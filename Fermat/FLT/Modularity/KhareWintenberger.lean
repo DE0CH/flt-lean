@@ -8310,6 +8310,8 @@ theorem exists_finset_ae_integral_split_of_forall_split (b : Module.Basis ι F D
       (eventually_exists_integralSplitting F D b hsplit)
   exact ⟨e, he⟩
 
+end IntegralSplitting
+
 end AdelicRigidification
 
 /-- **STEP 1a-vi — ADELIC PATCHING: local splittings at every finite place

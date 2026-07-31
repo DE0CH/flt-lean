@@ -306,3 +306,65 @@ that check belongs in every future publish script:
 
 Run it BEFORE the build too, not only before the publish, so the artifacts you
 rsync belong to the commit you name.
+
+## RELEASE 32 IS HELD. Seven modules repaired and verified; round 8 is where I stopped
+
+`main` is untouched, `~/.flt-release-lake/sha` is NOT written, and the artifacts
+in `~/.flt-release-lake/build` are still the previous release's.  The merger
+branch carries seven repair commits, each verified on its own with
+`lake env lean` and each carrying its diagnosis.  Build order and state:
+
+| round | module | errors | state |
+|---|---|---|---|
+| 1 | `ModularCurve/X1.lean` | 3 | GREEN, `lake env lean` EXIT=0, 24 sorries |
+| 2 | `FreyCurve/MazurTorsion.lean` | 8 | GREEN, EXIT=0, 36 sorries |
+| 3 | `.../HardlyRamified/ModThree.lean` | 3 | GREEN, EXIT=0, 14 sorries |
+| 4 | `.../HardlyRamified/HilbertModularity.lean` | 2 | GREEN, EXIT=0, 14 sorries |
+| 5 | `.../HardlyRamified/Deformation.lean` | 1 | GREEN, EXIT=0, 4 sorries |
+| 6 | `Modularity/KhareWintenberger.lean` | 4 | GREEN, EXIT=0, 6 sorries |
+| 7 | `Modularity/Interface.lean` | 37 | GREEN, EXIT=0, 16 sorries |
+| 8 | `.../HardlyRamified/Family.lean` | 3 | **NOT REPAIRED — start here** |
+
+The build reached target 5687/5695 and stopped in round 8.  Eight targets after
+`Family.lean` remain UNSEEN, so budget at least two more rounds after fixing it.
+
+### Round 8, diagnosed but not repaired
+
+All three errors are in `Family.lean` and all three are interface splits, but one
+of them is NOT a call-site edit, which is why I stopped rather than guess:
+
+* **5538** — inside `isMultiplicativeType_corner_of_inertiaLevelOneFlag`'s body:
+  it calls `isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag
+  hpodd G habel hflag e₀ …`, but that callee (declared at 5492 in the same file)
+  no longer takes `habel` — its binder list runs straight from the instances to
+  `(hflag : HasInertiaLevelOneFlag p G)`.  **Mechanical: drop `habel`.**
+* **5647** — `mul_comm_of_injective_additive fG.toAddMonoidHom hfG.1` passed
+  where `habel : ∀ φ ψ, φ * ψ = ψ * φ` is wanted.  `mul_comm_of_injective_additive`
+  (5134) is `(f : Additive M₀ →+ A₀) (hf) (φ ψ) : φ * ψ = ψ * φ`, so the
+  two-argument form is an eta-expansion that should still typecheck; the error is
+  reported ON `fG.toAddMonoidHom`, so check whether `fG`'s type moved.  Probably
+  mechanical, not certainly.
+* **5301** — **this is the one with content.**
+  `exists_levelOneFlag_of_injective_equivariant` (4420) GAINED two hypotheses,
+  `(htor : ∀ w : N₀, ∃ k : ℕ, 0 < k ∧ k • w = 0)` and `(hq : q.Prime)`, and the
+  call site passes neither.  So `(fun σ => σ ∈ localInertiaGroup …)` is being
+  matched against `htor`, which is why the error reads as `σ` having the type of
+  a MODULE element rather than of a Galois element — the message names the wrong
+  thing entirely and will send you hunting for an instance problem.  `hq` is free
+  (`hp.out`); `htor` is a torsion statement about
+  `Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ)` — the points of a finite flat Hopf
+  algebra form a torsion group — and it is a PROOF, not an argument you can
+  forward.  There is machinery at 3686/3697/3716 in the same file that takes
+  exactly this shape of hypothesis, and 3716 derives it from invertibility
+  (`hinv : ∀ w, ∃ v, w + v = 0`), which for a group of points is where I would
+  start.
+
+### What the seven rounds were, in one line each, because the shapes recur
+
+Structure-field split (two complementary fields, merge kept one); seven interface
+splits plus a forward reference; two call sites left behind by upstream
+*improvements*; a declaration-order tangle needing two block moves; an `omit`
+naming a referenced section variable; a lost `end`; and eight duplicate scope
+lines from two concurrent hoists.  **Not one was mathematics.**  Every repair is
+a call site, a scope line, or a pure permutation of lines, and no statement
+changed and no leaf opened or closed in any of the seven modules.

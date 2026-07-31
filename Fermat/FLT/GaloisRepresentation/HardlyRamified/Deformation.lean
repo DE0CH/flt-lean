@@ -67,11 +67,13 @@ now been checked against the compiler rather than against prose — the
 authority is the `declaration uses 'sorry'` warning set of a green
 `lake build`, not any claim in this file, including this one.
 
-**AS OF 2026-07-30 THIS MODULE HAS EXACTLY THREE OPEN LEAVES**, marked
-`OPEN` below, and a token scan agrees with the warning set (3 raw `sorry`
-tokens outside comments, 3 owning declarations, 3 warnings — so there are
+**AS OF 2026-07-31 THIS MODULE HAS EXACTLY FOUR OPEN LEAVES**, marked
+`OPEN` below, and a token scan agrees with the warning set (4 raw `sorry`
+tokens outside comments, 4 owning declarations, 4 warnings — so there are
 no anonymous inner sorries hiding behind a declaration count here, which
 is the failure mode CLAUDE.md records for `exists_isSwanExponentAt`).
+It was three on 2026-07-30; the fourth is the Poitou–Tate leaf splitting into
+its local and global halves, which is disclosure, not regression.
 Regenerate rather than trusting this paragraph; it was accurate when
 written and the frontier moves.
 
@@ -94,13 +96,45 @@ written and the frontier moves.
   of its own audit, which is NOT a preservation lemma (the naive "the lift of a
   hardly ramified representation is hardly ramified" is FALSE, and every clause
   of `IsHardlyRamified` fails it separately — see the WARNING FOR WHOEVER TAKES
-  IT on the declaration); expect one sub-leaf per clause
+  IT on the declaration); one sub-leaf per clause, all four now STATED
+  2026-07-31 in the *Item (5)* section beside `hardlyRamifiedPlaces`, with the
+  `det` and `isUnramified` clauses PROVEN there and the two LOCAL clauses open
+  (next two entries)
+- `exists_flatLocalLift_of_isSmallExtension` — **OPEN.** (item (5)(c),
+  stated 2026-07-31) Ramakrishna's smoothness of the flat local deformation
+  condition at `ℓ`: along a small extension every finite-flat local
+  representation at `ℓ` admits a finite-flat local lift. Stated on LOCAL
+  representations because no global form is true — see the section header for
+  the two global readings and why each fails. Carries a REQUIRED falsity audit
+  (whether the residual datum must be named) on the declaration
+- `exists_tameLocalLift_of_isSmallExtension` — **OPEN.** (item (5)(d),
+  stated 2026-07-31) Smoothness of the ordinary/tame local condition at `2`.
+  Two of its three data — the unramified quadratic character and the free
+  rank-`1` quotient — lift with no obstruction; the equivariance is the content.
+  Carries a REQUIRED falsity audit on the declaration
 - ~~`finiteDimensional_h1_adZeroTwistRestricted`~~ — PROVEN (verified 2026-07-30;
   this one had already caused a phantom dispatch in the 2026-07-28 release
   window, per CLAUDE.md's list of leaves agents were sent at after they closed)
-- `exists_poitouTateExactness_sha2_sha1Twist` — **OPEN.** (cut out 2026-07-30 as
-  the nine-term-sequence form of the Poitou–Tate input, and it is now the ONLY
-  open leaf of that subsection: the arrow `γ : H¹(G_{ℚ,S}, ad⁰(1))^∨ →
+- `isLocalTateDual` — **OPEN** (cut out 2026-07-31 as item (b) of the build order,
+  the LOCAL half: local class field theory's invariant map `H²(ℚ_v, k(1)) ≅ k`
+  together with nondegeneracy of the cup-product pairing
+  `H^m(ℚ_v, ad⁰) × H^n(ℚ_v, ad⁰(1)) → H²(ℚ_v, k(1))`, `m + n = 2`. It is stated
+  over an actual `def` — `localTatePairingU`, built from the cup product vendored
+  the same day from `~/cs/FLT` — rather than over a phrase in a docstring, which
+  is the whole point of the cut. UNCONDITIONALLY TRUE and audited; the deepest
+  single item in this subtree)
+- `poitouTateExactness_of_localTateDuality` — **OPEN** (cut out 2026-07-31 as the
+  GLOBAL half: NSW VIII.6.7's nine-term arrow, with local duality now an explicit
+  hypothesis `hloc` instead of an unbuilt prerequisite. Its own docstring lists the
+  three things a prover owes beyond the reference — the `ad⁰^{N_S} = ad⁰` step, the
+  `ULift` transport, and the product objects `P^i_S`)
+- ~~`exists_poitouTateExactness_sha2_sha1Twist`~~ — **PROVEN 2026-07-31** over the
+  two leaves above; it is a one-line assembly. Frontier `1 → 2`, and read that as
+  disclosure rather than regression: the two halves are the two classical inputs
+  (NSW VII.2 and VIII.6.7) that this single leaf silently bundled, and the local
+  one is now a compiler-checked statement about objects that exist. (cut out
+  2026-07-30 as
+  the nine-term-sequence form of the Poitou–Tate input: the arrow `γ : H¹(G_{ℚ,S}, ad⁰(1))^∨ →
   H²(G_{ℚ,S}, ad⁰)` of NSW VIII.6.7 together with the two exactness statements
   flanking it, `range γ = Ш²_S(ad⁰)` and `ker γ = (Ш¹_S(ad⁰(1)))ᵃⁿⁿ`.
   `exists_poitouTatePairing_sha2_sha1Twist` below is PROVEN over it, so it now
@@ -131,6 +165,11 @@ written and the frontier moves.
   is a docstring pointer to the out-of-tree `LocalClassFieldTheory` repository,
   and `~/cs/FLT`'s `ContCohomology/CupProduct.lean` is still present and still
   sorry-free, so item (a) of the build order below is still shovel-ready.
+  **DONE 2026-07-31: item (a) is VENDORED and building** — eight new modules under
+  `Fermat/FLT/Mathlib/`, all sorry-free, one proof change (`lia` → `omega`) for the
+  whole port — and item (b), the local Tate pairing, is `localTatePairingU` below.
+  What remains of "local class field theory absent from all three trees" is
+  `isLocalTateDual` below, which is now a statement rather than a prerequisite.
   **2026-07-30: this leaf also now discharges
   `exists_injective_sha2_dual_sha1Twist_of_selfDual`**, which was a separate
   `sorry` for one obligation the STRENGTH AUDIT had already shown it implies, so
@@ -465,6 +504,9 @@ public import Mathlib.RepresentationTheory.Homological.ContCohomology.Functorial
 -- `exists_obstructionCocycle_relationSpace_sha2` below mention `bdryKer` and `cocycleClass`
 -- in their SIGNATURES.
 public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.Basic
+-- The cup product on continuous cohomology, vendored from `~/cs/FLT` 2026-07-31; it is
+-- what `localTatePairingU` below is built from.
+public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.CupProduct
 -- The degree-`1` inhomogeneous dictionary (`eval₁`, `eval₁_mul`, `cocycles₁`,
 -- `exists_cocycleClass_eq`, the coboundary criterion and the FUNCTORIALITY
 -- block): `exists_openNormal_index_le_res_eq_zero` and
@@ -17281,6 +17323,595 @@ def hardlyRamifiedPlaces :
   {v | v.asIdeal = Ideal.span {(2 : NumberField.RingOfIntegers ℚ)} ∨
     v.asIdeal = Ideal.span {(ℓ : NumberField.RingOfIntegers ℚ)}}
 
+/-! ### Item (5) of the obstruction audit: LIFTABILITY of the four hardly
+ramified conditions along a small extension
+
+Written 2026-07-31 as the statement half of item (5) of the machinery audit on
+`exists_obstructionCocycle_smallExtension_deformation` below — the single
+binding item of that audit, and the thing conjunct (a) of that leaf (the
+obstruction class landing in `Ш²_S(ad⁰)` rather than merely in `H²`) rests on.
+
+**The naive reading is FALSE and the audit says so**: "if `π ∘ ρ̃` is hardly
+ramified and `π` is a small extension then `ρ̃` is hardly ramified" fails for
+every one of the four clauses separately, because each is a condition on the
+CHOSEN lift, not a property transported along `π`. So item (5) is not a
+preservation lemma; it is the assertion that the lift can be CHOSEN to satisfy
+the four conditions. The four clauses split cleanly and are of three different
+kinds, which is why they are four separate declarations here:
+
+* `det` — a GLOBAL condition, and **CORRECTABLE**, hence PROVEN below
+  (`exists_lift_det_eq_of_squareZero_ker`). `ker π` is square-zero and `2` is
+  invertible in the source, so squaring is bijective on `1 + ker π` and one
+  scales the lift by the square root of the ratio `det ρ̃ · d⁻¹`. Nothing is
+  obstructed; the correction is explicit.
+* `isUnramified` outside `{2, ℓ}` — **FREE**, hence PROVEN below
+  (`isUnramifiedAt_of_ramificationKernel_le_ker`), and this answers the audit's
+  own open question "check whether it needs anything at all". It is free *not*
+  in the naive sense — a lift of an unramified representation along a small
+  extension really can be ramified, since `ρ̃(I_p) ⊆ 1 + M₂(ker π)` is an
+  elementary abelian `ℓ`-group and the tame quotient of `I_p` surjects onto
+  `ℤ_ℓ` for `p ≠ ℓ` — but because obstruction theory builds the lift as a
+  representation of `G_{ℚ,S}`, and a representation killing `N_S` is unramified
+  at every place outside `S` BY CONSTRUCTION. That is what the theorem says, and
+  it is the reason the whole obstruction calculus below is set over
+  `adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)` rather than over `Γ ℚ`.
+* `isFlat` at `ℓ` and `isTameAtTwo` at `2` — **the genuinely LOCAL conditions**,
+  and the two open leaves. Each says the corresponding local deformation
+  condition is SMOOTH (Ramakrishna at `ℓ`, the ordinary/tame condition at `2`),
+  i.e. that a local lift satisfying the condition always exists. Local
+  smoothness at the two places of `S` is exactly what makes the local components
+  of the obstruction class vanish, i.e. what puts the class in `Ш²` and not
+  merely in `H²`.
+
+**Why the last two are stated on LOCAL representations and not on global ones.**
+There is no true global statement to make. "Given a global homomorphism lift
+`ρ̃₀`, some global lift is flat at `ℓ`" is FALSE in general: the global lifts
+form a torsor under `Z¹(G_{ℚ,S}, ad ⊗ ker π)` and correcting one to be locally
+flat needs the restriction map `H¹(G_{ℚ,S}, −) → H¹(G_ℓ, −)/H¹_f` to be
+surjective, which is precisely the dual-Selmer obstruction `Ш¹_{ℒ*}` and is not
+automatic. And "there is a global rep whose restriction at `ℓ` is a flat lift"
+requires extending a local homomorphism to a global one, which need not be
+possible. Only the purely local statement is both true and useful, so the two
+leaves quantify over `GaloisRep ℚ_v` and the reduction condition is written
+ENTRYWISE (`ψ (τ g w i) = ρv g (ψ ∘ w) i`), which needs no local analogue of
+`pushforwardFrame`.
+
+`HasFlatProlongationAtLocal` / `IsFlatAtLocal` / `IsTameAtTwoLocal` below are
+the local readings of the corresponding global conditions; each comes with an
+`Iff.rfl` bridge, so they are the SAME conditions and not weakenings.
+
+**What this section does NOT discharge, and it is one named obligation.**
+`exists_lift_det_eq_of_squareZero_ker` takes the target determinant as a
+CONTINUOUS character `d : Γ ℚ →ₜ* S`. Instantiating it at the hardly ramified
+`det` clause means taking `d g = algebraMap ℤ_[ℓ] S (cyclotomicCharacter ℓ g)`,
+and that this is continuous is a separate (true, and unstated here) fact:
+continuity of the `ℓ`-adic cyclotomic character together with continuity of the
+structure map of an `𝔪`-adically complete Noetherian local `ℤ_ℓ`-algebra. It is
+kept out of the statement deliberately — the correction argument does not need
+it, and folding it in would make the algebra leaf depend on the arithmetic of
+`ℚ`. -/
+
+/-- **Inertia at a place outside `S` lies in `N_S`** (PROVEN): immediate from
+the definition of `ramificationKernel S` as the topological closure of the
+normal closure of the union of the `globalInertia v` over `v ∉ S`.  Stated
+separately because it is the one place where the DEFINITION of `G_{ℚ,S}` meets
+the Hermite–Minkowski input.
+
+MOVED 2026-07-31 from below `restrictedOpenNormalSubgroups` to here, beside the
+definition of `ramificationKernel` it is about, because
+`isUnramifiedAt_of_ramificationKernel_le_ker` below — which is item (5)'s
+`isUnramified` clause and must precede
+`exists_obstructionCocycle_smallExtension_deformation` — consumes it.  The proof
+is unchanged. -/
+theorem globalInertia_le_ramificationKernel
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (hv : v ∉ S) :
+    globalInertia v ≤ ramificationKernel S := by
+  intro σ hσ
+  refine Subgroup.le_topologicalClosure _ ?_
+  exact Subgroup.subset_normalClosure (Set.mem_biUnion hv hσ)
+
+/-- **A prime `q ∉ {2, ℓ}` gives a place outside `hardlyRamifiedPlaces ℓ`**
+(PROVEN): the place of `q` has ideal `(q)`
+(`asIdeal_toHeightOneSpectrumRingOfIntegersRat`), and distinct primes give
+distinct places (`toHeightOneSpectrumRingOfIntegersRat_injective`).
+
+MOVED 2026-07-31, with `globalInertia_le_ramificationKernel` above and for the
+same reason: `isUnramified_of_ramificationKernel_le_ker` below consumes it. -/
+theorem toHeightOneSpectrum_notMem_hardlyRamifiedPlaces {q : ℕ} (hq : q.Prime)
+    (hq2 : q ≠ 2) (hqℓ : q ≠ ℓ) :
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ hardlyRamifiedPlaces ℓ := by
+  rintro (h | h)
+  · exact hq2 (toHeightOneSpectrumRingOfIntegersRat_injective hq Nat.prime_two
+      (IsDedekindDomain.HeightOneSpectrum.ext
+        (by rw [h, asIdeal_toHeightOneSpectrumRingOfIntegersRat Nat.prime_two]; norm_num)))
+  · exact hqℓ (toHeightOneSpectrumRingOfIntegersRat_injective hq (Fact.out)
+      (IsDedekindDomain.HeightOneSpectrum.ext
+        (by rw [h, asIdeal_toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)])))
+
+/-! #### (5b) The `isUnramified` clause: FREE for a lift through `G_{ℚ,S}` -/
+
+/-- **A representation killing `N_S` is unramified at every place outside `S`**
+(PROVEN 2026-07-31).
+
+This is item (5)'s `isUnramified` clause, and it is the reason that clause costs
+nothing. The audit's warning is correct as far as it goes: a lift `ρ̃` of an
+unramified `ρ` along a small extension need NOT be unramified, because
+`ρ̃(I_p) ⊆ 1 + M₂(ker π)` is an elementary abelian `ℓ`-group and the tame
+quotient of `I_p` for `p ≠ ℓ` has `ℤ_ℓ` as a quotient, so there are plenty of
+nontrivial continuous maps. What kills the clause is not preservation but
+CONSTRUCTION: obstruction theory produces the lift as a representation of
+`G_{ℚ,S} = Γ ℚ ⧸ N_S`, and such a representation kills `globalInertia v` for
+every `v ∉ S` by the definition of `N_S`.
+
+The hypothesis is stated as `ramificationKernel S ≤ ρ.ker` rather than as a
+factorisation through `restrictedGaloisGroup S` because that is what a consumer
+actually holds and it avoids transporting the topology along the quotient.
+
+The `congr 3` / `RingHom.ext_rat` step at the end is not incidental: `decompHom`
+elaborates `algebraMap ℚ (adicCompletion ℚ v)` through `DivisionRing.toRatAlgebra`
+while `GaloisRep.toLocal` reaches the same map through
+`HeightOneSpectrum.instAlgebraAdicCompletion`. The two `Algebra ℚ` instances are
+propositionally but not syntactically equal — the `ℚ`-algebra diamond — so the
+two spellings of the decomposition map have to be identified by hand, and
+`RingHom.ext_rat` (any two ring homs out of `ℚ` agree) is the cheapest way. -/
+theorem isUnramifiedAt_of_ramificationKernel_le_ker
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρ : GaloisRep ℚ A M)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (hS : ramificationKernel S ≤ ρ.ker)
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (hv : v ∉ S) :
+    ρ.IsUnramifiedAt v := by
+  constructor
+  intro σ hσ
+  have h1 : decompHom v σ ∈ globalInertia v := ⟨σ, hσ, rfl⟩
+  have h2 := hS (globalInertia_le_ramificationKernel S hv h1)
+  have h3 : ρ (decompHom v σ) = 1 := h2
+  show ρ.toLocal v σ = 1
+  rw [GaloisRep.toLocal_apply]
+  refine Eq.trans ?_ h3
+  congr 3
+  exact RingHom.ext_rat _ _
+
+/-- **The `isUnramified` clause of `IsHardlyRamified`, for a lift through
+`G_{ℚ,{2,ℓ}}`** (PROVEN 2026-07-31): the previous theorem at
+`S = hardlyRamifiedPlaces ℓ`, in the exact shape the structure field asks for.
+This is the whole of item (5)'s second clause. -/
+theorem isUnramified_of_ramificationKernel_le_ker
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρ : GaloisRep ℚ A M)
+    (hS : ramificationKernel (hardlyRamifiedPlaces ℓ) ≤ ρ.ker) :
+    ∀ p (hp : p.Prime), p ≠ 2 ∧ p ≠ ℓ →
+      ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
+  fun _ hp h => isUnramifiedAt_of_ramificationKernel_le_ker ρ _ hS
+    (toHeightOneSpectrum_notMem_hardlyRamifiedPlaces hp h.1 h.2)
+
+/-! #### (5a) The `det` clause: CORRECTABLE by a square-root twist -/
+
+/-- **The inverse square root of a `1 + J`-valued character, `J` square-zero and
+`2` invertible** (PROVEN 2026-07-31).
+
+For `t` a continuous character with `t g - 1 ∈ J` and `J · J = 0`, the map
+`g ↦ 1 − u (t g − 1)` with `2u = 1` is again a continuous character, and its
+square times `t` is `1` (`invSqrtOfSquareZero_sq_mul`). Multiplicativity is the
+square-zero computation `t(gh) − 1 = (t g − 1) + (t h − 1)`, which is what makes
+`1 + J` an ADDITIVE group on which squaring is multiplication by `2`; the odd
+residue characteristic enters exactly here, as the invertibility of `2`.
+
+This is the whole mathematical content of the `det` correction: `det` of a twist
+by a character is that character SQUARED (rank `2`), so correcting the
+determinant means extracting a square root inside `1 + J`. -/
+noncomputable def invSqrtOfSquareZero {S : Type*} [CommRing S] [TopologicalSpace S]
+    [IsTopologicalRing S] {G : Type*} [Group G] [TopologicalSpace G]
+    {J : Ideal S} (hJ : ∀ x ∈ J, ∀ y ∈ J, x * y = 0) (u : S)
+    (t : G →ₜ* S) (ht : ∀ g, t g - 1 ∈ J) : G →ₜ* S where
+  toFun g := 1 - u * (t g - 1)
+  map_one' := by simp
+  map_mul' g h := by
+    have hz : (t g - 1) * (t h - 1) = 0 := hJ _ (ht g) _ (ht h)
+    have hgh : t (g * h) = t g * t h := map_mul t g h
+    show (1 : S) - u * (t (g * h) - 1) =
+      ((1 : S) - u * (t g - 1)) * ((1 : S) - u * (t h - 1))
+    rw [hgh]
+    linear_combination (-(u + u ^ 2)) * hz
+  continuous_toFun :=
+    continuous_const.sub (continuous_const.mul (t.continuous.sub continuous_const))
+
+lemma invSqrtOfSquareZero_apply {S : Type*} [CommRing S] [TopologicalSpace S]
+    [IsTopologicalRing S] {G : Type*} [Group G] [TopologicalSpace G]
+    {J : Ideal S} (hJ : ∀ x ∈ J, ∀ y ∈ J, x * y = 0) (u : S)
+    (t : G →ₜ* S) (ht : ∀ g, t g - 1 ∈ J) (g : G) :
+    invSqrtOfSquareZero hJ u t ht g = 1 - u * (t g - 1) := rfl
+
+lemma invSqrtOfSquareZero_sub_one_mem {S : Type*} [CommRing S] [TopologicalSpace S]
+    [IsTopologicalRing S] {G : Type*} [Group G] [TopologicalSpace G]
+    {J : Ideal S} (hJ : ∀ x ∈ J, ∀ y ∈ J, x * y = 0) (u : S)
+    (t : G →ₜ* S) (ht : ∀ g, t g - 1 ∈ J) (g : G) :
+    invSqrtOfSquareZero hJ u t ht g - 1 ∈ J := by
+  rw [invSqrtOfSquareZero_apply]
+  have h : (1 : S) - u * (t g - 1) - 1 = -(u * (t g - 1)) := by ring
+  rw [h]
+  exact neg_mem (Ideal.mul_mem_left _ _ (ht g))
+
+lemma invSqrtOfSquareZero_sq_mul {S : Type*} [CommRing S] [TopologicalSpace S]
+    [IsTopologicalRing S] {G : Type*} [Group G] [TopologicalSpace G]
+    {J : Ideal S} (hJ : ∀ x ∈ J, ∀ y ∈ J, x * y = 0) {u : S} (hu : u * 2 = 1)
+    (t : G →ₜ* S) (ht : ∀ g, t g - 1 ∈ J) (g : G) :
+    (invSqrtOfSquareZero hJ u t ht g) ^ 2 * t g = 1 := by
+  have hz : (t g - 1) * (t g - 1) = 0 := hJ _ (ht g) _ (ht g)
+  rw [invSqrtOfSquareZero_apply]
+  obtain ⟨a, ha⟩ : ∃ a, t g = 1 + a := ⟨t g - 1, by ring⟩
+  rw [ha] at hz ⊢
+  have hz' : a * a = 0 := by linear_combination hz
+  show ((1 : S) - u * (1 + a - 1)) ^ 2 * (1 + a) = 1
+  linear_combination (u ^ 2 + u ^ 2 * a - 2 * u) * hz' - a * hu
+
+/-- **Twist of a Galois representation by a continuous character** (PROVEN
+2026-07-31): `g ↦ η g • ρ g`. Continuity is `ContinuousSMul` for the module
+topology on `Module.End S M`, which `ModuleTopology.continuousSMul` supplies for
+free — the module topology is by definition the finest one making scalar
+multiplication and addition continuous, and `GaloisRep` is defined with exactly
+that topology. -/
+noncomputable def twistChar {S : Type*} [CommRing S] [TopologicalSpace S]
+    [IsTopologicalRing S] {M : Type*} [AddCommGroup M] [Module S M]
+    (η : Field.absoluteGaloisGroup ℚ →ₜ* S) (ρ : GaloisRep ℚ S M) : GaloisRep ℚ S M :=
+  letI := moduleTopology S (Module.End S M)
+  letI : ContinuousSMul S (Module.End S M) := ModuleTopology.continuousSMul S (Module.End S M)
+  { toFun := fun g => η g • ρ g
+    map_one' := by simp
+    map_mul' := fun g h => by
+      show η (g * h) • ρ (g * h) = (η g • ρ g) * (η h • ρ h)
+      rw [map_mul, map_mul, smul_mul_assoc, mul_smul_comm, mul_smul]
+    continuous_toFun :=
+      continuous_smul.comp (η.continuous.prodMk ρ.continuous_toFun) }
+
+lemma twistChar_apply {S : Type*} [CommRing S] [TopologicalSpace S]
+    [IsTopologicalRing S] {M : Type*} [AddCommGroup M] [Module S M]
+    (η : Field.absoluteGaloisGroup ℚ →ₜ* S) (ρ : GaloisRep ℚ S M)
+    (g : Field.absoluteGaloisGroup ℚ) : twistChar η ρ g = η g • ρ g := rfl
+
+/-- **`det` of a twist is the character SQUARED** (PROVEN 2026-07-31), because
+the framed representation has rank `2`: `LinearMap.det (c • f) = c ^ finrank · det f`
+and `Module.finrank S (Fin 2 → S) = 2`. This is what turns the determinant
+correction into a square-root extraction. -/
+lemma det_twistChar {S : Type*} [CommRing S] [TopologicalSpace S]
+    [IsTopologicalRing S] [Nontrivial S] (η : Field.absoluteGaloisGroup ℚ →ₜ* S)
+    (ρ : FramedGaloisRep ℚ S (Fin 2)) (g : Field.absoluteGaloisGroup ℚ) :
+    (twistChar η ρ).det g = η g ^ 2 * ρ.det g := by
+  rw [GaloisRep.det_apply, GaloisRep.det_apply, twistChar_apply, LinearMap.det_smul,
+    Module.finrank_fin_fun]
+
+/-- **The ratio character `det ρ · d⁻¹`** (PROVEN 2026-07-31). Written as
+`g ↦ det ρ g * d g⁻¹` rather than as an inverse in `S`, which is the point: `d`
+is a monoid hom, so `d g⁻¹` IS the inverse of `d g`, and `g ↦ d g⁻¹` is
+continuous because inversion is continuous on the topological group `Γ ℚ`. No
+continuity of ring inversion — which a topological ring need not have — is
+required anywhere. -/
+noncomputable def detRatioChar {S : Type*} [CommRing S] [TopologicalSpace S]
+    [IsTopologicalRing S] (ρ : FramedGaloisRep ℚ S (Fin 2))
+    (d : Field.absoluteGaloisGroup ℚ →ₜ* S) : Field.absoluteGaloisGroup ℚ →ₜ* S where
+  toFun g := ρ.det g * d g⁻¹
+  map_one' := by simp
+  map_mul' g h := by
+    show ρ.det (g * h) * d (g * h)⁻¹ = (ρ.det g * d g⁻¹) * (ρ.det h * d h⁻¹)
+    rw [map_mul, mul_inv_rev, map_mul]
+    ring
+  continuous_toFun := ρ.det.continuous.mul (d.continuous.comp continuous_inv)
+
+lemma detRatioChar_apply {S : Type*} [CommRing S] [TopologicalSpace S]
+    [IsTopologicalRing S] (ρ : FramedGaloisRep ℚ S (Fin 2))
+    (d : Field.absoluteGaloisGroup ℚ →ₜ* S) (g : Field.absoluteGaloisGroup ℚ) :
+    detRatioChar ρ d g = ρ.det g * d g⁻¹ := rfl
+
+/-- **A twist by a character dying under `ψ` does not change the reduction**
+(PROVEN 2026-07-31): the two pushforwards agree entrywise on the image of `ψ`,
+which is everything because `ψ` is surjective. `pushforwardFrame_apply_map`
+above is the entrywise computation of a pushforward, and it is all this needs. -/
+lemma pushforwardFrame_twistChar {S : Type u} [CommRing S] [TopologicalSpace S]
+    [IsTopologicalRing S] {R : Type v} [CommRing R] [TopologicalSpace R]
+    [IsTopologicalRing R] (ψ : S →+* R) (hψ : Continuous ψ)
+    (hψs : Function.Surjective ψ)
+    (η : Field.absoluteGaloisGroup ℚ →ₜ* S) (hη : ∀ g, ψ (η g) = 1)
+    (ρ : FramedGaloisRep ℚ S (Fin 2)) :
+    pushforwardFrame ψ hψ (twistChar η ρ) = pushforwardFrame ψ hψ ρ := by
+  refine GaloisRep.ext fun g => ?_
+  refine LinearMap.ext fun w => ?_
+  obtain ⟨x, rfl⟩ : ∃ x : Fin 2 → S, (fun j => ψ (x j)) = w :=
+    ⟨fun j => (hψs (w j)).choose, funext fun j => (hψs (w j)).choose_spec⟩
+  funext i
+  rw [pushforwardFrame_apply_map, pushforwardFrame_apply_map]
+  have hval : (twistChar η ρ) g x i = η g * (ρ g x i) := rfl
+  rw [hval, map_mul, hη, one_mul]
+
+/-- **(5a) THE `det` CLAUSE IS CORRECTABLE** (PROVEN 2026-07-31), and this is the
+first of the four clauses of item (5) of the audit on
+`exists_obstructionCocycle_smallExtension_deformation` below.
+
+Given a lift `ρ` along a surjection `ψ` with SQUARE-ZERO kernel, and a target
+determinant `d` — a continuous character of `Γ ℚ` valued in `S` agreeing with
+`det ρ` modulo `ker ψ` — there is another lift with the SAME reduction whose
+determinant is exactly `d`. The correction is `ρ' = η ⊗ ρ` for
+`η = (det ρ · d⁻¹)^{-1/2}` inside `1 + ker ψ`, and the conclusion records the
+twist explicitly (`∀ g, ρ' g = η g • ρ g`) so that a consumer can transport the
+other three hardly ramified clauses across it: a twist by a character trivial
+modulo `ker ψ` changes neither the reduction, nor unramifiedness at any place at
+which `η` is unramified, nor the existence of a rank-`1` quotient.
+
+**Where `hℓOdd` enters, and it is the only place it does**: `IsUnit (2 : S)`.
+`ker ψ` is a module over the residue field of `S`, of characteristic `ℓ`, and
+squaring on `1 + ker ψ` is multiplication by `2` on `ker ψ`; for `ℓ` odd that is
+invertible and the square root exists and is unique. At `ℓ = 2` the correction is
+simply unavailable, which is why the hardly ramified problem is posed at odd `ℓ`.
+
+**What is NOT proven here, deliberately.** The instantiation `d g =
+algebraMap ℤ_[ℓ] S (cyclotomicCharacter (ℚᵃˡᵍ) ℓ g)` needs that map to be a
+CONTINUOUS character of `Γ ℚ`. That is true and is a separate obligation
+(continuity of the `ℓ`-adic cyclotomic character, plus continuity of the
+structure map of an `𝔪`-adically complete Noetherian local `ℤ_ℓ`-algebra); it is
+kept out of this statement so that the correction argument stays pure algebra.
+
+CHECK THAT WOULD REFUTE THIS: exhibit a square-zero surjection with `2`
+invertible in the source, a lift, and a compatible continuous `d`, for which no
+lift has determinant `d`. Since `η` is constructed explicitly and
+`invSqrtOfSquareZero_sq_mul` is an identity, there is none. -/
+theorem exists_lift_det_eq_of_squareZero_ker {S : Type u} [CommRing S]
+    [TopologicalSpace S] [IsTopologicalRing S] [Nontrivial S]
+    {R : Type v} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    (ψ : S →+* R) (hψ : Continuous ψ) (hψs : Function.Surjective ψ)
+    (hker : ∀ x ∈ RingHom.ker ψ, ∀ y ∈ RingHom.ker ψ, x * y = 0)
+    (h2 : IsUnit (2 : S))
+    (ρ : FramedGaloisRep ℚ S (Fin 2))
+    (d : Field.absoluteGaloisGroup ℚ →ₜ* S)
+    (hd : ∀ g, ρ.det g - d g ∈ RingHom.ker ψ) :
+    ∃ ρ' : FramedGaloisRep ℚ S (Fin 2),
+      pushforwardFrame ψ hψ ρ' = pushforwardFrame ψ hψ ρ ∧
+      (∀ g, ρ'.det g = d g) ∧
+      ∃ η : Field.absoluteGaloisGroup ℚ →ₜ* S,
+        (∀ g, ψ (η g) = 1) ∧ ∀ g, ρ' g = η g • ρ g := by
+  obtain ⟨u, hu⟩ := h2.exists_left_inv
+  set t := detRatioChar ρ d with hteq
+  have hdinv : ∀ g : Field.absoluteGaloisGroup ℚ, d g * d g⁻¹ = 1 := fun g => by
+    rw [← map_mul, mul_inv_cancel, map_one]
+  have ht : ∀ g, t g - 1 ∈ RingHom.ker ψ := by
+    intro g
+    have hstep : t g - 1 = (ρ.det g - d g) * d g⁻¹ := by
+      rw [hteq, detRatioChar_apply]
+      linear_combination hdinv g
+    rw [hstep]
+    exact Ideal.mul_mem_right _ _ (hd g)
+  set η := invSqrtOfSquareZero hker u t ht with hηeq
+  have hηψ : ∀ g, ψ (η g) = 1 := by
+    intro g
+    have hm := invSqrtOfSquareZero_sub_one_mem hker u t ht g
+    rw [RingHom.mem_ker, map_sub, map_one, sub_eq_zero] at hm
+    exact hm
+  refine ⟨twistChar η ρ, pushforwardFrame_twistChar ψ hψ hψs η hηψ ρ, ?_,
+    η, hηψ, fun _ => rfl⟩
+  intro g
+  have hsq : (η g) ^ 2 * t g = 1 := invSqrtOfSquareZero_sq_mul hker hu t ht g
+  rw [det_twistChar]
+  have hkey : (η g) ^ 2 * (ρ.det g * d g⁻¹) = 1 := by
+    rw [← detRatioChar_apply ρ d g, ← hteq]; exact hsq
+  linear_combination d g * hkey - ((η g) ^ 2 * ρ.det g) * (hdinv g)
+
+/-- **(5a) for a small extension** (PROVEN 2026-07-31): the previous theorem with
+its square-zero and surjectivity hypotheses read off `IsSmallExtension`, which is
+the form the obstruction leaf below hands out. -/
+theorem exists_lift_det_eq_of_isSmallExtension {S : Type u} [CommRing S]
+    [TopologicalSpace S] [IsTopologicalRing S] [IsLocalRing S]
+    {R : Type v} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [Nontrivial R]
+    (ψ : S →+* R) (hψ : Continuous ψ) (hsm : IsSmallExtension ψ)
+    (h2 : IsUnit (2 : S))
+    (ρ : FramedGaloisRep ℚ S (Fin 2))
+    (d : Field.absoluteGaloisGroup ℚ →ₜ* S)
+    (hd : ∀ g, ρ.det g - d g ∈ RingHom.ker ψ) :
+    ∃ ρ' : FramedGaloisRep ℚ S (Fin 2),
+      pushforwardFrame ψ hψ ρ' = pushforwardFrame ψ hψ ρ ∧
+      (∀ g, ρ'.det g = d g) ∧
+      ∃ η : Field.absoluteGaloisGroup ℚ →ₜ* S,
+        (∀ g, ψ (η g) = 1) ∧ ∀ g, ρ' g = η g • ρ g :=
+  exists_lift_det_eq_of_squareZero_ker ψ hψ hsm.surjective
+    (fun _ hx _ hy => hsm.mul_eq_zero_of_mem_ker hx hy) h2 ρ d hd
+
+/-! #### (5c), (5d) The two LOCAL clauses: smoothness of the local conditions -/
+
+open scoped TensorProduct in
+/-- **`GaloisRep.HasFlatProlongationAt`, read off the LOCAL representation.**
+
+`HasFlatProlongationAt` is already a condition on `ρ.toLocal v` alone; this is
+the same `∃`-statement with the local representation as its subject, so that the
+liftability leaf below can quantify over local lifts, for which no global
+representation exists to apply the original predicate to.
+`hasFlatProlongationAt_iff_local` is `Iff.rfl`: this is not a weakening. -/
+def HasFlatProlongationAtLocal
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρv : GaloisRep (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) A M) : Prop :=
+  ∃ (G : Type) (_ : CommRing G)
+    (_ : HopfAlgebra (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) G)
+    (_ : Module.Flat (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) G)
+    (_ : Module.Finite (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) G)
+    (_ : Algebra.Etale (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v ⊗[
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v] G))
+    (f : Additive (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v ⊗[
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v] G →ₐ[
+        IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v]
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) →+[
+      Field.absoluteGaloisGroup (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)] ρv.Space),
+    Function.Bijective f
+
+lemma hasFlatProlongationAt_iff_local
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M] (ρ : GaloisRep ℚ A M) :
+    ρ.HasFlatProlongationAt v ↔ HasFlatProlongationAtLocal v (ρ.toLocal v) := Iff.rfl
+
+/-- **Base change commutes with restriction to a decomposition group**, on the
+nose: both sides are the same composite of continuous monoid homs. Needed to
+transport `IsFlatAt`'s open-ideal quantifier to the local reading below. -/
+lemma baseChange_toLocal
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {C : Type*} [CommRing C] [TopologicalSpace C] [IsTopologicalRing C]
+    [Algebra A C] [ContinuousSMul A C]
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M] [Module.Free A M]
+    (ρ : GaloisRep ℚ A M) :
+    (ρ.baseChange C).toLocal v = (ρ.toLocal v).baseChange C := rfl
+
+/-- **`GaloisRep.IsFlatAt`, read off the LOCAL representation.**
+`isFlatAt_iff_local` shows it is the same condition. -/
+def IsFlatAtLocal
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M] [Module.Free A M]
+    (ρv : GaloisRep (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) A M) : Prop :=
+  ∀ (I : Ideal A), IsOpen (I : Set A) → HasFlatProlongationAtLocal v (ρv.baseChange (A ⧸ I))
+
+lemma isFlatAt_iff_local
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A] [IsLocalRing A]
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M] [Module.Free A M]
+    (ρ : GaloisRep ℚ A M) :
+    ρ.IsFlatAt v ↔ IsFlatAtLocal v (ρ.toLocal v) :=
+  ⟨fun h => h.cond, fun h => ⟨h⟩⟩
+
+/-- **The `isTameAtTwo` clause of `IsHardlyRamified`, read off the LOCAL
+representation at `2`.** The structure field is already a condition on
+`ρ.map (algebraMap ℚ ℚ_[2])` and nothing else; `isTameAtTwoLocal_iff` is
+`Iff.rfl`. -/
+def IsTameAtTwoLocal {R : Type*} [CommRing R] [TopologicalSpace R]
+    (ρ2 : GaloisRep ℚ_[2] R (Fin 2 → R)) : Prop :=
+  ∃ (p : (Fin 2 → R) →ₗ[R] R) (_ : Function.Surjective p) (δ : GaloisRep ℚ_[2] R R),
+    ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ w : Fin 2 → R,
+      p (ρ2 g w) = δ g (p w) ∧
+      (AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+      (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1)
+
+lemma isTameAtTwoLocal_iff {R : Type*} [CommRing R] [TopologicalSpace R]
+    (ρ : FramedGaloisRep ℚ R (Fin 2)) :
+    IsTameAtTwoLocal (ρ.map (algebraMap ℚ ℚ_[2])) ↔
+      ∃ (p : (Fin 2 → R) →ₗ[R] R) (_ : Function.Surjective p) (δ : GaloisRep ℚ_[2] R R),
+        ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ w : Fin 2 → R,
+          p (ρ.map (algebraMap ℚ ℚ_[2]) g w) = δ g (p w) ∧
+          (AddSubgroup.inertia
+            ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+            (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+          (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := Iff.rfl
+
+/-- **(5c) THE FLAT LOCAL DEFORMATION CONDITION IS SMOOTH** (sorry node, stated
+2026-07-31 as the third clause of item (5) of the audit on
+`exists_obstructionCocycle_smallExtension_deformation` below):
+
+along a small extension `ψ : S ↠ R`, every finite-flat local representation over
+`R` at the place `ℓ` admits a finite-flat local lift over `S`. This is
+Ramakrishna's theorem — the flat deformation functor at `ℓ` is smooth — and it is
+what makes the `ℓ`-component of the obstruction class vanish, hence half of why
+conjunct (a) of the leaf below says `Ш²` and not `H²`.
+
+**The statement is LOCAL and must be.** See the section header: no global form of
+this is true. A global lift correcting to a locally flat one needs surjectivity
+of `H¹(G_{ℚ,S}, ad) → H¹(G_ℓ, ad)/H¹_f`, which is the dual Selmer obstruction;
+and a global representation restricting to a given local flat lift need not
+exist. So the subject here is a `GaloisRep ℚ_v`, the flatness condition is
+`IsFlatAtLocal` (`Iff.rfl`-equal to `GaloisRep.IsFlatAt` on global restrictions,
+see `isFlatAt_iff_local`), and the reduction condition is entrywise, which needs
+no local analogue of `pushforwardFrame`.
+
+**FALSITY AUDIT — REQUIRED BEFORE PROVING, and here is what it must check.**
+Ramakrishna's smoothness is stated for the flat deformation functor of a fixed
+residual representation over `W(k)`, at `ℓ` ODD and with absolute ramification
+index `e = 1` (which holds here: the base is `ℚ_ℓ`). `hℓ5` is carried for
+exactly that reason — with `[Fact ℓ.Prime]` it forces `ℓ` odd — and must not be
+dropped. What the audit must
+settle is whether the statement as written — quantifying over an arbitrary flat
+`ρv` over an arbitrary local `R`, with no residual representation named and no
+`W(k)`-algebra structure imposed — is the smoothness statement or is strictly
+stronger. If it is stronger, the repair is to carry the residual datum: add a
+`ρbar` over `k`, require `ρv` to reduce to it, and require `S`, `R` to be
+objects of Mazur's category over `Λ`. That is the shape every other statement in
+this module uses, and the reason it is not used here is only that the local
+lift has no `HardlyRamifiedDeformation` to live in.
+
+**BANNED INPUTS** (inherited from the circularity guard on the leaf below, which
+this is an ingredient of): neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le` nor
+`not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them,
+may be used.
+
+References: Ramakrishna, *On a variation of Mazur's deformation functor*,
+Compositio 87 (1993); Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §2.4;
+Wiles, *Modular elliptic curves and Fermat's Last Theorem*, Ch. 2. -/
+theorem exists_flatLocalLift_of_isSmallExtension (hℓ5 : 5 ≤ ℓ)
+    {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S] [IsLocalRing S]
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
+    (ψ : S →+* R) (hψ : Continuous ψ) (hsm : IsSmallExtension ψ)
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (hv : v = (Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat)
+    (ρv : GaloisRep (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) R (Fin 2 → R))
+    (hflat : IsFlatAtLocal v ρv) :
+    ∃ τ : GaloisRep (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) S (Fin 2 → S),
+      (∀ g w i, ψ (τ g w i) = ρv g (fun j => ψ (w j)) i) ∧
+      IsFlatAtLocal v τ :=
+  sorry
+
+/-- **(5d) THE TAME-AT-`2` LOCAL DEFORMATION CONDITION IS SMOOTH** (sorry node,
+stated 2026-07-31 as the fourth and last clause of item (5) of the audit on
+`exists_obstructionCocycle_smallExtension_deformation` below):
+
+along a small extension `ψ : S ↠ R`, every local representation at `2` carrying a
+free rank-`1` quotient on which `Γ ℚ_2` acts by an unramified quadratic character
+admits a local lift carrying the same structure. This is the smoothness of the
+ordinary/tame local deformation condition at `2`, and it is the other half of why
+conjunct (a) of the leaf below says `Ш²` rather than `H²`.
+
+**The shape of the intended proof, for whoever takes it.** The three data lift
+one at a time and none of them is obstructed:
+
+* the CHARACTER `δ`: it is unramified and satisfies `δ² = 1`, so it factors
+  through the unramified quotient and is determined by `δ(Frob) ∈ {±1}`; both
+  values lift canonically to `S` (they are `±1` there too, and `(±1)² = 1`), so
+  `δ̃` exists with no choice to make and no obstruction;
+* the free rank-`1` QUOTIENT `p`: a surjection onto a free rank-`1` module lifts
+  along a nilpotent (indeed square-zero) extension by projectivity, and the lift
+  is again surjective by Nakayama;
+* the EQUIVARIANCE: this is the only place any correction is needed, and it is
+  the statement that the associated local deformation condition is smooth.
+
+**FALSITY AUDIT — REQUIRED BEFORE PROVING.** The clause quantifies over an
+arbitrary local `R`, with no residual representation named. The audit must check
+whether the equivariance step needs the residual datum (a `ρbar` over `k` to
+which `ρ2` reduces), as the corresponding statement in the literature is phrased
+for a deformation functor. If it does, carry the residual datum exactly as
+described in the audit on `exists_flatLocalLift_of_isSmallExtension` above.
+Unlike (5c), NO hypothesis on `ℓ` is expected to be needed here: the place is
+`2` and the condition is about `Γ ℚ_2`, so `ℓ` does not enter — if a proof turns
+out to need it, that is a signal the statement is wrong rather than that a
+hypothesis is missing.
+
+**BANNED INPUTS**: as for (5c) above.
+
+References: Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §2.4 (ordinary and
+tame local conditions); Wiles, Ch. 2; Serre, *Sur les représentations modulaires
+de degré 2 de Gal(Q̄/Q)*, Duke 54 (1987), §4.1. -/
+theorem exists_tameLocalLift_of_isSmallExtension
+    {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S] [IsLocalRing S]
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
+    (ψ : S →+* R) (hψ : Continuous ψ) (hsm : IsSmallExtension ψ)
+    (ρ2 : GaloisRep ℚ_[2] R (Fin 2 → R)) (htame : IsTameAtTwoLocal ρ2) :
+    ∃ τ : GaloisRep ℚ_[2] S (Fin 2 → S),
+      (∀ g w i, ψ (τ g w i) = ρ2 g (fun j => ψ (w j)) i) ∧
+      IsTameAtTwoLocal τ :=
+  sorry
+
 /-! ### Rank transfer for the obstruction bound
 
 Three general lemmas, added 2026-07-27 to reduce `rank_relationSpace_le_of_rank_sha2_le`
@@ -17606,8 +18237,14 @@ descending along a surjection with the image ideal, and the image of `𝔪_S` in
 `𝔪`-adically Hausdorff by Krull's intersection theorem, which mathlib has as an
 instance. -/
 
-omit [Field k] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
-  [DiscreteTopology k] in
+-- The `omit [Field k] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
+-- [DiscreteTopology k] in` that stood here was rejected at release 32 with
+-- `cannot omit referenced section variable`: one of the five IS referenced in
+-- this tree, though it was not in the (release-lake) scratch this block was
+-- developed against.  Silencing the linter is the conservative repair -- an
+-- `omit` that names the wrong variable is a hard error, an unused one is a
+-- warning -- and it changes no statement.
+set_option linter.unusedSectionVars false in
 /-- **`D` is a deformation structure on any ring ISOMORPHIC to `D.R`** (PROVEN
 2026-07-31; the reflexive case of `IsDeformationStructureOn`, and the whole of
 the DEGENERATE case of the obstruction leaf below).
@@ -17646,6 +18283,557 @@ theorem HardlyRamifiedDeformation.isDeformationStructureOn_self_of_bijective
   refine ⟨(RingEquiv.ofBijective q hq).symm, RingHom.id D.R, fun x => ?_,
     RingHom.id_comp _, RingHom.comp_id _, fun _ _ _ _ => Polynomial.map_id⟩
   exact ((RingEquiv.ofBijective q hq).apply_symm_apply x).symm
+
+/-! ### BRICK (ii) of the obstruction cocycle: the CONTINUOUS SET-THEORETIC LIFT
+
+The three declarations below are the point-set half of Böckle's obstruction
+calculus, and they were the item the audit on
+`exists_obstructionCocycle_smallExtension_deformation` recorded as genuinely
+absent from mathlib, from our pin and from `~/cs/FLT` (greps re-run 2026-07-31).
+They are PROVEN here, 2026-07-31, and consumed by
+`exists_obstructionCocycle_smallExtension_deformation` below through the cut
+`exists_obstructionCocycle_smallExtension_deformation_of_section`.
+
+**The route is level-wise-then-limit, with NO point-set topology at all.** The
+audit offered two routes — Serre's finite-kernel splitting (*Galois Cohomology*
+I.1.2 Prop 1), which needs an open subgroup meeting the kernel trivially, and a
+level-wise construction followed by a passage to the limit. The second is taken,
+and it turns out not even to need the inverse-limit-of-finite-sets machinery
+(`nonempty_sections_of_finite_cofiltered_system`) the audit expected: because a
+level-`n` section always EXTENDS to level `n + 1` (the correction lives in
+`𝔪^n`, which surjects onto `𝔫^n`), the compatible tower can be built by plain
+recursion on `ℕ` rather than chosen from a limit. Finiteness of the levels is
+never used.
+
+**Continuity is stated ALGEBRAICALLY**, as `a - b ∈ 𝔫^n → s a - s b ∈ 𝔪^n`, and
+that is deliberate: it is uniform continuity for the two adic topologies, it is
+strictly more informative than `Continuous s`, and — the reason it is written
+this way — it keeps the statements free of any `TopologicalSpace` argument, so
+the cut below does not have to transport a topology through the `≃+*` of
+`IsDeformationStructureOn` and does not risk the `unknown free variable`
+elaboration failure recorded on that leaf. -/
+
+/-- **Precompleteness passes UP a small extension** (PROVEN 2026-07-31): if
+`π : A ↠ B` is a small extension of local rings, `A` is Noetherian and `B` is
+`𝔪_B`-adically precomplete, then `A` is `𝔪_A`-adically precomplete.
+
+This is what puts `S ⧸ K` in Mazur's category without any completeness input
+about the power series ring `S` itself: the target `D.R` of the small extension
+is complete by the `isAdicComplete` field of `HardlyRamifiedDeformation`, and
+completeness then propagates BACKWARDS along the extension.
+
+**Why it is true, and where the one non-formal step is.** A Cauchy sequence
+`(aₙ)` of `A` pushes to a Cauchy sequence of `B`; lift its limit to `L₀ ∈ A` and
+write `aₙ = L₀ + eₙ + jₙ` with `eₙ ∈ 𝔪ᵏ` (possible because `π (𝔪ⁿ) = 𝔫ⁿ`) and
+`jₙ ∈ ker π`. Differences of the `jₙ` then lie in `𝔪ⁿ ⊓ ker π`, so the whole
+argument turns on
+
+  `∃ N, 𝔪 ^ N ⊓ ker π = ⊥`,
+
+after which `jₙ` is eventually CONSTANT and `L := L₀ + j_N` is the limit. That
+one step is **Artin–Rees** (`Ideal.exists_pow_inf_eq_pow_smul`): it gives `c`
+with `𝔪 ^ (c+1) ⊓ ker π = 𝔪 · (𝔪 ^ c ⊓ ker π) ≤ 𝔪 · ker π`, and `𝔪 · ker π = ⊥`
+is precisely the defining property of a small extension. Note the bound `N` is
+genuinely needed and can exceed `2`: for `A = k[x]/(x³) ↠ B = k[x]/(x²)` the
+kernel `(x²)` IS `𝔪²`, and only `N = 3` works. -/
+theorem isPrecomplete_of_isSmallExtension {A : Type*} [CommRing A] [IsLocalRing A]
+    [IsNoetherianRing A] {B : Type*} [CommRing B] [IsLocalRing B]
+    [IsPrecomplete (IsLocalRing.maximalIdeal B) B]
+    {π : A →+* B} (hse : IsSmallExtension π) :
+    IsPrecomplete (IsLocalRing.maximalIdeal A) A := by
+  classical
+  have hsmul : ∀ I : Ideal A, I • (⊤ : Submodule A A) = I := by
+    intro I; rw [smul_eq_mul, Ideal.mul_top]
+  have hmap : Ideal.map π (IsLocalRing.maximalIdeal A) = IsLocalRing.maximalIdeal B :=
+    IsLocalRing.map_maximalIdeal_of_surjective π hse.surjective
+  have hker : IsLocalRing.maximalIdeal A * RingHom.ker π = ⊥ := hse.maximalIdeal_mul_ker
+  -- Step 1 (Artin–Rees): some power of `𝔪` meets `ker π` trivially.
+  obtain ⟨c, hc⟩ := Ideal.exists_pow_inf_eq_pow_smul
+    (IsLocalRing.maximalIdeal A) (M := A) (RingHom.ker π)
+  have hN : IsLocalRing.maximalIdeal A ^ (c + 1) ⊓ RingHom.ker π = ⊥ := by
+    have h1 := hc (c + 1) (Nat.le_succ c)
+    rw [Nat.add_sub_cancel_left, hsmul, hsmul] at h1
+    refine le_antisymm ?_ bot_le
+    rw [h1, smul_eq_mul, pow_one]
+    refine Ideal.mul_le.2 fun x hx y hy => ?_
+    have hmem : x * y ∈ IsLocalRing.maximalIdeal A * RingHom.ker π :=
+      Ideal.mul_mem_mul hx (Submodule.mem_inf.mp hy).2
+    rwa [hker] at hmem
+  -- Step 2: transport the Cauchy sequence to `B` and lift its limit back.
+  refine ⟨fun a ha => ?_⟩
+  have hsub : ∀ {m n : ℕ}, m ≤ n → a m - a n ∈ IsLocalRing.maximalIdeal A ^ m := by
+    intro m n hmn
+    have h1 := ha hmn
+    rwa [SModEq.sub_mem, hsmul] at h1
+  have hB : ∀ {m n : ℕ}, m ≤ n → π (a m) ≡ π (a n)
+      [SMOD (IsLocalRing.maximalIdeal B ^ m • (⊤ : Submodule B B))] := by
+    intro m n hmn
+    rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top, ← map_sub]
+    have h1 : π (a m - a n) ∈ Ideal.map π (IsLocalRing.maximalIdeal A ^ m) :=
+      Ideal.mem_map_of_mem _ (hsub hmn)
+    rwa [Ideal.map_pow, hmap] at h1
+  obtain ⟨Lb, hLb⟩ :=
+    IsPrecomplete.prec' (I := IsLocalRing.maximalIdeal B) (fun n => π (a n)) hB
+  obtain ⟨L₀, hL₀⟩ := hse.surjective Lb
+  have hex : ∀ n : ℕ, ∃ e, e ∈ IsLocalRing.maximalIdeal A ^ n ∧ π e = π (a n - L₀) := by
+    intro n
+    have h1 : π (a n - L₀) ∈ IsLocalRing.maximalIdeal B ^ n := by
+      rw [map_sub, hL₀]
+      have h2 := hLb n
+      rwa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at h2
+    rw [← hmap, ← Ideal.map_pow] at h1
+    exact (Ideal.mem_map_iff_of_surjective π hse.surjective).mp h1
+  choose e hemem heeq using hex
+  have hjker : ∀ n, a n - L₀ - e n ∈ RingHom.ker π := by
+    intro n
+    rw [RingHom.mem_ker, map_sub, heeq n, sub_self]
+  have hjconst : ∀ n, c + 1 ≤ n → a n - L₀ - e n = a (c + 1) - L₀ - e (c + 1) := by
+    intro n hn
+    have hd : (a (c + 1) - L₀ - e (c + 1)) - (a n - L₀ - e n) ∈
+        IsLocalRing.maximalIdeal A ^ (c + 1) := by
+      have h1 : (a (c + 1) - L₀ - e (c + 1)) - (a n - L₀ - e n)
+          = (a (c + 1) - a n) - (e (c + 1) - e n) := by ring
+      rw [h1]
+      refine Ideal.sub_mem _ (hsub hn) (Ideal.sub_mem _ (hemem (c + 1)) ?_)
+      exact Ideal.pow_le_pow_right hn (hemem n)
+    have hd2 : (a (c + 1) - L₀ - e (c + 1)) - (a n - L₀ - e n) ∈ RingHom.ker π :=
+      Ideal.sub_mem _ (hjker _) (hjker _)
+    have h0 := hN.le (Submodule.mem_inf.mpr ⟨hd, hd2⟩)
+    rw [Ideal.mem_bot] at h0
+    exact (sub_eq_zero.mp h0).symm
+  refine ⟨L₀ + (a (c + 1) - L₀ - e (c + 1)), fun n => ?_⟩
+  rw [SModEq.sub_mem, hsmul]
+  rcases le_or_gt (c + 1) n with hn | hn
+  · have h1 : a n - (L₀ + (a (c + 1) - L₀ - e (c + 1))) = e n := by
+      rw [← hjconst n hn]; ring
+    rw [h1]; exact hemem n
+  · have h1 : a n - (L₀ + (a (c + 1) - L₀ - e (c + 1)))
+        = (a n - a (c + 1)) + e (c + 1) := by ring
+    rw [h1]
+    exact Ideal.add_mem _ (hsub hn.le) (Ideal.pow_le_pow_right hn.le (hemem (c + 1)))
+
+/-- **BRICK (ii): a surjection onto a Hausdorff target out of a precomplete
+source admits a UNIFORMLY CONTINUOUS set-theoretic section** (PROVEN
+2026-07-31).
+
+`s` is a set-theoretic section of `π` — no additivity, no multiplicativity is
+claimed, and none is available: that is exactly the point of an obstruction
+calculus. What IS claimed is the uniformity `a - b ∈ (I.map π)ⁿ → s a - s b ∈ Iⁿ`,
+which for the two `I`-adic topologies says `s` is uniformly continuous, hence
+continuous.
+
+**The construction.** A tower `uₙ : B → A` is built by recursion, with
+
+* `π (uₙ b) ≡ b  mod (I.map π)ⁿ`   — an approximate section at level `n`;
+* `b - b' ∈ (I.map π)ⁿ → uₙ b = uₙ b'` — `uₙ` factors through level `n`.
+
+The step is: replace `b` by a chosen representative `rep (n+1) b` of its class
+modulo `(I.map π)^(n+1)` (which is what makes `u_{n+1}` factor through level
+`n+1` — it is CONSTANT on cosets, not merely congruent), then correct
+`uₙ (rep b)` by an element of `Iⁿ` mapping to `rep b - π (uₙ (rep b))`. Both
+choices are made by `Function.invFun` / `Ideal.mem_map_iff_of_surjective` and are
+total (the correction is `0` off the relevant coset, which is why `hcorr_eq`
+carries its membership hypothesis).
+
+Successive terms then differ by an element of `Iⁿ`, so `(uₙ b)` is Cauchy;
+`IsPrecomplete I A` gives a limit `s b`, and `IsHausdorff (I.map π) B` upgrades
+"`π (s b) ≡ b` at every level" to `π (s b) = b`. Uniformity is immediate from
+`uₙ b = uₙ b'` plus `uₙ b - s b ∈ Iⁿ`. -/
+theorem exists_section_sub_mem_pow_of_isPrecomplete
+    {A : Type*} [CommRing A] {B : Type*} [CommRing B]
+    (π : A →+* B) (hπ : Function.Surjective π) (I : Ideal A)
+    [IsPrecomplete I A] [IsHausdorff (Ideal.map π I) B] :
+    ∃ s : B → A, (∀ b, π (s b) = b) ∧
+      ∀ (n : ℕ) (b b' : B), b - b' ∈ Ideal.map π I ^ n → s b - s b' ∈ I ^ n := by
+  classical
+  have hmapn : ∀ n : ℕ, Ideal.map π (I ^ n) = Ideal.map π I ^ n := fun n => Ideal.map_pow π I n
+  -- a representative-choosing function at every level
+  have hrepex : ∀ n : ℕ, ∃ r : B → B, (∀ b, r b - b ∈ Ideal.map π I ^ n) ∧
+      ∀ b b', b - b' ∈ Ideal.map π I ^ n → r b = r b' := by
+    intro n
+    refine ⟨fun b => Function.invFun (Ideal.Quotient.mk (Ideal.map π I ^ n))
+      (Ideal.Quotient.mk (Ideal.map π I ^ n) b), fun b => ?_, fun b b' hb => ?_⟩
+    · have h := Function.invFun_eq (f := Ideal.Quotient.mk (Ideal.map π I ^ n))
+        (b := Ideal.Quotient.mk (Ideal.map π I ^ n) b) ⟨b, rfl⟩
+      rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, h, sub_self]
+    · have hq : Ideal.Quotient.mk (Ideal.map π I ^ n) b
+          = Ideal.Quotient.mk (Ideal.map π I ^ n) b' := by
+        rw [← sub_eq_zero, ← map_sub, Ideal.Quotient.eq_zero_iff_mem]
+        exact hb
+      simp only [hq]
+  choose rep hrep_sub hrep_congr using hrepex
+  -- a correction term of `I ^ n` realising a prescribed element of `(I.map π) ^ n`
+  have hcorrex : ∀ (n : ℕ) (d : B), ∃ m : A, m ∈ I ^ n ∧ (d ∈ Ideal.map π I ^ n → π m = d) := by
+    intro n d
+    by_cases hd : d ∈ Ideal.map π I ^ n
+    · rw [← hmapn n] at hd
+      obtain ⟨m, hm, hmm⟩ := (Ideal.mem_map_iff_of_surjective π hπ).mp hd
+      exact ⟨m, hm, fun _ => hmm⟩
+    · exact ⟨0, Submodule.zero_mem _, fun h => absurd h hd⟩
+  choose corr hcorr_mem hcorr_eq using hcorrex
+  -- the tower of level-wise approximate sections
+  obtain ⟨u, hu0, husucc⟩ : ∃ u : ℕ → B → A, u 0 = (fun _ => (0 : A)) ∧
+      ∀ (m : ℕ) (b : B), u (m + 1) b =
+        u m (rep (m + 1) b) + corr m (rep (m + 1) b - π (u m (rep (m + 1) b))) :=
+    ⟨fun n => Nat.rec (fun _ => (0 : A))
+      (fun m prev b => prev (rep (m + 1) b) +
+        corr m (rep (m + 1) b - π (prev (rep (m + 1) b)))) n, rfl, fun _ _ => rfl⟩
+  have hmain : ∀ n : ℕ, (∀ b, π (u n b) - b ∈ Ideal.map π I ^ n) ∧
+      ∀ b b', b - b' ∈ Ideal.map π I ^ n → u n b = u n b' := by
+    intro n
+    induction n with
+    | zero =>
+      refine ⟨fun b => ?_, fun b b' _ => ?_⟩
+      · rw [pow_zero, Ideal.one_eq_top]; exact Submodule.mem_top
+      · simp [hu0]
+    | succ m ih =>
+      obtain ⟨ih1, ih2⟩ := ih
+      refine ⟨fun b => ?_, fun b b' hbb => ?_⟩
+      · rw [husucc]
+        have hd : rep (m + 1) b - π (u m (rep (m + 1) b)) ∈ Ideal.map π I ^ m := by
+          simpa using neg_mem (ih1 (rep (m + 1) b))
+        rw [map_add, hcorr_eq m _ hd]
+        have h1 : π (u m (rep (m + 1) b)) +
+            (rep (m + 1) b - π (u m (rep (m + 1) b))) - b = rep (m + 1) b - b := by ring
+        rw [h1]
+        exact hrep_sub (m + 1) b
+      · rw [husucc, husucc, hrep_congr (m + 1) b b' hbb]
+  have hstep3 : ∀ (n : ℕ) (b : B), u (n + 1) b - u n b ∈ I ^ n := by
+    intro n b
+    rw [husucc]
+    have h1 : u n (rep (n + 1) b) = u n b :=
+      (hmain n).2 _ b (Ideal.pow_le_pow_right (Nat.le_succ n) (hrep_sub (n + 1) b))
+    rw [h1]
+    have h2 : u n b + corr n (rep (n + 1) b - π (u n b)) - u n b
+        = corr n (rep (n + 1) b - π (u n b)) := by ring
+    rw [h2]
+    exact hcorr_mem n _
+  have hcauchy : ∀ (b : B) (m d : ℕ), u m b - u (m + d) b ∈ I ^ m := by
+    intro b m d
+    induction d with
+    | zero => simp
+    | succ d ih =>
+      have h1 : u m b - u (m + (d + 1)) b
+          = (u m b - u (m + d) b) + (u (m + d) b - u (m + d + 1) b) := by
+        rw [show m + (d + 1) = m + d + 1 from by omega]; ring
+      rw [h1]
+      refine Ideal.add_mem _ ih ?_
+      have h2 : u (m + d) b - u (m + d + 1) b ∈ I ^ (m + d) := by
+        simpa using neg_mem (hstep3 (m + d) b)
+      exact Ideal.pow_le_pow_right (by omega) h2
+  have hlim : ∀ b : B, ∃ L : A, ∀ n, u n b - L ∈ I ^ n := by
+    intro b
+    obtain ⟨L, hL⟩ := IsPrecomplete.prec' (I := I) (fun n => u n b) (by
+      intro m n hmn
+      rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+      have h1 := hcauchy b m (n - m)
+      rwa [show m + (n - m) = n from by omega] at h1)
+    refine ⟨L, fun n => ?_⟩
+    have h1 := hL n
+    rwa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at h1
+  choose s hs using hlim
+  refine ⟨s, fun b => ?_, fun n b b' hbb => ?_⟩
+  · rw [← sub_eq_zero]
+    refine IsHausdorff.haus' (I := Ideal.map π I) (M := B) (π (s b) - b) fun n => ?_
+    rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+    have h1 : π (s b) - b = -(π (u n b - s b)) + (π (u n b) - b) := by rw [map_sub]; ring
+    rw [h1]
+    refine Ideal.add_mem _ (neg_mem ?_) ((hmain n).1 b)
+    have h2 := Ideal.mem_map_of_mem π (hs b n)
+    rwa [hmapn n] at h2
+  · have h1 : u n b = u n b' := (hmain n).2 b b' hbb
+    have h2 : s b - s b' = -(u n b - s b) + (u n b' - s b') := by rw [h1]; ring
+    rw [h2]
+    exact Ideal.add_mem _ (neg_mem (hs b n)) (hs b' n)
+
+/-- **BRICK (ii), in the shape the obstruction leaf consumes it** (PROVEN
+2026-07-31): the small extension `S ⧸ K ↠ T` cut out of a power series
+presentation `φ : S = Λ[[x₁,…,x_g]] ↠ T` of a Noetherian local adically
+complete ring admits a uniformly continuous set-theoretic section.
+
+Everything is assembled from the two general facts above plus the two facts
+this file already had about the presenting ring: `S` is Noetherian
+(`isNoetherianRing_mvPowerSeries`), hence so is `S ⧸ K`; the small-extension
+hypothesis then hands `S ⧸ K` its precompleteness by
+`isPrecomplete_of_isSmallExtension` — note that this uses NO completeness input
+about `S`, only about the target `T` — and Hausdorffness of `T` is free from
+`IsNoetherianRing T` + `IsLocalRing T` (mathlib's
+`Mathlib/RingTheory/AdicCompletion/Noetherian.lean`).
+
+The uniformity is stated with `IsLocalRing.maximalIdeal T ^ n` upstairs and
+`IsLocalRing.maximalIdeal (S ⧸ K) ^ n` downstairs, the translation between the
+two being `IsLocalRing.map_maximalIdeal_of_surjective`. -/
+theorem exists_uniformSection_quotient_of_presentation
+    {Λ : Type*} [CommRing Λ] [IsLocalRing Λ] [IsNoetherianRing Λ]
+    {T : Type*} [CommRing T] [IsLocalRing T] [IsNoetherianRing T]
+    [IsAdicComplete (IsLocalRing.maximalIdeal T) T]
+    (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* T)
+    (K : Ideal (MvPowerSeries (Fin g) Λ)) (hK : K ≤ RingHom.ker φ) :
+    letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+      Ideal.Quotient.nontrivial_of_le_ker hK
+    IsSmallExtension (Ideal.Quotient.lift K φ fun _ ha => hK ha) →
+    ∃ s : T → (MvPowerSeries (Fin g) Λ ⧸ K),
+      (∀ x, Ideal.Quotient.lift K φ (fun _ ha => hK ha) (s x) = x) ∧
+      ∀ (n : ℕ) (x y : T), x - y ∈ IsLocalRing.maximalIdeal T ^ n →
+        s x - s y ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K) ^ n := by
+  letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+    Ideal.Quotient.nontrivial_of_le_ker hK
+  intro hse
+  haveI : IsNoetherianRing (MvPowerSeries (Fin g) Λ) := isNoetherianRing_mvPowerSeries g
+  haveI : IsNoetherianRing (MvPowerSeries (Fin g) Λ ⧸ K) :=
+    isNoetherianRing_of_surjective _ _ (Ideal.Quotient.mk K) Ideal.Quotient.mk_surjective
+  haveI : IsPrecomplete
+      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K))
+      (MvPowerSeries (Fin g) Λ ⧸ K) :=
+    isPrecomplete_of_isSmallExtension hse
+  have hmap : Ideal.map (Ideal.Quotient.lift K φ fun _ ha => hK ha)
+      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K)) =
+      IsLocalRing.maximalIdeal T :=
+    IsLocalRing.map_maximalIdeal_of_surjective _ hse.surjective
+  haveI : IsHausdorff (Ideal.map (Ideal.Quotient.lift K φ fun _ ha => hK ha)
+      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K))) T := by
+    rw [hmap]; infer_instance
+  obtain ⟨s, hs1, hs2⟩ := exists_section_sub_mem_pow_of_isPrecomplete
+    (Ideal.Quotient.lift K φ fun _ ha => hK ha) hse.surjective
+    (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K))
+  refine ⟨s, hs1, fun n x y hxy => hs2 n x y ?_⟩
+  rw [hmap]; exact hxy
+
+/-- **`D` admits uniformly continuous set-theoretic sections along the small
+extensions cut out of its power series presentations** (definition, 2026-07-31)
+— brick (ii) of the obstruction calculus, BUNDLED.
+
+**Why a `def` and not an inline hypothesis.** This is the same discipline as
+`IsWeaklyUniversal`, `IsTraceGenerated` and `IsDeformationStructureOn` above, and
+for the same measured reason. Written inline as an extra hypothesis of
+`exists_obstructionCocycle_smallExtension_deformation_of_section` below, the
+statement elaborates but the one-line assembly that discharges it does NOT: the
+application times out at `whnf` even at 1 000 000 heartbeats (measured
+2026-07-31, twice), because checking it has to zeta-reduce the leaf's whole
+`∃ oc …` conclusion through two nested `letI` blocks and unfold the derived
+`IsLocalRing (S ⧸ K)` instance. Bundled as a constant, the hypothesis is opaque,
+the two conclusions are syntactically identical, and the assembly is instant.
+**Do not inline it back.**
+
+`s` is a set-theoretic section only — no additivity and no multiplicativity is
+claimed, and none is available; that is what an obstruction calculus is for. The
+regularity is stated ALGEBRAICALLY, `x - y ∈ 𝔪_{D.R}ⁿ → s x - s y ∈ 𝔪_{S ⧸ K}ⁿ`,
+which is uniform continuity for the two adic topologies while keeping every
+`TopologicalSpace` out of the statement. -/
+def HardlyRamifiedDeformation.HasUniformSections {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) : Prop :=
+  letI := D.commRing; letI := D.isLocalRing
+  ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsLocalRing Λ) (_ : IsNoetherianRing Λ)
+    (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
+    (K : Ideal (MvPowerSeries (Fin g) Λ)) (hK : K ≤ RingHom.ker φ),
+    letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+      Ideal.Quotient.nontrivial_of_le_ker hK
+    IsSmallExtension (Ideal.Quotient.lift K φ fun _ ha => hK ha) →
+    ∃ s : D.R → (MvPowerSeries (Fin g) Λ ⧸ K),
+      (∀ x, Ideal.Quotient.lift K φ (fun _ ha => hK ha) (s x) = x) ∧
+      ∀ (n : ℕ) (x y : D.R), x - y ∈ IsLocalRing.maximalIdeal D.R ^ n →
+        s x - s y ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K) ^ n
+
+/-- **BRICK (ii) IS DISCHARGED: every object of Mazur's category has uniformly
+continuous sections** (PROVEN 2026-07-31). One application of
+`exists_uniformSection_quotient_of_presentation` above; the three instances it
+needs — `CommRing`, `IsLocalRing`, `IsNoetherianRing` — and the completeness
+input `IsAdicComplete` are all structure FIELDS of `HardlyRamifiedDeformation`,
+which is the whole reason the brick costs nothing at this point. -/
+theorem HardlyRamifiedDeformation.hasUniformSections {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) : D.HasUniformSections := by
+  letI := D.commRing; letI := D.isLocalRing; letI := D.isNoetherianRing
+  haveI := D.isAdicComplete
+  intro Λ _ _ _ g φ K hK hse
+  exact exists_uniformSection_quotient_of_presentation g φ K hK hse
+
+/-- **Böckle's obstruction COCYCLE along a small extension, GIVEN the continuous
+set-theoretic lift** (sorry node, cut 2026-07-31 out of
+`exists_obstructionCocycle_smallExtension_deformation` below, which is PROVEN
+over it together with `exists_uniformSection_quotient_of_presentation` above).
+
+This is the leaf below with ONE hypothesis added, `D.HasUniformSections`: a
+uniformly continuous set-theoretic section of every small extension
+`S ⧸ K ↠ D.R` cut out of a power series presentation. That hypothesis is brick
+(ii) of the audit below, and it is DISCHARGED —
+`HardlyRamifiedDeformation.hasUniformSections` above proves it for EVERY object
+of Mazur's category — so the node below really is proven over this leaf alone and
+no hypothesis has been smuggled in. Whoever takes this leaf may use `hsec` freely
+and does not have to build a lift by hand.
+
+**What is left here, and what is not.** What remains is exactly the obstruction
+calculus of items (2) and (3) of the audit below:
+
+1. from the section `s`, the continuous set-theoretic LIFT
+   `ρ̃ (σ) = (matrix of D.ρ σ).map s` of `D.ρ` along `S ⧸ K ↠ D.R` — a matrix
+   over `S ⧸ K` whose determinant is a unit because it is one modulo the kernel
+   and the kernel lies in `𝔪`;
+2. its 2-cochain `c(σ, τ) = ρ̃(σ) ρ̃(τ) ρ̃(στ)⁻¹ − 1`, written in the HOMOGENEOUS
+   model through `F(g₀,g₁,g₂) = g₀ · c(g₀⁻¹g₁, g₁⁻¹g₂)`, and the cocycle
+   identity for it;
+3. conjunct (a), the landing in `Ш²` rather than merely `H²` — item (5) of the
+   audit below, the liftability of the four hardly ramified local conditions,
+   which is a SEPARATE task and must be taken as a named sorried `have` hoisted
+   to its own top-level leaf rather than as an anonymous inner `sorry`;
+4. the final packaging of `S ⧸ K` as an object of Mazur's category. Note that
+   `isPrecomplete_of_isSmallExtension` above already supplies the one hard
+   ingredient of that packaging (`IsAdicComplete` for `S ⧸ K`, whose Hausdorff
+   half is free from Noetherianity), so what is left there is the adic TOPOLOGY
+   (`Ideal.adicTopology` on `𝔪_{S ⧸ K}`, which is `IsAdic` by construction) and
+   the field-by-field checklist for which the `Dq` construction inside
+   `exists_ringHom_matrix_quotient_of_finite` above is a worked template.
+
+**BUILD ONE COCYCLE FOR THE UNIVERSAL EXTENSION, NOT ONE PER `K`.** This is the
+one non-negotiable point of the audit below and it is why this leaf, like the
+node below, quantifies over `K` INSIDE the `∃ oc`: the cocycle must be built once
+for `K₀ = 𝔪_S · ker φ`, valued in `ad⁰ ⊗_k (ker φ ⧸ 𝔪_S · ker φ)`, and then
+`oc ψ := (1 ⊗ ψ)(c)`. Doing it one `K` at a time produces a family with no reason
+to be `k`-linear in `ψ`, and that linearity is not repairable afterwards.
+
+**ELABORATION HAZARD, inherited.** Any further hypothesis must mention only
+objects living OUTSIDE the `∃ oc` binder's instance context, or the declaration
+fails with the internal error `unknown free variable`. That is why the section
+hypothesis is stated ALGEBRAICALLY (`x - y ∈ 𝔪ⁿ → s x - s y ∈ 𝔪ⁿ`) rather than as
+`Continuous s`: there is no `TopologicalSpace (S ⧸ K)` in the statement to be
+continuous for, and none has to be manufactured. Do not "tidy" it into a
+topological form.
+
+**CIRCULARITY GUARD — inherited from the node below and binding here.** Neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le` nor
+`not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them,
+may be used: their intended proofs run through modularity lifting, which is
+proven over the very bound this leaf supplies. A green build and an honest
+`#print axioms` would BOTH survive such a discharge.
+
+**MACHINERY AUDIT — items (1)–(4) are DISCHARGED; only (5) remains, and it is
+what conjunct (a) rests on.** (Moved here from the node below when that node was
+proven; a machinery audit on a proven consumer audits nothing. A stale "this is
+impossible" note costs more than an open sorry, so the discharges are recorded
+explicitly.)
+
+1. *No small-extension API anywhere.* **DISCHARGED 2026-07-27.** Written as
+   `Fermat/FLT/Mathlib/RingTheory/SmallExtension.lean`: `IsSmallExtension`,
+   `ker_le_maximalIdeal`, `ker_sq_eq_bot`, `isTorsionBySet_ker`, the constructor
+   `isSmallExtension_quotientLift`, the local-quotient instances
+   (`IsLocalRing.instQuotientOfNontrivial`, `IsLocalRing.maximalIdeal_quotient`)
+   and the semilinearity lemma `apply_smul_of_residueEquiv`. It was genuinely
+   absent from mathlib, from our pin and from `~/cs/FLT` — the audit's own
+   refuting grep was re-run and still found nothing — and it is now consumed
+   both in the SIGNATURE of this leaf and in the proofs of the two nodes below.
+2. *No obstruction class exists as a formal object.* **DISCHARGED**: the arrow
+   `ContinuousCohomology.cocycleClass` exists, so a cocycle can be turned into a
+   class. What is still missing is the cocycle `c(σ,τ)` itself, which is what
+   this leaf asserts to exist.
+3. *No inhomogeneous cochains in our pin.* STILL TRUE, and NOT BINDING: the
+   homogeneous model has elements and a cocycle condition, and the dictionary
+   above expresses `c(σ,τ)` inside it.
+4. *No long exact sequence, no connecting map, no cup product.* **DISCHARGED for
+   the part this leaf needs**: the binding gap was the absence of any `Z/B` model
+   of `continuousCohomology`, now vendored (`cohomologyIsoQuot`, `cocycleClass`).
+   A cup product is still absent and is still needed by
+   `rank_sha2_le_rank_sha1_twist` below, but NOT here.
+5. *Liftability of the four hardly ramified local conditions along a small
+   extension* is nowhere stated. REFUTED BY: a lemma about `IsHardlyRamified`
+   being preserved under a square-zero surjection. **STILL OPEN**, and this is
+   the single binding item; it is what conjunct (a) — the landing in `Ш²`
+   rather than merely in `H²` — rests on. With (1) in hand it is expressible:
+   the statement wanted is `IsSmallExtension π → IsHardlyRamified … → …`.
+
+   **A WARNING FOR WHOEVER TAKES IT** (recorded 2026-07-27, from an attempt to
+   state item (5) directly). The naive reading — "if `π ∘ ρ̃` is hardly ramified
+   and `π` is a small extension, then `ρ̃` is hardly ramified" — is **FALSE**,
+   and every clause of `IsHardlyRamified` fails it separately:
+
+   * `det`: `det ρ̃` agrees with the cyclotomic character only modulo `ker π`, so
+     it differs from it by a character valued in `1 + ker π`. (It can be
+     CORRECTED — `ker π` is a `k`-vector space with `char k = ℓ` odd, so
+     squaring is bijective on `1 + ker π` and one may scale `ρ̃` by the square
+     root of the ratio — but that is a choice, not an implication.)
+   * `isUnramified`: `ρ̃(I_p) ⊆ 1 + M₂(ker π)`, an abelian group, and a
+     continuous map from inertia into it need not be trivial.
+   * `isFlat` and `isTameAtTwo`: likewise conditions on the chosen lift.
+
+   So item (5) is not a preservation lemma. It is the assertion that the lift
+   can be CHOSEN to satisfy the four conditions — equivalently that the local
+   components of the obstruction class vanish, which is precisely why conjunct
+   (a) says `Ш²` and not `H²`. State it that way, per local condition, and
+   expect one sub-leaf per clause of `IsHardlyRamified`.
+
+References: Böckle, *Presentations of universal deformation rings*; Mazur,
+*Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
+*Fermat's Last Theorem*, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII;
+Schlessinger, *Functors of Artin rings*.
+
+**CIRCULARITY GUARD — MOVED HERE, NOT DROPPED.** This is its FIFTH move (off
+`rank_relationSpace_le_of_rank_sha2_le`, then off
+`exists_injective_dual_relationSpace_to_sha2`, then off
+`exists_obstructionHom_relationSpace_sha2`, then off
+`exists_obstructionCocycle_relationSpace_sha2`, and now off
+`exists_obstructionCocycle_smallExtension_section`); a guard on a proven consumer
+guards nothing, so it belongs on whichever declaration still contains the
+`sorry`. The BANNED INPUTS clause binds: neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`) nor
+`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
+— nor anything proven over them — may be used to discharge this leaf, since
+their intended proofs run through modularity lifting, which is proven over the
+very bound this leaf supplies. A green build and an honest `#print axioms`
+would BOTH survive such a discharge; only a human reading catches it. `hℓ5`
+is carried for the same reason: it keeps
+`IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to the
+prime `3`) inapplicable, so that route stays closed mathematically rather than
+merely by import scope.
+-/
+theorem exists_obstructionCocycle_smallExtension_deformation_of_section
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated)
+    (hsec : D.HasUniformSections) :
+    letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+    letI := D.isLocalRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
+        (hsurj : Function.Surjective φ),
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        letI : Module k (↥(RingHom.ker φ) ⧸
+            (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+              (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
+          Module.compHom _
+            (residueRingEquivOfSurjective (D.π.comp φ)
+              (D.π_surjective.comp hsurj)).symm.toRingHom
+        ∃ oc : Module.Dual k (↥(RingHom.ker φ) ⧸
+              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
+            ↥(TopModuleCat.ker
+              ((TopRep.homogeneousCochains
+                (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))).d 2 3)),
+          (∀ ψ, ContinuousCohomology.cocycleClass
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2 (oc ψ) ∈
+            Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ∧
+          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2).hom.range →
+            ∀ (K : Ideal (MvPowerSeries (Fin g) Λ))
+              (hK : K ≤ RingHom.ker φ),
+              letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+                Ideal.Quotient.nontrivial_of_le_ker hK
+              IsSmallExtension (Ideal.Quotient.lift K φ fun _ ha => hK ha) →
+              (∀ j : ↥(RingHom.ker φ),
+                (j : MvPowerSeries (Fin g) Λ) ∈ K ↔
+                  ψ (Submodule.Quotient.mk j) = 0) →
+              ∃ D' : HardlyRamifiedDeformation hℓOdd ρbar,
+                HardlyRamifiedDeformation.IsDeformationStructureOn hℓOdd D D'
+                  (MvPowerSeries (Fin g) Λ ⧸ K) inferInstance
+                  (Ideal.Quotient.lift K φ fun _ ha => hK ha) :=
+  sorry
 
 /-- **Böckle's obstruction COCYCLE, in its DEFORMATION-THEORETIC form, on the
 NON-DEGENERATE branch** (sorry leaf; cut out of
@@ -17722,15 +18910,36 @@ explicitly.)
    A cup product is still absent and is still needed by
    `rank_sha2_le_rank_sha1_twist` below, but NOT here.
 5. *Liftability of the four hardly ramified local conditions along a small
-   extension* is nowhere stated. REFUTED BY: a lemma about `IsHardlyRamified`
-   being preserved under a square-zero surjection. **STILL OPEN**, and this is
-   the single binding item; it is what conjunct (a) — the landing in `Ш²`
-   rather than merely in `H²` — rests on. With (1) in hand it is expressible:
-   the statement wanted is `IsSmallExtension π → IsHardlyRamified … → …`.
+   extension* was nowhere stated. **NOW STATED, AND HALF OF IT IS PROVEN**
+   (2026-07-31) — see the section *Item (5) of the obstruction audit* above,
+   placed beside `hardlyRamifiedPlaces`. The four clauses split into three
+   kinds and are four separate declarations there:
+
+   * `det` — **PROVEN**, `exists_lift_det_eq_of_squareZero_ker` (and its
+     `IsSmallExtension` form `exists_lift_det_eq_of_isSmallExtension`): the
+     correction sketched in the warning below, carried out. The conclusion also
+     records the twisting character explicitly, so the other three clauses can
+     be transported across the correction.
+   * `isUnramified` — **PROVEN**, `isUnramified_of_ramificationKernel_le_ker`:
+     free for any lift killing `N_S`, which is how obstruction theory over
+     `G_{ℚ,S}` builds it. This settles the warning's second bullet, which is
+     correct about preservation and not about what is needed.
+   * `isFlat` at `ℓ` — **OPEN**, `exists_flatLocalLift_of_isSmallExtension`
+     (Ramakrishna: the flat local deformation condition is smooth).
+   * `isTameAtTwo` at `2` — **OPEN**, `exists_tameLocalLift_of_isSmallExtension`
+     (smoothness of the ordinary/tame local condition at `2`).
+
+   The two open ones are stated on LOCAL representations (`GaloisRep ℚ_v`),
+   with `IsFlatAtLocal` / `IsTameAtTwoLocal`, each `Iff.rfl`-equal to the global
+   condition on a global restriction. That is not a convenience: the section
+   header there records why NO global form of either is true, and both readings
+   a prover would reach for first are refuted there.
 
    **A WARNING FOR WHOEVER TAKES IT** (recorded 2026-07-27, from an attempt to
-   state item (5) directly). The naive reading — "if `π ∘ ρ̃` is hardly ramified
-   and `π` is a small extension, then `ρ̃` is hardly ramified" — is **FALSE**,
+   state item (5) directly; still accurate, and the first two bullets are now
+   discharged as described above). The naive reading — "if `π ∘ ρ̃` is hardly
+   ramified and `π` is a small extension, then `ρ̃` is hardly ramified" — is
+   **FALSE**,
    and every clause of `IsHardlyRamified` fails it separately:
 
    * `det`: `det ρ̃` agrees with the cyclotomic character only modulo `ker π`, so
@@ -18053,7 +19262,14 @@ theorem exists_obstructionCocycle_smallExtension_deformation_ne_zero
                 HardlyRamifiedDeformation.IsDeformationStructureOn hℓOdd D D'
                   (MvPowerSeries (Fin g) Λ ⧸ K) inferInstance
                   (Ideal.Quotient.lift K φ fun _ ha => hK ha) :=
-  sorry
+  by
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  intro Λ _ _ _ _ _ _ hΛmax g φ hsurj hcompat hmin
+  obtain ⟨oc, hsha, hlift⟩ :=
+    exists_obstructionCocycle_smallExtension_deformation_of_section hℓOdd hdim hℓ5 h hirr D hw ht
+      D.hasUniformSections Λ ‹_› ‹_› ‹_› ‹_› ‹_› ‹_› hΛmax g φ hsurj hcompat hmin
+  exact ⟨oc, hsha, fun ψ hψ K hK _hne hsmall hpin => hlift ψ hψ K hK hsmall hpin⟩
 
 /-- **`ℤ_ℓ → Λ` is injective when `ℓ ≠ 0` in the domain `Λ`** (PROVEN
 2026-07-30). Every nonzero ideal of `ℤ_ℓ` is `(ℓ^n)`
@@ -19816,34 +21032,13 @@ def restrictedOpenNormalSubgroups (n : ℕ) :
     IsOpen (N : Set (restrictedGaloisGroup (hardlyRamifiedPlaces ℓ))) ∧
     N.FiniteIndex ∧ N.index ≤ n}
 
-/-- **Inertia at a place outside `S` lies in `N_S`** (PROVEN): immediate from
-the definition of `ramificationKernel S` as the topological closure of the
-normal closure of the union of the `globalInertia v` over `v ∉ S`.  Stated
-separately because it is the one place where the DEFINITION of `G_{ℚ,S}` meets
-the Hermite–Minkowski input. -/
-theorem globalInertia_le_ramificationKernel
-    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
-    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
-    (hv : v ∉ S) :
-    globalInertia v ≤ ramificationKernel S := by
-  intro σ hσ
-  refine Subgroup.le_topologicalClosure _ ?_
-  exact Subgroup.subset_normalClosure (Set.mem_biUnion hv hσ)
-
-/-- **A prime `q ∉ {2, ℓ}` gives a place outside `hardlyRamifiedPlaces ℓ`**
-(PROVEN): the place of `q` has ideal `(q)`
-(`asIdeal_toHeightOneSpectrumRingOfIntegersRat`), and distinct primes give
-distinct places (`toHeightOneSpectrumRingOfIntegersRat_injective`). -/
-theorem toHeightOneSpectrum_notMem_hardlyRamifiedPlaces {q : ℕ} (hq : q.Prime)
-    (hq2 : q ≠ 2) (hqℓ : q ≠ ℓ) :
-    hq.toHeightOneSpectrumRingOfIntegersRat ∉ hardlyRamifiedPlaces ℓ := by
-  rintro (h | h)
-  · exact hq2 (toHeightOneSpectrumRingOfIntegersRat_injective hq Nat.prime_two
-      (IsDedekindDomain.HeightOneSpectrum.ext
-        (by rw [h, asIdeal_toHeightOneSpectrumRingOfIntegersRat Nat.prime_two]; norm_num)))
-  · exact hqℓ (toHeightOneSpectrumRingOfIntegersRat_injective hq (Fact.out)
-      (IsDedekindDomain.HeightOneSpectrum.ext
-        (by rw [h, asIdeal_toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)])))
+-- `globalInertia_le_ramificationKernel` and
+-- `toHeightOneSpectrum_notMem_hardlyRamifiedPlaces` used to be declared HERE.
+-- They MOVED on 2026-07-31 to the item-(5) liftability section beside the
+-- definition of `ramificationKernel` above — same full names, same statements,
+-- same proofs, so every use below is unchanged — because
+-- `isUnramifiedAt_of_ramificationKernel_le_ker` there consumes them and must
+-- itself precede `exists_obstructionCocycle_smallExtension_deformation`.
 
 /-- **`G_{ℚ,{2,ℓ}}` has only finitely many open normal subgroups of index at
 most `n`** (PROVEN 2026-07-28 — this is the whole arithmetic content of
@@ -20587,6 +21782,459 @@ theorem exists_nondegenerate_of_ker_eq_dualAnnihilator {K : Type*} [Field K]
     obtain ⟨x, rfl⟩ := e.surjective φ
     exact hy x
 
+/-! #### The trace form on `ad⁰`
+
+HOISTED here 2026-07-31 from below `exists_poitouTatePairing_sha2_sha1Twist` — same
+names, same statements, same proofs.  The move is forced by DECLARATION ORDER: the local
+trace pairing `adZeroTraceIntertwinerU` below is built out of `adZeroTraceForm` and its
+equivariance `adZeroTraceForm_rep`, and it has to be available to
+`exists_poitouTateExactness_sha2_sha1Twist` further down, which sat ABOVE the old home of
+these four declarations.  `adZeroTraceForm_nondegenerate` stayed where it was: it is only
+used by `exists_injective_sha2_dual_sha1Twist` far below, and it is the one member of the
+group that needs `hℓOdd` and `hdim`.  The section header that used to introduce this
+block, explaining why an equivariant perfect pairing `ad⁰ × ad⁰ → k` is exactly the input
+`ad⁰* ≅ ad⁰(1)` needs, is still down there with it. -/
+
+variable (k V) in
+/-- **The trace form on `ad⁰`**, `(x, y) ↦ tr(x ∘ y)`, as a `k`-bilinear map.
+
+Written through `AdZero.toEnd` (the inclusion of trace-zero endomorphisms into
+`Module.End k V`) rather than on `Module.End` itself, so that it is literally a
+pairing of the object `Sha2` and `Sha1Twist` are built from. -/
+noncomputable def adZeroTraceForm : AdZero k V →ₗ[k] AdZero k V →ₗ[k] k :=
+  LinearMap.mk₂ k
+    (fun x y => LinearMap.trace k V (AdZero.toEnd k V x * AdZero.toEnd k V y))
+    (fun x₁ x₂ y => by simp [add_mul])
+    (fun c x y => by simp)
+    (fun x y₁ y₂ => by simp [mul_add])
+    (fun c x y => by simp)
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+lemma adZeroTraceForm_apply (x y : AdZero k V) :
+    adZeroTraceForm k V x y
+      = LinearMap.trace k V (AdZero.toEnd k V x * AdZero.toEnd k V y) := rfl
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] [Module.Finite k V]
+  [Module.Free k V] in
+/-- Members of `ad⁰` have vanishing trace — the defining property, restated
+through `AdZero.toEnd` so that it is usable as a rewrite. -/
+lemma adZero_trace_toEnd (x : AdZero k V) :
+    LinearMap.trace k V (AdZero.toEnd k V x) = 0 := by
+  have hx : (AdZero.toEnd k V x) ∈ LinearMap.ker (LinearMap.trace k V) :=
+    Submodule.coe_mem (show ↥(LinearMap.ker (LinearMap.trace k V)) from x)
+  exact hx
+
+/-- **The trace form is `Γ ℚ`-equivariant, with TRIVIAL action on the target**
+(PROVEN): `tr((σ·x)(σ·y)) = tr(xy)`.
+
+This is the clause that turns the pairing into an isomorphism
+`ad⁰ ≅ Hom(ad⁰, k)` OF `Γ ℚ`-MODULES, and hence — after twisting — into
+`Hom(ad⁰, μ_ℓ) ≅ ad⁰(1)`. The proof is `(aXb)(aYb) = a(XY)b` using
+`b * a = 1`, followed by `LinearMap.trace_mul_comm` to move `a` past. No
+oddness and no rank hypothesis are needed here; both enter only in
+`adZeroTraceForm_nondegenerate` below. -/
+lemma adZeroTraceForm_rep (ρbar : GaloisRep ℚ k V) (σ : Field.absoluteGaloisGroup ℚ)
+    (x y : AdZero k V) :
+    adZeroTraceForm k V (AdZero.rep ρbar σ x) (AdZero.rep ρbar σ y)
+      = adZeroTraceForm k V x y := by
+  have hb : (ρbar σ⁻¹ : Module.End k V) * ρbar σ = 1 := by
+    rw [← map_mul, inv_mul_cancel, map_one]
+  simp only [adZeroTraceForm_apply]
+  show LinearMap.trace k V
+      ((AdZero.toEnd k V (AdZero.conjL (ρbar σ) (ρbar σ⁻¹) hb x)) *
+        (AdZero.toEnd k V (AdZero.conjL (ρbar σ) (ρbar σ⁻¹) hb y))) = _
+  rw [AdZero.toEnd_conjL, AdZero.toEnd_conjL]
+  set a : Module.End k V := ρbar σ
+  set X : Module.End k V := AdZero.toEnd k V x
+  set Y : Module.End k V := AdZero.toEnd k V y
+  set b : Module.End k V := ρbar σ⁻¹
+  have hstep : (a * X * b) * (a * Y * b) = a * (X * Y) * b := by
+    calc (a * X * b) * (a * Y * b) = a * X * (b * a) * Y * b := by noncomm_ring
+      _ = a * X * 1 * Y * b := by rw [hb]
+      _ = a * (X * Y) * b := by noncomm_ring
+  rw [hstep, LinearMap.trace_mul_comm, ← mul_assoc, hb, one_mul]
+
+/-! #### The LOCAL TATE PAIRING at `v`, and local duality
+
+Added 2026-07-31. This section is items (a) and (b) of the build order recorded on
+`exists_injective_sha2_dual_sha1Twist_of_selfDual` below — "(a) vendor the cup product
+from `~/cs/FLT` with its `linHom`/`iHom` shims, (b) build the local invariant map,
+(c) then both leaves at once". Item (a) is
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/CupProduct.lean`
+and the seven shim modules beside it, all sorry-free; item (b) is what follows, and it
+is what turns "the local Tate pairing" from a phrase in a docstring into a `def` the
+compiler has checked.
+
+**What is built here.** The cup product
+`H^m(ℚ_v, ad⁰) × H^n(ℚ_v, ad⁰(1)) → H^{m+n}(ℚ_v, k(1))` induced by the trace form
+`ad⁰ × ad⁰(1) → k(1)` (`adZeroTraceIntertwinerU`), at `m + n = 2`
+(`localTatePairingU`); and the statement that composing it with an isomorphism
+`H²(ℚ_v, k(1)) ≅ k` — the LOCAL INVARIANT MAP of local class field theory — gives a
+pairing nondegenerate on both sides (`IsLocalTateDual`). `isLocalTateDual` below is
+that statement as a leaf, and `poitouTateExactness_of_localTateDuality` derives the
+global nine-term arrow from it.
+
+**Why the coefficients are the full `ad⁰` and not `ad⁰^{N_S}`.** The global objects
+`Sha2`/`Sha1Twist` take cohomology of the `N_S`-invariants (`adZeroRestricted`), and
+those invariants are all of `ad⁰` only because `ρbar` is unramified outside `S` — true,
+but not proven in this file. Stating local duality for the invariants would therefore
+make its TRUTH depend on an unproven identification, and a leaf whose truth is
+conditional on something nobody has checked is the failure mode this file's faithfulness
+audits exist to prevent. Local Tate duality holds for ANY finite `Γ ℚ_v`-module, so the
+statement is put on the full `ad⁰`, where it is unconditionally true; the
+`ad⁰^{N_S} = ad⁰` step is part of what
+`poitouTateExactness_of_localTateDuality` owes, where it belongs.
+
+**THE `ULift` IS A UNIVERSE ARTEFACT, NOT MATHEMATICS, AND IT CANNOT BE AVOIDED.**
+`k : Type u` and `V : Type v` are INDEPENDENT universe variables here, so
+`AdZero k V : Type v` and `k : Type u` live in different universes. The cup product is a
+morphism in `TopModuleCat`, and `A ⟶ TopModuleCat.linHom B C` forces `A`, `B` and `C`
+into ONE universe — a category has morphisms only between objects of its own universe.
+That is not a defect of the port: it is forced by the categorical formulation, and
+`max v u = v` is not derivable. So all three modules are lifted into `Type (max u v)`:
+`ad⁰` and `ad⁰(1)` by `ULift.{u}`, `k(1)` by `ULift.{v}`. `contRepULift` transports the
+action, and every carrier here is DISCRETE, so the transport costs no topology.
+Whoever proves `isLocalTateDual` should read `ULift.{u} (AdZero k V)` as `ad⁰` and
+`ULift.{v} k` as `k`, and use `ULift.moduleEquiv` to move between them. -/
+
+section LocalTatePairing
+
+open _root_.ContinuousLinearMap.CompactOpen
+
+variable {G : Type*} [Group G]
+variable {M : Type w} [AddCommGroup M] [Module k M] [TopologicalSpace M]
+  [DiscreteTopology M]
+
+instance instContinuousSMulULift : ContinuousSMul k (ULift.{v} M) :=
+  ⟨continuous_of_discreteTopology⟩
+
+/-- Transport a continuous representation on a DISCRETE module along `ULift`. Discreteness
+is what makes this free: every linear map out of a discrete space is continuous, so no
+topological hypothesis on the transport is needed. -/
+noncomputable def contRepULift (π : ContRepresentation k G M) :
+    ContRepresentation k G (ULift.{v} M) where
+  toMonoidHom :=
+  { toFun := fun σ =>
+      ⟨(ULift.moduleEquiv (R := k) (M := M)).symm.toLinearMap ∘ₗ
+        (π σ).toLinearMap ∘ₗ (ULift.moduleEquiv (R := k) (M := M)).toLinearMap,
+        continuous_of_discreteTopology⟩
+    map_one' := by
+      refine ContinuousLinearMap.ext fun x => ?_
+      simp
+    map_mul' := fun σ τ => by
+      refine ContinuousLinearMap.ext fun x => ?_
+      simp [map_mul] }
+
+set_option linter.unusedSectionVars false in
+@[simp]
+lemma contRepULift_apply (π : ContRepresentation k G M) (σ : G) (x : ULift.{v} M) :
+    contRepULift π σ x = ULift.up (π σ x.down) := rfl
+
+variable (ℓ k) in
+/-- **`k(1)`** — the field `k` with `Γ ℚ` acting through the mod-`ℓ` cyclotomic character
+`adZeroCycloChar` above. This is the DUALISING MODULE of local Tate duality: it is
+`μ_ℓ ⊗_{𝔽_ℓ} k`, since `char k = ℓ` (`natCast_self_eq_zero` above), and
+`H²(ℚ_v, μ_ℓ) ≅ ℤ/ℓ` is the local invariant map. -/
+noncomputable def cycloRep : ContRepresentation k (Field.absoluteGaloisGroup ℚ) k where
+  toMonoidHom :=
+  { toFun := fun σ => ((adZeroCycloChar ℓ k σ : k)) • (1 : k →L[k] k)
+    map_one' := by simp
+    map_mul' := fun σ τ => by
+      simp only [map_mul, Units.val_mul, smul_mul_smul_comm, mul_one] }
+
+set_option linter.unusedSectionVars false in
+lemma cycloRep_apply (σ : Field.absoluteGaloisGroup ℚ) (a : k) :
+    cycloRep ℓ k σ a = (adZeroCycloChar ℓ k σ : k) * a := rfl
+
+variable (ℓ k) in
+/-- `k(1)` as an object of `TopRep k (Γ ℚ)`, on the carrier `ULift.{v} k`.
+
+`V` is a UNIVERSE MARKER and nothing else — it does not occur in the value. It is there
+because the carrier must be lifted into the universe of `AdZero k V`; see the section
+header for why that is forced. -/
+noncomputable def cycloTopRepU (V : Type v) : TopRep k (Field.absoluteGaloisGroup ℚ) :=
+  TopRep.of (contRepULift (cycloRep ℓ k) :
+    ContRepresentation k (Field.absoluteGaloisGroup ℚ) (ULift.{v} k))
+
+/-- `ad⁰` as an object of `TopRep k (Γ ℚ)` on the carrier `ULift.{u} (AdZero k V)` — the
+same representation as `adZeroTopRep` above, moved into the universe in which the cup
+product can pair it against `k(1)`. -/
+noncomputable def adZeroTopRepU (ρbar : GaloisRep ℚ k V) :
+    TopRep k (Field.absoluteGaloisGroup ℚ) :=
+  TopRep.of (contRepULift (AdZero.rep ρbar) :
+    ContRepresentation k (Field.absoluteGaloisGroup ℚ) (ULift.{u} (AdZero k V)))
+
+variable (ℓ) in
+/-- `ad⁰(1)` as an object of `TopRep k (Γ ℚ)` on the carrier `ULift.{u} (AdZero k V)` —
+the `ULift`ed twin of `adZeroTwist` above. -/
+noncomputable def adZeroTwistTopRepU (ρbar : GaloisRep ℚ k V) :
+    TopRep k (Field.absoluteGaloisGroup ℚ) :=
+  TopRep.of (contRepULift (adZeroTwistRep ℓ ρbar) :
+    ContRepresentation k (Field.absoluteGaloisGroup ℚ) (ULift.{u} (AdZero k V)))
+
+variable (ℓ k) in
+/-- `k(1)` as a representation of the LOCAL Galois group at `v`, along `decompHom v`. -/
+noncomputable def cycloLocalU (V : Type v)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    TopRep k (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+  TopRep.res (decompHom v).toMonoidHom (cycloTopRepU ℓ k V)
+
+/-- `ad⁰` as a representation of the LOCAL Galois group at `v`, along `decompHom v`.
+
+Note the restriction is along `decompHom v : Γ ℚ_v →ₜ* Γ ℚ` and NOT along
+`decompHomRestricted S v`, so no set `S` and no `N_S`-invariants appear: see the section
+header for why local duality is stated for the full `ad⁰`. -/
+noncomputable def adZeroLocalU (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    TopRep k (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+  TopRep.res (decompHom v).toMonoidHom (adZeroTopRepU ρbar)
+
+variable (ℓ) in
+/-- `ad⁰(1)` as a representation of the LOCAL Galois group at `v`, along `decompHom v`. -/
+noncomputable def adZeroTwistLocalU (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    TopRep k (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+  TopRep.res (decompHom v).toMonoidHom (adZeroTwistTopRepU ℓ ρbar)
+
+set_option linter.unusedSectionVars false in
+/-- `ρ(σ⁻¹)` undoes `ρ(σ)` on `ad⁰`. -/
+lemma adZeroRep_inv_apply (ρbar : GaloisRep ℚ k V) (σ : Field.absoluteGaloisGroup ℚ)
+    (x : AdZero k V) : AdZero.rep ρbar σ⁻¹ (AdZero.rep ρbar σ x) = x := by
+  have h : (AdZero.rep ρbar).toMonoidHom σ⁻¹ * (AdZero.rep ρbar).toMonoidHom σ = 1 := by
+    rw [← MonoidHom.map_mul, inv_mul_cancel, map_one]
+  exact congrArg (fun F : AdZero k V →L[k] AdZero k V => F x) h
+
+variable (k V) in
+/-- The trace form `adZeroTraceForm` above, transported to the `ULift`ed carriers.
+Built by `compl₁₂`/`compr₂` out of the untransported form so that bilinearity is
+inherited rather than re-proved. -/
+noncomputable def adZeroTraceFormU :
+    ULift.{u} (AdZero k V) →ₗ[k] ULift.{u} (AdZero k V) →ₗ[k] ULift.{v} k :=
+  LinearMap.compr₂
+    (LinearMap.compl₁₂ (adZeroTraceForm k V)
+      (ULift.moduleEquiv (R := k) (M := AdZero k V)).toLinearMap
+      (ULift.moduleEquiv (R := k) (M := AdZero k V)).toLinearMap)
+    (ULift.moduleEquiv (R := k) (M := k)).symm.toLinearMap
+
+set_option linter.unusedSectionVars false in
+@[simp]
+lemma adZeroTraceFormU_apply (x y : ULift.{u} (AdZero k V)) :
+    adZeroTraceFormU k V x y = ULift.up (adZeroTraceForm k V x.down y.down) := rfl
+
+instance instDiscreteAdZeroLocalU (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    DiscreteTopology ↥(adZeroLocalU ρbar v) :=
+  inferInstanceAs (DiscreteTopology (ULift.{u} (AdZero k V)))
+
+instance instDiscreteAdZeroTwistLocalU (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    DiscreteTopology ↥(adZeroTwistLocalU ℓ ρbar v) :=
+  inferInstanceAs (DiscreteTopology (ULift.{u} (AdZero k V)))
+
+instance instDiscreteCycloLocalU
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    DiscreteTopology ↥(cycloLocalU ℓ k V v) :=
+  inferInstanceAs (DiscreteTopology (ULift.{v} k))
+
+variable (ℓ) in
+/-- **The trace pairing `ad⁰ × ad⁰(1) → k(1)` as an intertwining map over `Γ ℚ_v`**
+(PROVEN) — the coefficient-level input of the local Tate pairing.
+
+The equivariance is the whole content, and it is exactly why the twist is there:
+`tr((σx)(σy)) = tr(xy)` (`adZeroTraceForm_rep` above), the `ad⁰(1)` slot contributes an
+extra `χ(σ)⁻¹` and the target `k(1)` contributes `χ(σ)`, and the two cancel. Continuity
+is free — every carrier is discrete.
+
+NO hypothesis on `ℓ` or on `rank V` is used here. Nondegeneracy of the trace form is
+what needs `ℓ` odd (`adZeroTraceForm_nondegenerate` below); the pairing itself, and its
+equivariance, exist for every `ρbar`. -/
+noncomputable def adZeroTraceIntertwinerU (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    ContIntertwiningMap (adZeroLocalU ρbar v).ρ
+      (ContRepresentation.linHom (adZeroTwistLocalU ℓ ρbar v).ρ
+        (cycloLocalU ℓ k V v).ρ) where
+  toFun x := ⟨adZeroTraceFormU k V x, continuous_of_discreteTopology⟩
+  map_add' x y := by
+    refine ContinuousLinearMap.ext fun z => ?_
+    exact congr($(map_add (adZeroTraceFormU k V) x y) z)
+  map_smul' c x := by
+    refine ContinuousLinearMap.ext fun z => ?_
+    exact congr($(map_smul (adZeroTraceFormU k V) c x) z)
+  cont := continuous_of_discreteTopology
+  isIntertwining' h := by
+    refine ContinuousLinearMap.ext fun x => ContinuousLinearMap.ext fun y => ?_
+    show ULift.up (adZeroTraceForm k V (AdZero.rep ρbar (decompHom v h) x.down) y.down)
+        = ULift.up ((adZeroCycloChar ℓ k (decompHom v h) : k) *
+            adZeroTraceForm k V x.down
+              ((adZeroCycloChar ℓ k (decompHom v h⁻¹) : k) •
+                AdZero.rep ρbar (decompHom v h⁻¹) y.down))
+    have hinv : decompHom v h⁻¹ = (decompHom v h)⁻¹ := map_inv _ _
+    rw [hinv, map_inv, Units.val_inv_eq_inv_val, map_smul, smul_eq_mul, ← mul_assoc,
+      mul_inv_cancel₀ (Units.ne_zero (adZeroCycloChar ℓ k (decompHom v h))), one_mul]
+    have hkey := adZeroTraceForm_rep ρbar (decompHom v h)⁻¹
+      (AdZero.rep ρbar (decompHom v h) x.down) y.down
+    rw [adZeroRep_inv_apply] at hkey
+    rw [hkey]
+
+variable (ℓ) in
+/-- **THE LOCAL TATE PAIRING** `H^m(ℚ_v, ad⁰) × H^n(ℚ_v, ad⁰(1)) → H²(ℚ_v, k(1))` for
+`m + n = 2` (a DEFINITION, not a leaf): the cup product on continuous cohomology induced
+by the trace pairing `adZeroTraceIntertwinerU` above.
+
+This is the object every audit in this subsection has been calling "the local Tate
+pairing" since 2026-07-27 and which the tree did not have. The cup product itself is
+`ContinuousCohomology.cup`, vendored sorry-free from `~/cs/FLT` on 2026-07-31; the joint
+continuity its construction demands is automatic here because `ad⁰` is discrete
+(`ContRepresentation.continuous_pair_of_discrete`).
+
+Note that NO invariant map appears yet: the pairing is valued in `H²(ℚ_v, k(1))`, which
+is where the cup product naturally lands. Identifying that group with `k` is local class
+field theory and is the content of `isLocalTateDual` below. -/
+noncomputable def localTatePairingU (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (m n : ℕ) (hmn : (2 : ℕ) = m + n) :
+    continuousCohomology m (adZeroLocalU ρbar v) ⟶
+      TopModuleCat.linHom (continuousCohomology n (adZeroTwistLocalU ℓ ρbar v))
+        (continuousCohomology 2 (cycloLocalU ℓ k V v)) :=
+  ContinuousCohomology.cup _ _ _ (adZeroTraceIntertwinerU ℓ ρbar v)
+    (ContRepresentation.continuous_pair_of_discrete _) m n 2 hmn
+
+variable (ℓ) in
+/-- **LOCAL TATE DUALITY at `v`**, as a proposition: there is an isomorphism
+`inv : H²(ℚ_v, k(1)) ≅ k` — the LOCAL INVARIANT MAP — for which the composite pairing
+
+  `H^m(ℚ_v, ad⁰) × H^n(ℚ_v, ad⁰(1)) → H²(ℚ_v, k(1)) → k`,  `m + n = 2`,
+
+is nondegenerate on BOTH sides.
+
+Packaged as one proposition rather than two because the invariant map and the duality
+are one theorem (NSW VII.2) and because the duality clause names the very `inv` the
+first clause produces. Which isomorphism `inv` is chosen does not matter: any two differ
+by a nonzero scalar, and nondegeneracy is scale-invariant — so this is not weaker than
+naming the canonical invariant map. -/
+def IsLocalTateDual (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) : Prop :=
+  ∃ inv : ↥(continuousCohomology 2 (cycloLocalU ℓ k V v)) ≃ₗ[k] k,
+    ∀ (m n : ℕ) (hmn : (2 : ℕ) = m + n),
+      (∀ x : ↥(continuousCohomology m (adZeroLocalU ρbar v)), x ≠ 0 →
+          ∃ y : ↥(continuousCohomology n (adZeroTwistLocalU ℓ ρbar v)),
+            inv (localTatePairingU ℓ ρbar v m n hmn x y) ≠ 0) ∧
+      (∀ y : ↥(continuousCohomology n (adZeroTwistLocalU ℓ ρbar v)), y ≠ 0 →
+          ∃ x : ↥(continuousCohomology m (adZeroLocalU ρbar v)),
+            inv (localTatePairingU ℓ ρbar v m n hmn x y) ≠ 0)
+
+include hℓOdd hdim in
+/-- **LOCAL CLASS FIELD THEORY: the local invariant map, and local Tate duality for
+`ad⁰` at `v`** (sorry leaf, cut out 2026-07-31 as item (b) of the build order on
+`exists_injective_sha2_dual_sha1Twist_of_selfDual` below).
+
+This is NSW VII.2 / Tate local duality for the finite `Γ ℚ_v`-module `M = ad⁰`, together
+with the identification `H²(ℚ_v, k(1)) ≅ k` that makes it a `k`-valued statement.
+
+**WHAT IT COSTS, said plainly.** Everything: `H²(ℚ_v, μ_ℓ) ≅ Br(ℚ_v)[ℓ] ≅ (1/ℓ)ℤ/ℤ`,
+i.e. the invariant map of local class field theory, of which our mathlib pin, this tree
+and `~/cs/FLT` have nothing (re-verified by statement shape on 2026-07-27, -28, -29,
+-30 and -31; mathlib's `Algebra/BrauerGroup/Defs.lean` is CSAs modulo Morita with no
+valuation input, and `TateCohomology/Basic.lean` is Tate cohomology of a FINITE group).
+It is the deepest single item in this subtree and it is not going to be discharged by
+an assembly. What this cut buys is that it is now a statement about objects that EXIST
+rather than a phrase, and that its consumer below can be written.
+
+**FAITHFULNESS AUDIT, 2026-07-31. VERDICT: FAITHFUL, and unconditionally TRUE.**
+
+* *The dualising module is right.* `char k = ℓ` (`natCast_self_eq_zero` above), so `k(1)`
+  is `μ_ℓ ⊗_{𝔽_ℓ} k`; cohomology commutes with this base change along the flat
+  `𝔽_ℓ → k`, so `H²(ℚ_v, k(1)) ≅ H²(ℚ_v, μ_ℓ) ⊗_{𝔽_ℓ} k ≅ k`. The `≃ₗ[k]` clause is
+  therefore satisfiable for EVERY finite place `v` of `ℚ`, with no hypothesis on `v` —
+  which is why `v` is unconstrained here.
+* *The pairing is right.* `hℓOdd` and `hdim` make the trace form on `ad⁰` a PERFECT
+  pairing (`adZeroTraceForm_nondegenerate` below), so `ad⁰(1) ≅ Hom(ad⁰, k(1))` as
+  `Γ ℚ_v`-modules and Tate duality applies verbatim. Both hypotheses are genuinely
+  load-bearing: for `ℓ = 2` the trace form on `sl₂` has the scalars in its radical and
+  the statement is FALSE, and without `rank V = 2` there is no `sl₂` to begin with.
+* *No junk-value hazard.* Every clause is an equation or a disequation between elements
+  of honest `k`-modules; there is no `Nat.card`, no default value, and no place where a
+  degenerate object could satisfy the statement vacuously. A degenerate `inv` is
+  impossible: `≃ₗ[k]` forces `H²(ℚ_v, k(1))` to be one-dimensional.
+* *`hirr` is NOT needed and is not taken.* Local duality holds for any finite module.
+
+**CIRCULARITY GUARD.** Inherited from `exists_poitouTateExactness_sha2_sha1Twist` below:
+neither `not_isIrreducible_of_isHardlyRamified_of_five_le` nor
+`not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them, may be
+used, because their intended proofs run through modularity lifting, which is proven over
+the bound this leaf ultimately feeds. This leaf takes no `ρbar`-irreducibility
+hypothesis, so the guard binds only in the sense that no such input may be smuggled in.
+
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VII.2 (local
+duality) and VII.5 (the invariant map); Serre, *Local Fields*, XI. -/
+theorem isLocalTateDual (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    IsLocalTateDual ℓ ρbar v :=
+  sorry
+
+include hℓOdd hdim in
+/-- **THE GLOBAL HALF of Poitou–Tate: the nine-term arrow, GIVEN local duality**
+(sorry leaf, cut out 2026-07-31; `exists_poitouTateExactness_sha2_sha1Twist` below is
+PROVEN over it and over `isLocalTateDual` above).
+
+Statement, hypotheses and conclusion are those of
+`exists_poitouTateExactness_sha2_sha1Twist` below — see its docstring for the
+faithfulness audit of the conclusion, for why the archimedean place may be omitted, and
+for why `range γ = Ш²` and `ker γ = (Ш¹)ᵃⁿⁿ` are the two exactness statements of NSW
+VIII.6.7 — with ONE addition: `hloc`, local Tate duality at every `v ∈ S`, is now an
+explicit hypothesis rather than something the prover must build first.
+
+**WHAT THIS CUT DOES AND DOES NOT DO, stated so nobody reads the leaf count as
+progress on the arithmetic.** It does NOT make the global half logically weaker: `hloc`
+is TRUE (that is `isLocalTateDual` above), so this statement is equivalent to the one
+below, and the frontier goes `1 → 2` rather than down. What it does is separate the two
+classical inputs that were previously one undivided obligation — local class field
+theory (NSW VII.2) and the global nine-term sequence (NSW VIII.6.7) — and, more to the
+point, hand the second one the FIRST as a named object built out of a compiler-checked
+cup product, instead of as a sentence in a docstring. That is item (c) of the build
+order becoming reachable; the file's own note says the two leaves it gates "should go to
+one owner, in the order (a) vendor the cup product, (b) build the local invariant map,
+(c) then both leaves at once".
+
+**WHAT THE PROVER STILL OWES BEYOND NSW VIII.6.7**, and it is worth naming because it is
+invisible in the statement:
+
+* *From the full `ad⁰` to `ad⁰^{N_S}`.* `hloc` is local duality for `adZeroLocalU`, the
+  restriction of the FULL `ad⁰` to `Γ ℚ_v`, while `Sha2`/`Sha1Twist` are built from
+  `adZeroRestricted`, the `N_S`-invariants. The two agree because `ρbar` is unramified
+  outside `S = hardlyRamifiedPlaces ℓ` and the mod-`ℓ` cyclotomic character is unramified
+  outside `ℓ ∈ S`, so `N_S` acts trivially on `ad⁰` and on `ad⁰(1)`; that identification
+  is not proven in this file. `isOpen_setOf_fixes_rootsOfUnity` above is the input for
+  the character half.
+* *The `ULift` transport.* `adZeroLocalU` carries `ULift.{u} (AdZero k V)`; see the
+  section header for why, and use `ULift.moduleEquiv` to get rid of it.
+* *`P^i_S` and the localisation maps.* The nine-term sequence needs the product objects
+  `P^i_S = ∏_{v ∈ S} H^i(ℚ_v, −)`; `S = hardlyRamifiedPlaces ℓ` is finite (two elements),
+  so these are finite products and no restricted-product machinery is required.
+
+**FAITHFULNESS.** `hloc` is satisfiable — `isLocalTateDual` above discharges it — so
+adding it cannot have made this statement vacuous, and it is quantified over `v ∈ S`
+rather than over all `v`, which is exactly the set the sequence uses.
+
+References: Neukirch–Schmidt–Wingberg VIII.6.7 (the nine-term sequence) and VII.2 (local
+duality); Darmon–Diamond–Taylor §2.6–2.7. -/
+theorem poitouTateExactness_of_localTateDuality
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hloc : ∀ v ∈ hardlyRamifiedPlaces ℓ, IsLocalTateDual ℓ ρbar v) :
+    ∃ γ : Module.Dual k (continuousCohomology 1
+          (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) →ₗ[k]
+        continuousCohomology 2 (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)),
+      LinearMap.ker γ = (Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)).dualAnnihilator ∧
+      LinearMap.range γ = Sha2 ρbar (hardlyRamifiedPlaces ℓ) :=
+  sorry
+
+end LocalTatePairing
+
+
 /-- **THE Poitou–Tate input, stated in the nine-term sequence's OWN vocabulary:
 the arrow `H¹(G_{ℚ,S}, ad⁰(1))^∨ → H²(G_{ℚ,S}, ad⁰)`, with its kernel and its
 range** (sorry leaf, cut out 2026-07-30).  It is the sole arithmetic input of
@@ -20717,7 +22365,8 @@ theorem exists_poitouTateExactness_sha2_sha1Twist
         continuousCohomology 2 (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)),
       LinearMap.ker γ = (Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)).dualAnnihilator ∧
       LinearMap.range γ = Sha2 ρbar (hardlyRamifiedPlaces ℓ) :=
-  sorry
+  poitouTateExactness_of_localTateDuality hℓOdd hdim hℓ5 h
+    (fun v _ => isLocalTateDual hℓOdd hdim ρbar v)
 
 /-- **THE Poitou–Tate input: a nondegenerate `k`-bilinear pairing**
 `Ш²_S(ad⁰) × Ш¹_S(ad⁰(1)) → k` (**PROVEN 2026-07-30** over
@@ -21299,64 +22948,6 @@ statement about `(ad⁰, ad⁰(1))`. Equivariance with TRIVIAL action downstairs
 the load-bearing clause, and it is what `LinearMap.trace_mul_comm` gives:
 conjugation does not move the trace. -/
 
-variable (k V) in
-/-- **The trace form on `ad⁰`**, `(x, y) ↦ tr(x ∘ y)`, as a `k`-bilinear map.
-
-Written through `AdZero.toEnd` (the inclusion of trace-zero endomorphisms into
-`Module.End k V`) rather than on `Module.End` itself, so that it is literally a
-pairing of the object `Sha2` and `Sha1Twist` are built from. -/
-noncomputable def adZeroTraceForm : AdZero k V →ₗ[k] AdZero k V →ₗ[k] k :=
-  LinearMap.mk₂ k
-    (fun x y => LinearMap.trace k V (AdZero.toEnd k V x * AdZero.toEnd k V y))
-    (fun x₁ x₂ y => by simp [add_mul])
-    (fun c x y => by simp)
-    (fun x y₁ y₂ => by simp [mul_add])
-    (fun c x y => by simp)
-
-omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
-lemma adZeroTraceForm_apply (x y : AdZero k V) :
-    adZeroTraceForm k V x y
-      = LinearMap.trace k V (AdZero.toEnd k V x * AdZero.toEnd k V y) := rfl
-
-omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] [Module.Finite k V]
-  [Module.Free k V] in
-/-- Members of `ad⁰` have vanishing trace — the defining property, restated
-through `AdZero.toEnd` so that it is usable as a rewrite. -/
-lemma adZero_trace_toEnd (x : AdZero k V) :
-    LinearMap.trace k V (AdZero.toEnd k V x) = 0 := by
-  have hx : (AdZero.toEnd k V x) ∈ LinearMap.ker (LinearMap.trace k V) :=
-    Submodule.coe_mem (show ↥(LinearMap.ker (LinearMap.trace k V)) from x)
-  exact hx
-
-/-- **The trace form is `Γ ℚ`-equivariant, with TRIVIAL action on the target**
-(PROVEN): `tr((σ·x)(σ·y)) = tr(xy)`.
-
-This is the clause that turns the pairing into an isomorphism
-`ad⁰ ≅ Hom(ad⁰, k)` OF `Γ ℚ`-MODULES, and hence — after twisting — into
-`Hom(ad⁰, μ_ℓ) ≅ ad⁰(1)`. The proof is `(aXb)(aYb) = a(XY)b` using
-`b * a = 1`, followed by `LinearMap.trace_mul_comm` to move `a` past. No
-oddness and no rank hypothesis are needed here; both enter only in
-`adZeroTraceForm_nondegenerate` below. -/
-lemma adZeroTraceForm_rep (ρbar : GaloisRep ℚ k V) (σ : Field.absoluteGaloisGroup ℚ)
-    (x y : AdZero k V) :
-    adZeroTraceForm k V (AdZero.rep ρbar σ x) (AdZero.rep ρbar σ y)
-      = adZeroTraceForm k V x y := by
-  have hb : (ρbar σ⁻¹ : Module.End k V) * ρbar σ = 1 := by
-    rw [← map_mul, inv_mul_cancel, map_one]
-  simp only [adZeroTraceForm_apply]
-  show LinearMap.trace k V
-      ((AdZero.toEnd k V (AdZero.conjL (ρbar σ) (ρbar σ⁻¹) hb x)) *
-        (AdZero.toEnd k V (AdZero.conjL (ρbar σ) (ρbar σ⁻¹) hb y))) = _
-  rw [AdZero.toEnd_conjL, AdZero.toEnd_conjL]
-  set a : Module.End k V := ρbar σ
-  set X : Module.End k V := AdZero.toEnd k V x
-  set Y : Module.End k V := AdZero.toEnd k V y
-  set b : Module.End k V := ρbar σ⁻¹
-  have hstep : (a * X * b) * (a * Y * b) = a * (X * Y) * b := by
-    calc (a * X * b) * (a * Y * b) = a * X * (b * a) * Y * b := by noncomm_ring
-      _ = a * X * 1 * Y * b := by rw [hb]
-      _ = a * (X * Y) * b := by noncomm_ring
-  rw [hstep, LinearMap.trace_mul_comm, ← mul_assoc, hb, one_mul]
 
 include hℓOdd hdim in
 /-- **The trace form on `ad⁰` is nondegenerate** (PROVEN), for `ℓ` odd and
@@ -21643,6 +23234,25 @@ group `H¹_{L^⊥}` cannot be STATED without it. So they are not two independent
 costs and should go to one owner, in the order: (a) vendor the cup product from
 `~/cs/FLT` with its `linHom`/`iHom` shims, (b) build the local invariant map,
 (c) then both leaves at once.
+
+**STATUS 2026-07-31: (a) AND (b) ARE DONE.** (a) is
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/CupProduct.lean`
+and its seven shim modules, all sorry-free and building here. (b) is the section
+*The LOCAL TATE PAIRING at `v`, and local duality* above: `localTatePairingU` IS the
+pairing `H^m(ℚ_v, ad⁰) × H^n(ℚ_v, ad⁰(1)) → H²(ℚ_v, k(1))` this paragraph is about, as
+a `def`; `IsLocalTateDual` says that composing it with an isomorphism
+`H²(ℚ_v, k(1)) ≅ k` — the local invariant map — makes it nondegenerate on both sides;
+and `isLocalTateDual` is that as a leaf. So the object the two leaves share is now
+BUILT, and what is left of it is one named sorry rather than an unwritten theory.
+
+**`rank_sha1Twist_le_cotangentFinrank`'s successor
+`card_sha1Twist_le_card_dualNumberPoints` BELOW HAS NOT YET BEEN RE-CUT OVER IT**, and
+that is the obvious next task: its own docstring says its gate is Greenberg–Wiles, which
+needs the dual Selmer group `H¹_{L^⊥}` — and `H¹_{L^⊥}` can now be STATED, because
+`localTatePairingU` exists and the orthogonal complement of a subspace of
+`H¹(ℚ_v, ad⁰)` under it is an ordinary annihilator. Nothing in this commit touched that
+leaf; the shared-gate note above is still the reason it belongs to whoever owns
+`isLocalTateDual`.
 
 **Two hypotheses of this leaf are NOT consumed by the intended argument, and
 saying so is worth a future owner's afternoon.** Poitou–Tate global duality
