@@ -782,7 +782,13 @@ def do_spawn(s, name, j):
     # --resume on every later one. Sessions are stored per PROJECT DIRECTORY,
     # so a resume must run with the same cwd as the original spawn -- row 8
     # respawns into the same worktree, so that holds by construction.
-    j.setdefault("session", str(uuid.uuid4()))
+    # `or`, not setdefault -- same null-vs-absent trap as prev_tokens in row 8.
+    # A record created by a row and saved before it ever spawned comes back with
+    # "session": null; setdefault would leave that, and shlex.quote(None) three
+    # lines down raises TypeError inside do_spawn, i.e. a panic on the ordinary
+    # spawn path. Every job record reaching here has been through save() at
+    # least once, so this is the normal case, not the corner one.
+    j["session"] = j.get("session") or str(uuid.uuid4())
     if j.get("resume"):
         # Continue the actual conversation. No prompt file: the agent already
         # knows its task, what it tried and what failed, which is the whole
@@ -1023,6 +1029,13 @@ def save(s):
         # is named here -- a field that rows write and save() silently discards
         # reads as amnesia one tick later. Anything added to a job record must
         # be added here too.
+        # AND: j.get(k) stores a key no job has written yet as an explicit
+        # null, so it reloads PRESENT-but-None. `dict.setdefault` therefore
+        # does NOT default a persisted field -- it only ever fires on the very
+        # first tick of a record's life, before its first save. Default such
+        # fields with `j.get(k) or <default>`; setdefault here is a bug that
+        # hides until the field is first read back, which is how row 8's
+        # prev_tokens panicked the loop on its first resume.
         # spawned_at MUST be here. do_spawn stamps it, but if it is not
         # persisted the record comes back with None, `now - 0` is always older
         # than GRACE, and every freshly spawned job is judged dead on its very

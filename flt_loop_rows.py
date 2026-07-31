@@ -492,8 +492,16 @@ def r4_action(s):
             # 17KB sentinel, and was then resumed NINETEEN times: each
             # replacement found its work done, exited without writing anything,
             # and the rotated token made the real sentinel invisible for ever.
-            j.setdefault("prev_tokens", []).append(j["token"])
-            j["prev_tokens"] = j["prev_tokens"][-10:]
+            #
+            # `or []` rather than setdefault, and this is not a style choice:
+            # save() persists each record as a FIXED KEY LIST built with
+            # j.get(k), so a field no job has ever written is stored as an
+            # explicit null. It comes back PRESENT, setdefault declines to
+            # replace it, and .append on None took the whole loop down on the
+            # first resume after this field was added -- before it had ever
+            # saved a single retired token. Across the persistence boundary,
+            # absent and null are the same state; only `or` reads them that way.
+            j["prev_tokens"] = ((j.get("prev_tokens") or []) + [j["token"]])[-10:]
             j["token"] = tok()
             j["retries"] += 1
             j["resume"] = bool(j.get("session"))
