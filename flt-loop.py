@@ -987,17 +987,12 @@ def do_graveyard(name, j):
     if base:
         subprocess.run(["git", "-C", str(wt), "reset", "--hard", base],
                        capture_output=True, text=True, timeout=300)
-    # -e, not a bare -fd. The reasoning that a bare `git clean -fd` would spare
-    # .lake was wrong twice over: a worktree's `.git` is a FILE, so the
-    # `.git/info/exclude` this project relies on lives in the MAIN repo under
-    # .git/worktrees/<name>/info/exclude; and the pattern there is `.lake/`,
-    # which does not match a symlink anyway. The first run deleted the .lake
-    # symlink from both worktrees. Nothing was destroyed -- the 12G of oleans
-    # sit in machine-local /scratch on the worktree's own host and are not even
-    # visible from here -- but the worktree lost its pointer at them, which
-    # costs a full mathlib rebuild to notice. Name the exclusions explicitly.
-    subprocess.run(["git", "-C", str(wt), "clean", "-fd",
-                    "-e", ".lake", "-e", ".report-server"],
+    # Plain -fd: the .lake symlink goes with everything else, and that is fine
+    # (Deyao, 2026-07-31 -- "the .lake file does not need to be saved"). Agents
+    # own their own .lake and the prompt already tells them the artifacts may
+    # need rebuilding, so preserving a pointer into machine-local /scratch is
+    # not this row's job. A clean slate means a clean slate.
+    subprocess.run(["git", "-C", str(wt), "clean", "-fd"],
                    capture_output=True, text=True, timeout=300)
     if j.get("session"):
         proj = str(wt).replace("/", "-").replace(".", "-")
