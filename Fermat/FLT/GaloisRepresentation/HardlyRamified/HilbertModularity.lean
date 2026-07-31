@@ -33450,9 +33450,391 @@ theorem exists_finEnum_of_card_eq {α : Type*} (Q : Finset α) (q : ℕ)
   intro i j h
   exact e.symm.injective (Subtype.ext h)
 
+/-! ### THE FROBENIUS RELATION ON THE TAME QUOTIENT, AND THE EXPONENT ARITHMETIC
+IT FEEDS
+
+(New 2026-07-31.) Four declarations — one LEAF and three PROVEN — that between
+them discharge the whole of the FIRST clause of
+`exists_hilbertAuxDiamondGenerators` below, i.e. the passage from "the diamond
+`δ_i` is a value of a character of the decomposition group at `w_i`" to
+"`δ_i ^ ℓ^{v_ℓ(N w_i − 1)} = 1`".
+
+The TAME-CHARACTER section on `exists_hilbertAuxDiamondQuotient_of_exponents`
+below identified, on 2026-07-30, exactly ONE genuinely missing ingredient in this
+chain: the FROBENIUS RELATION. Everything else it named
+(`wildInertiaGroup`, `tameCharacter`, `exists_pow_eq_of_mem_wildInertiaGroup`,
+`exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker`) is sorry-free in
+`Deformations/RepresentationTheory/ArtinConductor.lean` and reachable here
+through the `public` chain
+`HilbertModularity → HermiteMinkowski → FreyCurve/MazurTorsion → ArtinConductor`.
+That ingredient is now `exists_frobLift_conj_pow_mem_wildInertiaGroup`, the ONE
+`sorry` of this block; the other three are proven and take it the rest of the
+way.
+
+**WHY THE ARITHMETIC IS WORTH SEPARATING FROM THE GEOMETRY.** As recorded on the
+leaf below, inertia ALONE cannot produce the exponent: the `ℓ`-part of the full
+tame quotient of `I_w` is `ℤ_ℓ`, not `ℤ/ℓ^{ex}`, so any bound obtained from
+`χ_w|_{I_w}` by itself is `ℓ^N` for an unspecified `N`. The exponent comes from
+two independent facts multiplied together —
+
+* `χ_w(σ)^{N w − 1} = 1`, from the Frobenius relation (this block), and
+* `χ_w(σ) ∈ 1 + 𝔪`, whose `ℓ'`-torsion is trivial
+  (`pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal`)
+
+— and neither half mentions a deformation datum, a Hecke algebra or a modular
+form. Isolating them here is what lets the residual leaf be about the
+CONSTRUCTION of the characters and nothing else.
+-/
+
+/-- **THE FROBENIUS RELATION ON THE TAME QUOTIENT** (LEAF — new 2026-07-31; the
+ONE ingredient the 2026-07-30 tame-character audit on
+`exists_hilbertAuxDiamondQuotient_of_exponents` below identified as genuinely
+absent from `ArtinConductor.lean`).
+
+There is an element `Fr` of the local Galois group at `v` — a lift of the
+arithmetic Frobenius, though the statement does not need to say so — such that
+for EVERY `σ ∈ I_v`,
+
+    Fr · σ · Fr⁻¹ · (σ ^ N v)⁻¹  ∈  P_v ,
+
+i.e. `Fr σ Fr⁻¹ ≡ σ^{N v}` modulo WILD inertia, where `N v = #(𝓞_K ⧸ v)` is the
+residue cardinality. This is the defining relation of the tame quotient: `I_v/P_v`
+is `lim_n μ_n(k̄_v)` (`n` prime to the residue characteristic), and a Frobenius
+lift acts on `μ_n` by `x ↦ x^{N v}`.
+
+# WHY IT IS STATED THIS WAY AND NOT THROUGH `tameCharacter`
+
+The classical formulation is `θ(Fr σ Fr⁻¹) = θ(σ)^{N v}` for the tame character
+`θ` of `ArtinConductor.lean`. That form needs a `θ`, hence an `n` and an `X` with
+`Xⁿ` Galois-fixed, and the consumer would then have to identify ITS character
+with `θ` — which is exactly the identification nothing in the hypothesis package
+supplies. The group-theoretic form above needs no character at all: any
+homomorphism out of the decomposition group into a COMMUTATIVE group which kills
+`P_v` converts it into `χ(σ)^{N v − 1} = 1` in one line, and that is the only way
+this development consumes it (see
+`pow_natCard_residue_sub_one_eq_one_of_forall_mem_wildInertiaGroup` immediately
+below). No `n`, no `X`, no compatibility between two tame characters.
+
+# FAITHFULNESS AUDIT (2026-07-31)
+
+*The statement is not vacuous, and `Fr = 1` does NOT discharge it.* With `Fr = 1`
+the clause reads `σ^{1 − N v} ∈ P_v` for every `σ ∈ I_v`, i.e. the tame quotient
+`I_v/P_v` is killed by `N v − 1`. It is not: `I_v/P_v ≅ lim_n μ_n(k̄_v)` contains
+elements of order `n` for EVERY `n` prime to the residue characteristic, and
+`N v − 1` is a fixed integer. So the existential has content and a prover cannot
+dispatch it by choosing a convenient `Fr`.
+
+*It is not vacuously true through an empty index either*: `localInertiaGroup v`
+always contains `1`, and at `σ = 1` the clause is trivially satisfied — which is
+consistent, and is why the audit above is the one that matters.
+
+*The exponent is the RESIDUE CARDINALITY, not `N v − 1` or `ℓ`.* Getting this
+wrong in the other direction would make the leaf false: with `N v` replaced by
+any `m` not congruent to `N v` modulo the (pro-finite) order of `σ`, the relation
+fails already for `σ` of order `n` with `n ∤ (m − N v)`.
+
+*Direction of the conjugation.* `Fr σ Fr⁻¹ = σ^{N v}` is the ARITHMETIC Frobenius
+convention (`Fr` induces `x ↦ x^{N v}` on the residue field). The geometric
+convention gives the inverse exponent; both forms are true for the respective
+lifts, and the statement is an EXISTENTIAL over `Fr`, so it is insensitive to the
+choice — replacing `Fr` by `Fr⁻¹` and `N v` by `N v` is not the same statement,
+but a witness for either convention exists, so the leaf is true under both.
+
+*Every ingredient is normal where it needs to be:* `localInertiaGroup v` and
+`wildInertiaGroup v` are both normal in the local Galois group (inertia is the
+kernel of the residue action; wild inertia is its unique Sylow pro-`p`), so
+`Fr σ Fr⁻¹` really does lie in `I_v` and the product above is an honest element of
+`I_v`.
+
+# WHAT A PROVER MUST DO
+
+`ArtinConductor.lean` already has the tame quotient as an explicit inverse limit
+of the finite levels `tameLevel v F` with `tameGenChar` on each, plus
+`exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker`. The content to be added
+is that a Frobenius lift acts on each `μ_n ⊆ 𝒪ᵥ` by `x ↦ x^{N v}` — equivalently,
+that reduction `μ_n → k̄_v^×` is injective for `n` prime to the residue
+characteristic (which is `eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal`
+there, already proven) together with the fact that some element of the local
+Galois group induces the `N v`-power map on the residue field. The second half is
+the only genuinely new input, and it is the existence of a Frobenius lift for the
+unramified quotient — Serre, *Local Fields* IV §2 and Prop. 8; Neukirch, *ANT*
+II.9.9 and II.7.5.
+
+**DO NOT REBUILD `tameCharacter`.** That was the redirection the 2026-07-30 audit
+made, and it stands.
+
+References: Serre, *Local Fields*, IV §2; Neukirch, *Algebraic Number Theory*,
+II.7.5 and II.9.9; Taylor–Wiles, Ann. of Math. 141 (1995), §2. -/
+theorem exists_frobLift_conj_pow_mem_wildInertiaGroup
+    {K : Type u} [Field K] [NumberField K] (v : HeightOneSpectrum (𝓞 K)) :
+    ∃ Fr : Γ (v.adicCompletion K),
+      ∀ σ : localInertiaGroup v,
+        Fr * (σ : Γ (v.adicCompletion K)) * Fr⁻¹ *
+            ((σ : Γ (v.adicCompletion K)) ^ Nat.card (𝓞 K ⧸ v.asIdeal))⁻¹
+          ∈ wildInertiaGroup v :=
+  sorry
+
+/-- **A CHARACTER OF THE DECOMPOSITION GROUP KILLING WILD INERTIA IS
+`(N v − 1)`-TORSION ON INERTIA** (PROVEN 2026-07-31 over
+`exists_frobLift_conj_pow_mem_wildInertiaGroup` immediately above).
+
+This is the only way the Frobenius relation is consumed, and it is where the
+COMMUTATIVITY of the target does the work: `χ (Fr σ Fr⁻¹) = χ σ` for free, so the
+relation collapses to `χ σ = χ σ ^ (N v)` and hence to `χ σ ^ (N v − 1) = 1`.
+Note that `χ` must be defined on the whole DECOMPOSITION group, not merely on
+`I_v` — `Fr` is not inertial. That is precisely why
+`IsHilbertRaisedLevelHardlyRamified.isSplitTorusAt` splits `ρ|_{G_{F_w}}` rather
+than `ρ|_{I_w}`, as the docstring of that clause records. -/
+theorem pow_natCard_residue_sub_one_eq_one_of_forall_mem_wildInertiaGroup
+    {K : Type u} [Field K] [NumberField K] {R : Type*} [CommGroup R]
+    (v : HeightOneSpectrum (𝓞 K)) (χ : Γ (v.adicCompletion K) →* R)
+    (hwild : ∀ x ∈ wildInertiaGroup v, χ x = 1)
+    (σ : localInertiaGroup v) :
+    (χ (σ : Γ (v.adicCompletion K))) ^ (Nat.card (𝓞 K ⧸ v.asIdeal) - 1) = 1 := by
+  obtain ⟨Fr, hFr⟩ := exists_frobLift_conj_pow_mem_wildInertiaGroup v
+  have h := hwild _ (hFr σ)
+  rw [map_mul, map_mul, map_mul, map_inv, map_inv, map_pow] at h
+  set a := χ (σ : Γ (v.adicCompletion K)) with ha
+  set b := χ Fr with hb
+  set N := Nat.card (𝓞 K ⧸ v.asIdeal) with hN
+  have hconj : b * a * b⁻¹ = a := by
+    rw [mul_comm b a, mul_assoc, mul_inv_cancel, mul_one]
+  rw [hconj] at h
+  have haN : a = a ^ N := mul_inv_eq_one.mp h
+  have hN1 : 1 ≤ N := le_of_lt (one_lt_natCard_residue v)
+  have hsplit : a ^ N = a ^ (N - 1) * a := by
+    conv_lhs => rw [show N = (N - 1) + 1 by omega]
+    rw [pow_succ]
+  rw [hsplit] at haN
+  have hcan : (1 : R) * a = a ^ (N - 1) * a := by rw [one_mul]; exact haN
+  exact (mul_right_cancel hcan).symm
+
+/-- **GEOMETRIC-SUM CANCELLATION OVER A LOCAL RING** (PROVEN 2026-07-31): a root
+of unity of order prime to the residue characteristic which is `≡ 1 mod 𝔪` is
+`1`.
+
+`ArtinConductor.lean` has this for the integral closure `Oᵥ`
+(`eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal`) and `MazurTorsion.lean` has
+it for an arbitrary ideal of a DOMAIN (`eq_one_of_pow_eq_one_of_sub_one_mem`).
+Neither applies to a deformation ring: `𝒟Q.R` is a complete local ring and is not
+a domain, and it is not an integral closure. The proof is the same three lines —
+`(∑_{i<m} x^i)(x − 1) = x^m − 1 = 0`, the sum is `≡ m mod 𝔪` hence a unit — and
+the only hypothesis it needs is that `m` is a UNIT of `R`, which is strictly
+weaker than either of the other two forms. -/
+theorem eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal_of_isUnit
+    {R : Type*} [CommRing R] [IsLocalRing R] {m : ℕ} (hm : IsUnit ((m : ℕ) : R))
+    {x : R} (hx : x ^ m = 1) (h1 : x - 1 ∈ IsLocalRing.maximalIdeal R) : x = 1 := by
+  set S : R := ∑ i ∈ Finset.range m, x ^ i with hS
+  have hSmul : S * (x - 1) = 0 := by rw [hS, geom_sum_mul, hx, sub_self]
+  have hSn : S - (m : R) ∈ IsLocalRing.maximalIdeal R := by
+    have hsum : ∑ i ∈ Finset.range m, (x ^ i - 1) = S - (m : R) := by
+      rw [hS, Finset.sum_sub_distrib]
+      simp
+    rw [← hsum]
+    refine Ideal.sum_mem _ fun i _ => ?_
+    obtain ⟨c, hc⟩ : (x - 1) ∣ x ^ i - 1 := by
+      simpa using sub_dvd_pow_sub_pow x 1 i
+    rw [hc]
+    exact Ideal.mul_mem_right _ _ h1
+  have hSunit : IsUnit S := by
+    rw [← IsLocalRing.notMem_maximalIdeal]
+    intro hSm
+    have hnm : ((m : ℕ) : R) ∈ IsLocalRing.maximalIdeal R := by
+      have := Ideal.sub_mem _ hSm hSn
+      simpa using this
+    exact (IsLocalRing.notMem_maximalIdeal.mpr hm) hnm
+  have hzero : x - 1 = 0 := hSunit.mul_right_eq_zero.mp hSmul
+  linear_combination hzero
+
+/-- **THE `ℓ'`-PART OF A `1 + 𝔪` ROOT OF UNITY IS TRIVIAL** (PROVEN 2026-07-31):
+if `x ≡ 1 mod 𝔪` and `x ^ m = 1` in a local `ℤ_ℓ`-algebra, then already
+`x ^ ℓ^{v_ℓ(m)} = 1`.
+
+**THIS IS THE SECOND HALF OF THE EXPONENT, and it is what makes the first half
+usable.** The Frobenius relation gives `x^{N w − 1} = 1`; on its own that is a
+bound by `N w − 1`, which is not an `ℓ`-power. Splitting `m = ℓ^{v_ℓ m} · m'` and
+killing the prime-to-`ℓ` part is what turns it into the clause the Taylor–Wiles
+level ideal asks for.
+
+`m'` is a unit of `R` for the cheapest possible reason: it is a unit of `ℤ_ℓ`
+(being prime to `ℓ`), and units map to units. **No hypothesis on the residue
+characteristic of `R` is needed**, which matters because `HilbertAuxDeformationDatum`
+posits `Algebra ℤ_[ℓ] R` and nothing about `char k`. -/
+theorem pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal
+    {ℓ : ℕ} [Fact ℓ.Prime] {R : Type*} [CommRing R] [IsLocalRing R]
+    [Algebra ℤ_[ℓ] R] {m : ℕ} (hm : m ≠ 0) {x : R}
+    (h1 : x - 1 ∈ IsLocalRing.maximalIdeal R) (hx : x ^ m = 1) :
+    x ^ ℓ ^ (padicValNat ℓ m) = 1 := by
+  obtain ⟨m', hm'⟩ : ℓ ^ (padicValNat ℓ m) ∣ m := pow_padicValNat_dvd
+  have hnd : ¬ ℓ ∣ m' := by
+    intro hdv
+    obtain ⟨c, hc⟩ := hdv
+    have hdvd : ℓ ^ (padicValNat ℓ m + 1) ∣ m := by
+      refine ⟨c, ?_⟩
+      calc m = ℓ ^ padicValNat ℓ m * m' := hm'
+        _ = ℓ ^ padicValNat ℓ m * (ℓ * c) := by rw [hc]
+        _ = ℓ ^ (padicValNat ℓ m + 1) * c := by rw [pow_succ]; ring
+    have := (padicValNat_dvd_iff_le hm).mp hdvd
+    omega
+  set y := x ^ ℓ ^ (padicValNat ℓ m) with hy
+  have hy1 : y ^ m' = 1 := by rw [hy, ← pow_mul, ← hm']; exact hx
+  have hysub : y - 1 ∈ IsLocalRing.maximalIdeal R := by
+    obtain ⟨c, hc⟩ : (x - 1) ∣ y - 1 := by
+      rw [hy]
+      simpa using sub_dvd_pow_sub_pow x 1 (ℓ ^ (padicValNat ℓ m))
+    rw [hc]
+    exact Ideal.mul_mem_right _ _ h1
+  have hunit : IsUnit ((m' : ℕ) : R) := by
+    have hu : IsUnit ((m' : ℕ) : ℤ_[ℓ]) := by
+      rw [PadicInt.isUnit_iff, PadicInt.norm_natCast_eq_one_iff]
+      exact (Nat.Prime.coprime_iff_not_dvd (Fact.out)).mpr hnd
+    have := hu.map (algebraMap ℤ_[ℓ] R)
+    simpa using this
+  exact eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal_of_isUnit hunit hy1 hysub
+
+/-- **The diamond OPERATORS, PINNED TO THEIR CONSTRUCTION** (LEAF — new
+2026-07-31, the residue of `exists_hilbertAuxDiamondGenerators` immediately below
+once the exponent arithmetic is discharged; that declaration is now PROVEN GLUE
+over this one).
+
+The conclusion is the old one with `t` no longer merely CONSTRAINED but PINNED:
+alongside `t` the leaf hands back, at each `i`, the place `w i ∈ Q` it belongs
+to, the character `χ i` of the decomposition group at `w i` that the split-torus
+clause supplies, and the inertia element `σ i` whose value it is —
+
+    1 + t i  =  χ_i (σ_i) ,
+
+together with the fact that `χ i` kills WILD inertia. That last clause is what
+makes `t` an honest diamond rather than an arbitrary element of `ker toRuniv`,
+and it is exactly the strengthening the docstring of
+`exists_hilbertAuxDiamondQuotient_of_exponents` below asks for ("require
+`diamond` to factor through the tame characters ... exactly as `ex` is now pinned
+by construction rather than by a clause"), taken here at the level of `t` rather
+than of `diamond`.
+
+# WHAT MOVED OUT OF THIS LEAF, AND WHY THE CUT IS A REPAIR
+
+The old first clause `(1 + t i) ^ ℓ ^ ex i = 1` is GONE from the leaf and is now
+proven in the glue below. It was the clause whose whole content — recorded on
+`exists_hilbertAuxDiamondQuotient_of_exponents` since 2026-07-30 as the ONE thing
+missing from the tame-character interface — is
+
+* the Frobenius relation `Fr σ Fr⁻¹ ≡ σ^{N w}` mod wild inertia
+  (`exists_frobLift_conj_pow_mem_wildInertiaGroup` above, the new leaf), and
+* the triviality of the `ℓ'`-torsion of `1 + 𝔪`
+  (`pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal` above, PROVEN).
+
+Neither mentions a deformation datum, a Hecke algebra, a modular form, or `Q`.
+Leaving them inside this leaf meant that nobody could work on the exponent
+without first reconstructing the entire raised-level deformation problem, and
+that the exponent could not be got right or wrong independently of the control
+theorem. **The frontier count goes 1 → 2 and that is not the measure**: what is
+left here is the CONSTRUCTION of the characters out of `isSplitTorusAt` plus the
+control identification, and what left is a five-line statement about the local
+Galois group of a number field that a prover can discharge without opening this
+file. Judge the cut by what is LEFT (CLAUDE.md, "A DECOMPOSITION'S GLUE IS
+LEVEL-GENERIC BY CONSTRUCTION").
+
+# `h𝒟Qt` — THE FALSITY REPAIR, TAKEN
+
+The 2026-07-31 FALSITY AUDIT reproduced on `exists_hilbertAuxDiamondGenerators`
+below said the control clause is FALSE with `h𝒟Q : 𝒟Q.IsWeaklyUniversal` as the
+only hypothesis on `𝒟Q`, refuted by the power-series inflation
+`𝒟Q.R⟦y_1, …, y_N⟧`, and that the repair is to transport the 2026-07-26
+`IsTraceGenerated` repair to `HilbertAuxDeformationDatum`. **That transport had
+ALREADY LANDED** — `HilbertAuxDeformationDatum.IsTraceGenerated` is defined
+above and `exists_hilbertAuxDiamondQuotient_of_exponents` below already takes
+`h𝒟Qt` — and the 2026-07-31 cut that produced
+`exists_hilbertAuxDiamondGenerators` simply DROPPED the hypothesis its own caller
+was holding. Both this leaf and the glue below now carry it, and the call site
+passes the `h𝒟Qt` it already had, so no statement above changed and the audit's
+witness is killed: the variables `y_i` are not in the topological closure of the
+subring generated by the traces. This is CLAUDE.md's standing observation that
+*the missing hypothesis is usually already in the caller's hand*.
+
+# WHY THE CHARACTER IS A BARE `MonoidHom` INTO `𝒟Q.Rˣ`
+
+`isSplitTorusAt` produces a `GaloisRep (w.adicCompletion F) 𝒟Q.R 𝒟Q.R`, i.e. a
+homomorphism into `Module.End 𝒟Q.R 𝒟Q.R`. Extracting from it a homomorphism into
+the UNITS is a two-line exercise (a Galois representation lands in
+automorphisms), and doing it inside the leaf rather than in the statement is what
+keeps the consumer free of `Module.End` bookkeeping. The consumer needs exactly
+two things of `χ i` — that it is multiplicative on a COMMUTATIVE target and that
+it kills `P_{w i}` — and both are visible in this shape.
+
+**The wild-kernel clause is derivable, not an extra burden — with ONE step that
+should be checked before it is believed.** `w ∈ Q` has
+`((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal` (first conjunct of `hQ`), so `P_w` is pro-`p` for
+`p ≠ ℓ` and `exists_pow_eq_of_mem_wildInertiaGroup` in `ArtinConductor.lean`
+makes every element of `P_w` an `ℓ^e`-th power in `P_w`, for EVERY `e`; `ρbar` is
+unramified at `Q`, so `χ_w|_{I_w}` is residually trivial and takes values in
+`1 + 𝔪`. The clause is then "an element of `1 + 𝔪_{R_Q}` that is an `ℓ^e`-th
+power for every `e` is `1`", which is this file's own reading of the
+TAME-CHARACTER section on `exists_hilbertAuxDiamondQuotient_of_exponents` below
+("`1 + 𝔪`, a pro-`ℓ` group").
+
+**THE STEP TO CHECK** is that `1 + 𝔪_{R_Q}` really is pro-`ℓ`, which needs
+`(ℓ : R_Q) ∈ 𝔪` — i.e. the RESIDUE CHARACTERISTIC of `𝒟Q.R` is `ℓ`. Separatedness
+is free (`𝒟Q.isAdicComplete`), and with `ℓ ∈ 𝔪` one gets
+`(1 + m)^{ℓ^e} − 1 ∈ 𝔪^{e+1}`, so the intersection is trivial. But
+`HilbertAuxDeformationDatum` posits only `Algebra ℤ_[ℓ] R` and `π : R →+* k`
+surjective; it does NOT state `CharP k ℓ`, and this file's `1 + 𝔪` sentence has
+been carried in prose since 2026-07-30 without that being checked. If `char k = ℓ`
+turns out not to be derivable from the structure and from `ρbar` being an
+`ℓ`-adic residual representation, then the honest repair is a field or a
+hypothesis, NOT a weaker clause here — and it should be recorded as its own
+FALSITY AUDIT on the structure. Note the sibling
+`pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal` above deliberately does
+NOT need this: it kills the `ℓ'`-part using only that `m'` is a unit of `ℤ_ℓ`.
+
+# FAITHFULNESS
+
+The `ex`-clause `ex i = padicValNat ℓ (N (w i) − 1)` is FREE for the prover: it is
+`hexpin` read at `w := wOf`, which is the enumeration `hexpin` itself hands over.
+It is stated here rather than left to be re-derived because the glue below reads
+`ex i` at the prover's OWN `w i`, and `hexpin`'s witness is existential, so
+without this clause the two enumerations need not agree.
+
+References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Wiles, ibid. ch. 3;
+Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
+theorem exists_hilbertAuxDiamondGeneratorsPinned
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
+    (h𝒟e : 𝒟.toAuxEmpty.IsWeaklyUniversal)
+    (q : ℕ)
+    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
+    (h𝒟Q : 𝒟Q.IsWeaklyUniversal) (h𝒟Qt : 𝒟Q.IsTraceGenerated)
+    (toRuniv : 𝒟Q.R →+* 𝒟.R)
+    (halg : toRuniv.comp (algebraMap ℤ_[ℓ] 𝒟Q.R) = algebraMap ℤ_[ℓ] 𝒟.R)
+    (hπ : 𝒟.π.comp toRuniv = 𝒟Q.π)
+    (hρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map toRuniv = (𝒟.ρ g).charpoly)
+    (ex : Fin q → ℕ) (hex : ∀ i, n ≤ ex i)
+    (hexpin : IsHilbertTaylorWilesExponents ℓ F Q ex) :
+    ∃ (t : Fin q → 𝒟Q.R) (w : Fin q → HeightOneSpectrum (𝓞 F))
+      (χ : ∀ i, Γ ((w i).adicCompletion F) →* (𝒟Q.R)ˣ)
+      (σ : ∀ i, localInertiaGroup (w i)),
+      (∀ i, w i ∈ Q) ∧
+      (∀ i, ex i = padicValNat ℓ (Nat.card (𝓞 F ⧸ (w i).asIdeal) - 1)) ∧
+      (∀ i, ∀ x ∈ wildInertiaGroup (w i), χ i x = 1) ∧
+      (∀ i, ((χ i (σ i) : (𝒟Q.R)ˣ) : 𝒟Q.R) = 1 + t i) ∧
+      RingHom.ker toRuniv = Ideal.span (Set.range t) :=
+  sorry
+
 /-- **The diamond OPERATORS themselves: `q` elements of `R_Q` generating
-`ker toRuniv`, each of `ℓ`-power order dividing `ℓ^{ex i}`** (LEAF — new
-2026-07-31, the ARITHMETIC CORE of
+`ker toRuniv`, each of `ℓ`-power order dividing `ℓ^{ex i}`** (**PROVEN GLUE since
+2026-07-31 (second pass)** over `exists_hilbertAuxDiamondGeneratorsPinned`
+immediately above and `exists_frobLift_conj_pow_mem_wildInertiaGroup` above that;
+formerly the ARITHMETIC CORE of
 `exists_hilbertAuxDiamondQuotient_of_exponents` immediately below, which is now
 PROVEN GLUE over it).
 
@@ -33493,58 +33875,59 @@ because `𝒟.R` is nontrivial, being local), hence contained in `𝔪_{R_Q}` by
 `IsLocalRing.le_maximalIdeal`. The glue below derives it in four lines, so this
 statement deliberately does NOT carry `∀ i, t i ∈ 𝔪_{R_Q}` as a clause.
 
-# WHAT IS STILL OPEN HERE — read the TAME-CHARACTER section on the consumer
+# WHAT IS STILL OPEN, AND WHERE IT NOW LIVES (rewritten 2026-07-31, second pass)
 
-Unchanged, and it is the whole point of the cut: everything the consumer's
-docstring says about `diamond` is now said about `t`. In particular the
-2026-07-30 finding stands verbatim — the tame-character interface
-(`tameCharacter`, `wildInertiaGroup`, `exists_pow_eq_of_mem_wildInertiaGroup`,
-`exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker`) ALREADY EXISTS,
-sorry-free, in `Deformations/RepresentationTheory/ArtinConductor.lean` and is
-reachable from here through a fully `public` chain, and the ONE genuinely
-missing ingredient is the **Frobenius relation** `θ(F σ F⁻¹) = θ(σ)^{N w}` on
-the tame character. That relation is precisely what produces the exponent
-`ℓ^{v_ℓ(N w − 1)}` of the FIRST clause here, and nothing else in the hypothesis
-package can: inertia alone bounds the order of `χ_w(σ_w)` by *some* power of
-`ℓ`, because the `ℓ`-part of the full tame quotient of `I_w` is `ℤ_ℓ`, not
-`ℤ/ℓ^{ex}`.
+Nothing is open HERE any more. The first clause is proven below from the two
+declarations of the FROBENIUS RELATION block above; the second is
+`exists_hilbertAuxDiamondGeneratorsPinned`'s, verbatim. The 2026-07-30 finding
+that the tame-character interface (`tameCharacter`, `wildInertiaGroup`,
+`exists_pow_eq_of_mem_wildInertiaGroup`,
+`exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker`) ALREADY EXISTS
+sorry-free in `Deformations/RepresentationTheory/ArtinConductor.lean`, reachable
+through a fully `public` chain, stands; and the ONE genuinely missing ingredient
+it identified — the Frobenius relation — is now the named leaf
+`exists_frobLift_conj_pow_mem_wildInertiaGroup` above, stated in the
+character-free group-theoretic form, with its own faithfulness audit.
 
-So the first clause is where `hQ` (the congruence `N w ≡ 1 mod ℓ^n` and the
-distinct-eigenvalue clause), `𝒟Q.isHilbertRaisedLevelHardlyRamified` (the
-split-torus clause, which splits `ρ|_{G_{F_w}}` and not merely `ρ|_{I_w}` —
-that is what lets Frobenius conjugation be applied at all) and `hexpin` (which
-pins `ex i` to `v_ℓ(N (wOf i) − 1)`) are consumed; and the second clause is
-where `h𝒟Q`, `h𝒟e`, `h𝒟w`, `h𝒟t` and the three compatibilities `halg`, `hπ`,
-`hρ` of `toRuniv` are consumed, since they are what identify `toRuniv` as the
-classifying map rather than an arbitrary surjection.
+So the obligations are now split as follows, and they no longer overlap:
 
-# FALSITY AUDIT (2026-07-31): THE SECOND CLAUSE IS **FALSE AS STATED**
+* `exists_frobLift_conj_pow_mem_wildInertiaGroup` — pure local Galois theory of
+  a number field; mentions no deformation datum, no `Q`, no `ℓ`;
+* `exists_hilbertAuxDiamondGeneratorsPinned` — the CONSTRUCTION of the diamond
+  characters out of `𝒟Q.isHilbertRaisedLevelHardlyRamified.isSplitTorusAt` (with
+  `hQ`'s distinct-eigenvalue clause and `𝒟Q.resid` supplying the two weaknesses
+  of that clause recorded on the consumer) together with the CONTROL
+  identification of `ker toRuniv`, where `h𝒟Q`, `h𝒟Qt`, `h𝒟e`, `h𝒟w`, `h𝒟t` and
+  the three compatibilities `halg`, `hπ`, `hρ` are consumed.
 
-Inherited from the statement this leaf was cut out of, and not created by the
-cut — the pre-cut `exists_hilbertAuxDiamondQuotient_of_exponents` is refuted by
-the same witness. **The full audit, with the counterexample, the repair and the
-one check that would overturn it, is on
-`exists_hilbertAuxCotangentSpanningFamily` below; read it before working here.**
-In one line: `h𝒟Q : 𝒟Q.IsWeaklyUniversal` is the only hypothesis constraining
-`𝒟Q.R`, weak universality is not rigid, and `𝒟Q.R⟦y_1, …, y_N⟧` is a weakly
-universal raised-level datum for which `RingHom.ker toRuniv` contains
-`(y_1, …, y_N)` and therefore needs more than `q` generators. The 2026-07-26
-bottom-level repair (`HilbertDeformationDatum.IsTraceGenerated`) was never
-transported to `HilbertAuxDeformationDatum`; transporting it is the fix, and it
-is queued as one owned cut-level task.
+# FALSITY AUDIT (2026-07-31): THE SECOND CLAUSE WAS **FALSE AS STATED** — REPAIRED
 
-The FIRST clause `(1 + t i) ^ ℓ ^ ex i = 1` is unaffected — it constrains a `t`
-that is produced, not the ring — so the local class field theory described
-above is exactly what survives the repair, and a prover may work on it now.
+**Repaired the same day, second pass, by adding `h𝒟Qt : 𝒟Q.IsTraceGenerated`.**
+The audit is correct and is retained because it is the reason the hypothesis is
+there. In one line: with `h𝒟Q : 𝒟Q.IsWeaklyUniversal` as the ONLY hypothesis
+constraining `𝒟Q.R`, weak universality is not rigid, and `𝒟Q.R⟦y_1, …, y_N⟧` is
+a weakly universal raised-level datum for which `RingHom.ker toRuniv` contains
+`(y_1, …, y_N)` and therefore needs more than `q` generators. The full audit,
+with the counterexample and the one check that would overturn it, is on
+`exists_hilbertAuxCotangentSpanningFamily` below.
 
-**A PROVER SHOULD ATTACK THE TWO CLAUSES SEPARATELY AND MAY CUT AGAIN.** They
-share only `t`, and `t` is produced by the split-torus clause; a further cut
-into "produce `t` with clause 1" and "that same `t` satisfies clause 2" is
-possible but is NOT safe in the naive form, for the reason recorded at length
-on the consumer: a `t` constrained only by clause 2 may be junk, so any second
-cut must pin `t` to the CONSTRUCTION (`t i = χ_{w_i}(σ_{w_i}) − 1` for the
-tame generator `σ_{w_i}`) rather than merely constrain it. That is the same
-repair `IsHilbertTaylorWilesExponents` made for `ex`.
+**The repair was ALREADY IN THE TREE and this leaf was discarding it.**
+`HilbertAuxDeformationDatum.IsTraceGenerated` was transported to the raised level
+on 2026-07-30 and `exists_hilbertAuxDiamondQuotient_of_exponents` below — the
+sole call site — has taken `h𝒟Qt` ever since. The 2026-07-31 cut that produced
+this declaration dropped it. Adding it back changes no statement above and no
+call site's hypothesis list, because the caller was already holding it; it kills
+the inflation witness exactly as at base level, since the variables `y_i` are not
+in the topological closure of the subring generated by the traces (all of which
+lie in the image of `𝒟Q.R`).
+
+**Re-run of the earlier audits after the restatement** (CLAUDE.md, "TWO
+INDIVIDUALLY-CORRECT REPAIRS CAN BE FATAL TOGETHER"): this statement has now been
+restated twice — once when `ex` became an input, and again here. Adding `h𝒟Qt`
+only WEAKENS the statement (one more hypothesis, same conclusion), so any
+counterexample to the new form is a counterexample to the old, and the `ex` audit
+transfers verbatim. The FIRST clause is untouched by both restatements: it
+constrains a `t` that is produced, not the ring.
 
 References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Wiles, ibid. ch. 3;
 Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
@@ -33564,7 +33947,7 @@ theorem exists_hilbertAuxDiamondGenerators
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
     (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
-    (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (h𝒟Q : 𝒟Q.IsWeaklyUniversal) (h𝒟Qt : 𝒟Q.IsTraceGenerated)
     (toRuniv : 𝒟Q.R →+* 𝒟.R)
     (halg : toRuniv.comp (algebraMap ℤ_[ℓ] 𝒟Q.R) = algebraMap ℤ_[ℓ] 𝒟.R)
     (hπ : 𝒟.π.comp toRuniv = 𝒟Q.π)
@@ -33573,8 +33956,37 @@ theorem exists_hilbertAuxDiamondGenerators
     (hexpin : IsHilbertTaylorWilesExponents ℓ F Q ex) :
     ∃ t : Fin q → 𝒟Q.R,
       (∀ i, (1 + t i) ^ ℓ ^ ex i = 1) ∧
-      RingHom.ker toRuniv = Ideal.span (Set.range t) :=
-  sorry
+      RingHom.ker toRuniv = Ideal.span (Set.range t) := by
+  obtain ⟨t, w, χ, σ, hwQ, hexeq, hwild, hval, hker⟩ :=
+    exists_hilbertAuxDiamondGeneratorsPinned ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w h𝒟t h𝒟e
+      q n Q hQcard hQ 𝒟Q h𝒟Q h𝒟Qt toRuniv halg hπ hρ ex hex hexpin
+  refine ⟨t, ?_, hker⟩
+  intro i
+  -- `ker toRuniv` is a PROPER ideal of the local ring `R_Q` (proper because
+  -- `𝒟.R` is nontrivial, being local), hence inside `𝔪`; so `t i ∈ 𝔪`.
+  have hkerne : RingHom.ker toRuniv ≠ ⊤ := by
+    intro h
+    have h1 : (1 : 𝒟Q.R) ∈ RingHom.ker toRuniv := h ▸ Submodule.mem_top
+    rw [RingHom.mem_ker, map_one] at h1
+    exact one_ne_zero h1
+  have hti : t i ∈ IsLocalRing.maximalIdeal 𝒟Q.R := by
+    refine IsLocalRing.le_maximalIdeal hkerne ?_
+    rw [hker]
+    exact Ideal.subset_span ⟨i, rfl⟩
+  -- The FROBENIUS RELATION, transported through the character `χ i`: the
+  -- diamond is killed by `N (w i) − 1`.
+  have hu : (χ i (σ i)) ^ (Nat.card (𝓞 F ⧸ (w i).asIdeal) - 1) = 1 :=
+    pow_natCard_residue_sub_one_eq_one_of_forall_mem_wildInertiaGroup (w i) (χ i)
+      (hwild i) (σ i)
+  have h1 : (1 + t i) ^ (Nat.card (𝓞 F ⧸ (w i).asIdeal) - 1) = 1 := by
+    have := congrArg (fun u : (𝒟Q.R)ˣ => (u : 𝒟Q.R)) hu
+    simpa [hval i] using this
+  -- … and the `ℓ'`-part of `1 + 𝔪` is trivial, which is the rest of the exponent.
+  have hm : Nat.card (𝓞 F ⧸ (w i).asIdeal) - 1 ≠ 0 := by
+    have := one_lt_natCard_residue (w i); omega
+  have hsub : (1 + t i) - 1 ∈ IsLocalRing.maximalIdeal 𝒟Q.R := by simpa using hti
+  rw [hexeq i]
+  exact pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal hm hsub h1
 
 /-- **The diamonds and the control identification, at a GIVEN control map AND a
 GIVEN exponent vector** (**PROVEN GLUE since 2026-07-31** over
@@ -33594,14 +34006,17 @@ so those identities are `Ideal.map_span` and `Ideal.span_le`. The substitution
 itself is `exists_mvPowerSeries_ringHom_of_isAdicComplete` far above. See the
 new leaf's docstring for why `∀ i, t i ∈ 𝔪_{R_Q}` need not be assumed.
 
-**THIS STATEMENT IS FALSE AS STATED** — see the FALSITY AUDIT on
-`exists_hilbertAuxDiamondGenerators` immediately above and the full version on
-`exists_hilbertAuxCotangentSpanningFamily` below. The glue is unaffected (it is
-an honest implication from the leaf) and so is the leaf's FIRST clause; what is
-refuted is the control clause, by a `𝒟Q.R⟦y⟧`-inflation of `𝒟Q` that weak
-universality does not exclude. The repair is to transport the 2026-07-26
-bottom-level `IsTraceGenerated` repair to `HilbertAuxDeformationDatum` and
-thread it, which is queued as one owned task.
+**A NOTE HERE SAID "THIS STATEMENT IS FALSE AS STATED" — CORRECTED 2026-07-31
+(second pass).** It was written when `exists_hilbertAuxDiamondGenerators` above
+lacked `h𝒟Qt`, and it was right about THAT statement; it was never right about
+this one, which has carried `h𝒟Qt : 𝒟Q.IsTraceGenerated` since the 2026-07-30
+repair recorded in the FALSITY AUDIT below. The leaf above now carries it too —
+the 2026-07-31 cut had simply dropped a hypothesis this declaration was already
+holding and passing nowhere — so the `𝒟Q.R⟦y⟧`-inflation witness is excluded at
+both levels and no transport remains to be queued. The full audit is on
+`exists_hilbertAuxCotangentSpanningFamily` below, which was checked the same day
+and already carries `h𝒟Qt` itself, so the raised-level transport is now complete
+across all three declarations the audit named.
 
 Everything below this paragraph is retained from the pre-cut docstring because
 it is the mathematics of the new leaf, not of this glue; read it there.
@@ -33743,7 +34158,7 @@ theorem exists_hilbertAuxDiamondQuotient_of_exponents
   classical
   obtain ⟨t, htord, hker⟩ :=
     exists_hilbertAuxDiamondGenerators ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w h𝒟t h𝒟e q n Q
-      hQcard hQ 𝒟Q h𝒟Q toRuniv halg hπ hρ ex hex hexpin
+      hQcard hQ 𝒟Q h𝒟Q h𝒟Qt toRuniv halg hπ hρ ex hex hexpin
   haveI := 𝒟Q.isAdicComplete
   -- `ker toRuniv` is a PROPER ideal of the local ring `R_Q`, hence inside `𝔪`;
   -- this is what supplies the substitution lemma's hypothesis on `t`.
@@ -33874,6 +34289,22 @@ returns one docstring mention and no statement — and it is the ONE thing a
 successor must add. It is a bounded, self-contained piece of local theory over a
 sorry-free base, NOT the multi-module tame-ramification project the withdrawn
 note implied. **Redirect accordingly: do not rebuild `tameCharacter`.**
+
+**DONE 2026-07-31 (second pass), AND STATED CHARACTER-FREE: the relation is now
+`exists_frobLift_conj_pow_mem_wildInertiaGroup`**, ~40 lines above
+`exists_hilbertAuxDiamondGenerators`, in the group-theoretic form
+`∃ Fr, ∀ σ ∈ I_v, Fr σ Fr⁻¹ (σ^{Nv})⁻¹ ∈ P_v` rather than as an identity between
+tame characters. The `θ`-form written above is the classical one and is the wrong
+shape for this file: it forces the consumer to identify ITS character with a
+`tameCharacter v hn hX0 hXn` for some `n` and some `X`, and nothing in the
+hypothesis package supplies that identification. The group-theoretic form needs
+no character at all — apply any homomorphism into a COMMUTATIVE group that kills
+`P_v` and `χ(σ)^{Nv−1} = 1` falls out in one line
+(`pow_natCard_residue_sub_one_eq_one_of_forall_mem_wildInertiaGroup`, PROVEN).
+The `ℓ'`-part of the argument sketched above is likewise now proven
+(`pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal`), so the whole
+`𝔟_ex ≤ ker diamond` chain is glue and only the CONSTRUCTION of the characters
+remains open, in `exists_hilbertAuxDiamondGeneratorsPinned`.
 
 No cohomology is used here, and `coeff` is deliberately absent: the coefficient
 ring belongs to the generator bound, not to the diamonds.
@@ -35640,9 +36071,13 @@ statement about which map `toRuniv` is, so it can only be proven against a
   quotient, and `ex i` is the `ℓ`-valuation of `N w_i − 1` (that is `hexpin`),
   so `Δ_{w_i} ≅ ℤ/ℓ^{ex i}` is its `ℓ`-Sylow. The tame-character interface
   exists and is sorry-free — see the TAME-CHARACTER section of
-  `exists_hilbertAuxDiamondQuotient_of_exponents` above, which also names the
-  one genuinely missing ingredient (the Frobenius relation
-  `θ(F σ F⁻¹) = θ(σ)^{Nw}`). `hker` is the control theorem: killing the
+  `exists_hilbertAuxDiamondQuotient_of_exponents` above. The one ingredient that
+  section named as genuinely missing, the Frobenius relation, was ADDED
+  2026-07-31 as `exists_frobLift_conj_pow_mem_wildInertiaGroup` (group-theoretic
+  form, not the `θ`-identity), and the exponent bound `𝔟_ex ≤ ker diamond` is now
+  proven glue over it; what is still open in that direction is only the
+  CONSTRUCTION of the characters, in `exists_hilbertAuxDiamondGeneratorsPinned`.
+  `hker` is the control theorem: killing the
   diamonds is killing the level raising, so `R_Q ⧸ 𝔫 ≅ R_∅`.
 * **Fujiwara's form of the Taylor–Wiles freeness lemma** — the module `M`, its
   `R_Q`-action, its `Λ`-action through `diamond`, and the coordinate
@@ -36065,12 +36500,16 @@ than repaired.** The tame-character development exists, sorry-free, in
 (`tameCharacter`, `wildInertiaGroup`, `exists_pow_eq_of_mem_wildInertiaGroup`,
 `exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker`) and is reachable in THIS
 file through a fully `public` import chain — verified by compilation. The full
-correction, with the derivation and with the one ingredient that genuinely IS
-missing (the Frobenius relation `θ(FσF⁻¹) = θ(σ)^{Nw}`, which is where the
+correction, with the derivation and with the one ingredient that genuinely WAS
+missing (the Frobenius relation, which is where the
 exponent `ℓ^{v_ℓ(Nw−1)}` comes from — inertia alone cannot bound `χ_w|_{I_w}`,
 since the `ℓ`-part of the tame quotient is `ℤ_ℓ`), is in the TAME-CHARACTER
 section of `exists_hilbertAuxDiamondQuotient_of_exponents` above. Read it before
-concluding this seam is expensive to close.
+concluding this seam is expensive to close. **That relation was ADDED 2026-07-31
+as `exists_frobLift_conj_pow_mem_wildInertiaGroup`** — in the group-theoretic
+form `Fr σ Fr⁻¹ ≡ σ^{Nw}` mod wild inertia rather than as the `θ`-identity, so
+that no consumer has to identify its own character with a `tameCharacter` — and
+the exponent bound is now proven glue over it.
 
 Until that relation is added the hazard would stay as recorded here — an open
 check, not a refutation, since nothing in `h𝒟Q` and `hQ` has been shown to
@@ -36177,10 +36616,12 @@ are all in this one leaf because they are all statements about `diamond`:
    the `ℓ`-valuation of `N w_i − 1`, so `Δ_{w_i} ≅ ℤ/ℓ^{ex i}` is its
    `ℓ`-Sylow. The tame-character interface this needs EXISTS and is sorry-free —
    see the TAME-CHARACTER section of
-   `exists_hilbertAuxDiamondQuotient_of_exponents` above, which also names the
-   one genuinely missing ingredient (the Frobenius relation
-   `θ(F σ F⁻¹) = θ(σ)^{Nw}`, which is where the exponent `ℓ^{v_ℓ(Nw − 1)}` comes
-   from at all — inertia alone cannot bound `χ_w|_{I_w}`). `hker` is the control
+   `exists_hilbertAuxDiamondQuotient_of_exponents` above. The one ingredient it
+   named as genuinely missing — the Frobenius relation, which is where the
+   exponent `ℓ^{v_ℓ(Nw − 1)}` comes from at all, inertia alone being unable to
+   bound `χ_w|_{I_w}` — was ADDED 2026-07-31 as
+   `exists_frobLift_conj_pow_mem_wildInertiaGroup`, and the exponent bound is now
+   proven glue over it. `hker` is the control
    theorem: killing the diamonds is killing the level raising, so
    `R_Q ⧸ 𝔫 ≅ R_∅`.
 1. **Fujiwara's form of the Taylor–Wiles freeness lemma** — the module `M`
