@@ -4914,6 +4914,21 @@ target's own `open`/`namespace` header (and remember `^open ` greps hit prose in
 project's docstrings) and reproduce it exactly; then, if you do need `Limits`, add
 `open Limits in` to your declaration — ABOVE the doc comment.
 
+**THE ONE THING A SCRATCH STRUCTURALLY CANNOT CHECK IS DECLARATION ORDER**
+(2026-07-31, `flt-lean-397`). The scratch `public import`s the whole target module,
+so it sees EVERY declaration in it; the paste site sees only what is above it. A
+block that compiles in 6 seconds in the scratch can fail in the file for no reason
+but position. That bit here: the natural proof of the 6.6.2 assembly in `X0.lean`
+wants `exists_fullLevelStructure_baseChange`, which is PROVEN — 1500 lines BELOW
+the insertion point. The scratch cannot notice.
+
+So before pasting, run one `grep -n` per non-local name and compare against your
+insertion line. It is mechanical and it is not optional. And when a name you need
+really is below you, the cheap repair is usually to make it a HYPOTHESIS of the
+sub-leaf you are opening rather than to hoist a chain of declarations through a
+file the merge worker is concurrently reconciling — say so in the leaf's docstring,
+with the exact deletion a future hoister should make.
+
 **AND THE FIRST THING A SCRATCH WILL TELL YOU IS `unknown identifier` — that is
 almost never a missing import** (2026-07-31, cost one cycle). A scratch that
 `public import`s a giant `module` file and names one of its declarations gets
