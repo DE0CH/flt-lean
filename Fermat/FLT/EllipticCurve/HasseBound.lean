@@ -261,6 +261,15 @@ public import Fermat.FLT.EllipticCurve.Isogeny
 public import Fermat.FLT.EllipticCurve.TorsionCharP
 public import Mathlib.NumberTheory.Pell
 public import Fermat.FLT.EllipticCurve.DifferentialCharacter
+-- `det_frobeniusTorsionEnd_of_coprime` (`det F = q` on `Wbar[N]` for every `N`
+-- coprime to `q`) and `nonempty_basis_nTorsion` (`Wbar[N]` is free of rank two
+-- over `ZMod N`): the COMPOSITE-level Weil-pairing determinant, which is what
+-- the `ℓ`-adic half of `natCard_ker_degreeFormEnd_abs` below needs and which
+-- `WeilPairing.det_frobeniusTorsionEnd` gives only at PRIME level.  That block
+-- used to live in `FreyCurve/IsogenySignature.lean`, which is DOWNSTREAM of this
+-- module, so it was unreachable from here; it was moved VERBATIM on 2026-07-31.
+-- It adds NO module to this file's cone that `WeilPairing` did not already bring.
+public import Fermat.FLT.EllipticCurve.WeilPairingComposite
 
 @[expose] public section
 
