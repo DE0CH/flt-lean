@@ -4997,13 +4997,16 @@ is the assembly below. Backward: if `n = m³` then `γ₂(τ₀)` is the REAL nu
 `x³ − m³ = (x − m)(x² + xm + m²)` and `4(x² + xm + m²) = (2x + m)² + 3m²`, so `x = m ∈ ℚ`.
 The audits in the section above therefore transfer verbatim.
 
-AN AVAILABLE STRENGTHENING, deliberately NOT taken here, and the reason. The multiplier could
-be packaged as a `MonoidHom SL(2, ℤ) → ℂˣ` landing in `μ₃`, which is what identifies
-`ker` as the canonical index-`3` subgroup. That needs uniqueness of the constant, i.e. one
-point where `γ₂ ≠ 0`; `etaWeightFour_tendsto_one` (`F → 1` at `i∞`) supplies one in a few
-lines, since `η` never vanishes. It was left out because the existential form is what the
-assembly consumes and every extra unconsumed clause is a floating-code hazard; the upgrade is
-queued instead. -/
+THE MULTIPLIER IS A HOMOMORPHISM, and that is also proven here
+(`exists_monoidHom_gammaTwo_multiplier`): the constant is UNIQUE because `γ₂` does not vanish
+identically (`exists_gammaTwo_ne_zero`, from `etaWeightFour_tendsto_one` and `η ≠ 0`), and
+uniqueness turns the per-`γ` existential into a `MonoidHom χ : SL(2, ℤ) → ℂ` landing in `μ₃`.
+That is the form the leaf's binders take, because it is the one that identifies `ker χ` as a
+subgroup of index dividing `3` — "`γ₂` is a modular function of level `3`" in the honest sense
+rather than one whose translates merely differ by cube roots of unity one `γ` at a time. What
+is NOT proven, because nothing consumes it, is that the index is exactly `3`, i.e. that
+`χ(T) = ζ₂₄⁻⁸` is a PRIMITIVE cube root of unity; that is one `Complex.exp` computation
+whenever it is wanted. -/
 
 section GammaTwoMultiplier
 
@@ -5074,15 +5077,61 @@ theorem exists_cubeRootOne_gammaTwo_smul (γ : SL(2, ℤ)) :
       rw [smul_smul, mul_inv_cancel, one_smul] at hz
       rw [hz, inv_mul_cancel_left₀ hc0]
 
+/-- `γ₂` does not vanish identically. Proven from `F → 1` at the cusp
+(`etaWeightFour_tendsto_one`, with `F = E₄` by `etaWeightFour_eq_E₄`) together with `η ≠ 0`;
+`atImInfty` is `NeBot`, so an eventual non-vanishing produces an actual point.
+
+This is what makes the multiplier of `exists_cubeRootOne_gammaTwo_smul` UNIQUE, hence
+multiplicative — see `exists_monoidHom_gammaTwo_multiplier`. -/
+lemma exists_gammaTwo_ne_zero : ∃ z : UpperHalfPlane, gammaTwo z ≠ 0 := by
+  have hev : ∀ᶠ z in UpperHalfPlane.atImInfty, etaWeightFour z ≠ 0 :=
+    etaWeightFour_tendsto_one.eventually_ne one_ne_zero
+  obtain ⟨z, hz⟩ := hev.exists
+  refine ⟨z, ?_⟩
+  rw [gammaTwo_eq_E₄_div_eta_pow_eight, ← etaWeightFour_eq_E₄]
+  exact div_ne_zero hz (pow_ne_zero _ (ModularForm.eta_ne_zero z.2))
+
+/-- **THE LEVEL-`3` STRUCTURE OF `γ₂`, IN ITS SHARP FORM — PROVEN.** The multiplier of
+`exists_cubeRootOne_gammaTwo_smul` is a MONOID HOMOMORPHISM `χ : SL₂(ℤ) → ℂ` landing in `μ₃`.
+
+That is the statement that identifies the level: `ker χ` is a subgroup of index dividing `3`
+on which `γ₂` is invariant, so `γ₂` is a modular function of level `3` in the honest sense, not
+merely one whose translates differ by cube roots of unity one `γ` at a time.
+
+Multiplicativity is exactly uniqueness of the constant, and uniqueness needs ONE point where
+`γ₂ ≠ 0` — that is `exists_gammaTwo_ne_zero`, and it is the only extra input beyond the
+generator computation. `χ(S) = 1`, `χ(T) = ζ₂₄⁻⁸`, so `χ` is onto `μ₃` and `ker χ` has index
+exactly `3`; that surjectivity is not needed downstream and is not proven here. -/
+theorem exists_monoidHom_gammaTwo_multiplier : ∃ χ : SL(2, ℤ) →* ℂ, (∀ γ, χ γ ^ 3 = 1) ∧
+    ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane), gammaTwo (γ • z) = χ γ * gammaTwo z := by
+  classical
+  obtain ⟨z₀, hz₀⟩ := exists_gammaTwo_ne_zero
+  set c : SL(2, ℤ) → ℂ := fun γ => Classical.choose (exists_cubeRootOne_gammaTwo_smul γ) with hc
+  have hspec : ∀ γ : SL(2, ℤ), c γ ^ 3 = 1 ∧
+      ∀ z : UpperHalfPlane, gammaTwo (γ • z) = c γ * gammaTwo z :=
+    fun γ => Classical.choose_spec (exists_cubeRootOne_gammaTwo_smul γ)
+  have huniq : ∀ (γ : SL(2, ℤ)) (d : ℂ),
+      (∀ z : UpperHalfPlane, gammaTwo (γ • z) = d * gammaTwo z) → c γ = d := by
+    intro γ d hd
+    have h1 := (hspec γ).2 z₀
+    rw [hd z₀] at h1
+    exact (mul_right_cancel₀ hz₀ h1).symm
+  refine ⟨{ toFun := c
+            map_one' := huniq 1 1 (fun z => by simp)
+            map_mul' := fun γ δ => huniq (γ * δ) (c γ * c δ) (fun z => by
+              rw [mul_smul, (hspec γ).2, (hspec δ).2, mul_assoc]) },
+    fun γ => (hspec γ).1, fun γ z => (hspec γ).2 z⟩
+
 /-- **LEAF 4c‴ — WEBER'S THEOREM AT THE HEEGNER POINT: `γ₂(τ₀) ∈ ℚ`.** The CM half, and the
 only thing left of `LEAF 4c`.
 
 This is the open residue of the 2026-07-31 recut described in the section note above: the
-level-`3` modular half is supplied as the hypothesis `hmul` (PROVEN, immediately above, as
-`exists_cubeRootOne_gammaTwo_smul`) and everything downstream of the conclusion is discharged
-in `exists_intCube_jInvariant_heegnerPoint` below.
+level-`3` modular half is supplied as the binders `χ`, `hχ3`, `hχ` (PROVEN, immediately above,
+as `exists_cubeRootOne_gammaTwo_smul` sharpened to `exists_monoidHom_gammaTwo_multiplier`), and
+everything downstream of the conclusion is discharged in
+`exists_intCube_jInvariant_heegnerPoint` below.
 
-WHAT IS LEFT IS SHIMURA RECIPROCITY, and nothing else: `hmul` says `γ₂` is a modular function
+WHAT IS LEFT IS SHIMURA RECIPROCITY, and nothing else: `hχ` says `γ₂` is a modular function
 for a subgroup of index dividing `3`, so at the CM point `τ₀` the value `γ₂(τ₀)` is determined
 by `j(τ₀)` only up to `μ₃`; the theorem is that this ambiguity is TRIVIAL when `3 ∤ D`. Cox,
 *Primes of the form x² + ny²*, §12.B Theorem 12.2; Booher Theorem 36. The class-field shape of
@@ -5100,8 +5149,8 @@ recorded in the section note above.
 `3 ∤ p` (from `hp` with `h3`) IS LOAD-BEARING; `hp8` is retained for continuity with the
 consumer chain but is not. Both halves are checked in the section note. -/
 theorem exists_rat_gammaTwo_of_multiplier
-    (hmul : ∀ γ : SL(2, ℤ), ∃ c : ℂ, c ^ 3 = 1 ∧
-      ∀ z : UpperHalfPlane, gammaTwo (γ • z) = c * gammaTwo z)
+    (χ : SL(2, ℤ) →* ℂ) (hχ3 : ∀ γ, χ γ ^ 3 = 1)
+    (hχ : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane), gammaTwo (γ • z) = χ γ * gammaTwo z)
     {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p) {n : ℤ}
     (hn : (n : ℂ) = jInvariant (heegnerPoint p hp.pos)) :
     ∃ r : ℚ, (r : ℂ) = gammaTwo (heegnerPoint p hp.pos) :=
@@ -5144,8 +5193,8 @@ purely algebraic argument from the data already in this file can work. -/
 theorem exists_intCube_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
     (h3 : 3 < p) {n : ℤ} (hn : (n : ℂ) = jInvariant (heegnerPoint p hp.pos)) :
     ∃ m : ℤ, m ^ 3 = n := by
-  obtain ⟨r, hr⟩ :=
-    exists_rat_gammaTwo_of_multiplier exists_cubeRootOne_gammaTwo_smul hp hp8 h3 hn
+  obtain ⟨χ, hχ3, hχ⟩ := exists_monoidHom_gammaTwo_multiplier
+  obtain ⟨r, hr⟩ := exists_rat_gammaTwo_of_multiplier χ hχ3 hχ hp hp8 h3 hn
   have h1 : ((r : ℚ) : ℂ) ^ 3 = (n : ℂ) := by
     rw [hr, gammaTwo_pow_three_eq_jInvariant, ← hn]
   have h2 : r ^ 3 = (n : ℚ) := by exact_mod_cast h1
