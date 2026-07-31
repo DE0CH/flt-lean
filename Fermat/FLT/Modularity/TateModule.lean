@@ -21107,7 +21107,30 @@ leaf weaker for no gain.  The `m'.act (M : 𝒪_D)` spelling rather than
 **`hfin` IS USED ONLY FOR PERFECTNESS**, so a finite field is more than
 the argument needs; it is carried in this form because that is what the
 consumer has and because `Finite k → PerfectField k` is not the shape of
-any binder in this file. -/
+any binder in this file.
+
+**WHAT IS ALREADY IN THE PIN, FOUND 2026-07-31** (the three bullets above
+read as if all three steps were missing theory; the SMOOTHNESS one is not).
+`Mathlib/AlgebraicGeometry/Group/` exists and holds two of the inputs:
+
+* `AlgebraicGeometry.smooth_of_grpObj` (`Group/Smooth.lean`) — for
+  `f : G ⟶ Spec (.of K)` with `[LocallyOfFiniteType f] [GrpObj (Over.mk f)]`
+  and `[GeometricallyReduced f]`, `Smooth f`.  That IS "a reduced group
+  scheme of finite type over a perfect field is smooth", already proven,
+  already reduced to the algebraically closed case internally;
+* `AlgebraicGeometry.isCommMonObj_of_isProper_of_geometricallyIntegral`
+  (`Group/Abelian.lean`, stacks 0BFD) — a proper geometrically integral
+  group scheme over a field is commutative, which is what makes the `B`
+  produced here commutative without a separate argument.
+
+Both are stated for `GrpObj (Over.mk f)`, i.e. mathlib's group-object
+structure on the over-category, NOT for this file's `AbelianSchemeStruct`;
+so using them costs a translation between the two, and that translation
+does not exist in this tree yet.  What is genuinely missing is CHEVALLEY —
+the Zariski closure of an abstract subgroup of `G(k̄)` carries a closed
+subgroup-scheme structure — for which `grep -rl` over
+`.lake/packages/mathlib/Mathlib/AlgebraicGeometry/` and over `~/cs/FLT`
+returns nothing, and the GALOIS DESCENT of that closure. -/
 theorem exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase
     {k : Type u} [Field k] (hfin : Finite k)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -21393,7 +21416,29 @@ bijection satisfies everything else.  `htor` is what makes the conclusion
 non-vacuous — with `htor` weakened to a single `n` the statement is FALSE
 (`A'[I]` is finite, and its Zariski closure is finite, so `B` may be a
 finite subgroup scheme and `ι` far from surjective).  It is the whole
-tower `∀ n` that pins `T_I B = T_I A'`. -/
+tower `∀ n` that pins `T_I B = T_I A'`.
+
+**WHAT WAS SEARCHED AND NOT FOUND, 2026-07-31** (recorded so the next owner
+does not repeat it).  The classical argument needs the QUOTIENT abelian
+variety `C = A'/B` — or, equivalently for this purpose, Poincaré
+reducibility — and nothing in this tree, in the pin, or in `~/cs/FLT`
+constructs either: `Mathlib/AlgebraicGeometry/Group/` contains exactly
+`Abelian.lean` and `Smooth.lean` (commutativity of a proper geometrically
+integral group scheme, and smoothness of a geometrically reduced one), and
+`~/cs/FLT/FLT/GroupScheme/` contains only `FiniteFlat.lean`.
+
+The COUNTING route, which would avoid quotients entirely, does not close
+either, and the reason is worth stating because it looks available from
+this file's contents.  One would want `#A'[Iⁿ] > #B[Iⁿ]` for large `n`
+whenever `dim B < dim A'`; the counting machinery here
+(`card_torsion_span_singleton_of_isAlgClosed`, `finrank_mulByElt_of_isAlgClosed`)
+is stated in CHARACTERISTIC ZERO and consumes a relative-dimension
+hypothesis `hdim : SmoothOfRelativeDimension (finrank ℚ D) f'`, and this
+leaf has neither — deliberately, since the FAITHFULNESS paragraph above
+records that no rank hypothesis is needed.  Adding one would change the
+signature of `dense_torsionGeomPt_finiteBase` and of everything above it,
+and its consumers do not have it to give.  So the counting route is not a
+cheap alternative; it is a different leaf with a wider blast radius. -/
 theorem range_eq_univ_of_abelianSubscheme_torsion_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -21788,20 +21833,193 @@ theorem frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase
     simpa [hu_def] using h
   exact (Ideal.Quotient.eq_zero_iff_mem).mp hev
 
+open _root_.NumberField in
+/-- **A COHERENT SEQUENCE IN `𝒪_D` WITH UNIFORMLY BOUNDED LEVEL
+REPRESENTATIVES CONVERGES INSIDE `𝒪_D`** (**PROVEN 2026-07-31**; Northcott
+finiteness `NumberField.Embeddings.finite_of_norm_le` plus the pigeonhole.
+Pure algebra: no scheme, no Galois action, no `A'`).
+
+Let `s : ℕ → 𝒪_D` be COHERENT, `s_b ≡ s_a (mod Iᵃ)` for `a ≤ b`, and
+suppose there is ONE real `C`, independent of `n`, such that every level
+`n` admits an algebraic integer `u_n ≡ s_n (mod Iⁿ)` all of whose
+archimedean absolute values are `≤ C`.  Then a SINGLE `t ∈ 𝒪_D` satisfies
+`t ≡ s_n (mod Iⁿ)` at every level.
+
+THE PROOF.  `{x ∈ D | x integral over ℤ and ‖φ x‖ ≤ C for every
+`φ : D →+* ℂ`}` is FINITE (Northcott), and its preimage in `𝒪_D` under the
+injective `algebraMap` is finite too; the sequence `u` takes values there,
+so by the pigeonhole SOME value `t` is attained on an INFINITE set of
+indices.  For a given `n` pick `m > n` in that set: then
+`t − s_n = (u_m − s_m) + (s_m − s_n) ∈ Iᵐ + Iⁿ = Iⁿ`.
+
+**WHY BOUNDEDNESS IS EXACTLY THE MISSING INPUT.**  `𝒪_D` is DENSE in the
+`I`-adic completion `𝒪_{D,I}` and strictly smaller, so a coherent sequence
+is nothing but a Cauchy sequence and its limit need not be global: the
+partial sums `s_n = Σ_{j<n} c_j πʲ` of an `I`-adically irrational integer
+are coherent and admit no such `t`.  Finiteness of the bounded set is what
+converts "Cauchy" into "EVENTUALLY CONSTANT ALONG A SUBSEQUENCE", which is
+the whole argument.
+
+**FAITHFULNESS.**  Both hypotheses are load-bearing.
+
+* Drop `hcoh` and the statement is FALSE: for `I` maximal and nonzero take
+  `s_n = 0` for even `n` and `s_n = 1` for odd `n`, with `u_n = s_n` (both
+  bounded by `1`).  A global `t` would lie in `⋂ₙ Iⁿ = 0` and satisfy
+  `t − 1 ∈ ⋂ₙ Iⁿ = 0`, so `0 = 1`.
+* Drop `hbdd` and the statement is FALSE by the irrational-limit family
+  just described.
+
+**THE HYPOTHESIS IS DELIBERATELY `∀ n, ∃ uₙ` AND NOT `∃ u, ∀ n`.**  The
+strong form is what is classically true, and given `⋂ₙ Iⁿ = 0` it is
+equivalent to the CONCLUSION with a bound attached — stating it would make
+this lemma vacuous.  Letting `uₙ` depend on `n` is what leaves the
+pigeonhole as content. -/
+theorem exists_mem_pow_sub_of_coherent_of_bounded
+    {D : Type u} [Field D] [NumberField D]
+    (I : Ideal (NumberField.RingOfIntegers D))
+    (s : ℕ → NumberField.RingOfIntegers D)
+    (hcoh : ∀ a b : ℕ, a ≤ b → s b - s a ∈ I ^ a)
+    (C : ℝ)
+    (hbdd : ∀ n : ℕ, ∃ u : NumberField.RingOfIntegers D, u - s n ∈ I ^ n ∧
+      ∀ φ : D →+* ℂ, ‖φ (algebraMap (NumberField.RingOfIntegers D) D u)‖ ≤ C) :
+    ∃ t : NumberField.RingOfIntegers D, ∀ n : ℕ, t - s n ∈ I ^ n := by
+  classical
+  choose u hu hunorm using hbdd
+  -- ### Northcott: the bounded algebraic integers of `D` form a FINITE set
+  have hSfin : {x : D | IsIntegral ℤ x ∧ ∀ φ : D →+* ℂ, ‖φ x‖ ≤ C}.Finite :=
+    NumberField.Embeddings.finite_of_norm_le D ℂ C
+  have hinj : Function.Injective (algebraMap (NumberField.RingOfIntegers D) D) :=
+    IsFractionRing.injective _ _
+  have hS'fin : ((algebraMap (NumberField.RingOfIntegers D) D) ⁻¹'
+      {x : D | IsIntegral ℤ x ∧ ∀ φ : D →+* ℂ, ‖φ x‖ ≤ C}).Finite :=
+    Set.Finite.preimage hinj.injOn hSfin
+  have humem : ∀ n : ℕ, u n ∈ (algebraMap (NumberField.RingOfIntegers D) D) ⁻¹'
+      {x : D | IsIntegral ℤ x ∧ ∀ φ : D →+* ℂ, ‖φ x‖ ≤ C} :=
+    fun n => ⟨NumberField.RingOfIntegers.isIntegral_coe _, hunorm n⟩
+  -- ### pigeonhole: some value of `u` is attained at infinitely many levels
+  have hfib : ∃ t, {n : ℕ | u n = t}.Infinite := by
+    by_contra hcon
+    have hcon' : ∀ t : NumberField.RingOfIntegers D, {n : ℕ | u n = t}.Finite := by
+      intro t
+      rw [← Set.not_infinite]
+      exact fun h => hcon ⟨t, h⟩
+    have huniv : (Set.univ : Set ℕ).Finite := by
+      refine Set.Finite.subset (hS'fin.biUnion (fun t _ => hcon' t)) ?_
+      intro n _
+      exact Set.mem_biUnion (humem n) rfl
+    exact Set.infinite_univ huniv
+  obtain ⟨t, ht⟩ := hfib
+  refine ⟨t, fun n => ?_⟩
+  -- ### `t − s_n = (u_m − s_m) + (s_m − s_n)` for any such level `m > n`
+  obtain ⟨m, hm, hnm⟩ := ht.exists_gt n
+  have h1 : u m - s m ∈ I ^ n := Ideal.pow_le_pow_right hnm.le (hu m)
+  have h2 : s m - s n ∈ I ^ n := hcoh n m hnm.le
+  have hsplit : t - s n = (u m - s m) + (s m - s n) := by
+    rw [(by exact hm : u m = t)]; ring
+  rw [hsplit]
+  exact Ideal.add_mem _ h1 h2
+
+set_option linter.unusedVariables false in
+open _root_.NumberField in
+/-- **THE LEVEL SCALARS ADMIT ARCHIMEDEAN-BOUNDED REPRESENTATIVES — THE
+RIEMANN HYPOTHESIS FOR `A'`** (sorry leaf — **CUT 2026-07-31** out of
+`exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase`
+below, which is now PROVEN over it and over
+`exists_mem_pow_sub_of_coherent_of_bounded` above; Weil 1948, Mumford
+*Abelian Varieties* §19 and §21, Milne *Abelian Varieties* §V.1, Tate 1966).
+
+There is ONE real constant `C`, independent of the level, such that every
+`s n` is congruent modulo `Iⁿ` to an algebraic integer of `𝒪_D` all of
+whose archimedean absolute values are at most `C`.
+
+CLASSICALLY the witness is the same at every level and is the TRACE `t` of
+the Frobenius endomorphism `F` on `T_I A'`: `htower` makes `T_I A'` free of
+rank two over `𝒪_{D,I}`, `hs` makes `F` satisfy `F² − s_n F + N = 0` on
+`A'[Iⁿ]`, so `F² − t F + N = 0` on `T_I A'`; the annihilator of `A'[Iⁿ]` is
+exactly `Iⁿ` (again `htower`) and `F` is bijective on `A'[Iⁿ]` because
+`q ≠ char k` (`hqN`), so the level-`n` equation pins `s_n ≡ t (mod Iⁿ)`.
+The Riemann hypothesis for abelian varieties over a finite field says the
+eigenvalues of `F` have complex absolute value `√N` under every embedding,
+whence `‖φ t‖ ≤ 2√N` for every `φ : D →+* ℂ`.  So `C = 2√N` is the sharp
+value; the constant is left EXISTENTIAL because nothing downstream uses it
+and a prover should be free to reach any bound.
+
+**WHAT THE CUT BOUGHT, HONESTLY.**  It did not reduce the leaf count — one
+`sorry` replaces one `sorry` — and it did not remove the endomorphism-axis
+dependency described at the end of the consumer's docstring, which is still
+where a proof of this statement must start.  What it removed is the
+DESCENT-TO-GLOBAL step: the consumer's old statement mixed "the `I`-adic
+limit exists" with "it is defined over `𝒪_D`", and the second half is now
+DISCHARGED, by Northcott finiteness and a pigeonhole, in the proven lemma
+above.  What is left here is a purely ARCHIMEDEAN assertion — a bound —
+which is the shape the literature states and proves.
+
+**`∀ n, ∃ uₙ` RATHER THAN `∃ u, ∀ n` IS DELIBERATE**, for the reason
+recorded in the lemma above: the strong form is equivalent to the
+consumer's conclusion and would collapse the cut.  Letting the witness
+depend on the level is what keeps the pigeonhole on the consumer's side.
+
+**FAITHFULNESS.**  `htower` is load-bearing and the statement is FALSE
+without it, by the SAME counterexample that refuted the consumer: take `f'`
+of relative dimension zero, so `A'[Iⁿ] = 0` at every level and `hs` is
+vacuous; then `s_n` may be the partial sums of an `I`-adically irrational
+integer, and a bounded family of representatives would produce a global `t`
+by the lemma above — which that family provably has not.  `hσ` is
+load-bearing: it identifies the Galois action with Frobenius, and without it
+the constant term `N` is unmotivated and no bound of the shape `2√N` holds.
+`hqN` is load-bearing through `htower` (at the residue characteristic of `k`
+no tower of rank-two levels exists) and through the bijectivity of `F` on
+`A'[Iⁿ]`. -/
+theorem exists_boundedLevelScalar_atPrime_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (htower : ∀ n : ℕ, ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c)
+    (s : ℕ → NumberField.RingOfIntegers D)
+    (hs : ∀ n : ℕ, ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+          (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+        (m'.act (N : NumberField.RingOfIntegers D) y)
+        = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)) :
+    ∃ C : ℝ, ∀ n : ℕ, ∃ u : NumberField.RingOfIntegers D, u - s n ∈ I ^ n ∧
+      ∀ φ : D →+* ℂ, ‖φ (algebraMap (NumberField.RingOfIntegers D) D u)‖ ≤ C :=
+  sorry
+
 set_option linter.unusedVariables false in
 open _root_.NumberField in
 /-- **THE FROBENIUS CHARACTERISTIC SCALAR IS INTEGRAL, AT ONE PRIME —
-THE `I`-ADIC LIMIT LANDS IN THE GLOBAL RING** (sorry leaf; **SHARPENED
-2026-07-30**, see the note at the end).
+THE `I`-ADIC LIMIT LANDS IN THE GLOBAL RING** (**PROVEN 2026-07-31** over
+the archimedean leaf `exists_boundedLevelScalar_atPrime_finiteBase` and the
+pure-algebra lemma `exists_mem_pow_sub_of_coherent_of_bounded`, both
+immediately above; **SHARPENED 2026-07-30**, see the note at the end).
+
+**THE ASSEMBLY, WHICH IS ALL THAT IS LEFT HERE** (2026-07-31).  The
+archimedean leaf produces, at each level, an algebraic integer congruent to
+`s_n` modulo `Iⁿ` and bounded at every archimedean place by one constant;
+Northcott finiteness makes the set of such integers finite; the pigeonhole
+picks a value attained at infinitely many levels; and `hcoh` propagates it
+DOWN to every level.  That is `exists_mem_pow_sub_of_coherent_of_bounded`,
+and `hcoh` is consumed there and nowhere else.
 
 The level scalars `sₙ` are handed in as a plain sequence together with
 their coherence `s_b ≡ s_a (mod Iᵃ)`, which
 `frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase` above supplies for
 free; so this leaf carries no frame quantifier, no existential over `s`,
-and its conclusion is a statement of pure ideal arithmetic.  What is left
-is EXACTLY the integrality: the coherent family defines an element of the
-`I`-adic completion `𝒪_{D,I}`, and the content is that it lies in the
-GLOBAL ring `𝒪_D`.
+and its conclusion is a statement of pure ideal arithmetic.  What used to
+be left here was EXACTLY the integrality — the coherent family defines an
+element of the `I`-adic completion `𝒪_{D,I}` and the content is that it
+lies in the GLOBAL ring `𝒪_D` — and that content now lives ONE DECLARATION
+UP, restated as a bound: see `exists_boundedLevelScalar_atPrime_finiteBase`.
 
 **FAITHFULNESS — `htower` CANNOT BE DROPPED, AND THIS IS THE ONE THING TO
 CHECK BEFORE WEAKENING THE STATEMENT.**  With `htower` removed the leaf is
@@ -21821,12 +22039,13 @@ endomorphism, without which the displayed equation has constant term `N`
 for no reason.
 
 **THE AXIS THAT WOULD REDUCE IT FURTHER, AND WHICH IS NOT SEARCHED HERE**
-(inherited from the pre-sharpening docstring, and still accurate).  The
-level and frame axes are CLOSED: every restatement in terms of the matrix
-`Φ`, of `A'[Iⁿ]` or of the Galois action on torsion is equivalent to the
-above modulo the determinant leaf, and coherence across `n` is now
-discharged above rather than merely derivable.  The open axis is the
-ENDOMORPHISM axis: `End_k(A')` as a ring (which needs rigidity — a
+(inherited from the pre-sharpening docstring, and still accurate — but as
+of 2026-07-31 it describes the ARCHIMEDEAN LEAF above, not this proven
+assembly).  The level and frame axes are CLOSED: every restatement in terms
+of the matrix `Φ`, of `A'[Iⁿ]` or of the Galois action on torsion is
+equivalent to the above modulo the determinant leaf, and coherence across
+`n` is now discharged above rather than merely derivable.  The open axis is
+the ENDOMORPHISM axis: `End_k(A')` as a ring (which needs rigidity — a
 pointed morphism of abelian schemes is additive), faithfulness of the
 `I`-adic representation `End⁰_D(A') ↪ End_{D_I}(V_I A')`, and
 `𝒪_D = D ∩ End_k(A')`.  With those three STATED — not proven — the
@@ -21839,18 +22058,29 @@ tree, in mathlib (`grep -rli frobenius
 .lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is empty) or in
 `~/cs/FLT`, which is why the cut stops here rather than one level lower.
 
-An archimedean route is the other classical one and is NOT cheaper here:
-it needs `#A'(k_m) = deg(F^m − 1)` and positivity of the Rosati
-involution to get `|t| ≤ 2√N`, hence finitely many candidates in the
-lattice `𝒪_D`, hence a repeated value — and the degree formula is the
-same missing theory.
+An archimedean route is the other classical one, and the 2026-07-31 cut
+takes exactly its FIRST HALF.  It needs `#A'(k_m) = deg(F^m − 1)` and
+positivity of the Rosati involution to get `|t| ≤ 2√N` — the same missing
+theory — but its SECOND half, "finitely many candidates in the lattice
+`𝒪_D`, hence a repeated value, hence a global limit", is no longer missing:
+it is `exists_mem_pow_sub_of_coherent_of_bounded`, proven above out of
+Northcott finiteness and the pigeonhole.  That is what the archimedean leaf
+above isolates, and it is the reason its conclusion is a BOUND rather than
+an integrality assertion.
 
 **WHAT THE SHARPENING DID AND DID NOT DO.**  It did not reduce the leaf
 count: this is one `sorry` replacing one `sorry`.  It moved the
 frame-and-uniqueness bookkeeping OUT of the leaf (into the proven lemma
 above and into the consumer's assembly) and left the deep half alone, so
 the next owner reads a statement whose only mathematical content is
-integrality. -/
+integrality.
+
+**AND WHAT THE 2026-07-31 CUT DID.**  Same accounting: one `sorry` replaces
+one `sorry`, and the endomorphism-axis dependency is untouched.  What
+changed is that the residual leaf is now a BOUND — a statement the
+literature states and proves under a name (the Riemann hypothesis for
+abelian varieties) — while the step from a bound to a global element is
+proven Lean.  The `𝒪_D`-versus-`𝒪_{D,I}` half of this leaf is closed. -/
 theorem exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -21873,8 +22103,12 @@ theorem exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase
         (m'.act (N : NumberField.RingOfIntegers D) y)
         = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
     (hcoh : ∀ a b : ℕ, a ≤ b → s b - s a ∈ I ^ a) :
-    ∃ t : NumberField.RingOfIntegers D, ∀ n : ℕ, t - s n ∈ I ^ n :=
-  sorry
+    ∃ t : NumberField.RingOfIntegers D, ∀ n : ℕ, t - s n ∈ I ^ n := by
+  -- ### the archimedean leaf: one bound serving every level
+  obtain ⟨C, hC⟩ := exists_boundedLevelScalar_atPrime_finiteBase hfin N hN ab' m' σ hσ
+    q hq hqN I hI hqI htower s hs
+  -- ### Northcott finiteness plus the pigeonhole, propagated by `hcoh`
+  exact exists_mem_pow_sub_of_coherent_of_bounded I s hcoh C hC
 
 open _root_.NumberField in
 /-- **THE FROBENIUS CHARACTERISTIC SCALAR IS INTEGRAL, AT ONE PRIME**
