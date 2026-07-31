@@ -484,7 +484,7 @@ def r4_action(s):
             j["token"] = tok()
             j["takeover"] = True
             j["retries"] += 1
-            note(s, f"4  {n} died -> re-dispatched as takeover (attempt {j['retries']})")
+            note(s, f"4  {n} died -> fresh agent takes over its worktree (attempt {j['retries']})")
 
 
 def r5_guard(s):
@@ -526,8 +526,15 @@ def r5_action(s):
             # from the worktree the record already names.
             j["host"] = (j.get("host") or host_of(s, j["worktree"])
                          or (MEDIC_HOST if j["kind"] == "medic" else None))
-            host, pid, sess = SPAWN(s, n, j)
-            j["host"], j["pid"], j["session"] = host, pid, sess
+            # `session` used to be recorded here for a transcript resume that
+            # does not exist and cannot: the loop is a Python process, not a
+            # Claude session, and the ids it can obtain are not resumable. It
+            # was written on every record and read by nothing, which made the
+            # capability look real. Dropped; what preserves a dead agent's work
+            # is its WORKTREE, and the takeover prompt tells its replacement to
+            # read it.
+            host, pid, _ = SPAWN(s, n, j)
+            j["host"], j["pid"] = host, pid
             # Name what was spawned: row 7 is the ONE spawner for every kind,
             # so a bare "SPAWN" in the transition log is unreadable -- two
             # consecutive firings look like a double-spawn when they are a
@@ -1084,7 +1091,7 @@ ROWS = [
     (6, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
     (7, "branch landed -> free its worker, drop it from the merge queue",
      r3_guard, r3_action),
-    (8, "agent died -> resume from transcript", r4_guard, r4_action),
+    (8, "agent died -> re-dispatch as takeover", r4_guard, r4_action),
     (9, "merger died without releasing -> restore .inflight", r6_guard, r6_action),
     (10, "merger delivered main+snapshot+audit -> ADOPT", r7_guard, r7_action),
     (11, "batch ∨ derived-from-main is stale -> create merger record", r11_guard, r11_action),

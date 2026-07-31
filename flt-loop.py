@@ -1004,7 +1004,7 @@ def save(s):
         # first tick -- spawn, "died", re-dispatch, spawn, every ~15s, which is
         # exactly the churn the grace period exists to stop.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
-                                     "retries", "host", "pid", "session",
+                                     "retries", "host", "pid",
                                      "takeover", "spawned_at", "model", "inbox")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
