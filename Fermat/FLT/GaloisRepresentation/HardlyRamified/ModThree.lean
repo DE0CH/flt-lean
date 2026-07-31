@@ -49349,11 +49349,247 @@ theorem localInertiaGroup_le_muFixer_of_not_dvd_ray_class
   rw [IntegralClosure.coe_smul] at h1
   exact h1
 
+/-! ### The finite-ramification dictionary (sub-leaf (b) of the Minkowski cut)
+
+Block added 2026-07-31.  The two declarations below are the mathematical input of
+`exists_badPrimes_localInertiaGroup_le_of_isOpen_ray_class`; they are base-generic
+commutative algebra plus the inertia congruence, with no `𝒪₃ᵥ` anywhere in them. -/
+
+/-- A nonzero element integral over `ℤ` divides a nonzero natural number, with an
+integral cofactor. -/
+theorem exists_natCast_eq_mul_of_isIntegral_int {A : Type*} [CommRing A] [IsDomain A]
+    {δ : A} (hδ : IsIntegral ℤ δ) (hne : δ ≠ 0) :
+    ∃ (n : ℕ) (e : A), n ≠ 0 ∧ IsIntegral ℤ e ∧ δ * e = (n : A) := by
+  classical
+  -- Every `ℤ`-polynomial value at `δ` is integral, since `ℤ[δ]` is integral over `ℤ`.
+  have haeval : ∀ r : Polynomial ℤ, IsIntegral ℤ (Polynomial.aeval δ r) := by
+    intro r
+    have hmem : Polynomial.aeval δ r ∈ Algebra.adjoin ℤ ({δ} : Set A) := by
+      rw [Algebra.adjoin_singleton_eq_range_aeval]
+      exact ⟨r, rfl⟩
+    have hle : Algebra.adjoin ℤ ({δ} : Set A) ≤ integralClosure ℤ A :=
+      Algebra.adjoin_le (Set.singleton_subset_iff.mpr hδ)
+    exact hle hmem
+  -- the constant-coefficient step
+  have key : ∀ p : Polynomial ℤ, p.coeff 0 ≠ 0 → Polynomial.aeval δ p = 0 →
+      ∃ (c : ℤ) (e : A), c ≠ 0 ∧ IsIntegral ℤ e ∧ δ * e = (c : A) := by
+    intro p h0 ha
+    refine ⟨p.coeff 0, -(Polynomial.aeval δ p.divX), h0, (haeval _).neg, ?_⟩
+    have hsum := Polynomial.X_mul_divX_add p
+    have h := congrArg (Polynomial.aeval δ) hsum
+    rw [map_add, map_mul, Polynomial.aeval_X, Polynomial.aeval_C, ha] at h
+    simp only [algebraMap_int_eq, eq_intCast] at h
+    linear_combination -h
+  have main : ∃ (c : ℤ) (e : A), c ≠ 0 ∧ IsIntegral ℤ e ∧ δ * e = (c : A) := by
+    obtain ⟨p₀, hp₀m, hp₀⟩ := hδ
+    have hp₀ne : p₀ ≠ 0 := hp₀m.ne_zero
+    have hp₀a : Polynomial.aeval δ p₀ = 0 := by rw [Polynomial.aeval_def]; exact hp₀
+    suffices H : ∀ n (p : Polynomial ℤ), p.natDegree ≤ n → p ≠ 0 → Polynomial.aeval δ p = 0 →
+        ∃ (c : ℤ) (e : A), c ≠ 0 ∧ IsIntegral ℤ e ∧ δ * e = (c : A) from
+      H p₀.natDegree p₀ le_rfl hp₀ne hp₀a
+    intro n
+    induction n with
+    | zero =>
+      intro p hdeg hne0 ha
+      have h0 : p.coeff 0 ≠ 0 := by
+        intro h
+        exact hne0 (by rw [Polynomial.eq_C_of_natDegree_le_zero hdeg, h, map_zero])
+      exact key p h0 ha
+    | succ n ih =>
+      intro p hdeg hne0 ha
+      by_cases h0 : p.coeff 0 = 0
+      · have hp : Polynomial.X * p.divX = p := by
+          have h := Polynomial.X_mul_divX_add p
+          rw [h0, map_zero, add_zero] at h
+          exact h
+        have hdivne : p.divX ≠ 0 := fun h => hne0 (by rw [← hp, h, mul_zero])
+        have hane : Polynomial.aeval δ p.divX = 0 := by
+          have h1 : Polynomial.aeval δ (Polynomial.X * p.divX)
+              = δ * Polynomial.aeval δ p.divX := by
+            rw [map_mul, Polynomial.aeval_X]
+          rw [hp, ha] at h1
+          rcases mul_eq_zero.mp h1.symm with h | h
+          · exact absurd h hne
+          · exact h
+        refine ih p.divX ?_ hdivne hane
+        rw [Polynomial.natDegree_divX_eq_natDegree_tsub_one]
+        omega
+      · exact key p h0 ha
+  obtain ⟨c, e, hc, he, hce⟩ := main
+  have hn0 : c.natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hc
+  rcases Int.natAbs_eq c with h | h
+  · have h' := congrArg (fun z : ℤ => (z : A)) h
+    simp only [Int.cast_natCast] at h'
+    exact ⟨c.natAbs, e, hn0, he, by rw [hce]; exact h'⟩
+  · have h' := congrArg (fun z : ℤ => (z : A)) h
+    simp only [Int.cast_neg, Int.cast_natCast] at h'
+    refine ⟨c.natAbs, -e, hn0, he.neg, ?_⟩
+    rw [mul_neg, hce]
+    linear_combination -h'
+
+/-- **The core of the finite-ramification dictionary.** An algebraic number is fixed by the
+image of the local inertia group at every prime outside an explicit finite set: the primes
+dividing the "conjugate differences" of a monic integral witness. -/
+theorem exists_badPrimes_map_fixes (x : AlgebraicClosure ℚ) (hxint : IsIntegral ℤ x) :
+    ∃ T : Finset ℕ, ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) σ x = x := by
+  classical
+  obtain ⟨g, hgm, hg⟩ := id hxint
+  have hga : Polynomial.aeval x g = 0 := by rw [Polynomial.aeval_def]; exact hg
+  have hgne : g ≠ 0 := hgm.ne_zero
+  -- the finite set of `ℚ`-conjugates of `x` (roots of the integral witness `g`)
+  set R : Finset (AlgebraicClosure ℚ) := (g.aroots (AlgebraicClosure ℚ)).toFinset with hRdef
+  have hmemR : ∀ β : AlgebraicClosure ℚ, β ∈ R ↔ Polynomial.aeval β g = 0 := by
+    intro β
+    rw [hRdef, Multiset.mem_toFinset, Polynomial.mem_aroots]
+    exact ⟨fun h => h.2, fun h => ⟨hgne, h⟩⟩
+  have hrootint : ∀ β ∈ R, IsIntegral ℤ β := fun β hβ =>
+    ⟨g, hgm, by rw [← Polynomial.aeval_def]; exact (hmemR β).mp hβ⟩
+  -- for each conjugate `β ≠ x`, a nonzero natural number divisible by `x - β`
+  have hchoice : ∀ β : AlgebraicClosure ℚ, ∃ n : ℕ, n ≠ 0 ∧
+      (β ∈ R → β ≠ x → ∃ e : AlgebraicClosure ℚ, IsIntegral ℤ e ∧
+        (x - β) * e = (n : AlgebraicClosure ℚ)) := by
+    intro β
+    by_cases hb : β ∈ R ∧ β ≠ x
+    · obtain ⟨n, e, hn, he, hnee⟩ := exists_natCast_eq_mul_of_isIntegral_int
+        (hxint.sub (hrootint β hb.1)) (sub_ne_zero_of_ne (Ne.symm hb.2))
+      exact ⟨n, hn, fun _ _ => ⟨e, he, hnee⟩⟩
+    · exact ⟨1, one_ne_zero, fun h1 h2 => absurd ⟨h1, h2⟩ hb⟩
+  choose nn hnn hdvd using hchoice
+  refine ⟨R.biUnion (fun β => (nn β).primeFactors), ?_⟩
+  intro q hq hqT
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat
+  set f := algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+  intro σ hσ
+  by_contra hcon
+  -- `β`, the image of `x` under the global Galois element, is a conjugate of `x` distinct from it
+  set β := (Field.absoluteGaloisGroup.map f) σ x with hβ
+  have hβR : β ∈ R := by
+    rw [hmemR]
+    have hcomp : (((Field.absoluteGaloisGroup.map f) σ :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toRingEquiv.toRingHom).comp
+        (algebraMap ℤ (AlgebraicClosure ℚ)) = algebraMap ℤ (AlgebraicClosure ℚ) :=
+      RingHom.ext fun z => by simp
+    have h := Polynomial.hom_eval₂ (p := g) (f := algebraMap ℤ (AlgebraicClosure ℚ))
+      (g := ((Field.absoluteGaloisGroup.map f) σ :
+        AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toRingEquiv.toRingHom) x
+    have hrfl : (((Field.absoluteGaloisGroup.map f) σ :
+        AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toRingEquiv.toRingHom) x
+        = (Field.absoluteGaloisGroup.map f) σ x := rfl
+    rw [hcomp, hrfl] at h
+    rw [Polynomial.aeval_def, hβ, ← h, ← Polynomial.aeval_def, hga, map_zero]
+  have hβne : β ≠ x := hcon
+  obtain ⟨e, he, hexe⟩ := hdvd β hβR hβne
+  have hqn : ¬ q ∣ nn β := fun hd =>
+    hqT (Finset.mem_biUnion.mpr ⟨β, hβR, Nat.mem_primeFactors.mpr ⟨hq, hd, hnn β⟩⟩)
+  -- transport of integrality along the chosen embedding of algebraic closures
+  have hIC : ∀ w : AlgebraicClosure ℚ, IsIntegral ℤ w →
+      IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure.map f w) := by
+    intro w hw
+    have h1 : IsIntegral ℤ (AlgebraicClosure.map f w) := by
+      obtain ⟨p, hpm, hp⟩ := hw
+      refine ⟨p, hpm, ?_⟩
+      have hcomp : (AlgebraicClosure.map f).comp (algebraMap ℤ (AlgebraicClosure ℚ))
+          = algebraMap ℤ (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+        RingHom.ext fun z => by simp
+      have h := Polynomial.hom_eval₂ (p := p) (f := algebraMap ℤ (AlgebraicClosure ℚ))
+        (g := AlgebraicClosure.map f) w
+      rw [hcomp] at h
+      rw [← h, hp, map_zero]
+    haveI : IsScalarTower ℤ (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+      IsScalarTower.of_algebraMap_eq (fun z => by simp)
+    exact h1.tower_top
+  refine natCast_notMem_maximalIdeal_of_not_dvd_ray_class hq hqn ?_
+  -- the inertia congruence, in the integral closure
+  set y : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+    ⟨AlgebraicClosure.map f x, hIC x hxint⟩
+  set E : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+    ⟨AlgebraicClosure.map f (-e), hIC _ he.neg⟩
+  have hdiff := (AddSubgroup.mem_inertia.mp hσ) y
+  have hsmul : ((σ • y).1 : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      = AlgebraicClosure.map f β := by
+    rw [IntegralClosure.coe_smul, hβ]
+    exact (Field.absoluteGaloisGroup.lift_map f σ x).symm
+  have hprod : (σ • y - y) * E = ((nn β : ℕ) : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+    apply Subtype.ext
+    show ((σ • y).1 - y.1) * AlgebraicClosure.map f (-e)
+        = ((nn β : ℕ) : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+    rw [hsmul]
+    show (AlgebraicClosure.map f β - AlgebraicClosure.map f x) * AlgebraicClosure.map f (-e)
+        = ((nn β : ℕ) : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+    rw [← map_sub, ← map_mul]
+    have hcalc : (β - x) * (-e) = ((nn β : ℕ) : AlgebraicClosure ℚ) := by
+      rw [← hexe]; ring
+    rw [hcalc, map_natCast]
+  rw [← hprod]
+  exact Ideal.mul_mem_right _ _ hdiff
+
 /-- **SUB-LEAF (b) OF THE MINKOWSKI CUT: FINITE RAMIFICATION — AN OPEN SUBGROUP
-OF `Γ ℚ` CONTAINS ALL BUT FINITELY MANY LOCAL INERTIA IMAGES** (SORRY LEAF,
-created 2026-07-30 as the ONLY remaining mathematical input of
-`exists_badPrimes_mul_muFixer_eq_top_ray_class` just below, which is now GLUE
-over it and over sub-leaf (a) above).
+OF `Γ ℚ` CONTAINS ALL BUT FINITELY MANY LOCAL INERTIA IMAGES** (**PROVEN
+2026-07-31**; created 2026-07-30 as the ONLY remaining mathematical input of
+`exists_badPrimes_mul_muFixer_eq_top_ray_class` just below, which is GLUE
+over it and over sub-leaf (a) above, so that cut is now closed).
+
+**THE ROUTE ACTUALLY TAKEN, which is CHEAPER than the one recorded below and
+uses NEITHER a primitive element NOR a discriminant.** Two changes to the plan,
+both of which delete formal cost rather than mathematics:
+
+* *No primitive element.* `L := fixedField N` is finite over `ℚ`, so
+  `(⊤ : Submodule ℚ L).FG` hands back a finite `ℚ`-SPANNING SET, and a
+  `ℚ`-algebra automorphism that fixes a spanning set fixes the whole span by
+  `Submodule.span_induction` — plain `ℚ`-linearity, no field adjunction and no
+  `IntermediateField.lift` gymnastics. The primitive element theorem is only
+  ever used to make the generating set a SINGLETON, which nothing here needs.
+* *No discriminant.* For a single algebraic integer `x` the bad set is built
+  directly from the roots `R` of ANY monic integral witness `g` of `x` (not
+  `minpoly` — any `g` works, and every root of a monic integer polynomial is
+  again an algebraic integer, which is what makes this legitimate). For each
+  root `β ≠ x` the difference `x - β` is a nonzero algebraic integer, hence
+  divides SOME nonzero rational integer `n β` with integral cofactor
+  (`exists_natCast_eq_mul_of_isIntegral_int` above: strip the factors of `X`
+  from the witness polynomial until the constant coefficient is nonzero, then
+  read off `δ · (-(divX p)(δ)) = p.coeff 0`). Take
+  `T := ⋃_{β ∈ R} (n β).primeFactors`. That is a DIVISOR of the discriminant
+  rather than the discriminant itself, which is all that is wanted, and it
+  costs no Vieta, no `derivative`, no separability and no Bézout.
+
+The inertia step is then verbatim the shape of sub-leaf (a) above:
+`ι(σ x) - ι(x) ∈ 𝔪` by the definition of `localInertiaGroup`; if `σ x ≠ x` then
+`ι(x - σ x)` divides `ι(n) = (n : 𝒪̄_q)` inside the integral closure, so
+`(n : 𝒪̄_q) ∈ 𝔪` — contradicting
+`natCast_notMem_maximalIdeal_of_not_dvd_ray_class` for `q ∤ n`.
+
+**ONE PIN QUIRK, and it is the same one `Interface.lean` records for
+`isGalois_rat_algebraicClosure`:** `inferInstance` does NOT produce
+`IsGalois ℚ (AlgebraicClosure ℚ)` in this cone, because over `ℚ` typeclass
+search finds `DivisionRing.toRatAlgebra` while mathlib's instances are stated
+for `AlgebraicClosure.instAlgebra`. The proof below synthesizes against the
+latter and transports by `Subsingleton.elim`; a successor who copies this proof
+elsewhere must copy that `haveI` with it.
+
+**THE OTHER CUSTOMERS ARE STILL OPEN AND SHOULD BE DISPATCHED AT.** This
+statement is the missing input named by `HilbertModularity.lean`'s
+`finite_hilbertInertiaOutsideSubgroups` and
+`exists_finset_isUnramifiedAt_hilbert_of_notMem`, and by
+`Modularity/Patching.lean`'s `exists_finset_isUnramifiedAt_of_notMem`. Those are
+over a general number field `F`, not `ℚ`; the proof below is written base-`ℚ`
+only because its two bricks
+(`natCast_notMem_maximalIdeal_of_not_dvd_ray_class` and
+`hq.toHeightOneSpectrumRingOfIntegersRat`) are, and NOTHING in the argument
+uses `F = ℚ`. The hoist into
+`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean` at general `F`,
+beside the direction that was already proven, would serve all four.
+
+The rest of this docstring is retained as written on 2026-07-30.
 
 For every open `N ≤ Γ ℚ` there is a finite set `T` of rational primes such that
 the image in `Γ ℚ` of `localInertiaGroup q` lies in `N` for every prime
@@ -49431,8 +49667,81 @@ theorem exists_badPrimes_localInertiaGroup_le_of_isOpen_ray_class
       Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
-        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) ≤ N :=
-  sorry
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) ≤ N := by
+  classical
+  -- `inferInstance` fails on this at the pin: over `ℚ`, typeclass search finds
+  -- `DivisionRing.toRatAlgebra` while mathlib's instances are stated for
+  -- `AlgebraicClosure.instAlgebra`.  Synthesize against the latter and transport.
+  haveI hgal : IsGalois ℚ (AlgebraicClosure ℚ) :=
+    cast (congrArg (fun (i : Algebra ℚ (AlgebraicClosure ℚ)) =>
+        @IsGalois ℚ _ (AlgebraicClosure ℚ) _ i)
+      (Subsingleton.elim (AlgebraicClosure.instAlgebra ℚ (R := ℚ)) inferInstance))
+      (inferInstance :
+        @IsGalois ℚ _ (AlgebraicClosure ℚ) _ (AlgebraicClosure.instAlgebra ℚ (R := ℚ)))
+  have hclosed : IsClosed (N : Set (Field.absoluteGaloisGroup ℚ)) :=
+    Subgroup.isClosed_of_isOpen N hN
+  set L : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+    IntermediateField.fixedField (E := AlgebraicClosure ℚ) N
+  have hfix : L.fixingSubgroup = N := InfiniteGalois.fixingSubgroup_fixedField ⟨N, hclosed⟩
+  haveI hfd : FiniteDimensional ℚ L :=
+    (InfiniteGalois.isOpen_iff_finite L).mp (by rw [hfix]; exact hN)
+  -- the bad set attached to a single algebraic number (scaling to an algebraic integer)
+  have hcore : ∀ z : AlgebraicClosure ℚ, ∃ T : Finset ℕ, ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) σ z = z := by
+    intro z
+    have halgZ : IsAlgebraic ℤ z :=
+      (IsFractionRing.isAlgebraic_iff ℤ ℚ (AlgebraicClosure ℚ)).mpr
+        (Algebra.IsAlgebraic.isAlgebraic z)
+    obtain ⟨m, hm, hmint⟩ := halgZ.exists_integral_multiple
+    obtain ⟨T, hT⟩ := exists_badPrimes_map_fixes (m • z) hmint
+    refine ⟨T, fun q hq hqT σ hσ => ?_⟩
+    have h := hT q hq hqT σ hσ
+    rw [map_zsmul, zsmul_eq_mul, zsmul_eq_mul] at h
+    exact mul_left_cancel₀ (Int.cast_ne_zero.mpr hm) h
+  choose Tf hTf using hcore
+  -- a finite `ℚ`-spanning family of `L`
+  obtain ⟨s, hs⟩ : ∃ s : Finset L, Submodule.span ℚ (s : Set L) = ⊤ :=
+    Module.finite_def.mp inferInstance
+  refine ⟨s.biUnion (fun z => Tf (z : AlgebraicClosure ℚ)), ?_⟩
+  intro q hq hqT
+  rw [← hfix]
+  rintro g hg
+  obtain ⟨σ, hσ, rfl⟩ := Subgroup.mem_map.mp hg
+  have hgen : ∀ w ∈ s, (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) σ (w : AlgebraicClosure ℚ)
+      = (w : AlgebraicClosure ℚ) := by
+    intro w hw
+    exact hTf (w : AlgebraicClosure ℚ) q hq
+      (fun hmem => hqT (Finset.mem_biUnion.mpr ⟨w, hw, hmem⟩)) σ hσ
+  have hall : ∀ z : L, (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))) σ (z : AlgebraicClosure ℚ)
+      = (z : AlgebraicClosure ℚ) := by
+    intro z
+    have hz : z ∈ Submodule.span ℚ (s : Set L) := by rw [hs]; trivial
+    induction hz using Submodule.span_induction with
+    | mem w hw => exact hgen w hw
+    | zero => simp
+    | add a b _ _ ha hb =>
+      have hco : ((a + b : L) : AlgebraicClosure ℚ)
+          = (a : AlgebraicClosure ℚ) + (b : AlgebraicClosure ℚ) := rfl
+      rw [hco, map_add, ha, hb]
+    | smul c a _ ha =>
+      have hco : ((c • a : L) : AlgebraicClosure ℚ)
+          = (algebraMap ℚ (AlgebraicClosure ℚ) c) * (a : AlgebraicClosure ℚ) := by
+        rw [Algebra.smul_def]; rfl
+      have hcom : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) σ
+            ((algebraMap ℚ (AlgebraicClosure ℚ)) c)
+          = (algebraMap ℚ (AlgebraicClosure ℚ)) c :=
+        AlgEquiv.commutes _ c
+      rw [hco, map_mul, hcom, ha]
+  refine (IntermediateField.mem_fixingSubgroup_iff L _).mpr fun y hy => hall ⟨y, hy⟩
 
 /-- **`Γ F = H · Γ_{F(ζ_m)}` FOR EVERY OPEN `H` AND ALMOST EVERY `m`**
 (**DECOMPOSED AND ITS GLUE PROVEN 2026-07-30**; created 2026-07-28 as **the
@@ -49440,7 +49749,8 @@ single shared Minkowski cut** of the two leaves below, which were previously
 two independent sorries each carrying the whole of Minkowski. It is now glue
 over sub-leaf (a) `localInertiaGroup_le_muFixer_of_not_dvd_ray_class` — PROVEN
 above — and sub-leaf (b) `exists_badPrimes_localInertiaGroup_le_of_isOpen_ray_class`,
-the finite-ramification dictionary, which is the ONLY thing still open here.)
+the finite-ramification dictionary, **PROVEN 2026-07-31**, so this cut is
+now closed and nothing in it is open.)
 
 For any number field `F` and any OPEN subgroup `H ≤ Γ F` there is a finite bad
 set `T` of primes such that every modulus `m > 0` prime to `T` already satisfies
