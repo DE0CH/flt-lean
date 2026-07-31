@@ -58,12 +58,19 @@ material into `Interface.lean`.
   everywhere-unramified `L` with `relNormClassSubgroup K L ≤ N`. **This is where Kummer
   theory lives** — adjoin `ζ_n`, run Kummer theory over `K(ζ_n)`, descend the norm group by
   the translation theorem. It carries no degree, deliberately.
-* `NumberField.exists_unramifiedAbelian_sup` — **OPEN LEAF, cut 2026-07-31.** The compositum
-  of two finite abelian everywhere-unramified extensions of `K` is one. **No class field
-  theory in it at all** — pure Galois and ramification theory, mathlib-grade, separately
-  ownable from the leaf above. Its docstring gives the inertia argument for all three
-  obligations and records the one route (`FormallyUnramified.baseChange` on
-  `𝓞 L₁ ⊗_{𝓞 K} 𝓞 L₂`) that does NOT work and why.
+* `NumberField.exists_unramifiedAbelian_sup` — **PROVEN 2026-07-31**, the compositum of two
+  finite abelian everywhere-unramified extensions of `K` is one. **No class field theory in
+  it at all** — pure Galois and ramification theory, mathlib-grade, and decomposed the same
+  day into three obligations that are all the SAME argument (an element of `Gal(M/K)`
+  trivial on `L₁` and on `L₂` is trivial), of which one is closed:
+  * `NumberField.forall_mem_sup_of_fixed`, `NumberField.restrictNormalHom_eq_one_of_fixed`,
+    `NumberField.fixed_of_restrictNormalHom_eq_one` — PROVEN, that argument itself;
+  * `NumberField.isAbelianGalois_sup` — **PROVEN**, the Galois third;
+  * `NumberField.isUnramifiedAtInfinitePlaces_sup` — **OPEN LEAF**, the archimedean third
+    (complex conjugation);
+  * `NumberField.isUnramifiedAt_ringOfIntegers_sup` — **OPEN LEAF**, the nonarchimedean
+    third (inertia). Its docstring records the one route
+    (`FormallyUnramified.baseChange` on `𝓞 L₁ ⊗_{𝓞 K} 𝓞 L₂`) that does NOT work and why.
 * `NumberField.relNormClassSubgroup_le_of_le` and
   `NumberField.exists_isCyclic_quotient_notMem` — PROVEN 2026-07-31, the two pieces of glue
   the descent runs on: norm class groups are ANTITONE in the field (`Ideal.relNorm_relNorm`),
@@ -568,10 +575,173 @@ theorem exists_unramifiedAbelian_relNormClassSubgroup_le_of_isCyclic_quotient
       relNormClassSubgroup K L ≤ N :=
   sorry
 
+omit [NumberField K] in
+/-- **AN AUTOMORPHISM OF `AlgebraicClosure K` THAT FIXES `L₁` AND `L₂` POINTWISE FIXES THE
+COMPOSITUM POINTWISE** (PROVEN 2026-07-31).
+
+The engine of every compositum argument in this file, and the reason the three obligations
+on `L₁ ⊔ L₂` are all the same argument. The fixed points of `ρ` are an intermediate field —
+concretely `IntermediateField.fixedField (Subgroup.closure {ρ})` — so `sup_le` applies once
+each `Lᵢ` is inside it, and membership there is `Subgroup.closure_le` into
+`MulAction.stabilizer _ y`, which is exactly the statement that `ρ` fixes `y`.
+
+Using the stabiliser is what avoids an induction over the powers of `ρ`: `closure {ρ}`
+contains `ρ^n` for every `n : ℤ`, and checking each of those fixes `y` by hand would need
+a `zpow` induction, while `Subgroup.closure_le` discharges all of them from the single
+fact `ρ • y = y` because the stabiliser is already a subgroup. -/
+theorem forall_mem_sup_of_fixed (L₁ L₂ : IntermediateField K (AlgebraicClosure K))
+    (ρ : AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K)
+    (h₁ : ∀ x ∈ L₁, ρ x = x) (h₂ : ∀ x ∈ L₂, ρ x = x) :
+    ∀ x ∈ L₁ ⊔ L₂, ρ x = x := by
+  have key : L₁ ⊔ L₂ ≤ IntermediateField.fixedField (Subgroup.closure {ρ}) := by
+    refine sup_le ?_ ?_ <;> intro y hy <;>
+      refine (IntermediateField.mem_fixedField_iff _ _).2 fun g hg => ?_
+    · exact (Subgroup.closure_le
+        (MulAction.stabilizer (AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K) y)).2
+        (by rintro _ rfl; exact h₁ y hy) hg
+    · exact (Subgroup.closure_le
+        (MulAction.stabilizer (AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K) y)).2
+        (by rintro _ rfl; exact h₂ y hy) hg
+  intro x hx
+  exact (IntermediateField.mem_fixedField_iff _ _).1 (key hx) ρ (Subgroup.subset_closure rfl)
+
+omit [NumberField K] in
+/-- **RESTRICTING TO A NORMAL INTERMEDIATE FIELD IS TRIVIAL EXACTLY WHEN THE AUTOMORPHISM
+FIXES IT POINTWISE — the `→` direction** (PROVEN 2026-07-31). One application of
+`AlgEquiv.restrictNormal_commutes` and injectivity of the inclusion. -/
+theorem restrictNormalHom_eq_one_of_fixed (E : IntermediateField K (AlgebraicClosure K))
+    [Normal K E] (ρ : AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K)
+    (h : ∀ x ∈ E, ρ x = x) :
+    AlgEquiv.restrictNormalHom (F := K) (K₁ := AlgebraicClosure K) E ρ = 1 := by
+  refine AlgEquiv.ext fun y => ?_
+  have hc := AlgEquiv.restrictNormal_commutes ρ (E : IntermediateField K (AlgebraicClosure K)) y
+  rw [show ρ.restrictNormal (E : IntermediateField K (AlgebraicClosure K)) =
+    AlgEquiv.restrictNormalHom E ρ from rfl] at hc
+  exact Subtype.ext (by simpa [h (y : AlgebraicClosure K) y.2] using hc)
+
+omit [NumberField K] in
+/-- **… and the `←` direction** (PROVEN 2026-07-31). -/
+theorem fixed_of_restrictNormalHom_eq_one (E : IntermediateField K (AlgebraicClosure K))
+    [Normal K E] (ρ : AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K)
+    (h : AlgEquiv.restrictNormalHom (F := K) (K₁ := AlgebraicClosure K) E ρ = 1) :
+    ∀ x ∈ E, ρ x = x := by
+  intro x hx
+  have hc := AlgEquiv.restrictNormal_commutes ρ
+    (E : IntermediateField K (AlgebraicClosure K)) (⟨x, hx⟩ : E)
+  rw [show ρ.restrictNormal (E : IntermediateField K (AlgebraicClosure K)) =
+    AlgEquiv.restrictNormalHom E ρ from rfl, h] at hc
+  simpa using hc.symm
+
+open scoped IsMulCommutative in
+/-- **THE COMPOSITUM OF TWO FINITE ABELIAN EXTENSIONS OF `K` INSIDE `AlgebraicClosure K` IS
+ABELIAN OVER `K`** (PROVEN 2026-07-31).
+
+The Galois-theoretic third of the compositum leaf below, closed so that its owner faces only
+ramification. Lift `σ, τ ∈ Gal(L₁ ⬝ L₂ / K)` to `Gal(K̄/K)`
+(`AlgEquiv.restrictNormalHom_surjective`) and look at the commutator `ρ`. Restriction to
+`Lᵢ` is a group homomorphism into a COMMUTATIVE group, so it kills `ρ`; hence `ρ` fixes each
+`Lᵢ` pointwise, hence the compositum pointwise, hence restricts to `1` there — which is the
+commutativity wanted. `IsGalois K ↥(L₁ ⊔ L₂)` is synthesised (`Normal` and separability of a
+sup are instances at this pin), so only the commutativity is work.
+
+**Note what is NOT used: no linear disjointness, no `Gal(M/K) ↪ Gal(L₁/K) × Gal(L₂/K)` as an
+explicit map, and no degree.** Injectivity of that pair map is exactly
+`forall_mem_sup_of_fixed`, and stating it as "fixes both ⟹ fixes the sup" is what makes the
+same lemma serve the ramification clauses too. -/
+theorem isAbelianGalois_sup (L₁ L₂ : IntermediateField K (AlgebraicClosure K))
+    [FiniteDimensional K L₁] [FiniteDimensional K L₂]
+    [IsAbelianGalois K L₁] [IsAbelianGalois K L₂] :
+    IsAbelianGalois K ↥(L₁ ⊔ L₂) := by
+  haveI : IsGalois K ↥(L₁ ⊔ L₂) := ⟨⟩
+  refine { is_comm.comm := fun σ τ => ?_ }
+  obtain ⟨σ', rfl⟩ := AlgEquiv.restrictNormalHom_surjective (AlgebraicClosure K) σ
+  obtain ⟨τ', rfl⟩ := AlgEquiv.restrictNormalHom_surjective (AlgebraicClosure K) τ
+  set ρ : AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K := (σ' * τ') * (τ' * σ')⁻¹ with hρ
+  have hfix : ∀ (E : IntermediateField K (AlgebraicClosure K)) [Normal K E]
+      [IsMulCommutative (E ≃ₐ[K] E)], ∀ x ∈ E, ρ x = x := by
+    intro E _ _
+    refine fixed_of_restrictNormalHom_eq_one K E ρ ?_
+    rw [hρ, map_mul, map_inv, map_mul, map_mul,
+      mul_comm (AlgEquiv.restrictNormalHom E τ') (AlgEquiv.restrictNormalHom E σ')]
+    exact mul_inv_cancel _
+  have hone : AlgEquiv.restrictNormalHom (F := K) (K₁ := AlgebraicClosure K)
+      ↥(L₁ ⊔ L₂) ρ = 1 :=
+    restrictNormalHom_eq_one_of_fixed K (L₁ ⊔ L₂) ρ
+      (forall_mem_sup_of_fixed K L₁ L₂ ρ (hfix L₁) (hfix L₂))
+  rw [hρ, map_mul, map_inv] at hone
+  rw [← map_mul, ← map_mul, ← mul_inv_eq_one]
+  exact hone
+
+/-- **THE COMPOSITUM OF TWO EXTENSIONS UNRAMIFIED AT THE INFINITE PLACES IS UNRAMIFIED AT
+THE INFINITE PLACES** (SORRY LEAF, cut 2026-07-31 out of `exists_unramifiedAbelian_sup`
+below).
+
+Pure archimedean ramification theory, no class field theory. `IsUnramifiedAtInfinitePlaces
+K L` says every infinite place of `L` is unramified over `K`, i.e. no real place of `K`
+becomes complex. The argument is the ARCHIMEDEAN instance of `forall_mem_sup_of_fixed`
+above: if a real place `v` of `K` were to become complex in `M = L₁ ⬝ L₂`, complex
+conjugation at a place above `v` is a nontrivial element of `Gal(M/K)` (the extension is
+Galois, so the decomposition group at an archimedean place is generated by it), and its
+restriction to each `Lᵢ` is the corresponding conjugation there — trivial, since `v` is
+unramified in `Lᵢ`. An element trivial on `L₁` and on `L₂` is trivial, contradiction.
+
+**Cheap sufficient cases worth knowing before doing the general one**: mathlib's
+`IsUnramifiedAtInfinitePlaces_of_odd_finrank` settles it whenever `[M : K]` is odd, and
+`IsUnramifiedAtInfinitePlaces.bot` handles the tower direction; neither reaches the
+compositum. `NumberField.InfinitePlace.IsUnramified` and `InfinitePlace.comap` are the
+API to work in.
+
+**The check that would refute it**: two extensions of a number field `K`, each unramified
+at every infinite place, whose compositum has a real place of `K` becoming complex. -/
+theorem isUnramifiedAtInfinitePlaces_sup (L₁ L₂ : IntermediateField K (AlgebraicClosure K))
+    [FiniteDimensional K L₁] [FiniteDimensional K L₂]
+    [IsUnramifiedAtInfinitePlaces K L₁] [IsUnramifiedAtInfinitePlaces K L₂] :
+    IsUnramifiedAtInfinitePlaces K ↥(L₁ ⊔ L₂) :=
+  sorry
+
+/-- **THE COMPOSITUM OF TWO EXTENSIONS UNRAMIFIED AT EVERY FINITE PRIME IS UNRAMIFIED AT
+EVERY FINITE PRIME** (SORRY LEAF, cut 2026-07-31 out of `exists_unramifiedAbelian_sup`
+below).
+
+Pure nonarchimedean ramification theory, no class field theory, and the last genuinely
+mathematical obligation of the compositum. The argument is the NONARCHIMEDEAN instance of
+`forall_mem_sup_of_fixed` above: an element of the inertia group at a prime `Q` of
+`𝓞 (L₁ ⬝ L₂)` acts trivially on `𝓞 M / Q`, hence trivially on the subring
+`𝓞 Lᵢ / (Q ∩ 𝓞 Lᵢ)`, hence lies in the inertia group of `Q ∩ 𝓞 Lᵢ` over `𝓞 K` — which is
+trivial by hypothesis. So it is trivial on `L₁` and on `L₂`, hence trivial, hence the
+inertia group at `Q` is trivial and `Q` is unramified.
+
+**⚠ THE ROUTE NOT TO TRY: `Algebra.FormallyUnramified.baseChange` on
+`𝓞 L₁ ⊗_{𝓞 K} 𝓞 L₂`.** It gives unramifiedness of the TENSOR PRODUCT, and transporting
+that to `𝓞 (L₁L₂)` needs the latter to be locally generated by the former — i.e. that the
+conductor of `𝓞 L₁ ⊗ 𝓞 L₂` in `𝓞 (L₁L₂)` is the unit ideal, which is false in general even
+for `L₁`, `L₂` unramified. The inertia route never forms the tensor product.
+
+**What the pin supplies.** `Algebra.IsUnramifiedAt`, `Algebra.IsUnramifiedAt.of_liesOver`
+(descent to an intermediate ring, used elsewhere in this file),
+`Ideal.ramificationIdx'_eq_one_iff`, `Ideal.under_under`, and mathlib's Frobenius/inertia
+material in `Mathlib/RingTheory/Frobenius.lean` and `Mathlib/RingTheory/Invariant/Basic.lean`.
+`ArtinSymbol.lean`'s `eq_one_of_smul_eq_self` (an automorphism acting trivially on `𝓞 L` is
+the identity) is the bridge from "acts trivially on the ring" to "is `1` in `Gal`", and it
+is already proven.
+
+**The check that would refute it**: a prime of a number field `K` unramified in `L₁` and in
+`L₂` but ramified in `L₁L₂`. -/
+theorem isUnramifiedAt_ringOfIntegers_sup (L₁ L₂ : IntermediateField K (AlgebraicClosure K))
+    [FiniteDimensional K L₁] [FiniteDimensional K L₂] [NumberField L₁] [NumberField L₂]
+    (h₁ : ∀ (Q : Ideal (𝓞 L₁)) (_ : Q.IsPrime), Q ≠ ⊥ → Algebra.IsUnramifiedAt (𝓞 K) Q)
+    (h₂ : ∀ (Q : Ideal (𝓞 L₂)) (_ : Q.IsPrime), Q ≠ ⊥ → Algebra.IsUnramifiedAt (𝓞 K) Q) :
+    ∀ (Q : Ideal (𝓞 ↥(L₁ ⊔ L₂))) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 K) Q :=
+  sorry
+
 /-- **THE COMPOSITUM OF TWO EVERYWHERE-UNRAMIFIED ABELIAN EXTENSIONS IS ONE: given two
 finite abelian extensions of `K` inside `AlgebraicClosure K`, each unramified at every
-finite prime and at every infinite place, some such extension contains them both** (SORRY
-LEAF, cut 2026-07-31 out of `exists_unramifiedAbelian_relNormClassSubgroup_eq_bot` below).
+finite prime and at every infinite place, some such extension contains them both** (cut
+2026-07-31 out of `exists_unramifiedAbelian_relNormClassSubgroup_eq_bot` below, and
+DECOMPOSED AND PROVEN the same day from `isAbelianGalois_sup` above — the Galois third,
+CLOSED — together with the two remaining leaves `isUnramifiedAtInfinitePlaces_sup` and
+`isUnramifiedAt_ringOfIntegers_sup`, and from nothing else).
 
 **THERE IS NO CLASS FIELD THEORY IN THIS STATEMENT.** It is pure Galois and ramification
 theory, it is the kind of thing that belongs in mathlib, and it is separately ownable from
@@ -586,28 +756,22 @@ prover should take `M = L₁ ⊔ L₂` and will find `FiniteDimensional K M`
 does exactly this at `exists_surjective_aut_classGroupQuotient_intermediateField` below,
 where `E := HCF ⊔ M` needs no hand-built instance beyond the tower algebras.
 
-**The three real obligations, and how each is proven.** All three are the SAME argument —
-an element of `Gal(M/K)` that is trivial on `L₁` and on `L₂` is trivial, because the set it
-fixes is an intermediate field containing both, hence containing `L₁ ⊔ L₂`:
+**The three real obligations were ALL THE SAME ARGUMENT, and that is why one of them is
+already closed.** An element of `Gal(M/K)` trivial on `L₁` and on `L₂` is trivial, because
+the set it fixes is an intermediate field containing both, hence containing `L₁ ⊔ L₂`. That
+step is `forall_mem_sup_of_fixed` above, PROVEN, and it serves all three:
 
-* *abelian*: lift `σ, τ ∈ Gal(M/K)` to `Gal(K̄/K)`; their restrictions to `L₁` and to `L₂`
-  commute because those groups are commutative, so `στσ⁻¹τ⁻¹` fixes `L₁` and `L₂`
-  pointwise, hence fixes `M`. The fixed-point step is `IntermediateField.fixedField
-  (Subgroup.closure {ρ})` together with `Subgroup.closure_le` into
-  `MulAction.stabilizer _ y`, and then `sup_le`;
-* *unramified at a finite prime `Q` of `𝓞 M`*: the inertia group at `Q` injects into
-  `Gal(L₁/K) × Gal(L₂/K)`, because an element acting trivially on `𝓞 M / Q` acts trivially
-  on the subring `𝓞 Lᵢ / (Q ∩ 𝓞 Lᵢ)`; both images lie in the inertia groups of the `Lᵢ`,
-  which are trivial by hypothesis;
-* *unramified at an infinite place*: same, with complex conjugation in place of inertia — a
-  real place of `K` that became complex in `M` supplies a nontrivial element of `Gal(M/K)`
-  fixing `Lᵢ`, contradiction.
+* *abelian* — `isAbelianGalois_sup` above, **PROVEN 2026-07-31**: the commutator of two
+  lifts to `Gal(K̄/K)` restricts to `1` on each `Lᵢ` because `Gal(Lᵢ/K)` is commutative;
+* *unramified at the finite primes* — `isUnramifiedAt_ringOfIntegers_sup` above, OPEN: the
+  same, with the inertia group at a prime `Q` of `𝓞 M` in place of the commutator;
+* *unramified at the infinite places* — `isUnramifiedAtInfinitePlaces_sup` above, OPEN: the
+  same, with complex conjugation at an archimedean place.
 
-**The one thing NOT to try**: `Algebra.FormallyUnramified.baseChange` applied to
-`𝓞 L₁ ⊗_{𝓞 K} 𝓞 L₂`. It does not reach `Algebra.IsUnramifiedAt (𝓞 K) Q` for `Q` a prime of
-`𝓞 (L₁ ⊔ L₂)` without knowing that `𝓞 (L₁L₂)` is locally generated by that tensor product,
-which is FALSE in general (the conductor of `𝓞 L₁ ⊗ 𝓞 L₂` in `𝓞 (L₁L₂)` need not be the
-unit ideal). The inertia route above avoids the question entirely.
+The two open ones are separately ownable and use disjoint mathlib API
+(`Algebra.IsUnramifiedAt` and localisation, against `InfinitePlace.IsUnramified` and
+`InfinitePlace.comap`); each docstring carries its own argument and its own refutation
+check, including the `FormallyUnramified.baseChange` route that does NOT work.
 
 **Both unramifiedness hypotheses on both fields are load-bearing.** Dropping unramifiedness
 at the infinite places makes the conclusion false for the same reason it makes the
@@ -633,8 +797,14 @@ theorem exists_unramifiedAbelian_sup (L₁ L₂ : IntermediateField K (Algebraic
       (_ : IsUnramifiedAtInfinitePlaces K M),
       (∀ (Q : Ideal (𝓞 M)) (_ : Q.IsPrime), Q ≠ ⊥ →
         Algebra.IsUnramifiedAt (𝓞 K) Q) ∧
-      L₁ ≤ M ∧ L₂ ≤ M :=
-  sorry
+      L₁ ≤ M ∧ L₂ ≤ M := by
+  haveI := h₁fd; haveI := h₁nf; haveI := h₁ab; haveI := h₁inf
+  haveI := h₂fd; haveI := h₂nf; haveI := h₂ab; haveI := h₂inf
+  haveI : FiniteDimensional K ↥(L₁ ⊔ L₂) := IntermediateField.finiteDimensional_sup L₁ L₂
+  haveI : NumberField ↥(L₁ ⊔ L₂) := NumberField.of_module_finite K _
+  exact ⟨L₁ ⊔ L₂, inferInstance, inferInstance, isAbelianGalois_sup K L₁ L₂,
+    isUnramifiedAtInfinitePlaces_sup K L₁ L₂,
+    isUnramifiedAt_ringOfIntegers_sup K L₁ L₂ h₁unr h₂unr, le_sup_left, le_sup_right⟩
 
 /-- **THE SECOND FUNDAMENTAL INEQUALITY AT MODULUS `1`: for `L/K` finite abelian,
 unramified at every finite prime AND at every infinite place, the norm index
