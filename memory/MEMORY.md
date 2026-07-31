@@ -33,3 +33,4 @@
 - [Preflight finds unowned leaves](flt-preflight-finds-unowned-leaves.md) — the only check that catches sorries no agent reported; run it BETWEEN releases; count leaves back when grouping into tasks
 - [flt-loop spawn/liveness race](flt-loop-spawn-liveness-race.md) — the loop can put TWO live agents in one worktree; check your token against jobs/<name>.json first, and a discarded incarnation yields WITHOUT writing its sentinel
 - [flt-loop runs on mystique](flt-loop-runs-on-mystique.md) — not on the medic's host, so ps says "dead" for a healthy loop; it re-execs onto edited source itself (do NOT hand-restart), and a live Claude session there respawns it if killed
+- [A derivation kills 𝔪 for free](flt-derivation-kills-the-maximal-ideal.md) — "needs a ring generator, nothing weaker" is route-specific: δ(unif)=0 makes δ factor through the residue field, which is perfect because it is algebraic over a FINITE field (this closed Serre IV §1 Lemma 1)
