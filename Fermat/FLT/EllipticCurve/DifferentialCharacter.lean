@@ -123,9 +123,15 @@ cleared) `isDiffCharCert_add_of_ne` is now **PROVEN**.
 **STATUS AS OF 2026-07-31 — THE LEAF LIST IS BACK TO ONE.**  The two group-law leaves
 below are PROVEN, and both were **FALSE AS STATED** when they were opened.
 
-* `exists_diffCharScalar_poly` — `(A′B − AB′)·E = c·C·B²` for some `c`.  **THE ONLY
-  OPEN LEAF IN THIS FILE.**  Genuinely geometric (Abel–Jacobi); see the note on it for
-  why no `linear_combination` exists.
+* `exists_diffCharScalar_polyData` — `(A′B − AB′)·E = c·C·B²` for some `c`.  **THE ONLY
+  OPEN LEAF IN THIS FILE**, and since 2026-07-31 it mentions NO point, NO `AddMonoidHom`
+  and NO curve point set: five polynomials, two identities (`diffChar_yWitness_onePart`
+  and `diffChar_curveEq`, both PROVEN), one conclusion.  `exists_diffCharScalar_poly` is
+  now a three-line assembly over it.  Genuinely geometric — the pullback factor of a
+  morphism of complete curves is constant — so no `linear_combination` will do it; the
+  note on the declaration carries the valuation-by-valuation proof, a machine-checked
+  `linear_combination` for the one identity the count needs, and a characteristic-`2`
+  counterexample showing why the `y`-multiplier data cannot be thrown away.
 * `chordSum_xWitness` — the chord formula for `x₃`, `y` eliminated, cleared.
   **PROVEN 2026-07-31.**
 * `chordSum_yMultiplier` — the `y`-part of the chord formula for `y₃`, cleared.
@@ -1098,6 +1104,87 @@ at the points `P` whose `x`-coordinate avoids one finite set of your choosing �
 hypotheses. Do NOT try to verify the raw nine-term `IsDiffCharCert` at every point;
 that is what made these leaves look atomic. -/
 
+/-- **THE ONE OPEN LEAF OF THIS FILE (restated 2026-07-31): THE PULLBACK FACTOR OF A
+MORPHISM IS A CONSTANT, AS A STATEMENT ABOUT `F[X]` AND NOTHING ELSE.**
+
+No point, no `AddMonoidHom`, no `W.Point`: five polynomials and two identities.  The
+three hypotheses are exactly the point-level content of `IsRationalMap φ` that the
+argument uses, and all three are PROVEN above — `diffChar_yMultiplier_ne_zero` (`hCx`),
+`diffChar_yWitness_onePart` (`hone`) and `diffChar_curveEq` (`hcurve`) — so
+`exists_diffCharScalar_poly` below is a three-line assembly over this.
+
+**WHAT IT SAYS.**  Write `x = A/B`, `γ = Cx/E`, `δ = D/E` in `F(X)`.  Then `hone` says
+`2δ = γ(a₁X + a₃) − a₁′x − a₃′` and `hcurve` says the target curve's equation holds at
+`(x, γy + δ)`.  Together they say precisely that `P = (X, y) ↦ (x, γy + δ)` is a
+MORPHISM `W → W′` of the two elliptic curves.  The conclusion is `x′ = c·γ`, i.e.
+`φ*(dT/ψ₂′) = c·(dX/ψ₂)`: the pullback factor of a morphism is a constant.
+
+**THE PROOF, AND WHY IT IS NOT A `linear_combination`.**  `φ*ω′ = u·ω` with
+`u = x′/γ ∈ F(X)`; `ω` has neither zeros nor poles on `W` and `φ*ω′` is regular because
+`φ` is a morphism, so `div u ≥ 0` on the complete curve `W`, so `u ∈ F`.  Concretely, it
+is a valuation count at every place of `F(X)`, using ONLY `Ψ_{W′}(x) = γ²Ψ_W` (see
+below).  Writing `v` for a place, `m = ord_v(x − b)` at a point where `x(v) = b`:
+
+* `x` regular at `v`, `Ψ_{W′}(b) ≠ 0`: then `ord_v Ψ_W = 0` too (a root of `Ψ_W` forces
+  `2 ord_v γ = −1`, impossible), so `ord_v γ = 0` and `ord_v x′ ≥ 0`;
+* `x` regular, `Ψ_{W′}(b) = 0`: `2 ord_v γ = m − ord_v Ψ_W ∈ {m, m−1}`, and
+  `ord_v x′ ≥ m − 1`, so `ord_v u ≥ m/2 − 1 ≥ 0` resp. `(m−1)/2 ≥ 0`;
+* `x` with a pole of order `m`: `2 ord_v γ = −3m − ord_v Ψ_W`, `ord_v x′ ≥ −m−1`, and the
+  same two subcases give `ord_v u ≥ m/2 − 1 ≥ 0` resp. `(m−1)/2 ≥ 0`.
+
+In every case the PARITY forced by `2 ord_v γ` is what makes `m ≥ 2` (resp. `m` odd), and
+that is the whole content.  At `∞` the same count in `1/X`.  A rational function with no
+pole anywhere is a constant.  Equivalently, in polynomial form: `Cx·B² ∣ (A′B − AB′)·E`
+and `deg((A′B − AB′)·E) ≤ deg(Cx·B²)`, which together give `W = c·V` (with `c = 0` when
+the Wronskian vanishes — that case, `A/B ∈ F(X^p)`, is the inseparable/Frobenius one and
+needs no separate treatment).
+
+**THE ONE IDENTITY THE COUNT NEEDS, AND IT IS FREE — MACHINE-CHECKED 2026-07-31, PASTE
+IT IN.**  `Ψ_{W′}(x) = γ²Ψ_W`, cleared, is a `linear_combination` of the two hypotheses:
+no density, no points, no elliptic input.  Verbatim, and it compiles:
+
+    have hpsisq : E ^ 2 * (4 * A ^ 3 + (C W'.a₁ ^ 2 + 4 * C W'.a₂) * A ^ 2 * B
+          + (4 * C W'.a₄ + 2 * C W'.a₁ * C W'.a₃) * A * B ^ 2
+          + (C W'.a₃ ^ 2 + 4 * C W'.a₆) * B ^ 3)
+        = Cx ^ 2 * B ^ 3 * (4 * X ^ 3 + (C W.a₁ ^ 2 + 4 * C W.a₂) * X ^ 2
+          + (4 * C W.a₄ + 2 * C W.a₁ * C W.a₃) * X + (C W.a₃ ^ 2 + 4 * C W.a₆)) := by
+      simp only [map_ofNat] at hone
+      linear_combination (B * (2 * D * B + C W'.a₁ * A * E + C W'.a₃ * B * E
+          + Cx * B * (C W.a₁ * X + C W.a₃))) * hone - 4 * hcurve
+
+(the mechanism: `4f + (a₁X + a₃)² = Ψ_W`, and `B·(p² − q²) = B(p+q)(p−q)` for `p`, `q`
+the two sides of `hone`.  **The `simp only [map_ofNat]` is not cosmetic**: at the
+POLYNOMIAL level `ring` treats `Polynomial.C 2` as an ATOM, so without it the residual is
+`(4 − 2·C 2)(…) + (4 − (C 2)²)(…)` and `ring` fails.  Everywhere else in this file `hone`
+is used after `eval`, where `eval_C` has already done this.)  It is deliberately NOT a
+standalone lemma here: with the leaf still open it would have no consumer and would be
+free-floating.
+
+**THE CHARACTERISTIC-`2` TRAP, AND IT IS WHY `hcurve` AND `D` MUST BE KEPT.**  It is
+tempting to throw `D` away and state the leaf as "`x, γ ∈ F(X)` with `Ψ_{W′}(x) = γ²Ψ_W`
+implies `x′/γ ∈ F`".  **That statement is FALSE in characteristic `2`.**  There
+`Ψ_W = 4X³ + b₂X² + 2b₄X + b₆ = (a₁X + a₃)²` is a SQUARE — the `y`-free model is
+inseparable and remembers nothing — so on the supersingular curve `y² + y = x³`
+(`a₁ = 0`, `a₃ = 1`, `Δ = 1 ≠ 0`) one has `Ψ_W = Ψ_{W′} = 1`, and `x = X³`, `γ = 1`
+satisfies `Ψ_{W′}(x) = γ²Ψ_W` while `x′ = 3X² = X²` is not constant.  What kills that
+pair is `hcurve`: it would need `δ ∈ F(X)` with `δ² + δ = x³ − X³ = X⁹ − X³`, and
+Artin–Schreier has no solution there (a polynomial `δ` would need degree `9/2`).  So the
+statement is characteristic-free ONLY with the full `(A, B, Cx, D, E)` data.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: five polynomials over an algebraically closed
+field satisfying `hone` and `hcurve` for two elliptic `W`, `W′`, with `(A′B − AB′)·E` not
+a scalar multiple of `Cx·B²`.  Any candidate must survive the char-`2` remark above:
+`hcurve` is the load-bearing hypothesis, not `hone`. -/
+theorem exists_diffCharScalar_polyData [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {A B Cx D E : F[X]} (hB : B ≠ 0) (hE : E ≠ 0) (hCx : Cx ≠ 0)
+    (hone : C 2 * D * B + C W'.a₁ * A * E + C W'.a₃ * B * E
+      = Cx * B * (C W.a₁ * X + C W.a₃))
+    (hcurve : Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) * B ^ 3 + D ^ 2 * B ^ 3
+        + C W'.a₁ * A * D * E * B ^ 2 + C W'.a₃ * D * E * B ^ 3
+      = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3)) :
+    ∃ c : F, (derivative A * B - A * derivative B) * E = C c * Cx * B ^ 2 :=
+  sorry
+
 /-- **LEAF: the pullback ratio `φ*ω'/ω` is a CONSTANT.**
 
 This is the ONE geometric input of `exists_isDiffChar`, isolated from all of its
@@ -1175,15 +1262,29 @@ pair `(x₁, γ₁)` with `Ψ_{W′}(x₁) = γ₁²Ψ_W` is exactly a morphism 
 isogeny composed with a TRANSLATION — and "the pullback factor of a morphism is constant"
 is Abel–Jacobi, i.e. genuinely divisor theory.  That is why this leaf survived while the
 chord branch's did not: the chord branch has `c` and `d` handed to it, and this one has to
-produce one. -/
+produce one.
+
+**RESTATED AGAIN 2026-07-31 — IT IS NOW AN ASSEMBLY OVER
+`exists_diffCharScalar_polyData`, WHICH MENTIONS NO POINT, NO `AddMonoidHom` AND NO
+CURVE POINT SET.**  The three point-level consequences of `hrat` that the argument
+actually uses are already PROVEN here, so the whole of `φ` can be replaced by them:
+`diffChar_yMultiplier_ne_zero` (`Cx ≠ 0`), `diffChar_yWitness_onePart` and
+`diffChar_curveEq`.  What is left is a statement about five polynomials, attackable in a
+scratch module that imports almost nothing and testable with `gp`/`Singular`. -/
 theorem exists_diffCharScalar_poly [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {φ : W.Point →+ W'.Point} {A B Cx D E : F[X]} (hφ0 : φ ≠ 0) (hB : B ≠ 0) (hE : E ≠ 0)
     (hrat : ∀ P : W.Point, φ P ≠ 0 →
       veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
       veluPointY (φ P) * E.eval (veluPointX P)
         = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
-    ∃ c : F, (derivative A * B - A * derivative B) * E = C c * Cx * B ^ 2 :=
-  sorry
+    ∃ c : F, (derivative A * B - A * derivative B) * E = C c * Cx * B ^ 2 := by
+  classical
+  have hker : (AddMonoidHom.ker φ : Set W.Point).Finite :=
+    IsRationalMap.finite_ker ⟨A, B, Cx, D, E, hB, hE, hrat⟩ hφ0
+  exact exists_diffCharScalar_polyData (W := W) (W' := W') hB hE
+    (diffChar_yMultiplier_ne_zero hφ0 hker hB hE hrat)
+    (diffChar_yWitness_onePart (W' := W') hker hrat)
+    (diffChar_curveEq (W' := W') hker hB hE hrat)
 
 /-- **PROVEN 2026-07-30 over `exists_diffCharScalar_poly`**: the pullback ratio
 `φ*ω'/ω` is a constant, in the point-level form `exists_isDiffChar` consumes.
