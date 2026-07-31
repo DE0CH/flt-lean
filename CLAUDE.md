@@ -826,6 +826,36 @@ attaches rather than restarting (see the single-flight section); and
 splitting oversized modules is what converts idle cores into throughput,
 because the file is the unit of elaboration.
 
+**A DECOMPOSITION'S GLUE IS LEVEL-GENERIC BY CONSTRUCTION — so prototype it
+as an `example` that takes the sub-leaf as a HYPOTHESIS** (2026-07-31,
+measured in `X0.lean`: **16 s against 8 min**, a 30× round trip, and the
+prototype pasted into the 79 000-line file compiled first try).
+
+The scratch-module rule above says "import only what you need". For the
+commonest kind of iteration in this development — cutting a leaf into a
+smaller leaf plus glue — you can go further and need **none of the project
+at all**, because the glue never inspects the project's definitions. Write
+
+    example {XZ AZ SR : Scheme.{0}} {xstr : XZ ⟶ SR} {astrZ : AZ ⟶ SR}
+        (U : XZ.Opens) (hcodim : ∀ z : XZ, z ∉ U → 2 ≤ ringKrullDim (XZ.presheaf.stalk z))
+        (v : (U : Scheme.{0}) ⟶ AZ) (hv : v ≫ astrZ = U.ι ≫ xstr)
+        (purity : ⟨the sub-leaf's full statement, verbatim⟩) :
+        ⟨the parent's conclusion, verbatim⟩ := by …
+
+with the project's structures (`IsSmoothProperCurve`, `AbelianSchemeStruct`,
+`IsReductionBase`, …) simply DELETED from the signature and abstract
+`Scheme` variables in their place. If the glue really is glue it will not
+miss them; if it does miss one, that is the useful answer — the cut is not
+where you thought it was, and you learned it in seconds.
+
+Two things this buys beyond speed. It **proves the cut is honest**: a glue
+that compiles without the hypotheses is demonstrably not smuggling any of
+the parent's content into the residue. And the abstracted signature is
+worth QUOTING in the residue's docstring — not committing as a module,
+which would just be another unreachable file — because it states the
+sub-leaf in the one form that matters: stripped of everything the consumer
+does not actually use.
+
 ## Sorry and have discipline (glue-first, no floating)
 
 - **Glue first.** At any frontier, first replace the bare `sorry` with
