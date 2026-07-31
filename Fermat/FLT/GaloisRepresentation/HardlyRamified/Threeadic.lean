@@ -4503,12 +4503,27 @@ will do, since `Family` reaches this file transitively and therefore
 reaches everything this file imports.
 
 The multiplicative-type layer is also not yet in this file's import
-cone; `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Diagonalizable.lean`
-imports mathlib ONLY, so `public import`ing it wires
+cone. `public import`ing
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Diagonalizable.lean` wires
 `HopfAlgebra.IsMultiplicativeType`, `HopfAlgebra.cornerIdeal`,
 `HopfAlgebra.isMultiplicativeType_of_isShortExact` and
-`HopfAlgebra.etale_of_isShortExact` in with no new project edge and no
-cycle. Add it in the same commit that first uses it.
+`HopfAlgebra.etale_of_isShortExact` in with NO CYCLE. Add it in the same
+commit that first uses it.
+
+**CORRECTION, 2026-07-31, measured rather than repeated.** The version of
+this paragraph that stood here until today said `Diagonalizable.lean`
+"imports mathlib ONLY". That is FALSE: it `public import`s six project
+modules, and their transitive closure is NINE modules —
+`HopfAlgebra/{CartierDual, CartierDualExamples, Corner, GroupFunctions,
+ShortExact, AlphaP, AlphaPSelfDual, Diagonalizable}` and
+`Henselian/FiniteSplit`. What is TRUE, and is the only thing the claim
+was ever used for, is that all nine live under
+`Fermat/FLT/Mathlib/RingTheory/` and NONE of them is in this file's
+downstream cone, so the edge is acyclic. Also note `ShortExact.lean` is
+not sorry-free: `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`
+is an open leaf there, so `isMultiplicativeType_of_isShortExact` is
+direct-sorry-free but not necessarily axiom-clean — check with
+`#print axioms` appended to that module if it matters to you.
 
 Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102**
 (1974), 3.3.2–3.3.5; Tate, *Finite flat group schemes*, §4, in
@@ -5452,9 +5467,14 @@ NOT in this file's import cone: a probe importing only
 `HopfAlgebra.isMultiplicativeType_of_isShortExact` and
 `HopfAlgebra.etale_of_isShortExact`. `Fermat/FLT/Mathlib/RingTheory/
 HopfAlgebra/`'s `CartierDual`, `Corner`, `ShortExact` and
-`Diagonalizable` import only mathlib and each other, so a
+`Diagonalizable` import only mathlib and each other (measured
+2026-07-31: the closure of `Diagonalizable` is exactly nine modules,
+adding `CartierDualExamples`, `GroupFunctions`, `AlphaP`,
+`AlphaPSelfDual` and `Henselian/FiniteSplit` to those four, and every one
+of them is under `Fermat/FLT/Mathlib/RingTheory/` and outside this file's
+downstream cone), so a
 `public import` of `…HopfAlgebra.Diagonalizable` wires the layer in with
-no new project edge and no cycle. It is deliberately not added here,
+no cycle. It is deliberately not added here,
 because an import with no use is a build-time cost paid by every
 consumer of this file; add it in the same commit that first uses it.
 
@@ -5680,10 +5700,14 @@ rather than taken from the commit message:
   token. One warning, one token — so no anonymous inner sorries hide
   behind it.
 
-Also confirmed for whoever proves this: `HopfAlgebra/Diagonalizable.lean`
-imports mathlib ONLY, so the `public import` the paragraph above
-prescribes wires the multiplicative-type layer in with no project edge
-and no cycle.
+Also confirmed for whoever proves this: the `public import` of
+`HopfAlgebra/Diagonalizable.lean` that the paragraph above prescribes
+wires the multiplicative-type layer in with NO CYCLE. (The reason
+recorded here was "imports mathlib ONLY", and that is FALSE — see the
+measured correction in `connected_locus_smul_of_hopf_package`'s
+docstring above: the closure is nine modules, all under
+`Fermat/FLT/Mathlib/RingTheory/`, none of them downstream of this file,
+which is what makes the edge acyclic.)
 
 **PARTIAL RE-DERIVATION, 2026-07-31 (flt-lean-124) — the ledger above is
 now `2 → 2`, not `2 → 1`, and this theorem is PROVEN.** See the STATUS
