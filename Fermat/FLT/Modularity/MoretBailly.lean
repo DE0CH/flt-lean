@@ -10626,8 +10626,163 @@ theorem isDomain_algebraicClosure_tensorProduct_reduced_integralSystemModel_rat
       (AlgebraicClosure ℚ) (nilradical (IntegralSystemModel f ℚ)))
     (isPrime_nilradical_quotient_of_isPrime_radical _ hQ)
 
+/-- **A FINITE SEPARABLE EXTENSION OF `Frac P` IS THE FUNCTION FIELD OF A
+HYPERSURFACE OVER `P`** (**PROVEN 2026-07-31**), for `P` any unique factorisation
+domain. This is the whole mathematical content of
+`exists_irreducible_hypersurface_fractionRing_ringEquiv_rat` below; that theorem
+is Noether normalisation followed by this lemma followed by `finSuccEquiv`.
+
+THE ARGUMENT. `L / Frac P` is finite and separable, so `Field.exists_primitive_element`
+gives `θ` with `(Frac P)⟮θ⟯ = ⊤`; let `h := minpoly (Frac P) θ`. Clearing
+denominators (`IsLocalization.integerNormalization`) and passing to the PRIMITIVE
+PART produces `g₁ ∈ P[X]` whose image in `(Frac P)[X]` is `C (b / content) * h`,
+i.e. associated to `h`; Gauss's lemma
+(`Polynomial.IsPrimitive.irreducible_iff_irreducible_map_fraction_map`) turns the
+irreducibility of `h` into irreducibility of `g₁` over `P`, and Gauss again
+(`IsPrimitive.dvd_of_fraction_map_dvd_fraction_map`) identifies the kernel of
+`eval₂ (P → Frac P → L) θ : P[X] → L` with `(g₁)` — that is what makes the induced
+`ρ : P[X] ⧸ (g₁) → L` INJECTIVE, and it is the only step where primitivity is used
+twice. Finally every `z : L` lies in `Algebra.adjoin (Frac P) {θ}` (because
+`(Frac P)⟮θ⟯ = ⊤` and `θ` is integral), so `z = aeval θ q` for some `q` over
+`Frac P`, and clearing denominators in `q` writes `z` as a quotient of two elements
+of the image of `ρ`. `IsFractionRing.of_field` then says `L` IS `Frac (P[X] ⧸ (g₁))`.
+
+Note this is where separability — hence characteristic zero, at the one place the
+consumer uses it — enters, and nowhere else. -/
+theorem exists_irreducible_polynomial_fractionRing_ringEquiv_of_finiteSeparable
+    (P : Type*) [CommRing P] [IsDomain P] [UniqueFactorizationMonoid P]
+    (L : Type*) [Field L] [Algebra (FractionRing P) L]
+    [FiniteDimensional (FractionRing P) L] [Algebra.IsSeparable (FractionRing P) L] :
+    ∃ g₁ : Polynomial P, Irreducible g₁ ∧
+      Nonempty (FractionRing (Polynomial P ⧸ Ideal.span {g₁}) ≃+* L) := by
+  classical
+  letI : NormalizedGCDMonoid P := Nonempty.some inferInstance
+  obtain ⟨θ, hθ⟩ := Field.exists_primitive_element (FractionRing P) L
+  have hθint : IsIntegral (FractionRing P) θ := Algebra.IsIntegral.isIntegral θ
+  have hhirr : Irreducible (minpoly (FractionRing P) θ) := minpoly.irreducible hθint
+  have hhne : minpoly (FractionRing P) θ ≠ 0 := minpoly.ne_zero hθint
+  -- clear denominators in the minimal polynomial and take the primitive part
+  obtain ⟨b, hbM, hbmap⟩ :=
+    IsLocalization.integerNormalization_spec (nonZeroDivisors P) (minpoly (FractionRing P) θ)
+  set n : Polynomial P :=
+    IsLocalization.integerNormalization (nonZeroDivisors P) (minpoly (FractionRing P) θ) with hn
+  have hnne : n ≠ 0 := by
+    rw [hn, Ne, IsFractionRing.integerNormalization_eq_zero_iff]
+    exact hhne
+  have hcontent : (algebraMap P (FractionRing P)) n.content ≠ 0 := by
+    simp only [ne_eq, map_eq_zero_iff _ (IsFractionRing.injective P (FractionRing P)),
+      Polynomial.content_eq_zero_iff]
+    exact hnne
+  have hbne : (algebraMap P (FractionRing P)) b ≠ 0 := by
+    simp only [ne_eq, map_eq_zero_iff _ (IsFractionRing.injective P (FractionRing P))]
+    exact nonZeroDivisors.ne_zero hbM
+  -- `n.primPart` maps to a unit multiple of the minimal polynomial
+  have hmapeq : (n.primPart).map (algebraMap P (FractionRing P)) =
+      Polynomial.C ((algebraMap P (FractionRing P)) b /
+        (algebraMap P (FractionRing P)) n.content) * minpoly (FractionRing P) θ := by
+    have h1 : n.map (algebraMap P (FractionRing P)) =
+        Polynomial.C ((algebraMap P (FractionRing P)) n.content) *
+          (n.primPart).map (algebraMap P (FractionRing P)) := by
+      conv_lhs => rw [n.eq_C_content_mul_primPart]
+      rw [Polynomial.map_mul, Polynomial.map_C]
+    rw [h1] at hbmap
+    rw [Algebra.smul_def, Polynomial.algebraMap_apply] at hbmap
+    have hCne : (Polynomial.C ((algebraMap P (FractionRing P)) n.content)) ≠ 0 := by
+      simpa [Polynomial.C_eq_zero] using hcontent
+    refine mul_left_cancel₀ hCne ?_
+    have hdiv : (algebraMap P (FractionRing P)) n.content *
+        ((algebraMap P (FractionRing P)) b / (algebraMap P (FractionRing P)) n.content)
+        = (algebraMap P (FractionRing P)) b := by
+      field_simp
+    rw [hbmap, ← mul_assoc, ← Polynomial.C_mul, hdiv]
+  have hunit : IsUnit (Polynomial.C ((algebraMap P (FractionRing P)) b /
+      (algebraMap P (FractionRing P)) n.content)) :=
+    Polynomial.isUnit_C.mpr
+      (isUnit_iff_ne_zero.mpr (by simp [div_eq_zero_iff, hbne, hcontent]))
+  have hassoc : Associated (minpoly (FractionRing P) θ)
+      ((n.primPart).map (algebraMap P (FractionRing P))) := by
+    refine ⟨hunit.unit, ?_⟩
+    rw [hmapeq, IsUnit.unit_spec, mul_comm]
+  have hg1prim : (n.primPart).IsPrimitive := n.isPrimitive_primPart
+  have hirr : Irreducible n.primPart :=
+    hg1prim.irreducible_iff_irreducible_map_fraction_map.mpr (hassoc.irreducible hhirr)
+  refine ⟨n.primPart, hirr, ?_⟩
+  -- the evaluation map `P[X] → L` at `θ`
+  set ι : P →+* L := (algebraMap (FractionRing P) L).comp (algebraMap P (FractionRing P)) with hι
+  have hιinj : Function.Injective ι := by
+    rw [hι]
+    exact (algebraMap (FractionRing P) L).injective.comp (IsFractionRing.injective P _)
+  set φL : Polynomial P →+* L := Polynomial.eval₂RingHom ι θ with hφL
+  have hφLeq : ∀ q : Polynomial P,
+      φL q = Polynomial.aeval θ (q.map (algebraMap P (FractionRing P))) := by
+    intro q
+    rw [hφL, Polynomial.aeval_def, Polynomial.eval₂_map]
+    simp [hι]
+  have hker : ∀ q : Polynomial P, φL q = 0 ↔ n.primPart ∣ q := by
+    intro q
+    rw [hφLeq q]
+    constructor
+    · intro h0
+      refine hg1prim.dvd_of_fraction_map_dvd_fraction_map (K := FractionRing P) ?_
+      refine dvd_trans (hassoc.symm.dvd) ?_
+      exact minpoly.dvd (FractionRing P) θ h0
+    · rintro ⟨r, rfl⟩
+      rw [Polynomial.map_mul, map_mul]
+      have hzero : Polynomial.aeval θ ((n.primPart).map (algebraMap P (FractionRing P))) = 0 := by
+        rw [hmapeq, map_mul]
+        simp [minpoly.aeval]
+      rw [hzero, zero_mul]
+  have hspanle : Ideal.span {n.primPart} ≤ RingHom.ker φL := by
+    rw [Ideal.span_le]
+    rintro x hx
+    simp only [Set.mem_singleton_iff] at hx
+    subst hx
+    exact (hker _).mpr dvd_rfl
+  haveI hprime : (Ideal.span {n.primPart}).IsPrime :=
+    (Ideal.span_singleton_prime hirr.ne_zero).mpr
+      (UniqueFactorizationMonoid.irreducible_iff_prime.mp hirr)
+  haveI : IsDomain (Polynomial P ⧸ Ideal.span {n.primPart}) := Ideal.Quotient.isDomain _
+  set ρ : (Polynomial P ⧸ Ideal.span {n.primPart}) →+* L :=
+    Ideal.Quotient.lift _ φL (fun a ha => hspanle ha) with hρ
+  have hρmk : ∀ q : Polynomial P, ρ (Ideal.Quotient.mk _ q) = φL q := fun _ => rfl
+  have hρinj : Function.Injective ρ := by
+    rw [injective_iff_map_eq_zero]
+    intro x hx
+    obtain ⟨q, rfl⟩ := Ideal.Quotient.mk_surjective x
+    rw [hρmk] at hx
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton.mpr ((hker q).mp hx))
+  letI : Algebra (Polynomial P ⧸ Ideal.span {n.primPart}) L := ρ.toAlgebra
+  haveI : FaithfulSMul (Polynomial P ⧸ Ideal.span {n.primPart}) L :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr hρinj
+  haveI : IsFractionRing (Polynomial P ⧸ Ideal.span {n.primPart}) L := by
+    refine IsFractionRing.of_field _ L (fun z => ?_)
+    -- every `z : L` is a polynomial in `θ` over `Frac P`
+    have hz : z ∈ Algebra.adjoin (FractionRing P) ({θ} : Set L) := by
+      have h1 : (IntermediateField.adjoin (FractionRing P) ({θ} : Set L)).toSubalgebra =
+          Algebra.adjoin (FractionRing P) ({θ} : Set L) :=
+        IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hθint.isAlgebraic
+      rw [← h1, hθ]
+      trivial
+    rw [Algebra.adjoin_singleton_eq_range_aeval] at hz
+    obtain ⟨q, hq⟩ := hz
+    replace hq : (Polynomial.aeval θ) q = z := hq
+    obtain ⟨c, hcM, hcmap⟩ := IsLocalization.integerNormalization_spec (nonZeroDivisors P) q
+    have hcne : ι c ≠ 0 := fun h => nonZeroDivisors.ne_zero hcM (hιinj (by simpa using h))
+    refine ⟨Ideal.Quotient.mk _ (IsLocalization.integerNormalization (nonZeroDivisors P) q),
+      Ideal.Quotient.mk _ (Polynomial.C c), ?_⟩
+    have hcalc : φL (IsLocalization.integerNormalization (nonZeroDivisors P) q) = ι c * z := by
+      rw [hφLeq, hcmap, Algebra.smul_def, Polynomial.algebraMap_apply, map_mul]
+      simp [hq, hι]
+    have hCc : φL (Polynomial.C c) = ι c := by simp [hφL]
+    show z = ρ _ / ρ _
+    rw [hρmk, hρmk, hcalc, hCc]
+    field_simp
+  exact ⟨(IsLocalization.algEquiv (nonZeroDivisors (Polynomial P ⧸ Ideal.span {n.primPart}))
+    (FractionRing (Polynomial P ⧸ Ideal.span {n.primPart})) L).toRingEquiv⟩
+
 /-- **BIRATIONAL HYPERSURFACE NORMAL FORM FOR A FINITELY GENERATED DOMAIN OVER
-`ℚ`** — Poonen §3.2 step (c) (SORRY LEAF, cut 2026-07-28 out of
+`ℚ`** — Poonen §3.2 step (c) (**PROVEN 2026-07-31**; it was a sorry leaf, cut
+2026-07-28 out of
 `exists_fractionRing_ringEquiv_hypersurface_integralSystemModel_rat` below).
 
 This is the mathematical core of the cut: every finitely generated domain over `ℚ`
@@ -10708,13 +10863,145 @@ unavailable outright, since a field has no irreducible element; `S = ℚ` forces
 `k = 1` with `g` of degree one, and `S = ℚ[t]` forces `k = 2`. In general `k` is
 the transcendence degree of `Frac S` plus one, so no uniform junk answer exists.
 
-CIRCULARITY GUARD: pure commutative algebra; nothing in this file is used. -/
+CIRCULARITY GUARD: pure commutative algebra; nothing in this file is used.
+
+**HOW IT WAS PROVEN, 2026-07-31, and the ROUTE CORRECTION above was right about
+the branch but wrong about the last step being several lemmas.** The Noether
+branch was taken, in its `exists_finite_inj_algHom_of_fg` form — mathlib's
+companion to `exists_integral_inj_algHom_of_fg`, which hands back `g.Finite`
+directly and so skips `FiniteType.of_restrictScalars_finiteType` and
+`Algebra.IsIntegral.finite` entirely. Write `P := MvPolynomial (Fin s) ℚ` and
+`M := Algebra.algebraMapSubmonoid S P⁰`.
+
+The chain the correction predicted ("the localisation of `S` at `P ∖ 0` is
+already a field") is FOUR lines, not several lemmas, because
+`Module.Finite.of_isLocalization` is already registered in mathlib as an
+INSTANCE at exactly this pair — `Module.Finite (FractionRing A)
+(Localization (algebraMapSubmonoid C A⁰))` — so `Module.Finite (Frac P)
+(Localization M)` needs no argument at all, and `Algebra.IsIntegral.of_finite`
+plus `isField_of_isIntegral_of_isField'` finish it.
+
+What the correction did NOT foresee is that `IsField (Localization M)` is used
+WITHOUT ever installing a `Field` instance on it, which is what keeps the proof
+free of the usual `IsField.toField` instance diamond: `IsField.mul_inv_cancel`
+is a plain existence statement, and combining it with `IsLocalization.surj`
+gives, for each `x ∈ S⁰`, an `m` with `m * x ∈ M`. That is the hypothesis of
+`IsLocalization.isLocalization_of_is_exists_mul_mem`, which upgrades
+`IsLocalization M (Localization M)` to `IsLocalization S⁰ (Localization M)` —
+i.e. to `IsFractionRing S (Localization M)` — with no field structure anywhere.
+The `Frac P`-algebra structure is then TRANSPORTED to `FractionRing S` along
+`IsLocalization.algEquiv`, by definition, so `AlgEquiv.ofRingEquiv` takes
+`fun _ => rfl` and `Module.Finite.equiv` carries the finiteness across.
+
+Separability is free (`PerfectField.ofCharZero`), and everything from the
+primitive element onwards is the separate lemma
+`exists_irreducible_polynomial_fractionRing_ringEquiv_of_finiteSeparable` above,
+which knows nothing about `ℚ` and asks only that `P` be a UFD. `finSuccEquiv`
+and `Ideal.quotientEquiv` move `P[X] ⧸ (g₁)` to
+`MvPolynomial (Fin (s+1)) ℚ ⧸ (g)`, and
+`IsFractionRing.ringEquivOfRingEquiv` moves the fraction fields with them; `k`
+is `s + 1`, as the FAITHFULNESS paragraph predicts. -/
 theorem exists_irreducible_hypersurface_fractionRing_ringEquiv_rat
     (S : Type*) [CommRing S] [IsDomain S] [Algebra ℚ S] [Algebra.FiniteType ℚ S] :
     ∃ (k : ℕ) (g : MvPolynomial (Fin k) ℚ), Irreducible g ∧
       Nonempty (FractionRing S ≃+*
-        FractionRing (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {g})) :=
-  sorry
+        FractionRing (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {g})) := by
+  classical
+  obtain ⟨s, φ, hφinj, hφfin⟩ := exists_finite_inj_algHom_of_fg ℚ S
+  letI : Algebra (MvPolynomial (Fin s) ℚ) S := φ.toRingHom.toAlgebra
+  haveI : Module.Finite (MvPolynomial (Fin s) ℚ) S := hφfin
+  have halg : Function.Injective (algebraMap (MvPolynomial (Fin s) ℚ) S) := hφinj
+  have hMle : Algebra.algebraMapSubmonoid S (nonZeroDivisors (MvPolynomial (Fin s) ℚ)) ≤
+      nonZeroDivisors S := by
+    rintro _ ⟨p, hp, rfl⟩
+    refine mem_nonZeroDivisors_of_ne_zero (fun h => ?_)
+    exact nonZeroDivisors.ne_zero hp (halg (by simpa using h))
+  haveI : IsDomain (Localization
+      (Algebra.algebraMapSubmonoid S (nonZeroDivisors (MvPolynomial (Fin s) ℚ)))) :=
+    IsLocalization.isDomain_localization hMle
+  -- the localisation of `S` at the nonzero elements of the polynomial subring is a FIELD
+  have hLfield : IsField (Localization
+      (Algebra.algebraMapSubmonoid S (nonZeroDivisors (MvPolynomial (Fin s) ℚ)))) := by
+    haveI : Algebra.IsIntegral (FractionRing (MvPolynomial (Fin s) ℚ))
+        (Localization
+          (Algebra.algebraMapSubmonoid S (nonZeroDivisors (MvPolynomial (Fin s) ℚ)))) :=
+      Algebra.IsIntegral.of_finite _ _
+    exact isField_of_isIntegral_of_isField'
+      (Field.toIsField (FractionRing (MvPolynomial (Fin s) ℚ)))
+  -- hence it is already the whole fraction field of `S`
+  have hkey : ∀ x : nonZeroDivisors S, ∃ m : S,
+      m * (x : S) ∈ Algebra.algebraMapSubmonoid S (nonZeroDivisors (MvPolynomial (Fin s) ℚ)) := by
+    intro x
+    have hx0 : algebraMap S
+        (Localization (Algebra.algebraMapSubmonoid S
+          (nonZeroDivisors (MvPolynomial (Fin s) ℚ)))) (x : S) ≠ 0 := by
+      intro h
+      exact nonZeroDivisors.ne_zero x.2
+        (IsLocalization.injective _ hMle (h.trans (map_zero _).symm))
+    obtain ⟨w, hw⟩ := hLfield.mul_inv_cancel hx0
+    obtain ⟨⟨y, m⟩, hym⟩ :=
+      IsLocalization.surj
+        (Algebra.algebraMapSubmonoid S (nonZeroDivisors (MvPolynomial (Fin s) ℚ))) w
+    dsimp only at hym
+    refine ⟨y, ?_⟩
+    have hmap : algebraMap S
+        (Localization (Algebra.algebraMapSubmonoid S
+          (nonZeroDivisors (MvPolynomial (Fin s) ℚ)))) (y * (x : S)) =
+        algebraMap S _ (m : S) := by
+      calc algebraMap S
+            (Localization (Algebra.algebraMapSubmonoid S
+              (nonZeroDivisors (MvPolynomial (Fin s) ℚ)))) (y * (x : S))
+          = (algebraMap S _ (x : S) * w) * algebraMap S _ (m : S) := by
+            rw [map_mul, ← hym]; ring
+        _ = algebraMap S _ (m : S) := by rw [hw, one_mul]
+    rw [IsLocalization.injective _ hMle hmap]
+    exact m.2
+  haveI : IsFractionRing S
+      (Localization (Algebra.algebraMapSubmonoid S
+        (nonZeroDivisors (MvPolynomial (Fin s) ℚ)))) :=
+    IsLocalization.isLocalization_of_is_exists_mul_mem
+      (Localization (Algebra.algebraMapSubmonoid S
+        (nonZeroDivisors (MvPolynomial (Fin s) ℚ))))
+      (Algebra.algebraMapSubmonoid S (nonZeroDivisors (MvPolynomial (Fin s) ℚ)))
+      (nonZeroDivisors S) hMle hkey
+  -- transport the `Frac P`-algebra structure to `FractionRing S`
+  set e : Localization (Algebra.algebraMapSubmonoid S
+      (nonZeroDivisors (MvPolynomial (Fin s) ℚ))) ≃+* FractionRing S :=
+    (IsLocalization.algEquiv (nonZeroDivisors S)
+      (Localization (Algebra.algebraMapSubmonoid S
+        (nonZeroDivisors (MvPolynomial (Fin s) ℚ))))
+      (FractionRing S)).toRingEquiv with he
+  letI : Algebra (FractionRing (MvPolynomial (Fin s) ℚ)) (FractionRing S) :=
+    (e.toRingHom.comp (algebraMap (FractionRing (MvPolynomial (Fin s) ℚ))
+      (Localization (Algebra.algebraMapSubmonoid S
+        (nonZeroDivisors (MvPolynomial (Fin s) ℚ)))))).toAlgebra
+  haveI : Module.Finite (FractionRing (MvPolynomial (Fin s) ℚ)) (FractionRing S) :=
+    Module.Finite.equiv
+      (AlgEquiv.ofRingEquiv (R := FractionRing (MvPolynomial (Fin s) ℚ)) (f := e)
+        (fun _ => rfl)).toLinearEquiv
+  haveI : CharZero (MvPolynomial (Fin s) ℚ) :=
+    charZero_of_injective_algebraMap (algebraMap ℚ (MvPolynomial (Fin s) ℚ)).injective
+  haveI : CharZero (FractionRing (MvPolynomial (Fin s) ℚ)) :=
+    charZero_of_injective_algebraMap
+      (IsFractionRing.injective (MvPolynomial (Fin s) ℚ) (FractionRing (MvPolynomial (Fin s) ℚ)))
+  obtain ⟨g₁, hg₁irr, ⟨eA⟩⟩ :=
+    exists_irreducible_polynomial_fractionRing_ringEquiv_of_finiteSeparable
+      (MvPolynomial (Fin s) ℚ) (FractionRing S)
+  -- move from `P[X]` to `MvPolynomial (Fin (s+1)) ℚ`
+  set eqv : MvPolynomial (Fin (s + 1)) ℚ ≃+* Polynomial (MvPolynomial (Fin s) ℚ) :=
+    (MvPolynomial.finSuccEquiv ℚ s).toRingEquiv with heqv
+  refine ⟨s + 1, eqv.symm g₁, ?_, ?_⟩
+  · have hgg : Irreducible (eqv.toMulEquiv (eqv.symm g₁)) := by simpa using hg₁irr
+    exact (MulEquiv.irreducible_iff (f := eqv.toMulEquiv) (x := eqv.symm g₁)).mp hgg
+  · have hmapspan : Ideal.span {g₁} =
+        (Ideal.span {eqv.symm g₁}).map (eqv : MvPolynomial (Fin (s + 1)) ℚ →+*
+          Polynomial (MvPolynomial (Fin s) ℚ)) := by
+      rw [Ideal.map_span]
+      simp
+    have eB : (MvPolynomial (Fin (s + 1)) ℚ ⧸ Ideal.span {eqv.symm g₁}) ≃+*
+        (Polynomial (MvPolynomial (Fin s) ℚ) ⧸ Ideal.span {g₁}) :=
+      Ideal.quotientEquiv _ _ eqv hmapspan
+    exact ⟨eA.symm.trans (IsFractionRing.ringEquivOfRingEquiv eB).symm⟩
 
 section GeometricIntegralityFractionRing
 
