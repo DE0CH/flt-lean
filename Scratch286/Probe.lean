@@ -88,6 +88,26 @@ noncomputable instance pullbackOplaxMonoidal :
     (pullback.{u} (toRingHom' φ)).OplaxMonoidal :=
   (pullbackPushforwardAdjunction.{u} (toRingHom' φ)).leftAdjointOplaxMonoidal
 
+instance pullbackPreservesColimits :
+    PreservesColimitsOfSize.{u, u} (pullback.{u} (toRingHom' φ)) :=
+  (pullbackPushforwardAdjunction.{u} (toRingHom' φ)).leftAdjoint_preservesColimits
+
+open Functor.OplaxMonoidal MonoidalCategory in
+/-- `δ` of the pullback, as a natural transformation in the FIRST variable. -/
+noncomputable def deltaNatLeft (Q : PresheafOfModules.{u} (S ⋙ forget₂ _ _)) :
+    (tensorRight Q ⋙ pullback.{u} (toRingHom' φ)) ⟶
+      (pullback.{u} (toRingHom' φ) ⋙ tensorRight ((pullback.{u} (toRingHom' φ)).obj Q)) where
+  app P := δ (pullback.{u} (toRingHom' φ)) P Q
+  naturality _ _ f := (δ_natural_left _ f Q).symm
+
+open Functor.OplaxMonoidal MonoidalCategory in
+/-- `δ` of the pullback, as a natural transformation in the SECOND variable. -/
+noncomputable def deltaNatRight (P : PresheafOfModules.{u} (S ⋙ forget₂ _ _)) :
+    (tensorLeft P ⋙ pullback.{u} (toRingHom' φ)) ⟶
+      (pullback.{u} (toRingHom' φ) ⋙ tensorLeft ((pullback.{u} (toRingHom' φ)).obj P)) where
+  app Q := δ (pullback.{u} (toRingHom' φ)) P Q
+  naturality _ _ f := (δ_natural_right _ P f).symm
+
 end Pushforward
 
 end PresheafOfModules
@@ -125,4 +145,58 @@ lemma isIso_app_of_freeYoneda {C : Type u} [SmallCategory C] {R : Cᵒᵖ ⥤ Ri
   exact isIso_app_coconePt_of_preservesColimit _ τ _
     M.isColimitFreeYonedaCoproductsCokernelCofork
 
+open PresheafOfModules Functor.OplaxMonoidal MonoidalCategory in
+/-- **The presheaf pullback is strong monoidal as soon as it is so on free presheaves of
+modules on representables.**  This is the reduction of the leaf to its base case. -/
+lemma isIso_pullback_delta {C D : Type u} [SmallCategory C] [SmallCategory D]
+    {F : C ⥤ D} {R : Dᵒᵖ ⥤ CommRingCat.{u}} {S : Cᵒᵖ ⥤ CommRingCat.{u}} (φ : S ⟶ F.op ⋙ R)
+    (hbase : ∀ (U U' : C), IsIso (δ (pullback.{u} (toRingHom' φ))
+      ((free (S ⋙ forget₂ CommRingCat RingCat)).obj (yoneda.obj U))
+      ((free (S ⋙ forget₂ CommRingCat RingCat)).obj (yoneda.obj U'))))
+    (P Q : PresheafOfModules.{u} (S ⋙ forget₂ CommRingCat RingCat)) :
+    IsIso (δ (pullback.{u} (toRingHom' φ)) P Q) := by
+  have step1 : ∀ (U : C) (Q' : PresheafOfModules.{u} (S ⋙ forget₂ CommRingCat RingCat)),
+      IsIso (δ (pullback.{u} (toRingHom' φ))
+        ((free (S ⋙ forget₂ CommRingCat RingCat)).obj (yoneda.obj U)) Q') := fun U Q' ↦
+    isIso_app_of_freeYoneda (deltaNatRight φ _) (fun U' ↦ hbase U U') Q'
+  exact isIso_app_of_freeYoneda (deltaNatLeft φ Q) (fun U ↦ step1 U Q) P
+
 end Generators
+
+section Scheme
+
+open AlgebraicGeometry PresheafOfModules
+
+noncomputable instance presheafOfModulesMonoidal (Z : Scheme.{u}) :
+    MonoidalCategory (PresheafOfModules.{u} Z.ringCatSheaf.obj) :=
+  inferInstanceAs (MonoidalCategory
+    (PresheafOfModules.{u} (Z.presheaf ⋙ forget₂ CommRingCat RingCat)))
+
+noncomputable abbrev presheafModPullback {Z W : Scheme.{u}} (h : W ⟶ Z) :
+    PresheafOfModules.{u} Z.ringCatSheaf.obj ⥤ PresheafOfModules.{u} W.ringCatSheaf.obj :=
+  PresheafOfModules.pullback.{u} (Scheme.Hom.toRingCatSheafHom h).hom
+
+example {Z W : Scheme.{u}} (h : W ⟶ Z) :
+    presheafModPullback h = PresheafOfModules.pullback.{u} (toRingHom' h.c) := rfl
+
+noncomputable instance {Z W : Scheme.{u}} (h : W ⟶ Z) :
+    (presheafModPullback h).OplaxMonoidal :=
+  inferInstanceAs ((PresheafOfModules.pullback.{u} (toRingHom' h.c)).OplaxMonoidal)
+
+open Functor.OplaxMonoidal in
+/-- BASE CASE (the only thing left). -/
+theorem isIso_delta_freeYoneda {Z W : Scheme.{u}} (h : W ⟶ Z) (U U' : Z.Opens) :
+    IsIso (δ (presheafModPullback h)
+      ((PresheafOfModules.free Z.ringCatSheaf.obj).obj (yoneda.obj U))
+      ((PresheafOfModules.free Z.ringCatSheaf.obj).obj (yoneda.obj U'))) :=
+  sorry
+
+open Functor.OplaxMonoidal in
+theorem nonempty_presheafModPullback_tensor {Z W : Scheme.{u}} (h : W ⟶ Z)
+    (P Q : PresheafOfModules.{u} Z.ringCatSheaf.obj) :
+    Nonempty ((presheafModPullback h).obj (P ⊗ Q) ≅
+      (presheafModPullback h).obj P ⊗ (presheafModPullback h).obj Q) := by
+  refine ⟨@asIso _ _ _ _ (δ (presheafModPullback h) P Q) ?_⟩
+  exact isIso_pullback_delta h.c (isIso_delta_freeYoneda h) P Q
+
+end Scheme
