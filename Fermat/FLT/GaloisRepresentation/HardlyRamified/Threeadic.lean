@@ -5354,6 +5354,19 @@ bookkeeping that is now proven above.
 deleted below, is present again at the top of this file and is what the
 restored generator argument uses.
 
+VERIFIED. The whole module elaborates with `EXIT=0` and **zero errors**,
+and its `declaration uses `sorry`` set is exactly three — `3785`
+(`exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_trivial`,
+pre-existing and not touched here) and the two new Raynaud leaves. This
+theorem is NOT in that set. The comment-stripped `sorry` TOKEN count is
+also three, at the same three declarations, so no anonymous inner sorry
+hides behind a warning. The elaboration was run with `LEAN_PATH` pointed
+at the last published release's `.olean` set
+(`~/.flt-release-lake/build`, release 27) ahead of the worktree's, which
+is sound here because the module needs nothing added to its import cone
+since that release — it is exactly the fact that it elaborates against
+them that shows so.
+
 ## THE WITNESS, in one paragraph
 
 `E = 37a1 = [0,0,1,-1,0]` has good SUPERSINGULAR reduction at `3`
