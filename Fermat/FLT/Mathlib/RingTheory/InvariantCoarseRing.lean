@@ -765,9 +765,6 @@ Separability descends to the finite subextension for free: `A₀` is generated b
 many elements of `A`, each separable over `k`, and
 `IntermediateField.isSeparable_adjoin_iff_isSeparable` turns that into
 `Algebra.IsSeparable k A₀`. -/
-theorem linearDisjoint_of_isAlgebraic_of_isSeparable
-    {k L M : Type*} [Field k] [Field L] [Field M] [Algebra k L] [Algebra k M]
-directed colimit of the `L ⊗[k] A₀`. -/
 theorem linearDisjoint_of_isSeparable_of_algebraicClosure_eq_bot
     {k L M : Type*} [Field k] [Field L] [Field M] [Algebra k L] [Algebra k M]
     [Algebra L M] [IsScalarTower k L M] (hbot : algebraicClosure k L = ⊥)
@@ -813,32 +810,6 @@ theorem linearDisjoint_of_isSeparable_of_algebraicClosure_eq_bot
     rw [Finset.sum_coe_sort s (fun j => g j • ((a j : A) : M))]
     exact hsum
   exact Fintype.linearIndependent_iff.mp hbL' (fun j => g j.1) hsum' ⟨i, hi⟩
-
-/-- **The algebraic half of regularity, in the form that has no hypothesis on `k`**
-(PROVEN 2026-07-30).
-
-If `k` is algebraically closed in `L` and `K/k` is algebraic and SEPARABLE, then `L ⊗[k] K`
-is a domain.  Embed `K` into an algebraic closure `M` of `L` (possible because `K/k` is
-algebraic), apply `linearDisjoint_of_isAlgebraic_of_isSeparable` to the image, and conclude
-with `IntermediateField.LinearDisjoint.isDomain'`.
-
-This is the form the characteristic-`p` route needs, where the base is the imperfect
-rational function field `k(ι)` and separability comes from `ι` being a SEPARATING
-transcendence basis rather than from the base being perfect.  Over a perfect `k` the
-separability hypothesis is automatic, which is
-`isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` just below. -/
-theorem isDomain_tensorProduct_of_isAlgebraic_of_isSeparable
-    (k L : Type*) [Field k] [Field L] [Algebra k L]
-If `k` is algebraically closed in `L` and `K/k` is separable algebraic, then
-`L ⊗[k] K` is a domain.  Embed `K` into an algebraic closure `M` of `L`
-(possible because `K/k` is algebraic), apply
-`linearDisjoint_of_isSeparable_of_algebraicClosure_eq_bot` to the image, and
-conclude with `IntermediateField.LinearDisjoint.isDomain'`.
-
-Separability of `K/k` is what the primitive-element step needs; it used to be
-supplied by `[PerfectField k]`, which is strictly stronger and unavailable over
-the function field `k(ι)` in characteristic `p`.  With `[PerfectField k]` in
-scope `[Algebra.IsSeparable k K]` is an instance, so nothing is lost. -/
 
 /-! ### The algebraic half for a SEPARABLE extension
 
@@ -917,13 +888,14 @@ theorem isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot
 If `k` is PERFECT and algebraically closed in `L`, and `K/k` is algebraic, then `L ⊗[k] K`
 is a domain.  Over a perfect base every algebraic extension is separable
 (`Algebra.IsSeparable` is an instance there), so this is
-`isDomain_tensorProduct_of_isAlgebraic_of_isSeparable` with its hypothesis discharged. -/
+`isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot` with its hypothesis
+discharged. -/
 theorem isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot
     (k L : Type*) [Field k] [PerfectField k] [Field L] [Algebra k L]
     (hbot : algebraicClosure k L = ⊥)
     (K : Type*) [Field K] [Algebra k K] [Algebra.IsAlgebraic k K] :
     IsDomain (L ⊗[k] K) :=
-  isDomain_tensorProduct_of_isAlgebraic_of_isSeparable k L hbot K
+  isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot k L hbot K
 
 set_option maxSynthPendingDepth 2 in
 /-- **Being a domain after `⊗[k] K` is detected on the finitely generated
@@ -2014,7 +1986,20 @@ theorem isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClos
   · haveI := hchar
     obtain ⟨t, ht⟩ :=
       exists_isTranscendenceBasis k (A := ↥(IntermediateField.adjoin k (S : Set K)))
-    exact isDomain_tensorProduct_of_isTranscendenceBasis hbot ht
+    refine isDomain_tensorProduct_of_isTranscendenceBasis hbot ht ?_
+    -- In characteristic zero the separating-basis hypothesis is automatic: the base
+    -- `k(t)` is again of characteristic zero, hence perfect, and `K` is algebraic over
+    -- it because `t` is a transcendence basis.
+    haveI : Algebra.IsAlgebraic
+        ↥(IntermediateField.adjoin k (Set.range
+          (Subtype.val : ↥t → ↥(IntermediateField.adjoin k (S : Set K)))))
+        ↥(IntermediateField.adjoin k (S : Set K)) := ht.isAlgebraic_field
+    haveI : CharZero ↥(IntermediateField.adjoin k (Set.range
+        (Subtype.val : ↥t → ↥(IntermediateField.adjoin k (S : Set K))))) :=
+      charZero_of_injective_algebraMap
+        (algebraMap k ↥(IntermediateField.adjoin k (Set.range
+          (Subtype.val : ↥t → ↥(IntermediateField.adjoin k (S : Set K)))))).injective
+    infer_instance
   · -- Positive characteristic: a separating transcendence basis (MacLane), then the
     -- characteristic-free transcendental half.  `hchar` itself is not used — the branch is
     -- valid for every `k`.
