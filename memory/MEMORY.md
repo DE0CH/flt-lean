@@ -73,3 +73,5 @@
 - [Char-p parity lives downstairs](flt-char-p-parity-lives-downstairs.md) — before building a function field to get a ramification/parity fact, try the ultrametric case split on the Artin–Schreier form of the equation over the BASE; it closed the char-2 half of DifferentialCharacter
 - [A hoisted leaf can be orphaned by a re-proof](flt-hoisted-leaf-orphaned-by-reproof.md) — the parent's next proof need not preserve the consumer edge hoisting created; the orphan looks exactly like live work
 - [Globalise by normalise-then-choose](flt-globalise-by-normalise-then-choose.md) — "units at the other places" never globalises a one-place ultrametric argument; control ORDERS elsewhere, normalise so one coefficient is a unit, and run the argument at THAT coefficient's place
+
+- [Char-0 machinery is base-generic](flt-char0-machinery-is-base-generic.md) — in TateModule.lean only `cyclotomicCharacter` needs `[NumberField F]`; generalise the char-0 statement instead of writing a finite-base copy
