@@ -23,6 +23,11 @@ public import Mathlib.Algebra.Module.FinitePresentation
 public import Mathlib.LinearAlgebra.Dimension.Free
 public import Mathlib.LinearAlgebra.TensorProduct.Tower
 public import Mathlib.LinearAlgebra.TensorProduct.RightExactness
+public import Mathlib.RingTheory.Ideal.GoingUp
+public import Mathlib.RingTheory.Ideal.Quotient.Operations
+public import Mathlib.RingTheory.Spectrum.Maximal.Basic
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic
+public import Mathlib.RingTheory.Artinian.Module
 
 /-!
 # Short exact sequences of finite flat commutative group schemes, and exactness of Cartier duality
@@ -108,13 +113,28 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   extension-closed. **PROVEN**.
 * `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN**, unconditionally.
 * `HopfAlgebra.IsShortExact.cartierDual` — **Cartier duality is exact**. **PROVEN** as an
-  assembly of the statements below; as of 2026-07-28 the only one of them still open is the
+  assembly of the statements below; as of 2026-07-30 the only one of them still open is the
   *generation* half of the dual normal basis, `exists_spanning_cartierDual`. Its sibling, the
   rank count, was closed the same day over two new leaves — one Hopf-theoretic
   (`IsShortExact.nonempty_linearEquiv_baseChange`) and one not
   (`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`); **both of those closed on 2026-07-30**, on
   two different branches, so `exists_spanning_cartierDual` (through
-  `exists_lift_ker_le_span_cartierDual`) is the only sorry left in this file.
+  `exists_lift_ker_le_span_cartierDual`) was the only sorry left in this file.
+  **On 2026-07-31 `exists_lift_ker_le_span_cartierDual` was REFUTED as stated** — an explicit
+  counterexample over `ℤ[√-5]` is written out in its docstring, and the two earlier falsity audits
+  are marked there as computations in a degenerate sub-family. It and the four statements above it
+  in the chain now carry `[IsLocalRing R]`, in which form it is **PROVEN**. The rest, including
+  `etale_of_isShortExact`, is untouched and still holds over an arbitrary base.
+
+  **The single sorry in this file is `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`**
+  (2026-07-31). Two rival arrangements of the dual normal basis reached this file from two
+  branches — one rooted at that leaf, one rooted at `IsShortExact.flat_finrank_cartierDual` — and
+  they are mutually exclusive, since together they close a cycle. The Jacobson-radical one is
+  kept, because `flat_finrank_cartierDual` *implies* it (see the section on that declaration), so
+  rooting the file there leaves the file owing strictly less. `flat_finrank_cartierDual` and
+  `nonempty_basis_chooseBasisIndex_cartierDual` survive as PROVEN corollaries, moved below
+  `exists_basis_cartierDual`; do not move them back above it without deleting the Jacobson leaf,
+  which would be a cycle.
 * `HopfAlgebra.IsShortExact.apply_comp` — `π ∘ i` is `ε` followed by the unit. **PROVEN.**
 * `AlgHom.flat_quotient_range_of_faithfullyFlat` — the cokernel of a faithfully flat algebra map
   is a flat `R`-module. **PROVEN** (2026-07-28) by the diagram chase in the `FaithfullyFlatSplit`
@@ -150,9 +170,15 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   **Both halves are now proven from strictly smaller leaves**, so nothing in this cluster is open
   at the level of the cut itself.
 * `HopfAlgebra.IsShortExact.exists_spanning_cartierDual` — the generation half. **PROVEN**
-  (2026-07-28) from the purely formal `span_sup_ker_cartierDual_map_eq_top` together with the
-  residual leaf `IsShortExact.exists_lift_ker_le_span_cartierDual`, which is OPEN and is where
-  the generation half's mathematics and all of its audits now live.
+  (2026-07-28) from the purely formal `span_sup_ker_cartierDual_map_eq_top` together with
+  `IsShortExact.exists_lift_ker_le_span_cartierDual`, which is where the generation half's
+  mathematics and all of its audits live and which is itself **PROVEN** (2026-07-30) by Nakayama
+  from `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`.
+* `HopfAlgebra.IsShortExact.exists_lift_span_sup_jacobson_cartierDual` — the residual leaf of the
+  generation half: generation modulo the Jacobson radical of `D(A')`. **OPEN.** Equivalent to the
+  statement it replaces over a general base, and over a *local* base equal to the classical
+  statement over the residue field (Takeuchi). Its docstring records why, and that the only
+  consumer of this cluster in the tree works over `ℤ_p`.
 * `HopfAlgebra.IsShortExact.nonempty_linearEquiv_cartierDual` and its unpackaged form
   `HopfAlgebra.IsShortExact.finrank_eq_mul` — the rank count. **PROVEN** (2026-07-28) from the
   two leaves below, which share nothing with each other.
@@ -207,6 +233,59 @@ shim was deleted on 2026-07-27 and the mathlib lemma is used directly. See the n
 open TensorProduct Coalgebra
 
 universe u v w x
+
+/-- **A finite algebra over a local ring is semilocal.**
+
+Root-namespace commutative algebra with no Hopf content; it belongs in mathlib, which has
+`Module.free_of_flat_of_finrank_eq` for semilocal rings (phrased as
+`[Finite (MaximalSpectrum R)]`) but no way to produce that hypothesis from a local base.
+
+Proof: `S` is integral over `R`, so every maximal ideal of `S` contracts to a maximal ideal of
+`R`, which is `𝔪`; hence every maximal ideal of `S` contains `I = 𝔪 · S`, and `P ↦ P.map (mk I)`
+is an injection of `MaximalSpectrum S` into `MaximalSpectrum (S ⧸ I)`. And `S ⧸ I` is a finite
+algebra over the field `R ⧸ 𝔪`, hence an artinian ring, which has finitely many maximal ideals.
+
+Used to make `CartierDual R A'` semilocal in
+`HopfAlgebra.IsShortExact.nonempty_basis_chooseBasisIndex_cartierDual`, which is where the
+`[IsLocalRing R]` hypothesis of that half of the file is actually spent. -/
+theorem finite_maximalSpectrum_of_isLocalRing_of_module_finite
+    (R : Type*) (S : Type*) [CommRing R] [IsLocalRing R] [CommRing S] [Algebra R S]
+    [Module.Finite R S] : Finite (MaximalSpectrum S) := by
+  classical
+  set I : Ideal S := Ideal.map (algebraMap R S) (IsLocalRing.maximalIdeal R) with hI
+  haveI : Algebra.IsIntegral R S := Algebra.IsIntegral.of_finite R S
+  have hle : ∀ P : Ideal S, P.IsMaximal → I ≤ P := by
+    intro P hP
+    haveI := hP
+    have hcm : (P.comap (algebraMap R S)).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal (R := R) (S := S) P
+    rw [hI, Ideal.map_le_iff_le_comap]
+    exact le_of_eq (IsLocalRing.eq_maximalIdeal hcm).symm
+  haveI : Module.Finite (R ⧸ IsLocalRing.maximalIdeal R) (S ⧸ I) := by
+    have : Module.Finite R (S ⧸ I) := Module.Finite.of_surjective
+      (Ideal.Quotient.mkₐ R I).toLinearMap (Ideal.Quotient.mk_surjective)
+    exact Module.Finite.of_restrictScalars_finite R _ _
+  haveI : IsArtinianRing (S ⧸ I) := by
+    letI : Field (R ⧸ IsLocalRing.maximalIdeal R) := fast_instance% Ideal.Quotient.field _
+    exact IsArtinianRing.of_finite (R ⧸ IsLocalRing.maximalIdeal R) (S ⧸ I)
+  have hmax : ∀ P : MaximalSpectrum S,
+      (P.asIdeal.map (Ideal.Quotient.mk I)).IsMaximal := by
+    intro P
+    haveI := P.isMaximal
+    have hf : IsField (S ⧸ P.asIdeal) :=
+      (Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp P.isMaximal
+    exact Ideal.Quotient.maximal_of_isField _
+      ((DoubleQuot.quotQuotEquivQuotOfLE (hle _ P.isMaximal)).toMulEquiv.isField hf)
+  refine Finite.of_injective
+    (fun P : MaximalSpectrum S => (⟨P.asIdeal.map (Ideal.Quotient.mk I), hmax P⟩ :
+      MaximalSpectrum (S ⧸ I))) ?_
+  intro P Q hPQ
+  have h := congrArg (fun J : MaximalSpectrum (S ⧸ I) => J.asIdeal.comap (Ideal.Quotient.mk I)) hPQ
+  simp only [Ideal.comap_map_of_surjective _ Ideal.Quotient.mk_surjective,
+    ← RingHom.ker_eq_comap_bot, Ideal.mk_ker] at h
+  refine MaximalSpectrum.ext ?_
+  rw [← sup_eq_left.mpr (hle _ P.isMaximal), ← sup_eq_left.mpr (hle _ Q.isMaximal)]
+  exact h
 
 namespace Bialgebra
 
@@ -1363,6 +1442,372 @@ end BaseChange
 
 end Torsor
 
+/-! ### The Hopf–Galois map, and the torsor identity `A ⊗_{A''} A ≅ A ⊗_R A'`
+
+This section builds the **Hopf–Galois map**
+
+`β : A ⊗_{A''} A → A ⊗[R] A'`,  `x ⊗ y ↦ (x ⊗ 1) · ρ y`,  where `ρ a = ∑ a₍₁₎ ⊗ π a₍₂₎`,
+
+proves it is bijective, and so supplies `IsShortExact.nonempty_linearEquiv_baseChange` below.
+Geometrically this is the standard trivialisation `G ×_{G''} G ≅ G × G'` of a torsor by its own
+base change, `(x, y) ↦ (x, x⁻¹y)`.
+
+**The route taken here is NOT the one the leaf's docstring proposed**, and is shorter. That route
+was: present both `A ⊗_{A''} A` and `A ⊗[R] A'` as quotients of `A ⊗[R] A`, build the translation
+`Θ : a ⊗ b ↦ ∑ a b₍₁₎ ⊗ b₍₂₎` on `A ⊗[R] A`, and prove `Θ K₁ = K₂` for the two kernels. That needs
+both kernels identified — in particular `ker (A ⊗[R] A ↠ A ⊗[A''] A)` presented by generators,
+which is extra work — and then a quotient-of-quotient identification.
+
+Instead, `β` is defined **directly on `A ⊗_{A''} A`**: the `A''`-balancedness of
+`(x, y) ↦ (x ⊗ 1) · ρ y` is exactly `ρ ∘ i = (· ⊗ 1) ∘ i`, i.e. `coactionAlgHom_apply_i` below,
+which is one counit contraction. Dually the inverse is assembled from
+`γ : A → A ⊗_{A''} A`, `b ↦ ∑ S(b₍₁₎) ⊗ b₍₂₎`, which is an `R`-**algebra** map (the antipode of a
+commutative Hopf algebra is one), so that `ker π = A · i(ker ε)` lands in its kernel as soon as
+`γ ∘ i = ε`, which is `galoisSection_apply_i`. Descending `γ` along the surjection `π` needs only
+`AlgHom.liftOfSurjective`. The two composites are then single applications of the antipode axiom
+after one use of coassociativity, packaged as `translationInv_comul` and
+`translation_rTensor_antipode_comul`.
+
+Consequently **neither the presentation of `A ⊗_{A''} A` as a quotient of `A ⊗[R] A` by an
+explicitly generated ideal, nor `ker π = A ⊗ ker π` via `R`-flatness of `A`, is needed** — the
+docstring's "what has to be built" list is correspondingly shorter than it predicted. The
+`faithfullyFlat` field of `IsShortExact` is not used here either, as that docstring already said.
+
+`A''` acts on `A` through `i`; that is carried as an `[Algebra A'' A]` instance together with the
+hypothesis `hi : ∀ c, algebraMap A'' A c = i c`, so that the consumer can install the instance with
+`letI` and discharge `hi` by `rfl`. -/
+
+section BaseChange
+
+variable {R : Type u} {A'' : Type v} {A : Type w} {A' : Type x}
+variable [CommRing R] [CommRing A''] [CommRing A] [CommRing A']
+variable [HopfAlgebra R A''] [HopfAlgebra R A] [HopfAlgebra R A']
+
+variable (R A) in
+/-- `x ⊗ (u ⊗ v) ↦ F (x ⊗ u) ⊗ v`. Precomposing with `TensorProduct.assoc` turns this into
+`LinearMap.rTensor A F`, which is how coassociativity gets applied below. -/
+noncomputable def tensorLeftAux (F : A ⊗[R] A →ₗ[R] A) :
+    A ⊗[R] (A ⊗[R] A) →ₗ[R] A ⊗[R] A :=
+  LinearMap.rTensor A F ∘ₗ (TensorProduct.assoc R A A A).symm.toLinearMap
+
+lemma tensorLeftAux_assoc (F : A ⊗[R] A →ₗ[R] A) (x : (A ⊗[R] A) ⊗[R] A) :
+    tensorLeftAux R A F (TensorProduct.assoc R A A A x) = LinearMap.rTensor A F x := by
+  simp [tensorLeftAux]
+
+variable (R A) in
+/-- The **translation map** `Θ : x ⊗ z ↦ ∑ x z₍₁₎ ⊗ z₍₂₎` on `A ⊗[R] A`. -/
+noncomputable def translation : A ⊗[R] A →ₗ[R] A ⊗[R] A :=
+  tensorLeftAux R A (LinearMap.mul' R A) ∘ₗ LinearMap.lTensor A (Coalgebra.comul (R := R))
+
+variable (R A) in
+/-- The inverse translation map `Θ⁻¹ : x ⊗ z ↦ ∑ x S(z₍₁₎) ⊗ z₍₂₎`. -/
+noncomputable def translationInv : A ⊗[R] A →ₗ[R] A ⊗[R] A :=
+  tensorLeftAux R A (LinearMap.mul' R A ∘ₗ (antipode R).lTensor A) ∘ₗ
+    LinearMap.lTensor A (Coalgebra.comul (R := R))
+
+@[simp] lemma translation_tmul (x z : A) :
+    translation R A (x ⊗ₜ[R] z) =
+      tensorLeftAux R A (LinearMap.mul' R A) (x ⊗ₜ[R] Coalgebra.comul (R := R) z) := rfl
+
+@[simp] lemma translationInv_tmul (x z : A) :
+    translationInv R A (x ⊗ₜ[R] z) =
+      tensorLeftAux R A (LinearMap.mul' R A ∘ₗ (antipode R).lTensor A)
+        (x ⊗ₜ[R] Coalgebra.comul (R := R) z) := rfl
+
+/-- **`∑ a₍₁₎ S(a₍₂₎) ⊗ a₍₃₎ = 1 ⊗ a`**: coassociativity, then the antipode axiom, then
+counitality. -/
+lemma translationInv_comul (a : A) :
+    translationInv R A (Coalgebra.comul (R := R) a) = (1 : A) ⊗ₜ[R] a := by
+  have h1 : LinearMap.lTensor A (Coalgebra.comul (R := R)) (Coalgebra.comul (R := R) a)
+      = TensorProduct.assoc R A A A
+          (LinearMap.rTensor A (Coalgebra.comul (R := R)) (Coalgebra.comul (R := R) a)) :=
+    (Coalgebra.coassoc_apply a).symm
+  rw [translationInv, LinearMap.comp_apply, h1, tensorLeftAux_assoc, ← LinearMap.comp_apply,
+    ← LinearMap.rTensor_comp, LinearMap.comp_assoc,
+    HopfAlgebra.mul_antipode_lTensor_comul, LinearMap.rTensor_comp, LinearMap.comp_apply,
+    Coalgebra.rTensor_counit_comul]
+  simp
+
+/-- **`∑ S(a₍₁₎) a₍₂₎ ⊗ a₍₃₎ = 1 ⊗ a`**, the mirror image of `translationInv_comul`. -/
+lemma translation_rTensor_antipode_comul (a : A) :
+    translation R A ((antipode R).rTensor A (Coalgebra.comul (R := R) a)) = (1 : A) ⊗ₜ[R] a := by
+  have hcomm : LinearMap.lTensor A (Coalgebra.comul (R := R) (A := A)) ∘ₗ
+      (antipode R).rTensor A
+      = (antipode R).rTensor (A ⊗[R] A) ∘ₗ
+          LinearMap.lTensor A (Coalgebra.comul (R := R) (A := A)) := by
+    ext x y; simp [LinearMap.lTensor, LinearMap.rTensor, ← TensorProduct.map_comp]
+  have hG : tensorLeftAux R A (LinearMap.mul' R A) ∘ₗ (antipode R).rTensor (A ⊗[R] A)
+      = tensorLeftAux R A (LinearMap.mul' R A ∘ₗ (antipode R).rTensor A) := by
+    ext x u v; simp [tensorLeftAux]
+  have h1 : LinearMap.lTensor A (Coalgebra.comul (R := R)) (Coalgebra.comul (R := R) a)
+      = TensorProduct.assoc R A A A
+          (LinearMap.rTensor A (Coalgebra.comul (R := R)) (Coalgebra.comul (R := R) a)) :=
+    (Coalgebra.coassoc_apply a).symm
+  calc translation R A ((antipode R).rTensor A (Coalgebra.comul (R := R) a))
+      = tensorLeftAux R A (LinearMap.mul' R A)
+          ((antipode R).rTensor (A ⊗[R] A)
+            (LinearMap.lTensor A (Coalgebra.comul (R := R)) (Coalgebra.comul (R := R) a))) := by
+        rw [translation, LinearMap.comp_apply]
+        congr 1
+        exact LinearMap.congr_fun hcomm (Coalgebra.comul (R := R) a)
+    _ = tensorLeftAux R A (LinearMap.mul' R A ∘ₗ (antipode R).rTensor A)
+          (LinearMap.lTensor A (Coalgebra.comul (R := R)) (Coalgebra.comul (R := R) a)) := by
+        rw [← LinearMap.comp_apply, hG]
+    _ = (1 : A) ⊗ₜ[R] a := by
+        rw [h1, tensorLeftAux_assoc, ← LinearMap.comp_apply, ← LinearMap.rTensor_comp,
+          LinearMap.comp_assoc, HopfAlgebra.mul_antipode_rTensor_comul,
+          LinearMap.rTensor_comp, LinearMap.comp_apply, Coalgebra.rTensor_counit_comul]
+        simp
+
+variable (R A A') in
+/-- The **coaction** `ρ : A → A ⊗[R] A'`, `a ↦ ∑ a₍₁₎ ⊗ π a₍₂₎`, as an `R`-algebra map. -/
+noncomputable def coactionAlgHom (π : A →ₐc[R] A') : A →ₐ[R] A ⊗[R] A' :=
+  (Algebra.TensorProduct.map (AlgHom.id R A) π.toAlgHom).comp (Bialgebra.comulAlgHom R A)
+
+lemma toLinearMap_map_id_right (π : A →ₐc[R] A') :
+    (Algebra.TensorProduct.map (AlgHom.id R A) π.toAlgHom).toLinearMap =
+      LinearMap.lTensor A (π : A →ₗ[R] A') := by
+  ext x y; simp
+
+lemma coactionAlgHom_toLinearMap (π : A →ₐc[R] A') :
+    (coactionAlgHom R A A' π).toLinearMap =
+      (LinearMap.lTensor A (π : A →ₗ[R] A')) ∘ₗ Coalgebra.comul (R := R) := by
+  ext a
+  exact LinearMap.congr_fun (toLinearMap_map_id_right π) (Coalgebra.comul (R := R) a)
+
+section ShortExact
+
+variable [Algebra A'' A] [IsScalarTower R A'' A]
+variable {i : A'' →ₐc[R] A} {π : A →ₐc[R] A'}
+
+omit [Algebra A'' A] [IsScalarTower R A'' A] in
+/-- `π ∘ i = ι ∘ ε` as linear maps; the linear-map form of `IsShortExact.apply_comp`. -/
+lemma IsShortExact.comp_linearMap (h : IsShortExact i π) :
+    (π : A →ₗ[R] A') ∘ₗ (i : A'' →ₗ[R] A) =
+      (Algebra.linearMap R A') ∘ₗ (Coalgebra.counit (R := R) (A := A'')) := by
+  ext a
+  simp [h.apply_comp, Algebra.smul_def]
+
+omit [Algebra A'' A] [IsScalarTower R A'' A] in
+/-- **The coaction is trivial on the subalgebra**: `ρ (i c) = i c ⊗ 1`. This is the
+`A''`-balancedness that lets the Hopf–Galois map be defined on `A ⊗_{A''} A` at all, and it is one
+contraction along the counit: `π (i c₍₂₎) = ε(c₍₂₎) · 1`. -/
+lemma coactionAlgHom_apply_i (h : IsShortExact i π) (c : A'') :
+    coactionAlgHom R A A' π (i c) = (i c) ⊗ₜ[R] (1 : A') := by
+  have e0 : coactionAlgHom R A A' π (i c)
+      = (LinearMap.lTensor A (π : A →ₗ[R] A')) (Coalgebra.comul (R := R) (i c)) :=
+    LinearMap.congr_fun (coactionAlgHom_toLinearMap π) (i c)
+  have e1 : Coalgebra.comul (R := R) (i c)
+      = TensorProduct.map (i : A'' →ₗ[R] A) (i : A'' →ₗ[R] A) (Coalgebra.comul (R := R) c) :=
+    (LinearMap.congr_fun (CoalgHomClass.map_comp_comul i) c).symm
+  have e2 : (LinearMap.lTensor A (π : A →ₗ[R] A')) ∘ₗ
+      TensorProduct.map (i : A'' →ₗ[R] A) (i : A'' →ₗ[R] A)
+      = TensorProduct.map (i : A'' →ₗ[R] A) (Algebra.linearMap R A') ∘ₗ
+          LinearMap.lTensor A'' (Coalgebra.counit (R := R) (A := A'')) := by
+    rw [LinearMap.lTensor, LinearMap.lTensor, ← TensorProduct.map_comp, ← TensorProduct.map_comp,
+      h.comp_linearMap]
+    simp
+  rw [e0, e1, ← LinearMap.comp_apply, e2, LinearMap.comp_apply,
+    Coalgebra.lTensor_counit_comul]
+  simp
+
+variable (R A'' A) in
+/-- The canonical algebra map `A ⊗[R] A → A ⊗_{A''} A`. -/
+noncomputable def tensorQuot : A ⊗[R] A →ₐ[A] A ⊗[A''] A :=
+  AlgHom.liftEquiv R A A (A ⊗[A''] A)
+    ((Algebra.TensorProduct.includeRight : A →ₐ[A''] A ⊗[A''] A).restrictScalars R)
+
+@[simp] lemma tensorQuot_tmul (x y : A) : tensorQuot R A'' A (x ⊗ₜ[R] y) = x ⊗ₜ[A''] y := by
+  show x • ((1 : A) ⊗ₜ[A''] y) = _
+  rw [TensorProduct.smul_tmul']
+  simp
+
+variable (R A'' A) in
+/-- `γ : a ↦ ∑ S(a₍₁₎) ⊗_{A''} a₍₂₎`, an `R`-algebra map `A → A ⊗_{A''} A`. Multiplicativity is
+where commutativity of `A` is used: the antipode of a commutative Hopf algebra is an algebra
+map. -/
+noncomputable def galoisSection : A →ₐ[R] A ⊗[A''] A :=
+  ((tensorQuot R A'' A).restrictScalars R).comp
+    ((Algebra.TensorProduct.map (antipodeAlgHom R A) (AlgHom.id R A)).comp
+      (Bialgebra.comulAlgHom R A))
+
+@[simp] lemma galoisSection_apply (a : A) :
+    galoisSection R A'' A a =
+      tensorQuot R A'' A ((antipode R).rTensor A (Coalgebra.comul (R := R) a)) := by
+  have hmap : (Algebra.TensorProduct.map (antipodeAlgHom R A) (AlgHom.id R A)).toLinearMap
+      = LinearMap.rTensor A (antipode R : A →ₗ[R] A) := by
+    ext x y; simp
+  show tensorQuot R A'' A
+    ((Algebra.TensorProduct.map (antipodeAlgHom R A) (AlgHom.id R A))
+      (Coalgebra.comul (R := R) a)) = _
+  rw [show (Algebra.TensorProduct.map (antipodeAlgHom R A) (AlgHom.id R A))
+        (Coalgebra.comul (R := R) a)
+      = (antipode R).rTensor A (Coalgebra.comul (R := R) a) from
+    LinearMap.congr_fun hmap (Coalgebra.comul (R := R) a)]
+
+/-- **`∑ S(i(c)₍₁₎) ⊗_{A''} i(c)₍₂₎ = ε(c) · 1`.** Only the balancedness over `A''` — which lets
+`i(c₍₂₎)` be moved into the left slot — and the antipode axiom in `A` are used; in particular no
+compatibility of `i` with the antipode is needed, because `comul (i c) = (i ⊗ i) (comul c)` already
+puts the whole computation inside `A`. -/
+lemma galoisSection_apply_i (hi : ∀ c : A'', algebraMap A'' A c = i c) (c : A'') :
+    galoisSection R A'' A (i c)
+      = (algebraMap R A (Coalgebra.counit (R := R) c)) ⊗ₜ[A''] (1 : A) := by
+  classical
+  set 𝓢 := CartierDual.reprMap i (ℛ R c) with h𝓢
+  have hcomul : Coalgebra.comul (R := R) (i c) =
+      ∑ j ∈ 𝓢.index, 𝓢.left j ⊗ₜ[R] 𝓢.right j := 𝓢.eq.symm
+  have htmul : ∀ (x : A) (c' : A''), x ⊗ₜ[A''] (i c') = (i c' * x) ⊗ₜ[A''] (1 : A) := by
+    intro x c'
+    rw [← hi c', Algebra.algebraMap_eq_smul_one, ← TensorProduct.smul_tmul,
+      smul_mul_assoc, one_mul]
+  have hstep : ∀ j, tensorQuot R A'' A (antipode R (𝓢.left j) ⊗ₜ[R] 𝓢.right j)
+      = (antipode R (𝓢.left j) * 𝓢.right j) ⊗ₜ[A''] (1 : A) := by
+    intro j
+    rw [tensorQuot_tmul]
+    show antipode R (i ((ℛ R c).left j)) ⊗ₜ[A''] (i ((ℛ R c).right j)) = _
+    rw [htmul, mul_comm]
+    rfl
+  rw [galoisSection_apply, hcomul, map_sum, map_sum]
+  simp only [LinearMap.rTensor_tmul, hstep]
+  rw [← TensorProduct.sum_tmul]
+  congr 1
+  rw [HopfAlgebra.sum_antipode_mul_eq_algebraMap_counit (R := R) 𝓢,
+    CoalgHomClass.counit_comp_apply]
+
+/-- The coaction as an `A''`-algebra map, `A''` acting on `A` through `i`. -/
+noncomputable def coactionAlgHomSub (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) : A →ₐ[A''] A ⊗[R] A' :=
+  { (coactionAlgHom R A A' π).toRingHom with
+    commutes' := fun c => by
+      show coactionAlgHom R A A' π (algebraMap A'' A c) = algebraMap A'' (A ⊗[R] A') c
+      rw [hi, coactionAlgHom_apply_i h, Algebra.TensorProduct.algebraMap_apply, hi] }
+
+/-- The **Hopf–Galois map** `β : A ⊗_{A''} A → A ⊗[R] A'`, `x ⊗ y ↦ (x ⊗ 1) · ρ y`. -/
+noncomputable def galoisMap (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) : (A ⊗[A''] A) →ₐ[A] A ⊗[R] A' :=
+  (AlgHom.liftEquiv A'' A A (A ⊗[R] A')) (coactionAlgHomSub h hi)
+
+@[simp] lemma galoisMap_tmul (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) (x y : A) :
+    galoisMap h hi (x ⊗ₜ[A''] y) = x • coactionAlgHom R A A' π y := rfl
+
+/-- `γ` kills `ker π`, because `ker π = A · i(ker ε)` and `γ` is an algebra map sending `i c` to
+`ε(c) · 1`. -/
+lemma ker_le_ker_galoisSection (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) :
+    RingHom.ker (π.toAlgHom.toRingHom : A →+* A') ≤
+      RingHom.ker ((galoisSection R A'' A).toRingHom : A →+* A ⊗[A''] A) := by
+  rw [h.ker_eq, Ideal.map_le_iff_le_comap]
+  intro c hc
+  rw [Bialgebra.mem_augmentationIdeal_iff] at hc
+  rw [Ideal.mem_comap, RingHom.mem_ker]
+  show galoisSection R A'' A (i c) = 0
+  rw [galoisSection_apply_i hi c, hc]
+  simp
+
+/-- The descent of `γ` along the surjection `π`. -/
+noncomputable def galoisSectionQuot (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) : A' →ₐ[R] A ⊗[A''] A :=
+  AlgHom.liftOfSurjective π.toAlgHom h.surjective (galoisSection R A'' A)
+    (ker_le_ker_galoisSection h hi)
+
+@[simp] lemma galoisSectionQuot_apply (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) (b : A) :
+    galoisSectionQuot h hi (π b) = galoisSection R A'' A b :=
+  AlgHom.liftOfSurjective_apply π.toAlgHom h.surjective (galoisSection R A'' A)
+    (ker_le_ker_galoisSection h hi) b
+
+/-- The inverse of the Hopf–Galois map, `θ : x ⊗ a' ↦ x · γ̄ a'`. -/
+noncomputable def galoisMapInv (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) : (A ⊗[R] A') →ₐ[A] A ⊗[A''] A :=
+  (AlgHom.liftEquiv R A A' (A ⊗[A''] A)) (galoisSectionQuot h hi)
+
+@[simp] lemma galoisMapInv_tmul (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) (x : A) (a' : A') :
+    galoisMapInv h hi (x ⊗ₜ[R] a') = x • galoisSectionQuot h hi a' := rfl
+
+/-- `β ∘ quot = (id ⊗ π) ∘ Θ`. -/
+lemma galoisMap_tensorQuot (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) (w : A ⊗[R] A) :
+    galoisMap h hi (tensorQuot R A'' A w) =
+      LinearMap.lTensor A (π : A →ₗ[R] A') (translation R A w) := by
+  induction w with
+  | zero => simp
+  | add w₁ w₂ h₁ h₂ => rw [map_add, map_add, map_add, map_add, h₁, h₂]
+  | tmul x y =>
+    rw [tensorQuot_tmul, galoisMap_tmul, translation_tmul]
+    rw [show (coactionAlgHom R A A' π) y
+        = LinearMap.lTensor A (π : A →ₗ[R] A') (Coalgebra.comul (R := R) y) from
+      LinearMap.congr_fun (coactionAlgHom_toLinearMap π) y]
+    induction Coalgebra.comul (R := R) y with
+    | zero => simp
+    | add u v hu hv =>
+      rw [TensorProduct.tmul_add, map_add, map_add, map_add, smul_add, hu, hv]
+    | tmul u v => simp [tensorLeftAux, TensorProduct.smul_tmul']
+
+/-- `θ ∘ (id ⊗ π) = quot ∘ Θ⁻¹`. -/
+lemma galoisMapInv_lTensor (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) (w : A ⊗[R] A) :
+    galoisMapInv h hi (LinearMap.lTensor A (π : A →ₗ[R] A') w) =
+      tensorQuot R A'' A (translationInv R A w) := by
+  induction w with
+  | zero => simp
+  | add w₁ w₂ h₁ h₂ => rw [map_add, map_add, map_add, map_add, h₁, h₂]
+  | tmul x y =>
+    rw [LinearMap.lTensor_tmul, galoisMapInv_tmul]
+    show x • galoisSectionQuot h hi (π y) = _
+    rw [galoisSectionQuot_apply, galoisSection_apply, translationInv_tmul]
+    induction Coalgebra.comul (R := R) y with
+    | zero => simp
+    | add u v hu hv =>
+      rw [TensorProduct.tmul_add, map_add, map_add, map_add, map_add, ← hu, ← hv, smul_add]
+    | tmul u v => simp [tensorLeftAux, TensorProduct.smul_tmul', tensorQuot_tmul]
+
+/-- `β (∑ S(b₍₁₎) ⊗ b₍₂₎) = 1 ⊗ π b`. -/
+lemma galoisMap_galoisSection (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) (b : A) :
+    galoisMap h hi (galoisSection R A'' A b) = (1 : A) ⊗ₜ[R] π b := by
+  rw [galoisSection_apply, galoisMap_tensorQuot h hi, translation_rTensor_antipode_comul]
+  simp
+
+/-- `θ (ρ y) = 1 ⊗ y`. -/
+lemma galoisMapInv_coaction (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) (y : A) :
+    galoisMapInv h hi (coactionAlgHom R A A' π y) = (1 : A) ⊗ₜ[A''] y := by
+  rw [show (coactionAlgHom R A A' π) y
+      = LinearMap.lTensor A (π : A →ₗ[R] A') (Coalgebra.comul (R := R) y) from
+    LinearMap.congr_fun (coactionAlgHom_toLinearMap π) y,
+    galoisMapInv_lTensor h hi, translationInv_comul, tensorQuot_tmul]
+
+/-- **The torsor identity**: `A ⊗_{A''} A ≅ A ⊗[R] A'` as `A`-modules, via the Hopf–Galois map. -/
+noncomputable def IsShortExact.baseChangeEquiv (h : IsShortExact i π)
+    (hi : ∀ c : A'', algebraMap A'' A c = i c) : (A ⊗[A''] A) ≃ₗ[A] (A ⊗[R] A') :=
+  LinearEquiv.ofLinear (galoisMap h hi).toLinearMap (galoisMapInv h hi).toLinearMap
+    (by
+      refine LinearMap.ext fun z => ?_
+      simp only [LinearMap.comp_apply, LinearMap.id_coe, id_eq, AlgHom.toLinearMap_apply]
+      induction z with
+      | zero => simp
+      | add u v hu hv => rw [map_add, map_add, hu, hv]
+      | tmul x a' =>
+        obtain ⟨b, rfl⟩ := h.surjective a'
+        rw [galoisMapInv_tmul, galoisSectionQuot_apply, map_smul, galoisMap_galoisSection h hi,
+          TensorProduct.smul_tmul']
+        simp)
+    (by
+      refine LinearMap.ext fun z => ?_
+      simp only [LinearMap.comp_apply, LinearMap.id_coe, id_eq, AlgHom.toLinearMap_apply]
+      induction z with
+      | zero => simp
+      | add u v hu hv => rw [map_add, map_add, hu, hv]
+      | tmul x y =>
+        rw [galoisMap_tmul, map_smul, galoisMapInv_coaction h hi, TensorProduct.smul_tmul']
+        simp)
+
+end ShortExact
+
+end BaseChange
+
 /-! ### Exactness of Cartier duality -/
 
 section Dual
@@ -1387,18 +1832,21 @@ which are proven. The split is by *where the mathematics is*:
 | `surjective_cartierDual_map` | **PROVEN** from the above | functionals extend along `i` |
 | `le_ker_cartierDual` | **PROVEN** | the easy half of the dual kernel condition |
 | `span_sup_ker_cartierDual_map_eq_top` | **PROVEN** | a lift of an `R`-basis spans modulo `ker (map i)` |
-| `exists_lift_ker_le_span_cartierDual` | **OPEN** | that lift can be chosen to swallow `ker (map i)` |
+| `exists_lift_span_sup_jacobson_cartierDual` | **OPEN** | that lift can be chosen to generate modulo the Jacobson radical of `D(A')` |
+| `exists_lift_ker_le_span_cartierDual` | **PROVEN** (2026-07-30) by Nakayama from the above | that lift can be chosen to swallow `ker (map i)` |
 | `exists_spanning_cartierDual` | **PROVEN** from the two above | `D(A)` is *generated* over `D(A')` by `rk_R A''` elements |
 | `nonempty_linearEquiv_cartierDual` | **PROVEN** from the two below | the rank count `rk_R A = rk_R A'' · rk_R A'` |
 | `finrank_eq_mul` | **PROVEN** from the two below | that same rank count, before packaging |
 | `nonempty_linearEquiv_baseChange` | **PROVEN** (2026-07-30) | the torsor identity `A ⊗_{A''} A ≅ A ⊗_R A'` |
 | `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` | **PROVEN** (2026-07-30) | the degree of a tower (root namespace, no Hopf content) |
 | `exists_basis_cartierDual` | **PROVEN** from those two | `D(A)` is `D(A')`-free of rank `rk_R A''` |
+| `flat_finrank_cartierDual` | **PROVEN** (2026-07-31) from the above | `D(A)` is `D(A')`-flat with every fibre of dimension `rk_R A''` |
+| `nonempty_basis_chooseBasisIndex_cartierDual` | **PROVEN** from the above, semilocally | the same basis, reached through Stacks 02M9 |
 | `ker_cartierDual_le` | **PROVEN** from the cut | the hard half: a character trivial on `Spec A'` descends |
 | `faithfullyFlat_cartierDual` | **PROVEN** from the cut | `(Spec A)^D → (Spec A')^D` is faithfully flat |
 
-So exactly **one** statement is open in this file as of release 24 (2026-07-30), and it is
-Hopf-theoretic on the `A`-side:
+So exactly **one** statement is open in this file, and it is Hopf-theoretic on the `A`-side. As of
+release 24 (2026-07-30) that statement was
 `exists_lift_ker_le_span_cartierDual` (the residual form of the generation half —
 `exists_spanning_cartierDual` is PROVEN from it together with the formal
 `span_sup_ker_cartierDual_map_eq_top`). Its two former companions are both closed:
@@ -1412,8 +1860,28 @@ identity; the generation half was reduced to the first of the two on the same da
 **Both of those two were then closed on 2026-07-30**, on two different branches merged together
 at release 24 — the tower formula directly, at the root namespace just above `namespace
 HopfAlgebra`, and the torsor identity in `namespace Torsor` — so
-`exists_lift_ker_le_span_cartierDual` is now the ONLY sorry left in this file, and the whole rank
-count below it is unconditional.
+`exists_lift_ker_le_span_cartierDual` was, until 2026-07-31, the ONLY sorry left in this file,
+and the whole rank count below it is unconditional.
+
+**On 2026-07-31 that statement was REFUTED** (counterexample over `ℤ[√-5]` in its own docstring),
+repaired with `[IsLocalRing R]` — which it and the four rows below it now carry — and then
+**PROVEN** in the repaired form, by Nakayama from
+`exists_lift_span_sup_jacobson_cartierDual`, which is the single open row of the table. Rows above
+it, and `finrank_eq_mul` / `nonempty_linearEquiv_*` / `nonempty_linearEquiv_baseChange` /
+`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`, are unaffected and remain unconditional.
+
+**The two rows after `exists_basis_cartierDual` came from a rival arrangement and are now
+corollaries, not leaves** (2026-07-31). A second branch cut the same cluster the other way round,
+making `flat_finrank_cartierDual` — flatness of `D(A)` over `D(A')` plus constant fibre rank
+`rk_R A''`, which is Zariski/fppf-local and so escapes the `Pic`-theoretic obstruction that killed
+the global form — the root leaf, and deriving `exists_lift_ker_le_span_cartierDual` from it
+through `nonempty_basis_chooseBasisIndex_cartierDual` and the semilocality of `D(A')`. Both
+branches reached this file. The two arrangements cannot coexist: each derives the other's root
+from its own, so keeping both is a cycle. The Jacobson one is kept because
+`flat_finrank_cartierDual` implies it, so the file's one open obligation is the weaker of the two;
+the rival's two declarations are kept below `exists_basis_cartierDual`, proven. The full argument
+is on `flat_finrank_cartierDual` itself, and a prover who wants the remaining mathematics should
+read `exists_lift_span_sup_jacobson_cartierDual` instead.
 
 (An older version of this list also named `Module.Flat.quotient_range_of_rTensor_injective` as
 what the surjectivity field rests on. **That is stale**: no such declaration is in this file, or
@@ -1535,9 +2003,15 @@ what is left open in this half of the file is those two rather than the freeness
 
 * `IsShortExact.exists_spanning_cartierDual` — *generation*: some family of `rk_R A''` elements
   spans `CartierDual R A` over `CartierDual R A'`. **PROVEN** (2026-07-28) from the formal
-  `span_sup_ker_cartierDual_map_eq_top` plus the residual leaf
-  `IsShortExact.exists_lift_ker_le_span_cartierDual`, which is where the generation half's
-  mathematics — and its atomicity, falsity and axes-searched audits — now live;
+  `span_sup_ker_cartierDual_map_eq_top` plus `IsShortExact.exists_lift_ker_le_span_cartierDual`,
+  which is where the generation half's mathematics — and its atomicity, falsity and
+  axes-searched audits — live, and which is itself **PROVEN** (2026-07-30) by Nakayama's lemma
+  from the residual leaf `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`: the same pair
+  `(b, c)`, asked to generate only modulo the Jacobson radical of `D(A')`. Over a general base that
+  is an equivalent reformulation; its point is that over a **local** base it is the statement over
+  the residue field, where it is Takeuchi's classical theorem. The new leaf's docstring carries
+  that route, a refutation of the "fibrewise, then Nakayama" axis-closure below, and two new
+  constraints on the counterexample search;
 * `IsShortExact.nonempty_linearEquiv_cartierDual` — the *rank count*
   `rk_R A = rk_R A'' · rk_R A'`, packaged as an `R`-linear equivalence so that it is also true
   (vacuously) over the zero ring. **This one is PROVEN since 2026-07-28**, over two further
@@ -1587,13 +2061,193 @@ lemma span_sup_ker_cartierDual_map_eq_top {ι : Type*} (f : A'' →ₐc[R] A)
   refine Submodule.mem_sup.mpr ⟨y, hymem, x - y, ?_, by abel⟩
   simp [LinearMap.mem_ker, hmap]
 
+/-- **The dual normal basis, generation half, modulo the Jacobson radical of `D(A')`**: there is an
+`R`-basis `b` of `CartierDual R A''` and a family `c` lifting it along `CartierDual.map i` whose
+`CartierDual R A'`-span is all of `CartierDual R A` *modulo* `J · CartierDual R A`, where `J` is
+the Jacobson radical of `CartierDual R A'`.
+
+OPEN, and since 2026-07-30 this is the residual leaf of the generation half:
+`IsShortExact.exists_lift_ker_le_span_cartierDual` is PROVEN from it in one application of
+Nakayama's lemma (`Submodule.le_of_le_smul_of_le_jacobson_bot`, legitimate because `D(A)` is a
+*finite* `D(A')`-module), and everything above that is unchanged.
+
+**Read `IsShortExact.exists_lift_ker_le_span_cartierDual`'s docstring for the mathematics** — the
+atomicity audit, the two falsity audits, the four axes searched and the literature check all live
+there and are all still current. This docstring records only what is new.
+
+## HONEST LABEL: over a general base this is a REFORMULATION, not a reduction
+
+Nakayama makes it equivalent to the statement it replaces, because `D(A)` is a *finite* `D(A')`-
+module; the equivalence holds over every base, with no hypothesis. In particular it is *no weaker
+at all* when `Ideal.jacobson ⊥ = ⊥` in `D(A')`, which is the typical situation over a base like
+`ℤ`: a finitely generated `ℤ`-algebra is a Jacobson ring, so there `J` is the nilradical and
+vanishes as soon as `D(A')` is reduced. So a prover must not read "mod `J`" as slack that is there
+for the taking.
+
+Its value is in one thing it settles and one direction of attack it opens.
+
+## The "fibrewise, then Nakayama" axis is CLOSED FOR THE WRONG REASON, and is in fact open
+
+The third bullet of the AXES SEARCHED list on the old leaf rejects "fibrewise over the residue
+fields of `R`, then Nakayama over `R`" on the ground that «a family chosen fibrewise does not
+glue». That objection is correct about Nakayama over `R` and **void** for the Nakayama that
+applies here, which is over `D(A')`: the lemma takes *any* lift of a family generating
+`D(A) / J·D(A)` and returns a family generating `D(A)`. The gluing is what the lemma does. The
+axis was closed against the wrong ring.
+
+What survives of the objection is quantitative rather than structural: `J` is only big enough to
+be useful when `R` is **local**, and then it is big enough for everything.
+
+* `R` local with maximal ideal `𝔪` ⟹ `D(A')` is **semilocal** and `𝔪 · D(A') ≤ Ideal.jacobson ⊥`.
+  (`D(A')` is module-finite over `R`, hence integral, so every maximal ideal of `D(A')` contracts
+  to a maximal ideal of `R`, which is `𝔪`; so every maximal ideal contains `𝔪 · D(A')`.)
+* Generation modulo `𝔪` **is** the statement over the residue field `k = R/𝔪`, because forming the
+  Cartier dual of a finite free Hopf algebra commutes with base change.
+* Over a field that statement is **classical**: a finite-dimensional Hopf algebra is free over any
+  Hopf subalgebra (Takeuchi 1972 for the commutative case, which is this one; Nichols–Zoeller 1989
+  without commutativity). No fppf descent, no torsor triviality.
+
+So over a local base this leaf is a theorem in the literature, and the residual difficulty of the
+global statement is *entirely* the passage from local to global.
+
+**And the intended consumer of this cluster is over a local base — but it does not exist yet, so
+this is a claim about the PLAN, not about a call site.** Checked 2026-07-30 by two independent
+comment-stripped scans of every `.lean` file under `Fermat/`: the only term-level references to
+`isMultiplicativeType_of_isShortExact`, `IsShortExact.cartierDual`, `exists_basis_cartierDual`,
+`exists_spanning_cartierDual` and this leaf are **inside this file**. The chain ends at
+`HopfAlgebra.isMultiplicativeType_of_isShortExact`, which has **no consumer anywhere in the tree**;
+the whole cluster is free-floating in the technical sense, built ahead of a consumer that is still
+unwritten. Every mention of it in `Family.lean` and `Threeadic.lean` is prose — `Family.lean`'s own
+`(R1)` section says the object it needs was "UNSTATABLE" in that file and is still being built.
+
+What the plan says is nonetheless specific and does support the patch: `Family.lean` describes
+`(R3)` as "an iterated extension of `μ`-types over the **henselian** `𝒪ᵖᵥ`", i.e.
+`adicCompletionIntegers ℚ v` = `ℤ_p`, a complete DVR. So adding `[IsLocalRing R]` to
+this leaf and to the five declarations that consume it in this file
+(`exists_lift_ker_le_span_cartierDual`, `exists_spanning_cartierDual`,
+`exists_basis_cartierDual`, `ker_cartierDual_le`, `faithfullyFlat_cartierDual`, and hence
+`IsShortExact.cartierDual` and `isMultiplicativeType_of_isShortExact`) would cost the *project*
+nothing and would replace a statement nobody can prove by one that is in the literature.
+
+**That patch is deliberately NOT applied here.** It weakens `IsShortExact.cartierDual` — "Cartier
+duality is exact" — from an arbitrary base to a local one, which is a scope decision rather than a
+proof step, and the global statement has not been refuted. It is the recommended next move, and it
+is cheap: the hypothesis is an instance, so no call site outside this file changes.
+
+## What the global statement is, stripped of Cartier duality
+
+Under the duality that produces it the leaf says exactly this, with no dual in sight: *for a short
+exact sequence `1 → K → H → Q → 1` of finite flat commutative group schemes over `R` in which
+`O(K)`, `O(H)` and `O(Q)` are all free `R`-modules, `O(H)` is a free `O(Q)`-module of rank
+`rk_R O(K)`.* Take `K = (Spec A'')^D`, `H = (Spec A)^D`, `Q = (Spec A')^D`; the hypotheses are
+self-dual because the `R`-dual of a finite free module is finite free.
+
+That framing places it precisely between two known statements:
+
+* `H → Q` is a `K`-torsor, so `O(H)` is fppf-locally free of rank `rk_R O(K)` — and reportedly even
+  unconditionally f.g. projective over `O(Q)`, since a Hopf–Galois extension is (Kreimer–Takeuchi,
+  *Hopf algebras and Galois extensions of an algebra*, 1981; **that citation has not been checked
+  against a copy here** and is a pointer, not an authority). **True, classical, and weaker than
+  this leaf.**
+* `O(H) ≅ O(Q) ⊗_R O(K)` *as a comodule*, the normal basis property in its strong form, is
+  equivalent to the torsor being trivial. **False in general** — already over `R = ℝ` with
+  `K = ℤ/2` and the torsor `Spec ℂ`, where module-freeness holds and comodule-freeness cannot.
+
+The leaf is the module-theoretic statement strictly between them, i.e. the vanishing of the class
+of `O(H)` in the reduced `K₀` of `O(Q)`. That is why no fppf argument reaches it and why no
+counterexample is cheap.
+
+## TWO NEW CONSTRAINTS ON THE COUNTEREXAMPLE SEARCH
+
+**(1) The forgetful statement is FALSE, so the group law is load-bearing.** Drop the torsor
+structure and keep only «`S` is a finite free `R`-algebra, `M` is an `S`-module, projective of
+constant rank `n`, and `R`-free»: that is refuted. Take
+`R = ℝ[x₀,…,x₄] / (∑ xᵢ² - 1)` and `T = {v : R⁵ | ∑ xᵢ vᵢ = 0}`, the tangent module of the real
+algebraic 4-sphere: `T ⊕ R ≅ R⁵`, and `T` is **not** free (a basis would trivialise `T S⁴`, and
+`S⁴` is not parallelisable). Now put `S = R × R` — which is `O(ℤ/2)`, the shape the leaf's own
+`Q = ℤ/2` family has — and `M = T × R⁴`. Then `M` is `S`-projective of constant rank `4`, and as an
+`R`-module `M ≅ T ⊕ R⁴ ≅ R⁸` is **free**, yet `M` is not `S`-free. So every hypothesis of the leaf
+that survives forgetting the group law is satisfied by a counterexample: any proof must use the
+fact that the fibres of `H → Q` are *translates of one another*, which is what all four axes on the
+old leaf are attempts to exploit.
+
+**(2) The `Q = ℤ/N` family, computed once and for all.** Let `ζ_N ∈ R`, `Q = ℤ/N` constant,
+`K = μ_N`. Such an extension exists for every `μ_N`-torsor: `Ext¹(ℤ/N, μ_N) ↠ H¹(R, μ_N)` because
+`N` kills `H¹(R, μ_N)`. Then `O(Q) = R^N`, and `H → Q` decomposes into the `N` fibres `T_j`, the
+`μ_N`-torsor of class `j·[T]`; writing `L ∈ Pic(R)[N]` for the image of `[T]` under
+`H¹(R, μ_N) ↠ Pic(R)[N]`, `O(T_j) ≅ ⊕_{k<N} L^{jk}`. The leaf becomes, exactly:
+
+> `⊕_{j<N} ⊕_{k<N} L^{jk}` free `⟹` each `⊕_{k<N} L^{jk}` free.
+
+* `N = 2`: the determinant closes it in one line and over **any** base —
+  `det (R² ⊕ (R ⊕ L)) = L`, so the hypothesis forces `L ≅ R`. (The FALSITY AUDIT on the old leaf
+  reaches the same conclusion for `p = 2` by a Dedekind computation; the determinant needs no
+  Dedekind hypothesis.)
+* `N = 3`: every determinant in sight is `L³ ≅ R`, so the determinant says **nothing**. Here
+  `O(T_1) ≅ O(T_2) ≅ M := R ⊕ L ⊕ L²` and the leaf becomes: *can `M` fail to be free while
+  `M ⊕ M ⊕ R³` is free?* Two dimensions of base are excluded outright, and the exclusion is
+  the third instance of the pattern the FALSITY AUDIT below already noticed — hypothesis and
+  conclusion keep coinciding:
+  * `dim R ≤ 1`: `L ⊕ L²` has trivial determinant, hence is free over a Dedekind base, so `M` is
+    free unconditionally.
+  * `dim R = 2` (say a smooth affine surface over a field): rank `3 > dim R`, so by Bass–Serre the
+    stable class decides freeness, and `[M] - 3` lies in `F²K̃₀ ≅ CH₀`, where it is `c₂(M) = 2ℓ²`
+    with `ℓ = c₁(L)` — from `c(M) = (1 + ℓ)(1 + 2ℓ)`, whose `c₁ = 3ℓ = 0` and `c₂ = 2ℓ²`. So `M` is
+    non-free iff `2ℓ² ≠ 0`, while
+    `M ⊕ M ⊕ R³` free needs `2([M] - 3) = 0`, i.e. `4ℓ² = 0`. But `ℓ` is 3-torsion, so
+    `4ℓ² = ℓ²` and `2ℓ² = 0 ⟺ ℓ² = 0`: the two conditions are the same one, and there is again no
+    counterexample.
+  * `dim R ≥ 3`: rank `3` leaves the cancellative range, the hypothesis stops being a `K₀`
+    condition, and this is the only place a counterexample in this family can live.
+
+The general obstruction, which explains both bullets: `det_{O(Q)} O(H) ∈ Pic (O(Q))` is the image
+of the torsor class under `det` of the regular representation of `K`. `O(H)` and `O(Q)` being
+`R`-free force only its **norm** to `Pic R` to vanish, so a counterexample must sit in
+`ker (N : Pic (O(Q)) → Pic R)`; and for `K = μ_N` with `N` odd that determinant character is
+already trivial (`N ∣ N(N-1)/2`), which is exactly why the even case is closed by a determinant and
+the odd case needs `K₀`.
+
+## FAITHFULNESS
+
+Equivalent to the statement it replaces — Nakayama one way, `le_sup_left` the other — hence neither
+stronger nor weaker than `exists_basis_cartierDual` for any base, and the faithfulness audit there
+applies verbatim, non-vacuity included. (Over a field `J` is the nilradical of the finite-
+dimensional algebra `D(A')`, not `0`, so the "mod `J`" form is *not* literally the generation
+statement even there; the equivalence is Nakayama's, not an accident of the base.) Not
+over-constrained: a dual normal basis satisfies both clauses. -/
+theorem IsShortExact.exists_lift_span_sup_jacobson_cartierDual (h : IsShortExact i π) :
+    letI : Algebra (CartierDual R A') (CartierDual R A) :=
+      ((CartierDual.map π).toAlgHom.toRingHom :
+        CartierDual R A' →+* CartierDual R A).toAlgebra
+    ∃ (b : Module.Basis (Module.Free.ChooseBasisIndex R A'') R (CartierDual R A''))
+      (c : Module.Free.ChooseBasisIndex R A'' → CartierDual R A),
+      (∀ j, CartierDual.map i (c j) = b j) ∧
+      (⊤ : Submodule (CartierDual R A') (CartierDual R A)) ≤
+        Submodule.span (CartierDual R A') (Set.range c) ⊔
+          Ideal.jacobson (⊥ : Ideal (CartierDual R A')) •
+            (⊤ : Submodule (CartierDual R A') (CartierDual R A)) := sorry
+
 /-- **The dual normal basis, generation half, in its residual form**: there is an `R`-basis `b` of
 `CartierDual R A''` and a family `c` lifting it along `CartierDual.map i` whose
 `CartierDual R A'`-span already contains `ker (CartierDual.map i)`.
 
-OPEN, and it is the *whole* remaining content of `IsShortExact.exists_spanning_cartierDual`,
-which is proven from it below together with the formal
-`span_sup_ker_cartierDual_map_eq_top`.
+**PROVEN** (2026-07-30) from `IsShortExact.exists_lift_span_sup_jacobson_cartierDual` above by
+Nakayama's lemma — see the section at the end of this docstring — and it is the *whole* remaining
+content of `IsShortExact.exists_spanning_cartierDual`, which is proven from it below together with
+the formal `span_sup_ker_cartierDual_map_eq_top`. Everything between the two is unchanged: this
+docstring's audits describe the mathematics of both, since the two statements are equivalent.
+
+The audits below are kept because they are what established the shape of the statement, and
+because the REFUTATION is the reason the whole chain carries `[IsLocalRing R]`.
+
+**`[IsLocalRing R]` IS LOAD-BEARING AND WAS ADDED ON 2026-07-31, BECAUSE THE STATEMENT WITHOUT IT
+IS FALSE.** The counterexample is written out in the REFUTATION section below; it lives over
+`ℤ[√-5]`, i.e. over a *Dedekind* base, which the two falsity audits that preceded it had ruled
+out. Everything downstream of this leaf as far as
+`HopfAlgebra.isMultiplicativeType_of_isShortExact` carries the same hypothesis; at the time of
+the change nothing outside this file consumed any of those declarations at term level, and the
+intended consumer (`Family.lean`, over `𝒪ᵖᵥ`) has a local base, so the restriction costs the
+development nothing.
 
 ## ATOMICITY AUDIT (2026-07-28) — this is a REFORMULATION, not a reduction, and deliberately so
 
@@ -1649,7 +2303,90 @@ next, is the fppf-local decomposition of the audit's own fallback: prove
 `Module.Projective (CartierDual R A') (CartierDual R A)` of rank `rk_R A''` separately (this is
 fppf-local, hence within reach) and isolate the global triviality as a distinct, smaller leaf.
 
-## FALSITY AUDIT (2026-07-28) — searched, NOT refuted, and the search narrows the audit below
+## REFUTATION (2026-07-31) — the statement WITHOUT `[IsLocalRing R]` IS FALSE, over `ℤ[√-5]`
+
+The two audits below searched, honestly and correctly, and found no counterexample; both of them
+searched only sequences in which **`G'` and `G''` have the same order**, and that is exactly the
+degenerate case. Widening the quotient by one factor of the exponent breaks them at once, and
+the witness needs nothing more exotic than a class number `2`.
+
+Set `R = ℤ[√-5]`, `Pic R = ℤ/2 = ⟨[L]⟩` with `L = (2, 1+√-5)`, so `L ⊗ L ≅ R` and `L ≇ R`.
+
+*The primal witness.* `H¹_fppf(R, μ₂) ↠ Pic(R)[2]` (Kummer), so pick `ξ` with class `[L]`. From
+`0 → ℤ →⁴ ℤ → ℤ/4 → 0` and `4 · H¹(R, μ₂) = 0` one gets
+`Ext¹_fppf(ℤ/4, μ₂) ↠ H¹_fppf(R, μ₂)`, so there is a commutative extension of finite flat group
+schemes
+
+    1 → μ₂ → K → ℤ/4 → 1
+
+whose fibre over `1 ∈ ℤ/4` is the `μ₂`-torsor `ξ`. `K` is commutative, `K → ℤ/4` is a
+homomorphism, so the fibre over `k` is the contracted power `k·ξ`; and `H¹(R, μ₂)` is killed by
+`2`, so the four fibres are `ξ`-classes `0, ξ, 0, ξ`. Hence, as `R`-modules,
+
+    O(K) ≅ (R ⊕ R) ⊕ (R ⊕ L) ⊕ (R ⊕ R) ⊕ (R ⊕ L) ≅ R⁶ ⊕ L ⊕ L .
+
+Over a Dedekind domain a projective of rank `n` is `R^{n-1} ⊕ det`, and
+`det (R⁶ ⊕ L ⊕ L) = L ⊗ L ≅ R`, so **`O(K) ≅ R⁸` is `R`-FREE** — while `O(K)` is *not* free over
+`O(ℤ/4) = R⁴`, because that is a product decomposition and its second factor is `R ⊕ L`, whose
+determinant `L` is non-trivial.
+
+*Transporting it to this leaf.* Feed the leaf the **dual** sequence
+`1 → μ₄ → K^D → ℤ/2 → 1` (Cartier duality is an exact anti-equivalence on finite locally free
+commutative group schemes — Cartier's theorem, independent of this file), i.e.
+`A' = O(μ₄)`, `A = O(K^D)`, `A'' = O(ℤ/2) = R²`. All three hypotheses hold: `O(μ₄)` and `R²` are
+free, and `O(K^D) = Hom_R(O(K), R)` is free because `O(K)` is. Now
+`D(A') = O((μ₄)^D) = O(ℤ/4) = R⁴`, `D(A) = O(K)`, and `rk_R A'' = 2`, so this leaf — through the
+PROVEN `exists_spanning_cartierDual` and `exists_basis_cartierDual` — asserts that `O(K)` is
+`R⁴`-free of rank `2`. It is not. ∎
+
+*Why the two audits below missed it, stated as a rule rather than as an accident.* Take
+`G' = μ_p`, `G'' = ℤ/m` with `p ∣ m`, class `ξ ↦ L ∈ Pic(R)[p]`, and write `x = [L] - 1 ∈ K̃₀(R)`.
+The fibres repeat with period `p`, so `O(G) ≅ R^{m/p·p} ⊕ P^{⊕(m/p)(p-1)}`-shaped: each non-trivial
+fibre class occurs `m/p` times, whereas the *conclusion* is about ONE fibre. So
+
+* the **conclusion** is `[P] - p = 0`, i.e. (on a Dedekind base, where `K̃₀ = Pic`) `x = 0`;
+* the **hypothesis** `Module.Free R A` is `(m/p) · ([P] - p) = 0`.
+
+With `m = p` the two coincide up to the relation `p·x = 0` — that is the "hypothesis and
+conclusion move together" both audits observed, and it is a `K₀` identity, not evidence. With
+`m = p²` (here `p = 2`, `m = 4`) the multiplicity is `p`, `p·x = 0` holds for free, and the
+hypothesis becomes VACUOUS while the conclusion does not. The same computation over a
+`2`-dimensional base with `p = 3`, `m = 9` gives `[P] - 3 = x²` and multiplicity `6`, so
+`6x² = 0` automatically: the same break, one dimension up.
+
+**So the correct reading of both audits below is: they are computations in the sub-family
+`ord G'' = ord G'`, they are right, and that sub-family proves nothing.** Keep them — they are
+the reason the corrected form is believable — but do not read either as evidence for the leaf.
+
+## WHY `[IsLocalRing R]` IS THE RIGHT REPAIR, AND WHAT IS LEFT TO PROVE
+
+The obstruction above is a `Pic`/`K₀` obstruction on `D(A')`, *not* on `R`: a base with trivial
+`Pic` is not enough (`Pic (D(A'))` can be non-trivial for `R` a UFD). What kills it is:
+
+* `R` local and `D(A')` finite over `R` ⟹ `D(A')` is **semilocal** (it is integral over `R`, so
+  every maximal ideal lies over `𝔪`, and `D(A')/𝔪 D(A')` is artinian, so there are finitely
+  many);
+* over a semilocal commutative ring a finitely generated projective module of constant rank is
+  **free**;
+* and `D(A)` *is* a finitely generated projective `D(A')`-module of constant rank `rk_R A''`,
+  because `Spec D(A) → Spec D(A')` is a torsor under the finite locally free `Spec D(A'')`
+  (Kreimer–Takeuchi; classically, a quotient map of a finite flat group scheme by a finite flat
+  subgroup is finite locally free). **This is the one genuinely missing input**, and it is
+  fppf-local, which is precisely the "axis NOT searched" the atomicity audit below recommends.
+
+Given freeness, this leaf follows with no further Hopf input, and the derivation is worth
+recording because it is short: let `d` be a `D(A')`-basis of `D(A)` indexed by
+`ChooseBasisIndex R A''`. `le_ker_cartierDual` (PROVEN) gives
+`aug (D(A')) · D(A) ≤ ker (map i)`, so `map i` factors through
+`D(A) ⊗_{D(A')} R ≅ R^{rk_R A''}`; `surjective_cartierDual_map` (PROVEN) makes that factorisation
+a surjection onto `D(A'')`, which is `R`-free of the same rank, hence an isomorphism (a surjective
+endomorphism of a finitely generated module is injective). So the images `b j := map i (d j)` are
+an `R`-basis of `D(A'')`, `c := d` lifts `b`, and `span_{D(A')} (range c) = D(A) ⊇ ker (map i)`.
+`ker_cartierDual_le` falls out of the same isomorphism, which is why it is NOT circular to prove
+it separately below — it is proven from `exists_basis_cartierDual`, i.e. from the freeness, not
+from this leaf.
+
+## FALSITY AUDIT (2026-07-28) — REFUTED ABOVE; a correct computation in a degenerate sub-family
 
 The audit on `exists_basis_cartierDual` says a counterexample must use a non-local base with
 nontrivial `Pic`. That can be sharpened. Take `R` Dedekind containing `ζ_p`, with
@@ -1669,7 +2406,11 @@ in these families: it must exploit a base on which stably free modules need not 
 Krull dimension at least 2), which is a strictly stronger requirement than "non-local with
 nontrivial `Pic`". None was constructed.
 
-## FALSITY AUDIT, SECOND FAMILY (2026-07-30) — the ÉTALE case, over an ARBITRARY base
+**(2026-07-31: the emphasised sentence is true and its "hence" is false. "In these families" is
+`G'' = ℤ/p`, of the same order as `G' = μ_p`; the refutation above stays inside the Dedekind
+base `ℤ[√-5]` and only replaces `ℤ/2` by `ℤ/4`. Krull dimension ≥ 2 was never needed.)**
+
+## FALSITY AUDIT, SECOND FAMILY (2026-07-30) — REFUTED ABOVE; the ÉTALE case, arbitrary base
 
 The audit above leaves "Krull dimension ≥ 2" as the hunting ground. The simplest family living
 there was searched and is **also not a counterexample** — and the reason is instructive: the
@@ -1695,6 +2436,11 @@ The two conditions coincide, so `Module.Free R A` is exactly load-bearing here a
 Read together with the Dedekind computation above, the pattern is that the hypothesis keeps
 turning out to be equivalent to the conclusion rather than merely implying it, which is weak
 evidence *for* the leaf and is why no counterexample has been produced.
+
+**(2026-07-31: that pattern is now explained rather than suggestive — see the REFUTATION section.
+This family too has `ord G'' = ord G' = 2`, so the non-trivial fibre occurs exactly once and the
+hypothesis is forced to say the same thing as the conclusion. It is a property of the sub-family,
+not of the leaf.)**
 
 ## LITERATURE CHECK (2026-07-30) — the "Tate's argument" attribution is UNVERIFIED
 
@@ -1730,7 +2476,18 @@ generation plus the rank count.
 It is not vacuous: over a field it asserts `dim D(A) = dim A'' · dim A'` together with a choice
 of `rk_R A''` generators realising it, false for any smaller family. It is not over-constrained
 either — a dual normal basis satisfies both clauses, so the pair `(b, c)` is inhabited exactly
-when the parent cut holds. -/
+when the parent cut holds.
+
+## PROVEN since 2026-07-30, in one Nakayama step
+
+The open statement is now `IsShortExact.exists_lift_span_sup_jacobson_cartierDual` — the same pair
+`(b, c)`, asked to generate only **modulo the Jacobson radical of `D(A')`**. Over a general base
+that is an *equivalent* reformulation (Nakayama in one direction, `bot_le` in the other), so the
+audits above are untouched and are still the place to read the mathematics. What the new leaf adds
+is recorded on it and not repeated here: the "fibrewise, then Nakayama" axis closed above is
+**closed for the wrong reason** and is in fact open; the forgetful form of this statement is FALSE
+with an explicit witness; and the counterexample criterion is sharpened to a concrete question in
+`K₀` of a base of Krull dimension `≥ 3`. -/
 theorem IsShortExact.exists_lift_ker_le_span_cartierDual (h : IsShortExact i π) :
     letI : Algebra (CartierDual R A') (CartierDual R A) :=
       ((CartierDual.map π).toAlgHom.toRingHom :
@@ -1739,7 +2496,20 @@ theorem IsShortExact.exists_lift_ker_le_span_cartierDual (h : IsShortExact i π)
       (c : Module.Free.ChooseBasisIndex R A'' → CartierDual R A),
       (∀ j, CartierDual.map i (c j) = b j) ∧
       ∀ x : CartierDual R A, CartierDual.mapLinear i x = 0 →
-        x ∈ Submodule.span (CartierDual R A') (Set.range c) := sorry
+        x ∈ Submodule.span (CartierDual R A') (Set.range c) := by
+  letI : Algebra (CartierDual R A') (CartierDual R A) :=
+    ((CartierDual.map π).toAlgHom.toRingHom :
+      CartierDual R A' →+* CartierDual R A).toAlgebra
+  haveI : IsScalarTower R (CartierDual R A') (CartierDual R A) :=
+    IsScalarTower.of_algebraMap_eq fun r => ((CartierDual.map π).toAlgHom.commutes r).symm
+  -- `D(A)` is a finite `R`-module, hence a finite `D(A')`-module: Nakayama applies to it.
+  haveI : Module.Finite (CartierDual R A') (CartierDual R A) :=
+    Module.Finite.of_restrictScalars_finite R _ _
+  obtain ⟨b, c, hcb, htop⟩ := h.exists_lift_span_sup_jacobson_cartierDual
+  refine ⟨b, c, hcb, fun x _ => ?_⟩
+  -- Nakayama: a submodule that generates modulo an ideal inside the Jacobson radical is everything.
+  exact Submodule.le_of_le_smul_of_le_jacobson_bot Module.Finite.fg_top le_rfl htop
+    Submodule.mem_top
 
 /-- **The dual normal basis, generation half**: `CartierDual R A` is *generated* as a
 `CartierDual R A'`-module — the module structure being the one given by `CartierDual.map π` — by
@@ -1807,7 +2577,7 @@ search that narrows the audit below: no counterexample can live over a *Dedekind
 standard `μ_p`-by-`ℤ/p` families, so one would have to exploit a base on which stably free
 modules need not be free. The documented fallback (weaken to local freeness of rank `rk_R A''`
 and localise the two consumers' derivations, weakening neither consumer) applies unchanged. -/
-theorem IsShortExact.exists_spanning_cartierDual (h : IsShortExact i π) :
+theorem IsShortExact.exists_spanning_cartierDual [IsLocalRing R] (h : IsShortExact i π) :
     letI : Algebra (CartierDual R A') (CartierDual R A) :=
       ((CartierDual.map π).toAlgHom.toRingHom :
         CartierDual R A' →+* CartierDual R A).toAlgebra
@@ -1838,12 +2608,17 @@ basis, and it is proven here out of two statements that share nothing with each 
 identity that is pure Hopf algebra, and the degree of a tower, which is pure commutative algebra
 and lives at the root namespace above. -/
 
+set_option linter.unusedSectionVars false in
 /-- **`Spec A` is a `Spec A'`-torsor over `Spec A''`**, in the only form the rank count needs:
 `A ⊗[A''] A` and `A ⊗[R] A'` are isomorphic as `A`-modules, where `A` is an `A''`-algebra
 through `i`.
 
-OPEN. Cut on 2026-07-28 out of `IsShortExact.nonempty_linearEquiv_cartierDual`, alongside
-`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`.
+**PROVEN** (2026-07-30). Cut on 2026-07-28 out of
+`IsShortExact.nonempty_linearEquiv_cartierDual`, alongside
+`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`. It is `IsShortExact.baseChangeEquiv`, built in
+the `BaseChange` section above out of the **Hopf–Galois map** `β : x ⊗ y ↦ (x ⊗ 1) · ρ y`; read
+that section's header for the architecture and the sections below for the record of what the
+sketch in this docstring predicted.
 
 Geometrically this is the standard trivialisation of a torsor by its own base change,
 `G ×_{G''} G ≅ G × G'` via `(x, y) ↦ (x, x⁻¹y)`, which lands in `G'` precisely because `G'` is
@@ -1856,6 +2631,29 @@ Only `ker_eq`, surjectivity of `π`, and `R`-flatness of `A` (which is free) are
 `faithfullyFlat` field is **not** needed here — it is consumed one level up, in
 `IsShortExact.finrank_eq_mul`, where it makes `Spec A → Spec A''` surjective. Worth knowing
 before attacking this: it is not a descent statement, and no fppf machinery is involved.
+
+**Confirmed by the proof, and one item of it was over-cautious.** `faithfullyFlat` is indeed
+unused. `ker_eq` and surjectivity of `π` are both used, exactly where predicted (`ker_eq` in
+`ker_le_ker_galoisSection`, surjectivity in `galoisSectionQuot`). **`R`-flatness of `A` is NOT
+used** — it was needed only to identify `K₂ = A ⊗[R] ker π`, a step the route below takes and the
+proof does not, since `β` is built on `A ⊗_{A''} A` directly rather than as a map of quotients.
+So the theorem holds with no finiteness or freeness over `R` at all; it is stated here inside
+`section Dual`, which carries them, only because that is where its consumer lives.
+
+## The route BELOW is the one that was sketched, not the one that was taken
+
+Kept because its analysis is correct and because the two differ in an instructive way: the sketch
+presents both sides as quotients of `A ⊗[R] A` and matches the kernels, the proof defines `β` on
+`A ⊗_{A''} A` directly and inverts it. The sketch's `Θ K₁ ⊆ K₂` computation *is* the proof's
+`coactionAlgHom_apply_i` and its `K₂ ⊆ Θ K₁` computation *is* `galoisSection_apply_i`; what the
+proof avoids is presenting `K₁` by generators and the quotient-of-quotient identification.
+
+One claim in the sketch turns out to be avoidable: `K₂ ⊆ Θ K₁` is justified below by "use that `i`
+commutes with the antipode". No such compatibility is needed. Writing the corresponding step as
+`∑ S(i(c)₍₁₎) ⊗_{A''} i(c)₍₂₎`, i.e. against `comul (i c) = (i ⊗ i)(comul c)` rather than against
+`comul c` pushed forward, keeps the whole computation inside `A`, where it is the antipode axiom
+of `A` and nothing else. That matters because "a bialgebra map commutes with the antipode" is
+*true* but is not in this pin, so believing it necessary would have created a spurious sub-leaf.
 
 Let `Θ : A ⊗[R] A ≃ₗ[R] A ⊗[R] A`, `a ⊗ b ↦ ∑ a·b₍₁₎ ⊗ b₍₂₎`, the classical translation
 isomorphism, whose inverse is `a ⊗ b ↦ ∑ a·S(b₍₁₎) ⊗ b₍₂₎` (the composites collapse by
@@ -1877,16 +2675,23 @@ Then `Θ K₁ = K₂`, and the map induced on quotients is the required isomorph
   tensor and use that `i` commutes with the antipode:
   `∑ S(i c₍₁₎) i(c₍₂₎) = i (∑ S(c₍₁₎) c₍₂₎) = ε(c) · 1 = 0`.
 
-## What has to be built (checked, not assumed)
+## What has to be built (checked, not assumed) — and what turned out not to
 
 There is **no** Hopf–Galois map in this pin. `Mathlib/RingTheory/HopfAlgebra/` contains exactly
 `Basic`, `Convolution`, `GroupLike`, `MonoidAlgebra`, `Quotient`, `TensorProduct`, and a grep
 over `Mathlib/` for `hopf.?galois`/`galoisMap` returns nothing. So `Θ` must be built here from
 `Coalgebra.comul`, `HopfAlgebra.antipode` and the `Coalgebra.Repr` API
-(`sum_antipode_mul_eq_algebraMap_counit` and its siblings). The presentation of `A ⊗[A''] A` as
-`A ⊗[R] A` modulo `K₁` has to be written too; the file already carries the analogous
-right-exactness plumbing in `AlgHom.flat_quotient_range_of_faithfullyFlat`, which goes through
-`lTensor_exact`.
+(`sum_antipode_mul_eq_algebraMap_counit` and its siblings). ~~The presentation of `A ⊗[A''] A` as
+`A ⊗[R] A` modulo `K₁` has to be written too~~ — that part was **not** needed, and it was the
+expensive half of this list. Maps *out of* `A ⊗_{A''} A` are supplied by `AlgHom.liftEquiv`
+(`(A →ₐ[A''] B) ≃ (A ⊗[A''] A →ₐ[A] B)`), which asks for the balanced bilinear datum and nothing
+about kernels; the map *into* it needed here, `A ⊗[R] A → A ⊗_{A''} A`, is the same lemma again.
+So `lTensor_exact` and the right-exactness plumbing of
+`AlgHom.flat_quotient_range_of_faithfullyFlat` are not involved.
+
+`Θ` and `Θ⁻¹` were built as predicted, as `translation` / `translationInv`; the only `Repr`-level
+Sweedler argument left in the proof is `galoisSection_apply_i`, everything else being point-free
+composites in the style of `invariantAct_comul` further down this file.
 
 ## Faithfulness
 
@@ -1898,7 +2703,17 @@ equivalence proves the same rank count, so there is nothing an existential can h
 Refuting check showing `ker_eq` is load-bearing: drop it and take `A'' := R` with `i` the unit,
 `A' := R` with `π := ε_A`. The conclusion would read `A ⊗[R] A ≅ A`, forcing `rk A ^ 2 = rk A`,
 which fails for `A = R[ℤ/2]`. With `ker_eq` in force that configuration is excluded, because
-`ker ε_A` is the augmentation ideal of `A` while `Ideal.map i (augmentationIdeal R R)` is `0`. -/
+`ker ε_A` is the augmentation ideal of `A` while `Ideal.map i (augmentationIdeal R R)` is `0`.
+
+## Why the section's instances are kept although the proof uses none of them
+
+`section Dual` supplies `IsCocomm` and `Module.Finite`/`Module.Free` over `R` for all three
+algebras, and the proof below needs none of them — hence the `set_option` disabling
+`linter.unusedSectionVars`. They are deliberately **not** `omit`ted: that would change this
+theorem's signature, and `omit`ting here makes the same warning appear on `finrank_eq_mul` and
+onwards, i.e. an interface edit through the rank-count chain for no gain. The unconditional
+statement is available directly as `IsShortExact.baseChangeEquiv`, which is declared in the
+`BaseChange` section above and carries none of them. -/
 theorem IsShortExact.nonempty_linearEquiv_baseChange (h : IsShortExact i π) :
     letI : Algebra A'' A := (i.toAlgHom.toRingHom : A'' →+* A).toAlgebra
     Nonempty ((A ⊗[A''] A) ≃ₗ[A] (A ⊗[R] A')) := by
@@ -2092,6 +2907,17 @@ give. The reasons to believe the strong form here, and the shape a refutation wo
   use a non-local base with nontrivial `Pic`** — and by the previous point must decouple the
   freeness of `A` over `R` from the freeness of `D(A)` over `D(A')`.
 
+**IT WAS REFUTED, on 2026-07-31, and the repair taken was NOT the fallback below.** The three
+bullets above are correct as far as they go and all three are about the sub-family
+`ord G'' = ord G'`, where the multiplicity of the non-trivial fibre is `1` and the hypothesis is
+forced to coincide with the conclusion; taking `G' = μ₂`, `G'' = ℤ/4` over `ℤ[√-5]` decouples them
+(see the REFUTATION section on `IsShortExact.exists_lift_ker_le_span_cartierDual`). The repair is
+`[IsLocalRing R]`, which this statement now carries: it makes `CartierDual R A'` **semilocal**,
+where a finite flat module of constant fibre rank is free (mathlib's
+`Module.free_of_flat_of_finrank_eq`, under `[Finite (MaximalSpectrum _)]`). So the remaining
+mathematics is flatness plus the fibre-rank count, not global triviality. The fppf-local fallback
+below was not needed and is left only as a record of the alternative.
+
 **If the strong form is ever refuted, the fallback is known and both consumers survive it**, at
 the cost of a localisation argument in each: `ker_cartierDual_le` uses only that
 `CartierDual R A ⊗_{CartierDual R A'} R` is `R`-free of rank `rk A''`, and
@@ -2105,7 +2931,7 @@ two proofs below — *not* to weaken either consumer.
 * Takeuchi, *A correspondence between Hopf ideals and sub-Hopf algebras* (the Hopf–Galois input on
   the `A`-side, whose linear dual this is).
 * Waterhouse, *Introduction to Affine Group Schemes*, ch. 14–16. -/
-theorem IsShortExact.exists_basis_cartierDual (h : IsShortExact i π) :
+theorem IsShortExact.exists_basis_cartierDual [IsLocalRing R] (h : IsShortExact i π) :
     letI : Algebra (CartierDual R A') (CartierDual R A) :=
       ((CartierDual.map π).toAlgHom.toRingHom :
         CartierDual R A' →+* CartierDual R A).toAlgebra
@@ -2130,6 +2956,116 @@ theorem IsShortExact.exists_basis_cartierDual (h : IsShortExact i π) :
     OrzechProperty.injective_of_surjective_of_injective (R := R) e.toLinearMap
       (F.restrictScalars R) e.injective hFsurj
   exact ⟨Module.Basis.ofRepr (LinearEquiv.ofBijective F ⟨hFinj, hFsurj⟩).symm⟩
+
+/-- **The torsor `Spec D(A) → Spec D(A')` is finite locally free of rank `rk_R A''`**, in the two
+clauses the semilocal freeness criterion consumes: `D(A)` is a FLAT `D(A')`-module, and its fibre
+at every maximal ideal of `D(A')` has dimension `rk_R A''`.
+
+**PROVEN** (2026-07-31) from `IsShortExact.exists_basis_cartierDual` directly above: a
+`D(A')`-basis of `D(A)` indexed by `Module.Free.ChooseBasisIndex R A''` makes `D(A)` free, hence
+flat, and base-changes to a basis of every fibre (`Module.Basis.baseChange`), whose cardinality is
+`rk_R A''` by `Module.finrank_eq_card_chooseBasisIndex`.
+
+## WHY THIS IS BELOW `exists_basis_cartierDual` AND NOT ABOVE IT — read before rearranging
+
+This statement was introduced on 2026-07-31 as the *root* leaf of the dual normal basis, with the
+arrows pointing the other way: `flat_finrank_cartierDual` (open) →
+`nonempty_basis_chooseBasisIndex_cartierDual` → `exists_lift_ker_le_span_cartierDual` →
+`exists_spanning_cartierDual` → `exists_basis_cartierDual`. That arrangement and the one here are
+**mutually exclusive** — together they are a cycle — and the file must carry exactly one of them.
+
+The one here is kept, and the choice is not a matter of taste:
+
+* the root leaf under this arrangement is
+  `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`, generation modulo the Jacobson radical
+  of `D(A')`;
+* that statement is **implied by** this one. Given a `D(A')`-basis `d` of `D(A)`, the derivation
+  written out in the "WHY `[IsLocalRing R]` IS THE RIGHT REPAIR" section of
+  `exists_lift_ker_le_span_cartierDual`'s docstring produces the pair `(b, c)` with
+  `b j := map i (d j)` and `c := d`, which spans on the nose, a fortiori modulo `Jac (D(A'))`;
+* so making the Jacobson statement the root leaf leaves the file's single open obligation
+  **weaker** than making this one the root leaf. A file that owes less is strictly better, and
+  nothing else in the file changes.
+
+The cost is that this declaration is no longer where the remaining mathematics is. It is not a
+leaf any more; it is a corollary. The mathematics is one file-place up, at
+`exists_lift_span_sup_jacobson_cartierDual`, and its docstring is where a prover should start.
+
+## FAITHFULNESS
+
+Both clauses are implied by `exists_basis_cartierDual` (a basis makes the module free, hence flat,
+with every fibre of dimension the cardinality of the index set) — which is exactly the proof
+below, so the implication is now checked by the compiler rather than asserted. It is strictly
+weaker than global freeness: it says nothing about the module globally, and over `ℤ[√-5]` with
+`G' = μ₄`, `G'' = ℤ/2` — the refutation's witness, recorded on
+`exists_lift_ker_le_span_cartierDual` — both clauses hold while global freeness fails.
+
+Not vacuous: over a field it is the assertion `dim D(A) = dim A'' · dim D(A')`, and the flatness
+clause is what makes the fibre dimension an invariant at all. -/
+theorem IsShortExact.flat_finrank_cartierDual [IsLocalRing R] (h : IsShortExact i π) :
+    letI : Algebra (CartierDual R A') (CartierDual R A) :=
+      ((CartierDual.map π).toAlgHom.toRingHom :
+        CartierDual R A' →+* CartierDual R A).toAlgebra
+    Module.Flat (CartierDual R A') (CartierDual R A) ∧
+      ∀ P : MaximalSpectrum (CartierDual R A'),
+        Module.finrank (CartierDual R A' ⧸ P.asIdeal)
+          ((CartierDual R A' ⧸ P.asIdeal) ⊗[CartierDual R A'] CartierDual R A)
+          = Module.finrank R A'' := by
+  classical
+  letI : Algebra (CartierDual R A') (CartierDual R A) :=
+    ((CartierDual.map π).toAlgHom.toRingHom :
+      CartierDual R A' →+* CartierDual R A).toAlgebra
+  obtain ⟨b⟩ := h.exists_basis_cartierDual
+  haveI : Module.Free (CartierDual R A') (CartierDual R A) := Module.Free.of_basis b
+  refine ⟨inferInstance, fun P => ?_⟩
+  haveI : P.asIdeal.IsMaximal := P.isMaximal
+  letI : Field (CartierDual R A' ⧸ P.asIdeal) := Ideal.Quotient.field _
+  rw [Module.finrank_eq_card_basis (b.baseChange (CartierDual R A' ⧸ P.asIdeal)),
+    Module.finrank_eq_card_chooseBasisIndex]
+
+/-- **The dual normal basis**, in the form the generation half consumes: `CartierDual R A` is a
+free `CartierDual R A'`-module on `Module.Free.ChooseBasisIndex R A''`.
+
+**PROVEN** (2026-07-31) from `IsShortExact.flat_finrank_cartierDual` by the semilocal criterion,
+and this is the only place that criterion is exercised:
+
+* `CartierDual R A'` is a finite `R`-algebra and `R` is local, so it is **semilocal**
+  (`finite_maximalSpectrum_of_isLocalRing_of_module_finite`);
+* over a semilocal ring a finite flat module whose fibre dimension is constant is free
+  (mathlib's `Module.nonempty_basis_of_flat_of_finrank_eq`, Stacks 02M9);
+* the index set is `Fin (rk_R A'')`, reindexed to `Module.Free.ChooseBasisIndex R A''` by
+  `Module.finrank_eq_card_chooseBasisIndex`.
+
+Under the arrangement this file settled on (see the section on `flat_finrank_cartierDual` above)
+this is a *restatement* of `IsShortExact.exists_basis_cartierDual`, reached by a different route:
+`exists_basis_cartierDual` gets there by Orzech's property from generation plus the rank count,
+and this one by flatness plus constant fibre rank over a semilocal ring. It is kept because it is
+the form the intended henselian-base consumer asks for, and because the round trip through the
+semilocal criterion is a live check that the criterion's hypotheses really are met here — if the
+arrangement is ever inverted again, this is the declaration that becomes the load-bearing one. -/
+theorem IsShortExact.nonempty_basis_chooseBasisIndex_cartierDual [IsLocalRing R]
+    (h : IsShortExact i π) :
+    letI : Algebra (CartierDual R A') (CartierDual R A) :=
+      ((CartierDual.map π).toAlgHom.toRingHom :
+        CartierDual R A' →+* CartierDual R A).toAlgebra
+    Nonempty (Module.Basis (Module.Free.ChooseBasisIndex R A'')
+      (CartierDual R A') (CartierDual R A)) := by
+  classical
+  letI : Algebra (CartierDual R A') (CartierDual R A) :=
+    ((CartierDual.map π).toAlgHom.toRingHom :
+      CartierDual R A' →+* CartierDual R A).toAlgebra
+  haveI : IsScalarTower R (CartierDual R A') (CartierDual R A) :=
+    IsScalarTower.of_algebraMap_eq fun r => ((CartierDual.map π).toAlgHom.commutes r).symm
+  obtain ⟨hflat, hrk⟩ := h.flat_finrank_cartierDual
+  haveI := hflat
+  haveI : Finite (MaximalSpectrum (CartierDual R A')) :=
+    finite_maximalSpectrum_of_isLocalRing_of_module_finite R (CartierDual R A')
+  haveI : Module.Finite (CartierDual R A') (CartierDual R A) :=
+    Module.Finite.of_restrictScalars_finite R _ _
+  obtain ⟨bb⟩ := Module.nonempty_basis_of_flat_of_finrank_eq (CartierDual R A')
+    (CartierDual R A) (Module.finrank R A'') hrk
+  exact ⟨bb.reindex (Fintype.equivFinOfCardEq
+    (Module.finrank_eq_card_chooseBasisIndex R A'').symm).symm⟩
 
 /-- **The hard half of the dual kernel condition**: a functional on `A` vanishing on the
 sub-bialgebra `i(A'')` lies in the ideal of `CartierDual R A` generated by
@@ -2189,7 +3125,7 @@ Refuting check: the reverse inclusion `IsShortExact.le_ker_cartierDual` is prove
 counterexample would be a `φ : A →ₗ[R] R` killing `i(A'')` that is not a convolution combination
 of pullbacks along `π`; over a field the rank count `rk A = rk A'' * rk A'` makes both sides free
 of rank `rk A - rk A''`, so any counterexample must use a non-local base. -/
-theorem IsShortExact.ker_cartierDual_le (h : IsShortExact i π) :
+theorem IsShortExact.ker_cartierDual_le [IsLocalRing R] (h : IsShortExact i π) :
     RingHom.ker ((CartierDual.map i).toAlgHom.toRingHom :
         CartierDual R A →+* CartierDual R A'')
       ≤ Ideal.map ((CartierDual.map π).toAlgHom.toRingHom :
@@ -2329,7 +3265,7 @@ Refuting check: `RingHom.FaithfullyFlat` unfolds to `Module.FaithfullyFlat` alon
 `(CartierDual.map π).toAlgebra`, so a refutation would be a maximal ideal `m` of
 `CartierDual R A'` with `m • CartierDual R A = ⊤`; over a base field this is impossible because
 the module is free of rank `rk A''`, so any counterexample must use a non-local base. -/
-theorem IsShortExact.faithfullyFlat_cartierDual (h : IsShortExact i π) :
+theorem IsShortExact.faithfullyFlat_cartierDual [IsLocalRing R] (h : IsShortExact i π) :
     RingHom.FaithfullyFlat ((CartierDual.map π).toAlgHom.toRingHom :
       CartierDual R A' →+* CartierDual R A) := by
   letI : Algebra (CartierDual R A') (CartierDual R A) :=
@@ -2367,7 +3303,7 @@ exactly one of them. The kernel condition is fully proven (`le_ker_cartierDual` 
 `IsShortExact.exists_basis_cartierDual`; the surjectivity field is reduced to a pure module
 statement about `A` (`IsShortExact.exists_linearRetraction`) with no Hopf structure left in it,
 and that is PROVEN outright from `AlgHom.exists_linearRetraction_of_faithfullyFlat`. -/
-theorem IsShortExact.cartierDual (h : IsShortExact i π) :
+theorem IsShortExact.cartierDual [IsLocalRing R] (h : IsShortExact i π) :
     IsShortExact (CartierDual.map π) (CartierDual.map i) :=
   ⟨h.faithfullyFlat_cartierDual, h.surjective_cartierDual_map,
     le_antisymm h.ker_cartierDual_le h.le_ker_cartierDual⟩
@@ -2635,8 +3571,15 @@ the roles of `A''` and `A'`, and apply the étale half to the dual sequence.
 
 PROVEN, modulo its two inputs. That this proof is three symbols long is the evidence that the
 definition of `IsShortExact` above really is pinned by its consumer: any other placement of the
-faithful-flatness and kernel conditions would leave a mismatch here. -/
-theorem isMultiplicativeType_of_isShortExact
+faithful-flatness and kernel conditions would leave a mismatch here.
+
+**`[IsLocalRing R]` since 2026-07-31**, inherited from `IsShortExact.cartierDual` and ultimately
+from `exists_lift_ker_le_span_cartierDual`, whose unrestricted form was refuted. The étale half
+`etale_of_isShortExact` is unaffected and still holds over an arbitrary base. The intended
+consumer, `exists_unramified_grouplike_family_generating_corner` in
+`GaloisRepresentation/HardlyRamified/Family.lean`, works over `𝒪ᵖᵥ`, so it supplies the instance;
+at the time of the change no declaration outside this file used `(R3)` at term level. -/
+theorem isMultiplicativeType_of_isShortExact [IsLocalRing R]
     [IsCocomm R A''] [IsCocomm R A] [IsCocomm R A']
     [Module.Finite R A''] [Module.Free R A''] [Module.Finite R A] [Module.Free R A]
     [Module.Finite R A'] [Module.Free R A']
