@@ -14,6 +14,8 @@ public import Mathlib.Algebra.Polynomial.FieldDivision
 public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 public import Mathlib.RingTheory.EuclideanDomain
 public import Mathlib.RingTheory.AdjoinRoot
+public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.ElevenA
+public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.ElevenB
 
 /-!
 # A mod-`ℓ` degree obstruction, and the `p = 11` certificate of Mazur's non-CM table
@@ -58,17 +60,25 @@ worst single product is `(81 terms) * (41 terms)`) keeps every `ring_nf` call in
 about `10⁴` products.  Measured: the whole `seventeenA` chain elaborates in roughly `20`
 minutes on one core.  Do NOT "simplify" those four lemmas away.
 
-**THE OPEN LEAVES ARE ALL OF ONE KIND**, and none of them mentions a curve, `ℚ`, or Galois
-theory — each is a statement about two explicit polynomials over a finite field:
+**THE TWO `p = 11` ROWS ARE CLOSED** (2026-07-31).
+`dvd_X_pow_card_pow_sub_X_hPolyElevenA` and `…_hPolyElevenB` — `H ∣ X ^ (23 ^ 11) - X` — are
+PROVEN, one module per row under `MazurNonCMFrobenius/`, together with the four `hPoly*`
+themselves, which moved to `MazurNonCMFrobenius.lean` so the certificates can see them.  The
+route is square-and-multiply modulo the FACTORS of `H`, reassembled by `IsCoprime.mul_dvd`; it
+needs the factors only to be pairwise COPRIME, so no irreducibility test appears anywhere —
+which matters, because the standard irreducibility test for a degree-`11` factor over `F₂₃`
+*is* this very divisibility.
 
-* `dvd_X_pow_card_pow_sub_X_hPolyElevenA`, `…_hPolyElevenB` — `H ∣ X ^ (23 ^ 11) - X`;
-* `dvd_X_pow_card_pow_sub_X_hPolySeventeenA`, `…_hPolySeventeenB` — `H ∣ X ^ (67 ^ 34) - X`;
-* `isCoprime_hPolySeventeenA`, `isCoprime_hPolySeventeenB` — `IsCoprime H (X ^ (67 ^ 2) - X)`.
+**FOUR LEAVES REMAIN, all on the `p = 17` rows**, and none of them is open for a mathematical
+reason: `dvd_X_pow_card_pow_sub_X_hPolySeventeenA`/`…B` and `isCoprime_hPolySeventeenA`/`…B`.
+All four are TRUE, machine-checked twice, and generated in full by `gen_modules.py` at the repo
+root.  What stopped them is that the generated module is 14 287 lines and elaboration is
+single-threaded per FILE; the fix is to split it per factor.  See
+`dvd_X_pow_card_pow_sub_X_hPolySeventeenA`'s docstring for the exact instruction.
 
-All six are TRUE and machine-checked in PARI/GP 2.15.4.  Per row they are ONE computation (the
-table `T_i = X ^ (ℓ i) mod H`), and the two rows of a given `p` differ only in the constants, so
-the natural unit of work is "one `p`, both rows".  `dvd_X_pow_card_pow_sub_X_hPolyElevenA`'s
-docstring records the route in full.
+Read `MazurNonCMFrobenius.lean`'s docstring before touching any of it: the exponents have to
+stay behind the `XPow` wrapper or the elaborator unfolds `npowRec` once per unit of `23 ^ 11`
+and the build dies with an unlocated stack overflow.
 -/
 
 @[expose] public section
@@ -218,15 +228,6 @@ def elevenAMod : WeierstrassCurve (ZMod 23) := ⟨1, 1, 0, -2, -7⟩
 noncomputable def dPolyElevenA : (ZMod 23)[X] :=
   X^5 + 14*X^4 + 7*X^3 + 9*X^2 + 16*X + 1
 
-/-- The product of the five irreducible factors of `Ψ₁₁ mod 23` of degree `11`. -/
-noncomputable def hPolyElevenA : (ZMod 23)[X] :=
-  X^55 + 11*X^54 + 12*X^53 + 22*X^52 + 10*X^51 + 10*X^50 + 13*X^49 + 20*X^48 + X^47 + 12*X^46 +
-    13*X^45 + 10*X^44 + 11*X^43 + 2*X^42 + 7*X^41 + 9*X^40 + 16*X^39 + 2*X^38 + 5*X^37 + 16*X^36 +
-    5*X^35 + 17*X^34 + 17*X^33 + 16*X^31 + 19*X^30 + 20*X^29 + 19*X^28 + 21*X^27 + 3*X^26 +
-    8*X^25 + X^24 + 6*X^23 + 4*X^22 + 9*X^21 + 4*X^20 + 14*X^19 + 13*X^18 + 22*X^17 + 4*X^16 +
-    10*X^14 + 15*X^13 + 10*X^12 + 19*X^11 + 6*X^10 + 7*X^9 + 16*X^8 + 22*X^7 + 2*X^6 + 21*X^5 +
-    22*X^4 + 6*X^3 + X^2 + 4*X + 19
-
 theorem Ψ₂Sq_elevenAMod : elevenAMod.Ψ₂Sq =
     4*X^3 + 5*X^2 + 15*X + 18 := by
   rw [WeierstrassCurve.Ψ₂Sq]
@@ -301,33 +302,6 @@ theorem eval_hPolyElevenA_ne_zero (a : ZMod 23) : hPolyElevenA.eval a ≠ 0 := b
   simp only [hPolyElevenA, eval_add, eval_mul, eval_pow, eval_X, eval_ofNat]
   decide
 
-/-- **THE ONE OPEN LEAF OF THIS FILE** (sorry leaf, cut 2026-07-30): `H` divides
-`X ^ (23 ^ 11) - X`, i.e. every irreducible factor of `H` has degree dividing `11`.
-
-TRUE, machine-checked in PARI/GP 2.15.4 (`Mod(x, H) ^ (23 ^ 11) == x`); `H` is in fact a
-product of five irreducibles of degree exactly `11`, and `eval_hPolyElevenA_ne_zero` above is
-what turns "dividing `11`" into "equal to `11`" where the obstruction needs it.
-
-**THE ROUTE, and it is entirely mechanical.**  Write `r_k := X ^ (23 ^ k) mod H`, so `r_0 = X`
-and the claim is `r_11 = X`.  Do NOT compute `r_k ^ 23` by repeated squaring: over `ZMod 23`
-the Frobenius is LINEAR, `r ^ 23 = Polynomial.expand 23 r` (`Polynomial.expand_char` together
-with `ZMod.pow_card`, which kills the coefficient-wise `c ↦ c ^ 23`).  So precompute the table
-`T_i := X ^ (23 * i) mod H` for `i ≤ 54` — each `T_{i+1}` is `T_i * T_1` reduced, one identity
-of degree `≤ 108` apiece — and then each of the eleven Frobenius steps is a single `ZMod 23`
-linear combination of the `T_i`, which `ring_nf` checks at degree `54`.
-
-Every identity is of the shape `A * B = Q * H + R`, verified by the same
-`reduce_mod_char; ring_nf; reduce_mod_char` idiom the chain above uses; `Q` and `R` come from
-PARI.  The count is about `65` identities and the arithmetic is `≈ 2·10⁵` `F₂₃` operations,
-which is the figure the `X0.lean` cost triage calls "comfortably kernel-checkable".
-
-The same route closes the `p = 11`, `j = −24729001` row (same `ℓ`, same degrees) and, with one
-extra coprimality at `d = 2`, the two `p = 17` rows.  It does NOT close the `p = 37` rows:
-there `deg H = 666`, `ℓ = 397` and `m = 222`. -/
-theorem dvd_X_pow_card_pow_sub_X_hPolyElevenA :
-    hPolyElevenA ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X :=
-  sorry
-
 /-- **Row `p = 11`, `j = −121`: `Ψ₁₁ mod 23` has no monic divisor of degree `10`**
 (PROVEN 2026-07-30 over `dvd_X_pow_card_pow_sub_X_hPolyElevenA`).
 
@@ -367,16 +341,6 @@ def elevenBMod : WeierstrassCurve (ZMod 23) := ⟨1, 1, 1, -30, -76⟩
 row. -/
 noncomputable def dPolyElevenB : (ZMod 23)[X] :=
   X^5 + 14*X^4 + 17*X^3 + 16*X^2 + 21
-
-/-- The product of the five irreducible factors of degree `11` of `Ψ₁₁ mod 23` for the
-`j = −24729001` row. -/
-noncomputable def hPolyElevenB : (ZMod 23)[X] :=
-  X^55 + 11*X^54 + 9*X^53 + 20*X^52 + X^51 + 13*X^50 + 2*X^49 + 3*X^48 + 2*X^47 + 8*X^46 +
-    8*X^45 + 4*X^44 + 9*X^42 + 4*X^41 + 17*X^40 + 22*X^39 + 7*X^38 + 11*X^37 + 20*X^36 +
-    8*X^34 + 17*X^33 + 9*X^32 + 16*X^31 + 16*X^30 + 3*X^29 + 18*X^28 + X^27 + 16*X^26 +
-    4*X^25 + 13*X^24 + 14*X^23 + 12*X^22 + 20*X^21 + 10*X^20 + 15*X^19 + 7*X^18 + 16*X^17 +
-    2*X^16 + 9*X^15 + 20*X^14 + 21*X^13 + 5*X^12 + X^11 + 15*X^10 + 7*X^9 + 22*X^8 + 9*X^7 +
-    18*X^6 + 2*X^5 + 20*X^4 + 22*X^3 + 22*X^2 + 6
 
 theorem Ψ₂Sq_elevenBMod : elevenBMod.Ψ₂Sq =
     4*X^3 + 5*X^2 + 20*X + 19 := by
@@ -450,21 +414,6 @@ theorem eval_hPolyElevenB_ne_zero (a : ZMod 23) : hPolyElevenB.eval a ≠ 0 := b
   simp only [hPolyElevenB, eval_add, eval_mul, eval_pow, eval_X, eval_ofNat]
   decide
 
-/-- **THE OPEN LEAF OF THE `j = −24729001` ROW** (sorry leaf, cut 2026-07-31): `H` divides
-`X ^ (23 ^ 11) - X`, i.e. every irreducible factor of `H` has degree dividing `11`.
-
-TRUE, machine-checked in PARI/GP 2.15.4 (2026-07-31): `Mod(x, H) ^ (23 ^ 11) == x`, and `H` is
-in fact a product of five irreducibles of degree exactly `11`.
-
-Word-for-word the same statement as `dvd_X_pow_card_pow_sub_X_hPolyElevenA` with a different
-`H`, and the route recorded in that docstring closes both — the Frobenius-linearity table
-`T_i = X ^ (23 * i) mod H` for `i ≤ 54` followed by eleven linear steps.  **Whoever does one
-should do the other in the same pass**: the table shape, the degree bookkeeping and the tactic
-idiom are identical, and only the ~65 explicit polynomial identities differ. -/
-theorem dvd_X_pow_card_pow_sub_X_hPolyElevenB :
-    hPolyElevenB ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X :=
-  sorry
-
 /-- **Row `p = 11`, `j = −24729001`: `Ψ₁₁ mod 23` has no monic divisor of degree `10`**
 (PROVEN 2026-07-31 over `dvd_X_pow_card_pow_sub_X_hPolyElevenB`).
 
@@ -501,25 +450,6 @@ def seventeenAMod : WeierstrassCurve (ZMod 67) := ⟨1, 1, 0, -660, -7600⟩
 /-- The product of the four irreducible QUADRATIC factors of `Ψ₁₇ mod 67` on this row. -/
 noncomputable def dPolySeventeenA : (ZMod 67)[X] :=
   X^8 + 29*X^7 + 53*X^6 + 21*X^5 + 31*X^4 + 10*X^3 + 17*X^2 + 23*X + 26
-
-/-- The product of the four irreducible factors of degree `34` of `Ψ₁₇ mod 67` on this row. -/
-noncomputable def hPolySeventeenA : (ZMod 67)[X] :=
-  X^136 + 31*X^135 + 54*X^134 + 23*X^133 + 2*X^132 + X^131 + 38*X^130 + 37*X^129 + 65*X^128 +
-    46*X^127 + 49*X^126 + 39*X^125 + 43*X^124 + X^123 + 40*X^122 + 60*X^121 + 36*X^120 +
-    20*X^119 + 4*X^118 + 40*X^117 + 30*X^116 + 49*X^115 + 39*X^114 + 37*X^113 + 12*X^112 +
-    57*X^111 + 58*X^110 + 59*X^109 + 23*X^108 + 58*X^107 + 47*X^106 + 32*X^105 + 33*X^104 +
-    9*X^103 + 4*X^102 + 30*X^101 + 65*X^100 + 22*X^99 + 25*X^98 + 8*X^97 + 35*X^96 + 58*X^95 +
-    8*X^94 + 28*X^93 + 55*X^92 + 50*X^91 + 53*X^90 + 17*X^89 + 21*X^88 + 42*X^87 + 30*X^86 +
-    54*X^85 + 46*X^84 + 45*X^83 + 58*X^82 + 32*X^81 + 5*X^80 + 30*X^79 + 27*X^78 + 3*X^77 +
-    50*X^76 + 8*X^75 + 66*X^74 + 23*X^73 + 49*X^72 + 54*X^71 + 58*X^70 + 13*X^69 + 28*X^68 +
-    8*X^67 + 23*X^66 + 5*X^65 + 60*X^64 + 24*X^63 + 8*X^62 + 33*X^61 + 27*X^60 + 5*X^59 +
-    23*X^58 + 43*X^57 + 61*X^56 + 52*X^55 + 19*X^54 + 46*X^53 + 55*X^52 + 66*X^51 + 48*X^50 +
-    20*X^49 + 30*X^48 + 27*X^47 + 7*X^46 + 6*X^45 + 21*X^44 + 27*X^43 + 37*X^42 + 4*X^41 +
-    22*X^40 + 20*X^39 + 9*X^38 + 42*X^37 + 65*X^36 + 22*X^35 + 24*X^34 + 26*X^33 + 28*X^32 +
-    51*X^31 + 49*X^30 + 31*X^29 + 6*X^28 + 39*X^27 + 43*X^26 + 50*X^25 + 15*X^24 + 18*X^23 +
-    5*X^22 + 23*X^21 + 17*X^20 + 18*X^19 + 43*X^18 + 21*X^17 + 2*X^16 + 4*X^15 + 33*X^14 +
-    34*X^13 + 47*X^12 + 59*X^11 + 34*X^10 + X^9 + 62*X^8 + 58*X^7 + 42*X^6 + 58*X^5 + 18*X^4 +
-    26*X^3 + 58*X^2 + 15*X + 43
 
 theorem Ψ₂Sq_seventeenAMod : seventeenAMod.Ψ₂Sq =
     4*X^3 + 5*X^2 + 40*X + 18 := by
@@ -694,28 +624,35 @@ theorem preΨ'_seventeen_seventeenAMod :
   ring_nf
   reduce_mod_char
 
-/-- **OPEN LEAF (sorry, cut 2026-07-31)**: every irreducible factor of `H` has degree dividing
-`34`.  TRUE, machine-checked in PARI/GP 2.15.4 (`Mod(x, H) ^ (67 ^ 34) == x`); `H` is in fact a
-product of four irreducibles of degree exactly `34`.
+/-- **OPEN LEAF**: every irreducible factor of `H` has degree dividing `34`.
 
-Same shape as `dvd_X_pow_card_pow_sub_X_hPolyElevenA`, with `deg H = 136`, `q = 67`, `m = 34`:
-build the table `T_i = X ^ (67 * i) mod H` for `i ≤ 135` by repeated multiplication by `X ^ 67`
-(a shift plus one reduction, `deg Q ≤ 66`), then run `34` Frobenius steps, each a single
-`ZMod 67`-linear combination of the `T_i` because `r ^ 67 = Polynomial.expand 67 r` over
-`ZMod 67`.  `T_67` is the reduction of `X ^ (67 ^ 2)`, so the SAME table also supplies
-`isCoprime_hPolySeventeenA` below — the two leaves are one computation and should be closed
-together. -/
+TRUE, machine-checked twice on 2026-07-31 — PARI/GP 2.15.4 (`Mod(x, H) ^ (67 ^ 34) == x`) and
+an independent Python reimplementation.  `H` is a product of four irreducibles of degree
+exactly `34`.
+
+**THE ROUTE IS FULLY WORKED OUT AND MECHANICAL, AND THE `p = 11` ROWS ARE THE WORKED EXAMPLE.**
+`MazurNonCMFrobenius/ElevenA.lean` and `…/ElevenB.lean` are the same statement at `ℓ = 23`,
+`m = 11`, and they are PROVEN.  `gen_modules.py` at the repo root emits this row too, from the
+same code path, and its output was checked to be mathematically correct.
+
+**WHAT STOPPED IT WAS FILE SIZE, NOT MATHEMATICS.**  The generated `SeventeenA.lean` is 14 287
+lines and about 2 500 theorems; elaboration is single-threaded per FILE, and it was still
+running after 60 minutes at 47 GB resident when it was stopped.  The `p = 11` rows, 2 390
+lines, take 2 minutes each.  The fix is to SPLIT PER FACTOR: `H` has four degree-`34` factors,
+each chain is independent, so emit `MazurNonCMFrobenius/SeventeenA/Factor1.lean` … `Factor4.lean`
+(≈3 500 lines apiece, elaborating in parallel) and leave only the four Bézout coprimalities,
+the product identity and the `xpow_mul` assembly in `SeventeenA.lean`. -/
 theorem dvd_X_pow_card_pow_sub_X_hPolySeventeenA :
     hPolySeventeenA ∣ X ^ (Nat.card (ZMod 67)) ^ 34 - X :=
   sorry
 
-/-- **OPEN LEAF (sorry, cut 2026-07-31)**: `H` has no irreducible factor of degree `1` or `2`.
-TRUE, machine-checked in PARI/GP 2.15.4: `gcd(H, X ^ (67 ^ 2) - X) = 1`.
+/-- **OPEN LEAF**: `H` has no irreducible factor of degree `1` or `2`.
+TRUE, machine-checked 2026-07-31: `gcd(H, lift(Mod(x, H) ^ (67 ^ 2)) - x) = 1`.
 
 This single coprimality is what the `p = 17` rows need in place of the `p = 11` rows'
 root-freeness: the divisors of `m = 34` that are at most `n = 16` are `1` and `2`, and both
-divide `2`.  See `dvd_X_pow_card_pow_sub_X_hPolySeventeenA` for why the two leaves are one
-computation. -/
+divide `2`.  The generator emits it from the SAME chain — a second, 13-step square-and-multiply
+run at the smaller exponent `67 ^ 2`, then one Bézout pair against `r₂ - X`. -/
 theorem isCoprime_hPolySeventeenA :
     IsCoprime hPolySeventeenA (X ^ (Nat.card (ZMod 67)) ^ 2 - X) :=
   sorry
@@ -756,25 +693,6 @@ def seventeenBMod : WeierstrassCurve (ZMod 67) := ⟨1, 0, 1, -3041, 64278⟩
 /-- The product of the four irreducible QUADRATIC factors of `Ψ₁₇ mod 67` on this row. -/
 noncomputable def dPolySeventeenB : (ZMod 67)[X] :=
   X^8 + 42*X^7 + 14*X^6 + 11*X^5 + 12*X^4 + 38*X^3 + 42*X^2 + 58*X + 15
-
-/-- The product of the four irreducible factors of degree `34` of `Ψ₁₇ mod 67` on this row. -/
-noncomputable def hPolySeventeenB : (ZMod 67)[X] :=
-  X^136 + 37*X^135 + 20*X^134 + 58*X^133 + 63*X^132 + 14*X^131 + 62*X^130 + 27*X^129 + 42*X^128 +
-    15*X^127 + 13*X^126 + 52*X^125 + 25*X^124 + 20*X^123 + 16*X^122 + 37*X^121 + 29*X^120 +
-    45*X^119 + 61*X^118 + 49*X^117 + 54*X^116 + 33*X^114 + 42*X^113 + 59*X^112 + 21*X^111 +
-    28*X^110 + 42*X^109 + 14*X^108 + 37*X^107 + 23*X^106 + 16*X^105 + 7*X^104 + 41*X^103 +
-    13*X^102 + 36*X^101 + 36*X^100 + 30*X^99 + 48*X^98 + 31*X^97 + 41*X^96 + 41*X^95 + 52*X^94 +
-    29*X^93 + 6*X^92 + 60*X^91 + 9*X^90 + 63*X^89 + 30*X^88 + 43*X^87 + 35*X^86 + 44*X^85 +
-    10*X^84 + 40*X^83 + 27*X^82 + 65*X^81 + 33*X^80 + 14*X^79 + 39*X^78 + 34*X^77 + 64*X^76 +
-    54*X^75 + 40*X^74 + 32*X^73 + 34*X^72 + 56*X^71 + 41*X^70 + 14*X^69 + 47*X^68 + 25*X^67 +
-    41*X^66 + 18*X^65 + 10*X^64 + 62*X^63 + 36*X^62 + 32*X^61 + 5*X^60 + 38*X^59 + 53*X^58 +
-    21*X^57 + 32*X^56 + 58*X^55 + 54*X^54 + 16*X^53 + 49*X^52 + 39*X^51 + 28*X^50 + 31*X^49 +
-    30*X^48 + 58*X^47 + 9*X^46 + 3*X^45 + 30*X^44 + 64*X^43 + 53*X^42 + 51*X^41 + 48*X^40 +
-    22*X^39 + 3*X^38 + 42*X^37 + 53*X^36 + 15*X^35 + 62*X^34 + 23*X^33 + 29*X^32 + 61*X^31 +
-    47*X^30 + 33*X^29 + 31*X^28 + 2*X^27 + 30*X^26 + 34*X^25 + 58*X^24 + 30*X^23 + 37*X^22 +
-    26*X^21 + 45*X^20 + 14*X^19 + 6*X^18 + 62*X^17 + 51*X^16 + 5*X^15 + 39*X^14 + 54*X^12 +
-    63*X^11 + 41*X^10 + 29*X^9 + 17*X^8 + 42*X^7 + 61*X^6 + 50*X^5 + 8*X^4 + 34*X^3 + 48*X^2 +
-    60*X + 41
 
 theorem Ψ₂Sq_seventeenBMod : seventeenBMod.Ψ₂Sq =
     4*X^3 + X^2 + 32*X + 34 := by
@@ -949,28 +867,16 @@ theorem preΨ'_seventeen_seventeenBMod :
   ring_nf
   reduce_mod_char
 
-/-- **OPEN LEAF (sorry, cut 2026-07-31)**: every irreducible factor of `H` has degree dividing
-`34`.  TRUE, machine-checked in PARI/GP 2.15.4 (`Mod(x, H) ^ (67 ^ 34) == x`); `H` is in fact a
-product of four irreducibles of degree exactly `34`.
-
-Same shape as `dvd_X_pow_card_pow_sub_X_hPolyElevenA`, with `deg H = 136`, `q = 67`, `m = 34`:
-build the table `T_i = X ^ (67 * i) mod H` for `i ≤ 135` by repeated multiplication by `X ^ 67`
-(a shift plus one reduction, `deg Q ≤ 66`), then run `34` Frobenius steps, each a single
-`ZMod 67`-linear combination of the `T_i` because `r ^ 67 = Polynomial.expand 67 r` over
-`ZMod 67`.  `T_67` is the reduction of `X ^ (67 ^ 2)`, so the SAME table also supplies
-`isCoprime_hPolySeventeenB` below — the two leaves are one computation and should be closed
-together. -/
+/-- **OPEN LEAF**: every irreducible factor of `H` has degree dividing `34`.
+TRUE, machine-checked 2026-07-31 in PARI/GP and in Python.  Word for word
+`dvd_X_pow_card_pow_sub_X_hPolySeventeenA` with a different `H`; see that docstring for the
+route, the worked `p = 11` example, and why the generated module has to be split per factor. -/
 theorem dvd_X_pow_card_pow_sub_X_hPolySeventeenB :
     hPolySeventeenB ∣ X ^ (Nat.card (ZMod 67)) ^ 34 - X :=
   sorry
 
-/-- **OPEN LEAF (sorry, cut 2026-07-31)**: `H` has no irreducible factor of degree `1` or `2`.
-TRUE, machine-checked in PARI/GP 2.15.4: `gcd(H, X ^ (67 ^ 2) - X) = 1`.
-
-This single coprimality is what the `p = 17` rows need in place of the `p = 11` rows'
-root-freeness: the divisors of `m = 34` that are at most `n = 16` are `1` and `2`, and both
-divide `2`.  See `dvd_X_pow_card_pow_sub_X_hPolySeventeenB` for why the two leaves are one
-computation. -/
+/-- **OPEN LEAF**: `H` has no irreducible factor of degree `1` or `2`.
+TRUE, machine-checked 2026-07-31.  See `isCoprime_hPolySeventeenA`. -/
 theorem isCoprime_hPolySeventeenB :
     IsCoprime hPolySeventeenB (X ^ (Nat.card (ZMod 67)) ^ 2 - X) :=
   sorry
