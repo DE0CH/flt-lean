@@ -68,28 +68,46 @@ on `19a1` instead would run in the SAME field but with `ℤ[ρ]` of index `152`
 this file descends on `19a3` and transports by the isogeny rather than the other
 way round.
 
-## THE ONE LEAF
+## THE ONE LEAF (recut 2026-07-31)
 
-`MazurX0Nineteen.integral_leaf` — the pure integer statement
+`MazurX0Nineteen.exists_halving_witness` — the `2`-descent proper, in
+coordinates: from `n² = p³ + 4p²e² + 16pe⁴ + 16e⁶` with `gcd(p, e) = 1`, `e > 0`,
 
-    n² = p³ + 4p²e² + 16pe⁴ + 16e⁶,  gcd(p, e) = 1,  e > 0   ⟹   (p, e) = (0, 1).
+    ∃ a b c : ℤ,  b² + 2ac − 4bc = 0 ∧ p = a² − 4bc + 4c² ∧ e² = −ab + 4bc − 3c²,
 
-Everything else in this file is PROVEN over it:
-`U_eq_zero` (`RationalPointDescent.exists_int_model`, the shared plumbing from
-`MordellWeil.lean`), `x0Nineteen_x_eq_zero`, `cover_identity`, `cover_eq`,
-`rational_point_x0Nineteen`.
+which says exactly that `β = p − 2e²θ` is a SQUARE in `ℤ[θ]`,
+`θ³ + 2θ² + 4θ + 2 = 0`.  It is the ONLY place algebraic number theory enters,
+and it is the level-`19` transcription of `MazurLevel11.exists_halving_witness`
+(PROVEN there).
 
-**The template for closing it is `MazurLevel11.integral_leaf`**, which was itself
-a leaf until 2026-07-27 and is now fully proven; its chain is
-`exists_halving_witness` (the `2`-descent proper: `descent_zs`,
-`descent_unit_square`, `descent_square_class`, `epsilon_class_impossible`, over
-`Cubic.ZS.isPrincipalIdealRing_zs` and `Cubic.ZS.unit_sq_class`), then
-`halving_relation` → `height_drop_or_small` (`reduced_fraction`,
-`forms_common_dvd`, `forms_archimedean`) → `smallPoints` (a bitmask
-quadratic-residue sieve) → `halving_descends`/`trivial_ascends` →
-`integral_leaf_aux` by strong induction on `|p| + e²`.  A successor should
-follow that file rather than looking for a general Mordell–Weil theorem, which
-exists nowhere in this tree, in `Mathlib`, or in `~/cs/FLT`.
+**`integral_leaf` is PROVEN over it** (2026-07-31), together with the whole
+elementary half of the descent, which is now in this file:
+
+    exists_halving_witness  (the ℤ[θ] leaf)
+      → halving_norm_relation / halving_x_relation / halving_relation
+          (eliminate the halving coordinates m, c)
+      → height_drop_or_small
+          (over forms_common_dvd, forms_archimedean, MazurLevel11.reduced_fraction)
+      → smallPoints           (bitmask quadratic-residue sieve, |p| + e² ≤ 574)
+      → halving_descends / witness_c_ne_zero / trivial_ascends
+      → integral_leaf_aux     (strong induction on |p| + e²)
+      → integral_leaf → U_eq_zero → x0Nineteen_x_eq_zero
+      → rational_point_x0Nineteen   (over cover_identity, cover_eq)
+
+The two binary forms of the height bound are computed from the duplication
+formula on `W² = U³ + 4U² + 16U + 16` (`a₂ = 4`, `a₄ = a₆ = 16`):
+
+    F(X, Y) = X⁴ − 32X²Y² − 128XY³,   G(X, Y) = X³ + 4X²Y + 16XY² + 16Y³,
+
+against level `11`'s `X⁴ − 128XY³ + 256Y⁴` and `X³ − 4X²Y + 16Y³`; `Res(F, G) =
+2¹⁶·19²`, the Bezout cofactors clear `2¹⁰·19²  = 369664`, and the box is
+`|p| + e² ≤ 574`.  Note `F` has no constant term — `U = 0` is the `3`-torsion
+point and duplicates to itself — which is why the exceptional set here has ONE
+element where level `11` has two.
+
+A successor should follow `MordellWeil.lean` rather than looking for a general
+Mordell–Weil theorem, which exists nowhere in this tree, in `Mathlib`, or in
+`~/cs/FLT`.
 
 CHECKED EXTERNALLY (PARI/GP 2.17.4, an untrusted searcher — not a proof; every
 witness used below is verified in Lean).  `ellinit([0,1,1,-9,-15])` gives
@@ -111,9 +129,625 @@ public import Fermat.FLT.EllipticCurve.MordellWeil
 
 namespace MazurX0Nineteen
 
-/-- **THE level-`19` statement** (sorry leaf, introduced 2026-07-28): the only
-coprime integral points of the monic model `W² = U³ + 4U² + 16U + 16` of `19a3`
-are `(p, e) = (0, 1)`, i.e. `U = 0`.
+/-! ### The `2`-descent proper: the halving witness
+
+The ONE leaf of this file.  Everything below it is PROVEN, and the shape of the
+decomposition is transcribed from `MazurLevel11`, whose identical chain is fully
+proven in `MordellWeil.lean`.
+-/
+
+/-- **THE `2`-DESCENT AT LEVEL `19`** (sorry leaf, cut 2026-07-31 out of
+`integral_leaf`): the descent image `β = p − 2e²θ` of a coprime integral point of
+`W² = U³ + 4U² + 16U + 16` is a SQUARE in `ℤ[θ]`, `θ³ + 2θ² + 4θ + 2 = 0`, and
+this is that fact written out in coordinates.
+
+Reduction in `ℤ[θ]` is `θ³ = −2θ² − 4θ − 2` and `θ⁴ = 6θ + 4`, so
+
+    (a + bθ + cθ²)² = (a² − 4bc + 4c²) + (2ab − 8bc + 6c²)θ + (b² + 2ac − 4bc)θ²,
+
+and `β = δ²` with `δ = a + bθ + cθ²` reads exactly
+
+    b² + 2ac − 4bc = 0,   p = a² − 4bc + 4c²,   e² = −ab + 4bc − 3c²
+
+(the `θ`-coordinate `2ab − 8bc + 6c² = −2e²` halved).  These are the three
+conjuncts below, and nothing else about `ℤ[θ]` appears anywhere in this file.
+
+**IT IS CONSISTENT AT THE ONE REAL POINT**, which is the cheapest available check
+on the whole derivation: `(a, b, c) = (2, 2, 1)` gives `4 + 4 − 8 = 0`,
+`p = 4 − 8 + 4 = 0` and `e² = −4 + 8 − 3 = 1`, i.e. `(p, e) = (0, 1)` — and
+`δ = θ² + 2θ + 2` is the square root recorded in the module docstring,
+`−2θ = (θ² + 2θ + 2)²`.  Since `(0, 1)` is the ONLY solution of the hypotheses
+(exhaustive search, `|p| ≤ 6000`, `1 ≤ e ≤ 300`), this leaf is TRUE as stated;
+what it costs is a proof, which is the `2`-descent itself.
+
+WHAT A PROOF NEEDS, and why it is exactly `MazurLevel11.exists_halving_witness`
+with new constants — that declaration is PROVEN and is the template:
+
+* `ℤ[θ]` is the FULL ring of integers of the cubic field of discriminant `−76`
+  (index `1`: `−76/f²` would have to be `−19` for `f = 2`, and `−19` is not a
+  cubic field discriminant, the smallest complex one being `−23`).  Level `11`
+  proves the corresponding `disc = −44` statement via an Eisenstein-at-`2`
+  minimal polynomial and an explicit `mul11_mem` denominator bound; here the
+  minimal polynomial `θ³ + 2θ² + 4θ + 2` is Eisenstein at `2` in the same way.
+* Class number `1` (`Cubic.ZS.isPrincipalIdealRing_zs` at level `11`, via
+  Minkowski over `NumberField.discr`).
+* Units mod squares: rank `1`, fundamental unit `ε = θ + 1` of norm `1`, so the
+  ambiguity is `{1, ε}` — `N(−1) = −1 < 0` cannot divide the square `n²`.  The
+  `ε`-class must then be excluded, which at level `11` is
+  `epsilon_class_impossible`, a character mod `13`.
+* The valuation bookkeeping at the ramified primes, `(2) = (θ)³` and
+  `19 = 𝔮₁𝔮₂²` with both residue degrees `1` (level `11`:
+  `Cubic.ZS.descent_zs`).
+
+A successor should follow `MordellWeil.lean` lines `463`–`2104`
+(`MazurLevel11.Cubic.ZS` through `exists_halving_witness`) declaration by
+declaration; the ONLY things that change are the constants. -/
+theorem exists_halving_witness {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (h : n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6) :
+    ∃ a b c : ℤ, b ^ 2 + 2 * a * c - 4 * b * c = 0 ∧
+      p = a ^ 2 - 4 * b * c + 4 * c ^ 2 ∧
+      e ^ 2 = -(a * b) + 4 * b * c - 3 * c ^ 2 := sorry
+
+/-! ### `halving_descends`, decomposed: eliminate `m` and `c` first
+
+The halving coordinates `m` and `c` carry no arithmetic — they are removed
+outright by three `linear_combination`s, exactly as at level `11`, and what is
+left is a statement about two explicit binary forms.
+
+At level `19` the duplication formula on `W² = U³ + 4U² + 16U + 16`
+(`a₂ = a₄ = a₆ = 16`, `a₂ = 4`) is
+
+    U(2Q) = (U⁴ − 2a₄U² − 8a₆U + a₄² − 4a₂a₆) / (4(U³ + 4U² + 16U + 16))
+          = (U⁴ − 32U² − 128U) / (4(U³ + 4U² + 16U + 16)),
+
+so the two binary forms of this file are
+
+    F(X, Y) = X⁴ − 32X²Y² − 128XY³,   G(X, Y) = X³ + 4X²Y + 16XY² + 16Y³,
+
+against level `11`'s `X⁴ − 128XY³ + 256Y⁴` and `X³ − 4X²Y + 16Y³`.  Note the
+constant term of `F` vanishes — `U = 0` is the `3`-torsion point, which duplicates
+to itself — which is why the exceptional set below has ONE element rather than
+level `11`'s two.
+-/
+
+/-- **The norm half of the halving, with `c` eliminated** (PROVEN 2026-07-31):
+`c²·n'² = 16·e²·e'⁶`, i.e. `(c·n')² = (4·e·e'³)²`.
+
+`c³n'² = (cp')³ + 4c(cp')²e'² + 16c²(cp')e'⁴ + 16c³e'⁶ = 8e'⁶(m³ + 2cm² + 4c²m +
+2c³) = 16c·e²e'⁶` using `cp' = 2me'²` and the covering identity, and one factor
+of `c` cancels.  Downstream this gives `n' ≠ 0`, so the halved point is affine. -/
+theorem halving_norm_relation {e m c p' e' n' : ℤ} (hc : c ≠ 0)
+    (hcov : 2 * c * e ^ 2 = m ^ 3 + 2 * c * m ^ 2 + 4 * c ^ 2 * m + 2 * c ^ 3)
+    (hcross : 2 * m * e' ^ 2 = p' * c)
+    (hn' : n' ^ 2 = p' ^ 3 + 4 * p' ^ 2 * e' ^ 2 + 16 * p' * e' ^ 4 + 16 * e' ^ 6) :
+    c ^ 2 * n' ^ 2 = 16 * e ^ 2 * e' ^ 6 := by
+  have hcp : c * p' = 2 * m * e' ^ 2 := by linarith
+  refine mul_left_cancel₀ hc ?_
+  linear_combination (c ^ 3) * hn' +
+    ((c * p') ^ 2 + (c * p') * (2 * m * e' ^ 2) + (2 * m * e' ^ 2) ^ 2
+      + 4 * c * e' ^ 2 * (c * p' + 2 * m * e' ^ 2) + 16 * c ^ 2 * e' ^ 4) * hcp
+    - 8 * e' ^ 6 * hcov
+
+/-- **The `x`-half of the halving, with `c` eliminated** (PROVEN 2026-07-31):
+`c²·(p'⁴ − 32p'²e'⁴ − 128p'e'⁶) = 64·p·e'⁸`.
+
+This is the numerator of the duplication formula: `c⁴F(p', e'²) = (cp')⁴ −
+32c²(cp')²e'⁴ − 128c³(cp')e'⁶ = 16e'⁸(m⁴ − 8c²m² − 16c³m) = 64c²p·e'⁸`, and `c²`
+cancels. -/
+theorem halving_x_relation {p m c p' e' : ℤ} (hc : c ≠ 0)
+    (hpm : 4 * c ^ 2 * p = m ^ 4 - 8 * m ^ 2 * c ^ 2 - 16 * m * c ^ 3)
+    (hcross : 2 * m * e' ^ 2 = p' * c) :
+    c ^ 2 * (p' ^ 4 - 32 * p' ^ 2 * e' ^ 4 - 128 * p' * e' ^ 6) = 64 * p * e' ^ 8 := by
+  have hcp : c * p' = 2 * m * e' ^ 2 := by linarith
+  refine mul_left_cancel₀ (pow_ne_zero 2 hc) ?_
+  linear_combination
+    (((c * p') ^ 3 + (c * p') ^ 2 * (2 * m * e' ^ 2) + (c * p') * (2 * m * e' ^ 2) ^ 2
+        + (2 * m * e' ^ 2) ^ 3)
+      - 32 * c ^ 2 * e' ^ 4 * (c * p' + 2 * m * e' ^ 2) - 128 * c ^ 3 * e' ^ 6) * hcp
+    - 16 * e' ^ 8 * hpm
+
+/-- **THE HALVING, WITH `m` AND `c` GONE** (PROVEN 2026-07-31): the duplication
+formula as a single identity between the two coprime integral models,
+
+    e²·(p'⁴ − 32p'²e'⁴ − 128p'e'⁶)  =  4·p·e'²·n'² ,
+
+i.e. `p/e² = F(p', e'²) / (4e'²·G(p', e'²))` since `n'² = G(p', e'²)`.  Obtained
+by multiplying `halving_x_relation` by `n'²`, substituting
+`halving_norm_relation`, and cancelling `16e'⁶`. -/
+theorem halving_relation {p e m c p' e' n' : ℤ} (hc : c ≠ 0) (he' : e' ≠ 0)
+    (hcov : 2 * c * e ^ 2 = m ^ 3 + 2 * c * m ^ 2 + 4 * c ^ 2 * m + 2 * c ^ 3)
+    (hpm : 4 * c ^ 2 * p = m ^ 4 - 8 * m ^ 2 * c ^ 2 - 16 * m * c ^ 3)
+    (hcross : 2 * m * e' ^ 2 = p' * c)
+    (hn' : n' ^ 2 = p' ^ 3 + 4 * p' ^ 2 * e' ^ 2 + 16 * p' * e' ^ 4 + 16 * e' ^ 6) :
+    e ^ 2 * (p' ^ 4 - 32 * p' ^ 2 * e' ^ 4 - 128 * p' * e' ^ 6) = 4 * p * e' ^ 2 * n' ^ 2 := by
+  have hI := halving_norm_relation (e := e) hc hcov hcross hn'
+  have hII := halving_x_relation (p := p) hc hpm hcross
+  have h16 : (16 * e' ^ 6 : ℤ) ≠ 0 := by
+    have h6 : e' ^ 6 ≠ 0 := pow_ne_zero 6 he'
+    simpa using h6
+  refine mul_left_cancel₀ h16 ?_
+  linear_combination (-(p' ^ 4 - 32 * p' ^ 2 * e' ^ 4 - 128 * p' * e' ^ 6)) * hI + n' ^ 2 * hII
+
+/-- **THE NON-ARCHIMEDEAN HALF OF THE HEIGHT BOUND** (PROVEN 2026-07-31): any
+common divisor of the two binary forms
+
+    F(X, Y) = X⁴ − 32X²Y² − 128XY³   and   4Y·G(X, Y) = 4Y(X³ + 4X²Y + 16XY² + 16Y³)
+
+at a COPRIME pair `(X, Y)` divides `2¹⁰·19² = 369664`.
+
+Two integral Bezout identities, both checked by `linear_combination`:
+
+    (4Y(3X² + 8XY + 48Y²))·F + (−3X³ + 4X²Y + 80XY² + 304Y³)·(4YG) = 19456·Y⁷,
+    (19X³ + 64X²Y + 352XY² + 384Y³)·F + (−16X³ + 128X²Y + 768XY²)·(4YG) = 19·X⁷,
+
+with `19456 = 2¹⁰·19`.  Then `k ∣ 19456·Y⁷` and `k ∣ 19·X⁷`, and with
+`u·X⁷ + v·Y⁷ = 1` one writes `369664 = 19456u·(19X⁷) + 19v·(19456Y⁷)`.
+
+The first identity is the extended Euclidean algorithm for `f = X⁴ − 32X² − 128X`
+and `g = X³ + 4X² + 16X + 16` cleared of denominators (`4864 = 2⁸·19`, times the
+`4Y`); the second is the same for the reversed polynomials, plus one syzygy
+`(u, w) ↦ (u + 24G, w − 24F)` — needed because the raw cofactor of `G` is not
+divisible by `Y`, and adding `24` (the constant term of the raw cofactor,
+against `F ≡ X⁴ mod Y`) makes it so.  The bare resultant is
+`Res(F, 4YG) = 2²⁴·19²`; as at level `11` the Bezout cofactors clear far less. -/
+theorem forms_common_dvd {X Y k : ℤ} (hcop : IsCoprime X Y)
+    (h1 : k ∣ X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3)
+    (h2 : k ∣ 4 * Y * (X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3)) :
+    k ∣ 369664 := by
+  obtain ⟨a, ha⟩ := h1
+  obtain ⟨b, hb⟩ := h2
+  have hY : k ∣ 19456 * Y ^ 7 :=
+    ⟨4 * Y * (3 * X ^ 2 + 8 * X * Y + 48 * Y ^ 2) * a
+        + (-3 * X ^ 3 + 4 * X ^ 2 * Y + 80 * X * Y ^ 2 + 304 * Y ^ 3) * b, by
+      linear_combination (4 * Y * (3 * X ^ 2 + 8 * X * Y + 48 * Y ^ 2)) * ha
+        + (-3 * X ^ 3 + 4 * X ^ 2 * Y + 80 * X * Y ^ 2 + 304 * Y ^ 3) * hb⟩
+  have hX : k ∣ 19 * X ^ 7 :=
+    ⟨(19 * X ^ 3 + 64 * X ^ 2 * Y + 352 * X * Y ^ 2 + 384 * Y ^ 3) * a
+        + (-16 * X ^ 3 + 128 * X ^ 2 * Y + 768 * X * Y ^ 2) * b, by
+      linear_combination (19 * X ^ 3 + 64 * X ^ 2 * Y + 352 * X * Y ^ 2 + 384 * Y ^ 3) * ha
+        + (-16 * X ^ 3 + 128 * X ^ 2 * Y + 768 * X * Y ^ 2) * hb⟩
+  obtain ⟨u, v, huv⟩ := hcop.pow (m := 7) (n := 7)
+  obtain ⟨cX, hcX⟩ := hX
+  obtain ⟨cY, hcY⟩ := hY
+  exact ⟨19456 * u * cX + 19 * v * cY, by
+    linear_combination (19456 * u) * hcX + (19 * v) * hcY - 369664 * huv⟩
+
+/-- **THE ARCHIMEDEAN INGREDIENT** (PROVEN 2026-07-31): the two binary quartics
+are never both small,
+
+    max(|X|, Y)⁴  ≤  4·max(|F(X, Y)|, |4Y·G(X, Y)|)     for `Y > 0`,
+
+with `F(X, Y) = X⁴ − 32X²Y² − 128XY³` and `G(X, Y) = X³ + 4X²Y + 16XY² + 16Y³`.
+
+THE PROOF, by three exact identities and no estimation.  Write `t = X/Y`.
+
+* `4F − X⁴ = X(X − 8Y)(3X² + 24XY + 64Y²)`, and `3X² + 24XY + 64Y² =
+  3(X + 4Y)² + 16Y² > 0`.  So `4F ≥ X⁴` exactly on `t ≤ 0` and `t ≥ 8`.
+* `16Y·G − X⁴ = X³(16Y − X) + 64X²Y² + 256XY³ + 256Y⁴`, manifestly `≥ 0` on
+  `0 ≤ X ≤ 16Y`, which covers the gap `0 < t < 8` with room to spare.
+* `G − 3Y³ = (X + Y)(X² + 3XY + 13Y²)` and `4(X² + 3XY + 13Y²) = (2X + 3Y)² +
+  43Y² > 0`, so `G ≥ 3Y³` whenever `X ≥ −Y` — which handles the branch `|X| ≤ Y`,
+  where the height is `Y` and `4·|4YG| ≥ 48Y⁴`.
+
+Contrast level `11`, where `4|f|` failed on TWO intervals and the `G`-branch was
+tight (equality at `t = 4`).  Here nothing is tight: the worst case is `t = 8`,
+where `4F = X⁴` exactly, and it is covered twice over. -/
+theorem forms_archimedean {X Y : ℤ} (hY : 0 < Y) :
+    max X.natAbs Y.natAbs ^ 4 ≤
+      4 * max (X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3).natAbs
+        (4 * Y * (X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3)).natAbs := by
+  have hY3 : (0 : ℤ) < Y ^ 3 := pow_pos hY 3
+  have hY4 : (0 : ℤ) < Y ^ 4 := pow_pos hY 4
+  have hmain : max |X| Y ^ 4 ≤
+      4 * max |X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3|
+        |4 * Y * (X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3)| := by
+    have hFle : |X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3| ≤
+        max |X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3|
+          |4 * Y * (X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3)| := le_max_left _ _
+    have hGle : |4 * Y * (X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3)| ≤
+        max |X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3|
+          |4 * Y * (X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3)| := le_max_right _ _
+    have hquad : (0 : ℤ) < X ^ 2 + 3 * X * Y + 13 * Y ^ 2 := by
+      nlinarith [sq_nonneg (2 * X + 3 * Y), hY4, sq_nonneg Y]
+    rcases le_or_gt |X| Y with hle | hgt
+    · -- `|X| ≤ Y`: the height is `Y`, and `G ≥ 3Y³` outright.
+      rw [max_eq_right hle]
+      have hXY : -Y ≤ X := (abs_le.mp hle).1
+      have hG3 : 3 * Y ^ 3 ≤ X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3 := by
+        nlinarith [mul_nonneg (by linarith : (0 : ℤ) ≤ X + Y) hquad.le]
+      have hGpos : 12 * Y ^ 4 ≤ 4 * Y * (X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3) := by
+        nlinarith [mul_le_mul_of_nonneg_left hG3 (by linarith : (0 : ℤ) ≤ 4 * Y)]
+      have hGabs : 12 * Y ^ 4 ≤
+          |4 * Y * (X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3)| :=
+        le_trans hGpos (le_abs_self _)
+      linarith
+    · -- `Y < |X|`: the height is `|X|`, and `max |X| Y ^ 4 = X ^ 4`.
+      rw [max_eq_left hgt.le]
+      have habs4 : |X| ^ 4 = X ^ 4 := by
+        rw [← abs_pow]; exact abs_of_nonneg (by positivity)
+      rw [habs4]
+      have hq2 : (0 : ℤ) < 3 * X ^ 2 + 24 * X * Y + 64 * Y ^ 2 := by
+        nlinarith [sq_nonneg (X + 4 * Y), hY4, sq_nonneg Y]
+      rcases le_or_gt X 0 with h0 | h0
+      · -- `t ≤ 0`: `4F − X⁴ = X(X − 8Y)(3X² + 24XY + 64Y²) ≥ 0`.
+        have hXneg : X < 0 := by
+          rcases lt_or_eq_of_le h0 with h | h
+          · exact h
+          · exfalso; rw [h] at hgt; simp at hgt; omega
+        have hprod : (0 : ℤ) ≤ X * (X - 8 * Y) :=
+          le_of_lt (mul_pos_of_neg_of_neg hXneg (by linarith))
+        have h4F : X ^ 4 ≤ 4 * (X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3) := by
+          nlinarith [mul_nonneg hprod hq2.le]
+        have hFabs : X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3 ≤
+            |X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3| := le_abs_self _
+        linarith
+      · rcases le_or_gt X (8 * Y) with h8 | h8
+        · -- `0 < t ≤ 8`: `16YG − X⁴ = X³(16Y − X) + 64X²Y² + 256XY³ + 256Y⁴ ≥ 0`.
+          have hX3 : (0 : ℤ) < X ^ 3 := by positivity
+          have ht1 : (0 : ℤ) ≤ X ^ 3 * (16 * Y - X) := mul_nonneg hX3.le (by linarith)
+          have ht2 : (0 : ℤ) ≤ 64 * X ^ 2 * Y ^ 2 := by positivity
+          have ht3 : (0 : ℤ) ≤ 256 * X * Y ^ 3 := by positivity
+          have h4G : X ^ 4 ≤
+              4 * (4 * Y * (X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3)) := by
+            nlinarith [ht1, ht2, ht3, hY4]
+          have hGabs : 4 * Y * (X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3) ≤
+              |4 * Y * (X ^ 3 + 4 * X ^ 2 * Y + 16 * X * Y ^ 2 + 16 * Y ^ 3)| := le_abs_self _
+          linarith
+        · -- `t > 8`: `4F − X⁴ = X(X − 8Y)(3X² + 24XY + 64Y²) > 0`.
+          have hprod : (0 : ℤ) ≤ X * (X - 8 * Y) :=
+            le_of_lt (mul_pos h0 (by linarith))
+          have h4F : X ^ 4 ≤ 4 * (X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3) := by
+            nlinarith [mul_nonneg hprod hq2.le]
+          have hFabs : X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3 ≤
+              |X ^ 4 - 32 * X ^ 2 * Y ^ 2 - 128 * X * Y ^ 3| := le_abs_self _
+          linarith
+  -- Transport back to `ℕ`.
+  rw [← Nat.cast_le (α := ℤ)]
+  push_cast [Int.natCast_natAbs]
+  rw [abs_of_pos hY]
+  exact hmain
+
+/-- **THE RESULTANT / HEIGHT NODE at level `19`** (PROVEN 2026-07-31 over
+`forms_archimedean`, `forms_common_dvd` and `MazurLevel11.reduced_fraction`): the
+halving either strictly drops the height, or the point was small all along.
+
+**THIS IS THE FINITE-GENERATION CONTENT OF LEVEL `19`.**  A `2`-descent alone
+gives unique `2`-divisibility, which infinite groups satisfy too; it is exactly
+this height inequality that converts it into finiteness.
+
+Put `H = max(|p|, e²)`, `H' = max(|p'|, e'²)`, `A = F(p', e'²)`,
+`B = 4e'²·G(p', e'²) = 4e'²n'² > 0`.  Then `H = max(|A|, B)/k` for the single `k`
+of `reduced_fraction`; `k ∣ 369664` by `forms_common_dvd`; and
+`max(|A|, B) ≥ H'⁴/4` by `forms_archimedean`.  Combining, `H'⁴ ≤ 4·369664·H`, and
+if the height does NOT drop then `H ≤ 2H'`, so
+
+    H⁴ ≤ 16H'⁴ ≤ 16·4·369664·H = 23658496·H,
+
+i.e. `H³ ≤ 23658496 = 2²⁴·19²/2⁸ = Res(F, G)`, giving `H ≤ 287` and
+`|p| + e² ≤ 2H ≤ 574`.  That is the box `smallPoints` searches. -/
+theorem height_drop_or_small {p e p' e' n' : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (he' : 0 < e') (hcop' : IsCoprime p' e') (hn'0 : n' ≠ 0)
+    (hn' : n' ^ 2 = p' ^ 3 + 4 * p' ^ 2 * e' ^ 2 + 16 * p' * e' ^ 4 + 16 * e' ^ 6)
+    (hrel : e ^ 2 * (p' ^ 4 - 32 * p' ^ 2 * e' ^ 4 - 128 * p' * e' ^ 6)
+      = 4 * p * e' ^ 2 * n' ^ 2) :
+    p'.natAbs + (e' ^ 2).natAbs < p.natAbs + (e ^ 2).natAbs ∨
+      p.natAbs + (e ^ 2).natAbs ≤ 574 := by
+  set A : ℤ := p' ^ 4 - 32 * p' ^ 2 * e' ^ 4 - 128 * p' * e' ^ 6 with hA
+  set B : ℤ := 4 * e' ^ 2 * n' ^ 2 with hBdef
+  have hBpos : 0 < B := by
+    have h1 : (0 : ℤ) < e' ^ 2 := pow_pos he' 2
+    have h2 : (0 : ℤ) < n' ^ 2 := by positivity
+    rw [hBdef]; positivity
+  have hrel' : e ^ 2 * A = p * B := by rw [hA, hBdef]; linear_combination hrel
+  obtain ⟨k, hk0, hkB, hkA⟩ :=
+    WeierstrassCurve.MazurLevel11.reduced_fraction he hcop hBpos hrel'
+  have hAform : A = p' ^ 4 - 32 * p' ^ 2 * (e' ^ 2) ^ 2 - 128 * p' * (e' ^ 2) ^ 3 := by
+    rw [hA]; ring
+  have hBform : B = 4 * e' ^ 2 * (p' ^ 3 + 4 * p' ^ 2 * (e' ^ 2)
+      + 16 * p' * (e' ^ 2) ^ 2 + 16 * (e' ^ 2) ^ 3) := by
+    rw [hBdef, hn']; ring
+  have hkdvd : k ∣ 369664 :=
+    forms_common_dvd (X := p') (Y := e' ^ 2) hcop'.pow_right
+      (by rw [← hAform, hkA]; exact Dvd.intro_left p rfl)
+      (by rw [← hBform, hkB]; exact Dvd.intro_left (e ^ 2) rfl)
+  have hkle : k.natAbs ≤ 369664 := by
+    have hd : k.natAbs ∣ 369664 := by
+      have hdd := Int.natAbs_dvd_natAbs.mpr hkdvd
+      simpa using hdd
+    exact Nat.le_of_dvd (by norm_num) hd
+  set H : ℕ := max p.natAbs (e ^ 2).natAbs with hH
+  set H' : ℕ := max p'.natAbs (e' ^ 2).natAbs with hH'
+  have harch : H' ^ 4 ≤ 4 * max A.natAbs B.natAbs := by
+    rw [hH', hAform, hBform]
+    exact forms_archimedean (X := p') (Y := e' ^ 2) (pow_pos he' 2)
+  have hmaxmul : ∀ a b c : ℕ, max (a * c) (b * c) = max a b * c := by
+    intro a b c
+    rcases Nat.le_total a b with hab | hab
+    · rw [Nat.max_eq_right hab, Nat.max_eq_right (Nat.mul_le_mul hab (le_refl c))]
+    · rw [Nat.max_eq_left hab, Nat.max_eq_left (Nat.mul_le_mul hab (le_refl c))]
+  have hAB : max A.natAbs B.natAbs = H * k.natAbs := by
+    rw [hkA, hkB, hH, Int.natAbs_mul, Int.natAbs_mul, hmaxmul]
+  have hmain : H' ^ 4 ≤ 1478656 * H := by
+    calc H' ^ 4 ≤ 4 * max A.natAbs B.natAbs := harch
+      _ = 4 * (H * k.natAbs) := by rw [hAB]
+      _ ≤ 4 * (H * 369664) := Nat.mul_le_mul_left 4 (Nat.mul_le_mul_left H hkle)
+      _ = 1478656 * H := by ring
+  by_cases hdrop : p'.natAbs + (e' ^ 2).natAbs < p.natAbs + (e ^ 2).natAbs
+  · exact Or.inl hdrop
+  · refine Or.inr ?_
+    replace hdrop : p.natAbs + (e ^ 2).natAbs ≤ p'.natAbs + (e' ^ 2).natAbs :=
+      Nat.not_lt.mp hdrop
+    have hHs : H ≤ p.natAbs + (e ^ 2).natAbs := by rw [hH]; omega
+    have hs'H' : p'.natAbs + (e' ^ 2).natAbs ≤ 2 * H' := by rw [hH']; omega
+    have hH2 : H ≤ 2 * H' := le_trans hHs (le_trans hdrop hs'H')
+    have hcube : H ^ 4 ≤ 23658496 * H := by
+      calc H ^ 4 ≤ (2 * H') ^ 4 := Nat.pow_le_pow_left hH2 4
+        _ = 16 * H' ^ 4 := by ring
+        _ ≤ 16 * (1478656 * H) := Nat.mul_le_mul_left 16 hmain
+        _ = 23658496 * H := by ring
+    have hH287 : H ≤ 287 := by
+      by_contra hcon
+      have h288 : 288 ≤ H := Nat.lt_of_not_le hcon
+      have hp3 : (288 : ℕ) ^ 3 ≤ H ^ 3 := Nat.pow_le_pow_left h288 3
+      have hbig : 23887872 * H ≤ H ^ 4 := by
+        calc 23887872 * H = 288 ^ 3 * H := by norm_num
+          _ ≤ H ^ 3 * H := Nat.mul_le_mul hp3 (le_refl H)
+          _ = H ^ 4 := by ring
+      omega
+    have hle2H : p.natAbs + (e ^ 2).natAbs ≤ 2 * H := by rw [hH]; omega
+    omega
+
+/-! ### The finite base case, by a bitmask quadratic-residue sieve
+
+Transcribed from `MazurLevel11`, whose `qrMaskBad` / `qrMaskBad_sq` are reused
+verbatim — only the modulus list, the box and the exceptional set change.  The
+eight prime-power moduli were FOUND, not guessed: a greedy search over prime
+powers `< 256` picked at each step the modulus killing the most survivors of the
+`11158` coprime cells in the box, and `5` alone kills `5608` of the `7461`
+non-negative ones.  All eight are load-bearing.
+-/
+
+/-- The sieve: `N` is rejected if it is negative or a quadratic non-residue
+modulo any of eight prime powers. -/
+def sieveBad (N : ℤ) : Bool :=
+  decide (N < 0)
+  || WeierstrassCurve.MazurLevel11.qrMaskBad 5 19 N
+  || WeierstrassCurve.MazurLevel11.qrMaskBad 128
+      2668882576834431627811302641479385619 N
+  || WeierstrassCurve.MazurLevel11.qrMaskBad 11 571 N
+  || WeierstrassCurve.MazurLevel11.qrMaskBad 89 526807005835216593886842679 N
+  || WeierstrassCurve.MazurLevel11.qrMaskBad 29 332473075 N
+  || WeierstrassCurve.MazurLevel11.qrMaskBad 73 9059857384996697084767 N
+  || WeierstrassCurve.MazurLevel11.qrMaskBad 53 5310023542746835 N
+  || WeierstrassCurve.MazurLevel11.qrMaskBad 9 147 N
+
+set_option maxRecDepth 20000 in
+/-- A perfect square survives the sieve.  Each mask is re-derived inside Lean by
+`decide` from `qrMaskBad_sq`'s hypothesis, so no arithmetic claim about the
+constants above needs to be trusted. -/
+theorem sieveBad_sq (n : ℤ) : sieveBad (n ^ 2) = false := by
+  have h0 : decide ((n : ℤ) ^ 2 < 0) = false := by
+    simp only [decide_eq_false_iff_not, not_lt]; positivity
+  simp only [sieveBad, h0,
+    WeierstrassCurve.MazurLevel11.qrMaskBad_sq (q := 5) (mask := 19)
+      (by norm_num) (by decide) n,
+    WeierstrassCurve.MazurLevel11.qrMaskBad_sq (q := 128)
+      (mask := 2668882576834431627811302641479385619) (by norm_num) (by decide) n,
+    WeierstrassCurve.MazurLevel11.qrMaskBad_sq (q := 11) (mask := 571)
+      (by norm_num) (by decide) n,
+    WeierstrassCurve.MazurLevel11.qrMaskBad_sq (q := 89)
+      (mask := 526807005835216593886842679) (by norm_num) (by decide) n,
+    WeierstrassCurve.MazurLevel11.qrMaskBad_sq (q := 29) (mask := 332473075)
+      (by norm_num) (by decide) n,
+    WeierstrassCurve.MazurLevel11.qrMaskBad_sq (q := 73) (mask := 9059857384996697084767)
+      (by norm_num) (by decide) n,
+    WeierstrassCurve.MazurLevel11.qrMaskBad_sq (q := 53) (mask := 5310023542746835)
+      (by norm_num) (by decide) n,
+    WeierstrassCurve.MazurLevel11.qrMaskBad_sq (q := 9) (mask := 147)
+      (by norm_num) (by decide) n,
+    Bool.or_false]
+
+/-- One cell of the search: `true` means "this `(e, p)` is disposed of" — outside
+the box, not coprime, the one genuine point, or sieved out. -/
+def sieveCell (e p : ℤ) : Bool :=
+  decide (574 < p.natAbs + (e ^ 2).natAbs)
+  || decide (Int.gcd p e ≠ 1)
+  || decide (p = 0 ∧ e = 1)
+  || sieveBad (p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6)
+
+/-- The whole search: `e = i + 1` for `i < 23` (since `e² ≤ 574`) and
+`p = j − 574` for `j < 1149` (since `|p| ≤ 574`).  `23 × 1149 = 26427` cells. -/
+def sieveComplete : Bool :=
+  (List.range 23).all fun i =>
+    (List.range 1149).all fun j => sieveCell ((i : ℤ) + 1) ((j : ℤ) - 574)
+
+set_option maxRecDepth 10000 in
+/-- **THE FINITE SEARCH, DISCHARGED BY THE KERNEL** (2026-07-31). -/
+theorem sieveComplete_true : sieveComplete = true := by decide +kernel
+
+/-- **THE FINITE BASE CASE at level `19`** (PROVEN 2026-07-31 by a bitmask
+quadratic-residue sieve): the only SMALL coprime integral point of
+`W² = U³ + 4U² + 16U + 16` is the real one.
+
+This is `integral_leaf` restricted to `|p| + e² ≤ 574`, and unlike that statement
+it is a FINITE check: `1 ≤ e ≤ 23` and `|p| ≤ 574`, `11159` coprime pairs in the
+box out of `26427` cells, each decided by whether
+`p³ + 4p²e² + 16pe⁴ + 16e⁶` is a perfect square; it is negative — hence instantly
+not a square — on `3697` of them. -/
+theorem smallPoints {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (h : n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6)
+    (hsmall : p.natAbs + (e ^ 2).natAbs ≤ 574) :
+    p = 0 ∧ e = 1 := by
+  have hgcd : Int.gcd p e = 1 := Int.isCoprime_iff_gcd_eq_one.mp hcop
+  have hesq : e ^ 2 ≤ 574 := by
+    have h1 : (e ^ 2).natAbs ≤ 574 := le_trans (Nat.le_add_left _ _) hsmall
+    have h2 : (0 : ℤ) ≤ e ^ 2 := sq_nonneg e
+    omega
+  have he23 : e ≤ 23 := by nlinarith
+  have hpb : p.natAbs ≤ 574 := le_trans (Nat.le_add_right _ _) hsmall
+  have hple : -574 ≤ p ∧ p ≤ 574 := by omega
+  set i : ℕ := (e - 1).toNat with hidef
+  set j : ℕ := (p + 574).toNat with hjdef
+  have hie : ((i : ℤ)) + 1 = e := by omega
+  have hjp : ((j : ℤ)) - 574 = p := by omega
+  have hi : i < 23 := by omega
+  have hj : j < 1149 := by omega
+  have hcell : sieveCell ((i : ℤ) + 1) ((j : ℤ) - 574) = true :=
+    List.all_eq_true.mp
+      (List.all_eq_true.mp sieveComplete_true i (List.mem_range.mpr hi)) j
+      (List.mem_range.mpr hj)
+  rw [hie, hjp] at hcell
+  have hbad : sieveBad (p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6) = false := by
+    rw [← h]; exact sieveBad_sq n
+  simp only [sieveCell, hbad, Bool.or_false, Bool.or_eq_true, decide_eq_true_eq] at hcell
+  rcases hcell with (h1 | h1) | h1
+  · omega
+  · exact absurd hgcd h1
+  · exact h1
+
+/-- **THE HEIGHT STEP at level `19`** (PROVEN 2026-07-31 over
+`height_drop_or_small` and `smallPoints`): the halving supplied by
+`exists_halving_witness` strictly decreases the height, except at the one point
+that is actually there. -/
+theorem halving_descends {p e n m c p' e' n' : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (h : n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6) (hc : c ≠ 0)
+    (hcov : 2 * c * e ^ 2 = m ^ 3 + 2 * c * m ^ 2 + 4 * c ^ 2 * m + 2 * c ^ 3)
+    (hpm : 4 * c ^ 2 * p = m ^ 4 - 8 * m ^ 2 * c ^ 2 - 16 * m * c ^ 3)
+    (he' : 0 < e') (hcop' : IsCoprime p' e')
+    (hcross : 2 * m * e' ^ 2 = p' * c)
+    (hn' : n' ^ 2 = p' ^ 3 + 4 * p' ^ 2 * e' ^ 2 + 16 * p' * e' ^ 4 + 16 * e' ^ 6) :
+    (p = 0 ∧ e = 1) ∨ p'.natAbs + (e' ^ 2).natAbs < p.natAbs + (e ^ 2).natAbs := by
+  have hI := halving_norm_relation (e := e) hc hcov hcross hn'
+  have hn'0 : n' ≠ 0 := by
+    rintro rfl
+    have h1 : (0 : ℤ) < e ^ 2 := pow_pos he 2
+    have h2 : (0 : ℤ) < e' ^ 6 := pow_pos he' 6
+    have hz : (0 : ℤ) = 16 * e ^ 2 * e' ^ 6 := by linear_combination hI
+    nlinarith [h1, h2]
+  have hrel := halving_relation hc he'.ne' hcov hpm hcross hn'
+  rcases height_drop_or_small he hcop he' hcop' hn'0 hn' hrel with hlt | hsm
+  · exact Or.inr hlt
+  · exact Or.inl (smallPoints he hcop h hsm)
+
+/-- **The halving witness has `c ≠ 0`** (PROVEN 2026-07-31).  If `c = 0` the
+quadric `b² + 2ac − 4bc = 0` collapses to `b² = 0`, and then
+`e² = −ab + 4bc − 3c² = 0` contradicts `0 < e`. -/
+theorem witness_c_ne_zero {e a b c : ℤ} (he : 0 < e)
+    (hq : b ^ 2 + 2 * a * c - 4 * b * c = 0)
+    (hee : e ^ 2 = -(a * b) + 4 * b * c - 3 * c ^ 2) : c ≠ 0 := by
+  rintro rfl
+  have hb2 : b ^ 2 = 0 := by linear_combination hq
+  have hb : b = 0 := pow_eq_zero_iff two_ne_zero |>.mp hb2
+  have hz : e ^ 2 = 0 := by rw [hee, hb]; ring
+  have he0 : e = 0 := pow_eq_zero_iff two_ne_zero |>.mp hz
+  omega
+
+/-- **Triviality of the halved point ascends** (PROVEN 2026-07-31): if the
+halving `Q` of `P` is the known point, so is `P`.
+
+This is the duplication of the rational `3`-torsion, done in integers.  If
+`(p', e') = (0, 1)` then `U' = 0`, so `m = 0`, and the `x`-covering identity
+collapses to `p = 0`; coprimality alone then forces `e = 1`.  That is
+`2·(0, 4) = (0, −4)` on `W² = U³ + 4U² + 16U + 16` — the `3`-torsion point
+duplicating to its own inverse, which is what makes the descent close upwards
+instead of merely producing ever smaller solutions.
+
+The covering identity `hcov` is NOT a hypothesis here, unlike at level `11`:
+there the exceptional branch `U' = 0` gave `p = 4c²` and needed `e² = c²` to see
+`e ∣ p`, whereas here it gives `p = 0` outright and `IsCoprime 0 e` finishes. -/
+theorem trivial_ascends {p e m c p' e' : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (hc : c ≠ 0)
+    (hpm : 4 * c ^ 2 * p = m ^ 4 - 8 * m ^ 2 * c ^ 2 - 16 * m * c ^ 3)
+    (hcross : 2 * m * e' ^ 2 = p' * c)
+    (h' : p' = 0 ∧ e' = 1) :
+    p = 0 ∧ e = 1 := by
+  have hc2 : (4 * c ^ 2 : ℤ) ≠ 0 := by positivity
+  obtain ⟨hp', he'1⟩ := h'
+  subst hp'; subst he'1
+  have hm : m = 0 := by linarith [hcross]
+  subst hm
+  have hpv : p = 0 := by
+    refine mul_left_cancel₀ hc2 ?_
+    linear_combination hpm
+  have hu : IsUnit e := by
+    rw [hpv] at hcop
+    exact isCoprime_zero_left.mp hcop
+  have he1 : e = 1 := by
+    rcases Int.isUnit_iff.mp hu with h1 | h1 <;> omega
+  exact ⟨hpv, he1⟩
+
+/-- **The infinite descent at level `19`** (PROVEN 2026-07-31 over
+`exists_halving_witness`), by strong induction on `|p| + e²`.
+
+Each step: take the halving witness `(a, b, c)`; `c ≠ 0`; put `m = b − 2c`, for
+which the `θ²`-equation eliminates `a` and gives the two covering identities
+
+    2c·e² = m³ + 2cm² + 4c²m + 2c³,   4c²·p = m⁴ − 8m²c² − 16mc³
+
+by `linear_combination`; pass to the rational point `(U', W') = (2m/c, 4e/c)` of
+the SAME curve — which lies on it precisely because `θ³ + 2θ² + 4θ + 2 = 0` is
+the minimal polynomial, `W'² = 8·(m/c)³ + 16(m/c)² + 32(m/c) + 16 =
+8·P(m/c) = 16e²/c²` — and take its coprime integral model with
+`RationalPointDescent.exists_int_model`; then either `P` is the known point, or
+the model is strictly smaller and the induction hypothesis applies, and
+`trivial_ascends` carries the conclusion back up. -/
+theorem integral_leaf_aux : ∀ N : ℕ, ∀ p e n : ℤ, p.natAbs + (e ^ 2).natAbs ≤ N →
+    0 < e → IsCoprime p e →
+    n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6 →
+    p = 0 ∧ e = 1 := by
+  intro N
+  induction N using Nat.strong_induction_on with
+  | _ N ih =>
+    intro p e n hN he hcop h
+    obtain ⟨a, b, c, hq, hp, hee⟩ := exists_halving_witness he hcop h
+    have hc : c ≠ 0 := witness_c_ne_zero he hq hee
+    set m : ℤ := b - 2 * c with hm
+    have hcov : 2 * c * e ^ 2 = m ^ 3 + 2 * c * m ^ 2 + 4 * c ^ 2 * m + 2 * c ^ 3 := by
+      rw [hm]; linear_combination (2 * c) * hee - b * hq
+    have hpm : 4 * c ^ 2 * p = m ^ 4 - 8 * m ^ 2 * c ^ 2 - 16 * m * c ^ 3 := by
+      rw [hm]; linear_combination (4 * c ^ 2) * hp + (2 * a * c - b ^ 2 + 4 * b * c) * hq
+    have hcQ : (c : ℚ) ≠ 0 := Int.cast_ne_zero.mpr hc
+    have hcovQ : 2 * (c : ℚ) * (e : ℚ) ^ 2 =
+        (m : ℚ) ^ 3 + 2 * (c : ℚ) * (m : ℚ) ^ 2 + 4 * (c : ℚ) ^ 2 * (m : ℚ)
+          + 2 * (c : ℚ) ^ 3 := by
+      exact_mod_cast hcov
+    have hV : (4 * (e : ℚ) / (c : ℚ)) ^ 2 =
+        (2 * (m : ℚ) / (c : ℚ)) ^ 3 + ((4 : ℤ) : ℚ) * (2 * (m : ℚ) / (c : ℚ)) ^ 2
+          + ((16 : ℤ) : ℚ) * (2 * (m : ℚ) / (c : ℚ)) + ((16 : ℤ) : ℚ) := by
+      push_cast
+      field_simp
+      linear_combination (8 : ℚ) * hcovQ
+    obtain ⟨p', e', n', he', hcop', hTeq, hn'0⟩ :=
+      WeierstrassCurve.RationalPointDescent.exists_int_model (A := 4) (B := 16) (C := 16) hV
+    have hn' : n' ^ 2 = p' ^ 3 + 4 * p' ^ 2 * e' ^ 2 + 16 * p' * e' ^ 4 + 16 * e' ^ 6 := by
+      linear_combination hn'0
+    have he'Q : ((e' : ℚ)) ≠ 0 := Int.cast_ne_zero.mpr (by omega)
+    have hcross : 2 * m * e' ^ 2 = p' * c := by
+      have hQ : 2 * (m : ℚ) * (e' : ℚ) ^ 2 = (p' : ℚ) * (c : ℚ) := by
+        field_simp at hTeq
+        linarith [hTeq]
+      exact_mod_cast hQ
+    rcases halving_descends he hcop h hc hcov hpm he' hcop' hcross hn' with h1 | hlt
+    · exact h1
+    · exact trivial_ascends he hcop hc hpm hcross
+        (ih (p'.natAbs + (e' ^ 2).natAbs) (lt_of_lt_of_le hlt hN) p' e' n' le_rfl he' hcop' hn')
+
+/-- **THE level-`19` statement** (PROVEN 2026-07-31 over the single leaf
+`exists_halving_witness`; a sorry leaf itself from 2026-07-28 to 2026-07-31): the
+only coprime integral points of the monic model `W² = U³ + 4U² + 16U + 16` of
+`19a3` are `(p, e) = (0, 1)`, i.e. `U = 0`.
+
+DECOMPOSED 2026-07-31.  It is no longer a leaf: it is the infinite descent
+`integral_leaf_aux` over `exists_halving_witness` and `halving_descends`, and
+`halving_descends` is in turn PROVEN over `height_drop_or_small` and
+`smallPoints` once `halving_relation` eliminates the halving coordinates `m` and
+`c`.  `height_drop_or_small` — the resultant/archimedean height bound, where the
+finite-generation content lives — is PROVEN over `forms_common_dvd`,
+`forms_archimedean` and `MazurLevel11.reduced_fraction`; `smallPoints` — the
+finite base case, `|p| ≤ 574` and `1 ≤ e ≤ 23` — is PROVEN by a bitmask
+quadratic-residue sieve.  What remains open is ONLY the `2`-descent proper,
+`exists_halving_witness`, which is where `ℤ[θ]` enters; the bullets below are its
+route and no longer this declaration's.
 
 This is `x0Nineteen_x_eq_zero` — every affine rational point of
 `y² + y = x³ + x² + x` has `x = 0` — with the rationals removed, and through the
@@ -166,7 +800,8 @@ the rest).  Put `θ³ + 2θ² + 4θ + 2 = 0`.  Then:
   the three equations above give `p = 4 − 8 + 4 = 0`, `e² = −4 + 8 − 3 = 1`,
   `4 + 4 − 8 = 0` — the solution `(p, e) = (0, 1)`.
 
-* **What is left.**  The unit ambiguity is only `{1, ε}` modulo squares, since
+* **What is left** — and it is now exactly the statement of
+  `exists_halving_witness`, not of this declaration.  The unit ambiguity is only `{1, ε}` modulo squares, since
   `N(−1) = −1 < 0` cannot divide the square `n²`; so the `ε`-class must be
   excluded (`MazurLevel11.epsilon_class_impossible`, there by a character
   `mod 13`), together with the valuation bookkeeping at the ramified primes —
@@ -204,7 +839,8 @@ So the work here is the DESCENT, following `MazurLevel11.integral_leaf`'s chain,
 successor should not spend a cycle re-auditing the name. -/
 theorem integral_leaf {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6) :
-    p = 0 ∧ e = 1 := sorry
+    p = 0 ∧ e = 1 :=
+  integral_leaf_aux (p.natAbs + (e ^ 2).natAbs) p e n le_rfl he hcop h
 
 /-- **The only rational `U` on `W² = U³ + 4U² + 16U + 16` is `U = 0`** (PROVEN
 2026-07-28 from `integral_leaf`).
