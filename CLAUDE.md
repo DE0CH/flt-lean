@@ -6806,23 +6806,42 @@ file."* That is true, and the token printed in the prompt is **not always the on
 loop will accept.**
 
 `flt-loop.py` accepts a sentinel whose token is `j["token"]` **or** a member of
-`j["prev_tokens"]` (line ~877). Its comment says a resumed job is the same job, so an
-earlier incarnation's result is still its result. But `grep -n prev_tokens flt-loop.py`
-finds exactly **two** occurrences — the read at 877 and the field-copy at 1033. **Nothing
-ever writes it.** It is always `None`.
+`j["prev_tokens"]` (line ~883). Its comment says a resumed job is the same job, so an
+earlier incarnation's result is still its result.
 
-Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
-inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
-So on any job with `resume: true` / `retries > 0`:
+**CORRECTED 2026-07-31 (`flt-lean-361`): `prev_tokens` IS written, and the claim that
+stood here — "`grep -n prev_tokens flt-loop.py` finds exactly two occurrences, nothing
+ever writes it, it is always `None`" — was FALSE.** The grep was right and was run on the
+wrong file: the writer is `flt_loop_rows.py:504`,
+`j["prev_tokens"] = ((j.get("prev_tokens") or []) + [j["token"]])[-10:]`, immediately
+above the `j["token"] = tok()` that mints the new one. Measured live on a resumed job:
+`token: 9ef851a2`, `prev_tokens: ['15c0921e']`, and `15c0921e` was exactly the token
+printed in that run's prompt. So the old token is accepted and a resumed agent's sentinel
+is **not** discarded.
+
+**The lesson generalises past the loop, and it is why the correction is worth more than
+the fact: a claim of the form "nothing writes X" is a claim about a SEARCH, and the
+search's scope is part of the claim.** This project's loop is two modules —
+`flt-loop.py` (the state machine) and `flt_loop_rows.py` (the row actions that mutate the
+job records) — and essentially every WRITE lives in the second. Grep the directory, not
+the file whose name matches the concept. Same failure shape as the self-certifying greps
+recorded above, at tooling scope instead of Lean scope.
+
+Resume still mints a NEW token, deliberately, so the old `.started` marker goes inert, and
+the agent's prompt is the ORIGINAL payload carrying the ORIGINAL token. So on any job with
+`resume: true` / `retries > 0`:
 
 * the live token is in `~/.flt-loop/jobs/<name>.json` and `<name>.started`;
-* the prompt's token is the pre-resume one;
-* a sentinel written under the prompt's token is rejected, `j["sentinel"]` stays `None`,
-  and `started ∧ ¬alive ∧ ¬sentinel` makes the loop conclude the agent **died**.
+* the prompt's token is the pre-resume one, and is now in `prev_tokens`;
+* **either is accepted.** The failure this section was written to prevent — a sentinel
+  ignored, `j["sentinel"]` left `None`, and `started ∧ ¬alive ∧ ¬sentinel` making the loop
+  conclude the agent died and dispatch a replacement at work already committed — is
+  therefore no longer live. Only the last ten tokens are kept, which is far more than any
+  job's retry count.
 
-The result is the worst shape of failure this file catalogues: completed, committed,
-compiler-verified work is thrown away, and a replacement is dispatched at leaves that are
-already proven — a phantom dispatch manufactured out of a *successful* run.
+**Read the record anyway.** It costs one command, it is the only thing that stays right if
+the retention window or the acceptance rule changes again, and the `prev_tokens` safety net
+is itself a fix that this file asserted did not exist for a day.
 
 **So the check is one command, run it before writing the sentinel:**
 
