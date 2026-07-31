@@ -113,13 +113,17 @@ class-field leaves, which have in turn been replaced by the two `j`-statements b
   consumes `hcl`. It REPLACES the former `K = ℚ(√−p)`-valued leaf
   `Heegner.exists_quadratic_jInvariant_heegnerPoint`, which is PROVEN from it: `j(τ₀)` is
   real, so the `K` was dressing;
-* `Heegner.exists_intCube_jInvariant_heegnerPoint` — `j(τ₀) = n ∈ ℤ` is a CUBE in `ℤ`
-  (Weber's level-`3` descent; the load-bearing input is `3 ∤ p`, and the witness for that is
-  `p = 27`, where `j(τ₀) = −12288000 = −2¹⁵·3·5³` is rational and not a cube). RECUT
-  2026-07-31 (`flt-lean-360`) from `Heegner.exists_ratCube_jInvariant_heegnerPoint`, which is
-  now PROVEN from it together with `Heegner.exists_int_jInvariant_heegnerPoint` (`j(τ₀) ∈ ℚ`
-  upgrades to `j(τ₀) ∈ ℤ` for free, `j(τ₀)` being an algebraic integer); the `ℚ`-valued leaf in
-  turn REPLACES `Heegner.exists_quadratic_gammaTwo_of_jInvariant`, which is PROVEN from it;
+* `Heegner.exists_rat_gammaTwo_of_multiplier` — **Weber's theorem `γ₂(τ₀) ∈ ℚ`**, the CM half
+  of Weber's level-`3` descent, with the level-`3` half supplied as a hypothesis. RECUT TWICE:
+  2026-07-31 (`flt-lean-360`) from `Heegner.exists_ratCube_jInvariant_heegnerPoint` to
+  `Heegner.exists_intCube_jInvariant_heegnerPoint`, then again the same day
+  (`flt-lean-384`) to this, once the level-`3` half was PROVEN as
+  `Heegner.exists_cubeRootOne_gammaTwo_smul` (`γ₂ ∘ γ = c(γ)·γ₂` with `c(γ)³ = 1`, from the
+  `S`- and `T`-transformations of `η` and `E₄` plus `SL2Z_generators`). BOTH earlier names
+  survive as PROVEN theorems, so a queue entry naming either will pass an existence check and
+  land an agent on nothing — read the `declaration uses 'sorry'` warning set, not `grep`. The
+  load-bearing input is still `3 ∤ p`, and the witness for that is still `p = 27`, where
+  `j(τ₀) = −12288000 = −2¹⁵·3·5³` is rational and not a cube;
 
 `Heegner.gammaTwo_pow_three_eq_jInvariant` (Weber's `γ₂³ = j`) and
 `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` (the bound `exp(π√p) ≤ 745 − j(τ₀)`) are now both
@@ -147,12 +151,12 @@ So this file has FOUR open leaves. The list below was REGENERATED from the merge
 this merge (release 25, 2026-07-30) by a direct-sorry scan, not inherited from any of the seven
 sides that have disagreed about it — and each of them was RIGHT about its own base, which is
 exactly why none of their lists survives:
-`Heegner.natDegree_minpoly_weberAlpha_le`, `Heegner.exists_modularPolynomial_prod`, and the two
-`j`-statements `Heegner.exists_rat_jInvariant_heegnerPoint` and
-`Heegner.exists_intCube_jInvariant_heegnerPoint` (the latter recut 2026-07-31 from
-`Heegner.exists_ratCube_jInvariant_heegnerPoint`, which is now PROVEN — the COUNT is unchanged
-at four, and was re-confirmed against the `declaration uses 'sorry'` warning set of a green
-`lake build` of this module, not inherited).
+`Heegner.natDegree_minpoly_weberAlpha_le`, `Heegner.exists_modularPolynomial_prod`,
+`Heegner.exists_rat_jInvariant_heegnerPoint` and `Heegner.exists_rat_gammaTwo_of_multiplier`
+(the last recut TWICE on 2026-07-31, `exists_ratCube_… → exists_intCube_… →
+exists_rat_gammaTwo_of_multiplier`, both predecessors now PROVEN — the COUNT is unchanged at
+four through both recuts, and was re-confirmed against the `declaration uses 'sorry'` warning
+set of a green `lake build` of this module, not inherited).
 
 **THE `η`-CLUSTER IS CLOSED** (release 24). It is worth saying plainly, because the leaf that
 went is the one this file had been calling its hard analytic input for three releases:
@@ -6292,7 +6296,232 @@ WHAT WAS RE-CHECKED AND WHAT WAS RULED OUT (2026-07-31, `flt-lean-360`).
   form of discriminant `−p` primitive; the two notions part company only at composite `p`,
   which is exactly where the `p = 27` witnesses live. -/
 
-/-- **LEAF 4c″ — THE SINGULAR MODULUS `n = j(τ₀)` IS A PERFECT CUBE IN `ℤ`.**
+/-! #### `LEAF 4c″ RECUT` (2026-07-31, `flt-lean-384`) — the level-`3` half is now PROVEN, and
+the open residue is the CM half alone
+
+The 2026-07-31 note immediately above named "the first attackable sub-step" as the multiplier
+identity `γ₂ ∘ γ = ε(γ)⁻⁸ γ₂` with `ε⁸ ∈ μ₃`, i.e. that `γ₂` is a modular function for a group
+of index `3` in `SL₂(ℤ)`. **That step is now PROVEN**, as
+`exists_cubeRootOne_gammaTwo_smul` below, and it is proven from the `S`- and
+`T`-transformations already in this file rather than from any multiplier-system theory:
+
+* `T`: `η(z+1) = ζ₂₄ η(z)` (`eta_add_one`) and `E₄(z+1) = E₄(z)` (`etaWeightFour_of_eq_add_one`
+  through `etaWeightFour_eq_E₄`), so `γ₂(z+1) = ζ₂₄⁻⁸ γ₂(z)` and `(ζ₂₄⁻⁸)³ = ζ₂₄⁻²⁴ = 1`
+  (`zeta24_pow_24`);
+* `S`: `η(−1/z)⁸ = z⁴ η(z)⁸` — the `√I` and `√z` of mathlib's
+  `ModularForm.eta_comp_eq_csqrt_I_inv` are killed by `csqrtI_pow_eight` and
+  `csqrt_pow_eight`, so no branch of the square root is ever chosen — and
+  `E₄(−1/z) = z⁴ E₄(z)` (`etaWeightFour_of_eq_neg_inv`), so `γ₂(−1/z) = γ₂(z)` EXACTLY, with
+  multiplier `1`;
+* a `Subgroup.closure_induction` over `SpecialLinearGroup.SL2Z_generators`
+  (`closure {S, T} = ⊤`) carries the two base cases to every `γ`, the multiplier multiplying
+  along words.
+
+So the leaf is now cut as `exists_rat_gammaTwo_of_multiplier` — Weber's theorem
+`γ₂(τ₀) ∈ ℚ` WITH the multiplier identity supplied as a hypothesis. The COUNT is unchanged,
+`1 → 1`; the open NAME changes, which is a recut in the sense of CLAUDE.md's
+"A RECUT RENAMES THE OPEN LEAF" section, and the old name
+`exists_intCube_jInvariant_heegnerPoint` survives as a PROVEN theorem — so a queue entry
+naming it will pass an existence check and land an agent on nothing. It is the
+`declaration uses 'sorry'` warning set, not `grep`, that says what is open here.
+
+WHY THE HYPOTHESIS AND NOT A FREE-STANDING LEMMA. `exists_cubeRootOne_gammaTwo_smul` has no
+other consumer in the tree, so leaving it unconsumed would make it FREE-FLOATING (CLAUDE.md),
+and a sorried body contributes no dependency edges — the only way to keep a proven lemma whose
+sole use is inside a still-open proof is to put it in that proof's BINDERS. That is what is
+done here, and it is why the assembly below is written out in full rather than left as prose.
+
+WHAT THE REMAINING LEAF IS, precisely. Everything analytic and arithmetic around Weber's
+theorem is now discharged: given `γ₂(τ₀) ∈ ℚ`, the cube statement follows because
+`γ₂³ = j = n` makes that rational a root of `X³ − n`, hence an algebraic integer, hence an
+integer (`ℤ` is integrally closed in `ℚ`) — no reality, no `K`, no estimate needed. The
+residue is exactly Shimura reciprocity at a CM point: that the `μ₃`-ambiguity the multiplier
+creates is trivial at `τ₀` when `3 ∤ D`. Cox, *Primes of the form x² + ny²*, §12.B Thm 12.2;
+Booher Thm 36. The shape of that argument, for whoever takes it: `K = ℚ(√−p)` has `h = 1`
+under `hn`, `γ₂(τ₀)` lies in the ray class field of `K` of conductor `3`, and when `3 ∤ D` the
+ray class group mod `3` has order `|(𝒪_K/3)^×|/2 ∈ {2, 4}` — coprime to `3` in BOTH the split
+(`p ≡ 2 mod 3`) and inert (`p ≡ 1 mod 3`) cases — so there is no cubic subextension and
+`γ₂(τ₀) ∈ K`; being real it is in `ℚ`. `3 | D` is precisely the case where `3` ramifies and
+`|(𝒪_K/3)^×|/2 = 3`, which is the `p = 27` witness.
+
+THE NEW LEAF IS EQUIVALENT TO THE OLD, so no falsity risk was introduced by the recut. Forward
+is the assembly below. Backward: if `n = m³` then `γ₂(τ₀)` is the REAL number `x` of
+`exists_real_gammaTwo_heegnerPoint` with `x³ = m³`, and `x ↦ x³` is injective on `ℝ` via
+`x³ − m³ = (x − m)(x² + xm + m²)` and `4(x² + xm + m²) = (2x + m)² + 3m²`, so `x = m ∈ ℚ`.
+The audits in the section above therefore transfer verbatim.
+
+THE MULTIPLIER IS A HOMOMORPHISM, and that is also proven here
+(`exists_monoidHom_gammaTwo_multiplier`): the constant is UNIQUE because `γ₂` does not vanish
+identically (`exists_gammaTwo_ne_zero`, from `etaWeightFour_tendsto_one` and `η ≠ 0`), and
+uniqueness turns the per-`γ` existential into a `MonoidHom χ : SL(2, ℤ) → ℂ` landing in `μ₃`.
+That is the form the leaf's binders take, because it is the one that identifies `ker χ` as a
+subgroup of index dividing `3` — "`γ₂` is a modular function of level `3`" in the honest sense
+rather than one whose translates merely differ by cube roots of unity one `γ` at a time. What
+is NOT proven, because nothing consumes it, is that the index is exactly `3`, i.e. that
+`χ(T) = ζ₂₄⁻⁸` is a PRIMITIVE cube root of unity; that is one `Complex.exp` computation
+whenever it is wanted. -/
+
+section GammaTwoMultiplier
+
+open Complex UpperHalfPlane ModularForm
+open scoped MatrixGroups
+
+/-- **THE LEVEL-`3` HALF OF WEBER'S DESCENT — PROVEN.** For every `γ ∈ SL₂(ℤ)` there is a cube
+root of unity `c(γ)` with `γ₂(γ·z) = c(γ)·γ₂(z)` for ALL `z ∈ ℍ`.
+
+Equivalently: `γ₂` is a modular function for the kernel of the multiplier, a subgroup of index
+dividing `3`. Proven from `γ₂ = E₄/η⁸` (`gammaTwo_eq_E₄_div_eta_pow_eight`) by checking the two
+generators and inducting along `SpecialLinearGroup.SL2Z_generators`; `c(S) = 1` and
+`c(T) = ζ₂₄⁻⁸`, a primitive cube root of unity. See the section note above. -/
+theorem exists_cubeRootOne_gammaTwo_smul (γ : SL(2, ℤ)) :
+    ∃ c : ℂ, c ^ 3 = 1 ∧ ∀ z : UpperHalfPlane, gammaTwo (γ • z) = c * gammaTwo z := by
+  have hmem : γ ∈ Subgroup.closure ({ModularGroup.S, ModularGroup.T} : Set SL(2, ℤ)) := by
+    simp [SpecialLinearGroup.SL2Z_generators]
+  induction hmem using Subgroup.closure_induction with
+  | one => exact ⟨1, one_pow 3, fun z => by simp⟩
+  | mem g hg =>
+      simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hg
+      rcases hg with rfl | rfl
+      · -- `S : z ↦ −1/z`, multiplier `1`: the `z⁴` from `E₄` and the `z⁴` from `η⁸` cancel.
+        refine ⟨1, one_pow 3, fun z => ?_⟩
+        have hz0 : (z : ℂ) ≠ 0 := UpperHalfPlane.ne_zero z
+        have hcoe : ((ModularGroup.S • z : UpperHalfPlane) : ℂ) = -(z : ℂ)⁻¹ := by
+          rw [UpperHalfPlane.modular_S_smul]; simp
+        have hE : ModularForm.E₄ (ModularGroup.S • z) = (z : ℂ) ^ 4 * ModularForm.E₄ z := by
+          rw [← etaWeightFour_eq_E₄, ← etaWeightFour_eq_E₄, etaWeightFour_of_eq_neg_inv hcoe]
+        have h1 : ModularForm.eta ((ModularGroup.S • z : UpperHalfPlane) : ℂ)
+            = (Complex.sqrt Complex.I)⁻¹ * (Complex.sqrt (z : ℂ) * ModularForm.eta (z : ℂ)) := by
+          rw [hcoe]
+          simpa [neg_div] using ModularForm.eta_comp_eq_csqrt_I_inv z.2
+        have heta : ModularForm.eta ((ModularGroup.S • z : UpperHalfPlane) : ℂ) ^ 8
+            = (z : ℂ) ^ 4 * ModularForm.eta (z : ℂ) ^ 8 := by
+          rw [h1, mul_pow, mul_pow, inv_pow, csqrtI_pow_eight, inv_one, one_mul,
+            csqrt_pow_eight hz0]
+        rw [gammaTwo_eq_E₄_div_eta_pow_eight, gammaTwo_eq_E₄_div_eta_pow_eight, hE, heta, one_mul,
+          mul_div_mul_left _ _ (pow_ne_zero 4 hz0)]
+      · -- `T : z ↦ z + 1`, multiplier `ζ₂₄⁻⁸`, a primitive cube root of unity.
+        set ζ : ℂ := Complex.exp (↑Real.pi * Complex.I / 12) with hζ
+        refine ⟨(ζ ^ 8)⁻¹, ?_, fun z => ?_⟩
+        · rw [← inv_pow, ← pow_mul, show 8 * 3 = 24 from rfl, inv_pow, zeta24_pow_24, inv_one]
+        · have hζ0 : ζ ≠ 0 := Complex.exp_ne_zero _
+          have he0 : ModularForm.eta (z : ℂ) ≠ 0 := ModularForm.eta_ne_zero z.2
+          have hcoe : ((ModularGroup.T • z : UpperHalfPlane) : ℂ) = (z : ℂ) + 1 := by
+            rw [UpperHalfPlane.modular_T_smul, UpperHalfPlane.coe_vadd]; push_cast; ring
+          have hE : ModularForm.E₄ (ModularGroup.T • z) = ModularForm.E₄ z := by
+            rw [← etaWeightFour_eq_E₄, ← etaWeightFour_eq_E₄, etaWeightFour_of_eq_add_one hcoe]
+          have heta : ModularForm.eta ((ModularGroup.T • z : UpperHalfPlane) : ℂ) ^ 8
+              = ζ ^ 8 * ModularForm.eta (z : ℂ) ^ 8 := by
+            rw [hcoe, eta_add_one, mul_pow]
+          rw [gammaTwo_eq_E₄_div_eta_pow_eight, gammaTwo_eq_E₄_div_eta_pow_eight, hE, heta]
+          field_simp
+  | mul g h _ _ ig ih =>
+      obtain ⟨c₁, hc₁, hg⟩ := ig
+      obtain ⟨c₂, hc₂, hh⟩ := ih
+      refine ⟨c₁ * c₂, by rw [mul_pow, hc₁, hc₂, one_mul], fun z => ?_⟩
+      rw [mul_smul, hg, hh, mul_assoc]
+  | inv g _ ig =>
+      obtain ⟨c, hc, hg⟩ := ig
+      have hc0 : c ≠ 0 := by
+        intro h0
+        rw [h0] at hc
+        norm_num at hc
+      refine ⟨c⁻¹, by rw [inv_pow, hc, inv_one], fun z => ?_⟩
+      have hz := hg (g⁻¹ • z)
+      rw [smul_smul, mul_inv_cancel, one_smul] at hz
+      rw [hz, inv_mul_cancel_left₀ hc0]
+
+/-- `γ₂` does not vanish identically. Proven from `F → 1` at the cusp
+(`etaWeightFour_tendsto_one`, with `F = E₄` by `etaWeightFour_eq_E₄`) together with `η ≠ 0`;
+`atImInfty` is `NeBot`, so an eventual non-vanishing produces an actual point.
+
+This is what makes the multiplier of `exists_cubeRootOne_gammaTwo_smul` UNIQUE, hence
+multiplicative — see `exists_monoidHom_gammaTwo_multiplier`. -/
+lemma exists_gammaTwo_ne_zero : ∃ z : UpperHalfPlane, gammaTwo z ≠ 0 := by
+  have hev : ∀ᶠ z in UpperHalfPlane.atImInfty, etaWeightFour z ≠ 0 :=
+    etaWeightFour_tendsto_one.eventually_ne one_ne_zero
+  obtain ⟨z, hz⟩ := hev.exists
+  refine ⟨z, ?_⟩
+  rw [gammaTwo_eq_E₄_div_eta_pow_eight, ← etaWeightFour_eq_E₄]
+  exact div_ne_zero hz (pow_ne_zero _ (ModularForm.eta_ne_zero z.2))
+
+/-- **THE LEVEL-`3` STRUCTURE OF `γ₂`, IN ITS SHARP FORM — PROVEN.** The multiplier of
+`exists_cubeRootOne_gammaTwo_smul` is a MONOID HOMOMORPHISM `χ : SL₂(ℤ) → ℂ` landing in `μ₃`.
+
+That is the statement that identifies the level: `ker χ` is a subgroup of index dividing `3`
+on which `γ₂` is invariant, so `γ₂` is a modular function of level `3` in the honest sense, not
+merely one whose translates differ by cube roots of unity one `γ` at a time.
+
+Multiplicativity is exactly uniqueness of the constant, and uniqueness needs ONE point where
+`γ₂ ≠ 0` — that is `exists_gammaTwo_ne_zero`, and it is the only extra input beyond the
+generator computation. `χ(S) = 1`, `χ(T) = ζ₂₄⁻⁸`, so `χ` is onto `μ₃` and `ker χ` has index
+exactly `3`; that surjectivity is not needed downstream and is not proven here. -/
+theorem exists_monoidHom_gammaTwo_multiplier : ∃ χ : SL(2, ℤ) →* ℂ, (∀ γ, χ γ ^ 3 = 1) ∧
+    ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane), gammaTwo (γ • z) = χ γ * gammaTwo z := by
+  classical
+  obtain ⟨z₀, hz₀⟩ := exists_gammaTwo_ne_zero
+  set c : SL(2, ℤ) → ℂ := fun γ => Classical.choose (exists_cubeRootOne_gammaTwo_smul γ) with hc
+  have hspec : ∀ γ : SL(2, ℤ), c γ ^ 3 = 1 ∧
+      ∀ z : UpperHalfPlane, gammaTwo (γ • z) = c γ * gammaTwo z :=
+    fun γ => Classical.choose_spec (exists_cubeRootOne_gammaTwo_smul γ)
+  have huniq : ∀ (γ : SL(2, ℤ)) (d : ℂ),
+      (∀ z : UpperHalfPlane, gammaTwo (γ • z) = d * gammaTwo z) → c γ = d := by
+    intro γ d hd
+    have h1 := (hspec γ).2 z₀
+    rw [hd z₀] at h1
+    exact (mul_right_cancel₀ hz₀ h1).symm
+  refine ⟨{ toFun := c
+            map_one' := huniq 1 1 (fun z => by simp)
+            map_mul' := fun γ δ => huniq (γ * δ) (c γ * c δ) (fun z => by
+              rw [mul_smul, (hspec γ).2, (hspec δ).2, mul_assoc]) },
+    fun γ => (hspec γ).1, fun γ z => (hspec γ).2 z⟩
+
+/-- **LEAF 4c‴ — WEBER'S THEOREM AT THE HEEGNER POINT: `γ₂(τ₀) ∈ ℚ`.** The CM half, and the
+only thing left of `LEAF 4c`.
+
+This is the open residue of the 2026-07-31 recut described in the section note above: the
+level-`3` modular half is supplied as the binders `χ`, `hχ3`, `hχ` (PROVEN, immediately above,
+as `exists_cubeRootOne_gammaTwo_smul` sharpened to `exists_monoidHom_gammaTwo_multiplier`), and
+everything downstream of the conclusion is discharged in
+`exists_intCube_jInvariant_heegnerPoint` below.
+
+WHAT IS LEFT IS SHIMURA RECIPROCITY, and nothing else: `hχ` says `γ₂` is a modular function
+for a subgroup of index dividing `3`, so at the CM point `τ₀` the value `γ₂(τ₀)` is determined
+by `j(τ₀)` only up to `μ₃`; the theorem is that this ambiguity is TRIVIAL when `3 ∤ D`. Cox,
+*Primes of the form x² + ny²*, §12.B Theorem 12.2; Booher Theorem 36. The class-field shape of
+the argument is spelled out in the section note above (the ray class group of `K` mod `3` has
+order `2` or `4` when `3 ∤ D`, hence no cubic subextension).
+
+FACTS ALREADY IN THIS FILE that the proof will want, so they are not rediscovered:
+`gammaTwo_pow_three_eq_jInvariant` (`γ₂³ = j`), `exists_real_gammaTwo_heegnerPoint` (`γ₂(τ₀)`
+is REAL), `isIntegral_gammaTwo_heegnerPoint` (it is an algebraic INTEGER), and `hn` itself,
+which with `hp8`/`h3` gives `11 ≤ p` and hence `n < −32000` through
+`exp_pi_sqrt_le_of_jInvariant_eq`. Note `hn` is what makes the statement non-vacuous and
+simultaneously restricts `p` to `h(−p) = 1`, i.e. to `p ∈ {11, 19, 43, 67, 163}` — the sweep
+recorded in the section note above.
+
+`3 ∤ p` (from `hp` with `h3`) IS LOAD-BEARING; `hp8` is retained for continuity with the
+consumer chain but is not. Both halves are checked in the section note. -/
+theorem exists_rat_gammaTwo_of_multiplier
+    (χ : SL(2, ℤ) →* ℂ) (hχ3 : ∀ γ, χ γ ^ 3 = 1)
+    (hχ : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane), gammaTwo (γ • z) = χ γ * gammaTwo z)
+    {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p) {n : ℤ}
+    (hn : (n : ℂ) = jInvariant (heegnerPoint p hp.pos)) :
+    ∃ r : ℚ, (r : ℂ) = gammaTwo (heegnerPoint p hp.pos) :=
+  sorry
+
+end GammaTwoMultiplier
+
+/-- **LEAF 4c″ — THE SINGULAR MODULUS `n = j(τ₀)` IS A PERFECT CUBE IN `ℤ`. NOW PROVEN**
+(2026-07-31, `flt-lean-384`) over `exists_cubeRootOne_gammaTwo_smul` (the level-`3` half, proven
+just above) and `exists_rat_gammaTwo_of_multiplier` (`LEAF 4c‴`, the CM half, open).
+
+The arithmetic is the whole of what this theorem adds and it is three lines of field theory:
+`γ₂(τ₀) = r ∈ ℚ` and `γ₂³ = j = n` make `r` a root of the monic `X³ − n`, hence integral over
+`ℤ`, hence an integer since `ℤ` is integrally closed in `ℚ`. Reality of `γ₂(τ₀)` is NOT needed
+on this route — it is needed only for the converse, recorded in the section note above.
+
+The docstring below is the leaf's own record from when it was open, and is kept verbatim
+because its audits are what vouch for `LEAF 4c‴`, the two statements being equivalent.
 
 The open residue of Weber's level-`3` descent, with `ℚ`, `K`, `γ₂` and `Complex.I` all gone:
 the only analytic content left is the hypothesis `hn` naming the integer `n`.
@@ -6316,8 +6545,21 @@ way), for the first attackable sub-step (`γ₂ ∘ γ = ε(γ)⁻⁸ γ₂` wit
 purely algebraic argument from the data already in this file can work. -/
 theorem exists_intCube_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
     (h3 : 3 < p) {n : ℤ} (hn : (n : ℂ) = jInvariant (heegnerPoint p hp.pos)) :
-    ∃ m : ℤ, m ^ 3 = n :=
-  sorry
+    ∃ m : ℤ, m ^ 3 = n := by
+  obtain ⟨χ, hχ3, hχ⟩ := exists_monoidHom_gammaTwo_multiplier
+  obtain ⟨r, hr⟩ := exists_rat_gammaTwo_of_multiplier χ hχ3 hχ hp hp8 h3 hn
+  have h1 : ((r : ℚ) : ℂ) ^ 3 = (n : ℂ) := by
+    rw [hr, gammaTwo_pow_three_eq_jInvariant, ← hn]
+  have h2 : r ^ 3 = (n : ℚ) := by exact_mod_cast h1
+  have hint : IsIntegral ℤ r := by
+    refine IsIntegral.of_pow (n := 3) (by norm_num) ?_
+    rw [h2, show ((n : ℚ)) = algebraMap ℤ ℚ n by simp]
+    exact isIntegral_algebraMap
+  obtain ⟨m, hm⟩ := IsIntegrallyClosed.isIntegral_iff.mp hint
+  refine ⟨m, ?_⟩
+  have hmr : ((m : ℚ)) = r := by simpa using hm
+  have h3' : ((m : ℚ)) ^ 3 = (n : ℚ) := by rw [hmr]; exact h2
+  exact_mod_cast h3'
 
 /-- **LEAF 4c′ — `j(τ₀)` IS A CUBE IN `ℚ`. Weber's level-`3` descent. NOW PROVEN** over
 `exists_int_jInvariant_heegnerPoint` (`j(τ₀) ∈ ℤ`) and `LEAF 4c″`
