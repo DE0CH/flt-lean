@@ -444,7 +444,9 @@ open in them has been split along the theories it needed:
 | ~~`exists_weierstrassCurve_pointOfExactOrder`~~ | PROVEN 2026-07-30: Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`), so the leaf was that theorem at `WeierstrassCurve.ofJ (0 : L)` plus additive-order bookkeeping; no longer a leaf | — |
 | `nonempty_gamma1Datum_of_weierstrassPoint` | the base-generalisation of `nonempty_gamma1Datum_of_ratPoint`, which is the SAME statement at `ℚ` and is PROVEN.  Its whole obstruction is that `EllipticScheme.lean` is written at the concrete base `ℚ`; no new mathematics.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28, which is PROVEN over it and the row above (and `geometricComponents_of_gamma1GITPresentation` over that plus the two rows below, and `nontrivial_A_of_gamma1GITPresentation` over that alone). | any field `L` |
 | ~~`isReduced_A_of_gamma1GITPresentation`~~ | PROVEN 2026-07-28 over `smoothCurve_A_of_gamma1GITPresentation` and the in-tree `Algebra.Smooth.isReduced_of_isField`; no longer a leaf | — |
-| `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec (A ⊗[K] L)` transitively for EVERY field extension `L/K`.  MERGED 2026-07-30 out of the two former leaves `transitiveMinimalPrimes_of_gamma1GITPresentation` and `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, BOTH of which are now PROVEN over it — the first at `L := K` through `Algebra.TensorProduct.rid`, the second through the new `isDomain_of_minimalPrimes_transitive_family` plus `smoothCurve_A_of_gamma1GITPresentation` and `nontrivial_A_of_gamma1GITPresentation`.  Two leaves stating one sentence of IV.5.5 at two generalities became one leaf at the stronger generality. | any `K`, `char K ∤ N`, any field extension `L/K` |
+| ~~`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`~~ | PROVEN 2026-07-31 over the new `Gamma1GITPresentation.transitiveM` field; no longer a leaf, and the citation now sits on `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli` (the row below).  The move is the `smoothM`-style repair applied to IV.5.5 and it is leaf-NEUTRAL: what forced it is that `Gamma1GITPresentation` mentions no level-`n` structure anywhere, so the Weil pairing IV.5.5 runs on is not among the things its axioms can talk about.  The CLOSING AUDIT on the declaration records the three questions this closed, including the first positive evidence that the statement is TRUE (`classify_natural` pins the FIBRES of `π`, which refutes every “disjoint union” counterexample). | — |
+| `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli` | Deligne-Rapoport IV.5.5 where it is legitimately universally quantified: `det` is onto, so `GL₂(ℤ/n)` permutes the components of `Spec (A ⊗[K] L)` transitively, for a `Gamma1RigidifiedModuli` — whose `universal` field pins `Spec A` up to unique isomorphism AND whose `lvlM` field carries the level-`n` structure the pairing is defined on.  Supplied as a hypothesis to `nonempty_gamma1Rigidification_of_rigidifiedModuli` exactly as `hcov` is, and carried down as a structure field through both assembly steps. | any `K`, `char K ∤ N`, `char K ∤ n`, any field extension `L/K` |
+| ~~(historical row for the row above)~~ | Deligne-Rapoport IV.5.5 as it stood 2026-07-30 to 2026-07-31.  MERGED 2026-07-30 out of the two former leaves `transitiveMinimalPrimes_of_gamma1GITPresentation` and `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, BOTH of which are now PROVEN over it — the first at `L := K` through `Algebra.TensorProduct.rid`, the second through the new `isDomain_of_minimalPrimes_transitive_family` plus `smoothCurve_A_of_gamma1GITPresentation` and `nontrivial_A_of_gamma1GITPresentation`.  Two leaves stating one sentence of IV.5.5 at two generalities became one leaf at the stronger generality. | any `K`, `char K ∤ N`, any field extension `L/K` |
 | ~~`transitiveMinimalPrimes_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above at `L := K`; no longer a leaf | — |
 | ~~`isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above; no longer a leaf.  `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` and `connectedSpace_tensorProduct_of_gamma1GITPresentation` are unchanged and still read it | — |
 | `exists_rationalCuspPointsX1_field` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5).  Base field FREED 2026-07-28: this single leaf now carries the former `exists_rationalCuspPointsX1` (over `ℚ`, PROVEN over it) and the `≥` half of the former `card_cuspLocusPoints_x1_finiteField` (over `𝔽_3`) — one sentence of Deligne-Rapoport that used to be two open leaves at two bases. | any `K` with `N` invertible |
@@ -578,7 +580,7 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
 | `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (PROVEN 2026-07-28 over `exists_gamma1Datum_fieldExtension`, `isReduced_A_of_gamma1GITPresentation` — itself PROVEN later the same day over `smoothCurve_A_of_gamma1GITPresentation` — and `transitiveMinimalPrimes_of_gamma1GITPresentation`, itself PROVEN 2026-07-30 over `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
 | `smoothOfRelativeDimension_of_gamma0GITPresentation` (leaf) | `locallyStandardSmooth_of_gamma1GITPresentation` (leaf); `smoothOfRelativeDimension_of_gamma1GITPresentation` is PROVEN over it |
-| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` (leaf, 2026-07-30); `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
+| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` (PROVEN 2026-07-31 over the `transitiveM` field; the open leaf is now `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`); `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
 | `Gamma0AffineModel` / `exists_gamma0AffineModel` (PROVEN) | `Gamma1AffineModel` / `exists_gamma1AffineModel` (PROVEN) |
 
 `specInvariants_universal` (`X0.lean`, PROVEN and sorry-free) is REUSED
@@ -641,12 +643,15 @@ thing `Nontrivial A` needs), `isReduced_A_of_gamma1GITPresentation`
 `smoothCurve_A_of_gamma1GITPresentation`) and
 `transitiveMinimalPrimes_of_gamma1GITPresentation` (IV.5.5, the
 `det`-surjectivity — itself PROVEN 2026-07-30 over its base-changed form
-`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`, which is
-where the open obligation now sits).  The ROUTE AUDIT on the last of those records why
+`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`, itself
+PROVEN 2026-07-31 over the new `transitiveM` field, so the open obligation
+now sits on `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`).
+The ROUTE AUDIT and the CLOSING AUDIT on that former leaf record why
 neither `Algebra.IsInvariant.exists_smul_of_under_eq` nor an
-existentially-quantified algebra of components cuts it any further, and
-that the honest next step is a Weil-pairing FIELD on
-`Gamma1Rigidification` — the same shape as `coequalises`. -/
+algebra of components cuts it any further — both are circular with the only
+consumer — and that the honest step was the structural one, which is what
+was taken on 2026-07-31: the citation is a FIELD, the same shape as
+`coequalises`. -/
 
 /-- **A Katz–Mazur atlas for the `Γ₁(N)`-problem over a base scheme `S`.**
 
@@ -760,6 +765,67 @@ def Gamma1Atlas.toIsCoarseModuliY1 {N : ℕ} {S : Scheme.{0}} (A : Gamma1Atlas N
       rintro u₁ ⟨h₀, h₁⟩
       exact huniq u₁ ⟨h₀, (h₁ A.strM A.dM).symm⟩
 
+/-- **Deligne–Rapoport IV.5.5, as a property of the pair `(A, G)` over `S`**:
+the deck group permutes the components of the rigidified moduli scheme
+transitively, and goes on doing so after EVERY field base change.
+
+**Added 2026-07-31**, as the statement carried by the new `transitiveM` field
+of `Gamma1Rigidification` and `Gamma1GITPresentation`.  It is the exact
+statement that used to be the leaf
+`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`, factored out
+of it so that the field, the hypothesis at the assembly site, the leaf on
+`Gamma1RigidifiedModuli` and the derived theorem are all one name rather than
+five copies of a six-line quantifier.
+
+## Why it is phrased over an arbitrary base `S`
+
+`Gamma1Rigidification` and `Gamma1GITPresentation` are written over an
+arbitrary base scheme, and a field of theirs must be statable there; but the
+content — `A ⊗[K] L` for a field extension `L/K` — needs the base to BE a
+field.  The resolution: quantify over the presentations `(K, algebraMap K A)`
+of the base, with the clause
+
+    ∃ e : Spec K ≅ S, Spec (algebraMap K A) ≫ e.hom = strM
+
+tying `K` to `S`.  Over a non-affine or non-field base no such `K` exists and
+the property is vacuously true, which is the correct reading: the statement
+has no content there.  **That clause is LOAD-BEARING and dropping it makes the
+property FALSE.**  Without it one may take any `G`-fixed subfield `K₀ ⊊ K`:
+`A ⊗[K₀] L` for `L ⊇ K` acquires `[K : K₀]` conjugate copies of `A ⊗[K] L`,
+`G` acts `K`-linearly and therefore preserves each copy, and transitivity
+fails.  Concretely `K = ℚ(√2)`, `K₀ = ℚ`, `L = ℚ̄`.
+
+`hfix` — that `G` fixes `K` pointwise inside `A` — is a HYPOTHESIS rather than
+a consequence here only because the property is stated for a bare
+`(A, G, strM)` and not for an inhabitant of a structure.  Every consumer holds
+it: it is `Gamma1GITPresentation.smul_algebraMap_A`, the ring-level reading of
+`strM_invariant`.  It is bound before the conclusion because the conclusion
+NAMES it: `σ ⊗ 1` is only a ring map because `σ` is `K`-linear, and
+`AlgHom.mk (MulSemiringAction.toRingHom G A σ) (hfix σ)` is exactly
+`Gamma1GITPresentation.algHomA σ` unfolded, so the two conclusions are
+definitionally the same and
+`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` discharges by
+`exact`.
+
+The transitivity clause is phrased with `Ideal.comap` rather than a pointwise
+ideal action because that is the form the consumers take and it needs no
+`Pointwise` scope: `q = comap σ p` says `x ∈ q ↔ σ • x ∈ p`. -/
+def IsTransitiveOnGeometricComponents {S : Scheme.{0}} (A : Type) [CommRing A]
+    (G : Type) [Group G] [MulSemiringAction G A]
+    (strM : Spec (CommRingCat.of A) ⟶ S) : Prop :=
+  ∀ (K : Type) [Field K] [Algebra K A],
+    (∃ e : Spec (CommRingCat.of K) ≅ S,
+        Spec.map (CommRingCat.ofHom (algebraMap K A)) ≫ e.hom = strM) →
+      ∀ (hfix : ∀ (σ : G) (k : K),
+          MulSemiringAction.toRingHom G A σ (algebraMap K A k) = algebraMap K A k)
+        (L : Type) [Field L] [Algebra K L],
+        ∀ p ∈ minimalPrimes (TensorProduct K A L),
+          ∀ q ∈ minimalPrimes (TensorProduct K A L),
+            ∃ σ : G, Ideal.comap
+              (Algebra.TensorProduct.map
+                (AlgHom.mk (MulSemiringAction.toRingHom G A σ) (hfix σ))
+                (AlgHom.id K L)).toRingHom p = q
+
 /-- **A Katz–Mazur atlas presented the way (8.1.1) actually builds it**:
 the rigidified moduli scheme as `Spec A` with a finite group `G` acting,
 and the coarse space as `Spec` of the invariants.
@@ -826,6 +892,29 @@ structure Gamma1GITPresentation (N : ℕ) (S : Scheme.{0}) where
     Nonempty (IsBaseChangeOfGamma1 (𝟙 (Spec (CommRingCat.of A))) d₁ dM) ∧
     Nonempty (IsBaseChangeOfGamma1
       (Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ))) d₁ dM)
+  /-- **Deligne–Rapoport IV.5.5**: the deck group permutes the geometric
+  components of the rigidified moduli scheme transitively.
+
+  **Added 2026-07-31, and it is a repair rather than an enrichment.**  This was
+  the leaf `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`,
+  quantified over an arbitrary inhabitant of this structure; that declaration is
+  now a THEOREM reading this field, and the full argument for why the citation
+  had to move is the CLOSING AUDIT written on it.  In one line: the fields of
+  this structure do not mention a level-`n` structure ANYWHERE — `dM` is a bare
+  `Gamma1Datum`, which is `(E, f, ab, smooth, pt)` and carries no full level
+  structure — and IV.5.5 is a statement about the Weil pairing on exactly that
+  structure, `G = GL₂(ℤ/n)` moving its value through `det`.  A pairing on
+  something the axioms cannot name is not a consequence of them, however tight
+  they are; and the audit records that they ARE tight, since every
+  counterexample tried dies on `classify_natural`.
+
+  Carried verbatim from `Gamma1Rigidification.transitiveM`; supplied at the one
+  construction site (`nonempty_gamma1Rigidification_of_rigidifiedModuli`) as a
+  hypothesis, in exactly the way `hcov` is, and discharged at
+  `exists_gamma1Rigidification` from the leaf
+  `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`, where the object
+  IS pinned by `universal` and where `lvlM` carries the level-`n` structure. -/
+  transitiveM : IsTransitiveOnGeometricComponents A G strM
 
 /-- **A GIT presentation IS an atlas** (PROVEN 2026-07-27): the
 `quotient` field of `Gamma1Atlas` derived from the affine presentation
@@ -1364,6 +1453,13 @@ structure Gamma1Rigidification (N : ℕ) (S : Scheme.{0}) where
     IsBaseChangeOfGamma1 a d₁ dM →
     IsBaseChangeOfGamma1 b d₁ dM →
     a ≫ specInvariantsQuotient G A = b ≫ specInvariantsQuotient G A
+  /-- **Deligne–Rapoport IV.5.5**: the deck group permutes the geometric
+  components of the rigidified moduli scheme transitively.  Carried verbatim
+  into `Gamma1GITPresentation.transitiveM`, whose docstring records why it has
+  to be a field and not a theorem; supplied at the one construction site
+  (`nonempty_gamma1Rigidification_of_rigidifiedModuli`) as a hypothesis, in
+  exactly the way `hcov` is.  Added 2026-07-31. -/
+  transitiveM : IsTransitiveOnGeometricComponents A G strM
 
 /-- **fpqc descent of the classifying map, over an ARBITRARY base**
 (PROVEN 2026-07-27) — Katz–Mazur (8.1.3), and the half of
@@ -1557,7 +1653,8 @@ theorem nonempty_gamma1GITPresentation_of_rigidification {N : ℕ} {S : Scheme.{
             classify_dM := ?_
             cover := fun {_T} g d => R.cover g d
             strM_invariant := R.strM_invariant
-            dM_equivariant := R.dM_equivariant }⟩
+            dM_equivariant := R.dM_equivariant
+            transitiveM := R.transitiveM }⟩
   · -- naturality: both sides agree after the rigidifying cover of `d'`, and
     -- that cover is an epimorphism.
     intro T' T h g g' hg d' d bch
@@ -5035,14 +5132,47 @@ not mention it — but it is **load-bearing for the truth of the supplier**
 `exists_gamma1FullLevelStructure_cover`, since it is what makes `T` an
 `S`-scheme and hence forces the residue characteristics of `T` to be
 those of `S`.  Weakening `hcov` by dropping it would make it false at a
-base of characteristic dividing `n`; it is used here at `p ≫ g`. -/
+base of characteristic dividing `n`; it is used here at `p ≫ g`.
+
+**`htr` was added 2026-07-31** along with the `transitiveM` field it supplies —
+Deligne–Rapoport IV.5.5, and the move of that citation off
+`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`, where it was
+quantified over an object whose axioms cannot name a level-`n` structure.  It
+is a HYPOTHESIS rather than a field of `Gamma1RigidifiedModuli` for the same
+reason `hcov` is: this theorem is the assembly and owes no citation.
+
+It is quantified over the ACTION, which `hcov` is not and which is forced: the
+`MulSemiringAction` is chosen inside this proof, from `exists_gamma1DeckAction`,
+so a hypothesis of this theorem cannot name it.  The three clauses `htr` takes
+on `act` are exactly the three `exists_gamma1DeckAction` returns, and they are
+load-bearing for the truth of the supplier — see the FALSITY discussion on
+`transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`, whose short version
+is that without `hcoeq` the TRIVIAL action satisfies the other two and refutes
+the conclusion. -/
 theorem nonempty_gamma1Rigidification_of_rigidifiedModuli (N n : ℕ) (hn : 3 ≤ n)
     {S : Scheme.{0}} (R : Gamma1RigidifiedModuli N n S)
     (hcov : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma1Datum N T),
       ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T'),
         AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
         Nonempty (IsBaseChangeOfGamma1 p d' d) ∧
-        Nonempty (AbelianFullLevelStructure n d'.ab)) :
+        Nonempty (AbelianFullLevelStructure n d'.ab))
+    (htr : letI := R.commRing_A
+      ∀ act : MulSemiringAction (gamma0DeckGroup n) R.A,
+        letI := act
+        (∀ σ : gamma0DeckGroup n,
+            Spec.map (CommRingCat.ofHom
+              (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ)) ≫ R.strM = R.strM) →
+        (∀ σ : gamma0DeckGroup n, ∃ d₁ : Gamma1Datum N (Spec (CommRingCat.of R.A)),
+            Nonempty (IsBaseChangeOfGamma1 (𝟙 (Spec (CommRingCat.of R.A))) d₁ R.dM) ∧
+            Nonempty (IsBaseChangeOfGamma1
+              (Spec.map (CommRingCat.ofHom
+                (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ))) d₁ R.dM)) →
+        (∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of R.A)) (d₁ : Gamma1Datum N Z),
+            a ≫ R.strM = b ≫ R.strM →
+            IsBaseChangeOfGamma1 a d₁ R.dM → IsBaseChangeOfGamma1 b d₁ R.dM →
+            a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
+              = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A) →
+        IsTransitiveOnGeometricComponents R.A (gamma0DeckGroup n) R.strM) :
     Nonempty (Gamma1Rigidification N S) := by
   classical
   letI := R.commRing_A
@@ -5057,11 +5187,114 @@ theorem nonempty_gamma1Rigidification_of_rigidifiedModuli (N n : ℕ) (hn : 3 �
             cover := ?_
             strM_invariant := hstrinv
             dM_equivariant := hequiv
-            coequalises := fun {Z} a b d₁ hab ha hb => hcoeq a b d₁ hab ha hb }⟩
+            coequalises := fun {Z} a b d₁ hab ha hb => hcoeq a b d₁ hab ha hb
+            transitiveM :=
+              htr act hstrinv hequiv
+                (fun {Z} a b d₁ hab ha hb => hcoeq a b d₁ hab ha hb) }⟩
   intro T g d
   obtain ⟨T', p, d', hf, hs, hq, ⟨bp⟩, ⟨L⟩⟩ := hcov g d
   obtain ⟨m, ⟨hmg, bcm, -⟩, -⟩ := R.universal (p ≫ g) d' L
   exact ⟨T', p, d', m, hf, hs, hq, hmg.symm, ⟨bp⟩, ⟨bcm⟩⟩
+
+/-- **The deck group permutes the geometric components of the rigidified moduli
+scheme transitively** (sorry leaf, opened 2026-07-31) — Deligne–Rapoport
+IV.5.5, Katz–Mazur (8.1.1).
+
+TRUE and classical.  The geometric components of `𝔐([Γ₁(N)], [Γ(n)])` are
+indexed by the value of the Weil pairing `e_n(α(e₁), α(e₂))` on the universal
+level-`n` structure, i.e. by the primitive `n`-th roots of unity, and
+`GL₂(ℤ/n)` moves that value through `det`, which is SURJECTIVE onto `(ℤ/n)ˣ`.
+So the action on the components — equivalently on `minimalPrimes (A ⊗[K] L)` —
+is transitive, for every field extension `L/K`.
+
+## WHY THIS IS A LEGITIMATE `∀`, AND WHERE IT CAME FROM
+
+Until 2026-07-31 this citation lived downstream as
+`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`, quantified
+over an arbitrary `Gamma1GITPresentation`.  It was NOT refuted — the two ROUTE
+AUDIT closures and the PINCH AUDIT on that declaration all survive, and the
+CLOSING AUDIT written there on 2026-07-31 records that every counterexample one
+naturally tries is killed by `classify_natural` together with `classify_dM`.
+It moved because the audits ran out of routes: the fields of
+`Gamma1GITPresentation` do not mention a level-`n` structure at all — `dM` is a
+bare `Gamma1Datum`, i.e. `(E, f, ab, smooth, pt)` — so no consequence of them
+can name the Weil pairing, which is the entire content of IV.5.5.
+
+`Gamma1RigidifiedModuli` is where the citation IS legitimately universally
+quantified, and for two reasons rather than one:
+
+* `universal` is FINE moduli WITH a uniqueness clause.  Given two inhabitants
+  `R`, `R'`, `R'.universal` applied to `(R.dM, R.lvlM)` over `R.strM` produces a
+  unique `S`-morphism `m : Spec R.A ⟶ Spec R'.A` transporting the datum and the
+  level structure, and symmetrically an `m'`; both `m ≫ m'` and `𝟙` classify
+  `(R.dM, R.lvlM)`, so uniqueness forces them equal, and likewise the other way.
+  So `Spec R.A` is pinned up to unique isomorphism over `S`, and transitivity of
+  a group action on `minimalPrimes` transports along an equivariant isomorphism.
+* `lvlM` IS the universal level-`n` structure, carried as DATA.  The Weil
+  pairing the proof needs is a pairing of `lvlM.P` and `lvlM.Q`, which exist
+  here and exist nowhere in `Gamma1GITPresentation`.  This is the substantive
+  difference, and it is why the move is worth making even though it is
+  leaf-NEUTRAL.
+
+*The check that would refute this audit*: two inhabitants of
+`Gamma1RigidifiedModuli N n S` whose `Spec A` are not isomorphic over `S`.
+
+## THE ACTION IS A HYPOTHESIS, AND ITS THREE CLAUSES ARE LOAD-BEARING
+
+`act` is quantified rather than constructed because
+`nonempty_gamma1Rigidification_of_rigidifiedModuli` chooses it internally, from
+`exists_gamma1DeckAction`, and a hypothesis of that theorem cannot mention a
+term the theorem produces.  So this leaf must hold for EVERY action satisfying
+the three clauses that theorem returns.  It does, and **dropping any of them
+makes it FALSE**:
+
+* without `hcoeq`, take `act` TRIVIAL: then `A^G = A`, the quotient map is the
+  identity, `minimalPrimes (A ⊗ L)` has `φ(n)` elements over a large enough `L`
+  and no orbit relation holds — refuted at once.  What `hcoeq` buys is that
+  `Spec A ⟶ Spec A^G` identifies ANY two rigidifications of one datum, and by
+  `universal` two rigidifications of one datum differ by an arbitrary element of
+  `GL₂(ℤ/n)`; so `A^G` is contained in the coarse ring, which is where the
+  classical connectedness statement lives.  The same argument refutes any `act`
+  whose image misses a `det`-class — one factoring through `SL₂(ℤ/n)`, say —
+  which is the failure mode a candidate proof should be tested against;
+* `hstrinv` is what makes `σ` a `K`-algebra map, without which
+  `IsTransitiveOnGeometricComponents`'s `hfix` is unsatisfiable and the
+  statement is vacuous rather than false;
+* `hequiv` is what makes `act` an action ON THE MODULI PROBLEM rather than an
+  arbitrary automorphism group of the ring.
+
+## THE HYPOTHESES ON `K`
+
+`_hchar` and `_hcn` are LOAD-BEARING for truth: at `char K ∣ N` a point of exact
+order `N` acquires an infinitesimal part and the moduli problem is not smooth;
+at `char K ∣ n` the `n`-torsion is not étale and the level-`n` cover — hence the
+Weil-pairing indexing of the components — degenerates.  `_hN` and `_hn` are the
+rigidity hypotheses; they are strictly redundant given `R.universal`, and are
+carried because the sole call site (`exists_gamma1Rigidification`) holds them
+and because dropping a hypothesis from a citation is how a leaf becomes
+false. -/
+theorem transitiveOnGeometricComponents_of_gamma1RigidifiedModuli (N n : ℕ) (_hN : 4 ≤ N)
+    (_hn : 3 ≤ n) (K : Type) [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (_hcn : ¬ ringChar K ∣ n)
+    (R : Gamma1RigidifiedModuli N n (Spec (CommRingCat.of K)))
+    (act : letI := R.commRing_A; MulSemiringAction (gamma0DeckGroup n) R.A) :
+    letI := R.commRing_A
+    letI := act
+    (∀ σ : gamma0DeckGroup n,
+        Spec.map (CommRingCat.ofHom
+          (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ)) ≫ R.strM = R.strM) →
+    (∀ σ : gamma0DeckGroup n, ∃ d₁ : Gamma1Datum N (Spec (CommRingCat.of R.A)),
+        Nonempty (IsBaseChangeOfGamma1 (𝟙 (Spec (CommRingCat.of R.A))) d₁ R.dM) ∧
+        Nonempty (IsBaseChangeOfGamma1
+          (Spec.map (CommRingCat.ofHom
+            (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ))) d₁ R.dM)) →
+    (∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of R.A)) (d₁ : Gamma1Datum N Z),
+        a ≫ R.strM = b ≫ R.strM →
+        IsBaseChangeOfGamma1 a d₁ R.dM → IsBaseChangeOfGamma1 b d₁ R.dM →
+        a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
+          = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A) →
+    IsTransitiveOnGeometricComponents R.A (gamma0DeckGroup n) R.strM :=
+  sorry
 
 /-- **The Katz–Mazur rigidified moduli scheme of `[Γ₁(N)]` over a field in
 which `N` is invertible exists** (PROVEN 2026-07-28 from the three leaves
@@ -5107,6 +5340,9 @@ theorem exists_gamma1Rigidification (N : ℕ) (hN : 4 ≤ N) (K : Type) [Field K
   obtain ⟨R⟩ := exists_gamma1RigidifiedModuli N hN n hn K hchar hcn
   exact nonempty_gamma1Rigidification_of_rigidifiedModuli N n hn R
     (fun {_T} g d => exists_gamma1FullLevelStructure_cover n hn K hcn g d)
+    (fun act h₁ h₂ h₃ =>
+      transitiveOnGeometricComponents_of_gamma1RigidifiedModuli N n hN hn K hchar hcn R act
+        h₁ h₂ (fun {_Z} a b d₁ hab ha hb => h₃ a b d₁ hab ha hb))
 
 /-- **The Katz–Mazur GIT presentation of `Y_1(N)` over a field in which
 `N` is invertible exists** (PROVEN 2026-07-27 from the two halves it was
@@ -5163,7 +5399,7 @@ geometric statements is equivalent to a statement about the `K`-algebra
 |---|---|---|
 | `isDomain_of_gamma1GITPresentation` | `geometricComponents_of_gamma1GITPresentation` | `Scheme.ΓSpecIso` + `isDomain_of_minimalPrimes_transitive` |
 | `smoothOfRelativeDimension_of_gamma1GITPresentation` | `locallyStandardSmooth_of_gamma1GITPresentation` | `HasRingHomProperty.Spec_iff` |
-| `geometricallyConnected_of_gamma1GITPresentation` | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` (2026-07-30; `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` and then `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` are PROVEN over it) | `geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` + `pullbackSpecIso`, then (2026-07-28) `isDomain_tensorProduct_of_injective` |
+| `geometricallyConnected_of_gamma1GITPresentation` | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` (PROVEN 2026-07-31 over the `transitiveM` field, whose citation is `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`; `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation` and then `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` are PROVEN over it) | `geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` + `pullbackSpecIso`, then (2026-07-28) `isDomain_tensorProduct_of_injective` |
 
 So a prover sent at any of the three open leaves below works in
 commutative algebra over `K` and never touches a scheme.  This is the
@@ -6062,9 +6298,22 @@ theorem mem_minimalPrimes_comap_ringEquiv {R S : Type} [CommRing R] [CommRing S]
   rwa [comap_comap_ringEquiv' e q] at this
 
 /-- **The deck group permutes the components of EVERY BASE CHANGE of the
-rigidified moduli scheme transitively** (sorry leaf, NEW 2026-07-30) —
-Deligne–Rapoport IV.5.5, Katz–Mazur (8.1.1), and after this cut the ONLY
-open modular input to the geometric irreducibility of `Y_1(N)`.
+rigidified moduli scheme transitively** (**PROVEN 2026-07-31** over the new
+`Gamma1GITPresentation.transitiveM` field; a sorry leaf from 2026-07-30) —
+Deligne–Rapoport IV.5.5, Katz–Mazur (8.1.1), and the ONLY open modular input
+to the geometric irreducibility of `Y_1(N)`.
+
+**The statement is unchanged and no consumer moved.**  What happened on
+2026-07-31 is the repair `smoothCurve_A_of_gamma1GITPresentation` is still
+waiting for, applied here first: the citation moved UP, off this structure and
+onto `Gamma1RigidifiedModuli`, where the object is pinned by `universal` and —
+the point — where the level-`n` structure exists as DATA.  The new leaf is
+`transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`; this declaration
+now reads `P.transitiveM`, and the argument for why that was the only remaining
+move is the AUDIT TRAIL below, retained in full and now history rather than
+instruction.  **The frontier count is unchanged: one leaf became one leaf.**
+What changed is that the leaf is attached to an object whose axioms can see the
+Weil pairing.
 
 **What this replaces, and why the count goes DOWN.**  It replaces TWO
 leaves, both of which are now theorems over it:
@@ -6123,7 +6372,83 @@ statement is read over `K` or over `L`.  The audit's recommendation —
 carry the level-`n` torsor and its `det`-equivariant Weil pairing as a
 FIELD of `Gamma1Rigidification` / `Gamma1GITPresentation` — is the
 recommended route for THIS leaf too, and if anything it is more natural
-here, since a pairing valued in `μ_n` is a statement about a base change. -/
+here, since a pairing valued in `μ_n` is a statement about a base change.
+
+## CLOSING AUDIT, 2026-07-31 — why the citation moved, and what was closed
+## on the way
+
+Everything above is retained because it is correct, and because the reasoning
+that closed each route is worth more than the conclusion.  What follows is the
+last pass over this declaration.  It answers with verdicts rather than
+estimates, and it is the justification for
+`Gamma1GITPresentation.transitiveM`.
+
+**(a) The component-algebra route (route (2) below) is no longer FALSE — it is
+CIRCULAR, which closes it just as firmly.**  That audit refutes the route with
+`A = K[x, y]/(xy)`, a reduced non-normal ring.  Once `A` is known NORMAL — which
+it is, `Algebra.Smooth K A` from `smoothCurve_A_of_gamma1GITPresentation` in
+this tree, and unconditionally from a structure field on `merger`, where that
+declaration was refuted and repaired into a theorem over a new `smoothM` field
+on 2026-07-30 — the refutation no longer applies, and the route can be re-run.
+Doing so: a Noetherian normal ring is a FINITE PRODUCT of normal domains, one
+per connected component, and `minimalPrimes` IS that index set; so the algebra
+of components exists, it is `C ≅ L^r`, and `G` permutes the factors.  But then
+"`G` transitive on `minimalPrimes C`" is *literally* "`G` transitive on
+`minimalPrimes (A ⊗ L)`".  The route restates the leaf and buys nothing.  So
+routes (1) and (2) are now closed on the SAME ground — circularity with the only
+consumer — and neither is a live avenue.
+
+**(b) The leaf is TRUE, and here is the first positive evidence any audit of it
+has had.**  The audits of this cluster repeat that `classify_dM` "pins `B` and
+does NOT pin `A`".  That is right about `A` as a RING and wrong about what the
+classifying data pins: `classify_natural` pins the FIBRES of
+`π = Spec (B → A)`.  Read it at `h : T' ⟶ Spec A` against `classify_dM`:
+
+> if a datum `d'` over `T'` is a base change of `dM` along BOTH `h₁` and `h₂`,
+> then `h₁ ≫ π = h₂ ≫ π`.
+
+That is a separation property, and it refutes the whole family of "disjoint
+union" counterexamples — the ones that survive smoothness, which the pinch does
+not:
+
+* *`A := A₀ × A₀` with `G := G₀` acting diagonally* (a doubling, not a gluing,
+  so `A` stays smooth and no smoothness hypothesis excludes it).  `dM` restricts
+  to the SAME datum `d₀` on each copy, so `classify (strM₀, d₀)` is forced by
+  naturality along `ι₁` to be the inclusion into the first copy of `Spec B` and
+  along `ι₂` into the second.  Two different morphisms, one value.  REFUTED.
+* *`A := A₀ ⊔ A₀'`, two rigidifications at different auxiliary levels `n ≠ n'`,
+  `G := G₀ × G₀'` acting factorwise.*  Naturality does not bite over `K`, since
+  a datum need not admit both level structures there.  It bites over `K̄`: take
+  `(E, P)` over `K̄` with a level-`n` and a level-`n'` structure, which always
+  exist; the resulting datum is a base change of `dM|₁` and of `dM|₂`, and the
+  two forced values of `classify` lie in different components of `Spec B`.
+  REFUTED.
+* *`A := A₀ ⊗[K] K'` for a finite separable `K'/K`*, which would break
+  transitivity after base change to any `L ⊇ K'`, because `G` acts `K'`-linearly
+  and cannot permute the `[K' : K]` conjugate copies.  It dies one field
+  earlier: `classify` must send a datum over an ARBITRARY `K`-scheme `T` to a
+  `K`-morphism `T ⟶ Spec B`, and `Spec B` here lives over `Spec K'`, so `T`
+  would have to be a `K'`-scheme.  Take `T := Spec K` with any `(E, P)/K`.
+  REFUTED — no `classify` exists at all.
+
+So the axioms are much tighter than "they do not pin `A`" suggests, and nothing
+tried survives them.
+
+**(c) Therefore the citation moved, and this is the smallest honest move.**
+`Gamma1GITPresentation` mentions no level-`n` structure ANYWHERE: `dM` is a bare
+`Gamma1Datum`, i.e. `(E, f, ab, relativeDimensionOne, pt)`.  A Weil pairing on
+something the axioms cannot name is not a consequence of them, however tight
+they are — and (b) says they are tight enough that no counterexample is
+available either, which is exactly the position in which a statement is true and
+underivable.  So the transitivity is carried as the field `transitiveM` and
+discharged on `Gamma1RigidifiedModuli`, whose `lvlM` IS the universal level-`n`
+structure.
+
+*The check that would reopen this*: a proof of the conclusion from `classify`,
+`classify_natural`, `classify_dM`, `cover` and smoothness of `A` alone.  By (b)
+nothing here excludes such a proof — it is only that it would have to derive
+geometric connectedness of a coarse moduli space from a rigidification axiom,
+which is Deligne–Rapoport IV.5.5 itself and which nothing in this tree does. -/
 theorem transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
     {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K)))
@@ -6131,8 +6456,14 @@ theorem transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation {N : ℕ}
     letI := P.commRing_A; letI := P.algebraA; letI := P.group_G; letI := P.action_GA;
     ∀ p ∈ minimalPrimes (TensorProduct K P.A L),
       ∀ q ∈ minimalPrimes (TensorProduct K P.A L),
-        ∃ σ : P.G, Ideal.comap (P.tensorAlgHomA L σ).toRingHom p = q :=
-  sorry
+        ∃ σ : P.G, Ideal.comap (P.tensorAlgHomA L σ).toRingHom p = q := by
+  letI := P.commRing_A
+  letI := P.algebraA
+  letI := P.group_G
+  letI := P.action_GA
+  exact P.transitiveM K
+    ⟨Iso.refl _, by rw [Iso.refl_hom, Category.comp_id]; exact P.specMap_algebraMap_A⟩
+    (fun σ k => P.smul_algebraMap_A σ k) L
 
 /-- **The deck group permutes the components of the rigidified moduli
 scheme transitively** (**PROVEN 2026-07-30** over
@@ -7322,8 +7653,11 @@ LIVE leaves are:
   2026-07-30), `exists_gamma1FullLevelStructure_cover`,
   `exists_gamma1DeckAction` (`exists_gamma1Rigidification` and
   `exists_gamma1GITPresentation` are PROVEN over them);
-* the domain property — `exists_gamma1Datum_fieldExtension`,
+* the domain property — `exists_gamma1Datum_fieldExtension` and (since
+  2026-07-31) `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`,
+  the IV.5.5 citation having moved off
   `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`
+  onto the object that is pinned and that carries the level-`n` structure
   (`transitiveMinimalPrimes_of_gamma1GITPresentation`,
   `geometricComponents_of_gamma1GITPresentation` and
   `isDomain_of_gamma1GITPresentation` are PROVEN over them, together with
@@ -7339,7 +7673,8 @@ LIVE leaves are:
   `locallyStandardSmooth_of_gamma1GITPresentation` and
   `smoothOfRelativeDimension_of_gamma1GITPresentation` are PROVEN over them;
 * geometric connectedness — the SAME leaf as the domain property since
-  2026-07-30, `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`,
+  2026-07-30, reached through
+  `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`,
   over which `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`,
   `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` and in turn
   `connectedSpace_tensorProduct_of_gamma1GITPresentation` are PROVEN.
