@@ -670,7 +670,13 @@ here, because on a NO-GO that is exactly who reads it.
 # attempts a minute, ~500 in half an hour -- because nothing recorded that the
 # door was shut. This makes "the door is shut, and until when" a piece of
 # state, so the wait becomes a deliberate idle rather than a retry storm.
-LIMIT_MARK = "session limit"
+# Every wording the API uses to refuse us. Found by testing a resume against a
+# genuinely exhausted account, which answered "You've hit your WEEKLY limit" --
+# the detector matched only "session limit", so a weekly exhaustion would have
+# been read as a dead agent, resumed, refused again, and churned exactly as it
+# did before the quota rows existed. Matching the shared stem rather than one
+# noun is what makes it robust to the next wording.
+LIMIT_MARKS = ("session limit", "weekly limit", "usage limit", "rate limit")
 
 
 def parse_reset(text):
@@ -734,7 +740,7 @@ def refused_text(name, j):
     genuinely new refusal -- written by a fresh spawn attempt -- can block again.
     """
     t = rd(STATE / "joblogs" / ("%s-%s.log" % (name, j["token"])), "") or ""
-    return t if LIMIT_MARK in t else None
+    return t if any(m in t for m in LIMIT_MARKS) else None
 
 
 def consume_refusal(name, j):
