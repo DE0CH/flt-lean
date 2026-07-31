@@ -17730,6 +17730,43 @@ construction does need is now PROVEN outright as
 `isRaisedLevelHardlyRamified_pushforwardFrame` above — so carrying `hfunc` here
 would leave it unconsumed.  It is still consumed by the assembly's caller.
 
+**THE UNIVERSE OBSTRUCTION TO A VERBATIM TRANSCRIPTION, AND THE ESCAPE**
+(2026-07-31, `flt-lean-244`, found while assembling the consumer; this is the
+one thing a prover must settle before writing a line).
+
+The base-level `FrameRing` section of `HardlyRamified/Deformation.lean` builds
+
+    FrameGen k   := (Γ ℚ × Fin 2 × Fin 2) ⊕ k          -- `Type uK`
+    framePoly    := MvPolynomial (FrameGen k) ℤ_[p]     -- `Type uK`
+    frameRing    := framePoly ⧸ frameRel                -- `Type uK`
+
+— the Teichmüller generators `T_x`, one per element of `k`, put the ring in
+**`k`'s** universe.  This statement demands `P : Type uR` with `uR` INDEPENDENT
+of `uK`, because its consumer feeds `P` to
+`exists_universalFrame_profinite_of_levelIdealSystem`, whose `{P : Type w}` and
+`∃ (R : Type w)` are the same `w`, and that `w` is `uR`.  So a verbatim
+transcription produces `P : Type uK` and **does not typecheck**, and no `ULift`
+repairs it (`ULift.{uR} (frameRing p k) : Type (max uK uR)`).
+
+The escape is already in the hypotheses.  `𝒟₀ : AuxDeformationDatum.{uR, uK, uW}`
+carries `𝒟₀.R : Type uR` together with `𝒟₀.π : 𝒟₀.R →+* k` and
+`𝒟₀.π_surjective`, so
+
+    k₀ := 𝒟₀.R ⧸ RingHom.ker 𝒟₀.π   :   Type uR
+
+is a finite field with `k₀ ≃+* k` — a SMALL MODEL of the residual field, in the
+coefficient universe.  Build the frame ring over `k₀` (`FrameGen k₀ : Type uR`,
+since `Γ ℚ` contributes nothing above `Type 0`), and transport the conclusion's
+`evbar : P →+* k` and `hres` clause along that isomorphism.  `𝒟₀` is thus spent
+twice — for nonemptiness of the category AND for the universe — which is worth
+saying in the reproof, since it looks like an unused hypothesis until then.
+
+The same remark applies to making the base-level section PREDICATE-GENERIC: that
+part is the mechanical half the 2026-07-28 route audit priced correctly, but it
+is NOT sufficient on its own, and the audit does not mention the residual-field
+universe at all (it discusses only the COEFFICIENT universe, which `flt-lean-39`
+did fix).
+
 CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above.
 
 References: Schlessinger, *Functors of Artin rings*, Thm. 2.11; Mazur,
