@@ -2773,10 +2773,6 @@ namespace IsRelPicOf
 
 variable {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S} (hP : IsRelPicOf strX pstr)
 
-namespace IsRelPicOf
-
-variable {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S} (hP : IsRelPicOf strX pstr)
-
 /-- **The origin of `Pic`**: the point classifying `𝒪_{X_T}`. -/
 noncomputable def zeroPoint {T : Scheme.{u}} (g : T ⟶ S) : RelPoint pstr g :=
   (hP.surj (modUnit _) (isInvertibleSheaf_modUnit _)).choose
@@ -3123,6 +3119,10 @@ theorem exists_relPicOf_of_isAffineBase {Y V : Scheme.{u}} (strY : Y ⟶ V) [IsA
     ∃ (P : Scheme.{u}) (pstr : P ⟶ V),
       Nonempty (IsRelPicOf strY pstr) ∧ Smooth pstr ∧ IsSeparated pstr :=
   sorry
+
+namespace IsRelPicOf
+
+variable {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S} (hP : IsRelPicOf strX pstr)
 
 /-- **`Pic` is COMMUTATIVE** (PROVEN 2026-07-31) — the braiding, through
 `inj`. -/

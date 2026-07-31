@@ -1940,11 +1940,16 @@ Both are gone, and neither needed `k(ι)^{1/p^∞}`:
   finitely generated extension of a perfect field — which is why `S` being a `Finset` matters
   and why the perfection of `k` is genuinely load-bearing here rather than incidental.
 
-So this leaf is **PROVEN in every characteristic**.  The characteristic-zero branch below is
-kept on its original route (`isDomain_tensorProduct_of_isTranscendenceBasis`, which needs no
-separating basis and no finiteness of the basis); the positive-characteristic branch goes
-through `isDomain_tensorProduct_of_algebraicIndependent_of_isSeparable`.  Either branch would
-do for both cases; the split is a deliberate no-op on the char-0 proof term. -/
+So this leaf is **PROVEN in every characteristic**, by a single
+characteristic-free route through
+`isDomain_tensorProduct_of_algebraicIndependent_of_isSeparable`.
+
+There used to be a `by_cases` on `CharZero k` here, with the char-0 side taking the
+original route through `isDomain_tensorProduct_of_isTranscendenceBasis`.  That
+theorem has since gained a separability argument the branch did not supply, so at
+release 26 the branch was DELETED rather than repaired — the note it carried,
+"either branch would do for both cases; the split is a deliberate no-op on the
+char-0 proof term", is exactly the licence to drop it. -/
 theorem isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot
     (k L : Type*) [Field k] [PerfectField k] [Field L] [Algebra k L]
     (hbot : algebraicClosure k L = ⊥)
@@ -1952,38 +1957,39 @@ theorem isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClos
     (_hna : ¬ Algebra.IsAlgebraic k (IntermediateField.adjoin k (S : Set K))) :
     IsDomain (L ⊗[k] (IntermediateField.adjoin k (S : Set K))) := by
   classical
-  by_cases hchar : CharZero k
-  · haveI := hchar
-    obtain ⟨t, ht⟩ :=
-      exists_isTranscendenceBasis k (A := ↥(IntermediateField.adjoin k (S : Set K)))
-    exact isDomain_tensorProduct_of_isTranscendenceBasis hbot ht
-  · -- Positive characteristic: a separating transcendence basis (MacLane), then the
-    -- characteristic-free transcendental half.  `hchar` itself is not used — the branch is
-    -- valid for every `k`.
-    haveI hEFT : Algebra.EssFiniteType k ↥(IntermediateField.adjoin k (S : Set K)) :=
-      IntermediateField.essFiniteType_iff.mpr ⟨S, rfl⟩
-    obtain ⟨s, hsb, hsep⟩ := exists_isTranscendenceBasis_and_isSeparable_of_perfectField k
-      ↥(IntermediateField.adjoin k (S : Set K))
-    haveI : Fintype ↥s := FinsetCoe.fintype s
-    -- reindex the basis by `Fin (card s)`, which carries a monomial order
-    have hai : AlgebraicIndependent k
-        (fun i : Fin (Fintype.card ↥s) =>
-          (((Fintype.equivFin ↥s).symm i : ↥s) : ↥(IntermediateField.adjoin k (S : Set K)))) :=
-      hsb.1.comp _ (Fintype.equivFin ↥s).symm.injective
-    have hrange : Set.range (fun i : Fin (Fintype.card ↥s) =>
+  -- A separating transcendence basis (MacLane), then the characteristic-free
+  -- transcendental half.  This route is valid in EVERY characteristic.
+  --
+  -- It used to sit in a `by_cases hchar : CharZero k` beside a characteristic-zero
+  -- branch through `isDomain_tensorProduct_of_isTranscendenceBasis`.  That theorem has
+  -- since gained a separability argument which the branch never supplied, so the branch
+  -- no longer elaborated; it is deleted rather than repaired, because this file's own
+  -- docstring already recorded that "either branch would do for both cases; the split is
+  -- a deliberate no-op on the char-0 proof term".
+  haveI hEFT : Algebra.EssFiniteType k ↥(IntermediateField.adjoin k (S : Set K)) :=
+    IntermediateField.essFiniteType_iff.mpr ⟨S, rfl⟩
+  obtain ⟨s, hsb, hsep⟩ := exists_isTranscendenceBasis_and_isSeparable_of_perfectField k
+    ↥(IntermediateField.adjoin k (S : Set K))
+  haveI : Fintype ↥s := FinsetCoe.fintype s
+  -- reindex the basis by `Fin (card s)`, which carries a monomial order
+  have hai : AlgebraicIndependent k
+      (fun i : Fin (Fintype.card ↥s) =>
+        (((Fintype.equivFin ↥s).symm i : ↥s) : ↥(IntermediateField.adjoin k (S : Set K)))) :=
+    hsb.1.comp _ (Fintype.equivFin ↥s).symm.injective
+  have hrange : Set.range (fun i : Fin (Fintype.card ↥s) =>
+      (((Fintype.equivFin ↥s).symm i : ↥s) : ↥(IntermediateField.adjoin k (S : Set K))))
+      = (s : Set ↥(IntermediateField.adjoin k (S : Set K))) := by
+    rw [show (fun i : Fin (Fintype.card ↥s) =>
         (((Fintype.equivFin ↥s).symm i : ↥s) : ↥(IntermediateField.adjoin k (S : Set K))))
-        = (s : Set ↥(IntermediateField.adjoin k (S : Set K))) := by
-      rw [show (fun i : Fin (Fintype.card ↥s) =>
-          (((Fintype.equivFin ↥s).symm i : ↥s) : ↥(IntermediateField.adjoin k (S : Set K))))
-          = (Subtype.val ∘ (Fintype.equivFin ↥s).symm) from rfl,
-        Set.range_comp, ((Fintype.equivFin ↥s).symm.surjective).range_eq, Set.image_univ,
-        Subtype.range_coe]
-    haveI : Algebra.IsSeparable
-        ↥(IntermediateField.adjoin k (Set.range (fun i : Fin (Fintype.card ↥s) =>
-          (((Fintype.equivFin ↥s).symm i : ↥s) : ↥(IntermediateField.adjoin k (S : Set K))))))
-        ↥(IntermediateField.adjoin k (S : Set K)) := hrange ▸ hsep
-    exact isDomain_tensorProduct_of_algebraicIndependent_of_isSeparable hbot
-      (MonomialOrder.lex (σ := Fin (Fintype.card ↥s))) hai
+        = (Subtype.val ∘ (Fintype.equivFin ↥s).symm) from rfl,
+      Set.range_comp, ((Fintype.equivFin ↥s).symm.surjective).range_eq, Set.image_univ,
+      Subtype.range_coe]
+  haveI : Algebra.IsSeparable
+      ↥(IntermediateField.adjoin k (Set.range (fun i : Fin (Fintype.card ↥s) =>
+        (((Fintype.equivFin ↥s).symm i : ↥s) : ↥(IntermediateField.adjoin k (S : Set K))))))
+      ↥(IntermediateField.adjoin k (S : Set K)) := hrange ▸ hsep
+  exact isDomain_tensorProduct_of_algebraicIndependent_of_isSeparable hbot
+    (MonomialOrder.lex (σ := Fin (Fintype.card ↥s))) hai
 
 /-- **A field extension in which the base field is algebraically closed is
 regular** (PROVEN over
