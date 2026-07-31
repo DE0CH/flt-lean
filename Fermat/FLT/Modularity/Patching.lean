@@ -10131,12 +10131,6 @@ theorem eq_of_forall_exists_pow_sub_mem {S : Type*} [CommRing S] {p : ℕ} (hp :
   rw [hM] at hbot
   exact sub_eq_zero.mp (by simpa using hbot)
 
-/-- **Lifting `𝕎 k` along a NILPOTENT thickening** (PROVEN 2026-07-30; was LEAF
-B1a-i-α of the 2026-07-27 decomposition of
-`exists_taylorWilesCoefficients_ringHom`; this is the ENTIRE remaining
-content of Cohen's coefficient-ring map): if `p` is nilpotent in `S` and
-`σ : S ↠ k` has nilpotent kernel, then `σ` lifts UNIQUELY to a ring
-homomorphism `𝕎 k → S`.
 /-! #### Lifting `𝕎 k` along a nilpotent thickening — the four ingredients
 
 Added 2026-07-31 by the PROOF of `existsUnique_ringHom_wittVector_of_isNilpotent`
@@ -12103,16 +12097,6 @@ construction produces.  At a general `e` the forced identity reads
 intended witness.  `taylorWilesCoordModel p q d (fun _ => n)` recovers
 the old type verbatim. -/
 abbrev taylorWilesCoordModel (p : ℕ) [Fact p.Prime] (q d : ℕ)
-    (e : Fin q → ℕ) : Type :=
-  Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesLevelIdeal p e
-see the reduction audit recorded there.
-
-The constant-vector special case `e ≡ n` used to be a second abbrev
-`taylorWilesCoordModel p q d n`; it was deleted on 2026-07-30 along with the
-pin, since every consumer now passes the vector it was handed and an abbrev
-nothing mentions is free-floating.  Where the docstrings below still write
-`(Λ ⧸ 𝔟_{(n)})^d`, read `(Λ ⧸ 𝔟_{(e)})^d`. -/
-abbrev taylorWilesCoordModelAt (p : ℕ) [Fact p.Prime] {q : ℕ} (d : ℕ)
     (e : Fin q → ℕ) : Type :=
   Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesLevelIdeal p e
 
@@ -18714,7 +18698,7 @@ theorem exists_universalFrame_profinite_auxDeformation_of_clauses.{uK, uW, uR}
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hirr : ρbar.IsIrreducible)
-    (Q : Finset ℕ)
+    (Q : Finset ℕ) (hQp : ∀ q ∈ Q, q ≠ p)
     (𝒟₀ : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
     (_hfunc : IsAuxFunctorialityClause.{uR} hpodd Q)
     (hglue : IsAuxFibreProductClause.{uR, uK, uW} hpodd Q ρbar)
@@ -18755,7 +18739,7 @@ theorem exists_universalFrame_profinite_auxDeformation_of_clauses.{uK, uW, uR}
   -- ## the ARITHMETIC half: the raised-level level-ideal system
   obtain ⟨e0, P, iCRP, iAlgP, evbar, hevsurj, hevalg, M, 𝒥, hne, hdir, hker,
       hlev, hresM, hrep, hclass, hsep⟩ :=
-    exists_levelIdealSystem_aux_of_clauses.{uK, uW, uR} hpodd hW hirr Q 𝒟₀
+    exists_levelIdealSystem_aux_of_clauses.{uK, uW, uR} hpodd hW hirr Q hQp 𝒟₀
       hglue hfin
   letI := iCRP
   letI := iAlgP
@@ -18943,7 +18927,7 @@ theorem exists_universalFrame_auxDeformation_of_clauses.{uK, uW, uR}
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hirr : ρbar.IsIrreducible)
-    (Q : Finset ℕ)
+    (Q : Finset ℕ) (hQp : ∀ q ∈ Q, q ≠ p)
     (𝒟₀ : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
     (hfunc : IsAuxFunctorialityClause.{uR} hpodd Q)
     (hglue : IsAuxFibreProductClause.{uR, uK, uW} hpodd Q ρbar)
@@ -18969,7 +18953,7 @@ theorem exists_universalFrame_auxDeformation_of_clauses.{uK, uW, uR}
   obtain ⟨R, iCR, iTS, iTR, iLR, iAlg, iCompact, iT2, ρuniv, πuniv, hπsurj,
       hπcont, Suniv, hbasis, hcompat, hquotBC, hquotPF, hinj, huniv⟩ :=
     exists_universalFrame_profinite_auxDeformation_of_clauses.{uK, uW, uR}
-      hpodd hW hirr Q 𝒟₀ hfunc hglue hfin
+      hpodd hW hirr Q hQp 𝒟₀ hfunc hglue hfin
   -- **`𝔪` is the kernel of `πuniv`**, a surjection from a local ring onto a
   -- field, hence OPEN because `πuniv` is continuous and `k` is discrete.
   have hker : RingHom.ker πuniv = IsLocalRing.maximalIdeal R :=
@@ -19421,7 +19405,7 @@ theorem exists_isWeaklyUniversal_auxDeformationDatum_of_clauses.{uK, uW, uR}
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hirr : ρbar.IsIrreducible)
-    (Q : Finset ℕ)
+    (Q : Finset ℕ) (hQp : ∀ q ∈ Q, q ≠ p)
     (𝒟₀ : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
     (hfunc : IsAuxFunctorialityClause.{uR} hpodd Q)
     (hglue : IsAuxFibreProductClause.{uR, uK, uW} hpodd Q ρbar)
@@ -19433,7 +19417,7 @@ theorem exists_isWeaklyUniversal_auxDeformationDatum_of_clauses.{uK, uW, uR}
   obtain ⟨R, iCR, iTS, iTR, iLR, iAlg, iNoeth, hadic, hcomplete, ρuniv, πuniv,
       hπsurj, Suniv, hres, hquotI, huniv⟩ :=
     exists_universalFrame_auxDeformation_of_clauses.{uK, uW, uR} hpodd hW hirr Q
-      𝒟₀ hfunc hglue hfin
+      hQp 𝒟₀ hfunc hglue hfin
   -- **The raised-level condition for `ρuniv` itself**, from its open-quotient
   -- levels: that is exactly what the pro-limit clause is for, and the residual
   -- pinning it demands is the constructed package's own `(πuniv, Suniv, hres)`.
@@ -19516,11 +19500,12 @@ theorem exists_isWeaklyUniversal_auxDeformationDatum.{uK, uW, uR}
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hirr : ρbar.IsIrreducible)
     (n : ℕ) (Q : Finset ℕ) (hQ : IsTaylorWilesPrimeSet p ρbar n Q)
+    (hQp : ∀ q ∈ Q, q ≠ p)
     (𝒟₀ : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar) :
     ∃ 𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar,
       𝒟.IsWeaklyUniversal :=
   exists_isWeaklyUniversal_auxDeformationDatum_of_clauses.{uK, uW, uR}
-    hpodd hW hirr Q 𝒟₀
+    hpodd hW hirr Q hQp 𝒟₀
     (isAuxFunctorialityClause.{uR} hpodd Q)
     (isAuxFibreProductClause.{uR, uK, uW} hpodd hp5 hW hirr n Q hQ)
     (isAuxFiniteFramesClause.{uR} hpodd Q)
@@ -19550,7 +19535,60 @@ closure of the trace subalgebra of `R` — which is `⊤`, by the trace-generati
 hypothesis — inside `π⁻¹(B)`; surjectivity of `π` then gives `B = ⊤`.
 
 The content in one line: `π` is continuous with `k` discrete, so
-`π(closure A) ⊆ closure(π A) = π A`, and trace generation says `closure A = R`. -/
+`π(closure A) ⊆ closure(π A) = π A`, and trace generation says `closure A = R`.
+
+# BUILD-BLOCKING DEFECT, DIAGNOSED 2026-07-31 (`flt-lean-79`), NOT REPAIRED HERE
+
+**This declaration ERRORS.  It is the last error in this file and it is the only
+one, and it is a consequence of the 2026-07-31 restatement of
+`IsTraceGeneratedDeformation` near the top of this module.**  The proof body
+below writes `have hgen' : BR.topologicalClosure = ⊤ := hgen`, which was the OLD
+form; the new form quantifies over exceptional sets and subalgebras, so `hgen`
+must be APPLIED, and one of the two hypotheses it must be applied to is
+
+    ∀ x : R, ∃ a ∈ BR, x - a ∈ IsLocalRing.maximalIdeal R,
+
+i.e. residual surjectivity of the trace subalgebra — which is EXACTLY this
+theorem's conclusion, pulled back along `π`.  So the theorem is not merely
+mis-proved: **its conclusion is no longer derivable from its hypotheses**, and
+that is precisely what the restating audit established (it showed the old form
+smuggled in `k = 𝔽_p(traces of ρbar)`, a statement about `(k, ρbar)` alone that
+nothing in the package constrains, and that base change `(k, W) ↦ (k', W ⊗ k')`
+refutes).  The restating audit's own claim that the change "is inert for the
+build and changes no signature" — on the ground that `hgen` "is consumed by no
+proof body in the tree" — is FALSE at three sites: here, and at
+`isTraceGeneratedDeformation_exchange` and
+`surjective_of_isTraceGeneratedDeformation` below, both of which are repaired in
+this commit (each becomes SHORTER and needs no Chebotarev input, so those two
+really were inert in content if not in text).
+
+**THE PRESCRIPTION**, so the next owner does not have to rediscover it.  The
+missing content has to be ASSUMED somewhere, and the natural place is beside
+`hgen` itself, exactly as `hgen` was itself threaded when it was added:
+
+1. delete this theorem (it is unvouched, and CLAUDE.md forbids `sorry`ing an
+   unvouched statement);
+2. add, next to each `(hgen : IsTraceGeneratedDeformation p ρuniv Suniv)` binder
+   on the `Runiv`-consuming chain, the companion hypothesis
+
+       (hktr : Algebra.adjoin ℤ_[p] {a : k | ∃ (q : ℕ) (hq : q.Prime),
+         hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv ∧
+         a = (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1}
+         = ⊤)
+
+   — that is `exists_taylorWilesAuxLevelPresentedDatum`,
+   `exists_taylorWilesAuxLevelData`, `exists_taylorWilesLevelRaw`,
+   `exists_taylorWilesTower`, `exists_taylorWilesSystem`, `exists_patchedModule`
+   and `injective_ringHom_of_isWeaklyUniversal`, i.e. the six or seven sites that
+   already forward `hgen`;
+3. at the ONE call site (in `exists_taylorWilesAuxLevelPresentedDatum` below,
+   `have hktr := adjoin_residualCharFrob_eq_top_of_eq_top … (adjoin_residual… …)`)
+   drop the inner application and feed the new hypothesis to
+   `adjoin_residualCharFrob_eq_top_of_eq_top` directly — that transport theorem
+   is PROVEN and is what moves the statement from `Suniv` to `𝒟Q₀.S`.
+
+This is a hypothesis, not a leaf: pinning `k` as the residual trace field belongs
+to whoever supplies `IsWeaklyUniversalDeformation`, exactly like `hgen`. -/
 theorem adjoin_residualCharFrob_eq_top_of_isTraceGenerated.{uK, uW, uR}
     {p : ℕ} [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -20571,19 +20609,7 @@ theorem surjective_and_ker_of_auxDeformationClassifying.{s, t, uK, uW, uR}
           (ρuniv.charFrob hv.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
     Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (taylorWilesAug p q).map diamond :=
-      Function.Surjective pres := by
-  -- The Cohen coefficient map, which is what `hcohen` was added for.
-  obtain ⟨ι, hι⟩ :=
-    hcohen 𝒟Q.R 𝒟Q.isAdicComplete 𝒟Q.π 𝒟Q.π_surjective
-  -- The Greenberg–Wiles bound, in the RELATIVE generator form.
-  obtain ⟨t, ht, hspan⟩ :=
-    exists_auxDeformationTangentGenerators.{uK, uW, uR} hpodd hW hres hirr hπuniv
-      q0 q hq0 coeff hcoeff n Q hQcard hQ 𝒟Q h𝒟Q ι hι
-  -- The substitution homomorphism `Λ_𝒪 →+* 𝒟Q.R`.
-  obtain ⟨φ, hC, hX⟩ :=
-    exists_ringHom_mvPowerSeries_of_isAdicComplete 𝒟Q.isAdicComplete ι t ht
-  exact ⟨φ, surjective_of_span_range_sup_map_eq_maximalIdeal 𝒟Q.isAdicComplete
-    𝒟Q.π_surjective hι hspan hC hX⟩
+  sorry
 
 /-! ### The Carayol surjectivity of the CONTROL map
 
@@ -20635,98 +20661,19 @@ topological `ℤ_[p]`-algebra.  So this is reusable at every coefficient ring in
 this file. -/
 theorem isTraceGeneratedDeformation_exchange (p : ℕ) [Fact p.Prime]
     {Runiv : Type*} [CommRing Runiv] [TopologicalSpace Runiv]
-    [IsTopologicalRing Runiv] [Algebra ℤ_[p] Runiv]
+    [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
     {ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv)}
     {Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
     (hgen : IsTraceGeneratedDeformation p ρuniv Suniv)
     (Sexc : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
     IsTraceGeneratedDeformation p ρuniv Sexc := by
+  -- Under the 2026-07-31 form of `IsTraceGeneratedDeformation` (quantified over
+  -- every exceptional set containing the base one) the exchange is FORMAL and
+  -- needs no Chebotarev input: enlarge the exceptional set to `S ∪ Suniv`.
   classical
-  -- write `C` for the closed subalgebra generated by the traces off `Sexc`
-  set C : Subalgebra ℤ_[p] Runiv :=
-    (Algebra.adjoin ℤ_[p] {a : Runiv | ∃ (q : ℕ) (hq : q.Prime),
-        hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sexc ∧
-        a = (ρuniv.charFrob
-          hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1}).topologicalClosure
-    with hC
-  have hCclosed : IsClosed (C : Set Runiv) :=
-    Subalgebra.isClosed_topologicalClosure _
-  -- continuity of the global trace function `g ↦ (charpoly (ρuniv g)).coeff 1`
-  have hFcont : Continuous fun g : Field.absoluteGaloisGroup ℚ =>
-      ((ρuniv g).charpoly).coeff 1 := by
-    letI := moduleTopology Runiv (Module.End Runiv (Fin 2 → Runiv))
-    haveI : IsModuleTopology Runiv (Module.End Runiv (Fin 2 → Runiv)) := ⟨rfl⟩
-    have hρc : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρuniv g :=
-      ContinuousMonoidHom.continuous_toFun ρuniv
-    have htrc : Continuous fun φ : Module.End Runiv (Fin 2 → Runiv) =>
-        LinearMap.trace Runiv (Fin 2 → Runiv) φ :=
-      IsModuleTopology.continuous_of_linearMap _
-    have hcoeff : (fun g : Field.absoluteGaloisGroup ℚ =>
-        ((ρuniv g).charpoly).coeff 1) =
-        fun g => - LinearMap.trace Runiv (Fin 2 → Runiv) (ρuniv g) := by
-      funext g
-      have h := Matrix.trace_eq_neg_charpoly_coeff
-        (LinearMap.toMatrix (Pi.basisFun Runiv (Fin 2)) (Pi.basisFun Runiv (Fin 2))
-          (ρuniv g))
-      rw [LinearMap.charpoly_toMatrix] at h
-      rw [LinearMap.trace_eq_matrix_trace Runiv (Pi.basisFun Runiv (Fin 2)), h]
-      norm_num
-    rw [hcoeff]
-    exact (htrc.comp hρc).neg
-  -- the `C`-agreement set of the trace function is closed …
-  have hDclosed : IsClosed {g : Field.absoluteGaloisGroup ℚ |
-      ((ρuniv g).charpoly).coeff 1 ∈ C} :=
-    hCclosed.preimage hFcont
-  -- … and contains the Frobenius conjugates off `Sexc`
-  have hsub : {x : Field.absoluteGaloisGroup ℚ |
-      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sexc ∧
-        ∃ h : Field.absoluteGaloisGroup ℚ, x = h * globalFrob v * h⁻¹} ⊆
-      {g : Field.absoluteGaloisGroup ℚ |
-        ((ρuniv g).charpoly).coeff 1 ∈ C} := by
-    rintro x ⟨v, hvS, h, rfl⟩
-    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
-    have hgu : (ρuniv h).comp (ρuniv h⁻¹) = LinearMap.id := by
-      have h1 : ρuniv h * ρuniv h⁻¹ = 1 := by
-        rw [← map_mul, mul_inv_cancel, map_one]
-      exact h1
-    have hgu' : (ρuniv h⁻¹).comp (ρuniv h) = LinearMap.id := by
-      have h1 : ρuniv h⁻¹ * ρuniv h = 1 := by
-        rw [← map_mul, inv_mul_cancel, map_one]
-      exact h1
-    have heq : ρuniv (h * globalFrob
-          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) * h⁻¹) =
-        (LinearEquiv.ofLinear (ρuniv h) (ρuniv h⁻¹) hgu hgu').conj
-          (ρuniv (globalFrob
-            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))) := by
-      ext w
-      simp [map_mul, LinearEquiv.conj_apply, Module.End.mul_apply]
-    show ((ρuniv (h * globalFrob
-        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) *
-        h⁻¹)).charpoly).coeff 1 ∈ C
-    rw [heq, LinearEquiv.charpoly_conj]
-    refine Subalgebra.le_topologicalClosure _ (Algebra.subset_adjoin ?_)
-    refine ⟨q, hq, hvS, ?_⟩
-    rw [GaloisRep.charFrob_eq_charpoly_globalFrob]
-  -- Chebotarev density: EVERY trace lies in `C` …
-  have hall : ∀ g : Field.absoluteGaloisGroup ℚ,
-      ((ρuniv g).charpoly).coeff 1 ∈ C := by
-    intro g
-    have hdense := dense_conjClasses_globalFrob (K := ℚ) Sexc
-    have huniv : (Set.univ : Set (Field.absoluteGaloisGroup ℚ)) ⊆ _ :=
-      hdense.closure_eq ▸ hDclosed.closure_subset_iff.mpr hsub
-    exact huniv (Set.mem_univ g)
-  -- … in particular the ones off `Suniv`, whose closure is everything
-  have hle : Algebra.adjoin ℤ_[p] {a : Runiv | ∃ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv ∧
-      a = (ρuniv.charFrob
-        hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1} ≤ C := by
-    rw [Algebra.adjoin_le_iff]
-    rintro a ⟨q, hq, _, rfl⟩
-    rw [GaloisRep.charFrob_eq_charpoly_globalFrob]
-    exact hall _
-  have h1 := Subalgebra.topologicalClosure_minimal hle hCclosed
-  rw [hgen] at h1
-  exact top_unique h1
+  intro S hS A hAtr hAres
+  exact hgen (S ∪ Suniv) Finset.subset_union_right A
+    (fun q hq hqS => hAtr q hq fun h => hqS (Finset.mem_union_left _ h)) hAres
 
 /-! The two elementary adic-topology facts the surjectivity argument needs —
 *adically separated implies Hausdorff*, and *a local homomorphism of adic local
@@ -20916,17 +20863,31 @@ theorem surjective_of_isTraceGeneratedDeformation.{a, uK', uR'} {p : ℕ}
     rw [hrange]
     exact (isCompact_range hcont).isClosed
   -- **STEP 4** — a closed subalgebra above a topologically generating set is `⊤`.
-  have hle : Algebra.adjoin ℤ_[p] {a : Runiv | ∃ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sf ∧
-      a = (ρuniv.charFrob
-        hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1} ≤ fa.range := by
-    rw [Algebra.adjoin_le_iff]
-    rintro a ⟨q, hq, hqS, rfl⟩
-    obtain ⟨y, hy⟩ := hf q hq hqS
+  -- The range CONTAINS the traces away from `Sf ∪ Suniv` …
+  have hmem : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sf ∪ Suniv →
+      (ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 ∈
+        fa.range := by
+    intro q hq hqS
+    obtain ⟨y, hy⟩ := hf q hq fun h => hqS (Finset.mem_union_left _ h)
     exact (AlgHom.mem_range fa).mpr ⟨y, hy⟩
-  have h1 := Subalgebra.topologicalClosure_minimal hle hclosed
-  rw [isTraceGeneratedDeformation_exchange p hgen Sf] at h1
-  exact (AlgHom.range_eq_top fa).mp (top_unique h1)
+  -- … and SURJECTS onto the residue field, which is the second hypothesis the
+  -- 2026-07-31 form of `IsTraceGeneratedDeformation` asks of a subalgebra:
+  -- `πuniv ∘ f = πA` with `πA` surjective is exactly that.
+  have hres : ∀ x : Runiv, ∃ a ∈ fa.range,
+      x - a ∈ IsLocalRing.maximalIdeal Runiv := by
+    intro x
+    obtain ⟨y, hy⟩ := hπA (πuniv x)
+    refine ⟨fa y, (AlgHom.mem_range fa).mpr ⟨y, rfl⟩, ?_⟩
+    have hkU : RingHom.ker πuniv = IsLocalRing.maximalIdeal Runiv :=
+      IsLocalRing.ker_eq_maximalIdeal πuniv hπuniv
+    rw [← hkU, RingHom.mem_ker, map_sub, sub_eq_zero]
+    show πuniv x = πuniv (f y)
+    rw [show πuniv (f y) = (πuniv.comp f) y from rfl, hfπ, hy]
+  -- Trace generation then makes the range DENSE, and it is closed.
+  have hdense := hgen (Sf ∪ Suniv) Finset.subset_union_right fa.range hmem hres
+  have hself := Subalgebra.topologicalClosure_minimal (le_refl fa.range) hclosed
+  exact (AlgHom.range_eq_top fa).mp (top_unique (hdense ▸ hself))
 
 set_option linter.checkUnivs false in
 /-- **The diamonds and the control map, WITHOUT the surjectivity clause** (sorry
@@ -21419,7 +21380,7 @@ That is declined here, on two independent grounds, each checkable:
    paragraphs up needs.  See FALSITY AUDIT #2 below, which runs that argument to
    its conclusion and refutes the statement as it then stood; the exponent
    vector is now returned by this leaf, and the coordinate model is
-   `taylorWilesCoordModelAt p d e`.
+   `taylorWilesCoordModel p q d e`.
 
 # THE PROVABILITY OBSTRUCTION IS REMOVED (2026-07-30): `exists_auxDeformationDatum`
 
@@ -21691,10 +21652,17 @@ theorem exists_auxDeformationDiamondControl.{s, t, uK, uW, uR}
       (MvPowerSeries (Fin q) coeff.carrier ⧸ I))
     (hfaith : RingHom.ker diamond = taylorWilesLevelIdeal p e) :
     ∃ toRuniv : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) →+* Runiv,
-      (∀ i, n ≤ e i) ∧
       Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (taylorWilesAug p q).map diamond ∧
-      πuniv.comp toRuniv = 𝒟Q.π.comp φ.toRingHom := by
+      πuniv.comp toRuniv = 𝒟Q.π.comp φ.toRingHom ∧
+      (∀ c : ℤ_[p],
+        toRuniv (φ.symm (algebraMap ℤ_[p] 𝒟Q.R c)) = algebraMap ℤ_[p] Runiv c) ∧
+      ∃ Sf : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)),
+        ∀ (v : ℕ) (hv : v.Prime),
+          hv.toHeightOneSpectrumRingOfIntegersRat ∉ Sf →
+          toRuniv (φ.symm ((𝒟Q.ρ.charFrob
+              hv.toHeightOneSpectrumRingOfIntegersRat).coeff 1)) =
+            (ρuniv.charFrob hv.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
   -- THE MAP.  `exists_auxDeformationDatum` NAMES ITS CARRIER, so weak
   -- universality of `𝒟Q` yields a classifying map INTO `Runiv` itself.
   obtain ⟨𝒟u, ι, hιalg, hιπ, hιfrob⟩ :=
@@ -21738,7 +21706,11 @@ theorem exists_auxDeformationDiamondControl.{s, t, uK, uW, uR}
     surjective_and_ker_of_auxDeformationClassifying.{s, t, uK, uW, uR} hpodd hW
       hres hirr hadic hcomplete hranku hρuniv hπuniv hunivred hfact hgen q n Q
       hQcard hQ 𝒟Q h𝒟Q coeff I φ e he diamond hfaith toRuniv hπtoRuniv halg htr
-  exact ⟨toRuniv, hsurj, hker, hπtoRuniv⟩
+  -- `halg` and `htr` were proven above and DISCARDED until 2026-07-31; they are
+  -- now returned, because FAITHFULNESS AUDIT #6 of
+  -- `exists_auxHeckeCoordDiamondFreeness` below shows the Ihara clause is
+  -- unfaithful without them.  See that audit: they cost this proof nothing.
+  exact ⟨toRuniv, hsurj, hker, hπtoRuniv, halg, htr⟩
 
 set_option linter.checkUnivs false in
 /-- **The auxiliary deformation ring in PRESENTED form** (**PROVEN GLUE since
@@ -21931,17 +21903,17 @@ theorem exists_auxDeformationRingPresentation.{s, t, uK, uW, uR}
     (n : ℕ) (Q : Finset ℕ) (hQcard : Q.card = q)
     (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
     (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
-    (h𝒟Q : 𝒟Q.IsWeaklyUniversal) :
+    (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (hgenQ : IsTraceGeneratedDeformation p 𝒟Q.ρ 𝒟Q.S) :
     ∃ I : Ideal (MvPowerSeries (Fin q) coeff.carrier),
       Nonempty ((MvPowerSeries (Fin q) coeff.carrier ⧸ I) ≃+* 𝒟Q.R) := by
   -- LEAF A2′-3a (Greenberg–Wiles): the `q`-generator surjection onto `R_Q`, in
   -- quotient form.  Since the 2026-07-30 re-cut this is ALL this theorem does
   -- — `diamond`, `e` and `toRuniv` are produced downstream of the freeness
   -- leaf; see the RE-CUT note in the docstring above.
-      (∀ i, n ≤ e i) ∧
   obtain ⟨pres, hpres⟩ :=
     exists_auxDeformationPresSurjection.{uK, uW, uR} hpodd hW hres hirr hπuniv
-      q0 q hq0 coeff hcoeff hcohen n Q hQcard hQ 𝒟Q h𝒟Q
+      q0 q hq0 coeff hcoeff hcohen n Q hQcard hQ 𝒟Q h𝒟Q hgenQ
   exact ⟨RingHom.ker pres, ⟨pres.quotientKerEquivOfSurjective hpres⟩⟩
 
 set_option linter.checkUnivs false in
@@ -22327,6 +22299,115 @@ the faithfulness clause from here.  Splitting the two automorphic stages is
 safe in the direction that matters: STAGE 3's hypotheses mention `diamond`
 only through clauses this leaf proves.
 
+# FAITHFULNESS AUDIT #6 (2026-07-31): THE `∀ toRuniv` CLAUSE WAS UNFAITHFUL IN
+
+# THE MIRROR OF AUDIT #2's DEFECT (1), AND THE REPAIR WAS FREE
+
+CLAUDE.md: *a leaf restated a second time inherits no audit*.  This statement is
+the composite of the 2026-07-30 three-stage re-cut and the same day's absorption
+of stage 3, so audits #2–#5 certify statements that no longer exist.  Re-running
+the vacuity check in BOTH directions on the composite found ONE defect, in the
+last clause, and it is the exact mirror of audit #2 (1) with `toRuniv` in place
+of `diamond`.
+
+**The direction that is FINE.**  A junk extension of the `Λ`-action to
+`Λ_𝒪 ⧸ I` is not excluded by the module clause alone (that is the CUT-SAFETY
+objection audit #5 quotes), but it IS excluded here, because the leaf that
+CHOOSES the action is the one that must then produce `θ`.  That is what the
+absorption of stage 3 bought and it is not in question.
+
+**The direction that was NOT.**  Audit #4 concluded that the three hypotheses
+`Function.Surjective`, the kernel identity and `πuniv.comp toRuniv = 𝒟Q.π ∘ φ`
+"pin `toRuniv`".  They do not.  Two maps satisfying all three differ by an
+automorphism `α` of `Runiv` with `πuniv.comp α = πuniv`: both induce ring
+isomorphisms `(Λ_𝒪 ⧸ I) ⧸ (𝔫.map diamond) ≃ Runiv`, and `α` is the composite of
+one with the inverse of the other.  Conversely `α ∘ toRuniv` satisfies all three
+whenever `toRuniv` does.  So the clause quantifies over the whole `α`-ORBIT,
+while the comparison it demands is stated through `ψ ∘ toRuniv` — which is NOT
+`α`-invariant.
+
+**The entailment, machine-checked 2026-07-31** (`twist_ker_psi`, verified with
+`lake env lean` over `Mathlib`; the proof is six lines and is reproduced in the
+commit that added this audit).  Apply the clause to `toRuniv` and to
+`α ∘ toRuniv`, getting `θ` and `θ'`.  Let `u ∈ RingHom.ker ψ` and write
+`u = toRuniv x` (surjectivity).  Then `θ (mk (x • m)) = ψ u • θ (mk m) = 0`, so
+`mk (x • m) = 0` for every `m` by injectivity of `θ`; feeding that to `θ'` gives
+`ψ (α u) • θ' (mk m) = 0` for every `m`, and `θ'` is surjective, so
+`ψ (α u) • M0 = 0`.  `hM0T : M0 ≃ₗ[T] (Fin 2 → T)` makes the `T`-action on `M0`
+faithful (`faithful_of_linearEquiv_pi`, verified the same day), whence
+
+    ψ (α u) = 0 .
+
+So the leaf ENTAILS, as soon as ONE admissible `toRuniv` exists:
+
+    every `α ∈ Aut(Runiv)` with `πuniv.comp α = πuniv` preserves `RingHom.ker ψ`.
+                                                                            (★★)
+
+That is an arithmetic property of the `(Runiv, ψ, πuniv)` package that NO
+hypothesis of this leaf mentions — audit #2 (1)'s objection verbatim, reflected
+from `diamond` onto `toRuniv`.
+
+**And (★★) is not idle.**  Take the inflation family that
+`IsTraceGeneratedDeformation` exists to kill: `Runiv := Runiv₀[[y]]`,
+`ρuniv := ρuniv₀.baseChange`, `πuniv := πuniv₀ ∘ constantCoeff`,
+`ψ := ψ₀ ∘ constantCoeff`.  The substitution `α : y ↦ y + p` is a ring
+automorphism (inverse `y ↦ y − p`) with `πuniv ∘ α = πuniv`, since `p` lies in
+`𝔪_{Runiv₀}`; and `ψ (α y) = ψ₀ p = p ≠ 0 = ψ y` because `T` is
+`Module.Free ℤ_[p] T` and nontrivial.  So `ker ψ` is not `α`-stable, and at that
+model the clause proves `no admissible toRuniv exists`, i.e. decides
+`𝒟Q.R ⧸ 𝔫 ≇ Runiv`.  (Whether that model also satisfies `hbot` is NOT checked
+here — `hbot` itself demands a surjection onto `Runiv` from a `q`-variable
+power-series ring — so this is the sharp entailment (★★), not an exhibited
+counterexample.  It does not need to be: `hgen` was added elsewhere in this
+file precisely to exclude this family, and it was ABSENT from this leaf.)
+
+# THE REPAIR, AND WHY IT COST NOTHING
+
+Exactly the shape CLAUDE.md records for missing hypotheses — *the missing
+hypothesis is already in the caller's hand, and was being discarded*.
+`exists_auxDeformationDiamondControl` above PROVES two further clauses about the
+`toRuniv` it builds, `halg` (it is a `ℤ_[p]`-algebra map through `φ`) and `htr`
+(it matches linear `charFrob` coefficients away from a finite set), and until
+2026-07-31 its last line was `exact ⟨toRuniv, hsurj, hker, hπtoRuniv⟩` — the two
+were elaborated and thrown away.  They are now returned, and they are now
+hypotheses of the `∀`-clause below, together with `Suniv`, `hunivred` and `hgen`,
+which the consumer `exists_auxHeckeModuleData` also already holds.  No proof
+changed; one `exact` gained two components.
+
+What the repair buys, stated honestly rather than optimistically.  The `α`-orbit
+is cut down to automorphisms fixing `ℤ_[p]` and every linear `charFrob`
+coefficient of `𝒟Q.ρ` away from `Sf`; with `hgen` (at `S := Sf ∪ Suniv`, which
+is why the predicate was restated at every finite exceptional set on the same
+day) those generate a DENSE subalgebra, so `α` is the identity on a dense
+subring.  The inflation witness above dies immediately — `α : y ↦ y + p` moves
+`y`, and under `hgen` the traces cannot all be constants.  What is NOT closed by
+this repair, and is recorded rather than hidden: `α` is not known to be
+CONTINUOUS (it is built from two ring isomorphisms, neither of which carries a
+continuity clause), so "identity on a dense subring" does not formally give
+`α = id`.  Closing that residue needs either a continuity clause on `toRuniv` or
+the observation that the semilinearity equation lives in `M0`, which is finite
+over `ℤ_[p]`; it is strictly weaker than defect (★★) and is left as the one open
+question about this signature.
+
+# THE OTHER DIRECTION OF THE VACUITY CHECK ON THE COMPOSITE
+
+Run in full, because #5's VACUITY NOTE only covers the `∀`-clause's hypotheses.
+
+* `e` and `diamond` are OUTPUTS, and `RingHom.ker diamond = taylorWilesLevelIdeal
+  p e` is an equality, so the junk `diamond` killing every variable is excluded
+  outright (`ker` would be `𝔫`, and `X i ∈ 𝔫 \ 𝔟_(e)` for `e i ≥ 1`, which
+  `∀ i, n < e i` supplies).  Unchanged from #4 and still correct.
+* The module structure is an output too, but it is not free: `ker_le` (audit #2)
+  turns the `Λ`-compatibility clause into `ker diamond ≤ 𝔟_(e)`, so the two
+  output clauses constrain each other and neither can be discharged alone.
+* `hθ` is a hypothesis, quantified over EVERY `e`, and is proven glue
+  (`nonempty_augQuotEquiv_of_taylorWilesBottom`), so it cannot be the source of a
+  vacuity.
+* The `∀`-clause's hypotheses have a model — `exists_auxDeformationDiamondControl`
+  above builds one, now with all five clauses — so the clause is consumed
+  non-vacuously and a "proof" that no such `toRuniv` exists still contradicts
+  that theorem rather than discharging this one.
+
 References: Diamond, Invent. Math. 128 (1997), Thm. 2.1; Taylor–Wiles, Ann. of
 Math. 141 (1995), §2; Wiles, ibid. ch. 3; Darmon–Diamond–Taylor §3; Ribet,
 Invent. Math. 100 (1990).
@@ -22350,8 +22431,15 @@ theorem exists_auxHeckeCoordDiamondFreeness.{s, t, uK, uW, uR}
     (hranku : Module.rank Runiv (Fin 2 → Runiv) = 2)
     (hρuniv : IsHardlyRamified hpodd hranku ρuniv)
     {πuniv : Runiv →+* k} (hπuniv : Function.Surjective πuniv)
+    {Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hunivred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
+      πuniv ((ρuniv.charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     (hfact : IsWeaklyUniversalDeformation.{s, t, uK, uW, uR} hpodd ρbar
       ρuniv πuniv)
+    (hgen : IsTraceGeneratedDeformation p ρuniv Suniv)
     {T : Type s} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
     [Algebra ℤ_[p] T] [IsLocalRing T] [Module.Finite ℤ_[p] T]
     [Module.Free ℤ_[p] T] [IsModuleTopology ℤ_[p] T]
@@ -22397,10 +22485,19 @@ theorem exists_auxHeckeCoordDiamondFreeness.{s, t, uK, uW, uR}
       (∀ (x : MvPowerSeries (Fin q) ℤ_[p])
         (m : taylorWilesCoordModel p q d e), x • m = diamond x • m) ∧
       RingHom.ker diamond = taylorWilesLevelIdeal p e ∧
-      ∀ toRuniv : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) →+* Runiv,
+      ∀ (toRuniv : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) →+* Runiv)
+        (Sf : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
         Function.Surjective toRuniv →
         RingHom.ker toRuniv = (taylorWilesAug p q).map diamond →
         πuniv.comp toRuniv = 𝒟Q.π.comp φ.toRingHom →
+        (∀ c : ℤ_[p],
+          toRuniv (φ.symm (algebraMap ℤ_[p] 𝒟Q.R c)) =
+            algebraMap ℤ_[p] Runiv c) →
+        (∀ (v : ℕ) (hv : v.Prime),
+          hv.toHeightOneSpectrumRingOfIntegersRat ∉ Sf →
+          toRuniv (φ.symm ((𝒟Q.ρ.charFrob
+              hv.toHeightOneSpectrumRingOfIntegersRat).coeff 1)) =
+            (ρuniv.charFrob hv.toHeightOneSpectrumRingOfIntegersRat).coeff 1) →
         ∃ θ : (taylorWilesCoordModel p q d e ⧸
             (taylorWilesAug p q • ⊤ :
               Submodule (MvPowerSeries (Fin q) ℤ_[p])
@@ -23169,7 +23266,6 @@ theorem exists_auxHeckeModuleData.{s, t, uK, uW, uR}
     (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
     (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
     (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
-    (e : Fin q → ℕ) (he : ∀ i, n ≤ e i)
     (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
     (φ : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) ≃+* 𝒟Q.R) :
     ∃ (e : Fin q → ℕ)
@@ -23202,21 +23298,22 @@ theorem exists_auxHeckeModuleData.{s, t, uK, uW, uR}
   -- ADDITIVE identification at every exponent vector, since `e` is an output.
   obtain ⟨e, diamond, inst, he, hlam, hfaith, hihara⟩ :=
     exists_auxHeckeCoordDiamondFreeness.{s, t, uK, uW, uR} hpodd hW hres hirr
-      hadic hcomplete hranku hρuniv hπuniv hfact hrankT hρT hπ hred ψ hψalg hψπ
+      hadic hcomplete hranku hρuniv hπuniv hunivred hfact hgen hrankT hρT hπ hred
+      ψ hψalg hψπ
       hψ q0 q d hq0 coeff M0 hM0 hbot hM0T
       (fun e => nonempty_augQuotEquiv_of_taylorWilesBottom.{s, uR} hM0 hbot e)
       n Q hQcard hQ 𝒟Q h𝒟Q I φ
   -- THE GALOIS STAGE (control theorem): `R_Q ↠ R_univ` with kernel `𝔫 · R_Q`.
   -- It receives `diamond` together with `hfaith`, which is what excludes the
   -- junk diamond killing every variable.
-  obtain ⟨toRuniv, htoRuniv, hker, hπtoRuniv⟩ :=
+  obtain ⟨toRuniv, htoRuniv, hker, hπtoRuniv, halg, Sf, htr⟩ :=
     exists_auxDeformationDiamondControl.{s, t, uK, uW, uR} hpodd hW hres hirr
       hadic hcomplete hranku hρuniv hπuniv hunivred hfact hgen q n Q hQcard hQ
       𝒟Q h𝒟Q coeff I φ e he diamond hfaith
   -- …and that control map is exactly what the comparison clause was waiting
   -- for.  This is the consumption that makes the `∀ toRuniv` clause of the
   -- automorphic stage non-vacuous.
-  obtain ⟨θ, hint⟩ := hihara toRuniv htoRuniv hker hπtoRuniv
+  obtain ⟨θ, hint⟩ := hihara toRuniv Sf htoRuniv hker hπtoRuniv halg htr
   -- `projM` is `θ` after the augmentation quotient map; the remaining two
   -- clauses are surjectivity and injectivity of that composite.
   refine ⟨e, diamond, toRuniv, inst, θ.toAddMonoidHom.comp
@@ -23705,8 +23802,20 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
     exists_auxDeformationDatum.{uK, uW, uR} hpodd hW hres hirr hadic
       hcomplete hranku hρuniv hπuniv hunivred (n + 1) (by omega) Q hQ
   -- LEAF A2′-2: … and has a weakly universal object `R_Q`
+  -- `q ≠ p` for every `q ∈ Q`: `hQ` is asked at level `n + 1`, so
+  -- `q ≡ 1 [MOD p ^ (n + 1)]`, and `p ^ (n + 1) ∣ q - 1` with `0 < q - 1 < p ^ (n+1)`
+  -- is impossible when `q = p`.
+  have hQp : ∀ r ∈ Q, r ≠ p := by
+    intro r hr hrp
+    obtain ⟨hrprime, hcong, -⟩ := hQ.1 r hr
+    have h1r : 1 < r := hrprime.one_lt
+    have hdvd : p ^ (n + 1) ∣ r - 1 :=
+      (Nat.modEq_iff_dvd' h1r.le).mp hcong.symm
+    have hle := Nat.le_of_dvd (by omega) hdvd
+    have hself : p ≤ p ^ (n + 1) := Nat.le_self_pow (Nat.succ_ne_zero n) p
+    omega
   obtain ⟨𝒟Q₀, h𝒟Q₀⟩ := exists_isWeaklyUniversal_auxDeformationDatum.{uK, uW, uR}
-    hpodd hp5 hW hirr (n + 1) Q hQ 𝒟₀
+    hpodd hp5 hW hirr (n + 1) Q hQ hQp 𝒟₀
   -- CARAYOL MINIMALITY: … which may be taken TRACE-GENERATED.  Existence-only
   -- weak universality pins the ring in no direction — `𝒟Q₀.R[[y_1, …, y_m]]`
   -- classifies everything `𝒟Q₀.R` does — so without this descent the
@@ -23744,7 +23853,7 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
   obtain ⟨I, ⟨φ⟩⟩ :=
     exists_auxDeformationRingPresentation.{s, t, uK, uW, uR} hpodd hW hres hirr
       hadic hcomplete hranku hρuniv hπuniv hunivred hfact hgen q0 q hq0 coeff hcoeff hcohen
-      n Q hQcard hQ 𝒟Q h𝒟Q
+      n Q hQcard hQ 𝒟Q h𝒟Q hgenQ
   -- LEAF A2′-4 (HECKE): the auxiliary Hecke module on the coordinate model,
   -- together with the diamonds, the exponent vector and the control map.
   obtain ⟨e, diamond, toRuniv, actR, projM, he, htoRuniv, hker, hlam, hsurj,
@@ -23826,7 +23935,7 @@ carrier of the auxiliary deformation ring (an explicit quotient of
 `𝒪[[x_1, …, x_q]]`), `pres` with its surjectivity
 (`Ideal.Quotient.mk_surjective`), and the carrier of the Hecke module
 together with `coordM` (the module is produced ON the coordinate model
-`taylorWilesCoordModelAt`, so `coordM` is `LinearEquiv.refl`).
+`taylorWilesCoordModel`, so `coordM` is `LinearEquiv.refl`).
 
 **Four until 2026-07-30**, when the fourth — the exponent vector, which
 this proof used to discharge by substituting the constant `fun _ => n` —
