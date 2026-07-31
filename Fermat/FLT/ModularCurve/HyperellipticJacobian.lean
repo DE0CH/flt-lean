@@ -155,8 +155,11 @@ these TWENTY-TWO:
     geomPic_bc_injective, geomPic_descent, geomPic_divisible_place,
     finite_kummerCochains_pic, and `two_divisible_pic` at BOTH levels
 
-— TEN declarations, as of 2026-07-30 (a comment-stripped `sorry`-token count agrees, so there
-are no anonymous inner sorries).  The whole of obligations 1b and 1c, and obligation 2a's
+— TEN declarations, re-read off a green `lake build` of this module on 2026-07-31 (a
+comment-stripped `sorry`-token count agrees, so there are no anonymous inner sorries).  It
+said `exists_cubeModel_pic` until 2026-07-31, when that became PROVEN by a finite/infinite
+case split and the residual `exists_cubeModel_pic_of_infinite` took its place: the count is
+unchanged, and the change is a rename of one entry, not progress in the count.  The whole of obligations 1b and 1c, and obligation 2a's
 residue-field half, closed that day: `finite_isPlaceFun`, `exists_isPlaceFun_of_affPt`,
 `exists_isPlaceFun_of_infPt` and both `exists_localDenom_*` (hence
 `finrank_residue_pt_eq_one`).  `degOf_divisor_eq_zero`,
@@ -6675,11 +6678,21 @@ alone already give "no prime-to-`p` torsion" by the same Bézout step used in
 arithmetic input than the finiteness this file proves.  That is the same reason
 `card_coprime` is deliberately absent from `JacobianPackage`; do not "simplify" this way.
 
-**`log_mem_one` is redundant** (noted, not removed): reindexing `filt` by
-`padicLevel p (n − 1)` gives `filt 1 = ker red` from `padicLevel p 0 = ⊤`, and the four
-remaining axioms shift with it.  It is kept because the true logarithm satisfies it for
-free — `log (Ĵ(pℤ_p)) = (pℤ_p)²` — and because it is what makes `filt n` mean
-`J(ℚ) ∩ Ĵ(pⁿℤ_p)` on the nose.
+**`log_mem_one` is FREE, not merely redundant** (sharpened 2026-07-31; kept, not removed).
+The old note said only that reindexing `filt` by `padicLevel p (n − 1)` would make it
+disappear.  The stronger and more useful statement is that a prover never has to establish
+it at all: given ANY injective `φ : ↥spec.red.ker →+ ℤ_[p] × ℤ_[p]`, the rescaled map
+`log := (p : ℕ) • φ` is again injective — `(p : ℤ_[p]) ≠ 0` and `ℤ_[p]` is a domain, so
+`p • x = p • y → x = y` coordinatewise — and satisfies `log_mem_one` on the nose, since
+`(p • φ z).1 = (p : ℤ_[p]) * (φ z).1` is divisible by `p ^ 1`.  So
+
+    SmoothModel p D D'   ⟺   Specialisation p D D'  +  an INJECTIVE hom into `ℤ_[p] × ℤ_[p]`
+
+with no divisibility side condition, and that equivalence — not the three-field statement —
+is what `exists_smoothModel` really asks for.  The field is kept because the true logarithm
+satisfies it for free (`log (Ĵ(pℤ_p)) = (pℤ_p)²`), because it is what makes `filt n` mean
+`J(ℚ) ∩ Ĵ(pⁿℤ_p)` on the nose, and because deleting a `structure` field is a signature
+change in a file with concurrent editors, for a saving of one trivial obligation.
 
 **And `sp` is not a way around building the model.**  `D.Divisors` is free on `D.Places`, so
 any `ψ : D.Pic →+ D'.Pic` with `ψ (D.aj P) = D'.aj (redPt P)` lifts basis-wise to a map
@@ -6891,9 +6904,82 @@ leaf carries no content when `Pic⁰(X_ℚ)` is finite — which is correct rath
 since a finite group is finitely generated and the consumer's conclusion holds anyway.  It
 is the infinite (positive-rank) case that the leaf is for, and there `injective_of_smul`
 plus `cube_eval` force a genuine projective embedding of the Jacobian. -/
+**Not vacuous, and the FINITE case is now DISCHARGED BY THE KERNEL rather than asserted
+(2026-07-31).**  This paragraph used to read "`CubeModel` on a FINITE group is cheap
+(`dim = 1`, `coords = 1`)", quoting a recipe recorded on `CubeModel` itself.  **That recipe
+is FALSE**: constant coordinates make `coords P = 1 • coords Q` hold for every `P, Q`, so
+`injective_of_smul` returns `P = Q` and the recipe forces `Subsingleton A`, not merely
+`Finite A`.  The correct construction is the INDICATOR embedding, `dim = #A` and
+`coords P = e_P`, with the Segre image the set of coordinate points; it is
+`Fermat.nonempty_cubeModel_of_finite`, PROVEN in
+`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`, and the audit there carries the
+refutation of the old recipe.
+
+Consequently this leaf is now split by the kernel, not by prose: `exists_cubeModel_pic`
+below is PROVEN by the case distinction, and the surviving obligation
+`exists_cubeModel_pic_of_infinite` carries the extra hypothesis `Infinite D.Pic`.  The
+frontier count is unchanged (one leaf in, one leaf out) — what is bought is that the
+"finite case is cheap" half is machine-checked instead of being a false claim.
+
+**Honest accounting of the surviving hypothesis (corrected 2026-07-31).**  The split's own
+docstring first claimed `Infinite D.Pic` is "exactly the hypothesis the geometric
+construction wants".  That overstates it: the `4Θ` construction — `Θ` the theta divisor,
+`4Θ` symmetric very ample by Lefschetz, `dim = 16` — is uniform in `#Pic` and does not
+consult infiniteness anywhere.  What the hypothesis really does is tell the prover which
+regime `rel` lives in, and that is worth stating because `rel` is the only field with a
+choice in it: `rel` must cut out the Zariski CLOSURE of the Segre image of
+`D.Pic × D.Pic`, since `cube_nonvanishing` is quantified over that closure's cone.  For
+finite `Pic` the closure is a finite set of coordinate points, whose ideal is generated by
+the `z_m z_{m'}`, `m ≠ m'` — that is the indicator construction.  For infinite `Pic` the
+closure of a subgroup is an abelian SUBVARIETY of `J`, and `rel` is its Segre ideal.  The
+hypothesis is a free strengthening either way; a prover who never uses it has lost nothing.
+
+**Why `cube_nonvanishing` is the whole content, and a route that provably cannot work.**
+`coords_ne_zero`, `injective_of_smul`, `cube_eval` and `rel_eval` are all conditions AT the
+rational points; `cube_nonvanishing` is the only field quantified over `AlgebraicClosure ℚ`,
+and it is exactly PROPERNESS — "`(P, Q) ↦ (P + Q, P − Q)` extends to the closure with no
+base locus".  So no embedding of an infinite group into a NON-complete group variety can
+work, however cheap it looks, and the cheapest-looking one is refuted outright:
+
+* Take `A = ℤ`, `dim = 2`, `coords n = (1, tⁿ)` for a fixed `t ∈ ℚ`, `t ≠ 0, ±1` (the
+  multiplicative group inside `ℙ¹`).  The Segre point of `(m, n)` is
+  `z = (1, tⁿ, tᵐ, tᵐ⁺ⁿ)`, so writing `u = tᵐ`, `v = tⁿ`, a degree-`2` form in `z`
+  restricts to a polynomial of bidegree `≤ (2,2)` in `(u, v)`.  The scalar `c` of
+  `cube_eval` is then some `Q(u, v)` of bidegree `≤ (2,2)`, and the four `cube` values
+  force it: `cube (1,1)` restricts to `Q·u²`, so `deg_u Q = 0`; `cube (0,1)` restricts to
+  `Q·u/v`, so `v ∣ Q`; `cube (1,0)` restricts to `Q·u·v`, so `deg_v Q ≤ 1`.  Hence
+  `Q = λv`, `λ ≠ 0`, and the four forms are `λ z₀₀z₀₁`, `λ z₀₀z₁₀`, `λ z₀₁z₁₁`, `λ z₁₀z₁₁`
+  modulo the Segre quadric `z₀₀z₁₁ − z₀₁z₁₀` (which is the whole ideal, the points being
+  Zariski-dense in `ℙ¹ × ℙ¹`).  Every one of them VANISHES at `z = (1, 0, 0, 0)`, a point of
+  the quadric — so `cube_nonvanishing` fails, and the forced-degree argument shows it fails
+  for every admissible choice of `c` and of the representatives.  The geometry behind the
+  computation: `(1 : 0)` is the missing point `t = ∞` of `𝔾ₘ ⊂ ℙ¹`, and `(∞, ∞) ↦ (∞, ?)` is
+  genuinely indeterminate.
+* The additive analogue dies the same way and at the same point: `coords n = (1, n, n²)` on
+  the conic, with the base point `x = y = (0 : 0 : 1)`, where every degree-`2` form in `z`
+  reduces to a multiple of `z₂₂²` and no admissible `c` reaches bidegree `(4,4)`.
+
+So a prover must supply a COMPLETE group variety, i.e. genuinely an abelian variety.  The
+structural facts about `CubeModel` that a group-theoretic route would want — transport along
+an `AddEquiv`, a product construction, hence a model for every finitely generated `A` — are
+deliberately NOT built here, because routing this leaf through "`D.Pic` is finitely
+generated" is CIRCULAR: `exists_cubeModel_pic` feeds `exists_descentHeight_pic`, which feeds
+`fg_pic`, which is that very finite generation.  *Refuting check for the circularity claim*:
+a consumer of `exists_descentHeight_pic` that does not lie under `fg_pic`. -/
+theorem exists_cubeModel_pic_of_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (hinf : Infinite D.Pic) :
+    Nonempty (CubeModel D.Pic) := sorry
+
+/-- **LEAF (Mordell–Weil, geometric half), now PROVEN by the finite/infinite case
+distinction** over `Fermat.nonempty_cubeModel_of_finite` and
+`exists_cubeModel_pic_of_infinite`; see the docstring above. -/
 theorem exists_cubeModel_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) :
-    Nonempty (CubeModel D.Pic) := sorry
+    Nonempty (CubeModel D.Pic) := by
+  by_cases hfin : Finite D.Pic
+  · exact nonempty_cubeModel_of_finite D.Pic
+  · exact exists_cubeModel_pic_of_infinite D hsep (not_finite_iff_infinite.mp hfin)
 
 /-- **LEAF (Mordell–Weil, geometric half): a height function with the Northcott property
 exists on `Pic⁰(X_ℚ)`**, for every separable monic sextic.
@@ -9018,6 +9104,8 @@ so the next reader can re-check a claim instead of redoing the survey.
   top-down.  The correct next dispatch writes the `δ` SKELETON first (definition, the
   non-rational-point pinning, and `ker δ ⊆ 2·Pic` as a sorried `have` with its exact
   statement), and the field lemma and the norm then arrive with a consumer already waiting.
+  *Refuting check for the correction*: `PlaceData.residue` or `PlaceData.degOf` failing to
+  exist, or `exists_degreeMap` still being a leaf.
 * **REDUCTION axis — structurally empty, not merely unfinished.**  `exists_reduction` gives
   `red : D.Pic →+ D'.Pic` with torsion-free kernel.  For finitely generated `Pic` that
   makes `ker red ≅ ℤ^rank` and `Pic / ker red` embed in the finite `J(𝔽₅)`, so reduction
@@ -9510,7 +9598,13 @@ cut needs the map `δ : Pic → L*/(L*² · ℚ*)`, `L = ℚ[x]/(f)`, pinned by 
 pinning it by its values on rational points is powerless because `#Sel₂ = 1` makes the
 genuine `δ` identically zero on `J(ℚ)` — so the junk model `δ = 0` meets every such
 constraint and reduces the cut to this leaf's own conclusion.  Pinning needs residue fields
-`κ(v)` and their norms, which `PlaceData` deliberately does not carry.
+`κ(v)` and their norms.  **STALENESS CORRECTED 2026-07-31, as at level `18`**: this used to
+add "which `PlaceData` deliberately does not carry", and that is no longer true —
+`PlaceData.residue` and `PlaceData.degOf` are built from `ord` alone earlier in this file and
+`exists_degreeMap` is proven over them, so the descent cut is EXPRESSIBLE today.  The
+obstruction that survives is arithmetic (`#Sel₂ = 1`: class groups and `S`-units of the
+degree-`6` field `L = ℚ[x]/(f)`), not structural; see the corrected bullet at level `18` for
+the full accounting and for why the distinction matters when deciding to dispatch.
 
 **TARGET GROUP CORRECTED 2026-07-30, same correction as at level `18` and for the same
 reason**: this said `L*/L*²`, the ODD-degree formula.  `deg f = 6` and `f` is irreducible
