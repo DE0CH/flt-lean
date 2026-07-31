@@ -152,25 +152,32 @@ GROUP-LAW-FREE halves of the chart: a commutative-algebra one
 (`ProjChartRing E 2 ≃+* E.toAffine.CoordinateRing`) and a topological one
 (`V₊(Z̄)` is the image of `projInfty`).
 
-## THE LEAF STATUS OF THIS MODULE, FROM THE COMPILER (2026-07-30)
+## THE LEAF STATUS OF THIS MODULE, FROM THE COMPILER (2026-07-31)
 
 **Read this before believing anything below about what is open.**  `lake build
 Fermat.FLT.ModularCurve.EllipticScheme` emits **exactly ONE** `declaration uses
 'sorry'` warning, and it is
 
-* `exists_poleOrder_of_affineComplement` — the Riemann–Roch DIMENSION COUNT
-  `finrank K (L (n·[O])) = n` for the linear systems at the zero section, together
-  with the pole-order function that states them.  Its docstring records that
-  neither mathlib nor `~/cs/FLT` has Riemann–Roch or an arithmetic genus at this
-  pin.
+* `exists_poleOrderValuation_of_affineComplement` — the pole order `deg = -ord_O` at
+  the zero section, together with the three ELEMENTARY clauses that make its value
+  semigroup `⟨2, 3⟩`: no function has a simple pole (`genus ≥ 1`), some function has a
+  double pole and some a triple pole (`genus ≤ 1`), and two functions of equal pole
+  order differ by a `K`-multiple of smaller pole order (the residue field at `O` is
+  `K`).  Its docstring records that neither mathlib nor `~/cs/FLT` has Riemann–Roch or
+  an arithmetic genus at this pin.
 
-**UPDATED 2026-07-30**: the warning used to sit on
-`exists_weierstrassGenerators_of_affineComplement`, which is now PROVEN over the leaf
-above.  Everything between a pole-order filtration and the Weierstrass generators —
-the choice of `x` and `y`, the relation, the normalisation, the generation of `R` — is
-proven, sorry-free, in `PoleOrderFiltration` below.  The count is unchanged at ONE; what
-changed is that the remaining leaf is now purely a dimension count and carries no
-algebra.
+**UPDATED 2026-07-31**: the warning used to sit on
+`exists_poleOrder_of_affineComplement`, which is now PROVEN over the leaf above.  The
+DIMENSION COUNT `finrank K (L (n·[O])) = n` is no longer a leaf — it is derived, sorry
+free, in `PoleOrderFiltration.finrank_poleFiltration` from the elementary clauses.  The
+count is unchanged at ONE; what changed is that the remaining leaf mentions no
+`Module.finrank` at all, so an attack on it needs curve theory and no linear algebra.
+
+**UPDATED 2026-07-30**: the warning before that sat on
+`exists_weierstrassGenerators_of_affineComplement`, which is PROVEN over
+`exists_poleOrder_of_affineComplement`.  Everything between a pole-order filtration and
+the Weierstrass generators — the choice of `x` and `y`, the relation, the normalisation,
+the generation of `R` — is proven, sorry-free, in `PoleOrderFiltration` below.
 
 That is the module's whole DIRECT frontier.  A token scan agrees: with block
 comments (nested) and line comments stripped, the source contains exactly one
@@ -10116,6 +10123,151 @@ theorem linearIndependent_of_deg_injective {ι : Type*}
     rw [mem_poleFiltration_iff hL, deg_smul hL hgi₀] at hfin
     omega
 
+/-- The unit has pole order `0`. -/
+theorem deg_one_eq_zero
+    (hconst : ∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R)))
+    (h1 : (1 : R) ≠ 0) : deg (1 : R) = 0 :=
+  (hconst 1 h1).2 ⟨1, map_one _⟩
+
+/-- `L 0`, the space of functions with no pole at all, is the line of constants. -/
+theorem poleFiltration_zero (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n})
+    (hconst : ∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R)))
+    (h1 : (1 : R) ≠ 0) : L 0 = Submodule.span K {(1 : R)} := by
+  have hdeg1 : deg (1 : R) = 0 := deg_one_eq_zero hconst h1
+  apply le_antisymm
+  · intro r hr
+    rw [mem_poleFiltration_iff hL] at hr
+    rcases eq_or_ne r 0 with rfl | hr0
+    · exact Submodule.zero_mem _
+    · obtain ⟨c, hc⟩ := (hconst r hr0).1 (Nat.le_zero.1 hr)
+      rw [Submodule.mem_span_singleton]
+      exact ⟨c, by rw [Algebra.smul_def, mul_one, hc]⟩
+  · rw [Submodule.span_le, Set.singleton_subset_iff, SetLike.mem_coe,
+      mem_poleFiltration_iff hL]
+    omega
+
+/-- **No simple pole ⟹ `L 1 = L 0`.**  This is the only place the genus-`≥ 1`
+hypothesis `hone` is used, and it is what makes `finrank K (L 1) = 1` rather
+than `2`. -/
+theorem poleFiltration_one (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n})
+    (hzero : deg 0 = 0) (hone : ∀ r : R, r ≠ 0 → deg r ≠ 1) : L 1 = L 0 := by
+  refine le_antisymm (fun r hr => ?_) (poleFiltration_mono hL (Nat.zero_le 1))
+  rw [mem_poleFiltration_iff hL] at hr ⊢
+  rcases eq_or_ne r 0 with rfl | hr0
+  · exact hzero.le
+  · have := hone r hr0
+    omega
+
+/-- **The value semigroup of a genus-one pole order is `⟨2, 3⟩ = ℕ ∖ {1}`.**
+From one function with a double pole and one with a triple pole, EVERY pole
+order `n ≥ 2` is attained.  Only multiplicativity is used; no descent and no
+dimension count. -/
+theorem exists_deg_eq (hzero : deg 0 = 0)
+    (hmul : ∀ r s : R, r ≠ 0 → s ≠ 0 → deg (r * s) = deg r + deg s)
+    (hconst : ∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R)))
+    {x y : R} (hx : deg x = 2) (hy : deg y = 3) {n : ℕ} (hn : 2 ≤ n) :
+    ∃ r : R, r ≠ 0 ∧ deg r = n := by
+  have hx0 : x ≠ 0 := by rintro rfl; omega
+  have hy0 : y ≠ 0 := by rintro rfl; omega
+  haveI : Nontrivial R := nontrivial_of_ne x 0 hx0
+  have h1 : (1 : R) ≠ 0 := one_ne_zero
+  have hdeg1 : deg (1 : R) = 0 := deg_one_eq_zero hconst h1
+  have hpow : ∀ k : ℕ, x ^ k ≠ 0 ∧ deg (x ^ k) = 2 * k := by
+    intro k
+    induction k with
+    | zero => rw [pow_zero]; exact ⟨h1, by simp [hdeg1]⟩
+    | succ k ih =>
+        obtain ⟨hne, hdk⟩ := ih
+        have hd : deg (x ^ k * x) = 2 * (k + 1) := by
+          rw [hmul _ _ hne hx0, hdk, hx]; ring
+        have hne' : x ^ k * x ≠ 0 := by
+          intro h; rw [h, hzero] at hd; omega
+        rw [pow_succ]
+        exact ⟨hne', hd⟩
+  rcases Nat.even_or_odd n with ⟨m, hm⟩ | ⟨m, hm⟩
+  · exact ⟨x ^ m, (hpow m).1, by have := (hpow m).2; omega⟩
+  · have hm1 : 1 ≤ m := by omega
+    have hdy : deg (y * x ^ (m - 1)) = n := by
+      rw [hmul _ _ hy0 (hpow (m - 1)).1, hy, (hpow (m - 1)).2]; omega
+    exact ⟨y * x ^ (m - 1), by intro h; rw [h, hzero] at hdy; omega, hdy⟩
+
+/-- **THE GENUS-ONE DIMENSION COUNT — the pure-algebra half of Riemann–Roch.**
+
+`finrank K (L n) = n` for `n ≥ 1` is not itself a geometric statement: it
+follows from four ELEMENTARY properties of the pole order, three of which are
+valuation-theoretic bookkeeping and one of which (`hdesc`) is the statement
+that the residue field at the point `O` is the base field `K`:
+
+* `hone` — no function has a SIMPLE pole (`genus ≥ 1`);
+* `hx`, `hy` — some function has a DOUBLE pole and some a TRIPLE pole
+  (`genus ≤ 1`, i.e. Riemann's inequality at `n = 2, 3`);
+* `hdesc` — two functions of the same pole order `n ≥ 1` differ, after
+  scaling by a CONSTANT of `K`, by a function of strictly smaller pole order.
+
+The proof is the two-step one: `hdesc` says each graded piece
+`L n / L (n-1)` has dimension `≤ 1`, `exists_deg_eq` says it is nonzero for
+every `n ≥ 2`, and `poleFiltration_one` says it vanishes at `n = 1`. -/
+theorem finrank_poleFiltration
+    (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n})
+    (hzero : deg 0 = 0)
+    (hmul : ∀ r s : R, r ≠ 0 → s ≠ 0 → deg (r * s) = deg r + deg s)
+    (hconst : ∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R)))
+    (hone : ∀ r : R, r ≠ 0 → deg r ≠ 1)
+    (hdesc : ∀ r s : R, r ≠ 0 → s ≠ 0 → deg r = deg s → 1 ≤ deg r →
+      ∃ c : K, deg (r - c • s) < deg r)
+    {x y : R} (hx : deg x = 2) (hy : deg y = 3) :
+    ∀ n : ℕ, 1 ≤ n → Module.finrank K (L n) = n := by
+  have hx0 : x ≠ 0 := by rintro rfl; omega
+  haveI : Nontrivial R := nontrivial_of_ne x 0 hx0
+  have h1 : (1 : R) ≠ 0 := one_ne_zero
+  have hL0 : L 0 = Submodule.span K {(1 : R)} := poleFiltration_zero hL hconst h1
+  have hrank0 : Module.finrank K (L 0) = 1 := by
+    rw [hL0]; exact finrank_span_singleton h1
+  haveI hfd0 : FiniteDimensional K (L 0) := by rw [hL0]; infer_instance
+  have hL10 : L 1 = L 0 := poleFiltration_one hL hzero hone
+  have key : ∀ n : ℕ, 1 ≤ n → FiniteDimensional K (L n) ∧ Module.finrank K (L n) = n := by
+    intro n hn
+    induction n, hn using Nat.le_induction with
+    | base => rw [hL10]; exact ⟨hfd0, hrank0⟩
+    | succ n hn ih =>
+        obtain ⟨hfdn, hrn⟩ := ih
+        haveI := hfdn
+        obtain ⟨r, hr0, hrdeg⟩ := exists_deg_eq hzero hmul hconst hx hy (by omega : 2 ≤ n + 1)
+        have hsup : L (n + 1) = L n ⊔ Submodule.span K {r} := by
+          apply le_antisymm
+          · intro s hs
+            rw [mem_poleFiltration_iff hL] at hs
+            rcases lt_or_ge (deg s) (n + 1) with h | h
+            · exact Submodule.mem_sup_left ((mem_poleFiltration_iff hL _ _).2 (by omega))
+            · have hdegs : deg s = n + 1 := le_antisymm hs h
+              have hs0 : s ≠ 0 := by rintro rfl; omega
+              obtain ⟨c, hc⟩ := hdesc s r hs0 hr0 (hdegs.trans hrdeg.symm) (by omega)
+              have hmem : s - c • r ∈ L n := (mem_poleFiltration_iff hL _ _).2 (by omega)
+              have hrw : s = (s - c • r) + c • r := by abel
+              rw [hrw]
+              exact Submodule.add_mem_sup hmem
+                (Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self r))
+          · refine sup_le (poleFiltration_mono hL (Nat.le_succ n)) ?_
+            rw [Submodule.span_le, Set.singleton_subset_iff, SetLike.mem_coe,
+              mem_poleFiltration_iff hL]
+            omega
+        have hdisj : L n ⊓ Submodule.span K {r} = ⊥ := by
+          refine le_antisymm ?_ bot_le
+          intro z hz
+          obtain ⟨hz1, hz2⟩ := hz
+          simp only [SetLike.mem_coe] at hz1 hz2
+          rw [Submodule.mem_span_singleton] at hz2
+          obtain ⟨c, rfl⟩ := hz2
+          rcases eq_or_ne c 0 with rfl | hc
+          · simp
+          · exfalso
+            rw [mem_poleFiltration_iff hL, deg_smul hL hc] at hz1
+            omega
+        have hcount := Submodule.finrank_sup_add_finrank_inf_eq (L n) (Submodule.span K {r})
+        rw [hdisj, finrank_bot, add_zero, hrn, finrank_span_singleton hr0] at hcount
+        exact ⟨by rw [hsup]; infer_instance, by rw [hsup]; exact hcount⟩
+  exact fun n hn => (key n hn).2
+
 end PoleOrder
 
 set_option maxHeartbeats 1000000 in
@@ -10381,10 +10533,146 @@ theorem exists_weierstrassGenerators_of_poleOrder {K R : Type*} [Field K] [CommR
 
 end PoleOrderFiltration
 
+/-- **RIEMANN–ROCH, IN ELEMENTARY TERMS: the affine complement of the zero section
+carries a pole order whose value semigroup is `⟨2, 3⟩`** (sorry leaf, cut 2026-07-31
+out of `exists_poleOrder_of_affineComplement`, whose entire DIMENSION-COUNT content is
+now proven in `PoleOrderFiltration.finrank_poleFiltration`).
+
+**This statement mentions no `Module.finrank`, and that is the point of the cut.**  The
+Riemann–Roch content that used to be packaged as `finrank K (L n) = n` is here in the
+three elementary clauses a curve-theory argument actually produces:
+
+* `hone` — **no function has a SIMPLE pole at `O`.**  This is `genus ≥ 1`: an `r` with
+  `deg r = 1` is a degree-one map `A → P¹`, hence an isomorphism, and `P¹` carries no
+  abelian-scheme structure (an abelian scheme has translation-invariant, hence trivial,
+  canonical bundle, so `2g - 2 = 0`).
+* `∃ x, deg x = 2` and `∃ y, deg y = 3` — **some function has a double pole and some a
+  triple pole.**  This is `genus ≤ 1`, i.e. Riemann's inequality `dim L(n[O]) ≥ n + 1 - g`
+  read at `n = 2` and `n = 3`.  Together with `hone` these pin the value semigroup of
+  `deg` to `⟨2, 3⟩ = ℕ ∖ {1}`, which is `PoleOrderFiltration.exists_deg_eq`.
+* `hdesc` — **two functions with the SAME pole order differ, after scaling by a constant
+  OF `K`, by a function of strictly smaller pole order.**  This is not a dimension count
+  either: it is the statement that the residue field of the local ring at `O` is `K`,
+  which holds because `O = ab.zero (𝟙 _)` is a SECTION of `f`, hence a `K`-rational
+  point.  Concretely `r / s` is a unit of `𝒪_{A,O}`, and `c` is its residue.
+
+`PoleOrderFiltration.finrank_poleFiltration` turns exactly these three into
+`finrank K (L n) = n` for `n ≥ 1`, so nothing has been lost.
+
+TRUE — Silverman *AEC* III.3.1, and the geometric justification of each clause is the
+one recorded on `exists_poleOrder_of_affineComplement` below: `A` is a smooth proper
+geometrically connected curve over `K` carrying a group law, `O` is the `K`-rational
+point `ab.zero (𝟙 (Spec (CommRingCat.of K)))`, `Spec R` IS `A ∖ {O}`, the stalk
+`𝒪_{A,O}` is a DVR (this project owns that as
+`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`), and `deg r := -ord_O r`,
+`deg 0 := 0`.  Properness plus geometric connectedness plus geometric reducedness give
+`Γ(A, 𝒪_A) = K`, which is `hconst` and simultaneously `deg ≥ 0`.
+
+## FALSITY AUDIT (fresh, 2026-07-31 — this is a NEW statement, so no earlier audit
+applies; CLAUDE.md's rule that a restatement VOIDS the previous audit is why this is
+written out again rather than inherited)
+
+**`hrange` IS LOAD-BEARING, and the clause it now protects is `hconst`, not a dimension
+count.**  Drop it and take `ι` the open immersion onto the complement of TWO rational
+points `O` and `P`.  A function with poles only at `P` is regular at `O`, so it has
+`deg = 0` without being constant, and `hconst` fails for the geometric `deg`.  And no
+OTHER `deg` rescues the existential: a `deg` satisfying `hzero`/`hmul`/`hconst` is
+`-v` for a discrete valuation `v` of `Frac R` trivial on `K` with `v ≤ 0` on `R`; every
+such `v` is `ord_Q` for a point `Q` of the smooth projective model, `Q` must lie in the
+removed set (otherwise `R` contains non-constant functions regular at `Q`), and for
+either choice of `Q ∈ {O, P}` the ring `{r ∈ R | ord_Q r ≥ 0}` is the coordinate ring of
+the complement of the OTHER point, which is strictly larger than `K`.  So `hconst` fails
+for every admissible `deg`, and the conclusion is false.  This is sharper than the
+dimension-count witness the previous statement used, and it does not need `finrank`.
+
+**`hstr` IS LOAD-BEARING, and the mechanism is NOT the one the previous audit gave.**
+The previous audit's witness — `K = ℚ(t)`, `R` an elliptic coordinate ring over `K`,
+`K` acting through `t ↦ t²` — is a correct witness, but its stated reason ("the constants
+of `R` are unchanged as a SET, so `hconst` survives; the counterexample kills only
+`hrank`, silently") is WRONG, and the correct refutation is both simpler and available
+here where no `finrank` appears.  `Set.range (algebraMap K R)` is `ℚ(t²)`, a PROPER
+subfield of the true constant field `ℚ(t)`, so `hconst` is what breaks — and it breaks
+for every `deg`, not just the geometric one: `t` is a UNIT of `R` (both `t` and `t⁻¹`
+lie in `R`), so `hmul` forces `deg t + deg t⁻¹ = deg 1 = 0`, hence `deg t = 0`, while
+`t ∉ Set.range (algebraMap K R)`.  So `hconst` is contradicted outright.  (Over `ℚ` and
+`ℚ̄`, the only two bases instantiated, `algebraMap` is the unique ring map out of the base
+or is surjective, which is why the `ℚ`-era statement could omit `hstr`.  That is a fact
+about those two fields, not about this statement.)
+
+**`hone` IS NOT REDUNDANT.**  Without it the whole bundle is satisfiable on a GENUS-ZERO
+curve: take `A = P¹` (forgetting that it carries no group law), `O = ∞`, `R = K[t]`,
+`deg = ` degree of a polynomial.  Then `hzero`, `hmul`, `hconst`, `hdesc` and `htop` all
+hold, `deg t = 1`, `deg t² = 2`, `deg t³ = 3`, and `finrank K (L n) = n + 1 ≠ n`.  So
+`hone` is exactly the clause that separates genus one from genus zero, and it is the
+clause `PoleOrderFiltration.poleFiltration_one` consumes.
+
+**`hdesc` IS NOT REDUNDANT EITHER**, and the witness is a base change rather than a curve:
+run the same construction with the `K`-algebra structure on `R` restricted along a proper
+subfield `K₀ ⊂ K` over which `O` is still rational for the larger field.  Each graded
+piece `L n / L (n-1)` is then `[K : K₀]`-dimensional over `K₀` and the count is
+`[K : K₀] · n`.  What `hdesc` encodes is precisely that the residue field at `O` is not
+bigger than the base — i.e. that `O` is `K`-rational, which for a SECTION of `f` it is.
+
+**`hdim` IS LOAD-BEARING FOR THE PROOF, not for the truth**, exactly as before: without
+it `A` may be an abelian scheme of relative dimension `≥ 2`, and then `A ∖ {O}` is not
+affine so no such `ι` exists and the statement is vacuous there.  What `hdim` buys is the
+DVR stalk, i.e. the existence of `deg` at all.
+
+**NOT VACUOUS**: instantiate at the `(A, f, ab, ι)` produced by
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` and `exists_affineChart_projModel`,
+where `deg` is the pole order at the point at infinity of the Weierstrass model —
+`deg (x^i y^j) = 2i + 3j`, so `x` and `y` themselves witness the two existentials, `hone`
+holds because `2i + 3j = 1` has no solution, and `hdesc` is division of the leading
+coefficients.
+
+WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS: a Riemann–Roch theorem, a genus, or a theory
+of divisors/linear systems on a relative curve, in `Fermat/`, `.lake/packages/mathlib` or
+`~/cs/FLT`.  Still absent from all three as of 2026-07-31.  The pin DOES have
+`Mathlib/AlgebraicGeometry/OrderOfVanishing.lean` — `Scheme.ord`, the order of vanishing
+at a codimension-one point of a locally Noetherian integral scheme — which is enough to
+CONSTRUCT `deg`, to prove `hzero`, `hmul` and `hdesc`, and to state the rest.  After this
+cut the genuinely missing mathematics is only `hone` (genus `≥ 1`) and the two
+existentials (genus `≤ 1`). -/
+theorem exists_poleOrderValuation_of_affineComplement {K : Type} [Field K] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f)
+    (R : Type) [CommRing R] [Algebra K R] (ι : Spec (CommRingCat.of R) ⟶ A)
+    (hopen : IsOpenImmersion ι)
+    (hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K R)))
+    (hrange : Set.range ι.base =
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base)ᶜ) :
+    ∃ (deg : R → ℕ) (L : ℕ → Submodule K R),
+      (∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n}) ∧
+      deg 0 = 0 ∧
+      (∀ r s : R, r ≠ 0 → s ≠ 0 → deg (r * s) = deg r + deg s) ∧
+      (∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R))) ∧
+      (∀ r : R, r ≠ 0 → deg r ≠ 1) ∧
+      (∀ r s : R, r ≠ 0 → s ≠ 0 → deg r = deg s → 1 ≤ deg r →
+        ∃ c : K, deg (r - c • s) < deg r) ∧
+      (∃ x : R, deg x = 2) ∧ (∃ y : R, deg y = 3) ∧
+      (⨆ n, L n) = ⊤ :=
+  sorry
+
 /-- **RIEMANN–ROCH: the affine complement of the zero section carries a pole-order
-filtration with the genus-one dimension counts** (sorry leaf, cut 2026-07-30 out of
+filtration with the genus-one dimension counts** (PROVEN 2026-07-31 over the single
+sub-leaf `exists_poleOrderValuation_of_affineComplement` above; formerly a sorry leaf,
+cut 2026-07-30 out of
 `exists_weierstrassGenerators_of_affineComplement`, whose entire ELEMENT-LEVEL content is
 now proven in `PoleOrderFiltration.exists_weierstrassGenerators_of_poleOrder`).
+
+**THIS DECLARATION HAS NO `sorry` OF ITS OWN ANY MORE (2026-07-31).**  Its whole content
+is now the composite of two things: the elementary leaf
+`exists_poleOrderValuation_of_affineComplement` above (which supplies the pole order
+together with `hone`, `hdesc` and the two existentials `∃ x, deg x = 2`,
+`∃ y, deg y = 3`) and the pure-algebra theorem
+`PoleOrderFiltration.finrank_poleFiltration` (which turns those into
+`finrank K (L n) = n`).  **The FALSITY AUDIT below is therefore about a statement that is
+no longer a leaf; read the FRESH audit on `exists_poleOrderValuation_of_affineComplement`
+instead**, which also CORRECTS the `hstr` paragraph below (the twisted-action witness is
+right, but it breaks `hconst`, not `hrank`, and it breaks it for every admissible `deg`
+because `t` is a unit).  Nothing in the interface changed: the statement, the hypotheses
+and the consumers are all exactly as they were.
 
 This leaf carries the whole Riemann–Roch content of the reverse bridge and nothing else.
 It asks for exactly two things:
@@ -10486,8 +10774,11 @@ theorem exists_poleOrder_of_affineComplement {K : Type} [Field K] {A : Scheme.{0
       (∀ r s : R, r ≠ 0 → s ≠ 0 → deg (r * s) = deg r + deg s) ∧
       (∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R))) ∧
       (∀ n : ℕ, 1 ≤ n → Module.finrank K (L n) = n) ∧
-      (⨆ n, L n) = ⊤ :=
-  sorry
+      (⨆ n, L n) = ⊤ := by
+  obtain ⟨deg, L, hL, hzero, hmul, hconst, hone, hdesc, ⟨x, hx⟩, ⟨y, hy⟩, htop⟩ :=
+    exists_poleOrderValuation_of_affineComplement ab hdim R ι hopen hstr hrange
+  exact ⟨deg, L, hL, hzero, hmul, hconst,
+    PoleOrderFiltration.finrank_poleFiltration hL hzero hmul hconst hone hdesc hx hy, htop⟩
 
 /-- **RIEMANN–ROCH, IN ELEMENTS: the affine complement of the zero section
 has two generators satisfying a Weierstrass relation** (PROVEN 2026-07-30 over the
