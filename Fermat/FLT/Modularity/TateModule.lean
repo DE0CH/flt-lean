@@ -271,6 +271,7 @@ public import Mathlib.Algebra.Algebra.ZMod
 public import Mathlib.Algebra.Module.ZMod
 public import Mathlib.GroupTheory.SpecificGroups.Cyclic
 public import Fermat.FLT.Mathlib.FieldTheory.KaehlerField
+public import Fermat.FLT.Modularity.AbelianSchemeGrpObj
 
 @[expose] public section
 
@@ -23161,7 +23162,124 @@ def push {A B S : Scheme.{u}} (f : A ⟶ S) (ι : B ⟶ A) {T : Scheme.{u}} {g :
 @[simp] theorem push_val {A B S : Scheme.{u}} (f : A ⟶ S) (ι : B ⟶ A) {T : Scheme.{u}}
     {g : T ⟶ S} (y : RelPoint (ι ≫ f) g) : (push f ι y).1 = y.1 ≫ ι := rfl
 
+/-- **`push` commutes with a change of test object.**  Both sides are
+`h ≫ y.1 ≫ ι` up to the associator, so this is `Category.assoc`; it is what
+turns the `pre_act` field of a `Mult` on the subscheme into the `pre_act`
+field of the ambient one. -/
+theorem push_pre {A B S : Scheme.{u}} (f : A ⟶ S) (ι : B ⟶ A) {T' T : Scheme.{u}}
+    (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g')
+    (y : RelPoint (ι ≫ f) g) :
+    push f ι (RelPoint.pre h hg y) = RelPoint.pre h hg (push f ι y) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+/-- **Pushing forward along a MONOMORPHISM is injective on relative points.**
+
+This is what lets a subscheme INHERIT structure rather than be given it: an
+equation between relative points of `B` may be checked after pushing to `A`,
+where the ambient structure's own axioms are available.  A closed immersion is
+a preimmersion and hence a monomorphism at this pin
+(`AlgebraicGeometry.IsPreimmersion`'s `Mono` instance), so the hypothesis is
+free wherever `ι` is a closed immersion. -/
+theorem push_injective {A B S : Scheme.{u}} (f : A ⟶ S) (ι : B ⟶ A) [Mono ι]
+    {T : Scheme.{u}} {g : T ⟶ S} :
+    Function.Injective (push f ι (T := T) (g := g)) := fun _ _ hyz =>
+  Subtype.ext ((cancel_mono ι).1 (congrArg Subtype.val hyz))
+
 end RelPoint
+
+open _root_.NumberField in
+/-- **THE ZARISKI CLOSURE OF A DIVISIBLE, GALOIS-STABLE, `𝒪_D`-STABLE
+SUBGROUP OF `A'(k̄)` IS A CLOSED SUBGROUP SCHEME** (SORRY LEAF — cut
+2026-07-31 out of
+`exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase`
+immediately BELOW, which is now PROVEN over it; Chevalley's theorem,
+Mumford *Abelian Varieties* §II.4, Milne *Abelian Varieties* §I.1, SGA 3
+VI_A 0.2 and VI_B 1.3.1).
+
+**WHAT THE CUT DID, AND WHY IT IS NOT COSMETIC.**  The consumer's docstring
+lists three steps — Chevalley, connectedness, Galois descent — and adds that
+`Mathlib/AlgebraicGeometry/Group/` already proves the SMOOTHNESS and
+COMMUTATIVITY of the resulting group scheme, but for mathlib's
+`GrpObj (Over.mk f)` rather than for this file's `AbelianSchemeStruct`.  That
+translation is now written (`Modularity/AbelianSchemeGrpObj.lean`), so this
+leaf is stated in MATHLIB's language and asks for nothing that mathlib
+already has:
+
+* it hands back a `GrpObj (Over.mk (ι ≫ f'))` rather than an
+  `AbelianSchemeStruct`, so SMOOTHNESS is not asked for — the consumer gets
+  it from `AlgebraicGeometry.smooth_of_grpObj`;
+* it hands back `GeometricallyIntegral (ι ≫ f')` rather than
+  `GeometricallyConnected`, so COMMUTATIVITY is not asked for either — the
+  consumer gets it from
+  `AlgebraicGeometry.isCommMonObj_of_isProper_of_geometricallyIntegral`,
+  and geometric connectedness from geometric irreducibility;
+* the `𝒪_D`-action is handed back as a bare family of endomorphisms of the
+  functor of points with ONE compatibility (`act` commutes with
+  `RelPoint.push`).  Its five `Mult` axioms are NOT asked for: `ι` is a
+  closed immersion, hence a monomorphism, so `RelPoint.push` is injective
+  (`RelPoint.push_injective`) and every axiom is inherited from `m'`.  This
+  is the standard shape — a subobject inherits structure, it is not given
+  it — and it is what keeps the leaf from restating `Mult`.
+
+So what is genuinely left is exactly the geometry the consumer's three
+bullets name, and nothing else:
+
+* CHEVALLEY: the Zariski closure `Z` of an abstract subgroup of `A'(k̄)` is a
+  closed subgroup scheme.  `grep -rl` over
+  `.lake/packages/mathlib/Mathlib/AlgebraicGeometry/` and over `~/cs/FLT`
+  finds nothing (2026-07-31: `~/cs/FLT/FLT/GroupScheme/` holds only
+  `FiniteFlat.lean`), so this is a construction to write;
+* CONNECTEDNESS, which is where `hTdiv` and only `hTdiv` is used: the
+  components of `Z` are open, so `T` surjects onto the finite component
+  group, and a finite quotient of a DIVISIBLE group is trivial.  Together
+  with reducedness — `Z_red` is smooth because `hfin` makes `k` perfect —
+  connected plus reduced plus finite type over a field is INTEGRAL, which
+  is the `GeometricallyIntegral` conjunct;
+* DESCENT: `Z` is `Γ_k`-stable by `hTgal`, so it descends to a closed
+  subscheme `B` of `A'` over `k`, and the displayed closure equation holds
+  in `|A'|` because `|A'_{k̄}| → |A'|` is continuous, closed and surjective
+  (`Spec k̄ ⟶ Spec k` is integral, hence universally closed).
+
+**FAITHFULNESS.**  The binders are the consumer's, unchanged, and the
+counterexamples recorded there apply verbatim: without `hTdiv` the closure
+of a finite subgroup is a finite non-connected group scheme, so
+`GeometricallyIntegral` fails (it fails already at IRREDUCIBLE); without
+`hTgal` there is no `B` over `k`; and dropping the closure equation lets
+`B = A'`, `ι = 𝟙` discharge everything.  `IsProper (ι ≫ f')` is not a
+separate assumption on `B` — a closed immersion is proper and `f'` is
+proper by `ab'.proper`, so it is a consequence of the construction rather
+than an extra demand, and it is listed because `AbelianSchemeStruct` stores
+properness as data. -/
+theorem exists_grpObj_closure_of_divisibleGaloisSubmodule_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (T : Set (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))))
+    (hTzero : ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) ∈ T)
+    (hTadd : ∀ y ∈ T, ∀ z ∈ T, ab'.add y z ∈ T)
+    (hTact : ∀ a : NumberField.RingOfIntegers D, ∀ y ∈ T, m'.act a y ∈ T)
+    (hTgal : ∀ σ : Field.absoluteGaloisGroup k, ∀ y ∈ T,
+      ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y ∈ T)
+    (hTdiv : ∀ M : ℕ, M ≠ 0 → ∀ y ∈ T,
+      ∃ z ∈ T, m'.act (M : NumberField.RingOfIntegers D) z = y) :
+    ∃ (B : Scheme.{u}) (ι : B ⟶ A') (grp : GrpObj (Over.mk (ι ≫ f')))
+      (act : ∀ {W : Scheme.{u}} {g : W ⟶ Spec (CommRingCat.of k)},
+        NumberField.RingOfIntegers D → RelPoint (ι ≫ f') g → RelPoint (ι ≫ f') g),
+      IsClosedImmersion ι ∧
+      IsProper (ι ≫ f') ∧
+      GeometricallyIntegral (ι ≫ f') ∧
+      (∀ {W : Scheme.{u}} {g : W ⟶ Spec (CommRingCat.of k)} (y z : RelPoint (ι ≫ f') g),
+        RelPoint.push f' ι (@grpAdd _ _ (ι ≫ f') grp _ _ y z)
+          = ab'.add (RelPoint.push f' ι y) (RelPoint.push f' ι z)) ∧
+      (∀ {W : Scheme.{u}} {g : W ⟶ Spec (CommRingCat.of k)}
+        (a : NumberField.RingOfIntegers D) (y : RelPoint (ι ≫ f') g),
+        RelPoint.push f' ι (act a y) = m'.act a (RelPoint.push f' ι y)) ∧
+      (∀ y ∈ T, ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
+        RelPoint.push f' ι z = y) ∧
+      closure {x : A' | ∃ y ∈ T, x ∈ Set.range y.1.base} = Set.range ι.base :=
+  sorry
 
 open _root_.NumberField in
 /-- **THE ZARISKI CLOSURE OF A DIVISIBLE, GALOIS-STABLE, `𝒪_D`-STABLE
@@ -23267,8 +23385,54 @@ theorem exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase
         RelPoint.push f' ι (mB.act a y) = m'.act a (RelPoint.push f' ι y)) ∧
       (∀ y ∈ T, ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
         RelPoint.push f' ι z = y) ∧
-      closure {x : A' | ∃ y ∈ T, x ∈ Set.range y.1.base} = Set.range ι.base :=
-  sorry
+      closure {x : A' | ∃ y ∈ T, x ∈ Set.range y.1.base} = Set.range ι.base := by
+  obtain ⟨B, ι, grp, act, hcl, hp, hint, hadd, hactc, hlift, hclos⟩ :=
+    exists_grpObj_closure_of_divisibleGaloisSubmodule_finiteBase hfin ab' m' T
+      hTzero hTadd hTact hTgal hTdiv
+  letI := grp
+  haveI := hp
+  haveI := hint
+  haveI := hcl
+  -- the bridge: a proper geometrically integral group object over a field is
+  -- an abelian scheme, with `add` LITERALLY `grpAdd` — so the leaf's
+  -- restriction clause is this one's, unchanged
+  set abB : AbelianSchemeStruct (ι ≫ f') :=
+    AbelianSchemeStruct.ofGrpObjOfGeometricallyIntegral (ι ≫ f') with habB
+  have hadd' : ∀ {W : Scheme.{u}} {g : W ⟶ Spec (CommRingCat.of k)}
+      (y z : RelPoint (ι ≫ f') g),
+      RelPoint.push f' ι (abB.add y z)
+        = ab'.add (RelPoint.push f' ι y) (RelPoint.push f' ι z) := hadd
+  -- `ι` is a closed immersion, hence mono, so every axiom of the induced
+  -- `Mult` may be checked after pushing into `A'`
+  have hinj : ∀ {W : Scheme.{u}} {g : W ⟶ Spec (CommRingCat.of k)},
+      Function.Injective (RelPoint.push f' ι (T := W) (g := g)) := fun {_ _} =>
+    RelPoint.push_injective f' ι
+  refine ⟨B, ι, abB, ?_, hcl, hadd', ?_, hlift, hclos⟩
+  · exact
+      { act := act
+        act_add := by
+          intro W g a b y
+          refine hinj ?_
+          rw [hactc, hadd', hactc, hactc, m'.act_add]
+        act_mul := by
+          intro W g a b y
+          refine hinj ?_
+          rw [hactc, hactc, hactc, m'.act_mul]
+        act_one := by
+          intro W g y
+          refine hinj ?_
+          rw [hactc, m'.act_one]
+        act_addPt := by
+          intro W g a y z
+          refine hinj ?_
+          rw [hactc, hadd', hadd', hactc, hactc, m'.act_addPt]
+        pre_act := by
+          intro T' T'' h g g' hg a y
+          refine hinj ?_
+          rw [RelPoint.push_pre, hactc, hactc, m'.pre_act, RelPoint.push_pre] }
+  · intro W g a y
+    exact hactc a y
+
 
 open _root_.NumberField in
 /-- **THE ZARISKI CLOSURE OF THE `I`-POWER TORSION IS AN ABELIAN
