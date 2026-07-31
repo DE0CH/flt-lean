@@ -10131,12 +10131,26 @@ theorem eq_of_forall_exists_pow_sub_mem {S : Type*} [CommRing S] {p : ℕ} (hp :
   rw [hM] at hbot
   exact sub_eq_zero.mp (by simpa using hbot)
 
-/-- **Lifting `𝕎 k` along a NILPOTENT thickening** (PROVEN 2026-07-30; was LEAF
+/- (SYNTAX REPAIR 2026-07-31, `flt-lean-361`: THIS WAS A RUNAWAY DOC COMMENT — it
+had lost both its terminator and the declaration it documented, so it ran 1980
+lines and everything in between was invisible to the compiler.  The theorem it
+describes is `existsUnique_ringHom_wittVector_of_isNilpotent` at line ~10460,
+which carries its own (later, PROVEN) docstring, so this header is a stale
+duplicate left by a merge.  Demoted to a plain comment and terminated below; the
+prose is kept because deleting an author's writing is not a passer-by's call.
+This module has NOT been built this release — the release build stops at
+`ModularCurve/X0.lean` — so this repair is SYNTAX ONLY and is unverified against
+the elaborator.  Do NOT write a literal comment delimiter inside a note like
+this one; it closes the comment and recreates the defect.)
+
+**Lifting `𝕎 k` along a NILPOTENT thickening** (PROVEN 2026-07-30; was LEAF
 B1a-i-α of the 2026-07-27 decomposition of
 `exists_taylorWilesCoefficients_ringHom`; this is the ENTIRE remaining
 content of Cohen's coefficient-ring map): if `p` is nilpotent in `S` and
 `σ : S ↠ k` has nilpotent kernel, then `σ` lifts UNIQUELY to a ring
 homomorphism `𝕎 k → S`.
+-/
+
 /-! #### Lifting `𝕎 k` along a nilpotent thickening — the four ingredients
 
 Added 2026-07-31 by the PROOF of `existsUnique_ringHom_wittVector_of_isNilpotent`
@@ -12105,7 +12119,17 @@ the old type verbatim. -/
 abbrev taylorWilesCoordModel (p : ℕ) [Fact p.Prime] (q d : ℕ)
     (e : Fin q → ℕ) : Type :=
   Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesLevelIdeal p e
-see the reduction audit recorded there.
+
+/-- (SYNTAX REPAIR 2026-07-31, `flt-lean-361`: the opening delimiter of this
+docstring was lost in a merge while its terminator survived, so the paragraphs
+below were bare prose at top level and `taylorWilesCoordModelAt` had no
+docstring.  Reopened as the docstring it plainly is.  The first line is a
+mid-sentence fragment whose opening went with the lost delimiter; recovering it
+is an author's call.  This module has NOT been built this release, so the repair
+is SYNTAX ONLY.  Do NOT write a literal comment delimiter inside a note like
+this one.)
+
+… see the reduction audit recorded there.
 
 The constant-vector special case `e ≡ n` used to be a second abbrev
 `taylorWilesCoordModel p q d n`; it was deleted on 2026-07-30 along with the
