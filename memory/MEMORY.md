@@ -33,3 +33,4 @@
 - [Preflight finds unowned leaves](flt-preflight-finds-unowned-leaves.md) — the only check that catches sorries no agent reported; run it BETWEEN releases; count leaves back when grouping into tasks
 - [flt-loop spawn/liveness race](flt-loop-spawn-liveness-race.md) — the loop can put TWO live agents in one worktree; check your token against jobs/<name>.json first, and a discarded incarnation yields WITHOUT writing its sentinel
 - [flt-loop runs on mystique](flt-loop-runs-on-mystique.md) — not on the medic's host, so ps says "dead" for a healthy loop; it re-execs onto edited source itself (do NOT hand-restart), and a live Claude session there respawns it if killed
+- [Base-field port: autoParam the free-over-ℚ fact](flt-base-field-port-autoparam.md) — ℚ→F in place with ZERO ℚ call-site churn; and ask whether the morphism already determines the datum (it did: 58 `hom_ext_spec_rat` sites collapsed to two lemmas)
