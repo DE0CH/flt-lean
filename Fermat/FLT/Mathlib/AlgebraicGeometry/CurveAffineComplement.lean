@@ -66,11 +66,13 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
   cutting this is the ONLY mathematics left under properness, and it mentions no valuation ring,
   no lift and no fraction field — only `X`, `z`, `g` and a generization of `z` inside `U`.  Its
   docstring carries the extend-or-not dichotomy in full.
-* `exists_algebraMap_eq_stalkClosedPointTo_germ_coordOf` — **sorry leaf, SUB-LEAF 2** (cut
-  2026-07-31): `f`'s value at the `L`-point lies in `R`.  PURE BOOKKEEPING on the commuting
-  square — no curve, no properness, no smoothness — separated out precisely so that the
-  elaborator-fighting is not entangled with SUB-LEAF 1.  Its docstring gives the four rewrites
-  that prove it and names the exact half-line where the 2026-07-31 attempt stopped.
+* `exists_algebraMap_eq_stalkClosedPointTo_germ_coordOf` — SUB-LEAF 2, cut 2026-07-31 and
+  **PROVEN the same day, no sorry**: `f`'s value at the `L`-point lies in `R`.  PURE
+  BOOKKEEPING on the commuting square — no curve, no properness, no smoothness — separated out
+  precisely so that the elaborator-fighting was not entangled with SUB-LEAF 1, which is exactly
+  what let it close on its own.  Two helpers came out of it, both PROVEN and both absent from
+  the pin: `ι_appLE_top_eq_topIso_inv` and `appLE_top_top_eq_appTop`.  Its docstring records the
+  two `simp` traps that cost the round trips.
 * `coordOf` — the regular function on `U` that a morphism `U ⟶ 𝔸¹_K` classifies.
 * `isAffineOpen_compl_singleton_of_isSmoothProperCurve` — **PROVEN 2026-07-28** over those
   two, by Zariski's main theorem.  It does NOT go through ampleness; see the next section.
@@ -466,7 +468,29 @@ theorem exists_inv_coordOf_mem_maximalIdeal_compl_singleton
         (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) = 1 :=
   sorry
 
-/-- **SUB-LEAF 2 — `f`'s VALUE AT THE `L`-POINT COMES FROM `R`** (sorry leaf, cut 2026-07-31).
+/-- **The restriction `Γ(X, U) ⟶ Γ(U, ⊤)` along the inclusion IS `topIso U`'s inverse**
+(PROVEN 2026-07-31, no sorry).
+
+Both sides are `X.presheaf.map` of a morphism `op U ⟶ op (U.ι ''ᵁ ⊤)` in the poset `(X.Opens)ᵒᵖ`,
+written with `homOfLE` on one side and `eqToHom` on the other.  A poset has subsingleton hom-sets,
+so `congr 1` closes the gap — but only after `Scheme.Opens.ι_appLE` and the definition of
+`Scheme.Opens.topIso` have exposed both as `X.presheaf.map _`; `simp` alone does NOT do it, and
+`congr 1` applied to the full composite instead produces a bogus type-equality goal. -/
+theorem ι_appLE_top_eq_topIso_inv {X : Scheme.{u}} (U : X.Opens) (e) :
+    (Scheme.Opens.ι U).appLE U ⊤ e = (Scheme.Opens.topIso U).inv := by
+  rw [Scheme.Opens.ι_appLE]
+  rw [Scheme.Opens.topIso]
+  simp only [Functor.mapIso_inv, Iso.op_inv, eqToIso.inv]
+  congr 1
+
+/-- **`appLE ⊤ ⊤` is `appTop`** (PROVEN 2026-07-31, no sorry) — the `f ⁻¹ᵁ ⊤ = ⊤` bookkeeping
+that `Scheme.Hom.appLE_eq_app` does not do on its own. -/
+theorem appLE_top_top_eq_appTop {X Y : Scheme.{u}} (f : X ⟶ Y) (e) :
+    f.appLE ⊤ ⊤ e = f.appTop := by
+  simp [Scheme.Hom.appLE, Scheme.Hom.appTop]
+
+/-- **SUB-LEAF 2 — `f`'s VALUE AT THE `L`-POINT COMES FROM `R`** (cut 2026-07-31,
+**PROVEN 2026-07-31**).
 
 PURE BOOKKEEPING: no curve, no properness, no smoothness, no valuation ring, no `IsFractionRing`
 — just the commuting square `hcomm` read on global sections.  It is separated out because the
@@ -493,14 +517,19 @@ THE PROOF, in four rewrites, all of them in the pin:
 So the witness is forced: `r = (ΓSpecIso (of R)).hom (i₂.appTop ((ΓSpecIso (of K[T])).inv T))`,
 i.e. `T`'s pull-back along `i₂`, which is what "the value lies in `R`" means.
 
-WHERE THE ATTEMPT OF 2026-07-31 STOPPED, so the next prover does not repeat it: steps 3 and 4
-were verified in isolation; step 1 goes through; step 2's `rfl` fails because the two
-`X.presheaf.map` factors are written with `eqToHom` on one side and `homOfLE` on the other.  The
-missing half-line is `Subsingleton.elim` on `(X.Opens)ᵒᵖ` hom-sets — try
-`congr 1` then `exact Subsingleton.elim _ _`, or state
-`(Scheme.Opens.ι U).appLE U ⊤ e = (Scheme.Opens.topIso U).inv` as its own lemma and prove it that
-way.  `simp` alone does NOT close it and `congr 1` on the full composite produces a bogus
-type-equality goal — do not chase that one.
+HOW IT WAS FINISHED, later the same day: exactly by the second of the two suggestions the
+previous note left — step 2 is now the standalone lemma `ι_appLE_top_eq_topIso_inv` above, whose
+`congr 1` closes on subsingleton poset hom-sets, together with `appLE_top_top_eq_appTop`.  Two
+further traps, recorded because both cost a round trip:
+
+* `simpa using <congrArg of the morphism-level identity>` does NOT produce the element-level
+  form — `simp` normalises `topIso.inv` to `X.presheaf.map (eqToHom ⋯)` on both sides and then
+  reports a type mismatch between two printed-identical terms.  Use
+  `rw [← CommRingCat.comp_apply, key, CommRingCat.comp_apply, CommRingCat.comp_apply]` instead;
+  `rw` keeps `topIso.inv` intact.
+* `simpa using <congrArg of ΓSpecIso_naturality>` simplifies that hypothesis all the way to
+  `True`, since `simp` proves the naturality square outright.  State step 4 as its own `have`
+  with the two sides written out and prove it by `rw`.
 
 **`hcomm` IS LOAD-BEARING and the statement is FALSE without it**: it is the ONLY hypothesis
 relating `g` to `R` at all.  Without it `i₁` may send `T` to any element of `L` whatever, in
@@ -518,8 +547,44 @@ theorem exists_algebraMap_eq_stalkClosedPointTo_germ_coordOf
     (hcomm : i₁ ≫ g = Spec.map (CommRingCat.ofHom (algebraMap R L)) ≫ i₂)
     (hx₀ : (i₁ ≫ Scheme.Opens.ι U).base (IsLocalRing.closedPoint (CommRingCat.of L)) ∈ U) :
     ∃ r : R, (Scheme.stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U)).hom
-        ((X.presheaf.germ U _ hx₀).hom (coordOf U g)) = algebraMap R L r :=
-  sorry
+        ((X.presheaf.germ U _ hx₀).hom (coordOf U g)) = algebraMap R L r := by
+  set t := (Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom Polynomial.X with ht
+  refine ⟨(Scheme.ΓSpecIso (CommRingCat.of R)).hom.hom (i₂.appTop.hom t), ?_⟩
+  -- STEP 2: the restriction `Γ(X, U) ⟶ Γ(Spec L, ⊤)` of the composite factors as
+  -- `topIso.inv ≫ i₁.appTop`.
+  have hfac : (i₁ ≫ Scheme.Opens.ι U).appLE U ⊤
+      (Scheme.preimage_eq_top_of_closedPoint_mem (i₁ ≫ Scheme.Opens.ι U) hx₀).ge =
+      (Scheme.Opens.topIso U).inv ≫ i₁.appTop := by
+    rw [← ι_appLE_top_eq_topIso_inv U (by simp), ← appLE_top_top_eq_appTop i₁ (by simp)]
+    exact (Scheme.Hom.appLE_comp_appLE i₁ (Scheme.Opens.ι U) U ⊤ ⊤ _ _).symm
+  -- STEP 1: `germ ≫ stalkClosedPointTo` is that restriction followed by `ΓSpecIso`.
+  have key : X.presheaf.germ U _ hx₀ ≫ Scheme.stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U) =
+      (Scheme.Opens.topIso U).inv ≫ i₁.appTop ≫
+        (Scheme.ΓSpecIso (CommRingCat.of L)).hom := by
+    rw [Scheme.germ_stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U) U hx₀]
+    rw [Iso.trans_hom, Functor.mapIso_hom, Iso.op_hom, eqToIso.hom,
+      ← Category.assoc, Scheme.Hom.app_eq_appLE, Scheme.Hom.appLE_map, hfac, Category.assoc]
+  -- STEP 3: `hcomm` on global sections.
+  have h3 : i₁.appTop.hom (g.appTop.hom t) =
+      (Spec.map (CommRingCat.ofHom (algebraMap R L))).appTop.hom (i₂.appTop.hom t) := by
+    have h := congrArg
+      (fun φ : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of (Polynomial K)) => φ.appTop.hom t)
+      hcomm
+    simpa using h
+  -- STEP 4: naturality of `ΓSpecIso`.
+  have h4 : (Scheme.ΓSpecIso (CommRingCat.of L)).hom.hom
+        ((Spec.map (CommRingCat.ofHom (algebraMap R L))).appTop.hom (i₂.appTop.hom t))
+      = algebraMap R L ((Scheme.ΓSpecIso (CommRingCat.of R)).hom.hom (i₂.appTop.hom t)) := by
+    rw [← CommRingCat.comp_apply, Scheme.ΓSpecIso_naturality, CommRingCat.comp_apply]
+    rfl
+  have hco : (Scheme.Opens.topIso U).inv.hom (coordOf U g) = g.appTop.hom t := by
+    rw [ht, coordOf, ← CommRingCat.comp_apply, Iso.hom_inv_id, CommRingCat.id_apply]
+  have keyel : (Scheme.stalkClosedPointTo (i₁ ≫ Scheme.Opens.ι U)).hom
+      ((X.presheaf.germ U _ hx₀).hom (coordOf U g)) =
+      (Scheme.ΓSpecIso (CommRingCat.of L)).hom.hom
+        (i₁.appTop.hom ((Scheme.Opens.topIso U).inv.hom (coordOf U g))) := by
+    rw [← CommRingCat.comp_apply, key, CommRingCat.comp_apply, CommRingCat.comp_apply]
+  rw [keyel, hco, h3, h4]
 
 /-- **THE POLE AT `z`, in valuative form: a lift of a valuative square into `X` cannot hit `z`**
 (**PROVEN 2026-07-31** over the two sub-leaves immediately above; formerly a bare `sorry`, cut
