@@ -5686,11 +5686,19 @@ downstream changed: `exists_relPicZeroOf_of_relPicGroupLaw` still destructures
 this conjunction. -/
 theorem smooth_isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
-    (hconn : GeometricallyConnected strX) (hP : IsRelPicOf strX pstr)
+    (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hP : IsRelPicOf strX pstr)
     (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
     Smooth pstr ∧ IsSeparated pstr :=
-  ⟨smooth_of_isRelPicOf hproper hsmooth hconn hP hpush,
-    isSeparated_of_isRelPicOf hproper hsmooth hconn hP hpush⟩
+  -- BUILD REPAIR 2026-07-31 (`flt-lean-387`), class-7 interface split.  Both callees
+  -- gained `(_o : RelPoint strX (𝟙 S))` between `_hconn` and `_hP`, and the sole caller
+  -- (`exists_relPicZeroOf_of_relPicGroupLaw`, ~line 6449) already passes `o` — only this
+  -- middle wrapper was left with the old arity, which is exactly the shape where a
+  -- signature edit and its call sites land on opposite sides of a merge boundary.  The
+  -- resolution is forced: the two callee signatures and the one caller all agree that `o`
+  -- belongs here, so nothing was chosen.  I did not touch the mathematics.
+  ⟨smooth_of_isRelPicOf hproper hsmooth hconn o hP hpush,
+    isSeparated_of_isRelPicOf hproper hsmooth hconn o hP hpush⟩
 
 /-! ### The 2026-07-29 audit of `exists_relPicZeroSubgroup`
 
