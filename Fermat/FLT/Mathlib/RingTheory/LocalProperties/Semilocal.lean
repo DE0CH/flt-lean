@@ -33,12 +33,14 @@ Add it in the commit that first needs it.
 
 ## Provenance
 
-Both were extracted (2026-07-31) from
-`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, where the first was proven at the
-root namespace inside a Hopf-algebra file only because that is where it was first needed. There
-is deliberately **no copy left behind**: a declaration living in two modules one of which imports
+The first was MOVED here (2026-07-31) from
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, where it was proven at the root
+namespace inside a Hopf-algebra file only because that is where it was first needed. There is
+deliberately **no copy left behind**: a declaration living in two modules one of which imports
 the other is a hard `has already been declared` error, and is the failure mode CLAUDE.md's
-seventh invisibility class describes.
+seventh invisibility class describes. The second is new, and is exactly the three-step assembly
+that `HopfAlgebra.IsShortExact.nonempty_basis_chooseBasisIndex_cartierDual` was performing
+inline.
 -/
 
 @[expose] public section
