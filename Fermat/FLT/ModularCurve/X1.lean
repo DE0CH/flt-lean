@@ -18244,12 +18244,142 @@ theorem isIntegral_coeff_prime_pow_of_isIntegral_gamma1 {G : Subgroup (GL (Fin 2
         exact (hpi.mul ih.2).sub ((hcint.mul hpint).mul ih.1)
     exact (key k).1
 
+/-- **A NORMALIZED WEIGHT-TWO EIGENFORM ON `Γ₁(N)` IS NONZERO** (PROVEN
+2026-07-31) — the `Γ₁` twin of `X0.lean`'s `ne_zero_of_isWeightTwoEigenform`,
+and what the `period_ne` field of `IntegralHeckeEigensystem` becomes on this
+side, the period vector being the coordinate vector of `f`.
+
+`f = 0` makes the `q`-expansion of `⇑f` identically zero
+(`UpperHalfPlane.qExpansion_zero`), while `coeff_eq_qExpansion_coeffOn` at
+`G = Gamma1GL N` (so `le_rfl` discharges its hypothesis) identifies its `1`-st
+coefficient with `a 1 = 1`.  `hf.one` alone would not do it: `a` is a bare
+sequence, tied to `f` only through the two `qExpansion` fields, which is exactly
+the tie this lemma spends.  The nebentypus plays no part. -/
+theorem ne_zero_of_isWeightTwoEigenformOn_gamma1 {N : ℕ} {χ : DirichletCharacter ℂ N}
+    {f : CuspForm (Gamma1GL N) 2} {a : ℕ → ℂ}
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) : f ≠ 0 := by
+  intro h0
+  have h1 : a 1 = (PowerSeries.coeff 1) (UpperHalfPlane.qExpansion 1 (⇑f)) :=
+    coeff_eq_qExpansion_coeffOn le_rfl hf 1
+  rw [h0] at h1
+  simp [UpperHalfPlane.qExpansion_zero, hf.one] at h1
+
+/-- **THE HECKE-STABLE INTEGRAL LATTICE IN `S₂(Γ₁(N))`** (sorry leaf, NEW
+2026-07-31) — the GEOMETRIC/ANALYTIC input to Shimura's algebraicity theorem on
+`Γ₁(N)`, and after this cut the whole of what that theorem still owes here.
+`exists_integralHeckeEigensystem_of_isWeightTwoEigenformOn_gamma1` immediately
+below is PROVEN over this and `ne_zero_of_isWeightTwoEigenformOn_gamma1` and
+nothing else.
+
+**THE `Γ₁` TWIN OF `X0.lean`'s
+`exists_isIntegralHeckeStructure_of_isWeightTwoEigenform`, CUT ON THE SAME DAY
+BY THE SAME OWNER**, for the reason this file already records about the leaf
+below: a cut made on one side must be made on the other by ONE owner or the two
+drift into rival cuts of one node.  The sharing is now two levels deep — both
+sides produce a `Fermat.IsIntegralHeckeStructure`
+(`ModularCurve/HeckeLattice.lean`) and both consume the same PROVEN bridge
+`IntegralHeckeEigensystem.ofIsIntegralHeckeStructure` — so the geometry is all
+that differs, which is what one wants.
+
+TRUE, and classical (Shimura, *Introduction to the arithmetic theory of
+automorphic functions*, §3.5; Diamond–Shurman §5.2–5.3 and §6.5, where `Γ₁(N)`
+is the default level structure so this is the case actually written).  The
+witness is the `q`-expansion lattice: `S₂(Γ₁(N))` is finite-dimensional over
+`ℂ`; the forms with rational-integer `q`-expansion form a free `ℤ`-module of
+that rank spanning it; and the Hecke operators preserve it, because
+`a_m(T_n g) = ∑_{d ∣ gcd(m,n), gcd(d,N)=1} d · a_{mn/d²}(⟨d⟩ g)` has integer
+coefficients.
+
+**THE NEBENTYPUS ENTERS THE FORMULA AND NOT THE LATTICE, and that is why this
+leaf carries no hypothesis on `χ`.**  On `Γ₁(N)` the `d`-th term of the Hecke
+formula carries the DIAMOND operator `⟨d⟩`, which is defined over `ℤ` and
+preserves the integral lattice; `χ(d)` — a root of unity, not an integer —
+appears only when `⟨d⟩` is evaluated at a form with nebentypus `χ`, i.e. on the
+line spanned by `f`, downstream of the lattice.  So the integrality of `mat` is
+untouched by `χ`, and `T n f = a n • f` holds with `a n` in `ℚ(χ)`.  Had the
+lattice been taken inside the `χ`-eigenspace instead, `mat` would have had
+entries in `ℤ[χ]` and the statement would have been FALSE as written.
+
+**WHY THE CUT IS HERE, AND WHY IT IS NOT A RESTATEMENT DODGE.**  Everything
+between this and the conclusion is written out and compiling:
+`ofIsIntegralHeckeStructure` chooses the `ℂ`-basis, reads off the integer matrix
+of each `T n` and converts the eigenvector equation from the column to the row
+convention, and `IntegralHeckeEigensystem.isIntegral_coeff` then reads `a n` off
+a monic integer characteristic polynomial.  What is left mentions no matrix, no
+eigenvalue and no characteristic polynomial.  The per-`n` dodge — produce one
+integer matrix per `n` — is equivalent to `∀ n, IsIntegral ℤ (a n)` by the
+companion-matrix construction and was not taken; one lattice serves every `n`.
+
+**FALSITY AUDIT, RUN AGAINST THIS STATEMENT (2026-07-31) AND NOT INHERITED.**
+
+* `hN : N ≠ 0` and `G := Gamma1GL N` REMAIN LOAD-BEARING, and the MECHANIZED
+  level-`0` witness recorded in the block docstring above refutes THIS statement
+  without modification.  The implication runs through PROVEN code: were this
+  leaf to hold at `N = 0`, the assembly below — whose only other input,
+  `ne_zero_of_isWeightTwoEigenformOn_gamma1`, holds at every level — would give
+  `Nonempty (IntegralHeckeEigensystem a)` and hence, by
+  `IntegralHeckeEigensystem.isIntegral_coeff`, `IsIntegral ℤ (1/2 : ℂ)`, refuted
+  by `IsIntegrallyClosed ℤ` pulled back along `ℚ ↪ ℂ`.  Geometrically:
+  `S₂(Γ₁(0))` is not a finite-dimensional space with an integral structure.
+* `hf` IS LOAD-BEARING, and not only through `f`.  Drop it and `a` is arbitrary;
+  but `T n f = a n • f` with `f ≠ 0` forces, through `indep`, that `a n` be an
+  eigenvalue of an integer matrix, so the statement fails at `a := fun _ => 1/2`
+  at every `N`.  Both `qExpansion` parts of `hf` are load-bearing for the reason
+  recorded on `IsWeightTwoEigenformOn` itself: they are the only tie between `a`
+  and `f`.
+* **There is no degenerate witness at `rank = 0`.**  `IsIntegralHeckeStructure`
+  admits `rank := 0` when the space is zero, and it is unusable here: the
+  conjunct `∀ n, T n f = a n • f` together with `f ≠ 0` forces the space to be
+  nonzero.  That is why the eigenvector conjunct is stated here rather than
+  inside the structure.
+
+**WHAT REMAINS GENUINELY MISSING, AND HOW THIS SIDE DIFFERS FROM `Γ₀`**
+(surveyed 2026-07-31).  Three items, of which the `Γ₀` side has the third for
+free and this side does not:
+
+1. `FiniteDimensional ℂ (CuspForm (Gamma1GL N) 2)` — absent from mathlib for
+   non-trivial level (`Mathlib/NumberTheory/ModularForms/` carries only the
+   LEVEL-ONE dimension formula, re-checked 2026-07-31);
+2. the integral structure: the forms with integral `q`-expansion span, and form
+   a lattice with a `ℤ`-basis;
+3. **the Hecke operators themselves.**  `Fermat/FLT/Modularity/HeckeOperator.lean`
+   defines `heckeOp` only on `CuspForm (Gamma0GL M) 2`, and its construction
+   (`heckeTransform`, the coset representatives `heckeRep`, and the proof that
+   the transform is again a cusp form) is written for `Γ₀`.  Nothing in the tree
+   builds `T_n` or the diamond operators `⟨d⟩` on `Γ₁`.  So a successor here
+   pays for the operators as well, whereas on `Γ₀` they exist and are three
+   `import` lines away — see the survey on `X0.lean`'s
+   `exists_isIntegralHeckeStructure_of_isWeightTwoEigenform`, which names the
+   modules and records the no-cycle check.
+
+That asymmetry is real and is not a reason to split the two sides: the object
+produced, the bridge consumed and the assembly are identical, and only the
+producer differs, which is exactly the shape this file's own rule asks for.
+
+**REFUTED ROUTE, do not retry:** the archimedean bounds in this file bound
+`‖a_p‖`, and integrality is not an archimedean condition; `1/2` satisfies every
+one of them. -/
+theorem exists_isIntegralHeckeStructure_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) :
+    ∃ T : ℕ → CuspForm (Gamma1GL N) 2 →ₗ[ℂ] CuspForm (Gamma1GL N) 2,
+      Nonempty (IsIntegralHeckeStructure T) ∧ ∀ n, T n f = a n • f :=
+  sorry
+
 /-- **THE INTEGRAL HECKE LATTICE OF `X_1(N)`, FOR A WEIGHT-TWO EIGENFORM WITH
-NEBENTYPUS** (sorry leaf, NEW 2026-07-31) — the GEOMETRIC input to Shimura's
-algebraicity theorem on `Γ₁(N)`, and since 2026-07-31 the whole of what that
-theorem still owes here.  `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1`
+NEBENTYPUS** (a sorry leaf from 2026-07-31, **PROVEN the same day** over
+`exists_isIntegralHeckeStructure_of_isWeightTwoEigenformOn_gamma1` and
+`ne_zero_of_isWeightTwoEigenformOn_gamma1` immediately above) — the GEOMETRIC
+input to Shimura's algebraicity theorem on `Γ₁(N)`.
+`isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1`
 immediately below is PROVEN over it, and
 `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` over that.
+
+**THE STATEMENT IS UNCHANGED** and its consumers call it exactly as before; the
+count did not move — one leaf closed, one opened — and what changed is that the
+linear algebra between a lattice and an eigenvalue is now written out and shared
+with the `Γ₀` side.  The missing-machinery survey below is SUPERSEDED by the one
+on the leaf above, which distinguishes what this side owes from what `Γ₀` owes.
 
 **THE `Γ₁` TWIN OF `X0.lean`'s `exists_integralHeckeEigensystem_of_isWeightTwoEigenform`,
 CUT ON THE SAME DAY BY THE SAME OWNER.**  That is not a stylistic preference: the
@@ -18308,20 +18438,26 @@ theorem, so the implication is not in doubt — would give
 Hence no `IntegralHeckeEigensystem` exists for that system and `hN` cannot be
 dropped.  Geometrically: "`X_1(0)`" is not a curve with a homology lattice.
 
-**WHAT REMAINS GENUINELY MISSING** (re-checked 2026-07-31): the integral
-homology `H₁(X_1(N), ℤ)` as a Hecke module exists neither here, nor in mathlib
-at this pin, nor in `~/cs/FLT`.  The two routes worth costing are the same two
-listed on the `Γ₀` leaf in `X0.lean` — the Riemann-surface homology of
-Diamond–Shurman §6.5, and the `q`-expansion lattice `S₂(Γ₁(N), ℤ)` of Shimura
-§3.5 — and `Γ₁` is the better-documented side for both, since Diamond–Shurman
-takes `Γ₁(N)` as its default level structure.  **REFUTED ROUTE, do not retry:**
+**WHAT REMAINS GENUINELY MISSING** (written 2026-07-31, **SUPERSEDED the same
+day** by the itemised survey on the leaf above, which says which of the three
+items this side owes that `Γ₀` does not; do not cost work off this paragraph).
+It said: the integral homology `H₁(X_1(N), ℤ)` as a Hecke module exists neither
+here, nor in mathlib at this pin, nor in `~/cs/FLT` — still accurate — and that
+the two routes worth costing are the Riemann-surface homology of
+Diamond–Shurman §6.5 and the `q`-expansion lattice `S₂(Γ₁(N), ℤ)` of Shimura
+§3.5, `Γ₁` being the better-documented side for both since Diamond–Shurman takes
+`Γ₁(N)` as its default level structure.  The cut above takes the second route.
+**REFUTED ROUTE, do not retry:**
 the archimedean bounds in this file bound `‖a_p‖`, and integrality is not an
 archimedean condition; `1/2` satisfies every one of them. -/
 theorem exists_integralHeckeEigensystem_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
     (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
     (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) :
-    Nonempty (IntegralHeckeEigensystem a) :=
-  sorry
+    Nonempty (IntegralHeckeEigensystem a) := by
+  obtain ⟨T, ⟨H⟩, hTf⟩ :=
+    exists_isIntegralHeckeStructure_of_isWeightTwoEigenformOn_gamma1 N hN χ f a hf
+  exact ⟨IntegralHeckeEigensystem.ofIsIntegralHeckeStructure H
+    (ne_zero_of_isWeightTwoEigenformOn_gamma1 hf) hTf⟩
 
 /-- **SHIMURA'S ALGEBRAICITY THEOREM FOR `Γ₁(N)` AT A PRIME: `a_p` is an
 algebraic integer for every prime `p`** (sorry leaf, NEW 2026-07-31) — all that
