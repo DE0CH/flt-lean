@@ -10174,6 +10174,22 @@ curve, by the ROUND-7 reverse witness), that `[F : ℚ]` is forced EVEN, and
 that in the case the chain uses the citation is TAYLOR 1989 rather than
 Carayol.
 
+**RE-VERIFIED ATOMIC 2026-07-31 by a fresh owner, and the verdict to carry is
+the ROUND-7 one: "Do not dispatch another agent to look for a weakening; there
+is none."** The reverse witness at `CarayolJacobianPackage` (§ROUND-7
+EQUIVALENCE AUDIT, above the structure) makes `Nonempty (CarayolJacobianPackage
+F L badF P)` EQUIVALENT to the STEP 2a conclusion — the twenty-odd fields are
+all true of a plain `τ : GaloisRep F L (Fin 2 → L)` with `τ.charFrob w = P w`,
+with `hecke w` scalar, `pair` the symplectic form and `e = 1` — so every
+conclusion-side rearrangement is a relocation by construction. What is left is
+therefore exactly Langlands for Hilbert modular forms of parallel weight `2`:
+attach a `2`-dimensional `3`-adic representation to the eigensystem. That is
+Carayol's/Taylor's theorem and it is not decomposable in this tree; a prover
+dispatched here has no smaller target to hit. The one recorded genuine move is
+the `R = 𝕋` STRENGTHENING of ROUND-6, which asserts MORE and was rejected
+there. Refuting check, unchanged: exhibit a package `Q` with `Nonempty Q`
+strictly weaker than the STEP 2a conclusion.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem nonempty_carayolJacobianPackage_of_heckeAlgebraCharacter
@@ -17950,7 +17966,23 @@ only for the untwisted `ζ w = 1`.
 The residual citation here is therefore Arthur–Clozel Ch. 3 Thm 4.2(d) TOGETHER
 WITH the `p`-th-power Frobenius comparison at inert places — the two things
 findings (1) and (4) of the consumer's docstring identify — and no longer the
-archimedean estimate on top of them. -/
+archimedean estimate on top of them.
+
+**RE-VERIFIED ATOMIC 2026-07-31 by a fresh owner; the tempting further cut is
+NOT available, and here is why, so that nobody spends a cycle rediscovering
+it.** The natural next move is to split the two fused things — leave Thm 4.2(d)
+as the citation and PROVE the `p`-th-power Frobenius comparison separately, the
+way the SPLIT-place half was peeled off into the fully proven
+`charFrob_baseChange_eq_of_absNorm_eq`. It cannot be done at this signature.
+The Dickson conjunct is not a statement about `ρ` alone — it relates `PL v`, the
+eigensystem UPSTAIRS, to `a w`, the eigensystem being DESCENDED, and `a w` only
+exists as the output of the descent. Stating the comparison separately would
+mean naming the automorphic representations on the two sides, and the ninth-owner
+audit's own PIN correction records that the predicate is absent (`grep -rn
+IsAutomorphic Fermat/` returns nothing); asserting automorphy of an
+existentially bound object is the citation under another name. So what is below
+this node is the trace formula and the twisted character identity, exactly as
+finding (9) says, and a prover dispatched here has no smaller target. -/
 theorem exists_baseChangeDickson_of_prime_cyclic_step_of_inert
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
