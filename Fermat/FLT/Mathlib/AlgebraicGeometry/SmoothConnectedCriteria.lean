@@ -42,6 +42,13 @@ ring so that a consumer can discharge them by commutative algebra.
   previous item once regularity and perfectness have been consumed: for a
   **smooth** finite-type domain over ANY field, the relative dimension is the
   Krull dimension (**PROVEN 2026-07-28**; no perfectness, no regularity).
+* `algebraSmooth_of_smoothOfRelativeDimension` and
+  `ringKrullDim_eq_of_smoothOfRelativeDimension` — the CONVERSES of that item,
+  added 2026-07-30 for a consumer that receives the scheme-level property as
+  given data and has to read the two ring-level conjuncts back off it.  The
+  smoothness half is PROVEN (three rewrites, and no domain hypothesis); the
+  dimension half is a **LEAF**, and it is the pure dimension theory of smooth
+  algebras that this pin does not have — see its docstring.
 * `Algebra.linearIndepOn_pow_of_formallySmooth` — a formally smooth field extension
   is separable in MacLane's sense, Stacks `0323` (**PROVEN 2026-07-28**).  It is what
   the previous item pays for dropping `PerfectField`; mathlib records the same
@@ -1200,5 +1207,104 @@ theorem smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing
     SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B))) :=
   haveI := Algebra.Smooth.of_isRegularRing_of_perfectField K B
   smoothOfRelativeDimension_specMap_algebraMap_of_smooth K B n hdim
+
+/-! ### The converses: reading the ring-level conjuncts back off the morphism
+
+`smoothOfRelativeDimension_specMap_algebraMap_of_smooth` above turns
+`Algebra.Smooth K B` together with `ringKrullDim B = n` into
+`SmoothOfRelativeDimension n (Spec (algebraMap K B))`.  The two declarations
+below run that implication BACKWARDS, one conjunct each.
+
+They exist because of a 2026-07-30 repair in `Fermat/FLT/ModularCurve/X1.lean`.
+`smoothCurve_A_of_gamma1GITPresentation` used to assert `Algebra.Smooth K A`
+for an ARBITRARY `Gamma1GITPresentation`, and was refuted: the nine fields of
+that structure pin the ring of invariants `B` and do not pin `A`.  The repair
+carries Katz–Mazur 8.2.1 as a FIELD of the presentation — necessarily in the
+scheme-level form, since the structure is written over an arbitrary base scheme
+and `ringKrullDim A = 1` is simply false over, say, `Spec ℤ[1/N]`.  A consumer
+at a FIELD base then has to get back to the ring level, which is what these are
+for. -/
+
+/-- **A morphism `Spec B ⟶ Spec K` smooth of some relative dimension has
+`B` smooth as a `K`-algebra** (PROVEN 2026-07-30).
+
+The converse of the smoothness half of
+`smoothOfRelativeDimension_specMap_algebraMap_of_smooth`, and it is three
+rewrites: `SmoothOfRelativeDimension.smooth` forgets the dimension,
+`HasRingHomProperty.Spec_iff` for `@Smooth` crosses back over `Spec` (the
+instance `HasRingHomProperty @Smooth RingHom.Smooth` is mathlib's), and
+`RingHom.smooth_algebraMap` identifies `RingHom.Smooth (algebraMap K B)` with
+`Algebra.Smooth K B`.
+
+Note what is NOT needed, in contrast to the forward direction: no `IsDomain`,
+no `PerfectField`, no `Algebra.FiniteType` — finite presentation is part of
+`Algebra.Smooth` and comes out of the scheme-level hypothesis, rather than
+having to be supplied.  `K` is not used as a field either; the statement holds
+verbatim for a commutative base ring, and is stated over a field only because
+that is the shape of the consumer and of its forward twin. -/
+theorem algebraSmooth_of_smoothOfRelativeDimension
+    (K B : Type u) [Field K] [CommRing B] [Algebra K B] (n : ℕ)
+    (h : SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B)))) :
+    Algebra.Smooth K B := by
+  haveI := h
+  have h2 : Smooth (Spec.map (ofHom (algebraMap K B))) :=
+    SmoothOfRelativeDimension.smooth n _
+  rw [HasRingHomProperty.Spec_iff (P := @Smooth)] at h2
+  rw [CommRingCat.hom_ofHom] at h2
+  exact RingHom.smooth_algebraMap.mp h2
+
+/-- **A nontrivial algebra smooth of relative dimension `n` over a field has
+Krull dimension `n`** (sorry leaf, opened 2026-07-30) — the dimension half of
+the converse, and the reason it is a leaf rather than three rewrites like its
+twin above.
+
+TRUE and standard.  `SmoothOfRelativeDimension n` says every point of `Spec B`
+has an affine open neighbourhood `Spec B_t` with
+`Algebra.IsStandardSmoothOfRelativeDimension n K B_t`, i.e. a presentation
+`B_t ≅ K[x_1, …, x_m] ⧸ (f_1, …, f_{m-n})` whose Jacobian minor is invertible.
+Such a ring is a complete intersection of dimension `m - (m - n) = n` whenever
+it is nontrivial, and `ringKrullDim` of a scheme is the supremum over an affine
+open cover, so `ringKrullDim B = n`.
+
+`Nontrivial B` is REQUIRED and is not decoration: `ringKrullDim (0 : Type) = ⊥`,
+and the zero ring vacuously satisfies the hypothesis for every `n` (it has no
+points, so the universally quantified field of `SmoothOfRelativeDimension` is
+vacuous).  That is the only degenerate case — the class is genuinely
+equidimensional in the useful direction, because it demands the SAME `n` at
+every point: `B = K × K[x]` is smooth, but is not smooth of relative dimension
+`1`, the `Spec K` component having relative dimension `0`.  So no connectedness,
+irreducibility or domain hypothesis is needed here, and none is available at the
+call site.
+
+## WHAT IS MISSING FROM THE PIN
+
+Checked 2026-07-30, and it is dimension theory rather than anything about
+smoothness:
+
+* `Mathlib/RingTheory/KrullDimension/` has `ringKrullDim (MvPolynomial (Fin n) R)
+  = ringKrullDim R + n` and the polynomial-ring inequalities, but nothing that
+  computes the dimension of a QUOTIENT by a regular sequence — the Krull
+  principal-ideal theorem is present as `Ideal.height`-style statements and is
+  not connected to `ringKrullDim` of the quotient.
+* There is no `ringKrullDim`-vs-`Algebra.trdeg` theorem at all
+  (`grep -rn 'ringKrullDim.*trdeg' Mathlib/` is empty), so the classical route
+  "`dim B = trdeg_K Frac B` for a finite-type domain" is not available either —
+  and it would want `IsDomain B`, which this statement deliberately does not
+  have.
+* `Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` contains no dimension theory
+  whatsoever; this module's header records that check.
+
+*The check that would refute this audit*: any of those three greps returning a
+usable statement.
+
+*The check that would refute the STATEMENT*: a nontrivial `K`-algebra `B` with
+`SmoothOfRelativeDimension n (Spec (algebraMap K B))` and `ringKrullDim B ≠ n`.
+By the paragraph above such a `B` would have to fail equidimensionality, which
+the class forbids pointwise. -/
+theorem ringKrullDim_eq_of_smoothOfRelativeDimension
+    (K B : Type u) [Field K] [CommRing B] [Nontrivial B] [Algebra K B] (n : ℕ)
+    (_h : SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B)))) :
+    ringKrullDim B = n :=
+  sorry
 
 end AlgebraicGeometry

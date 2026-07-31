@@ -1613,7 +1613,21 @@ lemma lineNumerator_mem_pointIdeal_sub {q₁ q₂ x y : F} (hq : W.Nonsingular q
         rw [hU]
         linear_combination (-(q₁ - α) ^ 3) * hY + (ℓ * (q₁ - α) ^ 3) * hX
 
-variable {p : ℕ} [Fact p.Prime] [IsAlgClosed F]
+/-! ### The `p`-division substrate
+
+**GENERALIZED FROM PRIME `p` TO ANY LEVEL `p ≥ 2` (2026-07-30).**  Everything from
+here to the end of the file is indexed by a natural number `p` and used to be
+guarded by `[Fact p.Prime]`.  An audit of every use of that instance found
+exactly four things asked of it — `p ≠ 0`, `0 < p`, `2 ≤ p`, and (in
+`not_even_of_two_eq_zero`) that `p` is odd in characteristic `2` — of which the
+first three follow from `1 < p` and the fourth follows from the hypothesis
+`(p : F) ≠ 0` that the lemma already carries.  So the substrate is `[Fact (1 < p)]`
+now, which is what lets the level-`N` Weil pairing
+(`WeilPairing.exists_weilPairing_mu`, `Nat.Coprime N q`) run on it.  The prime
+case is unchanged: a caller with `[Fact p.Prime]` supplies
+`haveI : Fact (1 < p) := ⟨(Fact.out : p.Prime).one_lt⟩`. -/
+
+variable {p : ℕ} [Fact (1 < p)] [IsAlgClosed F]
 
 -- `[IsAlgClosed F]` is not needed for this leaf (nor is `hΔ`), but the
 -- signature is kept as the consumer `spanSingleton_pointEval_XClass`
@@ -4483,7 +4497,7 @@ theorem spanSingleton_pointEval_translate (hΔ : W.Δ ≠ 0) {Q : W.Point}
                       W.FunctionField)).prod)) := by
             rw [← hV]
 
-omit [Fact p.Prime] in
+omit [Fact (1 < p)] in
 /-- **L4-8: the translation character of the Miller generator**
 (PROVEN over the transport brick `spanSingleton_pointEval_translate`).
 Let `val : ι → W.Point` enumerate the `p`-torsion subgroup, `T'` a
@@ -4947,7 +4961,7 @@ theorem exists_smul_tautPoint_eq (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0) :
   haveI : (W.map (constHom W)).IsElliptic :=
     ⟨isUnit_iff_ne_zero.mpr (curveK_Δ_ne_zero W hΔ)⟩
   have hpZ : (p : ℤ) ≠ 0 :=
-    Int.natCast_ne_zero.mpr (Fact.out : p.Prime).ne_zero
+    Int.natCast_ne_zero.mpr ((Nat.zero_lt_of_lt (Fact.out : 1 < p)).ne')
   have hpF : ((p : ℤ) : F) ≠ 0 := by exact_mod_cast hp
   have hcast : ((W.map (constHom W)).baseChange W.FunctionField).toAffine =
       curveK W := map_constHom_baseChange_self W
@@ -4999,7 +5013,7 @@ theorem smul_taut_xCoord_ne_constHom {xp : W.FunctionField}
       apply Polynomial.coeff_eq_zero_of_natDegree_lt
       apply lt_of_le_of_lt (W.natDegree_ΨSq_le (p : ℤ))
       rw [Int.natAbs_natCast]
-      exact Nat.sub_lt (pow_pos (Fact.out : p.Prime).pos 2) one_pos
+      exact Nat.sub_lt (pow_pos (Nat.zero_lt_of_lt (Fact.out : 1 < p)) 2) one_pos
     have hcoeff : (W.Φ (p : ℤ) -
         Polynomial.C c * W.ΨSq (p : ℤ)).coeff (p ^ 2) = 1 := by
       rw [Polynomial.coeff_sub, Polynomial.coeff_C_mul, hΦc, hΨc, mul_zero,
@@ -5346,7 +5360,7 @@ theorem lift_pointEval_comp (hΔ : W.Δ ≠ 0) {Q R S : W.Point}
     exact RingHom.congr_fun hcomp2 a
   exact RingHom.congr_fun hring w
 
-omit [Fact p.Prime] in
+omit [Fact (1 < p)] in
 /-- **L4-5/6 sub-leaf: the lifted translation evaluations fix
 the `[p]`-pullback subfield pointwise** — `[p]^*K ⊆ Fix E[p]`.  For a
 `p`-torsion point `Q`, the lifted translation `σ_Q` fixes every
@@ -5709,7 +5723,7 @@ theorem finiteDimensional_and_finrank_le_pullback (hΔ : W.Δ ≠ 0)
     apply Polynomial.coeff_eq_zero_of_natDegree_lt
     apply lt_of_le_of_lt (W.natDegree_ΨSq_le (p : ℤ))
     rw [Int.natAbs_natCast]
-    exact Nat.sub_lt (pow_pos (Fact.out : p.Prime).pos 2) one_pos
+    exact Nat.sub_lt (pow_pos (Nat.zero_lt_of_lt (Fact.out : 1 < p)) 2) one_pos
   have hqcoeff : q.coeff (p ^ 2) = 1 := by
     rw [hqdef, Polynomial.coeff_sub, Polynomial.coeff_map, Polynomial.coeff_C_mul,
       Polynomial.coeff_map, hΦc, hΨc, map_zero, mul_zero, sub_zero, map_one]
@@ -6230,7 +6244,7 @@ omit [DecidableEq F] [IsAlgClosed F] in
 affine divisor). -/
 @[simp] lemma pointIdeal_zero : pointIdeal W (0 : W.Point) = ⊤ := rfl
 
-omit [Fact p.Prime] in
+omit [Fact (1 < p)] in
 /-- **Divisibility of the point group**: `[p]` is surjective on the
 points of a nonsingular Weierstrass curve over an algebraically closed
 field of characteristic prime to `p` (`TorsionCard.smul_surjective`,
@@ -6244,7 +6258,7 @@ theorem exists_zsmul_eq (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0) (R : W.Point) :
   rw [hbc] at hsurj
   exact hsurj R
 
-omit [Fact p.Prime] [IsAlgClosed F] in
+omit [Fact (1 < p)] [IsAlgClosed F] in
 /-- **The `p`-torsion enumeration is translation invariant**: for a
 `p`-torsion point `T`, translating the enumeration `val` of `E[p]` by
 `T` permutes it, so the two multisets agree. -/
@@ -6709,7 +6723,7 @@ lemma count_smul_pair_eq (hΔ : W.Δ ≠ 0) {a b : F} (hab : W.Nonsingular a b)
         (if W.Ψ₂Sq.eval x = 0 then 2 else 1) else 0 := by
   classical
   haveI : W.IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔ⟩
-  have hpZ : (p : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : p.Prime).ne_zero
+  have hpZ : (p : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr ((Nat.zero_lt_of_lt (Fact.out : 1 < p)).ne')
   obtain ⟨x', y', hns0, heq0, hx'0⟩ :=
     TorsionCard.exists_smul_some_eq W hpZ hab hΨ
   have h' : W.Nonsingular x' y' := hns0
@@ -6785,7 +6799,7 @@ lemma Φ_sub_C_mul_ΨSq_ne_zero (c : F) :
     apply Polynomial.coeff_eq_zero_of_natDegree_lt
     apply lt_of_le_of_lt (W.natDegree_ΨSq_le (p : ℤ))
     rw [Int.natAbs_natCast]
-    exact Nat.sub_lt (pow_pos (Fact.out : p.Prime).pos 2) one_pos
+    exact Nat.sub_lt (pow_pos (Nat.zero_lt_of_lt (Fact.out : 1 < p)) 2) one_pos
   have hcoeff : (W.Φ (p : ℤ) -
       Polynomial.C c * W.ΨSq (p : ℤ)).coeff (p ^ 2) = 1 := by
     rw [Polynomial.coeff_sub, Polynomial.coeff_C_mul, hΦc, hΨc, mul_zero,
@@ -7955,11 +7969,17 @@ theorem derivative_Ψ₂Sq_eq_zero_of_two_eq_zero (h2 : (2 : F) = 0) :
     h4, h2n, h2b, map_zero]
   simp
 
-omit [DecidableEq F] [IsAlgClosed F] in
-/-- `(p : F) ≠ 0` in characteristic `2` makes `p` odd. -/
+omit [DecidableEq F] [IsAlgClosed F] [Fact (1 < p)] in
+/-- `(p : F) ≠ 0` in characteristic `2` makes `p` odd.
+
+This used to be proved from `p.Prime` (`odd_of_ne_two` after excluding `p = 2`),
+which needed the level to be prime and only ruled out the single even value `2`.
+The hypothesis `(p : F) ≠ 0` already says everything: in characteristic `2` an
+even `p = 2k` casts to `k · 2 = 0`.  So the lemma is true for EVERY level, and
+that is what lets the descent run at composite level. -/
 theorem not_even_of_two_eq_zero (h2 : (2 : F) = 0) (hp : (p : F) ≠ 0) : ¬ Even p := by
-  have hne : p ≠ 2 := by rintro rfl; exact hp (by exact_mod_cast h2)
-  exact Nat.not_even_iff_odd.mpr ((Fact.out : p.Prime).odd_of_ne_two hne)
+  rintro ⟨k, hk⟩
+  exact hp (by rw [hk]; push_cast; linear_combination (k : F) * h2)
 
 omit [DecidableEq F] [IsAlgClosed F] in
 /-- An odd prime is `1` in characteristic `2`. -/
@@ -8139,7 +8159,7 @@ theorem card_le_two_mul_card_roots_Φ_sub_C_mul_ΨSq (hΔ : W.Δ ≠ 0) (hp : (p
       (W.Φ ((p : ℕ) : ℤ) - Polynomial.C x * W.ΨSq ((p : ℕ) : ℤ)).roots.toFinset.card := by
   classical
   haveI : W.IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔ⟩
-  have hpZ : ((p : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : p.Prime).ne_zero
+  have hpZ : ((p : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr ((Nat.zero_lt_of_lt (Fact.out : 1 < p)).ne')
   set G := W.Φ ((p : ℕ) : ℤ) - Polynomial.C x * W.ΨSq ((p : ℕ) : ℤ) with hGdef
   have hGne : G ≠ 0 := Φ_sub_C_mul_ΨSq_ne_zero x
   set P₀ : W.Point := Point.some x y hxy with hP₀def
@@ -8158,7 +8178,8 @@ theorem card_le_two_mul_card_roots_Φ_sub_C_mul_ΨSq (hΔ : W.Δ ≠ 0) (hp : (p
     have h := TorsionCard.card_torsionBy W p hp
     rwa [hbc] at h
   haveI : Finite (Submodule.torsionBy ℤ W.Point ((p : ℕ) : ℤ)) :=
-    Nat.finite_of_card_ne_zero (by rw [hM]; exact pow_ne_zero _ (Fact.out : p.Prime).pos.ne')
+    Nat.finite_of_card_ne_zero (by
+      rw [hM]; exact pow_ne_zero _ (Nat.zero_lt_of_lt (Fact.out : 1 < p)).ne')
   haveI : Fintype (Submodule.torsionBy ℤ W.Point ((p : ℕ) : ℤ)) := Fintype.ofFinite _
   set T : Finset W.Point :=
     Finset.univ.image (Subtype.val : (Submodule.torsionBy ℤ W.Point ((p : ℕ) : ℤ)) → W.Point)
@@ -8289,7 +8310,7 @@ theorem rootMultiplicity_derivative_Φ_eq_two_of_two_eq_zero_isAlgClosed
     (Polynomial.derivative (W.Φ ((p : ℕ) : ℤ))).rootMultiplicity a = 2 := by
   classical
   haveI : W.IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔ⟩
-  have hpZ : ((p : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : p.Prime).ne_zero
+  have hpZ : ((p : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr ((Nat.zero_lt_of_lt (Fact.out : 1 < p)).ne')
   have hodd : Odd p := Nat.not_even_iff_odd.mp (not_even_of_two_eq_zero (p := p) (F := F) h2 hp)
   set G := W.Φ ((p : ℕ) : ℤ) - Polynomial.C x * W.ΨSq ((p : ℕ) : ℤ) with hGdef
   set H := Polynomial.derivative (W.Φ ((p : ℕ) : ℤ)) with hHdef
@@ -8391,7 +8412,7 @@ theorem rootMultiplicity_derivative_Φ_eq_two_of_two_eq_zero_isAlgClosed
       refine lt_of_le_of_lt (Polynomial.natDegree_C_mul_le x _) ?_
       refine lt_of_le_of_lt (W.natDegree_ΨSq_le ((p : ℕ) : ℤ)) ?_
       rw [Int.natAbs_natCast]
-      exact Nat.sub_lt (pow_pos (Fact.out : p.Prime).pos 2) one_pos
+      exact Nat.sub_lt (pow_pos (Nat.zero_lt_of_lt (Fact.out : 1 < p)) 2) one_pos
     rw [hGdef, Polynomial.natDegree_sub_eq_left_of_natDegree_lt (by rw [h1]; exact h2'), h1]
   have hle : ∑ r ∈ R, G.rootMultiplicity r ≤ p ^ 2 := by
     rw [hsum, ← hGdeg]
@@ -8865,7 +8886,7 @@ theorem count_pointEval_XClass_of_smul_ne_zero
   cases S with
   | zero => exact absurd rfl hS0
   | some a b hab =>
-  have hpZ : (p : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : p.Prime).ne_zero
+  have hpZ : (p : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr ((Nat.zero_lt_of_lt (Fact.out : 1 < p)).ne')
   have hpF : ((p : ℤ) : F) ≠ 0 := by exact_mod_cast hp
   haveI : W.IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔ⟩
   have hΨiff : (((p : ℤ) • (Point.some a b hab : W.Point)) = 0) ↔
@@ -9709,7 +9730,7 @@ theorem one_le_count_pointEval_YClass_of_two_ne_zero
   classical
   haveI : W.IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔ⟩
   have hppos : (0 : ℤ) < (p : ℤ) :=
-    Int.natCast_pos.mpr (Fact.out : p.Prime).pos
+    Int.natCast_pos.mpr (Nat.zero_lt_of_lt (Fact.out : 1 < p))
   obtain ⟨xp', yp', hpn', hptaut', hxrel⟩ :=
     exists_smul_tautPoint_eq (W := W) hΔ hp
   have hxx : xp = xp' := by
@@ -12557,7 +12578,7 @@ lemma mult_prod_pointIdeal' [DecidableEq W.Point]
     · push_cast
       ring
 
-omit [Fact p.Prime] [IsAlgClosed F] in
+omit [Fact (1 < p)] [IsAlgClosed F] in
 /-- **L4-7 substrate brick (PROVEN): a point-adic multiplicity of a
 `[p]`-fiber product is `1` exactly on the fiber through the point.**
 Stated over the same abstract multiplicity as `mult_prod_pointIdeal'`.
@@ -12683,7 +12704,7 @@ theorem fiberProd_prod_inj {ι : Type*} [Fintype ι] {val : ι → W.Point}
   -- ── a nonzero `p`-torsion point exists, since `#E[p] = p² > 1`
   obtain ⟨i₀, hi₀⟩ := hval_surj 0 (smul_zero _)
   have h1lt : 1 < Fintype.card ι := by
-    have hp2 : 2 ≤ p := (Fact.out : p.Prime).two_le
+    have hp2 : 2 ≤ p := Fact.out (p := 1 < p)
     have h4 : 2 ^ 2 ≤ p ^ 2 := Nat.pow_le_pow_left hp2 2
     rw [hcard]
     exact lt_of_lt_of_le (by norm_num) h4
