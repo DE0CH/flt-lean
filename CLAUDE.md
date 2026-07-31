@@ -3927,3 +3927,50 @@ it still did not run, because a prose instruction in a 3 900-line file competes 
 hundred others at the moment somebody is merging ninety branches. **A check that is worth
 running every release should be a script with a name, not a paragraph.** Converting one
 costs ten minutes and is a full result for a task that has spare time.
+
+## AN ORPHANED OPENER CAN SCORE ZERO — because block comments NEST, and "unknown identifier" is its real symptom
+
+(2026-07-31, `flt-lean-105`, `ModularCurve/RelativePicard.lean`.) The section above
+says `depth > 0` names the culprit. That is true and it is not the whole story: **two
+defects of opposite sign cancel, and then the balance scan reports the file as clean.**
+
+`RelativePicard.lean` had an orphaned `/--` at ~4230 — the 2026-07-30 docstring of
+`𝒪(−σ) COMMUTES WITH BASE CHANGE`, left truncated mid-sentence when a branch replaced
+it — and a stray `-/` about 700 lines later, left by the *mirror* damage in a different
+docstring. The file scored `depth = 0`. It did not report `unterminated comment` either,
+because **Lean's block comments NEST**: the orphan simply swallowed everything up to the
+first unmatched `-/`, and the nested `/-!`/`/--` in between raised and lowered the depth
+on the way.
+
+**So the symptom is not a comment diagnostic at all. It is:**
+
+    error: Unknown identifier `relSection_comp_curveBaseChangeMap`
+    error: Unknown identifier `isPullback_curveBaseChangeMap`
+    error: Unknown identifier `exists_abelJacobiPoint`
+    error: Unknown identifier `exists_relPicZeroGroupScheme`
+
+for four declarations that `grep -c '^theorem <name>'` finds **exactly once each**. That
+combination — *the compiler says a name does not exist, and the source says it does* —
+has exactly two causes in this tree, and they are told apart in one command:
+
+* the declaration is BELOW its use (Lean's linear order), which
+  `grep -n` settles instantly; or
+* **the declaration is inside a comment nobody can see.** Look UP from the first
+  reported name for the nearest `/--` or `/-!` and check that it closes before the
+  declaration; a docstring that ends mid-sentence is the tell.
+
+Both were present here, which is why fixing the first alone changed nothing.
+
+**Consequences for the release checks.** The nesting-cancellation case is invisible to
+`flt-comment-balance.py` by construction, so the balance scan is a cheap FIRST pass and
+never a clearance. It stays worth running — it found four files in one release — but
+the only instrument that sees this one is `lake env lean` on the single file, which is
+minutes rather than a full build. Run it on any module whose errors are a list of
+"unknown identifier" for names that exist.
+
+And it argues for one habit when REPAIRING this class: after deleting an orphaned
+opener, re-run `lake env lean` even if the scan now reports the file balanced — the
+deletion *unmasks* whatever the stray `-/` was hiding, and here that was three further
+defects (a second orphaned header, a pair of `_`-prefixed binders used unprefixed in a
+body, and a genuine declaration-order break). Repairs in this class arrive in layers,
+for the same import-graph reason the release build takes three rounds.
