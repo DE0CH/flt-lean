@@ -15485,6 +15485,8 @@ theorem stepanovDerivX_add {R : Type*} [CommRing R] (b₁ b₂ : Polynomial (Pol
   intro i c₁ c₂
   rw [Polynomial.derivative_add, map_add, add_mul]
 
+end StepanovDerivationCalculus
+
 /-! #### Steps 1 and 2 of Schmidt's reduction (PROVEN 2026-07-31)
 
 `exists_stepanovJetLinearForms` is a four-step argument (Schmidt III §4,

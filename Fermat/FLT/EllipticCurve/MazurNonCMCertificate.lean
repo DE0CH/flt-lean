@@ -578,10 +578,6 @@ theorem not_monic_dvd_preΨ_elevenB_mod (G : (ZMod 23)[X]) (hG : G.Monic)
   exact not_monic_dvd_of_smallDegreePart hc preΨ'_eleven_elevenBMod hmn
     dvd_X_pow_card_pow_sub_X_hPolyElevenB eval_hPolyElevenB_ne_zero hD0 hDlt G hG hdeg
 
-end Fermat.MazurNonCMCertificate
-
-end
-
 /-- The minimal model `[1, 1, 0, -660, -7600]` of the `p = 17`, `j = −882216989/131072` row, read over
 `ZMod 67`.  Definitionally `Fermat.nonCMModelSeventeenAmod`. -/
 def seventeenAMod : WeierstrassCurve (ZMod 67) := ⟨1, 1, 0, -660, -7600⟩
