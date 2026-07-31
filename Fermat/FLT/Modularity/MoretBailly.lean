@@ -398,7 +398,14 @@ import Mathlib.Algebra.Polynomial.Eval.Irreducible
 import Mathlib.Algebra.Polynomial.Lifts
 import Mathlib.RingTheory.Polynomial.GaussLemma
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
-import Mathlib.RingTheory.Polynomial.IsIntegral
+-- `public` (2026-07-31): `Polynomial.isIntegral_coeff_of_dvd` and
+-- `MvPolynomial.isIntegral_iff_isIntegral_coeff` are the two mathlib bricks behind
+-- `irreducible_map_of_irreducible_specialize` below, and `integralClosure` occurs in the
+-- STATEMENT of `exists_ringHom_integralClosure`, so this must be re-exported.
+public import Mathlib.RingTheory.Polynomial.IsIntegral
+-- `MvPolynomial.finSuccEquiv` occurs in the statements of the `Fin 2`-monicity lemmas
+-- (`monic_finSuccEquiv`, `coeff_single_of_monic`) that the same criterion runs on.
+public import Mathlib.Algebra.MvPolynomial.Equiv
 import Mathlib.RingTheory.AdjoinRoot
 import Mathlib.FieldTheory.Finite.Basic
 -- (`Mathlib.Algebra.Field.ULift` is already `public import`ed above)
@@ -20200,8 +20207,504 @@ theorem exists_directionPlane_irreducible_familyPlaneSection_degree_one
   refine irreducible_of_totalDegree_eq_one_field ?_
   rw [totalDegree_map_eq_of_injective _ hinj, hG]
 
-/-- **SCHMIDT'S THEOREM 3D, STEP 2 IN THE BASIS NORMALISATION (SORRY LEAF, cut
-2026-07-30)** -- geometric integrality of the generic plane section, over the
+/-! ### The SPECIALISATION CRITERION: one honest irreducible section forces the generic one
+
+(2026-07-31.) This block proves, outright, the implication that Schmidt's Theorem 3D step 2
+was being asked for in the hard direction:
+
+> if a family `P ∈ K[y][s, t]` of plane sections is MONIC of degree `d` in `s`, and ONE of
+> its `K`-rational members `P(·, ·, y₀)` is irreducible in `K[s, t]`, then the GENERIC
+> member is irreducible over `\overline{K(y)}`.
+
+That is `irreducible_map_of_irreducible_eval_unit`. It reverses the usual direction of
+travel: "absolute irreducibility of the generic fibre specialises to a dense open set of
+fibres" is the standard statement, and the converse -- ONE good fibre suffices -- is the
+one that is actually cheap, because a factorisation over `\overline{K(y)}` of a polynomial
+MONIC in `s` has all of its coefficients INTEGRAL over `K[y]`, and an integral extension of
+`K[y]` has a maximal ideal over `ker (eval y₀)` whose residue field is `K` again
+(`K = K̄` and the Nullstellensatz). Push the factorisation through that residue map and the
+chosen fibre factors too, with both degrees in `s` preserved because both factors are monic.
+
+Consequences, and the reason this is the right brick:
+
+* it removes `FractionRing`, `AlgebraicClosure` and the whole generic-fibre vocabulary from
+  what a prover of the remaining leaf has to think about -- the leaf below asks only for an
+  irreducible HONEST plane section, a polynomial in two variables over `K`;
+* monicity in `s` is exactly clause (i) of the leaf, `h_d(u₁) ≠ 0`
+  (`coeff_single_planeSection_eq_eval_homogeneousComponent`), so the hypothesis costs
+  nothing that was not already being asked for;
+* NO degree hypothesis is needed on the chosen fibre: monicity of the FAMILY forces the
+  fibre to have `s`-degree `d` as well, which is precisely the "no degree collapse" side
+  condition that makes the naive specialisation argument fail without it.
+
+The three mathlib bricks are `Polynomial.isIntegral_coeff_of_dvd` (coefficients of a monic
+factor of a monic polynomial are integral over the base -- stacks 00H6),
+`Ideal.exists_ideal_over_maximal_of_isIntegral` (lying over) and
+`IsAlgClosed.ringHom_bijective_of_isIntegral` (the Nullstellensatz form). None of the three
+was used anywhere in this file before.
+
+WHAT WOULD REFUTE THE CRITERION, checked and clean: drop monicity and it is FALSE --
+`P = C y₀ * (s² - t)` over `K[y₀]` specialises at `y₀ = 0` to `0`, and `0` is not
+irreducible, so that direction is vacuous there; the real refutation is
+`P = (y₀ · s + 1) · (s + t)`, whose fibre at `y₀ = 0` is `s + t`, IRREDUCIBLE, while `P`
+itself is reducible over `K(y₀)`. Its `s`-leading coefficient `y₀` is not a unit of
+`K[y₀]`, which is exactly the hypothesis that fails. -/
+section BertiniSpecialisation
+
+open MvPolynomial
+
+attribute [local instance] MvPolynomial.algebraMvPolynomial
+
+/-- The exponent vector `(d, 0)` on `Fin 2` is the pure power `s^d`. -/
+theorem cons_zero_eq_single {d : ℕ} :
+    Finsupp.cons d (0 : Fin 1 →₀ ℕ) = Finsupp.single (0 : Fin 2) d := by
+  ext i
+  refine Fin.cases ?_ (fun j => ?_) i
+  · simp [Finsupp.cons_zero]
+  · simp [Finsupp.cons_succ, Fin.succ_ne_zero]
+
+theorem degree_cons {d : ℕ} (m : Fin 1 →₀ ℕ) :
+    (Finsupp.cons d m).degree = d + m.degree := by
+  classical
+  rw [Finsupp.degree_eq_sum, Finsupp.degree_eq_sum, Fin.sum_univ_two, Fin.sum_univ_one,
+    Finsupp.cons_zero, show (1 : Fin 2) = (0 : Fin 1).succ from rfl, Finsupp.cons_succ]
+
+/-- **PROVEN**: for a two-variable polynomial of total degree `≤ d` whose `s^d`-coefficient
+is `1`, the `X 0`-leading coefficient read through `finSuccEquiv` is the CONSTANT `1` of
+`MvPolynomial (Fin 1) R` -- not merely a polynomial with constant term `1`. The total-degree
+bound is what kills every `s^d t^k` with `k ≥ 1`. -/
+theorem coeff_finSuccEquiv_top {R : Type u} [CommRing R] {d : ℕ}
+    (P : MvPolynomial (Fin 2) R) (hdeg : P.totalDegree ≤ d)
+    (hmon : P.coeff (Finsupp.single 0 d) = 1) :
+    ((finSuccEquiv R 1) P).coeff d = 1 := by
+  classical
+  ext m
+  rw [finSuccEquiv_coeff_coeff]
+  rcases eq_or_ne m 0 with rfl | hm
+  · rw [cons_zero_eq_single, hmon]
+    simp
+  · have hdm : d < (Finsupp.cons d m).degree := by
+      rw [degree_cons]
+      have : m.degree ≠ 0 := fun hc => hm ((Finsupp.degree_eq_zero_iff m).mp hc)
+      omega
+    rw [MvPolynomial.coeff_eq_zero_of_totalDegree_lt
+      (by rw [← Finsupp.degree_apply]; omega)]
+    rw [MvPolynomial.coeff_one, if_neg (Ne.symm hm)]
+
+/-- **PROVEN**: total degree `≤ d` plus `s^d`-coefficient `1` says exactly that the
+polynomial is MONIC OF DEGREE `d` in `X 0` over `MvPolynomial (Fin 1) R`. -/
+theorem monic_finSuccEquiv {R : Type u} [CommRing R] [Nontrivial R] {d : ℕ}
+    (P : MvPolynomial (Fin 2) R) (hdeg : P.totalDegree ≤ d)
+    (hmon : P.coeff (Finsupp.single 0 d) = 1) :
+    ((finSuccEquiv R 1) P).Monic ∧ ((finSuccEquiv R 1) P).natDegree = d := by
+  have hnd : ((finSuccEquiv R 1) P).natDegree ≤ d := by
+    rw [natDegree_finSuccEquiv]
+    exact le_trans (MvPolynomial.degreeOf_le_totalDegree P 0) hdeg
+  have hc := coeff_finSuccEquiv_top P hdeg hmon
+  have hdeq : ((finSuccEquiv R 1) P).natDegree = d :=
+    le_antisymm hnd (Polynomial.le_natDegree_of_ne_zero (by rw [hc]; exact one_ne_zero))
+  exact ⟨by rw [Polynomial.Monic, Polynomial.leadingCoeff, hdeq, hc], hdeq⟩
+
+/-- **PROVEN — THE NULLSTELLENSATZ STEP.** A `K`-point of `Spec R` extends to the INTEGRAL
+CLOSURE of `R` in any field `Ω` containing it, when `K` is algebraically closed: lying over
+gives a maximal ideal `Q` of `integralClosure R Ω` above `ker x`, the residue field
+`T ⧸ Q` is integral over `R ⧸ ker x ≅ K`, and an integral extension field of an
+algebraically closed field is that field again.
+
+This is what turns "the factors have integral coefficients" into "the factorisation
+SPECIALISES at `x`", and it is the only place `IsAlgClosed K` is used in the criterion. -/
+theorem exists_ringHom_integralClosure {K R Ω : Type u} [Field K] [IsAlgClosed K]
+    [CommRing R] [Field Ω] [Algebra R Ω] [FaithfulSMul R Ω]
+    (x : R →+* K) (hx : Function.Surjective x) :
+    ∃ ψ : (integralClosure R Ω) →+* K,
+      ∀ r : R, ψ (algebraMap R (integralClosure R Ω) r) = x r := by
+  classical
+  set T := integralClosure R Ω
+  have hmax : (RingHom.ker x).IsMaximal := RingHom.ker_isMaximal_of_surjective x hx
+  have hinj : Function.Injective (algebraMap R T) := by
+    intro a b hab
+    refine FaithfulSMul.algebraMap_injective R Ω ?_
+    exact congrArg (fun z : T => (z : Ω)) hab
+  have hker : RingHom.ker (algebraMap R T) ≤ RingHom.ker x := by
+    intro a ha
+    have : a = 0 := by
+      exact hinj (by simpa using RingHom.mem_ker.mp ha)
+    simp [this]
+  obtain ⟨Q, hQmax, hQcomap⟩ :=
+    Ideal.exists_ideal_over_maximal_of_isIntegral (R := R) (S := T) (RingHom.ker x) hker
+  haveI := hQmax
+  haveI : Field (T ⧸ Q) := Ideal.Quotient.field Q
+  let f₁ : (R ⧸ RingHom.ker x) →+* (T ⧸ Q) :=
+    Ideal.quotientMap Q (algebraMap R T) (le_of_eq hQcomap.symm)
+  let f₂ : K ≃+* (R ⧸ RingHom.ker x) := (RingHom.quotientKerEquivOfSurjective hx).symm
+  let e : K →+* (T ⧸ Q) := f₁.comp f₂.toRingHom
+  have hcomm : ∀ r : R, e (x r) = Ideal.Quotient.mk Q (algebraMap R T r) := by
+    intro r
+    have h2 : f₂ (x r) = Ideal.Quotient.mk (RingHom.ker x) r := by
+      have : (RingHom.quotientKerEquivOfSurjective hx) (Ideal.Quotient.mk (RingHom.ker x) r)
+          = x r := rfl
+      exact (RingEquiv.symm_apply_eq _).mpr this.symm
+    show f₁ (f₂ (x r)) = _
+    rw [h2]
+    rfl
+  have hint : e.IsIntegral := by
+    intro y
+    obtain ⟨t, rfl⟩ := Ideal.Quotient.mk_surjective y
+    obtain ⟨p, hpm, hp⟩ := integralClosure.isIntegral (R := R) (A := Ω) t
+    refine ⟨p.map x, hpm.map _, ?_⟩
+    have : Polynomial.eval₂ e (Ideal.Quotient.mk Q t) (p.map x)
+        = Polynomial.eval₂ ((Ideal.Quotient.mk Q).comp (algebraMap R T))
+            (Ideal.Quotient.mk Q t) p := by
+      rw [Polynomial.eval₂_map]
+      congr 1
+      ext r
+      exact hcomm r
+    rw [this, ← Polynomial.hom_eval₂]
+    rw [show Polynomial.eval₂ (algebraMap R T) t p = Polynomial.aeval t p from rfl]
+    have : Polynomial.aeval t p = 0 := by
+      apply Subtype.ext
+      simpa [Polynomial.aeval_def, Polynomial.eval₂_at_apply] using hp
+    rw [this, map_zero]
+  obtain hbij := IsAlgClosed.ringHom_bijective_of_isIntegral e hint
+  refine ⟨((RingEquiv.ofBijective e hbij).symm.toRingHom).comp (Ideal.Quotient.mk Q), fun r => ?_⟩
+  show (RingEquiv.ofBijective e hbij).symm (Ideal.Quotient.mk Q (algebraMap R T r)) = x r
+  rw [← hcomm r]
+  exact (RingEquiv.ofBijective e hbij).symm_apply_apply (x r)
+
+/-- **PROVEN**: `finSuccEquiv` commutes with a coefficient map. -/
+theorem finSuccEquiv_map {R S : Type u} [CommRing R] [CommRing S] (f : R →+* S) {n : ℕ}
+    (p : MvPolynomial (Fin (n + 1)) R) :
+    (finSuccEquiv S n) (MvPolynomial.map f p)
+      = Polynomial.map (MvPolynomial.map f) ((finSuccEquiv R n) p) := by
+  ext i m
+  rw [finSuccEquiv_coeff_coeff, MvPolynomial.coeff_map, Polynomial.coeff_map,
+    MvPolynomial.coeff_map, finSuccEquiv_coeff_coeff]
+
+/-- **PROVEN**: a polynomial all of whose coefficients lie in the image of `f` is the image
+of a polynomial. Used to descend a factorisation from `Ω` to the integral closure. -/
+theorem exists_map_eq_of_coeff_mem {σ : Type*} {A B : Type u} [CommRing A] [CommRing B]
+    (f : A →+* B) (Q : MvPolynomial σ B) (h : ∀ n, MvPolynomial.coeff n Q ∈ Set.range f) :
+    ∃ Q' : MvPolynomial σ A, MvPolynomial.map f Q' = Q := by
+  classical
+  choose g hg using h
+  refine ⟨∑ n ∈ Q.support, MvPolynomial.monomial n (g n), ?_⟩
+  rw [map_sum]
+  simp only [MvPolynomial.map_monomial, hg]
+  exact MvPolynomial.support_sum_monomial_coeff Q
+
+/-- **PROVEN**: over a reduced ring a polynomial with a nonzero `s^d`-coefficient, `d ≥ 1`,
+is not a unit. -/
+theorem not_isUnit_of_coeff_single_ne_zero {A : Type u} [CommRing A] [IsReduced A] {d : ℕ}
+    (hd : 0 < d) (Q : MvPolynomial (Fin 2) A)
+    (h : Q.coeff (Finsupp.single 0 d) ≠ 0) : ¬ IsUnit Q := by
+  intro hu
+  have h0 := (MvPolynomial.isUnit_iff_totalDegree_of_isReduced.mp hu).2
+  have hle : ∑ i ∈ (Finsupp.single (0 : Fin 2) d).support, (Finsupp.single (0 : Fin 2) d) i
+      ≤ Q.totalDegree :=
+    MvPolynomial.le_totalDegree (MvPolynomial.mem_support_iff.mpr h)
+  rw [← Finsupp.degree_apply, Finsupp.degree_single] at hle
+  omega
+
+/-- **PROVEN**: the converse direction of `coeff_finSuccEquiv_top` -- a monic
+`finSuccEquiv` image of degree `e` has `s^e`-coefficient `1`. -/
+theorem coeff_single_of_monic {A : Type u} [CommRing A] {e : ℕ} (Q : MvPolynomial (Fin 2) A)
+    (hq : ((finSuccEquiv A 1) Q).Monic) (he : ((finSuccEquiv A 1) Q).natDegree = e) :
+    Q.coeff (Finsupp.single 0 e) = 1 := by
+  have h1 : ((finSuccEquiv A 1) Q).coeff e = 1 := by
+    rw [← he]; exact hq
+  have := congrArg (MvPolynomial.coeff (0 : Fin 1 →₀ ℕ)) h1
+  rwa [finSuccEquiv_coeff_coeff, cons_zero_eq_single, MvPolynomial.coeff_zero_one] at this
+
+theorem finSuccEquiv_C_apply {A : Type u} [CommRing A] {n : ℕ} (a : A) :
+    (finSuccEquiv A n) (MvPolynomial.C a) = Polynomial.C (MvPolynomial.C a) := by
+  simpa [MvPolynomial.algebraMap_eq] using (finSuccEquiv A n).commutes a
+
+/-- **THE SPECIALISATION CRITERION (PROVEN 2026-07-31), algebra-instance form.**
+
+`P ∈ R[s, t]` monic of degree `d ≥ 1` in `s`; `x : R → K` a surjection onto an
+algebraically closed field; `Ω` any field containing `R` faithfully. If the fibre
+`P^x ∈ K[s, t]` is irreducible then so is the image of `P` in `Ω[s, t]`.
+
+THE PROOF, and where each hypothesis is spent. Suppose `P^Ω = Q₁ Q₂` with neither factor a
+unit. Monicity of `P` in `s` forces `lc(q₁) · lc(q₂) = 1` in `Ω[t]`, hence both leading
+coefficients are CONSTANTS of `Ω`; rescaling by one of them makes both factors monic in `s`
+without changing whether they are units, and then neither can have `s`-degree `0` (a monic
+polynomial of degree `0` is `1`). `Polynomial.isIntegral_coeff_of_dvd` now puts every
+coefficient of each factor in the integral closure `T` of `R` in `Ω`
+(`MvPolynomial.isIntegral_iff_isIntegral_coeff` moves this from `MvPolynomial (Fin 1) R` down
+to `R`), so the whole factorisation descends to `T[s, t]`;
+`exists_ringHom_integralClosure` maps `T` onto `K` compatibly with `x`, and the images of
+the two factors are monic in `s` of the SAME degrees `d₁, d₂ ≥ 1`, hence nonunits. That
+contradicts irreducibility of `P^x`. -/
+theorem irreducible_map_of_irreducible_specialize
+    {K R Ω : Type u} [Field K] [IsAlgClosed K] [CommRing R] [Nontrivial R] [Field Ω]
+    [Algebra R Ω] [FaithfulSMul R Ω]
+    {d : ℕ} (hd : 0 < d)
+    (x : R →+* K) (hx : Function.Surjective x)
+    (P : MvPolynomial (Fin 2) R)
+    (hdeg : P.totalDegree ≤ d)
+    (hmon : P.coeff (Finsupp.single 0 d) = 1)
+    (hspec : Irreducible (MvPolynomial.map x P)) :
+    Irreducible (MvPolynomial.map (algebraMap R Ω) P) := by
+  classical
+  obtain ⟨ψ, hψ⟩ := exists_ringHom_integralClosure (K := K) (R := R) (Ω := Ω) x hx
+  have hdegΩ : (MvPolynomial.map (algebraMap R Ω) P).totalDegree ≤ d :=
+    le_trans (totalDegree_map_le' _ _) hdeg
+  have hmonΩ : (MvPolynomial.map (algebraMap R Ω) P).coeff (Finsupp.single 0 d) = 1 := by
+    rw [MvPolynomial.coeff_map, hmon, map_one]
+  obtain ⟨hpM, hpD⟩ := monic_finSuccEquiv (R := Ω) _ hdegΩ hmonΩ
+  obtain ⟨hp0M, hp0D⟩ := monic_finSuccEquiv (R := R) P hdeg hmon
+  refine ⟨not_isUnit_of_coeff_single_ne_zero hd _ (by rw [hmonΩ]; exact one_ne_zero), ?_⟩
+  intro Q₁ Q₂ heq
+  by_contra hcon
+  push_neg at hcon
+  obtain ⟨hu1, hu2⟩ := hcon
+  -- normalise the two factors to be monic in `X 0`
+  have hqmul : (finSuccEquiv Ω 1) Q₁ * (finSuccEquiv Ω 1) Q₂
+      = (finSuccEquiv Ω 1) (MvPolynomial.map (algebraMap R Ω) P) := by
+    rw [← map_mul, ← heq]
+  have hlead :
+      ((finSuccEquiv Ω 1) Q₁).leadingCoeff * ((finSuccEquiv Ω 1) Q₂).leadingCoeff = 1 := by
+    rw [← Polynomial.leadingCoeff_mul, hqmul]; exact hpM
+  obtain ⟨c, hcu, hc⟩ := MvPolynomial.isUnit_iff_eq_C_of_isReduced.mp
+    (IsUnit.of_mul_eq_one _ hlead)
+  have hc0 : c ≠ 0 := hcu.ne_zero
+  set Q₁' : MvPolynomial (Fin 2) Ω := MvPolynomial.C c⁻¹ * Q₁ with hQ₁'
+  set Q₂' : MvPolynomial (Fin 2) Ω := MvPolynomial.C c * Q₂ with hQ₂'
+  have hcc : (MvPolynomial.C c⁻¹ : MvPolynomial (Fin 2) Ω) * MvPolynomial.C c = 1 := by
+    rw [← MvPolynomial.C_mul, inv_mul_cancel₀ hc0, MvPolynomial.C_1]
+  have heq' : MvPolynomial.map (algebraMap R Ω) P = Q₁' * Q₂' := by
+    rw [hQ₁', hQ₂', heq]
+    calc Q₁ * Q₂ = (MvPolynomial.C c⁻¹ * MvPolynomial.C c) * (Q₁ * Q₂) := by
+          rw [hcc, one_mul]
+      _ = MvPolynomial.C c⁻¹ * Q₁ * (MvPolynomial.C c * Q₂) := by ring
+  have hu1' : ¬ IsUnit Q₁' := fun h => hu1 (isUnit_of_mul_isUnit_right h)
+  have hu2' : ¬ IsUnit Q₂' := fun h => hu2 (isUnit_of_mul_isUnit_right h)
+  set q₁ := (finSuccEquiv Ω 1) Q₁' with hq₁
+  set q₂ := (finSuccEquiv Ω 1) Q₂' with hq₂
+  have hq₁eq : q₁ = Polynomial.C (MvPolynomial.C c⁻¹) * (finSuccEquiv Ω 1) Q₁ := by
+    rw [hq₁, hQ₁', map_mul, finSuccEquiv_C_apply]
+  have hq₁M : q₁.Monic := by
+    rw [Polynomial.Monic, hq₁eq, Polynomial.leadingCoeff_mul, Polynomial.leadingCoeff_C, hc,
+      ← map_mul, inv_mul_cancel₀ hc0, map_one]
+  have hprod : q₁ * q₂ = (finSuccEquiv Ω 1) (MvPolynomial.map (algebraMap R Ω) P) := by
+    rw [hq₁, hq₂, ← map_mul, ← heq']
+  have hprodM : (q₁ * q₂).Monic := by rw [hprod]; exact hpM
+  have hq₂M : q₂.Monic := hq₁M.of_mul_monic_left hprodM
+  -- degrees of the two normalised factors
+  have hpos : ∀ (Qx : MvPolynomial (Fin 2) Ω), ¬ IsUnit Qx →
+      ((finSuccEquiv Ω 1) Qx).Monic → 0 < ((finSuccEquiv Ω 1) Qx).natDegree := by
+    intro Qx hnu hM
+    rcases Nat.eq_zero_or_pos ((finSuccEquiv Ω 1) Qx).natDegree with h0 | h
+    · exfalso
+      refine hnu ?_
+      have hone : (finSuccEquiv Ω 1) Qx = 1 := by
+        have hC := Polynomial.eq_C_of_natDegree_eq_zero h0
+        have hcz : ((finSuccEquiv Ω 1) Qx).coeff 0 = 1 := by
+          have := hM
+          rw [Polynomial.Monic, Polynomial.leadingCoeff, h0] at this
+          exact this
+        rw [hC, hcz, map_one]
+      have : Qx = 1 := (finSuccEquiv Ω 1).injective (by rw [hone, map_one])
+      rw [this]
+      exact isUnit_one
+    · exact h
+  have hd1 : 0 < q₁.natDegree := hpos Q₁' hu1' hq₁M
+  have hd2 : 0 < q₂.natDegree := hpos Q₂' hu2' hq₂M
+  -- the two factors have coefficients integral over `R`
+  have hmapP : Polynomial.map (algebraMap (MvPolynomial (Fin 1) R) (MvPolynomial (Fin 1) Ω))
+      ((finSuccEquiv R 1) P) = (finSuccEquiv Ω 1) (MvPolynomial.map (algebraMap R Ω) P) := by
+    rw [MvPolynomial.algebraMap_def, ← finSuccEquiv_map]
+  have hdvd1 : q₁ ∣ Polynomial.map
+      (algebraMap (MvPolynomial (Fin 1) R) (MvPolynomial (Fin 1) Ω)) ((finSuccEquiv R 1) P) :=
+    ⟨q₂, by rw [hmapP, ← hprod]⟩
+  have hdvd2 : q₂ ∣ Polynomial.map
+      (algebraMap (MvPolynomial (Fin 1) R) (MvPolynomial (Fin 1) Ω)) ((finSuccEquiv R 1) P) :=
+    ⟨q₁, by rw [hmapP, ← hprod, mul_comm]⟩
+  have hcoef : ∀ (Qx : MvPolynomial (Fin 2) Ω),
+      (∀ i, IsIntegral (MvPolynomial (Fin 1) R) (((finSuccEquiv Ω 1) Qx).coeff i)) →
+      ∀ n, IsIntegral R (Qx.coeff n) := by
+    intro Qx hh n
+    have := MvPolynomial.isIntegral_iff_isIntegral_coeff.mp (hh (n 0)) (Finsupp.tail n)
+    rwa [finSuccEquiv_coeff_coeff, Finsupp.cons_tail] at this
+  have hint1 : ∀ n, IsIntegral R (Q₁'.coeff n) :=
+    hcoef Q₁' (fun i => Polynomial.isIntegral_coeff_of_dvd _ _ hp0M hq₁M hdvd1 i)
+  have hint2 : ∀ n, IsIntegral R (Q₂'.coeff n) :=
+    hcoef Q₂' (fun i => Polynomial.isIntegral_coeff_of_dvd _ _ hp0M hq₂M hdvd2 i)
+  -- descend the factorisation to the integral closure, then specialise
+  obtain ⟨T₁, hT₁⟩ := exists_map_eq_of_coeff_mem (algebraMap (integralClosure R Ω) Ω) Q₁'
+    (fun n => ⟨⟨Q₁'.coeff n, hint1 n⟩, rfl⟩)
+  obtain ⟨T₂, hT₂⟩ := exists_map_eq_of_coeff_mem (algebraMap (integralClosure R Ω) Ω) Q₂'
+    (fun n => ⟨⟨Q₂'.coeff n, hint2 n⟩, rfl⟩)
+  have hinjT : Function.Injective
+      (MvPolynomial.map (algebraMap (integralClosure R Ω) Ω) :
+        MvPolynomial (Fin 2) (integralClosure R Ω) → MvPolynomial (Fin 2) Ω) :=
+    MvPolynomial.map_injective _ (fun a b hab => Subtype.ext hab)
+  have hPT : MvPolynomial.map (algebraMap (integralClosure R Ω) Ω)
+        (MvPolynomial.map (algebraMap R (integralClosure R Ω)) P)
+      = MvPolynomial.map (algebraMap R Ω) P := by
+    rw [MvPolynomial.map_map, ← IsScalarTower.algebraMap_eq]
+  have hfacT : T₁ * T₂ = MvPolynomial.map (algebraMap R (integralClosure R Ω)) P := by
+    apply hinjT
+    rw [map_mul, hT₁, hT₂, hPT, heq']
+  have hfinal : MvPolynomial.map ψ T₁ * MvPolynomial.map ψ T₂ = MvPolynomial.map x P := by
+    have hcompψ : ψ.comp (algebraMap R (integralClosure R Ω)) = x := RingHom.ext hψ
+    rw [← map_mul, hfacT, MvPolynomial.map_map, hcompψ]
+  have hlift : ∀ (Qx : MvPolynomial (Fin 2) Ω) (Tx : MvPolynomial (Fin 2) (integralClosure R Ω))
+      (e : ℕ), MvPolynomial.map (algebraMap (integralClosure R Ω) Ω) Tx = Qx →
+      Qx.coeff (Finsupp.single 0 e) = 1 → 0 < e → ¬ IsUnit (MvPolynomial.map ψ Tx) := by
+    intro Qx Tx e hTx hQx he
+    refine not_isUnit_of_coeff_single_ne_zero he _ ?_
+    have hval : algebraMap (integralClosure R Ω) Ω (Tx.coeff (Finsupp.single 0 e)) = 1 := by
+      rw [← MvPolynomial.coeff_map, hTx, hQx]
+    have : Tx.coeff (Finsupp.single 0 e) = 1 := Subtype.ext (by simpa using hval)
+    rw [MvPolynomial.coeff_map, this, map_one]
+    exact one_ne_zero
+  rcases hspec.isUnit_or_isUnit hfinal.symm with h | h
+  · exact hlift Q₁' T₁ q₁.natDegree hT₁ (coeff_single_of_monic Q₁' hq₁M rfl) hd1 h
+  · exact hlift Q₂' T₂ q₂.natDegree hT₂ (coeff_single_of_monic Q₂' hq₂M rfl) hd2 h
+
+/-- **THE SPECIALISATION CRITERION (PROVEN 2026-07-31), ring-hom form.** -/
+theorem irreducible_map_of_irreducible_eval
+    {K R Ω : Type u} [Field K] [IsAlgClosed K] [CommRing R] [Nontrivial R] [Field Ω]
+    (φ : R →+* Ω) (hφ : Function.Injective φ)
+    {d : ℕ} (hd : 0 < d) (x : R →+* K) (hx : Function.Surjective x)
+    (P : MvPolynomial (Fin 2) R) (hdeg : P.totalDegree ≤ d)
+    (hmon : P.coeff (Finsupp.single 0 d) = 1)
+    (hspec : Irreducible (MvPolynomial.map x P)) :
+    Irreducible (MvPolynomial.map φ P) := by
+  letI : Algebra R Ω := φ.toAlgebra
+  haveI : FaithfulSMul R Ω := (faithfulSMul_iff_algebraMap_injective R Ω).mpr hφ
+  exact irreducible_map_of_irreducible_specialize hd x hx P hdeg hmon hspec
+
+/-- **THE SPECIALISATION CRITERION (PROVEN 2026-07-31), the form its consumer uses**: the
+`X 0`-leading coefficient is only required to be a UNIT of the parameter ring, not `1`.
+That is what makes it applicable to a family of plane sections, whose `s^d`-coefficient is
+the CONSTANT `h_d(u₁)` and not `1`. -/
+theorem irreducible_map_of_irreducible_eval_unit
+    {K R Ω : Type u} [Field K] [IsAlgClosed K] [CommRing R] [Nontrivial R] [Field Ω]
+    (φ : R →+* Ω) (hφ : Function.Injective φ)
+    {d : ℕ} (hd : 0 < d) (x : R →+* K) (hx : Function.Surjective x)
+    (P : MvPolynomial (Fin 2) R) (hdeg : P.totalDegree ≤ d)
+    (u : Rˣ) (hmon : P.coeff (Finsupp.single 0 d) = (u : R))
+    (hspec : Irreducible (MvPolynomial.map x P)) :
+    Irreducible (MvPolynomial.map φ P) := by
+  set v : R := ((u⁻¹ : Rˣ) : R) with hv
+  have hvu : v * (u : R) = 1 := by rw [hv, ← Units.val_mul, inv_mul_cancel]; rfl
+  have hvunit : IsUnit v := (u⁻¹ : Rˣ).isUnit
+  set P₁ : MvPolynomial (Fin 2) R := MvPolynomial.C v * P with hP₁
+  have hdeg₁ : P₁.totalDegree ≤ d :=
+    le_trans (le_trans (MvPolynomial.totalDegree_mul _ _)
+      (by simp [MvPolynomial.totalDegree_C])) hdeg
+  have hmon₁ : P₁.coeff (Finsupp.single 0 d) = 1 := by
+    rw [hP₁, MvPolynomial.coeff_C_mul, hmon, hvu]
+  have hspec₁ : Irreducible (MvPolynomial.map x P₁) := by
+    rw [hP₁, map_mul, MvPolynomial.map_C]
+    exact (irreducible_isUnit_mul
+      (IsUnit.map (MvPolynomial.C : K →+* MvPolynomial (Fin 2) K) (hvunit.map x))).mpr hspec
+  have := irreducible_map_of_irreducible_eval φ hφ hd x hx P₁ hdeg₁ hmon₁ hspec₁
+  rw [hP₁, map_mul, MvPolynomial.map_C] at this
+  exact (irreducible_isUnit_mul
+    (IsUnit.map (MvPolynomial.C : Ω →+* MvPolynomial (Fin 2) Ω) (hvunit.map φ))).mp this
+
+/-- **PROVEN**: `homogeneousComponent` commutes with a coefficient map. -/
+theorem homogeneousComponent_map {K L : Type u} [CommRing K] [CommRing L] (f : K →+* L)
+    {N d : ℕ} (p : MvPolynomial (Fin N) K) :
+    MvPolynomial.homogeneousComponent d (MvPolynomial.map f p)
+      = MvPolynomial.map f (MvPolynomial.homogeneousComponent d p) := by
+  ext m
+  simp only [MvPolynomial.coeff_homogeneousComponent, MvPolynomial.coeff_map]
+  split_ifs with hh
+  · rfl
+  · rw [map_zero]
+
+/-- **PROVEN**: evaluating the constant-extension of `p` at the constant-extension of a
+point is the constant-extension of the value. -/
+theorem eval_C_comp_map_C {K : Type u} [CommRing K] {m N : ℕ}
+    (p : MvPolynomial (Fin N) K) (w : Fin N → K) :
+    MvPolynomial.eval (fun i => (MvPolynomial.C (w i) : MvPolynomial (Fin m) K))
+        (MvPolynomial.map (MvPolynomial.C : K →+* MvPolynomial (Fin m) K) p)
+      = MvPolynomial.C (MvPolynomial.eval w p) := by
+  rw [MvPolynomial.eval_map]
+  rw [show (MvPolynomial.eval w p) = MvPolynomial.eval₂ (RingHom.id K) w p from rfl]
+  rw [MvPolynomial.eval₂_comp_left (MvPolynomial.C : K →+* MvPolynomial (Fin m) K)
+    (RingHom.id K) w p]
+  rfl
+
+end BertiniSpecialisation
+
+/-- **SCHMIDT'S THEOREM 3D, STEP 2, IN HONEST-SECTION FORM (SORRY LEAF, cut 2026-07-31 out
+of `exists_basisPlane_irreducible_familyPlaneSection` below, which is now GLUE ONLY over
+this leaf and the PROVEN specialisation criterion
+`irreducible_map_of_irreducible_eval_unit`)**.
+
+WHAT IS BEING ASKED, and it is the whole of Bertini's irreducibility theorem for a
+hypersurface, with nothing else attached. For `K = K̄` and `h` irreducible of total degree
+`d ≥ 2` in `n + 3 ≥ 3` variables: there is an invertible `A` (with two-sided inverse `B`)
+and a parameter point `x₀ ∈ K^{n+1}` such that
+
+* (i) `h_d(A·e₀) ≠ 0` -- the leading form does not vanish on the first direction; and
+* (ii) the HONEST plane section of `h` along the affine plane based at
+  `∑ⱼ (A·e_{j+2}) x₀ⱼ` with directions `A·e₀`, `A·e₁` is IRREDUCIBLE in `K[s, t]`.
+
+There is no `FractionRing` here, no `AlgebraicClosure`, no generic fibre and no `hstep1`:
+just a two-variable polynomial over `K` that has to be irreducible. That is the entire
+difference between this leaf and the one it was cut out of, and it is why the cut is worth
+taking -- the generic-fibre statement is recovered from this one by
+`irreducible_map_of_irreducible_eval_unit`, which is PROVEN.
+
+WHY THE PARAMETRISATION IS NOT A RESTRICTION. Every affine `2`-plane in `K^{n+3}` arises
+this way: pick `u₁, u₂` spanning its direction, complete to a basis, take `A` to be the
+matrix of that basis, and choose `x₀` so that `∑ⱼ (A·e_{j+2}) x₀ⱼ` is the base point read
+modulo `span(u₁, u₂)` -- which is all that matters, since translating the base point along
+the plane does not move the plane. So a prover may think of this as "SOME affine plane" and
+is not being asked to hit a normal form.
+
+WHY IT IS TRUE, and why (i) and (ii) can be arranged TOGETHER. Bertini's irreducibility
+theorem (valid in every characteristic; see Jouanolou, *Théorèmes de Bertini et
+applications*, Thm 6.3, or Schmidt Chapter V Theorem 3D) says the general plane section of
+an irreducible hypersurface of dimension `≥ 2` is irreducible -- a dense open condition on
+the plane. Clause (i) is a second dense open condition on `u₁`, nonempty because `h_d ≠ 0`
+(`hdeg` with `d ≥ 1`). Two dense opens of an irreducible parameter space meet, so a plane
+satisfying both exists. Note this is a strictly finer statement than "there is a plane good
+for (ii)": the docstring of `exists_directionPlane_irreducible_familyPlaneSection` records
+the witness `h = X 1 ^ 2 - X 0`, `W = span(e₀, e₂)`, of a plane that is good for (ii) while
+`h_d` vanishes IDENTICALLY on it, so the two clauses genuinely have to be arranged by one
+choice of plane rather than sequentially.
+
+FALSITY AUDIT (2026-07-31, first audit; this statement has not been recut before, so
+nothing is inherited). Each hypothesis is load-bearing:
+
+* `hirr`. Without it the leaf is FALSE: `h = X 0 * X 1` in `Fin 3` variables has
+  `h_2 = X 0 * X 1`, so (i) is satisfiable, but EVERY plane section factors, being the
+  product of the two restricted linear forms. So irreducibility of `h` cannot be dropped,
+  and (unlike in the parent) it is genuinely USED here rather than carried.
+* `hd : 2 ≤ d`. This is a convenience rather than a necessity -- `d = 1` is handled
+  separately in `exists_directionPlane_irreducible_familyPlaneSection_degree_one` and
+  `d = 0` is impossible by `totalDegree_ne_zero_of_irreducible` -- so a prover may assume
+  it, exactly as every classical treatment of Theorem 3D does.
+* `n + 3 ≥ 3` variables. The dimension hypothesis of Bertini in disguise: for `N = 2` a
+  "plane section" is `h` itself composed with an automorphism, so the leaf degenerates to
+  `hirr` and is true but empty; for `N = 1` there is no plane. The shape `Fin (n + 3)`
+  pins `N ≥ 3`, which is what makes the statement have content.
+
+WHAT A PROVER GETS FOR FREE, and should not re-derive: the section automatically has total
+degree exactly `d` once (i) holds, by
+`totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero` -- so there is no separate
+"no degree collapse" obligation, and the criterion above does not ask for one either. -/
+theorem exists_basisPlane_irreducible_planeSection {K : Type*} [Field K]
+    [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
+    (hdeg : h.totalDegree = d) (hirr : Irreducible h) (hd : 2 ≤ d) :
+    ∃ (A B : Matrix (Fin (n + 3)) (Fin (n + 3)) K) (x₀ : Fin (n + 1) → K),
+      A * B = 1 ∧ B * A = 1 ∧
+      MvPolynomial.eval (fun i => A i 0) (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
+      Irreducible (planeSection h (fun i => ∑ j, A i j.succ.succ * x₀ j)
+        (fun i => A i 0) (fun i => A i 1)) :=
+  sorry
+
+/-- **SCHMIDT'S THEOREM 3D, STEP 2 IN THE BASIS NORMALISATION (PROVEN 2026-07-31 over ONE
+smaller leaf, `exists_basisPlane_irreducible_planeSection` above; formerly a sorry leaf,
+cut 2026-07-30)** -- geometric integrality of the generic plane section, over the
 SMALLEST field it can be asked over.
 
 WHAT IS BEING ASKED. `K = K̄`, `h` irreducible in `n + 3 ≥ 3` variables of total
@@ -20268,7 +20771,27 @@ absolutely irreducible. So clause (ii) is a genuine general-position condition o
 (`totalDegree_ne_zero_of_irreducible`) and `d = 1` is PROVEN separately, in
 `exists_directionPlane_irreducible_familyPlaneSection_degree_one`, where `h` is an
 affine form and clause (ii) really is free. So this leaf may assume the degree
-hypothesis every classical treatment of Theorem 3D carries. -/
+hypothesis every classical treatment of Theorem 3D carries.
+
+**STATUS (2026-07-31): PROVEN, over the single smaller leaf
+`exists_basisPlane_irreducible_planeSection` above.** The passage from the generic
+geometric fibre to an HONEST fibre is no longer part of what anybody has to prove: it is
+`irreducible_map_of_irreducible_eval_unit`, proven outright in the
+`BertiniSpecialisation` block above, and it goes in the direction one might not expect --
+ONE irreducible `K`-rational member of the family forces the generic member to be
+irreducible over `\overline{K(y)}`, because a factorisation of a family MONIC in `s` has
+integral coefficients and therefore specialises. What remains open is Bertini's
+irreducibility theorem itself, stated over `K` alone.
+
+TWO HYPOTHESES OF THIS DECLARATION ARE NOW UNUSED, and are deliberately KEPT rather than
+removed: `hstep1` and `hstep1basis`. They are the two proven forms of Gauss (step 1), and
+the route through the specialisation criterion never needs them -- step 1 exists to make
+the generic member irreducible over `L = K(y)` on the way to `L̄`, and the criterion jumps
+straight to `L̄`. Removing them would be a SIGNATURE change, and the sole consumer
+`exists_directionPlane_irreducible_familyPlaneSection` supplies them at the call site; the
+cost of keeping them is two unused-variable warnings, the cost of removing them is a
+cross-declaration edit for no mathematical gain. If a later cleanup does remove them, the
+call site is the only one in the tree. -/
 theorem exists_basisPlane_irreducible_familyPlaneSection {K : Type*} [Field K]
     [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
     (hdeg : h.totalDegree = d) (hirr : Irreducible h) (hd : 2 ≤ d)
@@ -20286,8 +20809,36 @@ theorem exists_basisPlane_irreducible_familyPlaneSection {K : Type*} [Field K]
       MvPolynomial.eval (fun i => A i 0) (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
       Irreducible (MvPolynomial.map (paramAlgClosureHom K (n + 1))
         (familyPlaneSection h (fun j i => A i j.succ.succ) (fun i => A i 0)
-          (fun i => A i 1))) :=
-  sorry
+          (fun i => A i 1))) := by
+  obtain ⟨A, B, x₀, hAB, hBA, hlead, hsec⟩ :=
+    exists_basisPlane_irreducible_planeSection n d h hdeg hirr hd
+  refine ⟨A, B, hAB, hBA, hlead, ?_⟩
+  set Φ : Fin (n + 1) → (Fin (n + 3) → K) := fun j i => A i j.succ.succ
+  set u₁ : Fin (n + 3) → K := fun i => A i 0
+  set u₂ : Fin (n + 3) → K := fun i => A i 1
+  set P := familyPlaneSection h Φ u₁ u₂ with hP
+  have hmapdeg : (MvPolynomial.map (MvPolynomial.C :
+      K →+* MvPolynomial (Fin (n + 1)) K) h).totalDegree ≤ d :=
+    le_trans (totalDegree_map_le' _ _) (le_of_eq hdeg)
+  have hPdeg : P.totalDegree ≤ d :=
+    le_trans (totalDegree_planeSection_le _ _ _ _) hmapdeg
+  have hPcoeff : P.coeff (Finsupp.single 0 d)
+      = MvPolynomial.C (MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h)) := by
+    rw [hP, familyPlaneSection,
+      coeff_single_planeSection_eq_eval_homogeneousComponent _ hmapdeg,
+      homogeneousComponent_map, eval_C_comp_map_C]
+  have hcu : IsUnit (MvPolynomial.C
+      (MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h)) :
+      MvPolynomial (Fin (n + 1)) K) :=
+    IsUnit.map (MvPolynomial.C : K →+* MvPolynomial (Fin (n + 1)) K) (hlead.isUnit)
+  have hsurj : Function.Surjective
+      (MvPolynomial.eval x₀ : MvPolynomial (Fin (n + 1)) K →+* K) :=
+    fun k => ⟨MvPolynomial.C k, by simp⟩
+  refine irreducible_map_of_irreducible_eval_unit (paramAlgClosureHom K (n + 1))
+    (paramAlgClosureHom_injective K (n + 1)) (by omega)
+    (MvPolynomial.eval x₀) hsurj P hPdeg hcu.unit (by rw [hPcoeff, hcu.unit_spec]) ?_
+  rw [hP, map_eval_familyPlaneSection]
+  exact hsec
 
 /-- **SCHMIDT'S THEOREM 3D, STEP 2 ALONE: GEOMETRIC INTEGRALITY OF THE GENERIC
 PLANE SECTION (PROVEN 2026-07-30 over one smaller leaf; cut as a leaf
