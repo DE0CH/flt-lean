@@ -520,7 +520,7 @@ theorem pderiv_cubeSub (j : σ) (g : MvPolynomial σ R) :
         rw [h1, pderiv_mul, hp, pderiv_pow, pderiv_X_self, pderiv_mul, pderiv_X_self,
           map_add, map_mul, cubeSub_X]
         push_cast
-        ring
+        ring_nf
       · rw [h1, pderiv_mul, hp, pderiv_pow, pderiv_X_of_ne hnj, pderiv_mul,
           pderiv_X_of_ne hnj, map_add, map_mul, cubeSub_X]
         simp only [map_zero, mul_zero, add_zero]
