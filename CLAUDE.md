@@ -2111,6 +2111,62 @@ order" (false: an arbitrary connected socle can be `3`-dimensional and carry a u
 "the Hopf order is the flat model of a rank-`2` representation with a residually trivial
 quotient" (true: the residual socle is `2`-dimensional for free, which is the sharp bound).
 
+## A LEAF QUANTIFIED OVER A BUNDLED DATUM MUST SURVIVE EVERY *RELABELLING* THAT DATUM ADMITS
+
+(2026-07-31, `range_base_atkinLehner_cusp` in `ModularCurve/X0.lean` — refuted the day
+after it was cut, by two instances of ITSELF.)
+
+`∀ C : SomeStructure, P C` is only as strong as the structure's fields make it. This file
+already records the PINCH test for that shape — perturb the *object* the structure
+describes and see which clauses survive. There is a second, cheaper and much more easily
+missed perturbation: **leave the object alone and permute the INDEXING.** A structure whose
+fields are a family `κ : ι → (something about X)` plus constraints that are all invariant
+under reindexing admits `C ∘ σ` for every `σ` in a group of permutations of `ι`, and a
+conclusion that mentions a *specific* map `ι → ι` is then provable only if that map is
+central for the whole group.
+
+`IsX0Compactification.CuspLocus` indexes the cusps of `X_0(N)` by `N.divisors` and pins the
+labelling only through `degree d = φ(gcd(d, N/d))`. So `C ∘ σ` is again a `CuspLocus` for
+every `σ` preserving that function — `cover` because `σ` is a bijection, `disj` because it
+is injective, `ratPoint` by handing back `σ.symm d`, `degree` by hypothesis. The leaf
+asserted `w (cusp_d) = cusp_{N/d}`, i.e. that `w`'s cusp permutation is `ι : d ↦ N/d` in
+EVERY labelling — which forces every admissible `σ` to commute with `ι`. At `N = 4` the
+three values of `φ(gcd(d, 4/d))` are all `1`, so every permutation of `{1, 2, 4}` is
+admissible, and the leaf at `C` (`d = 2`) with the leaf at `C ∘ (1 2)` (`d = 1`) gives
+`c_2 = c_4` against `C.disj`. **Both are instances of the leaf, so the refutation assumes
+nothing about `w` at all** — which is the cheapest possible shape of refutation and the one
+to look for first on a `∀ datum` leaf.
+
+**Why it survived the audit it already had.** The docstring carried a paragraph headed
+*"THE STATEMENT IS ROBUST TO THE INDEXING CONVENTION"*, correctly observing that `CuspLocus`
+fixes no convention and that `φ(gcd(d, N/d))` is symmetric under `d ↦ N/d`. Every clause was
+true. The inference was not: it varied the labelling **only along the involution the leaf
+was trying to establish**, which is exactly the relabelling that cannot detect the problem.
+That is the same failure as *A COUNTEREXAMPLE IS ONLY AS STRONG AS THE HYPOTHESIS LIST* below
+and *vary the parameter you did not think of as a parameter*, arriving through a symmetry
+argument — and a symmetry argument reads as more conclusive than a witness search, so it is
+worse.
+
+**The mechanical test, and it costs one careful read of the structure.** List the fields.
+Cross off the ones that are pointwise in the index (`K`, `κ`, `comm`, the instances) and the
+ones invariant under bijections (`cover`, `disj`, `ratPoint`). What remains — here just
+`degree` — is the whole of what pins the labelling. Then compute the group it leaves: the
+permutations preserving that invariant. If the conclusion names a map on the index set,
+check it is central in that group. **Do this before writing the leaf**, and record the group
+in the docstring; it is the datum's real automorphism group and every later `∀ C` statement
+in the file has to respect it.
+
+**The repair is usually a hypothesis, not a restatement.** Adding "the fibre of the pinning
+invariant through `d` is exactly `{d, N/d}`" (`hrigid`) makes every admissible `σ` restrict
+to that pair, where it is central for trivial reasons. It is sharp — the refutation runs at
+every `d` where it fails — it is DECIDABLE, and the sole consumer discharged it with
+`decide`, so no signature above the leaf moved. The alternative repair, existentially
+quantifying the datum (`∃ C, ∀ d, …`), is the honest general statement and is strictly
+weaker; prefer the hypothesis while every consumer satisfies it, and say in the docstring
+which levels would need the existential form. Adding a hypothesis is a restatement, so the
+old faithfulness audit is VOID — but in this direction re-running it is short, since a
+strengthened hypothesis can only shrink the class of counterexamples.
+
 ## A COUNTEREXAMPLE IS ONLY AS STRONG AS THE HYPOTHESIS LIST IT WAS TESTED AGAINST
 
 (2026-07-31, flt-lean-110.) `exists_hilbertFixing_rootsOfUnity_discrim_isSquare`
@@ -3302,6 +3358,55 @@ separately, and reassemble with `IsCoprime.mul_dvd` off explicit Bézout certifi
 needs pairwise COPRIMALITY only — which is a one-line `⟨u, v, by ring_nf⟩` — where proving
 irreducibility of a degree-11 factor over `F₂₃` is circular (the standard test *is* this
 divisibility). It is also `k²` cheaper, since every `ring_nf` call scales with `(deg f)²`.
+## WHEN THE TARGET FILE HAS AN INHERITED RED BASELINE, VERIFY *DIFFERENTIALLY*
+
+(2026-07-31, `flt-lean-112`, on `X0.lean` during the release-27 window, when that
+file carried ~193 errors none of which were anybody's current work.)
+
+Every verification rule in this file assumes a green baseline is reachable —
+`EXIT=0` plus `Build completed successfully`. Sometimes it is not: a release can
+hand you a module that has not built since two releases ago, and then "did my edit
+break anything" and "does the file build" are different questions and only the
+first is yours. Waiting for someone else to make it green is not an option, and
+shipping unverified is the class-7 hazard.
+
+**The differential check answers the first question exactly.** `lake env lean`
+writes no `.olean`, so two runs do not race and neither disturbs `.lake`:
+
+    cp <pristine copy of the file> Fermat/.../TargetBase.lean   # a REAL module path
+    echo Fermat/.../TargetBase.lean >> $(git rev-parse --git-common-dir)/info/exclude
+    lake env lean -DmaxErrors=800 Fermat/.../TargetBase.lean > /tmp/pre.log  &
+    lake env lean -DmaxErrors=800 Fermat/.../Target.lean     > /tmp/post.log &
+    wait
+
+Then require **post ⊆ pre**, after shifting line numbers by your own diff's
+insertion count (`git diff --numstat`). Put the copy at a genuine module path —
+the name is derived from the path, so a `module` file elaborates fine there and
+its diagnostics carry the *pre-edit* line numbers, which is what makes the two
+logs comparable.
+
+Three things that decide whether this works:
+
+* **Do NOT repair the baseline's wounds first.** It is tempting, and it destroys
+  the check: one parse error truncates the file, so fixing it unmasks thousands of
+  previously-hidden lines and `post ⊆ pre` fails for reasons that have nothing to
+  do with you. Repair after the differential, or not at all.
+* **Check where the first parse error sits relative to your edit.** If it is
+  *below* you, your declarations are still elaborated and the check is meaningful.
+  If it is *above* you, the run says nothing about your work and you must fix that
+  one wound (and then re-take the baseline).
+* **A comment-nesting scan is the cheap companion, and it sees what the compiler
+  cannot.** The compiler shows only the FIRST parse error; a character-level
+  `/-`/`-/` scan lists them all in one second. Iterating "report first stray, patch
+  it in a TEMP COPY, rescan" enumerates the whole set without a single build — three
+  wounds here, matching the merge worker's own first entry to two lines.
+
+And the ownership rule that goes with it: **a parse error is a passer-by's to fix,
+a 193-error module is not.** Report the list to whoever owns the file, in their
+line numbering as well as yours, with the repair for each — a repair chosen by
+reading which paragraph belongs to which declaration, since "insert a `/--`" and
+"delete the earlier `-/`" both parse and only one of them is faithful.
+
 ## Verify in a scratch module, not in the giant file
 
 (Deyao, 2026-07-25, from a measurement — this is the fleet's single
