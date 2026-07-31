@@ -38,6 +38,10 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.DifferentIdeal
 -- Same namespace `GaloisRepresentation`, so every reference below is
 -- unqualified and unchanged.
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.DiscrExponent
+-- `GaloisRepresentation.InertiaTrivialAt` and
+-- `GaloisRepresentation.not_dvd_discr_of_inertiaTrivialAt`, hoisted out of
+-- this file 2026-07-31 so that `ModularCurve/X0.lean` can reach them.
+public import Fermat.FLT.GaloisRepresentation.InertiaUnramified
 -- Hermite's theorem `NumberField.finite_of_discr_bdd`.
 public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 -- `NumberField.not_dvd_discr_iff_forall_mem`.
@@ -217,55 +221,6 @@ bounded discriminant and mathlib's Hermite theorem
 `NumberField.finite_of_discr_bdd` applies.
 -/
 
-/-- **Triviality of the inertia at a rational prime `q` on a subgroup
-of `Γ ℚ`**: every element of the local inertia group at `q`, pushed
-into `Γ ℚ` along the (chosen-embedding) map of absolute Galois groups,
-lies in `N`.  For `N = K.fixingSubgroup` this says exactly that the
-finite Galois subfield `K ⊆ ℚᵃˡᵍ` is unramified at `q` (through the
-PROVEN dictionary `isUnramifiedAt_of_inertia_le_fixingSubgroup` of
-`MazurTorsion`, reached by `not_dvd_discr_of_inertiaTrivialAt`); for
-`N` the kernel of a representation it is exactly
-`GaloisRep.IsUnramifiedAt`.  Stated in this pointwise form — rather
-than as `Subgroup.map … ≤ N` — so that both sides read off
-definitionally: the `Subgroup.map` spelling the `MazurTorsion`
-dictionary consumes is rebuilt where needed. -/
-def InertiaTrivialAt {q : ℕ} (hq : q.Prime)
-    (N : Subgroup (Field.absoluteGaloisGroup ℚ)) : Prop :=
-  ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
-    (Field.absoluteGaloisGroup.map (algebraMap ℚ
-      (HeightOneSpectrum.adicCompletion ℚ
-        hq.toHeightOneSpectrumRingOfIntegersRat))) σ ∈ N
-/-- **Unramified fields have coprime discriminant** (PROVEN — the
-inertia-to-discriminant transport of the Hermite–Minkowski cut): if
-the inertia at a prime `q` fixes the finite Galois subfield
-`K ⊆ ℚᵃˡᵍ` pointwise, then `q` does not divide the discriminant of
-`K`.  Chain: the pointwise hypothesis is repackaged as the image
-inclusion `Subgroup.map … ≤ K.fixingSubgroup`; every prime of `𝓞 K`
-over `q` is then unramified by the PROVEN inertia dictionary
-`isUnramifiedAt_of_inertia_le_fixingSubgroup` (`MazurTorsion`), and a
-prime unramified in every prime above it does not divide the
-discriminant (mathlib's `NumberField.not_dvd_discr_iff_forall_mem`).
-This is the ρ-free core of `ModThree.lean`'s
-`kernel_field_not_dvd_discr`. -/
-theorem not_dvd_discr_of_inertiaTrivialAt
-    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
-    [IsGalois ℚ K] {q : ℕ} (hq : q.Prime)
-    (hfix : InertiaTrivialAt hq K.fixingSubgroup) :
-    ¬ ((q : ℤ) ∣ NumberField.discr K) := by
-  have hle : Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
-      (HeightOneSpectrum.adicCompletion ℚ
-        hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
-      (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
-      ≤ K.fixingSubgroup := by
-    rintro g ⟨σ, hσ, rfl⟩
-    exact hfix σ hσ
-  have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
-  rw [NumberField.not_dvd_discr_iff_forall_mem K
-    (NumberField.RingOfIntegers K) hqZ]
-  intro P hP hmem
-  haveI := hP
-  exact isUnramifiedAt_of_inertia_le_fixingSubgroup K hq hle P
-    (by exact_mod_cast hmem)
 
 /-- **Hermite–Minkowski for fields unramified outside `{2, p}`**
 (PROVEN over the discriminant-exponent leaf — the field-side
