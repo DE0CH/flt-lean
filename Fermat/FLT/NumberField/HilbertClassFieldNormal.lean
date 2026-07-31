@@ -82,15 +82,26 @@ direct from the transitive frontier:
   `exists_hilbertClassField_intermediateField_isUnramifiedAtInfinitePlaces`
   carry `sorryAx`, and **every path to it leaves this file**: both route through
   `exists_classField_of_subgroup` / `exists_hilbertClassField_artinIso` in
-  `UnramifiedClassFieldExistence.lean`, i.e. the existence theorem of unramified
-  class field theory. Nothing in this file can shorten that; the four open
-  leaves are that file's `:237` and `:483` and `ArtinSymbol.lean`'s `:596`
-  (`artinMap_toPrincipalIdeal`) and `:710` (`closure_frobAt_eq_top`, Chebotarev).
+  `UnramifiedClassFieldExistence.lean` and thence into `ArtinSymbol.lean` —
+  i.e. into the existence theorem of unramified class field theory, Artin
+  reciprocity and Chebotarev. Nothing in this file can shorten that.
 
 So a frontier scan that reports `exists_hilbertClassField_normal_over_rat` as
 open is reading the TRANSITIVE census, and dispatching an agent at it wastes a
 worker — there is nothing here left to prove. See CLAUDE.md, "DIRECT vs
 TRANSITIVE sorries".
+
+**No leaf list is given for that cluster ON PURPOSE, and the omission is the
+point.** CLAUDE.md's rule against writing "still open, owned elsewhere" lists
+applies here with force: this cluster is among the fastest-moving in the tree,
+and a list written today is wrong within the day. Measured 2026-07-31 —
+`main` had four open leaves in it; `merger`, the same afternoon, had three,
+because `closure_frobAt_eq_top` (Chebotarev) and `exists_hilbertClassField_artinIso`
+had both been PROVEN and were merely sitting in the release window. A reader who
+had trusted a line-numbered list from `main` would have gone to prove Chebotarev
+twice. Regenerate instead: `git show merger:<file>` and grep, then
+`#print axioms` appended to the end of THIS module for the per-declaration
+verdict.
 -/
 
 @[expose] public section

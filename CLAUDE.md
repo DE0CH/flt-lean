@@ -279,9 +279,19 @@ to walk. Cost is one `lake env lean` of the module; restore the file afterwards:
 Here it separated four declarations in one run that a build reported identically:
 `conj_unramifiedAbelian` and `sup_unramifiedAbelian` came back axiom-clean, while
 `exists_hilbertClassField_normal_over_rat` came back `sorryAx` — and the same
-output **names the blocker for free**, since the only paths out led to
-`UnramifiedClassFieldExistence.lean`'s class-field existence leaves. That is a
-queue entry written by the compiler instead of by guesswork.
+output **names the blocking DIRECTION for free**, since the only paths out led
+into `UnramifiedClassFieldExistence.lean` and `ArtinSymbol.lean`.
+
+**But the direction is all it gives you — do not queue the named leaves without
+re-checking them against `merger`.** `#print axioms` is evaluated against YOUR
+import cone, which is `main`, and `main` is the frontier as of the last release.
+Measured the same afternoon: the cluster this audit pointed at had four open
+leaves on `main` and three on `merger`, because Chebotarev (`closure_frobAt_eq_top`)
+and `exists_hilbertClassField_artinIso` were both already proven and merely
+sitting in the release window. So the audit is authoritative about *your* target
+and merely indicative about everyone else's; pair it with
+`git show merger:<file>` before writing a queue entry, or you will pay someone to
+prove Chebotarev a second time.
 
 Two corollaries. Record the verdict in the file's module docstring, because it is
 the only place the next frontier scan will look and the only thing that stops the
