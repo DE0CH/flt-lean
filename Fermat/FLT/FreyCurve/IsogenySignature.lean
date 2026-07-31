@@ -273,14 +273,27 @@ import Mathlib.NumberTheory.FLT.Three
 -- `p`-torsion in characteristic `p`, the inseparability input of
 -- `exists_zsmul_eq_of_mem_torsionBy_of_charP` below.
 import Fermat.FLT.EllipticCurve.TorsionCharP
--- The genus-`2` hyperelliptic layer: the smooth projective model of a monic
--- sextic in `ℙ(1,3,1)`, its integral weighted-projective coordinates, the
--- reduction map `X(ℚ) → X(𝔽ₚ)`, and the Jacobian package (`Pic⁰` + Abel–Jacobi
--- + reduction + rank `0`).  Supplies
--- `Fermat.Hyperelliptic.X18.no_noncuspidal_point`, the smooth-model form of
--- `MazurLevel18.no_noncuspidal_point_on_smooth_model` below, together with the
--- machine-checked count `#X_1(18)(𝔽₅) = 6`.
-import Fermat.FLT.ModularCurve.HyperellipticJacobian
+-- BUILD REPAIR 2026-07-31 (flt-lean-124): the genus-`2` hyperelliptic layer used
+-- to be imported here, for `Fermat.Hyperelliptic.X18.no_noncuspidal_point`.  That
+-- import CLOSED A MODULE CYCLE and made the whole `X0`/`MazurTorsion`/`ModThree`/
+-- `Threeadic` cone unbuildable on `merger`:
+--
+--   `ModularCurve/X0.lean:985`            `public import …FreyCurve.IsogenySignature`
+--   `FreyCurve/IsogenySignature.lean:283` `import …ModularCurve.HyperellipticJacobian`
+--   `ModularCurve/HyperellipticJacobian.lean:325` `import …ModularCurve.X0`
+--
+-- (`lake build` reports `build cycle detected` on `IsogenySignature`, then
+-- `bad import` on every module above it.)  Each edge was added by a different
+-- branch and each was cycle-free at its own base; `X0.lean`'s own comment at the
+-- hoist even records the check — "None of the four project modules below imports
+-- this one, so no cycle is created" — which is true of the four modules named and
+-- false of `IsogenySignature`, the fifth.
+--
+-- THIS edge is the one that is free to cut: no name declared in
+-- `HyperellipticJacobian.lean` (373 of them) occurs anywhere in the
+-- comment-stripped source of this file, and its only mention of the layer was the
+-- comment this note replaces.  `MazurTorsion.lean`, the real consumer, imports
+-- `HyperellipticJacobian` DIRECTLY, so nothing loses reach.
 -- The Gaussian-integer infinite descent on `e² = X⁴ − 11X²Y² − Y⁴`: the
 -- arithmetic input of the `X_1(2,10)` node
 -- (`MazurTwoTen.quartic_no_solution`).
