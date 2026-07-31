@@ -2163,6 +2163,36 @@ the copy is needed at all — the first symptom is `object file '….olean' does
 The snapshot olean is stale, so treat cross-module errors with the usual suspicion; but
 errors internal to your file — parse errors, arity mismatches, unknown identifiers
 declared in the same file — are real and are yours to fix.
+### THE COMMONEST THING HIDING BEHIND A RED UPSTREAM: A HOIST THAT NEVER DELETED ITS SOURCE
+
+(2026-07-31, `flt-lean-337`, and it is the SECOND confirmed instance in two files.)
+When a block is hoisted out of a giant module into a new one and the new module is
+`public import`ed back, the originals have to be deleted in the same commit. They
+often are not — and **`tools/merge/semmerge.py` propagates ADDITIONS and never
+DELETIONS**, so no later merge can remove them. Every duplicate is then a hard
+`has already been declared`, and behind a red upstream nothing in the fleet can see
+it.
+
+Confirmed instances: `FreyCurve/MazurTorsion.lean` against `IsogenySignature.lean`
+and `X0.lean` (249 duplicates); `Modularity/Patching.lean` against the hoisted
+`Modularity/PatchingWitt.lean` (27, the entire Cohen/Witt coefficient-ring block,
+`759621e8`). Both were invisible because `X0.lean` upstream was red.
+
+The scan is cheap and worth running on ANY module that imports a recently created
+sibling — intersect the two files' declaration-name sets, then compare bodies before
+deleting anything:
+
+    tools/merge/xdup.py .        # or a 20-line name-intersection in python
+
+Delete the DOWNSTREAM copies, i.e. in the file doing the importing, and **compare
+bodies whitespace- and comment-normalised first**: identical means nothing is being
+chosen between, and a difference means the downstream copy may have been improved
+after the hoist and deleting it would silently revert that work. In the
+`PatchingWitt` case all 28 shared bodies were identical, which is what made the
+deletion mechanical. A partial trim is a tell — `wittVectorTopology` had already
+been removed from `Patching.lean` while the other 27 stayed, so the file was USING
+one hoisted name and REDECLARING the rest.
+
 ## READING A MERGE SPLICE: three signatures, and one message that does not mean what it says
 Same day, same file. Textual merges in this development produce a recognisable damage
 pattern, and one of its symptoms is systematically misread.
@@ -3648,6 +3678,64 @@ base is infinite, so the avoidance is direct.
   The change is then strictly additive: no consumer's call site moves, and a green
   build cannot regress. Both Stage-B leaves were generalised this way with the 15k-line
   `WeilPairing.lean` caller untouched.
+## A RESTATED *PREDICATE* VOIDS THE AUDITS OF EVERY LEAF THAT MERELY USES IT
+
+(2026-07-31, `flt-lean-337`.) This file already says a leaf restated a second time
+inherits no audit. The same voiding happens one level DOWN, through a definition,
+and it is much harder to see — because **the leaf's own statement never changes,
+so nothing flags it.**
+
+The instance. On 2026-07-30 `exists_traceGenerated_auxDeformationDatum` in
+`Modularity/Patching.lean` gained a hypothesis `hktr` ("`k` is generated over
+`ℤ_[p]` by `ρbar`'s residual Frobenius traces"), under a FALSITY AUDIT #4 that
+proved it NECESSARY: the leaf's conclusion `IsTraceGeneratedDeformation` entailed
+it, so without it the leaf was unprovable. The audit was correct, and it came with
+a refuting instance (`ρbar₀/𝔽_p` base-changed to `𝔽_{p²}`) and a proven obstruction
+theorem carrying the entailment.
+
+On 2026-07-31 `IsTraceGeneratedDeformation` itself was restated — quantified over
+subalgebras, with residual surjectivity moved from CONCLUSION to HYPOTHESIS. That
+killed the entailment, and with it every word of audit #4: the hypothesis stopped
+being necessary, and the obstruction theorem stopped being derivable and went RED.
+Its own restating audit even said so, at point (ii) — "the derivation cannot be run
+in reverse" — and still nobody connected that sentence to the leaf two thousand
+lines below that had been built on the derivation.
+
+So: **when you restate a definition, grep for every leaf whose audit ARGUES from
+it, not just for every signature that mentions it.** And the restating audit's
+companion claim here — "`hgen` is consumed by no proof body in the tree, so this
+change is inert for the build and changes no signature" — was false at three sites.
+It had been inferred from every *signature* merely forwarding `hgen`. The check
+that would have caught it is one command: grep the BINDER NAME inside proof bodies,
+not the predicate name in binder lists.
+
+### And before threading a new hypothesis "up the chain", find where the chain ENDS
+
+The prescription left for the red theorem was: delete it, and add `hktr` beside
+`hgen` at the seven `Runiv`-consuming declarations that already forward `hgen`.
+Every one of the seven is in `Patching.lean`, so the change looked self-contained.
+It is not: the seventh, `injective_ringHom_of_isWeaklyUniversal`, is called twice
+from `Modularity/Interface.lean`, where `hgen` is `obtain`ed from
+`exists_weaklyUniversal_hardlyRamifiedDeformation` — which **cannot supply `hktr`**,
+the base-change instance refuting it for a general coefficient field. Threading
+would have exported an unprovable obligation across a file boundary and moved the
+red downstream rather than removing it.
+
+One command separates the two outcomes, and it costs nothing:
+
+    grep -rn '<top name of the chain>' --include=*.lean Fermat/ | grep -v '<your file>'
+
+Run it on the TOP of the chain before you touch the bottom. A hypothesis you cannot
+discharge at the top is not a repair, however clean it looks at the leaf; the repair
+that closes is usually the opposite move — **removing** the hypothesis the voided
+audit added.
+
+(Operational note from the same task: the doctrine's LEAN_PATH shim really does need
+a single `cp -rs` farm. Putting an overlay directory FIRST in `LEAN_PATH` and the
+release build second did **not** fall through — `lean` reported the overlay's path
+as missing rather than finding the olean in the second entry. One farm dir, with
+`cp --remove-destination` for the modules you rebuild.)
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's

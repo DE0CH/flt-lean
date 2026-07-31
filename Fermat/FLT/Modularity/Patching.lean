@@ -1043,6 +1043,21 @@ forwarding application per consumer, all the way down to the sorried
 `exists_auxDeformationDiamondControl`).  So this change of definition is
 inert for the build and changes no signature.
 
+**THAT LAST CLAIM WAS FALSE, AND IS CORRECTED HERE** (2026-07-31, first by
+`flt-lean-79`, completed by `flt-lean-337`).  THREE proof bodies did consume
+`hgen`'s old strength: `isTraceGeneratedDeformation_exchange` and
+`surjective_of_isTraceGeneratedDeformation` below, both repaired by
+`flt-lean-79` and each SHORTER afterwards; and
+`adjoin_residualCharFrob_eq_top_of_isTraceGenerated`, which was NOT repairable —
+its conclusion (`k` is generated over `ℤ_[p]` by `ρbar`'s residual traces) is
+exactly what point (ii) above says the new form no longer forces, so it was
+deleted, together with the `hktr` hypothesis it existed to justify on
+`exists_traceGenerated_auxDeformationDatum` far below.  Net effect on signatures
+is therefore a hypothesis REMOVED, not added, and still nothing outside this
+module changed.  The lesson for the next restatement: "consumed by no proof
+body" must be checked by grepping for the BINDER NAME in proof bodies, not
+inferred from the fact that every signature merely forwards it.
+
 # THE SECOND DEFECT, FIXED IN THE SAME BREATH: THE `Sf \ Suniv` GAP
 
 `exists_auxDeformationDiamondControl` far below records a separate obstruction
@@ -10363,9 +10378,40 @@ theorem exists_ringHom_mvPowerSeries_of_isAdicComplete
     rw [MvPowerSeries.coe_eval₂Hom hcont hev]
     exact MvPowerSeries.eval₂_X _ _ _
 
-section WittVectorLocal
-variable (p : ℕ) [Fact p.Prime] (k : Type*) [Field k] [CharP k p] [PerfectRing k p]
-end WittVectorLocal
+/- **THE COHEN / WITT COEFFICIENT-RING BLOCK LIVED HERE AND WAS DELETED ON
+2026-07-31** (`flt-lean-337`).  It is now `Fermat/FLT/Modularity/PatchingWitt.lean`,
+which this module already `public import`s.
+
+Commit `759621e8` hoisted the block OUT of this file into `PatchingWitt.lean` and
+added the import, but the originals here survived — `tools/merge/semmerge.py`
+propagates ADDITIONS and never DELETIONS, so no merge could remove them.  The
+result was 27 hard `has already been declared` errors spanning the deleted range,
+invisible to every frontier instrument because `ModularCurve/X0.lean` upstream is
+red and `lake build` never reaches this module (CLAUDE.md's SEVENTH invisibility
+class).  All 28 shared declarations were compared body-for-body before deletion,
+comments and whitespace normalised: every one was IDENTICAL, so nothing was
+chosen between and no work was reverted.  `wittVectorTopology` had already been
+removed from this file by an earlier partial trim, which is why it is the one
+name in `PatchingWitt.lean` that this block used without redeclaring.
+
+The deleted names, all of them now supplied by `PatchingWitt.lean`:
+`wittVectorHomeomorph`, `continuous_wittVector_coeff`, `wittVector_compactSpace`,
+`wittVector_t2Space`, `wittVector_totallyDisconnectedSpace`,
+`wittVector_truncate_eq_mk`, `wittVector_isTopologicalRing`,
+`wittVector_maximalIdeal_eq_span_p`, `wittVectorResidueEquiv`,
+`wittVector_finite_residueField`, `wittVector_exists_isRegular_maximalIdeal`,
+`exists_mem_adjoin_teichmuller_coeff_eq`, `wittVector_topologicallyFG`,
+`TaylorWilesCoefficients.wittVector`, `symm_frobeniusEquiv_pow_pow`,
+`exists_ringHom_section_of_isNilpotent_ker`, `sub_pow_mem_pow_succ`,
+`sub_pow_pow_mem_pow`, `eq_of_forall_exists_pow_sub_mem`,
+`prime_pow_dvd_choose_prime_pow`, `pow_prime_pow_eq_of_sub_pow_eq_zero`,
+`exists_ringHom_section_of_charP`, `exists_ringHom_ghostComponent_quotient_p`,
+`existsUnique_ringHom_wittVector_of_isNilpotent`,
+`exists_ringHom_wittVector_of_isAdicComplete`, `IsCohenCoefficients` and
+`exists_taylorWilesCoefficients_ringHom`, together with the enclosing
+`section WittVectorLocal`.  Their docstrings — the audits included — went with
+them and are intact in `PatchingWitt.lean`. -/
+
 set_option linter.checkUnivs false in
 /-- **Complete Nakayama: the substitution homomorphism is surjective**
 (PROVEN 2026-07-27; was LEAF B1a-ii of the 2026-07-27 decomposition of
@@ -19076,157 +19122,44 @@ theorem exists_isWeaklyUniversal_auxDeformationDatum.{uK, uW, uR}
     (isAuxFiniteFramesClause.{uR} hpodd Q)
     (isAuxProLimitClause.{uR, uK, uW} hpodd hW hirr n Q hQ)
 
-set_option linter.checkUnivs false in
-/-- **NECESSITY OF RESIDUAL TRACE GENERATION** (PROVEN 2026-07-30, `flt-lean-69`):
-if a deformation `(R, ρ, π, S)` in the Mazur shape of this file is
-TRACE-GENERATED in the sense of `IsTraceGeneratedDeformation`, then the residual
-field `k` is ALREADY generated over `ℤ_[p]` by the Frobenius traces of `ρbar`
-away from `S`.
+/- **`adjoin_residualCharFrob_eq_top_of_isTraceGenerated` WAS DELETED HERE ON
+2026-07-31** (`flt-lean-337`).  Do not re-add it, and do not `sorry` it back.
 
-This is the obstruction that `exists_traceGenerated_auxDeformationDatum` below
-had to be repaired against (read its FALSITY AUDIT #4), and it is what makes the
-repairing hypothesis EXACTLY NECESSARY rather than merely sufficient.
+It said: a trace-generated deformation `(R, ρ, π, S)` forces the residual field
+`k` to be generated over `ℤ_[p]` by the Frobenius traces of `ρbar` away from
+`S`.  The derivation ran through the PRE-2026-07-31 reading of
+`IsTraceGeneratedDeformation` — "the `ℤ_[p]`-subalgebra generated by the traces
+is dense" — under which the image of that subalgebra under the (automatically
+continuous) `π` had to exhaust the discrete `k`.
 
-PROOF, and the two facts that make it work.  `π` is CONTINUOUS for free: its
-kernel is maximal (it is onto the field `k`), hence is `𝔪_R` because `R` is
-local, and `𝔪_R` is open because the topology is `𝔪`-adic (`isAdic_iff` at
-`n = 1`) — with `k` discrete that is continuity.  And `π` is automatically a
-`ℤ_[p]`-ALGEBRA map, by the rigidity `ringHom_padicInt_eq` of `ℤ_[p] →+* k`.
-So the preimage `π⁻¹(B)` of the residual trace subalgebra `B ⊆ k` is a CLOSED
-`ℤ_[p]`-subalgebra of `R` (closed because every subset of the discrete `k` is),
-and it contains every Frobenius trace of `ρ` away from `S` by `hred`.
-`Subalgebra.topologicalClosure_minimal` therefore puts the whole topological
-closure of the trace subalgebra of `R` — which is `⊤`, by the trace-generation
-hypothesis — inside `π⁻¹(B)`; surjectivity of `π` then gives `B = ⊤`.
+The 2026-07-31 restatement of `IsTraceGeneratedDeformation` (read its audit at
+the top of this module) instead QUANTIFIES over `ℤ_[p]`-subalgebras `A` and
+makes residual surjectivity of `A` a HYPOTHESIS, never a conclusion — point
+(ii) of that audit's re-audit of the composite says exactly that, and says why:
+"the derivation at the head of this audit cannot be run in reverse".  So the
+implication is gone.  The declaration was ERRORING for the matching reason (its
+body wrote `have hgen' : BR.topologicalClosure = ⊤ := hgen`, the old unapplied
+form) and it was the only error in this file; but the error was a symptom, and
+the disease is that **its conclusion is no longer derivable from its
+hypotheses**.  An unvouched statement may not be `sorry`d (CLAUDE.md), so it is
+deleted rather than left open.
 
-The content in one line: `π` is continuous with `k` discrete, so
-`π(closure A) ⊆ closure(π A) = π A`, and trace generation says `closure A = R`.
+Its ONLY consumer was the `hktr` hypothesis of
+`exists_traceGenerated_auxDeformationDatum` below, which the same restatement
+made unnecessary; that hypothesis is removed in the same commit, and the
+`have hktr := …` block at the one call site in
+`exists_taylorWilesAuxLevelPresentedDatum` with it.  No signature outside this
+module changed, and none could have — see the last paragraph of the VOIDED
+FALSITY AUDIT #4 below for why threading `hktr` up the `Runiv`-consuming chain
+was not an option.
 
-# BUILD-BLOCKING DEFECT, DIAGNOSED 2026-07-31 (`flt-lean-79`), NOT REPAIRED HERE
+The deleted proof is sorry-free and remains CORRECT FOR THE OLD PREDICATE;
+recover it, if the predicate is ever restated back, with
 
-**This declaration ERRORS.  It is the last error in this file and it is the only
-one, and it is a consequence of the 2026-07-31 restatement of
-`IsTraceGeneratedDeformation` near the top of this module.**  The proof body
-below writes `have hgen' : BR.topologicalClosure = ⊤ := hgen`, which was the OLD
-form; the new form quantifies over exceptional sets and subalgebras, so `hgen`
-must be APPLIED, and one of the two hypotheses it must be applied to is
+    git log --oneline -S adjoin_residualCharFrob_eq_top_of_isTraceGenerated \
+      -- Fermat/FLT/Modularity/Patching.lean
 
-    ∀ x : R, ∃ a ∈ BR, x - a ∈ IsLocalRing.maximalIdeal R,
-
-i.e. residual surjectivity of the trace subalgebra — which is EXACTLY this
-theorem's conclusion, pulled back along `π`.  So the theorem is not merely
-mis-proved: **its conclusion is no longer derivable from its hypotheses**, and
-that is precisely what the restating audit established (it showed the old form
-smuggled in `k = 𝔽_p(traces of ρbar)`, a statement about `(k, ρbar)` alone that
-nothing in the package constrains, and that base change `(k, W) ↦ (k', W ⊗ k')`
-refutes).  The restating audit's own claim that the change "is inert for the
-build and changes no signature" — on the ground that `hgen` "is consumed by no
-proof body in the tree" — is FALSE at three sites: here, and at
-`isTraceGeneratedDeformation_exchange` and
-`surjective_of_isTraceGeneratedDeformation` below, both of which are repaired in
-this commit (each becomes SHORTER and needs no Chebotarev input, so those two
-really were inert in content if not in text).
-
-**THE PRESCRIPTION**, so the next owner does not have to rediscover it.  The
-missing content has to be ASSUMED somewhere, and the natural place is beside
-`hgen` itself, exactly as `hgen` was itself threaded when it was added:
-
-1. delete this theorem (it is unvouched, and CLAUDE.md forbids `sorry`ing an
-   unvouched statement);
-2. add, next to each `(hgen : IsTraceGeneratedDeformation p ρuniv Suniv)` binder
-   on the `Runiv`-consuming chain, the companion hypothesis
-
-       (hktr : Algebra.adjoin ℤ_[p] {a : k | ∃ (q : ℕ) (hq : q.Prime),
-         hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv ∧
-         a = (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1}
-         = ⊤)
-
-   — that is `exists_taylorWilesAuxLevelPresentedDatum`,
-   `exists_taylorWilesAuxLevelData`, `exists_taylorWilesLevelRaw`,
-   `exists_taylorWilesTower`, `exists_taylorWilesSystem`, `exists_patchedModule`
-   and `injective_ringHom_of_isWeaklyUniversal`, i.e. the six or seven sites that
-   already forward `hgen`;
-3. at the ONE call site (in `exists_taylorWilesAuxLevelPresentedDatum` below,
-   `have hktr := adjoin_residualCharFrob_eq_top_of_eq_top … (adjoin_residual… …)`)
-   drop the inner application and feed the new hypothesis to
-   `adjoin_residualCharFrob_eq_top_of_eq_top` directly — that transport theorem
-   is PROVEN and is what moves the statement from `Suniv` to `𝒟Q₀.S`.
-
-This is a hypothesis, not a leaf: pinning `k` as the residual trace field belongs
-to whoever supplies `IsWeaklyUniversalDeformation`, exactly like `hgen`. -/
-theorem adjoin_residualCharFrob_eq_top_of_isTraceGenerated.{uK, uW, uR}
-    {p : ℕ} [Fact p.Prime]
-    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
-    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
-    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
-    {R : Type uR} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
-    [IsLocalRing R] [Algebra ℤ_[p] R]
-    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
-    {ρ : GaloisRep ℚ R (Fin 2 → R)}
-    {π : R →+* k} (hπ : Function.Surjective π)
-    {S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hred : ∀ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
-      π ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (hgen : IsTraceGeneratedDeformation p ρ S) :
-    Algebra.adjoin ℤ_[p] {a : k | ∃ (q : ℕ) (hq : q.Prime),
-        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S ∧
-        a = (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1}
-      = ⊤ := by
-  classical
-  -- `π` is continuous: its kernel is `𝔪`, open in the `𝔪`-adic topology, and
-  -- `k` is discrete.  (Same argument as `exists_auxDeformationDatum` above.)
-  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
-    IsLocalRing.ker_eq_maximalIdeal π hπ
-  have hmopen : IsOpen ((IsLocalRing.maximalIdeal R : Ideal R) : Set R) := by
-    have h := (isAdic_iff.mp hadic).1 1
-    simpa using h
-  have hπcont : Continuous π := by
-    apply continuous_of_continuousAt_zero π
-    unfold ContinuousAt
-    rw [map_zero, nhds_discrete k, Filter.tendsto_pure]
-    filter_upwards [hmopen.mem_nhds (Submodule.zero_mem _)] with x hx
-    exact RingHom.mem_ker.mp (by rw [hker]; exact hx)
-  -- `π` is automatically a `ℤ_[p]`-algebra map (`ℤ_p →+* k` is rigid).
-  have hcomm : ∀ x : ℤ_[p], π (algebraMap ℤ_[p] R x) = algebraMap ℤ_[p] k x := by
-    have h := ringHom_padicInt_eq (π.comp (algebraMap ℤ_[p] R))
-      (algebraMap ℤ_[p] k)
-    intro x
-    exact congrArg (fun f : ℤ_[p] →+* k => f x) h
-  let πalg : R →ₐ[ℤ_[p]] k := { π with commutes' := hcomm }
-  have hπalg : ∀ x, πalg x = π x := fun _ => rfl
-  set Bk : Subalgebra ℤ_[p] k := Algebra.adjoin ℤ_[p] {a : k | ∃ (q : ℕ)
-      (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S ∧
-      a = (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1}
-    with hBk
-  set BR : Subalgebra ℤ_[p] R := Algebra.adjoin ℤ_[p] {a : R | ∃ (q : ℕ)
-      (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S ∧
-      a = (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1}
-    with hBR
-  -- The preimage of the residual trace subalgebra is a CLOSED subalgebra of `R`
-  -- containing every Frobenius trace away from `S`.
-  have hle : BR ≤ Bk.comap πalg := by
-    rw [hBR]
-    apply Algebra.adjoin_le
-    rintro z ⟨q, hq, hqS, rfl⟩
-    have hmem : πalg ((ρ.charFrob
-        hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) ∈ Bk := by
-      rw [hπalg, hred q hq hqS, hBk]
-      exact Algebra.subset_adjoin ⟨q, hq, hqS, rfl⟩
-    exact hmem
-  have hclosed : IsClosed ((Bk.comap πalg : Subalgebra ℤ_[p] R) : Set R) := by
-    have hcoe : ((Bk.comap πalg : Subalgebra ℤ_[p] R) : Set R)
-        = π ⁻¹' (Bk : Set k) := rfl
-    rw [hcoe]
-    exact IsClosed.preimage hπcont (isClosed_discrete _)
-  have htop := Subalgebra.topologicalClosure_minimal hle hclosed
-  have hgen' : BR.topologicalClosure = ⊤ := hgen
-  rw [hgen'] at htop
-  refine Algebra.eq_top_iff.mpr fun y => ?_
-  obtain ⟨x, rfl⟩ := hπ y
-  exact htop (Algebra.mem_top)
+and `git show <that commit>^:Fermat/FLT/Modularity/Patching.lean`. -/
 
 set_option linter.checkUnivs false in
 /-- **RESIDUAL TRACE GENERATION DOES NOT SEE THE FINITE EXCEPTIONAL SET**
@@ -19249,12 +19182,19 @@ conjugates away from `S` are DENSE in `Γ_ℚ`.  So the closed set
 i.e. EVERY trace of `ρbar` already lies in `C`, in particular every trace away
 from `S'`.  Removing finitely many primes removes no trace VALUES.
 
-This is what makes the hypothesis `hktr` of
-`exists_traceGenerated_auxDeformationDatum` below canonical: it is one condition
-on `ρbar` and `k`, not a condition on an exceptional set, so it may be
-established at whichever set the caller happens to hold it at.  That is exactly
-how the call site in `exists_taylorWilesAuxLevelPresentedDatum` discharges it —
-from `hgen` at `Suniv`, for a `𝒟Q₀.S` it cannot see. -/
+**UNCONSUMED SINCE 2026-07-31** (`flt-lean-337`), and that is a status note, not
+a defect.  This theorem was cut on 2026-07-30 to transport the hypothesis `hktr`
+of `exists_traceGenerated_auxDeformationDatum` below between exceptional sets —
+`hktr` being one condition on `(ρbar, k)` rather than on a set, so it could be
+established at whichever set the caller held it at.  The 2026-07-31 restatement
+of `IsTraceGeneratedDeformation` removed the need for `hktr` altogether (read
+the VOIDED FALSITY AUDIT #4 on that leaf), so the transport has no caller left.
+
+It is kept, not deleted, because it is sorry-free, is a fact about `(ρbar, k)`
+alone, and costs nothing where it stands; it is however genuinely free-floating
+now, so the periodic free-floating sweep — which build-verifies its deletions
+and owns that decision — is free to take it.  Do not treat its presence as
+evidence that `hktr` is still wanted anywhere. -/
 theorem adjoin_residualCharFrob_eq_top_of_eq_top.{uK, uW}
     {p : ℕ} [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -19329,9 +19269,10 @@ set_option linter.checkUnivs false in
 taken TRACE-GENERATED** (sorry node, cut 2026-07-30, `flt-lean-69`, as the
 FALSITY REPAIR of `exists_cohenGenerators_maximalIdeal_auxDeformation` below —
 read FALSITY AUDIT #3 there for the counterexample family that forces it;
-RESTATED the same day, same worktree, over the necessary hypothesis `hktr` —
-read FALSITY AUDIT #4 below, which VOIDS nothing because there was no earlier
-audit on this leaf, but which does supersede the CAVEAT section as it stood).
+RESTATED the same day, same worktree, over a hypothesis `hktr`; **that
+hypothesis was REMOVED AGAIN on 2026-07-31 by `flt-lean-337`, and FALSITY
+AUDIT #4, which added it, is VOID** — read the void notice on it below before
+reasoning from anything in it).
 
 The raised-level twin of `exists_traceGenerated_of_isWeaklyUniversal` far above,
 cut in the same EXISTENTIAL shape and for the same reason.  The IMPLICATION
@@ -19349,9 +19290,19 @@ is a datum rather than a tuple: the descended ring is local, Noetherian, adic
 and adically complete, and `IsRaisedLevelHardlyRamified` survives because its
 five clauses are conditions on `ρ` and `ρ` factors through the subring.
 
-# FALSITY AUDIT #4 (2026-07-30, `flt-lean-69`): **THE CAVEAT WAS NOT A CAVEAT —
-# AS FIRST CUT, EARLIER THE SAME DAY, THIS LEAF WAS UNPROVABLE**, AND `hktr` IS
-# THE REPAIR
+# FALSITY AUDIT #4 (2026-07-30, `flt-lean-69`) IS **VOID** — READ THE NOTICE AT
+# ITS FOOT BEFORE USING ANY SENTENCE OF IT
+
+**Everything from here down to the void notice is reproduced as written on
+2026-07-30 and is TRUE ONLY OF THE PRE-2026-07-31 `IsTraceGeneratedDeformation`.**
+It is kept because its refuting instance is instructive and because a successor
+that meets the old predicate again should be able to read the argument; it is
+not kept because it still applies.  The hypothesis `hktr` it prescribes has been
+REMOVED from the binder list below.
+
+# FALSITY AUDIT #4, AS WRITTEN 2026-07-30 (VOID): **THE CAVEAT WAS NOT A CAVEAT
+# — AS FIRST CUT, EARLIER THE SAME DAY, THIS LEAF WAS UNPROVABLE**, AND `hktr`
+# IS THE REPAIR
 
 The section this replaces recorded, correctly, that the `ℤ_[p]` spelling of
 `IsTraceGeneratedDeformation` agrees with the classical `W(k)` descent "exactly
@@ -19419,6 +19370,63 @@ obstruction still applies to any HONEST proof of it (the guard there bans the
 directly above, and it mentions no leaf.  Read this leaf's binder list for
 occurrences of `𝒟`: `h𝒟` and `hktr`, and nothing else.
 
+# END OF THE VOID SECTION.  THE VOID NOTICE (2026-07-31, `flt-lean-337`)
+
+**What voided it.**  Audit #4's whole necessity argument is the step marked "The
+obstruction is now a THEOREM": that `IsTraceGeneratedDeformation p 𝒟'.ρ 𝒟'.S`
+ENTAILS `k = 𝔽_p(traces of ρbar)`, so that a leaf concluding trace generation
+had to assume it.  That entailment belongs to the pre-2026-07-31 predicate.  The
+restatement at the top of this module quantifies over `ℤ_[p]`-subalgebras `A`
+and asks residual surjectivity of `A` as a HYPOTHESIS on `A`, never as a
+conclusion; its own re-audit of the composite says so at point (ii), in as many
+words: the derivation "cannot be run in reverse".  CLAUDE.md's rule that a
+restatement VOIDS an earlier audit reaches this case through the PREDICATE
+rather than through the statement, and with the same force.  The theorem that
+carried the entailment, `adjoin_residualCharFrob_eq_top_of_isTraceGenerated`,
+was deleted above in the same commit — it was ERRORING, and its conclusion was
+no longer derivable from its hypotheses.
+
+**The refuting instance is no longer refuting.**  `ρbar₀` over `𝔽_p` base
+changed to `k = 𝔽_{p²}` still has all its traces in `𝔽_p`, so
+`Algebra.adjoin ℤ_[p] {traces} = 𝔽_p ⊊ k` — but under the new predicate that is
+not an obstruction to a trace-generated datum, because the subalgebras `A` the
+predicate quantifies over are required to surject onto `k` before anything is
+concluded about them, and the descended ring is generated over a COEFFICIENT
+RING, not over `ℤ_[p]` alone.
+
+**Re-audit of the hypothesis-free statement** (required: this leaf has now been
+restated twice, so no earlier audit is inherited).  With `hktr` gone the leaf is
+the raised-level twin of `exists_traceGenerated_of_isWeaklyUniversal` far above
+in shape AND in binder list, and that flat-level leaf carries no such hypothesis
+either.  Its only input is `exists_traceSubringDescent`, whose step 4 — restated
+2026-07-31, the same day as the predicate — is precisely the argument that makes
+`hktr` superfluous: a `ℤ_[p]`-subalgebra `B ⊆ A` containing the traces away from
+any finite `S ⊇ S₀` and surjecting onto `k` contains a coefficient ring, by
+running `exists_coefficientSubalgebra` INSIDE `B`, and hence is dense.  Nothing
+in that argument asks `k` to be the residual trace field; the coefficient ring
+supplies whatever of `k` the traces do not.  So the Carayol content owed here is
+unchanged and is owed at the same strength as at flat level.
+Non-vacuity and non-circularity are inherited from the sections above and are
+untouched by the removal of a hypothesis: the conclusion is still an existential
+whose datum fields pin `ρ` on the nose, and `hirr` still enters only through the
+descent.
+
+**Why `hktr` could NOT have been kept and threaded instead.**  The alternative
+prescription — add `hktr` beside `hgen` at the seven binders of the
+`Runiv`-consuming chain (`exists_taylorWilesAuxLevelPresentedDatum`,
+`exists_taylorWilesAuxLevelData`, `exists_taylorWilesLevelRaw`,
+`exists_taylorWilesTower`, `exists_taylorWilesSystem`, `exists_patchedModule`,
+`injective_ringHom_of_isWeaklyUniversal`) — does not terminate inside this
+module.  `injective_ringHom_of_isWeaklyUniversal` is called twice from
+`Modularity/Interface.lean`, by `exists_ringHom_charFrob_eq_of_heckeDeformation`
+and `exists_weightTwoEigenform_of_heckeDeformation_order_point`, and there
+`hgen` is `obtain`ed from `exists_weaklyUniversal_hardlyRamifiedDeformation`,
+which cannot supply `hktr`: the base-change instance above refutes it for a
+general coefficient field, so adding it as a conjunct there would manufacture a
+false leaf, and adding it as a hypothesis there merely moves an unprovable
+obligation further up the tree.  Removing the hypothesis is the repair that
+closes; threading it is one that does not.
+
 References: Carayol, in *p-adic monodromy and the Birch–Swinnerton-Dyer
 conjecture*, Contemp. Math. 165 (1994), Thm. 3; Nyssen, Manuscripta Math. 89
 (1996); Rouquier, J. Algebra 180 (1996); Mazur, in *Galois Groups over ℚ*
@@ -19441,11 +19449,7 @@ theorem exists_traceGenerated_auxDeformationDatum.{uK, uW, uR}
     (hirr : ρbar.IsIrreducible)
     (Q : Finset ℕ)
     (𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
-    (h𝒟 : 𝒟.IsWeaklyUniversal)
-    (hktr : Algebra.adjoin ℤ_[p] {a : k | ∃ (q : ℕ) (hq : q.Prime),
-        hq.toHeightOneSpectrumRingOfIntegersRat ∉ 𝒟.S ∧
-        a = (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1}
-      = ⊤) :
+    (h𝒟 : 𝒟.IsWeaklyUniversal) :
     ∃ 𝒟' : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar,
       𝒟'.IsWeaklyUniversal ∧ IsTraceGeneratedDeformation p 𝒟'.ρ 𝒟'.S :=
   sorry
@@ -23447,20 +23451,15 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
   -- classifies everything `𝒟Q₀.R` does — so without this descent the
   -- `q`-generator bound below is FALSE.  See FALSITY AUDIT #3 on
   -- `exists_cohenGenerators_maximalIdeal_auxDeformation`.
-  -- Its hypothesis `hktr` — that `k` is generated over `ℤ_[p]` by `ρbar`'s
-  -- Frobenius traces — is NECESSARY (FALSITY AUDIT #4 there) and is already in
-  -- this caller's hand: `hgen` gives it at `Suniv` through the obstruction
-  -- theorem, and residual trace generation does not see the exceptional set, so
-  -- it transfers to the `𝒟Q₀.S` chosen out of sight above.
-  have hktr : Algebra.adjoin ℤ_[p] {a : k | ∃ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ 𝒟Q₀.S ∧
-      a = (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1}
-      = ⊤ :=
-    adjoin_residualCharFrob_eq_top_of_eq_top.{uK, uW} hW ρbar 𝒟Q₀.S Suniv
-      (adjoin_residualCharFrob_eq_top_of_isTraceGenerated.{uK, uW, uR}
-        hadic hπuniv hunivred hgen)
+  -- It used to carry a hypothesis `hktr` — that `k` is generated over `ℤ_[p]`
+  -- by `ρbar`'s Frobenius traces — discharged here from `hgen` through an
+  -- obstruction theorem.  Both are gone since 2026-07-31: the restatement of
+  -- `IsTraceGeneratedDeformation` makes residual surjectivity a hypothesis on
+  -- the subalgebra rather than a consequence, so the obstruction no longer
+  -- holds and the hypothesis is no longer necessary.  Read the VOID NOTICE on
+  -- FALSITY AUDIT #4 of that leaf.
   obtain ⟨𝒟Q, h𝒟Q, hgenQ⟩ := exists_traceGenerated_auxDeformationDatum.{uK, uW, uR}
-    hpodd hW hirr Q 𝒟Q₀ h𝒟Q₀ hktr
+    hpodd hW hirr Q 𝒟Q₀ h𝒟Q₀
   -- The coefficient ring is the right one: `hbot` already presents `Runiv` over
   -- `Λ_coeff`, which is what pins `coeff`'s residue field to `k` (see the
   -- FAITHFULNESS REPAIR section of `exists_auxDeformationRingPresentation`).
