@@ -417,18 +417,6 @@ YOUR TASK FOLLOWS.
 ------------------------------------------------------------------------------
 """
 
-TAKEOVER = """\
-NOTE -- YOU ARE TAKING OVER A WORKTREE THAT ALREADY HAS WORK IN IT.
-A previous agent was working here and was stopped mid-task when the fleet was
-shut down; its conversation cannot be replayed, but its work is still on disk.
-Run `git -C %(worktree)s status --short` and `git -C %(worktree)s diff` FIRST.
-Treat what you find as a colleague's unfinished work: read it, judge it, and
-either finish it or explain in your commit why you replaced it. Do not delete
-it unexamined, and do not assume it is wrong merely because it is unfamiliar.
-------------------------------------------------------------------------------
-"""
-
-
 def compose(kind, name, j, s):
     head = PREAMBLE % {
         "kind": {"agent": "prover agent", "merger": "merge worker",
@@ -439,8 +427,6 @@ def compose(kind, name, j, s):
     }
     body = j["payload"] if isinstance(j["payload"], str) else json.dumps(j["payload"])
     if kind == "agent":
-        if j.get("takeover"):
-            head += TAKEOVER % {"worktree": pathlib.Path.home() / j["worktree"]}
         body = body.replace("{{FLT_WORKTREE}}", str(pathlib.Path.home() / j["worktree"]))
     elif kind == "merger":
         inbox = j.get("inbox") or []
@@ -796,7 +782,13 @@ def do_spawn(s, name, j):
     # --resume on every later one. Sessions are stored per PROJECT DIRECTORY,
     # so a resume must run with the same cwd as the original spawn -- row 8
     # respawns into the same worktree, so that holds by construction.
-    j.setdefault("session", str(uuid.uuid4()))
+    # `or`, not setdefault -- same null-vs-absent trap as prev_tokens in row 8.
+    # A record created by a row and saved before it ever spawned comes back with
+    # "session": null; setdefault would leave that, and shlex.quote(None) three
+    # lines down raises TypeError inside do_spawn, i.e. a panic on the ordinary
+    # spawn path. Every job record reaching here has been through save() at
+    # least once, so this is the normal case, not the corner one.
+    j["session"] = j.get("session") or str(uuid.uuid4())
     if j.get("resume"):
         # Continue the actual conversation. No prompt file: the agent already
         # knows its task, what it tried and what failed, which is the whole
@@ -885,7 +877,10 @@ def load():
         if sen:
             try:
                 d = json.loads(sen)
-                if d.get("token") == j["token"]:
+                # Accept a sentinel written under any token THIS job has held.
+                # The token identifies the process; a resumed job is the same
+                # job, and its earlier incarnation's result is still its result.
+                if d.get("token") in [j["token"]] + (j.get("prev_tokens") or []):
                     j["sentinel"] = d
             except json.JSONDecodeError:
                 j["sentinel"] = None      # truncated = not finished
@@ -1034,6 +1029,13 @@ def save(s):
         # is named here -- a field that rows write and save() silently discards
         # reads as amnesia one tick later. Anything added to a job record must
         # be added here too.
+        # AND: j.get(k) stores a key no job has written yet as an explicit
+        # null, so it reloads PRESENT-but-None. `dict.setdefault` therefore
+        # does NOT default a persisted field -- it only ever fires on the very
+        # first tick of a record's life, before its first save. Default such
+        # fields with `j.get(k) or <default>`; setdefault here is a bug that
+        # hides until the field is first read back, which is how row 8's
+        # prev_tokens panicked the loop on its first resume.
         # spawned_at MUST be here. do_spawn stamps it, but if it is not
         # persisted the record comes back with None, `now - 0` is always older
         # than GRACE, and every freshly spawned job is judged dead on its very
@@ -1041,7 +1043,7 @@ def save(s):
         # exactly the churn the grace period exists to stop.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
                                      "retries", "host", "pid", "session", "resume",
-                                     "takeover", "spawned_at", "model", "inbox")}
+                                     "spawned_at", "model", "inbox", "resume", "prev_tokens")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
             wr(STATE / "jobs" / (n + ".started"), j["token"])

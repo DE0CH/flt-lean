@@ -303,7 +303,7 @@ def rmedic_done_action(s):
 def rmedic_dead_guard(s):
     """The medic died without a verdict. Nothing below can rescue this.
 
-    Every other job's death has a recovery: an agent is respawned as a takeover,
+    Every other job's death has a recovery: an agent resumes its session,
     a merger's claim is restored to the batch. The medic has none, because the
     medic IS the recovery -- and SAFE MODE suspends every row beneath it. So a
     medic that stops without writing a sentinel wedges the loop permanently and
@@ -464,37 +464,50 @@ def r4_guard(s):
 
 
 def r4_action(s):
-    """A died agent RESUMES its own conversation. It does not start over.
+    """A died agent RESUMES its own conversation.
 
-    The loop chose the agent's session id when it spawned it, so the transcript
-    is addressable: row 3 re-launches with `--resume <session>` instead of a
-    fresh prompt, and the agent comes back knowing its task, what it had tried
-    and what had failed. Starting a stranger in the worktree instead throws all
-    of that away and makes it re-derive the situation from `git diff`.
+    Every job now carries a session id -- do_spawn assigns one at the first
+    spawn -- so the takeover path is gone. It existed only for records created
+    before sessions were recorded, and told a FRESH agent to reconstruct the
+    situation from `git status`/`git diff`: no idea what had been tried, what
+    had failed, or why. That is a wasted cycle whenever the conversation is
+    still there, and it now always is.
 
     A NEW token is minted even though the session is kept: the token names the
     PROCESS (it is what the liveness sweep matches in argv[0]), the session
     names the CONVERSATION. Reusing the token would let a stale `.started`
-    marker, or a straggler still exiting, be mistaken for the replacement.
+    marker, or a straggler still exiting, be read as the replacement.
 
-    Takeover -- a fresh agent told to read `git status` -- is the fallback for
-    a record with no session, which now means only the ones inherited from
-    before the loop existed.
+    A record with no session at all just runs its task again from the prompt,
+    which is correct -- no session means nothing was ever said.
     """
     for n, j in jobs_of(s, "agent").items():
         if died(j):
             j["started"] = False
             j["alive"] = False
+            # Keep the OLD token. A new one names the new process, which is
+            # what the liveness sweep needs -- but the sentinel is validated
+            # against the record's token, so rotating it silently discards a
+            # result the agent already wrote. flt-lean-204 finished, wrote a
+            # 17KB sentinel, and was then resumed NINETEEN times: each
+            # replacement found its work done, exited without writing anything,
+            # and the rotated token made the real sentinel invisible for ever.
+            #
+            # `or []` rather than setdefault, and this is not a style choice:
+            # save() persists each record as a FIXED KEY LIST built with
+            # j.get(k), so a field no job has ever written is stored as an
+            # explicit null. It comes back PRESENT, setdefault declines to
+            # replace it, and .append on None took the whole loop down on the
+            # first resume after this field was added -- before it had ever
+            # saved a single retired token. Across the persistence boundary,
+            # absent and null are the same state; only `or` reads them that way.
+            j["prev_tokens"] = ((j.get("prev_tokens") or []) + [j["token"]])[-10:]
             j["token"] = tok()
             j["retries"] += 1
-            if j.get("session"):
-                j["resume"] = True
-                note(s, f"4  {n} died -> resuming its session "
-                        f"(attempt {j['retries']})")
-            else:
-                j["takeover"] = True
-                note(s, f"4  {n} died, no session -> fresh takeover "
-                        f"(attempt {j['retries']})")
+            j["resume"] = bool(j.get("session"))
+            note(s, "4  %s died -> %s (attempt %d)"
+                    % (n, "resuming its session" if j["resume"]
+                       else "re-running its task", j["retries"]))
 
 
 def r5_guard(s):
@@ -541,8 +554,8 @@ def r5_action(s):
             # Claude session, and the ids it can obtain are not resumable. It
             # was written on every record and read by nothing, which made the
             # capability look real. Dropped; what preserves a dead agent's work
-            # is its WORKTREE, and the takeover prompt tells its replacement to
-            # read it.
+            # is its SESSION, which row 8 resumes rather than starting a
+            # stranger in its worktree.
             host, pid, sess = SPAWN(s, n, j)
             j["host"], j["pid"] = host, pid
             if sess:
