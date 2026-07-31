@@ -15730,26 +15730,37 @@ theorem summable_axisCoeffSeriesOn {N : ℕ} (hN : N ≠ 0)
   exact (summable_mul_left_iff hne).mp
     (hasSum_integral_Ioi_one_axisRestrictOn' hN f b hb).summable
 
-/-- **THE LEVEL-`25` ARITHMETIC, ON THE SERIES** (sorry leaf, opened
-2026-07-31 as a statement about two INTEGRALS and RESTATED the same day as
-this statement about one SERIES) — this is what is left of
-`cuspPeriod_ne_zero_x1TwentyFive` below once the Fricke fold above and the
-termwise integration above are applied, and it is the ONLY declaration in
-the cluster that still mentions `25`.
+/-- **THE LEVEL-`25` ARITHMETIC, AS A REAL INEQUALITY** (sorry leaf, opened
+2026-07-31 as a statement about two INTEGRALS and RESTATED TWICE the same
+day — first as a statement about one complex SERIES, then as this
+head-versus-tail inequality between REALS) — this is what is left of
+`cuspPeriod_ne_zero_x1TwentyFive` below once the Fricke fold, the termwise
+integration and the truncation criterion above are applied, and it is the
+ONLY declaration in the cluster that still mentions `25`.
 
-**THE STATEMENT NO LONGER MENTIONS AN INTEGRAL, A MEASURE OR A `∫`.**  It
-is a head-versus-tail inequality on an explicit convergent series, exactly
-as `X0.lean`'s `frickeTailSum_ne_zero` is on the `Γ₀` side; everything
-analytic in front of it is discharged by the six theorems above.  `f` and
-its Fricke partner survive in the statement only as the objects that PIN
-`a` and `b`, and `hb` pins `b` uniquely — see the uniqueness note on
-`exists_hasSum_axisRestrictOn_cuspFormOn`, which is what makes quantifying
-over `b` safe rather than a generalisation over unrelated sequences.
+**THE STATEMENT MENTIONS NO INTEGRAL, NO MEASURE, NO `∫`, NO `tsum` OVER
+`ℂ` AND NO `≠ 0`.**  Both sides are real numbers: on the left the tail of
+the coefficient series from `n = 3`, on the right the norm of its two-term
+head.  That is exactly the shape of `X0.lean`'s
+`frickeTailSum_tail_lt_head` on the `Γ₀` side, and it is reached the same
+way — through `X0.lean`'s already-proven `tsum_ne_zero_of_tail_lt_norm_sum`
+at `K = 2`, whose summability obligation is discharged here rather than by
+a prover.  `f` and its Fricke partner survive in the statement only as the
+objects that PIN `a` and `b`, and `hb` pins `b` uniquely — see the
+uniqueness note on `exists_hasSum_axisRestrictOn_cuspFormOn`, which is what
+makes quantifying over `b` safe rather than a generalisation over unrelated
+sequences.
 
-**RESTATEMENT VOIDS THE EARLIER AUDIT** (this development's own rule), so
-the paragraphs below have been re-read against the composite statement and
-stand; the one thing that CHANGED is the "what a prover owes" list, and it
-got shorter, not longer.
+**TWO RESTATEMENTS VOID BOTH EARLIER AUDITS** (this development's own
+rule — and the reason for the rule is that two individually-correct edits
+have made a leaf false here before).  The paragraphs below have been
+re-read against the composite statement and stand; the one thing that
+CHANGED is the "what a prover owes" list, and it got shorter each time.
+The truncation point `K = 2` is now BAKED IN rather than a parameter, which
+is the one substantive difference: the reconnaissance below says `K = 2`
+suffices with a threefold margin, so nothing is lost, but a prover who
+finds `K = 2` too tight must change this statement rather than pass a
+larger `K`.
 
 **WHAT THE FIRST CUT BOUGHT.**  The leaf as first opened was an assertion
 about `∫₀^∞`, where the `q`-series does not converge absolutely and no
@@ -15846,6 +15857,37 @@ form; drop it and `b` is a free sequence, `b := a` refutes the conclusion,
 and no arithmetic could save it.  The old `hFE` of the first cut needed a
 load-bearing note of its own; it does not appear here at all, its content
 having become the `frickeSlashOn` inside `hb`. -/
+theorem tail_lt_head_coeff_sub_frickePartner_x1TwentyFive
+    (χ : DirichletCharacter ℂ 25) (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a) (b : ℕ → ℂ)
+    (hb : ∀ y : ℝ, 0 < y →
+      HasSum (fun n : ℕ => b (n + 1) *
+          ((Real.exp (-(2 * Real.pi / Real.sqrt (25 : ℕ) * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+        (axisRestrictOn (Gamma1GL 25) 25
+          (frickeSlashOn 25 (by norm_num) le_rfl (gamma1GL_le_gamma0GL 25) f) y)) :
+    ∑' n : ℕ, ‖a (n + 3) - b (n + 3)‖ / ((n : ℝ) + 3) *
+        Real.exp (-(2 * Real.pi * ((n : ℝ) + 3) / Real.sqrt (25 : ℕ)))
+      < ‖(a 1 - b 1) * ((Real.exp (-(2 * Real.pi * 1 / Real.sqrt (25 : ℕ))) : ℝ) : ℂ)
+          + (a 2 - b 2) / 2 *
+            ((Real.exp (-(2 * Real.pi * 2 / Real.sqrt (25 : ℕ))) : ℝ) : ℂ)‖ :=
+  sorry
+
+/-- **THE COEFFICIENT SERIES DOES NOT VANISH** (**PROVEN 2026-07-31**, from
+the inequality above and `X0.lean`'s `tsum_ne_zero_of_tail_lt_norm_sum` at
+`K = 2`) — the shape the integral statement below consumes, and the exact
+`Γ₁` counterpart of `X0.lean`'s `frickeTailSum_ne_zero`.
+
+The analysis it removes from the leaf is real and was the last of it: the
+series is absolutely summable (each of the two halves is, by
+`summable_axisCoeffSeriesOn`, and summability in `ℂ` IS absolute
+summability), so `∑' t = ∑_{n<2} t n + ∑_{n≥2} t n` splits and the two
+summands cannot cancel once the tail is dominated in norm.  A prover of the
+leaf above owes none of that.
+
+**Absolute summability is load-bearing in the criterion**, not decoration:
+with only `Summable t` the tail `∑' ‖t (n + 2)‖` would take mathlib's junk
+value `0` whenever the norms failed to be summable, and the hypothesis
+would degenerate to `0 < ‖head‖`. -/
 theorem tsum_coeff_sub_frickePartner_ne_zero_x1TwentyFive
     (χ : DirichletCharacter ℂ 25) (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
     (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a) (b : ℕ → ℂ)
@@ -15855,8 +15897,44 @@ theorem tsum_coeff_sub_frickePartner_ne_zero_x1TwentyFive
         (axisRestrictOn (Gamma1GL 25) 25
           (frickeSlashOn 25 (by norm_num) le_rfl (gamma1GL_le_gamma0GL 25) f) y)) :
     ∑' n : ℕ, (a (n + 1) - b (n + 1)) / ((n : ℂ) + 1) *
-        ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt (25 : ℕ))) : ℝ) : ℂ) ≠ 0 :=
-  sorry
+        ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt (25 : ℕ))) : ℝ) : ℂ) ≠ 0 := by
+  have ha : ∀ y : ℝ, 0 < y →
+      HasSum (fun n : ℕ => a (n + 1) *
+          ((Real.exp (-(2 * Real.pi / Real.sqrt (25 : ℕ) * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+        (axisRestrictOn (Gamma1GL 25) 25 f y) :=
+    fun _ hy => hasSum_axisRestrictOn (by norm_num) hf hy
+  have hsa := summable_axisCoeffSeriesOn (N := 25) (by norm_num) f a ha
+  have hsb := summable_axisCoeffSeriesOn (N := 25) (by norm_num) _ b hb
+  set t : ℕ → ℂ := fun n : ℕ => (a (n + 1) - b (n + 1)) / ((n : ℂ) + 1) *
+    ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt (25 : ℕ))) : ℝ) : ℂ) with htdef
+  have hsum : Summable t := by
+    refine (hsa.sub hsb).congr fun n => ?_
+    simp only [htdef]
+    ring
+  have ht : Summable fun n : ℕ => ‖t n‖ := summable_norm_iff.mpr hsum
+  have hnormt : ∀ m : ℕ, ‖t m‖ = ‖a (m + 1) - b (m + 1)‖ / ((m : ℝ) + 1) *
+      Real.exp (-(2 * Real.pi * ((m : ℝ) + 1) / Real.sqrt (25 : ℕ))) := by
+    intro m
+    have hm : ((m : ℂ) + 1) = ((((m : ℝ) + 1 : ℝ)) : ℂ) := by push_cast; ring
+    simp only [htdef, hm, norm_mul, norm_div, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_pos (Real.exp_pos _)]
+    rw [abs_of_pos (by positivity : (0 : ℝ) < (m : ℝ) + 1)]
+  refine tsum_ne_zero_of_tail_lt_norm_sum ht 2 ?_
+  have hhead : (∑ n ∈ Finset.range 2, t n)
+      = (a 1 - b 1) * ((Real.exp (-(2 * Real.pi * 1 / Real.sqrt (25 : ℕ))) : ℝ) : ℂ)
+        + (a 2 - b 2) / 2 *
+          ((Real.exp (-(2 * Real.pi * 2 / Real.sqrt (25 : ℕ))) : ℝ) : ℂ) := by
+    rw [Finset.sum_range_succ, Finset.sum_range_one]
+    simp only [htdef]
+    norm_num
+  have hcongr : ∀ n : ℕ, ‖t (n + 2)‖ = ‖a (n + 3) - b (n + 3)‖ / ((n : ℝ) + 3) *
+      Real.exp (-(2 * Real.pi * ((n : ℝ) + 3) / Real.sqrt (25 : ℕ))) := by
+    intro n
+    rw [hnormt (n + 2)]
+    push_cast
+    ring_nf
+  rw [hhead, tsum_congr hcongr]
+  exact tail_lt_head_coeff_sub_frickePartner_x1TwentyFive χ f a hf b hb
 
 /-- **THE DIFFERENCE OF TAIL INTEGRALS IS NONZERO** (**PROVEN 2026-07-31 by
 decomposition**; a sorry leaf for one day) — the shape
