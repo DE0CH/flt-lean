@@ -54821,7 +54821,140 @@ theorem exists_commonNormBase_ray_class
       ((φ (Multiplicative.ofAdd β) : Dickson.K 3)) = χ (globalFrob v₀) ∧
       Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₁ Im₁ ∧
       Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₂ Im₂ := by
-  sorry
+  classical
+  haveI halgF : Algebra.IsAlgebraic F (AlgebraicClosure F) := AlgebraicClosure.isAlgebraic F
+  haveI hacF : IsAlgClosure F (AlgebraicClosure F) := ⟨inferInstance, halgF⟩
+  haveI hnormF : Normal F (AlgebraicClosure F) := IsAlgClosure.normal F (AlgebraicClosure F)
+  haveI hsepF : Algebra.IsSeparable F (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalF : IsGalois F (AlgebraicClosure F) := ⟨⟩
+  -- `χ` is unital and conjugation-invariant.
+  have hχone : χ 1 = 1 := hVker 1 V.one_mem
+  have hconj : ∀ a x : Γ F, χ (a * x * a⁻¹) = χ x := by
+    intro a x
+    have hinv : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, hχone]
+    rw [hmul, hmul]
+    calc χ a * χ x * χ a⁻¹ = χ a * χ a⁻¹ * χ x := by ring
+      _ = χ x := by rw [hinv, one_mul]
+  -- STEP 1: an element of `H₁ ⊓ H₂` carrying the target symbol.
+  obtain ⟨t, ρ, ht, hρ, hρeq⟩ := hcompos (globalFrob v₀)
+  have hρχ : χ ρ = χ (globalFrob v₀) := by rw [hρeq, hmul, ht, one_mul]
+  -- STEP 2: the finite set of primes the Chebotarev prime must avoid.
+  obtain ⟨δ₀, hδ₀mem, hδ₀ne⟩ := (Submodule.ne_bot_iff mm).mp hmm
+  have hm₁ne : (m₁ : NumberField.RingOfIntegers F) ≠ 0 := Nat.cast_ne_zero.mpr hm₁pos.ne'
+  have hm₂ne : (m₂ : NumberField.RingOfIntegers F) ≠ 0 := Nat.cast_ne_zero.mpr hm₂pos.ne'
+  set δ : NumberField.RingOfIntegers F :=
+    δ₀ * (m₁ : NumberField.RingOfIntegers F) * (m₂ : NumberField.RingOfIntegers F) with hδdef
+  have hδne : δ ≠ 0 := by
+    rw [hδdef]; exact mul_ne_zero (mul_ne_zero hδ₀ne hm₁ne) hm₂ne
+  have hSavoid : ∀ q : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      q ∉ (Multiplicative.toAdd (d δ)).support → δ ∉ q.asIdeal := by
+    intro q hq hmem
+    have hdvd : q.asIdeal ^ 1 ∣ Ideal.span {δ} := by
+      rw [pow_one, Ideal.dvd_iff_le, Ideal.span_le, Set.singleton_subset_iff]
+      exact hmem
+    have hle := (hd δ hδne q 1).mp hdvd
+    have hzero : Multiplicative.toAdd (d δ) q = 0 := by
+      by_contra h
+      exact hq (Finsupp.mem_support_iff.mpr h)
+    rw [hzero] at hle
+    norm_num at hle
+  -- STEP 3: the open subgroup `H₁ ⊓ H₂ ⊓ V` and its fixed field.
+  have hUopen : IsOpen ((H₁ ⊓ H₂ ⊓ V : Subgroup (Γ F)) : Set (Γ F)) := by
+    have hset : ((H₁ ⊓ H₂ ⊓ V : Subgroup (Γ F)) : Set (Γ F))
+        = ((H₁ : Set (Γ F)) ∩ (H₂ : Set (Γ F))) ∩ (V : Set (Γ F)) := rfl
+    rw [hset]; exact (hH₁open.inter hH₂open).inter hVopen
+  have hUclosed : IsClosed ((H₁ ⊓ H₂ ⊓ V : Subgroup (Γ F)) : Set (Γ F)) :=
+    Subgroup.isClosed_of_isOpen _ hUopen
+  have hLfix : (IntermediateField.fixedField (H₁ ⊓ H₂ ⊓ V : Subgroup (Γ F))).fixingSubgroup
+      = H₁ ⊓ H₂ ⊓ V :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨H₁ ⊓ H₂ ⊓ V, hUclosed⟩
+  haveI hLfd : FiniteDimensional F
+      (IntermediateField.fixedField (H₁ ⊓ H₂ ⊓ V : Subgroup (Γ F))) :=
+    (InfiniteGalois.isOpen_iff_finite _).mp (by rw [hLfix]; exact hUopen)
+  -- STEP 4: Chebotarev at `F` in the coset `ρ · (H₁ ⊓ H₂ ⊓ V)`.
+  obtain ⟨p, hpS, g, hg⟩ := exists_frobenius_conj_mem_coset
+    (Multiplicative.toAdd (d δ)).support
+    (IntermediateField.fixedField (H₁ ⊓ H₂ ⊓ V : Subgroup (Γ F))) ρ
+  rw [hLfix] at hg
+  have huU : ρ⁻¹ * (g * globalFrob p * g⁻¹) ∈ H₁ ⊓ H₂ ⊓ V := hg
+  have hueq : ρ * (ρ⁻¹ * (g * globalFrob p * g⁻¹)) = g * globalFrob p * g⁻¹ := by group
+  have hconjmem : g * globalFrob p * g⁻¹ ∈ H₁ ⊓ H₂ := by
+    have h := Subgroup.mul_mem (H₁ ⊓ H₂) hρ (Subgroup.mem_inf.mp huU).1
+    rwa [hueq] at h
+  have hpH₁ : globalFrob p ∈ H₁ := by
+    have h := hH₁norm g⁻¹ (g * globalFrob p * g⁻¹) (Subgroup.mem_inf.mp hconjmem).1
+    have heq : g⁻¹ * (g * globalFrob p * g⁻¹) * (g⁻¹)⁻¹ = globalFrob p := by group
+    rwa [heq] at h
+  have hpH₂ : globalFrob p ∈ H₂ := by
+    have h := hH₂norm g⁻¹ (g * globalFrob p * g⁻¹) (Subgroup.mem_inf.mp hconjmem).2
+    have heq : g⁻¹ * (g * globalFrob p * g⁻¹) * (g⁻¹)⁻¹ = globalFrob p := by group
+    rwa [heq] at h
+  have hpχ : χ (globalFrob p) = χ (globalFrob v₀) := by
+    have h1 : χ (g * globalFrob p * g⁻¹) = χ (globalFrob p) := hconj g _
+    rw [← hueq, hmul, hVker _ (Subgroup.mem_inf.mp huU).2, mul_one, hρχ] at h1
+    exact h1.symm
+  -- STEP 5: `p` avoids `mm`, `(m₁)` and `(m₂)`.
+  have hpδ : δ ∉ p.asIdeal := hSavoid p hpS
+  have hpmm : ¬ p.asIdeal ∣ mm := by
+    intro hdvd
+    refine hpδ ?_
+    have hmem : δ₀ ∈ p.asIdeal := Ideal.dvd_iff_le.mp hdvd hδ₀mem
+    rw [hδdef]
+    exact Ideal.mul_mem_right _ _ (Ideal.mul_mem_right _ _ hmem)
+  have hpm₁ : (m₁ : NumberField.RingOfIntegers F) ∉ p.asIdeal := by
+    intro hmem
+    refine hpδ ?_
+    rw [hδdef]
+    exact Ideal.mul_mem_right _ _ (Ideal.mul_mem_left _ _ hmem)
+  have hpm₂ : (m₂ : NumberField.RingOfIntegers F) ∉ p.asIdeal := by
+    intro hmem
+    refine hpδ ?_
+    rw [hδdef]
+    exact Ideal.mul_mem_left _ _ hmem
+  -- STEP 6: `single p 1` is a norm from `E₁` and from `E₂`.
+  obtain ⟨W₁, hW₁u, hW₁f⟩ := exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class
+    F E₁ hfin₁ ι₁ hinj₁ jE₁ j₁ hjE₁ hιapp₁ p (hsurH₁ (globalFrob p) hpH₁)
+  have hW₁mmE : ¬ W₁.asIdeal ∣ mmE₁ := by
+    intro hdvd
+    rcases hmmE₁supp W₁ hdvd with h | h
+    · exact hpmm (hW₁u ▸ h)
+    · refine hpm₁ ?_
+      have hmap : algebraMap (NumberField.RingOfIntegers F) (NumberField.RingOfIntegers E₁)
+          (m₁ : NumberField.RingOfIntegers F) ∈ W₁.asIdeal := by simpa using h
+      have hmem : (m₁ : NumberField.RingOfIntegers F) ∈
+          W₁.asIdeal.under (NumberField.RingOfIntegers F) := hmap
+      rwa [hW₁u] at hmem
+  obtain ⟨W₂, hW₂u, hW₂f⟩ := exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class
+    F E₂ hfin₂ ι₂ hinj₂ jE₂ j₂ hjE₂ hιapp₂ p (hsurH₂ (globalFrob p) hpH₂)
+  have hW₂mmE : ¬ W₂.asIdeal ∣ mmE₂ := by
+    intro hdvd
+    rcases hmmE₂supp W₂ hdvd with h | h
+    · exact hpmm (hW₂u ▸ h)
+    · refine hpm₂ ?_
+      have hmap : algebraMap (NumberField.RingOfIntegers F) (NumberField.RingOfIntegers E₂)
+          (m₂ : NumberField.RingOfIntegers F) ∈ W₂.asIdeal := by simpa using h
+      have hmem : (m₂ : NumberField.RingOfIntegers F) ∈
+          W₂.asIdeal.under (NumberField.RingOfIntegers F) := hmap
+      rwa [hW₂u] at hmem
+  refine ⟨Finsupp.single p (1 : ℤ), by rw [hφv p, hpχ], ?_, ?_⟩
+  · refine ⟨Multiplicative.ofAdd (Finsupp.single W₁ (1 : ℤ)), ?_, ?_⟩
+    · rw [SetLike.mem_coe, hIm₁]
+      intro W hW
+      have hne : W ≠ W₁ := fun h => hW₁mmE (h ▸ hW)
+      show Finsupp.single W₁ (1 : ℤ) W = 0
+      exact Finsupp.single_eq_of_ne hne
+    · rw [hbasis₁ W₁ p hW₁u, hW₁f]
+      norm_num
+  · refine ⟨Multiplicative.ofAdd (Finsupp.single W₂ (1 : ℤ)), ?_, ?_⟩
+    · rw [SetLike.mem_coe, hIm₂]
+      intro W hW
+      have hne : W ≠ W₂ := fun h => hW₂mmE (h ▸ hW)
+      show Finsupp.single W₂ (1 : ℤ) W = 0
+      exact Finsupp.single_eq_of_ne hne
+    · rw [hbasis₂ W₂ p hW₂u, hW₂f]
+      norm_num
+
 
 set_option maxHeartbeats 1000000 in
 /-- **THE COMMON NORM BASE AND THE TWO AUXILIARY NORM SUBGROUPS OF
