@@ -6959,3 +6959,148 @@ this is possible; reasoning from what your prompt said is reasoning from a cache
 Second corollary, for whoever is checking whether work got lost: `~/.flt-worktree-pool`
 reading `batched` does NOT mean your sentinel was accepted. Those are independent pieces of
 state, and this run observed `batched` while its sentinel was being ignored.
+
+## AN "IRREDUCIBLE / NEEDS A CITATION" VERDICT IS ABOUT THE DOCSTRING'S STORY, NOT THE STATEMENT
+
+(2026-07-31, `nonempty_isJLineZ` in `X0.lean`.) The leaf carried a citation verdict —
+"Igusa; `Y_0(1) ≅ 𝔸¹_j` over `ℤ`" — backed by a survey that is *correct*: there is no
+integral model of a modular curve in mathlib at our pin, in `~/cs/FLT`, or in this
+project. Two agents had recorded and re-recorded it. **The statement does not mention a
+modular curve.** `IsJLineZ N R` asks, field by field, for the `j`-invariant of the
+elliptic scheme underlying a `Γ₀(N)`-datum over an `R`-scheme, read as a point of
+`𝔸¹_R`. There is no `Y_0`, no compactification, no cusp in it.
+
+So the verdict was scoped to the *object the prose names* rather than to the *statement
+the compiler sees*, and the check that refutes it costs one grep: **read the conclusion
+field by field and look for the object the verdict is about. If it is not there, the
+verdict is about the story, not the leaf.** This is the same failure shape as
+"AUDITS SEARCH PRODUCTION, NOT INVARIANTS" and "THE SELF-CERTIFYING GREP", one level up:
+the survey was run against a true sentence that was not the theorem.
+
+**What was actually in the way was a PARAMETER PINNED AT A SPECIAL VALUE.** The whole
+rational `j`-theory — local Weierstrass models, well-definedness and functoriality of
+`j`, the gluing, and the Zariski descent from affine bases to all bases — was already
+proven, and *none of its proofs read the base or the level*. But it was stated at level
+`1` and over `SpecQ`, so nothing integral could reach it. Two mechanical generalisations
+made it reachable and the leaf became an assembly:
+
+- `Gamma0Datum 1` → `Gamma0Datum N` in the Weierstrass chain. **Generalising a SORRY
+  LEAF's statement in a parameter its content never reads is free**, and it is better
+  than cutting a parallel leaf: `exists_weierstrassModel_of_isLocalRing` and
+  `..._away_of_atPrime` are now shared by the rational and the integral `j`-theory
+  instead of duplicated, and the frontier did not move.
+- the `j`-VALUE separated from its PACKAGING: `IsJElt d r` says `r` is the `j`-value as
+  an element of the base RING, with no `j`-line in it. The base ring is then free of `ℚ`
+  and one element serves `Spec ℚ[X]` and `Spec R[X]` both.
+
+**The generalisable half is usually the BOOKKEEPING, and it is usually most of the
+lines.** Before believing that an integral/relative/positive-characteristic analogue
+needs new theory, check which of the existing proof's steps actually mention the thing
+being varied. Here: zero of them.
+
+## A VACUITY SHIELD CAN BE REMOVED BY A LATER PARAGRAPH OF THE SAME DOCSTRING
+
+(2026-07-31, `jm_eq_jLineZCoord_of_degeneracy`.) Its audit had three findings. (1) and
+(2) showed the leaf entails something false. (3) said: *"The leaf is nevertheless NOT
+FALSE, because `het` is INCONSISTENT … so this statement is vacuously true."* The LAST
+paragraph of the same docstring then read: *"`het` WAS REMOVED FROM THIS SIGNATURE ON
+2026-07-30."*
+
+Both were written the same day, by repairs that were each correct. Nobody read them
+against each other, and the leaf sat for a day as a FALSE statement with a live
+consumer, wearing an audit that said it was safe. The file's own rule had predicted it
+verbatim — *"Repairing `etale_of_specLocBase` removes the inconsistency, and AT THAT
+MOMENT this leaf turns from vacuously true to FALSE"* — and the prediction fired through
+the other available repair (deleting the false leaf rather than fixing it), which the
+note did not name.
+
+So: **a vacuity claim names a specific hypothesis, and it expires the moment that
+hypothesis is edited. Treat "vacuously true because hypothesis H is inconsistent" as a
+claim indexed by `H`, and re-check it against the CURRENT signature — the top of a
+docstring is not evidence about the bottom of the same docstring.** Cheap check when
+editing any signature: grep the docstring for the removed binder's name.
+
+Corollary found in the same file: **an inconsistent hypothesis makes a PROVEN theorem
+useless, not wrong.** `jm_eq_jLineZCoord_of_degeneracy_of_classifyCompat` — advertised as
+"the true form, PROVEN, with NO new leaf" — still carried `het`, whose only use had been
+deleted with `ofDvd`; the surviving `haveI := het …` was a dead binding. So the "true
+form" was vacuous and no consumer could ever have used it. Deleting one unused binder
+was the whole repair. **When a theorem is proven but nothing consumes it, check its
+hypotheses for one that cannot be supplied.**
+
+## A DECLARATION INSERTED BETWEEN A DOCSTRING AND ITS THEOREM REPORTS AT THE DOCSTRING
+
+(2026-07-31, `X0.lean`.) The commonest way a hand-inserted declaration breaks a huge file,
+and the error names neither the inserted block nor the broken declaration:
+
+    X0.lean:57339:67: unexpected token '/--'; expected 'lemma'
+
+Line 57339 is the **closing `-/` of the PRECEDING docstring**, ~40 lines above the edit.
+What happened is that a new `/-- … -/ def …` was placed *after* a theorem's docstring and
+*before* the theorem, so the docstring is followed by a second docstring rather than by a
+declaration. Same reported shape as the reserved-token truncation already recorded above,
+different cause — so do not stop at "must be a token clash".
+
+**It is worse than an ordinary error because a parse failure TRUNCATES the file**, so it
+hides every later error in a module that takes half an hour to elaborate. Two checks, both
+free, and worth running after any hand insertion into a big file:
+
+    # a docstring whose next non-blank line opens another docstring or a /-! block
+    awk 'prev ~ /-\/[[:space:]]*$/ && /^\/--/ {print NR": orphaned docstring above"} {prev=$0}' F.lean
+
+Fix by hoisting the new block ABOVE the victim's docstring (check its own dependencies are
+still earlier), not by re-indenting or by deleting the docstring.
+
+## AN "IRREDUCIBLE ARITHMETIC RESIDUE" IS STILL WORTH COMPUTING — the answer is not the proof
+
+(2026-07-31, `card_inter_ajPts_redPts_le_of_x0SieveTable`.) That leaf's audit was right that
+no soft argument reaches it and that this pin cannot express the object that would close it.
+The audit then stopped. But "cannot be PROVEN here" is not "cannot be KNOWN here": the
+`N = 26` row was computed outright in about an hour with `gp` and 150 lines of Python, and
+the answer (`|ajPts ∩ redPts| = 4`, tight) now sits in the docstring, so whoever eventually
+has the machinery formalises a known target instead of searching for one. **Compute the
+residue even when you cannot formalise it, and write the ANSWER into the leaf.**
+
+Three transferable pieces, since this shape recurs wherever a modular curve is involved:
+
+* **Get the plane model from `q`-expansions, do not hunt for a quoted one.**
+  `mfbasis(mfinit([N,2],1))` gives `f₁, f₂`; put `x = f₂/f₁`, `y = q·(dx/dq)/f₁`, and
+  `matker` on 25 `q`-coefficients returns the hyperelliptic relation uniquely. It is faster
+  than searching, and it is checkable: `disc` must be supported exactly on `N`'s primes, and
+  `#C(𝔽_p)` must equal `p + 1 − Tr T_p` at several good `p` and must FAIL at `p ∣ N`.
+  **This is not limited to the hyperelliptic case, and that is the part worth knowing.**
+  Take `f₁, …, f_g` as the CANONICAL coordinates and run the same `matker` over the
+  degree-`d` monomials in `g` variables: it returned the plane quartic at `g = 3`, the
+  quadric-and-cubic at `g = 4`, and the three quadrics at `g = 5`, in seconds each, for
+  four levels nobody had a model for. Two free checks come with it — the NUMBER of
+  vanishing forms must be what canonical theory predicts (`1` quadric plus one new cubic
+  at `g = 4`; `3` quadrics at `g = 5`), and the projective point count over `𝔽_p` must
+  again equal `p + 1 − Tr T_p`. Twelve counts across three levels matched on the first
+  try. Deriving the model is the cheap half; do it before assuming a model is missing.
+* **No rational Weierstrass point does not mean no Cantor.** `#J(𝔽_ℓ)` odd forces no
+  rational 2-torsion, hence no rational Weierstrass point, hence no degree-`2g+1` model —
+  which looks like a dead end. It is not: pick `a` with `f(a)` a NON-SQUARE, so the fibre
+  over `x = a` has no rational point, and `x ↦ a + 1/u` sends the two points at infinity off
+  `𝔽_ℓ`. The model is then **inert**, every rational point is finite, the only rational
+  divisor at infinity is the canonical class itself, and Cantor with base `K = ∞₊ + ∞₋`
+  applies verbatim (compose by polynomial CRT, reduce by `(g − v²)/u`).
+* **Let the arithmetic check itself.** The group generated by the Abel–Jacobi classes came
+  out at exactly `#J(𝔽_ℓ)` predicted by `charpoly(T_ℓ)` at `ℓ+1`; `aj(P) + aj(ιP)` came out
+  constant. Either one failing would have caught a bug. Build such a check in before
+  believing any hand-rolled divisor arithmetic.
+
+And one structural payoff worth looking for: `J(𝔽_ℓ)` turned out **cyclic**, so the
+order-`#J(ℚ)` subgroup is UNIQUE and `redPts` is pinned without identifying a single cusp.
+Check cyclicity first — it can delete the hardest half of the computation.
+
+**And you can check it WITHOUT computing the class group at all**, which is the part that
+generalises furthest. By Eichler–Shimura `F² − T_ℓF + ℓ = 0` on `H₁(X_0(N), ℤ) ⊗ ℤ_m`, and
+`(F−1)(F̄−1) = ℓ + 1 − T_ℓ`, so `G := H₁/(ℓ+1−T_ℓ)` is an **extension of `J(𝔽_ℓ)` by
+itself** — hence `J(𝔽_ℓ)` is a SUBGROUP of `G` and `exp J ∣ exp G`. `G` is one Smith
+normal form of an integer matrix (PARI, on the *saturated* cuspidal lattice — `mscuspidal`
+returns a ℚ-basis, so saturate with `matkerint(matkerint(M~)~)` or the SNF is meaningless).
+`exp G ≪ n` then PROVES not-cyclic. It cost seconds and settled four levels whose class
+groups are out of reach; it also bounds `#J(ℚ)`'s exponent, since `J(ℚ)` embeds too.
+Two cautions, both real: `G` need not SPLIT (at one level its invariant factors had odd
+multiplicities, so `G ≇ J ⊕ J` and the SNF does **not** determine `J`), and the argument
+sees only primes `m ∣ n` with `m ≠ ℓ` — check `ℓ ∤ n` before relying on it.
