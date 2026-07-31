@@ -170,6 +170,11 @@ public import Mathlib.NumberTheory.ModularForms.BoundedAtCusp
 -- mentions it, and `X0.lean` reaches the same file only through its private
 -- `EllipticScheme` import, which this module does not inherit.
 import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveAffineComplement
+-- `Scheme.BirationalOver.pullback_snd` (birationality ascends along a surjective base
+-- change with irreducible total spaces), used ONLY inside the proof body of
+-- `hasNoFibreAffineLine_of_notGeometricallyRational` below, so this import is
+-- deliberately NON-public: no signature in this file mentions anything from it.
+import Fermat.FLT.Mathlib.AlgebraicGeometry.BirationalBaseChange
 
 @[expose] public section
 
@@ -20376,15 +20381,29 @@ under flat base change, and the partial isomorphism base changes), so `X_L` is
 birational to `𝔸¹_L` over `L := K'^alg`.  That contradicts `hgeom L`, `L` being
 an algebraically closed field over `K`.
 
-**THE ONE MISSING INGREDIENT, NAMED, so a prover knows what is being asked**:
+**THE ONE MISSING INGREDIENT WAS NAMED HERE AND IS NOW SUPPLIED** (2026-07-31).
 `Mathlib`'s `Scheme.BirationalOver` has `refl`, `symm`, `trans`,
 `isRationalOver` and `Opens.birationalOver_of_dense`, and **no base-change
-lemma at all** (checked 2026-07-30 by grepping
-`Mathlib/AlgebraicGeometry/Birational/`).  So the ascent step above has to be
-written; everything else in the paragraph is already in tree.  `hsmooth` and
-`hconn` are exactly what
-`birationalOver_affineLine_of_not_exists_section` consumes, and are the reason
-they are hypotheses here rather than only on the consumer.
+lemma at all** (checked 2026-07-30 and re-checked 2026-07-31 by reading
+`Mathlib/AlgebraicGeometry/Birational/`).  The ascent step is now
+`Scheme.BirationalOver.pullback_snd` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/BirationalBaseChange.lean` — birationality
+ascends along a SURJECTIVE base change whose two total spaces are IRREDUCIBLE —
+and this leaf is proven over it.  `hsmooth` and `hconn` are what
+`birationalOver_affineLine_of_not_exists_section` consumes AND what supplies
+that irreducibility (through
+`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected` applied to
+the twice-base-changed curve over `L`), which is why they are hypotheses here
+rather than only on the consumer.
+
+**Two things the sketch above does not say, both of which the proof needed.**
+The `K`-algebra structure on `K'` is not given: it has to be read off `k'`
+through `Spec.preimage`, and the `K`-algebra structure on `L` is then the
+composite, so that `Spec.map (algebraMap K L) = Spec.map (algebraMap K' L) ≫ k'`
+by `Spec.map_comp`.  And the descent of "does not factor through a section"
+from the `K`-level `u` to the `K'`-level `u'` is not automatic either: it uses
+that `𝔸¹_{K'} ↘ Spec K'` is a SPLIT epimorphism (`AffineSpace.homOfVector_over`),
+exactly as `hasNoFibreAffineLine_baseChange` above does.
 
 **WHY `hgeom` MAY BE QUANTIFIED OVER ALGEBRAICALLY CLOSED `L` ONLY, while the
 conclusion ranges over EVERY field.**  That asymmetry is the whole content:
@@ -20407,8 +20426,111 @@ theorem hasNoFibreAffineLine_of_notGeometricallyRational
       ¬ Scheme.BirationalOver
           (curveBaseChangeProj strX (Spec.map (CommRingCat.ofHom (algebraMap K L)) ≫ k))
           (𝔸(Unit; Spec (CommRingCat.of L)) ↘ Spec (CommRingCat.of L))) :
-    HasNoFibreAffineLine (curveBaseChangeProj strX k) :=
-  sorry
+    HasNoFibreAffineLine (curveBaseChangeProj strX k) := by
+  intro K' _ k' u hu
+  by_contra hns
+  push Not at hns
+  -- STEP 1.  Read the `K`-algebra structure on `K'` off `k'`, and build one on `K'^alg`.
+  letI : Algebra K K' := (Spec.preimage k').hom.toAlgebra
+  have hk' : Spec.map (CommRingCat.ofHom (algebraMap K K')) = k' := by
+    rw [RingHom.algebraMap_toAlgebra, CommRingCat.ofHom_hom, Spec.map_preimage]
+  letI : Algebra K (AlgebraicClosure K') :=
+    ((algebraMap K' (AlgebraicClosure K')).comp (algebraMap K K')).toAlgebra
+  have hcomp : (algebraMap K (AlgebraicClosure K') : K →+* AlgebraicClosure K')
+      = (algebraMap K' (AlgebraicClosure K')).comp (algebraMap K K') :=
+    RingHom.algebraMap_toAlgebra _
+  have hkL : Spec.map (CommRingCat.ofHom (algebraMap K (AlgebraicClosure K')))
+      = Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K'))) ≫ k' := by
+    rw [← hk', ← Spec.map_comp, ← CommRingCat.ofHom_comp, ← hcomp]
+  -- STEP 2.  `𝔸¹_{K'} ↘ Spec K'` is a SPLIT epimorphism; this is what lets a section
+  -- upstairs be pushed back down to one for `u`.
+  have hsplit : (AffineSpace.homOfVector (𝟙 (Spec (CommRingCat.of K')))
+        (fun _ => (0 : Γ(Spec (CommRingCat.of K'), ⊤))))
+      ≫ (𝔸(Unit; Spec (CommRingCat.of K')) ↘ Spec (CommRingCat.of K')) = 𝟙 _ :=
+    AffineSpace.homOfVector_over _ _
+  -- STEP 3.  `u` becomes a nonconstant `K'`-morphism `𝔸¹_{K'} ⟶ X_{K'}`.
+  have hxu : (u ≫ pullback.fst strX k) ≫ strX
+      = (𝔸(Unit; Spec (CommRingCat.of K')) ↘ Spec (CommRingCat.of K')) ≫ (k' ≫ k) := by
+    rw [Category.assoc, pullback.condition, ← Category.assoc, hu, Category.assoc]
+  have hu'snd : (pullback.lift (u ≫ pullback.fst strX k)
+        (𝔸(Unit; Spec (CommRingCat.of K')) ↘ Spec (CommRingCat.of K')) hxu)
+      ≫ curveBaseChangeProj strX (k' ≫ k)
+      = 𝔸(Unit; Spec (CommRingCat.of K')) ↘ Spec (CommRingCat.of K') :=
+    pullback.lift_snd _ _ _
+  have hu'nc : ∀ s : Spec (CommRingCat.of K') ⟶ curveBaseChange strX (k' ≫ k),
+      (pullback.lift (u ≫ pullback.fst strX k)
+        (𝔸(Unit; Spec (CommRingCat.of K')) ↘ Spec (CommRingCat.of K')) hxu)
+        ≠ (𝔸(Unit; Spec (CommRingCat.of K')) ↘ Spec (CommRingCat.of K')) ≫ s := by
+    intro s hs
+    have hsk : s ≫ curveBaseChangeProj strX (k' ≫ k) = 𝟙 _ := by
+      have h1 : (𝔸(Unit; Spec (CommRingCat.of K')) ↘ Spec (CommRingCat.of K'))
+          ≫ (s ≫ curveBaseChangeProj strX (k' ≫ k))
+          = (𝔸(Unit; Spec (CommRingCat.of K')) ↘ Spec (CommRingCat.of K')) ≫ 𝟙 _ := by
+        rw [← Category.assoc, ← hs, hu'snd, Category.comp_id]
+      calc s ≫ curveBaseChangeProj strX (k' ≫ k)
+          = 𝟙 _ ≫ (s ≫ curveBaseChangeProj strX (k' ≫ k)) := (Category.id_comp _).symm
+        _ = _ := by
+            rw [← hsplit, Category.assoc, h1, ← Category.assoc, hsplit, Category.id_comp]
+    have hfib : (s ≫ pullback.fst strX (k' ≫ k)) ≫ strX = k' ≫ k := by
+      rw [Category.assoc, pullback.condition, ← Category.assoc, hsk, Category.id_comp]
+    refine hns (pullback.lift (s ≫ pullback.fst strX (k' ≫ k)) k' hfib) ?_
+    refine pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, pullback.lift_fst]
+      have h2 := congrArg (fun t => t ≫ pullback.fst strX (k' ≫ k)) hs
+      simp only [pullback.lift_fst, Category.assoc] at h2
+      exact h2
+    · rw [Category.assoc, pullback.lift_snd, hu]
+  -- STEP 4.  So `X_{K'}` is rational over `K'` (this is the Lüroth half, already proven).
+  haveI hsmP : SmoothOfRelativeDimension 1 (curveBaseChangeProj strX (k' ≫ k)) :=
+    smoothOfRelativeDimension_curveBaseChangeProj strX (k' ≫ k) hsmooth
+  have hconnP : GeometricallyConnected (curveBaseChangeProj strX (k' ≫ k)) :=
+    geometricallyConnected_curveBaseChangeProj strX (k' ≫ k) hconn
+  have hbir : Scheme.BirationalOver (curveBaseChangeProj strX (k' ≫ k))
+      (𝔸(Unit; Spec (CommRingCat.of K')) ↘ Spec (CommRingCat.of K')) :=
+    birationalOver_affineLine_of_not_exists_section hsmP hconnP _ hu'snd hu'nc
+  -- STEP 5.  Ascend to `L := K'^alg`.  Both total spaces upstairs are integral because
+  -- the twice-base-changed curve is still smooth of relative dimension `1` and
+  -- geometrically connected; the affine line's is transported across `isPullback_map`.
+  haveI hsmQ : SmoothOfRelativeDimension 1
+      (curveBaseChangeProj (curveBaseChangeProj strX (k' ≫ k))
+        (Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K'))))) :=
+    smoothOfRelativeDimension_curveBaseChangeProj _ _ hsmP
+  have hconnQ : GeometricallyConnected
+      (curveBaseChangeProj (curveBaseChangeProj strX (k' ≫ k))
+        (Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K'))))) :=
+    geometricallyConnected_curveBaseChangeProj _ _ hconnP
+  haveI : IsIntegral (curveBaseChange (curveBaseChangeProj strX (k' ≫ k))
+      (Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K'))))) :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1)
+      (curveBaseChangeProj (curveBaseChangeProj strX (k' ≫ k))
+        (Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K'))))) hconnQ
+  haveI : IrreducibleSpace ↥(pullback (curveBaseChangeProj strX (k' ≫ k))
+      (Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K'))))) := inferInstance
+  haveI : IrreducibleSpace ↥(pullback
+      (𝔸(Unit; Spec (CommRingCat.of K')) ↘ Spec (CommRingCat.of K'))
+      (Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K'))))) :=
+    (Scheme.homeoOfIso (AffineSpace.isPullback_map (n := Unit)
+      (Spec.map (CommRingCat.ofHom
+        (algebraMap K' (AlgebraicClosure K'))))).isoPullback).irreducibleSpace_iff.mp
+      inferInstance
+  have hgsurj : Surjective
+      (Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K')))) := by
+    refine ⟨fun y => ⟨?_, Subsingleton.elim _ _⟩⟩
+    exact (inferInstance : Nonempty ↥(Spec (CommRingCat.of (AlgebraicClosure K')))).some
+  have hbirL := hbir.pullback_snd
+    (Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K')))) hgsurj
+  -- STEP 6.  Rewrite the two total spaces into the shape `hgeom` asks for.
+  refine hgeom (AlgebraicClosure K') ?_
+  rw [hkL, Category.assoc]
+  exact Scheme.BirationalOver.of_isoOver
+    (pullbackLeftPullbackSndIso strX (k' ≫ k)
+      (Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K'))))).symm
+    (AffineSpace.isPullback_map (n := Unit)
+      (Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K'))))).isoPullback
+    (pullbackLeftPullbackSndIso_inv_snd_snd _ _ _)
+    ((AffineSpace.isPullback_map (n := Unit)
+      (Spec.map (CommRingCat.ofHom (algebraMap K' (AlgebraicClosure K'))))).isoPullback_hom_snd)
+    hbirL
 
 /-- **THE BASE-POINT-FREE REDUCTION: a nonconstant map to an abelian variety
 DESCENDS from an extension over which the curve acquires a rational point**
