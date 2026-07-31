@@ -12671,9 +12671,238 @@ is importable here but is NOT applicable from this leaf's hypotheses, so
 `exists_moretBaillySeed_residueCardTwo_of_five_le` below is a genuine open
 leaf and not a wrapper. -/
 
-/-- **BREAK B ALONE: the Moret–Bailly/Taylor base with a `ℚ_[2]`-point** (LEAF,
-cut 2026-07-30 out of `exists_moretBaillySeed_padicEmbedding_of_five_le` below,
-which is PROVEN over it).
+open CategoryTheory AlgebraicGeometry in
+/-- **MORET–BAILLY WITH ONE PRESCRIBED `ℚ_[2]`-POINT** (LEAF, cut 2026-07-31 out
+of `exists_hilbertBlumenthalPoint_padicEmbedding_of_five_le` below, which is
+PROVEN over this leaf together with its sibling
+`exists_twistedHilbertBlumenthalModuliScheme_padicPoint_of_five_le`).
+
+This is `Modularity.exists_totallyReal_point_of_geometricallyIrreducible` —
+PROVEN in `Modularity/MoretBailly.lean` — with ONE hypothesis and ONE conjunct
+added: `hpad : HasRationalPoint fX (ULift ℚ_[2])` in, `Nonempty (F →+* ℚ_[2])`
+out. Nothing else differs; the totally real Galois `F`, its degree parity, the
+avoidance join `N ⊔ range = ⊤` and the `F`-point are returned verbatim by that
+theorem.
+
+**THIS IS MORET–BAILLY'S THEOREM AS STATED; THE PROVEN DECLARATION IS THE
+WEAKENING.** Moret–Bailly, *Groupes de Picard et problèmes de Skolem II*, Ann.
+Sci. É.N.S. **22** (1989), Thm 1.3, prescribes for each place `v` of a finite set
+`S` a nonempty open `Ω_v ⊆ X(ℚ_v)` that the produced totally real field must
+meet. The declaration in `Modularity/MoretBailly.lean` runs at `S = ∅`; this one
+runs at `S = {2}` with `Ω_2 = X(ℚ_2)`.
+
+# ROUTE AUDIT, RE-RUN 2026-07-31 (flt-lean-210) — TWO INDEPENDENT OBSTRUCTIONS,
+# AND THE SPLITTING HALF IS NOT ONE OF THEM
+
+Read off the binders and bodies rather than inherited from the Break-E bullet
+below, which named only the first of these.
+
+* **The splitting half is ALREADY BUILT and merely DISCARDED.**
+  `Modularity.exists_totallyReal_point_of_affine_geometricallyIrreducible` binds
+  `(S₀ : Finset ℕ)` together with `hS₀prime` and
+  `hS₀pt : ∀ p ∈ S₀, HasRationalPoint fX (ULift ℚ_[p])`, and
+  `Modularity.exists_normalRealPoint_of_affine_curve` beneath it CONCLUDES
+  `∀ p ∈ S₀, IsTotallySplitAt F p` — which
+  `Modularity.nonempty_ringHom_padic_of_isTotallySplitAt` (PROVEN) turns into
+  `Nonempty (F →+* ℚ_[p])`. The affine layer simply drops that conjunct on the
+  floor: its call site binds it as `-` (the sixth component of the `obtain`).
+  So NOTHING in the `ℚ_[2]`-embedding itself is missing; what is missing is
+  strictly the two items below.
+* **OBSTRUCTION (i), the affine shrink** — this is the Break-E bullet, re-run and
+  still LIVE. `Modularity.exists_totallyReal_point_of_geometricallyIrreducible`
+  shrinks `X` to an affine open chosen around the REAL point, via
+  `Modularity.exists_isAffineOpen_hasRationalPoint`, and a prescribed
+  `ℚ_[2]`-point of `fX` need not lie in that open, so there is nothing to hand
+  down to the affine layer — which is why it is passed `∅`.
+    REFUTING CHECK, re-run 2026-07-31: inspect the binders of
+    `Modularity.exists_isAffineOpen_hasRationalPoint` for a SECOND family of
+    prescribed points. It takes exactly one, `(h : HasRationalPoint fX F)`. If a
+    second family is ever threaded, this obstruction is repaired.
+  What the repair costs: ONE affine open carrying the real point together with
+  finitely many prescribed local points. For SMOOTH `fX` that is true and the
+  reason is analytic rather than scheme-theoretic — `X(ℚ_2)` is a `2`-adic
+  manifold of dimension `dim X`, so it cannot be contained in the points of the
+  proper closed complement of a nonempty open — and it is FALSE without
+  smoothness. Quasi-projectivity is the hypothesis
+  `Modularity/MoretBailly.lean`'s FORM AUDIT records as not expressible at this
+  pin.
+* **OBSTRUCTION (ii), the PARITY enlargement — NEW, and not recorded anywhere
+  before 2026-07-31.** `Even (Module.finrank ℚ F)` was added to this chain's
+  conclusion on 2026-07-29, and the `ℚ_[2]`-embedding on 2026-07-30. Each edit is
+  correct alone; TOGETHER they break the documented route, which is exactly
+  CLAUDE.md's "two individually correct repairs can be fatal together". Step (vi)
+  of `exists_totallyReal_point_of_geometricallyIrreducible` enlarges `F` to
+  `F' = F(√d)` through
+  `Modularity.exists_evenDegree_totallyReal_of_sup_eq_top`, whose `d` comes from
+  `Modularity.exists_padicSquare_nat_of_finset_primes` with
+  `d = (Q + 1)² + Q`, `Q = ∏_{p ∈ S} p` over a Chebotarev set `S` of primes
+  `> 2` — so `d` is a square in `ℚ_p` for every `p ∈ S` and **carries no
+  condition at `2` whatever**. `F →+* ℚ_[2]` does NOT extend to `F(√d)` unless
+  `d` is a square in `ℚ_[2]`, so the embedding this leaf must produce is
+  destroyed by the very step that produces the parity.
+    THE REPAIR, and it is small: take `Q = 8 · ∏_{p ∈ S} p` in
+    `exists_padicSquare_nat_of_finset_primes`. Then `d = (Q + 1)² + Q ≡ 1
+    (mod 8)`, so `d` is a square in `ℚ_[2]` as well (`2`-adic Hensel needs
+    `≡ 1 mod 8`, not `≡ 1 mod 2`), while `d ≡ 1 (mod p)` for `p ∈ S` and the
+    squeeze `(Q + 1)² < d < (Q + 2)²` that makes `d` a non-square are both
+    untouched. The only genuinely new piece is a `p = 2` case of
+    `exists_padicSquare_of_dvd_sub_one`, i.e. Hensel at `2` from `8 ∣ d − 1`.
+  This is another owner's region (`Modularity/MoretBailly.lean`) and is
+  deliberately not attempted from here; it is queued as named work.
+
+**NON-VACUITY, CHECKED RATHER THAN ASSUMED**, since this leaf's conclusion gained
+conjuncts from two directions. `X = 𝔸¹_ℚ` is smooth, separated, of finite type,
+quasi-compact and geometrically irreducible and has points over `ℝ` and over
+`ℚ_[2]`; the conclusion holds of it with `F = ℚ(√17)`, which is totally real,
+Galois, of EVEN degree `2`, and has `17 ≡ 1 (mod 8)`, so `2` splits and
+`F →+* ℚ_[2]`. Parity and the `ℚ_[2]`-embedding are therefore jointly
+satisfiable, and this is not a false leaf dressed as a citation.
+
+**THE EMBEDDING MAY NOT BE DEMANDED OF AN `F` ALREADY PRODUCED**, which is why
+`hpad` and `Nonempty (F →+* ℚ_[2])` sit on the SAME declaration: `ℚ(√5)` is
+totally real, Galois, of even degree and satisfies every other conjunct, while
+`2` is INERT in it, so it admits no `ℚ_[2]`-embedding at all. The local condition
+at `2` must be arranged by the producer that chooses `F`. -/
+theorem exists_totallyReal_point_padicEmbedding_of_geometricallyIrreducible
+    {X : AlgebraicGeometry.Scheme.{u}}
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fX)
+    (hsep : AlgebraicGeometry.IsSeparated fX)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fX)
+    (hqc : AlgebraicGeometry.QuasiCompact fX)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fX)
+    (hreal : Modularity.HasRationalPoint fX (ULift.{u} ℝ))
+    (hpad : Modularity.HasRationalPoint fX (ULift.{u} ℚ_[2]))
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ))) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
+      Even (Module.finrank ℚ F) ∧
+      N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ ∧
+      Nonempty (F →+* ℚ_[2]) ∧
+      Modularity.HasRationalPoint fX F :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **BREAK B PROPER: the twisted Hilbert–Blumenthal moduli scheme HAS A
+`ℚ_[2]`-POINT** (LEAF, cut 2026-07-31 out of
+`exists_hilbertBlumenthalPoint_padicEmbedding_of_five_le` below).
+
+This is `Modularity.exists_twistedHilbertBlumenthalModuliScheme_of_five_le` —
+PROVEN in `Modularity/MoretBailly.lean` — with ONE conjunct added,
+`HasRationalPoint fX (ULift ℚ_[2])`. Everything else is returned verbatim by that
+theorem: the scheme, the abelian scheme with its `Fermat.AbelianSchemeStruct`,
+the five geometric properties, the real point, and the moduli condition
+`Modularity.IsTwistedHilbertBlumenthalModuli`.
+
+**WHY IT IS STATED EXISTENTIALLY AND NOT AS A PROPERTY OF A GIVEN `X`.** This is
+the one shape that avoids a FALSE leaf, and the file it is cut from states the
+refutation. The FORM-cut section of `Modularity/MoretBailly.lean` (immediately
+above `Modularity.IsFormOver`) shows that one may NOT quantify over an arbitrary
+`X` carrying a twisted family and conclude anything about its points: the twist
+`X_R` by an EVEN cocycle `R` is smooth, separated, of finite type, quasi-compact
+and geometrically irreducible, carries an abelian scheme with real multiplication
+of the right relative dimension, and satisfies
+`IsTwistedHilbertBlumenthalModuli ℓ ρbar` VACUOUSLY, because `X_R(ℝ) = ∅` forces
+`X_R(F) = ∅` for every totally real `F`. Adding `hreal` kills that particular
+witness but repairs nothing at `2`: NOTHING in the moduli condition remembers
+which twist `X` is at `2`, so a hypothesis-shaped version of this leaf would be a
+statement nobody in this development can vouch for. The burden is therefore
+stated where the twist is CHOSEN — the same discipline the leaf below applies to
+`F`.
+
+The price is that the five lines of PROVEN glue inside
+`exists_twistedHilbertBlumenthalModuliScheme_of_five_le` (geometric irreducibility
+and the real point, both read off `IsFormOver`) are restated here rather than
+consumed, so that theorem stays out of the root cone. That is the smaller of the
+two prices: the alternative is a leaf the even-twist witness may refute.
+
+**WHAT THE CITATION OWES, AND WHY IT IS NOT VERBATIM TAYLOR.** Taylor, *On the
+meromorphic continuation of degree two `L`-functions*, Documenta Math. Extra
+Volume Coates (2006) 729–779, §4, Lemma 4.5: `X_Dih` has a `ℚ`-rational point by
+the theory of complex multiplication, and `X_ρ` and `X_Dih` become isomorphic
+over `ℚ_l`, `ℚ_{p₁}`, `ℚ_{p₂}` and `ℝ`, whence `X_ρ` has points over those
+fields. **`2` is NOT on that list as Taylor writes it.** What this leaf adds is
+that the auxiliary dihedral data must be chosen so that the comparison holds at
+`2` as well — the standard "every place of `S` splits completely in `F`"
+refinement of potential modularity, which is what the consumer chain needs for
+the tame-at-`2` gluing condition. Naming that is the point of the cut: the single
+leaf it replaces hid it inside the phrase "the Moret–Bailly citation with
+`Ω_2 ≠ ∅`", where it read as a property of Moret–Bailly's theorem rather than as
+a demand on Taylor's construction.
+  THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a hardly ramified irreducible
+  `ρbar` with `ℓ ≥ 5` for which no twisted Hilbert–Blumenthal moduli scheme in
+  the sense of `IsTwistedHilbertBlumenthalModuli` has a `ℚ_[2]`-point. Since
+  `ρbar` is ramified only at `2` and `ℓ`, that is a condition on
+  `ρbar|_{G_{ℚ_2}}` alone, and such a refutation would also falsify the
+  `residueCardTwo` field of `PotentialHeckeDatum` above and every consumer of it.
+
+CIRCULARITY GUARD, inherited: this leaf may only ever be discharged by the
+independent Moret–Bailly/Taylor construction — never through `Family.lean`,
+`Lift.lean`, `Modularity/Interface.lean`, or the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_odd`. -/
+theorem exists_twistedHilbertBlumenthalModuliScheme_padicPoint_of_five_le
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    ∃ (X : AlgebraicGeometry.Scheme.{u})
+      (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (A : AlgebraicGeometry.Scheme.{u}) (fA : A ⟶ X)
+      (ab : Fermat.AbelianSchemeStruct fA),
+      AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsSeparated fX ∧
+      AlgebraicGeometry.LocallyOfFiniteType fX ∧
+      AlgebraicGeometry.QuasiCompact fX ∧
+      AlgebraicGeometry.GeometricallyIrreducible fX ∧
+      Modularity.HasRationalPoint fX (ULift.{u} ℝ) ∧
+      Modularity.HasRationalPoint fX (ULift.{u} ℚ_[2]) ∧
+      Modularity.IsTwistedHilbertBlumenthalModuli ℓ ρbar fX ab :=
+  sorry
+
+/-- **BREAK B ALONE: the Moret–Bailly/Taylor base with a `ℚ_[2]`-point** (PROVEN
+2026-07-31 (flt-lean-210) over the two leaves immediately above; a LEAF from its
+cut on 2026-07-30 out of `exists_moretBaillySeed_padicEmbedding_of_five_le`
+below, which is PROVEN over it).
+
+# STATUS CHANGE 2026-07-31 — THIS IS NO LONGER A LEAF
+
+The section headed "WHY NOT CUT FURTHER, with the blocker named" below described
+exactly this cut — "(A) a `ℚ_[2]`-prescribing form of
+`exists_totallyReal_point_of_geometricallyIrreducible`, and (B)
+`HasRationalPoint fX (ULift ℚ_[2])` for the twisted moduli `X`" — and declined it
+on the ground that it is "cut-level work in `Modularity/MoretBailly.lean`". That
+ground was WRONG, and the correction is worth stating because it is a reusable
+mistake: the two halves have to be **stated**, not **proven**, in order to cut
+here, and both are statable in this module's own vocabulary because
+`Modularity/MoretBailly.lean` is a `public import`. No declaration outside this
+file was touched. The parts of that section that were about the mathematics —
+which shrink discards the prescribed point, and where the repair sits — are true
+and have been moved into the ROUTE AUDIT of leaf (A), sharpened and re-run.
+
+What the cut bought, beyond making both obligations greppable by name:
+
+* the two halves are mathematically unrelated — (A) is pure Moret–Bailly with no
+  Hilbert–Blumenthal geometry in it at all, (B) is pure Taylor §4 with no field
+  arithmetic — so they are separately attackable and separately citable;
+* leaf (A)'s audit found a SECOND obstruction that the single leaf hid, and that
+  nothing in the tree had recorded: the parity enlargement of 2026-07-29 destroys
+  the `ℚ_[2]`-embedding of 2026-07-30, because its auxiliary `d` is arranged to
+  be a square at the odd Chebotarev primes and carries no condition at `2`. The
+  repair is `Q = 8 · ∏ p` and a `p = 2` Hensel step; see leaf (A);
+* the Tate-module half of the geometric chain
+  (`Modularity.nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`,
+  PROVEN, and everything under it) is back in the ROOT CONE, because this proof
+  calls it rather than receiving a `HilbertBlumenthalPoint` ready-made. That is
+  half of what the ROOT-CONE NOTE on the theorem below asks for; the moduli
+  CONSTRUCTION chain is still superseded rather than called, for the reason given
+  in leaf (B).
+
+Everything below is the 2026-07-30 record of what the citation owes, kept because
+leaf (B) is where that debt now sits.
 
 This is `Modularity.exists_hilbertBlumenthalPoint_of_five_le` — PROVEN in
 `Modularity/MoretBailly.lean` — with ONE conjunct added,
@@ -12711,19 +12940,30 @@ of EVEN degree `2`, and `17 ≡ 1 mod 8` splits `2`, giving `F →+* ℚ_[2]`. P
 and the `ℚ_[2]`-embedding are therefore compatible, and the open content is the
 Hilbert–Blumenthal point — the geometry — which is what a citation should owe.
 
-**WHY NOT CUT FURTHER, with the blocker named.** The next cut down would replay
+**WHY NOT CUT FURTHER — SUPERSEDED 2026-07-31, AND THE ERROR IS THE LESSON.**
+The 2026-07-30 text read: "The next cut down would replay
 `exists_hilbertBlumenthalPoint_of_five_le`'s own body against a Moret–Bailly
 step carrying local conditions, leaving two smaller leaves — (A) a
 `ℚ_[2]`-prescribing form of
 `exists_totallyReal_point_of_geometricallyIrreducible`, and (B)
 `HasRationalPoint fX (ULift ℚ_[2])` for the twisted moduli `X` — and it would
-additionally return the GEOMETRIC half of the chain to the root cone (see the
-cone note on the theorem below). It is blocked exactly where the Break-E bullet
-below says: `exists_totallyReal_point_of_geometricallyIrreducible` passes `∅`
-for `S₀` and discards any prescribed `ℚ_[2]`-point when it shrinks `X` to an
-affine open chosen around the REAL point, so leaf (A) is not a restatement but a
-repair BELOW that shrink. That is cut-level work in
-`Modularity/MoretBailly.lean` and is deliberately not attempted from here.
+additionally return the GEOMETRIC half of the chain to the root cone. It is
+blocked exactly where the Break-E bullet below says: … so leaf (A) is not a
+restatement but a repair BELOW that shrink. That is cut-level work in
+`Modularity/MoretBailly.lean` and is deliberately not attempted from here."
+
+**The cut description was exactly right and the blocking verdict was wrong.**
+It confused what leaf (A) needs in order to be PROVEN with what it needs in
+order to be STATED. Proving (A) is indeed a repair below the affine shrink and
+is indeed another module's region; STATING it costs nothing here, because
+`Modularity/MoretBailly.lean` is a `public import` and every name in (A)'s
+signature is already in scope. That is CLAUDE.md's "STATING a theory is not
+PROVING it", met in the wild: an obstruction to the proof was recorded as an
+obstruction to the cut. The two leaves are (A)
+`exists_totallyReal_point_padicEmbedding_of_geometricallyIrreducible` and (B)
+`exists_twistedHilbertBlumenthalModuliScheme_padicPoint_of_five_le`, both
+immediately above; the Break-E mathematics is preserved and sharpened in (A)'s
+ROUTE AUDIT, which also found a SECOND, previously unrecorded obstruction.
 
 # THE BREAK-E REPAIR IS SMALLER THAN RECORDED IN ONE PLACE AND LARGER IN ANOTHER
 # (measured 2026-07-30, flt-lean-251; binders read, witness machine-checked)
@@ -12808,8 +13048,30 @@ theorem exists_hilbertBlumenthalPoint_padicEmbedding_of_five_le
           (ρbar.map (algebraMap ℚ F)) h = ρbar g) ∧
       Nonempty (F →+* ℚ_[2]) ∧
       Nonempty (Modularity.HilbertBlumenthalPoint ℓ F
-        (ρbar.map (algebraMap ℚ F))) :=
-  sorry
+        (ρbar.map (algebraMap ℚ F))) := by
+  classical
+  -- (i) BREAK B: the moduli input, with the `ℚ_[2]`-point demanded of the twist
+  -- at the point where the twist is CHOSEN
+  obtain ⟨X, fX, A, fA, ab, hsm, hsep, hft, hqc, hgi, hreal, hpad, hmod⟩ :=
+    exists_twistedHilbertBlumenthalModuliScheme_padicPoint_of_five_le
+      hℓOdd hℓ5 hdim hbar hirr
+  -- (ii) Moret–Bailly, run at `S = {2}` with the splitting field of `ρbar` as
+  -- avoidance datum; parity and the `ℚ_[2]`-embedding come out together
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hsup, hemb, hFpt⟩ :=
+    exists_totallyReal_point_padicEmbedding_of_geometricallyIrreducible fX hsm
+      hsep hft hqc hgi hreal hpad ρbar.ker
+      (Modularity.isOpen_ker_of_finite_discrete ρbar)
+  -- (iii) the avoidance join IS image preservation
+  have hrestr : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ∃ h : Field.absoluteGaloisGroup F,
+        (ρbar.map (algebraMap ℚ F)) h = ρbar g :=
+    fun g => Modularity.forall_exists_map_eq_of_ker_sup_range_eq_top ρbar
+      (algebraMap ℚ F) hsup g
+  -- (iv) the Tate-module construction at the `F`-point (PROVEN upstream) — this
+  -- is the call that puts the half of the geometric chain back in the root cone
+  exact ⟨F, hF, hNF, hFtr, hFgal, hev, hrestr, hemb,
+    Modularity.nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli
+      hdim hirr hmod F hF hNF hFtr hFgal hrestr hFpt⟩
 
 /-- **Taylor's Theorem B in residual form, with a `ℚ_[2]`-embedding in place of
 the residue-degree conjunct** (PROVEN 2026-07-30 over
@@ -15166,11 +15428,72 @@ replace `f`/`hf` by `𝒟.IsWeaklyUniversal`.
 # ROUTE OBSTRUCTION FOUND 2026-07-27 (flt-lean-65) — **REPAIRED 2026-07-28 (flt-lean-326). THE BINDER IS NOW ON THIS NODE.**
 
 `[NumberField.IsTotallyReal F]` is present in the signature above, and on
-every declaration between here and the two terminal consumers. **The route
-described below is therefore AVAILABLE, and a prover dispatched at this leaf
-now has one.** The section is kept because it is the mathematical reason the
-binder must stay: deleting it does not merely lose a route, it makes the
-route's own bottom step false.
+every declaration between here and the two terminal consumers. The section is
+kept because it is the mathematical reason the binder must stay: deleting it
+does not merely lose a route, it makes the route's own bottom step false.
+
+# **THE ROUTE IS STILL NOT AVAILABLE FROM HERE — DECLARATION ORDER (2026-07-31,**
+# **flt-lean-210). THIS CORRECTS THE SENTENCE THAT USED TO STAND HERE.**
+
+Until 2026-07-31 this section ended "**The route described below is therefore
+AVAILABLE, and a prover dispatched at this leaf now has one**", and the summary
+in the consumer below ended "The route is available; the leaf is attackable".
+**Both are false, for a reason that has nothing to do with the binder they were
+about**, and they have been sending provers at a leaf they cannot reach. The
+binder repair of 2026-07-28 was real and is not in question; what it fixed was
+the route's BOTTOM step, not its FIRST one.
+
+Every declaration the route spends sits BELOW this leaf in the module, so Lean's
+declaration order forbids the appeal — the same mechanical block this docstring
+already records for `exists_framedGaloisRep_hilbertTraceSubring`, which applies
+just as much to the retraction-FREE half:
+
+| needed by the route | line | this leaf |
+|---|---|---|
+| `charpoly_baseChange_conj_hilbert` | ≈ 16090 | ≈ 15150 |
+| `exists_smul_eq_of_commute_of_isIrreducible_hilbert` | ≈ 16360 | |
+| `exists_conj_entries_mem_hilbertTraceSubring` | ≈ 17030 | |
+| `exists_framedGaloisRep_baseChange_hilbertTraceSubring` | ≈ 17130 | |
+| `exists_frameCoords_of_baseChange_conj_hilbert` | ≈ 17215 | |
+
+So a prover here has no conjugation to conjugate with, and nothing in the module
+above this point can supply one. Restating any of them above this leaf would
+duplicate a live declaration, which is worse than the block.
+
+**THE REPAIR IS A RELOCATION, AND ITS EXTENT WAS MEASURED 2026-07-31 rather than
+estimated.** Move the SIX-declaration descent cluster — this leaf, the consumer
+below, `exists_ringHom_map_top_eq_hilbertTraceSubring`,
+`exists_noetherianLocal_surjective_quotient_hilbertTraceSubring`,
+`fg_comap_maximalIdeal_hilbertTraceSubring`,
+`exists_isLocalRing_hilbertTraceSubring` — DOWN, to sit immediately above
+`exists_ringHom_retraction_hilbertTraceSubring`. It is a pure move: no
+declaration between `charpoly_baseChange_conj_hilbert` and
+`exists_ringHom_retraction_hilbertTraceSubring` references ANY of the six names
+in code (the only three occurrences in that range are inside docstrings, and one
+of those is in the retraction's own docstring, which follows the block down).
+Their own upstream — `isNoetherianRing_isAdic_hilbertTraceSubring_of_descent`,
+`hilbertTraceSubring_eq_top_of_charpoly_map`,
+`isLocalRing_of_isClosed_subring_of_finite_residueField` — all stays above.
+Their downstream consumers `exists_hilbertTraceDescent` and
+`exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum` are already
+below the destination.
+
+It was NOT done on 2026-07-31 because the file had a second concurrent owner at
+the time and a ~950-line block move is the worst possible shape for a merge. It
+is queued as named work, to be taken when the file is quiet, and it should be
+done as its OWN commit touching nothing else.
+
+**AFTER the relocation, what remains is not this leaf but a much narrower one**,
+and the file already names it: assemble
+`exists_framedGaloisRep_baseChange_hilbertTraceSubring` exactly as
+`exists_framedGaloisRep_hilbertTraceSubring` does, discharging three of the four
+local clauses formally (determinant by injectivity of `R' ↪ 𝒟.R`, unramifiedness
+through the injective frame, charpolys by `charpoly_baseChange_conj_hilbert`),
+and replace its tame step by a new leaf — "a version of
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` whose hypotheses replace
+`f`/`hf` by `𝒟.IsWeaklyUniversal`", which is the refuting check this docstring
+already states. That trades this whole node for the single tame-eigenrow
+question at `w ∣ 2`.
 
 What follows is the original 2026-07-27 record, with the repair's measured
 extent appended at the end.
@@ -15376,7 +15699,13 @@ single atom is
   this node, on the leaf above, and on the four declarations between them and
   the terminal consumers — see the repair record in that docstring for the
   measured extent (SIX declarations, and the four the 2026-07-27 note named do
-  not form a closed set). The route is available; the leaf is attackable.
+  not form a closed set). **The route is NOT available and the leaf is NOT yet
+  attackable, for a reason unrelated to that binder**: every declaration the
+  route spends lives BELOW the leaf in this module, so declaration order blocks
+  the appeal. Corrected 2026-07-31 (flt-lean-210); the measured relocation that
+  repairs it is written out in that leaf's docstring, and the sentence that used
+  to stand here — "The route is available; the leaf is attackable" — had been
+  sending provers at a node they could not reach.
 
 (The retired `hLemme1` read: `R'` is Noetherian, adic and adically complete;
 equivalently `𝔪'` is finitely generated, everything else following from
