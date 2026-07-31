@@ -5256,6 +5256,35 @@ Consequence for the second rule that is easy to miss: a hypothesis can be
 load-bearing **twice**. `ℓ.Prime` is cited for "`ZMod ℓ` is a field"; it is also
 the reason the uniqueness clause is true at all, and that second role is
 invisible until the statement is generalised.
+**AND THE SAME COLLISION HAPPENS BETWEEN TWO *PROVEN* THEOREMS, WHERE NO LEAF IS FALSE AND NOTHING IS
+EVEN OPEN** (2026-07-31, `Modularity/MoretBailly.lean`). The section above is about a LEAF going false.
+This variant is worse to find, because every declaration involved stays true and green.
+`exists_totallyReal_point_padicEmbedding_of_geometricallyIrreducible` needs a totally real `F` that is
+BOTH of even degree AND admits `F →+* ℚ_[2]`. `Even (Module.finrank ℚ F)` was added to the supply chain
+on 2026-07-29; the `ℚ_[2]`-embedding on 2026-07-30. Each is correct alone. Together they are
+unsatisfiable *by that chain*, because the parity step enlarges `F` to `F(√d)` with `d` chosen by
+`exists_padicSquare_nat_of_finset_primes` — a square at the Chebotarev primes `S` and carrying **no
+condition at `2` whatever**, so it destroys exactly the embedding the other conjunct demands.
+**Why no instrument could see it.** Both theorems were PROVEN and remained so; the build was green; the
+sorry count did not move; no `sorry`, no error, no unreachable module. The broken thing is a *route
+between two theorems*, and **no declaration in the tree states the composite property**, so there is
+nothing for a falsity audit to attach to and nothing for a frontier scan to count. It was found only by
+reading the two chains against each other from the consumer downwards.
+So: **after adding a conjunct to a widely-consumed producer, walk its chain and ask what each later step
+does to the conjuncts that were already there.** A step that CHOOSES something (a field enlargement, a
+level, an auxiliary prime) is where conjuncts get destroyed, because it is free to choose badly.
+**The repair shape is worth copying: strengthen the CHOICE, not the theory.** `d = (Q+1)² + Q` with
+`Q = ∏_{p ∈ S} p` is an EXPLICIT witness with slack — `Q` may be any positive multiple. Taking
+`Q = 8·∏_{p ∈ S} p` makes `d ≡ 1 (mod 8)`, hence a square in `ℚ_[2]`, while `p ∣ Q` for `p ∈ S` and the
+non-square squeeze `(Q+1)² < d < (Q+2)²` (which needs only `0 < Q < 2Q+3`) are untouched. Total cost: one
+factor of `8`, plus a `p = 2` Hensel companion that is the odd-prime proof with two lines changed
+(`‖2‖ = 1` becomes `‖2‖ = 2⁻¹`, and `norm_int_lt_one_iff_dvd` becomes `norm_int_le_pow_iff_dvd` at
+exponent `3`). **Before building theory to satisfy a new local condition, check whether the producing
+witness is explicit and has slack.** Here it had, and the whole repair was ~40 lines.
+Corollary for the conjunct itself: state it as an **implication in the conclusion**
+(`Nonempty (F →+* ℚ_[2]) → Nonempty (F' →+* ℚ_[2])`), not as a new hypothesis. Every existing call site
+then keeps compiling with one extra `-` in its `obtain`, and a call site that has no `p`-adic data to
+offer is not forced to invent any.
 ## SEVENTH invisibility class: A CLEAN MERGE THAT DOES NOT COMPILE — the interface split
 
 (2026-07-30, release 22, three instances in one batch.) The six classes above are all about

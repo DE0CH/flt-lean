@@ -39146,8 +39146,62 @@ theorem exists_padicSquare_of_dvd_sub_one (p : ℕ) [Fact p.Prime] (hp2 : 2 < p)
   push_cast at hmap
   exact hmap
 
-/-- **A positive NON-SQUARE natural that is a square in `ℚ_[p]` for every `p`
-in a prescribed finite set of odd primes** (PROVEN 2026-07-27).
+/-- **Hensel at `p = 2`: a natural number `≡ 1 (mod 8)` is a square in `ℚ_[2]`**
+(PROVEN 2026-07-31).
+
+The companion to `exists_padicSquare_of_dvd_sub_one`, which is stated for ODD
+`p` and whose docstring already records why: at `p = 2` the unit `2` of `ℤ_[p]`
+becomes the uniformiser, so `‖2‖ = 1/2` and Hensel's hypothesis
+`‖f(1)‖ < ‖f′(1)‖²` reads `‖1 − d‖₂ < 1/4` rather than `< 1`. The strongest
+power of `2` below `1/4` is `1/8`, i.e. exactly `8 ∣ 1 − d` — which is also the
+sharp condition, `(ℤ_[2]ˣ)²` being precisely the units `≡ 1 (mod 8)`.
+
+So the proof is the odd one with two lines changed: `‖2‖ = 1` becomes
+`‖2‖ = 2⁻¹` (`PadicInt.norm_p`), and `PadicInt.norm_int_lt_one_iff_dvd`
+becomes `PadicInt.norm_int_le_pow_iff_dvd` at exponent `3`.
+
+WHY THIS EXISTS (2026-07-31). `exists_padicSquare_nat_of_finset_primes` below
+must make its `d` a square at `2` as well as at the Chebotarev primes `S`, so
+that the enlargement `F ↦ F(√d)` of
+`exists_evenDegree_totallyReal_of_sup_eq_top` PRESERVES a `ℚ_[2]`-embedding of
+`F`. See that theorem's `THE `ℚ_[2]` CONJUNCT` block. -/
+theorem exists_padicSquare_two_of_eight_dvd_sub_one (d : ℕ)
+    (hd : (8 : ℤ) ∣ 1 - (d : ℤ)) :
+    ∃ z : ℚ_[2], z ^ 2 = (d : ℚ_[2]) := by
+  have hnorm2 : ‖(2 : ℤ_[2])‖ = (2 : ℝ)⁻¹ := by
+    have := PadicInt.norm_p (p := 2)
+    simpa using this
+  set G : Polynomial ℤ := X ^ 2 - C (d : ℤ) with hG
+  have hGa : G.aeval (1 : ℤ_[2]) = 1 - (((d : ℤ)) : ℤ_[2]) := by
+    rw [hG]; simp
+  have hGd : G.derivative = C 2 * X := by
+    rw [hG, derivative_sub, derivative_X_pow, derivative_C, sub_zero, pow_one]
+    norm_num
+  have hGda : G.derivative.aeval (1 : ℤ_[2]) = 2 := by
+    rw [hGd]; simp [map_ofNat]
+  have hcast : (((1 - (d : ℤ) : ℤ)) : ℤ_[2]) = 1 - (((d : ℤ)) : ℤ_[2]) := by
+    push_cast; ring
+  have hle : ‖G.aeval (1 : ℤ_[2])‖ ≤ (2 : ℝ) ^ (-3 : ℤ) := by
+    rw [hGa, ← hcast]
+    refine PadicInt.norm_int_le_pow_iff_dvd.mpr ?_
+    simpa using hd
+  have hlt : ‖G.aeval (1 : ℤ_[2])‖ < ‖G.derivative.aeval (1 : ℤ_[2])‖ ^ 2 := by
+    refine lt_of_le_of_lt hle ?_
+    rw [hGda, hnorm2]
+    norm_num
+  obtain ⟨z, hz, -, -, -⟩ := hensels_lemma (F := G) (a := (1 : ℤ_[2])) hlt
+  have hz' : z ^ 2 = (((d : ℤ)) : ℤ_[2]) := by
+    rw [hG] at hz
+    simp only [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, sub_eq_zero] at hz
+    exact hz
+  refine ⟨(z : ℚ_[2]), ?_⟩
+  have hmap := congrArg (fun w : ℤ_[2] => (w : ℚ_[2])) hz'
+  push_cast at hmap
+  exact hmap
+
+/-- **A positive NON-SQUARE natural that is a square in `ℚ_[2]` and in `ℚ_[p]`
+for every `p` in a prescribed finite set of odd primes** (PROVEN 2026-07-27;
+the `ℚ_[2]` conjunct added 2026-07-31).
 
 This is the arithmetic input to the even-degree enlargement below: the
 auxiliary real quadratic field is `ℚ(√d)`, and it must be split at the
@@ -39156,7 +39210,7 @@ extension.
 
 THE WITNESS IS EXPLICIT, and deliberately so — no Dirichlet theorem on
 primes in arithmetic progressions and no quadratic reciprocity is needed.
-Put `Q = ∏_{p ∈ S} p` and
+Put `Q = 8 · ∏_{p ∈ S} p` and
 
   `d = (Q + 1)² + Q`.
 
@@ -39168,15 +39222,37 @@ consecutive squares,
   `(Q + 1)² < d < (Q + 2)²`,
 
 the right-hand inequality being `Q < 2Q + 3`. The empty-`S` case is not
-special: the empty product is `Q = 1`, giving `d = 5`. -/
+special: the empty product is `1`, giving `Q = 8` and `d = 89`.
+
+THE FACTOR `8`, ADDED 2026-07-31, AND WHY IT COSTS NOTHING. The consumer
+`exists_evenDegree_totallyReal_of_sup_eq_top` must now enlarge `F` to
+`F(√d)` while PRESERVING an embedding `F →+* ℚ_[2]`, which forces `d` to
+be a square in `ℚ_[2]` as well. Since
+
+  `d − 1 = Q² + 3Q = Q·(Q + 3)`,
+
+taking `8 ∣ Q` gives `d ≡ 1 (mod 8)`, which is exactly the `2`-adic Hensel
+hypothesis (`exists_padicSquare_two_of_eight_dvd_sub_one`) and, being the
+condition defining `(ℤ_[2]ˣ)²`, is sharp. NOTHING ELSE MOVES: `p ∣ Q` for
+`p ∈ S` still holds because `Q` only gained a factor, and the non-square
+squeeze uses only `0 < Q < 2Q + 3`. The old `Q = ∏_{p ∈ S} p` carried NO
+condition at `2` whatever — that is the defect this repairs, and it was
+invisible to every frontier scan because both theorems were PROVEN.
+
+Note `2 ∉ S` is guaranteed by `hS` (`2 < p`), so the factor `8` cannot
+collide with the odd-prime clause. -/
 theorem exists_padicSquare_nat_of_finset_primes
     (S : Finset ℕ) (hS : ∀ p ∈ S, p.Prime ∧ 2 < p) :
     ∃ d : ℕ, 0 < d ∧ ¬ IsSquare d ∧
+      (∃ z : ℚ_[2], z ^ 2 = (d : ℚ_[2])) ∧
       ∀ (p : ℕ) [Fact p.Prime], p ∈ S → ∃ z : ℚ_[p], z ^ 2 = (d : ℚ_[p]) := by
   classical
-  set Q : ℕ := ∏ p ∈ S, p with hQdef
-  have hQpos : 0 < Q := Finset.prod_pos fun p hp => (hS p hp).1.pos
-  refine ⟨(Q + 1) ^ 2 + Q, by positivity, ?_, ?_⟩
+  set P : ℕ := ∏ p ∈ S, p with hPdef
+  have hPpos : 0 < P := Finset.prod_pos fun p hp => (hS p hp).1.pos
+  set Q : ℕ := 8 * P with hQdef
+  have hQpos : 0 < Q := by rw [hQdef]; omega
+  have hQ8 : (Q : ℤ) = 8 * (P : ℤ) := by rw [hQdef]; push_cast; ring
+  refine ⟨(Q + 1) ^ 2 + Q, by positivity, ?_, ?_, ?_⟩
   · rintro ⟨c, hc⟩
     have hc1 : Q + 1 < c := by
       by_contra hcon
@@ -39189,9 +39265,14 @@ theorem exists_padicSquare_nat_of_finset_primes
       have := Nat.mul_le_mul hcon hcon
       nlinarith
     omega
+  · -- `d − 1 = Q·(Q + 3) = 8P·(8P + 3)`, so `8 ∣ d − 1`
+    refine exists_padicSquare_two_of_eight_dvd_sub_one _ ?_
+    refine ⟨-(8 * (P : ℤ) * (P : ℤ) + 3 * (P : ℤ)), ?_⟩
+    push_cast [hQ8]
+    ring
   · intro p hpfact hpS
     obtain ⟨hpprime, hp2⟩ := hS p hpS
-    have hpQ : p ∣ Q := Finset.dvd_prod_of_mem _ hpS
+    have hpQ : p ∣ Q := Dvd.dvd.mul_left (Finset.dvd_prod_of_mem _ hpS) 8
     refine exists_padicSquare_of_dvd_sub_one p hp2 _ ?_
     obtain ⟨t, ht⟩ := hpQ
     refine ⟨-((p : ℤ) * t * t + 3 * t), ?_⟩
@@ -39586,7 +39667,15 @@ WHY `K` IS TAKEN AS A SUBFIELD OF `F'` AND NOT AS `AdjoinRoot` OVER `ℚ[X]`:
 UNIVERSES. The consumer (`exists_primes_forall_sup_eq_top_of_isOpen`)
 quantifies over `Type u`, and `AdjoinRoot` of a polynomial over `ℚ` lands in
 `Type 0`. Realising `ℚ(√d)` as `IntermediateField.adjoin ℚ {√d}` inside `F'`
-keeps it in `Type u` with no `ULift` bookkeeping at all. -/
+keeps it in `Type u` with no `ULift` bookkeeping at all.
+
+THE `F →+* ℚ_[p]` TRANSFER CONJUNCT (added 2026-07-31). `F'` is literally
+`AdjoinRoot (X² − d)` over `F`, so an embedding `ψ : F →+* ℚ_[p]` extends to
+`F'` along `AdjoinRoot.lift ψ z` for ANY `z : ℚ_[p]` with `z² = d` — one
+application of the universal property, no splitting or ramification theory,
+and no relation between `ψ` and the `K`-conjunct's embedding is claimed. It is
+stated as an IMPLICATION rather than as a hypothesis of the theorem so that
+call sites with no `p`-adic data at all keep type-checking unchanged. -/
 theorem exists_sqrtAdjoin_evenDegree_of_odd_finrank
     (F : Type u) [Field F] [NumberField F]
     [NumberField.IsTotallyReal F] [IsGalois ℚ F]
@@ -39598,6 +39687,8 @@ theorem exists_sqrtAdjoin_evenDegree_of_odd_finrank
       Even (Module.finrank ℚ F') ∧
       (∀ (p : ℕ) [Fact p.Prime], (∃ z : ℚ_[p], z ^ 2 = (d : ℚ_[p])) →
         Nonempty (K →+* ℚ_[p])) ∧
+      (∀ (p : ℕ) [Fact p.Prime], (∃ z : ℚ_[p], z ^ 2 = (d : ℚ_[p])) →
+        Nonempty (F →+* ℚ_[p]) → Nonempty (F' →+* ℚ_[p])) ∧
       (Field.absoluteGaloisGroup.map (algebraMap ℚ F')).toMonoidHom.range =
         (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range ⊓
           (Field.absoluteGaloisGroup.map (algebraMap ℚ K)).toMonoidHom.range := by
@@ -39679,15 +39770,22 @@ theorem exists_sqrtAdjoin_evenDegree_of_odd_finrank
   refine ⟨AdjoinRoot fF, inferInstance, inferInstance, inferInstance, hF'galois,
     algebraMap F (AdjoinRoot fF),
     IntermediateField.adjoin ℚ ({pbF.gen} : Set (AdjoinRoot fF)), inferInstance, inferInstance,
-    hKnormal, hevF', ?_, hΓeq⟩
-  -- (6) `K` embeds into `ℚ_[p]` as soon as `d` is a square there
-  rintro p hp ⟨z, hz⟩
-  have hz' : eval₂ (algebraMap ℚ ℚ_[p]) z (minpoly ℚ pbF.gen) = 0 := by
-    rw [hminQ]
-    simp only [eval₂_sub, eval₂_X_pow, eval₂_C, sub_eq_zero, hz]
-    simp
-  exact ⟨(AdjoinRoot.lift (algebraMap ℚ ℚ_[p]) z hz').comp
-    (IntermediateField.adjoinRootEquivAdjoin ℚ hyintQ).symm.toRingEquiv.toRingHom⟩
+    hKnormal, hevF', ?_, ?_, hΓeq⟩
+  · -- (6) `K` embeds into `ℚ_[p]` as soon as `d` is a square there
+    rintro p hp ⟨z, hz⟩
+    have hz' : eval₂ (algebraMap ℚ ℚ_[p]) z (minpoly ℚ pbF.gen) = 0 := by
+      rw [hminQ]
+      simp only [eval₂_sub, eval₂_X_pow, eval₂_C, sub_eq_zero, hz]
+      simp
+    exact ⟨(AdjoinRoot.lift (algebraMap ℚ ℚ_[p]) z hz').comp
+      (IntermediateField.adjoinRootEquivAdjoin ℚ hyintQ).symm.toRingEquiv.toRingHom⟩
+  · -- (7) so does `F' = F(√d)`, given an embedding of `F` itself: `F'` IS
+    -- `AdjoinRoot (X² − d)` over `F`, so `AdjoinRoot.lift ψ z` is the extension.
+    rintro p hp ⟨z, hz⟩ ⟨ψ⟩
+    have hroot : Polynomial.eval₂ ψ z fF = 0 := by
+      rw [hfF]
+      simp only [eval₂_sub, eval₂_X_pow, eval₂_natCast, map_natCast, hz, sub_self]
+    exact ⟨AdjoinRoot.lift ψ z hroot⟩
 
 open scoped Pointwise in
 /-- **Even-degree enlargement of a totally real Galois field, preserving
@@ -39737,8 +39835,8 @@ nothing to do. Otherwise:
   ODD primes such that any normal number field split completely at every
   `p ∈ S` is `H`-disjoint.
 * `exists_padicSquare_nat_of_finset_primes` produces an EXPLICIT positive
-  non-square `d = (Q + 1)² + Q`, `Q = ∏_{p ∈ S} p`, that is a square in
-  every `ℚ_[p]`, `p ∈ S`. So `K = ℚ(√d)` is split at `S` and
+  non-square `d = (Q + 1)² + Q`, `Q = 8·∏_{p ∈ S} p`, that is a square in
+  every `ℚ_[p]`, `p ∈ S`, and in `ℚ_[2]`. So `K = ℚ(√d)` is split at `S` and
   `H ⊔ Γ K = ⊤`.
 * `exists_sqrtAdjoin_evenDegree_of_odd_finrank` builds `F' = F(√d)`:
   totally real (`isTotallyReal_of_adjoin_sqrt`), Galois over `ℚ`, of
@@ -39760,7 +39858,44 @@ FAITHFULNESS NOTE. The conclusion is deliberately an ENLARGEMENT
 (`F →+* F'`) rather than a re-choice: the consumer needs to transport an
 already-obtained `F`-rational point up to `F'`, which
 `HasRationalPoint.of_ringHom` does along exactly such a hom. Nothing
-here constrains `X`, which is why this node is pure field theory. -/
+here constrains `X`, which is why this node is pure field theory.
+
+# THE `ℚ_[2]` CONJUNCT (added 2026-07-31, and the defect it repairs)
+
+`exists_totallyReal_point_padicEmbedding_of_geometricallyIrreducible` in
+`HardlyRamified/HilbertModularity.lean` must produce an `F` that is BOTH of
+even degree AND admits `F →+* ℚ_[2]`. `Even (Module.finrank ℚ F)` was added to
+this chain on 2026-07-29 and the `ℚ_[2]`-embedding on 2026-07-30. **Each edit
+is correct alone and TOGETHER they broke the route** — CLAUDE.md's "two
+individually correct repairs can be fatal together". The reason is exactly
+this node: its enlargement `F ↦ F(√d)` DESTROYS an embedding `F →+* ℚ_[2]`
+unless `d` happens to be a square in `ℚ_[2]`, and the old
+`d = (Q + 1)² + Q` with `Q = ∏_{p ∈ S} p` over a Chebotarev set of primes
+`> 2` carried no condition at `2` whatever.
+
+Nothing was `sorry`, nothing was red, and no frontier scan could see it: BOTH
+theorems were PROVEN and remained so. It was found only by reading the two
+chains against each other.
+
+The repair is one factor of `8` in `exists_padicSquare_nat_of_finset_primes`
+(making `d ≡ 1 mod 8`, see its docstring) plus the transfer conjunct of
+`exists_sqrtAdjoin_evenDegree_of_odd_finrank`, and it is recorded here as the
+implication `Nonempty (F →+* ℚ_[2]) → Nonempty (F' →+* ℚ_[2])`. An
+IMPLICATION, not a hypothesis, so that the existing call site in
+`exists_totallyReal_point_of_geometricallyIrreducible` — which has no `ℚ_[2]`
+data to offer — is unaffected.
+
+WHAT THIS DOES **NOT** REPAIR. The `ℚ_[2]`-embedding still does not reach this
+point, because of a SECOND and independent obstruction upstream: step (i) of
+`exists_totallyReal_point_of_geometricallyIrreducible` shrinks `X` to an
+affine open chosen around the REAL point via
+`exists_isAffineOpen_hasRationalPoint`, which takes exactly ONE prescribed
+point, so a prescribed `ℚ_[2]`-point is discarded before the affine layer (the
+`S₀ = ∅` there). Repairing that needs one affine open carrying the real point
+together with finitely many prescribed local points — true for smooth
+quasi-projective `X` by a `p`-adic dimension argument, and quasi-projectivity
+is what the FORM AUDIT below records as not expressible at this pin. That is
+separate work; this node is now ready for it. -/
 theorem exists_evenDegree_totallyReal_of_sup_eq_top
     (F : Type u) [Field F] [NumberField F]
     [NumberField.IsTotallyReal F] [IsGalois ℚ F]
@@ -39771,10 +39906,12 @@ theorem exists_evenDegree_totallyReal_of_sup_eq_top
       (_ : NumberField.IsTotallyReal F') (_ : IsGalois ℚ F')
       (_ : F →+* F'),
       Even (Module.finrank ℚ F') ∧
+      (Nonempty (F →+* ℚ_[2]) → Nonempty (F' →+* ℚ_[2])) ∧
       N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F')).toMonoidHom.range = ⊤ := by
   classical
   by_cases hev : Even (Module.finrank ℚ F)
-  · exact ⟨F, inferInstance, inferInstance, inferInstance, inferInstance, RingHom.id F, hev, hsup⟩
+  · exact ⟨F, inferInstance, inferInstance, inferInstance, inferInstance, RingHom.id F, hev,
+      id, hsup⟩
   · -- the open subgroup `H = N ⊓ Γ F` against which the auxiliary quadratic field is chosen
     have hΓFopen : IsOpen
         (((Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range :
@@ -39787,10 +39924,11 @@ theorem exists_evenDegree_totallyReal_of_sup_eq_top
     -- Chebotarev, run at `H` and at the bound `2` so every avoidance prime is ODD
     obtain ⟨S, hSprime, hSsup⟩ :=
       exists_primes_forall_sup_eq_top_of_isOpen.{u} _ hHopen 2
-    obtain ⟨d, hdpos, hdsq, hdpadic⟩ := exists_padicSquare_nat_of_finset_primes S hSprime
-    obtain ⟨F', hF', hNF', hFtr', hFgal', ι, K, hK, hNK, hKnormal, hev', hKsplit, hΓeq⟩ :=
+    obtain ⟨d, hdpos, hdsq, hd2, hdpadic⟩ := exists_padicSquare_nat_of_finset_primes S hSprime
+    obtain ⟨F', hF', hNF', hFtr', hFgal', ι, K, hK, hNK, hKnormal, hev', hKsplit, hFlift,
+      hΓeq⟩ :=
       exists_sqrtAdjoin_evenDegree_of_odd_finrank.{u} F hev d hdpos hdsq
-    refine ⟨F', hF', hNF', hFtr', hFgal', ι, hev', ?_⟩
+    refine ⟨F', hF', hNF', hFtr', hFgal', ι, hev', hFlift 2 hd2, ?_⟩
     have hHK : (N ⊓ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range)
         ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ K)).toMonoidHom.range = ⊤ :=
       hSsup K hK hNK hKnormal (fun p _ hp => hKsplit p (hdpadic p hp))
@@ -39937,9 +40075,14 @@ theorem exists_totallyReal_point_of_geometricallyIrreducible
   -- that survives the enlargement, so this costs nothing here and is what makes
   -- the quaternionic (hence even-degree) automorphic development usable
   -- downstream — see `exists_evenDegree_totallyReal_of_sup_eq_top`.
+  -- The `ℚ_[2]`-transfer conjunct that theorem also returns (2026-07-31) is
+  -- DISCARDED here and only here: this wrapper has no `ℚ_[2]`-point to offer,
+  -- because step (i) above already threw one away (see the `S₀ = ∅` note).  It
+  -- is what the padic-embedding variant of this theorem will consume once that
+  -- affine-shrink obstruction is repaired.
   haveI := hFtr
   haveI := hFgal
-  obtain ⟨F', hF', hNF', hFtr', hFgal', ιFF', hev, hsup'⟩ :=
+  obtain ⟨F', hF', hNF', hFtr', hFgal', ιFF', hev, -, hsup'⟩ :=
     exists_evenDegree_totallyReal_of_sup_eq_top F N hNopen hsup
   exact ⟨F', hF', hNF', hFtr', hFgal', hev, hsup',
     HasRationalPoint.of_ringHom fX F F' hF hNF hF' hNF' ιFF' hFptX⟩
