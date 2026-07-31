@@ -8587,22 +8587,39 @@ extension of `D.F` (both are `K(xx, yy)` for the same `xx, yy`, over `ℚ̄` and
 `Dbar.Places` really is all of its places.  In particular there is no junk model in which
 `below` misses a place, or in which `F̄^{Gal}` is bigger than `F`. -/
 
-/-- **LEAF (weak Mordell–Weil, 2a of 4): every place of `F` has a geometric place above
-it**, i.e. `below` is surjective.
+/-- **Every place of `F` has a geometric place above it** (PROVEN 2026-07-31), i.e. `below`
+is surjective.
 
-Extension of valuations along the constant field extension `F ↪ F̄`.  The valuation
-`ord v` of `F` extends to `F̄` — `F̄/F` is an algebraic (indeed integral) extension of
-fields, so every valuation of the base extends — and `ord_emb` pins `below` on that
-extension to be `v` itself, because `D.ord` is injective.  The extension is unramified
-(`e = 1`), which is what `ord_emb` asserts with no ramification index; if it were not, the
-witness would have to be rescaled, and `ord_surjective` for `Dbar` is what makes the
-rescaled valuation normalised.
+## THIS WAS A DUPLICATE LEAF, AND IT HAS NO CODE CONSUMER
 
-**Not vacuous.**  With `Dbar.Places` axiomatised as ALL normalised `ℚ̄`-trivial valuations
-of `Dbar.F` (`ord_complete`), the obligation is to produce a valuation FUNCTION on `Dbar.F`
-restricting to `ord v` on `emb '' F`, which is the honest content. -/
+It is character-for-character the statement of `GeomPic.below_surjective`, cut independently
+in this "four sub-leaves" block on 2026-07-30 while the namespace copy was cut for
+`GeomPic.bcDiv_injective`.  Neither cut could see the other — they share no identifier
+outside the statement itself — and a `sorry`-scan counted the one theorem twice, which is
+exactly the failure `CLAUDE.md` records under *AN "IRREDUCIBLE" VERDICT SEARCHES FOR A PROOF*.
+
+`geomPic_bc_injective` reaches surjectivity through `gp.bcDiv_injective`, not through this
+name; a comment-stripped scan of the whole module finds **no** use of `geomPic_below_surjective`
+in code (the three other hits are prose, at the module docstring, at `geomPic_bc_injective`
+and at `geomPic_exists_bcDiv_of_divAct_fixed`).  So this declaration is now a thin alias kept
+only so that nothing which cites the name breaks.
+
+**It should be DELETED**, together with any other member of this block that turns out to have
+no code consumer, by whoever next owns the `geomPic_bc_injective` cluster — that is an
+author-level decision about a block three of whose four members ARE consumed
+(`geomPic_exists_const_of_divisor_eq_zero`, `_exists_finiteLevel`,
+`_exists_emb_of_fieldAct_fixed`, at lines ~8756/8779/8835), and deleting a name a concurrent
+branch might re-point `geomPic_bc_injective` at is not worth the risk for one line.  Proving
+it costs nothing and takes it out of the frontier, which is what stops it drawing dispatches.
+
+The old route paragraph is retired: it asked for a valuation function restricting to `ord v`
+ON THE NOSE, i.e. for the constant field extension to be unramified — and that is NOT what the
+statement needs, because `ord_emb` is an axiom of `GeomPic` and supplies the unramifiedness for
+free.  See `GeomPic.below_surjective` for the argument and for why
+`constFieldExt_exists_uniformizer` is still owed where it stands. -/
 theorem geomPic_below_surjective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
-    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Surjective gp.below := sorry
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Surjective gp.below :=
+  gp.below_surjective
 
 /-- **LEAF (weak Mordell–Weil, 2b of 4): a geometric function with no zeros and no poles is
 a constant.**
