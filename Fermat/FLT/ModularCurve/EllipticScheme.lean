@@ -11322,6 +11322,22 @@ See the section note above for the four-case split, for where perfectness is use
 (twice, and only for a Frobenius root extraction) and for the `𝔽₂(t)` counterexample
 that shows `PerfectField` cannot be dropped. -/
 theorem exists_singular_of_Δ_eq_zero {K : Type} [Field K] [PerfectField K]
+    (E : WeierstrassCurve K) (hΔ : E.Δ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  rcases eq_or_ne (2 : K) 0 with h2 | h2
+  · rcases eq_or_ne E.a₁ 0 with ha1 | ha1
+    · exact exists_singular_of_Δ_eq_zero_of_char_two_of_a₁_eq_zero E hΔ h2 ha1
+    · exact exists_singular_of_Δ_eq_zero_of_char_two_of_a₁_ne_zero E hΔ h2 ha1
+  · rcases eq_or_ne E.c₄ 0 with hc4 | hc4
+    · rcases eq_or_ne (3 : K) 0 with h3 | h3
+      · exact exists_singular_of_Δ_eq_zero_of_char_three E hΔ h2 h3 hc4
+      · exact exists_singular_of_Δ_eq_zero_of_c₄_eq_zero E hΔ h2 h3 hc4
+    · exact exists_singular_of_Δ_eq_zero_of_c₄_ne_zero E hΔ h2 hc4
+
+/-- **A singular Weierstrass curve over a field where `2` and `3` are invertible has a
+singular point RATIONAL over that field** — the `two_three_ne_zero` branch, kept because
+its explicit witness is the one the char-`0` consumers cite.
+
 **Where the sign comes from**, since the two roots of `6x² + b₂x + b₄` are
 `x = (±√c₄ - b₂)/12` and only ONE of them lies on the curve: eliminating
 `b₄` and `b₆` against the two derivative conditions gives
@@ -11383,6 +11399,8 @@ theorem exists_singular_of_Δ_eq_zero_of_two_three_ne_zero {K : Type} [Field K]
     · refine h ?_
       field_simp
       ring
+
+section JacobianCriterion
 
 /-! ### Points of the affine coordinate ring, and the square-zero test ring `ℚ[t]/(t³)`
 
