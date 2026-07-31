@@ -406,6 +406,77 @@ theorem mem_fixingSubgroup_of_isUnramifiedAtInfinitePlaces
 
 end Compositum
 section Archimedean
+/-- **A COMPOSITUM OF EXTENSIONS UNRAMIFIED AT THE INFINITE PLACES IS
+**RENAMED 2026-07-31 (release 29).**  `UnramifiedClassFieldExistence.lean`
+declares a theorem of the same name about `IntermediateField K
+(AlgebraicClosure K)`; this one is about `IntermediateField K
+(AlgebraicClosure ℚ)`, which is what this file works in.  The qualified
+names collided, so this one carries a suffix.
+
+UNRAMIFIED AT THE INFINITE PLACES** (PROVEN 2026-07-30).
+
+This one is NOT decoration: `finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces`
+— the only degree bound this development has — REQUIRES it, and the leaf's
+docstring records a PARI/GP counterexample (`ℚ(√3)`, `h = 1`, narrow `h⁺ = 2`)
+showing the bound is FALSE with unramifiedness only at the finite places. So
+the compositum argument below cannot be run at finite places alone. -/
+theorem isUnramifiedAtInfinitePlaces_sup_algClosRat
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    (L₁ L₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ))
+    [FiniteDimensional (K : Type _) L₁] [IsGalois (K : Type _) L₁]
+    [FiniteDimensional (K : Type _) L₂] [IsGalois (K : Type _) L₂]
+    [IsUnramifiedAtInfinitePlaces (K : Type _) L₁]
+    [IsUnramifiedAtInfinitePlaces (K : Type _) L₂] :
+    IsUnramifiedAtInfinitePlaces (K : Type _)
+      (L₁ ⊔ L₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) := by
+  classical
+  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  haveI : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, inferInstance⟩
+  haveI : Normal ℚ (AlgebraicClosure ℚ) := inferInstance
+  haveI : Normal (K : Type _) (AlgebraicClosure ℚ) := inferInstance
+  haveI : IsGalois (K : Type _)
+      (L₁ ⊔ L₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) := ⟨⟩
+  haveI : FiniteDimensional ℚ
+      ((L₁ ⊔ L₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) : Type _) :=
+    FiniteDimensional.trans ℚ (K : Type _) _
+  haveI : NumberField ((L₁ ⊔ L₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) : Type _) :=
+    ⟨⟩
+  refine ⟨fun w => ?_⟩
+  rw [NumberField.InfinitePlace.isUnramified_iff_stabilizer_eq_bot, Subgroup.eq_bot_iff_forall]
+  intro τ hτ
+  have hτw : τ • w = w := hτ
+  set ρ : AlgebraicClosure ℚ ≃ₐ[(K : Type _)] AlgebraicClosure ℚ :=
+    τ.liftNormal (AlgebraicClosure ℚ) with hρdef
+  have hρM : ∀ x : ((L₁ ⊔ L₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) : Type _),
+      ρ (algebraMap _ (AlgebraicClosure ℚ) x) = algebraMap _ (AlgebraicClosure ℚ) (τ x) :=
+    fun x => AlgEquiv.liftNormal_commutes τ (AlgebraicClosure ℚ) x
+  have e₁ := mem_fixingSubgroup_of_isUnramifiedAtInfinitePlaces K (L₁ ⊔ L₂) L₁ le_sup_left w τ
+    hτw ρ hρM
+  have e₂ := mem_fixingSubgroup_of_isUnramifiedAtInfinitePlaces K (L₁ ⊔ L₂) L₂ le_sup_right w τ
+    hτw ρ hρM
+  have e₃ : ρ ∈ (L₁ ⊔ L₂).fixingSubgroup := by
+    rw [IntermediateField.fixingSubgroup_sup]; exact ⟨e₁, e₂⟩
+  simp only [IntermediateField.mem_fixingSubgroup_iff] at e₃
+  refine AlgEquiv.ext fun x => ?_
+  have h5 : ρ (algebraMap _ (AlgebraicClosure ℚ) x)
+      = algebraMap _ (AlgebraicClosure ℚ) x := e₃ _ x.2
+  have h6 : algebraMap _ (AlgebraicClosure ℚ) (τ x)
+      = algebraMap _ (AlgebraicClosure ℚ) x := by rw [← hρM x, h5]
+  simpa using (algebraMap _ (AlgebraicClosure ℚ)).injective h6
+
+end Compositum
+
+section Archimedean
+
+/-! ### Keeping the archimedean unramifiedness that `exists_hilbertClassField` discards
+
+`exists_classField_of_subgroup` PRODUCES `IsUnramifiedAtInfinitePlaces K H`;
+`exists_classField_finrank_eq_index` consumes it and deliberately does not
+re-export it, and `exists_hilbertClassField` inherits that. The compositum
+argument needs it, so the three theorems below re-derive the Hilbert class
+field keeping it, and carry it into `ℚ̄`. -/
+
+
 /-- `mult` is invariant under pulling an infinite place back along a ring ISO:
 `InfinitePlace.mult_comap_le` in both directions. -/
 theorem mult_comap_ringEquiv {k K : Type*} [Field k] [Field K] (f : k ≃+* K)
@@ -905,7 +976,7 @@ theorem exists_hilbertClassField_normal_over_rat
     ⟨⟩
   haveI : IsUnramifiedAtInfinitePlaces (K : Type _)
       (N₀ ⊔ N₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) :=
-    isUnramifiedAtInfinitePlaces_sup K N₀ N₂
+    isUnramifiedAtInfinitePlaces_sup_algClosRat K N₀ N₂
   haveI : FiniteDimensional ℚ
       ((N₀ ⊔ N₂ : IntermediateField (K : Type _) (AlgebraicClosure ℚ)) : Type _) :=
     FiniteDimensional.trans ℚ (K : Type _)
