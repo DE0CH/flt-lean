@@ -4518,6 +4518,8 @@ theorem exists_lowerRamificationData_lvl_eq
 
 end FiniteLevelInhabitation
 
+namespace LowerRamificationData
+
 /-! ### The arithmetic inputs to the construction, as NAMED leaves
 
 The four statements below were, until 2026-07-29, anonymous sorried `have`s
@@ -5182,6 +5184,20 @@ theorem exists_pow_sub_one_mem_maximalIdeal_of_isUnit {x : Oᵥ} (hx : IsUnit x)
 
 end TeichmullerTorsion
 
+section SerreTameCharacterKernel
+
+variable {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
+local notation "Kᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+local notation "Oᵥ" => IntegralClosure
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+  (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+local notation "Γᵥ" => Field.absoluteGaloisGroup
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+
+
 /-- **SERRE, *CORPS LOCAUX* IV §1, LEMMA 1 — THE REMAINING INPUT TO
 `wildInertiaGroup_le_gp_one`** (PROVEN 2026-07-30; cut as a sorry leaf earlier
 the same day): for an inertia element, membership in `G_1` is decided by its
@@ -5259,7 +5275,7 @@ theorem LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub
     obtain ⟨b, hb⟩ := hgp0 c hc
     exact ⟨a * (σ • c) + b, by rw [hkey, ha, hb]; ring⟩
   -- the residue field is algebraic over a FINITE field: `x ^ Q ≡ x`, `Q ≡ 0`.
-  obtain ⟨Q, hQm, hQx⟩ := exists_pow_sub_self_mem_maximalIdeal x
+  obtain ⟨Q, hQm, hQx⟩ := exists_pow_sub_self_mem_maximalIdeal v x
   have hQfix : ∀ τ ∈ D.lvl, τ • ((Q : ℕ) : Oᵥ) = ((Q : ℕ) : Oᵥ) := by
     intro τ _
     show (MulSemiringAction.toRingHom Γᵥ Oᵥ τ) ((Q : ℕ) : Oᵥ) = ((Q : ℕ) : Oᵥ)

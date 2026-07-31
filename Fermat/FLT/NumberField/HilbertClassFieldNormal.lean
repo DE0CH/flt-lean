@@ -404,8 +404,6 @@ theorem mem_fixingSubgroup_of_isUnramifiedAtInfinitePlaces
   rw [NumberField.InfinitePlace.isUnramified_iff_stabilizer_eq_bot] at hu
   exact (Subgroup.eq_bot_iff_forall _).mp hu g hstab
 
-end Compositum
-section Archimedean
 /-- **A COMPOSITUM OF EXTENSIONS UNRAMIFIED AT THE INFINITE PLACES IS
 **RENAMED 2026-07-31 (release 29).**  `UnramifiedClassFieldExistence.lean`
 declares a theorem of the same name about `IntermediateField K
