@@ -4145,26 +4145,6 @@ theorem isInvertibleSheaf_sectionIdeal {X S T : Scheme.{u}} {strX : X ⟶ S}
   · exact sectionIdeal_restrict_iso_unit_of_notMem_range _
       (isClosedImmersion_relSection _hproper x) z hz
 
-/-- **`T' = T ×_{X_T} X_{T'}`** (PROVEN) — the section square is cartesian too,
-which is the form in which the classical statement is usually quoted ("`D_{x'}`
-is the scheme-theoretic preimage of `D_x`").
-
-It is a CONSEQUENCE of the two lemmas above rather than an extra input: paste
-the section square onto the projection square, note that both composites
-`σ' ≫ π_{g'}` and `σ ≫ π_g` are identities, so the outer rectangle is the
-trivially-cartesian square `𝟙, h, h, 𝟙`, and peel the right square off again.
-
-**It is recorded but deliberately NOT used as the hypothesis of the leaf
-below** — see that leaf's falsity audit, where this square alone is refuted. -/
-theorem isPullback_relSection_curveBaseChangeMap {X S T T' : Scheme.{u}} {strX : X ⟶ S}
-    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') (x : RelPoint strX g) :
-    IsPullback (relSection (RelPoint.pre h hg x)) h (curveBaseChangeMap strX h hg)
-      (relSection x) := by
-  refine IsPullback.of_right (h₁₂ := curveBaseChangeProj strX g') ?_
-    (relSection_comp_curveBaseChangeMap h hg x) (isPullback_curveBaseChangeMap strX h hg).flip
-  rw [relSection_comp_proj, relSection_comp_proj]
-  exact IsPullback.of_horiz_isIso ⟨by simp⟩
-
 /-- **THE IDEAL OF A SECTION COMMUTES WITH BASE CHANGE OF THE AMBIENT SCHEME**
 (sorry leaf, cut 2026-07-30 out of `nonempty_modPullback_sectionIdeal`) — all of
 that leaf's content, stated for a bare section of a bare morphism because
@@ -4227,36 +4207,6 @@ theorem nonempty_modPullback_sectionIdeal_of_isPullback {Z Z' T T' : Scheme.{u}}
     Nonempty (modPullback φ (sectionIdeal σ) ≅ sectionIdeal σ') :=
   sorry
 
-/-- **`𝒪(−σ)` COMMUTES WITH BASE CHANGE** (PROVEN 2026-07-30 over
-`nonempty_modPullback_sectionIdeal_of_isPullback`, the two square lemmas above
-and `isInvertibleSheaf_sectionIdeal`; formerly a bare sorry leaf, and the audit
-below is the one written while it was one) — `φ^* 𝒪(−x) ≅ 𝒪(−x_{T'})` for
-`φ = curveBaseChangeMap strX h hg`.
-
-The second of the two genuinely new geometric obligations, and the only one
-`aj_pre` needs beyond the tensor calculus.
-
-**The square is cartesian and the sections match**, which is what makes this
-true and is worth recording because it is the only part a prover has to check by
-hand: writing `σ = relSection x` and `σ' = relSection (RelPoint.pre h hg x)`,
-
-    σ' ≫ φ = h ≫ σ,
-
-since both have first component `h ≫ x.1` (`pullback.lift_fst`, `x'.1 = h ≫ x.1`
-by definition of `RelPoint.pre`) and second component `h` (`pullback.lift_snd`
-together with `curveBaseChangeMap_proj`).  And `X ×_S T' = (X ×_S T) ×_T T'`, so
-the divisor `D_{x'}` really is the pullback of `D_x`.
-
-**Why it is not formal.**  `φ^*` is right exact, not left exact, so it does not
-commute with a kernel for free; the statement is exactly that the surjection
-`𝒪_{X_T} ↠ 𝒪_{D_x}` stays injective-on-the-ideal after pullback, i.e. that
-`D_x` is FLAT over `T` — which is the content of
-`isInvertibleSheaf_sectionIdeal` above (an effective relative Cartier divisor is
-flat over the base).  So this leaf DEPENDS on that one, and a proof should
-consume it rather than redo it.
-
-**FAITHFULNESS.**  Same two hypotheses, same reason: drop either and `𝒪(−x)`
-need not be invertible, hence need not be flat over `T`, and the pullback map
 /-! ### The base-change square of a relative point
 
 `nonempty_modPullback_sectionIdeal` below was one node until 2026-07-31.  Its
@@ -4323,6 +4273,26 @@ theorem isPullback_curveBaseChangeMap {X S T T' : Scheme.{u}} (strX : X ⟶ S) {
     exact IsPullback.of_hasPullback strX (h ≫ g)
   · simp [curveBaseChangeMap, curveBaseChangeProj, pullback.lift_snd]
 
+/-- **`T' = T ×_{X_T} X_{T'}`** (PROVEN) — the section square is cartesian too,
+which is the form in which the classical statement is usually quoted ("`D_{x'}`
+is the scheme-theoretic preimage of `D_x`").
+
+It is a CONSEQUENCE of the two lemmas above rather than an extra input: paste
+the section square onto the projection square, note that both composites
+`σ' ≫ π_{g'}` and `σ ≫ π_g` are identities, so the outer rectangle is the
+trivially-cartesian square `𝟙, h, h, 𝟙`, and peel the right square off again.
+
+**It is recorded but deliberately NOT used as the hypothesis of the leaf
+below** — see that leaf's falsity audit, where this square alone is refuted. -/
+theorem isPullback_relSection_curveBaseChangeMap {X S T T' : Scheme.{u}} {strX : X ⟶ S}
+    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') (x : RelPoint strX g) :
+    IsPullback (relSection (RelPoint.pre h hg x)) h (curveBaseChangeMap strX h hg)
+      (relSection x) := by
+  refine IsPullback.of_right (h₁₂ := curveBaseChangeProj strX g') ?_
+    (relSection_comp_curveBaseChangeMap h hg x) (isPullback_curveBaseChangeMap strX h hg).flip
+  rw [relSection_comp_proj, relSection_comp_proj]
+  exact IsPullback.of_horiz_isIso ⟨by simp⟩
+
 /-- **`𝒪(−σ)` COMMUTES WITH BASE CHANGE** (PROVEN 2026-07-31 over
 `nonempty_modPullback_sectionIdeal_of_isPullback` and
 `isInvertibleSheaf_sectionIdeal`; a sorry leaf from 2026-07-29 to 2026-07-31) —
@@ -4371,8 +4341,8 @@ theorem nonempty_modPullback_sectionIdeal {X S T T' : Scheme.{u}} {strX : X ⟶ 
   nonempty_modPullback_sectionIdeal_of_isPullback (relSection x)
     (relSection (RelPoint.pre h hg x)) (relSection_comp_proj x) (relSection_comp_proj _)
     (isPullback_curveBaseChangeMap strX h hg) (relSection_comp_curveBaseChangeMap h hg x)
-    (isClosedImmersion_relSection _hproper x)
-    (isInvertibleSheaf_sectionIdeal _hproper _hsmooth x)
+    (isClosedImmersion_relSection hproper x)
+    (isInvertibleSheaf_sectionIdeal hproper hsmooth x)
 
 /-- **THE ABEL–JACOBI MAP INTO `Pic`** (PROVEN 2026-07-29 over the two geometric
 leaves `isInvertibleSheaf_sectionIdeal` and `nonempty_modPullback_sectionIdeal`,
@@ -4902,7 +4872,7 @@ theorem isProper_of_relPicZeroGroupScheme {X P S J : Scheme.{u}} {strX : X ⟶ S
     IsProper jstr :=
   sorry
 
-/-- **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (PROVEN 2026-07-30 over
+/-! #### **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (PROVEN 2026-07-30 over
 `exists_relPicZeroGroupScheme` and `isProper_of_relPicZeroGroupScheme`; the
 audit above this subsection is the one written while it was one node, and still
 says what a reader needs).
@@ -4912,8 +4882,7 @@ first leaf produces, feed its data to the second to get properness, and
 `RelGroupSchemeStruct.toAbelianSchemeStruct` closes the gap.  The five clauses
 are `IsRelPicZeroIncl` unfolded, and they are literally the same propositions —
 `toAbelianSchemeStruct` leaves `add` and `zero` untouched, which is why no
-rewrite is needed anywhere below. -/
-`Pic(X_T)/Pic(T)` is a quotient set.
+rewrite is needed anywhere below.
 
 **CUT AGAIN, 2026-07-31, and this declaration is now the assembly.**  What is
 below is `exists_relPicZeroSubfunctor` plus the transport of the group law

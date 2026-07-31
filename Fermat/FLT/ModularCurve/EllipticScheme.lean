@@ -11318,7 +11318,7 @@ theorem exists_singular_of_Δ_eq_zero_charThree_b₂_eq_zero {K : Type} [Field K
     · refine h ?_
       linear_combination (E.a₁ * x + E.a₃) * h3
 
-/-- **A Weierstrass curve over a field in which `2` and `3` are invertible,
+/-! #### **A Weierstrass curve over a field in which `2` and `3` are invertible,
 with `Δ = 0`, has a RATIONAL singular point** (**PROVEN 2026-07-28** as the
 char-`0` half of leaf 3 of `exists_weierstrassModel_of_ellipticScheme`;
 `CharZero` weakened to `(2 : K) ≠ 0`, `(3 : K) ≠ 0` on 2026-07-30);
@@ -12490,11 +12490,11 @@ NOT VACUOUS: dropping `hzero` makes the statement FALSE — translation by a
 nonzero rational point of `A` is an isomorphism over the base and is not
 additive — and it is exactly `hzero` that the range chase in the consumer
 works to establish. -/
-theorem relPointPost_add {A B S : Scheme.{0}} {fA : A ⟶ S}
+theorem relPointPost_add {A B S : Scheme.{u}} {fA : A ⟶ S}
     {fB : B ⟶ S} (abA : AbelianSchemeStruct fA)
     (abB : AbelianSchemeStruct fB) (u : A ⟶ B) (hu : u ≫ fB = fA)
     (hzero : (abA.zero (𝟙 S)).1 ≫ u = (abB.zero (𝟙 S)).1)
-    {T : Scheme.{0}} {g : T ⟶ S} (x y : RelPoint fA g) :
+    {T : Scheme.{u}} {g : T ⟶ S} (x y : RelPoint fA g) :
     relPointPost u hu (abA.add x y)
       = abB.add (relPointPost u hu x) (relPointPost u hu y) := by
   have hq2 : Limits.pullback.snd fA fA ≫ fA = Limits.pullback.fst fA fA ≫ fA :=
@@ -12504,13 +12504,13 @@ theorem relPointPost_add {A B S : Scheme.{0}} {fA : A ⟶ S}
   set q : RelPoint fA (Limits.pullback.fst fA fA ≫ fA) :=
     ⟨Limits.pullback.snd fA fA, hq2⟩
   -- pointwise group facts, in the two abelian schemes
-  have haddzeroA : ∀ {T' : Scheme.{0}} {g' : T' ⟶ S}
+  have haddzeroA : ∀ {T' : Scheme.{u}} {g' : T' ⟶ S}
       (z : RelPoint fA g'), abA.add z (abA.zero g') = z := by
     intro T' g' z; rw [abA.add_comm, abA.zero_add]
-  have haddzeroB : ∀ {T' : Scheme.{0}} {g' : T' ⟶ S}
+  have haddzeroB : ∀ {T' : Scheme.{u}} {g' : T' ⟶ S}
       (z : RelPoint fB g'), abB.add z (abB.zero g') = z := by
     intro T' g' z; rw [abB.add_comm, abB.zero_add]
-  have haddnegB : ∀ {T' : Scheme.{0}} {g' : T' ⟶ S}
+  have haddnegB : ∀ {T' : Scheme.{u}} {g' : T' ⟶ S}
       (z : RelPoint fB g'), abB.add z (abB.neg z) = abB.zero g' := by
     intro T' g' z; rw [abB.add_comm, abB.neg_add]
   -- HALF 2: the universal instance, at the two projections of `A ×_S A`
