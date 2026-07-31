@@ -5362,8 +5362,33 @@ theorem hasInertiaLevelOneFlag_of_surjective_bialgHom
 set_option synthInstance.maxHeartbeats 1000000 in
 include hpodd in
 /-- **RAYNAUD, WITH BOTH HYPOTHESES ON THE CORNER: a connected finite flat Hopf order over
-`𝒪ᵖᵥ` whose OWN points carry a level-one inertia flag is of multiplicative type** (SORRY
-LEAF, and after this restatement it is the whole of `(R1)` and nothing else).
+`𝒪ᵖᵥ` whose OWN points carry a level-one inertia flag is of multiplicative type**
+(**PROVEN 2026-07-31**, one line, and NOT because any mathematics was done here — read on).
+
+**STATUS, 2026-07-31 — NO LONGER A SORRY LEAF, AND IT NEVER SHOULD HAVE BEEN ONE AFTER
+THE ABSTRACT CUT LANDED.** `isMultiplicativeType_of_connected_of_inertiaLevelOneFlag`
+above states exactly this over an ABSTRACT `A` with both hypotheses intrinsic, so this
+statement is the strict INSTANCE `A := G ⧸ cornerIdeal e₀` of it, and that is now its
+proof. Raynaud is unchanged and undischarged; it is that abstract leaf, and it alone.
+
+Two things this repair fixed, both of which were invisible to every frontier instrument
+(each counted this as an ordinary open leaf, because it emits a real
+`declaration uses 'sorry'` warning and its name matches nothing else in the tree):
+
+* this declaration had **NO CONSUMER**. The abstract cut re-pointed
+  `isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` below straight at the
+  abstract leaf, bypassing this one, while both docstrings went on describing the chain
+  as running through here. So it was a DEAD leaf — closing it moved the count and not the
+  project — and the two paragraphs that said otherwise were stale prose, not code;
+* consequently the consumer's `he₀`/`hε₀` were unused and the linter said so. Sending it
+  back through this statement restores the documented chain, puts this declaration in the
+  root cone (a proven declaration nothing reaches is free-floating, which this project
+  forbids), and spends `he₀`/`hε₀` again.
+
+**Do not read the `-1` on the frontier as progress on `(R1)`.** It is bookkeeping: one
+redundant instance of an open leaf stopped being counted separately from it. Judge the
+cluster by the abstract leaf above, which is where all four of the numbered steps below
+still live.
 
 **RESTATEMENT 2026-07-30, the second one this node has had.** On 2026-07-28 the `e₀`-specific
 `hprim₀` became the intrinsic `hconn`; today `hflag` moves from the AMBIENT `G` to the corner
@@ -5422,13 +5447,21 @@ characteristic-zero field `ℚᵖᵥ` every finite `ℚᵖᵥ`-algebra arising t
 corner inherits étaleness — but that inheritance is an unwritten lemma, and stating the
 hypothesis on `G` costs nothing and keeps this leaf a strict strengthening of its
 predecessor. A future fully-intrinsic version should drop `G` and `e₀` entirely and quantify
-over an abstract `A`; the only thing standing in the way is that one étale-descent step. -/
+over an abstract `A`; the only thing standing in the way is that one étale-descent step.
+
+**THAT FULLY-INTRINSIC VERSION NOW EXISTS** (2026-07-31):
+`isMultiplicativeType_of_connected_of_inertiaLevelOneFlag` above. It drops `G` and `e₀`
+exactly as this paragraph asked, and the étale-descent step turned out not to be needed at
+all — the hypothesis was simply omitted, because `ℚᵖᵥ` has characteristic zero and Cartier's
+theorem makes `Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] A)` automatic, so it is assumed inside that
+proof rather than carried in its signature. The `[Algebra.Etale …]` binder retained here is
+therefore vestigial for the mathematics and load-bearing only for the call site. -/
 theorem isMultiplicativeType_corner_of_connected_of_cornerLevelOneFlag
     (G : Type) [CommRing G]
     [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
     [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
-    (e₀ : G) (he₀ : IsIdempotentElem e₀)
-    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (e₀ : G) (_he₀ : IsIdempotentElem e₀)
+    (_hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
     [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
     [Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
     [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
@@ -5436,7 +5469,12 @@ theorem isMultiplicativeType_corner_of_connected_of_cornerLevelOneFlag
     (hflag : HasInertiaLevelOneFlag p (G ⧸ HopfAlgebra.cornerIdeal e₀))
     (hconn : ∀ z : G ⧸ HopfAlgebra.cornerIdeal e₀, IsIdempotentElem z → z = 0 ∨ z = 1) :
     HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
-  sorry
+  -- Both hypotheses are already ON the corner, so `G` and `e₀` survive here only as the
+  -- packaging the call site below speaks in: every remaining hypothesis about them
+  -- (étaleness of the ambient generic fibre, `_he₀`, `_hε₀`) is consumed THERE, in
+  -- building the corner's flag, and by nothing in this proof.  Hence the underscores.
+  isMultiplicativeType_of_connected_of_inertiaLevelOneFlag hpodd
+    (G ⧸ HopfAlgebra.cornerIdeal e₀) hflag hconn
 
 set_option synthInstance.maxHeartbeats 1000000 in
 include hpodd in
@@ -5540,7 +5578,10 @@ moved:
 * `hflag` WAS **NOT** ALREADY INTRINSIC HERE, and that was the single remaining obstruction
   to route (a). **IT IS NOW REMOVED (2026-07-30)**, and this statement is consequently no
   longer a sorry leaf: see `isMultiplicativeType_corner_of_connected_of_cornerLevelOneFlag`
-  just below, which is the same statement with `hflag` asked for ON THE CORNER, and
+  just ABOVE (this said "just below" until 2026-07-31, when the declaration it names was
+  proven and this theorem was re-pointed through it; CLAUDE.md's rule that a docstring's
+  "above"/"below" is an ORDER ASSERTION to check, not prose, is why the word was noticed),
+  which is the same statement with `hflag` asked for ON THE CORNER, and
   `hasInertiaLevelOneFlag_of_surjective_bialgHom` above, which is the bridge that
   paragraph described as "TRUE but unwritten" — `cornerIdeal e₀` is a Hopf ideal, so
   precomposition with the quotient map `G → G ⧸ (1 - e₀)` is an INJECTIVE
@@ -5560,8 +5601,14 @@ theorem isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag
     [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
     (hconn : ∀ z : G ⧸ HopfAlgebra.cornerIdeal e₀, IsIdempotentElem z → z = 0 ∨ z = 1) :
     HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
-  isMultiplicativeType_of_connected_of_inertiaLevelOneFlag hpodd
-    (G ⧸ HopfAlgebra.cornerIdeal e₀)
+  -- RE-POINTED 2026-07-31 through the corner-flag form ABOVE, which is what this
+  -- docstring has always said this theorem is.  It used to call the abstract leaf
+  -- directly, which left `isMultiplicativeType_corner_of_connected_of_cornerLevelOneFlag`
+  -- with no consumer anywhere in the tree (hence free-floating) and left `he₀`/`hε₀`
+  -- unused here; going through it restores both.  The hop carries no mathematics — the
+  -- corner form is a strict INSTANCE of the abstract leaf — but it is where the
+  -- ambient-flag-to-corner-flag bridge is spent, which is a real content boundary.
+  isMultiplicativeType_corner_of_connected_of_cornerLevelOneFlag hpodd G e₀ he₀ hε₀
     (hasInertiaLevelOneFlag_quotient_cornerIdeal G hflag e₀) hconn
 
 set_option synthInstance.maxHeartbeats 1000000 in
