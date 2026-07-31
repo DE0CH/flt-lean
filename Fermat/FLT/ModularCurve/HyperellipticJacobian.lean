@@ -8523,40 +8523,605 @@ lemma divAct_bcDiv (σ : QbarGal) (δ : D.Divisors) :
   rw [divAct_apply, bcDiv_apply, bcDiv_apply]
   rw [← gp.below_placeAct σ ((gp.placeAct σ).symm w), Equiv.apply_symm_apply]
 
-/-- **LEAF (weak Mordell–Weil, 2a of 4): every place of `F` lies under a geometric place**,
-i.e. `below` is surjective.
+namespace PlaceExtend
 
-`GeomPic.ord_emb` says that a geometric place RESTRICTS to a place of `F` with no
-ramification; this is the converse direction, that the restriction map is ONTO. Together they
-say `below` realises `Places(F̄) ↠ Places(F)`, which is the fibration
-[Stichtenoth, *Algebraic Function Fields and Codes*, III.6.3] describes — the sharp form
-counts the fibre over `v` as `deg v`, and only NON-EMPTINESS is needed here.
+open Polynomial IsDedekindDomain
+open PlaceFromDedekind PlaceClassify
+open scoped WithZero
 
-Route.  This is the extension theorem for valuations, specialised to a constant field
-extension.  Given `v`, its valuation ring `O_v ⊆ F` extends to a valuation ring of
-`F̄ = F·ℚ̄` (Chevalley; concretely, `O_v ⊗_ℚ L` is contained in a valuation ring of `F·L` for
-each finite `L/ℚ`, and the system is directed), and the extension is again DISCRETE and
-NORMALISED because the extension is by constants — the same unramifiedness that `ord_emb`
-records for the places that do exist.  `Dbar.ord_complete` then turns the resulting valuation
-FUNCTION into a place, exactly as `ConstFieldExt.exists_below` does in the other direction.
+section Poly
+
+variable {K K' : Type} [Field K] [Field K'] [Algebra K K']
+variable [Algebra K[X] K'[X]]
+  (hmap : ∀ p : K[X], algebraMap K[X] K'[X] p = p.map (algebraMap K K'))
+
+include hmap
+
+/-- With the coefficientwise algebra structure, `K[X] ⊆ K'[X]` is a scalar tower over `K`. -/
+lemma isScalarTower_poly : IsScalarTower K K[X] K'[X] :=
+  IsScalarTower.of_algebraMap_eq fun a => by
+    rw [hmap]
+    simp [Polynomial.algebraMap_eq]
+
+/-- **`K'[X]` is integral over `K[X]` when `K'` is integral over `K`** — the coefficients are
+integral and `X` is in the base, so every monomial is, and integral elements form a ring. -/
+lemma isIntegral_poly [Algebra.IsIntegral K K'] : Algebra.IsIntegral K[X] K'[X] := by
+  haveI := isScalarTower_poly hmap
+  constructor
+  intro q
+  have hX : IsIntegral K[X] (X : K'[X]) := by
+    have : (X : K'[X]) = algebraMap K[X] K'[X] X := by rw [hmap]; simp
+    rw [this]; exact isIntegral_algebraMap
+  have hC : ∀ c : K', IsIntegral K[X] (C c : K'[X]) := by
+    intro c
+    have h1 : IsIntegral K c := Algebra.IsIntegral.isIntegral c
+    have h2 : IsIntegral K (algebraMap K' K'[X] c) :=
+      h1.map (IsScalarTower.toAlgHom K K' K'[X])
+    have h3 : (algebraMap K' K'[X] c) = C c := rfl
+    rw [h3] at h2
+    exact h2.tower_top
+  induction q using Polynomial.induction_on' with
+  | add p q hp hq => exact hp.add hq
+  | monomial n c =>
+    rw [← C_mul_X_pow_eq_monomial]
+    exact (hC c).mul (hX.pow n)
+
+end Poly
+
+section Main
+
+variable {K K' F F' : Type} [Field K] [Field K'] [Field F] [Field F']
+  [Algebra K F] [Algebra K[X] F] [IsScalarTower K K[X] F]
+  [Algebra (RatFunc K) F] [IsScalarTower K[X] (RatFunc K) F]
+  [FiniteDimensional (RatFunc K) F] [Algebra.IsSeparable (RatFunc K) F]
+  [Algebra K' F'] [Algebra K'[X] F'] [IsScalarTower K' K'[X] F']
+  [Algebra (RatFunc K') F'] [IsScalarTower K'[X] (RatFunc K') F']
+  [FiniteDimensional (RatFunc K') F'] [Algebra.IsSeparable (RatFunc K') F']
+  [Algebra K K'] [Algebra.IsIntegral K K']
+
+omit [Algebra (RatFunc K) F] [IsScalarTower K[X] (RatFunc K) F] [FiniteDimensional (RatFunc K) F]
+  [Algebra.IsSeparable (RatFunc K) F] [Algebra (RatFunc K') F']
+  [IsScalarTower K'[X] (RatFunc K') F'] [FiniteDimensional (RatFunc K') F']
+  [Algebra.IsSeparable (RatFunc K') F'] [Algebra.IsIntegral K K'] in
+/-- **The embedding takes `K[X]` to `K'[X]` coefficientwise**, as an equality of ring
+homomorphisms `K[X] →+* F'`.  Both sides are determined by their values on the constants and
+on `X`, which is exactly what the two hypotheses give. -/
+lemma comp_algebraMap_poly (emb : F →+* F')
+    (hembK : ∀ a : K, emb (algebraMap K F a) = algebraMap K' F' (algebraMap K K' a))
+    (hembX : emb (algebraMap K[X] F X) = algebraMap K'[X] F' X) :
+    emb.comp (algebraMap K[X] F)
+      = (algebraMap K'[X] F').comp (Polynomial.mapRingHom (algebraMap K K')) := by
+  refine Polynomial.ringHom_ext (fun a => ?_) ?_
+  · simp only [RingHom.coe_comp, Function.comp_apply, coe_mapRingHom, Polynomial.map_C]
+    have e1 : algebraMap K[X] F (C a) = algebraMap K F a := by
+      rw [show (C a : K[X]) = algebraMap K K[X] a by simp [Polynomial.algebraMap_eq],
+        ← IsScalarTower.algebraMap_apply K K[X] F]
+    have e2 : algebraMap K'[X] F' (C (algebraMap K K' a))
+        = algebraMap K' F' (algebraMap K K' a) := by
+      rw [show (C (algebraMap K K' a) : K'[X]) = algebraMap K' K'[X] (algebraMap K K' a) by
+        simp [Polynomial.algebraMap_eq], ← IsScalarTower.algebraMap_apply K' K'[X] F']
+    rw [e1, e2, hembK]
+  · simpa using hembX
+
+omit [Algebra (RatFunc K) F] [IsScalarTower K[X] (RatFunc K) F] [FiniteDimensional (RatFunc K) F]
+  [Algebra.IsSeparable (RatFunc K) F] [Algebra (RatFunc K') F']
+  [IsScalarTower K'[X] (RatFunc K') F'] [FiniteDimensional (RatFunc K') F']
+  [Algebra.IsSeparable (RatFunc K') F'] [Algebra.IsIntegral K K'] in
+/-- The embedding takes elements integral over `K[X]` to elements integral over `K'[X]`. -/
+lemma isIntegral_emb (emb : F →+* F')
+    (hembK : ∀ a : K, emb (algebraMap K F a) = algebraMap K' F' (algebraMap K K' a))
+    (hembX : emb (algebraMap K[X] F X) = algebraMap K'[X] F' X) {z : F}
+    (hz : IsIntegral K[X] z) : IsIntegral K'[X] (emb z) := by
+  obtain ⟨p, hmonic, hroot⟩ := hz
+  refine ⟨p.map (Polynomial.mapRingHom (algebraMap K K')), hmonic.map _, ?_⟩
+  rw [Polynomial.eval₂_map, ← comp_algebraMap_poly emb hembK hembX, ← Polynomial.hom_eval₂,
+    hroot, map_zero]
+
+/-- **Every place of `F` regular at the abscissa is dominated by a place of `F'`.**
+
+`emb` presents `F'` over `F` as a constant field extension: `K'` is integral over `K` and the
+abscissa goes to the abscissa.  The place produced restricts along `emb` to a POSITIVE MULTIPLE
+of `o`; that the multiple is `1` is not proven here (and is not needed by the consumer, which
+reads it off `GeomPic.ord_emb` instead).
+
+The construction is lying over, in the rings of integers of the two towers: `o` is the adic
+valuation of a height-one prime `𝔭` of `A = integralClosure K[X] F`, the ring
+`A' = integralClosure K'[X] F'` is integral over `A`, and a prime of `A'` over `𝔭` gives the
+place. -/
+theorem exists_isPlaceFun_comp_emb (emb : F →+* F')
+    (hembK : ∀ a : K, emb (algebraMap K F a) = algebraMap K' F' (algebraMap K K' a))
+    (hembX : emb (algebraMap K[X] F X) = algebraMap K'[X] F' X)
+    {o : F → ℤ} (ho : IsPlaceFun K F o) (hot : 0 ≤ o (algebraMap K[X] F X)) :
+    ∃ w : F' → ℤ, IsPlaceFun K' F' w ∧ ∃ e : ℤ, 0 < e ∧
+      ∀ z : F, z ≠ 0 → w (emb z) = e * o z := by
+  classical
+  -- `emb` carries integral elements to integral elements
+  have hemb_int : ∀ {z : F}, IsIntegral K[X] z → IsIntegral K'[X] (emb z) :=
+    fun {_} hz => isIntegral_emb emb hembK hembX hz
+  have hembinj : Function.Injective emb := emb.injective
+  -- the coefficientwise tower `K[X] ⊆ K'[X] ⊆ F'`
+  letI : Algebra K[X] K'[X] := (Polynomial.mapRingHom (algebraMap K K')).toAlgebra
+  have hmapKX : ∀ p : K[X], algebraMap K[X] K'[X] p = p.map (algebraMap K K') := fun _ => rfl
+  haveI : Algebra.IsIntegral K[X] K'[X] := isIntegral_poly hmapKX
+  letI : Algebra K[X] F' :=
+    ((algebraMap K'[X] F').comp (Polynomial.mapRingHom (algebraMap K K'))).toAlgebra
+  haveI : IsScalarTower K[X] K'[X] F' := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  -- the two rings of integers, and the map between them
+  have hcoeA : ∀ x : ↥(integralClosure K[X] F), algebraMap (↥(integralClosure K[X] F)) F x
+      = (x : F) := fun _ => rfl
+  have hcoeA' : ∀ x : ↥(integralClosure K'[X] F'), algebraMap (↥(integralClosure K'[X] F')) F' x
+      = (x : F') := fun _ => rfl
+  let ι : ↥(integralClosure K[X] F) →+* ↥(integralClosure K'[X] F') :=
+    { toFun := fun a => ⟨emb (a : F), hemb_int a.2⟩
+      map_one' := by ext; simp
+      map_mul' := fun a b => by ext; simp
+      map_zero' := by ext; simp
+      map_add' := fun a b => by ext; simp }
+  have hιcoe : ∀ a : ↥(integralClosure K[X] F), ((ι a : ↥(integralClosure K'[X] F')) : F')
+      = emb (a : F) := fun _ => rfl
+  have hιinj : Function.Injective ι := by
+    intro a b hab
+    exact Subtype.ext (hembinj (by simpa [hιcoe] using congrArg Subtype.val hab))
+  letI : Algebra (↥(integralClosure K[X] F)) (↥(integralClosure K'[X] F')) := ι.toAlgebra
+  letI : Algebra (↥(integralClosure K[X] F)) F' :=
+    (emb.comp (algebraMap (↥(integralClosure K[X] F)) F)).toAlgebra
+  haveI : IsScalarTower (↥(integralClosure K[X] F)) (↥(integralClosure K'[X] F')) F' :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower K[X] (↥(integralClosure K[X] F)) F' := by
+    refine IsScalarTower.of_algebraMap_eq fun p => ?_
+    show algebraMap K'[X] F' (p.map (algebraMap K K'))
+      = emb (algebraMap (↥(integralClosure K[X] F)) F (algebraMap K[X] _ p))
+    rw [← IsScalarTower.algebraMap_apply K[X] (↥(integralClosure K[X] F)) F,
+      show emb (algebraMap K[X] F p) = _ from
+        congrArg (fun φ : K[X] →+* F' => φ p) (comp_algebraMap_poly emb hembK hembX)]
+    rfl
+  haveI : Algebra.IsIntegral (↥(integralClosure K[X] F)) (↥(integralClosure K'[X] F')) := by
+    constructor
+    intro z
+    have h2 : IsIntegral K[X] ((z : F')) := isIntegral_trans (A := K'[X]) _ z.2
+    have h3 : IsIntegral (↥(integralClosure K[X] F)) ((z : F')) := h2.tower_top
+    exact (isIntegral_algebraMap_iff (A := ↥(integralClosure K'[X] F')) (B := F')
+      (fun _ _ h => Subtype.ext h)).1 h3
+  -- the classification of `o` as an adic valuation
+  obtain ⟨pv, hp⟩ := PlaceClassify.exists_ordAt_eq ho (t := algebraMap K[X] F X) rfl hot
+  haveI : pv.asIdeal.IsPrime := pv.isPrime
+  -- lying over
+  have hinjAlg : Function.Injective
+      (algebraMap (↥(integralClosure K[X] F)) (↥(integralClosure K'[X] F'))) := hιinj
+  obtain ⟨Q, -, hQprime, hQcomap⟩ :=
+    Ideal.exists_ideal_over_prime_of_isIntegral (R := ↥(integralClosure K[X] F))
+      (S := ↥(integralClosure K'[X] F')) pv.asIdeal ⊥ (by
+        rw [← RingHom.ker_eq_comap_bot,
+          (RingHom.injective_iff_ker_eq_bot (algebraMap (↥(integralClosure K[X] F))
+            (↥(integralClosure K'[X] F')))).1 hinjAlg]
+        exact bot_le)
+  have hQ0 : Q ≠ ⊥ := by
+    intro h
+    refine pv.ne_bot ?_
+    rw [← hQcomap, h, Ideal.comap_bot_of_injective _ hinjAlg]
+  set q : HeightOneSpectrum (↥(integralClosure K'[X] F')) := ⟨Q, hQprime, hQ0⟩ with hq
+  refine ⟨ordAt (F := F') q, isPlaceFun_ordAt q, ?_⟩
+  -- the valuation ring of `o` maps into that of `ordAt q`
+  have key : ∀ z : F, 0 ≤ o z → 0 ≤ ordAt (F := F') q (emb z) := by
+    intro z hz
+    rcases eq_or_ne z 0 with rfl | hz0
+    · rw [map_zero, ordAt_zero]
+    have hzp : 0 ≤ ordAt (F := F) pv z := by rw [← hp]; exact hz
+    have hval : pv.valuation F z ≤ 1 := by
+      have hne : pv.valuation F z ≠ 0 := valuation_ne_zero pv hz0
+      refine (WithZero.log_le_log hne (one_ne_zero (α := ℤᵐ⁰))).1 ?_
+      simp only [WithZero.log_one]
+      simp only [ordAt] at hzp
+      omega
+    obtain ⟨n, d, hnd⟩ := pv.exists_primeCompl_mul_eq_of_integer z hval
+    rw [hcoeA, hcoeA] at hnd
+    have hd0 : ((d : ↥(integralClosure K[X] F)) : F) ≠ 0 := by
+      intro h0
+      have : (d : ↥(integralClosure K[X] F)) = 0 := Subtype.ext h0
+      exact d.2 (this ▸ Submodule.zero_mem _)
+    have hembd : emb ((d : ↥(integralClosure K[X] F)) : F) ≠ 0 := fun h =>
+      hd0 (hembinj (by simpa using h))
+    have hembz : emb z ≠ 0 := fun h => hz0 (hembinj (by simpa using h))
+    -- the denominator is a unit at `q`
+    have hwd : ordAt (F := F') q (emb ((d : ↥(integralClosure K[X] F)) : F)) = 0 := by
+      have hge : 0 ≤ ordAt (F := F') q (emb ((d : ↥(integralClosure K[X] F)) : F)) :=
+        ordAt_nonneg_of_isIntegral q (hemb_int (d : ↥(integralClosure K[X] F)).2)
+      by_contra hne
+      have hpos : 0 < ordAt (F := F') q (emb ((d : ↥(integralClosure K[X] F)) : F)) :=
+        lt_of_le_of_ne hge (Ne.symm hne)
+      have hmem := PlaceClassify.mem_of_ordAt_pos q
+        (a := ι (d : ↥(integralClosure K[X] F))) (by rw [hιcoe]; exact hembd)
+        (by rw [hιcoe]; exact hpos)
+      have hd' : ((d : ↥(integralClosure K[X] F))) ∈ Ideal.comap
+          (algebraMap (↥(integralClosure K[X] F)) (↥(integralClosure K'[X] F'))) Q := hmem
+      rw [hQcomap] at hd'
+      exact d.2 hd'
+    have hwn : 0 ≤ ordAt (F := F') q (emb ((n : ↥(integralClosure K[X] F)) : F)) :=
+      ordAt_nonneg_of_isIntegral q (hemb_int n.2)
+    have hmul : emb z * emb ((d : ↥(integralClosure K[X] F)) : F)
+        = emb ((n : ↥(integralClosure K[X] F)) : F) := by rw [← map_mul, hnd]
+    have hsplit := ordAt_mul (F := F') q (emb z)
+      (emb ((d : ↥(integralClosure K[X] F)) : F)) hembz hembd
+    rw [hmul, hwd] at hsplit
+    omega
+  -- hence it restricts to a multiple of `o`
+  obtain ⟨π, hπ⟩ := ho.normalised
+  have hπ0 : π ≠ 0 := by intro h0; rw [h0, ho.map_zero] at hπ; omega
+  have hembπ : emb π ≠ 0 := fun h => hπ0 (hembinj (by simpa using h))
+  have hunit : ∀ z : F, z ≠ 0 → o z = 0 → ordAt (F := F') q (emb z) = 0 := by
+    intro z hz hoz
+    have hembz : emb z ≠ 0 := fun h => hz (hembinj (by simpa using h))
+    have h1 : 0 ≤ ordAt (F := F') q (emb z) := key z (le_of_eq hoz.symm)
+    have h2 : 0 ≤ ordAt (F := F') q (emb z⁻¹) := key z⁻¹ (by
+      rw [isPlaceFun_inv ho hz, hoz]; simp)
+    rw [map_inv₀, isPlaceFun_inv (isPlaceFun_ordAt (K := K') q) hembz] at h2
+    omega
+  have hscale : ∀ z : F, z ≠ 0 →
+      ordAt (F := F') q (emb z) = ordAt (F := F') q (emb π) * o z := by
+    intro z hz
+    have hzp0 : (π ^ (o z) : F) ≠ 0 := zpow_ne_zero _ hπ0
+    have hu : z * (π ^ (o z))⁻¹ ≠ 0 := mul_ne_zero hz (inv_ne_zero hzp0)
+    have hou : o (z * (π ^ (o z))⁻¹) = 0 := by
+      rw [ho.map_mul _ _ hz (inv_ne_zero hzp0), isPlaceFun_inv ho hzp0,
+        isPlaceFun_zpow ho hπ0, hπ]
+      ring
+    have hres := hunit _ hu hou
+    have hembz : emb z ≠ 0 := fun h => hz (hembinj (by simpa using h))
+    have hembzp : emb (π ^ (o z) : F) ≠ 0 := fun h => hzp0 (hembinj (by simpa using h))
+    rw [map_mul, map_inv₀, isPlaceFun_ordAt (K := K') q |>.map_mul _ _ hembz
+      (inv_ne_zero hembzp), isPlaceFun_inv (isPlaceFun_ordAt (K := K') q) hembzp,
+      map_zpow₀, isPlaceFun_zpow (isPlaceFun_ordAt (K := K') q) hembπ] at hres
+    rw [mul_comm]
+    omega
+  refine ⟨ordAt (F := F') q (emb π), ?_, hscale⟩
+  -- and the multiple is positive, because the prime is
+  obtain ⟨a, ha, ha0⟩ := Submodule.ne_bot_iff _ |>.1 pv.ne_bot
+  have haF : ((a : ↥(integralClosure K[X] F)) : F) ≠ 0 := fun h => ha0 (Subtype.ext h)
+  have hιa0 : ι a ≠ 0 := fun h => ha0 (hιinj (by rw [h, map_zero]))
+  have hpos : 0 < ordAt (F := F') q (emb (a : F)) := by
+    have := ordAt_pos_of_mem (F := F') q (r := ι a) (by rw [← hQcomap] at ha; exact ha) hιa0
+    rwa [hcoeA', hιcoe] at this
+  have hoa : 0 ≤ o (a : F) := by
+    rw [hp]
+    exact ordAt_nonneg_of_isIntegral pv a.2
+  have hsc := hscale (a : F) haF
+  rcases eq_or_lt_of_le (key π (by omega)) with h | h
+  · rw [← h, zero_mul] at hsc
+    omega
+  · exact h
+
+
+/-- **The chart-level form of `exists_isPlaceFun_comp_emb`**: the tower instances that theorem
+quantifies over are installed here from raw chart data, on both sides at once.
+
+The chart data is exactly what `finite_isPlaceFun_aux` asks for: a transcendental `t` playing
+the role of the abscissa, an ordinate `yy` generating `F` over `K(t)` whose square lies in
+`K(t)` (as `P/Q`).  Both `t = x` and `t = 1/x` qualify, which is what lets the caller cover
+every place. -/
+theorem exists_isPlaceFun_comp_emb_of_chart
+    {K K' F F' : Type} [Field K] [Field K'] [Field F] [Field F']
+    [Algebra K F] [Algebra K' F'] [Algebra K K'] [Algebra.IsIntegral K K']
+    (h2 : (2 : K) ≠ 0) (h2' : (2 : K') ≠ 0)
+    {t yy : F} (htr : Transcendental K t) (hyy0 : yy ≠ 0)
+    (hgen : ∀ z : F, ∃ a b d : K[X], aeval t d ≠ 0 ∧
+      z * aeval t d = aeval t a + aeval t b * yy)
+    {P Q : K[X]} (hQ : aeval t Q ≠ 0) (hPQ : yy ^ 2 * aeval t Q = aeval t P)
+    {t' yy' : F'} (htr' : Transcendental K' t') (hyy0' : yy' ≠ 0)
+    (hgen' : ∀ z : F', ∃ a b d : K'[X], aeval t' d ≠ 0 ∧
+      z * aeval t' d = aeval t' a + aeval t' b * yy')
+    {P' Q' : K'[X]} (hQ' : aeval t' Q' ≠ 0) (hPQ' : yy' ^ 2 * aeval t' Q' = aeval t' P')
+    (emb : F →+* F')
+    (hembK : ∀ a : K, emb (algebraMap K F a) = algebraMap K' F' (algebraMap K K' a))
+    (hembt : emb t = t')
+    {o : F → ℤ} (ho : IsPlaceFun K F o) (hot : 0 ≤ o t) :
+    ∃ w : F' → ℤ, IsPlaceFun K' F' w ∧ ∃ e : ℤ, 0 < e ∧
+      ∀ z : F, z ≠ 0 → w (emb z) = e * o z := by
+  classical
+  letI : Algebra K[X] F := (Polynomial.aeval t : K[X] →ₐ[K] F).toRingHom.toAlgebra
+  have halgL : ∀ p : K[X], algebraMap K[X] F p = Polynomial.aeval t p := fun _ => rfl
+  haveI : IsScalarTower K K[X] F :=
+    IsScalarTower.of_algebraMap_eq fun a => by simp [halgL]
+  have hinjL : Function.Injective (algebraMap K[X] F) := by
+    rw [injective_iff_map_eq_zero]
+    intro p hp
+    by_contra hp0
+    exact htr ⟨p, hp0, by rw [← halgL]; exact hp⟩
+  letI : Algebra (RatFunc K) F := (IsFractionRing.lift (A := K[X]) hinjL).toAlgebra
+  haveI : IsScalarTower K[X] (RatFunc K) F :=
+    IsScalarTower.of_algebraMap_eq fun p => (IsFractionRing.lift_algebraMap hinjL p).symm
+  have hdownL : ∀ p : K[X], algebraMap (RatFunc K) F (algebraMap K[X] (RatFunc K) p)
+      = Polynomial.aeval t p := fun p => by rw [← IsScalarTower.algebraMap_apply, halgL]
+  have hQ0L : algebraMap K[X] (RatFunc K) Q ≠ 0 := fun h0 => hQ (by rw [← hdownL, h0, map_zero])
+  obtain ⟨cL, hcL⟩ : ∃ c : RatFunc K,
+      algebraMap K[X] (RatFunc K) P / algebraMap K[X] (RatFunc K) Q = c := ⟨_, rfl⟩
+  have hcFL : algebraMap (RatFunc K) F cL = yy ^ 2 := by
+    rw [← hcL, map_div₀, hdownL, hdownL, ← hPQ]
+    field_simp
+  have hc0L : cL ≠ 0 := by
+    intro h0
+    rw [h0, map_zero] at hcFL
+    exact (pow_ne_zero 2 hyy0) hcFL.symm
+  have hrootL : (Polynomial.aeval yy)
+      (Polynomial.X ^ 2 - Polynomial.C cL : (RatFunc K)[X]) = 0 := by
+    rw [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, hcFL, sub_self]
+  have hintL : IsIntegral (RatFunc K) yy :=
+    ⟨_, Polynomial.monic_X_pow_sub_C cL two_ne_zero, by
+      simpa [Polynomial.aeval_def] using hrootL⟩
+  have hadjL : IntermediateField.adjoin (RatFunc K) {yy} = ⊤ := by
+    refine eq_top_iff.mpr fun z _ => ?_
+    obtain ⟨a, b, d, hd, hz⟩ := hgen z
+    refine (IntermediateField.mem_adjoin_simple_iff (RatFunc K) z).2
+      ⟨Polynomial.C (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        + Polynomial.C (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+          * Polynomial.X, 1, ?_⟩
+    have e1 : algebraMap (RatFunc K) F
+        (algebraMap K[X] (RatFunc K) a / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval t a / Polynomial.aeval t d := by rw [map_div₀, hdownL, hdownL]
+    have e2 : algebraMap (RatFunc K) F
+        (algebraMap K[X] (RatFunc K) b / algebraMap K[X] (RatFunc K) d)
+        = Polynomial.aeval t b / Polynomial.aeval t d := by rw [map_div₀, hdownL, hdownL]
+    simp only [map_add, map_mul, Polynomial.aeval_C, Polynomial.aeval_X, map_one, div_one, e1, e2]
+    field_simp
+    linear_combination hz
+  haveI : FiniteDimensional (RatFunc K) F := by
+    have h1 := IntermediateField.adjoin.finiteDimensional hintL
+    rw [hadjL] at h1
+    exact (IntermediateField.topEquiv (F := RatFunc K) (E := F)).toLinearEquiv.finiteDimensional
+  have hsepyyL : IsSeparable (RatFunc K) yy := by
+    have h2K : (((2 : ℕ)) : K) ≠ 0 := by push_cast; exact h2
+    have h2' : (((2 : ℕ)) : RatFunc K) ≠ 0 := by
+      rw [← map_natCast (algebraMap K (RatFunc K)) 2]
+      exact fun hh => h2K ((algebraMap K (RatFunc K)).injective (by rw [hh, map_zero]))
+    exact (Polynomial.separable_X_pow_sub_C _ h2' hc0L).of_dvd (minpoly.dvd _ _ hrootL)
+  haveI : Algebra.IsSeparable (RatFunc K) F := by
+    have h1 : Algebra.IsSeparable (RatFunc K) (IntermediateField.adjoin (RatFunc K) {yy}) :=
+      (IntermediateField.isSeparable_adjoin_simple_iff_isSeparable (RatFunc K) F).2 hsepyyL
+    rw [hadjL] at h1
+    exact Algebra.IsSeparable.of_algHom (F := RatFunc K) (E := F)
+      (↥(⊤ : IntermediateField (RatFunc K) F))
+      (f := (IntermediateField.topEquiv (F := RatFunc K) (E := F)).symm.toAlgHom)
+  have hxxXL : algebraMap K[X] F Polynomial.X = t := by rw [halgL]; simp
+  letI : Algebra K'[X] F' := (Polynomial.aeval t' : K'[X] →ₐ[K'] F').toRingHom.toAlgebra
+  have halgR : ∀ p : K'[X], algebraMap K'[X] F' p = Polynomial.aeval t' p := fun _ => rfl
+  haveI : IsScalarTower K' K'[X] F' :=
+    IsScalarTower.of_algebraMap_eq fun a => by simp [halgR]
+  have hinjR : Function.Injective (algebraMap K'[X] F') := by
+    rw [injective_iff_map_eq_zero]
+    intro p hp
+    by_contra hp0
+    exact htr' ⟨p, hp0, by rw [← halgR]; exact hp⟩
+  letI : Algebra (RatFunc K') F' := (IsFractionRing.lift (A := K'[X]) hinjR).toAlgebra
+  haveI : IsScalarTower K'[X] (RatFunc K') F' :=
+    IsScalarTower.of_algebraMap_eq fun p => (IsFractionRing.lift_algebraMap hinjR p).symm
+  have hdownR : ∀ p : K'[X], algebraMap (RatFunc K') F' (algebraMap K'[X] (RatFunc K') p)
+      = Polynomial.aeval t' p := fun p => by rw [← IsScalarTower.algebraMap_apply, halgR]
+  have hQ0R : algebraMap K'[X] (RatFunc K') Q' ≠ 0 := fun h0 => hQ' (by rw [← hdownR, h0, map_zero])
+  obtain ⟨cR, hcR⟩ : ∃ c : RatFunc K',
+      algebraMap K'[X] (RatFunc K') P' / algebraMap K'[X] (RatFunc K') Q' = c := ⟨_, rfl⟩
+  have hcFR : algebraMap (RatFunc K') F' cR = yy' ^ 2 := by
+    rw [← hcR, map_div₀, hdownR, hdownR, ← hPQ']
+    field_simp
+  have hc0R : cR ≠ 0 := by
+    intro h0
+    rw [h0, map_zero] at hcFR
+    exact (pow_ne_zero 2 hyy0') hcFR.symm
+  have hrootR : (Polynomial.aeval yy')
+      (Polynomial.X ^ 2 - Polynomial.C cR : (RatFunc K')[X]) = 0 := by
+    rw [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, hcFR, sub_self]
+  have hintR : IsIntegral (RatFunc K') yy' :=
+    ⟨_, Polynomial.monic_X_pow_sub_C cR two_ne_zero, by
+      simpa [Polynomial.aeval_def] using hrootR⟩
+  have hadjR : IntermediateField.adjoin (RatFunc K') {yy'} = ⊤ := by
+    refine eq_top_iff.mpr fun z _ => ?_
+    obtain ⟨a, b, d, hd, hz⟩ := hgen' z
+    refine (IntermediateField.mem_adjoin_simple_iff (RatFunc K') z).2
+      ⟨Polynomial.C (algebraMap K'[X] (RatFunc K') a / algebraMap K'[X] (RatFunc K') d)
+        + Polynomial.C (algebraMap K'[X] (RatFunc K') b / algebraMap K'[X] (RatFunc K') d)
+          * Polynomial.X, 1, ?_⟩
+    have e1 : algebraMap (RatFunc K') F'
+        (algebraMap K'[X] (RatFunc K') a / algebraMap K'[X] (RatFunc K') d)
+        = Polynomial.aeval t' a / Polynomial.aeval t' d := by rw [map_div₀, hdownR, hdownR]
+    have e2 : algebraMap (RatFunc K') F'
+        (algebraMap K'[X] (RatFunc K') b / algebraMap K'[X] (RatFunc K') d)
+        = Polynomial.aeval t' b / Polynomial.aeval t' d := by rw [map_div₀, hdownR, hdownR]
+    simp only [map_add, map_mul, Polynomial.aeval_C, Polynomial.aeval_X, map_one, div_one, e1, e2]
+    field_simp
+    linear_combination hz
+  haveI : FiniteDimensional (RatFunc K') F' := by
+    have h1 := IntermediateField.adjoin.finiteDimensional hintR
+    rw [hadjR] at h1
+    exact (IntermediateField.topEquiv (F := RatFunc K') (E := F')).toLinearEquiv.finiteDimensional
+  have hsepyyR : IsSeparable (RatFunc K') yy' := by
+    have h2K : (((2 : ℕ)) : K') ≠ 0 := by push_cast; exact h2'
+    have h2' : (((2 : ℕ)) : RatFunc K') ≠ 0 := by
+      rw [← map_natCast (algebraMap K' (RatFunc K')) 2]
+      exact fun hh => h2K ((algebraMap K' (RatFunc K')).injective (by rw [hh, map_zero]))
+    exact (Polynomial.separable_X_pow_sub_C _ h2' hc0R).of_dvd (minpoly.dvd _ _ hrootR)
+  haveI : Algebra.IsSeparable (RatFunc K') F' := by
+    have h1 : Algebra.IsSeparable (RatFunc K') (IntermediateField.adjoin (RatFunc K') {yy'}) :=
+      (IntermediateField.isSeparable_adjoin_simple_iff_isSeparable (RatFunc K') F').2 hsepyyR
+    rw [hadjR] at h1
+    exact Algebra.IsSeparable.of_algHom (F := RatFunc K') (E := F')
+      (↥(⊤ : IntermediateField (RatFunc K') F'))
+      (f := (IntermediateField.topEquiv (F := RatFunc K') (E := F')).symm.toAlgHom)
+  have hxxXR : algebraMap K'[X] F' Polynomial.X = t' := by rw [halgR]; simp
+  refine exists_isPlaceFun_comp_emb emb hembK ?_ ho (by rw [hxxXL]; exact hot)
+  rw [hxxXL, hxxXR]
+  exact hembt
+
+end Main
+
+
+section Chart
+
+variable {d₀ d₁ d₂ d₃ d₄ d₅ : ℤ} {K F : Type} [Field K] [Field F] [Algebra K F]
+
+/-- A transcendental element is nonzero. -/
+lemma ne_zero_of_transcendental {x : F} (htr : Transcendental K x) : x ≠ 0 :=
+  fun h0 => htr ⟨Polynomial.X, Polynomial.X_ne_zero, by simp [h0]⟩
+
+/-- The inverse of a transcendental element is transcendental. -/
+lemma transcendental_inv {x : F} (htr : Transcendental K x) : Transcendental K x⁻¹ :=
+  fun halg => htr (IsAlgebraic.inv_iff.1 halg)
+
+/-- The ordinate is nonzero, from the curve equation and transcendence of the abscissa. -/
+lemma ordinate_ne_zero {x y : F} (htr : Transcendental K x)
+    (heqn : y ^ 2 = sext d₀ d₁ d₂ d₃ d₄ d₅ x) : y ≠ 0 := by
+  intro h0
+  have hsext0 : sextPoly d₀ d₁ d₂ d₃ d₄ d₅ K ≠ 0 := fun hz => by
+    have hd := natDegree_sextPoly d₀ d₁ d₂ d₃ d₄ d₅ K
+    rw [hz] at hd; simp at hd
+  refine htr ⟨sextPoly d₀ d₁ d₂ d₃ d₄ d₅ K, hsext0, ?_⟩
+  rw [h0] at heqn
+  rw [aeval_sextPoly, ← heqn]
+  ring
+
+/-- **The presentation in the chart at infinity** (PROVEN, by reflecting the three
+polynomials): `F` is generated over `K(1/x)` by the same ordinate. -/
+lemma gen_inv {x y : F} (hx0 : x ≠ 0)
+    (hgen : ∀ z : F, ∃ a b d : K[X], aeval x d ≠ 0 ∧
+      z * aeval x d = aeval x a + aeval x b * y) :
+    ∀ z : F, ∃ a b d : K[X], aeval x⁻¹ d ≠ 0 ∧
+      z * aeval x⁻¹ d = aeval x⁻¹ a + aeval x⁻¹ b * y := by
+  intro z
+  obtain ⟨a, b, d, hd, hz⟩ := hgen z
+  have hine : x⁻¹ ≠ 0 := inv_ne_zero hx0
+  set m : ℕ := max d.natDegree (max a.natDegree b.natDegree) with hm
+  have hdm : d.natDegree ≤ m := by rw [hm]; exact le_max_left _ _
+  have ham : a.natDegree ≤ m := by
+    rw [hm]; exact le_trans (le_max_left _ b.natDegree) (le_max_right _ _)
+  have hbm : b.natDegree ≤ m := by
+    rw [hm]; exact le_trans (le_max_right a.natDegree _) (le_max_right _ _)
+  refine ⟨Polynomial.reflect m a, Polynomial.reflect m b, Polynomial.reflect m d, ?_, ?_⟩
+  · rw [PlaceClassify.aeval_inv_reflect hx0 d m hdm]
+    exact mul_ne_zero hd (pow_ne_zero _ hine)
+  · rw [PlaceClassify.aeval_inv_reflect hx0 d m hdm, PlaceClassify.aeval_inv_reflect hx0 a m ham,
+      PlaceClassify.aeval_inv_reflect hx0 b m hbm]
+    linear_combination (x⁻¹ ^ m) * hz
+
+/-- The curve equation in the chart at infinity: `y² · (1/x)⁶` is the reflected sextic. -/
+lemma sq_mul_eq_reflect {x y : F} (hx0 : x ≠ 0)
+    (heqn : y ^ 2 = sext d₀ d₁ d₂ d₃ d₄ d₅ x) :
+    y ^ 2 * aeval x⁻¹ (Polynomial.X ^ 6 : K[X])
+      = aeval x⁻¹ (Polynomial.reflect 6 (sextPoly d₀ d₁ d₂ d₃ d₄ d₅ K)) := by
+  rw [PlaceClassify.aeval_inv_reflect hx0 _ 6 (by rw [natDegree_sextPoly]), aeval_sextPoly,
+    ← heqn, map_pow, Polynomial.aeval_X]
+
+end Chart
+
+end PlaceExtend
+
+/-- **Every place of `F` lies under a geometric place** (PROVEN 2026-07-31): `below` is
+surjective.
+
+`GeomPic.ord_emb` says that a geometric place RESTRICTS to a place of `F` with no ramification;
+this is the converse direction, that the restriction map is ONTO.  Together they say `below`
+realises `Places(F̄) ↠ Places(F)`, which is the fibration
+[Stichtenoth, *Algebraic Function Fields and Codes*, III.6.3] describes — the sharp form counts
+the fibre over `v` as `deg v`, and only NON-EMPTINESS is needed here.
 
 **Why this is the missing half and not bookkeeping.**  `bcDiv` reads a divisor off `below`
-(`bcDiv δ w = δ (below w)`), so `bcDiv` is injective *precisely* when `below` is surjective:
-a place `v` outside the image would make `Finsupp.single v 1` a nonzero divisor with zero base
-change, and `geomPic_bc_injective` would be false at that divisor's class. That is why the
-whole of `geomPic_bc_injective` splits into this leaf and the descent leaf below and into
-nothing else.
+(`bcDiv δ w = δ (below w)`), so `bcDiv` is injective *precisely* when `below` is surjective: a
+place `v` outside the image would make `Finsupp.single v 1` a nonzero divisor with zero base
+change, and `geomPic_bc_injective` would be false at that divisor's class.
 
-**Not vacuous.**  `below` is not free data: `ord_emb` together with `D.ord_injective` pins it
-as *the* place whose valuation is `ord_w ∘ emb` (see the section docstring), so this is a
-statement about the honest restriction map of the honest constant field extension.
+## THE ROUTE TAKEN IS NOT THE ONE THIS LEAF'S DOCSTRING PROPOSED, and the difference is the
+## whole cost of the node
 
-**What would refute it**: a normalised `ℚ`-trivial valuation of `F` admitting no normalised
-extension to `F̄`. For an extension generated by CONSTANTS there is none; the phenomenon does
-occur for geometric extensions, where a place can ramify and the extension of `ord_v` is
-`e·ord_v` rather than `ord_v` — which is why the statement is about this `emb` and not about
-an arbitrary embedding of function fields. -/
-theorem below_surjective : Function.Surjective gp.below := sorry
+The sketch this leaf carried asked for a valuation FUNCTION on `F̄` restricting to `ord_v` ON
+THE NOSE — i.e. for the constant field extension to be unramified at `v`, which is
+[Stichtenoth III.6.3(b)] and is exactly what the sibling leaf
+`constFieldExt_exists_uniformizer` still asks for.  **That is not needed here, because
+`ord_emb` is an AXIOM OF THIS STRUCTURE and it supplies the unramifiedness for free.**  It is
+enough to produce ANY place `w` of `F̄` whose restriction along `emb` is a POSITIVE MULTIPLE
+`e · ord_v`: then `ord_emb` reads that restriction as `ord_{below w}`, and `D.ord_surjective`
+at `below w` gives a `t` with `e · ord_v t = 1`, so `e = 1` and `below w = v` by
+`D.ord_injective`.
+
+What is left is a pure existence statement, and it is LYING OVER:
+
+* `PlaceClassify.exists_ordAt_eq` presents `ord_v` as the adic valuation of a height-one prime
+  `𝔭` of `A = integralClosure ℚ[t] F`, in the chart `t = x` or the chart `t = 1/x` according to
+  the sign of `ord_v x` — the same two towers `finite_isPlaceFun_core` runs over, and the only
+  reason this proof has two cases;
+* `A' = integralClosure ℚ̄[t] F̄` is INTEGRAL over `A`: `ℚ̄[t]` is integral over `ℚ[t]`
+  coefficientwise (`PlaceExtend.isIntegral_poly`), and integrality is transitive;
+* `Ideal.exists_ideal_over_prime_of_isIntegral` produces a prime `𝔮` of `A'` whose contraction
+  to `A` is exactly `𝔭`, nonzero because that contraction is, so `ordAt 𝔮` is a normalised
+  place of `F̄`.  Writing a `z` with `ord_v z ≥ 0` as `n/d` with `n ∈ A` and `d ∉ 𝔭` (mathlib's
+  `exists_primeCompl_mul_eq_of_integer`, i.e. `O_{ord_v} = A_𝔭`) gives
+  `ordAt 𝔮 (emb z) ≥ 0`; and a valuation ring containing that of a NORMALISED place pins the
+  place up to a positive factor, which is the `e` above.
+
+`PlaceExtend.exists_isPlaceFun_comp_emb` is that argument, stated for an arbitrary integral
+extension of constant fields and an arbitrary embedding carrying abscissa to abscissa.  It
+mentions no curve, and `PlaceExtend.exists_isPlaceFun_comp_emb_of_chart` is its chart-level
+form, which installs the two towers from the raw data `finite_isPlaceFun_aux` asks for.
+
+**This does NOT close `constFieldExt_exists_uniformizer`, and nobody should read it as doing
+so.**  That leaf is what BUILDS `below` and `ord_emb` for a `ConstFieldExt`, which carries no
+`ord_emb`; the observation here is only that a consumer which already HAS `ord_emb` gets the
+unramifiedness for free and must not be sent to reprove it.
+
+**Not vacuous.**  `below` is not free data: `ord_emb` together with `D.ord_injective` pins it as
+*the* place whose valuation is `ord_w ∘ emb` (see the section docstring), so this is a statement
+about the honest restriction map of the honest constant field extension. -/
+theorem below_surjective : Function.Surjective gp.below := by
+  classical
+  intro v
+  haveI : Algebra.IsIntegral ℚ (AlgebraicClosure ℚ) :=
+    (AlgebraicClosure.isAlgebraic ℚ).isIntegral
+  have h2 : (2 : ℚ) ≠ 0 := by norm_num
+  have h2' : (2 : AlgebraicClosure ℚ) ≠ 0 := by norm_num
+  have ho : IsPlaceFun ℚ D.F (D.ord v) :=
+    ⟨D.ord_zero v, D.ord_mul v, D.ord_add v, D.ord_algebraMap v, D.ord_surjective v⟩
+  have hx0 : D.xx ≠ 0 := PlaceExtend.ne_zero_of_transcendental D.transcendental_xx
+  have hx0' : gp.Dbar.xx ≠ 0 := PlaceExtend.ne_zero_of_transcendental gp.Dbar.transcendental_xx
+  have hy0 : D.yy ≠ 0 := PlaceExtend.ordinate_ne_zero D.transcendental_xx D.eqn
+  have hy0' : gp.Dbar.yy ≠ 0 :=
+    PlaceExtend.ordinate_ne_zero gp.Dbar.transcendental_xx gp.Dbar.eqn
+  obtain ⟨w, hw, e, he, hwe⟩ :
+      ∃ w : gp.Dbar.F → ℤ, IsPlaceFun (AlgebraicClosure ℚ) gp.Dbar.F w ∧ ∃ e : ℤ, 0 < e ∧
+        ∀ z : D.F, z ≠ 0 → w (gp.emb z) = e * D.ord v z := by
+    rcases le_or_gt 0 (D.ord v D.xx) with hcase | hcase
+    · exact PlaceExtend.exists_isPlaceFun_comp_emb_of_chart h2 h2'
+        D.transcendental_xx hy0 D.gen (P := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (Q := 1) (by simp)
+        (by rw [map_one, mul_one, aeval_sextPoly]; exact D.eqn)
+        gp.Dbar.transcendental_xx hy0' gp.Dbar.gen
+        (P' := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ)) (Q' := 1) (by simp)
+        (by rw [map_one, mul_one, aeval_sextPoly]; exact gp.Dbar.eqn)
+        gp.emb gp.emb_algebraMap gp.emb_xx ho hcase
+    · exact PlaceExtend.exists_isPlaceFun_comp_emb_of_chart h2 h2'
+        (PlaceExtend.transcendental_inv D.transcendental_xx) hy0
+        (PlaceExtend.gen_inv hx0 D.gen)
+        (P := Polynomial.reflect 6 (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ)) (Q := Polynomial.X ^ 6)
+        (by rw [map_pow, Polynomial.aeval_X]; exact pow_ne_zero _ (inv_ne_zero hx0))
+        (PlaceExtend.sq_mul_eq_reflect hx0 D.eqn)
+        (PlaceExtend.transcendental_inv gp.Dbar.transcendental_xx) hy0'
+        (PlaceExtend.gen_inv hx0' gp.Dbar.gen)
+        (P' := Polynomial.reflect 6 (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ)))
+        (Q' := Polynomial.X ^ 6)
+        (by rw [map_pow, Polynomial.aeval_X]; exact pow_ne_zero _ (inv_ne_zero hx0'))
+        (PlaceExtend.sq_mul_eq_reflect hx0' gp.Dbar.eqn)
+        gp.emb gp.emb_algebraMap (by rw [map_inv₀, gp.emb_xx]) ho
+        (by rw [PlaceClassify.isPlaceFun_inv ho hx0]; omega)
+  obtain ⟨wp, hwp⟩ := gp.Dbar.ord_complete w hw.map_zero hw.map_mul hw.ultra hw.map_algebraMap
+    hw.normalised
+  refine ⟨wp, ?_⟩
+  have hrestrict : ∀ z : D.F, z ≠ 0 → D.ord (gp.below wp) z = e * D.ord v z := by
+    intro z hz
+    rw [← gp.ord_emb wp z hz, hwp]
+    exact hwe z hz
+  obtain ⟨t, ht⟩ := D.ord_surjective (gp.below wp)
+  have ht0 : t ≠ 0 := by intro h0; rw [h0, D.ord_zero] at ht; omega
+  have he1 : e = 1 := by
+    have h1 : e * D.ord v t = 1 := by rw [← hrestrict t ht0]; exact ht
+    have hdvd : e ∣ 1 := ⟨D.ord v t, h1.symm⟩
+    rcases Int.isUnit_iff.mp (isUnit_of_dvd_one hdvd) with h | h <;> omega
+  refine D.ord_injective (funext fun z => ?_)
+  rcases eq_or_ne z 0 with rfl | hz
+  · rw [D.ord_zero, D.ord_zero]
+  · rw [hrestrict z hz, he1, one_mul]
 
 /-- **Base change of divisors is injective** (PROVEN from `below_surjective`): `bcDiv δ` reads
 off `δ` at `below w`, so it determines `δ` at every place in the image of `below`, which is
@@ -9041,22 +9606,39 @@ extension of `D.F` (both are `K(xx, yy)` for the same `xx, yy`, over `ℚ̄` and
 `Dbar.Places` really is all of its places.  In particular there is no junk model in which
 `below` misses a place, or in which `F̄^{Gal}` is bigger than `F`. -/
 
-/-- **LEAF (weak Mordell–Weil, 2a of 4): every place of `F` has a geometric place above
-it**, i.e. `below` is surjective.
+/-- **Every place of `F` has a geometric place above it** (PROVEN 2026-07-31), i.e. `below`
+is surjective.
 
-Extension of valuations along the constant field extension `F ↪ F̄`.  The valuation
-`ord v` of `F` extends to `F̄` — `F̄/F` is an algebraic (indeed integral) extension of
-fields, so every valuation of the base extends — and `ord_emb` pins `below` on that
-extension to be `v` itself, because `D.ord` is injective.  The extension is unramified
-(`e = 1`), which is what `ord_emb` asserts with no ramification index; if it were not, the
-witness would have to be rescaled, and `ord_surjective` for `Dbar` is what makes the
-rescaled valuation normalised.
+## THIS WAS A DUPLICATE LEAF, AND IT HAS NO CODE CONSUMER
 
-**Not vacuous.**  With `Dbar.Places` axiomatised as ALL normalised `ℚ̄`-trivial valuations
-of `Dbar.F` (`ord_complete`), the obligation is to produce a valuation FUNCTION on `Dbar.F`
-restricting to `ord v` on `emb '' F`, which is the honest content. -/
+It is character-for-character the statement of `GeomPic.below_surjective`, cut independently
+in this "four sub-leaves" block on 2026-07-30 while the namespace copy was cut for
+`GeomPic.bcDiv_injective`.  Neither cut could see the other — they share no identifier
+outside the statement itself — and a `sorry`-scan counted the one theorem twice, which is
+exactly the failure `CLAUDE.md` records under *AN "IRREDUCIBLE" VERDICT SEARCHES FOR A PROOF*.
+
+`geomPic_bc_injective` reaches surjectivity through `gp.bcDiv_injective`, not through this
+name; a comment-stripped scan of the whole module finds **no** use of `geomPic_below_surjective`
+in code (the three other hits are prose, at the module docstring, at `geomPic_bc_injective`
+and at `geomPic_exists_bcDiv_of_divAct_fixed`).  So this declaration is now a thin alias kept
+only so that nothing which cites the name breaks.
+
+**It should be DELETED**, together with any other member of this block that turns out to have
+no code consumer, by whoever next owns the `geomPic_bc_injective` cluster — that is an
+author-level decision about a block three of whose four members ARE consumed
+(`geomPic_exists_const_of_divisor_eq_zero`, `_exists_finiteLevel`,
+`_exists_emb_of_fieldAct_fixed`, at lines ~8756/8779/8835), and deleting a name a concurrent
+branch might re-point `geomPic_bc_injective` at is not worth the risk for one line.  Proving
+it costs nothing and takes it out of the frontier, which is what stops it drawing dispatches.
+
+The old route paragraph is retired: it asked for a valuation function restricting to `ord v`
+ON THE NOSE, i.e. for the constant field extension to be unramified — and that is NOT what the
+statement needs, because `ord_emb` is an axiom of `GeomPic` and supplies the unramifiedness for
+free.  See `GeomPic.below_surjective` for the argument and for why
+`constFieldExt_exists_uniformizer` is still owed where it stands. -/
 theorem geomPic_below_surjective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
-    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Surjective gp.below := sorry
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Surjective gp.below :=
+  gp.below_surjective
 
 /-- **LEAF (weak Mordell–Weil, 2b of 4): a geometric function with no zeros and no poles is
 a constant.**

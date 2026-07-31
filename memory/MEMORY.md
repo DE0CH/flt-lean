@@ -149,3 +149,4 @@
 - [simp is blind to `(Over.mk g).hom`](lean-simp-blind-to-over-mk-projection.md) — a projection where a bare variable belongs makes `Equiv.apply_symm_apply` silently not fire; and `simp [myDef]` may need an explicit `myDef_def := rfl`
 - [Cut AT the missing object](flt-cut-at-the-missing-object.md) — a leaf blocked on absent theory usually decomposes by stating that object's existence; the remainder was 100 lines of bookkeeping the file already owned
 - [The scratch may import the giant file](flt-scratch-may-import-the-giant-file.md) — don't trim imports, just don't re-elaborate what you're editing: 4 s vs 20 min on TateModule.lean
+- [Structure axiom discharges its converse](flt-structure-axiom-discharges-its-converse.md) — a route that demands something "on the nose" may be asking for what a structure FIELD already asserts; then only the up-to-a-factor existence statement is owed (this closed GeomPic.below_surjective)
