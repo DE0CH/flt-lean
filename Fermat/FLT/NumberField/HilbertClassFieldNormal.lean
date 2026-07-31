@@ -33,16 +33,19 @@ two:
   chosen NORMAL OVER `ℚ`. This is the one place where `K/ℚ` being Galois is
   used, and it is the whole mathematical content that the existence theorem does
   not already carry.
-* `NumberField.exists_hilbertClassField_intermediateField_isUnramifiedAtInfinitePlaces`,
-  `NumberField.conj_unramifiedAbelian`, `NumberField.sup_unramifiedAbelian` —
-  **SORRY LEAVES**, the decomposition of that node (2026-07-31). The first is
-  the class field inside `ℚ̄` carrying the infinite-place clause as well (which
-  the transport above drops, and which the upper bound of
-  `UnramifiedClassFieldBound.lean` cannot do without); the second says a
-  `ℚ`-conjugate of an everywhere-unramified abelian extension of `K` is one
-  again; the third — the deepest, and the "next piece of plumbing" named in
-  `exists_hilbertClassField_artinIso`'s docstring — says the compositum of two
-  is one. None of the three needs class field theory or analysis.
+* `NumberField.isUnramifiedAtInfinitePlaces_of_algEquiv`,
+  `NumberField.exists_unramifiedAbelianInf_of_algebraicClosureEquiv`,
+  `NumberField.exists_hilbertClassField_intermediateField_isUnramifiedAtInfinitePlaces`
+  — PROVEN 2026-07-31. The class field inside `ℚ̄` carrying the INFINITE-PLACE
+  clause as well, which `exists_unramifiedAbelian_of_algebraicClosureEquiv`
+  drops and which the upper bound of `UnramifiedClassFieldBound.lean` cannot do
+  without.
+* `NumberField.conj_unramifiedAbelian`, `NumberField.sup_unramifiedAbelian` —
+  **SORRY LEAVES**, the rest of that node's decomposition (2026-07-31). The
+  first says a `ℚ`-conjugate of an everywhere-unramified abelian extension of
+  `K` is one again; the second — the deeper, and the "next piece of plumbing"
+  named in `exists_hilbertClassField_artinIso`'s docstring — says the
+  compositum of two is one. Neither needs class field theory or analysis.
 * `NumberField.corestrictFieldRange` / `NumberField.galFieldRangeEquiv` — the
   bookkeeping that lets `Interface.lean` state its conclusions through
   `{σ : M ≃ₐ[ℚ] M // σ fixes ι(CF) pointwise}` instead of through
@@ -130,8 +133,85 @@ theorem exists_hilbertClassField_intermediateField
       H hab hunrH
   exact ⟨H'', hfd'', hgal'', hab'', hunr'', hrank''.trans hrank⟩
 
+/-- **UNRAMIFIEDNESS AT THE INFINITE PLACES CROSSES A `K`-ALGEBRA
+ISOMORPHISM** (PROVEN 2026-07-31).
+
+The archimedean companion of `isUnramifiedAt_of_algEquiv` in
+`CyclotomicModelTransport.lean`, and the one clause that
+`exists_unramifiedAbelian_of_algebraicClosureEquiv` does not carry. All three of
+`InfinitePlace.comap_id`, `comap_comp` and the definition of `IsUnramified` are
+`rfl`, so the whole content is `IsUnramified.comap_algHom` applied to `e.symm`:
+the place `w` of `H'` restricts along `e` to a place of `H`, which is unramified
+by hypothesis, and restricting THAT along `e.symm` returns `w` itself. -/
+theorem isUnramifiedAtInfinitePlaces_of_algEquiv {E H H' : Type*} [Field E] [Field H] [Field H']
+    [Algebra E H] [Algebra E H'] (e : H ≃ₐ[E] H')
+    [IsUnramifiedAtInfinitePlaces E H] : IsUnramifiedAtInfinitePlaces E H' := by
+  refine ⟨fun w => ?_⟩
+  have h : NumberField.InfinitePlace.IsUnramified E (w.comap (e : H →+* H')) :=
+    IsUnramifiedAtInfinitePlaces.isUnramified _
+  have h2 := h.comap_algHom (e.symm : H' →ₐ[E] H)
+  have hcomp : (e : H →+* H').comp ((e.symm : H' →ₐ[E] H) : H' →+* H) = RingHom.id H' := by
+    ext x; simp
+  rwa [← NumberField.InfinitePlace.comap_comp, hcomp,
+    NumberField.InfinitePlace.comap_id] at h2
+
+/-- **THE PACKAGE, WITH THE ARCHIMEDEAN CLAUSE, MOVES ALONG AN ISOMORPHISM OF
+AMBIENT ALGEBRAIC CLOSURES** (PROVEN 2026-07-31).
+
+`exists_unramifiedAbelian_of_algebraicClosureEquiv` of
+`CyclotomicModelTransport.lean` with `IsUnramifiedAtInfinitePlaces` added, over
+`isUnramifiedAtInfinitePlaces_of_algEquiv` above. The other five clauses are
+proven exactly as there and the proof is repeated rather than invoked, because
+that theorem returns an EXISTENTIALLY quantified `H''` and the sixth clause has
+to be established for the SAME field.
+
+**⚠ KEEP `ee` A HYPOTHESIS.** Building it from `IsAlgClosure.equiv` at the point
+of use — inside a `set` or a `let` — makes every subsequent `isDefEq` try to
+unfold `IsAlgClosed.lift`, and the declaration times out at 200000 heartbeats.
+That was observed here on 2026-07-31 and is the same trap the companion file's
+docstring records. -/
+theorem exists_unramifiedAbelianInf_of_algebraicClosureEquiv {E : Type*} [Field E] [NumberField E]
+    {Ω : Type*} [Field Ω] [Algebra E Ω]
+    (ee : AlgebraicClosure E ≃ₐ[E] Ω)
+    (H : IntermediateField E (AlgebraicClosure E)) [FiniteDimensional E H] [IsGalois E H]
+    [IsUnramifiedAtInfinitePlaces E H]
+    (hab : ∀ a b : H ≃ₐ[E] H, a * b = b * a)
+    (hunrH : ∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 E) Q) :
+    ∃ (H'' : IntermediateField E Ω) (_ : FiniteDimensional E H'') (_ : IsGalois E H'')
+      (_ : IsUnramifiedAtInfinitePlaces E H''),
+      (∀ a b : H'' ≃ₐ[E] H'', a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 H'')) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 E) Q) ∧
+      Module.finrank E H'' = Module.finrank E H := by
+  obtain ⟨H'', ⟨eH⟩⟩ : ∃ H'' : IntermediateField E Ω, Nonempty (H ≃ₐ[E] H'') :=
+    ⟨H.map ee.toAlgHom, ⟨IntermediateField.intermediateFieldMap ee H⟩⟩
+  haveI : FiniteDimensional E H'' := Module.Finite.equiv eH.toLinearEquiv
+  refine ⟨H'', inferInstance, IsGalois.of_algEquiv eH,
+    isUnramifiedAtInfinitePlaces_of_algEquiv eH, ?_, ?_, eH.toLinearEquiv.finrank_eq.symm⟩
+  · intro a b
+    have h1 := hab ((AlgEquiv.autCongr eH).symm a) ((AlgEquiv.autCongr eH).symm b)
+    have h2 := congrArg (AlgEquiv.autCongr eH) h1
+    rwa [map_mul, map_mul, MulEquiv.apply_symm_apply, MulEquiv.apply_symm_apply] at h2
+  · intro Q hQp hQ0
+    haveI := hQp
+    let f : (𝓞 H) ≃ₐ[𝓞 E] (𝓞 H'') := NumberField.RingOfIntegers.mapAlgEquiv eH
+    haveI hprime : (Ideal.comap (f : 𝓞 H →+* 𝓞 H'') Q).IsPrime := Ideal.comap_isPrime _ _
+    have hne : Ideal.comap (f : 𝓞 H →+* 𝓞 H'') Q ≠ ⊥ := by
+      intro hbot
+      refine hQ0 (le_bot_iff.mp fun y hy => ?_)
+      rw [Ideal.mem_bot]
+      have h1 : f.symm y ∈ Ideal.comap (f : 𝓞 H →+* 𝓞 H'') Q := by
+        rw [Ideal.mem_comap]
+        show f (f.symm y) ∈ Q
+        rwa [AlgEquiv.apply_symm_apply]
+      rw [hbot, Ideal.mem_bot] at h1
+      have h2 : y = f (f.symm y) := (AlgEquiv.apply_symm_apply f y).symm
+      rw [h2, h1, map_zero]
+    exact NumberField.isUnramifiedAt_of_algEquiv f _ Q rfl (hunrH _ hprime hne)
+
 /-- **THE HILBERT CLASS FIELD OF `K ⊆ ℚ̄` LIVES INSIDE `ℚ̄`, AND IS UNRAMIFIED
-AT THE INFINITE PLACES TOO** (SORRY LEAF, cut 2026-07-31 out of
+AT THE INFINITE PLACES TOO** (PROVEN 2026-07-31; cut the same day out of
 `exists_hilbertClassField_normal_over_rat` below).
 
 `exists_hilbertClassField_intermediateField` above is this statement WITHOUT the
@@ -171,8 +251,26 @@ theorem exists_hilbertClassField_intermediateField_isUnramifiedAtInfinitePlaces
       (∀ a b : N ≃ₐ[(K : Type _)] N, a * b = b * a) ∧
       (∀ (Q : Ideal (𝓞 N)) (_ : Q.IsPrime), Q ≠ ⊥ →
         Algebra.IsUnramifiedAt (𝓞 (K : Type _)) Q) ∧
-      Module.finrank (K : Type _) N = Nat.card (ClassGroup (𝓞 (K : Type _))) :=
-  sorry
+      Module.finrank (K : Type _) N = Nat.card (ClassGroup (𝓞 (K : Type _))) := by
+  classical
+  obtain ⟨H, hfd, hnf, hgal, hinf, hab, hunrH, hnorm⟩ :=
+    NumberField.exists_classField_of_subgroup (K : Type _) ⊥
+  haveI := hfd; haveI := hnf; haveI := hgal; haveI := hinf
+  have hrank : Module.finrank (K : Type _) H = Nat.card (ClassGroup (𝓞 (K : Type _))) := by
+    refine le_antisymm ?_ ?_
+    · have h := NumberField.finrank_le_index_relNormClassSubgroup (K : Type _) H hab hunrH
+      rwa [hnorm, Subgroup.index_bot] at h
+    · have h := NumberField.index_relNormClassSubgroup_le_finrank (K : Type _) H hab hunrH
+      rwa [hnorm, Subgroup.index_bot] at h
+  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  haveI : Algebra.IsAlgebraic (K : Type _) (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.tower_top (K := ℚ) (K : Type _)
+  haveI : IsAlgClosure (K : Type _) (AlgebraicClosure ℚ) := ⟨inferInstance, inferInstance⟩
+  obtain ⟨H'', hfd'', hgal'', hinf'', hab'', hunr'', hrank''⟩ :=
+    exists_unramifiedAbelianInf_of_algebraicClosureEquiv
+      (IsAlgClosure.equiv (K : Type _) (AlgebraicClosure (K : Type _)) (AlgebraicClosure ℚ))
+      H hab hunrH
+  exact ⟨H'', hfd'', hgal'', hinf'', hab'', hunr'', hrank''.trans hrank⟩
 
 /-- **A `ℚ`-CONJUGATE OF AN EVERYWHERE-UNRAMIFIED ABELIAN EXTENSION OF `K` IS
 ONE AGAIN** (SORRY LEAF, cut 2026-07-31 out of
