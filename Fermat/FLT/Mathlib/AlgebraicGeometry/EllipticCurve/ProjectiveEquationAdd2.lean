@@ -7,6 +7,8 @@ module
 
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveAddition
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveEquationAdd
+public import Mathlib.Algebra.MvPolynomial.Division
+public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 
 /-!
 # The SECOND chord–tangent addition law preserves the Weierstrass equation
@@ -381,22 +383,66 @@ does NOT have to go through Gauss's lemma:
 `IsRelPrime a b` — every common divisor is a unit — is precisely the primitivity
 check computed above, with `a = Pz ^ 2 * Qz ^ 2 * (Px * Qz - Qx * Pz)` and
 `b = c`.  Irreducible then upgrades to Prime because the base is a UFD
-(`UniqueFactorizationMonoid.irreducible_iff_prime`).  What is left is the explicit
-isomorphism `Poly[1/Pz] ⧸ idl ≅ (…)[Pz^{±1}] ⧸ (h)`.
+(`UniqueFactorizationMonoid.irreducible_iff_prime`).
 
-### The bookkeeping obstacle, and the refactor that removes it
+### How half one was ACTUALLY proven (2026-07-31): NO LOCALISATION, NO `Fin 10`
 
-In both halves the mathematics is short and the cost is entirely in viewing
-`Poly = MvPolynomial (Fin 11) ℤ` as `B[Px][Qx]`, i.e. in `renameEquiv` +
-`finSuccEquiv` juggling and in computing the images of `gen₁`, `gen₂` through it.
+The plan above ended "what is left is the explicit isomorphism
+`Poly[1/Pz] ⧸ idl ≅ (…)[Pz^{±1}] ⧸ (h)`", and the bookkeeping subsection below
+was written for the fight that isomorphism implies.  **Neither was needed, and
+the whole `Fin 11` → `B[Px][Qx]` re-presentation was avoided.**  See `SatPrime`.
 
-**If either half resists, the highest-value move is to stop fighting that and
-re-present the universal ring as `B[Px][Qx]` BY CONSTRUCTION**, i.e. take
-`Poly := Polynomial (Polynomial (MvPolynomial (Fin 9) ℤ))` with `Px`, `Qx` the two
-outer indeterminates.  Then `f₁`, `f₂` are visibly monic and both halves are
-direct.  The cost is rebuilding `curve`, `pt₁`, `pt₂`, `vals` and `spec` (the last
-as a two-stage `Polynomial.eval₂`), and reproving `spec_curve`, `spec_pt₁`,
-`spec_pt₂`; nothing below `idl` in this file depends on how `Poly` is presented.
+Two moves did it.
+
+*First: `Poly ↪ Poly[T]`, not `Poly ≃ E[T]`.*  `SatPrime.peel k` is the ring map
+`Poly →ₐ[ℤ] Polynomial Poly` sending `X k ↦ T` and every other `X i ↦ C (X i)`.
+It is NOT surjective, so it is not the structural isomorphism — but it is
+**injective, with an explicit retraction** (`Polynomial.eval (X k)`), and that is
+all the two uses need.  The base ring stays `Poly` itself, so there is no second
+index convention and no `renameEquiv`/`finSuccEquiv` juggling anywhere: `peel 4 u`
+is literally `C u` for any `u` written in the `X i`, `i ≠ 4`.  Irreducibility does
+not transfer along a non-surjection, but PRIMALITY transfers *downwards* through a
+retraction (`SatPrime.prime_of_peel_prime`): from `peel k p ∣ peel k a` apply the
+retraction to get `p ∣ a`.  `Xfree k`, "no `X k` occurs", is then the subalgebra
+where `peel k` agrees with `C`, so closure under `+ - * ^` is free.
+
+*Second: saturate by hand instead of localising.*  Inverting `Pz` is only ever
+used to divide by the leading coefficient of `gen₁` in `a₆`, which is `-Pz ^ 3`.
+So do exactly that and keep the cofactor: `SatPrime.exists_reduction` says every
+`a` satisfies `Pz ^ n * a ≡ r (mod gen₁)` with `r` free of `a₆`, proved by
+`MvPolynomial.induction_on` (the `X 4` step multiplies by `Pz ^ 3` and rewrites
+`Pz ^ 3 * a₆ = u - gen₁`).  Because `gen₁` has degree EXACTLY `1` in `a₆`, an
+`a₆`-free multiple of `gen₁` is `0` (`SatPrime.eq_zero_of_mem_Xfree_of_mem_span`),
+which turns congruences into equations.  The leaf then falls out of `Prime hpoly`
+plus `¬ hpoly ∣ Pz` with no localisation object ever constructed.
+
+*Third, and the cheapest trick here:* every non-divisibility the primitivity check
+needs — `Pz ∤ c`, `Qz ∤ c`, `(Px Qz - Qx Pz) ∤ c`, `hpoly ∤ Pz` — is discharged by
+evaluating at ONE integer point where the divisor vanishes and the dividend does
+not (`SatPrime.not_dvd_of_eval`).  No `Singular` certificate is transcribed; the
+CAS results quoted above only told us which points to look for.  In particular the
+generic-point substitution `Px = t Pz`, `Qx = t Qz` never appears in Lean — it was
+only how the point `(Px, Py, Pz, Qx, Qy, Qz) = (0, 0, 1, 0, 1, 1)` was found.
+
+### For HALF TWO, which is still open: `peel` is probably your bookkeeping fix too
+
+The advice this subsection used to give — "if the `Fin 11` bookkeeping resists,
+re-present the universal ring as `Polynomial (Polynomial (MvPolynomial (Fin 9) ℤ))`
+by construction, rebuilding `curve`, `pt₁`, `pt₂`, `vals`, `spec` and their
+specialisation lemmas" — is still AVAILABLE and nothing below `idl` depends on how
+`Poly` is presented.  But it is now the second-choice move, because half one paid
+none of that cost.
+
+`SatPrime.peel 5` and `SatPrime.peel 8` are `Poly ↪ Poly[T]` sending `Px` resp.
+`Qx` to `T`, and under them `-gen₁` and `-gen₂` are visibly MONIC of degree `3`
+(their `Px ^ 3`, `Qx ^ 3` coefficients are `1`) — which is exactly the hypothesis
+`Polynomial.modByMonic` and `Polynomial.eq_zero_of_dvd_of_degree_lt` want, and it
+is one `simp` away rather than a refactor of the module.  The catch to know in
+advance: `peel` is injective but NOT surjective, so anything you prove upstairs
+must come back down through the retraction `Polynomial.eval (X k)` (see
+`SatPrime.peel_dvd_cancel` and `SatPrime.prime_of_peel_prime` for the two shapes
+that worked).  Degree and freeness statements come back fine; a statement that
+quantifies over ALL of `Poly[T]` does not.
 
 ### Two facts recovered from the docstring this section replaced
 
@@ -424,14 +470,356 @@ bidegree `≤ (2, 2)` modulo `idl`, and a bidegree-`≤ (2, 2)` element of `idl`
 monic polynomial, twice. -/
 theorem mem_idl_of_X7_mul_mem {a : Poly} (ha : X 7 * a ∈ idl) : a ∈ idl := sorry
 
-/-- **The universal ideal is prime once `Pz = X 7` is inverted** (sorry leaf) —
+/-! ### Machinery for `exists_pow_X7_mul_mem_idl`
+
+Everything in `SatPrime` exists to prove that one leaf; it is namespaced so that
+the sibling leaf `mem_idl_of_X7_mul_mem`, which is owned elsewhere and needs a
+normal-form development of its own, cannot collide with these names. -/
+
+namespace SatPrime
+
+/-- View `Poly` inside `Poly[T]` with `X k ↦ T` and every other `X i ↦ C (X i)`. -/
+noncomputable def peel (k : Fin 11) : Poly →ₐ[ℤ] Polynomial Poly :=
+  aeval (fun i => if i = k then Polynomial.X else Polynomial.C (X i))
+
+@[simp] theorem peel_X_self (k : Fin 11) : peel k (X k) = Polynomial.X := by
+  simp [peel]
+
+@[simp] theorem peel_X_of_ne {k i : Fin 11} (h : i ≠ k) :
+    peel k (X i) = Polynomial.C (X i) := by
+  simp [peel, h]
+
+/-- The retraction: substitute `T ↦ X k`. -/
+theorem peel_leftInverse (k : Fin 11) (x : Poly) :
+    Polynomial.eval (X k) (peel k x) = x := by
+  have : (Polynomial.evalRingHom (X k)).comp (peel k : Poly →+* Polynomial Poly)
+      = RingHom.id Poly := by
+    apply MvPolynomial.ringHom_ext
+    · intro r; simp [peel]
+    · intro i; by_cases h : i = k <;> simp [peel, h]
+  exact congrArg (fun f => f x) this
+
+theorem peel_injective (k : Fin 11) : Function.Injective (peel k) :=
+  Function.LeftInverse.injective (peel_leftInverse k)
+
+theorem peel_dvd_cancel {k : Fin 11} {a b : Poly} (h : peel k a ∣ peel k b) : a ∣ b := by
+  obtain ⟨g, hg⟩ := h
+  refine ⟨Polynomial.eval (X k) g, ?_⟩
+  have := congrArg (Polynomial.eval (X k)) hg
+  simpa [peel_leftInverse] using this
+
+/-- `Xfree k` : the elements of `Poly` in which `X k` does not occur. -/
+noncomputable def Xfree (k : Fin 11) : Subalgebra ℤ Poly :=
+  AlgHom.equalizer (peel k)
+    ((Polynomial.CAlgHom (R := Poly) (A := Poly)).restrictScalars ℤ)
+
+theorem mem_Xfree_iff {k : Fin 11} {x : Poly} :
+    x ∈ Xfree k ↔ peel k x = Polynomial.C x := Iff.rfl
+
+theorem X_mem_Xfree {k i : Fin 11} (h : i ≠ k) : X i ∈ Xfree k := by
+  rw [mem_Xfree_iff, peel_X_of_ne h]
+
+/-! ## The two generators, written out -/
+
+/-- The `a₆`-free part of `gen₁`. -/
+noncomputable def upoly : Poly :=
+  X 6 ^ 2 * X 7 + X 0 * X 5 * X 6 * X 7 + X 2 * X 6 * X 7 ^ 2
+    - (X 5 ^ 3 + X 1 * X 5 ^ 2 * X 7 + X 3 * X 5 * X 7 ^ 2)
+
+/-- The `a₆`-free part of `gen₂`. -/
+noncomputable def vpoly : Poly :=
+  X 9 ^ 2 * X 10 + X 0 * X 8 * X 9 * X 10 + X 2 * X 9 * X 10 ^ 2
+    - (X 8 ^ 3 + X 1 * X 8 ^ 2 * X 10 + X 3 * X 8 * X 10 ^ 2)
+
+theorem gen₁_eq : gen₁ = upoly - X 4 * X 7 ^ 3 := by
+  rw [gen₁, curve, pt₁, upoly, eval_polynomial]
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  ring
+
+theorem gen₂_eq : gen₂ = vpoly - X 4 * X 10 ^ 3 := by
+  rw [gen₂, curve, pt₂, vpoly, eval_polynomial]
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  ring
+
+theorem peel4_upoly : peel 4 upoly = Polynomial.C upoly := by
+  rw [upoly]; simp
+
+theorem peel4_vpoly : peel 4 vpoly = Polynomial.C vpoly := by
+  rw [vpoly]; simp
+
+/-! ## The relation left after `Pz` is inverted and `a₆` eliminated -/
+
+/-- `Px * Qz - Qx * Pz`, the third prime factor of `hpoly`'s `a₄`-coefficient. -/
+noncomputable def dpoly : Poly := X 5 * X 10 - X 8 * X 7
+
+/-- The `a₄`-coefficient of `hpoly`. -/
+noncomputable def apoly : Poly := X 7 ^ 2 * X 10 ^ 2 * dpoly
+
+/-- `gen₁` with both the `a₄` and the `a₆` term dropped. -/
+noncomputable def u₀ : Poly :=
+  X 6 ^ 2 * X 7 + X 0 * X 5 * X 6 * X 7 + X 2 * X 6 * X 7 ^ 2 - (X 5 ^ 3 + X 1 * X 5 ^ 2 * X 7)
+
+/-- `gen₂` with both the `a₄` and the `a₆` term dropped. -/
+noncomputable def v₀ : Poly :=
+  X 9 ^ 2 * X 10 + X 0 * X 8 * X 9 * X 10 + X 2 * X 9 * X 10 ^ 2 - (X 8 ^ 3 + X 1 * X 8 ^ 2 * X 10)
+
+/-- The `a₄`-free part of `hpoly`. -/
+noncomputable def cpoly : Poly := X 7 ^ 3 * v₀ - X 10 ^ 3 * u₀
+
+/-- `Pz ^ 3 * gen₂ - Qz ^ 3 * gen₁`: the `a₆` terms cancel. -/
+noncomputable def hpoly : Poly := X 7 ^ 3 * vpoly - X 10 ^ 3 * upoly
+
+theorem hpoly_eq_gen : hpoly = X 7 ^ 3 * gen₂ - X 10 ^ 3 * gen₁ := by
+  rw [gen₁_eq, gen₂_eq, hpoly]; ring
+
+theorem hpoly_eq_a4 : hpoly = apoly * X 3 + cpoly := by
+  rw [hpoly, apoly, dpoly, cpoly, upoly, vpoly, u₀, v₀]; ring
+
+/-! ## Non-divisibilities, each witnessed by one integer point -/
+
+theorem not_dvd_of_eval {p q : Poly} (pt : Fin 11 → ℤ)
+    (hp : eval pt p = 0) (hq : eval pt q ≠ 0) : ¬ p ∣ q := by
+  rintro ⟨g, rfl⟩
+  exact hq (by rw [map_mul, hp, zero_mul])
+
+theorem ne_zero_of_eval {p : Poly} (pt : Fin 11 → ℤ) (h : eval pt p ≠ 0) : p ≠ 0 := by
+  rintro rfl; simp at h
+
+theorem apoly_ne_zero : apoly ≠ 0 :=
+  ne_zero_of_eval (vals 0 0 0 0 0 1 0 1 0 0 1) (by norm_num [apoly, dpoly, vals])
+
+theorem not_X10_dvd_X8_mul_X7 : ¬ (X 10 : Poly) ∣ X 8 * X 7 :=
+  not_dvd_of_eval (vals 0 0 0 0 0 0 0 1 1 0 0) (by norm_num [vals]) (by norm_num [vals])
+
+theorem not_X7_dvd_cpoly : ¬ (X 7 : Poly) ∣ cpoly :=
+  not_dvd_of_eval (vals 0 0 0 0 0 1 0 0 0 0 1) (by norm_num [vals])
+    (by norm_num [cpoly, u₀, v₀, vals])
+
+theorem not_X10_dvd_cpoly : ¬ (X 10 : Poly) ∣ cpoly :=
+  not_dvd_of_eval (vals 0 0 0 0 0 0 0 1 1 0 0) (by norm_num [vals])
+    (by norm_num [cpoly, u₀, v₀, vals])
+
+theorem not_dpoly_dvd_cpoly : ¬ dpoly ∣ cpoly :=
+  not_dvd_of_eval (vals 0 0 0 0 0 0 0 1 0 1 1) (by norm_num [dpoly, vals])
+    (by norm_num [cpoly, u₀, v₀, vals])
+
+theorem not_hpoly_dvd_X7 : ¬ hpoly ∣ (X 7 : Poly) :=
+  not_dvd_of_eval (vals 0 0 0 0 0 0 0 1 0 0 0)
+    (by norm_num [hpoly, upoly, vpoly, vals]) (by norm_num [vals])
+
+/-! ## `hpoly` is prime -/
+
+theorem isRelPrime_of_prime {R : Type*} [CommRing R] [IsDomain R] {p x : R}
+    (hp : Prime p) (h : ¬ p ∣ x) :
+    IsRelPrime p x := by
+  intro d hdp hdx
+  obtain ⟨e, he⟩ := hdp
+  rcases hp.irreducible.isUnit_or_isUnit he with hd | he'
+  · exact hd
+  · obtain ⟨w, hw⟩ := isUnit_iff_exists_inv.mp he'
+    exact absurd (Dvd.dvd.trans ⟨w, by rw [he, mul_assoc, hw, mul_one]⟩ hdx) h
+
+theorem prime_of_peel_prime {k : Fin 11} {p : Poly} (h : Prime (peel k p)) : Prime p := by
+  refine ⟨fun h0 => h.ne_zero (by rw [h0, map_zero]), fun hu => h.not_unit (hu.map (peel k)), ?_⟩
+  intro a b hab
+  have hd : peel k p ∣ peel k a * peel k b := by
+    rw [← map_mul]; exact map_dvd _ hab
+  rcases h.2.2 _ _ hd with h1 | h1
+  · exact Or.inl (peel_dvd_cancel h1)
+  · exact Or.inr (peel_dvd_cancel h1)
+
+theorem peel5_dpoly :
+    peel 5 dpoly = Polynomial.C (X 10) * Polynomial.X + Polynomial.C (-(X 8 * X 7)) := by
+  rw [dpoly]; simp; ring
+
+theorem prime_dpoly : Prime dpoly := by
+  refine prime_of_peel_prime (k := 5) ?_
+  rw [peel5_dpoly]
+  refine UniqueFactorizationMonoid.irreducible_iff_prime.mp
+    (Polynomial.irreducible_C_mul_X_add_C (X_ne_zero _) ?_)
+  exact isRelPrime_of_prime MvPolynomial.X_prime
+    (by rw [dvd_neg]; exact not_X10_dvd_X8_mul_X7)
+
+theorem peel3_apoly : peel 3 apoly = Polynomial.C apoly := by
+  rw [apoly, dpoly]; simp
+
+theorem peel3_cpoly : peel 3 cpoly = Polynomial.C cpoly := by
+  rw [cpoly, u₀, v₀]; simp
+
+theorem peel3_hpoly :
+    peel 3 hpoly = Polynomial.C apoly * Polynomial.X + Polynomial.C cpoly := by
+  rw [hpoly_eq_a4, map_add, map_mul, peel_X_self, peel3_apoly, peel3_cpoly]
+
+theorem isRelPrime_apoly_cpoly : IsRelPrime apoly cpoly := by
+  intro d hda hdc
+  by_contra hdu
+  have hd0 : d ≠ 0 := fun h => apoly_ne_zero (zero_dvd_iff.mp (h ▸ hda))
+  obtain ⟨q, hq, hqd⟩ := WfDvdMonoid.exists_irreducible_factor hdu hd0
+  have hqp : Prime q := UniqueFactorizationMonoid.irreducible_iff_prime.mp hq
+  have hqc : q ∣ cpoly := hqd.trans hdc
+  have key : ∀ r : Poly, Prime r → q ∣ r → ¬ r ∣ cpoly → False := fun r hr hqr hrc =>
+    hrc ((hqp.associated_of_dvd hr hqr).symm.dvd.trans hqc)
+  have hqa : q ∣ apoly := hqd.trans hda
+  rw [apoly] at hqa
+  rcases hqp.2.2 _ _ hqa with h1 | h1
+  · rcases hqp.2.2 _ _ h1 with h2 | h2
+    · exact key _ MvPolynomial.X_prime (hqp.dvd_of_dvd_pow h2) not_X7_dvd_cpoly
+    · exact key _ MvPolynomial.X_prime (hqp.dvd_of_dvd_pow h2) not_X10_dvd_cpoly
+  · exact key _ prime_dpoly h1 not_dpoly_dvd_cpoly
+
+theorem prime_hpoly : Prime hpoly := by
+  refine prime_of_peel_prime (k := 3) ?_
+  rw [peel3_hpoly]
+  exact UniqueFactorizationMonoid.irreducible_iff_prime.mp
+    (Polynomial.irreducible_C_mul_X_add_C apoly_ne_zero isRelPrime_apoly_cpoly)
+
+/-! ## Reduction modulo `gen₁`: clearing `a₆` at the cost of powers of `Pz` -/
+
+theorem C_mem_Xfree (k : Fin 11) (c : ℤ) : (C c : Poly) ∈ Xfree k := by
+  rw [mem_Xfree_iff]; simp [peel]
+
+theorem upoly_mem : upoly ∈ Xfree 4 := mem_Xfree_iff.mpr peel4_upoly
+
+theorem vpoly_mem : vpoly ∈ Xfree 4 := mem_Xfree_iff.mpr peel4_vpoly
+
+theorem X7_mem : (X 7 : Poly) ∈ Xfree 4 := X_mem_Xfree (by decide)
+
+theorem hpoly_mem_Xfree : hpoly ∈ Xfree 4 := by
+  rw [hpoly]
+  exact sub_mem (mul_mem (pow_mem X7_mem 3) vpoly_mem)
+    (mul_mem (pow_mem (X_mem_Xfree (by decide : (10 : Fin 11) ≠ 4)) 3) upoly_mem)
+
+theorem gen₁_mem_span : gen₁ ∈ Ideal.span ({gen₁} : Set Poly) :=
+  Ideal.mem_span_singleton_self _
+
+/-- **Reduction.** Multiplying by a power of `Pz` makes any `a` congruent, modulo `gen₁`,
+to a polynomial free of `a₆ = X 4`.  This is division by `gen₁` in `a₆`, whose leading
+coefficient is `-Pz ^ 3`. -/
+theorem exists_reduction (a : Poly) :
+    ∃ (n : ℕ) (r : Poly), r ∈ Xfree 4 ∧ X 7 ^ n * a - r ∈ Ideal.span ({gen₁} : Set Poly) := by
+  induction a using MvPolynomial.induction_on with
+  | C c =>
+    refine ⟨0, C c, C_mem_Xfree 4 c, ?_⟩
+    simp
+  | add p q hp hq =>
+    obtain ⟨n₁, r₁, hr₁, h₁⟩ := hp
+    obtain ⟨n₂, r₂, hr₂, h₂⟩ := hq
+    refine ⟨n₁ + n₂, X 7 ^ n₂ * r₁ + X 7 ^ n₁ * r₂,
+      add_mem (mul_mem (pow_mem X7_mem _) hr₁) (mul_mem (pow_mem X7_mem _) hr₂), ?_⟩
+    have key : X 7 ^ (n₁ + n₂) * (p + q) - (X 7 ^ n₂ * r₁ + X 7 ^ n₁ * r₂)
+        = X 7 ^ n₂ * (X 7 ^ n₁ * p - r₁) + X 7 ^ n₁ * (X 7 ^ n₂ * q - r₂) := by ring
+    rw [key]
+    exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ h₁) (Ideal.mul_mem_left _ _ h₂)
+  | mul_X p i hp =>
+    obtain ⟨n, r, hr, h⟩ := hp
+    by_cases hi : i = 4
+    · subst hi
+      refine ⟨n + 3, r * upoly, mul_mem hr upoly_mem, ?_⟩
+      have key : X 7 ^ (n + 3) * (p * X 4) - r * upoly
+          = X 7 ^ 3 * X 4 * (X 7 ^ n * p - r) - r * gen₁ := by
+        rw [gen₁_eq]; ring
+      rw [key]
+      exact Ideal.sub_mem _ (Ideal.mul_mem_left _ _ h) (Ideal.mul_mem_left _ _ gen₁_mem_span)
+    · refine ⟨n, r * X i, mul_mem hr (X_mem_Xfree hi), ?_⟩
+      have key : X 7 ^ n * (p * X i) - r * X i = (X 7 ^ n * p - r) * X i := by ring
+      rw [key]
+      exact Ideal.mul_mem_right _ _ h
+
+/-- **The degree kill.** `gen₁` has degree exactly `1` in `a₆`, so a multiple of it that
+is free of `a₆` is `0`. -/
+theorem eq_zero_of_mem_Xfree_of_mem_span {y : Poly} (hy : y ∈ Xfree 4)
+    (h : y ∈ Ideal.span ({gen₁} : Set Poly)) : y = 0 := by
+  obtain ⟨e, he⟩ := Ideal.mem_span_singleton'.mp h
+  rcases eq_or_ne e 0 with rfl | he0
+  · rw [← he, zero_mul]
+  exfalso
+  have hg : peel 4 gen₁ = Polynomial.C (-(X 7 ^ 3)) * Polynomial.X + Polynomial.C upoly := by
+    rw [gen₁_eq, map_sub, map_mul, map_pow, peel_X_self,
+      peel_X_of_ne (show (7 : Fin 11) ≠ 4 by decide), peel4_upoly, map_neg, map_pow]
+    ring
+  have hdeg : (peel 4 gen₁).natDegree = 1 := by
+    rw [hg]
+    exact Polynomial.natDegree_linear (neg_ne_zero.mpr (pow_ne_zero 3 (X_ne_zero _)))
+  have he' : peel 4 e ≠ 0 := fun hc => he0 (peel_injective 4 (by rw [hc, map_zero]))
+  have hgz : peel 4 gen₁ ≠ 0 := fun hc => by simp [hc] at hdeg
+  have hy' : peel 4 y = Polynomial.C y := hy
+  have : (Polynomial.C y).natDegree = (peel 4 e).natDegree + 1 := by
+    rw [← hy', ← he, map_mul, Polynomial.natDegree_mul he' hgz, hdeg]
+  rw [Polynomial.natDegree_C] at this
+  omega
+
+/-! ## Primality after `Pz` is inverted -/
+
+theorem gen₁_mem_idl : gen₁ ∈ idl := Ideal.subset_span (by simp)
+
+theorem gen₂_mem_idl : gen₂ ∈ idl := Ideal.subset_span (by simp)
+
+theorem hpoly_mem_idl : hpoly ∈ idl := by
+  rw [hpoly_eq_gen]
+  exact Ideal.sub_mem _ (Ideal.mul_mem_left _ _ gen₂_mem_idl)
+    (Ideal.mul_mem_left _ _ gen₁_mem_idl)
+
+theorem span_gen₁_le_idl : Ideal.span ({gen₁} : Set Poly) ≤ idl :=
+  (Ideal.span_singleton_le_iff_mem _).mpr gen₁_mem_idl
+
+/-- An `a₆`-free element of `idl` is, up to a power of `Pz`, a multiple of `hpoly`. -/
+theorem exists_pow_mul_mem_span_hpoly {x : Poly} (hx : x ∈ Xfree 4) (hmem : x ∈ idl) :
+    ∃ m : ℕ, X 7 ^ m * x ∈ Ideal.span ({hpoly} : Set Poly) := by
+  rw [idl, Ideal.mem_span_pair] at hmem
+  obtain ⟨c₁, c₂, hc⟩ := hmem
+  obtain ⟨n, r, hr, hrn⟩ := exists_reduction c₂
+  refine ⟨n + 3, ?_⟩
+  have key : X 7 ^ (n + 3) * x - r * hpoly
+      = X 7 ^ n * (X 7 ^ 3 * c₁ + X 10 ^ 3 * c₂) * gen₁ + (X 7 ^ n * c₂ - r) * hpoly := by
+    rw [← hc, hpoly_eq_gen]; ring
+  have hz : X 7 ^ (n + 3) * x - r * hpoly = 0 := by
+    refine eq_zero_of_mem_Xfree_of_mem_span
+      (sub_mem (mul_mem (pow_mem X7_mem _) hx) (mul_mem hr hpoly_mem_Xfree)) ?_
+    rw [key]
+    exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ gen₁_mem_span)
+      (Ideal.mul_mem_right _ _ hrn)
+  have : X 7 ^ (n + 3) * x = r * hpoly := by linear_combination hz
+  rw [this]
+  exact Ideal.mul_mem_left _ _ (Ideal.mem_span_singleton_self _)
+
+end SatPrime
+
+open SatPrime in
+/-- **The universal ideal is prime once `Pz = X 7` is inverted** (PROVEN) —
 stated as a `Pz`-saturated primality, which is exactly the contraction to `Poly`
-of `IsPrime (idl ⬝ Poly[1/Pz])`.  See the section docstring above: inverting `Pz`
-solves `gen₁` for `a₆` and leaves the single relation
-`h = Pz ^ 3 * gen₂ - Qz ^ 3 * gen₁`, which is a PRIMITIVE polynomial of degree `1`
-in `a₄` over a polynomial ring over `ℤ`, hence irreducible, hence prime. -/
+of `IsPrime (idl ⬝ Poly[1/Pz])`.  Inverting `Pz` solves `gen₁` for `a₆` and leaves
+the single relation `SatPrime.hpoly = Pz ^ 3 * gen₂ - Qz ^ 3 * gen₁`, which is a
+PRIMITIVE polynomial of degree `1` in `a₄` over a polynomial ring over `ℤ`, hence
+irreducible, hence prime.  See `SatPrime` above for the whole route. -/
 theorem exists_pow_X7_mul_mem_idl {a b : Poly} (hab : a * b ∈ idl) :
-    (∃ n : ℕ, X 7 ^ n * a ∈ idl) ∨ (∃ n : ℕ, X 7 ^ n * b ∈ idl) := sorry
+    (∃ n : ℕ, X 7 ^ n * a ∈ idl) ∨ (∃ n : ℕ, X 7 ^ n * b ∈ idl) := by
+
+  obtain ⟨na, ra, hra, hrna⟩ := exists_reduction a
+  obtain ⟨nb, rb, hrb, hrnb⟩ := exists_reduction b
+  have hprod : ra * rb ∈ idl := by
+    have key : ra * rb = X 7 ^ (na + nb) * (a * b)
+        - (ra * (X 7 ^ nb * b - rb) + (X 7 ^ na * a - ra) * (X 7 ^ nb * b)) := by ring
+    rw [key]
+    exact Ideal.sub_mem _ (Ideal.mul_mem_left _ _ hab)
+      (Ideal.add_mem _ (Ideal.mul_mem_left _ _ (span_gen₁_le_idl hrnb))
+        (Ideal.mul_mem_right _ _ (span_gen₁_le_idl hrna)))
+  obtain ⟨m, hm⟩ := exists_pow_mul_mem_span_hpoly (mul_mem hra hrb) hprod
+  have hdvd : hpoly ∣ X 7 ^ m * (ra * rb) := Ideal.mem_span_singleton.mp hm
+  have final : ∀ (n : ℕ) (c rc : Poly), hpoly ∣ rc →
+      X 7 ^ n * c - rc ∈ Ideal.span ({gen₁} : Set Poly) → X 7 ^ n * c ∈ idl := by
+    intro n c rc hrc hspan
+    obtain ⟨t, ht⟩ := hrc
+    have hrcidl : rc ∈ idl := by rw [ht]; exact Ideal.mul_mem_right t idl hpoly_mem_idl
+    have : X 7 ^ n * c = (X 7 ^ n * c - rc) + rc := by ring
+    rw [this]
+    exact Ideal.add_mem _ (span_gen₁_le_idl hspan) hrcidl
+  rcases prime_hpoly.2.2 _ _ hdvd with h1 | h1
+  · exact absurd (prime_hpoly.dvd_of_dvd_pow h1) not_hpoly_dvd_X7
+  rcases prime_hpoly.2.2 _ _ h1 with h2 | h2
+  · exact Or.inl ⟨na, final na a ra h2 hrna⟩
+  · exact Or.inr ⟨nb, final nb b rb h2 hrnb⟩
 
 /-- **The universal ideal is prime** (PROVEN from the two leaves above): a
 `Pz`-saturated primality plus the fact that `Pz` is a non-zerodivisor modulo
