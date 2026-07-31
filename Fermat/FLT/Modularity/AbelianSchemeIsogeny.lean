@@ -3969,6 +3969,13 @@ localization half is a common-denominator argument (`IsLocalization.surj` plus
 this leaf".  Neither has to carry the other's hypotheses, and in particular the remaining
 leaf mentions no `Submonoid`, no `IsLocalization` and no `D_j`.
 
+**BOTH HALVES OF THIS CUT ARE NOW PROVEN** (later the same day) — the localization lemma
+below and `ker_multIdeal_le_span_idealTensorComparison` after it, so Half B is sorry-free
+and 10.128.3's colimit half is down to Half A alone.  The cut is recorded anyway because it
+is what made the second half small enough to attack: the remaining statement mentions no
+`Submonoid`, no `IsLocalization` and no `D_j`, and the counterexample of Half B's FALSITY
+AUDIT is invisible to it.
+
 Everything here is stated for the multiplication map `multIdeal I P : ↥I ⊗[R] P → P`,
 `y ⊗ₜ p ↦ y • p`, which is `LinearMap.rTensor P I.subtype` composed with the left unitor;
 `injective_rTensor_iff_injective_multIdeal` is the (trivial) translation, and it is there
@@ -14256,7 +14263,28 @@ then descend, not weaken this statement.
 
 **`ab` is genuinely used.**  "An ample sheaf exists" is false for a general proper
 `X` — it says exactly that `X` is quasi-projective — and it is the group structure
-that supplies the theta divisor. -/
+that supplies the theta divisor.
+
+**SURVEY RE-RUN AND CONFIRMED 2026-07-31** (the docstring above asks for exactly this,
+so here is the answer rather than the instruction).  At this pin:
+
+* `grep -rl Ample .lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is EMPTY.  The only
+  `Ample` in all of mathlib is `Mathlib/Analysis/Convex/AmpleSet.lean` — ample sets in
+  convex geometry, for the h-principle, and unrelated.
+* `grep -rn "TheoremOfTheCube\|VeryAmple\|IsVeryAmple"` over mathlib finds NOTHING, and
+  over `Fermat/` and `~/cs/FLT/` finds only PROSE — six docstrings, including this one,
+  all saying the machinery is absent.  No definition anywhere.
+* There is no coherent-sheaf cohomology: the only `*ohomolog*` file under
+  `Mathlib/AlgebraicGeometry/` is `Sites/ElladicCohomology.lean`.
+* The nearest divisor-adjacent material is `Mathlib/AlgebraicGeometry/AlgebraicCycle/
+  Basic.lean` (two declarations: a coefficient map and a proper pushforward of cycles) and
+  `OrderOfVanishing.lean` (`ord`, `ordHom` at a codimension-one point).  There is no linear
+  equivalence, no `𝒪(D)`, no complete linear system and no Riemann–Roch, so the theta
+  divisor cannot even be STATED against them yet.
+
+So this leaf is not a proof problem but a THEORY-BUILDING problem, and the theory is the
+one `Fermat/FLT/Modularity/AmpleSheaf.lean` starts: whoever takes it should expect to add
+divisors and their sheaves there first, and should not expect a route through mathlib. -/
 theorem exists_isAmpleSheaf_of_field {X : Scheme.{u}} (K : Type u) [Field K]
     {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK) :
     ∃ L : X.Modules, IsAmpleSheaf L :=
@@ -14476,7 +14504,21 @@ where `c : A ×_K A ⟶ Spec K ⟶ A` is the constant zero map.  So:
 **A prover who wants the general Corollary 2 as a separate leaf should cut it.**
 It is the honest shape of the mathematics, and this statement is three formal
 steps below it; it is not cut here only because this project forbids
-free-floating declarations and nothing would yet consume it. -/
+free-floating declarations and nothing would yet consume it.
+
+**SURVEY RE-RUN AND CONFIRMED 2026-07-31.**  `grep -rn "TheoremOfTheCube\|[Ss]eesaw"` over
+mathlib finds NOTHING; over `Fermat/` and `~/cs/FLT/` it finds only prose saying so.  There
+is no coherent-sheaf cohomology at this pin (see the survey on
+`exists_isAmpleSheaf_of_field` above for the full list of what does exist), hence no flat
+base change for it and no seesaw principle, and those are the two inputs the cube needs.
+
+So the cut this docstring offers is not optional bookkeeping — it is the only way in.  A
+prover should NOT try to prove this statement directly; the work is to build the seesaw
+principle, which needs `H⁰` of a coherent sheaf on the fibres of a proper flat morphism and
+its semicontinuity, and that is a module of its own.  Note also that the two leaves of this
+block are INDEPENDENT of each other and of everything else here: this one carries no
+ampleness hypothesis and `exists_isAmpleSheaf_of_field` says nothing about the cube, so they
+want separate owners and neither is blocked on the other. -/
 theorem hasCubeIso_of_symm_of_normalized {X : Scheme.{u}} (K : Type u) [Field K]
     {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK) (L : X.Modules)
     (hinv : IsInvertibleSheaf L)
