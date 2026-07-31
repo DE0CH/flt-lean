@@ -744,6 +744,26 @@ run ON THE HOST THAT OWNS THE WORKTREE'S `.lake`:
 running `lake` anywhere else finds no artifacts. `lake`/`lean`/`elan`
 are no longer in `permissions.deny`.
 
+**`lake` IS NOT ON PATH IN AN AGENT'S SHELL, AND THE FAILURE LOOKS LIKE A CLEAN
+BUILD** (2026-07-31, cost one round). The harness's `Bash` runs a non-login
+shell that never sources the profile, so `~/.elan/bin` is absent — *even when
+you are already on the owning host and no `ssh` is involved.* The existing note
+about this is filed under ssh, which is why it reads as not applying locally.
+It does apply. Export it yourself, every call:
+
+    export PATH="$HOME/.elan/bin:$PATH"
+
+The reason it costs a round rather than a second is the SHAPE of the failure.
+`lake: command not found` exits **127**, and the log contains no `error`, no
+`warning`, no traceback — so `grep -i error` is EMPTY and `grep -c "declaration
+uses 'sorry'"` is `0`. Read as "no errors, no sorries", that is indistinguishable
+from a perfect build, and it is the same trap the doctrine's truncated-log
+section describes arriving by a different route. **Require the positive
+terminators — a literal `EXIT=0` *and* a `Build completed successfully (NNNN
+jobs)` line with a plausible job count.** An `EXIT=` that is not `0` is a
+failure however empty the log looks; zero sorry warnings from a build that never
+ran is the most confident wrong answer available.
+
 **Why the change.** Every persistent-server failure mode this project
 hit came from documents that were opened and never closed, and from
 state shared between client processes: a stale `lake setup-file`
