@@ -448,7 +448,8 @@ open in them has been split along the theories it needed:
 | ~~`transitiveMinimalPrimes_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above at `L := K`; no longer a leaf | — |
 | ~~`isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above; no longer a leaf.  `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` and `connectedSpace_tensorProduct_of_gamma1GITPresentation` are unchanged and still read it | — |
 | `exists_rationalCuspPointsX1_field` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5).  Base field FREED 2026-07-28: this single leaf now carries the former `exists_rationalCuspPointsX1` (over `ℚ`, PROVEN over it) and the `≥` half of the former `card_cuspLocusPoints_x1_finiteField` (over `𝔽_3`) — one sentence of Deligne-Rapoport that used to be two open leaves at two bases. | any `K` with `N` invertible |
-| `exists_isFineGamma1Moduli` | Katz–Mazur 4.7.1: `[Γ₁(N)]` is REPRESENTABLE at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` — a universal family `dM` over `M`, classified uniquely.  (`exists_fineGamma1Atlas` is PROVEN over it, 2026-07-28, through the formal `Gamma1Atlas.ofFineModuli`; that node was itself `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated the same day — see its FALSITY AUDIT.) | `𝔽_ℓ` |
+| ~~`exists_isFineGamma1Moduli`~~ | PROVEN 2026-07-31 over the row below, by the ATLAS cut: the atlas exists already (`exists_gamma1AffineModel`, PROVEN, which is where `ℓ` prime and `ℓ ∤ N` are consumed), and the UNIQUENESS half `eq_of_isBaseChange` is derived outright from `Gamma1Atlas.quotient` — no longer a leaf | — |
+| `exists_gamma1UniversalFamily_of_atlas` | Katz–Mazur 4.7.1, with the arithmetic and the uniqueness removed: the coarse space of ANY `Gamma1Atlas` over a field of characteristic prime to `N` carries a family `dY` of which every datum is the base change along its own classifying map.  Equivalently "the Katz–Mazur coarse space is FINE".  Base-generic, so the `ℚ` consumers of `X0.lean`/`X1.lean` can use it too. | any `K`, `char K ∤ N`, `N ≥ 4` |
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | `exists_weierstrassModel_of_abelianSchemeStruct_finiteField` | **Riemann-Roch on a genus-one curve** — a Weierstrass model of an abelian scheme of relative dimension one over `Spec 𝔽_ℓ`; NO modular curves and no level structure.  Cut 2026-07-28 as the geometry half of `exists_weierstrassEquiv_of_gamma1Datum` (now PROVEN over it).  The ℚ-side chain in `EllipticScheme.lean` is hardcoded to `Spec ℚ` and its own three leaves are open, so there is nothing to instantiate. | `𝔽_ℓ` |
 | `exists_relPointAddEquiv_of_weierstrassModel_finiteField` | the transport half of the same cut: given the model, the `𝔽_ℓ`-SECTIONS are `W(𝔽_ℓ)`.  The content is that the abelian scheme's group law agrees with the chord-and-tangent law (rigidity); strictly easier than the ℚ-side `exists_geomFibreAddEquiv_of_weierstrassModel`, which needs a `Γ_ℚ`-equivariant equivalence on geometric fibres. | `𝔽_ℓ` |
@@ -8522,13 +8523,31 @@ functor written out — is answered here by `Gamma1Datum` and
 `IsBaseChangeOfGamma1`, which are that functor's data in the form this
 file already uses.
 
-**Why only `exists_classify` carries an "over `S`" clause.**  Uniqueness
-is a statement about `M` alone and the structure morphism plays no part in
-it; existence has to produce a morphism *of `S`-schemes*, which is what
-`m ≫ strM = g` says.  Over `SpecF ℓ` that clause is in fact automatic —
-`ZMod ℓ` is a quotient of the initial ring `ℤ`, so `Hom(T, SpecF ℓ)` is a
-subsingleton, which is the `𝔽_ℓ` analogue of `subsingleton_hom_specQ` — but
-it is stated so that the notion is the right one over a general base.
+**Why only `exists_classify` carries an "over `S`" clause.**  Existence has
+to produce a morphism *of `S`-schemes*, which is what `m ≫ strM = g` says.
+Over `SpecF ℓ` that clause is in fact automatic — `ZMod ℓ` is a quotient of
+the initial ring `ℤ`, so `Hom(T, SpecF ℓ)` is a subsingleton, which is the
+`𝔽_ℓ` analogue of `subsingleton_hom_specQ` (it is `subsingleton_hom_specF`,
+in `X0.lean`) — but it is stated so that the notion is the right one over a
+general base.
+
+**CORRECTION (2026-07-31).**  This paragraph used to open "Uniqueness is a
+statement about `M` alone and the structure morphism plays no part in it".
+That is FALSE over a general base, and the structure is therefore *only* the
+right notion over a base whose hom-sets are subsingletons — which is exactly
+the base it is used at, so the leaf below is unaffected and nothing needed
+restating.  **Witness** (`S = Spec K`, `K = 𝔽_{ℓ²}`, `σ` the Frobenius):
+write `Y` for the fine space over `K`, take `d` a `Γ₁(N)`-datum defined over
+`𝔽_ℓ` and base-changed to `K`, and let `m₁ : Spec K ⟶ Y` be its classifying
+`K`-point.  Then `m₂ := Spec σ ≫ m₁` satisfies
+`m₂^* dY = σ^*(m₁^* dY) = σ^* d ≅ d`, so BOTH `m₁` and `m₂` exhibit `d` as a
+base change of `dY` — while `m₂ ≫ str = Spec σ ≠ 𝟙 = m₁ ≫ str`, so
+`m₁ ≠ m₂` and `eq_of_isBaseChange` fails.  What rigidity at `N ≥ 4` pins is
+the classifying morphism **among morphisms over the base**; a semilinear
+rival is invisible to it.  Accordingly
+`exists_isFineGamma1Moduli_of_atlas` below carries the hypothesis
+`∀ Z, Subsingleton (Z ⟶ S)` explicitly, and it is discharged at `SpecF ℓ`
+by `subsingleton_hom_specF`.
 
 **NOT VACUOUS, and in particular `M` cannot be empty.**  `exists_classify`
 demands a morphism `T ⟶ M` for every `T` carrying a datum, and data do
@@ -8548,9 +8567,228 @@ structure IsFineGamma1Moduli (N : ℕ) {M S : Scheme.{0}} (strM : M ⟶ S)
     Nonempty (IsBaseChangeOfGamma1 m₁ d dM) → Nonempty (IsBaseChangeOfGamma1 m₂ d dM) →
     m₁ = m₂
 
-/-- **`[Γ₁(N)]` is REPRESENTABLE over `𝔽_ℓ` for `N ≥ 4`, `ℓ ∤ N`** (sorry
-leaf, NEW 2026-07-28) — the whole mathematical content of
+/-! #### The ATLAS cut of `exists_isFineGamma1Moduli`, 2026-07-31
+
+`exists_isFineGamma1Moduli` was a single citation of Katz–Mazur 4.7.1 over
+`𝔽_ℓ`.  It is now PROVEN, over ONE leaf that is base-generic, carries no
+arithmetic and asks for strictly less:
+
+| what | where | status |
+|---|---|---|
+| an atlas over `𝔽_ℓ` exists — this is 4.7.0 + 2.7.4 + 8.1.1, i.e. all of the arithmetic, and where `ℓ` prime and `ℓ ∤ N` are consumed | `exists_gamma1AffineModel` | **PROVEN** 2026-07-27 |
+| the atlas's coarse space carries a UNIVERSAL family: every datum is the base change of `dY` along its own classifying map | `exists_gamma1UniversalFamily_of_atlas` | **LEAF** |
+| the classifying morphism is UNIQUE (`eq_of_isBaseChange`) | `exists_isFineGamma1Moduli_of_atlas` | **PROVEN** here, from `Gamma1Atlas.quotient` |
+| the assembly at `K := ZMod ℓ` | `exists_isFineGamma1Moduli` | **PROVEN** |
+
+**The uniqueness half costs nothing once the family descends**, and that is
+the finding this cut is made for.  Write `π := (A.classify A.strM A.dM).1`
+and `c := (A.classify A.str dY).1`.  Naturality of `classify` at the
+descent square gives `π = π ≫ c`; the pair `(𝟙, c)` therefore both solve
+the `∃!` of `A.quotient` at `Y' := A.Y`, `φ := π` — whose separation
+hypothesis is naturality of `classify` again, exactly as in
+`Gamma1Atlas.toIsCoarseModuliY1` — so `c = 𝟙`.  Then naturality at the two
+rival squares reads `(A.classify (mᵢ ≫ A.str) d).1 = mᵢ ≫ c = mᵢ`, and the
+two base points agree because `Hom(T, S)` is a subsingleton.  No rigidity
+argument, no geometry, no fibre product.
+
+**Why the `∀ A` is SAFE here, where `nonempty_relPoint_atlas_of_relPoint`'s
+was not.**  That refuted leaf asserted a property of `A.M`, the *rigidified*
+scheme, which genuinely varies between atlases — `𝔐([Γ₁(N)], [Γ(n)])` for
+every admissible auxiliary `n`, with different `𝔽_ℓ`-points and different
+components.  The leaf below mentions only `A.Y` and `A.classify`, and those
+are **pinned**: `Gamma1Atlas.toIsCoarseModuliY1` makes `(A.Y, A.classify)`
+initial among classifying cocones, so any two atlases over the same base
+have uniquely isomorphic ones, compatibly with `classify`.  The statement is
+therefore true at one atlas exactly when it is true at all of them, which is
+what makes the universal quantifier free rather than a strengthening.  The
+discriminating question to ask of any `∀ A` in this file is which of the two
+schemes it constrains.
+
+**The base is a FIELD of characteristic prime to `N`, and that is
+load-bearing rather than inherited.**  `Gamma1Atlas` is stated over an
+arbitrary `S`; the leaf below is not, because at `char K ∣ N` the naive
+problem (`PointOfExactOrder`, a section of exact order on geometric fibres)
+is not the representable one — the Drinfeld `[Γ₁(N)]` is — and an atlas over
+such a base, should one ever be built, would have a coarse space carrying no
+universal family.  Restricting to `Spec K` with `¬ ringChar K ∣ N` is also
+exactly the hypothesis under which this tree *builds* atlases
+(`exists_gamma1AffineModel`), so nothing is lost.
+-/
+
+/-- **The coarse space of a Katz–Mazur `Γ₁(N)`-atlas carries a UNIVERSAL
+family** (sorry leaf, NEW 2026-07-31) — Katz–Mazur 4.7.1 with the arithmetic
+discharged into `exists_gamma1AffineModel` and the uniqueness half removed;
+see the section comment for both.
+
+Read the conclusion as *"the classifying map classifies"*: `A.classify` is
+already a map from data to `Y`-points, and this leaf says the tautological
+family on `Y` exists and the classifying map really is the map that pulls it
+back.  That is representability of `[Γ₁(N)]`, and it is the only place in
+the cut where a scheme has to be produced.
+
+TRUE, and classical: Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*,
+Cor. 4.7.1 (the moduli problem `[Γ₁(N)]` is RIGID for `N ≥ 4`, and a rigid
+representable-relatively-representable problem is representable), together
+with 2.7.4 for relative representability of `[Γ₁(N)]` over the modular
+stack.  Deligne–Rapoport IV.2 and Diamond–Im §8 state the same fact as
+"`Y_1(N)` is a fine moduli scheme for `N ≥ 4`".
+
+## THE ROUTE, in this development's own terms (2026-07-31)
+
+Two steps, and the second is a general-purpose descent lemma that does not
+mention moduli:
+
+1. **Descend the universal family along `π`.**  `A.dM` lives on `A.M` and is
+   invariant under the deck group (`Gamma1GITPresentation.dM_equivariant`,
+   a field of the presentation every atlas in this tree comes from); at
+   `N ≥ 4` the problem is rigid, so the action is FREE and `π : A.M ⟶ A.Y`
+   is a torsor.  Produce `dY` on `A.Y` with
+   `IsBaseChangeOfGamma1 π A.dM dY`.
+2. **Spread it to an arbitrary datum by fpqc descent.**  Given `d` over `T`,
+   `A.cover` gives an fpqc `p : T' ⟶ T`, a `d'` over `T'` and a
+   rigidification `m' : T' ⟶ A.M`.  Naturality of `classify` at the two
+   base-change squares — the computation already written out in
+   `Gamma1Atlas.toIsCoarseModuliY1` — gives `m' ≫ π = p ≫ m` for
+   `m := (A.classify g d).1`, so `bm.comp` of step 1 is a square
+   `IsBaseChangeOfGamma1 (p ≫ m) d' dY`.  What remains is to CANCEL `p` on
+   the left:
+
+       {p fpqc} → IsBaseChangeOfGamma1 p d' d →
+         IsBaseChangeOfGamma1 (p ≫ m) d' dY → Nonempty (IsBaseChangeOfGamma1 m d dY)
+
+   Note this is the mirror of `IsBaseChangeOfGamma1.cancel`, which cancels
+   on the RIGHT and is formal (pullback pasting).  Cancelling on the left is
+   descent and is NOT formal: the comparison morphism `d.E ⟶ dY.E` is
+   obtained from `bc'.map` because `AlgebraicGeometry.fpqcTopology` is
+   `Subcanonical` — the same fact `exists_descendClassifyGamma1` runs on, so
+   it is in the pin — and the cocycle condition it needs is *precisely*
+   rigidity at `N ≥ 4`.  That is where `4 ≤ N` is really consumed.
+
+**Only MORPHISMS have to descend, never objects.**  Both `d` and `m^* dY`
+already exist over `T` in step 2, so nothing needs effective descent of
+schemes — which is just as well, since it is not in the pin: mathlib's
+`AlgebraicGeometry/Morphisms/Descent.lean` descends morphism PROPERTIES
+along faithfully flat maps and nothing else, and `~/cs/FLT` has no moduli
+material at all.  Step 1 is the one place an object is built, and there the
+morphism `π` is finite locally free rather than merely fpqc.
+
+**Each hypothesis is load-bearing** (the underscores record only that a
+`sorry` consumes nothing):
+
+* `_hN` is RIGIDITY, and it is sharp.  At `N ≤ 3` the pair `(E, P)` has a
+  nontrivial automorphism — `[-1]` fixes `P` when `2P = 0`, i.e. at
+  `N ≤ 2`, and at `N = 3` the curve `j = 0` carries `ζ₃` fixing a chosen
+  `3`-torsion point — so the deck action is not free, `π` is not a torsor,
+  step 1 fails, and no fine moduli scheme exists.  This is the same rigidity
+  that `IsCoarseModuliY1`'s own docstring records as the reason `Y_1(N)` is
+  fine for `N ≥ 4`.
+* `_hchar` is invertibility of `N` on the base.  At `char K ∣ N` the naive
+  problem is not even flat and the representable object is the *Drinfeld*
+  `[Γ₁(N)]`, whose universal object is a different scheme; the section form
+  of `PointOfExactOrder` used here is then not the right moduli problem at
+  all.
+
+**NOT VACUOUS, and `dY` cannot be junk.**  The conclusion produces the
+cartesian square together with `dY`, so a datum unrelated to `A.dM` does not
+discharge it: taking `g := A.strM`, `d := A.dM` forces
+`IsBaseChangeOfGamma1 π A.dM dY`, i.e. `dY` pulls back to the universal
+family along the quotient map.  And atlases over `Spec K` genuinely exist
+whenever `4 ≤ N` and `char K ∤ N` (`exists_gamma1AffineModel`), so the
+statement is not vacuous on the hypothesis side either.
+
+**WHAT THIS DOES NOT CLAIM.**  Nothing about the coarse space `Y_1(N)`
+being smooth, affine or geometrically connected, nothing about its
+compactification, and nothing about `K`-points existing — those are
+`exists_isCoarseModuliY1_isSmoothCurve` and its neighbours, and they are
+separate leaves.  This is the bare universal property and no more.
+
+**Refuting check** (in the sense the doctrine asks for): the leaf becomes
+cheap the moment effective fppf descent of schemes, or a representability
+theorem for rigid moduli problems, exists in this tree or in the pin.
+`grep -rn "Rigid\|representable\|IsRepresentable" Fermat/FLT/ModularCurve/`
+and a scan of `Mathlib/AlgebraicGeometry/Morphisms/Descent.lean` are what
+would refute the claim that neither exists today; both were run on
+2026-07-31 and neither does. -/
+theorem exists_gamma1UniversalFamily_of_atlas {N : ℕ} (_hN : 4 ≤ N)
+    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (A : Gamma1Atlas N (Spec (CommRingCat.of K))) :
+    ∃ dY : Gamma1Datum N A.Y, ∀ {T : Scheme.{0}} (g : T ⟶ Spec (CommRingCat.of K))
+      (d : Gamma1Datum N T), Nonempty (IsBaseChangeOfGamma1 (A.classify g d).1 d dY) :=
+  sorry
+
+/-- **The coarse space of an atlas IS a fine moduli scheme, over a base with
+subsingleton hom-sets** (PROVEN 2026-07-31 over the leaf above).
+
+The `hS` hypothesis is not decoration: `IsFineGamma1Moduli.eq_of_isBaseChange`
+has no "over `S`" clause, and without one it is FALSE over a base with a
+nontrivial automorphism — the `𝔽_{ℓ²}` witness is written out in the
+CORRECTION on `IsFineGamma1Moduli` above.  It is discharged at `SpecF ℓ` by
+`subsingleton_hom_specF` and at `SpecQ` by `subsingleton_hom_specQ`, which
+are the only two bases this development uses.
+
+The proof of `eq_of_isBaseChange` is the argument in the section comment:
+`A.quotient` applied at `Y' := A.Y`, `φ := π` has both `𝟙` and the
+classifying map of `dY` as solutions of its `∃!`, so the latter is `𝟙`, and
+naturality of `classify` then reads the two rival morphisms off the same
+`RelPoint`. -/
+theorem exists_isFineGamma1Moduli_of_atlas {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
+    (hS : ∀ Z : Scheme.{0}, Subsingleton (Z ⟶ Spec (CommRingCat.of K)))
+    (A : Gamma1Atlas N (Spec (CommRingCat.of K))) :
+    ∃ dY : Gamma1Datum N A.Y, IsFineGamma1Moduli N A.str dY := by
+  obtain ⟨dY, huniv⟩ := exists_gamma1UniversalFamily_of_atlas hN hchar A
+  have hpi : (A.classify A.strM A.dM).1 ≫ A.str = A.strM := (A.classify A.strM A.dM).2
+  -- naturality of `classify` at the descent square: `π = π ≫ c`
+  have hc0 : (A.classify A.strM A.dM).1
+      = (A.classify A.strM A.dM).1 ≫ (A.classify A.str dY).1 :=
+    congrArg Subtype.val (A.classify_natural (A.classify A.strM A.dM).1 hpi
+      (huniv A.strM A.dM).some)
+  -- the classifying map of `dM` cannot separate two rigidifications of one
+  -- datum — naturality again, exactly as in `toIsCoarseModuliY1`
+  have hsep : ∀ {Z : Scheme.{0}} (a b : Z ⟶ A.M) (d₁ : Gamma1Datum N Z),
+      a ≫ A.strM = b ≫ A.strM →
+      IsBaseChangeOfGamma1 a d₁ A.dM → IsBaseChangeOfGamma1 b d₁ A.dM →
+      a ≫ (A.classify A.strM A.dM).1 = b ≫ (A.classify A.strM A.dM).1 := by
+    intro Z a b d₁ hab ha hb
+    have h1 : (A.classify (a ≫ A.strM) d₁).1 = a ≫ (A.classify A.strM A.dM).1 :=
+      congrArg Subtype.val (A.classify_natural a rfl ha)
+    have h2 : (A.classify (b ≫ A.strM) d₁).1 = b ≫ (A.classify A.strM A.dM).1 :=
+      congrArg Subtype.val (A.classify_natural b rfl hb)
+    rw [← h1, ← h2, hab]
+  -- so `𝟙` and `c` are two solutions of the same `∃!`, hence equal
+  obtain ⟨ψ, -, huniqψ⟩ := A.quotient A.str (A.classify A.strM A.dM).1 hpi hsep
+  have hc : (A.classify A.str dY).1 = 𝟙 A.Y :=
+    (huniqψ _ ⟨(A.classify A.str dY).2, hc0.symm⟩).trans
+      (huniqψ (𝟙 A.Y) ⟨Category.id_comp _, Category.comp_id _⟩).symm
+  refine ⟨dY, ⟨?_, ?_⟩⟩
+  · intro T g d
+    exact ⟨(A.classify g d).1, (A.classify g d).2, huniv g d⟩
+  · intro T d m₁ m₂ h₁ h₂
+    obtain ⟨bc₁⟩ := h₁
+    obtain ⟨bc₂⟩ := h₂
+    have e₁ : (A.classify (m₁ ≫ A.str) d).1 = m₁ ≫ (A.classify A.str dY).1 :=
+      congrArg Subtype.val (A.classify_natural m₁ rfl bc₁)
+    have e₂ : (A.classify (m₂ ≫ A.str) d).1 = m₂ ≫ (A.classify A.str dY).1 :=
+      congrArg Subtype.val (A.classify_natural m₂ rfl bc₂)
+    have hg : m₁ ≫ A.str = m₂ ≫ A.str := (hS T).elim _ _
+    rw [hg] at e₁
+    rw [hc, Category.comp_id] at e₁ e₂
+    exact e₁.symm.trans e₂
+
+/-- **`[Γ₁(N)]` is REPRESENTABLE over `𝔽_ℓ` for `N ≥ 4`, `ℓ ∤ N`**
+(**PROVEN 2026-07-31 by the ATLAS cut** — over the single leaf
+`exists_gamma1UniversalFamily_of_atlas` and the proven
+`exists_gamma1AffineModel`; formerly a sorry leaf carrying the whole of
+Katz–Mazur 4.7.1, NEW 2026-07-28) — the whole mathematical content of
 `exists_fineGamma1Atlas` below, with the atlas bookkeeping removed.
+
+The assembly is three lines and no geometry: `ℓ` prime makes `ZMod ℓ` a
+field (`Fact.mk`), `ZMod.ringChar_zmod_n` turns `¬ ℓ ∣ N` into
+`¬ ringChar (ZMod ℓ) ∣ N`, `exists_gamma1AffineModel` produces the atlas,
+and `subsingleton_hom_specF` discharges the base hypothesis.  **All three
+arithmetic hypotheses are consumed HERE**, in the atlas construction and in
+the subsingleton — none of them survives into the leaf, which is the point
+of the cut and the evidence that the seam is in the right place.
 
 TRUE, and classical: Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*,
 Cor. 4.7.1 (the moduli problem `[Γ₁(N)]` is RIGID for `N ≥ 4`, and a rigid
@@ -8562,43 +8800,48 @@ the restriction of the universal elliptic curve, and the statement here is
 its defining property.
 
 **Each hypothesis is load-bearing, and each fails the conclusion on its
-own** (the underscores record only that a `sorry` consumes nothing):
+own** — and each is now CONSUMED rather than underscored:
 
-* `_hN` is RIGIDITY, and it is sharp.  At `N ≤ 3` the pair `(E, P)` has a
+* `hN` is RIGIDITY, and it is sharp.  At `N ≤ 3` the pair `(E, P)` has a
   nontrivial automorphism — `[-1]` fixes `P` when `2P = 0`, i.e. at
   `N ≤ 2`, and at `N = 3` the curve `j = 0` carries `ζ₃` fixing a chosen
   `3`-torsion point — so a datum can be a base change of `dM` along a
   morphism in more than one way after an étale cover, `eq_of_isBaseChange`
   fails, and no fine moduli scheme exists.  This is the same rigidity that
   `IsCoarseModuliY1`'s own docstring records as the reason `Y_1(N)` is
-  fine for `N ≥ 4`.
-* `_hℓN` is invertibility of `N` on the base.  At `ℓ ∣ N` the naive
+  fine for `N ≥ 4`.  It reaches the leaf through the atlas hypothesis of
+  `exists_gamma1AffineModel`, and it is what makes the deck action free in
+  step 1 of the route.
+* `hℓN` is invertibility of `N` on the base.  At `ℓ ∣ N` the naive
   problem is not even flat and the representable object is the *Drinfeld*
   `[Γ₁(N)]`, whose universal object is a different scheme; the section
   form of `PointOfExactOrder` used here is then not the right moduli
-  problem at all.
-* `_hℓ` is what makes `ZMod ℓ` a FIELD, hence `SpecF ℓ` the spectrum of a
+  problem at all.  It becomes `¬ ringChar (ZMod ℓ) ∣ N` here.
+* `hℓ` is what makes `ZMod ℓ` a FIELD, hence `SpecF ℓ` the spectrum of a
   residue field.  At composite `ℓ` the base is not reduced-and-regular in
   the way the representability theorem wants; see the FAITHFULNESS AUDIT
   on the parent leaf, where the `ℓ = 0` and composite regimes are worked
-  out.
+  out.  **It is load-bearing a SECOND time, and that was invisible before
+  the cut**: `subsingleton_hom_specF` is what makes `eq_of_isBaseChange`
+  true at all, and it holds because `ZMod ℓ` is a quotient of the initial
+  ring — see the CORRECTION on `IsFineGamma1Moduli` above, where the
+  `𝔽_{ℓ²}` counterexample to the base-free reading is written out.
 
 **WHAT THIS DOES NOT CLAIM.**  Nothing about the coarse space `Y_1(N)`
 being smooth, affine or geometrically connected, nothing about its
 compactification, and nothing about `𝔽_ℓ`-points existing — those are
 `exists_isCoarseModuliY1_isSmoothCurve` and its neighbours, and they are
-separate leaves.  This is the bare universal property and no more.
-
-**Refuting check** (in the sense the doctrine asks for): the leaf becomes
-cheap the moment a functor-valued form of `Gamma1Datum` and a
-representability theorem for rigid moduli problems exist in this tree.
-`grep -rn "Rigid\|representable\|IsRepresentable" Fermat/FLT/ModularCurve/`
-is what would refute the claim that neither exists here today. -/
-theorem exists_isFineGamma1Moduli (N ℓ : ℕ) (_hN : 4 ≤ N) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N) :
+separate leaves.  This is the bare universal property and no more. -/
+theorem exists_isFineGamma1Moduli (N ℓ : ℕ) (hN : 4 ≤ N) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) :
     ∃ (M : Scheme.{0}) (strM : M ⟶ SpecF ℓ) (dM : Gamma1Datum N M),
-      IsFineGamma1Moduli N strM dM :=
-  sorry
+      IsFineGamma1Moduli N strM dM := by
+  haveI := Fact.mk hℓ
+  have hchar : ¬ ringChar (ZMod ℓ) ∣ N := by rwa [ZMod.ringChar_zmod_n]
+  obtain ⟨A⟩ := exists_gamma1AffineModel N hN (ZMod ℓ) hchar
+  obtain ⟨dY, h⟩ := exists_isFineGamma1Moduli_of_atlas hN hchar
+    (fun Z => subsingleton_hom_specF ℓ Z) A.toGamma1Atlas
+  exact ⟨A.toGamma1Atlas.Y, A.toGamma1Atlas.str, dY, h⟩
 
 /-- **A fine moduli scheme IS an atlas, with `M = Y` and `π = 𝟙`**
 (PROVEN 2026-07-28) — the packaging half of the atlas cut, and it is

@@ -1103,6 +1103,44 @@ that the consumer **already held and was discarding** — so the fix cost nothin
 statement did not change. That is the usual shape: the missing hypothesis is often already in the caller's
 hand.
 
+## A CITATION LEAF IS NOT ATOMIC UNTIL YOU CHECK WHAT ITS NEIGHBOURS ALREADY PROVE
+
+(2026-07-31, `exists_isFineGamma1Moduli`.) A leaf whose docstring is one citation
+— "Katz–Mazur 4.7.1", "Deligne–Rapoport IV.2" — reads as irreducible, and the
+reflex is to price the whole classical theorem. Ask instead **which parts of that
+theorem the tree has already proven for a neighbouring leaf**, because a citation
+is usually a conjunction and the sibling constructions have often discharged most
+of it. Here the arithmetic half (4.7.0 + 2.7.4 + 8.1.1, every hypothesis on `N`
+and `ℓ`) was PROVEN in `exists_gamma1AffineModel`, and the uniqueness half fell
+out of a field the atlas structure already carried. What remained was one
+base-generic, arithmetic-free leaf: the frontier count did not move, but the leaf
+lost three hypotheses and became usable over `ℚ` as well.
+
+Two rules came out of it, and both generalise past this file:
+
+* **A `∀` over a structure is safe exactly when it constrains a field the
+  structure PINS.** `X1.lean` has a refuted `∀ A : Gamma1Atlas` leaf and a sound
+  one. The difference is not the quantifier: `A.M` (the rigidified scheme) varies
+  with the auxiliary level and a `∀` about it must hold for all of them at once,
+  while `(A.Y, A.classify)` is INITIAL among classifying cocones, so a statement
+  about it has the same truth value at every atlas. Before writing or auditing a
+  `∀ <structure>`, ask which field the conclusion mentions and whether the
+  structure's own universal property determines it.
+* **A uniqueness clause with no "over the base" clause is FALSE over any base
+  with a nontrivial automorphism.** `IsFineGamma1Moduli.eq_of_isBaseChange`
+  carried the note "uniqueness is a statement about `M` alone"; over
+  `K = 𝔽_{ℓ²}` with `σ` the Frobenius, `m` and `Spec σ ≫ m` classify the same
+  datum and differ. Rigidity pins the classifying morphism only *among morphisms
+  over the base*. Such a notion is correct only where `Hom(T, S)` is a
+  subsingleton — i.e. at `SpecQ` (`subsingleton_hom_specQ`) and `SpecF ℓ`
+  (`subsingleton_hom_specF`), the two bases this development uses — so when you
+  move one off its base, carry `∀ Z, Subsingleton (Z ⟶ S)` as a real hypothesis.
+
+Consequence for the second rule that is easy to miss: a hypothesis can be
+load-bearing **twice**. `ℓ.Prime` is cited for "`ZMod ℓ` is a field"; it is also
+the reason the uniqueness clause is true at all, and that second role is
+invisible until the statement is generalised.
+
 ## SEVENTH invisibility class: A CLEAN MERGE THAT DOES NOT COMPILE — the interface split
 
 (2026-07-30, release 22, three instances in one batch.) The six classes above are all about
