@@ -4587,9 +4587,47 @@ WHAT IS LEFT IN THIS HALF: EXISTENCE, i.e. rigidity. The coefficients of the pro
 each fixed `z`, the elementary symmetric functions of the `ψ(N)` numbers `j((a z + b)/d)`.
 They are holomorphic on `ℍ`, `Γ`-invariant by `hinv`, and meromorphic at the cusp, hence
 POLYNOMIALS IN `j`. See the partial refutation in the section note below: this step is NOT the
-missing structure theorem `M_* = ℂ[E₄, E₆]`, it is a pole-order induction over
-`ModularForm.levelOne_weight_zero_const`, which this file already uses twice
-(`wOctCubeForm`, `etaWeightFourForm`).
+missing structure theorem `M_* = ℂ[E₄, E₆]`.
+
+**THE INDUCTION, WITH EVERY STEP NAMED — checked against the pin 2026-07-31, and it needs FOUR
+mathlib lemmas plus a packaging pattern this file already contains twice.** The section note
+below calls this step "real work but bounded" and points at `Function.Periodic.qParam` /
+`cuspFunction` / `qExpansion`; that is right but understates what is available, so here is the
+route in full. Take POLE ORDER `≤ m` to MEAN "`F · Δ^m` extends to a `ModularForm 𝒮ℒ (12m)`" —
+no bespoke notion is needed, and this is exactly what the induction consumes and produces.
+
+Claim: `F : ℍ → ℂ` holomorphic with `F (γ • z) = F z` and pole order `≤ m` ⟹ `F = P ∘ j` for
+some `P : ℂ[Y]` with `deg P ≤ m`.
+
+* `m = 0`: `F` is itself a `ModularForm 𝒮ℒ 0`, hence CONSTANT by
+  `ModularFormClass.levelOne_weight_zero_const` — the same lemma `eta_weber_sum` uses through
+  `wOctCubeForm`, so the packaging pattern is already here twice (`wOctCubeForm`,
+  `etaWeightFourForm`).
+* `m + 1`: put `G := F · Δ^{m+1} : ModularForm 𝒮ℒ (12(m+1))` and `c := (qExpansion 1 G).coeff 0`.
+  Because `j = E₄³/Δ` BY DEFINITION here and `Δ` is nowhere zero
+  (`ModularForm.discriminant_ne_zero`), `j^{m+1}·Δ^{m+1} = E₄^{3(m+1)}` pointwise — field
+  algebra, no modular input. `E₄^{3(m+1)}` has zeroth `q`-coefficient `1`
+  (`EisensteinSeries.E_qExpansion_coeff_zero`, `ModularForm.qExpansion_of_pow`), so
+  `G − c·E₄^{3(m+1)}` is a weight-`12(m+1)` form with vanishing constant term.
+  `ModularForm.toCuspForm` (whose hypothesis is literally `(qExpansion 1 f).coeff 0 = 0`) makes
+  it a `CuspForm 𝒮ℒ (12(m+1))`, and `CuspForm.discriminantEquiv` divides it by `Δ` — with
+  `discriminantEquiv_apply : (discriminantEquiv f) z = f z / Δ z` true by `rfl` — landing in
+  `ModularForm 𝒮ℒ (12m)` whose underlying function is `(F − c·j^{m+1})·Δ^m`. That is the
+  induction hypothesis at `m`; take `P = Q + c·Y^{m+1}`.
+
+So the four names are `levelOne_weight_zero_const`, `toCuspForm`, `discriminantEquiv`,
+`E_qExpansion_coeff_zero`. Worth knowing separately, because the section note does not say it:
+mathlib's `UpperHalfPlane.cuspFunction` / `qExpansion` / `analyticAt_cuspFunction_zero` /
+`qExpansion_coeff_unique` are stated for an ARBITRARY `f : ℍ → ℂ` under
+`Periodic (f ∘ ofComplex) h`, `MDiff f`, `IsBoundedAtImInfty f` — no `ModularFormClass`
+instance is required — so they apply to the coefficient functions directly.
+
+WHAT THE PROVER ACTUALLY HAS TO SUPPLY, then: the packaging, and the POLE-ORDER BOUND for the
+coefficient functions. The bound may be crude, since only SOME `m` is needed:
+`Im((a z + b)/d) = a·Im z/d`, so `|j((a z + b)/d)| = O(|q|^{−a/d})` with `a/d ≤ N`, hence
+`e_k = O(|q|^{−kN})` and `m = ψ(N)·N` works for every coefficient at once. No sharp bound, and
+no `q`-expansion of the product, is needed on this side — which is what separates it from the
+integrality half, where the expansion's COEFFICIENTS are the whole point.
 
 `hinv` IS SPENT ENTIRELY HERE and is what the sibling half does NOT need — see the paragraph
 "`hinv` DOES NOT CROSS THE SPLIT" on that sibling. Adding it cannot make this statement false
@@ -4910,6 +4948,15 @@ not a missing structure theorem. What it does additionally require is a notion o
 the cusp for a `Γ`-invariant holomorphic function that is not a modular form; mathlib's
 `Function.Periodic.qParam` / `cuspFunction` / `qExpansion` are the tools, and that is real work
 but bounded.
+
+**AND IT IS NOW WRITTEN OUT, step by step, on `exists_complexPolynomial_eq_prod_of_smul_invariant`
+above (2026-07-31).** Two things that paragraph did not know: no bespoke pole-order notion is
+needed — DEFINE "pole order `≤ m`" as "`F·Δ^m` extends to a `ModularForm 𝒮ℒ (12m)`", which is
+what the induction both consumes and produces — and `ModularForm.toCuspForm` plus
+`CuspForm.discriminantEquiv` supply the descent `m + 1 ↦ m` off the shelf. The `cuspFunction`
+and `qExpansion` API is moreover stated for an ARBITRARY `f : ℍ → ℂ` with
+`Periodic (f ∘ ofComplex) h`, `MDiff f`, `IsBoundedAtImInfty f`, so it does not need the
+function to be packaged as a modular form first.
 
 AND A SECOND ROUTE IS ALSO TOOLED, if the first is awkward.
 `Mathlib/NumberTheory/ModularForms/LevelOne/DimensionFormula.lean` — reachable from here

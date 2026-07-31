@@ -1250,6 +1250,42 @@ point and had to be hoisted. So when a scratch-verified block first fails in the
 error before assuming a proof broke: a forward reference is far likelier than an elaboration
 difference, and the fix is a move, not a proof.
 
+**5. AFTER A MOVE-2 SPLIT, CHECK WHETHER CLAUSE `P` ALREADY IMPLIES THE AMBIENT HYPOTHESIS —
+it is often exactly strong enough, and then the two halves have DISJOINT hypotheses.**
+(2026-07-31, `flt-lean-175`, same file, next run.) Splitting `∃ Ψ, P Ψ ∧ Q Ψ` into `∃ Ψ, P Ψ`
+and `∀ Ψ, P Ψ → Q Ψ`, the reflex is to copy every hypothesis of the parent leaf into both
+halves. Do the check instead: the second half receives `P Ψ` as a hypothesis, and `P` is the
+clause chosen to PIN `Ψ`, so it is usually informative enough to reproduce some of them.
+
+`Φ_N`'s construction (`∃ Φ ∈ ℤ[Y][X]` specialising to `∏_t (X − j(t·z))`) split into existence
+over `ℂ` and integrality of the coefficients. The parent carried `hinv`, `Γ`-invariance of the
+product, and the classical account of the INTEGRALITY half spends `Γ`-invariance too — to know
+the coefficients are power series in `q` rather than `q^{1/N}`. So `hinv` looked like it had to
+go to both. It does not: `P Ψ` says the coefficient functions ARE polynomials in `j`, and
+`j(z+1) = j(z)`, so `T`-invariance is a CONSEQUENCE of the hypothesis. `hinv` stayed on the
+rigidity half alone.
+
+**The mirror-image obligation, which the count never shows: a split divides TECHNIQUES, not
+PREREQUISITES.** Both halves here still need the `q`-expansion of `j` at a triangular point —
+one wants its POLE ORDER, the other its COEFFICIENT RING. That is the single shared cost, and
+it means the pair should go to ONE owner even though neither uses the other's technique. Name
+the shared prerequisite in the docstring, or the next dispatcher will cost the halves as
+disjoint and pay for it twice.
+
+**And before writing "this step needs machinery we do not have", GREP THE PIN FOR THE STEP,
+not for the theory.** The section note here had recorded step (iv) — `Γ`-invariant holomorphic
++ meromorphic at the cusp ⟹ polynomial in `j` — as "real work but bounded", correctly ruling
+out the missing `M_* = ℂ[E₄, E₆]`. Ten minutes in `Mathlib/NumberTheory/ModularForms/` turned
+it into four named lemmas: `levelOne_weight_zero_const` (base case), `ModularForm.toCuspForm`
+(constant term zero ⟹ cusp form), `CuspForm.discriminantEquiv` (divide by `Δ`, and
+`discriminantEquiv_apply` is `rfl`), `EisensteinSeries.E_qExpansion_coeff_zero`. The bespoke
+"notion of pole order" the note said was owed is not owed either — DEFINE pole order `≤ m` as
+"`F·Δ^m` extends to a `ModularForm 𝒮ℒ (12m)`", which is what the induction consumes and
+produces. Also: `UpperHalfPlane.cuspFunction` / `qExpansion` / `analyticAt_cuspFunction_zero` /
+`qExpansion_coeff_unique` are stated for an ARBITRARY `f : ℍ → ℂ` under `Periodic`, `MDiff`,
+`IsBoundedAtImInfty` — no `ModularFormClass` instance — which is what makes them usable on a
+function that is not yet known to be a modular form.
+
 ## RIVAL CUTS ARE OFTEN COMPLEMENTARY — check before choosing
 
 (2026-07-30.) Nine of 57 branches in one batch were declined because another agent had cut the
