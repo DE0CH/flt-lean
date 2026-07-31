@@ -13,6 +13,7 @@ public import Mathlib.FieldTheory.Finite.Extension
 public import Mathlib.Algebra.Polynomial.FieldDivision
 public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 public import Mathlib.RingTheory.EuclideanDomain
+public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius
 
 /-!
 # A mod-`ℓ` degree obstruction, and the `p = 11` certificate of Mazur's non-CM table
@@ -189,32 +190,27 @@ theorem eval_hPolyElevenA_ne_zero (a : ZMod 23) : hPolyElevenA.eval a ≠ 0 := b
   simp only [hPolyElevenA, eval_add, eval_mul, eval_pow, eval_X, eval_ofNat]
   decide
 
-/-- **THE ONE OPEN LEAF OF THIS FILE** (sorry leaf, cut 2026-07-30): `H` divides
-`X ^ (23 ^ 11) - X`, i.e. every irreducible factor of `H` has degree dividing `11`.
+/-- **`H ∣ X ^ (23 ^ 11) - X`** (PROVEN 2026-07-31), i.e. every irreducible factor of `H` has
+degree dividing `11`.  `eval_hPolyElevenA_ne_zero` above is what turns "dividing `11`" into
+"equal to `11`" where the obstruction needs it.
 
-TRUE, machine-checked in PARI/GP 2.15.4 (`Mod(x, H) ^ (23 ^ 11) == x`); `H` is in fact a
-product of five irreducibles of degree exactly `11`, and `eval_hPolyElevenA_ne_zero` above is
-what turns "dividing `11`" into "equal to `11`" where the obstruction needs it.
+The whole content is `Fermat.MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly`, in its own module
+because it is a few thousand lines of generated `ring` identities and elaboration is
+single-threaded per file.  `H` is the product of five irreducible polynomials of degree
+exactly `11`; the divisibility is proven for each factor separately, through a precomputed
+table of `(X ^ 23) ^ i mod hⱼ`, and the five are recombined by explicit Bézout certificates.
 
-**THE ROUTE, and it is entirely mechanical.**  Write `r_k := X ^ (23 ^ k) mod H`, so `r_0 = X`
-and the claim is `r_11 = X`.  Do NOT compute `r_k ^ 23` by repeated squaring: over `ZMod 23`
-the Frobenius is LINEAR, `r ^ 23 = Polynomial.expand 23 r` (`Polynomial.expand_char` together
-with `ZMod.pow_card`, which kills the coefficient-wise `c ↦ c ^ 23`).  So precompute the table
-`T_i := X ^ (23 * i) mod H` for `i ≤ 54` — each `T_{i+1}` is `T_i * T_1` reduced, one identity
-of degree `≤ 108` apiece — and then each of the eleven Frobenius steps is a single `ZMod 23`
-linear combination of the `T_i`, which `ring_nf` checks at degree `54`.
-
-Every identity is of the shape `A * B = Q * H + R`, verified by the same
-`reduce_mod_char; ring_nf; reduce_mod_char` idiom the chain above uses; `Q` and `R` come from
-PARI.  The count is about `65` identities and the arithmetic is `≈ 2·10⁵` `F₂₃` operations,
-which is the figure the `X0.lean` cost triage calls "comfortably kernel-checkable".
+The route the original cut proposed — reduce `X ^ (23 ^ k)` mod `H` itself — was tried and is
+about `5×` more `ring` work, because it needs a `55`-entry table of degree-`54` polynomials
+rather than five `10`-entry tables of degree-`10` ones.
 
 The same route closes the `p = 11`, `j = −24729001` row (same `ℓ`, same degrees) and, with one
 extra coprimality at `d = 2`, the two `p = 17` rows.  It does NOT close the `p = 37` rows:
 there `deg H = 666`, `ℓ = 397` and `m = 222`. -/
 theorem dvd_X_pow_card_pow_sub_X_hPolyElevenA :
-    hPolyElevenA ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X :=
-  sorry
+    hPolyElevenA ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X := by
+  rw [Nat.card_zmod, hPolyElevenA]
+  exact Fermat.MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly
 
 /-- **Row `p = 11`, `j = −121`: `Ψ₁₁ mod 23` has no monic divisor of degree `10`**
 (PROVEN 2026-07-30 over `dvd_X_pow_card_pow_sub_X_hPolyElevenA`).
