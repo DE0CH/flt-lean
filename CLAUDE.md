@@ -120,6 +120,115 @@ Two riders from the same run:
   only inside one theorem BODY, which a private import reaches; making it `public` would
   re-export all of them through a module whose consumer already has them. What the edge
   still costs is BUILD ORDER, and that is the thing to justify.
+## WHEN YOUR TARGET EXISTS ONLY ON `merger`, `merger` IS YOUR BASE — AND YOU CAN STILL VERIFY WHEN IT IS RED
+(2026-07-31, `flt-lean-361`.) The release-window sections above all tell you to run
+`git show merger:<file> | grep -n <name>` and stop when the answer is "already proven".
+There is a third answer they do not cover and it is common: **the target DOES NOT EXIST
+on `main` at all**, because the commit that cut it is sitting on `merger` waiting for a
+release. `aj_eq_of_rationalProperCurve` was dispatched with a file-and-line reference
+(`X0.lean:~46424 as of a33a7b1c`); `a33a7b1c` is on `merger`, is not an ancestor of
+`main`, and the name appears **nowhere** in a `main`-based worktree. Every stale-worktree
+check passes — `git rev-list --count HEAD..main` is `0` after one fast-forward, `git
+status` is clean, the build is green — and the name is still missing.
+**Do not re-create the declaration on `main`.** `X0.lean` was 81 530 lines on `main` and
+107 787 on `merger`; a branch that re-cuts the leaf against the smaller file hands the
+merge worker a 26 000-line conflict in the file it has the least capacity to resolve.
+Merge `merger` into your branch (`git merge merger`, usually a fast-forward since your
+worktree is behind it) and edit `merger`'s copy. The merge worker then fast-forwards you
+back, and `git merge-tree` reports nothing to decide.
+**THE PRICE IS THE BUILD, AND `merger` IS ROUTINELY RED.** Rebuilding `X0`'s cone at
+`merger` took ~3 hours here and then failed: `merger` at `9e7f6e4b` has **103 errors in
+`X0.lean` alone** (from `4887`, `5047`, `15542` `Unknown identifier
+exists_nonConstant_qExpansion_gamma0GITPresentation`, `18083` `Unknown identifier
+exists_jSection`, `22287`…, up to the `maxErrors` cap), i.e. the release-27 repair the
+merge worker is in the middle of. That is not a reason to stop:
+**Verify against the RELEASE oleans through the `LEAN_PATH` shim, after DIFFING THE
+SIGNATURES of every declaration your proof names.** The shim is already documented above;
+what makes it *sound* here — and this is the part that is new — is the signature diff.
+Extract each name's declaration header from `git show main:<file>` and from your working
+copy and compare them textually; if they are identical, a proof that elaborates against
+the release environment ports verbatim. Nine names were checked this way
+(`exists_relPicZero`, `RelPicEquiv.{refl,of_iso,tensor,cancel_left}`, `modTensorComm`,
+`isInvertibleSheaf_sectionIdeal`, `IsRelPicZeroOf.isAlbaneseOf`,
+`IsAlbaneseOf.isJacobianOf`), all identical, and the proof went from first draft to green
+in **two 5-second iterations** against a file whose own build is hours long and broken.
+Two riders:
+* **The scratch farm must be the WHOLE release tree** (`cp -rs
+  ~/.flt-release-lake/build/lib /tmp/relean-N/`), prefixed onto `LEAN_PATH` harvested with
+  `lake env printenv` and run through **bare `lean`** — `lake env lean` resets
+  `LEAN_PATH` and silently discards your prefix.
+* **After porting, `lake env lean -DmaxErrors=400` the real file and grep for errors in
+  YOUR line range.** A red file still elaborates past your region; the default cap of 100
+  is what stops it, and raising it turns an unusable check into a usable one. "The module
+  does not build" and "my edit does not build" are different claims, and only the second
+  is yours.
+## A RUNAWAY COMMENT BALANCES, SO EVERY EXISTING CHECK IS SILENT — `tools/merge/longcomment.py`
+(2026-07-31, `flt-lean-361`.  This was the release-27 blocker, and four more instances
+were found in one pass once the check existed.)
+`flt-comment-balance.py` finds a comment that never CLOSES (`depth > 0` at EOF,
+`unterminated comment`). The commoner and worse defect balances:
+> a merge splices a duplicated `/-- …` header into the middle of an existing docstring.
+> The extra OPENER runs the comment far past its intended end; a stray terminator
+> elsewhere in the file — itself the residue of a *different* orphaned block — closes it
+> again. Total depth is `0`.
+In `X0.lean` one such splice (six lines, byte-identical to a docstring 500 lines above)
+ran a comment **1214 lines** and put **45 top-level declarations** inside it: the whole
+`addPairHom`/`shearHom`/`pairSquareMap` group machinery. In `Interface.lean` another ran
+**41 621 lines** over **644 declarations**. Nothing reported either: depth balances, so
+`flt-comment-balance.py` is silent; the declarations are still in the SOURCE, so
+`grep '^theorem'` and every duplicate scan are unchanged; `scopecheck.py` is unchanged.
+The only symptom is a shower of `Unknown identifier` and `Function expected at` for names
+that are visibly present in the file, which reads as a rename, a merge-side removal or a
+missing import — and CLAUDE.md's own advice sends you to `git log -m -S` instead of to the
+comment 1200 lines above.
+**The signal that works is BLUNT: a 1200-line comment in a Lean file is never
+intentional.** `tools/merge/longcomment.py` reports every block over `--min` lines
+together with the number of doc-comment openers at column 0 inside it, plus stray
+terminators separately. Run it before the release build; it costs seconds.
+    python3 tools/merge/longcomment.py Fermat --damage-only
+Three things about reading it, each learned by getting it wrong first:
+* **Do not count "declaration-looking lines" as the damage signal.** This tree's
+  docstrings quote Lean constantly and sentences begin `theorem …`, `lemma …`, `class …`
+  at column 0; that heuristic flagged every long docstring in the project. A NESTED
+  DOC-OPENER is the reliable tell, because it is what the splice leaves behind.
+* **A long block with no nested opener is a genuine docstring** — `X0.lean` has one of
+  1147 lines. One eyeball per hit; `--damage-only` suppresses them.
+* **Fix the runaway FIRST, then re-run.** Closing one un-consumes the stray terminator
+  that used to balance it, so a fresh stray appears elsewhere and names the next orphan.
+  The repairs arrive in layers, for the same reason the release build takes three rounds.
+**The repairs are syntax, and they must STAY syntax.** Demote a stale `/--` to `/-`,
+reopen an orphaned prose block as a PLAIN comment (not a docstring — the text usually
+documents a declaration other than the one that follows), comment out a truncated binder
+fragment. Delete nothing: a merge that drops a declaration also drops the only copy of its
+prose. Say in the note which choice you left to an author.
+**AND THE TRAP THAT COST A ROUND: do not write a literal comment delimiter inside the note
+explaining the repair.** `"a stray `-/` stood here"` CLOSES the comment and recreates
+exactly the defect being fixed — two fresh strays appeared that way and were caught only
+by re-running the scan. Write "terminator" / "delimiter" in prose.
+**Know when to stop.** One `X0.lean` runaway was left unrepaired on purpose: the region it
+hides contains a SECOND declaration of a name already declared outside it, so reopening it
+converts a silent error into `has already been declared`, and choosing which copy survives
+is an author's decision. A passer-by fixes the syntax and publishes the diagnosis; an
+interface reconciliation is not theirs. Write the diagnosis down completely — the dropped
+declaration, its source commit, the prescribed one-line derivation, the duplicate — so the
+decision is all that is left.
+## A `have` ON DATA DESTROYS DEFEQ — bind a structure INLINE, not with `have`
+(Same task, one iteration.) `have h : T := v` **forgets `v`** when `T` is data, so a
+composite of two `def`s bound that way stops being definitionally what it was. Concretely:
+    have jacP : IsJacobianOf strC ab' o := (P.isAlbaneseOf hf).isJacobianOf
+    have hP' : jacP.aj g x = jacP.aj g y := hP     -- FAILS
+    -- Type mismatch: hP has type P.aj x = P.aj y but is expected to have type
+    --   jacP.aj g x = jacP.aj g y
+`IsRelPicZeroOf.isAlbaneseOf` and `IsAlbaneseOf.isJacobianOf` are plain `def`s, so
+`(P.isAlbaneseOf hf).isJacobianOf.aj g x` really is defeq to `P.aj x` — and `have` is
+exactly what breaks it. Keep the composite inline (`obtain … := (P.isAlbaneseOf hf).…
+.universal …`) and close the last goal with `congrArg` rather than `rw`, which needs a
+syntactic match the projections will never give you. Use `let` only if you must name it.
+This development binds structures with `have` all over the place and usually gets away
+with it, because most such structures are only ever *projected*. It bites precisely when
+you need the projection to be DEFEQ to something else — i.e. whenever you have built the
+same object by two routes, which is the commonest shape of an autoduality or
+universal-property transfer.
 ## THE DEGENERATE OBJECT REFUTES EVERY UNGUARDED PERFECTNESS CLAUSE
 
 (2026-07-31.) `exists_tateWeilRawFamily_of_qAdicWeilSystem` was refuted with no
@@ -8858,15 +8967,37 @@ other absence claim in this file.
 Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
 inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
 So on any job with `resume: true` / `retries > 0`:
+**CORRECTED 2026-07-31 (`flt-lean-361`): `prev_tokens` IS written, and the claim that
+stood here — "`grep -n prev_tokens flt-loop.py` finds exactly two occurrences, nothing
+ever writes it, it is always `None`" — was FALSE.** The grep was right and was run on the
+wrong file: the writer is `flt_loop_rows.py:504`,
+`j["prev_tokens"] = ((j.get("prev_tokens") or []) + [j["token"]])[-10:]`, immediately
+above the `j["token"] = tok()` that mints the new one. Measured live on a resumed job:
+`token: 9ef851a2`, `prev_tokens: ['15c0921e']`, and `15c0921e` was exactly the token
+printed in that run's prompt. So the old token is accepted and a resumed agent's sentinel
+is **not** discarded.
+**The lesson generalises past the loop, and it is why the correction is worth more than
+the fact: a claim of the form "nothing writes X" is a claim about a SEARCH, and the
+search's scope is part of the claim.** This project's loop is two modules —
+`flt-loop.py` (the state machine) and `flt_loop_rows.py` (the row actions that mutate the
+job records) — and essentially every WRITE lives in the second. Grep the directory, not
+the file whose name matches the concept. Same failure shape as the self-certifying greps
+recorded above, at tooling scope instead of Lean scope.
+Resume still mints a NEW token, deliberately, so the old `.started` marker goes inert, and
+the agent's prompt is the ORIGINAL payload carrying the ORIGINAL token. So on any job with
+`resume: true` / `retries > 0`:
 
 * the live token is in `~/.flt-loop/jobs/<name>.json` and `<name>.started`;
-* the prompt's token is the pre-resume one;
-* a sentinel written under the prompt's token is rejected, `j["sentinel"]` stays `None`,
-  and `started ∧ ¬alive ∧ ¬sentinel` makes the loop conclude the agent **died**.
+* the prompt's token is the pre-resume one, and is now in `prev_tokens`;
+* **either is accepted.** The failure this section was written to prevent — a sentinel
+  ignored, `j["sentinel"]` left `None`, and `started ∧ ¬alive ∧ ¬sentinel` making the loop
+  conclude the agent died and dispatch a replacement at work already committed — is
+  therefore no longer live. Only the last ten tokens are kept, which is far more than any
+  job's retry count.
 
-The result is the worst shape of failure this file catalogues: completed, committed,
-compiler-verified work is thrown away, and a replacement is dispatched at leaves that are
-already proven — a phantom dispatch manufactured out of a *successful* run.
+**Read the record anyway.** It costs one command, it is the only thing that stays right if
+the retention window or the acceptance rule changes again, and the `prev_tokens` safety net
+is itself a fix that this file asserted did not exist for a day.
 
 **So the check is one command, run it before writing the sentinel:**
 
