@@ -9,6 +9,8 @@ public import Mathlib.NumberTheory.ModularForms.Basic
 public import Mathlib.NumberTheory.ModularForms.CongruenceSubgroups
 public import Mathlib.NumberTheory.ModularForms.QExpansion
 public import Mathlib.NumberTheory.ModularForms.Bounds
+public import Mathlib.NumberTheory.ModularForms.NormTrace
+public import Mathlib.NumberTheory.ModularForms.LevelOne.DimensionFormula
 public import Mathlib.NumberTheory.LSeries.Basic
 public import Mathlib.NumberTheory.LSeries.AbstractFuncEq
 public import Mathlib.NumberTheory.LSeries.MellinEqDirichlet
@@ -1163,6 +1165,170 @@ theorem exists_isLFunctionOf_of_isWeightTwoEigenform (N : ℕ) (hN : N ≠ 0)
           ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s)) *
         (Complex.Gamma s * (Complex.Gamma s)⁻¹) * LSeries a s from by ring,
       hcancel, mul_inv_cancel₀ hΓ, one_mul, one_mul]
+
+
+/-! ### Finite-dimensionality of `S₂(Γ₀(N))`
+
+HOISTED here 2026-07-31 from `Modularity/Interface.lean`, where it was
+proven 2026-07-24 and where it remains reachable under its old name (that
+copy is now a one-line delegation to this one, so there is exactly one
+proof).  The move is a HOIST and not a duplication: the argument is pure
+mathlib — `ModularForm.norm` to level one, `sturm_bound_levelOne`, and the
+`q`-expansion API — and it mentions no eigenform, no Hecke operator and no
+scheme, so `Interface.lean` was never its natural home.
+
+It was hoisted because `ModularCurve/X0.lean` needs it and is UPSTREAM of
+`Interface.lean` (which carries `public import Fermat.FLT.ModularCurve.X0`),
+so nothing in that file is nameable there: `finite_setOf_isWeightTwoEigenform`
+is proven over this.  That leaf's docstring said mathlib at this pin "has no
+finite-dimensionality of `CuspForm`" and that a prover would have to build the
+valence formula or a degree bound.  The first clause is true and the second is
+not — the project has had the theorem for a week, in a file that could not be
+cited.  Standing lesson: an inventory audit is reliable about what MATHLIB
+lacks and unreliable about what the PROJECT has, because a downstream file is
+invisible to a `grep` that stops at "is it in scope here".
+-/
+
+section SturmFiniteness
+
+open ModularForm Matrix.SpecialLinearGroup
+open scoped Manifold
+
+/-- The `m`-th `q`-expansion coefficient of a weight-`2` level-`N` cusp form,
+as a `ℂ`-linear functional — additivity and scalar equivariance through the
+pin's `qExpansion_add`/`qExpansion_smul`, which need analyticity of the cusp
+function and hence `1` being a strict period. -/
+noncomputable def qExpansionCoeffL (N m : ℕ) : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] ℂ where
+  toFun f := (qExpansion 1 ⇑f).coeff m
+  map_add' f g := by
+    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos
+      (one_mem_strictPeriods_Gamma0GL N)
+    have hga := ModularFormClass.analyticAt_cuspFunction_zero g one_pos
+      (one_mem_strictPeriods_Gamma0GL N)
+    show (qExpansion 1 ⇑(f + g)).coeff m = _
+    rw [CuspForm.coe_add, qExpansion_add hfa hga]
+    simp
+  map_smul' c f := by
+    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos
+      (one_mem_strictPeriods_Gamma0GL N)
+    show (qExpansion 1 ⇑(c • f)).coeff m = _
+    rw [CuspForm.IsGLPos.coe_smul, qExpansion_smul hfa]
+    simp
+
+@[simp] theorem qExpansionCoeffL_apply (N m : ℕ) (f : CuspForm (Gamma0GL N) 2) :
+    qExpansionCoeffL N m f = (qExpansion 1 ⇑f).coeff m := rfl
+
+/-- **Sturm bound for `S₂(Γ₀(N))`**: there is a finite bound `B` — here
+`2·[SL(2,ℤ):Γ₀(N)]/12 + 1` — such that a weight-2 level-`N` cusp form whose
+`q`-expansion coefficients `a_m` vanish for all `m < B` is zero.
+General-level analogue of the classical Sturm bound, proven by the
+norm-to-level-1 route made quantitative through the factorization
+`norm f = f · (complementary product)`. -/
+theorem exists_cuspForm_sturm_bound (N : ℕ) (hN : N ≠ 0) :
+    ∃ B : ℕ, ∀ f : CuspForm (Gamma0GL N) 2,
+      (∀ m < B, (qExpansion 1 ⇑f).coeff m = 0) → f = 0 := by
+  classical
+  haveI : NeZero N := ⟨hN⟩
+  refine ⟨2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) / 12 + 1, fun f hcoeff => ?_⟩
+  suffices hf0 : ⇑f = 0 from DFunLike.coe_injective (by rw [hf0, CuspForm.coe_zero])
+  by_contra hf
+  refine ModularForm.norm_ne_zero 𝒮ℒ hf ?_
+  apply ModularForm.sturm_bound_levelOne
+  letI := Fintype.ofFinite (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ)
+  set q₀ : 𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ := ⟦1⟧ with hq₀
+  set g : ℍ → ℂ :=
+    ∏ q ∈ Finset.univ.erase q₀, SlashInvariantForm.quotientFunc f q with hgdef
+  -- every element of `Γ₀(N)` stabilizes the identity coset
+  have hfix : ∀ (γ : GL (Fin 2) ℝ) (hγSL : γ ∈ 𝒮ℒ), γ ∈ Gamma0GL N →
+      (⟨γ, hγSL⟩ : 𝒮ℒ)⁻¹ • q₀ = q₀ := by
+    intro γ hγSL hγ
+    rw [hq₀]
+    exact Quotient.sound (QuotientGroup.leftRel_apply.mpr (by
+      simpa [Subgroup.mem_subgroupOf] using hγ))
+  have hfix' : ∀ (γ : GL (Fin 2) ℝ) (hγSL : γ ∈ 𝒮ℒ), γ ∈ Gamma0GL N →
+      (⟨γ, hγSL⟩ : 𝒮ℒ) • q₀ = q₀ := by
+    intro γ hγSL hγ
+    conv_lhs => rw [← hfix γ hγSL hγ]
+    rw [smul_inv_smul]
+  -- hence permutes the complementary cosets: `g` is `Γ₀(N)`-slash-invariant
+  have hslash : ∀ γ ∈ Gamma0GL N,
+      g ∣[(2 * ((Finset.univ.erase q₀).card : ℤ))] γ = g := by
+    intro γ hγ
+    have hγSL : γ ∈ 𝒮ℒ := by
+      rcases Subgroup.mem_map.mp hγ with ⟨s, -, rfl⟩
+      exact ⟨s, rfl⟩
+    have habs : |γ.det.val| = 1 := Subgroup.HasDetPlusMinusOne.abs_det hγSL
+    rw [hgdef, ModularForm.prod_slash, habs, _root_.one_zpow, one_smul]
+    refine Finset.prod_equiv (MulAction.toPerm ((⟨γ, hγSL⟩ : 𝒮ℒ)⁻¹))
+      (fun q => ?_) (fun q _ => ?_)
+    · simp only [Finset.mem_erase, Finset.mem_univ, and_true, MulAction.toPerm_apply]
+      rw [not_iff_not, inv_smul_eq_iff, hfix' γ hγSL hγ]
+    · simpa [MulAction.toPerm_apply] using
+        SlashInvariantForm.quotientFunc_smul f hγSL q
+  let G : SlashInvariantForm (Gamma0GL N) (2 * ((Finset.univ.erase q₀).card : ℤ)) :=
+    ⟨g, hslash⟩
+  have hper : Function.Periodic (g ∘ UpperHalfPlane.ofComplex) 1 :=
+    SlashInvariantFormClass.periodic_comp_ofComplex G (one_mem_strictPeriods_Gamma0GL N)
+  have hhol : MDiff g := by
+    rw [hgdef]
+    exact MDifferentiable.prod (Quotient.forall.mpr fun ⟨r, _⟩ _ =>
+      (ModularForm.translate f r⁻¹).holo')
+  have hqzero : ∀ q : 𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ,
+      IsZeroAtImInfty (SlashInvariantForm.quotientFunc f q) := by
+    intro q
+    induction q using Quotient.inductionOn with
+    | h r =>
+      rw [SlashInvariantForm.quotientFunc_mk]
+      have hinf : IsCusp OnePoint.infty 𝒮ℒ := isCusp_SL2Z_iff'.mpr ⟨1, by simp⟩
+      have hcusp : IsCusp ((r.val)⁻¹ • OnePoint.infty) (Gamma0GL N) :=
+        (hinf.smul_of_mem (inv_mem r.2)).of_isFiniteRelIndex
+      exact CuspFormClass.zero_at_cusps f hcusp _ rfl
+  have hbdd : IsBoundedAtImInfty g := by
+    rw [hgdef]
+    exact Filter.BoundedAtFilter.prod _ fun q _ =>
+      Filter.ZeroAtFilter.boundedAtFilter (hqzero q)
+  have hganal : AnalyticAt ℂ (cuspFunction 1 g) 0 :=
+    analyticAt_cuspFunction_zero one_pos hper hhol hbdd
+  have hfanal : AnalyticAt ℂ (cuspFunction 1 ⇑f) 0 :=
+    ModularFormClass.analyticAt_cuspFunction_zero f one_pos
+      (one_mem_strictPeriods_Gamma0GL N)
+  have hfac : ⇑(ModularForm.norm 𝒮ℒ f) = ⇑f * g := by
+    rw [ModularForm.coe_norm,
+      ← Finset.mul_prod_erase Finset.univ _ (Finset.mem_univ q₀), ← hgdef]
+    congr 1
+    rw [hq₀, SlashInvariantForm.quotientFunc_mk]
+    simp
+  rw [hfac, qExpansion_mul hfanal hganal]
+  have horderf : ((2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) / 12 + 1 : ℕ) : ℕ∞)
+      ≤ (qExpansion 1 ⇑f).order :=
+    PowerSeries.nat_le_order _ _ fun i hi => hcoeff i hi
+  have hcast : ((2 : ℤ) * (Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) : ℤ)).toNat
+      = 2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) := by omega
+  calc ((((2 : ℤ) * (Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) : ℤ)).toNat / 12 : ℕ) : ℕ∞)
+      < ((2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) / 12 + 1 : ℕ) : ℕ∞) := by
+        rw [hcast]
+        exact_mod_cast Nat.lt_succ_self _
+    _ ≤ (qExpansion 1 ⇑f).order := horderf
+    _ ≤ (qExpansion 1 ⇑f).order + (qExpansion 1 g).order := self_le_add_right _ _
+    _ ≤ ((qExpansion 1 ⇑f) * qExpansion 1 g).order := PowerSeries.le_order_mul _ _
+
+
+/-- **Finite dimensionality of `S₂(Γ₀(N))`**: the Sturm bound makes the
+finitely many coefficient functionals `qExpansionCoeffL N 0, …,
+qExpansionCoeffL N (B−1)` jointly injective, so the weight-2 cusp space
+embeds `ℂ`-linearly into `Fin B → ℂ`.  This is the content of the
+Diamond–Shurman ch. 3 dimension theory actually needed downstream, obtained
+with no modular-curve geometry. -/
+theorem cuspForm_finiteDimensional (N : ℕ) (hN : N ≠ 0) :
+    FiniteDimensional ℂ (CuspForm (Gamma0GL N) 2) := by
+  obtain ⟨B, hB⟩ := exists_cuspForm_sturm_bound N hN
+  refine FiniteDimensional.of_injective
+    (LinearMap.pi (fun i : Fin B => qExpansionCoeffL N (i : ℕ)))
+    ((injective_iff_map_eq_zero _).mpr fun f hf => ?_)
+  refine hB f fun m hm => ?_
+  simpa [LinearMap.pi_apply] using congrFun hf ⟨m, hm⟩
+
+end SturmFiniteness
 
 end Fermat
 
