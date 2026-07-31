@@ -579,6 +579,21 @@ DO ALL FIVE, IN ORDER
     "there is no snapshot to dispatch against", and a wrong one seeds every
     agent in the fleet with a .lake for the wrong main.
 
+HOLDING THE RELEASE IS A SUPPORTED OUTCOME. USE IT RATHER THAN PUBLISH RED.
+If the tree you built does not compile, do not publish it. Publishing replaces a
+green main with a red one and seeds every worktree in the fleet from a snapshot
+whose oleans do not match it -- which is a worse day than a late release, and it
+is the whole reason the merge batch exists. So: merge what you can into the
+integration branch, leave main alone, do not write the snapshot marker, say in
+`to_merger` what is still red and what you learned about it, and stop. The loop
+has a row for exactly this (21, HELD): your claim goes back to the batch, your
+notes reach your successor, and a fresh merger is created. Nothing is lost and
+nothing panics.
+
+Release 27 did this correctly and the loop panicked anyway, because the row did
+not exist yet. It does now. A held release costs one cycle; a red main costs
+every agent dispatched until somebody notices.
+
 FINALLY, write your sentinel to %(sentinel)s as your last act:
 
     {"token": "%(token)s", "queue": [], "to_merger": [], "to_medic": ""}
@@ -1027,6 +1042,17 @@ def load():
         # that has no tree. They get the answer, not the means of computing it.
         "snapshot_current": bool(snap) and lean_equiv(snap["sha"], sha),
         "audit_current": lean_equiv(aud, sha),
+        # "has main gained any Lean content since the baseline we adopted" --
+        # i.e. is there a release here at all. Raw `main != rebaselined` said
+        # yes to every tooling commit, and with a finished merger record in
+        # hand row 10 then read one as that merger's release. Release 27 held
+        # its release on purpose (a red X0.lean), three flt-loop commits moved
+        # main afterwards, and ADOPT would have signed for a delivery that was
+        # never made -- discharging the claim and advancing the baseline over a
+        # snapshot nobody rebuilt. Same lean_equiv question as the other two,
+        # asked about the baseline instead of the snapshot.
+        "rebaseline_current": lean_equiv(canon_sha(rd(STATE / "rebaselined", "")
+                                                  or ""), sha),
         "queue1": {"audited": aud, "tasks": split_tasks("\n".join(q1))},
         "queue2": split_tasks(rd(STATE / "queue2", "") or ""),
         # Messages agents addressed to the merge worker. They are held here
