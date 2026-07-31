@@ -20131,6 +20131,40 @@ as above exists, i.e. that `E` cannot acquire good reduction over `3` in a field
 linearly disjoint from `ℚ(E[7])`; or exhibit a clause of
 `IsHilbertHardlyRamified` that `T₇(E)|_{Γ F}` violates.
 
+**THE FIRST TWO OF THOSE FOUR CHECKS WERE RUN, 2026-07-30 (PARI/GP), AND BOTH
+CONFIRM THE AUDIT.** Recorded here so that nobody spends the day re-deriving
+them, and because the first generalises into a one-line structural proof that
+removes the "enumerated over all 16" from the argument entirely.
+
+*Check 1, and it is not a coincidence of `q = 7`.* Enumerating
+`N(T_ns) ∩ SL₂(𝔽_q)` for every prime `q ≡ 3 mod 4` up to `59` (orders
+`8, 16, 24, 40, 48, 64, 88, 96, 120`, so `16` at `q = 7` exactly as claimed)
+gives **ZERO** elements whose `tr² − 4·det` is a nonzero square. The reason is
+uniform: writing `d` for a non-residue and `T_ns = {[[a, db], [b, a]]}`, the
+determinant is `a² − db²`, so `SL₂` picks out two families —
+
+* `a² − db² = 1`, trace `2a`, hence `tr² − 4·det = 4a² − 4 = 4db²`, which is
+  `4 · (non-residue) · (square)`: a NON-SQUARE unless `b = 0`;
+* `a² − db² = −1` (the coset outside the torus), trace `0`, hence
+  `tr² − 4·det = −4`, a non-square precisely because `q ≡ 3 mod 4`.
+
+So the obstruction is `−1 ∉ (𝔽_q^×)²` plus the definition of "nonsplit", and the
+hypothesis `#k ≡ 3 mod 4` in the paragraph above is exactly what it needs.
+
+*Check 2.* `E = 54b1 = [1,−1,1,1,−1]`: conductor `54`, `j = 9261/8` with
+`v₂(j) = −3` and `v₃(j) = v₇(j) = +3`; `elllocalred` gives Kodaira `I₃` with
+Tamagawa number `3` at `2` (so multiplicative, and the reduction is split),
+type `II` at `3` (additive, potentially good), and `I₀` with conductor exponent
+`0` at `7` (GOOD). The mod-`7` image is surjective: `{a_p²/p mod 7}` over
+`5 ≤ p < 400`, `p ∉ {2,3,7}`, is ALL of `𝔽₇` — in particular it contains `3` and
+`5`, and the squares mod `7` are `{1,2,4}`, so the Dickson exclusion in the
+paragraph above applies as stated.
+
+Both are searcher output, not proof, in the sense of CLAUDE.md's CAS doctrine —
+but the object they are searching is a refutation, and a refutation is a witness.
+The Lean-checkable content, if this is ever wanted as a formal statement rather
+than as an audit, is the two-line non-residue computation above.
+
 CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
 `Modularity/*` or `Deformation.lean`; in particular the `ℚ`-level `exfalso`
 through `not_isIrreducible_of_isHardlyRamified_of_five_le` is FORBIDDEN. -/
@@ -20695,62 +20729,291 @@ def hilbertInertiaOutsideSubgroups (F : Type u) [Field F] [NumberField F]
     ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
       ∀ σ : ↥(localInertiaGroup w), hilbertInertiaToGlobalHom F w σ ∈ N}
 
-/-- **Hermite–Minkowski over `F`** (SORRY LEAF, cut out 2026-07-28 as the first
-of the four inputs of `finite_hilbertH1TwistUnramified` below):
+/-- **A rational prime lying in a place `w` of `F` divides the absolute norm of
+`w`** (PROVEN 2026-07-30; the one small arithmetic step that lets the
+Hermite–Minkowski block above be run against an ARBITRARY finite exclusion set
+of places rather than against the places over `2ℓ`).
+
+`q ∈ w` gives `(q) ≤ w`, so `N(w) ∣ N((q)) = q ^ [F : ℚ]`
+(`Ideal.absNorm_dvd_absNorm_of_le`, `Ideal.absNorm_span_natCast`); hence `N(w)`
+is a power of `q`, and it is not `q ^ 0 = 1` because `w` is prime, so `q ∣ N(w)`.
+
+This is what turns "the exclusion set is a finite set of PLACES" into "the bad
+rational primes divide the single integer `∏_{w ∈ S} N(w) · |d_F|`", which is the
+form Hermite's theorem `NumberField.finite_of_discr_bdd` consumes. -/
+theorem natCast_dvd_absNorm_of_natCast_mem (F : Type u) [Field F] [NumberField F]
+    {q : ℕ} (hq : q.Prime) (w : HeightOneSpectrum (𝓞 F))
+    (hqw : ((q : ℕ) : 𝓞 F) ∈ w.asIdeal) :
+    q ∣ Ideal.absNorm w.asIdeal := by
+  have hle : (Ideal.span {((q : ℕ) : 𝓞 F)} : Ideal (𝓞 F)) ≤ w.asIdeal := by
+    rwa [Ideal.span_le, Set.singleton_subset_iff]
+  have hdvd : Ideal.absNorm w.asIdeal ∣ Ideal.absNorm (Ideal.span {((q : ℕ) : 𝓞 F)}) :=
+    Ideal.absNorm_dvd_absNorm_of_le hle
+  rw [Ideal.absNorm_span_natCast] at hdvd
+  obtain ⟨j, hj, hje⟩ := (Nat.dvd_prime_pow hq).mp hdvd
+  have hne1 : Ideal.absNorm w.asIdeal ≠ 1 := fun h =>
+    w.isPrime.ne_top (Ideal.absNorm_eq_one_iff.mp h)
+  rcases Nat.eq_zero_or_pos j with rfl | hjpos
+  · rw [pow_zero] at hje; exact absurd hje hne1
+  · rw [hje]; exact dvd_pow_self q hjpos.ne'
+
+/-- **Unramified-outside-`S` fields have discriminant supported in `S` and `d_F`**
+(PROVEN 2026-07-30; the ARBITRARY-`S` form of
+`not_dvd_discr_of_hilbertInertiaTrivialAt` above).
+
+Its proof is that one's, with the two clauses `q ≠ 2`, `q ≠ ℓ` — whose only role
+there was to place the place `w` of `F` below `P` outside `{w ∣ 2ℓ}` — replaced by
+the single hypothesis `hqS`, which places it outside `S` directly. That step gets
+SHORTER, not longer: `hqw0` already exhibits `q ∈ w`, so `hqS` applies with no
+prime-divisibility bookkeeping at all, and the `hnat` helper of the `2ℓ` version
+disappears. Everything after it — the local-global inertia transport
+`isUnramifiedAt_of_hilbertInertiaTrivialAt` and the tower step
+`isUnramifiedAt_int_of_isUnramifiedAt_of_not_dvd_discr` — is used verbatim.
+
+BOTH-WAYS AUDIT. `hqF` is load-bearing for the same reason as in the `2ℓ` form:
+`d_K` is divisible by `d_F ^ [K : F]`, so a prime dividing `d_F` divides `d_K`
+however unramified `K/F` is. `hqS` is load-bearing because a place in `S` carries
+no inertia hypothesis at all. Not vacuous: `K = ⊥` satisfies every hypothesis,
+and for `S = ∅` the statement is the (true, non-trivial) assertion that an
+everywhere-unramified `K/F` contributes nothing to `d_K` beyond `d_F`. -/
+theorem not_dvd_discr_of_hilbertInertiaTrivialAt_outside
+    (F : Type u) [Field F] [NumberField F]
+    (K : IntermediateField F (AlgebraicClosure F))
+    (hfd : FiniteDimensional F K) (hgal : IsGalois F K)
+    (S : Finset (HeightOneSpectrum (𝓞 F)))
+    (hinert : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      HilbertInertiaTrivialAt w K.fixingSubgroup)
+    {q : ℕ} (hq : q.Prime)
+    (hqS : ∀ w ∈ S, ((q : ℕ) : 𝓞 F) ∉ w.asIdeal)
+    (hqF : ¬ ((q : ℤ) ∣ NumberField.discr F))
+    (hfdQ : FiniteDimensional ℚ (K.restrictScalars ℚ)) :
+    haveI : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
+    ¬ ((q : ℤ) ∣ NumberField.discr (K.restrictScalars ℚ)) := by
+  haveI := hfd
+  haveI := hgal
+  haveI : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
+  haveI hnfK : NumberField ↥K := inferInstanceAs (NumberField ↥(K.restrictScalars ℚ))
+  have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+  show ¬ ((q : ℤ) ∣ NumberField.discr ↥K)
+  rw [NumberField.not_dvd_discr_iff_forall_mem (↥K) (𝓞 ↥K) hqZ]
+  intro P hP hmem
+  haveI := hP
+  have hmem' : (q : 𝓞 ↥K) ∈ P := by exact_mod_cast hmem
+  haveI hw0p : (P.under (𝓞 F)).IsPrime := Ideal.IsPrime.under (𝓞 F) P
+  have hqw0 : (q : 𝓞 F) ∈ P.under (𝓞 F) := by
+    rw [Ideal.mem_under]
+    exact_mod_cast hmem'
+  have hw0bot : P.under (𝓞 F) ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mem_bot] at hqw0
+    exact hq.ne_zero (by exact_mod_cast hqw0)
+  set w : HeightOneSpectrum (𝓞 F) := ⟨P.under (𝓞 F), hw0p, hw0bot⟩ with hwdef
+  have hqw : ((q : ℕ) : 𝓞 F) ∈ w.asIdeal := hqw0
+  have hwS : w ∉ S := fun hmem => hqS w hmem hqw
+  haveI hlies : P.LiesOver w.asIdeal := ⟨rfl⟩
+  exact isUnramifiedAt_int_of_isUnramifiedAt_of_not_dvd_discr F K hq hqF P hmem'
+    (isUnramifiedAt_of_hilbertInertiaTrivialAt F K w (hinert w hwS) P)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Hermite–Minkowski over `F`, for an ARBITRARY finite set of places**
+(PROVEN 2026-07-30; the `S`-form of
+`finite_setOf_intermediateField_hilbertInertiaAt_le` above): for a fixed degree
+bound `n` there are finitely many finite Galois subextensions `K` of `Fᵃˡᵍ/F`
+with `[K : F] ≤ n` on which the local inertia at every place `w ∉ S` acts
+trivially.
+
+The proof is that theorem's, with exactly one substitution: its bad modulus
+`M = 2·ℓ·|d_F|` becomes `M = (∏_{w ∈ S} N(w))·|d_F|`, and the support step
+`q ∣ |d_K| → q ∣ M` is discharged by `natCast_dvd_absNorm_of_natCast_mem` above
+(if some `w ∈ S` contained `q` then `q ∣ N(w) ∣ ∏ ∣ M`) instead of by the two
+clauses `q ≠ 2`, `q ≠ ℓ`. The exponent bound
+`discr_factorization_le_of_finrank_le` and Hermite's theorem
+`NumberField.finite_of_discr_bdd` are used unchanged; `M ≠ 0` because each `N(w)`
+is nonzero (`Ideal.absNorm_eq_zero_iff`, `w.ne_bot`) and `d_F ≠ 0`.
+
+This SUBSUMES the `2ℓ` form, which is `S = {w ∣ 2} ∪ {w ∣ ℓ}`; that one is kept
+because it is what the Schlessinger-facing consumers upstream already cite. -/
+theorem finite_setOf_intermediateField_hilbertInertiaAt_le_outside
+    (F : Type u) [Field F] [NumberField F]
+    (S : Finset (HeightOneSpectrum (𝓞 F))) (n : ℕ) :
+    {K : IntermediateField F (AlgebraicClosure F) |
+      ∃ _ : FiniteDimensional F K,
+        IsGalois F K ∧ Module.finrank F K ≤ n ∧
+        ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+          HilbertInertiaTrivialAt w K.fixingSubgroup}.Finite := by
+  classical
+  set N : ℕ := Module.finrank ℚ F * n with hNdef
+  set c : ℕ := (N + 1) * N with hcdef
+  set M : ℕ := (∏ w ∈ S, Ideal.absNorm w.asIdeal) * (NumberField.discr F).natAbs with hMdef
+  have hdF0 : (NumberField.discr F).natAbs ≠ 0 :=
+    Int.natAbs_ne_zero.mpr (NumberField.discr_ne_zero F)
+  have hprod0 : (∏ w ∈ S, Ideal.absNorm w.asIdeal) ≠ 0 := by
+    refine Finset.prod_ne_zero_iff.mpr fun w _ => ?_
+    exact fun h => w.ne_bot (Ideal.absNorm_eq_zero_iff.mp h)
+  have hM0 : M ≠ 0 := by
+    rw [hMdef]; exact Nat.mul_ne_zero hprod0 hdF0
+  refine Set.Finite.of_finite_image
+    (f := fun K : IntermediateField F (AlgebraicClosure F) => K.restrictScalars ℚ)
+    ?_ (Set.injOn_of_injective (IntermediateField.restrictScalars_injective ℚ))
+  refine Set.Finite.subset
+    ((NumberField.finite_of_discr_bdd (AlgebraicClosure F) (M ^ c)).image Subtype.val) ?_
+  rintro _ ⟨K, ⟨hfd, hgal, hrank, hinert⟩, rfl⟩
+  haveI := hfd
+  have hfdQ : FiniteDimensional ℚ (K.restrictScalars ℚ) := FiniteDimensional.trans ℚ F K
+  refine ⟨⟨K.restrictScalars ℚ, hfdQ⟩, ?_, rfl⟩
+  haveI hNF : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
+  show |NumberField.discr (K.restrictScalars ℚ)| ≤ ((M ^ c : ℕ) : ℤ)
+  set a : ℕ := (NumberField.discr (K.restrictScalars ℚ)).natAbs with hadef
+  have ha0 : a ≠ 0 := Int.natAbs_ne_zero.mpr (NumberField.discr_ne_zero _)
+  have hrankQ : Module.finrank ℚ (K.restrictScalars ℚ) ≤ N := by
+    calc Module.finrank ℚ (K.restrictScalars ℚ)
+        = Module.finrank ℚ F * Module.finrank F K := (Module.finrank_mul_finrank ℚ F K).symm
+      _ ≤ Module.finrank ℚ F * n := Nat.mul_le_mul_left _ hrank
+      _ = N := hNdef.symm
+  have hexp : ∀ q : ℕ, a.factorization q ≤ c := fun q => by
+    rw [hcdef, hadef]
+    exact discr_factorization_le_of_finrank_le N (K.restrictScalars ℚ) hrankQ q
+  have hsupp : ∀ q : ℕ, q.Prime → q ∣ a → q ∣ M := by
+    intro q hq hqa
+    by_contra hqM
+    have hdF : ¬ ((q : ℤ) ∣ NumberField.discr F) := by
+      intro hdvd
+      have hnat : q ∣ (NumberField.discr F).natAbs := by
+        simpa using Int.natAbs_dvd_natAbs.mpr hdvd
+      exact hqM (by rw [hMdef]; exact hnat.mul_left _)
+    have hqS : ∀ w ∈ S, ((q : ℕ) : 𝓞 F) ∉ w.asIdeal := by
+      intro w hwS hqw
+      refine hqM ?_
+      rw [hMdef]
+      exact Dvd.dvd.mul_right
+        ((natCast_dvd_absNorm_of_natCast_mem F hq w hqw).trans
+          (Finset.dvd_prod_of_mem (fun w : HeightOneSpectrum (𝓞 F) =>
+            Ideal.absNorm w.asIdeal) hwS)) _
+    have hZ : ((q : ℤ)) ∣ NumberField.discr (K.restrictScalars ℚ) := by
+      have h1 : ((a : ℤ)) ∣ NumberField.discr (K.restrictScalars ℚ) := by
+        rw [hadef, Int.natCast_natAbs]
+        exact (abs_dvd _ _).mpr dvd_rfl
+      exact dvd_trans (Int.natCast_dvd_natCast.mpr hqa) h1
+    exact not_dvd_discr_of_hilbertInertiaTrivialAt_outside F K hfd hgal S hinert hq hqS
+      hdF hfdQ hZ
+  have hdvdM : a ∣ M ^ c := by
+    rw [← Nat.factorization_le_iff_dvd ha0 (pow_ne_zero _ hM0)]
+    refine Finsupp.le_def.mpr fun q => ?_
+    simp only [Nat.factorization_pow, Finsupp.smul_apply, smul_eq_mul]
+    by_cases hq0 : a.factorization q = 0
+    · simp [hq0]
+    · have hmem : q ∈ a.primeFactors := by
+        rw [← Nat.support_factorization]
+        exact Finsupp.mem_support_iff.mpr hq0
+      have h1 : 1 ≤ M.factorization q :=
+        Nat.Prime.factorization_pos_of_dvd (Nat.prime_of_mem_primeFactors hmem) hM0
+          (hsupp q (Nat.prime_of_mem_primeFactors hmem) (Nat.dvd_of_mem_primeFactors hmem))
+      calc a.factorization q ≤ c := hexp q
+        _ = c * 1 := (mul_one c).symm
+        _ ≤ c * M.factorization q := Nat.mul_le_mul_left _ h1
+  have hle : a ≤ M ^ c := Nat.le_of_dvd (Nat.pos_of_ne_zero (pow_ne_zero _ hM0)) hdvdM
+  calc |NumberField.discr (K.restrictScalars ℚ)| = (a : ℤ) := by
+        rw [hadef, Int.natCast_natAbs]
+    _ ≤ ((M ^ c : ℕ) : ℤ) := by exact_mod_cast hle
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Finiteness of open normal subgroups of `Γ F` of bounded index unramified
+outside `S`** (PROVEN 2026-07-30; the `S`-form of
+`finite_setOf_subgroup_hilbertInertiaAt_le` above, and its proof verbatim with
+the `2ℓ` inertia clause replaced by the `S` one).
+
+The Galois-correspondence step: such an `N` is closed, hence the fixing subgroup
+of its fixed field `K = (Fᵃˡᵍ)^N`, which is finite-dimensional over `F`, Galois,
+of degree `[K : F] = N.index ≤ n`, and inertia-trivial outside `S`; so the set
+injects into the finite field set above via `fixingSubgroup`. -/
+theorem finite_setOf_subgroup_hilbertInertiaAt_le_outside
+    (F : Type u) [Field F] [NumberField F]
+    (S : Finset (HeightOneSpectrum (𝓞 F))) (n : ℕ) :
+    {N : Subgroup (Γ F) |
+      N.Normal ∧ IsOpen (N : Set (Γ F)) ∧ N.FiniteIndex ∧ N.index ≤ n ∧
+      ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S → HilbertInertiaTrivialAt w N}.Finite := by
+  classical
+  haveI halgF : Algebra.IsAlgebraic F (AlgebraicClosure F) := AlgebraicClosure.isAlgebraic F
+  haveI hacF : IsAlgClosure F (AlgebraicClosure F) := ⟨inferInstance, halgF⟩
+  haveI hnormF : Normal F (AlgebraicClosure F) :=
+    IsAlgClosure.normal F (AlgebraicClosure F)
+  haveI hsepF : Algebra.IsSeparable F (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalF : IsGalois F (AlgebraicClosure F) := ⟨⟩
+  refine Set.Finite.subset
+    ((finite_setOf_intermediateField_hilbertInertiaAt_le_outside F S n).image
+      fun K => K.fixingSubgroup) ?_
+  rintro N ⟨hnorm, hopen, hFI, hidx, hinert⟩
+  have hclosed : IsClosed (N : Set (Γ F)) := Subgroup.isClosed_of_isOpen N hopen
+  have hfix : (IntermediateField.fixedField (E := AlgebraicClosure F) N).fixingSubgroup = N :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨N, hclosed⟩
+  haveI hfd : FiniteDimensional F (IntermediateField.fixedField (E := AlgebraicClosure F) N) :=
+    (InfiniteGalois.isOpen_iff_finite _).mp (by rw [hfix]; exact hopen)
+  haveI hgalK : IsGalois F (IntermediateField.fixedField (E := AlgebraicClosure F) N) :=
+    (InfiniteGalois.normal_iff_isGalois _).mp (by rw [hfix]; exact hnorm)
+  haveI hnorm' := hnorm
+  have hcard : Module.finrank F (IntermediateField.fixedField (E := AlgebraicClosure F) N) =
+      Nat.card (Γ F ⧸ N) := by
+    rw [← IsGalois.card_aut_eq_finrank]
+    exact (Nat.card_congr (InfiniteGalois.normalAutEquivQuotient
+      (⟨N, hclosed⟩ : ClosedSubgroup (Γ F))).toEquiv).symm
+  have hrank : Module.finrank F
+      (IntermediateField.fixedField (E := AlgebraicClosure F) N) ≤ n := by
+    rw [hcard, ← Subgroup.index_eq_card N]
+    exact hidx
+  refine ⟨_, ⟨hfd, hgalK, hrank, ?_⟩, hfix⟩
+  intro w hwS
+  rw [hfix]
+  exact hinert w hwS
+
+/-- **Hermite–Minkowski over `F`** (PROVEN 2026-07-30, over the three
+declarations immediately above; it was a bare `sorry` from 2026-07-28):
 `hilbertInertiaOutsideSubgroups F S n` is finite.
 
-This is `HermiteMinkowski.lean`'s `finite_setOf_subgroup_inertiaAt_le` with the
-base field `ℚ` replaced by an arbitrary number field `F` and the hard-wired
-rational prime set `{2, p}` replaced by an arbitrary finite set `S` of PLACES of
-`F`. It is the ONE genuinely new piece of arithmetic in this decomposition, and
-the reason it cannot simply be transcribed is recorded next.
+Unfolding the definition, membership is exactly the five clauses of
+`finite_setOf_subgroup_hilbertInertiaAt_le_outside` above — the only difference
+being that `hilbertInertiaOutsideSubgroups` spells the inertia clause with
+`hilbertInertiaToGlobalHom F w` applied to a SUBTYPE element, while
+`HilbertInertiaTrivialAt w N` spells it as a bounded quantifier over
+`localInertiaGroup w`; the two are the same statement (`hilbertInertiaToGlobalHom`
+is `hilbertDecompHom` composed with `Subgroup.subtype`), so the proof is
+`Set.Finite.subset` applied to that theorem.
 
-# ROUTE, AND WHAT IS NEW RELATIVE TO THE `ℚ`-LEVEL PROOF
+# WHAT THE ROUTE ACTUALLY COST — A CORRECTION TO THIS DOCSTRING'S OWN PREDICTION
 
-The SUBGROUP half transcribes verbatim, with `AlgebraicClosure ℚ` replaced by
-`AlgebraicClosure F` throughout: such an `N` is closed (`IsOpen ⟹ IsClosed` for
-a subgroup of a profinite group), hence the fixing subgroup of its fixed field
-`K = Fᵃˡᵍ^N` (`InfiniteGalois.fixingSubgroup_fixedField`), which is
-finite-dimensional over `F` (`InfiniteGalois.isOpen_iff_finite`), Galois
-(`InfiniteGalois.normal_iff_isGalois`) and of degree
-`[K : F] = #(Γ F ⧸ N) = N.index ≤ n`. So the set injects along `fixingSubgroup`
-into the set of finite Galois `K/F` of degree `≤ n` unramified outside `S`.
+The version of this docstring written when the leaf was cut (2026-07-28) called it
+"the ONE genuinely new piece of arithmetic in this decomposition" and priced it at
+**two dictionary lemmas**: the conductor–discriminant tower formula
+`d_K = N_{F/ℚ}(𝔡_{K/F}) · d_F ^ [K : F]`, and the converse of
+`isUnramifiedAt_of_inertia_le_fixingSubgroup` (unramified ⟹ inertia-trivial). It
+also recorded a "cheaper sufficient route" through pulling `N` back to `Γ ℚ`.
 
-The FIELD half is where the work is. `NumberField.finite_of_discr_bdd` applies
-to `AlgebraicClosure F` exactly as it does to `AlgebraicClosure ℚ` (it wants a
-characteristic-zero algebraically closed field, which `Fᵃˡᵍ` is), and it bounds
-the number of subfields by their ABSOLUTE discriminant. What is needed is
-therefore a bound on `|d_K|` from the relative data, i.e. the conductor–
-discriminant tower formula
+**None of the three was needed, and the leaf cost neither dictionary lemma.** What
+the prediction missed is that this file ALREADY carried the whole `F`-level
+Hermite–Minkowski block, proven on 2026-07-26 for the exclusion set `{w ∣ 2ℓ}`:
+`not_dvd_discr_of_hilbertInertiaTrivialAt` (which is the `F`-level inertia
+dictionary, in the direction actually used — inertia-trivial ⟹ unramified ⟹ does
+not divide the discriminant, so the expensive converse never arises),
+`finite_setOf_intermediateField_hilbertInertiaAt_le`, and
+`finite_setOf_subgroup_hilbertInertiaAt_le`. The tower formula is likewise not
+needed: `discr_factorization_le_of_finrank_le` bounds the exponent of a rational
+prime in `|d_K|` from `[K : ℚ]` ALONE, so only the SUPPORT of `d_K` has to be
+controlled, and for that the relative different is irrelevant.
 
-    d_K = N_{F/ℚ}(𝔡_{K/F}) · d_F ^ [K : F] ,
+So the entire distance from what existed to this leaf was the generalisation of
+the exclusion set from `{w ∣ 2ℓ}` to an arbitrary finite `S` of places, which is
+the three declarations above. The only genuinely new step in them is
+`natCast_dvd_absNorm_of_natCast_mem` — twelve lines — which converts "the
+exclusion set is a set of PLACES" into "the bad rational primes divide
+`∏_{w ∈ S} N(w) · |d_F|`", the form Hermite's theorem consumes. Every other line
+is one of the `2ℓ` proofs with that substitution made.
 
-together with: `[K : ℚ] = [K : F] · [F : ℚ] ≤ n · [F : ℚ]`, so the exponent of a
-rational prime `q` in `|d_K|` is bounded by
-`exists_discr_factorization_le_of_finrank_le q (n * [F : ℚ])` — already stated
-in `HermiteMinkowski.lean` for an arbitrary prime `q` — and the SUPPORT of `d_K`
-is contained in the finite set of rational primes lying under `S` together with
-the primes dividing `d_F`, because at any other `q` every place `w ∣ q` of `F`
-is outside `S`, so `K/F` is unramified at `w` (that is `hinert`, through the
-converse of `MinkowskiUnramified.lean`'s `isUnramifiedAt_of_inertia_le_fixingSubgroup`)
-and `F/ℚ` is unramified at `q`.
-
-**So this leaf costs exactly two dictionary lemmas**: the tower formula for
-discriminants in the shape "support and exponents of `d_K` are controlled by
-`𝔡_{K/F}` and `d_F`", and the same unramified⟹inertia-trivial converse that the
-`ℚ`-level `exists_finset_isUnramifiedAt_of_notMem` costs. Neither is in the pin
-(`grep -rn "discr.*tower\|discr_mul\|finrank.*discr" .lake/packages/mathlib`
-finds nothing of this shape) nor in `~/cs/FLT`.
-
-**A CHEAPER SUFFICIENT ROUTE, recorded because it may be the right one.** The
-consumer below never needs `S` to be arbitrary — it needs it to contain the
-places over `2` and `ℓ` and the ramification of `ρbar|_{G_F}`. Nothing is lost by
-proving the statement for `N` of index `≤ n` in the ABSOLUTE Galois group by
-pulling back to `Γ ℚ`: the fixed field of `N` is a number field of degree
-`≤ n · [F : ℚ]` over `ℚ`, and the finiteness of `{K ⊆ ℚᵃˡᵍ : [K : ℚ] ≤ m}`
-unramified outside a finite RATIONAL set is `finite_inertiaOutsideSubgroups`'s
-argument. That route replaces the tower formula by a base-change of the
-inertia condition, which may well be cheaper.
+**MORAL, worth keeping because it recurs in this file: a leaf whose docstring
+prices it in missing THEORIES may in fact be a change of one PARAMETER in a proof
+that is already present.** The `2ℓ` block and this leaf were written four hours
+apart on the same day by different owners, and neither docstring mentions the
+other. Before costing a leaf, grep this file for the same statement at a
+neighbouring parameter.
 
 Both-ways audit: a plain classical finiteness statement, no
 representation-theoretic hypothesis, hence not vacuous and not dischargeable by
@@ -20758,37 +21021,807 @@ refuting any package — `⊤` is a member for every `S` and every `n ≥ 1`, so
 set is nonempty and the content is genuinely an upper bound. -/
 theorem finite_hilbertInertiaOutsideSubgroups (F : Type u) [Field F] [NumberField F]
     (S : Finset (HeightOneSpectrum (𝓞 F))) (n : ℕ) :
-    (hilbertInertiaOutsideSubgroups F S n).Finite := sorry
+    (hilbertInertiaOutsideSubgroups F S n).Finite := by
+  refine (finite_setOf_subgroup_hilbertInertiaAt_le_outside F S n).subset ?_
+  rintro N ⟨hnorm, hopen, hFI, hidx, hinert⟩
+  exact ⟨hnorm, hopen, hFI, hidx, fun w hwS σ hσ => hinert w hwS ⟨σ, hσ⟩⟩
 
+/-! ### The `ℚ`-level inertia machinery behind `exists_finset_isUnramifiedAt_hilbert_of_notMem`
+
+Added 2026-07-30. `Modularity/Patching.lean` carries the same three declarations
+under the bare names `eq_of_sub_mem_maximalIdeal`, `map_localInertia_fixed` and
+`exists_finset_map_localInertia_fixed`; that file is DOWNSTREAM of this one (the
+circularity guard of the module header), so they are re-proven here rather than
+imported. They live in their own namespace so that the two copies can never
+collide even once `Patching.lean` imports this module.
+
+The block is deliberately elementary: no Hensel lemma, no completeness, no
+ramification/inertia dictionary. What it does is push a SEPARABILITY witness —
+the different `β = F'(α)` of an algebraic integer `α`, together with an integer
+`m` it divides — through the definition of `localInertiaGroup`, which is a
+congruence modulo the maximal ideal of `IntegralClosure 𝒪ᵥ ℚ_qᵃˡᵍ`. -/
+
+namespace HilbertRatInertia
+
+/-- **Hensel-free simple-root separation**: in a LOCAL DOMAIN `R`, two roots of a
+polynomial `P` that are congruent modulo the maximal ideal COINCIDE, as soon as
+`P'` fails to lie in the maximal ideal at one of them.
+
+No Hensel lemma, no completeness, no separability hypothesis is used. `P` factors
+as `(X - xa) * H` over `R` (a monic linear divisor exists over any commutative
+ring, `Polynomial.dvd_iff_isRoot`), so `P'(xa) = H(xa)`; if `xs ≠ xa` then
+`0 = P(xs) = (xs - xa) * H(xs)` forces `H(xs) = 0` because `R` is a domain; and
+`xs - xa` divides `H(xs) - H(xa)` (`Polynomial.sub_dvd_eval_sub`), so
+`P'(xa) = H(xa) ∈ 𝔪` — against the hypothesis. -/
+theorem eq_of_sub_mem_maximalIdeal
+    {R : Type*} [CommRing R] [IsDomain R] [IsLocalRing R]
+    (P : Polynomial R) (xa xs : R)
+    (hPa : P.eval xa = 0) (hPs : P.eval xs = 0)
+    (hcong : xs - xa ∈ IsLocalRing.maximalIdeal R)
+    (hunit : (Polynomial.derivative P).eval xa ∉ IsLocalRing.maximalIdeal R) :
+    xs = xa := by
+  classical
+  by_contra hne
+  obtain ⟨H, hH⟩ : (Polynomial.X - Polynomial.C xa) ∣ P := Polynomial.dvd_iff_isRoot.mpr hPa
+  have hderiv : (Polynomial.derivative P).eval xa = H.eval xa := by
+    have h2 := congrArg Polynomial.derivative hH
+    rw [Polynomial.derivative_mul, Polynomial.derivative_sub,
+      Polynomial.derivative_X, Polynomial.derivative_C, sub_zero, one_mul] at h2
+    have h3 := congrArg (Polynomial.eval xa) h2
+    simpa using h3
+  have h0 : (xs - xa) * H.eval xs = 0 := by
+    have h4 := congrArg (Polynomial.eval xs) hH
+    rw [hPs] at h4
+    simpa using h4.symm
+  have hHs : H.eval xs = 0 := by
+    rcases mul_eq_zero.mp h0 with h | h
+    · exact absurd h (sub_ne_zero.mpr hne)
+    · exact h
+  have hdiff : H.eval xs - H.eval xa ∈ IsLocalRing.maximalIdeal R := by
+    obtain ⟨d, hd⟩ := Polynomial.sub_dvd_eval_sub xs xa H
+    rw [hd]
+    exact Ideal.mul_mem_right _ _ hcong
+  rw [hHs, zero_sub] at hdiff
+  exact hunit (hderiv ▸ (Ideal.neg_mem_iff _).mp hdiff)
+
+/-- Transport of `eval₂` along a ring homomorphism, for an INTEGER polynomial: the two
+`ℤ →+* _` structure maps agree because `ℤ` is initial (`RingHom.ext_int`).
+
+Stated with `Int.castRingHom` rather than with `algebraMap ℤ _` on purpose: the fields
+and integral closures below carry several `Algebra ℤ _` instances that are equal but not
+syntactically so, and routing every evaluation through the canonical ring map removes an
+entire class of "synthesized instance is not definitionally equal" failures. -/
+theorem eval₂_intCastRingHom_map {A B : Type*} [CommRing A] [CommRing B] (g : A →+* B)
+    (x : A) (F : Polynomial ℤ) :
+    g (Polynomial.eval₂ (Int.castRingHom A) x F) =
+      Polynomial.eval₂ (Int.castRingHom B) (g x) F := by
+  rw [Polynomial.hom_eval₂]
+  congr 1
+  exact RingHom.ext_int _ _
+
+/-- `eval₂` against `Int.castRingHom` IS `aeval`, for any `ℤ`-algebra structure — the
+bridge between the instance-free spelling used below and mathlib's `minpoly` API. -/
+theorem eval₂_intCastRingHom_eq_aeval {A : Type*} [CommRing A] [Algebra ℤ A]
+    (x : A) (F : Polynomial ℤ) :
+    Polynomial.eval₂ (Int.castRingHom A) x F = (Polynomial.aeval x) F := by
+  rw [Polynomial.aeval_def]
+  congr 1
+  exact RingHom.ext_int _ _
+
+set_option maxHeartbeats 1000000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The local step**: an element `σ` of the local inertia at `q` fixes an
+algebraic integer `α` whose "different" `β = F'(α)` (`F = minpoly ℤ α`) divides an
+integer `m` PRIME TO `q`.
+
+Everything happens inside `𝒪 = IntegralClosure 𝒪ᵥ ℚ_qᵃˡᵍ`, whose maximal ideal is
+what DEFINES `localInertiaGroup v`; no ramification index, discriminant or inertia
+dictionary appears. Write `ι` for the embedding `ℚᵃˡᵍ → ℚ_qᵃˡᵍ` underlying
+`Field.absoluteGaloisGroup.map`. Then `ια` and `σ(ια)` are both roots of `F` in
+`𝒪`, they are congruent modulo `𝔪 𝒪` by the very definition of the local inertia,
+and `F'(ια) = ιβ` is a UNIT of `𝒪`: it divides `ιm`, and `m ∉ 𝔪 𝒪` because
+`𝔪 𝒪 ⊓ 𝒪ᵥ = 𝔪 𝒪ᵥ` (going-up: the contraction of a maximal ideal along an integral
+extension is maximal) contains `q`, while `x q + y m = 1` for some integers `x, y`.
+`eq_of_sub_mem_maximalIdeal` closes it, and `Field.absoluteGaloisGroup.lift_map`
+together with the injectivity of `ι` transports the conclusion back to `Γ ℚ`. -/
+theorem map_localInertia_fixed
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (q : ℕ)
+    (hqmem : (q : HeightOneSpectrum.adicCompletionIntegers ℚ v) ∈
+      IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers ℚ v))
+    (m : ℤ) (hcop : IsCoprime ((q : ℤ)) m)
+    (α β c : AlgebraicClosure ℚ) (F : Polynomial ℤ)
+    (hFα : Polynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) α F = 0)
+    (hβ : β = Polynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) α
+      (Polynomial.derivative F))
+    (hαint : IsIntegral ℤ α) (hcint : IsIntegral ℤ c)
+    (hmc : β * c = (m : AlgebraicClosure ℚ))
+    (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ v))
+    (hσ : σ ∈ localInertiaGroup v) :
+    (Field.absoluteGaloisGroup.map
+      (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v))) σ α = α := by
+  classical
+  set ι : AlgebraicClosure ℚ →+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v) :=
+    AlgebraicClosure.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)) with hιdef
+  set τ : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v) →+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v) :=
+    σ.toAlgHom.toRingHom with hτdef
+  have hτapp : ∀ y, τ y = σ y := fun _ => rfl
+  -- integrality transports along `ι`
+  have hint : ∀ x : AlgebraicClosure ℚ, IsIntegral ℤ x →
+      IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ v) (ι x) := by
+    intro x hx
+    obtain ⟨P, hPm, hPe⟩ := hx
+    refine ⟨P.map (Int.castRingHom (HeightOneSpectrum.adicCompletionIntegers ℚ v)),
+      hPm.map _, ?_⟩
+    have hcomp : (algebraMap (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).comp
+        (Int.castRingHom (HeightOneSpectrum.adicCompletionIntegers ℚ v)) =
+        Int.castRingHom (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) :=
+      RingHom.ext_int _ _
+    have hP0 : Polynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) x P = 0 := by
+      rw [eval₂_intCastRingHom_eq_aeval, Polynomial.aeval_def]
+      exact hPe
+    rw [Polynomial.eval₂_map, hcomp, ← eval₂_intCastRingHom_map ι x P, hP0, map_zero]
+  -- the elements of the big integral closure
+  set xa : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) :=
+    ⟨ι α, hint α hαint⟩ with hxadef
+  set xc : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) :=
+    ⟨ι c, hint c hcint⟩ with hxcdef
+  set j : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) →+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v) := algebraMap _ _ with hjdef
+  have hinjj : Function.Injective j := fun x y h => Subtype.ext h
+  have hjxa : j xa = ι α := rfl
+  have hjxc : j xc = ι c := rfl
+  set xs : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) := σ • xa with hxsdef
+  have hjxs : j xs = τ (ι α) := rfl
+  -- the integer polynomial, read over the big integral closure
+  set P : Polynomial (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) :=
+    F.map (Int.castRingHom _) with hPdef
+  have hPa : P.eval xa = 0 := by
+    apply hinjj
+    rw [map_zero, hPdef, Polynomial.eval_map, eval₂_intCastRingHom_map j xa F, hjxa,
+      ← eval₂_intCastRingHom_map ι α F, hFα, map_zero]
+  have hPs : P.eval xs = 0 := by
+    apply hinjj
+    rw [map_zero, hPdef, Polynomial.eval_map, eval₂_intCastRingHom_map j xs F, hjxs,
+      ← eval₂_intCastRingHom_map τ (ι α) F, ← eval₂_intCastRingHom_map ι α F, hFα,
+      map_zero, map_zero]
+  have hcong : xs - xa ∈ IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) :=
+    hσ xa
+  -- the derivative value maps to `ι β`
+  have hjb : j ((Polynomial.derivative P).eval xa) = ι β := by
+    rw [hPdef, Polynomial.derivative_map, Polynomial.eval_map,
+      eval₂_intCastRingHom_map j xa (Polynomial.derivative F), hjxa,
+      ← eval₂_intCastRingHom_map ι α (Polynomial.derivative F), ← hβ]
+  -- `m` is a unit in the big integral closure
+  haveI : (IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  have hcomapm : (IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))).comap
+      (algebraMap (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))) =
+      IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers ℚ v) := by
+    have hmax := Ideal.isMaximal_comap_of_isIntegral_of_isMaximal
+      (R := HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (S := IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+      (IsLocalRing.maximalIdeal _)
+    exact hmax.eq_of_le (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (IsLocalRing.le_maximalIdeal hmax.ne_top)
+  have hqO : (((q : ℤ)) : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) ∈
+      IsLocalRing.maximalIdeal _ := by
+    have h1 : ((q : HeightOneSpectrum.adicCompletionIntegers ℚ v)) ∈
+        (IsLocalRing.maximalIdeal
+          (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))).comap
+        (algebraMap (HeightOneSpectrum.adicCompletionIntegers ℚ v) _) := by
+      rw [hcomapm]; exact hqmem
+    rw [Ideal.mem_comap, map_natCast] at h1
+    push_cast
+    exact h1
+  obtain ⟨x, y, hxy⟩ := hcop
+  have hmnot : ((m : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))) ∉
+      IsLocalRing.maximalIdeal _ := by
+    intro hmem
+    have h2 : (((1 : ℤ)) : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) ∈
+        IsLocalRing.maximalIdeal _ := by
+      rw [← hxy]
+      push_cast
+      exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hqO) (Ideal.mul_mem_left _ _ hmem)
+    rw [Int.cast_one] at h2
+    exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (Ideal.eq_top_of_isUnit_mem _ h2 isUnit_one)
+  have hunit : (Polynomial.derivative P).eval xa ∉ IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) := by
+    intro hb
+    refine hmnot ?_
+    have hprod : (Polynomial.derivative P).eval xa * xc =
+        ((m : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))) := by
+      apply hinjj
+      rw [map_mul, hjb, hjxc, map_intCast, ← map_mul, hmc, map_intCast]
+    rw [← hprod]
+    exact Ideal.mul_mem_right _ _ hb
+  have hxs_eq := eq_of_sub_mem_maximalIdeal P xa xs hPa hPs hcong hunit
+  -- conclude
+  have hfix : σ (ι α) = ι α := by
+    rw [← hτapp, ← hjxs, ← hjxa, hxs_eq]
+  have hlift := Field.absoluteGaloisGroup.lift_map
+    (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)) σ α
+  refine RingHom.injective ι ?_
+  rw [hlift]
+  exact hfix
+
+set_option maxHeartbeats 1000000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The global step**: an algebraic integer `α` is fixed by the image of the local
+inertia at ALL BUT FINITELY MANY rational primes.
+
+The bad set is `T = (minpoly ℤ β).coeff 0 |>.natAbs.primeFactors`, where
+`β = F'(α)` for `F = minpoly ℤ α`. Two facts make it work:
+
+* `β ≠ 0`. Otherwise `minpoly ℚ α` divides its own derivative, which in
+  characteristic zero forces the derivative to vanish and hence `minpoly ℚ α` to be
+  constant — against `minpoly.natDegree_pos`. (This is separability, spelled out
+  rather than invoked.)
+* `β` divides a NONZERO integer, namely `m = (minpoly ℤ β).coeff 0`: split
+  `minpoly ℤ β = X * divX + C m` (`Polynomial.X_mul_divX_add`) and evaluate at `β`.
+  `m ≠ 0` because `(minpoly ℚ β).coeff 0 ≠ 0` for `β ≠ 0`.
+
+Both `β` and the cofactor are integral over `ℤ` (they are `ℤ`-polynomial expressions
+in `α` resp. `β`), which is what lets `map_localInertia_fixed` place them in the
+integral closure at every `q`. -/
+theorem exists_finset_map_localInertia_fixed (α : AlgebraicClosure ℚ)
+    (hα : IsIntegral ℤ α) :
+    ∃ T : Finset ℕ, ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) σ α = α := by
+  classical
+  have hαQ : IsIntegral ℚ α := Algebra.IsIntegral.isIntegral α
+  set F : Polynomial ℤ := minpoly ℤ α with hFdef
+  have hFα : Polynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) α F = 0 := by
+    rw [eval₂_intCastRingHom_eq_aeval]
+    exact minpoly.aeval ℤ α
+  set β : AlgebraicClosure ℚ :=
+    Polynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) α
+      (Polynomial.derivative F) with hβdef
+  have hmapF : minpoly ℚ α = F.map (algebraMap ℤ ℚ) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions' ℚ hα
+  have hβ0 : β ≠ 0 := by
+    intro h0
+    have hd : (Polynomial.aeval α) (Polynomial.derivative (minpoly ℚ α)) = 0 := by
+      rw [hmapF, Polynomial.derivative_map, Polynomial.aeval_map_algebraMap,
+        ← eval₂_intCastRingHom_eq_aeval, ← hβdef]
+      exact h0
+    have hdvd := minpoly.dvd ℚ α hd
+    have hpos : 0 < (minpoly ℚ α).natDegree := minpoly.natDegree_pos hαQ
+    by_cases hz : Polynomial.derivative (minpoly ℚ α) = 0
+    · have h1 : (minpoly ℚ α).natDegree = 0 :=
+        Polynomial.derivative_eq_zero.mp hz
+      omega
+    · have hlt := Polynomial.natDegree_derivative_lt (p := minpoly ℚ α) (by omega)
+      have hle := Polynomial.natDegree_le_of_dvd hdvd hz
+      omega
+  have hβint : IsIntegral ℤ β := by
+    have hle : Algebra.adjoin ℤ ({α} : Set (AlgebraicClosure ℚ)) ≤
+        integralClosure ℤ (AlgebraicClosure ℚ) :=
+      Algebra.adjoin_le (Set.singleton_subset_iff.mpr hα)
+    have h1 := hle (Polynomial.aeval_mem_adjoin_singleton
+      (R := ℤ) (x := α) (p := Polynomial.derivative F))
+    rw [hβdef, eval₂_intCastRingHom_eq_aeval]
+    exact h1
+  have hβQ : IsIntegral ℚ β := Algebra.IsIntegral.isIntegral β
+  set G : Polynomial ℤ := minpoly ℤ β with hGdef
+  have hm0 : G.coeff 0 ≠ 0 := by
+    have hmapG : minpoly ℚ β = G.map (algebraMap ℤ ℚ) :=
+      minpoly.isIntegrallyClosed_eq_field_fractions' ℚ hβint
+    have h1 : (minpoly ℚ β).coeff 0 ≠ 0 := minpoly.coeff_zero_ne_zero hβQ hβ0
+    rw [hmapG, Polynomial.coeff_map] at h1
+    intro h
+    exact h1 (by rw [h, map_zero])
+  set c : AlgebraicClosure ℚ := -((Polynomial.aeval β) G.divX) with hcdef
+  have hcint : IsIntegral ℤ c := by
+    have hle : Algebra.adjoin ℤ ({β} : Set (AlgebraicClosure ℚ)) ≤
+        integralClosure ℤ (AlgebraicClosure ℚ) :=
+      Algebra.adjoin_le (Set.singleton_subset_iff.mpr hβint)
+    have h1 := hle (Polynomial.aeval_mem_adjoin_singleton
+      (R := ℤ) (x := β) (p := G.divX))
+    rw [hcdef]
+    exact neg_mem h1
+  have hmc : β * c = ((G.coeff 0 : ℤ) : AlgebraicClosure ℚ) := by
+    have hG : (Polynomial.aeval β) G = 0 := minpoly.aeval ℤ β
+    have h2 := congrArg (Polynomial.aeval β) (Polynomial.X_mul_divX_add G)
+    rw [hG, map_add, map_mul, Polynomial.aeval_X, Polynomial.aeval_C] at h2
+    have h3 : β * ((Polynomial.aeval β) G.divX) =
+        -((algebraMap ℤ (AlgebraicClosure ℚ)) (G.coeff 0)) :=
+      eq_neg_of_add_eq_zero_left h2
+    rw [hcdef, mul_neg, h3, neg_neg]
+    simp
+  refine ⟨(G.coeff 0).natAbs.primeFactors, ?_⟩
+  intro q hq hqT σ hσ
+  refine map_localInertia_fixed hq.toHeightOneSpectrumRingOfIntegersRat q ?_
+    (G.coeff 0) ?_ α β c F hFα hβdef hα hcint hmc σ hσ
+  · rw [maximalIdeal_adicCompletionIntegers_eq_span hq]
+    exact Ideal.mem_span_singleton_self _
+  · have hqp : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+    refine (Prime.coprime_iff_not_dvd hqp).mpr ?_
+    intro hdvd
+    refine hqT (Nat.mem_primeFactors.mpr ⟨hq, ?_, Int.natAbs_ne_zero.mpr hm0⟩)
+    rwa [← Int.natAbs_dvd_natAbs, Int.natAbs_natCast] at hdvd
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Openness of the triviality locus of a representation over a DISCRETE
+coefficient field, with no finiteness on the field** — the `[Finite k]`-free form of
+`MinkowskiUnramified.lean`'s `isOpen_setOf_galoisRep_eq_one`.
+
+That lemma derives `Module.Finite k (Module.End k V)` from `Finite (Module.End k V)`,
+which needs `Finite k`; but `Module.Finite k (Module.End k V)` is available directly
+from `Module.Finite k V` and `Module.Free k V` (`Module.Finite.linearMap`), and it is
+all `discreteTopology_moduleTopology` consumes. So openness of the triviality locus
+costs DISCRETENESS of `k` only. -/
+lemma isOpen_setOf_eq_one_of_moduleFinite {k : Type*} [Field k] [TopologicalSpace k]
+    [IsTopologicalRing k] [DiscreteTopology k]
+    {V : Type*} [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+    (ρbar : GaloisRep ℚ k V) :
+    IsOpen {g : Field.absoluteGaloisGroup ℚ | ρbar g = 1} := by
+  letI := moduleTopology k (Module.End k V)
+  haveI : DiscreteTopology (Module.End k V) :=
+    GaloisRepresentation.discreteTopology_moduleTopology k (Module.End k V)
+  exact (isOpen_discrete ({1} : Set (Module.End k V))).preimage ρbar.continuous_toFun
+
+set_option maxHeartbeats 1000000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- **A continuous representation of `Γ ℚ` over a DISCRETE coefficient field is
+unramified outside a finite set of rational primes.**
+
+`ker ρbar` is open (`isOpen_setOf_eq_one_of_moduleFinite`), hence closed, hence the
+fixing subgroup of its fixed field `L`, which is finite over `ℚ`. Scale a `ℚ`-basis
+of `L` into algebraic INTEGERS (`IsAlgebraic.exists_integral_multiple`) and apply
+`exists_finset_map_localInertia_fixed` to each: outside the union of the finitely
+many bad sets, the image of `localInertiaGroup q` fixes every basis vector, hence
+fixes `L` pointwise, hence lies in `ker ρbar`. -/
+theorem exists_finset_isUnramifiedAt_rat_of_notMem
+    {k : Type*} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W) :
+    ∃ T : Finset ℕ, ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ρbar.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  classical
+  set N : Subgroup (Field.absoluteGaloisGroup ℚ) :=
+    { carrier := {g | ρbar g = 1}
+      one_mem' := map_one ρbar
+      mul_mem' := by
+        intro a b ha hb
+        show ρbar (a * b) = 1
+        rw [map_mul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show ρbar a⁻¹ = 1
+        have h1 : ρbar a⁻¹ * ρbar a = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 } with hNdef
+  have hmemN : ∀ g : Field.absoluteGaloisGroup ℚ, g ∈ N ↔ ρbar g = 1 := fun _ => Iff.rfl
+  have hopen : IsOpen ((N : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) :=
+    isOpen_setOf_eq_one_of_moduleFinite ρbar
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) := IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  haveI hsepQ : Algebra.IsSeparable ℚ (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+  have hclosed : IsClosed ((N : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := Subgroup.isClosed_of_isOpen N hopen
+  have hfix : (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N).fixingSubgroup = N :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨N, hclosed⟩
+  haveI hfd : FiniteDimensional ℚ
+      (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :=
+    (InfiniteGalois.isOpen_iff_finite _).mp (by rw [hfix]; exact hopen)
+  set b := Module.finBasis ℚ
+    (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) with hbdef
+  have hbint : ∀ i, ∃ y : ℤ, y ≠ 0 ∧
+      IsIntegral ℤ (y • ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+        AlgebraicClosure ℚ)) := by
+    intro i
+    have halg : IsAlgebraic ℤ
+        ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+          AlgebraicClosure ℚ) :=
+      (IsFractionRing.isAlgebraic_iff ℤ ℚ (AlgebraicClosure ℚ)).mpr
+        (Algebra.IsAlgebraic.isAlgebraic _)
+    exact halg.exists_integral_multiple
+  choose Y hY0 hYint using hbint
+  have hex : ∀ i, ∃ T : Finset ℕ, ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) σ
+          (Y i • ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+            AlgebraicClosure ℚ)) =
+          Y i • ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+            AlgebraicClosure ℚ) :=
+    fun i => exists_finset_map_localInertia_fixed _ (hYint i)
+  choose T hT using hex
+  refine ⟨Finset.univ.biUnion T, fun q hq hqT => ⟨fun σ hσ => ?_⟩⟩
+  show (ρbar.toLocal hq.toHeightOneSpectrumRingOfIntegersRat) σ = 1
+  rw [GaloisRep.toLocal_apply]
+  have hgfix : ∀ i, (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))) σ
+      ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+        AlgebraicClosure ℚ) =
+      ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+        AlgebraicClosure ℚ) := by
+    intro i
+    have h1 := hT i q hq
+      (fun hmem => hqT (Finset.mem_biUnion.mpr ⟨i, Finset.mem_univ i, hmem⟩)) σ hσ
+    have h2 : ((Y i : ℤ) : AlgebraicClosure ℚ) ≠ 0 := Int.cast_ne_zero.mpr (hY0 i)
+    rw [zsmul_eq_mul, map_mul, map_intCast] at h1
+    exact mul_left_cancel₀ h2 h1
+  have hgN : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))) σ ∈ N := by
+    rw [← hfix, IntermediateField.mem_fixingSubgroup_iff]
+    intro z hz
+    have hlin : (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) σ).toAlgHom.comp
+        (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N).val).toLinearMap =
+        ((IntermediateField.fixedField (E := AlgebraicClosure ℚ) N).val).toLinearMap :=
+      b.ext (fun i => hgfix i)
+    exact DFunLike.congr_fun hlin ⟨z, hz⟩
+  have h1 := (hmemN _).mp hgN
+  convert h1 using 4
+  exact Subsingleton.elim _ _
+
+end HilbertRatInertia
+
+namespace HilbertFInertia
+
+open HilbertRatInertia
+
+set_option maxHeartbeats 1000000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The local step at a place of `F`, along an ARBITRARY embedding** (PROVEN
+2026-07-30): if `α`, `β = P'(α)` and `c` live in some ring `E` mapped by `ι` into
+`F_wᵃˡᵍ`, `α` and `c` are integral over `ℤ`, `P ∈ ℤ[X]` kills `α`, and
+`β · c = m` for an integer `m` that is a UNIT of `𝒪_w`, then every element of
+`localInertiaGroup w` fixes `ι α`.
+
+This is `HilbertRatInertia.map_localInertia_fixed` with two changes, both of
+which make it strictly more usable and neither of which costs anything in the
+proof:
+
+* the base field is an arbitrary number field `F` rather than `ℚ`;
+* the embedding `ι` is a HYPOTHESIS rather than `AlgebraicClosure.map` of the
+  structure map. That is what lets the global step below feed it the COMPOSITE
+  `ℚᵃˡᵍ → Fᵃˡᵍ → F_wᵃˡᵍ`, which is the whole content of the descent from the
+  `ℚ`-level statement to the `F`-level one.
+
+The `IsCoprime (q : ℤ) m` bookkeeping of the `ℚ`-level form disappears: what the
+argument actually consumes is `m ∉ 𝔪 𝒪_w`, and asking for that directly removes
+the intermediate step through a rational prime. Everything else — the two roots
+of `P` inside `IntegralClosure 𝒪_w F_wᵃˡᵍ`, their congruence mod the maximal
+ideal (which is the DEFINITION of `localInertiaGroup w`), `P'(ια) = ιβ` a unit
+because it divides `ιm`, and `eq_of_sub_mem_maximalIdeal` — is unchanged. -/
+theorem localInertia_fixed_of_ringHom
+    {F : Type u} [Field F] [NumberField F]
+    (w : IsDedekindDomain.HeightOneSpectrum (𝓞 F))
+    {E : Type*} [CommRing E]
+    (ι : E →+* AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))
+    (m : ℤ)
+    (hm : ((m : ℤ) : HeightOneSpectrum.adicCompletionIntegers F w) ∉
+      IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers F w))
+    (α β c : E) (P : Polynomial ℤ)
+    (hPα : Polynomial.eval₂ (Int.castRingHom E) α P = 0)
+    (hβ : β = Polynomial.eval₂ (Int.castRingHom E) α (Polynomial.derivative P))
+    (hαint : IsIntegral ℤ α) (hcint : IsIntegral ℤ c)
+    (hmc : β * c = (m : E))
+    (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion F w))
+    (hσ : σ ∈ localInertiaGroup w) :
+    σ (ι α) = ι α := by
+  classical
+  set τ : AlgebraicClosure (HeightOneSpectrum.adicCompletion F w) →+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion F w) :=
+    σ.toAlgHom.toRingHom with hτdef
+  have hτapp : ∀ y, τ y = σ y := fun _ => rfl
+  -- integrality transports along `ι`
+  have hint : ∀ x : E, IsIntegral ℤ x →
+      IsIntegral (HeightOneSpectrum.adicCompletionIntegers F w) (ι x) := by
+    intro x hx
+    obtain ⟨Q, hQm, hQe⟩ := hx
+    refine ⟨Q.map (Int.castRingHom (HeightOneSpectrum.adicCompletionIntegers F w)),
+      hQm.map _, ?_⟩
+    have hcomp : (algebraMap (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))).comp
+        (Int.castRingHom (HeightOneSpectrum.adicCompletionIntegers F w)) =
+        Int.castRingHom (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) :=
+      RingHom.ext_int _ _
+    have hQ0 : Polynomial.eval₂ (Int.castRingHom E) x Q = 0 := by
+      rw [eval₂_intCastRingHom_eq_aeval, Polynomial.aeval_def]
+      exact hQe
+    rw [Polynomial.eval₂_map, hcomp, ← eval₂_intCastRingHom_map ι x Q, hQ0, map_zero]
+  -- the elements of the big integral closure
+  set xa : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) :=
+    ⟨ι α, hint α hαint⟩ with hxadef
+  set xc : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) :=
+    ⟨ι c, hint c hcint⟩ with hxcdef
+  set j : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) →+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion F w) := algebraMap _ _ with hjdef
+  have hinjj : Function.Injective j := fun x y h => Subtype.ext h
+  have hjxa : j xa = ι α := rfl
+  have hjxc : j xc = ι c := rfl
+  set xs : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) := σ • xa with hxsdef
+  have hjxs : j xs = τ (ι α) := rfl
+  -- the integer polynomial, read over the big integral closure
+  set Pb : Polynomial (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))) :=
+    P.map (Int.castRingHom _) with hPbdef
+  have hPa : Pb.eval xa = 0 := by
+    apply hinjj
+    rw [map_zero, hPbdef, Polynomial.eval_map, eval₂_intCastRingHom_map j xa P, hjxa,
+      ← eval₂_intCastRingHom_map ι α P, hPα, map_zero]
+  have hPs : Pb.eval xs = 0 := by
+    apply hinjj
+    rw [map_zero, hPbdef, Polynomial.eval_map, eval₂_intCastRingHom_map j xs P, hjxs,
+      ← eval₂_intCastRingHom_map τ (ι α) P, ← eval₂_intCastRingHom_map ι α P, hPα,
+      map_zero, map_zero]
+  have hcong : xs - xa ∈ IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))) :=
+    hσ xa
+  -- the derivative value maps to `ι β`
+  have hjb : j ((Polynomial.derivative Pb).eval xa) = ι β := by
+    rw [hPbdef, Polynomial.derivative_map, Polynomial.eval_map,
+      eval₂_intCastRingHom_map j xa (Polynomial.derivative P), hjxa,
+      ← eval₂_intCastRingHom_map ι α (Polynomial.derivative P), ← hβ]
+  -- `m` is a unit in the big integral closure
+  haveI : (IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  have hcomapm : (IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))).comap
+      (algebraMap (HeightOneSpectrum.adicCompletionIntegers F w)
+        (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))) =
+      IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers F w) := by
+    have hmax := Ideal.isMaximal_comap_of_isIntegral_of_isMaximal
+      (R := HeightOneSpectrum.adicCompletionIntegers F w)
+      (S := IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))
+      (IsLocalRing.maximalIdeal _)
+    exact hmax.eq_of_le (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (IsLocalRing.le_maximalIdeal hmax.ne_top)
+  have hmnot : ((m : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))) ∉
+      IsLocalRing.maximalIdeal _ := by
+    intro hmem
+    refine hm ?_
+    rw [← hcomapm, Ideal.mem_comap, map_intCast]
+    exact hmem
+  have hunit : (Polynomial.derivative Pb).eval xa ∉ IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))) := by
+    intro hb
+    refine hmnot ?_
+    have hprod : (Polynomial.derivative Pb).eval xa * xc =
+        ((m : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))) := by
+      apply hinjj
+      rw [map_mul, hjb, hjxc, map_intCast, ← map_mul, hmc, map_intCast]
+    rw [← hprod]
+    exact Ideal.mul_mem_right _ _ hb
+  have hxs_eq := eq_of_sub_mem_maximalIdeal Pb xa xs hPa hPs hcong hunit
+  rw [← hτapp, ← hjxs, ← hjxa, hxs_eq]
+
+/-- **A rational integer that `w` misses downstairs is a unit upstairs** (PROVEN
+2026-07-30): the contraction of `𝔪 𝒪_w` along `𝓞 F → 𝒪_w` is `w.asIdeal`
+(`Ideal.LiesOver.over` for `HeightOneSpectrum.completionIdeal`), so
+`m ∉ w.asIdeal` gives `m ∉ 𝔪 𝒪_w`.
+
+This is the bridge that turns the finiteness statement
+`finite_setOf_natCast_mem_asIdeal` — which is about PLACES containing an element
+of `𝓞 F` — into the hypothesis `localInertia_fixed_of_ringHom` actually wants. -/
+theorem intCast_notMem_maximalIdeal_of_notMem_asIdeal
+    {F : Type u} [Field F] [NumberField F]
+    (w : IsDedekindDomain.HeightOneSpectrum (𝓞 F)) (m : ℤ)
+    (hm : ((m : ℤ) : 𝓞 F) ∉ w.asIdeal) :
+    ((m : ℤ) : HeightOneSpectrum.adicCompletionIntegers F w) ∉
+      IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers F w) := by
+  intro hmem
+  refine hm ?_
+  have hlo : Ideal.comap (algebraMap (𝓞 F) (w.adicCompletionIntegers F))
+      (IsLocalRing.maximalIdeal (w.adicCompletionIntegers F)) = w.asIdeal := by
+    have := (Ideal.LiesOver.over (A := 𝓞 F) (p := w.asIdeal)
+      (P := IsDedekindDomain.HeightOneSpectrum.completionIdeal F w)).symm
+    rwa [Ideal.under_def] at this
+  rw [← hlo, Ideal.mem_comap, map_intCast]
+  exact hmem
+
+set_option maxHeartbeats 1000000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The global step over `F`** (PROVEN 2026-07-30): an algebraic integer `α` of
+`ℚᵃˡᵍ` is fixed by the image in `Γ ℚ` of the local inertia at ALL BUT FINITELY
+MANY places of `F`, the image being taken along the two-step map
+`Γ F_w → Γ F → Γ ℚ`.
+
+The `β`, `c`, `m` construction is verbatim
+`HilbertRatInertia.exists_finset_map_localInertia_fixed`'s and is entirely a
+statement about `α` inside `ℚᵃˡᵍ` — nothing in it mentions the base field. What
+changes is only the BAD SET: over `ℚ` it is `m.natAbs.primeFactors`, and over
+`F` it is `{w | m ∈ w}`, finite by `finite_setOf_natCast_mem_asIdeal`.
+
+The transport back to `Γ ℚ` is two applications of
+`Field.absoluteGaloisGroup.lift_map`, one per step of the tower: with
+`ι₁ = AlgebraicClosure.map (algebraMap ℚ F)` and
+`ι₂ = AlgebraicClosure.map (algebraMap F F_w)`,
+
+    ι₂ (ι₁ (g α)) = ι₂ (τ (ι₁ α)) = σ (ι₂ (ι₁ α)) = ι₂ (ι₁ α),
+
+the last equality being `localInertia_fixed_of_ringHom` applied to
+`ι = ι₂ ∘ ι₁`, and both `ι₁`, `ι₂` are injective. -/
+theorem exists_finset_map_localInertia_fixed_hilbert
+    (F : Type u) [Field F] [NumberField F]
+    (α : AlgebraicClosure ℚ) (hα : IsIntegral ℤ α) :
+    ∃ S : Finset (HeightOneSpectrum (𝓞 F)),
+      ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      ∀ σ ∈ localInertiaGroup w,
+        Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+          (Field.absoluteGaloisGroup.map
+            (algebraMap F (HeightOneSpectrum.adicCompletion F w)) σ) α = α := by
+  classical
+  have hαQ : IsIntegral ℚ α := Algebra.IsIntegral.isIntegral α
+  set P : Polynomial ℤ := minpoly ℤ α with hPdef
+  have hPα : Polynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) α P = 0 := by
+    rw [eval₂_intCastRingHom_eq_aeval]
+    exact minpoly.aeval ℤ α
+  set β : AlgebraicClosure ℚ :=
+    Polynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) α
+      (Polynomial.derivative P) with hβdef
+  have hmapP : minpoly ℚ α = P.map (algebraMap ℤ ℚ) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions' ℚ hα
+  have hβ0 : β ≠ 0 := by
+    intro h0
+    have hd : (Polynomial.aeval α) (Polynomial.derivative (minpoly ℚ α)) = 0 := by
+      rw [hmapP, Polynomial.derivative_map, Polynomial.aeval_map_algebraMap,
+        ← eval₂_intCastRingHom_eq_aeval, ← hβdef]
+      exact h0
+    have hdvd := minpoly.dvd ℚ α hd
+    have hpos : 0 < (minpoly ℚ α).natDegree := minpoly.natDegree_pos hαQ
+    by_cases hz : Polynomial.derivative (minpoly ℚ α) = 0
+    · have h1 : (minpoly ℚ α).natDegree = 0 :=
+        Polynomial.derivative_eq_zero.mp hz
+      omega
+    · have hlt := Polynomial.natDegree_derivative_lt (p := minpoly ℚ α) (by omega)
+      have hle := Polynomial.natDegree_le_of_dvd hdvd hz
+      omega
+  have hβint : IsIntegral ℤ β := by
+    have hle : Algebra.adjoin ℤ ({α} : Set (AlgebraicClosure ℚ)) ≤
+        integralClosure ℤ (AlgebraicClosure ℚ) :=
+      Algebra.adjoin_le (Set.singleton_subset_iff.mpr hα)
+    have h1 := hle (Polynomial.aeval_mem_adjoin_singleton
+      (R := ℤ) (x := α) (p := Polynomial.derivative P))
+    rw [hβdef, eval₂_intCastRingHom_eq_aeval]
+    exact h1
+  have hβQ : IsIntegral ℚ β := Algebra.IsIntegral.isIntegral β
+  set G : Polynomial ℤ := minpoly ℤ β with hGdef
+  have hm0 : G.coeff 0 ≠ 0 := by
+    have hmapG : minpoly ℚ β = G.map (algebraMap ℤ ℚ) :=
+      minpoly.isIntegrallyClosed_eq_field_fractions' ℚ hβint
+    have h1 : (minpoly ℚ β).coeff 0 ≠ 0 := minpoly.coeff_zero_ne_zero hβQ hβ0
+    rw [hmapG, Polynomial.coeff_map] at h1
+    intro h
+    exact h1 (by rw [h, map_zero])
+  set c : AlgebraicClosure ℚ := -((Polynomial.aeval β) G.divX) with hcdef
+  have hcint : IsIntegral ℤ c := by
+    have hle : Algebra.adjoin ℤ ({β} : Set (AlgebraicClosure ℚ)) ≤
+        integralClosure ℤ (AlgebraicClosure ℚ) :=
+      Algebra.adjoin_le (Set.singleton_subset_iff.mpr hβint)
+    have h1 := hle (Polynomial.aeval_mem_adjoin_singleton
+      (R := ℤ) (x := β) (p := G.divX))
+    rw [hcdef]
+    exact neg_mem h1
+  have hmc : β * c = ((G.coeff 0 : ℤ) : AlgebraicClosure ℚ) := by
+    have hG : (Polynomial.aeval β) G = 0 := minpoly.aeval ℤ β
+    have h2 := congrArg (Polynomial.aeval β) (Polynomial.X_mul_divX_add G)
+    rw [hG, map_add, map_mul, Polynomial.aeval_X, Polynomial.aeval_C] at h2
+    have h3 : β * ((Polynomial.aeval β) G.divX) =
+        -((algebraMap ℤ (AlgebraicClosure ℚ)) (G.coeff 0)) :=
+      eq_neg_of_add_eq_zero_left h2
+    rw [hcdef, mul_neg, h3, neg_neg]
+    simp
+  -- the bad set: the places of `F` that contain `m = G.coeff 0`
+  have hmO : ((G.coeff 0 : ℤ) : 𝓞 F) ≠ 0 := Int.cast_ne_zero.mpr hm0
+  refine ⟨(finite_setOf_natCast_mem_asIdeal F
+    ((G.coeff 0 : ℤ) : 𝓞 F) hmO).toFinset, ?_⟩
+  intro w hw σ hσ
+  have hnotmem : ((G.coeff 0 : ℤ) : 𝓞 F) ∉ w.asIdeal := by
+    intro hmem
+    exact hw (Set.Finite.mem_toFinset _ |>.mpr hmem)
+  have hm := intCast_notMem_maximalIdeal_of_notMem_asIdeal w (G.coeff 0) hnotmem
+  set ι₁ : AlgebraicClosure ℚ →+* AlgebraicClosure F :=
+    AlgebraicClosure.map (algebraMap ℚ F) with hι₁
+  set ι₂ : AlgebraicClosure F →+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion F w) :=
+    AlgebraicClosure.map (algebraMap F (HeightOneSpectrum.adicCompletion F w)) with hι₂
+  have hfix : σ (ι₂ (ι₁ α)) = ι₂ (ι₁ α) :=
+    localInertia_fixed_of_ringHom w (ι₂.comp ι₁) (G.coeff 0) hm α β c P hPα hβdef hα
+      hcint hmc σ hσ
+  set τ : Field.absoluteGaloisGroup F :=
+    Field.absoluteGaloisGroup.map
+      (algebraMap F (HeightOneSpectrum.adicCompletion F w)) σ with hτ
+  refine RingHom.injective ι₁ (RingHom.injective ι₂ ?_)
+  have h1 := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ F) τ α
+  have h2 := Field.absoluteGaloisGroup.lift_map
+    (algebraMap F (HeightOneSpectrum.adicCompletion F w)) σ (ι₁ α)
+  rw [show ι₂ (ι₁ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) τ α)) =
+      ι₂ (τ (ι₁ α)) from congrArg ι₂ h1, h2, hfix]
+
+end HilbertFInertia
+
+set_option maxHeartbeats 1000000 in
+set_option backward.isDefEq.respectTransparency false in
 /-- **A continuous representation of `Γ F` over a discrete coefficient field is
-unramified outside finitely many places** (SORRY LEAF, cut out 2026-07-28 as the
+unramified outside finitely many places** (cut out 2026-07-28 as the
 second of the four inputs of `finite_hilbertH1TwistUnramified` below; the
 `F`-level twin of `Modularity/Patching.lean`'s
-`exists_finset_isUnramifiedAt_of_notMem`).
+`exists_finset_isUnramifiedAt_of_notMem`; **PROVEN 2026-07-30**).
 
 This is the classical "a number field is ramified at only finitely many primes",
 transported through the kernel of `ρbar`. Route: `k` is discrete and `V` is a
 finite free `k`-module, so `Module.End k V` carries the discrete topology and
 continuity of `ρbar` makes `ker ρbar` an OPEN normal subgroup of `Γ ℚ`; its
-fixed field `L` is a finite Galois number field
-(`InfiniteGalois.isOpen_iff_finite`, `InfiniteGalois.normal_iff_isGalois`), and
-`ρbar.map (algebraMap ℚ F)` is unramified at every place `w` of `F` that is
-unramified in `L·F/F` — of which there are all but finitely many, since `L·F/F`
-is a finite extension. Take `S` to be that finite set.
+fixed field `L` is a finite number field (`InfiniteGalois.isOpen_iff_finite`),
+so a `ℚ`-basis of `L` scaled into ALGEBRAIC INTEGERS
+(`IsAlgebraic.exists_integral_multiple`) is fixed by the image of `I_w` for all
+but finitely many `w` (`HilbertFInertia.exists_finset_map_localInertia_fixed_hilbert`),
+hence so is `L`, hence that image lies in `ker ρbar`. Take `S` to be the union
+of the finitely many bad sets, one per basis vector.
 
 **`[Finite k]` IS ABSENT HERE TOO**, and the route above is why it costs
 nothing: what makes `ker ρbar` open is DISCRETENESS of `Module.End k V`, not
 finiteness. The `ℚ`-level twin carries `[Finite k]` only because its ambient
 section does.
 
-**What is genuinely missing and is this leaf's content**: the last step is the
-CONVERSE of `MinkowskiUnramified.lean`'s PROVEN
-`isUnramifiedAt_of_inertia_le_fixingSubgroup` (which runs inertia-trivial ⟹
-unramified). `grep -rn "isUnramifiedAt_of_inertia_le_fixingSubgroup" Fermat/`
-finds only that direction. That converse — "`w` unramified in the finite Galois
-`L/F` ⟹ the image of `I_w` fixes `L` pointwise" — is the one new dictionary
-lemma, and it is SHARED with `finite_hilbertInertiaOutsideSubgroups` above, so
-the two leaves are natural companions and are best given to ONE owner.
+**THE ROUTE PREDICTED BY THIS DOCSTRING WAS NOT THE ROUTE TAKEN, and the
+correction is worth recording** (2026-07-30). The prediction was that the last
+step is the CONVERSE of `MinkowskiUnramified.lean`'s
+`isUnramifiedAt_of_inertia_le_fixingSubgroup` — "`w` unramified in the finite
+Galois `L/F` ⟹ the image of `I_w` fixes `L` pointwise" — priced as the one new
+dictionary lemma, shared with `finite_hilbertInertiaOutsideSubgroups` above.
+**Neither leaf needed it.** The unramified/inertia dictionary never has to be
+crossed in that direction at all: one proves the inertia statement DIRECTLY, by
+the Hensel-free simple-root separation of
+`HilbertRatInertia.eq_of_sub_mem_maximalIdeal` inside
+`IntegralClosure 𝒪_w F_wᵃˡᵍ` — two roots of `minpoly ℤ α` congruent mod the
+maximal ideal, with `(minpoly ℤ α)'(α)` a unit there, coincide. The finite bad
+set is then the set of places containing one fixed nonzero integer, and no
+discriminant, ramification index, or `L/F`-level dictionary appears anywhere.
+
+The two leaves were indeed natural companions and were indeed given to one
+owner; what the shared step turned out to be is `eq_of_sub_mem_maximalIdeal`,
+not the converse dictionary lemma.
 
 Both-ways audit: no hypothesis on `ρbar` beyond its type, hence non-vacuous and
 not dischargeable by refuting the hardly ramified package. Stated for the FULL
@@ -20800,7 +21833,91 @@ theorem exists_finset_isUnramifiedAt_hilbert_of_notMem
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V] (ρbar : GaloisRep ℚ k V) :
     ∃ S : Finset (HeightOneSpectrum (𝓞 F)), ∀ w : HeightOneSpectrum (𝓞 F),
-      w ∉ S → (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w := sorry
+      w ∉ S → (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w := by
+  classical
+  set N : Subgroup (Field.absoluteGaloisGroup ℚ) :=
+    { carrier := {g | ρbar g = 1}
+      one_mem' := map_one ρbar
+      mul_mem' := by
+        intro a b ha hb
+        show ρbar (a * b) = 1
+        rw [map_mul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show ρbar a⁻¹ = 1
+        have h1 : ρbar a⁻¹ * ρbar a = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 } with hNdef
+  have hmemN : ∀ g : Field.absoluteGaloisGroup ℚ, g ∈ N ↔ ρbar g = 1 := fun _ => Iff.rfl
+  have hopen : IsOpen ((N : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) :=
+    HilbertRatInertia.isOpen_setOf_eq_one_of_moduleFinite ρbar
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) := IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  haveI hsepQ : Algebra.IsSeparable ℚ (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+  have hclosed : IsClosed ((N : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := Subgroup.isClosed_of_isOpen N hopen
+  have hfix : (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N).fixingSubgroup = N :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨N, hclosed⟩
+  haveI hfd : FiniteDimensional ℚ
+      (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :=
+    (InfiniteGalois.isOpen_iff_finite _).mp (by rw [hfix]; exact hopen)
+  set b := Module.finBasis ℚ
+    (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) with hbdef
+  have hbint : ∀ i, ∃ y : ℤ, y ≠ 0 ∧
+      IsIntegral ℤ (y • ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+        AlgebraicClosure ℚ)) := by
+    intro i
+    have halg : IsAlgebraic ℤ
+        ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+          AlgebraicClosure ℚ) :=
+      (IsFractionRing.isAlgebraic_iff ℤ ℚ (AlgebraicClosure ℚ)).mpr
+        (Algebra.IsAlgebraic.isAlgebraic _)
+    exact halg.exists_integral_multiple
+  choose Y hY0 hYint using hbint
+  have hex : ∀ i, ∃ S : Finset (HeightOneSpectrum (𝓞 F)),
+      ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      ∀ σ ∈ localInertiaGroup w,
+        Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+          (Field.absoluteGaloisGroup.map
+            (algebraMap F (HeightOneSpectrum.adicCompletion F w)) σ)
+          (Y i • ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+            AlgebraicClosure ℚ)) =
+          Y i • ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+            AlgebraicClosure ℚ) :=
+    fun i => HilbertFInertia.exists_finset_map_localInertia_fixed_hilbert F _ (hYint i)
+  choose S hS using hex
+  refine ⟨Finset.univ.biUnion S, fun w hw => ⟨fun σ hσ => ?_⟩⟩
+  -- keep the composite Galois element OPAQUE: unfolding `absoluteGaloisGroup.map`
+  -- twice is what makes the final `isDefEq` blow past a million heartbeats.
+  obtain ⟨g, hgdef⟩ : ∃ g : Field.absoluteGaloisGroup ℚ,
+      g = Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+        (Field.absoluteGaloisGroup.map
+          (algebraMap F (HeightOneSpectrum.adicCompletion F w)) σ) := ⟨_, rfl⟩
+  show ((ρbar.map (algebraMap ℚ F)).toLocal w) σ = 1
+  rw [GaloisRep.toLocal_apply, GaloisRep.map_apply, ← hgdef]
+  have hgfix : ∀ i, g ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+        AlgebraicClosure ℚ) =
+      ((b i : IntermediateField.fixedField (E := AlgebraicClosure ℚ) N) :
+        AlgebraicClosure ℚ) := by
+    intro i
+    have h1 := hS i w
+      (fun hmem => hw (Finset.mem_biUnion.mpr ⟨i, Finset.mem_univ i, hmem⟩)) σ hσ
+    have h2 : ((Y i : ℤ) : AlgebraicClosure ℚ) ≠ 0 := Int.cast_ne_zero.mpr (hY0 i)
+    rw [hgdef]
+    rw [zsmul_eq_mul, map_mul, map_intCast] at h1
+    exact mul_left_cancel₀ h2 h1
+  have hgN : g ∈ N := by
+    rw [← hfix, IntermediateField.mem_fixingSubgroup_iff]
+    intro z hz
+    have hlin : ((g.toAlgHom.comp
+        (IntermediateField.fixedField (E := AlgebraicClosure ℚ) N).val).toLinearMap) =
+        ((IntermediateField.fixedField (E := AlgebraicClosure ℚ) N).val).toLinearMap :=
+      b.ext (fun i => hgfix i)
+    exact DFunLike.congr_fun hlin ⟨z, hz⟩
+  exact (hmemN _).mp hgN
 
 /-- **THE COCYCLE FORM OF THE SMALL-SUBGROUP STATEMENT** (SORRY LEAF, cut
 2026-07-30 (late) out of
@@ -20917,6 +22034,49 @@ finite quotient, and let `z` be a continuous `1`-cocycle representing `c`.
   `z (g⁻¹) = −g⁻¹ · z g` and that `x` acts trivially on `M`. Its index is at
   most `#(Γ F / N₁) · #(image of z)`, both finite by compactness and
   discreteness, which is the `n` to take.
+
+  **THIS LAST SENTENCE IS THE ONE DEFECT IN THIS ROUTE, AND IT IS FATAL AS
+  WRITTEN (found 2026-07-30).** `n` is quantified BEFORE `c`, so the bound must
+  be UNIFORM in `z`; `#(image of z)` is not. It is finite for each `z` — a
+  continuous map from a compact group to a discrete space — but nothing here
+  bounds it independently of `z`.
+
+  The `ℚ`-level twin `Modularity/Patching.lean`'s
+  `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero` is PROVEN and takes
+  literally `N₁.index * Nat.card ↥(adZeroTwist p ρbar)` for its `n` — which is
+  uniform there **only because that file carries `[Finite k]`**, making the whole
+  coefficient module finite. THIS module deliberately does not (see
+  `finite_hilbertH1TwistUnramified`'s docstring), so the twin's `n` is `0` here
+  and the transcription does not survive the deviation. That the two leaves are
+  "honest twins" is exactly what hides this: the sentence was transcribed from a
+  file where it is true.
+
+  WHAT IS ACTUALLY TRUE, AND WHAT IT COSTS. `z|_{N₁}` is a continuous HOMOMORPHISM
+  `N₁ → M` (the action being trivial), so `N₁/N` embeds in `(M, +)`. If
+  `char k = 0` the only finite subgroup of `M` is `0`, so `N = N₁` and
+  `n := N₁.index` works with nothing further. If `char k = p` then `N₁/N` is
+  elementary abelian of exponent `p`, and `N` is an open subgroup of `Γ F`
+  containing every `I_w` for `w ∉ S`; so the fixed field of `N` sits inside the
+  maximal abelian exponent-`p` extension of the fixed field of `N₁` unramified
+  outside `S`, and the uniform bound is the degree of THAT — finite by class
+  field theory (finiteness of the `S`-ray class group, equivalently topological
+  finite generation of `Γ_{F,S}`).
+
+  **Hermite–Minkowski does NOT supply it**, and this is worth being explicit
+  about because this module has a Hermite–Minkowski block sitting right above:
+  `finite_hilbertInertiaOutsideSubgroups` bounds, for each `n`, the NUMBER of
+  admissible subgroups of index `≤ n`; it says nothing about how large the index
+  of one particular admissible subgroup can be. The two finitenesses are
+  independent.
+
+  So the genuinely missing input of this leaf is the finiteness of the maximal
+  elementary-abelian-`p` extension of a number field unramified outside a finite
+  set of places — not the cochain dictionary, which is present and which the
+  rest of this route uses correctly. A prover should either bring that in, or
+  ask an author whether `[Finite k]` may be added to this leaf and to
+  `finite_hilbertH1TwistUnramified` (at the intended instantiation `k` IS finite,
+  a residue field; the `[Finite k]`-free shape is a deliberate strengthening of
+  this module, not a requirement of its consumers).
 * `N ∈ hilbertInertiaOutsideSubgroups F S n`: for `w ∉ S` the module `M` is
   unramified at `w` (`hSunr`; the twist is by `det ρbar|_{G_F}`, which is
   unramified wherever `ρbar|_{G_F}` is, so no separate cyclotomic bookkeeping is
@@ -21052,9 +22212,100 @@ theorem exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero
     rw [hg, hzero _ g.2]
     rfl
 
+namespace HilbertResKer
+
+open ContinuousCohomology TopRep ContRepresentation
+
+/-- `ad⁰` is a finite-dimensional `k`-space: it is a subspace of `Module.End k V`
+(through `HilbertAdZero.equivKer`), which is finite-dimensional because `V` is
+finite free. Stated as a theorem rather than an instance so that nothing else in
+this 28 000-line module has its instance search perturbed. -/
+theorem moduleFinite_hilbertAdZero {k : Type u} [Field k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] : Module.Finite k (HilbertAdZero k V) := by
+  haveI : Module.Finite k (Module.End k V) := Module.Finite.linearMap k k V V
+  haveI : Module.Finite k ↥(LinearMap.ker (LinearMap.trace k V)) :=
+    Submodule.finiteDimensional_of_le (le_refl _)
+  exact Module.Finite.equiv (HilbertAdZero.equivKer k V).symm
+
+/-- **`ad⁰ρbar(1)` at `g` depends only on `ρbar|_{Γ F}` at `g`** (PROVEN
+2026-07-30): the twist is `det ρbar|_{Γ F} σ • conj (ρbar|_{Γ F} σ)`, and
+`ρbar|_{Γ F} σ⁻¹` is determined by `ρbar|_{Γ F} σ` as its inverse in the monoid
+`Module.End k V`. -/
+theorem rho_hilbertAdZeroTwist_eq_of_map_eq (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) {g h : Γ F}
+    (hgh : (ρbar.map (algebraMap ℚ F)) g = (ρbar.map (algebraMap ℚ F)) h) :
+    (hilbertAdZeroTwist F ρbar).ρ g = (hilbertAdZeroTwist F ρbar).ρ h := by
+  set ρF := ρbar.map (algebraMap ℚ F) with hρF
+  have hinv : ρF g⁻¹ = ρF h⁻¹ := by
+    have h1 : ρF g⁻¹ * ρF g = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+    have h2 : ρF h * ρF h⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
+    calc ρF g⁻¹ = ρF g⁻¹ * (ρF h * ρF h⁻¹) := by rw [h2, mul_one]
+      _ = (ρF g⁻¹ * ρF g) * ρF h⁻¹ := by rw [← hgh, mul_assoc]
+      _ = ρF h⁻¹ := by rw [h1, one_mul]
+  have hdet : ρF.det g = ρF.det h := by
+    rw [GaloisRep.det_apply, GaloisRep.det_apply, hgh]
+  show (ρF.det g) • (HilbertAdZero.rep ρF g) = (ρF.det h) • (HilbertAdZero.rep ρF h)
+  rw [hdet]
+  congr 1
+  refine ContinuousLinearMap.ext fun x => HilbertAdZero.ext ?_
+  show HilbertAdZero.toEnd k V (HilbertAdZero.conjL (ρF g) (ρF g⁻¹)
+        (by rw [← map_mul, inv_mul_cancel, map_one]) x) =
+      HilbertAdZero.toEnd k V (HilbertAdZero.conjL (ρF h) (ρF h⁻¹)
+        (by rw [← map_mul, inv_mul_cancel, map_one]) x)
+  rw [HilbertAdZero.toEnd_conjL, HilbertAdZero.toEnd_conjL, hgh, hinv]
+
+/-- **The orbit map `g ↦ ρ g m` of `ad⁰ρbar(1)` is CONTINUOUS** (PROVEN
+2026-07-30).
+
+This is the one hypothesis that `ContinuousCohomology.cocycleClass_eq_zero_of_
+eval₁_eq_sub` and the degree-`0` cochain `g ↦ ρ g m` need and that
+`ContRepresentation` deliberately does NOT carry (see that lemma's docstring:
+the datum only asks each `ρ g` to be continuous on `M`, so that `coind₁` can be
+formed with no hypothesis on the topology of `G`).
+
+Here it is free, and the two ingredients are exactly the two discreteness
+hypotheses this module keeps: `ρ g` depends only on `ρbar|_{Γ F} g`
+(`rho_hilbertAdZeroTwist_eq_of_map_eq`), and `ρbar|_{Γ F}` is continuous into
+`Module.End k V`, which carries the DISCRETE module topology because `k` is
+discrete and `V` is finite free (`discreteTopology_moduleTopology`). A map that
+factors through a continuous map into a discrete space is continuous, whatever
+the target. -/
+theorem continuous_rho_hilbertAdZeroTwist_apply
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (m : ↥(hilbertAdZeroTwist F ρbar)) :
+    Continuous fun g : Γ F => (hilbertAdZeroTwist F ρbar).ρ g m := by
+  classical
+  letI := moduleTopology k (Module.End k V)
+  haveI : DiscreteTopology (Module.End k V) :=
+    GaloisRepresentation.discreteTopology_moduleTopology k (Module.End k V)
+  set ρF := ρbar.map (algebraMap ℚ F) with hρF
+  set Φ : Module.End k V → ↥(hilbertAdZeroTwist F ρbar) := fun e =>
+    if h : ∃ g : Γ F, ρF g = e then
+      (hilbertAdZeroTwist F ρbar).ρ h.choose m else 0 with hΦ
+  have hfact : ∀ g : Γ F, (hilbertAdZeroTwist F ρbar).ρ g m = Φ (ρF g) := by
+    intro g
+    have hex : ∃ g' : Γ F, ρF g' = ρF g := ⟨g, rfl⟩
+    rw [hΦ]
+    simp only [dif_pos hex]
+    rw [rho_hilbertAdZeroTwist_eq_of_map_eq F ρbar hex.choose_spec]
+  have h1 : Continuous fun g : Γ F => ρF g := ρF.continuous_toFun
+  have hcont : Continuous (Φ ∘ fun g : Γ F => ρF g) :=
+    Continuous.comp continuous_of_discreteTopology h1
+  exact hcont.congr fun g => (hfact g).symm
+
+end HilbertResKer
+
+set_option maxHeartbeats 1000000 in
 /-- **Inflation–restriction: the kernel of restriction to an open normal
-subgroup is FINITE-DIMENSIONAL over `k`** (SORRY LEAF, cut out 2026-07-28 as the
-fourth of the four inputs of `finite_hilbertH1TwistUnramified` below).
+subgroup is FINITE-DIMENSIONAL over `k`** (cut out 2026-07-28 as the
+fourth of the four inputs of `finite_hilbertH1TwistUnramified` below;
+**PROVEN 2026-07-30**).
 
 For `N ≤ Γ F` open, normal and of finite index, the kernel of
 `res : H¹(Γ F, ad⁰ρbar(1)) → H¹(N, ad⁰ρbar(1))` is a finite-dimensional
@@ -21779,24 +23030,93 @@ theorem exists_hilbertAdZeroTrivializing_notMem_range_sub
           (hilbertAdZeroTwist F ρbar).ρ σ m - m :=
   sorry
 
-/-- **The NONEMPTINESS half of DDT Lemma 2.48 over `F`** (a SORRY LEAF from its
-cut on 2026-07-28 until 2026-07-30 (late); **PROVEN** that day over the single
-leaf `exists_hilbertAdZeroTrivializing_notMem_range_sub` immediately above, which
-is the DDT §2 separation step with all locus and cocycle bookkeeping stripped
-off. The statement is unchanged and no consumer changed. Everything below this
-paragraph is the leaf's original documentation and remains accurate as the
-description of the ROUTE and of the FALSITY AUDIT that produced the
-`[NumberField.IsTotallyReal F]` hypothesis; only the "SORRY LEAF" label is
-superseded.)
+/-- **The NONEMPTINESS half of DDT Lemma 2.48 over `F`** (SORRY LEAF, cut out
+2026-07-30 from `isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus`
+below, whose openness half is `isOpen_hilbertSurvivingLocus` immediately above
+and is now PROVEN).
 
-Original header follows.
+This is the deep half — the "nonemptiness step" of DDT §2 — and it is where
+absolute irreducibility of `ρbar|_{G_F}` is used classically. Everything the old
+combined leaf's docstring said about the OPENNESS half is discharged; what
+remains is exactly the paragraph below.
 
-**The NONEMPTINESS half of DDT Lemma 2.48 over `F`** (SORRY LEAF; cut out
-2026-07-28 as one leaf carrying openness as well, SPLIT 2026-07-30 once the
-openness half was proven): for a cocycle `z` representing a nonzero class `c`
-unramified outside `hilbertHardlyRamifiedPlaces ℓ F`, the surviving locus of `z`
+# ROUTE
+
+Let `M = ad⁰ρbar(1)` and `L = F(M, μ_{ℓⁿ})`, a finite Galois extension of `F`.
+`Γ L` acts trivially on `M`, so `z|_{Γ L}` is a HOMOMORPHISM `Γ L → M`, and
+`Γ L` is normal, so `hilbertTaylorWilesLocus` contains the whole coset `σ · Γ L`
+of any `σ` in it — and `exists_hilbertFixing_rootsOfUnity_charpoly_split` above
+supplies one. Restriction `H¹(Γ F, M) → Hom(Γ L, M)` is injective on classes
+unramified outside `hilbertHardlyRamifiedPlaces ℓ F` because
+`H¹(Gal(L/F), M) = 0` — this is the step needing absolute irreducibility of
+`ρbar|_{G_{F(ζ_ℓ)}}`, which at `ℓ ≥ 5` follows from `hirrF` — so `z|_{Γ L} ≠ 0`.
+Now `ρ σ` has two DISTINCT eigenvalues, so `(ρ σ − 1) · M` is a PROPER subspace
+of `M`; if `z σ ∈ (ρ σ − 1) · M`, pick `τ ∈ Γ L` with `z τ` outside it and use
+`z (σ τ) = z σ + ρ σ (z τ)`
+(`ContinuousCohomology.cocycles₁_eval₁_mul`) to move out. Either `σ` or `σ τ`
+then lies in the intersection.
+
+**THE DATUM `𝒟₀` IS LOAD-BEARING AND MAY NOT BE DROPPED.** It is what supplies
+the Galois element, through
+`exists_hilbertFixing_rootsOfUnity_charpoly_split`; and deviation (1) of
+`exists_hilbertTaylorWilesPrime`'s docstring records why no `k`-side hypothesis
+can replace it in this module.
+
+**WARNING, inherited from that supplier and not to be discovered twice**:
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` rests on
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare`, which carries a FALSITY
+AUDIT (2026-07-27) giving an explicit counterexample — curve `54b1`, `ℓ = 7`,
+`k = 𝔽₇`, residual image the order-`16` group `N(T_ns) ∩ SL₂(𝔽₇)`. So the
+Galois element this route asks for is NOT available at the stated generality,
+and a prover of this leaf will hit that wall. The honest repair recorded there
+is a quadratic ENLARGEMENT of `k`, threaded through `IsHilbertTaylorWilesPrimeSet`;
+it is a cut-level change to the cluster, not a proof obligation of this leaf.
+
+Both-ways audit: at the intended instantiation this is the cited Taylor–Wiles
+separation step. It is not vacuous — `hc0` is satisfiable as soon as
+`hilbertH1TwistUnramified ≠ ⊥`, and when that submodule IS `⊥` the leaf is
+vacuously true, which is harmless because `exists_hilbertTaylorWilesPrimeSet_core`
+then never calls it.
+
+CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean`; in particular a proof ending in `exfalso`
+on `hirrF` through `not_isIrreducible_of_isHardlyRamified_of_five_le` is
+FORBIDDEN, that dichotomy being proven over pillar α, which is proven over this
+cluster. -/
+theorem nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
+    {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
+    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
+    (hilbertSurvivingLocus F ρbar z ∩
+      hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty :=
+  sorry
+
+/-- **The GLOBAL half of DDT Lemma 2.48 over `F`** (cut out
+2026-07-28; **its OPENNESS clause PROVEN 2026-07-30** by
+`isOpen_hilbertSurvivingLocus` above, its nonemptiness clause left over the
+single named leaf `nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus`
+immediately above — this declaration carries no direct `sorry` of its own).
+
+For a cocycle `z` representing a nonzero class `c` unramified
+outside `hilbertHardlyRamifiedPlaces ℓ F`, the surviving locus of `z` is OPEN and
 MEETS the Taylor–Wiles locus of `F` at level `n`. (The representative itself is
 supplied by `ContinuousCohomology.exists_cocycleClass_eq`, in the consumer.)
+
+WHY THE SPLIT. The two clauses have nothing in common: openness is a
+two-discreteness-hypotheses fact about the cochain model and costs neither the
+datum nor irreducibility, while nonemptiness is the arithmetic core and rests on
+a supplier that is currently REFUTED at the stated generality (see the warning on
+the leaf). Carrying them in one `sorry` hid a proven half behind an open one and
+made the leaf look uniformly deep.
 
 This is the deep half — the "nonemptiness step" of DDT §2 — and it is where
 absolute irreducibility of `ρbar|_{G_F}` is used classically.
