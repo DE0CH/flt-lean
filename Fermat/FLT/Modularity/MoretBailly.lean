@@ -12712,23 +12712,29 @@ theorem exists_ringHom_retraction_of_localizedSystemGens
 
 /-- **THE DENOMINATOR-CLEARING HEART OF THE SPREADING-OUT, AS POLYNOMIAL IDENTITIES
 OVER `ℤ` AND WITH NO PRIME IN SIGHT** (SORRY LEAF, cut 2026-07-31 out of
-`exists_inverted_intLift_retraction_localizationAway_integralSystemModel` below,
-which is now PROVEN over it through the fibrewise assembly
-`exists_ringHom_retraction_of_localizedSystemGens` immediately above).
+`exists_pos_forall_prime_not_dvd_reduction_retraction_localizationAway_integralSystemModel`
+immediately below, which is now PROVEN over it through the fibrewise assembly
+`exists_ringHom_retraction_of_localizedSystemGens` above).
 
-WHAT THE CUT ACHIEVES. The consumer quantifies over primes and asks for two RING
+WHAT THE CUT ACHIEVES. Its consumer quantifies over primes and asks for two RING
 MAPS between localisations of mod-`p` fibres. Neither survives here. What a
 denominator-clearing argument actually produces is a finite tuple of INTEGER
 polynomials together with finitely many polynomial identities they satisfy — and
 those identities can be written down once, over `ℤ`, with no prime, no fibre, no
 localisation and no ring map anywhere in the statement. Everything else is
-formal and is discharged by the two lemmas above:
+formal and is discharged by the block above:
 
 * `exists_algHom_localizationAway_of_localizedSystemGens` turns a tuple killing
   `localizedSystemGens` into a map out of the localised presented algebra;
 * `exists_ringHom_retraction_of_localizedSystemGens` assembles the two maps and
   the retraction identity over ANY base ring in which `N` is invertible, which
   the consumer instantiates at `𝔽̄_p` for `p ∤ N`.
+
+Everything the consumer's own docstring lists as "the `Mathlib` names that do the
+work" — `IsLocalization.Away.lift` to rebuild the maps, `IsLocalization.surj` to
+write an element as a fraction, `IsLocalization.map_eq_zero_iff` to push an
+equation down to the numerator — is therefore ALREADY DONE, once, above. What is
+left here is only the `ℚ`-side bookkeeping plus step 3, the transfer.
 
 THE ENCODING. `Localization.Away` of a presented algebra is itself presented, by
 ONE extra variable: `localizedSystemGens F a N` is the family
@@ -12741,76 +12747,79 @@ data of `ψ` — the images of the `n` coordinates and of `1/a` — and
 
 **WHY `N · a` AND NOT `a`.** The extra variable must be sent to the inverse of
 `N · a` rather than of `a` alone, and this is forced, not cosmetic. Over `ℚ` the
-coordinates of `ψ` and `lam` are polynomials with RATIONAL coefficients; making
-them integral costs an inverted denominator, which on the hypersurface side can
-be absorbed by rescaling the freely-chosen `b` but on the model side cannot,
-because `a` is GIVEN. Inverting `N · a` makes `1/N = a · X none` and
-`1/a = N · X none` both integral expressions, which is what lets the whole
-statement live over `ℤ`.
+coordinates of `Ψ` and `Λ` are polynomials with RATIONAL coefficients; making
+them integral costs an inverted denominator, which on the hypersurface side could
+be absorbed by rescaling `b` but on the model side cannot, because `a` is GIVEN.
+Inverting `N · a` makes `1/N = a · X none` and `1/a = N · X none` both integral
+expressions, which is what lets the whole statement live over `ℤ`.
 
 THE THREE IDENTITY FAMILIES, and what each one says.
 
-* `hI1` — `ψ` is well defined: each presenting relation of the SOURCE, pushed
+* the first — `ψ` is well defined: each presenting relation of the SOURCE, pushed
   through `P`, lies in the ideal presenting the TARGET.
-* `hI2` — `lam` is well defined MODULO NILPOTENTS: each presenting relation of
-  the target, pushed through `Q`, has its `t`-th power in the ideal presenting
-  the source. The exponent `t` is where the passage to the reduction lives; it
-  is one exponent for all the identities, which costs nothing since finitely
-  many exponents can be maximised.
-* `hI3` — the retraction identity on coordinates: `Q ∘ P` is the identity on
-  each coordinate, again modulo the `t`-th power.
+* the second — `lam` is well defined MODULO NILPOTENTS: each presenting relation
+  of the target, pushed through `Q`, has its `t`-th power in the ideal presenting
+  the source. The exponent `t` is where the passage to the reduction lives; it is
+  one exponent for all the identities, which costs nothing since finitely many
+  exponents can be maximised.
+* the third — the retraction identity on coordinates: `Q ∘ P` is the identity on
+  each coordinate, again modulo the `t`-th power. This is `hcomp`, and it is the
+  only place `hcomp` is used.
 
 Every identity is multiplied by `N` on the left. That is exactly the
 denominator: over `𝔽̄_p` with `p ∤ N` the factor `N` is a unit and cancels, and
 over `ℤ` it is what makes the identity true at all.
 
-WHY IT IS TRUE. Over `ℚ`, `hQ` gives `θ` from `(A_ℚ[1/a])_red` to
-`Localization.Away b̄`; take `ψ_ℚ := θ ∘ mk` and `lam_ℚ := θ.symm`, so
-`lam_ℚ ∘ ψ_ℚ = mk` holds by construction and the `ℚ`-side is FREE. The work is:
-(1) replace `b̄` by the class of an INTEGER `b`, which is a unit multiple, so
-`nonempty_ringEquiv_localizationAway_isUnit_mul` (PROVEN above) identifies the
-two localisations at no cost, and turns `b̄ ≠ 0` into the stated `ℚ`-side
-non-membership; (2) write the finitely many coordinates of `ψ_ℚ`, `lam_ℚ` in the
-presentations, which is possible because a `Localization.Away` of a quotient of
-a polynomial ring is generated by the coordinates and the inverted element;
-(3) clear denominators — every identity above holds over `ℚ` with rational
-cofactors, and `N` is the product of the denominators of the coefficients of
-`P`, `Q` and those cofactors, together with whatever a chosen nonzero
-coefficient of `b` contributes; (4) choose `t` past the nilpotency exponents of
-the finitely many elements of `nilradical (A_ℚ[1/a])` that occur.
+WHY IT IS TRUE, AND WHY THE `ℚ` SIDE IS FREE. `Ψ`, `Λ` and `hcomp` are
+hypotheses, so no birational isomorphism has to be produced here — the consumer's
+consumer manufactures the pair from `θ` and `θ.symm`, where the identity holds by
+`RingEquiv.symm_apply_apply`. Note that NOTHING here needs `Ψ` or `Λ` to be an
+isomorphism, injective or surjective. The work is: (1) write the finitely many
+coordinates `Ψ(x_i)`, `Ψ(1/a)`, `Λ(y_j)`, `Λ(1/b)` as fractions
+(`IsLocalization.surj`), which is possible because a `Localization.Away` of a
+quotient of a polynomial ring is generated by the coordinates and the inverted
+element; (2) push each of the finitely many identities they satisfy down to its
+numerator (`IsLocalization.map_eq_zero_iff`), which turns it into a polynomial
+membership over `ℚ`; (3) clear denominators — `N` is the product of the
+denominators of the coefficients of `P`, `Q` and of the cofactors witnessing
+those memberships, and `exists_intPoly_map_eq_intCast_mul` (PROVEN above) is the
+tool; (4) choose `t` past the finitely many nilpotency exponents that occur on
+the `Λ` side, where the identities hold only modulo `nilradical`.
 
 NO NULLSTELLENSATZ IS WANTED HERE, and reaching for
 `exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` (PROVEN above) is the
 obvious trap: that lemma goes from "no `ℚ̄`-solution" to "no `𝔽̄_p`-solution",
 which is the HARD direction and the wrong one. What is needed is the easy
-direction — a `ℚ`-identity survives reduction mod `p` because reduction is a
-ring hom — and it needs nothing beyond clearing denominators.
+direction — a `ℚ`-identity survives reduction mod `p` because reduction is a ring
+hom — and it needs nothing beyond clearing denominators.
 
-FAITHFULNESS. The statement is not dischargeable by junk data. A `ψ` into the
-zero ring would force `lam 0 = 1`, hence `1 = 0` in `(A_p[1/a])_red`; and the
-`hI3` family is precisely what forbids `P` from being constant. The `b ≠ 0`
-conjunct is stated only over `ℚ` on purpose: it is spread to `𝔽̄_p` by the
-separate, model-free sibling
-`exists_pos_forall_prime_not_dvd_notMem_span_singleton_map` above.
+FAITHFULNESS. Not dischargeable by junk data: the third family is precisely what
+forbids `P` from being constant, and it is inherited from `hcomp`, which the
+consumer's faithfulness note already analyses. Nothing is asserted about `b`
+here; the `b ≠ 0` conjunct lives two levels up and is spread to `𝔽̄_p` by the
+separate, model-free `exists_pos_forall_prime_not_dvd_notMem_span_singleton_map`
+above.
 
-CIRCULARITY GUARD: inherited from the parent; pure commutative algebra, no
+CIRCULARITY GUARD: inherited from the consumer; pure commutative algebra, no
 Galois representation, no route through `Family.lean`, `Lift.lean` or
 `Modularity/Interface.lean`. -/
-theorem exists_localizedSystemGens_identities_of_birationalHypersurface
+theorem exists_localizedSystemGens_identities_of_ratRetraction
     {n m k : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ) (g : MvPolynomial (Fin k) ℤ)
-    (a : MvPolynomial (Fin n) ℤ)
-    (hQ : ∃ b : MvPolynomial (Fin k) ℚ ⧸
-              Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g},
-        b ≠ 0 ∧
-        Nonempty ((Localization.Away (integralSystemClass f ℚ a) ⧸
-            nilradical (Localization.Away (integralSystemClass f ℚ a))) ≃+*
-          Localization.Away b)) :
-    ∃ (N : ℕ) (b : MvPolynomial (Fin k) ℤ)
+    (a : MvPolynomial (Fin n) ℤ) (b : MvPolynomial (Fin k) ℤ)
+    (Ψ : Localization.Away (integralSystemClass f ℚ a) →+*
+      Localization.Away (Ideal.Quotient.mk
+        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+        (MvPolynomial.map (Int.castRingHom ℚ) b)))
+    (Λ : Localization.Away (Ideal.Quotient.mk
+        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+        (MvPolynomial.map (Int.castRingHom ℚ) b)) →+*
+      Localization.Away (integralSystemClass f ℚ a) ⧸
+        nilradical (Localization.Away (integralSystemClass f ℚ a)))
+    (hcomp : ∀ z, Λ (Ψ z) = Ideal.Quotient.mk _ z) :
+    ∃ (N : ℕ)
       (P : Option (Fin n) → MvPolynomial (Option (Fin k)) ℤ)
       (Q : Option (Fin k) → MvPolynomial (Option (Fin n)) ℤ) (t : ℕ),
       0 < N ∧
-      MvPolynomial.map (Int.castRingHom ℚ) b ∉
-        Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} ∧
       (∀ o : Option (Fin m),
         (N : MvPolynomial (Option (Fin k)) ℤ) *
             MvPolynomial.bind₁ P (localizedSystemGens f a N o) ∈
@@ -12825,23 +12834,170 @@ theorem exists_localizedSystemGens_identities_of_birationalHypersurface
           Ideal.span (Set.range (localizedSystemGens f a N))) :=
   sorry
 
+/-- **THE PURE DESCENT: A `ℚ`-DIAGRAM WITH AN INTEGRAL DENOMINATOR SPREADS OUT TO
+ALMOST EVERY FIBRE** (**PROVEN 2026-07-31**; cut 2026-07-30 out of
+`exists_inverted_intLift_retraction_localizationAway_integralSystemModel`
+immediately below, which is GLUE ONLY over it).
+
+PROVEN OVER ONE LEAF, `exists_localizedSystemGens_identities_of_ratRetraction`
+immediately above, which is this same statement with the two mod-`p` ring maps
+replaced by the tuples of INTEGER polynomials that define them and with no prime
+in its statement at all. This proof is the instantiation: `N` is invertible in
+`𝔽̄_p` exactly when `p ∤ N`, and `exists_ringHom_retraction_of_localizedSystemGens`
+(PROVEN above) rebuilds the two maps and the retraction identity from the
+identities over any base ring where that holds. The analysis below is unchanged
+and is what the remaining leaf still has to carry out; the `Mathlib` names it
+lists for rebuilding the maps are now consumed by that assembly rather than by a
+prover.
+
+WHAT THE CUT REMOVES FROM THE CONSUMER. The consumer receives its `b` as a bare
+CLASS in `MvPolynomial (Fin k) ℚ ⧸ (g)` and must (i) lift it to an INTEGER
+polynomial, (ii) show the lift's class over `ℚ` is still nonzero, and (iii)
+transport the `ℚ`-side isomorphism `θ` along the change of denominator. None of
+that is descent: it is `exists_integralMultiple` for the lift and
+`nonempty_ringEquiv_localizationAway_of_eq_isUnit_mul` for the transport (a
+nonzero rational scalar is a unit, and localising away from `c * x` is
+localising away from `x`). It is done once, below, and this leaf never sees it:
+here `b` is an INTEGER polynomial fixed in advance, and the `ℚ`-side data
+arrives as an explicit PAIR of ring maps rather than as an isomorphism.
+
+WHAT REMAINS IS EXACTLY DENOMINATOR CLEARING, and nothing else. Write
+`A_R := IntegralSystemModel f R`, `α_R := integralSystemClass f R a`,
+`B_R := MvPolynomial (Fin k) R ⧸ (g)`, `β_R := ⟦b⟧`. The hypothesis is a pair
+`Ψ : A_ℚ[1/α] → B_ℚ[1/β]`, `Λ : B_ℚ[1/β] → (A_ℚ[1/α])_red` with `Λ ∘ Ψ = mk` on
+the nose; the conclusion is the same pair over `𝔽̄_p`, with the identity only on
+the image of the model.
+
+ROUTE, in the shape that avoids ever CONSTRUCTING a map (recorded 2026-07-30;
+each step names the proven tool it uses).
+
+1. NEITHER MAP HAS TO BE BUILT AS A MAP — both are TUPLES SATISFYING EQUATIONS.
+   `IsLocalization.Away.lift` turns a ring map out of `A_p[1/α]` into a ring map
+   out of `A_p` sending `α_p` to a unit, and `Ideal.Quotient.lift` composed with
+   `MvPolynomial.eval₂` turns THAT into a tuple `u : Fin n → B_p[1/β]` with
+   `f_j(u) = 0` for every `j` and `a(u)` a unit. Dually `lam` is a tuple
+   `w : Fin k → A_p[1/α]` with every `g(w)` NILPOTENT and `b(w)` a unit modulo
+   nilpotents — the target being the REDUCTION is what turns `g(w) = 0` into the
+   strictly weaker `g(w)^M = 0`, and that weakening is what makes the leaf true.
+2. AFTER CLEARING DENOMINATORS EVERY CONDITION IS A MEMBERSHIP OF INTEGRAL
+   POLYNOMIALS. `Ψ` and `Λ` are determined by finitely many values (`ℚ` maps into
+   any ring in exactly one way, so no coefficient data escapes), each of the form
+   `⟦P_i⟧ / β^e` resp. `⟦Q_j⟧ / α^d`; `exists_integralMultiple` makes the `P_i`
+   and `Q_j` INTEGRAL at the cost of one integer `N₀`. The conditions of step 1
+   then read `β^t · f_j(P) ∈ span {g}`, `α^t · g(Q)^M ∈ integralSystemIdeal f _`,
+   `α^t · (P_i(Q) − α^? · x_i)^M ∈ integralSystemIdeal f _`, plus two unit
+   witnesses — all with INTEGER left-hand sides.
+3. THE ONE NEW INGREDIENT IS THEREFORE A SINGLE TRANSFER: a membership
+   `P ∈ integralSystemIdeal f ℚ` (resp. `span {g}` over `ℚ`) holds over `𝔽̄_p`
+   for every `p` outside an explicit finite set. Its proof is Bézout: the
+   certificate `P = Σ c_j f_j` has finitely many rational `c_j`, so
+   `N · P = Σ c'_j f_j` with `c'_j` integral, and `N` is a unit mod `p`. The
+   file's `exists_intPoly_map_eq_intCast_mul` and
+   `exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` are the two proven
+   lemmas of exactly this shape, and `exists_reducibilityCertificates` uses the
+   device in the same way one screen above.
+
+API LOCATED 2026-07-30, so the next prover does not have to find it. Every step
+of the route above has a named `Mathlib` tool, and all four were checked against
+the pin in this worktree:
+
+* BUILDING A MAP OUT OF `A_R[1/α]` WITHOUT NAMING A FRACTION —
+  `IsLocalization.Away.lift x hg : S →+* P` (`Mathlib/RingTheory/Localization/
+  Away/Basic.lean:147`), fed by `Ideal.Quotient.lift` of `MvPolynomial.eval₂`.
+  So `ψ` is exactly a tuple `u : Fin n → B_p[1/β]` with `f_j(u) = 0` and
+  `a(u)` a unit, and `Away.lift_eq` / `Away.lift_comp` read the values back off
+  it. Dually for `lam`, with `Fin k → (A_p[1/α])_red`.
+* WRITING AN ELEMENT AS A FRACTION — `IsLocalization.surj`
+  (`.../Localization/Defs.lean:133`): every `z` satisfies
+  `z * algebraMap m = algebraMap r` for some `(r, m)`, `m` a power of the
+  denominator. This is what turns the abstract `Ψ (mk (X i))` into a NUMERATOR,
+  which is the only form denominator clearing can act on. Do NOT try to produce
+  the fraction by hand.
+* PUSHING AN EQUATION DOWN TO THE NUMERATOR — `IsLocalization.map_eq_zero_iff`
+  (`.../Localization/Defs.lean:246`): `algebraMap r = 0 ↔ ∃ m, m * r = 0`. This
+  is what converts `f_j(u) = 0`, an identity in the LOCALIZATION, into
+  `β^t · f_j(P) ∈ span {g}`, an identity between POLYNOMIALS — step 2 of the
+  route. `IsLocalization.eq_zero_of_fst_eq_zero` is the converse half — a zero
+  numerator forces the fraction to vanish — stated in exactly the shape `surj`
+  hands you, so the two together move an equation both ways across the fraction
+  bar without ever mentioning `mk'`.
+* THE UNIT CONDITIONS COST NO NEW IDEA. `a(u)` is a unit over `ℚ` because it is
+  `Ψ` of the unit `α`; write its INVERSE as a fraction `Q/β^s` by `surj`, clear
+  denominators in `a(u) · Q = β^s`, transfer that single identity, and the
+  mod-`p` unit-ness falls out of the transferred identity because `β` is a unit
+  in `B_p[1/β]` by `IsLocalization.Away.algebraMap_isUnit`. The same device
+  handles `b(w)`.
+
+The one thing with no `Mathlib` name is step 3, the transfer itself, and it is
+three lines of Bézout: a certificate over `ℚ` has finitely many coefficients,
+`exists_intPoly_map_eq_intCast_mul` (PROVEN, ~2500 lines above) makes them
+integral at the cost of one `N`, and `N` is invertible mod every `p ∤ N`.
+
+WHY THE `ℚ` SIDE IS FREE. `Λ ∘ Ψ = mk` is imposed as a hypothesis rather than
+derived, so a prover here never has to produce the birational isomorphism; the
+consumer manufactures the pair from `θ` and `θ.symm`, where the identity holds by
+`RingEquiv.symm_apply_apply`.
+
+FAITHFULNESS. Not dischargeable by a junk `ψ`. The zero map into the zero ring
+forces `lam 0 = 1`, hence `1 = 0` in `(A_p[1/α])_red`, hence `A_p[1/α] = 0` — so
+the escape is available only where the conclusion is itself vacuous. The
+hypothesis is the STRONGEST form of the `ℚ`-side identity (`∀ z`, not merely on
+the image of the model) and the conclusion the WEAKEST form of the `𝔽̄_p`-side
+one, so the cut is sound in the only direction that matters: anything proving
+this leaf proves the consumer.
+
+CIRCULARITY GUARD: inherited from the consumer; pure commutative algebra, no
+Galois representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_pos_forall_prime_not_dvd_reduction_retraction_localizationAway_integralSystemModel
+    {n m k : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ) (g : MvPolynomial (Fin k) ℤ)
+    (a : MvPolynomial (Fin n) ℤ) (b : MvPolynomial (Fin k) ℤ)
+    (Ψ : Localization.Away (integralSystemClass f ℚ a) →+*
+      Localization.Away (Ideal.Quotient.mk
+        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+        (MvPolynomial.map (Int.castRingHom ℚ) b)))
+    (Λ : Localization.Away (Ideal.Quotient.mk
+        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+        (MvPolynomial.map (Int.castRingHom ℚ) b)) →+*
+      Localization.Away (integralSystemClass f ℚ a) ⧸
+        nilradical (Localization.Away (integralSystemClass f ℚ a)))
+    (hcomp : ∀ z, Λ (Ψ z) = Ideal.Quotient.mk _ z) :
+    ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
+      ∃ (ψ : Localization.Away (integralSystemClass f (AlgebraicClosure (ZMod p)) a) →+*
+            Localization.Away (Ideal.Quotient.mk
+              (Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g})
+              (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b)))
+        (lam : Localization.Away (Ideal.Quotient.mk
+              (Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g})
+              (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) b)) →+*
+            Localization.Away (integralSystemClass f (AlgebraicClosure (ZMod p)) a) ⧸
+              nilradical (Localization.Away
+                (integralSystemClass f (AlgebraicClosure (ZMod p)) a))),
+        ∀ y : IntegralSystemModel f (AlgebraicClosure (ZMod p)),
+          lam (ψ (algebraMap _ _ y)) = Ideal.Quotient.mk _ (algebraMap _ _ y) := by
+  classical
+  obtain ⟨N, P, Q, t, hN, hI1, hI2, hI3⟩ :=
+    exists_localizedSystemGens_identities_of_ratRetraction f g a b Ψ Λ hcomp
+  refine ⟨N, hN, ?_⟩
+  intro p hp hpN
+  haveI hchar : CharP (AlgebraicClosure (ZMod p)) p :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective p
+  have hNK : IsUnit ((N : AlgebraicClosure (ZMod p))) := by
+    rw [isUnit_iff_ne_zero]
+    intro h0
+    exact hpN ((CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod p)) p N).mp h0)
+  exact exists_ringHom_retraction_of_localizedSystemGens f g a b P Q N t
+    (AlgebraicClosure (ZMod p)) hNK hI1 hI2 hI3
+
 /-- **THE SPREADING-OUT OF THE BIRATIONAL DIAGRAM: THE MAP AND ITS RETRACTION
-MODULO NILPOTENTS** (**PROVEN 2026-07-31**; cut 2026-07-28 out of
+MODULO NILPOTENTS** (**PROVEN 2026-07-30**, GLUE ONLY over
+`exists_pos_forall_prime_not_dvd_reduction_retraction_localizationAway_integralSystemModel`
+immediately above; cut 2026-07-28 out of
 `exists_inverted_nilpotentKer_ringHom_localizationAway_integralSystemModel`
-immediately below, which is PROVEN over this declaration, over
+immediately below, which is now PROVEN over this leaf, over
 `exists_pos_forall_prime_not_dvd_notMem_span_singleton_map` above and over the
 general `exists_pow_eq_zero_of_ker_of_retraction_localizationAway` above).
-
-WHAT THE PROOF BELOW DISCHARGES ON ITS OWN, AND WHAT IT DELEGATES. It contributes
-nothing mathematical of its own: it is the passage from ONE base ring to the
-fibres. Everything is delegated to two declarations immediately above —
-`exists_localizedSystemGens_identities_of_birationalHypersurface` (SORRY LEAF),
-which is this same statement with the two ring maps replaced by the tuples of
-INTEGER polynomials that define them and with no prime in its statement at all,
-and `exists_ringHom_retraction_of_localizedSystemGens` (PROVEN), which rebuilds
-the two maps and the retraction identity over any base ring in which `N` is
-invertible. All this proof does is observe that `N` is invertible in `𝔽̄_p`
-exactly when `p ∤ N`.
 
 WHAT THE CUT REMOVES FROM THE CONSUMER, AND WHY. The consumer still speaks of a
 KERNEL and of a nilpotency exponent `s`. Neither survives here. What a
@@ -12924,19 +13080,43 @@ theorem exists_inverted_intLift_retraction_localizationAway_integralSystemModel
           ∀ y : IntegralSystemModel f (AlgebraicClosure (ZMod p)),
             lam (ψ (algebraMap _ _ y)) = Ideal.Quotient.mk _ (algebraMap _ _ y) := by
   classical
-  obtain ⟨N, b, P, Q, t, hN, hbQ, hI1, hI2, hI3⟩ :=
-    exists_localizedSystemGens_identities_of_birationalHypersurface f g a hQ
-  refine ⟨N, b, hN, hbQ, ?_⟩
-  intro p hp hpN
-  haveI hchar : CharP (AlgebraicClosure (ZMod p)) p :=
-    charP_of_injective_algebraMap
-      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective p
-  have hNK : IsUnit ((N : AlgebraicClosure (ZMod p))) := by
-    rw [isUnit_iff_ne_zero]
-    intro h0
-    exact hpN ((CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod p)) p N).mp h0)
-  exact exists_ringHom_retraction_of_localizedSystemGens f g a b P Q N t
-    (AlgebraicClosure (ZMod p)) hNK hI1 hI2 hI3
+  -- The `ℚ`-side datum arrives as a class `b₀` in `ℚ[Y]/(g)`; name a representative.
+  obtain ⟨b₀, hb₀ne, ⟨θ⟩⟩ := hQ
+  obtain ⟨β, rfl⟩ := Ideal.Quotient.mk_surjective b₀
+  -- STEP 1: clear denominators in the representative, producing an INTEGER `b`.
+  obtain ⟨b, c, hc0, hcb⟩ := exists_integralMultiple β
+  set C := MvPolynomial (Fin k) ℚ ⧸
+    Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} with hC
+  have hu : IsUnit (algebraMap ℚ C c) := (Ne.isUnit hc0).map (algebraMap ℚ C)
+  have hmk : (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+      (MvPolynomial.map (Int.castRingHom ℚ) b))
+      = algebraMap ℚ C c * Ideal.Quotient.mk _ β := by
+    rw [hcb, Algebra.smul_def, map_mul]
+    rfl
+  -- STEP 2: changing the denominator by a UNIT does not change the localization.
+  obtain ⟨e⟩ := nonempty_ringEquiv_localizationAway_of_eq_isUnit_mul
+    (algebraMap ℚ C c) (Ideal.Quotient.mk _ β) _ hu hmk
+  -- STEP 3: the `ℚ`-side non-membership of the integral lift.
+  have hbne : MvPolynomial.map (Int.castRingHom ℚ) b ∉
+      Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} := by
+    rw [← Ideal.Quotient.eq_zero_iff_mem]
+    rw [hmk]
+    exact fun h => hb₀ne (by
+      obtain ⟨v, hv⟩ := hu
+      have := congrArg (fun x => (↑v⁻¹ : C) * x) h
+      simpa [← mul_assoc, ← hv] using this)
+  -- STEP 4: the descent, over the explicit `ℚ`-side pair `(θ ∘ mk, θ.symm)` transported
+  -- along `e`.  The composite identity is `RingEquiv.symm_apply_apply`, twice.
+  obtain ⟨N, hN, hmain⟩ :=
+    exists_pos_forall_prime_not_dvd_reduction_retraction_localizationAway_integralSystemModel
+      f g a b
+      ((e.toRingHom.comp θ.toRingHom).comp
+        (Ideal.Quotient.mk (nilradical (Localization.Away (integralSystemClass f ℚ a)))))
+      (θ.symm.toRingHom.comp e.symm.toRingHom)
+      (fun z => by
+        show θ.symm (e.symm (e (θ (Ideal.Quotient.mk _ z)))) = Ideal.Quotient.mk _ z
+        rw [RingEquiv.symm_apply_apply, RingEquiv.symm_apply_apply])
+  exact ⟨N, b, hN, hbne, hmain⟩
 
 /-- **THE SPREADING-OUT OF THE BIRATIONAL DIAGRAM, WITH THE KERNEL CONDITION
 REPLACED BY A NILPOTENCY EXPONENT** (**PROVEN 2026-07-28**, having been cut on
