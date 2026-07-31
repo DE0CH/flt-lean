@@ -310,19 +310,19 @@ public import Fermat.FLT.Mathlib.NumberTheory.ProjectiveHeight
 -- consumer of this file (`FreyCurve/MazurTorsion.lean`, which already reaches it through
 -- `ModularCurve/X0.lean`).
 public import Fermat.FLT.Modularity.AbelianScheme
--- `Fermat.exists_cubeModel_of_abelianScheme`.  DELIBERATELY NON-PUBLIC: it is used only
--- inside the PROOF BODY of `exists_cubeModel_pic_of_infinite`, which a private import does
--- reach (theorem bodies are elided by the module system), so none of `X0.lean`'s 107 000
--- lines of names are re-exported through this file.  What the edge does cost is BUILD
--- ORDER — `X0` must finish before this module starts — and that price is paid on a path
--- that `MazurTorsion.lean` already serialises anyway.  A successor who wants it gone should
--- hoist the two declarations `nonempty_cubeModel_of_isAmpleSheaf_cube` (a leaf) and
--- `exists_cubeModel_of_abelianScheme` (its three-line assembly) out of `X0.lean` into
--- `Modularity/AbelianSchemeIsogeny.lean`, which already carries their sibling
--- `exists_isAmpleSheaf_symmetric_cube`; the only obstruction is that they are stated with
--- `SpecQ`, an `abbrev` for `Spec (CommRingCat.of ℚ)` declared in `X0.lean`, so the hoisted
--- copies must spell that out and `X0.lean` keeps two `rfl`-compatible delegations.
-import Fermat.FLT.ModularCurve.X0
+-- `Fermat.exists_cubeModel_of_abelianScheme`, used only inside the PROOF BODY of
+-- `exists_cubeModel_pic_of_infinite`, which a NON-PUBLIC import reaches (theorem
+-- bodies are elided by the module system).
+--
+-- This USED TO BE `import Fermat.FLT.ModularCurve.X0` (2026-07-31, flt-lean-389),
+-- whose comment asserted "there is no cycle, since `X0.lean` does not mention"
+-- this file.  That checked the DIRECT edge only and was WRONG: X0 imports
+-- `FreyCurve/IsogenySignature`, which imports THIS file, so the edge closed a loop
+-- and `lake build` failed on the ROOT target with `build cycle detected` -- i.e.
+-- the whole project stopped building, not just these three modules.  The two
+-- declarations were moved out of X0 into the module below, which sits upstream of
+-- both and carries no cycle.
+import Fermat.FLT.Modularity.AbelianCubeModel
 public import Mathlib.GroupTheory.FiniteAbelian.Basic
 public import Mathlib.RingTheory.Finiteness.Nakayama
 -- the construction of the function field `K(x)[y]/(y² − f)` in `exists_functionFieldData`:
