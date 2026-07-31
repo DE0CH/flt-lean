@@ -390,6 +390,7 @@ public import Mathlib.CategoryTheory.Localization.Monoidal.Basic
 public import Fermat.FLT.Modularity.AbelianScheme
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward
 public import Fermat.FLT.Mathlib.Algebra.Category.ModuleCat.Presheaf.MonoidalW
+public import Mathlib.AlgebraicGeometry.RelativeGluing
 
 @[expose] public section
 
@@ -3482,13 +3483,381 @@ theorem transport_of_forall_isAffineOpen {X P S : Scheme.{u}} {strX : X ⟶ S} {
   obtain ⟨Q, qstr, ⟨hQ⟩, hWQ⟩ := hloc V hV
   exact transport_of_isRelPicOf hP hQ hWQ
 
-/-- **THE SCHEME-THEORETIC GLUING** (sorry leaf, cut 2026-07-31 out of
+/-! ### `IsRelPicOf` IS STABLE UNDER BASE CHANGE OF THE BASE
+
+**PROVEN 2026-07-31**, and it is the pair of sublemmas
+`exists_gluedRelPic_of_forall_isAffineOpen`'s route (step 2) named as owed —
+*`IsRelPicOf` is stable under base change of the base* and *`IsRelPicOf`
+transports along an isomorphism of representing objects over the base*.  They
+are ONE lemma here: `IsRelPicOf.ofIsPullback` is stated over an abstract
+cartesian square, so the transport along an isomorphism is its `h = 𝟙 S`
+instance (`IsRelPicOf.ofIsoOver`), an isomorphism being a pullback along the
+identity.
+
+Everything is phrased with `IsPullback` rather than with `pullback`, for the
+reason `isPullback_curveBaseChangeMap` was proved below: the consumer's curve
+side is `X ×_S U = (X ×_S V) ×_V U`, which is a pasting of squares and not a
+chosen pullback, and forcing it into `pullback` shape costs a transport at
+every use. -/
+
+/-- **`𝟙^* L ≅ L`** — `Scheme.Modules.pullbackId`, read on an object.
+
+Named `…Pic` because `Modularity/AbelianSchemeIsogeny.lean` carries an
+identical `Fermat.modPullbackIdIso`; that module is NOT in this one's import
+cone, so the two coexist, but a downstream consumer of both would see a
+duplicate declaration. -/
+noncomputable def modPullbackIdIsoPic {Z : Scheme.{u}} (L : Z.Modules) :
+    modPullback (𝟙 Z) L ≅ L :=
+  (Scheme.Modules.pullbackId Z).app L
+
+/-- **`e.inv^*(e.hom^* L) ≅ L`.** -/
+noncomputable def modPullbackInvHomIsoPic {Z W : Scheme.{u}} (e : W ≅ Z) (L : Z.Modules) :
+    modPullback e.inv (modPullback e.hom L) ≅ L :=
+  modPullbackCompIso e.inv e.hom L ≪≫ modPullbackCongrIso e.inv_hom_id L ≪≫
+    modPullbackIdIsoPic L
+
+/-- **`e.hom^*(e.inv^* L) ≅ L`.** -/
+noncomputable def modPullbackHomInvIsoPic {Z W : Scheme.{u}} (e : W ≅ Z) (L : W.Modules) :
+    modPullback e.hom (modPullback e.inv L) ≅ L :=
+  modPullbackCompIso e.hom e.inv L ≪≫ modPullbackCongrIso e.hom_inv_id L ≪≫
+    modPullbackIdIsoPic L
+
+/-- **PULLBACK ALONG ANY MORPHISM OVER THE BASE PRESERVES `RelPicEquiv`**
+(PROVEN) — the generalisation of `relPicEquiv_modPullback` from
+`curveBaseChangeMap` to an arbitrary morphism of base-changed curves lying
+over a morphism `u` of the two bases.
+
+`relPicEquiv_modPullback` is the instance `ψ = curveBaseChangeMap strX h hg`,
+`u = h`; what is used below is the instance where `ψ` is an ISOMORPHISM of
+curves over a FIXED base, i.e. `u = 𝟙`.  The proof is
+`relPicEquiv_modPullback`'s, with `curveBaseChangeMap_proj` replaced by the
+commutation hypothesis, which is the only thing that proof ever knew about
+`curveBaseChangeMap`. -/
+theorem relPicEquiv_modPullback_of_comm {X S T X' S' T' : Scheme.{u}} (strX : X ⟶ S)
+    {g : T ⟶ S} {strX' : X' ⟶ S'} {g' : T' ⟶ S'}
+    (ψ : curveBaseChange strX' g' ⟶ curveBaseChange strX g) (u : T' ⟶ T)
+    (hcomm : ψ ≫ curveBaseChangeProj strX g = curveBaseChangeProj strX' g' ≫ u)
+    {L L' : (curveBaseChange strX g).Modules} (hLL' : RelPicEquiv strX g L L') :
+    RelPicEquiv strX' g' (modPullback ψ L) (modPullback ψ L') := by
+  obtain ⟨N, hN, ⟨e⟩⟩ := hLL'
+  refine ⟨modPullback u N, isInvertibleSheaf_modPullback u hN, ⟨?_⟩⟩
+  refine modPullbackMapIso _ e ≪≫
+    (nonempty_modPullback_modTensorPic ψ L'
+      (modPullback (curveBaseChangeProj strX g) N)).some ≪≫
+    modTensorMapIso (Iso.refl _) ?_
+  refine modPullbackCompIso ψ (curveBaseChangeProj strX g) N ≪≫ ?_
+  refine modPullbackCongrIso hcomm N ≪≫ ?_
+  exact (modPullbackCompIso (curveBaseChangeProj strX' g') u N).symm
+
+section IsRelPicOfBaseChange
+
+variable {X S P X' S' P' : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S} {h : S' ⟶ S}
+  {strX' : X' ⟶ S'} {φ : X' ⟶ X} {pstr' : P' ⟶ S'} {ψ : P' ⟶ P}
+
+/-- **A `T`-point of `P' = P ×_S S'` over `k : T ⟶ S'` IS a `T`-point of `P`
+over `k ≫ h`** (PROVEN, the easy direction): compose with `ψ`. -/
+def relPointBaseChange (hPb : IsPullback ψ pstr' pstr h) {T : Scheme.{u}} {k : T ⟶ S'}
+    (p : RelPoint pstr' k) : RelPoint pstr (k ≫ h) :=
+  ⟨p.1 ≫ ψ, by rw [Category.assoc, hPb.w, ← Category.assoc, p.2]⟩
+
+/-- The inverse of `relPointBaseChange`, by the universal property of the
+cartesian square. -/
+noncomputable def relPointBaseChangeInv (hPb : IsPullback ψ pstr' pstr h) {T : Scheme.{u}}
+    {k : T ⟶ S'} (q : RelPoint pstr (k ≫ h)) : RelPoint pstr' k :=
+  ⟨hPb.lift q.1 k q.2, hPb.lift_snd _ _ _⟩
+
+theorem relPointBaseChange_relPointBaseChangeInv (hPb : IsPullback ψ pstr' pstr h)
+    {T : Scheme.{u}} {k : T ⟶ S'} (q : RelPoint pstr (k ≫ h)) :
+    relPointBaseChange hPb (relPointBaseChangeInv hPb q) = q :=
+  Subtype.ext (hPb.lift_fst _ _ _)
+
+theorem relPointBaseChangeInv_relPointBaseChange (hPb : IsPullback ψ pstr' pstr h)
+    {T : Scheme.{u}} {k : T ⟶ S'} (p : RelPoint pstr' k) :
+    relPointBaseChangeInv hPb (relPointBaseChange hPb p) = p := by
+  refine Subtype.ext (hPb.hom_ext ?_ ?_)
+  · show hPb.lift (p.1 ≫ ψ) k _ ≫ ψ = _
+    rw [hPb.lift_fst]
+  · show hPb.lift (p.1 ≫ ψ) k _ ≫ pstr' = _
+    rw [hPb.lift_snd, p.2]
+
+/-- `relPointBaseChange` is NATURAL in the test object (PROVEN) — both sides
+are `⟨(u ≫ p.1) ≫ ψ, _⟩` up to associativity. -/
+theorem relPointBaseChange_pre (hPb : IsPullback ψ pstr' pstr h) {T T' : Scheme.{u}}
+    (u : T' ⟶ T) {k : T ⟶ S'} {k' : T' ⟶ S'} (hk : u ≫ k = k') (p : RelPoint pstr' k) :
+    relPointBaseChange hPb (RelPoint.pre u hk p)
+      = RelPoint.pre u (by rw [← Category.assoc, hk]) (relPointBaseChange hPb p) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+/-- **`X' ×_{S'} T ≅ X ×_S T` FOR A BASE-CHANGED CURVE** (PROVEN): the pasting
+of the cartesian square `X' = X ×_S S'` with the one defining `X' ×_{S'} T`,
+read through `IsPullback.isoPullback`.
+
+Being the canonical map into a pullback, it is pinned by its two projections
+(`curveBaseChangeIsoOfIsPullback_hom_fst`/`_hom_snd`), which is what makes every
+identity about it a `pullback.hom_ext`. -/
+noncomputable def curveBaseChangeIsoOfIsPullback (hX : IsPullback φ strX' strX h)
+    {T : Scheme.{u}} (k : T ⟶ S') :
+    curveBaseChange strX' k ≅ curveBaseChange strX (k ≫ h) :=
+  ((IsPullback.of_hasPullback strX' k).paste_horiz hX).isoPullback
+
+@[reassoc (attr := simp)]
+theorem curveBaseChangeIsoOfIsPullback_hom_fst (hX : IsPullback φ strX' strX h)
+    {T : Scheme.{u}} (k : T ⟶ S') :
+    (curveBaseChangeIsoOfIsPullback hX k).hom ≫ pullback.fst strX (k ≫ h)
+      = pullback.fst strX' k ≫ φ :=
+  IsPullback.isoPullback_hom_fst _
+
+@[reassoc (attr := simp)]
+theorem curveBaseChangeIsoOfIsPullback_hom_snd (hX : IsPullback φ strX' strX h)
+    {T : Scheme.{u}} (k : T ⟶ S') :
+    (curveBaseChangeIsoOfIsPullback hX k).hom ≫ curveBaseChangeProj strX (k ≫ h)
+      = curveBaseChangeProj strX' k :=
+  IsPullback.isoPullback_hom_snd _
+
+theorem curveBaseChangeIsoOfIsPullback_inv_proj (hX : IsPullback φ strX' strX h)
+    {T : Scheme.{u}} (k : T ⟶ S') :
+    (curveBaseChangeIsoOfIsPullback hX k).inv ≫ curveBaseChangeProj strX' k
+      = curveBaseChangeProj strX (k ≫ h) := by
+  rw [← curveBaseChangeIsoOfIsPullback_hom_snd hX k, Iso.inv_hom_id_assoc]
+
+/-- **The comparison isomorphisms are NATURAL in the test object** (PROVEN) —
+`pullback.hom_ext` against the two projections.  This is the whole content of
+the `sheaf_pre` field of `IsRelPicOf.ofIsPullback`. -/
+theorem curveBaseChangeIsoOfIsPullback_naturality (hX : IsPullback φ strX' strX h)
+    {T T' : Scheme.{u}} (u : T' ⟶ T) {k : T ⟶ S'} {k' : T' ⟶ S'} (hk : u ≫ k = k') :
+    (curveBaseChangeIsoOfIsPullback hX k').hom
+        ≫ curveBaseChangeMap strX u (by rw [← Category.assoc, hk] : u ≫ (k ≫ h) = k' ≫ h)
+      = curveBaseChangeMap strX' u hk ≫ (curveBaseChangeIsoOfIsPullback hX k).hom := by
+  apply pullback.hom_ext
+  · simp [curveBaseChangeMap, pullback.lift_fst, pullback.lift_fst_assoc]
+  · simp [curveBaseChangeMap, pullback.lift_snd]
+
+/-- `RelPicEquiv` transports DOWN the comparison isomorphism (PROVEN) — the
+`u = 𝟙` instance of `relPicEquiv_modPullback_of_comm`. -/
+theorem relPicEquiv_curveBaseChangeIso (hX : IsPullback φ strX' strX h) {T : Scheme.{u}}
+    {k : T ⟶ S'} {L L' : (curveBaseChange strX (k ≫ h)).Modules}
+    (hLL' : RelPicEquiv strX (k ≫ h) L L') :
+    RelPicEquiv strX' k (modPullback (curveBaseChangeIsoOfIsPullback hX k).hom L)
+      (modPullback (curveBaseChangeIsoOfIsPullback hX k).hom L') :=
+  relPicEquiv_modPullback_of_comm strX _ (𝟙 T) (by simp) hLL'
+
+/-- `RelPicEquiv` transports UP the comparison isomorphism (PROVEN) — the same
+lemma at the inverse, and what makes the `inj` field of
+`IsRelPicOf.ofIsPullback` go through. -/
+theorem relPicEquiv_curveBaseChangeIso_inv (hX : IsPullback φ strX' strX h) {T : Scheme.{u}}
+    {k : T ⟶ S'} {L L' : (curveBaseChange strX' k).Modules} (hLL' : RelPicEquiv strX' k L L') :
+    RelPicEquiv strX (k ≫ h) (modPullback (curveBaseChangeIsoOfIsPullback hX k).inv L)
+      (modPullback (curveBaseChangeIsoOfIsPullback hX k).inv L') :=
+  relPicEquiv_modPullback_of_comm strX' _ (𝟙 T)
+    (by simp [curveBaseChangeIsoOfIsPullback_inv_proj]) hLL'
+
+namespace IsRelPicOf
+
+/-- **The sheaf classified by a `T`-point of the base-changed representing
+object**: read the point upstairs and pull its sheaf back along the comparison
+isomorphism of curves. -/
+noncomputable def sheafOfIsPullback (hP : IsRelPicOf strX pstr) (hX : IsPullback φ strX' strX h)
+    (hPb : IsPullback ψ pstr' pstr h) {T : Scheme.{u}} {k : T ⟶ S'} (p : RelPoint pstr' k) :
+    (curveBaseChange strX' k).Modules :=
+  modPullback (curveBaseChangeIsoOfIsPullback hX k).hom (hP.sheaf (relPointBaseChange hPb p))
+
+/-- **`IsRelPicOf` IS STABLE UNDER BASE CHANGE OF THE BASE** (PROVEN
+2026-07-31).
+
+If `P` represents `Pic_{X/S}` and both the curve and the representing object
+are base-changed along `h : S' ⟶ S` — as CARTESIAN SQUARES, not as chosen
+pullbacks — then `P'` represents `Pic_{X'/S'}`.
+
+There is no geometry in it.  A `T`-point of `P'` over `k` is a `T`-point of `P`
+over `k ≫ h` (`relPointBaseChange`, a bijection by the universal property of
+the square), and the two curves `X' ×_{S'} T` and `X ×_S T` are canonically
+isomorphic OVER `T` (`curveBaseChangeIsoOfIsPullback`, the pasting of the two
+squares).  Every field is then that bijection and that isomorphism:
+`inj`/`surj` transport `RelPicEquiv` across the isomorphism in the two
+directions (`relPicEquiv_curveBaseChangeIso`, `…_inv`), and `sheaf_pre` is the
+naturality of the isomorphism (`curveBaseChangeIsoOfIsPullback_naturality`)
+composed with `hP.sheaf_pre`.
+
+This is one of the two sublemmas the route of
+`exists_gluedRelPic_of_forall_isAffineOpen` names; the other,
+*transport along an isomorphism of representing objects*, is `ofIsoOver`
+below and is this lemma at `h = 𝟙 S`. -/
+noncomputable def ofIsPullback (hP : IsRelPicOf strX pstr) (hX : IsPullback φ strX' strX h)
+    (hPb : IsPullback ψ pstr' pstr h) : IsRelPicOf strX' pstr' where
+  sheaf p := hP.sheafOfIsPullback hX hPb p
+  invertible p := isInvertibleSheaf_modPullback _ (hP.invertible _)
+  inj {T} {k} p q hpq := by
+    have h1 := relPicEquiv_curveBaseChangeIso_inv (strX := strX) hX hpq
+    have h2 : RelPicEquiv strX (k ≫ h) (hP.sheaf (relPointBaseChange hPb p))
+        (hP.sheaf (relPointBaseChange hPb q)) := by
+      refine relPicEquiv_trans _ _
+        (relPicEquiv_of_iso _ _
+          (modPullbackInvHomIsoPic (curveBaseChangeIsoOfIsPullback hX k) _).symm)
+        (relPicEquiv_trans _ _ h1
+          (relPicEquiv_of_iso _ _
+            (modPullbackInvHomIsoPic (curveBaseChangeIsoOfIsPullback hX k) _)))
+    have := hP.inj _ _ h2
+    rw [← relPointBaseChangeInv_relPointBaseChange hPb p,
+      ← relPointBaseChangeInv_relPointBaseChange hPb q, this]
+  surj {T} {k} L hL := by
+    obtain ⟨q, hq⟩ := hP.surj (modPullback (curveBaseChangeIsoOfIsPullback hX k).inv L)
+      (isInvertibleSheaf_modPullback _ hL)
+    refine ⟨relPointBaseChangeInv hPb q, ?_⟩
+    have h1 := relPicEquiv_curveBaseChangeIso (strX' := strX') hX hq
+    refine relPicEquiv_trans _ _ ?_
+      (relPicEquiv_trans _ _ h1
+        (relPicEquiv_of_iso _ _
+          (modPullbackHomInvIsoPic (curveBaseChangeIsoOfIsPullback hX k) L)))
+    exact relPicEquiv_of_iso _ _
+      (modPullbackMapIso _ (eqToIso (by rw [relPointBaseChange_relPointBaseChangeInv hPb q])))
+  sheaf_pre {T'} {T} u {k} {k'} hk p := by
+    have hk' : u ≫ (k ≫ h) = k' ≫ h := by rw [← Category.assoc, hk]
+    have h1 := relPicEquiv_curveBaseChangeIso (strX' := strX') (k := k') hX
+      (hP.sheaf_pre u hk' (relPointBaseChange hPb p))
+    refine relPicEquiv_trans _ _ ?_ (relPicEquiv_trans _ _ h1 ?_)
+    · exact relPicEquiv_of_iso _ _
+        (modPullbackMapIso _ (eqToIso (by rw [relPointBaseChange_pre hPb u hk p])))
+    · refine relPicEquiv_of_iso _ _ ?_
+      refine modPullbackCompIso _ _ _ ≪≫ ?_
+      refine modPullbackCongrIso (curveBaseChangeIsoOfIsPullback_naturality hX u hk) _ ≪≫ ?_
+      exact (modPullbackCompIso (curveBaseChangeMap strX' u hk)
+        (curveBaseChangeIsoOfIsPullback hX k).hom _).symm
+
+/-- **`IsRelPicOf` TRANSPORTS ALONG AN ISOMORPHISM OF REPRESENTING OBJECTS OVER
+THE BASE** (PROVEN) — the `h = 𝟙 S` instance of `ofIsPullback`, an isomorphism
+being exactly a pullback along the identity (`IsPullback.of_horiz_isIso`).
+
+`transport_of_isRelPicOf` above is the analogous statement for a
+`MorphismProperty`; this one moves the STRUCTURE, which is what the last step
+of the gluing needs. -/
+noncomputable def ofIsoOver {Q : Scheme.{u}} {qstr : Q ⟶ S} (hP : IsRelPicOf strX pstr)
+    (e : Q ≅ P) (he : e.hom ≫ pstr = qstr) : IsRelPicOf strX qstr :=
+  ofIsPullback (h := 𝟙 S) (φ := 𝟙 X) (ψ := e.hom) hP IsPullback.of_id_fst
+    (IsPullback.of_horiz_isIso ⟨by rw [he, Category.comp_id]⟩)
+
+end IsRelPicOf
+
+end IsRelPicOfBaseChange
+
+/-! ### The gluing datum
+
+The gluing of the local Picard schemes is a two-step affair, and only the
+first step has any content left after `IsRelPicOf.ofIsPullback`:
+
+* **assemble** the local representing objects into a
+  `Scheme.Cover.RelativeGluingData` over the directed cover of `S` by ALL its
+  affine opens — `exists_relativeGluingData_isRelPicOf`, still a leaf;
+* **glue and identify** — `exists_gluedRelPic_of_forall_isAffineOpen`, PROVEN
+  over it below.
+-/
+
+/-- **THE LOCAL PICARD SCHEMES FORM A RELATIVE GLUING DATUM** (sorry leaf,
+recut 2026-07-31 out of `exists_gluedRelPic_of_forall_isAffineOpen`) —
+Stacks 01JJ, the half of that leaf that is genuinely about assembling a
+functor.
+
+`S.directedAffineCover` is mathlib's cover of `S` by ALL of its affine opens,
+ordered by inclusion; it is `LocallyDirected` because affine opens are a basis.
+A `Scheme.Cover.RelativeGluingData` over it is a functor
+`F : S.affineOpens ⥤ Scheme` together with an EQUIFIBERED natural
+transformation `F ⟶ (U ↦ U)`, i.e. a scheme `P_U ⟶ U` for each affine open and,
+for each `U ≤ V`, a map `P_U ⟶ P_V` whose square over `U ↪ V` is CARTESIAN.
+This leaf says the local representing objects can be so assembled.
+
+**WHAT IS ALREADY PROVEN, and must not be re-derived.**
+
+* `IsRelPicOf.ofIsPullback` (above): `P_V ×_V U` represents `Pic` over `U`
+  whenever `P_V` represents it over `V`.  Its curve-side input is
+  `isPullback_curveBaseChangeMap` (`X ×_S U = (X ×_S V) ×_V U`, PROVEN below —
+  it is declared AFTER this point in the file, so a prover taking this leaf
+  must hoist it, or state the leaf's proof after it).
+* `IsRelPicOf.isoOver` / `IsRelPicOf.toHom` / `IsRelPicOf.isIso_toHom`: two
+  objects representing the same functor are canonically isomorphic over the
+  base, and the isomorphism is `cmp` at the tautological point.
+* `IsRelPicOf.cmp_pre`: `cmp` is NATURAL in the test object.  This is what
+  makes the structure maps compose, in exactly the way `toHom_comp_toHom`
+  already exploits.
+
+**THE ROUTE, and where its cost is.**  Choose `P_U`, `pstr_U`, `hP_U` from the
+hypothesis.  For `U ≤ V` write `j := S.homOfLE hUV` (so `j ≫ V.ι = U.ι`, by
+`Scheme.homOfLE_ι`), let
+`bc_{U,V} : IsRelPicOf (curveBaseChangeProj strX U.ι) (pullback.snd pstr_V j)`
+be `IsRelPicOf.ofIsPullback hP_V (isPullback_curveBaseChangeMap ..)
+(IsPullback.of_hasPullback ..)`, and set
+
+  `F.map hUV := (hP_U).toHom bc_{U,V} ≫ pullback.fst pstr_V j`.
+
+Equifiberedness is then immediate — `toHom` is an ISO (`isIso_toHom`) and the
+right factor is the projection of a cartesian square, so the composite square
+is cartesian by `IsPullback.of_iso` / `paste`.  **The cost is FUNCTORIALITY**,
+`F.map (𝟙 U) = 𝟙` and `F.map (f ≫ g) = F.map f ≫ F.map g`.  Both are instances
+of `hP_W.inj` at the test object `P_U`: two morphisms `P_U ⟶ P_W` over `W` are
+the same relative point once they classify the same sheaf.  What has to be
+supplied is precisely that the sheaves agree, and that is `IsRelPicOf.sheaf_cmp`
+plus a COCYCLE for the comparison isomorphisms of curves, namely
+
+  `curveBaseChangeIsoOfIsPullback h_{U,V} k
+     ≪≫ curveBaseChangeIsoOfIsPullback h_{V,W} (k ≫ j_{U,V})
+   = curveBaseChangeIsoOfIsPullback (h_{U,V}.paste_horiz h_{V,W}) k`
+
+up to the identification `(k ≫ j_{U,V}) ≫ j_{V,W} = k ≫ j_{U,W}`.  Each such
+identity is a `pullback.hom_ext` against the two projections
+(`curveBaseChangeIsoOfIsPullback_hom_fst`/`_hom_snd` pin the isomorphism
+completely), so none of it is hard; what it is, is a substantial amount of
+`eqToIso` bookkeeping, because `curveBaseChange strX g` for propositionally
+equal `g` are propositionally and not definitionally equal SCHEMES.  A prover
+should expect that bookkeeping to be the bulk of the work and should state the
+cocycle as a NAMED lemma rather than inline.
+
+**FAITHFULNESS AUDIT (fresh statement, 2026-07-31).**  TRUE, by the route
+above.  It inherits the parent's audit for the dropping of the five geometric
+hypotheses — `IsRelPicOf` is a bare functor-of-points condition, and every step
+named above quantifies only over `IsRelPicOf` structures and mathlib gluing —
+and that audit is now partly DISCHARGED rather than merely asserted: the whole
+of `IsRelPicOf.ofIsPullback` was proved without properness, smoothness,
+connectedness, a section or `f_*𝒪 = 𝒪`.
+
+NOT VACUOUS in either direction: the hypothesis is supplied by
+`exists_relPicOf_isAffineOpen`, and the conclusion is an existential whose
+witness the route constructs. -/
+theorem exists_relativeGluingData_isRelPicOf {X S : Scheme.{u}} (strX : X ⟶ S)
+    (_hloc : ∀ V : S.Opens, IsAffineOpen V →
+      ∃ (P : Scheme.{u}) (pstr : P ⟶ (V : Scheme.{u})),
+        Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr)) :
+    ∃ d : Scheme.Cover.RelativeGluingData S.directedAffineCover,
+      ∀ U : S.affineOpens,
+        Nonempty (IsRelPicOf (curveBaseChangeProj strX (U : S.Opens).ι) (d.natTrans.app U)) :=
+  sorry
+
+/-- **THE SCHEME-THEORETIC GLUING** (**PROVEN 2026-07-31** over the single
+recut leaf `exists_relativeGluingData_isRelPicOf`; cut 2026-07-31 out of
 `exists_isRelPicOverAffines_of_forall_isAffineOpen`) — Stacks 01JJ / 01LH.
 
 Glue the local Picard schemes into a single `P ⟶ S` whose restriction to
 each affine open of `S` again represents the local relative Picard functor.
 This is step 1 (and the `inj`/`surj` half of step 3) of the route recorded
 on the parent, and NOTHING ELSE: no classifying sheaf is produced here.
+
+**RECUT 2026-07-31, direct-sorry count UNCHANGED (1 → 1).**  Steps (1) and (4)
+of the route below, and the whole of step (2), are now Lean:
+
+* step 2's two sublemmas are `IsRelPicOf.ofIsPullback` and
+  `IsRelPicOf.ofIsoOver` above — PROVEN, unconditionally, and stated over an
+  abstract cartesian square so that the caller never has to move between
+  `pullback` and a pasted square;
+* step 1's mathlib input is `S.directedAffineCover`, whose `LocallyDirected`
+  instance mathlib supplies, so the "affine opens are a basis" argument the
+  route sketches does not have to be run at all;
+* step 4 — `RelativeGluingData.isPullback_natTrans_ι_toBase` against
+  `isPullback_morphismRestrict`, then `IsRelPicOf.ofIsoOver` — is the four-line
+  body of this theorem.
+
+What is LEFT is step 3, the assembly of the local objects into a functor with
+equifibered structure maps, and it is now the whole of
+`exists_relativeGluingData_isRelPicOf` above.  Read THAT docstring for what a
+prover still owes; the paragraph "functoriality and equifiberedness are FORCED
+rather than checked" below is right about equifiberedness and optimistic about
+functoriality, which needs a cocycle for the curve comparison isomorphisms.
 
 **IT IS UNCONDITIONAL, and that is deliberate.**  No properness, no
 smoothness, no connectedness, no section, no `f_*𝒪 = 𝒪`.  The whole
@@ -3537,13 +3906,20 @@ and costs nothing:** re-add it to this signature, and the sole consumer
 five in scope and passes them.  Record the failure in this docstring if so —
 that is more valuable than the generality. -/
 theorem exists_gluedRelPic_of_forall_isAffineOpen {X S : Scheme.{u}} (strX : X ⟶ S)
-    (_hloc : ∀ V : S.Opens, IsAffineOpen V →
+    (hloc : ∀ V : S.Opens, IsAffineOpen V →
       ∃ (P : Scheme.{u}) (pstr : P ⟶ (V : Scheme.{u})),
         Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr)) :
     ∃ (P : Scheme.{u}) (pstr : P ⟶ S),
       ∀ V : S.Opens, IsAffineOpen V →
-        Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) (pstr ∣_ V)) :=
-  sorry
+        Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) (pstr ∣_ V)) := by
+  obtain ⟨d, hd⟩ := exists_relativeGluingData_isRelPicOf strX hloc
+  refine ⟨d.glued, d.toBase, fun V hV => ?_⟩
+  obtain ⟨hP⟩ := hd ⟨V, hV⟩
+  have h1 : IsPullback (d.toBase ∣_ V) (d.toBase ⁻¹ᵁ V).ι V.ι d.toBase :=
+    isPullback_morphismRestrict d.toBase V
+  have h2 : IsPullback (d.natTrans.app ⟨V, hV⟩) (colimit.ι d.functor ⟨V, hV⟩) V.ι d.toBase :=
+    d.isPullback_natTrans_ι_toBase ⟨V, hV⟩
+  exact ⟨hP.ofIsoOver (h1.isoIsPullback _ _ h2) (h1.isoIsPullback_hom_fst _ _ h2)⟩
 
 /-- **THE RIGIDIFIED POINCARÉ BUNDLE** (sorry leaf, cut 2026-07-31 out of
 `exists_isRelPicOverAffines_of_forall_isAffineOpen`) — step 2 of that
