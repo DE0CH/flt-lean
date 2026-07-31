@@ -444,36 +444,47 @@ open in them has been split along the theories it needed:
 
 | open leaf | theory | base |
 |---|---|---|
-| `exists_gamma1RigidifiedModuli` | Katz-Mazur 4.7.2 + 5.1.1 + 6.6.2 and the affineness parenthesis of 8.1.1: the AFFINE FINE moduli scheme of `[Γ₁(N)], [Γ(n)]`.  The one citation half of the former `exists_gamma1Rigidification`, which is PROVEN over this row and the two below it (2026-07-28), as are `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`. | any `K`, `char K ∤ N`, `char K ∤ n` |
+| `exists_gamma1RigidifiedModuliScheme` | Katz-Mazur 4.7.1/4.7.2 + 5.1.1 + 6.6.2: the rigidified moduli problem of `[Γ₁(N)], [Γ(n)]` is REPRESENTABLE, affineness not mentioned.  Split off `exists_gamma1RigidifiedModuli` on 2026-07-30 — that node is now PROVEN over this row and the next, and it is still what `exists_gamma1Rigidification`, `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over. | any `K`, `char K ∤ N`, `char K ∤ n` |
+| `isAffine_of_gamma1RigidifiedModuliScheme` | Katz-Mazur, the affineness parenthesis of 8.1.1 and nothing else: `𝔐([Γ₁(N)], [Γ(n)])` is AFFINE.  The second half of the same 2026-07-30 split.  Legitimate as a `∀` because `universal` is a FINE moduli property; see its docstring. | any `K`, `char K ∤ N`, `char K ∤ n` |
 | `exists_torsionBasisCover_field` | Katz-Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4: after a flat surjective quasi-compact cover the `n`-torsion of an abelian scheme of relative dimension one acquires a basis.  Stated for a BARE abelian scheme — no `Gamma1Datum`, no moduli scheme — and it is all that is left under `exists_gamma1FullLevelStructure_cover`, which is PROVEN over it (2026-07-28).  It is the general-base form of `X0.lean`'s `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both of which are stated only over `SpecQ`. | any `K`, `char K ∤ n` |
-| `exists_gamma1DeckAction` | NO citation — the deck action, `strM_invariant`, `dM_equivariant` and the coequalising clause, all consequences of the fine moduli property.  `X0.lean`'s `exists_deckAction_of_torsion` proves the `Γ₀` analogue IN FULL, coequalising clause included (**corrected 2026-07-28**; the old claim that it left that clause sorried is stale).  What is open under the `Γ₀` node is the named leaf `exists_openCover_twist_of_fullLevelStructure`. | any base scheme `S` |
-| `smooth_coarseRing_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is a smooth `K`-algebra of Krull dimension one.  (`locallyStandardSmooth_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28, together with the release's `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`.) | any `K`, `char K ∤ N` |
-| `exists_weierstrassCurve_pointOfExactOrder` | Silverman *AEC* III.6.4: over an algebraically closed field of characteristic prime to `N`, some elliptic curve carries a point of exact order `N`.  PURE elliptic-curve arithmetic — no schemes, no moduli.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28. | alg. closed `L`, `char L ∤ N` |
+| `isOpenImmersion_equalizer_of_abelianFullLevelStructure` | NO citation beyond Katz–Mazur 2.3.1 — the equalizer of two `n`-torsion sections of an elliptic scheme over an ARBITRARY base carrying a full level-`n` structure is OPEN.  Step 2, and after the 2026-07-30 cut the ONLY step, of `exists_openCover_twist_of_abelianFullLevelStructure`, which is now PROVEN over it and over `exists_openCover_comb_of_abelianFullLevelStructure`; that node in turn is what `exists_gamma1DeckAction` (REFUTED 2026-07-29, restated with its over-`S` clause, then PROVEN) rests on.  Identical to `X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero` except that `L` replaces `g : Z ⟶ SpecQ` as the source of invertibility of `n`. | any base scheme, no characteristic hypothesis — see its FALSITY AUDIT for why `L` already pins `n` invertible |
+| `smoothCurve_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1, stated ONCE and on the rigidified ring where 8.2.1 is proved: `Spec A` is a smooth affine curve over `K` (`Algebra.Smooth K A` and `ringKrullDim A = 1`).  Replaced `isReduced_A_of_gamma1GITPresentation` and the dimension conjunct of `smooth_coarseRing_of_gamma1GITPresentation` on 2026-07-28; BOTH of those are now PROVEN over it. | any `K`, `char K ∤ N` |
+| `formallySmoothInvariants_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is FORMALLY smooth over `K`.  Cut 2026-07-30 out of `smoothInvariants_of_gamma1GITPresentation` (now PROVEN over it) by unfolding `Algebra.Smooth` and paying for the second conjunct: `finitePresentation_invariants_of_gamma1GITPresentation` is Noether's theorem on invariants, PROVEN over `smoothCurve_A_of_gamma1GITPresentation` and the new `Gamma1GITPresentation.isScalarTower`.  What is left still needs Stacks `02VL` plus freeness of the `G`-action, neither of which the structure supplies. | any `K`, `char K ∤ N` |
+| ~~`exists_weierstrassCurve_pointOfExactOrder`~~ | PROVEN 2026-07-30: Silverman *AEC* III.6.4 was already in cone as `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`), so the leaf was that theorem at `WeierstrassCurve.ofJ (0 : L)` plus additive-order bookkeeping; no longer a leaf | — |
 | `nonempty_gamma1Datum_of_weierstrassPoint` | the base-generalisation of `nonempty_gamma1Datum_of_ratPoint`, which is the SAME statement at `ℚ` and is PROVEN.  Its whole obstruction is that `EllipticScheme.lean` is written at the concrete base `ℚ`; no new mathematics.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28, which is PROVEN over it and the row above (and `geometricComponents_of_gamma1GITPresentation` over that plus the two rows below, and `nontrivial_A_of_gamma1GITPresentation` over that alone). | any field `L` |
-| `isReduced_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1: `Spec A` is smooth over `K`, hence reduced | any `K`, `char K ∤ N` |
-| `transitiveMinimalPrimes_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec A` transitively | any `K`, `char K ∤ N` |
-| `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `Frac B / K` is a regular extension (`K` algebraically closed in `Frac B`, separably generated).  `connectedSpace_tensorProduct_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28. | any `K`, `char K ∤ N` |
+| ~~`isReduced_A_of_gamma1GITPresentation`~~ | PROVEN 2026-07-28 over `smoothCurve_A_of_gamma1GITPresentation` and the in-tree `Algebra.Smooth.isReduced_of_isField`; no longer a leaf | — |
+| `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec (A ⊗[K] L)` transitively for EVERY field extension `L/K`.  MERGED 2026-07-30 out of the two former leaves `transitiveMinimalPrimes_of_gamma1GITPresentation` and `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, BOTH of which are now PROVEN over it — the first at `L := K` through `Algebra.TensorProduct.rid`, the second through the new `isDomain_of_minimalPrimes_transitive_family` plus `smoothCurve_A_of_gamma1GITPresentation` and `nontrivial_A_of_gamma1GITPresentation`.  Two leaves stating one sentence of IV.5.5 at two generalities became one leaf at the stronger generality. | any `K`, `char K ∤ N`, any field extension `L/K` |
+| ~~`transitiveMinimalPrimes_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above at `L := K`; no longer a leaf | — |
+| ~~`isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`~~ | PROVEN 2026-07-30 over the row above; no longer a leaf.  `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` and `connectedSpace_tensorProduct_of_gamma1GITPresentation` are unchanged and still read it | — |
 | `exists_rationalCuspPointsX1_field` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5).  Base field FREED 2026-07-28: this single leaf now carries the former `exists_rationalCuspPointsX1` (over `ℚ`, PROVEN over it) and the `≥` half of the former `card_cuspLocusPoints_x1_finiteField` (over `𝔽_3`) — one sentence of Deligne-Rapoport that used to be two open leaves at two bases. | any `K` with `N` invertible |
-| `exists_fineGamma1Atlas` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N`: `[Γ₁(N)]` is representable, so some atlas has `M ⟶ Y` an isomorphism.  (Was `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated 2026-07-28 — see its FALSITY AUDIT; the `∀ atlas` form is false at the Katz–Mazur atlas itself.) | `𝔽_ℓ` |
+| `exists_isFineGamma1Moduli` | Katz–Mazur 4.7.1: `[Γ₁(N)]` is REPRESENTABLE at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` — a universal family `dM` over `M`, classified uniquely.  (`exists_fineGamma1Atlas` is PROVEN over it, 2026-07-28, through the formal `Gamma1Atlas.ofFineModuli`; that node was itself `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated the same day — see its FALSITY AUDIT.) | `𝔽_ℓ` |
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | `exists_weierstrassModel_of_abelianSchemeStruct_finiteField` | **Riemann-Roch on a genus-one curve** — a Weierstrass model of an abelian scheme of relative dimension one over `Spec 𝔽_ℓ`; NO modular curves and no level structure.  Cut 2026-07-28 as the geometry half of `exists_weierstrassEquiv_of_gamma1Datum` (now PROVEN over it).  The ℚ-side chain in `EllipticScheme.lean` is hardcoded to `Spec ℚ` and its own three leaves are open, so there is nothing to instantiate. | `𝔽_ℓ` |
 | `exists_relPointAddEquiv_of_weierstrassModel_finiteField` | the transport half of the same cut: given the model, the `𝔽_ℓ`-SECTIONS are `W(𝔽_ℓ)`.  The content is that the abelian scheme's group law agrees with the chord-and-tangent law (rigidity); strictly easier than the ℚ-side `exists_geomFibreAddEquiv_of_weierstrassModel`, which needs a `Γ_ℚ`-equivariant equivalence on geometric fibres. | `𝔽_ℓ` |
-| `exists_geometricCuspEquiv_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic and again 2026-07-31 into moduli and scheme theory.  What is left is one Deligne-Rapoport sentence: the GEOMETRIC cusps of `X_1(N)_{𝔽_ℓ}` — ring maps `κ(c) →+* 𝔽̄_ℓ` for `c ∈ X ∖ Y` — are the primitive symbols of `CuspSymbolX1 N`, Galois-equivariantly for `cuspFrobX1 N ℓ`.  Carries NO counting (that is `card_fixedCuspSymbolX1`, PROVEN) and NO scheme theory (that is `geomFrobF_eq_self_of_residueFDegree_eq_one`, PROVEN).  `exists_cuspSymbolEmbedding_x1_finiteField` and `card_cuspLocusPoints_x1_finiteField_le` are PROVEN over it.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
-| `exists_x1CurveModel_of_base` | the integral model — Deligne-Rapoport / Igusa for `Γ₁(N)`.  The reduction map is no longer part of the leaf: `exists_x1ReductionAt` is PROVEN over this plus the moduli-free `NeronReduction.lean` | `ℚ → 𝔽_ℓ` |
+| `exists_cuspSymbolEmbedding_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic: the `𝔽_ℓ`-rational cusp points inject into the Frobenius-fixed cusp symbols `Γ_1(N)∖ℙ¹(ℚ)`.  Carries NO counting — that is `card_fixedCuspSymbolX1` (`ModularCurve/CuspSymbolX1.lean`), PROVEN, and `card_cuspLocusPoints_x1_finiteField_le` is PROVEN over the two.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
+| `exists_x1SmoothProperCurveModel` | Deligne-Rapoport VI.6.9: the smooth proper model over `ℤ_(ℓ)` together with the identification of its GENERIC fibre.  NO moduli in the conclusion — the modular input is the hypothesis `hX`.  (Replaces `exists_x1CurveReductionModel`, which is **PROVEN** over this row alone since 2026-07-30: the special fibre is the pullback along the closed point, so `spX`/`spX_nat` are `fibreIdentPullback`, and `properX` is `bijective_pre_generic_of_isProper` — the three obligations that need no modular geometry, discharged as `X0.lean` had already done on the `Γ₀` side.) | `ℚ → 𝔽_ℓ` |
+| `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.  Since 2026-07-30 the row above is the weaker `exists_x1SmoothProperCurveModel`; the leaf COUNT here is unchanged.) | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
-| `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action — the "build one factor" half of Eichler-Shimura.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.) | `ℚ` |
-| `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
-| `exists_cuspForm_gamma1GL_zero_lacunary` | a weight-two cusp form for `Γ₁(0) = ⟨T⟩` with `q`-expansion `∑ c^k q^(2^k)` — the lone analytic input of that refutation, and pure mathlib plumbing (locally-uniform convergence of a lacunary `q`-series; the only cusp of `⟨T⟩` is `∞`) | — |
+| `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity theorem for `Γ₁(N)`: the `a n` are algebraic integers.  MENTIONS NO SCHEME — the only obligation of `IsIsotypicQuotient` that does not, and it can be attacked from the integral-homology side or from the Hecke recursions plus a bound.  Cannot be an instance of `X0.lean`'s `isIntegral_coeff_of_isWeightTwoEigenform`: the `Γ₁` coefficients generate `ℚ(χ)`. | `ℚ` |
+| `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action AND algebraicity — the "build one factor" half of Eichler-Shimura, and the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.  `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this row and the one above since 2026-07-30, transporting the `Γ₀` recut of the same day; its FALSITY AUDIT was discharged that day too and the statement is TRUE.) | `ℚ` |
+| `finite_setOf_isWeightTwoEigenformOn_gamma1` | finiteness of the set of weight-two eigen-SYSTEMS on `Γ₁(N)` — pure modular forms, no scheme, no Hecke correspondence; the "finiteness of the index set" half of the assembly, split off 2026-07-31.  FALSE at `N = 0`, by `exists_isWeightTwoEigenformOn_gamma1GL_zero`, hence the `hN`.  The `Γ₀` twin `finite_setOf_isWeightTwoEigenform` is already PROVEN on the merge worker's branch. | — |
+| `exists_isotypicQuotientFamily_finiteKer_gamma1` | the geometry of the assembly, split off 2026-07-31: the isotypic quotients can be CHOSEN so that their kernels jointly meet in a finite set — Poincaré reducibility plus the Eichler–Shimura dimension count.  The `∃` is load-bearing: for an ARBITRARY family the statement is FALSE (single copies `A_g` where the isotypic part is `A_g^{σ₀(N/M)}`). | `ℚ` |
+| ~~`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`~~ | the "assemble the factors" half — **PROVEN 2026-07-31** over the two rows above.  `idx` IS the set of eigen-systems; the oldform multiplicities live inside `A i` (the maximal quotient is `A_g^{σ₀(N/M)}`), not in the index set, which is what the earlier reading of this row got wrong.  It never owned the `N = 0` case: that was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf carries `hN : N ≠ 0`; see its docstring | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
-| `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
-| `hasNoFibreAffineLine_of_one_le_x1Genus` | the genus formula, fibrewise — `genus X_1(N) ≥ 1` puts no rational curve in any fibre.  (`hasNonconstantAbelianMap_of_one_le_x1Genus` is PROVEN over it, 2026-07-28, together with `X0.lean`'s level-free `mono_ajHom_of_hasNoFibreAffineLine` and `not_isIso_of_smoothOfRelativeDimension_one`.) | any |
+| `cuspPeriod_ne_zero_x1TwentyFive` | the `L`-value numerics — the DEEP one, and the only row where `25` survives.  (`lFunction_apply_one_ne_zero_x1TwentyFive` was decomposed along the period 2026-07-28; its analytic half `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` is PROVEN the same day, as the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn`, which is in turn the group-generic form of `X0.lean`'s proven theorem.) | `ℚ` |
+| `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed` | the genus formula and nothing else — Diamond–Shurman Thm 3.1.1: a fibre of `X_1(N)` with `genus ≥ 1` is not birational to `𝔸¹` over an ALGEBRAICALLY CLOSED field.  The only declaration in the `Γ₁` genus formula that still mentions `N`.  (Cut 2026-07-30 out of `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus`, which is PROVEN over it and the row below.)  **RESTATED 2026-07-30 with `hchar : (N : K) ≠ 0`**: without it the leaf and its three proven consumers are FALSE, refuted by the Igusa curve `Ig(11)` in characteristic `11` — the falsity audit and the genus computation are on the declaration, and the hypothesis is discharged at the `SpecQ` base of `hasNonconstantAbelianMap_of_one_le_x1Genus`. | alg. closed `K`, `char K ∤ N` |
+| `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` | `Pic⁰` and the degree-`n` Abel–Jacobi map: a GEOMETRICALLY non-rational fibre receives a nonconstant map to an abelian variety.  LEVEL-FREE — no `N` in it, and the `Γ₀` sibling leaf would close over it verbatim; see its RELOCATION NOTE.  The same statement with the hypothesis taken over `K` rather than over `K̄` is FALSE (pointless conic over `ℝ`); the falsity audit is on the declaration. | any |
 
 (Table regenerated at the release-10 integration, 2026-07-28, from the
 compiler's `declaration uses 'sorry'` set rather than from any branch's prose;
 it agrees row-for-row with a comment-stripped source scan.  Fourteen rows.
 The last row was replaced 2026-07-28 when the node above it closed; a stray
-duplicate of it, left by a merge, was removed at the same time.
+duplicate of it, left by a merge, was removed at the same time.  It was
+replaced AGAIN later the same day, for the same reason: the fibrewise genus
+leaf `hasNoFibreAffineLine_of_one_le_x1Genus` was PROVEN by decomposition
+along the birational/Lüroth axis, and what is open in its place is the
+single arithmetic leaf now named in the row.
 
 Four further rows — the analytic quartet `exists_frickeInvolutionOn`,
 `isBigO_atTop_axisRestrictOn`, `locallyIntegrableOn_axisRestrictOn` and
@@ -482,7 +493,13 @@ Four further rows — the analytic quartet `exists_frickeInvolutionOn`,
 `WeightTwoEigenform.lean` plus one new normalisation lemma
 (`frickeMatrix_conj_mem_of_le`) and mathlib's `Bounds.lean`.  Ten rows.
 `isBigO_atTop_coeffOn` gained a `hN : N ≠ 0` hypothesis at the same time —
-it was FALSE at `N = 0`; see its FALSITY AUDIT.)
+it was FALSE at `N = 0`; see its FALSITY AUDIT.
+
+The last row was replaced a THIRD time on 2026-07-30, and this time it
+became TWO rows: `exists_nonconstant_toAbelianScheme_of_one_le_x1Genus` was
+PROVEN by separating the genus formula from the `Pic⁰` construction, so the
+genus entry is now the arithmetic leaf plus the level-free geometric one.
+Eleven rows.)
 
 **This table was REGENERATED at integration (2026-07-27) from a
 comment-stripped scan of the merged source, not merged as prose** — three
@@ -515,26 +532,6 @@ level and no count.  The split also made the failure mode visible: the bound
 `≤ φ(N)/2` is FALSE for `ℓ ≡ ±1 (mod N)`, and what rules that out is the
 hypothesis `IsUnit (ℓ - 1) ∧ IsUnit (ℓ + 1)` in `ZMod N`, which the witness
 row `(25, 3, 10)` discharges by `2` and `4` being units mod `25`.
-
-**Reorganised a FIFTH time 2026-07-31, along the MODULI-vs-SCHEME-THEORY
-axis, and that closed `exists_cuspSymbolEmbedding_x1_finiteField` too.**  The
-2026-07-28 split had removed the arithmetic but left two sentences welded:
-the Deligne-Rapoport identification of the GEOMETRIC cusps, and the general
-fact that a point of residue degree one has its geometric points fixed by
-Frobenius.  Only the first is modular.  The second is
-`geomFrobF_eq_self_of_residueFDegree_eq_one` — three lines over
-`Algebra.finrank_eq_one_iff_bijective_algebraMap`, `RingHom.ext_zmod` and
-`ZMod.pow_card`, with `nonempty_geomPoint_of_residueFDegree_eq_one` supplying
-the geometric point — and once it is separate,
-`exists_cuspSymbolEmbedding_x1_finiteField` is ten lines of assembly over
-`exists_geometricCuspEquiv_x1_finiteField`, which is now the only open leaf
-of the cluster.  The lesson is the one this file keeps meeting: what looked
-atomic was a moduli theorem with a piece of general scheme theory stuck to
-it, and the scheme theory was cheap.  Note also that a geometric point is
-recorded as a bare `κ(c) →+* 𝔽̄_ℓ` with no algebra structure, because
-`RingHom.ext_zmod` makes every such map `𝔽_ℓ`-linear automatically — that is
-what keeps `residueFAlgebra`, which is a `letI` rather than an instance, out
-of the remaining leaf's statement.
 
 **Updated again 2026-07-27** for the reduction/descent cluster.
 `exists_inverse_of_smoothCompactification` is now PROVEN outright, over
@@ -581,16 +578,18 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `exists_gamma0GITPresentation_of_rigidified` (PROVEN) | `nonempty_gamma1GITPresentation_of_rigidification` (PROVEN) |
 | `RigidifiedModuli` | `Gamma1RigidifiedModuli` |
 | `FullLevelStructure` | `AbelianFullLevelStructure` (a DUPLICATE — see the coordination note at the cut below) |
-| `exists_rigidifiedModuli` (leaf) | `exists_gamma1RigidifiedModuli` (leaf) |
+| `exists_rigidifiedModuli` (PROVEN over `exists_rigidifiedModuliScheme` + `isAffine_of_rigidifiedModuliScheme`, both leaves) | `exists_gamma1RigidifiedModuli` (PROVEN 2026-07-30 over `exists_gamma1RigidifiedModuliScheme` + `isAffine_of_gamma1RigidifiedModuliScheme`, both leaves — the same three-way split, made here for the same reason) |
 | `exists_fullLevelStructure_cover` (PROVEN, over `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both `SpecQ`-only leaves) | `exists_gamma1FullLevelStructure_cover` (PROVEN 2026-07-28, over the single general-base leaf `exists_torsionBasisCover_field`, plus the PROVEN `nonempty_abelianFullLevelStructure_of_geomBasis` and the `IsBaseChangeOfGamma1.toRelPoint` API) |
-| `exists_deckAction` (leaf) | `exists_gamma1DeckAction` (leaf) |
+| `exists_deckAction` (PROVEN over `exists_openCover_twist_of_fullLevelStructure`) | `exists_gamma1DeckAction` (REFUTED, restated with `a ≫ strM = b ≫ strM` and PROVEN 2026-07-29, over the single leaf `exists_openCover_twist_of_abelianFullLevelStructure`) |
+| `FullLevelStructure.twist` API + `exists_fullLevelStructure_baseChange` + `twist_baseChange` (PROVEN) | `AbelianFullLevelStructure.twist` API + `exists_abelianFullLevelStructure_baseChange` + `twist_baseChange` (PROVEN 2026-07-29 — a TRANSCRIPTION, deletable once `X0.lean`'s `FullLevelStructure` is generalised to `AbelianSchemeStruct`) |
+| `exists_openCover_deckTranslation` (PROVEN) | `exists_openCover_gamma1DeckTranslation` (PROVEN 2026-07-29) |
 | — | `nonempty_gamma1Rigidification_of_rigidifiedModuli` (PROVEN); `exists_gamma1Rigidification` (PROVEN over the three leaves) |
 | `exists_descendClassify` (PROVEN) | `exists_descendClassifyGamma1` (PROVEN) |
 | `exists_gamma0Datum_baseChange` (PROVEN) | `exists_gamma1Datum_baseChange` (PROVEN) |
 | `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
-| `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (PROVEN 2026-07-28 over three leaves — `exists_gamma1Datum_fieldExtension`, `isReduced_A_of_gamma1GITPresentation`, `transitiveMinimalPrimes_of_gamma1GITPresentation`); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
+| `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (PROVEN 2026-07-28 over `exists_gamma1Datum_fieldExtension`, `isReduced_A_of_gamma1GITPresentation` — itself PROVEN later the same day over `smoothCurve_A_of_gamma1GITPresentation` — and `transitiveMinimalPrimes_of_gamma1GITPresentation`, itself PROVEN 2026-07-30 over `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
 | `smoothOfRelativeDimension_of_gamma0GITPresentation` (leaf) | `locallyStandardSmooth_of_gamma1GITPresentation` (leaf); `smoothOfRelativeDimension_of_gamma1GITPresentation` is PROVEN over it |
-| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` (leaf); `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
+| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation` (leaf, 2026-07-30); `isPrime_nilradical_tensorProduct_of_gamma1GITPresentation`, `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation`, `connectedSpace_tensorProduct_of_gamma1GITPresentation` and `geometricallyConnected_of_gamma1GITPresentation` are PROVEN over it |
 | `Gamma0AffineModel` / `exists_gamma0AffineModel` (PROVEN) | `Gamma1AffineModel` / `exists_gamma1AffineModel` (PROVEN) |
 
 `specInvariants_universal` (`X0.lean`, PROVEN and sorry-free) is REUSED
@@ -649,9 +648,12 @@ they are three unrelated classical inputs:
 `exists_gamma1Datum_fieldExtension` (an elliptic curve with a point of
 exact order `N` over *some* field — no modular curves in it, and the only
 thing `Nontrivial A` needs), `isReduced_A_of_gamma1GITPresentation`
-(8.2.1, smoothness) and
+(8.2.1, smoothness — itself PROVEN later the same day over
+`smoothCurve_A_of_gamma1GITPresentation`) and
 `transitiveMinimalPrimes_of_gamma1GITPresentation` (IV.5.5, the
-`det`-surjectivity).  The ROUTE AUDIT on the last of those records why
+`det`-surjectivity — itself PROVEN 2026-07-30 over its base-changed form
+`transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`, which is
+where the open obligation now sits).  The ROUTE AUDIT on the last of those records why
 neither `Algebra.IsInvariant.exists_smul_of_under_eq` nor an
 existentially-quantified algebra of components cuts it any further, and
 that the honest next step is a Weil-pairing FIELD on
@@ -17993,9 +17995,111 @@ theorem not_lFunctionHypothesis_gamma1GL_zero
     rw [hLof.eq_lseries z hz.1, hzero z (le_of_lt hz.2)]
   exact key (Set.mem_univ 1)
 
-/-- **THE `Γ₁` ISOTYPIC DECOMPOSITION, GIVEN THE FACTORS** (sorry leaf,
-new 2026-07-28; **`hN : N ≠ 0` ADDED 2026-07-28 after the level-`0` case
-was REFUTED** — see the section docstring above and
+/-- **THE SET OF WEIGHT-TWO EIGEN-SYSTEMS OF LEVEL `N` ON `Γ₁(N)` IS
+FINITE** (sorry leaf, new 2026-07-31) — the "finiteness of the index set"
+bullet of `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`
+below, split off as a statement of pure modular-forms content: no scheme,
+no Jacobian, no Hecke correspondence, no compactification datum.
+
+TRUE, and classical.  A system `a` determines its form `f` (the
+`qExpansion` field reads `f` off `a` pointwise), distinct systems give
+linearly independent forms by the simultaneous-eigenvector argument, and
+`S₂(Γ₁(N))` is finite-dimensional; a linearly independent family in a
+finite-dimensional space is finite.
+
+**`hN` IS LOAD-BEARING AND THE LEVEL-`0` COUNTEREXAMPLE IS ALREADY IN
+THIS FILE.**  At `N = 0` the set is INFINITE:
+`exists_isWeightTwoEigenformOn_gamma1GL_zero` (~100 lines above) exhibits
+`lacunaryTwoCoeff c` as an eigen-system for every `c : ℂ`, and
+`lacunaryTwoCoeff_two` separates them.  That is the same computation
+`isEmpty_isHeckeIsotypicDecompositionGamma1_zero` runs, which is why the
+two `hN`s are the same `hN`.
+
+**WHERE THE PROOF IS.**  The `Γ₀` twin `finite_setOf_isWeightTwoEigenform`
+was PROVEN on 2026-07-31 on the merge worker's branch, and its docstring
+records the audit error that had made it look expensive: this project has
+had `FiniteDimensional ℂ (CuspForm (Gamma0GL N) 2)` since 2026-07-24 as
+`cuspForm_finiteDimensional`, invisible from here only because
+`Modularity/Interface.lean` carries `public import
+Fermat.FLT.ModularCurve.X0` and is therefore DOWNSTREAM.  That branch
+HOISTS the Sturm bound and the finite-dimensionality into a new upstream
+module `ModularCurve/WeightTwoEigenform.lean`.  So a prover of this `Γ₁`
+statement should first check whether that hoist has landed, and if it has,
+the work here is the `Γ₁` instance of the same three steps — a
+finite-dimensionality for `CuspForm (Gamma1GL N) 2` (the Sturm-bound route
+is level-shape agnostic), Fourier uniqueness, and linear independence.
+Note the nebentypus costs nothing: `χ` is quantified inside the set, and
+two systems with different nebentypus are still two systems. -/
+theorem finite_setOf_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0) :
+    {a : ℕ → ℂ | ∃ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2),
+      IsWeightTwoEigenformOn (Gamma1GL N) N χ f a}.Finite :=
+  sorry
+
+/-- **THE ISOTYPIC QUOTIENTS CAN BE CHOSEN JOINTLY SEPARATING** (sorry
+leaf, new 2026-07-31) — the geometric bullet of
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` below:
+the old-form MULTIPLICITIES and `finite_ker` in one statement, with the
+finiteness of the index set and the whole `neben`/`form` labelling
+removed.
+
+TRUE.  Take for each system `a` the MAXIMAL quotient of `J_1(N)` carrying
+`a` at the arities coprime to `N` — `A_a := J / K_a` where `K_a` is the
+abelian subvariety generated by the images of `(minpoly ℤ (a n))(T n)`
+for `n` coprime to `N`.  It is an `IsIsotypicQuotient`: surjective by
+construction, nontrivial because the system occurs in `J_1(N)`
+(Eichler–Shimura), equivariant at EVERY arity because `K_a` is stable
+under every endomorphism of `J_1(N)` (distinct anemic-isotypic pieces are
+non-isogenous, so `Hom` between them vanishes).  For a newform `g` of
+level `M ∣ N` the maximal quotient is `A_g^{σ₀(N/M)}`, and
+`J_1(N) ∼ ∏_g A_g^{σ₀(N/M)}` gives `∩_a ker(u_a)` finite.  Poincaré
+complete reducibility: Mumford, *Abelian Varieties* §19;
+Diamond–Shurman Thm 6.6.6.
+
+**WHY THE FAMILY IS EXISTENTIAL AND NOT UNIVERSAL — THE OBVIOUS
+STRONGER-LOOKING CUT IS FALSE.**  The tidy statement would be "for EVERY
+family `Q` of isotypic quotients, one per system, the joint kernel is
+finite".  It is FALSE, and `hquot` is exactly a witness generator for it:
+`IsIsotypicQuotient` asks only that the factor be a nontrivial surjective
+isotypic quotient, so a single copy `A_g` satisfies every field where the
+isotypic part is `A_g^{σ₀(N/M)}` with `σ₀(N/M) > 1`.  Take `N = p³M`,
+`p ∤ M`, `g` a newform of level `M`: the family `a ↦ A_g` (one copy) has
+`∩_a ker(u_a) ⊇ ` a positive-dimensional abelian subvariety, hence
+infinite.  So the choice of factors is part of the content, and the
+quantifier has to be `∃`.  This is the same freedom that
+`IsUniversalIsotypicFactor`'s docstring in `X0.lean` records as "a
+producer cannot supply a factor that is *too small* — a single copy `A_g`
+where the isotypic part is `A_g^m`".
+
+**`hquot` IS AVAILABLE AND MAY WELL BE UNUSED**, stated plainly rather
+than hidden.  It is kept because it is the hypothesis the parent has and
+because a prover may prefer to ENLARGE its quotients rather than build
+the maximal ones from scratch; but the `Γ₀` twin's residual proof
+(2026-07-31, merge worker's branch) takes its factors from a maximal-quotient
+leaf and leaves `hquot` unused, renaming the binder `_hquot`.  Expect the
+same here. -/
+theorem exists_isotypicQuotientFamily_finiteKer_gamma1 (N : ℕ) (hN : N ≠ 0)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (hmod : IsModularHeckeActionGamma1 N h.some jac T T_comp)
+    (hquot : ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
+      IsWeightTwoEigenformOn (Gamma1GL N) N χ f a → Nonempty (IsIsotypicQuotient ab T N a)) :
+    ∃ Q : ∀ a : ℕ → ℂ, (∃ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2),
+        IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) → IsIsotypicQuotient ab T N a,
+      {x : RelPoint jstr (𝟙 SpecQ) | ∀ (a : ℕ → ℂ)
+          (ha : ∃ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2),
+            IsWeightTwoEigenformOn (Gamma1GL N) N χ f a),
+          RelPoint.post (Q a ha).u (Q a ha).u_comp x = (Q a ha).abA.zero (𝟙 SpecQ)}.Finite :=
+  sorry
+
+/-- **THE `Γ₁` ISOTYPIC DECOMPOSITION, GIVEN THE FACTORS** (**PROVEN
+2026-07-31** over `finite_setOf_isWeightTwoEigenformOn_gamma1` and
+`exists_isotypicQuotientFamily_finiteKer_gamma1` immediately above; a
+sorry leaf from 2026-07-28 until then; **`hN : N ≠ 0` ADDED 2026-07-28
+after the level-`0` case was REFUTED** — see the section docstring above
+and
 `isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) — the "ASSEMBLE the
 factors" half of the cut of `exists_heckeIsotypicDecomposition_gamma1`
 below, and the `Γ₁` transport of `X0.lean`'s
@@ -18106,6 +18210,63 @@ term from `h.some` and would not have matched the field, so the fix is a
 statement change AND a proof change, not just a widening.)  That theorem
 is PROVEN and stays proven; only this leaf's hypothesis got stronger.
 
+**THE CUT TAKEN 2026-07-31, AND THE CLAIM IT CORRECTS: `idx` *IS* THE SET
+OF EIGEN-SYSTEMS, BECAUSE THE MULTIPLICITIES LIVE INSIDE `A i`.**  The
+"MULTIPLICITIES" bullet above, and the corresponding paragraph on
+`X0.lean`'s twin, both conclude that `idx` cannot be the set of
+eigen-systems and that `σ₀(N/M)` copies of `A_g` must be carried by
+`σ₀(N/M)` distinct degeneracy-twisted surjections.  That is a statement
+about a decomposition into COPIES OF `A_g`, and the structure does not ask
+for one.  Nothing in `IsHeckeIsotypicDecompositionGamma1` says `A i` is the
+abelian variety of a newform: `isotypic` only asks that `minpoly ℤ (coeff i n)`
+annihilate `S i n` at the arities coprime to `N`, and `A i := A_g^{σ₀(N/M)}`
+— the whole `g`-old quotient — satisfies it just as well as a single copy.
+Taking the MAXIMAL isotypic quotient at each system therefore discharges
+the multiplicities without ever indexing them, and it is also what makes
+`equivariant` hold at the junk arities `IsModularHeckeActionGamma1` does
+not pin, since the maximal kernel is stable under every endomorphism.
+
+The degeneracy maps are worse than unnecessary here: they do not commute
+with `U_p` at `p ∣ N/M`, so an individual twisted copy `J_1(N) ↠ A_g` need
+not admit any `S i p` at all, and `equivariant` quantifies over EVERY `n`.
+
+So the cut is into exactly two pieces, and both are strictly smaller than
+this node was:
+
+* `finite_setOf_isWeightTwoEigenformOn_gamma1` — pure modular forms, no
+  geometry, and the `Γ₀` twin of it is already PROVEN;
+* `exists_isotypicQuotientFamily_finiteKer_gamma1` — the geometry, i.e.
+  Poincaré reducibility plus the Eichler–Shimura dimension count, with
+  the labelling and the finiteness of the index set removed.
+
+Everything else — the `neben`/`form`/`isEigen` labelling, `coeff`,
+`integral`, `cover`, and the transport of `finite_ker` across
+`Subtype.forall` — is the residual proof below and costs nothing.  Note
+`hquot` IS consumed, by being passed to the second leaf; the honest
+caveat is recorded on that leaf, namely that its own prover will probably
+not need it.
+
+**THE `Γ₀` TWIN WAS CUT THE SAME WAY, INDEPENDENTLY AND ONE DAY EARLIER**
+(merge worker's branch, 2026-07-31), which is worth recording because the two
+cuts must not be re-unified carelessly.  There
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients` is PROVEN over
+three leaves — `finite_setOf_isWeightTwoEigenform`,
+`exists_universalIsotypicQuotient` and
+`finite_jointKernel_of_universalIsotypicQuotients` — with a new structure
+`IsUniversalIsotypicQuotient` carrying the maximality as a FIELD.  This
+`Γ₁` cut deliberately does NOT introduce a second copy of that structure:
+`IsUniversalIsotypicQuotient` is level-shape agnostic (it mentions no
+compactification and no `Gamma0GL`), so re-declaring it here would be a
+`has already been declared` error the moment that branch lands, and no
+textual merge could see it.  The `Γ₁` conclusion does not require
+maximality — it has no `IsUniversalIsotypicFactor` clause — so plain
+`IsIsotypicQuotient` suffices, and the maximality is pushed into the proof
+obligation of the second leaf rather than into its statement.  The tidy
+follow-up, once that branch is on `main`, is to split
+`exists_isotypicQuotientFamily_finiteKer_gamma1` along the same seam
+(`exists_universalIsotypicQuotient_gamma1` plus a shared joint-kernel
+statement) and reuse the structure.
+
 **AXIS NOT SEARCHED**, inherited from the `Γ₀` node: the complex-analytic
 route through `Γ₁(N)\ℍ*`, which is how the classical proof identifies the
 factors in the first place.  Everything above is the algebraic-moduli
@@ -18143,8 +18304,44 @@ theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1 (N : ℕ) 
         ∀ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
           IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
             Nonempty (IsIsotypicQuotient ab T N a)) :
-    Nonempty (IsHeckeIsotypicDecompositionGamma1 N h jac) :=
-  sorry
+    Nonempty (IsHeckeIsotypicDecompositionGamma1 N h jac) := by
+  classical
+  obtain ⟨T, T_comp, T_add, hmod, hq⟩ := hquot
+  -- the index set: the eigen-SYSTEMS of level `N`, of every nebentypus
+  set 𝒜 : Set (ℕ → ℂ) := {a : ℕ → ℂ | ∃ (χ : DirichletCharacter ℂ N)
+    (f : CuspForm (Gamma1GL N) 2), IsWeightTwoEigenformOn (Gamma1GL N) N χ f a}
+  have hfin : 𝒜.Finite := finite_setOf_isWeightTwoEigenformOn_gamma1 N hN
+  -- the factors: one per system, chosen so that they jointly separate
+  obtain ⟨Q, hker⟩ :=
+    exists_isotypicQuotientFamily_finiteKer_gamma1 N hN h jac T T_comp T_add hmod hq
+  -- the nebentypus and the form labelling each system
+  choose neb frm hfrm using fun x : 𝒜 => x.2
+  exact ⟨{ T := T
+           T_comp := T_comp
+           T_add := T_add
+           heckeModuli := hmod
+           idx := ↥𝒜
+           fintypeIdx := hfin.fintype
+           A := fun i => (Q i.1 i.2).A
+           astr := fun i => (Q i.1 i.2).astr
+           abA := fun i => (Q i.1 i.2).abA
+           u := fun i => (Q i.1 i.2).u
+           u_comp := fun i => (Q i.1 i.2).u_comp
+           u_add := fun i => (Q i.1 i.2).u_add
+           u_surj := fun i => (Q i.1 i.2).u_surj
+           neben := neb
+           form := frm
+           coeff := fun i => i.1
+           isEigen := hfrm
+           S := fun i => (Q i.1 i.2).S
+           S_comp := fun i => (Q i.1 i.2).S_comp
+           S_add := fun i => (Q i.1 i.2).S_add
+           equivariant := fun i n => (Q i.1 i.2).equivariant n
+           integral := fun i n => (Q i.1 i.2).integral n
+           isotypic := fun i => (Q i.1 i.2).isotypic
+           cover := fun χ f a hf => ⟨⟨a, ⟨χ, f, hf⟩⟩, rfl⟩
+           -- the joint kernel over `↥𝒜` is the joint kernel over `(a, ha)`
+           finite_ker := hker.subset (fun x hx a ha => hx ⟨a, ha⟩) }⟩
 
 /-- **EICHLER–SHIMURA for `Γ₁(N)`: the Hecke-isotypic decomposition
 exists** (**PROVEN 2026-07-28**, over the two leaves
