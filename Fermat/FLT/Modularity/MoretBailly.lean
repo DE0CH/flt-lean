@@ -15576,6 +15576,189 @@ theorem stepanovIdx_ext {d p K : ℕ} {q q' : StepanovIdx d p K}
   obtain rfl : v = v' := Fin.val_injective h4
   rfl
 
+/-! #### The unknowns as a linear parameter space (PROVEN 2026-07-30)
+
+`stepanovUnknownCount d q K` is a cardinality; a dimension count needs an honest
+INJECTIVE linear parametrisation by that many scalars, and then the rank–nullity
+step that turns "fewer equations than unknowns" into a NONZERO solution of the
+prescribed shape. Both are pure linear algebra over an arbitrary field, and both
+are proven here once — char-free, and with no primality or finiteness assumption
+on `q`, which is why the block is stated over a general `k` rather than over
+`ZMod p`. Nothing in it knows about `F`, about jets, or about the equations: only
+about the SHAPE
+
+  `i, c < d`,  `j + c ≤ K`,  `deg A_{ijc} + d + i + j + c ≤ q/d`.
+
+Two things are exported.
+
+* `exists_stepanovCoefficientParametrisation` — the `ZMod p` instance, i.e. the
+  sibling sorry leaf of `exists_stepanovJetLinearForms` immediately below, now
+  discharged.
+* `exists_stepanovShapedSolution` — the packaged dimension count
+  `B < stepanovUnknownCount d q K ⟹ ∃ a ≠ 0 of the shape with Φ a = 0`. This is
+  what the finite-field (`q = #K`) Stepanov leaves of `Modularity/Interface.lean`
+  consume, and it is the reason the block is not stated over `ZMod p`.
+
+The parametrisation is the obvious one — `A_{ijc} := ∑_v cc_{(i,c,j,v)} X^v` over
+the index `Finset` above — and its injectivity is coefficient extraction. The
+only mildly delicate point is that the `v`-range `q/d + 1 − (d + i + j + c)` is
+truncated at `0` exactly where the degree constraint forces `A_{ijc} = 0`, so the
+empty sum and the zero polynomial agree and `card_stepanovIdx` matches
+`stepanovUnknownCount` on the nose. -/
+
+/-- Schmidt's index set of unknowns: `(i, c, j, v)` with `i, c < d`, `j + c ≤ K`
+and `d + i + j + c + v ≤ q/d`, the last component indexing the coefficients of
+`A_{ijc}`. Its cardinality is `stepanovUnknownCount d q K`. -/
+def stepanovIdx (d q Kc : ℕ) : Finset ((_ : ℕ) × (_ : ℕ) × (_ : ℕ) × ℕ) :=
+  (Finset.range d).sigma fun i =>
+    (Finset.range d).sigma fun c =>
+      (Finset.range (Kc + 1 - c)).sigma fun j =>
+        Finset.range (q / d + 1 - (d + i + j + c))
+
+theorem mem_stepanovIdx {d q Kc i c j v : ℕ} :
+    (⟨i, c, j, v⟩ : (_ : ℕ) × (_ : ℕ) × (_ : ℕ) × ℕ) ∈ stepanovIdx d q Kc ↔
+      i < d ∧ c < d ∧ j + c ≤ Kc ∧ d + i + j + c + v ≤ q / d := by
+  simp only [stepanovIdx, Finset.mem_sigma, Finset.mem_range]
+  omega
+
+/-- The scalar attached to an unknown, extended by zero outside the index set. -/
+noncomputable def stepanovExt {k : Type*} [Field k] (d q Kc : ℕ)
+    (cc : ↥(stepanovIdx d q Kc) → k) (i j c v : ℕ) : k :=
+  if h : (⟨i, c, j, v⟩ : (_ : ℕ) × (_ : ℕ) × (_ : ℕ) × ℕ) ∈ stepanovIdx d q Kc then
+    cc ⟨⟨i, c, j, v⟩, h⟩ else 0
+
+/-- Schmidt's parametrisation of the unknowns: the `k`-linear map sending a
+vector of `stepanovUnknownCount d q K` scalars to the coefficient family
+`A_{ijc} := ∑_v cc_{(i,c,j,v)} X^v`. -/
+noncomputable def stepanovParam {k : Type*} [Field k] (d q Kc : ℕ) :
+    (↥(stepanovIdx d q Kc) → k) →ₗ[k] (ℕ → ℕ → ℕ → Polynomial k) where
+  toFun cc := fun i j c => ∑ v ∈ Finset.range (q / d + 1 - (d + i + j + c)),
+    Polynomial.C (stepanovExt d q Kc cc i j c v) * Polynomial.X ^ v
+  map_add' cc₁ cc₂ := by
+    funext i j c
+    simp only [Pi.add_apply, stepanovExt]
+    rw [← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun v _ => ?_
+    by_cases h : (⟨i, c, j, v⟩ : (_ : ℕ) × (_ : ℕ) × (_ : ℕ) × ℕ) ∈ stepanovIdx d q Kc
+    · simp [h, map_add, add_mul]
+    · simp [h]
+  map_smul' r cc := by
+    funext i j c
+    simp only [Pi.smul_apply, smul_eq_mul, RingHom.id_apply, stepanovExt, Finset.smul_sum]
+    refine Finset.sum_congr rfl fun v _ => ?_
+    by_cases h : (⟨i, c, j, v⟩ : (_ : ℕ) × (_ : ℕ) × (_ : ℕ) × ℕ) ∈ stepanovIdx d q Kc
+    · simp [h, map_mul, mul_assoc, Polynomial.smul_eq_C_mul]
+    · simp [h]
+
+theorem stepanovParam_apply {k : Type*} [Field k] (d q Kc : ℕ)
+    (cc : ↥(stepanovIdx d q Kc) → k) (i j c : ℕ) :
+    stepanovParam d q Kc cc i j c = ∑ v ∈ Finset.range (q / d + 1 - (d + i + j + c)),
+      Polynomial.C (stepanovExt d q Kc cc i j c v) * Polynomial.X ^ v := rfl
+
+/-- The parametrisation lands in Schmidt's SHARP degree constraint. -/
+theorem stepanovParam_natDegree {k : Type*} [Field k] (d q Kc : ℕ)
+    (cc : ↥(stepanovIdx d q Kc) → k) (i j c : ℕ) :
+    stepanovParam d q Kc cc i j c = 0 ∨
+      (stepanovParam d q Kc cc i j c).natDegree + d + i + j + c ≤ q / d := by
+  rcases Nat.eq_zero_or_pos (q / d + 1 - (d + i + j + c)) with hz | hpos
+  · left; rw [stepanovParam_apply, hz]; simp
+  · right
+    have hle : d + i + j + c ≤ q / d := by omega
+    have hdeg : (stepanovParam d q Kc cc i j c).natDegree
+        ≤ q / d - (d + i + j + c) := by
+      rw [stepanovParam_apply]
+      refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun v hv => ?_
+      have hv' : v < q / d + 1 - (d + i + j + c) := Finset.mem_range.mp hv
+      refine le_trans (Polynomial.natDegree_C_mul_le _ _) ?_
+      exact le_trans (Polynomial.natDegree_X_pow_le v) (by omega)
+    omega
+
+/-- The parametrisation lands in Schmidt's support box. -/
+theorem stepanovParam_supp {k : Type*} [Field k] (d q Kc : ℕ)
+    (cc : ↥(stepanovIdx d q Kc) → k) (i j c : ℕ)
+    (h : d ≤ i ∨ d ≤ c ∨ Kc < j + c) : stepanovParam d q Kc cc i j c = 0 := by
+  rw [stepanovParam_apply]
+  refine Finset.sum_eq_zero fun v _ => ?_
+  have : (⟨i, c, j, v⟩ : (_ : ℕ) × (_ : ℕ) × (_ : ℕ) × ℕ) ∉ stepanovIdx d q Kc := by
+    rw [mem_stepanovIdx]; omega
+  simp [stepanovExt, this]
+
+theorem stepanovParam_injective {k : Type*} [Field k] (d q Kc : ℕ) :
+    Function.Injective (stepanovParam (k := k) d q Kc) := by
+  rw [injective_iff_map_eq_zero]
+  intro cc hcc
+  funext t
+  obtain ⟨⟨i, c, j, v⟩, ht⟩ := t
+  have hmem := mem_stepanovIdx.mp ht
+  have hpoly : stepanovParam d q Kc cc i j c = 0 := by
+    rw [show (0 : ℕ → ℕ → ℕ → Polynomial k) = fun _ _ _ => 0 from rfl] at hcc
+    exact congrFun (congrFun (congrFun hcc i) j) c
+  have hco : (stepanovParam d q Kc cc i j c).coeff v = stepanovExt d q Kc cc i j c v := by
+    rw [stepanovParam_apply]
+    simp only [Polynomial.finsetSum_coeff, Polynomial.coeff_C_mul,
+      Polynomial.coeff_X_pow, mul_ite, mul_one, mul_zero]
+    rw [Finset.sum_ite_eq (Finset.range (q / d + 1 - (d + i + j + c))) v
+      (fun w => stepanovExt d q Kc cc i j c w)]
+    rw [if_pos (Finset.mem_range.mpr (by omega))]
+  rw [hpoly] at hco
+  simp only [Polynomial.coeff_zero, stepanovExt, dif_pos ht] at hco
+  exact hco.symm
+
+/-- **THE UNKNOWNS ARE `stepanovUnknownCount d q K` MANY, OVER ANY FIELD**
+(PROVEN 2026-07-30). The `Fin`-indexed repackaging of `stepanovParam`; see
+`exists_stepanovCoefficientParametrisation` below for the `ZMod p` instance that
+`exists_stepanovJetSolution` consumes. -/
+theorem exists_stepanovCoefficientParametrisationField {k : Type*} [Field k] (d q Kc : ℕ) :
+    ∃ ι : (Fin (stepanovUnknownCount d q Kc) → k) →ₗ[k]
+        (ℕ → ℕ → ℕ → Polynomial k),
+      Function.Injective ι ∧
+      (∀ cc i j c, ι cc i j c = 0 ∨ (ι cc i j c).natDegree + d + i + j + c ≤ q / d) ∧
+      (∀ cc i j c, d ≤ i ∨ d ≤ c ∨ Kc < j + c → ι cc i j c = 0) := by
+  classical
+  have hcard : Fintype.card ↥(stepanovIdx d q Kc) = stepanovUnknownCount d q Kc := by
+    rw [Fintype.card_coe, card_stepanovIdx]
+  let e : ↥(stepanovIdx d q Kc) ≃ Fin (stepanovUnknownCount d q Kc) :=
+    Fintype.equivFinOfCardEq hcard
+  refine ⟨(stepanovParam (k := k) d q Kc).comp (LinearMap.funLeft k k e), ?_,
+    fun cc => stepanovParam_natDegree d q Kc _,
+    fun cc i j c => stepanovParam_supp d q Kc _ i j c⟩
+  exact (stepanovParam_injective d q Kc).comp
+    (LinearMap.funLeft_injective_of_surjective k k e e.surjective)
+
+/-- **FEWER EQUATIONS THAN UNKNOWNS GIVES A NONZERO SHAPED SOLUTION** (PROVEN
+2026-07-30) — the rank–nullity half of Schmidt III §4, over an arbitrary field.
+
+`Φ` packages ANY family of at most `B` many `k`-linear conditions on the
+coefficient family; `B < stepanovUnknownCount d q K` then produces a family `a`
+that is not identically zero, obeys Schmidt's SHARP degree constraint and his
+support box, and satisfies all of them.
+
+This is the whole of the dimension count except for the two facts that are
+genuinely about `F`: that the vanishing conditions ARE linear (the `Φ` a consumer
+must supply) and that there are few enough of them
+(`stepanov_equationCount_lt_unknownCount` for `λ = 2`). -/
+theorem exists_stepanovShapedSolution {k : Type*} [Field k] (d q Kc B : ℕ)
+    (Φ : (ℕ → ℕ → ℕ → Polynomial k) →ₗ[k] (Fin B → k))
+    (hB : B < stepanovUnknownCount d q Kc) :
+    ∃ a : ℕ → ℕ → ℕ → Polynomial k,
+      (∀ i j c, a i j c = 0 ∨ (a i j c).natDegree + d + i + j + c ≤ q / d) ∧
+      (∀ i j c, d ≤ i ∨ d ≤ c ∨ Kc < j + c → a i j c = 0) ∧
+      (∃ i j c, a i j c ≠ 0) ∧ Φ a = 0 := by
+  have hker : LinearMap.ker (Φ.comp (stepanovParam (k := k) d q Kc)) ≠ ⊥ := by
+    intro h
+    have hle := LinearMap.finrank_le_finrank_of_injective (R := k)
+      (LinearMap.ker_eq_bot.mp h)
+    rw [Module.finrank_fintype_fun_eq_card, Module.finrank_fin_fun,
+      Fintype.card_coe, card_stepanovIdx] at hle
+    omega
+  obtain ⟨cc, hmem, hne⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hker
+  refine ⟨stepanovParam d q Kc cc, stepanovParam_natDegree d q Kc cc,
+    fun i j c => stepanovParam_supp d q Kc cc i j c, ?_, hmem⟩
+  by_contra hcon
+  push Not at hcon
+  exact hne (stepanovParam_injective d q Kc
+    (by funext i j c; simpa using hcon i j c))
+
 /-- **THE REDUCTION TO A LINEAR SYSTEM** (SORRY LEAF, cut 2026-07-27 out of
 `exists_stepanovJetSolution`) — Schmidt Chapter III §4, pp. 110–112. This is the
 part of the dimension count that does MATHEMATICS; the two siblings only count.
@@ -16135,8 +16318,14 @@ about polynomial coefficient spaces, and in particular Schmidt's standing
 conditions on `M` are NOT used here — they live entirely in
 `stepanov_equationCount_lt_unknownCount`.
 
+**PROVEN 2026-07-30**, and neither `2 ≤ d` nor `Fact p.Prime` is used: it is the
+`k := ZMod p` instance of `exists_stepanovCoefficientParametrisationField` in the
+block above `exists_stepanovJetLinearForms`, which carries out exactly the route
+described here over an arbitrary field. The hypotheses are kept because the
+consumer passes them and removing them is a signature change for no gain.
+
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
-theorem exists_stepanovCoefficientParametrisation (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+theorem exists_stepanovCoefficientParametrisation (d : ℕ) (_hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
     (K : ℕ) :
     ∃ ι : (Fin (stepanovUnknownCount d p K) → ZMod p) →ₗ[ZMod p]
         (ℕ → ℕ → ℕ → Polynomial (ZMod p)),
