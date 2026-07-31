@@ -205,6 +205,19 @@ e.g. programmatic transforms over structured data (bulk json updates
 computed from state, generated content) — capability, not convenience,
 is the test.
 
+**AND NEVER KEY A SCRIPTED EDIT ON A BOILERPLATE LINE** (2026-07-31). A one-line
+`s.replace("omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in\n", "")`
+in `Deformation.lean`, written to undo three lines just added, matched **nine**
+and stripped the `omit` from six unrelated proven lemmas. Attribute boilerplate
+(`omit … in`, `set_option … in`, `open scoped … in`, `variable … in`) is
+*designed* to be repeated verbatim, so it is the worst possible anchor — and
+`Edit`, which refuses a non-unique `old_string`, would have caught it for free.
+If a script really is the right tool: `assert s.count(anchor) == 1` before every
+replace, and check `git diff --stat` afterwards — an insert-only change must
+report **0 deletions**. Recovering the six lines needed
+`git diff -U1 | grep -A2 '^-omit'` to see which declaration each had guarded,
+which only worked because the tree was committed-clean first.
+
 ## THE GOAL: fully formalize Fermat's Last Theorem, no sorry, no undue axioms
 
 (Deyao, restated 2026-07-16.) The goal is to **fully formalize Fermat's

@@ -17564,48 +17564,426 @@ def HardlyRamifiedDeformation.IsDeformationStructureOn
       (D'.ρ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat).map p =
         D.ρ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat
 
-/-- **Böckle's obstruction COCYCLE, in its DEFORMATION-THEORETIC form** (sorry
-node, cut out of `exists_obstructionCocycle_smallExtension_section` below on
-2026-07-27, which is now PROVEN over it together with
-`exists_ringHom_section_of_isWeaklyUniversal_isTraceGenerated` above):
+/-! ### BRICK (ii) of the obstruction cocycle: the CONTINUOUS SET-THEORETIC LIFT
 
-same hypotheses and same `oc`, but conjunct (b) asks for what obstruction theory
-actually PRODUCES — a hardly ramified deformation carried by the ring `S ⧸ K` —
-rather than for the ring-theoretic section that is read off it afterwards. So
-where the node below concludes
+The three declarations below are the point-set half of Böckle's obstruction
+calculus, and they were the item the audit on
+`exists_obstructionCocycle_smallExtension_deformation` recorded as genuinely
+absent from mathlib, from our pin and from `~/cs/FLT` (greps re-run 2026-07-31).
+They are PROVEN here, 2026-07-31, and consumed by
+`exists_obstructionCocycle_smallExtension_deformation` below through the cut
+`exists_obstructionCocycle_smallExtension_deformation_of_section`.
 
-  `∃ s : D.R →+* S ⧸ K, …`,
+**The route is level-wise-then-limit, with NO point-set topology at all.** The
+audit offered two routes — Serre's finite-kernel splitting (*Galois Cohomology*
+I.1.2 Prop 1), which needs an open subgroup meeting the kernel trivially, and a
+level-wise construction followed by a passage to the limit. The second is taken,
+and it turns out not even to need the inverse-limit-of-finite-sets machinery
+(`nonempty_sections_of_finite_cofiltered_system`) the audit expected: because a
+level-`n` section always EXTENDS to level `n + 1` (the correction lives in
+`𝔪^n`, which surjects onto `𝔫^n`), the compatible tower can be built by plain
+recursion on `ℕ` rather than chosen from a limit. Finiteness of the levels is
+never used.
 
-this leaf concludes
+**Continuity is stated ALGEBRAICALLY**, as `a - b ∈ 𝔫^n → s a - s b ∈ 𝔪^n`, and
+that is deliberate: it is uniform continuity for the two adic topologies, it is
+strictly more informative than `Continuous s`, and — the reason it is written
+this way — it keeps the statements free of any `TopologicalSpace` argument, so
+the cut below does not have to transport a topology through the `≃+*` of
+`IsDeformationStructureOn` and does not risk the `unknown free variable`
+elaboration failure recorded on that leaf. -/
 
-  `∃ D' : HardlyRamifiedDeformation hℓOdd ρbar,
-     D.IsDeformationStructureOn D' (S ⧸ K) _ (S ⧸ K ↠ D.R)`.
+/-- **Precompleteness passes UP a small extension** (PROVEN 2026-07-31): if
+`π : A ↠ B` is a small extension of local rings, `A` is Noetherian and `B` is
+`𝔪_B`-adically precomplete, then `A` is `𝔪_A`-adically precomplete.
 
-**What the cut removes from the leaf, and what it leaves.** It removes the last
-mile — Carayol's splitting argument, which is pure category-of-deformations
-formalism and is now PROVEN as
-`exists_ringHom_section_of_isWeaklyUniversal_isTraceGenerated` above. The
-hypotheses `hw` and `ht` are consumed THERE and nowhere else, which is why they
-appear in this leaf's signature only to be passed along. What is left here is
-exactly the obstruction calculus, with no ring theory attached:
+This is what puts `S ⧸ K` in Mazur's category without any completeness input
+about the power series ring `S` itself: the target `D.R` of the small extension
+is complete by the `isAdicComplete` field of `HardlyRamifiedDeformation`, and
+completeness then propagates BACKWARDS along the extension.
 
-1. build the continuous set-theoretic lift `ρ̃` of `D.ρ` along the small
-   extension `S ⧸ K ↠ D.R` and its 2-cochain
-   `c(σ, τ) = ρ̃(σ) ρ̃(τ) ρ̃(στ)⁻¹ − 1 ∈ ad⁰`, written in the HOMOGENEOUS model
-   through `F(g₀,g₁,g₂) = g₀ · c(g₀⁻¹g₁, g₁⁻¹g₂)`;
-2. check it is a cocycle, and that its class lies in `Ш²_S(ad⁰)` — conjunct (a),
-   which is what item (5) of the audit below is about;
-3. when the class vanishes, correct `ρ̃` to a genuine HOMOMORPHISM and package
-   `S ⧸ K` with it as an object of Mazur's category. The packaging is
-   ring-theoretic bookkeeping (`S = Λ[[x₁,…,x_g]]` is Noetherian, local and
-   `𝔪`-adically complete, and these pass to `S ⧸ K`) plus
-   `isHardlyRamified` for the corrected lift.
+**Why it is true, and where the one non-formal step is.** A Cauchy sequence
+`(aₙ)` of `A` pushes to a Cauchy sequence of `B`; lift its limit to `L₀ ∈ A` and
+write `aₙ = L₀ + eₙ + jₙ` with `eₙ ∈ 𝔪ᵏ` (possible because `π (𝔪ⁿ) = 𝔫ⁿ`) and
+`jₙ ∈ ker π`. Differences of the `jₙ` then lie in `𝔪ⁿ ⊓ ker π`, so the whole
+argument turns on
 
-**The `≃+*` in `IsDeformationStructureOn` is deliberate and is what keeps this
-leaf honest.** With a bare `→+*` the leaf would be discharged by taking
-`D' := D` and `e := ` the section itself, i.e. it would be equivalent to the node
-below rather than a genuine reformulation. Demanding that `D'.R` BE `S ⧸ K` up to
-isomorphism forces the prover to produce the lift.
+  `∃ N, 𝔪 ^ N ⊓ ker π = ⊥`,
+
+after which `jₙ` is eventually CONSTANT and `L := L₀ + j_N` is the limit. That
+one step is **Artin–Rees** (`Ideal.exists_pow_inf_eq_pow_smul`): it gives `c`
+with `𝔪 ^ (c+1) ⊓ ker π = 𝔪 · (𝔪 ^ c ⊓ ker π) ≤ 𝔪 · ker π`, and `𝔪 · ker π = ⊥`
+is precisely the defining property of a small extension. Note the bound `N` is
+genuinely needed and can exceed `2`: for `A = k[x]/(x³) ↠ B = k[x]/(x²)` the
+kernel `(x²)` IS `𝔪²`, and only `N = 3` works. -/
+theorem isPrecomplete_of_isSmallExtension {A : Type*} [CommRing A] [IsLocalRing A]
+    [IsNoetherianRing A] {B : Type*} [CommRing B] [IsLocalRing B]
+    [IsPrecomplete (IsLocalRing.maximalIdeal B) B]
+    {π : A →+* B} (hse : IsSmallExtension π) :
+    IsPrecomplete (IsLocalRing.maximalIdeal A) A := by
+  classical
+  have hsmul : ∀ I : Ideal A, I • (⊤ : Submodule A A) = I := by
+    intro I; rw [smul_eq_mul, Ideal.mul_top]
+  have hmap : Ideal.map π (IsLocalRing.maximalIdeal A) = IsLocalRing.maximalIdeal B :=
+    IsLocalRing.map_maximalIdeal_of_surjective π hse.surjective
+  have hker : IsLocalRing.maximalIdeal A * RingHom.ker π = ⊥ := hse.maximalIdeal_mul_ker
+  -- Step 1 (Artin–Rees): some power of `𝔪` meets `ker π` trivially.
+  obtain ⟨c, hc⟩ := Ideal.exists_pow_inf_eq_pow_smul
+    (IsLocalRing.maximalIdeal A) (M := A) (RingHom.ker π)
+  have hN : IsLocalRing.maximalIdeal A ^ (c + 1) ⊓ RingHom.ker π = ⊥ := by
+    have h1 := hc (c + 1) (Nat.le_succ c)
+    rw [Nat.add_sub_cancel_left, hsmul, hsmul] at h1
+    refine le_antisymm ?_ bot_le
+    rw [h1, smul_eq_mul, pow_one]
+    refine Ideal.mul_le.2 fun x hx y hy => ?_
+    have hmem : x * y ∈ IsLocalRing.maximalIdeal A * RingHom.ker π :=
+      Ideal.mul_mem_mul hx (Submodule.mem_inf.mp hy).2
+    rwa [hker] at hmem
+  -- Step 2: transport the Cauchy sequence to `B` and lift its limit back.
+  refine ⟨fun a ha => ?_⟩
+  have hsub : ∀ {m n : ℕ}, m ≤ n → a m - a n ∈ IsLocalRing.maximalIdeal A ^ m := by
+    intro m n hmn
+    have h1 := ha hmn
+    rwa [SModEq.sub_mem, hsmul] at h1
+  have hB : ∀ {m n : ℕ}, m ≤ n → π (a m) ≡ π (a n)
+      [SMOD (IsLocalRing.maximalIdeal B ^ m • (⊤ : Submodule B B))] := by
+    intro m n hmn
+    rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top, ← map_sub]
+    have h1 : π (a m - a n) ∈ Ideal.map π (IsLocalRing.maximalIdeal A ^ m) :=
+      Ideal.mem_map_of_mem _ (hsub hmn)
+    rwa [Ideal.map_pow, hmap] at h1
+  obtain ⟨Lb, hLb⟩ :=
+    IsPrecomplete.prec' (I := IsLocalRing.maximalIdeal B) (fun n => π (a n)) hB
+  obtain ⟨L₀, hL₀⟩ := hse.surjective Lb
+  have hex : ∀ n : ℕ, ∃ e, e ∈ IsLocalRing.maximalIdeal A ^ n ∧ π e = π (a n - L₀) := by
+    intro n
+    have h1 : π (a n - L₀) ∈ IsLocalRing.maximalIdeal B ^ n := by
+      rw [map_sub, hL₀]
+      have h2 := hLb n
+      rwa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at h2
+    rw [← hmap, ← Ideal.map_pow] at h1
+    exact (Ideal.mem_map_iff_of_surjective π hse.surjective).mp h1
+  choose e hemem heeq using hex
+  have hjker : ∀ n, a n - L₀ - e n ∈ RingHom.ker π := by
+    intro n
+    rw [RingHom.mem_ker, map_sub, heeq n, sub_self]
+  have hjconst : ∀ n, c + 1 ≤ n → a n - L₀ - e n = a (c + 1) - L₀ - e (c + 1) := by
+    intro n hn
+    have hd : (a (c + 1) - L₀ - e (c + 1)) - (a n - L₀ - e n) ∈
+        IsLocalRing.maximalIdeal A ^ (c + 1) := by
+      have h1 : (a (c + 1) - L₀ - e (c + 1)) - (a n - L₀ - e n)
+          = (a (c + 1) - a n) - (e (c + 1) - e n) := by ring
+      rw [h1]
+      refine Ideal.sub_mem _ (hsub hn) (Ideal.sub_mem _ (hemem (c + 1)) ?_)
+      exact Ideal.pow_le_pow_right hn (hemem n)
+    have hd2 : (a (c + 1) - L₀ - e (c + 1)) - (a n - L₀ - e n) ∈ RingHom.ker π :=
+      Ideal.sub_mem _ (hjker _) (hjker _)
+    have h0 := hN.le (Submodule.mem_inf.mpr ⟨hd, hd2⟩)
+    rw [Ideal.mem_bot] at h0
+    exact (sub_eq_zero.mp h0).symm
+  refine ⟨L₀ + (a (c + 1) - L₀ - e (c + 1)), fun n => ?_⟩
+  rw [SModEq.sub_mem, hsmul]
+  rcases le_or_gt (c + 1) n with hn | hn
+  · have h1 : a n - (L₀ + (a (c + 1) - L₀ - e (c + 1))) = e n := by
+      rw [← hjconst n hn]; ring
+    rw [h1]; exact hemem n
+  · have h1 : a n - (L₀ + (a (c + 1) - L₀ - e (c + 1)))
+        = (a n - a (c + 1)) + e (c + 1) := by ring
+    rw [h1]
+    exact Ideal.add_mem _ (hsub hn.le) (Ideal.pow_le_pow_right hn.le (hemem (c + 1)))
+
+/-- **BRICK (ii): a surjection onto a Hausdorff target out of a precomplete
+source admits a UNIFORMLY CONTINUOUS set-theoretic section** (PROVEN
+2026-07-31).
+
+`s` is a set-theoretic section of `π` — no additivity, no multiplicativity is
+claimed, and none is available: that is exactly the point of an obstruction
+calculus. What IS claimed is the uniformity `a - b ∈ (I.map π)ⁿ → s a - s b ∈ Iⁿ`,
+which for the two `I`-adic topologies says `s` is uniformly continuous, hence
+continuous.
+
+**The construction.** A tower `uₙ : B → A` is built by recursion, with
+
+* `π (uₙ b) ≡ b  mod (I.map π)ⁿ`   — an approximate section at level `n`;
+* `b - b' ∈ (I.map π)ⁿ → uₙ b = uₙ b'` — `uₙ` factors through level `n`.
+
+The step is: replace `b` by a chosen representative `rep (n+1) b` of its class
+modulo `(I.map π)^(n+1)` (which is what makes `u_{n+1}` factor through level
+`n+1` — it is CONSTANT on cosets, not merely congruent), then correct
+`uₙ (rep b)` by an element of `Iⁿ` mapping to `rep b - π (uₙ (rep b))`. Both
+choices are made by `Function.invFun` / `Ideal.mem_map_iff_of_surjective` and are
+total (the correction is `0` off the relevant coset, which is why `hcorr_eq`
+carries its membership hypothesis).
+
+Successive terms then differ by an element of `Iⁿ`, so `(uₙ b)` is Cauchy;
+`IsPrecomplete I A` gives a limit `s b`, and `IsHausdorff (I.map π) B` upgrades
+"`π (s b) ≡ b` at every level" to `π (s b) = b`. Uniformity is immediate from
+`uₙ b = uₙ b'` plus `uₙ b - s b ∈ Iⁿ`. -/
+theorem exists_section_sub_mem_pow_of_isPrecomplete
+    {A : Type*} [CommRing A] {B : Type*} [CommRing B]
+    (π : A →+* B) (hπ : Function.Surjective π) (I : Ideal A)
+    [IsPrecomplete I A] [IsHausdorff (Ideal.map π I) B] :
+    ∃ s : B → A, (∀ b, π (s b) = b) ∧
+      ∀ (n : ℕ) (b b' : B), b - b' ∈ Ideal.map π I ^ n → s b - s b' ∈ I ^ n := by
+  classical
+  have hmapn : ∀ n : ℕ, Ideal.map π (I ^ n) = Ideal.map π I ^ n := fun n => Ideal.map_pow π I n
+  -- a representative-choosing function at every level
+  have hrepex : ∀ n : ℕ, ∃ r : B → B, (∀ b, r b - b ∈ Ideal.map π I ^ n) ∧
+      ∀ b b', b - b' ∈ Ideal.map π I ^ n → r b = r b' := by
+    intro n
+    refine ⟨fun b => Function.invFun (Ideal.Quotient.mk (Ideal.map π I ^ n))
+      (Ideal.Quotient.mk (Ideal.map π I ^ n) b), fun b => ?_, fun b b' hb => ?_⟩
+    · have h := Function.invFun_eq (f := Ideal.Quotient.mk (Ideal.map π I ^ n))
+        (b := Ideal.Quotient.mk (Ideal.map π I ^ n) b) ⟨b, rfl⟩
+      rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, h, sub_self]
+    · have hq : Ideal.Quotient.mk (Ideal.map π I ^ n) b
+          = Ideal.Quotient.mk (Ideal.map π I ^ n) b' := by
+        rw [← sub_eq_zero, ← map_sub, Ideal.Quotient.eq_zero_iff_mem]
+        exact hb
+      simp only [hq]
+  choose rep hrep_sub hrep_congr using hrepex
+  -- a correction term of `I ^ n` realising a prescribed element of `(I.map π) ^ n`
+  have hcorrex : ∀ (n : ℕ) (d : B), ∃ m : A, m ∈ I ^ n ∧ (d ∈ Ideal.map π I ^ n → π m = d) := by
+    intro n d
+    by_cases hd : d ∈ Ideal.map π I ^ n
+    · rw [← hmapn n] at hd
+      obtain ⟨m, hm, hmm⟩ := (Ideal.mem_map_iff_of_surjective π hπ).mp hd
+      exact ⟨m, hm, fun _ => hmm⟩
+    · exact ⟨0, Submodule.zero_mem _, fun h => absurd h hd⟩
+  choose corr hcorr_mem hcorr_eq using hcorrex
+  -- the tower of level-wise approximate sections
+  obtain ⟨u, hu0, husucc⟩ : ∃ u : ℕ → B → A, u 0 = (fun _ => (0 : A)) ∧
+      ∀ (m : ℕ) (b : B), u (m + 1) b =
+        u m (rep (m + 1) b) + corr m (rep (m + 1) b - π (u m (rep (m + 1) b))) :=
+    ⟨fun n => Nat.rec (fun _ => (0 : A))
+      (fun m prev b => prev (rep (m + 1) b) +
+        corr m (rep (m + 1) b - π (prev (rep (m + 1) b)))) n, rfl, fun _ _ => rfl⟩
+  have hmain : ∀ n : ℕ, (∀ b, π (u n b) - b ∈ Ideal.map π I ^ n) ∧
+      ∀ b b', b - b' ∈ Ideal.map π I ^ n → u n b = u n b' := by
+    intro n
+    induction n with
+    | zero =>
+      refine ⟨fun b => ?_, fun b b' _ => ?_⟩
+      · rw [pow_zero, Ideal.one_eq_top]; exact Submodule.mem_top
+      · simp [hu0]
+    | succ m ih =>
+      obtain ⟨ih1, ih2⟩ := ih
+      refine ⟨fun b => ?_, fun b b' hbb => ?_⟩
+      · rw [husucc]
+        have hd : rep (m + 1) b - π (u m (rep (m + 1) b)) ∈ Ideal.map π I ^ m := by
+          simpa using neg_mem (ih1 (rep (m + 1) b))
+        rw [map_add, hcorr_eq m _ hd]
+        have h1 : π (u m (rep (m + 1) b)) +
+            (rep (m + 1) b - π (u m (rep (m + 1) b))) - b = rep (m + 1) b - b := by ring
+        rw [h1]
+        exact hrep_sub (m + 1) b
+      · rw [husucc, husucc, hrep_congr (m + 1) b b' hbb]
+  have hstep3 : ∀ (n : ℕ) (b : B), u (n + 1) b - u n b ∈ I ^ n := by
+    intro n b
+    rw [husucc]
+    have h1 : u n (rep (n + 1) b) = u n b :=
+      (hmain n).2 _ b (Ideal.pow_le_pow_right (Nat.le_succ n) (hrep_sub (n + 1) b))
+    rw [h1]
+    have h2 : u n b + corr n (rep (n + 1) b - π (u n b)) - u n b
+        = corr n (rep (n + 1) b - π (u n b)) := by ring
+    rw [h2]
+    exact hcorr_mem n _
+  have hcauchy : ∀ (b : B) (m d : ℕ), u m b - u (m + d) b ∈ I ^ m := by
+    intro b m d
+    induction d with
+    | zero => simp
+    | succ d ih =>
+      have h1 : u m b - u (m + (d + 1)) b
+          = (u m b - u (m + d) b) + (u (m + d) b - u (m + d + 1) b) := by
+        rw [show m + (d + 1) = m + d + 1 from by omega]; ring
+      rw [h1]
+      refine Ideal.add_mem _ ih ?_
+      have h2 : u (m + d) b - u (m + d + 1) b ∈ I ^ (m + d) := by
+        simpa using neg_mem (hstep3 (m + d) b)
+      exact Ideal.pow_le_pow_right (by omega) h2
+  have hlim : ∀ b : B, ∃ L : A, ∀ n, u n b - L ∈ I ^ n := by
+    intro b
+    obtain ⟨L, hL⟩ := IsPrecomplete.prec' (I := I) (fun n => u n b) (by
+      intro m n hmn
+      rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+      have h1 := hcauchy b m (n - m)
+      rwa [show m + (n - m) = n from by omega] at h1)
+    refine ⟨L, fun n => ?_⟩
+    have h1 := hL n
+    rwa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at h1
+  choose s hs using hlim
+  refine ⟨s, fun b => ?_, fun n b b' hbb => ?_⟩
+  · rw [← sub_eq_zero]
+    refine IsHausdorff.haus' (I := Ideal.map π I) (M := B) (π (s b) - b) fun n => ?_
+    rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+    have h1 : π (s b) - b = -(π (u n b - s b)) + (π (u n b) - b) := by rw [map_sub]; ring
+    rw [h1]
+    refine Ideal.add_mem _ (neg_mem ?_) ((hmain n).1 b)
+    have h2 := Ideal.mem_map_of_mem π (hs b n)
+    rwa [hmapn n] at h2
+  · have h1 : u n b = u n b' := (hmain n).2 b b' hbb
+    have h2 : s b - s b' = -(u n b - s b) + (u n b' - s b') := by rw [h1]; ring
+    rw [h2]
+    exact Ideal.add_mem _ (neg_mem (hs b n)) (hs b' n)
+
+/-- **BRICK (ii), in the shape the obstruction leaf consumes it** (PROVEN
+2026-07-31): the small extension `S ⧸ K ↠ T` cut out of a power series
+presentation `φ : S = Λ[[x₁,…,x_g]] ↠ T` of a Noetherian local adically
+complete ring admits a uniformly continuous set-theoretic section.
+
+Everything is assembled from the two general facts above plus the two facts
+this file already had about the presenting ring: `S` is Noetherian
+(`isNoetherianRing_mvPowerSeries`), hence so is `S ⧸ K`; the small-extension
+hypothesis then hands `S ⧸ K` its precompleteness by
+`isPrecomplete_of_isSmallExtension` — note that this uses NO completeness input
+about `S`, only about the target `T` — and Hausdorffness of `T` is free from
+`IsNoetherianRing T` + `IsLocalRing T` (mathlib's
+`Mathlib/RingTheory/AdicCompletion/Noetherian.lean`).
+
+The uniformity is stated with `IsLocalRing.maximalIdeal T ^ n` upstairs and
+`IsLocalRing.maximalIdeal (S ⧸ K) ^ n` downstairs, the translation between the
+two being `IsLocalRing.map_maximalIdeal_of_surjective`. -/
+theorem exists_uniformSection_quotient_of_presentation
+    {Λ : Type*} [CommRing Λ] [IsLocalRing Λ] [IsNoetherianRing Λ]
+    {T : Type*} [CommRing T] [IsLocalRing T] [IsNoetherianRing T]
+    [IsAdicComplete (IsLocalRing.maximalIdeal T) T]
+    (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* T)
+    (K : Ideal (MvPowerSeries (Fin g) Λ)) (hK : K ≤ RingHom.ker φ) :
+    letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+      Ideal.Quotient.nontrivial_of_le_ker hK
+    IsSmallExtension (Ideal.Quotient.lift K φ fun _ ha => hK ha) →
+    ∃ s : T → (MvPowerSeries (Fin g) Λ ⧸ K),
+      (∀ x, Ideal.Quotient.lift K φ (fun _ ha => hK ha) (s x) = x) ∧
+      ∀ (n : ℕ) (x y : T), x - y ∈ IsLocalRing.maximalIdeal T ^ n →
+        s x - s y ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K) ^ n := by
+  letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+    Ideal.Quotient.nontrivial_of_le_ker hK
+  intro hse
+  haveI : IsNoetherianRing (MvPowerSeries (Fin g) Λ) := isNoetherianRing_mvPowerSeries g
+  haveI : IsNoetherianRing (MvPowerSeries (Fin g) Λ ⧸ K) :=
+    isNoetherianRing_of_surjective _ _ (Ideal.Quotient.mk K) Ideal.Quotient.mk_surjective
+  haveI : IsPrecomplete
+      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K))
+      (MvPowerSeries (Fin g) Λ ⧸ K) :=
+    isPrecomplete_of_isSmallExtension hse
+  have hmap : Ideal.map (Ideal.Quotient.lift K φ fun _ ha => hK ha)
+      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K)) =
+      IsLocalRing.maximalIdeal T :=
+    IsLocalRing.map_maximalIdeal_of_surjective _ hse.surjective
+  haveI : IsHausdorff (Ideal.map (Ideal.Quotient.lift K φ fun _ ha => hK ha)
+      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K))) T := by
+    rw [hmap]; infer_instance
+  obtain ⟨s, hs1, hs2⟩ := exists_section_sub_mem_pow_of_isPrecomplete
+    (Ideal.Quotient.lift K φ fun _ ha => hK ha) hse.surjective
+    (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K))
+  refine ⟨s, hs1, fun n x y hxy => hs2 n x y ?_⟩
+  rw [hmap]; exact hxy
+
+/-- **`D` admits uniformly continuous set-theoretic sections along the small
+extensions cut out of its power series presentations** (definition, 2026-07-31)
+— brick (ii) of the obstruction calculus, BUNDLED.
+
+**Why a `def` and not an inline hypothesis.** This is the same discipline as
+`IsWeaklyUniversal`, `IsTraceGenerated` and `IsDeformationStructureOn` above, and
+for the same measured reason. Written inline as an extra hypothesis of
+`exists_obstructionCocycle_smallExtension_deformation_of_section` below, the
+statement elaborates but the one-line assembly that discharges it does NOT: the
+application times out at `whnf` even at 1 000 000 heartbeats (measured
+2026-07-31, twice), because checking it has to zeta-reduce the leaf's whole
+`∃ oc …` conclusion through two nested `letI` blocks and unfold the derived
+`IsLocalRing (S ⧸ K)` instance. Bundled as a constant, the hypothesis is opaque,
+the two conclusions are syntactically identical, and the assembly is instant.
+**Do not inline it back.**
+
+`s` is a set-theoretic section only — no additivity and no multiplicativity is
+claimed, and none is available; that is what an obstruction calculus is for. The
+regularity is stated ALGEBRAICALLY, `x - y ∈ 𝔪_{D.R}ⁿ → s x - s y ∈ 𝔪_{S ⧸ K}ⁿ`,
+which is uniform continuity for the two adic topologies while keeping every
+`TopologicalSpace` out of the statement. -/
+def HardlyRamifiedDeformation.HasUniformSections {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) : Prop :=
+  letI := D.commRing; letI := D.isLocalRing
+  ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsLocalRing Λ) (_ : IsNoetherianRing Λ)
+    (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
+    (K : Ideal (MvPowerSeries (Fin g) Λ)) (hK : K ≤ RingHom.ker φ),
+    letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+      Ideal.Quotient.nontrivial_of_le_ker hK
+    IsSmallExtension (Ideal.Quotient.lift K φ fun _ ha => hK ha) →
+    ∃ s : D.R → (MvPowerSeries (Fin g) Λ ⧸ K),
+      (∀ x, Ideal.Quotient.lift K φ (fun _ ha => hK ha) (s x) = x) ∧
+      ∀ (n : ℕ) (x y : D.R), x - y ∈ IsLocalRing.maximalIdeal D.R ^ n →
+        s x - s y ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K) ^ n
+
+/-- **BRICK (ii) IS DISCHARGED: every object of Mazur's category has uniformly
+continuous sections** (PROVEN 2026-07-31). One application of
+`exists_uniformSection_quotient_of_presentation` above; the three instances it
+needs — `CommRing`, `IsLocalRing`, `IsNoetherianRing` — and the completeness
+input `IsAdicComplete` are all structure FIELDS of `HardlyRamifiedDeformation`,
+which is the whole reason the brick costs nothing at this point. -/
+theorem HardlyRamifiedDeformation.hasUniformSections {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) : D.HasUniformSections := by
+  letI := D.commRing; letI := D.isLocalRing; letI := D.isNoetherianRing
+  haveI := D.isAdicComplete
+  intro Λ _ _ _ g φ K hK hse
+  exact exists_uniformSection_quotient_of_presentation g φ K hK hse
+
+/-- **Böckle's obstruction COCYCLE along a small extension, GIVEN the continuous
+set-theoretic lift** (sorry node, cut 2026-07-31 out of
+`exists_obstructionCocycle_smallExtension_deformation` below, which is PROVEN
+over it together with `exists_uniformSection_quotient_of_presentation` above).
+
+This is the leaf below with ONE hypothesis added, `D.HasUniformSections`: a
+uniformly continuous set-theoretic section of every small extension
+`S ⧸ K ↠ D.R` cut out of a power series presentation. That hypothesis is brick
+(ii) of the audit below, and it is DISCHARGED —
+`HardlyRamifiedDeformation.hasUniformSections` above proves it for EVERY object
+of Mazur's category — so the node below really is proven over this leaf alone and
+no hypothesis has been smuggled in. Whoever takes this leaf may use `hsec` freely
+and does not have to build a lift by hand.
+
+**What is left here, and what is not.** What remains is exactly the obstruction
+calculus of items (2) and (3) of the audit below:
+
+1. from the section `s`, the continuous set-theoretic LIFT
+   `ρ̃ (σ) = (matrix of D.ρ σ).map s` of `D.ρ` along `S ⧸ K ↠ D.R` — a matrix
+   over `S ⧸ K` whose determinant is a unit because it is one modulo the kernel
+   and the kernel lies in `𝔪`;
+2. its 2-cochain `c(σ, τ) = ρ̃(σ) ρ̃(τ) ρ̃(στ)⁻¹ − 1`, written in the HOMOGENEOUS
+   model through `F(g₀,g₁,g₂) = g₀ · c(g₀⁻¹g₁, g₁⁻¹g₂)`, and the cocycle
+   identity for it;
+3. conjunct (a), the landing in `Ш²` rather than merely `H²` — item (5) of the
+   audit below, the liftability of the four hardly ramified local conditions,
+   which is a SEPARATE task and must be taken as a named sorried `have` hoisted
+   to its own top-level leaf rather than as an anonymous inner `sorry`;
+4. the final packaging of `S ⧸ K` as an object of Mazur's category. Note that
+   `isPrecomplete_of_isSmallExtension` above already supplies the one hard
+   ingredient of that packaging (`IsAdicComplete` for `S ⧸ K`, whose Hausdorff
+   half is free from Noetherianity), so what is left there is the adic TOPOLOGY
+   (`Ideal.adicTopology` on `𝔪_{S ⧸ K}`, which is `IsAdic` by construction) and
+   the field-by-field checklist for which the `Dq` construction inside
+   `exists_ringHom_matrix_quotient_of_finite` above is a worked template.
+
+**BUILD ONE COCYCLE FOR THE UNIVERSAL EXTENSION, NOT ONE PER `K`.** This is the
+one non-negotiable point of the audit below and it is why this leaf, like the
+node below, quantifies over `K` INSIDE the `∃ oc`: the cocycle must be built once
+for `K₀ = 𝔪_S · ker φ`, valued in `ad⁰ ⊗_k (ker φ ⧸ 𝔪_S · ker φ)`, and then
+`oc ψ := (1 ⊗ ψ)(c)`. Doing it one `K` at a time produces a family with no reason
+to be `k`-linear in `ψ`, and that linearity is not repairable afterwards.
+
+**ELABORATION HAZARD, inherited.** Any further hypothesis must mention only
+objects living OUTSIDE the `∃ oc` binder's instance context, or the declaration
+fails with the internal error `unknown free variable`. That is why the section
+hypothesis is stated ALGEBRAICALLY (`x - y ∈ 𝔪ⁿ → s x - s y ∈ 𝔪ⁿ`) rather than as
+`Continuous s`: there is no `TopologicalSpace (S ⧸ K)` in the statement to be
+continuous for, and none has to be manufactured. Do not "tidy" it into a
+topological form.
+
+**CIRCULARITY GUARD — inherited from the node below and binding here.** Neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le` nor
+`not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them,
+may be used: their intended proofs run through modularity lifting, which is
+proven over the very bound this leaf supplies. A green build and an honest
+`#print axioms` would BOTH survive such a discharge.
 
 **MACHINERY AUDIT — items (1)–(4) are DISCHARGED; only (5) remains, and it is
 what conjunct (a) rests on.** (Moved here from the node below when that node was
@@ -17685,6 +18063,124 @@ is carried for the same reason: it keeps
 `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to the
 prime `3`) inapplicable, so that route stays closed mathematically rather than
 merely by import scope.
+-/
+theorem exists_obstructionCocycle_smallExtension_deformation_of_section
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated)
+    (hsec : D.HasUniformSections) :
+    letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+    letI := D.isLocalRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
+        (hsurj : Function.Surjective φ),
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        letI : Module k (↥(RingHom.ker φ) ⧸
+            (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+              (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
+          Module.compHom _
+            (residueRingEquivOfSurjective (D.π.comp φ)
+              (D.π_surjective.comp hsurj)).symm.toRingHom
+        ∃ oc : Module.Dual k (↥(RingHom.ker φ) ⧸
+              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
+            ↥(TopModuleCat.ker
+              ((TopRep.homogeneousCochains
+                (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))).d 2 3)),
+          (∀ ψ, ContinuousCohomology.cocycleClass
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2 (oc ψ) ∈
+            Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ∧
+          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2).hom.range →
+            ∀ (K : Ideal (MvPowerSeries (Fin g) Λ))
+              (hK : K ≤ RingHom.ker φ),
+              letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+                Ideal.Quotient.nontrivial_of_le_ker hK
+              IsSmallExtension (Ideal.Quotient.lift K φ fun _ ha => hK ha) →
+              (∀ j : ↥(RingHom.ker φ),
+                (j : MvPowerSeries (Fin g) Λ) ∈ K ↔
+                  ψ (Submodule.Quotient.mk j) = 0) →
+              ∃ D' : HardlyRamifiedDeformation hℓOdd ρbar,
+                HardlyRamifiedDeformation.IsDeformationStructureOn hℓOdd D D'
+                  (MvPowerSeries (Fin g) Λ ⧸ K) inferInstance
+                  (Ideal.Quotient.lift K φ fun _ ha => hK ha) :=
+  sorry
+
+-- Insurance for the one-line assembly below. With the section hypothesis written
+-- INLINE (rather than bundled as `HasUniformSections`) the application timed out
+-- at `whnf` even at 1 000 000 heartbeats, measured twice on 2026-07-31; bundled,
+-- it is cheap, and this margin is only here so that a later edit to the leaf's
+-- conclusion cannot make the check fail for want of budget.
+set_option maxHeartbeats 400000 in
+/-- **Böckle's obstruction COCYCLE, in its DEFORMATION-THEORETIC form** (PROVEN
+2026-07-31 over the cut
+`exists_obstructionCocycle_smallExtension_deformation_of_section` above, which is
+this statement plus the continuous-section hypothesis, together with
+`exists_uniformSection_quotient_of_presentation` above, which DISCHARGES that
+hypothesis. It was itself cut out of
+`exists_obstructionCocycle_smallExtension_section` below on
+2026-07-27, which is PROVEN over it together with
+`exists_ringHom_section_of_isWeaklyUniversal_isTraceGenerated` above):
+
+same hypotheses and same `oc`, but conjunct (b) asks for what obstruction theory
+actually PRODUCES — a hardly ramified deformation carried by the ring `S ⧸ K` —
+rather than for the ring-theoretic section that is read off it afterwards. So
+where the node below concludes
+
+  `∃ s : D.R →+* S ⧸ K, …`,
+
+this leaf concludes
+
+  `∃ D' : HardlyRamifiedDeformation hℓOdd ρbar,
+     D.IsDeformationStructureOn D' (S ⧸ K) _ (S ⧸ K ↠ D.R)`.
+
+**What the cut removes from the leaf, and what it leaves.** It removes the last
+mile — Carayol's splitting argument, which is pure category-of-deformations
+formalism and is now PROVEN as
+`exists_ringHom_section_of_isWeaklyUniversal_isTraceGenerated` above. The
+hypotheses `hw` and `ht` are consumed THERE and nowhere else, which is why they
+appear in this leaf's signature only to be passed along. What is left here is
+exactly the obstruction calculus, with no ring theory attached:
+
+1. build the continuous set-theoretic lift `ρ̃` of `D.ρ` along the small
+   extension `S ⧸ K ↠ D.R` and its 2-cochain
+   `c(σ, τ) = ρ̃(σ) ρ̃(τ) ρ̃(στ)⁻¹ − 1 ∈ ad⁰`, written in the HOMOGENEOUS model
+   through `F(g₀,g₁,g₂) = g₀ · c(g₀⁻¹g₁, g₁⁻¹g₂)`;
+2. check it is a cocycle, and that its class lies in `Ш²_S(ad⁰)` — conjunct (a),
+   which is what item (5) of the audit below is about;
+3. when the class vanishes, correct `ρ̃` to a genuine HOMOMORPHISM and package
+   `S ⧸ K` with it as an object of Mazur's category. The packaging is
+   ring-theoretic bookkeeping (`S = Λ[[x₁,…,x_g]]` is Noetherian, local and
+   `𝔪`-adically complete, and these pass to `S ⧸ K`) plus
+   `isHardlyRamified` for the corrected lift.
+
+**The `≃+*` in `IsDeformationStructureOn` is deliberate and is what keeps this
+leaf honest.** With a bare `→+*` the leaf would be discharged by taking
+`D' := D` and `e := ` the section itself, i.e. it would be equivalent to the node
+below rather than a genuine reformulation. Demanding that `D'.R` BE `S ⧸ K` up to
+isomorphism forces the prover to produce the lift.
+
+**MACHINERY AUDIT and CIRCULARITY GUARD — MOVED, NOT DROPPED** (2026-07-31, when
+this node became proven): both now sit on
+`exists_obstructionCocycle_smallExtension_deformation_of_section` above, which is
+where the `sorry` is. A machinery audit on a proven consumer audits nothing, and
+a stale one costs more than an open `sorry`. In summary of what changed: audit
+items (1)–(4) were already DISCHARGED; brick (ii) — the continuous set-theoretic
+lift, recorded as absent from mathlib, from our pin and from `~/cs/FLT` — is
+DISCHARGED HERE by `exists_uniformSection_quotient_of_presentation` above, and
+item (5) (liftability of the four hardly ramified local conditions, i.e.
+conjunct (a)) remains the single binding item. Nothing in the assembly below
+touches either banned input: it is one application of the cut leaf to the
+section it needs.
 
 INTEGRATION REPAIR (2026-07-28, and it is the SECOND time this exact defect has
 crossed a release).  This leaf was cut from a base on which the cocycle lived in
@@ -17744,7 +18240,8 @@ theorem exists_obstructionCocycle_smallExtension_deformation
                 HardlyRamifiedDeformation.IsDeformationStructureOn hℓOdd D D'
                   (MvPowerSeries (Fin g) Λ ⧸ K) inferInstance
                   (Ideal.Quotient.lift K φ fun _ ha => hK ha) :=
-  sorry
+  exists_obstructionCocycle_smallExtension_deformation_of_section hℓOdd hdim hℓ5 h hirr
+    D hw ht D.hasUniformSections
 
 /-- **Böckle's obstruction COCYCLE, along a SMALL EXTENSION** (PROVEN 2026-07-27
 over `exists_obstructionCocycle_smallExtension_deformation` above — the same
