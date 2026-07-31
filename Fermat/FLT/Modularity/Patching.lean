@@ -20612,6 +20612,23 @@ theorem exists_auxDeformationPresSurjection.{uK, uW, uR}
   exact ⟨φ, surjective_of_span_union_image_maximalIdeal 𝒟Q.isAdicComplete
     𝒟Q.π_surjective hιsurj hspan hC hX⟩
 
+/-! ### The Carayol surjectivity of the CONTROL map
+
+Added 2026-07-30 by the decomposition of `exists_auxDeformationDiamondControl`
+below, whose clause 1 (surjectivity of `toRuniv`) it discharges.  Everything in
+this block is PROVEN and none of it is arithmetic: the block adds NO leaf.
+
+The shape mirrors `surjective_ringHom_of_charFrob_eq` far above, which does the
+same job on the HECKE side.  It cannot be reused: that proof gets closedness of
+the range for free from `Module.Finite ℤ_[p] T` (a finitely generated
+`ℤ_[p]`-submodule of a module-finite ring is compact), and `Runiv` is not
+module-finite over `ℤ_[p]` — the counterexample family
+`Runiv₀[[y_1, …, y_m]]` recorded on `IsTraceGeneratedDeformation` is exactly
+the reason it must not be.  So closedness comes from the SOURCE instead: a
+complete Noetherian local ring with finite residue field is profinite, hence
+compact, and the continuous image of a compact space in a Hausdorff space is
+closed. -/
+
 set_option linter.checkUnivs false in
 /-- **The two ARITHMETIC clauses of the control map, about a classifying map
 that has already been built** (sorry node, cut out of
