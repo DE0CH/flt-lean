@@ -711,6 +711,27 @@ run ON THE HOST THAT OWNS THE WORKTREE'S `.lake`:
 running `lake` anywhere else finds no artifacts. `lake`/`lean`/`elan`
 are no longer in `permissions.deny`.
 
+**`lake` IS NOT ON THE AGENT'S PATH, EVEN LOCALLY, AND THE FAILURE LOOKS
+LIKE A FINISHED BUILD** (2026-07-31, flt-lean-106). Since the loop took
+over, a prover agent runs *on* its worktree's host and calls `lake`
+directly — no `ssh`, so the `cd`-plus-elan-PATH wrapper the ssh recipe
+above carries is skipped, and the agent's shell has only
+`~/node/bin:/usr/local/bin:/usr/bin:…`. The result is
+
+    /bin/bash: line 1: lake: command not found
+    EXIT=127
+
+which, launched in the background with output redirected, is a **6-line
+log that returns in one second and contains no `error:`** — i.e. it
+passes the "no errors in the log" eyeball test and the harness reports
+exit 0 for the wrapper. Export the PATH in every `lake` call:
+
+    export PATH="$HOME/.elan/bin:$PATH"
+
+and require `EXIT=0` *plus* `Build completed successfully` before
+believing a build, per the doctrine's positive-terminator rule. A
+127 is a missing binary, not a missing proof.
+
 **Why the change.** Every persistent-server failure mode this project
 hit came from documents that were opened and never closed, and from
 state shared between client processes: a stale `lake setup-file`
