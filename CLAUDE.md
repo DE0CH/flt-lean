@@ -4059,6 +4059,70 @@ estimate exists at exponents that are not multiples of the ramification index.
 Test before believing any "and therefore it is a unit": write down which ideal the argument
 actually excludes, and check it is `𝔪` and not something inside it. Eight formal clauses of
 that leaf went through exactly as prescribed; this one line was the whole of what was left.
+## A PLAIN `import` HIDES EVERYTHING IN THAT FILE FROM EVERY DOWNSTREAM MODULE
+(2026-07-31, flt-lean-393.) `Fermat/FLT/ModularCurve/X0.lean` reaches
+`Fermat/FLT/ModularCurve/EllipticScheme.lean` through a **plain `import`, not a
+`public import`** (line 369, and it is the only such line in that header). Under
+Lean's module system that means nothing downstream of `X0.lean` — `MazurTorsion.lean`
+included, 40 000 lines of it — can name a single declaration of `EllipticScheme.lean`.
+`relPointPost`, `relPointPost_add` (rigidity), `hom_specRat_eq_of_range_eq`,
+`exists_isIso_of_affineChart`, `isIso_of_isDominant_of_inverse`,
+`isDominant_of_range_eq_compl`: all PROVEN, all invisible.
+This defeats the standing "grep the tree before proving anything from scratch" rule
+in a way the rule does not warn about. A `grep` finds the theorem, `git log` shows it
+green, its docstring says PROVEN — and `#check` says unknown identifier. **So the
+availability test is `lake env lean` on a one-line `#check`, not a grep.** A scratch
+module importing the target file costs seven seconds; run it before planning around
+a reuse.
+Two consequences that both bit in one task:
+* **The wrapper is invisible, the theorem it wraps often is not.** The valuative
+  criterion `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve` lives
+  in `Fermat/FLT/Mathlib/`, is reachable, and is stated over an ARBITRARY FIELD;
+  only `EllipticScheme.lean`'s ℚ-specialisation of it is hidden. Reproving the
+  ~40 lines of wrapper over a general field was the whole cost.
+* **Look for a second copy at the RIGHT generality before duplicating.** X0.lean's
+  own `isAdditiveOn_of_post_zero` is relative rigidity over an ARBITRARY base — the
+  general form of `EllipticScheme.relPointPost_add`, visible, and better. The first
+  plan copied 120 lines of the hidden one; the reachable one made that unnecessary.
+## PORTING A ℚ PROOF TO ℚ̄: THE STEPS THAT BREAK ARE THE ONES ABOUT ℚ's RIGIDITY
+(2026-07-31, flt-lean-393.) `EllipticScheme.hom_specRat_eq_of_range_eq` — "a
+`ℚ`-point of a scheme is determined by its image" — is the load-bearing step of the
+ℚ-side Weierstrass bridge, and it rests on `Subsingleton (k →+* ℚ)`: a field has AT
+MOST ONE ring map to ℚ, because ℚ is the prime field. **`Subsingleton (k →+* ℚ̄)` is
+false** — `AlgebraicClosure ℚ` has an enormous automorphism group — so the ℚ proof
+does not transfer, and the ℚ̄ statement needs a residue-field argument (it is
+recoverable for SECTIONS: `K → κ(x) → K` being the identity forces `κ(x) → K` to be
+the inverse of a bijection, hence unique).
+The general shape: when a ℚ-argument is transported to `ℚ̄`, the steps that will
+break are exactly those using "ℚ has no automorphisms / is the prime field / is
+subsingleton as a target of ring maps". Everything topological or scheme-theoretic
+(`Spec K` is a one-point space, connectedness, dominance, the valuative criterion)
+transfers verbatim with `ℚ` replaced by any field.
+**And the repair may be to delete the step rather than port it.** The zero section
+was being matched by a range chase, which is what needed the point-determined-by-image
+lemma. There are two ways out, and both were built independently the same day: port
+the lemma (`section_eq_of_range_eq_algClos`, the residue-field argument — a `K`-point
+that is a SECTION has `K → κ(x) → K` equal to the identity, which forces `κ(x) → K`
+to be the inverse of a bijection, hence unique), or **avoid needing it**: for an
+abelian scheme presented by its functor of points, TRANSLATION by a section costs no
+geometry at all — add the pullback of the section to the UNIVERSAL relative point
+`⟨𝟙 A, _⟩ : RelPoint f f`, and the group axioms plus `pre_add` alone show it is an
+isomorphism with inverse the translation by the negative. Correcting an arbitrary
+isomorphism by the translation that undoes `u(O₁)` matches the origins BY
+CONSTRUCTION, and the resulting statement — *every* isomorphism over the base yields
+an `IsEllipticIsoOf`, with no zero-section hypothesis — is both stronger and shorter.
+The ported-lemma route is the one that landed (`flt-lean-182`, release 26); the
+translation route is recorded here because it generalises to any abelian scheme over
+any base and needs no residue fields.
+**Same trick, same file, one leaf earlier: a functor-of-points endomorphism IS a
+morphism of schemes.** `IsCMByRamifiedMaximalOrder.phi` is a family of maps on
+`RelPoint d.f g` for every test scheme, and evaluating it at `⟨𝟙 d.E, _⟩` gives a
+single `Φ : d.E ⟶ d.E`, with `phi_pre` proving every value is postcomposition with
+it (six lines). That is the step that makes such a leaf attackable at all: an
+`IsIsogeny` certificate is polynomials in the coordinates, and no polynomial can be
+extracted from a family of abstract group maps. **Whenever a leaf's hypothesis is a
+`∀ T'`-quantified functorial bundle, evaluate at the universal point FIRST and
+restate it with the morphism.**
 ## SEVENTH invisibility class: A CLEAN MERGE THAT DOES NOT COMPILE — the interface split
 
 (2026-07-30, release 22, three instances in one batch.) The six classes above are all about
