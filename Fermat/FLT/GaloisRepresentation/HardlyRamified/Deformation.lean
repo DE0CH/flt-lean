@@ -17606,8 +17606,14 @@ descending along a surjection with the image ideal, and the image of `𝔪_S` in
 `𝔪`-adically Hausdorff by Krull's intersection theorem, which mathlib has as an
 instance. -/
 
-omit [Field k] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
-  [DiscreteTopology k] in
+-- The `omit [Field k] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
+-- [DiscreteTopology k] in` that stood here was rejected at release 32 with
+-- `cannot omit referenced section variable`: one of the five IS referenced in
+-- this tree, though it was not in the (release-lake) scratch this block was
+-- developed against.  Silencing the linter is the conservative repair -- an
+-- `omit` that names the wrong variable is a hard error, an unused one is a
+-- warning -- and it changes no statement.
+set_option linter.unusedSectionVars false in
 /-- **`D` is a deformation structure on any ring ISOMORPHIC to `D.R`** (PROVEN
 2026-07-31; the reflexive case of `IsDeformationStructureOn`, and the whole of
 the DEGENERATE case of the obstruction leaf below).
