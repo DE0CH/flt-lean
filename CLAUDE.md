@@ -14956,3 +14956,87 @@ Corollary for `~/.flt-release-lake`: its `sha` can be OLDER than the base you ne
 snapshot proves nothing about declarations added since.  Check
 `git merge-base --is-ancestor $(cat ~/.flt-release-lake/sha) <your base>` before using the
 snapshot as an olean source, and rebuild rather than shim when it comes back stale.
+
+## TWO `abbrev` WRAPPERS AROUND ONE TERM ARE TWO COPIES OF ONE LEAF — and no scan can see it
+
+(2026-07-31, `RelativePicard.lean`.) `presheafModPullback h` and `presheafPullback h`,
+defined ninety lines apart in the same file, are both
+`PresheafOfModules.pullback (Scheme.Hom.toRingCatSheafHom h).hom` — the same term written
+once with dot notation and once without. Each carried its own sorried theorem
+(`nonempty_presheafModPullback_tensor`, `nonempty_presheafPullback_tensor`) whose
+statements differ only in the names of their bound variables. Two agents cut the same leaf
+out of the same parent on the same day and neither could see the other's copy.
+
+**Every frontier instrument counts DECLARATIONS**, so this reads as two leaves for as long
+as the wrappers stand: `flt-frontier.py`, the `declaration uses 'sorry'` warning set, and
+the census all agree, and they are all wrong. `own.py`/`leafstat.py` cannot help either —
+the names are genuinely different. Only unfolding the wrappers shows it.
+
+So when a file defines a thin `abbrev` "for readability", check whether an earlier one
+already denotes the same term. The cheap mechanical check is to elaborate both and ask for
+`rfl`:
+
+    example : presheafModPullback h = presheafPullback h := rfl   -- it was
+
+Related and more general: a wrapper hides identity exactly as well as it hides complexity.
+`[[flt-two-leaves-may-be-one]]` is the sibling case where two leaves are logically, not
+definitionally, the same; this one is worse because no mathematics is involved at all.
+
+## THE ROUTE A LEAF'S DOCSTRING RECOMMENDS MAY BE THE EXPENSIVE ONE — PRICE THE FALLBACK FIRST
+
+(2026-07-31, same leaf.) The docstring listed two routes and recommended the first:
+establish the filtered-colimit formula `(Lan M)(V) = colim_{U ⊇ h(V)} M(U) ⊗ Γ(W,V)`, show
+the index poset is codirected, and use "tensor commutes with filtered colimits". It listed
+the *generators* argument as the alternative "if the pin gives no usable formula".
+
+The generators route needed **no new mathematics at all** — every ingredient is already an
+instance in the pin:
+
+* `Adjunction.leftAdjointOplaxMonoidal` turns "the right adjoint is lax monoidal" into the
+  comparison map `δ` with naturality in both variables, for free;
+* `Limits.isIso_app_coconePt_of_preservesColimit` is the closure step;
+* `PresheafOfModules.isColimitFreeYonedaCoproductsCokernelCofork` is the presentation;
+* `PreservesColimitsOfSize` on `tensorLeft`/`tensorRight` and
+  `Adjunction.leftAdjoint_preservesColimits` are the two preservation facts.
+
+The colimit formula the docstring recommended is never used, and the codirectedness it
+spent a paragraph on collapses to the single fact that `Opens.map` preserves `⊓`. The whole
+dévissage is ~40 lines. **A route recommendation in a docstring is a guess made before
+anyone tried; the fallback is not the fallback until you have priced both.**
+
+## A "FALSE ONE GENERALITY UP" AUDIT DOES NOT MEAN YOU MUST WORK AT THE SPECIAL GENERALITY
+
+(2026-07-31, same leaf, and this inverts how the section header read.) The header carried a
+correct counterexample — for `F` collapsing two objects of a discrete `C` onto one, the
+comparison compares `k²` with `k⁴` — and concluded "a proof may NOT be attempted at the
+generality of an arbitrary continuous functor between sites".
+
+That conclusion overshoots. What is false in general is the CONCLUSION, not the
+construction: the oplax structure and the entire two-variable dévissage go through for an
+arbitrary `F`, with no hypothesis on the site anywhere, and land in a general-purpose
+module. The site enters at exactly one point — `free (yoneda U) ⊗ free (yoneda U') ≅
+free (yoneda (U ⊓ U'))` — which is precisely what the counterexample destroys.
+
+So the right response to a falsity audit is to find the SMALLEST statement the
+counterexample kills and make that the leaf, then build everything above it in full
+generality. The audit then reads as a localisation result rather than a prohibition, and
+the general machinery is reusable by anything else that pulls back presheaves of modules.
+
+## A DOWNSTREAM "STRICT −1" NAMED IN A TASK PROMPT IS A HYPOTHESIS — CHECK THE MODULE'S CURRENT SORRY SET
+
+(2026-07-31.) A dispatch prompt said `Modularity/AmpleSheaf.lean` should have
+`nonempty_modPullback_modTensor` redirected and `modPullbackTensorComparison`,
+`modPullbackTensorComparison_tensorSection` and `isIso_modPullbackTensorComparison`
+DELETED, "a strict -1". Every one of those three is **already proven** — `flt-lean-216`
+closed them on 2026-07-30 by cutting a smaller leaf under a *different* name,
+`modLocW_modPullbackTensorPre`, and by replacing the under-pinned `Nonempty` form with the
+pinned `exists_modPullback_modTensor`, which has consumers in `AbelianSchemeIsogeny.lean`
+and `X0.lean`.
+
+Performing the prescribed deletion would therefore have removed the proof of a theorem
+those consumers rest on, in exchange for a weaker `Nonempty` that cannot replace it — a
+build break dressed as a leaf removal. The check is one comment-stripped scan of that
+module attributing each `sorry` token to its enclosing declaration; it takes seconds and
+does not need the module built. Same principle as the commit-message rule above: a leaf
+named as open anywhere is a hypothesis to check, and that includes the prompt you were
+given.

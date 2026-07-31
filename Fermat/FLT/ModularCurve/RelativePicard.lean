@@ -393,6 +393,7 @@ public import Fermat.FLT.Modularity.AbelianScheme
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward
 public import Fermat.FLT.Mathlib.Algebra.Category.ModuleCat.Presheaf.MonoidalW
 public import Mathlib.AlgebraicGeometry.RelativeGluing
+public import Fermat.FLT.Mathlib.Algebra.Category.ModuleCat.Presheaf.PullbackMonoidal
 
 @[expose] public section
 
@@ -995,7 +996,37 @@ should now be redirected to this declaration, and
 `isIso_modPullbackTensorComparison` together with `modPullbackTensorComparison`
 and `modPullbackTensorComparison_tensorSection` DELETED.  That is a strict
 removal of a leaf, not a hoist, and it is left to that module's owner because it
-is a downstream edit. -/
+is a downstream edit.
+
+**Amended again 2026-07-31 (fourth amendment), and it corrects the ROUTE advice above
+as well as the leaf count.**
+
+* The route recommended above — establish the filtered-colimit formula for the Kan
+  extension and run "tensor commutes with filtered colimits" — was NOT the one that
+  worked, and is not needed.  What the argument actually needs is only that `pullback`
+  and `− ⊗ Q` preserve colimits, both of which are already instances in the pin.  The
+  *generators* route, listed above as the second option, carries the whole dévissage,
+  and the codirectedness of `{U // V ≤ h ⁻¹ᵁ U}` is replaced by the single fact that
+  `Opens.map` preserves binary meets.
+* The paragraph above says the presheaf pullback "is NOT strong monoidal in general" and
+  that "a proof of the leaf below may NOT be attempted at the generality of an arbitrary
+  morphism of presheaves of rings over an arbitrary continuous functor".  Both remain
+  true, and the counterexample is unchanged — but note WHERE the generality now bites:
+  the oplax structure `δ` and the two-variable dévissage
+  (`Fermat/FLT/Mathlib/Algebra/Category/ModuleCat/Presheaf/PullbackMonoidal.lean`) are
+  valid for an ARBITRARY `F`, with no hypothesis on the site at all.  The only statement
+  that is false for a general `F` is the GENERATOR case,
+  `isIso_presheafModPullback_delta_freeYoneda`.  So the counterexample does not forbid
+  working in general — it forbids only concluding in general, and it localises to one
+  leaf about `free (yoneda U) ⊗ free (yoneda U')`.
+* Two leaves in this file, `nonempty_presheafModPullback_tensor` and
+  `nonempty_presheafPullback_tensor` ninety lines below it, were the SAME statement:
+  `presheafModPullback h` and `presheafPullback h` both unfold to
+  `PresheafOfModules.pullback (Scheme.Hom.toRingCatSheafHom h).hom`, once with dot
+  notation and once without.  Both are now proven, the second by `exact` over the first.
+  Worth a general moral: a wrapper `abbrev` hides identity as effectively as it hides
+  complexity, and two wrappers around one term will not be noticed by any frontier
+  scan, which counts declarations. -/
 
 /-- **The PRESHEAF-level pullback** of presheaves of modules along a morphism of
 schemes, i.e. `Scheme.Modules.pullback h` before sheafification.
@@ -1029,46 +1060,67 @@ noncomputable def modSheafifyTensorIso {W : Scheme.{u}}
         ((PresheafOfModules.sheafification (𝟙 W.ringCatSheaf.obj)).obj B)).symm
   { hom := e.hom, inv := e.inv, hom_inv_id := e.hom_inv_id, inv_hom_id := e.inv_hom_id }
 
-/-- **THE PRESHEAF PULLBACK IS STRONG MONOIDAL ON THE SITE OF OPENS** (sorry
-leaf, cut 2026-07-31 out of `nonempty_modPullback_modTensorPic`) — and this is
-now the ONLY open obligation behind "pullback commutes with `⊗`".
+/-- The comparison map `p(P ⊗ Q) ⟶ pP ⊗ pQ` for the PRESHEAF pullback, as the `δ` of an
+oplax monoidal structure.
 
-No sheaf, no sheafification, no Grothendieck topology: `PresheafOfModules.pullback`
-is the left adjoint of `PresheafOfModules.pushforward`, and the claim is that it
-carries the pointwise tensor product of presheaves of modules to the pointwise
-tensor product.
+**Where it comes from (2026-07-31, and it is not an ad-hoc construction).**
+`pushforward φ` is `pushforward₀OfCommRingCat` — which mathlib knows is STRONG monoidal,
+`PresheafOfModules.instMonoidalPushforward₀OfCommRingCat` — followed by `restrictScalars φ`,
+which is LAX monoidal (`PresheafOfModules.restrictScalarsLaxMonoidal`, proven sectionwise
+over `ModuleCat.instLaxMonoidalRestrictScalars` in
+`Fermat/FLT/Mathlib/Algebra/Category/ModuleCat/Presheaf/PullbackMonoidal.lean`).  So
+`pushforward φ` is lax monoidal and its left adjoint `pullback φ` is OPLAX monoidal by
+`Adjunction.leftAdjointOplaxMonoidal`.  `δ` is natural in both variables — which is what
+makes the dévissage below legitimate. -/
+noncomputable abbrev presheafModPullbackDelta {Z W : Scheme.{u}} (h : W ⟶ Z)
+    (P Q : PresheafOfModules.{u} Z.ringCatSheaf.obj) :
+    (presheafModPullback h).obj (P ⊗ Q) ⟶
+      (presheafModPullback h).obj P ⊗ (presheafModPullback h).obj Q :=
+  Functor.OplaxMonoidal.δ
+    (PresheafOfModules.pullback.{u} (PresheafOfModules.ringCatHomOfCommRingCatHom h.c)) P Q
 
-**ROUTE, and the only one that can work** (see the section header for why the
-statement is FALSE at greater generality, with the two-point counterexample).
+/-- **THE GENERATOR CASE OF "THE PRESHEAF PULLBACK IS STRONG MONOIDAL"** (sorry leaf, cut
+2026-07-31 out of `nonempty_presheafModPullback_tensor` — which is now PROVEN over it).
 
-`pushforward φ` is `precomposition with Opens.map h.base` followed by
-`restrictScalars φ`.  Take left adjoints in the other order:
+This is ALL that is left of "pullback commutes with `⊗`" at presheaf level: the comparison
+`δ` on the free presheaves of modules on representables.  Everything else — the existence
+of `δ`, its naturality, and the dévissage from arbitrary `P`, `Q` down to this case — is
+proven, in `Fermat/FLT/Mathlib/Algebra/Category/ModuleCat/Presheaf/PullbackMonoidal.lean`
+(`PresheafOfModules.pullbackOplaxMonoidal` and `isIso_pullback_delta`).
 
-1. *Base change of rings* `Γ(W, h ⁻¹ᵁ −) ⊗_{Γ(Z,−)} −` is STRONG monoidal, by
-   `TensorProduct.congr`-style associativity of base change — no colimits.
-2. *The relative left Kan extension* along `Opens.map h.base` is the filtered
-   colimit `(Lan M)(V) = colim_{U ⊇ h(V)} M(U) ⊗_{Γ(Z,U)} Γ(W,V)`.  The index
-   poset `{U : Z.Opens // V ≤ h ⁻¹ᵁ U}` is CODIRECTED (it is closed under `⊓`,
-   because `h ⁻¹ᵁ (U₁ ⊓ U₂) = h ⁻¹ᵁ U₁ ⊓ h ⁻¹ᵁ U₂`, and contains `⊤`), so the
-   colimit is FILTERED, and `M ↦ M ⊗ N` commutes with filtered colimits.
+**THIS IS EXACTLY WHERE THE SITE ENTERS, AND IT IS THE ONLY PLACE IT DOES.**  See the
+section header for why the statement is FALSE one generality up: for a functor `F`
+collapsing two objects of a discrete `C` onto one, `δ` compares `k²` with `k⁴` on
+generators and is not invertible.  The dévissage above is valid for ANY `F`; it is this
+leaf that is false for a general `F` and true for `Opens.map h.base`.
 
-What the pin does NOT give is that formula: `PresheafOfModules.pullback` is
-defined abstractly as `(pushforward φ).leftAdjoint`, with existence obtained
-through `pullbackObjIsDefined_eq_top` and no description of the object.  So a
-prover has two honest options, and should price both before choosing:
+**ROUTE.**  Write `S := Z.ringCatSheaf.obj`, `R := W.ringCatSheaf.obj`, `L := pullback`.
+Three ingredients, and the meet-preservation of `Opens.map h.base` is used twice:
 
-* establish the colimit formula above and run the argument, or
-* run the *generators* argument, which avoids the formula entirely.  Every
-  presheaf of modules is a colimit of `(free S).obj (yoneda.obj U)` — mathlib's
-  `PresheafOfModules.isColimitFreeYonedaCoproductsCokernelCofork` — the pullback
-  preserves colimits (left adjoint) and sends `(free S).obj (yoneda.obj U)` to
-  `(free R).obj (yoneda.obj (h ⁻¹ᵁ U))`
-  (`PresheafOfModules.pushforwardCompCoyonedaFreeYonedaCorepresentableBy`),
-  `− ⊗ N` preserves colimits (the tensor product is computed sectionwise and
-  colimits of presheaves of modules are sectionwise), and on generators
-  `free (yoneda U) ⊗ free (yoneda U') ≅ free (yoneda (U ⊓ U'))` **because
-  `Opens` is a poset with binary meets** — which is the same fact about the site
-  as in the colimit route, and the same fact that fails in the counterexample.
+1. `L ((free S).obj (yoneda.obj U)) ≅ (free R).obj (yoneda.obj (h ⁻¹ᵁ U))`.  Free from the
+   pin: `PresheafOfModules.pushforwardCompCoyonedaFreeYonedaCorepresentableBy` corepresents
+   `N ↦ ((free S).obj (yoneda.obj U) ⟶ (pushforward φ).obj N)` by
+   `(free R).obj (yoneda.obj (h ⁻¹ᵁ U))`, and `Adjunction.corepresentableBy` corepresents
+   the same functor by `L ((free S).obj (yoneda.obj U))`; then
+   `Functor.CorepresentableBy.uniqueUpToIso`.
+2. `(free S).obj (yoneda.obj U) ⊗ (free S).obj (yoneda.obj U') ≅
+   (free S).obj (yoneda.obj (U ⊓ U'))`, and the same on the `W` side.  Sectionwise at `V`
+   this is `Free(V ≤ U) ⊗_{S(V)} Free(V ≤ U') ≅ Free(V ≤ U ⊓ U')`: in a POSET both
+   `Hom`-types are subsingletons, so both sides are `S(V)` when `V ≤ U ⊓ U'` and `0`
+   otherwise.  **This is the first use of binary meets, and it is the step that has no
+   analogue for a general site.**
+3. `h ⁻¹ᵁ (U ⊓ U') = h ⁻¹ᵁ U ⊓ h ⁻¹ᵁ U'` (`TopologicalSpace.Opens.map` preserves `⊓` — it
+   is `rfl` for the underlying sets).  **Second use.**
+
+With 1–3, both source and target of `δ` are isomorphic to
+`(free R).obj (yoneda.obj (h ⁻¹ᵁ (U ⊓ U')))`.  What is then left, and it is the real work,
+is to check that `δ` ITSELF is the resulting isomorphism and not some other map.  The
+cheapest way found so far avoids computing `δ` on elements: `δ = (adj.homEquiv).symm ν`
+with `ν = (unit ⊗ₘ unit) ≫ μ (pushforward φ)`, so `δ ≫ g` transposes to `ν ≫ (pushforward
+φ).map g` (`Adjunction.homEquiv_naturality_right_symm`), and `δ` is invertible iff
+`g ↦ ν ≫ (pushforward φ).map g` is bijective for every `N` — which by 1–3 and
+`PresheafOfModules.freeYonedaEquiv` is a map `N.obj (op (h ⁻¹ᵁ U ⊓ h ⁻¹ᵁ U')) →
+N.obj (op (h ⁻¹ᵁ (U ⊓ U')))` between two hom-sets that 1–3 identify.
 
 **NOT VACUOUS and NOT trivially reducible.**  Take `h` a closed immersion of a
 point into `𝔸¹` and `P = Q` the ideal sheaf of the point: `h^*P` is the
@@ -1076,11 +1128,37 @@ one-dimensional conormal space, `h^*(P ⊗ P)` is one-dimensional too, and the
 comparison is an isomorphism only because the tensor product is taken over the
 pulled-back ring `Γ(W, −)` and not over `Γ(Z, −)`.  Nothing here is formal in
 the sense of holding for any adjunction. -/
+theorem isIso_presheafModPullback_delta_freeYoneda {Z W : Scheme.{u}} (h : W ⟶ Z)
+    (U U' : Z.Opens) :
+    IsIso (presheafModPullbackDelta h
+      ((PresheafOfModules.free Z.ringCatSheaf.obj).obj (yoneda.obj U))
+      ((PresheafOfModules.free Z.ringCatSheaf.obj).obj (yoneda.obj U'))) :=
+  sorry
+
+/-- **THE PRESHEAF PULLBACK IS STRONG MONOIDAL ON THE SITE OF OPENS** (**PROVEN
+2026-07-31** over the single generator leaf `isIso_presheafModPullback_delta_freeYoneda`;
+formerly a bare sorry leaf).
+
+No sheaf, no sheafification, no Grothendieck topology: `PresheafOfModules.pullback`
+is the left adjoint of `PresheafOfModules.pushforward`, and the claim is that it
+carries the pointwise tensor product of presheaves of modules to the pointwise
+tensor product.
+
+The old docstring here recorded two routes — "establish the colimit formula" and "run the
+generators argument" — and recommended the first.  The second is the one that worked, and
+it did not need the colimit formula at any point: what the *dévissage* needs is only that
+`pullback` and `− ⊗ Q` preserve colimits, both of which are pin instances
+(`Adjunction.leftAdjoint_preservesColimits`, and mathlib's `PreservesColimitsOfSize` on
+`tensorLeft`/`tensorRight` for presheaves of modules).  The filtered-colimit description of
+the Kan extension is never used, and the codirectedness of `{U // V ≤ h ⁻¹ᵁ U}` is replaced
+by the single fact that `Opens.map` preserves `⊓`, which is where the generator leaf spends
+it. -/
 theorem nonempty_presheafModPullback_tensor {Z W : Scheme.{u}} (h : W ⟶ Z)
     (P Q : PresheafOfModules.{u} Z.ringCatSheaf.obj) :
     Nonempty ((presheafModPullback h).obj (P ⊗ Q) ≅
-      (presheafModPullback h).obj P ⊗ (presheafModPullback h).obj Q) :=
-  sorry
+      (presheafModPullback h).obj P ⊗ (presheafModPullback h).obj Q) := by
+  refine ⟨@asIso _ _ _ _ (presheafModPullbackDelta h P Q) ?_⟩
+  exact isIso_pullback_delta h.c (isIso_presheafModPullback_delta_freeYoneda h) P Q
 
 /-- **Pullback of PRESHEAVES of `𝒪`-modules along a morphism of schemes** — the
 functor mathlib's `sheafificationCompPullback` moves the sheafification past.
@@ -1091,25 +1169,28 @@ noncomputable abbrev presheafPullback {Z W : Scheme.{u}} (h : W ⟶ Z) :
     PresheafOfModules.{u} Z.ringCatSheaf.obj ⥤ PresheafOfModules.{u} W.ringCatSheaf.obj :=
   PresheafOfModules.pullback h.toRingCatSheafHom.hom
 
-/-- **THE PRESHEAF-LEVEL TENSOR COMPARISON** (sorry leaf) — `p(A ⊗ B) ≅ pA ⊗ pB`
-for the pullback of PRESHEAVES of modules along a morphism of schemes.
+/-- **THE PRESHEAF-LEVEL TENSOR COMPARISON** — `p(A ⊗ B) ≅ pA ⊗ pB` for the pullback of
+PRESHEAVES of modules along a morphism of schemes.
 
-This is the whole of what is left of `nonempty_modPullback_modTensorPic`: no
-sheafification, no invertibility, no scheme geometry beyond the fact that `h` is
-a morphism of schemes — and that fact is LOAD-BEARING, not decoration.  See the
-section note above for the counterexample that kills the general-`F` version
-(two-object discrete `C` over a point: `k²` against `k⁴`) and for the two known
-routes (filtered Kan extension, or comparison on `freeYoneda` generators).
+**PROVEN 2026-07-31 by `exact`, because it is a VERBATIM DUPLICATE of
+`nonempty_presheafModPullback_tensor` above.**  `presheafPullback h` is
+`PresheafOfModules.pullback h.toRingCatSheafHom.hom` and `presheafModPullback h` is
+`PresheafOfModules.pullback (Scheme.Hom.toRingCatSheafHom h).hom` — the SAME term written
+once with dot notation and once without, so the two abbreviations are equal on the nose and
+the two statements differ only in the names of their bound variables.  Two agents cut the
+same leaf out of `nonempty_modPullback_modTensorPic` on the same day, in the same file,
+ninety lines apart, and neither could see the other's copy because nothing about the names
+`presheafModPullback` / `presheafPullback` says they denote one functor.
 
-Stated as `Nonempty` rather than as `IsIso` of a named comparison map because
-the assembly only ever transports it through the functor `a`, and a bare iso of
-presheaves is enough for that; a prover who finds it easier to build the
-canonical map and prove it invertible may of course do so and derive this. -/
+Kept (rather than deleted) because `modPullbackSheafifyIso` and `modPullbackValIso` below
+are stated in terms of `presheafPullback`; deleting it would be a rename touching those,
+which is a bigger edit than a one-line delegation.  Anyone doing that rename should collapse
+the two abbreviations too. -/
 theorem nonempty_presheafPullback_tensor {Z W : Scheme.{u}} (h : W ⟶ Z)
     (A B : PresheafOfModules.{u} Z.ringCatSheaf.obj) :
     Nonempty ((presheafPullback h).obj (A ⊗ B) ≅
       (presheafPullback h).obj A ⊗ (presheafPullback h).obj B) :=
-  sorry
+  nonempty_presheafModPullback_tensor h A B
 
 /-- **`f^*(a A) ≅ a(p A)`: PULLBACK COMMUTES WITH SHEAFIFICATION** — mathlib's
 `SheafOfModules.sheafificationCompPullback`, read on an object.
