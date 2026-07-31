@@ -459,6 +459,20 @@ public import Fermat.FLT.AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concre
 -- which `public import`s this module), so the `ℚ`-level file cannot be imported
 -- here and duplicating 990 lines of commutative algebra was the alternative.
 public import Fermat.FLT.Modularity.PatchingCore
+-- `Modularity.exists_taylorWilesCoefficients_ringHom_unramified` — Cohen's
+-- coefficient ring `W(k)`, with `𝔪 = (p)` and precompleteness. ADDED 2026-07-31,
+-- and it is the SECOND instance of the hoist the paragraph above describes: the
+-- Witt/Cohen block lived in `Modularity/Patching.lean` (DOWNSTREAM of this file)
+-- until 2026-07-31 and was moved VERBATIM into `Modularity/PatchingWitt.lean` so
+-- that `exists_hilbertBottomCoeffRingHom` below could cite it instead of
+-- duplicating ~1100 lines of commutative algebra and its leaf.
+-- CIRCULARITY GUARD: costs nothing, and this is a computation rather than a
+-- judgement — `PatchingWitt.lean`'s Fermat import closure is EXACTLY
+-- `PatchingCore.lean`'s (13 modules, all `Modularity/PatchingVendored/*` plus
+-- two `Fermat/FLT/Mathlib/*`) together with itself, so the line above already
+-- carries all of it and this import grows this module's cone by ONE module.
+-- Nothing in it mentions `ρbar`, a deformation functor or a Hecke algebra.
+public import Fermat.FLT.Modularity.PatchingWitt
 -- `Nat.ModEq` (the `≡ … [MOD …]` notation) and `Ideal.Quotient`, for the
 -- Taylor–Wiles congruence `N w ≡ 1 mod ℓ ^ n` on places of `F` in
 -- `IsHilbertTaylorWilesPrimeSet` below.
@@ -25599,7 +25613,28 @@ without it the presentation below is false, since `Λ⟦x⟧ ↠ 𝒟.R` forces
 References: Cohen, *On the structure and ideal theory of complete local
 rings*, Trans. AMS 59 (1946), §§8–9 (the unramified case); Serre, *Corps
 locaux*, II §5 (Witt vectors as the unramified lift); Mazur, *Deforming Galois
-representations*, §1.2. -/
+representations*, §1.2.
+
+# CLOSED 2026-07-31 BY THE HOIST THIS DOCSTRING ASKED FOR
+
+Every item of "WHAT IS OWED" above was already discharged at the `ℚ` level, in
+`Modularity/Patching.lean`, and was unreachable from here only because that
+module is DOWNSTREAM (it `public import`s `HardlyRamified/Deformation.lean`,
+which `public import`s this file).  The block — the `Type 0` model of `k`, the
+four topological fields, `TaylorWilesCoefficients.wittVector`, and the lift `c`
+itself through `existsUnique_ringHom_wittVector_of_isNilpotent` (PROVEN
+2026-07-30) — now lives in `Modularity/PatchingWitt.lean`, whose Fermat import
+closure is `PatchingCore.lean`'s, so importing it costs the circularity guard
+nothing.  The strengthened export
+`Modularity.exists_taylorWilesCoefficients_ringHom_unramified` is the same
+theorem with the two clauses `𝔪_𝒪 = (p)` and `IsPrecomplete 𝔪_𝒪 𝒪` added; both
+hold of `W(k)` by construction, so the strengthening cost its proof nothing.
+
+The one thing that is genuinely local is `CharP k ℓ`, which is NOT a hypothesis
+and must not become one: `𝒟.R` is a `ℤ_[ℓ]`-algebra and `𝒟.π` is onto `k`, so
+`k` is a FINITE `ℤ_[ℓ]`-algebra, and `natCast_eq_zero_of_finite_algebra` above
+(with the `ringChar` bookkeeping it is always used with) gives it.  Were
+`char k = q ≠ ℓ`, `q` would be a unit of `ℤ_[ℓ]` dying in the nontrivial `k`. -/
 theorem exists_hilbertBottomCoeffRingHom
     (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F]
@@ -25612,8 +25647,25 @@ theorem exists_hilbertBottomCoeffRingHom
       IsLocalRing.maximalIdeal coeff.carrier
           = Ideal.span {(ℓ : coeff.carrier)} ∧
         IsPrecomplete (IsLocalRing.maximalIdeal coeff.carrier) coeff.carrier ∧
-        ∃ c : coeff.carrier →+* 𝒟.R, Function.Surjective (𝒟.π.comp c) :=
-  sorry
+        ∃ c : coeff.carrier →+* 𝒟.R, Function.Surjective (𝒟.π.comp c) := by
+  -- `k` has characteristic `ℓ`, and this costs no hypothesis: `𝒟.R` is a
+  -- `ℤ_[ℓ]`-algebra and `𝒟.π` is onto `k`, so `k` is a FINITE `ℤ_[ℓ]`-algebra.
+  letI : Algebra ℤ_[ℓ] k := (𝒟.π.comp (algebraMap ℤ_[ℓ] 𝒟.R)).toAlgebra
+  haveI hchar : CharP k ℓ := by
+    have hp : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hdvd : ringChar k ∣ ℓ :=
+      (CharP.cast_eq_zero_iff k (ringChar k) ℓ).mp
+        (natCast_eq_zero_of_finite_algebra ℓ k)
+    have heq : ringChar k = ℓ :=
+      (Nat.prime_dvd_prime_iff_eq hp (Fact.out : ℓ.Prime)).mp hdvd
+    exact heq ▸ ringChar.charP k
+  -- Cohen at the bottom of the tower, cited from `Modularity/PatchingWitt.lean`
+  obtain ⟨coeff, hmax, hprec, -, c, hc⟩ :=
+    Modularity.exists_taylorWilesCoefficients_ringHom_unramified
+      (R := 𝒟.R) 𝒟.isAdicComplete (π := 𝒟.π) 𝒟.π_surjective ℓ
+  exact ⟨coeff, hmax, hprec, c, hc⟩
 
 /-- **The RING half of the bottom Taylor–Wiles level over `F`** (**PROVEN GLUE
 since 2026-07-31** over the single leaf `exists_hilbertBottomCoeffRingHom`

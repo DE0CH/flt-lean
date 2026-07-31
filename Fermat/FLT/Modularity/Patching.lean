@@ -451,6 +451,7 @@ import Mathlib.Algebra.Algebra.Shrink
 -- because `survivingLocus` below mentions `ContinuousCohomology.eval₁` in
 -- SIGNATURE position.
 public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.LowDegreeOne
+public import Fermat.FLT.Modularity.PatchingWitt
 -- PROMOTED TO `public import` 2026-07-27 by the `IsTaylorWilesPrimeSet`
 -- dual-Selmer repair: that predicate's global clause is stated in the
 -- Galois-cohomology vocabulary of this module (`adZeroTwist`,
@@ -9846,38 +9847,6 @@ theorem exists_ringHom_mvPowerSeries_of_isAdicComplete
   · intro i
     rw [MvPowerSeries.coe_eval₂Hom hcont hev]
     exact MvPowerSeries.eval₂_X _ _ _
-
-/-! ### Cohen's coefficient ring: `𝕎 k` as a `TaylorWilesCoefficients`
-
-The block below (2026-07-27) discharges obligation (a) of
-`exists_taylorWilesCoefficients_ringHom`: it exhibits the Witt vectors
-`𝕎 k` of a finite field `k` of characteristic `p` as a
-`TaylorWilesCoefficients` bundle, and it does so with NO sorry.  The
-topological half — which the leaf's docstring flagged as the part needing
-`𝕎 k = lim 𝕎_n(k)` — turned out not to need the inverse-limit
-description at all: `𝕎 k` is by DEFINITION a structure whose single field
-is `coeff : ℕ → k`, so the coefficientwise topology makes it
-HOMEOMORPHIC to `ℕ → k`, and compactness, Hausdorffness and total
-disconnectedness are Tychonoff plus transport.  Only the continuity of
-the ring operations needs an argument, and that argument is
-`WittVector.truncate` (the `n`-th coefficient of `x + y`, `x * y`, `-x`
-depends on the first `n + 1` coefficients of `x` and `y` alone) landing
-in a FINITE, hence discrete, space.
-
-For a perfect `k` of characteristic `p` this topology IS the `p`-adic
-one, by `WittVector.mem_span_p_pow_iff_le_coeff_eq_zero`
-(`(p)^n = {x | ∀ i < n, x.coeff i = 0}`), so nothing unnatural is being
-installed. -/
-
-/-- **The coefficientwise topology on `𝕎 k`** (PROVEN 2026-07-27), for a
-DISCRETE coefficient ring `k`: the topology induced from `ℕ → k` along
-`WittVector.coeff`.  For `k` perfect of characteristic `p` this is the
-`p`-adic topology, because `(p)^n` is exactly the set of Witt vectors
-whose first `n` coefficients vanish
-(`WittVector.mem_span_p_pow_iff_le_coeff_eq_zero`). -/
-@[reducible] def wittVectorTopology (p : ℕ) (k : Type*) [TopologicalSpace k] :
-    TopologicalSpace (WittVector p k) :=
-  TopologicalSpace.induced (fun x : WittVector p k => x.coeff) inferInstance
 
 /-- `𝕎 k` with the coefficientwise topology is HOMEOMORPHIC to `ℕ → k`
 (PROVEN 2026-07-27) — `WittVector p k` is a one-field structure, so
