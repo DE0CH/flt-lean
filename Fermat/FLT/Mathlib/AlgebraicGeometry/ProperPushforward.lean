@@ -3063,7 +3063,7 @@ have to refute a step of the route above, not the leaf. -/
 theorem eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
     (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop)
-    (m : Ideal ↥Γ(S, ⊤)) (_hm : m.IsMaximal) :
+    (m : Ideal ↥Γ(S, ⊤)) (hm : m.IsMaximal) :
     letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
     (⊤ : Submodule ↥Γ(S, ⊤) ↥Γ(X, ⊤)) =
       Submodule.span ↥Γ(S, ⊤) {(1 : ↥Γ(X, ⊤))} ⊔

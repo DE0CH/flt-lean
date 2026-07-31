@@ -524,7 +524,7 @@ statement is the one the consumers need.  It is, and there is nothing to rename:
 * it is TRUE as stated, not merely plausible: the exhaustive search recorded above
   (`|p| ≤ 4000`, `1 ≤ e ≤ 300`, coprime) finds `(0, 1)` and nothing else;
 * and it is neither vacuous nor over-strong — `(0, 1)` IS a solution, and dropping
-  `hcop` admits `(0, k)` for every `k`. -/
+  `hcop` admits `(0, k)` for every `k`.
 
   **WARNING (2026-07-30): THIS IS THE ONE PLACE WHERE LEVEL 11 DOES *NOT*
   TRANSCRIBE, and it is not a matter of changing constants.**
@@ -548,7 +548,7 @@ statement is the one the consumers need.  It is, and there is nothing to rename:
   a real prerequisite, not plumbing, and it is the reason a straight transcription
   of `MazurLevel11` stalls.**  (Everything else in the level-11 chain — the norm
   form, the halving witness, the `ε`-class obstruction, the archimedean drop, the
-  sieve — really does transcribe with new constants.)
+  sieve — really does transcribe with new constants.) -/
 theorem integral_leaf {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 + 4 * p ^ 2 * e ^ 2 + 16 * p * e ^ 4 + 16 * e ^ 6) :
     p = 0 ∧ e = 1 := by
