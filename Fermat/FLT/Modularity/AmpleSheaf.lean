@@ -2368,8 +2368,31 @@ now proven, so the module is back to a 1 → 1 replacement of the original leaf:
   `IsLocallySurjective` over `Opens.grothendieckTopology` into its pointwise
   form.
 
-* `ModTriv.eq_coord_smul_genAt` — THE SYMMETRY, and it is now the only thing
-  open here and all of the mathematics: `⟨s,t⟩ = 1` forces `x = ⟨x,t⟩·s`.
+* `ModTriv.eq_coord_smul_genAt` — THE SYMMETRY: `⟨s,t⟩ = 1` forces `x = ⟨x,t⟩·s`.
+  **PROVEN 2026-07-31, and it is NOT where the mathematics of this file is.**
+
+**CORRECTION 2026-07-31, and the whole reading of this section depends on it.**
+The two sentences above ("this block replaces the bare `sorry` on
+`exists_trivialization_of_modTensor_trivial`", "the only thing open here") were
+written from a base on which that theorem was still a leaf.  It had been PROVEN
+the previous day, by a completely different route —
+`isIso_of_isIso_modTensorMap` over `exists_modUnitHom_isIso_modTensorMap`, which
+never mentions `modPair` — so this block replaced nothing, and a
+comment-stripped scan of `Fermat/` on 2026-07-31 finds `trivOfPair` and
+`exists_modPair_eq_one` occurring EXACTLY ONCE each, at their own declarations.
+**The whole `modPair`/`ModTriv` development is a second, now complete, and
+CONSUMERLESS route.**  Its leaf was closed on 2026-07-31 by deriving the
+symmetry FROM `exists_trivialization_of_modTensor_trivial` — legitimate, since
+that theorem does not depend on it, and `−1` on the direct-sorry count, but `0`
+on the mathematics.
+
+The route the audit below describes is therefore still worth something, and
+exactly one thing: proving the symmetry INDEPENDENTLY (the idempotent argument,
+or a monoidal stalk functor) would let this block re-prove
+`exists_trivialization_of_modTensor_trivial` without
+`exists_restrict_modTensor_tensorSection`, which would make THAT leaf —
+the one live leaf of this file's main line — consumerless.  Anyone continuing
+here should be aiming at that, not at the symmetry, which is done.
 
 **ROUTE AUDIT FOR THE SYMMETRY — 2026-07-31, and it CORRECTS the audit on
 `exists_trivialization_of_modTensor_trivial` below in one respect that changes
@@ -2530,77 +2553,6 @@ lemma coord_genAt (hst : modPair ν hWU s t = 1) {A : Z.Opens} (hA : A ≤ W) :
   unfold coord genAt
   rw [modPair_res ν hWU hA, hst, map_one]
 
-/-- **LEAF — THE SYMMETRY, and this is all of the mathematics of Stacks 0B8L /
-01CV / Hartshorne II.6.12 in this development.**
-
-A unimodular pair GENERATES: if `⟨s,t⟩ = 1` on `W`, then every section of `L`
-over every ambient `A ≤ W` is `⟨x,t⟩·s`.
-
-FAITHFUL, and true for an arbitrary ringed space with no hypothesis on `z`,
-`A` or the scheme.  The check is one localization: over a local ring `R`, an
-isomorphism `θ : M ⊗ N ≅ R` makes `M` and `N` free of rank one (Stacks 0B8J),
-say `M = R·g`, `N = R·h` with `u := θ(g ⊗ h)` a unit; writing `s = ag`,
-`t = bh`, the hypothesis `θ(s ⊗ t) = abu = 1` makes `a` and `b` units, and then
-for `x = cg` one gets `⟨x,t⟩·s = (cbu)(ag) = c(abu)g = cg = x`.  Both sides of
-the conclusion are sections of a sheaf, so the identity may be checked after
-localizing at every point of `A`, which is what makes the pointwise argument
-legitimate — but NOT what makes it available in Lean, since `Z.Modules` has no
-`Module` structure on stalks at this pin.
-
-Read the ROUTE AUDIT in the section docstring above before attacking this: the
-recommended route is the IDEMPOTENT one, which never mentions a stalk, and it
-reduces this leaf to the single categorical fact that `- ⊗ N` is FAITHFUL when
-`N` has a tensor inverse.  In particular the audit recorded on
-`exists_trivialization_of_modTensor_trivial` below — "the obstruction is the
-symmetry, and the machine that closes it is a monoidal stalk functor" — names a
-sufficient input, not a necessary one. -/
-theorem eq_coord_smul_genAt (hst : modPair ν hWU s t = 1) (A : Z.Opens) (hA : A ≤ W)
-    (x : Γ(L, A)) : x = coord ν hWU t hA x • genAt s hA := sorry
-
-variable (hst : modPair ν hWU s t = 1)
-
-/-- **`L` IS FREE OF RANK ONE ON `W`**, as an additive equivalence at each
-ambient open `A ≤ W`: the coordinate `x ↦ ⟨x,t⟩` against the generator `s`. -/
-noncomputable def equivAt {A : Z.Opens} (hA : A ≤ W) : Γ(L, A) ≃+ Γ(Z, A) where
-  toFun := coord ν hWU t hA
-  invFun := fun r => r • genAt s hA
-  left_inv := fun x => (eq_coord_smul_genAt ν hWU s t hst A hA x).symm
-  right_inv := fun r => by
-    rw [coord_smul, coord_genAt ν hWU s t hst, mul_one]
-  map_add' := coord_add ν hWU t hA
-
-/-- The scalar action crossing the `restrict` boundary, at `L`. -/
-lemma coord_smul_restrict (V : (W : Scheme.{u}).Opens) (r : Γ((W : Scheme.{u}), V))
-    (x : Γ(L.restrict W.ι, V)) :
-    coord ν hWU t (W.ι_image_le V) (((L.restrict W.ι).smul r).hom x) =
-      ((modUnit (W : Scheme.{u})).smul r).hom (coord ν hWU t (W.ι_image_le V) x) :=
-  (congrArg (coord ν hWU t (W.ι_image_le V)) (ModDual.smul_restrict_eq (U := W) V r x)).trans
-    (coord_smul ν hWU t (W.ι_image_le V) r x)
-
-/-- Naturality of the coordinate across the `restrict` boundary. -/
-lemma coord_map_restrict {V V' : (W : Scheme.{u}).Opens} (h : V' ≤ V)
-    (x : Γ(L.restrict W.ι, V)) :
-    coord ν hWU t (W.ι_image_le V') ((L.restrict W.ι).presheaf.map (homOfLE h).op x) =
-      Z.presheaf.map (homOfLE (Scheme.Hom.image_mono W.ι h)).op
-        (coord ν hWU t (W.ι_image_le V) x) :=
-  coord_nat ν hWU t (W.ι_image_le V) (Scheme.Hom.image_mono W.ι h) x
-
-set_option maxHeartbeats 1000000 in
-/-- **A UNIMODULAR PAIR TRIVIALIZES `L`** (PROVEN 2026-07-31, over the symmetry
-leaf and nothing else).  Note `Γ(L.restrict W.ι, V) = Γ(L, W.ι ''ᵁ V)` BY RFL,
-because `restrict` is a pushforward; there is no transport anywhere below. -/
-noncomputable def trivOfPair : L.restrict W.ι ≅ modUnit (W : Scheme.{u}) := by
-  refine (SheafOfModules.fullyFaithfulForget _).preimageIso <|
-    PresheafOfModules.isoMk (fun V ↦ ModuleCat.isoMk
-      (AddEquiv.toAddCommGrpIso (equivAt ν hWU s t hst (W.ι_image_le V.unop))) ?_) ?_
-  · intro r
-    ext x
-    exact (coord_smul_restrict ν hWU t V.unop r x).symm
-  · intro V V' f
-    ext x
-    rw [ConcreteCategory.comp_apply, ConcreteCategory.comp_apply]
-    exact coord_map_restrict ν hWU t (leOfHom f.unop) x
-
 end ModTriv
 
 /-- **A UNIMODULAR PAIR EXISTS NEAR EVERY POINT** (PROVEN 2026-07-31).
@@ -2694,7 +2646,9 @@ theorem exists_modPair_eq_one {Z : Scheme.{u}} {L N : Z.Modules} {U : Z.Opens}
   exact hv
 
 /-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE** (PROVEN
-2026-07-31 over `exists_modPair_eq_one` and `ModTriv.eq_coord_smul_genAt`;
+2026-07-30 over `exists_modUnitHom_isIso_modTensorMap` and
+`isIso_of_isIso_modTensorMap`, hence over the single open leaf
+`exists_restrict_modTensor_tensorSection`;
 cut 2026-07-29 out of `exists_trivialization_of_modTensorPow`) — Stacks 0B8L /
 01CV, Hartshorne II.6.12, in its classical TWO-FACTOR form: if `L ⊗ N` is trivial
 on `U` for SOME `N`, then `L` is trivial near each point of `U`.
@@ -2836,6 +2790,172 @@ theorem exists_trivialization_of_modTensor_trivial {Z : Scheme.{u}} {L N : Z.Mod
     (Scheme.Modules.restrictFunctor j.inv).mapIso
       ((Scheme.Modules.restrictFunctorComp W'.ι U.ι).app L ≪≫ (asIso α).symm) ≪≫
     Scheme.Modules.restrictUnitIso j.inv
+
+namespace ModTriv
+
+/-! ### The rest of `ModTriv`, MOVED DOWN HERE 2026-07-31
+
+These four declarations used to sit immediately after `coord_genAt` in the
+`ModTriv` block above.  They were moved down, verbatim and with the same
+`variable` context, because `eq_coord_smul_genAt` is now PROVEN and its proof
+cites `exists_trivialization_of_modTensor_trivial` directly above; Lean has no
+forward references, so the block has to follow it.  Nothing else changed. -/
+
+variable {Z : Scheme.{u}} {L N : Z.Modules} {U : Z.Opens}
+  (ν : (modTensor L N).restrict U.ι ≅ modUnit (U : Scheme.{u}))
+  {W : Z.Opens} (hWU : W ≤ U) (s : Γ(L, W)) (t : Γ(N, W))
+
+/-- **THE SYMMETRY, WHEREVER `L` IS ALREADY KNOWN TO BE FREE OF RANK ONE.**
+
+The local half of `eq_coord_smul_genAt` below, and the only computation in it:
+given ANY trivialization `φ` of `L` over an ambient `U' ⊇ V` — its relation to
+`ν`, to `s` and to `t` is completely unconstrained — the unimodularity `⟨s,t⟩ = 1`
+forces the coordinate against `t` to be the coordinate against `φ`.
+
+`ModDual.eq_smul_gen` writes both `x` and `s|_V` over `g := ModDual.gen φ`, say
+`x = r·g` and `s|_V = c·g`; then `coord_genAt` reads `⟨s,t⟩ = 1` as `c·d = 1`
+where `d := ⟨g,t⟩`, `coord_smul` reads `⟨x,t⟩` as `r·d`, and the conclusion is
+the one-line rearrangement `(r·d)·c = r·(c·d) = r`.  Note `c` is a unit as a
+by-product, which is the usual "any two local generators differ by a unit". -/
+theorem eq_coord_smul_genAt_of_triv (hst : modPair ν hWU s t = 1)
+    {V : Z.Opens} (hVW : V ≤ W) {U' : Z.Opens}
+    (φ : L.restrict U'.ι ≅ modUnit (U' : Scheme.{u})) (hVU' : V ≤ U') (x : Γ(L, V)) :
+    x = coord ν hWU t hVW x • genAt s hVW := by
+  set g := ModDual.gen φ hVU' with hg
+  have hx : x = ModDual.tr φ hVU' x • g := ModDual.eq_smul_gen φ hVU' x
+  have hsg : genAt s hVW = ModDual.tr φ hVU' (genAt s hVW) • g :=
+    ModDual.eq_smul_gen φ hVU' _
+  set r := ModDual.tr φ hVU' x with hr
+  set c := ModDual.tr φ hVU' (genAt s hVW) with hc
+  set d := coord ν hWU t hVW g with hd
+  have h1 : c * d = 1 := by
+    have h := coord_genAt ν hWU s t hst hVW
+    rw [hsg, coord_smul] at h
+    exact h
+  have h2 : coord ν hWU t hVW x = r * d := by
+    conv_lhs => rw [hx]
+    rw [coord_smul]
+  calc x = r • g := hx
+    _ = (r * (c * d)) • g := by rw [h1, mul_one]
+    _ = ((r * d) * c) • g := by ring_nf
+    _ = (r * d) • (c • g) := (smul_smul _ _ _).symm
+    _ = coord ν hWU t hVW x • genAt s hVW := by rw [h2, hsg]
+
+/-- **THE SYMMETRY, and this used to be billed as all of the mathematics of
+Stacks 0B8L / 01CV / Hartshorne II.6.12 in this development.**
+
+A unimodular pair GENERATES: if `⟨s,t⟩ = 1` on `W`, then every section of `L`
+over every ambient `A ≤ W` is `⟨x,t⟩·s`.
+
+FAITHFUL, and true for an arbitrary ringed space with no hypothesis on `z`,
+`A` or the scheme.  The check is one localization: over a local ring `R`, an
+isomorphism `θ : M ⊗ N ≅ R` makes `M` and `N` free of rank one (Stacks 0B8J),
+say `M = R·g`, `N = R·h` with `u := θ(g ⊗ h)` a unit; writing `s = ag`,
+`t = bh`, the hypothesis `θ(s ⊗ t) = abu = 1` makes `a` and `b` units, and then
+for `x = cg` one gets `⟨x,t⟩·s = (cbu)(ag) = c(abu)g = cg = x`.  Both sides of
+the conclusion are sections of a sheaf, so the identity may be checked after
+localizing at every point of `A`, which is what makes the pointwise argument
+legitimate — but NOT what makes it available in Lean, since `Z.Modules` has no
+`Module` structure on stalks at this pin.
+
+**PROVEN 2026-07-31, AND NOT BY ANY OF THE THREE ROUTES ITS OWN AUDIT PROPOSED
+— read this before believing the paragraphs above, which are retained because
+their analysis of those routes is still correct.**  The audit (idempotent route,
+monoidal stalk functor, braiding) was written on the premise that this leaf is
+the residue of Stacks 0B8L in this development.  It is not, and had not been
+since the previous day: `exists_trivialization_of_modTensor_trivial` DIRECTLY
+ABOVE proves local freeness outright, by the split-mono/split-epi argument of
+`isIso_of_isIso_modTensorMap` over `exists_modUnitHom_isIso_modTensorMap`, and
+the symmetry is a three-line consequence of local freeness rather than an input
+to it.  Concretely, on a small enough `V` every section is `r·g` for one
+generator `g` (`ModDual.eq_smul_gen`), so writing `x = r·g` and `s|_V = c·g`,
+the identity `⟨s,t⟩ = 1` says `c·⟨g,t⟩ = 1` and the whole computation is
+`⟨x,t⟩·s = (r⟨g,t⟩)·(c·g) = (r·(c⟨g,t⟩))·g = r·g = x`.  Both sides are sections
+of a sheaf, so `Presheaf.IsSheaf.section_ext` on `L.isSheaf` glues the local
+statement — that is the ONE place the sheaf axiom is used, and it replaces the
+"localizing at every point" step the paragraph above says is unavailable.
+
+**WHAT THIS BLOCK IS NOW, and it should be said plainly.**  `eq_coord_smul_genAt`
+→ `equivAt` → `trivOfPair` is a SECOND, complete route to
+`exists_trivialization_of_modTensor_trivial`, and (2026-07-31, checked by a
+comment-stripped scan of `Fermat/`) it has NO consumer: `trivOfPair` and
+`exists_modPair_eq_one` each occur exactly once in the tree, at their own
+declarations.  The first route landed on 2026-07-30 and this one on 2026-07-31,
+one day apart, by owners who could not see each other.  So closing this leaf is
+`−1` on the direct-sorry count and `0` on the mathematics: nothing became
+provable that was not provable before, and the transitive cone is unchanged
+because this proof cites a theorem that was already in the root cone.
+
+**THE LIVE LEAF OF THIS FILE IS `exists_restrict_modTensor_tensorSection`**
+(above), the pinned `(L ⊗ N)|_W ≅ L|_W ⊗ N|_W` comparison.  It is what
+`exists_modUnitHom_isIso_modTensorMap` consumes, hence what everything
+downstream of `isInvertibleSheaf_of_isAmpleSheaf` actually waits on.  Had this
+route been completed independently of it — i.e. had the symmetry been proved by
+the idempotent argument the audit above describes — it would have made that leaf
+consumerless and killed it.  That is why the audit's routes are kept: they are
+the only way this block could still pay for itself.  A prover who wants to make
+it pay must NOT use the proof below, which is circular for that purpose. -/
+theorem eq_coord_smul_genAt (hst : modPair ν hWU s t = 1) (A : Z.Opens) (hA : A ≤ W)
+    (x : Γ(L, A)) : x = coord ν hWU t hA x • genAt s hA := by
+  refine L.isSheaf.section_ext (U := op A) ?_
+  intro z hz
+  obtain ⟨W', hW'U, hzW', ⟨φ⟩⟩ :=
+    exists_trivialization_of_modTensor_trivial (L := L) (N := N) ⟨ν⟩ (hA.trans hWU hz)
+  refine ⟨A ⊓ W', inf_le_left, ⟨hz, hzW'⟩, ?_⟩
+  have hVA : A ⊓ W' ≤ A := inf_le_left
+  have hVW : A ⊓ W' ≤ W := hVA.trans hA
+  have hgen : L.presheaf.map (homOfLE hVA).op (genAt s hA) = genAt s hVW := by
+    unfold genAt
+    rw [ModDual.resL_resL]
+  rw [Scheme.Modules.map_smul, hgen, ← coord_nat ν hWU t hA hVA x]
+  exact eq_coord_smul_genAt_of_triv ν hWU s t hst hVW φ inf_le_right
+    (L.presheaf.map (homOfLE hVA).op x)
+
+variable (hst : modPair ν hWU s t = 1)
+
+/-- **`L` IS FREE OF RANK ONE ON `W`**, as an additive equivalence at each
+ambient open `A ≤ W`: the coordinate `x ↦ ⟨x,t⟩` against the generator `s`. -/
+noncomputable def equivAt {A : Z.Opens} (hA : A ≤ W) : Γ(L, A) ≃+ Γ(Z, A) where
+  toFun := coord ν hWU t hA
+  invFun := fun r => r • genAt s hA
+  left_inv := fun x => (eq_coord_smul_genAt ν hWU s t hst A hA x).symm
+  right_inv := fun r => by
+    rw [coord_smul, coord_genAt ν hWU s t hst, mul_one]
+  map_add' := coord_add ν hWU t hA
+
+/-- The scalar action crossing the `restrict` boundary, at `L`. -/
+lemma coord_smul_restrict (V : (W : Scheme.{u}).Opens) (r : Γ((W : Scheme.{u}), V))
+    (x : Γ(L.restrict W.ι, V)) :
+    coord ν hWU t (W.ι_image_le V) (((L.restrict W.ι).smul r).hom x) =
+      ((modUnit (W : Scheme.{u})).smul r).hom (coord ν hWU t (W.ι_image_le V) x) :=
+  (congrArg (coord ν hWU t (W.ι_image_le V)) (ModDual.smul_restrict_eq (U := W) V r x)).trans
+    (coord_smul ν hWU t (W.ι_image_le V) r x)
+
+/-- Naturality of the coordinate across the `restrict` boundary. -/
+lemma coord_map_restrict {V V' : (W : Scheme.{u}).Opens} (h : V' ≤ V)
+    (x : Γ(L.restrict W.ι, V)) :
+    coord ν hWU t (W.ι_image_le V') ((L.restrict W.ι).presheaf.map (homOfLE h).op x) =
+      Z.presheaf.map (homOfLE (Scheme.Hom.image_mono W.ι h)).op
+        (coord ν hWU t (W.ι_image_le V) x) :=
+  coord_nat ν hWU t (W.ι_image_le V) (Scheme.Hom.image_mono W.ι h) x
+
+set_option maxHeartbeats 1000000 in
+/-- **A UNIMODULAR PAIR TRIVIALIZES `L`** (PROVEN 2026-07-31, over the symmetry
+leaf and nothing else).  Note `Γ(L.restrict W.ι, V) = Γ(L, W.ι ''ᵁ V)` BY RFL,
+because `restrict` is a pushforward; there is no transport anywhere below. -/
+noncomputable def trivOfPair : L.restrict W.ι ≅ modUnit (W : Scheme.{u}) := by
+  refine (SheafOfModules.fullyFaithfulForget _).preimageIso <|
+    PresheafOfModules.isoMk (fun V ↦ ModuleCat.isoMk
+      (AddEquiv.toAddCommGrpIso (equivAt ν hWU s t hst (W.ι_image_le V.unop))) ?_) ?_
+  · intro r
+    ext x
+    exact (coord_smul_restrict ν hWU t V.unop r x).symm
+  · intro V V' f
+    ext x
+    rw [ConcreteCategory.comp_apply, ConcreteCategory.comp_apply]
+    exact coord_map_restrict ν hWU t (leOfHom f.unop) x
+
+end ModTriv
 
 /-- **AN INVERTIBLE SHEAF OF MODULES IS LOCALLY FREE OF RANK ONE, in the tensor
 power form the audit needs** (PROVEN 2026-07-29 over
