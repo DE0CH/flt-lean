@@ -23,7 +23,9 @@ import pathlib
 import re
 import shlex
 import subprocess
+import traceback
 import urllib.request
+import uuid
 import sys
 import time
 
@@ -415,18 +417,6 @@ YOUR TASK FOLLOWS.
 ------------------------------------------------------------------------------
 """
 
-TAKEOVER = """\
-NOTE -- YOU ARE TAKING OVER A WORKTREE THAT ALREADY HAS WORK IN IT.
-A previous agent was working here and was stopped mid-task when the fleet was
-shut down; its conversation cannot be replayed, but its work is still on disk.
-Run `git -C %(worktree)s status --short` and `git -C %(worktree)s diff` FIRST.
-Treat what you find as a colleague's unfinished work: read it, judge it, and
-either finish it or explain in your commit why you replaced it. Do not delete
-it unexamined, and do not assume it is wrong merely because it is unfamiliar.
-------------------------------------------------------------------------------
-"""
-
-
 def compose(kind, name, j, s):
     head = PREAMBLE % {
         "kind": {"agent": "prover agent", "merger": "merge worker",
@@ -437,8 +427,6 @@ def compose(kind, name, j, s):
     }
     body = j["payload"] if isinstance(j["payload"], str) else json.dumps(j["payload"])
     if kind == "agent":
-        if j.get("takeover"):
-            head += TAKEOVER % {"worktree": pathlib.Path.home() / j["worktree"]}
         body = body.replace("{{FLT_WORKTREE}}", str(pathlib.Path.home() / j["worktree"]))
     elif kind == "merger":
         inbox = j.get("inbox") or []
@@ -669,7 +657,16 @@ here, because on a NO-GO that is exactly who reads it.
 # attempts a minute, ~500 in half an hour -- because nothing recorded that the
 # door was shut. This makes "the door is shut, and until when" a piece of
 # state, so the wait becomes a deliberate idle rather than a retry storm.
-LIMIT_MARK = "session limit"
+# The API's refusals all share one stem -- "You've hit your <something> limit"
+# -- and only the noun varies: session, weekly, usage. Matching the STEM rather
+# than a list of nouns is what makes this survive the next wording; an
+# enumeration silently stops detecting the day a new one appears, and a missed
+# refusal is read as a dead agent, resumed, refused again, and churns.
+#
+# Found by testing a resume against a genuinely exhausted account, which
+# answered "You've hit your WEEKLY limit" while the detector matched only
+# "session limit".
+LIMIT_RE = re.compile(r"hit your \w+ limit", re.I)
 
 
 def parse_reset(text):
@@ -695,33 +692,17 @@ def creds_stamp():
         return 0
 
 
-def probe_quota():
-    """Ask the API, with the key currently on disk, whether it will serve us.
+def send_probe():
+    """Launch one probe with the credential currently on disk.
 
-    NOT a timer. The refusal message carries a reset time, but that time
-    describes whichever ACCOUNT was live when it was printed, and a rotator
-    swaps ~/.claude/.credentials.json underneath us from a bank of accounts. So
-    the deadline is unreliable in BOTH directions: it can expire while we are
-    still refused, and -- what happened here -- remain in the future long after
-    a rotation has already made us servable. The logs even disagreed with each
-    other, 9:30pm against 9:50pm.
-
-    Everywhere else this loop observes rather than believes: `ancestor` asks
-    git, `alive` asks /proc, `main` asks the repo. This applies the same rule
-    to the one place that was trusting a string.
+    Pure effect: whether to probe, and what a served probe means, are decided
+    by rows 19 and 20. This only does the launching.
     """
     result = STATE / "quota-probe.json"
-    if result.exists():
-        rm(result)
-        rm(STATE / "quota-probe")
-        return True
-    st = STATE / "quota-probe"
-    last = float((rd(st, "") or "0").strip() or 0)
-    if time.time() - last < PROBE_EVERY:
-        return False
-    wr(st, str(time.time()))
-    inner = ('exec -a flt-job-quotaprobe %s --dangerously-skip-permissions -p %s'
-             % (shlex.quote(CLAUDE),
+    rm(result)
+    inner = ('exec -a flt-job-quotaprobe %s --model %s '
+             '--dangerously-skip-permissions -p %s'
+             % (shlex.quote(CLAUDE), shlex.quote(MODEL),
                 shlex.quote('Write the file %s containing exactly {"ok":true} '
                             'and nothing else, then stop.' % result)))
     try:
@@ -732,49 +713,9 @@ def probe_quota():
             timeout=30)
     except Exception:
         pass
-    return False
 
 
-def quota_until():
-    """Are we currently refused? A fact to be re-checked, not a sentence to serve.
-
-    The state file records only THAT we were refused and which credential was
-    live at the time. It clears when a probe succeeds. A rotation (the
-    credentials file changing underneath us) forces the next probe immediately
-    rather than waiting out the interval, because a new account is the most
-    likely reason the answer has changed.
-    """
-    v = rd(STATE / "quota-blocked")
-    if not v:
-        return None
-    try:
-        d = json.loads(v)
-    except json.JSONDecodeError:
-        rm(STATE / "quota-blocked")
-        return None
-    if d.get("creds") and d["creds"] != creds_stamp():
-        rm(STATE / "quota-probe")          # rotated: probe now, do not wait
-    if probe_quota():
-        rm(STATE / "quota-blocked")
-        notify("flt-loop: quota available again, resuming",
-              "A probe with the credential now on disk was served, so the "
-              "block was lifted on evidence. Spawning has resumed.")
-        return None
-    return d.get("since", 1)               # truthy == still blocked
-
-
-def note_quota(reset_epoch, why):
-    wr(STATE / "quota-blocked",
-       json.dumps({"since": int(time.time()), "creds": creds_stamp(),
-                   "log_said": int(reset_epoch)}))
-    notify("flt-loop: quota exhausted, idling",
-          "Spawning is being refused. The loop is IDLING rather than retrying, "
-          "and probes every %ds with whatever credential is on disk -- the "
-          "reset time in the message is only a hint, since the rotator can "
-          "swap accounts underneath us.\n\n%s" % (PROBE_EVERY, why))
-
-
-def refused(name, j):
+def refused_text(name, j):
     """Did this job's log say it was refused? Only asked about dead-looking jobs.
 
     The log is EVIDENCE, and evidence has to be consumed. A job refused an hour
@@ -788,15 +729,23 @@ def refused(name, j):
     (renamed, not deleted) but it is out of the evidence path, and only a
     genuinely new refusal -- written by a fresh spawn attempt -- can block again.
     """
+    t = rd(STATE / "joblogs" / ("%s-%s.log" % (name, j["token"])), "") or ""
+    return t if LIMIT_RE.search(t) else None
+
+
+def consume_refusal(name, j):
+    """Move the evidence aside once a row has acted on it.
+
+    The log is a historical record: a job refused an hour ago keeps the line
+    forever, and a refusal does not change the token, so the same file is read
+    on every tick. Renaming (not deleting) keeps the history while taking it
+    out of the evidence path, so only a genuinely new refusal can block again.
+    """
     log = STATE / "joblogs" / ("%s-%s.log" % (name, j["token"]))
-    t = rd(log, "") or ""
-    if LIMIT_MARK not in t:
-        return None
     try:
         log.rename(log.with_suffix(".log.refused-%d" % time.time()))
     except OSError:
         rm(log)
-    return t
 
 
 # --------------------------------------------------------------- spawn
@@ -828,11 +777,36 @@ def do_spawn(s, name, j):
     # already runs under its own CLAUDE_CONFIG_DIR with a different model.
     # Recorded on the job too, so what ran is auditable from the state alone.
     j["model"] = MODEL
+    # The loop CHOOSES the session id rather than trying to discover one, which
+    # is what makes a real resume possible: --session-id on the first run,
+    # --resume on every later one. Sessions are stored per PROJECT DIRECTORY,
+    # so a resume must run with the same cwd as the original spawn -- row 8
+    # respawns into the same worktree, so that holds by construction.
+    j.setdefault("session", str(uuid.uuid4()))
+    if j.get("resume"):
+        # Continue the actual conversation. No prompt file: the agent already
+        # knows its task, what it tried and what failed, which is the whole
+        # point of resuming instead of starting a stranger in its worktree.
+        # Always `continue`. The empty-prompt form only continues a session
+        # the CLI itself DEFERRED, which a killed or refused agent never is, so
+        # trying it first bought a guaranteed-failing call before the real one.
+        act = "--resume %s -p continue" % shlex.quote(j["session"])
+    else:
+        # The FIRST run of a job: hand it the composed prompt and name the
+        # session so the resume above has something to address.
+        #
+        # This branch was deleted by an edit that only meant to simplify the
+        # resume form, leaving `act` assigned on one path out of two -- so
+        # every ordinary spawn raised UnboundLocalError and the loop panicked
+        # itself to a stop. --dry-run did not catch it because it evaluates
+        # guards without running row actions: the dry run validates the TABLE,
+        # not the EFFECTS.
+        act = ("--session-id %s -p \"$(cat %s)\""
+               % (shlex.quote(j["session"]), shlex.quote(str(pf))))
     inner = ("cd %s 2>/dev/null || cd %s; "
-             "exec -a flt-job-%s %s --model %s --dangerously-skip-permissions "
-             "-p \"$(cat %s)\""
+             "exec -a flt-job-%s %s --model %s --dangerously-skip-permissions %s"
              % (shlex.quote(str(wt)), shlex.quote(str(REPO)), j["token"],
-                shlex.quote(CLAUDE), shlex.quote(MODEL), shlex.quote(str(pf))))
+                shlex.quote(CLAUDE), shlex.quote(MODEL), act))
     cmd = ("setsid --fork nohup bash -c %s >%s 2>&1 </dev/null"
            % (shlex.quote(inner), shlex.quote(str(log))))
     try:
@@ -844,6 +818,8 @@ def do_spawn(s, name, j):
 
 
 flt_loop_rows.SPAWN = do_spawn
+flt_loop_rows.PROBE = send_probe
+flt_loop_rows.CONSUME_REFUSAL = consume_refusal
 
 
 # --------------------------------------------------------------- state I/O
@@ -916,14 +892,14 @@ def load():
         # DEAD and re-dispatched. Before believing that, ask its log whether it
         # ever got to run: a refusal is not a death, and treating it as one is
         # what produced the retry storm.
+        # OBSERVED, not acted on. Whether this job was refused by the API is a
+        # fact about it, like `alive` or `sentinel`; arming the block, moving
+        # the log aside and un-spawning the record are DECISIONS, and they
+        # belong to a row. load() writing state was the one piece of quota
+        # handling that sat outside the transition table.
+        j["refused"] = ""
         if j["started"] and not j["alive"] and not j["sentinel"]:
-            txt = refused(n, j)
-            if txt:
-                if not quota_until():
-                    note_quota(parse_reset(txt), "%s (%s) was refused: %s"
-                               % (n, j["kind"], txt.strip().splitlines()[0]))
-                j["started"] = False       # unspawned again, retried after the block
-                j["alive"] = False
+            j["refused"] = refused_text(n, j) or ""
         j.setdefault("retries", 0)
         jobs[n] = j
     wh = worker_hosts()
@@ -1002,7 +978,10 @@ def load():
         "ancestor": anc,
         "healthy": {k: v == "1" for k, v in _pairs("healthy").items()},
         "hosts": refresh_hosts(),
-        "quota_until": quota_until(),
+        # Plain observed state, like batch or inflight. No decision is taken
+        # here: the rows decide, and save() writes back whatever they set.
+        "quota_block": json.loads(rd(STATE / "quota-blocked") or "null"),
+        "probe": {"served": (STATE / "quota-probe.json").exists()},
         "log": [], "git": [], "email": [],
     }
 
@@ -1014,6 +993,12 @@ def save(s):
         "\n=== TASK ===\n".join(s["queue1"]["tasks"])))
     wr(STATE / "queue2", "\n=== TASK ===\n".join(s["queue2"]))
     wr(STATE / "merger-inbox", "".join(m + "\n" for m in s["merger_inbox"]))
+    if s.get("quota_block"):
+        wr(STATE / "quota-blocked", json.dumps(s["quota_block"]))
+    else:
+        rm(STATE / "quota-blocked")
+    if not s.get("probe", {}).get("served"):
+        rm(STATE / "quota-probe.json")
     wr(STATE / "batch", "".join(b + "\n" for b in s["batch"]))
     if s["inflight"] is None:
         rm(STATE / "inflight")
@@ -1041,8 +1026,8 @@ def save(s):
         # first tick -- spawn, "died", re-dispatch, spawn, every ~15s, which is
         # exactly the churn the grace period exists to stop.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
-                                     "retries", "host", "pid", "session",
-                                     "takeover", "spawned_at", "model", "inbox")}
+                                     "retries", "host", "pid", "session", "resume",
+                                     "spawned_at", "model", "inbox", "resume")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
             wr(STATE / "jobs" / (n + ".started"), j["token"])
@@ -1164,6 +1149,91 @@ IDLE, PANIC = 13, 14
 QUIET = (IDLE, 4)
 
 
+def panic(why):
+    """Machine-level panic: hand the loop to a medic and STOP.
+
+    This is PANIC2: invoked directly when the state machine is not working.
+    panic1 is the row-based route (rows 5, 14, 17), which may assume the
+    machine still runs and lets medic1 wait its turn through row 3. This one
+    may assume nothing, so it spawns medic2 itself, locally, and exits.
+
+    Distinct from the medic route THROUGH the table (rows 5, 14, 17), which
+    handles states the loop can still reason about. This one is for faults that
+    stop the reasoning: if every tick raises, no row runs, so a record left for
+    row 3 would sit unspawned for ever. The table cannot dispatch the repair
+    for a fault that stops the table.
+
+    exit(1) rather than carrying on: a loop that keeps ticking through a fault
+    it cannot survive writes state nobody can trust, and the medic it just
+    summoned owns the machine now. The medic is detached (setsid, reparented to
+    init), so it outlives this process by construction.
+    """
+    # SPAWN MEDIC2 FIRST, LOCALLY, WITH NOTHING ELSE IN THE WAY.
+    #
+    # panic2 (this function) is invoked directly when the state machine is NOT
+    # working -- an unhandled exception -- as opposed to panic1, which is a ROW
+    # and may assume the machine still runs. So nothing here may depend on the
+    # machine: no rules module, no prompt composition, no file written before
+    # the spawn. Every one of those is a way to die before medic2 exists, and a
+    # panic with no medic is a dead loop nobody is coming for.
+    #
+    # LOCAL, not ssh. medic2 runs on mystique, which is THIS machine, so ssh
+    # would add sshd, the network and key auth as failure modes for a local
+    # process -- at the exact moment things are already broken. The previous
+    # version went through ssh and its richer path also went through do_spawn,
+    # which is where the fault that killed the loop actually lived: the panic
+    # path was broken by the same bug it was reporting.
+    t = "%08x" % (os.getpid() ^ int(time.time()))
+    prompt = ("The flt-loop raised an unhandled exception and STOPPED. You own "
+              "it now: the state is ~/.flt-loop, the source ~/flt-lean/flt-loop.py "
+              "and ~/flt-lean/flt_loop_rows.py. Fix it and restart it.\n\n" + why[-3000:])
+    try:
+        subprocess.Popen(
+            [CLAUDE, "--model", MODEL, "--dangerously-skip-permissions",
+             "-p", prompt],
+            cwd=str(REPO), start_new_session=True,
+            stdin=subprocess.DEVNULL,
+            stdout=open(STATE / "joblogs" / ("medic2-%s.log" % t), "a"),
+            stderr=subprocess.STDOUT)
+    except Exception:
+        pass
+    # Everything below is best-effort bookkeeping. It cannot prevent the exit,
+    # and none of it gates the medic already running.
+    for step in (
+        lambda: wr(STATE / "jobs" / "medic.json", json.dumps(
+            {"kind": "medic", "worktree": "flt-lean", "token": t, "retries": 0,
+             "host": "mystique", "panic2": True,
+             "payload": prompt}, indent=1)),
+        lambda: wr(STATE / "jobs" / "medic.started", t),
+        lambda: notify("flt-loop: PANIC2 -- loop stopped, medic2 running locally",
+                       why[-1500:]),
+    ):
+        try:
+            step()
+        except Exception:
+            pass
+    os._exit(1)
+
+
+def _excepthook(exc_type, exc, tb):
+    """Last resort: anything that escapes the tick's own handler.
+
+    sys.excepthook is what Python calls when an exception propagates out of the
+    main thread instead of being caught -- so it covers startup, main() outside
+    the loop, and anything after it. It does NOT cover the tick body, which
+    catches its own exceptions and calls panic() directly; the two are layers,
+    not alternatives, and deliberately so: a flaky ssh or a git hiccup should
+    be retried, not treated as a broken machine.
+
+    It cannot recurse. If an excepthook raises, Python prints "Error in
+    sys.excepthook" and the original traceback rather than re-entering, and
+    panic() wraps its own body and ends in os._exit anyway. SystemExit never
+    reaches here -- the interpreter special-cases it -- so a clean shutdown is
+    not mistaken for a fault.
+    """
+    panic("".join(traceback.format_exception(exc_type, exc, tb)))
+
+
 def tick(dry=False):
     s = load()
     rows, firing = evaluate(s)
@@ -1207,6 +1277,7 @@ def main():
                 v = r["why"][:70]
             print("  %-3s %-58s %s" % (r["id"], r["label"][:58], v))
         return
+    sys.excepthook = _excepthook
     take_lock()
     startup_digest = source_digest()
     print("flt-loop running, pid %d, state %s, source %s"
@@ -1225,9 +1296,8 @@ def main():
             # return if it re-execs.
             if "medic" not in s["jobs"]:
                 adopt_source(startup_digest)
-        except Exception as e:
-            notify("flt-loop: tick raised", repr(e))
-            time.sleep(30)
+        except Exception:
+            panic(traceback.format_exc())
         if a.once:
             return
         time.sleep(TICK)

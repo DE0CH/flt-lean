@@ -79,7 +79,7 @@ def unjustified(s):
 
 
 def idle_guard(s):
-    if s.get("quota_until"):
+    if s.get("quota_block"):
         return (True, "")      # idling on quota is a legitimate wait
     live = [n for n, j in s["jobs"].items() if j["alive"]]
     if not live:
@@ -220,7 +220,7 @@ def spawnable(s, j):
     # The API is refusing work. Spawning now burns an attempt and achieves
     # nothing, so the loop waits instead -- the wait is the correct action,
     # not a degraded one.
-    if s.get("quota_until"):
+    if s.get("quota_block"):
         return False
     # SAFE MODE, enforced at the spawner rather than by row order. SPAWN has
     # to sit ABOVE the SAFE MODE row -- otherwise the row that engages safe
@@ -303,7 +303,7 @@ def rmedic_done_action(s):
 def rmedic_dead_guard(s):
     """The medic died without a verdict. Nothing below can rescue this.
 
-    Every other job's death has a recovery: an agent is respawned as a takeover,
+    Every other job's death has a recovery: an agent resumes its session,
     a merger's claim is restored to the batch. The medic has none, because the
     medic IS the recovery -- and SAFE MODE suspends every row beneath it. So a
     medic that stops without writing a sentinel wedges the loop permanently and
@@ -464,27 +464,33 @@ def r4_guard(s):
 
 
 def r4_action(s):
-    """Resume = respawn. It cannot be anything else.
+    """A died agent RESUMES its own conversation.
 
-    A stopped agent's conversation is not replayable from the loop's side: the
-    loop is a Python process, not a Claude session, and the ids it holds are
-    not resumable session ids. What survives is the WORK, in the worktree. So
-    the record is returned to unspawned and row 3 starts a fresh agent that is
-    told to read `git status`/`git diff` first and continue what it finds.
+    Every job now carries a session id -- do_spawn assigns one at the first
+    spawn -- so the takeover path is gone. It existed only for records created
+    before sessions were recorded, and told a FRESH agent to reconstruct the
+    situation from `git status`/`git diff`: no idea what had been tried, what
+    had failed, or why. That is a wasted cycle whenever the conversation is
+    still there, and it now always is.
 
-    A NEW token is minted. The old one is what the previous process advertised
-    and what its markers name, so reusing it would let a stale `.started` file
-    -- or a straggler process that is still exiting -- be mistaken for the
-    replacement.
+    A NEW token is minted even though the session is kept: the token names the
+    PROCESS (it is what the liveness sweep matches in argv[0]), the session
+    names the CONVERSATION. Reusing the token would let a stale `.started`
+    marker, or a straggler still exiting, be read as the replacement.
+
+    A record with no session at all just runs its task again from the prompt,
+    which is correct -- no session means nothing was ever said.
     """
     for n, j in jobs_of(s, "agent").items():
         if died(j):
             j["started"] = False
             j["alive"] = False
             j["token"] = tok()
-            j["takeover"] = True
             j["retries"] += 1
-            note(s, f"4  {n} died -> re-dispatched as takeover (attempt {j['retries']})")
+            j["resume"] = bool(j.get("session"))
+            note(s, "4  %s died -> %s (attempt %d)"
+                    % (n, "resuming its session" if j["resume"]
+                       else "re-running its task", j["retries"]))
 
 
 def r5_guard(s):
@@ -526,8 +532,17 @@ def r5_action(s):
             # from the worktree the record already names.
             j["host"] = (j.get("host") or host_of(s, j["worktree"])
                          or (MEDIC_HOST if j["kind"] == "medic" else None))
+            # `session` used to be recorded here for a transcript resume that
+            # does not exist and cannot: the loop is a Python process, not a
+            # Claude session, and the ids it can obtain are not resumable. It
+            # was written on every record and read by nothing, which made the
+            # capability look real. Dropped; what preserves a dead agent's work
+            # is its SESSION, which row 8 resumes rather than starting a
+            # stranger in its worktree.
             host, pid, sess = SPAWN(s, n, j)
-            j["host"], j["pid"], j["session"] = host, pid, sess
+            j["host"], j["pid"] = host, pid
+            if sess:
+                j["session"] = sess
             # Name what was spawned: row 7 is the ONE spawner for every kind,
             # so a bare "SPAWN" in the transition log is unreadable -- two
             # consecutive firings look like a double-spawn when they are a
@@ -876,6 +891,100 @@ def inferred_panic(s):
     panic(s, why)
 
 
+# Installed by the runtime: send one probe, and consume a job's refusal
+# evidence. Both are EFFECTS, so they belong to row actions rather than to
+# observation -- the loop learns it is refused by reading state, and decides
+# what to do about it in the table like everything else.
+PROBE = None            # () -> None, sends a probe
+CONSUME_REFUSAL = None  # (name, job) -> None, moves the log aside
+
+
+def now(s):
+    return s.get("now") or __import__("time").time()
+
+
+def refused_jobs(s):
+    return {n: j for n, j in s["jobs"].items() if j.get("refused")}
+
+
+def r_refused_guard(s):
+    """The API refused a job. Stop spawning until it serves us again.
+
+    This is the whole of "out of credit" as far as the machine is concerned:
+    an observation about a job, and a transition. It used to be imperative code
+    inside load(), which meant the one condition that halts the entire fleet
+    was the one condition not expressible in the transition table -- invisible
+    to --dry-run, to the medic, and to anyone reading the rows.
+    """
+    if s.get("quota_block"):
+        return (False, "already blocked")
+    hits = refused_jobs(s)
+    if not hits:
+        return (False, "no job reported an API refusal")
+    n = sorted(hits)[0]
+    return (True, "%s was refused: %s" % (n, hits[n]["refused"].strip().splitlines()[0][:70]))
+
+
+def r_refused_action(s):
+    hits = refused_jobs(s)
+    n = sorted(hits)[0]
+    s["quota_block"] = {"since": int(now(s)),
+                        "why": hits[n]["refused"].strip().splitlines()[0][:200]}
+    for m, j in hits.items():
+        # A refusal is not a death: the record goes back to unspawned so it is
+        # retried once the door opens, and its evidence is consumed so the same
+        # line cannot re-arm the block for ever.
+        j["started"], j["alive"], j["refused"] = False, False, ""
+        if CONSUME_REFUSAL:
+            CONSUME_REFUSAL(m, j)
+    note(s, "quota: refused -- spawning halted, %d record(s) returned to the queue"
+            % len(hits))
+    s["email"].append("flt-loop: quota exhausted, idling -- %s" % s["quota_block"]["why"])
+
+
+def r_unblock_guard(s):
+    if not s.get("quota_block"):
+        return (False, "not blocked")
+    if not s["probe"]["served"]:
+        return (False, "no probe has come back served")
+    return (True, "")
+
+
+def r_unblock_action(s):
+    s["quota_block"] = None
+    s["probe"] = dict(s["probe"], served=False)
+    note(s, "quota: a probe was served -- spawning resumes")
+    s["email"].append("flt-loop: quota available again, resuming")
+
+
+def r_probe_guard(s):
+    """Blocked and no answer yet -- ask again. Every tick, no timer.
+
+    A refused call costs nothing: the API rejects it immediately and it
+    consumes no quota, so there is nothing to ration and no reason to wait
+    between attempts. Probing on every cycle also removes two things that only
+    existed to approximate this one: the staleness interval, and the special
+    case that forced an immediate probe when the rotator swapped credentials.
+    Both were answering "has the answer changed yet?" indirectly. Asking every
+    tick answers it directly, and the block lifts the tick after the door
+    opens rather than up to five minutes later.
+
+    It stops on its own: a served probe fires row 19, which clears the block,
+    and this guard needs the block.
+    """
+    if not s.get("quota_block"):
+        return (False, "not blocked")
+    if s["probe"]["served"]:
+        return (False, "a served probe is waiting to be consumed")
+    return (True, "")
+
+
+def r_probe_action(s):
+    if PROBE:
+        PROBE()
+    note(s, "quota: probed with the credential now on disk")
+
+
 def anomalies(s):
     """Invariants that must hold of the state. Every violation is a bug.
 
@@ -980,6 +1089,9 @@ ROWS = [
     # ORDER. Renumbering would silently repoint those constants at other rows.
     (16, "medic died without a verdict -> escalate + STOP",
      rmedic_dead_guard, rmedic_dead_action),
+    (18, "API refused a job -> halt spawning", r_refused_guard, r_refused_action),
+    (19, "quota blocked ∧ probe served -> resume", r_unblock_guard, r_unblock_action),
+    (20, "quota blocked ∧ no answer yet -> probe again", r_probe_guard, r_probe_action),
     (3, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
     (4, "medic in flight -> SAFE MODE (all rows below suspended)",
      rmedic_wait_guard, rmedic_wait_action),
@@ -987,7 +1099,7 @@ ROWS = [
     (6, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
     (7, "branch landed -> free its worker, drop it from the merge queue",
      r3_guard, r3_action),
-    (8, "agent died -> resume from transcript", r4_guard, r4_action),
+    (8, "agent died -> resume its session", r4_guard, r4_action),
     (9, "merger died without releasing -> restore .inflight", r6_guard, r6_action),
     (10, "merger delivered main+snapshot+audit -> ADOPT", r7_guard, r7_action),
     (11, "batch ∨ derived-from-main is stale -> create merger record", r11_guard, r11_action),
