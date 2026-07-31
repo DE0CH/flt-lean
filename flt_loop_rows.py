@@ -952,6 +952,13 @@ def r_refused_action(s):
         # retried once the door opens, and its evidence is consumed so the same
         # line cannot re-arm the block for ever.
         j["started"], j["alive"], j["refused"] = False, False, ""
+        # A refusal must not count toward the retry limit. `retries` is the
+        # medic's two-strike budget (rmedic_dead_action), and a strike means
+        # "observed absent while it should have been running" -- an outage is
+        # neither, and it also breaks the consecutiveness the two strikes are
+        # meant to establish. Left uncleared, a quota window silently spends
+        # half the medic's budget before the medic has run at all.
+        j["retries"] = 0
         if CONSUME_REFUSAL:
             CONSUME_REFUSAL(m, j)
     note(s, "quota: refused -- spawning halted, %d record(s) returned to the queue"
@@ -1104,11 +1111,11 @@ ROWS = [
     # Id 16, not 3: ids are stable names that IDLE/PANIC/QUIET refer to by
     # number, so a new row is appended to the numbering and inserted in the
     # ORDER. Renumbering would silently repoint those constants at other rows.
-    (16, "medic died without a verdict -> escalate + STOP",
-     rmedic_dead_guard, rmedic_dead_action),
     (18, "API refused a job -> halt spawning", r_refused_guard, r_refused_action),
     (19, "quota blocked ∧ probe served -> resume", r_unblock_guard, r_unblock_action),
     (20, "quota blocked ∧ no answer yet -> probe again", r_probe_guard, r_probe_action),
+    (16, "medic died without a verdict -> escalate + STOP",
+     rmedic_dead_guard, rmedic_dead_action),
     (3, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
     (4, "medic in flight -> SAFE MODE (all rows below suspended)",
      rmedic_wait_guard, rmedic_wait_action),
