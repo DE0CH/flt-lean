@@ -259,6 +259,8 @@ public import Fermat.FLT.EllipticCurve.Isogeny
 -- to this file's cone and NONE to `MazurTorsion.lean`'s, which already imports
 -- `TorsionCharP` directly.
 public import Fermat.FLT.EllipticCurve.TorsionCharP
+public import Mathlib.NumberTheory.Pell
+public import Fermat.FLT.EllipticCurve.DifferentialCharacter
 
 @[expose] public section
 
@@ -1612,12 +1614,718 @@ theorem natCard_ker_mul_natCard_ker_conj (q : ℕ) [Fact q.Prime]
   rw [hZ] at h2
   linarith [h2]
 
+/-! ### NINTH CUT, 2026-07-31: the degree form never vanishes off the origin
+
+`degreeForm_ne_zero` below proves `m² − c·m·n + n²q ≠ 0` for every
+`(m, n) ≠ (0, 0)`, equivalently that `X² − c·X + q` has NO rational root,
+equivalently that `c² − 4q` is not a perfect square.  It is exactly the
+"degenerate case `d = 0`" that the ROUTE UPDATE on
+`natCard_ker_degreeFormEnd_le` below named as the second piece of work a re-cut
+would have to write, and it is what removes that leaf from the `d = 0` branch of
+`natCard_ker_degreeFormEnd_of_dvd`.
+
+**THE LOAD-BEARING STEP IS NOT ELEMENTARY, and the sketch that leaf carried
+skipped it.**  That sketch reads: `d = 0` forces an integer root, so
+`(F ∓ 1)(F ∓ q) = 0` "with both factors of finite kernel — a contradiction,
+since `Wbar(𝔽̄_q)` is infinite".  The outline is right, but *both factors of
+finite kernel* is the whole difficulty: `IsIsogeny.finite_ker` gives it only for
+a NONZERO isogeny, and `F − [q] ≠ 0` — i.e. that the `q`-power Frobenius is not
+multiplication by the integer `q` — is not visible to any counting argument in
+this file.  (`#ker F = 1` is consistent with `F = [q]`: that is the supersingular
+case, where `E[q] = 0`.)
+
+What supplies it is the WEIL PAIRING, through `frobeniusPointEnd_ne_zsmul`:
+`det(F | Wbar[p]) = q` for every prime `p ≠ q`
+(`WeilPairing.det_frobeniusTorsionEnd`), while `[r]` acts on the rank-two
+`Wbar[p]` with determinant `r²`.  So `p ∣ r² − q` for EVERY prime `p ≠ q`, which
+forces `r² = q` and contradicts primality of `q`.  Note this is a case where the
+determinant DOES decide something, contrary to the general steer of the audits
+below: those say a determinant cannot see the SIGN of `d`, which is true; here it
+is being used to see that `F` is not a scalar, which is a statement `|d|` can
+carry.
+
+The composite is then killed without any finiteness bookkeeping at all: two
+nonzero isogenies are each SURJECTIVE (`IsIsogeny.surjective`), so their
+composite is surjective, and a surjective map onto a group with a nonzero point
+is not `0`.
+
+WHAT THIS DOES NOT DO, stated so it is not mistaken for progress on Hasse.  It
+rules out `c² − 4q` being a SQUARE; it says nothing about its SIGN, which is the
+whole of `natCard_ker_degreeFormEnd_le` and of Hasse's bound.  Concretely it
+kills the case `c = ±(q + 1)` (where `X² − cX + q = (X ∓ 1)(X ∓ q)`) and leaves
+every non-square positive discriminant standing.
+
+A ROUTE THAT THIS OPENS, and it is NOT refuted by the counter-model `A` of the
+audit on `natCard_ker_degreeFormEnd_le` — recorded because that audit's claim
+that "no rearrangement of the `ℤ[F]` material in this file … can close this leaf"
+is about `ℤ[F]`-only reasoning, and this route leaves `ℤ[F]`:
+
+> Suppose `c² − 4q > 0`.  It is not a square (this section), so `ℤ[α]` with
+> `α² = cα − q` is an order in a REAL quadratic field, and PELL
+> (`Pell.exists_of_not_isSquare`, mathlib) supplies a unit `u = M + N·α` of norm
+> `1` with `N ≠ 0`, hence integers `(M, N)` with
+> `M² + c·M·N + N²q = 1`.  Then `ψ := [M] + [N]∘F` satisfies
+> `ψ ∘ ψ′ = ψ′ ∘ ψ = [1]` by `degreeFormEnd_mul_conj`/`conj_mul_degreeFormEnd`,
+> so `ψ` is INVERTIBLE in `WeierstrassCurve.End`, and so are all its powers
+> `ψ^k = [M_k] + [N_k]∘F` with `N_k ≠ 0`.  If `ψ` had FINITE ORDER, say
+> `ψ^k = 1`, then `[M_k − 1] + [N_k]∘F = 0`, whose degree-form value is nonzero
+> by this section — and a `degreeFormEnd` with nonzero form value is not `0`,
+> since `ψ ∘ ψ′ = [d]` and `Wbar(𝔽̄_q)` has points of order exceeding `|d|`.
+> Contradiction.  So the ONE missing atom is:
+>
+>   **an isogeny that is invertible in `WeierstrassCurve.End` has finite
+>   multiplicative order.**
+>
+> That is Aut-finiteness, and it is exactly what the counter-model `A` fails:
+> in `A = ⨁_{ℓ ≠ q}(ℚ_ℓ/ℤ_ℓ)²` the companion matrix generates an INFINITE unit
+> group, which is why `A` interprets every identity in this file and still
+> violates Hasse.  So Aut-finiteness is a genuine escape from `A`, not another
+> `ℤ[F]` rearrangement.  `EllipticCurve/AutomorphismExponent.lean` already proves
+> the group-theoretic half — the stabiliser of `W` in
+> `WeierstrassCurve.VariableChange` has exponent dividing `12` — so what is
+> missing is the bridge "an invertible endomorphism of `(W, O)` comes from a
+> variable change" (Silverman *AEC* III.3.1(b)).  That bridge is a real piece of
+> work and it is a statement about COORDINATES, not about degrees, so it does not
+> re-import the degree theory the audits below say this tree lacks.
+-/
+
+/-- **`Wbar(𝔽̄_q)` has a nonzero point** (PROVEN 2026-07-31): otherwise the
+`(q+1)`-torsion would have one element instead of `(q+1)²`
+(`TorsionCard.card_torsionBy`). -/
+theorem exists_point_ne_zero (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] :
+    ∃ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, P ≠ 0 := by
+  classical
+  by_contra hcon
+  have hzero : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, P = 0 := by
+    intro P
+    by_contra hP
+    exact hcon ⟨P, hP⟩
+  haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+  have hqn : ¬ (q ∣ (q + 1)) := by
+    intro hdvd
+    have h2 : q ∣ 1 := (Nat.dvd_add_right (dvd_refl q)).mp hdvd
+    exact (Fact.out : q.Prime).one_lt.ne' (Nat.dvd_one.mp h2)
+  have hn0 : (((q + 1 : ℕ)) : AlgebraicClosure (ZMod q)) ≠ 0 := fun h0 =>
+    hqn ((CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod q)) q (q + 1)).mp h0)
+  have hcard : Nat.card (Submodule.torsionBy ℤ
+      (Wbar⁄(AlgebraicClosure (ZMod q))).Point (((q + 1 : ℕ) : ℤ))) = (q + 1) ^ 2 :=
+    TorsionCard.card_torsionBy
+      (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))) (q + 1) hn0
+  haveI hsub : Subsingleton ((Wbar⁄(AlgebraicClosure (ZMod q))).Point) :=
+    ⟨fun a b => by rw [hzero a, hzero b]⟩
+  have hone : Nat.card (Submodule.torsionBy ℤ
+      (Wbar⁄(AlgebraicClosure (ZMod q))).Point (((q + 1 : ℕ) : ℤ))) = 1 := by
+    haveI : Subsingleton (Submodule.torsionBy ℤ
+        (Wbar⁄(AlgebraicClosure (ZMod q))).Point (((q + 1 : ℕ) : ℤ))) :=
+      ⟨fun a b => Subtype.ext (Subsingleton.elim _ _)⟩
+    exact Nat.card_eq_one_iff_unique.mpr ⟨inferInstance, ⟨0⟩⟩
+  rw [hone] at hcard
+  have h2 : 2 ≤ q := (Fact.out : q.Prime).two_le
+  nlinarith [hcard]
+
+/-- **The Frobenius is not multiplication by an integer** (PROVEN 2026-07-31):
+for every `r : ℤ` there is a point of `Wbar(𝔽̄_q)` with `F P ≠ r • P`.
+
+This is the one place in this module where the Weil-pairing determinant decides
+something, and the mechanism is worth stating because the audits below rightly
+warn that a determinant cannot see the sign of the degree form:
+`det(F | Wbar[p]) = q` for every prime `p ≠ q`
+(`WeilPairing.det_frobeniusTorsionEnd`), whereas `[r]` acts on the rank-two
+`Wbar[p]` (`WeierstrassCurve.p_torsion_rank`) with determinant `r²`.  So
+`p ∣ r² − q` for EVERY prime `p ≠ q`, and taking `p` larger than
+`|r² − q|` forces `r² = q`, contradicting primality of `q`.
+
+The counting facts of this file do NOT give it: `#ker F = 1`
+(`natCard_ker_frobeniusPointEnd`) is perfectly consistent with `F = [q]`, which
+is the supersingular case `E[q] = 0`. -/
+theorem frobeniusPointEnd_ne_zsmul (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (r : ℤ) :
+    ¬ (∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+        frobeniusPointEnd q Wbar P = r • P) := by
+  intro h
+  have key : ∀ p : ℕ, p.Prime → p ≠ q → ((p : ℤ) ∣ r ^ 2 - (q : ℤ)) := by
+    intro p hp hpq
+    haveI : Fact p.Prime := ⟨hp⟩
+    haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+      charP_of_injective_algebraMap
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+    have hpk : ((p : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 := by
+      intro hz
+      have h1 : q ∣ p := (CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod q)) q p).mp hz
+      rcases (Nat.Prime.eq_one_or_self_of_dvd hp q h1) with h2 | h2
+      · exact (Fact.out : q.Prime).one_lt.ne' h2
+      · exact hpq h2.symm
+    have hrank := WeierstrassCurve.p_torsion_rank
+      (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))) hpk
+    have hfr : Module.finrank (ZMod p)
+        ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion p) = 2 :=
+      Module.finrank_eq_of_rank_eq (by rw [hrank]; norm_num)
+    have hres : WeilPairing.frobeniusTorsionEnd q Wbar p
+        = (r : ZMod p) • (1 : Module.End (ZMod p)
+            ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion p)) := by
+      refine LinearMap.ext fun x => ?_
+      have hr : ((r : ZMod p) • (1 : Module.End (ZMod p)
+          ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion p))) x
+          = r • x := by
+        rw [LinearMap.smul_apply, Module.End.one_apply, Int.cast_smul_eq_zsmul]
+      rw [hr]
+      refine Subtype.ext ?_
+      show _ = ((r • x.1 : (Wbar⁄(AlgebraicClosure (ZMod q))).Point))
+      exact h x.1
+    have hdet := WeilPairing.det_frobeniusTorsionEnd q Wbar p (Ne.symm hpq)
+    rw [hres, LinearMap.det_smul, Module.End.one_eq_id, LinearMap.det_id, hfr,
+      mul_one] at hdet
+    have hz : ((r ^ 2 - (q : ℤ) : ℤ) : ZMod p) = 0 := by
+      push_cast
+      rw [hdet]
+      ring
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hz
+  obtain ⟨p, hpge, hp⟩ := Nat.exists_infinite_primes ((r ^ 2 - (q : ℤ)).natAbs + q + 1)
+  have hpq : p ≠ q := by omega
+  have hdvd := key p hp hpq
+  have hzero : r ^ 2 - (q : ℤ) = 0 := by
+    by_contra hne
+    have h1 : (p : ℤ) ≤ |r ^ 2 - (q : ℤ)| :=
+      Int.le_of_dvd (abs_pos.mpr hne) ((dvd_abs _ _).mpr hdvd)
+    rw [Int.abs_eq_natAbs] at h1
+    omega
+  have hq : (r.natAbs) ^ 2 = q := by
+    have h3 : ((r.natAbs : ℕ) : ℤ) ^ 2 = ((q : ℕ) : ℤ) := by
+      rw [Int.natCast_natAbs, sq_abs]; omega
+    exact_mod_cast h3
+  have hd : r.natAbs ∣ q := ⟨r.natAbs, by rw [← hq]; ring⟩
+  have h2 : 2 ≤ q := (Fact.out : q.Prime).two_le
+  rcases (Fact.out : q.Prime).eq_one_or_self_of_dvd _ hd with h1 | h1
+  · rw [h1] at hq; omega
+  · rw [h1] at hq; nlinarith [hq]
+
+/-- **The Frobenius characteristic polynomial does not split over `ℤ`** (PROVEN
+2026-07-31): if `X² − c·X + q = (X − r)(X − r′)` with `r, r′ : ℤ`, then `hc`
+factors as `(F − [r]) ∘ (F − [r′]) = 0`.  Both factors are NONZERO
+(`frobeniusPointEnd_ne_zsmul`) isogenies, hence SURJECTIVE
+(`IsIsogeny.surjective`), so their composite is surjective — while it is `0`,
+and `Wbar(𝔽̄_q)` has a nonzero point.
+
+No finiteness bookkeeping is needed: surjectivity of the two factors is what
+does the work, and it is free from `IsIsogeny`. -/
+theorem not_split_charEquation (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    {r r' : ℤ} (hsum : r + r' = c) (hprod : r * r' = (q : ℤ)) : False := by
+  haveI hell : ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine).IsElliptic :=
+    inferInstanceAs (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).IsElliptic
+  set f : WeierstrassCurve.End ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine) :=
+    ⟨(frobeniusPointEnd q Wbar).toAddMonoidHom, isIsogeny_frobeniusPointEnd q Wbar⟩ with hf
+  set g₁ : WeierstrassCurve.End ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine) :=
+    f - Int.cast r with hg₁
+  set g₂ : WeierstrassCurve.End ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine) :=
+    f - Int.cast r' with hg₂
+  have hg₁app : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      (g₁ : AddMonoid.End _) P = frobeniusPointEnd q Wbar P - r • P := fun _ => rfl
+  have hg₂app : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      (g₂ : AddMonoid.End _) P = frobeniusPointEnd q Wbar P - r' • P := fun _ => rfl
+  have hne₁ : (g₁ : AddMonoid.End ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) ≠ 0 := by
+    intro h0
+    refine frobeniusPointEnd_ne_zsmul q Wbar r fun P => ?_
+    have hP := hg₁app P
+    rw [h0] at hP
+    have h1 : (0 : AddMonoid.End ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) P = 0 := rfl
+    rw [h1] at hP
+    linear_combination (norm := abel) -hP
+  have hne₂ : (g₂ : AddMonoid.End ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) ≠ 0 := by
+    intro h0
+    refine frobeniusPointEnd_ne_zsmul q Wbar r' fun P => ?_
+    have hP := hg₂app P
+    rw [h0] at hP
+    have h1 : (0 : AddMonoid.End ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) P = 0 := rfl
+    rw [h1] at hP
+    linear_combination (norm := abel) -hP
+  have hmulapp : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      ((g₁ * g₂ : WeierstrassCurve.End _) : AddMonoid.End _) P
+        = (g₁ : AddMonoid.End _) ((g₂ : AddMonoid.End _) P) := fun _ => rfl
+  have hcomp : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      ((g₁ * g₂ : WeierstrassCurve.End _) : AddMonoid.End _) P = 0 := by
+    intro P
+    have happ : ((g₁ * g₂ : WeierstrassCurve.End _) : AddMonoid.End _) P
+        = (g₁ : AddMonoid.End _) ((g₂ : AddMonoid.End _) P) := rfl
+    have hcP : frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+        = (r + r') • frobeniusPointEnd q Wbar P - (r * r') • P := by
+      rw [hsum, hprod]
+      exact congrArg
+        (fun e : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point) => e P) hc
+    rw [happ, hg₁app, hg₂app, map_sub, map_zsmul, hcP]
+    module
+  obtain ⟨P, hP⟩ := exists_point_ne_zero q Wbar
+  obtain ⟨Q, hQ⟩ := g₁.2.surjective hne₁ P
+  obtain ⟨R, hR⟩ := g₂.2.surjective hne₂ Q
+  refine hP ?_
+  rw [← hQ, ← hR]
+  exact hcomp R
+
+/-- **A vanishing value of the degree form makes `X² − c·X + q` split over `ℤ`**
+(PROVEN 2026-07-31, pure arithmetic): the rational-root theorem in the shape
+`(2m − cn)² = n²(c² − 4q)`, so `n ∣ 2m − cn` by `Int.pow_dvd_pow_iff`, the
+quotient `k` satisfies `k² = c² − 4q`, and `c + k` is even because
+`(c − k)(c + k) = 4q`. -/
+theorem exists_int_root_of_degreeForm_eq_zero {c qq m n : ℤ}
+    (hmn : ¬ (m = 0 ∧ n = 0)) (h : m ^ 2 - c * m * n + n ^ 2 * qq = 0) :
+    ∃ r : ℤ, r ^ 2 - c * r + qq = 0 := by
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    exact hmn ⟨by nlinarith [sq_nonneg m, h], rfl⟩
+  have key : (2 * m - c * n) ^ 2 = n ^ 2 * (c ^ 2 - 4 * qq) := by linear_combination 4 * h
+  have hdvd : n ^ 2 ∣ (2 * m - c * n) ^ 2 := ⟨c ^ 2 - 4 * qq, key⟩
+  have hnk : n ∣ (2 * m - c * n) := (Int.pow_dvd_pow_iff two_ne_zero).mp hdvd
+  obtain ⟨k, hk⟩ := hnk
+  have hk2 : k ^ 2 = c ^ 2 - 4 * qq := by
+    have hsq : n ^ 2 * k ^ 2 = n ^ 2 * (c ^ 2 - 4 * qq) := by
+      rw [← key, hk]; ring
+    exact mul_left_cancel₀ (pow_ne_zero 2 hn0) hsq
+  have hpar : (c - k) * (c + k) = 4 * qq := by linear_combination -hk2
+  have h2 : (2 : ℤ) ∣ c + k := by
+    by_contra hodd
+    have hv : Odd (c + k) := Int.not_even_iff_odd.mp (fun he => hodd he.two_dvd)
+    obtain ⟨t, ht⟩ := hv
+    have hu : Odd (c - k) := ⟨c - t - 1, by omega⟩
+    have hop : Odd ((c - k) * (c + k)) := hu.mul ⟨t, ht⟩
+    rw [hpar] at hop
+    exact (Int.not_odd_iff_even.mpr ⟨2 * qq, by ring⟩) hop
+  obtain ⟨r, hr⟩ := h2
+  refine ⟨r, ?_⟩
+  have hk' : k = 2 * r - c := by omega
+  rw [hk'] at hk2
+  have h4 : 4 * (r ^ 2 - c * r + qq) = 0 := by linear_combination hk2
+  linarith
+
+/-- **The degree form never vanishes off the origin** (PROVEN 2026-07-31):
+`m² − c·m·n + n²q ≠ 0` for `(m, n) ≠ (0, 0)`.
+
+Equivalently `X² − c·X + q` is irreducible over `ℤ`, equivalently `c² − 4q` is
+not a perfect square.  See the section header for why the load-bearing step is
+the Weil-pairing determinant rather than a counting argument, and for the route
+this opens.
+
+It is consumed by `natCard_ker_degreeFormEnd_of_dvd` below, whose `d = 0` branch
+used to cite the still-open `natCard_ker_degreeFormEnd_le`; that branch is now
+VACUOUS, so the `q`-primary count no longer touches that leaf at all. -/
+theorem degreeForm_ne_zero (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    {m n : ℤ} (hmn : ¬ (m = 0 ∧ n = 0)) :
+    m ^ 2 - c * m * n + n ^ 2 * (q : ℤ) ≠ 0 := by
+  intro h0
+  obtain ⟨r, hr⟩ := exists_int_root_of_degreeForm_eq_zero hmn h0
+  exact not_split_charEquation q Wbar hc (r := r) (r' := c - r) (by ring)
+    (by linarith [hr])
+
+/-! ### TENTH CUT, 2026-07-31: the SIGN of the degree form, by Pell and Aut-finiteness
+
+This section carries out the route that the NINTH CUT opened and the AUDIT of
+2026-07-30 explicitly declined to refute (see the QUALIFICATION on
+`natCard_ker_degreeFormEnd_le` below).  Its output is
+`degreeForm_nonneg_of_sq` — `0 ≤ m² − c·m·n + n²q` for EVERY `(m, n)`, with no
+hypothesis on `m` — which is exactly the "inert positivity statement" that the
+2026-07-27 audit refused to hand back and that the 2026-07-30 audit proved has no
+`ℤ[F]`-internal proof.  It is proven here over ONE new leaf, `finite_units_end`.
+
+**WHY THIS ESCAPES THE COUNTER-MODEL `A`.**  `A = ⨁_{ℓ ≠ q}(ℚ_ℓ/ℤ_ℓ)²` with `F`
+the companion matrix of `X² − c·X + q` interprets every algebraic fact in this
+file, at `q = 5, c = 7` where Hasse FAILS.  The audit of 2026-07-30 concluded from
+this that no rearrangement of the `ℤ[F]` material can close the leaf, and that is
+right.  But `A` has exactly ONE property that an elliptic curve does not: its
+group of invertible endomorphisms is INFINITE — the companion matrix of a form of
+positive discriminant generates a copy of the Pell group.  So an argument that
+uses **finiteness of the invertible endomorphisms** is not an `ℤ[F]`
+rearrangement, and `A` does not refute it.  That is the argument below.
+
+**THE ARGUMENT, in four steps.**  Suppose `D := c² − 4q > 0`.
+
+1. `D` is not a perfect square (`not_isSquare_discr`), because a square `D`
+   splits `X² − c·X + q` over `ℤ` and `not_split_charEquation` (NINTH CUT) kills
+   that.  The parity step is free: `(k − c)(k + c) = −4q` is even and the two
+   factors differ by `2c`, so both are even and `r = (c + k)/2` is an integer.
+2. PELL (`exists_injective_degreeForm_eq_one`): `x² − D·y² = 1` has infinitely
+   many solutions, and `(m, n) = (x − y·c, −2y)` turns each into a representation
+   `m² − c·m·n + n²q = 1` of `1` by the degree form — the norm form of `ℤ[α]`,
+   `α² = cα − q`, under `2α − c = √D`.  Injectivity in `y` comes from
+   `Pell.IsFundamental.y_strictMono`, so the family is genuinely infinite.
+3. Each such `(m, n)` makes `ψ = [m] − [n]∘F` a UNIT of `WeierstrassCurve.End`:
+   `degreeFormEnd_mul_conj`/`conj_mul_degreeFormEnd` give `ψ ∘ ψ' = ψ' ∘ ψ = [1]`,
+   and `ψ` is an honest isogeny because `F` is (`isIsogeny_frobeniusPointEnd`,
+   EIGHTH CUT) and `End` is a ring.  Distinct `(m, n)` give distinct units, since
+   their difference is a `degreeFormEnd` with nonzero form value
+   (`degreeForm_ne_zero`), hence nonzero (`degreeFormEnd_ne_zero`).
+4. So `(End)ˣ` is infinite, contradicting `finite_units_end`.
+
+**WHAT THE NEW LEAF IS, AND WHY IT IS THE RIGHT ATOM.**  `finite_units_end` says
+an elliptic curve over an algebraically closed field has only finitely many
+automorphisms — Silverman *AEC* III.10.1, where the count is `2`, `4`, `6`, `12`
+or `24`.  It is a statement about COORDINATES (an invertible endomorphism comes
+from a variable change), not about degrees, so it does NOT re-import the
+function-field degree theory this development lacks and that the MACHINERY AUDIT
+below records as absent.  `EllipticCurve/AutomorphismExponent.lean` already proves
+the group-theoretic half — the stabiliser of `W` in
+`WeierstrassCurve.VariableChange` has exponent dividing `12` — so what is missing
+is exactly the bridge `Aut(W, O) ⊆ VariableChange`.
+
+**WHAT THIS DOES NOT DO.**  Positivity is only HALF of
+`natCard_ker_degreeFormEnd_le`, and the other half is genuinely different
+mathematics: the leaf also asserts a MAGNITUDE bound, `#ker ψ ≤ |d|`, which is
+the `ℓ`-adic/separable-degree content.  That half is now split off as
+`natCard_ker_degreeFormEnd_abs` below, and `natCard_ker_degreeFormEnd_le` is
+PROVEN from the two.  The split is along exactly the axis the 2026-07-30 audit
+identified but could not act on: "those tools compute `|d|`; the leaf asks for
+`d`."
+-/
+
+/-- **A definite Pell equation represents `1` infinitely often** (PROVEN
+2026-07-31, pure arithmetic): if `D = c² − 4q` is positive and not a square, then
+the binary quadratic form `m² − c·m·n + n²q` — the norm form of `ℤ[α]` with
+`α² = cα − q` — represents `1` at infinitely many *distinct* pairs `(m, n)`.
+
+The dictionary is `2α − c = √D`, i.e. a unit `x + y√D` of norm `1` is
+`m − nα` with `(m, n) = (x − y·c, −2y)`; expanding,
+`m² − c·m·n + n²q = x² − D·y² = 1`.  The family is indexed by the powers of the
+FUNDAMENTAL solution, whose `y` is strictly monotone
+(`Pell.IsFundamental.y_strictMono`), which is what makes the pairs distinct. -/
+theorem exists_injective_degreeForm_eq_one {c qq : ℤ}
+    (hD : 0 < c ^ 2 - 4 * qq) (hns : ¬ IsSquare (c ^ 2 - 4 * qq)) :
+    ∃ f : ℤ → ℤ × ℤ, Function.Injective f ∧
+      ∀ t : ℤ, (f t).1 ^ 2 - c * (f t).1 * (f t).2 + (f t).2 ^ 2 * qq = 1 := by
+  obtain ⟨a, ha⟩ := Pell.IsFundamental.exists_of_not_isSquare hD hns
+  refine ⟨fun t => ((a ^ t).x - (a ^ t).y * c, -2 * (a ^ t).y), ?_, ?_⟩
+  · intro s t hst
+    have h2 : -2 * (a ^ s).y = -2 * (a ^ t).y := congrArg Prod.snd hst
+    exact ha.y_strictMono.injective (by linarith)
+  · intro t
+    have hp := (a ^ t).prop
+    simp only
+    linear_combination hp
+
+/-- **`[m] − [n]∘F` on a point** (PROVEN, definitional unfolding). -/
+theorem degreeFormEnd_apply (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) (m n : ℤ)
+    (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point) :
+    degreeFormEnd q Wbar m n P = m • P - n • frobeniusPointEnd q Wbar P := by
+  simp [degreeFormEnd]
+
+/-- **`[m] − [n]∘F` is not the ZERO endomorphism off the origin** (PROVEN
+2026-07-31): the companion of `degreeForm_ne_zero` at the level of endomorphisms
+rather than of the form.
+
+No finiteness bookkeeping: a nonzero form value makes `ψ` SURJECTIVE
+(`surjective_degreeFormEnd`), and a surjection onto a group with a nonzero point
+(`exists_point_ne_zero`) is not the zero map.  This is the same one-line device
+as in `not_split_charEquation`. -/
+theorem degreeFormEnd_ne_zero (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    {m n : ℤ} (hmn : ¬ (m = 0 ∧ n = 0)) :
+    degreeFormEnd q Wbar m n ≠ 0 := by
+  intro h0
+  obtain ⟨hsurj, -⟩ :=
+    surjective_degreeFormEnd q Wbar hc (m := m) (n := n) (degreeForm_ne_zero q Wbar hc hmn)
+  obtain ⟨P, hP⟩ := exists_point_ne_zero q Wbar
+  obtain ⟨R, hR⟩ := hsurj P
+  exact hP (by rw [← hR, h0]; simp)
+
+/-- **The discriminant is not a perfect square** (PROVEN 2026-07-31): `c² − 4q`
+is not a square in `ℤ`.
+
+This is `degreeForm_ne_zero` read the other way round.  If `c² − 4q = k²` then
+`k` and `c` have the same parity — `(k − c)(k + c) = −4q` is even and the factors
+differ by `2c` — so `r = (c + k)/2` is an integer root of `X² − c·X + q`, and
+`not_split_charEquation` refutes that. -/
+theorem not_isSquare_discr (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))) :
+    ¬ IsSquare (c ^ 2 - 4 * (q : ℤ)) := by
+  rintro ⟨k, hk⟩
+  have hprod : Even ((k - c) * (k + c)) := ⟨-(2 * (q : ℤ)), by linear_combination -hk⟩
+  have hpar : Even (k + c) := by
+    rcases Int.even_mul.mp hprod with ⟨w, hw⟩ | h
+    · exact ⟨w + c, by linarith⟩
+    · exact h
+  obtain ⟨r, hr⟩ := hpar
+  refine not_split_charEquation q Wbar hc (r := r) (r' := c - r) (by ring) ?_
+  have hkr : k = 2 * r - c := by linarith
+  rw [hkr] at hk
+  have h4 : 4 * (r * (c - r)) = 4 * (q : ℤ) := by linear_combination hk
+  linarith
+
+/-- **AUT-FINITENESS** (sorry leaf, opened 2026-07-31; Silverman *AEC* III.10.1):
+an elliptic curve over an algebraically closed field has only FINITELY MANY
+automorphisms — i.e. the unit group of `WeierstrassCurve.End` is finite.
+
+Classically `#Aut(E) ∈ {2, 4, 6, 12, 24}`, the larger values occurring only for
+`j = 0` and `j = 1728` and, in characteristics `2` and `3`, for the supersingular
+curve.  Only FINITENESS is asked for here; no count, no exponent, no bound.
+
+WHY THIS IS THE ATOM, AND WHY IT IS NOT ANOTHER `ℤ[F]` REARRANGEMENT.  The
+counter-model `A = ⨁_{ℓ ≠ q}(ℚ_ℓ/ℤ_ℓ)²` of the audit on
+`natCard_ker_degreeFormEnd_le` below interprets *every* algebraic identity of this
+module while violating Hasse.  The single property it fails is this one: its
+companion matrix generates an infinite group of invertible endomorphisms.  So a
+proof using this leaf escapes `A` by construction — which is why the section
+header above claims the route is not refuted by that audit, and it is the reason
+this particular statement was chosen as the atom rather than, say, a degree
+function.
+
+IT IS A STATEMENT ABOUT COORDINATES, NOT ABOUT DEGREES.  That matters: the
+MACHINERY AUDIT on `exists_natCard_ker_degreeFormEnd` records that this tree has
+no scheme-theoretic degree and that `Isogeny.lean` machine-REFUTES the
+characteristic-`p` dual isogeny (`isRationalMap_dualHom_is_false`), so any leaf
+phrased in terms of `deg` is blocked on a development that does not exist.  This
+one is not: a unit of `End W` carries an `IsRationalMap` certificate in both
+directions, so it is an automorphism of the plane curve fixing the origin, i.e. an
+element of the stabiliser of `W` in `WeierstrassCurve.VariableChange`.
+
+WHAT THE TREE ALREADY HAS.  `EllipticCurve/AutomorphismExponent.lean` proves the
+GROUP-THEORETIC half — that stabiliser has exponent dividing `12` — so the missing
+step is the bridge `Aut(W, O) ↪ VariableChange` (*AEC* III.3.1(b)): an invertible
+endomorphism is induced by a variable change `(u, r, s, t)`.  The `x`-witness
+`A/B` of `IsRationalMap` for an invertible `φ` has an inverse of the same shape,
+so `A/B` is a Möbius transformation of `ℙ¹`; compatibility with the group law then
+pins `r, s, t` and leaves `u` a root of unity.
+
+NON-VACUITY, and it is worth stating because "finitely many" statements are easy
+to satisfy trivially: the group is nonempty and contains `±1`, and for
+`j ≠ 0, 1728` it is EXACTLY `{±1}`.  The hypotheses are all load-bearing:
+`IsAlgClosed` is what makes `endSubring` a subring at all (`IsIsogeny.add` is
+FALSE without it — see `Isogeny.lean`'s falsity audit), and `IsElliptic` excludes
+a singular Weierstrass curve, whose smooth locus is `𝔾ₐ` or `𝔾ₘ` and has infinite
+automorphism group.
+
+THE CHECK THAT WOULD REFUTE the claim that this is a genuine escape from `A`: an
+interpretation of this module's algebra in which the unit group of `End` is finite
+and Hasse still fails.
+
+ROUTE UPDATE, 2026-07-31, and it is HALF THE BRIDGE, PROVEN.  The paragraph above
+names the missing step as *AEC* III.3.1(b), "an invertible endomorphism is induced
+by a variable change `(u, r, s, t)`", and says the way in is that "the `x`-witness
+`A/B` of `IsRationalMap` for an invertible `φ` has an inverse of the same shape, so
+`A/B` is a Möbius transformation of `ℙ¹`".  **That step no longer needs the inverse,
+and it is now a theorem.**  A unit `ψ` is INJECTIVE, and `λ(ψ)·λ(ψ⁻¹) = λ(1) = 1`
+(`isDiffChar_comp`) forces `λ(ψ) ≠ 0`; so
+`exists_xWitness_natDegree_le_one_of_injective` (TWELFTH CUT, below
+`natCard_ker_degreeFormEnd_abs`) gives `ψ` an `x`-map of degree `≤ 1` outright.
+
+WHAT IS LEFT, and it is a COUNTING argument rather than a classification.  A degree-
+`≤ 1` `x`-map is a Möbius transformation, and a Möbius transformation is determined
+by its values at THREE distinct points.  Take the three `x`-coordinates of the
+nonzero `2`-torsion (three distinct values for `q` odd, since `#E[2] = 4` by
+`TorsionCard.card_torsionBy` and each nonzero `2`-torsion point is its own negative):
+`ψ` maps `E[2]` to itself bijectively, so its `x`-map permutes those three values, of
+which there are `3! = 6` permutations; and `ψ` is determined by its `x`-map up to
+sign (`W.Point` is not the union of two proper subgroups — see the discussion at
+`Isogeny.lean`'s `eq_or_eq_neg_of_veluPointX_eq`).  That bounds the unit group by
+`12`, which is both finite and the classically correct bound away from `q ∈ {2, 3}`.
+`q = 2` needs its own treatment, since `#E[2] ∈ {1, 2}` there and three points are
+not available; the honest fallback is `E[3]` (`#E[3] = 9`, four `x`-values), which
+serves every `q ≠ 3`, so a two-case split on `q = 3` covers everything.
+
+So the successor at this leaf is doing finite combinatorics over the small torsion,
+NOT reconstructing `WeierstrassCurve.VariableChange` — and in particular
+`AutomorphismExponent.lean` is no longer on the critical path. -/
+theorem finite_units_end {F : Type*} [Field F] [DecidableEq F] [IsAlgClosed F]
+    (W : WeierstrassCurve.Affine F) [W.IsElliptic] :
+    Finite (WeierstrassCurve.End W)ˣ :=
+  sorry
+
+/-- **HASSE FOR THE CHARACTERISTIC-EQUATION COEFFICIENT** (PROVEN 2026-07-31 over
+`finite_units_end`): any `c` with `F² = c·F − q` satisfies `c² ≤ 4q`.
+
+The section header gives the four-step argument; in one line, `c² − 4q > 0` makes
+the degree form INDEFINITE, Pell then produces infinitely many units of
+`WeierstrassCurve.End`, and an elliptic curve has only finitely many.
+
+Note that no uniqueness of `c` is used or needed: the statement is proven for
+whichever `c` the caller is holding. -/
+theorem sq_sub_four_mul_nonpos (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))) :
+    c ^ 2 - 4 * (q : ℤ) ≤ 0 := by
+  by_contra hcon
+  rw [not_le] at hcon
+  haveI hell : ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine).IsElliptic :=
+    inferInstanceAs (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).IsElliptic
+  obtain ⟨g, hginj, hg1⟩ :=
+    exists_injective_degreeForm_eq_one hcon (not_isSquare_discr q Wbar hc)
+  set f : WeierstrassCurve.End ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine) :=
+    ⟨(frobeniusPointEnd q Wbar).toAddMonoidHom, isIsogeny_frobeniusPointEnd q Wbar⟩
+  have hcP : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+        = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
+    fun P => congrArg (fun e : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point) => e P) hc
+  -- a representation of `1` by the form makes `[m] − [n]∘F` a unit of `End`
+  have key : ∀ m n : ℤ, m ^ 2 - c * m * n + n ^ 2 * (q : ℤ) = 1 →
+      IsUnit (((m : ℤ) : WeierstrassCurve.End ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine))
+        - ((n : ℤ) : WeierstrassCurve.End _) * f) := by
+    intro m n hmn
+    refine ⟨⟨((m : ℤ) : WeierstrassCurve.End _) - ((n : ℤ) : WeierstrassCurve.End _) * f,
+      (((m - n * c : ℤ)) : WeierstrassCurve.End _) + ((n : ℤ) : WeierstrassCurve.End _) * f,
+      ?_, ?_⟩, rfl⟩
+    · refine Subtype.ext (AddMonoidHom.ext fun P => ?_)
+      show (m : ℤ) • ((m - n * c : ℤ) • P + (n : ℤ) • frobeniusPointEnd q Wbar P)
+            - (n : ℤ) • frobeniusPointEnd q Wbar
+              ((m - n * c : ℤ) • P + (n : ℤ) • frobeniusPointEnd q Wbar P) = P
+      rw [map_add, map_smul, map_smul, hcP]
+      match_scalars
+      · linear_combination hmn
+      · ring
+    · refine Subtype.ext (AddMonoidHom.ext fun P => ?_)
+      show (m - n * c : ℤ) • ((m : ℤ) • P - (n : ℤ) • frobeniusPointEnd q Wbar P)
+            + (n : ℤ) • frobeniusPointEnd q Wbar
+              ((m : ℤ) • P - (n : ℤ) • frobeniusPointEnd q Wbar P) = P
+      rw [map_sub, map_smul, map_smul, hcP]
+      match_scalars
+      · linear_combination hmn
+      · ring
+  -- distinct `(m, n)` give distinct units, so `ℤ` injects into a finite group
+  haveI := finite_units_end ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine)
+  have hinj : Function.Injective (fun t : ℤ => (key (g t).1 (g t).2 (hg1 t)).unit) := by
+    intro s t hst
+    have hval : ((g s).1 : WeierstrassCurve.End _) - ((g s).2 : WeierstrassCurve.End _) * f
+        = ((g t).1 : WeierstrassCurve.End _) - ((g t).2 : WeierstrassCurve.End _) * f := by
+      have h1 := congrArg Units.val hst
+      simpa [IsUnit.unit_spec] using h1
+    have hzero : degreeFormEnd q Wbar ((g s).1 - (g t).1) ((g s).2 - (g t).2) = 0 := by
+      refine LinearMap.ext fun P => ?_
+      have happ := congrArg
+        (fun U : WeierstrassCurve.End ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine) =>
+          (U : AddMonoid.End _) P) hval
+      rw [degreeFormEnd_apply]
+      show ((g s).1 - (g t).1) • P - ((g s).2 - (g t).2) • frobeniusPointEnd q Wbar P = 0
+      have hs : ((g s).1 : ℤ) • P - ((g s).2 : ℤ) • frobeniusPointEnd q Wbar P
+          = ((g t).1 : ℤ) • P - ((g t).2 : ℤ) • frobeniusPointEnd q Wbar P := happ
+      rw [sub_smul, sub_smul]
+      linear_combination (norm := abel) hs
+    have hne0 := degreeFormEnd_ne_zero q Wbar hc
+      (m := (g s).1 - (g t).1) (n := (g s).2 - (g t).2)
+    by_contra hne
+    exact hne0
+      (fun hzz => hne (hginj (Prod.ext (by linarith [hzz.1]) (by linarith [hzz.2])))) hzero
+  haveI : Finite ℤ := Finite.of_injective _ hinj
+  exact not_finite ℤ
+
+/-- **POSITIVITY OF THE DEGREE FORM, FOR ANY COEFFICIENT SATISFYING `hc`** (PROVEN
+2026-07-31 over `sq_sub_four_mul_nonpos`, hence over `finite_units_end`):
+`0 ≤ m² − c·m·n + n²q` for EVERY `(m, n)`, with no hypothesis on `m`.
+
+This is the statement that the 2026-07-27 audit in `MazurTorsion.lean` refused to
+hand back as a leaf — correctly, since it is EQUIVALENT to Hasse's bound — and
+that the 2026-07-30 audit below then proved has no `ℤ[F]`-internal proof.  It is
+here as a THEOREM rather than a leaf, over an atom that is not `ℤ[F]`.
+
+`4d = (2m − c·n)² − n²(c² − 4q)` and both terms are nonnegative once
+`c² ≤ 4q`; note this is the SAME identity that `sq_frobeniusTrace_le` runs in the
+opposite direction at the end of the file.  The difference is which of the two
+statements is taken as known: there, positivity is the input and `c² ≤ 4q` the
+output; here it is the other way round, because the Pell argument produces
+`c² ≤ 4q` directly. -/
+theorem degreeForm_nonneg_of_sq (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    (m n : ℤ) :
+    0 ≤ m ^ 2 - c * m * n + n ^ 2 * (q : ℤ) := by
+  have hD := sq_sub_four_mul_nonpos q Wbar hc
+  nlinarith [sq_nonneg (2 * m - c * n), sq_nonneg n,
+    mul_nonneg (sq_nonneg n) (neg_nonneg.mpr hD)]
+
+/-- **Separable degree ≤ |degree|** (sorry leaf, opened 2026-07-31 by the TENTH
+CUT as the MAGNITUDE half of `natCard_ker_degreeFormEnd_le` below):
+`#ker([m] − [n]∘F) ≤ |m² − c·m·n + n²q|`.
+
+THIS IS THE HALF THAT THE `ℓ`-ADIC AXIS CAN DO, and splitting it off is the whole
+content of the TENTH CUT.  The AUDIT of 2026-07-30 on
+`natCard_ker_degreeFormEnd_le` ends with the sentence that dictates this split:
+*"Those tools compute `|d|`; the leaf asks for `d`."*  The sign is now supplied by
+`degreeForm_nonneg_of_sq` (Pell + Aut-finiteness), so what is left is precisely
+the absolute value — and the audit's own paragraph says how to get it:
+
+> the Weil-pairing determinant together with `WeierstrassCurve.n_torsion_dimension`
+> (which does give `E.nTorsion N ≃+ ZMod N × ZMod N` over a separably closed field)
+> yields `#ker ψ = |d|` for `q ∤ d` via Smith normal form on `E[d²]`.
+
+Two consequences for whoever takes this leaf.
+
+* **The counter-model `A` does NOT refute it.**  In
+  `A = ⨁_{ℓ ≠ q}(ℚ_ℓ/ℤ_ℓ)²` at `q = 5, c = 7` one has `#ker ψ = |d|/5^{v₅(d)}`,
+  so this statement is TRUE in `A` — which is exactly why `A` refutes the
+  unsigned `natCard_ker_degreeFormEnd_le` and not this.  The refuting test the
+  audit prescribes ("if the sub-leaf is TRUE in `A`, it cannot imply the leaf")
+  is therefore PASSED BY DESIGN here: this sub-leaf does not imply the old leaf,
+  and is not meant to — the sign comes from the other half.
+* **The obstruction is a RELOCATION, not a proof, in the same way as for
+  `exists_sq_frobeniusPointEnd_prime_to_char`.**  `WeilPairing.det_frobeniusTorsionEnd`
+  is available here only for PRIME level, which decides `ℓ ∤ #ker ψ` for `ℓ ∤ d`
+  but cannot see the `ℓ`-adic valuation.  The COMPOSITE-level determinant
+  `det_frobeniusTorsionEnd_of_coprime` is PROVEN, in `FreyCurve/MazurTorsion.lean`,
+  which `public import`s this module; moving that block upstream serves this leaf
+  and the prime-to-`q` characteristic equation at once.
+
+THE `q ∣ d` AND `q ∣ m` CASES ARE NOT EXCLUDED, deliberately, for the same reason
+the old leaf carried no hypothesis on `m`: at `(m, n) = (0, 1)` the map is `−F`,
+with `#ker = 1` against `|d| = q`, so the inequality is STRICT there and the
+statement is still true; and `#ker ψ` for `q ∣ m` is handled by peeling `F` off
+(`degreeFormEnd_peel`, `natCard_ker_frobeniusPointEnd`), which divides `|d|` by
+`q` and leaves the kernel count alone.  A successor may prove the `q ∤ d` case
+first and reduce the rest by that peeling; the induction terminates on `|d|`, and
+`degreeForm_ne_zero` makes `d = 0` impossible off the origin.
+
+NON-VACUITY.  At `n = 0` it reads `#ker [m] ≤ m²`, met with equality by
+`TorsionCard.card_torsionBy` for `q ∤ m`; at `(m, n) = (1, 1)` it reads
+`#Wbar(𝔽_q) ≤ |1 − c + q|`, an equality.  `hc` is load-bearing exactly as before:
+without it `c` is free and the right-hand side is unrelated to the curve. -/
+theorem natCard_ker_degreeFormEnd_abs (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    (m n : ℤ) :
+    (Nat.card (LinearMap.ker (degreeFormEnd q Wbar m n)) : ℤ)
+      ≤ |m ^ 2 - c * m * n + n ^ 2 * (q : ℤ)| :=
+  sorry
+
 /-! ### The degree form -/
 
-/-- **Separable degree ≤ degree** (sorry leaf, opened 2026-07-28; the first of
-the two halves of step 4 of the endomorphism-algebra route):
-`#ker([m] − [n]∘F) ≤ m² − c·m·n + n²q`, for `c` the coefficient of the
+/-- **Separable degree ≤ degree** (opened as a sorry leaf 2026-07-28; **PROVEN
+2026-07-31 by the ELEVENTH CUT**, over the TENTH CUT's two halves and nothing
+else): `#ker([m] − [n]∘F) ≤ m² − c·m·n + n²q`, for `c` the coefficient of the
 Frobenius characteristic equation and with NO hypothesis on `m`.
+
+THE PROOF IS THE SPLIT ITSELF, and it is three lines: `natCard_ker_degreeFormEnd_abs`
+bounds the count by `|d|`, `degreeForm_nonneg_of_sq` says `0 ≤ d`, and
+`abs_of_nonneg` identifies the two.  The whole content of this declaration is now
+in those two, and they are split along exactly the axis the AUDIT of 2026-07-30
+below identified and could not act on — *"those tools compute `|d|`; the leaf asks
+for `d`"*.  The magnitude is `ℓ`-adic and the sign is not; the audit's counter-model
+`A` refutes any `ℤ[F]`-internal proof of the SIGN, and the sign is now supplied
+from outside `ℤ[F]` (Pell plus finiteness of the automorphism group), which is a
+route `A` does not interpret.
+
+**Everything below this paragraph is the ORIGINAL 2026-07-28 docstring and the
+two audits it accumulated.**  It is kept in full, and kept HERE rather than moved,
+because it is the record of why the leaf could not be closed along the axes that
+look natural — the `ℓ`-adic re-cut, the Weil-pairing route, the peeling reversal.
+A successor arriving at `natCard_ker_degreeFormEnd_abs` needs all of it: those
+arguments still apply verbatim to that leaf, minus the sign.  Read the AUDIT's
+part (2) as scoped to the SIGN, per the QUALIFICATION added to it by the NINTH CUT.
 
 Classically this is the trivial half — `deg = deg_sep · deg_insep`, so
 `#ker ψ = deg_sep ψ ≤ deg ψ = m² − c·m·n + n²q` — and it is trivial only once
@@ -1660,15 +2368,26 @@ the invariant `M − c·N`:
 * `q ∣ M − c·N` and `q ∣ M`: peel one `F` and recurse on `|d|`, which drops by
   a factor of `q`.
 
-WHY THAT IS NOT DONE HERE.  The degenerate case `d = 0` is not covered by it:
+WHY THAT WAS NOT DONE HERE — **and the `d = 0` half of it is now DONE, NINTH
+CUT 2026-07-31.**  The degenerate case `d = 0` is not covered by the route above:
 there one must show `Nat.card (ker ψ) = 0`, i.e. that `ker ψ` is INFINITE, and
-the present proof of `natCard_ker_degreeFormEnd_of_dvd` discharges `d = 0` by
-citing THIS leaf.  Reversing the dependency therefore also needs the `d = 0`
-analysis: `d = 0` with `(m, n) ≠ (0, 0)` forces `m/n ∈ ℤ` to be a root of
-`X² − cX + q` dividing `q`, hence `±1` (as `q ∤ m` in the cases that matter),
-so `(F ∓ 1)(F ∓ q) = 0` with both factors of finite kernel — a contradiction,
-since `Wbar(𝔽̄_q)` is infinite.  That argument is elementary but is a second
-piece of work, and it is what a re-cut would have to write.
+the proof of `natCard_ker_degreeFormEnd_of_dvd` used to discharge `d = 0` by
+citing THIS leaf.  It no longer does: `degreeForm_ne_zero` (above the section
+`### The degree form`) shows `d = 0` is IMPOSSIBLE for `(m, n) ≠ (0, 0)`, so that
+branch is vacuous and the `q`-primary count is off this leaf entirely.
+
+**The sketch this paragraph used to carry was right in outline and skipped its
+own hard step, which is worth recording because a successor would repeat it.**
+It read: `d = 0` forces `m/n ∈ ℤ` to be a root of `X² − cX + q` dividing `q`,
+"hence `±1` … so `(F ∓ 1)(F ∓ q) = 0` with both factors of finite kernel — a
+contradiction, since `Wbar(𝔽̄_q)` is infinite".  *Both factors of finite kernel*
+is the whole difficulty: `IsIsogeny.finite_ker` gives finiteness only for a
+NONZERO isogeny, and `F − [q] ≠ 0` is invisible to every counting fact in this
+file — `#ker F = 1` (`natCard_ker_frobeniusPointEnd`) is perfectly consistent
+with `F = [q]`, which is the supersingular case `E[q] = 0`.  The step is supplied
+by the Weil-pairing determinant (`frobeniusPointEnd_ne_zsmul`), and once both
+factors are known nonzero the finiteness bookkeeping is not needed at all: they
+are then SURJECTIVE, so the composite is surjective and cannot be `0`.
 
 THE CHECK THAT WOULD REFUTE this route: a `(M, N)` with `d ≠ 0` falling into
 none of the three cases, or a proof that the third case fails to terminate.
@@ -1735,6 +2454,22 @@ The ONE statement of this module that `A` does not interpret is
 `Wbar(𝔽_q)` — a geometric identification, not an algebraic one; and it is not a
 contradiction either, since `#ker([1] − F) = 1` in `A` and a curve is allowed one
 rational point.  That `A` escapes exactly there is the finding, not a gap in it.
+
+**A QUALIFICATION TO (2), added 2026-07-31 by the NINTH CUT, and it matters
+because as written (2) steers a successor away from a route it does not
+refute.**  What `A` refutes is `ℤ[F]`-only reasoning, and `A` itself survives the
+NINTH CUT: its `F` is not a scalar and its discriminant `29` is not a square, so
+`frobeniusPointEnd_ne_zsmul` and `degreeForm_ne_zero` both hold in `A`.  Two
+consequences.  First, a Weil-pairing determinant is not useless here — it cannot
+see the SIGN of `d`, which is what (2) is about, but it does decide that `F` is
+not multiplication by an integer, and that is what the `d = 0` analysis needed.
+Second, the property `A` FAILS is that its unit group is infinite: the companion
+matrix generates an infinite group of invertible endomorphisms.  So an argument
+that uses **finiteness of the invertible endomorphisms** escapes `A` by
+construction, and the Pell route in the section header above
+`exists_point_ne_zero` is exactly that argument, with the single atom "an isogeny
+invertible in `WeierstrassCurve.End` has finite multiplicative order".  Read (2)
+as "no `ℤ[F]`-internal rearrangement", not as "no route".
 
 **What (2) settles.**  It is a proof of what the 2026-07-27 audit asserted
 informally — "a sign is invisible to every p-adic argument, since a determinant
@@ -1810,8 +2545,9 @@ theorem natCard_ker_degreeFormEnd_le (q : ℕ) [Fact q.Prime]
         - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
     (m n : ℤ) :
     (Nat.card (LinearMap.ker (degreeFormEnd q Wbar m n)) : ℤ)
-      ≤ m ^ 2 - c * m * n + n ^ 2 * (q : ℤ) :=
-  sorry
+      ≤ m ^ 2 - c * m * n + n ^ 2 * (q : ℤ) := by
+  have habs := natCard_ker_degreeFormEnd_abs q Wbar hc m n
+  rwa [abs_of_nonneg (degreeForm_nonneg_of_sq q Wbar hc m n)] at habs
 
 /-! ### The `q`-primary machinery: `F` peels off
 
@@ -1864,6 +2600,337 @@ theorem frobeniusConj_mul_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
   rw [show c - 1 * c = (0 : ℤ) by ring, degreeFormEnd_zero_neg_one,
     show c ^ 2 - c * c * 1 + 1 ^ 2 * (q : ℤ) = (q : ℤ) by ring] at h
   exact h
+
+/-! ### TWELFTH CUT, 2026-07-31: SEPARABILITY, and with it the ordinary criterion
+
+The audits on `exists_ne_zero_qTorsion` below and on `natCard_ker_degreeFormEnd_le`
+above both end at the same missing statement, and name it: *"separable and
+non-constant ⟹ `#ker = deg > 1`"*, i.e. **a separable isogeny is not injective**.
+Both record it as blocked on "a fibre-counting statement for a separable rational map
+of curves", which this tree does not have.
+
+It is PROVEN here, and the fibre counting is not needed — only the WRONSKIAN is.
+
+**THE ARGUMENT.**  Let `φ` be injective with `x`-witness `A/B` in lowest terms, and
+let `ξ ∈ F` be a slope.  Every root `r` of `A − ξ·B` has `B(r) ≠ 0` (coprimality), so
+`r = x(P)` for a nonzero point `P` (`exists_point_veluPointX_eq`, and `F` is
+algebraically closed), and then `x(φP) = ξ`.  Two distinct roots would give
+`φP₁ = ±φP₂` (`eq_or_eq_neg_of_veluPointX_eq`), hence `P₁ = ±P₂` by injectivity,
+hence `r₁ = r₂`.  **So `A − ξ·B` has exactly ONE distinct root** — and if its degree
+is `≥ 2` that root is a MULTIPLE one, where `A′B − AB′` vanishes:
+`A(r) = ξB(r)` and `A′(r) = ξB′(r)` give `A′(r)B(r) − A(r)B′(r) = 0`.  Distinct
+slopes give distinct roots (`ξ = A(r)/B(r)`), and there are infinitely many slopes,
+so the Wronskian has infinitely many roots and vanishes identically.  A vanishing
+Wronskian makes the differential certificate read `c·(…) = 0`, i.e. `λ(φ) = 0`.
+
+Contrapositive, which is the form used: **`λ(φ) ≠ 0` and `φ` injective ⟹ the `x`-map
+has degree `≤ 1`** (`exists_xWitness_natDegree_le_one_of_injective`).
+
+**WHY THIS CLOSES THE ORDINARY CRITERION.**  Suppose `E[q] = 0`.  Then `[q]` is
+injective; since `[q] = V ∘ F` with `V = [c] − F` and `F` is bijective
+(`bijective_frobeniusPointEnd`), `V` is injective too.  And `λ(V) = c` — because
+`λ(F) = 0`, which is `d(x^q) = 0` and nothing more (`isDiffChar_frobeniusPointEnd`,
+whose whole proof is `derivative (X^q) = 0` in characteristic `q`).  So `q ∤ c` makes
+`V` a SEPARABLE injective isogeny, and the theorem above gives it an `x`-map
+`A/B` of degree `≤ 1`.  But `x([q]P) = (A/B)(x(P)^q)`, so
+`Φ_q · B(X^q) = A(X^q) · Ψ²_q`, and `Φ_q` is coprime to `Ψ²_q`
+(`isCoprime_Φ_ΨSq`), so `Φ_q ∣ A(X^q)`:
+
+    q² = deg Φ_q ≤ deg A(X^q) = q · deg A ≤ q,
+
+which is false for `q ≥ 2`.  The `q`-th power is where the whole argument lives: the
+Frobenius multiplies degrees by `q`, so a degree-`1` `V` cannot compose with it to
+give the degree-`q²` map `[q]`.
+
+**WHAT THIS DOES NOT NEED**, all of it listed as required by one route note or
+another: point counting over `𝔽_{q^n}`, the Hasse invariant, Deuring's congruence,
+the Cartier operator, the Verschiebung as a separate object, the `E[q^∞]` structure
+theorem, a scheme-theoretic `deg`, and the characteristic-`q` dual isogeny (which
+`Isogeny.isRationalMap_dualHom_is_false` refutes outright).
+
+**WHERE IT DOES NOT HELP**, stated because the neighbouring leaf looks similar and is
+not: it says nothing about `natCard_ker_degreeFormEnd_abs`.  That leaf is about the
+SIZE of a kernel, and the argument here only ever distinguishes "trivial kernel" from
+"nontrivial kernel" — one bit.  The counter-model `A` of the audit above satisfies
+everything in this section (its `F` has `λ = 0` for the same reason, and its `V` is
+injective exactly when `q ∣ c`), so no rearrangement of this section reaches the
+degree form's magnitude or its sign.
+-/
+
+section Separability
+
+open _root_.Polynomial
+
+variable {F : Type*} [Field F] [DecidableEq F] {W W' : Affine F}
+
+omit [DecidableEq F] in
+/-- A common root contradicts coprimality. -/
+theorem no_common_root {A B : F[X]} (hcop : IsCoprime A B) {r : F}
+    (hA : A.eval r = 0) (hB : B.eval r = 0) : False := by
+  obtain ⟨u, v, huv⟩ := hcop
+  have h := congrArg (Polynomial.eval r) huv
+  simp [hA, hB] at h
+
+omit [DecidableEq F] in
+/-- Over an algebraically closed field, a polynomial of degree ≥ 2 with at most one
+distinct root has a root at which its derivative also vanishes. -/
+theorem exists_root_derivative_of_unique_root [IsAlgClosed F] {g : F[X]}
+    (hdeg : 2 ≤ g.natDegree)
+    (huniq : ∀ r₁ r₂ : F, g.eval r₁ = 0 → g.eval r₂ = 0 → r₁ = r₂) :
+    ∃ r : F, g.eval r = 0 ∧ (derivative g).eval r = 0 := by
+  have hg : g ≠ 0 := fun h0 => by simp [h0] at hdeg
+  have hdeg0 : g.degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree hg]
+    exact_mod_cast (by omega : g.natDegree ≠ 0)
+  obtain ⟨r, hr⟩ := IsAlgClosed.exists_root g hdeg0
+  obtain ⟨h, hh⟩ := (Polynomial.dvd_iff_isRoot).2 hr
+  have hh0 : h ≠ 0 := fun h0 => hg (by rw [hh, h0, mul_zero])
+  have hdegh : h.natDegree = g.natDegree - 1 := by
+    have := Polynomial.natDegree_mul (Polynomial.X_sub_C_ne_zero r) hh0
+    rw [← hh, Polynomial.natDegree_X_sub_C] at this
+    omega
+  have hdegh0 : h.degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree hh0]
+    exact_mod_cast (by omega : h.natDegree ≠ 0)
+  obtain ⟨r', hr'⟩ := IsAlgClosed.exists_root h hdegh0
+  have hgr' : g.eval r' = 0 := by
+    rw [hh]; simp [Polynomial.IsRoot] at hr' ⊢; right; exact hr'
+  have hrr : r' = r := huniq r' r hgr' hr
+  subst hrr
+  obtain ⟨k, hk⟩ := (Polynomial.dvd_iff_isRoot).2 hr'
+  refine ⟨r', hr, ?_⟩
+  have hgk : g = (X - C r') ^ 2 * k := by rw [hh, hk]; ring
+  rw [hgk]
+  simp [Polynomial.derivative_mul, Polynomial.derivative_pow]
+
+/-- **AN INJECTIVE MAP IS INSEPARABLE, in its polynomial form.** -/
+theorem wronskian_eq_zero_of_injective [IsAlgClosed F] [W.IsElliptic]
+    {φ : W.Point →+ W'.Point} (hinj : Function.Injective φ)
+    {A B G : F[X]} (hG : G ≠ 0) (hcop : IsCoprime A B)
+    (hwit : ∀ P : W.Point, φ P ≠ 0 → G.eval (veluPointX P) ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P))
+    (hdeg : 2 ≤ max A.natDegree B.natDegree) :
+    derivative A * B - A * derivative B = 0 := by
+  set D := max A.natDegree B.natDegree with hD
+  have hnz : A.coeff D ≠ 0 ∨ B.coeff D ≠ 0 := by
+    rcases le_total B.natDegree A.natDegree with h | h
+    · have hDA : D = A.natDegree := max_eq_left h
+      have hA0 : A ≠ 0 := by intro h0; rw [hDA, h0] at hdeg; simp at hdeg
+      exact Or.inl (by rw [hDA]; exact Polynomial.leadingCoeff_ne_zero.2 hA0)
+    · have hDB : D = B.natDegree := max_eq_right h
+      have hB0 : B ≠ 0 := by intro h0; rw [hDB, h0] at hdeg; simp at hdeg
+      exact Or.inr (by rw [hDB]; exact Polynomial.leadingCoeff_ne_zero.2 hB0)
+  -- the excluded slopes: those killing the leading coefficient, and those attained
+  -- on the (finite) zero set of `G`, where the witness identity is unavailable
+  set bad : Set F := {ξ : F | A.coeff D - ξ * B.coeff D = 0} ∪
+    ((fun r : F => A.eval r / B.eval r) '' {r : F | G.eval r = 0}) with hbadDef
+  have hbadfin : bad.Finite := by
+    refine Set.Finite.union ?_ ((Polynomial.finite_setOf_isRoot hG).image _)
+    refine Set.Subsingleton.finite ?_
+    intro ξ₁ h₁ ξ₂ h₂
+    simp only [Set.mem_setOf_eq, sub_eq_zero] at h₁ h₂
+    rcases eq_or_ne (B.coeff D) 0 with hB | hB
+    · rcases hnz with h | h
+      · exact absurd (by rw [h₁, hB, mul_zero]) h
+      · exact absurd hB h
+    · exact mul_right_cancel₀ hB (by rw [← h₁, ← h₂])
+  have key : ∀ ξ : F, ξ ∉ bad →
+      ∃ r : F, (derivative A * B - A * derivative B).eval r = 0 ∧
+        B.eval r ≠ 0 ∧ A.eval r = ξ * B.eval r := by
+    intro ξ hξ
+    have hξ1 : A.coeff D - ξ * B.coeff D ≠ 0 := fun h => hξ (Or.inl h)
+    have hξ2 : ∀ r : F, G.eval r = 0 → A.eval r / B.eval r ≠ ξ := by
+      intro r hr hc
+      exact hξ (Or.inr ⟨r, hr, hc⟩)
+    set g : F[X] := A - C ξ * B with hgDef
+    have hgcoeff : g.coeff D ≠ 0 := by
+      simpa [hgDef, Polynomial.coeff_sub, Polynomial.coeff_C_mul] using hξ1
+    have hgdegle : g.natDegree ≤ D := by
+      refine le_trans (Polynomial.natDegree_sub_le _ _) (max_le (le_max_left _ _) ?_)
+      exact le_trans (Polynomial.natDegree_C_mul_le _ _) (le_max_right _ _)
+    have hgdeg : g.natDegree = D :=
+      le_antisymm hgdegle (Polynomial.le_natDegree_of_ne_zero hgcoeff)
+    have hval : ∀ r : F, g.eval r = 0 → A.eval r = ξ * B.eval r := by
+      intro r hr
+      have h0 : A.eval r - ξ * B.eval r = 0 := by
+        simpa [hgDef, Polynomial.eval_sub, Polynomial.eval_mul] using hr
+      linear_combination h0
+    have hBne : ∀ r : F, g.eval r = 0 → B.eval r ≠ 0 := by
+      intro r hr hBr
+      have hAr : A.eval r = 0 := by rw [hval r hr, hBr, mul_zero]
+      exact no_common_root hcop hAr hBr
+    have hGne : ∀ r : F, g.eval r = 0 → G.eval r ≠ 0 := by
+      intro r hr hGr
+      exact hξ2 r hGr (by rw [hval r hr, mul_div_assoc, div_self (hBne r hr), mul_one])
+    have huniq : ∀ r₁ r₂ : F, g.eval r₁ = 0 → g.eval r₂ = 0 → r₁ = r₂ := by
+      intro r₁ r₂ h₁ h₂
+      obtain ⟨P₁, hP₁0, hP₁x⟩ := exists_point_veluPointX_eq (W := W) r₁
+      obtain ⟨P₂, hP₂0, hP₂x⟩ := exists_point_veluPointX_eq (W := W) r₂
+      have hφ₁ : φ P₁ ≠ 0 := fun hc => hP₁0 (hinj (by rw [hc, map_zero]))
+      have hφ₂ : φ P₂ ≠ 0 := fun hc => hP₂0 (hinj (by rw [hc, map_zero]))
+      have e₁ := hwit P₁ hφ₁ (by rw [hP₁x]; exact hGne r₁ h₁)
+      have e₂ := hwit P₂ hφ₂ (by rw [hP₂x]; exact hGne r₂ h₂)
+      rw [hP₁x] at e₁
+      rw [hP₂x] at e₂
+      have hx₁ : veluPointX (φ P₁) = ξ :=
+        mul_right_cancel₀ (hBne r₁ h₁) (by rw [e₁, hval r₁ h₁])
+      have hx₂ : veluPointX (φ P₂) = ξ :=
+        mul_right_cancel₀ (hBne r₂ h₂) (by rw [e₂, hval r₂ h₂])
+      rcases eq_or_eq_neg_of_veluPointX_eq hφ₁ hφ₂ (by rw [hx₁, hx₂]) with hcase | hcase
+      · have h : P₁ = P₂ := hinj hcase
+        rw [← hP₁x, ← hP₂x, h]
+      · have h : P₁ = -P₂ := hinj (by rw [hcase, map_neg])
+        rw [← hP₁x, ← hP₂x, h, velu_pointX_neg]
+    obtain ⟨r, hr, hdr⟩ :=
+      exists_root_derivative_of_unique_root (by rw [hgdeg]; exact hdeg) huniq
+    have hAr := hval r hr
+    have hdA : (derivative A).eval r = ξ * (derivative B).eval r := by
+      have h0 : (derivative A).eval r - ξ * (derivative B).eval r = 0 := by
+        simpa [hgDef, Polynomial.derivative_sub, Polynomial.derivative_C_mul,
+          Polynomial.eval_sub, Polynomial.eval_mul] using hdr
+      linear_combination h0
+    refine ⟨r, ?_, hBne r hr, hAr⟩
+    simp only [Polynomial.eval_sub, Polynomial.eval_mul, hAr, hdA]
+    ring
+  by_contra hne
+  have hfin : {x : F | (derivative A * B - A * derivative B).IsRoot x}.Finite :=
+    Polynomial.finite_setOf_isRoot hne
+  have himg : ((fun t : F => A.eval t / B.eval t) ''
+      {x : F | (derivative A * B - A * derivative B).IsRoot x}).Finite := hfin.image _
+  have hsub : badᶜ ⊆ (fun t : F => A.eval t / B.eval t) ''
+      {x : F | (derivative A * B - A * derivative B).IsRoot x} := by
+    intro ξ hξ
+    obtain ⟨r, hr, hBr, hAr⟩ := key ξ hξ
+    refine ⟨r, hr, ?_⟩
+    show A.eval r / B.eval r = ξ
+    rw [hAr, mul_div_assoc, div_self hBr, mul_one]
+  exact (hbadfin.infinite_compl).mono hsub |>.elim himg
+
+/-- **A SEPARABLE INJECTIVE ISOGENY HAS A DEGREE-`≤ 1` `x`-MAP.** -/
+theorem exists_xWitness_natDegree_le_one_of_injective [IsAlgClosed F]
+    [W.IsElliptic] [W'.IsElliptic] {φ : W.Point →+ W'.Point} {c : F}
+    (hdc : IsDiffChar φ c) (hc : c ≠ 0) (hinj : Function.Injective φ) :
+    ∃ A B G : F[X], G ≠ 0 ∧ IsCoprime A B ∧
+      max A.natDegree B.natDegree ≤ 1 ∧
+      ∀ P : W.Point, φ P ≠ 0 → G.eval (veluPointX P) ≠ 0 →
+        veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) := by
+  classical
+  obtain ⟨hguard, A₀, B₀, C₀, D₀, E₀, hB₀, hE₀, hwit₀, hcert₀⟩ := id hdc
+  have hG : GCDMonoid.gcd A₀ B₀ ≠ 0 := gcd_ne_zero_of_right hB₀
+  obtain ⟨A, hA₀⟩ : GCDMonoid.gcd A₀ B₀ ∣ A₀ := gcd_dvd_left A₀ B₀
+  obtain ⟨B, hB₀'⟩ : GCDMonoid.gcd A₀ B₀ ∣ B₀ := gcd_dvd_right A₀ B₀
+  set G : F[X] := GCDMonoid.gcd A₀ B₀ with hGdef
+  have hcop : IsCoprime A B := by
+    have h := isCoprime_div_gcd_div_gcd (p := A₀) (q := B₀) hB₀
+    rw [← hGdef] at h
+    rwa [hA₀, hB₀', mul_div_cancel_left₀ _ hG, mul_div_cancel_left₀ _ hG] at h
+  have hwit : ∀ P : W.Point, φ P ≠ 0 → G.eval (veluPointX P) ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) := by
+    intro P hP hGP
+    have h := (hwit₀ P hP).1
+    rw [hA₀, hB₀'] at h
+    simp only [Polynomial.eval_mul] at h
+    apply mul_left_cancel₀ hGP
+    linear_combination h
+  refine ⟨A, B, G, hG, hcop, ?_, hwit⟩
+  by_contra hdeg
+  rw [not_le] at hdeg
+  have hW : derivative A * B - A * derivative B = 0 :=
+    wronskian_eq_zero_of_injective hinj hG hcop hwit (by omega)
+  have hW₀ : derivative A₀ * B₀ - A₀ * derivative B₀ = 0 := by
+    rw [hA₀, hB₀']
+    simp only [Polynomial.derivative_mul]
+    linear_combination (G ^ 2) * hW
+  have hzero : IsDiffChar φ (0 : F) := by
+    refine ⟨fun _ => rfl, A₀, B₀, C₀, D₀, E₀, hB₀, hE₀, hwit₀, fun P hP => ?_⟩
+    have h := congrArg (Polynomial.eval (veluPointX P)) hW₀
+    simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_zero] at h
+    simp only [IsDiffCharCert, zero_mul]
+    linear_combination (-(E₀.eval (veluPointX P) *
+      (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃))) * h
+  exact hc (isDiffChar_unique hdc hzero)
+
+/-- Wronskian vanishing certifies `λ = 0`. -/
+theorem isDiffChar_zero_of_wronskian [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} {A B C D E : F[X]} (hB : B ≠ 0) (hE : E ≠ 0)
+    (hwit : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = C.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P))
+    (hW : derivative A * B - A * derivative B = 0) :
+    IsDiffChar φ (0 : F) := by
+  refine ⟨fun _ => rfl, A, B, C, D, E, hB, hE, hwit, fun P hP => ?_⟩
+  have h := congrArg (Polynomial.eval (veluPointX P)) hW
+  simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_zero] at h
+  simp only [IsDiffCharCert, zero_mul]
+  linear_combination (-(E.eval (veluPointX P) *
+    (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃))) * h
+
+/-- `λ([m]) = m` for an integer `m`. -/
+theorem isDiffChar_zsmulHom [IsAlgClosed F] [W.IsElliptic] (m : ℤ) :
+    IsDiffChar ((m • (1 : Module.End ℤ W.Point)).toAddMonoidHom) ((m : F)) := by
+  induction m using Int.induction_on with
+  | zero =>
+      have hEq : (((0 : ℤ) • (1 : Module.End ℤ W.Point)).toAddMonoidHom)
+          = (0 : W.Point →+ W.Point) := by ext P; simp
+      rw [hEq]; simpa using (isDiffChar_zero (W := W) (W' := W))
+  | succ n ih =>
+      have hEq : ((((n : ℤ) + 1) • (1 : Module.End ℤ W.Point)).toAddMonoidHom)
+          = ((n : ℤ) • (1 : Module.End ℤ W.Point)).toAddMonoidHom
+            + AddMonoidHom.id W.Point := by
+        ext P; simp [add_smul]
+      rw [hEq]
+      have := isDiffChar_add ih (isDiffChar_id (W := W))
+      simpa using this
+  | pred n ih =>
+      have hEq : (((-(n : ℤ) - 1) • (1 : Module.End ℤ W.Point)).toAddMonoidHom)
+          = ((-(n : ℤ)) • (1 : Module.End ℤ W.Point)).toAddMonoidHom
+            + (-(AddMonoidHom.id W.Point)) := by
+        ext P; simp [sub_smul]; abel
+      rw [hEq]
+      have h := isDiffChar_add ih (isDiffChar_neg_id (W := W))
+      have hcast : ((-(n : ℤ) - 1 : ℤ) : F) = ((-(n : ℤ) : ℤ) : F) + (-1 : F) := by
+        push_cast; ring
+      rw [hcast]
+      exact h
+
+/-- `λ(F) = 0`: the `q`-power Frobenius kills the invariant differential. -/
+theorem isDiffChar_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] :
+    IsDiffChar (frobeniusPointEnd q Wbar).toAddMonoidHom
+      (0 : AlgebraicClosure (ZMod q)) := by
+  haveI : ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine).IsElliptic :=
+    inferInstanceAs (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).IsElliptic
+  obtain ⟨C, D, hCD⟩ := exists_pow_eq_linear (Wbar⁄(AlgebraicClosure (ZMod q))) q
+  refine isDiffChar_zero_of_wronskian (A := Polynomial.X ^ q) (B := 1) (C := C) (D := D)
+    (E := 1) one_ne_zero one_ne_zero (fun P hP => ?_) (by simp [Polynomial.derivative_X_pow])
+  have hP0 : P ≠ 0 := by rintro rfl; exact hP (map_zero _)
+  cases P with
+  | zero => exact absurd rfl hP0
+  | some x y h =>
+    simp only [LinearMap.toAddMonoidHom_coe]
+    refine ⟨?_, ?_⟩
+    · rw [veluPointX_frobeniusPointEnd]; simp
+    · rw [veluPointY_frobeniusPointEnd]; simpa using hCD x y h.1
+
+/-- `λ([c] − F) = c`. -/
+theorem isDiffChar_degreeFormEnd_one (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (c : ℤ) :
+    IsDiffChar (degreeFormEnd q Wbar c 1).toAddMonoidHom
+      ((c : AlgebraicClosure (ZMod q))) := by
+  haveI : ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine).IsElliptic :=
+    inferInstanceAs (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).IsElliptic
+  have hEq : (degreeFormEnd q Wbar c 1).toAddMonoidHom
+      = (c • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point))).toAddMonoidHom
+        + (-((frobeniusPointEnd q Wbar).toAddMonoidHom)) := by
+    ext P; simp [degreeFormEnd]; abel
+  rw [hEq]
+  have h := isDiffChar_add (isDiffChar_zsmulHom
+      (W := (Wbar⁄(AlgebraicClosure (ZMod q))).toAffine) c)
+    (isDiffChar_neg (isDiffChar_frobeniusPointEnd q Wbar))
+  simpa using h
+
+end Separability
 
 /-- **The ORDINARY criterion, in its POLYNOMIAL form** (sorry leaf, opened
 2026-07-30; Silverman *AEC* V.3.1, Deuring): a curve whose Frobenius trace is
@@ -2044,17 +3111,119 @@ theorem exists_ne_zero_qTorsion (q : ℕ) [Fact q.Prime]
         - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
     (hqc : ¬ ((q : ℤ) ∣ c)) :
     ∃ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, P ≠ 0 ∧ (q : ℤ) • P = 0 := by
-  classical
-  have hq : ((q : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : q.Prime).ne_zero
-  set K := AlgebraicClosure (ZMod q) with hK
-  have hdeg : (((Wbar.map (algebraMap (ZMod q) K))⁄K).ΨSq (q : ℤ)).natDegree ≠ 0 := by
-    rw [show ((Wbar.map (algebraMap (ZMod q) K))⁄K) =
-        (Wbar.map (algebraMap (ZMod q) K)).map (algebraMap K K) from rfl,
-      WeierstrassCurve.map_ΨSq, WeierstrassCurve.map_ΨSq,
-      Polynomial.natDegree_map, Polynomial.natDegree_map]
-    exact natDegree_ΨSq_ne_zero_of_not_dvd q Wbar hc hqc
-  exact (TorsionCharP.exists_ne_zero_torsion_iff_natDegree_ΨSq_ne_zero
-    (Wbar.map (algebraMap (ZMod q) K)) hq).mpr hdeg
+  haveI hell : ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine).IsElliptic :=
+    inferInstanceAs (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).IsElliptic
+  by_contra hcon
+  have hqinj : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (q : ℤ) • P = 0 → P = 0 := by
+    intro P hP
+    by_contra hP0
+    exact hcon ⟨P, hP0, hP⟩
+  have hcP : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+        = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
+    fun P => congrArg (fun e : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point) => e P) hc
+  have hVF : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      degreeFormEnd q Wbar c 1 (frobeniusPointEnd q Wbar P) = (q : ℤ) • P := by
+    intro P
+    show c • frobeniusPointEnd q Wbar P
+        - (1 : ℤ) • frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P) = _
+    rw [hcP P, one_zsmul]
+    abel
+  have hVker : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      degreeFormEnd q Wbar c 1 P = 0 → P = 0 := by
+    intro P hP
+    obtain ⟨R, hR⟩ := surjective_frobeniusPointEnd q Wbar P
+    have hq0 : (q : ℤ) • R = 0 := by rw [← hVF R, hR, hP]
+    rw [← hR, hqinj R hq0, map_zero]
+  have hVinj : Function.Injective (degreeFormEnd q Wbar c 1).toAddMonoidHom := by
+    intro P₁ P₂ h
+    have := hVker (P₁ - P₂) (by simp only [map_sub]; rw [show
+      (degreeFormEnd q Wbar c 1) P₁ = (degreeFormEnd q Wbar c 1) P₂ from h, sub_self])
+    exact sub_eq_zero.mp this
+  -- `λ(V) = c ≠ 0` in characteristic `q`
+  have hcK : ((c : ℤ) : AlgebraicClosure (ZMod q)) ≠ 0 := by
+    intro h
+    refine hqc ((ZMod.intCast_zmod_eq_zero_iff_dvd c q).mp ?_)
+    refine (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective ?_
+    rw [map_intCast, map_zero]
+    exact h
+  obtain ⟨A, B, G, hG, hcop, hdeg, hwit⟩ :=
+    exists_xWitness_natDegree_le_one_of_injective
+      (isDiffChar_degreeFormEnd_one q Wbar c) hcK hVinj
+  -- `x ∘ [q] = (A/B) ∘ X^q`, as an identity of polynomials
+  have hqne : (q : ℕ) ≠ 0 := (Fact.out : q.Prime).pos.ne'
+  have hqZ : ((q : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hqne
+  have hGcomp : G.comp (Polynomial.X ^ q) ≠ 0 := by
+    rw [← Polynomial.expand_eq_comp_X_pow]
+    exact fun h => hG ((Polynomial.expand_eq_zero (Nat.pos_of_ne_zero hqne)).mp h)
+  set Φq := (Wbar⁄(AlgebraicClosure (ZMod q))).Φ ((q : ℕ) : ℤ) with hΦq
+  set Ψq := (Wbar⁄(AlgebraicClosure (ZMod q))).ΨSq ((q : ℕ) : ℤ) with hΨq
+  have hpoly : Φq * B.comp (Polynomial.X ^ q) - A.comp (Polynomial.X ^ q) * Ψq = 0 := by
+    refine Polynomial.eq_zero_of_infinite_isRoot _ ?_
+    refine Set.Infinite.mono (s := {t : AlgebraicClosure (ZMod q) |
+      (G.comp (Polynomial.X ^ q)).IsRoot t}ᶜ) ?_
+      ((Polynomial.finite_setOf_isRoot hGcomp).infinite_compl)
+    intro t ht
+    obtain ⟨P, hP0, hPx⟩ :=
+      exists_point_veluPointX_eq (W := (Wbar⁄(AlgebraicClosure (ZMod q))).toAffine) t
+    have hqP : ((q : ℕ) : ℤ) • P ≠ 0 := fun h => hP0 (hqinj P h)
+    have hqPn : (q : ℕ) • P ≠ 0 := by rwa [← natCast_zsmul]
+    have e1 : veluPointX ((q : ℕ) • P) * Ψq.eval t = Φq.eval t := by
+      have := veluPointX_nsmul (W := (Wbar⁄(AlgebraicClosure (ZMod q))).toAffine)
+        (n := q) hqne P hqPn
+      rwa [hPx] at this
+    have hFx : veluPointX (frobeniusPointEnd q Wbar P) = t ^ q := by
+      rw [veluPointX_frobeniusPointEnd, hPx]
+    have hVFP : (degreeFormEnd q Wbar c 1).toAddMonoidHom (frobeniusPointEnd q Wbar P)
+        = (q : ℕ) • P := by
+      show degreeFormEnd q Wbar c 1 (frobeniusPointEnd q Wbar P) = _
+      rw [hVF P, natCast_zsmul]
+    have hGt : G.eval (t ^ q) ≠ 0 := by
+      intro h
+      exact ht (by
+        show (G.comp (Polynomial.X ^ q)).eval t = 0
+        simpa [Polynomial.eval_comp] using h)
+    have e2 : veluPointX ((q : ℕ) • P) * B.eval (t ^ q) = A.eval (t ^ q) := by
+      have := hwit (frobeniusPointEnd q Wbar P) (by rw [hVFP]; exact hqPn)
+        (by rw [hFx]; exact hGt)
+      rwa [hVFP, hFx] at this
+    show (Φq * B.comp (Polynomial.X ^ q) - A.comp (Polynomial.X ^ q) * Ψq).eval t = 0
+    simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_comp,
+      Polynomial.eval_pow, Polynomial.eval_X]
+    linear_combination (-(B.eval (t ^ q))) * e1 + (Ψq.eval t) * e2
+  -- degree contradiction
+  have hΦdvd : Φq ∣ A.comp (Polynomial.X ^ q) := by
+    have hcop2 : IsCoprime Φq Ψq :=
+      WeierstrassCurve.isCoprime_Φ_ΨSq _ hqZ (Wbar⁄(AlgebraicClosure (ZMod q))).isUnit_Δ
+    refine hcop2.dvd_of_dvd_mul_right ⟨B.comp (Polynomial.X ^ q), ?_⟩
+    linear_combination -hpoly
+  have hΦdeg : Φq.natDegree = q ^ 2 := by
+    rw [hΦq, WeierstrassCurve.natDegree_Φ]
+    simp
+  have hAne : A.comp (Polynomial.X ^ q) ≠ 0 := by
+    rw [← Polynomial.expand_eq_comp_X_pow]
+    intro h
+    have hA0 : A = 0 := (Polynomial.expand_eq_zero (Nat.pos_of_ne_zero hqne)).mp h
+    have hBu : IsUnit B := by
+      rw [hA0] at hcop
+      exact isCoprime_zero_left.mp hcop
+    have hBcomp : B.comp (Polynomial.X ^ q) ≠ 0 := by
+      rw [← Polynomial.expand_eq_comp_X_pow]
+      exact fun hh => hBu.ne_zero ((Polynomial.expand_eq_zero (Nat.pos_of_ne_zero hqne)).mp hh)
+    have hΦ0 : Φq = 0 := by
+      rcases mul_eq_zero.mp (by
+        rw [hA0] at hpoly; simpa using hpoly : Φq * B.comp (Polynomial.X ^ q) = 0) with h1 | h1
+      · exact h1
+      · exact absurd h1 hBcomp
+    rw [hΦ0, Polynomial.natDegree_zero] at hΦdeg
+    have h2 := (Fact.out : q.Prime).two_le
+    nlinarith [hΦdeg, h2]
+  have hle := Polynomial.natDegree_le_of_dvd hΦdvd hAne
+  rw [hΦdeg, ← Polynomial.expand_eq_comp_X_pow, Polynomial.natDegree_expand] at hle
+  have hA1 : A.natDegree ≤ 1 := le_trans (le_max_left _ _) hdeg
+  have h2q := (Fact.out : q.Prime).two_le
+  nlinarith [hle, hA1, h2q]
+
 
 /-- **`#E[q] = q` in the ordinary case** (PROVEN 2026-07-29 over
 `exists_ne_zero_qTorsion` and `TorsionCharP.exists_zsmul_eq_of_charP`).
@@ -2355,10 +3524,11 @@ theorem natCard_ker_degreeFormEnd_of_dvd (q : ℕ) [Fact q.Prime]
   classical
   have hqprime : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp (Fact.out : q.Prime)
   rcases eq_or_ne (m ^ 2 - c * m * n + n ^ 2 * (q : ℤ)) 0 with hd0 | hd0
-  · -- `d = 0`: the kernel is all of the infinite `Wbar(𝔽̄_q)`, so `Nat.card` is `0`
-    have hle := natCard_ker_degreeFormEnd_le q Wbar hc m n
-    rw [hd0] at hle ⊢
-    exact le_antisymm hle (Int.natCast_nonneg _)
+  · -- `d = 0` is IMPOSSIBLE off the origin (`degreeForm_ne_zero`, NINTH CUT), and
+    -- `q ∤ m` puts us off the origin.  This branch used to cite the still-open
+    -- `natCard_ker_degreeFormEnd_le`; it no longer does.
+    exact absurd hd0 (degreeForm_ne_zero q Wbar hc (m := m) (n := n)
+      (fun hmn => hm (by rw [hmn.1]; exact dvd_zero _)))
   -- `q ∣ d` and `q ∤ m` force `q ∣ m − c·n`, hence `q ∤ c`: the ORDINARY case
   have hmc : (q : ℤ) ∣ m - c * n := by
     have hsplit : m ^ 2 - c * m * n + n ^ 2 * (q : ℤ)
