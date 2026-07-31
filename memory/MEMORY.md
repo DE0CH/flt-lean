@@ -33,3 +33,5 @@
 - [Preflight finds unowned leaves](flt-preflight-finds-unowned-leaves.md) — the only check that catches sorries no agent reported; run it BETWEEN releases; count leaves back when grouping into tasks
 - [flt-loop spawn/liveness race](flt-loop-spawn-liveness-race.md) — the loop can put TWO live agents in one worktree; check your token against jobs/<name>.json first, and a discarded incarnation yields WITHOUT writing its sentinel
 - [flt-loop runs on mystique](flt-loop-runs-on-mystique.md) — not on the medic's host, so ps says "dead" for a healthy loop; it re-execs onto edited source itself (do NOT hand-restart), and a live Claude session there respawns it if killed
+- [Cut AT the missing object](flt-cut-at-the-missing-object.md) — a leaf blocked on absent theory usually decomposes by stating that object's existence; the remainder was 100 lines of bookkeeping the file already owned
+- [The scratch may import the giant file](flt-scratch-may-import-the-giant-file.md) — don't trim imports, just don't re-elaborate what you're editing: 4 s vs 20 min on TateModule.lean
