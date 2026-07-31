@@ -1422,18 +1422,6 @@ theorem End.degree_toIsogeny_zero [IsAlgClosed F] [W.IsElliptic] :
   have hz : End.toIsogeny (0 : End W) = Isogeny.zero := rfl
   rw [hz, Isogeny.degree_zero]
 
-/-- `deg (−χ) = deg χ`. Multiplicativity against `deg [−1] = (−1)² = 1`; the kernel
-of `−χ` is literally the kernel of `χ`, but this route needs no new lemma. -/
-theorem End.degree_neg [IsAlgClosed F] [CharZero F] [W.IsElliptic] (χ : End W) :
-    Isogeny.degree (End.toIsogeny (-χ)) = Isogeny.degree (End.toIsogeny χ) := by
-  have h : (-χ : End W) = (((-1 : ℤ)) : End W) * χ := by
-    rw [Int.cast_neg, Int.cast_one, neg_one_mul]
-  have hm := End.degree_mul (((-1 : ℤ)) : End W) χ
-  rw [← h, End.degree_intCast] at hm
-  have hz : ((Isogeny.degree (End.toIsogeny (-χ)) : ℤ))
-      = ((Isogeny.degree (End.toIsogeny χ) : ℤ)) := by rw [hm]; ring
-  exact_mod_cast hz
-
 /-- `deg (χ + χ) = 4 · deg χ`. Multiplicativity against `deg [2] = 4`. This is the
 degenerate case of the parallelogram law at `φ = ψ`, and is what discharges the two
 diagonal cases of it below without any appeal to the leaves. -/

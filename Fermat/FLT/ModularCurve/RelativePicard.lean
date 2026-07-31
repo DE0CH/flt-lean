@@ -4145,52 +4145,6 @@ theorem isInvertibleSheaf_sectionIdeal {X S T : Scheme.{u}} {strX : X ⟶ S}
   · exact sectionIdeal_restrict_iso_unit_of_notMem_range _
       (isClosedImmersion_relSection _hproper x) z hz
 
-/-! ### The base-change square of a section, and what it does NOT say
-
-The two lemmas here are the geometry `nonempty_modPullback_sectionIdeal` needs
-and the only part of it a prover has to check by hand; the docstring of that
-leaf already named them.  Both are PROVEN, so what is left of that leaf is a
-single statement about ideal sheaves under base change, cut out below. -/
-
-/-- **THE SECTIONS MATCH** (PROVEN): `σ' ≫ φ = h ≫ σ` for `σ = relSection x`,
-`σ' = relSection (RelPoint.pre h hg x)` and `φ = curveBaseChangeMap strX h hg`.
-
-Both sides have first component `h ≫ x.1` — which is `(RelPoint.pre h hg x).1`
-by definition — and second component `h`.  It is *not* `rfl`: each side is a
-`pullback.lift` applied to a different pair, so the check is two applications of
-`pullback.hom_ext` and `pullback.lift_fst`/`lift_snd`. -/
-theorem relSection_comp_curveBaseChangeMap {X S T T' : Scheme.{u}} {strX : X ⟶ S}
-    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') (x : RelPoint strX g) :
-    relSection (RelPoint.pre h hg x) ≫ curveBaseChangeMap strX h hg = h ≫ relSection x := by
-  apply pullback.hom_ext
-  · rw [Category.assoc, curveBaseChangeMap, pullback.lift_fst, relSection, relSection,
-      pullback.lift_fst, Category.assoc, pullback.lift_fst]
-    rfl
-  · rw [Category.assoc, curveBaseChangeMap, pullback.lift_snd, relSection, relSection,
-      ← Category.assoc, pullback.lift_snd, Category.assoc, pullback.lift_snd,
-      Category.id_comp, Category.comp_id]
-
-/-- **`X ×_S T' = (X ×_S T) ×_T T'`** (PROVEN) — the base-change square of the
-curve is cartesian, i.e. `curveBaseChangeMap` really is the base change of
-`π_g` along `h`.  This is what makes the divisor `D_{x'}` the pullback of `D_x`
-rather than merely a divisor mapping to it.
-
-Proved by pasting: `curveBaseChangeMap ≫ pullback.fst strX g = pullback.fst
-strX (h ≫ g)`, so the outer rectangle and the right-hand square are both the
-defining pullback of `strX` against a morphism, and `IsPullback.of_right` peels
-the left square off. -/
-theorem isPullback_curveBaseChangeMap {X S T T' : Scheme.{u}} (strX : X ⟶ S)
-    {g : T ⟶ S} {g' : T' ⟶ S} (h : T' ⟶ T) (hg : h ≫ g = g') :
-    IsPullback (curveBaseChangeMap strX h hg) (curveBaseChangeProj strX g')
-      (curveBaseChangeProj strX g) h := by
-  subst hg
-  refine IsPullback.of_right (h₁₂ := pullback.fst strX g) ?_ (curveBaseChangeMap_proj strX h rfl)
-    (IsPullback.of_hasPullback strX g)
-  have : curveBaseChangeMap strX h (rfl : h ≫ g = h ≫ g) ≫ pullback.fst strX g
-      = pullback.fst strX (h ≫ g) := pullback.lift_fst _ _ _
-  rw [this]
-  exact IsPullback.of_hasPullback strX (h ≫ g)
-
 /-- **`T' = T ×_{X_T} X_{T'}`** (PROVEN) — the section square is cartesian too,
 which is the form in which the classical statement is usually quoted ("`D_{x'}`
 is the scheme-theoretic preimage of `D_x`").
@@ -4368,57 +4322,6 @@ theorem isPullback_curveBaseChangeMap {X S T T' : Scheme.{u}} (strX : X ⟶ S) {
     rw [e]
     exact IsPullback.of_hasPullback strX (h ≫ g)
   · simp [curveBaseChangeMap, curveBaseChangeProj, pullback.lift_snd]
-
-/-- **AN INVERTIBLE IDEAL OF A SECTION COMMUTES WITH BASE CHANGE** (sorry leaf,
-cut 2026-07-31 out of `nonempty_modPullback_sectionIdeal`) — Stacks 062Y/0631,
-EGA IV 21.15: a *relative* effective Cartier divisor pulls back to one, and its
-ideal sheaf pulls back to the ideal sheaf.
-
-The square is `Y' = Y ×_T T'`, `σ` is a section of `p : Y ⟶ T`, and `σ'` is the
-section of `p'` it base-changes to.  The conclusion is that
-`φ^* I_σ ⟶ I_{σ'}` — the map induced on kernels by right-exactness of `φ^*` — is
-an isomorphism.
-
-**WHERE EACH HYPOTHESIS IS SPENT, and none is decoration.**
-
-* `_hinv` is Cartier-ness.  Without it `I_σ` is not even locally principal, and
-  `φ^* I_σ ⟶ 𝒪_{Y'}` has nothing to be compared with; the classical witness is a
-  Weil divisor that is not Cartier on a singular `Y`.
-* `_hσ` is FLATNESS, and it is the whole reason this is true.  `σ` a section
-  makes `D_σ ⟶ T` an isomorphism, hence flat; and for an effective Cartier
-  divisor `D = V(t) ⊂ Y` the sequence `0 → 𝒪_Y →ᵗ 𝒪_Y → 𝒪_D → 0` stays exact
-  after `⊗_{𝒪_T} 𝒪_{T'}` precisely when `Tor₁^{𝒪_T}(𝒪_D, 𝒪_{T'}) = 0`, which
-  `𝒪_D` flat over `𝒪_T` supplies.  Drop it — allow `σ` to be any closed
-  immersion with invertible ideal — and the statement is **FALSE**: take
-  `T = Spec k[s]`, `Y = 𝔸²_T = Spec k[s,t]`, `D = V(st)`, whose ideal is
-  invertible (`st` is a nonzerodivisor) but which is not flat over `T`
-  (`s · t = 0` in `k[s,t]/(st)` with `t ≠ 0`).  Base-changing along
-  `T' = Spec k[s]/(s) ⟶ T` gives `Y' = Spec k[t]`, on which `st` pulls back to
-  `0`: so `φ^* I ≅ 𝒪_{Y'}` has rank `1` while the ideal of `φ^{-1}(D) = Y'` is
-  `0`.  No isomorphism exists.
-* `_hsq` is what makes `σ'` the base change of `σ` at all; without it `σ'` is an
-  unrelated section and the two ideals live on unrelated schemes.
-* `_hσ'` and `_hcomp` pin `σ'`: `_hsq` determines a map `T' ⟶ Y'` by its two
-  components, and these are the two components of the base-changed section.
-  Note `_hσ'` is NOT derivable from the others — `_hcomp` and `_hsq` only give
-  `(σ' ≫ p') ≫ h = h`, which does not force `σ' ≫ p' = 𝟙`.
-
-**ROUTE.**  Right-exactness of `φ^*` gives `φ^* I_σ ⟶ φ^* 𝒪_Y ≅ 𝒪_{Y'}`
-(`modPullbackUnitIso`); the composite kills `u_{σ'}` because the square is
-cartesian, so it factors through `I_{σ'} = ker u_{σ'}`.  That the factorisation
-is an isomorphism is local, and is where `_hinv` and the Tor vanishing above are
-consumed: on a trivialising open `I_σ ≅ 𝒪_Y` carrying the local equation `t`,
-and the claim becomes that `φ^# t` is a nonzerodivisor on `𝒪_{Y'}`.
-
-**NOT VACUOUS.**  `h = 𝟙 T`, `Y' = Y`, `φ = 𝟙` satisfies every hypothesis with
-`_hinv` supplied by `isInvertibleSheaf_modUnit` for the trivial divisor, and the
-general case is consumed immediately below. -/
-theorem nonempty_modPullback_sectionIdeal_of_isPullback {Y Y' T T' : Scheme.{u}}
-    {p : Y ⟶ T} {p' : Y' ⟶ T'} {φ : Y' ⟶ Y} {h : T' ⟶ T}
-    (_hsq : IsPullback φ p' p h) {σ : T ⟶ Y} {σ' : T' ⟶ Y'}
-    (_hσ : σ ≫ p = 𝟙 T) (_hσ' : σ' ≫ p' = 𝟙 T') (_hcomp : σ' ≫ φ = h ≫ σ)
-    (_hinv : IsInvertibleSheaf (sectionIdeal σ)) :
-    Nonempty (modPullback φ (sectionIdeal σ) ≅ sectionIdeal σ') := sorry
 
 /-- **`𝒪(−σ)` COMMUTES WITH BASE CHANGE** (PROVEN 2026-07-31 over
 `nonempty_modPullback_sectionIdeal_of_isPullback` and
