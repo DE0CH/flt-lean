@@ -801,26 +801,10 @@ def do_spawn(s, name, j):
         # Continue the actual conversation. No prompt file: the agent already
         # knows its task, what it tried and what failed, which is the whole
         # point of resuming instead of starting a stranger in its worktree.
-        # Two resume modes, tried in order of transparency.
-        #
-        # `-p ''` continues a DEFERRED session: one that stopped waiting on a
-        # tool call. It resumes from the tool result with no synthetic user
-        # turn at all, so the agent simply carries on its interrupted turn and
-        # has no way to tell it was ever stopped. That is the ideal case and it
-        # is exactly how an agent killed mid-tool-call died.
-        #
-        # If the session was not deferred the CLI says so and exits, and the
-        # fallback adds the smallest possible nudge. It has to be a user turn:
-        # headless mode loads the history, appends a message and responds, and
-        # a conversation ending in a COMPLETE assistant turn has nothing to
-        # continue into without one.
-        r = shlex.quote(j["session"])
-        act = ("--resume %s -p '' || exec -a flt-job-%s %s --model %s "
-               "--dangerously-skip-permissions --resume %s -p continue"
-               % (r, j["token"], shlex.quote(CLAUDE), shlex.quote(MODEL), r))
-    else:
-        act = "--session-id %s -p \"$(cat %s)\"" % (shlex.quote(j["session"]),
-                                                    shlex.quote(str(pf)))
+        # Always `continue`. The empty-prompt form only continues a session
+        # the CLI itself DEFERRED, which a killed or refused agent never is, so
+        # trying it first bought a guaranteed-failing call before the real one.
+        act = "--resume %s -p continue" % shlex.quote(j["session"])
     inner = ("cd %s 2>/dev/null || cd %s; "
              "exec -a flt-job-%s %s --model %s --dangerously-skip-permissions %s"
              % (shlex.quote(str(wt)), shlex.quote(str(REPO)), j["token"],
@@ -1167,6 +1151,42 @@ IDLE, PANIC = 13, 14
 QUIET = (IDLE, 4)
 
 
+def panic(why):
+    """Machine-level panic: hand the loop to a medic and STOP.
+
+    Short on purpose. This runs when the loop itself is broken -- a tick that
+    raised -- so every line here is a line that can also fail while the ground
+    is already moving. It does three things and nothing else: record why, start
+    a detached medic, exit.
+
+    Distinct from the medic route THROUGH the table (rows 5, 14, 17), which
+    handles states the loop can still reason about. This one is for faults that
+    stop the reasoning: if every tick raises, no row runs, so a record left for
+    row 3 would sit unspawned for ever. The table cannot dispatch the repair
+    for a fault that stops the table.
+
+    exit(1) rather than carrying on: a loop that keeps ticking through a fault
+    it cannot survive writes state nobody can trust, and the medic it just
+    summoned owns the machine now. The medic is detached (setsid, reparented to
+    init), so it outlives this process by construction.
+    """
+    try:
+        t = flt_loop_rows.tok()
+        rec = {"kind": "medic", "worktree": "flt-lean", "token": t, "retries": 0,
+               "host": flt_loop_rows.MEDIC_HOST,
+               "payload": "the loop raised and stopped:\n\n" + why[-3000:]}
+        wr(STATE / "jobs" / "medic.json", json.dumps(rec, indent=1))
+        do_spawn({"jobs": {}}, "medic", rec)
+        wr(STATE / "jobs" / "medic.started", t)
+    except Exception:
+        pass
+    try:
+        notify("flt-loop: PANIC -- loop stopped, medic summoned", why[-1500:])
+    except Exception:
+        pass
+    os._exit(1)
+
+
 def tick(dry=False):
     s = load()
     rows, firing = evaluate(s)
@@ -1229,34 +1249,7 @@ def main():
             if "medic" not in s["jobs"]:
                 adopt_source(startup_digest)
         except Exception:
-            # A tick that raises IS the loop being broken, which is the medic's
-            # domain -- so summon one, exactly as an unexplained state does.
-            #
-            # Spawned DIRECTLY rather than by creating a record and letting
-            # row 3 start it, and that exception is deliberate: if every tick
-            # raises, no row ever runs, so a record placed here would sit
-            # unspawned for ever while the fleet drifted. The table cannot
-            # dispatch the repair for a fault that stops the table.
-            #
-            # Retrying for ever continues underneath. The fault may be
-            # transient, and if it is not, the medic is already on it.
-            tb = traceback.format_exc()
-            try:
-                if not (STATE / "jobs" / "medic.json").exists():
-                    t = flt_loop_rows.tok()
-                    rec = {"kind": "medic", "worktree": "flt-lean",
-                           "payload": "the loop's tick raised:\n\n" + tb[-3000:],
-                           "token": t, "retries": 0, "host": flt_loop_rows.MEDIC_HOST}
-                    wr(STATE / "jobs" / "medic.json", json.dumps(rec, indent=1))
-                    do_spawn({"jobs": {}}, "medic", rec)
-                    wr(STATE / "jobs" / "medic.started", t)
-                    commit_state("tick raised -> medic spawned directly")
-                    notify("flt-loop: tick raised, medic summoned", tb[-1500:])
-                else:
-                    notify("flt-loop: tick raised (medic already in flight)", tb[-1500:])
-            except Exception:
-                notify("flt-loop: tick raised AND medic spawn failed", tb[-1500:])
-            time.sleep(30)
+            panic(traceback.format_exc())
         if a.once:
             return
         time.sleep(TICK)
