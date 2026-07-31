@@ -51,8 +51,173 @@ local notation3 "Γ" K:max => Field.absoluteGaloisGroup K
 
 universe u
 
+/-- **ARTIN RECIPROCITY AT A PRIME-POWER MODULUS, THE `ray ⊆ ker` CONTAINMENT ONLY**
+(SORRY LEAF, cut 2026-07-31 (`flt-lean-167`) out of
+`exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class` below, which is now
+PROVEN over it in eighteen lines of index bookkeeping).
+
+Unwound: for the finite cyclic `M/F` cut out by `χ`, there is a modulus `mm₀ ^ (t+1)`
+such that every totally positive `δ ≡ 1 (mod mm₀ ^ (t+1))` has trivial Artin symbol,
+`c ((δ)) = 1`. Classically: `mm₀ ^ (t+1)` is admissible for `M/F`, and the narrow ray
+group `P⁺_{F, mm₀^(t+1)}` lies in the kernel of the Artin map. Childress ch. 5
+(pp. 113–114 for the base case, pp. 121–123 for the descent); Neukirch VI (7.3);
+Janusz V; Lang *ANT* X.
+
+## Why the leaf below was recut onto this, and what the recut costs
+
+The parent's own docstring (retained verbatim below) recorded, correctly, that the
+containment route needs `P ≤ φ.ker`, that this is Artin reciprocity, and that
+reciprocity is mathematically deeper than the inequality it proves — so that trading
+the inequality for reciprocity would be a REGRESSION unless the new citation also
+discharged `NumberField.artinMap_toPrincipalIdeal` in
+`Fermat/FLT/NumberField/ArtinSymbol.lean`. **That unification is NOT available, and
+this file should stop recommending it; see the section after next.** What makes the
+recut worth making anyway is a different fact, which the parent's route inventory
+missed:
+
+**`ModThree.lean` ALREADY CONTAINS A RAY-CLASS ARTIN RECIPROCITY DEVELOPMENT, in this
+exact formalism, following Childress, and the base case of THIS leaf is PROVEN in it.**
+The inventory looked for reciprocity under `Fermat/FLT/NumberField/` and found only the
+modulus-`1`, `artinMap`-language cluster; the ray-class one is 13 000 lines away in
+`ModThree.lean` under names beginning `artin…_ray_class`, and none of them contains the
+word "reciprocity". Concretely, and all checked against `main` at `fe5131ca`:
+
+* `artinSymbol_span_eq_one_of_cyclotomic_ray_class` (`ModThree.lean:50045`) — **PROVEN**.
+  This IS the statement below, for `F` replaced by any number field and the modulus
+  replaced by `(m)` with `χ` CYCLOTOMIC of level `m`. Childress pp. 113–114.
+* `artinDivisorSymbol_span_eq_one_of_cyclotomic_ray_class` (`:58238`) — **PROVEN**, the
+  same thing transported to the divisor group.
+* `exists_artinAuxiliaryNumberField_ray_class` (`:54540`) — **PROVEN**: Artin's auxiliary
+  field `E` realised as a number field in `Type u`, with `M ∩ E = F`, `M ⊆ E(ζ_m)`,
+  `globalFrob p ∈ H`, and the base-change clause that puts `χ ∘ ι` in the scope of the
+  cyclotomic case at `E`.
+* `exists_relNormDivisorHom_ray_class` (`:62157`) — **PROVEN**: the relative-norm
+  homomorphism on divisors with its compatibility `c (N_{E/F} 𝔄) = c' 𝔄`.
+
+So the descent apparatus that carries the cyclotomic base case down to a general `F` and
+a general modulus is BUILT and green; what is missing is one assembly, in the same shape
+as `exists_artinNormSubgroups_ramified_ray_class` (`:63121`, proven glue) but for the
+opposite containment. That is why the recut is a decomposition rather than a trade: this
+leaf is strictly weaker than "ray class Artin reciprocity" as the parent's audit priced
+it, being only one of the two containments, with no Artin map, no surjectivity, no
+`Subgroup`, no `relIndex` and no divisor group in its statement.
+
+**AND THE TWO DIRECTIONS DO NOT COLLIDE — checked, because the obvious fear is
+circularity.** `exists_artinNormSubgroups_ramified_ray_class` proves
+`φ.ker ⊓ Im ≤ P ⊔ N` (the `ker ⊆ ray · norms` direction, which yields `h ≤ n`) and it
+takes `hidx₂ : A.relIndex Im ≤ (P ⊔ N).relIndex Im` — *the parent leaf's own conclusion,
+`n ≤ h`* — as a HYPOTHESIS. So the in-tree reciprocity development consumes the
+inequality in the `ker ⊆ ray·norms` direction and cannot be used to prove it, while the
+`ray ⊆ ker` direction asked for here is not used by it anywhere. Anyone tempted to close
+this leaf by citing `exists_artinNormSubgroups_ramified_ray_class` should read its
+`hidx₂` binder first.
+
+## The unification with `ArtinSymbol.lean` is NOT available (verdict, 2026-07-31)
+
+The parent recommended stating ray class reciprocity ONCE, upstream of both this module
+and `Fermat/FLT/NumberField/ArtinSymbol.lean`, and proving both
+`artinMap_toPrincipalIdeal` and this leaf over it — `2` leaves for `1`. It was attempted
+and abandoned, for a reason that is structural rather than a matter of effort: **the two
+modules are written in two different formalisms and there is no dictionary between them
+in this tree.** `ArtinSymbol.lean` is deliberately mathlib-only (`frobAt`,
+`Algebra.IsUnramifiedAt`, `IsUnramifiedAtInfinitePlaces`, an abstract `L` with
+`[IsGalois K L]`); everything here is absolute-Galois (`Γ F`, `globalFrob`,
+`localInertiaGroup`, characters of `Γ F`). Deriving `artinMap_toPrincipalIdeal` from a
+`Γ F`-character reciprocity needs FOUR bridges, of which exactly one exists:
+
+1. `restrictNormalHom L (globalFrob v) = frobAtBelow K L v` — **available**, from
+   `Chebotarev.lean`'s `exists_isArithFrobAt_restrictNormalHom_globalFrob` (`:12351`,
+   PROVEN, pointwise at every `v`, no unramifiedness needed) together with
+   `ArtinSymbol.lean`'s `frobAtBelow_eq_frobAt` and `eq_of_isUnramifiedAt`.
+2. *Finite inertia*: `(∀ Q, Algebra.IsUnramifiedAt (𝓞 K) Q) → the image of
+   `localInertiaGroup w` in `Gal(L/K)` is trivial`. **Absent.** This is the local–global
+   comparison of inertia; nothing in `Fermat/` relates `localInertiaGroup` to
+   `Algebra.IsUnramifiedAt`.
+3. *Archimedean*: `IsUnramifiedAtInfinitePlaces K L → χ` kills the decomposition group at
+   each real place. **Absent.**
+4. Transport of an abstract Galois `L/K` to an `IntermediateField K (AlgebraicClosure K)`,
+   which is what (1) is stated for. **Absent.**
+
+Bridges 2 and 3 are theorems of the same order as the leaves they would serve, so the
+unification is `2` leaves for `1 + 2` — a regression, and a several-thousand-line one.
+It would also drag `Chebotarev.lean`'s 13 479-line cone into `ArtinSymbol.lean`, whose
+own docstring says it "deliberately uses NO vocabulary from either" consumer. **Do not
+re-attempt it as stated.** If the two clusters are ever to share a statement, the cheap
+order is to build bridge 2 FIRST as a leaf in its own right — it is wanted by
+`hmm₀ram`-style hypotheses all over `ModThree.lean` — and only then ask about a shared
+reciprocity.
+
+## FALSITY AUDIT (run from scratch, 2026-07-31). VERDICT: TRUE AS STATED
+
+* *Monotone in `t`, the right way.* Raising `t` SHRINKS `mm₀ ^ (t+1)`, hence shrinks the
+  set of admissible `δ`, hence WEAKENS the conclusion. So `∃ t` is satisfiable as soon as
+  one admissible `t` exists and every larger `t` works too — the same check that the
+  parent's audit identified as load-bearing there, and it runs the same way here. (Had it
+  run the other way, `∃ t` would be dischargeable at a degenerate `t` and useless at every
+  admissible one.)
+* *Identification with the classical theorem.* `χ` has open kernel (`hVopen`, `hVker`) and
+  exponent dividing `ℓ ^ k` (`hord`), so it cuts out a finite abelian — in fact cyclic, see
+  the parent's docstring — extension `M/F` of `ℓ`-power degree, and `c` is its Artin symbol
+  on ideals (`hcmul`, `hcfrob`). The conductor `𝔣(M/F)` is supported at the primes ramified
+  in `M`, which `hmm₀ram` places inside `supp mm₀`; so for `t` large `mm₀ ^ (t+1)` is
+  divisible by `𝔣(M/F)` and is ADMISSIBLE, and Artin reciprocity says the ray group mod an
+  admissible modulus is in the kernel. Passing from the wide ray group to the narrow one
+  only shrinks the hypothesis set, so total positivity is free here.
+* *`hmm₀ram` is load-bearing, with an explicit refutation.* Drop it and take `F = ℚ`, `χ`
+  the quadratic character cutting out `ℚ(i)` (so `ℓ = 2`, `k = 1`), and `mm₀ = (3)` — which
+  misses the ramified prime `2`. For any `t`, Dirichlet gives a prime `p ≡ 1 (mod 3^{t+1})`
+  with `p ≡ 3 (mod 4)`; then `δ = p` is totally positive and `≡ 1 (mod 3^{t+1})`, while
+  `c ((p)) = χ (Frob_p) = (−1/p) = −1 ≠ 1`. So no `t` works and the leaf is FALSE without
+  `hmm₀ram`. This is the same shape as the second refutation recorded on
+  `ModThree.lean`'s `exists_artinDivisorNormIndex_le_ray_class`.
+* *Total positivity is load-bearing*, for the reason recorded at the base case
+  (`artinSymbol_span_eq_one_of_cyclotomic_ray_class`, step 4): without it `Algebra.norm ℤ δ`
+  may be negative, `absNorm ((δ))` picks up the absolute value, and the norm is `≡ −1` rather
+  than `≡ 1` modulo the level, on which the character need not be trivial. Verified
+  numerically there at `F = ℚ(√3)`.
+* *The `mm₀ = ⊤` branch is real and survives.* `hmm₀ram` is then vacuous only if `χ` is
+  unramified at every finite place; `⊤ ^ (t+1) = ⊤` and `δ - 1 ∈ ⊤` always, so the claim
+  becomes "every totally positive principal ideal has trivial Artin symbol", i.e.
+  reciprocity for the NARROW Hilbert class field. True and nontrivial. **Any proof that
+  begins "let `v` be a prime dividing the modulus" is wrong on this branch.**
+* *Nothing is pinned by junk.* `c` is universally quantified OUTSIDE the leaf and pinned on
+  the height-one primes by `hcfrob` and multiplicatively by `hcmul`, hence determined on
+  every nonzero ideal by unique factorisation in `𝓞 F`; the conclusion is a genuine
+  constraint on it and not dischargeable by a degenerate witness.
+
+**The check that would refute it**: a number field `F`, a character `χ` as above, an `mm₀`
+divisible by every prime at which `χ` is ramified, and for EVERY `t` a nonzero totally
+positive `δ ≡ 1 (mod mm₀ ^ (t+1))` with `c ((δ)) ≠ 1`. -/
+theorem exists_artinSymbol_span_eq_one_narrowRay_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (mm₀ : Ideal (NumberField.RingOfIntegers F)) (hmm₀ : mm₀ ≠ ⊥)
+    (hmm₀ram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
+        χ (a * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
+          ≠ 1) →
+      w.asIdeal ∣ mm₀) :
+    ∃ t : ℕ, ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
+      δ - 1 ∈ mm₀ ^ (t + 1) →
+      c (Ideal.span {δ}) = 1 :=
+  sorry
+
 /-- **THE GLOBAL NORM-INDEX INEQUALITY, AT A PRIME-POWER MODULUS AND WITH THE TRIVIAL
-CASE ALREADY DISCHARGED** (sorry node, created 2026-07-31 by hoisting the irreducible
+CASE ALREADY DISCHARGED** (**PROVEN 2026-07-31** (`flt-lean-167`) as containment glue over
+`exists_artinSymbol_span_eq_one_narrowRay_ray_class` just above; created 2026-07-31 by
+hoisting the irreducible
 core of `ModThree.lean`'s `exists_natCard_charDivisorImage_le_ray_class` into this module;
 that theorem is now PROVEN as glue over
 `exists_natCard_charDivisorImage_le_normIndex_ray_class` just below, which is in turn glue
@@ -71,10 +236,36 @@ and the conclusion is verbatim `[I_mm : P_mm · N_{M/F} I_mm(M)] ≥ [M : F]`
 (Childress §5, Janusz IV, Neukirch VI §7 in the idele language). It is proved either by
 Chevalley's ambiguous class number formula / Herbrand quotients (the algebraic route, which
 needs the CYCLICITY that is handed over here as a hypothesis) or analytically from
-`L(1, ψ) ≠ 0` for ray class characters. **It is NOT obtainable from the Artin map**: the
-containment route `P ⊔ N ≤ φ.ker` needs `P ≤ φ.ker`, which is Artin reciprocity, and
-reciprocity is strictly harder than the inequality it would prove here. Three independent
-audits in `ModThree.lean` reached that verdict; it stands.
+`L(1, ψ) ≠ 0` for ray class characters — but see the correction near the end of this
+docstring: **the analytic route proves the OPPOSITE inequality.**
+
+**THE ROUTE THAT WAS TAKEN, 2026-07-31 (`flt-lean-167`): the containment, over the
+`ray ⊆ ker` half of ray-class Artin reciprocity.** Everything below this paragraph is the
+docstring as it stood while this was a `sorry`, and it is kept because its audits are what
+the new leaf inherits. One verdict in it is now superseded and is corrected here rather
+than deleted, because the reasoning that produced it is still worth reading:
+
+> **It is NOT obtainable from the Artin map**: the containment route `P ⊔ N ≤ φ.ker` needs
+> `P ≤ φ.ker`, which is Artin reciprocity, and reciprocity is strictly harder than the
+> inequality it would prove here. Three independent audits in `ModThree.lean` reached that
+> verdict; it stands.
+
+Both sentences are true of *full* ray-class Artin reciprocity, and the containment route is
+taken anyway, because what the route consumes is strictly less than that and is already
+half-built in this tree. It consumes only `P ≤ φ.ker` — one of the two containments, with
+no Artin map, no surjectivity and no reverse inclusion — and that is now the named leaf
+`exists_artinSymbol_span_eq_one_narrowRay_ray_class` above, whose CYCLOTOMIC BASE CASE is
+PROVEN in `ModThree.lean` (`artinSymbol_span_eq_one_of_cyclotomic_ray_class`, `:50045`,
+and its divisor form at `:58238`) and whose descent apparatus is PROVEN there too
+(`exists_artinAuxiliaryNumberField_ray_class`, `exists_relNormDivisorHom_ray_class`). See
+that leaf's docstring for the full inventory, for the check that this does NOT create a
+cycle with `ModThree.lean`'s reciprocity development, and for the verdict — negative — on
+unifying with `Fermat/FLT/NumberField/ArtinSymbol.lean`'s `artinMap_toPrincipalIdeal`.
+
+The leaf count is UNCHANGED, `1 → 1`. What the trade buys is that the surviving statement
+mentions no `Subgroup`, no `relIndex`, no divisor group and no `Im`/`P`/`N`: it is a
+statement about an ideal and a character, in the same vocabulary as the base case that is
+already proven one file away.
 
 **WHAT THIS FORM CHANGES relative to the `ModThree.lean` statement, and why each change
 is faithful.**
@@ -278,8 +469,37 @@ theorem exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class
         IsCyclic (Im.map φ) → Nat.card (Im.map φ) ∣ ℓ ^ k → N ≤ φ.ker →
         P ≤ Im → N ≤ Im → P.relIndex Im ≠ 0 →
         1 < Nat.card (Im.map φ) →
-        Nat.card (Im.map φ) ≤ (P ⊔ N).relIndex Im :=
-  sorry
+        Nat.card (Im.map φ) ≤ (P ⊔ N).relIndex Im := by
+  obtain ⟨t, ht⟩ := exists_artinSymbol_span_eq_one_narrowRay_ray_class
+    F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c hcmul hcfrob mm₀ hmm₀ hmm₀ram
+  refine ⟨t, ?_⟩
+  intro φ d Im P N _hd _hφv hφd _hIm hP hN _hcyc _hcard hNker _hPIm _hNIm hPidx _hgt
+  -- **RECIPROCITY**: the narrow ray group lies in the kernel of the divisor Artin map.
+  -- `P` is generated by the `d δ` for `δ` in the ray, `hφd` identifies `φ (d δ)` with the
+  -- ideal symbol `c ((δ))`, and the leaf above kills that.
+  have hPker : P ≤ φ.ker := by
+    rw [hP]
+    refine (Subgroup.closure_le _).2 ?_
+    intro y hy
+    obtain ⟨δ, hδ0, hδpos, hδcong, rfl⟩ := hy
+    rw [SetLike.mem_coe, MonoidHom.mem_ker]
+    refine Units.ext ?_
+    rw [hφd δ hδ0, Units.val_one]
+    exact ht δ hδ0 hδpos hδcong
+  -- `N ≤ φ.ker` is a hypothesis — it is the elementary half of the containment, `φ` sending
+  -- the generator `single v (f_v)` to `χ (globalFrob v) ^ f_v = 1`.
+  have hsup : P ⊔ N ≤ φ.ker := sup_le hPker hNker
+  -- The index is FINITE, inherited from `P.relIndex Im ≠ 0` along `P ≤ P ⊔ N`.  Without
+  -- this the `Nat.le_of_dvd` below is unavailable and the conclusion is false for the
+  -- trivial reason that `relIndex` returns `0` for an infinite index.
+  have hne : (P ⊔ N).relIndex Im ≠ 0 := fun h0 =>
+    hPidx (zero_dvd_iff.mp (h0 ▸ Subgroup.relIndex_dvd_of_le_left Im le_sup_left))
+  -- `Nat.card (Im.map φ) = (ker φ).relIndex Im` (`Subgroup.relIndex_ker`), and `relIndex`
+  -- is antitone in its first argument, so the containment above IS the inequality.
+  calc Nat.card (Im.map φ) = φ.ker.relIndex Im := (Subgroup.relIndex_ker (K := Im) φ).symm
+    _ ≤ (P ⊔ N).relIndex Im :=
+        Nat.le_of_dvd (Nat.pos_of_ne_zero hne)
+          (Subgroup.relIndex_dvd_of_le_left Im hsup)
 
 /-- **THE GLOBAL NORM-INDEX INEQUALITY IN THE FORM THE RAY-CLASS CLUSTER CONSUMES**
 (**PROVEN 2026-07-31** as glue over
