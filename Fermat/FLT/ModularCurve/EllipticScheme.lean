@@ -8,6 +8,17 @@ module
 public import Fermat.FLT.Modularity.AbelianScheme
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModel
+-- ADDED 2026-07-31 (`flt-lean-387`).  This module is the `ℚ → arbitrary field` port of
+-- the curve-geometry half of THIS file, in namespace
+-- `WeierstrassCurve.Projective.OverField`, and it is SORRY-FREE.  It supplies
+-- `smoothOfRelativeDimension_projToSpec` and `geometricallyConnected_projToSpec` over an
+-- arbitrary base field, which are two of the four inputs of
+-- `exists_ellipticScheme_weierstrassChart_addEquiv_field` below; before this import they
+-- were about to be cut as fresh leaves here, which would have duplicated ~2300 proven
+-- lines.  Its only other consumer is `Fermat/FLT/Modularity/MoretBailly.lean`.  There is
+-- no cycle: it imports only `ProjectiveModel` (which this file already imports) and
+-- mathlib.  Its namespace is disjoint from `Fermat`, so nothing here is shadowed.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModelOverField
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 -- Supplies `exists_isOpenImmersion_range_eq_compl_of_section`, which is
 -- `exists_affineComplement_zeroSection` below in mathlib-facing form, together with the
@@ -13555,35 +13566,523 @@ theorem exists_isIso_of_affineCharts_field {k : Type} [Field k] {C A B : Scheme.
       (strX := fB) (j := iB) (strZ := fA) abB.connected hfinB hstrB iA hstrA
   exact ⟨u, isIso_of_isDominant_of_inverse u v h1 h3 h2 h4, h1, h2⟩
 
-/-- **Every elliptic curve over a field has a Weierstrass model as an
-abelian scheme, with its `k`-points** (sorry leaf, opened 2026-07-30) — the
-single citation of the `k`-rational bridge, and the `k`-analogue of
-`exists_ellipticScheme_isWeierstrassModel_of_projModel` above.
+/-! ### The `k`-rational projective model: the FOUR inputs, cut out one by one
+
+(Cut 2026-07-31, `flt-lean-387`.)  `exists_ellipticScheme_weierstrassChart_addEquiv_field`
+below was a single opaque `sorry` covering an entire development.  It is now an
+ASSEMBLY, in exactly the shape of its `ℚ` twin
+`exists_ellipticScheme_isWeierstrassModel_of_projModel`, whose whole proof is
+
+    exact ⟨proj E, projToSpec E, (projGroupLaw E).toAbelianSchemeStruct,
+      smoothOfRelativeDimension_projToSpec E,
+      exists_affineChart_projModel E (projGroupLaw E),
+      exists_projGeomFibreAddEquiv E⟩
+
+So the `k`-statement needs the `k`-analogues of those inputs and *nothing else*: the
+scheme is `proj E`, which `ProjectiveModel.lean` already builds over an arbitrary
+`CommRing`, and the assembly below is that `exact` with `ℚ` replaced by `F`.
+
+**Every leaf in this subsection is a PORT of one named, PROVEN theorem of this
+module, not a new mathematical problem.**  That is the point of cutting here, and it
+is what makes the four independently dispatchable: each owner reads one `ℚ` proof and
+re-runs it over `F`.
+
+## The state of the generalisation, measured at this commit
+
+The `ℚ → F` port of this module is **already under way and roughly a third done** —
+see the section heading "The base field is a variable (generalisation begun
+2026-07-31)".  `ProjCoords` (line ~715), `ProjGroupLaw` (line ~555), and everything
+between them and line ~3470 are ALREADY stated over an arbitrary `{F : Type u}
+[Field F]`; `proj`, `projToSpec`, `projInfty` and `projNeg` are over an arbitrary
+`CommRing`.  What is still written `WeierstrassCurve ℚ` is the block from roughly
+line 3470 to line 10050 — about 106 declarations.
+
+**The friction that the task prompts for this node name — the 83 occurrences of
+`hom_ext_spec_rat`, i.e. `Spec ℚ` being terminal — is ALREADY SOLVED and its
+replacement is already proven.**  Do not re-derive it:
+
+* `ProjCoords.toHom_comp_projToSpec` pins `c.toHom ≫ projToSpec E` to
+  `X.toSpecΓ ≫ Spec.map (ofHom c.base)`;
+* `ProjCoords.toHom_comp_projToSpec_congr` turns the commuting square that a
+  `Limits.pullback.lift` demands into the single hypothesis `c.base = d.base`;
+* `ProjCoords.base_eq_of_comp_projToSpec_eq` is its CONVERSE, so wherever the `ℚ`
+  proof already knew `c.toHom = d.toHom` the base equality is free;
+* `ProjCoords.base_eq_of_toHom_eq_pullback_proj` supplies it at every group-law site,
+  out of `Limits.pullback.condition` alone.
+
+Moreover the whole general-base `ProjCoords` API takes that equality as an
+AUTO-PARAM defaulting to `by exact Subsingleton.elim _ _`, so each `ℚ` call site
+keeps working untouched while the `F` call sites just pass it.  A porter's job is
+therefore: replace `WeierstrassCurve ℚ` by `WeierstrassCurve F` with `{F : Type u}
+[Field F]` and `Scheme.{0}` by `Scheme.{u}` in the declaration, and at each
+`hom_ext_spec_rat _ _` supply the base equality from the four lemmas above.  I
+sampled the sites in `isProjMulOn_of_add`, `isProjMulOn_of_cover`, `exists_lawCover`
+and `exists_projCoordsCoverLaw` (lines ~3480–3660): **none of them uses
+`hom_ext_spec_rat`, `base_eq` or `Subsingleton` at all** — they are already
+base-general in substance and port by binder change alone.
+
+## Why the cut falls here and not one level down
+
+The four leaves below are the four inputs of `ofMorphisms` + the chart, and no two
+share a difficulty: properness is a finite-type/`Proj` fact with no discriminant in
+it; smoothness is the Jacobian criterion and is where `Δ` is consumed; geometric
+connectedness is the graded-domain/base-change argument; the group law is the
+Bosma–Lenstra gluing; the chart is `Proj` topology plus commutative algebra.  Cutting
+above them instead would hand one owner all five.
+
+`isProper_projToSpec_field` is PROVEN below rather than cut, because its `ℚ` proof
+turned out to be verbatim characteristic-free — which is the evidence that the other
+three are ports and not research. -/
+
+section FieldProjModel
+
+/-  The open is RESTRICTED to a name list, and must stay that way: `open
+`_root_.WeierstrassCurve.Projective` unrestricted also enables that namespace's scoped
+`⁄` notation, which then collides with the `WeierstrassCurve.Affine` one opened at the
+top of this file and makes `(E⁄F).Point` in
+`exists_projGroupLaw_relPointAddEquiv_field` an `Ambiguous term`.  This is the same
+idiom the `open … (proj projToSpec projInfty projNeg) in` lines above use. -/
+open _root_.WeierstrassCurve.Projective (proj projToSpec polynomial
+  polynomialHomogeneousIdeal projGrading isHomogeneous_polynomial)
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+variable {F : Type} [Field F]
+
+/-- **The projective Weierstrass model is proper over `Spec F`, for an ARBITRARY
+field `F`** (PROVEN 2026-07-31, `flt-lean-387`) — the general-base form of
+`isProper_projToSpec`, and the first of the four inputs of the `k`-rational model.
+
+The proof is the `ℚ` proof with `ℚ` replaced by `F`, unchanged in every other
+respect; see `isProper_projToSpec` for the two implementation notes (the pinned
+`IsScalarTower`, and the two `rfl` bridging identities) that it cost to write.  The
+reason it ports verbatim is that no step is arithmetic: `projToSpec` is
+`Proj.toSpecZero` followed by `Spec` of `F → projGrading E 0`, the first factor is
+proper because the coordinate ring is of finite type over its degree-zero part, and
+the second factor is an ISOMORPHISM because the degree-zero part of `F[X,Y,Z] ⧸ (W)`
+is `F` itself — which is `MvPolynomial.homogeneousSubmodule_zero` plus the
+observation that `constantCoeff` kills `(W)`, `W` being homogeneous of degree `3`.
+
+**FORMAL-CONTENT NOTE, inherited from the `ℚ` version:** `[E.IsElliptic]` is NOT
+used.  Properness holds for the projective model of an arbitrary Weierstrass equation
+over any field, singular or not.  The hypothesis is retained only because
+`ProjGroupLaw.toAbelianSchemeStructField` consumes this signature. -/
+theorem isProper_projToSpec_field (E : WeierstrassCurve F) [E.IsElliptic] :
+    IsProper (projToSpec E) := by
+  -- The projective Weierstrass polynomial has vanishing constant term: it is
+  -- homogeneous of degree `3`, and `3 ≠ 0`.
+  have hc : MvPolynomial.constantCoeff (polynomial E) = 0 :=
+    (isHomogeneous_polynomial E).coeff_eq_zero (d := 0) (by simp)
+  -- Hence `F → F[X, Y, Z] ⧸ (W)` is injective: a constant in `(W)` is `b * W`, and
+  -- `constantCoeff` sends that to `0`.
+  have hinj : Function.Injective (algebraMap F
+      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal)) := by
+    intro c c' h
+    have h' : (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
+          (MvPolynomial.C c)) = Ideal.Quotient.mk _ (MvPolynomial.C c') := h
+    rw [Ideal.Quotient.mk_eq_mk_iff_sub_mem, ← MvPolynomial.C_sub] at h'
+    obtain ⟨b, hb⟩ := Ideal.mem_span_singleton'.mp h'
+    have hcc := congrArg MvPolynomial.constantCoeff hb
+    rw [map_mul, hc, mul_zero, MvPolynomial.constantCoeff_C] at hcc
+    exact sub_eq_zero.mp hcc.symm
+  -- The degree-zero part of the homogeneous coordinate ring is exactly `F`.
+  have hbij : Function.Bijective (algebraMap F (projGrading E 0)) := by
+    refine ⟨fun c c' h => hinj (congrArg Subtype.val h), ?_⟩
+    rintro ⟨x, hx⟩
+    obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hx
+    rw [MvPolynomial.homogeneousSubmodule_zero] at hp
+    obtain ⟨c, rfl⟩ := Submodule.mem_one.mp hp
+    exact ⟨c, rfl⟩
+  -- `R`/`S`/`A` pinned by name: see the implementation note on `isProper_projToSpec`.
+  haveI := IsScalarTower.of_algebraMap_eq (R := F) (S := (projGrading E 0))
+    (A := MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) fun _ => rfl
+  haveI : Algebra.FiniteType F
+      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
+    Algebra.FiniteType.of_surjective (Ideal.Quotient.mkₐ F _) Ideal.Quotient.mk_surjective
+  haveI : Algebra.FiniteType (projGrading E 0)
+      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
+    Algebra.FiniteType.of_restrictScalars_finiteType F _ _
+  haveI : IsIso (CommRingCat.ofHom (algebraMap F (projGrading E 0))) :=
+    (ConcreteCategory.isIso_iff_bijective _).mpr hbij
+  show IsProper (Proj.toSpecZero (projGrading E) ≫
+    Spec.map (CommRingCat.ofHom (algebraMap F (projGrading E 0))))
+  infer_instance
+
+/-- **The projective Weierstrass model is smooth of relative dimension one over an
+ARBITRARY field** (PROVEN 2026-07-31, `flt-lean-387`, by DELEGATION) — the
+general-base form of `smoothOfRelativeDimension_projToSpec`, and the ONE place the
+discriminant is consumed.
+
+## IT WAS ALREADY PROVEN, IN A MODULE THIS FILE DID NOT IMPORT
+
+This was about to be cut here as a fresh leaf, and the port priced at "roughly lines
+5356–6570 plus the chart-ring dictionary".  None of that was needed.  It is
+`WeierstrassCurve.Projective.OverField.smoothOfRelativeDimension_projToSpec`, in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModelOverField.lean` —
+which is the `ℚ → arbitrary field` port of this file's ENTIRE curve-geometry half,
+103 declarations, sorry-free, including `projChart_jacobian_span_eq_top`,
+`isStandardSmoothOfRelativeDimension_projChartAway`,
+`locally_isStandardSmooth_awayCoord`, `exists_projChartRingEquiv`, `dehomogenizeAt`,
+`homogenizeAt` and `projInfty_comp_projToSpec`.  Its only consumer before today was
+`Fermat/FLT/Modularity/MoretBailly.lean`; `EllipticScheme.lean` did not import it, so
+none of it appeared in this module's build and none of it was reachable from any
+proof here.  Adding the import (see the header) closed this leaf and the next one
+outright.
+
+**The lesson, which is the fleet's standing one and was still missed here:** the
+task prompt for this node, the leaf's own docstring, and my own first inventory all
+priced this as a 6500-line port, because all three asked "is it proven over `ℚ` in
+THIS file?" and "is it in mathlib?".  Neither is the question.  Grep the whole of
+`Fermat/` for the CONCLUSION's shape before cutting a port leaf.  An unimported
+module is invisible to `lake build`, to the `declaration uses 'sorry'` warning set,
+and to the transitive census — so the fact that nothing pointed at it is not evidence
+that it does not exist.
+
+## The mathematics is characteristic-free, and this has been CHECKED, not assumed
+
+I read the two theorems where a char-2/3 obstruction would have to appear if there
+were one, and there is none:
+
+* `eval_pderiv_projPolynomial_eq_zero` is Euler's relation
+  `3W = X·W_X + Y·W_Y + Z·W_Z` used only to conclude that the third partial vanishes
+  when the other two do AND `P i = 1`.  The `3` is never divided by — the proof is
+  `Finset.sum_eq_single_of_mem` plus `linear_combination -hE`, and in characteristic
+  `3` the relation reads `0 = ∑ Pᵦ · W_ᵦ`, which is exactly as usable.
+* `false_of_eval_pderiv_projPolynomial_eq_zero` splits on `P 2 = 0`.  The infinity
+  case is `P x ^ 3 = 0 ⟹ P x = 0` (`pow_ne_zero`, valid in any field) and then
+  `eval P W_Z = P y ^ 2` (`pow_ne_zero` again).  The affine case is the Jacobian
+  criterion `hjac` at `S := k`, where `Δ` being a UNIT is what makes the span the
+  unit ideal.  Neither case inverts `2` or `3`.
+
+`Δ_mem_jacobianSpan` — the source of the discriminant's power here — is stated over
+an ARBITRARY commutative ring already; the section heading before it says so in as
+many words ("they hold over an ARBITRARY commutative ring — nothing here is special
+to `ℚ`").
+
+## What is genuinely `ℚ`-shaped in the chain, and is bookkeeping
+
+`eval_map_eq_dehomogenizeAt`, `eval_pderiv_projPolynomial_eq_zero` and
+`false_of_eval_pderiv_projPolynomial_eq_zero` are stated with `[Algebra ℚ k]` and
+`algebraMap ℚ k`.  Over `F` those become `[Algebra F k]` and `algebraMap F k`; the
+`k` in them is a residue field of the chart ring, so it is an `F`-algebra by
+construction and nothing has to be supplied.  Likewise `MvPolynomial (ProjChartVar i)
+ℚ` and `dehomogenizeAt ℚ i` become `… F` and `dehomogenizeAt F i` —
+`dehomogenizeAt` already takes its base ring as an explicit argument.
+
+## Faithfulness
+
+`[E.IsElliptic]` is load-bearing HERE and nowhere else in the four: at `Δ = 0` the
+projective cubic is singular and this statement is FALSE.  That is why properness
+(above) does not need it and this does. -/
+theorem smoothOfRelativeDimension_projToSpec_field (E : WeierstrassCurve F) [E.IsElliptic] :
+    SmoothOfRelativeDimension 1 (projToSpec E) :=
+  _root_.WeierstrassCurve.Projective.OverField.smoothOfRelativeDimension_projToSpec E
+
+/-- **The projective Weierstrass model is geometrically connected over an ARBITRARY
+field** (PROVEN 2026-07-31, `flt-lean-387`, by DELEGATION) — the general-base form of
+`geometricallyConnected_projToSpec`.
+
+## Also already proven, in the same unimported module
+
+`WeierstrassCurve.Projective.OverField.geometricallyConnected_projToSpec`.  See the
+leaf above for the module and for the lesson.  Note it takes `F` EXPLICITLY, unlike
+its `ℚ` twin here, which is why the delegation passes `F E` rather than `E`.
+
+The rest of this docstring is the audit written while this was still believed to be a
+leaf.  It is kept because it records what that module's proof actually rests on, and
+because the `prime_projPolynomial` question below is worth having answered in writing:
+it IS proven there, over an arbitrary field, so the characteristic worry it raises is
+settled rather than merely deferred.
+
+## What that module's proof rests on
+
+Its `ℚ` twin's proof is eighteen lines and cites exactly three theorems; the ported
+version cites the ported three, all in `ProjectiveModelOverField.lean`:
+
+* `nonempty_projPullbackIso E K` — the base change of `proj E` along `F → K` is
+  `proj (E.baseChange K)`.  This is the bulk of it: `section BaseChange`, lines
+  ~7821–8435.
+* `nonempty_proj` — the point at infinity `[0 : 1 : 0]` is a `K`-rational point.
+  `projInfty` is already defined over an arbitrary `CommRing` in
+  `ProjectiveModel.lean`, so check whether `nonempty_proj` is already general before
+  porting it.
+* `preconnectedSpace_proj` — `K[X, Y, Z] ⧸ (W_K)` is a graded DOMAIN, so its `Proj`
+  is irreducible.  `section GradedDomain`, lines ~7625–7655, resting on
+  `prime_projPolynomial`.
+
+## The one thing to check before starting, because it is where a characteristic
+## argument could really hide
+
+`prime_projPolynomial` — irreducibility of the projective Weierstrass cubic over a
+field.  Over `ℚ` this is a degree argument in `K[X, Y, Z]`.  It is TRUE in every
+characteristic for an elliptic curve (a smooth plane cubic is irreducible; a
+reducible cubic has a singular point at an intersection of two components, and
+`Δ` is a unit), but the `ℚ` proof may route through something that is not.  Read it
+first, and if it does route through characteristic zero, the smoothness leaf above
+gives the characteristic-free replacement argument.
+
+## Faithfulness
+
+`[E.IsElliptic]` is load-bearing: a NODAL cubic is still connected, but the proof
+runs through irreducibility of the polynomial, and for `Δ = 0` the cubic can factor
+(e.g. `Y²Z = X³` is irreducible but `Y²Z = X²(X+Z)` — a nodal cubic — is too, while
+`Δ = 0` cases like a triple line are not).  So the hypothesis is doing real work in
+the proof even where the conclusion might survive without it. -/
+theorem geometricallyConnected_projToSpec_field (E : WeierstrassCurve F) [E.IsElliptic] :
+    GeometricallyConnected (projToSpec E) :=
+  _root_.WeierstrassCurve.Projective.OverField.geometricallyConnected_projToSpec F E
+
+/-- **The abelian-scheme structure on the projective Weierstrass model over an
+ARBITRARY field** (PROVEN, formal) — the general-base form of
+`ProjGroupLaw.toAbelianSchemeStruct`, and the assembly of the three curve-geometry
+inputs above with the group-law data.
+
+Everything here is formal: `AbelianSchemeStruct.ofMorphisms` turns the morphism-level
+data of a `ProjGroupLaw` into the functor-of-points presentation, and its two
+naturality fields cost the caller nothing.  `Smooth` comes from
+`SmoothOfRelativeDimension 1` by `SmoothOfRelativeDimension.smooth`, so smoothness is
+asserted once rather than twice.
+
+This is a `def`, so when the three inputs above are closed this definition becomes
+sorry-free with no edit.  It is deliberately NOT stated to agree with
+`ProjGroupLaw.toAbelianSchemeStruct` at `F = ℚ`: the two are propositionally equal
+(same `ofMorphisms` call, proof-irrelevant arguments) but nothing downstream needs
+that, and stating it would create a second obligation for no consumer. -/
+noncomputable def ProjGroupLaw.toAbelianSchemeStructField {E : WeierstrassCurve F}
+    [E.IsElliptic] (gl : ProjGroupLaw E) : AbelianSchemeStruct (projToSpec E) :=
+  haveI := smoothOfRelativeDimension_projToSpec_field E
+  AbelianSchemeStruct.ofMorphisms (projToSpec E) gl.m gl.e gl.i gl.hm gl.he gl.hi
+    gl.hassoc gl.hcomm gl.hunit gl.hinv (isProper_projToSpec_field E)
+    (SmoothOfRelativeDimension.smooth 1 (projToSpec E))
+    (geometricallyConnected_projToSpec_field E)
+
+/-- **The chord–tangent group law exists on the projective model over an ARBITRARY
+field, and computes the `F`-RATIONAL points** (sorry leaf, cut 2026-07-31) — the
+general-base form of `nonempty_projGroupLaw` and `exists_projGeomFibreAddEquiv`
+bundled into one statement, and the largest of the four.
+
+## Why the two halves are ONE leaf and not two
+
+Over `ℚ` they are two declarations, but they are not independent: `projGroupLaw E` is
+`Classical.choose` of `exists_projGroupLaw_geomFibreAddEquiv`, precisely because a
+statement about an ARBITRARY `ProjGroupLaw` pins nothing about `m` and is provable
+only through the rigidity theorem — that is the content of the 2026-07-27 repair
+recorded in the audit on `exists_projGroupLaw_geomFibreAddEquiv`.  Splitting them
+here would reproduce exactly the falsity-of-cut that repair fixed, so the existential
+over `gl` carries its own specification, as it does over `ℚ`.
+
+## FIRST: a large part of the scaffolding already exists, and the gap is EXISTENCE
+
+Measured 2026-07-31 against `Fermat/FLT/Modularity/MoretBailly.lean`, which carries a
+parallel `OverField` development nobody here was pointed at:
+
+* `ProjGroupLawOverField` (line ~54664) — the same structure as `ProjGroupLaw` here,
+  over an arbitrary field — with `ProjGroupLawOverField.toAbelianSchemeStruct` and
+  `ProjGroupLawOverField.ofMul` (a CONSTRUCTOR taking the multiplication `m` and its
+  four axioms as INPUT);
+* `isProper_projToSpecOverField` (~52067) — the same fact this subsection's
+  `isProper_projToSpec_field` proves independently;
+* `exists_projGroupLawOverField_geomFibreAddEquiv` (~55011) — the GEOMETRIC-point
+  dictionary over a field.
+
+## THIS LEAF AND `exists_projMulOverField_geomFibreAddEquiv` ARE ONE LEAF. DO NOT PORT TWICE.
+
+**Read this before anyone is dispatched at either.**  `MoretBailly.lean` line ~54971
+carries `exists_projMulOverField_geomFibreAddEquiv`, a `sorry` leaf asserting exactly
+the existence of `m` over an arbitrary field together with its four axioms — the same
+Bosma–Lenstra gluing this leaf needs, in the same `ofMul` shape.  The two differ ONLY
+in the dictionary conjunct hung off it: that one publishes the GEOMETRIC fibre over
+`F̄` with Galois equivariance, this one the `F`-RATIONAL points.  Everything expensive
+— the whole `ℚ → F` port of the gluing — is shared.
+
+Its own docstring already carries the measurement, and it is the best estimate anyone
+has: **6677 lines, 611 comment-stripped `ℚ` occurrences, 100 `Scheme.{0}`
+occurrences**, 11 `base_eq` and 14 `ProjCoords.ext` call sites to thread the base
+equality through, and — the useful part — a lemma that repairs **59 of the
+`hom_ext_spec_rat` sites by `congrArg` applied to `c.base = d.base`**, confirming
+`ProjCoords`'s own "all 77 follow from `base_eq` alone".  It also flags the one thing
+that is NOT a substitution and must be costed separately: the `[Algebra ℚ S]`
+instance binders.
+
+**So the dispatch is ONE task, and its output belongs in
+`ProjectiveModelOverField.lean`** — which is the common ancestor of the two consumers
+(`MoretBailly.lean` has imported it since it was written; `EllipticScheme.lean` began
+importing it 2026-07-31, see the header).  Put the `m`-existence there once, beside
+the rest of the `OverField` development, and both leaves close against it.  Do NOT
+import `MoretBailly.lean` from here: it is a 55 000-line module and this file is
+upstream of the moduli argument, so that would invert the dependency order.
+
+Part 1 below is that shared work.  Part 2 is this leaf's own remaining half, and it is
+NOT reducible to `exists_projGroupLawOverField_geomFibreAddEquiv`: that theorem is
+about geometric points over `F̄`, this is about rational points over `F`, and neither
+implies the other — the same distinction the `k`-rational bridge's subsection
+docstring draws for the whole chain.
 
 ## What the prover of this node owes
 
-The classical construction, over an arbitrary field `k` rather than over `ℚ`:
-`proj E`, the `Proj` of the homogeneous Weierstrass coordinate ring — which
-`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModel.lean`
-already builds over an ARBITRARY commutative ring — is, for `E` elliptic,
-smooth proper geometrically connected of relative dimension one over `k`, its
-chord–tangent law makes it an abelian scheme with zero section `[0 : 1 : 0]`,
-its standard chart `D₊(Z)` is `Spec k[E]` with complement exactly that zero
-section, and its `k`-points are `(E⁄k).Point` as a group.
+Two ported chains, in this order:
 
-**The route is to GENERALISE the `ℚ` chain, not to reprove it.**  Every step
-above exists over `ℚ` in this module and is proven there:
-`smoothOfRelativeDimension_projToSpec`, `isProper_projToSpec`,
-`geometricallyConnected_projToSpec`, `exists_projMul`,
-`nonempty_projGroupLaw`, `projGroupLaw`, `exists_affineChart_projModel`,
-`exists_ellipticScheme_isWeierstrassModel_of_projModel`.  A prover should
-expect the arithmetic to be characteristic-free and the friction to be in the
-places the `ℚ` chain spends `hom_ext_spec_rat` / `subsingleton_hom_specRat`
-— i.e. where it uses that `ℚ` is initial in `CommRing` to make a morphism to
-the base free.  Over a general `k` those steps become genuine content, which
-is the same warning
-`exists_weierstrassModel_of_ellipticScheme_field`'s docstring in `X0.lean`
-records for the sibling leaf.
+1. `nonempty_projGroupLaw` (line ~7419) over `F`, hence `exists_projMul` (~7006),
+   `exists_projMulOfCoords` (~6656), `exists_projMulOfCoordsTwo` (~4421) and the
+   `IsProjMulOn` gluing (~3470–3660).  This is the Bosma–Lenstra two-law gluing and
+   it is where most of the 83 `hom_ext_spec_rat` sites live — read the subsection
+   docstring above for the four replacement lemmas, which are already proven.  The
+   sites in `isProjMulOn_of_add`, `isProjMulOn_of_add2`, `isProjMulOn_of_cover`,
+   `exists_lawCover` and `exists_projCoordsCoverLaw` need NOTHING (checked: they use
+   neither `hom_ext_spec_rat` nor `base_eq` nor `Subsingleton`); the ones that do
+   need work are in `exists_projMulOfCoordsTwo_of_cover` (~4296), the
+   `projMulCoords_*` lemmas (~4512–4700), `projMulPt`/`comp_lift_proj` (~4792–4841),
+   `exists_projMulOfCoords` (~6656) and `exists_projMul` (~7006).
+2. The RATIONAL-point dictionary.  Over `ℚ` the published statement is about
+   GEOMETRIC points, `GeomFibrePt` over `ℚ̄`, and it is Galois-equivariant.  **This
+   leaf asks for strictly less**: `RelPoint (projToSpec E) (𝟙 (Spec F))`, no Galois
+   clause, no algebraic closure.  The machine for it is already in the file and is
+   already stated over a general target field: `ProjCoords.specPointEquiv`
+   (line ~5202) is `(Spec K ⟶ proj E) ≃ (E.map f).toAffine.Point` for `f : ℚ →+* K`,
+   with `affinePoint_add` and `affinePoint_add2_self` as its additivity.  Porting it
+   means `f : F →+* K`, and then the leaf is that equivalence at `K := F`,
+   `f := RingHom.id F`, cut down from `Spec F ⟶ proj E` to those morphisms that are
+   sections of `projToSpec E`.
+
+## Where the `ℚ`-specific `Subsingleton` uses in part 2 are, and what replaces them
+
+`specPointEquiv`'s supporting lemmas discharge `f = (gammaSpecEquiv K).toRingHom.comp
+c.base` by `Subsingleton.elim` at lines ~4903, ~5079 and ~5144 — that is `ℚ →+* K`
+being a subsingleton, and it is FALSE over `F`.  It is also not needed: it is exactly
+the base-equality hypothesis the general `ProjCoords` API now takes as an auto-param,
+so those three sites become hypotheses of the enclosing lemmas, discharged at the
+call site from `ProjCoords.base_eq_of_comp_projToSpec_eq` — the caller always knows
+the two morphisms agree, since both are the point being classified.
+
+## Faithfulness
+
+`[DecidableEq F]` is what mathlib's chord–tangent addition on
+`WeierstrassCurve.Affine.Point` requires, and `[E.IsElliptic]` is what makes the cubic
+smooth, hence the chord–tangent law a group law.  NOT VACUOUS: `RelPoint` of a proper
+smooth curve over a field with a rational point is nonempty (the zero section), and
+`(E⁄F).Point` is nonempty (the point at infinity), so neither side is empty and the
+`≃+` is a real claim.  The check that would refute it is a `ProjGroupLaw E` whose `m`
+is NOT the chord–tangent law but whose `RelPoint` group is still `(E⁄F).Point` — that
+does not refute this statement, which is existential over `gl`, and it is precisely
+why the existential is the right shape. -/
+theorem exists_projGroupLaw_relPointAddEquiv_field [DecidableEq F]
+    (E : WeierstrassCurve F) [E.IsElliptic] :
+    ∃ gl : ProjGroupLaw E,
+      letI := gl.toAbelianSchemeStructField.addCommGroup (𝟙 (Spec (CommRingCat.of F)))
+      Nonempty (RelPoint (projToSpec E) (𝟙 (Spec (CommRingCat.of F))) ≃+ (E⁄F).Point) :=
+  sorry
+
+/-- **The affine Weierstrass chart is the complement of the zero section, over an
+ARBITRARY field** (sorry leaf, cut 2026-07-31) — the general-base form of
+`exists_affineChart_projModel`.
+
+## What the prover of this node owes, and the two-step route
+
+The `ℚ` proof (line ~9951) is fifteen lines and has exactly two ingredients:
+
+1. `exists_affineChart_projInfty` (line ~9865) over `F` — the chart with the removed
+   point taken to be `projInfty E` rather than the group law's zero section.  This is
+   the real content: `exists_projChartRingEquiv E 2` (the degree-zero part of the
+   localisation away from `Z` is the chart ring) composed with
+   `exists_coordinateRingEquiv_projChartRing` (that chart ring IS
+   `E.toAffine.CoordinateRing`), and `compl_basicOpen_projCoord_two` for the range.
+   All three are commutative algebra and `Proj` topology with no arithmetic in them.
+2. `exists_translation_toZero` — already stated over an arbitrary `Scheme.{u}` and
+   already PROVEN, so it costs nothing.  It is what moves the removed point from
+   `projInfty E` to the zero section, and it is why no comparison of two sections is
+   needed.
+
+## Two of the three ingredients ALREADY EXIST over an arbitrary field — do not re-port
+
+Checked 2026-07-31 against the module this file now imports,
+`ProjectiveModelOverField.lean` (see the smoothness leaf above for why it was
+invisible):
+
+* `WeierstrassCurve.Projective.OverField.exists_projChartRingEquiv` — the degree-zero
+  part of the localisation away from `xᵢ` is the chart ring — is there over an
+  arbitrary field, PROVEN.  That is step 1's first half.
+* `WeierstrassCurve.Projective.projInfty_comp_projToSpec` (same file, line ~2442, in
+  the plain `Projective` namespace over an arbitrary `CommRing`) is the section
+  property `projInfty E ≫ projToSpec E = 𝟙`.  This is the ONE thing that is free over
+  `ℚ` — `projInfty_projToSpec` here is `subsingleton_hom_specRat _ _`, pure
+  terminality — and it does NOT have to be reproved: it is already available at full
+  generality.  An earlier draft of this docstring cut it as a sub-leaf; that was
+  wrong, and the correction cost nothing only because the import landed first.
+
+**So what is actually owed is one commutative-algebra statement plus one topological
+one**, both currently `ℚ`-only in THIS file:
+`exists_coordinateRingEquiv_projChartRing` (that the chart ring at `i = 2` IS
+`E.toAffine.CoordinateRing`) and `compl_basicOpen_projCoord_two` (that the complement
+of `D₊(Z)` is exactly the point at infinity).  Port those two, then
+`exists_affineChart_projInfty` and `exists_affineChart_projModel` port verbatim.
+Grep `ProjectiveModelOverField.lean` for both names before starting — the pattern of
+this whole subsection is that things were already there.
+
+## Faithfulness
+
+`range_eq` is the load-bearing conjunct: `IsOpenImmersion` alone would be satisfied by
+the empty scheme if the coordinate ring were trivial, whereas forcing the range to be
+the WHOLE complement of a point of an irreducible curve makes the chart dense.  It is
+also what `exists_isIso_of_affineCharts_field` consumes to make the chart dominant, so
+weakening it would break the theorem two levels up, not merely here. -/
+theorem exists_affineChart_projModel_field (E : WeierstrassCurve F) [E.IsElliptic]
+    (gl : ProjGroupLaw E) :
+    ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ proj E,
+      IsOpenImmersion ι ∧
+        ι ≫ projToSpec E =
+          Spec.map (CommRingCat.ofHom (algebraMap F E.toAffine.CoordinateRing)) ∧
+        Set.range ι.base =
+          (Set.range (gl.toAbelianSchemeStructField.zero
+            (𝟙 (Spec (CommRingCat.of F)))).1.base)ᶜ :=
+  sorry
+
+end FieldProjModel
+
+/-- **Every elliptic curve over a field has a Weierstrass model as an
+abelian scheme, with its `k`-points** (ASSEMBLED 2026-07-31, `flt-lean-387`, from the
+subsection above; formerly a single opaque `sorry` opened 2026-07-30) — the
+single citation of the `k`-rational bridge, and the `k`-analogue of
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` above.
+
+## Status: this declaration is no longer where any work happens
+
+Its body is the `ℚ` assembly with `ℚ` replaced by `k`, over the five declarations of
+the subsection above.  Of those five, three are DONE — `isProper_projToSpec_field`
+(proven here), `smoothOfRelativeDimension_projToSpec_field` and
+`geometricallyConnected_projToSpec_field` (both delegated to the sorry-free
+`WeierstrassCurve.Projective.OverField` development, which this file began importing
+today) — and two remain open:
+
+* `exists_projGroupLaw_relPointAddEquiv_field` — the chord–tangent group law over a
+  general field, plus the rational-point dictionary.  **This is ONE leaf with
+  `MoretBailly.lean`'s `exists_projMulOverField_geomFibreAddEquiv`; read that leaf's
+  docstring before dispatching, and put the shared work in
+  `ProjectiveModelOverField.lean`.**
+* `exists_affineChart_projModel_field` — down to two ℚ-only ports,
+  `exists_coordinateRingEquiv_projChartRing` and `compl_basicOpen_projCoord_two`.
+
+**So do not dispatch anyone at THIS name.**  Nothing here is left to prove, and a
+successor sent at it would find a five-line `exact` over two leaves that live
+elsewhere.  Dispatch at the two named above instead.
+
+## What the original cut got wrong, recorded because it cost most of a cycle
+
+This leaf's own docstring, and the task prompt written from it, both priced the node as
+"generalise the `ℚ` chain — about 146 `proj`-named declarations, 6500 lines", with the
+friction identified as the 83 `hom_ext_spec_rat` sites.  Two things were already false
+when that was written:
+
+1. The `hom_ext_spec_rat` friction was already SOLVED — `ProjCoords` and its four
+   base-equality lemmas (`toHom_comp_projToSpec`, `toHom_comp_projToSpec_congr`,
+   `base_eq_of_comp_projToSpec_eq`, `base_eq_of_toHom_eq_pullback_proj`) were already
+   general and already proven, and the `ProjCoords` API already takes the base
+   equality as an auto-param so that `ℚ` call sites do not move.
+2. Most of the port was already DONE, in `ProjectiveModelOverField.lean`, which this
+   file did not import.  See `smoothOfRelativeDimension_projToSpec_field` above for
+   the full account and the standing lesson.
+
+The arithmetic really is characteristic-free, as the original audit predicted; that
+part held up.
 
 ## What it does NOT owe
 
@@ -13622,8 +14121,19 @@ theorem exists_ellipticScheme_weierstrassChart_addEquiv_field {k : Type} [Field 
           Set.range i.base
             = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ) ∧
       (letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of k)))
-       Nonempty (RelPoint f (𝟙 (Spec (CommRingCat.of k))) ≃+ (E⁄k).Point)) :=
-  sorry
+       Nonempty (RelPoint f (𝟙 (Spec (CommRingCat.of k))) ≃+ (E⁄k).Point)) := by
+  -- The model is `proj E` and nothing else; this is the `ℚ` assembly
+  -- `exists_ellipticScheme_isWeierstrassModel_of_projModel` with `ℚ` replaced by `k`.
+  -- The group law must be the one the point dictionary is stated about, so it comes
+  -- out of the bundled leaf rather than being chosen separately — see that leaf's
+  -- docstring for why splitting it would be a falsity-of-cut.
+  obtain ⟨gl, he⟩ := exists_projGroupLaw_relPointAddEquiv_field E
+  exact ⟨_root_.WeierstrassCurve.Projective.proj E,
+    _root_.WeierstrassCurve.Projective.projToSpec E,
+    gl.toAbelianSchemeStructField,
+    smoothOfRelativeDimension_projToSpec_field E,
+    exists_affineChart_projModel_field E gl,
+    he⟩
 
 /-- **The `k`-points of an elliptic scheme are the `k`-points of its
 Weierstrass model, as GROUPS** (PROVEN 2026-07-30 from the leaf above and the
