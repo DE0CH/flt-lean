@@ -3248,6 +3248,29 @@ Two caveats, both real:
   importing it fails with `object file … does not exist` for the whole duration.
   Do the scratch iteration first and the build last; do not interleave them.
 
+**YOUR OWN `lake build` DISABLES YOUR SCRATCH MODULE FOR ITS WHOLE DURATION**
+(2026-07-31, measured). `lake build <Module>` DELETES the target's `.olean`
+before elaborating, so from the moment you start a full-file verify until it
+finishes — 40+ minutes for `MoretBailly.lean` — every scratch verify fails with
+    error: object file '….lake/build/lib/lean/…/MoretBailly.olean' of module
+    Fermat.FLT.Modularity.MoretBailly does not exist
+That reads like a broken `.lake` and invites a re-seed or a `lake exe cache get`,
+which fixes nothing. It is just your own build, and the cost is real: the two
+things an agent wants to do most — verify the file and keep developing — are
+mutually exclusive by default, so the fast loop stops exactly when it is needed.
+**The fix is one line, and it makes scratch work independent of your build:
+elaborate the scratch against the RELEASE oleans.**
+    BASE=$(lake env printenv LEAN_PATH)
+    export LEAN_PATH="/home/chend/.flt-release-lake/build/lib/lean:$BASE"
+    lean Scratch.lean          # NOT `lake env lean`
+Two traps in that recipe. **`lake env lean` sets `LEAN_PATH` itself**, so it
+silently discards whatever you exported — you must invoke `lean` directly with
+lake's own path captured first, or the override does nothing and you get the
+same "does not exist" error. And this is only sound because
+`/home/chend/.flt-release-lake` is the build of a commit with no Lean diff
+against `main` (check: `git diff --stat <sha> main -- Fermat/` empty, where the
+sha is in `~/.flt-release-lake/sha`); if it is stale in the Lean sources you are
+developing against yesterday's statements.
 ## Sorry and have discipline (glue-first, no floating)
 
 - **Glue first.** At any frontier, first replace the bare `sorry` with
