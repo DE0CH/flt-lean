@@ -10131,12 +10131,29 @@ theorem eq_of_forall_exists_pow_sub_mem {S : Type*} [CommRing S] {p : ℕ} (hp :
   rw [hM] at hbot
   exact sub_eq_zero.mp (by simpa using hbot)
 
-/-- **Lifting `𝕎 k` along a NILPOTENT thickening** (PROVEN 2026-07-30; was LEAF
+/- **Lifting `𝕎 k` along a NILPOTENT thickening** (PROVEN 2026-07-30; was LEAF
 B1a-i-α of the 2026-07-27 decomposition of
 `exists_taylorWilesCoefficients_ringHom`; this is the ENTIRE remaining
 content of Cohen's coefficient-ring map): if `p` is nilpotent in `S` and
 `σ : S ↠ k` has nilpotent kernel, then `σ` lifts UNIQUELY to a ring
 homomorphism `𝕎 k → S`.
+
+MERGE-WOUND REPAIR 2026-07-31 (`flt-lean-391`): this was a doc comment whose
+terminator the release-27 declaration-level merge dropped, so it swallowed
+EVERY declaration from here to line ~12114 —
+`existsUnique_ringHom_wittVector_of_isNilpotent`, `IsCohenCoefficients`,
+`surjective_of_span_range_sup_map_eq_maximalIdeal`, `taylorWilesCoordModel`
+and ~1980 lines besides.  Nothing said so: the file still PARSED, and the
+swallowed names surfaced only as `Unknown identifier` and `Function expected
+at` hundreds of lines further down.  It is demoted to an ordinary block
+comment rather than restored as a doc comment because the theorem it
+describes, `existsUnique_ringHom_wittVector_of_isNilpotent` below, already
+carries its own (longer) docstring — this is the superseded copy.
+
+BEWARE when writing such a note: a comment-open or comment-close token
+appearing INSIDE block-comment prose still nests, so spelling those tokens
+out here would reopen the very wound this note records. -/
+
 /-! #### Lifting `𝕎 k` along a nilpotent thickening — the four ingredients
 
 Added 2026-07-31 by the PROOF of `existsUnique_ringHom_wittVector_of_isNilpotent`
@@ -12105,16 +12122,16 @@ the old type verbatim. -/
 abbrev taylorWilesCoordModel (p : ℕ) [Fact p.Prime] (q d : ℕ)
     (e : Fin q → ℕ) : Type :=
   Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesLevelIdeal p e
-see the reduction audit recorded there.
 
-The constant-vector special case `e ≡ n` used to be a second abbrev
-`taylorWilesCoordModel p q d n`; it was deleted on 2026-07-30 along with the
-pin, since every consumer now passes the vector it was handed and an abbrev
-nothing mentions is free-floating.  Where the docstrings below still write
-`(Λ ⧸ 𝔟_{(n)})^d`, read `(Λ ⧸ 𝔟_{(e)})^d`. -/
-abbrev taylorWilesCoordModelAt (p : ℕ) [Fact p.Prime] {q : ℕ} (d : ℕ)
-    (e : Fin q → ℕ) : Type :=
-  Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesLevelIdeal p e
+/- MERGE-WOUND REPAIR 2026-07-31 (`flt-lean-391`): the release-27 merge left
+here the tail of a rival docstring — its opener gone, its terminator the one
+that finally closed the runaway comment opened ~1980 lines above — followed by
+`abbrev taylorWilesCoordModelAt`, a `{q}`-implicit rival of
+`taylorWilesCoordModel` immediately above with a byte-identical body.  The
+rival is DECLINED and deleted: `taylorWilesCoordModel` is the one every call
+site uses (~22064, ~22408, ~22422 …), `taylorWilesCoordModelAt` occurred in
+prose only and in code nowhere, so keeping it would have been free-floating.
+Docstrings at ~21449 and ~23856 still name it; read `taylorWilesCoordModel`. -/
 
 /-! ### The RING/HECKE cut of the auxiliary Taylor–Wiles level over `ℚ` -/
 
@@ -20423,168 +20440,6 @@ theorem exists_auxDeformationPresSurjection.{uK, uW, uR}
   exact ⟨φ, surjective_of_span_union_image_maximalIdeal 𝒟Q.isAdicComplete
     𝒟Q.π_surjective hιsurj hspan hC hX⟩
 
-set_option linter.checkUnivs false in
-/-- **The two ARITHMETIC clauses of the control map, about a classifying map
-that has already been built** (sorry node, cut out of
-`exists_auxDeformationDiamondControl` below on 2026-07-30; that theorem is now
-PROVEN GLUE over this one).
-
-# WHY THIS CUT, AND WHAT IT BOUGHT
-
-`exists_auxDeformationDiamondControl` below asked for three things at once: a
-map `Λ_𝒪 ⧸ I →+* Runiv`, its surjectivity, and its kernel.  Two of the three
-were already discharged by material in this file, and the ~200 lines of its
-docstring devoted to *how to obtain the map* were the evidence:
-
-* the MAP itself comes from `exists_auxDeformationDatum` above, which since
-  2026-07-30 NAMES ITS CARRIER (`ι : 𝒟.R ≃+* Runiv`), composed with the
-  classifying map `h𝒟Q 𝒟u`;
-* the `π`-compatibility `πuniv.comp toRuniv = 𝒟Q.π.comp φ.toRingHom` is then
-  `hιπ` followed by `hfπ`, two rewrites.
-
-Neither is arithmetic, and both are now done below.  What is left is exactly
-the two clauses that ARE arithmetic, and they are what this leaf states.
-
-# THE CHARACTERISATION OF `toRuniv` TRAVELS WITH IT — THE FAITHFULNESS POINT
-
-A bare surjectivity claim about a handed-in ring map is unprovable, and this
-file's own principle (*a datum handed across a seam can only be constrained by
-what already saw it*, INTERFACE REPAIR of
-`exists_taylorWilesAuxLevelPresentedDatum` below) says what to do about it: the
-producing side must export everything the receiving side needs.  So `toRuniv`
-arrives here with all three properties the classifying map actually has, and
-they are exactly the inputs a surjectivity proof consumes:
-
-* `hπtoRuniv` — the residual compatibility, which pins `toRuniv` against
-  `𝒟Q.π` rather than up to an automorphism of `Runiv`;
-* `halg` — `toRuniv` is a `ℤ_[p]`-algebra map through `φ`, so its image is a
-  `ℤ_[p]`-subalgebra;
-* `htr` — the image CONTAINS the Frobenius traces of `ρuniv` away from some
-  finite set `Sf`.  This is the `Sf`-clause of
-  `AuxDeformationDatum.IsWeaklyUniversal` composed with the ALL-PLACES trace
-  compatibility of `exists_auxDeformationDatum`'s `ι`, and it is the whole
-  input to surjectivity.
-
-All three are DERIVED, not assumed, in the glue below.
-
-# CLAUSE 1 (SURJECTIVITY): WHAT IS OWED, AND THE ONE RECORDED OBSTRUCTION
-
-With `hgen` the argument is: the image of `toRuniv` is a `ℤ_[p]`-subalgebra
-containing the traces away from `Sf`; the image of a map out of a complete
-Noetherian local ring is closed; and `hgen` says the closed `ℤ_[p]`-subalgebra
-generated by the traces away from `Suniv` is everything.  The standard
-`𝔪`-adic successive-approximation argument then gives surjectivity.
-
-**THE GAP IS `Sf \ Suniv`, AND IT IS REAL, NOT BOOKKEEPING** (recorded on the
-consumer since 2026-07-30 and restated here because this is now the leaf that
-owns it).  `htr` gives the traces away from `Sf ∪ Suniv`; `hgen` is a statement
-about the traces away from `Suniv`.  Nothing in `IsTraceGeneratedDeformation`
-says that dropping finitely many primes leaves the topological closure
-unchanged.  Morally it does — Frobenius traces are Chebotarev-dense — and the
-two honest fixes are:
-
-1. state `IsTraceGeneratedDeformation` at EVERY finite exceptional set
-   containing `Suniv`, and thread that stronger form up the `Runiv`-consuming
-   chain.  `hgen` is a HYPOTHESIS at the top of that chain and is discharged by
-   nobody in this module, so strengthening it breaks no proof — it is a
-   signature change across the eight theorems listed in the FALSITY REPAIR
-   section of the consumer below and nothing more; or
-2. upgrade the trace compatibility to EVERY place first, which is what
-   `exists_conj_of_charFrob_eq_away` does over the residue FIELD inside
-   `exists_auxDeformationDatum`'s own proof, and what is not yet available over
-   a general coefficient ring.
-
-**A prover who stalls here has found this, not a gap in the mathematics.  Say
-so rather than weakening `hgen` or `htr`.**
-
-# CLAUSE 2 (THE KERNEL): WILES'S CONTROL THEOREM
-
-`RingHom.ker toRuniv = (taylorWilesAug p q).map diamond`, i.e.
-`R_Q ⧸ 𝔫 R_Q ≅ R_univ` — switching the diamonds off returns the original
-deformation problem.  Wiles, Ann. of Math. 141 (1995), ch. 3.
-
-`hfaith` is what makes this non-vacuous, and it is why `diamond` arrives with
-its kernel PINNED rather than merely bounded: for the junk diamond
-`(algebraMap ℤ_[p] _).comp MvPowerSeries.constantCoeff` one has
-`𝔫.map diamond = ⊥`, so clause 2 would demand `toRuniv` INJECTIVE, i.e. it
-would decide `𝒟Q.R ≅ Runiv`.  `hfaith` refutes that diamond outright rather
-than merely discouraging it: `he` gives `1 ≤ e i`, hence
-`X i ∈ 𝔫 \ taylorWilesLevelIdeal p e` (the degree-one coefficient argument
-recorded in FAITHFULNESS AUDIT #2 of `exists_auxHeckeCoordDiamondFreeness`
-below), so `RingHom.ker diamond = 𝔫` contradicts `hfaith`.  See the
-both-directions vacuity check on the consumer below, which is unchanged by
-this cut.
-
-References: Wiles, Ann. of Math. 141 (1995), ch. 3; Taylor–Wiles, ibid. §2;
-Darmon–Diamond–Taylor §2.49 and §5.3; Fujiwara §3; Kisin, Ann. of Math. 170
-(2009), §3; Carayol, Contemp. Math. 165 (1994), Thm. 3 (trace generation).
-
-CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above; in particular a
-proof ending in `exfalso` against `hirr` must be rejected. -/
-theorem surjective_and_ker_of_auxDeformationClassifying.{s, t, uK, uW, uR}
-    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
-    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
-    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
-    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hres : IsTaylorWilesResidual hpodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    {Runiv : Type uR} [CommRing Runiv] [TopologicalSpace Runiv]
-    [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
-    [IsNoetherianRing Runiv]
-    (hadic : IsAdic (IsLocalRing.maximalIdeal Runiv))
-    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
-    {ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv)}
-    (hranku : Module.rank Runiv (Fin 2 → Runiv) = 2)
-    (hρuniv : IsHardlyRamified hpodd hranku ρuniv)
-    {πuniv : Runiv →+* k} (hπuniv : Function.Surjective πuniv)
-    {Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hunivred : ∀ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
-      πuniv ((ρuniv.charFrob
-          hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (hfact : IsWeaklyUniversalDeformation.{s, t, uK, uW, uR} hpodd ρbar
-      ρuniv πuniv)
-    (hgen : IsTraceGeneratedDeformation p ρuniv Suniv)
-    (q : ℕ) (n : ℕ) (Q : Finset ℕ) (hQcard : Q.card = q)
-    (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
-    (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
-    (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
-    (coeff : TaylorWilesCoefficients)
-    (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
-    (φ : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) ≃+* 𝒟Q.R)
-    (e : Fin q → ℕ) (he : ∀ i, n < e i)
-    (diamond : MvPowerSeries (Fin q) ℤ_[p] →+*
-      (MvPowerSeries (Fin q) coeff.carrier ⧸ I))
-    (hfaith : RingHom.ker diamond = taylorWilesLevelIdeal p e)
-    (toRuniv : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) →+* Runiv)
-    (hπtoRuniv : πuniv.comp toRuniv = 𝒟Q.π.comp φ.toRingHom)
-    (halg : ∀ c : ℤ_[p],
-      toRuniv (φ.symm (algebraMap ℤ_[p] 𝒟Q.R c)) = algebraMap ℤ_[p] Runiv c)
-    (htr : ∃ Sf : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)),
-      ∀ (v : ℕ) (hv : v.Prime),
-        hv.toHeightOneSpectrumRingOfIntegersRat ∉ Sf →
-        toRuniv (φ.symm ((𝒟Q.ρ.charFrob
-            hv.toHeightOneSpectrumRingOfIntegersRat).coeff 1)) =
-          (ρuniv.charFrob hv.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
-    Function.Surjective toRuniv ∧
-      RingHom.ker toRuniv = (taylorWilesAug p q).map diamond :=
-      Function.Surjective pres := by
-  -- The Cohen coefficient map, which is what `hcohen` was added for.
-  obtain ⟨ι, hι⟩ :=
-    hcohen 𝒟Q.R 𝒟Q.isAdicComplete 𝒟Q.π 𝒟Q.π_surjective
-  -- The Greenberg–Wiles bound, in the RELATIVE generator form.
-  obtain ⟨t, ht, hspan⟩ :=
-    exists_auxDeformationTangentGenerators.{uK, uW, uR} hpodd hW hres hirr hπuniv
-      q0 q hq0 coeff hcoeff n Q hQcard hQ 𝒟Q h𝒟Q ι hι
-  -- The substitution homomorphism `Λ_𝒪 →+* 𝒟Q.R`.
-  obtain ⟨φ, hC, hX⟩ :=
-    exists_ringHom_mvPowerSeries_of_isAdicComplete 𝒟Q.isAdicComplete ι t ht
-  exact ⟨φ, surjective_of_span_range_sup_map_eq_maximalIdeal 𝒟Q.isAdicComplete
-    𝒟Q.π_surjective hι hspan hC hX⟩
-
 /-! ### The Carayol surjectivity of the CONTROL map
 
 Added 2026-07-30 by the decomposition of `exists_auxDeformationDiamondControl`
@@ -20927,6 +20782,195 @@ theorem surjective_of_isTraceGeneratedDeformation.{a, uK', uR'} {p : ℕ}
   have h1 := Subalgebra.topologicalClosure_minimal hle hclosed
   rw [isTraceGeneratedDeformation_exchange p hgen Sf] at h1
   exact (AlgHom.range_eq_top fa).mp (top_unique h1)
+
+set_option linter.checkUnivs false in
+/-- **The two ARITHMETIC clauses of the control map, about a classifying map
+that has already been built** (sorry node, cut out of
+`exists_auxDeformationDiamondControl` below on 2026-07-30; that theorem is now
+PROVEN GLUE over this one).
+
+# WHY THIS CUT, AND WHAT IT BOUGHT
+
+`exists_auxDeformationDiamondControl` below asked for three things at once: a
+map `Λ_𝒪 ⧸ I →+* Runiv`, its surjectivity, and its kernel.  Two of the three
+were already discharged by material in this file, and the ~200 lines of its
+docstring devoted to *how to obtain the map* were the evidence:
+
+* the MAP itself comes from `exists_auxDeformationDatum` above, which since
+  2026-07-30 NAMES ITS CARRIER (`ι : 𝒟.R ≃+* Runiv`), composed with the
+  classifying map `h𝒟Q 𝒟u`;
+* the `π`-compatibility `πuniv.comp toRuniv = 𝒟Q.π.comp φ.toRingHom` is then
+  `hιπ` followed by `hfπ`, two rewrites.
+
+Neither is arithmetic, and both are now done below.  What is left is exactly
+the two clauses that ARE arithmetic, and they are what this leaf states.
+
+# THE CHARACTERISATION OF `toRuniv` TRAVELS WITH IT — THE FAITHFULNESS POINT
+
+A bare surjectivity claim about a handed-in ring map is unprovable, and this
+file's own principle (*a datum handed across a seam can only be constrained by
+what already saw it*, INTERFACE REPAIR of
+`exists_taylorWilesAuxLevelPresentedDatum` below) says what to do about it: the
+producing side must export everything the receiving side needs.  So `toRuniv`
+arrives here with all three properties the classifying map actually has, and
+they are exactly the inputs a surjectivity proof consumes:
+
+* `hπtoRuniv` — the residual compatibility, which pins `toRuniv` against
+  `𝒟Q.π` rather than up to an automorphism of `Runiv`;
+* `halg` — `toRuniv` is a `ℤ_[p]`-algebra map through `φ`, so its image is a
+  `ℤ_[p]`-subalgebra;
+* `htr` — the image CONTAINS the Frobenius traces of `ρuniv` away from some
+  finite set `Sf`.  This is the `Sf`-clause of
+  `AuxDeformationDatum.IsWeaklyUniversal` composed with the ALL-PLACES trace
+  compatibility of `exists_auxDeformationDatum`'s `ι`, and it is the whole
+  input to surjectivity.
+
+All three are DERIVED, not assumed, in the glue below.
+
+# CLAUSE 1 (SURJECTIVITY): WHAT IS OWED, AND THE ONE RECORDED OBSTRUCTION
+
+With `hgen` the argument is: the image of `toRuniv` is a `ℤ_[p]`-subalgebra
+containing the traces away from `Sf`; the image of a map out of a complete
+Noetherian local ring is closed; and `hgen` says the closed `ℤ_[p]`-subalgebra
+generated by the traces away from `Suniv` is everything.  The standard
+`𝔪`-adic successive-approximation argument then gives surjectivity.
+
+**THE GAP IS `Sf \ Suniv`, AND IT IS REAL, NOT BOOKKEEPING** (recorded on the
+consumer since 2026-07-30 and restated here because this is now the leaf that
+owns it).  `htr` gives the traces away from `Sf ∪ Suniv`; `hgen` is a statement
+about the traces away from `Suniv`.  Nothing in `IsTraceGeneratedDeformation`
+says that dropping finitely many primes leaves the topological closure
+unchanged.  Morally it does — Frobenius traces are Chebotarev-dense — and the
+two honest fixes are:
+
+1. state `IsTraceGeneratedDeformation` at EVERY finite exceptional set
+   containing `Suniv`, and thread that stronger form up the `Runiv`-consuming
+   chain.  `hgen` is a HYPOTHESIS at the top of that chain and is discharged by
+   nobody in this module, so strengthening it breaks no proof — it is a
+   signature change across the eight theorems listed in the FALSITY REPAIR
+   section of the consumer below and nothing more; or
+2. upgrade the trace compatibility to EVERY place first, which is what
+   `exists_conj_of_charFrob_eq_away` does over the residue FIELD inside
+   `exists_auxDeformationDatum`'s own proof, and what is not yet available over
+   a general coefficient ring.
+
+**A prover who stalls here has found this, not a gap in the mathematics.  Say
+so rather than weakening `hgen` or `htr`.**
+
+# CLAUSE 2 (THE KERNEL): WILES'S CONTROL THEOREM
+
+`RingHom.ker toRuniv = (taylorWilesAug p q).map diamond`, i.e.
+`R_Q ⧸ 𝔫 R_Q ≅ R_univ` — switching the diamonds off returns the original
+deformation problem.  Wiles, Ann. of Math. 141 (1995), ch. 3.
+
+`hfaith` is what makes this non-vacuous, and it is why `diamond` arrives with
+its kernel PINNED rather than merely bounded: for the junk diamond
+`(algebraMap ℤ_[p] _).comp MvPowerSeries.constantCoeff` one has
+`𝔫.map diamond = ⊥`, so clause 2 would demand `toRuniv` INJECTIVE, i.e. it
+would decide `𝒟Q.R ≅ Runiv`.  `hfaith` refutes that diamond outright rather
+than merely discouraging it: `he` gives `1 ≤ e i`, hence
+`X i ∈ 𝔫 \ taylorWilesLevelIdeal p e` (the degree-one coefficient argument
+recorded in FAITHFULNESS AUDIT #2 of `exists_auxHeckeCoordDiamondFreeness`
+below), so `RingHom.ker diamond = 𝔫` contradicts `hfaith`.  See the
+both-directions vacuity check on the consumer below, which is unchanged by
+this cut.
+
+References: Wiles, Ann. of Math. 141 (1995), ch. 3; Taylor–Wiles, ibid. §2;
+Darmon–Diamond–Taylor §2.49 and §5.3; Fujiwara §3; Kisin, Ann. of Math. 170
+(2009), §3; Carayol, Contemp. Math. 165 (1994), Thm. 3 (trace generation).
+
+CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above; in particular a
+proof ending in `exfalso` against `hirr` must be rejected. -/
+theorem surjective_and_ker_of_auxDeformationClassifying.{s, t, uK, uW, uR}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hres : IsTaylorWilesResidual hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {Runiv : Type uR} [CommRing Runiv] [TopologicalSpace Runiv]
+    [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
+    [IsNoetherianRing Runiv]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal Runiv))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
+    {ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv)}
+    (hranku : Module.rank Runiv (Fin 2 → Runiv) = 2)
+    (hρuniv : IsHardlyRamified hpodd hranku ρuniv)
+    {πuniv : Runiv →+* k} (hπuniv : Function.Surjective πuniv)
+    {Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hunivred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
+      πuniv ((ρuniv.charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (hfact : IsWeaklyUniversalDeformation.{s, t, uK, uW, uR} hpodd ρbar
+      ρuniv πuniv)
+    (hgen : IsTraceGeneratedDeformation p ρuniv Suniv)
+    (q : ℕ) (n : ℕ) (Q : Finset ℕ) (hQcard : Q.card = q)
+    (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
+    (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
+    (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (coeff : TaylorWilesCoefficients)
+    (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
+    (φ : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) ≃+* 𝒟Q.R)
+    (e : Fin q → ℕ) (he : ∀ i, n < e i)
+    (diamond : MvPowerSeries (Fin q) ℤ_[p] →+*
+      (MvPowerSeries (Fin q) coeff.carrier ⧸ I))
+    (hfaith : RingHom.ker diamond = taylorWilesLevelIdeal p e)
+    (toRuniv : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) →+* Runiv)
+    (hπtoRuniv : πuniv.comp toRuniv = 𝒟Q.π.comp φ.toRingHom)
+    (halg : ∀ c : ℤ_[p],
+      toRuniv (φ.symm (algebraMap ℤ_[p] 𝒟Q.R c)) = algebraMap ℤ_[p] Runiv c)
+    (htr : ∃ Sf : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)),
+      ∀ (v : ℕ) (hv : v.Prime),
+        hv.toHeightOneSpectrumRingOfIntegersRat ∉ Sf →
+        toRuniv (φ.symm ((𝒟Q.ρ.charFrob
+            hv.toHeightOneSpectrumRingOfIntegersRat).coeff 1)) =
+          (ρuniv.charFrob hv.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
+    Function.Surjective toRuniv ∧
+      RingHom.ker toRuniv = (taylorWilesAug p q).map diamond := by
+  classical
+  obtain ⟨Sf, hSf⟩ := htr
+  -- **CLAUSE 1 — SURJECTIVITY.**  Transport `toRuniv` across `φ` so that its
+  -- source is `𝒟Q.R`, which carries the complete-Noetherian-local structure the
+  -- Carayol argument needs, and apply
+  -- `surjective_of_isTraceGeneratedDeformation` above.  The `Sf \ Suniv`
+  -- discrepancy the docstring flags as "real, not bookkeeping" is absorbed
+  -- inside that theorem by `isTraceGeneratedDeformation_exchange`, which is
+  -- exactly why the exceptional sets need not be compared here.
+  have hsurj : Function.Surjective toRuniv := by
+    set f : 𝒟Q.R →+* Runiv := toRuniv.comp φ.symm.toRingHom with hf_def
+    have hfalg : f.comp (algebraMap ℤ_[p] 𝒟Q.R) = algebraMap ℤ_[p] Runiv := by
+      ext c
+      exact halg c
+    have hfπ : πuniv.comp f = 𝒟Q.π := by
+      ext x
+      have hx := RingHom.congr_fun hπtoRuniv (φ.symm x)
+      simpa [hf_def] using hx
+    have hrange : ∀ (r : ℕ) (hr : r.Prime),
+        hr.toHeightOneSpectrumRingOfIntegersRat ∉ Sf →
+        (ρuniv.charFrob hr.toHeightOneSpectrumRingOfIntegersRat).coeff 1 ∈
+          Set.range f :=
+      fun r hr hrS =>
+        ⟨(𝒟Q.ρ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat).coeff 1,
+          hSf r hr hrS⟩
+    have hfsurj : Function.Surjective f :=
+      surjective_of_isTraceGeneratedDeformation.{uR, uK, uR} 𝒟Q.isAdic
+        𝒟Q.isAdicComplete hadic hcomplete 𝒟Q.π_surjective hπuniv hgen f hfalg
+        hfπ hrange
+    intro y
+    obtain ⟨x, hx⟩ := hfsurj y
+    exact ⟨φ.symm x, hx⟩
+  -- **CLAUSE 2 — THE KERNEL.**  Wiles's control theorem, `R_Q ⧸ 𝔫 R_Q ≅ R_univ`;
+  -- this is the arithmetic the cut was taken to isolate, and it is the only
+  -- thing this leaf still owes.  `hfaith` is what makes it non-vacuous (see the
+  -- CLAUSE 2 section of the docstring above: for the junk `diamond` the
+  -- right-hand side is `⊥`, and `hfaith` together with `he` refutes that
+  -- `diamond` outright).
+  have hker : RingHom.ker toRuniv = (taylorWilesAug p q).map diamond := sorry
+  exact ⟨hsurj, hker⟩
 
 set_option linter.checkUnivs false in
 /-- **The diamonds and the control map, WITHOUT the surjectivity clause** (sorry
@@ -21938,7 +21982,10 @@ theorem exists_auxDeformationRingPresentation.{s, t, uK, uW, uR}
   -- quotient form.  Since the 2026-07-30 re-cut this is ALL this theorem does
   -- — `diamond`, `e` and `toRuniv` are produced downstream of the freeness
   -- leaf; see the RE-CUT note in the docstring above.
-      (∀ i, n ≤ e i) ∧
+  -- (MERGE-WOUND REPAIR 2026-07-31, `flt-lean-391`: a stray `(∀ i, n ≤ e i) ∧`
+  -- sat here, a leftover of the pre-re-cut conclusion that the declaration-level
+  -- merge dropped INTO the tactic block.  It was the parse error that truncated
+  -- everything below it in this file.)
   obtain ⟨pres, hpres⟩ :=
     exists_auxDeformationPresSurjection.{uK, uW, uR} hpodd hW hres hirr hπuniv
       q0 q hq0 coeff hcoeff hcohen n Q hQcard hQ 𝒟Q h𝒟Q
