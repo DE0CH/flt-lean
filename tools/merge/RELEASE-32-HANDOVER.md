@@ -118,46 +118,34 @@ because the loop pops every ten seconds.
 
 **Do this every held release.**  It is one script and no build.
 
-## WHAT IS STILL RED IN X0, WITH THE DIAGNOSIS
+## WHERE X0 ENDED UP
 
-### FIVE `linarith failed` in the Fricke tail-sum numerics — the one real lead
+Measured, differentially, round by round: **39 -> 29 -> 17 -> 11 -> 7 -> (v5)**.
+Six commits, `b9b044db` through `109726ac`, written to be read in order; each
+commit message states what it fixed and what would change my mind.
 
-`axisRestrict_one_ne_zero_of_le_eighteen` and three
-`frickeTailSum_tail_lt_head_of_*`.  The failing goals are of the shape
+The last round closed the five `linarith failed` errors that release 31 handed
+over as "genuine, and the arithmetic half of flt-lean-224's numerics".  They are
+neither: they are `Real.sqrt` of a PERFECT SQUARE (four sites at `4`, one at
+`9`), where `norm_num` can decide the bound `sqrt 4 < 2.00001` on its own, so
+`linarith`'s own preprocessing DISCHARGES that hypothesis and DROPS it -- leaving
+the root an unbounded atom in the other hypothesis and no certificate at all.
+Every other row in the same proofs (`sqrt 2, 3, 5, 6, 7, 8, 10, 11`) passes.
+Repair: give the VALUE, not a bound.  Now in CLAUDE.md, with the method that
+found it -- **reproduce the failing goal in a mathlib-only file with the atoms
+written once**, which separates this from the atom-mismatch trap in one minute
+and works when the real module has no olean.
 
-    h  : ‖b 4‖ ≤ 3 * √4        (from `hd 4`, after `rw [d4]; push_cast`)
-    s4 : √4 < 2.00001
-    a✝ : 600003 / 100000 < ‖b 4‖
-    ⊢ False
+**If the v5 log at `/tmp/x0v5.log` shows zero errors, X0 IS GREEN and the next
+step is the full `lake build`.**  Do not expect that to be the end: the 24
+targets downstream of X0 have not been compiled since release 25 and accumulate
+merge damage invisibly (seventh invisibility class).  Budget three build rounds,
+for the reason release 22 recorded -- the errors are serialised behind each other
+by the import graph, so round n only reveals what round n-1 was hiding.
 
-and **the arithmetic is valid**: `3 · 2.00001 = 6.00003 = 600003/100000` exactly,
-so `h + 3·s4 + a✝` sums to `0 < 0`.  linarith works over exact rationals, so
-boundary-tightness is not the problem; the certificate is purely linear, so
-`nlinarith`'s products are not needed either.  That leaves an ATOM MISMATCH —
-two `√4`s or two `‖b 4‖`s that print identically and are not syntactically
-equal — which is the standing "printed pattern equals printed target" trap, and
-which cannot be diagnosed without a compile probe.
-
-I did not attempt it: X0 has no olean, so there is no scratch loop, and each
-blind probe is a ~13-minute full elaboration.  **Whoever has an X0 olean can
-settle it in seconds** with `set_option pp.explicit true` on one failing goal.
-Release 31's lead is also still worth following: these are flt-lean-224's `65,
-91` numerics, re-spliced by release 30 over merger's copy of the theorem, so
-diff the four theorems against `flt-lean-224`'s versions before touching the
-arithmetic.  Note the sibling `have e2`/`e5`/`e9` lines in the SAME proofs are
-the same shape and do NOT fail, which is the discriminating fact to start from.
-
-### `exists_jSection` at 18655 — CHECK THIS FIRST, it may already be gone
-
-The v4 run was still in flight when this was written.  The 4770-line hoist and
-the `exists_jSection` restatement are both in; if the two errors at 18655
-survive, the cause is no longer position and is worth re-reading from scratch.
-
-### The rest
-
-Read the tail of this file's error list from the newest `lake env lean` log.
-Everything I could diagnose is in the five commit messages, which are written to
-be read in order.
+If it shows errors, they are in the v5 log with line numbers, and the two
+structural repairs of round 6 (a docstring orphaned at each end of the round-5
+hoist) are the shape to check first.
 
 ## LEADS I OPENED AND DID NOT TAKE
 
