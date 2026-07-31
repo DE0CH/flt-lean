@@ -17,6 +17,7 @@ public import Mathlib.RingTheory.ClassGroup.Basic
 -- and `differentIdeal` / `not_dvd_differentIdeal_iff` to be visible there.
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.RingTheory.DedekindDomain.Different
+public import Fermat.FLT.NumberField.Density
 
 /-!
 # The Artin symbol of a number field, and the two deep inputs of unramified CFT
