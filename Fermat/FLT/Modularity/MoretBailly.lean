@@ -2866,7 +2866,7 @@ theorem nonempty_bertiniFibreAlgEquiv {k : Type u} [Field k] {S : Type u} [CommR
     exact ((Ideal.Quotient.mk_eq_mk_iff_sub_mem _ _).2 (hgenX i)).symm
 
 /-- **GENERIC SMOOTHNESS ON THE TARGET — THE ALGEBRAIC SARD THEOREM**
-(sorry node, 2026-07-27; cut out of
+(PROVEN; formerly a sorry node, 2026-07-27; cut out of
 `exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible`, which is now
 PROVEN over this leaf).
 
@@ -4108,8 +4108,9 @@ theorem tensorProduct_map_injective {F : Type*} [Field F] {B C : Type*} [CommRin
   refine (Algebra.TensorProduct.basis B bA).repr.injective (Finsupp.ext fun μ => hφ ?_)
   rw [← repr_tensorProduct_map bA φ x μ, ← repr_tensorProduct_map bA φ y μ, hxy]
 open _root_.TensorProduct in
-/-- **STACKS `0363` — THE ONLY NON-FORMAL STEP IN LEDGER ITEM 1** (sorry leaf,
-NAMED 2026-07-29). A connected affine scheme over an ALGEBRAICALLY CLOSED field
+/-- **STACKS `0363` — THE ONLY NON-FORMAL STEP IN LEDGER ITEM 1** (PROVEN;
+formerly a sorry leaf, NAMED 2026-07-29). A connected affine scheme over an
+ALGEBRAICALLY CLOSED field
 stays connected after an arbitrary field extension of the base.
 
 Everything else on the `0387` route is proven around this leaf, so this
@@ -4465,9 +4466,107 @@ noncomputable def baseChangeQuotientEquiv {k : Type u} [Field k] {S : Type u} [C
 
 end BertiniBaseChange
 
+open CategoryTheory AlgebraicGeometry in
+/-- **LEDGER ITEM 4′, THE MATHEMATICAL FRONTIER: BERTINI IRREDUCIBILITY FOR AN AFFINE
+INTEGRAL VARIETY** (sorry leaf, CUT 2026-07-31 out of
+`exists_bertiniConnectedLocus_isAlgClosed` below, which is now GLUE ONLY over this leaf).
+
+For `K` algebraically closed of characteristic zero and `A` an integral `K`-algebra
+presented as a quotient of `K[X₀,…,X_{n-1}]` (i.e. `Spec A ↪ 𝔸ⁿ` closed) with
+`dim (Spec A) ≥ 2`: there is a nonzero `G ∈ K[X₀,…,X_n]` such that for every `K`-rational
+`w` off `G = 0` the hyperplane section `Spec (A ⧸ (ℓ_w))` is IRREDUCIBLE.
+
+This is Bertini's irreducibility theorem in the shape the classical proofs establish it,
+and the affine translation of Jouanolou, *Théorèmes de Bertini et applications*, Thm 6.3.
+
+WHAT THE GLUE BELOW ALREADY DISCHARGES, so that this leaf does not have to.  Each of the
+four is PROVEN in `exists_bertiniConnectedLocus_isAlgClosed`'s body and costs this leaf's
+prover nothing:
+
+* `IsDomain A`.  `Algebra.Smooth K A` gives `IsReduced A`
+  (`Algebra.Smooth.isReduced_of_isField`, already in this module's import closure —
+  verified by COMPILING, no new import was needed), and a reduced ring whose spectrum is
+  irreducible has `nilradical = ⊥` prime.  So `hirr` is subsumed and is NOT repeated here.
+* `2 ≤ n`.  `hgen` makes `MvPolynomial.aeval y : K[X₀,…,X_{n-1}] → A` SURJECTIVE, whence
+  `ringKrullDim A ≤ ringKrullDim K[X₀,…,X_{n-1}] = n`, and `hdim` is `1 < dim`.  This is
+  what retires the FALSITY AUDIT's `hgen` counterexample once and for all: at `n = 0` the
+  form `ℓ_w` degenerates to the constant `−w_{last}`, the quotient is the ZERO ring and its
+  `Spec` is EMPTY — that case is now IMPOSSIBLE rather than something `G` must dodge.  (`G`
+  must still vanish where the whole linear part `w ∘ Fin.castSucc` is zero, for the same
+  reason; `2 ≤ n` does not remove that, it only removes the degenerate PRESENTATION.)
+* The surjection itself, handed over as `hsurj` in place of `hgen`.  The two are equivalent
+  — the image of `aeval y` is precisely `Subring.closure (range (algebraMap K A) ∪ range y)`
+  — but the surjection is the usable form: it IS the closed embedding `Spec A ↪ 𝔸ⁿ` that
+  every classical proof starts from, and it is what makes the linear system separate points.
+* `IrreducibleSpace ⟹ ConnectedSpace`, plus the carrier bridge
+  `ConnectedSpace ↥(Spec (CommRingCat.of R))` versus `ConnectedSpace (PrimeSpectrum R)`,
+  which is definitional.
+
+WHY THE CONCLUSION IS STRENGTHENED FROM CONNECTED TO IRREDUCIBLE, which is a cost and is
+paid deliberately.  The route recorded in the docstring below already carries its own
+2026-07-27 correction: the classical argument must produce IRREDUCIBILITY of the projective
+section `X̄ ∩ H`, because the affine part `X ∩ H` is a nonempty OPEN of it, and a nonempty
+open of a merely CONNECTED space need not be connected.  So irreducibility of the affine
+section is what the route actually delivers, not an extra obligation invented here; stating
+it removes the trap permanently instead of leaving it to be rediscovered.  Per CLAUDE.md's
+tie-breaker the cut also leaves the same number of open leaves (one), with strictly more
+hypotheses in hand.
+
+AND IT ANSWERS THE "WHY CONNECTEDNESS AND NOT IRREDUCIBILITY" PARAGRAPH ~800 LINES BELOW,
+in `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`'s docstring, which
+argues the opposite way and MUST be read before this cut is judged.  That paragraph is
+right that connectedness is the Lefschetz-type half and that the upgrade to irreducibility
+is formal ONCE THE SECTION IS SMOOTH (smooth over a field ⇒ regular ⇒ normal, and a
+connected normal locally noetherian scheme is irreducible).  What makes the upgrade cheap
+HERE rather than merely formal is that the smooth locus is already available in this file:
+`exists_bertiniSmoothLocus_algebra` (above, PROVEN, `CharZero` base, same pencil `ℓ_v` and
+the same `MvPolynomial (Fin (n+1)) k` good-locus shape) hands out an `F ≠ 0` off which
+`A ⧸ (ℓ_w)` is `Algebra.Smooth K`.  So a prover who follows the connectedness route
+discharges this leaf by taking `G := F * G₀` and running that upgrade — the strengthening
+costs one multiplication of good loci, not a new theorem.  That is why it was taken.
+
+`Algebra.Smooth K A` is RETAINED even though the classical theorem does not need it
+(Bertini irreducibility holds for any integral `X` of dimension `≥ 2`; smoothness is a
+Bertini-SMOOTHNESS hypothesis, not a Bertini-IRREDUCIBILITY one, and the audit below found
+it not load-bearing).  Keeping it makes this leaf WEAKER, hence easier, and a prover who
+does not want it may simply ignore it.  Same for `CharZero K`: the irreducibility theorem
+is characteristic-free, and the hypothesis is kept only because it is free here.
+
+WHAT IS STILL OPEN, i.e. the actual mathematics.  See the ROUTE and the two obstructions in
+the docstring below.  In brief: the incidence variety of this family is
+`A[t₀,…,t_n] ⧸ (∑_{i<n} tᵢ yᵢ − t_n) ≅ A[t₀,…,t_{n-1}]` — the relation SOLVES for `t_n` —
+so it is `Spec A × 𝔸ⁿ` and irreducible for free.  None of the content is in producing an
+irreducible object.  All of it is in (i) GEOMETRIC irreducibility of the generic fibre over
+`K(t₀,…,t_n)`, which is Bertini proper, and (ii) the passage from the generic fibre to a
+dense open set of special fibres (EGA IV 9.7.7, constructibility of the
+geometrically-irreducible locus), which is absent from `Mathlib` at this pin. -/
+theorem exists_bertiniIrreducibleLocus_isAlgClosed {K : Type u} [Field K] [IsAlgClosed K]
+    [CharZero K] {A : Type u} [CommRing A] [Algebra K A] [Algebra.Smooth K A] [IsDomain A]
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of A)))
+    {n : ℕ} (hn : 2 ≤ n) (y : Fin n → A)
+    (hsurj : Function.Surjective
+      ((MvPolynomial.aeval y : MvPolynomial (Fin n) K →ₐ[K] A) :
+        MvPolynomial (Fin n) K →+* A)) :
+    ∃ G : MvPolynomial (Fin (n + 1)) K, G ≠ 0 ∧
+      ∀ w : Fin (n + 1) → K, MvPolynomial.eval w G ≠ 0 →
+        IrreducibleSpace (PrimeSpectrum
+          (A ⧸ Ideal.span {(∑ i : Fin n, algebraMap K A (w i.castSucc) * y i)
+            - algebraMap K A (w (Fin.last n))})) := by
+  sorry
+
 open CategoryTheory AlgebraicGeometry _root_.TensorProduct in
-/-- **LEDGER ITEM 4, THE MATHEMATICAL FRONTIER: BERTINI IRREDUCIBILITY OVER AN
-ALGEBRAICALLY CLOSED FIELD** (sorry leaf, CUT 2026-07-29 out of
+/-- **LEDGER ITEM 4 — RECUT 2026-07-31, THIS THEOREM IS NOW GLUE, NOT A LEAF.**
+Its `sorry` is gone: the mathematics moved UP to
+`exists_bertiniIrreducibleLocus_isAlgClosed`, stated immediately above, and the body
+below discharges four of this statement's obligations outright — `IsDomain A` (so
+`hirr` is subsumed), `2 ≤ n` (so the `hgen` counterexample recorded below is now an
+IMPOSSIBLE case rather than one `G` must dodge), the surjection `K[X₀,…,X_{n-1}] ↠ A`
+that `hgen` really is, and the `IrreducibleSpace → ConnectedSpace` bridge.  EVERYTHING
+BELOW IN THIS DOCSTRING — the falsity audit, the route, the availability survey — is
+still correct and should now be read as being ABOUT THAT LEAF.
+
+Original header: **LEDGER ITEM 4, THE MATHEMATICAL FRONTIER: BERTINI IRREDUCIBILITY
+OVER AN ALGEBRAICALLY CLOSED FIELD** (sorry leaf, CUT 2026-07-29 out of
 `exists_bertiniConnectedLocus_algebraicClosure` below, which is now GLUE ONLY over this
 leaf and `topologicalKrullDim_le_baseChange`).
 
@@ -4527,7 +4626,53 @@ theorem exists_bertiniConnectedLocus_isAlgClosed {K : Type u} [Field K] [IsAlgCl
         ConnectedSpace ↥(AlgebraicGeometry.Spec (CommRingCat.of
           (A ⧸ Ideal.span {(∑ i : Fin n, algebraMap K A (w i.castSucc) * y i)
             - algebraMap K A (w (Fin.last n))}))) := by
-  sorry
+  -- STEP 1.  `A` is a DOMAIN: smooth over a field is reduced, and a reduced ring whose
+  -- spectrum is irreducible has `nilradical = ⊥` prime.
+  haveI hred : IsReduced A := Algebra.Smooth.isReduced_of_isField (Field.toIsField K)
+  haveI hdom : IsDomain A := by
+    have h := PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical.mp hirr
+    rw [nilradical_eq_bot_iff.mpr hred] at h
+    exact IsDomain.of_bot_isPrime A
+  -- STEP 2.  `hgen` says exactly that `K[X₀,…,X_{n-1}] ↠ A`, i.e. that `Spec A ↪ 𝔸ⁿ` is a
+  -- closed embedding.  This is the usable form of `hgen`, and is what the leaf receives.
+  have hsurj : Function.Surjective
+      ((MvPolynomial.aeval y : MvPolynomial (Fin n) K →ₐ[K] A) :
+        MvPolynomial (Fin n) K →+* A) := by
+    have hsub : (⊤ : Subring A) ≤
+        ((MvPolynomial.aeval y : MvPolynomial (Fin n) K →ₐ[K] A) :
+          MvPolynomial (Fin n) K →+* A).range := by
+      rw [← hgen]
+      refine Subring.closure_le.mpr ?_
+      rintro a (⟨c, rfl⟩ | ⟨i, rfl⟩)
+      · exact ⟨MvPolynomial.C c, by simp⟩
+      · exact ⟨MvPolynomial.X i, by simp⟩
+    exact fun a => hsub (Subring.mem_top a)
+  -- STEP 3.  That surjection bounds the dimension by `n`, so `hdim` forces `2 ≤ n`.  This
+  -- is what turns the FALSITY AUDIT's `n = 0` counterexample into an impossible case.
+  have heq : topologicalKrullDim ↥(AlgebraicGeometry.Spec (CommRingCat.of A)) = ringKrullDim A :=
+    PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim A
+  have hdim' : (1 : WithBot ℕ∞) < ringKrullDim A := heq ▸ hdim
+  have hle : ringKrullDim A ≤ (n : WithBot ℕ∞) := by
+    refine le_trans (ringKrullDim_le_of_surjective _ hsurj) ?_
+    rw [MvPolynomial.ringKrullDim_of_isNoetherianRing]
+    have hK : ringKrullDim K ≤ 0 := Order.krullDim_nonpos_of_subsingleton
+    simp only [Nat.card_eq_fintype_card, Fintype.card_fin]
+    calc ringKrullDim K + (n : WithBot ℕ∞) ≤ 0 + (n : WithBot ℕ∞) := by gcongr
+      _ = (n : WithBot ℕ∞) := by simp
+  have hlt : (1 : WithBot ℕ∞) < (n : WithBot ℕ∞) := lt_of_lt_of_le hdim' hle
+  have hn : 2 ≤ n := by
+    rcases Nat.lt_or_ge n 2 with h | h
+    · exfalso; interval_cases n <;> norm_num at hlt
+    · exact h
+  -- STEP 4.  `IrreducibleSpace` implies `ConnectedSpace`, and the carrier of
+  -- `Spec (CommRingCat.of R)` IS `PrimeSpectrum R`, so the bridge is definitional.
+  have bridge : ∀ (R : Type u) (_ : CommRing R), IrreducibleSpace (PrimeSpectrum R) →
+      ConnectedSpace ↥(AlgebraicGeometry.Spec (CommRingCat.of R)) := by
+    intro R _ h
+    haveI := h
+    exact (inferInstance : ConnectedSpace (PrimeSpectrum R))
+  obtain ⟨G, hG0, hG⟩ := exists_bertiniIrreducibleLocus_isAlgClosed hdim hn y hsurj
+  exact ⟨G, hG0, fun w hw => bridge _ _ (hG w hw)⟩
 
 open _root_.TensorProduct in
 /-- `S ⊗[k] K` is faithfully flat over `S` whenever `K` is an extension field of `k`
@@ -4570,7 +4715,8 @@ theorem ringKrullDim_le_of_faithfullyFlat (R T : Type*) [CommRing R] [CommRing T
 
 open CategoryTheory AlgebraicGeometry _root_.TensorProduct in
 /-- **LEDGER ITEM 2: THE KRULL DIMENSION DOES NOT DROP UNDER A BASE FIELD EXTENSION**
-(sorry leaf, CUT 2026-07-29 out of `exists_bertiniConnectedLocus_algebraicClosure` below).
+(PROVEN — see the CLOSED note at the end of this docstring; formerly a sorry leaf,
+CUT 2026-07-29 out of `exists_bertiniConnectedLocus_algebraicClosure` below).
 
 This is what transports `hdim` across the reduction to `k̄`.  Only the `≤` direction is
 stated, because only that direction is consumed: the leaf below has `1 < dim (Spec S)` and
@@ -4629,9 +4775,9 @@ theorem topologicalKrullDim_le_baseChange {k : Type u} [Field k] {S : Type u} [C
   exact h2 ▸ h1
 
 open _root_.TensorProduct in
-/-- **LEDGER ITEMS 2 + 4: BERTINI IRREDUCIBILITY, OVER `k̄`** (sorry leaf, NAMED
-2026-07-28 — the other half of the anonymous `obtain … := sorry` that used to sit
-inside `exists_bertiniConnectedLocus_algebra` below).
+/-- **LEDGER ITEMS 2 + 4: BERTINI IRREDUCIBILITY, OVER `k̄`** (PROVEN; formerly a
+sorry leaf, NAMED 2026-07-28 — the other half of the anonymous `obtain … := sorry`
+that used to sit inside `exists_bertiniConnectedLocus_algebra` below).
 
 Same hypotheses as `exists_bertiniConnectedLocus_algebra`, and the same
 hyperplane pencil `ℓ_v = ∑ᵢ vᵢ xᵢ − v_last` indexed by `k`-RATIONAL `v`; but the
@@ -4775,7 +4921,8 @@ theorem exists_bertiniConnectedLocus_algebraicClosure {k : Type u} [Field k] [Ch
   exact BertiniBaseChange.connectedSpace_primeSpectrum_of_ringEquiv
     (BertiniBaseChange.baseChangeQuotientEquiv (S := S) K (Ideal.span {ℓ})) hGv
 
-/-- **BERTINI CONNECTEDNESS, IN PURE COMMUTATIVE ALGEBRA** (sorry node,
+/-- **BERTINI CONNECTEDNESS, IN PURE COMMUTATIVE ALGEBRA** (PROVEN — this body is
+GLUE, see THE CUT at the end of this docstring; formerly a sorry node,
 2026-07-27; cut out of
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`, which is
 PROVEN over this leaf. **STATEMENT REPAIRED 2026-07-27** — see the FALSITY
@@ -5248,7 +5395,8 @@ theorem exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible
 
 open CategoryTheory AlgebraicGeometry in
 /-- **BERTINI CONNECTEDNESS: the generic hyperplane section of a variety of
-dimension `≥ 2` is geometrically connected** (sorry node, 2026-07-26 — the
+dimension `≥ 2` is geometrically connected** (PROVEN — this body is GLUE over
+`exists_bertiniConnectedLocus_algebra`; formerly a sorry node, 2026-07-26 — the
 second of the two classical Bertini theorems, and **the only place `hdim` is
 used**).
 
