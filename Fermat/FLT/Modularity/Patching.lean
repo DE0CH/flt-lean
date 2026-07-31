@@ -10360,6 +10360,26 @@ CONTINUOUS (the maximal ideal is open in the `𝔪`-adic topology and is
 `ker πuniv`), which is what lets `ρuniv` be base-changed along `πuniv` at all.
 `hirr` is what the Chebotarev–Brauer–Nesbitt step consumes.
 
+# THE CONCLUSION NAMES ITS CARRIER (2026-07-31) — THE WITNESS-FORGETTING
+
+# `Nonempty` IS GONE
+
+Until 2026-07-31 this leaf concluded
+`Nonempty (AuxDeformationDatum hpodd Q ρbar)`, which throws away exactly the
+information its own proof produces: the witness IS `(Runiv, ρuniv, πuniv,
+Suniv)`, verbatim, and nothing else was ever built.  That discard was recorded
+as a live obstruction on `exists_auxDeformationDiamondControl` far below
+("WHAT PINS `Runiv` AS THE `Q = ∅` RING"), whose clause 2 needs a classifying
+map `𝒟Q.R →+* Runiv` and can only get one by applying `h𝒟Q` to a datum KNOWN to
+sit on `Runiv`.  That section prescribed the strengthening below verbatim and
+priced it at zero; this is it, carried out.
+
+The three extra clauses are the ones that section asked for — the ring
+isomorphism `e : 𝒟.R ≃+* Runiv`, its `ℤ_[p]`-algebra compatibility, and
+`πuniv.comp e = 𝒟.π` — and every one of them is `rfl` here, because the datum is
+literally built with `R := Runiv` and `π := πuniv`.  A consumer that only wants
+non-emptiness writes `obtain ⟨𝒟₀, -⟩`.
+
 CIRCULARITY GUARD: inherited from the assembly —
 `not_isIrreducible_of_isHardlyRamified_of_five_le`,
 `IsHardlyRamified.mod_three_reducible` and
@@ -10393,7 +10413,10 @@ theorem exists_auxDeformationDatum.{uK, uW, uR}
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     (n : ℕ) (hn : 1 ≤ n) (Q : Finset ℕ)
     (hQ : IsTaylorWilesPrimeSet p ρbar n Q) :
-    Nonempty (AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar) := by
+    ∃ (𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
+      (e : 𝒟.R ≃+* Runiv),
+      e.toRingHom.comp (algebraMap ℤ_[p] 𝒟.R) = algebraMap ℤ_[p] Runiv ∧
+      πuniv.comp e.toRingHom = 𝒟.π := by
   classical
   haveI : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv := hcomplete
   -- `πuniv` is continuous: its kernel is the maximal ideal, which is open in
@@ -10500,22 +10523,24 @@ theorem exists_auxDeformationDatum.{uK, uW, uR}
     exact exists_isSplitTorusAt_of_isUnramifiedAt
       hq.toHeightOneSpectrumRingOfIntegersRat πuniv hπuniv ρuniv
       (hρuniv.isUnramified q hq ⟨hq2, hqp⟩) α β hαβ ((hall _).trans hpoly)
-  exact ⟨{ R := Runiv
-           isAdic := hadic
-           isAdicComplete := hcomplete
-           ρ := ρuniv
-           rank_eq := hranku
-           isRaisedLevelHardlyRamified :=
-             { det := hρuniv.det
-               isUnramified := fun q hq _ h2 hp =>
-                 hρuniv.isUnramified q hq ⟨h2, hp⟩
-               isFlat := hρuniv.isFlat
-               isTameAtTwo := hρuniv.isTameAtTwo
-               isSplitTorusAt := hsplit }
-           π := πuniv
-           π_surjective := hπuniv
-           S := Suniv
-           charFrob_compat := hunivred }⟩
+  refine ⟨{ R := Runiv
+            isAdic := hadic
+            isAdicComplete := hcomplete
+            ρ := ρuniv
+            rank_eq := hranku
+            isRaisedLevelHardlyRamified :=
+              { det := hρuniv.det
+                isUnramified := fun q hq _ h2 hp =>
+                  hρuniv.isUnramified q hq ⟨h2, hp⟩
+                isFlat := hρuniv.isFlat
+                isTameAtTwo := hρuniv.isTameAtTwo
+                isSplitTorusAt := hsplit }
+            π := πuniv
+            π_surjective := hπuniv
+            S := Suniv
+            charFrob_compat := hunivred }, RingEquiv.refl Runiv, ?_, ?_⟩
+  · exact RingHom.ext fun _ => rfl
+  · exact RingHom.ext fun _ => rfl
 
 /-! #### The RAISED-LEVEL deformation-condition clauses, and the machine
 
@@ -15647,7 +15672,125 @@ conjunct and `hQcard` are for.  That is the ONLY thing still owed here.
 file — it is there, proven, with `π.comp ι = WittVector.constantCoeff`.
 `grep -n 'IsCohenCoefficients' Fermat/FLT/Modularity/Patching.lean` — every hit
 is either the definition, this thread, or the discharge site; there is no
-second, unrelated user to keep in step. -/
+second, unrelated user to keep in step.
+
+# FALSITY AUDIT (2026-07-31): `𝒟Q` IS UNPINNED FROM ABOVE — THE `Runiv` DEFECT
+
+# OF THE SIBLING LEAF, RELOCATED ONTO THIS LEAF'S OWN HYPOTHESIS.  **REPAIRED
+
+# BY PRODUCING THE DATUM INSTEAD OF RECEIVING IT.**
+
+`exists_auxDeformationDiamondControl` below was refuted on 2026-07-28 because
+`IsWeaklyUniversalDeformation` is existence-only and therefore pins `Runiv` in
+NO direction, so `Runiv₀[[y_1, …, y_m]]` satisfies every hypothesis while being
+arbitrarily large.  `AuxDeformationDatum.IsWeaklyUniversal` is the SAME
+existence-only clause — read its docstring, which says so in as many words
+("Only the EXISTENCE half is asked, exactly as in
+`IsWeaklyUniversalDeformation` above") — and this leaf's conclusion is a
+statement bounding `𝒟Q.R` from ABOVE.  The identical counterexample therefore
+applies to `𝒟Q`.  It was missed because the audit above is about the
+`𝒪`-ALGEBRA STRUCTURE of `𝒟Q.R` (repaired by `hcohen`) and never asks what
+pins its SIZE.
+
+**The counterexample family.**  Fix any model of the hypotheses, with a genuine
+weakly universal datum `𝒟Q⁰`, and for `m : ℕ` replace it by `𝒟Q^m` with
+
+    R  := MvPowerSeries (Fin m) 𝒟Q⁰.R      (the `𝔪`-adic topology)
+    ρ  := 𝒟Q⁰.ρ.baseChange                 (along `MvPowerSeries.C`)
+    π  := 𝒟Q⁰.π.comp MvPowerSeries.constantCoeff
+    S  := 𝒟Q⁰.S
+
+Every structure field survives: `IsLocalRing`, `IsNoetherianRing`
+(`PatchingCore.lean` proves `IsNoetherianRing (MvPowerSeries (Fin n) A)` for
+Noetherian `A`), `isAdic`, `isAdicComplete`, `rank_eq`, `π_surjective`, and
+`charFrob_compat` because the `charFrob` coefficients of a base change are the
+images of the originals and `constantCoeff ∘ C = id`.
+`IsRaisedLevelHardlyRamified` transfers along the flat local injection `C` for
+the reasons the sibling leaf's audit already records, and with the same soft
+spot, stated here so the next reader can close it rather than redo the survey:
+the general-coefficient transfer is not mechanised (the PROVEN
+`isRaisedLevelHardlyRamified_baseChange_quotient` is for QUOTIENTS and does not
+apply to an injection).  And `𝒟Q^m.IsWeaklyUniversal` holds because a
+classifying map out of `𝒟Q⁰.R` precomposed with `MvPowerSeries.constantCoeff`
+classifies just as well — verbatim the argument `IsTraceGeneratedDeformation`'s
+docstring gives for `Runiv`, clause by clause: the `algebraMap` clause because
+`constantCoeff ∘ C = id`, the `π` clause by construction, and the `Sf` clause
+because the base-changed `charFrob` coefficients are constants.
+
+**The refutation.**  A SURJECTIVE ring hom out of a local ring has local target
+(a quotient of a local ring is local) and carries the maximal ideal ONTO the
+maximal ideal, so it cannot increase the minimal number of generators of the
+maximal ideal.  For `Λ_𝒪 = MvPowerSeries (Fin q) coeff.carrier` that number is
+at most `q + 1`: `coeff.carrier` is a DVR by
+`TaylorWilesCoefficients.exists_isRegular_maximalIdeal` (a regular sequence of
+length `0 + 1` generating `𝔪_𝒪`), so `𝔪_{Λ_𝒪} = (ϖ, X_1, …, X_q)`.  For the
+witness it is `m + μ(𝔪_{𝒟Q⁰.R}) ≥ m`.  Taking `m := q + 2` refutes the
+conclusion.  (Krull dimension gives the same answer: `dim Λ_𝒪 = q + 1` while
+`dim 𝒟Q^m.R = dim 𝒟Q⁰.R + m`.)
+
+**How far the falsity reaches, exactly.**  `exists_auxDeformationRingPresentation`
+below INHERITS it verbatim — its clause 1 asks for `(Λ_𝒪 ⧸ I) ≃+* 𝒟Q.R` off the
+same hypotheses.  It stops there.  `exists_taylorWilesAuxLevelPresentedDatum`
+CHOOSES its own `𝒟Q` inside its proof, so at that node the defect is a
+provability obstruction and not a false statement; and
+`exists_auxHeckeCoordModuleData` is untouched, because `φ` is a HYPOTHESIS
+there and already pins `𝒟Q.R` as a quotient of `Λ_𝒪`.
+
+**Three cheaper repairs, all checked and all wrong** (recorded so that they are
+not re-proposed):
+
+1. *Add `IsTraceGeneratedDeformation p 𝒟Q.ρ 𝒟Q.S` as a hypothesis*, mirroring
+   `hgen`.  It does exclude the witness, and it is UNDISCHARGEABLE: `𝒟Q` is
+   chosen inside `exists_taylorWilesAuxLevelPresentedDatum`'s proof, so no
+   hypothesis mentioning `𝒟Q` can be stated at any consumer, and the clause
+   would have to be carried all the way down to
+   `exists_universalFrame_profinite_auxDeformation_of_clauses`, where the datum
+   is actually built.
+2. *Add it in the universally quantified form* `∀ 𝒟, 𝒟.IsWeaklyUniversal →
+   IsTraceGeneratedDeformation p 𝒟.ρ 𝒟.S`, which IS statable at every
+   consumer.  That hypothesis is REFUTED by the witness above, so the package
+   becomes vacuous — strictly worse than the false leaf it was meant to fix.
+3. *State a new leaf producing a weakly universal AND trace-generated datum.*
+   Trace generation over `ℤ_[p]` forces the residue field to be generated by
+   the residual traces, and nothing here pins `k` to the trace field of `ρbar`
+   (take `ρbar` absolutely irreducible over `𝔽_p` and `k = 𝔽_{p²}`), so that
+   leaf would be FALSE as stated.  The same objection applies to `hgen`, which
+   survives it only because `hgen` is a HYPOTHESIS and never an obligation —
+   worth knowing before anyone tries to discharge it.
+
+**THE REPAIR TAKEN (2026-07-31), and it is this file's own principle**: *a datum
+handed across a seam can only be constrained by what already saw it* (FAITHFULNESS
+AUDIT #3 of `exists_auxHeckeCoordModuleData` below).  This leaf's conclusion is a
+statement about `𝒟Q.R`, so this leaf must PRODUCE `𝒟Q`.  In place of `𝒟Q`/`h𝒟Q`
+it now takes the NONEMPTINESS guard
+
+    hwu : ∃ 𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar, 𝒟.IsWeaklyUniversal
+
+— a genuine hypothesis and not a formality, for the reason
+`exists_isWeaklyUniversal_auxDeformationDatum` records of its own `𝒟₀`: an
+existential over a category is FALSE as soon as the category is empty, and the
+raised-level category is empty for two independent reasons — and returns
+
+    ∃ 𝒟Q, 𝒟Q.IsWeaklyUniversal ∧ ∃ pres, Function.Surjective pres
+
+`hwu` rather than `𝒟₀` deliberately: it keeps the caller's
+`exists_isWeaklyUniversal_auxDeformationDatum` (and with it the whole
+Schlessinger/clause subtree beneath it) in the used-constant cone of the root,
+which a `𝒟₀`-shaped hypothesis would not, since a sorried body contributes no
+dependency edges.  None of the mathematics described in the sections above
+changes: a prover destructures `hwu`, or builds a better datum of its own, and
+then proves Greenberg–Wiles for the ring it is going to return.
+
+`exists_auxDeformationDiamondControl` below has the SAME defect on the same
+hypothesis — see its own FALSITY AUDIT #2 — and is repaired by RECEIVING this
+leaf's `pres`, which pins `𝒟Q.R` as a quotient of `Λ_𝒪` from above.
+
+*The refuting checks for this section.*
+`grep -n 'def AuxDeformationDatum.IsWeaklyUniversal' -A 20` in this file — the
+body is a bare `∃ f`, with no uniqueness and no generation clause.
+`grep -n 'exists_isRegular_maximalIdeal' -A 3
+Fermat/FLT/Modularity/PatchingCore.lean` — `ts.length = 0 + 1`, so `𝔪_𝒪` is
+principal and `μ(𝔪_{Λ_𝒪}) ≤ q + 1`. -/
 theorem exists_auxDeformationPresSurjection.{uK, uW, uR}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -15665,10 +15808,12 @@ theorem exists_auxDeformationPresSurjection.{uK, uW, uR}
     (hcohen : IsCohenCoefficients.{uR, uK} coeff k)
     (n : ℕ) (Q : Finset ℕ) (hQcard : Q.card = q)
     (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
-    (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
-    (h𝒟Q : 𝒟Q.IsWeaklyUniversal) :
-    ∃ pres : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟Q.R,
-      Function.Surjective pres :=
+    (hwu : ∃ 𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar,
+      𝒟.IsWeaklyUniversal) :
+    ∃ 𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar,
+      𝒟Q.IsWeaklyUniversal ∧
+      ∃ pres : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟Q.R,
+        Function.Surjective pres :=
   sorry
 
 set_option linter.checkUnivs false in
@@ -15774,9 +15919,14 @@ The alternative recorded on `exists_auxDeformationRingPresentation` — adding
 is a second, independent new leaf; the strengthening above is not, because it
 is already proved by the material `exists_auxDeformationDatum` contains.
 
-**A prover who finds clause 2 unreachable has found this reason, not a gap in
-the mathematics.**  Report it; do not paper over it, and do not restate the
-clause to make it provable.
+**DONE 2026-07-31 — the strengthening above is now the statement of
+`exists_auxDeformationDatum`, verbatim.**  Its three extra clauses are all `rfl`
+there (the datum is literally built with `R := Runiv`, `π := πuniv`), so the
+price really was zero.  A prover of clause 2 therefore now HAS the classifying
+map: apply `h𝒟Q` to that datum and compose with `e`.  What remains of clause 2
+is its SURJECTIVITY and the kernel identity, exactly as this section predicted.
+The two paragraphs above are kept because they are the argument for why the
+change was needed; they are no longer an outstanding item.
 
 # FALSITY AUDIT (2026-07-28): CLAUSE 2 IS NOT MERELY UNREACHABLE — IT IS FALSE,
 
@@ -15870,12 +16020,10 @@ ring is Carayol's theorem and belongs to whoever supplies
 `IsWeaklyUniversalDeformation`, which is where the ring is constructed.
 
 Note this closes only the FALSITY.  The provability obstruction the section
-before last records is untouched and still stands: `h𝒟Q` yields a classifying
-map `𝒟Q.R →+* 𝒟'.R` for any level-`Q` datum `𝒟'`, and
-`exists_auxDeformationDatum` above proves such a datum exists over `Runiv` but
-returns `Nonempty (AuxDeformationDatum …)`, discarding the carrier.  The
-strengthening written out above is still what a prover needs, and it is still
-free (that leaf's proof already knows its carrier).  With `hgen` in hand the
+before last records was closed separately on 2026-07-31, by carrying out its own
+prescription: `exists_auxDeformationDatum` now NAMES its carrier, so `h𝒟Q`
+applied to that datum and composed with its `e` IS the classifying map
+`𝒟Q.R →+* Runiv`.  With `hgen` in hand the
 remaining mathematics is: the classifying map hits the topological generators
 of `Runiv` (`𝒟Q.charFrob_compat` plus the `Sf`-clause of
 `AuxDeformationDatum.IsWeaklyUniversal`), hence is surjective; and its kernel
@@ -15934,6 +16082,56 @@ References: Wiles, Ann. of Math. 141 (1995), ch. 3; Taylor-Wiles, ibid. §2;
 Darmon-Diamond-Taylor §2.49 and §5.3; Fujiwara §3; Kisin, Ann. of Math. 170
 (2009), §3; Carayol, Contemp. Math. 165 (1994), Thm. 3 (trace generation).
 
+# FALSITY AUDIT #2 (2026-07-31): `𝒟Q` IS UNPINNED FROM ABOVE TOO, AND CLAUSES
+
+# 2 AND 3 ARE FALSE FOR THAT SECOND, INDEPENDENT REASON.  REPAIRED BY `pres`.
+
+The audit above refutes clause 2 by ENLARGING `Runiv`, and repairs it with
+`hgen`.  The mirror of that argument enlarges `𝒟Q.R`, refutes clauses 2 and 3
+TOGETHER, and `hgen` does nothing about it:
+`AuxDeformationDatum.IsWeaklyUniversal` is the same existence-only clause, so it
+pins `𝒟Q.R` in no direction either.
+
+**The counterexample family** is written out in full in the FALSITY AUDIT of
+`exists_auxDeformationPresSurjection` above — replace a genuine weakly universal
+`𝒟Q⁰` by `𝒟Q^m` with `R := MvPowerSeries (Fin m) 𝒟Q⁰.R`, everything base-changed
+along `MvPowerSeries.C`.  `Runiv` and every hypothesis about it are untouched, so
+`hadic`, `hcomplete`, `hρuniv`, `hπuniv`, `hunivred`, `hfact` and `hgen` all still
+hold; the repair `hgen` is simply about the wrong ring.
+
+**The refutation.**  `taylorWilesAug p q = Ideal.span (Set.range MvPowerSeries.X)`
+is generated by `q` elements, so `(taylorWilesAug p q).map diamond` is generated
+by the `q` elements `diamond (X i)`.  Clause 2 therefore makes
+`RingHom.ker toRuniv` an ideal of `𝒟Q^m.R` generated by `q` elements, hence of
+height at most `q` by Krull's height theorem, while
+`𝒟Q^m.R ⧸ RingHom.ker toRuniv ≅ Runiv` (clause 2's surjectivity) forces
+
+    dim Runiv  ≥  dim 𝒟Q^m.R − q  =  dim 𝒟Q⁰.R + m − q.
+
+`Runiv` is a FIXED Noetherian local ring, so `dim Runiv` is finite and
+independent of `m`; taking `m > dim Runiv + q` refutes clauses 2 and 3 jointly.
+Unlike the `Runiv` refutation this one is carried by the KERNEL clause, not by
+surjectivity alone — which is why the both-directions vacuity check at the head
+of this docstring is again untouched, and why the two clauses still may not be
+split.
+
+**The repair, and it costs no new mathematics.**  This leaf now RECEIVES
+`pres : Λ_𝒪 ↠ 𝒟Q.R` from `exists_auxDeformationPresSurjection` above, which is
+where `𝒟Q` is now produced (see that leaf's FALSITY AUDIT for why the datum had
+to move to the producing side).  `pres` pins `𝒟Q.R` as a quotient of `Λ_𝒪`, so
+`μ(𝔪_{𝒟Q.R}) ≤ q + 1` and `dim 𝒟Q.R ≤ q + 1`, and the family is excluded exactly
+in the range `m` has to reach for the refutation.  The glue
+`exists_auxDeformationRingPresentation` below already held `pres` — obtaining it
+is the first line of its proof — so this is a rebinding, not a new obligation
+anywhere.
+
+Note what `pres` does NOT do: it says nothing about `Runiv`, so the 2026-07-28
+audit and its `hgen` repair stay exactly as they are, and it says nothing about
+the provability obstruction two sections above (the witness-forgetting
+`Nonempty` conclusion of `exists_auxDeformationDatum`).  That obstruction was
+repaired separately on 2026-07-31 by strengthening that leaf to NAME its
+carrier, exactly as the section above prescribes.
+
 CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above; in particular a
 proof ending in `exfalso` against `hirr` must be rejected. -/
 theorem exists_auxDeformationDiamondControl.{s, t, uK, uW, uR}
@@ -15966,7 +16164,10 @@ theorem exists_auxDeformationDiamondControl.{s, t, uK, uW, uR}
     (q : ℕ) (n : ℕ) (Q : Finset ℕ) (hQcard : Q.card = q)
     (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
     (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
-    (h𝒟Q : 𝒟Q.IsWeaklyUniversal) :
+    (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (coeff : TaylorWilesCoefficients)
+    (pres : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟Q.R)
+    (hpres : Function.Surjective pres) :
     ∃ (e : Fin q → ℕ) (diamond : MvPowerSeries (Fin q) ℤ_[p] →+* 𝒟Q.R)
       (toRuniv : 𝒟Q.R →+* Runiv),
       (∀ i, n ≤ e i) ∧
@@ -16077,11 +16278,18 @@ in full on `exists_auxDeformationDiamondControl` above, which now owns clause
 3: the classifying map `𝒟Q.R →+* Runiv` is available from `h𝒟Q` alone as soon
 as some level-`Q` datum is known to have carrier `Runiv` — and
 `exists_auxDeformationDatum` above PROVES exactly that, with `ρuniv` as its
-witness, but returns `Nonempty (AuxDeformationDatum hpodd Q ρbar)` and so
-DISCARDS the carrier.  Strengthening that leaf's conclusion to name `Runiv`
-costs its prover nothing (its proof already knows it) and is not a new leaf,
-unlike the `𝒟univ` route above.  See the sub-leaf's docstring for the exact
-strengthened statement.
+witness.  It used to return `Nonempty (AuxDeformationDatum hpodd Q ρbar)` and so
+DISCARD the carrier; **since 2026-07-31 it names it**, at zero cost to its proof
+(three `rfl` clauses) and without a new leaf, unlike the `𝒟univ` route above.
+
+**AND THE CONCLUSION OF THIS GLUE CHANGED THE SAME DAY.**  It now also
+existentially quantifies `𝒟Q` itself, because the RING sub-leaf
+`exists_auxDeformationPresSurjection` PRODUCES the datum rather than receiving
+it — read its FALSITY AUDIT (2026-07-31): weak universality is existence-only,
+so a received `𝒟Q` is unpinned from above and `(Λ_𝒪 ⧸ I) ≃+* 𝒟Q.R` is refuted by
+`𝒟Q.R := 𝒟Q⁰.R[[y_1, …, y_m]]`.  What arrives here instead is the nonemptiness
+guard `hwu`, and `exists_auxDeformationDiamondControl` is handed this glue's own
+`pres` so that its clauses 2-3 are pinned too.
 
 References: Wiles, Ann. of Math. 141 (1995), ch. 3; Taylor–Wiles, ibid. §2;
 Darmon–Diamond–Taylor §2.49 and §5.3; Fujiwara §3; Kisin, Ann. of Math. 170
@@ -16122,9 +16330,11 @@ theorem exists_auxDeformationRingPresentation.{s, t, uK, uW, uR}
     (hcohen : IsCohenCoefficients.{uR, uK} coeff k)
     (n : ℕ) (Q : Finset ℕ) (hQcard : Q.card = q)
     (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
-    (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
-    (h𝒟Q : 𝒟Q.IsWeaklyUniversal) :
-    ∃ (e : Fin q → ℕ) (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
+    (hwu : ∃ 𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar,
+      𝒟.IsWeaklyUniversal) :
+    ∃ 𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar,
+      𝒟Q.IsWeaklyUniversal ∧
+      ∃ (e : Fin q → ℕ) (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
       (_ : (MvPowerSeries (Fin q) coeff.carrier ⧸ I) ≃+* 𝒟Q.R)
       (diamond : MvPowerSeries (Fin q) ℤ_[p] →+*
         (MvPowerSeries (Fin q) coeff.carrier ⧸ I))
@@ -16133,14 +16343,19 @@ theorem exists_auxDeformationRingPresentation.{s, t, uK, uW, uR}
       Function.Surjective toRuniv ∧
       RingHom.ker toRuniv = (taylorWilesAug p q).map diamond ∧
       taylorWilesLevelIdeal p e ≤ RingHom.ker diamond := by
-  -- LEAF A2′-3a (Greenberg–Wiles): the `q`-generator surjection onto `R_Q` …
-  obtain ⟨pres, hpres⟩ :=
+  -- LEAF A2′-3a (Greenberg–Wiles): the weakly universal datum ITSELF, together
+  -- with the `q`-generator surjection onto its ring.  The datum is produced
+  -- HERE rather than received, because the conclusion is a statement about it
+  -- — see that leaf's FALSITY AUDIT (2026-07-31).
+  obtain ⟨𝒟Q, h𝒟Q, pres, hpres⟩ :=
     exists_auxDeformationPresSurjection.{uK, uW, uR} hpodd hW hres hirr hπuniv
-      q0 q hq0 coeff hcoeff hcohen n Q hQcard hQ 𝒟Q h𝒟Q
+      q0 q hq0 coeff hcoeff hcohen n Q hQcard hQ hwu
+  refine ⟨𝒟Q, h𝒟Q, ?_⟩
   -- LEAF A2′-3b (local CFT + control): the diamonds and `R_Q ↠ R_univ` …
   obtain ⟨e, diamond, toRuniv, he, htoRuniv, hker, hbn⟩ :=
     exists_auxDeformationDiamondControl.{s, t, uK, uW, uR} hpodd hW hres hirr
-      hadic hcomplete hranku hρuniv hπuniv hunivred hfact hgen q n Q hQcard hQ 𝒟Q h𝒟Q
+      hadic hcomplete hranku hρuniv hπuniv hunivred hfact hgen q n Q hQcard hQ 𝒟Q
+      h𝒟Q coeff pres hpres
   -- … and transport the latter two onto the presented carrier `Λ_𝒪 ⧸ ker pres`.
   refine ⟨e, RingHom.ker pres, pres.quotientKerEquivOfSurjective hpres,
     (pres.quotientKerEquivOfSurjective hpres).symm.toRingHom.comp diamond,
@@ -16708,6 +16923,35 @@ is left in place rather than deleted because the whole chain above it
 (`exists_auxHeckeModuleData`, `exists_taylorWilesAuxLevelPresentedDatum`) is
 PROVEN GLUE over it and the re-cut touches the RING half, which was under repair
 elsewhere on 2026-07-29.  Diamond 1997 Thm. 2.1 and Ihara are not what blocks it.
+
+# STATE AFTER THE RING RE-CUT OF 2026-07-31 — THIS LEAF IS UNCHANGED, AND
+
+# STAGE 2 OF THE THREE-STAGE RE-CUT IS NOW CHEAPER
+
+Recorded so the next reader does not have to re-derive the interaction.  On
+2026-07-31 the RING half was repaired for a defect of the same FAMILY as the one
+audited here, one level up: `AuxDeformationDatum.IsWeaklyUniversal` is
+existence-only, so a RECEIVED `𝒟Q` is unpinned from above and both ring leaves
+were refuted by `𝒟Q.R := 𝒟Q⁰.R[[y_1, …, y_m]]` (see the FALSITY AUDIT of
+`exists_auxDeformationPresSurjection` and FALSITY AUDIT #2 of
+`exists_auxDeformationDiamondControl` above).  The repair is the principle this
+audit states: `exists_auxDeformationPresSurjection` now PRODUCES the datum, and
+`exists_auxDeformationDiamondControl` RECEIVES its `pres`, which pins `𝒟Q.R` as
+a quotient of `Λ_𝒪`.
+
+**Two consequences here, and neither changes the statement below.**
+
+* This leaf is untouched by that defect, for the reason its FAITHFULNESS AUDIT
+  already gives about `𝒪` and `Runiv`: `φ : (Λ_𝒪 ⧸ I) ≃+* 𝒟Q.R` is a HYPOTHESIS,
+  and it already pins `𝒟Q.R` as a quotient of `Λ_𝒪` from above.  The 2026-07-31
+  witness family is excluded here by assumption, which is exactly why the ring
+  leaves and not this one had to be re-cut.
+* **Stage 2 of the three-stage re-cut above got cheaper twice over.**
+  `exists_auxDeformationDatum` now NAMES its carrier (2026-07-31), so the
+  classifying map `𝒟Q.R →+* Runiv` that stage 2 needs is available from `h𝒟Q`
+  directly; and stage 2 now also holds `pres`.  Defect (1) — this leaf receiving
+  a `diamond` its conclusion makes assertions about — is untouched by all of it,
+  and remains the reason not to dispatch a prover here.
 
 References: Diamond, Invent. Math. 128 (1997), Thm. 2.1; Taylor-Wiles, Ann. of
 Math. 141 (1995), §2; Wiles, ibid. ch. 3; Darmon-Diamond-Taylor §3 (Ihara's
@@ -17431,11 +17675,16 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
   -- A level-`(n+1)` set is a level-`n` set a fortiori, so nothing is lost.
   obtain ⟨Q, hQcard, hQ⟩ := hTWq q (n + 1) hq0
   -- LEAF A2′-1: the raised-level deformation category at `Q` is nonempty …
-  obtain ⟨𝒟₀⟩ := exists_auxDeformationDatum.{uK, uW, uR} hpodd hW hres hirr hadic
-    hcomplete hranku hρuniv hπuniv hunivred (n + 1) (by omega) Q hQ
-  -- LEAF A2′-2: … and has a weakly universal object `R_Q`
-  obtain ⟨𝒟Q, h𝒟Q⟩ := exists_isWeaklyUniversal_auxDeformationDatum.{uK, uW, uR}
-    hpodd hp5 hW hirr (n + 1) Q hQ 𝒟₀
+  obtain ⟨𝒟₀, -⟩ := exists_auxDeformationDatum.{uK, uW, uR} hpodd hW hres hirr
+    hadic hcomplete hranku hρuniv hπuniv hunivred (n + 1) (by omega) Q hQ
+  -- LEAF A2′-2: … and has a weakly universal object `R_Q`.  Kept as the
+  -- EXISTENTIAL `hwu`, because since 2026-07-31 the RING leaf produces its own
+  -- datum rather than receiving one — see the FALSITY AUDIT of
+  -- `exists_auxDeformationPresSurjection` for why it had to.
+  have hwu : ∃ 𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar,
+      𝒟.IsWeaklyUniversal :=
+    exists_isWeaklyUniversal_auxDeformationDatum.{uK, uW, uR}
+      hpodd hp5 hW hirr (n + 1) Q hQ 𝒟₀
   -- The coefficient ring is the right one: `hbot` already presents `Runiv` over
   -- `Λ_coeff`, which is what pins `coeff`'s residue field to `k` (see the
   -- FAITHFULNESS REPAIR section of `exists_auxDeformationRingPresentation`).
@@ -17448,10 +17697,10 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
   -- LEAF A2′-3 (RING): the presentation of `R_Q`, the diamonds, the control
   -- map — and, since 2026-07-30, the EXPONENT VECTOR `e` itself (see the
   -- EXPONENT UNPINNED note on `exists_auxDeformationDiamondControl`).
-  obtain ⟨e, I, φ, diamond, toRuniv, he, htoRuniv, hker, hbn⟩ :=
+  obtain ⟨𝒟Q, h𝒟Q, e, I, φ, diamond, toRuniv, he, htoRuniv, hker, hbn⟩ :=
     exists_auxDeformationRingPresentation.{s, t, uK, uW, uR} hpodd hW hres hirr
       hadic hcomplete hranku hρuniv hπuniv hunivred hfact hgen q0 q hq0 coeff hcoeff hcohen
-      n Q hQcard hQ 𝒟Q h𝒟Q
+      n Q hQcard hQ hwu
   -- LEAF A2′-4 (HECKE): the auxiliary Hecke module on the coordinate model
   obtain ⟨actR, projM, hlam, hsurj, hint, hctrl⟩ :=
     exists_auxHeckeModuleData.{s, t, uK, uW, uR} hpodd hW hres hirr hadic

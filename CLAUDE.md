@@ -655,6 +655,56 @@ cut on an unmerged branch (the release window); or **cut, merged, and deliberate
 Only the third is permanent, and only `-m` distinguishes it. Before reporting a phantom name,
 run that command — the merge's own subject line usually says which rival cut won and why.
 
+## AN EXISTENCE-ONLY UNIVERSALITY CLAUSE PINS ITS RING IN **NO** DIRECTION — AND THE AUDIT THAT FOUND THAT ONCE DOES NOT TRANSFER ITSELF
+
+(2026-07-31, `Patching.lean`.) `IsWeaklyUniversalDeformation` is deliberately the
+existence half only, and a 2026-07-28 audit refuted `exists_auxDeformationDiamondControl`
+with the family `Runiv₀[[y_1, …, y_m]]`: a classifying map out of `Runiv₀` precomposed with
+`constantCoeff` classifies just as well, so weak universality admits arbitrarily large
+`Runiv` and any conclusion bounding it from ABOVE is false. That audit was written, the
+repair (`hgen`, trace generation) was threaded through eight declarations, and everyone
+moved on.
+
+**`AuxDeformationDatum.IsWeaklyUniversal` is the SAME clause on a DIFFERENT ring**, and its
+docstring says so in as many words — and both ring leaves take that datum as a hypothesis
+and conclude something bounding `𝒟Q.R` from above. The identical family refutes both.
+Nobody looked, because the leaf already carried a FALSITY AUDIT (about the `𝒪`-algebra
+structure, repaired by `hcohen`) and a leaf that has been audited reads as a leaf that has
+been checked.
+
+So: **when an audit refutes a leaf because some bundled object is unpinned, grep for every
+OTHER object in the same file with the same defining shape** — here, one `grep -n 'Only the
+EXISTENCE half is asked'` would have found it. An audit is scoped to the object it names,
+never to the pattern.
+
+Corollary on where such a defect must be repaired: the conclusion is a statement about the
+object, so **the leaf must PRODUCE the object, not receive it** (this file's own principle,
+"a datum handed across a seam can only be constrained by what already saw it"). Three
+cheaper repairs were checked and all fail — a hypothesis naming the received datum is
+UNDISCHARGEABLE when the consumer chooses it internally; the universally-quantified form
+(`∀ 𝒟, weakly universal → generated`) is refuted by the same witness and makes the package
+vacuous; and a new leaf producing a "weakly universal AND trace-generated" datum is FALSE
+as stated, because trace generation over `ℤ_[p]` forces the residue field to be the trace
+field and nothing pins `k` to it (`ρbar` absolutely irreducible over `𝔽_p`, `k = 𝔽_{p²}`).
+
+## MOVING A DATUM FROM HYPOTHESIS TO CONCLUSION CAN ORPHAN THE SUBTREE THAT PRODUCED IT — PASS THE **EXISTENTIAL**, NOT THE WITNESS
+
+(2026-07-31, same repair.) The obvious way to make a leaf produce its datum is to give it
+the raw nonemptiness witness `(𝒟₀ : AuxDeformationDatum …)` and delete the consumer's call
+to the theorem that used to build the weakly universal one. That call was the ONLY thing
+keeping `exists_isWeaklyUniversal_auxDeformationDatum` — and the whole Schlessinger clause
+subtree beneath it — in the root's used-constant cone, and **a sorried body contributes no
+dependency edges**, so the leaf's intended proof does not hold it there. The change would
+have silently made a large proven subtree free-floating.
+
+The fix costs one character of design: hand the leaf the EXISTENTIAL
+
+    hwu : ∃ 𝒟 : AuxDeformationDatum … , 𝒟.IsWeaklyUniversal
+
+which the consumer discharges with the same call it already made. The leaf still chooses
+its own datum, and the producer stays in the cone. **Any time a repair deletes a call from
+a proven proof, ask what else that call was holding up.**
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
