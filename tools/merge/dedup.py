@@ -79,7 +79,9 @@ def plan(root):
             if name not in dn_names or name not in up_names:
                 print('  SKIP (not a block): %s in %s' % (name, dn))
                 continue
-            same = norm(dn_names[name]) == norm(up_names[name])
+            # `split_blocks` maps a name to a LIST of blocks (a name can occur
+            # more than once in one file), so compare the first of each.
+            same = norm(dn_names[name][0]) == norm(up_names[name][0])
             if same:
                 nsame += 1
             else:
