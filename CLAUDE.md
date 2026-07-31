@@ -1459,6 +1459,43 @@ attaches rather than restarting (see the single-flight section); and
 splitting oversized modules is what converts idle cores into throughput,
 because the file is the unit of elaboration.
 
+### Keep iterating WHILE the final build runs — `lake build` DELETES the target olean first
+
+(2026-07-31.) The scratch-module loop above dies the moment you start the one final
+verify: `lake build Fermat.FLT.ModularCurve.X0` removes `X0.olean` at the START of the
+job, so every scratch that imports `X0` fails instantly with
+
+    object file '….lake/build/lib/lean/Fermat/FLT/ModularCurve/X0.olean' … does not exist
+
+and you are locked out of the fast loop for the entire build — an hour or more for a
+79k-line module. That is exactly the window in which you want to be working on the NEXT
+leaf.
+
+**The shim, which costs about a second.** Build a symlink farm of the whole olean tree in
+`/tmp`, drop the LAST GOOD copy of the one module into it, and put it FIRST on `LEAN_PATH`:
+
+    cp -rs /scratch/chend-flt/flt-lean-N/.lake/build/lib/lean /tmp/relean-N/lib/     # symlinks, instant
+    cp -f  ~/.flt-release-lake/build/lib/lean/<Mod path>/X0.olean* \
+           /tmp/relean-N/lib/lean/<Mod path>/                                        # real file, overrides
+
+    LP=$(lake env printenv LEAN_PATH); LSP=$(lake env printenv LEAN_SRC_PATH)
+    LEAN_PATH="/tmp/relean-N/lib/lean:$LP" LEAN_SRC_PATH="$LSP" \
+      lean Fermat/FLT/ModularCurve/Scratch.lean
+
+Two things that are easy to get wrong, both of which cost a cycle here:
+
+* **`lake env lean` RESETS `LEAN_PATH`** — prefixing it on the `lake env` call is silently
+  discarded. Harvest the environment with `lake env printenv` and invoke bare `lean`.
+* **A single-module override is not enough.** Lean resolved `X0` out of `/tmp` and then
+  looked for `X0`'s own imports in `/tmp` too, failing on the first one. The farm has to
+  mirror the WHOLE tree; `cp -rs` (copy-as-symlinks) does that in 0.3 s and costs no disk.
+
+`~/.flt-release-lake/build` is the natural source for the good copy — and check first that
+`git diff --stat $(cat ~/.flt-release-lake/sha) HEAD -- Fermat/` is empty, in which case
+that whole tree can also just be `rsync`ed over a stale `.lake/build` instead of rebuilding.
+
+This is what let one agent prove two independent leaves in the time of one build.
+
 ## Sorry and have discipline (glue-first, no floating)
 
 - **Glue first.** At any frontier, first replace the bare `sorry` with
