@@ -13110,9 +13110,306 @@ theorem exists_moretBaillySeed_residueCardTwo_of_five_le
     fun w hw => natCard_residue_eq_of_nonempty_ringHom_padic F hF hNF
       hFgal.to_normal 2 hemb w hw, hseed⟩
 
+/-! #### (C) AND (LL), SEPARATED — the Hecke algebra of a NON-MINIMAL level
+
+(Cut 2026-07-31, out of `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`
+below.)  `HilbertHeckeAlgebraAtLevel` is `HilbertHeckeAlgebra` with **exactly
+one field removed**, `isHilbertHardlyRamified`, and it exists to take that
+leaf apart at the joint its own docstring already names:
+
+* **(C)** Carayol (Ann. Sci. ÉNS **19** (1986); Contemp. Math. **165** (1994))
+  + Taylor (Invent. Math. **98** (1989)) — the Galois representation attached
+  to the seed newform `g`, with local–global compatibility — together with
+  Jacquet–Langlands (LNM **114** §14–16) for the automorphic clause.  Output:
+  the localized Hecke algebra of `g`'s OWN level.
+* **(LL)** Fujiwara; Jarvis, Compositio **116** (1999) and Math. Ann. **313**
+  (1999); Rajaei, J. reine angew. Math. **537** (2001) — level (and weight)
+  lowering over totally real fields, which is what replaces `g`'s level by the
+  MINIMAL one.  `isHilbertHardlyRamified` is by fiat that minimality (see the
+  FORMAL-CONTENT AUDIT of `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra`),
+  so it is the whole of (LL) and nothing else in the structure is.
+
+**WHAT THE SPLIT BUYS, concretely, and it is not just two names.**  The
+condition at `2` separates cleanly and lands entirely in (LL).  `hres2`
+(`N(w) = 2` at every `w ∣ 2`) is load-bearing ONLY through `isTameAtTwo`,
+whose deformation-theoretic route `isHilbertTameAtTwo_of_fibreProduct` was
+machine-refuted on 2026-07-26 without the sharp hypothesis `ℓ ∤ N(w)² − 1`,
+and whose totally-real witness is `F = ℚ(√5)` (`2` inert, `N(w) = 4`,
+`5 ∣ 15`).  So (C) is stated WITHOUT `hres2` — Carayol and Jacquet–Langlands
+never see the places over `2` — and every trace of that trap is confined to
+(LL), where its owner meets it with the counterexample already written down.
+
+**FAITHFULNESS OF (C).**  Its `seed` binder is what keeps it honest, exactly
+as for the parent: a proof of (C) that does not use `seed` is proving mod-`ℓ`
+modularity of `ρbar|_{G_F}` over every totally real Galois `F`, i.e. Serre's
+conjecture over totally real fields.
+  REFUTING CHECK, inherited verbatim from the parent and unweakened by the
+  cut: if a proof of (C) is ever offered that does not use `seed`, it is wrong.
+
+**FAITHFULNESS OF (LL), AND THE FIELD THAT CARRIES IT.**  (LL) takes a
+`HilbertHeckeAlgebraAtLevel` and returns a `HilbertHeckeAlgebra`; its input is
+therefore *not* Galois-theoretic data, because the structure retains
+`automorphic`.  That field says every number-field-valued point of the
+`ℤ`-form is realized by a nonzero weight-`2` form on every totally definite
+rigidified quaternion algebra over `F` — i.e. the input asserts that
+`ρbar|_{G_F}` IS modular, at the level recorded by `bad`.  Lowering that level
+is Fujiwara/Jarvis/Rajaei and nothing more.
+  REFUTING CHECK for (LL): if `automorphic` is ever deleted from
+  `HilbertHeckeAlgebraAtLevel`, (LL) becomes "an abstract local `ℤ_[ℓ]`-algebra
+  with a Galois representation residually `ρbar|_{G_F}` implies modularity at
+  minimal level", which is Serre's conjecture plus a modularity lifting theorem
+  over `F` — the theorem this module exists to prove.  Do not delete it.
+
+**WHAT WAS REJECTED HERE: splitting `automorphic` off as its own leaf.**  It
+is the widest clause of the parent and the obvious next cut, and it is the one
+cut that must NOT be made: a leaf of the shape "given the Galois half of a
+Hecke algebra, produce the automorphic form" has purely Galois-theoretic
+hypotheses and an automorphic conclusion, which is verbatim the defect the
+AUTOMORPHY AUDIT diagnosed in `Modularity/KhareWintenberger.lean`'s
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra` and repaired by MOVING
+the burden here.  Splitting it off again would move it straight back.  So
+`automorphic` stays in the structure, and (C) — where `seed` is in hand —
+is the only place it may be discharged.
+
+**HOW THIS AXIS RELATES TO THE ONE THAT WAS REFUTED.**  `KhareWintenberger.lean`
+carries a CUT ANALYSIS (2026-07-28) of the identically-named twin, which cuts
+`HilbertHeckeAlgebra` into a PRESENTATION group (`T₀`, `𝔪`, `TEquiv`, `isAdic`,
+`bad`, `heckeT₀`, `heckeT`, `heckeT_eq`, `adjoin_heckeT`, `πT`,
+`πT_surjective`) and an ATTACHMENT group (`ρT`, `isHilbertHardlyRamified`,
+`charFrobT`, `residT`), and finds that split unsafe in both directions.  That
+analysis is correct and it is a DIFFERENT axis: it puts
+`isHilbertHardlyRamified` inside the attachment group and never considers
+cutting within it.  The cut made here is orthogonal to it and none of its two
+objections applies — neither half here is vacuous (both retain `ρT`,
+`charFrobT`, `residT` and `automorphic`) and neither is asked to produce a
+Galois representation over an unpinned presentation.
+
+**AND THAT ANALYSIS IS NOW PARTLY STALE, which is worth acting on separately.**
+Its objection to the presentation half rests on the sentence "`HilbertHeckeAlgebra`
+contains **no automorphic pin**".  That was true when written and is FALSE
+today: the `automorphic` field was added to the structure the same day
+(2026-07-28) by the AUTOMORPHY AUDIT, and `IsQuaternionicEigensystem F E bad
+(fun w => θ (heckeT₀ w))` is precisely "a predicate pinning `(T₀, heckeT₀)` to
+a genuine Hecke algebra WITHOUT mentioning `ρT`" — which is, word for word,
+what that analysis names as THE CHECK THAT WOULD MAKE THE SPLIT SAFE, and it
+is stated over the very API (`TotallyDefiniteQuaternionAlgebra.HeckeOperator.T`
+on `WeightTwoAutomorphicForm`) that it points at.  So the presentation/attachment
+split has become available since, and (C) can be cut again along it.  That is a
+second, independent decomposition and is deliberately NOT taken here: one cut
+per commit in a file with concurrent owners.  It is queued instead. -/
+
+/-- **The Hecke algebra of a Hilbert newform of SOME level** — this is
+`HilbertHeckeAlgebra` with the single field `isHilbertHardlyRamified` removed,
+and it is the intermediate object of the (C)/(LL) cut described in the section
+docstring above.
+
+Every other field is reproduced verbatim, including `automorphic`, which is
+what makes this an automorphic object rather than an abstract algebra with a
+Galois representation, and is what keeps the (LL) leaf below honest.  The
+per-field commentary is NOT duplicated: read it on `HilbertHeckeAlgebra`,
+which is the authoritative copy and the one every consumer uses.
+
+Nothing consumes this structure except the two leaves below; it is deliberately
+not given derived instances (`isLocalRing`, `moduleFinite`, `moduleFree`,
+`isAdicComplete`), since a consumer that wants them wants `HilbertHeckeAlgebra`
+and should apply (LL) first. -/
+structure HilbertHeckeAlgebraAtLevel (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (ρbar : GaloisRep ℚ k V) where
+  /-- The Hecke algebra. -/
+  T : Type u
+  [commRing : CommRing T]
+  [topologicalSpace : TopologicalSpace T]
+  [isTopologicalRing : IsTopologicalRing T]
+  [algebra : Algebra ℤ_[ℓ] T]
+  /-- **`k` is FINITE.** As in `HilbertHeckeAlgebra`. -/
+  [finiteK : Finite k]
+  /-- **`k` has characteristic `ℓ`.** As in `HilbertHeckeAlgebra`. -/
+  [charPK : CharP k ℓ]
+  /-- **The `ℤ`-FORM of the Hecke algebra.** As in `HilbertHeckeAlgebra`. -/
+  T₀ : Type u
+  [commRingT₀ : CommRing T₀]
+  [moduleFiniteT₀ : Module.Finite ℤ T₀]
+  /-- `T₀` is `ℤ`-FREE. -/
+  [moduleFreeT₀ : Module.Free ℤ T₀]
+  /-- The maximal ideal of `W(k) ⊗_{ℤ_[ℓ]} (ℤ_[ℓ] ⊗_ℤ T₀)` attached to
+  `ρbar|_{G_F}`. -/
+  𝔪 : Ideal (heckeWittBaseChange ℓ k T₀)
+  /-- `𝔪` is maximal. -/
+  𝔪_isMaximal : 𝔪.IsMaximal
+  /-- **`T` IS the local factor at `𝔪`.** -/
+  TEquiv : T ≃ₐ[ℤ_[ℓ]] heckeLocalFactor ℓ k T₀ 𝔪 𝔪_isMaximal
+  /-- **The topology of `T` is the maximal-adic one.** -/
+  isAdic : letI : IsLocalRing T :=
+      isLocalRing_of_algEquiv_heckeLocalFactor ℓ k T₀ 𝔪 𝔪_isMaximal TEquiv
+    IsAdic (IsLocalRing.maximalIdeal T)
+  /-- The finite bad set: the level of the newform — HERE ITS OWN LEVEL, not
+  the minimal one — and the places over `2` and `ℓ`. -/
+  bad : Finset (HeightOneSpectrum (𝓞 F))
+  /-- **The Hecke operator at a place, over `ℤ`.** -/
+  heckeT₀ : HeightOneSpectrum (𝓞 F) → T₀
+  /-- The Hecke operator at a place. -/
+  heckeT : HeightOneSpectrum (𝓞 F) → T
+  /-- **The Hecke operators are `ℚ`-rational.** -/
+  heckeT_eq : ∀ w : HeightOneSpectrum (𝓞 F),
+    TEquiv (heckeT w) = heckeZFormMap ℓ k T₀ 𝔪 𝔪_isMaximal (heckeT₀ w)
+  /-- `T` is generated over `ℤ_ℓ` by the `ℓ`-power Teichmüller roots together
+  with the good-place Hecke operators. -/
+  adjoin_heckeT : Algebra.adjoin ℤ_[ℓ]
+    ({x : T | ∃ n : ℕ, 0 < n ∧ x ^ ℓ ^ n = x} ∪ heckeT '' {w | w ∉ bad}) = ⊤
+  /-- The reduction map onto the residual coefficient field. -/
+  πT : T →+* k
+  /-- **`k` IS the residue field of `T`.** -/
+  πT_surjective : Function.Surjective πT
+  /-- **The Hecke-valued Galois representation** `ρT : G_F → GL₂(T)`. -/
+  ρT : FramedGaloisRep F T (Fin 2)
+  /-- **Hecke = Frobenius trace** at every good place. -/
+  charFrobT : ∀ w ∉ bad, (ρT.charFrob w).coeff 1 = -heckeT w
+  /-- **Residual modularity of `ρbar|_{G_F}`.** -/
+  residT : ∀ g : Γ F, ((ρT g).charpoly).map πT =
+    ((ρbar.map (algebraMap ℚ F)) g).charpoly
+  /-- **`T` ACTS ON AUTOMORPHIC FORMS** — the automorphic pin, reproduced from
+  `HilbertHeckeAlgebra.automorphic` unchanged.  This is the field that makes
+  the (LL) leaf below level lowering rather than Serre's conjecture; see the
+  REFUTING CHECK in the section docstring above before touching it. -/
+  automorphic : ∀ (E : Type u) [Field E] [NumberField E] (θ : T₀ →+* E),
+    IsQuaternionicEigensystem F E bad (fun w => θ (heckeT₀ w))
+
+attribute [instance] HilbertHeckeAlgebraAtLevel.commRing
+  HilbertHeckeAlgebraAtLevel.topologicalSpace
+  HilbertHeckeAlgebraAtLevel.isTopologicalRing
+  HilbertHeckeAlgebraAtLevel.algebra
+  HilbertHeckeAlgebraAtLevel.commRingT₀
+  HilbertHeckeAlgebraAtLevel.moduleFiniteT₀
+  HilbertHeckeAlgebraAtLevel.moduleFreeT₀
+
+/-- **(C) — CARAYOL/TAYLOR ATTACHMENT PLUS JACQUET–LANGLANDS, AT THE SEED'S
+OWN LEVEL** (LEAF, cut 2026-07-31 out of
+`nonempty_hilbertHeckeAlgebra_of_moretBaillySeed` below).
+
+Given a `Modularity.MoretBaillySeed` over the totally real Galois `F` — a
+Hilbert newform `g` over `F`, presented through its Hecke polynomials
+`X² − a_w X + Nw`, whose `λ`-adic representation reduces to `ρbar|_{G_F}` —
+produce the localized Hecke algebra of `g`'s level, with the Galois
+representation attached to it and its Jacquet–Langlands transfer.
+
+WHAT THIS ASKS FOR, clause by clause:
+
+* the localized Hecke algebra of `g`'s level and its `ℤ`-form (the classical
+  rational structure of the space of Hilbert cusp forms of parallel weight
+  `2`): `T₀`, `𝔪`, `TEquiv`, `bad`, `heckeT₀`, `heckeT`, `heckeT_eq`,
+  `adjoin_heckeT`, `πT`, `πT_surjective`, `isAdic`;
+* Carayol/Taylor: `ρT` with `charFrobT` (local–global compatibility at the
+  good places) and `residT` (reduction to `ρbar|_{G_F}`).  The 1994 upgrade
+  from a pseudo-representation to a genuine `GL₂(𝕋_𝔪)`-valued `ρT` needs
+  `ρbar|_{G_F}` ABSOLUTELY irreducible, which `hbar` and `hirr` already supply
+  at no extra cost — the argument is written out under "`hbar` + `hirr`
+  ALREADY GIVE ABSOLUTE IRREDUCIBILITY" in the docstring of
+  `nonempty_potentialHeckeDatum_of_five_le`;
+* Jacquet–Langlands (LNM **114** §14–16; Carayol 1986 §0.9): `automorphic`.
+  `g` is cuspidal and discrete series at every infinite place because the
+  weight is `2`, so it transfers to every totally definite quaternion algebra
+  over `F` with the same finite components.
+
+WHAT IT DOES **NOT** ASK FOR, and this is the point of the cut: nothing about
+minimality of the level, hence nothing about the places over `2`.  `hres2` is
+absent from the binder list on purpose — see the section docstring.
+
+  REFUTING CHECK (inherited, unweakened): any proof that does not use `seed`
+  is proving mod-`ℓ` modularity of `ρbar|_{G_F}` over every totally real
+  Galois `F`, which is Serre's conjecture over totally real fields.
+
+CIRCULARITY GUARD, inherited: this leaf may only ever be discharged by the
+independent Moret–Bailly/Taylor construction — never through `Family.lean`,
+`Lift.lean`, `Modularity/Interface.lean`, or the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_odd`, which is proven over pillar α,
+which is proven over this leaf. -/
+theorem nonempty_hilbertHeckeAlgebraAtLevel_of_moretBaillySeed
+    (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {hdim : Module.rank k V = 2} {ρbar : GaloisRep ℚ k V}
+    (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (seed : Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :
+    Nonempty (HilbertHeckeAlgebraAtLevel ℓ F ρbar) :=
+  sorry
+
+/-- **(LL) — LEVEL LOWERING OVER TOTALLY REAL FIELDS** (LEAF, cut 2026-07-31
+out of `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed` below).
+
+Fujiwara, *Deformation rings and Hecke algebras in the totally real case*;
+Jarvis, *Mazur's principle for totally real fields of odd degree*, Compositio
+**116** (1999), 39–79, and *Level lowering for modular mod `ℓ` representations
+over totally real fields*, Math. Ann. **313** (1999), 141–160; Rajaei, *On the
+levels of mod `ℓ` Hilbert modular forms*, J. reine angew. Math. **537** (2001),
+33–65.
+
+The input `H` is a Hecke algebra at SOME level: an automorphic object, since
+`HilbertHeckeAlgebraAtLevel.automorphic` says every number-field point of its
+`ℤ`-form is the eigensystem of a nonzero weight-`2` form on every totally
+definite rigidified quaternion algebra over `F`.  So the hypothesis is
+"`ρbar|_{G_F}` is modular, of level `H.bad`", and the conclusion is that it is
+modular at the MINIMAL level — which is what `HilbertHeckeAlgebra` pins by
+fiat through `isHilbertHardlyRamified`, the ONE field this structure adds back.
+
+WHERE EACH ARITHMETIC HYPOTHESIS IS SPENT.  All four of the parent's arithmetic
+hypotheses are consumed here and none of them in (C):
+
+* `hbar` is the `ℚ`-level local condition whose `F`-level shadow
+  `isHilbertHardlyRamified` asserts of the new `ρT`;
+* `hℓOdd` gives the unique square root `ε^{1/2}` of the nebentypus that
+  restores `det ρT = χ_ℓ` on the nose (`IsHilbertHardlyRamified.det`);
+* `hℓ5` together with `hres2` is `ℓ ∤ N(w)² − 1 = 3` at every `w ∣ 2`, the
+  tame-at-`2` gluing condition of `isTameAtTwo`.  Neither may be dropped:
+  `isHilbertTameAtTwo_of_fibreProduct` was machine-refuted on 2026-07-26 with
+  `5 ≤ ℓ` as its only arithmetic hypothesis, and the totally real witness that
+  applies here is `F = ℚ(√5)` — totally real, Galois over `ℚ`, `2` inert,
+  `N(w) = 4`, `N(w)² − 1 = 15`, `5 ∣ 15`.  `hres2` is exactly what excludes it;
+* `hirrF` is the irreducibility hypothesis of every level-lowering theorem in
+  the list above, and is what lets Brauer–Nesbitt plus Chebotarev upgrade an
+  agreement of Frobenius characteristic polynomials to `residT` at every
+  `g : Γ F`.
+
+  REFUTING CHECK: this leaf is honest only while `HilbertHeckeAlgebraAtLevel`
+  retains `automorphic`.  Without it the hypotheses are purely Galois-theoretic
+  and the conclusion is modularity at minimal level, i.e. Serre's conjecture
+  over totally real fields together with a modularity lifting theorem over `F`.
+
+CIRCULARITY GUARD, inherited: as for (C) above. -/
+theorem nonempty_hilbertHeckeAlgebra_of_atLevel
+    (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {hdim : Module.rank k V = 2} {ρbar : GaloisRep ℚ k V}
+    (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (hres2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+      Nat.card (𝓞 F ⧸ w.asIdeal) = 2)
+    (H : HilbertHeckeAlgebraAtLevel ℓ F ρbar) :
+    Nonempty (HilbertHeckeAlgebra ℓ F ρbar) :=
+  sorry
+
 /-- **Carayol/Taylor plus level lowering, applied to a GIVEN modular seed**
-(LEAF — the (C) + (LL) half of `nonempty_potentialHeckeDatum_of_five_le`, cut
-off 2026-07-27).
+(PROVEN ASSEMBLY since 2026-07-31 — was the (C) + (LL) half of
+`nonempty_potentialHeckeDatum_of_five_le`, cut off 2026-07-27; it is now
+`nonempty_hilbertHeckeAlgebra_of_atLevel` applied to
+`nonempty_hilbertHeckeAlgebraAtLevel_of_moretBaillySeed`, and the two leaves
+it rests on are the (C) and (LL) halves of the citation, separated.  The whole
+of the docstring below is the ATOMICITY record it was carrying and is kept
+verbatim: it is the audit those two leaves inherit.  See the section docstring
+above for what the cut is, what it buys and what was rejected.)
 
 Given a Hilbert newform over `F` whose `λ`-adic representation is residually
 `ρbar|_{G_F}` — that is, given a `Modularity.MoretBaillySeed` — this produces
@@ -13211,8 +13508,11 @@ theorem nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
     (hres2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
       Nat.card (𝓞 F ⧸ w.asIdeal) = 2)
     (seed : Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :
-    Nonempty (HilbertHeckeAlgebra ℓ F ρbar) :=
-  sorry
+    Nonempty (HilbertHeckeAlgebra ℓ F ρbar) := by
+  obtain ⟨H⟩ := nonempty_hilbertHeckeAlgebraAtLevel_of_moretBaillySeed
+    (hℓOdd := hℓOdd) (hdim := hdim) ℓ hℓ5 hbar hirr F hFtr hFgal hirrF seed
+  exact nonempty_hilbertHeckeAlgebra_of_atLevel
+    (hℓOdd := hℓOdd) (hdim := hdim) ℓ hℓ5 hbar hirr F hFtr hFgal hirrF hres2 H
 
 /-- **Potential modularity together with finiteness of the Hilbert Hecke
 algebra** (LEAF — items 5 and 3 of the audit's missing-machinery list,
