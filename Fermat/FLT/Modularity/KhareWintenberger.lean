@@ -14284,6 +14284,61 @@ WOULD REFUTE THIS: exhibit, from `‖α‖ = ‖β‖ = √q` and `αβ = q` alo
 finite multiset of complex numbers containing `α, β`, with integer power
 sums `p_s ≤ q^s + 1` for all `s ≥ 1`.
 
+**WHAT THE CUT AUDIT ABOVE DOES NOT SETTLE, AND THE TRAP IT LEAVES OPEN
+(2026-07-31).**  The audit refutes ONE direction — building the
+point-count package *from* purity — and it is right about that direction.
+It says nothing about the OTHER move, which is the first thing anyone
+attacking this node will try: leave the consumers where they are and
+WEAKEN the node's conclusion to what they use.  Two facts about the
+consumers decide it, and NEITHER is recorded anywhere else in this block,
+so they are stated here rather than left to be re-derived from 1500 lines
+of proof.
+
+*Fact 1 — the naive weakening is REFUTED, and it fails in the build, not
+in an audit.*  Every paragraph in this block presents the point-count
+package as feeding `norm_le_two_mul_sqrt_of_frobEigenvalues` to produce
+`‖φ(a_w)‖ ≤ 2√(Nw)`.  That is `weilBound_heckeF_of_heckePackage`'s use
+and it is only ONE of the two.  `weilBound_descended_of_heckePackage`
+calls `norm_eq_sqrt_of_frobEigenvalues` TWICE, at `i` and at `j`, and
+needs `‖γ i‖ = ‖γ j‖ = √(NV)` **exactly** — an equality, not a bound —
+in order to match `α^f, β^f` against the pair upstairs at an inert place.
+So weakening this node to `‖φ(a_w)‖ ≤ 2√(Nw)`, i.e. to the conclusion of
+its own first consumer, breaks the second one outright.
+
+*Fact 2 — the weakest shape that DOES serve both consumers is purity,*
+`∃ α β : ℂ, ‖α‖ = √(Nw) ∧ ‖β‖ = √(Nw) ∧ α + β = −φ(a_w) ∧ α·β = Nw`:
+consumer 1 gets its bound by the triangle inequality, consumer 2 gets
+exactly the two equalities and the two relations it matches against.  By
+the audit above this IS strictly weaker than the point-count package (the
+separating content is the `Npt s ≥ 0` effectivity), so the move is a
+genuine reduction of the citation and not one of the equivalent
+restatements this file forbids elsewhere.
+
+*It was considered on 2026-07-31 and DELIBERATELY NOT TAKEN.*  The reason
+is the price, which is paid in proven code: purity has no use for
+`Npt`, so `norm_le_sqrt_of_forall_norm_frobPowerSum_le`,
+`norm_le_two_mul_sqrt_of_frobEigenvalues` and
+`norm_eq_sqrt_of_frobEigenvalues` all lose their only consumers and become
+free-floating, i.e. deletable under this project's rule — roughly 190
+lines of finished complex analysis (Hasse's generating-function argument
+with the Herglotz bound) traded for a citation that no realistic
+discharge finds easier, since both shapes are "Deligne, Weil I, plus
+Carayol" and neither will be closed by anything short of that.  Under the
+project's own tie-breaker — count OPEN leaves after, not leaves created —
+the trade is neutral (zero closed, zero opened) and strictly destructive
+of verified material, so it is declined.
+
+WHAT WOULD REVERSE THE DECISION, stated so it is checkable rather than a
+matter of taste: a second consumer appearing for those three analytic
+lemmas (`norm_le_sqrt_of_forall_norm_frobPowerSum_le` is already flagged
+above as a DUPLICATE of `Interface.lean`'s
+`norm_le_sqrt_of_forall_norm_sum_pow_le`, so if the dedupe recorded in the
+section note is ever done in the other direction — `Interface.lean`
+importing this copy — that lemma survives the weakening on its own and
+only the two thin wrappers are at risk); or a discharge route for
+Ramanujan–Petersson that is genuinely blocked by `Npt : ℕ → ℕ` and
+genuinely open in purity form.  Absent either, keep the point-count shape.
+
 `hirrF` IS LOAD-BEARING AND MUST NOT BE DROPPED.  Without it `ρ = 1 ⊕ χ_ℓ`
 satisfies every remaining hypothesis and has `a_w = 1 + Nw > 2√(Nw)`; by
 the FAITHFULNESS paragraph below any witness of this leaf FORCES
@@ -14353,6 +14408,27 @@ Stepanov machinery, but no curve-level or plane-model point-count bound;
 and `exists_const_natCard_zeroLocus_sub_le` is still in `Interface.lean`
 and still stated with `{q : ℕ} [Fact q.Prime]`, i.e. over the prime field.
 So the plane-model cut remains unavailable and this paragraph stands.
+
+RE-RUN AGAIN 2026-07-31, BOTH BLOCKERS STILL LIVE — but the price of
+repairing blocker 1 has DROPPED, and that is worth recording rather than
+re-measuring.  `exists_const_natCard_zeroLocus_sub_le` is now **PROVEN**:
+`Interface.lean:54325`, 111 body lines after comment-stripping, ZERO
+`sorry` tokens in the body.  So the curve-level Weil bound over the prime
+field is no longer a leaf to be discharged — it is finished code to be
+MOVED, and blocker 1 is now a pure relocation job rather than a piece of
+mathematics.  Blocker 2 is untouched: the statement still opens
+`{q : ℕ} [Fact q.Prime]`, so the prime-POWER generalisation (Schmidt,
+LNM 536, §§7 ff.) is still owed, and `Nw = Ideal.absNorm w.asIdeal` is
+still a prime power.  The refuting greps are unchanged and both were run:
+`grep -rn 'natCard_zeroLocus\|Lang.*Weil' Fermat/FLT/Modularity/MoretBailly.lean`
+returns prose only, and `grep -rn '^theorem exists_const_natCard_zeroLocus'
+Fermat/ --include=*.lean` returns the `Interface.lean` line alone.
+
+WARNING for whoever takes the relocation: the 111 lines are the tip of a
+dependency cone sitting ~54 000 lines into a 57 000-line module, and the
+cone has NOT been measured.  Measure it before promising the move; a hoist
+that drags half of `Interface.lean` upstream is a different job from a
+hoist of one theorem.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
@@ -21651,6 +21727,23 @@ AXES SEARCHED, and why each is closed:
    `MoretBailly.lean`, i.e. it RELOCATES the citation instead of
    reducing it. Refuting check: read the field list of
    `PotentialModularityWitness` (`MoretBailly.lean`).
+
+   **RE-RUN 2026-07-31 — STILL CLOSED, and the field list is copied in
+   here so the next owner does not have to fetch it again.** The
+   structure carries, in order: `F`, `totallyReal`, `galoisF`, `E`,
+   `badF`, `heckeF`, `ψℓ`, `ιO`, `ιO_injective`, `modularF`,
+   `descentClosed`, `weilBoundF`, `weilBoundDescent`, `B`, `τF`, `ψ₃`,
+   `ιB`, `ιB_injective`, `matchF₃` (plus instance binders and the
+   `E₀`/`O₀` seed block). **`matchF₃` is still the ONLY clause that
+   mentions `τF` at all**, and it reads
+   `∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃` — a Frobenius
+   match away from the bad set, carrying nothing local. Worth noting
+   because it is the thing that looks most like a change: the two fields
+   ADDED to the structure since the 2026-07-27 audit (`weilBoundF`,
+   `weilBoundDescent`) are Ramanujan bounds on `heckeF`, not local
+   conditions on `τF`, so they do not open this axis either. The axis
+   re-opens exactly when a local clause about `τF` appears in that list,
+   and not before — that, and not the date of this note, is the check.
 4. *Ingredient axis* — the classical ingredients of the Brauer trick.
    **CORRECTED AGAIN 2026-07-27 (second pass): the ingredient axis is
    EMPTY. It is ZERO missing ingredients, not three and not four, and
