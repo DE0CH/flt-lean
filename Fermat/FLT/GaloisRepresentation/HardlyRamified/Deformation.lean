@@ -17598,6 +17598,453 @@ instance. -/
 
 omit [Field k] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
   [DiscreteTopology k] in
+/-- **`D` is a deformation structure on any ring ISOMORPHIC to `D.R`** (PROVEN
+2026-07-31; the reflexive case of `IsDeformationStructureOn`, and the whole of
+the DEGENERATE case of the obstruction leaf below).
+
+If `q : T →+* D.R` is bijective then `D` itself, together with `e := q⁻¹` and
+`p := id`, witnesses `D.IsDeformationStructureOn D T instT q`: the three
+compatibility clauses are `RingHom.id_comp`, `RingHom.comp_id` and
+`Polynomial.map_id`, and the pointwise clause `∀ x, p x = q (e x)` is
+`RingEquiv.apply_symm_apply`.
+
+**Why this is the right shape, and why it is not a cheat.** The `≃+*` in
+`IsDeformationStructureOn` is there — see the note on that definition and on the
+leaf below — precisely so that the predicate cannot be discharged by a bare
+`→+*` such as a section. It is discharged HERE by a genuine isomorphism, which
+is the one situation in which "the ring `T` carries a hardly ramified
+deformation lying over `D`" is true for the trivial reason: `T` *is* `D.R`.
+
+The consumer is the `ψ = 0` branch of
+`exists_obstructionCocycle_smallExtension_deformation` below, where the pinning
+hypothesis forces `K = ker φ` and hence makes `S ⧸ K ↠ D.R` an isomorphism.
+That branch carries no obstruction-theoretic content at all, which is why it is
+peeled off there rather than left inside the leaf. -/
+theorem HardlyRamifiedDeformation.isDeformationStructureOn_self_of_bijective
+    {ρbar : GaloisRep ℚ k V} (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (T : Type u) (instT : CommRing T) :
+    letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+    letI := D.isLocalRing; letI := D.algebra
+    letI := instT
+    ∀ q : T →+* D.R, Function.Bijective q →
+      HardlyRamifiedDeformation.IsDeformationStructureOn hℓOdd D D T instT
+        (q : T → D.R) := by
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  letI := instT
+  intro q hq
+  refine ⟨(RingEquiv.ofBijective q hq).symm, RingHom.id D.R, fun x => ?_,
+    RingHom.id_comp _, RingHom.comp_id _, fun _ _ _ _ => Polynomial.map_id⟩
+  exact ((RingEquiv.ofBijective q hq).apply_symm_apply x).symm
+
+/-- **Böckle's obstruction COCYCLE, in its DEFORMATION-THEORETIC form, on the
+NON-DEGENERATE branch** (sorry leaf; cut out of
+`exists_obstructionCocycle_smallExtension_deformation` below on 2026-07-31,
+which is PROVEN over it together with
+`HardlyRamifiedDeformation.isDeformationStructureOn_self_of_bijective` above.
+That node was itself cut out of `exists_obstructionCocycle_smallExtension_section`
+below on 2026-07-27, which is now PROVEN over it together with
+`exists_ringHom_section_of_isWeaklyUniversal_isTraceGenerated` above):
+
+same hypotheses and same `oc`, but conjunct (b) asks for what obstruction theory
+actually PRODUCES — a hardly ramified deformation carried by the ring `S ⧸ K` —
+rather than for the ring-theoretic section that is read off it afterwards. So
+where the node below concludes
+
+  `∃ s : D.R →+* S ⧸ K, …`,
+
+this leaf concludes
+
+  `∃ D' : HardlyRamifiedDeformation hℓOdd ρbar,
+     D.IsDeformationStructureOn D' (S ⧸ K) _ (S ⧸ K ↠ D.R)`.
+
+**What the cut removes from the leaf, and what it leaves.** It removes the last
+mile — Carayol's splitting argument, which is pure category-of-deformations
+formalism and is now PROVEN as
+`exists_ringHom_section_of_isWeaklyUniversal_isTraceGenerated` above. The
+hypotheses `hw` and `ht` are consumed THERE and nowhere else, which is why they
+appear in this leaf's signature only to be passed along. What is left here is
+exactly the obstruction calculus, with no ring theory attached:
+
+1. build the continuous set-theoretic lift `ρ̃` of `D.ρ` along the small
+   extension `S ⧸ K ↠ D.R` and its 2-cochain
+   `c(σ, τ) = ρ̃(σ) ρ̃(τ) ρ̃(στ)⁻¹ − 1 ∈ ad⁰`, written in the HOMOGENEOUS model
+   through `F(g₀,g₁,g₂) = g₀ · c(g₀⁻¹g₁, g₁⁻¹g₂)`;
+2. check it is a cocycle, and that its class lies in `Ш²_S(ad⁰)` — conjunct (a),
+   which is what item (5) of the audit below is about;
+3. when the class vanishes, correct `ρ̃` to a genuine HOMOMORPHISM and package
+   `S ⧸ K` with it as an object of Mazur's category. The packaging is
+   ring-theoretic bookkeeping (`S = Λ[[x₁,…,x_g]]` is Noetherian, local and
+   `𝔪`-adically complete, and these pass to `S ⧸ K`) plus
+   `isHardlyRamified` for the corrected lift.
+
+**The `≃+*` in `IsDeformationStructureOn` is deliberate and is what keeps this
+leaf honest.** With a bare `→+*` the leaf would be discharged by taking
+`D' := D` and `e := ` the section itself, i.e. it would be equivalent to the node
+below rather than a genuine reformulation. Demanding that `D'.R` BE `S ⧸ K` up to
+isomorphism forces the prover to produce the lift.
+
+**MACHINERY AUDIT — items (1)–(4) are DISCHARGED; only (5) remains, and it is
+what conjunct (a) rests on.** (Moved here from the node below when that node was
+proven; a machinery audit on a proven consumer audits nothing. A stale "this is
+impossible" note costs more than an open sorry, so the discharges are recorded
+explicitly.)
+
+1. *No small-extension API anywhere.* **DISCHARGED 2026-07-27.** Written as
+   `Fermat/FLT/Mathlib/RingTheory/SmallExtension.lean`: `IsSmallExtension`,
+   `ker_le_maximalIdeal`, `ker_sq_eq_bot`, `isTorsionBySet_ker`, the constructor
+   `isSmallExtension_quotientLift`, the local-quotient instances
+   (`IsLocalRing.instQuotientOfNontrivial`, `IsLocalRing.maximalIdeal_quotient`)
+   and the semilinearity lemma `apply_smul_of_residueEquiv`. It was genuinely
+   absent from mathlib, from our pin and from `~/cs/FLT` — the audit's own
+   refuting grep was re-run and still found nothing — and it is now consumed
+   both in the SIGNATURE of this leaf and in the proofs of the two nodes below.
+2. *No obstruction class exists as a formal object.* **DISCHARGED**: the arrow
+   `ContinuousCohomology.cocycleClass` exists, so a cocycle can be turned into a
+   class. What is still missing is the cocycle `c(σ,τ)` itself, which is what
+   this leaf asserts to exist.
+3. *No inhomogeneous cochains in our pin.* STILL TRUE, and NOT BINDING: the
+   homogeneous model has elements and a cocycle condition, and the dictionary
+   above expresses `c(σ,τ)` inside it.
+4. *No long exact sequence, no connecting map, no cup product.* **DISCHARGED for
+   the part this leaf needs**: the binding gap was the absence of any `Z/B` model
+   of `continuousCohomology`, now vendored (`cohomologyIsoQuot`, `cocycleClass`).
+   A cup product is still absent and is still needed by
+   `rank_sha2_le_rank_sha1_twist` below, but NOT here.
+5. *Liftability of the four hardly ramified local conditions along a small
+   extension* is nowhere stated. REFUTED BY: a lemma about `IsHardlyRamified`
+   being preserved under a square-zero surjection. **STILL OPEN**, and this is
+   the single binding item; it is what conjunct (a) — the landing in `Ш²`
+   rather than merely in `H²` — rests on. With (1) in hand it is expressible:
+   the statement wanted is `IsSmallExtension π → IsHardlyRamified … → …`.
+
+   **A WARNING FOR WHOEVER TAKES IT** (recorded 2026-07-27, from an attempt to
+   state item (5) directly). The naive reading — "if `π ∘ ρ̃` is hardly ramified
+   and `π` is a small extension, then `ρ̃` is hardly ramified" — is **FALSE**,
+   and every clause of `IsHardlyRamified` fails it separately:
+
+   * `det`: `det ρ̃` agrees with the cyclotomic character only modulo `ker π`, so
+     it differs from it by a character valued in `1 + ker π`. (It can be
+     CORRECTED — `ker π` is a `k`-vector space with `char k = ℓ` odd, so
+     squaring is bijective on `1 + ker π` and one may scale `ρ̃` by the square
+     root of the ratio — but that is a choice, not an implication.)
+   * `isUnramified`: `ρ̃(I_p) ⊆ 1 + M₂(ker π)`, an abelian group, and a
+     continuous map from inertia into it need not be trivial.
+   * `isFlat` and `isTameAtTwo`: likewise conditions on the chosen lift.
+
+   So item (5) is not a preservation lemma. It is the assertion that the lift
+   can be CHOSEN to satisfy the four conditions — equivalently that the local
+   components of the obstruction class vanish, which is precisely why conjunct
+   (a) says `Ш²` and not `H²`. State it that way, per local condition, and
+   expect one sub-leaf per clause of `IsHardlyRamified`.
+
+6. *There is NO CONTINUOUS SET-THEORETIC LIFT, and item (5) is therefore NOT the
+   only binding item.* **ADDED 2026-07-31, and it corrects the sentence above
+   that calls (5) "the single binding item".** That sentence is about the
+   MATHEMATICS and is right; it is wrong as a statement about what a successor
+   can start on, because step 1 of the route sketched at the top of this
+   docstring — "build the continuous set-theoretic lift `ρ̃` of `D.ρ` along the
+   small extension `S ⧸ K ↠ D.R`" — has no theorem behind it anywhere.
+
+   *The refuting greps, run 2026-07-31 over all three trees.* A search for
+   `exists_continuous_section` / `ContinuousSection` / `continuous_section` over
+   `Fermat/`, over the mathlib pin's `Mathlib/Topology/` and `Mathlib/Algebra/`,
+   and over `~/cs/FLT` returns **nothing** in any of them; and the only two hits
+   in this repository for the phrase "continuous set-theoretic lift" are the two
+   prose sentences in this file's own docstrings. The theorem wanted is Serre,
+   *Galois Cohomology*, I.§1.2, Prop. 1 — a surjection of profinite groups
+   admits a continuous section as a map of spaces — or, sufficient here and
+   easier, its finite-kernel case: a surjective continuous open hom with FINITE
+   kernel onto a compact group splits set-theoretically and continuously,
+   because `p` restricted to a small enough open subgroup `W` (one meeting the
+   kernel only in `1`) is a homeomorphism onto the open, finite-index subgroup
+   `p W`, and the section is glued over the finitely many clopen cosets.
+
+   *It was also claimed here that `D.R` is not known to be COMPACT.* **THAT
+   CLAIM WAS FALSE, and it is corrected in place rather than deleted, because
+   the way it was reached is the reusable part** (2026-07-31, second owner).
+   What it said: `ProfiniteLocalNoetherian.lean` takes `[CompactSpace R]` as a
+   HYPOTHESIS throughout (`finite_quotient_of_isOpen`, `isClosed_sup`,
+   `exists_pow_le_of_isOpen`, `le_of_le_sup_closure_sq`,
+   `fg_maximalIdeal_of_finite_ringHom`,
+   `isNoetherianRing_isAdic_of_profinite_of_finite_ringHom`), i.e. it proves the
+   CONVERSE direction — profinite ⟹ Noetherian-adic — so the direction this leaf
+   wants "is nowhere stated". Every clause of that is true about
+   `ProfiniteLocalNoetherian.lean`, and the conclusion drawn from it is wrong.
+
+   **Brick (i) is PROVEN, IN THIS FILE, ~6800 lines above this docstring, and it
+   is already APPLIED TO `D.R`.** `compactSpace_of_isAdic_of_pi` (above, PROVEN)
+   is exactly the wanted direction — a local Noetherian ring with the
+   `𝔪`-adic topology, `𝔪`-adically complete, surjecting onto the finite field
+   `k`, is compact — and `fg_comap_maximalIdeal_traceSubring_of_uniform` above
+   already contains the one line that instantiates it:
+
+     `haveI : CompactSpace D.R := compactSpace_of_isAdic_of_pi D.isAdic D.π D.π_surjective`
+
+   (paired there with `haveI : T2Space D.R := t2Space_of_isAdic D.isAdic`, which
+   a successor will want too). So brick (i) costs a successor ONE LINE, not a
+   sub-task, and `Ideal.finite_quotient_pow` /
+   `ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient` do not need to be
+   re-assembled — `compactSpace_of_isAdic_of_pi` is that assembly.
+
+   **Why this matters beyond the one line: a re-derivation was written and had
+   to be thrown away.** A `HardlyRamifiedDeformation.compactSpace` wrapper was
+   proven here on 2026-07-31 and verified green before the in-file original was
+   noticed; it was a duplicate of a one-liner, consumed by nothing, hence
+   free-floating, and it was deleted rather than committed. **The lesson, and it
+   generalises past this leaf: an "it is nowhere stated" verdict reached by
+   grepping the file where the machinery OUGHT to live is not a refutation.
+   Grep for the CONCLUSION — here, `CompactSpace` applied to a deformation
+   ring — across the whole tree INCLUDING the file you are editing.** This file
+   is 24 000 lines; "not in this module" is not something an author knows by
+   having read it. (`HilbertModularity.lean` assembles the same fact for its own
+   deformation ring, `hcompact` in `exists_ringHom_hilbertTraceSubring_…`, which
+   is a third independent place the verdict could have been broken.)
+
+   *So the honest build order for this leaf is THREE bricks, and the first is
+   pure topology with no Galois theory in it, hence dispatchable to a separate
+   owner in parallel with (5):*
+
+   (ii) the continuous section above — the one brick of the four that is
+       genuinely absent, and the refuting greps for it stand (re-run
+       2026-07-31 over `Fermat/`, the pin's `Mathlib/Topology/` and
+       `Mathlib/Algebra/`, and `~/cs/FLT`, for `Function.RightInverse` /
+       `hasSection` / `continuousSection` / `exists_continuous_section` in
+       combination with `Continuous`: the only hits are the discrete-group
+       `liftOfRightInverse'` family in `AutomorphicForm/GroupTheoryStuff.lean`,
+       a purely algebraic splitting with no topology in it).
+
+       Two routes, and the SECOND is the cheap one because our pin already has
+       its engine. (a) Serre's argument as sketched above — an open subgroup
+       `W` meeting the finite kernel only in `1`, `p|W` a homeomorphism onto an
+       open finite-index subgroup, glue over the finitely many clopen cosets;
+       this needs a neighbourhood basis of open ADDITIVE subgroups, which
+       `IsAdic` supplies as the `𝔪ⁿ`, plus the delicate step that some `𝔪ⁿ`
+       meets the kernel trivially. (b) **Level-wise, then take the limit:**
+       `S ⧸ K` and `D.R` are both inverse limits of their FINITE `𝔪`-adic
+       quotients (finite by `finite_quotient_of_maximalIdeal_pow_le` above),
+       each level map is a surjection of finite sets, and a compatible system
+       of set-theoretic sections is a point of an inverse limit of NONEMPTY
+       FINITE sets — which is nonempty by
+       `nonempty_sections_of_finite_cofiltered_system` /
+       `nonempty_sections_of_finite_inverse_system`, both in the pin. Route (b)
+       does no point-set topology at all and reuses this module's own
+       finiteness lemma; price it first.
+   (iii) the cocycle `c(σ, τ)` and its cocycle identity in the homogeneous
+       model, which is where items (2)–(4) of this audit are consumed and is
+       the first step that is actually unblocked today;
+   (iv) item (5), the local conditions, per clause.
+
+   **A NOTE ON HOW A SUCCESSOR SHOULD LAND (ii), because the deleted wrapper
+   shows the trap.** A brick proven with no consumer is free-floating and may
+   not be committed. Brick (ii) can only be CONSUMED once `S ⧸ K` carries a
+   topology, and this leaf's statement deliberately gives it none — `T`'s
+   `CommRing` is an ordinary argument and the topology is transported from
+   `D'` through the `≃+*` (see `IsDeformationStructureOn` above). So (ii) is
+   not separately committable ahead of (iii): the same owner must topologize
+   `S ⧸ K` (the `𝔪`-adic topology, plus Noetherian/local/complete, which pass
+   to the quotient) and use the section to build the lift. Bricks (ii) and
+   (iii) are ONE task, not two, and only (iv) genuinely splits off.
+
+   Note (iii) wants the UNIVERSAL small extension `S ⧸ (𝔪 · ker φ) ↠ D.R`,
+   whose kernel is the whole of `ker φ/𝔪 · ker φ`, rather than one `S ⧸ K` at a
+   time: `oc` is required to be `k`-LINEAR in `ψ`, and the way to get that is to
+   build ONE cocycle valued in `ad⁰ ⊗_k (ker φ/𝔪 · ker φ)` and set
+   `oc ψ := (1 ⊗ ψ)(c)`. Doing it one `K` at a time gives a family of cocycles
+   with no reason to depend linearly on `ψ`, and the linearity is not repairable
+   afterwards. This is why the leaf quantifies over `K` INSIDE the `∃ oc` and
+   not outside it.
+
+**FAITHFULNESS AUDIT, 2026-07-31 — RUN AGAINST THE COMPOSITE STATEMENT, because
+this leaf has now been restated TWICE and CLAUDE.md voids the earlier audit when
+that happens.  VERDICT: FAITHFUL.**
+
+The two restatements pull in OPPOSITE directions, which is what makes the
+composite worth checking rather than assuming:
+
+* *2026-07-27* replaced the conclusion `∃ s : D.R →+* S ⧸ K, …` by
+  `∃ D', D.IsDeformationStructureOn D' (S ⧸ K) _ q`.  That is a
+  **STRENGTHENING** — see the `≃+*` paragraph above, which is precisely the
+  clause that stops the new conclusion from being discharged by a bare section.
+* *2026-07-31* added `K ≠ RingHom.ker φ` to the inner implication.  That is a
+  **WEAKENING**, and a weakening is monotone: it cannot turn a true statement
+  false.  So no interaction is possible in that direction, and the composite
+  audit reduces to auditing the 2026-07-27 strengthening.  (This is the exact
+  point of difference from the `exists_artinDivisorNormIndex_le_ray_class`
+  episode CLAUDE.md records, where BOTH edits constrained the witness.)
+
+*The strengthening is true.*  When the class of `oc ψ` vanishes, obstruction
+theory does not merely split `S ⧸ K → D.R`; it produces the lifted
+representation, and every field of `HardlyRamifiedDeformation` is then in hand
+with `D'.R := S ⧸ K` and `e := RingEquiv.refl`.  Checked field by field, since
+that is where a strengthening of this shape usually breaks:
+`S = MvPowerSeries (Fin g) Λ` lies in `Type u` because `Λ` does, so the universe
+constraint is met; `Λ` is `ℓ`-adically complete (`Module.Finite ℤ_[ℓ] Λ`) and
+Noetherian, hence so are `S` and `S ⧸ K`, giving `isNoetherianRing`, `isAdic`
+and `isAdicComplete`; `D'.π := D.π ∘ q` is surjective because `q` and `D.π` are;
+`charFrob_compat` for `D'` follows from `D`'s by mapping along `q` first, which
+is the same composite the `IsDeformationStructureOn` clause `D.π.comp p = D'.π`
+asserts.  Nothing here needs `hirr`, `hw` or `ht` — those are consumed only by
+the node below.
+
+*`oc = 0` is NOT a cheat witness, and the reason is worth stating because it
+reads like one.*  Taking `oc := 0` satisfies conjunct (a) for free (the class of
+`0` lies in every submodule), but it makes conjunct (b)'s hypothesis hold for
+EVERY `ψ`, so it demands that every proper small extension pinned by every `ψ`
+admit a lift — which is false as soon as the obstruction is nonzero.  A cheap
+`oc` therefore makes the leaf HARDER, not easier; the `∃` is not a loophole.
+
+*The mirror hazard — an `oc` that is never a coboundary, making (b) vacuous — is
+also not a cheat, and this one is a genuine surprise.*  Such an `oc` exists
+whenever `dim Ш² ≥ dim (ker φ ⧸ 𝔪 · ker φ)`, and it discharges (b) vacuously.
+That is not a defect: it is exactly the conclusion the consumer chain wants, and
+the consumer (`exists_obstructionCocycle_smallExtension_section` below, thence
+`rank_relationSpace_le_of_rank_sha2_le`) uses (b) only contrapositively, to get
+that `ψ ↦ class (oc ψ)` is injective and hence
+`dim relationSpace ≤ dim Ш²`.  So the leaf is faithful in the strong sense: both
+degenerate choices of `oc` land on the right side of the inequality the tree is
+after, and the statement is not weakened by admitting them.  A successor should
+NOT "repair" this by demanding that `oc` be the literal Böckle cocycle.
+
+*The `k`-LINEARITY of `oc` is the one clause that could have been unachievable,
+and it is achievable.*  A family of cocycles indexed by `ψ` has no reason to be
+linear in `ψ`; the note in item (6)(iii) above is what makes it so — build ONE
+cocycle valued in `ad⁰ ⊗_k (ker φ ⧸ 𝔪 · ker φ)` for the UNIVERSAL small
+extension and set `oc ψ := (1 ⊗ ψ)(c)`.  Recorded here as well as there because
+a faithfulness audit that skipped it would be certifying a clause nobody had
+checked was satisfiable.
+
+*No junk-value hazard.*  Every object in the statement is a submodule, a kernel,
+a range or an `∃`; there is no `Nat.card` and no numeric value that could
+silently be `0` (contrast `card_sha1Twist_le_card_dualNumberPoints` below).
+
+References: Böckle, *Presentations of universal deformation rings*; Mazur,
+*Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
+*Fermat's Last Theorem*, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII;
+Schlessinger, *Functors of Artin rings*.
+
+**CIRCULARITY GUARD — MOVED HERE, NOT DROPPED.** This is its FIFTH move (off
+`rank_relationSpace_le_of_rank_sha2_le`, then off
+`exists_injective_dual_relationSpace_to_sha2`, then off
+`exists_obstructionHom_relationSpace_sha2`, then off
+`exists_obstructionCocycle_relationSpace_sha2`, and now off
+`exists_obstructionCocycle_smallExtension_section`); a guard on a proven consumer
+guards nothing, so it belongs on whichever declaration still contains the
+`sorry`. The BANNED INPUTS clause binds: neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`) nor
+`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
+— nor anything proven over them — may be used to discharge this leaf, since
+their intended proofs run through modularity lifting, which is proven over the
+very bound this leaf supplies. A green build and an honest `#print axioms`
+would BOTH survive such a discharge; only a human reading catches it. `hℓ5`
+is carried for the same reason: it keeps
+`IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to the
+prime `3`) inapplicable, so that route stays closed mathematically rather than
+merely by import scope.
+
+INTEGRATION REPAIR (2026-07-28, and it is the SECOND time this exact defect has
+crossed a release).  This leaf was cut from a base on which the cocycle lived in
+`adZeroTopRep ρbar`, i.e. cohomology over the full `Γ_ℚ`.  `Sha2` had meanwhile
+been restated over `G_{ℚ,S}` — it is now a submodule of
+`continuousCohomology 2 (adZeroRestricted ρbar S)` — so the `∈ Sha2 …` clause had
+no `Membership` instance and the consumer's `refine ⟨oc, hsha, …⟩` was a type
+mismatch.  Restated here over `adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)`,
+matching `exists_obstructionCocycle_smallExtension_section` below; nothing was
+proven or weakened, and the mathematical content is unchanged — this is the same
+statement over the group `Sha2` is now indexed by.
+
+**WHAT THE `K ≠ ker φ` HYPOTHESIS IS, AND WHY IT COSTS THE LEAF NOTHING** (the
+2026-07-31 cut). Conjunct (b) here asks only about PROPER small extensions; the
+node below recovers the unrestricted statement, so no consumer sees the
+difference. When `K = ker φ` the map `S ⧸ K ↠ D.R` is not a proper small
+extension at all but an ISOMORPHISM — surjective because `φ` is, injective
+because its kernel is `ker φ / K = 0` — and the conclusion is discharged by `D`
+itself through
+`HardlyRamifiedDeformation.isDeformationStructureOn_self_of_bijective` above.
+That branch carries no obstruction theory whatever, and it cannot be avoided by
+choosing `oc` cleverly: `oc` is `k`-linear, so `oc 0 = 0`, whose class is
+`0 ∈ Ш²` for free and which is a coboundary, so the hypothesis of conjunct (b)
+holds there for ANY `oc`. It had to be discharged, not assumed away.
+
+Under the pinning clause the restriction is exactly `ψ ≠ 0`, and that is the
+form to think in. `ψ = 0` makes the pinning clause read `∀ j : ker φ, (j : S) ∈ K`,
+i.e. `ker φ ≤ K`, which with the standing `hK : K ≤ ker φ` gives `K = ker φ`;
+conversely a `ψ` with `ψ (mk j) ≠ 0` puts that `j` outside `K`. What the
+restriction BUYS is the standard setting of the literature: for `ψ ≠ 0`, `ψ` is
+a nonzero functional on a `k`-vector space, hence surjective, so `j ↦ ψ (mk j)`
+carries `ker φ` onto `k` with kernel exactly `K` — i.e. `ker φ / K ≅ k` is
+ONE-DIMENSIONAL, and `S ⧸ K ↠ D.R` is a small extension with a `1`-dimensional
+kernel. That is the hypothesis under which Böckle's and Mazur's obstruction
+calculus is written, and a successor may now assume it instead of re-deriving
+it. It is deliberately not added as a further conjunct: it follows from `hpin`
+in two lines, and stating it would widen this signature for no gain.
+
+**IT IS PHRASED ON `K` AND NOT ON `ψ` FOR AN ELABORATION REASON, NOT A
+MATHEMATICAL ONE — do not "tidy" it back.** Both `∀ ψ, ψ ≠ 0 → …` and the
+pointwise `∀ ψ, (∃ j, ψ j ≠ 0) → …` make this declaration fail with the internal
+error `unknown free variable` (both measured 2026-07-31; the second was tried
+precisely to dodge the `Zero` instance on `Module.Dual k (ker φ/𝔪 · ker φ)`, and
+it fails identically, so the trigger is the extra binder in that position and NOT
+the instance). This is the same elaboration failure the note on
+`IsDeformationStructureOn` above records — the one that forced the compatibility
+clauses to be hoisted out of this statement into that definition. `K ≠ ker φ` is
+a statement about ideals of `MvPowerSeries (Fin g) Λ` alone: it mentions nothing
+under the `letI`-supplied `Module k` structure, so it elaborates. **General rule
+for this leaf: a new hypothesis goes on the objects that live OUTSIDE the `∃ oc`
+binder's instance context, or it does not go in at all.** The consumer below
+branches on `K = ker φ` for the same reason. -/
+theorem exists_obstructionCocycle_smallExtension_deformation_ne_zero
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+    letI := D.isLocalRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
+        (hsurj : Function.Surjective φ),
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        letI : Module k (↥(RingHom.ker φ) ⧸
+            (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+              (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
+          Module.compHom _
+            (residueRingEquivOfSurjective (D.π.comp φ)
+              (D.π_surjective.comp hsurj)).symm.toRingHom
+        ∃ oc : Module.Dual k (↥(RingHom.ker φ) ⧸
+              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
+            ↥(TopModuleCat.ker
+              ((TopRep.homogeneousCochains
+                (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))).d 2 3)),
+          (∀ ψ, ContinuousCohomology.cocycleClass
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2 (oc ψ) ∈
+            Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ∧
+          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2).hom.range →
+            ∀ (K : Ideal (MvPowerSeries (Fin g) Λ))
+              (hK : K ≤ RingHom.ker φ),
+              K ≠ RingHom.ker φ →
+              letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+                Ideal.Quotient.nontrivial_of_le_ker hK
+              IsSmallExtension (Ideal.Quotient.lift K φ fun _ ha => hK ha) →
+              (∀ j : ↥(RingHom.ker φ),
+                (j : MvPowerSeries (Fin g) Λ) ∈ K ↔
+                  ψ (Submodule.Quotient.mk j) = 0) →
+              ∃ D' : HardlyRamifiedDeformation hℓOdd ρbar,
+                HardlyRamifiedDeformation.IsDeformationStructureOn hℓOdd D D'
+                  (MvPowerSeries (Fin g) Λ ⧸ K) inferInstance
+                  (Ideal.Quotient.lift K φ fun _ ha => hK ha) :=
+  sorry
+
 /-- **`ℤ_ℓ → Λ` is injective when `ℓ ≠ 0` in the domain `Λ`** (PROVEN
 2026-07-30). Every nonzero ideal of `ℤ_ℓ` is `(ℓ^n)`
 (`PadicInt.ideal_eq_span_pow_p`, from its discrete valuation ring structure), so
@@ -18149,44 +18596,25 @@ theorem exists_obstructionCocycle_smallExtension_deformation
   letI := D.isLocalRing; letI := D.algebra
   intro Λ _ _ _ _ _ _ hΛmax g φ hsurj hcompat hmin
   obtain ⟨oc, hsha, hlift⟩ :=
-    exists_obstructionCocycle_smallExtension_lift hℓOdd hdim hℓ5 h hirr D hw ht Λ
-      ‹_› ‹_› ‹_› ‹_› ‹_› ‹_› hΛmax g φ hsurj hcompat hmin
+    exists_obstructionCocycle_smallExtension_deformation_ne_zero hℓOdd hdim hℓ5 h hirr D hw ht
+      Λ ‹_› ‹_› ‹_› ‹_› ‹_› ‹_› hΛmax g φ hsurj hcompat hmin
   refine ⟨oc, hsha, fun ψ hψ K hK hsmall hpin => ?_⟩
-  haveI hnt : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
-    Ideal.Quotient.nontrivial_of_le_ker hK
-  haveI hNS : IsNoetherianRing (MvPowerSeries (Fin g) Λ) := isNoetherianRing_mvPowerSeries g
-  letI : TopologicalSpace (MvPowerSeries (Fin g) Λ ⧸ K) :=
-    (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K)).adicTopology
-  letI : IsTopologicalRing (MvPowerSeries (Fin g) Λ ⧸ K) :=
-    isTopologicalRing_adicTopology _
-  obtain ⟨ρ', hHR, hcf⟩ := hlift ψ hψ K hK hsmall hpin
-  set q : (MvPowerSeries (Fin g) Λ ⧸ K) →+* D.R :=
-    Ideal.Quotient.lift K φ (fun _ ha => hK ha)
-  have hqsurj : Function.Surjective q := by
-    intro a
-    obtain ⟨x, hx⟩ := hsurj a
-    exact ⟨Ideal.Quotient.mk K x, hx⟩
-  have hqalg : q.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ ⧸ K)) =
-      algebraMap ℤ_[ℓ] D.R := by
-    rw [← hcompat]; rfl
-  have hcfmap : ∀ r (hr : r.Prime), r ≠ 2 → r ≠ ℓ →
-      (ρ'.charFrob hr.toHeightOneSpectrumRingOfIntegersRat).map q =
-        D.ρ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat := by
-    intro r hr hr2 hrℓ
-    exact Polynomial.ext fun n => by
-      rw [Polynomial.coeff_map]; exact hcf r hr hr2 hrℓ n
-  refine ⟨{ R := MvPowerSeries (Fin g) Λ ⧸ K
-            isAdic := rfl
-            isAdicComplete := isAdicComplete_quotient_mvPowerSeries Λ g hΛmax K
-            ρ := ρ'
-            isHardlyRamified := hHR
-            π := D.π.comp q
-            π_surjective := D.π_surjective.comp hqsurj
-            charFrob_compat := by
-              intro r hr hr2 hrℓ
-              rw [← Polynomial.map_map, hcfmap r hr hr2 hrℓ]
-              exact D.charFrob_compat r hr hr2 hrℓ }, ?_⟩
-  exact ⟨RingEquiv.refl _, q, fun x => rfl, hqalg, rfl, hcfmap⟩
+  by_cases h0 : K = RingHom.ker φ
+  · -- DEGENERATE BRANCH: the "small extension" is an ISOMORPHISM, and `D` itself
+    -- is the deformation structure on it. No obstruction theory is involved.
+    have hKeq : RingHom.ker φ ≤ K := le_of_eq h0.symm
+    have hbij : Function.Bijective (Ideal.Quotient.lift K φ fun _ ha => hK ha) := by
+      constructor
+      · refine (injective_iff_map_eq_zero _).mpr fun y hy => ?_
+        obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective y
+        rw [Ideal.Quotient.lift_mk] at hy
+        exact Ideal.Quotient.eq_zero_iff_mem.mpr (hKeq hy)
+      · intro a
+        obtain ⟨x, hx⟩ := hsurj a
+        exact ⟨Ideal.Quotient.mk K x, by rw [Ideal.Quotient.lift_mk]; exact hx⟩
+    exact ⟨D, HardlyRamifiedDeformation.isDeformationStructureOn_self_of_bijective hℓOdd D
+      (MvPowerSeries (Fin g) Λ ⧸ K) inferInstance _ hbij⟩
+  · exact hlift ψ hψ K hK h0 hsmall hpin
 
 /-- **Böckle's obstruction COCYCLE, along a SMALL EXTENSION** (PROVEN 2026-07-27
 over `exists_obstructionCocycle_smallExtension_deformation` above — the same
