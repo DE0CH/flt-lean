@@ -257,6 +257,46 @@ before agents reported back that their targets were already proven. **Build
 task lists from the DIRECT set; use the transitive set only for judging
 whether a subtree still blocks the root.**
 
+**AND THE PER-DECLARATION ANSWER IS `#print axioms`, RUN IN-FILE — a green build
+cannot give it to you** (2026-07-31, `HilbertClassFieldNormal.lean`). An agent
+arriving at a target needs to know which of three states it is in: open, proven
+outright, or proven-but-transitively-tainted. `lake build` distinguishes only the
+first from the other two — a module with no `declaration uses 'sorry'` warning is
+*direct*-clean and says nothing about the cone — and the fleet has repeatedly
+paid a worker to rediscover the difference.
+
+`#print axioms <name>` gives it exactly, but **it must be appended to the END OF
+THE FILE THAT DECLARES THE NAME**, not written in a scratch module that imports
+it. The module system elides imported proof bodies (`value? = none`, and
+`import all` does not help), so from a scratch importer the traversal has nothing
+to walk. Cost is one `lake env lean` of the module; restore the file afterwards:
+
+    cp F.lean /tmp/orig.lean
+    printf '\n#print axioms Some.Decl\n' >> F.lean
+    lake env lean F.lean            # `[propext, Classical.choice, Quot.sound]` = finished
+    cp /tmp/orig.lean F.lean
+
+Here it separated four declarations in one run that a build reported identically:
+`conj_unramifiedAbelian` and `sup_unramifiedAbelian` came back axiom-clean, while
+`exists_hilbertClassField_normal_over_rat` came back `sorryAx` — and the same
+output **names the blocker for free**, since the only paths out led to
+`UnramifiedClassFieldExistence.lean`'s class-field existence leaves. That is a
+queue entry written by the compiler instead of by guesswork.
+
+Two corollaries. Record the verdict in the file's module docstring, because it is
+the only place the next frontier scan will look and the only thing that stops the
+same target being re-dispatched off the transitive census. And note the reverse
+reading: `sorryAx` on your target is **not** a failure when every path to it
+leaves your file — say so, name the upstream leaves, and do not go prove them.
+
+**Small trap that cost one wasted build: `lake` is NOT on `PATH` in a worker
+shell**, even when you are already logged in to the owning host and never touch
+`ssh`. The first invocation returns `lake: command not found` / `EXIT=127`, which
+reads like a broken worktree rather than a missing environment. Prefix every
+command with `export PATH="$HOME/.elan/bin:$PATH"`. The existing note about this
+is filed under *ssh* builds; the cause is the login shell not sourcing elan, so
+it bites local runs identically.
+
 **`verified: true` does NOT mean the import cone is current** (2026-07-25, hit
 independently by two agents). Lean's LSP caches the `lake setup-file` result per
 HEADER SNAPSHOT and replays a failed one verbatim until the IMPORT LIST changes.

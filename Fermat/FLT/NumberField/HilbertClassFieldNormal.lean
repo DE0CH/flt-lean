@@ -53,11 +53,12 @@ two:
   lemmas feeding it are `NumberField.restrictNormalHom_eq_one_of_inertia` and
   `NumberField.restrictNormalHom_eq_one_of_stabilizer`, both over the single
   compatibility `NumberField.restrictNormalHom_inclusion`.
-* `NumberField.conj_unramifiedAbelian` — **THE ONE SORRY LEAF LEFT** in this
-  file (2026-07-31): a `ℚ`-conjugate of an everywhere-unramified abelian
-  extension of `K` is one again. It needs no class field theory and no
-  analysis; see its docstring for why it is not an instance of the transport
-  above.
+* `NumberField.conj_unramifiedAbelian` — **PROVEN 2026-07-31** (it was the last
+  sorry leaf of this file, and closing it made the file sorry-free): a
+  `ℚ`-conjugate of an everywhere-unramified abelian extension of `K` is one
+  again. It needs no class field theory and no analysis; see its docstring for
+  why it is not an instance of the transport above, and for why its
+  `set_option maxHeartbeats 1600000 in` is load-bearing.
 * `NumberField.corestrictFieldRange` / `NumberField.galFieldRangeEquiv` — the
   bookkeeping that lets `Interface.lean` state its conclusions through
   `{σ : M ≃ₐ[ℚ] M // σ fixes ι(CF) pointwise}` instead of through
@@ -65,6 +66,31 @@ two:
   identity on underlying functions.
 
 Nothing here imports `Interface.lean`; `Interface.lean` imports this.
+
+## Status: THIS FILE IS SORRY-FREE, and its residual `sorryAx` is entirely upstream
+
+`lake build Fermat.FLT.NumberField.HilbertClassFieldNormal` is green and emits
+NO `declaration uses 'sorry'` warning for this module (verified 2026-07-31,
+3536 jobs, `EXIT=0`). An in-file `#print axioms` run — the only form that sees
+through the module system, which elides imported proof bodies — separates the
+direct from the transitive frontier:
+
+* `conj_unramifiedAbelian` and `sup_unramifiedAbelian` are **axiom-clean**:
+  `[propext, Classical.choice, Quot.sound]` and nothing else. They are finished
+  mathematics, not merely sorry-free source.
+* `exists_hilbertClassField_normal_over_rat` and
+  `exists_hilbertClassField_intermediateField_isUnramifiedAtInfinitePlaces`
+  carry `sorryAx`, and **every path to it leaves this file**: both route through
+  `exists_classField_of_subgroup` / `exists_hilbertClassField_artinIso` in
+  `UnramifiedClassFieldExistence.lean`, i.e. the existence theorem of unramified
+  class field theory. Nothing in this file can shorten that; the four open
+  leaves are that file's `:237` and `:483` and `ArtinSymbol.lean`'s `:596`
+  (`artinMap_toPrincipalIdeal`) and `:710` (`closure_frobAt_eq_top`, Chebotarev).
+
+So a frontier scan that reports `exists_hilbertClassField_normal_over_rat` as
+open is reading the TRANSITIVE census, and dispatching an agent at it wastes a
+worker — there is nothing here left to prove. See CLAUDE.md, "DIRECT vs
+TRANSITIVE sorries".
 -/
 
 @[expose] public section
