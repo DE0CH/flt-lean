@@ -36777,9 +36777,36 @@ model"*.  This block cuts it along the line the mathematics actually has:
   points (`affineCoord`, `affineCoord_injective`), and the `Fin 2` bookkeeping
   that puts the points outside `U` into `Bool`
   (`exists_ptInjection_of_affinePlaneOpen`);
-* what is LEFT, `exists_affinePlaneOpen_x0ThirtySeven`, is the pure MODULAR
+* what was LEFT, `exists_affinePlaneOpen_x0ThirtySeven`, was the pure MODULAR
   input: an open immersion of an open of `X_0(37)` into the affine sextic,
   compatible over `ℚ`, plus the bound `2` on the rational points outside it.
+
+*ACTED ON 2026-07-31 (flt-lean-273): that leaf is now PROVEN too, over four
+leaves of its own.*  Taking `U` to be the affine sextic itself and `uV` the
+identity turns the four morphisms into one, and the general compactification
+theorem `AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` supplies
+it — so what was left was `isIntegral_planeCurveSchemeQ_sexticThirtySeven` and
+`smoothOfRelativeDimension_sexticThirtySeven` (concrete commutative algebra
+about `y² − f`, `f` squarefree), `card_le_two_compl_sexticThirtySeven` (the two
+points over `x = ∞`), and ONE modular statement,
+`exists_isX0Compactification_sexticThirtySeven`.
+
+*ACTED ON AGAIN, the same day and in the same worktree: two of those four are
+now PROVEN as well.*  `isIntegral_planeCurveSchemeQ_sexticThirtySeven` is
+closed outright (irreducibility of `y² − f` over `ℚ[x]`, with `f(0) = −4` as the
+whole of "`f` is not a square"), and `card_le_two_compl_sexticThirtySeven` is
+proven over the single geometric leaf `exists_compl_pair_sexticThirtySeven`,
+its rational-point bookkeeping having been discharged in general by
+`specSection_eq_of_base_eq` / `relPointBase_injective` /
+`card_le_two_of_compl_pair`.  **So the open frontier of this section is now
+three leaves**: `smoothOfRelativeDimension_sexticThirtySeven` (Jacobian
+criterion for `y² − f`, two charts), `exists_compl_pair_sexticThirtySeven` (the
+second chart of the hyperelliptic gluing has a two-point fibre over `u = 0`),
+and the modular `exists_isX0Compactification_sexticThirtySeven`.
+
+See the Magma reconnaissance
+block below, which is what fixed the shape: the two cusps of `X_0(37)` are NOT
+the two points at infinity, so `Y_0(37)` is not the affine chart.
 
 **Why this is not a relabelling.**  The leaf as it stood asked a successor for a
 FUNCTION into `(ℚ × ℚ) ⊕ Bool` together with its injectivity and a proof that
@@ -37034,29 +37061,489 @@ theorem eval_sexticThirtySevenPoly (p : ℚ × ℚ) :
   simp only [sexticThirtySevenPoly, map_sub, map_add, map_mul, map_pow, map_ofNat,
     MvPolynomial.eval_X, Matrix.cons_val_zero, Matrix.cons_val_one, sub_eq_zero]
 
+/-! #### Reconnaissance (Magma V2.29-2, 2026-07-31, flt-lean-273; untrusted
+searcher, nothing below is used as a proof)
+
+    X := SmallModularCurve(37);      // y² − x³y = 2x⁵ − 5x⁴ + 7x³ − 6x² + 3x − 1
+    S, m := SimplifiedModel(X);      // y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4
+    Points(S : Bound := 500);
+    Cusp(X, 37, 1);  Cusp(X, 37, 37);  jInvariant(P, 37);
+
+`m` is `(x, y, z) ↦ (x, −x³ + 2y, z)`, i.e. exactly the completion of the square
+`Y = 2y − x³` carrying Magma's model to `sexticThirtySevenPoly`.  So the sextic
+this file has carried since 2026-07-28 IS `SmallModularCurve(37)`, verbatim, and
+the identification is not an act of faith about a transcribed equation.
+Coordinates are the weighted-projective `(x : y : z)` of weights `(1, 3, 1)`, so
+`z = 0` is the fibre over `x = ∞`.
+
+**The four rational points, and WHICH TWO ARE THE CUSPS.**
+
+| point of `S`   | affine `(x, y)` | status                                     |
+| -------------- | --------------- | ------------------------------------------ |
+| `(1 : 1 : 1)`  | `(1, 1)`        | **CUSP** (the one indexed by `d = 1`)      |
+| `(1 : 1 : 0)`  | `x = ∞`         | **CUSP** (the one indexed by `d = 37`)     |
+| `(1 : −1 : 1)` | `(1, −1)`       | non-cuspidal, `j = −162677523113838677`    |
+| `(1 : −1 : 0)` | `x = ∞`         | non-cuspidal, `j = −9317`                  |
+
+This matches `rational_point_sextic_thirtySeven` (the only affine rational points
+are `(1, ±1)`) and the `Bool` summand (two points over `x = ∞`), and the two
+non-cuspidal `j`-values are the classical pair of `37`-isogenous curves.
+
+**THE ONE THING HERE WORTH KNOWING: it kills the obvious cut.**  The tempting
+statement is *"`Y_0(37)` IS the affine sextic"* — it would make `U := Y`, make
+`uV` an isomorphism, and turn clause `4` into the rational-cusp count `2`.  It is
+**FALSE**: one cusp is affine and one is at infinity, so `Y_0(37)` and the affine
+chart are two DIFFERENT opens of `X_0(37)`, and NEITHER contains the other —
+`(1 : −1 : 0)` lies in `Y_0(37)` but not in the chart, and `(1 : 1 : 1)` lies in
+the chart but not in `Y_0(37)`.  Their intersection misses three rational points,
+so it cannot serve as `U` either (clause `4` would read `3 ≤ 2`).  `U` must be the
+affine chart itself, which is why the cut below compactifies the SEXTIC and then
+recognises `X_0(37)` in the result, rather than compactifying `Y_0(37)` and
+looking for the sextic inside it.
+
+`Discriminant(x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4) = 207474688 = 2¹² · 37³`,
+nonzero, so the sextic is squarefree over `ℚ` — which is what makes the affine
+plane curve smooth and its coordinate ring a domain, i.e. it is the arithmetic
+input to the first two leaves below. -/
+
+/-! #### The sextic in ONE variable, and the transport that makes it a quadratic
+
+`sexticThirtySevenPoly` is `y² − f(x)`.  Read as a polynomial in `y` over
+`ℚ[x]` it is a MONIC QUADRATIC, and mathlib's
+`Polynomial.Monic.irreducible_iff_roots_eq_zero_of_degree_le_three` then reduces
+irreducibility over an arbitrary DOMAIN — no Gauss lemma, no fraction field, no
+integral closedness — to "`f` is not a square in `ℚ[x]`".  The transport is
+`renameEquiv` (swap the two variables, so that `y` becomes variable `0`)
+followed by `finSuccEquiv` (peel variable `0` off as the polynomial variable). -/
+
+/-- **The level-`37` sextic in ONE variable**, `f = x⁶ + 8x⁵ − 20x⁴ + 28x³ −
+24x² + 12x − 4`, as an element of `MvPolynomial (Fin 1) ℚ`. -/
+noncomputable def sexticThirtySevenUniPoly : MvPolynomial (Fin 1) ℚ :=
+  MvPolynomial.X 0 ^ 6 + 8 * MvPolynomial.X 0 ^ 5 - 20 * MvPolynomial.X 0 ^ 4
+    + 28 * MvPolynomial.X 0 ^ 3 - 24 * MvPolynomial.X 0 ^ 2 + 12 * MvPolynomial.X 0 - 4
+
+/-- **`ℚ[x, y] ≃ (ℚ[x])[y]`, with `y` as the OUTER variable** (PROVEN): swap the
+two variables and then peel the (new) first one off. -/
+noncomputable def sexticThirtySevenEquiv :
+    MvPolynomial (Fin 2) ℚ ≃ₐ[ℚ] Polynomial (MvPolynomial (Fin 1) ℚ) :=
+  (MvPolynomial.renameEquiv ℚ (Equiv.swap 0 1)).trans (MvPolynomial.finSuccEquiv ℚ 1)
+
+/-- **`x` goes to the constant `x`** (PROVEN). -/
+theorem sexticThirtySevenEquiv_X_zero :
+    sexticThirtySevenEquiv (MvPolynomial.X 0) = Polynomial.C (MvPolynomial.X 0) := by
+  have hs : (Equiv.swap (0 : Fin 2) 1) 0 = 1 := by decide
+  have hsucc : MvPolynomial.finSuccEquiv ℚ 1 (MvPolynomial.X (Fin.succ (0 : Fin 1)))
+      = Polynomial.C (MvPolynomial.X 0) := MvPolynomial.finSuccEquiv_X_succ
+  simp only [sexticThirtySevenEquiv, AlgEquiv.trans_apply, MvPolynomial.renameEquiv_apply,
+    MvPolynomial.rename_X, hs]
+  exact hsucc
+
+/-- **`y` goes to the polynomial variable** (PROVEN). -/
+theorem sexticThirtySevenEquiv_X_one :
+    sexticThirtySevenEquiv (MvPolynomial.X 1) = Polynomial.X := by
+  have hs : (Equiv.swap (0 : Fin 2) 1) 1 = 0 := by decide
+  simp only [sexticThirtySevenEquiv, AlgEquiv.trans_apply, MvPolynomial.renameEquiv_apply,
+    MvPolynomial.rename_X, hs]
+  exact MvPolynomial.finSuccEquiv_X_zero
+
+/-- **The plane sextic IS the monic quadratic `Y² − f`** (PROVEN). -/
+theorem sexticThirtySevenEquiv_apply :
+    sexticThirtySevenEquiv sexticThirtySevenPoly
+      = Polynomial.X ^ 2 - Polynomial.C sexticThirtySevenUniPoly := by
+  simp only [sexticThirtySevenPoly, sexticThirtySevenUniPoly, map_sub, map_add, map_mul,
+    map_pow, map_ofNat, sexticThirtySevenEquiv_X_zero, sexticThirtySevenEquiv_X_one]
+
+/-- **`f` is not a square in `ℚ[x]`** (PROVEN), by ONE evaluation: `f(0) = −4`,
+and `−4` is not a square in `ℚ`.
+
+This is cheaper than the five-coefficient comparison the leaf's docstring
+describes, and cheaper than the discriminant: a square of a polynomial takes
+square values at every rational point, and `f` does not at `x = 0`. -/
+theorem not_isSquare_sexticThirtySevenUniPoly (r : MvPolynomial (Fin 1) ℚ) :
+    r ^ 2 ≠ sexticThirtySevenUniPoly := by
+  intro h
+  have h0 : MvPolynomial.eval (fun _ => (0 : ℚ)) (r ^ 2)
+      = MvPolynomial.eval (fun _ => (0 : ℚ)) sexticThirtySevenUniPoly := by rw [h]
+  have hg : MvPolynomial.eval (fun _ => (0 : ℚ)) sexticThirtySevenUniPoly = -4 := by
+    simp [sexticThirtySevenUniPoly, map_ofNat]
+  rw [map_pow, hg] at h0
+  nlinarith [sq_nonneg (MvPolynomial.eval (fun _ => (0 : ℚ)) r)]
+
+/-- **`Y² − f` is irreducible over `ℚ[x]`** (PROVEN): a monic quadratic over a
+DOMAIN is irreducible iff it has no root there, and a root is a square root of
+`f`. -/
+theorem irreducible_quadratic_sexticThirtySeven :
+    Irreducible (Polynomial.X ^ 2 - Polynomial.C sexticThirtySevenUniPoly) := by
+  have hm : (Polynomial.X ^ 2 - Polynomial.C sexticThirtySevenUniPoly).Monic :=
+    Polynomial.monic_X_pow_sub_C _ two_ne_zero
+  have hdeg : (Polynomial.X ^ 2 - Polynomial.C sexticThirtySevenUniPoly).natDegree = 2 :=
+    Polynomial.natDegree_X_pow_sub_C
+  rw [hm.irreducible_iff_roots_eq_zero_of_degree_le_three (by omega) (by omega)]
+  refine Multiset.eq_zero_of_forall_notMem fun r hr => ?_
+  rw [Polynomial.mem_roots hm.ne_zero] at hr
+  have hr' : r ^ 2 - sexticThirtySevenUniPoly = 0 := by
+    simpa [Polynomial.IsRoot] using hr
+  exact not_isSquare_sexticThirtySevenUniPoly r (by linear_combination hr')
+
+/-- **The plane sextic is irreducible in `ℚ[x, y]`** (PROVEN), by transport. -/
+theorem irreducible_sexticThirtySevenPoly : Irreducible sexticThirtySevenPoly :=
+  (MulEquiv.irreducible_iff sexticThirtySevenEquiv).mp
+    (sexticThirtySevenEquiv_apply ▸ irreducible_quadratic_sexticThirtySeven)
+
+/-- **`ℚ[x, y]/(y² − f)` is a DOMAIN** (PROVEN): `ℚ[x, y]` is a UFD, so the
+irreducible `y² − f` is prime, so the ideal it spans is prime. -/
+theorem isDomain_quotient_sexticThirtySevenPoly :
+    IsDomain (MvPolynomial (Fin 2) ℚ ⧸ Ideal.span {sexticThirtySevenPoly}) := by
+  rw [Ideal.Quotient.isDomain_iff_prime,
+    Ideal.span_singleton_prime irreducible_sexticThirtySevenPoly.ne_zero]
+  exact UniqueFactorizationMonoid.irreducible_iff_prime.mp irreducible_sexticThirtySevenPoly
+
+/-- **The affine sextic is INTEGRAL** (PROVEN 2026-07-31 by flt-lean-273; a sorry
+leaf for seven hours the same day, cut out of
+`exists_affinePlaneOpen_x0ThirtySeven`).
+
+`ℚ[x, y]/(y² − f(x))` is a domain, where `f = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² +
+12x − 4`, and `Spec` of it is irreducible and reduced.
+
+**THE PROOF IS CHEAPER THAN THE ROUTE THIS DOCSTRING USED TO PRESCRIBE**, in two
+independent places, and both corrections are worth keeping because both are the
+generic trap.
+
+* *No Gauss lemma, no fraction field, no integral closedness.*  The old route
+  went `R[Y] → K[Y]`, `K = ℚ(x)`, to use the "quadratic with no root" criterion
+  over a FIELD.  But mathlib's
+  `Polynomial.Monic.irreducible_iff_roots_eq_zero_of_degree_le_three` is stated
+  over an arbitrary `[CommRing R] [IsDomain R]` — and it is true there, because a
+  monic quadratic factors into non-units only as a product of two monic linear
+  factors, whose leading coefficients are forced to be units.  So the criterion
+  applies to `ℚ[x]` directly and the whole descent step disappears.
+* *No five-coefficient comparison.*  "`f` is not a square in `ℚ[x]`" is ONE
+  evaluation: `f(0) = −4`, and a square of a polynomial takes square values at
+  every rational point, while `−4 < 0`.  The coefficient computation the old
+  docstring gave (`a = 4`, `b = −18`, `c = 86`, `b² + 2ac = 1012 ≠ −24`) is
+  correct and was checked, but it is five `norm_num`s where this is one.
+  (`Disc f = 2¹² · 37³ ≠ 0` from the reconnaissance also settles it, and is
+  dearer still.)
+
+`IsIntegral` of the SCHEME is then `inferInstance`: mathlib carries
+`instance {R : CommRingCat} [IsDomain R] : IsIntegral (Spec R)`
+(`AlgebraicGeometry/Properties.lean`), so `isIntegral_of_isAffine_of_isDomain`
+and the `Nonempty` argument the old docstring prescribed are not needed either.
+
+**Load-bearing**: this and the next leaf are exactly what
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` consumes, so
+without them the compactification `X` of the assembly does not exist and the
+modular leaf below is vacuous. -/
+theorem isIntegral_planeCurveSchemeQ_sexticThirtySeven :
+    IsIntegral (planeCurveSchemeQ sexticThirtySevenPoly) := by
+  haveI := isDomain_quotient_sexticThirtySevenPoly
+  infer_instance
+
+/-- **The affine sextic is a SMOOTH curve over `ℚ`** (SORRY LEAF, cut 2026-07-31
+by flt-lean-273 out of `exists_affinePlaneOpen_x0ThirtySeven`).
+
+`Spec (ℚ[x, y]/(y² − f)) ⟶ Spec ℚ` is smooth of relative dimension `1`.
+
+TRUE, by the Jacobian criterion, and this is where squarefreeness of `f` enters:
+a singular point of `V(F)`, `F = y² − f(x)`, needs `∂F/∂y = 2y = 0` and
+`∂F/∂x = −f'(x) = 0` and `F = 0`, i.e. a repeated root of `f`.  `Disc f = 2¹² · 37³
+≠ 0` (reconnaissance above), so there is none, over `ℚ̄` as well as over `ℚ`.
+
+The work is not the mathematics but the presentation: `SmoothOfRelativeDimension 1`
+wants a standard-smooth presentation locally, and the Jacobian `(2y, −f'(x))` is a
+UNIT only after inverting one of its two entries, so the honest route is the two
+basic opens `D(y)` and `D(f'(x))` — which cover `V(F)` precisely because
+`(F, 2y, f'(x)) = (1)`, a Bézout identity with EXPLICIT cofactors that `ring` can
+check once someone computes them (over `ℚ[x]`, `gcd(f, f') = 1` gives
+`a·f + b·f' = 1` with `a, b` of degrees `4` and `5`; `decide`/`norm_num` on the
+rational coefficients).  Smoothness of a basic open of a smooth scheme is
+`AlgebraicGeometry.isStandardSmoothOfRelativeDimension_of_isLocalizationAway`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`), and locality of
+`SmoothOfRelativeDimension` on the source does the gluing.
+
+CAS note: `gp`'s `polresultant(f, f')` and `Singular`'s `groebner` both produce the
+Bézout cofactors directly; they are an untrusted searcher for the coefficients, and
+the identity is then a one-line `linear_combination` in Lean. -/
+theorem smoothOfRelativeDimension_sexticThirtySeven :
+    SmoothOfRelativeDimension 1 (planeCurveStrQ sexticThirtySevenPoly) :=
+  sorry
+
+/-! #### Rational points inject into the topological space
+
+The half of the count that is REUSABLE, and that every rational-point count in
+this file has so far re-derived by hand (`affineCoord_injective`,
+`MazurLevel32.fourPoints`): a section of `X ⟶ Spec K` is determined by the image
+of the closed point, so `X(K)` injects into `↥X` and a `Finset` of rational
+points landing in a two-element set has card `≤ 2`.
+
+The three declarations below mention neither level `37` nor the sextic and would
+sit as happily in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveAffineComplement.lean`;
+they are kept here only to hold this branch's edits inside one contiguous region
+of one file. -/
+
+/-- **Two retractions of a ring map between fields agree** (PROVEN).
+
+`φ ∘ ι = id` makes `φ` injective, hence `ι ∘ φ = id` as well, hence `ι` is a
+two-sided inverse and `φ` is determined by `ι`. -/
+theorem ringHom_retraction_unique {K L : Type*} [Field K] [Field L] (ι : K →+* L)
+    (φ ψ : L →+* K) (hφ : ∀ k, φ (ι k) = k) (hψ : ∀ k, ψ (ι k) = k) : φ = ψ := by
+  ext l
+  have h2 : ι (φ l) = l := φ.injective (by rw [hφ])
+  calc φ l = ψ (ι (φ l)) := (hψ _).symm
+    _ = ψ l := by rw [h2]
+
+/-- **A section of `X ⟶ Spec K` is determined by the image of the closed point**
+(PROVEN).
+
+Both sections factor as `Spec.map φ ≫ X.fromSpecResidueField x` through the
+SAME residue field once their base points agree
+(`Scheme.descResidueField_stalkClosedPointTo_fromSpecResidueField`, plus
+`Scheme.residueFieldCongr_fromSpecResidueField` to move `Q`'s descent to `P`'s
+point).  Being a section makes each `φ` a retraction of the one ring map
+`ι : K ⟶ κ(x)` underlying `X.fromSpecResidueField x ≫ str` — `Spec` is fully
+faithful, so `ι` is `Spec.preimage` of it and `Spec.map_injective` turns the
+scheme identity into the ring identity — and `ringHom_retraction_unique`
+finishes. -/
+theorem specSection_eq_of_base_eq {K : Type u} [Field K] {X : Scheme.{u}}
+    {str : X ⟶ Spec (.of K)}
+    (P Q : Spec (.of K) ⟶ X) (hP : P ≫ str = 𝟙 _) (hQ : Q ≫ str = 𝟙 _)
+    (h : P (IsLocalRing.closedPoint K) = Q (IsLocalRing.closedPoint K)) : P = Q := by
+  have hP' := Scheme.descResidueField_stalkClosedPointTo_fromSpecResidueField K X P
+  have hQ' := Scheme.descResidueField_stalkClosedPointTo_fromSpecResidueField K X Q
+  set φ := Scheme.descResidueField (Scheme.stalkClosedPointTo P) with hφdef
+  set ψ := Scheme.descResidueField (Scheme.stalkClosedPointTo Q) with hψdef
+  set ψ' : X.residueField (P (IsLocalRing.closedPoint K)) ⟶ .of K :=
+    (X.residueFieldCongr h).hom ≫ ψ with hψ'def
+  set ι : (CommRingCat.of K) ⟶ X.residueField (P (IsLocalRing.closedPoint K)) :=
+    Spec.preimage (X.fromSpecResidueField (P (IsLocalRing.closedPoint K)) ≫ str) with hιdef
+  have hιmap : Spec.map ι = X.fromSpecResidueField (P (IsLocalRing.closedPoint K)) ≫ str := by
+    rw [hιdef, Spec.map_preimage]
+  have hφret : ι ≫ φ = 𝟙 _ := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, Spec.map_id, hιmap, ← Category.assoc, hP', hP]
+  have hQ'' : Spec.map ψ' ≫ X.fromSpecResidueField (P (IsLocalRing.closedPoint K)) = Q := by
+    rw [hψ'def, Spec.map_comp, Category.assoc,
+      Scheme.residueFieldCongr_fromSpecResidueField h, hQ']
+  have hψret : ι ≫ ψ' = 𝟙 _ := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, Spec.map_id, hιmap, ← Category.assoc, hQ'', hQ]
+  have hfin : φ = ψ' := by
+    apply CommRingCat.hom_ext
+    refine ringHom_retraction_unique ι.hom φ.hom ψ'.hom ?_ ?_
+    · intro k; exact congrArg (fun m => CommRingCat.Hom.hom m k) hφret
+    · intro k; exact congrArg (fun m => CommRingCat.Hom.hom m k) hψret
+  rw [← hP', hfin, hQ'']
+
+/-- **`Spec K`-rational points inject into the topological space** (PROVEN). -/
+theorem relPointBase_injective {K : Type u} [Field K] {X : Scheme.{u}}
+    {str : X ⟶ Spec (.of K)} :
+    Function.Injective
+      (fun P : RelPoint str (𝟙 (Spec (.of K))) => P.1 (IsLocalRing.closedPoint K)) :=
+  fun P Q h => Subtype.ext (specSection_eq_of_base_eq P.1 Q.1 P.2 Q.2 h)
+
+/-- **A `Finset` of rational points outside an open whose complement is covered
+by two points has card `≤ 2`** (PROVEN).
+
+`Spec K` has ONE point, so `Set.range P.1.base = {P.1 (closedPoint K)}` and the
+hypothesis "`P` does not land in the open" is literally "that point is outside
+the open"; `relPointBase_injective` then transports the count. -/
+theorem card_le_two_of_compl_pair {K : Type u} [Field K] {X U : Scheme.{u}}
+    {str : X ⟶ Spec (.of K)} {uX : U ⟶ X} (a b : X)
+    (hab : ∀ z : X, z ∉ Set.range uX.base → z = a ∨ z = b)
+    (s : Finset (RelPoint str (𝟙 (Spec (.of K)))))
+    (hs : ∀ P ∈ s, ¬ Set.range P.1.base ⊆ Set.range uX.base) :
+    s.card ≤ 2 := by
+  classical
+  have himg : s.card
+      = (s.image (fun P : RelPoint str (𝟙 (Spec (.of K))) =>
+          P.1 (IsLocalRing.closedPoint K))).card :=
+    (Finset.card_image_of_injective _ relPointBase_injective).symm
+  rw [himg]
+  have hsub : s.image (fun P : RelPoint str (𝟙 (Spec (.of K))) =>
+      P.1 (IsLocalRing.closedPoint K)) ⊆ ({a, b} : Finset X) := by
+    intro z hz
+    obtain ⟨P, hP, rfl⟩ := Finset.mem_image.mp hz
+    have hrange : Set.range P.1.base = {P.1 (IsLocalRing.closedPoint K)} := by
+      rw [Set.range_unique]
+      congr 1
+      exact congrArg _ (Subsingleton.elim _ _)
+    have hnot : P.1 (IsLocalRing.closedPoint K) ∉ Set.range uX.base := by
+      intro hmem
+      exact hs P hP (by rw [hrange]; simpa using hmem)
+    rcases hab _ hnot with h | h <;> simp [h]
+  have htwo : ({a, b} : Finset X).card ≤ 2 :=
+    le_trans (Finset.card_insert_le _ _) (by simp)
+  exact le_trans (Finset.card_le_card hsub) htwo
+
+/-- **The complement of the affine chart in the smooth compactification is
+covered by TWO points** (SORRY LEAF, cut 2026-07-31 by flt-lean-273 out of
+`card_le_two_compl_sexticThirtySeven`; it is the GEOMETRIC half, and the only
+half left, since the rational-point bookkeeping is discharged above by
+`card_le_two_of_compl_pair`).
+
+TRUE: `X ∖ V(F)` is the fibre over `x = ∞` of a sextic whose leading coefficient
+`1` is a SQUARE, so it consists of exactly two points — the `(1 : ±1 : 0)` of
+the reconnaissance above.  Note the statement asks only for a COVER by two
+points, not for exactly two: `a = b` is permitted, and no rationality of `a, b`
+is asserted, because the rational-point count is done downstream.
+
+The concrete model to compute against is the standard hyperelliptic gluing,
+second chart `v² = u⁶ f(1/u) = 1 + 8u − 20u² + 28u³ − 24u⁴ + 12u⁵ − 4u⁶` via
+`u = 1/x`, `v = y/x³`, whose `u = 0` fibre is `v² = 1`.  This is legitimate
+because the smooth compactification of a smooth curve is unique up to unique
+isomorphism (`exists_unique_extension_of_isSmoothProperCurve` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean` is the extension
+property behind it), so the hypothesis pins `X` up to isomorphism.
+
+**Nothing here may cite a level-`37` cardinality bound**:
+`exists_x0Compactification_thirtySeven_cardLe` and `card_y0Le_thirtySeven` are
+proven FROM the consumer of this leaf, so citing either closes a cycle. -/
+theorem exists_compl_pair_sexticThirtySeven {X : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {uX : planeCurveSchemeQ sexticThirtySevenPoly ⟶ X}
+    (_h : IsSmoothCompactification (planeCurveStrQ sexticThirtySevenPoly) strX uX) :
+    ∃ a b : X, ∀ z : X, z ∉ Set.range uX.base → z = a ∨ z = b :=
+  sorry
+
+/-- **The affine sextic misses at most `2` rational points of its smooth
+compactification** (PROVEN 2026-07-31 by flt-lean-273 over the single geometric
+leaf `exists_compl_pair_sexticThirtySeven`; a sorry leaf for seven hours the
+same day, cut out of
+`exists_affinePlaneOpen_x0ThirtySeven`; it is that leaf's clause `4`, with every
+modular hypothesis removed).
+
+Stated for an ARBITRARY smooth compactification, which is the right shape and is
+not a strengthening: a smooth curve over a field has a smooth compactification
+unique up to unique isomorphism (`Fermat/FLT/Mathlib/AlgebraicGeometry/`
+`CurveExtension.lean`'s `exists_unique_extension_of_isSmoothProperCurve` is the
+extension property behind it), so quantifying universally costs nothing and frees
+the consumer from having to name one.
+
+TRUE, and this is the clause the section docstring calls GEOMETRY rather than
+arithmetic: `X ∖ V(F)` is the fibre over `x = ∞` of a sextic with leading
+coefficient `1`, a SQUARE, so it consists of exactly two points, both `ℚ`-rational
+— the `(1 : ±1 : 0)` of the reconnaissance above.  Nothing about level `37` is
+used, and in particular **nothing here may cite a level-`37` cardinality bound**:
+`exists_x0Compactification_thirtySeven_cardLe` and `card_y0Le_thirtySeven` are
+proven FROM the consumer of this leaf, so citing either closes a cycle.  That is
+the whole reason level `32`'s route (`exists_weierstrassModel_x0ThirtyTwo` out of
+`card_le_four_x0ThirtyTwo`) is unavailable at `37`.
+
+**Two steps, and the second is the reusable one.**  (a) The complement is a set of
+at most two POINTS of `X` — the geometry, now the leaf
+`exists_compl_pair_sexticThirtySeven` immediately above.  (b) `RelPoint strX
+(𝟙 SpecQ) → ↥X`, `P ↦ P.1.base (closedPoint ℚ)`, is INJECTIVE, so a `Finset` of
+rational points landing in a two-element set has card `≤ 2` — now PROVEN in
+general as `specSection_eq_of_base_eq` / `relPointBase_injective` /
+`card_le_two_of_compl_pair`, which mention neither the sextic nor level `37`.
+
+The old docstring prescribed `Scheme.SpecToEquivOfField` for (b); the proof
+actually used the two halves of that equivalence separately
+(`descResidueField_stalkClosedPointTo_fromSpecResidueField` and
+`residueFieldCongr_fromSpecResidueField`), because `SpecToEquivOfField_eq_iff`
+puts the point equality inside a dependent `∃ e`, and the ring identity
+`ι ≫ φ = 𝟙` is easier to obtain by applying `Spec.map_injective` to the section
+identity than by rewriting under that binder. -/
+theorem card_le_two_compl_sexticThirtySeven {X : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {uX : planeCurveSchemeQ sexticThirtySevenPoly ⟶ X}
+    (h : IsSmoothCompactification (planeCurveStrQ sexticThirtySevenPoly) strX uX)
+    (s : Finset (RelPoint strX (𝟙 SpecQ)))
+    (hs : ∀ P ∈ s, ¬ Set.range P.1.base ⊆ Set.range uX.base) :
+    s.card ≤ 2 := by
+  obtain ⟨a, b, hab⟩ := exists_compl_pair_sexticThirtySeven h
+  exact card_le_two_of_compl_pair a b hab s hs
+
+/-- **THE MODULAR LEAF: the smooth compactification of the affine sextic IS
+`X_0(37)`** (SORRY LEAF, cut 2026-07-31 by flt-lean-273 as the irreducibly modular
+residue of `exists_affinePlaneOpen_x0ThirtySeven`).
+
+Given any smooth compactification `uX : V(F) ⟶ X` of the affine sextic over `ℚ`,
+`X` carries a `Γ₀(37)`-structure: there is an open `Y ⊆ X` whose structure
+morphism is a coarse moduli space for the `Γ₀(37)`-problem, with `X` its smooth
+compactification.
+
+**This is the entire remaining modular content of level `37`.**  Everything else
+that `exists_affinePlaneOpen_x0ThirtySeven` used to ask for is now discharged:
+the plane-curve dictionary and the `Bool` bookkeeping by
+`exists_ptInjection_of_affinePlaneOpen` (2026-07-29), the EXISTENCE of the
+compactification by `exists_isSmoothCompactification_of_isAffine` over the two
+concrete leaves above, and the count outside the chart by
+`card_le_two_compl_sexticThirtySeven`.
+
+TRUE: `X` is the smooth projective model of `y² = f(x)`, a genus-`2` curve, and
+that model is `X_0(37)` — Magma's `SmallModularCurve(37)` is this very equation
+(reconnaissance above), and the smooth compactification of a smooth curve is
+unique up to isomorphism, so any `X` satisfying the hypothesis is it.  `Y` is `X`
+minus the two cusps `(1 : 1 : 1)` and `(1 : 1 : 0)`; note that this `Y` is NOT the
+affine chart `V(F)` and is not contained in it — see the reconnaissance, where
+that mismatch is what forced the shape of this cut.
+
+**What proving it needs, and why no shortcut is admissible.**  A `Γ₀(37)`-moduli
+interpretation of an explicit curve is not derivable from the equation: it is the
+statement that the classical `j`- and `j∘w₃₇`-relation cuts out this model, i.e.
+the modular parametrisation.  The realistic route is the one this development
+already uses for `Y_0(N)` — `Fermat.exists_gamma0AffineModel` and the initiality of
+`IsCoarseModuliY0` (`Fermat.exists_isIso_of_isCoarseModuliY0`) — reducing the leaf
+to an isomorphism between the Katz–Mazur coarse space and an explicit open of this
+curve; the modular units / `q`-expansion identity `x = (η(q)/η(q³⁷))`-style is what
+supplies that isomorphism, and it is not in the tree.
+
+**Not vacuous, in either direction.**  The hypothesis is satisfiable (the two
+leaves above supply an `X`), and the conclusion is not free: a `Γ₀(37)` coarse
+space is pinned up to unique isomorphism by initiality, so this really does assert
+that this particular genus-`2` curve is the modular one.
+
+**The check that would refute it**: a fifth rational point on
+`y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4` (`X_0(37)(ℚ)` has exactly four), or
+a genus computation giving anything other than `2`. -/
+theorem exists_isX0Compactification_sexticThirtySeven {X : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {uX : planeCurveSchemeQ sexticThirtySevenPoly ⟶ X}
+    (_h : IsSmoothCompactification (planeCurveStrQ sexticThirtySevenPoly) strX uX) :
+    ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (jY : Y ⟶ X),
+      Nonempty (IsX0Compactification 37 strX strY jY) :=
+  sorry
+
 /-- **THE MODULAR LEAF: an open of `X_0(37)` is an open of the affine sextic**
-(SORRY LEAF, introduced 2026-07-29 by flt-lean-275 as the residue of
+(PROVEN 2026-07-31 by flt-lean-273 over the four leaves immediately above; a bare
+sorry leaf from 2026-07-29, when flt-lean-275 introduced it as the residue of
 `exists_planeModel_x0ThirtySeven`, which is PROVEN over it).
 
-This is the *entire* remaining content of the MODULI half of level `37`, with
-every curve-independent step already discharged above.  What a successor must
-produce is four morphisms of schemes and one count:
+**THE CUT (2026-07-31).**  `U` is the affine sextic ITSELF and `uV` is the
+identity, so the four morphisms collapse to one — the open immersion of the chart
+into its own smooth compactification — and the statement decomposes into the four
+leaves above with a fifteen-line assembly:
 
-1. a compactification `X ⊇ Y` of the `Γ₀(37)`-problem (`exists_x0Compactification
-   37` supplies one, so the leaf is SATISFIABLE and not vacuous);
-2. an open `U` of `X` with an open immersion `uX : U ⟶ X`;
-3. an open immersion `uV : U ⟶ V(sexticThirtySevenPoly)` realising `U` as an
-   open of the affine sextic, compatible with the two structure morphisms over
-   `ℚ` (`hcompat`);
-4. the bound `2` on the rational points of `X` OUTSIDE `U`.
+* `isIntegral_planeCurveSchemeQ_sexticThirtySeven` (PROVEN the same day) and
+  `smoothOfRelativeDimension_sexticThirtySeven` — the affine sextic is a smooth
+  integral affine curve over `ℚ`.  These two are exactly the hypotheses of
+  `AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine`, which then
+  MANUFACTURES `X` and `uX`.  No modular input, and no `Proj` written by hand:
+  the compactification theorem is proven general algebraic geometry, and it is
+  the same one `Fermat.exists_x0Compactification` calls.
+* `exists_isX0Compactification_sexticThirtySeven` — that `X` is `X_0(37)`.  The
+  irreducibly modular residue, and now the only one.
+* `card_le_two_compl_sexticThirtySeven` — clause `4`, stripped of every modular
+  hypothesis: the chart misses at most two rational points of `X`.  PROVEN the
+  same day over `exists_compl_pair_sexticThirtySeven`, which is that clause with
+  the rational points removed as well: the complement is covered by two POINTS
+  of the topological space, and the passage from points to rational points is
+  the reusable `card_le_two_of_compl_pair`.
+
+**Why `U` cannot be anything else, which is the reconnaissance's contribution.**
+The natural guess is `U := Y_0(37)` with `uV` an isomorphism, and it is FALSE:
+Magma puts one cusp at the affine point `(1, 1)` and the other at infinity, so
+`Y_0(37)` and the affine chart are incomparable opens and their intersection
+misses three rational points.  See the reconnaissance block above; the whole
+shape of the cut is a consequence of that table.
 
 **The model** is Magma's `SmallModularCurve(37)`, simplified:
 `S : y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4`, the smooth model of which
-is `X_0(37)`.  The four rational points and the action of the three involutions
-on them are recorded in the reconnaissance on `card_y0Le_thirtySeven`.
+is `X_0(37)`, and the reconnaissance above checks that identification at the
+level of the equation (`SimplifiedModel` is `Y = 2y − x³`).  The four rational
+points and the action of the three involutions on them are recorded in the
+reconnaissance on `card_y0Le_thirtySeven`.
 
 **Clause 4 is GEOMETRY, not arithmetic, and this is what keeps the cut
-non-circular.**  Taking `U` to be the affine part, the complement is the fibre
+non-circular.**  With `U` the affine part, the complement is the fibre
 over `x = ∞`, which carries exactly `2` rational points because the leading
 coefficient `1` of the sextic is a square — the same sentence that justified
 the `Bool` summand of the statement below before this cut.  It is NOT
@@ -37072,7 +37559,8 @@ the sextic, so a degenerate choice (`U` empty, `uV` constant) is not available
 while clause 4 must also hold — with `U = ∅` clause 4 would assert
 `#X_0(37)(ℚ) ≤ 2`, which is FALSE, the four points `A, B, C, D` of the
 reconnaissance being distinct.  So the two clauses pull against each other and
-neither can be satisfied cheaply.
+neither can be satisfied cheaply.  The cut above respects this: it does not take
+`U = ∅`, it takes `U` maximal among the opens that admit a `uV` at all.
 
 **The check that would refute this**: a fifth rational point on `S`, or a proof
 that `X_0(37)` is not the smooth model of `S`. -/
@@ -37083,8 +37571,19 @@ theorem exists_affinePlaneOpen_x0ThirtySeven :
       (_huX : IsOpenImmersion uX) (_huV : IsOpenImmersion uV),
       uX ≫ strX = uV ≫ planeCurveStrQ sexticThirtySevenPoly ∧
         ∀ s : Finset (RelPoint strX (𝟙 SpecQ)),
-          (∀ P ∈ s, ¬ Set.range P.1.base ⊆ Set.range uX.base) → s.card ≤ 2 :=
-  sorry
+          (∀ P ∈ s, ¬ Set.range P.1.base ⊆ Set.range uX.base) → s.card ≤ 2 := by
+  haveI := isIntegral_planeCurveSchemeQ_sexticThirtySeven
+  haveI := smoothOfRelativeDimension_sexticThirtySeven
+  obtain ⟨X, strX, uX, h⟩ :=
+    AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine (K := ℚ)
+      (planeCurveStrQ sexticThirtySevenPoly)
+  obtain ⟨Y, strY, jY, ⟨hX⟩⟩ := exists_isX0Compactification_sexticThirtySeven h
+  haveI := h.isOpenImmersion
+  refine ⟨X, Y, strX, strY, jY, hX, planeCurveSchemeQ sexticThirtySevenPoly, uX,
+    𝟙 _, h.isOpenImmersion, inferInstance, ?_,
+    fun s hs => card_le_two_compl_sexticThirtySeven h s hs⟩
+  rw [Category.id_comp]
+  exact h.comm
 
 /-- **`X_0(37)(ℚ)` injects into the points of the genus-`2` model
 `S : y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4`** (PROVEN 2026-07-29 by
