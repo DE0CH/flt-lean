@@ -1152,14 +1152,20 @@ transfers verbatim with `ℚ` replaced by any field.
 
 **And the repair may be to delete the step rather than port it.** The zero section
 was being matched by a range chase, which is what needed the point-determined-by-image
-lemma. Instead: for an abelian scheme presented by its functor of points, TRANSLATION
-by a section is available with no geometry at all — add the pullback of the section to
-the UNIVERSAL relative point `⟨𝟙 A, _⟩ : RelPoint f f`, and the group axioms plus
-`pre_add` alone show it is an isomorphism with inverse the translation by the
-negative. Correcting an arbitrary isomorphism by the translation that undoes
-`u(O₁)` matches the origins BY CONSTRUCTION, so the resulting statement ("every
-isomorphism over the base yields an `IsEllipticIsoOf`") is both stronger than the
-one with a zero-section hypothesis and shorter to prove.
+lemma. There are two ways out, and both were built independently the same day: port
+the lemma (`section_eq_of_range_eq_algClos`, the residue-field argument — a `K`-point
+that is a SECTION has `K → κ(x) → K` equal to the identity, which forces `κ(x) → K`
+to be the inverse of a bijection, hence unique), or **avoid needing it**: for an
+abelian scheme presented by its functor of points, TRANSLATION by a section costs no
+geometry at all — add the pullback of the section to the UNIVERSAL relative point
+`⟨𝟙 A, _⟩ : RelPoint f f`, and the group axioms plus `pre_add` alone show it is an
+isomorphism with inverse the translation by the negative. Correcting an arbitrary
+isomorphism by the translation that undoes `u(O₁)` matches the origins BY
+CONSTRUCTION, and the resulting statement — *every* isomorphism over the base yields
+an `IsEllipticIsoOf`, with no zero-section hypothesis — is both stronger and shorter.
+The ported-lemma route is the one that landed (`flt-lean-182`, release 26); the
+translation route is recorded here because it generalises to any abelian scheme over
+any base and needs no residue fields.
 
 **Same trick, same file, one leaf earlier: a functor-of-points endomorphism IS a
 morphism of schemes.** `IsCMByRamifiedMaximalOrder.phi` is a family of maps on
