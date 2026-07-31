@@ -872,30 +872,34 @@ together but that are separately identifiable here.
   `det(F | Wbar[n]) = q`, after which `F² = t_n·F − q` holds on `Wbar[n]` with
   `t_n = tr(F | Wbar[n]) ∈ ZMod n`.
 
-  **DO NOT REBUILD THIS HALF — IT IS ALREADY PROVEN, BUT DOWNSTREAM (audited
-  2026-07-30).**  `WeilPairing.det_frobeniusTorsionEnd` is indeed only for PRIME
-  `n`, and that is what earlier notes here recorded; but
-  `FreyCurve/MazurTorsion.lean` carries the COMPOSITE-LEVEL version, PROVEN, as
-  `det_frobeniusTorsionEnd_of_coprime`, together with everything it needs —
-  `nonempty_basis_nTorsion`, `pairing_map_eq_det_mul_fin_two`,
+  **DO NOT REBUILD THIS HALF — IT IS ALREADY PROVEN, AND SINCE 2026-07-31 IT IS
+  CITABLE FROM HERE.**  `WeilPairing.det_frobeniusTorsionEnd` is indeed only for
+  PRIME `n`, and that is what earlier notes here recorded; the COMPOSITE-LEVEL
+  version `det_frobeniusTorsionEnd_of_coprime` is PROVEN, together with
+  everything it needs — `nonempty_basis_nTorsion`, `pairing_map_eq_det_mul_fin_two`,
   `det_eq_of_conj_of_basis_fin_two`, `sq_eq_trace_smul_sub_det_smul_fin_two`,
   `isPrimitiveRoot_pairing_of_nondegenerate_basis_fin_two`,
   `exists_weilPairing_mu_of_coprime`, `exists_weilPairing_frobenius_of_coprime` —
   over the SINGLE arithmetic leaf `exists_weilPairing_mu_nondeg_of_coprime` (the
   level-`N` re-run of `WeilPairing.exists_weilPairing_mu`), which is separately
-  owned there.
+  owned.
 
-  The obstruction is purely architectural: `MazurTorsion.lean` `public import`s
-  this module, so none of it can be cited here.  **The repair is a RELOCATION,
-  not a proof** — move that block into a module upstream of this one (its own
-  file, or the tail of `EllipticCurve/WeilPairing.lean`, keeping the namespace so
-  `MazurTorsion.lean`'s existing references still resolve) and this half of the
-  leaf closes with NO new sorry, leaving only the trace integrality below.  It is
-  not done here because that block sits in a 33 000-line file that had five
-  concurrent uncommitted editors when this was written, and a relocation of that
-  size is a merge decision rather than a proof.  Note that a naive local re-cut
-  is strictly worse: re-stating the composite determinant here as a fresh leaf
-  DUPLICATES a statement the tree already proves.
+  **THE RELOCATION HAS BEEN DONE.**  The obstruction was purely architectural,
+  and the block was NOT where the 2026-07-30 audit said: it had already moved
+  from `FreyCurve/MazurTorsion.lean` to `FreyCurve/IsogenySignature.lean`, which
+  also `public import`s this module.  On 2026-07-31 it was moved VERBATIM — no
+  statement and no proof edited, namespace unchanged, so every existing reference
+  still resolves — into `EllipticCurve/WeilPairingComposite.lean`, which this
+  module now `public import`s.  So `det (F | Wbar[N]) = q` at every `N` coprime
+  to `q` may be cited here directly, and this half of the leaf is a matter of
+  assembling it, leaving only the trace integrality below.
+
+  Note that a naive local re-cut remains strictly worse than the relocation:
+  re-stating the composite determinant here as a fresh leaf DUPLICATES a
+  statement the tree already proves.  The same block is what
+  `natCard_ker_degreeFormEnd_abs` below needs, and its docstring records what the
+  magnitude half still owes on top of it — which is more than the audits there
+  suggest, and is pure module theory rather than a citation.
 * *Integrality of the trace.*  The residues `t_n` are compatible (each is the
   reduction of the next, because `Wbar[n] ⊆ Wbar[nm]` and `F` is injective), so
   they assemble to an element of `Ẑ`; the content of this leaf is that that
@@ -2280,13 +2284,70 @@ Two consequences for whoever takes this leaf.
   audit prescribes ("if the sub-leaf is TRUE in `A`, it cannot imply the leaf")
   is therefore PASSED BY DESIGN here: this sub-leaf does not imply the old leaf,
   and is not meant to — the sign comes from the other half.
-* **The obstruction is a RELOCATION, not a proof, in the same way as for
-  `exists_sq_frobeniusPointEnd_prime_to_char`.**  `WeilPairing.det_frobeniusTorsionEnd`
-  is available here only for PRIME level, which decides `ℓ ∤ #ker ψ` for `ℓ ∤ d`
-  but cannot see the `ℓ`-adic valuation.  The COMPOSITE-level determinant
-  `det_frobeniusTorsionEnd_of_coprime` is PROVEN, in `FreyCurve/MazurTorsion.lean`,
-  which `public import`s this module; moving that block upstream serves this leaf
-  and the prime-to-`q` characteristic equation at once.
+* **THE RELOCATION IS DONE — 2026-07-31 — AND THE OBSTRUCTION WAS NOT ONLY A
+  RELOCATION.**  `WeilPairing.det_frobeniusTorsionEnd` is available here only for
+  PRIME level, which decides `ℓ ∤ #ker ψ` for `ℓ ∤ d` but cannot see the `ℓ`-adic
+  valuation.  The COMPOSITE-level determinant `det_frobeniusTorsionEnd_of_coprime`
+  (`det (F | Wbar[N]) = q` for every `N` coprime to `q`) is PROVEN and is now
+  CITABLE FROM HERE: it lived in `FreyCurve/IsogenySignature.lean` — the earlier
+  note saying `FreyCurve/MazurTorsion.lean` was already stale — and was moved
+  VERBATIM into `EllipticCurve/WeilPairingComposite.lean`, upstream of this
+  module, which now `public import`s it.  `nonempty_basis_nTorsion`
+  (`Wbar[N]` free of rank two over `ZMod N` for `N` coprime to `q`) came with it.
+  Its own leaf `exists_weilPairing_mu_nondeg_of_coprime` travelled unchanged and
+  is SEPARATELY OWNED; the frontier did not move (comment-stripped `sorry`
+  tokens: `IsogenySignature.lean` `6 → 5`, `WeilPairingComposite.lean` `0 → 1`).
+
+  **What that leaves is a statement of pure module theory with no elliptic curve
+  in it, and the audits below understate it.**  Both the ROUTE UPDATE and the
+  2026-07-30 audit dispose of the `ℓ`-adic route with the phrase "via Smith
+  normal form on `E[d²]`", as though the count were a corollary of the
+  determinant.  It is not: a determinant over `ZMod N` sees a kernel only through
+  the elementary divisors, and the step that converts `det = d` into a
+  CARDINALITY is a theorem this tree does not have.  Written out, the residue is
+
+      **`natCard_ker_dvd_of_det`** (NOT IN THE TREE, and not in mathlib):
+      let `M` be free of rank two over `ZMod N`, let `f : M →ₗ M` with
+      `LinearMap.det f = (d : ZMod N)`, and let `N = d.natAbs ^ 2` with `d ≠ 0`.
+      Then `Nat.card (LinearMap.ker f) ∣ d.natAbs`.
+
+  and the ARGUMENT is short enough to record here, because it is not the Smith
+  form over `ZMod N` that the audits gesture at — it runs over `ℤ`, where mathlib
+  HAS the adapted basis (`Submodule.smithNormalForm`, a PID):
+
+  1. present `M` as `ℤ² ⧸ Nℤ²` through the basis, and let `L ⊆ ℤ²` be the
+     preimage of `ker f`.  Then `Nℤ² ⊆ L` and `#ker f = [L : Nℤ²]`;
+  2. Smith over `ℤ` gives a basis `u₁, u₂` of `ℤ²` with `L = ⟨α u₁, α' u₂⟩`, and
+     `Nℤ² ⊆ L` forces `α ∣ N` and `α' ∣ N`.  Put `k₁ = N/α`, `k₂ = N/α'`, so
+     `#ker f = k₁ k₂` and both `kᵢ ∣ N`;
+  3. in the basis `ū₁, ū₂` the matrix of `f` has its first column divisible by
+     `k₁` and its second by `k₂` — that is exactly `α ū₁, α' ū₂ ∈ ker f` — so
+     `det f ∈ (k₁k₂)`, i.e. `d ≡ k₁k₂ · s (mod N)` for some `s`;
+  4. hence every common divisor of `k₁k₂` and `N` divides `d`.  In particular
+     `k₁ ∣ d` and `k₂ ∣ d`, so `k₁k₂ ∣ d² = N`; and then `k₁k₂ ∣ N` together with
+     `k₁k₂ ∣ k₁k₂` gives `k₁k₂ ∣ d`.  ∎
+
+  Step 4 is the whole trick and it is why `N = d²` and not `N = |d|`: at
+  `N = |d|` the determinant is `≡ 0` and carries no information at all (`ψ` may
+  kill `E[d]` entirely as far as that level can see).
+
+  **This does NOT contradict the 2026-07-30 audit** — the audit's point (2) is
+  about the SIGN, and this statement is about `|d|`, exactly as its QUALIFICATION
+  says.  What it corrects is the audit's parenthetical pricing of the magnitude
+  half as free once the determinant is available.
+
+  **WHAT AN ASSEMBLY STILL OWES, beyond that lemma**, all of it in this file:
+  the restriction of `hc` from `frobeniusPointEnd` to
+  `WeilPairing.frobeniusTorsionEnd q Wbar N` (`charEquation_frobeniusTorsionEnd`
+  in `IsogenySignature.lean` is the same statement with `HasseBound.frobeniusTrace`
+  in place of `c`, and CANNOT be hoisted — it names this module); `tr (F | Wbar[N]) = c`,
+  from that plus `det F = q` plus Cayley–Hamilton
+  (`sq_eq_trace_smul_sub_det_smul_fin_two`) and invertibility of `F`
+  (`eq_zero_of_smul_eq_zero_of_isUnit_fin_two`, whose unit is `q` mod `N`); the
+  rank-two determinant `det (m • 1 − n • F) = m² − c·m·n + n²q`, the two-parameter
+  companion of `det_one_sub_fin_two`; `ker ψ ⊆ Wbar[|d|] ⊆ Wbar[N]` from
+  `conj_mul_degreeFormEnd`; and that the inclusion `ker (ψ | Wbar[N]) → ker ψ` is
+  a bijection.  All five are bounded and none is a citation.
 
 THE `q ∣ d` AND `q ∣ m` CASES ARE NOT EXCLUDED, deliberately, for the same reason
 the old leaf carried no hypothesis on `m`: at `(m, n) = (0, 1)` the map is `−F`,
@@ -2522,8 +2583,10 @@ A SECOND ROUTE, ANALYSED AND REJECTED 2026-07-30 — the WEIL-PAIRING one, recor
 so that nobody spends a cycle on it after seeing the composite-level determinant
 become available.  Sketch (NOT machine-checked; it is written down only to be
 refuted): let `N := d²` with `q ∤ d ≠ 0`, take `det(F | Wbar[N]) = q` (proven
-downstream as `MazurTorsion.det_frobeniusTorsionEnd_of_coprime`; see the
-relocation note on `exists_sq_frobeniusPointEnd_prime_to_char`) and
+as `det_frobeniusTorsionEnd_of_coprime`, since 2026-07-31 in
+`EllipticCurve/WeilPairingComposite.lean`, which is UPSTREAM of this module and
+is imported by it — the relocation this paragraph and the note on
+`exists_sq_frobeniusPointEnd_prime_to_char` both called for has been done) and
 `tr(F | Wbar[N]) = c` (Cayley–Hamilton plus `hc`, since `q` is a unit mod `N`);
 then `det(ψ | Wbar[N]) = m² − c·m·n + n²q = d`, and `ker ψ ⊆ Wbar[d] ⊆ Wbar[N]`,
 so a Smith normal form `e₁ ∣ e₂ ∣ N` for `ψ` on `Wbar[N]` has
