@@ -76,9 +76,10 @@ of this list counted, was PROVEN concurrently — see its bullet above; and
 `exists_rat_gammaTwo_heegnerPoint`, which it also counted, was replaced by the two
 class-field leaves, which have in turn been replaced by the two `j`-statements below.)
 
-* `Heegner.natDegree_minpoly_weberAlpha_le` — the degree of `α` over `ℚ` is AT MOST `3`
-  (Weber's theory of the ring class field of the order of discriminant `−4p`, whose class
-  number is `3`). This is the ONLY thing about `α` still open, and it is an INEQUALITY: the
+* `Heegner.exists_ratPoly_weberAlpha_pow_four` — WEBER'S DESCENT, `α ∈ ℚ[α⁴]` (recut
+  2026-07-31 out of `natDegree_minpoly_weberAlpha_le`, which is now PROVEN from it plus
+  `γ₂(τ₀) ∈ ℤ`). This is the ONLY thing about `α` still open, and it carries NO class-number
+  hypothesis: the class number enters only in the numerical value `3` of the degree. The
   equality `Heegner.natDegree_minpoly_weberAlpha` (`deg α = 3`) is PROVEN from it (2026-07-30),
   because the `≥ 3` half is not CM content. That half goes:
   `Heegner.intCast_indep_weberAlpha_pow_four` — the `ℤ`-independence of `1, α⁴, α⁸` — is PROVEN
@@ -147,6 +148,20 @@ exactly why none of their lists survives:
 `Heegner.natDegree_minpoly_weberAlpha_le`, `Heegner.exists_modularPolynomial_prod`, and the two
 `j`-statements `Heegner.exists_rat_jInvariant_heegnerPoint` and
 `Heegner.exists_ratCube_jInvariant_heegnerPoint`.
+
+**AND THAT LIST IS ITSELF STALE (2026-07-31).** Three of those four are now PROVEN, each over a
+smaller statement; the frontier of this file is the FIVE leaves
+
+* `Heegner.exists_ratPoly_weberAlpha_pow_four` — `LEAF 1b`, Weber's descent `α ∈ ℚ[α⁴]`,
+  class-number-FREE (it replaced `natDegree_minpoly_weberAlpha_le`, which is now a theorem);
+* `Heegner.exists_intPolynomial_eq_prod` — `LEAF 3a-i`, the construction of `Φ_N`;
+* `Heegner.isUnit_leadingCoeff_diag_of_eq_prod` — `LEAF 3a-ii`, Kronecker (these two replaced
+  `exists_modularPolynomial_prod`, now a theorem);
+* `Heegner.exists_posDefForm_root_of_aeval_minpoly_jInvariant` — `LEAF 4b″`, the conjugates of
+  `j(τ₀)` (it replaced `exists_rat_jInvariant_heegnerPoint`, now a theorem);
+* `Heegner.exists_ratCube_jInvariant_heegnerPoint` — `LEAF 4c′`, unchanged.
+
+Do not trust this paragraph either, for exactly the reason the one below gives.
 
 **THE `η`-CLUSTER IS CLOSED** (release 24). It is worth saying plainly, because the leaf that
 went is the one this file had been calling its hard analytic input for three releases:
@@ -1473,8 +1488,9 @@ open _root_.Polynomial _root_.IntermediateField in
 
 This is the converse of the degree argument that used to prove independence FROM `deg α = 3`,
 and it is what makes the `≥ 3` half of `natDegree_minpoly_weberAlpha` a theorem rather than an
-assumption: independence is now proven outright (`intCast_indep_of_cubic`), so the CM leaf can
-be stated as the `≤ 3` half alone (`natDegree_minpoly_weberAlpha_le`).
+assumption: independence is now proven outright (`intCast_indep_of_cubic`), so the CM leaf could
+be stated as the `≤ 3` half alone (`natDegree_minpoly_weberAlpha_le`) — and has since been cut
+smaller still, to `exists_ratPoly_weberAlpha_pow_four`, which drops the class number too.
 
 If `deg α ≤ 2` then `ℚ(α)` has dimension `≤ 2` over `ℚ`, so `α⁴` — which lies in it — satisfies
 its own MONIC minimal polynomial of degree `≤ 2` (`minpoly.natDegree_le`, transported along
@@ -1709,9 +1725,58 @@ theorem intCast_indep_of_natDegree_minpoly_pow_four {α : ℂ}
     exact _root_.Polynomial.natDegree_le_iff_degree_le.mpr (le_trans hd hdq)
   omega
 
-/-- **LEAF 1b — `α` HAS DEGREE AT MOST `3` OVER `ℚ`**, i.e. `α ∈ ℚ(α⁴)`.
+/-- **LEAF 1b — WEBER'S DESCENT: `α` IS A RATIONAL POLYNOMIAL IN `α⁴`**, i.e. `α ∈ ℚ(α⁴)`.
 
-THIS LEAF REPLACES the former `natDegree_minpoly_weberAlpha` (degree EXACTLY `3`), which is
+**RECUT 2026-07-31 FROM `natDegree_minpoly_weberAlpha_le`, AND `hcl` IS GONE.** The leaf used
+to read `deg α ≤ 3` and carried the class-number hypothesis; it now reads `α ∈ ℚ[α⁴]` and
+carries none, with `natDegree_minpoly_weberAlpha_le` PROVEN from it further down (it has to
+live there: the degree bound needs `deg α⁴ ≤ 3`, which comes from `γ₂(τ₀) ∈ ℤ`, i.e. from
+`exists_int_gammaTwo` and hence from the OTHER CM leaf). The old docstring is kept below the
+new audit because its account of the mathematics is still correct.
+
+WHY `hcl` COMES OFF, and this is a measurement rather than a hope. The old statement conflated
+two things: Weber's descent (`f₂(τ₀)²` generates no more than `f₂(τ₀)⁸` does) and the VALUE of
+the resulting degree (`3`, because `h(−4p) = 3h(−p) = 3`). Only the second needs `h(−p) = 1`.
+Numerically (`PARI/GP`, 400 digits, `α = ζ₈⁻¹f₂(τ₀)²` via `eta(·,1)`, degrees by `algdep` with
+residual `< 10⁻²⁹⁰` and coefficient height `< 10³⁰`):
+
+| `p` | `p mod 8` | `h(−p)` | `deg α` | `deg α⁴` |
+|-----|-----------|---------|---------|----------|
+| `11`, `19`, `43`, `67`, `163` | `3` | `1` | `3` | `3` |
+| `59`, `83`, `107`, `139`      | `3` | `3` | `9` | `9` |
+| `7`                           | `7` | `1` | `1` | `1` |
+| `23`, `31`                    | `7` | `3` | `3` | `3` |
+| `47`                          | `7` | `5` | `5` | `5` |
+
+`deg α = deg α⁴` in every case, at class number `1`, `3` and `5` alike — so `ℚ(α) = ℚ(α⁴)`
+and the leaf holds with no class-number hypothesis whatever. (`p = 131`, `h = 5`, resolves to
+`13 = 13` at this precision rather than the expected `15 = 15`; the two still agree, and the
+shortfall is `algdep` under-resolving a height-`10²²` polynomial, not a discrepancy.)
+
+**`p ≡ 3 mod 4` IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT**, which the old statement's
+`hcl` was masking. Same computation at `p ≡ 1 mod 4`:
+
+| `p`      | `5` | `13` | `17` | `29` | `37` | `41` |
+|----------|-----|------|------|------|------|------|
+| `deg α`  | `4` | `4`  | `8`  | `10` | `4`  | `10` |
+| `deg α⁴` | `2` | `2`  | `4`  | `6`  | `2`  | `8`  |
+
+`deg α > deg α⁴` in all six, so `α ∉ ℚ(α⁴)` and the conclusion fails outright. `hp8` is kept in
+the signature because that is what the consumers carry and because asking a prover for the
+`p ≡ 7 mod 8` case buys the development nothing; the SHARP form is `p % 4 = 3`, verified above
+at `p = 7, 23, 31, 47`. `h3` is likewise kept rather than removed.
+
+Note the contrast with the DEGREE this leaf used to assert: `deg α = 3h(−p)` for `p ≡ 3 mod 8`
+but `deg α = h(−p)` for `p ≡ 7 mod 8` (rows three to five), because `h(−4p) = 2h(−p)(1 − (−p|2)/2)`
+and the Kronecker symbol flips. So the old leaf really did need `p ≡ 3 mod 8` for its `3`,
+and the recut one does not — the descent is insensitive to the factor.
+
+Refute this leaf by exhibiting a `p ≡ 3 mod 8` at which `α` is not a rational polynomial in
+`α⁴`; equivalently, by `deg α > deg α⁴` at such a `p`.
+
+--- the account below is from the previous cut and remains correct about the mathematics ---
+
+THE OLD LEAF REPLACED the former `natDegree_minpoly_weberAlpha` (degree EXACTLY `3`), which is
 now PROVEN further down from this one; and the replacement is strictly weaker in a way that
 removes the class number FORMULA from the development entirely. Read the two directions
 separately, because only one of them was ever deep:
@@ -1757,15 +1822,16 @@ substantive half of Weber's ring-class-field computation. The remaining consumer
 `exists_intCubic_weberAlpha`, is served through `natDegree_minpoly_weberAlpha` (the equality,
 proven below from this leaf), so no consumer or docstring reference had to change.
 
-`hcl`, `hp8` and `h3` are all still load-bearing, by the class-number computation above: drop
-`hcl` and `h(−p)` may exceed `1`, making `h(−4p) = 3h(−p) > 3` and the degree LARGER than `3` —
-which is exactly what this inequality forbids. Note the faithfulness note above is about the
-equality and therefore still covers this weaker statement; and note that the direction that
-survives here is the one `hcl` protects, so weakening did not make the leaf vacuous. -/
-theorem natDegree_minpoly_weberAlpha_le {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
-    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
-      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
-    (minpoly ℚ (weberAlpha p hp.pos)).natDegree ≤ 3 :=
+`hcl`, `hp8` and `h3` were all recorded as load-bearing for the OLD statement, by the
+class-number computation above: drop `hcl` and `h(−p)` may exceed `1`, making
+`h(−4p) = 3h(−p) > 3` and the degree LARGER than `3` — which is exactly what that inequality
+forbade. That remains true of the inequality, and is exactly why `hcl` had to move DOWN to
+`natDegree_minpoly_weberAlpha_le` rather than simply be deleted: the membership statement here
+is class-number-free, the numerical VALUE `3` is not. -/
+theorem exists_ratPoly_weberAlpha_pow_four {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+    (h3 : 3 < p) :
+    ∃ q : Polynomial ℚ,
+      weberAlpha p hp.pos = Polynomial.aeval (weberAlpha p hp.pos ^ 4) q :=
   sorry
 
 /-! `natDegree_minpoly_weberAlpha` — the EQUALITY `deg α = 3` — is no longer a leaf. It is
@@ -4867,7 +4933,8 @@ lemma rat_of_quadratic_jInvariant_heegnerPoint (p : ℕ) (hp : 0 < p)
 /-! #### ROUTE SEARCHED AND CLOSED (2026-07-30): `deg α ≤ 3` does NOT reach `γ₂(τ₀) ∈ ℚ`
 
 Recorded because it is the first thing a successor will try — it would close BOTH leaves below
-at once, out of a leaf this file ALREADY has (`natDegree_minpoly_weberAlpha_le`), and it dies on
+at once, out of a statement this file ALREADY has (`natDegree_minpoly_weberAlpha_le`, a leaf
+when this note was written and now a theorem over `LEAF 1b`), and it dies on
 a fact stated 2000 lines above that nobody would think to connect to it.
 
 THE ROUTE. `γ₂(τ₀) ∈ ℚ(α)`, since `γ₂ = (α¹² − 16)/α⁴` by `weberAlpha_pow_four_cubic`; and
@@ -5573,13 +5640,88 @@ theorem intCast_indep_weberAlpha_pow_four {p : ℕ} (hp : p.Prime) (hp8 : p % 8 
   refine intCast_indep_of_cubic hle hcub u v w ?_
   linear_combination h
 
-/-- **`α` HAS DEGREE EXACTLY `3` — PROVEN (2026-07-30), over the strictly weaker leaf
-`natDegree_minpoly_weberAlpha_le`.**
+open _root_.Polynomial _root_.IntermediateField in
+/-- **`deg α ≤ 3` — NO LONGER A LEAF: PROVEN (2026-07-31)** from Weber's descent
+(`exists_ratPoly_weberAlpha_pow_four`, `LEAF 1b`) and `γ₂(τ₀) ∈ ℤ` (`exists_int_gammaTwo`).
+
+It has to live HERE rather than beside `LEAF 1b` — its old position, ~3800 lines above —
+because it consumes `exists_int_gammaTwo`, which is downstream of the CM leaves. Lean's
+declaration order is the only reason for the move; the statement is unchanged and its single
+consumer, `natDegree_minpoly_weberAlpha` just below, is unaffected.
+
+THE PROOF IS THE TOWER, in two independent halves:
+
+* `deg α⁴ ≤ 3`, with no Weber input at all: `α⁴` is a root of `x³ − γ₂(τ₀)x − 16`
+  (`weberAlpha_pow_four_cubic`, the definition of `γ₂` rearranged) and `γ₂(τ₀)` is the rational
+  integer `g`, so that cubic is a nonzero rational polynomial killing `α⁴`;
+* `ℚ(α) ⊆ ℚ(α⁴)`, with no class-number input at all: that is `LEAF 1b`, which hands back a
+  `q ∈ ℚ[X]` with `α = q(α⁴)`.
+
+Then `finrank ℚ ℚ⟮α⟯ ≤ finrank ℚ ℚ⟮α⁴⟯` and `IntermediateField.adjoin.finrank` turns both
+sides into minimal-polynomial degrees.
+
+**WHERE `hcl` IS SPENT, AND WHY THAT IS THE POINT OF THE RECUT.** All four hypotheses are
+consumed, but `hcl` enters ONLY through `exists_int_gammaTwo` — the same complex multiplication
+the development already buys for `γ₂(τ₀) ∈ ℤ`, and which `isIntegral_weberAlpha`,
+`isIntegral_gammaTwo_heegnerPoint` and `intCast_indep_weberAlpha_pow_four` are each already
+reduced to. So this is the FOURTH statement in the cluster found not to be an independent CM
+input; what is genuinely independent is `LEAF 1b`, and that one is class-number-free.
+
+The numerical value `3` is exactly the class-number-dependent part: `deg α = 3h(−p)` for
+`p ≡ 3 mod 8`, so at `h(−p) = 3` the same `α` has degree `9` and this inequality is false while
+`LEAF 1b` still holds. See `LEAF 1b`'s audit table. -/
+theorem natDegree_minpoly_weberAlpha_le {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    (minpoly ℚ (weberAlpha p hp.pos)).natDegree ≤ 3 := by
+  obtain ⟨g, hg⟩ := exists_int_gammaTwo hp hp8 h3 hcl
+  obtain ⟨q, hq⟩ := exists_ratPoly_weberAlpha_pow_four hp hp8 h3
+  have hcub := weberAlpha_pow_four_cubic p hp.pos
+  rw [← hg] at hcub
+  have hint : IsIntegral ℚ (weberAlpha p hp.pos) :=
+    (isIntegral_weberAlpha hp hp8 h3 hcl).tower_top
+  have hint4 : IsIntegral ℚ (weberAlpha p hp.pos ^ 4) := hint.pow 4
+  -- `α ^ 4` has degree at most `3`, from the cubic
+  have hmon : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ).Monic := by monicity!
+  have hpne : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ) ≠ 0 := hmon.ne_zero
+  have hae : (Polynomial.aeval (weberAlpha p hp.pos ^ 4))
+      (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ) = 0 := by
+    simp only [map_sub, map_mul, map_pow, aeval_X, aeval_C, eq_ratCast]
+    push_cast
+    linear_combination hcub
+  have hdeg4 : (minpoly ℚ (weberAlpha p hp.pos ^ 4)).natDegree ≤ 3 := by
+    have hd := minpoly.degree_le_of_ne_zero ℚ (weberAlpha p hp.pos ^ 4) hpne hae
+    have hdq : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ).degree ≤ 3 := by compute_degree
+    exact Polynomial.natDegree_le_iff_degree_le.mpr (le_trans hd hdq)
+  -- `α ∈ ℚ⟮α ^ 4⟯`, from Weber's descent
+  have hmem : weberAlpha p hp.pos ∈ ℚ⟮weberAlpha p hp.pos ^ 4⟯ := by
+    have h1 : weberAlpha p hp.pos
+        ∈ Algebra.adjoin ℚ ({weberAlpha p hp.pos ^ 4} : Set ℂ) := by
+      rw [Algebra.adjoin_singleton_eq_range_aeval]
+      exact ⟨q, hq.symm⟩
+    have h2 : Algebra.adjoin ℚ ({weberAlpha p hp.pos ^ 4} : Set ℂ)
+        ≤ (ℚ⟮weberAlpha p hp.pos ^ 4⟯).toSubalgebra := Algebra.adjoin_le (by simp)
+    exact h2 h1
+  have hle : ℚ⟮weberAlpha p hp.pos⟯ ≤ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
+    IntermediateField.adjoin_simple_le_iff.mpr hmem
+  haveI : FiniteDimensional ℚ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
+    IntermediateField.adjoin.finiteDimensional hint4
+  have hfr : Module.finrank ℚ ℚ⟮weberAlpha p hp.pos⟯
+      ≤ Module.finrank ℚ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
+    LinearMap.finrank_le_finrank_of_injective
+      (f := (IntermediateField.inclusion hle).toLinearMap)
+      (IntermediateField.inclusion_injective hle)
+  rw [IntermediateField.adjoin.finrank hint, IntermediateField.adjoin.finrank hint4] at hfr
+  omega
+
+/-- **`α` HAS DEGREE EXACTLY `3` — PROVEN (2026-07-30), over the strictly weaker
+`natDegree_minpoly_weberAlpha_le`** (itself no longer a leaf since 2026-07-31).
 
 This was `LEAF 1b`, stated as an equality. Only the `≤ 3` half is complex multiplication: the
 `≥ 3` half is `three_le_natDegree_minpoly_of_intCast_indep` applied to the independence result
-just above, which is itself proven from `γ₂(τ₀) ≤ −16`. So the CM content is now isolated in
-`natDegree_minpoly_weberAlpha_le`, and this equality is bookkeeping.
+just above, which is itself proven from `γ₂(τ₀) ≤ −16`. So the CM content is isolated in
+`natDegree_minpoly_weberAlpha_le` — and, since that was recut, in
+`exists_ratPoly_weberAlpha_pow_four`; this equality is bookkeeping.
 
 Kept as an equality, under its original name, because `exists_intCubic_weberAlpha` and several
 docstrings refer to it and because `exists_intCubic_of_natDegree_minpoly` wants the exact
@@ -5763,8 +5905,9 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
 (`Heegner.exists_heegnerRelation_aux`), as is the passage from "algebraic integer" plus
 "rational" to `γ₂(τ₀) ∈ ℤ` (`Heegner.exists_int_gammaTwo`). What remains open is:
 
-* `Heegner.natDegree_minpoly_weberAlpha_le` — `α` has degree AT MOST `3` over `ℚ`.
-  It REPLACED `Heegner.exists_intCubic_weberAlpha` and
+* `Heegner.exists_ratPoly_weberAlpha_pow_four` — `α` is a rational polynomial in `α⁴`
+  (`LEAF 1b`; it replaced `Heegner.natDegree_minpoly_weberAlpha_le`, now PROVEN from it).
+  That inequality in turn REPLACED `Heegner.exists_intCubic_weberAlpha` and
   `Heegner.intCast_indep_weberAlpha_pow_four`, both then PROVEN from the EQUALITY
   `Heegner.natDegree_minpoly_weberAlpha`. Neither rests on a leaf now beyond this inequality:
   `Heegner.intCast_indep_weberAlpha_pow_four` is PROVEN OUTRIGHT (2026-07-30) from
