@@ -5072,15 +5072,33 @@ isomorphism — with no analysis in it at all. The DENSITY half is now discharge
 in-tree rather than merely "not needing to be rebuilt".
 
 NOTE ALSO, and it is new since the inventory below was written: the UNRAMIFIED
-case of exactly this existence theorem has landed in the tree —
+case of exactly this existence theorem is now UNDER CONSTRUCTION in the tree, at
 `Fermat/FLT/NumberField/UnramifiedClassFieldExistence.lean`
 (`exists_hilbertClassField_artinIso`, `exists_classField_of_subgroup`,
-`exists_hilbertClassField`) and `Fermat/FLT/NumberField/ArtinSymbol.lean`
-(`artinMap`, `artinMap_toPrincipalIdeal`, `exists_classGroupHom_eq_frobAt`).
-Those are the `𝔪 = (1)` shadow of the citation below; a prover of it should
-read them first, since the ramified case is the same argument with the ray class
-group in place of the class group. They are NOT in this module's import cone
-today, and wiring them in is part of the job, not a blocker to be reported.
+`exists_hilbertClassField`, `index_relNormClassSubgroup_le_finrank`) and
+`Fermat/FLT/NumberField/ArtinSymbol.lean` (`frobAt`, `artinMap`,
+`artinMap_toPrincipalIdeal`, `exists_classGroupHom_eq_frobAt`,
+`closure_frobAt_eq_top`).
+
+**Stated precisely, because the difference matters and a summary of it would be
+exactly the error the RECUT above is about.** That development is NOT proven: its
+two core statements are themselves open leaves — `exists_hilbertClassField_artinIso`
+(`UnramifiedClassFieldExistence.lean:226`, `sorry` at `:237`) and
+`artinMap_toPrincipalIdeal` (`ArtinSymbol.lean:591`, `sorry` at `:596`), plus
+`exists_surjective_aut_classGroupQuotient` (`:477`) and `closure_frobAt_eq_top`
+(`ArtinSymbol.lean:707`). What IS proven there and is worth reading before
+attacking the citation below is the surrounding apparatus: `frobAt` and its
+characterisation `isArithFrobAt_frobAt`, `frobAt_eq_frobAt_of_comm` (the Artin
+symbol is well defined on an abelian extension), `frobAt_eq_one_iff_inertiaDeg_eq_one`,
+`artinMap` as a homomorphism out of the class group, and the degree/index
+comparison `index_relNormClassSubgroup_le_finrank`. Refuting check, one command:
+`grep -n "sorry" Fermat/FLT/NumberField/{ArtinSymbol,UnramifiedClassFieldExistence}.lean`.
+
+So the honest reading is: what remains for the citation below is the RAMIFIED
+case of a theorem whose UNRAMIFIED case is being built by another owner, in a
+module that is NOT in this module's import cone today. Wiring it in is part of
+the job. Coordinate rather than duplicate — a second statement of one theorem is
+the most expensive object this fleet produces.
 
 WHY THE CITATION IS NOT VACUOUSLY DISCHARGEABLE. A tempting cheat is to pick an
 `L` and `τ` for which no `w` satisfies the Frobenius hypothesis, making the
@@ -5233,11 +5251,14 @@ declaration now has a body. The same file also carries the counting core of
 Dirichlet for narrow ray classes (`IsNarrowRayEquiv`,
 `exists_finset_forall_isNarrowRayEquiv`, Weber's
 `exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`), which no audit in
-this block had noticed; and the UNRAMIFIED existence theorem has since landed at
-`Fermat/FLT/NumberField/UnramifiedClassFieldExistence.lean` and
-`Fermat/FLT/NumberField/ArtinSymbol.lean`. So "the ray class group, the ray
-class field and the Artin map for one all have to be built" is now: the RAMIFIED
-case of a theorem whose unramified case is in the tree.
+this block had noticed; and the UNRAMIFIED case of the existence theorem is under
+construction at `Fermat/FLT/NumberField/UnramifiedClassFieldExistence.lean` and
+`Fermat/FLT/NumberField/ArtinSymbol.lean` — **under construction, not proven**:
+its two core statements are open leaves there, and the RECUT note above says
+exactly which. So "the ray class group, the ray class field and the Artin map
+for one all have to be built" is now: the RAMIFIED case of a theorem whose
+unramified case has a named owner and a partial development elsewhere in the
+tree.
 
 This tree also carries ray-class-flavoured material that does NOT found this leaf:
 `HardlyRamified/ModThree.lean`'s `charKernelRayClass`, `muFixerRayClass`,
