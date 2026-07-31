@@ -5633,11 +5633,79 @@ non-junk:
 * so the `ord_v (z_k·t_v^k) = −e_v d_k + k` are pairwise DISTINCT mod `e_v` for
   `0 ≤ k < e_v`, and the strict ultrametric equality forbids the sum from vanishing.
 
-What that argument cannot do is run at several places at once: it needs `t_v` and `s_{v,i}`
-to be units at the OTHER poles, which is the approximation theorem
-([Stichtenoth, Thm. 1.3.1]) and is the genuinely missing input.  A prover should expect to
-have to prove approximation from `ord_injective` + `ord_complete` first, or to find a
-route that sums the single-place bounds without it.
+**THAT SINGLE-PLACE CASE IS NOW PROVEN** (2026-07-31), immediately above, as
+`PlaceData.mul_degOf_le_finrank_adjoin_of_ord_neg` — `e_v · deg v ≤ n` at EVERY pole, with no
+approximation theorem, along exactly the route the four bullets predict.  (Its family form,
+`PlaceData.mul_card_le_finrank_adjoin_of_ord_neg`, is the reusable one: given ANY `f` elements
+of `O_v` with `K`-independent residues it produces `e_v·f` elements of `F` independent over
+`K⟮g⟯`.)  So `f_v < ∞` at every pole is now a fact, and the right-hand side of this leaf is
+known to be non-junk there.
+
+**What is left is EXACTLY the passage from one place to the SUM — and it is NOT a routine
+generalisation of the proof above.**  Recorded because the obvious attempt fails, and fails in
+a way that looks like it should work.
+
+*The attempt that does not work.*  Give each pole `v` a uniformiser `t_v` and lifts `s_{v,i}`
+that are UNITS at the other poles, and run the argument above at a pole `v₀` with `e = e_{v₀}`.
+Every coefficient `λ ∈ K[g]` has `ord_{v₀} λ = −e·deg λ ≡ 0 (mod e)`, so **every term coming
+from a pole `v ≠ v₀` also has order ≡ 0 (mod e)** — the same residue class as the `k = 0` group
+from `v₀` itself.  Writing the relation as `(z_0 + Y) + Σ_{k=1}^{e−1} z_k·t_{v₀}^k = 0`, the
+`k ≥ 1` terms do have pairwise distinct orders, all `≢ 0 (mod e)`; but the aggregate `z_0 + Y`
+has no controlled order at all and may tie with their minimum, and if every `λ_{v₀,i,k}` with
+`k ≥ 1` vanishes there is no contradiction at `v₀` to be had.  Units at the other poles are
+NOT enough.
+
+*The proof that does work* (reconstructed and checked 2026-07-31; two ingredients are missing
+from the naive attempt, and neither is obvious).  **Ingredient one: the approximation must
+control the ORDER at the other poles, not merely nonvanishing.**  The family is not
+`s_{v,i}·t_v^k` itself but an approximation to it:
+
+    for each pole `v`, each `i < f_v`, each `k < e_v`, an element `b_{v,i,k} ∈ F` with
+        `ord_v (b_{v,i,k} − s_{v,i}·t_v^k) ≥ e_v`   and   `ord_w (b_{v,i,k}) ≥ e_w`
+    for every other pole `w`
+
+— i.e. the CRT statement `b ≡ s_{v,i} t_v^k mod P_v^{e_v}`, `b ≡ 0 mod P_w^{e_w}`.  That is
+exactly [Stichtenoth, Thm. 1.3.1] in its "prescribe approximations at finitely many places"
+form, and the single clean statement to cut as a leaf is
+
+    ∀ (V : Finset D.Places) (y : D.Places → D.F) (N : D.Places → ℤ),
+        ∃ b : D.F, ∀ v ∈ V, N v ≤ D.ord v (b − y v)
+
+with `t_v` any uniformiser and `s_{v,i}` any lifts of a `K`-basis of `κ(v)`; neither needs any
+property at the other poles, because the approximation supplies it.
+
+**Ingredient two: NORMALISE the coefficients, and then CHOOSE the place.**  Given a relation
+`Σ λ_{v,i,k}·b_{v,i,k} = 0` with `λ ∈ K[X]` not all zero, put `d := max deg λ` over ALL indices
+and multiply through by `g^{−d}`.  By `PlaceData.vanishesAt_aeval_mul_inv_pow` (proven above)
+`λ(g)·g^{−d}` then lies in `O_w` at EVERY pole `w` and is congruent there to the constant
+`λ.coeff d` — so all coefficients become regular at every pole at once, and exactly those of
+degree `d` stay units.  Now take `v₀` to be **the pole of an index attaining the maximum `d`**;
+this is the step the naive attempt has no counterpart for.  Write `e = e_{v₀}`,
+`d_k := max_i deg λ_{v₀,i,k}`, and `Z_k := (Σ_i λ_{v₀,i,k}(g)·s_{v₀,i})·g^{−d}`.  Then:
+
+* every term with `v ≠ v₀` has `ord_{v₀} ≥ 0 + e_{v₀} = e`, by the approximation;
+* every `v₀`-term's error `b − s t^k` contributes `ord_{v₀} ≥ 0 + e = e` likewise;
+* so `ord_{v₀} (Σ_k Z_k·t_{v₀}^k) ≥ e`;
+* but `ord_{v₀} (Z_k·t_{v₀}^k) = e·(d − d_k) + k` by the single-place computation, these are
+  pairwise distinct mod `e` for `0 ≤ k < e`, and the choice of `v₀` gives some `k₀` with
+  `d_{k₀} = d`, hence a term of order `k₀ < e`.  The strict minimum is therefore `< e`
+  (`ord_sum_eq_of_unique_min`), contradicting the previous line.
+
+So the ONLY missing input is the approximation theorem; everything else is already in this
+file.  Do not re-derive the two ingredients — they are the whole content of the step.
+
+**The ring-theoretic alternative, and its one real obstruction** — checked 2026-07-31 against
+this mathlib pin rather than guessed.  BOTH halves of the fundamental identity are
+`Ideal.sum_ramification_inertia` applied to `A = K[g⁻¹]` and its integral closure in `F`:
+the primes above `(g⁻¹)` are the poles of `g`, `ramificationIdx` there is `ord_P (g⁻¹) = e_P`,
+and `inertiaDeg` is `[κ(P) : K]` because `K[g⁻¹]/(g⁻¹) = K`.  Much of the bridge already exists
+in this file (`PlaceFromDedekind.ordAt`, `exists_ordAt_eq`, `finite_ordAt_ne_zero`).  What
+blocks it is the hypothesis `Module.Finite R S`: `IsIntegralClosure.finite` sits under
+`variable [Algebra.IsSeparable K L]` in `Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean`
+(lines 146 and 174 at this pin), and `F/K⟮g⟯` is genuinely inseparable for `g = xᵖ` in
+characteristic `p`, so that instance is not available for an arbitrary transcendental `g`.  The
+finiteness is TRUE here — `K[g⁻¹]` is a finitely generated `K`-algebra — so the route is open
+to anyone willing to supply it by hand; it is not open by citation.
 
 **What would refute it**: nothing about the sextic — this is general function-field theory,
 so `hsep` is deliberately absent.  A counterexample would have to be a `PlaceData` with a
@@ -5674,6 +5742,22 @@ is why it is stated separately from the first inequality rather than bundled wit
 `Module.finrank K (D.residue v)`, which is the junk `0` at a place of infinite residue
 degree; an underestimate makes the FIRST inequality easier and this one harder, so it is
 this leaf that has to know residue degrees are finite.  Step 3 supplies exactly that.
+
+**That finiteness is NOW AVAILABLE without step 3** (2026-07-31):
+`PlaceData.mul_degOf_le_finrank_adjoin_of_ord_neg`, proven above, gives `e_v·f_v ≤ n` at every
+POLE of `g` — and the poles of `g` are the only places this leaf's right-hand side sees.  So
+step 3 no longer has to carry finiteness; its job is reduced to the codimension bound
+`dim_K L(C+v)/L(C) ≤ deg v` proper, which is the one-line "multiply by a power of a uniformiser
+and read the residue" argument.
+
+**And `ℓ(0)` does NOT have to be `1` — do not add `hsep` to this leaf to get it.**  Step 4 as
+written above wants `ℓ(0) = 1`, i.e. that `K` is the full constant field of `F`.  For a
+`PlaceData` that is reachable only through `finrank_residue_pt_eq_one`, which needs `hsep`,
+and this leaf deliberately has none.  It is not needed: `ℓ(C) ≤ deg C + ℓ(0)` with `ℓ(0)` merely
+FINITE still gives `n·(m+1) ≤ m·deg A + deg B + ℓ(0)` for every `m`, hence `n ≤ deg A` in the
+limit.  And `ℓ(0)` is finite because the constant field embeds in `κ(v)` for any place `v`,
+whose degree is finite at a pole of `g` by the theorem just named.  A prover who reaches for
+`hsep` here has taken a wrong turn.
 
 **What would refute it**: a `PlaceData` and a transcendental `g` whose pole divisor has
 degree strictly smaller than `[F : K⟮g⟯]`.  Since `deg` is computed with the junk-tolerant
