@@ -1273,18 +1273,32 @@ the shared prerequisite in the docstring, or the next dispatcher will cost the h
 disjoint and pay for it twice.
 
 **And before writing "this step needs machinery we do not have", GREP THE PIN FOR THE STEP,
-not for the theory.** The section note here had recorded step (iv) — `Γ`-invariant holomorphic
-+ meromorphic at the cusp ⟹ polynomial in `j` — as "real work but bounded", correctly ruling
-out the missing `M_* = ℂ[E₄, E₆]`. Ten minutes in `Mathlib/NumberTheory/ModularForms/` turned
-it into four named lemmas: `levelOne_weight_zero_const` (base case), `ModularForm.toCuspForm`
-(constant term zero ⟹ cusp form), `CuspForm.discriminantEquiv` (divide by `Δ`, and
-`discriminantEquiv_apply` is `rfl`), `EisensteinSeries.E_qExpansion_coeff_zero`. The bespoke
-"notion of pole order" the note said was owed is not owed either — DEFINE pole order `≤ m` as
-"`F·Δ^m` extends to a `ModularForm 𝒮ℒ (12m)`", which is what the induction consumes and
-produces. Also: `UpperHalfPlane.cuspFunction` / `qExpansion` / `analyticAt_cuspFunction_zero` /
-`qExpansion_coeff_unique` are stated for an ARBITRARY `f : ℍ → ℂ` under `Periodic`, `MDiff`,
-`IsBoundedAtImInfty` — no `ModularFormClass` instance — which is what makes them usable on a
-function that is not yet known to be a modular form.
+not for the theory — then WRITE IT, because the estimate is usually pessimistic.** The section
+note here had recorded step (iv) — `Γ`-invariant holomorphic + meromorphic at the cusp ⟹
+polynomial in `j` — as "real work but bounded", correctly ruling out the missing
+`M_* = ℂ[E₄, E₆]`. Ten minutes in `Mathlib/NumberTheory/ModularForms/` turned it into four
+named lemmas, and **the same afternoon it was PROVEN in about eighty lines**
+(`exists_polynomial_eval_jInvariant_of_modularForm`): `levelOne_weight_zero_const` (base case),
+`ModularForm.toCuspForm` (constant term zero ⟹ cusp form), `CuspForm.discriminantEquiv`
+(divide by `Δ`, and `discriminantEquiv_apply` is `rfl`),
+`EisensteinSeries.E_qExpansion_coeff_zero`. The bespoke "notion of pole order" the note said was
+owed is not owed either — DEFINE pole order `≤ m` as "`F·Δ^m` extends to a
+`ModularForm 𝒮ℒ (12m)`", which is exactly what the induction consumes and produces, so
+`Γ`-invariance and holomorphy of `F` become CONSEQUENCES (`Δ` is nowhere zero, weight `12`)
+rather than hypotheses. Also: `UpperHalfPlane.cuspFunction` / `qExpansion` /
+`analyticAt_cuspFunction_zero` / `qExpansion_coeff_unique` are stated for an ARBITRARY
+`f : ℍ → ℂ` under `Periodic`, `MDiff`, `IsBoundedAtImInfty` — no `ModularFormClass` instance —
+which is what makes them usable on a function that is not yet known to be a modular form.
+
+**Two Lean traps from that proof, each worth one build round.** (a) `ModularForm.coe_smul` is
+stated for scalars acting *through* `ℝ` (`[SMul α ℝ] [SMul α ℂ] [IsScalarTower α ℝ ℂ]`), so at
+`α = ℂ` it demands `SMul ℂ ℝ` and fails; the `IsGLPos.coe_smul` variant covers `α = ℂ`, but the
+robust move is to state the equation yourself and let DEFEQ place it — `⇑(c • E)` and `c • ⇑E`
+are `rfl`-equal, so `have h : <the form you want> := <the mathlib lemma>` typechecks where `rw`
+cannot match. (b) A `set`-bound modular form is a local DEFINITION, so `simp` zeta-unfolds it
+and then silently reports your hypotheses about it as "unused simp argument" while the goal
+sits there unchanged. `clear_value` it once the defining facts are extracted, or introduce the
+name with `obtain ⟨c, hc⟩ : ∃ c, … = c := ⟨_, rfl⟩` so it is opaque from the start.
 
 ## RIVAL CUTS ARE OFTEN COMPLEMENTARY — check before choosing
 

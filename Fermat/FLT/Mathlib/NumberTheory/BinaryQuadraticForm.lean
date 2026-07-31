@@ -154,9 +154,13 @@ smaller statement; the frontier of this file is the SIX leaves
 
 * `Heegner.exists_ratPoly_weberAlpha_pow_four` — `LEAF 1b`, Weber's descent `α ∈ ℚ[α⁴]`,
   class-number-FREE (it replaced `natDegree_minpoly_weberAlpha_le`, which is now a theorem);
-* `Heegner.exists_complexPolynomial_eq_prod_of_smul_invariant` — `LEAF 3a-i″`, the coefficients
-  of the product are polynomials in `j` OVER `ℂ`, given `Γ`-invariance: rigidity, i.e. the
-  pole-order induction over `ModularForm.levelOne_weight_zero_const`;
+* `Heegner.exists_modularForm_coeff_prod_of_smul_invariant` — `LEAF 3a-i″`, the ANALYTIC
+  PACKAGING: each coefficient of the product, times a power of `Δ`, is a level-one modular
+  form. The rigidity that used to sit on top of it — a `Γ`-invariant holomorphic function with
+  a pole of order `≤ m` at the cusp is a polynomial in `j` — is now the THEOREM
+  `exists_polynomial_eval_jInvariant_of_modularForm`, proved over
+  `levelOne_weight_zero_const`, `ModularForm.toCuspForm` and `CuspForm.discriminantEquiv`, so
+  what is left here is holomorphy, `hinv` read coefficientwise, and a crude pole-order bound;
 * `Heegner.exists_intPolynomial_map_of_eq_prod` — `LEAF 3a-i‴`, any such polynomial over `ℂ`
   has INTEGER coefficients: the `ℤ[ζ_N]`-plus-Galois-stability argument, with no modular
   content left in it beyond `j`'s own `q`-expansion. These two replaced
@@ -4571,80 +4575,212 @@ theorem prod_triangularReps_jInvariant_smul {N : ℤ} (hN : 0 < N) (γ : SL(2, �
   · intro t ht
     rw [(hspec t ht).2.2 z]
 
-/-- **LEAF 3a-i″ — THE COEFFICIENTS ARE POLYNOMIALS IN `j`, OVER `ℂ`.** One
+section ModularFunctionRigidity
+
+open Complex UpperHalfPlane ModularForm Filter Function
+open scoped Real MatrixGroups Topology Manifold
+
+/-- **EVERY LEVEL-ONE MODULAR FUNCTION HOLOMORPHIC ON `ℍ` WITH A POLE OF ORDER `≤ m` AT THE
+CUSP IS A POLYNOMIAL IN `j`. PROVEN (2026-07-31).**
+
+This is step (iv) of the `Φ_N` construction — the one the section note below called "real work
+but bounded" — and it is a theorem here rather than a leaf. It is stated for an arbitrary
+`F : ℍ → ℂ`, so it is reusable anywhere in this development.
+
+**POLE ORDER `≤ m` IS *DEFINED* BY THE HYPOTHESIS, and that is what makes the induction go.**
+Rather than introduce a bespoke notion of order at the cusp for a function that is not yet
+known to be modular, the hypothesis says exactly `F · Δ^m` extends to a `ModularForm 𝒮ℒ (12m)`.
+That is what the induction consumes AND what it produces, so nothing else is owed. `Γ`-
+invariance and holomorphy of `F` are consequences, not extra hypotheses: `Δ` is nowhere zero
+and has weight `12`, so `F = G/Δ^m` is holomorphic of weight `0`.
+
+THE PROOF, over four mathlib lemmas.
+
+* `m = 0`: `F` IS the modular form, hence constant by
+  `ModularFormClass.levelOne_weight_zero_const` — the same rigidity lemma `eta_weber_sum` uses
+  through `wOctCubeForm`.
+* `m + 1`: let `c := (qExpansion 1 G).coeff 0`. Because `j = E₄³/Δ` BY DEFINITION here and `Δ`
+  is nowhere zero (`ModularForm.discriminant_ne_zero`), `j^{m+1}·Δ^{m+1} = E₄^{3(m+1)}`
+  pointwise — field algebra, no modular input. `E₄^{3(m+1)}` has zeroth `q`-coefficient `1`
+  (`EisensteinSeries.E_qExpansion_coeff_zero` through `ModularForm.qExpansion_pow`), so
+  `G − c·E₄^{3(m+1)}` is a weight-`12(m+1)` form with vanishing constant term.
+  `ModularForm.toCuspForm` — whose hypothesis is literally `(qExpansion 1 f).coeff 0 = 0` —
+  makes it a `CuspForm 𝒮ℒ (12(m+1))`, and `CuspForm.discriminantEquiv` divides it by `Δ`
+  (`discriminantEquiv_apply` is `rfl`), landing in `ModularForm 𝒮ℒ (12m)` whose underlying
+  function is `(F − c·j^{m+1})·Δ^m`. That is the induction hypothesis at `m`, and
+  `P = Q + c·Y^{m+1}`.
+
+It does NOT need the structure theorem `M_* = ℂ[E₄, E₆]`, which really is absent from the pin.
+Two Lean traps, recorded because each cost a build round: `ModularForm.coe_smul` is stated for
+scalars acting through `ℝ`, so at `α = ℂ` it demands `SMul ℂ ℝ` and the usable form is to state
+the equation oneself and let defeq place it (`⇑(c • E)` and `c • ⇑E` are `rfl`-equal); and a
+`set`-bound modular form is a local DEFINITION, so `simp` zeta-unfolds it and silently discards
+hypotheses about it — `clear_value` first, or use `obtain` to get an opaque name. -/
+theorem exists_polynomial_eval_jInvariant_of_modularForm :
+    ∀ (m : ℕ) (F : UpperHalfPlane → ℂ) (G : ModularForm 𝒮ℒ (12 * (m : ℤ))),
+      (∀ z : UpperHalfPlane, F z * ModularForm.discriminant z ^ m = G z) →
+      ∃ P : Polynomial ℂ, ∀ z : UpperHalfPlane, F z = P.eval (jInvariant z) := by
+  intro m
+  induction m with
+  | zero =>
+    intro F G hFG
+    obtain ⟨c, hc⟩ := ModularFormClass.levelOne_weight_zero_const
+      (ModularForm.mcast (show (12 * ((0 : ℕ) : ℤ)) = 0 by simp) G)
+    refine ⟨Polynomial.C c, fun z => ?_⟩
+    have h1 : F z = G z := by simpa using hFG z
+    have h2 : G z = c := congrFun hc z
+    rw [h1, h2, Polynomial.eval_C]
+  | succ m ih =>
+    intro F G hFG
+    have hΔ : ∀ z : UpperHalfPlane, ModularForm.discriminant z ≠ 0 :=
+      fun z => ModularForm.discriminant_ne_zero z
+    set E : ModularForm 𝒮ℒ (12 * ((m + 1 : ℕ) : ℤ)) :=
+      ModularForm.mcast (by push_cast; ring) (ModularForm.E₄.pow (3 * (m + 1))) with hEdef
+    have hEcoe : (E : UpperHalfPlane → ℂ)
+        = (ModularForm.E₄ : UpperHalfPlane → ℂ) ^ (3 * (m + 1)) := by
+      rw [hEdef]
+      exact ModularForm.coe_pow ModularForm.E₄ (3 * (m + 1))
+    have hEval : ∀ z : UpperHalfPlane, E z = ModularForm.E₄ z ^ (3 * (m + 1)) := by
+      intro z
+      simpa using congrFun hEcoe z
+    have hEc : (qExpansion 1 E).coeff 0 = 1 := by
+      have h1 : qExpansion 1 E
+          = (qExpansion 1 (ModularForm.E₄ : UpperHalfPlane → ℂ)) ^ (3 * (m + 1)) := by
+        rw [hEdef, ModularForm.qExpansion_mcast,
+          ModularForm.qExpansion_pow one_pos one_mem_strictPeriods_SL]
+      rw [h1, PowerSeries.coeff_zero_eq_constantCoeff, map_pow,
+        ← PowerSeries.coeff_zero_eq_constantCoeff,
+        EisensteinSeries.E_qExpansion_coeff_zero (k := 4) (by norm_num) ⟨2, rfl⟩, one_pow]
+    clear_value E
+    clear hEdef hEcoe
+    obtain ⟨c, hcdef⟩ : ∃ c : ℂ, (qExpansion 1 (⇑G : UpperHalfPlane → ℂ)).coeff 0 = c := ⟨_, rfl⟩
+    have hG'c : (qExpansion 1 (G - c • E)).coeff 0 = 0 := by
+      have h1 : qExpansion 1 (⇑G - c • ⇑E : UpperHalfPlane → ℂ)
+          = qExpansion 1 (⇑G : UpperHalfPlane → ℂ)
+            - qExpansion 1 (⇑(c • E) : UpperHalfPlane → ℂ) :=
+        ModularForm.qExpansion_sub one_pos one_mem_strictPeriods_SL G (c • E)
+      have h2 : qExpansion 1 (⇑(c • E) : UpperHalfPlane → ℂ)
+          = c • qExpansion 1 (⇑E : UpperHalfPlane → ℂ) :=
+        ModularForm.qExpansion_smul one_pos one_mem_strictPeriods_SL c E
+      rw [h1, h2, map_sub, PowerSeries.coeff_smul, hEc, hcdef, smul_eq_mul, mul_one, sub_self]
+    set G'' : ModularForm 𝒮ℒ (12 * (m : ℤ)) :=
+      ModularForm.mcast (by push_cast; ring)
+        (CuspForm.discriminantEquiv (ModularForm.toCuspForm (G - c • E) hG'c)) with hG''def
+    have key : ∀ z : UpperHalfPlane,
+        (F z - c * jInvariant z ^ (m + 1)) * ModularForm.discriminant z ^ m = G'' z := by
+      intro z
+      have hGz : G z = F z * ModularForm.discriminant z ^ (m + 1) := (hFG z).symm
+      have hjz : jInvariant z ^ (m + 1) * ModularForm.discriminant z ^ (m + 1)
+          = ModularForm.E₄ z ^ (3 * (m + 1)) := by
+        have hj : jInvariant z = ModularForm.E₄ z ^ 3 / ModularForm.discriminant z := rfl
+        rw [hj, div_pow, div_mul_cancel₀ _ (pow_ne_zero _ (hΔ z)), ← pow_mul]
+      have hG''z : G'' z = (G z - c * E z) / ModularForm.discriminant z := by
+        have h1 : G'' z
+            = (CuspForm.discriminantEquiv (ModularForm.toCuspForm (G - c • E) hG'c)) z := by
+          rw [hG''def, ModularForm.coe_mcast]
+        rw [h1, CuspForm.discriminantEquiv_apply, ModularForm.toCuspForm_apply]
+        rfl
+      rw [hG''z, hEval z, hGz, ← hjz, eq_div_iff (hΔ z)]
+      ring
+    obtain ⟨Q, hQ⟩ := ih (fun z => F z - c * jInvariant z ^ (m + 1)) G'' key
+    refine ⟨Q + Polynomial.C c * Polynomial.X ^ (m + 1), fun z => ?_⟩
+    have hz := hQ z
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
+      Polynomial.eval_pow, Polynomial.eval_X]
+    linear_combination hz
+
+/-- **LEAF 3a-i″ — THE ANALYTIC PACKAGING: each coefficient of `∏_t (X − j(t·z))`, times a
+power of `Δ`, IS A MODULAR FORM.**
+
+For every `k` there are an `m` and a `G ∈ M_{12m}(SL₂(ℤ))` with
+`c_k(z)·Δ(z)^m = G(z)` for all `z ∈ ℍ`, where `c_k(z)` is the `k`-th coefficient of the product
+— up to sign, the `k`-th elementary symmetric function of the `ψ(N)` numbers `j((a z + b)/d)`.
+
+**RECUT 2026-07-31 (move 4: prove a bullet, hand it back).** This REPLACES the existence
+statement `∃ Ψ ∈ ℂ[Y][X]` that stood here for a few hours, which is now PROVEN just below from
+this leaf together with `exists_polynomial_eval_jInvariant_of_modularForm` above. One leaf for
+one leaf, the CONSUMER'S statement unchanged, so the faithfulness audit reproduced there
+survives — that is the point of this shape of recut, as against a restatement of the
+conclusion, which would void it.
+
+WHAT IS LEFT, and it is now purely analytic — no polynomials, no `j`-as-a-variable, no
+rigidity:
+
+* HOLOMORPHY of `z ↦ c_k(z)` on `ℍ`: a finite sum of products of `j ∘ triPoint`, so
+  composition and `Δ ≠ 0`;
+* `Γ`-INVARIANCE, which is `hinv` read coefficientwise, one
+  `congrArg (Polynomial.coeff · k)` away — this is where `hinv` is spent, and it is why `hinv`
+  stays on this leaf;
+* the POLE-ORDER BOUND at the cusp, which is the only genuinely new estimate. It may be crude,
+  since only SOME `m` is needed: `Im((a z + b)/d) = a·Im z/d`, so
+  `|j((a z + b)/d)| = O(|q|^{−a/d})` with `a/d ≤ N`, hence `c_k = O(|q|^{−kN})` and
+  `m = ψ(N)·N` serves every `k` at once. `k > ψ(N)` is trivial: `c_k = 0`, take `m = 0`,
+  `G = 0`.
+
+Then `c_k · Δ^m` is holomorphic, `SL₂(ℤ)`-slash-invariant of weight `12m` and bounded at the
+cusp — the `ModularForm` packaging pattern this file already contains twice (`wOctCubeForm`,
+`etaWeightFourForm`). Note that mathlib's `UpperHalfPlane.cuspFunction` / `qExpansion` /
+`analyticAt_cuspFunction_zero` / `qExpansion_coeff_unique` are stated for an ARBITRARY
+`f : ℍ → ℂ` under `Periodic (f ∘ ofComplex) h`, `MDiff f`, `IsBoundedAtImInfty f` — no
+`ModularFormClass` instance required — so they are usable on `c_k` before it is packaged.
+
+FALSITY AUDIT. TRUE: `c_k · Δ^m` is the classical modular form `E₄`-and-`Δ`-expression of the
+`k`-th coefficient of `Φ_N(X, j(z))`; existence of SOME `m` is all that is asked, and the crude
+bound above supplies one. NOT VACUOUS: the `k > ψ(N)` case is satisfiable outright, and at
+`k ≤ ψ(N)` the conclusion is a statement about a concrete function. `hinv` cannot make it false
+(a hypothesis only weakens), and `hN` IS NOT LOAD-BEARING — for `N ≤ 0` the product is `1`, so
+`c_0 = 1` and `c_k = 0` for `k > 0`, and `m = 0` with the constant form works. Refute by
+exhibiting an `N > 0`, a `k`, and a proof that `c_k·Δ^m` fails to be a modular form for every
+`m` — equivalently, that `c_k` has an essential singularity at the cusp.
+
+WHAT THIS HALF SHARES WITH ITS SIBLING `exists_intPolynomial_map_of_eq_prod`, stated so that
+nobody costs them as disjoint: BOTH need the `q`-expansion of `j` at a triangular point,
+`j((a z + b)/d) = ζ_d^{−b} q^{−a/d} + 744 + ⋯`. This half needs its POLE ORDER, the other its
+COEFFICIENT RING. That is the one common prerequisite, and it is the reason the two are natural
+to dispatch together even though neither uses the other's technique. -/
+theorem exists_modularForm_coeff_prod_of_smul_invariant {N : ℤ} (hN : 0 < N)
+    (hinv : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane),
+      ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t)))
+        = ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))))
+    (k : ℕ) :
+    ∃ (m : ℕ) (G : ModularForm 𝒮ℒ (12 * (m : ℤ))),
+      ∀ z : UpperHalfPlane,
+        (∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).coeff k
+          * ModularForm.discriminant z ^ m = G z :=
+  sorry
+
+/-- **THE COEFFICIENTS ARE POLYNOMIALS IN `j`, OVER `ℂ` — PROVEN (2026-07-31)** over
+`exists_modularForm_coeff_prod_of_smul_invariant` (`LEAF 3a-i″`, the analytic packaging) and
+`exists_polynomial_eval_jInvariant_of_modularForm` (the rigidity induction). One
 `Ψ ∈ ℂ[Y][X]` whose specialisation at `Y = j(z)` is the monic product
 `∏_{(a,b,d) ∈ triangularReps N} (X − j((a z + b)/d))`, for every `z ∈ ℍ` simultaneously,
 GIVEN that that product is `Γ`-invariant in `z`.
 
 **SPLIT 2026-07-31 out of `exists_intPolynomial_eq_prod_of_smul_invariant`** (`LEAF 3a-i′`),
-which is now PROVEN from this together with `exists_intPolynomial_map_of_eq_prod` below. The
+which is PROVEN from this together with `exists_intPolynomial_map_of_eq_prod` below. The
 split is the one that leaf's own docstring named as right and deferred "only because it costs
 a `Polynomial.map` composition glue that is worth writing once, carefully"; the glue is that
 `(evalRingHom (j z)).comp (mapRingHom (Int.castRingHom ℂ)) = eval₂RingHom (Int.castRingHom ℂ)
 (j z)`, one `RingHom.ext` over `Polynomial.eval_map`, and it is written out below.
 
-WHAT IS LEFT IN THIS HALF: EXISTENCE, i.e. rigidity. The coefficients of the product are, for
-each fixed `z`, the elementary symmetric functions of the `ψ(N)` numbers `j((a z + b)/d)`.
-They are holomorphic on `ℍ`, `Γ`-invariant by `hinv`, and meromorphic at the cusp, hence
-POLYNOMIALS IN `j`. See the partial refutation in the section note below: this step is NOT the
-missing structure theorem `M_* = ℂ[E₄, E₆]`.
+THE ASSEMBLY here is the other half of the bookkeeping the split cost: the rigidity theorem
+delivers one `P_k : ℂ[Y]` per coefficient, and they have to be packed into a single element of
+`ℂ[Y][X]`. `Ψ := ∑_{k ≤ ψ(N)} C (P_k) X^k` does it, with `Polynomial.natDegree_prod_le` plus
+`natDegree_X_sub_C_le` bounding the product's degree by `#(triangularReps N)` and
+`Polynomial.as_sum_range_C_mul_X_pow'` expanding it against that bound. `Polynomial.map` is
+coefficientwise, so the two sides match term by term.
 
-**THE INDUCTION, WITH EVERY STEP NAMED — checked against the pin 2026-07-31, and it needs FOUR
-mathlib lemmas plus a packaging pattern this file already contains twice.** The section note
-below calls this step "real work but bounded" and points at `Function.Periodic.qParam` /
-`cuspFunction` / `qExpansion`; that is right but understates what is available, so here is the
-route in full. Take POLE ORDER `≤ m` to MEAN "`F · Δ^m` extends to a `ModularForm 𝒮ℒ (12m)`" —
-no bespoke notion is needed, and this is exactly what the induction consumes and produces.
-
-Claim: `F : ℍ → ℂ` holomorphic with `F (γ • z) = F z` and pole order `≤ m` ⟹ `F = P ∘ j` for
-some `P : ℂ[Y]` with `deg P ≤ m`.
-
-* `m = 0`: `F` is itself a `ModularForm 𝒮ℒ 0`, hence CONSTANT by
-  `ModularFormClass.levelOne_weight_zero_const` — the same lemma `eta_weber_sum` uses through
-  `wOctCubeForm`, so the packaging pattern is already here twice (`wOctCubeForm`,
-  `etaWeightFourForm`).
-* `m + 1`: put `G := F · Δ^{m+1} : ModularForm 𝒮ℒ (12(m+1))` and `c := (qExpansion 1 G).coeff 0`.
-  Because `j = E₄³/Δ` BY DEFINITION here and `Δ` is nowhere zero
-  (`ModularForm.discriminant_ne_zero`), `j^{m+1}·Δ^{m+1} = E₄^{3(m+1)}` pointwise — field
-  algebra, no modular input. `E₄^{3(m+1)}` has zeroth `q`-coefficient `1`
-  (`EisensteinSeries.E_qExpansion_coeff_zero`, `ModularForm.qExpansion_of_pow`), so
-  `G − c·E₄^{3(m+1)}` is a weight-`12(m+1)` form with vanishing constant term.
-  `ModularForm.toCuspForm` (whose hypothesis is literally `(qExpansion 1 f).coeff 0 = 0`) makes
-  it a `CuspForm 𝒮ℒ (12(m+1))`, and `CuspForm.discriminantEquiv` divides it by `Δ` — with
-  `discriminantEquiv_apply : (discriminantEquiv f) z = f z / Δ z` true by `rfl` — landing in
-  `ModularForm 𝒮ℒ (12m)` whose underlying function is `(F − c·j^{m+1})·Δ^m`. That is the
-  induction hypothesis at `m`; take `P = Q + c·Y^{m+1}`.
-
-So the four names are `levelOne_weight_zero_const`, `toCuspForm`, `discriminantEquiv`,
-`E_qExpansion_coeff_zero`. Worth knowing separately, because the section note does not say it:
-mathlib's `UpperHalfPlane.cuspFunction` / `qExpansion` / `analyticAt_cuspFunction_zero` /
-`qExpansion_coeff_unique` are stated for an ARBITRARY `f : ℍ → ℂ` under
-`Periodic (f ∘ ofComplex) h`, `MDiff f`, `IsBoundedAtImInfty f` — no `ModularFormClass`
-instance is required — so they apply to the coefficient functions directly.
-
-WHAT THE PROVER ACTUALLY HAS TO SUPPLY, then: the packaging, and the POLE-ORDER BOUND for the
-coefficient functions. The bound may be crude, since only SOME `m` is needed:
-`Im((a z + b)/d) = a·Im z/d`, so `|j((a z + b)/d)| = O(|q|^{−a/d})` with `a/d ≤ N`, hence
-`e_k = O(|q|^{−kN})` and `m = ψ(N)·N` works for every coefficient at once. No sharp bound, and
-no `q`-expansion of the product, is needed on this side — which is what separates it from the
-integrality half, where the expansion's COEFFICIENTS are the whole point.
-
-`hinv` IS SPENT ENTIRELY HERE and is what the sibling half does NOT need — see the paragraph
-"`hinv` DOES NOT CROSS THE SPLIT" on that sibling. Adding it cannot make this statement false
-(the conclusion is a theorem outright, `Ψ` being the classical `Φ_N` pushed into `ℂ[Y][X]`),
-so it is a proof aid rather than a hypothesis the audit has to defend.
-
-WHAT THE TWO HALVES SHARE, stated so that nobody costs them as disjoint: BOTH need the
-`q`-expansion of `j` at a triangular point, `j((a z + b)/d) = ζ_d^{−b} q^{−a/d} + 744 + ⋯`.
-This half needs its POLE ORDER, the other its COEFFICIENT RING. That is the one common
-prerequisite, and it is the reason the two are natural to dispatch together even though
-neither uses the other's technique.
+`hinv` IS SPENT IN THE LEAF ABOVE, not here, and is what the integrality sibling does NOT need
+— see the paragraph "`hinv` DOES NOT CROSS THE SPLIT" there. Adding it cannot make either
+statement false (the conclusion is a theorem outright, `Ψ` being the classical `Φ_N` pushed
+into `ℂ[Y][X]`), so it is a proof aid rather than a hypothesis the audit has to defend.
 
 MACHINE-CHECKED FAITHFULNESS OF THE CONCLUSION: identical to the sibling's, which is quoted
 in full on `exists_intPolynomial_eq_prod_of_smul_invariant` below — the product really is the
-classical `Φ_N(X, j(z))`, checked with `PARI/GP`'s `polmodular` at `N = 2, 3, 5`. Refute this
-half by exhibiting an `N > 0` and a coefficient of the product that is not a polynomial
-function of `j`. -/
+classical `Φ_N(X, j(z))`, checked with `PARI/GP`'s `polmodular` at `N = 2, 3, 5`. -/
 theorem exists_complexPolynomial_eq_prod_of_smul_invariant {N : ℤ} (hN : 0 < N)
     (hinv : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane),
       ∏ t ∈ triangularReps N,
@@ -4655,8 +4791,36 @@ theorem exists_complexPolynomial_eq_prod_of_smul_invariant {N : ℤ} (hN : 0 < N
       ∀ z : UpperHalfPlane,
         Ψ.map (Polynomial.evalRingHom (jInvariant z))
           = ∏ t ∈ triangularReps N,
-              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :=
-  sorry
+              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) := by
+  classical
+  have hP : ∀ k : ℕ, ∃ P : Polynomial ℂ, ∀ z : UpperHalfPlane,
+      (∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).coeff k
+        = P.eval (jInvariant z) := by
+    intro k
+    obtain ⟨m, G, hG⟩ := exists_modularForm_coeff_prod_of_smul_invariant hN hinv k
+    exact exists_polynomial_eval_jInvariant_of_modularForm m _ G hG
+  choose P hPspec using hP
+  refine ⟨∑ k ∈ Finset.range ((triangularReps N).card + 1),
+    Polynomial.C (P k) * Polynomial.X ^ k, fun z => ?_⟩
+  have hdeg : (∏ t ∈ triangularReps N,
+      (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).natDegree
+        < (triangularReps N).card + 1 := by
+    refine Nat.lt_succ_of_le (le_trans (Polynomial.natDegree_prod_le _ _) ?_)
+    have hle : ∀ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))).natDegree ≤ 1 :=
+      fun t _ => Polynomial.natDegree_X_sub_C_le _
+    refine le_trans (Finset.sum_le_sum hle) ?_
+    simp
+  rw [Polynomial.map_sum]
+  conv_rhs => rw [Polynomial.as_sum_range_C_mul_X_pow' _ hdeg]
+  refine Finset.sum_congr rfl (fun k _ => ?_)
+  rw [Polynomial.map_mul, Polynomial.map_C, Polynomial.map_pow, Polynomial.map_X]
+  congr 1
+  rw [hPspec k z]
+  rfl
+
+end ModularFunctionRigidity
 
 /-- **LEAF 3a-i‴ — THOSE POLYNOMIALS HAVE INTEGER COEFFICIENTS.** ANY `Ψ ∈ ℂ[Y][X]` satisfying
 the product formula is the image of a `Φ ∈ ℤ[Y][X]`.
