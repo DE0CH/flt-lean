@@ -205,107 +205,15 @@ open scoped WeierstrassCurve.Affine
 
 namespace Fermat
 
-/-! ### Sections, and the `Γ₁(N)`-level structure -/
+/-! ### Sections, and the `Γ₁(N)`-level structure — RELOCATED
 
-/-- **The relative point cut out by a section `sec : T ⟶ E`.**
-
-A section of `f : E ⟶ T` gives a `T'`-point of `E` over every
-`g : T' ⟶ T`, by precomposition.  Naturality is automatic — the induced
-family is `g ↦ g ≫ sec`, so `RelPoint.pre` of it is again of this shape
-— which is exactly why the `Γ₁`-level structure below needs no
-naturality axiom, whereas `CyclicSubgroupOfOrder` has to state its
-conditions at every base. -/
-def RelPoint.ofSection {E T : Scheme.{u}} {f : E ⟶ T} (sec : T ⟶ E)
-    (hsec : sec ≫ f = 𝟙 T) {T' : Scheme.{u}} (g : T' ⟶ T) : RelPoint f g :=
-  ⟨g ≫ sec, by rw [Category.assoc, hsec, Category.comp_id]⟩
-
-/-- **A point of exact order `N` on an abelian scheme**: a section whose
-value on every geometric fibre has additive order exactly `N`.
-
-This is the Katz–Mazur `Γ₁(N)`-structure at levels invertible on the
-base, which is the only case used here (`N = 25` over `ℚ` and over
-`𝔽_3`).  Katz–Mazur's general definition is an inclusion
-`(ℤ/N)_T ↪ E[N]` of group schemes; over a base where `N` is invertible
-the two agree, and the section form is the one every consumer here
-evaluates.
-
-**Why exactness is stated on GEOMETRIC fibres**, matching
-`CyclicSubgroupOfOrder.geom_cyclic`: the order of a section is not a
-condition that can be tested at a single base, and at a non-reduced base
-"order `N`" is not even the right notion.  Testing on geometric fibres is
-what makes the condition insensitive to the base and is the form the
-descent leaf `nonempty_gamma1Datum_of_ratPoint` naturally produces.
-
-Note that `PointOfExactOrder ab N` refines `CyclicSubgroupOfOrder ab N`:
-the multiples of the section span a cyclic subgroup of order `N`.  That
-comparison — the forgetful map `X_1(N) → X_0(N)` — is not built here
-because nothing below consumes it, and at `N = 25` it is precisely the
-map that loses all the information (`X_0(25)` has genus `0`). -/
-structure PointOfExactOrder {E T : Scheme.{u}} {f : E ⟶ T}
-    (ab : AbelianSchemeStruct f) (N : ℕ) where
-  /-- the section carrying the level structure -/
-  sec : T ⟶ E
-  /-- it really is a section of the structure morphism -/
-  sec_comp : sec ≫ f = 𝟙 T
-  /-- on every geometric fibre the section has additive order exactly `N` -/
-  geom_order : ∀ (K : Type u) [Field K] [IsAlgClosed K]
-      (t : Spec (CommRingCat.of K) ⟶ T),
-      letI := ab.addCommGroup t
-      addOrderOf (RelPoint.ofSection sec sec_comp t) = N
-
-/-! ### The `Γ₁(N)`-moduli problem -/
-
-/-- **A `Γ₁(N)`-structure over a scheme `T`**: an elliptic scheme over
-`T` together with a point of exact order `N`.
-
-Identical to `Gamma0Datum` except in the level structure, and for the
-same reasons: "elliptic scheme" is spelled out as *abelian scheme of
-relative dimension one*, `AbelianSchemeStruct f` supplying properness,
-smoothness, geometrically connected fibres, a zero section and a
-commutative group law on the functor of points.
-
-This is the moduli problem `[Γ₁(N)]` of Katz–Mazur; its coarse space over
-`ℚ` is `Y_1(N)`. -/
-structure Gamma1Datum (N : ℕ) (T : Scheme.{u}) where
-  /-- the total space of the elliptic scheme -/
-  E : Scheme.{u}
-  /-- the structure morphism of the elliptic scheme -/
-  f : E ⟶ T
-  /-- the abelian-scheme structure on `f` -/
-  ab : AbelianSchemeStruct f
-  /-- relative dimension one: the fibres are curves -/
-  relativeDimensionOne : SmoothOfRelativeDimension 1 f
-  /-- the `Γ₁(N)`-level structure -/
-  pt : PointOfExactOrder ab N
-
-/-- **`d'` is a base change of `d` along `h : T' ⟶ T`.**
-
-The `Γ₁` analogue of `IsBaseChangeOf`, and stated the same way rather
-than constructed: a morphism `map` on total spaces making a cartesian
-square, compatible with the group law and with the level structure.
-
-The level-structure clause is `map_sec`, and it is *simpler* than
-`IsBaseChangeOf.liesIn_iff`: a section is transported by a single
-equation between morphisms `T' ⟶ d.E`, where a subgroup scheme needs a
-biconditional at every base.  Taking `h = 𝟙` recovers isomorphism of
-`Γ₁(N)`-data over a fixed base, so a natural transformation out of the
-moduli problem is automatically constant on isomorphism classes. -/
-structure IsBaseChangeOfGamma1 {N : ℕ} {T' T : Scheme.{u}} (h : T' ⟶ T)
-    (d' : Gamma1Datum N T') (d : Gamma1Datum N T) where
-  /-- the morphism on total spaces -/
-  map : d'.E ⟶ d.E
-  /-- the square over `h` is cartesian -/
-  isPullback : IsPullback d'.f map h d.f
-  /-- the zero section is preserved -/
-  map_zero : ∀ {T'' : Scheme.{u}} (g : T'' ⟶ T'),
-    RelPoint.along map isPullback.w (d'.ab.zero g) = d.ab.zero (g ≫ h)
-  /-- the group law is preserved -/
-  map_add : ∀ {T'' : Scheme.{u}} {g : T'' ⟶ T'} (x y : RelPoint d'.f g),
-    RelPoint.along map isPullback.w (d'.ab.add x y)
-      = d.ab.add (RelPoint.along map isPullback.w x)
-          (RelPoint.along map isPullback.w y)
-  /-- the level structure is the pullback of the level structure -/
-  map_sec : d'.pt.sec ≫ map = h ≫ d.pt.sec
+`RelPoint.ofSection`, `PointOfExactOrder`, `Gamma1Datum` and
+`IsBaseChangeOfGamma1` were moved VERBATIM into `Fermat/FLT/ModularCurve/X0.lean`
+on 2026-07-31, at the same root namespace `Fermat`, so every reference in this
+file still resolves through the `public import` at the top.  They sit there
+immediately after `RelPoint.along_val`, beside the `Γ₀` base-change calculus they
+mirror; the reason for the move, and the false-positive cycle report that
+prompted it, are recorded in full on the section header there. -/
 
 /-! ### The coarse moduli space `Y_1(N)` -/
 
@@ -1173,177 +1081,13 @@ theorem exists_gamma1Datum_baseChange {N : ℕ} {T' T : Scheme.{u}} (h : T' ⟶ 
     ∃ d' : Gamma1Datum N T', Nonempty (IsBaseChangeOfGamma1 h d' d) :=
   ⟨Gamma1BaseChange.datumBC h d, ⟨Gamma1BaseChange.isBaseChangeBC h d⟩⟩
 
-namespace IsBaseChangeOfGamma1
+/-! #### `namespace IsBaseChangeOfGamma1` — RELOCATED
 
-variable {N : ℕ}
-
-/-- **A datum is a base change of itself along the identity** (PROVEN).
-
-Consumed by `nonempty_gamma1GITPresentation_of_rigidification` to compute
-the classifying map of the universal family: the trivial cover `𝟙` of
-`Spec A`, rigidified by `𝟙`, is what forces `classify strM dM = π`. -/
-def refl {T : Scheme.{u}} (d : Gamma1Datum N T) : IsBaseChangeOfGamma1 (𝟙 T) d d where
-  map := 𝟙 d.E
-  isPullback := IsPullback.of_id_snd
-  map_zero := by
-    intro T'' g
-    have h0 : d.ab.zero (g ≫ 𝟙 T)
-        = RelPoint.transport (Category.comp_id g).symm (d.ab.zero g) :=
-      (RelPoint.transport_zero d.ab _).symm
-    refine Subtype.ext ?_
-    rw [h0]
-    simp only [RelPoint.along_val, RelPoint.transport_val, Category.comp_id]
-  map_add := by
-    intro T'' g x y
-    have hal : ∀ z : RelPoint d.f g,
-        RelPoint.along (𝟙 d.E) (IsPullback.of_id_snd (f := d.f)).w z
-          = RelPoint.transport (Category.comp_id g).symm z :=
-      fun z => Subtype.ext (by
-        simp only [RelPoint.along_val, RelPoint.transport_val, Category.comp_id])
-    rw [hal, hal, hal, RelPoint.transport_add]
-  map_sec := by rw [Category.comp_id, Category.id_comp]
-
-/-- **Base changes compose** (PROVEN): `d₁` a base change of `d₂` along
-`a` and `d₂` one of `d₃` along `b` make `d₁` one of `d₃` along `a ≫ b`.
-The cartesian square is `IsPullback.paste_vert`; the base-point
-associativity is absorbed by `AbelianSchemeStruct.zero_val_congr` /
-`add_val_congr`, and `map_sec` is three rewrites. -/
-noncomputable def comp {T₁ T₂ T₃ : Scheme.{u}} {a : T₁ ⟶ T₂} {b : T₂ ⟶ T₃}
-    {d₁ : Gamma1Datum N T₁} {d₂ : Gamma1Datum N T₂} {d₃ : Gamma1Datum N T₃}
-    (bc₁ : IsBaseChangeOfGamma1 a d₁ d₂) (bc₂ : IsBaseChangeOfGamma1 b d₂ d₃) :
-    IsBaseChangeOfGamma1 (a ≫ b) d₁ d₃ where
-  map := bc₁.map ≫ bc₂.map
-  isPullback := bc₁.isPullback.paste_vert bc₂.isPullback
-  map_zero := by
-    intro U g
-    refine Subtype.ext ?_
-    have h₁ : (d₁.ab.zero g).1 ≫ bc₁.map = (d₂.ab.zero (g ≫ a)).1 :=
-      congrArg Subtype.val (bc₁.map_zero g)
-    have h₂ : (d₂.ab.zero (g ≫ a)).1 ≫ bc₂.map = (d₃.ab.zero ((g ≫ a) ≫ b)).1 :=
-      congrArg Subtype.val (bc₂.map_zero (g ≫ a))
-    show (d₁.ab.zero g).1 ≫ bc₁.map ≫ bc₂.map = (d₃.ab.zero (g ≫ a ≫ b)).1
-    rw [← Category.assoc, h₁, h₂]
-    exact AbelianSchemeStruct.zero_val_congr d₃.ab (Category.assoc g a b)
-  map_add := by
-    intro U g x y
-    refine Subtype.ext ?_
-    have h₁ : (d₁.ab.add x y).1 ≫ bc₁.map
-        = (d₂.ab.add (RelPoint.along bc₁.map bc₁.isPullback.w x)
-            (RelPoint.along bc₁.map bc₁.isPullback.w y)).1 :=
-      congrArg Subtype.val (bc₁.map_add x y)
-    have h₂ : ∀ z w : RelPoint d₂.f (g ≫ a), (d₂.ab.add z w).1 ≫ bc₂.map
-        = (d₃.ab.add (RelPoint.along bc₂.map bc₂.isPullback.w z)
-            (RelPoint.along bc₂.map bc₂.isPullback.w w)).1 :=
-      fun z w => congrArg Subtype.val (bc₂.map_add z w)
-    show (d₁.ab.add x y).1 ≫ bc₁.map ≫ bc₂.map
-        = (d₃.ab.add (RelPoint.along (bc₁.map ≫ bc₂.map) (bc₁.isPullback.paste_vert
-              bc₂.isPullback).w x)
-            (RelPoint.along (bc₁.map ≫ bc₂.map) (bc₁.isPullback.paste_vert
-              bc₂.isPullback).w y)).1
-    rw [← Category.assoc, h₁, h₂]
-    exact AbelianSchemeStruct.add_val_congr d₃.ab (Category.assoc g a b) _ _ _ _
-      (Category.assoc _ _ _) (Category.assoc _ _ _)
-  map_sec := by
-    show d₁.pt.sec ≫ bc₁.map ≫ bc₂.map = (a ≫ b) ≫ d₃.pt.sec
-    rw [← Category.assoc, bc₁.map_sec, Category.assoc, bc₂.map_sec, ← Category.assoc]
-
-/-- The morphism induced by cancelling a base change: `e.E ⟶ d'.E`, from
-the universal property of `d'.E` as a fibre product. -/
-noncomputable def cancelMap {T'' T' T : Scheme.{u}}
-    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma1Datum N T''}
-    {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
-    (hb : IsBaseChangeOfGamma1 (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOfGamma1 h₂ d' d) :
-    e.E ⟶ d'.E :=
-  hb₂.isPullback.lift (e.f ≫ h₁) hb.map (by rw [Category.assoc]; exact hb.isPullback.w)
-
-@[reassoc] theorem cancelMap_fst {T'' T' T : Scheme.{u}}
-    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma1Datum N T''}
-    {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
-    (hb : IsBaseChangeOfGamma1 (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOfGamma1 h₂ d' d) :
-    hb.cancelMap hb₂ ≫ d'.f = e.f ≫ h₁ :=
-  hb₂.isPullback.lift_fst _ _ _
-
-@[reassoc] theorem cancelMap_snd {T'' T' T : Scheme.{u}}
-    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma1Datum N T''}
-    {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
-    (hb : IsBaseChangeOfGamma1 (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOfGamma1 h₂ d' d) :
-    hb.cancelMap hb₂ ≫ hb₂.map = hb.map :=
-  hb₂.isPullback.lift_snd _ _ _
-
-/-- **Base changes CANCEL** (PROVEN) — the exact converse of
-`IsBaseChangeOfGamma1.comp`, and the `Γ₁` analogue of
-`IsBaseChangeOf.cancel`.
-
-Both `e` and `d'` are pullbacks of `d`, so `e.E` maps to `d'.E` by the
-universal property and the resulting square is cartesian by the converse
-of pullback pasting (`IsPullback.of_bot`).  The remaining fields
-transport because `IsPullback.hom_ext` lets a morphism into `d'.E` be
-checked against `d'.f` and `hb₂.map` separately, and `cancelMap_fst` /
-`cancelMap_snd` say what those two composites are.
-
-Consumed by `exists_descendClassifyGamma1` at `h₁ := g₂`, `h₂ := p`, to
-recognise that a base change of the rigidified cover along `g₁` is *also*
-one along any `g₂` with `g₁ ≫ p = g₂ ≫ p`. -/
-noncomputable def cancel {T'' T' T : Scheme.{u}}
-    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma1Datum N T''}
-    {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
-    (hb : IsBaseChangeOfGamma1 (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOfGamma1 h₂ d' d) :
-    IsBaseChangeOfGamma1 h₁ e d' where
-  map := hb.cancelMap hb₂
-  isPullback := by
-    refine IsPullback.of_bot ?_ (hb.cancelMap_fst hb₂).symm hb₂.isPullback
-    rw [hb.cancelMap_snd hb₂]
-    exact hb.isPullback
-  map_zero g := by
-    refine Subtype.ext (hb₂.isPullback.hom_ext ?_ ?_)
-    · simp only [RelPoint.along]
-      rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, (e.ab.zero g).2,
-        (d'.ab.zero (g ≫ h₁)).2]
-    · have e1 : (e.ab.zero g).1 ≫ hb.map = (d.ab.zero (g ≫ h₁ ≫ h₂)).1 :=
-        congrArg Subtype.val (hb.map_zero g)
-      have e2 : (d'.ab.zero (g ≫ h₁)).1 ≫ hb₂.map = (d.ab.zero ((g ≫ h₁) ≫ h₂)).1 :=
-        congrArg Subtype.val (hb₂.map_zero (g ≫ h₁))
-      simp only [RelPoint.along]
-      rw [Category.assoc, hb.cancelMap_snd hb₂, e1, e2, Category.assoc]
-  map_add := fun {_} {g} x y => by
-    refine Subtype.ext (hb₂.isPullback.hom_ext ?_ ?_)
-    · simp only [RelPoint.along]
-      rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, (e.ab.add x y).2,
-        (d'.ab.add _ _).2]
-    · have e1 : (e.ab.add x y).1 ≫ hb.map
-          = (d.ab.add (RelPoint.along hb.map hb.isPullback.w x)
-              (RelPoint.along hb.map hb.isPullback.w y)).1 :=
-        congrArg Subtype.val (hb.map_add x y)
-      have e2 : ∀ a b : RelPoint d'.f (g ≫ h₁), (d'.ab.add a b).1 ≫ hb₂.map
-          = (d.ab.add (RelPoint.along hb₂.map hb₂.isPullback.w a)
-              (RelPoint.along hb₂.map hb₂.isPullback.w b)).1 :=
-        fun a b => congrArg Subtype.val (hb₂.map_add a b)
-      simp only [RelPoint.along]
-      rw [Category.assoc, hb.cancelMap_snd hb₂, e1, e2]
-      refine d.ab.add_val_congr (Category.assoc g h₁ h₂) _ _ _ _ ?_ ?_ <;>
-        · simp only [RelPoint.along]
-          rw [Category.assoc, hb.cancelMap_snd hb₂]
-  map_sec := by
-    refine hb₂.isPullback.hom_ext ?_ ?_
-    · rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, e.pt.sec_comp,
-        Category.id_comp, Category.assoc, d'.pt.sec_comp, Category.comp_id]
-    · rw [Category.assoc, hb.cancelMap_snd hb₂, hb.map_sec, Category.assoc,
-        Category.assoc, hb₂.map_sec]
-
-/-- **`RelPoint.along` is injective at a cartesian square** (PROVEN 2026-07-30),
-stated on the underlying morphisms so that no base-point transport is involved
-— the `Γ₁` transcription of `X0.lean`'s `IsBaseChangeOf.along_injective`, and
-the only piece of that file's `along` API that
-`nonempty_gamma1RigidifiedModuli_of_iso` below needs.  `alongInv` and
-`alongEquiv` are NOT transcribed: the level-structure half of that transport is
-`exists_abelianFullLevelStructure_baseChange`, which is already PROVEN, so the
-additive equivalence never has to be built here. -/
-lemma along_injective {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma1Datum N T'}
-    {d : Gamma1Datum N T} (bc : IsBaseChangeOfGamma1 h d' d) {U : Scheme.{u}} {g : U ⟶ T'}
-    {a b : RelPoint d'.f g} (hab : a.1 ≫ bc.map = b.1 ≫ bc.map) : a = b :=
-  Subtype.ext (bc.isPullback.hom_ext (by rw [a.2, b.2]) hab)
-
-end IsBaseChangeOfGamma1
+`refl`, `comp`, `cancelMap`, `cancelMap_fst`, `cancelMap_snd`, `cancel` and
+`along_injective` were moved VERBATIM into `Fermat/FLT/ModularCurve/X0.lean` on
+2026-07-31, together with the four structures above, at the same root namespace.
+`exists_descendClassifyGamma1` and `nonempty_gamma1RigidifiedModuli_of_iso` below
+consume `cancel` and `along_injective` unchanged. -/
 
 /-! #### The rigidified moduli scheme, and the two halves of (8.1.1)/(8.1.3)
 
