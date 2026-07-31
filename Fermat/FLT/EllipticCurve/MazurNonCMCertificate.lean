@@ -314,14 +314,13 @@ def elevenAMod : WeierstrassCurve (ZMod 23) := ⟨1, 1, 0, -2, -7⟩
 noncomputable def dPolyElevenA : (ZMod 23)[X] :=
   X^5 + 14*X^4 + 7*X^3 + 9*X^2 + 16*X + 1
 
-/-- The product of the five irreducible factors of `Ψ₁₁ mod 23` of degree `11`. -/
-noncomputable def hPolyElevenA : (ZMod 23)[X] :=
-  X^55 + 11*X^54 + 12*X^53 + 22*X^52 + 10*X^51 + 10*X^50 + 13*X^49 + 20*X^48 + X^47 + 12*X^46 +
-    13*X^45 + 10*X^44 + 11*X^43 + 2*X^42 + 7*X^41 + 9*X^40 + 16*X^39 + 2*X^38 + 5*X^37 + 16*X^36 +
-    5*X^35 + 17*X^34 + 17*X^33 + 16*X^31 + 19*X^30 + 20*X^29 + 19*X^28 + 21*X^27 + 3*X^26 +
-    8*X^25 + X^24 + 6*X^23 + 4*X^22 + 9*X^21 + 4*X^20 + 14*X^19 + 13*X^18 + 22*X^17 + 4*X^16 +
-    10*X^14 + 15*X^13 + 10*X^12 + 19*X^11 + 6*X^10 + 7*X^9 + 16*X^8 + 22*X^7 + 2*X^6 + 21*X^5 +
-    22*X^4 + 6*X^3 + X^2 + 4*X + 19
+-- `hPolyElevenA` USED TO BE DECLARED HERE and was DELETED 2026-07-31 as a duplicate.  It is
+-- declared, character for character, in `MazurNonCMFrobenius.lean` — `gen_modules.py`'s
+-- `write_base` emits all four `hPoly*` certificates there, under this same namespace — and
+-- keeping it here is not a choice: `MazurNonCMFrobenius/ElevenA.lean` imports ONLY
+-- `MazurNonCMFrobenius` and states `factor_hPolyElevenA` about this name, so the definition
+-- has to sit upstream of it, and THIS file imports `ElevenA`.  Two branches of release 28
+-- landed both copies; `has already been declared` is what that costs.
 
 theorem Ψ₂Sq_elevenAMod : elevenAMod.Ψ₂Sq =
     4*X^3 + 5*X^2 + 15*X + 18 := by
@@ -397,7 +396,10 @@ theorem eval_hPolyElevenA_ne_zero (a : ZMod 23) : hPolyElevenA.eval a ≠ 0 := b
   simp only [hPolyElevenA, eval_add, eval_mul, eval_pow, eval_X, eval_ofNat]
   decide
 
-/-- **`H ∣ X ^ (23 ^ 11) - X`** (PROVEN 2026-07-31), i.e. every irreducible factor of `H` has
+/-! ### `H ∣ X ^ (23 ^ 11) - X` on the `j = −121` row — the route note, kept after the
+declaration it documented was deleted as a duplicate (see the end of this block)
+
+Every irreducible factor of `H` has
 degree dividing `11`.  `eval_hPolyElevenA_ne_zero` above is what turns "dividing `11`" into
 "equal to `11`" where the obstruction needs it.
 
@@ -413,11 +415,29 @@ rather than five `10`-entry tables of degree-`10` ones.
 
 The same route closes the `p = 11`, `j = −24729001` row (same `ℓ`, same degrees) and, with one
 extra coprimality at `d = 2`, the two `p = 17` rows.  It does NOT close the `p = 37` rows:
-there `deg H = 666`, `ℓ = 397` and `m = 222`. -/
-theorem dvd_X_pow_card_pow_sub_X_hPolyElevenA :
-    hPolyElevenA ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X := by
-  rw [Nat.card_zmod, hPolyElevenA]
-  exact Fermat.MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly
+there `deg H = 666`, `ℓ = 397` and `m = 222`.
+
+**RIVAL CUT, RESOLVED 2026-07-31.**  Release 28 merged TWO complete and independent proofs of
+this one theorem, under the same name in the same namespace, from two branches that could not
+see each other: this four-line delegation to `MazurNonCMFrobenius.dvd_X_pow_sub_X_hPoly` (one
+blob per row, `F1`..`F5` in that module and in `MazurNonCMFrobeniusB.lean`), and the generated
+factor-by-factor proof that terminates at `MazurNonCMFrobenius/ElevenA.lean`'s theorem of this
+name.  Both are sorry-free, so neither is better mathematics; but a name can only be declared
+once, and `has already been declared` was taking X0.lean and everything downstream out of the
+build.
+
+The generated one is kept, on three grounds that are all facts rather than taste: THIS file
+already `public import`s `ElevenA`/`ElevenB`, so the factored design is the one wired in;
+those modules are emitted by `gen_modules.py` and editing them would break the round-trip its
+docstring claims; and the delegation below is the shorter text to lose.  The declaration is
+therefore deleted here and the docstring kept, because the route note above is about the
+mathematics and survives the choice.
+
+What this leaves for the merge worker, and it is NOT decided here: `dvd_X_pow_sub_X_hPoly` in
+`MazurNonCMFrobenius.lean` (the `F1`..`F5` block) and its twin in `MazurNonCMFrobeniusB.lean`
+now have no consumer, i.e. roughly 4 500 lines of proven, verified, free-floating certificate.
+Deleting an author's landed proof is not a passer-by's call; it is recorded here and in the
+sentinel instead. -/
 
 /-- **Row `p = 11`, `j = −121`: `Ψ₁₁ mod 23` has no monic divisor of degree `10`**
 (PROVEN 2026-07-30 over `dvd_X_pow_card_pow_sub_X_hPolyElevenA`).
@@ -463,15 +483,9 @@ def elevenBMod : WeierstrassCurve (ZMod 23) := ⟨1, 1, 1, -30, -76⟩
 noncomputable def dPolyElevenB : (ZMod 23)[X] :=
   X^5 + 14*X^4 + 17*X^3 + 16*X^2 + 21
 
-/-- The product of the five irreducible factors of degree `11` of `Ψ₁₁ mod 23` for
-`elevenBMod`. -/
-noncomputable def hPolyElevenB : (ZMod 23)[X] :=
-  X^55 + 11*X^54 + 9*X^53 + 20*X^52 + X^51 + 13*X^50 + 2*X^49 + 3*X^48 + 2*X^47 + 8*X^46 + 8*X^45 +
-    4*X^44 + 9*X^42 + 4*X^41 + 17*X^40 + 22*X^39 + 7*X^38 + 11*X^37 + 20*X^36 + 8*X^34 + 17*X^33 +
-    9*X^32 + 16*X^31 + 16*X^30 + 3*X^29 + 18*X^28 + X^27 + 16*X^26 + 4*X^25 + 13*X^24 + 14*X^23 +
-    12*X^22 + 20*X^21 + 10*X^20 + 15*X^19 + 7*X^18 + 16*X^17 + 2*X^16 + 9*X^15 + 20*X^14 + 21*X^13 +
-    5*X^12 + X^11 + 15*X^10 + 7*X^9 + 22*X^8 + 9*X^7 + 18*X^6 + 2*X^5 + 20*X^4 + 22*X^3 + 22*X^2 +
-    6
+-- `hPolyElevenB` USED TO BE DECLARED HERE and was DELETED 2026-07-31 as a duplicate, for the
+-- same reason as `hPolyElevenA` above: it is declared in `MazurNonCMFrobenius.lean`, which
+-- `MazurNonCMFrobenius/ElevenB.lean` needs upstream of itself.
 
 theorem Ψ₂Sq_elevenBMod : elevenBMod.Ψ₂Sq =
     4*X^3 + 5*X^2 + 20*X + 19 := by
@@ -547,15 +561,18 @@ theorem eval_hPolyElevenB_ne_zero (a : ZMod 23) : hPolyElevenB.eval a ≠ 0 := b
   simp only [hPolyElevenB, eval_add, eval_mul, eval_pow, eval_X, eval_ofNat]
   decide
 
-/-- **`H ∣ X ^ (23 ^ 11) - X`** for the `j = −24729001` row (PROVEN 2026-07-31).
+/-! ### `H ∣ X ^ (23 ^ 11) - X` on the `j = −24729001` row — route note, kept after the
+declaration it documented was deleted as a duplicate
 
 The content is `Fermat.MazurNonCMFrobeniusB.dvd_X_pow_sub_X_hPoly`, generated by
 `flt-frobenius-cert.py` into its own module for the same reason as the `A` row: elaboration
-is single-threaded per file, so the two certificates elaborate in parallel. -/
-theorem dvd_X_pow_card_pow_sub_X_hPolyElevenB :
-    hPolyElevenB ∣ X ^ (Nat.card (ZMod 23)) ^ 11 - X := by
-  rw [Nat.card_zmod, hPolyElevenB]
-  exact Fermat.MazurNonCMFrobeniusB.dvd_X_pow_sub_X_hPoly
+is single-threaded per file, so the two certificates elaborate in parallel.
+
+**RIVAL CUT, RESOLVED 2026-07-31** — the same collision as on the `A` row above, resolved the
+same way and for the same reasons: the declaration is deleted here in favour of
+`MazurNonCMFrobenius/ElevenB.lean`'s generated proof of this name, and
+`MazurNonCMFrobeniusB.dvd_X_pow_sub_X_hPoly` is left in the tree without a consumer for the
+merge worker to rule on. -/
 
 /-- **Row `p = 11`, `j = −24729001`: `Ψ₁₁ mod 23` has no monic divisor of degree `10`**
 (PROVEN 2026-07-31).
@@ -589,7 +606,18 @@ end
 -- of the file) unmatched and the whole `p = 17` half declared at ROOT level, where
 -- `ModularCurve/X0.lean`'s four `MazurNonCMCertificate.not_monic_dvd_preΨ_*_mod` citations
 -- cannot see it.  The two `end`s at the bottom are the surviving evidence of what was here.
+--
+-- `open Polynomial` and the two `set_option`s have to be repeated, and that is the half of this
+-- wound that does NOT announce itself: `open` is scoped to the section, so closing the first
+-- section at the `end` above also closed it.  The symptom is `Unknown identifier C_neg` /
+-- `C_add` / `C_mul` on lines that have never changed, which reads as a mathlib rename rather
+-- than as a scope problem.
 @[expose] public section
+
+open Polynomial
+
+set_option maxRecDepth 1000000
+set_option maxHeartbeats 1000000
 
 namespace Fermat.MazurNonCMCertificate
 
