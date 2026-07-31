@@ -79,7 +79,7 @@ def unjustified(s):
 
 
 def idle_guard(s):
-    if s.get("quota_until"):
+    if s.get("quota_block"):
         return (True, "")      # idling on quota is a legitimate wait
     live = [n for n, j in s["jobs"].items() if j["alive"]]
     if not live:
@@ -220,7 +220,7 @@ def spawnable(s, j):
     # The API is refusing work. Spawning now burns an attempt and achieves
     # nothing, so the loop waits instead -- the wait is the correct action,
     # not a degraded one.
-    if s.get("quota_until"):
+    if s.get("quota_block"):
         return False
     # SAFE MODE, enforced at the spawner rather than by row order. SPAWN has
     # to sit ABOVE the SAFE MODE row -- otherwise the row that engages safe
@@ -876,6 +876,100 @@ def inferred_panic(s):
     panic(s, why)
 
 
+# Installed by the runtime: send one probe, and consume a job's refusal
+# evidence. Both are EFFECTS, so they belong to row actions rather than to
+# observation -- the loop learns it is refused by reading state, and decides
+# what to do about it in the table like everything else.
+PROBE = None            # () -> None, sends a probe
+CONSUME_REFUSAL = None  # (name, job) -> None, moves the log aside
+PROBE_EVERY = 300
+
+
+def now(s):
+    return s.get("now") or __import__("time").time()
+
+
+def refused_jobs(s):
+    return {n: j for n, j in s["jobs"].items() if j.get("refused")}
+
+
+def r_refused_guard(s):
+    """The API refused a job. Stop spawning until it serves us again.
+
+    This is the whole of "out of credit" as far as the machine is concerned:
+    an observation about a job, and a transition. It used to be imperative code
+    inside load(), which meant the one condition that halts the entire fleet
+    was the one condition not expressible in the transition table -- invisible
+    to --dry-run, to the medic, and to anyone reading the rows.
+    """
+    if s.get("quota_block"):
+        return (False, "already blocked")
+    hits = refused_jobs(s)
+    if not hits:
+        return (False, "no job reported an API refusal")
+    n = sorted(hits)[0]
+    return (True, "%s was refused: %s" % (n, hits[n]["refused"].strip().splitlines()[0][:70]))
+
+
+def r_refused_action(s):
+    hits = refused_jobs(s)
+    n = sorted(hits)[0]
+    s["quota_block"] = {"since": int(now(s)), "creds": s["probe"]["creds"],
+                        "why": hits[n]["refused"].strip().splitlines()[0][:200]}
+    for m, j in hits.items():
+        # A refusal is not a death: the record goes back to unspawned so it is
+        # retried once the door opens, and its evidence is consumed so the same
+        # line cannot re-arm the block for ever.
+        j["started"], j["alive"], j["refused"] = False, False, ""
+        if CONSUME_REFUSAL:
+            CONSUME_REFUSAL(m, j)
+    note(s, "quota: refused -- spawning halted, %d record(s) returned to the queue"
+            % len(hits))
+    s["email"].append("flt-loop: quota exhausted, idling -- %s" % s["quota_block"]["why"])
+
+
+def r_unblock_guard(s):
+    if not s.get("quota_block"):
+        return (False, "not blocked")
+    if not s["probe"]["served"]:
+        return (False, "no probe has come back served")
+    return (True, "")
+
+
+def r_unblock_action(s):
+    s["quota_block"] = None
+    s["probe"] = dict(s["probe"], served=False, sent_at=0)
+    note(s, "quota: a probe was served -- spawning resumes")
+    s["email"].append("flt-loop: quota available again, resuming")
+
+
+def r_probe_guard(s):
+    """Ask the API whether it is still refusing, rather than wait out a clock.
+
+    The refusal message carries a reset time, but it describes whichever
+    ACCOUNT was live when it was printed, and a rotator swaps credentials
+    underneath us. So the block is lifted on evidence, never on a deadline. A
+    credential change makes the last probe stale immediately, since a new
+    account is the likeliest reason the answer has changed.
+    """
+    b = s.get("quota_block")
+    if not b:
+        return (False, "not blocked")
+    if s["probe"]["served"]:
+        return (False, "a served probe is waiting to be consumed")
+    rotated = b.get("creds") and b["creds"] != s["probe"]["creds"]
+    if not rotated and now(s) - s["probe"]["sent_at"] < PROBE_EVERY:
+        return (False, "probed less than %ds ago" % PROBE_EVERY)
+    return (True, "credential rotated" if rotated else "")
+
+
+def r_probe_action(s):
+    s["probe"] = dict(s["probe"], sent_at=now(s))
+    if PROBE:
+        PROBE()
+    note(s, "quota: probe sent with the credential now on disk")
+
+
 def anomalies(s):
     """Invariants that must hold of the state. Every violation is a bug.
 
@@ -980,6 +1074,9 @@ ROWS = [
     # ORDER. Renumbering would silently repoint those constants at other rows.
     (16, "medic died without a verdict -> escalate + STOP",
      rmedic_dead_guard, rmedic_dead_action),
+    (18, "API refused a job -> halt spawning", r_refused_guard, r_refused_action),
+    (19, "quota blocked ∧ probe served -> resume", r_unblock_guard, r_unblock_action),
+    (20, "quota blocked ∧ probe stale -> send a probe", r_probe_guard, r_probe_action),
     (3, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
     (4, "medic in flight -> SAFE MODE (all rows below suspended)",
      rmedic_wait_guard, rmedic_wait_action),
