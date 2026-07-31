@@ -695,33 +695,17 @@ def creds_stamp():
         return 0
 
 
-def probe_quota():
-    """Ask the API, with the key currently on disk, whether it will serve us.
+def send_probe():
+    """Launch one probe with the credential currently on disk.
 
-    NOT a timer. The refusal message carries a reset time, but that time
-    describes whichever ACCOUNT was live when it was printed, and a rotator
-    swaps ~/.claude/.credentials.json underneath us from a bank of accounts. So
-    the deadline is unreliable in BOTH directions: it can expire while we are
-    still refused, and -- what happened here -- remain in the future long after
-    a rotation has already made us servable. The logs even disagreed with each
-    other, 9:30pm against 9:50pm.
-
-    Everywhere else this loop observes rather than believes: `ancestor` asks
-    git, `alive` asks /proc, `main` asks the repo. This applies the same rule
-    to the one place that was trusting a string.
+    Pure effect: whether to probe, and what a served probe means, are decided
+    by rows 19 and 20. This only does the launching.
     """
     result = STATE / "quota-probe.json"
-    if result.exists():
-        rm(result)
-        rm(STATE / "quota-probe")
-        return True
-    st = STATE / "quota-probe"
-    last = float((rd(st, "") or "0").strip() or 0)
-    if time.time() - last < PROBE_EVERY:
-        return False
-    wr(st, str(time.time()))
-    inner = ('exec -a flt-job-quotaprobe %s --dangerously-skip-permissions -p %s'
-             % (shlex.quote(CLAUDE),
+    rm(result)
+    inner = ('exec -a flt-job-quotaprobe %s --model %s '
+             '--dangerously-skip-permissions -p %s'
+             % (shlex.quote(CLAUDE), shlex.quote(MODEL),
                 shlex.quote('Write the file %s containing exactly {"ok":true} '
                             'and nothing else, then stop.' % result)))
     try:
@@ -732,49 +716,9 @@ def probe_quota():
             timeout=30)
     except Exception:
         pass
-    return False
 
 
-def quota_until():
-    """Are we currently refused? A fact to be re-checked, not a sentence to serve.
-
-    The state file records only THAT we were refused and which credential was
-    live at the time. It clears when a probe succeeds. A rotation (the
-    credentials file changing underneath us) forces the next probe immediately
-    rather than waiting out the interval, because a new account is the most
-    likely reason the answer has changed.
-    """
-    v = rd(STATE / "quota-blocked")
-    if not v:
-        return None
-    try:
-        d = json.loads(v)
-    except json.JSONDecodeError:
-        rm(STATE / "quota-blocked")
-        return None
-    if d.get("creds") and d["creds"] != creds_stamp():
-        rm(STATE / "quota-probe")          # rotated: probe now, do not wait
-    if probe_quota():
-        rm(STATE / "quota-blocked")
-        notify("flt-loop: quota available again, resuming",
-              "A probe with the credential now on disk was served, so the "
-              "block was lifted on evidence. Spawning has resumed.")
-        return None
-    return d.get("since", 1)               # truthy == still blocked
-
-
-def note_quota(reset_epoch, why):
-    wr(STATE / "quota-blocked",
-       json.dumps({"since": int(time.time()), "creds": creds_stamp(),
-                   "log_said": int(reset_epoch)}))
-    notify("flt-loop: quota exhausted, idling",
-          "Spawning is being refused. The loop is IDLING rather than retrying, "
-          "and probes every %ds with whatever credential is on disk -- the "
-          "reset time in the message is only a hint, since the rotator can "
-          "swap accounts underneath us.\n\n%s" % (PROBE_EVERY, why))
-
-
-def refused(name, j):
+def refused_text(name, j):
     """Did this job's log say it was refused? Only asked about dead-looking jobs.
 
     The log is EVIDENCE, and evidence has to be consumed. A job refused an hour
@@ -788,15 +732,23 @@ def refused(name, j):
     (renamed, not deleted) but it is out of the evidence path, and only a
     genuinely new refusal -- written by a fresh spawn attempt -- can block again.
     """
+    t = rd(STATE / "joblogs" / ("%s-%s.log" % (name, j["token"])), "") or ""
+    return t if LIMIT_MARK in t else None
+
+
+def consume_refusal(name, j):
+    """Move the evidence aside once a row has acted on it.
+
+    The log is a historical record: a job refused an hour ago keeps the line
+    forever, and a refusal does not change the token, so the same file is read
+    on every tick. Renaming (not deleting) keeps the history while taking it
+    out of the evidence path, so only a genuinely new refusal can block again.
+    """
     log = STATE / "joblogs" / ("%s-%s.log" % (name, j["token"]))
-    t = rd(log, "") or ""
-    if LIMIT_MARK not in t:
-        return None
     try:
         log.rename(log.with_suffix(".log.refused-%d" % time.time()))
     except OSError:
         rm(log)
-    return t
 
 
 # --------------------------------------------------------------- spawn
@@ -844,6 +796,8 @@ def do_spawn(s, name, j):
 
 
 flt_loop_rows.SPAWN = do_spawn
+flt_loop_rows.PROBE = send_probe
+flt_loop_rows.CONSUME_REFUSAL = consume_refusal
 
 
 # --------------------------------------------------------------- state I/O
@@ -916,14 +870,14 @@ def load():
         # DEAD and re-dispatched. Before believing that, ask its log whether it
         # ever got to run: a refusal is not a death, and treating it as one is
         # what produced the retry storm.
+        # OBSERVED, not acted on. Whether this job was refused by the API is a
+        # fact about it, like `alive` or `sentinel`; arming the block, moving
+        # the log aside and un-spawning the record are DECISIONS, and they
+        # belong to a row. load() writing state was the one piece of quota
+        # handling that sat outside the transition table.
+        j["refused"] = ""
         if j["started"] and not j["alive"] and not j["sentinel"]:
-            txt = refused(n, j)
-            if txt:
-                if not quota_until():
-                    note_quota(parse_reset(txt), "%s (%s) was refused: %s"
-                               % (n, j["kind"], txt.strip().splitlines()[0]))
-                j["started"] = False       # unspawned again, retried after the block
-                j["alive"] = False
+            j["refused"] = refused_text(n, j) or ""
         j.setdefault("retries", 0)
         jobs[n] = j
     wh = worker_hosts()
@@ -1002,7 +956,10 @@ def load():
         "ancestor": anc,
         "healthy": {k: v == "1" for k, v in _pairs("healthy").items()},
         "hosts": refresh_hosts(),
-        "quota_until": quota_until(),
+        # Plain observed state, like batch or inflight. No decision is taken
+        # here: the rows decide, and save() writes back whatever they set.
+        "quota_block": json.loads(rd(STATE / "quota-blocked") or "null"),
+        "probe": {"served": (STATE / "quota-probe.json").exists()},
         "log": [], "git": [], "email": [],
     }
 
@@ -1014,6 +971,12 @@ def save(s):
         "\n=== TASK ===\n".join(s["queue1"]["tasks"])))
     wr(STATE / "queue2", "\n=== TASK ===\n".join(s["queue2"]))
     wr(STATE / "merger-inbox", "".join(m + "\n" for m in s["merger_inbox"]))
+    if s.get("quota_block"):
+        wr(STATE / "quota-blocked", json.dumps(s["quota_block"]))
+    else:
+        rm(STATE / "quota-blocked")
+    if not s.get("probe", {}).get("served"):
+        rm(STATE / "quota-probe.json")
     wr(STATE / "batch", "".join(b + "\n" for b in s["batch"]))
     if s["inflight"] is None:
         rm(STATE / "inflight")
