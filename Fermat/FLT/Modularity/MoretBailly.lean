@@ -41765,6 +41765,429 @@ theorem natCast_eq_zero_of_residueFieldEquiv {D : Type u} [Field D] [NumberField
     exact Ideal.Quotient.eq_zero_iff_mem.mpr hn
   rw [← map_natCast e n, h0, map_zero]
 
+/-- **The kernel of a residual representation is open** (PROVEN): for a
+finite discrete coefficient field `k` and a finite `k`-module `W`, the
+endomorphism algebra `Module.End k W` is discrete in its module
+topology, so the kernel of the continuous `ρbar` is the preimage of an
+open singleton.
+
+This is the side condition of Moret–Bailly's avoidance datum: the
+subgroup handed to
+`exists_totallyReal_point_of_geometricallyIrreducible` must be open (it
+is the group of the splitting field of `ρbar`, a finite extension of
+`ℚ`), and openness — not merely finite index — is what makes it
+correspond to a field at all.
+
+HOISTED 2026-07-31, from below `exists_hilbertBlumenthalPoint_of_five_le`
+to here, unchanged. The second consumer is the OPEN-KERNEL clause of the
+descent cocycle cut just below, which sits some 8000 lines upstream of
+where this used to be declared; the proof is mathlib-only, so the move
+costs nothing and avoids a near-duplicate. Its original consumer is
+untouched — the name did not change. -/
+theorem isOpen_ker_of_finite_discrete
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    (ρbar : GaloisRep ℚ k W) :
+    IsOpen ((ρbar.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := by
+  letI : TopologicalSpace (Module.End k W) := moduleTopology k (Module.End k W)
+  haveI : DiscreteTopology (Module.End k W) :=
+    discreteTopology_moduleTopology _ _
+  have hcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρbar g :=
+    ContinuousMonoidHom.continuous_toFun ρbar
+  have hset : ((ρbar.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) =
+      (fun g : Field.absoluteGaloisGroup ℚ => ρbar g) ⁻¹' {1} := rfl
+  rw [hset]
+  exact hcont.isOpen_preimage _ (isOpen_discrete _)
+
+/-- **The kernel of a Galois representation is normal** (PROVEN): the
+codomain `Module.End k W` is only a MONOID, so mathlib's
+`MonoidHom.normal_ker` — stated for `MonoidHom.ker` — does not fire
+through `ContinuousMonoidHom.ker`; the two-line proof is written out. -/
+theorem normal_galoisRepKer {k : Type u} [Field k] [TopologicalSpace k]
+    {W : Type v} [AddCommGroup W] [Module k W] (ρ : GaloisRep ℚ k W) :
+    (ρ.ker : Subgroup (Field.absoluteGaloisGroup ℚ)).Normal := by
+  constructor
+  intro n hn g
+  have hn' : ρ n = 1 := hn
+  show ρ (g * n * g⁻¹) = 1
+  rw [map_mul, map_mul, hn', mul_one, ← map_mul, mul_inv_cancel, map_one]
+
+/-! #### THE LEVEL-TWISTING COCYCLE (2026-07-31)
+
+Leaf A2a1's INTENDED PROOF — see its docstring — builds the moduli space for
+ONE convenient level module `(ρ₁, Λ)` and then twists it along
+`σ ↦ ρ₀(σ) ρ₁(σ)⁻¹` to reach the PRESCRIBED `(ρ₀, Λ)`. Everything about that
+cochain that does not mention a scheme is GROUP THEORY, it is proven in this
+subsection, and the cut below hands it to the geometric prover already done.
+
+Three facts, and the third is the one the `Γ`-ACTION AUDIT calls the condition
+for the construction to make sense:
+
+* it is a nonabelian 1-cocycle for the `ρ₁`-conjugation action,
+  `g(στ) = g(σ) · ρ₁(σ) g(τ) ρ₁(σ)⁻¹`, and its values are invertible
+  (`g'(σ) = ρ₁(σ) ρ₀(σ)⁻¹` is the two-sided inverse);
+* it is trivial on `ker ρ₀ ⊓ ker ρ₁`, which is OPEN because `k` is finite and
+  discrete (`isOpen_ker_of_finite_discrete`) and normal
+  (`normal_galoisRepKer`) — that is the open-kernel clause of the conclusion;
+* **it preserves `Λ` EXACTLY**, not merely up to `galRoot`. The docstring of
+  leaf A2a1 justifies this by "`hstd` and the standard module both have
+  `det = χ̄_ℓ`"; the proof below is shorter and does not go through the
+  determinant at all. Write `v' = ρ₁(σ)⁻¹ v`. Then
+  `Λ(g σ v, g σ w) = Λ(ρ₀ σ v', ρ₀ σ w') = galRoot σ (Λ(v', w'))` by
+  `IsStandardLevelModule`'s `galRoot`-clause for `ρ₀`, and
+  `Λ(v, w) = Λ(ρ₁ σ v', ρ₁ σ w') = galRoot σ (Λ(v', w'))` by the SAME clause
+  for `ρ₁`. The two right-hand sides are equal on the nose.
+
+  Note what this needs: the two level modules must carry the **same** `Λ`.
+  That is why the cut below asks its geometric leaf for a `ρ₁` standard for
+  the GIVEN `Λ`, rather than for the canonical `stdRep`/`stdPairing` pair of
+  `exists_standardLevelModule` — whose pairing is `φ ∘ det₂` for an
+  arbitrary additive character `φ`, and which therefore need not be `Λ`. A
+  cut that fixed `ρ₁ := stdRep` would owe a comparison of two nondegenerate
+  alternating `μ_ℓ`-valued forms on `k²`, and biadditive forms `k × k → μ_ℓ`
+  form an `r²`-dimensional family against the `r`-dimensional family of the
+  `φ ∘ det₂`, so that comparison is NOT free. Quantifying over `ρ₁` costs
+  nothing and removes it.
+-/
+
+section LevelTwist
+
+variable {k : Type u} [Field k] [TopologicalSpace k]
+
+/-- The **level-twisting cochain** `σ ↦ ρ₀(σ) ρ₁(σ)⁻¹`, valued in
+`Module.End k (k²)`. Inverses are taken in the group `Γ_ℚ` rather than in the
+endomorphism monoid: `ρ σ⁻¹` is a two-sided inverse of `ρ σ` because `ρ` is a
+monoid homomorphism out of a group. -/
+noncomputable def levelTwistCochain (ρ₀ ρ₁ : GaloisRep ℚ k (Fin 2 → k))
+    (σ : Field.absoluteGaloisGroup ℚ) : Module.End k (Fin 2 → k) :=
+  ρ₀ σ * ρ₁ σ⁻¹
+
+/-- **The group-theoretic half of the twisting datum**, i.e. everything about
+the cochain `g = ρ₀ ρ₁⁻¹` that can be said without mentioning a scheme.
+
+This is what the descent leaf's geometric prover is HANDED rather than asked
+for: `isLevelTwistCocycle_levelTwistCochain` below discharges it outright for
+`levelTwistCochain`, and the assembly of leaf A2a1 passes it in. -/
+structure IsLevelTwistCocycle {ℓ : ℕ} (ρ₀ ρ₁ : GaloisRep ℚ k (Fin 2 → k))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F))
+    (g : Field.absoluteGaloisGroup ℚ → Module.End k (Fin 2 → k)) : Prop where
+  /-- normalisation at the identity -/
+  map_one : g 1 = 1
+  /-- `g` carries `ρ₁` to `ρ₀`: this is what "twisting along `ρ₀ ρ₁⁻¹`" means -/
+  mul_rep : ∀ σ, g σ * ρ₁ σ = ρ₀ σ
+  /-- the nonabelian 1-cocycle identity for the `ρ₁`-conjugation action -/
+  cocycle : ∀ σ τ, g (σ * τ) = g σ * (ρ₁ σ * g τ * ρ₁ σ⁻¹)
+  /-- every value is invertible, so `g` lands in `Aut` and not merely in `End` -/
+  exists_inv : ∀ σ, ∃ h, g σ * h = 1 ∧ h * g σ = 1
+  /-- every value preserves the level pairing EXACTLY — the condition that puts
+  the cochain in the pairing-preserving subgroup -/
+  pairing : ∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+      (σ : Field.absoluteGaloisGroup F) (v w : Fin 2 → k),
+      Λ F (g (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
+          (g (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w) = Λ F v w
+
+variable (ρ₀ ρ₁ : GaloisRep ℚ k (Fin 2 → k))
+
+/-- `ρ σ⁻¹` is a left inverse of `ρ σ` (PROVEN). -/
+theorem galoisRep_inv_mul (ρ : GaloisRep ℚ k (Fin 2 → k))
+    (σ : Field.absoluteGaloisGroup ℚ) : ρ σ⁻¹ * ρ σ = 1 := by
+  rw [← map_mul, inv_mul_cancel, map_one]
+
+/-- `ρ σ⁻¹` is a right inverse of `ρ σ` (PROVEN). -/
+theorem galoisRep_mul_inv (ρ : GaloisRep ℚ k (Fin 2 → k))
+    (σ : Field.absoluteGaloisGroup ℚ) : ρ σ * ρ σ⁻¹ = 1 := by
+  rw [← map_mul, mul_inv_cancel, map_one]
+
+/-- The pointwise form of `galoisRep_mul_inv` (PROVEN). -/
+theorem galoisRep_apply_inv_apply (ρ : GaloisRep ℚ k (Fin 2 → k))
+    (σ : Field.absoluteGaloisGroup ℚ) (v : Fin 2 → k) :
+    ρ σ (ρ σ⁻¹ v) = v := by
+  simpa using congrArg (fun f : Module.End k (Fin 2 → k) => f v) (galoisRep_mul_inv ρ σ)
+
+/-- The cochain, applied to a vector (PROVEN, `rfl`). -/
+theorem levelTwistCochain_apply (σ : Field.absoluteGaloisGroup ℚ) (v : Fin 2 → k) :
+    levelTwistCochain ρ₀ ρ₁ σ v = ρ₀ σ (ρ₁ σ⁻¹ v) := rfl
+
+/-- The cochain is normalised at `1` (PROVEN). -/
+theorem levelTwistCochain_one : levelTwistCochain ρ₀ ρ₁ 1 = 1 := by
+  simp [levelTwistCochain]
+
+/-- The cochain carries `ρ₁` to `ρ₀` (PROVEN). -/
+theorem levelTwistCochain_mul_rep (σ : Field.absoluteGaloisGroup ℚ) :
+    levelTwistCochain ρ₀ ρ₁ σ * ρ₁ σ = ρ₀ σ := by
+  rw [levelTwistCochain, mul_assoc, galoisRep_inv_mul, mul_one]
+
+/-- The cochain for the swapped pair is a two-sided inverse (PROVEN). -/
+theorem levelTwistCochain_mul_swap (σ : Field.absoluteGaloisGroup ℚ) :
+    levelTwistCochain ρ₀ ρ₁ σ * levelTwistCochain ρ₁ ρ₀ σ = 1 := by
+  rw [levelTwistCochain, levelTwistCochain, mul_assoc, ← mul_assoc (ρ₁ σ⁻¹),
+    galoisRep_inv_mul, one_mul, galoisRep_mul_inv]
+
+/-- **The nonabelian 1-cocycle identity** (PROVEN). -/
+theorem levelTwistCochain_cocycle (σ τ : Field.absoluteGaloisGroup ℚ) :
+    levelTwistCochain ρ₀ ρ₁ (σ * τ) =
+      levelTwistCochain ρ₀ ρ₁ σ * (ρ₁ σ * levelTwistCochain ρ₀ ρ₁ τ * ρ₁ σ⁻¹) := by
+  simp only [levelTwistCochain, map_mul, mul_inv_rev, mul_assoc]
+  rw [← mul_assoc (ρ₁ σ⁻¹) (ρ₁ σ), galoisRep_inv_mul, one_mul]
+
+/-- **The cochain preserves the level pairing exactly** (PROVEN) — the
+`galRoot` twists on the two sides cancel. See the subsection docstring for
+why this needs the two level modules to carry the SAME `Λ`. -/
+theorem levelTwistCochain_pairing {ℓ : ℕ}
+    {Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F)}
+    (h₀ : IsStandardLevelModule ℓ ρ₀ Λ) (h₁ : IsStandardLevelModule ℓ ρ₁ Λ)
+    (F : Type u) (hF : Field F) (hA : Algebra ℚ F)
+    (σ : Field.absoluteGaloisGroup F) (v w : Fin 2 → k) :
+    Λ F (levelTwistCochain ρ₀ ρ₁ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
+        (levelTwistCochain ρ₀ ρ₁ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w)
+      = Λ F v w := by
+  set m := Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ with hm
+  have hv : ρ₁ m (ρ₁ m⁻¹ v) = v := galoisRep_apply_inv_apply ρ₁ m v
+  have hw : ρ₁ m (ρ₁ m⁻¹ w) = w := galoisRep_apply_inv_apply ρ₁ m w
+  calc Λ F (levelTwistCochain ρ₀ ρ₁ m v) (levelTwistCochain ρ₀ ρ₁ m w)
+      = Λ F (ρ₀ m (ρ₁ m⁻¹ v)) (ρ₀ m (ρ₁ m⁻¹ w)) := rfl
+    _ = Fermat.galRoot σ (Λ F (ρ₁ m⁻¹ v) (ρ₁ m⁻¹ w)) := h₀.2.2.2.2 F hF hA σ _ _
+    _ = Λ F (ρ₁ m (ρ₁ m⁻¹ v)) (ρ₁ m (ρ₁ m⁻¹ w)) := (h₁.2.2.2.2 F hF hA σ _ _).symm
+    _ = Λ F v w := by rw [hv, hw]
+
+/-- **The twisting cochain of two level modules for the same `Λ` is a
+pairing-preserving 1-cocycle** (PROVEN): the assembly of the five facts
+above. -/
+theorem isLevelTwistCocycle_levelTwistCochain {ℓ : ℕ}
+    {Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F)}
+    (h₀ : IsStandardLevelModule ℓ ρ₀ Λ) (h₁ : IsStandardLevelModule ℓ ρ₁ Λ) :
+    IsLevelTwistCocycle ρ₀ ρ₁ Λ (levelTwistCochain ρ₀ ρ₁) where
+  map_one := levelTwistCochain_one ρ₀ ρ₁
+  mul_rep := levelTwistCochain_mul_rep ρ₀ ρ₁
+  cocycle := levelTwistCochain_cocycle ρ₀ ρ₁
+  exists_inv := fun σ =>
+    ⟨levelTwistCochain ρ₁ ρ₀ σ, levelTwistCochain_mul_swap ρ₀ ρ₁ σ,
+      levelTwistCochain_mul_swap ρ₁ ρ₀ σ⟩
+  pairing := levelTwistCochain_pairing ρ₀ ρ₁ h₀ h₁
+
+/-- **The cochain is trivial on the common kernel** (PROVEN). -/
+theorem levelTwistCochain_eq_one_of_mem_ker {σ : Field.absoluteGaloisGroup ℚ}
+    (h₀ : σ ∈ (ρ₀.ker : Subgroup (Field.absoluteGaloisGroup ℚ)))
+    (h₁ : σ ∈ (ρ₁.ker : Subgroup (Field.absoluteGaloisGroup ℚ))) :
+    levelTwistCochain ρ₀ ρ₁ σ = 1 := by
+  have e₀ : ρ₀ σ = 1 := h₀
+  have e₁ : ρ₁ σ⁻¹ = 1 := (ρ₁.ker.inv_mem h₁ :)
+  rw [levelTwistCochain, e₀, e₁, one_mul]
+
+end LevelTwist
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The conclusion of leaf A2a1, as a predicate in the level modules.**
+
+Verbatim the existential of
+`exists_splitHilbertBlumenthalCocycle_of_standardLevelModule` below, with the
+two level modules `(ρ₀, Λ)`, `(ρ₀p, Λp)` turned into parameters. It exists so
+that the two halves of the 2026-07-31 cut and their assembly can each name it
+once instead of repeating thirty-five lines of conclusion three times; NOTHING
+about the statement changed, and the leaf below still states its own
+conclusion in full rather than through this definition, so no consumer of the
+leaf sees a new name. -/
+def HasSplitHilbertBlumenthalCocycleModel
+    (ℓ p : ℕ) (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
+    (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (𝔞 : Ideal (NumberField.RingOfIntegers D))
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {kp : Type u} [Field kp] [TopologicalSpace kp]
+    (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F))
+    (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F)) : Prop :=
+  ∃ (X₁ : Scheme.{u}) (fX₁ : X₁ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (c : Field.absoluteGaloisGroup ℚ →
+      (Limits.pullback fX₁ (specRatMap (AlgebraicClosure (ULift.{u} ℚ))) ⟶
+        Limits.pullback fX₁ (specRatMap (AlgebraicClosure (ULift.{u} ℚ))))),
+    AlgebraicGeometry.IsSeparated fX₁ ∧
+    AlgebraicGeometry.LocallyOfFiniteType fX₁ ∧ AlgebraicGeometry.QuasiCompact fX₁ ∧
+    AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₁ ∧
+    AlgebraicGeometry.GeometricallyConnected fX₁ ∧
+    (∀ s : Set X₁, s.Finite → ∃ U : X₁.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U) ∧
+    IsQGaloisCocycle ratGaloisBaseAction fX₁ c ∧
+    (∃ N : Subgroup (Field.absoluteGaloisGroup ℚ), N.Normal ∧
+      IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)) ∧ ∀ σ ∈ N, c σ = 𝟙 _) ∧
+    (∀ (X₀ : Scheme.{u}) (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))),
+      IsGaloisTwistForm ratGaloisBaseAction fX₀ fX₁ c →
+      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₀ →
+      AlgebraicGeometry.IsSeparated fX₀ →
+      AlgebraicGeometry.LocallyOfFiniteType fX₀ →
+      AlgebraicGeometry.QuasiCompact fX₀ →
+      AlgebraicGeometry.GeometricallyConnected fX₀ →
+      ∃ (A₀ : Scheme.{u}) (fA₀ : A₀ ⟶ X₀) (ab₀ : Fermat.AbelianSchemeStruct fA₀)
+        (m₀ : Fermat.Mult ab₀ (NumberField.RingOfIntegers D))
+        (d₀ : Fermat.DualStruct ab₀ m₀)
+        (pol₀ : Fermat.PolarizationStruct d₀ {lam, frp} 𝔞 (totallyPositiveElts D)),
+        AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fA₀ ∧
+        (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+          (x : Spec (CommRingCat.of F) ⟶ X₀), x ≫ fX₀ = specRatMap F →
+          IsSplitLevelStructure lam ℓ hlamℓ pol₀ ρ₀ Λ x ∧
+            IsSplitLevelStructure frp p hfrpp pol₀ ρ₀p Λp x) ∧
+        (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+          (B : Scheme.{u}) (fB : B ⟶ Spec (CommRingCat.of F))
+          (abB : Fermat.AbelianSchemeStruct fB)
+          (mB : Fermat.Mult abB (NumberField.RingOfIntegers D))
+          (dB : Fermat.DualStruct abB mB)
+          (polB : Fermat.PolarizationStruct dB {lam, frp} 𝔞 (totallyPositiveElts D)),
+          AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB →
+          IsSplitLevelStructure lam ℓ hlamℓ polB ρ₀ Λ (𝟙 (Spec (CommRingCat.of F))) →
+          IsSplitLevelStructure frp p hfrpp polB ρ₀p Λp (𝟙 (Spec (CommRingCat.of F))) →
+          ∃ x : Spec (CommRingCat.of F) ⟶ X₀, x ≫ fX₀ = specRatMap F ∧
+            ∃ φ : Fermat.GeomFibrePt fB (𝟙 (Spec (CommRingCat.of F))) →
+                Fermat.GeomFibrePt fA₀ x,
+              Function.Bijective φ ∧
+              (∀ y z, φ (abB.add y z) = ab₀.add (φ y) (φ z)) ∧
+              (∀ (a : NumberField.RingOfIntegers D) y,
+                φ (mB.act a y) = m₀.act a (φ y)) ∧
+              (∀ (σ : Field.absoluteGaloisGroup F) y,
+                φ (abB.galSMul (𝟙 (Spec (CommRingCat.of F))) σ y) =
+                  ab₀.galSMul x σ (φ y))))
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF A2a1-i — the `ℚ`-model, for a level module of its own choosing**
+(sorry node, cut 2026-07-31 out of
+`exists_splitHilbertBlumenthalCocycle_of_standardLevelModule`).
+
+WHAT IT SAYS, and how it differs from the leaf it was cut from: the SAME
+conclusion, except that the two level modules are EXISTENTIALLY quantified
+instead of prescribed. A prover is free to build Rapoport's space for
+whatever `(ρ₁, ρ₁p)` the construction naturally produces — the tautological
+representation on the `λ`- and `𝔭`-torsion of the universal family — instead
+of having to hit a `(ρ₀, ρ₀p)` handed to it from outside. That is the whole
+of the ARITHMETIC content the twisting half takes over.
+
+`Λ` and `Λp` are NOT quantified. The twisting cochain preserves the pairing
+only because both modules carry the SAME form (see the LEVEL-TWISTING
+COCYCLE subsection), so the pairing has to be common to the two halves;
+quantifying the representations alone is exactly the freedom that is safe to
+give. This is why the cut does NOT fix `ρ₁ := stdRep` and `Λ₁ :=
+stdPairing` from `exists_standardLevelModule` — that would leave a
+comparison of two nondegenerate alternating `μ_ℓ`-valued forms on `k²` owed
+by somebody, and the subsection docstring records why that comparison is not
+free.
+
+**FAITHFULNESS — THIS LEAF IS A CONSEQUENCE OF THE ONE IT REPLACES**, so it
+cannot be false unless that one was. Take `ρ₁ := ρ₀`, `ρ₁p := ρ₀p`: the two
+standardness clauses are then the hypotheses `hstd`, `hstdp` verbatim, and
+the model clause is the conclusion of
+`exists_splitHilbertBlumenthalCocycle_of_standardLevelModule` verbatim. The
+same argument applies to the twisting half below, and jointly the two are
+EQUIVALENT to the leaf — nothing was weakened away and nothing was invented.
+
+WHAT IS STILL OWED HERE: all of the geometry. Rapoport,
+*Compactifications de l'espace de modules de Hilbert–Blumenthal*, Compositio
+36 (1978), §1, with Deligne–Pappas for a general `𝒪_D`. Quasi-projectivity
+(`horb`) is asserted of the `X₁` this leaf CHOOSES, so it is discharged from
+the construction — Rapoport's space carries an ample line bundle from the
+Baily–Borel compactification. -/
+theorem exists_splitHilbertBlumenthalRatModel_of_standardLevelModule
+    {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    (hlam : lam.IsMaximal) (hfrp : frp.IsMaximal)
+    (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
+    (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (hne : lam ≠ frp)
+    (k : Type u) [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
+    (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
+    (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (𝔞 : Ideal (NumberField.RingOfIntegers D)) (h𝔞 : 𝔞 ≠ ⊥)
+    (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F))
+    (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F))
+    (hstd : IsStandardLevelModule ℓ ρ₀ Λ) (hstdp : IsStandardLevelModule p ρ₀p Λp) :
+    ∃ (ρ₁ : GaloisRep ℚ k (Fin 2 → k)) (ρ₁p : GaloisRep ℚ kp (Fin 2 → kp)),
+      IsStandardLevelModule ℓ ρ₁ Λ ∧ IsStandardLevelModule p ρ₁p Λp ∧
+      HasSplitHilbertBlumenthalCocycleModel ℓ p D lam frp hlamℓ hfrpp 𝔞 ρ₁ ρ₁p Λ Λp :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF A2a1-ii — twisting the model from one level module to another**
+(sorry node, cut 2026-07-31 out of
+`exists_splitHilbertBlumenthalCocycle_of_standardLevelModule`).
+
+WHAT IT SAYS: given the `ℚ`-model for ONE level module `(ρ₁, Λ)`, `(ρ₁p, Λp)`
+and a prescribed second pair `(ρ₀, Λ)`, `(ρ₀p, Λp)` with the SAME pairings,
+the model for the second pair exists too. This is the DESCENT half of leaf
+A2a1: the model for `ρ₀` is the twist of the model for `ρ₁` by the cocycle
+`σ ↦ ρ₀(σ) ρ₁(σ)⁻¹`, transported to automorphisms of `X₁ ⊗ K` through the
+moduli interpretation.
+
+**THE GROUP THEORY IS ALREADY DONE AND IS HANDED IN, NOT ASKED FOR.** The
+cochain arrives as `g`/`gp` with `IsLevelTwistCocycle` — normalisation, the
+nonabelian cocycle identity for the `ρ₁`-conjugation action, invertibility of
+the values, the defining relation `g σ · ρ₁ σ = ρ₀ σ`, and EXACT preservation
+of `Λ` — and its kernel arrives as an open normal `N` on which both cochains
+are trivial. `exists_splitHilbertBlumenthalCocycle_of_standardLevelModule`
+below supplies all of it from `levelTwistCochain` and
+`isLevelTwistCocycle_levelTwistCochain`, so a prover of this leaf never has
+to touch `ρ₀ ρ₁⁻¹` as such: what is owed is exactly the TRANSPORT of `g` to
+`Aut_K (X₁ ⊗ K)` and the transport of the level structures along the twist.
+
+WHERE THE OPEN KERNEL GOES: `N` is what discharges the open-kernel clause of
+the conclusion, since the transported `c` is the identity wherever `g` and
+`gp` are.
+
+**FAITHFULNESS — THIS LEAF IS A CONSEQUENCE OF THE ONE IT REPLACES.** Its
+conclusion is the conclusion of
+`exists_splitHilbertBlumenthalCocycle_of_standardLevelModule` at `(ρ₀, Λ)`,
+`(ρ₀p, Λp)`, and its hypotheses include that leaf's hypotheses `hstd`,
+`hstdp` — so it follows from that leaf with every other hypothesis unused.
+It therefore cannot be false unless that leaf was, and together with
+`exists_splitHilbertBlumenthalRatModel_of_standardLevelModule` it is
+EQUIVALENT to it. This is the strongest faithfulness guarantee a cut of a
+`∃`-statement can carry, and it is why the cut was made this way rather than
+by naming a new geometric interface: an interface would have had to be
+JUDGED strong enough, and this does not.
+
+REFERENCES: the twisting construction is Taylor's §4 use of Rapoport §1; the
+descent machinery it lands in is the scheme-level Galois-descent interface of
+this file (`IsQGaloisCocycle`, `IsGaloisTwistForm`,
+`isEffectiveQGaloisTwist_of_isOpenKernel`). -/
+theorem hasSplitHilbertBlumenthalCocycleModel_of_levelTwistCocycle
+    {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    (hlam : lam.IsMaximal) (hfrp : frp.IsMaximal)
+    (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
+    (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (hne : lam ≠ frp)
+    (k : Type u) [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
+    (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
+    (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (𝔞 : Ideal (NumberField.RingOfIntegers D)) (h𝔞 : 𝔞 ≠ ⊥)
+    (ρ₀ ρ₁ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p ρ₁p : GaloisRep ℚ kp (Fin 2 → kp))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F))
+    (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F))
+    (hstd : IsStandardLevelModule ℓ ρ₀ Λ) (hstdp : IsStandardLevelModule p ρ₀p Λp)
+    (hstd₁ : IsStandardLevelModule ℓ ρ₁ Λ) (hstd₁p : IsStandardLevelModule p ρ₁p Λp)
+    (g : Field.absoluteGaloisGroup ℚ → Module.End k (Fin 2 → k))
+    (gp : Field.absoluteGaloisGroup ℚ → Module.End kp (Fin 2 → kp))
+    (hg : IsLevelTwistCocycle ρ₀ ρ₁ Λ g) (hgp : IsLevelTwistCocycle ρ₀p ρ₁p Λp gp)
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ)) (hNnormal : N.Normal)
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (hgN : ∀ σ ∈ N, g σ = 1) (hgpN : ∀ σ ∈ N, gp σ = 1)
+    (hmodel : HasSplitHilbertBlumenthalCocycleModel ℓ p D lam frp hlamℓ hfrpp 𝔞
+      ρ₁ ρ₁p Λ Λp) :
+    HasSplitHilbertBlumenthalCocycleModel ℓ p D lam frp hlamℓ hfrpp 𝔞 ρ₀ ρ₀p Λ Λp :=
+  sorry
+
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF A2a1 — the split family over `K`, and the descent datum that
 carries it down to `ℚ`** (sorry node, cut 2026-07-28 along the Galois-descent
@@ -41845,7 +42268,43 @@ THE CHECK THAT WOULD REFUTE THIS CUT: look for `X₀` or `fX₀` from the
 conclusion of `exists_splitHilbertBlumenthalFamily_of_standardLevelModule`
 inside this statement. There is none — this leaf re-existentializes its own
 `X₁` and the assembly takes its `X₀` from the effectivity leaf — so this is
-that leaf weakened, and no defect here can make it false. -/
+that leaf weakened, and no defect here can make it false.
+
+**CUT NOTE (2026-07-31) — THIS DECLARATION IS NOW AN ASSEMBLY.** Everything
+above is the audit trail of the statement and is unchanged; what follows is
+how it is now discharged. The cut runs along the axis the docstring's INTENDED
+PROOF already named — "build the space for one level module, then twist along
+`ρ₀`" — and it is in two named halves plus the group theory between them:
+
+* `exists_splitHilbertBlumenthalRatModel_of_standardLevelModule` builds the
+  `ℚ`-model for a level module `(ρ₁, Λ)`, `(ρ₁p, Λp)` OF ITS OWN CHOOSING.
+  All of Rapoport §1 is here; none of the twisting is.
+* the LEVEL-TWISTING COCYCLE subsection above **proves outright** everything
+  about `σ ↦ ρ₀(σ) ρ₁(σ)⁻¹` that does not mention a scheme: the nonabelian
+  1-cocycle identity, invertibility, the defining relation, exact
+  preservation of `Λ`, and triviality on the OPEN NORMAL subgroup
+  `ker ρ₀ ⊓ ker ρ₁ ⊓ ker ρ₀p ⊓ ker ρ₁p`. So the open-kernel clause of the
+  conclusion is discharged at the group level here, not owed downstream.
+* `hasSplitHilbertBlumenthalCocycleModel_of_levelTwistCocycle` receives that
+  cochain already verified and owes only its TRANSPORT to `Aut_K (X₁ ⊗ K)`
+  and the transport of the level structures along the twist.
+
+WHY THIS CUT AND NOT AN INTERFACE. A cut that named a new moduli-theoretic
+interface for `X₁` would have to be JUDGED strong enough for the twisting
+half — and CLAUDE.md's TWO INDIVIDUALLY-CORRECT REPAIRS section records what
+that judgement costs when it is wrong. This cut needs no judgement: each half
+is a CONSEQUENCE of this leaf (the first at `ρ₁ := ρ₀`, using `hstd`; the
+second by discarding every hypothesis but `hstd`, `hstdp`), and jointly they
+are EQUIVALENT to it. Neither can be false unless this leaf is. The
+faithfulness argument is written out on each of them.
+
+`Λ` and `Λp` are deliberately NOT quantified in the first half. The twisting
+cochain preserves the pairing only because the two modules carry the SAME
+form — see `levelTwistCochain_pairing` — so fixing `ρ₁ := stdRep` and
+`Λ₁ := stdPairing` from `exists_standardLevelModule` would leave somebody
+owing a comparison of two nondegenerate alternating `μ_ℓ`-valued forms on
+`k²`, which is not free: biadditive `k × k → μ_ℓ` is an `r²`-dimensional
+family against the `r`-dimensional family of the `φ ∘ det₂`. -/
 theorem exists_splitHilbertBlumenthalCocycle_of_standardLevelModule
     {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
     (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -41911,8 +42370,35 @@ theorem exists_splitHilbertBlumenthalCocycle_of_standardLevelModule
                   φ (mB.act a y) = m₀.act a (φ y)) ∧
                 (∀ (σ : Field.absoluteGaloisGroup F) y,
                   φ (abB.galSMul (𝟙 (Spec (CommRingCat.of F))) σ y) =
-                    ab₀.galSMul x σ (φ y)))) :=
-  sorry
+                    ab₀.galSMul x σ (φ y)))) := by
+  -- the `ℚ`-model, for a level module the geometric half chose itself
+  obtain ⟨ρ₁, ρ₁p, hstd₁, hstd₁p, hmodel₁⟩ :=
+    exists_splitHilbertBlumenthalRatModel_of_standardLevelModule hp hpℓ D lam frp
+      hlam hfrp hlamℓ hfrpp hne k kp hres hresp 𝔞 h𝔞 ρ₀ ρ₀p Λ Λp hstd hstdp
+  -- the twisting cochain, with its cocycle identity and exact `Λ`-preservation
+  haveI := normal_galoisRepKer ρ₀
+  haveI := normal_galoisRepKer ρ₁
+  haveI := normal_galoisRepKer ρ₀p
+  haveI := normal_galoisRepKer ρ₁p
+  -- its kernel: open, normal, and killing both cochains at once
+  have hopenN : IsOpen (((ρ₀.ker ⊓ ρ₁.ker) ⊓ (ρ₀p.ker ⊓ ρ₁p.ker) :
+      Subgroup (Field.absoluteGaloisGroup ℚ)) : Set (Field.absoluteGaloisGroup ℚ)) := by
+    simp only [Subgroup.coe_inf]
+    exact ((isOpen_ker_of_finite_discrete ρ₀).inter (isOpen_ker_of_finite_discrete ρ₁)).inter
+      ((isOpen_ker_of_finite_discrete ρ₀p).inter (isOpen_ker_of_finite_discrete ρ₁p))
+  exact hasSplitHilbertBlumenthalCocycleModel_of_levelTwistCocycle hp hpℓ D lam frp
+    hlam hfrp hlamℓ hfrpp hne k kp hres hresp 𝔞 h𝔞 ρ₀ ρ₁ ρ₀p ρ₁p Λ Λp hstd hstdp
+    hstd₁ hstd₁p (levelTwistCochain ρ₀ ρ₁) (levelTwistCochain ρ₀p ρ₁p)
+    (isLevelTwistCocycle_levelTwistCochain ρ₀ ρ₁ hstd hstd₁)
+    (isLevelTwistCocycle_levelTwistCochain ρ₀p ρ₁p hstdp hstd₁p)
+    ((ρ₀.ker ⊓ ρ₁.ker) ⊓ (ρ₀p.ker ⊓ ρ₁p.ker)) inferInstance hopenN
+    (fun σ hσ => by
+      simp only [Subgroup.mem_inf] at hσ
+      exact levelTwistCochain_eq_one_of_mem_ker ρ₀ ρ₁ hσ.1.1 hσ.1.2)
+    (fun σ hσ => by
+      simp only [Subgroup.mem_inf] at hσ
+      exact levelTwistCochain_eq_one_of_mem_ker ρ₀p ρ₁p hσ.2.1 hσ.2.2)
+    hmodel₁
 
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF A2a — Rapoport's split family, in the form Rapoport §1 actually
@@ -50253,35 +50739,6 @@ theorem exists_twistedHilbertBlumenthalModuli_of_five_le
     fun F hF hNF hFtr hFgal hrestr hpt =>
       nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli hW hirr hmod F hF hNF
         hFtr hFgal hrestr hpt⟩
-
-/-- **The kernel of a residual representation is open** (PROVEN): for a
-finite discrete coefficient field `k` and a finite `k`-module `W`, the
-endomorphism algebra `Module.End k W` is discrete in its module
-topology, so the kernel of the continuous `ρbar` is the preimage of an
-open singleton.
-
-This is the side condition of Moret–Bailly's avoidance datum: the
-subgroup handed to
-`exists_totallyReal_point_of_geometricallyIrreducible` must be open (it
-is the group of the splitting field of `ρbar`, a finite extension of
-`ℚ`), and openness — not merely finite index — is what makes it
-correspond to a field at all. -/
-theorem isOpen_ker_of_finite_discrete
-    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    (ρbar : GaloisRep ℚ k W) :
-    IsOpen ((ρbar.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
-      Set (Field.absoluteGaloisGroup ℚ)) := by
-  letI : TopologicalSpace (Module.End k W) := moduleTopology k (Module.End k W)
-  haveI : DiscreteTopology (Module.End k W) :=
-    discreteTopology_moduleTopology _ _
-  have hcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρbar g :=
-    ContinuousMonoidHom.continuous_toFun ρbar
-  have hset : ((ρbar.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
-      Set (Field.absoluteGaloisGroup ℚ)) =
-      (fun g : Field.absoluteGaloisGroup ℚ => ρbar g) ⁻¹' {1} := rfl
-  rw [hset]
-  exact hcont.isOpen_preimage _ (isOpen_discrete _)
 
 /-- **The geometric joint of Theorem B** (PROVEN 2026-07-25 as the
 assembly of the Moret–Bailly split above — Moret–Bailly
