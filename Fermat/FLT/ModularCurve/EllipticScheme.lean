@@ -637,7 +637,39 @@ makes `hom_ext_spec_rat` work), so any two `ProjCoords` on the same `X`
 have equal bases (`ProjCoords.base_eq`) and the structure is extensional in
 `coord` alone (`ProjCoords.ext`).  The alternative — an instance argument —
 is not available, because a general scheme carries no `ℚ`-algebra structure
-on its global sections. -/
+on its global sections.
+
+## THIS STRUCTURE IS THE WHOLE COST OF GENERALISING THE `proj` CLUSTER TO A FIELD
+
+(Measured 2026-07-31, `flt-lean-182`, while closing
+`exists_weierstrassModel_of_ellipticScheme_field`.  Recorded here rather than in a
+task prompt because it is the fact a prover of
+`exists_ellipticScheme_weierstrassChart_addEquiv_field` would otherwise spend a
+cycle rediscovering.)
+
+`hom_ext_spec_rat` occurs **77 times** in this file, and almost every occurrence is
+in the same syntactic position — the proof obligation of
+`Limits.pullback.lift c.toHom d.toHom _`, i.e.
+`c.toHom ≫ projToSpec E = d.toHom ≫ projToSpec E`.  It is tempting to read that as
+"77 commuting squares to supply".  It is not: all 77 follow from **`base_eq`
+alone**, which is `Subsingleton.elim` out of `Rat.subsingleton_ringHom`.
+
+Over a general field `k`, `base_eq` is **FALSE** — two `k`-algebra structures on
+`Γ(X, ⊤)` differing by an automorphism of `k` refute it — which is the same
+mechanism that makes the structure-morphism conjunct of
+`exists_weierstrassModel_of_ellipticScheme_field` (`X0.lean`) load-bearing over `k`
+and vacuous over `ℚ`.
+
+So the generalisation is a change to ONE structure and its two lemmas, not a sweep
+over the file: keep `base` a field, DELETE `base_eq`, and thread `c.base = d.base`
+as a hypothesis (12 `base_eq` call sites, 441 `ProjCoords` occurrences, 15
+`Subsingleton.elim` uses to triage).  `ext` changes shape too — it currently derives
+base equality by subsingleton and would have to take it, so `@[ext]` on the
+coordinate-only form is lost and every `ext` call in the cluster gains an argument.
+In the group-law statements `c` and `d` are two coordinate data on the SAME `X`
+pulled back along the two pullback projections, so the equality should be available
+there; that is the thing to CHECK FIRST, and any site where it is not available is
+the real leaf and should be cut and named. -/
 structure ProjCoords (E : WeierstrassCurve ℚ) (X : Scheme.{0}) where
   /-- the structure map of the base -/
   base : ℚ →+* Γ(X, ⊤)
