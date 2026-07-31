@@ -5941,7 +5941,13 @@ theorem exists_ellipticScheme_of_weierstrass_field (L : Type) [Field L] [Decidab
   -- `AddEquiv.symm` is the whole of the difference.
   obtain ⟨A, f, ab, hdim, -, he⟩ :=
     exists_ellipticScheme_weierstrassChart_addEquiv_field (k := L) E
-  exact ⟨A, f, ab, hdim, he.map AddEquiv.symm⟩
+  -- the `letI` must land BEFORE `.symm` is elaborated: `AddEquiv.symm`'s `[Add _]`
+  -- arguments are synthesised rather than read off `e`'s type, and the group structure
+  -- on `RelPoint f (𝟙 _)` is `letI`-bound inside the STATEMENT, so it is not in scope
+  -- for instance search until it is introduced here.
+  letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of L)))
+  obtain ⟨e⟩ := he
+  exact ⟨A, f, ab, hdim, ⟨e.symm⟩⟩
 
 /-- **A ring map out of a field into an algebraically closed field EXTENDS
 to the algebraic closure, and the extension COMMUTES** (PROVEN
