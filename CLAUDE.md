@@ -7675,6 +7675,35 @@ green scratch means nothing. Check the names first; it takes one `git show`.
 the three things it structurally cannot do.  All three were live in one batch of 19
 branches and none of them shows in a diff, a conflict marker, or `check-dup`.)
 
+**0. A HOIST CAN ALSO MERGE AS A FORWARD REFERENCE, AND THE SYMPTOM IS AN
+`Unknown identifier` FOR A NAME DECLARED LATER IN THE SAME FILE** (2026-07-31,
+`flt-lean-395`, measured on `merger` at `9e7f6e4b`).  Case 1 below is the hoist
+whose *copy* lands twice.  This is the other half: the branch PROVED a consumer
+over a declaration it was simultaneously hoisting ABOVE it, the new proof merged
+(it is an addition), and the block move did not (it is a reorder).  The consumer
+then sits above its input.  Two instances in one file, both fatal:
+
+    X0.lean:15565  obtain ... := exists_nonConstant_qExpansion_gamma0GITPresentation ...
+    X0.lean:15956  theorem exists_nonConstant_qExpansion_gamma0GITPresentation      <- 391 lines BELOW
+    X0.lean:18083  obtain ⟨js⟩ := exists_jSection        (in exists_jSection_algClosModel)
+    X0.lean:30112  theorem exists_jSection                                          <- 12000 lines BELOW
+
+On `main` the same pair is in the right order (`exists_jSection` at 27386, used at
+27427), which is the tell that this is merge damage and not a bad branch.
+
+**Do not diagnose it as a missing declaration.**  This file already warns that an
+ERRORED declaration reports as `unknown constant`; this is a third cause of the
+same message, and the discriminator is one `grep -n`: if the name IS declared in
+the file but BELOW the use, nothing errored and nothing is missing — a relocation
+failed to merge.  The repair is to move the block, which is the worst shape for a
+merge and belongs in its own commit touching nothing else.
+
+**And it is invisible to every check in the list below**: no duplicate name, no
+scope imbalance, no missing branch-added declaration, comments balanced.  Only the
+build sees it.  Add the cheap positive check instead — for each branch that
+relocated a block, grep the RESOLVED file for the moved names and compare their
+line numbers against their use sites.
+
 **1. IT PROPAGATES ADDITIONS, NEVER DELETIONS — so a HOIST merges as pure
 DUPLICATION.**  `semmerge` iterates over THEIRS' declaration names; a name that is
 in the base and in ours but *not* in theirs is simply never considered, and ours
