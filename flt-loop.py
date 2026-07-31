@@ -184,7 +184,18 @@ def ssh(host, cmd, timeout=60):
     entire purpose is to be startable when other things are broken.
     """
     if host in (None, LOCALHOST, "localhost"):
-        return subprocess.run(["bash", "-c", cmd],
+        # A local spawn must be ENVIRONMENT-EQUIVALENT to the ssh spawn it
+        # replaces, or it is not the same operation. `ssh` starts a fresh login
+        # environment and forwards nothing; `bash -c` inherits whatever shell
+        # launched the loop -- and the shell that launched it had
+        # CLAUDE_CONFIG_DIR=~/.claude-monitor set, so the medic resumed into a
+        # config dir that holds none of the fleet's transcripts and died with
+        # "No conversation found with session ID" against a session that was
+        # sitting right there in ~/.claude. Nothing about the job was wrong;
+        # the spawn had quietly changed meaning.
+        env = {k: v for k, v in os.environ.items()
+               if not k.startswith(("CLAUDE_", "ANTHROPIC_"))}
+        return subprocess.run(["bash", "-c", cmd], env=env,
                               capture_output=True, text=True, timeout=timeout)
     return subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
                            host, cmd], capture_output=True, text=True, timeout=timeout)
