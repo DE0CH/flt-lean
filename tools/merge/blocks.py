@@ -72,8 +72,18 @@ def commands(lines):
     return out
 
 
-def kind(lines, s):
+def kind(lines, s, e=None):
     head = lines[s]
+    # `open X in`, `set_option … in`, `attribute … in` are PREFIXES: they bind to
+    # the single command that follows, so they belong to that declaration's block
+    # and must be removed with it.  Leaving one behind is a parse error at best
+    # and a silently misapplied `open` at worst.
+    if e is not None:
+        last = e - 1
+        while last > s and not lines[last].strip():
+            last -= 1
+        if lines[last].rstrip().endswith(' in') and not head.startswith('/-'):
+            return 'attr'
     if head.startswith('/-'):
         return 'comment'
     if head.startswith('@['):
@@ -92,7 +102,7 @@ def blocks(path):
     cmds = commands(lines)
     stack, out, pending = [], [], []
     for (s, e) in cmds:
-        k = kind(lines, s)
+        k = kind(lines, s, e)
         if k == 'structural':
             m = NS.match(lines[s])
             if m:
