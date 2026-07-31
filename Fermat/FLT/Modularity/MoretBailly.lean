@@ -38464,10 +38464,75 @@ theorem natCard_rootsOfUnity_succ_galoisField (p : ℕ) [Fact p.Prime] :
     rw [orderOf_pow, hordg, hgcd, hfact, Nat.mul_div_cancel_left _ (by omega : 0 < p - 1)]
   exact (IsPrimitiveRoot.iff_orderOf.mpr hordz).card_rootsOfUnity'
 
+/-- **THE CLASS FIELD THEORY LEAF, IN ITS SHARPEST FORM: AN IMAGINARY QUADRATIC
+FIELD HAS A CYCLIC ANTICYCLOTOMIC QUOTIENT OF EVERY ORDER** (SORRY LEAF, cut
+2026-07-31 out of `nonempty_ringClassArtinData_anticyclotomic` just below, which
+is now PROVEN over it and is the ONLY consumer).
+
+This is `nonempty_ringClassArtinData_anticyclotomic` with the abstract group
+`Cl` replaced by the concrete `Multiplicative (ZMod K)` and the packaging
+structure removed. **Everything the parent's docstring says about the
+mathematics, the faithfulness of the hypotheses, the missing machinery and the
+route applies verbatim to this statement and is not repeated here — read it
+there.** What this cut buys the prover:
+
+* no type-valued existential and no `[CommGroup]`/`[Finite]` instance fields to
+  produce — the group is fixed and its instances are found by synthesis;
+* `exists_orderOf_dvd` disappears: `orderOf (ofAdd 1) = K` in `ZMod K` by
+  `orderOf_ofAdd_eq_addOrderOf` + `ZMod.addOrderOf_one`, so the order clause is
+  discharged once, in the assembly below, instead of being an obligation;
+* the target is exactly the shape class field theory delivers — a SURJECTIVE
+  character of `Γ_M` onto a cyclic group of order `K` — and exactly the shape
+  the downstream consumer `exists_ringClassZModChar_of_inertPrime` re-extracts
+  from `Cl` through `exists_zmodChar_of_dvd_exponent` anyway.
+
+**IT IS NOT WEAKER, AND THE STRENGTHENING IS FREE ON THE INTENDED ROUTE.** The
+parent asks only for SOME element of order divisible by `K`; this asks for a
+cyclic quotient of order EXACTLY `K`. The parent's own route produces the
+sharper object: for each prime power `ℓ^{v_ℓ(K)} ‖ K` the anticyclotomic
+`ℤ_ℓ`-extension of `M` supplies its `ℓ^{v_ℓ(K)}`-layer, and the compositum of
+those layers is cyclic anticyclotomic of order exactly `K` because the layers
+have pairwise coprime degrees. A prover who finds the exact-order form
+inconvenient may reduce it to prime powers first, by that same coprimality: a
+subgroup of `∏ᵢ ZMod ℓᵢ^{aᵢ}` surjecting onto each factor has order divisible by
+each `ℓᵢ^{aᵢ}`, hence is everything. That reduction is NOT performed here
+because it does not make the analytic content any smaller — the `ℤ_ℓ`-tower has
+to be built either way — and it would cost a `Nat.factorization`-indexed
+Chinese-remainder bookkeeping for no mathematical gain.
+
+**`hd`, `hx`, `he`, `hK` are load-bearing exactly as in the parent**; in
+particular `hK : K ≠ 0` is needed twice here, once to make `ZMod K` finite and
+once because `Multiplicative (ZMod 0) = Multiplicative ℤ` has no element of
+finite order, so the surjectivity clause would demand a surjection from `Γ_M`
+onto `ℤ` — impossible for a map with open kernel.
+
+**`hd : d < 0` remains load-bearing and this form makes the failure sharper.**
+For `d > 0` (real quadratic `M`) the anticyclotomic `ℤ_ℓ`-extension does not
+exist — `r₂ = 0` leaves only the cyclotomic `ℤ_ℓ`-extension, on which complex
+conjugation acts trivially, so every anticyclotomic quotient is killed by `2`
+and the conclusion fails for every `K ∉ {1, 2}`. -/
+theorem exists_anticyclotomicCyclicChar
+    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (he : ∀ g, e g = 1 ↔ g x = x)
+    (K : ℕ) (hK : K ≠ 0) :
+    ∃ (χ : Field.absoluteGaloisGroup ℚ → Multiplicative (ZMod K))
+      (H : Subgroup (Field.absoluteGaloisGroup ℚ)),
+      IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)) ∧
+      (∀ h ∈ H, e h = 1) ∧
+      (∀ g h, e g = 1 → h ∈ H → χ (g * h) = χ g) ∧
+      (∀ g h, e g = 1 → e h = 1 → χ (g * h) = χ g * χ h) ∧
+      (∀ c g, e c = -1 → e g = 1 → χ (c * g * c⁻¹) = (χ g)⁻¹) ∧
+      (∀ a : Multiplicative (ZMod K), ∃ g, e g = 1 ∧ χ g = a) :=
+  sorry
+
 /-- **THE CLASS FIELD THEORY LEAF, IN ITS MINIMAL FORM: AN IMAGINARY QUADRATIC
-FIELD HAS ANTICYCLOTOMIC ABELIAN QUOTIENTS OF EVERY ORDER** (sorry node, cut
-2026-07-28 out of `exists_ringClassArtinData_conductorMap_of_inertPrime` just
-below, which is now PROVEN over it — and which is the ONLY consumer).
+FIELD HAS ANTICYCLOTOMIC ABELIAN QUOTIENTS OF EVERY ORDER** (**PROVEN
+2026-07-31** over `exists_anticyclotomicCyclicChar` immediately above, which is
+now where the whole content lives; it was cut 2026-07-28 out of
+`exists_ringClassArtinData_conductorMap_of_inertPrime` just below, which is
+PROVEN over it — and which is the ONLY consumer).
 
 **THIS IS NOW THE ONLY CLASS-FIELD-THEORETIC CONTENT anywhere under
 `exists_dihedralOddGaloisRep_of_charThree`.** Unwound, it says: for the
@@ -38526,7 +38591,28 @@ below, all of which apply verbatim to this statement.** Over `M(ζ_n)` the minus
 part of the units is only roots of unity, so Kummer theory cannot produce
 anticyclotomic extensions (the refuting check: exhibit a cyclic anticyclotomic
 extension of an imaginary quadratic `M` of degree `> 2` obtained by adjoining a
-radical). The complex-multiplication axis costs strictly more, not less: the
+radical).
+
+**THAT CHECK IS NOW SETTLED, AND THE RADICAL ROUTE IS DEAD BY GROUP THEORY
+ALONE** (2026-07-31; this upgrades the units remark above from a heuristic about
+one auxiliary field to a proof covering every extension obtained by adjoining a
+single radical, over any base). Let `N = ℚ(ζ_K, a^{1/K})` be the splitting field
+of `X^K − a`, so `G = Gal(N/ℚ)` embeds in the affine group
+`(ℤ/K) ⋊ (ℤ/K)ˣ`, with `(t, u)(t', u') = (t + u t', u u')`. A generalized
+dihedral quotient with cyclic part `ℤ/K` is a surjection `G ↠ ℤ/K ⋊ {±1}` that
+is the identity on the `ℤ/K` factor, so it is induced by a surjection
+`(ℤ/K)ˣ ↠ {±1}` whose kernel `U` must act TRIVIALLY on `ℤ/K` — otherwise the
+target semidirect product is not well defined. Concretely, computing in `G`,
+`(t, 1)(0, u)(−t, 1) = (t − u t, u)`, so the subgroup `1 ⋊ U` is normal in `G`
+only when `u t = t` for all `t`, i.e. only when `U = 1`. Hence `(ℤ/K)ˣ = {±1}`,
+i.e. `K ∈ {1, 2, 3, 4, 6}`. So no radical extension whatsoever carries an
+anticyclotomic `ℤ/K` for `K ∉ {1, 2, 3, 4, 6}`, for ANY `a` and any base — the
+obstruction is that Kummer theory hands you the cyclotomic character acting on
+the radicals, and the anticyclotomic condition demands its inverse. A would-be
+Kummer proof must instead produce `α` in a `χ`-eigenspace of a class group,
+which is class field theory again.
+
+The complex-multiplication axis costs strictly more, not less: the
 modular `j`-FUNCTION does not exist in mathlib (`EllipticCurve.j` is the
 algebraic invariant `c₄³/Δ`), there is no CM theory in any of the three trees,
 and the half that would be needed — `M(j(𝒪))/M` abelian with group `Cl(𝒪)` — is
@@ -38535,12 +38621,54 @@ barely started upstream: `Mathlib/RepresentationTheory/Homological/
 TateCohomology/` has only `Basic.lean` (no class formations, no Tate's theorem)
 and `Mathlib/Algebra/BrauerGroup/Defs.lean` has no invariant map.
 
-**MISSING MACHINERY, with the grep that refutes the claim** (re-run 2026-07-28
-on all three trees, at `a929bb45`): `grep -rn 'RayClassGroup\|rayClassGroup\|
+**MISSING MACHINERY — ⚠ THE 2026-07-28 SURVEY IS NOW FALSE; RE-RUN 2026-07-31
+AND CORRECTED HERE.** It read: "`grep -rn 'RayClassGroup\|rayClassGroup\|
 ArtinMap\|artinMap\|HilbertClassField\|idele\|reciprocity' Fermat/
 .lake/packages/mathlib/ ~/cs/FLT/` returns PROSE ONLY — there is no ray class
-group, no Artin map, no idele class group and no reciprocity anywhere.
-`Mathlib/NumberTheory/` has no `ClassField` directory.
+group, no Artin map, no idele class group and no reciprocity anywhere." A CLASS
+FIELD THEORY CLUSTER has landed under `Fermat/FLT/NumberField/` since, and the
+same grep now returns CODE. Do not quote the old paragraph again:
+
+* `NumberField/ArtinSymbol.lean` (712 lines) — `frobAt`, `frobAtBelow`,
+  `isArithFrobAt_frobAt`, `frobAt_pow_inertiaDeg`, and **`artinMap`** itself,
+  the Artin map of an abelian everywhere-unramified `L/K` on the ideal group,
+  with `artinMap_toPrincipalIdeal` and `exists_classGroupHom_eq_frobAt`. Two
+  sorries (lines 596, 710).
+* `NumberField/UnramifiedClassFieldExistence.lean` (609 lines) — **the
+  EXISTENCE direction of the correspondence**:
+  `exists_classField_of_subgroup (N : Subgroup (ClassGroup (𝓞 K)))` produces a
+  finite abelian everywhere-unramified `H/K` inside `AlgebraicClosure K` with
+  `relNormClassSubgroup K H = N`, and above it `exists_hilbertClassField` and
+  `exists_hilbertClassField_artinIso`. Two sorries (237, 483).
+* `NumberField/UnramifiedClassFieldBound.lean` — SORRY-FREE; the degree bound
+  `finrank_le_card_classGroup_of_unramified_abelian_of_isUnramifiedAtInfinitePlaces`.
+* `NumberField/HilbertClassFieldNormal.lean` — carries the class field into
+  `AlgebraicClosure ℚ` and asks for it NORMAL OVER `ℚ` (one sorry).
+
+`Mathlib/NumberTheory/` still has no `ClassField` directory; the cluster above
+is this project's own.
+
+**WHY THAT CLUSTER STILL DOES NOT CLOSE THIS LEAF, AND WHAT IT CHANGES FOR ITS
+OWNER.** The cluster is UNRAMIFIED class field theory, so over `M` it reaches
+only `Cl(𝓞 M)`: the largest anticyclotomic quotient obtainable from it has order
+`h_M`, a CONSTANT of `d`, whereas this leaf needs order divisible by an
+ARBITRARY `K` — the consumer applies it at `K ≥ (p+1)/24` with `p` unbounded.
+Arbitrary `K` needs a MODULUS, i.e. ray class fields. That is exactly the
+generalisation `UnramifiedClassFieldExistence.lean`'s own docstring already
+names: *"Whoever builds class field theory for either leaf should build it once,
+in THIS file (generalising `relNormClassSubgroup` to a modulus)"*. So the work
+this leaf is waiting on belongs in THAT file, in THAT vocabulary
+(`IntermediateField`, `ClassGroup (𝓞 K)`, `Algebra.IsUnramifiedAt`), and this
+leaf becomes an application of it plus the `Γ_ℚ` bridge — for which
+`NumberField/HilbertClassFieldNormal.lean`'s `corestrictFieldRange` /
+`galFieldRangeEquiv` and mathlib's `IntermediateField.fixingSubgroup_isOpen` /
+`InfiniteGalois.isOpen_iff_finite` are the pieces already in hand.
+
+Note also what the 2026-07-28 audit named as the check that would refute it —
+"find a declaration whose CONCLUSION has a Galois group or a field extension as
+its codomain and whose HYPOTHESES do not already contain one". **That check is
+now SATISFIED**, by `exists_classField_of_subgroup`. The audit's negative
+conclusion has been overtaken by events, not by an error in its reasoning.
 
 **THE ONE NEAR MISS, carried over and still standing.**
 `Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean`'s 116-declaration
@@ -38566,8 +38694,27 @@ theorem nonempty_ringClassArtinData_anticyclotomic
     (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
     (he : ∀ g, e g = 1 ↔ g x = x)
     (K : ℕ) (hK : K ≠ 0) :
-    Nonempty (RingClassArtinData e K) :=
-  sorry
+    Nonempty (RingClassArtinData e K) := by
+  -- Take `Cl := Multiplicative (ZMod K)`: the six `art`-clauses are literally the six
+  -- clauses of `exists_anticyclotomicCyclicChar`, and `exists_orderOf_dvd` is
+  -- `orderOf (ofAdd 1) = K`.
+  haveI : NeZero K := ⟨hK⟩
+  obtain ⟨χ, H, hopen, hHker, hcoset, hmul, hconj, hsurj⟩ :=
+    exists_anticyclotomicCyclicChar d hd x hx e he K hK
+  have hdvd : K ∣ orderOf (Multiplicative.ofAdd (1 : ZMod K)) := by
+    rw [orderOf_ofAdd_eq_addOrderOf, ZMod.addOrderOf_one]
+  exact ⟨{ Cl := Multiplicative (ZMod K)
+           commGroup := inferInstance
+           finite := inferInstance
+           art := χ
+           H := H
+           isOpen_H := hopen
+           H_le_ker := hHker
+           art_coset := hcoset
+           art_mul := hmul
+           art_conj := hconj
+           art_surjOn := hsurj
+           exists_orderOf_dvd := ⟨Multiplicative.ofAdd 1, hdvd⟩ }⟩
 
 /-- **THE RING CLASS FIELD OF CONDUCTOR `p` AT AN INERT PRIME, TOGETHER WITH THE
 CONDUCTOR MAP OF THE WHOLE RESIDUE UNIT GROUP** (**PROVEN 2026-07-28** over
@@ -41688,6 +41835,22 @@ left of the geometry is THIS leaf, and
 `isEffectiveQGaloisTwist_of_isOpenKernel` below is now the assembly of the two.
 Everything above about `horb`, `hopen` and `hac`/`halg` still applies — to this
 leaf, which is where it always belonged.
+
+THIRD SURVEY 2026-07-31 — THE 2026-07-29 CORRECTION STILL HOLDS EXACTLY; NOTHING
+HAS MOVED, and this is recorded so the next owner does not re-run it. Against the
+current pin: `grep -rn "IsStack" Mathlib/AlgebraicGeometry/` returns NOTHING (so
+`Sites/Descent/IsStack.lean` is still stated-but-uninstantiated, and no
+`AlgebraicGeometry` file imports `Sites.Descent`);
+`grep -rln "quotientScheme\|QuotientScheme" Mathlib/` returns NOTHING, so the
+finite-group quotient — the one piece the 2026-07-29 correction said genuinely
+has to be BUILT here — is still absent, and it is still the critical path.
+`Mathlib/CategoryTheory/Sites/Descent/` is unchanged (`DescentData`,
+`DescentDataAsCoalgebra`, `DescentDataPrime`, `IsPrestack`, `IsStack`,
+`Precoverage`). Unlike the class-field-theory audit on
+`nonempty_ringClassArtinData_anticyclotomic` above — which HAD gone stale and was
+corrected the same day — this one has not, so the plan in the 2026-07-29
+correction (read `pullFunctorEquivalence` and `Sites/Fpqc.lean` first, then build
+the quotient) is the plan.
 
 The four shape hypotheses `hsm`/`hsep`/`hlft`/`hqc` are KEPT in this signature
 even though the descent block no longer needs them here: they may or may not be
