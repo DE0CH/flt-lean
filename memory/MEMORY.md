@@ -69,3 +69,4 @@
 - [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
 
 - [Hoist vs concurrent proof](flt-hoist-vs-concurrent-proof.md) — relocating a leaf and proving it in place merge into a duplicate declaration; keep the hoisted location, move the proof
+- [Merger red? verify against the release farm](flt-merger-red-verify-against-release-farm.md) — the target may exist ONLY on a `merger` that does not build; base there anyway and verify a verbatim restatement in a 12-second scratch against `~/.flt-release-lake`
