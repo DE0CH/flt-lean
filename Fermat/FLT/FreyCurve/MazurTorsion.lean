@@ -40602,7 +40602,356 @@ theorem exists_morphism_phi {p : ℕ} {T : Scheme.{0}} {d : Gamma0Datum p T}
   rw [hx] at hp
   exact hp
 
-/-- **THE WEIERSTRASS BRIDGE** (sorry leaf, cut 2026-07-31 by flt-lean-393 out of
+/-! #### The chart-pinned dictionary: how the Weierstrass bridge is cut
+(2026-07-31, `flt-lean-109`)
+
+The bridge below used to be one `sorry`.  Its own docstring records — correctly —
+that the NAIVE split into "an additive equivalence exists" and "any additive
+equivalence transports `Φ` into `End W`" makes the second half FALSE, because a
+bare `≃+` is invariant under composition with a wild automorphism of the abstract
+group `W(ℚ̄) ≅ (ℚ/ℤ)² ⊕ ⊕ℚ` and therefore records nothing about the chart.
+
+What that argument rules out is a split along an UNPINNED equivalence.  It says
+nothing about a split along a PINNED one, and that is the cut made here:
+
+* `chartRelPoint` names, for each affine solution `(x, y)` of `W`, the relative
+  point of `A` it cuts out — `Spec` of evaluation at `(x, y)`, composed with the
+  chart.  No hypothesis beyond `hcomm` is needed to see that it IS a relative
+  point over `𝟙`: evaluation is a `k`-algebra map, so it splits the structure map;
+* `eq_of_chartPinned` (PROVEN) is what makes the cut sound: a map
+  `W.toAffine.Point → RelPoint f (𝟙 (Spec k))` that sends `0` to the zero section
+  and every `some x y h` to `chartRelPoint … x y h` is UNIQUE.  So "e is pinned by
+  the chart" is not a property that many equivalences share — it determines `e`
+  outright, which is exactly what the wild-automorphism witness destroys and what
+  the naive split omits.
+
+The residue is then two leaves, and they are the two facts the bridge's own
+docstring already identifies as its content:
+
+* `exists_addEquiv_chartPinned_of_weierstrassModel` — the dictionary, i.e. that
+  the chart-pinned bijection exists and is ADDITIVE.  This is RIGIDITY, it is the
+  half `EllipticScheme.lean` supplies over `ℚ` (`exists_geomFibreAddEquiv_of_weierstrassModel`,
+  PROVEN, not importable here), and it is a SHARED obligation: the sibling
+  `exists_relSchemeEnd_geomEquiv_of_weierstrassModel` above needs the same
+  dictionary for its `ε`, and `X0.lean`'s `exists_weierstrassQ_autStable_of_weierstrassAlgClos`
+  needs its semilinear form.  Note `X0.lean`'s `exists_addEquiv_of_weierstrassModel_field`
+  gives the `≃+` at every field ALREADY — what it does not give, and cannot, is
+  the pinning, since its conclusion is a bare `Nonempty`;
+* `isRationalMap_of_chartPinned` — the certificate.
+
+**THE CERTIFICATE SHRANK TO ONE OF ITS THREE CLAUSES, and this is worth knowing
+before attacking it.**  Membership in `WeierstrassCurve.End` is `IsIsogeny`, which
+asks for `IsRationalMap`, surjectivity of a nonzero map, and finiteness of its
+kernel.  Over an ALGEBRAICALLY CLOSED field the last two are free:
+`WeierstrassCurve.IsRationalMap.isIsogeny` (`EllipticCurve/Isogeny.lean`, PROVEN
+and axiom-clean) derives both.  `AlgebraicClosure ℚ` is algebraically closed, so
+the only geometric obligation left is the five polynomials, and the leaf is stated
+as `IsRationalMap` rather than as `IsIsogeny`.
+
+**THE ROUTE FOR THE CERTIFICATE**, worked out but not carried out.  `Φ` is a
+MORPHISM, which is what `exists_morphism_phi` above exists to supply, so:
+
+1. `Φ⁻¹(zero section)` is closed in `A`; either it is everything — then `ψ = 0`,
+   which the assembly below discharges by `IsRationalMap.zero` — or it is a proper
+   closed subset of an irreducible curve, hence finite.  The assembly hands the
+   leaf `hψ0 : ψ ≠ 0`, so a prover may assume the second case;
+2. off that finite set the chart is carried into itself, giving a ring map
+   `k[W] ⟶ k[W][1/f]` for any `f` vanishing on it, hence rational functions
+   `Φ*(x), Φ*(y) ∈ k(W)`;
+3. `k(W) = k(x) ⊕ k(x)·η` with `η := y + (a₁x + a₃)/2` anti-invariant under the
+   hyperelliptic involution.  `ψ` is ADDITIVE, so `x ∘ ψ` is invariant
+   (`x(-Q) = x(Q)`) and lands in `k(x)`, while `y ∘ ψ` is `C(x)/E(x) · y + D(x)/E(x)`.
+   That is the certificate's shape, and additivity is the only place it comes from;
+4. the identities then hold off a finite set of `x`-values, and **that is enough**:
+   multiplying `A, B` (resp. `C, D, E`) by a polynomial vanishing at those values
+   makes both sides `0` there, so the certificate extends to every `P` with
+   `ψ P ≠ 0` at no cost.  `B ≠ 0` and `E ≠ 0` survive because the field is a domain.
+
+**THREE OF THE PROVEN LEMMAS BELOW HAVE NO TERM-LEVEL CONSUMER YET, AND MUST NOT BE
+SWEPT.**  `chartRelPoint` is in the STATEMENT of both leaves, so it is in the root
+cone; `chartRelPoint_ne_zero`, `chartRelPoint_inj` and `eq_of_chartPinned` are not,
+because the only proof that will consume them is the one that closes
+`exists_addEquiv_chartPinned_of_weierstrassModel` — a sorried body contributes no
+dependency edges.  They are kept deliberately: `eq_of_chartPinned` is the soundness
+receipt of this cut (without it a reader cannot tell this split from the refuted
+one, and the docstring's claim that the pinning determines `e` would be prose), and
+the other two are the non-degeneracy and injectivity halves of the bijection that
+leaf A's prover needs.  A floating sweep should leave them until that leaf closes.
+
+**WHAT IS PROVEN HERE AND WHAT IS NOT.**  Everything that is not one of those two
+facts: the chart point and its two separation properties, the uniqueness that
+justifies the cut, the packaging of `RelPoint.post Φ hΦ` as an `AddMonoidHom`
+(`IsAdditiveOn` plus `IsAdditiveOn.postZero`), the transport of it along the
+dictionary, the degenerate branch, and the passage from `IsRationalMap` to
+`End W`.  The frontier goes `1 → 2` and that is the honest accounting; what the
+two survivors buy is that neither mentions `Gamma0Datum`, a level, or `ℚ̄` — both
+are stated over an arbitrary field — and that between them they contain no
+bookkeeping at all. -/
+
+/-- **The relative point cut out by an affine point of a Weierstrass model**
+(PROVEN).
+
+`(x, y)` a solution of `W` over `k` gives a `k`-algebra map
+`k[W] = k[X, Y]/(W) ⟶ k`, namely evaluation at it (`weierstrassEvalHom`,
+`ModularCurve/X1.lean`, stated there over an arbitrary field); `Spec` of it is a
+`k`-point of the affine chart, and `ι` pushes it into `A`.
+
+The side condition — that this really is a SECTION of `f` over the identity — is
+where `hcomm` is spent, and it is one rewrite: evaluation is a `k`-ALGEBRA map, so
+composing it with `algebraMap k k[W]` is the identity of `k`, and `Spec` turns that
+into `Spec.map _ ≫ (ι ≫ f) = 𝟙`.  Nothing about openness or about the range of `ι`
+is used, so this definition is available before any of the geometry. -/
+noncomputable def chartRelPoint {k : Type} [Field k] (W : _root_.WeierstrassCurve k)
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of k)}
+    (ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A)
+    (hcomm : ι ≫ f = Spec.map (CommRingCat.ofHom
+      (algebraMap k W.toAffine.CoordinateRing)))
+    (x y : k) (h : W.toAffine.Equation x y) :
+    RelPoint f (𝟙 (Spec (CommRingCat.of k))) :=
+  ⟨Spec.map (CommRingCat.ofHom
+      (weierstrassEvalHom W x y h : W.toAffine.CoordinateRing →+* k)) ≫ ι, by
+    have hev : (CommRingCat.ofHom (algebraMap k W.toAffine.CoordinateRing)) ≫
+        (CommRingCat.ofHom (weierstrassEvalHom W x y h : W.toAffine.CoordinateRing →+* k))
+        = 𝟙 (CommRingCat.of k) := by
+      ext a
+      exact (weierstrassEvalHom W x y h).commutes a
+    rw [Category.assoc, hcomm, ← Spec.map_comp, hev, Spec.map_id]⟩
+
+/-- **A chart point is never the zero section** (PROVEN).
+
+It factors through `ι`, so its image point lies in `Set.range ι.base`, which
+`hrange` says is the COMPLEMENT of the zero section's image.  `Spec k` is nonempty,
+which is all that is needed to read that off.
+
+This is the half of "the dictionary is a bijection" that costs nothing, and it is
+what a prover of `exists_addEquiv_chartPinned_of_weierstrassModel` needs in order
+to know the pinning is consistent with `e 0 = 0`. -/
+theorem chartRelPoint_ne_zero {k : Type} [Field k] (W : _root_.WeierstrassCurve k)
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of k)} (ab : AbelianSchemeStruct f)
+    (ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A)
+    (hcomm : ι ≫ f = Spec.map (CommRingCat.ofHom
+      (algebraMap k W.toAffine.CoordinateRing)))
+    (hrange : Set.range ι.base
+      = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ)
+    (x y : k) (h : W.toAffine.Equation x y) :
+    chartRelPoint W ι hcomm x y h ≠ ab.zero (𝟙 (Spec (CommRingCat.of k))) := by
+  intro hcon
+  obtain ⟨p⟩ : Nonempty (Spec (CommRingCat.of k)) :=
+    inferInstanceAs (Nonempty (PrimeSpectrum k))
+  have hmem : (chartRelPoint W ι hcomm x y h).1.base p ∈ Set.range ι.base := ⟨_, rfl⟩
+  rw [hrange] at hmem
+  exact hmem ⟨p, congrArg (fun z : RelPoint f (𝟙 (Spec (CommRingCat.of k))) =>
+    z.1.base p) hcon.symm⟩
+
+set_option maxHeartbeats 1000000 in
+/-- **A chart point determines its coordinates** (PROVEN).
+
+`ι` is an open immersion, hence a monomorphism, so the two `Spec.map`s agree;
+`Spec` is fully faithful (`Spec.map_injective`), so the two evaluation maps agree;
+and an evaluation map is determined by its values on the two generators of the
+coordinate ring, which are `x` and `y` (`weierstrassEvalHom_of_X`,
+`weierstrassEvalHom_root`, both in `ModularCurve/X1.lean` over an arbitrary field).
+
+The heartbeat bump is for `Spec.map_injective`'s unification through
+`CommRingCat.of`; the two implicit rings are supplied explicitly and it is still
+the expensive step. -/
+theorem chartRelPoint_inj {k : Type} [Field k] (W : _root_.WeierstrassCurve k)
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of k)}
+    (ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A) [IsOpenImmersion ι]
+    (hcomm : ι ≫ f = Spec.map (CommRingCat.ofHom
+      (algebraMap k W.toAffine.CoordinateRing)))
+    {x y x' y' : k} {h : W.toAffine.Equation x y} {h' : W.toAffine.Equation x' y'}
+    (heq : chartRelPoint W ι hcomm x y h = chartRelPoint W ι hcomm x' y' h') :
+    x = x' ∧ y = y' := by
+  have h1 : Spec.map (CommRingCat.ofHom
+      (weierstrassEvalHom W x y h : W.toAffine.CoordinateRing →+* k)) ≫ ι
+      = Spec.map (CommRingCat.ofHom
+      (weierstrassEvalHom W x' y' h' : W.toAffine.CoordinateRing →+* k)) ≫ ι :=
+    congrArg Subtype.val heq
+  have h2 := (cancel_mono ι).mp h1
+  have h3 : (CommRingCat.ofHom (weierstrassEvalHom W x y h : _ →+* k))
+      = CommRingCat.ofHom (weierstrassEvalHom W x' y' h' : _ →+* k) :=
+    Spec.map_injective (R := CommRingCat.of W.toAffine.CoordinateRing)
+      (S := CommRingCat.of k) h2
+  have h4 : ∀ z : W.toAffine.CoordinateRing,
+      weierstrassEvalHom W x y h z = weierstrassEvalHom W x' y' h' z := by
+    intro z
+    exact congrArg (fun u : CommRingCat.of W.toAffine.CoordinateRing ⟶ CommRingCat.of k =>
+      u.hom z) h3
+  refine ⟨?_, ?_⟩
+  · have := h4 (AdjoinRoot.of W.toAffine.polynomial Polynomial.X)
+    rwa [weierstrassEvalHom_of_X, weierstrassEvalHom_of_X] at this
+  · have := h4 (AdjoinRoot.root W.toAffine.polynomial)
+    rwa [weierstrassEvalHom_root, weierstrassEvalHom_root] at this
+
+/-- **THE PINNING DETERMINES THE DICTIONARY** (PROVEN) — the soundness lemma of
+the cut immediately below, and the reason the split this file's bridge warns
+against is not the split being made.
+
+`WeierstrassCurve.Affine.Point` has exactly two constructors, so a map out of it
+is fixed by its value at `zero` and at each `some x y h`.  A "chart-pinned" map is
+therefore not a member of a large family — it is the unique such map, and the wild
+automorphism of the abstract group `W(k)` that refutes the unpinned split does not
+preserve the pinning.
+
+There is nothing to hypothesise about `e` beyond the two clauses: no injectivity,
+no surjectivity, no additivity.  `e 0 = ab.zero` is free for an ADDITIVE `e`, which
+is the shape both consumers hand over. -/
+theorem eq_of_chartPinned {k : Type} [Field k] [DecidableEq k]
+    (W : _root_.WeierstrassCurve k) [W.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of k)} (ab : AbelianSchemeStruct f)
+    (ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A)
+    (hcomm : ι ≫ f = Spec.map (CommRingCat.ofHom
+      (algebraMap k W.toAffine.CoordinateRing)))
+    (e e' : W.toAffine.Point → RelPoint f (𝟙 (Spec (CommRingCat.of k))))
+    (h0 : e _root_.WeierstrassCurve.Affine.Point.zero
+      = ab.zero (𝟙 (Spec (CommRingCat.of k))))
+    (h0' : e' _root_.WeierstrassCurve.Affine.Point.zero
+      = ab.zero (𝟙 (Spec (CommRingCat.of k))))
+    (he : ∀ (x y : k) (h : W.toAffine.Nonsingular x y),
+      e (.some x y h) = chartRelPoint W ι hcomm x y h.left)
+    (he' : ∀ (x y : k) (h : W.toAffine.Nonsingular x y),
+      e' (.some x y h) = chartRelPoint W ι hcomm x y h.left) :
+    e = e' := by
+  funext P
+  rcases P with _ | ⟨x, y, h⟩
+  · rw [h0, h0']
+  · rw [he, he']
+
+/-- **LEAF A of the Weierstrass bridge (cut 2026-07-31, `flt-lean-109`): THE
+CHART-PINNED DICTIONARY IS ADDITIVE** — the `k`-points of an abelian scheme are
+the `k`-points of its Weierstrass model, AS GROUPS, by the map the chart gives.
+
+**FIELD-GENERIC AND LEVEL-GENERIC.**  `k` is an arbitrary field, `f` an arbitrary
+abelian scheme over it, and no `Gamma0Datum` appears.  The bridge below is the
+instance `k = ℚ̄`; the sibling `exists_relSchemeEnd_geomEquiv_of_weierstrassModel`
+above needs the same statement for its `ε`; and at `k = ZMod ℓ` this is the
+statement `X1.lean` records as `map_add_relPointWeierstrassEquiv`, DELETED there on
+2026-07-31 for having no consumer.  It has one now.
+
+**WHAT IS NEW HERE, AND IT IS EXACTLY ONE THING.**  `X0.lean`'s
+`exists_addEquiv_of_weierstrassModel_field` already gives, at every field, a
+`Nonempty (RelPoint f (𝟙 (Spec k)) ≃+ (W⁄k).Point)`.  What it cannot give is the
+PINNING: its conclusion is a bare `Nonempty`, so a consumer may use only what is
+true of EVERY witness, and composing a witness with a wild automorphism of the
+abstract group `W(k)` gives another witness.  This leaf asks for the same
+equivalence with `e` identified on affine points, which by `eq_of_chartPinned`
+above determines it completely.
+
+**THE ARGUMENT** is rigidity, and it is what `EllipticScheme.lean` runs over `ℚ` in
+`exists_geomFibreAddEquiv_of_weierstrassModel` (PROVEN there, NOT importable here —
+`X0.lean` imports that module privately).  The chart bijection sends the zero
+section to the point at infinity by construction (`chartRelPoint_ne_zero` is the
+non-degeneracy, `chartRelPoint_inj` the injectivity), so the two group laws being
+compared share an identity, and `Fermat.isAdditiveOn_of_post_zero` — relative
+rigidity over an arbitrary base, and it IS reachable from this file — is what turns
+that into additivity once both sides are presented as abelian schemes.  The
+missing presentation is the chord–tangent law on the projective model as an
+`AbelianSchemeStruct`, which over an arbitrary field is
+`EllipticScheme.lean`'s `exists_ellipticScheme_weierstrassChart_addEquiv_field`.
+
+The cheapest way to close this leaf is therefore NOT to rebuild rigidity here: it
+is to strengthen that theorem (and the `exists_projGroupLaw_relPointAddEquiv_field`
+under it) to publish its `≃+` PINNED BY ITS OWN CHART, and to re-export the pinned
+form through `X0.lean` beside `exists_addEquiv_of_weierstrassModel_field`.  That is
+an interface change in a file with concurrent owners, which is why it was not made
+from here.
+
+**SURJECTIVITY IS THE ONLY PART THAT IS PURE BOOKKEEPING**, and it is `X1.lean`'s
+`relPointOfOption_bijective` with `ZMod ℓ` replaced by `k`: `Spec k` is a one-point
+space, so a section of `f` either lands in `Set.range ι.base` — where
+`IsOpenImmersion.lift` factors it through the chart — or lands on the zero
+section's point and IS the zero section, because a `k`-SECTION of a `k`-scheme is
+determined by its image point (any `k`-algebra map `κ(x) → k` is a retraction of
+`k → κ(x)`, hence bijective, hence the inverse of it, hence unique).  That last
+step is where `X1.lean` uses `RingHom.ext_zmod` and where the general field needs
+the retraction argument instead.
+
+**NOT VACUOUS**: at `k = ℚ̄` the chart is supplied by
+`exists_isWeierstrassModel_algClos` and the underlying `≃+` by
+`exists_addEquiv_of_weierstrassModel_field`, so the only question is the pinning.
+
+*The check that would refute it*: a Weierstrass model whose chart bijection is not
+additive — equivalently, an abelian scheme over a field whose functor-of-points
+group law disagrees with the chord–tangent law of a model of it.  There is none:
+both are group laws on the same smooth proper genus-one curve with the same
+identity, and rigidity identifies them. -/
+theorem exists_addEquiv_chartPinned_of_weierstrassModel {k : Type} [Field k] [DecidableEq k]
+    (W : _root_.WeierstrassCurve k) [W.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of k)} (ab : AbelianSchemeStruct f)
+    (ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A) (_hopen : IsOpenImmersion ι)
+    (hcomm : ι ≫ f = Spec.map (CommRingCat.ofHom
+      (algebraMap k W.toAffine.CoordinateRing)))
+    (_hrange : Set.range ι.base
+      = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ) :
+    ∃ e : W.toAffine.Point ≃ RelPoint f (𝟙 (Spec (CommRingCat.of k))),
+      (∀ P Q : W.toAffine.Point, e (P + Q) = ab.add (e P) (e Q)) ∧
+      (∀ (x y : k) (h : W.toAffine.Nonsingular x y),
+        e (.some x y h) = chartRelPoint W ι hcomm x y h.left) :=
+  sorry
+
+/-- **LEAF B of the Weierstrass bridge (cut 2026-07-31, `flt-lean-109`): THE
+CERTIFICATE** — an additive endomorphism of the abelian scheme, read through the
+chart-pinned dictionary, is given by RATIONAL FUNCTIONS in the coordinates.
+
+This is the whole of what `WeierstrassCurve.End` asks beyond additivity, and over
+an algebraically closed field it is the ONLY thing it asks: surjectivity and
+finiteness of the kernel are derived from `IsRationalMap` by
+`WeierstrassCurve.IsRationalMap.isIsogeny`.  The leaf is therefore stated as
+`IsRationalMap` and not as `IsIsogeny`, and it carries no `IsAlgClosed`.
+
+**WHY IT NEEDS THE PINNING AND NOT MERELY A `≃+`.**  `IsRationalMap ψ` is a
+statement about the COORDINATES of `ψ P`, so a hypothesis on `e` that does not
+say which relative point `(x, y)` corresponds to is no hypothesis at all: see the
+subsection note above, and `eq_of_chartPinned` for why the pinning is not one
+property among many but a complete determination of `e`.  Note that `e` here is a
+bare `Equiv` — additivity of `e` is not needed, because `ψ` arrives as an
+`AddMonoidHom` already.
+
+**THE ROUTE** is the four steps written out in the subsection note above.  In one
+sentence: `hint` plus `_he` say that the coordinates of `ψ P` are the values at `P`
+of `(ι ≫ Φ)^*x` and `(ι ≫ Φ)^*y`, which are rational functions on `W` because `Φ`
+is a MORPHISM; `ψ` being additive puts the first in `k(x)` and the second in
+`k(x) ⊕ k(x)·y`; and the finitely many bad `x`-values are absorbed by multiplying
+the witnesses by a polynomial vanishing at them.
+
+**`_hψ0` IS FREE STRENGTH, NOT A RESTRICTION.**  `IsRationalMap 0` is true, so the
+statement without it is equally true; it is supplied because the assembly's
+`by_cases` produces it for nothing, and it lets a prover assume `Φ` does not kill
+every `k`-point — which is what makes `Φ⁻¹(zero section)` a PROPER closed subset
+and hence finite.  `_hadd` is likewise retained defensively: `hint` with `ψ` an
+`AddMonoidHom` already constrains `Φ` heavily, but the caller holds `_hadd` for
+free and a prover may want it.
+
+**NOT VACUOUS**: `exists_addEquiv_chartPinned_of_weierstrassModel` supplies `e` and
+`_he`, and `exists_morphism_phi` above supplies `Φ` with `_hadd` at each of
+`p = 43, 67, 163`; `Φ` the zero morphism and `ψ = 0` realise the hypotheses minus
+`_hψ0` at every level.
+
+*The check that would refute it*: an abelian scheme over a field with a Weierstrass
+model and an additive scheme endomorphism whose induced map on `k`-points is not
+given by rational functions in the coordinates.  There is none while `Φ` is a
+morphism of schemes; the statement IS false with `Φ` weakened to an additive
+endomorphism of the point group, which is what makes `Φ`'s being a morphism the
+load-bearing hypothesis of the whole bridge. -/
+theorem isRationalMap_of_chartPinned {k : Type} [Field k] [DecidableEq k]
+    (W : _root_.WeierstrassCurve k) [W.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of k)} (ab : AbelianSchemeStruct f)
+    (ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A) (_hopen : IsOpenImmersion ι)
+    (hcomm : ι ≫ f = Spec.map (CommRingCat.ofHom
+      (algebraMap k W.toAffine.CoordinateRing)))
+    (_hrange : Set.range ι.base
+      = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ)
+    (Φ : A ⟶ A) (hΦ : Φ ≫ f = f) (_hadd : IsAdditiveOn ab ab Φ hΦ)
+    (e : W.toAffine.Point ≃ RelPoint f (𝟙 (Spec (CommRingCat.of k))))
+    (_he : ∀ (x y : k) (h : W.toAffine.Nonsingular x y),
+      e (.some x y h) = chartRelPoint W ι hcomm x y h.left)
+    (ψ : W.toAffine.Point →+ W.toAffine.Point) (_hψ0 : ψ ≠ 0)
+    (_hint : ∀ P : W.toAffine.Point, e (ψ P) = RelPoint.post Φ hΦ (e P)) :
+    _root_.WeierstrassCurve.IsRationalMap ψ :=
+  sorry
+
+/-- **THE WEIERSTRASS BRIDGE** (cut 2026-07-31 by flt-lean-393 out of
 `exists_end_of_isCMByRamifiedMaximalOrder`; it replaces that leaf and is the only
 one the cut leaves open): a Weierstrass model of an elliptic scheme over `ℚ̄`
 identifies the `ℚ̄`-points of the model with the relative points of the scheme over
@@ -40614,7 +40963,12 @@ relation and `IsCMByRamifiedMaximalOrder` have all been removed by the cut, and
 what remains holds for every elliptic scheme over `ℚ̄`, every Weierstrass model of
 it and every additive `Φ`.
 
-**THE TWO HALVES, and why they may NOT be separated into two leaves.**
+**PROVEN 2026-07-31 (`flt-lean-109`) over `exists_addEquiv_chartPinned_of_weierstrassModel`
+and `isRationalMap_of_chartPinned` immediately above.**  The paragraph below is the
+warning this cut had to respect, and it is left standing because it is CORRECT
+about the split it describes; read it together with the reconciliation after it.
+
+**THE TWO HALVES, and why they may NOT be separated ALONG AN UNPINNED `≃+`.**
 The equivalence `e` is the geometric identification supplied by the chart of
 `IsWeierstrassModel`; `ψ` is `Φ` read through it.  Stating them as two leaves — "an
 additive equivalence exists" and "any additive equivalence transports `Φ` into
@@ -40622,8 +40976,19 @@ additive equivalence exists" and "any additive equivalence transports `Φ` into
 automorphism of the abstract group `W(ℚ̄)` (divisible of infinite rank, so it has
 many) again gives a `≃+`, and the transported endomorphism is then a group
 endomorphism with no reason to satisfy `IsRationalMap`.  The `≃+` type does not
-record that `e` came from the chart, so the two must be produced together.  See the
-subsection note above.
+record that `e` came from the chart.
+
+**RECONCILIATION (2026-07-31): the split that IS made carries the chart with it.**
+The witness above refutes a split whose second half quantifies over an arbitrary
+`≃+`.  It says nothing about a split whose second half receives `e` TOGETHER WITH
+the equation identifying it on affine points — and that pinning is not one property
+among many: by `eq_of_chartPinned` above (PROVEN) it determines `e` outright, so
+the wild automorphism is not an admissible witness for it.  This is the same repair
+`X0.lean`'s `exists_weierstrassQ_autStable_of_weierstrassAlgClos` prescribes for
+the same trap in its own BLOCKING AUDIT — "any admissible cut must either construct
+the dictionary inside, or hypothesise it together with its semilinearity" — with
+chart-pinning in place of semilinearity, that being the invariance this consumer
+needs.  The frontier goes `1 → 2`; see the subsection note for what left the leaf.
 
 **THE ARGUMENT.**  `hW` gives an open immersion `Spec ℚ̄[W] ↪ d.E` over `Spec ℚ̄`
 whose range is the complement of the zero section, so the `ℚ̄`-points of `W` off the
@@ -40671,8 +41036,33 @@ theorem exists_end_of_isWeierstrassModel_of_isAdditiveOn {N : ℕ}
       (e : W.toAffine.Point ≃+
         RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))),
       ∀ P : W.toAffine.Point,
-        e ((ψ : AddMonoid.End W.toAffine.Point) P) = RelPoint.post Φ hΦ (e P) :=
-  sorry
+        e ((ψ : AddMonoid.End W.toAffine.Point) P) = RelPoint.post Φ hΦ (e P) := by
+  letI := d.ab.addCommGroup (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+  obtain ⟨ι, hopen, hcomm, hrange⟩ := hW
+  obtain ⟨e, hadde, he⟩ :=
+    exists_addEquiv_chartPinned_of_weierstrassModel W d.ab ι hopen hcomm hrange
+  -- `RelPoint.post Φ hΦ` is additive: `hadd` is the sum clause and
+  -- `IsAdditiveOn.postZero` the zero one.
+  let post : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) →+
+      RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :=
+    { toFun := RelPoint.post Φ hΦ
+      map_zero' := hadd.postZero _
+      map_add' := fun x y => hadd x y }
+  -- the dictionary, as an `AddEquiv`
+  let E : W.toAffine.Point ≃+ RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :=
+    { e with map_add' := hadde }
+  -- `Φ` transported along it
+  let ψ₀ : W.toAffine.Point →+ W.toAffine.Point :=
+    (E.symm.toAddMonoidHom).comp (post.comp E.toAddMonoidHom)
+  have hint : ∀ P : W.toAffine.Point, e (ψ₀ P) = RelPoint.post Φ hΦ (e P) :=
+    fun P => E.apply_symm_apply _
+  -- over an ALGEBRAICALLY CLOSED field `IsRationalMap` is all of `IsIsogeny`, and the
+  -- degenerate branch is free.
+  have hrat : _root_.WeierstrassCurve.IsRationalMap ψ₀ := by
+    by_cases hz : ψ₀ = 0
+    · rw [hz]; exact _root_.WeierstrassCurve.IsRationalMap.zero
+    · exact isRationalMap_of_chartPinned W d.ab ι hopen hcomm hrange Φ hΦ hadd e he ψ₀ hz hint
+  exact ⟨⟨ψ₀, hrat.isIsogeny⟩, E, hint⟩
 
 end CMPhiYoneda
 
