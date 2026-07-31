@@ -66,14 +66,20 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
   valuation-ring dichotomy (`ValuationRing.isInteger_or_isInteger`, over
   `valuationRing_stalk_of_smoothOfRelativeDimension_one` — **no DVR and no `¬ IsField` side
   condition needed**) plus `IsFractionRing.injective` for the stalks of an integral scheme.
-* `not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton` — **sorry leaf** (cut
-  2026-07-31 out of SUB-LEAF 1, and after four rounds of cutting this is the ONLY mathematics
-  left under properness): `f` DOES NOT EXTEND ACROSS `z`, i.e. `germ_{x₀} f` is not in the image
-  of `𝒪_{X,z} ⟶ 𝒪_{X,x₀}`.  No valuation ring, no maximal ideal, no reciprocal, no fraction
-  field — one non-membership, and the only place `hqf` and `IsProper strX` are consumed.  Its
-  docstring carries the extend-or-not dichotomy in full, and names the gluing step
-  (`germ_eq` + `germ_injective_of_isIntegral` + the sheaf axiom + `Spec.preimage`) that produces
-  the hypothetical `ĝ : X ⟶ 𝔸¹_K` the dichotomy runs on.
+* `res_top_eq_appTop_topIso`, `coordHom`(`_apply_X`, `_comp_C`), `exists_res_eq_of_germ_eq`,
+  `false_of_res_eq_coordOf_of_locallyQuasiFinite` — **PROVEN 2026-07-31, no sorry**: the four
+  items that close the extension obstruction.  The load-bearing one is the last: an OPEN `U` of
+  a proper integral `X`, infinite, carrying a `K`-morphism `g : U ⟶ 𝔸¹_K` whose classified
+  function is the restriction of a GLOBAL section, cannot be quasi-finite.  No curve, no
+  valuation ring and no `z` appears in it.
+* `not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton` — **PROVEN 2026-07-31**, cut
+  the same day out of SUB-LEAF 1: `f` DOES NOT EXTEND ACROSS `z`, i.e. `germ_{x₀} f` is not in
+  the image of `𝒪_{X,z} ⟶ 𝒪_{X,x₀}`.  With it the WHOLE properness half of the affineness route
+  is closed and the file's only remaining leaf is Riemann–Roch.  **The proof is NOT the fibre
+  dichotomy this file used to plan**: the morphism `ĝ : X ⟶ 𝔸¹_K`, its properness and Zariski's
+  main theorem are all avoided, because the pin's `isIntegral_appTop_of_universallyClosed`
+  makes a global regular function on a universally closed `X` algebraic over `K` outright — so
+  only the SECTION has to be glued, never the morphism.  See its docstring.
 * `exists_algebraMap_eq_stalkClosedPointTo_germ_coordOf` — SUB-LEAF 2, cut 2026-07-31 and
   **PROVEN the same day, no sorry**: `f`'s value at the `L`-point lies in `R`.  PURE
   BOOKKEEPING on the commuting square — no curve, no properness, no smoothness — separated out
@@ -420,9 +426,227 @@ theorem false_of_pole {X : Scheme.{u}} {R L : Type u} [CommRing R] [IsDomain R] 
   exact (IsLocalRing.mem_maximalIdeal _ |>.mp hwm)
     (‹IsLocalHom ψ.hom›.map_nonunit _ (IsUnit.of_mul_eq_one _ h3))
 
-/-- **SUB-SUB-LEAF — `f` DOES NOT EXTEND ACROSS `z`** (sorry leaf, cut 2026-07-31 out of
-`exists_inv_coordOf_mem_maximalIdeal_compl_singleton` immediately below, which is now PROVEN
-over it; this is the WHOLE of the mathematics that leaf contained, and nothing else survives).
+/-! ### The extension obstruction: a global regular function on a proper curve is algebraic
+
+The four items below are what closes the "`f` does not extend across `z`" sub-sub-leaf, and
+none of them mentions a valuation ring, a DVR, `𝔪_z`, properness of a morphism to `𝔸¹`, or
+Zariski's main theorem.  The route they realise is SHORTER than the extend-then-ZMT dichotomy
+this file used to plan, and the reason is one lemma of the pin that the plan overlooked:
+`isIntegral_appTop_of_universallyClosed` (`Morphisms/Proper.lean`) says the global sections of
+a universally closed scheme over an affine base are INTEGRAL over it.  So an extension `F` of
+`f` is algebraic over `K` outright, `g` classifies a root of a nonzero polynomial, and `g` is
+therefore constant — no fibre dichotomy, no `IsFinite.of_isProper_of_locallyQuasiFinite`, and
+no need to build the morphism `ĝ : X ⟶ 𝔸¹_K` at all (only the SECTION `F` is needed). -/
+
+/-- **The restriction `Γ(X, ⊤) ⟶ Γ(X, U)` is `ι.appTop` followed by `topIso`**
+(PROVEN 2026-07-31, no sorry).
+
+This is `ι_appLE_top_eq_topIso_inv` and `appLE_top_top_eq_appTop` below, glued by
+`Scheme.Hom.map_appLE`; their proofs are repeated inline rather than reused because those two
+lemmas are declared *after* the sub-sub-leaf this one serves, and the leaf must precede its own
+consumer. -/
+theorem res_top_eq_appTop_topIso {X : Scheme.{u}} (U : X.Opens) :
+    X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op =
+      (Scheme.Opens.ι U).appTop ≫ (Scheme.Opens.topIso U).hom := by
+  have h1 : (Scheme.Opens.ι U).appLE U ⊤ (by simp) = (Scheme.Opens.topIso U).inv := by
+    rw [Scheme.Opens.ι_appLE, Scheme.Opens.topIso]
+    simp only [Functor.mapIso_inv, Iso.op_inv, eqToIso.inv]
+    congr 1
+  have h2 : ∀ {Y Z : Scheme.{u}} (f : Y ⟶ Z) e, f.appLE ⊤ ⊤ e = f.appTop := by
+    intro Y Z f e; simp [Scheme.Hom.appLE, Scheme.Hom.appTop]
+  have key : X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op ≫ (Scheme.Opens.topIso U).inv
+      = (Scheme.Opens.ι U).appTop := by
+    rw [← h1, Scheme.Hom.map_appLE, h2]
+  rw [← key, Category.assoc, Iso.inv_hom_id, Category.comp_id]
+
+/-- **The classifying ring map `K[T] ⟶ Γ(X, U)` of a morphism `U ⟶ 𝔸¹_K`** — `coordOf` is its
+value at `T`, and this packaging is what lets a POLYNOMIAL identity be pushed through it. -/
+noncomputable def coordHom {K : Type u} [Field K] {X : Scheme.{u}} (U : X.Opens)
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K))) :
+    CommRingCat.of (Polynomial K) ⟶ X.presheaf.obj (Opposite.op U) :=
+  (Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv ≫ g.appTop ≫
+    (Scheme.Opens.topIso U).hom
+
+/-- **`coordHom` sends `T` to `coordOf`** (PROVEN, `rfl`). -/
+theorem coordHom_apply_X {K : Type u} [Field K] {X : Scheme.{u}} (U : X.Opens)
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K))) :
+    (coordHom U g).hom Polynomial.X = coordOf U g := rfl
+
+/-- **`coordHom` is `K`-linear, for the `K`-algebra structure `strX` gives `Γ(X, U)`**
+(PROVEN 2026-07-31, no sorry) — and this is the ONLY place `hover` is consumed in the
+extension argument.
+
+Read on the constants of `K[T]`, the triangle `hover` says exactly that the two ways of
+turning a scalar into a section of `Γ(X, U)` — through `𝔸¹_K` and through `Spec K` — agree.
+Without it `g` is a morphism of schemes over `ℤ` and its restriction `K → Γ(X, U)` need not be
+the structure map at all; see `affineLineOver`. -/
+theorem coordHom_comp_C {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) (U : X.Opens)
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
+    (hover : g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX) :
+    CommRingCat.ofHom (Polynomial.C : K →+* Polynomial K) ≫ coordHom U g =
+      ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop) ≫
+        X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op := by
+  have h := congrArg (fun m : U.toScheme ⟶ Spec (CommRingCat.of K) => m.appTop) hover
+  simp only [Scheme.Hom.comp_appTop, affineLineOver] at h
+  have hC : (CommRingCat.ofHom (Polynomial.C : K →+* Polynomial K)) =
+      CommRingCat.ofHom (algebraMap K (Polynomial K)) := by
+    rw [Polynomial.algebraMap_eq]
+  rw [hC, coordHom, ← Category.assoc, Scheme.ΓSpecIso_inv_naturality,
+    res_top_eq_appTop_topIso U]
+  simp only [Category.assoc]
+  rw [← Category.assoc
+      ((Spec.map (CommRingCat.ofHom (algebraMap K (Polynomial K)))).appTop) g.appTop,
+    h, Category.assoc]
+
+/-- **Two sections of an INTEGRAL scheme with the same germ at one common point glue**
+(PROVEN 2026-07-31, no sorry).
+
+On an integral scheme a germ determines a section (`germ_injective_of_isIntegral`), so equality
+of germs at the single point `x₀` upgrades to equality on EVERY open contained in both domains
+— which is exactly the compatibility that `TopCat.Sheaf.existsUnique_gluing'` wants.  Only the
+restriction of the glued section to `U` is returned, since that is all the consumer uses.
+
+`IsIntegral X` IS LOAD-BEARING: without irreducibility two sections can agree at `x₀` and
+disagree elsewhere on `U ⊓ V`, and nothing glues. -/
+theorem exists_res_eq_of_germ_eq {X : Scheme.{u}} [IsIntegral X] {U V : X.Opens}
+    (hcover : (⊤ : X.Opens) ≤ U ⊔ V) {x₀ : X} (hxU : x₀ ∈ U) (hxV : x₀ ∈ V)
+    (f : Γ(X, U)) (s : Γ(X, V))
+    (h : X.presheaf.germ U x₀ hxU f = X.presheaf.germ V x₀ hxV s) :
+    ∃ F : Γ(X, ⊤), X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op F = f := by
+  classical
+  have key : ∀ (W : X.Opens) (h1 : W ≤ U) (h2 : W ≤ V), x₀ ∈ W →
+      X.presheaf.map (homOfLE h1).op f = X.presheaf.map (homOfLE h2).op s := by
+    intro W h1 h2 hxW
+    refine germ_injective_of_isIntegral X x₀ hxW ?_
+    rw [X.presheaf.germ_res_apply, X.presheaf.germ_res_apply]
+    exact h
+  let 𝒰 : Bool → X.Opens := fun b => Bool.rec V U b
+  let sf : ∀ b, Γ(X, 𝒰 b) := fun b => Bool.rec s f b
+  have hcompat : TopCat.Presheaf.IsCompatible X.sheaf.1 𝒰 sf := by
+    rintro (_ | _) (_ | _)
+    · rfl
+    · exact (key _ inf_le_right inf_le_left ⟨hxV, hxU⟩).symm
+    · exact key _ inf_le_left inf_le_right ⟨hxU, hxV⟩
+    · rfl
+  have hcov : (⊤ : X.Opens) ≤ iSup 𝒰 := by
+    rw [iSup_bool_eq]
+    exact hcover
+  obtain ⟨F, hFspec, -⟩ :=
+    X.sheaf.existsUnique_gluing' 𝒰 ⊤ (fun _ => homOfLE le_top) hcov sf hcompat
+  exact ⟨F, hFspec true⟩
+
+/-- **IF THE CLASSIFIED FUNCTION EXTENDS TO A GLOBAL SECTION, `g` CANNOT BE QUASI-FINITE**
+(PROVEN 2026-07-31, no sorry) — the whole of the sub-sub-leaf's mathematics, with the puncture,
+the specialization and the stalks removed: only an OPEN `U` of a proper integral `X`, infinite,
+and a `K`-morphism `g : U ⟶ 𝔸¹_K` whose classified function is the restriction of a global one.
+
+THE ARGUMENT, in four moves:
+
+1. `isIntegral_appTop_of_universallyClosed strX` (pin, `Morphisms/Proper.lean`): `Γ(X, ⊤)` is
+   INTEGRAL over `K`.  So `F` satisfies a monic `p ∈ K[T]`.
+2. `coordHom_comp_C` transports that identity along the classifying map: `p` is in the kernel
+   of `coordHom U g`, because a ring map out of `K[T]` is `eval₂` of what it does to `K` and to
+   `T` (`Polynomial.ringHom_ext`), and those are the restriction `Γ(X, ⊤) ⟶ Γ(X, U)` and `f`.
+3. Hence `T`'s pull-back to the basic open of `p` is `0`, so `g` sends the GENERIC point of `U`
+   into `V(p)`; as `p ≠ 0` and `K[T]` is a PID, that prime is MAXIMAL, i.e. a closed point.
+4. A continuous map sends generizations to generizations, so the image of the whole of `U` is
+   contained in the closure of that closed point — a single point.  Its fibre is all of `U`,
+   which is infinite, while `Scheme.Hom.finite_preimage_singleton` makes it finite.
+
+**`IsProper strX` IS LOAD-BEARING**, through `UniversallyClosed` in move 1 — on an affine curve
+`Γ(X, ⊤)` is not algebraic over `K` and the extension carries no information.
+
+**`Infinite ↥U` IS LOAD-BEARING and the statement is FALSE without it**: on a finite `U` a
+constant `g` is perfectly quasi-finite.
+
+**`hover` IS LOAD-BEARING**: it is the only hypothesis tying `g` to the `K`-structure, and
+move 2 is where it is consumed.  See `affineLineOver`. -/
+theorem false_of_res_eq_coordOf_of_locallyQuasiFinite {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [IsProper strX] [IsIntegral X]
+    (U : X.Opens) [Infinite ↥U]
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
+    [LocallyQuasiFinite g] [QuasiCompact g]
+    (hover : g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX)
+    (F : Γ(X, ⊤))
+    (hF : X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op F = coordOf U g) :
+    False := by
+  classical
+  haveI : Nonempty ↥U := inferInstance
+  haveI : Nonempty ↥(U.toScheme) := inferInstanceAs (Nonempty ↥U)
+  haveI : Infinite ↥(U.toScheme) := inferInstanceAs (Infinite ↥U)
+  -- MOVE 1: `F` is integral over `K`.
+  have hint : ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop).hom.IsIntegral := by
+    apply RingHom.isIntegral_respectsIso.2
+      (e := (Scheme.ΓSpecIso (CommRingCat.of K)).symm.commRingCatIsoToRingEquiv)
+    exact isIntegral_appTop_of_universallyClosed strX
+  obtain ⟨p, hpm, hp0⟩ := hint F
+  -- MOVE 2: the same polynomial dies in the classifying map of `g`.
+  have hpsi : (coordHom U g).hom p = 0 := by
+    have hsplit : (coordHom U g).hom = Polynomial.eval₂RingHom
+        ((coordHom U g).hom.comp (Polynomial.C : K →+* Polynomial K))
+        ((coordHom U g).hom Polynomial.X) :=
+      Polynomial.ringHom_ext (fun a => by simp) (by simp)
+    have hcc := congrArg CommRingCat.Hom.hom (coordHom_comp_C strX U g hover)
+    rw [hsplit]
+    show Polynomial.eval₂ _ _ p = 0
+    rw [coordHom_apply_X, ← hF]
+    have hK : (coordHom U g).hom.comp (Polynomial.C : K →+* Polynomial K) =
+        (X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op).hom.comp
+          ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop).hom := hcc
+    rw [hK, ← Polynomial.hom_eval₂, hp0, map_zero]
+  -- MOVE 3: so `T`'s pull-back vanishes, and the image of the generic point is a closed point.
+  have hzero : g.appTop.hom
+      ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p) = 0 := by
+    have hexp : (coordHom U g).hom p =
+        (Scheme.Opens.topIso U).hom.hom
+          (g.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p)) := rfl
+    rw [hexp] at hpsi
+    have h := congrArg (Scheme.Opens.topIso U).inv.hom hpsi
+    rw [map_zero, ← CommRingCat.comp_apply, Iso.hom_inv_id, CommRingCat.id_apply] at h
+    exact h
+  haveI : IsIntegral U.toScheme := isIntegral_of_isOpenImmersion (Scheme.Opens.ι U)
+  set η : U.toScheme := genericPoint U.toScheme with hη
+  set y : Spec (CommRingCat.of (Polynomial K)) := g.base η with hy
+  have hpy : p ∈ y.asIdeal := by
+    have hb : (Spec (CommRingCat.of (Polynomial K))).basicOpen
+        ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p) =
+        PrimeSpectrum.basicOpen p := basicOpen_eq_of_affine _
+    by_contra hcon
+    have hmem : y ∈ (Spec (CommRingCat.of (Polynomial K))).basicOpen
+        ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p) := by
+      rw [hb]; exact (PrimeSpectrum.mem_basicOpen p y).mpr hcon
+    have hmem2 : η ∈ (U.toScheme).basicOpen
+        (g.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p)) := by
+      rw [← Scheme.preimage_basicOpen_top]; exact hmem
+    rw [hzero, Scheme.basicOpen_zero] at hmem2
+    exact hmem2
+  have hpne : p ≠ 0 := hpm.ne_zero
+  have hbot : y.asIdeal ≠ ⊥ := by
+    intro hb
+    rw [hb, Ideal.mem_bot] at hpy
+    exact hpne hpy
+  haveI : y.asIdeal.IsMaximal := _root_.IsPrime.to_maximal_ideal hbot
+  have hyclosed : IsClosed ({y} : Set (Spec (CommRingCat.of (Polynomial K)))) :=
+    (PrimeSpectrum.isClosed_singleton_iff_isMaximal y).mpr ‹_›
+  -- MOVE 4: so `g` is constant, and its one fibre is both all of `U` and finite.
+  have hconst : ∀ u : U.toScheme, g.base u = y := by
+    intro u
+    have h1 : η ⤳ u := (genericPoint_spec U.toScheme).specializes trivial
+    have h2 : y ⤳ g.base u := h1.map g.base.hom.continuous
+    simpa using h2.mem_closed hyclosed rfl
+  have hfin := g.finite_preimage_singleton y
+  have huniv : (⇑g ⁻¹' {y}) = Set.univ := by
+    ext u
+    simp [hconst u]
+  rw [huniv] at hfin
+  exact (Set.infinite_univ (α := ↥(U.toScheme))) hfin
+
+/-- **`f` DOES NOT EXTEND ACROSS `z`** (cut 2026-07-31 out of
+`exists_inv_coordOf_mem_maximalIdeal_compl_singleton` immediately below, which is proven over
+it; this is the WHOLE of the mathematics that leaf contained.  **PROVEN 2026-07-31 the same
+day, no sorry**, over the four items immediately above — so the affineness route's properness
+half is now closed outright and the file's only remaining leaf is Riemann–Roch.)
 
 Read it as `f ∉ 𝒪_{X,z}`, stated without the function field: `germ_{x₀} f` is not in the image
 of the specialization map `𝒪_{X,z} ⟶ 𝒪_{X,x₀}`.  On an integral `X` that image is exactly
@@ -433,37 +657,49 @@ of the specialization map `𝒪_{X,z} ⟶ 𝒪_{X,x₀}`.  On an integral `X` th
 `1/f` that the parent leaf carried has been discharged; what is left is a single
 non-membership, and it is the only place `hqf` and `IsProper strX` are consumed.
 
-THE PROOF IS THE DICHOTOMY the parent's docstring records, on a hypothetical extension
-`ĝ : X ⟶ 𝔸¹_K` with `Scheme.Opens.ι U ≫ ĝ = g`:
+## PROOF (2026-07-31), AND IT DOES NOT BUILD `ĝ` AT ALL
 
-* `ĝ ≫ affineLineOver K = strX`, because the two agree on `U`, which is DENSE
-  (`isDominant_of_finite_compl`, `CurveExtension.lean`, together with
-  `ext_of_isDominant`) — so `ĝ` is a `K`-morphism, hence proper by `IsProper.of_comp`
-  cancelling against the separated `affineLineOver K`;
-* if some fibre of `ĝ` is infinite it is all of the irreducible curve `X`, so `g` is constant on
-  the infinite `U` (`infinite_of_smoothOfRelativeDimension_one`), contradicting `hqf`;
-* otherwise `ĝ` is quasi-finite, hence FINITE by `IsFinite.of_isProper_of_locallyQuasiFinite`, so
-  `affineLineOver K` is proper AND affine, hence finite, i.e. `K[T]` is a finite `K`-module —
-  false, `Polynomial.basisMonomials` being a basis indexed by `ℕ`.
+The plan this docstring used to record — extend `g` to `ĝ : X ⟶ 𝔸¹_K`, prove `ĝ` proper by
+cancelling against `affineLineOver K`, then run a fibre dichotomy ending in
+`IsFinite.of_isProper_of_locallyQuasiFinite` and `Module.Finite K K[T]` — is CORRECT but was
+strictly more work than necessary, and it is not what is implemented.  The pin already carries
+`isIntegral_appTop_of_universallyClosed` (`Morphisms/Proper.lean`): the global sections of a
+universally closed scheme over an affine base are INTEGRAL over it.  That collapses the
+dichotomy, because the "`ĝ` dominant" branch is then impossible outright rather than being
+excluded case by case, and the MORPHISM `ĝ` is never needed — only the SECTION.
 
-**WHERE THE WORK STARTS, and it is bookkeeping rather than mathematics**: producing `ĝ` from
-the hypothesis.  `a : 𝒪_{X,z}` with `stalkSpecializes a = germ_{x₀} f` is a section `s` of `X`
-on some open `V ∋ z` agreeing with `f` on `U ∩ V` (`X.presheaf.germ_eq`, plus
-`germ_injective_of_isIntegral` to upgrade "equal germs at `x₀`" to "equal on a neighbourhood",
-plus `germ_injective_of_isIntegral` again on the irreducible `U ∩ V` to upgrade that to "equal
-on `U ∩ V`").  `U ∪ V = ⊤` since `U = {z}ᶜ` and `z ∈ V`, so the sheaf axiom glues `s` and `f`
-into `F ∈ Γ(X, ⊤)`; and `ĝ` is then `X.toSpecΓ ≫ Spec.map (eval₂ of F)`, using that
-`Spec K[T]` is affine so that a morphism into it IS a `K`-algebra map `K[T] ⟶ Γ(X, ⊤)`, i.e.
-one element of `Γ(X, ⊤)` (`Polynomial.aeval`, `Spec.preimage`/`Spec.map_preimage`).
+So the three steps actually taken are:
+
+* the hypothesis `a : 𝒪_{X,z}` with `stalkSpecializes a = germ_{x₀} f` gives a section `s` on
+  some open `V ∋ z` (`X.presheaf.exists_germ_eq`) whose germ at `x₀` is `germ_{x₀} f` — note
+  `x₀ ∈ V` for free, `V` being open and `x₀ ⤳ z`;
+* `U ⊔ V = ⊤`, since `U = {z}ᶜ` and `z ∈ V`, so `exists_res_eq_of_germ_eq` above glues `s` and
+  `f` into `F ∈ Γ(X, ⊤)` restricting to `f`.  Equality of the two germs at the SINGLE point
+  `x₀` suffices because `X` is integral;
+* `false_of_res_eq_coordOf_of_locallyQuasiFinite` above finishes: `F` is algebraic over `K`, so
+  `g` is constant, so its single fibre is the infinite `U` — and a quasi-finite quasi-compact
+  morphism has finite fibres.
+
+`QuasiCompact g` is obtained here exactly as in
+`isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` below: `X` is a NOETHERIAN scheme
+(`CompactSpace` from `QuasiCompact strX`, `IsLocallyNoetherian` from
+`LocallyOfFiniteType.isLocallyNoetherian`), hence so is the open `U`, and
+`quasiCompact_of_noetherianSpace_source` applies.
 
 **`hqf` IS LOAD-BEARING and the statement is FALSE without it**: `g` constant at `0` gives
 `f = 0`, which extends across `z` by `0`.
 
-**`IsProper strX` IS LOAD-BEARING**: it is what makes a `K`-morphism `X ⟶ 𝔸¹_K` proper in the
-dichotomy.  On an affine curve `f` may extend across `z`.
+**`IsProper strX` IS LOAD-BEARING**, and it is consumed twice: through `UniversallyClosed` for
+the integrality of `Γ(X, ⊤)`, and through `QuasiCompact`/`LocallyOfFiniteType` for
+`QuasiCompact g`.  On an affine curve `f` may extend across `z`.
 
 **`hconn` IS LOAD-BEARING**, through `IsIntegral X` — without irreducibility there is no
-generic point to compare germs at and the gluing step above has no meaning. -/
+generic point to compare germs at, the gluing step has no meaning, and `g` need not be constant
+on the whole of `U` even when its classified function is algebraic.
+
+**`SmoothOfRelativeDimension 1 strX` IS LOAD-BEARING**, and ONLY through
+`infinite_of_smoothOfRelativeDimension_one`: it is what makes `U` infinite, which is the last
+move.  On a zero-dimensional `X` the statement is false — every function extends. -/
 theorem not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton
     {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [IsProper strX] [SmoothOfRelativeDimension 1 strX]
@@ -478,8 +714,39 @@ theorem not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton
     (hx₀ : x₀ ∈ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) :
     ¬ ∃ a : X.presheaf.stalk z,
         (X.presheaf.stalkSpecializes hsp).hom a =
-          (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) :=
-  sorry
+          (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) := by
+  haveI : IsIntegral X :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
+  haveI : Infinite X := infinite_of_smoothOfRelativeDimension_one strX
+  haveI : Infinite ↥(⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) :=
+    (Set.Finite.infinite_compl (Set.finite_singleton z)).to_subtype
+  haveI := hqf
+  -- `QuasiCompact g`, exactly as in the consumer two declarations below.
+  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace strX
+  haveI : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian strX
+  haveI : IsNoetherian X := ⟨⟩
+  haveI : NoetherianSpace
+      (Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) := by
+    show NoetherianSpace (({z}ᶜ : Set X))
+    infer_instance
+  haveI : QuasiCompact g := inferInstance
+  rintro ⟨a, ha⟩
+  -- `a` is the germ of a section `s` on some open `V ∋ z`, and `x₀ ∈ V` since `x₀ ⤳ z`.
+  obtain ⟨V, hzV, s, hs⟩ := X.presheaf.exists_germ_eq a
+  have hx₀V : x₀ ∈ V := hsp.mem_open V.isOpen hzV
+  have hgerm : (X.presheaf.germ _ x₀ hx₀) (coordOf _ g) = (X.presheaf.germ V x₀ hx₀V) s := by
+    have h1 : (X.presheaf.germ V x₀ hx₀V) s
+        = (X.presheaf.stalkSpecializes hsp).hom ((X.presheaf.germ V z hzV) s) := by
+      rw [← CommRingCat.comp_apply, X.presheaf.germ_stalkSpecializes]
+    rw [h1, hs, ha]
+  -- `U ⊔ V = ⊤` because `U = {z}ᶜ` and `z ∈ V`, so `s` and `f` glue.
+  have hcover : (⊤ : X.Opens) ≤ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⊔ V := by
+    rintro x -
+    rcases eq_or_ne x z with rfl | hx
+    · exact Or.inr hzV
+    · exact Or.inl hx
+  obtain ⟨F, hF⟩ := exists_res_eq_of_germ_eq hcover hx₀ hx₀V (coordOf _ g) s hgerm
+  exact false_of_res_eq_coordOf_of_locallyQuasiFinite strX _ g hover F hF
 
 /-- **SUB-LEAF 1 — `f` HAS A POLE AT `z`** (cut 2026-07-31 out of
 `notMem_range_of_valuativeLift_toAffineLine_compl_singleton`; **PROVEN the same day** over the
