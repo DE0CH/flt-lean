@@ -146,6 +146,14 @@ public import Fermat.FLT.ModularCurve.CuspSymbolX1
 -- structure recovers the invertibility of `n` that the `Γ₀` side receives from a `ℚ`-base.
 -- No cycle: nothing under `Fermat/FLT/EllipticCurve/` imports `ModularCurve`.
 public import Fermat.FLT.EllipticCurve.TorsionCharP
+-- `Fermat.WeilRestriction.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint`: the
+-- BASE-POINT residue of `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational`
+-- below — a nonconstant map to an abelian variety descends from a finite separable
+-- extension over which the curve acquires a rational point.  Stated and PROVEN there,
+-- over two atoms (a separable point on a smooth scheme; Weil restriction along a finite
+-- étale extension of fields), because nothing in it is `Γ₁`-specific and `X0.lean`'s
+-- `exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` wants the same theorem.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.WeilRestriction
 public import Mathlib.NumberTheory.DirichletCharacter.Basic
 -- infinite Galois theory: `InfiniteGalois.mem_range_algebraMap_iff_fixed`, the field-theoretic
 -- half of `exists_specSection_of_specGal_invariant` below.  `public` because that theorem's
