@@ -655,6 +655,83 @@ cut on an unmerged branch (the release window); or **cut, merged, and deliberate
 Only the third is permanent, and only `-m` distinguishes it. Before reporting a phantom name,
 run that command — the merge's own subject line usually says which rival cut won and why.
 
+## A LEAF CAN BE CLOSED BY MOVING CODE — the declaration-order leaf class
+
+(2026-07-31, `flt-lean-2`, on `flat_toImage_of_isAdditiveOn` in `X0.lean`.)
+
+A leaf can be **already proven, in the same file, below itself**. Lean elaborates top
+to bottom, so the general theorem is unusable at the leaf's position and the leaf gets
+`sorry`d, honestly, with a docstring saying so — and then it sits there, because every
+prover who reads it correctly concludes there is no mathematics to do and moves on.
+This one survived three days and an audit that diagnosed it exactly and declined to act.
+
+**The repair is a relocation, and moving code DOWN is the safe direction**: it cannot
+break the moved code's own dependencies, so the ONLY check is whether anything between
+the old and the new position consumes the block. That check is cheap, and it is the
+whole risk assessment.
+
+Three things this cost, worth knowing in advance:
+
+* **A docstring's call-site list goes stale the moment the block moves.** The audit here
+  named "exactly one CODE call site, at line ~66357" — written when the block lived
+  1000 lines earlier, and by the time it was read the line number meant nothing and the
+  count was wrong (there were three, two of them for a different declaration). Re-derive
+  the list against the current file; do not inherit it. A naive `grep` over-reports
+  wildly, because in this project most occurrences of a name are prose in docstrings.
+* **`refine ⟨?_, h⟩` fails when `h`'s type mentions the hole.** Restructuring the
+  consumer to name the object it used to produce as a `refine` hole is the usual shape
+  of this repair; use `refine ⟨?_, ?_⟩` with bullets so the first goal assigns the
+  metavariable before the second is checked.
+* **Structure literals are indentation-sensitive in a way the error does not name.**
+  Re-indenting a `{ field := … }` block by one column produces
+  `unexpected identifier; expected '}'` plus a bogus "fields missing" list.
+
+**And the payoff is usually bigger than the one leaf.** Moving this block below the
+morphism-level group machinery (`addPairHom`, `sqMap`, `pairSquareMap`,
+`pairSquareMap_addPair`) put that machinery ABOVE two sibling leaves that had been
+stated in terms of it and could not use it. One of the two was proven the same day
+purely because it became expressible. So when choosing WHICH side to move, prefer the
+move that leaves the remaining leaves with more machinery above them.
+
+## `IsSchemeTheoreticallyDominant` is the pin's tool for "the image is a subgroup scheme"
+
+(2026-07-31, same task — this is the concrete follow-up to the standing note that
+schematic density is in the pin.)
+
+The classical argument for "the scheme-theoretic image of a homomorphism is a subgroup
+scheme" goes through "`B ×_ℚ B` is the image of `J ×_ℚ J`, because the source is reduced
+and the base is a field". **Reducedness is a detour.** What the argument actually needs
+is `AlgebraicGeometry.IsSchemeTheoreticallyDominant` (`f.ker = ⊥`), and the pin carries
+everything:
+
+* `IsSchemeTheoreticallyDominant.of_isPullback` — stable under **flat** base change;
+* an instance for composition;
+* `Scheme.Hom.ker_comp` + `IdealSheafData.map_bot` give **cancellation**:
+  `p.ker = ⊥ → (p ≫ h).ker = h.ker`. Since `IsClosedImmersion.lift` asks exactly for
+  `ι.ker ≤ (·).ker`, that turns "the composite lands in the subscheme" into "the
+  morphism lands in the subscheme". This is the whole mechanism;
+* **over `Spec` of a field, flatness is free** — `[Subsingleton Y] [IsIntegral Y] → Flat f`
+  — so every base change along a structure morphism to `SpecQ` qualifies with no work.
+
+`q ×_S q` is dominant when `q` is: cut it as `(q × 𝟙) ≫ (𝟙 × q)`, each a base change of
+`q` along a projection, pasted with `IsPullback.of_bot`.
+
+**Two things to check BEFORE writing any of it.** `X0.lean` already contained
+`isSchemeTheoreticallyDominant_toImage` and a `sqCover` version of the product step —
+proven for an unrelated leaf **58 000 lines away**, under names that share no keyword
+with the leaf being worked on. Grep for the CONCEPT (`IsSchemeTheoreticallyDominant`,
+`ker_eq_bot`, `of_isPullback`), not for the leaf's vocabulary. And develop in a scratch
+module that `public import`s the target's built olean: the round trip on this file is
+~25 minutes for a build and ~40 seconds for the scratch, and the leaf above went from
+first draft to green in four scratch iterations.
+
+Known GAP in the pin, found the same day: **`Smooth f → GeometricallyReduced f` does not
+exist**, in any form, at any level. Mathlib DOES have Cartier's theorem
+(`AlgebraicGeometry.smooth_of_grpObj`: a locally-finite-type geometrically reduced group
+scheme over a field is smooth), so the char-0 smoothness of a group scheme is reachable
+in principle — but its `GeometricallyReduced` hypothesis has to be built by hand, and for
+an abelian scheme the obvious source is its own `smooth` field, which does not deliver.
+
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
