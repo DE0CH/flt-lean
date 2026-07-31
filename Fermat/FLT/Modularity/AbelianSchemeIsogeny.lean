@@ -6102,6 +6102,8 @@ theorem isLocalHom_quotientMap {S₀ T₀ : Type u} [CommRing S₀] [CommRing T�
       ((IsLocalRing.maximalIdeal T₀).eq_top_iff_one.mpr h1)
   exact ((isUnit_map_iff φ s).mp hfs).map _
 
+end HalfAColimit
+
 namespace NoetherianApproxSystem
 
 section FibreData
@@ -7563,6 +7565,8 @@ theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian
   haveI : Module.Flat (B ⊗[st.Mid] st.Tot) A := IsLocalization.flat A W
   have hflatBA : Module.Flat B A := Module.Flat.trans B (B ⊗[st.Mid] st.Tot) A
   exact hflatBA
+
+end EssFinitePresentationCancellation
 
 end FibreCriterionRingLevel
 
