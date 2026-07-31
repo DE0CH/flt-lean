@@ -4769,66 +4769,252 @@ theorem exists_trivialization_sectionIdeal_at {X S T : Scheme.{u}} {strX : X ⟶
   sorry
 
 
-/-- **THE IDEAL OF A SECTION COMMUTES WITH BASE CHANGE OF THE AMBIENT SCHEME**
-(sorry leaf, cut 2026-07-30 out of `nonempty_modPullback_sectionIdeal`) — all of
-that leaf's content, stated for a bare section of a bare morphism because
-nothing in the argument knows about curves.
+/-! #### THE COMPARISON MAP `φ^*𝒪(−σ) ⟶ 𝒪(−σ')` IS CONSTRUCTED, NOT MERELY
+ASSERTED TO EXIST
 
-Set-up: `π : Z ⟶ T` with a section `σ`, and `Z' = Z ×_T T'` with `φ` and `π'`
-the two projections, so that `σ' : T' ⟶ Z'` is *forced* to be the base-changed
-section (`_hσ'` and `_hcomm` pin it uniquely, by the universal property of the
-pullback).  The claim is `φ^* 𝒪(−σ) ≅ 𝒪(−σ')`.
+(2026-07-31.)  `nonempty_modPullback_sectionIdeal_of_isPullback` used to be a
+bare `Nonempty (… ≅ …)` leaf.  Everything below `isIso_modPullbackSectionIdealMap`
+is now PROVEN: the canonical map is written down (`modPullbackSectionIdealMap`),
+the factorisation through the kernel that defines `sectionIdeal σ'` is checked,
+and the leaf that remains says that ONE NAMED MAP is an isomorphism.  That is
+strictly stronger than the old statement and it is what every route needs
+first, since no route can compare two ideal sheaves without a comparison map.
 
-**ROUTE.**  `σ` is a closed immersion, so `D := σ(T) ≅ T` and the defining
-sequence of `sectionIdeal σ` is `0 ⟶ I ⟶ 𝒪_Z ⟶ σ_*𝒪_T ⟶ 0`.  `φ^*` is only
-right exact, so the content is that no `Tor` appears: locally
-`𝒪_{Z'} = 𝒪_Z ⊗_{𝒪_T} 𝒪_{T'}` because the square is cartesian, so
-`Tor^{𝒪_Z}_i(σ_*𝒪_T, 𝒪_{Z'}) = Tor^{𝒪_T}_i(𝒪_T, 𝒪_{T'}) = 0` for `i > 0` —
-`σ_*𝒪_T` is `𝒪_T` as an `𝒪_T`-module, hence flat over `T`, and THAT is the
-"`D_x` is flat over `T`" the parent's docstring names.  Then `φ^*` of the
-sequence is exact, `φ^*(σ_*𝒪_T) ≅ σ'_*𝒪_{T'}` by affine base change
-(a closed immersion is affine, which is what `_hclosed` is for), and comparing
-kernels gives the isomorphism.
+**The construction spends `_hcompat` and nothing else.**  `_hsq`, `_hσ`, `_hσ'`,
+`_hproper`, `_hsmooth` are all still open credit, spent only in the remaining
+leaf. -/
+
+/-- **A NATURAL ISOMORPHISM TRANSPORTS "THIS FUNCTOR KILLS THIS MORPHISM"**
+(PROVEN) — if `F ≅ G` and `G.map u = 0` then `F.map u = 0`.
+
+Pure naturality: `F.map u = e.hom.app A ≫ G.map u ≫ e.inv.app B`.  Stated
+because the pullback pseudofunctor identifies `σ'^* ∘ φ^*` with `h^* ∘ σ^*` only
+up to a natural isomorphism, and the vanishing has to cross it. -/
+theorem map_eq_zero_of_natIso {C D : Type*} [Category C] [Category D]
+    [HasZeroMorphisms D] {F G : C ⥤ D} (e : F ≅ G) {A B : C} (u : A ⟶ B)
+    (hu : G.map u = 0) : F.map u = 0 := by
+  have hn := e.hom.naturality u
+  calc F.map u = F.map u ≫ e.hom.app B ≫ e.inv.app B := by
+        rw [e.hom_inv_id_app, Category.comp_id]
+    _ = (F.map u ≫ e.hom.app B) ≫ e.inv.app B := by rw [Category.assoc]
+    _ = (e.hom.app A ≫ G.map u) ≫ e.inv.app B := by rw [hn]
+    _ = 0 := by rw [hu, comp_zero, zero_comp]
+
+/-- **`σ^*` KILLS THE INCLUSION `𝒪(−σ) ↪ 𝒪_Z`** (PROVEN) — `σ^*(I_σ) ⟶ σ^*𝒪_Z`
+is the zero map.
+
+This is the scheme-theoretic content of "`σ` factors through the closed
+subscheme `V(I_σ)`", i.e. `I_σ · 𝒪_T = 0`, in the only form this pin can state
+it: there is no closed-subscheme-of-an-ideal-sheaf construction here, only the
+kernel that `sectionIdeal` is defined to be.
+
+**The proof is one triangle identity, and it uses NOTHING about `σ`.**  Write
+`F = σ^*`, `G = σ_*`, `η = adj.unit.app 𝒪_Z`.  Then `F.map η` is a SPLIT MONO —
+its retraction is `adj.counit.app (F.obj 𝒪_Z)`, and `F.map η ≫ counit = 𝟙` is
+`Adjunction.left_triangle_components`.  So it is a mono, and
+`F.map (kernel.ι η) ≫ F.map η = F.map (kernel.ι η ≫ η) = F.map 0 = 0` cancels
+to `F.map (kernel.ι η) = 0`.  `Scheme.Modules.pullback` is `Additive` at this
+pin (mathlib, `AlgebraicGeometry/Modules/Sheaf.lean`), which is what makes
+`Functor.map_zero` available. -/
+theorem pullback_map_sectionIdeal_ι_eq_zero {Z T : Scheme.{u}} (σ : T ⟶ Z) :
+    (Scheme.Modules.pullback σ).map
+        (kernel.ι ((Scheme.Modules.pullbackPushforwardAdjunction σ).unit.app (modUnit Z)))
+      = 0 := by
+  set adj := Scheme.Modules.pullbackPushforwardAdjunction σ with hadj
+  set η := adj.unit.app (modUnit Z) with hηdef
+  haveI : IsSplitMono ((Scheme.Modules.pullback σ).map η) :=
+    ⟨⟨adj.counit.app ((Scheme.Modules.pullback σ).obj (modUnit Z)),
+      adj.left_triangle_components _⟩⟩
+  refine zero_of_comp_mono ((Scheme.Modules.pullback σ).map η) ?_
+  rw [← Functor.map_comp, kernel.condition, Functor.map_zero]
+
+/-- **`σ'^* φ^*` KILLS THE INCLUSION `𝒪(−σ) ↪ 𝒪_Y`** (PROVEN) — the previous
+lemma transported across the square.
+
+`σ' ≫ φ = h ≫ σ` (`hcompat`), so `σ'^* ∘ φ^* ≅ (σ' ≫ φ)^* = (h ≫ σ)^*
+≅ h^* ∘ σ^*` by `Scheme.Modules.pullbackComp` twice and
+`Scheme.Modules.pullbackCongr` in between; the right-hand functor kills the
+inclusion because `σ^*` does and `h^*` is additive.  `map_eq_zero_of_natIso`
+carries the vanishing back.
+
+**Only `hcompat` is used.**  In particular the square need not be cartesian for
+this; being cartesian is what makes the resulting map an *isomorphism*, not what
+makes it exist. -/
+theorem pullback_pullback_map_sectionIdeal_ι_eq_zero {Y T Y' T' : Scheme.{u}}
+    {φ : Y' ⟶ Y} {h : T' ⟶ T} {σ : T ⟶ Y} {σ' : T' ⟶ Y'} (hcompat : σ' ≫ φ = h ≫ σ) :
+    (Scheme.Modules.pullback σ').map ((Scheme.Modules.pullback φ).map
+        (kernel.ι ((Scheme.Modules.pullbackPushforwardAdjunction σ).unit.app (modUnit Y))))
+      = 0 := by
+  set ι := kernel.ι ((Scheme.Modules.pullbackPushforwardAdjunction σ).unit.app (modUnit Y))
+    with hι
+  have hG : (Scheme.Modules.pullback σ ⋙ Scheme.Modules.pullback h).map ι = 0 := by
+    show (Scheme.Modules.pullback h).map ((Scheme.Modules.pullback σ).map ι) = 0
+    rw [hι, pullback_map_sectionIdeal_ι_eq_zero, Functor.map_zero]
+  have e : (Scheme.Modules.pullback φ ⋙ Scheme.Modules.pullback σ') ≅
+      (Scheme.Modules.pullback σ ⋙ Scheme.Modules.pullback h) :=
+    Scheme.Modules.pullbackComp σ' φ ≪≫ Scheme.Modules.pullbackCongr hcompat ≪≫
+      (Scheme.Modules.pullbackComp h σ).symm
+  exact map_eq_zero_of_natIso e ι hG
+
+/-- **THE CANONICAL COMPARISON MAP `φ^*𝒪(−σ) ⟶ 𝒪(−σ')`** (PROVEN — this is a
+construction, and it is total: it needs only `σ' ≫ φ = h ≫ σ`).
+
+`φ^*` applied to `I_σ ↪ 𝒪_Y`, followed by `modPullbackUnitIso φ : φ^*𝒪_Y ≅
+𝒪_{Y'}`, is a map `φ^*I_σ ⟶ 𝒪_{Y'}`.  It lands inside `I_{σ'} = ker η_{σ'}`
+because its transpose across `σ'^* ⊣ σ'_*` is `σ'^*φ^*(kernel.ι η_σ) = 0`
+(the lemma above) — concretely, unit naturality turns `u ≫ η_{σ'}` into
+`η_{σ'} ≫ σ'_*(σ'^*u)` and the second factor is zero.  `kernel.lift` then
+supplies the map.
+
+**Why this is the right object to name.**  Both `φ^*𝒪(−σ)` and `𝒪(−σ')` are
+subsheaves-up-to-`Tor` of `𝒪_{Y'}`, and every proof of the parent theorem — the
+`Tor` route, the split-exactness route below, a local-coordinate route — proves
+that THIS map is invertible.  A bare `Nonempty (… ≅ …)` hides that and would let
+a prover chase an unrelated isomorphism. -/
+noncomputable def modPullbackSectionIdealMap {Y T Y' T' : Scheme.{u}}
+    {φ : Y' ⟶ Y} {h : T' ⟶ T} {σ : T ⟶ Y} {σ' : T' ⟶ Y'} (hcompat : σ' ≫ φ = h ≫ σ) :
+    modPullback φ (sectionIdeal σ) ⟶ sectionIdeal σ' :=
+  kernel.lift ((Scheme.Modules.pullbackPushforwardAdjunction σ').unit.app (modUnit Y'))
+    ((Scheme.Modules.pullback φ).map
+        (kernel.ι ((Scheme.Modules.pullbackPushforwardAdjunction σ).unit.app (modUnit Y)))
+      ≫ (modPullbackUnitIso φ).hom)
+    (by
+      set u := (Scheme.Modules.pullback φ).map
+          (kernel.ι ((Scheme.Modules.pullbackPushforwardAdjunction σ).unit.app (modUnit Y)))
+        ≫ (modPullbackUnitIso φ).hom with hu
+      have hz : (Scheme.Modules.pullback σ').map u = 0 := by
+        rw [hu, Functor.map_comp, pullback_pullback_map_sectionIdeal_ι_eq_zero hcompat, zero_comp]
+      have hcomp : (Scheme.Modules.pullback σ' ⋙ Scheme.Modules.pushforward σ').map u = 0 := by
+        show (Scheme.Modules.pushforward σ').map ((Scheme.Modules.pullback σ').map u) = 0
+        rw [hz, Functor.map_zero]
+      have hnat := (Scheme.Modules.pullbackPushforwardAdjunction σ').unit.naturality u
+      refine hnat.trans ?_
+      rw [hcomp]
+      exact comp_zero)
+
+/-- **THE COMPARISON MAP IS AN ISOMORPHISM** (sorry leaf, cut 2026-07-31 out of
+`nonempty_modPullback_sectionIdeal_of_isPullback`, which is now PROVEN over it
+and is its only consumer) — Stacks 062Y / 0631, EGA IV 21.15: a relative
+effective Cartier divisor pulls back to one, and its ideal sheaf pulls back to
+the ideal sheaf.
+
+**THE ROUTE, AND A CORRECTION TO THE ONE THIS LEAF INHERITED.**  The audit this
+slot used to carry said the content is `Tor`-vanishing, supplied by flatness of
+`𝒪_{D_σ}` over `𝒪_T`.  That is true but it is not the cheapest true thing, and
+naming flatness hides where `_hσ` is actually spent.  In the affine model —
+`Y = Spec B`, `T = Spec A`, `strY^# : A ⟶ B`, `σ^# : B ⟶ A` an `A`-algebra
+retraction of it (that IS `_hσ`), `I = ker σ^#`, `T' = Spec A'`,
+`B' = B ⊗_A A'` (that IS `_hsq`), `σ'^# = σ^# ⊗ 𝟙` (that IS `_hσ'` + `_hcompat`)
+— the defining sequence
+
+    0 ⟶ I ⟶ B ⟶ A ⟶ 0
+
+is a sequence of `A`-modules that is **SPLIT**, the splitting being `strY^#`
+itself.  A split short exact sequence is a biproduct decomposition, so EVERY
+additive functor preserves it; no flatness theorem and no `Tor` computation is
+needed.  Applying `− ⊗_A A'`:
+
+    0 ⟶ I ⊗_A A' ⟶ B' ⟶ A' ⟶ 0
+
+is still split exact, so `I ⊗_A A' = ker σ'^# = I_{σ'}`.  And
+`I ⊗_B B' = I ⊗_B (B ⊗_A A') = I ⊗_A A'`, which is `φ^* I_σ`.  The two
+identifications are compatible with the inclusions into `B'`, so the composite
+is exactly `modPullbackSectionIdealMap`, and it is an isomorphism.
+
+**So the ONE genuinely missing formal input is:** for a cartesian square,
+`φ^*` on `Y.Modules`, read through the `strY^{-1}𝒪_T`-module structure, IS the
+base change `− ⊗_{𝒪_T} 𝒪_{T'}`.  Everything else in the paragraph above is
+formal (split monos and split epis are preserved by additive functors, and
+`Scheme.Modules.pullback` is `Additive` at this pin).  That input is flat base
+change and it does not exist here; a prover has to build it, or to work locally
+with `isIso_of_locally_isIso` above and a local equation for `I_σ` obtained from
+`isInvertibleSheaf_sectionIdeal_of_isSection`.
+
+**WHY `_hσ` IS LOAD-BEARING, with the witness that was recorded on this leaf.**
+Drop it and the statement is FALSE: take `T = Spec k[s]`, `Y = Spec k[s,t]`,
+`D = V(st)`.  Its ideal is invertible (`st` is a nonzerodivisor) but `D` is not
+flat over `T` (`s · t = 0` with `t ≠ 0`), and base change along `s = 0` gives
+`φ^*I ≅ 𝒪` of rank one against an ideal of the preimage equal to `0`.  In the
+split language: without a retraction there is no `A`-splitting of
+`0 ⟶ I ⟶ B ⟶ B/I ⟶ 0`, and the sequence does not survive `− ⊗_A A'`.
+The older audit credited this flatness to `isInvertibleSheaf_sectionIdeal`; that
+is WRONG — invertibility of the ideal says nothing about flatness over `T`, as
+the same witness shows.
 
 **FALSITY AUDIT — the tempting weaker hypothesis is REFUTED.**  It is natural to
-ask only that the SECTION square be cartesian, i.e. `T' = T ×_Z Z'`, which is
+ask only that the SECTION square be cartesian, i.e. `T' = T ×_Y Y'`, which is
 `isPullback_relSection_curveBaseChangeMap` above and looks like the right
 statement ("`D'` is the preimage of `D`").  **That version is FALSE**, with an
 explicit witness:
 
-    Z = 𝔸¹_k = Spec k[t],  T = Spec k,  π the structure map,  σ = the origin;
-    Z' = Spec k[t]/(t),    T' = Spec k, π' = 𝟙,  h = 𝟙,  σ' = 𝟙,  φ the closed
+    Y = 𝔸¹_k = Spec k[t],  T = Spec k,  strY the structure map,  σ = the origin;
+    Y' = Spec k[t]/(t),    T' = Spec k, strY' = 𝟙,  h = 𝟙,  σ' = 𝟙,  φ the closed
     immersion of the origin.
 
-Then `σ' ≫ φ = φ = h ≫ σ`, and `T ×_Z Z' = Spec (k ⊗_{k[t]} k[t]/(t)) = Spec k
+Then `σ' ≫ φ = φ = h ≫ σ`, and `T ×_Y Y' = Spec (k ⊗_{k[t]} k[t]/(t)) = Spec k
 = T'`, so the section square IS cartesian; `sectionIdeal σ = (t)` is invertible
 and `σ` is a closed immersion, so every other hypothesis holds.  But
-`sectionIdeal σ' = ker(𝒪_{Z'} ⟶ 𝟙_*𝒪_{T'}) = 0` while `φ^*(t) ≅ 𝒪_{Z'} ≠ 0`, so
-no isomorphism exists.  What kills the witness is exactly `_hbase`:
-`Z ×_T T' = 𝔸¹_k`, not `Spec k[t]/(t)`.  So the load-bearing hypothesis is that
-`Z'` is the base change of `Z` **over `T`**, not that `D'` is the preimage of
+`sectionIdeal σ' = ker(𝒪_{Y'} ⟶ 𝟙_*𝒪_{T'}) = 0` while `φ^*(t) ≅ 𝒪_{Y'} ≠ 0`, so
+no isomorphism exists.  What kills the witness is exactly `_hsq`:
+`Y ×_T T' = 𝔸¹_k`, not `Spec k[t]/(t)`.  So the load-bearing hypothesis is that
+`Y'` is the base change of `Y` **over `T`**, not that `D'` is the preimage of
 `D`.
 
-**The other hypotheses.**  `_hσ` and `_hσ'` make `σ`, `σ'` sections rather than
-arbitrary morphisms; drop `_hσ'` and `σ'` is unconstrained by `_hcomm` alone, so
-the statement is false for any `σ'` that is not the base-changed section.
-`_hclosed` is used for the affine base change of `σ_*` and is available for free
-wherever this is applied (`isClosedImmersion_relSection`).  `_hinv` is the
-hypothesis the parent's docstring predicted would be needed and is likewise free
-at the call site; the `Tor` argument above does **not** visibly consume it — the
-flatness it stands for comes from `D ≅ T`, not from invertibility of `I` — so it
-is offered rather than demanded, and a prover may ignore it.
+**THE OTHER HYPOTHESES, re-audited against the composite statement** (the
+previous audit is VOID rather than inherited — this statement is new, and its
+binder names have changed: the old `_hbase` is `_hsq`, the old `_hcomm` is
+`hcompat`, and the old `_hclosed`/`_hinv` are gone).
+
+* `_hσ'` is NOT derivable and is load-bearing: `_hcompat` together with `_hsq`
+  only gives `(σ' ≫ strY') ≫ h = h`, so without `_hσ'` the statement is false
+  for any `σ'` that is not the base-changed section.
+* `_hproper` and `_hsmooth` are **not used by the affine argument above at
+  all** — they are kept because the call site
+  (`nonempty_modPullback_sectionIdeal`) holds them for free, because dropping a
+  hypothesis is a signature change, and because a globalising argument that
+  reduces to the affine case is likely to want `σ` to be a closed immersion,
+  which is one line from `_hproper` (see `isClosedImmersion_relSection`, whose
+  proof generalises verbatim to any section of a proper morphism).  A prover may
+  ignore both.
+* `_hinv`, which the 2026-07-30 statement carried, has been dropped: it is
+  recoverable from `_hproper`, `_hsmooth` and `_hσ` through
+  `isInvertibleSheaf_sectionIdeal_of_isSection` below, so demanding it added
+  nothing.
 
 **NOT VACUOUS.**  Instantiated immediately below, and already at `h = 𝟙 T`,
 where `φ` is a nontrivial automorphism of the pullback rather than the
 identity. -/
+theorem isIso_modPullbackSectionIdealMap {Y T Y' T' : Scheme.{u}}
+    (strY : Y ⟶ T) (strY' : Y' ⟶ T') (φ : Y' ⟶ Y) (h : T' ⟶ T)
+    (_hsq : IsPullback φ strY' strY h)
+    (_hproper : IsProper strY) (_hsmooth : SmoothOfRelativeDimension 1 strY)
+    {σ : T ⟶ Y} (_hσ : σ ≫ strY = 𝟙 T) {σ' : T' ⟶ Y'} (_hσ' : σ' ≫ strY' = 𝟙 T')
+    (hcompat : σ' ≫ φ = h ≫ σ) :
+    IsIso (modPullbackSectionIdealMap hcompat) := sorry
+
+/-- **THE IDEAL OF A SECTION COMMUTES WITH BASE CHANGE OF THE AMBIENT SCHEME**
+(PROVEN 2026-07-31 over `isIso_modPullbackSectionIdealMap`; a sorry leaf from
+2026-07-30 to 2026-07-31) — stated for a bare section of a bare morphism because
+nothing in the argument knows about curves.
+
+Set-up: `strY : Y ⟶ T` with a section `σ`, and `Y' = Y ×_T T'` with `φ` and
+`strY'` the two projections, so that `σ' : T' ⟶ Y'` is *forced* to be the
+base-changed section (`_hσ'` and `_hcompat` pin it uniquely, by the universal
+property of the pullback).  The claim is `φ^* 𝒪(−σ) ≅ 𝒪(−σ')`.
+
+The isomorphism is not an anonymous one: it is `modPullbackSectionIdealMap`,
+constructed above, and the whole content is that it is invertible.  See its
+`IsIso` leaf for the route and for the hypothesis audit. -/
 theorem nonempty_modPullback_sectionIdeal_of_isPullback {Y T Y' T' : Scheme.{u}}
     (strY : Y ⟶ T) (strY' : Y' ⟶ T') (φ : Y' ⟶ Y) (h : T' ⟶ T)
     (_hsq : IsPullback φ strY' strY h)
     (_hproper : IsProper strY) (_hsmooth : SmoothOfRelativeDimension 1 strY)
     {σ : T ⟶ Y} (_hσ : σ ≫ strY = 𝟙 T) {σ' : T' ⟶ Y'} (_hσ' : σ' ≫ strY' = 𝟙 T')
     (_hcompat : σ' ≫ φ = h ≫ σ) :
-    Nonempty (modPullback φ (sectionIdeal σ) ≅ sectionIdeal σ') := sorry
+    Nonempty (modPullback φ (sectionIdeal σ) ≅ sectionIdeal σ') :=
+  haveI := isIso_modPullbackSectionIdealMap strY strY' φ h _hsq _hproper _hsmooth _hσ _hσ'
+    _hcompat
+  ⟨asIso (modPullbackSectionIdealMap _hcompat)⟩
 
 /-- **THE SECTIONS MATCH** (PROVEN 2026-07-31) — `σ' ≫ φ = h ≫ σ` in the
 notation of `nonempty_modPullback_sectionIdeal` below: transporting a relative
