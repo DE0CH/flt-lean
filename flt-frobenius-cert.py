@@ -1,21 +1,34 @@
 #!/usr/bin/env python3
 """Generate a Lean certificate for  `H ∣ X ^ (q ^ m) - X`  over `ZMod q`.
 
-This is the machinery that closed `dvd_X_pow_card_pow_sub_X_hPolyElevenA`
-(`Fermat/FLT/EllipticCurve/MazurNonCMFrobenius.lean`, 2026-07-31).  It is a tool rather
-than a one-off script because the same certificate is wanted on further rows of Mazur's
-non-CM table in `Fermat/FLT/ModularCurve/X0.lean`, and rediscovering the shape costs a
-cycle.
+*** SUPERSEDED (2026-07-31) — DO NOT POINT `--out` AT A COMMITTED MODULE. ***
 
+`gen_modules.py` (with `gen_all.py`, `gen_frobenius.py`, `gen_coprime.py`) is the generator
+the tree now uses.  It emits `Fermat/FLT/EllipticCurve/MazurNonCMFrobenius.lean` as the
+SHARED machinery only — `XPow`, the step lemmas, and the four `H` — and one module per row
+under `MazurNonCMFrobenius/`, which is the arrangement `MazurNonCMCertificate.lean` consumes.
+
+This script emits the older single-file shape instead: one module carrying `pow_frob`,
+`chain_step` and a hand-rolled `namespace F1` … `namespace F5` chain.  That output was
+DELETED from the tree on 2026-07-31 — it had had no consumer since the generated
+`MazurNonCMFrobenius/ElevenA.lean` and `…/ElevenB.lean` landed, and it cost 530 s of build
+time in `MazurNonCMFrobenius.lean` plus 235 s in a sibling module `MazurNonCMFrobeniusB.lean`
+that was deleted with it.  Re-running the invocation below would overwrite the shared
+machinery and break both generated row modules.  Keep it for the measurements and the
+`F_q[X]` arithmetic below; regenerate through `gen_modules.py`.
+
+This is the machinery that first closed `dvd_X_pow_card_pow_sub_X_hPolyElevenA`
+(2026-07-31).  It was a tool rather than a one-off script because the same certificate is
+wanted on further rows of Mazur's non-CM table in `Fermat/FLT/ModularCurve/X0.lean`, and
+rediscovering the shape costs a cycle.
+
+    # HISTORICAL — the module this wrote no longer has this shape:
     python3 flt-frobenius-cert.py --prime 23 --exponent 11 \
         --namespace Fermat.MazurNonCMFrobenius --module-doc-target hPolyElevenA \
         --poly-file H.txt --out Fermat/FLT/EllipticCurve/MazurNonCMFrobenius.lean
 
 `--poly-file` holds the modulus' coefficients, HIGHEST degree first, whitespace- or
 comma-separated — which is exactly what `lift(Vec(H))` prints in PARI/GP.
-
-Regenerating the committed `MazurNonCMFrobenius.lean` reproduces it byte for byte; that
-round trip is this tool's regression test.
 
 WHAT IT EMITS, AND WHY THIS SHAPE.  All three levers below were MEASURED against the
 alternative on real data before being chosen; see the same discussion in `CLAUDE.md`.

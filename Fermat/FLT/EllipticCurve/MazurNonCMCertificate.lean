@@ -16,7 +16,6 @@ public import Mathlib.RingTheory.EuclideanDomain
 public import Mathlib.RingTheory.AdjoinRoot
 public import Mathlib.FieldTheory.Finiteness
 public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius
-public import Fermat.FLT.EllipticCurve.MazurNonCMFrobeniusB
 public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.ElevenA
 public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.ElevenB
 
@@ -55,9 +54,13 @@ Lean from mathlib's EDS recursion — `Ψ₂Sq, Ψ₃, preΨ₄, preΨ' 5, preΨ
 than in `X0.lean` because elaboration is single-threaded per file and `X0.lean` is already the
 slowest file in the tree; nothing here mentions a modular curve.
 
-**THE ONE OPEN LEAF IS `dvd_X_pow_card_pow_sub_X_hPolyElevenA`**, `H ∣ X ^ (23 ^ 11) - X`.
-That is a pure statement about two polynomials over `ZMod 23` — no curve, no `ℚ`, no Galois
-theory — and its docstring records the route.
+**THE `p = 11` ROWS ARE CLOSED** (2026-07-31): `dvd_X_pow_card_pow_sub_X_hPolyElevenA` and its
+`ElevenB` twin are PROVEN, in the generated modules `MazurNonCMFrobenius/ElevenA.lean` and
+`…/ElevenB.lean`.  **THE FOUR REMAINING OPEN LEAVES ARE ALL ON THE `p = 17` ROWS**:
+`dvd_X_pow_card_pow_sub_X_hPolySeventeenA` / `…SeventeenB` and `isCoprime_hPolySeventeenA` /
+`…SeventeenB`.  Each is a pure statement about two polynomials over `ZMod 67` — no curve, no
+`ℚ`, no Galois theory — and `dvd_X_pow_card_pow_sub_X_hPolySeventeenA`'s docstring records both
+the route and the one thing that stopped it, which is file size and not mathematics.
 -/
 
 @[expose] public section
