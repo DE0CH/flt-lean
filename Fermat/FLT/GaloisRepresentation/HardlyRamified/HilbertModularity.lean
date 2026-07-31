@@ -19391,6 +19391,50 @@ hence equally false), `exists_hilbertTaylorWilesPrime`,
 `exists_hilbertTaylorWilesPrimeSet` and their consumers, so it belongs to an
 author adjudicating the cut, not to a prover working this leaf in isolation.
 
+**THIRD INDEPENDENT CONFIRMATION, BY HAND RATHER THAN BY ENUMERATION
+(2026-07-31, flt-lean-110, dispatched at this leaf).** Write
+`T_ns = {[[a, 3b], [b, a]] : (a,b) ≠ 0} ≅ 𝔽₄₉ˣ` (`3` is a non-residue mod `7`) and
+`N(T_ns) = T_ns ⊔ T_ns · diag(1, −1)`, so `H = N(T_ns) ∩ SL₂(𝔽₇)`.
+
+* Torus part: `det = a² − 3b² = 1` has exactly the eight solutions with
+  `b ∈ {0, 1, 3, 4, 6}` (`b = 0: a = ±1`; `b = ±1: a = ±2`; `b = ±3: a = 0`), and
+  there `tr² − 4·det = 4a² − 4 = 4·3b² = 5b² ∈ {0, 5, 3}`.
+* Coset part: every element has `tr = 0`, `det = 1`, so `tr² − 4·det = −4 = 3`.
+
+`{0, 3, 5}` meets the squares `{1, 2, 4}` only in `0`, which forces `δ = 0`. Same
+verdict, reached a second way. The same two lines re-prove `hirrF` for free: the
+torus element `(a, b) = (2, 1)` has discriminant `5`, a non-residue, hence no
+`𝔽₇`-rational eigenvector, so `H` is irreducible.
+
+**AND IT PINS THE REPAIR DOWN, which the audits above leave as "thread a quadratic
+enlargement somewhere".** The enlargement is not a design choice; it is forced and
+CANONICAL. Split this leaf into
+
+* **(α) the TRUE half** — this statement with `∃ δ ≠ 0, δ² = tr² − 4·det` replaced
+  by `tr(ρbar σ)² − 4·det(ρbar σ) ≠ 0`, i.e. `σ` REGULAR SEMISIMPLE, eigenvalues
+  distinct in `kᵃˡᵍ` rather than in `k`. That is the statement
+  Diamond–Darmon–Taylor actually prove ("a nonabelian irreducible subgroup of
+  `GL₂` contains an element with distinct eigenvalues"), and it SURVIVES the
+  counterexample: in `H` the discriminants `3` and `5` are nonzero; and
+* **(β) the coefficient enlargement** `k ↝ k(√(tr² − 4·det))`, a SINGLE quadratic
+  extension determined by the `σ` of (α), threaded through
+  `IsHilbertTaylorWilesPrimeSet` and its consumers.
+
+(β) makes (α) imply this statement by construction — `d` is a square in `k(√d)` —
+so no largeness assumption on `#k` is needed and nothing is left open. In the
+counterexample it is exactly `𝔽₇ ↝ 𝔽₄₉`, where `3` and `5` both become squares.
+
+**WHAT (β) COSTS, measured 2026-07-31 rather than guessed, and why it was NOT done
+here.** The propagation is `exists_hilbertFixing_rootsOfUnity_charpoly_split` →
+`exists_hilbertTaylorWilesPrime` → `IsHilbertTaylorWilesPrimeSet.exists_insert` →
+`.exists_card_eq` → `exists_hilbertTaylorWilesPrimeSet_core` and its consumers —
+eight declarations — PLUS the definition `IsHilbertTaylorWilesPrimeSet` itself,
+whose dual-Selmer clause is stated in `continuousCohomology` over `k` and would
+have to move to `k'`. It is one edit that must land ATOMICALLY across a
+3000-line span of this file; half-landing it is exactly the interface-split merge
+hazard of CLAUDE.md's seventh invisibility class, where the signature edits merge
+cleanly and the call sites do not. It is queued as a single task for one owner.
+
 **The Taylor–Wiles Galois element over `F`, in discriminant form** (LEAF —
 new 2026-07-27; this is the whole mathematical content of
 `exists_hilbertFixing_rootsOfUnity_charpoly_split` below, which is now PROVEN
@@ -20063,9 +20107,81 @@ def hilbertInertiaOutsideSubgroups (F : Type u) [Field F] [NumberField F]
     ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
       ∀ σ : ↥(localInertiaGroup w), hilbertInertiaToGlobalHom F w σ ∈ N}
 
-/-- **Hermite–Minkowski over `F`** (SORRY LEAF, cut out 2026-07-28 as the first
-of the four inputs of `finite_hilbertH1TwistUnramified` below):
-`hilbertInertiaOutsideSubgroups F S n` is finite.
+/-- **Hermite–Minkowski over `F`, FIELD half** (SORRY LEAF, cut out 2026-07-31 by
+flt-lean-110 as the arithmetic half of `finite_hilbertInertiaOutsideSubgroups`
+below; the `F`-level twin of `HermiteMinkowski.lean`'s
+`finite_setOf_intermediateField_inertiaAt_le` and of the STEP A of
+`Modularity/Patching.lean`'s `finite_inertiaOutsideSubgroups`).
+
+There are finitely many finite Galois subextensions `K/F` inside `Fᵃˡᵍ` of degree
+at most `n` on which the inertia at every place `w ∉ S` acts trivially.
+
+**WHY THE CUT IS HERE.** The SUBGROUP half — infinite Galois correspondence,
+`fixingSubgroup_fixedField`, `isOpen_iff_finite`, `normal_iff_isGalois`,
+`normalAutEquivQuotient` — transcribes VERBATIM from `ℚ` to `F` and is now the
+PROVEN body of `finite_hilbertInertiaOutsideSubgroups` below, so it is done and
+nobody need do it again. Everything genuinely arithmetic is here.
+
+# WHAT THIS LEAF COSTS, and the correction that made the accounting change
+
+The original cut (2026-07-28) recorded this leaf's cost as "the discriminant tower
+formula plus the unramified ⟹ inertia-trivial CONVERSE, shared with
+`exists_finset_isUnramifiedAt_hilbert_of_notMem`". **The second half of that is
+now known to be wrong** — that leaf was proven on 2026-07-31 without the converse
+and without any ramification theory at all (see its docstring), so the pairing is
+VOID and this leaf is on its own. What it actually costs, measured against the
+`ℚ`-level proof which is complete in this tree:
+
+1. **The exponent bound, by TRANSPORT.**
+   `DiscrExponent.lean`'s `exists_discr_factorization_le_of_finrank_le q n hq`
+   bounds `v_q(|d_K|)` in terms of `q` and `[K : ℚ]` alone, but it is stated for
+   `K : IntermediateField ℚ (AlgebraicClosure ℚ)`. `Fᵃˡᵍ` is ALSO an algebraic
+   closure of `ℚ` (`Algebra.IsAlgebraic.trans` through `F`), so `IsAlgClosure.equiv`
+   gives `AlgebraicClosure ℚ ≃ₐ[ℚ] Fᵃˡᵍ`, and the bound transports along it —
+   `finrank` is preserved and `NumberField.discr` is an `AlgEquiv` invariant. This
+   is bookkeeping, not mathematics, but it is not free.
+2. **The support bound, which is the real content.** One needs a FIXED finite set
+   `T` of rational primes with `q ∤ d_K` for `q ∉ T`; take `T` = the primes under
+   `S` together with the primes ramified in `F`. The step
+   `q ∉ T ⟹ Algebra.IsUnramifiedAt ℤ Q` for `Q ∣ q` in `𝓞 K` factors as
+   (i) `Algebra.IsUnramifiedAt (𝓞 F) Q` from the inertia hypothesis at
+   `w = Q ∩ 𝓞 F`, which is `MinkowskiUnramified.lean`'s PROVEN
+   `isUnramifiedAt_of_inertia_le_fixingSubgroup` with its base field `ℚ` replaced
+   by `F` — that lemma and its two supporting nodes
+   (`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`,
+   `inertia_eq_bot_of_exists_prime_over`) are hard-wired to `ℚ` and to
+   `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`, and generalising them to a
+   variable base number field is the single largest item here;
+   (ii) `Algebra.IsUnramifiedAt ℤ w` for `q ∉ T`, i.e. only finitely many primes
+   ramify in the FIXED field `F` — a statement about `F` alone; and
+   (iii) transitivity of unramifiedness in the tower `ℤ ⊆ 𝓞 F ⊆ 𝓞 K`.
+
+**A CHEAPER SUFFICIENT ROUTE IS *NOT* AVAILABLE HERE, contrary to what the note on
+the consumer used to say.** "Pull back to `Γ ℚ` and use the rational statement"
+replaces (i) by a base-change of the inertia condition along `Γ F ≤ Γ ℚ`, which is
+the same local–global comparison in different clothes: `localInertiaGroup w` lives
+in `Γ F_w` and `localInertiaGroup q` in `Γ ℚ_q`, and relating them is exactly (i)
+plus (ii).
+
+Both-ways audit: a plain classical finiteness statement about number fields, no
+representation-theoretic hypothesis, hence not vacuous and not dischargeable by
+refuting any package. Not vacuous in the other direction either — `⊥ = F` itself
+is a member for every `S` and every `n ≥ 1`, so the set is nonempty and the
+content is genuinely an upper bound. -/
+theorem finite_setOf_intermediateField_hilbertInertiaOutside
+    (F : Type u) [Field F] [NumberField F]
+    (S : Finset (HeightOneSpectrum (𝓞 F))) (n : ℕ) :
+    {K : IntermediateField F (Fᵃˡᵍ) |
+      ∃ _ : FiniteDimensional F K,
+        IsGalois F K ∧ Module.finrank F K ≤ n ∧
+        ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+          ∀ σ : ↥(localInertiaGroup w),
+            hilbertInertiaToGlobalHom F w σ ∈ K.fixingSubgroup}.Finite := sorry
+
+/-- **Hermite–Minkowski over `F`** (PROVEN 2026-07-31 over the FIELD half
+`finite_setOf_intermediateField_hilbertInertiaOutside` immediately above; cut out
+2026-07-28 as the first of the four inputs of `finite_hilbertH1TwistUnramified`
+below): `hilbertInertiaOutsideSubgroups F S n` is finite.
 
 This is `HermiteMinkowski.lean`'s `finite_setOf_subgroup_inertiaAt_le` with the
 base field `ℚ` replaced by an arbitrary number field `F` and the hard-wired
@@ -20123,10 +20239,55 @@ inertia condition, which may well be cheaper.
 Both-ways audit: a plain classical finiteness statement, no
 representation-theoretic hypothesis, hence not vacuous and not dischargeable by
 refuting any package — `⊤` is a member for every `S` and every `n ≥ 1`, so the
-set is nonempty and the content is genuinely an upper bound. -/
+set is nonempty and the content is genuinely an upper bound.
+
+**STATUS 2026-07-31 (flt-lean-110): the SUBGROUP half above is now the PROVEN body
+below, and the two paragraphs of ROUTE above are superseded on two points.** The
+"two dictionary lemmas" estimate stands only for the tower formula; the
+unramified ⟹ inertia-trivial CONVERSE it names as the second is NOT what this
+costs, because the leaf it was said to be shared with
+(`exists_finset_isUnramifiedAt_hilbert_of_notMem`) was proven the same day without
+it. And the "CHEAPER SUFFICIENT ROUTE" through `Γ ℚ` is not cheaper: see the
+FIELD half's docstring, which carries the corrected accounting. -/
 theorem finite_hilbertInertiaOutsideSubgroups (F : Type u) [Field F] [NumberField F]
     (S : Finset (HeightOneSpectrum (𝓞 F))) (n : ℕ) :
-    (hilbertInertiaOutsideSubgroups F S n).Finite := sorry
+    (hilbertInertiaOutsideSubgroups F S n).Finite := by
+  classical
+  haveI halgF : Algebra.IsAlgebraic F (AlgebraicClosure F) := AlgebraicClosure.isAlgebraic F
+  haveI hacF : IsAlgClosure F (AlgebraicClosure F) := ⟨inferInstance, halgF⟩
+  haveI hnormF : Normal F (AlgebraicClosure F) := IsAlgClosure.normal F (AlgebraicClosure F)
+  haveI hsepF : Algebra.IsSeparable F (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalF : IsGalois F (AlgebraicClosure F) := ⟨⟩
+  refine Set.Finite.subset
+    ((finite_setOf_intermediateField_hilbertInertiaOutside F S n).image
+      fun K => K.fixingSubgroup) ?_
+  rintro N ⟨hnorm, hopen, hFI, hidx, hinert⟩
+  have hclosed : IsClosed ((N : Subgroup (Γ F)) : Set (Γ F)) :=
+    Subgroup.isClosed_of_isOpen N hopen
+  have hfix : (IntermediateField.fixedField (E := AlgebraicClosure F) N).fixingSubgroup = N :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨N, hclosed⟩
+  haveI hfd : FiniteDimensional F
+      (IntermediateField.fixedField (E := AlgebraicClosure F) N) :=
+    (InfiniteGalois.isOpen_iff_finite _).mp (by rw [hfix]; exact hopen)
+  haveI hgalK : IsGalois F
+      (IntermediateField.fixedField (E := AlgebraicClosure F) N) :=
+    (InfiniteGalois.normal_iff_isGalois _).mp (by rw [hfix]; exact hnorm)
+  haveI hnorm' := hnorm
+  have hcard : Module.finrank F
+      (IntermediateField.fixedField (E := AlgebraicClosure F) N) =
+      Nat.card (Γ F ⧸ N) := by
+    rw [← IsGalois.card_aut_eq_finrank]
+    exact (Nat.card_congr (InfiniteGalois.normalAutEquivQuotient
+      (⟨N, hclosed⟩ : ClosedSubgroup (Γ F))).toEquiv).symm
+  have hrank : Module.finrank F
+      (IntermediateField.fixedField (E := AlgebraicClosure F) N) ≤ n := by
+    rw [hcard, ← Subgroup.index_eq_card N]
+    exact hidx
+  refine ⟨_, ⟨hfd, hgalK, hrank, ?_⟩, hfix⟩
+  intro w hw σ
+  rw [hfix]
+  exact hinert w hw σ
 
 /-! #### The local-inertia fixed-point apparatus of
 `exists_finset_isUnramifiedAt_hilbert_of_notMem`
