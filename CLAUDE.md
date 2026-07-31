@@ -5447,6 +5447,7 @@ Corollary for a prover handed a leaf: **`grep` the tree for your target's consum
 it.** Zero consumers means the task is a deletion, not a proof, and the honest sentinel reports that.
 
 ## A "DO NOT CUT THIS WAY" PROHIBITION IS DATED EVIDENCE, EXACTLY LIKE AN AUDIT
+=======
 
 (2026-07-31, `exists_qAdicPolarizedSystem_finiteBase`.) The rule above says a falsity audit is
 VOID once the statement is restated. The same is true in the other direction, and it is easier to
@@ -13262,3 +13263,40 @@ Three things follow:
   existing rule reads line numbers as a checksum on your checkout; a SIGNATURE is a checksum
   on your prompt. Diff them before writing any Lean — it is one `sed` and it is the whole
   difference between a proof and a phantom.
+### The follow-up: neither the localisation NOR the re-presentation was needed
+(2026-07-31, `exists_pow_X7_mul_mem_idl`, the first half of that cut, now PROVEN.) The plan above
+is right about the mathematics and wrong about the cost, in a way worth generalising: **it named
+two expensive objects — a localisation and a structural isomorphism `MvPolynomial (Fin n) ≃ E[T]` —
+and the proof needed neither.** Both were replaced by one cheap gadget.
+**Use the INJECTION `R ↪ R[T]`, not the isomorphism `R ≃ E[T]`.** To see a `MvPolynomial (Fin n) ℤ`
+as a polynomial ring in one chosen variable `X k`, do not peel `X k` off into an `n−1`-variable base
+ring. Map `X k ↦ T` and every *other* `X i ↦ C (X i)`, **landing in `R[T]` over `R` itself**:
+    noncomputable def peel (k : Fin n) : R →ₐ[ℤ] Polynomial R :=
+      aeval (fun i => if i = k then Polynomial.X else Polynomial.C (X i))
+This is not surjective, so it is not the structural iso — but it is injective with an explicit
+retraction (`Polynomial.eval (X k)`), and it costs nothing:
+- **no second index convention.** The `Fin (n−1)` version renumbers every variable above `k`, so
+  each polynomial must be transcribed twice and the two copies kept in sync by hand. Here
+  `peel k p = C p` *literally*, for any `p` written in the `X i, i ≠ k`, by `simp`.
+- **"`X k` does not occur in `p`" becomes `peel k p = C p`** — an `AlgHom.equalizer`, i.e. a
+  subalgebra, so closure under `+ - * ^` is free rather than eleven lemmas.
+- **degree-in-`X k` arguments work unchanged**, because `Polynomial R` is a domain when `R` is:
+  "an `X k`-free multiple of something of degree exactly 1 in `X k` is 0" is `natDegree_mul`.
+The one thing to know before committing to it: **irreducibility does NOT transfer back along a
+non-surjection, but primality DOES.** From `peel k p ∣ peel k a`, apply the retraction to get
+`p ∣ a`; that gives `Prime (peel k p) → Prime p` directly. So prove `Irreducible` upstairs in
+`R[T]` (via `irreducible_C_mul_X_add_C`), upgrade to `Prime` upstairs (UFD), and only then come
+down. Anything quantifying over *all* of `R[T]` will not come down.
+**And "invert `f`'s leading coefficient" can be done by hand, keeping the cofactor.** Localisation
+was only ever wanted to divide by `-Pz ^ 3`, the `a₆`-coefficient of `gen₁`. Instead prove
+"for every `a` there are `n` and an `a₆`-free `r` with `Pz ^ n * a ≡ r (mod gen₁)`" by
+`MvPolynomial.induction_on` — three cases, the `X k` step being one `ring` — and the `∃ n` in the
+leaf's own statement absorbs the powers. **A leaf already stated in saturated form
+(`∃ n, Pz ^ n * a ∈ I`) is telling you that no localisation object is required.** Read the
+statement before building the machine.
+**Last, and it removed every remaining computation: prove `¬ p ∣ q` by evaluating at ONE integer
+point** where `p` vanishes and `q` does not (`p ∣ q → eval pt p ∣ eval pt q → 0 ∣ nonzero`). All
+four primitivity non-divisibilities went this way, each a two-line `norm_num`. The CAS work quoted
+in the plan (generic-point substitutions, `factorize`, `minAssGTZ`) was still worth doing — but its
+output is *where to look for the point*, never anything transcribed into Lean. That is the CAS
+doctrine's "untrusted searcher" in its cheapest possible form: the certificate is a point.
