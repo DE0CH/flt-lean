@@ -6807,253 +6807,6 @@ theorem exists_nat_eq_sum_lowerSwan (ρ : GaloisRep K A M)
           - Module.finrank A (ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v)) : ℕ) : ℚ)
         / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ) := sorry
 
-/-- **HASSE–ARF: THE BREAK SUM IS AN INTEGER** (PROVEN 2026-07-30; a SORRY LEAF
-from 2026-07-28, when it was cut out of step `hsum` of
-`GaloisRep.exists_isSwanExponentAt`).
-
-Serre, *Corps Locaux* V §7 (Hasse–Arf for abelian extensions) and VI §2 (the
-Swan conductor as the break sum): the breaks of a representation lie in `ℚ`,
-but their SUM — the Swan conductor — is a natural number. Equivalently, the
-jumps of the upper-numbering filtration of an abelian extension are
-integers, applied to the abelianised action on each break subspace.
-
-Nothing weaker will do: `IsSwanExponentAt` demands `s : ℕ`, deliberately, so
-that integrality is part of what is proved rather than smuggled in by the
-type.
-
-`hfin` is carried because the statement is about a break list, which exists
-only under it — and, now that this is a theorem rather than a leaf, because the
-proof needs the open subgroup it supplies.
-
-**HOW IT IS PROVED (2026-07-30), and where the depth went.** The statement is
-no longer a leaf, but it is not cheap either: what the proof does is move the
-deep content OFF the upper-numbering break list and ONTO one finite level,
-where it is the classical Hasse–Arf theorem. The deep step is now the single
-leaf `exists_nat_eq_sum_lowerSwan` immediately above; everything between the
-two is a Riemann-sum estimate, and it is worth writing down because it is the
-part that decides which finite-level statement is the right one to leaf.
-
-1. `hfin` gives an open `N` whose wild part acts trivially, and
-   `exists_lowerRamificationData_phi_one_le` (proven, above) a level `D ≤ N` with
-   `φ_D(1) ≤ δ` for a `δ` chosen below. `hD` — the level's wild part acts
-   trivially — follows.
-2. `fixedSubmodule_gp_phi_eq` turns `hμ` at `u = φ_D(m)` into a COUNTING
-   formula for the finite-level codimension, `c_D(m) = #{k < d : φ_D(m) ≤ μ k}`
-   for every `m ≥ 1`. This is the only place `gp_herbrand` enters, and it is
-   what makes the finite-level sum computable from the break list at all.
-3. `LowerRamificationData.exists_gp_eq_lvl` gives a `T ≥ 1` with
-   `D.gp T = D.lvl`, hence `hT`, hence `c_D(T) = 0`, hence — through step 2 —
-   `μ k < φ_D(T)` for every `k < d`, i.e. `ψ_D(μ k) ≤ T`. The truncation is
-   therefore past every break.
-4. THE SWAP. Substituting step 2 into the leaf's sum and exchanging the two
-   summations,
-   `∑_{m ∈ [1,T]} c_D(m)/[G₀ : G_m] = ∑_{k < d} ∑_{m ∈ [1,T], φ_D(m) ≤ μ k} 1/[G₀ : G_m]`,
-   and the inner sum is sandwiched between `φ_D(ψ_D(μ k) − 1)` and
-   `φ_D(ψ_D(μ k))` because `φ_D` IS the partial sum of those steps
-   (definitionally) and the index set sits between the two initial segments.
-5. THE ESTIMATE. `φ_D(ψ − 1) < μ k ≤ φ_D(ψ)` (`phi_psiNat_pred_lt`,
-   `le_phi_psiNat`) and `φ_D(ψ) ≤ φ_D(ψ − 1) + φ_D(1)` (`step_le_phi_one`), so
-   each inner sum is within `φ_D(1)` of `μ k` and the whole sum within
-   `d · φ_D(1) ≤ d · δ` of `∑ μ k`.
-6. INTEGRALITY. Take `δ := 1/(2 · den(∑ μ k) · (d+1))`, so the error is at most
-   `1/(2·den)`. The leaf's `s` is then an integer within `1/(2·den)` of the
-   sum, and `s·den − num` is an integer of absolute value `≤ 1/2`, hence `0`.
-
-Two things this route does NOT need, and a prover of the leaf should not
-reintroduce them: it never needs the breaks to be Herbrand values of `D` (they
-are, for the genuine filtration, but the axioms do not pin `c` off the Herbrand
-grid — see the note on `fixedSubmodule_gp_phi_eq`), and it never needs `1 ≤ μ k`
-(WITHDRAWN as FALSE). Positivity `hpos` is used, and only through `psiNat_pos`
-and `phi_psiNat_pred_lt`.
-
-**`hpos` IS NECESSARY, NOT DECORATION (added 2026-07-30).** Without it the
-statement is FALSE, and cheaply: the counting clause tests only at `u > 0`,
-so an entry `μ k ≤ 0` is invisible to it and free to be anything. Take
-`d = 2`, a codimension function equal to `1` on `(0, 1/2]` and `0` above,
-and `μ = (1/2, 0)`: the counting clause holds and `∑ μ = 1/2`, which is no
-natural number. The same slack refutes UNIQUENESS of the Swan exponent —
-`μ = (3, 0)` and `μ = (3, −1)` have identical counting functions and sums
-`3` and `2` — which is why `GaloisRep.IsSwanExponentAt` now carries the
-positivity clause too. -/
-theorem exists_nat_eq_sum_breaks (ρ : GaloisRep K A M)
-    (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
-    (F : RamificationFiltration v) (μ : ℕ → ℚ)
-    (hpos : ∀ k < ρ.wildCodim v, 0 < μ k)
-    (hμ : ∀ u : ℚ, 0 < u →
-      Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
-        ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) :
-    ∃ s : ℕ, (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := by
-  classical
-  obtain ⟨N, hN, hNtriv⟩ := id hfin
-  set d := ρ.wildCodim v with hd
-  set S : ℚ := ∑ k ∈ Finset.range d, μ k with hS
-  have hdenpos : (0 : ℚ) < (S.den : ℚ) := by exact_mod_cast S.den_pos
-  have hdnn : (0 : ℚ) ≤ (d : ℚ) := Nat.cast_nonneg d
-  have hprodpos : (0 : ℚ) < 2 * (S.den : ℚ) * ((d : ℚ) + 1) :=
-    mul_pos (mul_pos (by norm_num) hdenpos) (by linarith)
-  have hδpos : (0 : ℚ) < 1 / (2 * (S.den : ℚ) * ((d : ℚ) + 1)) := div_pos one_pos hprodpos
-  obtain ⟨D, hDN, hDphi⟩ :=
-    exists_lowerRamificationData_phi_one_le v N hN _ hδpos
-  have hD : ∀ σ ∈ D.lvl ⊓ wildInertiaGroup v, ∀ x : M, ρ.toLocal v σ x = x := by
-    intro σ hσ x
-    obtain ⟨hσ1, hσ2⟩ := Subgroup.mem_inf.mp hσ
-    exact hNtriv σ (Subgroup.mem_inf.mpr ⟨hDN hσ1, hσ2⟩) x
-  have hphipos : ∀ m : ℕ, 1 ≤ m → 0 < D.phi m := by
-    intro m hm
-    have h := D.phi_strictMono (Nat.lt_of_lt_of_le Nat.zero_lt_one hm)
-    rwa [D.phi_zero] at h
-  -- STEP 2: the finite-level codimension, as a counting function of the breaks
-  have hcount : ∀ m : ℕ, 1 ≤ m →
-      (Module.finrank A M
-        - Module.finrank A (ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v)))
-        = ((Finset.range d).filter fun k => D.phi m ≤ μ k).card := by
-    intro m hm
-    have h := hμ (D.phi m) (hphipos m hm)
-    rwa [ρ.fixedSubmodule_gp_phi_eq v F D hD m (hphipos m hm)] at h
-  -- STEP 3: a truncation point past every break
-  obtain ⟨T, hT1, hTlvl⟩ := D.exists_gp_eq_lvl
-  have hTtop : ρ.fixedSubmodule v (D.gp T ⊓ wildInertiaGroup v) = ⊤ := by
-    rw [hTlvl]
-    refine eq_top_iff.mpr fun x _ => ?_
-    intro σ hσ
-    exact hD σ hσ x
-  obtain ⟨s, hs⟩ := ρ.exists_nat_eq_sum_lowerSwan v hfin D T hD hTtop
-  refine ⟨s, ?_⟩
-  have hcT : ((Finset.range d).filter fun k => D.phi T ≤ μ k).card = 0 := by
-    rw [← hcount T hT1, hTtop, Submodule.topEquiv.finrank_eq, Nat.sub_self]
-  have hlt : ∀ k : ℕ, k < d → μ k < D.phi T := by
-    intro k hk
-    by_contra hcon
-    have hmem : k ∈ (Finset.range d).filter fun j => D.phi T ≤ μ j :=
-      Finset.mem_filter.mpr ⟨Finset.mem_range.mpr hk, not_lt.mp hcon⟩
-    rw [Finset.card_eq_zero] at hcT
-    rw [hcT] at hmem
-    exact absurd hmem (Finset.notMem_empty k)
-  -- STEP 4: exchange the two summations
-  have hswap : ∑ m ∈ Finset.Icc 1 T,
-        ((Module.finrank A M
-            - Module.finrank A (ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v)) : ℕ) : ℚ)
-          / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ)
-      = ∑ k ∈ Finset.range d,
-          ∑ m ∈ (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k),
-            (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ) := by
-    have h1 : ∀ m ∈ Finset.Icc 1 T,
-        ((Module.finrank A M
-            - Module.finrank A (ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v)) : ℕ) : ℚ)
-          / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ)
-        = ∑ k ∈ Finset.range d,
-            (if D.phi m ≤ μ k then
-              (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ) else 0) := by
-      intro m hm
-      rw [← Finset.sum_filter, Finset.sum_const, nsmul_eq_mul,
-        hcount m (Finset.mem_Icc.mp hm).1]
-      ring
-    rw [Finset.sum_congr rfl h1, Finset.sum_comm]
-    exact Finset.sum_congr rfl fun k _ => (Finset.sum_filter _ _).symm
-  -- `φ` IS the partial sum of its steps
-  have hphisum : ∀ j : ℕ, D.phi j
-      = ∑ m ∈ Finset.Icc 1 j, (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ) := by
-    intro j; rfl
-  have hnn : ∀ m : ℕ, (0 : ℚ) ≤ (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ) := by
-    intro m; positivity
-  -- STEP 5: each inner sum is within `φ_D(1)` of its break
-  have hsand : ∀ k : ℕ, k < d →
-      μ k - D.phi 1 ≤ (∑ m ∈ (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k),
-          (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ))
-      ∧ (∑ m ∈ (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k),
-          (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ)) ≤ μ k + D.phi 1 := by
-    intro k hk
-    have hμk : 0 < μ k := hpos k hk
-    have hψpos : 0 < D.psiNat (μ k) := D.psiNat_pos hμk
-    have hψT : D.psiNat (μ k) ≤ T := D.psiNat_le (le_of_lt (hlt k hk))
-    have hpred : D.phi (D.psiNat (μ k) - 1) < μ k := D.phi_psiNat_pred_lt hμk
-    have hupper : μ k ≤ D.phi (D.psiNat (μ k)) := D.le_phi_psiNat (μ k)
-    have hsucc : D.psiNat (μ k) - 1 + 1 = D.psiNat (μ k) := by omega
-    have hstep : D.phi (D.psiNat (μ k))
-        ≤ D.phi (D.psiNat (μ k) - 1) + D.phi 1 := by
-      have h := D.step_le_phi_one (D.psiNat (μ k) - 1)
-      have h2 := D.phi_succ (D.psiNat (μ k) - 1)
-      rw [hsucc] at h2
-      rw [h2]
-      rw [hsucc] at h
-      linarith
-    have hsub1 : Finset.Icc 1 (D.psiNat (μ k) - 1)
-        ⊆ (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k) := by
-      intro m hm
-      obtain ⟨hm1, hm2⟩ := Finset.mem_Icc.mp hm
-      refine Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨hm1, by omega⟩, ?_⟩
-      exact le_of_lt (lt_of_le_of_lt (D.phi_strictMono.monotone hm2) hpred)
-    have hsub2 : (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k)
-        ⊆ Finset.Icc 1 (D.psiNat (μ k)) := by
-      intro m hm
-      obtain ⟨hm1, hm2⟩ := Finset.mem_filter.mp hm
-      refine Finset.mem_Icc.mpr ⟨(Finset.mem_Icc.mp hm1).1, ?_⟩
-      exact D.phi_strictMono.le_iff_le.mp (le_trans hm2 hupper)
-    have hlow := Finset.sum_le_sum_of_subset_of_nonneg hsub1 (fun m _ _ => hnn m)
-    have hhigh := Finset.sum_le_sum_of_subset_of_nonneg hsub2 (fun m _ _ => hnn m)
-    rw [← hphisum (D.psiNat (μ k) - 1)] at hlow
-    rw [← hphisum (D.psiNat (μ k))] at hhigh
-    exact ⟨by linarith, by linarith⟩
-  set E : ℚ := ∑ k ∈ Finset.range d,
-      ∑ m ∈ (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k),
-        (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ) with hE
-  have hEs : (s : ℚ) = E := hs.trans hswap
-  have hlowsum : S - (d : ℚ) * D.phi 1 ≤ E := by
-    have hsum := Finset.sum_le_sum (fun k hk => (hsand k (Finset.mem_range.mp hk)).1)
-    rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul] at hsum
-    rw [hE]
-    linarith [hsum]
-  have hhighsum : E ≤ S + (d : ℚ) * D.phi 1 := by
-    have hsum := Finset.sum_le_sum (fun k hk => (hsand k (Finset.mem_range.mp hk)).2)
-    rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul] at hsum
-    rw [hE]
-    linarith [hsum]
-  -- STEP 6: an integer within `1/(2·den)` of the sum IS the sum
-  have hphi1nn : (0 : ℚ) ≤ D.phi 1 := le_of_lt (hphipos 1 le_rfl)
-  have hne1 : ((d : ℚ) + 1) ≠ 0 := by positivity
-  have hne2 : (S.den : ℚ) ≠ 0 := ne_of_gt hdenpos
-  have herr : (d : ℚ) * D.phi 1 ≤ 1 / (2 * (S.den : ℚ)) := by
-    have h1 : (d : ℚ) * D.phi 1 ≤ ((d : ℚ) + 1) * D.phi 1 := by nlinarith
-    have h2 : ((d : ℚ) + 1) * D.phi 1
-        ≤ ((d : ℚ) + 1) * (1 / (2 * (S.den : ℚ) * ((d : ℚ) + 1))) :=
-      mul_le_mul_of_nonneg_left hDphi (by linarith)
-    have h3 : ((d : ℚ) + 1) * (1 / (2 * (S.den : ℚ) * ((d : ℚ) + 1)))
-        = 1 / (2 * (S.den : ℚ)) := by
-      field_simp
-    linarith
-  have hnum : (S.num : ℚ) = S * (S.den : ℚ) :=
-    (div_eq_iff hne2).mp (Rat.num_div_den S)
-  have hdiff1 : -(1 / (2 * (S.den : ℚ))) ≤ (s : ℚ) - S := by rw [hEs]; linarith
-  have hdiff2 : (s : ℚ) - S ≤ 1 / (2 * (S.den : ℚ)) := by rw [hEs]; linarith
-  have hhalf : ((1 : ℚ) / (2 * (S.den : ℚ))) * (S.den : ℚ) = 1 / 2 := by field_simp
-  have hb2 : ((s : ℚ) - S) * (S.den : ℚ) ≤ 1 / 2 := by
-    have h := mul_le_mul_of_nonneg_right hdiff2 (le_of_lt hdenpos)
-    rw [hhalf] at h
-    exact h
-  have hb1 : -(1 / 2 : ℚ) ≤ ((s : ℚ) - S) * (S.den : ℚ) := by
-    have h := mul_le_mul_of_nonneg_right hdiff1 (le_of_lt hdenpos)
-    rw [neg_mul, hhalf] at h
-    exact h
-  have hzero : (s : ℤ) * (S.den : ℤ) - S.num = 0 := by
-    have hcast : (((s : ℤ) * (S.den : ℤ) - S.num : ℤ) : ℚ) = ((s : ℚ) - S) * (S.den : ℚ) := by
-      push_cast
-      rw [hnum]
-      ring
-    have hc1 : (-1 : ℚ) < (((s : ℤ) * (S.den : ℤ) - S.num : ℤ) : ℚ) := by
-      rw [hcast]; linarith
-    have hc2 : (((s : ℤ) * (S.den : ℤ) - S.num : ℤ) : ℚ) < 1 := by
-      rw [hcast]; linarith
-    have h1 : (-1 : ℤ) < (s : ℤ) * (S.den : ℤ) - S.num := by exact_mod_cast hc1
-    have h2 : (s : ℤ) * (S.den : ℤ) - S.num < 1 := by exact_mod_cast hc2
-    omega
-  have hmul : ((s : ℚ) - S) * (S.den : ℚ) = 0 := by
-    have hq : (((s : ℤ) * (S.den : ℤ) - S.num : ℤ) : ℚ) = 0 := by rw [hzero]; simp
-    push_cast at hq
-    rw [hnum] at hq
-    linarith
-  rcases mul_eq_zero.mp hmul with h | h
-  · linarith
-  · exact absurd h hne2
 
 section PhiOneSmall
 
@@ -7766,6 +7519,254 @@ theorem exists_max_codim_gt (ρ : GaloisRep K A M)
     rw [Nat.sub_add_cancel hjpos] at heq
     rw [heq]
     exact hgreat _ (D.phi_strictMono.lt_iff_lt.mp (lt_of_lt_of_le hw hjle))
+
+/-- **HASSE–ARF: THE BREAK SUM IS AN INTEGER** (PROVEN 2026-07-30; a SORRY LEAF
+from 2026-07-28, when it was cut out of step `hsum` of
+`GaloisRep.exists_isSwanExponentAt`).
+
+Serre, *Corps Locaux* V §7 (Hasse–Arf for abelian extensions) and VI §2 (the
+Swan conductor as the break sum): the breaks of a representation lie in `ℚ`,
+but their SUM — the Swan conductor — is a natural number. Equivalently, the
+jumps of the upper-numbering filtration of an abelian extension are
+integers, applied to the abelianised action on each break subspace.
+
+Nothing weaker will do: `IsSwanExponentAt` demands `s : ℕ`, deliberately, so
+that integrality is part of what is proved rather than smuggled in by the
+type.
+
+`hfin` is carried because the statement is about a break list, which exists
+only under it — and, now that this is a theorem rather than a leaf, because the
+proof needs the open subgroup it supplies.
+
+**HOW IT IS PROVED (2026-07-30), and where the depth went.** The statement is
+no longer a leaf, but it is not cheap either: what the proof does is move the
+deep content OFF the upper-numbering break list and ONTO one finite level,
+where it is the classical Hasse–Arf theorem. The deep step is now the single
+leaf `exists_nat_eq_sum_lowerSwan` immediately above; everything between the
+two is a Riemann-sum estimate, and it is worth writing down because it is the
+part that decides which finite-level statement is the right one to leaf.
+
+1. `hfin` gives an open `N` whose wild part acts trivially, and
+   `exists_lowerRamificationData_phi_one_le` (proven, above) a level `D ≤ N` with
+   `φ_D(1) ≤ δ` for a `δ` chosen below. `hD` — the level's wild part acts
+   trivially — follows.
+2. `fixedSubmodule_gp_phi_eq` turns `hμ` at `u = φ_D(m)` into a COUNTING
+   formula for the finite-level codimension, `c_D(m) = #{k < d : φ_D(m) ≤ μ k}`
+   for every `m ≥ 1`. This is the only place `gp_herbrand` enters, and it is
+   what makes the finite-level sum computable from the break list at all.
+3. `LowerRamificationData.exists_gp_eq_lvl` gives a `T ≥ 1` with
+   `D.gp T = D.lvl`, hence `hT`, hence `c_D(T) = 0`, hence — through step 2 —
+   `μ k < φ_D(T)` for every `k < d`, i.e. `ψ_D(μ k) ≤ T`. The truncation is
+   therefore past every break.
+4. THE SWAP. Substituting step 2 into the leaf's sum and exchanging the two
+   summations,
+   `∑_{m ∈ [1,T]} c_D(m)/[G₀ : G_m] = ∑_{k < d} ∑_{m ∈ [1,T], φ_D(m) ≤ μ k} 1/[G₀ : G_m]`,
+   and the inner sum is sandwiched between `φ_D(ψ_D(μ k) − 1)` and
+   `φ_D(ψ_D(μ k))` because `φ_D` IS the partial sum of those steps
+   (definitionally) and the index set sits between the two initial segments.
+5. THE ESTIMATE. `φ_D(ψ − 1) < μ k ≤ φ_D(ψ)` (`phi_psiNat_pred_lt`,
+   `le_phi_psiNat`) and `φ_D(ψ) ≤ φ_D(ψ − 1) + φ_D(1)` (`step_le_phi_one`), so
+   each inner sum is within `φ_D(1)` of `μ k` and the whole sum within
+   `d · φ_D(1) ≤ d · δ` of `∑ μ k`.
+6. INTEGRALITY. Take `δ := 1/(2 · den(∑ μ k) · (d+1))`, so the error is at most
+   `1/(2·den)`. The leaf's `s` is then an integer within `1/(2·den)` of the
+   sum, and `s·den − num` is an integer of absolute value `≤ 1/2`, hence `0`.
+
+Two things this route does NOT need, and a prover of the leaf should not
+reintroduce them: it never needs the breaks to be Herbrand values of `D` (they
+are, for the genuine filtration, but the axioms do not pin `c` off the Herbrand
+grid — see the note on `fixedSubmodule_gp_phi_eq`), and it never needs `1 ≤ μ k`
+(WITHDRAWN as FALSE). Positivity `hpos` is used, and only through `psiNat_pos`
+and `phi_psiNat_pred_lt`.
+
+**`hpos` IS NECESSARY, NOT DECORATION (added 2026-07-30).** Without it the
+statement is FALSE, and cheaply: the counting clause tests only at `u > 0`,
+so an entry `μ k ≤ 0` is invisible to it and free to be anything. Take
+`d = 2`, a codimension function equal to `1` on `(0, 1/2]` and `0` above,
+and `μ = (1/2, 0)`: the counting clause holds and `∑ μ = 1/2`, which is no
+natural number. The same slack refutes UNIQUENESS of the Swan exponent —
+`μ = (3, 0)` and `μ = (3, −1)` have identical counting functions and sums
+`3` and `2` — which is why `GaloisRep.IsSwanExponentAt` now carries the
+positivity clause too. -/
+theorem exists_nat_eq_sum_breaks (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
+    (F : RamificationFiltration v) (μ : ℕ → ℚ)
+    (hpos : ∀ k < ρ.wildCodim v, 0 < μ k)
+    (hμ : ∀ u : ℚ, 0 < u →
+      Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
+        ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) :
+    ∃ s : ℕ, (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := by
+  classical
+  obtain ⟨N, hN, hNtriv⟩ := id hfin
+  set d := ρ.wildCodim v with hd
+  set S : ℚ := ∑ k ∈ Finset.range d, μ k with hS
+  have hdenpos : (0 : ℚ) < (S.den : ℚ) := by exact_mod_cast S.den_pos
+  have hdnn : (0 : ℚ) ≤ (d : ℚ) := Nat.cast_nonneg d
+  have hprodpos : (0 : ℚ) < 2 * (S.den : ℚ) * ((d : ℚ) + 1) :=
+    mul_pos (mul_pos (by norm_num) hdenpos) (by linarith)
+  have hδpos : (0 : ℚ) < 1 / (2 * (S.den : ℚ) * ((d : ℚ) + 1)) := div_pos one_pos hprodpos
+  obtain ⟨D, hDN, hDphi⟩ :=
+    exists_lowerRamificationData_phi_one_le v N hN _ hδpos
+  have hD : ∀ σ ∈ D.lvl ⊓ wildInertiaGroup v, ∀ x : M, ρ.toLocal v σ x = x := by
+    intro σ hσ x
+    obtain ⟨hσ1, hσ2⟩ := Subgroup.mem_inf.mp hσ
+    exact hNtriv σ (Subgroup.mem_inf.mpr ⟨hDN hσ1, hσ2⟩) x
+  have hphipos : ∀ m : ℕ, 1 ≤ m → 0 < D.phi m := by
+    intro m hm
+    have h := D.phi_strictMono (Nat.lt_of_lt_of_le Nat.zero_lt_one hm)
+    rwa [D.phi_zero] at h
+  -- STEP 2: the finite-level codimension, as a counting function of the breaks
+  have hcount : ∀ m : ℕ, 1 ≤ m →
+      (Module.finrank A M
+        - Module.finrank A (ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v)))
+        = ((Finset.range d).filter fun k => D.phi m ≤ μ k).card := by
+    intro m hm
+    have h := hμ (D.phi m) (hphipos m hm)
+    rwa [ρ.fixedSubmodule_gp_phi_eq v F D hD m (hphipos m hm)] at h
+  -- STEP 3: a truncation point past every break
+  obtain ⟨T, hT1, hTlvl⟩ := D.exists_gp_eq_lvl
+  have hTtop : ρ.fixedSubmodule v (D.gp T ⊓ wildInertiaGroup v) = ⊤ := by
+    rw [hTlvl]
+    refine eq_top_iff.mpr fun x _ => ?_
+    intro σ hσ
+    exact hD σ hσ x
+  obtain ⟨s, hs⟩ := ρ.exists_nat_eq_sum_lowerSwan v hfin D T hD hTtop
+  refine ⟨s, ?_⟩
+  have hcT : ((Finset.range d).filter fun k => D.phi T ≤ μ k).card = 0 := by
+    rw [← hcount T hT1, hTtop, Submodule.topEquiv.finrank_eq, Nat.sub_self]
+  have hlt : ∀ k : ℕ, k < d → μ k < D.phi T := by
+    intro k hk
+    by_contra hcon
+    have hmem : k ∈ (Finset.range d).filter fun j => D.phi T ≤ μ j :=
+      Finset.mem_filter.mpr ⟨Finset.mem_range.mpr hk, not_lt.mp hcon⟩
+    rw [Finset.card_eq_zero] at hcT
+    rw [hcT] at hmem
+    exact absurd hmem (Finset.notMem_empty k)
+  -- STEP 4: exchange the two summations
+  have hswap : ∑ m ∈ Finset.Icc 1 T,
+        ((Module.finrank A M
+            - Module.finrank A (ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v)) : ℕ) : ℚ)
+          / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ)
+      = ∑ k ∈ Finset.range d,
+          ∑ m ∈ (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k),
+            (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ) := by
+    have h1 : ∀ m ∈ Finset.Icc 1 T,
+        ((Module.finrank A M
+            - Module.finrank A (ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v)) : ℕ) : ℚ)
+          / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ)
+        = ∑ k ∈ Finset.range d,
+            (if D.phi m ≤ μ k then
+              (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ) else 0) := by
+      intro m hm
+      rw [← Finset.sum_filter, Finset.sum_const, nsmul_eq_mul,
+        hcount m (Finset.mem_Icc.mp hm).1]
+      ring
+    rw [Finset.sum_congr rfl h1, Finset.sum_comm]
+    exact Finset.sum_congr rfl fun k _ => (Finset.sum_filter _ _).symm
+  -- `φ` IS the partial sum of its steps
+  have hphisum : ∀ j : ℕ, D.phi j
+      = ∑ m ∈ Finset.Icc 1 j, (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ) := by
+    intro j; rfl
+  have hnn : ∀ m : ℕ, (0 : ℚ) ≤ (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ) := by
+    intro m; positivity
+  -- STEP 5: each inner sum is within `φ_D(1)` of its break
+  have hsand : ∀ k : ℕ, k < d →
+      μ k - D.phi 1 ≤ (∑ m ∈ (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k),
+          (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ))
+      ∧ (∑ m ∈ (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k),
+          (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ)) ≤ μ k + D.phi 1 := by
+    intro k hk
+    have hμk : 0 < μ k := hpos k hk
+    have hψpos : 0 < D.psiNat (μ k) := D.psiNat_pos hμk
+    have hψT : D.psiNat (μ k) ≤ T := D.psiNat_le (le_of_lt (hlt k hk))
+    have hpred : D.phi (D.psiNat (μ k) - 1) < μ k := D.phi_psiNat_pred_lt hμk
+    have hupper : μ k ≤ D.phi (D.psiNat (μ k)) := D.le_phi_psiNat (μ k)
+    have hsucc : D.psiNat (μ k) - 1 + 1 = D.psiNat (μ k) := by omega
+    have hstep : D.phi (D.psiNat (μ k))
+        ≤ D.phi (D.psiNat (μ k) - 1) + D.phi 1 := by
+      have h := D.step_le_phi_one (D.psiNat (μ k) - 1)
+      have h2 := D.phi_succ (D.psiNat (μ k) - 1)
+      rw [hsucc] at h2
+      rw [h2]
+      rw [hsucc] at h
+      linarith
+    have hsub1 : Finset.Icc 1 (D.psiNat (μ k) - 1)
+        ⊆ (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k) := by
+      intro m hm
+      obtain ⟨hm1, hm2⟩ := Finset.mem_Icc.mp hm
+      refine Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨hm1, by omega⟩, ?_⟩
+      exact le_of_lt (lt_of_le_of_lt (D.phi_strictMono.monotone hm2) hpred)
+    have hsub2 : (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k)
+        ⊆ Finset.Icc 1 (D.psiNat (μ k)) := by
+      intro m hm
+      obtain ⟨hm1, hm2⟩ := Finset.mem_filter.mp hm
+      refine Finset.mem_Icc.mpr ⟨(Finset.mem_Icc.mp hm1).1, ?_⟩
+      exact D.phi_strictMono.le_iff_le.mp (le_trans hm2 hupper)
+    have hlow := Finset.sum_le_sum_of_subset_of_nonneg hsub1 (fun m _ _ => hnn m)
+    have hhigh := Finset.sum_le_sum_of_subset_of_nonneg hsub2 (fun m _ _ => hnn m)
+    rw [← hphisum (D.psiNat (μ k) - 1)] at hlow
+    rw [← hphisum (D.psiNat (μ k))] at hhigh
+    exact ⟨by linarith, by linarith⟩
+  set E : ℚ := ∑ k ∈ Finset.range d,
+      ∑ m ∈ (Finset.Icc 1 T).filter (fun m => D.phi m ≤ μ k),
+        (1 : ℚ) / (((D.gp m).relIndex (D.gp 0) : ℕ) : ℚ) with hE
+  have hEs : (s : ℚ) = E := hs.trans hswap
+  have hlowsum : S - (d : ℚ) * D.phi 1 ≤ E := by
+    have hsum := Finset.sum_le_sum (fun k hk => (hsand k (Finset.mem_range.mp hk)).1)
+    rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul] at hsum
+    rw [hE]
+    linarith [hsum]
+  have hhighsum : E ≤ S + (d : ℚ) * D.phi 1 := by
+    have hsum := Finset.sum_le_sum (fun k hk => (hsand k (Finset.mem_range.mp hk)).2)
+    rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul] at hsum
+    rw [hE]
+    linarith [hsum]
+  -- STEP 6: an integer within `1/(2·den)` of the sum IS the sum
+  have hphi1nn : (0 : ℚ) ≤ D.phi 1 := le_of_lt (hphipos 1 le_rfl)
+  have hne1 : ((d : ℚ) + 1) ≠ 0 := by positivity
+  have hne2 : (S.den : ℚ) ≠ 0 := ne_of_gt hdenpos
+  have herr : (d : ℚ) * D.phi 1 ≤ 1 / (2 * (S.den : ℚ)) := by
+    have h1 : (d : ℚ) * D.phi 1 ≤ ((d : ℚ) + 1) * D.phi 1 := by nlinarith
+    have h2 : ((d : ℚ) + 1) * D.phi 1
+        ≤ ((d : ℚ) + 1) * (1 / (2 * (S.den : ℚ) * ((d : ℚ) + 1))) :=
+      mul_le_mul_of_nonneg_left hDphi (by linarith)
+    have h3 : ((d : ℚ) + 1) * (1 / (2 * (S.den : ℚ) * ((d : ℚ) + 1)))
+        = 1 / (2 * (S.den : ℚ)) := by
+      field_simp
+    linarith
+  have hnum : (S.num : ℚ) = S * (S.den : ℚ) :=
+    (div_eq_iff hne2).mp (Rat.num_div_den S)
+  have hdiff1 : -(1 / (2 * (S.den : ℚ))) ≤ (s : ℚ) - S := by rw [hEs]; linarith
+  have hdiff2 : (s : ℚ) - S ≤ 1 / (2 * (S.den : ℚ)) := by rw [hEs]; linarith
+  have hhalf : ((1 : ℚ) / (2 * (S.den : ℚ))) * (S.den : ℚ) = 1 / 2 := by field_simp
+  have hb2 : ((s : ℚ) - S) * (S.den : ℚ) ≤ 1 / 2 := by
+    have h := mul_le_mul_of_nonneg_right hdiff2 (le_of_lt hdenpos)
+    rw [hhalf] at h
+    exact h
+  have hb1 : -(1 / 2 : ℚ) ≤ ((s : ℚ) - S) * (S.den : ℚ) := by
+    have h := mul_le_mul_of_nonneg_right hdiff1 (le_of_lt hdenpos)
+    rw [neg_mul, hhalf] at h
+    exact h
+  have hzero : (s : ℤ) * (S.den : ℤ) - S.num = 0 := by
+    have hcast : (((s : ℤ) * (S.den : ℤ) - S.num : ℤ) : ℚ) = ((s : ℚ) - S) * (S.den : ℚ) := by
+      push_cast
+      rw [hnum]
+      ring
+    have hc1 : (-1 : ℚ) < (((s : ℤ) * (S.den : ℤ) - S.num : ℤ) : ℚ) := by
+      rw [hcast]; linarith
+    have hc2 : (((s : ℤ) * (S.den : ℤ) - S.num : ℤ) : ℚ) < 1 := by
+      rw [hcast]; linarith
+    have h1 : (-1 : ℤ) < (s : ℤ) * (S.den : ℤ) - S.num := by exact_mod_cast hc1
+    have h2 : (s : ℤ) * (S.den : ℤ) - S.num < 1 := by exact_mod_cast hc2
+    omega
+  have hmul : ((s : ℚ) - S) * (S.den : ℚ) = 0 := by
+    have hq : (((s : ℤ) * (S.den : ℤ) - S.num : ℤ) : ℚ) = 0 := by rw [hzero]; simp
+    push_cast at hq
+    rw [hnum] at hq
+    linarith
+  rcases mul_eq_zero.mp hmul with h | h
+  · linarith
+  · exact absurd h hne2
 
 /-- **THE BREAK DECOMPOSITION** (SORRY LEAF, cut 2026-07-28 out of step
 `hbreak` of `GaloisRep.exists_isSwanExponentAt`): with finite wild
