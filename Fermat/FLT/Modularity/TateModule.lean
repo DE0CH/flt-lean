@@ -17132,10 +17132,223 @@ theorem eq_zero_of_red_eq_red_zero (q n : ℕ) (hq : q.Prime)
 
 end IsAbelianReductionDatum
 
-/-- **A FROBENIUS-EQUIVARIANT PLACE OF `F̄` ABOVE `w`** (sorry leaf, cut
-2026-07-30 as the ALGEBRAIC half of
-`exists_finset_abelianReductionDatum_of_mult` below; Neukirch *ANT* II.8,
-II.9, Serre *Local Fields* I–II, Bourbaki *Commutative Algebra* VI).
+/-! #### The place of `F̄` above `w` that the transported Frobenius preserves
+
+**CUT 2026-07-31.**  `exists_frobEquivariant_placeAbove` below is now PROVEN
+over the single residual leaf `exists_residueHom_placeAbove`, which is about
+the RESIDUE FIELD of one explicit valuation subring and about nothing else.
+
+**WHAT THE CUT REMOVES FROM THE LEAF, AND IT IS THE HALF ITS OWN DOCSTRING
+CALLED THE OBSTRUCTION.**  That docstring recorded a cheaper route to five of
+the seven clauses (Chevalley extension via
+`FLT.exists_ratValuation_of_heightOneSpectrum`) and then correctly rejected it,
+because "the sixth clause fails outright: Chevalley's extension theorem chooses
+an ARBITRARY valuation subring, the places above `w` form a single `Γ_F`-orbit,
+and nothing makes the arbitrary choice the one that `IsAlgClosed.lift` singles
+out."  That is exactly right, and it is now DISCHARGED rather than routed
+around: `placeAbove w` is the pullback along `AlgebraicClosure.map` of the
+local valuation subring, and `mem_placeAbove_frobAbove_iff` proves it is
+preserved by the transported arithmetic Frobenius, from
+`Field.absoluteGaloisGroup.lift_map` (which is the commutation
+`emb ∘ map f σ = σ ∘ emb`) plus the fact that ANY `F_w`-automorphism preserves
+integrality over `𝒪ᵥ`.  Both inputs were already in the tree, in
+`Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`.
+
+Clauses 1, 4, 5a and 6 of the leaf are likewise proven here, from
+`ValuationSubring.mem_or_inv_mem` and
+`HeightOneSpectrum.coe_mem_adicCompletionIntegers`.
+
+**THE ACCOUNTING IS HONEST: this is 1 leaf for 1 leaf, not a closure.**  What
+it buys is that the residue is a statement of pure valuation theory — it names
+no absolute Galois group, no functoriality of `Γ`, no adic completion, and no
+`IsAlgClosed.lift` — so the "two disjoint books at once" objection the leaf was
+cut against no longer applies to it.  Refuting check, one grep each on the
+residual statement: `absoluteGaloisGroup.map`, `adicCompletion` and
+`localValuationSubring` do not occur in it. -/
+
+/-- The embedding of `F̄` into the algebraic closure of the completion at `w`
+that `Field.absoluteGaloisGroup.mapAux` is built from.  Using THIS embedding
+and not an arbitrary one is what makes `placeAbove` Frobenius-stable. -/
+noncomputable abbrev algClosEmb {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    AlgebraicClosure F →+* AlgebraicClosure (w.adicCompletion F) :=
+  AlgebraicClosure.map (algebraMap F (w.adicCompletion F))
+
+/-- The place of `F̄` above `w` singled out by `algClosEmb`: the pullback of the
+local valuation subring of `(F_w)ᵃˡᵍ`. -/
+noncomputable def placeAbove {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) : ValuationSubring (AlgebraicClosure F) :=
+  (localValuationSubring w).comap (algClosEmb w)
+
+theorem mem_placeAbove_iff {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (x : AlgebraicClosure F) :
+    x ∈ placeAbove w ↔ algClosEmb w x ∈ localValuationSubring w := Iff.rfl
+
+/-- Membership in the local valuation subring IS integrality over `𝒪ᵥ`; the
+subring is `integralClosure 𝒪ᵥ (F_w)ᵃˡᵍ` on the nose. -/
+theorem mem_localValuationSubring_iff {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (y : AlgebraicClosure (w.adicCompletion F)) :
+    y ∈ localValuationSubring w ↔ IsIntegral (w.adicCompletionIntegers F) y := Iff.rfl
+
+/-- **EVERY `F_w`-AUTOMORPHISM PRESERVES THE LOCAL VALUATION SUBRING, IN BOTH
+DIRECTIONS.**  The membership form of
+`mem_decompositionSubgroup_localValuationSubring`: integrality over `𝒪ᵥ` is
+transported by any `𝒪ᵥ`-algebra map, and applying that to `σ` and to `σ⁻¹`
+gives the `iff`. -/
+theorem mem_localValuationSubring_map_iff {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F))
+    (σ : AlgebraicClosure (w.adicCompletion F) ≃ₐ[w.adicCompletion F]
+      AlgebraicClosure (w.adicCompletion F))
+    (y : AlgebraicClosure (w.adicCompletion F)) :
+    σ y ∈ localValuationSubring w ↔ y ∈ localValuationSubring w := by
+  constructor
+  · intro h
+    have h2 : IsIntegral (w.adicCompletionIntegers F) y := by
+      have := IsIntegral.map
+        ((σ.symm : AlgebraicClosure (w.adicCompletion F) ≃ₐ[w.adicCompletion F]
+          AlgebraicClosure (w.adicCompletion F)).toAlgHom.restrictScalars
+            (w.adicCompletionIntegers F)) (h : IsIntegral _ (σ y))
+      simpa using this
+    exact h2
+  · intro h
+    exact IsIntegral.map
+      (σ.toAlgHom.restrictScalars (w.adicCompletionIntegers F)) (h : IsIntegral _ y)
+
+/-- The arithmetic Frobenius at `w`, transported to `Γ_F` along `algClosEmb`.
+This is the element `IsAbelianReductionDatum.sp_frob` names. -/
+noncomputable abbrev frobAbove {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) : Field.absoluteGaloisGroup F :=
+  Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+    (Field.AbsoluteGaloisGroup.adicArithFrob w)
+
+/-- **THE CHOSEN PLACE IS FROBENIUS-STABLE.**  This is the clause that no
+Chevalley-extension construction can supply, and it is the whole reason the
+place has to be the one `IsAlgClosed.lift` singles out.  The proof is two
+lemmas already in the tree: `Field.absoluteGaloisGroup.lift_map` turns the
+statement into stability of `localValuationSubring w` under an
+`F_w`-automorphism, and that is `mem_localValuationSubring_map_iff`. -/
+theorem mem_placeAbove_frobAbove_iff {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (x : AlgebraicClosure F) :
+    (frobAbove w : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) x ∈ placeAbove w ↔
+      x ∈ placeAbove w := by
+  rw [mem_placeAbove_iff, mem_placeAbove_iff,
+    Field.absoluteGaloisGroup.lift_map (algebraMap F (w.adicCompletion F))
+      (Field.AbsoluteGaloisGroup.adicArithFrob w) x]
+  exact mem_localValuationSubring_map_iff w _ _
+
+/-- `𝓞 F` lands in the place: its image in `(F_w)ᵃˡᵍ` comes from `𝒪ᵥ`, hence is
+integral over it. -/
+theorem algebraMap_mem_placeAbove {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (a : 𝓞 F) :
+    algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∈ placeAbove w := by
+  rw [mem_placeAbove_iff]
+  show IsIntegral (w.adicCompletionIntegers F) _
+  rw [AlgebraicClosure.map_algebraMap]
+  have hmem : (algebraMap F (w.adicCompletion F) (algebraMap (𝓞 F) F a))
+      ∈ w.adicCompletionIntegers F :=
+    HeightOneSpectrum.coe_mem_adicCompletionIntegers w a
+  have h2 : algebraMap F (w.adicCompletion F) (algebraMap (𝓞 F) F a)
+      = algebraMap (w.adicCompletionIntegers F) (w.adicCompletion F) ⟨_, hmem⟩ := rfl
+  rw [h2]
+  exact isIntegral_algebraMap
+
+/-- The transported arithmetic Frobenius, restricted to the place it preserves. -/
+noncomputable def frobRestrict {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) : placeAbove w ≃+* placeAbove w where
+  toFun z := ⟨(frobAbove w : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) z.1,
+    (mem_placeAbove_frobAbove_iff w z.1).mpr z.2⟩
+  invFun z := ⟨(frobAbove w : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).symm z.1, by
+    refine (mem_placeAbove_frobAbove_iff w _).mp ?_
+    rw [AlgEquiv.apply_symm_apply]
+    exact z.2⟩
+  left_inv z := Subtype.ext (by simp)
+  right_inv z := Subtype.ext (by simp)
+  map_mul' z z' := Subtype.ext (by simp)
+  map_add' z z' := Subtype.ext (by simp)
+
+@[simp] theorem frobRestrict_val {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (z : placeAbove w) :
+    ((frobRestrict w z : placeAbove w) : AlgebraicClosure F)
+      = (frobAbove w : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F)
+          (z : AlgebraicClosure F) := rfl
+
+/-- **THE RESIDUE FIELD OF THE PLACE IS AN ALGEBRAIC CLOSURE OF `κ(w)`, AND THE
+TRANSPORTED FROBENIUS ACTS ON IT AS THE `N w`-POWER MAP** (sorry leaf, cut
+2026-07-31 as the residue-side half of `exists_frobEquivariant_placeAbove`
+below, which is now PROVEN over it — Bourbaki *Commutative Algebra* VI §8,
+Neukirch *ANT* II.8/II.9, Serre *Local Fields* I–II).
+
+This is the piece the parent's docstring identified as genuinely absent from
+the pin, and it is now stated with nothing else attached: no absolute Galois
+group, no functoriality of `Γ`, no adic completion, no `IsAlgClosed.lift`.
+
+**THE CLASSICAL PROOF, in four steps.**
+
+* `placeAbove w` is a valuation subring of the ALGEBRAICALLY CLOSED field `F̄`,
+  so its residue field is algebraically closed: a monic polynomial over the
+  residue field lifts to a monic polynomial over `placeAbove w`, that has a
+  root in `F̄`, the root is integral over `placeAbove w` because the polynomial
+  is monic, and a valuation ring is integrally closed — so the root lies in
+  `placeAbove w` and its residue is a root downstairs.
+* The residue field is ALGEBRAIC over `κ(w)`.  The maximal ideal of
+  `placeAbove w` is the contraction of the maximal ideal of
+  `localValuationSubring w` (`z` is a unit iff `z⁻¹` lies in the subring, and
+  that is preserved and reflected by `algClosEmb`), so the residue field embeds
+  in the residue field of `localValuationSubring w = integralClosure 𝒪ᵥ (F_w)ᵃˡᵍ`;
+  and there every element is integral over `𝒪ᵥ`, so its residue satisfies the
+  reduction mod `𝔪ᵥ` of a monic polynomial over `𝒪ᵥ`, i.e. is algebraic over
+  `κ(𝒪ᵥ) = κ(w)`.
+* The two together make the residue field an `IsAlgClosure` of `κ(w)`, so
+  `IsAlgClosure.equiv` produces `π` with `Function.Surjective π` and
+  `ker π = 𝔪`, which is the second clause.  The third clause is then
+  `a ∈ w ↔ a` is a non-unit of `placeAbove w`, i.e. `a⁻¹ ∉ 𝒪ᵥ`, which is the
+  definition of the `w`-adic valuation being positive.
+* The fourth clause is `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`
+  transported along that embedding of residue fields: `Frobᵥ` acts on
+  `κ(integralClosure 𝒪ᵥ (F_w)ᵃˡᵍ)` as `x ↦ x ^ #κ(𝒪ᵥ)`, hence so does
+  `frobRestrict w` on the subfield, and `x ↦ x ^ (N w)` is a RING map in
+  characteristic `p` (it is a power of the Frobenius), so it commutes with the
+  identification `π`.  `hσ` then converts it into `σ`.
+
+**`hσ` IS LOAD-BEARING**, exactly as on the parent: for an arbitrary `σ` the
+fourth clause is false, since the residue action of the arithmetic Frobenius is
+the `N w`-power map and nothing else.
+
+**FAITHFULNESS.**  The statement is an EXISTENCE claim over an explicitly
+constructed `placeAbove w`, so it cannot be weakened by junk data: `π` is
+pinned up to `Aut(κ(w)ᵃˡᵍ / κ(w))` by the second and third clauses, and the
+fourth holds for every such choice because `x ↦ x ^ (N w)` commutes with every
+ring map. -/
+theorem exists_residueHom_placeAbove {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F))
+    (σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField)
+    (hσ : ∀ z : AlgebraicClosure w.asIdeal.ResidueField,
+      (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+          AlgebraicClosure w.asIdeal.ResidueField) z = z ^ Ideal.absNorm w.asIdeal) :
+    ∃ π : placeAbove w →+* AlgebraicClosure w.asIdeal.ResidueField,
+      Function.Surjective π ∧
+      (∀ z : placeAbove w, π z = 0 ↔ ¬ IsUnit z) ∧
+      (∀ a : 𝓞 F, π ⟨_, algebraMap_mem_placeAbove w a⟩ = 0 ↔ a ∈ w.asIdeal) ∧
+      (∀ z : placeAbove w, π (frobRestrict w z)
+        = (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+            AlgebraicClosure w.asIdeal.ResidueField) (π z)) :=
+  sorry
+
+/-- **A FROBENIUS-EQUIVARIANT PLACE OF `F̄` ABOVE `w`** (**PROVEN 2026-07-31**
+over the single residual leaf `exists_residueHom_placeAbove` immediately above;
+it was a sorry leaf from 2026-07-30 until then.  The docstring below is the
+one it carried, and everything it says about the mathematics still holds —
+read it as a description of the CHAIN, since clauses 1, 4, 5a and 6 are now
+discharged here and only the residue side is left.  Original citation:
+Neukirch *ANT* II.8, II.9, Serre *Local Fields* I–II, Bourbaki *Commutative
+Algebra* VI.)
+
+**THE SIXTH CLAUSE — the one the docstring below calls the reason the cheap
+route "reaches five of seven clauses and stops" — IS NOW PROVEN**, as
+`mem_placeAbove_frobAbove_iff`, and it cost two lemmas that were already in
+the tree.  See the subsection header above for the accounting.
+
+The historical text follows.
 
 Everything `exists_finset_abelianReductionDatum_of_mult` needs to know about
 the BASE, and nothing about abelian schemes: a valuation ring `O` of `F̄`
@@ -17153,40 +17366,6 @@ the structure's `sp_frob` names, and it acts on residues as `σ`.
 books at once — BLR chapters 1 and 7 for the model, and the valuation
 theory of `F̄` for the base — and the base half is where the trap recorded
 on the leaf below lives.  Split, each half is ownable alone.
-
-**ROUTE, and where the pieces already are.**  `O` is the pullback along
-`IsAlgClosed.lift : F̄ →ₐ[F] (F_w)ᵃˡᵍ` — the SAME embedding
-`Field.absoluteGaloisGroup.mapAux` is built from, which is what buys the
-sixth clause and is not optional (see the leaf below) — of the valuation
-ring of `(F_w)ᵃˡᵍ`.  Verified 2026-07-30 against that definition, which is
-`AlgHom.restrictNormal'` of `σ ∘ IsAlgClosed.lift`, so `φ` is exactly the
-transported Frobenius and the sixth clause is its defining property.
-The seventh is `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`
-together with `hσ`.
-
-A CHEAPER ROUTE EXISTS FOR THE FIRST FIVE CLAUSES ALONE, and it is already
-in this tree: `FLT.exists_ratValuation_of_heightOneSpectrum` in
-`Fermat/FLT/Mathlib/RingTheory/Valuation/AlgebraicExtension.lean` extends
-the `w`-adic valuation to any algebraic extension of `F` as a
-`WithTop ℚ`-valued additive valuation, with the comparison clause
-`z ∈ w^N ↔ N ≤ v z` on `𝒪_F`.  Taking `O := {z : F̄ // 0 ≤ v z}` gives
-`ι_injective` and `valuationRing` immediately (`v z + v z⁻¹ = v 1 = 0`), and
-`lift_int` from the comparison clause plus the observation that `a ∉ w`
-forces `v a = 0` because `v (aⁿ) = n · v a < 1` for every `n` (`w` is
-prime, so `aⁿ ∉ w`).
-
-WHAT THAT ROUTE DOES **NOT** GIVE, and why the pullback construction is
-still the one to build: (a) `π_surjective` needs the residue field of `O`
-to be an ALGEBRAIC CLOSURE of `κ(w)` — algebraically closed because a monic
-polynomial over `O` has all its roots in `O`, algebraic because `F̄/F` is —
-and then `IsAlgClosure.equiv`; mathlib has neither statement (checked
-2026-07-30: no `IsAlgClosed` result anywhere under
-`Mathlib/RingTheory/Valuation/`).  (b) The sixth clause fails outright:
-Chevalley's extension theorem chooses an ARBITRARY valuation subring, the
-places above `w` form a single `Γ_F`-orbit, and nothing makes the arbitrary
-choice the one that `IsAlgClosed.lift` singles out.  So that route reaches
-five of seven clauses and stops; it is recorded because those five are
-real work that need not be redone, not because it finishes.
 
 **FAITHFULNESS AUDIT (2026-07-30).**  The statement is an EXISTENCE claim,
 so it cannot be weakened by junk data, and the only way it could fail is if
@@ -17219,8 +17398,18 @@ theorem exists_frobEquivariant_placeAbove {F : Type u} [Field F] [NumberField F]
             AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (ι.hom z)) ∧
       (∀ z : O, π.hom (φ.hom.hom z)
         = (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
-              AlgebraicClosure w.asIdeal.ResidueField) (π.hom z)) :=
-  sorry
+              AlgebraicClosure w.asIdeal.ResidueField) (π.hom z)) := by
+  obtain ⟨π, hsurj, hker, hlift, hfrob⟩ := exists_residueHom_placeAbove w σ hσ
+  refine ⟨CommRingCat.of (placeAbove w), CommRingCat.ofHom (placeAbove w).subtype,
+    CommRingCat.ofHom π, (frobRestrict w).toCommRingCatIso, ?_, hsurj, hker, ?_, ?_, ?_, hfrob⟩
+  · exact Subtype.val_injective
+  · intro z _
+    rcases (placeAbove w).mem_or_inv_mem z with h | h
+    · exact Or.inl ⟨⟨z, h⟩, rfl⟩
+    · exact Or.inr ⟨⟨z⁻¹, h⟩, rfl⟩
+  · intro a
+    exact ⟨⟨_, algebraMap_mem_placeAbove w a⟩, rfl, hlift a⟩
+  · intro z; rfl
 
 /-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES, OVER A GIVEN PLACE OF
 `F̄`** (sorry leaf, cut 2026-07-30 as the GEOMETRIC half of

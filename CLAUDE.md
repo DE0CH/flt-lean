@@ -6735,10 +6735,27 @@ file."* That is true, and the token printed in the prompt is **not always the on
 loop will accept.**
 
 `flt-loop.py` accepts a sentinel whose token is `j["token"]` **or** a member of
-`j["prev_tokens"]` (line ~877). Its comment says a resumed job is the same job, so an
-earlier incarnation's result is still its result. But `grep -n prev_tokens flt-loop.py`
-finds exactly **two** occurrences — the read at 877 and the field-copy at 1033. **Nothing
-ever writes it.** It is always `None`.
+`j["prev_tokens"]` (line ~883). Its comment says a resumed job is the same job, so an
+earlier incarnation's result is still its result.
+
+**CORRECTION (2026-07-31, `flt-lean-311`): `prev_tokens` IS NOW POPULATED, so a stale
+prompt token is no longer fatal.** This paragraph used to read "`grep -n prev_tokens
+flt-loop.py` finds exactly two occurrences … **nothing ever writes it**, it is always
+`None`", and that was true when written. The writer now exists — `flt_loop_rows.py:504`,
+`j["prev_tokens"] = ((j.get("prev_tokens") or []) + [j["token"]])[-10:]` — so on resume
+the retiring token is pushed onto a ten-deep history and `flt-loop.py:883` accepts it.
+Measured on this job: prompt token `d23a0878`, live token `d9605e97`,
+`prev_tokens = ['d23a0878']`, i.e. the prompt's token *would* have been accepted.
+
+**The procedure below does not change and is still the one to follow** — read the token
+from the record, not the prompt. What changes is the SEVERITY: a sentinel written from a
+stale prompt is now normally accepted rather than silently discarded, so an agent that
+skipped the check has probably not lost its work. Do not go hunting for a lost sentinel
+on that theory alone; check `prev_tokens` first. And note the general shape, which is the
+reason this correction is worth its own paragraph: **a section of this file that reasons
+from the ABSENCE of a line in a tool's source is a measurement of that source on one day,
+and the fleet's own tooling is under active repair.** Re-run the grep before believing it,
+exactly as with every "absent from the pin" claim.
 
 Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
 inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
