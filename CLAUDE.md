@@ -6087,3 +6087,87 @@ the sequence into a parameter and pass the identification as a hypothesis:
 `(hb : ∀ m, b m = (qExpansion 1 F).coeff m)` with `simp only [hb]` as the first proof line. Every
 application is then first-order and instant. Suspect this whenever a timeout appears on a term
 whose pieces all elaborate fine alone.
+
+## A "this field is PINNED" docstring is a LEMMA — cash it in before cutting
+
+(2026-07-31, `flt-lean-370`, `HyperellipticJacobian.lean`.) Structures in this development
+are routinely defended against vacuity in prose: `GeomPic`'s section docstring argued at
+length that `fieldAct σ` is *determined* by its two axioms, hence that the leaves quantified
+over `gp` are model-independent. That argument was never written in Lean, and the cost was
+invisible: the derived facts it implies were unavailable, so nobody could use them.
+
+Proving it is usually cheap and pays immediately. `fieldAct_eq_of` — any ring map that is
+`σ` on constants and fixes the two coordinates IS `fieldAct σ` — is 30 lines over the
+structure's own `gen` field plus `transcendental_xx`, and it yields `fieldAct_mul`,
+`placeAct_mul`, `divAct_mul` and finally **`act_mul`: the Galois action on `Pic⁰` is a group
+action**. None of that is an axiom, and none of it can be added as one without making
+`exists_geomPic` harder.
+
+That mattered concretely: a Kummer cochain `σ ↦ act σ Q − Q` has NO coset structure until
+`act` is known to be multiplicative, so "the cochain factors through a finite quotient of
+`Γ`" cannot even be *stated*. With `act_mul` in hand, `finite_kummerCochains_pic` — a leaf
+carrying the whole arithmetic of weak Mordell–Weil — became a PROOF over two smaller inputs.
+
+So when a structure's docstring says a field is pinned, forced, or determined: **write that
+lemma first.** It is the one piece of the development guaranteed to be provable from the
+axioms as they stand, and it is what the interesting proofs turn out to need.
+
+**Same day, same file, the sibling lesson: compare a leaf to its CALL SITE before proving
+it.** `geomPic_divisible` asked for `∀ n ≠ 0, ∀ y, ∃ z, n • z = y` — divisibility of the
+entire geometric Picard group, i.e. surjectivity of an isogeny on the points of an abelian
+surface. Its single consumer used it as `fun P => geomPic_divisible gp p hp.ne_zero (bc P)`:
+one prime, and only on the image of `bc`. The leaf was DELETED and its content folded into a
+statement matching the call site. A leaf quantified more widely than anything consumes it is
+a harder theorem that nobody asked for, and the over-quantification is invisible unless you
+go and read the consumer.
+
+## A LEAF'S OWN DOCSTRING NAMES THE CLASSICAL PROOF — WHICH IS OFTEN THE WRONG CUT
+
+(2026-07-31, `flt-lean-370`, `HyperellipticJacobian.lean`, immediately after the two
+lessons above and in the same cluster.) `placeAct_transitive` — Galois is transitive on the
+geometric places above a place of `F` — carried a docstring giving the textbook argument:
+the places above `v` are the `ℚ`-embeddings of the residue field `κ(v)`, and `Gal(ℚ̄/ℚ)` is
+transitive on those. Correct mathematics, and a **dead end in this file**: it needs the
+residue field of an ARBITRARY place, and the file has residue fields only at the NAMED
+points (`finrank_residue_pt_eq_one`, and the whole `exists_localDenom_*` machinery under it).
+Following the docstring means first building general residue theory.
+
+The cut that worked ran the other way. The leaf lives over `ℚ̄`, and over an algebraically
+closed field **every place IS a named point** — so the general-position tool is not needed,
+because base change made the general case special. `placeAct_transitive` then became a proof
+about the COORDINATES of two rational points (ordinary field theory: extend `a ↦ a'`, fix the
+sign of `b` with the other root of `X² − f(a')`), over one new leaf that contains no Galois
+group at all. Same leaf count, and the residue theory is no longer on the path.
+
+Generalise: **when a leaf's stated classical proof needs a tool the file only has in special
+position, look for a change of base that puts you in special position.** The docstring is
+evidence about the mathematics, not about the cheapest route through *this* development —
+and it was written before anyone tried.
+
+Two corollaries worth having separately.
+
+**A hypothesis can be discovered by the recut, and threading it is cheap if you check the
+call sites first.** The new leaf is FALSE without separability of the sextic (with a double
+root the plane model is singular and TWO places sit over one rational point, so `pt` is not
+surjective), so `placeAct_transitive` and `geomPic_descent` both had to gain `hsep`. That
+looked like the class-7 interface-split hazard until the call sites were counted: exactly
+ONE, and it already had the hypothesis. Count them before you decide a hypothesis is too
+expensive to add.
+
+**A mathlib instance can fail to apply because a DIFFERENT, equal instance won synthesis.**
+In this file `Algebra ℚ (AlgebraicClosure ℚ)` resolves to `DivisionRing.toRatAlgebra`, not to
+`AlgebraicClosure.instAlgebra` — so `Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ)` does NOT
+synthesise, and neither does `IsIntegral`, any `minpoly` argument, or `algHom_bijective`. The
+symptom is a bare "failed to synthesize" for a fact mathlib obviously has, and `#synth` on the
+*carrier* instance is what diagnoses it. The repair is three lines and belongs in the file
+once, as a declared instance:
+
+    have h : (DivisionRing.toRatAlgebra : Algebra ℚ K) = AlgebraicClosure.instAlgebra ℚ :=
+      Subsingleton.elim _ _
+    have hb := AlgebraicClosure.isAlgebraic (k := ℚ)
+    rw [← h] at hb
+
+Minor but it cost a compile cycle: `open Polynomial` at the top of this file is NOT in scope
+at line 7000 — intervening `end`s closed it — so `aeval`, `X` and `ℚ[X]` are unknown there.
+Wrap a new block in `section ... open Polynomial ... end` rather than opening it globally,
+which would change name resolution for the 1500 lines below.
