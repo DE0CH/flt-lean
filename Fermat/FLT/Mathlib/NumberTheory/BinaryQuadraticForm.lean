@@ -4113,6 +4113,109 @@ theorem mem_triangularReps {N a b d : ℤ} (ha : 0 < a) (hd : 0 < d) (had : a * 
     Finset.mem_Ico]
   exact ⟨⟨⟨by omega, haN⟩, ⟨hb0, by omega⟩, ⟨by omega, hdN⟩⟩, had, hbd, hgcd⟩
 
+/-- **LEAF 3a-i — THE CONSTRUCTION OF `Φ_N`.** One `Φ ∈ ℤ[Y][X]` whose specialisation at
+`Y = j(z)` is the monic product `∏_{(a,b,d) ∈ triangularReps N} (X − j((a z + b)/d))`, for
+every `z ∈ ℍ` simultaneously.
+
+This is the first of the two halves that `exists_modularPolynomial_prod` was split into on
+2026-07-31; the second is `isUnit_leadingCoeff_diag_of_eq_prod` (Kronecker). Read the section
+note on `exists_modularPolynomial_prod` below for why the split is possible and what each half
+inherits. In one line: this half is Cox Theorem 11.18, the other is Cox Lemma 11.23, and
+neither uses the other's technique.
+
+WHAT IS IN IT. The coefficients of the product are, for each fixed `z`, the elementary
+symmetric functions of the `ψ(N)` numbers `j((a z + b)/d)`. Three things must be shown:
+
+* those functions of `z` are `Γ`-INVARIANT — right multiplication by `γ ∈ SL₂(ℤ)` permutes the
+  triangular representatives modulo left `Γ`-translation, and `j` is `Γ`-invariant
+  (`jInvariant_smul`, PROVEN). `exists_hermite_of_primitive` (PROVEN above) is the existence
+  half of that permutation; its uniqueness half — `γ B = B'` with both triangular and
+  normalised forces `B = B'` — is elementary and is not yet in this file;
+* they are holomorphic on `ℍ` and meromorphic at the cusp, hence POLYNOMIALS IN `j`. See the
+  partial refutation in the section note below: this step is NOT the missing structure theorem
+  `M_* = ℂ[E₄, E₆]`, it is a pole-order induction over `ModularForm.levelOne_weight_zero_const`,
+  which this file already uses twice;
+* those polynomials have INTEGER coefficients — the `q`-expansions lie in `ℤ[ζ_N]` and are
+  `Gal(ℚ(ζ_N)/ℚ)`-stable, hence in `ℤ`.
+
+MACHINE-CHECKED FAITHFULNESS OF THE STATEMENT, 2026-07-31, and this is a check of the PRODUCT
+IDENTITY itself rather than of its degrees — the earlier audit checked only degrees and leading
+coefficients. With `triangularReps N` transcribed LITERALLY from the definition above
+(`a, d ∈ [1, N]`, `b ∈ [0, N)`, `a d = N`, `b < d`, `gcd(a, gcd(b, d)) = 1`), `PARI/GP` at
+`z = 0.3 + 1.7i` and 50 digits gives
+
+  `∏_{t ∈ triangularReps N} (X − j(t·z))  =  polmodular(N)(X, j(z))`
+
+to a maximum relative coefficient discrepancy of `1.8·10⁻⁵⁷` at `N = 2`, `2.5·10⁻⁵⁷` at
+`N = 3` and `1.2·10⁻⁵⁶` at `N = 5`, with matching degrees `3, 4, 6`. Independently,
+`#(triangularReps N) = ψ(N)` for every `N ≤ 12`: `1, 3, 4, 6, 6, 12, 8, 12, 12, 18, 12, 24`.
+So the index set in the statement is the right one and the polynomial it produces is the
+classical `Φ_N` — refute by exhibiting an `N` and a `z` where the two disagree.
+
+`hN` IS NOT LOAD-BEARING and is carried only to match the consumer: for `N ≤ 0` the ambient
+box `Finset.Icc 1 N` is empty, so `triangularReps N = ∅`, the product is `1`, and `Φ = 1`
+works. It is kept because every classical source states the theorem for `N > 0` and because
+dropping it would invite a reader to think the empty case is the interesting one. -/
+theorem exists_intPolynomial_eq_prod {N : ℤ} (hN : 0 < N) :
+    ∃ Φ : Polynomial (Polynomial ℤ),
+      ∀ z : UpperHalfPlane,
+        Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
+          = ∏ t ∈ triangularReps N,
+              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :=
+  sorry
+
+/-- **LEAF 3a-ii — KRONECKER'S LEADING COEFFICIENT.** The diagonal `Φ_N(Y, Y) ∈ ℤ[Y]` of ANY
+`Φ` satisfying the product formula has leading coefficient `±1` when `N` is not a square.
+
+The second of the two halves `exists_modularPolynomial_prod` was split into on 2026-07-31.
+
+**WHY IT MAY BE STATED ABOUT AN ARBITRARY `Φ`, WHICH IS WHAT MAKES THE SPLIT POSSIBLE.** The
+product formula PINS `Φ` DOWN uniquely. Write `Φ = Σ_k c_k(Y) X^k` with `c_k ∈ ℤ[Y]`;
+`Polynomial.map` acts coefficientwise, so `hprod` says `c_k(j(z))` equals the `k`-th
+coefficient of the product for every `z ∈ ℍ`. If `Φ₁` and `Φ₂` both satisfy it then
+`c_k^{(1)} − c_k^{(2)}` vanishes at every value of `j`, and `j` is a non-constant holomorphic
+function on `ℍ` (indeed surjective onto `ℂ`), so that difference has infinitely many roots and
+is `0`. Hence `Φ₁ = Φ₂`, and "any `Φ` satisfying `hprod`" is "the `Φ`" — there is no hidden
+existential coupling the two halves.
+
+THE ARGUMENT, from the retracted-and-corrected account in the section note below. Write
+`q = e^{2πiz}`, `j = q⁻¹ + 744 + ⋯`. Evaluating the diagonal at `j(z)` gives
+`∏_t (j(z) − j(t·z))`, and the factor at `(a, b, d)` has leading `q`-power
+
+* `q⁻¹` with coefficient `1` when `a < d`;
+* `q^{−a/d}` with coefficient `−ζ_d^{−b}`, a root of unity, when `a > d`;
+* `q⁻¹` with coefficient `1 − ζ_a^{−b}` when `a = d`.
+
+`a = d` happens exactly when `N = a²` is a square, so for non-square `N` every factor
+contributes a root of unity, the product's leading coefficient is a root of unity lying in
+`ℤ`, and Kronecker gives `±1`.
+
+`hns : ¬ IsSquare N` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT, with the sharpest
+witness at `N = 1`: `triangularReps 1 = {(1, 0, 1)}`, so the product is `X − j(z)`, `Φ = X − Y`,
+`Φ(Y, Y) = 0` and its leading coefficient is `0`, not a unit. At `N = 4` and `N = 9` the
+diagonal is not zero but its leading coefficient is `−2` and `−3` respectively — the cyclotomic
+values `Φ_2(1) = 2`, `Φ_3(1) = 3` from the `a = d` factors — so the failure is not confined to
+the degenerate case. (Machine-checked, `PARI/GP`; see the section note below. Note also that
+`Φ_4(Y, Y)` is NOT identically zero, contrary to a claim retracted there: under the PRIMITIVE
+convention `d·I` has content `d` and is not a representative.)
+
+`hN` IS NOT LOAD-BEARING and is carried for uniformity with the sibling leaf: for `N < 0`,
+`triangularReps N = ∅`, `hprod` forces `Φ = 1`, the diagonal is `1` and its leading coefficient
+is a unit, so the conclusion holds anyway; and `N = 0` is a square, so `hns` is unsatisfiable
+there.
+
+MACHINE-CHECKED (`PARI/GP`, `polmodular` at prime level): `Φ_2(X, X)` has degree `4` and
+leading coefficient `−1`, `Φ_3` degree `6` and `−1`, `Φ_5` degree `10` and `−1`. Refute by
+exhibiting a non-square `N` whose diagonal has a non-unit leading coefficient. -/
+theorem isUnit_leadingCoeff_diag_of_eq_prod {N : ℤ} (hN : 0 < N) (hns : ¬ IsSquare N)
+    (Φ : Polynomial (Polynomial ℤ))
+    (hprod : ∀ z : UpperHalfPlane,
+      Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
+        = ∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))) :
+    IsUnit (Φ.eval Polynomial.X).leadingCoeff :=
+  sorry
+
 /-- **LEAF 3a — THE MODULAR POLYNOMIAL `Φ_N`, WITH KRONECKER'S LEADING COEFFICIENT.**
 
 For every `N > 0` there is a `Φ_N ∈ ℤ[Y][X]` such that
@@ -4233,15 +4336,31 @@ coefficient. Those three are the leaf; step (iv) is not.
 WHAT THIS LEAF IS *NOT*. It needs no complex multiplication, no class field theory and no
 class-number hypothesis — integrality of `j` at CM points is prior to all of that, and holds
 at every imaginary quadratic point regardless of the class number. That is exactly why the
-CM content of this cluster sits in the class-field leaves and not here. -/
+CM content of this cluster sits in the class-field leaves and not here.
+
+**SPLIT 2026-07-31 INTO ITS TWO INDEPENDENT HALVES, WHICH ARE DIFFERENT MATHEMATICS.** This
+declaration is no longer a leaf: it is PROVEN in one line from `exists_intPolynomial_eq_prod`
+(the CONSTRUCTION of `Φ`) and `isUnit_leadingCoeff_diag_of_eq_prod` (KRONECKER's leading
+coefficient), stated and left open just below. The split is possible at all because the
+product formula PINS `Φ` DOWN — see the uniqueness argument in the second one's docstring —
+so Kronecker's clause can be stated about *any* `Φ` satisfying the first, with no existential
+tying the two together.
+
+Against the three-item "untooled" list above: the construction leaf inherits the
+representatives and the integrality of the coefficients (Cox Theorem 11.18); the Kronecker
+leaf inherits the leading coefficient (Cox Lemma 11.23) and, with it, the whole of the
+`¬ IsSquare N` hypothesis and the `q`-expansion analysis that hypothesis exists for. Neither
+half needs the other's technique, and the second may ASSUME `Φ` exists — which is most of what
+made the combined statement forbidding. -/
 theorem exists_modularPolynomial_prod {N : ℤ} (hN : 0 < N) :
     ∃ Φ : Polynomial (Polynomial ℤ),
       (¬ IsSquare N → IsUnit (Φ.eval Polynomial.X).leadingCoeff) ∧
       ∀ z : UpperHalfPlane,
         Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
           = ∏ t ∈ triangularReps N,
-              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :=
-  sorry
+              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) := by
+  obtain ⟨Φ, hprod⟩ := exists_intPolynomial_eq_prod hN
+  exact ⟨Φ, fun hns => isUnit_leadingCoeff_diag_of_eq_prod hN hns Φ hprod, hprod⟩
 
 /-- **The TRIANGULAR modular equation — PROVEN** over `exists_modularPolynomial_prod`.
 
@@ -4912,6 +5031,15 @@ FALSITY AUDIT (2026-07-31, run fresh against this statement, which was cut the s
   root (`minpoly.aeval`), and `exists_heegnerForm` witnesses the conclusion for it. So the
   statement has content at every `p ≡ 3 mod 4`, and in particular is NOT of the shape whose
   hypotheses can go empty.
+* **THE ALGEBRAICITY OF `j(τ₀)` IS LOAD-BEARING AND IS INVISIBLE IN THE STATEMENT.** `minpoly ℚ x`
+  is `0` for a non-integral `x`, and `aeval x 0 = 0` holds for EVERY `x : ℂ`; so if `j(τ₀)` were
+  transcendental the hypothesis would be satisfied by every complex number while the conclusion
+  can hold for only countably many, and the leaf would be FALSE. What rescues it is
+  `isIntegral_jInvariant_heegnerPoint`, PROVEN above — note that this makes the leaf depend, for
+  its very TRUTH and not merely for its use, on the OTHER open leaf of this file
+  (`exists_modularPolynomial_prod`, through `exists_modularPolynomial`). A prover must not
+  "simplify" the hypothesis by dropping that dependence, and a reviewer must not read the two CM
+  leaves here as independent: `Φ_N` is upstream of this one in both senses.
 * `hp4` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT, by the same empty-family
   mechanism the old `LEAF 4b′` audit identified — but running the OTHER WAY, which is worth
   stating because it is the reverse of the trap. `discr f = b² − 4ac ≡ 0 or 1 (mod 4)`, so for
