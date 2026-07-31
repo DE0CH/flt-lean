@@ -54,10 +54,11 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
   middle one is the CONVERSE of the pole argument's MOVE 3: a nonconstant section sends the
   generic point of `U` to the generic point of `𝔸¹_K`.  The last is pure topology (a closed set
   of closed points in a noetherian scheme is finite).
-* `isClosed_singleton_of_ne_genericPoint` — **sorry leaf**: on a smooth curve, every point other
-  than the generic one is CLOSED.  Dimension one, stated topologically; no morphism to `𝔸¹`, no
-  polynomial, no quasi-finiteness.  It arguably belongs in `CurveExtension.lean`.
-* `locallyQuasiFinite_of_notIsIntegralElem_coordOf` — **PROVEN 2026-07-31** over that one leaf: a
+* `isClosed_singleton_of_ne_genericPoint` — **PROVEN 2026-07-31, no sorry**: on a smooth curve,
+  every point other than the generic one is CLOSED.  Dimension one, stated topologically; no
+  morphism to `𝔸¹`, no polynomial, no quasi-finiteness.  It would sit just as well in
+  `CurveExtension.lean` beside the other dimension facts.
+* `locallyQuasiFinite_of_notIsIntegralElem_coordOf` — **PROVEN 2026-07-31, no sorry**: a
   nonconstant section classifies a QUASI-FINITE morphism.  Two cases, and neither is
   Riemann–Roch: over the generic point of `𝔸¹_K` the fibre is the generic point of `U` alone
   (`Scheme.Hom.closePoints_subset_preimage_closedPoints`, `Spec K[T]` being Jacobson, plus the
@@ -142,8 +143,10 @@ proven here over exactly two named sub-leaves, along the Zariski's-main-theorem 
   `notMem_range_of_valuativeLift_toAffineLine_compl_singleton` and
   `not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton`, is now sorry-free.
 
-**So as of 2026-07-31 the ONLY open leaves in this file are the two Riemann–Roch-side ones**,
-and the whole compactification half is done.
+**So as of 2026-07-31 the file has exactly ONE open leaf,
+`exists_notIsIntegralElem_section_compl_singleton` — RIEMANN–ROCH, asking for a single
+nonconstant section of `Γ(X, X ∖ {z})` and nothing else.**  Everything else here, the whole
+compactification half and the whole quasi-finiteness half, is sorry-free.
 
 and the glue between them, which is what this file newly PROVES:
 `IsFinite.of_isProper_of_locallyQuasiFinite` (Zariski's main theorem, stacks `02LS`) turns
@@ -500,28 +503,38 @@ theorem base_genericPoint_asIdeal_eq_bot {K : Type u} [Field K] {X : Scheme.{u}}
     Polynomial.monic_mul_leadingCoeff_inv hpne, ?_⟩
   rw [Polynomial.eval₂_mul, hco, zero_mul]
 
-/-- **EVERY POINT OF A SMOOTH CURVE OTHER THAN THE GENERIC POINT IS CLOSED** (sorry leaf, cut
-2026-07-31 out of `locallyQuasiFinite_of_notIsIntegralElem_coordOf` just below, which is now
-PROVEN over it and is the whole of what that leaf still needed).
+/-- **EVERY POINT OF A SMOOTH CURVE OTHER THAN THE GENERIC POINT IS CLOSED** (cut 2026-07-31 out
+of `locallyQuasiFinite_of_notIsIntegralElem_coordOf` just below, and **PROVEN the same day, no
+sorry**).
 
 This is DIMENSION ONE, stated topologically, and it mentions no morphism to `𝔸¹`, no polynomial
 and no quasi-finiteness.  It arguably belongs in `CurveExtension.lean` beside the other
 dimension facts; it is here only because that is where its consumer is.
 
-TRUE.  Suppose `x` is neither generic nor closed.  Then `closure {x} ⊋ {x}`, so there is
-`w ≠ x` with `x ⤳ w`, and `η ⤳ x ⤳ w` is a chain of THREE distinct points (`η ≠ w`, since
-`η ⤳ w` and `w ⤳ ... ` would force `η = x` by `T0`).  Generizations of `w` are exactly the range
-of `Spec 𝒪_{X,w} ⟶ X` (`Scheme.range_fromSpecStalk`), and that map is injective and reflects
-specialization, so `Spec 𝒪_{X,w}` carries a strict chain of three primes — i.e.
-`ringKrullDim 𝒪_{X,w} ≥ 2`.  That contradicts
-`ringKrullDim_stalk_le_of_smoothOfRelativeDimension` (`CurveExtension.lean`), which gives `≤ 1`
-for `SmoothOfRelativeDimension 1`.
+## PROOF — a three-term specialization chain against the stalk's Krull dimension
 
-**WHAT THE PROVER SHOULD CHECK FIRST**: whether the pin already has "a scheme of Krull dimension
-≤ 1 is `T1` away from the generic point" in some form, and what the cleanest way is to turn a
-three-term specialization chain into `2 ≤ Order.krullDim (PrimeSpectrum R)` — `Order.LTSeries`
-and `Order.LTSeries.length_le_krullDim` are the intended tools, with the chain built from
-`Scheme.range_fromSpecStalk` plus injectivity of `Scheme.fromSpecStalk`.
+Suppose `x` is neither generic nor closed.  Then `closure {x} ⊋ {x}`, so there is `w ≠ x` with
+`x ⤳ w`, and with `η := genericPoint X` the chain `η ⤳ x ⤳ w` has THREE DISTINCT points:
+`η ≠ x` is the hypothesis, `w ≠ x` is the choice, and `η ≠ w` because `x ⤳ η` together with
+`η ⤳ x` forces `x = η` by `Specializes.antisymm` in a `T0` space.
+
+**The chain is then read off in an AFFINE OPEN rather than in the stalk**, and that is the one
+design decision worth recording, because the obvious route does not work: the pin has
+`Scheme.range_fromSpecStalk` (the range of `Spec 𝒪_{X,w} ⟶ X` is the set of generizations of
+`w`), but NO injectivity lemma for `Scheme.fromSpecStalk`, so the three points cannot be lifted
+that way without proving injectivity first.  Instead pick an affine open `V ∋ w`; every
+generization of `w` lies in it (`Specializes.mem_open`), so `η, x, w ∈ V`, and
+`IsAffineOpen.primeIdealOf` — which IS the affine iso `V ≅ Spec Γ(X, V)` on points, hence
+continuous, and injective because `IsAffineOpen.fromSpec_primeIdealOf` is a retraction — turns
+the chain into a strict chain of three primes of `Γ(X, V)`, via
+`PrimeSpectrum.le_iff_specializes`.  Specialization inside `V` is specialization in `X`
+(`Topology.IsInducing.specializes_iff` for the open immersion).
+
+Two applications of `Ideal.height_add_one_le_of_lt_of_isPrime` then give
+`2 ≤ (primeIdealOf w).asIdeal.height`; `IsLocalization.AtPrime.ringKrullDim_eq_height` together
+with `IsAffineOpen.isLocalization_stalk` identifies that height with
+`ringKrullDim 𝒪_{X,w}`; and `ringKrullDim_stalk_le_of_smoothOfRelativeDimension`
+(`CurveExtension.lean`) bounds it by `1`.
 
 **`SmoothOfRelativeDimension 1` IS LOAD-BEARING and the statement is FALSE without it**: on a
 smooth SURFACE the generic point of a curve on it is neither generic nor closed.
@@ -530,8 +543,91 @@ smooth SURFACE the generic point of a curve on it is neither generic nor closed.
 irreducibility there is no `genericPoint X` to except. -/
 theorem isClosed_singleton_of_ne_genericPoint {K : Type u} [Field K] {X : Scheme.{u}}
     (strX : X ⟶ Spec (CommRingCat.of K)) [SmoothOfRelativeDimension 1 strX] [IsIntegral X]
-    {x : X} (hx : x ≠ genericPoint X) : IsClosed ({x} : Set X) :=
-  sorry
+    {x : X} (hx : x ≠ genericPoint X) : IsClosed ({x} : Set X) := by
+  by_contra hcl
+  -- a point `w` strictly below `x`
+  obtain ⟨w, hwc, hwx⟩ : ∃ w ∈ closure ({x} : Set X), w ≠ x := by
+    by_contra h
+    refine hcl ?_
+    have hsub : closure ({x} : Set X) ⊆ {x} := by
+      intro y hy
+      by_contra hne
+      exact h ⟨y, hy, hne⟩
+    have hce : closure ({x} : Set X) = {x} := subset_antisymm hsub subset_closure
+    rw [← hce]
+    exact isClosed_closure
+  have hxw : x ⤳ w := by rwa [specializes_iff_mem_closure]
+  -- and the generic point strictly above
+  have hgx : genericPoint X ⤳ x := (genericPoint_spec X).specializes trivial
+  have hgw : genericPoint X ⤳ w := hgx.trans hxw
+  have hgne : genericPoint X ≠ w := by
+    intro h
+    exact hx ((hgx.antisymm (h ▸ hxw)).eq).symm
+  -- an affine open around `w`; it contains both generizations
+  obtain ⟨_, ⟨V, hV, rfl⟩, hwV, -⟩ :=
+    X.isBasis_affineOpens.exists_subset_of_mem_open (Set.mem_univ w) isOpen_univ
+  have hxV : x ∈ V := hxw.mem_open V.isOpen hwV
+  have hgV : genericPoint X ∈ V := hgw.mem_open V.isOpen hwV
+  -- the three points, as points of `V`
+  set ηV : Scheme.Opens.toScheme V := ⟨genericPoint X, hgV⟩ with hηV
+  set xV : Scheme.Opens.toScheme V := ⟨x, hxV⟩ with hxVdef
+  set wV : Scheme.Opens.toScheme V := ⟨w, hwV⟩ with hwVdef
+  have hind : Topology.IsInducing (Scheme.Opens.ι V).base :=
+    (Scheme.Opens.ι V).isOpenEmbedding.isInducing
+  have hsp1 : ηV ⤳ xV := hind.specializes_iff.mp
+    (show (Scheme.Opens.ι V).base ηV ⤳ (Scheme.Opens.ι V).base xV from hgx)
+  have hsp2 : xV ⤳ wV := hind.specializes_iff.mp
+    (show (Scheme.Opens.ι V).base xV ⤳ (Scheme.Opens.ι V).base wV from hxw)
+  -- transport to `Spec Γ(X, V)` along the affine iso
+  have hinj : Function.Injective (hV.primeIdealOf) := by
+    intro a b hab
+    have := congrArg hV.fromSpec hab
+    rw [hV.fromSpec_primeIdealOf, hV.fromSpec_primeIdealOf] at this
+    exact Subtype.ext this
+  have hcont : Continuous (hV.primeIdealOf) := by
+    show Continuous fun a => hV.isoSpec.hom.base a
+    exact hV.isoSpec.hom.base.hom.continuous
+  have hle1 : hV.primeIdealOf ηV ≤ hV.primeIdealOf xV :=
+    (PrimeSpectrum.le_iff_specializes _ _).mpr (hsp1.map hcont)
+  have hle2 : hV.primeIdealOf xV ≤ hV.primeIdealOf wV :=
+    (PrimeSpectrum.le_iff_specializes _ _).mpr (hsp2.map hcont)
+  have hne1 : hV.primeIdealOf ηV ≠ hV.primeIdealOf xV := by
+    intro h
+    exact hx (congrArg Subtype.val (hinj h)).symm
+  have hne2 : hV.primeIdealOf xV ≠ hV.primeIdealOf wV := by
+    intro h
+    exact hwx (congrArg Subtype.val (hinj h)).symm
+  -- so a strict chain of three primes, i.e. height at least two at `w`
+  haveI : (hV.primeIdealOf ηV).asIdeal.IsPrime := (hV.primeIdealOf ηV).isPrime
+  haveI : (hV.primeIdealOf xV).asIdeal.IsPrime := (hV.primeIdealOf xV).isPrime
+  haveI : (hV.primeIdealOf wV).asIdeal.IsPrime := (hV.primeIdealOf wV).isPrime
+  have hlt1 : (hV.primeIdealOf ηV).asIdeal < (hV.primeIdealOf xV).asIdeal :=
+    lt_of_le_of_ne hle1 fun h => hne1 (PrimeSpectrum.ext h)
+  have hlt2 : (hV.primeIdealOf xV).asIdeal < (hV.primeIdealOf wV).asIdeal :=
+    lt_of_le_of_ne hle2 fun h => hne2 (PrimeSpectrum.ext h)
+  have hh1 : (hV.primeIdealOf ηV).asIdeal.height + 1 ≤ (hV.primeIdealOf xV).asIdeal.height :=
+    Ideal.height_add_one_le_of_lt_of_isPrime hlt1
+  have hh2 : (hV.primeIdealOf xV).asIdeal.height + 1 ≤ (hV.primeIdealOf wV).asIdeal.height :=
+    Ideal.height_add_one_le_of_lt_of_isPrime hlt2
+  have hh : (2 : ℕ∞) ≤ (hV.primeIdealOf wV).asIdeal.height := by
+    have h1 : (1 : ℕ∞) ≤ (hV.primeIdealOf xV).asIdeal.height := le_trans (by simp) hh1
+    calc (2 : ℕ∞) = 1 + 1 := by norm_num
+      _ ≤ (hV.primeIdealOf xV).asIdeal.height + 1 := by gcongr
+      _ ≤ _ := hh2
+  -- but the stalk at `w` is that localization, and it has dimension at most one
+  letI : Algebra Γ(X, V) (X.presheaf.stalk w) :=
+    TopCat.Presheaf.algebra_section_stalk X.presheaf (U := V) ⟨w, hwV⟩
+  haveI : IsLocalization.AtPrime (X.presheaf.stalk w) (hV.primeIdealOf wV).asIdeal :=
+    hV.isLocalization_stalk ⟨w, hwV⟩
+  have heq : ringKrullDim (X.presheaf.stalk w) =
+      ((hV.primeIdealOf wV).asIdeal.height : WithBot ℕ∞) :=
+    IsLocalization.AtPrime.ringKrullDim_eq_height _ _
+  have hle : ringKrullDim (X.presheaf.stalk w) ≤ (1 : WithBot ℕ∞) :=
+    ringKrullDim_stalk_le_of_smoothOfRelativeDimension (n := 1) strX w
+  rw [heq] at hle
+  have hfin : ((2 : ℕ∞) : WithBot ℕ∞) ≤ (1 : WithBot ℕ∞) :=
+    le_trans (WithBot.coe_le_coe.mpr hh) hle
+  simp at hfin
 
 /-- **A CLOSED SET OF CLOSED POINTS IN A NOETHERIAN SCHEME IS FINITE** (PROVEN 2026-07-31, no
 sorry) — pure topology.
