@@ -163,6 +163,13 @@ public import Mathlib.AlgebraicGeometry.Morphisms.FlatRank
 -- closed field is a finite product of copies of it.  This is what counts the
 -- `K`-points of `ker [a]` in `card_fibrePt_eq_of_finrank_eq`.
 public import Mathlib.RingTheory.Etale.Field
+-- `FLT.D_eq_zero_iff_exists_pow`: for `k` PERFECT of characteristic `p` and `K/k`
+-- finitely generated, `{x : K | d x = 0} = K ^ p` in `Ω[K⁄k]`.  This is the field
+-- theory the differential route to `exists_pow_eq_stalkMap_mulByNat_prime` needs
+-- (see the DIFFERENTIAL ROUTE paragraph in that leaf's docstring); it is imported
+-- here so the module is reachable from `Fermat.lean` and so a prover at that leaf
+-- finds it by name.
+public import Fermat.FLT.Mathlib.FieldTheory.KaehlerField
 public import Mathlib.RingTheory.Artinian.Ring
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 -- `GaloisRepresentation.globalFrob` and `dense_conjClasses_globalFrob`: the
@@ -17359,6 +17366,28 @@ counting it as progress.  What it buys is METHOD, and concretely:
   scheme-level interface written first.  Against the stalk statement it needs
   only `Ω[𝒪_{A',x} ⁄ k]`, which exists.  That is the one concrete thing this cut
   changes about the route, and it is why the cut was made in this direction.
+
+**THE FIELD-THEORY HALF OF THE DIFFERENTIAL ROUTE NOW EXISTS** (2026-07-31,
+`Fermat/FLT/Mathlib/FieldTheory/KaehlerField.lean`).  `FLT.D_eq_zero_iff_exists_pow`
+proves, with no `sorry`, that for `k` PERFECT of characteristic `p` and `K/k`
+finitely generated (`Algebra.EssFiniteType`),
+
+  `KaehlerDifferential.D k K x = 0 ↔ ∃ y : K, y ^ p = x`,
+
+i.e. the kernel of `d` on the function field is exactly `K ^ p`; the same file has
+`FLT.exists_kaehlerBasis_of_isTranscendenceBasis` (freeness of `Ω[K⁄k]` on a
+separating transcendence basis) and `FLT.exists_partialDerivation_of_isTranscendenceBasis`
+(the dual partial derivations).  So the DIFFERENTIAL ROUTE to this leaf is now
+blocked on ONE input only: `d[p] = 0` on the invariant differentials of `A'`,
+i.e. `[p]^*` kills `Ω[k(A')⁄k]`.  **That input is not in the pin and is not
+queued** — it needs the invariant differentials of an abelian variety
+(`Ω_{A'/k} ≅ 𝒪_{A'} ⊗ Lie(A')^∨` and `[n]^* ω = n ω` on invariant `ω`), which is
+genuine missing theory, not a formalisation gap.  Note also the passage from the
+FUNCTION FIELD to the STALK is itself a step: `𝒪_{A', x} ↪ k(A')` for `A'`
+integral, and `d` is compatible with that inclusion, so a stalk element with
+`d = 0` is a `p`-th power IN `k(A')` and one still owes that its `p`-th root lies
+in the local ring — true because `𝒪_{A', x}` is normal (`A'` smooth), but it is a
+separate lemma.
 
 **WHAT IS LOAD-BEARING.**  The statement needs exactly that `k` is **PERFECT**.
 It needs neither finiteness, nor `p ^ a = #k`, nor any tie between an exponent
