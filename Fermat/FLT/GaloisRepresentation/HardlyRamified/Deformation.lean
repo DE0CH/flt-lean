@@ -20338,6 +20338,42 @@ already carries `cokerDesc`, `cokerCongr`, `cyclesIsoKer`, `homologyIsoCoker`),
 `invariantsObjIHom`, `d_hom_zero`, `d_hom_succ_apply`, `eqToHom_iHom_apply`
 (~130 lines).  Total to vendor: **≈ 1160 lines**, all sorry-free upstream.
 
+**MEASURED EXACTLY 2026-07-31, by walking `CupProduct.lean`'s FLT-local import
+closure rather than by enumerating declarations, and the two counts agree well
+enough that the estimate above can be trusted.**  The closure is 12 files and
+**1706 lines, every one of them sorry-free** (`grep -c sorry` = 0 in all 12):
+`ContCohomology/{CupProduct 582, Basic 239}`,
+`Algebra/Category/ModuleCat/Topology/{Homology 179, Basic 79}`,
+`Algebra/Algebra/{Hom 178, Pi 168}`, `RepresentationTheory/Continuous/{Basic 81,
+TopRep 31}`, `Topology/{CompactOpen 57, Algebra/Module/CompactOpen 48,
+Constructions 44}`, `Algebra/Homology/HomologicalComplex 20`.  Subtract
+`ContCohomology/Basic.lean`, 235 of whose 239 lines we already carry as
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`,
+and the surface is ≈1470 lines — the difference from ≈1160 being that the
+declaration-level audit did not count the transitive files.
+
+**Of that, 346 lines are almost certainly TRIMMABLE, and this corrects a
+deterrent note in our own vendored `Basic.lean`.**  That file's provenance
+section says the cup-product half "drags in `SemialgHom`
+(`FLT.Mathlib.Algebra.Algebra.{Hom,Pi}`, 346 lines) for reasons unrelated to
+cohomology".  The 346 lines are real and they ARE in the closure — but they
+enter only through the 44-line `FLT.Mathlib.Topology.Constructions`, and
+`SemialgHom` appears **zero times** in `CupProduct.lean`, in
+`Continuous/Basic.lean`, in `ModuleCat/Topology/Basic.lean` and in
+`ContCohomology/Basic.lean`.  So no cohomology file uses it; vendor the one or
+two lemmas actually wanted out of `Topology/Constructions.lean` instead of the
+file, and the drag disappears.  Do not read that note as a reason to price step
+(a) at 1700 lines.
+
+Re-checked against our pin the same day, so the absences above are current, not
+inherited: `TopModuleCat.linHom` / `iHom` / `homOfBilinear` / `cokerDescCLM` /
+`cokerDescBilinear` / `isOpenQuotientMap_cokerπ` / `resolutionCLM` /
+`invariantsObjIHom` / `d_hom_succ_apply` return **nothing** from
+`Mathlib/Algebra/Category/ModuleCat/Topology/` or `Mathlib/RepresentationTheory/`.
+The only `linHom` upstream is `Representation.linHom`
+(`Mathlib/RepresentationTheory/Basic.lean:659`), the DISCRETE one, which is a
+different object and must not be mistaken for the shim.
+
 **And the cup product is only the FIRST half.**  The pairing also needs the
 local invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ` (local class field theory), plus the
 reciprocity `Σ_v inv_v = 0` that makes the global pairing well defined.
@@ -22334,6 +22370,45 @@ looks safe.
   warns is FALSE in its naive "a lift of a hardly ramified representation is
   hardly ramified" form, so it must be proved for push-forwards specifically and
   not quoted.
+
+  **THE AXIS WAS PRICED ON 2026-07-31, AND THE SECOND COST IS ALREADY PAID —
+  IN THIS FILE, SORRY-FREE.**  `isHardlyRamified_pushforwardFrame` (above,
+  PROVEN, `isHardlyRamified_baseChange` composed with `isHardlyRamified_conj`;
+  its flat clause `isFlatAt_baseChange` is likewise PROVEN, so the docstring
+  there calling flatness "the one genuinely open clause" is stale) says exactly
+  the thing the paragraph above asks for and does not quote the naive form: for
+  `ψ : B →+* A` CONTINUOUS and `ℤ_ℓ`-compatible with `A` FINITE, local and
+  topological, the push-forward of a hardly ramified framed representation is
+  hardly ramified.  `A = DualNumber k` meets every hypothesis — `Finite` and
+  `IsLocalRing` for it are the two-line constructions at
+  `ProfiniteLocalNoetherian.lean:647–648` (`Patching.lean` carries them as
+  instances but is DOWNSTREAM of this module, so copy, do not import).
+
+  **And the continuity side-condition is FREE, which is the part that looks like
+  it should cost something.**  Any `f ∈ dualNumberPoints D.R D.π` satisfies
+  `(f x).fst = D.π x` by definition, so `f` carries
+  `𝔪 = ker D.π` (`IsLocalRing.ker_eq_maximalIdeal`) into `ker TrivSqZeroExt.fst
+  = (ε)`, whence `f 𝔪² ⊆ (ε)² = 0`.  So `ker f ⊇ 𝔪²`, which is OPEN because
+  `D.isAdic` makes the topology `𝔪`-adic; an ideal containing an open ideal is
+  open, and `DualNumber k` is discrete.  `ℤ_ℓ`-compatibility is clause 1 of
+  `dualNumberPoints` verbatim.  Nothing has to be assumed.
+
+  **AND THE OTHER HALF OF THE PEEL SHOULD BE STATED AS `≤`, NOT `=`.**  The
+  paragraph above frames it as a cardinality EQUALITY, which is what forces the
+  correspondence to be ONTO and hence forces the push-forward clause at all.
+  This leaf only ever needs
+  `Nat.card {def to k[ε]}/∼ ≤ Nat.card (dualNumberPoints D.R D.π)`, i.e. an
+  INJECTION `D' ↦ (the unique compatible f from hu)`, whose two clauses are
+  `IsUniversal`'s first two conjuncts and land in `dualNumberPoints` by
+  definition.  Injectivity modulo strict equivalence is "same `charFrob` at all
+  good primes ⟹ strictly equivalent", i.e. Carayol/trace-generation, which this
+  module already speaks (`IsTraceGenerated`,
+  `isUniversal_of_isWeaklyUniversal_isTraceGenerated`).  So a successor who
+  states the peel as an inequality pays neither of the two costs the paragraph
+  above budgets, and the equality — with its onto-ness and its push-forward
+  clause, both now known to be affordable — is available afterwards if anyone
+  wants it for its own sake.  This is the "CUT THE OUTPUT, NOT THE MACHINERY"
+  shape: the leaf's conclusion is an inequality, so the peel should be too.
 * *Insert the Selmer group.* Rejected already, one section above
   `adZeroTwistRep`, and for a reason that still stands: quantifying over
   arbitrary local conditions `L` makes the middle statement FALSE (take
