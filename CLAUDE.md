@@ -7746,6 +7746,17 @@ the coverage invariant, and re-validate it the same way — the check is ten lin
 it is the only thing standing between a scanner bug and a release that queues 200
 tasks against a 333-leaf frontier.
 
+**IT HARDCODES `ROOT = /home/chend/flt-staging`, so from a WORKTREE it reports the
+MERGE WORKER'S tree and not yours** (2026-07-31, `flt-lean-395`).  Same trap as
+[[flt-hidden-sorries-scans-main-repo]], and it is worse here because the output is
+per-file with line numbers, so it looks like an answer about the file you are editing.
+I had just PROVEN two leaves in `X1.lean` and the scan still listed both — at their
+PRE-EDIT line numbers, which is the tell.  A prover checking its own work with it will
+conclude the proof did not take.  Either run it with `ROOT` pointed at your worktree,
+or verify your own file the way the compiler does — `lake build` and read the
+`declaration uses 'sorry'` set.  **Any scanner in `tools/merge/` is the merge worker's
+and is rooted at staging by design; check `ROOT` before believing per-file output.**
+
 Two riders that cost real time here:
 
 * **Tokenise task text unicode-safely before matching leaf names against it.**  A
