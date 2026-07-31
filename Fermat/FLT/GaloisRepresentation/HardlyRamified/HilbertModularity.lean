@@ -33302,14 +33302,30 @@ keeps the consumer free of `Module.End` bookkeeping. The consumer needs exactly
 two things of `χ i` — that it is multiplicative on a COMMUTATIVE target and that
 it kills `P_{w i}` — and both are visible in this shape.
 
-**The wild-kernel clause is derivable, not an extra burden.** `w ∈ Q` has
+**The wild-kernel clause is derivable, not an extra burden — with ONE step that
+should be checked before it is believed.** `w ∈ Q` has
 `((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal` (first conjunct of `hQ`), so `P_w` is pro-`p` for
 `p ≠ ℓ` and `exists_pow_eq_of_mem_wildInertiaGroup` in `ArtinConductor.lean`
-makes every element of `P_w` an `ℓ^e`-th power in `P_w`; `ρbar` is unramified at
-`Q`, so `χ_w|_{I_w}` is residually trivial and takes values in `1 + 𝔪`, whose
-`ℓ'`-torsion is trivial by
-`pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal` above. Those two
-together are the clause.
+makes every element of `P_w` an `ℓ^e`-th power in `P_w`, for EVERY `e`; `ρbar` is
+unramified at `Q`, so `χ_w|_{I_w}` is residually trivial and takes values in
+`1 + 𝔪`. The clause is then "an element of `1 + 𝔪_{R_Q}` that is an `ℓ^e`-th
+power for every `e` is `1`", which is this file's own reading of the
+TAME-CHARACTER section on `exists_hilbertAuxDiamondQuotient_of_exponents` below
+("`1 + 𝔪`, a pro-`ℓ` group").
+
+**THE STEP TO CHECK** is that `1 + 𝔪_{R_Q}` really is pro-`ℓ`, which needs
+`(ℓ : R_Q) ∈ 𝔪` — i.e. the RESIDUE CHARACTERISTIC of `𝒟Q.R` is `ℓ`. Separatedness
+is free (`𝒟Q.isAdicComplete`), and with `ℓ ∈ 𝔪` one gets
+`(1 + m)^{ℓ^e} − 1 ∈ 𝔪^{e+1}`, so the intersection is trivial. But
+`HilbertAuxDeformationDatum` posits only `Algebra ℤ_[ℓ] R` and `π : R →+* k`
+surjective; it does NOT state `CharP k ℓ`, and this file's `1 + 𝔪` sentence has
+been carried in prose since 2026-07-30 without that being checked. If `char k = ℓ`
+turns out not to be derivable from the structure and from `ρbar` being an
+`ℓ`-adic residual representation, then the honest repair is a field or a
+hypothesis, NOT a weaker clause here — and it should be recorded as its own
+FALSITY AUDIT on the structure. Note the sibling
+`pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal` above deliberately does
+NOT need this: it kills the `ℓ'`-part using only that `m'` is a unit of `ℤ_ℓ`.
 
 # FAITHFULNESS
 
