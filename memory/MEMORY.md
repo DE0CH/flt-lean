@@ -33,3 +33,4 @@
 - [Preflight finds unowned leaves](flt-preflight-finds-unowned-leaves.md) — the only check that catches sorries no agent reported; run it BETWEEN releases; count leaves back when grouping into tasks
 - [flt-loop spawn/liveness race](flt-loop-spawn-liveness-race.md) — the loop can put TWO live agents in one worktree; check your token against jobs/<name>.json first, and a discarded incarnation yields WITHOUT writing its sentinel
 - [flt-loop runs on mystique](flt-loop-runs-on-mystique.md) — not on the medic's host, so ps says "dead" for a healthy loop; it re-execs onto edited source itself (do NOT hand-restart), and a live Claude session there respawns it if killed
+- [Constrain the replacement's VALUES](flt-constrain-the-replacements-values.md) — a "same pin, plus an equivariance" sibling leaf collapses into the original by adding `u n = v n ∨ u n = 𝟙`; and a vacuous-regime hypothesis is usually dischargeable at the call site by `by_cases Nonempty`
