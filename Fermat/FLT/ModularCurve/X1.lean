@@ -12445,6 +12445,56 @@ theorem exists_genericFibreOpen_of_x1IntegralModel {N : ℕ} {R : Subring ℚ}
   rw [hrange, ← Set.image_compl_eq (Scheme.homeoOfIso eGen.compareIso.symm).bijective]
   exact hfin.image _
 
+/-- **The integral model exists, and its generic fibre is SOME `X_1(N)/ℚ`** (PROVEN
+2026-07-31 over the three leaves of the subsection above) — `X0.lean`'s
+`exists_x0IntegralCompactification` transcribed, and the assembly every node below
+this point runs on.
+
+The generic fibre is not posited: it is `Limits.pullback xstr (SpecLoc.generic R)`,
+i.e. literally `𝒳 ×_{ℤ_(ℓ)} ℚ`, its open part is `𝒴 ×_{ℤ_(ℓ)} ℚ`, and the immersion
+between them is `IsFibreIdent.openSection` of `fibreIdentPullback`.  Its three
+geometric fields are base change; its `coarse` and `finite_compl` come from
+`exists_genericFibreOpen_of_x1IntegralModel`.
+
+**`hmodel` is returned rather than `Nonempty`-wrapped**, because the model AS A
+`Γ₁(N)`-MODULI COMPACTIFICATION OVER `SpecLoc R` — not merely as a curve — is what
+`exists_isX1Compactification_specialFibre` consumes two nodes below.  What is still
+missing here is the comparison of this generic fibre with the `X` the caller handed
+in; that is `exists_x1CompactificationModel` below. -/
+theorem exists_x1IntegralCompactification (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX1Compactification N strX strY jY) :
+    ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
+      (jZ : YZ ⟶ XZ) (hmodel : IsX1Compactification N xstr ystr jZ),
+      Nonempty (IsX1Compactification N
+        (Limits.pullback.snd xstr (SpecLoc.generic R))
+        (Limits.pullback.snd ystr (SpecLoc.generic R))
+        (IsFibreIdent.openSection (fibreIdentPullback (SpecLoc.generic R) xstr)
+          hmodel.comm)) := by
+  have hN : 0 < N := by
+    rcases Nat.eq_zero_or_pos N with rfl | h
+    exacts [absurd (dvd_zero ℓ) hℓN, h]
+  obtain ⟨XZ, YZ, xstr, ystr, jZ, ⟨hmodel⟩⟩ :=
+    exists_x1IntegralModel N ℓ hℓ hℓN R toF hbase hX
+  haveI : IsOpenImmersion jZ := hmodel.isOpen
+  -- the three geometric fields of the generic compactification are base change,
+  -- exactly as in `X0.lean`'s `exists_x0IntegralCompactification`
+  haveI := hmodel.isProper
+  haveI := hmodel.connected
+  haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+  obtain ⟨hcoarse, hfin⟩ :=
+    exists_genericFibreOpen_of_x1IntegralModel hmodel hN
+      (fibreIdentPullback (SpecLoc.generic R) xstr)
+  exact ⟨XZ, YZ, xstr, ystr, jZ, hmodel,
+    ⟨{ comm := IsFibreIdent.openSection_comp _ hmodel.comm
+       coarse := hcoarse
+       isOpen := IsFibreIdent.isOpenImmersion_openSection _ hmodel.comm
+       isProper := inferInstance
+       smooth := MorphismProperty.pullback_snd xstr (SpecLoc.generic R) hmodel.smooth
+       connected := inferInstance
+       finite_compl := hfin }⟩⟩
+
 /-- **Deligne–Rapoport: `X_1(N)` has a SMOOTH PROPER MODEL over `ℤ_(ℓ)`, whose
 GENERIC FIBRE is SOME `X_1(N)/ℚ`** (**PROVEN 2026-07-31** over the three leaves of the
 subsection above — `nonempty_gamma1Atlas_specLoc`,
@@ -12579,33 +12629,14 @@ theorem exists_x1IntegralSmoothProperModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (h�
     ∃ (XZ X₀ Y₀ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (strX₀ : X₀ ⟶ SpecQ)
       (strY₀ : Y₀ ⟶ SpecQ) (j₀ : Y₀ ⟶ X₀) (_h₀ : IsX1Compactification N strX₀ strY₀ j₀),
       IsSmoothProperCurve xstr ∧ Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX₀) := by
-  have hN : 0 < N := by
-    rcases Nat.eq_zero_or_pos N with rfl | h
-    exacts [absurd (dvd_zero ℓ) hℓN, h]
-  obtain ⟨XZ, YZ, xstr, ystr, jZ, ⟨hmodel⟩⟩ :=
-    exists_x1IntegralModel N ℓ hℓ hℓN R toF hbase hX
-  haveI : IsOpenImmersion jZ := hmodel.isOpen
-  -- the three geometric fields of the generic compactification are base change,
-  -- exactly as in `X0.lean`'s `exists_x0IntegralCompactification`
-  haveI := hmodel.isProper
-  haveI := hmodel.connected
-  haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
-  obtain ⟨hcoarse, hfin⟩ :=
-    exists_genericFibreOpen_of_x1IntegralModel hmodel hN
-      (fibreIdentPullback (SpecLoc.generic R) xstr)
+  obtain ⟨XZ, YZ, xstr, ystr, jZ, hmodel, ⟨h₀⟩⟩ :=
+    exists_x1IntegralCompactification N ℓ hℓ hℓN R toF hbase hX
   exact ⟨XZ, Limits.pullback xstr (SpecLoc.generic R),
     Limits.pullback ystr (SpecLoc.generic R), xstr,
     Limits.pullback.snd xstr (SpecLoc.generic R),
     Limits.pullback.snd ystr (SpecLoc.generic R),
     IsFibreIdent.openSection (fibreIdentPullback (SpecLoc.generic R) xstr) hmodel.comm,
-    { comm := IsFibreIdent.openSection_comp _ hmodel.comm
-      coarse := hcoarse
-      isOpen := IsFibreIdent.isOpenImmersion_openSection _ hmodel.comm
-      isProper := inferInstance
-      smooth := MorphismProperty.pullback_snd xstr (SpecLoc.generic R) hmodel.smooth
-      connected := inferInstance
-      finite_compl := hfin },
-    ⟨hmodel.isProper, hmodel.smooth, hmodel.connected⟩,
+    h₀, ⟨hmodel.isProper, hmodel.smooth, hmodel.connected⟩,
     ⟨fibreIdentPullback (SpecLoc.generic R) xstr⟩⟩
 
 /-- **Deligne–Rapoport: `X_1(N)` has a SMOOTH PROPER MODEL over `ℤ_(ℓ)` whose
@@ -12627,14 +12658,16 @@ plus `IsFibreIdent.congrFibre`.
 The isomorphism is applied in the direction `e : X ≅ X₀` with
 `e.hom ≫ strX₀ = strX`, i.e. `e.hom = w'` and `e.inv = w`; `congrFibre` then
 replaces the fibre `strX₀` by `strX` and inherits naturality verbatim. -/
-theorem exists_x1SmoothProperCurveModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+theorem exists_x1CompactificationModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
     (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX1Compactification N strX strY jY) :
-    ∃ (XZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R),
-      IsSmoothProperCurve xstr ∧ Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX) := by
-  obtain ⟨XZ, X₀, Y₀, xstr, strX₀, strY₀, j₀, h₀, hcurve, ⟨eGen⟩⟩ :=
-    exists_x1IntegralSmoothProperModel N ℓ hℓ hℓN R toF hbase hX
+    ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
+      (jZ : YZ ⟶ XZ), Nonempty (IsX1Compactification N xstr ystr jZ) ∧
+        IsSmoothProperCurve xstr ∧
+          Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX) := by
+  obtain ⟨XZ, YZ, xstr, ystr, jZ, hmodel, ⟨h₀⟩⟩ :=
+    exists_x1IntegralCompactification N ℓ hℓ hℓN R toF hbase hX
   -- the model's own generic fibre and the caller's `X` are two `X_1(N)`s over `ℚ`,
   -- hence isomorphic: `IsCoarseModuliY1` is initial, and a smooth curve over a FIELD
   -- has a unique smooth proper compactification
@@ -12643,7 +12676,27 @@ theorem exists_x1SmoothProperCurveModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN 
     exists_inverse_of_smoothCompactification_field h₀.comm hX.comm h₀.isOpen hX.isOpen
       h₀.isProper hX.isProper h₀.smooth hX.smooth h₀.connected hX.connected
       h₀.finite_compl hX.finite_compl hu hv huv hvu
-  exact ⟨XZ, xstr, hcurve, ⟨eGen.congrFibre ⟨w', w, hw'w, hww'⟩ hw'⟩⟩
+  exact ⟨XZ, YZ, xstr, ystr, jZ, ⟨hmodel⟩,
+    ⟨hmodel.isProper, hmodel.smooth, hmodel.connected⟩,
+    ⟨(fibreIdentPullback (SpecLoc.generic R) xstr).congrFibre ⟨w', w, hw'w, hww'⟩ hw'⟩⟩
+
+/-- **Deligne–Rapoport: `X_1(N)` has a SMOOTH PROPER MODEL over `ℤ_(ℓ)` whose
+GENERIC FIBRE is the given `X`** (PROVEN; statement UNCHANGED) — the projection of
+`exists_x1CompactificationModel` immediately above that forgets the moduli structure
+on the model.
+
+It is kept as a named theorem because its docstring above is the record of the
+2026-07-31 restatement, and because a consumer that wants only the CURVE should not
+have to destructure the moduli data it is not going to read. -/
+theorem exists_x1SmoothProperCurveModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX1Compactification N strX strY jY) :
+    ∃ (XZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R),
+      IsSmoothProperCurve xstr ∧ Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX) := by
+  obtain ⟨XZ, YZ, xstr, ystr, jZ, -, hcurve, eGen⟩ :=
+    exists_x1CompactificationModel N ℓ hℓ hℓN R toF hbase hX
+  exact ⟨XZ, xstr, hcurve, eGen⟩
 
 /-- **Deligne–Rapoport: `X_1(N)` has GOOD REDUCTION at every `ℓ ∤ N`**
 (**PROVEN 2026-07-30** over the single strictly weaker leaf
@@ -12660,24 +12713,44 @@ accounting, which is `X0.lean`'s `exists_x0CurveModel_of_base` transported
 step for step.
 
 `X'` is `𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ`, which is what makes `spX` free; `exists_isX1Compactification_specialFibre` below is what says that scheme
-IS `X_1(N)` over `𝔽_ℓ`, and it remains a separate leaf. -/
+IS `X_1(N)` over `𝔽_ℓ`, and it remains a separate leaf.
+
+**CONCLUSION RESTORED 2026-07-31 — it also returns the model's MODULI structure.**
+`exists_isX1Compactification_specialFibre` was reproven on 2026-07-30 over a
+different hypothesis: `hmodel : IsX1Compactification N xstr ystr jZ`, the model as a
+`Γ₁(N)`-moduli compactification over `SpecLoc R`, in place of the caller's rational
+`hX`.  Its own docstring records that the restatement of THIS node "the same day" is
+what delivers that, and `exists_x1CurveModel_of_base` below was updated to destructure
+nine components accordingly — but the restatement of this conclusion was DROPPED by a
+declaration-level merge, which kept this side's pre-restatement code beside the other
+side's updated call site.  The result was a five-component conclusion feeding a
+nine-pattern `obtain`, i.e. `X1.lean` red at `exists_x1CurveModel_of_base` for a reason
+visible in neither branch's diff — CLAUDE.md's seventh invisibility class exactly.
+
+The restored shape is the one the call site pins, in its order:
+`X'`, `XZ`, `YZ`, `strX'`, `xstr`, `ystrZ`, `jZ`, the `IsCurveReductionModel`, the
+`IsX1Compactification`.  Nothing else changed, and the extra data costs nothing: it is
+the `hmodel` that `exists_x1CompactificationModel` above now carries through. -/
 theorem exists_x1CurveReductionModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
     (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX1Compactification N strX strY jY) :
-    ∃ (X' XZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (xstr : XZ ⟶ SpecLoc R),
-      Nonempty (IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) := by
-  obtain ⟨XZ, xstr, hcurve, ⟨eGen⟩⟩ :=
-    exists_x1SmoothProperCurveModel N ℓ hℓ hℓN R toF hbase hX
+    ∃ (X' XZ YZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (xstr : XZ ⟶ SpecLoc R)
+      (ystrZ : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
+      Nonempty (IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) ∧
+        Nonempty (IsX1Compactification N xstr ystrZ jZ) := by
+  obtain ⟨XZ, YZ, xstr, ystrZ, jZ, hmodel, hcurve, ⟨eGen⟩⟩ :=
+    exists_x1CompactificationModel N ℓ hℓ hℓN R toF hbase hX
   -- the special fibre is not posited: it is the pullback along the closed point
-  exact ⟨Limits.pullback xstr (SpecLoc.special toF), XZ,
-    Limits.pullback.snd xstr (SpecLoc.special toF), xstr,
+  exact ⟨Limits.pullback xstr (SpecLoc.special toF), XZ, YZ,
+    Limits.pullback.snd xstr (SpecLoc.special toF), xstr, ystrZ, jZ,
     ⟨{ curve := hcurve
        genX := eGen.toEquiv
        spX := (fibreIdentPullback (SpecLoc.special toF) xstr).toEquiv
        genX_nat := eGen.nat
        spX_nat := (fibreIdentPullback (SpecLoc.special toF) xstr).nat
-       properX := bijective_pre_generic_of_isProper ℓ R toF hbase xstr hcurve.isProper }⟩⟩
+       properX := bijective_pre_generic_of_isProper ℓ R toF hbase xstr hcurve.isProper }⟩,
+    hmodel⟩
 
 /-! #### Base change of the model to the special fibre — the `Γ₀` route, transcribed
 

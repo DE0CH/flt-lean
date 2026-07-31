@@ -6740,6 +6740,17 @@ earlier incarnation's result is still its result. But `grep -n prev_tokens flt-l
 finds exactly **two** occurrences — the read at 877 and the field-copy at 1033. **Nothing
 ever writes it.** It is always `None`.
 
+**CORRECTED 2026-07-31 (`flt-lean-115`): `prev_tokens` IS populated now.** A resumed job
+observed on that date read `token: 0028aee5, prev_tokens: ['4f1d1581'], retries: 1,
+resume: true`, with `4f1d1581` being exactly the token its prompt carried. So the
+fallback the loop reads really does fire, and copying the prompt's token verbatim on a
+resumed job is no longer fatal. **Do not relax the check on that account.** The
+canonical value is still `j["token"]` — the loop overwrites the sentinel's token with it
+at line 1039 — the field could stop being written again as easily as it started, and
+reading it costs one command. Cross-check `j["session"]` against your own session id
+while you are there; it is the second, independent confirmation that you are the live
+owner rather than a discarded twin.
+
 Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
 inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
 So on any job with `resume: true` / `retries > 0`:
@@ -7727,6 +7738,19 @@ of 25, including `HyperellipticJacobian` (25) and `MoretBailly` (14).  Use it fo
 the coverage invariant, and re-validate it the same way — the check is ten lines and
 it is the only thing standing between a scanner bug and a release that queues 200
 tasks against a 333-leaf frontier.
+
+**IT HARDCODES `ROOT = /home/chend/flt-staging` AND IGNORES ITS ARGUMENTS** (measured
+2026-07-31, `flt-lean-115`). Run from a worktree it silently reports the STAGING tree's
+frontier, and `python3 tools/merge/frontier.py <your file>` prints the whole staging
+scan rather than erroring — so a worker measuring its own delta gets the pre-change
+number and concludes it changed nothing. Same trap as
+[[flt-hidden-sorries-scans-main-repo]], in the tool the release now depends on. From a
+worktree, copy it with `ROOT` rewritten:
+
+    sed "s#/home/chend/flt-staging#$PWD#" tools/merge/frontier.py > /tmp/frontier.py
+
+The tell is that your own new declarations are absent from its output while the count
+looks plausible. Cross-check by grepping the output for a name you just added.
 
 Two riders that cost real time here:
 
