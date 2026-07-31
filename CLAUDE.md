@@ -16151,3 +16151,105 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A CONE WALK OVER AN IMPORTED `module` FILE REPORTS A FALSE CLEAN — and the false clean reads as "the circularity has lifted"
+
+(2026-07-31, `flt-lean-107`, release 33, on
+`Modularity/Interface.lean`'s strong-multiplicity-one leaf.)
+
+This file already says that `#print axioms` must be appended to the file that
+DECLARES the name, because the module system elides imported proof bodies. The
+same elision breaks the other measurement this project relies on, and there it
+is far more dangerous, because the failure is SILENT and its output is a
+positive result.
+
+`eq_of_isWeightTwoNewform_sub_degeneracyOp_one_mem_oldSubspace` carries a
+CIRCULARITY WARNING: nine named declarations, up to
+`exists_galoisRep_charFrob_of_weightTwoNewform`, are its transitive CONSUMERS,
+so no Galois representation this file attaches to a newform may be used to prove
+it. The warning records the method that established it — *"a cone walk over
+proof TERMS, run from a plain-import (non-`module`) file — a `module` file
+exports no theorem bodies and reports a false clean, which is a trap this
+project has been caught by before"* — together with cone sizes of 68 950–123 009.
+
+**Run exactly that recipe today and every one of the nine comes back
+`hits []`, including the POSITIVE CONTROL**, which calls the parent by name in
+its own proof. Cone sizes come out ~4 900 instead of ~69 000.
+
+The recipe is not wrong about the phenomenon and it is wrong about which file's
+module-ness matters. **It is the IMPORTED file's**: `Interface.lean` is itself a
+`module` (line 134), so `ConstantInfo.value?` is `none` for every theorem it
+exports and the walk stops at the statement, whatever the importing file looks
+like. `import all` does not help. Since the docstring's own control is inside
+the elided file, the control fails silently too — a check designed to catch this
+exact failure cannot catch it.
+
+**What the false clean would cause is not a wasted grep but a wasted route.** A
+reader reproducing the recipe concludes the consumers are independent, takes the
+Chebotarev + Brauer–Nesbitt route the docstring describes as available-but-
+circular, and builds a proof of the leaf out of theorems that rest on it.
+
+**The method that works costs seconds, needs no build, and needs no oleans:
+build the call graph from the SOURCE.** Strip comments (nested block comments —
+this tree's docstrings quote Lean constantly), attribute every token to the
+enclosing declaration by walking back to the nearest declaration header, and BFS
+the reverse edges. Nineteen edges came back with line numbers, and each one was
+eyeballed as a genuine application in a proof body rather than a mention in a
+statement. Two riders:
+
+* it only sees ONE file, so it is a complete answer exactly when the chain is
+  in-file — which is how these clusters are built, and is checkable by grepping
+  the endpoints;
+* tokenise with `isalnum() or c in "_'."`, never a unicode range
+  ([[lean-identifier-regex-swallows-brackets]]), and take the whole declaration
+  block including its signature, so the graph OVER-approximates: a hit must then
+  be confirmed by reading the line, and a MISS is already conclusive.
+
+The alternative, when the chain crosses files, is to append the `run_cmd` cone
+walk to the END of the declaring file — the same rule `#print axioms` already
+obeys — and pay one elaboration.
+
+## AN "ONLY TWO ROUTES" VERDICT MAY HAVE NAMED THE WRONG TWO — READ THE PROOF IN THE SOURCE IT CITES
+
+(Same leaf, same day, and it is what actually moved the node.)
+
+The leaf's docstring priced its own closure as *"Rankin–Selberg: needs the
+Rankin–Selberg integral, which this pin does not have"* or *"Casselman: needs
+the adelic dictionary, of which this pin has NONE"*, and concluded that a
+successor *"should expect to BUILD one of the two missing analytic theories, and
+should cost it as such."* Both absence claims are TRUE and were re-verified.
+The verdict is still wrong, because **the docstring cites Miyake's Theorem
+4.6.19 as the statement and never reads Miyake's PROOF, which is neither
+route.** Read on disk (`~/flt-sources/miyake1989modularforms.txt`, line 7988) it
+is: the functional equation of `Λ` (Cor. 4.3.7), the Euler products (Thm
+4.5.16), `f ∣ ω_N = c·f` for a primitive form (Thm 4.6.15(2)), and then a
+`p`-by-`p` comparison of local factors in which the Ramanujan bound (Thm 4.6.17)
+kills the bad cases.
+
+Three of those four are ALREADY IN THIS TREE, sorry-free and reachable from the
+leaf through `X0.lean`'s public import of `ModularCurve/WeightTwoEigenform.lean`:
+`cuspFEPair N hN f` IS the pair `(f, f ∣ W_N)` with `isStrongFEPair_cuspFEPair`
+PROVEN, so mathlib's `IsStrongFEPair.Λ_eq` is the functional equation;
+`exists_isLFunctionOf_of_isWeightTwoEigenform` is the analytic continuation;
+`exists_satakeParams_of_isWeightTwoEigenform` and
+`norm_coeff_le_two_mul_sqrt_of_not_dvd` are Ramanujan–Petersson in weight two.
+The fourth is already a CUT LEAF upstream
+(`exists_frickeSlash_eq_smul_of_isNewEigenformAt` in `X0.lean`). What is
+genuinely unbuilt is the Euler product — for which mathlib has
+`NumberTheory/EulerProduct/Basic.lean` and this file has the multiplicativity it
+needs — plus a page of algebra and a carrier reconciliation.
+
+**The generalisable check, and it is one `grep` of a book already on disk:
+when a docstring names a theorem in the literature AND prices the routes, open
+the cited proof and see which route it takes.** A cost estimate is written from
+the routes its author could recall; the cited source is the one place a
+different route is guaranteed to be written down. Here the recalled routes were
+the two famous ones and the actual one was in the same three pages as the
+statement the docstring quotes.
+
+Corollary about where such an estimate goes stale: absence claims about MATHLIB
+are frozen with the pin, but this verdict's real error was about `Fermat/` —
+`cuspFEPair`, the Satake parameters and the `L`-function all postdate it. The
+standing rule ([[flt-inventory-audits-understate-what-exists]]) applies to route
+estimates and not only to inventories, and the half that rots is always the
+project half.
