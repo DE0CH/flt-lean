@@ -165,6 +165,15 @@ leaves it moved to are, in dependency order:
   `isIso_modPullbackTensorComparison` in `AmpleSheaf.lean`, so hoisting it
   would move a leaf rather than remove one.
 
+  **Amended 2026-07-31: `nonempty_modPullback_modTensorPic` is PROVEN, and
+  the hoist is CANCELLED.**  Waiting for `AmpleSheaf.lean` was never
+  necessary: the sheafification half is free from the pin
+  (`SheafOfModules.sheafificationCompPullback` and
+  `SheafOfModules.pullbackIso`), and the leaf under it is now the purely
+  presheaf-level `nonempty_presheafModPullback_tensor`.  The route this
+  paragraph and the section header used to record was wrong in both
+  halves; see the section header immediately above that leaf.
+
   **Amended 2026-07-29: `exists_modTensor_inv` is now PROVEN**, and the
   leaf under it is `exists_modDual` — the dual sheaf `L^∨` with its
   evaluation pairing `L ⊗ L^∨ ⟶ 𝒪_Z`, asked for only up to LOCAL
@@ -252,6 +261,17 @@ of (pre)sheaves of modules at this pin to shortcut it —
 `grep -rln Monoidal Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/`
 returns `Monoidal.lean`, `PushforwardZeroMonoidal.lean` and
 `ColimitFunctor.lean`, none of them about `pullback`.
+
+**Amended 2026-07-31, and this WITHDRAWS the paragraph above it.**  The grep is
+still accurate and its conclusion was still wrong: the pin has no monoidal
+structure on the pullback, but it does have `SheafOfModules.pullbackIso` and
+`SheafOfModules.sheafificationCompPullback`, which is all the sheaf-level
+bookkeeping the leaf ever needed.  `nonempty_modPullback_modTensorPic` is now
+PROVEN over the presheaf-level `nonempty_presheafModPullback_tensor`, so the
+count is still 9 but with a DIFFERENT member, and there is no longer any leaf
+here that is "not a dispatch target".  The moral, worth keeping: a
+"mathlib does not have X" grep answers a question about X, never about whether
+the leaf needs X.
 
 The 8 → 9 in that chain is a SPLIT, not a regression:
 `smooth_isSeparated_of_isRelPicOf` was a conjunction of BLR 8.4/2 and BLR
@@ -507,7 +527,17 @@ inherits the whole block by import and is otherwise untouched.
 `nonempty_modPullback_modTensor` in `AmpleSheaf.lean` is proven only over
 the still-open `isIso_modPullbackTensorComparison` there.  **It must not be
 dispatched at independently** — hoisting it would drag that leaf up rather
-than remove one; the correct action is the hoist, once it is settled. -/
+than remove one; the correct action is the hoist, once it is settled.
+
+**Amended 2026-07-31 — the paragraph above is WITHDRAWN in full.**
+"Sheafification commutes with pullback" is not open and never was: it is
+`SheafOfModules.sheafificationCompPullback` in the pin.
+`nonempty_modPullback_modTensorPic` is PROVEN, the hoist is cancelled, and what
+is genuinely still open is the PRESHEAF-level
+`nonempty_presheafModPullback_tensor` — which is a statement about a filtered
+colimit on the site of opens and mentions no sheaf at all.  Its section header,
+just above it, also records the counterexample that shows it must NOT be
+generalised to an arbitrary continuous functor between sites. -/
 
 /-! #### Pseudo-functoriality of `modPullback` (PROVEN — free from the pin) -/
 
