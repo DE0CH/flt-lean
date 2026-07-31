@@ -9264,3 +9264,84 @@ Three things to carry:
   it is the half a declaration-level merge cannot carry for you.  Say in the branch
   report which declarations you removed from where; that note is the only thing
   standing between the hoist and this.
+
+## STATE A BASE-CHANGE LEMMA OVER AN **ABSTRACT CARTESIAN SQUARE** — the "transport along an iso" twin is then the `𝟙` instance, free
+
+(2026-07-31, `flt-lean-260`, `ModularCurve/RelativePicard.lean`.)  A leaf's route
+named TWO sublemmas as owed — *`IsRelPicOf` is stable under base change of the base*
+and *`IsRelPicOf` transports along an isomorphism of representing objects over the
+base* — and priced them as "both routine".  They are **one lemma**, and seeing that
+before writing either saved the second.
+
+The move is to state the base-change lemma with `IsPullback` hypotheses instead of
+with mathlib's chosen `pullback`:
+
+    theorem IsRelPicOf.ofIsPullback (hP : IsRelPicOf strX pstr)
+        (hX  : IsPullback φ strX' strX h)      -- the CURVE is base-changed
+        (hPb : IsPullback ψ pstr' pstr h) :    -- the REPRESENTING OBJECT is too
+        IsRelPicOf strX' pstr'
+
+Then `h := 𝟙 S`, `φ := 𝟙 X`, `ψ := e.hom` gives transport along an isomorphism, because
+an iso IS a pullback along the identity — `IsPullback.of_id_fst` and
+`IsPullback.of_horiz_isIso` supply the two squares, and the corollary is three lines.
+Three payoffs, and the second is the one that is easy to miss:
+
+* **the consumer's square is usually a PASTING, not a chosen pullback.**  Here the
+  curve side is `X ×_S U = (X ×_S V) ×_V U`, which the tree already had as an
+  `IsPullback` (`isPullback_curveBaseChangeMap`); in `pullback` form every use would
+  have paid a transport;
+* **the internal isomorphism comes out canonical and pinned.**  `IsPullback.isoPullback`
+  of the pasted square is THE map into a pullback, so `isoPullback_hom_fst`/`_hom_snd`
+  determine it, and every later identity about it — naturality in the test object,
+  and the cocycle a gluing needs — is one `pullback.hom_ext`;
+* **no `pullback.map`/`pullbackLeftPullbackSndIso` juggling appears anywhere.**
+
+For a structure whose fields quantify over relative points, the recipe that made all
+five fields go through first try: a point bijection `RelPoint pstr' k ≃ RelPoint pstr (k ≫ h)`
+(compose with `ψ` one way, `hPb.lift` the other), a curve comparison
+`curveBaseChange strX' k ≅ curveBaseChange strX (k ≫ h)` (paste, then `isoPullback`),
+and ONE generalised transport lemma for the file's equivalence relation, stated for an
+arbitrary morphism of base-changed curves lying over an arbitrary morphism of bases.
+That last generalisation is worth taking even when you only need the `u = 𝟙` case:
+`relPicEquiv_modPullback` already existed for `curveBaseChangeMap`, and its proof never
+used anything about `curveBaseChangeMap` except one commuting square, so generalising it
+cost a copy-paste and made the iso case an instance rather than a rival development.
+
+**And the cost that remains after all this is BOOKKEEPING, not mathematics — say so.**
+The residual leaf here is the functoriality of `U ↦ P_U`, and every identity in it is a
+`pullback.hom_ext`; what makes it large is that `curveBaseChange strX g` for
+propositionally-equal `g` are propositionally and not definitionally equal SCHEMES, so a
+cocycle across three opens is a pile of `eqToIso`.  A route note that says "functoriality
+is FORCED rather than checked" is right about the mathematics and silent about that, which
+is how the leaf came to be priced as small.
+
+## `main` CAN BE A DIVERGENT TOOLING BRANCH WHILE THE FLEET IS BASED ON A RELEASE COMMIT ON `merger`
+
+(2026-07-31, measured.)  Every rule in this file about staleness assumes `main` is the
+last green RELEASE and that being behind means being an ancestor.  On this day neither
+held: `main` was `5162faa1`, a run of `flt-loop:` tooling commits, and
+
+    git merge-base --is-ancestor <release 27 tip> main   ->  FALSE
+    git merge-base --is-ancestor main merger             ->  TRUE
+
+i.e. `main` sits on a side branch that `merger` has since merged, and releases 27 and 28
+exist **only on `merger`**.  A worktree advanced to `main` therefore does not contain a
+target that was cut two releases ago, and the usual diagnosis — "my worktree is behind,
+`git merge --ff-only main`" — silently does nothing about it.
+
+The cheap way to find the base the rest of the fleet is actually on, without trusting any
+branch name:
+
+    git merge-base flt-lean-<some other live worktree> flt-lean-<another>
+
+That returned the release-27 tip directly.  Then pick the **last COMPLETED release** on
+`merger`, not `merger` itself: the loop log said `row 21  merger HELD the release (red
+build)`, so `merger`'s head was mid-release-29 and red, while release 28's tip
+(`e110bcba`, one commit before the first `release 29:` subject) is the newest point that
+was built green.  `git merge <that sha>` put the worktree where the fleet is.
+
+Corollary for `~/.flt-release-lake`: its `sha` can be OLDER than the base you need
+(`7080929d` here, which predates release 27), so a green scratch elaborated against that
+snapshot proves nothing about declarations added since.  Check
+`git merge-base --is-ancestor $(cat ~/.flt-release-lake/sha) <your base>` before using the
+snapshot as an olean source, and rebuild rather than shim when it comes back stale.
