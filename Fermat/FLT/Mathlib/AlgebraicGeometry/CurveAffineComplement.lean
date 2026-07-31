@@ -46,9 +46,17 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
   `Γ(X, U)` classifies a `K`-morphism `U ⟶ 𝔸¹_K`.  Pure `Γ ⊣ Spec` adjunction
   (`ΓSpecIso_inv_ΓSpec_adjunction_homEquiv`, `ext_to_Spec`), and it is what lets both
   Riemann–Roch sub-leaves below be about SECTIONS rather than morphisms.
-* `exists_notIsIntegralElem_section_compl_singleton` — **sorry leaf, RIEMANN–ROCH**, and after
-  the 2026-07-31 cut this is all Riemann–Roch is asked for: ONE element of `Γ(X, X ∖ {z})` not
-  integral over `K`.  No morphism, no `𝔸¹`, no quasi-finiteness.
+* `exists_germToFunctionField_eq_of_forall_isInteger`, `functionFieldHom`,
+  `structHom_comp_germToFunctionField`, `notIsIntegralElem_of_germToFunctionField` —
+  **PROVEN 2026-07-31, no sorry**: the bridge `Γ(X, U) = ⋂_{x ∈ U} 𝒪_{X,x}` between the
+  function field and sheaf sections, and the `K`-algebra structure on `K(X)` it is measured
+  against.  Absent from the pin.
+* `exists_forall_isInteger_notIsIntegralElem_functionField` — **sorry leaf, RIEMANN–ROCH, and
+  after two cuts the ONLY open leaf in this file**: one element of `K(X)` lying in the local ring
+  at every point other than `z` and not integral over `K`.  That is `L(n·[z]) ⊋ K` with the `n`
+  suppressed.  No morphism, no `𝔸¹`, no quasi-finiteness, and no sheaf.
+* `exists_notIsIntegralElem_section_compl_singleton` — **PROVEN 2026-07-31** over that leaf and
+  the bridge: the same thing packaged as a SECTION of `Γ(X, X ∖ {z})`.
 * `coordHom_apply_eq_eval₂`, `base_genericPoint_asIdeal_eq_bot`,
   `finite_of_isClosed_of_forall_isClosed_singleton` — **PROVEN 2026-07-31, no sorry**.  The
   middle one is the CONVERSE of the pole argument's MOVE 3: a nonconstant section sends the
@@ -144,8 +152,8 @@ proven here over exactly two named sub-leaves, along the Zariski's-main-theorem 
   `not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton`, is now sorry-free.
 
 **So as of 2026-07-31 the file has exactly ONE open leaf,
-`exists_notIsIntegralElem_section_compl_singleton` — RIEMANN–ROCH, asking for a single
-nonconstant section of `Γ(X, X ∖ {z})` and nothing else.**  Everything else here, the whole
+`exists_forall_isInteger_notIsIntegralElem_functionField` — RIEMANN–ROCH, asking for a single
+nonconstant rational function with poles only at `z` and nothing else.**  Everything else here, the whole
 compactification half and the whole quasi-finiteness half, is sorry-free.
 
 and the glue between them, which is what this file newly PROVES:
@@ -396,14 +404,131 @@ theorem exists_toAffineLine_coordOf_eq {K : Type u} [Field K] {X : Scheme.{u}}
     rw [hφ, Polynomial.algebraMap_eq]
     exact Polynomial.eval₂_C _ _
 
-/-- **RIEMANN–ROCH, AND AFTER THE 2026-07-31 CUT IT IS ALL THAT IS ASKED OF IT: a NONCONSTANT
-SECTION** (sorry leaf, cut out of `exists_locallyQuasiFinite_toAffineLine_compl_singleton`
-below, which is now PROVEN over this and one sibling).
+/-- **A RATIONAL FUNCTION LYING IN EVERY LOCAL RING OF `U` COMES FROM A SECTION ON `U`**
+(PROVEN 2026-07-31, no sorry) — i.e. `Γ(X, U) = ⋂_{x ∈ U} 𝒪_{X,x}` inside `K(X)`, for `X`
+integral.
 
-No morphism, no `𝔸¹`, no quasi-finiteness: one element of `Γ(X, X ∖ {z})` that is not integral
-over `K`.  On a geometrically connected `X` "not integral over `K`" is exactly "nonconstant",
-since the algebraic closure of `K` in `K(X)` is then `K` itself — so this is the classical
-statement and nothing more.
+This is the bridge between the function-field language, which is what a Riemann–Roch argument
+produces, and the sheaf-section language, which is what this file's consumers want.  It is
+absent from the pin.
+
+The proof is the sheaf axiom over the cover of `U` by neighbourhoods on which `f` is a section:
+each `x ∈ U` contributes an open `V x ∋ x` and `t x ∈ Γ(X, V x)` with `germ_x (t x) = f`
+(`TopCat.Presheaf.exists_germ_eq`, intersected with `U`).  Compatibility is where integrality is
+used TWICE: any two of the `V x` MEET, because a nonempty open of an irreducible space is dense
+(`nonempty_preirreducible_inter`), and on the overlap the two restrictions have the same image in
+`K(X)` — namely `f` — so they are equal because `Scheme.germToFunctionField_injective` is
+injective on a nonempty open.  Without irreducibility the overlap could be empty and the argument
+would say nothing.
+
+`exists_res_eq_of_germ_eq` below is the special two-open case, cut earlier the same day for the
+pole argument; this is the general one and does not subsume it (that one glues two given sections
+agreeing at a point, this one glues a family produced from a single rational function). -/
+theorem exists_germToFunctionField_eq_of_forall_isInteger {X : Scheme.{u}} [IsIntegral X]
+    (U : X.Opens) [Nonempty U] (f : X.functionField)
+    (h : ∀ x ∈ U, ∃ a : X.presheaf.stalk x,
+      algebraMap (X.presheaf.stalk x) X.functionField a = f) :
+    ∃ s : Γ(X, U), X.germToFunctionField U s = f := by
+  classical
+  -- choose, for each point of `U`, an open neighbourhood inside `U` and a section equal to `f`
+  have hchoice : ∀ i : ↥U, ∃ (V : X.Opens) (_ : (i : X) ∈ V) (_ : V ≤ U) (t : Γ(X, V)),
+      ∀ (_ : Nonempty V), X.germToFunctionField V t = f := by
+    rintro ⟨x, hxU⟩
+    obtain ⟨a, ha⟩ := h x hxU
+    obtain ⟨W, hxW, t, ht⟩ := X.presheaf.exists_germ_eq a
+    refine ⟨W ⊓ U, ⟨hxW, hxU⟩, inf_le_right,
+      X.presheaf.map (homOfLE (inf_le_left : W ⊓ U ≤ W)).op t, fun hV => ?_⟩
+    haveI : Nonempty (W ⊓ U : X.Opens) := hV
+    have hx' : x ∈ W ⊓ U := ⟨hxW, hxU⟩
+    have h1 : X.presheaf.germ (W ⊓ U) x hx'
+        (X.presheaf.map (homOfLE (inf_le_left : W ⊓ U ≤ W)).op t) = a := by
+      rw [X.presheaf.germ_res_apply]; exact ht
+    have h2 := Scheme.algebraMap_germ_eq_germToFunctionField (X := X) (U := W ⊓ U) hx'
+      (X.presheaf.map (homOfLE (inf_le_left : W ⊓ U ≤ W)).op t)
+    rw [h1, ha] at h2
+    exact h2.symm
+  choose V hxV hVU t ht using hchoice
+  -- the sections agree on overlaps, because both map to `f` in the function field
+  have hcompat : TopCat.Presheaf.IsCompatible X.sheaf.1 V t := by
+    intro i j
+    haveI : Nonempty (V i) := ⟨⟨(i : X), hxV i⟩⟩
+    haveI : Nonempty (V j) := ⟨⟨(j : X), hxV j⟩⟩
+    have hmeet : ((V i ⊓ V j : X.Opens) : Set X).Nonempty :=
+      nonempty_preirreducible_inter (V i).isOpen (V j).isOpen
+        ⟨(i : X), hxV i⟩ ⟨(j : X), hxV j⟩
+    haveI : Nonempty ((V i ⊓ V j : X.Opens)) := ⟨⟨hmeet.choose, hmeet.choose_spec⟩⟩
+    refine X.germToFunctionField_injective (V i ⊓ V j) ?_
+    have e1 : X.germToFunctionField (V i ⊓ V j)
+        (X.presheaf.map (Opens.infLELeft (V i) (V j)).op (t i)) = f := by
+      rw [X.presheaf.germ_res_apply]
+      exact ht i inferInstance
+    have e2 : X.germToFunctionField (V i ⊓ V j)
+        (X.presheaf.map (Opens.infLERight (V i) (V j)).op (t j)) = f := by
+      rw [X.presheaf.germ_res_apply]
+      exact ht j inferInstance
+    exact e1.trans e2.symm
+  -- glue over the cover
+  have hcov : U ≤ iSup V := fun x hx => Opens.mem_iSup.mpr ⟨⟨x, hx⟩, hxV ⟨x, hx⟩⟩
+  obtain ⟨s, hs, -⟩ :=
+    X.sheaf.existsUnique_gluing' V U (fun i => homOfLE (hVU i)) hcov t hcompat
+  refine ⟨s, ?_⟩
+  obtain ⟨u, hu⟩ : ((U : Set X)).Nonempty := by
+    obtain ⟨i⟩ := ‹Nonempty U›
+    exact ⟨i.1, i.2⟩
+  set i : ↥U := ⟨u, hu⟩ with hi
+  haveI : Nonempty (V i) := ⟨⟨(i : X), hxV i⟩⟩
+  have hti := ht i inferInstance
+  rw [← hti, ← hs i]
+  exact (X.presheaf.germ_res_apply _ _ _ s).symm
+
+/-- **The `K`-algebra structure `strX` puts on the FUNCTION FIELD** — `structHom` at `⊤`,
+followed into `K(X)`.  It is what "nonconstant" is measured against in the leaf below. -/
+noncomputable def functionFieldHom {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [IrreducibleSpace X]
+    [Nonempty (⊤ : X.Opens)] : CommRingCat.of K ⟶ X.functionField :=
+  (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop ≫ X.germToFunctionField ⊤
+
+/-- **`structHom` at any `U` agrees with `functionFieldHom`** (PROVEN, no sorry): one
+`TopCat.Presheaf.germ_res`, since a germ at the generic point does not see the restriction. -/
+theorem structHom_comp_germToFunctionField {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [IrreducibleSpace X]
+    [Nonempty (⊤ : X.Opens)] (U : X.Opens) [Nonempty U] :
+    structHom strX U ≫ X.germToFunctionField U = functionFieldHom strX := by
+  rw [structHom, functionFieldHom, Category.assoc, Category.assoc]
+  congr 2
+  exact X.presheaf.germ_res (homOfLE (le_top : U ≤ ⊤)) _ _
+
+/-- **Nonconstancy transports from the function field back to a section** (PROVEN, no sorry) —
+the direction the decomposition needs, and the easy one: a monic equation satisfied by the
+section is carried into `K(X)` by the ring map `germToFunctionField`.  (The converse would need
+injectivity, which is true but not required here.) -/
+theorem notIsIntegralElem_of_germToFunctionField {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [IrreducibleSpace X]
+    [Nonempty (⊤ : X.Opens)] (U : X.Opens) [Nonempty U] (s : Γ(X, U))
+    (hf : ¬ (functionFieldHom strX).hom.IsIntegralElem (X.germToFunctionField U s)) :
+    ¬ (structHom strX U).hom.IsIntegralElem s := by
+  rintro ⟨p, hpm, hp0⟩
+  refine hf ⟨p, hpm, ?_⟩
+  have hc : ((X.germToFunctionField U).hom.comp (structHom strX U).hom) =
+      (functionFieldHom strX).hom :=
+    congrArg CommRingCat.Hom.hom (structHom_comp_germToFunctionField strX U)
+  rw [← hc, ← Polynomial.hom_eval₂, hp0, map_zero]
+
+/-- **RIEMANN–ROCH, AND AFTER TWO CUTS THIS IS THE WHOLE OF WHAT IS ASKED OF IT: a NONCONSTANT
+RATIONAL FUNCTION WITH POLES ONLY AT `z`** (sorry leaf, and the ONLY one left in this file).
+
+No morphism, no `𝔸¹`, no quasi-finiteness, and since 2026-07-31 no SHEAF SECTION either: one
+element `f` of the FUNCTION FIELD `K(X)`, lying in the local ring at every point other than `z`,
+and not integral over `K`.  On a geometrically connected `X` "not integral over `K`" is exactly
+"nonconstant", since the algebraic closure of `K` in `K(X)` is then `K` itself — so this is the
+classical statement and nothing more.
+
+**This is exactly `L(n·[z]) ⊋ K` for some `n`**, phrased without naming `n`: "regular away from
+`z`" is the first clause and "nonconstant" is the second.  It is the shape an `ord`-based
+argument produces directly, which is why the cut is here — see the inventory below, and note that
+the first clause is equivalent to `0 ≤ Scheme.ord f x` for all `x ≠ z`, the stalks being DVRs
+(`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`).  Either form may be used; the
+`IsInteger` form is stated because it needs no coheight side conditions.
 
 TRUE and classical.  `X` is a smooth proper geometrically connected curve over `K`, so it has a
 genus `g`, and Riemann–Roch gives `dim_K L(n·[z]) = n·deg[z] − g + 1` for `n·deg[z] > 2g − 2`.
@@ -424,7 +549,7 @@ still true but for a different reason, and the intended proof consumes propernes
 genus.
 
 NOT VACUOUS: for `X` the projective model of an elliptic curve over `ℚ` and `z` the point at
-infinity, `x` (the first Weierstrass coordinate) is such a section.
+infinity, `x` (the first Weierstrass coordinate) is such a rational function.
 
 ## WHAT THE PIN ACTUALLY HAS, read rather than grepped (2026-07-31)
 
@@ -478,14 +603,45 @@ is `≥ 0` at every point of an open `U` is the germ of an actual SECTION in `Γ
 two-open case of the gluing that argument needs; the general case is the same
 `TopCat.Sheaf.existsUnique_gluing'` over an affine cover, plus the commutative-algebra fact that
 a noetherian domain is the intersection of its localisations at primes. -/
+theorem exists_forall_isInteger_notIsIntegralElem_functionField
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX] [IsIntegral X]
+    [Nonempty (⊤ : X.Opens)]
+    (hconn : GeometricallyConnected strX)
+    {z : X} (hz : IsClosed ({z} : Set X)) :
+    ∃ f : X.functionField,
+      (∀ x ∈ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens),
+        ∃ a : X.presheaf.stalk x, algebraMap (X.presheaf.stalk x) X.functionField a = f) ∧
+      ¬ (functionFieldHom strX).hom.IsIntegralElem f :=
+  sorry
+
+/-- **The same thing as a SECTION of `Γ(X, X ∖ {z})`** (PROVEN 2026-07-31 over the leaf above and
+`exists_germToFunctionField_eq_of_forall_isInteger`).
+
+This used to be the Riemann–Roch leaf itself.  It is now three lines: take the rational function,
+glue it into a section — every hypothesis of the gluing bridge is exactly the leaf's first clause
+— and transport nonconstancy along `germToFunctionField`.  The point of the cut is that a
+Riemann–Roch prover now never touches a sheaf. -/
 theorem exists_notIsIntegralElem_section_compl_singleton
     {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [IsProper strX] [SmoothOfRelativeDimension 1 strX]
     (hconn : GeometricallyConnected strX)
     {z : X} (hz : IsClosed ({z} : Set X)) :
     ∃ f : Γ(X, (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)),
-      ¬ (structHom strX (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)).hom.IsIntegralElem f :=
-  sorry
+      ¬ (structHom strX (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)).hom.IsIntegralElem f := by
+  haveI : IsIntegral X :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
+  haveI : Nonempty (⊤ : X.Opens) := ⟨⟨Classical.arbitrary X, trivial⟩⟩
+  haveI : Infinite X := infinite_of_smoothOfRelativeDimension_one strX
+  haveI : Nonempty (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) := by
+    have h : (({z}ᶜ : Set X)).Nonempty :=
+      ((Set.Finite.infinite_compl (Set.finite_singleton z)).nonempty)
+    exact ⟨⟨h.choose, h.choose_spec⟩⟩
+  obtain ⟨f, hint, hni⟩ :=
+    exists_forall_isInteger_notIsIntegralElem_functionField strX hconn hz
+  obtain ⟨s, hs⟩ := exists_germToFunctionField_eq_of_forall_isInteger
+    (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) f hint
+  exact ⟨s, notIsIntegralElem_of_germToFunctionField strX _ s (by rw [hs]; exact hni)⟩
 
 /-- **`coordHom` IS `eval₂` AGAINST `structHom` AND `coordOf`** (PROVEN 2026-07-31, no sorry).
 
