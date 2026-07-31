@@ -5,6 +5,121 @@ This repository was split out of Deyao's dissertation repo on
 history of the formalization is preserved. The project root IS the
 Lean package (formerly the `fermat/` subfolder).
 
+## AN EXISTENTIALLY-QUANTIFIED CONSTANT CARRIES NO ANALYSIS — and the PROVEN theorem below you may depend on your leaf
+
+(2026-07-31, `flt-lean-92`, `Modularity/TateModule.lean`.) Two traps, one leaf, and the
+first of them is worth checking on every leaf in this tree whose conclusion contains a
+real number.
+
+**1. `∃ C : ℝ, … ≤ C` IS NOT A BOUND.** `exists_boundedLevelScalar_atPrime_finiteBase` was
+titled *"THE RIEMANN HYPOTHESIS FOR `A'`"*, cited Weil 1948, Mumford §19 and Tate 1966,
+and its docstring told a prover the residue needed `#A'(k_m) = deg(F^m − 1)` and
+**positivity of the Rosati involution**. Its conclusion is
+
+    ∃ C : ℝ, ∀ n, ∃ u, u − s n ∈ Iⁿ ∧ ∀ φ : D →+* ℂ, ‖φ u‖ ≤ C
+
+and the docstring itself says `C = 2√N` is the sharp value *"but the constant is left
+EXISTENTIAL because nothing downstream uses it"*. **That clause destroys the analysis.**
+`D →+* ℂ` is a FINITE type for a number field (`NumberField.Embeddings` registers the
+`Fintype`), so the moment a single global `t` exists, `Set.range (fun φ => ‖φ t‖)` is a
+finite set of reals, `Set.Finite.bddAbove` hands you `C`, and the archimedean clause is
+five lines with no arithmetic in it. What is left is *"the trace of Frobenius is a global
+algebraic integer"* — Weil's **rationality** half, which follows from finite generation of
+the endomorphism module and has nothing archimedean in it. Rationality and the Riemann
+hypothesis are a whole theory apart, and the leaf was advertising the wrong one.
+
+**The check is mechanical and takes a minute: instantiate the existential yourself.** If
+the bounded object is a SINGLE object (not a family), or the index set is finite, or the
+constant may depend on everything in sight, then the bound is decoration and the content
+is whatever produces the object. Sharp constants only carry content when something
+downstream reads them — and a docstring that says nothing does is telling you so.
+
+**2. A PROVEN THEOREM 1000 LINES BELOW YOU MAY BE PROVEN *OVER* YOUR LEAF.** This file's
+own "A LEAF CAN BE CLOSED BY MOVING CODE" and "A DECLARATION-ORDER LEAF CLOSES BY MOVING"
+sections say to grep below for a proven counterpart. Here there was one, and it was
+perfect: `exists_frobEndoCharEq_of_mult_finiteBase`, PROVEN, ~1050 lines down, whose
+conclusion subsumes the leaf at every geometric point, differing only in carrying `hdim'`
+where the leaf carries `htower`. Everything about it reads as a hoist plus a bridge.
+
+It is **circular**: it is proven over `exists_frobTraceAct_of_mult_finiteBase`, which
+calls `exists_frobLevelTrace_of_mult_finiteBase`, which calls
+`…_of_levelScalar_…` → `…_of_coherentLevelScalar_…` → the leaf. Five hops, none of them
+visible in either docstring — both describe their own cut and neither mentions the other.
+
+**So the declaration-order check is not `grep -n` on line numbers; it is the CALL GRAPH.**
+Before treating a below-you theorem as a hoist, grep the file for YOUR leaf's name and
+follow every hit that is a call site, not prose:
+
+    grep -n '<yourLeafName>' <file> | grep -v '`'      # call sites, then their callers
+
+If a path comes back to the candidate, the ordering is not an accident of layout — it is
+the dependency, and no relocation can fix it.
+
+**Corollary about equivalence, which is what the two checks together established.** Once
+the archimedean clause was known free, the leaf turned out to be *equivalent* to the
+conclusion of a theorem 200 lines below it — one direction already in the file, the other
+proved in six seconds — with the hypothesis that separates them (`hlev`) derivable inline
+from machinery already present. A leaf that is provably interchangeable with a downstream
+theorem is not thereby closable; but say so in the docstring, because it doubles the
+shapes a prover may attack and it stops the next agent re-deriving the equivalence. And
+name the inline step: `hlev` here was STEP 2 of a 200-line proof, invisible from outside
+until it was pulled out as `exists_frobLevelScalar_of_levelTateFrame_finiteBase`.
+
+## A RED UPSTREAM MODULE DOES NOT BLOCK A CUT THROUGH IT — SHIM THE RELEASE OLEAN, AFTER DIFFING THE ONE NAME YOU USE
+(2026-07-31, `flt-lean-389`, on `exists_cubeModel_pic_of_infinite`.) The cheapest correct
+cut of a leaf routinely runs through a theorem in another module — here, closing
+`HyperellipticJacobian.lean`'s geometric Mordell–Weil half by importing `X0.lean`'s PROVEN
+`exists_cubeModel_of_abelianScheme` instead of re-cutting the same sheaf-level obligation.
+**That module can be RED at your base**, and it was: `X0.lean` at `merger` `9e7f6e4b` fails
+with **103 errors** (release 27 did not publish; `merger` has since gained
+`1ead8a94 … why it did not publish, and the X0 repair method`). The obvious readings —
+"take the other cut", "wait for the repair", "commit unverified" — are all wrong.
+**Verify against the RELEASE SNAPSHOT's olean.** `~/.flt-release-lake/build` holds the
+last green build and `~/.flt-release-lake/sha` names its commit. Your edit is checkable
+against it **exactly when every name your new text takes from the red module has a
+byte-identical STATEMENT at that sha and at your HEAD** — one `git show` per name:
+    for R in $(cat ~/.flt-release-lake/sha) HEAD; do
+      git show $R:<the red module> | grep -A6 "^theorem <the one name you use>"; done
+Here that was a single name and the two outputs matched character for character, so the
+shim proves what a real build would. Then (per the existing shim recipe) farm YOUR
+worktree's current, mutually consistent oleans and override only the red module:
+    cp -rs /scratch/chend-flt/flt-lean-N/.lake/build/lib/lean /tmp/relean-N/
+    rm -f /tmp/relean-N/lean/<path>/X0.olean*
+    cp -f ~/.flt-release-lake/build/lib/lean/<path>/X0.olean* /tmp/relean-N/lean/<path>/
+    LP=$(lake env printenv LEAN_PATH); LSP=$(lake env printenv LEAN_SRC_PATH)
+    LEAN_PATH="/tmp/relean-N/lean:$LP" LEAN_SRC_PATH="$LSP" lean <your file>
+**Two conditions make this sound rather than wishful, and both must be checked:**
+* *the farm must be internally consistent* — take the CURRENT build as the base and
+  override ONE module, not the other way round. A wholesale release-era farm would compile
+  your file against release-era versions of its other dependencies; here three of the
+  target's dependencies had changed since the snapshot, so that would have proved nothing;
+* *the overridden olean's own dependencies must not have moved under it*. `git diff` the
+  STRUCTURES your borrowed theorem's statement mentions — not the whole files. Here
+  `ProjectiveHeight.lean` and `AbelianScheme.lean` had both changed, but `CubeModel`,
+  `AbelianSchemeStruct` and `RelPoint` were untouched (the diffs were an added theorem and
+  an unrelated pairing repair), which is what makes loading the old `X0.olean` beside the
+  new ones safe.
+**And weigh the marginal damage before adding the edge at all.** A green module gaining an
+import of a red one sounds reckless; compute who is downstream. `HyperellipticJacobian`'s
+only consumer is `MazurTorsion.lean`, which already `public import`s `X0.lean`, so while
+`X0` is red that consumer is red anyway and the marginal cost of the new edge is exactly
+one module's warning set. If instead the red module sits under something that still builds,
+do not add the edge.
+Two riders from the same run:
+* **Put a one-consumer helper DOWNSTREAM, not beside the structure it is about.**
+  `CubeModel.congr` (transport of a `CubeModel` along an `AddEquiv`) belongs in
+  `ProjectiveHeight.lean` next to `CubeModel`. It is in `HyperellipticJacobian.lean`
+  instead, because `ProjectiveHeight.lean` is `public import`ed by `X0.lean`, so touching
+  it rebuilds the largest module in the tree — **and the rebuild had already been started
+  and would have had to be thrown away.** Dot notation is the price (`cubeModelCongr cm e`
+  rather than `cm.congr e`, since a declaration made inside `Fermat.Hyperelliptic` cannot
+  extend the `Fermat.CubeModel` namespace); say in the docstring where it belongs and what
+  would justify the hoist.
+* **A non-public `import` is the right edge for a proof-only dependency, and it is worth
+  spelling out why in the import block.** `X0.lean`'s 107 000 lines of names are used here
+  only inside one theorem BODY, which a private import reaches; making it `public` would
+  re-export all of them through a module whose consumer already has them. What the edge
+  still costs is BUILD ORDER, and that is the thing to justify.
 ## THE DEGENERATE OBJECT REFUTES EVERY UNGUARDED PERFECTNESS CLAUSE
 
 (2026-07-31.) `exists_tateWeilRawFamily_of_qAdicWeilSystem` was refuted with no
@@ -251,6 +366,45 @@ And `lake` is **not on `PATH`** in a fresh agent shell even when running locally
 host — `export PATH="$HOME/.elan/bin:$PATH"` first, or the build dies instantly with
 `lake: command not found` and an `EXIT=127` that is easy to misread as a build failure.
 
+## `merger` CAN BE RED — never base a branch on it without building it first
+(2026-07-31, cost one agent ~90 minutes.) A task prompt described the "STATE OF
+THE ART" using facts that exist only on `merger` (a structure field `smoothM`
+added on 2026-07-30, and an audit written the same day). The obvious inference —
+"so I must work from `merger`, otherwise the premise of my task is absent" — is
+what the *previous* release windows had taught. It was wrong that day, and the
+failure mode is worth stating because it is invisible from the task prompt:
+**`merger` is a work-in-progress tree, not a better `main`.** Release 27 was
+NOT published precisely because `ModularCurve/X0.lean` had not built since
+release 25 and still had ~193 errors after nine repairs. `main` was
+deliberately left at the last GREEN release, and
+`~/.flt-release-lake/build` still matches it. So on `merger`:
+* `lake build <anything importing X0>` fails with hundreds of errors that are
+  none of your business and that you must not "fix";
+* the release-artifact seed does not match the tree, so the "51 seconds"
+  figure a prompt quotes becomes a multi-hour rebuild of ~5000 modules;
+* you cannot verify anything, and an unverified structural edit is worth less
+  than no edit.
+**The rule: build before you trust a branch, and prefer `main`.** `main` is the
+only tree guaranteed to pair with `~/.flt-release-lake/build`. If your task's
+premise is merger-only, do the work against `main` anyway (the declarations and
+the plumbing sites almost always exist there too, just at an earlier state),
+verify it green, and put a precise conflict note in `to_merger` saying where the
+two edits collide and how to resolve them. A verified change on `main` plus a
+merge note beats an unverified change on `merger`.
+Two mechanical consequences, both hit the same day:
+* `queue1` records `AUDITED: <sha of main>`. **That sha is the tree the loop
+  expects you to work in.** Check it (`head -1 ~/.flt-loop/queue1`) against your
+  worktree's HEAD before deciding what to base on — it is the cheapest possible
+  disambiguation and it is authoritative.
+* If you have already advanced a worktree to `merger` and built, `git reset
+  --hard main` is not enough: `.lake/build` is then a mix of merger-built and
+  release-snapshot oleans and lake will rebuild everything back. **Re-run the
+  seed** (`rsync -a --delete ~/.flt-release-lake/build/ .lake/build/`) before
+  building; it takes seconds warm and saves hours.
+Also: `lake` is not on `PATH` in a fresh agent shell. Every build line needs
+`export PATH="$HOME/.elan/bin:$PATH"` first, or it dies with
+`lake: command not found` and `EXIT=127` — which reads like a broken worktree
+and is not one.
 ## Missing tools: brew install is pre-authorized
 
 (Deyao, 2026-07-21.) If a needed tool is missing and available through
@@ -1191,6 +1345,44 @@ mine would have traded a closed leaf for an open one plus a large conflict. Say 
 the sentinel's `to_merger`, so that an empty or tooling-only diff is not read as the
 dropped-merge bug of class six.
 
+**AND THE MERGER-CHECK CAN CONFIRM YOUR LEAF IS OPEN WHILE ITS PROOF SITS 260 LINES
+ABOVE IT IN THE SAME FILE** (2026-07-31, `flt-lean-82`).
+
+The variant the rule above does not cover: the name IS on `merger`, it IS still
+`sorry`, and the answer is still wrong — because a SECOND declaration with the
+IDENTICAL statement under a DIFFERENT name is proven earlier in the same file.
+`mem_idl_of_X7_mul_mem` (`sorry`, line 689) and `mem_idl_of_Pz_mul_mem` (PROVEN,
+line 423) in `ProjectiveEquationAdd2.lean` are character-for-character the same
+proposition. Two branches decomposed `idl_isPrime` the same way under different
+names; a union-style conflict resolution kept both blocks, so the file carries the
+whole decomposition twice — the saturation half is duplicated too
+(`exists_pow_Pz_mul_mem_idl` / `exists_pow_X7_mul_mem_idl`, both open).
+
+This is the worst shape the merger-check takes, because it does not fail: it
+returns a positive, correctly-quoted `sorry` at the right line, and every
+subsequent step — the task prompt's route, the section docstring, the sorry-warning
+count — agrees with it. Nothing anywhere says "look for this under another name".
+
+So when the merger-check finds your leaf open, do not stop there. **Read the
+enclosing section, and grep for the STATEMENT rather than the name:**
+
+    git show merger:<the file> > /tmp/x.lean
+    grep -n '∈ idl' /tmp/x.lean          # a distinctive fragment of the CONCLUSION
+    grep -n '^theorem' /tmp/x.lean       # then scan the section for near-twins
+
+A duplicate block announces itself in the declaration list — two `idl_ne_top`-shaped
+runs of the same shape, or one file with two "### Half two" section headings. In this
+file the module docstring named the `X7` pair while the proven pair was `Pz`-named,
+which is exactly the tell.
+
+What to do when you find it: **delegate, do not re-prove.** Replace your `sorry` with
+a one-line application of the existing proof, say in the docstring that the
+declaration is a duplicate slated for deletion, and put the deletion in `to_merger`.
+Do NOT delete the twin of a leaf that has its own live owner — deleting
+`exists_pow_X7_mul_mem_idl` here would have destroyed another agent's in-flight
+target for the sake of tidiness. Closing your own by delegation costs one line and
+conflicts with nobody.
+
 ## A LINE-NUMBER MISMATCH IN YOUR TASK PROMPT MEANS YOUR WORKTREE IS STALE — not that the leaf is gone
 
 (2026-07-31, `flt-lean-23`.) A task named three leaves at `X1.lean:13442`, `:13465`,
@@ -1374,6 +1566,136 @@ phase 2 needs the staging worktree quiet. If the order is ever wrong again, phas
 so every worktree IS advanced to the release, and the only thing missing is artifacts. Agents own
 their own `.lake` and can rebuild; the loss is throughput, not correctness.
 
+## TWO RIVAL CUTS OF ONE CLUSTER, BOTH MERGED, IS A CYCLE THAT LOOKS LIKE TWO INDEPENDENT SORRIES
+
+(2026-07-31, `flt-lean-334`, `HopfAlgebra/ShortExact.lean`.) The task said "`flat_finrank_cartierDual`
+is the ONLY sorry in that file". On `merger` the file had **two**, and the second was not a new leaf
+— it was the *old* root of the same cluster, re-introduced by merging a branch that predated the
+re-cut. Both routes were mathematically fine. Together they were a **cycle**:
+
+    route A:  exists_lift_span_sup_jacobson  ->  exists_lift_ker_le_span  ->  exists_spanning
+                                             ->  exists_basis_cartierDual
+    route B:  flat_finrank  ->  nonempty_basis_chooseBasisIndex  ->  exists_lift_ker_le_span  -> ...
+
+Each route derives the other's root from its own. Lean cannot see the cycle, because declaration
+order breaks it: whichever root is textually first is a `sorry` and the other is "open" too, so the
+file simply carries **two** obligations where it should carry one. Nothing is red. No frontier scan
+flags it. Every `declaration uses 'sorry'` warning is honest. It reads as ordinary decomposition
+progress, and it is the exact opposite — the merge DOUBLED what the file owes.
+
+**The tell is that the two sorries are visibly about the same mathematics**, and that one of them
+has a docstring deriving the other. Whenever a file has two open leaves whose docstrings each cite
+the other as the thing they replace, suspect this and check the merge-base: one of them almost
+certainly arrived from a branch that forked before the re-cut.
+
+**The resolution rule, and it is decidable rather than a matter of taste: keep the arrangement whose
+root leaf is IMPLIED by the rival's root.** That leaves the file owing strictly less. Demote the
+rival's declarations to PROVEN corollaries placed below the shared cut, and say in their docstring
+that they are corollaries and why moving them back up is a cycle. Here `flat_finrank_cartierDual`
+(flat + constant fibre rank) implies the Jacobson generation leaf, so the Jacobson leaf was kept as
+the root and `flat_finrank_cartierDual` was closed in ~10 lines from `exists_basis_cartierDual`.
+Net: one file, two sorries -> one sorry, and the survivor is the weaker obligation.
+
+Corollary for dispatch: **"the only sorry in that file" in a task prompt is a claim about the commit
+the prompt was written against, not about your tree.** Regenerate it — strip comments, grep `sorry`
+tokens, compare against the build's warning set — before believing the file has the shape you were
+told.
+
+## IF YOUR TARGET IS NOT IN YOUR WORKTREE AT ALL, YOU ARE ON `main` AND `main` IS BEHIND `merger`
+
+(Same task, same day.) The worktree was dispatched onto `main`, and `flat_finrank_cartierDual` did
+not exist anywhere in the file. Not renamed, not moved — absent. `main` was **867 commits behind
+`merger`**: release 27 had been built on `merger` and not yet promoted, so `main` was two releases
+stale while every task prompt was being written against `merger`'s frontier.
+
+This is the "release window" trap in its sharpest form: the usual symptom is a leaf that is already
+proven, and this is the mirror — a leaf that does not exist yet. Both come from the same cause and
+both are resolved by the same one-line check *before* reading anything:
+
+    git log --oneline -1 main merger
+    git merge-base --is-ancestor main merger && echo "main is BEHIND merger"
+
+If `main` is behind, `git merge --ff-only merger` first and work there. The merge worker merges into
+`merger`, so basing on `merger` costs nothing and a branch based on a stale `main` silently
+re-litigates hundreds of commits at merge time.
+
+## SEVENTH invisibility class: a RED module UPSTREAM hides your module's own errors
+(2026-07-31, `flt-lean-79`.) `lake build <Module>` builds an import closure and stops
+at the first red module in it. So when `X0.lean` is red — as it was on `merger` at
+release 27, 101 errors, mid-repair — **`Patching.lean` is never compiled**, and its own
+errors are invisible to `lake build`, to the `declaration uses 'sorry'` warning set, and
+to every frontier scan. On that day `Patching.lean` had **52 errors of its own** and
+nothing in the fleet could see one of them.
+This composes with the other six rather than replacing them: the red upstream module has
+a named owner and is being worked on, so the situation reads as "someone is on it" when
+in fact a second, unowned, unrelated breakage is sitting behind it.
+**The workaround is one command and it does not need the upstream repaired.**
+`lake env lean` consumes whatever `.olean`s are on disk and does not rebuild imports, so
+restore the red module's artifacts from the last good snapshot and elaborate YOUR file
+directly:
+    cp -p ~/.flt-release-lake/build/lib/lean/Fermat/FLT/ModularCurve/X0.* \
+          .lake/build/lib/lean/Fermat/FLT/ModularCurve/
+    lake env lean Fermat/FLT/Modularity/Patching.lean
+(A failed `lake build` DELETES the stale outputs of the module that failed, which is why
+the copy is needed at all — the first symptom is `object file '….olean' does not exist`.)
+The snapshot olean is stale, so treat cross-module errors with the usual suspicion; but
+errors internal to your file — parse errors, arity mismatches, unknown identifiers
+declared in the same file — are real and are yours to fix.
+## READING A MERGE SPLICE: three signatures, and one message that does not mean what it says
+Same day, same file. Textual merges in this development produce a recognisable damage
+pattern, and one of its symptoms is systematically misread.
+* **`error: unexpected token ':='; expected command`** — two declarations spliced: one's
+  signature followed by another's `:= by` and body. Seen as
+  `… = (taylorWilesAug p q).map diamond :=` immediately followed by
+  `Function.Surjective pres := by`.
+* **A stray line inside a proof body** (`      (∀ i, n ≤ e i) ∧` between two `obtain`s) —
+  a leftover of a conclusion that was edited on one side.
+* **A lost `/--`** — the deadliest, because it reports NOTHING at the damage site. The
+  prose of the next docstring is absorbed into the previous declaration's *value*, and
+  with `autoImplicit` on, every word becomes an auto-bound implicit and the declaration
+  elaborates to junk. `abbrev taylorWilesCoordModel … := Fin d → … ⧸ taylorWilesLevelIdeal p e`
+  silently swallowed `see the reduction audit recorded there.` and the six lines after it.
+**And the message that misleads:** `invalid use of explicit universe parameters, 'X' is a
+local variable`. This does NOT mean `X` is shadowed. It means **`X` IS NOT IN THE
+ENVIRONMENT AT ALL** — autoImplicit bound the unknown name as a local, and `X.{u, v}` on
+a local is then illegal. So the message is a report about a declaration that failed or
+was swallowed somewhere *above*, not about the line it points at. Four such messages
+(`IsCohenCoefficients`) plus a dozen `Function expected at` (`taylorWilesCoordModel`) all
+traced back to that one missing `/--` 8000 lines earlier.
+Corollary for triage order: fix the FIRST parse error and the FIRST swallowed declaration
+before believing any later diagnostic. In this instance 4 root defects accounted for
+about 40 of the 52 reported errors.
+## SEVENTH invisibility class: a RUNAWAY DOC COMMENT that deletes 50 declarations while the file still parses
+(2026-07-31, `flt-lean-391`, found in `Modularity/Patching.lean` at release 27.) A `/--`
+whose terminator a declaration-level merge drops does **not** produce a parse error. Lean's
+block comments NEST, so some stray terminator further down — typically the one belonging to
+an orphaned *rival* docstring the same merge left behind — closes it. The file parses. Every
+declaration in between is silently a comment. Here that was **~1980 lines**, including
+`IsCohenCoefficients`, `existsUnique_ringHom_wittVector_of_isNilpotent`,
+`surjective_of_span_range_sup_map_eq_maximalIdeal` and `taylorWilesCoordModel`.
+**Nothing points at the opening line.** The wound reports itself hundreds of lines away as
+`Unknown identifier`, `Function expected at`, and — the unmistakable tell —
+`invalid use of explicit universe parameters, X is a local variable`. That last one is what a
+*swallowed* name becomes once `autoImplicit` binds it, and it cannot arise any other way,
+because nobody writes `X.{u,v}` for a name they did not define. Seeing it, do NOT hunt for a
+missing import: run a comment-depth scan (walk the text counting `/-` and `-/`, skipping `--`
+lines at depth 0) and report every top-level block longer than ~400 lines. This file has
+genuine 600-line docstrings, so length alone is not the signal — depth balance is.
+Two traps in the repair itself. **A comment-open or comment-close token spelled inside
+block-comment PROSE still nests**, so writing the note that records the wound can reopen it —
+re-run the depth scan after editing, every time. And the matching stray terminator downstream
+is usually attached to a rival declaration, so fixing only the opener flips the remainder of
+the file into a comment instead.
+Same release, same file, two more wounds of the same family worth naming: a statement whose
+body was replaced by an orphaned rival body, giving `theorem foo : T := <term> := by …` (a
+parse error, and one that truncates everything below it — so every error count on a wounded
+file is a LOWER BOUND until the parse errors are gone); and a stray conclusion fragment
+dropped INTO a tactic block. **Corollary for the merge worker: "every module except X builds"
+is only true of modules the build REACHED.** X0 is upstream of `Patching.lean`, so the release
+build stopped before it, and `Patching.lean`'s 50 errors were invisible — release 27's handover
+called X0 "the only thing between this tree and a release" on exactly that basis. Elaborate a
+suspected-unreached module directly with `lake env lean` against the previous release's oleans
+before believing a whole-build claim about it.
 ## SIXTH invisibility class: a merge that fails, records success, and drops the payload
 
 (2026-07-29.) `git merge flt-lean-243` printed `error: Unable to write index` and **still
@@ -2261,6 +2583,33 @@ synthesize `C X Y`" for a class that OCCURS in the goal you are staring at means
 scoped instance upstream, not a missing one. `grep -n 'local instance\|scoped instance' <the
 upstream file>` before hunting mathlib for something to import.
 
+## A LEAF'S OWN "NOT PROVABLE FROM WHAT IS HERE" AUDIT CANNOT SEE DOWNSTREAM
+(2026-07-31, `natCast_ne_zero_of_geomBasis` in `X0.lean`.) The leaf shipped with a
+careful, correct audit naming two routes and pricing each: a rank (`deg [n] = n²`,
+Mumford §6) or invariant differentials of an abelian scheme. Both were genuinely
+absent, both were correctly priced as new subtrees, and the dispatch that followed
+told its agent not to re-measure them. **Neither was needed.** The arithmetic
+already existed, PROVEN the previous day, in `X1.lean` — a file that IMPORTS
+`X0.lean` and therefore cannot be seen from inside it. The leaf closed in five
+lines over a bridge (`exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint`) that
+`X0.lean` itself already proved.
+This is the `Missing machinery may be DOWNSTREAM` memory, but with a sharper edge:
+there, an agent's *inventory* missed a downstream proof. Here, the leaf's own
+authored audit did — and an audit reads as settled fact in a way an inventory does
+not, so it propagates into dispatch prompts as "this was measured, do not
+re-measure". **An audit's ABSENCE claims are scoped to the import cone it was
+written in. Before believing one, grep the whole tree for the mathematical content,
+not the file's dependencies.** Hoisting the proof out to a small shared module
+(here `Fermat/FLT/EllipticCurve/GeomTorsionBasis.lean`) costs nothing: the
+downstream file inherits its own declarations back through the upstream file's
+`public import`, under unchanged names, so no call site anywhere changes.
+**Corollary, same leaf: a docstring conjecture backed by a BOUNDED search is a
+hypothesis, and the bound is usually where the counterexample is.** `X1.lean`
+recorded "the bare basis property probably implies `n • y = 0`" on the strength of
+a sweep over `n ∈ {3, 4, 5}`. It is false, and the smallest counterexample is
+`n = 6`: `G = ℤ/20`, `y = z = 1`, where `∃!` holds exactly on the `n`-torsion
+`{0, 10}` while `6 • y = 6 ≠ 0`. Re-run such a search past its recorded bound
+before relying on the conjecture — it took seconds and it decided the signature.
 ## A `sorry` is a PROMISE that the statement is provable
 
 (2026-07-29, orchestrator error, caught only because an agent quoted the file's
@@ -2447,6 +2796,121 @@ Two riders learned in the same repair:
   `obtain ⟨·⟩ → obtain ⟨·, ·⟩`. A `rw` will not see through a structure LITERAL's
   projection (`{ jt := jtr.jt, … }.jt g d`); `show` will, the projection being `rfl`.
 
+## A RED RELEASE DOES NOT STOP YOU — elaborate your module against the LAST GOOD olean of the broken one
+
+(2026-07-31, `flt-lean-258`.) Release 27 did not publish: `ModularCurve/X0.lean` is red
+on `merger` with ~193 errors and has not been built since release 25. Everything
+downstream of it is unbuildable, which on this tree is most of the project — including
+`Modularity/Patching.lean`, three module hops away through `FreyCurve/MazurTorsion`.
+
+An agent whose target lives in that cone will find, in this order: `lake build` fails
+naming a module it never touched; and then **`lake env lean` on its own file dies with
+`object file '….X0.olean' does not exist`**, because a failing `lake build` DELETES the
+target olean at job start. That second message reads like a torn `.lake` and invites a
+reseed, which does not help — the olean is missing because the module cannot be built,
+not because the snapshot is damaged.
+
+The escape is the `LEAN_PATH` shim CLAUDE.md already describes for the
+"iterate while the final build runs" case, pointed at the *release* copy of the broken
+module instead:
+
+    cp -rs /scratch/chend-flt/flt-lean-N/.lake/build/lib/lean /tmp/relean-N/lean
+    R=~/.flt-release-lake/build/lib/lean
+    cp --remove-destination -f "$R"/Fermat/FLT/ModularCurve/X0.*        /tmp/relean-N/lean/Fermat/FLT/ModularCurve/
+    cp --remove-destination -f "$R"/Fermat/FLT/FreyCurve/MazurTorsion.* /tmp/relean-N/lean/Fermat/FLT/FreyCurve/
+    LP=$(lake env printenv LEAN_PATH); LSP=$(lake env printenv LEAN_SRC_PATH)
+    LEAN_PATH="/tmp/relean-N/lean:$LP" LEAN_SRC_PATH="$LSP" \
+      lean -o /tmp/relean-N/lean/<your module path>.olean <your file>.lean
+
+**Two mechanics that are not in the existing write-up and cost a round each:**
+
+* **`cp -f` onto a `cp -rs` farm entry WRITES THROUGH THE SYMLINK** into the real
+  `/scratch` build directory. `cp --remove-destination` unlinks first. Getting this
+  wrong does not fail loudly — it silently plants a stale olean in your own artifacts,
+  which is the inconsistent-olean state this file spends a section on.
+* **An olean is FIVE files at this toolchain**, not one: `.olean`, `.olean.private`,
+  `.olean.server`, plus `.hash` siblings. Overlaying only `.olean` gives
+  `failed to open file '….olean.server'`, which reads like a corrupt snapshot and is
+  merely an incomplete copy. Always copy `<module>.*`.
+
+Soundness condition, and it must actually be checked: the shim is honest only if
+nothing in your cone uses a name added to the broken module since the release sha.
+`git diff <release-sha> merger -- <broken module>` plus a grep for the added names
+settles it, and a green result from the shim means nothing without it.
+
+Corollary for triage, and it is the reason this belongs here rather than in a report:
+**a build failure naming a module you have never heard of is a statement about the
+RELEASE, not about your worktree.** Read `tools/merge/RELEASE-*-HANDOVER.md` before
+reseeding anything — the merge worker records exactly which module is blocking and why,
+and release 27's handover named X0 and its ~35-minute elaboration in the first screen.
+
+## A DÉVISSAGE A DOCSTRING RECOMMENDS MAY NOT CLOSE ITS OWN INDUCTION — check what the RECURSION needs, not what the CHAIN looks like
+
+(2026-07-31, `flt-lean-258`, on `isSplitTorusAt_of_subring_entries` in `Patching.lean`.)
+
+That leaf's docstring — and its Hilbert twin's, in the same words — recommends
+*"Schlessinger dévissage against `hglue` … the chain `C = C₀ ⊂ C₁ ⊂ ⋯ ⊂ C_n = A`
+obtained by adjoining one element of `𝔪_A` at a time"*. The chain exists and each of
+its steps really is a fibre product. **It still does not close the argument**, because
+the fibre-product clause needs the condition on a QUOTIENT of the smaller ring at every
+step, and going up the chain that quotient is never available — the recursion is not
+well-founded on the index `[A : C]`.
+
+What works is one fibre product and a different induction variable: **induct on
+`Nat.card A`, the AMBIENT ring**, using the last nonvanishing power `I = 𝔪_A^{n-1}` as
+the ideal to quotient by. Both branches (`ι(C) ∩ I ≠ 0`, use `hglue` on
+`C ≅ A ×_{A/J} (C/ι⁻¹J)`; `ι(C) ∩ I = 0`, so `C` embeds in `A ⧸ I` and the SAME goal is
+the inductive hypothesis) land at a strictly smaller ambient ring, so a plain
+`induction n` on a `Nat.card A ≤ n` bound suffices. The one place the residue-field
+hypothesis is spent is showing `ι(C) ∩ I` is an ideal of `A` rather than merely a
+sub-`ι(C)`-module: `a = ι(c) + m` and `m·x ∈ 𝔪_A·I = 0`.
+
+Two transferable points:
+
+* **A docstring's dévissage is a picture of a FILTRATION, not a proof of TERMINATION.**
+  Before building one, write down the recursive call and check its measure decreases.
+  Here the picture was right about the geometry and wrong about which parameter shrinks.
+* **State such a descent with an INJECTIVE RING HOM, never with `C : Subring A`.** Every
+  recursive call lands at a pair (`C ⧸ ι⁻¹J ↪ A ⧸ J`, `C ↪ A ⧸ I`) that is not a
+  `Subring` of the original `A`, and the `Subring.map` bookkeeping is pure cost. Derive
+  the `Subring` form as a one-line corollary at `ι := C.subtype`.
+
+**And the hypothesis the prose assumed was not in the signature.** That leaf's docstring
+says, parenthetically, *"`C` and `A` having the same residue field (`πA` is surjective
+and factors through `C` …)"* — and `Function.Surjective (πA.comp C.subtype)` is **not a
+binder of the leaf**, though both of its recorded routes need it and the call site
+supplies it for free (`πA.comp f = ι.comp frameEv`, with `frameEv` surjective). So add
+to the standing checks on any leaf you are dispatched at: **read the docstring for
+sentences of the form "X, because Y", and check that Y is in the binder list.** A
+parenthetical justification is exactly where a load-bearing hypothesis goes missing,
+because it reads as an explanation rather than as an assumption.
+
+## A background `ssh … lake build` reported STOPPED may still be RUNNING — relaunching gives TWO builds in one worktree
+(2026-07-31.) A `run_in_background` Bash whose task record is lost across a session
+boundary comes back as `stopped` / "no completion record was found … it may have been
+running when the previous Claude Code process exited". **That is a statement about the
+harness's bookkeeping, not about the remote process.** The `ssh` client died; the remote
+`bash -c '… lake build …'` did not. Relaunching the same command then puts **two
+concurrent `lake build`s in one worktree**, racing on one artifact directory.
+The symptom is a build failure that reads as a broken tree and is not:
+    ✖ [4970/4976] Building Fermat.FLT.Modularity.AmpleSheaf
+    error: no such file or directory (error code: 4294967294)
+      file: …/.lake/build/lib/lean/Fermat/FLT/Modularity/AmpleSheaf.olean
+— one `lake` moves the temp olean away from under the other. Two further tells, both
+observed: **two `lean` workers elaborating the SAME file**, and a log that `grep` calls
+`binary file matches`, because both builds opened it with `>` and the second's truncation
+left the first writing at its old offset into a NUL-padded hole (use `grep -a`, and a
+FRESH log filename per launch — a reused one cannot be told from the previous run's).
+So before relaunching any remote build, look for a live one, and kill by PID only after
+checking the cwd (the host runs ~40 other worktrees):
+    ssh $H 'for p in $(pgrep -x "lake|lean"); do
+              case "$(readlink /proc/$p/cwd)" in $HOME/flt-lean-N) echo "$p";; esac; done'
+Killing a `lake` **orphans its `lean` children**, which keep elaborating and keep writing
+oleans into that same tree — kill those by PID too, or the "replacement" build races the
+corpse of the one it replaced. And note the harness may report the survivor as your
+*failed* job (exit 143) when you kill what you think is the stray: the two are
+indistinguishable from the tool side, which is the whole reason to check `/proc` rather
+than reason from task ids.
 ## Verification is the COMMAND LINE. No MCP, no LSP, no servers.
 
 (Deyao, 2026-07-25 — supersedes every "trust the MCP diagnostics" rule
@@ -2601,6 +3065,25 @@ that has since been rewritten, and then proving or re-refuting against it.
 Do not "fix" the discrepancy by trusting the prompt's numbers and seeking around
 them. A prompt is a snapshot of a file you do not have.
 
+**A TARGET THAT DOES NOT EXIST IN YOUR WORKTREE IS A STALE WORKTREE FIRST, A
+PHANTOM SECOND** (2026-07-31). This is the same rule, but its sharpest instance,
+because a missing NAME looks like a completely different kind of failure from a
+stale ERROR and invites a completely wrong report. `flt-lean-116` was dispatched
+at `exists_neronModelData` in `X0.lean`, and the name occurred nowhere in its
+copy of that file — zero hits, comments included, which is exactly the evidence
+CLAUDE.md's own class-5 section says to read as a phantom dispatch. It was not.
+The worktree was simply behind: `HEAD` was an old `merger` commit that happened
+to be an ancestor of `main`, and one `git merge --ff-only main` brought the
+declaration in along with 43 000 lines of `X0.lean`.
+**So run these two commands before any `grep` for the target**, and note the
+second is what distinguishes the cases — a phantom leaf and an un-advanced
+worktree produce identical greps:
+    git log --oneline -1
+    git merge-base --is-ancestor HEAD main && echo "BEHIND: merge main first"
+"The leaf is not here" and "I am not there yet" are the same observation until
+you have run that. The dispatch hook normally fast-forwards a worktree at
+allocation, so this state means the pointer did not move — do not treat it as
+evidence about the frontier.
 **There is NO Lean MCP of any kind (Deyao, 2026-07-25).** Both the
 `lean-lsp` MCP and the per-worktree `report-flt-lean-N` servers are gone;
 `.mcp.json` holds exactly one entry, `annas-mcp`, which is for downloading
@@ -2773,6 +3256,52 @@ expensive; there is nothing cheaper than `c = 37`.
 its denominators.** Doing it the other way round means generating a megabyte of
 Lean that cannot compile, and the diagnosis costs a full build.
 
+## A LARGE EXPONENT LITERAL COSTS RECURSION DEPTH `3n`, AND `maxRecDepth` LARGE MAKES IT WORSE
+(2026-07-31, measured over about twenty probe builds while closing the `p = 11` and `p = 17`
+rows of Mazur's non-CM table.)
+`X ^ n` for a `ℕ` LITERAL `n` is a trap whenever the elaborator has to unify a term containing
+it against a pattern. Unification falls through to `whnf`, `whnf` unfolds `npowRec`, and
+`npowRec` recurses **once per unit of `n`** — measured depth `≈ 3n`. A chain step at
+`n = 3466` elaborates; the same step at `n = 6932` needs `maxRecDepth 20000`; the certificates
+here run to `n = 23 ^ 11 = 952809757913927`.
+**Three things about this cost a whole session between them.**
+1. **The failure has NO LOCATION.** Past the stack it is `Stack overflow detected. Aborting.`
+   and nothing else — no line, no declaration, no tactic. Every natural next step is wrong:
+   `lake env lean -s 65536`, `-s 262144` and `-s 524288` all still die (the last one is also
+   silently misparsed and reports `no such file or directory`). To get a *located* error, drop
+   `maxRecDepth` to ~20000 and read the errors; that is diagnosis, not a fix attempt.
+2. **`set_option maxRecDepth` LARGE IS THE WRONG DIRECTION.** At `4000000` these files crash;
+   at `20000` they compile. A high limit lets a doomed reduction run until the C stack dies
+   instead of failing fast so the elaborator can take another route. The predecessor's file
+   carried `maxRecDepth 10000000`, which is exactly how a locatable error became a crash.
+3. **The symptom mimics whatever you were last worried about.** Because depth scales with the
+   exponent and the exponents grow along a chain, the failures appear at a *boundary partway
+   down the chain* — which reads convincingly as "the polynomial identities got too big". Two
+   full rewrites were spent shrinking the identities (degree 230 → degree 22, `expand` →
+   square-and-multiply). Both were sound engineering and **neither fixed anything**, because
+   the degree was never the problem.
+**The fix is to keep the exponent out of unification, behind a definition:**
+```lean
+def XPow {q : ℕ} (f : (ZMod q)[X]) (n : ℕ) (a : (ZMod q)[X]) : Prop := f ∣ X ^ n - a
+```
+State every chain step as `XPow f n a` rather than `f ∣ X ^ n - a`. Now `n` is an *argument*,
+unification assigns `?n := 952809757913927` and never looks inside `X ^ ?n`. Same statements,
+same proofs, seconds instead of a crash. Cross into the raw `∣` exactly once, at the end,
+where the target is fixed and there is no pattern to match.
+Corollary, learned the same way: **do not `rw` a `ℕ` equation into exponent position.**
+`rw [hexp]` inside `X ^ (Nat.card (ZMod ℓ)) ^ m` puts the literal straight back and the
+blow-up returns. Move the arithmetic into a `ℕ`-only lemma (`xpow_card` here) where no
+polynomial appears.
+Everything lives in `Fermat/FLT/EllipticCurve/MazurNonCMFrobenius.lean`; the four generated
+row modules under `MazurNonCMFrobenius/` are produced by `gen_modules.py` at the repo root
+(`gen_frobenius.py`, `gen_binpow.py`, `gen_factored.py`, `gen_coprime.py`, `gen_row.py`), which
+also re-derives every certificate and cross-checks it against PARI/GP before emitting Lean.
+**And a mathematical corollary worth more than the tooling: `H ∣ X ^ (q ^ m) - X` does NOT
+need `H`'s factors to be irreducible.** Factor `H = ∏ fᵢ`, prove each `fᵢ ∣ X ^ (q ^ m) - X`
+separately, and reassemble with `IsCoprime.mul_dvd` off explicit Bézout certificates. That
+needs pairwise COPRIMALITY only — which is a one-line `⟨u, v, by ring_nf⟩` — where proving
+irreducibility of a degree-11 factor over `F₂₃` is circular (the standard test *is* this
+divisibility). It is also `k²` cheaper, since every `ring_nf` call scales with `(deg f)²`.
 ## Verify in a scratch module, not in the giant file
 
 (Deyao, 2026-07-25, from a measurement — this is the fleet's single
@@ -2953,6 +3482,29 @@ Two caveats, both real:
   importing it fails with `object file … does not exist` for the whole duration.
   Do the scratch iteration first and the build last; do not interleave them.
 
+**YOUR OWN `lake build` DISABLES YOUR SCRATCH MODULE FOR ITS WHOLE DURATION**
+(2026-07-31, measured). `lake build <Module>` DELETES the target's `.olean`
+before elaborating, so from the moment you start a full-file verify until it
+finishes — 40+ minutes for `MoretBailly.lean` — every scratch verify fails with
+    error: object file '….lake/build/lib/lean/…/MoretBailly.olean' of module
+    Fermat.FLT.Modularity.MoretBailly does not exist
+That reads like a broken `.lake` and invites a re-seed or a `lake exe cache get`,
+which fixes nothing. It is just your own build, and the cost is real: the two
+things an agent wants to do most — verify the file and keep developing — are
+mutually exclusive by default, so the fast loop stops exactly when it is needed.
+**The fix is one line, and it makes scratch work independent of your build:
+elaborate the scratch against the RELEASE oleans.**
+    BASE=$(lake env printenv LEAN_PATH)
+    export LEAN_PATH="/home/chend/.flt-release-lake/build/lib/lean:$BASE"
+    lean Scratch.lean          # NOT `lake env lean`
+Two traps in that recipe. **`lake env lean` sets `LEAN_PATH` itself**, so it
+silently discards whatever you exported — you must invoke `lean` directly with
+lake's own path captured first, or the override does nothing and you get the
+same "does not exist" error. And this is only sound because
+`/home/chend/.flt-release-lake` is the build of a commit with no Lean diff
+against `main` (check: `git diff --stat <sha> main -- Fermat/` empty, where the
+sha is in `~/.flt-release-lake/sha`); if it is stale in the Lean sources you are
+developing against yesterday's statements.
 ## Sorry and have discipline (glue-first, no floating)
 
 - **Glue first.** At any frontier, first replace the bare `sorry` with
@@ -3110,6 +3662,47 @@ the declaration you would need, not the capability. "needs `PlaceData.residue`" 
 been refuted by the next reader in ten seconds; "needs the degree theory `PlaceData`
 deliberately omits" survived because there was nothing to look up.
 
+## "THE TARGET EXISTS ONLY ON `merger`" IS USUALLY NOT A REASON TO DROP THE TASK
+(2026-07-31, `flt-lean-97`.) A task prompt said: audit against `main` first, and if the release
+carrying the target declarations has not landed, DROP and re-queue. It had not landed — the two
+targets and their proven prerequisite existed only on `merger`, mid-release-27 — and dropping it
+would have idled a worker for a whole release cycle.
+The cheap thing to check instead is **how many `Fermat` imports the target FILE has.** A leaf
+file near the top of the tree usually has one or two, and then merger's version of it is very
+nearly self-contained relative to `main`. Here `HyperellipticJacobian.lean` (10 522 lines on
+merger) imports exactly `GroupTheory.Descent` (identical on both) and `NumberTheory.
+ProjectiveHeight` (differs). Taking merger's copy of BOTH onto a main-based branch built green
+in one shot; taking only the target file failed with a single `Unknown identifier`, which is
+what named the second file. So the recipe is:
+    git checkout merger -- <the target file>
+    lake build <the module>              # the failures name the other files you need
+    git checkout merger -- <those too>   # repeat; it converges in one or two rounds
+**Prefer this to the two obvious alternatives.** Basing the branch on `merger` drags in the
+whole unreleased release (153 k lines here) and couples you to its fate. Re-inventing the
+decomposition on top of `main` guarantees a rival-cut conflict with merger's version of the same
+names — exactly the "two complete proofs of one theorem cannot both be carried" case that costs
+an author a reconciliation. Taking the file verbatim makes the merge a no-op for the imported
+lines and a pure content add for what you prove on top.
+Two things to tell the merge worker when you do it: which files you imported wholesale, and that
+if it DECLINES that release's payload for those files your branch reintroduces it. And build a
+downstream consumer — `grep -rln "import <YourModule>" Fermat/` — because a main-era consumer
+against a merger-era dependency is exactly the interface split that class 7 is about. (Here the
+one consumer, `MazurTorsion.lean`, was green.)
+## TWO `lake build`s IN ONE WORKTREE CLOBBER EACH OTHER — including your own two
+(2026-07-31, same agent, cost one 20-minute build.) The doctrine's warnings about concurrent
+builds are all about TWO AGENTS sharing a worktree. One agent is enough. A downstream build
+(`Fermat.FLT.FreyCurve.MazurTorsion`) died with
+    error: failed to open file '.../HyperellipticJacobian.olean': No such file or directory
+not because anything was wrong, but because I started a rebuild of `HyperellipticJacobian` in
+the same worktree while the consumer build was still running, and lake unlinks the olean before
+rewriting it. The failure is indistinguishable from a torn `.lake` and reads as a much more
+serious problem than it is.
+Worse, it is silent until the end: `grep -c error` on the log was **0** while the build was
+still running, so an early check says "clean" and the real answer arrives minutes later. Only
+the `EXIT=` marker you wrote yourself is a verdict.
+So: **one `lake build` per worktree at a time.** If you want a downstream check, run it AFTER
+the module it depends on has settled, not alongside an edit-rebuild loop. Scratch-module
+`lake env lean` runs are safe to overlap with nothing — they read oleans too.
 ## A DECLINE IS A COMMIT, NOT A SHRUG — ancestry is the only receipt for a branch
 
 (2026-07-30, medic.) The loop hands a merge worker a list of branches and gets
@@ -3250,6 +3843,34 @@ Two corollaries that cost nothing and were both worth more than the proof:
   the argument consumed. A leaf stated for "an arbitrary `Φ` with `hΦ`" was never a
   generalisation, and nobody had checked.
 
+**THE MCP DOES NOT EXIST FOR A LOOP-SPAWNED AGENT — USE THE OPEN WEB**
+(2026-07-31, prover on `exists_neronModelData`). A task prompt instructed
+"download BLR *Néron Models* through the Anna's Archive MCP
+(`download_annas`)". For an agent started by `flt-loop.py` that route is not
+available in either half: `annas-mcp` is not in the agent's tool set, and
+`ANNAS_KEY` is unset in the agent's environment — it is exported only in the
+shell that launches an interactive Claude Code session — so calling
+`annas-mcp.py` by hand fails too. **Task prompts should stop offering it**,
+the same way they stopped offering the Lean MCP.
+The open web served the whole book in fifteen seconds, and the fleet's network
+is unrestricted (`curl https://…` returns 200):
+    curl -sL -o blr.pdf \
+      "https://www.math.stonybrook.edu/~kamenova/homepage_files/Bosch_Raynaud_Neron_Model_tc.pdf"
+    pdftotext -layout blr.pdf blr.txt     # 15469 lines, the WHOLE book, no OCR
+Two things that could have stopped this and did not: the `_tc` in that filename
+is part of the scan's name and **not** an abbreviation for "table of contents" —
+the file is all ~350 pages; and a `WebSearch` summary said the page "doesn't
+provide direct access to the specific content", which was a statement about the
+snippet the search returned, not about the PDF. Fetch it and look.
+So the procedure is: **`WebSearch` for the title plus a distinctive internal
+section number, then `curl` the first university-mirror hit, then
+`pdftotext -layout`.** Do that before concluding a reference is unobtainable.
+Running text and theorem numbering survive extraction cleanly; displayed
+formulas do not, so read for the ARGUMENT and restate the mathematics yourself,
+exactly as the OCR section below prescribes.
+**Copy what you download to `~/sources/`** — outside the repo, since these are
+8–16 MB scans — so the next agent does not pay for it again. It currently holds
+Katz–Mazur and Bosch–Lütkebohmert–Raynaud, each as `.pdf` plus extracted `.txt`.
 ## PDF Text Extraction
 
 When extracting text from a PDF, the output will be read by an AI, not
@@ -3446,6 +4067,41 @@ that the consumer **already held and was discarding** — so the fix cost nothin
 statement did not change. That is the usual shape: the missing hypothesis is often already in the caller's
 hand.
 
+### Its cheapest and commonest form: DELETE × REFACTOR = an ORPHAN LEAF, merged cleanly
+
+(2026-07-31, `X0.lean`.) One branch **collapsed** a cut: it deleted the two leaves
+`exists_isAbelianWeilEigenvalues` and `prod_one_sub_eq_of_isJacobianOf` and made their consumer
+`card_jacobian_of_isWeilEigenvalues` the single leaf. Concurrently, a second branch **refactored**
+one of those very declarations the way its curve-side neighbour is built — turning
+`exists_isAbelianWeilEigenvalues` into a proven assembly over a NEW leaf
+`exists_isAbelianWeilEigenvalues_galoisField`. Both edits are correct in isolation, and — this is the
+whole trap — they **do not conflict textually**, because the refactor's new declaration is added at a
+line the collapse never touched. So git merged both, silently, and the result was:
+
+* the assembly gone (the collapse deleted it), and
+* its sub-leaf still there, `sorry`, with **no consumer anywhere in the tree** — free-floating, and
+  carrying a docstring asserting it was "the sole remaining leaf of" a declaration that the same
+  commit had deleted.
+
+Net effect of two correct edits: `−2 + 1` instead of `−2`, and a theory build (Tate modules,
+Frobenius in char `p`, isogeny degree) still owed by the frontier for nothing at all.
+
+**Nothing in the frontier machinery can see this.** The orphan emits a perfectly ordinary
+`declaration uses 'sorry'` warning, contains a real `sorry` token in real source, and lives in a
+module on the root's import closure — so it is visible to the compiler, to `flt-frontier.py`, and to
+the census, and all three report it as an ordinary open leaf. It is exactly the free-floating-code
+condition, which is why the standing free-floating check is the one thing that catches it.
+
+**The rule: whenever a merge deletes a declaration, grep the merged tree for consumers of everything
+that declaration consumed.** A leaf whose only consumer was deleted is not "now unowned", it is
+**garbage** — delete it and record in its section docstring where to recover it from. Conversely,
+when you are about to delete a declaration, check whether anyone is refactoring it (`~/.flt-merge-batch`
+and the other worktrees' diffs), because the refactor will survive your deletion rather than conflict
+with it.
+
+Corollary for a prover handed a leaf: **`grep` the tree for your target's consumers before proving
+it.** Zero consumers means the task is a deletion, not a proof, and the honest sentinel reports that.
+
 ## A "DO NOT CUT THIS WAY" PROHIBITION IS DATED EVIDENCE, EXACTLY LIKE AN AUDIT
 
 (2026-07-31, `exists_qAdicPolarizedSystem_finiteBase`.) The rule above says a falsity audit is
@@ -3585,6 +4241,141 @@ The repair here was free, in the shape the section above predicts: the consumer 
 `hthree` from destructuring `HasDoubleCoverOfAffineLine` and was passing it to one child and
 discarding it at the other.
 
+## A TASK PROMPT THAT CITES A REPAIR COMMIT IS CITING `merger`, NOT `main`
+(2026-07-31, `flt-lean-65`.) A prompt opened with "two repairs landed that day (commits
+`f1ca4452` and `b1225666`) and you must read the leaf's docstring before anything else — it
+now contains a FALSITY AUDIT and a step-by-step route". Neither commit was an ancestor of the
+worktree's HEAD: the dispatch hook fast-forwards to `main`, and both were still sitting on
+`merger`. So the docstring in the file was the OLD one, the statement was missing the `htors`
+binder the prompt described, and `IsTraceDualFunctional`'s third clause was the weak version
+the prompt said had been replaced. **Everything the prompt asserted was true, and none of it
+was true in the worktree.** This is the release window (class five) seen from the receiving
+end, and it is the normal case for any prompt written by an agent that just finished: the
+repair it is telling you about is *its own*, and it has not landed.
+The check is two commands and costs nothing:
+    git merge-base --is-ancestor <sha> HEAD || echo "NOT PRESENT — go get it"
+    git log --oneline main..<sha>          # usually a handful of commits
+Then **merge that sha directly, not `merger`.** Here `main..b1225666` was three commits over
+two files; merging `merger` wholesale would have dragged an entire release's payload onto a
+single-leaf branch for no reason, and made the merge worker's job harder rather than easier.
+Say in the report that your branch carries those commits, so the merger knows the duplication
+is deliberate.
+Corollary for whoever WRITES such a prompt: a sha is not a location. Write
+"`b1225666`, on `merger`, not yet on `main` — merge it first", because the reader's tree is
+`main` by construction.
+## `∉ (small ideal)` IS NOT `∉ 𝔪` — the commonest direction error in a duality argument
+(2026-07-31, found while proving `exists_tateWeilRawFamily_of_qAdicWeilSystem`.) A leaf's
+prescribed route ended "the contrapositive turns a nonzero pairing value into
+`C ∉ span {(q:O)}^N`, and then locality of `O` plus `hker` upgrade that to `IsUnit`". The
+first half is right; the second is not, and the error is worth naming because it reads as a
+routine last step.
+In a local ring, `IsUnit c` is `c ∉ 𝔪` — non-membership in the BIGGEST proper ideal.
+A duality hypothesis of the shape `c ∈ J ⟹ (θ-estimate)` contrapositives to `c ∉ J`, and `J`
+is always SMALL (here `span {(q:O)}^N ⊆ span {j π}^{eN} ⊆ 𝔪`). Non-membership in a subideal
+is *weaker* than non-membership in the whole maximal ideal, so the implication runs backwards.
+Getting `IsUnit` needs an UPPER bound on `θ` over `𝔪` itself, which is a different and usually
+missing clause — in this development the module's own docstring already recorded that no such
+estimate exists at exponents that are not multiples of the ramification index.
+Test before believing any "and therefore it is a unit": write down which ideal the argument
+actually excludes, and check it is `𝔪` and not something inside it. Eight formal clauses of
+that leaf went through exactly as prescribed; this one line was the whole of what was left.
+## A PLAIN `import` HIDES EVERYTHING IN THAT FILE FROM EVERY DOWNSTREAM MODULE
+(2026-07-31, flt-lean-393.) `Fermat/FLT/ModularCurve/X0.lean` reaches
+`Fermat/FLT/ModularCurve/EllipticScheme.lean` through a **plain `import`, not a
+`public import`** (line 369, and it is the only such line in that header). Under
+Lean's module system that means nothing downstream of `X0.lean` — `MazurTorsion.lean`
+included, 40 000 lines of it — can name a single declaration of `EllipticScheme.lean`.
+`relPointPost`, `relPointPost_add` (rigidity), `hom_specRat_eq_of_range_eq`,
+`exists_isIso_of_affineChart`, `isIso_of_isDominant_of_inverse`,
+`isDominant_of_range_eq_compl`: all PROVEN, all invisible.
+This defeats the standing "grep the tree before proving anything from scratch" rule
+in a way the rule does not warn about. A `grep` finds the theorem, `git log` shows it
+green, its docstring says PROVEN — and `#check` says unknown identifier. **So the
+availability test is `lake env lean` on a one-line `#check`, not a grep.** A scratch
+module importing the target file costs seven seconds; run it before planning around
+a reuse.
+Two consequences that both bit in one task:
+* **The wrapper is invisible, the theorem it wraps often is not.** The valuative
+  criterion `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve` lives
+  in `Fermat/FLT/Mathlib/`, is reachable, and is stated over an ARBITRARY FIELD;
+  only `EllipticScheme.lean`'s ℚ-specialisation of it is hidden. Reproving the
+  ~40 lines of wrapper over a general field was the whole cost.
+* **Look for a second copy at the RIGHT generality before duplicating.** X0.lean's
+  own `isAdditiveOn_of_post_zero` is relative rigidity over an ARBITRARY base — the
+  general form of `EllipticScheme.relPointPost_add`, visible, and better. The first
+  plan copied 120 lines of the hidden one; the reachable one made that unnecessary.
+## PORTING A ℚ PROOF TO ℚ̄: THE STEPS THAT BREAK ARE THE ONES ABOUT ℚ's RIGIDITY
+(2026-07-31, flt-lean-393.) `EllipticScheme.hom_specRat_eq_of_range_eq` — "a
+`ℚ`-point of a scheme is determined by its image" — is the load-bearing step of the
+ℚ-side Weierstrass bridge, and it rests on `Subsingleton (k →+* ℚ)`: a field has AT
+MOST ONE ring map to ℚ, because ℚ is the prime field. **`Subsingleton (k →+* ℚ̄)` is
+false** — `AlgebraicClosure ℚ` has an enormous automorphism group — so the ℚ proof
+does not transfer, and the ℚ̄ statement needs a residue-field argument (it is
+recoverable for SECTIONS: `K → κ(x) → K` being the identity forces `κ(x) → K` to be
+the inverse of a bijection, hence unique).
+The general shape: when a ℚ-argument is transported to `ℚ̄`, the steps that will
+break are exactly those using "ℚ has no automorphisms / is the prime field / is
+subsingleton as a target of ring maps". Everything topological or scheme-theoretic
+(`Spec K` is a one-point space, connectedness, dominance, the valuative criterion)
+transfers verbatim with `ℚ` replaced by any field.
+**And the repair may be to delete the step rather than port it.** The zero section
+was being matched by a range chase, which is what needed the point-determined-by-image
+lemma. There are two ways out, and both were built independently the same day: port
+the lemma (`section_eq_of_range_eq_algClos`, the residue-field argument — a `K`-point
+that is a SECTION has `K → κ(x) → K` equal to the identity, which forces `κ(x) → K`
+to be the inverse of a bijection, hence unique), or **avoid needing it**: for an
+abelian scheme presented by its functor of points, TRANSLATION by a section costs no
+geometry at all — add the pullback of the section to the UNIVERSAL relative point
+`⟨𝟙 A, _⟩ : RelPoint f f`, and the group axioms plus `pre_add` alone show it is an
+isomorphism with inverse the translation by the negative. Correcting an arbitrary
+isomorphism by the translation that undoes `u(O₁)` matches the origins BY
+CONSTRUCTION, and the resulting statement — *every* isomorphism over the base yields
+an `IsEllipticIsoOf`, with no zero-section hypothesis — is both stronger and shorter.
+The ported-lemma route is the one that landed (`flt-lean-182`, release 26); the
+translation route is recorded here because it generalises to any abelian scheme over
+any base and needs no residue fields.
+**Same trick, same file, one leaf earlier: a functor-of-points endomorphism IS a
+morphism of schemes.** `IsCMByRamifiedMaximalOrder.phi` is a family of maps on
+`RelPoint d.f g` for every test scheme, and evaluating it at `⟨𝟙 d.E, _⟩` gives a
+single `Φ : d.E ⟶ d.E`, with `phi_pre` proving every value is postcomposition with
+it (six lines). That is the step that makes such a leaf attackable at all: an
+`IsIsogeny` certificate is polynomials in the coordinates, and no polynomial can be
+extracted from a family of abstract group maps. **Whenever a leaf's hypothesis is a
+`∀ T'`-quantified functorial bundle, evaluate at the universal point FIRST and
+restate it with the morphism.**
+## A CITATION LEAF IS NOT ATOMIC UNTIL YOU CHECK WHAT ITS NEIGHBOURS ALREADY PROVE
+(2026-07-31, `exists_isFineGamma1Moduli`.) A leaf whose docstring is one citation
+— "Katz–Mazur 4.7.1", "Deligne–Rapoport IV.2" — reads as irreducible, and the
+reflex is to price the whole classical theorem. Ask instead **which parts of that
+theorem the tree has already proven for a neighbouring leaf**, because a citation
+is usually a conjunction and the sibling constructions have often discharged most
+of it. Here the arithmetic half (4.7.0 + 2.7.4 + 8.1.1, every hypothesis on `N`
+and `ℓ`) was PROVEN in `exists_gamma1AffineModel`, and the uniqueness half fell
+out of a field the atlas structure already carried. What remained was one
+base-generic, arithmetic-free leaf: the frontier count did not move, but the leaf
+lost three hypotheses and became usable over `ℚ` as well.
+Two rules came out of it, and both generalise past this file:
+* **A `∀` over a structure is safe exactly when it constrains a field the
+  structure PINS.** `X1.lean` has a refuted `∀ A : Gamma1Atlas` leaf and a sound
+  one. The difference is not the quantifier: `A.M` (the rigidified scheme) varies
+  with the auxiliary level and a `∀` about it must hold for all of them at once,
+  while `(A.Y, A.classify)` is INITIAL among classifying cocones, so a statement
+  about it has the same truth value at every atlas. Before writing or auditing a
+  `∀ <structure>`, ask which field the conclusion mentions and whether the
+  structure's own universal property determines it.
+* **A uniqueness clause with no "over the base" clause is FALSE over any base
+  with a nontrivial automorphism.** `IsFineGamma1Moduli.eq_of_isBaseChange`
+  carried the note "uniqueness is a statement about `M` alone"; over
+  `K = 𝔽_{ℓ²}` with `σ` the Frobenius, `m` and `Spec σ ≫ m` classify the same
+  datum and differ. Rigidity pins the classifying morphism only *among morphisms
+  over the base*. Such a notion is correct only where `Hom(T, S)` is a
+  subsingleton — i.e. at `SpecQ` (`subsingleton_hom_specQ`) and `SpecF ℓ`
+  (`subsingleton_hom_specF`), the two bases this development uses — so when you
+  move one off its base, carry `∀ Z, Subsingleton (Z ⟶ S)` as a real hypothesis.
+Consequence for the second rule that is easy to miss: a hypothesis can be
+load-bearing **twice**. `ℓ.Prime` is cited for "`ZMod ℓ` is a field"; it is also
+the reason the uniqueness clause is true at all, and that second role is
+invisible until the statement is generalised.
 ## SEVENTH invisibility class: A CLEAN MERGE THAT DOES NOT COMPILE — the interface split
 
 (2026-07-30, release 22, three instances in one batch.) The six classes above are all about
@@ -4127,6 +4918,35 @@ correct third-difference identity must do. **The general test: specialise your s
 degenerate point where a reference's ambient hypothesis was doing the work, and check you get a
 tautology and not a hidden assertion.**
 
+## A HOIST IS THE HIGHEST-CONFLICT EDIT THERE IS — give the merger a RECEIPT that it is a pure move
+(2026-07-31, `flt-lean-76`, closing `birationalOver_affineLine_of_not_injective_aj`.) Some
+leaves are not mathematics at all: the theorem already exists in the same file, declared
+BELOW its consumer, so the derivation cannot be written. The repair is a relocation, and a
+230-line relocation in a file with four other concurrent editors is exactly the edit the
+class-7 section above says a merge will split.
+Two things make it safe, and both cost seconds.
+**1. Prove the move is pure, mechanically, and quote it in the commit message.** A relocation
+diff is 50% `-` and 50% `+` and reads like a rewrite; nobody can see by eye that nothing
+inside the moved block was also edited. The sorted line multiset can:
+    git show HEAD:<path> | sort > /tmp/old.sorted
+    sort <path>          > /tmp/new.sorted
+    diff /tmp/old.sorted /tmp/new.sorted     # empty => pure move
+Empty, with an unchanged line count, means every line still exists exactly once and only the
+ORDER changed. **Put the move in its OWN commit**, separate from the proof that consumes it,
+with the old and new line ranges and the parent sha in the message — then a conflict is
+resolved by RE-APPLYING the move to the merged text, which is the only resolution that cannot
+half-land.
+**2. Audit the direction words, because the compiler is silent about all of them.** Docstrings
+in this development are dense with "`foo` above" / "`bar` below", and a hoist falsifies some of
+them in both the moved text and the text that cites it. Grep every mention of each moved name
+and check each direction; here exactly two of about a dozen went stale. Also choose the ORDER
+of the moved blocks against their own prose — placing `relPicEquiv_sectionIdeal_of_aj_eq`
+before `birationalOver_affineLine_of_relPicEquiv_sectionIdeal` kept its self-description
+("the shared first half of both degree-`1` Riemann–Roch leaves below") true for free.
+And check the close the way CLAUDE.md checks a release, not by reading the diff: X0's
+`declaration uses 'sorry'` warnings went 105 → 104 **and** its comment-stripped `sorry` TOKEN
+count went 105 → 104. Equal deltas is what rules out an anonymous inner sorry having been
+swapped in for the named one.
 ## RIVAL CUTS ARE OFTEN COMPLEMENTARY — check before choosing
 
 (2026-07-30.) Nine of 57 branches in one batch were declined because another agent had cut the
@@ -6740,6 +7560,17 @@ earlier incarnation's result is still its result. But `grep -n prev_tokens flt-l
 finds exactly **two** occurrences — the read at 877 and the field-copy at 1033. **Nothing
 ever writes it.** It is always `None`.
 
+**CORRECTED 2026-07-31 (`flt-lean-115`): `prev_tokens` IS populated now.** A resumed job
+observed on that date read `token: 0028aee5, prev_tokens: ['4f1d1581'], retries: 1,
+resume: true`, with `4f1d1581` being exactly the token its prompt carried. So the
+fallback the loop reads really does fire, and copying the prompt's token verbatim on a
+resumed job is no longer fatal. **Do not relax the check on that account.** The
+canonical value is still `j["token"]` — the loop overwrites the sentinel's token with it
+at line 1039 — the field could stop being written again as easily as it started, and
+reading it costs one command. Cross-check `j["session"]` against your own session id
+while you are there; it is the second, independent confirmation that you are the live
+owner rather than a discarded twin.
+
 Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
 inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
 So on any job with `resume: true` / `retries > 0`:
@@ -7728,6 +8559,19 @@ the coverage invariant, and re-validate it the same way — the check is ten lin
 it is the only thing standing between a scanner bug and a release that queues 200
 tasks against a 333-leaf frontier.
 
+**IT HARDCODES `ROOT = /home/chend/flt-staging` AND IGNORES ITS ARGUMENTS** (measured
+2026-07-31, `flt-lean-115`). Run from a worktree it silently reports the STAGING tree's
+frontier, and `python3 tools/merge/frontier.py <your file>` prints the whole staging
+scan rather than erroring — so a worker measuring its own delta gets the pre-change
+number and concludes it changed nothing. Same trap as
+[[flt-hidden-sorries-scans-main-repo]], in the tool the release now depends on. From a
+worktree, copy it with `ROOT` rewritten:
+
+    sed "s#/home/chend/flt-staging#$PWD#" tools/merge/frontier.py > /tmp/frontier.py
+
+The tell is that your own new declarations are absent from its output while the count
+looks plausible. Cross-check by grepping the output for a name you just added.
+
 Two riders that cost real time here:
 
 * **Tokenise task text unicode-safely before matching leaf names against it.**  A
@@ -7739,6 +8583,538 @@ Two riders that cost real time here:
   zero.
 * `Fermat/SorryGate.lean` contains the token `sorry` twice inside a STRING LITERAL in
   its `elab`.  Any scan must exclude that file or strip string literals.
+## A TASK'S OWN "IS THE FILE QUIET" GUARD — and why rebasing onto `merger` is NOT the dodge
+(2026-07-31, `flt-lean-291`.) A well-written task that makes an INTERFACE change sometimes ships
+with its own precondition: *skip me if `merger` is still carrying an unmerged restructuring of this
+region*. That guard is class 7 above stated in advance, and it is one command:
+    diff <(git show main:<path>) <(git show merger:<path>) | grep -E '^[0-9]'
+The hunk LINE RANGES are the whole answer — you do not have to read the prose. If a hunk boundary
+abuts the declaration you were told to edit, the merge will split your signature change from your
+call sites exactly as class 7 describes. In the instance that produced this note the guard hunk was
+`1365c1374,1483`, ending on the line immediately above the `theorem` line to be changed: an
+adjacent-line edit on both sides, i.e. a guaranteed conflict at the one place where a wrong
+resolution silently compiles on one side only.
+**The tempting workaround is to base the branch on `merger` instead, so there is no boundary. Do
+not.** Two reasons, and the second is fatal on its own:
+- `merger` is a LIVE branch — it moved between two consecutive `git rev-parse` calls in this very
+  session — so "based on merger" names nothing stable.
+- The seeded artifacts (`~/.flt-release-lake/build`, rsynced at each release) track **main**. At the
+  time of writing `merger` was **867 commits and 164 000 changed lines** ahead of main across 118
+  files, so a worktree rebased onto it has no usable `.lake` and must rebuild an unreleased tree
+  that nobody has certified green. You would be paying a full mathlib-adjacent rebuild to verify a
+  three-line change, against a base whose redness would not be yours.
+So the correct response to a fired guard is the one the task asks for: **skip, and re-queue with the
+full edit spelled out**, including the current line numbers and the guard restated. That is a full
+success, not a wasted cycle — the queued task is strictly cheaper to run after the release than the
+conflict repair would have been before it.
+## GENERALISING A BASE FIELD IN PLACE: autoParam the fact that was free, and check whether the morphism already determines the datum
+(2026-07-31, `flt-lean-276`, generalising `EllipticScheme.lean`'s `ProjCoords` cluster from `ℚ`
+to `F : Type u`.) Two techniques, both reusable, because this tree has several ℚ→field ports
+still queued.
+**A ℚ-only fact that a hundred call sites use IMPLICITLY becomes an `autoParam`, not a new
+argument.** `ProjCoords.base_eq` — `ℚ →+* A` is a subsingleton — was consumed silently by
+`add`, `add2`, `ext`, and by every one of the 58 `hom_ext_spec_rat` invocations. Adding
+    (hb : c.base = d.base := by exact Subsingleton.elim _ _)
+as the LAST binder leaves **every existing `ℚ` call site byte-identical** (the tactic fires and
+finds `Rat.subsingleton_ringHom`) while a general-`F` caller gets a hard error until it supplies
+the proof. The port becomes opt-in per call site and `ℚ` cannot regress. Two caveats, both hit:
+* a `@[simp]` projection lemma ABOUT the autoParam'd definition must take the hypothesis as an
+  explicit anonymous binder (`(h) (hb)`), because that lemma's own statement is elaborated at `F`,
+  where the default tactic fails;
+* what makes `rw`/`exact` still match a goal whose proof term came from the tactic rather than
+  from the caller is proof irrelevance — so keep the hypothesis a `Prop`.
+**Before threading a datum through, ask whether the MORPHISM already determines it.** The 58
+`hom_ext_spec_rat` uses are not 58 obligations: they all sit in one position, the commuting square
+of `Limits.pullback.lift c.toHom d.toHom _`. Two lemmas replace the lot:
+* `ProjCoords.toHom_comp_projToSpec` — `c.toHom ≫ projToSpec E = X.toSpecΓ ≫ Spec.map (ofHom c.base)`,
+  which is mathlib's `Proj.fromOfGlobalSections_toSpecZero` (it already exists — do not rebuild the
+  chart dictionary for it) plus "`ringHom` evaluates a constant to itself";
+* `ProjCoords.base_eq_of_toHom_eq` — the CONVERSE, `c.toHom = d.toHom → c.base = d.base`, because
+  `Γ ⊣ Spec` is an adjunction (`Scheme.toSpecΓ_appTop`, `Scheme.Hom.comp_appTop`,
+  `AlgebraicGeometry.ext_to_Spec`, `Spec.map_injective`).
+The converse is what makes the port cheap: every rigidity/congruence lemma already knows
+`c.toHom = c'.toHom`, so over `F` it needs **no new hypothesis at all**. The estimate that had
+been carried in `MoretBailly.lean` for a year — "60 vanished justifications, the group-law port
+crosses this obstruction dozens of times" — is right about the count and wrong about the cost.
+**And for a PERVASIVE edit inside a monolith, the scratch module is a truncated PREFIX of the same
+file.** The "verify in a scratch module" rule above assumes the new code is separable; when the
+edit is spread over 3 000 lines of a 12 686-line file it is not. Write `lines[:N]` plus the
+closing `end`s to `ScratchN.lean` — same imports, a quarter of the elaboration — and delete it
+before committing (an unimported module under `Fermat/` is the fourth invisibility class).
+Measured here: the clean file is **72 s**; a ~100-line prefix probing two lemmas is **60 s**; the
+same full file carrying a dozen errors ran past **10 minutes**. **Error recovery, not size, is
+what makes a broken monolith slow — never price the next round off the last one.**
+## A LEAF CAN NAME THE WRONG HALF AS HARD — split the algebra out before building the theory
+(2026-07-31, `ProperPushforward.lean`.) That file's single leaf,
+`self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero`, carried six audit blocks — (A)–(D) on
+`finiteType_appTop_of_isProper`, (E)–(H) on the leaf — each with an explicit witness, all
+correct, all agreeing that closing it is a THEORY BUILD (Grothendieck coherence, absent from
+the pin) and that every proposed shortcut is dead. Every one of those conclusions still
+stands. And the leaf still closed, because the audits were about the GEOMETRY and the leaf as
+stated bundled the geometry with a commutative-algebra bridge that was fully provable at the
+pin in ~110 lines.
+**The tell was in the file and is worth looking for generally: a statement of the honest
+classical input sitting BELOW the leaf and proven CIRCULARLY from it.** Here it was
+`exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber` (Mumford's complex in degree
+`0`), discharged by "once the leaf is known, `A ≅ R`, so take `R¹ ⟶ R⁰` with `d = 0`". A
+declaration whose proof is *"assume the leaf, now the witness is trivial"* is not content —
+it is the file telling you its dependency order is inverted. Hoist it above the leaf, make
+IT the leaf, and prove the old leaf from it. The two are then provably equivalent, so no
+audit is voided and none of the recorded witnesses is lost.
+**The technique that made the bridge provable, and it generalises.** The natural hypothesis
+on a two-term complex is `Module.Flat R (range d)` — that is what a Tor computation gives
+`ker d ∩ 𝔪·C₀ ≤ 𝔪·ker d` from. But the Nakayama step ALSO needs `Module.Finite R (ker d)`,
+and in this file the only source of that was downstream of the leaf, so the flat form was
+unusable exactly where it was wanted. **Ask for `Module.Projective R (range d)` instead**: it
+splits `0 ⟶ ker d ⟶ C₀ ⟶ range d ⟶ 0`, and the retraction `r : C₀ ⟶ ker d` gives BOTH facts
+in one line each (`ker d` is a quotient of the finite `C₀`; `r` carries `𝔪·C₀` into
+`𝔪·ker d` and fixes `ker d`). The two hypotheses agree in the intended application — a
+finitely presented flat module is projective — so nothing is given up. General form: **when a
+flatness hypothesis is unusable because the finiteness its Tor argument needs is the very
+conclusion, ask for the SPLIT rather than the Tor-vanishing.**
+**A third thing, about tensor products.** The dévissage those complexes are for (`H⁰(J) :=
+ker(d ⊗ J)`, left exact by flatness of the terms) needs no tensor product to state: flatness
+of `C₀` identifies `ker(d ⊗ J)` with the honest submodule `ker d ∩ J·C₀`. Whenever a route is
+written with `⊗` over a filtration of ideals, check whether flatness lets it be written with
+`Submodule.inf` and `Submodule.smul` first — the Lean cost is an order of magnitude lower.
+
+## "ADJOIN THE LIFT OF A GENERATOR" IS USUALLY WORSE THAN "ADJOIN THE LIFT OF EVERYTHING"
+
+(2026-07-31, `flt-lean-73`, closing step 1 of `exists_traceSubringDescent` in
+`Patching.lean`.)  The classical recipe for a coefficient ring inside a complete
+local ring with finite residue field is Teichmüller's: `kˣ` is cyclic, lift a
+GENERATOR `ḡ` along `X ^ (#k − 1) − 1`, adjoin the lift.  The leaf's docstring
+prescribed exactly that, and it is correct mathematics.  It is also the expensive
+formalisation, for a reason that has nothing to do with the mathematics:
+recovering an arbitrary `y ≠ 0` as `ḡ ^ m` needs
+`Submonoid.powers` / `Subgroup.zpowers` / `mem_powers_iff_mem_zpowers`
+bookkeeping, and that membership **timed out at `whnf` (200 000 heartbeats)
+inside the file's ambient context while elaborating instantly in a two-line
+isolated `example`.**  Restructuring — dropping the `set`s, splitting the Hensel
+step into its own lemma — did not help; the timeout is a property of the
+surrounding context, not of the tactic block.
+
+The escape is to notice that **the generator was only ever there to make the
+adjoined set a SINGLETON, and nothing needs it to be one**: `k` is finite, so
+`Set.range τ` for the lift map `τ : k → R₀` is finite, and
+`Algebra.finite_adjoin_of_finite_of_isIntegral` is stated for exactly a finite
+set of integral elements.  Adjoining the Teichmüller lift of EVERY element makes
+residual surjectivity a projection (`⟨τ y, subset_adjoin ⟨y, rfl⟩⟩`), deletes the
+cyclic-group theory entirely, and the whole thing is ~20 lines.  Use `X ^ #k − X`
+rather than `X ^ (#k − 1) − 1`: its derivative is `#k · X ^ (#k−1) − 1`, which
+maps to `−1` on the nose since `(#k : k) = 0` (`FiniteField.cast_card_eq_zero`),
+so the simple-root hypothesis needs no case split on whether the point is zero.
+
+Generalises past this leaf: **when a recipe adjoins the lift/preimage of a
+GENERATOR, ask whether adjoining the whole finite fibre is equally finite.**  If
+it is, the group theory was never load-bearing — it was an optimisation of the
+*ring*, and you are optimising the *proof*.  Same family as
+[[flt-leaf-cost-estimates-are-hypotheses]]: a docstring route is a hypothesis
+about cost, written before anyone tried.
+
+Two mechanical traps from the same proof, each one round trip:
+
+* **The monic witness for `IsIntegral R x` lives in `R[X]`, and passing an
+  `A[X]` one is reported as a UNIVERSE error.**  `Polynomial.monic_X_pow_sub h`
+  with `h : (X : A[X]).degree < n` fed to `⟨X ^ n - X, ·, ·⟩ : IsIntegral R x`
+  gives `degree.{uR} X < ↑n` against `degree.{0} X < ↑n` — which reads as a
+  `Type*` / universe-polymorphism problem and is not one.  The two `X ^ n − X`
+  are simply polynomials over different rings.  Check the RING before touching
+  the universes.
+* `IsAdicComplete.henselianRing R I` gives `HenselianRing R I`, **not**
+  `HenselianLocalRing R`, and mathlib has no instance from the first to the
+  second.  Use `HenselianRing.is_henselian` directly: its simple-root hypothesis
+  is `IsUnit (Ideal.Quotient.mk I …)`, which for `I = maximalIdeal R` you get
+  from `IsUnit …` in `R` by `.map _`, and `IsUnit …` in `R` from
+  `IsLocalRing.notMem_maximalIdeal` plus `IsLocalRing.ker_eq_maximalIdeal`.
+
+### When your target module is downstream of a RED module, fill only the MISSING oleans from the release
+
+Same run, and it is the sharp form of the shim recorded above.  `X0.lean` was red
+on `merger` (≥100 errors, `maxErrors` reached — release-27 merge damage: dropped
+arities on `etale_nTorsion_of_specQBase` / `isFinite_flat_nTorsion`, and
+`exists_jSection` used above its declaration), and `X0 → MazurTorsion → Patching`
+means `lake build Fermat.FLT.Modularity.Patching` could not reach the module at
+all.  `lake` had already brought 5579 of 5597 targets up to date before dying, so
+the right farm is **current `.lake/build` plus the release copy of exactly what is
+missing** — not the release tree wholesale:
+
+    python3 - # list modules under Fermat/ with no .olean in .lake/build/lib/lean
+    cp -rs /scratch/chend-flt/flt-lean-N/.lake/build/lib /tmp/relean-N/      # symlinks, instant
+    cp -f ~/.flt-release-lake/build/lib/lean/<the missing module>.olean* /tmp/relean-N/lib/lean/<dir>/
+    LP=$(lake env printenv LEAN_PATH); LSP=$(lake env printenv LEAN_SRC_PATH)
+    LEAN_PATH="/tmp/relean-N/lib/lean:$LP" LEAN_SRC_PATH="$LSP" lean <your file>
+
+Here that was ONE module.  The soundness condition is the usual one — your file
+must not name anything added to the substituted module since the release sha —
+and it is much more likely to hold when you substitute one olean than when you
+substitute the whole tree.  Say in the commit which oleans were substituted; a
+shim-verified edit is not a build and must not be reported as one.
+
+**AND WHEN THE SHIM ITSELF COMES BACK RED, DIFF IT AGAINST THE UNEDITED FILE —
+that turns an unusable log into a clean verdict.**  The run above produced 52
+errors, so on its own it says nothing about whether the edit is sound.  Running
+the SAME shim on `git show <base>:<path> > /tmp/Pre.lean` gave 52 errors too, and
+comparing the `(line, column)` pairs showed a single distinct offset —
+`(+151, same column)` — which is exactly the number of lines the edit inserted
+above them.  Identical error set, identical `declaration uses 'sorry'` set (8 in
+both, at the same shifted lines).  That is a complete answer to "did I break
+anything", and it costs one extra elaboration of a file you were going to
+elaborate anyway.  It also detects the reverse — an error that DISAPPEARS is as
+much a signal as one that appears, since it usually means a declaration stopped
+being reached.
+
+Do the comparison on `(line, column)` pairs and require the shift to be a single
+constant; a mixed shift set means your edit changed more than it inserted.
+## "THE OTHER SIDE DOES NOT HAVE THIS PROBLEM" MUST NAME THE **OBJECT** IT PROTECTS
+(2026-07-31, the Hilbert twin of the `Patching.lean` `𝒟Q` refutation. This is a *different*
+failure from "an audit is scoped to the object it names, never to the pattern" — that one is
+about not looking; this one is about looking, finding a note, and being told the wrong thing.)
+`Patching.lean`'s 2026-07-28 audit refuted a leaf because `IsWeaklyUniversalDeformation` is
+existence-only and so pins `Runiv` in no direction. It then wrote, as an aside:
+> The Hilbert twin does not have this problem because
+> `exists_hilbertAuxDeformationRingPresentation` carries `h𝒟t : 𝒟.IsTraceGenerated`
+> alongside `h𝒟w`, and trace generation is exactly what excludes `y`.
+**Every clause of that is TRUE — about `𝒟`, the BASE-level datum.** That Hilbert theorem
+*also* received `𝒟Q`, the RAISED-level one, under nothing but
+`HilbertAuxDeformationDatum.IsWeaklyUniversal` — the same existence-only clause, on a ring
+the sentence never mentions. So the Hilbert side had the identical defect, on the other ring,
+for three days, PROTECTED BY A CORRECT NOTE. Anyone who checked found the note, read "the
+Hilbert twin does not have this problem", and stopped.
+A theorem's hypotheses routinely mention several bundled objects of the same kind. A
+protection note that names the theorem and the hypothesis but not **which object of that
+theorem is thereby pinned** is unfalsifiable by the reader who most needs it. So:
+- **Writing one**: name the ring/module/datum. "`𝒟` is pinned by `h𝒟t`; `𝒟Q` is NOT pinned by
+  anything" is one clause longer and would have prevented this.
+- **Reading one**: before accepting "X does not have this problem", list the objects in X's
+  hypotheses of the shape the defect attacks, and check the note covers each. Here that is
+  `grep -n 'IsWeaklyUniversal' <the theorem>` — two hits, one covered, one not.
+Same shape as "TWO INDIVIDUALLY-CORRECT REPAIRS CAN BE FATAL TOGETHER" above: a true
+statement that is *scoped narrower than it reads* is more dangerous than a false one, because
+it survives review.
+## `| head -N` ON A BUILD KILLS THE BUILD — AND THE TRUNCATED LOG LOOKS LIKE A CLEAN ONE
+(2026-07-31, cost one full module build, ~25 min.) The doctrine warns never to pipe a
+backgrounded build through `tail`. `head -N` is worse and reads as more innocent: it *exits*
+after N lines, so the writers upstream get `SIGPIPE` and the whole pipeline — including
+`lake` — dies. Here
+    lake build <Module> 2>&1 | tee /tmp/b.log | grep -E "error|declaration uses" | head -40
+was killed the instant the 40th matching line was printed. `/tmp/b.log` then held 905 lines
+ending mid-stream, with **no error lines and no `Build completed`** — indistinguishable at a
+glance from a green build in progress, and `grep -c error` on it returns 0.
+**Redirect, never pipe:** `lake build <Module> > /tmp/b.log 2>&1; echo "EXIT=$?" >> /tmp/b.log`
+and grep the file afterwards. Judge a build by the presence of `Build completed successfully`
+plus an explicit `EXIT=`, never by the absence of the word `error` — absence of errors is also
+what a killed build looks like.
+## A RECORDED "THIS CUT IS IMPOSSIBLE" REFUTES ONE SPLIT, NOT ALL SPLITS — look for a PINNING clause
+(2026-07-31, `exists_fundamentalCharacter_of_semistabilityDefect`, node `A₀-3b-i`.) A leaf whose
+conclusion is `∃ x, P x ∧ Q x` invites the obvious split: leaf 1 produces an `x` with `P x`; leaf 2
+takes such an `x` as a HYPOTHESIS and proves `Q x`. That split is FALSE whenever `P` fails to
+determine `x` — leaf 2 must then prove `Q` for EVERY `P`-satisfying witness, and `Q` typically holds
+only for the intended one. This node carried a careful, correct, explicit counterexample to exactly
+that split (`N = 29`, `e = 4`, `ψ' = ψ_L^15` is surjective and satisfies `ψ'^e = χ|_J`, yet no
+`ψ'^r` with `r ≤ e` equals `λ|_J`), together with a note that strengthening `P` to "`ψ` generates
+the character group" does not repair it. A prior agent read that as a proof the node is ATOMIC and
+made no change.
+**It is not. The counterexample refutes splitting along `P`; it says nothing about splitting along a
+DIFFERENT clause.** The repair is not a stronger PROPERTY of `x` but a clause that PINS it — a
+defining property with at most one solution, satisfied by the intended witness. Here that was the
+compatibility that DEFINES the level-one fundamental character,
+    ∀ σ ∈ J, ∃ τ ∈ I_N, τ^e σ⁻¹ ∈ P_N ∧ ψ σ = χ τ,
+whose uniqueness proof is two lines (the tame quotient is torsion-free, so `e·τ̄ = e·τ̄'` forces
+`τ τ'⁻¹ ∈ P_N`), which kills the recorded witness on sight (it would force `ψ_L^14 = 1`), and which
+turned one atomic node into two citable leaves: local-field theory with no curve in it, and
+Raynaud's classification with no tame theory in it.
+The checklist when a split is blocked by a witness-ambiguity counterexample:
+1. Ask what **defines** the intended witness, not what is **true** of it. A defining property is
+   usually a compatibility with something already named in the statement — not new vocabulary.
+2. Prove the pinning clause has at most one solution and put that argument in the docstring. It is
+   the whole of what makes the second leaf faithful, and the only thing a reviewer must check.
+3. Re-run the recorded counterexample against the new clause and say in the docstring that it dies.
+   The old counterexample is still TRUE and must be KEPT, relabelled as refuting the old cut only.
+Expect the pinning clause to be strictly harder to prove than the property it replaces (it was here:
+it needs the tame quotient torsion-free, not merely procyclic). That is the right trade — it moves
+work off the unprovable side onto the provable one.
+## A DOCSTRING THAT ARGUES TWO LEAVES ARE EQUIVALENT IS A LEAF-MERGE WAITING TO BE PERFORMED
+(2026-07-31, done twice the same day — `X1.lean`'s `Γ₁` pair, then `X0.lean`'s `Γ₀` pair.)
+Both files carried the same cut: one Katz–Mazur citation split into
+`exists_<X>ModuliScheme` (`∃ R, …`) and `isAffine_of_<X>ModuliScheme` (`∀ R, IsAffine R.M`).
+The `∀`-shaped half is the junk-witness shape this development is rightly afraid of, so each
+docstring answered the worry in prose:
+> `universal` is a **fine** moduli property, so any two inhabitants are related by a unique
+> isomorphism (apply each one's `universal` to the other's universal family, and then to its own
+> to see that the two composites are the identity).  `IsAffine` is invariant under isomorphism.
+**That paragraph is not a caveat. It is a complete proof that one of the two leaves is free** —
+it says `∃ R, IsAffine R.M` implies `∀ R, IsAffine R.M`, so merging the halves into the single
+existential costs one thirty-line lemma and closes a leaf. Both files had it written out, in
+full, for four days, under a heading that reads like a disclaimer.
+Both docstrings also contained the explicit escape hatch — "if a prover would rather not pay it,
+the honest weakening is to prove `∃ R, IsAffine R.M` instead … but then the two citation halves
+fuse back together, which is the thing this cut exists to prevent." **The warning had the sign
+backwards.** The cut was made so that no leaf carried both a citation and a formalisation; what
+it actually produced was two leaves carrying ONE citation between them, because (8.1.1)'s
+affineness clause is a remark on the construction of (4.7.2) and nobody proves it separately.
+Fusing is a strict improvement whenever the two halves are not separately provable.
+So, as a standing sweep: **grep docstrings for prose that relates two leaves**, not just for
+`sorry`. The phrases that actually found these are `are the same statement`, `up to unique
+isomorphism`, `invariant under isomorphism`, `junk-witness`, `would rather not pay`. Each hit is
+a hypothesis that a leaf is free; it costs one read to check.
+**The mechanical obstacle, and the cheap way through it.** The merge needs a rigidity lemma, and
+a rigidity lemma needs the file's `IsBaseChangeOf.refl` / `.comp` calculus — which in `X0.lean`
+sat 500 lines BELOW both leaves and below their consumer. Do not relocate the leaves (their
+docstrings are long and their consumers are elsewhere): **hoist the calculus**. A line-range move
+is safe when (a) it is namespace-balanced — every `namespace`/`end`/`section` pair in the moved
+range is inside it — and (b) nothing in the skipped span uses the moved names. Both are one
+`grep` each, and the move is then verbatim: `git diff` shows equal insertions and deletions.
+**Corollary for the accounting.** `X0.lean` went 130 → 129 direct sorries while GAINING a
+declaration. Merging leaves is one of the few moves that lowers the frontier without proving any
+mathematics, so it does not show up in any "what got proven" report — say so explicitly, or the
+delta looks unexplained.
+## AN "ABSENT FROM MATHLIB" VERDICT ABOUT A **POINT** IS OFTEN A VOCABULARY MISS
+(2026-07-31, `flt-lean-349`, and it had cost two prior audits a cycle each.) Two audits on
+`card_compl_range_le_card_divisors` (`ModularCurve/X0.lean`) deferred the same re-cut because it
+needed *a closed point of a finite-type `k`-scheme has `Module.Finite k κ(p)`*, and mathlib "has
+nothing packaging that at the scheme level (grepped 2026-07-31)". The second priced it as a
+four-step chain of curve theory: `Y ≠ ∅` from integrality → `X` irreducible → the generic point
+lies in `Y` → a non-generic point of an integral curve is closed → Zariski's lemma. **None of the
+four was needed and the whole obligation was twenty lines**, over
+`AlgebraicGeometry.isClosed_singleton_iff_locallyOfFiniteType` and
+`isFinite_iff_locallyOfFiniteType_of_jacobsonSpace` (`Mathlib/AlgebraicGeometry/Morphisms/Finite.lean`,
+both stacks 01TB) plus `LocallyOfFiniteType.jacobsonSpace`.
+**Why the grep missed it, and this generalises.** Mathlib's AG library states facts about a POINT
+as properties of the canonical morphism out of it (`X.fromSpecResidueField p`, `Hom.residueDegree`),
+and states those as *equivalences between `MorphismProperty`s*. A search in the mathematician's
+vocabulary — "closed point", "residue field", "finite over the base" — therefore returns nothing,
+and the absence claim reads as verified. Before concluding a point-level scheme fact must be built,
+grep `Mathlib/AlgebraicGeometry/Morphisms/*.lean` for the canonical morphism and for `_iff_`-shaped
+lemmas between morphism properties.
+**Second lever from the same task: a topological argument can delete the geometry outright.** An
+open set is stable under generisation, so "the generic point lies in `Y`" became "`closure {p}` is
+disjoint from `Y`, hence sits inside the FINITE complement" plus `JacobsonSpace` — no
+irreducibility, no integrality, no dimension, no nonemptiness of `Y`. When a chain of geometric
+hypotheses is being assembled only to locate the generic point, check first whether finiteness of
+the complement already does it.
+## AN EXISTENTIAL LEAF OFTEN RE-PROVES AN EXISTENCE THEOREM THE SAME FILE ALREADY HAS
+(2026-07-31, `X0.lean`.) `exists_isWeilEigenvalues_isEichlerShimuraTransform_x0` asked a prover
+to EXHIBIT a multiset reproducing the point counts of `X_0(N)_{𝔽_ℓ}` over every `𝔽_{ℓⁿ}`. Doing
+that at all is **Weil rationality for a curve** — and `exists_isWeilEigenvalues` sat 680 lines
+ABOVE it in the same file, proving exactly that over its own named leaf. The existential leaf was
+carrying a whole classical theorem a second time, invisibly, because the redundancy is between a
+CONCLUSION (`∃ β, IsWeilEigenvalues …`) and a HYPOTHESIS nobody had written down.
+So: **when a leaf asks you to produce an object, grep the file above it for an existence theorem
+for that same object before doing anything else.** The leaf's real content is usually only the
+IDENTIFICATION — "the object you can already get is *this* one" — and splitting the existence off
+is a provable reduction, not a repackaging: derive the old leaf from the new one plus the existing
+existence theorem, and check the converse holds too, so you can state in the docstring that nothing
+was made harder.
+**BUT: check who consumes the DERIVATION before you reverse a cut.** The tempting move here was
+shorter — sorry the universally-quantified `isEichlerShimuraTransform_x0` and derive the existential
+from it. It is mathematically better (same delegation, one less statement). It is **wrong
+mechanically**, and the reason generalises: a five-theorem "pinning" chain
+(`multiset_eq_of_forall_pow_sum_eq` and friends) had **exactly one consumer in the tree** — the
+proof that transports the EXISTENTIAL leaf's witness to an arbitrary multiset. Reversing the cut
+deletes that proof's reason to exist and strands all five as free-floating code, which this project
+forbids. The existential shape was load-bearing for ~200 lines of proven algebra, and nothing in
+either statement says so.
+The check is one grep per lemma in the block you are about to orphan:
+    grep -rn '<lemma-name>' --include=*.lean . | grep -v '<the file>:'   # external consumers
+    grep -n '<lemma-name>' <the file>                                    # internal, minus docstrings
+A cut is only free to reverse when the derivation it deletes is not the sole consumer of anything.
+## A DOCSTRING THAT INVITES YOU TO DROP A HYPOTHESIS IS A TRAP WITH A WELCOME MAT
+(2026-07-31, closing two of the three cases of `exists_ringHom_gamma0GITPresentationOver_of_atlas_aux`
+in `X0.lean`.) `exists_rigidifiedModuliData_specF` carried `hℓN : ¬ ℓ ∣ N` under a
+Faithfulness note saying it is "**not claimed** to be load-bearing … it is passed in
+because it is available at the call site and because whether the development's
+`CyclicSubgroupOfOrder` is the Drinfeld notion at `ℓ ∣ N` has not been checked. **A
+prover who does not need it should say so and drop it.**"
+Dropping it would have closed my leaf in one line. It would also have been the
+`one_le_break` failure in a new suit: the two leaves underneath are SORRIES, so widening
+them costs nothing at build time and cannot be caught by any test. **A hypothesis on a
+sorry leaf is the only thing standing between the leaf and being false; deleting one is
+not a simplification, it is an unaudited new claim.**
+The check the docstring said had not been run took ten minutes and was not in the
+literature — **it was in the file, in the structure definition**. `CyclicSubgroupOfOrder`'s
+`geom_cyclic` field demands, at every geometric point, an honest point of order exactly
+`N` generating the fibre — i.e. `N` DISTINCT geometric points. `ker F` on a supersingular
+curve in characteristic `p` has one. So the structure is the NAIVE notion, the Katz–Mazur
+6.6.1 citation attached to it (relative representability and finite flatness, which is a
+DRINFELD statement) is not about it at `ℓ ∣ N`, and the invitation was withdrawn in the
+docstring rather than accepted.
+Generalisable: **when a docstring says a hypothesis is "carried but probably not needed",
+treat that as an OPEN QUESTION with a named owner, never as a licence.** Two moves settle
+it cheaply, in this order: unfold the DEFINITION the hypothesis is about (not the theorem,
+and not the literature), and check what the statement's conclusion asserts about the
+degenerate case the hypothesis excludes. Only a written audit of both buys the deletion.
+## COUNT BOTH DIRECTIONS BEFORE DOING DECLARATION-ORDER SURGERY
+Same leaf, same day, and it is the reason the leaf was reachable at all. Its docstring
+recorded the blockage correctly — "a declaration-order artifact and nothing else",
+`exists_gamma0GITPresentationOver_zmod` proves the `p ∤ N` case verbatim ~2300 lines
+below — and prescribed the fix as **hoisting the producer UP**: the whole `𝔽_ℓ`
+rigidification chain, ~2000 lines, in an 82 000-line concurrently-edited module. Two
+successive task prompts repeated that as the plan.
+**Moving the CONSUMERS DOWN was six declarations and ~430 lines.** The producer's
+dependency cone is usually much larger than the consumer's, so the obvious direction is
+usually the expensive one. Count both before cutting; the cheap direction is found by
+grepping what sits BETWEEN the two positions and consumes the block (here: nothing — the
+furthest-reaching of the six is next used ~700 lines below the destination).
+**And a block move can be made SAFE in a contended file, which is what makes this
+tractable at all.** Do it with a script that slices line ranges, then verify the result is
+a PURE PERMUTATION of the original lines:
+    python3 - <<'PY'
+    from collections import Counter
+    a=Counter(open('/tmp/X0.before').read().split('\n'))
+    b=Counter(open('Fermat/.../X0.lean').read().split('\n'))
+    print("added:",dict(b-a)); print("removed:",dict(a-b))
+    PY
+Anything in `removed` is a bug in your slice indices; `added` must contain exactly the
+section/`open`/blank lines you meant to insert. That check costs a second and is stronger
+than reading the diff, because a 1200-line reordering diff is unreadable. Leave a
+breadcrumb at BOTH positions — the old one saying what left and where to, the new one
+saying what arrived and why — since the next reader of either site will otherwise
+rediscover the blockage.
+## VERIFY AGAINST THE LAST GREEN RELEASE'S OLEANS WHEN YOUR IMPORT CONE IS RED — and prove the shim sound by DIFFING THE API
+(2026-07-31, `flt-lean-115`.) A target can live only on `merger`, and `merger` can be
+RED in a module your file imports, for a reason that is not yours and whose repair is
+somebody else's multi-hour task. Release 27 was in exactly that state: it was **not
+published** (`tools/merge/RELEASE-27-HANDOVER.md`), `main` stayed at the last green
+release, and `ModularCurve/X0.lean` carried ~193 errors *inherited from release 25*. So
+`git merge merger` — which the doctrine correctly prescribes when your target exists
+nowhere else — buys you the declaration and takes away `lake build`, because
+`ModularCurve/X1.lean` imports `X0`.
+**You are not blocked, and you must not "fix" X0 to unblock yourself.** The scratch shim
+this file already documents for the *lake-deletes-the-target-olean* case is the general
+answer, and this is its strongest use:
+    cp -rs ~/.flt-release-lake/build/lib /tmp/relean-N/          # symlink farm, ~0.3 s
+    LEAN_PATH="/tmp/relean-N/lib/lean:$LP" LEAN_SRC_PATH="$LSP" lean Fermat/Scratch.lean
+The farm is the LAST GREEN RELEASE's artifacts, so the red module is replaced by its
+green predecessor and a scratch that `public import`s it elaborates in about a minute.
+Here it verified 440 lines — three new leaves, five proven transport declarations and
+the target's whole proof — first try, with exactly the three intended
+`declaration uses 'sorry'` warnings.
+**THE SOUNDNESS CONDITION IS NOT "the shim ran green"; it is that every name you use is
+PRESENT AND UNCHANGED at the snapshot's sha, and you check that mechanically:**
+    git show main:<the upstream file> > /tmp/up-main.lean
+    # then, per name, compare the declaration text in /tmp/up-main.lean with your tree's
+Nine names were compared this way (`IsFibreIdent`, `fibreIdentPullback`,
+`IsSmoothProperCurve`, `finite_compl_range_fibreBaseChangeMap_generic`,
+`genericFibreClassify`, and the four `Γ₁` structures) and all nine were byte-identical,
+which is what makes the green scratch a genuine verification of the text that goes into
+the file. The check also FOUND the one place it fails:
+`exists_unit_natCast_of_isReductionBase` is merger-only, so a leaf stated over the
+Katz–Mazur proviso `∃ n, 3 ≤ n ∧ IsUnit (n : ↥R)` could not have been verified — the
+leaf was stated over `IsReductionBase` instead, with the improvement named in its
+docstring for whoever takes it. **Design your cut around what the shim can verify**;
+that is a cheap constraint and it is much cheaper than an unverifiable commit.
+Two riders. Extract the scratch from the REAL FILE by line range once the edit is in
+place, rather than keeping a hand-typed parallel copy — that way the thing you verified
+and the thing you committed are the same characters. And a full shim run of the edited
+module itself is worth launching in the background as a second opinion, but it is only
+evidence about the parts that do not touch merger-only upstream names.
+## A DEGENERATE-CASE ESCAPE HATCH IS THE ONE PART OF A TWIN TRANSCRIPTION THAT DOES NOT TRANSFER
+(2026-07-31, the `Γ₀` → `Γ₁` transport of `X0.lean`'s integral-model trio into
+`X1.lean`.) This development is built out of twin layers, and transcribing one onto the
+other is a standard and highly productive move: five declarations came across here with
+`Gamma0Datum` → `Gamma1Datum` and `IsBaseChangeOf` → `IsBaseChangeOfGamma1` and *nothing
+else changed*, because none of those proofs ever looks at the level structure.
+**The exception is the degenerate parameter, and it is exactly where the two problems
+genuinely differ.** `X0.lean`'s `exists_unique_genericFibre_universal` carries no
+positivity hypothesis and discharges `N = 0` by EMPTINESS: `isEmpty_of_gamma0Datum_zero`,
+because a cyclic subgroup scheme of order `0` cannot exist, so the coarse space is empty,
+hence initial, and the `∃!` is trivial. Copy that and you have written a false
+justification: `Gamma1Datum` carries a `PointOfExactOrder`, whose clause is
+`addOrderOf … = N`, and `addOrderOf x = 0` is the ordinary statement that `x` has
+INFINITE order — which an elliptic curve over an algebraically closed field has in
+abundance. So `Gamma1Datum 0 T` is INHABITED where `Gamma0Datum 0 T` is not, `[Γ₁(0)]` is
+not a Katz–Mazur moduli problem, and the transcribed statement at `N = 0` is neither
+supported nor refuted by anything in the tree.
+That is the [[flt-third-outcome-strengthen-the-axioms]] situation, and the cheap response
+is to EXCLUDE rather than gamble: add `0 < N` to the leaf. It weakens the leaf, so it
+cannot make it false, and here it cost nothing at all — the only consumer already carried
+`¬ ℓ ∣ N`, and every `ℓ` divides `0`.
+**The general rule: when transcribing between twins, list the places the SOURCE proof
+discharges a degenerate case, and re-derive each one at the target.** They are easy to
+miss because they are usually a single `rcases … with hN | hN` branch inside an otherwise
+mechanical proof, and because the transcription compiles perfectly without them — the
+degenerate branch of the source is exactly the part you are NOT copying when the target's
+version is a `sorry`. Grep the source for `Nat.eq_zero_or_pos`, `isEmpty_of_`,
+`Subsingleton`, and `IsInitial`; those four cover most of them here.
+Corollary about the leaf count, since it is the shape of this whole task: cutting the
+trio took `X1.lean` from 24 direct sorries to 26. **One leaf became three and that is
+DISCLOSURE.** What changed is that a single citation naming three classical theorems in
+prose became three statements naming one theorem each, and that everything between them
+and the node — the generic classifying map, its naturality, the coarse structure of the
+generic fibre, the cusp-locus count and the three geometric fields — is Lean instead of
+promise. Judge it by what is LEFT in each leaf, not by the delta.
+## A DELETION COMMIT IS NOT A CURRENT ABSENCE — and the recovery instruction is what fossilises it
+(2026-07-31, `exists_rationalCuspSectionsX1_field`.) A task prompt for this leaf ranked its
+second route as "needs the Tate uniformisation, which was DELETED as free-floating in
+`52297bf2` — recover with `git show 52297bf2...^:<path>`". Every clause of that is checkable and
+the first two are TRUE: the sweep really did delete `TateCurveConstruction` (1551 lines) and
+`TateUniformization` (2890 lines) on 2026-07-18. The conclusion is false. Both were rebuilt and
+are in the tree today at **16 000 lines across six modules**, and `TateSepClosure` is
+`public import`ed by `FreyCurve/Semistable.lean` and `Modularity/Interface.lean`, so the whole
+chain compiles on every build. One `ls` of the directory refutes it.
+**The recovery instruction is what makes this worse than an ordinary stale claim.** "Deleted —
+recover it with `git show`" reads as *already checked, and here is the workaround*, so the reader
+runs the `git show` rather than the `ls`. It also carries a citation, which is the shape doctrine
+already flags as self-certifying: the commit is real, the diff is real, and the claim is still
+wrong about the present. **A deletion commit is evidence about a moment, and this tree re-adds
+deleted material routinely** — the free-floating sweep deletes what has no consumer *yet*, and
+the same theory comes back when a consumer appears.
+So: **before quoting any absence, `ls` the directory and `grep` the tree at HEAD.** And when the
+absence turns out to be stale, do not just fix your own note — the false claim propagates through
+prompts, so correct it where the next agent will read it (the declaration's docstring), and say
+what IS there.
+The correction changed the whole cost estimate, and a four-line scratch settled it in one
+`lake env lean`: for a bare `(K : Type) [Field K]`, `TopologicalSpace K⸨X⸩`, `CompleteSpace K⸨X⸩`
+and `WeierstrassCurve.tateCurve q : WeierstrassCurve K⸨X⸩` all elaborate, with no hypothesis on
+`K` and no characteristic assumption — the in-tree Tate curve is defined over
+`{k : Type*} [Field k] [TopologicalSpace k]` by `tsum`s, not over a characteristic-zero local
+field. So the route is to INSTANTIATE an existing theory, not to build one. **"Needs a theory
+nobody has written" and "needs an instantiation nobody has run" are different dispatches, and
+only the second is one an agent can finish.**
+The same scratch also located the real blocker one layer lower than the mathematics predicts:
+the first missing instance is `ValuativeRel K⸨X⸩` — mathlib has `Valued K⸨X⸩ ℤᵐ⁰` and a
+`Valued`-to-`ValuativeRel` bridge and nobody has connected them — not local compactness, which
+is the *second* obstruction and only bites over infinite residue fields. **A negative instance
+probe is worth writing even when you are sure of the answer**: "which instance fails FIRST" is a
+different question from "which hypothesis is mathematically false", and it is the one that sizes
+the next task.
+## A target that exists only on `merger` is workable — put it in a NEW MODULE
+(2026-07-31, `flt-lean-335`.) The dispatch prompt for
+`exists_nonconstant_toAbelianScheme_of_baseChange_relPoint` said: it was cut on a
+branch, it is on `merger`, and if it is not in your worktree, **"WAIT for the release
+rather than restating it"**. The check was right — the leaf was on `merger` at
+`df076668` and absent from `main` — but "wait" is not an action an agent can take. The
+loop has no pause; ending the turn is death, and a worker that reports "blocked until
+the release" burns a whole worktree-cycle and delivers nothing.
+There is a third option between *restating it in the file* (which conflicts with the
+merge worker's own copy, guaranteed, because that file is being rewritten by thousands
+of lines per release) and *waiting*:
+**State the theorem VERBATIM in a new module, prove it there over named atoms, and
+leave the merge worker a one-line delegation to write.**
+- A new file cannot conflict with anything. The only edit to the contested file is one
+  `public import` line, which merges trivially wherever it lands.
+- Put it under `Fermat/FLT/Mathlib/…` when the statement mentions nothing specific to
+  the file it was cut from — which is common, since leaves get cut *because* they are
+  the level-free residue. Then the sibling curve file wanting the same theorem gets it
+  for free instead of restating it a third time.
+- Use a distinct NAMESPACE (`Fermat.WeilRestriction.foo`), not a distinct name. The
+  merge worker's job is then `:= Fermat.WeilRestriction.foo h₁ h₂ h₃` with the
+  hypotheses in the same order, and nothing has to be renamed if the release lands
+  first.
+- Say so in `to_merger`. The commit alone is not read.
+Cost of getting this wrong in the other direction is asymmetric: a duplicate proof of
+one theorem cannot be carried (the name collides), so restating in-file forces a merge
+worker to CHOOSE between two branches' mathematics; a new module forces nobody to
+choose anything.
+The residue's top theorem is then FREE-FLOATING until the release wires it — that is
+expected and is not a defect to chase. Record it in the module docstring so the next
+floating sweep does not delete it.
+**Also: `lake` is not on `PATH` in a fresh agent shell**, even working locally on the
+worktree's own host, and the failure is `lake: command not found` with `EXIT=127` —
+which reads like a broken worktree rather than a shell setup. `export
+PATH="$HOME/.elan/bin:$PATH"` first, in every Bash call (shell state does not persist
+between calls).
 
 ## WHEN A RELEASE IS HELD, `main` IS NOT EVEN THE LAST RELEASE — AND YOUR TARGET MAY EXIST ONLY ON `merger`
 
@@ -7790,3 +9166,4 @@ replay" shortcut does not apply. Check what it is worth before spending a minute
 Here the worktree's own `.lake` was newer than the snapshot (it had been seeded at the held
 release), and the target module rebuilt in 29 s from it while the snapshot would have forced a
 rebuild of the whole changed cone.
+||||||| 1ead8a94

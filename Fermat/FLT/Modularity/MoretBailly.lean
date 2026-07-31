@@ -15478,14 +15478,49 @@ theorem stepanovDerivX_monomial (n : ℕ) (c : Polynomial R) :
   rw [stepanovDerivX, Polynomial.sum_monomial_index _ _ (by simp),
     Polynomial.C_mul_X_pow_eq_monomial]
 
-theorem stepanovDerivX_add (b₁ b₂ : Polynomial (Polynomial R)) :
+theorem stepanovDerivX_add {R : Type*} [CommRing R] (b₁ b₂ : Polynomial (Polynomial R)) :
     stepanovDerivX (b₁ + b₂) = stepanovDerivX b₁ + stepanovDerivX b₂ := by
   rw [stepanovDerivX, stepanovDerivX, stepanovDerivX]
   refine Polynomial.sum_add_index _ _ _ (by simp) ?_
   intro i c₁ c₂
   rw [Polynomial.derivative_add, map_add, add_mul]
 
-end StepanovDerivationCalculus
+/-! #### Steps 1 and 2 of Schmidt's reduction (PROVEN 2026-07-31)
+
+`exists_stepanovJetLinearForms` is a four-step argument (Schmidt III §4,
+pp. 110–112); its docstring lists them. The first two are the ones that are pure
+calculus of the two derivations, and they are proven here so that the reduction
+leaf below can consume them as hypotheses rather than re-deriving them:
+
+1. **FROBENIUS SPLITTING** — `stepanov_jet_stepanovAnsatz`. The factors
+   `X^{pj}Y^{pk}` are killed by BOTH derivations in characteristic `p`, so they
+   pass through the whole jet recursion untouched and
+   `a^{(ν)} = ∑_{jk} b_{jk}^{(ν)} X^{pj} Y^{pk}`.
+2. **LEMMA 3A** — `stepanov_totalFilt_stepanovJet`, the growth
+   `w(a^{(ν)}) ≤ w(a) + (2d−3)ν` for the weighted degree
+   `w(P) = maxₙ (deg (P.coeff n) + n)`, which is exactly membership in the
+   already-available `stepanovTotalFilt` filtration.
+
+**WHY THE `ℕ`-TRUNCATION FORCES THE `mul_deriv` SHAPE.** Bounding the two
+derivative terms of the recursion as `mem (2d−2) (F_Y²)` times
+`mem (w−1) (∂_X a^{(ν)})` is off by one exactly when `w = 0`: truncated
+subtraction gives `2d−2` against the required `2d−3`. The honest statement of
+that case is that a `mem 0` element is a constant, so BOTH its derivatives
+vanish — so the bound is packaged as the single lemma
+`mem B₁ v → mem B₂ u → mem (B₁ + B₂ − 1) (v * ∂u)`, whose `B₂ = 0` branch
+discharges the product outright. With `B₁ ≥ 1` (here `B₁ = 2(d−1) ≥ 2`) the
+arithmetic is then exact with no case analysis at the call site. -/
+
+/-- `stepanovDerivX` acts coefficientwise: it differentiates each `Y`-coefficient. -/
+theorem stepanovDerivX_coeff {R : Type*} [CommRing R] (a : Polynomial (Polynomial R)) (n : ℕ) :
+    (stepanovDerivX a).coeff n = Polynomial.derivative (a.coeff n) := by
+  classical
+  rw [stepanovDerivX, Polynomial.sum_def, Polynomial.finsetSum_coeff]
+  simp only [Polynomial.C_mul_X_pow_eq_monomial, Polynomial.coeff_monomial]
+  rw [Finset.sum_ite_eq' a.support n fun i => Polynomial.derivative (a.coeff i)]
+  by_cases h : n ∈ a.support
+  · rw [if_pos h]
+  · rw [if_neg h, Polynomial.notMem_support_iff.mp h, map_zero]
 
 /-- **LEMMA 4A(iii), THE DEGREE BOUND** (PROVEN 2026-07-27) — mechanical, and
 proven here so that no sub-leaf has to carry it.
@@ -15914,30 +15949,21 @@ section DerivationCalculus
 
 variable {R : Type*} [CommRing R]
 
-theorem stepanovDerivX_zero : stepanovDerivX (0 : Polynomial (Polynomial R)) = 0 := by
-  simp [stepanovDerivX]
+theorem stepanovDerivX_zero {R : Type*} [CommRing R] :
+    stepanovDerivX (0 : Polynomial (Polynomial R)) = 0 := by
+  refine Polynomial.ext fun n => ?_
+  rw [stepanovDerivX_coeff]; simp
 
 /-- `stepanovDerivX` is a derivation: it satisfies the Leibniz rule. Proven by a
 double induction on monomials, where it comes down to `Polynomial.derivative_mul`
 for the inner variable. -/
-theorem stepanovDerivX_mul (b₁ b₂ : Polynomial (Polynomial R)) :
-    stepanovDerivX (b₁ * b₂)
-      = stepanovDerivX b₁ * b₂ + b₁ * stepanovDerivX b₂ := by
-  induction b₁ using Polynomial.induction_on' with
-  | add p q hp hq =>
-      rw [add_mul, stepanovDerivX_add, stepanovDerivX_add, hp, hq]
-      ring
-  | monomial n c =>
-      induction b₂ using Polynomial.induction_on' with
-      | add p q hp hq =>
-          rw [mul_add, stepanovDerivX_add, stepanovDerivX_add, hp, hq]
-          ring
-      | monomial m e =>
-          rw [Polynomial.monomial_mul_monomial, stepanovDerivX_monomial,
-            stepanovDerivX_monomial, stepanovDerivX_monomial,
-            Polynomial.derivative_mul]
-          simp only [← Polynomial.C_mul_X_pow_eq_monomial, map_add, map_mul, pow_add]
-          ring
+theorem stepanovDerivX_mul {R : Type*} [CommRing R] (a b : Polynomial (Polynomial R)) :
+    stepanovDerivX (a * b) = stepanovDerivX a * b + a * stepanovDerivX b := by
+  refine Polynomial.ext fun n => ?_
+  simp only [stepanovDerivX_coeff, Polynomial.coeff_add, Polynomial.coeff_mul,
+    stepanovDerivX_coeff]
+  rw [map_sum, ← Finset.sum_add_distrib]
+  exact Finset.sum_congr rfl fun x _ => Polynomial.derivative_mul
 
 /-- Every jet `a ↦ a^{(ν)}` is additive in `a`: the recursion is built from
 additive operations. -/
@@ -15966,6 +15992,329 @@ theorem stepanovJet_sum {ι : Type*} (F : Polynomial (Polynomial R)) (M ℓ : �
   | empty => simp [stepanovJet_zero_arg]
   | insert x s hx ih =>
       rw [Finset.sum_insert hx, Finset.sum_insert hx, stepanovJet_add, ih]
+
+/-- **FROBENIUS SPLITTING, THE ONE-FACTOR FORM.** A factor killed by BOTH
+derivations passes through the whole jet recursion. -/
+theorem stepanovJet_mul_left {R : Type*} [CommRing R] (F : Polynomial (Polynomial R)) (M : ℕ)
+    {u : Polynomial (Polynomial R)} (hu : Polynomial.derivative u = 0)
+    (hu' : stepanovDerivX u = 0) (ν : ℕ) (a : Polynomial (Polynomial R)) :
+    stepanovJet F M ν (u * a) = u * stepanovJet F M ν a := by
+  induction ν with
+  | zero => rfl
+  | succ ν ih =>
+      simp only [stepanovJet, ih, stepanovDerivX_mul, Polynomial.derivative_mul, hu, hu',
+        zero_mul, zero_add]
+      ring
+
+/-- Schmidt's block `b_{jk}(X, Y) = ∑_{i<d} A_{ijk}(X) Y^i` (III §4, p. 110). -/
+noncomputable def stepanovAnsatzBlock {R : Type*} [CommRing R] (d : ℕ)
+    (A : ℕ → ℕ → ℕ → Polynomial R) (j k : ℕ) : Polynomial (Polynomial R) :=
+  ∑ i ∈ Finset.range d, Polynomial.monomial i (A i j k)
+
+theorem stepanovAnsatz_eq_sum_block {R : Type*} [CommRing R] (d p K : ℕ)
+    (A : ℕ → ℕ → ℕ → Polynomial R) :
+    stepanovAnsatz d p K A = ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+      stepanovAnsatzBlock d A j k * Polynomial.monomial (p * k) (Polynomial.X ^ (p * j)) := by
+  rw [stepanovAnsatz, Finset.sum_comm]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [stepanovAnsatzBlock, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Polynomial.monomial_mul_monomial, Nat.add_comm i (p * k)]
+
+section StepanovFrobenius
+
+variable {p : ℕ} [Fact p.Prime]
+
+theorem stepanov_natCast_mul_self_eq_zero (j : ℕ) :
+    ((p * j : ℕ) : Polynomial (ZMod p)) = 0 := by
+  rw [Nat.cast_mul, ← Polynomial.C_eq_natCast, ZMod.natCast_self, map_zero, zero_mul]
+
+theorem stepanov_derivative_frobMonomial (j k : ℕ) :
+    Polynomial.derivative
+        (Polynomial.monomial (p * k) (Polynomial.X ^ (p * j) : Polynomial (ZMod p))) = 0 := by
+  rw [Polynomial.derivative_monomial, stepanov_natCast_mul_self_eq_zero k, mul_zero,
+    Polynomial.monomial_zero_right]
+
+theorem stepanov_derivX_frobMonomial (j k : ℕ) :
+    stepanovDerivX
+        (Polynomial.monomial (p * k) (Polynomial.X ^ (p * j) : Polynomial (ZMod p))) = 0 := by
+  rw [stepanovDerivX_monomial, Polynomial.derivative_X_pow, Nat.cast_mul, ZMod.natCast_self,
+    zero_mul, map_zero, zero_mul, Polynomial.monomial_zero_right]
+
+/-- **STEP 1 OF SCHMIDT'S REDUCTION: FROBENIUS SPLITTING** (III §4, p. 110).
+`a^{(ν)} = ∑_{k<d, j≤K} b_{jk}^{(ν)}·X^{pj}Y^{pk}`. -/
+theorem stepanov_jet_stepanovAnsatz (d K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
+    (F : Polynomial (Polynomial (ZMod p))) (M ν : ℕ) :
+    stepanovJet F M ν (stepanovAnsatz d p K A)
+      = ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+          stepanovJet F M ν (stepanovAnsatzBlock d A j k) *
+            Polynomial.monomial (p * k) (Polynomial.X ^ (p * j)) := by
+  rw [stepanovAnsatz_eq_sum_block, stepanovJet_sum]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [stepanovJet_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [mul_comm, stepanovJet_mul_left F M (stepanov_derivative_frobMonomial j k)
+    (stepanov_derivX_frobMonomial j k), mul_comm]
+
+end StepanovFrobenius
+
+theorem stepanovTotalFilt_mem_C_C {R : Type*} [CommRing R] (c : R) :
+    (stepanovTotalFilt R).mem 0 (Polynomial.C (Polynomial.C c)) := by
+  intro n
+  by_cases h : n = 0
+  · subst h; right; simp
+  · left; simp [Polynomial.coeff_C, h]
+
+theorem stepanovTotalFilt_mem_derivative {R : Type*} [CommRing R] {B C : ℕ}
+    {u : Polynomial (Polynomial R)} (h : (stepanovTotalFilt R).mem B u) (hBC : B ≤ C + 1) :
+    (stepanovTotalFilt R).mem C (Polynomial.derivative u) := by
+  intro n
+  rw [Polynomial.coeff_derivative]
+  rcases h (n + 1) with h1 | h1
+  · left; rw [h1, zero_mul]
+  · right
+    have hdeg : ((n : Polynomial R) + 1).natDegree = 0 :=
+      Nat.le_zero.mp (le_trans (Polynomial.natDegree_add_le _ _) (by simp))
+    refine le_trans (Nat.add_le_add_right Polynomial.natDegree_mul_le n) ?_
+    rw [hdeg]
+    omega
+
+theorem stepanovTotalFilt_mem_derivX {R : Type*} [CommRing R] {B C : ℕ}
+    {u : Polynomial (Polynomial R)} (h : (stepanovTotalFilt R).mem B u) (hBC : B ≤ C + 1) :
+    (stepanovTotalFilt R).mem C (stepanovDerivX u) := by
+  intro n
+  rw [stepanovDerivX_coeff]
+  rcases h n with h1 | h1
+  · left; rw [h1, map_zero]
+  · by_cases hz : Polynomial.derivative (u.coeff n) = 0
+    · left; exact hz
+    · right
+      have hnd : (u.coeff n).natDegree ≠ 0 := by
+        intro hcon
+        exact hz (by rw [Polynomial.eq_C_of_natDegree_eq_zero hcon]; exact Polynomial.derivative_C)
+      have := Polynomial.natDegree_derivative_le (u.coeff n)
+      omega
+
+theorem stepanov_derivative_eq_zero_of_mem_zero {R : Type*} [CommRing R]
+    {u : Polynomial (Polynomial R)} (h : (stepanovTotalFilt R).mem 0 u) :
+    Polynomial.derivative u = 0 := by
+  refine Polynomial.ext fun n => ?_
+  rw [Polynomial.coeff_derivative, Polynomial.coeff_zero]
+  rcases h (n + 1) with h1 | h1
+  · rw [h1, zero_mul]
+  · omega
+
+theorem stepanov_derivX_eq_zero_of_mem_zero {R : Type*} [CommRing R]
+    {u : Polynomial (Polynomial R)} (h : (stepanovTotalFilt R).mem 0 u) :
+    stepanovDerivX u = 0 := by
+  refine Polynomial.ext fun n => ?_
+  rw [stepanovDerivX_coeff, Polynomial.coeff_zero]
+  rcases h n with h1 | h1
+  · rw [h1, map_zero]
+  · rw [Polynomial.eq_C_of_natDegree_eq_zero (by omega : (u.coeff n).natDegree = 0)]
+    exact Polynomial.derivative_C
+
+/-- The `B₂ = 0` branch is what keeps Lemma 3A's constant at `2d − 3`: see the
+section note above. -/
+theorem stepanovTotalFilt_mem_mul_derivative {R : Type*} [CommRing R] {B₁ B₂ : ℕ}
+    {v u : Polynomial (Polynomial R)} (hv : (stepanovTotalFilt R).mem B₁ v)
+    (hu : (stepanovTotalFilt R).mem B₂ u) :
+    (stepanovTotalFilt R).mem (B₁ + B₂ - 1) (v * Polynomial.derivative u) := by
+  rcases Nat.eq_zero_or_pos B₂ with h0 | h0
+  · subst h0
+    rw [stepanov_derivative_eq_zero_of_mem_zero hu, mul_zero]
+    exact (stepanovTotalFilt R).mem_zero _
+  · have hdu : (stepanovTotalFilt R).mem (B₂ - 1) (Polynomial.derivative u) :=
+      stepanovTotalFilt_mem_derivative hu (by omega)
+    exact (stepanovTotalFilt R).mem_mono (by omega) ((stepanovTotalFilt R).mem_mul hv hdu)
+
+theorem stepanovTotalFilt_mem_mul_derivX {R : Type*} [CommRing R] {B₁ B₂ : ℕ}
+    {v u : Polynomial (Polynomial R)} (hv : (stepanovTotalFilt R).mem B₁ v)
+    (hu : (stepanovTotalFilt R).mem B₂ u) :
+    (stepanovTotalFilt R).mem (B₁ + B₂ - 1) (v * stepanovDerivX u) := by
+  rcases Nat.eq_zero_or_pos B₂ with h0 | h0
+  · subst h0
+    rw [stepanov_derivX_eq_zero_of_mem_zero hu, mul_zero]
+    exact (stepanovTotalFilt R).mem_zero _
+  · have hdu : (stepanovTotalFilt R).mem (B₂ - 1) (stepanovDerivX u) :=
+      stepanovTotalFilt_mem_derivX hu (by omega)
+    exact (stepanovTotalFilt R).mem_mono (by omega) ((stepanovTotalFilt R).mem_mul hv hdu)
+
+/-- `w(F) ≤ d` — `hcoeff` and `hdegY` together, in filtration language. -/
+theorem stepanov_totalFilt_mem_of_coeff {R : Type*} [CommRing R] (d : ℕ)
+    {F : Polynomial (Polynomial R)} (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i) : (stepanovTotalFilt R).mem d F := by
+  intro i
+  by_cases hi : i ≤ d
+  · right; have := hcoeff i; omega
+  · left; exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+
+/-- The induction behind Lemma 3A, with the three degree budgets abstracted so
+that the arithmetic at each step is linear. -/
+theorem stepanov_totalFilt_jet_aux {R : Type*} [CommRing R] {e₁ e₂ c : ℕ}
+    (F : Polynomial (Polynomial R)) (M : ℕ)
+    (hFY : (stepanovTotalFilt R).mem e₁ (Polynomial.derivative F))
+    (hFX : (stepanovTotalFilt R).mem e₁ (stepanovDerivX F))
+    (hFYY : (stepanovTotalFilt R).mem e₂ (Polynomial.derivative (Polynomial.derivative F)))
+    (hFYX : (stepanovTotalFilt R).mem e₂ (stepanovDerivX (Polynomial.derivative F)))
+    (hc₁ : e₂ + e₁ ≤ c) (hc₂ : 2 * e₁ ≤ c + 1) :
+    ∀ (ν B : ℕ) (a : Polynomial (Polynomial R)), (stepanovTotalFilt R).mem B a →
+      (stepanovTotalFilt R).mem (B + c * ν) (stepanovJet F M ν a) := by
+  intro ν
+  induction ν with
+  | zero => intro B a ha; simp only [Nat.mul_zero, Nat.add_zero]; exact ha
+  | succ ν ih =>
+      intro B a ha
+      have hJ := ih B a ha
+      obtain ⟨B', hB'⟩ : ∃ B', B + c * ν = B' := ⟨_, rfl⟩
+      rw [hB'] at hJ
+      rw [Nat.mul_succ, ← Nat.add_assoc, hB', stepanovJet]
+      have hG : (stepanovTotalFilt R).mem c
+          (stepanovDerivX (Polynomial.derivative F) * Polynomial.derivative F
+            - Polynomial.derivative (Polynomial.derivative F) * stepanovDerivX F) :=
+        (stepanovTotalFilt R).mem_sub
+          ((stepanovTotalFilt R).mem_mono hc₁ ((stepanovTotalFilt R).mem_mul hFYX hFY))
+          ((stepanovTotalFilt R).mem_mono hc₁ ((stepanovTotalFilt R).mem_mul hFYY hFX))
+      have hsq : (stepanovTotalFilt R).mem (e₁ + e₁) (Polynomial.derivative F ^ 2) := by
+        rw [sq]; exact (stepanovTotalFilt R).mem_mul hFY hFY
+      have hT1 : (stepanovTotalFilt R).mem (B' + c)
+          (Polynomial.C (Polynomial.C ((2 * M - 2 * ν : ℕ) : R)) *
+            (stepanovDerivX (Polynomial.derivative F) * Polynomial.derivative F
+              - Polynomial.derivative (Polynomial.derivative F) * stepanovDerivX F) *
+            stepanovJet F M ν a) :=
+        (stepanovTotalFilt R).mem_mono (by omega)
+          ((stepanovTotalFilt R).mem_mul
+            ((stepanovTotalFilt R).mem_mul (stepanovTotalFilt_mem_C_C _) hG) hJ)
+      have hT2 : (stepanovTotalFilt R).mem (B' + c)
+          (Polynomial.derivative F ^ 2 * stepanovDerivX (stepanovJet F M ν a)) :=
+        (stepanovTotalFilt R).mem_mono (by omega) (stepanovTotalFilt_mem_mul_derivX hsq hJ)
+      have hT3 : (stepanovTotalFilt R).mem (B' + c)
+          (Polynomial.derivative F * stepanovDerivX F *
+            Polynomial.derivative (stepanovJet F M ν a)) :=
+        (stepanovTotalFilt R).mem_mono (by omega)
+          (stepanovTotalFilt_mem_mul_derivative ((stepanovTotalFilt R).mem_mul hFY hFX) hJ)
+      exact (stepanovTotalFilt R).mem_sub ((stepanovTotalFilt R).mem_add hT1 hT2) hT3
+
+/-- **STEP 2 OF SCHMIDT'S REDUCTION: LEMMA 3A** (Chapter III §3, p. 105), stated
+in the weighted total degree `w(P) = maxₙ (deg (P.coeff n) + n)`, i.e. as
+membership in `stepanovTotalFilt`.
+
+The three inputs are `w(F_Y), w(F_X) ≤ d − 1` and `w(F_{YY}), w(F_{YX}) ≤ d − 2`,
+so each of the three terms of `stepanovJet`'s recursion raises `w` by at most
+`(d − 2) + (d − 1) = 2d − 3`. That constant is load-bearing: replacing it by
+`2d − 2` makes `stepanov_equationCount_lt_unknownCount` FALSE (first failure
+`d = 2`, `M = 124`, `p = 34849`). -/
+theorem stepanov_totalFilt_stepanovJet {R : Type*} [CommRing R] (d : ℕ) (hd : 2 ≤ d)
+    {F : Polynomial (Polynomial R)} (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i) (M : ℕ)
+    (B ν : ℕ) (a : Polynomial (Polynomial R)) (ha : (stepanovTotalFilt R).mem B a) :
+    (stepanovTotalFilt R).mem (B + (2 * d - 3) * ν) (stepanovJet F M ν a) := by
+  have hF : (stepanovTotalFilt R).mem d F := stepanov_totalFilt_mem_of_coeff d hdegY hcoeff
+  have hFY : (stepanovTotalFilt R).mem (d - 1) (Polynomial.derivative F) :=
+    stepanovTotalFilt_mem_derivative hF (by omega)
+  have hFX : (stepanovTotalFilt R).mem (d - 1) (stepanovDerivX F) :=
+    stepanovTotalFilt_mem_derivX hF (by omega)
+  have hFYY : (stepanovTotalFilt R).mem (d - 2) (Polynomial.derivative (Polynomial.derivative F)) :=
+    stepanovTotalFilt_mem_derivative hFY (by omega)
+  have hFYX : (stepanovTotalFilt R).mem (d - 2) (stepanovDerivX (Polynomial.derivative F)) :=
+    stepanovTotalFilt_mem_derivX hFY (by omega)
+  exact stepanov_totalFilt_jet_aux (c := 2 * d - 3) F M hFY hFX hFYY hFYX
+    (by omega) (by omega) ν B a ha
+
+/-- `w(b_{jk}) ≤ p/d − d − j − k`, straight off Schmidt's SHARP degree constraint
+`deg A_{ijk} + d + i + j + k ≤ p/d`. The `−(i + j + k)` is what pays for the
+`X^{pj}` in step 3 and it may not be dropped. -/
+theorem stepanov_totalFilt_stepanovAnsatzBlock (d p : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
+    (hAdeg : ∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d) (j k : ℕ) :
+    (stepanovTotalFilt (ZMod p)).mem (p / d - d - j - k) (stepanovAnsatzBlock d A j k) := by
+  refine (stepanovTotalFilt (ZMod p)).mem_sum _ _ _ fun i _ => ?_
+  refine stepanovTotalFilt_mem_monomial ?_
+  rcases hAdeg i j k with h | h
+  · exact Or.inl h
+  · exact Or.inr (by omega)
+
+/-- **STEPS 1 AND 2 COMBINED, IN THE FORM THE COUNTING STEP CONSUMES**: the
+weighted degree of the `ν`-th jet of Schmidt's block `b_{jk}` is at most
+`p/d − d − j − k + (2d−3)ν`. Summing the resulting coefficient counts over
+`ν < M` is what produces `stepanovEquationCount d p M`. -/
+theorem stepanov_totalFilt_jet_stepanovAnsatzBlock (d : ℕ) (hd : 2 ≤ d) (p : ℕ)
+    {F : Polynomial (Polynomial (ZMod p))} (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i) (M : ℕ)
+    (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
+    (hAdeg : ∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d)
+    (j k ν : ℕ) :
+    (stepanovTotalFilt (ZMod p)).mem (p / d - d - j - k + (2 * d - 3) * ν)
+      (stepanovJet F M ν (stepanovAnsatzBlock d A j k)) :=
+  stepanov_totalFilt_stepanovJet d hd hdegY hcoeff M _ ν _
+    (stepanov_totalFilt_stepanovAnsatzBlock d p A hAdeg j k)
+
+/-- **THE REDUCTION TO A LINEAR SYSTEM, STEPS 3 AND 4** (SORRY LEAF, cut
+2026-07-31 out of `exists_stepanovJetLinearForms`) — Schmidt Chapter III §4,
+pp. 110–112.
+
+The parent's four-step argument is listed on its own docstring below. Steps 1
+(FROBENIUS SPLITTING) and 2 (LEMMA 3A) are **PROVEN** immediately above and are
+handed in here as `hsplit` and `hjetblock`; what is left is steps 3 and 4:
+
+3. **ELIMINATION.** At `x ∈ 𝔽_p` with `F(x, y) = 0` and `y ∉ 𝔽_p`, put
+   `y' := y^p`. Then `x^{pj} = x^j` (Fermat), `y^{pk} = y'^k`,
+   `F(x, y') = F(x, y)^p = 0` and `y ≠ y'`, so `e₂(x, y, y') = 0` for the `e₂`
+   defined by `F(X, Y) − F(X, Y') = (Y − Y')·e₂(X, Y, Y')`. Feeding `hsplit`
+   through `stepanovEvalPoint` therefore gives `a^{(ν)}(x, y) = D^{(ν)}(x, y, y')`
+   for the three-variable
+   `D^{(ν)} := ∑_{k<d, j≤K} (stepanovJet F M ν (stepanovAnsatzBlock d A j k))·X^j·Y'^k`,
+   and reducing `D^{(ν)}` modulo `F` in `Y` and modulo `e₂` in `Y'` changes none
+   of its values at such points.
+4. **THE FORMS.** `Φ A` is the tuple of coefficients of the reduced `D^{(ν)}`
+   for `ν < M`. Every operation is `𝔽_p`-LINEAR in `A`
+   (`Polynomial.modByMonicHom` for the two reductions), and by `hjetblock` the
+   reduced `D^{(ν)}` has `deg_X ≤ p/d − d + (2d−3)ν`, `deg_Y ≤ d − 1`,
+   `deg_{Y'} ≤ d − 2`, so the surviving coefficients number at most
+   `∑_{ν<M} d(d−1)(p/d + (2d−3)ν) ≤ stepanovEquationCount d p M`. Padding with
+   zero forms is free, so producing FEWER equations is fine.
+
+**WHAT IS STILL MISSING AT THIS PIN** (grepped 2026-07-31 across `Fermat/`):
+`e₂` occurs only in PROSE — at the section note above `stepanovEquationCount`,
+in `stepanov_irreducible_stepanovFZ`'s docstring and in
+`stepanov_pow_X_sub_C_dvd_of_jet_vanishing`'s — and has NO definition anywhere.
+It has to be written here, together with: it is monic in `Y'` of degree `d − 1`
+(so `Polynomial.modByMonic` applies in the `Y'` direction, exactly as
+`stepanov_exists_wd_rem` above already handles the `Y` direction), and the
+defining identity, which is `geom_sum₂_mul` applied coefficientwise to `F`.
+
+NOTE the hypothesis `hAdeg` is the SHARP constraint `deg + d + i + j + k ≤ p/d`,
+not the weak `deg + d ≤ p/d` the grandparent exports. `hp : 250 d⁵ < p` is NOT
+needed here and is not taken.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_stepanovJetLinearForms_of_frobeniusSplit (d : ℕ) (hd : 2 ≤ d) (p : ℕ)
+    [Fact p.Prime] (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (M K : ℕ) (hK : K = (d - 1) * M / d + d - 2)
+    (hsplit : ∀ (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) (ν : ℕ),
+      stepanovJet F M ν (stepanovAnsatz d p K A)
+        = ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+            stepanovJet F M ν (stepanovAnsatzBlock d A j k) *
+              Polynomial.monomial (p * k) (Polynomial.X ^ (p * j)))
+    (hjetblock : ∀ (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)),
+      (∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d) →
+      ∀ j k ν, (stepanovTotalFilt (ZMod p)).mem (p / d - d - j - k + (2 * d - 3) * ν)
+        (stepanovJet F M ν (stepanovAnsatzBlock d A j k))) :
+    ∃ Φ : (ℕ → ℕ → ℕ → Polynomial (ZMod p)) →ₗ[ZMod p]
+        (Fin (stepanovEquationCount d p M) → ZMod p),
+      ∀ A : ℕ → ℕ → ℕ → Polynomial (ZMod p),
+        (∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d) →
+        (∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0) →
+        Φ A = 0 →
+        ∀ (x : ZMod p) (y : AlgebraicClosure (ZMod p)),
+          stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
+          (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
+          ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+            (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 :=
+  sorry
 
 /-- **THE FACTOR THAT PASSES THROUGH THE WHOLE RECURSION.** A factor `c` killed by
 BOTH derivations — `∂_X c = 0` and `∂_Y c = 0` — is a constant for every step of
@@ -16444,19 +16793,11 @@ theorem exists_stepanovJetLinearForms (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p
           stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
           (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
           ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
-            (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 := by
-  classical
-  obtain ⟨s, hcard, hspan⟩ :=
-    exists_stepanovJetSpanningFinset d hd p F hmon hdegY hcoeff M K hK
-      (fun A ℓ => stepanovJet_stepanovAnsatz d K M ℓ F A)
-  obtain ⟨Φ, hΦ⟩ :=
-    exists_linearForms_of_mem_span_finset (stepanovJetEvalMap d p K M F)
-      (stepanovCoefficientSpace d p K) (stepanovEquationCount d p M) s hcard hspan
-  refine ⟨Φ, fun A hAdeg hAsupp hΦA x y hxy hirr ℓ hℓ => ?_⟩
-  have hzero := hΦ A (mem_stepanovCoefficientSpace hAdeg hAsupp) hΦA
-  have h2 : stepanovJetEvalMap d p K M F A (⟨(x, y), hxy, hirr⟩, ⟨ℓ, hℓ⟩) = 0 := by
-    rw [hzero]; rfl
-  simpa [stepanovJetEvalMap] using h2
+            (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 :=
+  exists_stepanovJetLinearForms_of_frobeniusSplit d hd p F hmon hdegY hcoeff M K hK
+    (fun A ν => stepanov_jet_stepanovAnsatz d K A F M ν)
+    (fun A hAdeg j k ν =>
+      stepanov_totalFilt_jet_stepanovAnsatzBlock d hd p hdegY hcoeff M A hAdeg j k ν)
 
 /-- **THE UNKNOWNS ARE `stepanovUnknownCount d p K` MANY** (**PROVEN 2026-07-30**;
 cut 2026-07-27 out of `exists_stepanovJetSolution`) — Schmidt Chapter III §4, p. 112,

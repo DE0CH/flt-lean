@@ -73,9 +73,19 @@ integral domain, and in which `addZ ≠ 0` (witnessed by `y² = x³ + 1` with
 `[0 : 1 : 1]` and `[2 : 3 : 1]`, where `addZ = -8`).  Every `(R, W', P, Q)` with
 `W'.Equation P` and `W'.Equation Q` is a specialisation of it, so the identity
 transports.  That reduces the whole leaf to the single standard fact
-`Universal.idl_isPrime`, which is in turn PROVEN below from two shallower leaves —
-`Universal.mem_idl_of_X7_mul_mem` (`Pz` is a non-zerodivisor modulo the ideal) and
-`Universal.exists_pow_X7_mul_mem_idl` (the ideal is prime once `Pz` is inverted).
+`Universal.idl_isPrime`, which is in turn PROVEN below from two shallower
+statements — `Pz` is a non-zerodivisor modulo the ideal, and the ideal is prime
+once `Pz` is inverted.  The FIRST of those is PROVEN
+(`Universal.mem_idl_of_Pz_mul_mem`, over `Universal.prime_gen₂`); the second is
+the sole remaining leaf of this module.
+
+Both statements currently appear TWICE, under two names each —
+`mem_idl_of_Pz_mul_mem` / `mem_idl_of_X7_mul_mem` and
+`exists_pow_Pz_mul_mem_idl` / `exists_pow_X7_mul_mem_idl` — because two branches
+decomposed `idl_isPrime` identically under different names and the union
+resolution kept both.  The `X7`-named pair should be DELETED once the saturation
+leaf is closed; see the note at `mem_idl_of_X7_mul_mem`.
+
 See the section docstring at `Universal.idl_ne_top` for a complete route in which
 BOTH halves are elementary: monic division for the first, degree-one primitivity
 over a UFD for the second.
@@ -680,13 +690,24 @@ Note that only a WEAKER statement than `idl.IsPrime` is actually consumed below,
 and a proof of it would close the node just as well: that `addZ ucurve upt₁ upt₂`
 is a non-zerodivisor in `Univ`. -/
 
-/-- **`Pz = X 7` is a non-zerodivisor modulo the universal ideal** (sorry leaf).
-See the section docstring above for a complete elementary proof: `gen₁` and `gen₂`
-are monic cubics in `Px` resp. `Qx` up to sign, so every `a` has a normal form of
-bidegree `≤ (2, 2)` modulo `idl`, and a bidegree-`≤ (2, 2)` element of `idl` is
-`0`.  No primality and no UFD are involved — only uniqueness of division by a
-monic polynomial, twice. -/
-theorem mem_idl_of_X7_mul_mem {a : Poly} (ha : X 7 * a ∈ idl) : a ∈ idl := sorry
+/-- **`Pz = X 7` is a non-zerodivisor modulo the universal ideal** (PROVEN, by
+delegation).
+
+**This declaration is a DUPLICATE and should be deleted at the next integration.**
+It is verbatim the statement of `mem_idl_of_Pz_mul_mem` above, which is proven —
+the two arose from two branches decomposing `idl_isPrime` the same way under
+different names, and the union resolution kept both.  Nothing is gained by giving
+it a second, independent proof, so it delegates.
+
+For the record, the route the section docstring above prescribes for it (normal
+form by division by the monic cubics `-gen₁` in `Px` and `-gen₂` in `Qx`, then
+uniqueness) is correct but strictly more expensive than the one
+`mem_idl_of_Pz_mul_mem` actually takes: reduce a relation `Pz·h = c·gen₁ + d·gen₂`
+modulo `Pz`, where `gen₁ ≡ -Px³` and `gen₂` is `Pz`-free, and use `prime_gen₂`.
+That needs no presentation of `Poly` as `B[Px][Qx]` at all, which is where all of
+the prescribed route's cost sits. -/
+theorem mem_idl_of_X7_mul_mem {a : Poly} (ha : X 7 * a ∈ idl) : a ∈ idl :=
+  mem_idl_of_Pz_mul_mem ha
 
 /-- **The universal ideal is prime once `Pz = X 7` is inverted** (sorry leaf) —
 stated as a `Pz`-saturated primality, which is exactly the contraction to `Poly`

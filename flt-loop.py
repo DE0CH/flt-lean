@@ -22,6 +22,7 @@ import os
 import pathlib
 import re
 import shlex
+import socket
 import subprocess
 import traceback
 import urllib.request
@@ -170,7 +171,21 @@ def is_ancestor(branch):
     return git_repo("merge-base", "--is-ancestor", branch, "main").returncode == 0
 
 
+LOCALHOST = socket.gethostname().split(".")[0]
+
+
 def ssh(host, cmd, timeout=60):
+    """Run `cmd` on `host` -- WITHOUT ssh when that host is this machine.
+
+    Deyao, 2026-07-30: the medic must not reach its own worktree over ssh. It
+    is the loop's self-repair and it runs on mystique, which is where the loop
+    itself runs, so an ssh hop there buys nothing and adds a dependency -- a
+    refused key or a full connection table would take out the one job whose
+    entire purpose is to be startable when other things are broken.
+    """
+    if host in (None, LOCALHOST, "localhost"):
+        return subprocess.run(["bash", "-c", cmd],
+                              capture_output=True, text=True, timeout=timeout)
     return subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
                            host, cmd], capture_output=True, text=True, timeout=timeout)
 
@@ -752,11 +767,31 @@ def consume_refusal(name, j):
 GRACE = 120     # seconds a freshly spawned job is presumed alive
 
 
+def session_exists(j):
+    """Is there already a transcript for this job's session id?
+
+    Sessions live per PROJECT DIRECTORY: the cwd with every `/` and `.` mapped
+    to `-`. $HOME is shared across the fleet, so asking locally answers for
+    whichever host the job runs on.
+    """
+    if not j.get("session"):
+        return False
+    wt = pathlib.Path.home() / j["worktree"]
+    proj = str(wt).replace("/", "-").replace(".", "-")
+    return (pathlib.Path.home() / ".claude" / "projects" / proj
+            / (j["session"] + ".jsonl")).exists()
+
+
 def do_spawn(s, name, j):
     """Start a real, detached claude process on the worker host."""
     # Stamped BEFORE the ssh, so the grace period covers the launch itself.
     j["spawned_at"] = time.time()
-    host = j.get("host") or flt_loop_rows.MEDIC_HOST
+    # The medic's host is a CONSTANT, not a record field. A record written
+    # before that rule existed carries a worker host (this one said
+    # "nightcrawler"), and a stale field would quietly send the loop's own
+    # repair job to a machine it does not live on.
+    host = (flt_loop_rows.MEDIC_HOST if j["kind"] == "medic"
+            else (j.get("host") or flt_loop_rows.MEDIC_HOST))
     prompt = compose(j["kind"], name, j, s)
     wr(STATE / "jobs" / (name + ".prompt"), prompt)
     pf = STATE / "jobs" / (name + ".prompt")
@@ -789,7 +824,16 @@ def do_spawn(s, name, j):
     # spawn path. Every job record reaching here has been through save() at
     # least once, so this is the normal case, not the corner one.
     j["session"] = j.get("session") or str(uuid.uuid4())
-    if j.get("resume"):
+    # ...and a session that ALREADY EXISTS on disk can only be resumed:
+    # `--session-id <existing>` is an error, so the flag alone is not a safe
+    # basis for the choice. It went wrong exactly once and it mattered: the
+    # medic was refused for quota mid-conversation, having already written a
+    # 440 KB transcript, and the refusal path returns a record to unspawned
+    # WITHOUT setting `resume` -- it is not a death, so nothing had reason to.
+    # Re-spawning it would then have tried to create a session that was already
+    # there. Deriving the branch from the transcript's existence makes it true
+    # by observation rather than by whoever last set the flag.
+    if j.get("resume") or session_exists(j):
         # Continue the actual conversation. No prompt file: the agent already
         # knows its task, what it tried and what failed, which is the whole
         # point of resuming instead of starting a stranger in its worktree.

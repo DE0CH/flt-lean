@@ -127,8 +127,18 @@ run is for `pushoutSection`, not for `directImage`.
     theorem above adds is the lift-and-subtract step, which the maximal-ideal ↔ point
     dictionary (`exists_point_ker_Γevaluation_eq_of_isMaximal`,
     `surjective_appTop_fiberι_comp_appTop`, both PROVEN 2026-07-30) discharges.
-  * `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` — **LEAF** (RE-CUT 2026-07-30 out of
-    the theorem above), and as of that re-cut **the ONLY leaf in this file**: if `a` itself
+  * `exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` —
+    **LEAF** (CUT 2026-07-31), and **the ONLY leaf in this file**: Grothendieck's finite free
+    complex in degree `0` (EGA III 6.10.5 / Mumford *AV* §5 / Hartshorne III.12.2), with
+    `Module.Projective R (range d)` in place of the usual flatness of the image.  The whole
+    commutative-algebra bridge from it to the statement below is proven, in
+    `ker_eq_span_of_projective_range_of_forall_isMaximal` immediately above it.  Its docstring
+    is where this file's remaining obligation is analysed, and it records a route — the flat
+    Čech complex, which needs NO coherence theory, plus a length dévissage that closes the
+    ARTINIAN case outright.
+  * `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` — **PROVEN** 2026-07-31 over the
+    leaf above, to which it is EQUIVALENT (RE-CUT 2026-07-30 out of
+    the theorem above), and until then **the ONLY leaf in this file**: if `a` itself
     restricts to zero on `X_s` then `a ∈ 𝔪·R[a]`.  It carries both of the leaves this file
     had before, and they are three-line corollaries of it — the general `x ∈ R[a]` form
     because **`x` is its own `a`** (apply the leaf to `x`, then `R[x] ≤ R[a]`), and the
@@ -304,8 +314,11 @@ run is for `pushoutSection`, not for `directImage`.
   `mem_smul_adjoin_of_appTop_fiberι_eq_zero` and `mem_smul_top_of_appTop_fiberι_eq_zero`, the
   fibre-vanishing forms of the same two statements, and **both of those are now proven as well**
   (2026-07-30, third pass) over the single one-element leaf
-  `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero`, which is the current set and has one
-  member.  Read it off the compiler's warning set, not off this bullet.)  The mechanism is that the
+  `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` — **which is itself now PROVEN**
+  (2026-07-31, fourth pass) over
+  `exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber`, the
+  finite free complex, which is the current set and has one member.  Read it off the
+  compiler's warning set, not off this bullet.)  The mechanism is that the
   projection away from
   `X ×_S X` is an OPEN map once restricted to a fibre of `q`, because everything there is
   flat over the field `κ(s)`; the input is `Mathlib`'s
@@ -1272,15 +1285,259 @@ theorem surjective_appTop_fiberι_comp_appTop (f : X ⟶ S) (s : S)
     (ConcreteCategory.bijective_of_isIso
       (Scheme.ΓSpecIso (S.residueField s)).inv).2).comp hsurj
 
-/-- **LEAF 1a‴ — `a|_{X_s} = 0 ⟹ a ∈ 𝔪 · R[a]`, FOR ITS OWN `a`** (LEAF, RE-CUT 2026-07-30
-out of `mem_smul_adjoin_of_appTop_fiberι_eq_zero` immediately below, which is PROVEN over it).
+/-- **THE COMMUTATIVE-ALGEBRA BRIDGE FROM GROTHENDIECK'S COMPLEX** — **PROVEN**
+(2026-07-31).  Let `d : R^{n₀} ⟶ R^{n₁}` be a map of finite free modules whose IMAGE is
+projective, and let `x ∈ ker d` be such that for every maximal ideal `𝔪` the fibre kernel
+`ker(d ⊗ R/𝔪)` is the line spanned by the image of `x` — written, as everywhere in this file,
+as `d⁻¹(𝔪·R^{n₁}) = R·x + 𝔪·R^{n₀}`.  Then `ker d = R·x` **on the nose**.
+
+**Why projectivity of the image is exactly the right hypothesis, and how it is used twice.**
+Projectivity splits `0 ⟶ ker d ⟶ R^{n₀} ⟶ range d ⟶ 0`, producing a retraction
+`r : R^{n₀} ⟶ ker d`.  That single object discharges both finiteness obligations that the
+Nakayama argument has and that no weaker hypothesis supplies:
+
+* `ker d` is a quotient of the finite module `R^{n₀}`, hence **finite** — the file's other
+  route to `Module.Finite` runs through `module_finite_appTop_of_isProper`, which is
+  DOWNSTREAM of this bridge's consumer, so borrowing it would be circular;
+* `ker d ∩ 𝔪·R^{n₀} ≤ 𝔪 · ker d`, because `r` maps `𝔪·R^{n₀}` into `𝔪 · ker d` and fixes
+  `ker d` pointwise.  This is the conclusion that
+  `inf_smul_top_le_smul_ker_of_flat_range` below obtains from flatness of the image by a Tor
+  computation; here it is one line, and the two hypotheses agree, since a finitely presented
+  flat module is projective and `range d` is finitely presented as soon as `ker d` is.
+
+With those two, the fibre clause gives `ker d = R·x + 𝔪·(ker d)` for every maximal `𝔪`, and
+`eq_bot_of_fg_of_le_smul_of_forall_isMaximal` above kills the quotient.
+
+**No noetherian, no local, no flatness of `R`, and nothing geometric.**  This is pure module
+theory over an arbitrary commutative ring, which is what makes it usable against the
+non-noetherian bases this file must survive (audit block (A) on
+`finiteType_appTop_of_isProper` below exhibits one). -/
+theorem ker_eq_span_of_projective_range_of_forall_isMaximal
+    {R : Type*} [CommRing R] {n₀ n₁ : ℕ}
+    (d : (Fin n₀ → R) →ₗ[R] (Fin n₁ → R))
+    (hproj : Module.Projective R ↥(LinearMap.range d))
+    (x : ↥(LinearMap.ker d))
+    (hfib : ∀ m : Ideal R, m.IsMaximal →
+      Submodule.comap d (m • (⊤ : Submodule R (Fin n₁ → R))) =
+        Submodule.span R {(x : Fin n₀ → R)} ⊔ m • (⊤ : Submodule R (Fin n₀ → R))) :
+    (⊤ : Submodule R ↥(LinearMap.ker d)) = Submodule.span R {x} := by
+  classical
+  haveI := hproj
+  -- a section of `R^{n₀} ↠ range d`
+  obtain ⟨σ, hσ⟩ := Module.projective_lifting_property d.rangeRestrict LinearMap.id
+    d.surjective_rangeRestrict
+  have hdσ : ∀ y : ↥(LinearMap.range d), d (σ y) = (y : Fin n₁ → R) := by
+    intro y
+    have := congrArg (fun (g : ↥(LinearMap.range d) →ₗ[R] ↥(LinearMap.range d)) => g y) hσ
+    simpa [LinearMap.rangeRestrict] using congrArg Subtype.val this
+  -- the resulting retraction `r : R^{n₀} ⟶ ker d`
+  set q : (Fin n₀ → R) →ₗ[R] (Fin n₀ → R) :=
+    (LinearMap.id : (Fin n₀ → R) →ₗ[R] (Fin n₀ → R)) - σ.comp d.rangeRestrict with hqdef
+  have hmem : ∀ c : Fin n₀ → R, q c ∈ LinearMap.ker d := by
+    intro c
+    simp only [hqdef, LinearMap.mem_ker, LinearMap.sub_apply, LinearMap.id_apply,
+      LinearMap.comp_apply, map_sub]
+    rw [hdσ (d.rangeRestrict c)]
+    simp [LinearMap.rangeRestrict]
+  set r : (Fin n₀ → R) →ₗ[R] ↥(LinearMap.ker d) :=
+    LinearMap.codRestrict (LinearMap.ker d) q hmem with hrdef
+  have hrk : ∀ k : ↥(LinearMap.ker d), r (k : Fin n₀ → R) = k := by
+    intro k
+    have hk0 : d.rangeRestrict (k : Fin n₀ → R) = 0 := by
+      ext; simp [LinearMap.rangeRestrict]
+    apply Subtype.ext
+    show q (k : Fin n₀ → R) = (k : Fin n₀ → R)
+    simp only [hqdef, LinearMap.sub_apply, LinearMap.id_apply, LinearMap.comp_apply, hk0,
+      map_zero, sub_zero]
+  have hrsurj : Function.Surjective r := fun k => ⟨(k : Fin n₀ → R), hrk k⟩
+  haveI : Module.Finite R ↥(LinearMap.ker d) := Module.Finite.of_surjective r hrsurj
+  -- `𝔪·R^{n₀} ∩ ker d ≤ 𝔪 · ker d`, read off the retraction
+  have hdesc : ∀ (m : Ideal R) (k : ↥(LinearMap.ker d)),
+      (k : Fin n₀ → R) ∈ m • (⊤ : Submodule R (Fin n₀ → R)) →
+      k ∈ m • (⊤ : Submodule R ↥(LinearMap.ker d)) := by
+    intro m k hk
+    have hmap : r (k : Fin n₀ → R) ∈
+        Submodule.map r (m • (⊤ : Submodule R (Fin n₀ → R))) :=
+      Submodule.mem_map_of_mem hk
+    rw [Submodule.map_smul'', Submodule.map_top,
+      LinearMap.range_eq_top.mpr hrsurj] at hmap
+    rw [hrk k] at hmap
+    exact hmap
+  -- Nakayama on the quotient by the line `R·x`
+  set L : Submodule R ↥(LinearMap.ker d) := Submodule.span R {x} with hLdef
+  have hquot : ∀ m : Ideal R, m.IsMaximal →
+      (⊤ : Submodule R (↥(LinearMap.ker d) ⧸ L)) ≤
+        m • (⊤ : Submodule R (↥(LinearMap.ker d) ⧸ L)) := by
+    intro m hm
+    rintro z -
+    obtain ⟨k, rfl⟩ := L.mkQ_surjective z
+    have hcomap : (k : Fin n₀ → R) ∈
+        Submodule.comap d (m • (⊤ : Submodule R (Fin n₁ → R))) := by
+      simp only [Submodule.mem_comap]
+      have hk : d (k : Fin n₀ → R) = 0 := k.2
+      rw [hk]
+      exact zero_mem _
+    rw [hfib m hm] at hcomap
+    obtain ⟨u, hu, v, hv, huv⟩ := Submodule.mem_sup.mp hcomap
+    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hu
+    have hvk : v = ((k - c • x : ↥(LinearMap.ker d)) : Fin n₀ → R) := by
+      have hkv : (k : Fin n₀ → R) = c • (x : Fin n₀ → R) + v := huv.symm
+      push_cast
+      rw [hkv]
+      abel
+    have hvmem : (k - c • x : ↥(LinearMap.ker d)) ∈
+        m • (⊤ : Submodule R ↥(LinearMap.ker d)) :=
+      hdesc m _ (hvk ▸ hv)
+    have hkx : L.mkQ k = L.mkQ (k - c • x) := by
+      rw [Submodule.mkQ_apply, Submodule.mkQ_apply, Submodule.Quotient.eq]
+      have hsub : k - (k - c • x) = c • x := by abel
+      rw [hsub, hLdef]
+      exact Submodule.mem_span_singleton.mpr ⟨c, rfl⟩
+    rw [hkx]
+    have hmapq : L.mkQ (k - c • x) ∈
+        Submodule.map L.mkQ (m • (⊤ : Submodule R ↥(LinearMap.ker d))) :=
+      Submodule.mem_map_of_mem hvmem
+    rw [Submodule.map_smul'', Submodule.map_top,
+      LinearMap.range_eq_top.mpr L.mkQ_surjective] at hmapq
+    exact hmapq
+  haveI : Module.Finite R (↥(LinearMap.ker d) ⧸ L) :=
+    Module.Finite.of_surjective L.mkQ L.mkQ_surjective
+  have htop : (⊤ : Submodule R (↥(LinearMap.ker d) ⧸ L)) = ⊥ :=
+    eq_bot_of_fg_of_le_smul_of_forall_isMaximal (Module.Finite.fg_top) hquot
+  refine le_antisymm (fun k _ => ?_) le_top
+  have hz : L.mkQ k = 0 := by
+    have := htop.le (Submodule.mem_top (x := L.mkQ k))
+    simpa using this
+  simpa [hLdef, Submodule.Quotient.mk_eq_zero] using hz
+
+/-- **LEAF 1a⁗ — GROTHENDIECK'S DEGREE-`0` COMPLEX, FINITE FREE, WITH PROJECTIVE IMAGE**
+(LEAF, CUT 2026-07-31 out of `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` immediately
+below, which is now PROVEN over it together with the bridge above).
+
+**THIS IS THE ONLY GEOMETRIC OBLIGATION LEFT IN THIS FILE**, and it is a NAMED CLASSICAL
+THEOREM rather than an ad-hoc algebraic one: it is the degree-`0` part of the finite free
+complex computing `Rf_*𝒪_X`, EGA III 6.10.5 / Mumford *Abelian Varieties* §5 / Hartshorne
+III.12.2, together with the base-change clause that `h` supplies.  In the language of the
+pin-free literature it is Stacks 0B91 (`Rf_*𝒪_X` is a **perfect** complex for `f` proper,
+flat and of finite presentation) plus the observation that `h` makes `H⁰` commute with base
+change, i.e. makes `range d` flat.
+
+**What it says.**  With `R = Γ(S, ⊤)` and `A = Γ(X, ⊤)` there are `n₀`, `n₁` and an
+`R`-linear `d : R^{n₀} ⟶ R^{n₁}` with
+
+* `Module.Projective R (range d)` — the image of `d` is a projective `R`-module;
+* `A ≃ₗ[R] ker d` — global sections are the equalizer of the two-term complex;
+* for every maximal `𝔪`, `d⁻¹(𝔪·R^{n₁}) = R·(e 1) + 𝔪·R^{n₀}` — the SAME complex computes
+  `H⁰` of the fibre after reduction mod `𝔪`, and that `H⁰` is the line spanned by the image
+  of `1 ∈ A`.  This clause is `h s` read through the complex.
+
+**RELATION TO THE STATEMENT IT REPLACES: they are EQUIVALENT, so no audit is voided.**  The
+leaf below is derived from this one (`ker_eq_span_of_projective_range_of_forall_isMaximal`
+above plus four lines of `Γ`-bookkeeping).  Conversely this one follows from that one exactly
+as `exists_finiteFree_ker_linearEquiv_appTop_of_isIso_appTop_fiber` far below is proved from
+it: once `A ≅ R`, take `R^1 ⟶ R^0` with `d = 0`, whose image `⊥` is projective.  So every
+negative result recorded on the leaf below — (D1)'s `ℤ_p ⋉ ℚ_p`, (D2)'s route, (E)'s cusp
+`k[t², t³] ⊆ k[t]`, (F)'s circular diagonal, and audit blocks (A)–(D) on
+`finiteType_appTop_of_isProper` — transfers verbatim and still rules out the same shortcuts.
+**What the re-cut buys is not a weaker obligation but a NAMED one**: the whole
+commutative-algebra half of the argument, which was previously entangled with the geometry,
+is now proven, and what is left is a single classical theorem with a textbook proof.
+
+**WHY `Module.Projective (range d)` AND NOT `Module.Flat`.**  The two agree here — `range d`
+is finitely presented once `ker d` is finite, and finitely presented flat is projective — but
+projectivity is the form that can be USED without first knowing `ker d` is finite, which is
+precisely the finiteness this file is trying to establish.  Choosing `Flat` instead would
+reintroduce the circularity through `module_finite_appTop_of_isProper`.  (`Flat` is what
+`exists_flatRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` far below asks for; that
+statement sits underneath `module_finite_appTop_of_isProper` and so may use it.)
+
+**FAITHFULNESS.**  `Module.Projective R (range d)` is TRUE in the classical situation and the
+reason is worth recording, because it is where `h` does its work: `range d` is finitely
+presented (`R^{n₀}` is finite free and `ker d ≅ A` is finite), and `Tor₁^R(range d, M)` is
+exactly the obstruction to `H⁰(X, 𝒪) ⊗_R M ⟶ H⁰(X_M, 𝒪)` being an isomorphism.  Stacks 0E0S
+— `f_*𝒪_X = 𝒪_Y` for `f` proper, flat, of finite presentation with geometrically reduced
+connected fibres, **and this holds after any base change** — says that obstruction vanishes
+for every `M`.  So flatness, hence projectivity, of the image is a *consequence of the
+classical theorem including its base-change clause*, and asking for it is not asking for more
+than the literature provides.  Without `h` it is false exactly where `h⁰` jumps; audit block
+(A) on `finiteType_appTop_of_isProper` below carries the char-`2` wild-fibre witness.
+
+**NON-VACUITY.**  The existential is not satisfiable by a degenerate choice: as noted above,
+the cheapest witness `R^1 ⟶ R^0` requires `A = R·1`, which is what the leaf exists to prove.
+That is a property of every terminal leaf and not a defect of this cut — the same paragraph
+appears on `exists_flatRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` below.
+
+**THE ROUTE, AND ONE NEW REDUCTION THAT NEEDS NO COHERENCE AT ALL** (2026-07-31).  The Čech
+description is the source of the complex and it is much cheaper than the coherence theorem
+that pins it down.  `f` proper over an affine `S` makes `X` quasi-compact and separated, so a
+finite affine cover `{U_i}` exists and every `U_i ∩ U_j` is affine.  Put
+`C₀ := ∏_i Γ(U_i, 𝒪)`, `C₁ := ∏_{i<j} Γ(U_i ∩ U_j, 𝒪)` and `d :=` the difference of the two
+restrictions.  Then, **by the sheaf axiom alone and with no cohomology theory whatsoever**:
+
+* `A = ker d`;
+* each `C_j` is a FLAT `R`-module, because `f` is flat and each `U` is affine;
+* for every `R`-algebra `R'`, `Γ(X_{R'}, 𝒪) = ker(d ⊗_R R')`, because
+  `Γ(U ×_S Spec R', 𝒪) = Γ(U, 𝒪) ⊗_R R'` for affine `U` and the cover base-changes.
+
+The terms are flat but not finite, so this is NOT the leaf; the leaf's finite freeness is the
+coherence theorem.  But the flat form is enough over an **artinian** base, and that reduction
+is worth writing down because it is elementary and was not previously recorded:
+
+> Let `R` be artinian local with residue field `k` and `length R = n`.  For an `R`-module `M`
+> put `H⁰(M) := ker(d ⊗ M)`.  Flatness of `C₀` and `C₁` makes `H⁰` LEFT EXACT (snake lemma on
+> the two exact rows `0 → C_j ⊗ M' → C_j ⊗ M → C_j ⊗ M'' → 0`).  Filter
+> `0 = J_0 ⊂ ⋯ ⊂ J_n = R` with `J_i/J_{i-1} ≅ k`; left exactness embeds
+> `H⁰(J_i)/H⁰(J_{i-1}) ↪ H⁰(k) = Γ(X_k, 𝒪) = k` by `h`, so
+> `length_R A = length_R H⁰(R) ≤ n`.  Since `R ⟶ A` is injective
+> (`injective_appTop_of_flat_of_surjective`), `length_R A ≥ n`, so `A = R·1`. ∎
+
+Two notes on that reduction.  *First*, no tensor product is needed to state it: flatness of
+`C₀` identifies `H⁰(J)` with the honest submodule `ker d ∩ J·C₀`, so the whole dévissage can
+be written with `Submodule.inf` and `Submodule.smul`.  *Second*, it is exactly Step 1 of the
+elementary route recorded on `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber` below,
+with the quasi-coherent ideal sheaf `J·𝒪_X` replaced by `J·C₀`; the sheaf-theoretic
+formulation is not needed and mathlib's `IdealSheafData` need not be involved.
+
+So the remaining work splits cleanly into two independent tasks:
+
+1. **The Čech complex** (flat terms, base change, `A = ker d`) — provable at this pin from
+   the sheaf axiom, `Flat f` and affine base change.  It closes the ARTINIAN case outright
+   via the dévissage above, and it is the object the coherence theorem improves.
+2. **Finite freeness**, i.e. replacing the flat Čech complex by a finite free one — the
+   coherence theorem proper, which classically comes from the noetherian case (EGA III 3.2.1)
+   plus limits.  Audit block (B) on `finiteType_appTop_of_isProper` below records what
+   mathlib has for the second half (`AffineTransitionLimit.lean`) and what it lacks (object
+   descent, EGA IV 8.8.2 / Stacks 01ZM). -/
+theorem exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber
+    (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
+    letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+    ∃ (n₀ n₁ : ℕ) (d : (Fin n₀ → ↥Γ(S, ⊤)) →ₗ[↥Γ(S, ⊤)] (Fin n₁ → ↥Γ(S, ⊤)))
+      (e : ↥Γ(X, ⊤) ≃ₗ[↥Γ(S, ⊤)] LinearMap.ker d),
+      Module.Projective ↥Γ(S, ⊤) ↥(LinearMap.range d) ∧
+      ∀ m : Ideal ↥Γ(S, ⊤), m.IsMaximal →
+        Submodule.comap d (m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₁ → ↥Γ(S, ⊤)))) =
+          Submodule.span ↥Γ(S, ⊤) {((e 1 : LinearMap.ker d) : Fin n₀ → ↥Γ(S, ⊤))} ⊔
+            m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₀ → ↥Γ(S, ⊤))) :=
+  sorry
+
+/-- **1a‴ — `a|_{X_s} = 0 ⟹ a ∈ 𝔪 · R[a]`, FOR ITS OWN `a`** — **PROVEN** (2026-07-31) over
+`exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` and
+`ker_eq_span_of_projective_range_of_forall_isMaximal` immediately above.  **The two statements
+are EQUIVALENT** (the derivation in both directions is in that leaf's docstring), so
+everything recorded below — including the audit blocks — is still live evidence, now about
+the complex.  Read that docstring for where the file stands; read this one for what was tried.
+It was itself RE-CUT 2026-07-30
+out of `mem_smul_adjoin_of_appTop_fiberι_eq_zero` immediately below, which is PROVEN over it.
 `𝔪` is `RingHom.ker (S.Γevaluation s)`, i.e. the maximal ideal cut out by `s` when `s` comes
 from `exists_point_ker_Γevaluation_eq_of_isMaximal`.
 
-**THIS IS THE ONLY GEOMETRIC OBLIGATION LEFT IN THIS FILE.**  It carries BOTH of the leaves
-this file had before, and it is the sharpest form either of them takes: one element, one
-hypothesis, no quantifier over a submodule, no ideal, no `span {1}`, no maximality — only
-*vanishing on a fibre*.  The two derivations are in the file, immediately below and at
+**IT CARRIED, UNTIL 2026-07-31, THE WHOLE GEOMETRIC OBLIGATION OF THIS FILE.**  It carries
+BOTH of the leaves this file had before, and it is the sharpest form either of them takes:
+one element, one hypothesis, no quantifier over a submodule, no ideal, no `span {1}`, no
+maximality — only *vanishing on a fibre*.  The two derivations are in the file, immediately
+below and at
 `mem_smul_top_of_appTop_fiberι_eq_zero`, and they are three lines each:
 
 * the general `x ∈ R[a]` form follows because **`x` is its own `a`**.  Apply this leaf to `x`,
@@ -1487,8 +1744,47 @@ theorem self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero (f : X ⟶ S) [IsAff
     (a : ↥Γ(X, ⊤)) (ha : (f.fiberι s).appTop.hom a = 0) :
     letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
     a ∈ RingHom.ker (S.Γevaluation s).hom •
-      (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule :=
-  sorry
+      (Algebra.adjoin ↥Γ(S, ⊤) {a}).toSubmodule := by
+  letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+  obtain ⟨n₀, n₁, d, e, hproj, hfib⟩ :=
+    exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber f h
+  -- STEP 1: the bridge makes `ker d` the line spanned by `e 1`, so `R ⟶ A` is onto.
+  have hspan := ker_eq_span_of_projective_range_of_forall_isMaximal d hproj (e 1) hfib
+  have halg : algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤) = f.appTop.hom := rfl
+  obtain ⟨c, hc⟩ : ∃ c : ↥Γ(S, ⊤), a = algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤) c := by
+    have hmem : e a ∈ Submodule.span ↥Γ(S, ⊤) {e 1} := hspan ▸ Submodule.mem_top
+    obtain ⟨c, hcv⟩ := Submodule.mem_span_singleton.mp hmem
+    refine ⟨c, ?_⟩
+    have he : e a = e (c • (1 : ↥Γ(X, ⊤))) := by rw [map_smul]; exact hcv.symm
+    have ha' := e.injective he
+    rw [ha', Algebra.smul_def, mul_one]
+  -- STEP 2: `a|_{X_s} = 0` forces `c` into the ideal cut out by `s`.
+  have hfac : f.appTop ≫ (f.fiberι s).appTop
+      = (S.fromSpecResidueField s).appTop ≫ (f.fiberToSpecResidueField s).appTop := by
+    rw [← Scheme.Hom.comp_appTop, ← Scheme.Hom.comp_appTop, f.fiber_fac s]
+  have hck : c ∈ RingHom.ker (S.Γevaluation s).hom := by
+    haveI := h s
+    have h0 : ((f.appTop ≫ (f.fiberι s).appTop)).hom c = 0 := by
+      rw [CommRingCat.hom_comp]
+      simp only [RingHom.coe_comp, Function.comp_apply]
+      rw [← halg, ← hc]
+      exact ha
+    rw [hfac, appTop_fromSpecResidueField_eq_Γevaluation, CommRingCat.hom_comp,
+      CommRingCat.hom_comp] at h0
+    simp only [RingHom.coe_comp, Function.comp_apply] at h0
+    have hz1 : (f.fiberToSpecResidueField s).appTop.hom
+        (((Scheme.ΓSpecIso (S.residueField s)).inv).hom ((S.Γevaluation s).hom c)) =
+        (f.fiberToSpecResidueField s).appTop.hom 0 := by rw [map_zero]; exact h0
+    have h1 := (ConcreteCategory.bijective_of_isIso
+      ((f.fiberToSpecResidueField s).appTop)).1 hz1
+    have hz2 : ((Scheme.ΓSpecIso (S.residueField s)).inv).hom ((S.Γevaluation s).hom c) =
+        ((Scheme.ΓSpecIso (S.residueField s)).inv).hom 0 := by rw [map_zero]; exact h1
+    have h2 := (ConcreteCategory.bijective_of_isIso
+      ((Scheme.ΓSpecIso (S.residueField s)).inv)).1 hz2
+    exact RingHom.mem_ker.mpr h2
+  -- STEP 3: `a = c · 1` with `c ∈ 𝔪` and `1 ∈ R[a]`.
+  rw [hc, Algebra.algebraMap_eq_smul_one]
+  exact Submodule.smul_mem_smul hck (Subalgebra.one_mem _)
 
 /-- **LEAF 1a″ — A SECTION OF `R[a]` VANISHING ON THE FIBRE `X_s` LIES IN `𝔪 · R[a]`** —
 **PROVEN** (2026-07-30) over `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` immediately
@@ -5028,8 +5324,9 @@ and the second has since been proven, as has `finiteType_appTop_of_isProper`; th
 `eq_span_one_sup_smul_top_appTop_of_isIso_appTop_fiber`, and both of those have since been
 proven too — the set was then `mem_smul_adjoin_of_appTop_fiberι_eq_zero` and
 `mem_smul_top_of_appTop_fiberι_eq_zero`, and those are now proven as well, over the single
-`self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero`.  Any count in this file is stale by
-construction; run the compiler.)
+`self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero`, and that in turn is now proven over
+`exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber`.  Any count
+in this file is stale by construction; run the compiler.)
 
 The concrete obstruction the earlier audit named is still worth recording, because it is
 what the covering step had to get past: the reduction to an affine target cannot be done
