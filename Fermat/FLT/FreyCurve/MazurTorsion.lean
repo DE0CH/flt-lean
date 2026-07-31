@@ -45060,6 +45060,24 @@ apply; positive-definiteness (`4N = (2a + b)² + p b²`) plus "no nonzero intege
 kills every relative point" finishes it.  Only the SPANNING half needs to know
 what `End(d.E)` IS, and that is where the transport is unavoidable.
 
+**BOTH HALVES ARE NOW PROVEN AND THIS SUB-SUBSECTION IS CLOSED** (2026-07-31,
+flt-lean-101).  The spanning half was proven over the transport this note
+predicted would be unavoidable — and it is unavoidable, and it was ALREADY CUT,
+as `exists_end_of_relPointEndo` in the `ℚ̄`-Weierstrass-bridge subsection ~1400
+lines above.  So the transport never had to be re-cut for `End(d.E)`: the bridge
+is stated for an ARBITRARY additive natural `u` at an arbitrary level, which is
+exactly the "same map applied to an ARBITRARY additive natural `u`" this note
+asks for, and its injectivity clause is `relPointEndo_ext`, PROVEN beside it.
+The paragraph below saying "a successor who builds the TRANSPORT gets both at
+once" was therefore right about the mathematics and wrong about the work: the
+transport was built for a different consumer the day before this note was
+written, and the only thing owed was to apply it.  **The moral, for the next
+leaf in this file that needs an endomorphism of `d.E` as an element of a ring:
+grep the bridge subsection first — the `ℚ̄`-Weierstrass bridge is the single
+place this file crosses from the functor of points into `WeierstrassCurve.End`,
+and every consumer of it should go through `exists_end_of_relPointEndo` rather
+than cut a specialised twin.**
+
 **What the split buys, since the leaf count rises from one anonymous to two
 named.**  Everything algebraic is now discharged: given the basis, the passage
 from `u² − u + m = 0` to `u = φ ∨ u + φ = 1` is the computation in
@@ -45230,10 +45248,49 @@ theorem intBasis_indep_of_isCMByRamifiedMaximalOrder (p : ℕ)
   have hk := key U g x
   rwa [← natCast_zsmul, Int.toNat_of_nonneg hNpos.le]
 
-/-- **EVERY endomorphism of `d.E` is `a + bφ`** (sorry leaf, introduced
-2026-07-30 by the naming of `phi_or_conj_of_isEllipticIsoOf`'s anonymous `hend`;
-the spanning half of "`1, φ` is a `ℤ`-basis of `End(d.E)`", and the half that
-carries the maximality of the order).
+/-- **EVERY endomorphism of `d.E` is `a + bφ`** (introduced 2026-07-30 by the
+naming of `phi_or_conj_of_isEllipticIsoOf`'s anonymous `hend`; the spanning half
+of "`1, φ` is a `ℤ`-basis of `End(d.E)`", and the half that carries the
+maximality of the order.  **PROVEN 2026-07-31, flt-lean-101 — NO LEAF WAS
+ADDED**).
+
+**THE PROOF IS PURE TRANSPORT, AND EVERY INPUT WAS ALREADY IN THIS FILE.**  It
+is the composite of three declarations above, in this order:
+
+1. `exists_isWeierstrassModel_algClos` (PROVEN) supplies a Weierstrass model `W`
+   of `d.ab` over `ℚ̄`;
+2. `exists_end_of_relPointEndo` (the `ℚ̄`-Weierstrass bridge, a leaf) is applied
+   TWICE — to `h.phi`, giving `Φ ∈ End W` with `Φ² + m = Φ` by the transport of
+   `phi_sq` copied verbatim out of `exists_end_of_isCMByRamifiedMaximalOrder`,
+   and to the given `u`, giving `X ∈ End W`;
+3. `mem_intSpan_of_maximalOrderRel` (PROVEN) — the maximality of `ℤ[Φ]` at a
+   squarefree `p ≡ 3 mod 4` — writes `X = a + bΦ` in `End W`.
+
+`relPointEndo_ext` (PROVEN) then descends from the base point `g = 𝟙` to every
+test object, which is where `hu_pre` is spent a second time.  So the whole
+arithmetic content of this leaf was the `WeierstrassCurve.End` statement, and
+its geometric content is exactly the bridge leaf — which is shared with
+`exists_end_of_isCMByRamifiedMaximalOrder` and with
+`phi_or_conj_of_isEllipticIsoOf`, so closing this added nothing to the frontier.
+
+**A DUPLICATE OF THE BRIDGE WAS NOT NEEDED, AND THAT IS THE FINDING.**  A branch
+(`flt-lean-106`, 2026-07-31) cut a fresh leaf
+`exists_endTransport_of_isCMByRamifiedMaximalOrder` for step 2 above, at
+`IsCMByRamifiedMaximalOrder` and at this `p`.  `exists_end_of_relPointEndo` had
+been cut a day earlier, is stated with `N` universally quantified over an
+arbitrary additive natural `u`, is strictly more general, and already had two
+consumers.  Nothing about the transport is specific to `φ` or to `p`, so the
+general bridge is the right owner and the specialised leaf was never owed.
+
+**THE ONE STEP THAT IS NOT BOOKKEEPING** is naturality of the family
+`fun U g x => a • x + b • φ x`, which `relPointEndo_ext` demands.  The `φ` half
+is `phi_pre`; the `a • x` half needs `RelPoint.pre` to commute with `+` and with
+`ℤ`-scaling, and that is `ab.pre_add` bundled as an `AddMonoidHom.mk'` and read
+through `map_add` / `map_zsmul` (`ab.preAddHom` in `AbelianSchemeIsogeny.lean` is
+the same bundling, but it is a `def`, so it is inlined here rather than imported).
+Note the goal presents `RelPoint.pre k hg (a • x + b • φ x)` with the `+` of
+`ab.addCommGroup`, NOT as `ab.add`, so `rw [ab.pre_add]` does not fire on it —
+the bundled-hom route is what works.
 
 TRUE.  `u` is additive (`hu_add`) and natural in the test object (`hu_pre`), so
 by Yoneda it is an endomorphism of the group scheme `d.f`, i.e. an element of
@@ -45273,15 +45330,15 @@ of group schemes, and no such morphism need be `a + bφ` (translation by any
 NOT VACUOUS: `u = h.phi` satisfies both hypotheses (`phi_add`, `phi_pre`) and is
 `a = 0, b = 1`; `u = id` is `a = 1, b = 0`. -/
 theorem mem_intSpan_of_isCMByRamifiedMaximalOrder (p : ℕ)
-    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
     {d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
     (h : IsCMByRamifiedMaximalOrder p d)
     (u : ∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))),
       RelPoint d.f g → RelPoint d.f g)
-    (_hu_add : ∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+    (hu_add : ∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
       (x y : RelPoint d.f g),
       u U g (d.ab.add x y) = d.ab.add (u U g x) (u U g y))
-    (_hu_pre : ∀ (U' U : Scheme.{0}) (k : U' ⟶ U)
+    (hu_pre : ∀ (U' U : Scheme.{0}) (k : U' ⟶ U)
       (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
       (g' : U' ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))) (hg : k ≫ g = g')
       (x : RelPoint d.f g),
@@ -45289,8 +45346,59 @@ theorem mem_intSpan_of_isCMByRamifiedMaximalOrder (p : ℕ)
     ∃ a b : ℤ, ∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
       (x : RelPoint d.f g),
       letI := d.ab.addCommGroup g
-      u U g x = a • x + b • h.phi x :=
-  sorry
+      u U g x = a • x + b • h.phi x := by
+  classical
+  -- **1.** Riemann–Roch over `ℚ̄`: a Weierstrass model of `d.E`
+  obtain ⟨W, hWell, hW⟩ := exists_isWeierstrassModel_algClos d
+  haveI := hWell
+  letI := d.ab.addCommGroup (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+  -- **2.** the `ℚ̄`-Weierstrass bridge, applied twice: to `h.phi` and to `u`
+  obtain ⟨e, he⟩ := exists_end_of_relPointEndo hW
+  obtain ⟨Φ, hΦ⟩ := he (fun _ _ x => h.phi x) (fun _ _ x y => h.phi_add x y)
+    (fun _ _ k _ _ hg x => h.phi_pre k hg x)
+  obtain ⟨X, hX⟩ := he u hu_add hu_pre
+  -- **3.** the ring relation `Φ² + m = Φ`, which is `phi_sq` read across `e`
+  -- (verbatim from `exists_end_of_isCMByRamifiedMaximalOrder` above)
+  have hrel0 : Φ * Φ + (((p + 1) / 4 : ℕ) : _root_.WeierstrassCurve.End W.toAffine) = Φ := by
+    refine Subtype.ext (AddMonoidHom.ext fun P => ?_)
+    obtain ⟨x, rfl⟩ : ∃ x, e x = P := ⟨e.symm P, e.apply_symm_apply P⟩
+    show (Φ : AddMonoid.End W.toAffine.Point) ((Φ : AddMonoid.End W.toAffine.Point) (e x))
+        + ((p + 1) / 4 : ℕ) • e x = (Φ : AddMonoid.End W.toAffine.Point) (e x)
+    rw [hΦ x, hΦ (h.phi x), ← map_nsmul e, ← map_add e]
+    exact congrArg e (h.phi_sq x)
+  have hrel : Φ * Φ + ((((p + 1) / 4 : ℕ) : ℤ) : _root_.WeierstrassCurve.End W.toAffine) = Φ := by
+    rw [Int.cast_natCast]; exact hrel0
+  -- **4.** `ℤ[Φ]` is MAXIMAL at a squarefree `p ≡ 3 mod 4`, so `X = a + bΦ`
+  have hpm : (p : ℤ) = 4 * (((p + 1) / 4 : ℕ) : ℤ) - 1 := by fin_cases hp <;> norm_num
+  have hppos : (0 : ℤ) < (p : ℤ) := by fin_cases hp <;> norm_num
+  obtain ⟨a, b, hab⟩ := mem_intSpan_of_maximalOrderRel (p : ℤ) (((p + 1) / 4 : ℕ) : ℤ) hpm hppos
+    (sq_eq_one_of_sq_mul_eq_neg p hp) Φ hrel X
+  refine ⟨a, b, ?_⟩
+  -- **5.** descend from the base point `g = 𝟙` to every test object
+  refine relPointEndo_ext u
+    (fun U g x => letI := d.ab.addCommGroup g; a • x + b • h.phi x) hu_pre ?_ ?_
+  · -- naturality of `fun U g x => a • x + b • φ x`: `phi_pre` for the `φ` half,
+    -- and `pre_add` bundled as an `AddMonoidHom` for the `a • x` half
+    intro U' U k g g' hg x
+    letI := d.ab.addCommGroup g
+    letI := d.ab.addCommGroup g'
+    show a • RelPoint.pre k hg x + b • h.phi (RelPoint.pre k hg x)
+      = RelPoint.pre k hg (a • x + b • h.phi x)
+    have hadd : ∀ y z : RelPoint d.f g,
+        RelPoint.pre k hg (y + z) = RelPoint.pre k hg y + RelPoint.pre k hg z := fun y z =>
+      map_add (AddMonoidHom.mk' (fun w : RelPoint d.f g => RelPoint.pre k hg w)
+        (fun w v => d.ab.pre_add k hg w v)) y z
+    have hzs : ∀ (n : ℤ) (y : RelPoint d.f g),
+        RelPoint.pre k hg (n • y) = n • RelPoint.pre k hg y := fun n y =>
+      map_zsmul (AddMonoidHom.mk' (fun w : RelPoint d.f g => RelPoint.pre k hg w)
+        (fun w v => d.ab.pre_add k hg w v)) n y
+    rw [hadd, hzs, hzs, h.phi_pre k hg x]
+  · -- the conclusion at the base point, by injectivity of the bridge `e`
+    intro x
+    show u _ (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) x = a • x + b • h.phi x
+    refine e.injective ?_
+    rw [map_add, map_zsmul, map_zsmul, ← hΦ x, ← hX x, hab]
+    rfl
 
 /-- **`End`-RIGIDITY: a root of `X² − X + (p+1)/4` in `End(d.E)` is `φ` or
 `1 − φ`** (PROVEN 2026-07-30 over the two basis leaves above; this is the
