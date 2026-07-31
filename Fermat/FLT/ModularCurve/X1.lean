@@ -2260,37 +2260,31 @@ basis property does NOT visibly imply `n • y = 0` — the statement
 elements it represents, and applying it at `x = y` needs the very
 uniqueness one is trying to prove.  A search over cyclic groups of order
 `≤ 40` and products `ℤ/m × ℤ/m'` with `m, m' ≤ 12`, for `n ∈ {3, 4, 5}`,
-found no counterexample, so the implication is probably true; it is not
-NEEDED, because the sole caller (`exists_torsionBasisCover_field` below)
+found no counterexample, so the implication was recorded here as "probably
+true".
+
+**It is FALSE, and the search missed it only by stopping at `n = 5`**
+(2026-07-31, while proving `X0.lean`'s `natCast_ne_zero_of_geomBasis`).
+Take `G = ℤ/20`, `n = 6`, `y = z = 1`.  Then `n • x = 0` cuts out
+`T = {0, 10}`; the sums `a + b` with `a, b < 6` run over `0 … 10` with
+multiplicity `min(s + 1, 11 − s)`, which is `1` exactly at `s = 0` and
+`s = 10`.  So `∃!` holds exactly on `T` — the basis property holds — while
+`6 • y = 6 ≠ 0`.  A sweep of all cyclic `ℤ/d`, `d < 60`, `n < 13`, finds 28
+such `(d, n, y, z)`, the smallest being this one; every one has `y` and `z`
+generating the SAME cyclic subgroup, which is the shape the elliptic-curve
+consumers rule out but the abstract statement does not.
+
+So the hypothesis is not merely convenient, it is NECESSARY; and it is not
+COSTLY, because the sole caller (`exists_torsionBasisCover_field` below)
 builds its basis out of `exists_zmodBasis_torsion_geomPoint_field`, which
 returns the two torsion facts alongside it and was discarding them.  The
 caller's own statement is unchanged. -/
 
-/-- **A `ℤ`-multiple of an `n`-torsion element is a `ℕ`-multiple below `n`**
-(PROVEN 2026-07-30) — Euclidean division of the coefficient by `n`, the
-quotient part being killed by `n • z = 0`.  Bookkeeping for
-`natCast_ne_zero_of_indep_point` below and for
-`natCast_ne_zero_of_geomBasis_point` far below, both of whose one appeal to
-the literature (`TorsionCharP.exists_zsmul_eq_of_charP`) returns a
-`ℤ`-multiple while the basis property speaks of `Fin n`-coefficients. -/
-theorem exists_lt_nsmul_eq_zsmul {G : Type*} [AddCommGroup G] {n : ℕ} (hn : n ≠ 0)
-    {z : G} (hz : n • z = 0) (a : ℤ) : ∃ r : ℕ, r < n ∧ a • z = r • z := by
-  have hnpos : (0 : ℤ) < (n : ℤ) := by exact_mod_cast Nat.pos_of_ne_zero hn
-  refine ⟨(a % (n : ℤ)).toNat, ?_, ?_⟩
-  · have h1 : a % (n : ℤ) < (n : ℤ) := Int.emod_lt_of_pos a hnpos
-    have h2 : (0 : ℤ) ≤ a % (n : ℤ) := Int.emod_nonneg a (by omega)
-    omega
-  · have hz' : ((n : ℤ)) • z = 0 := by rw [natCast_zsmul]; exact hz
-    have hsplit : a = (n : ℤ) * (a / (n : ℤ)) + a % (n : ℤ) :=
-      (Int.mul_ediv_add_emod a (n : ℤ)).symm
-    have h2 : (0 : ℤ) ≤ a % (n : ℤ) := Int.emod_nonneg a (by omega)
-    calc a • z = ((n : ℤ) * (a / (n : ℤ)) + a % (n : ℤ)) • z := by rw [← hsplit]
-      _ = (a / (n : ℤ)) • ((n : ℤ) • z) + (a % (n : ℤ)) • z := by
-          rw [add_zsmul, mul_comm, mul_zsmul]
-      _ = (a % (n : ℤ)) • z := by rw [hz', smul_zero, zero_add]
-      _ = ((a % (n : ℤ)).toNat : ℤ) • z := by rw [Int.toNat_of_nonneg h2]
-      _ = (a % (n : ℤ)).toNat • z := natCast_zsmul _ _
-
+/-! `exists_lt_nsmul_eq_zsmul` was HOISTED out of this file on 2026-07-31 into
+`Fermat/FLT/EllipticCurve/GeomTorsionBasis.lean`, unchanged line for line, so
+that `X0.lean` — which this file imports, and which therefore cannot import it
+back — can use it for `natCast_ne_zero_of_geomBasis`.  It is still in scope
+here under its unchanged name, through `X0.lean`'s `public import`. -/
 /-- **AN INDEPENDENT PAIR IN A GROUP WHOSE `n`-TORSION IS `(ℤ/n)²` SPANS IT**
 (PROVEN 2026-07-30) — pure counting: `(a, b) ↦ a·y + b·z` is an injection of
 `Fin n × Fin n` into the `n`-torsion, which has exactly `n²` elements, so it
@@ -4192,136 +4186,15 @@ because `natCast_ne_zero_of_indep_point` there — the independence-side twin of
 `natCast_ne_zero_of_geomBasis_point` below — needs it several thousand lines
 earlier in the file.  Nothing about it changed. -/
 
-/-- **A `Fin n × Fin n`-BASIS OF THE `n`-TORSION OF AN ELLIPTIC CURVE FORCES
-`n` INVERTIBLE** (PROVEN 2026-07-30) — the arithmetic heart of the count
-recorded in the FALSITY AUDIT of
-`isOpenImmersion_equalizer_of_abelianFullLevelStructure` below, and the
-single place where the `Γ₁` leaf recovers, from its full level structure,
-the invertibility of `n` that the `Γ₀` leaf receives outright from a
-`ℚ`-base.
-
-## The statement
-
-`y, z` are two `n`-torsion points of `E(K)` such that EVERY `n`-torsion
-point has exactly one expression `a·y + b·z` with `(a, b) ∈ Fin n × Fin n`
-— i.e. `E(K)[n] ≅ (ℤ/n)²`.  Then `n` is invertible in `K`.
-
-## The proof
-
-Suppose `(n : K) = 0`.  Then `p := ringChar K` is a prime dividing `n`
-(`ringChar.spec`, and `CharP.char_is_prime_or_zero` with `p ≠ 0` because
-`n ≠ 0`).  Write `n = p·m` with `1 ≤ m < n` and set `P := m·y`, `Q := m·z`;
-both are `p`-torsion, since `p·(m·y) = n·y = 0`.
-
-`Q ≠ 0`: were `m·z = 0`, the point `0` would have the two coordinate pairs
-`(0, m)` and `(0, 0)`, and uniqueness would force `m ≡ 0 (mod n)` against
-`0 < m < n`.
-
-`TorsionCharP.exists_zsmul_eq_of_charP` — the geometric `p`-torsion in
-characteristic `p` is CYCLIC, PROVEN 2026-07-25 from the inseparability of
-`[p]` — then produces `k : ℤ` with `P = k·Q`.  Reducing `k·m` modulo `n`
-(`exists_lt_nsmul_eq_zsmul`) gives `r < n` with `m·y = r·z`, so the point
-`m·y` has the two coordinate pairs `(m, 0)` and `(0, r)`; uniqueness forces
-`m ≡ 0 (mod n)`, the same contradiction.
-
-## Faithfulness
-
-The conclusion is exactly the classical dichotomy: for `p ∣ n` in
-characteristic `p` the group `E(K)[n]` is a proper subgroup of `(ℤ/n)²`
-— `E[p^a]` is cyclic or trivial — so the `∃!` hypothesis is unsatisfiable
-there.  `hn` is used only through `n ≠ 0` (at `n = 0` the hypothesis is
-satisfiable and `(0 : K) = 0` holds, so SOME positivity is needed);
-`IsAlgClosed K` is what `TorsionCharP.exists_zsmul_eq_of_charP` consumes. -/
-theorem natCast_ne_zero_of_geomBasis_point {K : Type} [Field K] [IsAlgClosed K] [DecidableEq K]
-    (W : WeierstrassCurve K) [W.IsElliptic] (n : ℕ) (hn : 3 ≤ n)
-    (y z : (W⁄K).Point) (hy : n • y = 0) (hz : n • z = 0)
-    (hb : ∀ x : (W⁄K).Point, n • x = 0 ↔
-      ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) :
-    (n : K) ≠ 0 := by
-  intro hchar
-  have hn0 : n ≠ 0 := by omega
-  haveI : NeZero n := ⟨hn0⟩
-  set p := ringChar K
-  have hpdvd : p ∣ n := (ringChar.spec K n).mp hchar
-  have hp0 : p ≠ 0 := by
-    rintro h
-    rw [h] at hpdvd
-    exact hn0 (Nat.eq_zero_of_zero_dvd hpdvd)
-  have hp : p.Prime := by
-    haveI := ringChar.charP K
-    rcases CharP.char_is_prime_or_zero K p with h | h
-    · exact h
-    · exact absurd h hp0
-  have hcharp : (p : K) = 0 := ringChar.Nat.cast_ringChar
-  obtain ⟨m, hm⟩ := hpdvd
-  have hm0 : m ≠ 0 := by rintro rfl; simp at hm; exact hn0 hm
-  have hmlt : m < n := by
-    have h2 := hp.two_le
-    have : 1 * m < p * m :=
-      Nat.mul_lt_mul_of_lt_of_le (by omega) (le_refl m) (Nat.pos_of_ne_zero hm0)
-    omega
-  set P : (W⁄K).Point := m • y with hPdef
-  set Q : (W⁄K).Point := m • z with hQdef
-  have hPtor : ((p : ℕ) : ℤ) • P = 0 := by
-    rw [natCast_zsmul, hPdef, smul_smul, ← hm]; exact hy
-  have hQtor : ((p : ℕ) : ℤ) • Q = 0 := by
-    rw [natCast_zsmul, hQdef, smul_smul, ← hm]; exact hz
-  obtain ⟨c0, -, huniq0⟩ := (hb 0).mp (by simp)
-  have hQ0 : Q ≠ 0 := by
-    intro h
-    have e1 : (0 : (W⁄K).Point)
-        = ((((0 : Fin n), (⟨m, hmlt⟩ : Fin n)) : Fin n × Fin n).1 : ℕ) • y
-          + (((((0 : Fin n), (⟨m, hmlt⟩ : Fin n))) : Fin n × Fin n).2 : ℕ) • z := by
-      simpa using h.symm
-    have e2 : (0 : (W⁄K).Point)
-        = ((((0 : Fin n), (0 : Fin n)) : Fin n × Fin n).1 : ℕ) • y
-          + (((((0 : Fin n), (0 : Fin n))) : Fin n × Fin n).2 : ℕ) • z := by simp
-    have hmz : (⟨m, hmlt⟩ : Fin n) = (0 : Fin n) :=
-      congrArg Prod.snd ((huniq0 _ e1).trans (huniq0 _ e2).symm)
-    exact hm0 (by simpa using congrArg Fin.val hmz)
-  obtain ⟨kk, hkk⟩ := TorsionCharP.exists_zsmul_eq_of_charP W hp hcharp P Q hPtor hQtor hQ0
-  obtain ⟨r, hrlt, hr⟩ := exists_lt_nsmul_eq_zsmul hn0 hz (kk * (m : ℤ))
-  have hPr : P = r • z := by
-    rw [hkk, hQdef, ← natCast_zsmul z m, ← mul_zsmul, hr]
-  have hPtorn : n • P = 0 := by
-    rw [hPdef, smul_comm]; rw [hy, smul_zero]
-  obtain ⟨c, -, huniq⟩ := (hb P).mp hPtorn
-  have e1 : P = ((((⟨m, hmlt⟩ : Fin n), (0 : Fin n)) : Fin n × Fin n).1 : ℕ) • y
-      + (((((⟨m, hmlt⟩ : Fin n), (0 : Fin n))) : Fin n × Fin n).2 : ℕ) • z := by
-    simp [hPdef]
-  have e2 : P = ((((0 : Fin n), (⟨r, hrlt⟩ : Fin n)) : Fin n × Fin n).1 : ℕ) • y
-      + (((((0 : Fin n), (⟨r, hrlt⟩ : Fin n))) : Fin n × Fin n).2 : ℕ) • z := by
-    simpa using hPr
-  have hmz : (⟨m, hmlt⟩ : Fin n) = (0 : Fin n) :=
-    congrArg Prod.fst ((huniq _ e1).trans (huniq _ e2).symm)
-  exact hm0 (by simpa using congrArg Fin.val hmz)
-
-/-- **A `Fin n × Fin n`-basis of the `n`-torsion transports along an
-`AddEquiv`** (PROVEN 2026-07-30) — pure bookkeeping, and the bridge between
-`AbelianFullLevelStructure.geom_basis` (stated on `RelPoint f t`) and
-`natCast_ne_zero_of_geomBasis_point` (stated on `(W⁄K).Point`). -/
-theorem geomBasis_addEquiv {G H : Type*} [AddCommGroup G] [AddCommGroup H] (φ : G ≃+ H)
-    {n : ℕ} {y z : G}
-    (hb : ∀ x : G, n • x = 0 ↔ ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) :
-    ∀ x : H, n • x = 0 ↔
-      ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • φ y + (c.2 : ℕ) • φ z := by
-  intro x
-  have htor : n • x = 0 ↔ n • φ.symm x = 0 := by
-    constructor
-    · intro h
-      apply φ.injective
-      rw [map_nsmul, φ.apply_symm_apply, h, map_zero]
-    · intro h
-      rw [← φ.apply_symm_apply x, ← map_nsmul, h, map_zero]
-  rw [htor, hb]
-  refine existsUnique_congr (fun c => ?_)
-  constructor
-  · intro h
-    rw [← φ.apply_symm_apply x, h, map_add, map_nsmul, map_nsmul]
-  · intro h
-    apply φ.injective
-    rw [φ.apply_symm_apply, h, map_add, map_nsmul, map_nsmul]
-
+/-! `natCast_ne_zero_of_geomBasis_point` and `geomBasis_addEquiv` were HOISTED
+out of this file on 2026-07-31 into `Fermat/FLT/EllipticCurve/GeomTorsionBasis.lean`,
+unchanged line for line, for `X0.lean`'s `natCast_ne_zero_of_geomBasis` — the
+same statement one level down, on the geometric fibre of an abelian scheme
+rather than on `(W⁄K).Point`.  `X0.lean` already had the bridge between the two
+(`exists_weierstrassModel_geomFibreAddEquiv_of_geomPoint`); the arithmetic was
+the only thing it lacked, and it lacked it only because the arithmetic lived
+DOWNSTREAM of it.  Both are still in scope here under their unchanged names,
+through `X0.lean`'s `public import`. -/
 /-- **A FULL LEVEL-`n` STRUCTURE FORCES `n` INVERTIBLE AT EVERY GEOMETRIC
 POINT OF THE BASE** (PROVEN 2026-07-30) — the count that the FALSITY AUDIT
 of `isOpenImmersion_equalizer_of_abelianFullLevelStructure` describes,
@@ -4350,37 +4223,12 @@ theorem natCast_ne_zero_geomPoint_of_abelianFullLevelStructure (n : ℕ) (hn : 3
   · rw [← map_nsmul, RelPoint.nsmul_pre_eq_zero abs t (Category.comp_id t) L.nsmul_P, map_zero]
   · rw [← map_nsmul, RelPoint.nsmul_pre_eq_zero abs t (Category.comp_id t) L.nsmul_Q, map_zero]
 
-/-- **Every geometric fibre of `E[n]` is REDUCED over an ARBITRARY base on
-which `n` is invertible at every geometric point** (PROVEN 2026-07-30) —
-`isReduced_geomFibre_nTorsion_field` with its `hnK'` promoted from a
-consequence of the `K`-base to a hypothesis, which is what makes it usable
-over the arbitrary base of the equalizer leaf.  The proof is that node's,
-line for line. -/
-theorem isReduced_geomFibre_nTorsion_of_natCast_ne_zero (n : ℕ) (hn : 3 ≤ n)
-    {E Z : Scheme.{0}} {f : E ⟶ Z} (ab : AbelianSchemeStruct f)
-    (hnat : ∀ (K : Type) [Field K] [IsAlgClosed K] (_t : Spec (CommRingCat.of K) ⟶ Z),
-      (n : K) ≠ 0) :
-    ∀ (K' : Type) [Field K'] [IsAlgClosed K'] (t : Spec (CommRingCat.of K') ⟶ Z),
-      IsReduced (Limits.pullback
-        (Limits.pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f) t) := by
-  intro K' _ _ t
-  have hnK' : (n : K') ≠ 0 := hnat K' t
-  haveI hfin : IsFinite (Limits.pullback.snd (ab.mulByNat n) ab.zeroSection) := by
-    rw [← nTorsionStructure_eq_snd n ab]
-    exact (isFinite_flat_nTorsion_noBase n hn ab).1
-  rw [nTorsionStructure_eq_snd n ab]
-  set abK := ab.baseChange t
-  have hP := ab.isPullback_ker_baseChange t n
-  haveI : IsFinite (Limits.pullback.snd (abK.mulByNat n) abK.zeroSection) :=
-    MorphismProperty.IsStableUnderBaseChange.of_isPullback hP hfin
-  haveI : FormallyUnramified (abK.mulByNat n) := formallyUnramified_mulByNat K' abK n hnK'
-  haveI : FormallyUnramified (Limits.pullback.snd (abK.mulByNat n) abK.zeroSection) :=
-    MorphismProperty.IsStableUnderBaseChange.of_isPullback (IsPullback.of_hasPullback _ _)
-      inferInstance
-  haveI : IsReduced (Limits.pullback (abK.mulByNat n) abK.zeroSection) :=
-    AlgebraicGeometry.isReduced_of_formallyUnramified_over_field
-      (Limits.pullback.snd (abK.mulByNat n) abK.zeroSection)
-  exact isReduced_of_isOpenImmersion hP.isoPullback.inv
+/-! `isReduced_geomFibre_nTorsion_of_natCast_ne_zero` was declared here until
+2026-07-31, when `X0.lean` acquired a copy of it (with `n ≠ 0` in place of
+`3 ≤ n`, so strictly more general) as part of the general-base level-structure
+comparison.  Two copies of one name in a file and the file it imports is a hard
+`has already been declared` error that neither branch could see on its own; the
+`X0.lean` one is kept, and it is in scope here under the same name. -/
 
 /-- **`E[n] ⟶ Z` IS ÉTALE OVER AN ARBITRARY BASE CARRYING A FULL LEVEL-`n`
 STRUCTURE** (PROVEN 2026-07-30) — Katz–Mazur 2.3.1 with no hypothesis on
@@ -4403,137 +4251,13 @@ theorem etale_nTorsion_of_abelianFullLevelStructure (n : ℕ) (hn : 3 ≤ n)
   haveI := (isFinite_flat_nTorsion_noBase n hn abs).2
   haveI := locallyOfFinitePresentation_nTorsion n abs
   exact AlgebraicGeometry.etale_of_isReduced_pullback _
-    (isReduced_geomFibre_nTorsion_of_natCast_ne_zero n hn abs
+    (isReduced_geomFibre_nTorsion_of_natCast_ne_zero n (by omega) abs
       (fun K _ _ t => natCast_ne_zero_geomPoint_of_abelianFullLevelStructure n hn abs hdim L K t))
 
-/-- **THE EQUALIZER OF TWO `n`-TORSION SECTIONS IS OPEN, GIVEN THAT `E[n]`
-IS ÉTALE OVER THE BASE** (PROVEN 2026-07-30) — the geometric half of
-`isOpenImmersion_equalizer_of_abelianFullLevelStructure`, stated with the
-étaleness as a hypothesis so that it mentions no level structure, no
-characteristic and no base field at all.
-
-**It is EXACTLY what `X0.lean`'s `isOpenImmersion_equalizer_of_nsmul_eq_zero`
-still owes**: that leaf's `g : Z ⟶ SpecQ` is spent only on step 3 of its
-route (`E[n] ⟶ Z` unramified), which is this theorem's hypothesis, and
-`etale_nTorsion_of_specQBase` supplies it there.  Since `X0.lean` cannot
-import this file, closing it means MOVING this declaration there; nothing
-mathematical is left in it.
-
-## The proof, which is steps 1, 2, 4 and 5 of that leaf's route
-
-`hx` and `hy` say precisely that `x` and `y` factor through
-`E[n] := pullback [n] e` as sections `sx`, `sy` of `q := pullback.snd`
-(`nsmul_val` and `zero_val` turn `n • x = 0` into `x ≫ [n] = 𝟙 ≫ e`, which
-is the hypothesis of the universal property).
-
-`ι := pullback.fst [n] e` is a MONOMORPHISM, being the base change of the
-zero section, which is split mono with retraction `f`.  So `pullback x y`
-and `pullback sx sy` have the same universal property — the mono cancels
-from the cospan — and the explicit isomorphism between them is written out
-below rather than invoked, mathlib having no lemma in that shape.
-
-`pullback sx sy` is in turn the base change of the DIAGONAL of `q` along
-`(sx, sy) : Z ⟶ E[n] ×_Z E[n]`, and the diagonal of a formally unramified
-morphism locally of finite type is an open immersion
-(`FormallyUnramified.isOpenImmersion_diagonal`), a property stable under
-base change.  This is the construction `section_eq_of_formallyUnramified`
-performs in `X0.lean`, minus its connectedness step: here the clopen locus
-is kept as a piece of a cover instead of being shown to be everything.
-
-## Faithfulness
-
-`hetale` is load-bearing for TRUTH: over a base of residue characteristic
-`p ∣ n` the kernel `E[n]` is not étale, its zero section is not open, and
-two `n`-torsion sections can agree on a closed non-open locus.  `hx` and
-`hy` are load-bearing — they are what makes `x` and `y` sections of `E[n]`
-rather than of `E`, and the equalizer of two sections of the SMOOTH `f` is
-in general a closed point of the base and not open.  Note `n` is otherwise
-unconstrained: no `3 ≤ n`, since `hetale` at `n = 0` already fails (the
-`0`-torsion is all of `E`, not étale over `Z` in relative dimension one). -/
-theorem isOpenImmersion_equalizer_of_etale_nTorsion (n : ℕ)
-    {Z E : Scheme.{0}} {f : E ⟶ Z} (abs : AbelianSchemeStruct f)
-    (hetale : AlgebraicGeometry.Etale
-      (Limits.pullback.fst (abs.mulByNat n) abs.zeroSection ≫ f))
-    (x y : RelPoint f (𝟙 Z))
-    (hx : letI := abs.addCommGroup (𝟙 Z); n • x = 0)
-    (hy : letI := abs.addCommGroup (𝟙 Z); n • y = 0) :
-    IsOpenImmersion (Limits.pullback.fst x.1 y.1) := by
-  letI := abs.addCommGroup (𝟙 Z)
-  haveI hq : AlgebraicGeometry.Etale (pullback.snd (abs.mulByNat n) abs.zeroSection) := by
-    rw [← nTorsionStructure_eq_snd n abs]; exact hetale
-  haveI : IsSplitMono abs.zeroSection := ⟨⟨f, abs.zeroSection_comp⟩⟩
-  haveI : Mono (pullback.fst (abs.mulByNat n) abs.zeroSection) := inferInstance
-  have hxx : x.1 ≫ abs.mulByNat n = 𝟙 Z ≫ abs.zeroSection := by
-    rw [← abs.nsmul_val n x, ← abs.zero_val (𝟙 Z)]
-    exact congrArg Subtype.val hx
-  have hyy : y.1 ≫ abs.mulByNat n = 𝟙 Z ≫ abs.zeroSection := by
-    rw [← abs.nsmul_val n y, ← abs.zero_val (𝟙 Z)]
-    exact congrArg Subtype.val hy
-  set sx : Z ⟶ pullback (abs.mulByNat n) abs.zeroSection := pullback.lift x.1 (𝟙 Z) hxx
-  set sy : Z ⟶ pullback (abs.mulByNat n) abs.zeroSection := pullback.lift y.1 (𝟙 Z) hyy
-  have hsxι : sx ≫ pullback.fst (abs.mulByNat n) abs.zeroSection = x.1 :=
-    pullback.lift_fst _ _ _
-  have hsyι : sy ≫ pullback.fst (abs.mulByNat n) abs.zeroSection = y.1 :=
-    pullback.lift_fst _ _ _
-  have hsxq : sx ≫ pullback.snd (abs.mulByNat n) abs.zeroSection = 𝟙 Z :=
-    pullback.lift_snd _ _ _
-  have hsyq : sy ≫ pullback.snd (abs.mulByNat n) abs.zeroSection = 𝟙 Z :=
-    pullback.lift_snd _ _ _
-  have hst : sx ≫ pullback.snd (abs.mulByNat n) abs.zeroSection
-      = sy ≫ pullback.snd (abs.mulByNat n) abs.zeroSection := by rw [hsxq, hsyq]
-  set q := pullback.snd (abs.mulByNat n) abs.zeroSection
-  set e : Z ⟶ pullback q q := pullback.lift sx sy hst
-  have hefst : e ≫ pullback.fst q q = sx := pullback.lift_fst _ _ _
-  have hesnd : e ≫ pullback.snd q q = sy := pullback.lift_snd _ _ _
-  haveI : IsOpenImmersion (pullback.fst e (pullback.diagonal q)) := inferInstance
-  have hxy : pullback.fst x.1 y.1 ≫ x.1 = pullback.fst x.1 y.1 ≫ y.1 :=
-    pullback_fst_comp_relPoint x y
-  have hsxy : pullback.fst x.1 y.1 ≫ sx = pullback.fst x.1 y.1 ≫ sy := by
-    refine (cancel_mono (pullback.fst (abs.mulByNat n) abs.zeroSection)).mp ?_
-    rw [Category.assoc, Category.assoc, hsxι, hsyι]
-    exact hxy
-  have hα : pullback.fst x.1 y.1 ≫ e = (pullback.fst x.1 y.1 ≫ sx) ≫ pullback.diagonal q := by
-    refine pullback.hom_ext ?_ ?_
-    · rw [Category.assoc, hefst, Category.assoc, pullback.diagonal_fst, Category.comp_id]
-    · rw [Category.assoc, hesnd, Category.assoc, pullback.diagonal_snd, Category.comp_id,
-        ← hsxy]
-  set α : pullback x.1 y.1 ⟶ pullback e (pullback.diagonal q) :=
-    pullback.lift (pullback.fst x.1 y.1) (pullback.fst x.1 y.1 ≫ sx) hα
-  have hαfst : α ≫ pullback.fst e (pullback.diagonal q) = pullback.fst x.1 y.1 :=
-    pullback.lift_fst _ _ _
-  have hαsnd : α ≫ pullback.snd e (pullback.diagonal q) = pullback.fst x.1 y.1 ≫ sx :=
-    pullback.lift_snd _ _ _
-  have hDsx : pullback.fst e (pullback.diagonal q) ≫ sx
-      = pullback.snd e (pullback.diagonal q) := by
-    have h := pullback.condition (f := e) (g := pullback.diagonal q)
-    have h2 := congrArg (fun k => k ≫ pullback.fst q q) h
-    simpa [Category.assoc, hefst, pullback.diagonal_fst] using h2
-  have hDsy : pullback.fst e (pullback.diagonal q) ≫ sy
-      = pullback.snd e (pullback.diagonal q) := by
-    have h := pullback.condition (f := e) (g := pullback.diagonal q)
-    have h2 := congrArg (fun k => k ≫ pullback.snd q q) h
-    simpa [Category.assoc, hesnd, pullback.diagonal_snd] using h2
-  have hβcond : pullback.fst e (pullback.diagonal q) ≫ x.1
-      = pullback.fst e (pullback.diagonal q) ≫ y.1 := by
-    rw [← hsxι, ← hsyι, ← Category.assoc, ← Category.assoc, hDsx, hDsy]
-  set β : pullback e (pullback.diagonal q) ⟶ pullback x.1 y.1 :=
-    pullback.lift (pullback.fst e (pullback.diagonal q))
-      (pullback.fst e (pullback.diagonal q)) hβcond
-  have hβfst : β ≫ pullback.fst x.1 y.1 = pullback.fst e (pullback.diagonal q) :=
-    pullback.lift_fst _ _ _
-  have hβsnd : β ≫ pullback.snd x.1 y.1 = pullback.fst e (pullback.diagonal q) :=
-    pullback.lift_snd _ _ _
-  have hαβ : α ≫ β = 𝟙 _ := by
-    refine pullback.hom_ext ?_ ?_
-    · rw [Category.assoc, hβfst, hαfst, Category.id_comp]
-    · rw [Category.assoc, hβsnd, hαfst, Category.id_comp, pullback_snd_eq_fst_relPoint x y]
-  have hβα : β ≫ α = 𝟙 _ := by
-    refine pullback.hom_ext ?_ ?_
-    · rw [Category.assoc, hαfst, hβfst, Category.id_comp]
-    · rw [Category.assoc, hαsnd, ← Category.assoc, hβfst, hDsx, Category.id_comp]
-  haveI : IsIso α := ⟨β, hαβ, hβα⟩
-  rw [← hαfst]
-  infer_instance
+/-! `isOpenImmersion_equalizer_of_etale_nTorsion` was declared here until
+2026-07-31 and is now `X0.lean`'s, for the same reason and with the same
+signature (only the binder names differ: `ab`/`hq` there for `abs`/`hetale`
+here).  Still in scope here under the same name. -/
 
 end EqualizerOpenX1
 
