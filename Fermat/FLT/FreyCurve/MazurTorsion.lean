@@ -4076,6 +4076,478 @@ theorem nonempty_atkinLehnerMorphismOver {N : ℕ} {S : Scheme.{0}}
       (hex g (hex g dd).choose).choose_spec.some
       ((hex g dd).choose_spec.some).symm).some
 
+/-! #### THE FIFTH CUT (2026-07-31): the cuspidal subscheme, as a STRUCTURE
+
+`redX_base_ne_of_isCusp` below used to be a bare point-level sorry leaf, and its
+own DERIVABILITY AUDIT said why that was the wrong shape: neither it nor its
+counting sibling follows from the fields of `IsX0JNeronDatum` by any argument
+using only properness, smoothness and finiteness of the complement, and the
+audit's verdict was that *"a successor should expect to BUILD the cuspidal
+subscheme as a finite étale scheme, not to find it"* — this development carries
+the cuspidal locus as a subSET of points, never as a closed subscheme.
+
+That is what `IsX0JNeronCuspModel` is.  It carries `𝒞 = 𝒳 ∖ 𝒴` as `Spec` of a
+FINITE ÉTALE `ℤ_(q)`-algebra immersed in the model, which is exactly what
+Deligne–Rapoport prove over `ℤ[1/N]` and base-change to `ℤ_(q)` for `q ∤ N`.
+`nonempty_isX0JNeronCuspModel` is the single citation; the SEPARATION half is
+then a THEOREM over it, with its statement, hypothesis order and call sites
+unchanged, and the whole non-classical part of the argument — which is what the
+audit called "a large, honest piece of scheme theory" — is discharged here:
+
+* `relPoint_eq_of_base_eq` closes the gap the old docstring only asserted, that
+  equal supporting points force equal `𝔽_q`-points (both residue fields being
+  `𝔽_q` by `finrank_residueField_eq_one_of_relPoint`, and a `k`-algebra
+  retraction of a degree-one residue field being unique);
+* `algHom_eq_of_sub_mem_maximalIdeal` is the arithmetic heart: two sections of
+  an unramified algebra over a local ring agreeing modulo `𝔪` agree, by
+  `Algebra.FormallyUnramified.ext_of_iInf` along the `𝔪`-adic filtration;
+* `iInf_maximalIdeal_pow_eq_bot_of_isReductionBase` supplies its Krull
+  hypothesis for `ℤ_(q)` WITHOUT a Noetherian instance, which `IsReductionBase`
+  does not carry: `maximalIdeal_eq_span_of_isReductionBase` identifies `𝔪` with
+  `(q)` from `not_dvd_den`/`mem_of_not_dvd_den`, and the `q`-adic valuation of a
+  nonzero rational bounds the exponent.  `prime_of_isReductionBase` is what lets
+  `padicValRat` be used at all, and it is a CONSEQUENCE of `IsReductionBase`,
+  exactly as that structure's docstring has always claimed but never proved.
+
+**WHAT IS NOT DONE HERE, AND THE FALSE OBSTRUCTION TO AVOID.**  The COUNTING
+sibling `card_compl_range_le_card_divisors_specialFibre` is untouched.  Its
+statement counts points of `X'`, and `IsX0JNeronDatum` relates `X'` to the model
+`XZ` only through the `RelPoint` equivalences `spX`/`genX`, which reads at first
+as "there is no map of underlying spaces to transport a count along, so the leaf
+is structurally underivable".  **That reading is wrong, and it should not be
+recorded as an obstruction.**  `spX` quantifies over ALL `T : Scheme.{0}`, so
+instantiating at `T = X'` and feeding it the identity produces an honest morphism
+
+    u := (d.spX strX' (strX' ≫ SpecLoc.special toF) rfl ⟨𝟙 X', Category.id_comp _⟩).1
+
+with `u ≫ xstr = strX' ≫ SpecLoc.special toF`; naturality (`spX_nat`) makes
+`spX` a Yoneda isomorphism `X' ≅ XZ ×_{Spec ℤ_(q)} Spec 𝔽_q`, so `u` is the base
+change of the closed immersion `SpecLoc.special toF` — hence a closed immersion,
+hence injective on points.  That, plus `cover` and `Module.Finite`, is a route to
+the counting half: `X' ∖ Y'` injects into the special fibre of `𝒞`, whose points
+number at most `finrank ℤ_(q) A`.  What that route additionally needs is the RANK
+of `𝒞`, i.e. the cusp count `∑_{d ∣ N} φ(gcd(d, N/d))` of Diamond–Shurman §3.8 —
+a field this structure deliberately does NOT carry, because the separation half
+does not need it.  See the queued task recorded with this commit. -/
+
+/-- **`q` is PRIME**, as a consequence of `IsReductionBase` (PROVEN 2026-07-31).
+
+`IsReductionBase`'s own docstring has said since it was written that "`R/m ≅ 𝔽_ℓ`
+is then a field, so `ℓ` is PRIME — this is a consequence, not a hypothesis", and
+`two_le`'s docstring records that primality "is not needed anywhere below".  It
+is needed now, by `padicValRat` in
+`iInf_maximalIdeal_pow_eq_bot_of_isReductionBase`, so the consequence is proven.
+
+The argument needs no denominators.  A proper divisor `m` of `q` and its
+cofactor `k` both lie strictly between `0` and `q`, so neither is `0` in
+`ZMod q`, so both are UNITS of `R` by `isUnit_of_ne_zero`; their product is
+`(q : R)`, which `ker_eq_nonunits` makes a non-unit. -/
+theorem prime_of_isReductionBase {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    (h : IsReductionBase q R toF) : q.Prime := by
+  haveI := h.nontrivialResidue
+  refine Nat.prime_def.mpr ⟨h.two_le, fun m hm => ?_⟩
+  rcases Nat.eq_zero_or_pos m with rfl | hm0
+  · exact absurd (Nat.eq_zero_of_zero_dvd hm) h.ne_zero
+  rcases eq_or_lt_of_le (Nat.le_of_dvd (Nat.pos_of_ne_zero h.ne_zero) hm) with heq | hlt
+  · exact Or.inr heq
+  · left
+    by_contra hm1
+    obtain ⟨k, hk⟩ := hm
+    have hunit : ∀ a : ℕ, 0 < a → a < q → IsUnit ((a : ℕ) : R) := by
+      intro a ha0 haq
+      refine h.isUnit_of_ne_zero ?_
+      rw [map_natCast]
+      intro hc
+      have : q ∣ a := (ZMod.natCast_eq_zero_iff a q).mp hc
+      exact absurd (Nat.le_of_dvd ha0 this) (not_le.mpr haq)
+    have hk0 : 0 < k := by
+      rcases Nat.eq_zero_or_pos k with rfl | hk0
+      · rw [Nat.mul_zero] at hk; exact absurd hk h.ne_zero
+      · exact hk0
+    have hkq : k < q := by
+      have hm2 : 2 ≤ m := by omega
+      have hlt' : 1 * k < m * k := (Nat.mul_lt_mul_right hk0).mpr (by omega)
+      rw [one_mul, ← hk] at hlt'
+      exact hlt'
+    have huq : IsUnit ((q : ℕ) : R) := by
+      rw [hk, Nat.cast_mul]
+      exact (hunit m hm0 hlt).mul (hunit k hk0 hkq)
+    exact absurd huq ((h.ker_eq_nonunits _).mp (by rw [map_natCast, ZMod.natCast_self]))
+
+/-- **The maximal ideal of `ℤ_(q)` is generated by `q`** (PROVEN 2026-07-31).
+
+`⊇` is `ker_eq_nonunits` at `(q : R)`.  For `⊆`: a non-unit `a ≠ 0` has
+`a⁻¹ ∉ R`, so `q ∣ (a⁻¹).den = |num a|` by the contrapositive of
+`mem_of_not_dvd_den`; writing `num a = q · m` makes `a / q = m / den a`, whose
+denominator divides `den a`, which is prime to `q` by `not_dvd_den`.  So
+`a / q ∈ R` and `a ∈ (q)`.
+
+The point of having this at all is that it gives Krull's intersection theorem
+for `R` without an `IsNoetherianRing` instance, which `IsReductionBase`
+deliberately does not provide (its docstring: "in a form that needs no
+`IsDiscreteValuationRing`, `IsFractionRing` or `IsLocalRing` instance and hence
+no new import"). -/
+theorem maximalIdeal_eq_span_of_isReductionBase {q : ℕ} {R : Subring ℚ}
+    {toF : R →+* ZMod q} (h : IsReductionBase q R toF) :
+    letI := h.isLocalRing
+    IsLocalRing.maximalIdeal (R : Type) = Ideal.span {((q : ℕ) : R)} := by
+  letI := h.isLocalRing
+  apply le_antisymm
+  · intro a ha
+    rcases eq_or_ne (a : ℚ) 0 with h0 | h0
+    · have hz : a = 0 := Subtype.ext (by simpa using h0)
+      simp [hz]
+    have hnu : ¬ IsUnit a := (IsLocalRing.mem_maximalIdeal a).mp ha
+    have hnotmem : ((a : ℚ))⁻¹ ∉ R := by
+      intro hmem
+      refine hnu (IsUnit.of_mul_eq_one (a := a) (b := ⟨((a : ℚ))⁻¹, hmem⟩) (Subtype.ext ?_))
+      push_cast
+      field_simp
+    have hdvd : q ∣ (((a : ℚ))⁻¹).den := by
+      by_contra hc
+      exact hnotmem (h.mem_of_not_dvd_den hc)
+    rw [Rat.den_inv_of_ne_zero h0] at hdvd
+    obtain ⟨m, hm⟩ : ((q : ℕ) : ℤ) ∣ (a : ℚ).num := by
+      rcases Int.natAbs_eq (a : ℚ).num with he | he <;> rw [he]
+      · exact Int.natCast_dvd_natCast.mpr hdvd
+      · exact dvd_neg.mpr (Int.natCast_dvd_natCast.mpr hdvd)
+    have hq0 : ((q : ℕ) : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr h.ne_zero
+    have hdne : (((a : ℚ).den : ℚ)) ≠ 0 := by
+      exact_mod_cast (Rat.den_ne_zero (a : ℚ))
+    have hnum : (a : ℚ) * ((a : ℚ).den : ℚ) = ((a : ℚ).num : ℚ) := Rat.mul_den_eq_num _
+    have hmQ : ((a : ℚ).num : ℚ) = ((q : ℕ) : ℚ) * (m : ℚ) := by exact_mod_cast hm
+    have hz : (a : ℚ) / ((q : ℕ) : ℚ) = (m : ℚ) / (((a : ℚ).den : ℤ) : ℚ) := by
+      rw [div_eq_div_iff hq0 (by push_cast; exact hdne)]
+      push_cast
+      linear_combination hnum + hmQ
+    have hden : ((((m : ℚ)) / (((a : ℚ).den : ℤ) : ℚ)).den : ℤ) ∣ (((a : ℚ).den : ℤ)) := by
+      have hdd := Rat.den_dvd m (((a : ℚ).den : ℤ))
+      rwa [Rat.divInt_eq_div] at hdd
+    have hmem : (a : ℚ) / ((q : ℕ) : ℚ) ∈ R := by
+      refine h.mem_of_not_dvd_den ?_
+      rw [hz]
+      intro hc
+      exact h.not_dvd_den a (Nat.dvd_trans hc (by exact_mod_cast hden))
+    refine Ideal.mem_span_singleton'.mpr ⟨⟨_, hmem⟩, Subtype.ext ?_⟩
+    push_cast
+    field_simp
+  · rw [Ideal.span_le, Set.singleton_subset_iff]
+    refine (IsLocalRing.mem_maximalIdeal _).mpr ?_
+    exact (h.ker_eq_nonunits _).mp (by rw [map_natCast, ZMod.natCast_self])
+
+/-- **Krull's intersection theorem for `ℤ_(q)`** (PROVEN 2026-07-31), proven
+from the `q`-adic valuation rather than from Noetherianity.
+
+`⨅ 𝔪ⁱ = ⊥` is the hypothesis of `Algebra.FormallyUnramified.ext_of_iInf`, and it
+is the only thing standing between "the cuspidal subscheme is unramified" and
+"its sections are separated by their special fibre".  Mathlib proves it for
+Noetherian local rings and for Noetherian domains, and `IsReductionBase` carries
+no `IsNoetherianRing` instance for `R` — deriving one would mean exhibiting `R`
+as a localization of `ℤ`, which is more work than the valuation argument here.
+
+`r ∈ 𝔪ⁱ = (qⁱ)` gives `r = s · qⁱ` with `s ∈ R`, so
+`v_q(r) = i + v_q(s) ≥ i` by `padicValRat_nonneg`; a nonzero rational has a
+FIXED `v_q`, so `i` is bounded.  Primality of `q` — needed for `padicValRat.mul`
+— is `prime_of_isReductionBase`. -/
+theorem iInf_maximalIdeal_pow_eq_bot_of_isReductionBase {q : ℕ} {R : Subring ℚ}
+    {toF : R →+* ZMod q} (h : IsReductionBase q R toF) :
+    letI := h.isLocalRing
+    ⨅ i : ℕ, (IsLocalRing.maximalIdeal (R : Type)) ^ i = ⊥ := by
+  letI := h.isLocalRing
+  haveI : Fact q.Prime := ⟨prime_of_isReductionBase h⟩
+  rw [eq_bot_iff]
+  intro r hr0
+  have hr : ∀ i : ℕ, ∃ s : R, s * (((q : ℕ) : R)) ^ i = r := by
+    intro i
+    have hmem : r ∈ (IsLocalRing.maximalIdeal (R : Type)) ^ i := (Submodule.mem_iInf _).mp hr0 i
+    rw [maximalIdeal_eq_span_of_isReductionBase h, Ideal.span_singleton_pow,
+      Ideal.mem_span_singleton'] at hmem
+    exact hmem
+  by_contra hne
+  have h0 : (r : ℚ) ≠ 0 := fun hc => hne (Subtype.ext (by simpa using hc))
+  have hq1 : 1 < q := (Fact.out : q.Prime).one_lt
+  have hbound : ∀ i : ℕ, (i : ℤ) ≤ padicValRat q (r : ℚ) := by
+    intro i
+    obtain ⟨s, hs⟩ := hr i
+    have hsq : (r : ℚ) = (s : ℚ) * ((q : ℕ) : ℚ) ^ i := by
+      have hcast := congrArg (fun t : R => (t : ℚ)) hs
+      push_cast at hcast
+      exact hcast.symm
+    have hs0 : (s : ℚ) ≠ 0 := by
+      intro hc; rw [hc, zero_mul] at hsq; exact h0 hsq
+    have hqi : (((q : ℕ) : ℚ)) ^ i ≠ 0 := pow_ne_zero _ (Nat.cast_ne_zero.mpr h.ne_zero)
+    rw [hsq, padicValRat.mul hs0 hqi, padicValRat.pow (((q : ℕ) : ℚ)), padicValRat.self hq1]
+    have hnn := h.padicValRat_nonneg s
+    omega
+  have hfin := hbound ((padicValRat q (r : ℚ)).toNat + 1)
+  omega
+
+/-- **Two sections of a formally unramified algebra over a local ring agreeing
+modulo the maximal ideal are equal** (PROVEN 2026-07-31), given Krull vanishing.
+
+This is the whole of the "finite étale means sections do not fuse" argument, in
+algebra rather than in geometry.  `Algebra.FormallyUnramified.ext_of_iInf` walks
+the `𝔪`-adic filtration: agreement modulo `𝔪ⁿ` upgrades to agreement modulo
+`𝔪ⁿ⁺¹` because `𝔪ⁿ/𝔪ⁿ⁺¹` is square-zero, and `⨅ 𝔪ⁱ = ⊥` collects the limit.
+
+Note the base need NOT be Henselian or complete — which matters, because
+`ℤ_(q)` is neither. -/
+theorem algHom_eq_of_sub_mem_maximalIdeal {B A : Type} [CommRing B] [CommRing A] [Algebra B A]
+    [IsLocalRing B] [Algebra.FormallyUnramified B A]
+    (hkrull : ⨅ i : ℕ, (IsLocalRing.maximalIdeal B) ^ i = ⊥)
+    {g₁ g₂ : A →ₐ[B] B}
+    (hres : ∀ x : A, g₁ x - g₂ x ∈ IsLocalRing.maximalIdeal B) :
+    g₁ = g₂ :=
+  Algebra.FormallyUnramified.ext_of_iInf _ hkrull
+    (fun x => (Ideal.Quotient.eq).mpr (hres x))
+
+/-- **A `k`-rational point of a `k`-scheme is determined by the point of `X` it
+is supported at** (PROVEN 2026-07-31).
+
+The converse pairing of `exists_relPoint_of_residueDegreeOne` and
+`finrank_residueField_eq_one_of_relPoint`, and the step
+`redX_base_ne_of_isCusp`'s docstring has always asserted parenthetically —
+"equal points would force equal `RelPoint`s here, both reductions having residue
+field `𝔽_q`" — without proving it.
+
+By `algHom_of_relPoint_factor` each `k`-point factors as `Spec` of a `k`-ALGEBRA
+retraction `κ(p) →ₐ[k] k` followed by `fromSpecResidueField p`; and
+`finrank_residueField_eq_one_of_relPoint` makes `algebraMap k κ(p)` bijective, so
+the retraction is its inverse and there is only one.  `Spec` of a field being a
+one-point space is what lets the hypothesis be stated at an arbitrary `P`. -/
+theorem relPoint_eq_of_base_eq {k : Type} [Field k] {X : Scheme.{0}}
+    (strX : X ⟶ Spec (CommRingCat.of k))
+    (x₁ x₂ : RelPoint strX (𝟙 (Spec (CommRingCat.of k))))
+    (P : (Spec (CommRingCat.of k) : Scheme.{0}))
+    (hP : x₁.1.base P = x₂.1.base P) : x₁ = x₂ := by
+  have hsub : ∀ Q : (Spec (CommRingCat.of k) : Scheme.{0}),
+      Q = IsLocalRing.closedPoint k := fun Q => Subsingleton.elim _ _
+  set p : X := x₁.1.base (IsLocalRing.closedPoint k) with hp
+  have hp2 : x₂.1.base (IsLocalRing.closedPoint k) = p := by
+    rw [hp, ← hsub P, hP, hsub P]
+  have key : ∀ (x : RelPoint strX (𝟙 (Spec (CommRingCat.of k)))) (r : X),
+      x.1.base (IsLocalRing.closedPoint k) = r →
+      letI := residueBaseAlgebra strX r
+      ∃ f : X.residueField r →ₐ[k] k,
+        Spec.map (CommRingCat.ofHom f.toRingHom) ≫ X.fromSpecResidueField r = x.1 := by
+    rintro x r rfl
+    exact algHom_of_relPoint_factor strX x _ _
+      (Scheme.descResidueField_stalkClosedPointTo_fromSpecResidueField k X x.1)
+  letI := residueBaseAlgebra strX p
+  obtain ⟨f₁, hf₁⟩ := key x₁ p rfl
+  obtain ⟨f₂, hf₂⟩ := key x₂ p hp2
+  -- `finrank_eq_one_of_algHom_to_base` rather than the equivalent
+  -- `finrank_residueField_eq_one_of_relPoint`, so that this block depends only on
+  -- `algHom_of_relPoint_factor` and on `X0.lean`: on the `merger` branch
+  -- `finrank_residueField_eq_one_of_relPoint` sits BELOW the consumer of all this,
+  -- and citing it here would force a hoist at merge time for nothing.
+  have hdeg : Module.finrank k (X.residueField p) = 1 := finrank_eq_one_of_algHom_to_base f₁
+  have hbij : Function.Bijective (algebraMap k (X.residueField p)) :=
+    Algebra.finrank_eq_one_iff_bijective_algebraMap.mp hdeg
+  have hfeq : f₁ = f₂ := by
+    ext z
+    obtain ⟨c, rfl⟩ := hbij.2 z
+    rw [f₁.commutes, f₂.commutes]
+  exact Subtype.ext (hf₁.symm.trans (by rw [hfeq]; exact hf₂))
+
+/-- **THE CUSPIDAL SUBSCHEME OF THE SMOOTH MODEL, AS A FINITE ÉTALE
+`ℤ_(q)`-SCHEME** (structure, new 2026-07-31).
+
+This is the object the DERIVABILITY AUDIT of `redX_base_ne_of_isCusp` said a
+successor should expect to BUILD rather than to find: `𝒞 = 𝒳 ∖ 𝒴` presented as
+`Spec` of a finite étale `ℤ_(q)`-algebra sitting inside the model, rather than
+as the subSET of points that `IsX0Compactification.finite_compl` gives.  The
+audit's two counterexamples — `Spec R[t]/(t² − q)` for the separation half and
+`Spec (R × 𝔽_q)` for the counting half — are exactly the finite non-étale
+shapes this structure excludes, and both satisfy every field of
+`IsX0Compactification`.
+
+**PRESENTED AS AN ALGEBRA, NOT AS A CLOSED SUBSCHEME**, for the same reason
+`IsX0Compactification.CuspLocus` in `X0.lean` records residue ALGEBRAS rather
+than a Galois orbit: everything consumed downstream is a statement about
+sections, sections of an affine scheme over an affine base ARE algebra maps, and
+`Algebra.Etale` / `Module.Finite` are where mathlib's unramifiedness API lives.
+Nothing is lost — `𝒞` is affine over an affine base, being finite over it.
+
+**`section_of_isCusp` IS STATED FOR CUSPS RATHER THAN DERIVED FROM `cover`, AND
+THAT IS A DELIBERATE CHOICE.**  For a rational cusp `x`, the integral section
+`d.intX x` meets `𝒴` nowhere: its GENERIC point lies off `𝒴` (else
+`IsOpenImmersion.lift` and `genX_j` would exhibit `x` as
+`sectionAlong hX.j hX.over y`, contradicting `hX.IsCusp x`), and the complement
+of `𝒴` is CLOSED while `SpecLoc.denseRange_generic` makes the generic point
+dense, so the whole section lies in `𝒞`.  Given `cover` that is pure topology
+plus the factorisation of a section through a closed subscheme; carrying the
+conclusion directly costs the leaf nothing in strength — it remains a statement
+Deligne–Rapoport prove, namely that the cusps are sections of the cuspidal
+subscheme — and saves the derivation a page of plumbing that proves nothing new.
+A successor tightening this should DERIVE `section_of_isCusp` from `cover` and
+delete the field, not weaken it.
+
+**WHY `mono` AND NOT `IsClosedImmersion`.**  Only cancellation is used, and a
+closed immersion is a monomorphism; asking for the weaker property keeps the
+leaf's obligation smaller with no loss.  `comm` and `cover` are not consumed by
+the derivation below and are carried anyway, so that the datum PINS `𝒞` as the
+cuspidal locus over the base rather than being satisfiable by an arbitrary
+unramified algebra — the same role `cover` plays in
+`IsX0Compactification.CuspLocus`, and for the same reason recorded there.
+
+**REFERENCES.**  Deligne–Rapoport, *Les schémas de modules de courbes
+elliptiques* (Antwerp II, 1973), IV.3 and VI.6; Katz–Mazur, *Arithmetic Moduli
+of Elliptic Curves*, 13.11. -/
+structure IsX0JNeronCuspModel {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) where
+  /-- the coordinate ring of the cuspidal subscheme `𝒞 = 𝒳 ∖ 𝒴` -/
+  A : Type
+  [commRing : CommRing A]
+  [algebra : Algebra (R : Type) A]
+  /-- `𝒞 → Spec ℤ_(q)` is ÉTALE -/
+  [etale : Algebra.Etale (R : Type) A]
+  /-- and FINITE -/
+  [finite : Module.Finite (R : Type) A]
+  /-- the immersion of the cuspidal subscheme into the model -/
+  ι : Spec (CommRingCat.of A) ⟶ XZ
+  /-- it is a monomorphism -/
+  mono : Mono ι
+  /-- it lies over the base -/
+  comm : ι ≫ xstr = Spec.map (CommRingCat.ofHom (algebraMap (R : Type) A))
+  /-- its image is exactly the cusp locus of the model -/
+  cover : Set.range ι.base = (Set.range jZ.base)ᶜ
+  /-- the integral section attached to a rational CUSP is a section of `𝒞` -/
+  section_of_isCusp : ∀ x : RelPoint strX (𝟙 SpecQ), hX.IsCusp x →
+    ∃ f : A →ₐ[(R : Type)] (R : Type),
+      Spec.map (CommRingCat.ofHom f.toRingHom) ≫ ι = (d.intX x).1
+
+attribute [instance] IsX0JNeronCuspModel.commRing IsX0JNeronCuspModel.algebra
+  IsX0JNeronCuspModel.etale IsX0JNeronCuspModel.finite
+
+/-- **DELIGNE–RAPOPORT: the smooth model at `q ∤ N` HAS a finite étale cuspidal
+subscheme** (sorry leaf, new 2026-07-31) — the ONE classical citation of this
+cut, replacing the point-level assertion `redX_base_ne_of_isCusp` used to be.
+
+TRUE, and it is what Deligne–Rapoport actually prove: over `ℤ[1/N]` the smooth
+model of `X_0(N)` carries a cuspidal subscheme finite étale over the base.  For
+`q ∤ N` the ring `ℤ_(q)` is a `ℤ[1/N]`-algebra, so the base change of that
+subscheme is finite étale over `ℤ_(q)`, is a closed subscheme of the model —
+hence its immersion is a monomorphism and lies over the base — and its
+underlying set is the complement of the open part, which is `cover`.  The
+sections `section_of_isCusp` are the cusps themselves: a rational cusp extends
+to an integral section by properness (`properX`, through `intX`), that section
+misses `𝒴` (see the field's note on the structure), and a section of the model
+landing in a closed subscheme with reduced base factors through it.
+
+**`hqN : ¬ q ∣ N` IS LOAD-BEARING AND NOT DECORATIVE.**  At `q ∣ N` the model is
+not smooth at `q`, the cuspidal subscheme is genuinely NOT étale there, cusps
+collide in the special fibre and the leaf is FALSE — that is the same
+hypothesis, for the same reason, that `redX_base_ne_of_isCusp` has always
+carried, and it is now consumed rather than underscored.
+
+**NO `N ≠ 0` AND NO `N.Prime`.**  Étaleness of the cuspidal subscheme away from
+`N` is level-generic; the arithmetic of the cusp COUNT, which is not, lives on
+the sibling leaf `card_compl_range_le_card_divisors_specialFibre` and needs
+squarefreeness there.  Adding `N ≠ 0` here would make the leaf undischargeable
+at `redX_base_ne_of_isCusp`, which does not have it.
+
+**NON-VACUITY.**  `N = 37`, `q = 3`: `𝒞` is `Spec (ℤ_(3) × ℤ_(3))`, the two
+cusps `0` and `∞`, finite étale of rank `2` over `ℤ_(3)`, and `section_of_isCusp`
+returns the two coordinate projections.
+
+**REFERENCES.**  Deligne–Rapoport (Antwerp II, 1973), IV.3, V.5, VI.6;
+Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*, 13.11. -/
+theorem nonempty_isX0JNeronCuspModel (N q : ℕ) (_hqN : ¬ q ∣ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    Nonempty (IsX0JNeronCuspModel d) :=
+  sorry
+
+/-- **DISTINCT rational cusps of `X_0(N)` have DISTINCT reductions mod `q`, OVER
+A CUSPIDAL MODEL** (PROVEN 2026-07-31) — the whole non-classical content of the
+separation half, and the reason `IsX0JNeronCuspModel` is worth having.
+
+Three steps, each of which is a lemma above:
+
+* equal supporting points in `X'` force `d.redX x₁ = d.redX x₂` as `𝔽_q`-points
+  (`relPoint_eq_of_base_eq`), so the two integral sections agree after
+  restriction along `SpecLoc.special toF`;
+* both sections factor through `𝒞` (`section_of_isCusp`), and `ι` is a mono, so
+  the two ALGEBRA maps `A → ℤ_(q)` agree after composing with `toF`, i.e.
+  modulo `𝔪 = ker toF`;
+* `𝒞` is unramified over `ℤ_(q)` and `⨅ 𝔪ⁱ = ⊥`, so they are equal
+  (`algHom_eq_of_sub_mem_maximalIdeal`); hence `d.intX x₁ = d.intX x₂`, and
+  `genX` being an equivalence gives `x₁ = x₂`.
+
+Note where the hypotheses go: `hx₁`, `hx₂` are consumed ONLY to produce the two
+factorisations through `𝒞`, which is precisely why the statement is false for
+arbitrary rational points — two of those may perfectly well be congruent mod
+`q`, and that is what makes Mazur's formal-immersion argument nontrivial. -/
+theorem redX_base_ne_of_isX0JNeronCuspModel {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ}
+    (C : IsX0JNeronCuspModel d)
+    (x₁ x₂ : RelPoint strX (𝟙 SpecQ)) (hx₁ : hX.IsCusp x₁) (hx₂ : hX.IsCusp x₂)
+    (hne : x₁ ≠ x₂) (P : (SpecF q : Scheme.{0})) :
+    (d.redX x₁).1.base P ≠ (d.redX x₂).1.base P := by
+  haveI : Fact q.Prime := ⟨prime_of_isReductionBase d.base⟩
+  haveI := d.base.isLocalRing
+  haveI := C.mono
+  haveI := C.etale.formallyEtale
+  intro hPeq
+  -- equal supporting points force equal `𝔽_q`-points
+  have hred : d.redX x₁ = d.redX x₂ := relPoint_eq_of_base_eq strX' _ _ P hPeq
+  -- hence the two integral sections agree on the special fibre
+  have hpre : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX x₁)
+      = RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX x₂) := by
+    have hsp := congrArg (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)) hred
+    rwa [d.redX_def, d.redX_def, Equiv.apply_symm_apply, Equiv.apply_symm_apply] at hsp
+  have hcomp : SpecLoc.special toF ≫ (d.intX x₁).1
+      = SpecLoc.special toF ≫ (d.intX x₂).1 := congrArg Subtype.val hpre
+  -- both sections factor through the cuspidal subscheme
+  obtain ⟨f₁, hf₁⟩ := C.section_of_isCusp x₁ hx₁
+  obtain ⟨f₂, hf₂⟩ := C.section_of_isCusp x₂ hx₂
+  rw [← hf₁, ← hf₂, ← Category.assoc, ← Category.assoc, cancel_mono] at hcomp
+  -- read that off as an equality of ring maps into `𝔽_q`
+  have hring : (CommRingCat.ofHom f₁.toRingHom ≫ CommRingCat.ofHom toF)
+      = (CommRingCat.ofHom f₂.toRingHom ≫ CommRingCat.ofHom toF) := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, Spec.map_comp]
+    exact hcomp
+  have hres : ∀ a : C.A, f₁ a - f₂ a ∈ IsLocalRing.maximalIdeal (R : Type) := by
+    intro a
+    refine (IsLocalRing.mem_maximalIdeal _).mpr ((d.base.ker_eq_nonunits _).mp ?_)
+    have ha := congrArg (fun (t : CommRingCat.of C.A ⟶ CommRingCat.of (ZMod q)) => t.hom a) hring
+    simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply,
+      CommRingCat.hom_ofHom] at ha
+    rw [map_sub]
+    exact sub_eq_zero_of_eq ha
+  have hfeq : f₁ = f₂ :=
+    algHom_eq_of_sub_mem_maximalIdeal
+      (iInf_maximalIdeal_pow_eq_bot_of_isReductionBase d.base) hres
+  -- so the two integral sections coincide, hence so do the rational points
+  have hint : d.intX x₁ = d.intX x₂ := by
+    apply Subtype.ext
+    rw [← hf₁, ← hf₂, hfeq]
+  exact hne ((d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective
+    (by rw [← d.pre_intX, ← d.pre_intX, hint]))
+
 section AtkinLehnerModelCut
 
 variable {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
@@ -5495,478 +5967,6 @@ theorem finrank_residueField_eq_one_of_relPoint {k : Type} [Field k] {X : Scheme
   obtain ⟨f, -⟩ := algHom_of_relPoint_factor strX x _ _
     (Scheme.descResidueField_stalkClosedPointTo_fromSpecResidueField k X x.1)
   exact finrank_eq_one_of_algHom_to_base f
-
-/-! #### THE FIFTH CUT (2026-07-31): the cuspidal subscheme, as a STRUCTURE
-
-`redX_base_ne_of_isCusp` below used to be a bare point-level sorry leaf, and its
-own DERIVABILITY AUDIT said why that was the wrong shape: neither it nor its
-counting sibling follows from the fields of `IsX0JNeronDatum` by any argument
-using only properness, smoothness and finiteness of the complement, and the
-audit's verdict was that *"a successor should expect to BUILD the cuspidal
-subscheme as a finite étale scheme, not to find it"* — this development carries
-the cuspidal locus as a subSET of points, never as a closed subscheme.
-
-That is what `IsX0JNeronCuspModel` is.  It carries `𝒞 = 𝒳 ∖ 𝒴` as `Spec` of a
-FINITE ÉTALE `ℤ_(q)`-algebra immersed in the model, which is exactly what
-Deligne–Rapoport prove over `ℤ[1/N]` and base-change to `ℤ_(q)` for `q ∤ N`.
-`nonempty_isX0JNeronCuspModel` is the single citation; the SEPARATION half is
-then a THEOREM over it, with its statement, hypothesis order and call sites
-unchanged, and the whole non-classical part of the argument — which is what the
-audit called "a large, honest piece of scheme theory" — is discharged here:
-
-* `relPoint_eq_of_base_eq` closes the gap the old docstring only asserted, that
-  equal supporting points force equal `𝔽_q`-points (both residue fields being
-  `𝔽_q` by `finrank_residueField_eq_one_of_relPoint`, and a `k`-algebra
-  retraction of a degree-one residue field being unique);
-* `algHom_eq_of_sub_mem_maximalIdeal` is the arithmetic heart: two sections of
-  an unramified algebra over a local ring agreeing modulo `𝔪` agree, by
-  `Algebra.FormallyUnramified.ext_of_iInf` along the `𝔪`-adic filtration;
-* `iInf_maximalIdeal_pow_eq_bot_of_isReductionBase` supplies its Krull
-  hypothesis for `ℤ_(q)` WITHOUT a Noetherian instance, which `IsReductionBase`
-  does not carry: `maximalIdeal_eq_span_of_isReductionBase` identifies `𝔪` with
-  `(q)` from `not_dvd_den`/`mem_of_not_dvd_den`, and the `q`-adic valuation of a
-  nonzero rational bounds the exponent.  `prime_of_isReductionBase` is what lets
-  `padicValRat` be used at all, and it is a CONSEQUENCE of `IsReductionBase`,
-  exactly as that structure's docstring has always claimed but never proved.
-
-**WHAT IS NOT DONE HERE, AND THE FALSE OBSTRUCTION TO AVOID.**  The COUNTING
-sibling `card_compl_range_le_card_divisors_specialFibre` is untouched.  Its
-statement counts points of `X'`, and `IsX0JNeronDatum` relates `X'` to the model
-`XZ` only through the `RelPoint` equivalences `spX`/`genX`, which reads at first
-as "there is no map of underlying spaces to transport a count along, so the leaf
-is structurally underivable".  **That reading is wrong, and it should not be
-recorded as an obstruction.**  `spX` quantifies over ALL `T : Scheme.{0}`, so
-instantiating at `T = X'` and feeding it the identity produces an honest morphism
-
-    u := (d.spX strX' (strX' ≫ SpecLoc.special toF) rfl ⟨𝟙 X', Category.id_comp _⟩).1
-
-with `u ≫ xstr = strX' ≫ SpecLoc.special toF`; naturality (`spX_nat`) makes
-`spX` a Yoneda isomorphism `X' ≅ XZ ×_{Spec ℤ_(q)} Spec 𝔽_q`, so `u` is the base
-change of the closed immersion `SpecLoc.special toF` — hence a closed immersion,
-hence injective on points.  That, plus `cover` and `Module.Finite`, is a route to
-the counting half: `X' ∖ Y'` injects into the special fibre of `𝒞`, whose points
-number at most `finrank ℤ_(q) A`.  What that route additionally needs is the RANK
-of `𝒞`, i.e. the cusp count `∑_{d ∣ N} φ(gcd(d, N/d))` of Diamond–Shurman §3.8 —
-a field this structure deliberately does NOT carry, because the separation half
-does not need it.  See the queued task recorded with this commit. -/
-
-/-- **`q` is PRIME**, as a consequence of `IsReductionBase` (PROVEN 2026-07-31).
-
-`IsReductionBase`'s own docstring has said since it was written that "`R/m ≅ 𝔽_ℓ`
-is then a field, so `ℓ` is PRIME — this is a consequence, not a hypothesis", and
-`two_le`'s docstring records that primality "is not needed anywhere below".  It
-is needed now, by `padicValRat` in
-`iInf_maximalIdeal_pow_eq_bot_of_isReductionBase`, so the consequence is proven.
-
-The argument needs no denominators.  A proper divisor `m` of `q` and its
-cofactor `k` both lie strictly between `0` and `q`, so neither is `0` in
-`ZMod q`, so both are UNITS of `R` by `isUnit_of_ne_zero`; their product is
-`(q : R)`, which `ker_eq_nonunits` makes a non-unit. -/
-theorem prime_of_isReductionBase {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
-    (h : IsReductionBase q R toF) : q.Prime := by
-  haveI := h.nontrivialResidue
-  refine Nat.prime_def.mpr ⟨h.two_le, fun m hm => ?_⟩
-  rcases Nat.eq_zero_or_pos m with rfl | hm0
-  · exact absurd (Nat.eq_zero_of_zero_dvd hm) h.ne_zero
-  rcases eq_or_lt_of_le (Nat.le_of_dvd (Nat.pos_of_ne_zero h.ne_zero) hm) with heq | hlt
-  · exact Or.inr heq
-  · left
-    by_contra hm1
-    obtain ⟨k, hk⟩ := hm
-    have hunit : ∀ a : ℕ, 0 < a → a < q → IsUnit ((a : ℕ) : R) := by
-      intro a ha0 haq
-      refine h.isUnit_of_ne_zero ?_
-      rw [map_natCast]
-      intro hc
-      have : q ∣ a := (ZMod.natCast_eq_zero_iff a q).mp hc
-      exact absurd (Nat.le_of_dvd ha0 this) (not_le.mpr haq)
-    have hk0 : 0 < k := by
-      rcases Nat.eq_zero_or_pos k with rfl | hk0
-      · rw [Nat.mul_zero] at hk; exact absurd hk h.ne_zero
-      · exact hk0
-    have hkq : k < q := by
-      have hm2 : 2 ≤ m := by omega
-      have hlt' : 1 * k < m * k := (Nat.mul_lt_mul_right hk0).mpr (by omega)
-      rw [one_mul, ← hk] at hlt'
-      exact hlt'
-    have huq : IsUnit ((q : ℕ) : R) := by
-      rw [hk, Nat.cast_mul]
-      exact (hunit m hm0 hlt).mul (hunit k hk0 hkq)
-    exact absurd huq ((h.ker_eq_nonunits _).mp (by rw [map_natCast, ZMod.natCast_self]))
-
-/-- **The maximal ideal of `ℤ_(q)` is generated by `q`** (PROVEN 2026-07-31).
-
-`⊇` is `ker_eq_nonunits` at `(q : R)`.  For `⊆`: a non-unit `a ≠ 0` has
-`a⁻¹ ∉ R`, so `q ∣ (a⁻¹).den = |num a|` by the contrapositive of
-`mem_of_not_dvd_den`; writing `num a = q · m` makes `a / q = m / den a`, whose
-denominator divides `den a`, which is prime to `q` by `not_dvd_den`.  So
-`a / q ∈ R` and `a ∈ (q)`.
-
-The point of having this at all is that it gives Krull's intersection theorem
-for `R` without an `IsNoetherianRing` instance, which `IsReductionBase`
-deliberately does not provide (its docstring: "in a form that needs no
-`IsDiscreteValuationRing`, `IsFractionRing` or `IsLocalRing` instance and hence
-no new import"). -/
-theorem maximalIdeal_eq_span_of_isReductionBase {q : ℕ} {R : Subring ℚ}
-    {toF : R →+* ZMod q} (h : IsReductionBase q R toF) :
-    letI := h.isLocalRing
-    IsLocalRing.maximalIdeal (R : Type) = Ideal.span {((q : ℕ) : R)} := by
-  letI := h.isLocalRing
-  apply le_antisymm
-  · intro a ha
-    rcases eq_or_ne (a : ℚ) 0 with h0 | h0
-    · have hz : a = 0 := Subtype.ext (by simpa using h0)
-      simp [hz]
-    have hnu : ¬ IsUnit a := (IsLocalRing.mem_maximalIdeal a).mp ha
-    have hnotmem : ((a : ℚ))⁻¹ ∉ R := by
-      intro hmem
-      refine hnu (IsUnit.of_mul_eq_one (a := a) (b := ⟨((a : ℚ))⁻¹, hmem⟩) (Subtype.ext ?_))
-      push_cast
-      field_simp
-    have hdvd : q ∣ (((a : ℚ))⁻¹).den := by
-      by_contra hc
-      exact hnotmem (h.mem_of_not_dvd_den hc)
-    rw [Rat.den_inv_of_ne_zero h0] at hdvd
-    obtain ⟨m, hm⟩ : ((q : ℕ) : ℤ) ∣ (a : ℚ).num := by
-      rcases Int.natAbs_eq (a : ℚ).num with he | he <;> rw [he]
-      · exact Int.natCast_dvd_natCast.mpr hdvd
-      · exact dvd_neg.mpr (Int.natCast_dvd_natCast.mpr hdvd)
-    have hq0 : ((q : ℕ) : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr h.ne_zero
-    have hdne : (((a : ℚ).den : ℚ)) ≠ 0 := by
-      exact_mod_cast (Rat.den_ne_zero (a : ℚ))
-    have hnum : (a : ℚ) * ((a : ℚ).den : ℚ) = ((a : ℚ).num : ℚ) := Rat.mul_den_eq_num _
-    have hmQ : ((a : ℚ).num : ℚ) = ((q : ℕ) : ℚ) * (m : ℚ) := by exact_mod_cast hm
-    have hz : (a : ℚ) / ((q : ℕ) : ℚ) = (m : ℚ) / (((a : ℚ).den : ℤ) : ℚ) := by
-      rw [div_eq_div_iff hq0 (by push_cast; exact hdne)]
-      push_cast
-      linear_combination hnum + hmQ
-    have hden : ((((m : ℚ)) / (((a : ℚ).den : ℤ) : ℚ)).den : ℤ) ∣ (((a : ℚ).den : ℤ)) := by
-      have hdd := Rat.den_dvd m (((a : ℚ).den : ℤ))
-      rwa [Rat.divInt_eq_div] at hdd
-    have hmem : (a : ℚ) / ((q : ℕ) : ℚ) ∈ R := by
-      refine h.mem_of_not_dvd_den ?_
-      rw [hz]
-      intro hc
-      exact h.not_dvd_den a (Nat.dvd_trans hc (by exact_mod_cast hden))
-    refine Ideal.mem_span_singleton'.mpr ⟨⟨_, hmem⟩, Subtype.ext ?_⟩
-    push_cast
-    field_simp
-  · rw [Ideal.span_le, Set.singleton_subset_iff]
-    refine (IsLocalRing.mem_maximalIdeal _).mpr ?_
-    exact (h.ker_eq_nonunits _).mp (by rw [map_natCast, ZMod.natCast_self])
-
-/-- **Krull's intersection theorem for `ℤ_(q)`** (PROVEN 2026-07-31), proven
-from the `q`-adic valuation rather than from Noetherianity.
-
-`⨅ 𝔪ⁱ = ⊥` is the hypothesis of `Algebra.FormallyUnramified.ext_of_iInf`, and it
-is the only thing standing between "the cuspidal subscheme is unramified" and
-"its sections are separated by their special fibre".  Mathlib proves it for
-Noetherian local rings and for Noetherian domains, and `IsReductionBase` carries
-no `IsNoetherianRing` instance for `R` — deriving one would mean exhibiting `R`
-as a localization of `ℤ`, which is more work than the valuation argument here.
-
-`r ∈ 𝔪ⁱ = (qⁱ)` gives `r = s · qⁱ` with `s ∈ R`, so
-`v_q(r) = i + v_q(s) ≥ i` by `padicValRat_nonneg`; a nonzero rational has a
-FIXED `v_q`, so `i` is bounded.  Primality of `q` — needed for `padicValRat.mul`
-— is `prime_of_isReductionBase`. -/
-theorem iInf_maximalIdeal_pow_eq_bot_of_isReductionBase {q : ℕ} {R : Subring ℚ}
-    {toF : R →+* ZMod q} (h : IsReductionBase q R toF) :
-    letI := h.isLocalRing
-    ⨅ i : ℕ, (IsLocalRing.maximalIdeal (R : Type)) ^ i = ⊥ := by
-  letI := h.isLocalRing
-  haveI : Fact q.Prime := ⟨prime_of_isReductionBase h⟩
-  rw [eq_bot_iff]
-  intro r hr0
-  have hr : ∀ i : ℕ, ∃ s : R, s * (((q : ℕ) : R)) ^ i = r := by
-    intro i
-    have hmem : r ∈ (IsLocalRing.maximalIdeal (R : Type)) ^ i := (Submodule.mem_iInf _).mp hr0 i
-    rw [maximalIdeal_eq_span_of_isReductionBase h, Ideal.span_singleton_pow,
-      Ideal.mem_span_singleton'] at hmem
-    exact hmem
-  by_contra hne
-  have h0 : (r : ℚ) ≠ 0 := fun hc => hne (Subtype.ext (by simpa using hc))
-  have hq1 : 1 < q := (Fact.out : q.Prime).one_lt
-  have hbound : ∀ i : ℕ, (i : ℤ) ≤ padicValRat q (r : ℚ) := by
-    intro i
-    obtain ⟨s, hs⟩ := hr i
-    have hsq : (r : ℚ) = (s : ℚ) * ((q : ℕ) : ℚ) ^ i := by
-      have hcast := congrArg (fun t : R => (t : ℚ)) hs
-      push_cast at hcast
-      exact hcast.symm
-    have hs0 : (s : ℚ) ≠ 0 := by
-      intro hc; rw [hc, zero_mul] at hsq; exact h0 hsq
-    have hqi : (((q : ℕ) : ℚ)) ^ i ≠ 0 := pow_ne_zero _ (Nat.cast_ne_zero.mpr h.ne_zero)
-    rw [hsq, padicValRat.mul hs0 hqi, padicValRat.pow (((q : ℕ) : ℚ)), padicValRat.self hq1]
-    have hnn := h.padicValRat_nonneg s
-    omega
-  have hfin := hbound ((padicValRat q (r : ℚ)).toNat + 1)
-  omega
-
-/-- **Two sections of a formally unramified algebra over a local ring agreeing
-modulo the maximal ideal are equal** (PROVEN 2026-07-31), given Krull vanishing.
-
-This is the whole of the "finite étale means sections do not fuse" argument, in
-algebra rather than in geometry.  `Algebra.FormallyUnramified.ext_of_iInf` walks
-the `𝔪`-adic filtration: agreement modulo `𝔪ⁿ` upgrades to agreement modulo
-`𝔪ⁿ⁺¹` because `𝔪ⁿ/𝔪ⁿ⁺¹` is square-zero, and `⨅ 𝔪ⁱ = ⊥` collects the limit.
-
-Note the base need NOT be Henselian or complete — which matters, because
-`ℤ_(q)` is neither. -/
-theorem algHom_eq_of_sub_mem_maximalIdeal {B A : Type} [CommRing B] [CommRing A] [Algebra B A]
-    [IsLocalRing B] [Algebra.FormallyUnramified B A]
-    (hkrull : ⨅ i : ℕ, (IsLocalRing.maximalIdeal B) ^ i = ⊥)
-    {g₁ g₂ : A →ₐ[B] B}
-    (hres : ∀ x : A, g₁ x - g₂ x ∈ IsLocalRing.maximalIdeal B) :
-    g₁ = g₂ :=
-  Algebra.FormallyUnramified.ext_of_iInf _ hkrull
-    (fun x => (Ideal.Quotient.eq).mpr (hres x))
-
-/-- **A `k`-rational point of a `k`-scheme is determined by the point of `X` it
-is supported at** (PROVEN 2026-07-31).
-
-The converse pairing of `exists_relPoint_of_residueDegreeOne` and
-`finrank_residueField_eq_one_of_relPoint`, and the step
-`redX_base_ne_of_isCusp`'s docstring has always asserted parenthetically —
-"equal points would force equal `RelPoint`s here, both reductions having residue
-field `𝔽_q`" — without proving it.
-
-By `algHom_of_relPoint_factor` each `k`-point factors as `Spec` of a `k`-ALGEBRA
-retraction `κ(p) →ₐ[k] k` followed by `fromSpecResidueField p`; and
-`finrank_residueField_eq_one_of_relPoint` makes `algebraMap k κ(p)` bijective, so
-the retraction is its inverse and there is only one.  `Spec` of a field being a
-one-point space is what lets the hypothesis be stated at an arbitrary `P`. -/
-theorem relPoint_eq_of_base_eq {k : Type} [Field k] {X : Scheme.{0}}
-    (strX : X ⟶ Spec (CommRingCat.of k))
-    (x₁ x₂ : RelPoint strX (𝟙 (Spec (CommRingCat.of k))))
-    (P : (Spec (CommRingCat.of k) : Scheme.{0}))
-    (hP : x₁.1.base P = x₂.1.base P) : x₁ = x₂ := by
-  have hsub : ∀ Q : (Spec (CommRingCat.of k) : Scheme.{0}),
-      Q = IsLocalRing.closedPoint k := fun Q => Subsingleton.elim _ _
-  set p : X := x₁.1.base (IsLocalRing.closedPoint k) with hp
-  have hp2 : x₂.1.base (IsLocalRing.closedPoint k) = p := by
-    rw [hp, ← hsub P, hP, hsub P]
-  have key : ∀ (x : RelPoint strX (𝟙 (Spec (CommRingCat.of k)))) (r : X),
-      x.1.base (IsLocalRing.closedPoint k) = r →
-      letI := residueBaseAlgebra strX r
-      ∃ f : X.residueField r →ₐ[k] k,
-        Spec.map (CommRingCat.ofHom f.toRingHom) ≫ X.fromSpecResidueField r = x.1 := by
-    rintro x r rfl
-    exact algHom_of_relPoint_factor strX x _ _
-      (Scheme.descResidueField_stalkClosedPointTo_fromSpecResidueField k X x.1)
-  letI := residueBaseAlgebra strX p
-  obtain ⟨f₁, hf₁⟩ := key x₁ p rfl
-  obtain ⟨f₂, hf₂⟩ := key x₂ p hp2
-  -- `finrank_eq_one_of_algHom_to_base` rather than the equivalent
-  -- `finrank_residueField_eq_one_of_relPoint`, so that this block depends only on
-  -- `algHom_of_relPoint_factor` and on `X0.lean`: on the `merger` branch
-  -- `finrank_residueField_eq_one_of_relPoint` sits BELOW the consumer of all this,
-  -- and citing it here would force a hoist at merge time for nothing.
-  have hdeg : Module.finrank k (X.residueField p) = 1 := finrank_eq_one_of_algHom_to_base f₁
-  have hbij : Function.Bijective (algebraMap k (X.residueField p)) :=
-    Algebra.finrank_eq_one_iff_bijective_algebraMap.mp hdeg
-  have hfeq : f₁ = f₂ := by
-    ext z
-    obtain ⟨c, rfl⟩ := hbij.2 z
-    rw [f₁.commutes, f₂.commutes]
-  exact Subtype.ext (hf₁.symm.trans (by rw [hfeq]; exact hf₂))
-
-/-- **THE CUSPIDAL SUBSCHEME OF THE SMOOTH MODEL, AS A FINITE ÉTALE
-`ℤ_(q)`-SCHEME** (structure, new 2026-07-31).
-
-This is the object the DERIVABILITY AUDIT of `redX_base_ne_of_isCusp` said a
-successor should expect to BUILD rather than to find: `𝒞 = 𝒳 ∖ 𝒴` presented as
-`Spec` of a finite étale `ℤ_(q)`-algebra sitting inside the model, rather than
-as the subSET of points that `IsX0Compactification.finite_compl` gives.  The
-audit's two counterexamples — `Spec R[t]/(t² − q)` for the separation half and
-`Spec (R × 𝔽_q)` for the counting half — are exactly the finite non-étale
-shapes this structure excludes, and both satisfy every field of
-`IsX0Compactification`.
-
-**PRESENTED AS AN ALGEBRA, NOT AS A CLOSED SUBSCHEME**, for the same reason
-`IsX0Compactification.CuspLocus` in `X0.lean` records residue ALGEBRAS rather
-than a Galois orbit: everything consumed downstream is a statement about
-sections, sections of an affine scheme over an affine base ARE algebra maps, and
-`Algebra.Etale` / `Module.Finite` are where mathlib's unramifiedness API lives.
-Nothing is lost — `𝒞` is affine over an affine base, being finite over it.
-
-**`section_of_isCusp` IS STATED FOR CUSPS RATHER THAN DERIVED FROM `cover`, AND
-THAT IS A DELIBERATE CHOICE.**  For a rational cusp `x`, the integral section
-`d.intX x` meets `𝒴` nowhere: its GENERIC point lies off `𝒴` (else
-`IsOpenImmersion.lift` and `genX_j` would exhibit `x` as
-`sectionAlong hX.j hX.over y`, contradicting `hX.IsCusp x`), and the complement
-of `𝒴` is CLOSED while `SpecLoc.denseRange_generic` makes the generic point
-dense, so the whole section lies in `𝒞`.  Given `cover` that is pure topology
-plus the factorisation of a section through a closed subscheme; carrying the
-conclusion directly costs the leaf nothing in strength — it remains a statement
-Deligne–Rapoport prove, namely that the cusps are sections of the cuspidal
-subscheme — and saves the derivation a page of plumbing that proves nothing new.
-A successor tightening this should DERIVE `section_of_isCusp` from `cover` and
-delete the field, not weaken it.
-
-**WHY `mono` AND NOT `IsClosedImmersion`.**  Only cancellation is used, and a
-closed immersion is a monomorphism; asking for the weaker property keeps the
-leaf's obligation smaller with no loss.  `comm` and `cover` are not consumed by
-the derivation below and are carried anyway, so that the datum PINS `𝒞` as the
-cuspidal locus over the base rather than being satisfiable by an arbitrary
-unramified algebra — the same role `cover` plays in
-`IsX0Compactification.CuspLocus`, and for the same reason recorded there.
-
-**REFERENCES.**  Deligne–Rapoport, *Les schémas de modules de courbes
-elliptiques* (Antwerp II, 1973), IV.3 and VI.6; Katz–Mazur, *Arithmetic Moduli
-of Elliptic Curves*, 13.11. -/
-structure IsX0JNeronCuspModel {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
-    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
-    {hc : IsCoarseModuliY0 N strY}
-    {hX : IsCompactificationY0 strY strX}
-    {hX' : IsX0Compactification N strX' strY' jY'}
-    {hj : IsJMapOn N hc}
-    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) where
-  /-- the coordinate ring of the cuspidal subscheme `𝒞 = 𝒳 ∖ 𝒴` -/
-  A : Type
-  [commRing : CommRing A]
-  [algebra : Algebra (R : Type) A]
-  /-- `𝒞 → Spec ℤ_(q)` is ÉTALE -/
-  [etale : Algebra.Etale (R : Type) A]
-  /-- and FINITE -/
-  [finite : Module.Finite (R : Type) A]
-  /-- the immersion of the cuspidal subscheme into the model -/
-  ι : Spec (CommRingCat.of A) ⟶ XZ
-  /-- it is a monomorphism -/
-  mono : Mono ι
-  /-- it lies over the base -/
-  comm : ι ≫ xstr = Spec.map (CommRingCat.ofHom (algebraMap (R : Type) A))
-  /-- its image is exactly the cusp locus of the model -/
-  cover : Set.range ι.base = (Set.range jZ.base)ᶜ
-  /-- the integral section attached to a rational CUSP is a section of `𝒞` -/
-  section_of_isCusp : ∀ x : RelPoint strX (𝟙 SpecQ), hX.IsCusp x →
-    ∃ f : A →ₐ[(R : Type)] (R : Type),
-      Spec.map (CommRingCat.ofHom f.toRingHom) ≫ ι = (d.intX x).1
-
-attribute [instance] IsX0JNeronCuspModel.commRing IsX0JNeronCuspModel.algebra
-  IsX0JNeronCuspModel.etale IsX0JNeronCuspModel.finite
-
-/-- **DELIGNE–RAPOPORT: the smooth model at `q ∤ N` HAS a finite étale cuspidal
-subscheme** (sorry leaf, new 2026-07-31) — the ONE classical citation of this
-cut, replacing the point-level assertion `redX_base_ne_of_isCusp` used to be.
-
-TRUE, and it is what Deligne–Rapoport actually prove: over `ℤ[1/N]` the smooth
-model of `X_0(N)` carries a cuspidal subscheme finite étale over the base.  For
-`q ∤ N` the ring `ℤ_(q)` is a `ℤ[1/N]`-algebra, so the base change of that
-subscheme is finite étale over `ℤ_(q)`, is a closed subscheme of the model —
-hence its immersion is a monomorphism and lies over the base — and its
-underlying set is the complement of the open part, which is `cover`.  The
-sections `section_of_isCusp` are the cusps themselves: a rational cusp extends
-to an integral section by properness (`properX`, through `intX`), that section
-misses `𝒴` (see the field's note on the structure), and a section of the model
-landing in a closed subscheme with reduced base factors through it.
-
-**`hqN : ¬ q ∣ N` IS LOAD-BEARING AND NOT DECORATIVE.**  At `q ∣ N` the model is
-not smooth at `q`, the cuspidal subscheme is genuinely NOT étale there, cusps
-collide in the special fibre and the leaf is FALSE — that is the same
-hypothesis, for the same reason, that `redX_base_ne_of_isCusp` has always
-carried, and it is now consumed rather than underscored.
-
-**NO `N ≠ 0` AND NO `N.Prime`.**  Étaleness of the cuspidal subscheme away from
-`N` is level-generic; the arithmetic of the cusp COUNT, which is not, lives on
-the sibling leaf `card_compl_range_le_card_divisors_specialFibre` and needs
-squarefreeness there.  Adding `N ≠ 0` here would make the leaf undischargeable
-at `redX_base_ne_of_isCusp`, which does not have it.
-
-**NON-VACUITY.**  `N = 37`, `q = 3`: `𝒞` is `Spec (ℤ_(3) × ℤ_(3))`, the two
-cusps `0` and `∞`, finite étale of rank `2` over `ℤ_(3)`, and `section_of_isCusp`
-returns the two coordinate projections.
-
-**REFERENCES.**  Deligne–Rapoport (Antwerp II, 1973), IV.3, V.5, VI.6;
-Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*, 13.11. -/
-theorem nonempty_isX0JNeronCuspModel (N q : ℕ) (_hqN : ¬ q ∣ N)
-    {R : Subring ℚ} {toF : R →+* ZMod q}
-    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
-    {hc : IsCoarseModuliY0 N strY}
-    {hX : IsCompactificationY0 strY strX}
-    {hX' : IsX0Compactification N strX' strY' jY'}
-    {hj : IsJMapOn N hc}
-    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
-    Nonempty (IsX0JNeronCuspModel d) :=
-  sorry
-
-/-- **DISTINCT rational cusps of `X_0(N)` have DISTINCT reductions mod `q`, OVER
-A CUSPIDAL MODEL** (PROVEN 2026-07-31) — the whole non-classical content of the
-separation half, and the reason `IsX0JNeronCuspModel` is worth having.
-
-Three steps, each of which is a lemma above:
-
-* equal supporting points in `X'` force `d.redX x₁ = d.redX x₂` as `𝔽_q`-points
-  (`relPoint_eq_of_base_eq`), so the two integral sections agree after
-  restriction along `SpecLoc.special toF`;
-* both sections factor through `𝒞` (`section_of_isCusp`), and `ι` is a mono, so
-  the two ALGEBRA maps `A → ℤ_(q)` agree after composing with `toF`, i.e.
-  modulo `𝔪 = ker toF`;
-* `𝒞` is unramified over `ℤ_(q)` and `⨅ 𝔪ⁱ = ⊥`, so they are equal
-  (`algHom_eq_of_sub_mem_maximalIdeal`); hence `d.intX x₁ = d.intX x₂`, and
-  `genX` being an equivalence gives `x₁ = x₂`.
-
-Note where the hypotheses go: `hx₁`, `hx₂` are consumed ONLY to produce the two
-factorisations through `𝒞`, which is precisely why the statement is false for
-arbitrary rational points — two of those may perfectly well be congruent mod
-`q`, and that is what makes Mazur's formal-immersion argument nontrivial. -/
-theorem redX_base_ne_of_isX0JNeronCuspModel {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
-    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
-    {hc : IsCoarseModuliY0 N strY}
-    {hX : IsCompactificationY0 strY strX}
-    {hX' : IsX0Compactification N strX' strY' jY'}
-    {hj : IsJMapOn N hc}
-    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    {d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ}
-    (C : IsX0JNeronCuspModel d)
-    (x₁ x₂ : RelPoint strX (𝟙 SpecQ)) (hx₁ : hX.IsCusp x₁) (hx₂ : hX.IsCusp x₂)
-    (hne : x₁ ≠ x₂) (P : (SpecF q : Scheme.{0})) :
-    (d.redX x₁).1.base P ≠ (d.redX x₂).1.base P := by
-  haveI : Fact q.Prime := ⟨prime_of_isReductionBase d.base⟩
-  haveI := d.base.isLocalRing
-  haveI := C.mono
-  haveI := C.etale.formallyEtale
-  intro hPeq
-  -- equal supporting points force equal `𝔽_q`-points
-  have hred : d.redX x₁ = d.redX x₂ := relPoint_eq_of_base_eq strX' _ _ P hPeq
-  -- hence the two integral sections agree on the special fibre
-  have hpre : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX x₁)
-      = RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX x₂) := by
-    have hsp := congrArg (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)) hred
-    rwa [d.redX_def, d.redX_def, Equiv.apply_symm_apply, Equiv.apply_symm_apply] at hsp
-  have hcomp : SpecLoc.special toF ≫ (d.intX x₁).1
-      = SpecLoc.special toF ≫ (d.intX x₂).1 := congrArg Subtype.val hpre
-  -- both sections factor through the cuspidal subscheme
-  obtain ⟨f₁, hf₁⟩ := C.section_of_isCusp x₁ hx₁
-  obtain ⟨f₂, hf₂⟩ := C.section_of_isCusp x₂ hx₂
-  rw [← hf₁, ← hf₂, ← Category.assoc, ← Category.assoc, cancel_mono] at hcomp
-  -- read that off as an equality of ring maps into `𝔽_q`
-  have hring : (CommRingCat.ofHom f₁.toRingHom ≫ CommRingCat.ofHom toF)
-      = (CommRingCat.ofHom f₂.toRingHom ≫ CommRingCat.ofHom toF) := by
-    apply Spec.map_injective
-    rw [Spec.map_comp, Spec.map_comp]
-    exact hcomp
-  have hres : ∀ a : C.A, f₁ a - f₂ a ∈ IsLocalRing.maximalIdeal (R : Type) := by
-    intro a
-    refine (IsLocalRing.mem_maximalIdeal _).mpr ((d.base.ker_eq_nonunits _).mp ?_)
-    have ha := congrArg (fun (t : CommRingCat.of C.A ⟶ CommRingCat.of (ZMod q)) => t.hom a) hring
-    simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply,
-      CommRingCat.hom_ofHom] at ha
-    rw [map_sub]
-    exact sub_eq_zero_of_eq ha
-  have hfeq : f₁ = f₂ :=
-    algHom_eq_of_sub_mem_maximalIdeal
-      (iInf_maximalIdeal_pow_eq_bot_of_isReductionBase d.base) hres
-  -- so the two integral sections coincide, hence so do the rational points
-  have hint : d.intX x₁ = d.intX x₂ := by
-    apply Subtype.ext
-    rw [← hf₁, ← hf₂, hfeq]
-  exact hne ((d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective
-    (by rw [← d.pre_intX, ← d.pre_intX, hint]))
 
 /-- **The special fibre has at most `σ₀(N)` cusps, when every `gcd(d, N/d)` is
 `1`** (PROVEN 2026-07-30 over `redX_base_ne_and_card_compl_range_le_of_jNeronDatum`
@@ -24886,7 +24886,7 @@ theorem IsCotangentScalar.add [IsAlgClosed F] [CharZero F]
     (hφ : IsIsogeny φ) (hψ : IsIsogeny ψ)
     (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar ψ d) :
     IsCotangentScalar (φ + ψ) (c + d) :=
-  isCotangentScalar_of_isDiffChar (hφ.add hψ)
+  isCotangentScalar_of_isDiffChar
     (isDiffChar_add (isDiffChar_of_isCotangentScalar hφ hc)
       (isDiffChar_of_isCotangentScalar hψ hd))
 
@@ -38709,7 +38709,7 @@ theorem exists_gamma0Datum_descent_isBaseChangeOf_mazurLevel (p : ℕ)
   -- theory and not by Mazur: they would force `p ∈ {2, 3}`
   have hne : ¬ (p = 2 ∨ p = 3) := by fin_cases hp <;> norm_num
   -- **3.** and off those two values Weil's descent obstruction is empty
-  refine exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic hpp d hinv W hW
+  refine exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic hpp.ne_zero d hinv W hW
     (fun hcon => hne ?_) (fun hcon => hne ?_)
   · exact eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ hpp d hinv W hW (Or.inl hcon)
   · exact eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ hpp d hinv W hW (Or.inr hcon)
@@ -41173,7 +41173,8 @@ theorem exists_relSchemeEnd_of_endMinpoly_of_weierstrassModel (p : ℕ)
           = RelPoint.post Ψ hΨ (RelPoint.self d.f)) := by
   classical
   obtain ⟨Ψ, hΨ, hadd, hpt, hmin⟩ :=
-    exists_relSchemeEnd_geomEquiv_of_weierstrassModel ((p + 1) / 4) bc E hmodel φ hsq
+    FixedLocusOfAdditive.exists_relSchemeEnd_geomEquiv_of_weierstrassModel
+      ((p + 1) / 4) bc E hmodel φ hsq
   refine ⟨Ψ, hΨ, hadd, ?_, hmin⟩
   letI := d.ab.addCommGroup (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
   letI := d₀.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -42195,7 +42196,7 @@ theorem ajFixed_x0MazurLevel {N : ℕ} (hN : N ∈ ({43, 67, 163} : Finset ℕ))
   -- the rational point is classified by SOME `ℚ̄`-datum: PROVEN upstream in
   -- `X0.lean`, so this half is not assumed
   obtain ⟨d, hd⟩ :=
-    exists_gamma0Datum_geomClassify hprime hX.coarse (RelPoint.pre (specAlgClos ℚ) rfl y)
+    exists_gamma0Datum_geomClassify hprime.pos hX.coarse (RelPoint.pre (specAlgClos ℚ) rfl y)
   -- Mazur: that datum is a CM datum for the maximal order
   obtain ⟨hcm⟩ :=
     nonempty_isCMByRamifiedMaximalOrder_geomPoint_mazurLevel N hN hX.coarse y d hd
@@ -45230,7 +45231,7 @@ isomorphism of the functors of points rather than of the bare schemes.
 Conjugation by a mere isomorphism of schemes would say nothing about
 endomorphisms of the group. -/
 theorem phi_or_conj_of_isEllipticIsoOf (p : ℕ)
-    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
     {d₁ d₂ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
     (h₁ : IsCMByRamifiedMaximalOrder p d₁) (h₂ : IsCMByRamifiedMaximalOrder p d₂)
     (α : IsEllipticIsoOf d₁ d₂) :
@@ -45460,9 +45461,9 @@ theorem card_y0Le_classNumberOne (p : ℕ) (hp : p ∈ ({43, 67, 163} : Finset �
   intro y _ z _
   -- **1.** both rational points, base-changed to `ℚ̄`, are classified by `ℚ̄`-data
   obtain ⟨d₁, hd₁⟩ :=
-    exists_gamma0Datum_geomClassify hprime hc (RelPoint.pre (specAlgClos ℚ) rfl y)
+    exists_gamma0Datum_geomClassify hprime.pos hc (RelPoint.pre (specAlgClos ℚ) rfl y)
   obtain ⟨d₂, hd₂⟩ :=
-    exists_gamma0Datum_geomClassify hprime hc (RelPoint.pre (specAlgClos ℚ) rfl z)
+    exists_gamma0Datum_geomClassify hprime.pos hc (RelPoint.pre (specAlgClos ℚ) rfl z)
   -- **2.** Mazur: each of them is a CM datum for the maximal order of discriminant `−p`
   obtain ⟨e₁⟩ := nonempty_isCMByRamifiedMaximalOrder_of_classify_eq p hp hc y d₁ hd₁
   obtain ⟨e₂⟩ := nonempty_isCMByRamifiedMaximalOrder_of_classify_eq p hp hc z d₂ hd₂

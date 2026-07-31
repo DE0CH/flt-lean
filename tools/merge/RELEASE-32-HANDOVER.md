@@ -190,15 +190,30 @@ The half above was written mid-flight by the merge worker that made `X0.lean`
 green and left the full build running.  That build FAILED, and this is what was
 behind it.
 
-## The 24 dark targets held exactly one defect, and it was in the first of them
+## The 24 dark targets took THREE rounds, exactly as the half above budgeted
 
-The prediction in the half above was right in shape and generous in size.  The
-build stopped at target 5676/5695, `Fermat.FLT.ModularCurve.X1`, with three
-errors, and there was nothing wrong behind it: after the repair the whole tree
-built.  So six releases of accumulated invisibility cost one repair, not the
-three rounds budgeted.  Do not read that as a reason to budget less next time —
-X1 is the FIRST module after X0, and the reason nothing else broke is that
-nothing else was as heavily edited during the dark window.
+**I first wrote here that they held one defect.  That was written after round
+one and before round two, and it was wrong.**  I am leaving the correction
+visible rather than editing it out, because the mistake is the interesting part:
+after `X1.lean` went green the build ran for another eight minutes with a clean
+log, and a clean log from a build that has not reached the end is not evidence.
+`grep -c error` was `0` at the moment I wrote the claim, and the module that
+breaks it, `MazurTorsion.lean`, takes 490 s to elaborate and had not finished.
+
+The rounds, in the order the import graph serialised them:
+
+* **round 1 — `ModularCurve/X1.lean`, 3 errors.**  A structure-field split,
+  described below.
+* **round 2 — `FreyCurve/MazurTorsion.lean`, 8 errors** in an 80 000-line module
+  that has not compiled since release 25.  Seven were interface splits and one
+  was a forward reference; all are described below.
+* **round 3 — the 18 targets after `MazurTorsion`**, which round 2 never
+  reached and which are therefore still UNSEEN as I write this.
+
+So the standing "budget three rounds minimum, the errors are serialised behind
+each other by the import graph" is not folklore, and the reason it holds is
+mechanical: each round can only reveal what the previous round's failure was
+hiding.
 
 ## What the defect was, since it is a shape worth recognising in one screen
 
