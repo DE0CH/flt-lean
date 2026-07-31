@@ -1191,6 +1191,44 @@ mine would have traded a closed leaf for an open one plus a large conflict. Say 
 the sentinel's `to_merger`, so that an empty or tooling-only diff is not read as the
 dropped-merge bug of class six.
 
+**AND THE MERGER-CHECK CAN CONFIRM YOUR LEAF IS OPEN WHILE ITS PROOF SITS 260 LINES
+ABOVE IT IN THE SAME FILE** (2026-07-31, `flt-lean-82`).
+
+The variant the rule above does not cover: the name IS on `merger`, it IS still
+`sorry`, and the answer is still wrong — because a SECOND declaration with the
+IDENTICAL statement under a DIFFERENT name is proven earlier in the same file.
+`mem_idl_of_X7_mul_mem` (`sorry`, line 689) and `mem_idl_of_Pz_mul_mem` (PROVEN,
+line 423) in `ProjectiveEquationAdd2.lean` are character-for-character the same
+proposition. Two branches decomposed `idl_isPrime` the same way under different
+names; a union-style conflict resolution kept both blocks, so the file carries the
+whole decomposition twice — the saturation half is duplicated too
+(`exists_pow_Pz_mul_mem_idl` / `exists_pow_X7_mul_mem_idl`, both open).
+
+This is the worst shape the merger-check takes, because it does not fail: it
+returns a positive, correctly-quoted `sorry` at the right line, and every
+subsequent step — the task prompt's route, the section docstring, the sorry-warning
+count — agrees with it. Nothing anywhere says "look for this under another name".
+
+So when the merger-check finds your leaf open, do not stop there. **Read the
+enclosing section, and grep for the STATEMENT rather than the name:**
+
+    git show merger:<the file> > /tmp/x.lean
+    grep -n '∈ idl' /tmp/x.lean          # a distinctive fragment of the CONCLUSION
+    grep -n '^theorem' /tmp/x.lean       # then scan the section for near-twins
+
+A duplicate block announces itself in the declaration list — two `idl_ne_top`-shaped
+runs of the same shape, or one file with two "### Half two" section headings. In this
+file the module docstring named the `X7` pair while the proven pair was `Pz`-named,
+which is exactly the tell.
+
+What to do when you find it: **delegate, do not re-prove.** Replace your `sorry` with
+a one-line application of the existing proof, say in the docstring that the
+declaration is a duplicate slated for deletion, and put the deletion in `to_merger`.
+Do NOT delete the twin of a leaf that has its own live owner — deleting
+`exists_pow_X7_mul_mem_idl` here would have destroyed another agent's in-flight
+target for the sake of tidiness. Closing your own by delegation costs one line and
+conflicts with nobody.
+
 ## A LINE-NUMBER MISMATCH IN YOUR TASK PROMPT MEANS YOUR WORKTREE IS STALE — not that the leaf is gone
 
 (2026-07-31, `flt-lean-23`.) A task named three leaves at `X1.lean:13442`, `:13465`,
