@@ -4146,8 +4146,15 @@ def IsInvertibleSubsheaf {X : Scheme.{u}} [IrreducibleSpace X] {L : X.Modules}
     (ι : L ⟶ constSheaf X) : Prop :=
   IsInvertibleSheaf L ∧ Mono ι
 
-/-- **`𝒪_X ↪ 𝒦_X` ON AN INTEGRAL SCHEME** (sorry leaf, 2026-07-31) — the one
-place integrality enters the subsheaf half of the dictionary.
+/-! ### `𝒪_X ↪ 𝒦_X` on an integral scheme
+
+**`mono_toConstSheaf` below is PROVEN**; this note is the audit written when it
+was introduced as a leaf, kept because it records why integrality is the
+hypothesis and what the two-line refutation is.  The four helpers between here
+and it are its proof.
+
+**`𝒪_X ↪ 𝒦_X`** is the one place integrality enters the subsheaf half of the
+dictionary.
 
 **Route, and it is short.**  A faithful functor reflects monomorphisms, and
 `SheafOfModules.forget` is faithful, so it suffices to be monic in presheaves of
@@ -4169,8 +4176,103 @@ NOT monic.  Reducedness is exactly what `IsIntegral` adds and exactly what
 `germ_injective_of_isIntegral` uses.
 
 **NOT VACUOUS.**  Every smooth proper geometrically connected curve over a
-field is integral, which is the situation every consumer of this section is in. -/
-theorem mono_toConstSheaf (X : Scheme.{u}) [IsIntegral X] : Mono (toConstSheaf X) := sorry
+field is integral, which is the situation every consumer of this section is in.
+
+**PROVEN 2026-07-31**, exactly along the route above and over the four helpers
+immediately below.  Cost: about forty lines, no new mathematics, and the
+identification that made it short is `toConstSheaf_eq` — the composite
+`unit ≫ g_*(g^*𝒪 ≅ 𝒪)` defining `toConstSheaf` IS mathlib's
+`SheafOfModules.unitToPushforwardObjUnit`, whose sections map is `g^♯` by
+`rfl`.  So no adjunction had to be unwound by hand. -/
+
+/-- **THE PREIMAGE OF A NONEMPTY OPEN UNDER THE GENERIC POINT IS EVERYTHING**
+(PROVEN) — `Spec K` is a one-point space for `K` a field, and that point goes
+to the generic point (`Scheme.fromSpecStalk_closedPoint`), which lies in every
+nonempty open. -/
+theorem preimage_genericPointHom_eq_top (X : Scheme.{u}) [IsIntegral X] (U : X.Opens)
+    [Nonempty U] : (genericPointHom X) ⁻¹ᵁ U = ⊤ := by
+  haveI : Subsingleton (Spec X.functionField) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum X.functionField))
+  have hη : genericPoint X ∈ U :=
+    ((genericPoint_spec X).mem_open_set_iff U.isOpen).mpr (by simpa using ‹Nonempty U›)
+  rw [eq_top_iff]
+  intro p _
+  show (genericPointHom X).base p ∈ U
+  have hp : p = IsLocalRing.closedPoint X.functionField := Subsingleton.elim _ _
+  subst hp
+  rw [show (genericPointHom X).base (IsLocalRing.closedPoint X.functionField) = genericPoint X from
+    Scheme.fromSpecStalk_closedPoint]
+  exact hη
+
+/-- **RESTRICTION TO AN OPEN THAT IS KNOWN TO BE `⊤` IS INJECTIVE** (PROVEN) —
+after substituting the equation the map is `𝟙`.  Stated with the equation as a
+hypothesis rather than by rewriting at the use site, because rewriting `V = ⊤`
+inside `presheaf.map (homOfLE le_top : V ⟶ ⊤).op` changes the TYPE of the
+morphism and drags `eqToHom` through the whole proof. -/
+theorem injective_res_of_eq_top {Z : Scheme.{u}} (V : Z.Opens) (hV : V = ⊤) :
+    Function.Injective (Z.presheaf.map (homOfLE le_top : V ⟶ ⊤).op) := by
+  subst hV
+  rw [Subsingleton.elim (homOfLE le_top : (⊤ : Z.Opens) ⟶ ⊤) (𝟙 _)]
+  intro a b h
+  simpa using h
+
+/-- **`g^♯` IS INJECTIVE ON A NONEMPTY OPEN** (PROVEN) — this is where
+integrality is spent, through mathlib's `germ_injective_of_isIntegral`.
+
+`Scheme.fromSpecStalk_app` factors `g.app U` as
+`germ ≫ (ΓSpecIso K).inv ≫ restriction`, and all three factors are injective:
+the germ by integrality, the middle by being an isomorphism, and the
+restriction by `injective_res_of_eq_top` at
+`preimage_genericPointHom_eq_top`. -/
+theorem injective_genericPointHom_app (X : Scheme.{u}) [IsIntegral X] (U : X.Opens)
+    [Nonempty U] : Function.Injective ((genericPointHom X).app U) := by
+  have hη : genericPoint X ∈ U :=
+    ((genericPoint_spec X).mem_open_set_iff U.isOpen).mpr (by simpa using ‹Nonempty U›)
+  have happ : (genericPointHom X).app U =
+      X.presheaf.germ U (genericPoint X) hη ≫
+        (Scheme.ΓSpecIso X.functionField).inv ≫
+          (Spec X.functionField).presheaf.map (homOfLE le_top).op :=
+    Scheme.fromSpecStalk_app hη
+  rw [happ]
+  intro a b hab
+  simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply] at hab
+  refine germ_injective_of_isIntegral X (genericPoint X) hη ?_
+  refine (ConcreteCategory.bijective_of_isIso (Scheme.ΓSpecIso X.functionField).inv).1 ?_
+  exact injective_res_of_eq_top _ (preimage_genericPointHom_eq_top X U) hab
+
+/-- **`toConstSheaf` IS mathlib's `unitToPushforwardObjUnit`** (PROVEN) — the
+identification that makes `mono_toConstSheaf` short.
+
+`toConstSheaf` is written as `η ≫ g_*(g^*𝒪_X ≅ 𝒪_{Spec K})`, which is the
+adjunction transpose of `pullbackObjUnitToUnit`; mathlib's
+`pullbackPushforwardAdjunction_homEquiv_pullbackObjUnitToUnit` says that
+transpose is `unitToPushforwardObjUnit`, whose value on sections is `g^♯`
+BY `rfl` (`unitToPushforwardObjUnit_val_app_apply`).  So the sections
+description costs no unwinding of the adjunction at all. -/
+theorem toConstSheaf_eq (X : Scheme.{u}) [IrreducibleSpace X] :
+    toConstSheaf X =
+      SheafOfModules.unitToPushforwardObjUnit (genericPointHom X).toRingCatSheafHom := by
+  rw [← SheafOfModules.pullbackPushforwardAdjunction_homEquiv_pullbackObjUnitToUnit,
+    Adjunction.homEquiv_unit]
+  rfl
+
+/-- **`𝒪_X ↪ 𝒦_X` ON AN INTEGRAL SCHEME** (PROVEN 2026-07-31) — the audit,
+including the two witnesses showing `[IsIntegral X]` cannot be weakened to
+`[IrreducibleSpace X]`, is the section note above. -/
+theorem mono_toConstSheaf (X : Scheme.{u}) [IsIntegral X] : Mono (toConstSheaf X) := by
+  refine (SheafOfModules.forget X.ringCatSheaf).mono_of_mono_map ?_
+  refine PresheafOfModules.mono_of_injective ?_
+  intro V a b hab
+  by_cases hne : Nonempty V.unop
+  · haveI := hne
+    rw [toConstSheaf_eq] at hab
+    exact injective_genericPointHom_app X V.unop hab
+  · have hbot : V.unop = ⊥ := by
+      ext x
+      simp only [Opens.coe_bot, Set.mem_empty_iff_false, iff_false]
+      exact fun hx => hne ⟨⟨x, hx⟩⟩
+    have hs : Subsingleton Γ(X, V.unop) := hbot ▸ inferInstance
+    exact hs.elim a b
 
 /-- **`𝒪(−σ) ⊆ 𝒦_X`** — the ideal sheaf of a section, read inside the constant
 sheaf. -/
