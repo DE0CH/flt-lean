@@ -229,6 +229,80 @@ with it, because most such structures are only ever *projected*. It bites precis
 you need the projection to be DEFEQ to something else — i.e. whenever you have built the
 same object by two routes, which is the commonest shape of an autoduality or
 universal-property transfer.
+## WHEN THE TARGET FILE IS RED FOR SOMEBODY ELSE'S REASONS: VERIFY AGAINST THE RELEASE OLEAN WITH THE MERGER-ONLY DEPENDENCIES **STUBBED VERBATIM**
+(2026-07-31, `flt-lean-381`, `X0.lean`.) The scratch-module doctrine assumes your
+target module BUILDS, so that a scratch can `public import` its olean. Under the
+release window that assumption fails routinely in the worst way: `merger`'s copy of a
+giant module can be RED — here 100+ errors, `maxErrors` reached at line 73478 with more
+beyond, every one of them a pre-existing merge wound and none of them mine — and then
+there is no olean, no scratch, and a 40-minute build that only re-prints somebody else's
+errors. Repairing a hundred wounds is the merge worker's job, not yours (it alone knows
+which side of each merge won), so waiting for green is waiting forever.
+**The way through: verify against `~/.flt-release-lake`'s olean — which is `main`, and
+green — and STUB the handful of declarations that exist only on `merger`, copying their
+statements VERBATIM out of `merger`'s source.**
+    S=$(cat ~/.flt-release-lake/sha)
+    git diff --stat $S main -- Fermat/            # empty ⇒ that olean IS main's
+    cp -rs ~/.flt-release-lake/build/lib /tmp/relean-N/
+    LEAN_PATH="/tmp/relean-N/lib/lean:$LP" LEAN_SRC_PATH="$LSP" lean Scratch.lean
+Then, in the scratch, for each name your block uses, decide which side it is on:
+    git show $S:<path> | grep -c '<name>'         # 0 ⇒ merger-only ⇒ stub it
+and stub the merger-only ones as `theorem stub_<name> <signature copied verbatim> := sorry`.
+Here that was **four** names out of ~16, and the run came back with exactly four
+`declaration uses 'sorry'` warnings and **no errors** — i.e. every application in the block
+typechecks against the real snapshot for twelve of the dependencies and against a
+mechanically transcribed signature for the other four. Two rounds, ~2 minutes each,
+against a build that cannot be made to finish at all.
+**What this does and does not prove.** It proves the mathematics, the instance
+resolution, the argument order and the tactic scripts. It does NOT prove the four
+transcriptions — so extract them with `sed`/`awk` from the merger source rather than
+retyping, and say in the commit that this is how they were checked. And it says nothing
+about the target's import surface or notation scope, exactly as the doctrine already
+warns.
+**Do the stubbed run as a SECOND scratch, not the first.** The first should contain only
+the declarations that need no stubs; those are usually the pure-algebra ones, which are
+where the tactic failures actually live (four of the five real errors in this task were
+there — a `field_simp` that did not close, a mathlib name that does not exist at this pin
+(`isUnit_of_mul_eq_one`), an over-eager `rw` chain, and a `Subsingleton` instance that
+needed `@Subsingleton.elim _ (myLemma R _) _ _` instead of a `haveI`). Getting those green
+first means the stubbed run tests only what it is for.
+## AN "IRREDUCIBLE ALONG AXIS X" VERDICT CAN BE SEARCHING FOR THE OBJECT WHILE THE CITATION IS ALREADY IN THE FILE
+(Same task, and it is what closed the leaf.) `nonempty_gamma0AtlasOver_specLoc` — the
+Katz–Mazur atlas of `Y_0(N)` over `ℤ_(ℓ)` — carried a dated, re-checked, entirely correct
+verdict: *`ModularCurve` is absent from mathlib entirely, there is no `DeligneRapoport`
+or integral model of a modular curve in mathlib, `~/cs/FLT` or this project; the check
+that refutes it is to produce the `Γ₀(N)`-atlas over `ℤ[1/n]`*. Every clause was true.
+The leaf closed with no atlas produced and no new leaf opened.
+What it missed is that a **fusion one day earlier had already replaced the two
+base-specific representability leaves by base-general ones** —
+`exists_rigidifiedModuliSchemeData_of_isUnit` and
+`isAffine_rigidifiedModuliSchemeData_of_isUnit`, stated over an arbitrary ring `R` with
+`3 ≤ n`, `IsUnit (n : R)`, `IsUnit (N : R)`. Those hypotheses ARE Katz–Mazur's own
+proviso, which is exactly what the leaf's `hu` already carried. Everything between them
+and the atlas was already stated over an arbitrary base and PROVEN. So the
+mixed-characteristic base was never the obstruction the verdict named; nobody had read
+the `𝔽_ℓ` route at a base that is not a field.
+Two things generalise:
+* **A verdict names an AXIS, and the axis is the author's search, not a property of the
+  statement.** This one searched for *an atlas over a base of mixed characteristic*. The
+  refuting check it prescribed was to build that object — so following the docstring's own
+  advice would have cost a theory build. Ask instead which CITATION the leaf needs and
+  whether some sibling has already been generalised to cover it; in a tree that fuses
+  base-specific leaves as aggressively as this one, that happens on a timescale of days.
+* **A base-specific chain transcribes to a general base exactly when the base is spent
+  through a NUMERICAL condition.** Here the whole `𝔽_ℓ` torsion/Isom chain spends `𝔽_ℓ`
+  twice — the fibrewise `ℤ/n`-basis of `E[n]`, and étaleness of `E[n] ⟶ T` — and both go
+  through `(n : K) ≠ 0` at the geometric points, which is what
+  `WeierstrassCurve.n_torsion_dimension` and `etale_nTorsion_of_natCast_ne_zero` actually
+  ask for. `¬ ℓ ∣ n` was only the route to it. Over `ℤ_(ℓ)` no single characteristic
+  exists, so the `CharP` form is unavailable and the `(n : K) ≠ 0` form is the only one
+  that survives — which is the tell that it was the real hypothesis all along. The note on
+  `exists_isomTorsor_of_geomPoint_specF` said so in as many words and nobody had taken it
+  at its word.
+Corollary, and it is the cheap check: **before believing a base-specific chain must be
+rebuilt, grep the base hypothesis through it and see what each use extracts.** If every
+use extracts the same numerical fact, the chain is already general and the transcription
+is mechanical.
 ## THE DEGENERATE OBJECT REFUTES EVERY UNGUARDED PERFECTNESS CLAUSE
 
 (2026-07-31.) `exists_tateWeilRawFamily_of_qAdicWeilSystem` was refuted with no
