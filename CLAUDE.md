@@ -69,6 +69,35 @@ WELL-DEFINED-FALSE while the formal clauses beside it are true. `Tr(δ I^k 𝒪)
 is `q^{⌊k/e⌋}ℤ_q`, not `q^k ℤ_q`, so that pairing does not descend at all for
 `e ≥ 2`. Read the CLAUSES, not the gloss.
 
+## After a fast-forward, RSYNC the release snapshot instead of rebuilding
+
+(2026-07-31, `flt-lean-373`.) A worktree seeded at release *R* and then
+fast-forwarded to a later `main` has an `.olean` set for *R*, so the first
+`lake build` of anything rebuilds the whole changed cone — >10 minutes before it
+even reaches your own module, and that is the state of EVERY worktree whose
+targets were introduced after its seed (mine did not contain its three targets
+at all until the ff).
+
+`~/.flt-release-lake/build` is the current snapshot and `~/.flt-release-lake/sha`
+names the commit it was built at. **The snapshot is valid for your tree exactly
+when no commit between that sha and your HEAD touches `Fermat/`:**
+
+    S=$(cat ~/.flt-release-lake/sha)
+    git merge-base --is-ancestor $S HEAD && git log --oneline $S..HEAD -- Fermat/
+
+Empty output → the oleans match your sources, so
+
+    rsync -a --delete ~/.flt-release-lake/build/ /scratch/chend-flt/flt-lean-N/.lake/build/
+
+is a complete substitute for the rebuild (2.3G, under a minute). It replaces only
+the PROJECT build; `.lake/packages/mathlib/.lake/build` is a separate directory
+and is untouched. Kill your own `lake`/`lean` first (**by PID after checking
+`/proc/<pid>/cwd`**, never by pattern) — rsyncing under a live build is exactly
+the torn-snapshot state the release seeder's own guard exists to prevent.
+
+If the `git log` is NON-empty the snapshot is stale for those modules and you
+must build; the check is cheap and there is no partial-credit version of it.
+
 ## Missing tools: brew install is pre-authorized
 
 (Deyao, 2026-07-21.) If a needed tool is missing and available through
