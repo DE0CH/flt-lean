@@ -16611,6 +16611,43 @@ the spectral-norm dichotomy).  Then
   `N w` because `𝒪_w ⧸ 𝔪_w ≅ κ(w)` and `Ideal.absNorm w.asIdeal =
   Nat.card κ(w)` (`natCard_residueField_heightOneSpectrum`).
 
+VERIFIED STARTING POINT (2026-07-31; both fragments compiled against this
+pin, so they are facts and not suggestions).  `ValuationSubring.comap` gives
+`V` in one line, and `x ∈ A.comap f ↔ f x ∈ A` holds definitionally, so a
+`show` moves the goal across it:
+
+    noncomputable def V : ValuationSubring (AlgebraicClosure F) :=
+      (localValuationSubring w).comap
+        (AlgebraicClosure.map (algebraMap F (w.adicCompletion F)))
+
+and `hcentre` is then
+
+    show (AlgebraicClosure.map (algebraMap F (w.adicCompletion F)))
+        (algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a))
+          ∈ localValuationSubring w
+    rw [AlgebraicClosure.map_algebraMap]
+    have hy : (algebraMap F (w.adicCompletion F)) ((algebraMap (𝓞 F) F) a)
+        ∈ w.adicCompletionIntegers F :=
+      HeightOneSpectrum.coe_algebraMap_mem (R := 𝓞 F) (K := F) (v := w) a
+    show IsIntegral (w.adicCompletionIntegers F) _
+    exact (isIntegral_algebraMap :
+      IsIntegral (w.adicCompletionIntegers F)
+        (algebraMap (w.adicCompletionIntegers F)
+          (AlgebraicClosure (w.adicCompletion F)) ⟨_, hy⟩))
+
+Note `AlgebraicClosure.map` and `AlgebraicClosure.map_algebraMap` are OURS
+(`Fermat/FLT/Deformations/Lemmas.lean`), not mathlib's, and
+`HeightOneSpectrum.coe_algebraMap_mem` needs its `R`/`K`/`v` given by name —
+positional arguments unify `w` against a `Type`.
+
+WHERE THE NEXT STEP GOES.  `hw` is `IsLocalRing.mem_maximalIdeal` composed
+with `ValuationSubring.mem_nonunits_iff_or` (`x ∈ A.nonunits ↔ x = 0 ∨ x⁻¹ ∉
+A`) across the `comap`, which reduces it to
+`(localValuationSubring w).valuation (algebraMap … a) < 1 ↔ a ∈ w.asIdeal` —
+i.e. to comparing the spectral valuation of `F̄_w` restricted to `F_w` with
+the adic valuation.  That comparison is the one piece of this leaf with no
+existing statement to lean on.
+
 WHY THE COMPLETION CANNOT BE AVOIDED, since it is the one design choice worth
 recording.  Over the GLOBAL field there is no canonical Frobenius lift: at a
 maximal ideal `Q` of the integral closure of `𝓞_F` in `F̄` the residue field
