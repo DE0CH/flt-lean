@@ -69,3 +69,5 @@
 - [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
 
 - [Hoist vs concurrent proof](flt-hoist-vs-concurrent-proof.md) — relocating a leaf and proving it in place merge into a duplicate declaration; keep the hoisted location, move the proof
+
+- [Cut along the proven special-case sibling](flt-cut-along-the-proven-special-case-sibling.md) — a bundled-predicate leaf usually has a PROVEN `_of_two`/`_of_prime` twin one screen away; copy its signature and its glue, and verify the whole cut in a 34-second scratch
