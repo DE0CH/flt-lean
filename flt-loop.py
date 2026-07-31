@@ -805,6 +805,18 @@ def do_spawn(s, name, j):
         # the CLI itself DEFERRED, which a killed or refused agent never is, so
         # trying it first bought a guaranteed-failing call before the real one.
         act = "--resume %s -p continue" % shlex.quote(j["session"])
+    else:
+        # The FIRST run of a job: hand it the composed prompt and name the
+        # session so the resume above has something to address.
+        #
+        # This branch was deleted by an edit that only meant to simplify the
+        # resume form, leaving `act` assigned on one path out of two -- so
+        # every ordinary spawn raised UnboundLocalError and the loop panicked
+        # itself to a stop. --dry-run did not catch it because it evaluates
+        # guards without running row actions: the dry run validates the TABLE,
+        # not the EFFECTS.
+        act = ("--session-id %s -p \"$(cat %s)\""
+               % (shlex.quote(j["session"]), shlex.quote(str(pf))))
     inner = ("cd %s 2>/dev/null || cd %s; "
              "exec -a flt-job-%s %s --model %s --dangerously-skip-permissions %s"
              % (shlex.quote(str(wt)), shlex.quote(str(REPO)), j["token"],
