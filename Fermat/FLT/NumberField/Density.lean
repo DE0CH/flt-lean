@@ -253,6 +253,47 @@ theorem zetaAvoiding_nonneg (K : Type*) [Field K] [NumberField K]
     (T : Set (Ideal (𝓞 K))) (s : ℝ) : 0 ≤ zetaAvoiding K T s :=
   tsum_nonneg fun _ => Real.rpow_nonneg (Nat.cast_nonneg _) _
 
+open Asymptotics Finset in
+/-- **THE PARTIAL SUMS OF THE IDEAL-COUNTING FUNCTION ARE `~ ρ_K · x`** (PROVEN 2026-07-31).
+
+`(∑_{m ≤ n} #{I : N I = m}) / n → ρ_K`. This is mathlib's ideal-counting theorem
+`NumberField.Ideal.tendsto_norm_le_div_atTop₀` with the counting function rewritten from
+"norm at most `n`" to "the fibres of the norm summed", exactly as the proof of
+`tendsto_sub_one_mul_dedekindZeta_nhdsGT` does it internally; it is lifted out here
+because all three leaves below need it and mathlib does not export it. -/
+theorem tendsto_sum_card_absNorm_eq_div (K : Type*) [Field K] [NumberField K] :
+    Tendsto (fun n : ℕ ↦ (∑ m ∈ Finset.Icc 1 n,
+        (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = m} : ℝ)) / (n : ℝ)) atTop
+      (𝓝 (dedekindZeta_residue K)) := by
+  refine ((NumberField.Ideal.tendsto_norm_le_div_atTop₀ K).comp
+    tendsto_natCast_atTop_atTop).congr fun n ↦ ?_
+  simp only [Function.comp_apply, Nat.cast_le, ← Nat.cast_sum]
+  congr
+  rw [← add_left_inj 1, ← _root_.Ideal.card_norm_le_eq_card_norm_le_add_one,
+    show Finset.Icc 1 n = Finset.Ioc 0 n from Finset.Icc_succ_left_eq_Ioc _ _,
+    show 1 = Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = 0} by
+      simp [Ideal.absNorm_eq_zero_iff],
+    Finset.sum_Ioc_add_eq_sum_Icc (n.zero_le),
+    ← Finset.card_preimage_eq_sum_card_image_eq
+      (fun k _ ↦ _root_.Ideal.finite_setOf_absNorm_eq k)]
+  simp [Set.coe_eq_subtype]
+
+open Asymptotics in
+/-- **THE DIRICHLET SERIES OF `ζ_K` CONVERGES ABSOLUTELY AT EVERY REAL `s > 1`** (PROVEN
+2026-07-31).
+
+`LSeriesSummable_of_sum_norm_bigO_and_nonneg` applied to the previous lemma with `r = 1`.
+This is the convergence hypothesis every one of the three leaves below silently needs, and
+it is the reason each of them is stated with `1 < s`. -/
+theorem lseriesSummable_dedekindZeta (K : Type*) [Field K] [NumberField K] {s : ℝ}
+    (hs : 1 < s) :
+    LSeriesSummable
+      (fun n ↦ ((Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) : ℂ)) s := by
+  refine LSeriesSummable_of_sum_norm_bigO_and_nonneg ?_ (fun _ ↦ Nat.cast_nonneg _)
+    zero_le_one (by simpa using hs)
+  have hlim := tendsto_sum_card_absNorm_eq_div K
+  exact isBigO_atTop_natCast_rpow_of_tendsto_div_rpow (r := 1) (by simpa using hlim)
+
 /-- **LEAF 1 — THE REGROUPING: `ζ_K(s)` is the sum of `(N I)^{-s}` over the nonzero ideals**
 (OPEN, cut 2026-07-31).
 
@@ -267,10 +308,13 @@ of `absNorm` are finite (`NumberField.Ideal.finite_setOf_absNorm_eq`, used by
 `tsum_sigma`/`Summable.tsum_fiberwise` for the map `I ↦ absNorm I`. The value is real
 because every coefficient is a natural number, which is why `.re` loses nothing.
 
-**Convergence.** For `1 < s` both sides converge absolutely; `LSeriesSummable` at real
-`s > 1` follows from `LSeriesSummable_of_sum_norm_bigO` with `r = 1` and mathlib's
-`NumberField.Ideal.tendsto_norm_le_div_atTop`, which is exactly the estimate
-`#{I : N I ≤ x} = O(x)`. -/
+**Convergence is already available**: `lseriesSummable_dedekindZeta` above, PROVEN, is
+`LSeriesSummable` of these coefficients at every real `s > 1`. Combined with
+`summable_norm_iff` it gives absolute convergence of the `ℕ`-indexed side; the ideal-indexed
+side then follows from `summable_sigma_of_nonneg` along
+`Equiv.sigmaFiberEquiv (fun I ↦ Ideal.absNorm I)`, whose fibres are finite by
+`Ideal.finite_setOf_absNorm_eq`. Do not re-derive the counting estimate — it is
+`tendsto_sum_card_absNorm_eq_div`, also PROVEN above. -/
 theorem dedekindZeta_re_eq_zetaAvoiding_empty (K : Type*) [Field K] [NumberField K]
     (s : ℝ) (hs : 1 < s) :
     (dedekindZeta K s).re = zetaAvoiding K ∅ s :=
