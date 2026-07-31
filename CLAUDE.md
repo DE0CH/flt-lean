@@ -711,6 +711,27 @@ check its HEADER before hunting for a missing consumer — and note that wiring 
 island in correctly RAISES the reported frontier, because its sorries become
 visible for the first time. That is disclosure, not regression.
 
+**Do NOT over-read that into "every name you use needs a `public import`" — that
+is false, and the false version has been sitting in a leaf docstring telling
+agents to edit a 71 000-line header** (measured and corrected 2026-07-31). A
+plain `import M` makes `M`'s names available for elaboration in the importing
+module; `public` only controls whether they are RE-EXPORTED to that module's own
+importers. Since **theorem proof bodies are elided by the module system**, a
+`public theorem` may use privately-imported constants freely. What needs a
+`public` edge is a name occurring in a **statement**, or in the body of a
+`def`/`abbrev`/`instance` that `@[expose]` publishes.
+`ModThree.lean`'s `exists_local_hopf_tensor_etale_algEquiv_of_finite_hopf`
+carried the note "whoever takes this leaf must add
+`public import Fermat.FLT.GroupScheme.ConnectedEtale` — a transitively-reached or
+private import does not make the names available even in proof bodies". The file
+had imported that module privately since before the note was written, and 300
+lines of new public theorems calling into it elaborate green against exactly that
+configuration. The one edge that did have to be `public` was
+`Mathlib.RingTheory.HopfAlgebra.Quotient`, because `Ideal.IsHopfIdeal` appears in
+two of the new STATEMENTS. Check WHERE the name occurs before touching a header:
+the test is one `lake env lean` on a scratch module mirroring the target's import
+lines, about ten seconds.
+
 **So a fourth standing check belongs in every bookkeeping cycle: enumerate
 modules under `Fermat/` and subtract the root's import closure.** A newly
 vendored subtree is the usual way modules land here — vendoring a directory
@@ -1961,6 +1982,44 @@ Corollary for the decline itself: **a decline recorded on ownership grounds has 
 expiry date that nothing writes down**, so say in the docstring which job held the
 lock, and re-check `~/.flt-loop/jobs` before inheriting it. Two of these three
 declines were on ownership that had already lapsed.
+
+## A RECORDED ROUTE IS A COST HYPOTHESIS, NOT A SPECIFICATION — and an `∃` licenses a cruder witness
+
+(2026-07-31, measured on `exists_badPrimes_localInertiaGroup_le_of_isOpen_ray_class`.)
+Docstrings in this development often carry a fully worked-out route. That route is
+evidence the leaf is TRUE; it is not a statement of what must be formalized. When the
+conclusion is `∃ T : Finset _, …` — or `∃` a bound, a modulus, a constant — **any
+admissible witness discharges it, and the canonical invariant the route names is
+usually the most expensive object that would work.**
+
+That leaf's route prescribed a primitive element `α` of `L = fixedField N` and
+`Δ := ∏_{β≠γ}(β−γ)` over the roots of `minpoly ℤ α`, with `T :=` the primes dividing
+`Δ`. Two substitutions deleted most of the formal cost and no mathematics:
+
+- **A `ℚ`-SPANNING SET beats a primitive element.** An automorphism fixing a spanning
+  set of `L` fixes all of `L` by `Submodule.span_induction` — plain linearity, and
+  `(⊤ : Submodule ℚ L).FG` supplies the set from `FiniteDimensional`. The primitive
+  element theorem only makes that set a *singleton*, which the argument never needs,
+  and it costs the `IntermediateField.lift` bookkeeping to move `ℚ⟮α⟯` from inside `L`
+  up to an intermediate field of `ℚᵃˡᵍ`.
+- **ANY DIVISOR beats the discriminant.** `x − β` is a nonzero algebraic integer for
+  every root `β ≠ x` of **any** monic integral witness `g ∈ ℤ[X]` of `x` — *not*
+  `minpoly`; any monic `g` with `g(x) = 0` works, because roots of a monic integer
+  polynomial are again algebraic integers. Each such difference divides SOME nonzero
+  rational integer, and the union of those integers' prime factors is a legitimate
+  `T`. No Vieta, no `derivative`, no separability, no Bézout.
+
+So the discipline is: **before formalizing a named classical invariant, ask which
+property of it the proof actually uses.** If the answer is "it is nonzero and
+everything bad divides it", build the crude divisor instead. Then state in the commit
+which reading of the route you took and what would change your mind — here, a consumer
+needing `T` to be *exactly* the ramified primes; none of the three named customers
+(`finite_hilbertInertiaOutsideSubgroups`, `exists_finset_isUnramifiedAt_hilbert_of_notMem`,
+`exists_finset_isUnramifiedAt_of_notMem`) does.
+
+Corollary, general: **`minpoly` is rarely what you need** when a plain `IsIntegral`
+witness will do — it drags in irreducibility and the `ℤ`-vs-`ℚ` integrally-closed
+bridge for nothing.
 
 ## A `sorry` is a PROMISE that the statement is provable
 

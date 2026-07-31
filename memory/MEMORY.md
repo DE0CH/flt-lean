@@ -64,3 +64,6 @@
 
 - [Same morphism, two points, blocks rw](lean-same-morphism-two-points-blocks-rw.md) — one morphism named twice gives two stalk TYPES; `rw` reports "pattern not found" on a goal that contains it — take the equation as a hypothesis and `subst` in a primed lemma
 - [Proper ⟹ global sections integral](proper-global-sections-are-integral.md) — the pin's `isIntegral_appTop_of_universallyClosed` kills "a regular function on a proper scheme is constant" without building the extension MORPHISM; it collapsed a planned ZMT fibre dichotomy to ~40 lines
+
+- [An ∃-finite-set leaf admits a cruder witness](flt-existential-finite-set-admits-a-cruder-witness.md) — a docstring's ROUTE is a cost hypothesis, not a spec: spanning set beats primitive element, any divisor beats the discriminant
+- [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
