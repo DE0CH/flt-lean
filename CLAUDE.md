@@ -1147,6 +1147,30 @@ dropped-merge bug of class six.
 2. *Per merge: names declared on the BRANCH but absent from the resolved file, grepped
    (comments stripped) against the resolved file.* This is what found `flt-lean-366`'s breakage
    before a build ran.
+3. *Per merge: DECLARATION ORDER.* Both checks above ask whether a name is PRESENT. Lean also
+   requires it to be present **above its use**, and a merge can get that wrong while every
+   presence check passes. Found on `merger` at `9e7f6e4b` (release 27), in `X0.lean`: the branch
+   that closed `exists_qExpansion_gamma0GITPresentation` inserted three declarations
+   (`isAlgebraic_of_quotient_isMaximal`, `injective_of_not_isAlgebraic_apply`, and the replacement
+   leaf `exists_nonConstant_qExpansion_gamma0GITPresentation`) and MOVED
+   `isRegularRing_coarseRing_of_gamma0GITPresentation` up above them. The merge landed the new
+   proof body at the CONSUMER'S OLD LINE (15535) and the whole helper block 200–400 lines LOWER
+   (15743, 15820, 15846, 15933) — so the proof forward-references all four. Nothing is duplicated,
+   nothing is missing, the diff against the first parent is fat, and the file cannot compile.
+   The branch's own docstrings say what the intended order was ("was MOVED UP … to just above
+   `exists_qExpansion_gamma0GITPresentation`", "the strictly smaller replacement for
+   `exists_qExpansion_gamma0GITPresentation` immediately below") — **when a docstring says
+   "above"/"below"/"MOVED", that is an order assertion to check, not prose.**
+
+   The check is one command per merged file: for each name the branch newly declares, compare
+   `grep -n "^theorem <name>"` with the line of every use. A RELOCATION is the trigger — a merge
+   resolves a move as an insertion plus a deletion in two independent hunks, and only one of them
+   has to land at the old site for the order to invert.
+
+   Corollary for AUTHORS, and it is cheap: **do not relocate a declaration to reach something
+   below you if you can re-run its body instead.** `flt-lean-359` needed the same coarse-ring
+   package from the same below-it theorem and inlined its twenty-line body rather than hoisting
+   it; that version has no move, hence no hunk that can land at the wrong site.
 
 And the standing one, which is what caught the rest: **the release build is not optional and its
 first failure is not its last.** Fix, rebuild, repeat — FOUR rounds this release, and the reason is
