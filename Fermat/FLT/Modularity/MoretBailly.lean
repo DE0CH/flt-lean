@@ -91,6 +91,7 @@ public import Fermat.FLT.Modularity.DivisibleTorsionParam
 -- module above: it is pure abelian group theory, and the file is the unit of
 -- elaboration.
 public import Fermat.FLT.Modularity.InvolutionFrame
+public import Fermat.FLT.Modularity.GeneralisedPicard
 -- The VENDORED quaternionic automorphic-forms development (weight-2 forms on a
 -- totally definite quaternion algebra over a totally real field, with their
 -- Hecke algebras).  It is imported HERE, and only here, because
@@ -32828,11 +32829,191 @@ theorem isTotallyReal_of_natCard_ringHom_real
   rw [← NumberField.InfinitePlace.mk_embedding v, NumberField.InfinitePlace.isReal_mk_iff]
   exact hreal _
 
+/-! ### The auxiliary prime, and the §3.1 boundary as a scheme
+
+Two small pieces hoisted OUT of the geometric leaf below, in the same spirit as
+`isTotallyReal_of_natCard_ringHom_real` above: one of them is pure number theory
+and is PROVEN here; the other is Moret–Bailly's normalisation 3.1.2(iii) and is a
+separate, separately dispatchable leaf. -/
+
+/-- **The auxiliary prime `q ∉ S` exists** (PROVEN).
+
+INCOMPLETENESS of the Skolem datum — Moret–Bailly's standing hypothesis, and what
+makes §3.8's strong approximation available — is bought by omitting one prime from
+`Σ = {∞} ∪ S`, i.e. by inverting it. That such a prime exists is Euclid, and
+nothing else; it used to be part of the geometric leaf's existential burden, where
+it had no business being. -/
+theorem exists_prime_notMem (S : Finset ℕ) : ∃ q : ℕ, q.Prime ∧ q ∉ S := by
+  obtain ⟨q, hqge, hqp⟩ := Nat.exists_infinite_primes (S.sup id + 1)
+  refine ⟨q, hqp, fun hmem => ?_⟩
+  have hle : q ≤ S.sup id := Finset.le_sup (f := id) hmem
+  omega
+
 open CategoryTheory AlgebraicGeometry in
-/-- **Moret–Bailly §3.2–3.9 as a LOCAL-CONDITIONS DATUM** (SORRY — the whole
-Picard-theoretic argument; the ONE residual leaf of
+/-- **Moret–Bailly 3.1.2(iii): the boundary `Z = X̄ ∖ C` is a closed subscheme,
+finite flat and surjective over the base** (SORRY — leaf).
+
+`j : C ↪ X̄` is a dense open immersion with nonempty complement, so
+`(range j.base)ᶜ` is a nonempty closed subset of `X̄`. This leaf asks for it as a
+SCHEME: a closed immersion `ι : Z ⟶ X̄` with exactly that image, whose structure
+morphism `ι ≫ fX : Z → Spec ℚ` is finite, flat and surjective. That is MB's
+normalisation 3.1.2(iii) — over a general base he buys it by shrinking `B` and
+enlarging `Σ` (his 1.10); over `B = Spec ℚ` it is much cheaper, and the cheapness
+is the reason this is stated separately rather than left inside the geometry.
+
+WHY IT IS TRUE, AND WHY EVERY CONJUNCT IS TRUE (faithfulness audit).
+`X̄` is a smooth proper geometrically irreducible curve over `ℚ` and `C` is a
+nonempty open subscheme, so the complement is a FINITE set of closed points, each
+with a number-field residue field. Give it the reduced induced structure:
+
+* `IsClosedImmersion ι` and `range ι.base = (range j.base)ᶜ` — that is what "the
+  reduced induced structure on a closed subset" means, and the subset is closed
+  because `j` is an open immersion;
+* `IsFinite (ι ≫ fX)` — `Z` is a finite disjoint union of `Spec` of number
+  fields, hence affine and module-finite over `ℚ`;
+* `Flat (ι ≫ fX)` — every module over a FIELD is flat, so this conjunct is free
+  at this base and is stated only because `exists_genRelPic` consumes it;
+* `Surjective (ι ≫ fX)` — `Spec ℚ` is a one-point space and `Z` is nonempty by
+  `hZ`.
+
+None of the four can fail, so this leaf is not one that will turn out to be FALSE
+AS STATED; what it needs is the REDUCED INDUCED CLOSED SUBSCHEME, which is the
+one construction here that the mathlib pin does not obviously package (searched
+2026-07-31: `Mathlib/AlgebraicGeometry/` has `IsClosedImmersion` and
+`Scheme.restrict` for OPENS, but no `Scheme.reducedInduced`). A prover may find
+it easier to build `Z` by hand as `Spec` of the product of the residue fields of
+the finitely many missing points, together with the closed immersion that
+description gives — the statement does not care which route is taken.
+
+The dimension hypothesis is carried because it is what makes the complement
+FINITE; without it the complement of a dense open can be positive-dimensional and
+`IsFinite` fails. -/
+theorem exists_boundarySubscheme_of_projectiveCompactification
+    {C Xbar : AlgebraicGeometry.Scheme.{u}}
+    (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (j : C ⟶ Xbar) (hjimm : AlgebraicGeometry.IsOpenImmersion j)
+    (hXsmooth : AlgebraicGeometry.Smooth fX)
+    (hXproper : AlgebraicGeometry.IsProper fX)
+    (hXgi : AlgebraicGeometry.GeometricallyIrreducible fX)
+    (hZ : (Set.range j.base)ᶜ.Nonempty)
+    (hXdim : topologicalKrullDim ↥Xbar ≤ 1) :
+    ∃ (Z : AlgebraicGeometry.Scheme.{u}) (ι : Z ⟶ Xbar),
+      AlgebraicGeometry.IsClosedImmersion ι ∧
+      Set.range ι.base = (Set.range j.base)ᶜ ∧
+      AlgebraicGeometry.IsFinite (ι ≫ fX) ∧
+      AlgebraicGeometry.Flat (ι ≫ fX) ∧
+      AlgebraicGeometry.Surjective (ι ≫ fX) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.2 and §3.5–§3.10, GIVEN the generalised Picard scheme**
+(SORRY — leaf; the geometric residue of
+`exists_skolemBallDatum_of_projectiveCompactification` below).
+
+This is the target leaf with THREE burdens removed and handed to their own
+owners: the auxiliary prime `q` (now a hypothesis, supplied by the PROVEN
+`exists_prime_notMem`), the boundary scheme `Z` (now hypotheses `ι`, `hιimm`,
+`hιrange`, supplied by `exists_boundarySubscheme_of_projectiveCompactification`),
+and §3.4's generalised relative Picard scheme `PG(X̄, Z)` (now the hypothesis
+`hPG`, supplied by `Fermat.exists_genRelPic` in
+`Fermat/FLT/Modularity/GeneralisedPicard.lean`).
+
+WHAT IS LEFT UNDER THIS LEAF, in Moret–Bailly's numbering — the four items the
+target's docstring lists, minus §3.4:
+
+* **§3.2** the symmetric power `X̄^(d)` and its identification with effective
+  Cartier divisors finite flat of degree `d`, and `U_d` the étale ones. Absent
+  from all three trees (re-verified 2026-07-29); `SymmetricPower` in mathlib is
+  the symmetric tensor power of a MODULE and is a near-miss, not a start.
+* **§3.5** `φ_d : X̄^(d) → PG_d`, `D ↦ (𝒪(D), s_D|_Z)`. Now expressible: `PG_d`
+  is the degree-`d` part of the `hPG` this leaf receives.
+* **§3.6** Riemann–Roch and `R¹(X̄, 𝒩_d) = 0`. `Hⁿ(X̄, ℒ)` IS a writable type at
+  this pin (`Mathlib/CategoryTheory/Sites/SheafCohomology/`, verified by
+  compiling — see the target's CORRECTION (B)); `𝒪(D)`, `deg` and `genus` are
+  not, and `genus` matches zero lines in all of `Mathlib/`.
+* **§3.7–§3.9** the open sets `W_v^d`, their multiplicativity, and the choice of
+  `(ℒ, α)` — ordinary work once §3.2 and §3.6 exist, EXCEPT for §3.9's engine,
+  which is quasi-compactness of `P₀(K_Σ)/im Γ(Z, 𝒪_Z^×)` and rests on:
+* **§3.10.2** (Raynaud) compactness of `J(K_v)` for `J` the Jacobian of a proper
+  regular geometrically integral curve over a local field.
+
+STRENGTH. This leaf is strictly WEAKER than the target: it has the target's
+hypotheses plus three more, and a conclusion with `q` no longer existentially
+quantified. So a proof of the target does not follow from it alone — the target
+is the assembly of this leaf with the two suppliers above, and that assembly is
+WRITTEN, not asserted. The `d = 0` collapse recorded on the target's docstring
+applies here verbatim and for the same reason: any decomposition of an
+existential statement into a single leaf is logically equivalent to it, and what
+the cut buys is placement of the discharged parts in the root cone plus a
+checkable record of what §3.4 has to deliver. -/
+theorem exists_skolemBallDatum_of_genRelPic
+    {C Xbar Zb Pg : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (j : C ⟶ Xbar) (hjimm : AlgebraicGeometry.IsOpenImmersion j)
+    (hjcomm : j ≫ fX = fC)
+    (hXsmooth : AlgebraicGeometry.Smooth fX)
+    (hXproper : AlgebraicGeometry.IsProper fX)
+    (hXgi : AlgebraicGeometry.GeometricallyIrreducible fX)
+    (hZ : (Set.range j.base)ᶜ.Nonempty)
+    (hdim : topologicalKrullDim ↥C ≤ 1)
+    (hXdim : topologicalKrullDim ↥Xbar ≤ 1)
+    (hreal : HasRationalPoint fC (ULift.{u} ℝ))
+    (S : Finset ℕ) (hSprime : ∀ p ∈ S, p.Prime)
+    (hSpt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S →
+      HasRationalPoint fC (ULift.{u} ℚ_[p]))
+    (q : ℕ) (hq : q.Prime) (hqS : q ∉ S)
+    (ι : Zb ⟶ Xbar) (hιimm : AlgebraicGeometry.IsClosedImmersion ι)
+    (hιrange : Set.range ι.base = (Set.range j.base)ᶜ)
+    (pstr : Pg ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hPG : Fermat.IsGenRelPicOf fX ι pstr) :
+    ∃ (d : ℕ) (t : Fin d → ℝ) (w : ℕ → Fin d → ℚ) (ε : ℚ), 0 < ε ∧
+      ∀ a : Fin d → ℚ,
+        (∀ i, |(a i : ℝ) - t i| < (ε : ℝ)) →
+        (∀ p ∈ S, ∀ i, padicNorm p (a i - w p i) < ε) →
+        (∀ ℓ : ℕ, ℓ.Prime → ℓ ∉ S → ℓ ≠ q → ∀ i, padicNorm ℓ (a i) ≤ 1) →
+        ∃ (x : ↥C) (_ : NumberField ↥(C.residueField x)),
+          Nat.card (↥(C.residueField x) →+* ℝ)
+              = Module.finrank ℚ ↥(C.residueField x) ∧
+          ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt ↥(C.residueField x) p :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.2–3.9 as a LOCAL-CONDITIONS DATUM** (**DECOMPOSED AND PROVEN
+2026-07-31** — an assembly over the PROVEN `exists_prime_notMem` and the three leaves
+`exists_boundarySubscheme_of_projectiveCompactification` (§3.1.2(iii)),
+`Fermat.exists_genRelPic` (§3.4, in `Fermat/FLT/Modularity/GeneralisedPicard.lean`) and
+`exists_skolemBallDatum_of_genRelPic` (§3.2 and §3.5–§3.10); it was a bare `sorry` until
+that day, and the docstring below is the survey that made the cut possible, kept in full).
+
+**THE CUT TAKEN, 2026-07-31, and why it is this one.** The three survey rounds recorded
+below name five absent chapters and, after CORRECTION (A), reorder them so that §3.4's
+GENERALISED Picard functor `PG(X̄, Z)` — pairs `(ℒ, α)` with `α` a trivialisation of
+`ℒ|_Z` — is the item whose ingredients already exist in this project. That is now a
+DEFINED object, `Fermat.IsGenRelPicOf`, with its representability as the separate leaf
+`Fermat.exists_genRelPic`; see `Fermat/FLT/Modularity/GeneralisedPicard.lean` for the
+construction and for the argument (rigidification along a FAITHFULLY FLAT `Z` kills the
+automorphisms, so the naive functor is already a sheaf) that makes that leaf true as
+stated rather than a sheafification trap. Two further burdens that had no business being
+inside a geometric leaf are hoisted out at the same time: the auxiliary prime `q ∉ S`
+(Euclid — PROVEN, `exists_prime_notMem`) and the boundary `Z` as a scheme (MB 3.1.2(iii),
+its own leaf). What remains under `exists_skolemBallDatum_of_genRelPic` is §3.2's
+symmetric power, §3.5–§3.6's Riemann–Roch, and §3.9–§3.10's compactness.
+
+The cut costs one leaf and buys three: the direct-sorry count at this node goes from one
+to three, which is DISCLOSURE — each of the three is separately dispatchable, two of them
+are small, and `Fermat.exists_genRelPic` is reusable machinery rather than a step of this
+proof. The CUT-STRENGTH AUDIT below applies to the residual leaf verbatim and is repeated
+on it: no single-leaf decomposition of an existential statement is logically weaker than
+the statement, and what is bought is placement, not strength.
+
+Everything below this paragraph is the survey as it stood before the cut; it is what a
+prover of any of the three leaves needs, and it is left intact.
+
+The state before the cut was: SORRY — the whole Picard-theoretic argument; the ONE
+residual leaf of
 `exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompactification`, whose
-other half, §3.8's strong-approximation engine, is PROVEN above).
+other half, §3.8's strong-approximation engine, is PROVEN above.
 
 The datum this leaf produces is exactly what §3.2–3.7 and §3.9 construct and what §3.8
 then feeds to strong approximation: an auxiliary prime `q ∉ S` (the omitted place that
@@ -33281,8 +33462,19 @@ theorem exists_skolemBallDatum_of_projectiveCompactification
         ∃ (x : ↥C) (_ : NumberField ↥(C.residueField x)),
           Nat.card (↥(C.residueField x) →+* ℝ)
               = Module.finrank ℚ ↥(C.residueField x) ∧
-          ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt ↥(C.residueField x) p :=
-  sorry
+          ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt ↥(C.residueField x) p := by
+  classical
+  haveI : AlgebraicGeometry.Smooth fX := hXsmooth
+  obtain ⟨q, hq, hqS⟩ := exists_prime_notMem S
+  obtain ⟨Zb, ι, hιimm, hιrange, hZfin, hZflat, hZsurj⟩ :=
+    exists_boundarySubscheme_of_projectiveCompactification fX j hjimm hXsmooth hXproper hXgi
+      hZ hXdim
+  obtain ⟨P, pstr, ⟨hPG⟩⟩ :=
+    Fermat.exists_genRelPic fX ι hXproper inferInstance hXgi hZfin hZflat hZsurj
+  obtain ⟨d, t, w, ε, hε, hmain⟩ :=
+    exists_skolemBallDatum_of_genRelPic fC fX j hjimm hjcomm hXsmooth hXproper hXgi hZ hdim
+      hXdim hreal S hSprime hSpt q hq hqS ι hιimm hιrange pstr hPG
+  exact ⟨q, hq, hqS, d, t, w, ε, hε, hmain⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.2–3.10 in residue-field form: the arithmetic core**
