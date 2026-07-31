@@ -4518,8 +4518,6 @@ theorem exists_lowerRamificationData_lvl_eq
 
 end FiniteLevelInhabitation
 
-namespace LowerRamificationData
-
 /-! ### The arithmetic inputs to the construction, as NAMED leaves
 
 The four statements below were, until 2026-07-29, anonymous sorried `have`s
@@ -4534,15 +4532,15 @@ construction `nonempty_ramificationFiltration` below consumes them.
 new rather than lifted: see its own docstring and
 `GaloisRep.pos_of_card_filter_eq`.
 
-**STATUS 2026-07-30 (second pass) — four of the five are now THEOREMS, not
-leaves**, so do not dispatch at them: `iInf_gp_eq_lvl` (`hterm`) over the
-`KrullSeparation` section above, `iInf_lvl_eq_bot` (`hsep`) over
-`exists_lowerRamificationData_lvl_eq`, `localInertiaGroup_le_gp_zero` (`hin`),
-and `wildInertiaGroup_le_gp_one` — the last through the pair
-`dvd_smul_unif_sub_of_mem_wildInertiaGroup` (the tame character is trivial on
-`P_v`) and `mem_gp_one_of_dvd_smul_unif_sub` (Serre IV §1 Lemma 1), both proven.
-The ONE still open is `gp_le_upperRamificationFiltration_sup_lvl` (`hherb`,
-which is Herbrand's theorem itself and is the deep one). -/
+**STATUS 2026-07-31 — four of the five are now THEOREMS, not leaves**, so do not
+dispatch at them: `iInf_gp_eq_lvl` (`hterm`) over the `KrullSeparation` section
+above, `iInf_lvl_eq_bot` (`hsep`) over `exists_lowerRamificationData_lvl_eq`,
+`localInertiaGroup_le_gp_zero` (`hin`), and — since 2026-07-31 —
+`wildInertiaGroup_le_gp_one`, whose last input
+`mem_gp_one_of_dvd_smul_unif_sub` was closed over
+`exists_pow_sub_self_mem_maximalIdeal`. ONE is still open:
+`gp_le_upperRamificationFiltration_sup_lvl` (`hherb`, which is Herbrand's
+theorem itself and is the deep one). -/
 
 /-- **THE LOWER FILTRATION IS EVENTUALLY TRIVIAL**: `G_m(L/Kᵥ) = 1` for `m`
 large, i.e. `G_m ≤ N` at the level itself (Serre, *Corps Locaux* IV §2,
@@ -5017,6 +5015,71 @@ The route is stated so that no residue-field *theory* is needed downstream:
 the conclusion is a divisibility in `Oᵥ`.
 -/
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **EVERY ELEMENT OF `Oᵥ` SATISFIES `x ^ Q ≡ x` MODULO `𝔪` FOR SOME `Q ≡ 0`**
+(PROVEN 2026-07-31) — i.e. the residue field of `Oᵥ` is ALGEBRAIC OVER A FINITE
+FIELD, said without ever naming the residue characteristic: the `Q` returned is
+the cardinality of a finite field, so `Q` is a power of `p` and lands in `𝔪`,
+and `x ^ Q − x` lands in `𝔪` because `x̄` lies in that finite field.
+
+This is the ONE arithmetic input that
+`LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub` needs and that its
+`LowerRamificationData` axioms do not contain; see that docstring for what it
+replaces (monogenicity of `𝒪_L` over the unramified subring).
+
+THE PROOF is the classical two-line one. `Oᵥ` is integral over `𝒪ᵥ`
+(`Algebra.IsIntegral`), the map `𝒪ᵥ → Oᵥ` is LOCAL (`𝔪ᵥ` is the contraction of
+`𝔪`, which is `Ideal.LiesOver.over` — the same step as
+`natCast_mem_maximalIdeal_integralClosure_of_mem_asIdeal`), so reducing an
+integral equation gives `x̄` integral over the residue field `κ(𝒪ᵥ)`, which is
+FINITE (that instance is `AbsoluteGaloisGroup.lean`'s, and is where the
+arithmetic of a number field finally enters). Hence `κ(𝒪ᵥ)⟮x̄⟯` is a finite
+field, and `FiniteField.pow_card` / `FiniteField.cast_card_eq_zero` supply the
+two conclusions with `Q = #κ(𝒪ᵥ)⟮x̄⟯`. -/
+theorem exists_pow_sub_self_mem_maximalIdeal (x : Oᵥ) :
+    ∃ Q : ℕ, ((Q : ℕ) : Oᵥ) ∈ IsLocalRing.maximalIdeal Oᵥ ∧
+      x ^ Q - x ∈ IsLocalRing.maximalIdeal Oᵥ := by
+  haveI hlh : IsLocalHom (algebraMap 𝒪ᵥ Oᵥ) := by
+    constructor
+    intro a ha
+    by_contra hnu
+    have hmem : a ∈ IsLocalRing.maximalIdeal 𝒪ᵥ := (IsLocalRing.mem_maximalIdeal _).mpr hnu
+    have hlies : IsLocalRing.maximalIdeal 𝒪ᵥ =
+        Ideal.comap (algebraMap 𝒪ᵥ Oᵥ) (IsLocalRing.maximalIdeal Oᵥ) :=
+      Ideal.LiesOver.over
+    rw [hlies, Ideal.mem_comap] at hmem
+    exact ((IsLocalRing.mem_maximalIdeal _).mp hmem) ha
+  letI : Algebra (IsLocalRing.ResidueField 𝒪ᵥ) (IsLocalRing.ResidueField Oᵥ) :=
+    (IsLocalRing.ResidueField.map (algebraMap 𝒪ᵥ Oᵥ)).toAlgebra
+  set xb : IsLocalRing.ResidueField Oᵥ := IsLocalRing.residue Oᵥ x with hxb
+  have hint : IsIntegral (IsLocalRing.ResidueField 𝒪ᵥ) xb := by
+    obtain ⟨P, hPm, hPe⟩ := Algebra.IsIntegral.isIntegral (R := 𝒪ᵥ) x
+    refine ⟨P.map (IsLocalRing.residue 𝒪ᵥ), hPm.map _, ?_⟩
+    rw [Polynomial.eval₂_map]
+    have hcomp : (algebraMap (IsLocalRing.ResidueField 𝒪ᵥ) (IsLocalRing.ResidueField Oᵥ)).comp
+        (IsLocalRing.residue 𝒪ᵥ) = (IsLocalRing.residue Oᵥ).comp (algebraMap 𝒪ᵥ Oᵥ) := rfl
+    rw [hcomp, hxb, ← Polynomial.hom_eval₂, hPe, map_zero]
+  set E := IntermediateField.adjoin (IsLocalRing.ResidueField 𝒪ᵥ) {xb} with hE
+  haveI : FiniteDimensional (IsLocalRing.ResidueField 𝒪ᵥ) E :=
+    IntermediateField.adjoin.finiteDimensional hint
+  haveI : Finite E := Module.finite_of_finite (IsLocalRing.ResidueField 𝒪ᵥ)
+  letI : Fintype E := Fintype.ofFinite _
+  refine ⟨Fintype.card E, ?_, ?_⟩
+  · rw [← IsLocalRing.residue_eq_zero_iff, map_natCast]
+    have h0 : ((Fintype.card E : ℕ) : E) = 0 := FiniteField.cast_card_eq_zero E
+    have h1 : (algebraMap E (IsLocalRing.ResidueField Oᵥ)) ((Fintype.card E : ℕ) : E)
+        = ((Fintype.card E : ℕ) : IsLocalRing.ResidueField Oᵥ) := map_natCast _ _
+    rw [← h1, h0, map_zero]
+  · rw [← IsLocalRing.residue_eq_zero_iff]
+    have hmem : xb ∈ E := IntermediateField.mem_adjoin_simple_self _ _
+    have h0 : (⟨xb, hmem⟩ : E) ^ Fintype.card E = ⟨xb, hmem⟩ := FiniteField.pow_card _
+    have h1 := congrArg (algebraMap E (IsLocalRing.ResidueField Oᵥ)) h0
+    simp only [map_pow] at h1
+    have h2 : (algebraMap E (IsLocalRing.ResidueField Oᵥ)) ⟨xb, hmem⟩ = xb := rfl
+    rw [h2] at h1
+    rw [map_sub, map_pow, ← hxb, h1, sub_self]
+
 set_option synthInstance.maxHeartbeats 4000000 in
 set_option maxHeartbeats 1000000 in
 /-- **A UNIT OF `Oᵥ` IS A ROOT OF UNITY MODULO `𝔪`** (PROVEN 2026-07-30), with
@@ -5173,133 +5236,98 @@ makes `S` a unit, and without it the statement fails already for an unramified
 hypothesis is vacuous, while `σ ∉ D.gp 1`). Stated only at `i = 1`, which is
 all `wildInertiaGroup_le_gp_one` consumes. -/
 theorem LowerRamificationData.mem_gp_one_of_dvd_smul_unif_sub
-    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D : LowerRamificationData v)
+    (D : LowerRamificationData v)
     {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
     (hσ : σ ∈ localInertiaGroup v)
     (h : D.unif ^ 2 ∣ σ • D.unif - D.unif) :
     σ ∈ D.gp 1 := by
-  classical
   rw [D.mem_gp]
-  -- `σ ∈ G_0`: every level-fixed element is moved by a multiple of `unif`.
-  have hg0 : ∀ y : IntegralClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-      (AlgebraicClosure (v.adicCompletion K)),
-      (∀ τ ∈ D.lvl, τ • y = y) → D.unif ∣ σ • y - y := by
+  intro x hx
+  -- `σ ∈ G_0`: the inertia moves every level-fixed element by at least `unif`.
+  have hgp0 : ∀ y : Oᵥ, (∀ τ ∈ D.lvl, τ • y = y) → D.unif ∣ σ • y - y := by
     intro y hy
     simpa using (D.mem_gp 0 σ).mp (D.localInertiaGroup_le_gp_zero hσ) y hy
-  -- dividing a level-fixed element by `unif` keeps it level-fixed
-  have hdiv : ∀ y z : IntegralClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-      (AlgebraicClosure (v.adicCompletion K)),
-      (∀ τ ∈ D.lvl, τ • y = y) → y = D.unif * z → (∀ τ ∈ D.lvl, τ • z = z) := by
-    intro y z hy hyz τ hτ
-    have h1 := hy τ hτ
-    rw [hyz, smul_mul', D.unif_fixed τ hτ] at h1
-    exact mul_left_cancel₀ D.unif_ne_zero h1
-  intro x hx
-  show D.unif ^ 2 ∣ σ • x - x
-  by_cases hu : IsUnit x
-  · -- THE UNIT CASE.  `x` is a root of unity mod `𝔪` of order `n` prime to `p`.
-    obtain ⟨n, hn, hxn⟩ := exists_pow_sub_one_mem_maximalIdeal_of_isUnit v hu
-    -- `x ^ n - 1` is level-fixed and a non-unit, hence `unif * c`
-    have hxnfix : ∀ τ ∈ D.lvl, τ • (x ^ n - 1) = x ^ n - 1 := by
-      intro τ hτ
-      rw [smul_sub, smul_one, smul_pow_integralClosure, hx τ hτ]
-    obtain ⟨c, hc⟩ := D.unif_spec _ hxnfix ((IsLocalRing.mem_maximalIdeal _).mp hxn)
-    have hcfix := hdiv _ _ hxnfix hc
-    -- `unif ^ 2` divides `σ • (x ^ n) - x ^ n`
-    have hxnpow : σ • x ^ n - x ^ n = (σ • D.unif - D.unif) * (σ • c) +
-        D.unif * (σ • c - c) := by
-      have hxeq : x ^ n = 1 + D.unif * c := by linear_combination hc
-      rw [hxeq, smul_add, smul_one, smul_mul']
+  -- the `unif · c` step, FREE from `h` plus `σ ∈ G_0`. This is the only use of `h`.
+  have hmul : ∀ c : Oᵥ, (∀ τ ∈ D.lvl, τ • c = c) →
+      D.unif ^ 2 ∣ σ • (D.unif * c) - D.unif * c := by
+    intro c hc
+    have hkey : σ • (D.unif * c) - D.unif * c
+        = (σ • D.unif - D.unif) * (σ • c) + D.unif * (σ • c - c) := by
+      rw [smul_mul']
       ring
-    have hkey : D.unif ^ 2 ∣ σ • x ^ n - x ^ n := by
-      rw [hxnpow]
-      refine dvd_add (h.mul_right _) ?_
-      obtain ⟨e, he⟩ := hg0 c hcfix
-      exact ⟨e, by rw [he]; ring⟩
-    -- the geometric factorisation `(σ • x) ^ n - x ^ n = S * (σ • x - x)`
-    set S : IntegralClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-      (AlgebraicClosure (v.adicCompletion K)) :=
-      ∑ i ∈ Finset.range n, (σ • x) ^ i * x ^ (n - 1 - i) with hS
-    have hgeom : S * (σ • x - x) = σ • x ^ n - x ^ n := by
-      rw [hS, geom_sum₂_mul, smul_pow_integralClosure]
-    -- `S` is a unit, because it is `n * x ^ (n-1)` modulo `𝔪`
-    have hSm : S - (n : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-        (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1) ∈
-        IsLocalRing.maximalIdeal _ := by
-      have hcong : ∀ i ∈ Finset.range n,
-          (σ • x) ^ i * x ^ (n - 1 - i) - x ^ (n - 1)
-            = ((σ • x) ^ i - x ^ i) * x ^ (n - 1 - i) := by
-        intro i hi
-        have hin : i < n := Finset.mem_range.mp hi
-        have hxx : x ^ i * x ^ (n - 1 - i) = x ^ (n - 1) := by
-          rw [← pow_add]
-          congr 1
-          omega
-        rw [sub_mul, hxx]
-      -- `Finset.sum_sub_distrib` does NOT fire at the `IntegralClosure` type synonym
-      -- (its `AddCommGroup` instance is not found by keyed matching through the `def`
-      -- barrier), exactly as `sum_pow_sub_one_range` records; so split by induction.
-      have hgen : ∀ m : ℕ,
-          ∑ i ∈ Finset.range m, ((σ • x) ^ i * x ^ (n - 1 - i) - x ^ (n - 1))
-            = (∑ i ∈ Finset.range m, (σ • x) ^ i * x ^ (n - 1 - i))
-              - (m : IntegralClosure
-                  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-                  (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1) := by
-        intro m
-        induction m with
-        | zero => simp
-        | succ j ih =>
-            rw [Finset.sum_range_succ, Finset.sum_range_succ, ih]
-            push_cast
-            ring
-      have hsplit : S - (n : IntegralClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-          (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1)
-          = ∑ i ∈ Finset.range n,
-              ((σ • x) ^ i * x ^ (n - 1 - i) - x ^ (n - 1)) := by
-        rw [hS]
-        exact (hgen n).symm
-      rw [hsplit, Finset.sum_congr rfl hcong]
-      refine Ideal.sum_mem _ fun i _ => Ideal.mul_mem_right _ _ ?_
-      obtain ⟨w, hw⟩ : σ • x - x ∣ (σ • x) ^ i - x ^ i := sub_dvd_pow_sub_pow _ _ i
-      rw [hw]
-      exact Ideal.mul_mem_right _ _ (hσ x)
-    have hSunit : IsUnit S := by
-      rw [← IsLocalRing.notMem_maximalIdeal]
-      intro hSmem
-      have hnx : (n : IntegralClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-          (AlgebraicClosure (v.adicCompletion K))) * x ^ (n - 1) ∈
-          IsLocalRing.maximalIdeal _ := by
-        have := Ideal.sub_mem _ hSmem hSm
-        simpa using this
-      exact (IsLocalRing.notMem_maximalIdeal.mpr
-        ((isUnit_natCast_integralClosure_of_notMem_asIdeal v hn).mul (hu.pow (n - 1)))) hnx
-    -- assemble: invert `S`
-    obtain ⟨Su, hSu⟩ := hSunit
-    have hinv : ((Su⁻¹ : _ˣ) : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-        (AlgebraicClosure (v.adicCompletion K))) * S = 1 := by
-      rw [← hSu, ← Units.val_mul, inv_mul_cancel, Units.val_one]
-    have hrw : σ • x - x = ((Su⁻¹ : _ˣ) : IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
-        (AlgebraicClosure (v.adicCompletion K))) * (σ • x ^ n - x ^ n) := by
-      rw [← hgeom, ← mul_assoc, hinv, one_mul]
+    obtain ⟨a, ha⟩ := h
+    obtain ⟨b, hb⟩ := hgp0 c hc
+    exact ⟨a * (σ • c) + b, by rw [hkey, ha, hb]; ring⟩
+  -- the residue field is algebraic over a FINITE field: `x ^ Q ≡ x`, `Q ≡ 0`.
+  obtain ⟨Q, hQm, hQx⟩ := exists_pow_sub_self_mem_maximalIdeal x
+  have hQfix : ∀ τ ∈ D.lvl, τ • ((Q : ℕ) : Oᵥ) = ((Q : ℕ) : Oᵥ) := by
+    intro τ _
+    show (MulSemiringAction.toRingHom Γᵥ Oᵥ τ) ((Q : ℕ) : Oᵥ) = ((Q : ℕ) : Oᵥ)
+    exact map_natCast _ _
+  have hQdvd : D.unif ∣ ((Q : ℕ) : Oᵥ) :=
+    D.unif_spec _ hQfix ((IsLocalRing.mem_maximalIdeal _).mp hQm)
+  have hxQfix : ∀ τ ∈ D.lvl, τ • (x ^ Q - x) = x ^ Q - x := by
+    intro τ hτ
+    rw [smul_sub, smul_pow_integralClosure, hx τ hτ]
+  obtain ⟨c, hc⟩ : D.unif ∣ x ^ Q - x :=
+    D.unif_spec _ hxQfix ((IsLocalRing.mem_maximalIdeal _).mp hQx)
+  have hcfix : ∀ τ ∈ D.lvl, τ • c = c := by
+    intro τ hτ
+    have h1 := hxQfix τ hτ
+    rw [hc, smul_mul', D.unif_fixed τ hτ] at h1
+    exact mul_left_cancel₀ D.unif_ne_zero h1
+  -- `unif ² ∣ σ • x ^ Q − x ^ Q`, because the geometric cofactor is `≡ Q x ^ (Q−1)`.
+  obtain ⟨t, ht⟩ := hgp0 x hx
+  have hsplit : ∀ n : ℕ,
+      (∑ i ∈ Finset.range n, ((σ • x) ^ i * x ^ (Q - 1 - i) - x ^ (Q - 1)))
+        = (∑ i ∈ Finset.range n, (σ • x) ^ i * x ^ (Q - 1 - i)) - (n : Oᵥ) * x ^ (Q - 1) := by
+    intro n
+    induction n with
+    | zero => simp
+    | succ m ih =>
+      rw [Finset.sum_range_succ, Finset.sum_range_succ, ih]
+      push_cast
+      ring
+  have hterm : ∀ i ∈ Finset.range Q,
+      D.unif ∣ ((σ • x) ^ i * x ^ (Q - 1 - i) - x ^ (Q - 1)) := by
+    intro i hi
+    rw [Finset.mem_range] at hi
+    have hxi : i + (Q - 1 - i) = Q - 1 := by omega
+    have hrw : (σ • x) ^ i * x ^ (Q - 1 - i) - x ^ (Q - 1)
+        = ((σ • x) ^ i - x ^ i) * x ^ (Q - 1 - i) := by
+      rw [sub_mul, ← pow_add, hxi]
     rw [hrw]
-    exact hkey.mul_left _
-  · -- THE NON-UNIT CASE.  `x = unif * y`, and no residue theory is needed.
-    obtain ⟨y, hy⟩ := D.unif_spec x hx hu
-    have hyfix := hdiv _ _ hx hy
-    have hrw : σ • x - x = (σ • D.unif - D.unif) * (σ • y) + D.unif * (σ • y - y) := by
-      rw [hy, smul_mul']; ring
-    rw [hrw]
-    refine dvd_add (h.mul_right _) ?_
-    obtain ⟨e, he⟩ := hg0 y hyfix
-    exact ⟨e, by rw [he]; ring⟩
+    exact Dvd.dvd.mul_right (dvd_trans ⟨t, ht⟩ (sub_dvd_pow_sub_pow _ _ i)) _
+  have hSdvd : D.unif ∣ ∑ i ∈ Finset.range Q, (σ • x) ^ i * x ^ (Q - 1 - i) := by
+    have h1 : D.unif ∣
+        (∑ i ∈ Finset.range Q, (σ • x) ^ i * x ^ (Q - 1 - i)) - (Q : Oᵥ) * x ^ (Q - 1) := by
+      rw [← hsplit Q]
+      exact Finset.dvd_sum hterm
+    have h2 : D.unif ∣ (Q : Oᵥ) * x ^ (Q - 1) := hQdvd.mul_right _
+    have h3 : (∑ i ∈ Finset.range Q, (σ • x) ^ i * x ^ (Q - 1 - i))
+        = ((∑ i ∈ Finset.range Q, (σ • x) ^ i * x ^ (Q - 1 - i)) - (Q : Oᵥ) * x ^ (Q - 1))
+          + (Q : Oᵥ) * x ^ (Q - 1) := by ring
+    rw [h3]
+    exact dvd_add h1 h2
+  obtain ⟨s, hs⟩ := hSdvd
+  have hS : D.unif ^ 2 ∣ σ • (x ^ Q) - x ^ Q := by
+    refine ⟨s * t, ?_⟩
+    have hgeom : (∑ i ∈ Finset.range Q, (σ • x) ^ i * x ^ (Q - 1 - i)) * (σ • x - x)
+        = (σ • x) ^ Q - x ^ Q := geom_sum₂_mul _ _ _
+    rw [smul_pow_integralClosure, ← hgeom, hs, ht]
+    ring
+  -- assemble along `x ^ Q = x + unif · c`.
+  obtain ⟨p1, hp1⟩ := hS
+  obtain ⟨p2, hp2⟩ := hmul c hcfix
+  have hxQ : x ^ Q = x + D.unif * c := by linear_combination hc
+  have hid : σ • (x ^ Q) - x ^ Q
+      = (σ • x - x) + (σ • (D.unif * c) - D.unif * c) := by
+    rw [hxQ, smul_add]
+    ring
+  rw [hid, hp2] at hp1
+  exact ⟨p1 - p2, by linear_combination hp1⟩
+
+end SerreTameCharacterKernel
 
 /-- **THE WILD INERTIA LANDS IN `G_1` AT EVERY LEVEL**, `P_v ≤ G_1(L/Kᵥ)`.
 
@@ -8241,8 +8269,8 @@ theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
     ∃ s : ℕ, ρ.IsSwanExponentAt v s := by
   -- STEP 1 (`hexists`): the upper-numbering filtration exists — CONSTRUCTED
   -- as Serre's inverse limit `upperRamificationFiltration v` over the finite
-  -- levels, in `nonempty_ramificationFiltration`, over named leaves (three of
-  -- the five still open as of 2026-07-30).
+  -- levels, in `nonempty_ramificationFiltration`, over named leaves (one of
+  -- the five still open as of 2026-07-31).
   obtain ⟨F₀⟩ := nonempty_ramificationFiltration v
   -- STEP 3 (`hsum`): the break sum is a natural number, the same for every
   -- admissible `F` — `exists_nat_forall_sum_breaks_eq`.
