@@ -250,10 +250,21 @@ de-duplication is a queue deletion and can strand a leaf.
   telling the agent to `git merge flt-lean-273` first (the branch is BEHIND main,
   so it is an ordinary merge).  Merge it early next release and strip the four
   preconditions — grep `PRECONDITION, ADDED AT RELEASE 32`.
-* **`Fermat/FLT/Mathlib/RingTheory/Localization/BaseChange.lean` is the SECOND
-  module unreachable from `Fermat.lean`** (96 lines, 5 declarations).  Unlike
-  `CurveDivisorDegree.lean` it has NO sorries, so it hides no frontier leaf and
-  is not urgent — but it is free-floating and nothing in the tree records it.
-  `cyclecheck.py` is clean; the reachability check that finds these is a BFS of
-  the `^(public )?import Fermat` edges from `Fermat.lean`, differenced against
-  the `.lean` files on disk, and it is ten lines.
+* **`CurveDivisorDegree.lean` is the ONLY module unreachable from `Fermat.lean`**
+  — 401 of 402 modules are in the closure.  I record that as a corrected claim,
+  because my first run of the check said TWO and the second one was a bug in my
+  own scan, of exactly the kind this project keeps paying for:
+
+      IMP = r'^(?:public\s+)?import\s+(Fermat[\w.]*)\s*$'     # WRONG
+
+  That regex is anchored at end-of-line, so it silently drops
+  `public import Fermat.X.Y -- removing this breaks a simp proof`, which is a
+  real line in `Fermat/FLT/DedekindDomain/IntegralClosure.lean`.  The module it
+  imports then looks orphaned.  **Do not anchor an import scan at end-of-line;
+  Lean import lines in this tree carry trailing comments.**  Drop the `$`, and
+  skip lines whose first token is a comment opener.
+
+  The general form is the one CLAUDE.md already states about `xdup.py` and about
+  absence audits, and it bit me inside the same release in which I wrote it down:
+  a scan that UNDER-reports does not merely miss things, it CERTIFIES — I had
+  already written the wrong claim into this file before re-running the check.
