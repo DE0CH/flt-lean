@@ -16444,6 +16444,31 @@ theorem pre_relPointTwist {O : CommRingCat.{u}} {𝒜 : Scheme.{u}} {fO : 𝒜 �
   rw [← Category.assoc j t.hom, hs]
   simp [Category.assoc]
 
+/-- **THE FROBENIUS AXIOM OF `IsAbelianReductionDatum`, AT EITHER FIBRE**
+(PROVEN).  `gen_frob` and `sp_frob` are THE SAME STATEMENT, applied at
+`j = ι` with `g = Frob_w` and at `j = π` with `g = σ` (`sp_frob` is written
+in the opposite direction, so a consumer takes `.symm`).
+
+Stated in the non-existential form so that it can be used to BUILD an
+`IsAbelianReductionDatum`, which lives in `Type` and therefore cannot
+destructure an `Exists`.  `exists_frobPt_of_semilinearIso` below is the
+packaged corollary. -/
+theorem relPointTwist_fibre {O : CommRingCat.{u}} {𝒜 : Scheme.{u}} {fO : 𝒜 ⟶ Spec O}
+    {Φ : 𝒜 ≅ 𝒜} {t : Spec O ≅ Spec O} (hΦ : Φ.hom ≫ fO = fO ≫ t.hom)
+    {F : Type u} [Field F] {A S : Scheme.{u}} {f : A ⟶ S} {x : Spec (CommRingCat.of F) ⟶ S}
+    {j : O ⟶ CommRingCat.of (AlgebraicClosure F)} (g : Field.absoluteGaloisGroup F)
+    (hj : Spec.map j ≫ t.hom = specGal g ≫ Spec.map j)
+    (e : GeomFibrePt f x ≃ RelPoint fO (Spec.map j))
+    (he : ∀ y : GeomFibrePt f x,
+      (e (RelPoint.pre (specGal g) (specGal_comp_base x g) y)).1
+        = specGal g ≫ (e y).1 ≫ Φ.inv)
+    (u : RelPoint fO (𝟙 (Spec O))) :
+    e (RelPoint.pre (specGal g) (specGal_comp_base x g)
+        (e.symm (RelPoint.pre (Spec.map j) (Category.comp_id (Spec.map j)) u)))
+      = RelPoint.pre (Spec.map j) (Category.comp_id (Spec.map j)) (relPointTwist hΦ u) := by
+  apply Subtype.ext
+  rw [he, Equiv.apply_symm_apply, pre_relPointTwist hΦ (Spec.map j) (specGal g) hj]
+
 /-- **`frobPt`, `gen_frob` AND `sp_frob` COME FOR FREE FROM A SEMILINEAR
 AUTOMORPHISM OF THE MODEL** (PROVEN).  This is the functorial half of step 3
 of `exists_finset_abelianReductionDatum_of_mult`, and it is stated for an
@@ -16492,12 +16517,9 @@ theorem exists_frobPt_of_semilinearIso {O : CommRingCat.{u}} {𝒜 : Scheme.{u}}
       (∀ u : RelPoint fO (𝟙 (Spec O)),
         RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) (frobPt u)
           = sp (RelPoint.pre (specGal σ) (specGal_comp_base (𝟙 (Spec (CommRingCat.of k))) σ)
-              (sp.symm (RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) u)))) := by
-  refine ⟨relPointTwist hΦ, fun u => ?_, fun u => ?_⟩
-  · apply Subtype.ext
-    rw [hgen, Equiv.apply_symm_apply, pre_relPointTwist hΦ (Spec.map ι) (specGal g) hι]
-  · apply Subtype.ext
-    rw [hsp, Equiv.apply_symm_apply, pre_relPointTwist hΦ (Spec.map π) (specGal σ) hπ]
+              (sp.symm (RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) u)))) :=
+  ⟨relPointTwist hΦ, relPointTwist_fibre hΦ g hι gen hgen,
+    fun u => (relPointTwist_fibre hΦ σ hπ sp hsp u).symm⟩
 
 /-- **THE RESIDUE FIELD OF A VALUATION RING OF `F̄` CENTRED ON `w` IS AN
 ALGEBRAIC CLOSURE OF `κ(w)`** (sorry leaf — valuation theory; Bourbaki
@@ -16667,6 +16689,113 @@ theorem exists_localRing_arithFrob_of_heightOneSpectrum {F : Type u} [Field F] [
     rw [map_sub, map_pow, sub_eq_zero] at h0
     exact h0
 
+/-- **THE WHOLE OF STEP 3, ASSEMBLED: THE DATUM FROM THE MODEL** (PROVEN, no
+`sorry` anywhere in its cone except the two leaves above).
+
+This is the receipt for the cut.  It takes
+
+* the ARITHMETIC input — `gO` and the seven clauses that
+  `exists_localRing_arithFrob_of_heightOneSpectrum` produces, plus the `σ` of
+  `exists_absoluteGaloisGroup_pow_absNorm`;
+* the GEOMETRIC input of steps 1–2 — the abelian scheme `abO` over `Spec O`
+  with its real multiplication, the special fibre, the two identifications
+  `gen`/`sp` with their additivity and `𝒪_D`-equivariance, the valuative
+  criterion `neron`, and a semilinear automorphism `Φ` of the model over
+  `Spec gO` for which `gen` and `sp` are equivariant
+
+and returns an `IsAbelianReductionDatum`.  `frobPt`, `gen_frob` and `sp_frob`
+never appear among the inputs: they are CONSTRUCTED, from `Φ` alone.
+
+So a prover of `exists_finset_abelianReductionDatum_of_mult` should build
+`Φ` — which the base-change construction of step 2 supplies, since `𝒜` is a
+base change along `Spec gO` of something defined over a subring of `F` — and
+apply this; nothing further about the Frobenius is owed.
+
+It is deliberately a `def` and not a `theorem`: `IsAbelianReductionDatum`
+carries data (`gen`, `sp`, `frobPt`), so it lives in `Type` and an `Exists`
+cannot be destructured into it.  That is why `relPointTwist_fibre` above is
+stated in non-existential form. -/
+noncomputable def isAbelianReductionDatum_of_semilinearModel
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] {m : Mult ab (𝓞 D)}
+    {F : Type u} [Field F] [NumberField F] {x : Spec (CommRingCat.of F) ⟶ S}
+    {w : HeightOneSpectrum (𝓞 F)}
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of w.asIdeal.ResidueField)}
+    {ab' : AbelianSchemeStruct f'} {m' : Mult ab' (𝓞 D)}
+    {σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField}
+    {O : CommRingCat.{u}} {ι : O ⟶ CommRingCat.of (AlgebraicClosure F)}
+    {π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField)}
+    {𝒜 : Scheme.{u}} {fO : 𝒜 ⟶ Spec O}
+    {abO : AbelianSchemeStruct fO} {mO : Mult abO (𝓞 D)}
+    (gO : O ≅ O)
+    (hιinj : Function.Injective ι.hom)
+    (hπsurj : Function.Surjective π.hom)
+    (hker : ∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z)
+    (hval : ∀ z : AlgebraicClosure F, z ≠ 0 →
+      (∃ u : O, ι.hom u = z) ∨ (∃ u : O, ι.hom u = z⁻¹))
+    (hlift : ∀ a : 𝓞 F, ∃ z : O,
+      ι.hom z = algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∧
+        (π.hom z = 0 ↔ a ∈ w.asIdeal))
+    (hgalι : ∀ z : O, ι.hom (gO.hom.hom z) =
+      ((Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+          (Field.AbsoluteGaloisGroup.adicArithFrob w) :
+        Field.absoluteGaloisGroup F) :
+          AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (ι.hom z))
+    (hgalπ : ∀ z : O, π.hom (gO.hom.hom z) = (π.hom z) ^ Ideal.absNorm w.asIdeal)
+    (hσ : ∀ z : AlgebraicClosure w.asIdeal.ResidueField,
+      (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+        AlgebraicClosure w.asIdeal.ResidueField) z = z ^ Ideal.absNorm w.asIdeal)
+    (Φ : 𝒜 ≅ 𝒜) (hΦ : Φ.hom ≫ fO = fO ≫ Spec.map gO.hom)
+    (gen : GeomFibrePt f x ≃ RelPoint fO (Spec.map ι))
+    (gen_add : ∀ y y' : GeomFibrePt f x, gen (ab.add y y') = abO.add (gen y) (gen y'))
+    (gen_act : ∀ (c : 𝓞 D) (y : GeomFibrePt f x), gen (m.act c y) = mO.act c (gen y))
+    (hgen : ∀ y : GeomFibrePt f x,
+      (gen (ab.galSMul x
+          (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+            (Field.AbsoluteGaloisGroup.adicArithFrob w)) y)).1
+        = specGal (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+            (Field.AbsoluteGaloisGroup.adicArithFrob w)) ≫ (gen y).1 ≫ Φ.inv)
+    (sp : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField))) ≃
+      RelPoint fO (Spec.map π))
+    (sp_add : ∀ u v : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField))),
+      sp (ab'.add u v) = abO.add (sp u) (sp v))
+    (sp_act : ∀ (c : 𝓞 D)
+        (u : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField)))),
+      sp (m'.act c u) = mO.act c (sp u))
+    (hsp : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField))),
+      (sp (ab'.galSMul (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField))) σ y)).1
+        = specGal σ ≫ (sp y).1 ≫ Φ.inv)
+    (neron : Function.Bijective
+      (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) :
+        RelPoint fO (𝟙 (Spec O)) → RelPoint fO (Spec.map ι))) :
+    IsAbelianReductionDatum ab m x w ab' m' σ O ι π abO mO :=
+  letI t : Spec O ≅ Spec O :=
+    { hom := Spec.map gO.hom
+      inv := Spec.map gO.inv
+      hom_inv_id := by rw [← Spec.map_comp, gO.inv_hom_id, Spec.map_id]
+      inv_hom_id := by rw [← Spec.map_comp, gO.hom_inv_id, Spec.map_id] }
+  haveI hι : Spec.map ι ≫ t.hom = specGal
+      (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+        (Field.AbsoluteGaloisGroup.adicArithFrob w)) ≫ Spec.map ι :=
+    specMap_comp_specMap_of_semilinear ι gO.hom _ hgalι
+  haveI hπ : Spec.map π ≫ t.hom = specGal σ ≫ Spec.map π :=
+    specMap_comp_specMap_of_semilinear π gO.hom σ (fun z => by rw [hgalπ z, hσ (π.hom z)])
+  { ι_injective := hιinj
+    π_surjective := hπsurj
+    ker_π := hker
+    valuationRing := hval
+    lift_int := hlift
+    gen := gen
+    gen_add := gen_add
+    gen_act := gen_act
+    sp := sp
+    sp_add := sp_add
+    sp_act := sp_act
+    neron := neron
+    frobPt := relPointTwist (t := t) hΦ
+    gen_frob := relPointTwist_fibre (t := t) hΦ _ hι gen hgen
+    sp_frob := fun u => (relPointTwist_fibre (t := t) hΦ σ hπ sp hsp u).symm }
+
 /-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES** (sorry leaf —
 SPREADING OUT; BLR *Néron Models* 1.2/1.4 and 7.4, Mumford *AV* §6).
 
@@ -16714,13 +16843,20 @@ only steps 1 and 2.  Concretely:
   `gen_frob` and `sp_frob`, for an ARBITRARY scheme over `Spec O` carrying an
   automorphism over `Spec gO`.
 
-What is left for steps 1–2 is the abelian scheme `abO` over that `O` with its
-real multiplication, the special fibre `A'`, the two identifications `gen`
-and `sp` with their additivity and `𝒪_D`-equivariance, the valuative
-criterion `neron`, and the SEMILINEARITY of `gen` and `sp` (`hgen`, `hsp`),
-which the base-change construction supplies.  `σ` should be taken from
-`exists_absoluteGaloisGroup_pow_absNorm`, which is the specialisation of
-`hσ` to `κ(w)`. -/
+* `isAbelianReductionDatum_of_semilinearModel` packages all three: hand it
+  the arithmetic output, the geometry, and a semilinear automorphism `Φ` of
+  the model over `Spec gO`, and it RETURNS the datum.  `frobPt`, `gen_frob`
+  and `sp_frob` are not among its inputs.
+
+What is left for steps 1–2 is exactly the remaining arguments of that
+function: the abelian scheme `abO` over that `O` with its real
+multiplication, the special fibre `A'`, the two identifications `gen` and
+`sp` with their additivity and `𝒪_D`-equivariance, the valuative criterion
+`neron`, the automorphism `Φ`, and the SEMILINEARITY of `gen` and `sp`
+(`hgen`, `hsp`) — all of which the base-change construction supplies, since
+`𝒜` is a base change along `Spec gO` of a model defined over a subring of
+`F`.  `σ` should be taken from `exists_absoluteGaloisGroup_pow_absNorm`,
+which is the specialisation of `hσ` to `κ(w)`. -/
 theorem exists_finset_abelianReductionDatum_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
