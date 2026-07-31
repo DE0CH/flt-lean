@@ -1088,6 +1088,29 @@ theorem inertiaDeg_eq_one_of_forall_pow_natCard
   have hle : p ^ f - 1 ≤ p - 1 := Nat.le_of_dvd (by omega) hdvd
   omega
 
+/-! ### `ramifiedBelow`, `finite_ramifiedBelow` and the density leaf live in `Density.lean`
+
+**They used to be declared HERE, and the three declarations below were DELETED on
+2026-07-31** because `Fermat/FLT/NumberField/Density.lean` — which this module
+`public import`s — now carries all three under the same names and the same
+signatures. That file says so itself: *"Hoisted here from
+`Fermat/FLT/NumberField/ArtinSymbol.lean` … unchanged, so that the density theorem
+below can use it; `ArtinSymbol.lean` still consumes it under the same name and
+signature."* The hoist landed; the matching deletion here did not, and the two
+branches merged cleanly into two copies of three names — a `has already been
+declared` error that no textual merge can see (CLAUDE.md records the same class
+for `IsGamma1Isogeny`).
+
+`Density.lean` keeps `k F` EXPLICIT through its `variable (k F)`, so the two
+consumers below (`closure_frobAt_eq_top`) call
+`ramifiedBelow K L` and `finrank_eq_one_of_forall_inertiaDeg_eq_one K M _ …`
+completely unchanged.
+
+This deletion also removes a DUPLICATED SORRY: the density leaf
+`finrank_eq_one_of_forall_inertiaDeg_eq_one` was `sorry` here while `Density.lean`
+**PROVES** it over the Dedekind-zeta endgame, so the frontier loses a leaf that
+was never open in the first place. -/
+
 end Chebotarev
 /-- **CHEBOTAREV, IN THE ONLY FORM THIS DEVELOPMENT NEEDS: the Frobenius elements
 of the unramified primes GENERATE `Gal(L/K)`** (PROVEN 2026-07-31 over the single
