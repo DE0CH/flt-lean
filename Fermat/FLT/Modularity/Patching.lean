@@ -175,6 +175,11 @@ public import Mathlib.Topology.Algebra.Algebra
 -- `Subalgebra.topologicalClosure`, in the statement of the Carayol
 -- generation leaf `topologicalClosure_adjoin_charFrobCoeff_eq_top`
 public import Mathlib.Algebra.CharP.Basic
+-- `Subgroup.normal_of_index_eq_two` and `Subgroup.pow_index_mem`, used by the
+-- unipotent-free half of the dihedral configuration
+-- (`eq_one_of_unipotent_of_index_two_commutative`).
+public import Mathlib.GroupTheory.IndexNormal
+public import Mathlib.GroupTheory.OrderOfElement
 public import Mathlib.RingTheory.MvPowerSeries.Inverse
 -- the power-series plumbing behind the Auslander–Buchsbaum endgame:
 -- `MvPowerSeries.renameEquiv` (reindexing along `Fin (n+1) ≃ Option (Fin n)`),
@@ -7869,8 +7874,11 @@ scalar is zero when `(2 : k) ≠ 0`.
 
 (2026-07-30, later the same day: the `ε ≠ 1` horn
 `not_isUnit_stable_traceZero_of_exists_ne` below was then PROVEN too, over the
-`E`-free arithmetic leaf `not_index_two_commutative_of_isHardlyRamified`, which is
-the SOLE remainder of this cluster.) -/
+`E`-free arithmetic leaf `not_index_two_commutative_of_isHardlyRamified`.
+That leaf is itself now GLUE — see 2026-07-31 below — over
+`isUnramifiedAtTwo_of_forall_unipotent_eq_one` and
+`not_index_two_commutative_of_isUnramifiedAtTwo`, which are the two remainders of
+this cluster.) -/
 theorem not_commute_stable_traceZero.{uK, uW}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -7917,13 +7925,400 @@ theorem not_commute_stable_traceZero.{uK, uW}
   rw [hc, hc0, zero_smul] at hE0
   exact hE0 rfl
 
+/-! #### The UNIPOTENT-FREE half of the dihedral configuration
+
+Added 2026-07-31 by the owner of `not_index_two_commutative_of_isHardlyRamified`
+below.  It is the GLOBAL half of that leaf's STEP A, and the point of isolating it
+is that it needs **no local Galois theory whatsoever** — no decomposition group, no
+inertia, no `F`, no `χ`.
+
+The observation: the dihedral hypotheses ALREADY forbid unipotents, for purely
+group-theoretic reasons.  `ρbar(H)` is COMMUTATIVE and `H` is NORMAL (index two),
+so if some `ρbar h` with `h ∈ H` were unipotent and `≠ 1`, its fixed line
+`L = ker (ρbar h - 1)` would be `Γ ℚ`-STABLE: `ρbar g` carries `L` to
+`ker (ρbar (g⁻¹ h g) - 1)`, the element `g⁻¹ h g` again lies in `H`, and two
+COMMUTING square-zero endomorphisms of a rank-`2` space have ZERO PRODUCT — so
+`ker (ρbar h - 1) = ker (ρbar (g⁻¹ h g) - 1)` and the line does not move.  That
+contradicts `hirr`.
+
+The zero-product step is the only content, and it is three lines over
+`exists_anticomm_eq_smul_one` above: nilpotents are traceless, so
+`n n' + n' n = s · 1`; commuting makes the left side `2 (n n')`; squaring gives
+`s² · 1 = 0` because `(n n')² = n² n'² = 0`; hence `s = 0` and `n n' = 0` since
+`(2 : k) ≠ 0`.  Note it does NOT need a basis adapted to either nilpotent, which
+is the same reason `exists_eq_smul_one_add_smul_of_commute` above is stated
+basis-free.
+
+`eq_one_of_unipotent_of_index_two_commutative` then drops the `h ∈ H`
+restriction, because `g ^ 2 ∈ H` for EVERY `g` when `H` has index two
+(`Subgroup.pow_index_mem`): for a unipotent `u = ρbar g` one has
+`u ^ 2 - 1 = 2 (u - 1)` and hence `(u ^ 2 - 1) ^ 2 = 4 (u - 1) ^ 2 = 0`, so
+`u ^ 2 = 1` by the `h ∈ H` case, and a unipotent with `u ^ 2 = 1` is `1` once
+`(2 : k) ≠ 0`.
+
+**So in the dihedral configuration `ρbar` has NO nontrivial unipotent values at
+all.**  That is exactly what the local step at `2` consumes: `isTameAtTwo` plus an
+unramified determinant makes `ρbar(I₂)` unipotent, and this kills it. -/
+
+/-- **A square-zero endomorphism is TRACELESS** (PROVEN 2026-07-31), in any
+characteristic: it is nilpotent, mathlib's `isNilpotent_trace_of_isNilpotent` makes
+its trace nilpotent, and a nilpotent element of a field is `0`. -/
+lemma trace_eq_zero_of_mul_self_eq_zero.{u1, u2}
+    {k : Type u1} [Field k] {W : Type u2} [AddCommGroup W] [Module k W]
+    (n : Module.End k W) (hn : n * n = 0) :
+    LinearMap.trace k W n = 0 :=
+  (LinearMap.isNilpotent_trace_of_isNilpotent
+    (⟨2, by rw [pow_two]; exact hn⟩ : IsNilpotent n)).eq_zero
+
+/-- **A NONZERO square-zero endomorphism of a rank-`2` space has `range = ker`, a
+LINE** (PROVEN 2026-07-31).
+
+Rank–nullity plus `range ≤ ker` (which is what `n * n = 0` says) forces
+`finrank (range n) ≤ finrank (ker n)` and `finrank (range n) + finrank (ker n) = 2`,
+so `finrank (range n) ≤ 1`; and `n ≠ 0` makes `range n ≠ ⊥`, so both are `1` and the
+inclusion is an equality.  The `range = ker` half is what the stability argument
+below needs: it converts "`v` is killed by `n`" into "`v` is HIT by `n`", which is
+how the other nilpotent gets to act on it. -/
+lemma range_eq_ker_of_mul_self_eq_zero.{u1, u2}
+    {k : Type u1} [Field k] {W : Type u2} [AddCommGroup W] [Module k W]
+    [Module.Finite k W] (hW : Module.rank k W = 2)
+    (n : Module.End k W) (hn0 : n ≠ 0) (hn : n * n = 0) :
+    LinearMap.range n = LinearMap.ker n ∧ Module.finrank k (LinearMap.ker n) = 1 := by
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  have hle : LinearMap.range n ≤ LinearMap.ker n := by
+    rintro _ ⟨x, rfl⟩
+    rw [LinearMap.mem_ker, ← Module.End.mul_apply, hn]
+    simp
+  have hrn : Module.finrank k (LinearMap.range n) + Module.finrank k (LinearMap.ker n)
+      = Module.finrank k W := LinearMap.finrank_range_add_finrank_ker n
+  have hmono : Module.finrank k (LinearMap.range n) ≤ Module.finrank k (LinearMap.ker n) :=
+    Submodule.finrank_mono hle
+  have hrne : LinearMap.range n ≠ ⊥ := by
+    simpa [LinearMap.range_eq_bot] using hn0
+  have hrpos : 1 ≤ Module.finrank k (LinearMap.range n) :=
+    Submodule.one_le_finrank_iff.mpr hrne
+  rw [hfr] at hrn
+  have hr1 : Module.finrank k (LinearMap.range n) = 1 := by omega
+  have hk1 : Module.finrank k (LinearMap.ker n) = 1 := by omega
+  exact ⟨Submodule.eq_of_le_of_finrank_eq hle (by rw [hr1, hk1]), hk1⟩
+
+/-- **Two COMMUTING square-zero endomorphisms of a rank-`2` space have ZERO
+PRODUCT** (PROVEN 2026-07-31), when `(2 : k) ≠ 0`.
+
+Over `exists_anticomm_eq_smul_one` above: both are traceless
+(`trace_eq_zero_of_mul_self_eq_zero`), so `n n' + n' n = s · 1`; commuting turns
+that into `2 (n n') = s · 1`; and `(n n')² = n (n' n) n' = n (n n') n' = n² n'² = 0`,
+so squaring gives `s² · 1 = 0`, i.e. `s = 0`.  Then `2 (n n') = 0` and `(2 : k) ≠ 0`.
+
+`(2 : k) ≠ 0` is load-bearing and NOT removable: over `𝔽₂` the two commuting
+square-zero matrices `n = n' = ![![0,1],![0,0]]` have `n n' = 0` only by accident,
+while `n = ![![0,1],![0,0]]`, `n' = n` is the general shape — the honest failure is
+that in characteristic `2` a unipotent `u` with `u² = 1` need not be `1`, which is
+what breaks the consumer below rather than this lemma. -/
+lemma mul_eq_zero_of_commute_of_mul_self_eq_zero.{u1, u2}
+    {k : Type u1} [Field k] {W : Type u2} [AddCommGroup W] [Module k W]
+    [Module.Finite k W] [Module.Free k W] (hW : Module.rank k W = 2)
+    (h2 : (2 : k) ≠ 0) (n n' : Module.End k W) (hn : n * n = 0) (hn' : n' * n' = 0)
+    (hc : n * n' = n' * n) : n * n' = 0 := by
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  haveI : Nontrivial W := Module.nontrivial_of_finrank_pos (R := k) (by rw [hfr]; norm_num)
+  obtain ⟨s, hs⟩ := exists_anticomm_eq_smul_one hW n n'
+    (trace_eq_zero_of_mul_self_eq_zero n hn) (trace_eq_zero_of_mul_self_eq_zero n' hn')
+  rw [← hc] at hs
+  have h2nn : (2 : k) • (n * n') = s • (1 : Module.End k W) := by rw [two_smul]; exact hs
+  have hzero : (n * n') * (n * n') = 0 := by
+    calc (n * n') * (n * n') = n * (n' * n) * n' := by noncomm_ring
+      _ = n * (n * n') * n' := by rw [hc]
+      _ = (n * n) * (n' * n') := by noncomm_ring
+      _ = 0 := by rw [hn, hn']; simp
+  have hsq : (s * s) • (1 : Module.End k W) = 0 := by
+    have hcg := congrArg (fun X : Module.End k W => X * X) h2nn
+    simp only [smul_mul_smul_comm, one_mul, hzero, smul_zero] at hcg
+    exact hcg.symm
+  have hss : s * s = 0 := by
+    by_contra hne
+    have hinv := congrArg (fun X : Module.End k W => ((s * s)⁻¹) • X) hsq
+    simp only [smul_smul, inv_mul_cancel₀ hne, one_smul, smul_zero] at hinv
+    exact one_ne_zero hinv
+  have hs0 : s = 0 := by rcases mul_eq_zero.mp hss with h | h <;> exact h
+  rw [hs0, zero_smul] at h2nn
+  have hinv2 := congrArg (fun X : Module.End k W => ((2 : k)⁻¹) • X) h2nn
+  simp only [smul_smul, inv_mul_cancel₀ h2, one_smul, smul_zero] at hinv2
+  exact hinv2
+
+/-- **`ρbar(H)` CONTAINS NO NONTRIVIAL UNIPOTENT** (PROVEN 2026-07-31), in the
+dihedral configuration: `H` of index two with `ρbar(H)` commutative and `ρbar`
+irreducible.
+
+The whole of the argument is in the section note above.  Note which hypotheses are
+consumed and which are not: `hHker`, `hHopen` and `hnc` are NOT used — this is a
+statement about an arbitrary commutative index-two image, and the arithmetic
+package `hρbar` plays no part either.  So it applies verbatim to the `p = 3` case,
+where the leaf below has no flatness input to spend. -/
+theorem eq_one_of_unipotent_mem_of_index_two_commutative.{uK, uW}
+    {k : Type uK} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) (h2 : (2 : k) ≠ 0)
+    {ρbar : GaloisRep ℚ k W} (hirr : ρbar.IsIrreducible)
+    {H : Subgroup (Field.absoluteGaloisGroup ℚ)} (hHidx : H.index = 2)
+    (hHcomm : ∀ g ∈ H, ∀ h ∈ H, ρbar g * ρbar h = ρbar h * ρbar g)
+    {h : Field.absoluteGaloisGroup ℚ} (hh : h ∈ H)
+    (hnil : (ρbar h - 1) * (ρbar h - 1) = 0) :
+    ρbar h = 1 := by
+  classical
+  have hfr : Module.finrank k W = 2 := Module.finrank_eq_of_rank_eq hW
+  haveI hHnormal : H.Normal := Subgroup.normal_of_index_eq_two hHidx
+  by_contra hne
+  have hn0 : (ρbar h - 1 : Module.End k W) ≠ 0 := fun hz => hne (sub_eq_zero.mp hz)
+  obtain ⟨hrk, hk1⟩ := range_eq_ker_of_mul_self_eq_zero hW _ hn0 hnil
+  have hstab : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ∀ v ∈ LinearMap.ker (ρbar h - 1 : Module.End k W),
+      ρbar.toRepresentation g v ∈ LinearMap.ker (ρbar h - 1 : Module.End k W) := by
+    intro g v hv
+    have hinv : (ρbar g⁻¹ : Module.End k W) * ρbar g = 1 := by
+      rw [← map_mul, inv_mul_cancel, map_one]
+    have hinv' : (ρbar g : Module.End k W) * ρbar g⁻¹ = 1 := by
+      rw [← map_mul, mul_inv_cancel, map_one]
+    have hh'H : g⁻¹ * h * g ∈ H := by
+      have hcm := hHnormal.conj_mem h hh g⁻¹
+      simpa [mul_assoc] using hcm
+    have hconj : (ρbar (g⁻¹ * h * g) - 1 : Module.End k W)
+        = ρbar g⁻¹ * (ρbar h - 1) * ρbar g := by
+      have e1 : (ρbar (g⁻¹ * h * g) : Module.End k W) = ρbar g⁻¹ * ρbar h * ρbar g := by
+        rw [map_mul, map_mul]
+      calc (ρbar (g⁻¹ * h * g) - 1 : Module.End k W)
+          = ρbar g⁻¹ * ρbar h * ρbar g - 1 := by rw [e1]
+        _ = ρbar g⁻¹ * ρbar h * ρbar g - ρbar g⁻¹ * ρbar g := by rw [hinv]
+        _ = ρbar g⁻¹ * (ρbar h - 1) * ρbar g := by noncomm_ring
+    have hn'nil : (ρbar (g⁻¹ * h * g) - 1 : Module.End k W)
+        * (ρbar (g⁻¹ * h * g) - 1) = 0 := by
+      rw [hconj]
+      calc ρbar g⁻¹ * (ρbar h - 1) * ρbar g * (ρbar g⁻¹ * (ρbar h - 1) * ρbar g)
+          = ρbar g⁻¹ * (ρbar h - 1) * (ρbar g * ρbar g⁻¹) * (ρbar h - 1) * ρbar g := by
+            noncomm_ring
+        _ = ρbar g⁻¹ * ((ρbar h - 1) * (ρbar h - 1)) * ρbar g := by
+            rw [hinv']; noncomm_ring
+        _ = 0 := by rw [hnil]; simp
+    have hcomm : (ρbar h - 1 : Module.End k W) * (ρbar (g⁻¹ * h * g) - 1)
+        = (ρbar (g⁻¹ * h * g) - 1) * (ρbar h - 1) := by
+      have hc := hHcomm h hh _ hh'H
+      calc (ρbar h - 1 : Module.End k W) * (ρbar (g⁻¹ * h * g) - 1)
+          = ρbar h * ρbar (g⁻¹ * h * g) - ρbar h - ρbar (g⁻¹ * h * g) + 1 := by
+            noncomm_ring
+        _ = ρbar (g⁻¹ * h * g) * ρbar h - ρbar (g⁻¹ * h * g) - ρbar h + 1 := by
+            rw [hc]; abel
+        _ = (ρbar (g⁻¹ * h * g) - 1) * (ρbar h - 1) := by noncomm_ring
+    have hprod : (ρbar (g⁻¹ * h * g) - 1 : Module.End k W) * (ρbar h - 1) = 0 :=
+      mul_eq_zero_of_commute_of_mul_self_eq_zero hW h2 _ _ hn'nil hnil hcomm.symm
+    have hvr : v ∈ LinearMap.range (ρbar h - 1 : Module.End k W) := by rw [hrk]; exact hv
+    obtain ⟨w, hw⟩ := hvr
+    have hkill : (ρbar (g⁻¹ * h * g) - 1 : Module.End k W) v = 0 := by
+      rw [← hw, ← Module.End.mul_apply, hprod]
+      simp
+    have hpush : ((ρbar h - 1 : Module.End k W) * ρbar g)
+        = ρbar g * (ρbar (g⁻¹ * h * g) - 1) := by
+      rw [hconj]
+      calc (ρbar h - 1 : Module.End k W) * ρbar g
+          = (ρbar g * ρbar g⁻¹) * (ρbar h - 1) * ρbar g := by rw [hinv']; noncomm_ring
+        _ = ρbar g * (ρbar g⁻¹ * (ρbar h - 1) * ρbar g) := by noncomm_ring
+    have hgoal : (ρbar h - 1 : Module.End k W) (ρbar g v) = 0 := by
+      have hv0 : ((ρbar h - 1 : Module.End k W) * ρbar g) v = 0 := by
+        rw [hpush, Module.End.mul_apply, hkill, map_zero]
+      rwa [Module.End.mul_apply] at hv0
+    show ρbar.toRepresentation g v ∈ LinearMap.ker (ρbar h - 1 : Module.End k W)
+    have hrep : ρbar.toRepresentation g v = ρbar g v := rfl
+    rw [hrep, LinearMap.mem_ker]
+    exact hgoal
+  obtain ⟨-, hsub⟩ := (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr
+  rcases hsub _ hstab with hb | ht
+  · rw [hb] at hk1; simp at hk1
+  · rw [ht, finrank_top, hfr] at hk1; norm_num at hk1
+
+/-- **IN THE DIHEDRAL CONFIGURATION `ρbar` HAS NO NONTRIVIAL UNIPOTENT VALUE AT
+ALL** (PROVEN 2026-07-31) — the `h ∈ H` restriction of
+`eq_one_of_unipotent_mem_of_index_two_commutative` removed.
+
+`H` has index two, so `g ^ 2 ∈ H` for every `g` (`Subgroup.pow_index_mem`).  For a
+unipotent `u = ρbar g` the identity `(u - 1) ^ 2 = 0` gives `u ^ 2 = 2 u - 1`,
+hence `u ^ 2 - 1 = 2 (u - 1)` and `(u ^ 2 - 1) ^ 2 = 4 (u - 1) ^ 2 = 0`; so
+`ρbar (g ^ 2) = u ^ 2` is a unipotent lying in `ρbar(H)` and is therefore `1`.
+Then `2 (u - 1) = u ^ 2 - 1 = 0`, and `(2 : k) ≠ 0` finishes.
+
+This is the form STEP A of `not_index_two_commutative_of_isHardlyRamified` below
+consumes: `isTameAtTwo` together with an unramified determinant makes every
+`ρbar σ`, `σ ∈ I₂`, unipotent, and this theorem then says `ρbar σ = 1`. -/
+theorem eq_one_of_unipotent_of_index_two_commutative.{uK, uW}
+    {k : Type uK} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) (h2 : (2 : k) ≠ 0)
+    {ρbar : GaloisRep ℚ k W} (hirr : ρbar.IsIrreducible)
+    {H : Subgroup (Field.absoluteGaloisGroup ℚ)} (hHidx : H.index = 2)
+    (hHcomm : ∀ g ∈ H, ∀ h ∈ H, ρbar g * ρbar h = ρbar h * ρbar g)
+    (g : Field.absoluteGaloisGroup ℚ)
+    (hnil : (ρbar g - 1) * (ρbar g - 1) = 0) :
+    ρbar g = 1 := by
+  haveI hHnormal : H.Normal := Subgroup.normal_of_index_eq_two hHidx
+  have hg2 : g ^ 2 ∈ H := by
+    have hp := Subgroup.pow_index_mem H g
+    rwa [hHidx] at hp
+  have hexp : ((ρbar g : Module.End k W) - 1) * (ρbar g - 1)
+      = ρbar g * ρbar g - ρbar g - ρbar g + 1 := by noncomm_ring
+  rw [hnil] at hexp
+  have hsq : (ρbar g : Module.End k W) * ρbar g = ρbar g + ρbar g - 1 := by
+    have hz : (ρbar g : Module.End k W) * ρbar g - (ρbar g + ρbar g - 1) = 0 := by
+      have hre : (ρbar g : Module.End k W) * ρbar g - (ρbar g + ρbar g - 1)
+          = ρbar g * ρbar g - ρbar g - ρbar g + 1 := by abel
+      rw [hre, ← hexp]
+    exact sub_eq_zero.mp hz
+  have hg2v : (ρbar (g ^ 2) : Module.End k W) = ρbar g * ρbar g := by
+    rw [pow_two, map_mul]
+  have hnil2 : ((ρbar (g ^ 2) : Module.End k W) - 1) * (ρbar (g ^ 2) - 1) = 0 := by
+    rw [hg2v, hsq]
+    have hre : ((ρbar g : Module.End k W) + ρbar g - 1 - 1)
+        = ((ρbar g : Module.End k W) - 1) + (ρbar g - 1) := by abel
+    rw [hre]
+    have hex2 : (((ρbar g : Module.End k W) - 1) + (ρbar g - 1))
+        * (((ρbar g : Module.End k W) - 1) + (ρbar g - 1))
+        = ((ρbar g - 1) * (ρbar g - 1) + (ρbar g - 1) * (ρbar g - 1))
+          + ((ρbar g - 1) * (ρbar g - 1) + (ρbar g - 1) * (ρbar g - 1)) := by noncomm_ring
+    rw [hex2, hnil]; abel
+  have hone : (ρbar (g ^ 2) : Module.End k W) = 1 :=
+    eq_one_of_unipotent_mem_of_index_two_commutative hW h2 hirr hHidx hHcomm hg2 hnil2
+  rw [hg2v, hsq] at hone
+  have htwo : ((ρbar g : Module.End k W) - 1) + (ρbar g - 1) = 0 := by
+    have hre : ((ρbar g : Module.End k W) - 1) + (ρbar g - 1)
+        = (ρbar g + ρbar g - 1) - 1 := by abel
+    rw [hre, hone]; abel
+  have hsmul : (2 : k) • ((ρbar g : Module.End k W) - 1) = 0 := by
+    rw [two_smul]; exact htwo
+  have hinv2 := congrArg (fun X : Module.End k W => ((2 : k)⁻¹) • X) hsmul
+  simp only [smul_smul, inv_mul_cancel₀ h2, one_smul, smul_zero] at hinv2
+  exact sub_eq_zero.mp hinv2
+
+/-- **STEP A's LOCAL HALF (SORRY LEAF, cut 2026-07-31): a hardly ramified `ρbar`
+with no nontrivial UNIPOTENT value is UNRAMIFIED AT `2`.**
+
+This is everything about the prime `2` that
+`not_index_two_commutative_of_isHardlyRamified` below needs, and it mentions no
+`H`, no `F` and no dihedral structure — the dihedral input arrives packaged as
+`hu`, which `eq_one_of_unipotent_of_index_two_commutative` above supplies.
+
+# THE PROOF, IN THREE STEPS, NONE OF WHICH IS DEEP
+
+1. `hρbar.isTameAtTwo` gives a surjection `π : V →ₗ[k] k` and a character
+   `δ : Γ ℚ_[2] → kˣ` with `π ∘ ρbar g = δ g · π` for `g ∈ Γ ℚ_[2]`, and `δ`
+   trivial on `AddSubgroup.inertia ((𝔪 Z2bar).toAddSubgroup) (Γ ℚ_[2])`.  So
+   `K := ker π` is a `D₂`-stable LINE and `ρbar` acts on `V / K` by `δ`.
+2. `hρbar.det` and `p ≠ 2`: `ℚ₂(μ_{p^n})/ℚ₂` is UNRAMIFIED, so `χ_cyc` is trivial
+   on inertia at `2`.  With `δ|_{I₂} = 1` this makes `ρbar σ` act as the identity
+   on BOTH `K` and `V / K` for `σ ∈ I₂` — i.e. `(ρbar σ - 1) ² = 0`, since
+   `ρbar σ - 1` maps `V` into `K` and kills `K`.
+3. `hu σ` then gives `ρbar σ = 1`, which is `IsUnramifiedAt` at `2` once the two
+   inertia vocabularies are matched.
+
+# THE ONE PIECE OF PLUMBING THIS ACTUALLY COSTS
+
+`isTameAtTwo` is phrased over `Γ ℚ_[2]` and `AddSubgroup.inertia` on `Z2bar`,
+whereas `GaloisRep.IsUnramifiedAt v` is phrased over `localInertiaGroup v` inside
+`Γ (v.adicCompletion ℚ)`.  Those are two different types and the bridge between
+them is not in this tree.  **That bridge, not the mathematics, is the cost of this
+leaf** — and it is reusable: every other leaf that wants to convert `isTameAtTwo`
+into a statement about `ρbar`'s ramification will want the same map.
+
+`δ ² = 1` is NOT consumed.  Neither is irreducibility, nor `hHker`/`hHopen`/`hnc`;
+all the dihedral content is inside `hu`.
+
+CIRCULARITY GUARD: as for the consumer below — not through
+`not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`IsHardlyRamified.mod_three_reducible` or `Family.lean`.  Note in particular that
+`hu` is NOT vacuous and must not be "discharged" by deriving `False` from
+`hρbar ∧ hirr`: `hirr` is not even a hypothesis here. -/
+theorem isUnramifiedAtTwo_of_forall_unipotent_eq_one.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hu : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (ρbar g - 1) * (ρbar g - 1) = 0 → ρbar g = 1) :
+    ρbar.IsUnramifiedAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat Nat.prime_two) := sorry
+
+/-- **STEPS B, C and D (SORRY LEAF, cut 2026-07-31): the ARITHMETIC of the
+dihedral configuration, with `ρbar` already known UNRAMIFIED AT `2`.**
+
+Identical to `not_index_two_commutative_of_isHardlyRamified` below except for the
+extra hypothesis `hunr2`, which is what STEP A buys.  The full route is in that
+theorem's docstring; the short form is:
+
+* **B.**  `hunr2` and `hρbar.isUnramified` make `ρbar` unramified outside `{p}`;
+  `hHker` puts `F` inside its splitting field; `F ≠ ℚ` by Minkowski; so
+  `F = ℚ(√p*)` with `F_p/ℚ_p` RAMIFIED quadratic, and `χ` is unramified outside
+  `𝔭_p`.
+* **C.**  `hρbar.isFlat` with `e(ℚ_p) = 1 < p - 1` gives Raynaud's dichotomy.
+  Supersingular dies for every odd `p` on the order count `(p² - 1)/2 > p - 1`.
+  Ordinary forces `ω̃|_{I_{F_p}} = 1`, of order `(p - 1)/2`, hence `p = 3`.
+* **D.**  At `p = 3`, `F = ℚ(√-3)`, and a character of `G_F` of order prime to `3`
+  unramified outside `𝔭₃` is TRIVIAL — the prime-to-`3` part of every ray class
+  group `Cl_{𝔭₃ⁿ}(ℚ(√-3))` vanishes, since `(1 + 𝔭₃)/(1 + 𝔭₃ⁿ)` is a `3`-group,
+  `h = 1`, and `-1` already surjects onto `𝔽₃ˣ`.  So `ρbar ⊗ k̄ = 1 ⊕ ε_F` is
+  reducible, against `hirr`.  **This branch consumes NO flatness.**
+
+So `hρbar.isFlat` is spent only on the `p ≥ 5` branch, and `hρbar.isTameAtTwo` is
+spent entirely upstream, in `hunr2`.
+
+# THE INFRASTRUCTURE THIS NEEDS, AND THE ORDER TO BUILD IT IN
+
+None of it is in this tree.  In dependency order, cheapest first:
+
+1. The index-two correspondence `H ↔ F` with its quadratic character `ε_F`, and
+   the discriminant of a quadratic field — enough to say "`F` is ramified only at
+   `p`, hence `F = ℚ(√p*)`".  This alone is STEP B.
+2. `ρbar|_{D_ℓ}` and the inertia-level content of `IsUnramifiedAt`, enough to say
+   `χ` is unramified outside `𝔭_p`.
+3. Ray class groups of `ℚ(√-3)` at `𝔭₃` and the prime-to-`p` argument.  With 1 and
+   2 this closes `p = 3` OUTRIGHT — a strictly smaller, self-contained target
+   worth cutting off as its own leaf before anyone attempts 4.
+4. The order of `χ_cyc|_{I_p}`, the fundamental characters `ω̃`, `ω_{F_p}`, `ψ₂`,
+   and Raynaud's `e < p - 1` classification.  Only this is expensive, and only the
+   `p ≥ 5` branch needs it.
+
+CIRCULARITY GUARD: as for the consumer below.  A proof ending in `exfalso` on
+`hirr` through `IsHardlyRamified.mod_three_reducible` is BANNED even though that
+theorem does close the `p = 3` case — see the corroboration note there. -/
+theorem not_index_two_commutative_of_isUnramifiedAtTwo.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar) (hirr : ρbar.IsIrreducible)
+    (hunr2 : ρbar.IsUnramifiedAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat Nat.prime_two))
+    {H : Subgroup (Field.absoluteGaloisGroup ℚ)}
+    (hHker : ρbar.ker ≤ H)
+    (hHopen : IsOpen ((H : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)))
+    (hHidx : H.index = 2)
+    (hHcomm : ∀ g ∈ H, ∀ h ∈ H, ρbar g * ρbar h = ρbar h * ρbar g)
+    (hnc : ¬ ∀ g h : Field.absoluteGaloisGroup ℚ,
+      ρbar g * ρbar h = ρbar h * ρbar g) :
+    False := sorry
+
 /-- **`ρbar` IS NOT DIHEDRAL (SORRY LEAF, cut 2026-07-30 out of the `ε ≠ 1` horn
 `not_isUnit_stable_traceZero_of_exists_ne` below, which is PROVEN over it): an
 irreducible hardly ramified `ρbar` has no INDEX-TWO open subgroup on which its
 image is COMMUTATIVE.**
 
-This is now the WHOLE of what is open under
-`adZeroTwist_eq_top_of_map_rho_le_of_ne_bot`, and — the point of the cut — it
+**As of 2026-07-31 this is no longer a leaf: it is GLUE** over the proven
+`eq_one_of_unipotent_of_index_two_commutative` and two successor leaves,
+`isUnramifiedAtTwo_of_forall_unipotent_eq_one` and
+`not_index_two_commutative_of_isUnramifiedAtTwo`.  Those two are together the
+WHOLE of what is open under `adZeroTwist_eq_top_of_map_rho_le_of_ne_bot`, and —
+the point of the original cut, which the successors inherit — it
 mentions no `E`, no `ad⁰`, and no cohomology.  It is the classical statement
 "the projective image of `ρbar` is not dihedral", in the form the classification
 of subgroups of `PGL₂` produces it: `H` cuts out a quadratic field `F`
@@ -7984,8 +8379,104 @@ still contains the `δ_F` line.  That input is what kills the `ε = 1` horn
 
 What this needs is ARITHMETIC bounding `F`: `hHker` with `hρbar.isUnramified`
 confines `F` to `{2, p}`, and `hρbar.isFlat` at `p` together with
-`hρbar.isTameAtTwo` must exclude every surviving `F`.  None of that is formalised
-in this tree.
+`hρbar.isTameAtTwo` must exclude every surviving `F`.
+
+# THE ROUTE, SETTLED 2026-07-31 — AND THE `p = 3` BOUNDARY IS **NOT** REAL
+
+An earlier owner worked this leaf out on 2026-07-31 and left it flagged as
+possibly **FALSE AS STATED** at `p = 3`, to be repaired by adding `5 ≤ p` and
+threading that through `not_isUnit_stable_traceZero_of_exists_ne`,
+`not_isUnit_stable_traceZero`, `adZeroTwist_no_stable_finrank_one` and
+`adZeroTwist_eq_top_of_map_rho_le_of_ne_bot`.
+
+**It is NOT false at `p = 3`.  No `5 ≤ p` is needed, the four consumers keep
+their present signatures, and no restatement is made here** — so the BOTH-WAYS
+AUDIT above is still an audit of the statement that exists, not of a predecessor
+(CLAUDE.md's "a leaf restated a SECOND time voids the first audit" does not fire).
+STEP D below is the `p = 3` audit and it is why the cut is where it is.
+
+Throughout: `F` is the quadratic field cut out by `H`; `hnc` plus
+`not_forall_commute_of_isHardlyRamified` above rules out `ρbar(H)` scalar, so
+`ρbar ⊗ k̄ ≅ Ind_{G_F}^{G_ℚ} χ` for a character `χ` of `G_F` with `χ ≠ χ^σ`, and
+`det ρbar = ε_F · (χ ∘ Ver)`, i.e. `χ · χ^σ = χ_cyc|_{G_F}`.  Note `χ` takes
+values in `k̄ˣ` with `k̄` of characteristic `p`, so **`χ` has order PRIME TO `p`** —
+that single fact does most of the work below.
+
+**STEP A — `ρbar` is UNRAMIFIED AT `2`.**  This is stronger than, and replaces,
+the earlier route's "`F` is unramified at `2`", and it is also cheaper.
+`isTameAtTwo` gives a `D₂`-stable line `K = ker π` with `ρbar` acting on `V / K`
+through the UNRAMIFIED `δ`; and `det ρbar|_{D₂} = χ_cyc|_{D₂}` is unramified
+because `p ≠ 2` makes `ℚ₂(μ_{p^n})/ℚ₂` unramified.  So for `σ ∈ I₂` both diagonal
+characters are trivial and `ρbar σ` is UNIPOTENT.  Then
+`eq_one_of_unipotent_of_index_two_commutative` above — PROVEN, purely
+group-theoretic — gives `ρbar σ = 1`.  `δ ² = 1` is not used, and neither is any
+of the delicate `μ`/`ε_{F₂}` case analysis the earlier route ran: the dihedral
+hypotheses forbid unipotents outright.
+
+**STEP B — hence `F = ℚ(√p*)`, `p* = (-1)^{(p-1)/2} p`, and `χ` is unramified
+outside `𝔭_p`.**  By STEP A and `hρbar.isUnramified`, `ρbar` is unramified outside
+`{p}`; `hHker` puts `F` inside the splitting field of `ρbar`, so `F` is ramified
+only at `p`, and `F ≠ ℚ` (Minkowski).  There is exactly one such quadratic field —
+`ℚ(√p*)` — and `F_p/ℚ_p` is the RAMIFIED quadratic extension.  Since
+`I_{F_w} ≤ I_ℓ ≤ ker ρbar` for every `ℓ ≠ p`, `χ` is unramified outside `𝔭_p`.
+
+**STEP C — `hρbar.isFlat` at `p`, and BOTH Raynaud cases now close by an ORDER
+COUNT.**  `𝒪_{F_p}ˣ = μ_{p-1} × (1 + 𝔪)` with `(1 + 𝔪)` pro-`p`, so `χ` of order
+prime to `p` restricted to `I_{F_p}` factors through `μ_{p-1} ≅ 𝔽_pˣ`; and `σ`
+fixes `μ_{p-1} ⊂ ℤ_p` pointwise, so **`χ` and `χ^σ` AGREE ON `I_{F_p}`** — call the
+common restriction `θ`.  `e(ℚ_p) = 1 < p - 1` for every odd `p`, so Raynaud gives
+`ρbar|_{I_p} ≅ 1 ⊕ χ_cyc|_{I_p}` (ordinary) or `ψ₂ ⊕ ψ₂^p` (supersingular).
+
+* *Supersingular is impossible for EVERY odd `p`.*  `ψ₂` has order `p² - 1` on
+  `I_p`, and `I_{F_p}` has index `2` in `I_p`, so `ψ₂|_{I_{F_p}}` has order at
+  least `(p² - 1)/2`.  It must equal `θ`, whose order divides `p - 1`.  But
+  `(p² - 1)/2 > p - 1` for every `p ≥ 2`.  (The earlier route left this as "the
+  same count one level up"; it is in fact the cheaper of the two cases.)
+* *Ordinary forces `p = 3`.*  Restricting `1 ⊕ ω̃` to `I_{F_p}` gives `θ ⊕ θ`, so
+  `θ = 1` AND `ω̃|_{I_{F_p}} = 1`.  But `F_p/ℚ_p` is TAMELY ramified of degree `2`
+  (`p` odd), so `ω̃|_{I_{F_p}} = ω_{F_p}^{e} = ω_{F_p}²`, of order `(p - 1)/2`.
+  Hence `(p - 1)/2 = 1`, i.e. `p = 3` — and, as a by-product, `θ = 1`, so `χ` is
+  unramified at `𝔭_p` as well.
+
+**STEP D — `p = 3` CLOSES TOO, and WITHOUT FLATNESS.**  At `p = 3`, STEP B gives
+`F = ℚ(√-3) = ℚ(ζ₃)` (the only quadratic field ramified only at `3`; `ℚ(√3)` has
+discriminant `12`).  STEP A already makes `χ` unramified outside `𝔭₃ = (√-3)`, and
+`χ` has order prime to `3`, so its conductor divides `𝔭₃ⁿ` for some `n`.  Now
+`𝒪_F = ℤ[ζ₃]` has class number `1` and unit group `μ₆`, and
+
+    Cl_{𝔭₃ⁿ}(F) = (𝒪/𝔭₃ⁿ)ˣ / im μ₆ ,   (𝒪/𝔭₃ⁿ)ˣ ≅ 𝔽₃ˣ × (1 + 𝔭₃)/(1 + 𝔭₃ⁿ),
+
+whose PRIME-TO-`3` part is TRIVIAL for every `n`: the second factor is a `3`-group,
+and `-1 ∈ μ₆` already surjects onto `𝔽₃ˣ`.  (Checked with PARI/GP as an untrusted
+searcher — `bnrinit` gives `Cl_{𝔭₃ⁿ}` = trivial, trivial, `[3]`, `[3,3]`, `[9,3]`,
+`[9,9]` for `n = 1..6`: `3`-groups throughout.)  So `χ = 1`, hence
+`ρbar ⊗ k̄ ≅ Ind_F 1 = 1 ⊕ ε_F` is REDUCIBLE, against `hirr`.
+
+So `p = 3` needs no flatness input at all — which matters, because it means the
+residual leaf may spend `hρbar.isFlat` freely on the `p ≥ 5` branch without owing
+the `p = 3` branch anything.
+
+*Independent corroboration, NOT usable as a proof here.*
+`IsHardlyRamified.mod_three_reducible` (`HardlyRamified/ModThree.lean`,
+`public import`ed by this module) says a mod-`3` hardly ramified representation is
+REDUCIBLE with no irreducibility hypothesis at all — so `hρbar ∧ hirr` is already
+contradictory at `p = 3` there.  That agrees with STEP D and is worth knowing, but
+it is named in the CIRCULARITY GUARD below and must NOT be used to discharge this
+leaf or its successors.
+
+# WHAT THIS CUT LEAVES OPEN
+
+The proof below is now GLUE over exactly two named leaves, plus the proven
+group theory:
+
+* `eq_one_of_unipotent_of_index_two_commutative` — PROVEN above.  STEP A's global
+  half.
+* `isUnramifiedAtTwo_of_forall_unipotent_eq_one` — STEP A's LOCAL half: the
+  `Γ ℚ_[2]`-to-`D₂` bridge, the inertia-level content of `isTameAtTwo`, and
+  `χ_cyc` unramified at `2`.  Small, and entirely about the prime `2`.
+* `not_index_two_commutative_of_isUnramifiedAtTwo` — STEPS B, C and D.  All the
+  arithmetic, and now with `ρbar` unramified at `2` in hand rather than to be
+  established.
 
 # THE ROUTE, WORKED OUT 2026-07-31 — AND A `p = 3` BOUNDARY THAT MAY MAKE THIS
 # LEAF FALSE AS STATED
@@ -8057,7 +8548,7 @@ CIRCULARITY GUARD, inherited from the consumer: not to be discharged through
 `not_isIrreducible_of_isHardlyRamified_of_five_le`,
 `IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything downstream of
 them — a proof ending in `exfalso` on `hirr` is the circular discharge and is
-BANNED. -/
+BANNED.  It applies verbatim to both successor leaves below. -/
 theorem not_index_two_commutative_of_isHardlyRamified.{uK, uW}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -8073,7 +8564,28 @@ theorem not_index_two_commutative_of_isHardlyRamified.{uK, uW}
     (hHcomm : ∀ g ∈ H, ∀ h ∈ H, ρbar g * ρbar h = ρbar h * ρbar g)
     (hnc : ¬ ∀ g h : Field.absoluteGaloisGroup ℚ,
       ρbar g * ρbar h = ρbar h * ρbar g) :
-    False := sorry
+    False := by
+  classical
+  haveI hchar : CharP k p := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
+  have h2 : (2 : k) ≠ 0 := by
+    intro hz
+    have hd : p ∣ 2 := by
+      have h' : ((2 : ℕ) : k) = 0 := by exact_mod_cast hz
+      exact (CharP.cast_eq_zero_iff k p 2).mp h'
+    have hp2 := (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hd
+    rw [hp2] at hpodd
+    exact (Nat.not_odd_iff_even.mpr (by decide)) hpodd
+  -- STEP A, global half: PROVEN above, and it needs no arithmetic input.
+  have hu : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (ρbar g - 1) * (ρbar g - 1) = 0 → ρbar g = 1 :=
+    fun g => eq_one_of_unipotent_of_index_two_commutative hW h2 hirr hHidx hHcomm g
+  -- STEP A, local half.
+  have hunr2 : ρbar.IsUnramifiedAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat Nat.prime_two) :=
+    isUnramifiedAtTwo_of_forall_unipotent_eq_one hpodd hW hρbar hu
+  -- STEPS B, C, D.
+  exact not_index_two_commutative_of_isUnramifiedAtTwo hpodd hW hρbar hirr hunr2
+    hHker hHopen hHidx hHcomm hnc
 
 /-- **The `ε ≠ 1` horn: the genuinely DIHEDRAL configuration — PROVEN 2026-07-30
 over the single `E`-free leaf `not_index_two_commutative_of_isHardlyRamified`
@@ -8372,11 +8884,14 @@ The `ε ≠ 1` horn is the DIHEDRAL case; it is
 `not_isUnit_stable_traceZero_of_exists_ne` above and is **PROVEN 2026-07-30**,
 over the single `E`-free leaf `not_index_two_commutative_of_isHardlyRamified` —
 "`ρbar` is not dihedral", i.e. no index-two open subgroup carries a commutative
-image.  That leaf is the SOLE remainder of this cluster and is where the
-arithmetic sits: `ρbar` is unramified outside `{2, p}` and the leaf's `hHker`
-confines the quadratic field `F` to that set, after which `hρbar.isFlat` at `p`
-together with `hρbar.isTameAtTwo` must exclude every surviving `F`; none of that
-is formalised here.
+image.  **That leaf was itself opened on 2026-07-31 and is now GLUE**; the two
+remainders of this cluster are `isUnramifiedAtTwo_of_forall_unipotent_eq_one`
+(the prime `2` — `isTameAtTwo` plus an unramified determinant makes `ρbar(I₂)`
+unipotent, and the dihedral hypotheses forbid unipotents) and
+`not_index_two_commutative_of_isUnramifiedAtTwo` (the arithmetic: `F = ℚ(√p*)`,
+then Raynaud at `p ≥ 5` and the ray class groups of `ℚ(√-3)` at `p = 3`).  The
+`p = 3` boundary that earlier looked like it might make the leaf FALSE AS STATED
+was settled on 2026-07-31 — it does not, and no `5 ≤ p` is threaded anywhere.
 
 **CORRECTION to `adZeroTwist_eq_top_of_map_rho_le_of_ne_bot`'s docstring below,
 and to the task note that repeated it.**  Both say an owner will need ABSOLUTE
