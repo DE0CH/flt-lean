@@ -1,4 +1,4 @@
-# RELEASE 32 HANDOVER — HELD, and `ModularCurve/X0.lean` is down from 39 errors to a short list
+# RELEASE 32 HANDOVER — HELD, and **`ModularCurve/X0.lean` IS GREEN**
 
 `main` is UNTOUCHED at `5162faa1` and `~/.flt-release-lake/sha` was NOT written
 (it still names `7080929d`).  The integration tip is on `merger`.
@@ -136,16 +136,31 @@ found it -- **reproduce the failing goal in a mathlib-only file with the atoms
 written once**, which separates this from the atom-mismatch trap in one minute
 and works when the real module has no olean.
 
-**If the v5 log at `/tmp/x0v5.log` shows zero errors, X0 IS GREEN and the next
-step is the full `lake build`.**  Do not expect that to be the end: the 24
-targets downstream of X0 have not been compiled since release 25 and accumulate
-merge damage invisibly (seventh invisibility class).  Budget three build rounds,
-for the reason release 22 recorded -- the errors are serialised behind each other
-by the import graph, so round n only reveals what round n-1 was hiding.
+**X0 ELABORATES CLEAN.**  `/tmp/x0v5.log` ends `EXIT=0` with **zero errors** and
+100 `declaration uses 'sorry'` warnings — the file's honest frontier.  It has
+been red since release 25; six releases were held on it.
 
-If it shows errors, they are in the v5 log with line numbers, and the two
-structural repairs of round 6 (a docstring orphaned at each end of the round-5
-hoist) are the shape to check first.
+**I LEFT THE FULL RELEASE BUILD RUNNING.**  `lake build` at the tip, detached
+(`setsid --fork`, ppid 1, so it survives every session boundary), writing to
+`/tmp/rel32build.log` and appending its own `EXIT=` line and touching
+`/tmp/rel32build.done` when it finishes.  **Read that log before doing anything
+else** — and read it knowing what it is likely to say:
+
+* the 24 targets downstream of X0 have NOT been compiled since release 25.  They
+  are UNSEEN, not fine, and they accumulate merge damage invisibly (seventh
+  invisibility class).  Expect errors there that nothing in the fleet has ever
+  been able to see;
+* budget THREE rounds minimum, for the reason release 22 recorded: the errors are
+  serialised behind each other by the import graph, so round n only reveals what
+  round n−1 was hiding;
+* if it is green, PUBLISH: `git branch -f main <sha>`, rsync `.lake/build` to
+  `~/.flt-release-lake/build`, and write the sha to `~/.flt-release-lake/sha`
+  LAST, after the artifacts are in place.  queue1 already carries 379 audited
+  tasks covering the whole frontier, and its `AUDITED:` stamp must then be
+  rewritten to the sha you publish.
+
+I did not wait for it because the build is longer than the budget I had left, and
+publishing an unverified tree is the one thing worse than another hold.
 
 ## LEADS I OPENED AND DID NOT TAKE
 
