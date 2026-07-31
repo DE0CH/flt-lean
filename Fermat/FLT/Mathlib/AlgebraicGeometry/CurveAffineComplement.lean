@@ -61,11 +61,19 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
 * `notMem_range_of_valuativeLift_toAffineLine_compl_singleton` — a lift of a valuative square
   into `X` cannot hit `z`.  **PROVEN 2026-07-31** over the two sub-leaves below; formerly a bare
   `sorry` (cut 2026-07-30).
-* `exists_inv_coordOf_mem_maximalIdeal_compl_singleton` — **sorry leaf, SUB-LEAF 1** (cut
-  2026-07-31): `1/f` lies in `𝔪_z`, i.e. `f` genuinely has a POLE at `z`.  After three rounds of
-  cutting this is the ONLY mathematics left under properness, and it mentions no valuation ring,
-  no lift and no fraction field — only `X`, `z`, `g` and a generization of `z` inside `U`.  Its
-  docstring carries the extend-or-not dichotomy in full.
+* `exists_inv_coordOf_mem_maximalIdeal_compl_singleton` — SUB-LEAF 1, cut 2026-07-31 and
+  **PROVEN the same day**: `1/f` lies in `𝔪_z`, i.e. `f` genuinely has a POLE at `z`.  The
+  valuation-ring dichotomy (`ValuationRing.isInteger_or_isInteger`, over
+  `valuationRing_stalk_of_smoothOfRelativeDimension_one` — **no DVR and no `¬ IsField` side
+  condition needed**) plus `IsFractionRing.injective` for the stalks of an integral scheme.
+* `not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton` — **sorry leaf** (cut
+  2026-07-31 out of SUB-LEAF 1, and after four rounds of cutting this is the ONLY mathematics
+  left under properness): `f` DOES NOT EXTEND ACROSS `z`, i.e. `germ_{x₀} f` is not in the image
+  of `𝒪_{X,z} ⟶ 𝒪_{X,x₀}`.  No valuation ring, no maximal ideal, no reciprocal, no fraction
+  field — one non-membership, and the only place `hqf` and `IsProper strX` are consumed.  Its
+  docstring carries the extend-or-not dichotomy in full, and names the gluing step
+  (`germ_eq` + `germ_injective_of_isIntegral` + the sheaf axiom + `Spec.preimage`) that produces
+  the hypothetical `ĝ : X ⟶ 𝔸¹_K` the dichotomy runs on.
 * `exists_algebraMap_eq_stalkClosedPointTo_germ_coordOf` — SUB-LEAF 2, cut 2026-07-31 and
   **PROVEN the same day, no sorry**: `f`'s value at the `L`-point lies in `R`.  PURE
   BOOKKEEPING on the commuting square — no curve, no properness, no smoothness — separated out
@@ -412,9 +420,70 @@ theorem false_of_pole {X : Scheme.{u}} {R L : Type u} [CommRing R] [IsDomain R] 
   exact (IsLocalRing.mem_maximalIdeal _ |>.mp hwm)
     (‹IsLocalHom ψ.hom›.map_nonunit _ (IsUnit.of_mul_eq_one _ h3))
 
-/-- **SUB-LEAF 1 — `f` HAS A POLE AT `z`** (sorry leaf, cut 2026-07-31 out of
-`notMem_range_of_valuativeLift_toAffineLine_compl_singleton`; this is ALL of the mathematics
-that leaf still contains).
+/-- **SUB-SUB-LEAF — `f` DOES NOT EXTEND ACROSS `z`** (sorry leaf, cut 2026-07-31 out of
+`exists_inv_coordOf_mem_maximalIdeal_compl_singleton` immediately below, which is now PROVEN
+over it; this is the WHOLE of the mathematics that leaf contained, and nothing else survives).
+
+Read it as `f ∉ 𝒪_{X,z}`, stated without the function field: `germ_{x₀} f` is not in the image
+of the specialization map `𝒪_{X,z} ⟶ 𝒪_{X,x₀}`.  On an integral `X` that image is exactly
+`𝒪_{X,z}` viewed inside `𝒪_{X,x₀} ⊆ K(X)` (both maps are injective), so the two readings agree
+— see `exists_inv_coordOf_mem_maximalIdeal_compl_singleton`'s proof, which does the conversion.
+
+**NO VALUATION RING, NO MAXIMAL IDEAL, NO RECIPROCAL.**  Everything about DVRs, `𝔪_z` and
+`1/f` that the parent leaf carried has been discharged; what is left is a single
+non-membership, and it is the only place `hqf` and `IsProper strX` are consumed.
+
+THE PROOF IS THE DICHOTOMY the parent's docstring records, on a hypothetical extension
+`ĝ : X ⟶ 𝔸¹_K` with `Scheme.Opens.ι U ≫ ĝ = g`:
+
+* `ĝ ≫ affineLineOver K = strX`, because the two agree on `U`, which is DENSE
+  (`isDominant_of_finite_compl`, `CurveExtension.lean`, together with
+  `ext_of_isDominant`) — so `ĝ` is a `K`-morphism, hence proper by `IsProper.of_comp`
+  cancelling against the separated `affineLineOver K`;
+* if some fibre of `ĝ` is infinite it is all of the irreducible curve `X`, so `g` is constant on
+  the infinite `U` (`infinite_of_smoothOfRelativeDimension_one`), contradicting `hqf`;
+* otherwise `ĝ` is quasi-finite, hence FINITE by `IsFinite.of_isProper_of_locallyQuasiFinite`, so
+  `affineLineOver K` is proper AND affine, hence finite, i.e. `K[T]` is a finite `K`-module —
+  false, `Polynomial.basisMonomials` being a basis indexed by `ℕ`.
+
+**WHERE THE WORK STARTS, and it is bookkeeping rather than mathematics**: producing `ĝ` from
+the hypothesis.  `a : 𝒪_{X,z}` with `stalkSpecializes a = germ_{x₀} f` is a section `s` of `X`
+on some open `V ∋ z` agreeing with `f` on `U ∩ V` (`X.presheaf.germ_eq`, plus
+`germ_injective_of_isIntegral` to upgrade "equal germs at `x₀`" to "equal on a neighbourhood",
+plus `germ_injective_of_isIntegral` again on the irreducible `U ∩ V` to upgrade that to "equal
+on `U ∩ V`").  `U ∪ V = ⊤` since `U = {z}ᶜ` and `z ∈ V`, so the sheaf axiom glues `s` and `f`
+into `F ∈ Γ(X, ⊤)`; and `ĝ` is then `X.toSpecΓ ≫ Spec.map (eval₂ of F)`, using that
+`Spec K[T]` is affine so that a morphism into it IS a `K`-algebra map `K[T] ⟶ Γ(X, ⊤)`, i.e.
+one element of `Γ(X, ⊤)` (`Polynomial.aeval`, `Spec.preimage`/`Spec.map_preimage`).
+
+**`hqf` IS LOAD-BEARING and the statement is FALSE without it**: `g` constant at `0` gives
+`f = 0`, which extends across `z` by `0`.
+
+**`IsProper strX` IS LOAD-BEARING**: it is what makes a `K`-morphism `X ⟶ 𝔸¹_K` proper in the
+dichotomy.  On an affine curve `f` may extend across `z`.
+
+**`hconn` IS LOAD-BEARING**, through `IsIntegral X` — without irreducibility there is no
+generic point to compare germs at and the gluing step above has no meaning. -/
+theorem not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton
+    {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX]
+    (hconn : GeometricallyConnected strX)
+    {z : X} (hz : IsClosed ({z} : Set X))
+    (g : Scheme.Opens.toScheme (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ⟶
+        Spec (CommRingCat.of (Polynomial K)))
+    (hqf : LocallyQuasiFinite g)
+    (hover : g ≫ affineLineOver K =
+      Scheme.Opens.ι (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens) ≫ strX)
+    {x₀ : X} (hsp : x₀ ⤳ z)
+    (hx₀ : x₀ ∈ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) :
+    ¬ ∃ a : X.presheaf.stalk z,
+        (X.presheaf.stalkSpecializes hsp).hom a =
+          (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) :=
+  sorry
+
+/-- **SUB-LEAF 1 — `f` HAS A POLE AT `z`** (cut 2026-07-31 out of
+`notMem_range_of_valuativeLift_toAffineLine_compl_singleton`; **PROVEN the same day** over the
+single sub-leaf immediately above, which now carries all of its mathematics).
 
 Concretely: `1/f` lies in the maximal ideal of `𝒪_{X,z}`, stated without ever writing `1/f` —
 `w` is the reciprocal, and the clause `stalkSpecializes w · germ_{x₀} f = 1` says so inside
@@ -427,30 +496,32 @@ of a closed point is the generic point, so `𝒪_{X,x₀} = X.functionField` and
 identity is literally `w = f⁻¹` in the function field.  The statement is phrased at a general
 `x₀` only so that the consumer does not have to prove that identification.
 
-TRUE, by the dichotomy the old docstring records, on a hypothetical extension `ĝ : X ⟶ 𝔸¹_K`
-with `Scheme.Opens.ι U ≫ ĝ = g`:
+## PROOF (2026-07-31) — the valuation-ring dichotomy, over the sub-leaf above
 
-* `ĝ ≫ affineLineOver K = strX`, because the two agree on `U`, which is DENSE
-  (`isDominant_of_finite_compl`, `CurveExtension.lean`) — so `ĝ` is a `K`-morphism, hence proper
-  by `IsProper.of_comp` cancelling against the separated `affineLineOver K`;
-* if some fibre of `ĝ` is infinite it is all of the irreducible curve `X`, so `g` is constant on
-  the infinite `U` (`infinite_of_smoothOfRelativeDimension_one`), contradicting `hqf`;
-* otherwise `ĝ` is quasi-finite, hence FINITE by `IsFinite.of_isProper_of_locallyQuasiFinite`, so
-  `affineLineOver K` is proper AND affine, hence finite, i.e. `K[T]` is a finite `K`-module —
-  false, `Polynomial.basisMonomials` being a basis indexed by `ℕ`.
+`𝒪_{X,z}` is a VALUATION RING (`valuationRing_stalk_of_smoothOfRelativeDimension_one`,
+`CurveExtension.lean`) with fraction field `K(X)` (mathlib's
+`IsFractionRing (X.presheaf.stalk x) X.functionField` for integral `X`), so
+`ValuationRing.isInteger_or_isInteger` applied to `φ`, the image of `f` in `K(X)`, gives
+`φ ∈ 𝒪_{X,z}` or `φ⁻¹ ∈ 𝒪_{X,z}`.  The sub-leaf kills the first, so `φ⁻¹ = algebraMap w` for
+some `w`; and `w ∉ 𝒪_{X,z}ˣ`, since a unit `w` would make `φ = algebraMap (w⁻¹)` an integer
+after all.  That is `w ∈ 𝔪_z`.
 
-Then `𝒪_{X,z}` is a DISCRETE VALUATION RING
-(`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`, `CurveExtension.lean`), so
-`f ∉ 𝒪_{X,z}` forces `f⁻¹ ∈ 𝔪_z`, which is `w`.
+**No DVR is needed — only `ValuationRing`.**  The old plan went through
+`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`, which needs
+`¬ IsField 𝒪_{X,z}` (i.e. `z` is not the generic point) as a side condition.  The dichotomy
+above needs none of that: at the generic point the stalk IS `K(X)`, every element is an
+integer, and the sub-leaf is simply false there — so the exclusion of the generic point is
+carried by the sub-leaf and never has to be proven separately.
 
-**`hqf` IS LOAD-BEARING and the statement is FALSE without it**: `g` constant at `0` gives
-`f = 0`, which has no reciprocal at all, so no `w` can satisfy the identity.
+The transport back into `𝒪_{X,x₀}` is `IsFractionRing.injective` for `𝒪_{X,x₀} ⟶ K(X)`
+together with `TopCat.Presheaf.stalkSpecializes_comp` (the specialization `𝒪_{X,z} ⟶ 𝒪_{X,x₀}`
+followed by `𝒪_{X,x₀} ⟶ K(X)` IS `𝒪_{X,z} ⟶ K(X)`) — which is also what turns the sub-leaf's
+stalk-level non-membership into `¬ IsLocalization.IsInteger`.
 
-**`IsProper strX` IS LOAD-BEARING**: it is what makes a `K`-morphism `X ⟶ 𝔸¹_K` proper in the
-dichotomy.  On an affine curve `f` may extend across `z` and then `w` is a unit, not in `𝔪`.
-
-**`hconn` IS LOAD-BEARING**, through `IsIntegral X` — without irreducibility `X.functionField`
-is not a field, `𝒪_{X,z}` is not a domain, and "`f` has a pole" has no meaning. -/
+**`hqf`, `IsProper strX` and `hconn` are all LOAD-BEARING**, and after this cut all three are
+consumed inside the sub-leaf rather than here; see its docstring for the counterexamples.
+`hconn` is additionally used here, through `IsIntegral X`, for the `IsFractionRing` and
+`IsDomain` instances on the stalks. -/
 theorem exists_inv_coordOf_mem_maximalIdeal_compl_singleton
     {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [IsProper strX] [SmoothOfRelativeDimension 1 strX]
@@ -465,8 +536,55 @@ theorem exists_inv_coordOf_mem_maximalIdeal_compl_singleton
     (hx₀ : x₀ ∈ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)) :
     ∃ w : X.presheaf.stalk z, w ∈ IsLocalRing.maximalIdeal (X.presheaf.stalk z) ∧
       (X.presheaf.stalkSpecializes hsp).hom w *
-        (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) = 1 :=
-  sorry
+        (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) = 1 := by
+  haveI : IsIntegral X :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
+  haveI : ValuationRing (X.presheaf.stalk z) :=
+    valuationRing_stalk_of_smoothOfRelativeDimension_one strX z
+  set fx₀ : X.presheaf.stalk x₀ := (X.presheaf.germ _ x₀ hx₀).hom (coordOf _ g) with hfx₀
+  set φ : X.functionField := algebraMap (X.presheaf.stalk x₀) X.functionField fx₀ with hφ
+  -- The specialization `𝒪_{X,z} ⟶ 𝒪_{X,x₀}` followed by `𝒪_{X,x₀} ⟶ K(X)` IS `𝒪_{X,z} ⟶ K(X)`.
+  have htri : ∀ a : X.presheaf.stalk z,
+      algebraMap (X.presheaf.stalk x₀) X.functionField
+          ((X.presheaf.stalkSpecializes hsp).hom a) =
+        algebraMap (X.presheaf.stalk z) X.functionField a := by
+    intro a
+    show (X.presheaf.stalkSpecializes _).hom ((X.presheaf.stalkSpecializes hsp).hom a) =
+      (X.presheaf.stalkSpecializes _).hom a
+    rw [← CommRingCat.comp_apply, TopCat.Presheaf.stalkSpecializes_comp]
+  -- The sub-leaf, transported across `IsFractionRing.injective`.
+  have hni : ¬ IsLocalization.IsInteger (X.presheaf.stalk z) φ := by
+    rintro ⟨a, ha⟩
+    refine not_exists_stalkSpecializes_eq_germ_coordOf_compl_singleton
+      strX hconn hz g hqf hover hsp hx₀ ⟨a, ?_⟩
+    refine IsFractionRing.injective (X.presheaf.stalk x₀) X.functionField ?_
+    rw [htri a, ha]
+  have hφ0 : φ ≠ 0 := by
+    intro h
+    exact hni (by rw [h]; exact IsLocalization.isInteger_zero)
+  -- The valuation-ring dichotomy: `φ ∉ 𝒪_{X,z}`, so `φ⁻¹ ∈ 𝒪_{X,z}`.
+  obtain hint | ⟨w, hw⟩ :=
+    ValuationRing.isInteger_or_isInteger (X.presheaf.stalk z) (K := X.functionField) φ
+  · exact absurd hint hni
+  refine ⟨w, ?_, ?_⟩
+  · -- `w` is not a unit: a unit `w` would make `φ = algebraMap w⁻¹` an integer after all.
+    rw [IsLocalRing.mem_maximalIdeal]
+    rintro ⟨u, rfl⟩
+    refine hni ⟨((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z), ?_⟩
+    calc algebraMap (X.presheaf.stalk z) X.functionField
+            ((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z)
+        = algebraMap (X.presheaf.stalk z) X.functionField
+            ((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z) * (φ⁻¹ * φ) := by
+          rw [inv_mul_cancel₀ hφ0, mul_one]
+      _ = (algebraMap (X.presheaf.stalk z) X.functionField
+            ((u⁻¹ : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z) *
+          algebraMap (X.presheaf.stalk z) X.functionField
+            ((u : (X.presheaf.stalk z)ˣ) : X.presheaf.stalk z)) * φ := by
+          rw [hw]; ring
+      _ = φ := by rw [← map_mul]; simp
+  · -- `w · f = 1` in `𝒪_{X,x₀}`, checked in `K(X)`, where it is `φ⁻¹ · φ = 1`.
+    refine IsFractionRing.injective (X.presheaf.stalk x₀) X.functionField ?_
+    rw [map_mul, map_one, htri w, hw, ← hφ, inv_mul_cancel₀ hφ0]
 
 /-- **The restriction `Γ(X, U) ⟶ Γ(U, ⊤)` along the inclusion IS `topIso U`'s inverse**
 (PROVEN 2026-07-31, no sorry).
