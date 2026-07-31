@@ -15099,3 +15099,81 @@ individually-correct edits: **a second restatement VOIDS the first audit.** The
 2026-07-30 audit that added `e` certified a statement that no longer exists once `e`
 is absorbed; it does not transpose, and reading it as covering the new form is how the
 naive clause would have shipped.
+
+## A CHECK THAT REPORTS CLEAN IS ONLY AS GOOD AS ITS MODEL — RE-RUN IT AFTER MERGING A FIX TO IT
+
+(2026-07-31, release 31.) `tools/merge/xdup.py` reported **0 qualified duplicate
+pairs** on `merger`'s tree. Nine branches later — none of which touched a single
+Lean declaration involved — it reported **21**, and both clusters were HARD
+`environment already contains …` import failures, i.e. they stop a module before
+one line of it elaborates. Nothing about the tree had changed. What had changed
+is that one of the nine branches (`flt-lean-307`) carried a two-line fix to
+`xdup.py` itself.
+
+The bug is worth knowing because the same modelling error is easy to make again:
+the pair test was `a in cone[b]` — *does one of the two modules IMPORT the
+other?* Lean's condition is strictly weaker. **A collision happens as soon as
+SOME SINGLE module sees both**, whether or not either sees the other. Two sibling
+modules under a common consumer collide, and no import-cone pair test can see it.
+
+So the rule, and it generalises past this one script: **when a merge brings in a
+change to a CHECKER, re-run that checker on the tree you have already certified
+with the old one.** A checker is not payload — its diff is three lines and its
+blast radius is every previous clean verdict. The natural reading ("tooling
+change, no Lean impact, no need to re-verify") is exactly backwards.
+
+Corollary for reading a previous release's handover: "check X was clean" is a
+statement about X *as it stood then*. Release 30's handover truthfully reported
+zero qualified duplicates and the tree had two release-blocking collisions in it.
+
+The two found this way, both the "TWO BRANCHES HOISTING OVERLAPPING BLOCKS"
+shape CLAUDE.md already predicts by name:
+
+* `Modularity/HeckeAtkinLehner.lean` (196 declarations hoisted out of
+  `Interface.lean`) against `Modularity/HeckeQExpansion.lean` (19, a strict
+  SUBSET), with `Interface.lean` `public import`ing both — 19 pairs. Resolved
+  as prescribed: keep both modules, larger imports smaller, delete the overlap
+  from the larger. `tools/merge/dedup_cross.py` body-compares first, which is
+  what makes this mechanical: 18 bodies were byte-identical and one
+  (`qCoeff_heckeOp`) was the same STATEMENT with a different proof, which the
+  tool correctly refused to delete and left for a decision.
+* `Mathlib/AlgebraicGeometry/PrincipalDivisorDegree.lean` against
+  `…/CurveDivisorDegree.lean` on `Scheme.ord_one`/`Scheme.ord_inv`, seen by
+  `ModularCurve/X0.lean`, the only module importing both.
+
+## A DECLINED BRANCH'S NOTE NAMES THE ONE THING THAT MUST SURVIVE — READ IT BEFORE DECLINING
+
+(Same release.) `flt-lean-357`'s headline payload was the removal of 249
+cross-file duplicates from `MazurTorsion.lean`. By the time it reached the merge
+worker that work was **entirely redundant**: the duplicates were gone, and
+merger's copy of the file was 519 lines SHORTER than the branch's own
+de-duplicated version. Its ArtinConductor, WeilPairingStageB, RelativePicard,
+HyperellipticJacobian and X0 hunks were likewise all repairs merger had since
+made by another route. Declining the whole Lean payload was right.
+
+**It would also have silently reverted a proof**, and the branch said so, in one
+sentence, in its handover:
+
+> THE ONE EXCEPTION, and it must survive or my de-duplication silently reverts a
+> proof: my transplant of `X0GenusOne.finrank_cuspForm_eq_one_of_x0Genus_eq_one`
+
+That declaration was `sorry` on merger and had a three-line proof on the branch,
+over a theorem 48 000 lines above it in the same file. Nothing in any diff, any
+duplicate scan or any frontier count distinguishes it from the 17 000 redundant
+lines around it.
+
+**So a decline is not a diff-level decision.** Before `git checkout HEAD -- ` on
+a branch's files, read its `to_merger` note for a sentence of the form *"this one
+thing must survive"* and check that ONE thing by hand. Branch authors write it
+precisely because they can see the merge coming and you cannot see their reason.
+And when you decline, say in the commit message what you took and what would
+change your mind — an empty-looking payload otherwise reads as the class-six
+dropped-merge bug.
+
+Rider on how to make the check cheap: the redundancy verdict itself was one
+command per claim rather than a reading of 17 000 lines. `xdup.py`'s qualified
+pass for the de-duplication; `grep` for the branch's own canary
+(`GaloisRepresentation.globalValuationSubring`, declared once, in the upstream
+module); `wc -l` on the three copies of the file. **Price a branch's payload
+against the tree with the branch's OWN success criteria, not by reading its
+diff.**
