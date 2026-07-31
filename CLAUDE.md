@@ -6409,3 +6409,111 @@ content": **a value handed to you in a prompt is a claim about state at dispatch
 state now.** Prompts are immutable; the state machine is not. Anything in a prompt that
 names live state — a token, a line number, a leaf that is "still open", a worktree said to
 be owned by someone else — is a hypothesis to check against the state itself.
+
+## AN EXPRESSIBILITY CUT MOVES NO COUNTER AND IS STILL THE WHOLE STEP
+
+(2026-07-31, `flt-lean-204`, on `nonempty_modularTateCarrierData_of_jacobian`.)
+
+Some leaves are not hard, they are **unsayable**. The Eichler–Shimura leaf's own docstring
+had diagnosed itself correctly: it was ATOMIC "and it is a statement about EXPRESSIBILITY,
+not about difficulty" — the `p`-adic Tate module of `J₀(M)` could not be *written down* in
+Lean, because `Fermat.TatePt` takes a `Mult ab R` argument and no `m : Mult ab 𝒪_ℚ` existed.
+Every split anyone could state therefore had to quantify over an ABSTRACT carrier of the
+right dimension, and such a split manufactures a FALSE leaf (Eichler–Shimura is false for an
+arbitrary faithful Hecke module of the right dimension).
+
+The cut that unblocks it adds the missing datum as a HYPOTHESIS and discharges it in glue:
+
+    theorem X_of_mult … (m : Mult ab 𝒪_ℚ) : C := sorry      -- the leaf, now sayable
+    theorem X … : C := by obtain ⟨m⟩ := nonempty_mult_ringOfIntegersRat ab; exact X_of_mult … m
+
+Here `Mult ab 𝒪_ℚ` is free — `Rat.ringOfIntegersEquiv : 𝒪_ℚ ≃+* ℤ` and every abelian group is
+a `ℤ`-module, so `act a y := (Rat.ringOfIntegersEquiv a) • y` and the six axioms are the
+`zsmul` laws plus `map_zsmul` on the additive map `RelPoint.pre`. Fifty lines, first try.
+
+**Two things to carry forward.**
+
+- **The sorry count does not move**, and neither does the transitive count: one leaf in, one
+  leaf out, plus a proven construction. To `flt-frontier.py` and to the `declaration uses
+  'sorry'` warning set this cycle produced *nothing*. It produced the only step that made the
+  next four possible. So do not judge a cycle by the delta, and do not let a leaf sit because
+  the work under it "would not close anything".
+- **The tell is in the leaf's own docstring**, and it is a phrase, not a feeling: a leaf that
+  says a split "cannot be stated", "would manufacture a false leaf", or "the object does not
+  exist yet" is an expressibility leaf, and the task is to BUILD THE OBJECT, not to attack the
+  mathematics. Read the docstring for that phrase before costing the leaf as hard.
+
+Corollary for whoever writes the construction: **it must land with its consumer in the same
+commit**, since a free-floating definition is not allowed here — which is why the restatement
+and the construction are one edit and not two.
+
+## SIBLING LEAVES COSTED AT DIFFERENT DEPTHS MAY BE ONE LEAF — test it before costing either
+
+(2026-07-31, `flt-lean-204`, on the two halves of strong multiplicity one in
+`Modularity/Interface.lean`.)
+
+A cut had split one leaf into two and written a careful paragraph explaining that they "want
+different machinery and are of different depth": one was inside the Atkin–Lehner theory the
+file was already building and "could plausibly be closed without new analysis"; the other
+needed Rankin–Selberg or the adelic dictionary, "an input this pin lacks entirely", and
+"anyone attacking this leaf should expect to BUILD one of the two missing analytic theories".
+
+**Both were the same leaf.** Each is two lines over one statement — newform block independence
+at a common level — instantiated at a different common multiple of the two levels. The
+asymmetry was an artefact of reading each leaf's hypothesis at face value: the "deep" one
+looked deep because its agreement set was smaller, and the smaller set really does defeat the
+obvious attack (Hecke recursion never reaches a NEW prime — that part of the old note was
+correct). But the route that closes the sibling does not use recursion; it changes level, and
+at the larger level the weaker hypothesis is already enough.
+
+**The general test, and it is cheap.** When a cut leaves siblings, take the machinery named as
+missing for the EASY one and ask whether it also discharges the HARD one. Here that was five
+minutes of reading and a 10-second scratch verify. Two leaves became one, three declarations
+became glue, and — the point that outlives the instance — nobody will now be dispatched to
+build Rankin–Selberg for a node that does not need it.
+
+**And the reverse reading matters just as much:** a leaf documented as CHEAP because it sits
+inside theory the file already has is suspect the moment its cheap route also proves a sibling
+documented as expensive. Either the cheap verdict is wrong or the expensive one is. Say which
+in the docstring; do not leave the pair contradicting each other, because the next agent will
+believe whichever docstring it opens first.
+
+## A BLOCKING HYPOTHESIS IS NOT A MISSING THEORY — READ THE LEMMA THE COROLLARY CAME FROM
+
+(2026-07-31, `flt-lean-204`, on Serre's type-`A₀` core in `Modularity/Interface.lean`.)
+
+The leaf's docstring named the globalisation half as blocked on **Kronecker–Weber**
+(`Γℚ^ab ≅ Ẑˣ`), "ABSENT from mathlib at this pin: grepped 2026-07-28, no `KroneckerWeber` in
+`Mathlib/`, in `Fermat/`, or in `~/cs/FLT`". The grep was correct and the verdict was wrong.
+
+What the argument needs is *an everywhere-unramified continuous character of `Γℚ` is trivial*.
+The tree has `minkowski_character_trivial`, which says exactly that — **but only for a character
+with an OPEN KERNEL**, which a `ℚ̄_p`-valued character of infinite image does not have. That one
+hypothesis is the entire reason the node read as blocked on a missing theory.
+
+`minkowski_character_trivial` is a five-line COROLLARY of
+`open_normal_subgroup_eq_top_of_inertia_le` in the same file, and **the parent needs no open
+kernel** — it needs an open normal subgroup containing every inertia image. For a character into
+`ℚ̄_p` that is handed over by ultrametric geometry: each ball `{x : ‖x − 1‖ < ε}`, `ε ≤ 1`, is a
+multiplicative subgroup, its preimage is open (continuity), normal (the target is commutative,
+so a character is a class function), and contains every inertia image; Minkowski makes it `⊤` for
+EVERY `ε`; the balls are a neighbourhood basis of `1`, so `ψ = 1`. Forty lines, no class field
+theory, no Kronecker–Weber.
+
+**The general rule: when a lemma's HYPOTHESIS is what blocks you, find the theorem it was derived
+from.** Corollaries are specialised to their first consumer, and the specialisation is exactly
+what gets thrown away. The tree records "we have X" at the granularity of the corollary, so the
+parent's extra strength is invisible to any inventory search. This is the third distinct way this
+project has manufactured a phantom "missing theory" — after
+[searching for how to PRODUCE an object instead of for the deciding invariant] and [reading a
+leaf's own MISSING MACHINERY list as reliable about strength] — and all three are cured by
+reading the statement rather than the summary.
+
+**Corollary, same day, same proof, and worth its own line: A CONTINUITY YOU CANNOT PROVE MAY BE
+HANDED TO YOU BY A HYPOTHESIS.** The glue needs `χ_cyc : Γℚ → ℚ̄_p` continuous, and nothing on
+this pin proves `cyclotomicCharacter` continuous — that alone would have sunk the assembly. But
+the leaf already carries `hcyc : ∀ γ, δ₁ γ * δ₂ γ = χ_cyc γ`, and `δ₁`, `δ₂` are continuous by
+hypothesis, so `χ_cyc` is continuous by `funext` in two lines. Before costing "`X` is
+continuous/measurable/finite" as missing machinery, check whether some hypothesis already equates
+`X` to something that has the property. In a statement with many hypotheses this is common and
+it is easy to miss, because the hypothesis was written for a different purpose.
