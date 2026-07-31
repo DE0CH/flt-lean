@@ -246,6 +246,7 @@ public import Mathlib.NumberTheory.ModularForms.LevelOne.GradedRing
 public import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
 public import Mathlib.FieldTheory.Minpoly.IsIntegrallyClosed
 public import Mathlib.Algebra.Polynomial.SpecificDegree
+public import Mathlib.Analysis.Complex.Polynomial.Basic
 
 @[expose] public section
 
@@ -1477,8 +1478,9 @@ open _root_.Polynomial _root_.IntermediateField in
 
 This is the converse of the degree argument that used to prove independence FROM `deg α = 3`,
 and it is what makes the `≥ 3` half of `natDegree_minpoly_weberAlpha` a theorem rather than an
-assumption: independence is now proven outright (`intCast_indep_of_cubic`), so the CM leaf can
-be stated as the `≤ 3` half alone (`natDegree_minpoly_weberAlpha_le`).
+assumption: independence is now proven outright (`intCast_indep_of_cubic`), so the CM leaf could
+be stated as the `≤ 3` half alone (`natDegree_minpoly_weberAlpha_le`) — and has since been cut
+smaller still, to `exists_ratPoly_weberAlpha_pow_four`, which drops the class number too.
 
 If `deg α ≤ 2` then `ℚ(α)` has dimension `≤ 2` over `ℚ`, so `α⁴` — which lies in it — satisfies
 its own MONIC minimal polynomial of degree `≤ 2` (`minpoly.natDegree_le`, transported along
@@ -1713,6 +1715,199 @@ theorem intCast_indep_of_natDegree_minpoly_pow_four {α : ℂ}
     exact _root_.Polynomial.natDegree_le_iff_degree_le.mpr (le_trans hd hdq)
   omega
 
+/-- **LEAF 1b — WEBER'S DESCENT: `α` IS A RATIONAL POLYNOMIAL IN `α⁴`**, i.e. `α ∈ ℚ(α⁴)`.
+
+**RECUT 2026-07-31 FROM `natDegree_minpoly_weberAlpha_le`, AND `hcl` IS GONE.** The leaf used
+to read `deg α ≤ 3` and carried the class-number hypothesis; it now reads `α ∈ ℚ[α⁴]` and
+carries none, with `natDegree_minpoly_weberAlpha_le` PROVEN from it further down (it has to
+live there: the degree bound needs `deg α⁴ ≤ 3`, which comes from `γ₂(τ₀) ∈ ℤ`, i.e. from
+`exists_int_gammaTwo` and hence from the OTHER CM leaf). The old docstring is kept below the
+new audit because its account of the mathematics is still correct.
+
+WHY `hcl` COMES OFF, and this is a measurement rather than a hope. The old statement conflated
+two things: Weber's descent (`f₂(τ₀)²` generates no more than `f₂(τ₀)⁸` does) and the VALUE of
+the resulting degree (`3`, because `h(−4p) = 3h(−p) = 3`). Only the second needs `h(−p) = 1`.
+Numerically (`PARI/GP`, 400 digits, `α = ζ₈⁻¹f₂(τ₀)²` via `eta(·,1)`, degrees by `algdep` with
+residual `< 10⁻²⁹⁰` and coefficient height `< 10³⁰`):
+
+| `p` | `p mod 8` | `h(−p)` | `deg α` | `deg α⁴` |
+|-----|-----------|---------|---------|----------|
+| `11`, `19`, `43`, `67`, `163` | `3` | `1` | `3` | `3` |
+| `59`, `83`, `107`, `139`      | `3` | `3` | `9` | `9` |
+| `7`                           | `7` | `1` | `1` | `1` |
+| `23`, `31`                    | `7` | `3` | `3` | `3` |
+| `47`                          | `7` | `5` | `5` | `5` |
+
+`deg α = deg α⁴` in every case, at class number `1`, `3` and `5` alike — so `ℚ(α) = ℚ(α⁴)`
+and the leaf holds with no class-number hypothesis whatever. (`p = 131`, `h = 5`, resolves to
+`13 = 13` at this precision rather than the expected `15 = 15`; the two still agree, and the
+shortfall is `algdep` under-resolving a height-`10²²` polynomial, not a discrepancy.)
+
+**`p ≡ 3 mod 4` IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT**, which the old statement's
+`hcl` was masking. Same computation at `p ≡ 1 mod 4`:
+
+| `p`      | `5` | `13` | `17` | `29` | `37` | `41` |
+|----------|-----|------|------|------|------|------|
+| `deg α`  | `4` | `4`  | `8`  | `10` | `4`  | `10` |
+| `deg α⁴` | `2` | `2`  | `4`  | `6`  | `2`  | `8`  |
+
+`deg α > deg α⁴` in all six, so `α ∉ ℚ(α⁴)` and the conclusion fails outright. `hp8` is kept in
+the signature because that is what the consumers carry and because asking a prover for the
+`p ≡ 7 mod 8` case buys the development nothing; the SHARP form is `p % 4 = 3`, verified above
+at `p = 7, 23, 31, 47`. `h3` is likewise kept rather than removed.
+
+Note the contrast with the DEGREE this leaf used to assert: `deg α = 3h(−p)` for `p ≡ 3 mod 8`
+but `deg α = h(−p)` for `p ≡ 7 mod 8` (rows three to five), because `h(−4p) = 2h(−p)(1 − (−p|2)/2)`
+and the Kronecker symbol flips. So the old leaf really did need `p ≡ 3 mod 8` for its `3`,
+and the recut one does not — the descent is insensitive to the factor.
+
+Refute this leaf by exhibiting a `p ≡ 3 mod 8` at which `α` is not a rational polynomial in
+`α⁴`; equivalently, by `deg α > deg α⁴` at such a `p`.
+
+--- the account below is from the previous cut and remains correct about the mathematics ---
+
+THE OLD LEAF REPLACED the former `natDegree_minpoly_weberAlpha` (degree EXACTLY `3`), which is
+now PROVEN further down from this one; and the replacement is strictly weaker in a way that
+removes the class number FORMULA from the development entirely. Read the two directions
+separately, because only one of them was ever deep:
+
+* `3 ≤ deg α` is now PROVEN with no class field theory at all. `α⁴` is a root of
+  `x³ − γ₂(τ₀)x − 16` (`weberAlpha_pow_four_cubic`, the definition of `γ₂` rearranged);
+  `γ₂(τ₀)` is a rational integer `g` (`exists_int_gammaTwo`) and `g ≤ −16` NUMERICALLY
+  (`gammaTwo_int_le`, from the `q`-expansion bound `exp(π√p) ≤ 745 − j(τ₀)` — the class
+  number enters only to make `γ₂` an integer, not to bound it); so the cubic has no rational
+  root and is the minimal polynomial of `α⁴`, giving `deg(α⁴) = 3`
+  (`natDegree_minpoly_eq_three_of_cubic`). Since `deg(α⁴) ≤ deg α`
+  (`natDegree_minpoly_pow_le`), `deg α ≥ 3`.
+* `deg α ≤ 3` — THIS LEAF — is the genuine CM input, and it is exactly Weber's theorem that
+  `f₂(τ₀)²`, not merely `f₂(τ₀)⁸`, lies in the ring class field: `α` lies in the ring class
+  field of the order `[1, √−p]` of discriminant `−4p`, whose class number is
+  `h(−4p) = 2·h(−p)·(1 − (−p|2)/2) = 3·h(−p) = 3` for `p ≡ 3 mod 8` with `h(−p) = 1`
+  (using `(−p|2) = −1` because `−p ≡ 5 mod 8`), and `α` is REAL, so it generates the real
+  cubic subfield.
+
+`hcl` IS LOAD-BEARING and does not appear in the conclusion: drop it and `h(−p)` may exceed
+`1`, making `h(−4p) = 3h(−p) > 3` and the degree larger than `3`. It is not decorative. Note
+that after this restatement `hcl` is load-bearing in ONE direction only, which is what makes
+the leaf smaller: nothing about the lower bound needs it beyond `γ₂(τ₀) ∈ ℤ`.
+
+MACHINE-CHECKED FAITHFULNESS: `polisirreducible(algdep(α,3)) = 1` at all five admissible `p`
+(table in `isIntegral_weberAlpha`), so the degree is exactly `3` — not `1` or `2` — in every
+case where the hypotheses are satisfiable. Refute by exhibiting an admissible `p` at which
+`α` satisfies a rational polynomial of degree `< 3`.
+
+**WEAKENED 2026-07-30 (`flt-lean-185`) FROM AN EQUALITY TO AN INEQUALITY.** The leaf used to
+read `natDegree = 3` and had two consumers; it now reads `natDegree ≤ 3` and the equality is a
+THEOREM. Two independent findings did that:
+
+* `intCast_indep_weberAlpha_pow_four` no longer uses this leaf — that statement is PROVEN
+  outright from `γ₂(τ₀) ≤ −16` (`intCast_indep_of_cubic`, `int_gammaTwo_le_neg_sixteen`);
+* independence in turn forces `deg α ≥ 3` (`three_le_natDegree_minpoly_of_intCast_indep`: if
+  `deg α ≤ 2` then `α⁴` satisfies a monic `ℚ`-polynomial of degree `≤ 2`, which is a nontrivial
+  relation among `1, α⁴, α⁸` after clearing denominators).
+
+So the `≥ 3` side of the degree is NOT complex multiplication, and what is left open here is
+only the `≤ 3` side — "`α` lies in a field of degree at most `3` over `ℚ`", which is the
+substantive half of Weber's ring-class-field computation. The remaining consumer,
+`exists_intCubic_weberAlpha`, is served through `natDegree_minpoly_weberAlpha` (the equality,
+proven below from this leaf), so no consumer or docstring reference had to change.
+
+`hcl`, `hp8` and `h3` were all recorded as load-bearing for the OLD statement, by the
+class-number computation above: drop `hcl` and `h(−p)` may exceed `1`, making
+`h(−4p) = 3h(−p) > 3` and the degree LARGER than `3` — which is exactly what that inequality
+forbade. That remains true of the inequality, and is exactly why `hcl` had to move DOWN to
+`natDegree_minpoly_weberAlpha_le` rather than simply be deleted: the membership statement here
+is class-number-free, the numerical VALUE `3` is not. -/
+theorem exists_ratPoly_weberAlpha_pow_four {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+    (h3 : 3 < p) :
+    ∃ q : Polynomial ℚ,
+      weberAlpha p hp.pos = Polynomial.aeval (weberAlpha p hp.pos ^ 4) q :=
+  sorry
+
+/-! `natDegree_minpoly_weberAlpha` — the EQUALITY `deg α = 3` — is no longer a leaf. It is
+PROVEN below, after `intCast_indep_weberAlpha_pow_four`, as
+`le_antisymm (natDegree_minpoly_weberAlpha_le …) (three_le_natDegree_minpoly_of_intCast_indep …)`;
+it has to live there because the `≥ 3` half consumes the independence result, which in turn
+consumes `exists_int_gammaTwo`. -/
+
+/-! **`LEAF 2` — the `ℤ`-independence of `1, α⁴, α⁸` — HAS MOVED, and is no longer proven from
+the degree at all.**
+
+`intCast_indep_weberAlpha_pow_four` now lives below `int_gammaTwo_le_neg_sixteen`, because it
+is PROVEN from `γ₂(τ₀) ≤ −16` by `intCast_indep_of_cubic` (see the section
+"`x³ − gx − 16` has no rational root once `g ≤ −16`" above) and therefore depends on
+`exists_int_gammaTwo` and `exp_pi_sqrt_le_of_jInvariant_eq`. Lean's declaration order is the
+only reason for the move.
+
+WHAT THE OLD PLACEMENT ASSERTED, and why it was more than needed. The leaf used to be proven
+here as `intCast_indep_of_natDegree_minpoly (natDegree_minpoly_weberAlpha …)`, i.e. from
+"`α` has degree `3`" by the primality of that degree, applied twice. That derivation is
+CORRECT — and it has been DELETED with its two helpers (see the section note above for what
+they said and how to recover them), because it had no other consumer; it is
+simply not necessary, because independence follows from the ARITHMETIC of the cubic
+`x³ − γ₂x − 16` with no degree hypothesis at all. Since the development pays for
+`γ₂(τ₀) ∈ ℤ` anyway, and the `q`-expansion bound already forces `γ₂(τ₀) ≤ −32`, nothing new is
+bought by asking for the degree here. -/
+
+/-! `LEAF 1` — the monic integral cubic satisfied by `α` — is `exists_intCubic_weberAlpha`,
+and it is stated and PROVEN further down, immediately after `exists_int_gammaTwo`. It has to
+live there rather than here: its integrality half is no longer a leaf but a CONSEQUENCE of
+`γ₂(τ₀) ∈ ℤ`, so it depends on `LEAF 3`/`LEAF 4` by way of `exists_int_gammaTwo`. See
+`isIntegral_weberAlpha`. -/
+
+/- **LEAF 3 (`isIntegral_gammaTwo_heegnerPoint`) HAS MOVED** — it is now PROVEN, and lives
+just below `gammaTwo_pow_three_eq_jInvariant` (LEAF 5), which its proof consumes. Lean's
+declaration order is the only reason for the move; nothing about the statement changed. -/
+
+/-! #### `LEAF 4` DECOMPOSED — the real-analytic half is PROVEN here (2026-07-28)
+
+`γ₂(τ₀) ∈ ℚ` splits into a REAL-ANALYTIC half and a CLASS-FIELD half, and the first of the
+two costs no arithmetic at all:
+
+* `exists_real_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℝ`. **PROVEN** here, from `0 < p` alone.
+* `exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)`. The first main theorem
+  of complex multiplication; the ONLY place `hcl` is consumed. **PROVEN 2026-07-30** over
+  `exists_rat_jInvariant_heegnerPoint` (`j(τ₀) ∈ ℚ`), which is the open CM leaf.
+* `exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K`. Weber's
+  level-`3` descent, which needs only `3 ∤ p`. **PROVEN 2026-07-30** over
+  `exists_ratCube_jInvariant_heegnerPoint` (`j(τ₀)` is a rational cube), which is the open
+  level-`3` leaf.
+
+Both of those proofs, and the two leaves they rest on, live below
+`gammaTwo_pow_three_eq_jInvariant` — search `LEAF 4 RECUT`.
+
+The assembly is then arithmetic: `K ∩ ℝ = ℚ`, i.e. `x = u + v√−p` real forces `v = 0`.
+That IS the classical argument's shape — CM puts `j` in the ring class field, `h(−p) = 1`
+collapses that field to `K`, and REALITY is what cuts `K` down to `ℚ`. Separating reality out
+matters because reality is elementary and everything else here is not.
+
+WHY `γ₂(τ₀)` IS REAL, and why it is provable at this pin. `q = 𝕢₁(τ₀) = −e^{−π√p}` is a
+NEGATIVE REAL — this is exactly what the `3` in `τ₀ = (3+√−p)/2` buys — so every factor of
+`η`'s product `∏(1 − qⁿ⁺¹)` is real; and the prefactors satisfy `𝕢₂₄(τ₀)⁸ = −e^{−π√p/3}`,
+`𝕢₂₄(2τ₀)⁸ = e^{−2π√p/3}`, both real. Hence `η(τ₀)⁸` and `η(2τ₀)⁸` are real, so
+`f₂(τ₀)⁸ = 16·η(2τ₀)⁸/η(τ₀)⁸` is real and `γ₂ = ((f₂⁸)³ + 16)/f₂⁸` is real. Note `f₂(τ₀)` and
+`f₂(τ₀)²` are NOT real — only the EIGHTH power is, which is the same phenomenon the `ζ₈⁻¹`
+twist in `weberAlpha` records. Reality is expressed here as `conj`-invariance and transported
+through the infinite product by `Multipliable.map_tprod` applied to `starRingEnd ℂ`; that is
+the whole trick, and it needs nothing from mathlib beyond `ModularForm.eta`'s definition.
+
+ABSENCE RE-VERIFIED 2026-07-28, not inherited. `grep -rn` for `ComplexMultiplication`,
+`HilbertClassField`, `ringClassField` returns, over `.lake/packages/mathlib`: NOTHING; over
+`~/cs/FLT`: NOTHING; over `Fermat/`: four hits, every one of them prose inside a docstring
+(`Modularity/MoretBailly.lean`, `FreyCurve/MazurTorsion.lean`, `ModularCurve/X0.lean`, and
+this file) asserting the same absence. The two mathlib files that match `jInvariant`
+(`Analysis/Fourier/AddCircle.lean`, `Topology/ContinuousMap/StoneWeierstrass.lean`) match on
+the substring inside `conjInvariantSubalgebra` and have nothing to do with `j`. So there is
+still no `j`-invariant and no class field theory anywhere reachable. Refute by exhibiting any
+of those names as an actual declaration.
+
+MACHINE-CHECKED (`PARI/GP`, 80 digits, via `ellj` — computed independently of the `η`-product
+that defines `γ₂` here): at EVERY prime `p ≡ 3 mod 8` with `3 < p ≤ 200` and `h(−p) = 1`,
+i.e. `p = 11, 19, 43, 67, 163`, `j(τ₀)` has `|Im j| = 0` to 80 digits and is the integer
+`−32768, −884736, −884736000, −147197952000, −262537412640768000`, each an EXACT cube of
+`−32, −96, −960, −5280, −640320`. So all three leaves below hold at every admissible `p`,
+with `v = 0` in the two `K`-valued ones. -/
+
 /-- **LEAF 1b — `α` HAS DEGREE AT MOST `3` OVER `ℚ`**, i.e. `α ∈ ℚ(α⁴)`.
 
 THIS LEAF REPLACES the former `natDegree_minpoly_weberAlpha` (degree EXACTLY `3`), which is
@@ -1785,93 +1980,46 @@ form of discriminant `−p` primitive; the two notions part company only at comp
 theorem natDegree_minpoly_weberAlpha_le {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
       f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
-    (minpoly ℚ (weberAlpha p hp.pos)).natDegree ≤ 3 :=
-  sorry
-
-/-! `natDegree_minpoly_weberAlpha` — the EQUALITY `deg α = 3` — is no longer a leaf. It is
-PROVEN below, after `intCast_indep_weberAlpha_pow_four`, as
-`le_antisymm (natDegree_minpoly_weberAlpha_le …) (three_le_natDegree_minpoly_of_intCast_indep …)`;
-it has to live there because the `≥ 3` half consumes the independence result, which in turn
-consumes `exists_int_gammaTwo`. -/
-
-/-! **`LEAF 2` — the `ℤ`-independence of `1, α⁴, α⁸` — HAS MOVED, and is no longer proven from
-the degree at all.**
-
-`intCast_indep_weberAlpha_pow_four` now lives below `int_gammaTwo_le_neg_sixteen`, because it
-is PROVEN from `γ₂(τ₀) ≤ −16` by `intCast_indep_of_cubic` (see the section
-"`x³ − gx − 16` has no rational root once `g ≤ −16`" above) and therefore depends on
-`exists_int_gammaTwo` and `exp_pi_sqrt_le_of_jInvariant_eq`. Lean's declaration order is the
-only reason for the move.
-
-WHAT THE OLD PLACEMENT ASSERTED, and why it was more than needed. The leaf used to be proven
-here as `intCast_indep_of_natDegree_minpoly (natDegree_minpoly_weberAlpha …)`, i.e. from
-"`α` has degree `3`" by the primality of that degree, applied twice. That derivation is
-CORRECT — and it has been DELETED with its two helpers (see the section note above for what
-they said and how to recover them), because it had no other consumer; it is
-simply not necessary, because independence follows from the ARITHMETIC of the cubic
-`x³ − γ₂x − 16` with no degree hypothesis at all. Since the development pays for
-`γ₂(τ₀) ∈ ℤ` anyway, and the `q`-expansion bound already forces `γ₂(τ₀) ≤ −32`, nothing new is
-bought by asking for the degree here. -/
-
-/-! `LEAF 1` — the monic integral cubic satisfied by `α` — is `exists_intCubic_weberAlpha`,
-and it is stated and PROVEN further down, immediately after `exists_int_gammaTwo`. It has to
-live there rather than here: its integrality half is no longer a leaf but a CONSEQUENCE of
-`γ₂(τ₀) ∈ ℤ`, so it depends on `LEAF 3`/`LEAF 4` by way of `exists_int_gammaTwo`. See
-`isIntegral_weberAlpha`. -/
-
-/- **LEAF 3 (`isIntegral_gammaTwo_heegnerPoint`) HAS MOVED** — it is now PROVEN, and lives
-just below `gammaTwo_pow_three_eq_jInvariant` (LEAF 5), which its proof consumes. Lean's
-declaration order is the only reason for the move; nothing about the statement changed. -/
-
-/-! #### `LEAF 4` DECOMPOSED — the real-analytic half is PROVEN here (2026-07-28)
-
-`γ₂(τ₀) ∈ ℚ` splits into a REAL-ANALYTIC half and a CLASS-FIELD half, and the first of the
-two costs no arithmetic at all:
-
-* `exists_real_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℝ`. **PROVEN** here, from `0 < p` alone.
-* `exists_quadratic_jInvariant_heegnerPoint` — `j(τ₀) ∈ K = ℚ(√−p)`. The first main theorem
-  of complex multiplication; the ONLY place `hcl` is consumed. **PROVEN 2026-07-30** over
-  `exists_rat_jInvariant_heegnerPoint` (`j(τ₀) ∈ ℚ`), which is the open CM leaf.
-* `exists_quadratic_gammaTwo_of_jInvariant` — `γ₂(τ₀) ∈ K` once `j(τ₀) ∈ K`. Weber's
-  level-`3` descent, which needs only `3 ∤ p`. **PROVEN 2026-07-30** over
-  `exists_ratCube_jInvariant_heegnerPoint` (`j(τ₀)` is a rational cube), itself **PROVEN
-  2026-07-31** over `exists_intCube_jInvariant_heegnerPoint` (`j(τ₀) = n ∈ ℤ` is a cube in
-  `ℤ`), which is the open level-`3` leaf.
-
-Both of those proofs, and the two leaves they rest on, live below
-`gammaTwo_pow_three_eq_jInvariant` — search `LEAF 4 RECUT`.
-
-The assembly is then arithmetic: `K ∩ ℝ = ℚ`, i.e. `x = u + v√−p` real forces `v = 0`.
-That IS the classical argument's shape — CM puts `j` in the ring class field, `h(−p) = 1`
-collapses that field to `K`, and REALITY is what cuts `K` down to `ℚ`. Separating reality out
-matters because reality is elementary and everything else here is not.
-
-WHY `γ₂(τ₀)` IS REAL, and why it is provable at this pin. `q = 𝕢₁(τ₀) = −e^{−π√p}` is a
-NEGATIVE REAL — this is exactly what the `3` in `τ₀ = (3+√−p)/2` buys — so every factor of
-`η`'s product `∏(1 − qⁿ⁺¹)` is real; and the prefactors satisfy `𝕢₂₄(τ₀)⁸ = −e^{−π√p/3}`,
-`𝕢₂₄(2τ₀)⁸ = e^{−2π√p/3}`, both real. Hence `η(τ₀)⁸` and `η(2τ₀)⁸` are real, so
-`f₂(τ₀)⁸ = 16·η(2τ₀)⁸/η(τ₀)⁸` is real and `γ₂ = ((f₂⁸)³ + 16)/f₂⁸` is real. Note `f₂(τ₀)` and
-`f₂(τ₀)²` are NOT real — only the EIGHTH power is, which is the same phenomenon the `ζ₈⁻¹`
-twist in `weberAlpha` records. Reality is expressed here as `conj`-invariance and transported
-through the infinite product by `Multipliable.map_tprod` applied to `starRingEnd ℂ`; that is
-the whole trick, and it needs nothing from mathlib beyond `ModularForm.eta`'s definition.
-
-ABSENCE RE-VERIFIED 2026-07-28, not inherited. `grep -rn` for `ComplexMultiplication`,
-`HilbertClassField`, `ringClassField` returns, over `.lake/packages/mathlib`: NOTHING; over
-`~/cs/FLT`: NOTHING; over `Fermat/`: four hits, every one of them prose inside a docstring
-(`Modularity/MoretBailly.lean`, `FreyCurve/MazurTorsion.lean`, `ModularCurve/X0.lean`, and
-this file) asserting the same absence. The two mathlib files that match `jInvariant`
-(`Analysis/Fourier/AddCircle.lean`, `Topology/ContinuousMap/StoneWeierstrass.lean`) match on
-the substring inside `conjInvariantSubalgebra` and have nothing to do with `j`. So there is
-still no `j`-invariant and no class field theory anywhere reachable. Refute by exhibiting any
-of those names as an actual declaration.
-
-MACHINE-CHECKED (`PARI/GP`, 80 digits, via `ellj` — computed independently of the `η`-product
-that defines `γ₂` here): at EVERY prime `p ≡ 3 mod 8` with `3 < p ≤ 200` and `h(−p) = 1`,
-i.e. `p = 11, 19, 43, 67, 163`, `j(τ₀)` has `|Im j| = 0` to 80 digits and is the integer
-`−32768, −884736, −884736000, −147197952000, −262537412640768000`, each an EXACT cube of
-`−32, −96, −960, −5280, −640320`. So all three leaves below hold at every admissible `p`,
-with `v = 0` in the two `K`-valued ones. -/
+    (minpoly ℚ (weberAlpha p hp.pos)).natDegree ≤ 3 := by
+  obtain ⟨g, hg⟩ := exists_int_gammaTwo hp hp8 h3 hcl
+  obtain ⟨q, hq⟩ := exists_ratPoly_weberAlpha_pow_four hp hp8 h3
+  have hcub := weberAlpha_pow_four_cubic p hp.pos
+  rw [← hg] at hcub
+  have hint : IsIntegral ℚ (weberAlpha p hp.pos) :=
+    (isIntegral_weberAlpha hp hp8 h3 hcl).tower_top
+  have hint4 : IsIntegral ℚ (weberAlpha p hp.pos ^ 4) := hint.pow 4
+  -- `α ^ 4` has degree at most `3`, from the cubic
+  have hmon : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ).Monic := by monicity!
+  have hpne : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ) ≠ 0 := hmon.ne_zero
+  have hae : (Polynomial.aeval (weberAlpha p hp.pos ^ 4))
+      (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ) = 0 := by
+    simp only [map_sub, map_mul, map_pow, aeval_X, aeval_C, eq_ratCast]
+    push_cast
+    linear_combination hcub
+  have hdeg4 : (minpoly ℚ (weberAlpha p hp.pos ^ 4)).natDegree ≤ 3 := by
+    have hd := minpoly.degree_le_of_ne_zero ℚ (weberAlpha p hp.pos ^ 4) hpne hae
+    have hdq : (X ^ 3 - C (g : ℚ) * X - C 16 : Polynomial ℚ).degree ≤ 3 := by compute_degree
+    exact Polynomial.natDegree_le_iff_degree_le.mpr (le_trans hd hdq)
+  -- `α ∈ ℚ⟮α ^ 4⟯`, from Weber's descent
+  have hmem : weberAlpha p hp.pos ∈ ℚ⟮weberAlpha p hp.pos ^ 4⟯ := by
+    have h1 : weberAlpha p hp.pos
+        ∈ Algebra.adjoin ℚ ({weberAlpha p hp.pos ^ 4} : Set ℂ) := by
+      rw [Algebra.adjoin_singleton_eq_range_aeval]
+      exact ⟨q, hq.symm⟩
+    have h2 : Algebra.adjoin ℚ ({weberAlpha p hp.pos ^ 4} : Set ℂ)
+        ≤ (ℚ⟮weberAlpha p hp.pos ^ 4⟯).toSubalgebra := Algebra.adjoin_le (by simp)
+    exact h2 h1
+  have hle : ℚ⟮weberAlpha p hp.pos⟯ ≤ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
+    IntermediateField.adjoin_simple_le_iff.mpr hmem
+  haveI : FiniteDimensional ℚ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
+    IntermediateField.adjoin.finiteDimensional hint4
+  have hfr : Module.finrank ℚ ℚ⟮weberAlpha p hp.pos⟯
+      ≤ Module.finrank ℚ ℚ⟮weberAlpha p hp.pos ^ 4⟯ :=
+    LinearMap.finrank_le_finrank_of_injective
+      (f := (IntermediateField.inclusion hle).toLinearMap)
+      (IntermediateField.inclusion_injective hle)
+  rw [IntermediateField.adjoin.finrank hint, IntermediateField.adjoin.finrank hint4] at hfr
+  omega
 
 /-- `τ₀` written out: `(3 + i√p)/2`. -/
 lemma coe_heegnerPoint (p : ℕ) (hp : 0 < p) :
@@ -4134,6 +4282,1005 @@ theorem mem_triangularReps {N a b d : ℤ} (ha : 0 < a) (hd : 0 < d) (had : a * 
     Finset.mem_Ico]
   exact ⟨⟨⟨by omega, haN⟩, ⟨hb0, by omega⟩, ⟨by omega, hdN⟩⟩, had, hbd, hgcd⟩
 
+/-- **The converse of `mem_triangularReps` — PROVEN.** Membership unpacks to exactly the data
+that produced it, primitivity included.
+
+The `Finset` is defined by a filter over an ambient box, so the box bounds come back too and
+are discarded here: `a ≤ N`, `d ≤ N` and `b < N` are consequences of `a d = N` and `b < d` and
+carry no information. The one step that is not `omega` is turning `gcd(a, gcd(b, d)) = 1` back
+into the "every common divisor is a unit" form the rest of this file states primitivity in;
+that goes through `Int.isCoprime_iff_gcd_eq_one` and `IsCoprime.isUnit_of_dvd'`, with
+`Nat.dvd_gcd` on `natAbs` supplying `e ∣ gcd(b, d)`. -/
+theorem triangularReps_spec {N a b d : ℤ} (h : (a, b, d) ∈ triangularReps N) :
+    0 < a ∧ 0 < d ∧ a * d = N ∧ 0 ≤ b ∧ b < d ∧
+      (∀ e : ℤ, e ∣ a → e ∣ b → e ∣ d → IsUnit e) := by
+  simp only [triangularReps, Finset.mem_filter, Finset.mem_product, Finset.mem_Icc,
+    Finset.mem_Ico] at h
+  obtain ⟨⟨⟨ha1, _⟩, ⟨hb0, _⟩, ⟨hd1, _⟩⟩, had, hbd, hgcd⟩ := h
+  refine ⟨by omega, by omega, had, hb0, hbd, ?_⟩
+  intro e hea heb hed
+  have h1 : e ∣ ((Int.gcd b d : ℕ) : ℤ) := by
+    have hn : e.natAbs ∣ Int.gcd b d :=
+      Nat.dvd_gcd (Int.natAbs_dvd_natAbs.mpr heb) (Int.natAbs_dvd_natAbs.mpr hed)
+    exact Int.natAbs_dvd.mp (Int.natCast_dvd_natCast.mpr hn)
+  exact (Int.isCoprime_iff_gcd_eq_one.mpr hgcd).isUnit_of_dvd' hea h1
+
+/-- **UNIQUENESS OF THE HERMITE NORMAL FORM — PROVEN.** This is the half that
+`exists_hermite_of_primitive` above does not supply, and `LEAF 3a-i`'s docstring below names it
+as the missing elementary input to `Γ`-invariance of the product.
+
+If `γ · [[a, b], [0, d]] = [[a', b'], [0, d']]` with `γ ∈ SL₂(ℤ)` and both triangular matrices
+normalised (`a, d, a', d' > 0`, `0 ≤ b < d`, `0 ≤ b' < d'`), then the two coincide. So each
+left `Γ`-class of primitive integral matrices of determinant `N` meets `triangularReps N` in
+EXACTLY ONE point — existence from `exists_hermite_of_primitive`, uniqueness here — which is
+what makes `t ↦ t'` a well-defined permutation of `triangularReps N` under right multiplication
+by `γ`, and hence what makes the coefficients of the product `Γ`-invariant.
+
+THE ARGUMENT IS FOUR STEPS AND USES EVERY NORMALISATION. Writing
+`γ · [[a,b],[0,d]] = [[αa, αb+βd], [δa, δb+εd]]`: the lower-left entry gives `δ a = 0`, hence
+`δ = 0` since `a > 0`; then `α ε = 1`, so `α = ±1`, and `a' = α a` with both positive forces
+`α = 1` and therefore `ε = 1`; that gives `a' = a` and `d' = d`; and finally `b' = b + β d`
+with `0 ≤ b, b' < d` traps `β` strictly between `−1` and `1`.
+
+The matrices are written out entrywise rather than as `Matrix (Fin 2) (Fin 2) ℤ` to match
+`exists_hermite_of_primitive`, whose conclusion is stated in exactly these four equations
+(with `p, q, r, s` in place of `a', b', 0, d'`). `hd'` is redundant — `d' = d > 0` — and is
+underscored. -/
+theorem triangular_unique {α β δ ε a b d a' b' d' : ℤ}
+    (hγ : α * ε - β * δ = 1)
+    (ha : 0 < a) (hd : 0 < d) (hb0 : 0 ≤ b) (hbd : b < d)
+    (ha' : 0 < a') (_hd' : 0 < d') (hb0' : 0 ≤ b') (hbd' : b' < d')
+    (h1 : a' = α * a) (h2 : b' = α * b + β * d) (h3 : (0 : ℤ) = δ * a) (h4 : d' = δ * b + ε * d) :
+    a = a' ∧ b = b' ∧ d = d' := by
+  have hδ : δ = 0 := by
+    rcases mul_eq_zero.mp h3.symm with h | h
+    · exact h
+    · omega
+  subst hδ
+  have hαε : α * ε = 1 := by linarith [hγ]
+  have hα : α = 1 := by
+    rcases Int.isUnit_iff.mp (isUnit_of_dvd_one ⟨ε, hαε.symm⟩) with h | h
+    · exact h
+    · exfalso; rw [h] at h1; omega
+  subst hα
+  have hε : ε = 1 := by omega
+  subst hε
+  refine ⟨by omega, ?_, by omega⟩
+  have hβ : β = 0 := by
+    by_contra hβ0
+    rcases lt_or_gt_of_ne hβ0 with h | h
+    · have hle : β * d ≤ -1 * d := mul_le_mul_of_nonneg_right (by omega) hd.le
+      omega
+    · have hle : 1 * d ≤ β * d := mul_le_mul_of_nonneg_right (by omega) hd.le
+      omega
+  rw [hβ] at h2
+  omega
+
+/-- **The Möbius denominator of a unimodular integral matrix does not vanish on `ℍ` — PROVEN.**
+
+If `r = 0` then `ps = 1` forces `s ≠ 0`; otherwise `Im(r w + s) = r · Im w ≠ 0`. Stated with
+the two entries loose rather than through mathlib's `UpperHalfPlane.denom` so that the caller
+need not produce a `GL (Fin 2) ℝ` first.
+
+HOISTED 2026-07-31 from just above `jInvariant_eq_of_act`, which is still its other consumer:
+`exists_triangularReps_right_mul` just below needs it too, and it is the earlier of the two. -/
+theorem denom_ne_zero_of_det {p q r s : ℤ} (hdet : p * s - q * r = 1) (w : UpperHalfPlane) :
+    (r : ℂ) * (w : ℂ) + (s : ℂ) ≠ 0 := by
+  intro h
+  have him := congrArg Complex.im h
+  simp only [Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im,
+    Complex.zero_im, zero_mul, add_zero] at him
+  have hwim : 0 < (w : ℂ).im := w.im_pos
+  have hr : (r : ℝ) = 0 := by
+    rcases mul_eq_zero.mp him with h' | h'
+    · exact h'
+    · linarith
+  have hr0 : r = 0 := by exact_mod_cast hr
+  subst hr0
+  simp only [Int.cast_zero, zero_mul, zero_add] at h
+  have hs0 : s = 0 := by exact_mod_cast h
+  subst hs0
+  simp at hdet
+
+/-- The integral matrix `[[a, b], [0, d]]` of a triangular datum `t = (a, b, d)`.
+
+It exists only so that the `Γ`-invariance argument below can state "`B_t · γ = g · B_{t'}`" as
+one equation instead of four, which is what makes the injectivity step (`γ` cancels on the
+right, `g₂⁻¹` on the left) a two-line matrix computation. Everything else about triangular
+data is stated entrywise, as `triangular_unique` and `exists_hermite_of_primitive` are. -/
+def triMat (t : ℤ × ℤ × ℤ) : Matrix (Fin 2) (Fin 2) ℤ := !![t.1, t.2.1; 0, t.2.2]
+
+/-- **RIGHT MULTIPLICATION BY `γ ∈ SL₂(ℤ)` MOVES A TRIANGULAR REPRESENTATIVE TO ANOTHER ONE
+— PROVEN.** For `t ∈ triangularReps N` there is a `t' ∈ triangularReps N` and a `g ∈ SL₂(ℤ)`
+with `B_t · γ = g · B_{t'}`, and then `j` at the `t`-point of `γ • z` agrees with `j` at the
+`t'`-point of `z`, for every `z ∈ ℍ` at once.
+
+This is the existence half of the permutation underlying `Γ`-invariance of the coefficients of
+`∏_t (X − j(t·z))`; `triangularReps_eq_of_right_mul` below is the injectivity half, and
+`prod_triangularReps_jInvariant_smul` assembles them.
+
+THE CONSTRUCTION. `B_t · γ = [[aA+bD, aB+bE], [dD, dE]]` has determinant `N` and is primitive
+— primitivity transfers back through `γ⁻¹`, which is integral, and the three divisibility
+identities that do it are written out below. `exists_hermite_of_primitive` factors it as
+`γ₁ · B_{t₁}`, and `b₁` is normalised into `[0, d₁)` by absorbing `T^k` into `γ₁`; that
+absorption is exactly the identity `[[A₁,B₁],[D₁,E₁]] · T^k = [[A₁, A₁k+B₁], [D₁, D₁k+E₁]]`,
+which is where the `g` of the conclusion comes from.
+
+THE POINT IDENTITY is pure Möbius algebra and is done here by exhibiting the COMMON VALUE
+`(P z + Q)/(R z + S)`, where `(P, Q, R, S)` are the entries of `B_t · γ`: both
+`(a (γ z) + b)/d` and `g • ((a₁ z + b')/d₁)` reduce to it, the second because the Hermite
+identities `P = A₁a₁`, `Q = A₁b₁ + B₁d₁`, `R = D₁a₁`, `S = D₁b₁ + E₁d₁` and `d₁k + b' = b₁`
+turn its numerator and denominator into `(P z + Q)/d₁` and `(R z + S)/d₁`. Then
+`jInvariant_smul` finishes. Doing it through the common value rather than by one `field_simp`
+keeps every denominator's non-vanishing (`d`, `d₁`, `Dz+E`, `Rz+S`) local to the step that
+needs it. -/
+theorem exists_triangularReps_right_mul {N : ℤ} (hN : 0 < N) (γ : SL(2, ℤ))
+    {t : ℤ × ℤ × ℤ} (ht : t ∈ triangularReps N) :
+    ∃ t', t' ∈ triangularReps N ∧
+      (∃ g : SL(2, ℤ),
+        triMat t * (γ : Matrix (Fin 2) (Fin 2) ℤ) = (g : Matrix (Fin 2) (Fin 2) ℤ) * triMat t') ∧
+      ∀ z : UpperHalfPlane, jInvariant (triPoint (γ • z) t) = jInvariant (triPoint z t') := by
+  obtain ⟨a, b, d⟩ := t
+  obtain ⟨ha, hd, had, hb0, hbd, hprim⟩ := triangularReps_spec ht
+  set A := γ 0 0 with hA
+  set B := γ 0 1 with hB
+  set D := γ 1 0 with hD
+  set E := γ 1 1 with hE
+  have hdet : A * E - B * D = 1 := by
+    have h := γ.2
+    rw [Matrix.det_fin_two] at h
+    exact h
+  -- the entries of `B_t · γ`
+  have hdetA : (a * A + b * D) * (d * E) - (a * B + b * E) * (d * D) = N := by
+    linear_combination (a * d) * hdet + had
+  have hprimA : ∀ e : ℤ, e ∣ (a * A + b * D) → e ∣ (a * B + b * E) → e ∣ (d * D) →
+      e ∣ (d * E) → IsUnit e := by
+    intro e h1 h2 h3 h4
+    refine hprim e ?_ ?_ ?_
+    · have hEq : a = (a * A + b * D) * E - (a * B + b * E) * D := by
+        linear_combination (-a) * hdet
+      rw [hEq]; exact (h1.mul_right E).sub (h2.mul_right D)
+    · have hEq : b = (a * B + b * E) * A - (a * A + b * D) * B := by
+        linear_combination (-b) * hdet
+      rw [hEq]; exact (h2.mul_right A).sub (h1.mul_right B)
+    · have hEq : d = (d * E) * A - (d * D) * B := by
+        linear_combination (-d) * hdet
+      rw [hEq]; exact (h4.mul_right A).sub (h3.mul_right B)
+  obtain ⟨A1, B1, D1, E1, a1, b1, d1, hg1, ha1, hd1, had1, hprim1, hp1, hq1, hr1, hs1⟩ :=
+    exists_hermite_of_primitive hN hdetA hprimA
+  -- normalise `b1` into `[0, d1)`
+  set k : ℤ := b1 / d1 with hk
+  set b' : ℤ := b1 % d1 with hb'
+  have hbk : d1 * k + b' = b1 := Int.mul_ediv_add_emod b1 d1
+  have hb0' : 0 ≤ b' := Int.emod_nonneg b1 hd1.ne'
+  have hbd' : b' < d1 := Int.emod_lt_of_pos b1 hd1
+  have hprim' : ∀ e : ℤ, e ∣ a1 → e ∣ b' → e ∣ d1 → IsUnit e := by
+    intro e h1 h2 h3
+    refine hprim1 e h1 ?_ h3
+    have : e ∣ d1 * k + b' := (h3.mul_right k).add h2
+    rwa [hbk] at this
+  have hmem' : (a1, b', d1) ∈ triangularReps N :=
+    mem_triangularReps ha1 hd1 had1 hb0' hbd' hprim'
+  have hgdet : (!![A1, A1 * k + B1; D1, D1 * k + E1] : Matrix (Fin 2) (Fin 2) ℤ).det = 1 := by
+    rw [Matrix.det_fin_two_of]; linear_combination hg1
+  set g : SL(2, ℤ) := ⟨!![A1, A1 * k + B1; D1, D1 * k + E1], hgdet⟩ with hgdef
+  have hgc : (g : Matrix (Fin 2) (Fin 2) ℤ) = !![A1, A1 * k + B1; D1, D1 * k + E1] := rfl
+  have hg00 : g 0 0 = A1 := rfl
+  have hg01 : g 0 1 = A1 * k + B1 := rfl
+  have hg10 : g 1 0 = D1 := rfl
+  have hg11 : g 1 1 = D1 * k + E1 := rfl
+  refine ⟨(a1, b', d1), hmem', ⟨g, ?_⟩, ?_⟩
+  · rw [hgc]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [triMat, Matrix.mul_apply, Fin.sum_univ_two, ← hA, ← hB, ← hD, ← hE]
+    · linear_combination hp1
+    · linear_combination hq1 - A1 * hbk
+    · linear_combination hr1
+    · linear_combination hs1 - D1 * hbk
+  · intro z
+    -- the common Möbius value `(P z + Q)/(R z + S)`, `(P, Q, R, S)` the entries of `B_t · γ`
+    have hd1C : ((d1 : ℤ) : ℂ) ≠ 0 := Int.cast_ne_zero.mpr hd1.ne'
+    have hdC : ((d : ℤ) : ℂ) ≠ 0 := Int.cast_ne_zero.mpr hd.ne'
+    have hdenγ : (D : ℂ) * (z : ℂ) + (E : ℂ) ≠ 0 := denom_ne_zero_of_det hdet z
+    have hγz : ((γ • z : UpperHalfPlane) : ℂ)
+        = ((A : ℂ) * (z : ℂ) + (B : ℂ)) / ((D : ℂ) * (z : ℂ) + (E : ℂ)) := by
+      rw [coe_specialLinearGroup_apply, ← hA, ← hB, ← hD, ← hE]
+      simp only [algebraMap_int_eq, eq_intCast, Complex.ofReal_intCast]
+    set P : ℂ := (a : ℂ) * (A : ℂ) + (b : ℂ) * (D : ℂ) with hPdef
+    set Q : ℂ := (a : ℂ) * (B : ℂ) + (b : ℂ) * (E : ℂ) with hQdef
+    set R : ℂ := (d : ℂ) * (D : ℂ) with hRdef
+    set S : ℂ := (d : ℂ) * (E : ℂ) with hSdef
+    have hRS : R * (z : ℂ) + S ≠ 0 := by
+      have hfac : R * (z : ℂ) + S = (d : ℂ) * ((D : ℂ) * (z : ℂ) + (E : ℂ)) := by
+        rw [hRdef, hSdef]; ring
+      rw [hfac]
+      exact mul_ne_zero hdC hdenγ
+    have hp1C : P = (A1 : ℂ) * (a1 : ℂ) := by
+      rw [hPdef]; exact_mod_cast congrArg (Int.cast : ℤ → ℂ) hp1
+    have hq1C : Q = (A1 : ℂ) * (b1 : ℂ) + (B1 : ℂ) * (d1 : ℂ) := by
+      rw [hQdef]; exact_mod_cast congrArg (Int.cast : ℤ → ℂ) hq1
+    have hr1C : R = (D1 : ℂ) * (a1 : ℂ) := by
+      rw [hRdef]; exact_mod_cast congrArg (Int.cast : ℤ → ℂ) hr1
+    have hs1C : S = (D1 : ℂ) * (b1 : ℂ) + (E1 : ℂ) * (d1 : ℂ) := by
+      rw [hSdef]; exact_mod_cast congrArg (Int.cast : ℤ → ℂ) hs1
+    have hbkC : (d1 : ℂ) * (k : ℂ) + (b' : ℂ) = (b1 : ℂ) := by
+      exact_mod_cast congrArg (Int.cast : ℤ → ℂ) hbk
+    -- the `t`-point of `γ • z`
+    have hdenγ' : (z : ℂ) * (D : ℂ) + (E : ℂ) ≠ 0 := by rw [mul_comm]; exact hdenγ
+    have hW : ((triPoint (γ • z) (a, b, d) : UpperHalfPlane) : ℂ)
+        = (P * (z : ℂ) + Q) / (R * (z : ℂ) + S) := by
+      rw [coe_triPoint _ ha hd, hγz, hPdef, hQdef, hRdef, hSdef]
+      field_simp [hdenγ']
+      ring
+    -- the `t'`-point of `z`, translated by `g`
+    have hVc : ((triPoint z (a1, b', d1) : UpperHalfPlane) : ℂ)
+        = ((a1 : ℂ) * (z : ℂ) + (b' : ℂ)) / ((d1 : ℤ) : ℂ) := coe_triPoint z ha1 hd1
+    have hgVc : ((g • triPoint z (a1, b', d1) : UpperHalfPlane) : ℂ)
+        = ((A1 : ℂ) * ((triPoint z (a1, b', d1) : UpperHalfPlane) : ℂ)
+            + ((A1 * k + B1 : ℤ) : ℂ))
+          / ((D1 : ℂ) * ((triPoint z (a1, b', d1) : UpperHalfPlane) : ℂ)
+            + ((D1 * k + E1 : ℤ) : ℂ)) := by
+      rw [coe_specialLinearGroup_apply, hg00, hg01, hg10, hg11]
+      simp only [algebraMap_int_eq, eq_intCast, Complex.ofReal_intCast]
+    have hnumC : (A1 : ℂ) * ((a1 : ℂ) * (z : ℂ) + (b' : ℂ))
+        + (d1 : ℂ) * ((A1 : ℂ) * (k : ℂ) + (B1 : ℂ)) = P * (z : ℂ) + Q := by
+      linear_combination (-(z : ℂ)) * hp1C + (A1 : ℂ) * hbkC - hq1C
+    have hdenC : (D1 : ℂ) * ((a1 : ℂ) * (z : ℂ) + (b' : ℂ))
+        + (d1 : ℂ) * ((D1 : ℂ) * (k : ℂ) + (E1 : ℂ)) = R * (z : ℂ) + S := by
+      linear_combination (-(z : ℂ)) * hr1C + (D1 : ℂ) * hbkC - hs1C
+    have hn : (A1 : ℂ) * (((a1 : ℂ) * (z : ℂ) + (b' : ℂ)) / ((d1 : ℤ) : ℂ))
+        + ((A1 * k + B1 : ℤ) : ℂ) = (P * (z : ℂ) + Q) / ((d1 : ℤ) : ℂ) := by
+      push_cast
+      field_simp
+      linear_combination hnumC
+    have hdn : (D1 : ℂ) * (((a1 : ℂ) * (z : ℂ) + (b' : ℂ)) / ((d1 : ℤ) : ℂ))
+        + ((D1 * k + E1 : ℤ) : ℂ) = (R * (z : ℂ) + S) / ((d1 : ℤ) : ℂ) := by
+      push_cast
+      field_simp
+      linear_combination hdenC
+    have hgV : ((g • triPoint z (a1, b', d1) : UpperHalfPlane) : ℂ)
+        = (P * (z : ℂ) + Q) / (R * (z : ℂ) + S) := by
+      rw [hgVc, hVc, hn, hdn, div_div_div_cancel_right₀ hd1C]
+    have hsmul : g • (triPoint z (a1, b', d1)) = triPoint (γ • z) (a, b, d) := by
+      rw [← UpperHalfPlane.coe_inj, hgV, hW]
+    rw [← hsmul, jInvariant_smul]
+
+/-- **INJECTIVITY OF THAT MAP — PROVEN**, and this is where `triangular_unique` is spent.
+
+If two normalised triangular data `t₁`, `t₂` are carried by right multiplication by the same
+`γ` onto the SAME `t'`, they coincide. The two hypotheses give `B_{t₁}γ = g₁B_{t'}` and
+`B_{t₂}γ = g₂B_{t'}`; substituting the second into the first after left-multiplying by
+`g₁g₂⁻¹` gives `B_{t₁}γ = (g₁g₂⁻¹ B_{t₂})γ`, and `γ` cancels on the right because it is
+unimodular. So `B_{t₁} = h · B_{t₂}` with `h = g₁g₂⁻¹ ∈ SL₂(ℤ)`, which is exactly
+`triangular_unique`'s hypothesis in entrywise form.
+
+`t'` NEED NOT BE NORMALISED and is not assumed to lie in `triangularReps N`: it is cancelled
+before any normalisation is used. Only `t₁` and `t₂` are constrained, and only through
+`triangularReps_spec`. -/
+theorem triangularReps_eq_of_right_mul {N : ℤ} {γ g₁ g₂ : SL(2, ℤ)} {t₁ t₂ t' : ℤ × ℤ × ℤ}
+    (h₁ : t₁ ∈ triangularReps N) (h₂ : t₂ ∈ triangularReps N)
+    (e₁ : triMat t₁ * (γ : Matrix (Fin 2) (Fin 2) ℤ)
+      = (g₁ : Matrix (Fin 2) (Fin 2) ℤ) * triMat t')
+    (e₂ : triMat t₂ * (γ : Matrix (Fin 2) (Fin 2) ℤ)
+      = (g₂ : Matrix (Fin 2) (Fin 2) ℤ) * triMat t') :
+    t₁ = t₂ := by
+  obtain ⟨a₁, b₁, d₁⟩ := t₁
+  obtain ⟨a₂, b₂, d₂⟩ := t₂
+  obtain ⟨ha₁, hd₁, -, hb₁0, hb₁d, -⟩ := triangularReps_spec h₁
+  obtain ⟨ha₂, hd₂, -, hb₂0, hb₂d, -⟩ := triangularReps_spec h₂
+  set h : SL(2, ℤ) := g₁ * g₂⁻¹ with hhdef
+  have hg₂ : ((g₂⁻¹ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ) * (g₂ : Matrix (Fin 2) (Fin 2) ℤ)
+      = 1 := by
+    rw [← Matrix.SpecialLinearGroup.coe_mul, inv_mul_cancel]
+    rfl
+  have hγγ : (γ : Matrix (Fin 2) (Fin 2) ℤ) * ((γ⁻¹ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ)
+      = 1 := by
+    rw [← Matrix.SpecialLinearGroup.coe_mul, mul_inv_cancel]
+    rfl
+  have hshift : (h : Matrix (Fin 2) (Fin 2) ℤ)
+      * (triMat (a₂, b₂, d₂) * (γ : Matrix (Fin 2) (Fin 2) ℤ))
+      = (g₁ : Matrix (Fin 2) (Fin 2) ℤ) * triMat t' := by
+    rw [e₂, hhdef, Matrix.SpecialLinearGroup.coe_mul, mul_assoc,
+      ← mul_assoc ((g₂⁻¹ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ), hg₂, one_mul]
+  have hstep : triMat (a₁, b₁, d₁) * (γ : Matrix (Fin 2) (Fin 2) ℤ)
+      = ((h : Matrix (Fin 2) (Fin 2) ℤ) * triMat (a₂, b₂, d₂))
+        * (γ : Matrix (Fin 2) (Fin 2) ℤ) := by
+    rw [e₁, ← hshift, mul_assoc]
+  have key : triMat (a₁, b₁, d₁)
+      = (h : Matrix (Fin 2) (Fin 2) ℤ) * triMat (a₂, b₂, d₂) := by
+    have hc := congrArg (fun M => M * ((γ⁻¹ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ)) hstep
+    simpa only [mul_assoc, hγγ, mul_one] using hc
+  have hdeth : h 0 0 * h 1 1 - h 0 1 * h 1 0 = 1 := by
+    have := h.2
+    rwa [Matrix.det_fin_two] at this
+  have E1 : a₁ = h 0 0 * a₂ := by
+    have hc := congrFun (congrFun key 0) 0
+    simpa [triMat, Matrix.mul_apply, Fin.sum_univ_two] using hc
+  have E2 : b₁ = h 0 0 * b₂ + h 0 1 * d₂ := by
+    have hc := congrFun (congrFun key 0) 1
+    simpa [triMat, Matrix.mul_apply, Fin.sum_univ_two] using hc
+  have E3 : (0 : ℤ) = h 1 0 * a₂ := by
+    have hc := congrFun (congrFun key 1) 0
+    simpa [triMat, Matrix.mul_apply, Fin.sum_univ_two] using hc
+  have E4 : d₁ = h 1 0 * b₂ + h 1 1 * d₂ := by
+    have hc := congrFun (congrFun key 1) 1
+    simpa [triMat, Matrix.mul_apply, Fin.sum_univ_two] using hc
+  obtain ⟨hea, heb, hed⟩ :=
+    triangular_unique hdeth ha₂ hd₂ hb₂0 hb₂d ha₁ hd₁ hb₁0 hb₁d E1 E2 E3 E4
+  simp [hea, heb, hed]
+
+/-- **`Γ`-INVARIANCE OF THE PRODUCT `∏_t (X − j(t·z))` — PROVEN.** Replacing `z` by `γ • z`
+permutes the factors and leaves the product alone, for every `γ ∈ SL₂(ℤ)` and every `z ∈ ℍ`.
+
+This is the first of the three bullets `LEAF 3a-i` was documented as needing, and it is
+discharged here: the leaf below now assumes it and the leaf's old statement is recovered by
+feeding this in. It is stated as an equality of POLYNOMIALS rather than of each elementary
+symmetric function, which is strictly stronger and no harder — the coefficientwise form a
+consumer wants is one `congrArg (Polynomial.coeff · k)` away.
+
+`Finset.prod_bij` over the map of `exists_triangularReps_right_mul`, whose injectivity is
+`triangularReps_eq_of_right_mul`; surjectivity is then free on a finite set
+(`Finset.surj_on_of_inj_on_of_card_le` with `#s ≤ #s`), so `γ⁻¹` never has to be run through
+the construction a second time. -/
+theorem prod_triangularReps_jInvariant_smul {N : ℤ} (hN : 0 < N) (γ : SL(2, ℤ))
+    (z : UpperHalfPlane) :
+    ∏ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t)))
+      = ∏ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) := by
+  classical
+  have hspec : ∀ t (ht : t ∈ triangularReps N),
+      (exists_triangularReps_right_mul hN γ ht).choose ∈ triangularReps N ∧
+      (∃ g : SL(2, ℤ), triMat t * (γ : Matrix (Fin 2) (Fin 2) ℤ)
+        = (g : Matrix (Fin 2) (Fin 2) ℤ)
+          * triMat (exists_triangularReps_right_mul hN γ ht).choose) ∧
+      ∀ w : UpperHalfPlane, jInvariant (triPoint (γ • w) t)
+        = jInvariant (triPoint w (exists_triangularReps_right_mul hN γ ht).choose) :=
+    fun t ht => (exists_triangularReps_right_mul hN γ ht).choose_spec
+  refine Finset.prod_bij (fun t ht => (exists_triangularReps_right_mul hN γ ht).choose)
+    (fun t ht => (hspec t ht).1) ?_ ?_ ?_
+  · intro t₁ ht₁ t₂ ht₂ heq
+    obtain ⟨-, ⟨g₁, e₁⟩, -⟩ := hspec t₁ ht₁
+    obtain ⟨-, ⟨g₂, e₂⟩, -⟩ := hspec t₂ ht₂
+    rw [heq] at e₁
+    exact triangularReps_eq_of_right_mul ht₁ ht₂ e₁ e₂
+  · intro b hb
+    obtain ⟨t, ht, hbt⟩ :=
+      Finset.surj_on_of_inj_on_of_card_le
+        (fun t ht => (exists_triangularReps_right_mul hN γ ht).choose)
+        (fun t ht => (hspec t ht).1)
+        (by
+          intro t₁ t₂ ht₁ ht₂ heq
+          obtain ⟨-, ⟨g₁, e₁⟩, -⟩ := hspec t₁ ht₁
+          obtain ⟨-, ⟨g₂, e₂⟩, -⟩ := hspec t₂ ht₂
+          rw [heq] at e₁
+          exact triangularReps_eq_of_right_mul ht₁ ht₂ e₁ e₂)
+        le_rfl b hb
+    exact ⟨t, ht, hbt.symm⟩
+  · intro t ht
+    rw [(hspec t ht).2.2 z]
+
+section ModularFunctionRigidity
+
+open Complex UpperHalfPlane ModularForm Filter Function
+open scoped Real MatrixGroups Topology Manifold
+
+/-- **EVERY LEVEL-ONE MODULAR FUNCTION HOLOMORPHIC ON `ℍ` WITH A POLE OF ORDER `≤ m` AT THE
+CUSP IS A POLYNOMIAL IN `j`. PROVEN (2026-07-31).**
+
+This is step (iv) of the `Φ_N` construction — the one the section note below called "real work
+but bounded" — and it is a theorem here rather than a leaf. It is stated for an arbitrary
+`F : ℍ → ℂ`, so it is reusable anywhere in this development.
+
+**POLE ORDER `≤ m` IS *DEFINED* BY THE HYPOTHESIS, and that is what makes the induction go.**
+Rather than introduce a bespoke notion of order at the cusp for a function that is not yet
+known to be modular, the hypothesis says exactly `F · Δ^m` extends to a `ModularForm 𝒮ℒ (12m)`.
+That is what the induction consumes AND what it produces, so nothing else is owed. `Γ`-
+invariance and holomorphy of `F` are consequences, not extra hypotheses: `Δ` is nowhere zero
+and has weight `12`, so `F = G/Δ^m` is holomorphic of weight `0`.
+
+THE PROOF, over four mathlib lemmas.
+
+* `m = 0`: `F` IS the modular form, hence constant by
+  `ModularFormClass.levelOne_weight_zero_const` — the same rigidity lemma `eta_weber_sum` uses
+  through `wOctCubeForm`.
+* `m + 1`: let `c := (qExpansion 1 G).coeff 0`. Because `j = E₄³/Δ` BY DEFINITION here and `Δ`
+  is nowhere zero (`ModularForm.discriminant_ne_zero`), `j^{m+1}·Δ^{m+1} = E₄^{3(m+1)}`
+  pointwise — field algebra, no modular input. `E₄^{3(m+1)}` has zeroth `q`-coefficient `1`
+  (`EisensteinSeries.E_qExpansion_coeff_zero` through `ModularForm.qExpansion_pow`), so
+  `G − c·E₄^{3(m+1)}` is a weight-`12(m+1)` form with vanishing constant term.
+  `ModularForm.toCuspForm` — whose hypothesis is literally `(qExpansion 1 f).coeff 0 = 0` —
+  makes it a `CuspForm 𝒮ℒ (12(m+1))`, and `CuspForm.discriminantEquiv` divides it by `Δ`
+  (`discriminantEquiv_apply` is `rfl`), landing in `ModularForm 𝒮ℒ (12m)` whose underlying
+  function is `(F − c·j^{m+1})·Δ^m`. That is the induction hypothesis at `m`, and
+  `P = Q + c·Y^{m+1}`.
+
+It does NOT need the structure theorem `M_* = ℂ[E₄, E₆]`, which really is absent from the pin.
+Two Lean traps, recorded because each cost a build round: `ModularForm.coe_smul` is stated for
+scalars acting through `ℝ`, so at `α = ℂ` it demands `SMul ℂ ℝ` and the usable form is to state
+the equation oneself and let defeq place it (`⇑(c • E)` and `c • ⇑E` are `rfl`-equal); and a
+`set`-bound modular form is a local DEFINITION, so `simp` zeta-unfolds it and silently discards
+hypotheses about it — `clear_value` first, or use `obtain` to get an opaque name. -/
+theorem exists_polynomial_eval_jInvariant_of_modularForm :
+    ∀ (m : ℕ) (F : UpperHalfPlane → ℂ) (G : ModularForm 𝒮ℒ (12 * (m : ℤ))),
+      (∀ z : UpperHalfPlane, F z * ModularForm.discriminant z ^ m = G z) →
+      ∃ P : Polynomial ℂ, ∀ z : UpperHalfPlane, F z = P.eval (jInvariant z) := by
+  intro m
+  induction m with
+  | zero =>
+    intro F G hFG
+    obtain ⟨c, hc⟩ := ModularFormClass.levelOne_weight_zero_const
+      (ModularForm.mcast (show (12 * ((0 : ℕ) : ℤ)) = 0 by simp) G)
+    refine ⟨Polynomial.C c, fun z => ?_⟩
+    have h1 : F z = G z := by simpa using hFG z
+    have h2 : G z = c := congrFun hc z
+    rw [h1, h2, Polynomial.eval_C]
+  | succ m ih =>
+    intro F G hFG
+    have hΔ : ∀ z : UpperHalfPlane, ModularForm.discriminant z ≠ 0 :=
+      fun z => ModularForm.discriminant_ne_zero z
+    set E : ModularForm 𝒮ℒ (12 * ((m + 1 : ℕ) : ℤ)) :=
+      ModularForm.mcast (by push_cast; ring) (ModularForm.E₄.pow (3 * (m + 1))) with hEdef
+    have hEcoe : (E : UpperHalfPlane → ℂ)
+        = (ModularForm.E₄ : UpperHalfPlane → ℂ) ^ (3 * (m + 1)) := by
+      rw [hEdef]
+      exact ModularForm.coe_pow ModularForm.E₄ (3 * (m + 1))
+    have hEval : ∀ z : UpperHalfPlane, E z = ModularForm.E₄ z ^ (3 * (m + 1)) := by
+      intro z
+      simpa using congrFun hEcoe z
+    have hEc : (qExpansion 1 E).coeff 0 = 1 := by
+      have h1 : qExpansion 1 E
+          = (qExpansion 1 (ModularForm.E₄ : UpperHalfPlane → ℂ)) ^ (3 * (m + 1)) := by
+        rw [hEdef, ModularForm.qExpansion_mcast,
+          ModularForm.qExpansion_pow one_pos one_mem_strictPeriods_SL]
+      rw [h1, PowerSeries.coeff_zero_eq_constantCoeff, map_pow,
+        ← PowerSeries.coeff_zero_eq_constantCoeff,
+        EisensteinSeries.E_qExpansion_coeff_zero (k := 4) (by norm_num) ⟨2, rfl⟩, one_pow]
+    clear_value E
+    clear hEdef hEcoe
+    obtain ⟨c, hcdef⟩ : ∃ c : ℂ, (qExpansion 1 (⇑G : UpperHalfPlane → ℂ)).coeff 0 = c := ⟨_, rfl⟩
+    have hG'c : (qExpansion 1 (G - c • E)).coeff 0 = 0 := by
+      have h1 : qExpansion 1 (⇑G - c • ⇑E : UpperHalfPlane → ℂ)
+          = qExpansion 1 (⇑G : UpperHalfPlane → ℂ)
+            - qExpansion 1 (⇑(c • E) : UpperHalfPlane → ℂ) :=
+        ModularForm.qExpansion_sub one_pos one_mem_strictPeriods_SL G (c • E)
+      have h2 : qExpansion 1 (⇑(c • E) : UpperHalfPlane → ℂ)
+          = c • qExpansion 1 (⇑E : UpperHalfPlane → ℂ) :=
+        ModularForm.qExpansion_smul one_pos one_mem_strictPeriods_SL c E
+      rw [h1, h2, map_sub, PowerSeries.coeff_smul, hEc, hcdef, smul_eq_mul, mul_one, sub_self]
+    set G'' : ModularForm 𝒮ℒ (12 * (m : ℤ)) :=
+      ModularForm.mcast (by push_cast; ring)
+        (CuspForm.discriminantEquiv (ModularForm.toCuspForm (G - c • E) hG'c)) with hG''def
+    have key : ∀ z : UpperHalfPlane,
+        (F z - c * jInvariant z ^ (m + 1)) * ModularForm.discriminant z ^ m = G'' z := by
+      intro z
+      have hGz : G z = F z * ModularForm.discriminant z ^ (m + 1) := (hFG z).symm
+      have hjz : jInvariant z ^ (m + 1) * ModularForm.discriminant z ^ (m + 1)
+          = ModularForm.E₄ z ^ (3 * (m + 1)) := by
+        have hj : jInvariant z = ModularForm.E₄ z ^ 3 / ModularForm.discriminant z := rfl
+        rw [hj, div_pow, div_mul_cancel₀ _ (pow_ne_zero _ (hΔ z)), ← pow_mul]
+      have hG''z : G'' z = (G z - c * E z) / ModularForm.discriminant z := by
+        have h1 : G'' z
+            = (CuspForm.discriminantEquiv (ModularForm.toCuspForm (G - c • E) hG'c)) z := by
+          rw [hG''def, ModularForm.coe_mcast]
+        rw [h1, CuspForm.discriminantEquiv_apply, ModularForm.toCuspForm_apply]
+        rfl
+      rw [hG''z, hEval z, hGz, ← hjz, eq_div_iff (hΔ z)]
+      ring
+    obtain ⟨Q, hQ⟩ := ih (fun z => F z - c * jInvariant z ^ (m + 1)) G'' key
+    refine ⟨Q + Polynomial.C c * Polynomial.X ^ (m + 1), fun z => ?_⟩
+    have hz := hQ z
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
+      Polynomial.eval_pow, Polynomial.eval_X]
+    linear_combination hz
+
+/-- `j` is holomorphic on `ℍ` — PROVEN. `j = E₄³/Δ` with `Δ` nowhere zero. -/
+lemma jInvariant_mdiff : MDiff jInvariant := by
+  rw [UpperHalfPlane.mdifferentiable_iff]
+  have hE : DifferentiableOn ℂ
+      ((ModularForm.E₄ : UpperHalfPlane → ℂ) ∘ UpperHalfPlane.ofComplex) {z : ℂ | 0 < z.im} :=
+    UpperHalfPlane.mdifferentiable_iff.mp (ModularFormClass.holo ModularForm.E₄)
+  have hD : DifferentiableOn ℂ
+      ((ModularForm.discriminant : UpperHalfPlane → ℂ) ∘ UpperHalfPlane.ofComplex)
+      {z : ℂ | 0 < z.im} :=
+    UpperHalfPlane.mdifferentiable_iff.mp (CuspFormClass.holo CuspForm.discriminant)
+  exact (hE.pow 3).div hD
+    (fun z _ => ModularForm.discriminant_ne_zero (UpperHalfPlane.ofComplex z))
+
+/-- `z ↦ j((a z + b)/d)` is holomorphic on `ℍ` when `a, d > 0` — PROVEN.
+
+It has to go through `coe_triPoint` rather than through the definition of `triPoint`, which is
+TOTAL BY DESIGN with `z` itself as its junk value off the intended domain. -/
+lemma jInvariant_triPoint_mdiff {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) :
+    MDiff (fun z : UpperHalfPlane => jInvariant (triPoint z (a, b, d))) := by
+  have hj := UpperHalfPlane.mdifferentiable_iff.mp jInvariant_mdiff
+  rw [UpperHalfPlane.mdifferentiable_iff]
+  have hdC : (d : ℂ) ≠ 0 := Int.cast_ne_zero.mpr hd.ne'
+  have hmob : DifferentiableOn ℂ
+      (fun w : ℂ => ((a : ℂ) * w + (b : ℂ)) / (d : ℂ)) {z : ℂ | 0 < z.im} := by
+    fun_prop (disch := simp [hdC])
+  have hmaps : Set.MapsTo (fun w : ℂ => ((a : ℂ) * w + (b : ℂ)) / (d : ℂ))
+      {z : ℂ | 0 < z.im} {z : ℂ | 0 < z.im} := by
+    intro w hw
+    exact im_pos_tri ⟨w, hw⟩ ha hd
+  have hcomp := hj.comp hmob hmaps
+  refine hcomp.congr fun w hw => ?_
+  have hz : ((UpperHalfPlane.ofComplex w) : ℂ) = w :=
+    UpperHalfPlane.ofComplex_apply_of_im_pos hw ▸ rfl
+  have hcoe : ((triPoint (UpperHalfPlane.ofComplex w) (a, b, d) : UpperHalfPlane) : ℂ)
+      = ((a : ℂ) * w + (b : ℂ)) / (d : ℂ) := by
+    rw [coe_triPoint _ ha hd, hz]
+  simp only [Function.comp_apply]
+  congr 1
+  apply UpperHalfPlane.ext
+  rw [hcoe, UpperHalfPlane.ofComplex_apply_of_im_pos (hmaps hw)]
+
+/-- **Each coefficient of `∏_t (X − j(t·z))` is holomorphic in `z` — PROVEN**, by induction
+over the `Finset` through `Polynomial.coeff_mul`'s antidiagonal sum. -/
+lemma coeff_prod_mdiff :
+    ∀ (s : Finset (ℤ × ℤ × ℤ)), (∀ t ∈ s, 0 < t.1 ∧ 0 < t.2.2) → ∀ k : ℕ,
+      MDiff (fun z : UpperHalfPlane =>
+        ((∏ t ∈ s, (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :
+          Polynomial ℂ).coeff k : ℂ)) := by
+  classical
+  intro s
+  induction s using Finset.induction_on with
+  | empty =>
+    intro _ k
+    rw [UpperHalfPlane.mdifferentiable_iff]
+    simp only [Finset.prod_empty, Polynomial.coeff_one, Function.comp_def]
+    exact differentiableOn_const _
+  | insert a s ha ih =>
+    intro hs k
+    have hsa := hs a (Finset.mem_insert_self a s)
+    have hs' : ∀ t ∈ s, 0 < t.1 ∧ 0 < t.2.2 :=
+      fun t ht => hs t (Finset.mem_insert_of_mem ht)
+    have hu : MDiff (fun z : UpperHalfPlane => jInvariant (triPoint z a)) := by
+      obtain ⟨a1, a2, a3⟩ := a
+      exact jInvariant_triPoint_mdiff hsa.1 hsa.2
+    rw [UpperHalfPlane.mdifferentiable_iff] at hu ⊢
+    have key : ∀ z : UpperHalfPlane,
+        (∏ t ∈ insert a s, (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).coeff k
+          = ∑ x ∈ Finset.antidiagonal k,
+              ((Polynomial.X - Polynomial.C (jInvariant (triPoint z a))).coeff x.1)
+                * ((∏ t ∈ s,
+                    (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).coeff x.2) := by
+      intro z
+      rw [Finset.prod_insert ha, Polynomial.coeff_mul]
+    simp only [Function.comp_def, key]
+    refine DifferentiableOn.fun_sum fun x _ => ?_
+    have h2 := UpperHalfPlane.mdifferentiable_iff.mp (ih hs' x.2)
+    simp only [Function.comp_def] at h2
+    have h1 : DifferentiableOn ℂ
+        (fun w : ℂ => (Polynomial.X
+            - Polynomial.C (jInvariant (triPoint (UpperHalfPlane.ofComplex w) a))).coeff x.1)
+        {z : ℂ | 0 < z.im} := by
+      have hrw : (fun w : ℂ => (Polynomial.X
+            - Polynomial.C (jInvariant (triPoint (UpperHalfPlane.ofComplex w) a))).coeff x.1)
+          = fun w : ℂ => (if x.1 = 1 then (1 : ℂ) else 0)
+              - (if x.1 = 0 then jInvariant (triPoint (UpperHalfPlane.ofComplex w) a) else 0) := by
+        funext w
+        simp [Polynomial.coeff_sub, Polynomial.coeff_X, Polynomial.coeff_C, eq_comm]
+      rw [hrw]
+      by_cases h0 : x.1 = 0
+      · simp only [h0, if_neg (by norm_num : ¬ (0 : ℕ) = 1)]
+        exact (differentiableOn_const _).sub hu
+      · simp only [if_neg h0, sub_zero]
+        exact differentiableOn_const _
+    exact h1.mul h2
+
+/-- **`c_k · Δ^m` is slash-invariant of weight `12m` — PROVEN.** `Γ`-invariance of `c_k` is
+`hinv` plus one `congrArg (Polynomial.coeff · k)`, and `Δ(γ • z) = denom^12 · Δ(z)` is `Δ`'s own
+slash law, so the automorphy factors cancel exactly. -/
+lemma coeffDelta_slash {N : ℤ}
+    (hinv : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane),
+      ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t)))
+        = ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))))
+    (k m : ℕ) (γ : SL(2, ℤ)) :
+    ((fun z : UpperHalfPlane =>
+        ((∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k)
+          * ModularForm.discriminant z ^ m) ∣[(12 * (m : ℤ))] γ)
+      = fun z : UpperHalfPlane =>
+        ((∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k)
+          * ModularForm.discriminant z ^ m := by
+  funext z
+  have hmem : (Matrix.SpecialLinearGroup.mapGL ℝ γ) ∈ 𝒮ℒ := ⟨γ, rfl⟩
+  have hs : (Matrix.SpecialLinearGroup.mapGL ℝ γ) • z = γ • z := rfl
+  have hD := SlashInvariantForm.slash_action_eqn'' CuspForm.discriminant hmem z
+  rw [hs] at hD
+  have hdc : ⇑CuspForm.discriminant = ModularForm.discriminant := CuspForm.coe_discriminant
+  rw [hdc] at hD
+  have hc : ((∏ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t))) : Polynomial ℂ).coeff k)
+      = ((∏ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k) :=
+    congrArg (fun p : Polynomial ℂ => p.coeff k) (hinv γ z)
+  have hden : denom (Matrix.SpecialLinearGroup.mapGL ℝ γ) z ≠ 0 := denom_ne_zero _ z
+  have hbridge : denom (Matrix.SpecialLinearGroup.toGL
+      ((Matrix.SpecialLinearGroup.map (Int.castRingHom ℝ)) γ)) (z : ℂ)
+      = denom (Matrix.SpecialLinearGroup.mapGL ℝ γ) (z : ℂ) := rfl
+  rw [ModularForm.SL_slash_apply, hc, hD, mul_pow,
+    ← zpow_natCast (denom (Matrix.SpecialLinearGroup.mapGL ℝ γ) z ^ (12 : ℤ)) m, ← zpow_mul,
+    hbridge, zpow_neg]
+  have hDe : (denom (Matrix.SpecialLinearGroup.mapGL ℝ γ) (z : ℂ)) ^ ((m : ℤ) * 12) ≠ 0 :=
+    zpow_ne_zero _ hden
+  field_simp
+
+/-- **LEAF 3a-i″ — THE ANALYTIC PACKAGING: each coefficient of `∏_t (X − j(t·z))`, times a
+power of `Δ`, IS A MODULAR FORM.**
+
+For every `k` there are an `m` and a `G ∈ M_{12m}(SL₂(ℤ))` with
+`c_k(z)·Δ(z)^m = G(z)` for all `z ∈ ℍ`, where `c_k(z)` is the `k`-th coefficient of the product
+— up to sign, the `k`-th elementary symmetric function of the `ψ(N)` numbers `j((a z + b)/d)`.
+
+**RECUT 2026-07-31 (move 4: prove a bullet, hand it back).** This REPLACES the existence
+statement `∃ Ψ ∈ ℂ[Y][X]` that stood here for a few hours, which is now PROVEN just below from
+this leaf together with `exists_polynomial_eval_jInvariant_of_modularForm` above. One leaf for
+one leaf, the CONSUMER'S statement unchanged, so the faithfulness audit reproduced there
+survives — that is the point of this shape of recut, as against a restatement of the
+conclusion, which would void it.
+
+WHAT IS LEFT, and it is now purely analytic — no polynomials, no `j`-as-a-variable, no
+rigidity:
+
+* HOLOMORPHY of `z ↦ c_k(z)` on `ℍ`: a finite sum of products of `j ∘ triPoint`, so
+  composition and `Δ ≠ 0`;
+* `Γ`-INVARIANCE, which is `hinv` read coefficientwise, one
+  `congrArg (Polynomial.coeff · k)` away — this is where `hinv` is spent, and it is why `hinv`
+  stays on this leaf;
+* the POLE-ORDER BOUND at the cusp, which is the only genuinely new estimate. It may be crude,
+  since only SOME `m` is needed: `Im((a z + b)/d) = a·Im z/d`, so
+  `|j((a z + b)/d)| = O(|q|^{−a/d})` with `a/d ≤ N`, hence `c_k = O(|q|^{−kN})` and
+  `m = ψ(N)·N` serves every `k` at once. `k > ψ(N)` is trivial: `c_k = 0`, take `m = 0`,
+  `G = 0`.
+
+Then `c_k · Δ^m` is holomorphic, `SL₂(ℤ)`-slash-invariant of weight `12m` and bounded at the
+cusp — the `ModularForm` packaging pattern this file already contains twice (`wOctCubeForm`,
+`etaWeightFourForm`). Note that mathlib's `UpperHalfPlane.cuspFunction` / `qExpansion` /
+`analyticAt_cuspFunction_zero` / `qExpansion_coeff_unique` are stated for an ARBITRARY
+`f : ℍ → ℂ` under `Periodic (f ∘ ofComplex) h`, `MDiff f`, `IsBoundedAtImInfty f` — no
+`ModularFormClass` instance required — so they are usable on `c_k` before it is packaged.
+
+FALSITY AUDIT. TRUE: `c_k · Δ^m` is the classical modular form `E₄`-and-`Δ`-expression of the
+`k`-th coefficient of `Φ_N(X, j(z))`; existence of SOME `m` is all that is asked, and the crude
+bound above supplies one. NOT VACUOUS: the `k > ψ(N)` case is satisfiable outright, and at
+`k ≤ ψ(N)` the conclusion is a statement about a concrete function. `hinv` cannot make it false
+(a hypothesis only weakens), and `hN` IS NOT LOAD-BEARING — for `N ≤ 0` the product is `1`, so
+`c_0 = 1` and `c_k = 0` for `k > 0`, and `m = 0` with the constant form works. Refute by
+exhibiting an `N > 0`, a `k`, and a proof that `c_k·Δ^m` fails to be a modular form for every
+`m` — equivalently, that `c_k` has an essential singularity at the cusp.
+
+WHAT THIS HALF SHARES WITH ITS SIBLING `exists_intPolynomial_map_of_eq_prod`, stated so that
+nobody costs them as disjoint: BOTH need the `q`-expansion of `j` at a triangular point,
+`j((a z + b)/d) = ζ_d^{−b} q^{−a/d} + 744 + ⋯`. This half needs its POLE ORDER, the other its
+COEFFICIENT RING. That is the one common prerequisite, and it is the reason the two are natural
+to dispatch together even though neither uses the other's technique. -/
+theorem exists_isBoundedAtImInfty_coeff_prod {N : ℤ} (hN : 0 < N) (k : ℕ) :
+    ∃ m : ℕ, UpperHalfPlane.IsBoundedAtImInfty
+      (fun z : UpperHalfPlane =>
+        ((∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k)
+          * ModularForm.discriminant z ^ m) :=
+  sorry
+
+/-- **THE ANALYTIC PACKAGING — PROVEN (2026-07-31)** over `exists_isBoundedAtImInfty_coeff_prod`
+and the four lemmas above. Same statement it had as a leaf; only its proof moved.
+
+`holo'` is `coeff_prod_mdiff` times `Δ^m`; `slash_action_eq'` is `coeffDelta_slash`, which is
+where `hinv` is spent; and `bdd_at_cusps'` reduces every cusp to `i∞` by
+`OnePoint.isBoundedAt_iff_forall_SL2Z` precisely because the slash by any `γ` returns the same
+function — the `wOctCubeForm` pattern. So the ONLY analytic input left is the boundedness
+hypothesis, which is the leaf above. -/
+theorem exists_modularForm_coeff_prod_of_smul_invariant {N : ℤ} (hN : 0 < N)
+    (hinv : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane),
+      ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t)))
+        = ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))))
+    (k : ℕ) :
+    ∃ (m : ℕ) (G : ModularForm 𝒮ℒ (12 * (m : ℤ))),
+      ∀ z : UpperHalfPlane,
+        (∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).coeff k
+          * ModularForm.discriminant z ^ m = G z := by
+  obtain ⟨m, hm⟩ := exists_isBoundedAtImInfty_coeff_prod hN k
+  have hpos : ∀ t ∈ triangularReps N, 0 < t.1 ∧ 0 < t.2.2 := by
+    intro t ht
+    obtain ⟨a, b, d⟩ := t
+    obtain ⟨ha, hd, -⟩ := triangularReps_spec ht
+    exact ⟨ha, hd⟩
+  have hcf := coeff_prod_mdiff (triangularReps N) hpos k
+  have hmul : MDiff (fun z : UpperHalfPlane =>
+      ((∏ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k)
+        * ModularForm.discriminant z ^ m) := by
+    rw [UpperHalfPlane.mdifferentiable_iff] at hcf ⊢
+    have hD : DifferentiableOn ℂ
+        ((ModularForm.discriminant : UpperHalfPlane → ℂ) ∘ UpperHalfPlane.ofComplex)
+        {z : ℂ | 0 < z.im} :=
+      UpperHalfPlane.mdifferentiable_iff.mp (CuspFormClass.holo CuspForm.discriminant)
+    exact hcf.mul (hD.pow m)
+  refine ⟨m,
+    { toFun := fun z : UpperHalfPlane =>
+        ((∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k)
+          * ModularForm.discriminant z ^ m
+      slash_action_eq' := ?_
+      holo' := hmul
+      bdd_at_cusps' := ?_ }, fun z => rfl⟩
+  · intro A hA
+    obtain ⟨A, rfl⟩ := hA
+    exact coeffDelta_slash hinv k m A
+  · intro c hc
+    rw [Subgroup.IsArithmetic.isCusp_iff_isCusp_SL2Z] at hc
+    rw [OnePoint.isBoundedAt_iff_forall_SL2Z hc]
+    intro γ _
+    rw [coeffDelta_slash hinv k m γ]
+    exact hm
+
+/-- **THE COEFFICIENTS ARE POLYNOMIALS IN `j`, OVER `ℂ` — PROVEN (2026-07-31)** over
+`exists_modularForm_coeff_prod_of_smul_invariant` (`LEAF 3a-i″`, the analytic packaging) and
+`exists_polynomial_eval_jInvariant_of_modularForm` (the rigidity induction). One
+`Ψ ∈ ℂ[Y][X]` whose specialisation at `Y = j(z)` is the monic product
+`∏_{(a,b,d) ∈ triangularReps N} (X − j((a z + b)/d))`, for every `z ∈ ℍ` simultaneously,
+GIVEN that that product is `Γ`-invariant in `z`.
+
+**SPLIT 2026-07-31 out of `exists_intPolynomial_eq_prod_of_smul_invariant`** (`LEAF 3a-i′`),
+which is PROVEN from this together with `exists_intPolynomial_map_of_eq_prod` below. The
+split is the one that leaf's own docstring named as right and deferred "only because it costs
+a `Polynomial.map` composition glue that is worth writing once, carefully"; the glue is that
+`(evalRingHom (j z)).comp (mapRingHom (Int.castRingHom ℂ)) = eval₂RingHom (Int.castRingHom ℂ)
+(j z)`, one `RingHom.ext` over `Polynomial.eval_map`, and it is written out below.
+
+THE ASSEMBLY here is the other half of the bookkeeping the split cost: the rigidity theorem
+delivers one `P_k : ℂ[Y]` per coefficient, and they have to be packed into a single element of
+`ℂ[Y][X]`. `Ψ := ∑_{k ≤ ψ(N)} C (P_k) X^k` does it, with `Polynomial.natDegree_prod_le` plus
+`natDegree_X_sub_C_le` bounding the product's degree by `#(triangularReps N)` and
+`Polynomial.as_sum_range_C_mul_X_pow'` expanding it against that bound. `Polynomial.map` is
+coefficientwise, so the two sides match term by term.
+
+`hinv` IS SPENT IN THE LEAF ABOVE, not here, and is what the integrality sibling does NOT need
+— see the paragraph "`hinv` DOES NOT CROSS THE SPLIT" there. Adding it cannot make either
+statement false (the conclusion is a theorem outright, `Ψ` being the classical `Φ_N` pushed
+into `ℂ[Y][X]`), so it is a proof aid rather than a hypothesis the audit has to defend.
+
+MACHINE-CHECKED FAITHFULNESS OF THE CONCLUSION: identical to the sibling's, which is quoted
+in full on `exists_intPolynomial_eq_prod_of_smul_invariant` below — the product really is the
+classical `Φ_N(X, j(z))`, checked with `PARI/GP`'s `polmodular` at `N = 2, 3, 5`. -/
+theorem exists_complexPolynomial_eq_prod_of_smul_invariant {N : ℤ} (hN : 0 < N)
+    (hinv : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane),
+      ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t)))
+        = ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))) :
+    ∃ Ψ : Polynomial (Polynomial ℂ),
+      ∀ z : UpperHalfPlane,
+        Ψ.map (Polynomial.evalRingHom (jInvariant z))
+          = ∏ t ∈ triangularReps N,
+              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) := by
+  classical
+  have hP : ∀ k : ℕ, ∃ P : Polynomial ℂ, ∀ z : UpperHalfPlane,
+      (∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).coeff k
+        = P.eval (jInvariant z) := by
+    intro k
+    obtain ⟨m, G, hG⟩ := exists_modularForm_coeff_prod_of_smul_invariant hN hinv k
+    exact exists_polynomial_eval_jInvariant_of_modularForm m _ G hG
+  choose P hPspec using hP
+  refine ⟨∑ k ∈ Finset.range ((triangularReps N).card + 1),
+    Polynomial.C (P k) * Polynomial.X ^ k, fun z => ?_⟩
+  have hdeg : (∏ t ∈ triangularReps N,
+      (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).natDegree
+        < (triangularReps N).card + 1 := by
+    refine Nat.lt_succ_of_le (le_trans (Polynomial.natDegree_prod_le _ _) ?_)
+    have hle : ∀ t ∈ triangularReps N,
+        (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))).natDegree ≤ 1 :=
+      fun t _ => Polynomial.natDegree_X_sub_C_le _
+    refine le_trans (Finset.sum_le_sum hle) ?_
+    simp
+  rw [Polynomial.map_sum]
+  conv_rhs => rw [Polynomial.as_sum_range_C_mul_X_pow' _ hdeg]
+  refine Finset.sum_congr rfl (fun k _ => ?_)
+  rw [Polynomial.map_mul, Polynomial.map_C, Polynomial.map_pow, Polynomial.map_X]
+  congr 1
+  rw [hPspec k z]
+  rfl
+
+end ModularFunctionRigidity
+
+/-- **LEAF 3a-i‴ — THOSE POLYNOMIALS HAVE INTEGER COEFFICIENTS.** ANY `Ψ ∈ ℂ[Y][X]` satisfying
+the product formula is the image of a `Φ ∈ ℤ[Y][X]`.
+
+The second half of the split described on `exists_complexPolynomial_eq_prod_of_smul_invariant`
+above; together the two give `LEAF 3a-i′` back verbatim. This is Cox Theorem 11.18's
+integrality step: the `q`-expansions of the elementary symmetric functions lie in `ℤ[ζ_N]` and
+are `Gal(ℚ(ζ_N)/ℚ)`-stable, hence in `ℤ`, and the standard reduction algorithm against
+`j = q⁻¹ + 744 + ⋯` then keeps the polynomial's coefficients in `ℤ`.
+
+**WHY IT MAY BE STATED ABOUT AN ARBITRARY `Ψ`, WHICH IS WHAT MAKES THE SPLIT LEGITIMATE.** The
+product formula PINS `Ψ` DOWN uniquely, and this is the obligation that `CLAUDE.md`'s move-2
+rule attaches to splitting `∃ Ψ, P Ψ ∧ Q Ψ` into `∃ Ψ, P Ψ` and `∀ Ψ, P Ψ → Q Ψ`, so it is
+discharged here rather than left to the prover. Write `Ψ = Σ_k c_k(Y) X^k` with `c_k ∈ ℂ[Y]`;
+`Polynomial.map` is coefficientwise, so `hprod` says `c_k(j(z))` is the `k`-th coefficient of
+the product, for every `z ∈ ℍ`. If `Ψ₁` and `Ψ₂` both satisfy it then `c_k^{(1)} − c_k^{(2)}`
+vanishes at every value of `j`, and `j` is non-constant on `ℍ` (indeed surjective onto `ℂ`),
+so that difference has infinitely many roots and is `0`. Hence `Ψ₁ = Ψ₂`. This is the same
+argument the Kronecker leaf `isUnit_leadingCoeff_diag_of_eq_prod` below runs over `ℤ[Y][X]`,
+and it is what makes both of this file's "about ANY `Φ` satisfying `hprod`" statements honest.
+
+**`hinv` DOES NOT CROSS THE SPLIT, AND THAT IS NOT AN ACCIDENT.** One might expect the
+integrality half to need `Γ`-invariance too, to know that the `c_k` are power series in `q`
+rather than in `q^{1/N}` — that descent is where `Γ`-invariance is spent in the classical
+account. It is FREE here: `hprod` already exhibits `c_k∘j` as a POLYNOMIAL IN `j`, and
+`j(z + 1) = j(z)`, so `T`-invariance of the coefficient functions is a consequence of the
+hypothesis rather than an extra assumption. So the two halves really do have disjoint
+hypotheses, and this one is the arithmetic of `q`-expansions with nothing modular left in it
+beyond `j`'s own expansion.
+
+FALSITY AUDIT. NOT VACUOUS: `exists_complexPolynomial_eq_prod_of_smul_invariant` together with
+`prod_triangularReps_jInvariant_smul` produces a `Ψ` satisfying `hprod` for every `N > 0`, so
+the hypothesis is satisfiable exactly where it should be. TRUE: by the pinning paragraph the
+only such `Ψ` is the classical `Φ_N` mapped into `ℂ[Y][X]`, and `Φ_N ∈ ℤ[Y][X]`. `hN` IS NOT
+LOAD-BEARING and is carried to match the two siblings: for `N ≤ 0` the ambient box
+`Finset.Icc 1 N` is empty, so `triangularReps N = ∅`, `hprod` forces `Ψ = 1` by the same
+pinning argument, and `Φ = 1` works. Refute by exhibiting an `N` and a `Ψ` satisfying `hprod`
+with a coefficient outside `ℤ`. -/
+theorem exists_intPolynomial_map_of_eq_prod {N : ℤ} (hN : 0 < N)
+    (Ψ : Polynomial (Polynomial ℂ))
+    (hprod : ∀ z : UpperHalfPlane,
+      Ψ.map (Polynomial.evalRingHom (jInvariant z))
+        = ∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))) :
+    ∃ Φ : Polynomial (Polynomial ℤ),
+      Φ.map (Polynomial.mapRingHom (Int.castRingHom ℂ)) = Ψ :=
+  sorry
+
+/-- **LEAF 3a-i′ — THE CONSTRUCTION OF `Φ_N`, WITH `Γ`-INVARIANCE DISCHARGED. NO LONGER A
+LEAF: PROVEN 2026-07-31** over the two halves above, `exists_complexPolynomial_eq_prod_of_
+smul_invariant` (existence over `ℂ`) and `exists_intPolynomial_map_of_eq_prod` (integrality).
+One `Φ ∈ ℤ[Y][X]` whose specialisation at `Y = j(z)` is the monic product
+`∏_{(a,b,d) ∈ triangularReps N} (X − j((a z + b)/d))`, for every `z ∈ ℍ` simultaneously,
+GIVEN that that product is `Γ`-invariant in `z`.
+
+RECUT 2026-07-31 out of `exists_intPolynomial_eq_prod`, which is PROVEN from it: `hinv`
+is `prod_triangularReps_jInvariant_smul` above, proved unconditionally, so the old statement
+is recovered verbatim and nothing was weakened. That was one leaf replacing one leaf; what
+changed is that the GROUP THEORY went out of it and only the ANALYSIS was left. The split
+recorded above then divided that analysis in two.
+
+Adding a hypothesis cannot make a leaf false, so the earlier faithfulness audit of
+`exists_intPolynomial_eq_prod` (reproduced below, and still the audit of the CONCLUSION)
+survives this recut intact — which is the one thing the "a restated leaf voids its audit"
+rule of `CLAUDE.md` does not apply to.
+
+WHERE ITS THREE BULLETS WENT. The coefficients of the product are, for each fixed `z`, the
+elementary symmetric functions of the `ψ(N)` numbers `j((a z + b)/d)`, and three things had to
+be shown about them. None is open here any more:
+
+* ~~those functions of `z` are `Γ`-INVARIANT~~ — this is `hinv`, discharged for the consumer by
+  `prod_triangularReps_jInvariant_smul`; a coefficientwise form is one
+  `congrArg (Polynomial.coeff · k)` away;
+* ~~they are holomorphic on `ℍ` and meromorphic at the cusp, hence POLYNOMIALS IN `j`~~ — this
+  is `exists_complexPolynomial_eq_prod_of_smul_invariant`;
+* ~~those polynomials have INTEGER coefficients~~ — this is
+  `exists_intPolynomial_map_of_eq_prod`.
+
+The last two share no technique, which is why they were separated; the paragraph on the first
+of them records the one prerequisite they DO share (`j`'s expansion at a triangular point) so
+that nobody costs them as wholly disjoint.
+
+MACHINE-CHECKED FAITHFULNESS OF THE CONCLUSION, 2026-07-31, and this is a check of the PRODUCT
+IDENTITY itself rather than of its degrees — the earlier audit checked only degrees and leading
+coefficients. With `triangularReps N` transcribed LITERALLY from the definition above
+(`a, d ∈ [1, N]`, `b ∈ [0, N)`, `a d = N`, `b < d`, `gcd(a, gcd(b, d)) = 1`), `PARI/GP` at
+`z = 0.3 + 1.7i` and 50 digits gives
+
+  `∏_{t ∈ triangularReps N} (X − j(t·z))  =  polmodular(N)(X, j(z))`
+
+to a maximum relative coefficient discrepancy of `1.8·10⁻⁵⁷` at `N = 2`, `2.5·10⁻⁵⁷` at
+`N = 3` and `1.2·10⁻⁵⁶` at `N = 5`, with matching degrees `3, 4, 6`. Independently,
+`#(triangularReps N) = ψ(N)` for every `N ≤ 12`: `1, 3, 4, 6, 6, 12, 8, 12, 12, 18, 12, 24`.
+So the index set in the statement is the right one and the polynomial it produces is the
+classical `Φ_N` — refute by exhibiting an `N` and a `z` where the two disagree.
+
+`hN` IS NOT LOAD-BEARING and is carried only to match the consumer: for `N ≤ 0` the ambient
+box `Finset.Icc 1 N` is empty, so `triangularReps N = ∅`, the product is `1`, and `Φ = 1`
+works. It is kept because every classical source states the theorem for `N > 0` and because
+dropping it would invite a reader to think the empty case is the interesting one. -/
+theorem exists_intPolynomial_eq_prod_of_smul_invariant {N : ℤ} (hN : 0 < N)
+    (hinv : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane),
+      ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint (γ • z) t)))
+        = ∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))) :
+    ∃ Φ : Polynomial (Polynomial ℤ),
+      ∀ z : UpperHalfPlane,
+        Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
+          = ∏ t ∈ triangularReps N,
+              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) := by
+  obtain ⟨Ψ, hΨ⟩ := exists_complexPolynomial_eq_prod_of_smul_invariant hN hinv
+  obtain ⟨Φ, hΦ⟩ := exists_intPolynomial_map_of_eq_prod hN Ψ hΨ
+  refine ⟨Φ, fun z => ?_⟩
+  have hcomp : (Polynomial.evalRingHom (jInvariant z)).comp
+      (Polynomial.mapRingHom (Int.castRingHom ℂ))
+      = Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z) :=
+    RingHom.ext fun q => Polynomial.eval_map _ _
+  rw [← hΨ z, ← hΦ, Polynomial.map_map, hcomp]
+
+/-- **THE CONSTRUCTION OF `Φ_N` — PROVEN** over `LEAF 3a-i′` and
+`prod_triangularReps_jInvariant_smul`. Same statement it had as a leaf; only its proof moved.
+
+This is the first of the two halves that `exists_modularPolynomial_prod` was split into on
+2026-07-31; the second is `isUnit_leadingCoeff_diag_of_eq_prod` (Kronecker). Read the section
+note on `exists_modularPolynomial_prod` below for why the split is possible and what each half
+inherits. In one line: this half is Cox Theorem 11.18, the other is Cox Lemma 11.23, and
+neither uses the other's technique. -/
+theorem exists_intPolynomial_eq_prod {N : ℤ} (hN : 0 < N) :
+    ∃ Φ : Polynomial (Polynomial ℤ),
+      ∀ z : UpperHalfPlane,
+        Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
+          = ∏ t ∈ triangularReps N,
+              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :=
+  exists_intPolynomial_eq_prod_of_smul_invariant hN
+    (fun γ z => prod_triangularReps_jInvariant_smul hN γ z)
+
+/-- **LEAF 3a-ii — KRONECKER'S LEADING COEFFICIENT.** The diagonal `Φ_N(Y, Y) ∈ ℤ[Y]` of ANY
+`Φ` satisfying the product formula has leading coefficient `±1` when `N` is not a square.
+
+The second of the two halves `exists_modularPolynomial_prod` was split into on 2026-07-31.
+
+**WHY IT MAY BE STATED ABOUT AN ARBITRARY `Φ`, WHICH IS WHAT MAKES THE SPLIT POSSIBLE.** The
+product formula PINS `Φ` DOWN uniquely. Write `Φ = Σ_k c_k(Y) X^k` with `c_k ∈ ℤ[Y]`;
+`Polynomial.map` acts coefficientwise, so `hprod` says `c_k(j(z))` equals the `k`-th
+coefficient of the product for every `z ∈ ℍ`. If `Φ₁` and `Φ₂` both satisfy it then
+`c_k^{(1)} − c_k^{(2)}` vanishes at every value of `j`, and `j` is a non-constant holomorphic
+function on `ℍ` (indeed surjective onto `ℂ`), so that difference has infinitely many roots and
+is `0`. Hence `Φ₁ = Φ₂`, and "any `Φ` satisfying `hprod`" is "the `Φ`" — there is no hidden
+existential coupling the two halves.
+
+THE ARGUMENT, from the retracted-and-corrected account in the section note below. Write
+`q = e^{2πiz}`, `j = q⁻¹ + 744 + ⋯`. Evaluating the diagonal at `j(z)` gives
+`∏_t (j(z) − j(t·z))`, and the factor at `(a, b, d)` has leading `q`-power
+
+* `q⁻¹` with coefficient `1` when `a < d`;
+* `q^{−a/d}` with coefficient `−ζ_d^{−b}`, a root of unity, when `a > d`;
+* `q⁻¹` with coefficient `1 − ζ_a^{−b}` when `a = d`.
+
+`a = d` happens exactly when `N = a²` is a square, so for non-square `N` every factor
+contributes a root of unity, the product's leading coefficient is a root of unity lying in
+`ℤ`, and Kronecker gives `±1`.
+
+`hns : ¬ IsSquare N` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT, with the sharpest
+witness at `N = 1`: `triangularReps 1 = {(1, 0, 1)}`, so the product is `X − j(z)`, `Φ = X − Y`,
+`Φ(Y, Y) = 0` and its leading coefficient is `0`, not a unit. At `N = 4` and `N = 9` the
+diagonal is not zero but its leading coefficient is `−2` and `−3` respectively — the cyclotomic
+values `Φ_2(1) = 2`, `Φ_3(1) = 3` from the `a = d` factors — so the failure is not confined to
+the degenerate case. (Machine-checked, `PARI/GP`; see the section note below. Note also that
+`Φ_4(Y, Y)` is NOT identically zero, contrary to a claim retracted there: under the PRIMITIVE
+convention `d·I` has content `d` and is not a representative.)
+
+`hN` IS NOT LOAD-BEARING and is carried for uniformity with the sibling leaf: for `N < 0`,
+`triangularReps N = ∅`, `hprod` forces `Φ = 1`, the diagonal is `1` and its leading coefficient
+is a unit, so the conclusion holds anyway; and `N = 0` is a square, so `hns` is unsatisfiable
+there.
+
+MACHINE-CHECKED (`PARI/GP`, `polmodular` at prime level): `Φ_2(X, X)` has degree `4` and
+leading coefficient `−1`, `Φ_3` degree `6` and `−1`, `Φ_5` degree `10` and `−1`. Refute by
+exhibiting a non-square `N` whose diagonal has a non-unit leading coefficient. -/
+theorem isUnit_leadingCoeff_diag_of_eq_prod {N : ℤ} (hN : 0 < N) (hns : ¬ IsSquare N)
+    (Φ : Polynomial (Polynomial ℤ))
+    (hprod : ∀ z : UpperHalfPlane,
+      Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
+        = ∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))) :
+    IsUnit (Φ.eval Polynomial.X).leadingCoeff :=
+  sorry
+
 /-- **LEAF 3a — THE MODULAR POLYNOMIAL `Φ_N`, WITH KRONECKER'S LEADING COEFFICIENT.**
 
 For every `N > 0` there is a `Φ_N ∈ ℤ[Y][X]` such that
@@ -4237,6 +5384,15 @@ the cusp for a `Γ`-invariant holomorphic function that is not a modular form; m
 `Function.Periodic.qParam` / `cuspFunction` / `qExpansion` are the tools, and that is real work
 but bounded.
 
+**AND IT IS NOW WRITTEN OUT, step by step, on `exists_complexPolynomial_eq_prod_of_smul_invariant`
+above (2026-07-31).** Two things that paragraph did not know: no bespoke pole-order notion is
+needed — DEFINE "pole order `≤ m`" as "`F·Δ^m` extends to a `ModularForm 𝒮ℒ (12m)`", which is
+what the induction both consumes and produces — and `ModularForm.toCuspForm` plus
+`CuspForm.discriminantEquiv` supply the descent `m + 1 ↦ m` off the shelf. The `cuspFunction`
+and `qExpansion` API is moreover stated for an ARBITRARY `f : ℍ → ℂ` with
+`Periodic (f ∘ ofComplex) h`, `MDiff f`, `IsBoundedAtImInfty f`, so it does not need the
+function to be packaged as a modular form first.
+
 AND A SECOND ROUTE IS ALSO TOOLED, if the first is awkward.
 `Mathlib/NumberTheory/ModularForms/LevelOne/DimensionFormula.lean` — reachable from here
 already, since this file quotes `ModularForm.levelOne_weight_four_rank_one` out of it — supplies
@@ -4254,15 +5410,31 @@ coefficient. Those three are the leaf; step (iv) is not.
 WHAT THIS LEAF IS *NOT*. It needs no complex multiplication, no class field theory and no
 class-number hypothesis — integrality of `j` at CM points is prior to all of that, and holds
 at every imaginary quadratic point regardless of the class number. That is exactly why the
-CM content of this cluster sits in the class-field leaves and not here. -/
+CM content of this cluster sits in the class-field leaves and not here.
+
+**SPLIT 2026-07-31 INTO ITS TWO INDEPENDENT HALVES, WHICH ARE DIFFERENT MATHEMATICS.** This
+declaration is no longer a leaf: it is PROVEN in one line from `exists_intPolynomial_eq_prod`
+(the CONSTRUCTION of `Φ`) and `isUnit_leadingCoeff_diag_of_eq_prod` (KRONECKER's leading
+coefficient), stated and left open just below. The split is possible at all because the
+product formula PINS `Φ` DOWN — see the uniqueness argument in the second one's docstring —
+so Kronecker's clause can be stated about *any* `Φ` satisfying the first, with no existential
+tying the two together.
+
+Against the three-item "untooled" list above: the construction leaf inherits the
+representatives and the integrality of the coefficients (Cox Theorem 11.18); the Kronecker
+leaf inherits the leading coefficient (Cox Lemma 11.23) and, with it, the whole of the
+`¬ IsSquare N` hypothesis and the `q`-expansion analysis that hypothesis exists for. Neither
+half needs the other's technique, and the second may ASSUME `Φ` exists — which is most of what
+made the combined statement forbidding. -/
 theorem exists_modularPolynomial_prod {N : ℤ} (hN : 0 < N) :
     ∃ Φ : Polynomial (Polynomial ℤ),
       (¬ IsSquare N → IsUnit (Φ.eval Polynomial.X).leadingCoeff) ∧
       ∀ z : UpperHalfPlane,
         Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
           = ∏ t ∈ triangularReps N,
-              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) :=
-  sorry
+              (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) := by
+  obtain ⟨Φ, hprod⟩ := exists_intPolynomial_eq_prod hN
+  exact ⟨Φ, fun hns => isUnit_leadingCoeff_diag_of_eq_prod hN hns Φ hprod, hprod⟩
 
 /-- **The TRIANGULAR modular equation — PROVEN** over `exists_modularPolynomial_prod`.
 
@@ -4672,7 +5844,8 @@ lemma rat_of_quadratic_jInvariant_heegnerPoint (p : ℕ) (hp : 0 < p)
 /-! #### ROUTE SEARCHED AND CLOSED (2026-07-30): `deg α ≤ 3` does NOT reach `γ₂(τ₀) ∈ ℚ`
 
 Recorded because it is the first thing a successor will try — it would close BOTH leaves below
-at once, out of a leaf this file ALREADY has (`natDegree_minpoly_weberAlpha_le`), and it dies on
+at once, out of a statement this file ALREADY has (`natDegree_minpoly_weberAlpha_le`, a leaf
+when this note was written and now a theorem over `LEAF 1b`), and it dies on
 a fact stated 2000 lines above that nobody would think to connect to it.
 
 THE ROUTE. `γ₂(τ₀) ∈ ℚ(α)`, since `γ₂ = (α¹² − 16)/α⁴` by `weberAlpha_pow_four_cubic`; and
@@ -4710,39 +5883,285 @@ hence `⊇ ℚ(α⁴) = ℚ(α)` hence `∋ β/α = ζ₈`, so `ℚ(β) = ℚ(α
 step — the whole engine of the route — is gone, and `ℚ(β) ∩ ℝ` is then a real sextic field, not
 `ℚ`. -/
 
-/-- **LEAF 4b′ — `j(τ₀) ∈ ℚ`. THE FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION.**
+section HeegnerConjugates
 
-This replaces the `K`-valued `LEAF 4b` (see the section note: the two are equivalent, because
-`j(τ₀)` is real), and it is the ONLY leaf in this file that needs complex multiplication.
+open UpperHalfPlane MatrixGroups Matrix.SpecialLinearGroup
+
+/-! #### `LEAF 4b′` RECUT (2026-07-31) — the class-number hypothesis is spent HERE, not in the leaf
+
+`exists_rat_jInvariant_heegnerPoint` is no longer a leaf. It is PROVEN below from a single
+smaller statement, `exists_posDefForm_root_of_aeval_minpoly_jInvariant`, together with the
+elementary form/point dictionary developed in this section. What moved, and why the split is
+the right one:
+
+* the NEW leaf says only that every complex root of `minpoly ℚ (j(τ₀))` is `j(w)` for `w ∈ ℍ`
+  a root of SOME positive definite integral form of discriminant `−p`. That is the standard
+  statement "the conjugates of a CM `j`-value are the `j`-values of the other classes of the
+  same discriminant", i.e. the first main theorem of complex multiplication, and it carries
+  **no class-number hypothesis at all** — it is true for every `p ≡ 3 mod 4`, exactly as
+  `isIntegral_jInvariant_heegnerPoint` is;
+* `hcl` is spent entirely in the GLUE, where it collapses that set of forms to one class, and
+  the collapse is elementary: properly equivalent forms have `SL₂(ℤ)`-equivalent roots in `ℍ`
+  (`jInvariant_eq_of_act`), and `j` is `SL₂(ℤ)`-invariant (`jInvariant_smul`, already proven);
+* the step from "all conjugates coincide" to "`j(τ₀) ∈ ℚ`" is separability of the minimal
+  polynomial in characteristic zero, which is mathlib's (`Irreducible.separable`).
+
+WHAT THIS BUYS, against the old shape where the whole implication was one leaf. The old leaf's
+docstring said the next cut belonged at the modular polynomial `Φ_N` and that a refinement here
+"needs a `Finset` of form classes and a `form ↦ τ_f` map". That reading was right about the
+`Finset` and wrong about needing it: quantifying over the ROOTS OF THE MINIMAL POLYNOMIAL
+rather than over a `Finset` of classes avoids the class group entirely, and the `form ↦ τ_f`
+map is not needed either, because the leaf may hand back the point `w` alongside the form.
+Both halves of the old leaf's stated obstruction are therefore gone, and what is left is the
+theorem itself rather than the theorem plus its bookkeeping.
+
+WHAT IS NOT CLAIMED. This is a decomposition, not a proof: the CM content is untouched and
+sits in the one leaf below. The `Φ_N` route named in the old docstring is still the way to
+prove it, and `exists_modularPolynomial` (PROVEN above, over `exists_modularPolynomial_prod`)
+is still its main missing input. -/
+
+/-- **A positive definite integral binary quadratic form has AT MOST ONE root in `ℍ` — PROVEN.**
+
+`a x² + b x + c` has two complex roots, differing by conjugation about `−b/(2a)`; only one of
+them can have positive imaginary part. Formally: subtracting the two relations gives
+`(v − w)(a(v + w) + b) = 0`, and if `v ≠ w` then `a(v + w) + b = 0`, whose imaginary part is
+`a(Im v + Im w) = 0` — impossible with `a ≠ 0` and both imaginary parts positive.
+
+Only `a ≠ 0` is needed; neither positive definiteness nor a sign condition on the discriminant
+enters, and the roots are not assumed to come from the same form as anything else. -/
+theorem eq_of_quadratic_root {a b c : ℤ} (ha : a ≠ 0) {v w : UpperHalfPlane}
+    (hv : (a : ℂ) * (v : ℂ) ^ 2 + (b : ℂ) * (v : ℂ) + (c : ℂ) = 0)
+    (hw : (a : ℂ) * (w : ℂ) ^ 2 + (b : ℂ) * (w : ℂ) + (c : ℂ) = 0) :
+    v = w := by
+  by_contra hne
+  have hne' : (v : ℂ) - (w : ℂ) ≠ 0 := by
+    intro h
+    exact hne (UpperHalfPlane.coe_injective (by linear_combination h))
+  have hfac : ((v : ℂ) - (w : ℂ)) * ((a : ℂ) * ((v : ℂ) + (w : ℂ)) + (b : ℂ)) = 0 := by
+    linear_combination hv - hw
+  have hsum : (a : ℂ) * ((v : ℂ) + (w : ℂ)) + (b : ℂ) = 0 := by
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact absurd h hne'
+    · exact h
+  have him := congrArg Complex.im hsum
+  simp only [Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im,
+    Complex.zero_im] at him
+  have hvim : 0 < (v : ℂ).im := v.im_pos
+  have hwim : 0 < (w : ℂ).im := w.im_pos
+  have haR : (a : ℝ) ≠ 0 := Int.cast_ne_zero.mpr ha
+  have hz : (a : ℝ) * ((v : ℂ).im + (w : ℂ).im) = 0 := by
+    simpa [Complex.add_im] using him
+  rcases mul_eq_zero.mp hz with h | h
+  · exact haR h
+  · linarith
+
+/-- **PROPERLY EQUIVALENT FORMS HAVE THE SAME `j`-VALUE AT THEIR ROOTS IN `ℍ` — PROVEN.**
+
+This is the whole of the form/point dictionary that the `LEAF 4b′` glue needs, and it needs no
+`form ↦ τ_f` map: the two points are supplied by the caller as roots, and the conclusion is an
+equality of `j`-values rather than of points.
+
+THE MECHANISM. `g = f ∘ M` with `M = [[p,q],[r,s]] ∈ SL₂(ℤ)` means `g(x, y) = f(px+qy, rx+sy)`
+(`BinaryQuadraticForm.act`), so `g(x, 1) = (rx+s)² · f((px+q)/(rx+s), 1)`. Hence if `w ∈ ℍ`
+kills `g(·, 1)` then `M • w` kills `f(·, 1)`; it is again in `ℍ` because `M` is real with
+positive determinant; and `f(·, 1)` has at most one root there (`eq_of_quadratic_root`), so
+`v = M • w`. Then `j(v) = j(M • w) = j(w)` by `jInvariant_smul`.
+
+`f.a ≠ 0` IS LOAD-BEARING and is the only nondegeneracy assumed — without it `f(·, 1)` is
+linear or constant and the uniqueness step fails. Callers get it from `IsPosDef.a_pos`. Note
+the hypothesis is on `f` only: `g.a` may be anything, since `g` is only ever used through its
+own root. -/
+theorem jInvariant_eq_of_act {f g : BinaryQuadraticForm} {p q r s : ℤ}
+    (hdet : p * s - q * r = 1) (hact : f.act p q r s = g) (hfa : f.a ≠ 0)
+    {v w : UpperHalfPlane}
+    (hv : (f.a : ℂ) * (v : ℂ) ^ 2 + (f.b : ℂ) * (v : ℂ) + (f.c : ℂ) = 0)
+    (hw : (g.a : ℂ) * (w : ℂ) ^ 2 + (g.b : ℂ) * (w : ℂ) + (g.c : ℂ) = 0) :
+    jInvariant v = jInvariant w := by
+  subst hact
+  have hden : (r : ℂ) * (w : ℂ) + (s : ℂ) ≠ 0 := denom_ne_zero_of_det hdet w
+  let γ : SL(2, ℤ) := ⟨!![p, q; r, s], by
+    rw [Matrix.det_fin_two_of]; linear_combination hdet⟩
+  have hγ00 : γ 0 0 = p := rfl
+  have hγ01 : γ 0 1 = q := rfl
+  have hγ10 : γ 1 0 = r := rfl
+  have hγ11 : γ 1 1 = s := rfl
+  have hu : ((γ • w : UpperHalfPlane) : ℂ)
+      = ((p : ℂ) * (w : ℂ) + (q : ℂ)) / ((r : ℂ) * (w : ℂ) + (s : ℂ)) := by
+    rw [coe_specialLinearGroup_apply, hγ00, hγ01, hγ10, hγ11]
+    simp only [algebraMap_int_eq, eq_intCast, Complex.ofReal_intCast]
+  have hw' : (f.a : ℂ) * ((p : ℂ) * (w : ℂ) + (q : ℂ)) ^ 2
+      + (f.b : ℂ) * (((p : ℂ) * (w : ℂ) + (q : ℂ)) * ((r : ℂ) * (w : ℂ) + (s : ℂ)))
+      + (f.c : ℂ) * ((r : ℂ) * (w : ℂ) + (s : ℂ)) ^ 2 = 0 := by
+    simp only [BinaryQuadraticForm.act, BinaryQuadraticForm.eval] at hw
+    push_cast at hw
+    linear_combination hw
+  have hu' : ((γ • w : UpperHalfPlane) : ℂ) * ((r : ℂ) * (w : ℂ) + (s : ℂ))
+      = (p : ℂ) * (w : ℂ) + (q : ℂ) := by
+    rw [hu, div_mul_cancel₀ _ hden]
+  have hroot : (f.a : ℂ) * ((γ • w : UpperHalfPlane) : ℂ) ^ 2
+      + (f.b : ℂ) * ((γ • w : UpperHalfPlane) : ℂ) + (f.c : ℂ) = 0 := by
+    have hD2 : ((r : ℂ) * (w : ℂ) + (s : ℂ)) ^ 2 ≠ 0 := pow_ne_zero 2 hden
+    have hmul : ((f.a : ℂ) * ((γ • w : UpperHalfPlane) : ℂ) ^ 2
+        + (f.b : ℂ) * ((γ • w : UpperHalfPlane) : ℂ) + (f.c : ℂ))
+        * ((r : ℂ) * (w : ℂ) + (s : ℂ)) ^ 2 = 0 := by
+      linear_combination hw'
+        + ((f.a : ℂ) * (((γ • w : UpperHalfPlane) : ℂ) * ((r : ℂ) * (w : ℂ) + (s : ℂ))
+            + ((p : ℂ) * (w : ℂ) + (q : ℂ))) + (f.b : ℂ) * ((r : ℂ) * (w : ℂ) + (s : ℂ))) * hu'
+    rcases mul_eq_zero.mp hmul with h | h
+    · exact h
+    · exact absurd h hD2
+  have hvw : v = γ • w := eq_of_quadratic_root hfa hv hroot
+  rw [hvw, jInvariant_smul]
+
+/-- **The Heegner point is the root in `ℍ` of a positive definite form of discriminant `−p`
+— PROVEN.**
+
+The form is `f₀ = ⟨1, −3, (p+9)/4⟩`, the same one `isIntegral_jInvariant_heegnerPoint` uses:
+writing `p = 4k+3` its third coefficient is `k + 3`, its discriminant is
+`9 − 4(k+3) = −(4k+3) = −p`, and `a = 1 > 0` makes it positive definite (the discriminant is
+negative because `p > 0`). It is also primitive, `a` being `1`, though nothing below needs
+that.
+
+`p ≡ 3 mod 4` IS LOAD-BEARING and is exactly the condition for `−p` to BE a discriminant:
+`b² − 4ac ≡ b² ≡ 0, 1 (mod 4)` for every form, so for `p ≡ 1 mod 4` no form of discriminant
+`−p` exists at all. -/
+theorem exists_heegnerForm {p : ℕ} (hp : 0 < p) (hp4 : p % 4 = 3) :
+    ∃ f : BinaryQuadraticForm, f.IsPosDef ∧ f.discr = -(p : ℤ) ∧
+      (f.a : ℂ) * (heegnerPoint p hp : ℂ) ^ 2 + (f.b : ℂ) * (heegnerPoint p hp : ℂ)
+        + (f.c : ℂ) = 0 := by
+  obtain ⟨k, hk⟩ : ∃ k : ℕ, p = 4 * k + 3 := ⟨p / 4, by omega⟩
+  have hkZ : (p : ℤ) = 4 * (k : ℤ) + 3 := by
+    exact_mod_cast congrArg (fun n : ℕ => (n : ℤ)) hk
+  refine ⟨⟨1, -3, (k : ℤ) + 3⟩, ⟨by norm_num, ?_⟩, ?_, ?_⟩
+  · simp only [BinaryQuadraticForm.discr]
+    omega
+  · simp only [BinaryQuadraticForm.discr]
+    omega
+  · have hcoe : ((heegnerPoint p hp : UpperHalfPlane) : ℂ)
+        = (3 + Complex.I * (Real.sqrt p : ℂ)) / 2 := UpperHalfPlane.coe_mk _ _
+    have hs : ((Real.sqrt p : ℂ)) ^ 2 = (p : ℂ) := by
+      rw [← Complex.ofReal_pow, Real.sq_sqrt (by positivity)]
+      norm_num
+    have hI : (Complex.I) ^ 2 = -1 := Complex.I_sq
+    have hp' : (p : ℂ) = 4 * (k : ℂ) + 3 := by
+      exact_mod_cast congrArg (fun n : ℕ => (n : ℂ)) hk
+    rw [hcoe]
+    push_cast
+    linear_combination (((Real.sqrt p : ℂ)) ^ 2 / 4) * hI - (1 / 4) * hs - (1 / 4) * hp'
+
+/-- **LEAF 4b″ — THE CONJUGATES OF `j(τ₀)` ARE `j`-VALUES OF FORMS OF THE SAME DISCRIMINANT.
+THE FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION.**
+
+Every complex root `x` of `minpoly ℚ (j(τ₀))` is `j(w)` for some `w ∈ ℍ` killing some positive
+definite integral form of discriminant exactly `−p`. This is the ONLY leaf in this file that
+needs complex multiplication, and it replaces `exists_rat_jInvariant_heegnerPoint`, which is
+PROVEN from it just below.
+
+WHY IT IS TRUE. `j(τ₀)` is an algebraic integer (`isIntegral_jInvariant_heegnerPoint`, PROVEN
+above over the modular polynomial), and its minimal polynomial over `ℚ` is the class
+polynomial `H_{−p}(X) = ∏_{f ∈ Cl(−p)} (X − j(τ_f))`, which is irreducible over `ℚ` (Cox
+Theorem 11.1). Its roots are therefore exactly the `j(τ_f)` with `f` running over the classes
+of primitive positive definite forms of discriminant `−p`, and each such `f` with its root
+`τ_f ∈ ℍ` witnesses the conclusion. `τ₀` itself is the case `f = ⟨1, −3, (p+9)/4⟩`
+(`exists_heegnerForm`).
+
+WHAT IT WOULD TAKE, unchanged from the statement it replaces: complex multiplication and ring
+class fields are absent from mathlib at this pin, from `~/cs/FLT` and from this project. The
+route is Cox §11 through the modular polynomial `Φ_N`, whose existence is
+`exists_modularPolynomial` — PROVEN above, over the separate leaf
+`exists_modularPolynomial_prod`. So the two open CM leaves of this file are not independent:
+closing `exists_modularPolynomial_prod` is a prerequisite for the intended proof of this one.
+
+WHY THE EXISTENTIAL IS NOT WEAKENED BY DROPPING PRIMITIVITY. The conclusion asks only for
+SOME positive definite `f` of discriminant `−p`; imprimitive forms enlarge the target set and
+so make the statement easier, never harder. The direction that matters is the consumer's, and
+there `hcl` quantifies over the same enlarged set — see the note on `p = 27` below.
+
+FALSITY AUDIT (2026-07-31, run fresh against this statement, which was cut the same day).
+
+* NOT VACUOUS, and satisfiable without any class-number hypothesis. `x = j(τ₀)` is always a
+  root (`minpoly.aeval`), and `exists_heegnerForm` witnesses the conclusion for it. So the
+  statement has content at every `p ≡ 3 mod 4`, and in particular is NOT of the shape whose
+  hypotheses can go empty.
+* **THE ALGEBRAICITY OF `j(τ₀)` IS LOAD-BEARING AND IS INVISIBLE IN THE STATEMENT.** `minpoly ℚ x`
+  is `0` for a non-integral `x`, and `aeval x 0 = 0` holds for EVERY `x : ℂ`; so if `j(τ₀)` were
+  transcendental the hypothesis would be satisfied by every complex number while the conclusion
+  can hold for only countably many, and the leaf would be FALSE. What rescues it is
+  `isIntegral_jInvariant_heegnerPoint`, PROVEN above — note that this makes the leaf depend, for
+  its very TRUTH and not merely for its use, on the OTHER open leaf of this file
+  (`exists_modularPolynomial_prod`, through `exists_modularPolynomial`). A prover must not
+  "simplify" the hypothesis by dropping that dependence, and a reviewer must not read the two CM
+  leaves here as independent: `Φ_N` is upstream of this one in both senses.
+* `hp4` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT, by the same empty-family
+  mechanism the old `LEAF 4b′` audit identified — but running the OTHER WAY, which is worth
+  stating because it is the reverse of the trap. `discr f = b² − 4ac ≡ 0 or 1 (mod 4)`, so for
+  `p ≡ 1 mod 4` NO form of discriminant `−p` exists and the CONCLUSION is unsatisfiable, while
+  the hypothesis stays satisfiable (`x = j(τ₀)` is always a root). Witness: `p = 5`, where
+  `τ₀ = (3+√−5)/2` satisfies `2x² − 6x + 7 = 0`, a form of discriminant `−20`; `h(−20) = 2`, so
+  `minpoly ℚ (j(τ₀))` has degree `2` and roots exist, and no form of discriminant `−5` does.
+  Same at every `p ≡ 1 mod 4`.
+* `hp` (`0 < p`) is forced by the statement, which mentions `heegnerPoint p hp`.
+* NEITHER PRIMALITY NOR `p ≡ 3 mod 8` IS NEEDED, exactly as for
+  `isIntegral_jInvariant_heegnerPoint`: the class polynomial of ANY discriminant `−p ≡ 1 mod 4`
+  is irreducible with the stated roots, whatever the class number and whether or not `−p` is
+  fundamental. Checked at `p = 15` (`h(−15) = 2`, the two classes `⟨1,1,4⟩` and `⟨2,1,2⟩`,
+  `j` of the second being the conjugate of `j(τ₀)`) and at `p = 27` (non-fundamental,
+  `−27 = 3²·(−3)`, `h(−27) = 1`). The `p = 27` case is also where the imprimitive forms become
+  visible: `⟨3,3,3⟩` is positive definite of discriminant `−27` with `j = 0 ≠ j(τ₀)`, so at
+  that `p` the CONSUMER's `hcl` is false — which is correct, since `j(τ₀) = −12288000` there
+  and the consumer's conclusion happens to hold for an unrelated reason. At the five `p` where
+  `hcl` is satisfiable (`11, 19, 43, 67, 163`) `p` is prime and squarefree, so every form of
+  discriminant `−p` is primitive and `hcl` says exactly `h(−p) = 1`, as its own audit records.
+
+Refute this leaf by exhibiting a `p ≡ 3 mod 4` and a root of `minpoly ℚ (j(τ₀))` that is not
+`j` of any root of a positive definite integral form of discriminant `−p`. -/
+theorem exists_posDefForm_root_of_aeval_minpoly_jInvariant {p : ℕ} (hp : 0 < p) (hp4 : p % 4 = 3)
+    {x : ℂ}
+    (hx : (Polynomial.aeval x) (minpoly ℚ (jInvariant (heegnerPoint p hp))) = 0) :
+    ∃ (f : BinaryQuadraticForm) (w : UpperHalfPlane), f.IsPosDef ∧ f.discr = -(p : ℤ) ∧
+      (f.a : ℂ) * (w : ℂ) ^ 2 + (f.b : ℂ) * (w : ℂ) + (f.c : ℂ) = 0 ∧
+      x = jInvariant w :=
+  sorry
+
+end HeegnerConjugates
+
+/-- **LEAF 4b′ — `j(τ₀) ∈ ℚ`. NO LONGER A LEAF: PROVEN (2026-07-31) over `LEAF 4b″`**
+(`exists_posDefForm_root_of_aeval_minpoly_jInvariant`) and the form/point dictionary of the
+`HeegnerConjugates` section above.
+
+THE PROOF, in three steps, of which only the first is complex multiplication:
+
+1. every complex root of `minpoly ℚ (j(τ₀))` is `j(w)` for `w ∈ ℍ` a root of SOME positive
+   definite integral form of discriminant `−p` — that is `LEAF 4b″`, and it carries no
+   class-number hypothesis;
+2. `hcl` makes any such form properly equivalent to `f₀ = ⟨1, −3, (p+9)/4⟩`, whose root is
+   `τ₀` (`exists_heegnerForm`), and properly equivalent forms have equal `j` at their roots
+   (`jInvariant_eq_of_act`, PROVEN: the roots differ by the `SL₂(ℤ)` element itself, and `j`
+   is `SL₂(ℤ)`-invariant). So EVERY complex root of the minimal polynomial is `j(τ₀)`;
+3. hence `minpoly ℚ (j(τ₀))` maps to `(X − j(τ₀))^n` over `ℂ`; it is separable because it is
+   irreducible in characteristic zero (`Irreducible.separable`), hence squarefree, hence
+   `n = 1` — and a monic rational polynomial of degree `1` killing `j(τ₀)` exhibits it as a
+   rational number.
 
 `τ₀ = (3+√−p)/2 = 1 + (1+√−p)/2`, so `ℤ + ℤτ₀ = ℤ[(1+√−p)/2] = 𝒪_K`, the MAXIMAL order (here
-`p ≡ 3 mod 4` follows from `p ≡ 3 mod 8`). By the first main theorem of CM (Booher Theorem
-34/36; Cox §11) `K(j(𝒪_K))` is the Hilbert class field of `K` and `[K(j(𝒪_K)) : K] = h(−p)`.
-`hcl` says every positive definite form of discriminant `−p` is properly equivalent to every
-other, i.e. `h(−p) = 1`, so that field is `K` itself; with `j(τ₀)` real that gives `j(τ₀) ∈ ℚ`.
+`p ≡ 3 mod 4` follows from `p ≡ 3 mod 8`); the classical account is that by the first main
+theorem of CM (Booher Theorem 34/36; Cox §11) `K(j(𝒪_K))` is the Hilbert class field of `K`
+with `[K(j(𝒪_K)) : K] = h(−p)`, and `hcl` says `h(−p) = 1`. Step 1 above is exactly the part
+of that account which is not bookkeeping.
 
-WHAT IT WOULD TAKE. Complex multiplication, ring class fields and the Galois action
-`σ_𝔞(j(𝔟)) = j(𝔞𝔟)` are absent from mathlib at this pin, from `~/cs/FLT` and from this
-project. The route is Cox §11: the modular polynomial `Φ_N ∈ ℤ[X, Y]`, then that `Gal(ℚ̄/ℚ)`
-permutes the finite set `{j(τ_f) : f of discriminant −p}`, then `h = 1` makes that set a
-singleton, so `j(τ₀)` is fixed by every automorphism. Building `Φ_N` is the bulk of it and is a
-project in its own right; **that** is where the next cut belongs, not here.
+CHEAPER ALTERNATIVE STILL UNCOSTED, and it now applies to `LEAF 4b″` rather than to this
+statement: Stark's remark (quoted at the end of Booher) that "nothing more modern is required"
+— Weber's own computations replace the class field theory. Nobody in this development has
+costed that route.
 
-WHAT THE 2026-07-30 RECUT COSTED THE NEXT CUT: nothing was lost, and one thing was gained.
-`hcl` enters only through "`h(−p) = 1`", and this file already has the elementary theory of
-reduction of positive definite forms (`exists_reduced_equivalent`, `not_represents_one`,
-`Equivalent.represents`) — so the intermediate statement "all `j(τ_f)`, `f` of discriminant
-`−p`, coincide" is elementary GIVEN `SL₂(ℤ)`-invariance of `j`, which is in reach from
-mathlib (`E₄ : ModularForm 𝒮ℒ 4` and `Δ` as a weight-`12` cusp form, so the weight-`12`
-factors cancel in `E₄³/Δ`). The irreducible remainder is then exactly "the class polynomial
-has rational coefficients", which is the standard shape of the theorem and the right thing to
-vendor. That refinement is deliberately NOT done here: it needs a `Finset` of form classes and
-a `form ↦ τ_f` map, i.e. new infrastructure, and this leaf is already the honest residue.
+`h3` IS NOT USED by this proof and is underscored to make that mechanically visible; the
+signature is unchanged because callers pass it positionally. `p = 3` is in fact admissible:
+`h(−3) = 1`, `τ₀ = (3+√−3)/2 = ρ + 2` and `j(τ₀) = 0 ∈ ℚ`. What IS used is `hp8`, and only
+through `p % 4 = 3` — see the sharp form in the audit below.
 
-CHEAPER ALTERNATIVE STILL UNCOSTED: Stark's remark (quoted at the end of Booher) that
-"nothing more modern is required" — Weber's own computations replace the class field theory.
-Nobody in this development has costed that route; doing so is a legitimate outcome for whoever
-owns this leaf.
+The FALSITY AUDIT below was written for this statement when it was a leaf. It is retained
+verbatim because it audits the STATEMENT, which has not changed, and because its last
+paragraph is about the whole `hcl`-taking family rather than about this declaration.
 
 FALSITY AUDIT (2026-07-30, `flt-lean-185`, run FRESH against this statement — the leaf was cut
 the same day, so no earlier audit covers it). The statement is TRUE and NOT VACUOUS: `hcl` is
@@ -4773,11 +6192,58 @@ This applies verbatim to every `hcl`-taking declaration in this file
 the reason none is broken is `hp8`, not anything about class numbers, and a future weakening of
 that binder must not treat `hcl` as if it still said `h(−p) = 1`. -/
 theorem exists_rat_jInvariant_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
-    (h3 : 3 < p)
+    (_h3 : 3 < p)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
       f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
-    ∃ u : ℚ, (u : ℂ) = jInvariant (heegnerPoint p hp.pos) :=
-  sorry
+    ∃ u : ℚ, (u : ℂ) = jInvariant (heegnerPoint p hp.pos) := by
+  have hp4 : p % 4 = 3 := by omega
+  obtain ⟨f₀, hf₀pd, hf₀d, hf₀root⟩ := exists_heegnerForm hp.pos hp4
+  set c : ℂ := jInvariant (heegnerPoint p hp.pos) with hcdef
+  have hint : IsIntegral ℚ c := (isIntegral_jInvariant_heegnerPoint hp.pos hp4).tower_top
+  set qp : Polynomial ℚ := minpoly ℚ c with hqpdef
+  have hmonic : qp.Monic := minpoly.monic hint
+  have hn : 0 < qp.natDegree := minpoly.natDegree_pos hint
+  set Q : Polynomial ℂ := qp.map (algebraMap ℚ ℂ) with hQdef
+  have hQmonic : Q.Monic := hmonic.map _
+  have hQdeg : Q.natDegree = qp.natDegree := hmonic.natDegree_map _
+  have hsplits : Q.Splits := IsAlgClosed.splits Q
+  have hcard : Q.roots.card = qp.natDegree := by
+    rw [← hQdeg]; exact Polynomial.splits_iff_card_roots.mp hsplits
+  -- every complex root of the minimal polynomial is `c` itself
+  have hroots : ∀ y ∈ Q.roots, y = c := by
+    intro y hy
+    have hy0 : Polynomial.aeval y qp = 0 := by
+      have h1 : Q.eval y = 0 := Polynomial.isRoot_of_mem_roots hy
+      rwa [hQdef, Polynomial.eval_map, ← Polynomial.aeval_def] at h1
+    obtain ⟨f, w, hfpd, hfd, hfroot, hyw⟩ :=
+      exists_posDefForm_root_of_aeval_minpoly_jInvariant hp.pos hp4 hy0
+    obtain ⟨P, R, S, T, hdet, hact⟩ := hcl f f₀ hfpd hf₀pd hfd hf₀d
+    rw [hyw, hcdef]
+    exact jInvariant_eq_of_act hdet hact (ne_of_gt hfpd.a_pos) hfroot hf₀root
+  -- hence `Q = (X − C c) ^ n`
+  have hrepl : Q.roots = Multiset.replicate qp.natDegree c :=
+    Multiset.eq_replicate.mpr ⟨hcard, hroots⟩
+  have hQeq : Q = (Polynomial.X - Polynomial.C c) ^ qp.natDegree := by
+    rw [hsplits.eq_prod_roots_of_monic hQmonic, hrepl, Multiset.map_replicate,
+      Multiset.prod_replicate]
+  -- the minimal polynomial is separable in characteristic zero, so `n = 1`
+  have hsq : Squarefree Q := ((minpoly.irreducible hint).separable.map).squarefree
+  have hdeg1 : qp.natDegree = 1 := by
+    by_contra hne
+    have h2 : 2 ≤ qp.natDegree := by omega
+    have hdvd : (Polynomial.X - Polynomial.C c) * (Polynomial.X - Polynomial.C c) ∣ Q := by
+      rw [hQeq, ← sq]
+      exact pow_dvd_pow _ h2
+    exact Polynomial.not_isUnit_X_sub_C c (hsq _ hdvd)
+  -- a monic rational polynomial of degree one killing `c` exhibits `c` as a rational
+  have hX : qp = Polynomial.X + Polynomial.C (qp.coeff 0) := hmonic.eq_X_add_C hdeg1
+  refine ⟨-(qp.coeff 0), ?_⟩
+  have haev : Polynomial.aeval c qp = 0 := minpoly.aeval ℚ c
+  rw [hX] at haev
+  simp only [map_add, Polynomial.aeval_X, Polynomial.aeval_C] at haev
+  push_cast
+  rw [eq_comm, ← sub_eq_zero]
+  simpa [algebraMap] using haev
 
 /-- **LEAF 4b — `j(τ₀) ∈ K = ℚ(√−p)`. NOW PROVEN**, from `LEAF 4b′` (`j(τ₀) ∈ ℚ`) by taking
 the `√−p` coefficient to be `0`. The `K` was always dressing — see the section note. -/
@@ -5247,13 +6713,14 @@ theorem intCast_indep_weberAlpha_pow_four {p : ℕ} (hp : p.Prime) (hp8 : p % 8 
   refine intCast_indep_of_cubic hle hcub u v w ?_
   linear_combination h
 
-/-- **`α` HAS DEGREE EXACTLY `3` — PROVEN (2026-07-30), over the strictly weaker leaf
-`natDegree_minpoly_weberAlpha_le`.**
+/-- **`α` HAS DEGREE EXACTLY `3` — PROVEN (2026-07-30), over the strictly weaker
+`natDegree_minpoly_weberAlpha_le`** (itself no longer a leaf since 2026-07-31).
 
 This was `LEAF 1b`, stated as an equality. Only the `≤ 3` half is complex multiplication: the
 `≥ 3` half is `three_le_natDegree_minpoly_of_intCast_indep` applied to the independence result
-just above, which is itself proven from `γ₂(τ₀) ≤ −16`. So the CM content is now isolated in
-`natDegree_minpoly_weberAlpha_le`, and this equality is bookkeeping.
+just above, which is itself proven from `γ₂(τ₀) ≤ −16`. So the CM content is isolated in
+`natDegree_minpoly_weberAlpha_le` — and, since that was recut, in
+`exists_ratPoly_weberAlpha_pow_four`; this equality is bookkeeping.
 
 Kept as an equality, under its original name, because `exists_intCubic_weberAlpha` and several
 docstrings refer to it and because `exists_intCubic_of_natDegree_minpoly` wants the exact
