@@ -4233,6 +4233,52 @@ Corollary for the recutting agent: **say "RECUT, count unchanged" in the commit 
 body.** A warning-set delta of `−1 +1` is indistinguishable from one closure plus one unrelated
 disclosure, and the honest reading is the one that has to be written down.
 
+## TWO LEAVES CAN CITE THE SAME THEOREM WITH NO NAME, STATEMENT OR TYPE IN COMMON
+
+(2026-07-31, `X0.lean`, found while working `exists_dedekind_rigidifiedModuli`.) A leaf stated
+at a **base variable** and a leaf stated at a **specific base** can carry the identical piece of
+mathematics while sharing nothing a checker compares. `isAffine_rigidifiedModuliSchemeData_of_isUnit`
+asks for Katz–Mazur (8.1.1) over any `R` with `n`, `N` invertible; `exists_dedekind_rigidifiedModuli`
+asked for it again at `R = ℚ`, along with (4.7.2), (5.1.1)+(6.6.1) and (6.6.2) — all four of which
+the base-general family already owed. Different names, different statements, different types, one
+`Nonempty`/one `∃`. `dupstmt`, `xdup`'s qualified pass and `dedup_cross` all pass; a frontier scan
+counts two honest leaves; `own.py` and `leafstat.py` both say "open and unowned", which is true and
+useless. **Closing either one would have left the other open with nothing left to prove** — the
+`Chebotarev.lean` failure mode, but manufactured inside a single file by two correct cuts made a
+day apart.
+
+**The signal that did exist, and it is the only one: the docstring named a route the BODY did not
+take.** `exists_isAffine_rigidifiedModuliScheme`'s docstring said "PROVEN over the base-general
+citation leaf `exists_rigidifiedModuliSchemeData_of_isUnit` above" while its body went through the
+fused `ℚ` leaf instead — a fusion made the next day rewired the proof and left the paragraph. That
+is the same shape as `parent-docstring-vs-proof-body-names-duplicate`, and it generalises:
+
+> **When a declaration's docstring names its route, `grep` the route's name in the PROOF BODY.**
+> A route claimed and not taken means some other declaration is now carrying that content, and the
+> two are invisible to each other.
+
+Two corroborating cheap checks, both of which fired here and neither of which is in any script:
+
+* **A PROVEN theorem with no consumer is evidence of a duplicate, not just of floating code.**
+  `exists_rigidifiedModuliSchemeData_of_isUnit` had been proven for a day with zero uses. The
+  free-floating rule would eventually have deleted it; the right reading was that its consumer
+  had been re-routed through a rival cut.
+* **A section comment that states an intention is a claim to verify.** The base-general family's
+  own header said it had been hoisted "thereby to subsume the `ℚ` leaf as well as the `𝔽_ℓ` one".
+  Nobody had checked whether the subsumption was actually taken, and it was not.
+
+**The repair shape, when you find one: a HYPOTHESIS, not a deletion.** Add the duplicated content
+to the redundant leaf as a hypothesis (`hne : Nonempty …`) and discharge it at the call site from
+the surviving leaf. The leaf keeps its name, its signature is only weakened, every consumer keeps
+compiling, and the frontier count does not move while the citation strictly shrinks. `X0.lean`
+already had the pattern in its `𝔽_ℓ` twin (`exists_isAffine_rigidifiedModuliScheme_specF`), whose
+docstring explains exactly why: stating the `∃` unconditionally "would ALSO assert representability
+and would therefore subsume" the representability leaf. Adding a hypothesis cannot make a true
+leaf false, so the audit for such a re-cut is short — but CLAUDE.md still requires it to be
+WRITTEN, against the composite, because the earlier audit's reasons may no longer hold. Here
+`hn : 3 ≤ n` was demoted from load-bearing-for-truth to load-bearing-for-the-citation (under the
+new hypothesis the `n ≤ 2` case is vacuous rather than false) while `hN : 0 < N` survived intact.
+
 ## A TARGET THAT IS NOT IN THE FILE: check the worktree pointer BEFORE concluding anything
 
 (2026-07-31, `flt-lean-360`.) The task prompt named a leaf at
