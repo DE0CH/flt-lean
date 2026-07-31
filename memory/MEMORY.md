@@ -69,3 +69,4 @@
 - [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
 
 - [Hoist vs concurrent proof](flt-hoist-vs-concurrent-proof.md) — relocating a leaf and proving it in place merge into a duplicate declaration; keep the hoisted location, move the proof
+- [Structure axiom discharges its converse](flt-structure-axiom-discharges-its-converse.md) — a route that demands something "on the nose" may be asking for what a structure FIELD already asserts; then only the up-to-a-factor existence statement is owed (this closed GeomPic.below_surjective)
