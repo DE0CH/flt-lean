@@ -6,6 +6,7 @@ Authors: Edison Xie, Yaël Dillies, Kevin Buzzard, Salvatore Mercuri, Pietro Mon
 module
 
 public import Mathlib.Topology.CompactOpen
+public import Fermat.FLT.Mathlib.Topology.Constructions
 
 /-!
 # Joint continuity of pairing into a product, and slicewise continuity over a discrete factor
@@ -72,13 +73,3 @@ lemma ContinuousMap.continuous_prodMk {α β δ : Type*} [TopologicalSpace α] [
   obtain ⟨x, hxs, hzC⟩ := mem_iUnion₂.1 hzK
   exact hsubU x (hsK (hsfin.mem_toFinset.1 hxs)) ⟨(hp x hxs).1 hzC, (hp x hxs).2 hzC⟩
 
-open Topology in
-/-- A map on `X × D` with `D` discrete is continuous as soon as all its slices `x ↦ g (x, d)`
-are continuous. -/
-lemma continuous_of_discreteTopology_snd {X D Y : Type*} [TopologicalSpace X]
-    [TopologicalSpace D] [DiscreteTopology D] [TopologicalSpace Y] {g : X × D → Y}
-    (hg : ∀ d, Continuous fun x ↦ g (x, d)) : Continuous g := by
-  simp_rw [continuous_iff_continuousAt, ContinuousAt]
-  rintro ⟨x, d⟩
-  rw [nhds_prod_eq, nhds_discrete D, Filter.prod_pure]
-  exact Filter.tendsto_map'_iff.mp ((hg d).tendsto x)
