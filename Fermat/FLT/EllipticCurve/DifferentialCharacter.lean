@@ -1896,9 +1896,123 @@ theorem charTwo_rootMultiplicity_T_even [IsAlgClosed F] {W W' : Affine F} [W'.Is
     charTwo_AS_rootMultiplicity hCx hSb hN₁0 hlt
   exact Nat.even_iff.mpr (by omega)
 
-/-- **THE ONE OPEN LEAF OF THIS FILE (2026-07-31): THE CHARACTERISTIC-`2` HALF of
-`exists_diffCharScalar_polyData`, with `E` and `Cx` already eliminated from the
-conclusion.**  Everything else in this file is PROVEN; this is what is left.
+omit [DecidableEq F] in
+/-- **In characteristic `2` the derivative of a SQUARE vanishes**, `(w²)′ = 2ww′ = 0`. -/
+theorem charTwo_derivative_sq (h2 : (2 : F) = 0) (w : F[X]) :
+    derivative (w ^ 2) = 0 := by
+  have h2p : (2 : F[X]) = 0 := by
+    have h : (C (2 : F) : F[X]) = 0 := by rw [h2, map_zero]
+    rwa [map_ofNat] at h
+  rw [show w ^ 2 = w * w from sq w, derivative_mul]
+  linear_combination (derivative w * w) * h2p
+
+omit [DecidableEq F] in
+/-- **THE PARITY LEVER.**  In characteristic `2`, an EVEN power that divides `p` divides
+`p′` as well: writing `q^{2m}·v = (q^m)²·v`, the Leibniz term `((q^m)²)′·v` vanishes by
+`charTwo_derivative_sq`.
+
+This is what pays for the `−1` in `rootMultiplicity_le_wronskianPoly_left`/`_right`: at a
+place where the relevant multiplicity is EVEN those two lemmas improve from
+`ord_b G ≤ ord_b(A′B − AB′) + 1` to `ord_b G ≤ ord_b(A′B − AB′)`, which is exactly the
+inequality the characteristic-`2` count needs and cannot get otherwise. -/
+theorem charTwo_even_pow_dvd_derivative {p q : F[X]} {k : ℕ} (h2 : (2 : F) = 0)
+    (hk : Even k) (hd : q ^ k ∣ p) : q ^ k ∣ derivative p := by
+  obtain ⟨v, rfl⟩ := hd
+  obtain ⟨m, hm⟩ := hk
+  subst hm
+  rw [show q ^ (m + m) = (q ^ m) ^ 2 by ring, derivative_mul,
+    charTwo_derivative_sq h2 (q ^ m), zero_mul, zero_add]
+  exact dvd_mul_right _ _
+
+/-- **THE ONE OPEN LEAF OF THIS FILE (2026-07-31, RECUT): the characteristic-`2` count at
+a SUPERSINGULAR TARGET, `W'.a₁ = 0`.**
+
+`exists_wronskianPoly_scalar_charTwo_coprime` below is now PROVEN over this, and this is
+all that is left of it.  In characteristic `2` an elliptic curve has `a₁ = 0` exactly when
+it is supersingular (`j = 0`), and `lineOfDiff_ne_zero_of_charTwo` then forces `a₃′ ≠ 0`,
+so the hypothesis `ha₁'` says `T := a₁′A + a₃′B` degenerates to `a₃′·B` and the conclusion
+degenerates to `P·S = c·a₃′·B²`, i.e. `u′·S = c·a₃′` for `u = A/B` — "the invariant
+derivation `D = S·d/dX` sends `u` to a CONSTANT".
+
+**WHY THIS CASE AND NO OTHER.**  When `a₁′ ≠ 0` one has `T = a₁′·(A − r′B)` with
+`r′ = a₃′/a₁′`, so `T` is a Wronskian-companion of `B` — `wronskianPoly_sub` says the pair
+`(A − r′B, B)` has the SAME Wronskian `P` as `(A, B)` — and the two crude bounds
+`rootMultiplicity_le_wronskianPoly_left/_right`, sharpened by `charTwo_even_pow_dvd_derivative`
+at the places where `hparB`/`hparT` supply an even multiplicity, give
+`ord_b T + ord_b B ≤ ord_b P + ord_b S` at every `b`, and `deg P + 1 ≤ deg T + deg B` at
+`∞`.  Every step of that is in the proof below.
+
+When `a₁′ = 0` the companion collapses: `T = a₃′B`, so the requirement at a pole of `u`
+(`m := ord_b B > 0`) is the DOUBLED `2m ≤ ord_b P + ord_b S`, and neither crude bound nor
+the parity lever reaches it — they give `m ≤ ord_b P` and stop.  The same doubling happens
+at `∞` when `deg A > deg B`.
+
+**THE ROUTE (worked out 2026-07-31; valuations, not yet Lean).**  Put `γ = Cx/E`,
+`δ = D/E`, `u = A/B`, `g(t) = t³ + a₂′t² + a₄′t + a₆′`, `f = X³ + a₂X² + a₄X + a₆`.  With
+`a₁′ = 0`, cancelling `B` from `hone` gives `Cx·S = a₃′·E`, i.e.
+
+    γ = a₃′/S,
+
+and `hcurve` divided by `B³E²` becomes the ARTIN–SCHREIER equation
+
+    δ² + a₃′·δ = g(u) + (a₃′/S)²·f.                                        (♦)
+
+Differentiating (♦) — in characteristic `2` both squares differentiate to `0`, and
+`((a₃′/S)²)′ = 0` for the same reason — gives, with `f′ = X² + a₄`,
+
+    a₃′·δ′ = (u² + a₄′)·u′ + (a₃′/S)²·(X² + a₄).                           (♣)
+
+Now fix `b` with `m := ord_b B > 0` and `S(b) ≠ 0`; `hparB` gives `m` EVEN, and `hcop`
+gives `ord_b u = −m` exactly.  Then:
+
+* `ord_b g(u) = −3m` and `ord_b((a₃′/S)²f) ≥ 0`, so the right side of (♦) has order
+  `−3m < 0`; on the left `ord_b(a₃′δ) = ord_b δ > 2·ord_b δ = ord_b(δ²)` once `ord_b δ < 0`,
+  so the ultrametric case split forces `2·ord_b δ = −3m`, i.e. **`ord_b δ = −3m/2`** (this
+  is `charTwo_AS_rootMultiplicity`, the same lemma `charTwo_rootMultiplicity_B_even` above
+  already uses, and it is where `m` even is spent a second time);
+* `ord_b δ′ ≥ ord_b δ − 1 = −3m/2 − 1`, and the last term of (♣) has order `≥ 0`, so
+  `ord_b((u² + a₄′)·u′) ≥ −3m/2 − 1`;
+* `ord_b(u² + a₄′) = −2m` exactly, whence `ord_b u′ ≥ 2m − 3m/2 − 1 = m/2 − 1 ≥ 0`,
+  the last step because `m` is even and positive, so `m ≥ 2`.
+
+Since `u′ = P/B²`, that is `ord_b P ≥ 2m + m/2 − 1 ≥ 2m`, which is the missing inequality.
+The place `∞` runs identically with `deg A > deg B` in place of `ord_b B > 0`.
+
+**WHAT MUST BE DONE IN LEAN, and it is bookkeeping rather than new mathematics.**  (♦) and
+(♣) have to be cleared of denominators before they can be stated: (♦) is `hcurve` with
+`Cx·S = a₃′E` substituted, and (♣) is its formal derivative, so both are polynomial
+identities in `A, B, D, E, S` obtainable by `linear_combination` from `hcurve`, the
+cancelled `hone`, and their derivatives.  The three valuation steps are then
+`rootMultiplicity` arithmetic of exactly the kind `charTwo_rootMultiplicity_B_even` above
+performs, with `rootMultiplicity_add_of_lt` for the ultrametric case splits.
+
+**THE REMAINING PLACE `S(b) = 0`** (only possible when `a₁ ≠ 0`) needs `B(b) ≠ 0`: there
+`hparB` gives nothing, and the crude bound `m ≤ ord_b P + 1` is short of `2m ≤ ord_b P + 1`
+for every `m ≥ 1`.  It is the point where `W → ℙ¹` is ramified, and `γ = a₃′/S` has a pole
+there, so `hone` forces `ord_b Cx < ord_b E`; the same (♦)/(♣) analysis applies with
+`ord_b S = 1` carried through.  A prover should do the two together.
+
+**THE CHECK THAT WOULD REFUTE IT** is unchanged from the parent: a morphism of elliptic
+curves over `F̄₂` with `a₁′ = 0` whose pullback of `ω′` is not a constant multiple of `ω`.
+The obvious candidate does not work: `x = X³`, `γ = 1` on `y² + y = x³` satisfies
+`Ψ_{W′}(x) = γ²Ψ_W` with `x′ = X²` not constant, and `hcurve` kills it because it would
+need `δ² + δ = X⁹ + X³`, which has no polynomial solution (the degree would be `9/2`). -/
+theorem exists_wronskianPoly_scalar_charTwo_supersingular [IsAlgClosed F]
+    [W.IsElliptic] [W'.IsElliptic]
+    {A B Cx D E : F[X]} (h2 : (2 : F) = 0) (hB : B ≠ 0) (hE : E ≠ 0) (hCx : Cx ≠ 0)
+    (hcop : IsCoprime A B) (ha₁' : W'.a₁ = 0)
+    (hone : E * (C W'.a₁ * A + C W'.a₃ * B) = Cx * B * (C W.a₁ * X + C W.a₃))
+    (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
+        + Cx * D * (C W.a₁ * X + C W.a₃))
+      = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3))
+    (hparB : ∀ b : F, (C W.a₁ * X + C W.a₃).eval b ≠ 0 → Even (B.rootMultiplicity b)) :
+    ∃ c : F, (derivative A * B - A * derivative B) * (C W.a₁ * X + C W.a₃)
+      = C c * (C W'.a₁ * A + C W'.a₃ * B) * B :=
+  sorry
+
+/-- **PROVEN 2026-07-31 over `exists_wronskianPoly_scalar_charTwo_supersingular`: THE
+CHARACTERISTIC-`2` HALF of `exists_diffCharScalar_polyData`**, with `E` and `Cx` already
+eliminated from the conclusion.
 
 Writing `S = C a₁·X + C a₃` (nonzero, `lineOfDiff_ne_zero_of_charTwo`) and
 `T = C a₁′·A + C a₃′·B`, the two hypotheses are `hone` and `hcurve` in the shape they
@@ -1922,7 +2036,8 @@ a SQUARE and `4 = 0`, so the cubic degenerates and the identity becomes
 degeneracy the parent's char-`2` remark records, and it is why `hcurve` is the load-bearing
 hypothesis here and `D` may not be thrown away.
 
-**HOW FAR THE COUNT GETS** (worked out 2026-07-31).
+**HOW THE COUNT RUNS, and where it stops** (worked out 2026-07-31, and the whole of it is
+below except the one case that is now `exists_wronskianPoly_scalar_charTwo_supersingular`).
 `T = a₁′(A − r′B)` (`r′ = a₃′/a₁′`) is one of the parent's `Gᵢ`, so
 `ord_b T ≤ ord_b(A′B − AB′) + 1` and `ord_b B ≤ ord_b(A′B − AB′) + 1` are the SAME two
 lemmas `rootMultiplicity_le_wronskianPoly_left`/`_right` above, and the inequality the
@@ -1946,28 +2061,35 @@ directly for the pole, and after translating `δ` by the `2`-torsion ordinate `c
 fibre over `r′`.  The ellipticity of `W′` enters exactly once, as
 `charTwo_twoTorsion_partialX_ne_zero`.
 
-**WHAT IS LEFT, and it is now purely the count** (no curve, no `Cx`, no `D`, no `E`):
+**THE COUNT, IN THE FORM IT IS CARRIED OUT BELOW** (no curve, no `Cx`, no `D`, no `E` —
+`hone` and `hcurve` are not used at all once `a₁′ ≠ 0`, and are forwarded untouched to the
+supersingular leaf):
 
-* *divisibility* — at every `b`, `ord_b T + ord_b B ≤ ord_b(A′B − AB′) + ord_b S`.  With
-  `A`, `B` coprime the three cases are: `B(b) ≠ 0` and `T(b) ≠ 0` (nothing to prove);
-  `B(b) ≠ 0`, `k = ord_b T > 0`, where `hparT` gives `k` even so `(t^k v)′ = t^k v′` and
-  `ord_b(A′B − AB′) ≥ k` by `wronskianPoly_sub` plus
-  `rootMultiplicity_le_wronskianPoly_left`; and `B(b) = 0`, `m = ord_b B > 0`, where
-  `hparB` gives `m` even and `rootMultiplicity_le_wronskianPoly_right` closes it — EXCEPT
-  when `a₁′ = 0`, where `T = a₃′B` and the requirement is the stronger
-  `ord_b(A′B − AB′) ≥ 2m`.  That last sub-case is the one place a derivative identity is
-  still needed: differentiating `hcurve` and eliminating `γ′` with the derivative of `hone`
-  gives the clean relation
-
-      `γ²f′ + γδ′S = (u² + a₄′ + a₁′δ)·u′`,   `u = A/B`,   `u′ = (A′B − AB′)/B²`
-
-  (the two `γδa₁` terms cancel in characteristic `2`), and at a pole with `a₁′ = 0` one has
-  `ord_b δ = −3m/2` from the parity argument, `ord_b(u² + a₄′) = −2m` exactly, and
-  `ord_b δ′ ≥ ord_b δ − 1`, which forces `ord_b u′ ≥ m/2 − 1 ≥ 0`.
-* *degrees* — `deg(A′B − AB′) + deg S ≤ deg T + deg B`, the same three cases read at `∞`.
+* *divisibility* — at every `b`, `ord_b T + ord_b B ≤ ord_b P + ord_b S`, where
+  `P = A′B − AB′`.  Since `a₁′ ≠ 0`, `T = a₁′·G` with `G = A − r′B`, and `wronskianPoly_sub`
+  says `(G, B)` has the same Wronskian `P` as `(A, B)`.  Two cases at each `b`:
+  - `S(b) = 0` (at most one place, and only when `a₁ ≠ 0`): then `ord_b S ≥ 1` pays for the
+    `+1` in the crude bounds directly — `rootMultiplicity_le_wronskianPoly_left` on `(G, B)`
+    when `B(b) ≠ 0`, and `rootMultiplicity_le_wronskianPoly_right` when `B(b) = 0` (where
+    coprimality makes `G(b) = A(b) ≠ 0`, so `ord_b T = 0`).
+  - `S(b) ≠ 0`: then `hparB`/`hparT` apply and `charTwo_even_pow_dvd_derivative` upgrades
+    the crude bound to the sharp one.  When `B(b) ≠ 0` it is `ord_b G` that is even, and
+    `(X − b)^{ord_b G}` divides both `G` and `G′`, hence `P = G′B − GB′`.  When `B(b) = 0`
+    it is `ord_b B` that is even, `ord_b G = 0` by coprimality, and `(X − b)^{ord_b B}`
+    divides both `B` and `B′`, hence `P = A′B − AB′`.
+* *degrees* — `deg P + deg S ≤ deg T + deg B` is FREE: `natDegree_wronskianPoly_succ_le` on
+  `(G, B)` gives `deg P + 1 ≤ deg G + deg B = deg T + deg B`, and `deg S ≤ 1`.
 
 Then `PS = c·TB` follows exactly as in `exists_wronskianPoly_scalar_coprime`'s assembly:
-a divisor of no larger degree is a constant multiple.
+a divisor of no larger degree is a constant multiple.  (The scalar picked up here is
+`c/a₁′`, since the divisor produced is `G·B` and not `T·B`.)
+
+**WHERE `a₁′ = 0` BREAKS IT, in one line**: `T` degenerates to `a₃′·B`, so at a pole of
+`A/B` the requirement `ord_b T + ord_b B ≤ ord_b P` DOUBLES to `2·ord_b B ≤ ord_b P`, and
+the parity lever gives only `ord_b B ≤ ord_b P`.  The same doubling happens at `∞` when
+`deg A > deg B`.  That case, and only that case, is
+`exists_wronskianPoly_scalar_charTwo_supersingular` above, whose docstring carries the
+Artin–Schreier route that closes it.
 
 **THE CHECK THAT WOULD REFUTE IT** must exhibit `D`.  The obvious candidate does not:
 `x = X³`, `γ = 1` on the supersingular `y² + y = x³` over `F̄₂` satisfies
@@ -1985,8 +2107,132 @@ theorem exists_wronskianPoly_scalar_charTwo_coprime [IsAlgClosed F] [W.IsEllipti
     (hparT : ∀ b : F, (C W.a₁ * X + C W.a₃).eval b ≠ 0 →
       Even ((C W'.a₁ * A + C W'.a₃ * B).rootMultiplicity b)) :
     ∃ c : F, (derivative A * B - A * derivative B) * (C W.a₁ * X + C W.a₃)
-      = C c * (C W'.a₁ * A + C W'.a₃ * B) * B :=
-  sorry
+      = C c * (C W'.a₁ * A + C W'.a₃ * B) * B := by
+  classical
+  by_cases ha₁' : W'.a₁ = 0
+  · exact exists_wronskianPoly_scalar_charTwo_supersingular h2 hB hE hCx hcop ha₁' hone
+      hcurve hparB
+  have h2p : (2 : F[X]) = 0 := by
+    have h : (C (2 : F) : F[X]) = 0 := by rw [h2, map_zero]
+    rwa [map_ofNat] at h
+  set S : F[X] := C W.a₁ * X + C W.a₃ with hSdef
+  set T : F[X] := C W'.a₁ * A + C W'.a₃ * B with hTdef
+  set P : F[X] := derivative A * B - A * derivative B with hPdef
+  by_cases hP : P = 0
+  · exact ⟨0, by rw [hP, zero_mul, map_zero, zero_mul, zero_mul]⟩
+  have hS : S ≠ 0 := lineOfDiff_ne_zero_of_charTwo (W := W) h2
+  -- `T = a₁′·G` with `G = A − r′B`, and `(G, B)` has the same Wronskian `P` as `(A, B)`.
+  set r' : F := W'.a₃ / W'.a₁ with hr'def
+  set G : F[X] := A - C r' * B with hGdef
+  have hmul : W'.a₁ * r' = W'.a₃ := by rw [hr'def]; field_simp
+  have hcc : (C W'.a₁ : F[X]) * C r' = C W'.a₃ := by rw [← C_mul, hmul]
+  have hTG : T = C W'.a₁ * G := by
+    rw [hTdef, hGdef]
+    linear_combination B * hcc + (C W'.a₃ * B) * h2p
+  have hWG : derivative G * B - G * derivative B = P := by
+    rw [hGdef, hPdef]; exact wronskianPoly_sub A B r'
+  have hG0 : G ≠ 0 := by
+    intro h
+    apply hP
+    rw [← hWG, h]
+    simp
+  -- `B(b) = 0` forces `A(b) ≠ 0` by coprimality, hence `G(b) = A(b) ≠ 0`.
+  have hGzero : ∀ b : F, B.rootMultiplicity b ≠ 0 → G.rootMultiplicity b = 0 := by
+    intro b hm
+    have hBb : B.IsRoot b := (rootMultiplicity_pos hB).mp (Nat.pos_of_ne_zero hm)
+    have hAb : ¬ A.IsRoot b := by
+      obtain ⟨p, q, hpq⟩ := hcop
+      intro h
+      have hev := congrArg (Polynomial.eval b) hpq
+      simp only [eval_add, eval_mul, eval_one] at hev
+      rw [IsRoot] at h hBb
+      rw [h, hBb, mul_zero, mul_zero, add_zero] at hev
+      exact zero_ne_one hev
+    apply rootMultiplicity_eq_zero
+    rw [hGdef]
+    simp only [IsRoot, eval_sub, eval_mul, eval_C]
+    rw [IsRoot] at hBb
+    rw [hBb, mul_zero, sub_zero]
+    exact hAb
+  ---------------------------------------------------------------------------
+  -- STEP 1 : divisibility, place by place
+  ---------------------------------------------------------------------------
+  have hdvd : G * B ∣ P * S := by
+    have hsp : (G * B).Splits := IsAlgClosed.splits _
+    refine (hsp.dvd_iff_roots_le_roots (mul_ne_zero hG0 hB) (mul_ne_zero hP hS)).mpr ?_
+    rw [Multiset.le_iff_count]
+    intro b
+    rw [count_roots, count_roots, rootMultiplicity_mul (mul_ne_zero hG0 hB),
+      rootMultiplicity_mul (mul_ne_zero hP hS)]
+    by_cases hSb : S.eval b = 0
+    · -- at the root of `S` the crude `+1` bounds suffice
+      have hSm : 1 ≤ S.rootMultiplicity b := (rootMultiplicity_pos hS).mpr hSb
+      by_cases hm : B.rootMultiplicity b = 0
+      · have hb := rootMultiplicity_le_wronskianPoly_left (A := G) (B := B) (b := b)
+          (by rw [hWG]; exact hP)
+        rw [hWG] at hb
+        omega
+      · have hGm := hGzero b hm
+        have hb := rootMultiplicity_le_wronskianPoly_right (A := A) (B := B) (b := b)
+          (by rw [← hPdef]; exact hP)
+        rw [← hPdef] at hb
+        omega
+    · -- off the root of `S` the parities pay for the `+1`
+      have hBeven : Even (B.rootMultiplicity b) := hparB b hSb
+      have hTeven : Even (T.rootMultiplicity b) := hparT b hSb
+      have hTGm : T.rootMultiplicity b = G.rootMultiplicity b := by
+        rw [hTG, rootMultiplicity_mul (mul_ne_zero (C_ne_zero.mpr ha₁') hG0),
+          rootMultiplicity_C]
+        omega
+      by_cases hm : B.rootMultiplicity b = 0
+      · have hGeven : Even (G.rootMultiplicity b) := hTGm ▸ hTeven
+        have hd1 : (X - C b) ^ (G.rootMultiplicity b) ∣ G := pow_rootMultiplicity_dvd G b
+        have hd2 : (X - C b) ^ (G.rootMultiplicity b) ∣ derivative G :=
+          charTwo_even_pow_dvd_derivative h2 hGeven hd1
+        have hd3 : (X - C b) ^ (G.rootMultiplicity b) ∣ P := by
+          rw [← hWG]; exact dvd_sub (hd2.mul_right _) (hd1.mul_right _)
+        have := (le_rootMultiplicity_iff hP).2 hd3
+        omega
+      · have hGm := hGzero b hm
+        have hd1 : (X - C b) ^ (B.rootMultiplicity b) ∣ B := pow_rootMultiplicity_dvd B b
+        have hd2 : (X - C b) ^ (B.rootMultiplicity b) ∣ derivative B :=
+          charTwo_even_pow_dvd_derivative h2 hBeven hd1
+        have hd3 : (X - C b) ^ (B.rootMultiplicity b) ∣ P := by
+          rw [hPdef]; exact dvd_sub (hd1.mul_left _) (hd2.mul_left _)
+        have := (le_rootMultiplicity_iff hP).2 hd3
+        omega
+  ---------------------------------------------------------------------------
+  -- STEP 2 : the degree bound — free, `deg S ≤ 1`
+  ---------------------------------------------------------------------------
+  have hSdeg : S.natDegree ≤ 1 := by
+    rw [hSdef]
+    refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+    · exact natDegree_mul_le.trans (by simp)
+    · simp
+  have hdeg : (P * S).natDegree ≤ (G * B).natDegree := by
+    rw [natDegree_mul hP hS, natDegree_mul hG0 hB]
+    have h1 : P.natDegree + 1 ≤ G.natDegree + B.natDegree := by
+      have hh := natDegree_wronskianPoly_succ_le (A := G) (B := B) (by rw [hWG]; exact hP)
+      rwa [hWG] at hh
+    omega
+  ---------------------------------------------------------------------------
+  -- ASSEMBLY : a divisor of no larger degree is a constant multiple
+  ---------------------------------------------------------------------------
+  obtain ⟨u, hu⟩ := hdvd
+  have hu0 : u ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at hu
+    exact (mul_ne_zero hP hS) hu
+  have hdu : u.natDegree = 0 := by
+    have hnd := natDegree_mul (mul_ne_zero hG0 hB) hu0
+    rw [← hu] at hnd
+    omega
+  obtain ⟨c, hc⟩ : ∃ c : F, u = C c := ⟨u.coeff 0, eq_C_of_natDegree_eq_zero hdu⟩
+  refine ⟨c / W'.a₁, ?_⟩
+  have hcc2 : (C (c / W'.a₁) : F[X]) * C W'.a₁ = C c := by
+    rw [← C_mul, div_mul_cancel₀ _ ha₁']
+  rw [hu, hc, hTG, ← hcc2]
+  ring
 
 /-- **The characteristic-`2` count, with its two parity inputs DISCHARGED (2026-07-31).**
 
