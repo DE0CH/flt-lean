@@ -347,6 +347,12 @@ public import Fermat.FLT.FreyCurve.TateNormalForm
 -- content and live outside this file so that `ModularCurve/X1.lean` can reuse them
 -- verbatim.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.NeronModel
+-- `FormalImmersion.eq_of_formalImmersion_subringRat`: the CLASSICAL formal-immersion
+-- principle over `ℤ_(q)`, with no modular content whatever.  It is what PROVES
+-- `eq_of_formalImmersionAt` below; it lives outside this file because it mentions
+-- nothing of this development beyond `Subring ℚ` and `ZMod q`, and because
+-- `ModularCurve/X1.lean` will want it verbatim.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.FormalImmersion
 -- Gauss's theory of integral binary quadratic forms — reduction theory and
 -- Rabinowitsch's criterion — carrying `mazurIsogeny_rabinowitsch_bound` down
 -- to the single deep input `neg_163_le_of_classNumberOne` (class number one).
@@ -2322,9 +2328,48 @@ theorem exists_eisensteinQuotientCert_of_jNeronDatum (N q : ℕ)
 
 /-- **THE FORMAL-IMMERSION PRINCIPLE: a morphism of `ℤ_(q)`-schemes that is
 injective on `𝔽_q`-tangent vectors at a point of the special fibre is
-injective on the `ℤ_(q)`-points reducing to that point** (sorry leaf, new
-2026-07-30) — the general principle, with `N`, the modular curve, the
-Eisenstein ideal and the cusp all removed.
+injective on the `ℤ_(q)`-points reducing to that point** (was a sorry leaf
+when opened 2026-07-30; **PROVEN 2026-07-31** over
+`Fermat.FormalImmersion.eq_of_formalImmersion_subringRat`) — the general
+principle, with `N`, the modular curve, the Eisenstein ideal and the cusp
+all removed.
+
+**`_hsm` AND `_abZ` ARE BOTH UNUSED BY THE PROOF, and that is not an
+accident — see below.**  They are kept in the signature only so that the
+call site in `formalImmersion_of_cuspFormalImmersionCert` does not change;
+a successor who wants the sharp statement should delete them and drop the
+two arguments there.
+
+**THE ROUTE TAKEN IS NOT THE ONE THE AUDIT BELOW PRESCRIBES, and the
+difference is exactly the two hypotheses.**  The audit's route — dualise
+tangent injectivity to cotangent surjectivity, apply Nakayama to the
+COMPLETED local rings, then compare on the residue disc — needs
+`𝒪_{XZ,c̄}` noetherian (whence `_hsm`) and `𝒪_{AZ,ā}` noetherian (whence
+`_abZ`, the "honest wart" the audit names).  It is correct, and it is
+more expensive than necessary.  What was formalised instead is the
+`q`-adic induction, which completes nothing:
+
+* a section `Spec ℤ_(q) ⟶ XZ` whose closed point lands at `c̄` IS a local
+  homomorphism `φ : 𝒪_{XZ,c̄} → ℤ_(q)`, by mathlib's
+  `AlgebraicGeometry.SpecToEquivOfLocalRing`; and precomposition with
+  `Spec.map` of a local ring map is postcomposition on that side, so every
+  hypothesis and the conclusion become statements about ring maps out of
+  the ONE stalk `𝒪_{XZ,c̄}`;
+* if `φ ≡ ψ (mod qⁿ)` then `D := (φ − ψ)/qⁿ` is an honest `ψ`-derivation
+  `𝒪_{XZ,c̄} → ℤ_(q)`, because `φa·φb − ψa·ψb = φa(φb − ψb) + (φa − ψa)ψb`
+  is an EXACT identity in `ℤ_(q)`, needing no truncation;
+* `toF ∘ D` is then an `𝔽_q`-valued derivation, i.e. an `𝔽_q[ε]`-point of
+  `XZ` over `ℤ_(q)` restricting to `c̄`, and it has the same image under
+  `fmor` as the ZERO derivation, because `φ` and `ψ` already agree on the
+  image of `𝒪_{AZ,ā}` (that is `_himg`);
+* `_htan` kills it, so `q ∣ D`, i.e. `φ ≡ ψ (mod q^{n+1})`;
+* `⋂ₙ qⁿ ℤ_(q) = 0` finishes.
+
+No duality (so no finite-dimensionality), no Nakayama (so no
+noetherianity), no completion.  `IsReductionBase`'s two axioms alone give
+everything the base has to supply, including `q` PRIME and `𝔪_R = qR`;
+those are proven in the new module from the axioms rather than imported
+from `X0.lean`, so the module has no project dependency at all.
 
 This is the cut that the docstring of
 `formalImmersion_of_cuspFormalImmersionCert` (immediately below) has
@@ -2426,8 +2471,13 @@ theorem eq_of_formalImmersionAt {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod 
     (_hred : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) x
       = RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) c)
     (_himg : RelPoint.post fmor hfmor x = RelPoint.post fmor hfmor c) :
-    x = c :=
-  sorry
+    x = c := by
+  refine Subtype.ext (FormalImmersion.eq_of_formalImmersion_subringRat
+    (xstr := xstr) (fmor := fmor) (c := c.1) (x := x.1)
+    _hbase.surjective _hbase.ker_eq_nonunits c.2 x.2 (fun v w hv hw hv' hw' hvw => ?_)
+    (congrArg Subtype.val _hred) (congrArg Subtype.val _himg))
+  exact congrArg Subtype.val
+    (_htan ⟨v, hv⟩ ⟨w, hw⟩ (Subtype.ext hv') (Subtype.ext hw') (Subtype.ext hvw))
 
 /-- **A formal immersion at a point of the special fibre is injective on
 that point's residue disc** (was a sorry node when opened 2026-07-28;
