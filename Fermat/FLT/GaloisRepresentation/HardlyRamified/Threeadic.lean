@@ -2416,7 +2416,40 @@ The hypothesis `_hσ` is unused by this assembly: everything the
 inertia-membership of `σ` contributes enters through `hconn`, which is
 its consequence. It is retained in the signature because it is what
 makes the third bullet TRUE — a caller instantiating `σ` outside inertia
-could not supply `hconn`. -/
+could not supply `hconn`.
+
+**RE-CUT INDEPENDENTLY VERIFIED, 2026-07-31** (second agent, on a tree
+freshly merged with `main` so the check is not a stale-checkout echo of
+the first — CLAUDE.md warns that agents confirming from a shared defect
+are one observation, not several). Four things were checked mechanically
+rather than taken from the commit message:
+
+* the parent's two direct sorries were attributed to their enclosing
+  declarations and are EXACTLY the two deleted targets
+  (`eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion`, the
+  FALSE one, and `exists_uniform_pow_localInertia_smul_connected_of_`
+  `threeTorsion_uniform`); this file now has one, here, so the ledger
+  `2 → 1` is exact and the survivor is the vouched one;
+* all `35` deleted names, grepped comment-stripped across `Fermat/`,
+  have ZERO term-level references anywhere; the only survivors are the
+  two prose citations named above;
+* the deleted range is plain `theorem`s ONLY — every apparent
+  `instance`/`structure`/`class`/`namespace` in the diff is line-wrapped
+  docstring prose, so none of the elaboration-invisible dependency
+  classes of CLAUDE.md was cut;
+* `lake build` of this module AND of all three genuine importers
+  (`HardlyRamified.Lift`, `Modularity.KhareWintenberger`,
+  `Modularity.Interface` — the other six grep hits are prose, not
+  `import` lines) is green on `forge`: `EXIT=0`, `5615` jobs, zero
+  errors, and this file contributes exactly one `declaration uses`
+  `` `sorry` `` warning, matching the single comment-stripped `sorry`
+  token. One warning, one token — so no anonymous inner sorries hide
+  behind it.
+
+Also confirmed for whoever proves this: `HopfAlgebra/Diagonalizable.lean`
+imports mathlib ONLY, so the `public import` the paragraph above
+prescribes wires the multiplicative-type layer in with no project edge
+and no cycle. -/
 theorem exists_connectedEtale_line_of_hopf_package
     {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
