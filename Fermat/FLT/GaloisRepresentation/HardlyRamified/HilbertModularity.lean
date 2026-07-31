@@ -20128,11 +20128,380 @@ theorem finite_hilbertInertiaOutsideSubgroups (F : Type u) [Field F] [NumberFiel
     (S : Finset (HeightOneSpectrum (𝓞 F))) (n : ℕ) :
     (hilbertInertiaOutsideSubgroups F S n).Finite := sorry
 
+/-! #### The local-inertia fixed-point apparatus of
+`exists_finset_isUnramifiedAt_hilbert_of_notMem`
+
+Added 2026-07-31 (flt-lean-110). These five declarations are the `F`-level
+transcription of the block `Modularity/Patching.lean` proves its `ℚ`-level twin
+`exists_finset_isUnramifiedAt_of_notMem` over — that file being DOWNSTREAM of
+this one, nothing there may be cited, so they are honest twins rather than
+re-exports.
+
+**THE ROUTE MENTIONS NO DISCRIMINANT AND NO INERTIA DICTIONARY**, and that is the
+whole point: the docstring of the leaf below (written when it was cut) predicted
+that it costs the CONVERSE of `MinkowskiUnramified.lean`'s
+`isUnramifiedAt_of_inertia_le_fixingSubgroup`. It does not — the same correction
+was recorded at the `ℚ` level on 2026-07-28 and it applies here verbatim. The
+argument goes straight at the DEFINITION of `localInertiaGroup w` (trivial action
+modulo the maximal ideal of the integral closure of `𝒪_w` in `F_wᵃˡᵍ`), so the
+converse remains missing and remains a fine thing to have, but **nobody should be
+dispatched at it on this leaf's account.**
+
+**THE ONE PLACE THE `F`-LEVEL ARGUMENT IS SHORTER THAN THE `ℚ`-LEVEL ONE.** At the
+rational level the local step has to argue that the integer `m` is a unit of
+`𝒪_q` from `IsCoprime q m` — `q` being a uniformizer of `ℤ_q`, which is the
+ABSOLUTE UNRAMIFIEDNESS of the base. Over `F` there is no such uniformizer to
+appeal to, and none is needed: the hypothesis is taken directly as "`m` is not in
+the maximal ideal of `𝒪_w`", and the finitely many places where it fails are
+exactly the divisors of `(m)`, which `finite_setOf_natCast_mem_asIdeal` above
+already counts. `hilbert_notMem_maximalIdeal_adicCompletionIntegers` is the
+valuation-side dictionary that converts between the two spellings, through
+`intValuation_eq_one_iff`. -/
+
+/-- Transport of `eval₂` along a ring homomorphism, for an INTEGER polynomial: the
+two `ℤ →+* _` structure maps agree because `ℤ` is initial (`RingHom.ext_int`).
+
+Stated with `Int.castRingHom` rather than with `algebraMap ℤ _` on purpose: the
+fields and integral closures below carry several `Algebra ℤ _` instances that are
+equal but not syntactically so, and routing every evaluation through the canonical
+ring map removes an entire class of "synthesized instance is not definitionally
+equal" failures. -/
+theorem hilbert_eval₂_intCastRingHom_map {A B : Type*} [CommRing A] [CommRing B]
+    (g : A →+* B) (x : A) (P : Polynomial ℤ) :
+    g (Polynomial.eval₂ (Int.castRingHom A) x P) =
+      Polynomial.eval₂ (Int.castRingHom B) (g x) P := by
+  rw [Polynomial.hom_eval₂]
+  congr 1
+  exact RingHom.ext_int _ _
+
+/-- `eval₂` against `Int.castRingHom` IS `aeval`, for any `ℤ`-algebra structure —
+the bridge between the instance-free spelling used below and mathlib's `minpoly`
+API. -/
+theorem hilbert_eval₂_intCastRingHom_eq_aeval {A : Type*} [CommRing A] [Algebra ℤ A]
+    (x : A) (P : Polynomial ℤ) :
+    Polynomial.eval₂ (Int.castRingHom A) x P = (Polynomial.aeval x) P := by
+  rw [Polynomial.aeval_def]
+  congr 1
+  exact RingHom.ext_int _ _
+
+/-- **Hensel-free simple-root separation** (PROVEN 2026-07-31; the
+commutative-algebra core of `hilbert_map_localInertia_fixed` below). In a LOCAL
+DOMAIN `R`, two roots of a polynomial `P` that are congruent modulo the maximal
+ideal COINCIDE, as soon as `P'` fails to lie in the maximal ideal at one of them.
+
+No Hensel lemma, no completeness, no separability hypothesis is used. `P` factors
+as `(X - xa) * H` over `R` (a monic linear divisor exists over any commutative
+ring, `Polynomial.dvd_iff_isRoot`), so `P'(xa) = H(xa)`; if `xs ≠ xa` then
+`0 = P(xs) = (xs - xa) * H(xs)` forces `H(xs) = 0` because `R` is a domain; and
+`xs - xa` divides `H(xs) - H(xa)` (`Polynomial.sub_dvd_eval_sub`), so
+`P'(xa) = H(xa) ∈ 𝔪` — against the hypothesis. -/
+theorem hilbert_eq_of_sub_mem_maximalIdeal
+    {R : Type*} [CommRing R] [IsDomain R] [IsLocalRing R]
+    (P : Polynomial R) (xa xs : R)
+    (hPa : P.eval xa = 0) (hPs : P.eval xs = 0)
+    (hcong : xs - xa ∈ IsLocalRing.maximalIdeal R)
+    (hunit : (Polynomial.derivative P).eval xa ∉ IsLocalRing.maximalIdeal R) :
+    xs = xa := by
+  classical
+  by_contra hne
+  obtain ⟨H, hH⟩ : (Polynomial.X - Polynomial.C xa) ∣ P := Polynomial.dvd_iff_isRoot.mpr hPa
+  have hderiv : (Polynomial.derivative P).eval xa = H.eval xa := by
+    have h2 := congrArg Polynomial.derivative hH
+    rw [Polynomial.derivative_mul, Polynomial.derivative_sub,
+      Polynomial.derivative_X, Polynomial.derivative_C, sub_zero, one_mul] at h2
+    have h3 := congrArg (Polynomial.eval xa) h2
+    simpa using h3
+  have h0 : (xs - xa) * H.eval xs = 0 := by
+    have h4 := congrArg (Polynomial.eval xs) hH
+    rw [hPs] at h4
+    simpa using h4.symm
+  have hHs : H.eval xs = 0 := by
+    rcases mul_eq_zero.mp h0 with h | h
+    · exact absurd h (sub_ne_zero.mpr hne)
+    · exact h
+  have hdiff : H.eval xs - H.eval xa ∈ IsLocalRing.maximalIdeal R := by
+    obtain ⟨d, hd⟩ := Polynomial.sub_dvd_eval_sub xs xa H
+    rw [hd]
+    exact Ideal.mul_mem_right _ _ hcong
+  rw [hHs, zero_sub] at hdiff
+  exact hunit (hderiv ▸ (Ideal.neg_mem_iff _).mp hdiff)
+
+/-- **A global integer outside `w` is a UNIT of the local integers at `w`**
+(PROVEN 2026-07-31): membership in the maximal ideal of `𝒪_w` is non-invertibility
+(`adicCompletionIntegers.isUnit_iff_valued_eq_one`), the valuation on the
+completion agrees with `w.valuation F` on `F` and with `w.intValuation` on `𝓞 F`,
+and `intValuation_eq_one_iff` reads that off as `x ∉ w.asIdeal`.
+
+This replaces the `ℚ`-level twin's coprimality step, which used that a rational
+prime `q` is a UNIFORMIZER of `ℤ_q` — an absolute-unramifiedness fact with no
+analogue over a general `F`. -/
+theorem hilbert_notMem_maximalIdeal_adicCompletionIntegers
+    (F : Type u) [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (x : 𝓞 F) (hx : x ∉ w.asIdeal) :
+    (algebraMap (𝓞 F) (HeightOneSpectrum.adicCompletionIntegers F w) x) ∉
+      IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers F w) := by
+  intro hmem
+  rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at hmem
+  refine hmem (HeightOneSpectrum.adicCompletionIntegers.isUnit_iff_valued_eq_one.mpr ?_)
+  rw [HeightOneSpectrum.algebraMap_adicCompletionIntegers_apply,
+    HeightOneSpectrum.valuedAdicCompletion_eq_valuation',
+    HeightOneSpectrum.valuation_of_algebraMap]
+  exact HeightOneSpectrum.intValuation_eq_one_iff.mpr hx
+
+set_option maxHeartbeats 1000000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The local step** (PROVEN 2026-07-31): an element `σ` of the local inertia at
+a place `w` of `F` fixes an algebraic integer `α` whose "different"
+`β = P'(α)` (`P = minpoly ℤ α`) divides an integer `m` that is a unit at `w`.
+
+Everything happens inside `𝒪 = IntegralClosure 𝒪_w F_wᵃˡᵍ`, whose maximal ideal is
+what DEFINES `localInertiaGroup w`; no ramification index, discriminant or inertia
+dictionary appears. Write `ι` for the embedding `Fᵃˡᵍ → F_wᵃˡᵍ` underlying
+`Field.absoluteGaloisGroup.map`. Then `ια` and `σ(ια)` are both roots of `P` in
+`𝒪`, they are congruent modulo `𝔪 𝒪` by the very definition of the local inertia,
+and `P'(ια) = ιβ` is a UNIT of `𝒪`: it divides `ιm`, and `m ∉ 𝔪 𝒪` because
+`𝔪 𝒪 ⊓ 𝒪_w = 𝔪 𝒪_w` (going-up: the contraction of a maximal ideal along an
+integral extension is maximal) and `m` is a unit of `𝒪_w` by hypothesis.
+`hilbert_eq_of_sub_mem_maximalIdeal` closes it, and
+`Field.absoluteGaloisGroup.lift_map` together with the injectivity of `ι`
+transports the conclusion back to `Γ F`. -/
+theorem hilbert_map_localInertia_fixed
+    (F : Type u) [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F))
+    (m : ℤ)
+    (hm : ((m : ℤ) : HeightOneSpectrum.adicCompletionIntegers F w) ∉
+      IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers F w))
+    (α β c : Fᵃˡᵍ) (P : Polynomial ℤ)
+    (hPα : Polynomial.eval₂ (Int.castRingHom (Fᵃˡᵍ)) α P = 0)
+    (hβ : β = Polynomial.eval₂ (Int.castRingHom (Fᵃˡᵍ)) α (Polynomial.derivative P))
+    (hαint : IsIntegral ℤ α) (hcint : IsIntegral ℤ c)
+    (hmc : β * c = (m : Fᵃˡᵍ))
+    (σ : Γ (HeightOneSpectrum.adicCompletion F w))
+    (hσ : σ ∈ localInertiaGroup w) :
+    (Field.absoluteGaloisGroup.map
+      (algebraMap F (HeightOneSpectrum.adicCompletion F w))) σ α = α := by
+  classical
+  set ι : AlgebraicClosure F →+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion F w) :=
+    AlgebraicClosure.map (algebraMap F (HeightOneSpectrum.adicCompletion F w)) with hιdef
+  set τ : AlgebraicClosure (HeightOneSpectrum.adicCompletion F w) →+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion F w) :=
+    σ.toAlgHom.toRingHom with hτdef
+  have hτapp : ∀ y, τ y = σ y := fun _ => rfl
+  -- integrality transports along `ι`
+  have hint : ∀ x : AlgebraicClosure F, IsIntegral ℤ x →
+      IsIntegral (HeightOneSpectrum.adicCompletionIntegers F w) (ι x) := by
+    intro x hx
+    obtain ⟨Q, hQm, hQe⟩ := hx
+    refine ⟨Q.map (Int.castRingHom (HeightOneSpectrum.adicCompletionIntegers F w)),
+      hQm.map _, ?_⟩
+    have hcomp : (algebraMap (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))).comp
+        (Int.castRingHom (HeightOneSpectrum.adicCompletionIntegers F w)) =
+        Int.castRingHom (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) :=
+      RingHom.ext_int _ _
+    have hQ0 : Polynomial.eval₂ (Int.castRingHom (AlgebraicClosure F)) x Q = 0 := by
+      rw [hilbert_eval₂_intCastRingHom_eq_aeval, Polynomial.aeval_def]
+      exact hQe
+    rw [Polynomial.eval₂_map, hcomp, ← hilbert_eval₂_intCastRingHom_map ι x Q, hQ0, map_zero]
+  -- the elements of the big integral closure
+  set xa : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) :=
+    ⟨ι α, hint α hαint⟩ with hxadef
+  set xc : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) :=
+    ⟨ι c, hint c hcint⟩ with hxcdef
+  set j : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) →+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion F w) := algebraMap _ _ with hjdef
+  have hinjj : Function.Injective j := fun x y h => Subtype.ext h
+  have hjxa : j xa = ι α := rfl
+  have hjxc : j xc = ι c := rfl
+  set xs : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) := σ • xa with hxsdef
+  have hjxs : j xs = τ (ι α) := rfl
+  -- the integer polynomial, read over the big integral closure
+  set Q : Polynomial (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))) :=
+    P.map (Int.castRingHom _) with hQdef
+  have hQa : Q.eval xa = 0 := by
+    apply hinjj
+    rw [map_zero, hQdef, Polynomial.eval_map, hilbert_eval₂_intCastRingHom_map j xa P, hjxa,
+      ← hilbert_eval₂_intCastRingHom_map ι α P, hPα, map_zero]
+  have hQs : Q.eval xs = 0 := by
+    apply hinjj
+    rw [map_zero, hQdef, Polynomial.eval_map, hilbert_eval₂_intCastRingHom_map j xs P, hjxs,
+      ← hilbert_eval₂_intCastRingHom_map τ (ι α) P, ← hilbert_eval₂_intCastRingHom_map ι α P,
+      hPα, map_zero, map_zero]
+  have hcong : xs - xa ∈ IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))) :=
+    hσ xa
+  -- the derivative value maps to `ι β`
+  have hjb : j ((Polynomial.derivative Q).eval xa) = ι β := by
+    rw [hQdef, Polynomial.derivative_map, Polynomial.eval_map,
+      hilbert_eval₂_intCastRingHom_map j xa (Polynomial.derivative P), hjxa,
+      ← hilbert_eval₂_intCastRingHom_map ι α (Polynomial.derivative P), ← hβ]
+  -- `m` is a unit in the big integral closure
+  haveI : (IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  have hcomapm : (IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))).comap
+      (algebraMap (HeightOneSpectrum.adicCompletionIntegers F w)
+        (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))) =
+      IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers F w) := by
+    have hmax := Ideal.isMaximal_comap_of_isIntegral_of_isMaximal
+      (R := HeightOneSpectrum.adicCompletionIntegers F w)
+      (S := IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))
+      (IsLocalRing.maximalIdeal _)
+    exact hmax.eq_of_le (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (IsLocalRing.le_maximalIdeal hmax.ne_top)
+  have hmnot : ((m : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))) ∉
+      IsLocalRing.maximalIdeal _ := by
+    intro hmem
+    refine hm ?_
+    have h1 : ((m : ℤ) : HeightOneSpectrum.adicCompletionIntegers F w) ∈
+        (IsLocalRing.maximalIdeal
+          (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))).comap
+          (algebraMap (HeightOneSpectrum.adicCompletionIntegers F w) _) := by
+      rw [Ideal.mem_comap, map_intCast]
+      exact hmem
+    rwa [hcomapm] at h1
+  have hunit : (Polynomial.derivative Q).eval xa ∉ IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))) := by
+    intro hb
+    refine hmnot ?_
+    have hprod : (Polynomial.derivative Q).eval xa * xc =
+        ((m : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers F w)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)))) := by
+      apply hinjj
+      rw [map_mul, hjb, hjxc, map_intCast, ← map_mul, hmc, map_intCast]
+    rw [← hprod]
+    exact Ideal.mul_mem_right _ _ hb
+  have hxs_eq := hilbert_eq_of_sub_mem_maximalIdeal Q xa xs hQa hQs hcong hunit
+  -- conclude
+  have hfix : σ (ι α) = ι α := by
+    rw [← hτapp, ← hjxs, ← hjxa, hxs_eq]
+  have hlift := Field.absoluteGaloisGroup.lift_map
+    (algebraMap F (HeightOneSpectrum.adicCompletion F w)) σ α
+  refine RingHom.injective ι ?_
+  rw [hlift]
+  exact hfix
+
+set_option maxHeartbeats 1000000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The global step** (PROVEN 2026-07-31): an algebraic integer `α` is fixed by
+the image of the local inertia at ALL BUT FINITELY MANY places of `F`.
+
+The bad set is the set of places dividing `m = (minpoly ℤ β).coeff 0`, where
+`β = P'(α)` for `P = minpoly ℤ α`; it is finite by
+`finite_setOf_natCast_mem_asIdeal` above. Two facts make it work:
+
+* `β ≠ 0`. Otherwise `minpoly ℚ α` divides its own derivative, which in
+  characteristic zero forces the derivative to vanish and hence `minpoly ℚ α` to
+  be constant — against `minpoly.natDegree_pos`. (This is separability, spelled
+  out rather than invoked.)
+* `β` divides the NONZERO integer `m`: split `minpoly ℤ β = X * divX + C m`
+  (`Polynomial.X_mul_divX_add`) and evaluate at `β`. `m ≠ 0` because
+  `(minpoly ℚ β).coeff 0 ≠ 0` for `β ≠ 0`.
+
+Both `β` and the cofactor are integral over `ℤ` (they are `ℤ`-polynomial
+expressions in `α` resp. `β`), which is what lets `hilbert_map_localInertia_fixed`
+place them in the integral closure at every `w`. -/
+theorem hilbert_exists_finset_map_localInertia_fixed
+    (F : Type u) [Field F] [NumberField F] (α : Fᵃˡᵍ) (hα : IsIntegral ℤ α) :
+    ∃ S : Finset (HeightOneSpectrum (𝓞 F)),
+      ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+        ∀ σ ∈ localInertiaGroup w,
+          (Field.absoluteGaloisGroup.map
+            (algebraMap F (HeightOneSpectrum.adicCompletion F w))) σ α = α := by
+  classical
+  have hαQ : IsIntegral ℚ α := hα.tower_top
+  set P : Polynomial ℤ := minpoly ℤ α with hPdef
+  have hPα : Polynomial.eval₂ (Int.castRingHom (AlgebraicClosure F)) α P = 0 := by
+    rw [hilbert_eval₂_intCastRingHom_eq_aeval]
+    exact minpoly.aeval ℤ α
+  set β : AlgebraicClosure F :=
+    Polynomial.eval₂ (Int.castRingHom (AlgebraicClosure F)) α
+      (Polynomial.derivative P) with hβdef
+  have hmapP : minpoly ℚ α = P.map (algebraMap ℤ ℚ) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions' ℚ hα
+  have hβ0 : β ≠ 0 := by
+    intro h0
+    have hd : (Polynomial.aeval α) (Polynomial.derivative (minpoly ℚ α)) = 0 := by
+      rw [hmapP, Polynomial.derivative_map, Polynomial.aeval_map_algebraMap,
+        ← hilbert_eval₂_intCastRingHom_eq_aeval, ← hβdef]
+      exact h0
+    have hdvd := minpoly.dvd ℚ α hd
+    have hpos : 0 < (minpoly ℚ α).natDegree := minpoly.natDegree_pos hαQ
+    by_cases hz : Polynomial.derivative (minpoly ℚ α) = 0
+    · have h1 : (minpoly ℚ α).natDegree = 0 :=
+        Polynomial.derivative_eq_zero.mp hz
+      omega
+    · have hlt := Polynomial.natDegree_derivative_lt (p := minpoly ℚ α) (by omega)
+      have hle := Polynomial.natDegree_le_of_dvd hdvd hz
+      omega
+  have hβint : IsIntegral ℤ β := by
+    have hle : Algebra.adjoin ℤ ({α} : Set (AlgebraicClosure F)) ≤
+        integralClosure ℤ (AlgebraicClosure F) :=
+      Algebra.adjoin_le (Set.singleton_subset_iff.mpr hα)
+    have h1 := hle (Polynomial.aeval_mem_adjoin_singleton
+      (R := ℤ) (x := α) (p := Polynomial.derivative P))
+    rw [hβdef, hilbert_eval₂_intCastRingHom_eq_aeval]
+    exact h1
+  have hβQ : IsIntegral ℚ β := hβint.tower_top
+  set G : Polynomial ℤ := minpoly ℤ β with hGdef
+  have hm0 : G.coeff 0 ≠ 0 := by
+    have hmapG : minpoly ℚ β = G.map (algebraMap ℤ ℚ) :=
+      minpoly.isIntegrallyClosed_eq_field_fractions' ℚ hβint
+    have h1 : (minpoly ℚ β).coeff 0 ≠ 0 := minpoly.coeff_zero_ne_zero hβQ hβ0
+    rw [hmapG, Polynomial.coeff_map] at h1
+    intro h
+    exact h1 (by rw [h, map_zero])
+  set c : AlgebraicClosure F := -((Polynomial.aeval β) G.divX) with hcdef
+  have hcint : IsIntegral ℤ c := by
+    have hle : Algebra.adjoin ℤ ({β} : Set (AlgebraicClosure F)) ≤
+        integralClosure ℤ (AlgebraicClosure F) :=
+      Algebra.adjoin_le (Set.singleton_subset_iff.mpr hβint)
+    have h1 := hle (Polynomial.aeval_mem_adjoin_singleton
+      (R := ℤ) (x := β) (p := G.divX))
+    rw [hcdef]
+    exact neg_mem h1
+  have hmc : β * c = ((G.coeff 0 : ℤ) : AlgebraicClosure F) := by
+    have hG : (Polynomial.aeval β) G = 0 := minpoly.aeval ℤ β
+    have h2 := congrArg (Polynomial.aeval β) (Polynomial.X_mul_divX_add G)
+    rw [hG, map_add, map_mul, Polynomial.aeval_X, Polynomial.aeval_C] at h2
+    have h3 : β * ((Polynomial.aeval β) G.divX) =
+        -((algebraMap ℤ (AlgebraicClosure F)) (G.coeff 0)) :=
+      eq_neg_of_add_eq_zero_left h2
+    rw [hcdef, mul_neg, h3, neg_neg]
+    simp
+  -- the bad set: the places of `F` containing the nonzero integer `G.coeff 0`
+  have hc0 : ((G.coeff 0 : ℤ) : 𝓞 F) ≠ 0 := Int.cast_ne_zero.mpr hm0
+  refine ⟨(finite_setOf_natCast_mem_asIdeal F ((G.coeff 0 : ℤ) : 𝓞 F) hc0).toFinset, ?_⟩
+  intro w hw σ hσ
+  refine hilbert_map_localInertia_fixed F w (G.coeff 0) ?_ α β c P hPα hβdef hα hcint hmc σ hσ
+  have hnot : ((G.coeff 0 : ℤ) : 𝓞 F) ∉ w.asIdeal := by
+    intro hmem
+    exact hw (Set.Finite.mem_toFinset _ |>.mpr hmem)
+  have h1 := hilbert_notMem_maximalIdeal_adicCompletionIntegers F w
+    ((G.coeff 0 : ℤ) : 𝓞 F) hnot
+  rwa [map_intCast] at h1
+
 /-- **A continuous representation of `Γ F` over a discrete coefficient field is
 unramified outside finitely many places** (SORRY LEAF, cut out 2026-07-28 as the
 second of the four inputs of `finite_hilbertH1TwistUnramified` below; the
 `F`-level twin of `Modularity/Patching.lean`'s
-`exists_finset_isUnramifiedAt_of_notMem`).
+`exists_finset_isUnramifiedAt_of_notMem`; **PROVEN 2026-07-31** over the five
+auxiliary declarations immediately above).
 
 This is the classical "a number field is ramified at only finitely many primes",
 transported through the kernel of `ρbar`. Route: `k` is discrete and `V` is a
@@ -20149,14 +20518,45 @@ nothing: what makes `ker ρbar` open is DISCRETENESS of `Module.End k V`, not
 finiteness. The `ℚ`-level twin carries `[Finite k]` only because its ambient
 section does.
 
-**What is genuinely missing and is this leaf's content**: the last step is the
-CONVERSE of `MinkowskiUnramified.lean`'s PROVEN
-`isUnramifiedAt_of_inertia_le_fixingSubgroup` (which runs inertia-trivial ⟹
-unramified). `grep -rn "isUnramifiedAt_of_inertia_le_fixingSubgroup" Fermat/`
-finds only that direction. That converse — "`w` unramified in the finite Galois
-`L/F` ⟹ the image of `I_w` fixes `L` pointwise" — is the one new dictionary
-lemma, and it is SHARED with `finite_hilbertInertiaOutsideSubgroups` above, so
-the two leaves are natural companions and are best given to ONE owner.
+**⚠ CORRECTION 2026-07-31 (flt-lean-110), and it RETRACTS this leaf's own cost
+estimate.** The paragraph this replaces said the last step is the CONVERSE of
+`MinkowskiUnramified.lean`'s PROVEN `isUnramifiedAt_of_inertia_le_fixingSubgroup`,
+i.e. "`w` unramified in the finite Galois `L/F` ⟹ the image of `I_w` fixes `L`
+pointwise", and that the converse is SHARED with
+`finite_hilbertInertiaOutsideSubgroups` above so the two leaves are best given to
+one owner. The observation that only the forward direction exists at this pin is
+CORRECT and still is. **The conclusion drawn from it was not.** That converse is
+expensive — it needs local–global compatibility of ramification indices, which
+this tree does not have — and **it is not needed here at all.** The `ℚ`-level twin
+recorded exactly the same retraction on 2026-07-28, and the reasoning transfers
+verbatim.
+
+The proof below mentions no discriminant, no ramification index and no inertia
+dictionary. It goes straight at the DEFINITION of `localInertiaGroup w` (trivial
+action modulo the maximal ideal of the integral closure of `𝒪_w` in `F_wᵃˡᵍ`):
+
+* `{g : Γ F | ρbar|_{G_F} g = 1}` is OPEN (`discreteTopology_moduleTopology`:
+  `Module.End k V` is a finite module over the DISCRETE `k`, hence discrete — no
+  `[Finite k]` anywhere), hence closed, hence the fixing subgroup of its fixed
+  field `K ⊆ Fᵃˡᵍ`, which is FINITE-dimensional over `F`
+  (`InfiniteGalois.isOpen_iff_finite`).
+* Take an `F`-basis of `K` and scale each basis vector to an ALGEBRAIC INTEGER
+  (`IsAlgebraic.exists_integral_multiple`, one scalar per vector — no common
+  denominator is needed). This is where `Algebra.IsAlgebraic ℚ Fᵃˡᵍ` enters, by
+  transitivity through `F`.
+* `hilbert_exists_finset_map_localInertia_fixed` gives, for one algebraic integer,
+  a finite set of PLACES OF `F` off which every local-inertia element fixes it.
+  `S` is the union over the basis.
+* Off `S`, the resulting element of `Γ F` fixes an `F`-basis of `K`, hence — being
+  `F`-linear — all of `K` (`Module.Basis.ext`), hence lies in `K.fixingSubgroup`,
+  which is the kernel. `GaloisRep.toLocal_apply` turns that into `IsUnramifiedAt`.
+
+So the honest cost of this leaf was a Hensel-free simple-root separation lemma
+over an arbitrary local domain (`hilbert_eq_of_sub_mem_maximalIdeal`), not a piece
+of ramification theory. **Nobody should be dispatched at the converse of
+`isUnramifiedAt_of_inertia_le_fixingSubgroup` on this leaf's account** — it remains
+missing, and remains a fine thing to have, but this leaf does not pay for it, and
+neither leaf-pairing argument based on it survives.
 
 Both-ways audit: no hypothesis on `ρbar` beyond its type, hence non-vacuous and
 not dischargeable by refuting the hardly ramified package. Stated for the FULL
@@ -20168,7 +20568,95 @@ theorem exists_finset_isUnramifiedAt_hilbert_of_notMem
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V] (ρbar : GaloisRep ℚ k V) :
     ∃ S : Finset (HeightOneSpectrum (𝓞 F)), ∀ w : HeightOneSpectrum (𝓞 F),
-      w ∉ S → (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w := sorry
+      w ∉ S → (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w := by
+  classical
+  letI := moduleTopology k (Module.End k V)
+  haveI : DiscreteTopology (Module.End k V) := discreteTopology_moduleTopology _ _
+  have hcont : Continuous fun g : Γ F => (ρbar.map (algebraMap ℚ F)) g :=
+    ContinuousMonoidHom.continuous_toFun (ρbar.map (algebraMap ℚ F))
+  set N : Subgroup (Γ F) :=
+    { carrier := {g | (ρbar.map (algebraMap ℚ F)) g = 1}
+      one_mem' := map_one (ρbar.map (algebraMap ℚ F))
+      mul_mem' := by
+        intro a b ha hb
+        show (ρbar.map (algebraMap ℚ F)) (a * b) = 1
+        rw [map_mul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show (ρbar.map (algebraMap ℚ F)) a⁻¹ = 1
+        have h1 : (ρbar.map (algebraMap ℚ F)) a⁻¹ * (ρbar.map (algebraMap ℚ F)) a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 } with hNdef
+  have hmemN : ∀ g : Γ F, g ∈ N ↔ (ρbar.map (algebraMap ℚ F)) g = 1 := fun _ => Iff.rfl
+  have hopen : IsOpen ((N : Subgroup (Γ F)) : Set (Γ F)) :=
+    (isOpen_discrete ({1} : Set (Module.End k V))).preimage hcont
+  haveI halgF : Algebra.IsAlgebraic F (AlgebraicClosure F) := AlgebraicClosure.isAlgebraic F
+  haveI hacF : IsAlgClosure F (AlgebraicClosure F) := ⟨inferInstance, halgF⟩
+  haveI hnormF : Normal F (AlgebraicClosure F) := IsAlgClosure.normal F (AlgebraicClosure F)
+  haveI hsepF : Algebra.IsSeparable F (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalF : IsGalois F (AlgebraicClosure F) := ⟨⟩
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.trans (R := ℚ) (S := F) (A := AlgebraicClosure F)
+  have hclosed : IsClosed ((N : Subgroup (Γ F)) : Set (Γ F)) :=
+    Subgroup.isClosed_of_isOpen N hopen
+  have hfix : (IntermediateField.fixedField (E := AlgebraicClosure F) N).fixingSubgroup = N :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨N, hclosed⟩
+  haveI hfd : FiniteDimensional F
+      (IntermediateField.fixedField (E := AlgebraicClosure F) N) :=
+    (InfiniteGalois.isOpen_iff_finite _).mp (by rw [hfix]; exact hopen)
+  -- an `F`-basis of the fixed field, scaled to algebraic integers
+  set b := Module.finBasis F
+    (IntermediateField.fixedField (E := AlgebraicClosure F) N) with hbdef
+  have hbint : ∀ i, ∃ y : ℤ, y ≠ 0 ∧
+      IsIntegral ℤ (y • ((b i : IntermediateField.fixedField (E := AlgebraicClosure F) N) :
+        AlgebraicClosure F)) := by
+    intro i
+    have halg : IsAlgebraic ℤ
+        ((b i : IntermediateField.fixedField (E := AlgebraicClosure F) N) :
+          AlgebraicClosure F) :=
+      (IsFractionRing.isAlgebraic_iff ℤ ℚ (AlgebraicClosure F)).mpr
+        (Algebra.IsAlgebraic.isAlgebraic _)
+    exact halg.exists_integral_multiple
+  choose Y hY0 hYint using hbint
+  have hex : ∀ i, ∃ S : Finset (HeightOneSpectrum (𝓞 F)),
+      ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+        ∀ σ ∈ localInertiaGroup w,
+          (Field.absoluteGaloisGroup.map
+            (algebraMap F (HeightOneSpectrum.adicCompletion F w))) σ
+            (Y i • ((b i : IntermediateField.fixedField (E := AlgebraicClosure F) N) :
+              AlgebraicClosure F)) =
+            Y i • ((b i : IntermediateField.fixedField (E := AlgebraicClosure F) N) :
+              AlgebraicClosure F) :=
+    fun i => hilbert_exists_finset_map_localInertia_fixed F _ (hYint i)
+  choose S hS using hex
+  refine ⟨Finset.univ.biUnion S, fun w hw => ⟨fun σ hσ => ?_⟩⟩
+  show ((ρbar.map (algebraMap ℚ F)).toLocal w) σ = 1
+  rw [GaloisRep.toLocal_apply]
+  have hgfix : ∀ i, (Field.absoluteGaloisGroup.map
+      (algebraMap F (HeightOneSpectrum.adicCompletion F w))) σ
+      ((b i : IntermediateField.fixedField (E := AlgebraicClosure F) N) :
+        AlgebraicClosure F) =
+      ((b i : IntermediateField.fixedField (E := AlgebraicClosure F) N) :
+        AlgebraicClosure F) := by
+    intro i
+    have h1 := hS i w
+      (fun hmem => hw (Finset.mem_biUnion.mpr ⟨i, Finset.mem_univ i, hmem⟩)) σ hσ
+    have h2 : ((Y i : ℤ) : AlgebraicClosure F) ≠ 0 := Int.cast_ne_zero.mpr (hY0 i)
+    rw [zsmul_eq_mul, map_mul, map_intCast] at h1
+    exact mul_left_cancel₀ h2 h1
+  have hgN : (Field.absoluteGaloisGroup.map
+      (algebraMap F (HeightOneSpectrum.adicCompletion F w))) σ ∈ N := by
+    rw [← hfix, IntermediateField.mem_fixingSubgroup_iff]
+    intro z hz
+    have hlin : (((Field.absoluteGaloisGroup.map
+        (algebraMap F (HeightOneSpectrum.adicCompletion F w))) σ).toAlgHom.comp
+        (IntermediateField.fixedField (E := AlgebraicClosure F) N).val).toLinearMap =
+        ((IntermediateField.fixedField (E := AlgebraicClosure F) N).val).toLinearMap :=
+      b.ext (fun i => hgfix i)
+    exact DFunLike.congr_fun hlin ⟨z, hz⟩
+  have h1 := (hmemN _).mp hgN
+  convert h1 using 4
 
 /-- **An unramified-outside-`hilbertHardlyRamifiedPlaces` class dies on a small
 open subgroup** (SORRY LEAF, cut out 2026-07-28 as the third of the four inputs
