@@ -3937,7 +3937,55 @@ char-`0` cluster, and now the finite-base cluster
 (`card_torsion_span_singleton_of_field`, and over it
 `card_torsion_of_isMaximal_finiteBase`) — is proven over THIS
 statement.  The honest inputs are all OUTSIDE this file: the theorem of
-the cube, singular/étale homology, or the rational Tate module. -/
+the cube, singular/étale homology, or the rational Tate module.
+
+**FAITHFULNESS RE-AUDIT, 2026-07-31 — TRUE AS STATED, in every
+characteristic.**  Dropping `[CharZero K]` is safe and the reason is not
+the one a reader might supply: it is NOT that "the degree is a
+polynomial identity".  For `ℓ' ≠ ringChar K`, `T_{ℓ'}A` is free of rank
+`2` over `𝓞_D ⊗ ℤ_{ℓ'}`, and Mumford *AV* §19 Thm 4 gives
+`deg α = det_{ℤ_{ℓ'}}(α ∣ T_{ℓ'}A)` as an equality **in `ℤ_{ℓ'}`**.
+`deg α` is a non-negative INTEGER, and an integer is determined by its
+image in `ℤ_{ℓ'}`, so one prime `ℓ' ≠ char` pins it exactly — including
+the `char`-part of the degree, which is where `[a]` is inseparable and
+where a naive count fails.  That is the whole content of "the DEGREE
+identity itself survives" in the paragraph above, spelled out.
+
+**FAITHFULNESS OF `m` IS AUTOMATIC — do not add an injectivity
+hypothesis.**  `ker (𝓞_D → End A)` is an ideal of `𝓞_D`; a nonzero one
+has FINITE quotient, so the image would be a finite subring containing
+`1` inside `End A`, which is torsion-free once `dim A > 0`.  Hence
+`ker = 0`.  Note where this uses `hdim`: at `dim A = 0` one has
+`End A = 0`, `1 = 0`, and every action is trivial — which is exactly the
+degenerate `fK = 𝟙` witness recorded above, seen from the other side.
+
+**THIRD AXIS SEARCHED AND CLOSED (2026-07-31) — NORM-COMPANION
+MULTIPLICATIVITY.  Do not re-take it.**  For `a ≠ 0` put
+`b := N_{D/ℚ}(a)/a`.  This lies in `D` and is an algebraic integer, so
+`b ∈ 𝓞_D`, and `m` being a ring action gives `[a] ≫ [b] = [N(a)]`,
+whence `deg[a] · deg[b] = deg[N(a)] = N(a)^{2g}` from the classical
+`deg[n] = n^{2g}`.  This is CONSISTENT with the claim — `N(b) =
+N(a)^{g-1}`, so `N(a)² · N(a)^{2(g-1)} = N(a)^{2g}` — and therefore
+proves nothing: it pins the PRODUCT and leaves each factor free.  The
+counterexample already recorded for the `ℤ`-module axis (the module
+`𝓞_{J₁} ⊕ 𝓞_{J₂}³` at a split prime, with local ranks `(1,3)` instead of
+`(2,2)`) satisfies every one of these multiplicativity identities.  So
+"`deg[n] = n^{2g}` plus multiplicativity" is insufficient for the same
+reason the first axis is, and it is not a cheaper packaging of it.
+
+**MECHANICAL ABSENCE, measured at this pin 2026-07-31.**  Even that
+insufficient axis is not available off the shelf: mathlib's
+`AlgebraicGeometry/Morphisms/FlatRank.lean` has **no composition law for
+`Scheme.Hom.finrank`**.  The complete public API there is
+`finrank_SpecMap_eq_finrank`, `finrank_SpecMap_algebraMap`,
+`finrank_comp_left_of_isIso`, `finrank_pullback_snd`,
+`finrank_pullback_fst`, `finrank_of_isPullback`, `finrank_eq_one_of_isIso`,
+`isLocallyConstant_finrank`, `one_le_finrank_iff_surjective`,
+`isIso_iff_finrank_eq` — `finrank (f ≫ g) = finrank f * finrank g` is
+not among them and would have to be proven first.  Relatedly,
+`AlgebraicGeometry/Group/Abelian.lean` exists at this pin but contains
+only `isCommMonObj_of_isProper_of_geometricallyIntegral`: there is no
+degree, no isogeny, and no dual abelian variety anywhere in mathlib. -/
 theorem finrank_mulByElt_of_field {X : Scheme.{u}} {K : Type u} [Field K]
     {fK : X ⟶ Spec (CommRingCat.of K)} {abK : AbelianSchemeStruct fK}
     {D : Type u} [Field D] [NumberField D]
@@ -9016,6 +9064,15 @@ at which the axiom is contradictory.  `weil` itself needs no change — a
 pairing landing in a trivial group is harmless, it is only the
 nondegeneracy claim about it that is false.
 
+**THAT REPAIR LANDED 2026-07-31.**  `DualStruct.weil_nondegenerate` now
+reads `… (hn : (n : R) ∈ I) (hnF : (n : F) ≠ 0) (y : GeomFibrePt f x), …`,
+and the only code consumer in the tree —
+`DualStruct.baseChangeOfIsPullback`, which builds the pullback dual — passes
+the new hypothesis straight through, since base change does not change the
+fibre field.  Every other occurrence of the name in this development is
+prose.  So the leaf below is no longer false, and a successor may attack it
+as an ordinary (deep) geometric statement.
+
 CONSEQUENCE FOR THE FINITE-BASE SIBLING, which is why the audit was run
 here — **AND WHICH THE GATE REVERSES.**  As written, the note said:
 `exists_qAdicPolarizedSystem_finiteBase` must NOT be cut along this seam,
@@ -9049,17 +9106,17 @@ different `𝔡_I⁻¹` is PRINCIPAL, say `𝔡_I⁻¹ = (δ)`.  `θ` is
 `c ↦ Tr_{D_I/ℚ_q}(δ c)`, and the two substantive clauses say that the
 induced pairing
 
-  `𝒪_D/I^k × O/(j π)^k ⟶ ℤ_q/q^k`,   `(b, c) ↦ θ (j b * c)`
+  `𝒪_D/q^k 𝒪_D · O × O/(j π)^k ⟶ ℤ_q/q^k`,   `(b, c) ↦ θ (j b * c)`
 
-is PERFECT: every level-`k` additive functional on `𝒪_D` that kills `I^k`
-is represented by some `c` (third clause), and the representing `c` is
-unique modulo `(j π)^k` (fourth clause).  That is exactly the definition of
-the different, and it is what converts an `𝒪_D`-ADJOINT `ℤ`-valued pairing
-into an `𝒪_D`-BILINEAR `𝒪_D`-valued one.
+is PERFECT: every level-`k` additive functional on `𝒪_D` that kills the
+elements `a` with `j a ∈ (q)^k` is represented by some `c` (third clause),
+and the representing `c` is unique modulo `(j π)^k` (fourth clause).  That
+is exactly the definition of the different, and it is what converts an
+`𝒪_D`-ADJOINT `ℤ`-valued pairing into an `𝒪_D`-BILINEAR `𝒪_D`-valued one.
 
 The first two clauses are the ambient linearity of a trace: additivity and
 `ℤ_q`-linearity.  Note the functionals `φ` of the third clause are only
-required to be additive MODULO `q^k` and to kill `I^k` MODULO `q^k` —
+required to be additive MODULO `q^k` and to kill the level MODULO `q^k` —
 which is what the applications supply, since they arise as
 `b ↦ L k (w k (b y) z)` and `L` is itself only additive modulo `q^k`.
 
@@ -9067,6 +9124,55 @@ WHY BOTH DIRECTIONS ARE STATED even though the two finite groups have the
 same order: the development never has the cardinality count in hand, and
 `c` is only ever pinned modulo `(j π)^k`, so surjectivity and injectivity
 must be available separately.
+
+**THE ANNIHILATION HYPOTHESIS OF THE THIRD CLAUSE IS `(q)^k`, NOT `I^k`,
+AND THE DIFFERENCE IS THE WHOLE CLAUSE AT A RAMIFIED `I` (repaired
+2026-07-31).**  Until this date the hypothesis read `∀ a ∈ I ^ k`.  That is
+STRICTLY STRONGER than what it now reads — `j a ∈ span {(q : O)} ^ k`,
+which by `hker` and `span {j π} ^ e = span {(q : O)}` is `a ∈ I ^ (e·k)`
+for `e = v_I(q)` — so the clause was strictly WEAKER, and at `e ≥ 2` too
+weak to be usable at all.
+
+WHY, and this is not a matter of convenience.  The functionals the
+development feeds this clause are
+`φ(b) = L N (w N (m.act b (t.1 (e·N))) (s.1 (e·N)))`, which classically is
+`b ↦ Tr(δ · b · u^{2N} E(t,s)) mod q^N` with `u = q/π^e` a unit and
+`E(t,s) ∈ O`.  Such a `φ` kills EXACTLY `{a : v_I(a) ≥ e·N}` — it does not
+kill `I^N`.  Explicitly, at `D = ℚ(√5)`, `q = 5`, `I = (√5)`, `π = √5`,
+`e = 2`, `u = 1`: the local different is `𝔡 = (π)` (tame, `e = 2`, `5` odd)
+so `δ = π⁻¹` up to a unit, and at `N = 1`, `b = π ∈ I`,
+`φ(π) = Tr(π⁻¹ · π · E(t,s)) = Tr(E(t,s))`, which is `2` for a unimodular
+`E` — a UNIT of `ℤ₅`, not an element of `(5)`.  So the old hypothesis was
+unsatisfiable by the intended input whenever `I` ramifies over `q`, and the
+third clause could not be invoked at any positive level.
+
+THE CONSEQUENCE, which is why this was worth chasing: every constant the
+OLD clause could produce lies in `(j π)^{(e-1)k}`, hence is a NON-UNIT for
+`e ≥ 2` and `k ≥ 1`, and the ninth (perfectness) clause of
+`IsTateWeilRawFamily` demands a UNIT.  So
+`exists_tateWeilRawFamily_of_qAdicWeilSystem` — whose whole route is this
+clause — was unattackable at ramified `I` while looking like ordinary work.
+
+AND THE OLD FOUR CLAUSES DID NOT PIN `θ` DOWN.  Write `θ_m = Tr(δ π^m ·)`.
+For every `0 ≤ m ≤ e - 1` all four OLD clauses hold of `θ_m`: the fourth
+because `{c : Tr(δπ^m 𝒪 c) ⊆ q^k} = π^{ek-m}𝒪 ⊆ π^k 𝒪` exactly when
+`m ≤ (e-1)k`, and the third by the same count as below.  The repaired third
+clause holds ONLY for `m = 0`: the functionals killing `I^{ek}` form a group
+of order `q^{efk}`, the map `c ↦ (b ↦ θ_m (j b c))` has kernel `π^{ek-m}𝒪`,
+so its image has order `q^{f(ek-m)}`, and surjectivity forces `m = 0`.  In
+other words the strengthened clause is exactly the statement that `θ`
+GENERATES `Hom_{ℤ_q}(O, ℤ_q)` as an `O`-module, which is what
+`exists_traceDualFunctional_of_adicPin` builds anyway — so the repair costs
+that proof nothing, and it was only the statement that was under-committed.
+
+The strengthened clause is TRUE: `O` is free of rank `ef` over `ℤ_q`, so
+`O/q^k O` and `Hom(O/q^k O, ℤ/q^k)` both have order `q^{efk}`, and
+`c ↦ θ(· c)` has kernel exactly `q^k O`, hence is bijective onto the
+functionals that kill `q^k O`.  No cardinality argument is needed in the
+formal proof, which lifts instead — see
+`exists_linearMap_congr_of_adicPin`, where the approximation depth was
+ALREADY `N = e·k` and the old hypothesis was being weakened on the way in
+by `Ideal.pow_le_pow_right`.
 
 MATHLIB INGREDIENTS: `Submodule.traceDual`, `FractionalIdeal.dual`,
 `differentIdeal`, `Algebra.traceForm_nondegenerate`, together with the
@@ -9082,7 +9188,8 @@ def IsTraceDualFunctional {D : Type u} [Field D] [NumberField D]
   (∀ (k : ℕ) (φ : NumberField.RingOfIntegers D → ℤ_[q]),
       (∀ a b : NumberField.RingOfIntegers D,
         φ (a + b) - (φ a + φ b) ∈ Ideal.span {(q : ℤ_[q])} ^ k) →
-      (∀ a ∈ I ^ k, φ a ∈ Ideal.span {(q : ℤ_[q])} ^ k) →
+      (∀ a : NumberField.RingOfIntegers D, j a ∈ Ideal.span {(q : O)} ^ k →
+        φ a ∈ Ideal.span {(q : ℤ_[q])} ^ k) →
       ∃ c : O, ∀ b : NumberField.RingOfIntegers D,
         φ b - θ (j b * c) ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
   (∀ (k : ℕ) (c : O),
@@ -10064,16 +10171,29 @@ functional on `O`** (PROVEN 2026-07-29).
 
 This is the surjectivity half of trace duality done by LIFTING rather than
 by counting, and it is why no cardinality argument appears anywhere in this
-cluster.  `φ` is only additive modulo `q^k` and only kills `I^k` modulo
-`q^k` — which is what the applications supply, since they arise as
+cluster.  `φ` is only additive modulo `q^k` and only kills the level `(q)^k`
+modulo `q^k` — which is what the applications supply, since they arise as
 `b ↦ L k (w k (b y) z)` — and the conclusion is an honest `ℤ_q`-LINEAR map
 agreeing with it modulo `q^k` on `j 𝒪_D`.
+
+**`hann` IS AT `(q)^k`, NOT AT `I^k` (repaired 2026-07-31), and the
+statement is STRICTLY STRONGER for it.**  `j a ∈ span {(q : O)} ^ k` says
+`a ∈ I^{e·k}` by `hker` together with `span {j π} ^ e = span {(q : O)}`, so
+the hypothesis is weaker than the old `a ∈ I ^ k` by a factor of `e` in the
+exponent.  The PROOF is unchanged apart from one line: its approximation
+depth was ALREADY `N = e·k`, and the old hypothesis was being thrown away on
+the way in by `Ideal.pow_le_pow_right` — the `have hNk : k ≤ N` that did the
+throwing away is now gone, along with its only use.  The strengthening is
+what makes the clause usable at a RAMIFIED `I`, where the Weil functionals
+of the application kill `I^{e·k}` and NOT `I^k`; see the audit on
+`IsTraceDualFunctional` for the explicit `ℚ(√5)` witness and for why every
+constant obtainable from the old form was a non-unit.
 
 Three steps, each of which is where one hypothesis is consumed.
 
 1. `z ↦ φ a` for any `a` with `z ≡ j a` modulo `(jπ)^{ek}` is well defined:
-   two such `a` differ by an element of `I^{ek} ⊆ I^k` (`hker`, and `e ≥ 1`),
-   which `φ` kills modulo `q^k`.  This is where
+   two such `a` differ by an element `d` with `j d ∈ (q)^k`, which `φ` kills
+   modulo `q^k`.  This is where
    `exists_pow_span_uniformizer_eq_span_natCast_of_adicPin` is used, to make
    `(jπ)^{ek} = (q)^k`.
 2. The resulting map is automatically `ℤ_q`-LINEAR, not merely additive,
@@ -10101,19 +10221,16 @@ theorem exists_linearMap_congr_of_adicPin
     (k : ℕ) (φ : NumberField.RingOfIntegers D → ℤ_[q])
     (hadd : ∀ a b : NumberField.RingOfIntegers D,
       φ (a + b) - (φ a + φ b) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
-    (hann : ∀ a ∈ I ^ k, φ a ∈ Ideal.span {(q : ℤ_[q])} ^ k) :
+    (hann : ∀ a : NumberField.RingOfIntegers D, j a ∈ Ideal.span {(q : O)} ^ k →
+      φ a ∈ Ideal.span {(q : ℤ_[q])} ^ k) :
     ∃ Ψ : O →ₗ[ℤ_[q]] ℤ_[q], ∀ b : NumberField.RingOfIntegers D,
       Ψ (j b) - φ b ∈ Ideal.span {(q : ℤ_[q])} ^ k := by
   classical
   haveI := hfree
-  obtain ⟨e, he0, hespan⟩ :=
+  obtain ⟨e, _he0, hespan⟩ :=
     exists_pow_span_uniformizer_eq_span_natCast_of_adicPin hI hqI hdense hker
   set Q : Ideal ℤ_[q] := Ideal.span {(q : ℤ_[q])} ^ k with hQdef
   set N : ℕ := e * k with hNdef
-  have hNk : k ≤ N := by
-    rw [hNdef]
-    calc k = 1 * k := (one_mul k).symm
-      _ ≤ e * k := Nat.mul_le_mul_right k he0
   have hspanN : Ideal.span {j π} ^ N = Ideal.span {(q : O)} ^ k := by
     rw [hNdef, pow_mul, hespan]
   have hφadd' : ∀ a b : NumberField.RingOfIntegers D, φ (a + b) - φ a - φ b ∈ Q := by
@@ -10143,13 +10260,13 @@ theorem exists_linearMap_congr_of_adicPin
   have hwd : ∀ (z : O) (b : NumberField.RingOfIntegers D), z - j b ∈ Ideal.span {j π} ^ N →
       (Submodule.Quotient.mk (p := Q) (φ b)) = Submodule.Quotient.mk (p := Q) (φ (apx z)) := by
     intro z b hb
-    have hsub : b - apx z ∈ I ^ N := by
-      refine (hker N _).mp ?_
+    have hsub : j (b - apx z) ∈ Ideal.span {(q : O)} ^ k := by
+      rw [← hspanN]
       have h1 : j (b - apx z) = (z - j (apx z)) - (z - j b) := by
         rw [map_sub]; ring
       rw [h1]
       exact sub_mem (hapx z) hb
-    have hval : φ (b - apx z) ∈ Q := hann _ (Ideal.pow_le_pow_right hNk hsub)
+    have hval : φ (b - apx z) ∈ Q := hann _ hsub
     have h2 := hφadd' (apx z) (b - apx z)
     rw [add_sub_cancel] at h2
     have h3 : φ b - φ (apx z) = (φ b - φ (apx z) - φ (b - apx z)) + φ (b - apx z) := by ring
@@ -11738,7 +11855,110 @@ deliver a UNIT OF `O`.  The split taken here never leaves the
 `IsTateWeilPairing` demands — and `θ` does not occur in the predicate.  The
 refuting check is the same one that paragraph prescribes: look for `θ` or
 `ℤ_[q]`-valued quantities in `IsTateWeilRawFamily`.  There are none except
-the cyclotomic multiplier, which `IsTateWeilPairing` carries too. -/
+the cyclotomic multiplier, which `IsTateWeilPairing` carries too.
+
+**FALSITY AUDIT (2026-07-31) — THE LEAF WAS FALSE AS STATED, AND `htors` IS
+THE REPAIR.  The earlier audits are VOID: this leaf was restated twice on
+2026-07-30, and the rule that a second restatement voids the first audit is
+exactly what turned this up.**
+
+WITNESS, and it needs no arithmetic at all.  Take `A = S`, `f = 𝟙 S`, the
+ZERO abelian scheme.  `AbelianSchemeStruct` asks for a group law on the
+functor of points together with `IsProper`, `Smooth` and
+`GeometricallyConnected` — no nontriviality axiom, and `𝟙 S` satisfies all
+three (its fibres are points).  Every `RelPoint (𝟙 S) g` is a SINGLETON, so
+`GeomFibrePt f x` is a singleton, so `TatePt m x I π` is a singleton: `t = s`
+for the unique Tate point `t`, whatever `I` and `π` are.  Take `w N y z := 1`;
+`IsQAdicWeilSystem` holds, its perfectness clause vacuously (`y ≠ 0` is never
+satisfiable).  `hdiv` holds.  `θ` and `L` exist as always — they depend only
+on `(D, q, I, π, O, j)` and on `F`, never on `A`.  So EVERY hypothesis of the
+old statement was satisfiable.
+
+But the conclusion is not.  The THIRD clause of `IsTateWeilRawFamily` is
+alternating, `C N t t ∈ span {j π} ^ N`, and the NINTH is
+`∀ N ≥ 1, ∃ t s, IsUnit (C N t s)`.  With one Tate point the ninth reads
+`IsUnit (C 1 t t)` while the third reads `C 1 t t ∈ span {j π}`, and
+`span {j π} ≠ ⊤` — `hker` at `n = 1` with `a = 1` says `1 ∈ span {j π} ↔ 1 ∈ I`,
+and `I` is maximal — so `C 1 t t` is a member of a proper ideal, hence a
+NON-UNIT.  Clauses 3 and 9 are contradictory.  Not vacuous, not hard: false.
+
+WHY IT WAS INVISIBLE.  The two 2026-07-30 audits are about the NORMALISATION
+(`u^{2N}`) and about `IsUnit v`, both of which are real and both of which
+presuppose a nonzero Tate module.  Nothing in the leaf ever said the Tate
+module is nonzero — and its sibling `exists_levelWeilPairing_of_traceDual\
+FrobeniusLog_finiteBase` carries exactly that hypothesis, under the name
+`hne`, with the same reason recorded on it ("`A' = Spec k` satisfies every
+other hypothesis … `e 0 0 = 0` is a unit only in the zero ring").  The
+characteristic-zero half simply lost it.
+
+THE REPAIR, applied here and threaded upward in the same commit: the new
+binder
+
+  `htors : ∃ y ∈ (m.torsion x I).1, y ≠ ab.zero (specAlgClos F ≫ x)`
+
+`A[I] ≠ 0` is what makes `T_I A ≠ 0` (through `hdiv`, which makes the
+transition maps surjective), and it is the exact analogue of the finite-base
+`hne`.  The SAME defect was present in the two PROVEN consumers —
+`exists_tateWeilPairing_of_qAdicWeilSystem` and
+`exists_tateWeilSystem_of_qAdicWeilSystem`, whose conclusions
+(`IsTateWeilPairing`, `IsTateWeilSystem`) each carry a unit clause and are
+refuted by the same witness — so both now carry `htors` and pass it through.
+The chain terminates at `exists_tateWeilSystem_of_mult`, which DISCHARGES it
+from `hdim`: `card_torsion_ne_one_of_isMaximal` says `A[I]` is not a
+singleton, and a set containing the zero point and not equal to `{0}` has a
+nonzero member.  That is where `hdim` pays for perfectness, and it is worth
+saying plainly, because the old docstrings attributed `hdim` only to the
+rank-two count.
+
+**AND THE ROUTE IS NOW OPEN (2026-07-31).**  Independently of the falsity,
+the prescribed construction could not be started at a RAMIFIED `I`: the
+third clause of `IsTraceDualFunctional` demanded that the functional kill
+`I^k`, and the Weil functional
+`φ(b) = L N (w N (m.act b (t.1 (e·N))) (s.1 (e·N)))` kills `I^{e·N}` and NOT
+`I^N` — see the audit on `IsTraceDualFunctional` for the `ℚ(√5)` witness and
+for the proof that every constant the old clause could return was a
+non-unit, hence could never satisfy the ninth clause.  That clause has been
+strengthened (its hypothesis is now `j a ∈ span {(q : O)} ^ k`, i.e.
+`a ∈ I^{e·k}`), `exists_traceDualFunctional_of_adicPin` needed no change to
+supply it, and the route below is now the one to follow.
+
+WHAT A SUCCESSOR SHOULD DO, written out because the pieces are all now in
+place and the arithmetic has been checked:
+
+* `Φ N t s : b ↦ L N (w N (m.act b (t.1 (e*N))) (s.1 (e*N)))`, and
+  `C N t s :=` the constant `hθ`'s third clause returns for it at level `N`.
+  `t.1 (e*N)` is `q^N`-torsion because `(q^N) ⊆ I^{e·N}` (`hqe`), and `Φ`
+  kills `{a : j a ∈ span {(q:O)}^N}` because such an `a` lies in `I^{e·N}`
+  (`hker`, plus `span {(q:O)} ⊆ span {j π}^e` from `hqe`), so
+  `m.act a (t.1 (e*N)) = 0` and `L N 1 ∈ (q)^N` by `hLinj`.
+* Clauses 1–5 then go through `hθ`'s FOURTH clause at level `N`: reduce
+  `X - Y ∈ span {j π}^N` to `∀ b, θ (j b * (X - Y)) ∈ (q)^N`, replace each
+  `θ (j b * C …)` by the corresponding `Φ` value, and finish with the
+  matching clause of `IsQAdicWeilSystem` followed by `hLadd` / `hLgal`.
+* Clause 6 (continuity) is the one that looks impossible and is not.  Do NOT
+  try to compare the two functionals directly — at `e ≥ 2` their difference
+  is genuinely not in `(q)^k`.  Instead use clauses 1, 2 and 4: `t.1 k = t'.1 k`
+  makes `r := t - t'` a Tate point with `r.1 k = 0`, and such an `r` is
+  `m.act (π^k)` of the Tate point `r'` defined by `r'.1 n := r.1 (n + k)`.
+  That `r'` really is a Tate point: `π^n · r.1 (n+k) = r.1 k = 0`, and
+  `I^n ⊆ (π^n) + I^{n+k}` (iterate `LevelFrame.span_singleton_sup_pow_eq`),
+  so `r.1 (n+k)` is killed by `I^n` as required.  Then clause 4 puts
+  `C N r s` in `j (π^k) · O + span {j π}^N ⊆ span {j π}^k`.
+* Clause 7 (the multiplier) is the level shift.  Choose `a ∈ 𝒪_D ∖ I` with
+  `q - a·π^e ∈ I^{e·N+e}` — available because `I^e ⊆ (π^e) + I^n` by the same
+  sup computation, with `a ∉ I` forced by `hqe2`.  Then
+  `m.act q (t.1 (eN+e)) = m.act a (t.1 (eN))` EXACTLY, so the `w`-tower clause
+  plus `hLtower` give `Φ (N+1) t s b ≡ Φ N t s (a² b) (mod q^N)`, which is
+  clause 7 with `v ≡ j (a²)`.  `v` itself is the `hcplt`-limit of the
+  `j (a_N²)`.
+* Clause 8 is then `(𝒪_D/I^k)ˣ` finite through `hker`, and `IsUnit v` comes
+  from `a ∉ I` with `I` maximal, exactly as the note on
+  `IsTateWeilRawFamily` records.
+* Clause 9 is where `htors` is spent, and it is the only clause that needs
+  it.  The usable form of `hθ`'s second clause is the UPPER bound
+  `c ∈ span {(q : O)}^N ⟹ ∀ b, θ (j b * c) ∈ (q)^N` (write
+  `c = (q:O)^N * z = algebraMap ((q:ℤ_[q])^N) * z`), whose contrapositive
+  turns a nonzero value of `w N` into `C N t s ∉ span {(q:O)}^N`. -/
 theorem exists_tateWeilRawFamily_of_qAdicWeilSystem
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D]
@@ -11777,7 +11997,8 @@ theorem exists_tateWeilRawFamily_of_qAdicWeilSystem
     (hLsurj : ∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
       ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
-      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
+      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y)
+    (htors : ∃ y ∈ (m.torsion x I).1, y ≠ ab.zero (specAlgClos F ≫ x)) :
     ∃ (v : O) (C : ℕ → TatePt m x I π → TatePt m x I π → O),
       IsTateWeilRawFamily m x q I π j v C :=
   sorry
@@ -11848,7 +12069,8 @@ theorem exists_tateWeilPairing_of_qAdicWeilSystem
     (hLsurj : ∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
       ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
-      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
+      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y)
+    (htors : ∃ y ∈ (m.torsion x I).1, y ≠ ab.zero (specAlgClos F ≫ x)) :
     ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E := by
   -- THE RAMIFICATION INDEX of `I` over `q`, produced here rather than inside the
   -- leaf: `q ≠ 0` and Krull's intersection theorem for the Noetherian domain
@@ -11879,7 +12101,7 @@ theorem exists_tateWeilPairing_of_qAdicWeilSystem
     rw [hesucc]; exact hfs
   obtain ⟨v, C, hC⟩ := exists_tateWeilRawFamily_of_qAdicWeilSystem m x q I hI hqI
     (Nat.find hne - 1) (by omega) hqe hqe2 π hπ hπ2 O j
-    hcplt hker w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv
+    hcplt hker w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv htors
   obtain ⟨C', hC'⟩ := exists_tateWeilApprox_of_rawFamily m x q I π O j v C hC
   refine exists_tateWeilPairing_of_approx m x q I π O j hcplt ?_ C' hC'
   -- `j π` is a non-unit: were `span {j π}` the unit ideal, `hker` at `n = 1`
@@ -12046,12 +12268,13 @@ theorem exists_tateWeilSystem_of_qAdicWeilSystem
     (hLsurj : ∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
       ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
     (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
-      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
+      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y)
+    (htors : ∃ y ∈ (m.torsion x I).1, y ≠ ab.zero (specAlgClos F ≫ x)) :
     ∃ e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O, IsTateWeilSystem m x q I π j e := by
   classical
   obtain ⟨E, hEadd1, hEadd2, hEalt, hEbil, hEgal, hEcont, t₀, s₀, hunit⟩ :=
     exists_tateWeilPairing_of_qAdicWeilSystem m x q I hI hqI π hπ hπ2 O j hcplt hker
-      w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv
+      w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj hdiv htors
   -- ### torsion bookkeeping
   have hadd_mem : ∀ (k : ℕ) (y y' : GeomFibrePt f x), y ∈ (m.torsion x (I ^ k)).1 →
       y' ∈ (m.torsion x (I ^ k)).1 → ab.add y y' ∈ (m.torsion x (I ^ k)).1 := by
@@ -12380,9 +12603,27 @@ theorem exists_tateWeilSystem_of_mult
   obtain ⟨θ, hθ⟩ :=
     exists_traceDualFunctional_of_adicPin q I hI hqI π hπ hπ2 O j hcplt hdense hker
   obtain ⟨L, hLadd, hLgal, hLtower, hLinj, hLsurj⟩ := exists_cyclotomicLog F q
+  -- THE NONTRIVIALITY OF `A[I]`, which is where `hdim` pays for the perfectness
+  -- clause downstream: without it the whole chain is FALSE, since the zero
+  -- abelian scheme satisfies every other hypothesis and has `A[I] = 0` — see the
+  -- FALSITY AUDIT on `exists_tateWeilRawFamily_of_qAdicWeilSystem`.  `A[I]` is a
+  -- two-dimensional vector space over `𝒪_D/I`, so it is not a singleton, and a
+  -- set containing the zero point and not equal to `{0}` has a nonzero member.
+  have htors : ∃ y ∈ (m.torsion x I).1, y ≠ ab.zero (specAlgClos F ≫ x) := by
+    by_contra hcon
+    push_neg at hcon
+    refine card_torsion_ne_one_of_isMaximal m x hdim I hI ?_
+    have hzero : ab.zero (specAlgClos F ≫ x) ∈ (m.torsion x I).1 := by
+      letI := ab.addCommGroup (specAlgClos F ≫ x)
+      letI := m.module (specAlgClos F ≫ x)
+      exact (Submodule.torsionBySet (NumberField.RingOfIntegers D) (GeomFibrePt f x)
+        (I : Set (NumberField.RingOfIntegers D))).zero_mem
+    have hsub : Subsingleton (m.torsion x I).1 :=
+      ⟨fun y z => Subtype.ext ((hcon y.1 y.2).trans (hcon z.1 z.2).symm)⟩
+    exact Nat.card_eq_one_iff_unique.mpr ⟨hsub, ⟨⟨_, hzero⟩⟩⟩
   exact exists_tateWeilSystem_of_qAdicWeilSystem m x q I hI hqI π hπ hπ2 O j hcplt hker
     w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj
-    (fun a ha y => exists_preimage_act_of_mult m x hdim a ha y)
+    (fun a ha y => exists_preimage_act_of_mult m x hdim a ha y) htors
 
 /-- **A compatible system of levelwise pairings passes to the limit and
 gives an `I`-adic Weil pairing on the Tate module** (PROVEN 2026-07-27 —
@@ -20354,6 +20595,40 @@ than assumed, so the next owner reads a statement whose content is only the
 limit and the scaling, and does not have to rediscover that the different and
 the pin are already in the tree.
 
+**ITS ROUTE WAS CLOSED AND IS NOW OPEN (2026-07-31).**  "Refine it by `θ` to
+an `𝒪_{D,I}`-bilinear `E`" above is the third clause of
+`IsTraceDualFunctional`, and until this date that clause could not be invoked
+here at all when `I` RAMIFIES over `q`.  It demanded that the functional kill
+`I^k`; the functional this leaf feeds it is
+`b ↦ L M (w M (m'.act b y) z)`, classically `Tr(δ · b · X) mod q^M`, which
+kills `I^{e·k}` and NOT `I^k` — at `D = ℚ(√5)`, `q = 5`, `I = (√5)`, `e = 2`,
+`b = π ∈ I` its value is `Tr(E) = 2`, a unit of `ℤ₅`.  Worse, every constant
+the old clause could return lay in `(jπ)^{(e-1)k}`, hence was a NON-UNIT,
+which is precisely what the perfectness clause of `IsLevelWeilPairing` — the
+unit value of the primitivized `E'` — cannot tolerate.  The clause has been
+strengthened (its hypothesis is now `j a ∈ span {(q : O)} ^ k`, i.e.
+`a ∈ I^{e·k}`), and `exists_traceDualFunctional_of_adicPin` supplies it with
+NO change to its proof, because the `θ` it builds is a GENERATOR of
+`Hom_{ℤ_q}(O, ℤ_q)` and was already correctly normalised.  See the audit on
+`IsTraceDualFunctional` for the count showing that only the correctly
+normalised `θ` satisfies the strengthened clause.
+
+Two notes for whoever takes this leaf, both learned the same day on the
+characteristic-zero sibling `exists_tateWeilRawFamily_of_qAdicWeilSystem`,
+whose docstring writes the analogous route out step by step:
+
+* `hne` here is LOAD-BEARING in exactly the way that sibling's newly added
+  `htors` is.  That sibling was FALSE without it — refuted by the ZERO
+  abelian scheme, where `TatePt` is a singleton and the alternating and
+  perfectness clauses contradict each other — and the finite-base half was
+  saved only because `hne` was already present.  Do not drop it.
+* the usable form of `hθ`'s second clause is the UPPER bound
+  `c ∈ span {(q : O)}^M ⟹ ∀ b, θ (j b * c) ∈ (q)^M`, got by writing
+  `c = (q:O)^M * z = algebraMap ((q : ℤ_[q])^M) * z`.  `hθ`'s fourth clause
+  is the LOWER bound, and those two are the only handles on `θ`: there is no
+  estimate of `θ` on `span {j π}^m` for `m` not a multiple of `e`, and
+  hunting for one is the commonest way to lose a day here.
+
 **FAITHFULNESS.**  This statement is `exists_levelWeilPairing_of_qAdic\
 PolarizedSystem_finiteBase` with strictly MORE hypotheses and the SAME
 conclusion, so it is implied by that leaf and cannot be false unless that one
@@ -21107,7 +21382,30 @@ leaf weaker for no gain.  The `m'.act (M : 𝒪_D)` spelling rather than
 **`hfin` IS USED ONLY FOR PERFECTNESS**, so a finite field is more than
 the argument needs; it is carried in this form because that is what the
 consumer has and because `Finite k → PerfectField k` is not the shape of
-any binder in this file. -/
+any binder in this file.
+
+**WHAT IS ALREADY IN THE PIN, FOUND 2026-07-31** (the three bullets above
+read as if all three steps were missing theory; the SMOOTHNESS one is not).
+`Mathlib/AlgebraicGeometry/Group/` exists and holds two of the inputs:
+
+* `AlgebraicGeometry.smooth_of_grpObj` (`Group/Smooth.lean`) — for
+  `f : G ⟶ Spec (.of K)` with `[LocallyOfFiniteType f] [GrpObj (Over.mk f)]`
+  and `[GeometricallyReduced f]`, `Smooth f`.  That IS "a reduced group
+  scheme of finite type over a perfect field is smooth", already proven,
+  already reduced to the algebraically closed case internally;
+* `AlgebraicGeometry.isCommMonObj_of_isProper_of_geometricallyIntegral`
+  (`Group/Abelian.lean`, stacks 0BFD) — a proper geometrically integral
+  group scheme over a field is commutative, which is what makes the `B`
+  produced here commutative without a separate argument.
+
+Both are stated for `GrpObj (Over.mk f)`, i.e. mathlib's group-object
+structure on the over-category, NOT for this file's `AbelianSchemeStruct`;
+so using them costs a translation between the two, and that translation
+does not exist in this tree yet.  What is genuinely missing is CHEVALLEY —
+the Zariski closure of an abstract subgroup of `G(k̄)` carries a closed
+subgroup-scheme structure — for which `grep -rl` over
+`.lake/packages/mathlib/Mathlib/AlgebraicGeometry/` and over `~/cs/FLT`
+returns nothing, and the GALOIS DESCENT of that closure. -/
 theorem exists_abelianSubscheme_closure_of_divisibleGaloisSubmodule_finiteBase
     {k : Type u} [Field k] (hfin : Finite k)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -21393,7 +21691,29 @@ bijection satisfies everything else.  `htor` is what makes the conclusion
 non-vacuous — with `htor` weakened to a single `n` the statement is FALSE
 (`A'[I]` is finite, and its Zariski closure is finite, so `B` may be a
 finite subgroup scheme and `ι` far from surjective).  It is the whole
-tower `∀ n` that pins `T_I B = T_I A'`. -/
+tower `∀ n` that pins `T_I B = T_I A'`.
+
+**WHAT WAS SEARCHED AND NOT FOUND, 2026-07-31** (recorded so the next owner
+does not repeat it).  The classical argument needs the QUOTIENT abelian
+variety `C = A'/B` — or, equivalently for this purpose, Poincaré
+reducibility — and nothing in this tree, in the pin, or in `~/cs/FLT`
+constructs either: `Mathlib/AlgebraicGeometry/Group/` contains exactly
+`Abelian.lean` and `Smooth.lean` (commutativity of a proper geometrically
+integral group scheme, and smoothness of a geometrically reduced one), and
+`~/cs/FLT/FLT/GroupScheme/` contains only `FiniteFlat.lean`.
+
+The COUNTING route, which would avoid quotients entirely, does not close
+either, and the reason is worth stating because it looks available from
+this file's contents.  One would want `#A'[Iⁿ] > #B[Iⁿ]` for large `n`
+whenever `dim B < dim A'`; the counting machinery here
+(`card_torsion_span_singleton_of_isAlgClosed`, `finrank_mulByElt_of_isAlgClosed`)
+is stated in CHARACTERISTIC ZERO and consumes a relative-dimension
+hypothesis `hdim : SmoothOfRelativeDimension (finrank ℚ D) f'`, and this
+leaf has neither — deliberately, since the FAITHFULNESS paragraph above
+records that no rank hypothesis is needed.  Adding one would change the
+signature of `dense_torsionGeomPt_finiteBase` and of everything above it,
+and its consumers do not have it to give.  So the counting route is not a
+cheap alternative; it is a different leaf with a wider blast radius. -/
 theorem range_eq_univ_of_abelianSubscheme_torsion_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -21788,20 +22108,193 @@ theorem frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase
     simpa [hu_def] using h
   exact (Ideal.Quotient.eq_zero_iff_mem).mp hev
 
+open _root_.NumberField in
+/-- **A COHERENT SEQUENCE IN `𝒪_D` WITH UNIFORMLY BOUNDED LEVEL
+REPRESENTATIVES CONVERGES INSIDE `𝒪_D`** (**PROVEN 2026-07-31**; Northcott
+finiteness `NumberField.Embeddings.finite_of_norm_le` plus the pigeonhole.
+Pure algebra: no scheme, no Galois action, no `A'`).
+
+Let `s : ℕ → 𝒪_D` be COHERENT, `s_b ≡ s_a (mod Iᵃ)` for `a ≤ b`, and
+suppose there is ONE real `C`, independent of `n`, such that every level
+`n` admits an algebraic integer `u_n ≡ s_n (mod Iⁿ)` all of whose
+archimedean absolute values are `≤ C`.  Then a SINGLE `t ∈ 𝒪_D` satisfies
+`t ≡ s_n (mod Iⁿ)` at every level.
+
+THE PROOF.  `{x ∈ D | x integral over ℤ and ‖φ x‖ ≤ C for every
+`φ : D →+* ℂ`}` is FINITE (Northcott), and its preimage in `𝒪_D` under the
+injective `algebraMap` is finite too; the sequence `u` takes values there,
+so by the pigeonhole SOME value `t` is attained on an INFINITE set of
+indices.  For a given `n` pick `m > n` in that set: then
+`t − s_n = (u_m − s_m) + (s_m − s_n) ∈ Iᵐ + Iⁿ = Iⁿ`.
+
+**WHY BOUNDEDNESS IS EXACTLY THE MISSING INPUT.**  `𝒪_D` is DENSE in the
+`I`-adic completion `𝒪_{D,I}` and strictly smaller, so a coherent sequence
+is nothing but a Cauchy sequence and its limit need not be global: the
+partial sums `s_n = Σ_{j<n} c_j πʲ` of an `I`-adically irrational integer
+are coherent and admit no such `t`.  Finiteness of the bounded set is what
+converts "Cauchy" into "EVENTUALLY CONSTANT ALONG A SUBSEQUENCE", which is
+the whole argument.
+
+**FAITHFULNESS.**  Both hypotheses are load-bearing.
+
+* Drop `hcoh` and the statement is FALSE: for `I` maximal and nonzero take
+  `s_n = 0` for even `n` and `s_n = 1` for odd `n`, with `u_n = s_n` (both
+  bounded by `1`).  A global `t` would lie in `⋂ₙ Iⁿ = 0` and satisfy
+  `t − 1 ∈ ⋂ₙ Iⁿ = 0`, so `0 = 1`.
+* Drop `hbdd` and the statement is FALSE by the irrational-limit family
+  just described.
+
+**THE HYPOTHESIS IS DELIBERATELY `∀ n, ∃ uₙ` AND NOT `∃ u, ∀ n`.**  The
+strong form is what is classically true, and given `⋂ₙ Iⁿ = 0` it is
+equivalent to the CONCLUSION with a bound attached — stating it would make
+this lemma vacuous.  Letting `uₙ` depend on `n` is what leaves the
+pigeonhole as content. -/
+theorem exists_mem_pow_sub_of_coherent_of_bounded
+    {D : Type u} [Field D] [NumberField D]
+    (I : Ideal (NumberField.RingOfIntegers D))
+    (s : ℕ → NumberField.RingOfIntegers D)
+    (hcoh : ∀ a b : ℕ, a ≤ b → s b - s a ∈ I ^ a)
+    (C : ℝ)
+    (hbdd : ∀ n : ℕ, ∃ u : NumberField.RingOfIntegers D, u - s n ∈ I ^ n ∧
+      ∀ φ : D →+* ℂ, ‖φ (algebraMap (NumberField.RingOfIntegers D) D u)‖ ≤ C) :
+    ∃ t : NumberField.RingOfIntegers D, ∀ n : ℕ, t - s n ∈ I ^ n := by
+  classical
+  choose u hu hunorm using hbdd
+  -- ### Northcott: the bounded algebraic integers of `D` form a FINITE set
+  have hSfin : {x : D | IsIntegral ℤ x ∧ ∀ φ : D →+* ℂ, ‖φ x‖ ≤ C}.Finite :=
+    NumberField.Embeddings.finite_of_norm_le D ℂ C
+  have hinj : Function.Injective (algebraMap (NumberField.RingOfIntegers D) D) :=
+    IsFractionRing.injective _ _
+  have hS'fin : ((algebraMap (NumberField.RingOfIntegers D) D) ⁻¹'
+      {x : D | IsIntegral ℤ x ∧ ∀ φ : D →+* ℂ, ‖φ x‖ ≤ C}).Finite :=
+    Set.Finite.preimage hinj.injOn hSfin
+  have humem : ∀ n : ℕ, u n ∈ (algebraMap (NumberField.RingOfIntegers D) D) ⁻¹'
+      {x : D | IsIntegral ℤ x ∧ ∀ φ : D →+* ℂ, ‖φ x‖ ≤ C} :=
+    fun n => ⟨NumberField.RingOfIntegers.isIntegral_coe _, hunorm n⟩
+  -- ### pigeonhole: some value of `u` is attained at infinitely many levels
+  have hfib : ∃ t, {n : ℕ | u n = t}.Infinite := by
+    by_contra hcon
+    have hcon' : ∀ t : NumberField.RingOfIntegers D, {n : ℕ | u n = t}.Finite := by
+      intro t
+      rw [← Set.not_infinite]
+      exact fun h => hcon ⟨t, h⟩
+    have huniv : (Set.univ : Set ℕ).Finite := by
+      refine Set.Finite.subset (hS'fin.biUnion (fun t _ => hcon' t)) ?_
+      intro n _
+      exact Set.mem_biUnion (humem n) rfl
+    exact Set.infinite_univ huniv
+  obtain ⟨t, ht⟩ := hfib
+  refine ⟨t, fun n => ?_⟩
+  -- ### `t − s_n = (u_m − s_m) + (s_m − s_n)` for any such level `m > n`
+  obtain ⟨m, hm, hnm⟩ := ht.exists_gt n
+  have h1 : u m - s m ∈ I ^ n := Ideal.pow_le_pow_right hnm.le (hu m)
+  have h2 : s m - s n ∈ I ^ n := hcoh n m hnm.le
+  have hsplit : t - s n = (u m - s m) + (s m - s n) := by
+    rw [(by exact hm : u m = t)]; ring
+  rw [hsplit]
+  exact Ideal.add_mem _ h1 h2
+
+set_option linter.unusedVariables false in
+open _root_.NumberField in
+/-- **THE LEVEL SCALARS ADMIT ARCHIMEDEAN-BOUNDED REPRESENTATIVES — THE
+RIEMANN HYPOTHESIS FOR `A'`** (sorry leaf — **CUT 2026-07-31** out of
+`exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase`
+below, which is now PROVEN over it and over
+`exists_mem_pow_sub_of_coherent_of_bounded` above; Weil 1948, Mumford
+*Abelian Varieties* §19 and §21, Milne *Abelian Varieties* §V.1, Tate 1966).
+
+There is ONE real constant `C`, independent of the level, such that every
+`s n` is congruent modulo `Iⁿ` to an algebraic integer of `𝒪_D` all of
+whose archimedean absolute values are at most `C`.
+
+CLASSICALLY the witness is the same at every level and is the TRACE `t` of
+the Frobenius endomorphism `F` on `T_I A'`: `htower` makes `T_I A'` free of
+rank two over `𝒪_{D,I}`, `hs` makes `F` satisfy `F² − s_n F + N = 0` on
+`A'[Iⁿ]`, so `F² − t F + N = 0` on `T_I A'`; the annihilator of `A'[Iⁿ]` is
+exactly `Iⁿ` (again `htower`) and `F` is bijective on `A'[Iⁿ]` because
+`q ≠ char k` (`hqN`), so the level-`n` equation pins `s_n ≡ t (mod Iⁿ)`.
+The Riemann hypothesis for abelian varieties over a finite field says the
+eigenvalues of `F` have complex absolute value `√N` under every embedding,
+whence `‖φ t‖ ≤ 2√N` for every `φ : D →+* ℂ`.  So `C = 2√N` is the sharp
+value; the constant is left EXISTENTIAL because nothing downstream uses it
+and a prover should be free to reach any bound.
+
+**WHAT THE CUT BOUGHT, HONESTLY.**  It did not reduce the leaf count — one
+`sorry` replaces one `sorry` — and it did not remove the endomorphism-axis
+dependency described at the end of the consumer's docstring, which is still
+where a proof of this statement must start.  What it removed is the
+DESCENT-TO-GLOBAL step: the consumer's old statement mixed "the `I`-adic
+limit exists" with "it is defined over `𝒪_D`", and the second half is now
+DISCHARGED, by Northcott finiteness and a pigeonhole, in the proven lemma
+above.  What is left here is a purely ARCHIMEDEAN assertion — a bound —
+which is the shape the literature states and proves.
+
+**`∀ n, ∃ uₙ` RATHER THAN `∃ u, ∀ n` IS DELIBERATE**, for the reason
+recorded in the lemma above: the strong form is equivalent to the
+consumer's conclusion and would collapse the cut.  Letting the witness
+depend on the level is what keeps the pigeonhole on the consumer's side.
+
+**FAITHFULNESS.**  `htower` is load-bearing and the statement is FALSE
+without it, by the SAME counterexample that refuted the consumer: take `f'`
+of relative dimension zero, so `A'[Iⁿ] = 0` at every level and `hs` is
+vacuous; then `s_n` may be the partial sums of an `I`-adically irrational
+integer, and a bounded family of representatives would produce a global `t`
+by the lemma above — which that family provably has not.  `hσ` is
+load-bearing: it identifies the Galois action with Frobenius, and without it
+the constant term `N` is unmotivated and no bound of the shape `2√N` holds.
+`hqN` is load-bearing through `htower` (at the residue characteristic of `k`
+no tower of rank-two levels exists) and through the bijectivity of `F` on
+`A'[Iⁿ]`. -/
+theorem exists_boundedLevelScalar_atPrime_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (htower : ∀ n : ℕ, ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c)
+    (s : ℕ → NumberField.RingOfIntegers D)
+    (hs : ∀ n : ℕ, ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+          (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+        (m'.act (N : NumberField.RingOfIntegers D) y)
+        = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)) :
+    ∃ C : ℝ, ∀ n : ℕ, ∃ u : NumberField.RingOfIntegers D, u - s n ∈ I ^ n ∧
+      ∀ φ : D →+* ℂ, ‖φ (algebraMap (NumberField.RingOfIntegers D) D u)‖ ≤ C :=
+  sorry
+
 set_option linter.unusedVariables false in
 open _root_.NumberField in
 /-- **THE FROBENIUS CHARACTERISTIC SCALAR IS INTEGRAL, AT ONE PRIME —
-THE `I`-ADIC LIMIT LANDS IN THE GLOBAL RING** (sorry leaf; **SHARPENED
-2026-07-30**, see the note at the end).
+THE `I`-ADIC LIMIT LANDS IN THE GLOBAL RING** (**PROVEN 2026-07-31** over
+the archimedean leaf `exists_boundedLevelScalar_atPrime_finiteBase` and the
+pure-algebra lemma `exists_mem_pow_sub_of_coherent_of_bounded`, both
+immediately above; **SHARPENED 2026-07-30**, see the note at the end).
+
+**THE ASSEMBLY, WHICH IS ALL THAT IS LEFT HERE** (2026-07-31).  The
+archimedean leaf produces, at each level, an algebraic integer congruent to
+`s_n` modulo `Iⁿ` and bounded at every archimedean place by one constant;
+Northcott finiteness makes the set of such integers finite; the pigeonhole
+picks a value attained at infinitely many levels; and `hcoh` propagates it
+DOWN to every level.  That is `exists_mem_pow_sub_of_coherent_of_bounded`,
+and `hcoh` is consumed there and nowhere else.
 
 The level scalars `sₙ` are handed in as a plain sequence together with
 their coherence `s_b ≡ s_a (mod Iᵃ)`, which
 `frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase` above supplies for
 free; so this leaf carries no frame quantifier, no existential over `s`,
-and its conclusion is a statement of pure ideal arithmetic.  What is left
-is EXACTLY the integrality: the coherent family defines an element of the
-`I`-adic completion `𝒪_{D,I}`, and the content is that it lies in the
-GLOBAL ring `𝒪_D`.
+and its conclusion is a statement of pure ideal arithmetic.  What used to
+be left here was EXACTLY the integrality — the coherent family defines an
+element of the `I`-adic completion `𝒪_{D,I}` and the content is that it
+lies in the GLOBAL ring `𝒪_D` — and that content now lives ONE DECLARATION
+UP, restated as a bound: see `exists_boundedLevelScalar_atPrime_finiteBase`.
 
 **FAITHFULNESS — `htower` CANNOT BE DROPPED, AND THIS IS THE ONE THING TO
 CHECK BEFORE WEAKENING THE STATEMENT.**  With `htower` removed the leaf is
@@ -21821,12 +22314,13 @@ endomorphism, without which the displayed equation has constant term `N`
 for no reason.
 
 **THE AXIS THAT WOULD REDUCE IT FURTHER, AND WHICH IS NOT SEARCHED HERE**
-(inherited from the pre-sharpening docstring, and still accurate).  The
-level and frame axes are CLOSED: every restatement in terms of the matrix
-`Φ`, of `A'[Iⁿ]` or of the Galois action on torsion is equivalent to the
-above modulo the determinant leaf, and coherence across `n` is now
-discharged above rather than merely derivable.  The open axis is the
-ENDOMORPHISM axis: `End_k(A')` as a ring (which needs rigidity — a
+(inherited from the pre-sharpening docstring, and still accurate — but as
+of 2026-07-31 it describes the ARCHIMEDEAN LEAF above, not this proven
+assembly).  The level and frame axes are CLOSED: every restatement in terms
+of the matrix `Φ`, of `A'[Iⁿ]` or of the Galois action on torsion is
+equivalent to the above modulo the determinant leaf, and coherence across
+`n` is now discharged above rather than merely derivable.  The open axis is
+the ENDOMORPHISM axis: `End_k(A')` as a ring (which needs rigidity — a
 pointed morphism of abelian schemes is additive), faithfulness of the
 `I`-adic representation `End⁰_D(A') ↪ End_{D_I}(V_I A')`, and
 `𝒪_D = D ∩ End_k(A')`.  With those three STATED — not proven — the
@@ -21839,18 +22333,29 @@ tree, in mathlib (`grep -rli frobenius
 .lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is empty) or in
 `~/cs/FLT`, which is why the cut stops here rather than one level lower.
 
-An archimedean route is the other classical one and is NOT cheaper here:
-it needs `#A'(k_m) = deg(F^m − 1)` and positivity of the Rosati
-involution to get `|t| ≤ 2√N`, hence finitely many candidates in the
-lattice `𝒪_D`, hence a repeated value — and the degree formula is the
-same missing theory.
+An archimedean route is the other classical one, and the 2026-07-31 cut
+takes exactly its FIRST HALF.  It needs `#A'(k_m) = deg(F^m − 1)` and
+positivity of the Rosati involution to get `|t| ≤ 2√N` — the same missing
+theory — but its SECOND half, "finitely many candidates in the lattice
+`𝒪_D`, hence a repeated value, hence a global limit", is no longer missing:
+it is `exists_mem_pow_sub_of_coherent_of_bounded`, proven above out of
+Northcott finiteness and the pigeonhole.  That is what the archimedean leaf
+above isolates, and it is the reason its conclusion is a BOUND rather than
+an integrality assertion.
 
 **WHAT THE SHARPENING DID AND DID NOT DO.**  It did not reduce the leaf
 count: this is one `sorry` replacing one `sorry`.  It moved the
 frame-and-uniqueness bookkeeping OUT of the leaf (into the proven lemma
 above and into the consumer's assembly) and left the deep half alone, so
 the next owner reads a statement whose only mathematical content is
-integrality. -/
+integrality.
+
+**AND WHAT THE 2026-07-31 CUT DID.**  Same accounting: one `sorry` replaces
+one `sorry`, and the endomorphism-axis dependency is untouched.  What
+changed is that the residual leaf is now a BOUND — a statement the
+literature states and proves under a name (the Riemann hypothesis for
+abelian varieties) — while the step from a bound to a global element is
+proven Lean.  The `𝒪_D`-versus-`𝒪_{D,I}` half of this leaf is closed. -/
 theorem exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -21873,8 +22378,12 @@ theorem exists_globalFrobCharScalar_atPrime_of_coherentLevelScalar_finiteBase
         (m'.act (N : NumberField.RingOfIntegers D) y)
         = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
     (hcoh : ∀ a b : ℕ, a ≤ b → s b - s a ∈ I ^ a) :
-    ∃ t : NumberField.RingOfIntegers D, ∀ n : ℕ, t - s n ∈ I ^ n :=
-  sorry
+    ∃ t : NumberField.RingOfIntegers D, ∀ n : ℕ, t - s n ∈ I ^ n := by
+  -- ### the archimedean leaf: one bound serving every level
+  obtain ⟨C, hC⟩ := exists_boundedLevelScalar_atPrime_finiteBase hfin N hN ab' m' σ hσ
+    q hq hqN I hI hqI htower s hs
+  -- ### Northcott finiteness plus the pigeonhole, propagated by `hcoh`
+  exact exists_mem_pow_sub_of_coherent_of_bounded I s hcoh C hC
 
 open _root_.NumberField in
 /-- **THE FROBENIUS CHARACTERISTIC SCALAR IS INTEGRAL, AT ONE PRIME**

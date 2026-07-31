@@ -802,6 +802,238 @@ theorem End.degree_mul [IsAlgClosed F] [W.IsElliptic] (a c : End W) :
   ring
 
 /-! ### Rank-two linear algebra for the `ℓ`-torsion
+/-! ### The parallelogram law collapses to its UNIT SHIFT
+
+The four theorems below are **unconditional** — they do not consume the file's
+leaf, and they are placed here, above it, to make that visible. Together they say:
+
+> the whole parallelogram law `deg (φ+ψ) + deg (φ−ψ) = 2 deg φ + 2 deg ψ`
+> follows from its single instance `φ = 1`,
+>
+>     deg (χ + 1) + deg (χ − 1) = 2 deg χ + 2      (for every `χ : End W`).
+
+**Why this is a reduction and not the ninth lap of the degree circle** (the audit
+on `End.natCast_degree_eq_det_torsionRep_of_not_dvd` warns against shuffling
+between equivalent members of that circle, and the warning is right). Every member
+of the circle quantifies over a PAIR of endomorphisms, or over a pair
+`(endomorphism, prime)`. The `hshift` hypothesis below quantifies over ONE
+endomorphism and mentions no second endomorphism, no prime, no torsion module, no
+determinant and no pairing: it is `#ker (χ+1) + #ker (χ−1) = 2 #ker χ + 2`, a
+statement about three kernel cardinalities. That is strictly the smallest target
+in the circle, and it is the one a `x`-coordinate degree count (Washington,
+*Elliptic Curves* §3.2 — route (2) of the audits below) actually produces, since
+that count is performed one endomorphism at a time.
+
+The two moves are elementary and are what the classical texts leave implicit:
+
+1. **Integer shifts, by second-order induction** (`End.degree_intCast_shift`). The
+   hypothesis is a linear recurrence `f (m+1) − 2 f m + f (m−1) = 2` on
+   `f m := deg (χ + [m])`, whose solution with the two initial values `f 0` and
+   `f 1` is the quadratic `f m = deg χ + t m + m²`, `t := deg (χ+1) − deg χ − 1`.
+   In particular the `t` cancels in `f m + f (−m)`, giving the parallelogram law
+   for the pair `(χ, [m])` at every INTEGER `m` (`End.degree_intCast_parallelogram`).
+2. **From integer shifts to arbitrary pairs, through the dual**
+   (`End.degree_add_add_degree_sub_of_unitShift`). Multiplying by `φ̂` turns the
+   pair `(φ, ψ)` into the pair `(φ̂ψ, [deg φ])`, because `φ̂(φ ± ψ) = [deg φ] ± φ̂ψ`
+   by `End.dualEnd_comp` and distributivity, and `deg` is multiplicative. Dividing
+   by `deg φ̂ = deg φ > 0` at the end is what recovers the general law. No geometry
+   enters; `End.degree_dualEnd` is itself elementary.
+
+So a prover looking for the file's missing geometric input should aim at the
+`hshift` hypothesis of `End.degree_add_add_degree_sub_of_unitShift`, and may then
+close the file by that theorem together with
+`charPoly_of_multiplicative_parallelogram` below (whose five side conditions are
+listed at `End.self_add_dualEnd`).
+
+**FOR THE FREE-FLOATING SWEEP: these four are DELIBERATELY UNCONSUMED**, exactly as
+`not_exists_dual` and `exists_dual_is_false` above are. They are route (2)'s
+assembly, and route (2) cannot have a consumer until its one hypothesis is proven —
+at which point `End.degree_add_add_degree_sub` is re-proven from
+`End.degree_add_add_degree_sub_of_unitShift`, the leaf below is DELETED rather than
+proven, and all four enter the root cone at once. Deleting them as floaters would
+delete the reduction and leave only the prose describing it. `End.degree_neg` and
+`End.degree_dualEnd` are in addition general facts about `End W` that this file did
+not previously have under any name. -/
+
+/-- `deg (−ψ) = deg ψ`. `−ψ = [−1] · ψ` and `deg [−1] = 1`. -/
+theorem End.degree_neg [IsAlgClosed F] [CharZero F] [W.IsElliptic] (ψ : End W) :
+    (Isogeny.degree (End.toIsogeny (-ψ)) : ℤ) = (Isogeny.degree (End.toIsogeny ψ) : ℤ) := by
+  have hEq : (-ψ : End W) = (((-1 : ℤ)) : End W) * ψ := by
+    rw [Int.cast_neg, Int.cast_one, neg_one_mul]
+  rw [hEq, End.degree_mul, End.degree_intCast]
+  ring
+
+/-- **`deg ψ̂ = deg ψ`.** Elementary, and independent of everything below: apply the
+multiplicativity of the degree to `ψ̂ψ = [deg ψ]` (`End.dualEnd_comp`) and use
+`deg [n] = n²`, then cancel the nonzero `deg ψ`. The zero case is separate because
+`End.dualEnd 0 = 0`. -/
+theorem End.degree_dualEnd [IsAlgClosed F] [CharZero F] [W.IsElliptic] (ψ : End W) :
+    (Isogeny.degree (End.toIsogeny (End.dualEnd ψ)) : ℤ)
+      = (Isogeny.degree (End.toIsogeny ψ) : ℤ) := by
+  by_cases h : ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point) = 0
+  · have hz : (End.toIsogeny ψ).toHom = 0 := h
+    have hd : End.dualEnd ψ = 0 := End.dualEnd_of_eq_zero h
+    have hz' : (End.toIsogeny (End.dualEnd ψ)).toHom = 0 := by
+      rw [hd]; exact AddMonoidHom.ext fun _ => rfl
+    rw [Isogeny.degree_of_eq_zero hz, Isogeny.degree_of_eq_zero hz']
+  · have hpos : (0 : ℤ) < (Isogeny.degree (End.toIsogeny ψ) : ℤ) := by
+      exact_mod_cast Isogeny.degree_pos (φ := End.toIsogeny ψ) h
+    have hprod := congrArg (fun χ : End W => (Isogeny.degree (End.toIsogeny χ) : ℤ))
+      (End.dualEnd_comp ψ)
+    simp only [End.degree_mul] at hprod
+    have hcast : ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : End W)
+        = (((Isogeny.degree (End.toIsogeny ψ) : ℕ) : ℤ) : End W) := (Int.cast_natCast _).symm
+    rw [hcast, End.degree_intCast] at hprod
+    nlinarith [hprod, hpos]
+
+/-- **The integer-shift expansion, from the unit shift alone.**
+
+`f m := deg (χ + [m])` satisfies the second-order recurrence
+`f (m+1) + f (m−1) = 2 f m + 2` — that is the hypothesis, applied at `χ + [m]` —
+and the recurrence together with `f 0` and `f 1` determines `f` as the quadratic
+`deg χ + t m + m²`. The induction is the paired one (`f m` and `f (m+1)` together),
+because the recurrence is of second order; `Int.induction_on` then runs in both
+directions from `0`.
+
+Nothing here is about curves: `End W` is used only as a ring, and the only inputs
+are the hypothesis and `χ + [0] = χ`. -/
+theorem End.degree_intCast_shift [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (hshift : ∀ χ : End W,
+      Isogeny.degree (End.toIsogeny (χ + 1)) + Isogeny.degree (End.toIsogeny (χ - 1))
+        = 2 * Isogeny.degree (End.toIsogeny χ) + 2)
+    (χ : End W) (m : ℤ) :
+    (Isogeny.degree (End.toIsogeny (χ + ((m : ℤ) : End W))) : ℤ)
+      = (Isogeny.degree (End.toIsogeny χ) : ℤ)
+        + ((Isogeny.degree (End.toIsogeny (χ + 1)) : ℤ)
+            - (Isogeny.degree (End.toIsogeny χ) : ℤ) - 1) * m + m ^ 2 := by
+  set f : ℤ → ℤ := fun k => (Isogeny.degree (End.toIsogeny (χ + ((k : ℤ) : End W))) : ℤ)
+    with hf
+  have hf0 : f 0 = (Isogeny.degree (End.toIsogeny χ) : ℤ) := by
+    simp only [hf]
+    norm_num
+  have hf1 : f 1 = (Isogeny.degree (End.toIsogeny (χ + 1)) : ℤ) := by
+    simp only [hf]
+    norm_num
+  have hrec : ∀ k : ℤ, f (k + 1) + f (k - 1) = 2 * f k + 2 := by
+    intro k
+    have h := hshift (χ + ((k : ℤ) : End W))
+    have e1 : χ + ((k : ℤ) : End W) + 1 = χ + (((k + 1 : ℤ)) : End W) := by push_cast; abel
+    have e2 : χ + ((k : ℤ) : End W) - 1 = χ + (((k - 1 : ℤ)) : End W) := by push_cast; abel
+    rw [e1, e2] at h
+    simp only [hf]
+    exact_mod_cast h
+  have key : ∀ k : ℤ, f k = f 0 + (f 1 - f 0 - 1) * k + k ^ 2
+      ∧ f (k + 1) = f 0 + (f 1 - f 0 - 1) * (k + 1) + (k + 1) ^ 2 := by
+    intro k
+    induction k using Int.induction_on with
+    | zero => exact ⟨by ring, by simp only [zero_add]; ring⟩
+    | succ j ih =>
+        refine ⟨ih.2, ?_⟩
+        have h := hrec ((j : ℤ) + 1)
+        rw [show ((j : ℤ) + 1 - 1) = (j : ℤ) by ring] at h
+        have h1 := ih.1
+        have h2 := ih.2
+        linear_combination h + 2 * h2 - h1
+    | pred j ih =>
+        have h := hrec (-(j : ℤ))
+        have h1 := ih.1
+        have h2 := ih.2
+        constructor
+        · linear_combination h - h2 + 2 * h1
+        · rw [show (-(j : ℤ) - 1 + 1) = -(j : ℤ) by ring]
+          linear_combination h1
+  have := (key m).1
+  rw [hf0, hf1] at this
+  simpa only [hf] using this
+
+/-- **The parallelogram law for the pair `(χ, [m])`, from the unit shift alone.**
+The linear term `t m` of `End.degree_intCast_shift` is odd in `m` and cancels in
+the sum, leaving `2 deg χ + 2 m²` — and `deg [m] = m²`, so this is exactly the
+parallelogram law whenever the second argument is an integer. -/
+theorem End.degree_intCast_parallelogram [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (hshift : ∀ χ : End W,
+      Isogeny.degree (End.toIsogeny (χ + 1)) + Isogeny.degree (End.toIsogeny (χ - 1))
+        = 2 * Isogeny.degree (End.toIsogeny χ) + 2)
+    (χ : End W) (m : ℤ) :
+    (Isogeny.degree (End.toIsogeny (χ + ((m : ℤ) : End W))) : ℤ)
+        + (Isogeny.degree (End.toIsogeny (χ - ((m : ℤ) : End W))) : ℤ)
+      = 2 * (Isogeny.degree (End.toIsogeny χ) : ℤ) + 2 * m ^ 2 := by
+  have hpos := End.degree_intCast_shift hshift χ m
+  have hneg := End.degree_intCast_shift hshift χ (-m)
+  have e : χ + (((-m : ℤ)) : End W) = χ - ((m : ℤ) : End W) := by push_cast; abel
+  rw [e] at hneg
+  linear_combination hpos + hneg
+
+/-- **THE REDUCTION: the parallelogram law follows from its `φ = 1` instance.**
+
+Given the unit shift for every endomorphism, the law holds for every PAIR. The
+move is `End.dualEnd_comp`: for `φ ≠ 0` with `d := deg φ`,
+
+    φ̂ (φ + ψ) = [d] + φ̂ψ,     φ̂ (φ − ψ) = [d] − φ̂ψ,
+
+so multiplicativity of the degree turns the pair `(φ, ψ)` into the pair
+`(φ̂ψ, [d])`, which `End.degree_intCast_parallelogram` already handles:
+
+    d · (deg (φ+ψ) + deg (φ−ψ)) = deg (φ̂ψ + [d]) + deg (φ̂ψ − [d])
+                                = 2 deg (φ̂ψ) + 2 d² = 2 d · deg ψ + 2 d²,
+
+and `d > 0` cancels. The case `φ = 0` is `deg (−ψ) = deg ψ` (`End.degree_neg`).
+
+The statement is the exact statement of `End.degree_add_add_degree_sub` below, so
+a proof of `hshift` closes this file through
+`charPoly_of_multiplicative_parallelogram` without touching the Weil pairing. -/
+theorem End.degree_add_add_degree_sub_of_unitShift [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (hshift : ∀ χ : End W,
+      Isogeny.degree (End.toIsogeny (χ + 1)) + Isogeny.degree (End.toIsogeny (χ - 1))
+        = 2 * Isogeny.degree (End.toIsogeny χ) + 2)
+    (φ ψ : End W) :
+    Isogeny.degree (End.toIsogeny (φ + ψ)) + Isogeny.degree (End.toIsogeny (φ - ψ))
+      = 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ) := by
+  have main : (Isogeny.degree (End.toIsogeny (φ + ψ)) : ℤ)
+      + (Isogeny.degree (End.toIsogeny (φ - ψ)) : ℤ)
+      = 2 * (Isogeny.degree (End.toIsogeny φ) : ℤ)
+        + 2 * (Isogeny.degree (End.toIsogeny ψ) : ℤ) := by
+    by_cases h : ((φ : AddMonoid.End W.Point) : W.Point →+ W.Point) = 0
+    · -- `φ = 0`: the law degenerates to `deg ψ + deg (−ψ) = 2 deg ψ`
+      have hzdeg : (Isogeny.degree (End.toIsogeny φ) : ℤ) = 0 := by
+        rw [Isogeny.degree_of_eq_zero (show (End.toIsogeny φ).toHom = 0 from h)]
+        norm_num
+      have hφ0 : φ = 0 := Subtype.ext h
+      have e1 : φ + ψ = ψ := by rw [hφ0, zero_add]
+      have e2 : φ - ψ = -ψ := by rw [hφ0, zero_sub]
+      rw [e1, e2, hzdeg, End.degree_neg]
+      ring
+    · have hdpos : (0 : ℤ) < (Isogeny.degree (End.toIsogeny φ) : ℤ) := by
+        exact_mod_cast Isogeny.degree_pos (φ := End.toIsogeny φ) h
+      have hdualdeg : (Isogeny.degree (End.toIsogeny (End.dualEnd φ)) : ℤ)
+          = (Isogeny.degree (End.toIsogeny φ) : ℤ) := End.degree_dualEnd φ
+      have hcast : ((Isogeny.degree (End.toIsogeny φ) : ℕ) : End W)
+          = (((Isogeny.degree (End.toIsogeny φ) : ℕ) : ℤ) : End W) :=
+        (Int.cast_natCast _).symm
+      -- `φ̂ (φ ± ψ) = [d] ± φ̂ψ`
+      have eadd : End.dualEnd φ * (φ + ψ)
+          = End.dualEnd φ * ψ + (((Isogeny.degree (End.toIsogeny φ) : ℕ) : ℤ) : End W) := by
+        rw [mul_add, End.dualEnd_comp, hcast]; abel
+      have esub : End.dualEnd φ * (φ - ψ)
+          = -(End.dualEnd φ * ψ - (((Isogeny.degree (End.toIsogeny φ) : ℕ) : ℤ) : End W)) := by
+        rw [mul_sub, End.dualEnd_comp, hcast]; abel
+      have hadd := congrArg (fun σ : End W => (Isogeny.degree (End.toIsogeny σ) : ℤ)) eadd
+      have hsub := congrArg (fun σ : End W => (Isogeny.degree (End.toIsogeny σ) : ℤ)) esub
+      simp only [End.degree_mul, hdualdeg, End.degree_neg] at hadd hsub
+      have hpar := End.degree_intCast_parallelogram hshift (End.dualEnd φ * ψ)
+        ((Isogeny.degree (End.toIsogeny φ) : ℕ) : ℤ)
+      rw [End.degree_mul, hdualdeg] at hpar
+      have hsum : (Isogeny.degree (End.toIsogeny φ) : ℤ)
+            * ((Isogeny.degree (End.toIsogeny (φ + ψ)) : ℤ)
+              + (Isogeny.degree (End.toIsogeny (φ - ψ)) : ℤ))
+          = (Isogeny.degree (End.toIsogeny φ) : ℤ)
+            * (2 * (Isogeny.degree (End.toIsogeny φ) : ℤ)
+              + 2 * (Isogeny.degree (End.toIsogeny ψ) : ℤ)) := by
+        linear_combination hadd + hsub + hpar
+      linear_combination mul_left_cancel₀ hdpos.ne' hsum
+  exact_mod_cast main
+
+/-! ### The Weil pairing on the `ℓ`-torsion — the file's one geometric input
 
 Everything from here to the end of the file is an algebraic consequence of the two
 route-2 leaves stated in the ROUTE 2 section below. The audits on

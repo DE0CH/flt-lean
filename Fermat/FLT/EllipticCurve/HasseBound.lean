@@ -1865,7 +1865,71 @@ theorem frobeniusConj_mul_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
     show c ^ 2 - c * c * 1 + 1 ^ 2 * (q : ℤ) = (q : ℤ) by ring] at h
   exact h
 
-/-- **The ORDINARY criterion** (sorry leaf, opened 2026-07-29; Silverman *AEC*
+/-- **The ORDINARY criterion, in its POLYNOMIAL form** (sorry leaf, opened
+2026-07-30; Silverman *AEC* V.3.1, Deuring): a curve whose Frobenius trace is
+prime to `q` has a NON-CONSTANT `q`-division polynomial.
+
+This is `exists_ne_zero_qTorsion` below with the point-group layer stripped off.
+The two are equivalent through
+`TorsionCharP.exists_ne_zero_torsion_iff_natDegree_ΨSq_ne_zero` (PROVEN
+2026-07-30, characteristic-agnostic, every `n ≠ 0`), and this is the better
+side of that equivalence to own: `ΨSq_q` is ONE EXPLICIT POLYNOMIAL OVER THE
+PRIME FIELD `𝔽_q`, so the whole question is now finite and machine-checkable
+for any given `q`, with no algebraic closure, no `Affine.Point`, and no
+Frobenius endomorphism in the conclusion.  `hc` and `hqc` survive only as the
+hypotheses that pin `c` to the trace.
+
+WHAT `ΨSq_q` LOOKS LIKE HERE, and it is the reason this is the natural atom.
+By `TorsionCharP.exists_pow_eq_ΨSq_of_charP`, `ΨSq_q = g^q` over `𝔽̄_q` with
+`deg g ≤ q − 1` (`card_roots_ΨSq_le_of_charP`).  So the conclusion reads
+`deg g ≥ 1`, and its negation — the SUPERSINGULAR case — is the sharp
+statement that `ΨSq_q` is a nonzero CONSTANT.  Note the contrast with
+`q` invertible, where `ΨSq_q` is separable of degree `q² − 1`: the degree
+collapses in characteristic `q` because the leading coefficient of `ΨSq_n` is
+`n²`.
+
+FALSITY AUDIT (2026-07-30, and this is the FIRST audit of this statement — the
+audits on `exists_ne_zero_qTorsion` were written against a different
+conclusion and are NOT inherited).  Checked with PARI/GP over ALL 328
+nonsingular short-Weierstrass curves `y² = x³ + ax + b` with `q ∈ {5, 7, 11,
+13}`: `q ∤ a_q` and `deg ψ_q > 0` agreed in every case, in BOTH directions,
+zero mismatches.  So the converse holds too and the leaf is not merely
+non-vacuous but sharp; only the stated direction is claimed here, because only
+it is consumed.
+
+`hqc` IS LOAD-BEARING and the statement is FALSE without it, with the same
+witness as before, now checked in its polynomial form: `y² = x³ + 1` over
+`𝔽₅` has `#E(𝔽₅) = 6`, so `c = 0`, and `ψ₅ = 4` — a nonzero CONSTANT, degree
+`0`.  `hc` is load-bearing for the reason given on `exists_ne_zero_qTorsion`
+below: it is what pins `c` to the Frobenius trace rather than leaving it a
+free integer.
+
+`q = 2` and `q = 3` are covered by the statement but not by the numerical
+sweep above, which is in short-Weierstrass form; the `q = 2` argument is the
+explicit one recorded below.
+
+THE ROUTE IS UNCHANGED — Deuring's congruence, and everything said about it
+below still applies, because the equivalence used to get here is proven and
+costs nothing.  What the successor now has to produce is
+`deg ψ_q > 0`, and the classical bridge to Deuring is that `ψ_q` is constant
+exactly when the Hasse invariant `H` (the coefficient of `x^{q−1}` in
+`g^{(q−1)/2}`) vanishes, while `c ≡ H (mod q)`.
+
+THE CHECK THAT WOULD REFUTE the claim that this is the minimal atom: a proof
+of `deg ψ_q > 0` from the kernel counts alone.  The model `A` recorded on
+`natCard_ker_degreeFormEnd_le` above rules that out — it satisfies every
+`ℤ[F]` identity this module proves, for any `c` prime to `q`, with `A[q] = 0`. -/
+theorem natDegree_ΨSq_ne_zero_of_not_dvd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    (hqc : ¬ ((q : ℤ) ∣ c)) :
+    (Wbar.ΨSq (q : ℤ)).natDegree ≠ 0 :=
+  sorry
+
+/-- **The ORDINARY criterion** (PROVEN 2026-07-30 over
+`natDegree_ΨSq_ne_zero_of_not_dvd` above; Silverman *AEC*
 V.3.1, Deuring): a curve whose Frobenius trace is prime to `q` has a NONZERO
 `q`-torsion point over `𝔽̄_q`.
 
@@ -1960,15 +2024,37 @@ the point `(0, y)` with `y² + a₃y = a₆` is a nonzero `2`-torsion point, and
 `hqc` excludes.
 
 THE CHECK THAT WOULD REFUTE the claim that this is the minimal atom: a proof of
-`E[q] ≠ 0` from the kernel counts alone.  The model above rules that out. -/
+`E[q] ≠ 0` from the kernel counts alone.  The model above rules that out.
+
+SEVENTH CUT, 2026-07-30 — THE POINT-GROUP LAYER IS GONE.  The statement above is
+now PROVEN, over the strictly smaller `natDegree_ΨSq_ne_zero_of_not_dvd` just
+below, which says the same thing about a SINGLE EXPLICIT POLYNOMIAL over the
+PRIME field.  What closed is the dictionary, and it is general enough to be worth
+naming: `TorsionCharP.exists_ne_zero_torsion_iff_natDegree_ΨSq_ne_zero`,
+
+    (∃ P ≠ 0, n • P = 0)  ↔  (ΨSqₙ).natDegree ≠ 0
+
+over an algebraically closed field, in ANY characteristic and for every `n ≠ 0`.
+Everything above about the model `A` and about the geometry being unavoidable
+remains correct and now applies verbatim to the surviving leaf. -/
 theorem exists_ne_zero_qTorsion (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
     (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
       = c • frobeniusPointEnd q Wbar
         - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
     (hqc : ¬ ((q : ℤ) ∣ c)) :
-    ∃ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, P ≠ 0 ∧ (q : ℤ) • P = 0 :=
-  sorry
+    ∃ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, P ≠ 0 ∧ (q : ℤ) • P = 0 := by
+  classical
+  have hq : ((q : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : q.Prime).ne_zero
+  set K := AlgebraicClosure (ZMod q) with hK
+  have hdeg : (((Wbar.map (algebraMap (ZMod q) K))⁄K).ΨSq (q : ℤ)).natDegree ≠ 0 := by
+    rw [show ((Wbar.map (algebraMap (ZMod q) K))⁄K) =
+        (Wbar.map (algebraMap (ZMod q) K)).map (algebraMap K K) from rfl,
+      WeierstrassCurve.map_ΨSq, WeierstrassCurve.map_ΨSq,
+      Polynomial.natDegree_map, Polynomial.natDegree_map]
+    exact natDegree_ΨSq_ne_zero_of_not_dvd q Wbar hc hqc
+  exact (TorsionCharP.exists_ne_zero_torsion_iff_natDegree_ΨSq_ne_zero
+    (Wbar.map (algebraMap (ZMod q) K)) hq).mpr hdeg
 
 /-- **`#E[q] = q` in the ordinary case** (PROVEN 2026-07-29 over
 `exists_ne_zero_qTorsion` and `TorsionCharP.exists_zsmul_eq_of_charP`).

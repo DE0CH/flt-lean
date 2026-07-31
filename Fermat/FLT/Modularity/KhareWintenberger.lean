@@ -7592,15 +7592,176 @@ theorem algebraMap_mem_adicCompletionIntegers (w : HeightOneSpectrum (𝓞 F)) (
 
 end MaximalOrderInMatrixAlgebra
 
+section IntegralSplitting
+
+open scoped Matrix
+open MonoidWithZeroHom IsDedekindDomain.HeightOneSpectrum
+
+/-- **The value group of the valuation on a completion at a height-one prime is the whole of
+`ℤᵐ⁰ˣ`.** The valuation is surjective (`valuedAdicCompletion_surjective`), and
+`valueGroup_eq_range` turns that into the statement that every unit of `ℤᵐ⁰` is a value. -/
+theorem valueGroup_valuedAdicCompletion_eq_top (A : Type*) [CommRing A] [IsDedekindDomain A]
+    (Kf : Type*) [Field Kf] [Algebra A Kf] [IsFractionRing A Kf] (v : HeightOneSpectrum A) :
+    MonoidWithZeroHom.valueGroup
+        (.ofClass (Valued.v : Valuation (v.adicCompletion Kf)
+          (WithZero (Multiplicative ℤ)))) = ⊤ := by
+  refine top_unique fun γ _ => ?_
+  obtain ⟨x, hx⟩ := valuedAdicCompletion_surjective Kf v (γ : WithZero (Multiplicative ℤ))
+  have hmem : (γ : WithZero (Multiplicative ℤ)) ∈
+      Units.val '' ((MonoidWithZeroHom.valueGroup
+        (.ofClass (Valued.v : Valuation (v.adicCompletion Kf)
+          (WithZero (Multiplicative ℤ))))) : Set (WithZero (Multiplicative ℤ))ˣ) := by
+    rw [valueGroup_eq_range]
+    exact ⟨⟨x, hx⟩, by simp⟩
+  obtain ⟨δ, hδ, hval⟩ := hmem
+  exact (Units.ext hval : δ = γ) ▸ hδ
+
+/-- **`𝒪_w` is a PID.** Mathlib knows that the valuation subring of a valuation with cyclic
+nontrivial value group is a discrete valuation ring
+(`Valuation.valuationSubring_isPrincipalIdealRing`), but records no instance for
+`adicCompletionIntegers`; this supplies the two missing instances from surjectivity of the
+valuation. Stated as a theorem rather than an instance so that it is switched on only inside
+the proofs that need it. -/
+theorem isPrincipalIdealRing_adicCompletionIntegers (A : Type*) [CommRing A]
+    [IsDedekindDomain A] (Kf : Type*) [Field Kf] [Algebra A Kf] [IsFractionRing A Kf]
+    (v : HeightOneSpectrum A) : IsPrincipalIdealRing (v.adicCompletionIntegers Kf) := by
+  haveI : IsCyclic (MonoidWithZeroHom.valueGroup
+      (.ofClass (Valued.v : Valuation (v.adicCompletion Kf)
+        (WithZero (Multiplicative ℤ))))) := by
+    rw [valueGroup_valuedAdicCompletion_eq_top A Kf v]; infer_instance
+  haveI : Nontrivial (MonoidWithZeroHom.valueGroup
+      (.ofClass (Valued.v : Valuation (v.adicCompletion Kf)
+        (WithZero (Multiplicative ℤ))))) := by
+    rw [valueGroup_valuedAdicCompletion_eq_top A Kf v]; infer_instance
+  exact Valuation.valuationSubring_isPrincipalIdealRing
+    (Valued.v : Valuation (v.adicCompletion Kf) (WithZero (Multiplicative ℤ)))
+
+/-- **A FINITE MULTIPLICATIVELY CLOSED SPANNING FAMILY OF `2 × 2` MATRICES OVER THE FRACTION
+FIELD OF A PID CAN BE CONJUGATED INTO THE INTEGRAL MATRICES.**
+
+This is the lattice half of "a maximal order of `M₂(K)` is conjugate to `M₂(O)`", and it is
+where the classical argument lives. Let `Λ` be the `O`-span of the family. Its FIRST COLUMNS
+span an `O`-submodule `L ⊆ K²` which is
+
+* finitely generated (a span of finitely many vectors);
+* full, because the family spans `M₂(K)` over `K` and `A ↦ A · e₀` is onto `K²`;
+* stable under the family, because `α i · (α j · e₀) = (α i α j) · e₀` and `hmul` expands
+  `α i α j` integrally.
+
+So `L` is a lattice; over a PID it is free, of rank `2` by `IsLattice.finrank_of_pi`, and its
+`O`-basis is a `K`-basis of `K²` by `Basis.extendOfIsLattice`. Reading matrices in THAT basis
+is an algebra automorphism of `M₂(K)` — concretely
+`Matrix.toLinAlgEquiv'.trans (LinearMap.toMatrixAlgEquiv eK)`, which is conjugation by the
+basis-change matrix — and it carries the family into `M₂(O)` precisely because `L` is
+stable. No maximality is used here; maximality is spent separately, by the discriminant, to
+get the REVERSE inclusion. -/
+theorem exists_algEquiv_matrix_entries_mem {O Kf : Type*} [CommRing O] [IsDomain O]
+    [IsPrincipalIdealRing O] [Field Kf] [Algebra O Kf] [IsFractionRing O Kf]
+    {κ : Type*} [Fintype κ] (α : κ → Matrix (Fin 2) (Fin 2) Kf)
+    (hspan : Submodule.span Kf (Set.range α) = ⊤)
+    (hmul : ∀ i j, ∃ s : κ → O, α i * α j = ∑ k, algebraMap O Kf (s k) • α k) :
+    ∃ Ψ : Matrix (Fin 2) (Fin 2) Kf ≃ₐ[Kf] Matrix (Fin 2) (Fin 2) Kf,
+      ∀ i p q, ∃ o : O, Ψ (α i) p q = algebraMap O Kf o := by
+  classical
+  set col : κ → (Fin 2 → Kf) := fun i p => α i p 0 with hcol
+  set L : Submodule O (Fin 2 → Kf) := Submodule.span O (Set.range col) with hL
+  set φ : Matrix (Fin 2) (Fin 2) Kf →ₗ[Kf] (Fin 2 → Kf) :=
+    { toFun := fun A p => A p 0
+      map_add' := fun _ _ => rfl
+      map_smul' := fun _ _ => rfl } with hφ
+  have hφsurj : Function.Surjective φ := fun y => ⟨Matrix.of fun p _ => y p, rfl⟩
+  haveI : Submodule.IsLattice Kf L := by
+    refine ⟨Submodule.fg_span (Set.finite_range _), top_unique ?_⟩
+    have hsub : Submodule.span Kf (Set.range col) ≤ Submodule.span Kf (L : Set (Fin 2 → Kf)) :=
+      Submodule.span_mono (by rintro _ ⟨i, rfl⟩; exact Submodule.subset_span ⟨i, rfl⟩)
+    refine le_trans ?_ hsub
+    have hrange : Set.range col = φ '' (Set.range α) := by rw [← Set.range_comp]; rfl
+    rw [hrange, Submodule.span_image, hspan, Submodule.map_top]
+    rintro y -
+    exact hφsurj y
+  have hstable : ∀ i, ∀ x ∈ L, (α i) *ᵥ x ∈ L := by
+    intro i x hx
+    have hle : L ≤ Submodule.comap (((α i).mulVecLin).restrictScalars O) L := by
+      rw [hL]
+      refine Submodule.span_le.2 ?_
+      rintro _ ⟨j, rfl⟩
+      obtain ⟨s, hs⟩ := hmul i j
+      have hcomp : (α i) *ᵥ (col j) = fun p => (α i * α j) p 0 := by
+        funext p
+        simp [Matrix.mulVec, dotProduct, Matrix.mul_apply, hcol]
+      have hkey : (α i) *ᵥ (col j) = ∑ k, s k • col k := by
+        rw [hcomp, hs]
+        funext p
+        have e1 : ((∑ k, algebraMap O Kf (s k) • α k : Matrix (Fin 2) (Fin 2) Kf)) p 0
+            = ∑ k, algebraMap O Kf (s k) * α k p 0 := by
+          simp only [Matrix.sum_apply, Matrix.smul_apply, smul_eq_mul]
+        have e2 : ((∑ k, s k • col k : Fin 2 → Kf)) p
+            = ∑ k, algebraMap O Kf (s k) * α k p 0 := by
+          rw [Finset.sum_apply]
+          refine Finset.sum_congr rfl fun k _ => ?_
+          show s k • (α k p 0) = algebraMap O Kf (s k) * α k p 0
+          rw [Algebra.smul_def]
+        rw [e1, e2]
+      show (α i) *ᵥ (col j) ∈ L
+      rw [hkey]
+      exact Submodule.sum_mem _ fun k _ => Submodule.smul_mem _ _ (Submodule.subset_span ⟨k, rfl⟩)
+    exact hle hx
+  have hcard : Fintype.card (Module.Free.ChooseBasisIndex O L) = 2 := by
+    have h := Submodule.IsLattice.finrank_of_pi Kf L
+    rw [Module.finrank_eq_card_chooseBasisIndex] at h
+    simpa using h
+  set eL2 : Module.Basis (Fin 2) O L :=
+    (Module.Free.chooseBasis O L).reindex (Fintype.equivFinOfCardEq hcard) with heL2
+  set eK : Module.Basis (Fin 2) Kf (Fin 2 → Kf) := eL2.extendOfIsLattice Kf with heK
+  have heKapp : ∀ j, eK j = ((eL2 j : L) : Fin 2 → Kf) := fun j => by
+    rw [heK, Module.Basis.extendOfIsLattice_apply]
+  have hreprmem : ∀ (y : Fin 2 → Kf), y ∈ L → ∀ p,
+      ∃ o : O, eK.repr y p = algebraMap O Kf o := by
+    intro y hy p
+    refine ⟨eL2.repr ⟨y, hy⟩ p, ?_⟩
+    have hy' : y = ∑ j, algebraMap O Kf (eL2.repr ⟨y, hy⟩ j) • eK j := by
+      have h0 : ∑ j, ((eL2.repr ⟨y, hy⟩ j • eL2 j : L) : Fin 2 → Kf) = y := by
+        have h1 := congrArg (Subtype.val) (eL2.sum_repr ⟨y, hy⟩)
+        rw [Submodule.coe_sum] at h1
+        exact h1
+      refine h0.symm.trans (Finset.sum_congr rfl fun j _ => ?_)
+      rw [heKapp j, algebraMap_smul, Submodule.coe_smul]
+    conv_lhs => rw [hy']
+    rw [Module.Basis.repr_sum_self]
+  refine ⟨Matrix.toLinAlgEquiv'.trans (LinearMap.toMatrixAlgEquiv eK), fun i p q => ?_⟩
+  have hentry : (Matrix.toLinAlgEquiv'.trans (LinearMap.toMatrixAlgEquiv eK) (α i)) p q
+      = eK.repr ((α i) *ᵥ (eK q)) p := by
+    rw [AlgEquiv.trans_apply, LinearMap.toMatrixAlgEquiv_apply, Matrix.toLinAlgEquiv'_apply]
+  rw [hentry]
+  exact hreprmem _ (heKapp q ▸ hstable i _ (eL2 q).2) p
+
+/-- **An integral linear system with UNIT determinant has an integral solution.** The matrix
+is invertible already over `O`, so `c = t ᵥ* G⁻¹` has entries in `O`. This is the exact
+shape in which the unit-discriminant certificate is spent. -/
+theorem forall_exists_of_vecMul_of_isUnit_det {O Kf : Type*} [CommRing O] [CommRing Kf]
+    [Algebra O Kf] {κ : Type*} [Fintype κ] [DecidableEq κ] (G : Matrix κ κ O)
+    (hdet : IsUnit G.det) (c : κ → Kf) (t : κ → O)
+    (heq : c ᵥ* ((algebraMap O Kf).mapMatrix G) = fun j => algebraMap O Kf (t j)) :
+    ∀ i, ∃ o : O, c i = algebraMap O Kf o := by
+  obtain ⟨u, hu⟩ := (Matrix.isUnit_iff_isUnit_det G).2 hdet
+  have hGinv : ((algebraMap O Kf).mapMatrix G) *
+      ((algebraMap O Kf).mapMatrix (↑u⁻¹ : Matrix κ κ O)) = 1 := by
+    rw [← map_mul, ← hu, u.mul_inv, map_one]
+  have hc : c = (fun j => algebraMap O Kf (t j)) ᵥ*
+      ((algebraMap O Kf).mapMatrix (↑u⁻¹ : Matrix κ κ O)) := by
+    rw [← heq, Matrix.vecMul_vecMul, hGinv, Matrix.vecMul_one]
+  intro i
+  refine ⟨(t ᵥ* (↑u⁻¹ : Matrix κ κ O)) i, ?_⟩
+  rw [hc]
+  simp [Matrix.vecMul, dotProduct, map_sum, RingHom.mapMatrix_apply]
+
 /-- **STEP 1a-vi(b′′) — MAXIMAL ORDERS IN A SPLIT QUATERNION ALGEBRA OVER A COMPLETE DVR ARE
 CONJUGATE TO `M₂(𝒪_w)`** (**PROVEN 2026-07-30, ROUND-12**; cut 2026-07-30, ROUND-11, out of
 `eventually_exists_integralSplitting` below, which is now a PROVEN assembly over this leaf,
 `traceDiscr_ne_zero_of_split` and `eventually_valuation_eq_one`).
 
-ONE PLACE, ONE LATTICE, AND THE MAXIMALITY HANDED OVER. The predecessor leaf asked for the
-same conclusion at ALMOST EVERY place and left the prover to discover, on the way, both that
-the `𝒪_w`-span of `b` is an order at almost every `w` and that it is MAXIMAL at almost every
-`w`. Those two are now hypotheses at a single `w`:
+**WHAT THE PROOF IS, and why it never needed the words "maximal order".** The classical
+statement is proved in two halves that pull in opposite directions and meet exactly:
 
 * `_hone` and `hstruct` say the span `Λ_w := ⊕ᵢ 𝒪_w · (1 ⊗ b i)` contains `1` and is closed
   under multiplication, i.e. `Λ_w` IS an `𝒪_w`-order;
@@ -7660,13 +7821,13 @@ Two hypotheses are load-bearing in ways worth recording.
   REGULAR trace form of `M₂(𝒪_w)` in the standard basis has entries `2 · δ`, so its
   determinant is a unit times `2⁴`; at `w ∣ 2` no basis of any order has unit discriminant.
   The assembly only ever needs `hdisc` at almost every `w`, and the places over `2` are
-  finitely many, so they are simply among the exceptions. (Using the REDUCED trace would
-  remove the factor; it is not defined in this tree, and defining it is not worth it for a
-  statement that is only ever used a.e.)
-* `hsplitw` is retained even though a prover following the route above constructs `f`
-  outright, for the reason the predecessor leaf gave: keeping it makes this leaf strictly
-  weaker than the local content it replaces, so the cut cannot have introduced a
-  falsehood. -/
+  finitely many, so they are simply among the exceptions. Note the proof above never
+  computes that `2⁴` — it only needs `det G` to be a unit and the entries of `G` to be
+  integral, so the characteristic-`2` obstruction stays where it belongs, in the caller.
+* `hsplitw` is retained even though the conclusion produces a splitting outright, for the
+  reason the predecessor leaf gave: keeping it makes this statement strictly weaker than
+  the local content it replaces, so the cut cannot have introduced a falsehood. -/
+
 theorem exists_integralSplitting_of_valuation_traceDiscr_eq_one (b : Module.Basis ι F D)
     (w : HeightOneSpectrum (𝓞 F))
     (hsplitw : Nonempty ((w.adicCompletion F) ⊗[F] D ≃ₐ[w.adicCompletion F]
@@ -10777,6 +10938,22 @@ at every finite place and no admissible `D'` exists for a generic `θ`. Nothing
 about a Shimura curve, étale cohomology, Poincaré duality or the
 Eichler–Shimura relation has to be formalised to close what remains here — all
 four were only ever inside the package, and the package is now proven from `τ`.
+
+**RE-VERIFIED ATOMIC 2026-07-31 by a fresh owner, and the verdict to carry is
+the ROUND-7 one: "Do not dispatch another agent to look for a weakening; there
+is none."** The reverse witness at `CarayolJacobianPackage` (§ROUND-7
+EQUIVALENCE AUDIT, above the structure) makes `Nonempty (CarayolJacobianPackage
+F L badF P)` EQUIVALENT to the STEP 2a conclusion — the twenty-odd fields are
+all true of a plain `τ : GaloisRep F L (Fin 2 → L)` with `τ.charFrob w = P w`,
+with `hecke w` scalar, `pair` the symplectic form and `e = 1` — so every
+conclusion-side rearrangement is a relocation by construction. What is left is
+therefore exactly Langlands for Hilbert modular forms of parallel weight `2`:
+attach a `2`-dimensional `3`-adic representation to the eigensystem. That is
+Carayol's/Taylor's theorem and it is not decomposable in this tree; a prover
+dispatched here has no smaller target to hit. The one recorded genuine move is
+the `R = 𝕋` STRENGTHENING of ROUND-6, which asserts MORE and was rejected
+there. Refuting check, unchanged: exhibit a package `Q` with `Nonempty Q`
+strictly weaker than the STEP 2a conclusion.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/

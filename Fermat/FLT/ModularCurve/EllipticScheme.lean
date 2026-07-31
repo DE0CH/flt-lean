@@ -152,25 +152,32 @@ GROUP-LAW-FREE halves of the chart: a commutative-algebra one
 (`ProjChartRing E 2 ≃+* E.toAffine.CoordinateRing`) and a topological one
 (`V₊(Z̄)` is the image of `projInfty`).
 
-## THE LEAF STATUS OF THIS MODULE, FROM THE COMPILER (2026-07-30)
+## THE LEAF STATUS OF THIS MODULE, FROM THE COMPILER (2026-07-31)
 
 **Read this before believing anything below about what is open.**  `lake build
 Fermat.FLT.ModularCurve.EllipticScheme` emits **exactly ONE** `declaration uses
 'sorry'` warning, and it is
 
-* `exists_poleOrder_of_affineComplement` — the Riemann–Roch DIMENSION COUNT
-  `finrank K (L (n·[O])) = n` for the linear systems at the zero section, together
-  with the pole-order function that states them.  Its docstring records that
-  neither mathlib nor `~/cs/FLT` has Riemann–Roch or an arithmetic genus at this
-  pin.
+* `exists_poleOrderValuation_of_affineComplement` — the pole order `deg = -ord_O` at
+  the zero section, together with the three ELEMENTARY clauses that make its value
+  semigroup `⟨2, 3⟩`: no function has a simple pole (`genus ≥ 1`), some function has a
+  double pole and some a triple pole (`genus ≤ 1`), and two functions of equal pole
+  order differ by a `K`-multiple of smaller pole order (the residue field at `O` is
+  `K`).  Its docstring records that neither mathlib nor `~/cs/FLT` has Riemann–Roch or
+  an arithmetic genus at this pin.
 
-**UPDATED 2026-07-30**: the warning used to sit on
-`exists_weierstrassGenerators_of_affineComplement`, which is now PROVEN over the leaf
-above.  Everything between a pole-order filtration and the Weierstrass generators —
-the choice of `x` and `y`, the relation, the normalisation, the generation of `R` — is
-proven, sorry-free, in `PoleOrderFiltration` below.  The count is unchanged at ONE; what
-changed is that the remaining leaf is now purely a dimension count and carries no
-algebra.
+**UPDATED 2026-07-31**: the warning used to sit on
+`exists_poleOrder_of_affineComplement`, which is now PROVEN over the leaf above.  The
+DIMENSION COUNT `finrank K (L (n·[O])) = n` is no longer a leaf — it is derived, sorry
+free, in `PoleOrderFiltration.finrank_poleFiltration` from the elementary clauses.  The
+count is unchanged at ONE; what changed is that the remaining leaf mentions no
+`Module.finrank` at all, so an attack on it needs curve theory and no linear algebra.
+
+**UPDATED 2026-07-30**: the warning before that sat on
+`exists_weierstrassGenerators_of_affineComplement`, which is PROVEN over
+`exists_poleOrder_of_affineComplement`.  Everything between a pole-order filtration and
+the Weierstrass generators — the choice of `x` and `y`, the relation, the normalisation,
+the generation of `R` — is proven, sorry-free, in `PoleOrderFiltration` below.
 
 That is the module's whole DIRECT frontier.  A token scan agrees: with block
 comments (nested) and line comments stripped, the source contains exactly one
@@ -10116,6 +10123,151 @@ theorem linearIndependent_of_deg_injective {ι : Type*}
     rw [mem_poleFiltration_iff hL, deg_smul hL hgi₀] at hfin
     omega
 
+/-- The unit has pole order `0`. -/
+theorem deg_one_eq_zero
+    (hconst : ∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R)))
+    (h1 : (1 : R) ≠ 0) : deg (1 : R) = 0 :=
+  (hconst 1 h1).2 ⟨1, map_one _⟩
+
+/-- `L 0`, the space of functions with no pole at all, is the line of constants. -/
+theorem poleFiltration_zero (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n})
+    (hconst : ∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R)))
+    (h1 : (1 : R) ≠ 0) : L 0 = Submodule.span K {(1 : R)} := by
+  have hdeg1 : deg (1 : R) = 0 := deg_one_eq_zero hconst h1
+  apply le_antisymm
+  · intro r hr
+    rw [mem_poleFiltration_iff hL] at hr
+    rcases eq_or_ne r 0 with rfl | hr0
+    · exact Submodule.zero_mem _
+    · obtain ⟨c, hc⟩ := (hconst r hr0).1 (Nat.le_zero.1 hr)
+      rw [Submodule.mem_span_singleton]
+      exact ⟨c, by rw [Algebra.smul_def, mul_one, hc]⟩
+  · rw [Submodule.span_le, Set.singleton_subset_iff, SetLike.mem_coe,
+      mem_poleFiltration_iff hL]
+    omega
+
+/-- **No simple pole ⟹ `L 1 = L 0`.**  This is the only place the genus-`≥ 1`
+hypothesis `hone` is used, and it is what makes `finrank K (L 1) = 1` rather
+than `2`. -/
+theorem poleFiltration_one (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n})
+    (hzero : deg 0 = 0) (hone : ∀ r : R, r ≠ 0 → deg r ≠ 1) : L 1 = L 0 := by
+  refine le_antisymm (fun r hr => ?_) (poleFiltration_mono hL (Nat.zero_le 1))
+  rw [mem_poleFiltration_iff hL] at hr ⊢
+  rcases eq_or_ne r 0 with rfl | hr0
+  · exact hzero.le
+  · have := hone r hr0
+    omega
+
+/-- **The value semigroup of a genus-one pole order is `⟨2, 3⟩ = ℕ ∖ {1}`.**
+From one function with a double pole and one with a triple pole, EVERY pole
+order `n ≥ 2` is attained.  Only multiplicativity is used; no descent and no
+dimension count. -/
+theorem exists_deg_eq (hzero : deg 0 = 0)
+    (hmul : ∀ r s : R, r ≠ 0 → s ≠ 0 → deg (r * s) = deg r + deg s)
+    (hconst : ∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R)))
+    {x y : R} (hx : deg x = 2) (hy : deg y = 3) {n : ℕ} (hn : 2 ≤ n) :
+    ∃ r : R, r ≠ 0 ∧ deg r = n := by
+  have hx0 : x ≠ 0 := by rintro rfl; omega
+  have hy0 : y ≠ 0 := by rintro rfl; omega
+  haveI : Nontrivial R := nontrivial_of_ne x 0 hx0
+  have h1 : (1 : R) ≠ 0 := one_ne_zero
+  have hdeg1 : deg (1 : R) = 0 := deg_one_eq_zero hconst h1
+  have hpow : ∀ k : ℕ, x ^ k ≠ 0 ∧ deg (x ^ k) = 2 * k := by
+    intro k
+    induction k with
+    | zero => rw [pow_zero]; exact ⟨h1, by simp [hdeg1]⟩
+    | succ k ih =>
+        obtain ⟨hne, hdk⟩ := ih
+        have hd : deg (x ^ k * x) = 2 * (k + 1) := by
+          rw [hmul _ _ hne hx0, hdk, hx]; ring
+        have hne' : x ^ k * x ≠ 0 := by
+          intro h; rw [h, hzero] at hd; omega
+        rw [pow_succ]
+        exact ⟨hne', hd⟩
+  rcases Nat.even_or_odd n with ⟨m, hm⟩ | ⟨m, hm⟩
+  · exact ⟨x ^ m, (hpow m).1, by have := (hpow m).2; omega⟩
+  · have hm1 : 1 ≤ m := by omega
+    have hdy : deg (y * x ^ (m - 1)) = n := by
+      rw [hmul _ _ hy0 (hpow (m - 1)).1, hy, (hpow (m - 1)).2]; omega
+    exact ⟨y * x ^ (m - 1), by intro h; rw [h, hzero] at hdy; omega, hdy⟩
+
+/-- **THE GENUS-ONE DIMENSION COUNT — the pure-algebra half of Riemann–Roch.**
+
+`finrank K (L n) = n` for `n ≥ 1` is not itself a geometric statement: it
+follows from four ELEMENTARY properties of the pole order, three of which are
+valuation-theoretic bookkeeping and one of which (`hdesc`) is the statement
+that the residue field at the point `O` is the base field `K`:
+
+* `hone` — no function has a SIMPLE pole (`genus ≥ 1`);
+* `hx`, `hy` — some function has a DOUBLE pole and some a TRIPLE pole
+  (`genus ≤ 1`, i.e. Riemann's inequality at `n = 2, 3`);
+* `hdesc` — two functions of the same pole order `n ≥ 1` differ, after
+  scaling by a CONSTANT of `K`, by a function of strictly smaller pole order.
+
+The proof is the two-step one: `hdesc` says each graded piece
+`L n / L (n-1)` has dimension `≤ 1`, `exists_deg_eq` says it is nonzero for
+every `n ≥ 2`, and `poleFiltration_one` says it vanishes at `n = 1`. -/
+theorem finrank_poleFiltration
+    (hL : ∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n})
+    (hzero : deg 0 = 0)
+    (hmul : ∀ r s : R, r ≠ 0 → s ≠ 0 → deg (r * s) = deg r + deg s)
+    (hconst : ∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R)))
+    (hone : ∀ r : R, r ≠ 0 → deg r ≠ 1)
+    (hdesc : ∀ r s : R, r ≠ 0 → s ≠ 0 → deg r = deg s → 1 ≤ deg r →
+      ∃ c : K, deg (r - c • s) < deg r)
+    {x y : R} (hx : deg x = 2) (hy : deg y = 3) :
+    ∀ n : ℕ, 1 ≤ n → Module.finrank K (L n) = n := by
+  have hx0 : x ≠ 0 := by rintro rfl; omega
+  haveI : Nontrivial R := nontrivial_of_ne x 0 hx0
+  have h1 : (1 : R) ≠ 0 := one_ne_zero
+  have hL0 : L 0 = Submodule.span K {(1 : R)} := poleFiltration_zero hL hconst h1
+  have hrank0 : Module.finrank K (L 0) = 1 := by
+    rw [hL0]; exact finrank_span_singleton h1
+  haveI hfd0 : FiniteDimensional K (L 0) := by rw [hL0]; infer_instance
+  have hL10 : L 1 = L 0 := poleFiltration_one hL hzero hone
+  have key : ∀ n : ℕ, 1 ≤ n → FiniteDimensional K (L n) ∧ Module.finrank K (L n) = n := by
+    intro n hn
+    induction n, hn using Nat.le_induction with
+    | base => rw [hL10]; exact ⟨hfd0, hrank0⟩
+    | succ n hn ih =>
+        obtain ⟨hfdn, hrn⟩ := ih
+        haveI := hfdn
+        obtain ⟨r, hr0, hrdeg⟩ := exists_deg_eq hzero hmul hconst hx hy (by omega : 2 ≤ n + 1)
+        have hsup : L (n + 1) = L n ⊔ Submodule.span K {r} := by
+          apply le_antisymm
+          · intro s hs
+            rw [mem_poleFiltration_iff hL] at hs
+            rcases lt_or_ge (deg s) (n + 1) with h | h
+            · exact Submodule.mem_sup_left ((mem_poleFiltration_iff hL _ _).2 (by omega))
+            · have hdegs : deg s = n + 1 := le_antisymm hs h
+              have hs0 : s ≠ 0 := by rintro rfl; omega
+              obtain ⟨c, hc⟩ := hdesc s r hs0 hr0 (hdegs.trans hrdeg.symm) (by omega)
+              have hmem : s - c • r ∈ L n := (mem_poleFiltration_iff hL _ _).2 (by omega)
+              have hrw : s = (s - c • r) + c • r := by abel
+              rw [hrw]
+              exact Submodule.add_mem_sup hmem
+                (Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self r))
+          · refine sup_le (poleFiltration_mono hL (Nat.le_succ n)) ?_
+            rw [Submodule.span_le, Set.singleton_subset_iff, SetLike.mem_coe,
+              mem_poleFiltration_iff hL]
+            omega
+        have hdisj : L n ⊓ Submodule.span K {r} = ⊥ := by
+          refine le_antisymm ?_ bot_le
+          intro z hz
+          obtain ⟨hz1, hz2⟩ := hz
+          simp only [SetLike.mem_coe] at hz1 hz2
+          rw [Submodule.mem_span_singleton] at hz2
+          obtain ⟨c, rfl⟩ := hz2
+          rcases eq_or_ne c 0 with rfl | hc
+          · simp
+          · exfalso
+            rw [mem_poleFiltration_iff hL, deg_smul hL hc] at hz1
+            omega
+        have hcount := Submodule.finrank_sup_add_finrank_inf_eq (L n) (Submodule.span K {r})
+        rw [hdisj, finrank_bot, add_zero, hrn, finrank_span_singleton hr0] at hcount
+        exact ⟨by rw [hsup]; infer_instance, by rw [hsup]; exact hcount⟩
+  exact fun n hn => (key n hn).2
+
 end PoleOrder
 
 set_option maxHeartbeats 1000000 in
@@ -10381,10 +10533,146 @@ theorem exists_weierstrassGenerators_of_poleOrder {K R : Type*} [Field K] [CommR
 
 end PoleOrderFiltration
 
+/-- **RIEMANN–ROCH, IN ELEMENTARY TERMS: the affine complement of the zero section
+carries a pole order whose value semigroup is `⟨2, 3⟩`** (sorry leaf, cut 2026-07-31
+out of `exists_poleOrder_of_affineComplement`, whose entire DIMENSION-COUNT content is
+now proven in `PoleOrderFiltration.finrank_poleFiltration`).
+
+**This statement mentions no `Module.finrank`, and that is the point of the cut.**  The
+Riemann–Roch content that used to be packaged as `finrank K (L n) = n` is here in the
+three elementary clauses a curve-theory argument actually produces:
+
+* `hone` — **no function has a SIMPLE pole at `O`.**  This is `genus ≥ 1`: an `r` with
+  `deg r = 1` is a degree-one map `A → P¹`, hence an isomorphism, and `P¹` carries no
+  abelian-scheme structure (an abelian scheme has translation-invariant, hence trivial,
+  canonical bundle, so `2g - 2 = 0`).
+* `∃ x, deg x = 2` and `∃ y, deg y = 3` — **some function has a double pole and some a
+  triple pole.**  This is `genus ≤ 1`, i.e. Riemann's inequality `dim L(n[O]) ≥ n + 1 - g`
+  read at `n = 2` and `n = 3`.  Together with `hone` these pin the value semigroup of
+  `deg` to `⟨2, 3⟩ = ℕ ∖ {1}`, which is `PoleOrderFiltration.exists_deg_eq`.
+* `hdesc` — **two functions with the SAME pole order differ, after scaling by a constant
+  OF `K`, by a function of strictly smaller pole order.**  This is not a dimension count
+  either: it is the statement that the residue field of the local ring at `O` is `K`,
+  which holds because `O = ab.zero (𝟙 _)` is a SECTION of `f`, hence a `K`-rational
+  point.  Concretely `r / s` is a unit of `𝒪_{A,O}`, and `c` is its residue.
+
+`PoleOrderFiltration.finrank_poleFiltration` turns exactly these three into
+`finrank K (L n) = n` for `n ≥ 1`, so nothing has been lost.
+
+TRUE — Silverman *AEC* III.3.1, and the geometric justification of each clause is the
+one recorded on `exists_poleOrder_of_affineComplement` below: `A` is a smooth proper
+geometrically connected curve over `K` carrying a group law, `O` is the `K`-rational
+point `ab.zero (𝟙 (Spec (CommRingCat.of K)))`, `Spec R` IS `A ∖ {O}`, the stalk
+`𝒪_{A,O}` is a DVR (this project owns that as
+`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`), and `deg r := -ord_O r`,
+`deg 0 := 0`.  Properness plus geometric connectedness plus geometric reducedness give
+`Γ(A, 𝒪_A) = K`, which is `hconst` and simultaneously `deg ≥ 0`.
+
+## FALSITY AUDIT (fresh, 2026-07-31 — this is a NEW statement, so no earlier audit
+applies; CLAUDE.md's rule that a restatement VOIDS the previous audit is why this is
+written out again rather than inherited)
+
+**`hrange` IS LOAD-BEARING, and the clause it now protects is `hconst`, not a dimension
+count.**  Drop it and take `ι` the open immersion onto the complement of TWO rational
+points `O` and `P`.  A function with poles only at `P` is regular at `O`, so it has
+`deg = 0` without being constant, and `hconst` fails for the geometric `deg`.  And no
+OTHER `deg` rescues the existential: a `deg` satisfying `hzero`/`hmul`/`hconst` is
+`-v` for a discrete valuation `v` of `Frac R` trivial on `K` with `v ≤ 0` on `R`; every
+such `v` is `ord_Q` for a point `Q` of the smooth projective model, `Q` must lie in the
+removed set (otherwise `R` contains non-constant functions regular at `Q`), and for
+either choice of `Q ∈ {O, P}` the ring `{r ∈ R | ord_Q r ≥ 0}` is the coordinate ring of
+the complement of the OTHER point, which is strictly larger than `K`.  So `hconst` fails
+for every admissible `deg`, and the conclusion is false.  This is sharper than the
+dimension-count witness the previous statement used, and it does not need `finrank`.
+
+**`hstr` IS LOAD-BEARING, and the mechanism is NOT the one the previous audit gave.**
+The previous audit's witness — `K = ℚ(t)`, `R` an elliptic coordinate ring over `K`,
+`K` acting through `t ↦ t²` — is a correct witness, but its stated reason ("the constants
+of `R` are unchanged as a SET, so `hconst` survives; the counterexample kills only
+`hrank`, silently") is WRONG, and the correct refutation is both simpler and available
+here where no `finrank` appears.  `Set.range (algebraMap K R)` is `ℚ(t²)`, a PROPER
+subfield of the true constant field `ℚ(t)`, so `hconst` is what breaks — and it breaks
+for every `deg`, not just the geometric one: `t` is a UNIT of `R` (both `t` and `t⁻¹`
+lie in `R`), so `hmul` forces `deg t + deg t⁻¹ = deg 1 = 0`, hence `deg t = 0`, while
+`t ∉ Set.range (algebraMap K R)`.  So `hconst` is contradicted outright.  (Over `ℚ` and
+`ℚ̄`, the only two bases instantiated, `algebraMap` is the unique ring map out of the base
+or is surjective, which is why the `ℚ`-era statement could omit `hstr`.  That is a fact
+about those two fields, not about this statement.)
+
+**`hone` IS NOT REDUNDANT.**  Without it the whole bundle is satisfiable on a GENUS-ZERO
+curve: take `A = P¹` (forgetting that it carries no group law), `O = ∞`, `R = K[t]`,
+`deg = ` degree of a polynomial.  Then `hzero`, `hmul`, `hconst`, `hdesc` and `htop` all
+hold, `deg t = 1`, `deg t² = 2`, `deg t³ = 3`, and `finrank K (L n) = n + 1 ≠ n`.  So
+`hone` is exactly the clause that separates genus one from genus zero, and it is the
+clause `PoleOrderFiltration.poleFiltration_one` consumes.
+
+**`hdesc` IS NOT REDUNDANT EITHER**, and the witness is a base change rather than a curve:
+run the same construction with the `K`-algebra structure on `R` restricted along a proper
+subfield `K₀ ⊂ K` over which `O` is still rational for the larger field.  Each graded
+piece `L n / L (n-1)` is then `[K : K₀]`-dimensional over `K₀` and the count is
+`[K : K₀] · n`.  What `hdesc` encodes is precisely that the residue field at `O` is not
+bigger than the base — i.e. that `O` is `K`-rational, which for a SECTION of `f` it is.
+
+**`hdim` IS LOAD-BEARING FOR THE PROOF, not for the truth**, exactly as before: without
+it `A` may be an abelian scheme of relative dimension `≥ 2`, and then `A ∖ {O}` is not
+affine so no such `ι` exists and the statement is vacuous there.  What `hdim` buys is the
+DVR stalk, i.e. the existence of `deg` at all.
+
+**NOT VACUOUS**: instantiate at the `(A, f, ab, ι)` produced by
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` and `exists_affineChart_projModel`,
+where `deg` is the pole order at the point at infinity of the Weierstrass model —
+`deg (x^i y^j) = 2i + 3j`, so `x` and `y` themselves witness the two existentials, `hone`
+holds because `2i + 3j = 1` has no solution, and `hdesc` is division of the leading
+coefficients.
+
+WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS: a Riemann–Roch theorem, a genus, or a theory
+of divisors/linear systems on a relative curve, in `Fermat/`, `.lake/packages/mathlib` or
+`~/cs/FLT`.  Still absent from all three as of 2026-07-31.  The pin DOES have
+`Mathlib/AlgebraicGeometry/OrderOfVanishing.lean` — `Scheme.ord`, the order of vanishing
+at a codimension-one point of a locally Noetherian integral scheme — which is enough to
+CONSTRUCT `deg`, to prove `hzero`, `hmul` and `hdesc`, and to state the rest.  After this
+cut the genuinely missing mathematics is only `hone` (genus `≥ 1`) and the two
+existentials (genus `≤ 1`). -/
+theorem exists_poleOrderValuation_of_affineComplement {K : Type} [Field K] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f)
+    (R : Type) [CommRing R] [Algebra K R] (ι : Spec (CommRingCat.of R) ⟶ A)
+    (hopen : IsOpenImmersion ι)
+    (hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K R)))
+    (hrange : Set.range ι.base =
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base)ᶜ) :
+    ∃ (deg : R → ℕ) (L : ℕ → Submodule K R),
+      (∀ n : ℕ, (L n : Set R) = {r : R | deg r ≤ n}) ∧
+      deg 0 = 0 ∧
+      (∀ r s : R, r ≠ 0 → s ≠ 0 → deg (r * s) = deg r + deg s) ∧
+      (∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R))) ∧
+      (∀ r : R, r ≠ 0 → deg r ≠ 1) ∧
+      (∀ r s : R, r ≠ 0 → s ≠ 0 → deg r = deg s → 1 ≤ deg r →
+        ∃ c : K, deg (r - c • s) < deg r) ∧
+      (∃ x : R, deg x = 2) ∧ (∃ y : R, deg y = 3) ∧
+      (⨆ n, L n) = ⊤ :=
+  sorry
+
 /-- **RIEMANN–ROCH: the affine complement of the zero section carries a pole-order
-filtration with the genus-one dimension counts** (sorry leaf, cut 2026-07-30 out of
+filtration with the genus-one dimension counts** (PROVEN 2026-07-31 over the single
+sub-leaf `exists_poleOrderValuation_of_affineComplement` above; formerly a sorry leaf,
+cut 2026-07-30 out of
 `exists_weierstrassGenerators_of_affineComplement`, whose entire ELEMENT-LEVEL content is
 now proven in `PoleOrderFiltration.exists_weierstrassGenerators_of_poleOrder`).
+
+**THIS DECLARATION HAS NO `sorry` OF ITS OWN ANY MORE (2026-07-31).**  Its whole content
+is now the composite of two things: the elementary leaf
+`exists_poleOrderValuation_of_affineComplement` above (which supplies the pole order
+together with `hone`, `hdesc` and the two existentials `∃ x, deg x = 2`,
+`∃ y, deg y = 3`) and the pure-algebra theorem
+`PoleOrderFiltration.finrank_poleFiltration` (which turns those into
+`finrank K (L n) = n`).  **The FALSITY AUDIT below is therefore about a statement that is
+no longer a leaf; read the FRESH audit on `exists_poleOrderValuation_of_affineComplement`
+instead**, which also CORRECTS the `hstr` paragraph below (the twisted-action witness is
+right, but it breaks `hconst`, not `hrank`, and it breaks it for every admissible `deg`
+because `t` is a unit).  Nothing in the interface changed: the statement, the hypotheses
+and the consumers are all exactly as they were.
 
 This leaf carries the whole Riemann–Roch content of the reverse bridge and nothing else.
 It asks for exactly two things:
@@ -10486,8 +10774,11 @@ theorem exists_poleOrder_of_affineComplement {K : Type} [Field K] {A : Scheme.{0
       (∀ r s : R, r ≠ 0 → s ≠ 0 → deg (r * s) = deg r + deg s) ∧
       (∀ r : R, r ≠ 0 → (deg r = 0 ↔ r ∈ Set.range (algebraMap K R))) ∧
       (∀ n : ℕ, 1 ≤ n → Module.finrank K (L n) = n) ∧
-      (⨆ n, L n) = ⊤ :=
-  sorry
+      (⨆ n, L n) = ⊤ := by
+  obtain ⟨deg, L, hL, hzero, hmul, hconst, hone, hdesc, ⟨x, hx⟩, ⟨y, hy⟩, htop⟩ :=
+    exists_poleOrderValuation_of_affineComplement ab hdim R ι hopen hstr hrange
+  exact ⟨deg, L, hL, hzero, hmul, hconst,
+    PoleOrderFiltration.finrank_poleFiltration hL hzero hmul hconst hone hdesc hx hy, htop⟩
 
 /-- **RIEMANN–ROCH, IN ELEMENTS: the affine complement of the zero section
 has two generators satisfying a Weierstrass relation** (PROVEN 2026-07-30 over the
@@ -10851,6 +11142,183 @@ theorem exists_weierstrassRingEquiv_of_affineComplement {K : Type} [Field K] {A 
     ⟨_root_.injective_of_surjective_coordinateRing E hnf φ.toRingHom hφ, hφ⟩).symm⟩⟩
 
 /-! ### The singular point of a `Δ = 0` Weierstrass cubic is rational over a PERFECT field
+/-! #### `Δ = 0` forces a rational singular point — over any PERFECT field
+
+The four lemmas below are the characteristic-`2` and characteristic-`3`
+branches of `exists_singular_of_Δ_eq_zero`, which was stated over a
+characteristic-zero field until 2026-07-30 and is now stated over a
+**perfect** one.  `PerfectField` is the exact hypothesis, in both
+directions:
+
+* it is ENOUGH, because the only place a root has to be extracted is the
+  degenerate branch of each small characteristic (`a₁ = 0` in char `2`,
+  `b₂ = 0` in char `3`), where the missing coordinate is a `p`-th root and
+  Frobenius is surjective;
+* it is NECESSARY, because the leaf is FALSE over an imperfect field.  In
+  char `2` take `K = 𝔽₂(t)` and `E = ⟨0, 0, 0, t, 0⟩`: every `bᵢ` except
+  `b₈ = -t²` vanishes, so `Δ = 0`, while `W_Y = a₁X + 2Y + a₃ ≡ 0` and
+  `W_X = X² + t`, so the unique singular point is `(√t, 0)` and `√t ∉ K`.
+  In char `3` take `K = 𝔽₃(t)` and `E = ⟨0, 0, 0, 0, -t⟩`: `Δ = 2a₄³ = 0`,
+  the singular point is `(∛t, 0)`, and `∛t ∉ K`.
+
+Both instances the development actually needs are perfect —
+`PerfectField.ofCharZero` covers `ℚ` and every other characteristic-zero
+base, and `IsAlgClosed.perfectField` covers the geometric fibres — so
+relaxing `CharZero` to `PerfectField` costs no call site and buys the
+char-`p` geometric points that `X1.lean`'s
+`exists_zmodBasis_torsion_geomPoint_field` needs.
+
+The three explicit witnesses were found with Singular over `𝔽₂` and `𝔽₃`
+and are verified here by `linear_combination`; the char-`3` identity
+`b₂³ · W(X, Y) = -b₂²b₈ + b₄³` turned out to hold over `ℤ` exactly, with no
+characteristic correction, which is why `charThree_b₂_ne_zero` closes on
+`hd` alone. -/
+
+/-- In a perfect field in which the prime `p` vanishes, every element is a
+`p`-th power: `PerfectField` gives `PerfectRing`, whose Frobenius is
+surjective. -/
+theorem exists_pow_eq_of_perfectField {K : Type} [Field K] [PerfectField K] {p : ℕ}
+    (hp : p.Prime) (hchar : (p : K) = 0) (a : K) : ∃ b : K, b ^ p = a := by
+  have hdvd : ringChar K ∣ p := (ringChar.spec K p).mp hchar
+  have hrc : ringChar K = p := by
+    rcases hp.eq_one_or_self_of_dvd _ hdvd with h | h
+    · exfalso
+      have h1 : ((1 : ℕ) : K) = 0 := (ringChar.spec K 1).mpr (by rw [h])
+      simp at h1
+    · exact h
+  haveI : CharP K p := hrc ▸ ringChar.charP K
+  haveI : ExpChar K p := ExpChar.prime hp
+  obtain ⟨b, hb⟩ := surjective_frobenius K p a
+  exact ⟨b, hb⟩
+
+/-- `Δ` in characteristic `2`, with every even coefficient discharged. -/
+theorem weierstrass_delta_charTwo {K : Type} [Field K] (E : WeierstrassCurve K)
+    (h2 : (2 : K) = 0) (hΔ : E.Δ = 0) :
+    E.a₁ ^ 6 * E.a₆ + E.a₁ ^ 5 * E.a₃ * E.a₄ + E.a₁ ^ 4 * E.a₂ * E.a₃ ^ 2
+      + E.a₁ ^ 4 * E.a₄ ^ 2 + E.a₃ ^ 4 + E.a₁ ^ 3 * E.a₃ ^ 3 = 0 := by
+  simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈] at hΔ
+  linear_combination hΔ + (E.a₁ ^ 6 * E.a₆ + E.a₁ ^ 4 * E.a₂ * E.a₃ ^ 2
+    + 6 * E.a₁ ^ 4 * E.a₂ * E.a₆ - 4 * E.a₁ ^ 3 * E.a₂ * E.a₃ * E.a₄
+    - 18 * E.a₁ ^ 3 * E.a₃ * E.a₆ + 4 * E.a₁ ^ 2 * E.a₂ ^ 2 * E.a₃ ^ 2
+    + 24 * E.a₁ ^ 2 * E.a₂ ^ 2 * E.a₆ - 4 * E.a₁ ^ 2 * E.a₂ * E.a₄ ^ 2
+    + 15 * E.a₁ ^ 2 * E.a₃ ^ 2 * E.a₄ - 36 * E.a₁ ^ 2 * E.a₄ * E.a₆
+    - 8 * E.a₁ * E.a₂ ^ 2 * E.a₃ * E.a₄ - 18 * E.a₁ * E.a₂ * E.a₃ ^ 3
+    - 72 * E.a₁ * E.a₂ * E.a₃ * E.a₆ + 48 * E.a₁ * E.a₃ * E.a₄ ^ 2
+    + 8 * E.a₂ ^ 3 * E.a₃ ^ 2 + 32 * E.a₂ ^ 3 * E.a₆ - 8 * E.a₂ ^ 2 * E.a₄ ^ 2
+    - 36 * E.a₂ * E.a₃ ^ 2 * E.a₄ - 144 * E.a₂ * E.a₄ * E.a₆ + 14 * E.a₃ ^ 4
+    + 108 * E.a₃ ^ 2 * E.a₆ + 32 * E.a₄ ^ 3 + 216 * E.a₆ ^ 2) * h2
+
+/-- `Δ` in characteristic `3`: the `-27 b₆²` and `9 b₂b₄b₆` terms drop out. -/
+theorem weierstrass_delta_charThree {K : Type} [Field K] (E : WeierstrassCurve K)
+    (h3 : (3 : K) = 0) (hΔ : E.Δ = 0) : -E.b₂ ^ 2 * E.b₈ + E.b₄ ^ 3 = 0 := by
+  simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈] at hΔ ⊢
+  linear_combination hΔ + (-12 * E.a₁ ^ 3 * E.a₃ * E.a₆ + 12 * E.a₁ ^ 2 * E.a₃ ^ 2 * E.a₄
+    - 24 * E.a₁ ^ 2 * E.a₄ * E.a₆ - 12 * E.a₁ * E.a₂ * E.a₃ ^ 3
+    - 48 * E.a₁ * E.a₂ * E.a₃ * E.a₆ + 36 * E.a₁ * E.a₃ * E.a₄ ^ 2
+    - 24 * E.a₂ * E.a₃ ^ 2 * E.a₄ - 96 * E.a₂ * E.a₄ * E.a₆ + 9 * E.a₃ ^ 4
+    + 72 * E.a₃ ^ 2 * E.a₆ + 24 * E.a₄ ^ 3 + 144 * E.a₆ ^ 2) * h3
+
+/-- Char `2`, `a₁ ≠ 0`: `W_Y = a₁X + a₃` pins `x = a₃/a₁`, then `W_X = 0`
+pins `y`, and `a₁⁶ · W(x, y) = Δ`.  No root extraction, so no
+`PerfectField`. -/
+theorem exists_singular_of_Δ_eq_zero_charTwo_a₁_ne_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (h2 : (2 : K) = 0) (hΔ : E.Δ = 0) (ha1 : E.a₁ ≠ 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have hd := weierstrass_delta_charTwo E h2 hΔ
+  refine ⟨E.a₃ / E.a₁, (E.a₃ ^ 2 + E.a₁ ^ 2 * E.a₄) / E.a₁ ^ 3, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    field_simp
+    linear_combination hd + (E.a₁ ^ 2 * E.a₃ ^ 2 * E.a₄ - E.a₁ ^ 4 * E.a₂ * E.a₃ ^ 2
+      - E.a₁ ^ 6 * E.a₆) * h2
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · refine h ?_
+      field_simp
+      linear_combination (-E.a₃ ^ 2 - E.a₁ * E.a₂ * E.a₃) * h2
+    · refine h ?_
+      field_simp
+      linear_combination (E.a₃ ^ 2 + E.a₁ ^ 2 * E.a₄ + E.a₃ * E.a₁ ^ 3) * h2
+
+/-- Char `2`, `a₁ = 0`: then `Δ = a₃⁴`, so `a₃ = 0`, `W_Y ≡ 0`, and the
+singular point is `(√a₄, √(a₂a₄ + a₆))` — two square roots, which is
+where `PerfectField` is spent. -/
+theorem exists_singular_of_Δ_eq_zero_charTwo_a₁_eq_zero {K : Type} [Field K] [PerfectField K]
+    (E : WeierstrassCurve K) (h2 : (2 : K) = 0) (hΔ : E.Δ = 0) (ha1 : E.a₁ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have hd := weierstrass_delta_charTwo E h2 hΔ
+  rw [ha1] at hd
+  have ha3 : E.a₃ = 0 := by
+    have h4 : E.a₃ ^ 4 = 0 := by linear_combination hd
+    exact pow_eq_zero_iff (n := 4) (by norm_num) |>.mp h4
+  obtain ⟨x, hx⟩ := exists_pow_eq_of_perfectField Nat.prime_two h2 E.a₄
+  obtain ⟨y, hy⟩ := exists_pow_eq_of_perfectField Nat.prime_two h2 (E.a₂ * E.a₄ + E.a₆)
+  refine ⟨x, y, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    linear_combination hy + (-E.a₂ - x) * hx + (x * y) * ha1 + y * ha3 + (-E.a₄ * x) * h2
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · refine h ?_
+      linear_combination y * ha1 + (-3 : K) * hx + (-2 * E.a₄ - E.a₂ * x) * h2
+    · refine h ?_
+      linear_combination y * h2 + x * ha1 + ha3
+
+/-- Char `3`, `b₂ ≠ 0`: `3X²` drops out of `W_X`, so `W_X = W_Y = 0` is a
+LINEAR system with determinant `b₂`, and its unique solution
+`(-b₄/b₂, (a₁a₄ - 2a₂a₃)/b₂)` lies on the curve because
+`b₂³ · W = -b₂²b₈ + b₄³` identically over `ℤ`.  No root extraction. -/
+theorem exists_singular_of_Δ_eq_zero_charThree_b₂_ne_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (h3 : (3 : K) = 0) (hΔ : E.Δ = 0) (hb2 : E.b₂ ≠ 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have hd := weierstrass_delta_charThree E h3 hΔ
+  refine ⟨-E.b₄ / E.b₂, (E.a₁ * E.a₄ - 2 * E.a₂ * E.a₃) / E.b₂, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    field_simp
+    simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₈] at hd ⊢
+    linear_combination hd
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · refine h ?_
+      field_simp
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄] at ⊢
+      linear_combination (-(2 * E.a₄ + E.a₁ * E.a₃) ^ 2) * h3
+    · refine h ?_
+      field_simp
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄] at ⊢
+      ring
+
+/-- Char `3`, `b₂ = 0`: then `Δ = b₄³` forces `b₄ = 0`, the two derivative
+conditions COLLAPSE onto each other, `y = a₁x + a₃`, and the equation
+becomes `x³ = 2a₃² - a₆` — one cube root, which is where `PerfectField` is
+spent. -/
+theorem exists_singular_of_Δ_eq_zero_charThree_b₂_eq_zero {K : Type} [Field K] [PerfectField K]
+    (E : WeierstrassCurve K) (h3 : (3 : K) = 0) (hΔ : E.Δ = 0) (hb2 : E.b₂ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have hd := weierstrass_delta_charThree E h3 hΔ
+  rw [hb2] at hd
+  have hb4 : E.b₄ = 0 := by
+    have h3' : E.b₄ ^ 3 = 0 := by linear_combination hd
+    exact pow_eq_zero_iff (n := 3) (by norm_num) |>.mp h3'
+  simp only [WeierstrassCurve.b₂] at hb2
+  simp only [WeierstrassCurve.b₄] at hb4
+  obtain ⟨x, hx⟩ := exists_pow_eq_of_perfectField Nat.prime_three h3 (2 * E.a₃ ^ 2 - E.a₆)
+  refine ⟨x, E.a₁ * x + E.a₃, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    linear_combination (-1 : K) * hx + (2 * x ^ 2) * hb2 + (4 * x) * hb4
+      + (-3 * E.a₂ * x ^ 2 - 3 * E.a₄ * x) * h3
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · refine h ?_
+      linear_combination x * hb2 + hb4 + (-x ^ 2 - 2 * E.a₂ * x - E.a₄) * h3
+    · refine h ?_
+      linear_combination (E.a₁ * x + E.a₃) * h3
+
+/-- **A Weierstrass curve over a field in which `2` and `3` are invertible,
+with `Δ = 0`, has a RATIONAL singular point** (**PROVEN 2026-07-28** as the
+char-`0` half of leaf 3 of `exists_weierstrassModel_of_ellipticScheme`;
+`CharZero` weakened to `(2 : K) ≠ 0`, `(3 : K) ≠ 0` on 2026-07-30);
+Silverman *AEC* III.1.4.
 
 `exists_singular_of_Δ_eq_zero` at the end of this block is the arithmetic input to
 leaf 3 of `exists_weierstrassModel_of_ellipticScheme` (Silverman *AEC* III.1.4):
@@ -11156,6 +11624,72 @@ theorem exists_singular_of_Δ_eq_zero {K : Type} [Field K] [PerfectField K]
       · exact exists_singular_of_Δ_eq_zero_of_char_three E hΔ h2 h3 hc4
       · exact exists_singular_of_Δ_eq_zero_of_c₄_eq_zero E hΔ h2 h3 hc4
     · exact exists_singular_of_Δ_eq_zero_of_c₄_ne_zero E hΔ h2 hc4
+
+/-- **A singular Weierstrass curve over a field where `2` and `3` are invertible has a
+singular point RATIONAL over that field** — the `two_three_ne_zero` branch, kept because
+its explicit witness is the one the char-`0` consumers cite.
+
+**Where the sign comes from**, since the two roots of `6x² + b₂x + b₄` are
+`x = (±√c₄ - b₂)/12` and only ONE of them lies on the curve: eliminating
+`b₄` and `b₆` against the two derivative conditions gives
+`c₆ = -(b₂ + 12 x₀) ^ 3`, i.e. `X ^ 3 = -c₆`, which together with
+`X ^ 2 = c₄` pins `X = -c₆ / c₄`.  Choosing `+c₆ / c₄` instead gives the
+OTHER critical point of the cubic, which satisfies both derivative equations
+and is NOT on the curve. -/
+theorem exists_singular_of_Δ_eq_zero_of_two_three_ne_zero {K : Type} [Field K]
+    (E : WeierstrassCurve K) (h2 : (2 : K) ≠ 0) (h3 : (3 : K) ≠ 0) (hΔ : E.Δ = 0) :
+    ∃ x y : K, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  -- `ring` will NOT invert a numeral in a field of unknown characteristic (checked:
+  -- `2 * (x / 2) = x` fails for `[Field K]` and succeeds for `[Field K] [CharZero K]`),
+  -- so every step that divided by `2`, `12`, `48`, `576` or `864` in the `CharZero`
+  -- version is now cleared by `field_simp` against `h2`/`h3` first.
+  have h12 : (12 : K) ≠ 0 := by
+    intro h
+    have h' : (2 : K) * (2 * 3) = 0 := by linear_combination h
+    rcases mul_eq_zero.mp h' with h'' | h''
+    · exact h2 h''
+    · rcases mul_eq_zero.mp h'' with h3' | h3'
+      · exact h2 h3'
+      · exact h3 h3'
+  -- `X` is introduced OPAQUELY (rather than by `set`) so that the `simp only`
+  -- unfoldings of `b₂`/`c₄`/`c₆` below cannot reach inside its definition.
+  obtain ⟨X, hX2, hX3⟩ : ∃ X : K, X ^ 2 = E.c₄ ∧ X ^ 3 = -E.c₆ := by
+    have hc : E.c₄ ^ 3 = E.c₆ ^ 2 := by
+      have h := E.c_relation
+      rw [hΔ, mul_zero] at h
+      linear_combination -h
+    have hc6 : E.c₄ = 0 → E.c₆ = 0 := fun h => by
+      have h2' : E.c₆ ^ 2 = 0 := by rw [← hc, h]; ring
+      exact sq_eq_zero_iff.mp h2'
+    have hmul : E.c₄ * (-E.c₆ / E.c₄) = -E.c₆ := by
+      rcases eq_or_ne E.c₄ 0 with h | h
+      · rw [h, hc6 h]; ring
+      · field_simp
+    have hX2 : (-E.c₆ / E.c₄) ^ 2 = E.c₄ := by
+      rcases eq_or_ne E.c₄ 0 with h | h
+      · rw [h, hc6 h]; norm_num
+      · refine mul_left_cancel₀ (pow_ne_zero 2 h) ?_
+        calc E.c₄ ^ 2 * (-E.c₆ / E.c₄) ^ 2 = (E.c₄ * (-E.c₆ / E.c₄)) ^ 2 := by ring
+          _ = (-E.c₆) ^ 2 := by rw [hmul]
+          _ = E.c₄ ^ 2 * E.c₄ := by linear_combination -hc
+    exact ⟨-E.c₆ / E.c₄, hX2, by
+      have h : (-E.c₆ / E.c₄) ^ 3 = (-E.c₆ / E.c₄) ^ 2 * (-E.c₆ / E.c₄) := by ring
+      rw [h, hX2, hmul]⟩
+  refine ⟨(X - E.b₂) / 12, -(E.a₃ + E.a₁ * ((X - E.b₂) / 12)) / 2, ?_, ?_⟩
+  · rw [WeierstrassCurve.Affine.equation_iff']
+    field_simp
+    simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+      WeierstrassCurve.c₄, WeierstrassCurve.c₆] at hX2 hX3 ⊢
+    linear_combination (-12 * X) * hX2 + (8 : K) * hX3
+  · rw [WeierstrassCurve.Affine.nonsingular_iff']
+    rintro ⟨-, h | h⟩
+    · refine h ?_
+      field_simp
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.c₄] at hX2 ⊢
+      linear_combination (-6 : K) * hX2
+    · refine h ?_
+      field_simp
+      ring
 
 section JacobianCriterion
 
@@ -11949,7 +12483,7 @@ lemma) and `hasUniversallyTrivialPushforward_of_isProper_of_flat` — and
 nothing else.
 
 NOT VACUOUS: dropping `hzero` makes the statement FALSE — translation by a
-nonzero rational point of `A` is an isomorphism over `Spec ℚ` and is not
+nonzero rational point of `A` is an isomorphism over the base and is not
 additive — and it is exactly `hzero` that the range chase in the consumer
 works to establish. -/
 theorem relPointPost_add {A B S : Scheme.{0}} {fA : A ⟶ S}
@@ -12127,14 +12661,18 @@ theorem dense_compl_singleton_of_isOpen {X : Type*} [TopologicalSpace X] [Connec
   · have hz : z ∈ ({z}ᶜ : Set X) := Set.eq_univ_iff_forall.mp h z
     simp at hz
 
-/-- **The range of a `ℚ`-point of a scheme is a single point** (PROVEN):
-`Spec ℚ` is a one-point space, so the range of any `Spec ℚ ⟶ X` is the
+/-- **The range of a `k`-point of a scheme is a single point** (PROVEN;
+stated over `ℚ` as `range_hom_specRat_eq_singleton` until 2026-07-30, when
+it was renamed and generalised — the proof never used more than
+`Subsingleton (Spec k)`, which holds for every field):
+`Spec k` is a one-point space, so the range of any `Spec k ⟶ X` is the
 singleton on the image of the closed point.  This is what turns the
 `ᶜ`-shaped range hypotheses — stated against the range of a SECTION —
 into complements of an honest point. -/
-theorem range_hom_specRat_eq_singleton {X : Scheme.{0}} (s : Spec (CommRingCat.of ℚ) ⟶ X) :
+theorem range_hom_specField_eq_singleton {k : Type} [Field k] {X : Scheme.{0}}
+    (s : Spec (CommRingCat.of k) ⟶ X) :
     ∃ z : X, Set.range s.base = {z} := by
-  refine ⟨s.base (IsLocalRing.closedPoint ℚ), ?_⟩
+  refine ⟨s.base (IsLocalRing.closedPoint k), ?_⟩
   ext y
   simp only [Set.mem_range, Set.mem_singleton_iff]
   constructor
@@ -12143,17 +12681,20 @@ theorem range_hom_specRat_eq_singleton {X : Scheme.{0}} (s : Spec (CommRingCat.o
   · rintro rfl
     exact ⟨_, rfl⟩
 
-/-- **A chart whose range is the complement of a `ℚ`-point of a connected
-scheme is dominant** (PROVEN, from the two lemmas above).
+/-- **A chart whose range is the complement of a `k`-point of a connected
+scheme is dominant** (PROVEN, from the two lemmas above; generalised from
+`ℚ` to an arbitrary field 2026-07-30 along with the lemma it consumes).
 
 This is what supplies the `[IsDominant]` instances that
 `isIso_of_isDominant_of_inverse` — and through it mathlib's
 `ext_of_isDominant_of_isSeparated` — consumes, and it is applied twice in
-`exists_isIso_of_affineChart`, once to each chart. -/
-theorem isDominant_of_range_eq_compl {X C : Scheme.{0}} [ConnectedSpace X] [Nonempty C]
-    (j : C ⟶ X) [IsOpenImmersion j] (s : Spec (CommRingCat.of ℚ) ⟶ X)
+`exists_isIso_of_affineChart` and twice in
+`exists_isIso_of_affineCharts_field`, once to each chart. -/
+theorem isDominant_of_range_eq_compl {k : Type} [Field k] {X C : Scheme.{0}}
+    [ConnectedSpace X] [Nonempty C]
+    (j : C ⟶ X) [IsOpenImmersion j] (s : Spec (CommRingCat.of k) ⟶ X)
     (hj : Set.range j.base = (Set.range s.base)ᶜ) : IsDominant j := by
-  obtain ⟨z, hz⟩ := range_hom_specRat_eq_singleton s
+  obtain ⟨z, hz⟩ := range_hom_specField_eq_singleton s
   rw [hz] at hj
   have hopen : IsOpen (Set.range j.base) := by
     rw [← Scheme.Hom.coe_opensRange]; exact j.opensRange.2
@@ -12224,7 +12765,7 @@ are supplied by declarations PROVEN above:
 * `smoothOfRelativeDimension_projToSpec`;
 * `geometricallyConnected_projToSpec`;
 
-plus finiteness of the complement, which is `range_hom_specRat_eq_singleton`
+plus finiteness of the complement, which is `range_hom_specField_eq_singleton`
 applied to `hrange₀` — the removed locus is the range of a SECTION, hence a
 single point.
 
@@ -12251,7 +12792,7 @@ theorem exists_hom_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
   haveI := smoothOfRelativeDimension_projToSpec E
   haveI := ab.proper
   have hfin : (Set.range ι₀.base)ᶜ.Finite := by
-    obtain ⟨z, hz⟩ := range_hom_specRat_eq_singleton
+    obtain ⟨z, hz⟩ := range_hom_specField_eq_singleton
       ((projGroupLaw E).toAbelianSchemeStruct.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
     rw [hrange₀, compl_compl, hz]
     exact Set.finite_singleton z
@@ -12407,7 +12948,7 @@ theorem exists_hom_symm_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
   haveI := smoothOfRelativeDimension_one_of_affineChart E ab ι h₁ hstr hrange
   have hfin : (Set.range ι.base)ᶜ.Finite := by
     obtain ⟨z, hz⟩ :=
-      range_hom_specRat_eq_singleton (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
+      range_hom_specField_eq_singleton (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
     rw [hrange, compl_compl, hz]
     exact Set.finite_singleton z
   obtain ⟨v, ⟨h1, h2⟩, -⟩ :=
@@ -12524,6 +13065,297 @@ theorem exists_isIso_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
   obtain ⟨v, hvf, hvι⟩ :=
     exists_hom_symm_of_affineChart E ab ι₀ ι h₀ h₁ hstr₀ hstr hrange₀ hrange
   exact ⟨u, isIso_of_isDominant_of_inverse u v huf hvf huι hvι, huf, huι⟩
+
+/-! #### The `k`-RATIONAL bridge, over an arbitrary field
+
+Opened 2026-07-30, to close `X0.lean`'s `exists_addEquiv_of_weierstrassModel_field`.
+
+That leaf is a SIBLING of `exists_geomFibreAddEquiv_of_weierstrassModel`
+above, not a generalisation of it — it concludes about the `k`-RATIONAL
+points `RelPoint f (𝟙 (Spec k))` of an abelian scheme over an arbitrary
+field, with no Galois clause, where the `ℚ` statement concludes about
+geometric points and carries one.  Neither follows from the other by
+formality.  What DOES transfer is the ROUTE, and this subsection is that
+route rebuilt over `k`, with the one ingredient it cannot supply cut out as
+a single leaf.
+
+**What the route costs over `k`, and where the cut falls.**  The `ℚ` proof
+has three inputs: gluing the two charts to an isomorphism
+(`exists_isIso_of_affineChart`), matching the two ZERO SECTIONS
+(`hom_specRat_eq_of_range_eq`), and rigidity (`relPointPost_add`).  Over `k`:
+
+* rigidity is FREE — `relPointPost_add` was already stated over an arbitrary
+  base in everything but its signature, and has been generalised in place;
+* the zero-section step is **not needed at all**, and that is the one real
+  simplification here.  `hom_specRat_eq_of_range_eq` is a statement about
+  `ℚ`-points (`Subsingleton (k →+* ℚ)`) and its analogue over a general field
+  is genuinely harder — a `k`-point of a `k`-scheme is pinned by its image
+  only because the residue field there is forced to be `k` itself.  It is
+  avoided by TRANSLATING instead of matching: `exists_translation_toZero`
+  turns any isomorphism over the base into one carrying zero to zero, and
+  rigidity asks for nothing else.  See `nonempty_addEquiv_relPoint_of_isIso`;
+* gluing needs the OTHER model to be a smooth proper curve, which over `ℚ` is
+  supplied by `proj E` and its five `projToSpec` lemmas.  Over `k` that whole
+  development does not exist, so it is replaced by a SECOND ABELIAN SCHEME —
+  which is strictly more general, since every field the statement is about
+  gets its curve inputs from `AbelianSchemeStruct` fields rather than from
+  `Proj`.  See `exists_isIso_of_affineCharts_field`.
+
+What is left over is `exists_ellipticScheme_weierstrassChart_addEquiv_field`:
+that `E` itself has such a model over `k`.  That is the `k`-analogue of
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` above, and it is the
+single citation of this subsection. -/
+
+/-- **An isomorphism of abelian schemes over the base induces an `AddEquiv`
+of relative points, at EVERY base point** (PROVEN 2026-07-30).
+
+No compatibility between `u` and the two zero sections is hypothesised, and
+none is needed: if `u` does not preserve the zero section, translate.
+`δ := e_A ≫ u` is a section of `f_B`, `exists_translation_toZero` produces an
+automorphism `τ` of `B` over the base carrying `δ` to `e_B`, and `u ≫ τ` is
+then an isomorphism over the base that does preserve zero — which is exactly
+`relPointPost_add`'s hypothesis.
+
+**This is what replaces `hom_specRat_eq_of_range_eq` over a general field**,
+and it is a strictly better tool even over `ℚ`: that lemma had to prove the
+two zero sections EQUAL, which is a statement about residue fields, whereas
+translation only needs them to be sections.
+
+NOT VACUOUS, and the `AddEquiv` is not canonical: it is the transport along
+`u` corrected by a translation, so it depends on `u`.  What is canonical is
+its existence, which is all any consumer here asks for. -/
+theorem nonempty_addEquiv_relPoint_of_isIso {S A B : Scheme.{u}} {fA : A ⟶ S} {fB : B ⟶ S}
+    (abA : AbelianSchemeStruct fA) (abB : AbelianSchemeStruct fB)
+    (u : A ⟶ B) [IsIso u] (hu : u ≫ fB = fA) {T : Scheme.{u}} (g : T ⟶ S) :
+    letI := abA.addCommGroup g
+    letI := abB.addCommGroup g
+    Nonempty (RelPoint fA g ≃+ RelPoint fB g) := by
+  letI := abA.addCommGroup g
+  letI := abB.addCommGroup g
+  have hδ : ((abA.zero (𝟙 S)).1 ≫ u) ≫ fB = 𝟙 S := by
+    rw [Category.assoc, hu]; exact (abA.zero (𝟙 S)).2
+  obtain ⟨τ, hτiso, hτf, hτz⟩ := exists_translation_toZero abB _ hδ
+  haveI := hτiso
+  have hu' : (u ≫ τ) ≫ fB = fA := by rw [Category.assoc, hτf, hu]
+  have hzero : (abA.zero (𝟙 S)).1 ≫ (u ≫ τ) = (abB.zero (𝟙 S)).1 := by
+    rw [← Category.assoc]; exact hτz
+  exact ⟨{ relPointPostEquiv (u ≫ τ) hu' with
+      map_add' := fun x y => relPointPost_add abA abB (u ≫ τ) hu' hzero x y }⟩
+
+/-- **Two abelian schemes over a field sharing an affine chart with
+complementary zero section are isomorphic over the base** (PROVEN
+2026-07-30) — `exists_isIso_of_affineChart` with `proj E` replaced by a
+second abelian scheme, and over an arbitrary field rather than `ℚ`.
+
+The proof is the same two-step argument and cites the same two theorems —
+`exists_unique_extension_of_isSmoothProperCurve` twice for EXISTENCE of the
+two extensions, `isIso_of_isDominant_of_inverse` once for UNIQUENESS of the
+round trips — but every curve input that the `ℚ` version read off `proj E`
+is here read off `abB` instead:
+
+| needed of the second model | `proj E` version         | here          |
+|----------------------------|--------------------------|---------------|
+| proper                     | `isProper_projToSpec`    | `abB.proper`  |
+| geometrically connected    | `geometricallyConnected_projToSpec` | `abB.connected` |
+| connected space            | `preconnectedSpace_proj` + `nonempty_proj` | `abB.connected` |
+| reduced                    | `geometricallyReduced_projToSpec` | `abB.smooth` |
+| relative dimension one     | `smoothOfRelativeDimension_projToSpec` | `hdimB` |
+
+`hdimB` is the ONE thing an `AbelianSchemeStruct` does not carry (its
+`smooth` field is a bare `Smooth`), so it is a hypothesis; `A`'s relative
+dimension is then DERIVED rather than assumed, exactly as in
+`smoothOfRelativeDimension_one_of_affineChart` — the shared chart `strC` is
+smooth of relative dimension `0 + 1` because `iB` is an open immersion into
+the curve `B`, and `smoothOfRelativeDimension_of_isDominant` transports that
+to `fA` along the dominant `iA`.  So the statement is NOT symmetric in `A`
+and `B`, even though its conclusion nearly is.
+
+## Faithfulness
+
+Both range hypotheses are load-bearing, for the two reasons the `ℚ` version
+gives: they are what make each removed locus a single point (hence the
+extension problem one at a DVR, and the complement finite), and what makes
+each chart DOMINANT, which the uniqueness half consumes.
+
+`[Nonempty C]` is load-bearing and is NOT free: with `C` empty, `hrangeA`
+would read `∅ = (range e_A)ᶜ`, i.e. `A` is the single point `e_A`, and the
+conclusion would assert `A ≅ B` for an arbitrary `B`.  In the application `C`
+is `Spec k[E]`, nonempty because the coordinate ring of an elliptic curve
+over a field is a domain.
+
+NOT VACUOUS: the conclusion pins `u` to restrict to the given identification
+of charts (`iA ≫ u = iB`), so it cannot be discharged by an unrelated
+automorphism. -/
+theorem exists_isIso_of_affineCharts_field {k : Type} [Field k] {C A B : Scheme.{0}}
+    {fA : A ⟶ Spec (CommRingCat.of k)} {fB : B ⟶ Spec (CommRingCat.of k)}
+    (abA : AbelianSchemeStruct fA) (abB : AbelianSchemeStruct fB)
+    (hdimB : SmoothOfRelativeDimension 1 fB) [Nonempty C]
+    {strC : C ⟶ Spec (CommRingCat.of k)}
+    (iA : C ⟶ A) (iB : C ⟶ B) (hA : IsOpenImmersion iA) (hB : IsOpenImmersion iB)
+    (hstrA : iA ≫ fA = strC) (hstrB : iB ≫ fB = strC)
+    (hrangeA : Set.range iA.base
+      = (Set.range (abA.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ)
+    (hrangeB : Set.range iB.base
+      = (Set.range (abB.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ) :
+    ∃ u : A ⟶ B, IsIso u ∧ u ≫ fB = fA ∧ iA ≫ u = iB := by
+  haveI := hA
+  haveI := hB
+  haveI := abA.proper
+  haveI := abA.smooth
+  haveI := abA.connected
+  haveI := abB.proper
+  haveI := abB.smooth
+  haveI := abB.connected
+  haveI := hdimB
+  -- the shared chart is itself a smooth curve over `k`, because it is an open
+  -- subscheme of the curve `B`
+  have hdimC : SmoothOfRelativeDimension 1 strC := by
+    have h : SmoothOfRelativeDimension (0 + 1) (iB ≫ fB) := inferInstance
+    rw [zero_add, hstrB] at h
+    exact h
+  haveI : ConnectedSpace A := GeometricallyConnected.connectedSpace_of_subsingleton (f := fA)
+  haveI : ConnectedSpace B := GeometricallyConnected.connectedSpace_of_subsingleton (f := fB)
+  haveI : IsDominant iA := isDominant_of_range_eq_compl iA _ hrangeA
+  haveI : IsDominant iB := isDominant_of_range_eq_compl iB _ hrangeB
+  haveI : SmoothOfRelativeDimension 1 fA :=
+    _root_.AlgebraicGeometry.smoothOfRelativeDimension_of_isDominant hstrA abA.smooth hdimC
+  -- both models are reduced, by descent from smoothness over the reduced base
+  haveI : GeometricallyReduced fA := _root_.AlgebraicGeometry.GeometricallyReduced.of_smooth fA
+  haveI : IsLocallyNoetherian A := LocallyOfFiniteType.isLocallyNoetherian fA
+  haveI : IsReduced A := GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian fA
+  haveI : GeometricallyReduced fB := _root_.AlgebraicGeometry.GeometricallyReduced.of_smooth fB
+  haveI : IsLocallyNoetherian B := LocallyOfFiniteType.isLocallyNoetherian fB
+  haveI : IsReduced B := GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian fB
+  -- each removed locus is the range of a `k`-point, hence a single point
+  have hfinA : (Set.range iA.base)ᶜ.Finite := by
+    obtain ⟨z, hz⟩ :=
+      range_hom_specField_eq_singleton (abA.zero (𝟙 (Spec (CommRingCat.of k)))).1
+    rw [hrangeA, compl_compl, hz]
+    exact Set.finite_singleton z
+  have hfinB : (Set.range iB.base)ᶜ.Finite := by
+    obtain ⟨z, hz⟩ :=
+      range_hom_specField_eq_singleton (abB.zero (𝟙 (Spec (CommRingCat.of k)))).1
+    rw [hrangeB, compl_compl, hz]
+    exact Set.finite_singleton z
+  obtain ⟨u, ⟨h1, h2⟩, -⟩ :=
+    _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+      (strX := fA) (j := iA) (strZ := fB) abA.connected hfinA hstrA iB hstrB
+  obtain ⟨v, ⟨h3, h4⟩, -⟩ :=
+    _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+      (strX := fB) (j := iB) (strZ := fA) abB.connected hfinB hstrB iA hstrA
+  exact ⟨u, isIso_of_isDominant_of_inverse u v h1 h3 h2 h4, h1, h2⟩
+
+/-- **Every elliptic curve over a field has a Weierstrass model as an
+abelian scheme, with its `k`-points** (sorry leaf, opened 2026-07-30) — the
+single citation of the `k`-rational bridge, and the `k`-analogue of
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` above.
+
+## What the prover of this node owes
+
+The classical construction, over an arbitrary field `k` rather than over `ℚ`:
+`proj E`, the `Proj` of the homogeneous Weierstrass coordinate ring — which
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModel.lean`
+already builds over an ARBITRARY commutative ring — is, for `E` elliptic,
+smooth proper geometrically connected of relative dimension one over `k`, its
+chord–tangent law makes it an abelian scheme with zero section `[0 : 1 : 0]`,
+its standard chart `D₊(Z)` is `Spec k[E]` with complement exactly that zero
+section, and its `k`-points are `(E⁄k).Point` as a group.
+
+**The route is to GENERALISE the `ℚ` chain, not to reprove it.**  Every step
+above exists over `ℚ` in this module and is proven there:
+`smoothOfRelativeDimension_projToSpec`, `isProper_projToSpec`,
+`geometricallyConnected_projToSpec`, `exists_projMul`,
+`nonempty_projGroupLaw`, `projGroupLaw`, `exists_affineChart_projModel`,
+`exists_ellipticScheme_isWeierstrassModel_of_projModel`.  A prover should
+expect the arithmetic to be characteristic-free and the friction to be in the
+places the `ℚ` chain spends `hom_ext_spec_rat` / `subsingleton_hom_specRat`
+— i.e. where it uses that `ℚ` is initial in `CommRing` to make a morphism to
+the base free.  Over a general `k` those steps become genuine content, which
+is the same warning
+`exists_weierstrassModel_of_ellipticScheme_field`'s docstring in `X0.lean`
+records for the sibling leaf.
+
+## What it does NOT owe
+
+Anything about a SECOND model.  Comparison with an arbitrary abelian scheme
+carrying a Weierstrass chart for the same `E` is `exists_isIso_of_affineCharts_field`
+plus `nonempty_addEquiv_relPoint_of_isIso` above, both PROVEN, and
+`nonempty_addEquiv_of_weierstrassModel_field` below is their assembly.  Nor
+anything Galois-equivariant, and nor anything about geometric points: the
+conclusion is about `k`-RATIONAL points, `RelPoint f (𝟙 (Spec k))`.
+
+## Faithfulness
+
+`[E.IsElliptic]` is load-bearing and is the whole hypothesis: it says `Δ` is
+a unit, and at `Δ = 0` the projective Weierstrass cubic is singular, so it is
+not smooth, carries no group law, and no abelian scheme with this chart
+exists.  `[DecidableEq k]` is Lean bookkeeping — it is what mathlib's
+chord–tangent addition on `WeierstrassCurve.Affine.Point` requires.
+
+NOT VACUOUS over `ℚ`: `exists_ellipticScheme_isWeierstrassModel_of_projModel`
+supplies everything but the last conjunct there (it publishes the GEOMETRIC
+`ℚ̄`-points rather than the rational ones), so at `k = ℚ` this leaf is that
+theorem plus one rational-vs-geometric transport.
+
+*The check that would refute it*: exhibit an elliptic `E / k` for which the
+complement of `Spec k[E]` inside any proper smooth model is not the range of a
+single `k`-rational section — equivalently, a Weierstrass curve whose point at
+infinity is not `k`-rational.  There is none: `[0 : 1 : 0]` has coordinates in
+the prime field. -/
+theorem exists_ellipticScheme_weierstrassChart_addEquiv_field {k : Type} [Field k]
+    [DecidableEq k] (E : WeierstrassCurve k) [E.IsElliptic] :
+    ∃ (A : Scheme.{0}) (f : A ⟶ Spec (CommRingCat.of k)) (ab : AbelianSchemeStruct f),
+      SmoothOfRelativeDimension 1 f ∧
+      (∃ i : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
+        IsOpenImmersion i ∧
+          i ≫ f = Spec.map (CommRingCat.ofHom (algebraMap k E.toAffine.CoordinateRing)) ∧
+          Set.range i.base
+            = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ) ∧
+      (letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of k)))
+       Nonempty (RelPoint f (𝟙 (Spec (CommRingCat.of k))) ≃+ (E⁄k).Point)) :=
+  sorry
+
+/-- **The `k`-points of an elliptic scheme are the `k`-points of its
+Weierstrass model, as GROUPS** (PROVEN 2026-07-30 from the leaf above and the
+two transport theorems beside it) — this is `X0.lean`'s
+`exists_addEquiv_of_weierstrassModel_field`, which is now a one-line
+specialisation of it.
+
+Given the model `A` produced by the leaf and the model `A'` the hypothesis
+`hmodel` describes, `exists_isIso_of_affineCharts_field` glues the two shared
+charts to an isomorphism over `Spec k`, and
+`nonempty_addEquiv_relPoint_of_isIso` transports the group of `k`-points
+across it — translating first, so that no comparison of the two zero sections
+is required.
+
+It is stated here rather than in `X0.lean` because both of its inputs are
+here, and `X0.lean`'s import of this module is NON-public: the statement
+mentions neither `proj` nor `projToSpec`, so it is consumable there by
+`exact`, exactly as `exists_weierstrassModel_of_ellipticScheme` is. -/
+theorem nonempty_addEquiv_of_weierstrassModel_field {k : Type} [Field k] [DecidableEq k]
+    (E : WeierstrassCurve k) [E.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of k)} (ab : AbelianSchemeStruct f)
+    (hmodel : ∃ i : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
+      IsOpenImmersion i ∧
+        i ≫ f = Spec.map (CommRingCat.ofHom (algebraMap k E.toAffine.CoordinateRing)) ∧
+        Set.range i.base
+          = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of k)))).1.base)ᶜ) :
+    letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of k)))
+    Nonempty (RelPoint f (𝟙 (Spec (CommRingCat.of k))) ≃+ (E⁄k).Point) := by
+  letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of k)))
+  obtain ⟨i, hopen, hstr, hrange⟩ := hmodel
+  obtain ⟨A₀, f₀, ab₀, hdim₀, ⟨i₀, hopen₀, hstr₀, hrange₀⟩, he₀⟩ :=
+    exists_ellipticScheme_weierstrassChart_addEquiv_field (k := k) E
+  haveI : IsDomain E.toAffine.CoordinateRing := inferInstance
+  haveI : Nonempty (Spec (CommRingCat.of E.toAffine.CoordinateRing)) := inferInstance
+  obtain ⟨u, huiso, huf, -⟩ :=
+    exists_isIso_of_affineCharts_field ab ab₀ hdim₀ i i₀ hopen hopen₀ hstr hstr₀ hrange hrange₀
+  haveI := huiso
+  letI := ab₀.addCommGroup (𝟙 (Spec (CommRingCat.of k)))
+  obtain ⟨e₀⟩ := he₀
+  obtain ⟨e⟩ := nonempty_addEquiv_relPoint_of_isIso ab ab₀ u huf
+    (𝟙 (Spec (CommRingCat.of k)))
+  exact ⟨e.trans e₀⟩
 
 end Transport
 
