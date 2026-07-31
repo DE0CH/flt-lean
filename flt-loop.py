@@ -417,18 +417,6 @@ YOUR TASK FOLLOWS.
 ------------------------------------------------------------------------------
 """
 
-TAKEOVER = """\
-NOTE -- YOU ARE TAKING OVER A WORKTREE THAT ALREADY HAS WORK IN IT.
-A previous agent was working here and was stopped mid-task when the fleet was
-shut down; its conversation cannot be replayed, but its work is still on disk.
-Run `git -C %(worktree)s status --short` and `git -C %(worktree)s diff` FIRST.
-Treat what you find as a colleague's unfinished work: read it, judge it, and
-either finish it or explain in your commit why you replaced it. Do not delete
-it unexamined, and do not assume it is wrong merely because it is unfamiliar.
-------------------------------------------------------------------------------
-"""
-
-
 def compose(kind, name, j, s):
     head = PREAMBLE % {
         "kind": {"agent": "prover agent", "merger": "merge worker",
@@ -439,8 +427,6 @@ def compose(kind, name, j, s):
     }
     body = j["payload"] if isinstance(j["payload"], str) else json.dumps(j["payload"])
     if kind == "agent":
-        if j.get("takeover"):
-            head += TAKEOVER % {"worktree": pathlib.Path.home() / j["worktree"]}
         body = body.replace("{{FLT_WORKTREE}}", str(pathlib.Path.home() / j["worktree"]))
     elif kind == "merger":
         inbox = j.get("inbox") or []
@@ -1041,7 +1027,7 @@ def save(s):
         # exactly the churn the grace period exists to stop.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
                                      "retries", "host", "pid", "session", "resume",
-                                     "takeover", "spawned_at", "model", "inbox")}
+                                     "spawned_at", "model", "inbox", "resume")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
             wr(STATE / "jobs" / (n + ".started"), j["token"])
