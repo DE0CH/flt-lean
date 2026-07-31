@@ -29,23 +29,32 @@ every `BOTH-CHANGED, kept ours` decision was read. Two needed a judgement call:
 
 ## THE THREE BLOCKERS, in the order a successor should take them
 
-### 1. `ModularCurve/X0.lean` — 176+ errors (the cap was hit; regenerate)
+### 1. `ModularCurve/X0.lean` — 106 errors, 95 sorries
 
 **It elaborates in 200 seconds, not 35 minutes.** Release 27's handover quoted
 ~35 min and that number has been wrong for a while; iteration here is cheap and
-the file should not be treated as untouchable.
+the file should not be treated as untouchable. (The `-DmaxErrors=800` run below is
+slower than 200 s, because error recovery dominates once the cap is lifted — never
+price the next round off a broken round.)
 
     lake env lean -DmaxErrors=800 Fermat/FLT/ModularCurve/X0.lean
+    grep -c ': error:' <log>       # NOT `grep -c '^error'`
 
-The 100-error-capped distribution from build round 6 was:
+**COUNT IT WITH `': error:'`.** `lake build` emits multi-line error bodies, so a
+naive line grep of the build log gives 176 where the truth is 106. The `^error`
+form matches `lake build`'s prefix and matches NOTHING in a `lake env lean` log,
+which reports zero and looks like success.
 
-    29  Function expected at            18  Unknown identifier
-     8  unsolved goals                   8  Application type mismatch
-     8  Ambiguous term                   5  Invalid field
-     4  rcases … not an inductive datatype
-     4  No goals to be solved            4  linarith failed
-     3  cannot coerce to sort            2  Invalid projection
-     1  (kernel) declaration has metavariables   1  whnf timeout
+Distribution after this release's repairs (106 errors, 95 `declaration uses
+'sorry'`):
+
+    33  Function expected at            18  unsolved goals
+     9  Application type mismatch        8  Ambiguous term
+     6  rcases … not an inductive datatype
+     5  (deterministic) timeout          4  No goals to be solved
+     4  linarith failed                  3  cannot coerce to sort
+     2  (kernel) declaration has metavariables
+     2  Invalid projection               1  unknown metavariable
 
 **Most of `Function expected at` and `Unknown identifier` are CASCADE.** An
 errored declaration never enters the environment, so every later use reports as a
@@ -66,11 +75,16 @@ as independent work.
   describes this same pair from the other side — it was a `sorry` leaf then, and
   a branch has since given it a proof that its position cannot support.
 
-**The parse errors are all gone.** Three orphaned docstring bodies were reopened
-this release and the whole tree now scans clean under
-`tools/merge/commentscan.py`. That matters because one parse error truncates the
-file and hides every later error — it is why release 27's count fell only
-248 → 193 across nine real repairs.
+**The parse errors are all gone**, and the tree scans clean under
+`tools/merge/commentscan.py`. Five were repaired this release: three orphaned
+docstring BODIES (a lost opener, so prose parsed as Lean), one orphaned DOCSTRING
+whose declaration had vanished (two doc comments with nothing between them), and
+one stray BINDER FRAGMENT spliced after a proof line.
+
+Worth knowing for calibration: the last two removed only **2** of the 108 errors.
+A parse error truncates the file and can hide a great deal — that is why release
+27's count fell only 248 → 193 across nine repairs — but it does not always, and
+you should re-measure rather than assume a large disclosure is waiting.
 
 ### 2. `FreyCurve/MazurTorsion.lean` — 249 cross-file duplicate declarations
 
