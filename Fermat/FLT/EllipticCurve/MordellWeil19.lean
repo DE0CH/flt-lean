@@ -200,8 +200,12 @@ with a consumer. -/
 coordinate layer below is enough to STATE the descent and to run both prunings
 that consume it; it is not enough to PROVE it, because the proof factors `β` in
 `ℤ[θ]` and factoring needs the ring rather than its multiplication table.  So the
-cut is placed exactly where level `11` places it: `descent_unit_square` is the
-leaf, and everything above it is proven here.
+cut is placed exactly where level `11` places it — `descent_unit_square` is the
+seam, and everything above it is proven here — and the ring itself lives in
+`Fermat/FLT/EllipticCurve/CubicRing19.lean`, which since 2026-07-31 also PROVES
+`descent_unit_square`.  It is a separate module because this one already costs
+`~130 s` to elaborate (the `decide +kernel` sieve of `sieveComplete_true`), and
+nothing in the ring development depends on anything here.
 
 The two prunings, both PROVEN below:
 
