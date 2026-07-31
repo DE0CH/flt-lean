@@ -33,3 +33,4 @@
 - [Preflight finds unowned leaves](flt-preflight-finds-unowned-leaves.md) — the only check that catches sorries no agent reported; run it BETWEEN releases; count leaves back when grouping into tasks
 - [flt-loop spawn/liveness race](flt-loop-spawn-liveness-race.md) — the loop can put TWO live agents in one worktree; check your token against jobs/<name>.json first, and a discarded incarnation yields WITHOUT writing its sentinel
 - [flt-loop runs on mystique](flt-loop-runs-on-mystique.md) — not on the medic's host, so ps says "dead" for a healthy loop; it re-execs onto edited source itself (do NOT hand-restart), and a live Claude session there respawns it if killed
+- [Leaf hypotheses are a superset](flt-leaf-hypotheses-are-a-superset.md) — both halves of the BLR 7.4/5 split were proven from a strict subset; prove a named helper with what you use and apply it, never edit the leaf signature
