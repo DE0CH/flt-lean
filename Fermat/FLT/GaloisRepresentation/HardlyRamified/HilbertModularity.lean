@@ -21827,6 +21827,8 @@ theorem hilbert_exists_finset_map_localInertia_fixed
     ((G.coeff 0 : ℤ) : 𝓞 F) hnot
   rwa [map_intCast] at h1
 
+namespace HilbertRatInertia
+
 /-- **Hensel-free simple-root separation**: in a LOCAL DOMAIN `R`, two roots of a
 polynomial `P` that are congruent modulo the maximal ideal COINCIDE, as soon as
 `P'` fails to lie in the maximal ideal at one of them.

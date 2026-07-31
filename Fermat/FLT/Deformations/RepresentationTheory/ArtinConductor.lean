@@ -4518,6 +4518,8 @@ theorem exists_lowerRamificationData_lvl_eq
 
 end FiniteLevelInhabitation
 
+namespace LowerRamificationData
+
 /-! ### The arithmetic inputs to the construction, as NAMED leaves
 
 The four statements below were, until 2026-07-29, anonymous sorried `have`s
@@ -7255,7 +7257,6 @@ theorem exists_nat_eq_sum_breaks (ρ : GaloisRep K A M)
   rcases mul_eq_zero.mp hmul with h | h
   · linarith
   · exact absurd h hne2
-    ∃ s : ℕ, (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := sorry
 
 section PhiOneSmall
 

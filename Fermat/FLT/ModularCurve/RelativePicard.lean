@@ -2773,6 +2773,10 @@ namespace IsRelPicOf
 
 variable {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S} (hP : IsRelPicOf strX pstr)
 
+namespace IsRelPicOf
+
+variable {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S} (hP : IsRelPicOf strX pstr)
+
 /-- **The origin of `Pic`**: the point classifying `𝒪_{X_T}`. -/
 noncomputable def zeroPoint {T : Scheme.{u}} (g : T ⟶ S) : RelPoint pstr g :=
   (hP.surj (modUnit _) (isInvertibleSheaf_modUnit _)).choose

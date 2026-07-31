@@ -765,9 +765,6 @@ Separability descends to the finite subextension for free: `A₀` is generated b
 many elements of `A`, each separable over `k`, and
 `IntermediateField.isSeparable_adjoin_iff_isSeparable` turns that into
 `Algebra.IsSeparable k A₀`. -/
-theorem linearDisjoint_of_isAlgebraic_of_isSeparable
-    {k L M : Type*} [Field k] [Field L] [Field M] [Algebra k L] [Algebra k M]
-directed colimit of the `L ⊗[k] A₀`. -/
 theorem linearDisjoint_of_isSeparable_of_algebraicClosure_eq_bot
     {k L M : Type*} [Field k] [Field L] [Field M] [Algebra k L] [Algebra k M]
     [Algebra L M] [IsScalarTower k L M] (hbot : algebraicClosure k L = ⊥)
@@ -814,31 +811,6 @@ theorem linearDisjoint_of_isSeparable_of_algebraicClosure_eq_bot
     exact hsum
   exact Fintype.linearIndependent_iff.mp hbL' (fun j => g j.1) hsum' ⟨i, hi⟩
 
-/-- **The algebraic half of regularity, in the form that has no hypothesis on `k`**
-(PROVEN 2026-07-30).
-
-If `k` is algebraically closed in `L` and `K/k` is algebraic and SEPARABLE, then `L ⊗[k] K`
-is a domain.  Embed `K` into an algebraic closure `M` of `L` (possible because `K/k` is
-algebraic), apply `linearDisjoint_of_isAlgebraic_of_isSeparable` to the image, and conclude
-with `IntermediateField.LinearDisjoint.isDomain'`.
-
-This is the form the characteristic-`p` route needs, where the base is the imperfect
-rational function field `k(ι)` and separability comes from `ι` being a SEPARATING
-transcendence basis rather than from the base being perfect.  Over a perfect `k` the
-separability hypothesis is automatic, which is
-`isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` just below. -/
-theorem isDomain_tensorProduct_of_isAlgebraic_of_isSeparable
-    (k L : Type*) [Field k] [Field L] [Algebra k L]
-If `k` is algebraically closed in `L` and `K/k` is separable algebraic, then
-`L ⊗[k] K` is a domain.  Embed `K` into an algebraic closure `M` of `L`
-(possible because `K/k` is algebraic), apply
-`linearDisjoint_of_isSeparable_of_algebraicClosure_eq_bot` to the image, and
-conclude with `IntermediateField.LinearDisjoint.isDomain'`.
-
-Separability of `K/k` is what the primitive-element step needs; it used to be
-supplied by `[PerfectField k]`, which is strictly stronger and unavailable over
-the function field `k(ι)` in characteristic `p`.  With `[PerfectField k]` in
-scope `[Algebra.IsSeparable k K]` is an instance, so nothing is lost. -/
 
 /-! ### The algebraic half for a SEPARABLE extension
 
@@ -857,36 +829,6 @@ algebraic extension is separable), and the older ones are kept unchanged because
 sites — and the characteristic-zero route through
 `isDomain_tensorProduct_of_isTranscendenceBasis` — supply perfection rather than
 separability. -/
-
-/-- **A finite-dimensional SEPARABLE intermediate field is linearly disjoint from `L`**
-(PROVEN).
-
-Identical to `linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot` except that the
-primitive element comes from the hypothesis `Algebra.IsSeparable k A` rather than from
-`PerfectField k`. -/
-theorem linearDisjoint_of_finiteDimensional_of_isSeparable_of_algebraicClosure_eq_bot
-    {k L M : Type*} [Field k] [Field L] [Field M] [Algebra k L] [Algebra k M]
-    [Algebra L M] [IsScalarTower k L M] (hbot : algebraicClosure k L = ⊥)
-    (A : IntermediateField k M) [FiniteDimensional k A] [Algebra.IsSeparable k A] :
-    A.LinearDisjoint L := by
-  let pb : PowerBasis k A := Field.powerBasisOfFiniteOfSeparable k A
-  set β : M := (pb.gen : M) with hβ
-  have hint : IsIntegral k β := (Algebra.IsIntegral.isIntegral (R := k) pb.gen).map A.val
-  have hmp : minpoly k β = minpoly k pb.gen := minpoly.algHom_eq A.val A.val.injective pb.gen
-  have hdeg : (minpoly L β).natDegree = pb.dim := by
-    rw [minpoly_map_eq_of_algebraicClosure_eq_bot hbot hint, Polynomial.natDegree_map, hmp,
-      pb.natDegree_minpoly]
-  have hLI : LinearIndependent L (fun i : Fin pb.dim => β ^ (i : ℕ)) :=
-    (linearIndependent_pow (K := L) β).comp (finCongr hdeg.symm) (finCongr hdeg.symm).injective
-  refine IntermediateField.LinearDisjoint.of_basis_left pb.basis ?_
-  have hval : ⇑A.val ∘ pb.basis = fun i : Fin pb.dim => β ^ (i : ℕ) := by
-    funext i
-    show ((pb.basis i : A) : M) = β ^ (i : ℕ)
-    rw [pb.coe_basis, hβ]
-    push_cast
-    ring
-  rw [hval]
-  exact hLI
 
 /-- **The algebraic half of regularity, for a SEPARABLE extension `K/k`** (PROVEN).
 
@@ -923,7 +865,7 @@ theorem isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot
     (hbot : algebraicClosure k L = ⊥)
     (K : Type*) [Field K] [Algebra k K] [Algebra.IsAlgebraic k K] :
     IsDomain (L ⊗[k] K) :=
-  isDomain_tensorProduct_of_isAlgebraic_of_isSeparable k L hbot K
+  isDomain_tensorProduct_of_isSeparable_of_algebraicClosure_eq_bot k L hbot K
 
 set_option maxSynthPendingDepth 2 in
 /-- **Being a domain after `⊗[k] K` is detected on the finitely generated

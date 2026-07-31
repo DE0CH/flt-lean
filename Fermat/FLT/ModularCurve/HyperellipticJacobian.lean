@@ -8176,7 +8176,7 @@ theorem geomPic_bc_injective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceDat
       PlaceData.divisor_inv _ hγF, gp.Dbar.divisor_algebraMap hγ0, neg_zero, add_zero, hgdiv]
   -- STEP 8: read the conclusion back down along `bcDiv`
   have hδ : δ = D.divisor g + n • Finsupp.single (D.pt PlaceData.infPlus) (1 : ℤ) := by
-    refine gp.bcDiv_injective (geomPic_below_surjective gp) ?_
+    refine gp.bcDiv_injective ?_
     rw [map_add, gp.bcDiv_divisor, map_zsmul, gp.bcDiv_single_infPlus, hg, hdivgg, hn, hxy]
   show (QuotientAddGroup.mk δ : D.Divisors ⧸ D.picRel) = 0
   rw [QuotientAddGroup.eq_zero_iff, hδ, PlaceData.picRel]

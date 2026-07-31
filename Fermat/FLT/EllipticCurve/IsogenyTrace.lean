@@ -2059,8 +2059,12 @@ theorem End.degree_add_add_degree_sub [IsAlgClosed F] [CharZero F] [W.IsElliptic
     (φ ψ : End W) :
     Isogeny.degree (End.toIsogeny (φ + ψ)) + Isogeny.degree (End.toIsogeny (φ - ψ))
       = 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ) := by
+  -- `End.degree_neg` is stated after coercion to `ℤ`; these goals are in `ℕ`.
+  have hneg : ∀ χ : End W,
+      Isogeny.degree (End.toIsogeny (-χ)) = Isogeny.degree (End.toIsogeny χ) := by
+    intro χ; exact_mod_cast End.degree_neg χ
   rcases eq_or_ne φ 0 with rfl | hφ
-  · rw [zero_add, zero_sub, End.degree_neg, End.degree_toIsogeny_zero]
+  · rw [zero_add, zero_sub, hneg, End.degree_toIsogeny_zero]
     ring
   rcases eq_or_ne ψ 0 with rfl | hψ
   · rw [add_zero, sub_zero, End.degree_toIsogeny_zero]
@@ -2069,7 +2073,7 @@ theorem End.degree_add_add_degree_sub [IsAlgClosed F] [CharZero F] [W.IsElliptic
   · have hψφ : ψ = -φ := eq_neg_of_add_eq_zero_right hadd
     subst hψφ
     rw [hadd, End.degree_toIsogeny_zero, sub_neg_eq_add, End.degree_add_self,
-      End.degree_neg]
+      hneg]
     ring
   rcases eq_or_ne (φ - ψ) 0 with hsub | hsub
   · have hψφ : ψ = φ := (sub_eq_zero.mp hsub).symm
