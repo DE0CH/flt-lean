@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDual
+public import Fermat.FLT.Mathlib.RingTheory.LocalProperties.Semilocal
 public import Mathlib.RingTheory.RingHom.FaithfullyFlat
 public import Mathlib.RingTheory.Etale.Basic
 public import Mathlib.RingTheory.Smooth.Fiber
@@ -233,59 +234,6 @@ shim was deleted on 2026-07-27 and the mathlib lemma is used directly. See the n
 open TensorProduct Coalgebra
 
 universe u v w x
-
-/-- **A finite algebra over a local ring is semilocal.**
-
-Root-namespace commutative algebra with no Hopf content; it belongs in mathlib, which has
-`Module.free_of_flat_of_finrank_eq` for semilocal rings (phrased as
-`[Finite (MaximalSpectrum R)]`) but no way to produce that hypothesis from a local base.
-
-Proof: `S` is integral over `R`, so every maximal ideal of `S` contracts to a maximal ideal of
-`R`, which is `𝔪`; hence every maximal ideal of `S` contains `I = 𝔪 · S`, and `P ↦ P.map (mk I)`
-is an injection of `MaximalSpectrum S` into `MaximalSpectrum (S ⧸ I)`. And `S ⧸ I` is a finite
-algebra over the field `R ⧸ 𝔪`, hence an artinian ring, which has finitely many maximal ideals.
-
-Used to make `CartierDual R A'` semilocal in
-`HopfAlgebra.IsShortExact.nonempty_basis_chooseBasisIndex_cartierDual`, which is where the
-`[IsLocalRing R]` hypothesis of that half of the file is actually spent. -/
-theorem finite_maximalSpectrum_of_isLocalRing_of_module_finite
-    (R : Type*) (S : Type*) [CommRing R] [IsLocalRing R] [CommRing S] [Algebra R S]
-    [Module.Finite R S] : Finite (MaximalSpectrum S) := by
-  classical
-  set I : Ideal S := Ideal.map (algebraMap R S) (IsLocalRing.maximalIdeal R) with hI
-  haveI : Algebra.IsIntegral R S := Algebra.IsIntegral.of_finite R S
-  have hle : ∀ P : Ideal S, P.IsMaximal → I ≤ P := by
-    intro P hP
-    haveI := hP
-    have hcm : (P.comap (algebraMap R S)).IsMaximal :=
-      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal (R := R) (S := S) P
-    rw [hI, Ideal.map_le_iff_le_comap]
-    exact le_of_eq (IsLocalRing.eq_maximalIdeal hcm).symm
-  haveI : Module.Finite (R ⧸ IsLocalRing.maximalIdeal R) (S ⧸ I) := by
-    have : Module.Finite R (S ⧸ I) := Module.Finite.of_surjective
-      (Ideal.Quotient.mkₐ R I).toLinearMap (Ideal.Quotient.mk_surjective)
-    exact Module.Finite.of_restrictScalars_finite R _ _
-  haveI : IsArtinianRing (S ⧸ I) := by
-    letI : Field (R ⧸ IsLocalRing.maximalIdeal R) := fast_instance% Ideal.Quotient.field _
-    exact IsArtinianRing.of_finite (R ⧸ IsLocalRing.maximalIdeal R) (S ⧸ I)
-  have hmax : ∀ P : MaximalSpectrum S,
-      (P.asIdeal.map (Ideal.Quotient.mk I)).IsMaximal := by
-    intro P
-    haveI := P.isMaximal
-    have hf : IsField (S ⧸ P.asIdeal) :=
-      (Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp P.isMaximal
-    exact Ideal.Quotient.maximal_of_isField _
-      ((DoubleQuot.quotQuotEquivQuotOfLE (hle _ P.isMaximal)).toMulEquiv.isField hf)
-  refine Finite.of_injective
-    (fun P : MaximalSpectrum S => (⟨P.asIdeal.map (Ideal.Quotient.mk I), hmax P⟩ :
-      MaximalSpectrum (S ⧸ I))) ?_
-  intro P Q hPQ
-  have h := congrArg (fun J : MaximalSpectrum (S ⧸ I) => J.asIdeal.comap (Ideal.Quotient.mk I)) hPQ
-  simp only [Ideal.comap_map_of_surjective _ Ideal.Quotient.mk_surjective,
-    ← RingHom.ker_eq_comap_bot, Ideal.mk_ker] at h
-  refine MaximalSpectrum.ext ?_
-  rw [← sup_eq_left.mpr (hle _ P.isMaximal), ← sup_eq_left.mpr (hle _ Q.isMaximal)]
-  exact h
 
 namespace Bialgebra
 
@@ -690,9 +638,12 @@ consequence one wants from it:
 
 `Module.free_of_flat_of_finrank_eq` (`Mathlib/RingTheory/LocalRing/Module.lean`, stacks `02M9`)
 says a finite flat module over a **semilocal** ring — `[Finite (MaximalSpectrum B)]` — whose
-fibre dimension is the constant `n` at every maximal ideal is FREE of rank `n`. An Artinian ring
-is semilocal (`IsArtinianRing.primeSpectrumEquivMaximalSpectrum` plus `Finite (PrimeSpectrum B)`),
-so over the fibre the tower formula is just `Module.finrank_mul_finrank` for free modules.
+fibre dimension is the constant `n` at every maximal ideal is FREE of rank `n`. A finite algebra
+over a field is semilocal — `finite_maximalSpectrum_of_isLocalRing_of_module_finite` at `R = κ`,
+a field being a local ring — so over the fibre the tower formula is just
+`Module.finrank_mul_finrank` for free modules. (The step used to go the long way round, through
+`IsArtinianRing` and `IsArtinianRing.primeSpectrumEquivMaximalSpectrum`; that is the same fact
+and one lemma more.)
 
 So the proof is four steps, and no step needs the non-reduced `IsArtinianRing.equivPi` that this
 docstring used to name as "the concrete gap to fill":
@@ -703,8 +654,8 @@ docstring used to name as "the concrete gap to fill":
    after `Algebra.IsPushout.cancelBaseChange R κ S B M : B ⊗[S] M ≃ₗ[κ] κ ⊗[R] M`, where
    `B := κ ⊗[R] S`. (That is the *left*-handed cancellation, which is what a tower needs;
    `AlgebraTensorModule.cancelBaseChange` cancels on the right and does not apply here.)
-2. `B` is a finite-dimensional `κ`-algebra, hence `IsArtinianRing` (`isArtinian_of_tower`),
-   hence semilocal.
+2. `B` is a finite-dimensional `κ`-algebra, hence semilocal
+   (`finite_maximalSpectrum_of_isLocalRing_of_module_finite`).
 3. `N := B ⊗[S] M` has fibre dimension `n` at every maximal ideal `P` of `B`: cancel the base
    change the other way, `(B ⧸ P) ⊗[B] (B ⊗[S] M) ≃ₗ[B ⧸ P] (B ⧸ P) ⊗[S] M`
    (`AlgebraTensorModule.cancelBaseChange`), then read that dimension as a rank at a stalk of the
@@ -787,10 +738,12 @@ theorem Module.finrank_eq_finrank_mul_of_rankAtStalk_eq
     rw [(Algebra.IsPushout.cancelBaseChange R κ S B M).finrank_eq]
     exact Module.finrank_baseChange
   have hS : Module.finrank κ B = Module.finrank R S := Module.finrank_baseChange
-  -- `B` is a finite-dimensional `κ`-algebra, hence artinian, hence semilocal.
-  haveI : IsArtinianRing B := isArtinian_of_tower κ inferInstance
+  -- `B` is a finite-dimensional algebra over the field `κ`, hence semilocal. (A field is a local
+  -- ring, so this is the `R = κ` case of `finite_maximalSpectrum_of_isLocalRing_of_module_finite`;
+  -- it replaces the two-step "artinian, hence its primes are its maximal ideals" argument that
+  -- used to stand here.)
   haveI : Finite (MaximalSpectrum B) :=
-    Finite.of_equiv _ (IsArtinianRing.primeSpectrumEquivMaximalSpectrum (R := B))
+    finite_maximalSpectrum_of_isLocalRing_of_module_finite κ B
   -- The fibre dimension of `N` is `n` at every maximal ideal of `B`.
   have hrk : ∀ P : MaximalSpectrum B, Module.finrank (B ⧸ P.1) ((B ⧸ P.1) ⊗[B] N) = n := by
     intro P
@@ -3029,12 +2982,17 @@ free `CartierDual R A'`-module on `Module.Free.ChooseBasisIndex R A''`.
 **PROVEN** (2026-07-31) from `IsShortExact.flat_finrank_cartierDual` by the semilocal criterion,
 and this is the only place that criterion is exercised:
 
-* `CartierDual R A'` is a finite `R`-algebra and `R` is local, so it is **semilocal**
-  (`finite_maximalSpectrum_of_isLocalRing_of_module_finite`);
+* `CartierDual R A'` is a finite `R`-algebra and `R` is local, so it is **semilocal**;
 * over a semilocal ring a finite flat module whose fibre dimension is constant is free
   (mathlib's `Module.nonempty_basis_of_flat_of_finrank_eq`, Stacks 02M9);
-* the index set is `Fin (rk_R A'')`, reindexed to `Module.Free.ChooseBasisIndex R A''` by
-  `Module.finrank_eq_card_chooseBasisIndex`.
+* `Module.Finite (CartierDual R A') (CartierDual R A)` from finiteness over `R` down the tower.
+
+Those three are packaged as `Module.nonempty_basis_of_flat_of_finrank_eq_of_isLocalRing_base` in
+`Fermat/FLT/Mathlib/RingTheory/LocalProperties/Semilocal.lean`, which is also where the
+semilocality criterion `finite_maximalSpectrum_of_isLocalRing_of_module_finite` lives — it was
+moved out of this file on 2026-07-31, having no Hopf content. All that is left here is that the
+index set is `Fin (rk_R A'')`, reindexed to `Module.Free.ChooseBasisIndex R A''` by
+`Module.finrank_eq_card_chooseBasisIndex`.
 
 Under the arrangement this file settled on (see the section on `flat_finrank_cartierDual` above)
 this is a *restatement* of `IsShortExact.exists_basis_cartierDual`, reached by a different route:
@@ -3058,12 +3016,8 @@ theorem IsShortExact.nonempty_basis_chooseBasisIndex_cartierDual [IsLocalRing R]
     IsScalarTower.of_algebraMap_eq fun r => ((CartierDual.map π).toAlgHom.commutes r).symm
   obtain ⟨hflat, hrk⟩ := h.flat_finrank_cartierDual
   haveI := hflat
-  haveI : Finite (MaximalSpectrum (CartierDual R A')) :=
-    finite_maximalSpectrum_of_isLocalRing_of_module_finite R (CartierDual R A')
-  haveI : Module.Finite (CartierDual R A') (CartierDual R A) :=
-    Module.Finite.of_restrictScalars_finite R _ _
-  obtain ⟨bb⟩ := Module.nonempty_basis_of_flat_of_finrank_eq (CartierDual R A')
-    (CartierDual R A) (Module.finrank R A'') hrk
+  obtain ⟨bb⟩ := Module.nonempty_basis_of_flat_of_finrank_eq_of_isLocalRing_base R
+    (CartierDual R A') (CartierDual R A) (Module.finrank R A'') hrk
   exact ⟨bb.reindex (Fintype.equivFinOfCardEq
     (Module.finrank_eq_card_chooseBasisIndex R A'').symm).symm⟩
 
