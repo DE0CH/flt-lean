@@ -69,3 +69,5 @@
 - [A private import suffices for proof bodies](lean-private-import-suffices-for-proof-bodies.md) — only STATEMENTS (and exposed def bodies) need `public import`; ModThree's docstring said otherwise for three days and made a leaf look like it needed a header edit it did not
 
 - [Hoist vs concurrent proof](flt-hoist-vs-concurrent-proof.md) — relocating a leaf and proving it in place merge into a duplicate declaration; keep the hoisted location, move the proof
+- [Closing a leaf may close nothing](flt-closing-a-leaf-may-close-nothing.md) — the target's chain may have no consumer; a prompt's "everything else is proven over it" reads DOWNWARD, so finish with `#print axioms` on the row's public theorem, not a green build
+- [Minkowski above the PID threshold](flt-minkowski-above-the-pid-threshold.md) — `isPrincipalIdealRing_of_abs_discr_lt` failing (|disc| > ~49.96 for a complex cubic) is ~60 lines, not a prerequisite: the pin's `primesOver`/`Icc` criterion plus one principal prime of norm 2
