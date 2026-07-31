@@ -1187,3 +1187,44 @@ same edit would have traded one closed leaf for three re-opened ones. Re-derive 
 accounting against the release, never against its base; and when you decline for this reason, queue
 the follow-up, because the work usually got CHEAPER (here: generalise the PROOFS, and both targets
 close with no new sorry).
+
+**ADOPT THE RIVAL'S SPLIT POINT — copy its statement VERBATIM and contribute only the body**
+(2026-07-31, flt-lean-290). All three leaves of one task were already proven on `merger` when the
+worker started; the queue had been written against a `main` that was 480 commits behind. Two of the
+three were straight duplicates and were dropped. The third was the interesting case, and it
+generalises:
+
+`merger` had split `exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero` into a cocycle
+half (`…_eval₁_eq_zero`, left `sorry`) plus a one-line cohomological consumer. This worktree had
+independently proven the WHOLE of that cocycle half except a uniform Hermite–Minkowski bound — i.e.
+its work was exactly the body of the rival's open leaf. Neither "decline mine" nor "decline theirs"
+was right: the reconciliation is to **take the rival's name and signature as authoritative, paste
+your proof into it, and make your copy of the shared consumer byte-identical to theirs.** The merge
+then has nothing to choose — one side is a pure insertion, the other is unchanged.
+
+The general rule, and it is cheaper than it sounds: when you find the node already cut elsewhere,
+diff the two cuts and ask *which half of theirs do I already have*. A statement copied verbatim from
+the incumbent costs nothing and converts a guaranteed conflict into a no-op; a statement you prefer
+for aesthetic reasons costs the merger a decision it has no author to make. Say in the docstring
+that the signature is inherited and why, so the next reader does not "fix" it back.
+
+Corollary for the DROPPED halves: a duplicate proof does not merely lose, it *poisons*. This
+worktree's rival proof of `cyclotomicCharacter_map_map_eq_one_of_mem_localInertiaGroup` came with
+five new general-`K` helper declarations sitting in a NON-conflicting region. Resolving the theorem
+to the incumbent's body would have left those five behind as free-floating declarations — class-7's
+interface split, in the shape of dead code rather than broken code. Revert the whole payload
+(`git apply -R` of your own commit's hunks), not just the colliding declaration.
+
+## `set_option … in` GOES BEFORE THE DOCSTRING, NOT BETWEEN IT AND THE DECLARATION
+
+(2026-07-31.) `/-- doc -/ set_option maxHeartbeats 2000000 in theorem foo …` does not parse:
+`unexpected token 'set_option'; expected 'lemma'`. The doc comment must be immediately followed by
+a declaration keyword, so the modifier belongs ABOVE it:
+
+    set_option maxHeartbeats 2000000 in
+    /-- doc -/
+    theorem foo …
+
+Trivial, and it cost a full 40-minute build of a 25 000-line module to discover, because the
+elaborator reaches the syntax error only after loading the whole import cone. Cheap insurance: after
+inserting any `set_option … in`, grep the file for `-/$` immediately preceding it.
