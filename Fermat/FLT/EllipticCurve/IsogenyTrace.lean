@@ -96,9 +96,15 @@ cut the elementary `x`-coordinate route into two sub-steps:
 * `End.exists_isXNormalForm_degree` (leaf (A)) — for a nonzero `φ ∈ End W`, writing
   `x ∘ φ = A / B` in lowest terms, `deg φ = max (deg A) (deg B)`. Silverman *AEC*
   II.2.4.1 + III.4.10; Washington *Elliptic Curves* §2.9.
-* `End.isXNormalForm_natDegree_parallelogram` (leaf (B)) — that `max`-degree is a
-  quadratic form on `End W`, by the `x`-only addition law and a coprimality count. A
-  statement about `F[X]` alone.
+* `End.isXNormalForm_natDegree_parallelogram` (leaf (B)) — that `max`-degree is
+  SUBadditive in the parallelogram sense on `End W`, by the `x`-only addition law and a
+  coprimality count. A statement about `F[X]` alone. **As of the TENTH pass
+  (2026-07-31) it is an INEQUALITY**, not an identity: `End.degree_add_add_degree_sub_of_le`
+  shows that `≤` for every pair forces `=` for every pair (instantiate at the pair
+  `(φ+ψ, φ−ψ)`, whose sum and difference are `[2]φ` and `[2]ψ`). Since the `x`-route
+  proves leaf (B) by COUNTING ROOTS of `A − X B`, and a root count is `≤ natDegree` by
+  nature, this deletes the separability/squarefreeness step — the one the header of the
+  `XDegree` section calls "where the geometry actually enters" — from the whole file.
 
 **As of the NINTH pass (2026-07-30) leaf (A) is PROVEN**, so leaf (B) is the file's
 only remaining leaf. Leaf (A) went through in two halves, over a definition change:
@@ -487,7 +493,9 @@ parallelogram law too**, so the file now stands on exactly one open leaf:
   `End.isXNormalForm_natDegree_parallelogram`, and `End.exists_trace_charPoly` is
   proven over the parallelogram law, which is proven over those two. **The ninth
   pass (2026-07-30) PROVED the first of them**, so
-  `End.isXNormalForm_natDegree_parallelogram` — pure `F[X]` — is all that is left.
+  `End.isXNormalForm_natDegree_parallelogram` — pure `F[X]` — is all that is left,
+  and **the tenth pass (2026-07-31) weakened it to an INEQUALITY**, which is what a
+  root count produces without a separability argument.
 
 with
 
@@ -847,7 +855,10 @@ close the file by that theorem together with
 listed at `End.self_add_dualEnd`).
 
 **FOR THE FREE-FLOATING SWEEP: these four are DELIBERATELY UNCONSUMED**, exactly as
-`not_exists_dual` and `exists_dual_is_false` above are. They are route (2)'s
+`not_exists_dual` and `exists_dual_is_false` above are. (Their `≤`-hypothesis
+counterparts in the next section are in the same position, with the ONE exception of
+`End.degree_add_add_degree_sub_of_le`, which is consumed: it is what turns the file's
+leaf, now an inequality, back into the parallelogram law.) They are route (2)'s
 assembly, and route (2) cannot have a consumer until its one hypothesis is proven —
 at which point `End.degree_add_add_degree_sub` is re-proven from
 `End.degree_add_add_degree_sub_of_unitShift`, the leaf below is DELETED rather than
@@ -1032,6 +1043,253 @@ theorem End.degree_add_add_degree_sub_of_unitShift [IsAlgClosed F] [CharZero F] 
               + 2 * (Isogeny.degree (End.toIsogeny ψ) : ℤ)) := by
         linear_combination hadd + hsub + hpar
       linear_combination mul_left_cancel₀ hdpos.ne' hsum
+  exact_mod_cast main
+
+/-! ### THE LAW IS FORCED BY ITS OWN INEQUALITY — and that is what deletes separability
+
+(2026-07-31, tenth pass.) The four theorems above reduce the parallelogram law to its
+`φ = 1` instance. The four below reduce it *again*, to the **INEQUALITY**
+
+    deg (χ + 1) + deg (χ − 1)  ≤  2 deg χ + 2      (for every `χ : End W`).
+
+Both halves are elementary, and neither is another lap of the degree circle: the
+statement quantifies over ONE endomorphism, it mentions no pairing and no torsion
+module, and it is an inequality rather than an identity, so it is strictly weaker
+than everything the earlier passes moved the `sorry` between.
+
+1. **Polarisation** (`End.degree_add_add_degree_sub_of_le`). Suppose only that
+   `deg (φ+ψ) + deg (φ−ψ) ≤ 2 deg φ + 2 deg ψ` for every PAIR. Instantiating that at
+   the pair `(φ+ψ, φ−ψ)` — whose sum is `[2]φ` and whose difference is `[2]ψ` — gives
+   `4 deg φ + 4 deg ψ ≤ 2 deg (φ+ψ) + 2 deg (φ−ψ)`, i.e. the REVERSE inequality. So
+   `≤` for all pairs is already `=` for all pairs. The only input is `deg [2] = 4`.
+2. **Concavity** (`End.degree_intCast_shift_le`). The unit-shift inequality applied at
+   `χ + [k]` says the second difference of `f k := deg (χ + [k])` is at most `2`, i.e.
+   `h k := f k − k²` is CONCAVE on `ℤ`. A concave function lies below its chord at
+   `0`, so `h k ≤ h 0 + t k` with `t := h 1 − h 0`; the linear term is odd and cancels
+   in `h m + h (−m)`, which is `End.degree_intCast_parallelogram_le`. Then the same
+   multiplication by `φ̂` as in the equality case
+   (`End.degree_add_add_degree_sub_of_unitShift_le`) turns the pair `(φ, ψ)` into the
+   pair `(φ̂ψ, [deg φ])` and delivers the hypothesis of step 1.
+
+**WHY THIS MATTERS FOR THE FILE'S ONE LEAF, and it is the point of the pass.** Leaf
+(B) — `End.isXNormalForm_natDegree_parallelogram` — is accordingly **stated as an
+inequality from this pass onwards**, and `End.degree_add_add_degree_sub` is recovered
+from it through step 1 (see `End.degree_add_add_degree_sub_le` below). That is not
+cosmetic. The `x`-coordinate route to leaf (B) counts the roots of `A − X B` (whose
+roots are exactly the abscissae of the nonzero `P` with `χ P = ±P`, i.e. of
+`ker (χ−1) ∪ ker (χ+1)`), and a ROOT COUNT is intrinsically an inequality:
+`#roots ≤ natDegree`. Getting `=` out of it needs the counted polynomial to be
+SQUAREFREE — which is the separability argument the section header on
+`End.exists_isXNormalForm_degree` calls "where the geometry actually enters". **With
+the leaf weakened to `≤`, separability is no longer needed anywhere in this file.**
+
+The residue of the whole file is therefore the single inequality above, or its `F[X]`
+face, leaf (B). A prover attacking it should read `End.IsXNormalForm`'s COFINITE
+certificate first: the reduced pair `(A, B)` is only certified off a finite set `T`
+of abscissae (`T = ` the roots of the `gcd` divided out in `End.exists_isXNormalForm`),
+and the root count above needs the certificate AT the abscissae of
+`ker (χ−1) ∪ ker (χ+1)`. Closing that gap — or choosing a normal form whose `T` misses
+those finitely many abscissae — is the first obstacle on the route, and it is not
+discussed anywhere else in this file. -/
+
+/-- **Polarisation: the parallelogram INEQUALITY is already the parallelogram LAW.**
+
+If `deg (φ+ψ) + deg (φ−ψ) ≤ 2 deg φ + 2 deg ψ` holds for every pair, apply it to the
+pair `(φ+ψ, φ−ψ)`: the sum is `φ + φ = [2]φ` and the difference is `ψ + ψ = [2]ψ`, so
+
+    4 deg φ + 4 deg ψ = deg ([2]φ) + deg ([2]ψ) ≤ 2 deg (φ+ψ) + 2 deg (φ−ψ),
+
+which is the reverse inequality after halving. The only ingredient is `deg [2] = 4`
+(multiplicativity against `End.degree_intCast`), inlined here because
+`End.degree_add_self` is declared further down the file. -/
+theorem End.degree_add_add_degree_sub_of_le [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (hle : ∀ φ ψ : End W,
+      Isogeny.degree (End.toIsogeny (φ + ψ)) + Isogeny.degree (End.toIsogeny (φ - ψ))
+        ≤ 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ))
+    (φ ψ : End W) :
+    Isogeny.degree (End.toIsogeny (φ + ψ)) + Isogeny.degree (End.toIsogeny (φ - ψ))
+      = 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ) := by
+  have hdouble : ∀ χ : End W,
+      Isogeny.degree (End.toIsogeny (χ + χ)) = 4 * Isogeny.degree (End.toIsogeny χ) := by
+    intro χ
+    have h : (χ + χ : End W) = (((2 : ℤ)) : End W) * χ := by push_cast; rw [two_mul]
+    have hm := End.degree_mul (((2 : ℤ)) : End W) χ
+    rw [← h, End.degree_intCast] at hm
+    have hz : ((Isogeny.degree (End.toIsogeny (χ + χ)) : ℤ))
+        = 4 * ((Isogeny.degree (End.toIsogeny χ) : ℤ)) := by rw [hm]; ring
+    exact_mod_cast hz
+  have h1 := hle φ ψ
+  have h2 := hle (φ + ψ) (φ - ψ)
+  have e1 : (φ + ψ) + (φ - ψ) = φ + φ := by abel
+  have e2 : (φ + ψ) - (φ - ψ) = ψ + ψ := by abel
+  rw [e1, e2, hdouble, hdouble] at h2
+  omega
+
+/-- **The integer-shift bound, from the unit-shift INEQUALITY alone.**
+
+The inequality version of `End.degree_intCast_shift`. With `f k := deg (χ + [k])` the
+hypothesis applied at `χ + [k]` reads `f (k+1) + f (k−1) ≤ 2 f k + 2`, i.e. the first
+difference `d k := f (k+1) − f k − (2k+1)` of `f k − k²` is NON-INCREASING. Hence
+`d k ≤ d 0` for `k ≥ 0` and `d k ≥ d 0` for `k < 0`, and telescoping in each direction
+gives `f m ≤ f 0 + t m + m²` with `t := f 1 − f 0 − 1` — the same quadratic that
+`End.degree_intCast_shift` produces exactly, now as an upper bound.
+
+The induction carries the monotonicity of `d` alongside the bound, in the direction
+appropriate to the sign of `k`; that is what the two guarded conjuncts are for.
+Nothing here is about curves: `End W` is used only as a ring. -/
+theorem End.degree_intCast_shift_le [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (hshift : ∀ χ : End W,
+      Isogeny.degree (End.toIsogeny (χ + 1)) + Isogeny.degree (End.toIsogeny (χ - 1))
+        ≤ 2 * Isogeny.degree (End.toIsogeny χ) + 2)
+    (χ : End W) (m : ℤ) :
+    (Isogeny.degree (End.toIsogeny (χ + ((m : ℤ) : End W))) : ℤ)
+      ≤ (Isogeny.degree (End.toIsogeny χ) : ℤ)
+        + ((Isogeny.degree (End.toIsogeny (χ + 1)) : ℤ)
+            - (Isogeny.degree (End.toIsogeny χ) : ℤ) - 1) * m + m ^ 2 := by
+  set f : ℤ → ℤ := fun k => (Isogeny.degree (End.toIsogeny (χ + ((k : ℤ) : End W))) : ℤ)
+    with hf
+  have hf0 : f 0 = (Isogeny.degree (End.toIsogeny χ) : ℤ) := by
+    simp only [hf]; norm_num
+  have hf1 : f 1 = (Isogeny.degree (End.toIsogeny (χ + 1)) : ℤ) := by
+    simp only [hf]; norm_num
+  have hrec : ∀ k : ℤ, f (k + 1) + f (k - 1) ≤ 2 * f k + 2 := by
+    intro k
+    have h := hshift (χ + ((k : ℤ) : End W))
+    have e1 : χ + ((k : ℤ) : End W) + 1 = χ + (((k + 1 : ℤ)) : End W) := by push_cast; abel
+    have e2 : χ + ((k : ℤ) : End W) - 1 = χ + (((k - 1 : ℤ)) : End W) := by push_cast; abel
+    rw [e1, e2] at h
+    simp only [hf]
+    exact_mod_cast h
+  set d : ℤ → ℤ := fun k => f (k + 1) - f k - (2 * k + 1) with hd
+  have hmono : ∀ k : ℤ, d k ≤ d (k - 1) := by
+    intro k
+    have h := hrec k
+    simp only [hd]
+    have e : k - 1 + 1 = k := by ring
+    rw [e]
+    linarith
+  set t : ℤ := f 1 - f 0 - 1 with ht
+  have hd0 : d 0 = t := by simp only [hd, ht]; norm_num
+  have key : ∀ k : ℤ, (f k ≤ f 0 + t * k + k ^ 2) ∧ (0 ≤ k → d k ≤ t)
+      ∧ (k ≤ 0 → t ≤ d (k - 1)) := by
+    intro k
+    induction k using Int.induction_on with
+    | zero =>
+        refine ⟨by ring_nf; omega, fun _ => le_of_eq hd0, fun _ => ?_⟩
+        have := hmono 0
+        rw [hd0] at this
+        exact this
+    | succ n ih =>
+        obtain ⟨ih1, ih2, _⟩ := ih
+        have hdn : d (n : ℤ) ≤ t := ih2 (by positivity)
+        have hfn : f ((n : ℤ) + 1) = f (n : ℤ) + d (n : ℤ) + (2 * (n : ℤ) + 1) := by
+          simp only [hd]; ring
+        have hdn1 : d ((n : ℤ) + 1) ≤ t := by
+          have := hmono ((n : ℤ) + 1)
+          have e : (n : ℤ) + 1 - 1 = (n : ℤ) := by ring
+          rw [e] at this
+          linarith
+        refine ⟨by rw [hfn]; nlinarith [ih1], fun _ => hdn1, fun hc => by omega⟩
+    | pred n ih =>
+        obtain ⟨ih1, _, ih3⟩ := ih
+        have hdn : t ≤ d (-(n : ℤ) - 1) := ih3 (by omega)
+        have hfn : f (-(n : ℤ) - 1)
+            = f (-(n : ℤ)) - d (-(n : ℤ) - 1) - (2 * (-(n : ℤ) - 1) + 1) := by
+          simp only [hd]
+          have e : -(n : ℤ) - 1 + 1 = -(n : ℤ) := by ring
+          rw [e]; ring
+        have hdn2 : t ≤ d (-(n : ℤ) - 1 - 1) := le_trans hdn (hmono (-(n : ℤ) - 1))
+        refine ⟨by rw [hfn]; nlinarith [ih1], fun hc => by omega, fun _ => hdn2⟩
+  have hm := (key m).1
+  rw [ht, hf0, hf1] at hm
+  simpa only [hf] using hm
+
+/-- **The `(χ, [m])` parallelogram inequality, from the unit-shift inequality alone.**
+The linear term of `End.degree_intCast_shift_le` is odd in `m`, so it cancels between
+the bounds at `m` and at `−m`, leaving `2 deg χ + 2 m² = 2 deg χ + 2 deg [m]`. -/
+theorem End.degree_intCast_parallelogram_le [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (hshift : ∀ χ : End W,
+      Isogeny.degree (End.toIsogeny (χ + 1)) + Isogeny.degree (End.toIsogeny (χ - 1))
+        ≤ 2 * Isogeny.degree (End.toIsogeny χ) + 2)
+    (χ : End W) (m : ℤ) :
+    (Isogeny.degree (End.toIsogeny (χ + ((m : ℤ) : End W))) : ℤ)
+        + (Isogeny.degree (End.toIsogeny (χ - ((m : ℤ) : End W))) : ℤ)
+      ≤ 2 * (Isogeny.degree (End.toIsogeny χ) : ℤ) + 2 * m ^ 2 := by
+  have hpos := End.degree_intCast_shift_le hshift χ m
+  have hneg := End.degree_intCast_shift_le hshift χ (-m)
+  have e : χ + (((-m : ℤ)) : End W) = χ - ((m : ℤ) : End W) := by push_cast; abel
+  rw [e] at hneg
+  nlinarith [hpos, hneg]
+
+/-- **THE SHARPEST REDUCTION IN THIS FILE: the unit-shift INEQUALITY gives the whole
+parallelogram LAW.**
+
+`End.degree_add_add_degree_sub_of_unitShift` above needs the `φ = 1` instance as an
+EQUALITY; this needs only
+
+    deg (χ + 1) + deg (χ − 1) ≤ 2 deg χ + 2.
+
+The proof is the same multiplication by `φ̂` — `φ̂ (φ ± ψ) = [d] ± φ̂ψ` for `d := deg φ`,
+so `End.degree_intCast_parallelogram_le` at `(φ̂ψ, [d])` bounds
+`d · (deg (φ+ψ) + deg (φ−ψ))` by `d · (2 deg φ + 2 deg ψ)`, and `d > 0` cancels —
+followed by `End.degree_add_add_degree_sub_of_le`, which upgrades the resulting
+inequality for all pairs to an equality for all pairs.
+
+So the file's one geometric input is an INEQUALITY, and the `x`-coordinate root count
+that produces it does not have to be sharp. See the section header above. -/
+theorem End.degree_add_add_degree_sub_of_unitShift_le [IsAlgClosed F] [CharZero F]
+    [W.IsElliptic]
+    (hshift : ∀ χ : End W,
+      Isogeny.degree (End.toIsogeny (χ + 1)) + Isogeny.degree (End.toIsogeny (χ - 1))
+        ≤ 2 * Isogeny.degree (End.toIsogeny χ) + 2)
+    (φ ψ : End W) :
+    Isogeny.degree (End.toIsogeny (φ + ψ)) + Isogeny.degree (End.toIsogeny (φ - ψ))
+      = 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ) := by
+  refine End.degree_add_add_degree_sub_of_le ?_ φ ψ
+  clear φ ψ
+  intro φ ψ
+  have main : (Isogeny.degree (End.toIsogeny (φ + ψ)) : ℤ)
+      + (Isogeny.degree (End.toIsogeny (φ - ψ)) : ℤ)
+      ≤ 2 * (Isogeny.degree (End.toIsogeny φ) : ℤ)
+        + 2 * (Isogeny.degree (End.toIsogeny ψ) : ℤ) := by
+    by_cases h : ((φ : AddMonoid.End W.Point) : W.Point →+ W.Point) = 0
+    · -- `φ = 0`: the law degenerates to `deg ψ + deg (−ψ) = 2 deg ψ`
+      have hzdeg : (Isogeny.degree (End.toIsogeny φ) : ℤ) = 0 := by
+        rw [Isogeny.degree_of_eq_zero (show (End.toIsogeny φ).toHom = 0 from h)]
+        norm_num
+      have hφ0 : φ = 0 := Subtype.ext h
+      have e1 : φ + ψ = ψ := by rw [hφ0, zero_add]
+      have e2 : φ - ψ = -ψ := by rw [hφ0, zero_sub]
+      rw [e1, e2, hzdeg, End.degree_neg]
+      ring_nf
+      omega
+    · have hdpos : (0 : ℤ) < (Isogeny.degree (End.toIsogeny φ) : ℤ) := by
+        exact_mod_cast Isogeny.degree_pos (φ := End.toIsogeny φ) h
+      have hdualdeg : (Isogeny.degree (End.toIsogeny (End.dualEnd φ)) : ℤ)
+          = (Isogeny.degree (End.toIsogeny φ) : ℤ) := End.degree_dualEnd φ
+      have hcast : ((Isogeny.degree (End.toIsogeny φ) : ℕ) : End W)
+          = (((Isogeny.degree (End.toIsogeny φ) : ℕ) : ℤ) : End W) :=
+        (Int.cast_natCast _).symm
+      have eadd : End.dualEnd φ * (φ + ψ)
+          = End.dualEnd φ * ψ + (((Isogeny.degree (End.toIsogeny φ) : ℕ) : ℤ) : End W) := by
+        rw [mul_add, End.dualEnd_comp, hcast]; abel
+      have esub : End.dualEnd φ * (φ - ψ)
+          = -(End.dualEnd φ * ψ - (((Isogeny.degree (End.toIsogeny φ) : ℕ) : ℤ) : End W)) := by
+        rw [mul_sub, End.dualEnd_comp, hcast]; abel
+      have hadd := congrArg (fun σ : End W => (Isogeny.degree (End.toIsogeny σ) : ℤ)) eadd
+      have hsub := congrArg (fun σ : End W => (Isogeny.degree (End.toIsogeny σ) : ℤ)) esub
+      simp only [End.degree_mul, hdualdeg, End.degree_neg] at hadd hsub
+      have hpar := End.degree_intCast_parallelogram_le hshift (End.dualEnd φ * ψ)
+        ((Isogeny.degree (End.toIsogeny φ) : ℕ) : ℤ)
+      rw [End.degree_mul, hdualdeg] at hpar
+      have hsum : (Isogeny.degree (End.toIsogeny φ) : ℤ)
+            * ((Isogeny.degree (End.toIsogeny (φ + ψ)) : ℤ)
+              + (Isogeny.degree (End.toIsogeny (φ - ψ)) : ℤ))
+          ≤ (Isogeny.degree (End.toIsogeny φ) : ℤ)
+            * (2 * (Isogeny.degree (End.toIsogeny φ) : ℤ)
+              + 2 * (Isogeny.degree (End.toIsogeny ψ) : ℤ)) := by
+        nlinarith [hadd, hsub, hpar]
+      exact le_of_mul_le_mul_left hsum hdpos
   exact_mod_cast main
 
 /-! ### The Weil pairing on the `ℓ`-torsion — the file's one geometric input
@@ -1935,16 +2193,28 @@ theorem End.exists_isXNormalForm_degree [IsAlgClosed F] [CharZero F] [W.IsEllipt
   exact (h₂ γ (fun hm => hγ (Finset.mem_union_right _ hm))).symm.trans
     (h₁ γ (fun hm => hγ (Finset.mem_union_left _ hm)))
 
-/-- **LEAF (B) (2026-07-30, eighth pass) — the `x`-degree is a quadratic form**, by
-the `x`-only addition law and a coprimality count. Washington *Elliptic Curves*,
-§9.? (the proof of the parallelogram law that uses no divisors); Silverman *AEC*
-III.6.3 is the same identity by the Weil-pairing route.
+/-- **LEAF (B) (2026-07-30, eighth pass; WEAKENED TO AN INEQUALITY 2026-07-31, tenth
+pass) — the `x`-degree is SUBadditive in the parallelogram sense**, by the `x`-only
+addition law and a coprimality count. Washington *Elliptic Curves*, §9.? (the proof of
+the parallelogram law that uses no divisors); Silverman *AEC* III.6.3 is the same
+identity by the Weil-pairing route.
 
     max(deg A₁, deg B₁) + max(deg A₂, deg B₂)
-        = 2 max(deg A, deg B) + 2 max(deg C, deg D)
+        ≤ 2 max(deg A, deg B) + 2 max(deg C, deg D)
 
 for reduced `x`-normal forms `(A, B)` of `φ`, `(C, D)` of `ψ`, `(A₁, B₁)` of
 `φ + ψ` and `(A₂, B₂)` of `φ − ψ`.
+
+**THE `≤` IS NOT A RETREAT — IT IS THE WHOLE STATEMENT.** `End.degree_add_add_degree_sub`
+below is still the EQUALITY, and is now derived from this by
+`End.degree_add_add_degree_sub_of_le` (polarisation: instantiate the inequality at the
+pair `(φ+ψ, φ−ψ)`, whose sum and difference are `[2]φ` and `[2]ψ`, and the reverse
+inequality falls out of `deg [2] = 4`). See the section "THE LAW IS FORCED BY ITS OWN
+INEQUALITY" above. What the weakening buys is that the route's count of the roots of
+`A − X B` no longer has to be SHARP: a root count is `#roots ≤ natDegree` by nature, and
+upgrading it to `=` is exactly the separability/squarefreeness argument that the section
+header on `End.exists_isXNormalForm_degree` calls "where the geometry actually enters".
+That argument is now needed nowhere in this file.
 
 ### ROUTE
 
@@ -1965,7 +2235,32 @@ is the **coprimality count**: `gcd (A₁ B₂ + A₂ B₁, A₁ A₂, B₁ B₂)
 the two presentations agree up to a unit and turns the degree bookkeeping into the
 stated identity.
 
-### FAITHFULNESS AUDIT (2026-07-30, RE-RUN in the ninth pass)
+### FAITHFULNESS AUDIT (2026-07-31, RE-RUN in the TENTH pass, for the `≤` form)
+
+**The ninth pass's audit is reproduced below and this paragraph sits in front of it**,
+per CLAUDE.md's rule that a restatement voids the earlier audit rather than inheriting
+it. Here the CONCLUSION was weakened (`=` became `≤`) and no hypothesis moved, so the
+new statement is IMPLIED by the old one clause for clause: every counterexample to the
+`≤` form is a counterexample to the `=` form, and the ninth pass's audit — which
+certified the `=` form true — therefore certifies this one. That is the one direction
+in which an audit does transfer, and the argument is written out rather than asserted.
+
+*But the four nonvanishing hypotheses do NOT all become removable, which is the clause
+a reader will be tempted to skip.* Weakening the conclusion makes two of the four
+degenerate cases harmless and leaves two fatal, and they must be told apart:
+at `φ = 0` the adversarial pair `(A, B) := (X, 1)` gives `2 deg ψ ≤ 2 + 2 deg ψ`, TRUE,
+and likewise at `ψ = 0`; but at `φ + ψ = 0` the certificate for `A₁, B₁` is vacuous, so
+`(A₁, B₁) := (X ^ 100, 1)` is admissible and the left side is unbounded while the right
+side is fixed — **FALSE**. So `hadd` and `hsub` are load-bearing for TRUTH in the `≤`
+form, `hφ` and `hψ` are not, and all four are kept because the consumer
+(`End.degree_add_add_degree_sub_le`) discharges them all anyway and a hypothesis that
+cannot make a leaf false costs a prover nothing.
+
+*Numerically re-checked in the `≤` direction at the ninth pass's own two models*:
+`2 + 2 ≤ 2·1 + 2·1` and `9 + 1 ≤ 2·1 + 2·4`. Both hold, the first with equality — so
+the models do not accidentally certify a strictly weaker statement than intended.
+
+### FAITHFULNESS AUDIT (2026-07-30, RE-RUN in the ninth pass) — for the `=` form
 
 **The eighth pass's audit of this statement is VOID and this replaces it**, per
 CLAUDE.md's rule that a restatement voids the earlier audit rather than inheriting
@@ -2022,24 +2317,27 @@ theorem End.isXNormalForm_natDegree_parallelogram [IsAlgClosed F] [CharZero F]
     (hf : End.IsXNormalForm φ A B) (hg : End.IsXNormalForm ψ C D)
     (h₁ : End.IsXNormalForm (φ + ψ) A₁ B₁) (h₂ : End.IsXNormalForm (φ - ψ) A₂ B₂) :
     max A₁.natDegree B₁.natDegree + max A₂.natDegree B₂.natDegree
-      = 2 * max A.natDegree B.natDegree + 2 * max C.natDegree D.natDegree :=
+      ≤ 2 * max A.natDegree B.natDegree + 2 * max C.natDegree D.natDegree :=
   sorry
 
-/-- **The parallelogram law for the degree — PROVEN (2026-07-30, eighth pass)** over
-the two route-2 statements above: `End.exists_isXNormalForm_degree`, itself PROVEN in
-the ninth pass, and `End.isXNormalForm_natDegree_parallelogram`, which remains the
-file's one leaf. Silverman *AEC* III.6.3: the degree is a quadratic form on `End W`.
+/-- **The parallelogram INEQUALITY for the degree — PROVEN (2026-07-30, eighth pass;
+restated as `≤` in the tenth)** over the two route-2 statements above:
+`End.exists_isXNormalForm_degree`, itself PROVEN in the ninth pass, and
+`End.isXNormalForm_natDegree_parallelogram`, which remains the file's one leaf.
+Silverman *AEC* III.6.3: the degree is a quadratic form on `End W`.
 
-    deg (φ + ψ) + deg (φ − ψ) = 2 deg φ + 2 deg ψ.
+    deg (φ + ψ) + deg (φ − ψ) ≤ 2 deg φ + 2 deg ψ,
 
-Stated in `ℕ` because `Isogeny.degree` is `Nat.card (ker ·)`; every term is a
-cardinality.
+and `End.degree_add_add_degree_sub` immediately below turns that into the EQUALITY by
+polarisation, so nothing is lost. Stated in `ℕ` because `Isogeny.degree` is
+`Nat.card (ker ·)`; every term is a cardinality.
 
 **The proof.** Four applications of leaf (A) turn each degree into the `max` of the
-`natDegree`s of a reduced `x`-normal form, and leaf (B) is the resulting identity.
+`natDegree`s of a reduced `x`-normal form, and leaf (B) is the resulting inequality.
 The four degenerate cases — `φ = 0`, `ψ = 0`, `ψ = −φ`, `ψ = φ`, exactly the cases
 leaf (B) must exclude — are discharged first and outright, from `End.degree_neg`
-and `End.degree_add_self` (multiplicativity against `deg [±1] = 1`, `deg [2] = 4`).
+and `End.degree_add_self` (multiplicativity against `deg [±1] = 1`, `deg [2] = 4`);
+they hold there with EQUALITY, so weakening the conclusion costs them nothing.
 
 **This supersedes the third pass's proof** (2026-07-27), which derived the law from
 `End.natCast_degree_eq_det_torsionRep` by testing the identity modulo arbitrarily
@@ -2055,37 +2353,51 @@ Everything else in the trace layer — `End.self_add_dualEnd`, `End.dualEnd_add`
 `End.exists_dual`, `End.exists_charPoly`,
 `End.sq_eq_neg_natCast_of_atkinLehner`, and now
 `exists_weilPairing_torsionRep_adjoint` too — is proven over this. -/
-theorem End.degree_add_add_degree_sub [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+theorem End.degree_add_add_degree_sub_le [IsAlgClosed F] [CharZero F] [W.IsElliptic]
     (φ ψ : End W) :
     Isogeny.degree (End.toIsogeny (φ + ψ)) + Isogeny.degree (End.toIsogeny (φ - ψ))
-      = 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ) := by
+      ≤ 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ) := by
   -- `End.degree_neg` is stated after coercion to `ℤ`; these goals are in `ℕ`.
   have hneg : ∀ χ : End W,
       Isogeny.degree (End.toIsogeny (-χ)) = Isogeny.degree (End.toIsogeny χ) := by
     intro χ; exact_mod_cast End.degree_neg χ
   rcases eq_or_ne φ 0 with rfl | hφ
   · rw [zero_add, zero_sub, hneg, End.degree_toIsogeny_zero]
-    ring
+    omega
   rcases eq_or_ne ψ 0 with rfl | hψ
   · rw [add_zero, sub_zero, End.degree_toIsogeny_zero]
-    ring
+    omega
   rcases eq_or_ne (φ + ψ) 0 with hadd | hadd
   · have hψφ : ψ = -φ := eq_neg_of_add_eq_zero_right hadd
     subst hψφ
     rw [hadd, End.degree_toIsogeny_zero, sub_neg_eq_add, End.degree_add_self,
       hneg]
-    ring
+    omega
   rcases eq_or_ne (φ - ψ) 0 with hsub | hsub
   · have hψφ : ψ = φ := (sub_eq_zero.mp hsub).symm
     subst hψφ
     rw [hsub, End.degree_toIsogeny_zero, End.degree_add_self]
-    ring
+    omega
   obtain ⟨A, B, hf, hdf⟩ := End.exists_isXNormalForm_degree hφ
   obtain ⟨C, D, hg, hdg⟩ := End.exists_isXNormalForm_degree hψ
   obtain ⟨A₁, B₁, h₁, hd₁⟩ := End.exists_isXNormalForm_degree hadd
   obtain ⟨A₂, B₂, h₂, hd₂⟩ := End.exists_isXNormalForm_degree hsub
   rw [hdf, hdg, hd₁, hd₂]
   exact End.isXNormalForm_natDegree_parallelogram hφ hψ hadd hsub hf hg h₁ h₂
+
+/-- **The parallelogram law itself**, from the inequality above by polarisation
+(`End.degree_add_add_degree_sub_of_le`). Silverman *AEC* III.6.3: the degree is a
+quadratic form on `End W`.
+
+The two steps are worth keeping separate, and the split is the tenth pass's
+contribution: everything geometric is in `End.degree_add_add_degree_sub_le`, and the
+upgrade from `≤` to `=` is three lines of ring theory over `deg [2] = 4` that no route
+has to re-derive. -/
+theorem End.degree_add_add_degree_sub [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (φ ψ : End W) :
+    Isogeny.degree (End.toIsogeny (φ + ψ)) + Isogeny.degree (End.toIsogeny (φ - ψ))
+      = 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ) :=
+  End.degree_add_add_degree_sub_of_le End.degree_add_add_degree_sub_le φ ψ
 
 /-- **The characteristic polynomial of a single endomorphism — PROVEN (2026-07-30,
 eighth pass).** Silverman *AEC* III.6.2. Writing `n := deg ψ`, there is an integer
