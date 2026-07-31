@@ -3890,3 +3890,90 @@ export something its existing conclusion already implies.
   instance argument to mismatch and closed it immediately. Two `Fintype` instances on one type
   are propositionally equal and syntactically different, which is exactly the gap `rw` cannot
   cross.
+
+**ADOPT THE RIVAL'S SPLIT POINT — copy its statement VERBATIM and contribute only the body**
+(2026-07-31, flt-lean-290). All three leaves of one task were already proven on `merger` when the
+worker started; the queue had been written against a `main` that was 480 commits behind. Two of the
+three were straight duplicates and were dropped. The third was the interesting case, and it
+generalises:
+
+`merger` had split `exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero` into a cocycle
+half (`…_eval₁_eq_zero`, left `sorry`) plus a one-line cohomological consumer. This worktree had
+independently proven the WHOLE of that cocycle half except a uniform Hermite–Minkowski bound — i.e.
+its work was exactly the body of the rival's open leaf. Neither "decline mine" nor "decline theirs"
+was right: the reconciliation is to **take the rival's name and signature as authoritative, paste
+your proof into it, and make your copy of the shared consumer byte-identical to theirs.** The merge
+then has nothing to choose — one side is a pure insertion, the other is unchanged.
+
+The general rule, and it is cheaper than it sounds: when you find the node already cut elsewhere,
+diff the two cuts and ask *which half of theirs do I already have*. A statement copied verbatim from
+the incumbent costs nothing and converts a guaranteed conflict into a no-op; a statement you prefer
+for aesthetic reasons costs the merger a decision it has no author to make. Say in the docstring
+that the signature is inherited and why, so the next reader does not "fix" it back.
+
+Corollary for the DROPPED halves: a duplicate proof does not merely lose, it *poisons*. This
+worktree's rival proof of `cyclotomicCharacter_map_map_eq_one_of_mem_localInertiaGroup` came with
+five new general-`K` helper declarations sitting in a NON-conflicting region. Resolving the theorem
+to the incumbent's body would have left those five behind as free-floating declarations — class-7's
+interface split, in the shape of dead code rather than broken code. Revert the whole payload
+(`git apply -R` of your own commit's hunks), not just the colliding declaration.
+
+## `set_option … in` GOES BEFORE THE DOCSTRING, NOT BETWEEN IT AND THE DECLARATION
+
+(2026-07-31.) `/-- doc -/ set_option maxHeartbeats 2000000 in theorem foo …` does not parse:
+`unexpected token 'set_option'; expected 'lemma'`. The doc comment must be immediately followed by
+a declaration keyword, so the modifier belongs ABOVE it:
+
+    set_option maxHeartbeats 2000000 in
+    /-- doc -/
+    theorem foo …
+
+Trivial, and it cost a full 40-minute build of a 25 000-line module to discover, because the
+elaborator reaches the syntax error only after loading the whole import cone. Cheap insurance: after
+inserting any `set_option … in`, grep the file for `-/$` immediately preceding it.
+
+## `∃ n, ∀ z` DOES NOT MEAN `n` IS UNKNOWN UNTIL `z` IS SEEN
+
+(2026-07-31, flt-lean-290.) A leaf's own docstring argued at length that it needed a SECOND,
+independent Hermite–Minkowski input, and named the sibling leaf it could not use:
+
+> *"It is NOT supplied by `finite_hilbertInertiaOutsideSubgroups`. That leaf bounds the NUMBER of
+> subgroups of index `≤ n` for a GIVEN `n`; here `n` is what is being produced, and no amount of
+> counting at a fixed level yields it. … neither implies the other."*
+
+Every clause is wrong, and the whole leaf then fell to one page. **`n` was not what was being
+produced.** The thing that must not depend on `z` is the BOUND; the LEVEL at which the counting leaf
+gets invoked is free to be any quantity computable from the ambient data. Here `d = N₁.index` and
+`p = ringChar k` are fixed by `ρbar` and `k` alone, so `(d·p)!` is such a level — and at that level
+the sibling leaf is exactly strong enough, because `⨅ {C : C in that finite set}` is one subgroup,
+independent of `z`, that every admissible cocycle dies on.
+
+The general shape, worth checking whenever a `∃ n, ∀ x` leaf is called ATOMIC: **list what is fixed
+before `x` is quantified.** In this development that is almost always more than it looks — the
+representation, the base field, the finite set of places, the residue characteristic, and every
+invariant of them. A "uniform in `x`" obligation is discharged by ANY construction from that list,
+not only by one that visibly ignores `x`.
+
+Two corollaries the same day. First, and this is the same family as
+[[flt-leaf-cost-estimates-are-hypotheses]] and [[flt-inventory-audits-understate-what-exists]]: a
+docstring paragraph saying "leaf A does not imply leaf B" is written by whoever CUT them, before
+either was attempted, and is a hypothesis. Try the implication before believing the prose — even
+when the prose is careful, cites the right objects, and was written by someone who had just read
+both statements. Second: a leaf whose docstring says "the section has TWO Hermite–Minkowski leaves,
+best given to one owner" is a dispatch instruction built on that hypothesis, and it survives into
+task prompts long after the hypothesis is refuted.
+
+## `LinearMap`'s coercion does not fire inside a `Subgroup` structure instance — `AddMonoidHom`'s does
+
+(2026-07-31, flt-lean-290.) With `letI : Module (ZMod p) M := AddCommGroup.zmodModule …` in scope
+and `f : M →ₗ[ZMod p] ZMod p` in context, `f x` elaborates fine in an ordinary `have` and fails
+inside
+
+    set NB : Subgroup G := { carrier := {h | h ∈ N₁ ∧ f (e h) = 0}, one_mem' := …, … }
+
+with `Function expected at f, but this term has type M →ₗ[ZMod p] ZMod p` — i.e. the `FunLike`
+instance is not found, because it wants the `Module` instance and instance search does not reach a
+local `letI` from inside a structure-instance field. The one-line fix is to carry the map as an
+`AddMonoidHom` (`LinearMap.toAddMonoidHom`), whose `FunLike` needs no module structure; `map_add`,
+`map_zero` and `map_neg` all still apply, so no proof changes. Do the conversion at the `obtain`,
+not at the use site.

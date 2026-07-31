@@ -22322,6 +22322,676 @@ theorem exists_forall_mem_hilbertInertiaOutsideSubgroups_eval₁_eq_zero
           ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 g = 0 :=
   sorry
 
+/-- **`ker(ρbar|_{G_F})` is open, normal, of finite index, acts trivially on
+`ad⁰ρbar(1)`, and swallows the inertia at every place outside `S`** (PROVEN
+2026-07-31, flt-lean-290; the group-theoretic first bullet of
+`exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero`'s route below).
+
+The subgroup produced is literally `(ρbar.map (algebraMap ℚ F)).ker`, and each of
+the five clauses is cheap once the right dictionary entry is named:
+
+* OPEN — the preimage of the open singleton `{1}` under a continuous map into
+  `Module.End k V`, which is DISCRETE by `discreteTopology_moduleTopology` (`k`
+  discrete, `V` finite). No `[Finite k]` is used anywhere, which is what lets this
+  serve a module whose leaves deliberately drop it;
+* FINITE INDEX — an open subgroup of the compact group `Γ F`
+  (`Subgroup.quotient_finite_of_isOpen`);
+* TRIVIAL ACTION — `hilbertAdZeroTwist_rho_eq_of_apply_eq`: the action at `g`
+  depends only on `ρbar|_{G_F} g` and `ρbar|_{G_F} g⁻¹`, and both are `1`;
+* INERTIA — `GaloisRep.IsUnramifiedAt.localInertiaGroup_le`, i.e. exactly the
+  hypothesis `hSunr`.
+
+Note the trivial-action clause is stated pointwise (`∀ g ∈ N₁, ∀ m, ρ g m = m`)
+rather than as `∀ g ∈ N₁, ρ g = 1`; the consumer uses it at a single `m` each
+time, and the pointwise form avoids a `ContinuousLinearMap.ext` at every use. -/
+theorem exists_openNormal_trivial_hilbertAdZeroTwist
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (S : Finset (HeightOneSpectrum (𝓞 F)))
+    (hSunr : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w) :
+    ∃ N₁ : Subgroup (Γ F),
+      N₁.Normal ∧ IsOpen (N₁ : Set (Γ F)) ∧ N₁.FiniteIndex ∧
+      (∀ g ∈ N₁, ∀ m : ↥(hilbertAdZeroTwist F ρbar),
+        (hilbertAdZeroTwist F ρbar).ρ g m = m) ∧
+      (∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+        ∀ σ : ↥(localInertiaGroup w), hilbertInertiaToGlobalHom F w σ ∈ N₁) := by
+  classical
+  letI := moduleTopology k (Module.End k V)
+  haveI : DiscreteTopology (Module.End k V) := discreteTopology_moduleTopology _ _
+  refine ⟨(ρbar.map (algebraMap ℚ F)).ker, inferInstance, ?_, ?_, ?_, ?_⟩
+  · -- OPEN: preimage of the open singleton `{1}` under a continuous map
+    have hcont : Continuous fun g : Γ F => (ρbar.map (algebraMap ℚ F)) g :=
+      ContinuousMonoidHom.continuous_toFun (ρbar.map (algebraMap ℚ F))
+    have hrw : ((ρbar.map (algebraMap ℚ F)).ker : Set (Γ F)) =
+        (fun g : Γ F => (ρbar.map (algebraMap ℚ F)) g) ⁻¹' {1} := rfl
+    rw [hrw]
+    exact (isOpen_discrete ({1} : Set (Module.End k V))).preimage hcont
+  · -- FINITE INDEX: an open subgroup of the compact group `Γ F`
+    haveI : CompactSpace (Γ F) :=
+      inferInstanceAs (CompactSpace (AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F))
+    have hopen : IsOpen ((ρbar.map (algebraMap ℚ F)).ker : Set (Γ F)) := by
+      have hcont : Continuous fun g : Γ F => (ρbar.map (algebraMap ℚ F)) g :=
+        ContinuousMonoidHom.continuous_toFun (ρbar.map (algebraMap ℚ F))
+      have hrw : ((ρbar.map (algebraMap ℚ F)).ker : Set (Γ F)) =
+          (fun g : Γ F => (ρbar.map (algebraMap ℚ F)) g) ⁻¹' {1} := rfl
+      rw [hrw]
+      exact (isOpen_discrete ({1} : Set (Module.End k V))).preimage hcont
+    haveI : Finite (Γ F ⧸ (ρbar.map (algebraMap ℚ F)).ker) :=
+      Subgroup.quotient_finite_of_isOpen _ hopen
+    exact Subgroup.finiteIndex_of_finite_quotient
+  · -- TRIVIAL ACTION on `ad⁰ρbar(1)`
+    intro g hg m
+    have hg1 : (ρbar.map (algebraMap ℚ F)) g = 1 := hg
+    have hginv : (ρbar.map (algebraMap ℚ F)) g⁻¹ = 1 := by
+      have h : (ρbar.map (algebraMap ℚ F)) (g⁻¹ * g) =
+          (ρbar.map (algebraMap ℚ F)) g⁻¹ * (ρbar.map (algebraMap ℚ F)) g := map_mul _ _ _
+      rw [inv_mul_cancel, map_one, hg1, mul_one] at h
+      exact h.symm
+    have h : (hilbertAdZeroTwist F ρbar).ρ g = (hilbertAdZeroTwist F ρbar).ρ 1 := by
+      refine hilbertAdZeroTwist_rho_eq_of_apply_eq F ρbar ?_ ?_
+      · rw [hg1, map_one]
+      · rw [hginv, inv_one, map_one]
+    rw [h, map_one]
+    rfl
+  · -- INERTIA outside `S`
+    intro w hw σ
+    exact GaloisRep.IsUnramifiedAt.localInertiaGroup_le (self := hSunr w hw) σ.2
+
+/-- **The normal core of a finite-index subgroup has index at most `(H.index)!`**
+(PROVEN 2026-07-31, flt-lean-290): `H.normalCore` is the kernel of the action of
+`G` on `G ⧸ H` (`Subgroup.normalCore_eq_ker`), so `G ⧸ H.normalCore` injects into
+`Equiv.Perm (G ⧸ H)`, a set of size `(H.index)!`.
+
+Used exactly once, in `exists_bound_forall_mem_finset_eval₁_hilbertAdZeroTwist`
+below, to turn a subgroup of index `d · p` that is only normal in `N₁` into a
+subgroup NORMAL IN `Γ F` whose index is bounded by a quantity depending only on
+`d` and `p` — which is what makes the level `(d · p)!` of
+`finite_hilbertInertiaOutsideSubgroups` an admissible, `z`-independent choice. -/
+theorem index_normalCore_le_factorial {G : Type*} [Group G] (H : Subgroup G)
+    [H.FiniteIndex] : H.normalCore.index ≤ Nat.factorial H.index := by
+  classical
+  haveI : Finite (G ⧸ H) := H.finite_quotient_of_finiteIndex
+  have hker : H.normalCore = (MulAction.toPermHom G (G ⧸ H)).ker :=
+    Subgroup.normalCore_eq_ker H
+  rw [hker, Subgroup.index_ker]
+  calc Nat.card (MulAction.toPermHom G (G ⧸ H)).range
+      ≤ Nat.card (Equiv.Perm (G ⧸ H)) := Nat.card_le_card_of_injective _ Subtype.val_injective
+    _ = Nat.factorial (Nat.card (G ⧸ H)) := by simp [Nat.card_perm]
+    _ = Nat.factorial H.index := rfl
+
+/-- **A nonzero vector of a vector space is separated by a linear functional**
+(PROVEN 2026-07-31, flt-lean-290): take a complement `W` of the line `K ∙ x` and
+compose the projection onto that line with the inverse of
+`LinearEquiv.toSpanNonzeroSingleton`. -/
+theorem exists_linearMap_apply_ne_zero {K : Type*} [Field K] {M : Type*}
+    [AddCommGroup M] [Module K M] {x : M} (hx : x ≠ 0) :
+    ∃ f : M →ₗ[K] K, f x ≠ 0 := by
+  classical
+  obtain ⟨W, hW⟩ := Submodule.exists_isCompl (K ∙ x)
+  refine ⟨(LinearEquiv.toSpanNonzeroSingleton K M x hx).symm.toLinearMap ∘ₗ
+    Submodule.projectionOnto _ _ hW, ?_⟩
+  have hx' : x ∈ (K ∙ x) := Submodule.mem_span_singleton_self x
+  have h1 : Submodule.projectionOnto _ _ hW x = ⟨x, hx'⟩ :=
+    Submodule.projectionOnto_apply_left hW ⟨x, hx'⟩
+  simp only [LinearMap.coe_comp, Function.comp_apply, h1]
+  intro h
+  have h2 : ((LinearEquiv.toSpanNonzeroSingleton K M x hx) 0 : M) = x := by
+    rw [← h]; simp
+  simp at h2
+  exact hx h2.symm
+
+/-- **The additive-homomorphism form of the previous lemma** (PROVEN 2026-07-31,
+flt-lean-290). It exists only because `LinearMap`'s `FunLike` coercion does NOT
+fire inside the `Subgroup` structure instances of the proof below — the
+`Module (ZMod p)` instance there is a local `letI` and instance search does not
+reach it from inside a structure-instance field — while `AddMonoidHom`'s does,
+since it needs no module structure. Anyone tempted to inline this and use the
+`LinearMap` directly will meet `function expected at f`. -/
+theorem exists_addMonoidHom_apply_ne_zero {K : Type*} [Field K] {M : Type*}
+    [AddCommGroup M] [Module K M] {x : M} (hx : x ≠ 0) :
+    ∃ f : M →+ K, f x ≠ 0 := by
+  obtain ⟨g, hg⟩ := exists_linearMap_apply_ne_zero (K := K) hx
+  exact ⟨g.toAddMonoidHom, hg⟩
+
+open ContinuousCohomology in
+set_option maxHeartbeats 4000000 in
+/-- **A UNIFORM bound on the size of the image of an unramified-outside-`S`
+cocycle** (cut out 2026-07-31 by flt-lean-290 as the ONE remaining input of
+`exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero` below, and
+**PROVEN the same day over `finite_hilbertInertiaOutsideSubgroups` above** —
+see the correction section at the end, which retracts this docstring's original
+claim that the two are independent).
+
+# WHY THIS EXISTS AT ALL
+
+The leaf below quantifies `∃ n, ∀ c`, so the index bound may NOT depend on the
+class. Its route bounds `N.index` by `N₁.index * #(image of z)`, and the second
+factor is a property of `z`. The `ℚ`-level twin
+`Modularity/Patching.lean`'s `exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero`
+gets `#(image of z) ≤ #M` from its `[Finite k]`; **this module deliberately drops
+`[Finite k]`** (see `finite_hilbertH1TwistUnramified`'s docstring), so `M` is
+infinite as a set and that bound is simply unavailable. That gap — already
+recorded on the leaf below on 2026-07-30, but never cut into a declaration — IS
+this statement.
+
+Everything else in the route is now discharged:
+`exists_openNormal_trivial_hilbertAdZeroTwist` above supplies `N₁`, and the
+subgroup `N = {g ∈ N₁ | z g = 0}`, its normality in the whole of `Γ F`, its
+openness, the vanishing of `z` on the inertia outside `S`, the injection
+`Γ F ⧸ N ↪ (Γ F ⧸ N₁) × image z` and the final restriction-kills-the-class step
+are all proven inside the leaf below.
+
+# WHAT IT COSTS, BY CHARACTERISTIC
+
+Write `M = ad⁰ρbar(1)` and `N₁ = ker(ρbar|_{G_F})`, so that `N₁` acts trivially on
+`M` and `z|_{N₁}` is an honest continuous HOMOMORPHISM `N₁ → (M, +)`. Its image is
+finite for each `z` (continuous image of a compact group in a discrete space), and
+`z` is constant on each coset of `N₁` up to the value at a coset representative, so
+`#(image of z on Γ F) ≤ N₁.index · #(image of z on N₁)`. The content is therefore
+entirely a uniform bound on `#(image of z|_{N₁})`.
+
+* **`ringChar k = 0`.** `(M, +)` is torsion-free, so a FINITE subgroup of it is
+  trivial: `z|_{N₁} = 0`, and `m := N₁.index` works, with `T` the set of values at
+  coset representatives. No arithmetic input at all.
+* **`ringChar k = p`.** `(M, +)` is an `𝔽_p`-space and `z|_{N₁}` is trivial on the
+  inertia at every place outside `S` (that vanishing is proven in the leaf below,
+  from `hSram` and `hcunr`), so it factors through the Galois group of the maximal
+  abelian exponent-`p` extension of `L = (Fᵃˡᵍ)^{N₁}` unramified outside the places
+  of `L` over `S`. FINITENESS of that group — Hermite–Minkowski again, in its
+  abelian form — is the whole content, and the bound it gives depends only on
+  `ρbar`, `F` and `S`, which is exactly the uniformity required.
+
+# CORRECTION (2026-07-31, and it is what made this provable)
+
+The paragraph that stood here said: *"It is NOT supplied by
+`finite_hilbertInertiaOutsideSubgroups` above. That leaf bounds the NUMBER of
+subgroups of index `≤ n` for a GIVEN `n`; here `n` is what is being produced, and
+no amount of counting at a fixed level yields it. … neither implies the other."*
+
+**That is FALSE, and the mistake is worth naming: `n` is NOT what is being
+produced.** The quantity that must not depend on `z` is the bound, and the LEVEL
+at which the counting leaf is invoked may be computed from `ρbar`, `k` and `S`
+alone. Writing `d = N₁.index` and `p = ringChar k`, the level `(d · p)!` is such a
+quantity, and at that level the counting leaf is exactly strong enough. So this
+leaf does NOT need an independent abelian Hermite–Minkowski input; the section has
+ONE arithmetic leaf, `finite_hilbertInertiaOutsideSubgroups`, not two.
+
+The argument, which is what the proof below carries out:
+
+* `𝒞 := hilbertInertiaOutsideSubgroups F S (d · p)!` is FINITE, so
+  `N★ := ⨅ C ∈ 𝒞, C` is an open normal subgroup of finite index, and — this is the
+  whole point — it depends on nothing but `ρbar`, `S` and `k`. Take `m := N★.index`.
+* `N₁ ∈ 𝒞` (its index is `d ≤ d · p ≤ (d · p)!`), so `N★ ≤ N₁`.
+* Suppose `z g ≠ 0` for some `g ∈ N★`. Since `M` is killed by `p`, it is a
+  `ZMod p`-vector space, so some functional `f : M →+ ZMod p` has `f (z g) ≠ 0`
+  (`exists_addMonoidHom_apply_ne_zero` above). Put
+  `N_B := {h ∈ N₁ | f (z h) = 0}`. Because `z|_{N₁}` is a homomorphism, `N_B` is a
+  subgroup, and `↥N₁ ⧸ N_B` injects into `ZMod p`, so `N_B.relIndex N₁ ≤ p` and
+  `N_B.index ≤ d · p`.
+* `N_B` need not be normal in `Γ F`, so pass to `N_B.normalCore`, whose index is
+  at most `(d · p)!` by `index_normalCore_le_factorial` above. It contains
+  `Nsub = {h ∈ N₁ | z h = 0}`, which is normal in `Γ F`, OPEN, and contains the
+  inertia outside `S` — so `N_B.normalCore ∈ 𝒞`, hence `N★ ≤ N_B.normalCore ≤ N_B`,
+  hence `f (z g) = 0`. Contradiction.
+* Therefore `z` vanishes on `N★`, so `z` is constant on the cosets of `N★` and its
+  image has at most `N★.index = m` elements.
+
+In characteristic zero none of this is needed: `(M, +)` is torsion-free, a finite
+subgroup of it is trivial, so `z` vanishes on `N₁` itself and `m := N₁.index` works.
+That branch uses NO arithmetic input at all.
+
+The general lesson, recorded because it generalises past this leaf: **a bound that
+must be uniform in `z` may still be computed from a level that is itself uniform in
+`z`.** Reading `∃ n, ∀ z` as "`n` is unknown until `z` is seen" is what hid a
+one-page argument behind a second Hermite–Minkowski leaf for a day.
+
+Both-ways audit. Not vacuous: `z = 0` satisfies the hypothesis, so the inner
+statement is inhabited and `m ≥ 1` is genuinely needed. `hSram` and `hSunr` are
+both load-bearing through the consumer's use of them — without `hSram` the
+hypothesis `cocycleClass z ∈ hilbertH1TwistUnramified` says nothing at the places
+of `S`, and without `hSunr` the inertia outside `S` need not act trivially on `M`,
+so `z|_{N₁}` need not be unramified there and the char-`p` bullet collapses. No
+hypothesis on `ρbar` beyond its type, so no circular discharge is available; and
+the conclusion is an upper bound, which cannot be made true by shrinking the
+class of `z` it ranges over. -/
+theorem exists_bound_forall_mem_finset_eval₁_hilbertAdZeroTwist
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (S : Finset (HeightOneSpectrum (𝓞 F)))
+    (hSram : hilbertHardlyRamifiedPlaces ℓ F ⊆ (S : Set (HeightOneSpectrum (𝓞 F))))
+    (hSunr : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w) :
+    ∃ m : ℕ, ∀ z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar),
+      ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z ∈
+          hilbertH1TwistUnramified ℓ F ρbar →
+        ∃ T : Finset ↥(hilbertAdZeroTwist F ρbar), T.card ≤ m ∧
+          ∀ g : Γ F, ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 g ∈ T := by
+  classical
+  haveI hdisc : DiscreteTopology ↥(hilbertAdZeroTwist F ρbar) :=
+    inferInstanceAs (DiscreteTopology (HilbertAdZero k V))
+  haveI : CompactSpace (Γ F) :=
+    inferInstanceAs (CompactSpace (AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F))
+  obtain ⟨N₁, hN₁norm, hN₁open, hN₁FI, hN₁triv, hN₁inert⟩ :=
+    exists_openNormal_trivial_hilbertAdZeroTwist F ρbar S hSunr
+  haveI := hN₁norm
+  haveI := hN₁FI
+  -- the crossed-homomorphism identities, once and for all
+  have hmul : ∀ (z : cocycles₁ (hilbertAdZeroTwist F ρbar)) (a b : Γ F),
+      eval₁ (hilbertAdZeroTwist F ρbar) z.1 (a * b) =
+        eval₁ (hilbertAdZeroTwist F ρbar) z.1 a +
+          (hilbertAdZeroTwist F ρbar).ρ a (eval₁ (hilbertAdZeroTwist F ρbar) z.1 b) :=
+    fun z a b => cocycles₁_eval₁_mul z a b
+  have hone : ∀ z : cocycles₁ (hilbertAdZeroTwist F ρbar),
+      eval₁ (hilbertAdZeroTwist F ρbar) z.1 1 = 0 :=
+    fun z => eval₁_one (cocycles₁_d_eq_zero z)
+  -- on `N₁` the action is trivial, so `eval₁ z` is an honest homomorphism
+  have hhom : ∀ (z : cocycles₁ (hilbertAdZeroTwist F ρbar)) (a b : Γ F), a ∈ N₁ →
+      eval₁ (hilbertAdZeroTwist F ρbar) z.1 (a * b) =
+        eval₁ (hilbertAdZeroTwist F ρbar) z.1 a + eval₁ (hilbertAdZeroTwist F ρbar) z.1 b := by
+    intro z a b ha
+    rw [hmul z a b, hN₁triv a ha]
+  -- REDUCTION: one subgroup, independent of `z`, on which every admissible cocycle vanishes
+  suffices h : ∃ Nstar : Subgroup (Γ F), Nstar.FiniteIndex ∧
+      ∀ z : cocycles₁ (hilbertAdZeroTwist F ρbar),
+        cocycleClass (hilbertAdZeroTwist F ρbar) 1 z ∈ hilbertH1TwistUnramified ℓ F ρbar →
+          ∀ g ∈ Nstar, eval₁ (hilbertAdZeroTwist F ρbar) z.1 g = 0 by
+    obtain ⟨Nstar, hFI, hvan⟩ := h
+    haveI := hFI
+    haveI : Finite (Γ F ⧸ Nstar) := Nstar.finite_quotient_of_finiteIndex
+    haveI : Fintype (Γ F ⧸ Nstar) := Fintype.ofFinite _
+    refine ⟨Nstar.index, fun z hz => ?_⟩
+    have hvz := hvan z hz
+    have hwd : ∀ a b : Γ F, a⁻¹ * b ∈ Nstar →
+        eval₁ (hilbertAdZeroTwist F ρbar) z.1 a = eval₁ (hilbertAdZeroTwist F ρbar) z.1 b := by
+      intro a b hab
+      have hb : b = a * (a⁻¹ * b) := by group
+      rw [hb, hmul, hvz _ hab, map_zero, add_zero]
+    refine ⟨Finset.image
+      (Quotient.lift (fun g => eval₁ (hilbertAdZeroTwist F ρbar) z.1 g)
+        (fun a b hab => hwd a b (QuotientGroup.leftRel_apply.mp hab)))
+      (Finset.univ : Finset (Γ F ⧸ Nstar)), ?_, ?_⟩
+    · calc (Finset.image _ (Finset.univ : Finset (Γ F ⧸ Nstar))).card
+          ≤ (Finset.univ : Finset (Γ F ⧸ Nstar)).card := Finset.card_image_le
+        _ = Nat.card (Γ F ⧸ Nstar) := by rw [Nat.card_eq_fintype_card, Finset.card_univ]
+        _ = Nstar.index := rfl
+    · intro g
+      exact Finset.mem_image.mpr ⟨QuotientGroup.mk g, Finset.mem_univ _, rfl⟩
+  by_cases hchar : ringChar k = 0
+  · -- CHARACTERISTIC ZERO: `ad⁰ρbar(1)` is torsion-free, so `z` already dies on `N₁`
+    refine ⟨N₁, hN₁FI, ?_⟩
+    intro z _ g hg
+    have hcompact : IsCompact (N₁ : Set (Γ F)) :=
+      ((⟨N₁, hN₁open⟩ : OpenSubgroup (Γ F)).isClosed).isCompact
+    have hfin : (eval₁ (hilbertAdZeroTwist F ρbar) z.1 '' (N₁ : Set (Γ F))).Finite :=
+      (hcompact.image (continuous_eval₁ (hilbertAdZeroTwist F ρbar) z.1)).finite_of_discrete
+    have hpow : ∀ n : ℕ, eval₁ (hilbertAdZeroTwist F ρbar) z.1 (g ^ n) =
+        n • eval₁ (hilbertAdZeroTwist F ρbar) z.1 g := by
+      intro n
+      induction n with
+      | zero => simpa using hone z
+      | succ n ih => rw [pow_succ, hhom z _ g (pow_mem hg n), ih, succ_nsmul]
+    have hmemall : ∀ n : ℕ, n • eval₁ (hilbertAdZeroTwist F ρbar) z.1 g ∈
+        (eval₁ (hilbertAdZeroTwist F ρbar) z.1 '' (N₁ : Set (Γ F))) :=
+      fun n => ⟨g ^ n, pow_mem hg n, hpow n⟩
+    obtain ⟨a, b, hab, heq⟩ := hfin.exists_lt_map_eq_of_forall_mem hmemall
+    have hsplit : b • eval₁ (hilbertAdZeroTwist F ρbar) z.1 g =
+        a • eval₁ (hilbertAdZeroTwist F ρbar) z.1 g +
+          (b - a) • eval₁ (hilbertAdZeroTwist F ρbar) z.1 g := by
+      rw [← add_nsmul]
+      congr 1
+      omega
+    rw [← heq] at hsplit
+    have hba : (b - a) • eval₁ (hilbertAdZeroTwist F ρbar) z.1 g = 0 :=
+      (add_eq_left.mp hsplit.symm)
+    have hcast : ((b - a : ℕ) : k) ≠ 0 := by
+      intro hc
+      have hdvd := (ringChar.spec k (b - a)).mp hc
+      rw [hchar] at hdvd
+      have : b - a = 0 := Nat.eq_zero_of_zero_dvd hdvd
+      omega
+    have h2 : ((b - a : ℕ) : k) • eval₁ (hilbertAdZeroTwist F ρbar) z.1 g = 0 := by
+      rw [Nat.cast_smul_eq_nsmul]; exact hba
+    exact (smul_eq_zero.mp h2).resolve_left hcast
+  · -- CHARACTERISTIC `p`: the uniform subgroup comes from Hermite-Minkowski at level (d*p) factorial
+    haveI hcp : CharP k (ringChar k) := ringChar.charP k
+    set p := ringChar k with hpdef
+    have hp : p.Prime := (CharP.char_is_prime_or_zero k p).resolve_right hchar
+    haveI : Fact p.Prime := ⟨hp⟩
+    have hpM : ∀ x : ↥(hilbertAdZeroTwist F ρbar), p • x = 0 := by
+      intro x
+      rw [← Nat.cast_smul_eq_nsmul k p x, CharP.cast_eq_zero k p, zero_smul]
+    letI : Module (ZMod p) ↥(hilbertAdZeroTwist F ρbar) := AddCommGroup.zmodModule hpM
+    set nn : ℕ := Nat.factorial (N₁.index * p) with hnndef
+    have hCfin : (hilbertInertiaOutsideSubgroups F S nn).Finite :=
+      finite_hilbertInertiaOutsideSubgroups F S nn
+    haveI : Finite ↥(hilbertInertiaOutsideSubgroups F S nn) := hCfin.to_subtype
+    haveI hCFI : ∀ C : ↥(hilbertInertiaOutsideSubgroups F S nn),
+        (C : Subgroup (Γ F)).FiniteIndex := fun C => C.2.2.2.1
+    haveI hstarFI :
+        (⨅ C : ↥(hilbertInertiaOutsideSubgroups F S nn), (C : Subgroup (Γ F))).FiniteIndex :=
+      Subgroup.finiteIndex_iInf hCFI
+    refine ⟨⨅ C : ↥(hilbertInertiaOutsideSubgroups F S nn), (C : Subgroup (Γ F)),
+      hstarFI, ?_⟩
+    intro z hz g hg
+    have hN₁mem : N₁ ∈ hilbertInertiaOutsideSubgroups F S nn := by
+      refine ⟨hN₁norm, hN₁open, hN₁FI, ?_, hN₁inert⟩
+      calc N₁.index ≤ N₁.index * p := Nat.le_mul_of_pos_right _ hp.pos
+        _ ≤ Nat.factorial (N₁.index * p) := Nat.self_le_factorial _
+    have hgN₁ : g ∈ N₁ :=
+      (Subgroup.mem_iInf.mp hg) (⟨N₁, hN₁mem⟩ : ↥(hilbertInertiaOutsideSubgroups F S nn))
+    by_contra hne
+    obtain ⟨f, hfx⟩ := exists_addMonoidHom_apply_ne_zero (K := ZMod p) hne
+    -- `z` vanishes on the inertia away from `S`
+    have hinert0 : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+        ∀ σ : ↥(localInertiaGroup w),
+          eval₁ (hilbertAdZeroTwist F ρbar) z.1 (hilbertInertiaToGlobalHom F w σ) = 0 := by
+      intro w hw σ
+      have hv : w ∉ hilbertHardlyRamifiedPlaces ℓ F := fun h => hw (hSram h)
+      have hker : cocycleClass (hilbertAdZeroTwist F ρbar) 1 z ∈
+          LinearMap.ker (hilbertLocResInertiaTwist1 F ρbar w).hom.toLinearMap := by
+        have h1 := (Submodule.mem_iInf _).mp hz w
+        exact (Submodule.mem_iInf _).mp h1 hv
+      have hzero : cocycleClass (hilbertAdZeroTwistInertia F ρbar w) 1
+          (cocyclesMapKer (hilbertInertiaToGlobalHom F w)
+            (CategoryTheory.CategoryStruct.id (hilbertAdZeroTwistInertia F ρbar w)) 1 z) = 0 := by
+        rw [← map_cocycleClass_cocyclesMapKer]
+        exact hker
+      obtain ⟨mm, hmm⟩ := exists_eval₁_eq_sub_of_cocycleClass_eq_zero _ hzero
+      have h1 := hmm σ
+      rw [eval₁_cocyclesMapKer] at h1
+      have h2 : (hilbertAdZeroTwist F ρbar).ρ (hilbertInertiaToGlobalHom F w σ) mm = mm :=
+        hN₁triv _ (hN₁inert w hw σ) mm
+      have h3 : (hilbertAdZeroTwistInertia F ρbar w).ρ σ mm = mm := h2
+      rw [h3, sub_self] at h1
+      exact h1
+    have hinvv : ∀ a : Γ F, a ∈ N₁ →
+        eval₁ (hilbertAdZeroTwist F ρbar) z.1 a⁻¹ =
+          - eval₁ (hilbertAdZeroTwist F ρbar) z.1 a := by
+      intro a ha
+      have h1 := eval₁_inv (cocycles₁_d_eq_zero z) a
+      rw [h1, hN₁triv a⁻¹ (inv_mem ha)]
+    -- the kernel of `z` on `N₁`, and the bigger subgroup cut out by the functional `f`
+    set Nsub : Subgroup (Γ F) :=
+      { carrier := {h | h ∈ N₁ ∧ eval₁ (hilbertAdZeroTwist F ρbar) z.1 h = 0}
+        one_mem' := ⟨one_mem _, hone z⟩
+        mul_mem' := fun {a b} ha hb => ⟨mul_mem ha.1 hb.1, by
+          rw [hhom z a b ha.1, ha.2, hb.2, add_zero]⟩
+        inv_mem' := fun {a} ha => ⟨inv_mem ha.1, by rw [hinvv a ha.1, ha.2, neg_zero]⟩ }
+      with hNsubdef
+    set NB : Subgroup (Γ F) :=
+      { carrier := {h | h ∈ N₁ ∧ f (eval₁ (hilbertAdZeroTwist F ρbar) z.1 h) = 0}
+        one_mem' := ⟨one_mem _, by rw [hone z, map_zero]⟩
+        mul_mem' := fun {a b} ha hb => ⟨mul_mem ha.1 hb.1, by
+          rw [hhom z a b ha.1, map_add, ha.2, hb.2, add_zero]⟩
+        inv_mem' := fun {a} ha => ⟨inv_mem ha.1, by
+          rw [hinvv a ha.1, map_neg, ha.2, neg_zero]⟩ }
+      with hNBdef
+    have hNsubNB : Nsub ≤ NB := fun h hh => ⟨hh.1, by
+      show f (eval₁ (hilbertAdZeroTwist F ρbar) z.1 h) = 0
+      rw [hh.2, map_zero]⟩
+    have hNBleN₁ : NB ≤ N₁ := fun h hh => hh.1
+    haveI hNsubNormal : Nsub.Normal := by
+      refine ⟨fun x hx a => ⟨hN₁norm.conj_mem x hx.1 a, ?_⟩⟩
+      have hconj := eval₁_conj (cocycles₁_d_eq_zero z) a x
+      show eval₁ (hilbertAdZeroTwist F ρbar) z.1 (a * x * a⁻¹) = 0
+      rw [hconj, hx.2, map_zero, zero_add, hN₁triv _ (hN₁norm.conj_mem x hx.1 a), sub_self]
+    have hNsubOpen : IsOpen (Nsub : Set (Γ F)) := by
+      have h1 : (Nsub : Set (Γ F)) =
+          (N₁ : Set (Γ F)) ∩ ((eval₁ (hilbertAdZeroTwist F ρbar) z.1) ⁻¹' {0}) := rfl
+      rw [h1]
+      exact hN₁open.inter
+        ((isOpen_discrete ({0} : Set ↥(hilbertAdZeroTwist F ρbar))).preimage
+          (continuous_eval₁ (hilbertAdZeroTwist F ρbar) z.1))
+    -- the relative index of `NB` in `N₁` is at most `p`
+    have hQwd : ∀ a b : ↥N₁, a⁻¹ * b ∈ NB.subgroupOf N₁ →
+        f (eval₁ (hilbertAdZeroTwist F ρbar) z.1 (a : Γ F)) =
+          f (eval₁ (hilbertAdZeroTwist F ρbar) z.1 (b : Γ F)) := by
+      intro a b hab
+      have hab' : (a : Γ F)⁻¹ * (b : Γ F) ∈ NB := by
+        simpa [Subgroup.mem_subgroupOf] using hab
+      have hb : (b : Γ F) = (a : Γ F) * ((a : Γ F)⁻¹ * (b : Γ F)) := by group
+      rw [hb, hhom z _ _ a.2, map_add, hab'.2, add_zero]
+    set Q : ↥N₁ ⧸ NB.subgroupOf N₁ → ZMod p :=
+      Quotient.lift (fun a : ↥N₁ => f (eval₁ (hilbertAdZeroTwist F ρbar) z.1 (a : Γ F)))
+        (fun a b hab => hQwd a b (QuotientGroup.leftRel_apply.mp hab)) with hQdef
+    have hQinj : Function.Injective Q := by
+      refine fun x y => Quotient.inductionOn₂ x y ?_
+      intro a b hEq
+      have hEq' : f (eval₁ (hilbertAdZeroTwist F ρbar) z.1 (a : Γ F)) =
+          f (eval₁ (hilbertAdZeroTwist F ρbar) z.1 (b : Γ F)) := hEq
+      have hmem : (a : Γ F)⁻¹ * (b : Γ F) ∈ NB := by
+        refine ⟨mul_mem (inv_mem a.2) b.2, ?_⟩
+        have hb : (b : Γ F) = (a : Γ F) * ((a : Γ F)⁻¹ * (b : Γ F)) := by group
+        have h3 := hhom z (a : Γ F) ((a : Γ F)⁻¹ * (b : Γ F)) a.2
+        rw [← hb] at h3
+        have h4 := congrArg f h3
+        rw [map_add, ← hEq'] at h4
+        exact (add_eq_left.mp h4.symm)
+      refine Quotient.sound (QuotientGroup.leftRel_apply.mpr ?_)
+      simpa [Subgroup.mem_subgroupOf] using hmem
+    haveI hQfin : Finite (↥N₁ ⧸ NB.subgroupOf N₁) := Finite.of_injective Q hQinj
+    have hrel : NB.relIndex N₁ ≤ p := by
+      calc NB.relIndex N₁ = Nat.card (↥N₁ ⧸ NB.subgroupOf N₁) := rfl
+        _ ≤ Nat.card (ZMod p) := Nat.card_le_card_of_injective Q hQinj
+        _ = p := by simp
+    have hrelne : NB.relIndex N₁ ≠ 0 := by
+      show Nat.card (↥N₁ ⧸ NB.subgroupOf N₁) ≠ 0
+      exact Nat.card_pos.ne'
+    have hNBidx : NB.index ≤ N₁.index * p := by
+      rw [← Subgroup.relIndex_mul_index hNBleN₁, mul_comm]
+      exact Nat.mul_le_mul_left _ hrel
+    haveI hNBFI : NB.FiniteIndex := by
+      refine ⟨?_⟩
+      rw [← Subgroup.relIndex_mul_index hNBleN₁]
+      exact Nat.mul_ne_zero hrelne hN₁FI.index_ne_zero
+    -- the normal core of `NB` is a member of the finite Hermite–Minkowski set
+    have hNsubC : Nsub ≤ NB.normalCore := Subgroup.normal_le_normalCore.mpr hNsubNB
+    have hCmem : NB.normalCore ∈ hilbertInertiaOutsideSubgroups F S nn := by
+      refine ⟨inferInstance, Subgroup.isOpen_mono hNsubC hNsubOpen, inferInstance, ?_, ?_⟩
+      · exact le_trans (index_normalCore_le_factorial NB) (Nat.factorial_le hNBidx)
+      · intro w hw σ
+        exact hNsubC ⟨hN₁inert w hw σ, hinert0 w hw σ⟩
+    have hgcore : g ∈ NB.normalCore :=
+      (Subgroup.mem_iInf.mp hg)
+        (⟨NB.normalCore, hCmem⟩ : ↥(hilbertInertiaOutsideSubgroups F S nn))
+    have hgNB : g ∈ NB := NB.normalCore_le hgcore
+    exact hfx hgNB.2
+
+set_option maxHeartbeats 2000000 in
+/-- **THE COCYCLE FORM OF THE SMALL-SUBGROUP STATEMENT** (PROVEN 2026-07-31,
+flt-lean-290, over `exists_openNormal_trivial_hilbertAdZeroTwist` and
+`exists_bound_forall_mem_finset_eval₁_hilbertAdZeroTwist` above).
+
+There is a bound `n` such that EVERY continuous `1`-cocycle whose class is
+unramified outside `hilbertHardlyRamifiedPlaces ℓ F` VANISHES IDENTICALLY on some
+`N ∈ hilbertInertiaOutsideSubgroups F S n`.
+
+# WHY THIS DECLARATION EXISTS, AND WHY ITS STATEMENT IS NOT MINE
+
+The statement is copied VERBATIM from a concurrent cut of the same node made on
+2026-07-30 (late) on another branch, which split
+`exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero` below at exactly
+this point and left this half `sorry`. That branch reached the integration tree
+first, so its NAME and SIGNATURE are authoritative; what is contributed here is
+the PROOF, which was developed independently against the unsplit consumer and
+turned out to discharge the whole of the other branch's leaf except for the
+uniform bound. Keeping the two cuts identical is deliberate: it makes the
+reconciliation "take this body" rather than a choice between rival statements.
+
+Its own justification of the cut is worth keeping and is repeated here. The
+consumer's statement is cohomological — a class in the kernel of
+`hilbertResSubgroupTwist1` — while its route is entirely about a COCYCLE: build
+`N₁ = ker(ρbar|_{G_F})`, cut it down to `N = {g ∈ N₁ | z g = 0}`, bound the
+index. Only the very last line of that route is cohomological, and it is the one
+line needing the degree-one continuous-cochain dictionary of
+`LowDegreeOne.lean`; that line now lives in the consumer, where it is
+`ContinuousCohomology.map_cocycleClass_cocyclesMapKer` followed by
+`cocycleClass_eq_zero_of_eval₁_eq_sub` at `m = 0`.
+
+# WHAT THE PROOF DOES
+
+Everything in the consumer's four-bullet route except the uniform bound:
+
+* `N := {g ∈ N₁ | z g = 0}` is built as an honest `Subgroup` — `one_mem` from
+  `eval₁_one`, `mul_mem` from the crossed-homomorphism identity
+  `cocycles₁_eval₁_mul` together with triviality of the `N₁`-action, `inv_mem`
+  from `eval₁_inv`;
+* NORMAL in the whole of `Γ F`, not merely in `N₁`, from `eval₁_conj` plus the
+  same triviality — this is the step the route flagged, and it costs one line
+  once `eval₁_conj` is named;
+* OPEN as `(N₁ : Set _) ∩ (eval₁ z)⁻¹' {0}`, by `continuous_eval₁` into the
+  discrete `HilbertAdZero k V`;
+* `z` VANISHES on the inertia at `w ∉ S`: the unramifiedness hypothesis puts the
+  class in the kernel of `hilbertLocResInertiaTwist1` at `w`, so
+  `exists_eval₁_eq_sub_of_cocycleClass_eq_zero` produces `mm` with
+  `z σ = ρ σ mm − mm` on `I_w`, and `ρ σ mm = mm` because `I_w ⊆ N₁`;
+* the INDEX bound is the injection `Γ F ⧸ N ↪ (Γ F ⧸ N₁) × T`, `g ↦ (g N₁, z g)`,
+  well defined and injective by the crossed-homomorphism identity again — `T`
+  being the uniform finite value set supplied by the remaining leaf.
+
+`set_option maxHeartbeats 2000000` is needed: the statement mentions four
+different `TopRep`-valued functors of `ρbar` and the unifier is slow on them.
+It sits ABOVE this docstring, not between it and the `theorem` keyword, which
+does not parse (`unexpected token 'set_option'; expected 'lemma'`). -/
+theorem exists_forall_mem_hilbertInertiaOutsideSubgroups_eval₁_eq_zero
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (S : Finset (HeightOneSpectrum (𝓞 F)))
+    (hSram : hilbertHardlyRamifiedPlaces ℓ F ⊆ (S : Set (HeightOneSpectrum (𝓞 F))))
+    (hSunr : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w) :
+    ∃ n : ℕ, ∀ z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar),
+      ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z
+          ∈ hilbertH1TwistUnramified ℓ F ρbar →
+      ∃ N ∈ hilbertInertiaOutsideSubgroups F S n,
+        ∀ g : Γ F, g ∈ N →
+          ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 g = 0 := by
+  classical
+  haveI hdisc : DiscreteTopology ↥(hilbertAdZeroTwist F ρbar) :=
+    inferInstanceAs (DiscreteTopology (HilbertAdZero k V))
+  obtain ⟨N₁, hN₁norm, hN₁open, hN₁FI, hN₁triv, hN₁inert⟩ :=
+    exists_openNormal_trivial_hilbertAdZeroTwist F ρbar S hSunr
+  obtain ⟨m, hm⟩ :=
+    exists_bound_forall_mem_finset_eval₁_hilbertAdZeroTwist ℓ F ρbar S hSram hSunr
+  haveI := hN₁norm
+  haveI := hN₁FI
+  refine ⟨N₁.index * m, ?_⟩
+  intro z hc
+  obtain ⟨T, hTcard, hTmem⟩ := hm z hc
+  set e : Γ F → ↥(hilbertAdZeroTwist F ρbar) :=
+    fun g => ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 g with hedef
+  have hmul : ∀ g h : Γ F,
+      e (g * h) = e g + (hilbertAdZeroTwist F ρbar).ρ g (e h) :=
+    fun g h => ContinuousCohomology.cocycles₁_eval₁_mul z g h
+  have hone : e 1 = 0 :=
+    ContinuousCohomology.eval₁_one (ContinuousCohomology.cocycles₁_d_eq_zero z)
+  have hinvv : ∀ g : Γ F,
+      e g⁻¹ = - (hilbertAdZeroTwist F ρbar).ρ g⁻¹ (e g) :=
+    fun g => ContinuousCohomology.eval₁_inv (ContinuousCohomology.cocycles₁_d_eq_zero z) g
+  -- vanishing of the cocycle on the inertia away from `S`
+  have hinert0 : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      ∀ σ : ↥(localInertiaGroup w), e (hilbertInertiaToGlobalHom F w σ) = 0 := by
+    intro w hw σ
+    have hv : w ∉ hilbertHardlyRamifiedPlaces ℓ F := fun h => hw (hSram h)
+    have hker : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z ∈
+        LinearMap.ker (hilbertLocResInertiaTwist1 F ρbar w).hom.toLinearMap := by
+      have h1 := (Submodule.mem_iInf _).mp hc w
+      exact (Submodule.mem_iInf _).mp h1 hv
+    have hzero : ContinuousCohomology.cocycleClass
+        (hilbertAdZeroTwistInertia F ρbar w) 1
+        (ContinuousCohomology.cocyclesMapKer (hilbertInertiaToGlobalHom F w)
+          (CategoryTheory.CategoryStruct.id (hilbertAdZeroTwistInertia F ρbar w)) 1 z) = 0 := by
+      rw [← ContinuousCohomology.map_cocycleClass_cocyclesMapKer]
+      exact hker
+    obtain ⟨mm, hmm⟩ :=
+      ContinuousCohomology.exists_eval₁_eq_sub_of_cocycleClass_eq_zero _ hzero
+    have h1 := hmm σ
+    rw [ContinuousCohomology.eval₁_cocyclesMapKer] at h1
+    have h2 : (hilbertAdZeroTwist F ρbar).ρ (hilbertInertiaToGlobalHom F w σ) mm = mm :=
+      hN₁triv _ (hN₁inert w hw σ) mm
+    have h3 : (hilbertAdZeroTwistInertia F ρbar w).ρ σ mm = mm := h2
+    rw [h3, sub_self] at h1
+    exact h1
+  -- the subgroup
+  set Nsub : Subgroup (Γ F) :=
+    { carrier := {g | g ∈ N₁ ∧ e g = 0}
+      one_mem' := ⟨one_mem _, hone⟩
+      mul_mem' := fun {a b} ha hb => ⟨mul_mem ha.1 hb.1, by
+        rw [hmul, ha.2, hb.2, map_zero, add_zero]⟩
+      inv_mem' := fun {a} ha => ⟨inv_mem ha.1, by
+        rw [hinvv, ha.2, map_zero, neg_zero]⟩ } with hNsubdef
+  have hle : Nsub ≤ N₁ := fun g hg => hg.1
+  have hNnorm : Nsub.Normal := by
+    refine ⟨fun x hx g => ⟨hN₁norm.conj_mem x hx.1 g, ?_⟩⟩
+    have hconj := ContinuousCohomology.eval₁_conj
+      (ContinuousCohomology.cocycles₁_d_eq_zero z) g x
+    show e (g * x * g⁻¹) = 0
+    rw [hedef]
+    show ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 (g * x * g⁻¹) = 0
+    rw [hconj,
+      show ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 x = e x from rfl,
+      hx.2, map_zero, zero_add, hN₁triv _ (hN₁norm.conj_mem x hx.1 g), sub_self]
+  have hNopen : IsOpen (Nsub : Set (Γ F)) := by
+    have h1 : (Nsub : Set (Γ F)) = (N₁ : Set (Γ F)) ∩ (e ⁻¹' {0}) := rfl
+    rw [h1]
+    exact hN₁open.inter
+      ((isOpen_discrete ({0} : Set ↥(hilbertAdZeroTwist F ρbar))).preimage
+        (ContinuousCohomology.continuous_eval₁ (hilbertAdZeroTwist F ρbar) z.1))
+  -- the index bound
+  have hwd : ∀ a b : Γ F, a⁻¹ * b ∈ Nsub →
+      ((QuotientGroup.mk a : Γ F ⧸ N₁), (⟨e a, hTmem a⟩ : ↥T)) =
+      ((QuotientGroup.mk b : Γ F ⧸ N₁), (⟨e b, hTmem b⟩ : ↥T)) := by
+    intro a b hab
+    refine Prod.ext ((QuotientGroup.eq (s := N₁)).mpr (hle hab)) ?_
+    have hb : b = a * (a⁻¹ * b) := by group
+    refine Subtype.ext ?_
+    show e a = e b
+    rw [hb, hmul, hab.2, map_zero, add_zero]
+  set Q : Γ F ⧸ Nsub → (Γ F ⧸ N₁) × ↥T :=
+    Quotient.lift (fun g => ((QuotientGroup.mk g : Γ F ⧸ N₁), (⟨e g, hTmem g⟩ : ↥T)))
+      (fun a b hab => hwd a b (QuotientGroup.leftRel_apply.mp hab)) with hQdef
+  have hQinj : Function.Injective Q := by
+    refine fun x y => Quotient.inductionOn₂ x y ?_
+    intro a b hEq
+    have h1 : (QuotientGroup.mk a : Γ F ⧸ N₁) = QuotientGroup.mk b :=
+      congrArg Prod.fst hEq
+    have h2 : e a = e b := congrArg Subtype.val (congrArg Prod.snd hEq)
+    have hab1 : a⁻¹ * b ∈ N₁ := (QuotientGroup.eq (s := N₁)).mp h1
+    have hab2 : e (a⁻¹ * b) = 0 := by
+      have hb : b = a * (a⁻¹ * b) := by group
+      have h3 : e b = e a + (hilbertAdZeroTwist F ρbar).ρ a (e (a⁻¹ * b)) := by
+        rw [← hmul, ← hb]
+      rw [h2] at h3
+      have h4 : (hilbertAdZeroTwist F ρbar).ρ a (e (a⁻¹ * b)) = 0 := by
+        have := h3.symm
+        rwa [add_eq_left] at this
+      have h5 := congrArg (fun t => (hilbertAdZeroTwist F ρbar).ρ a⁻¹ t) h4
+      simpa [ContinuousCohomology.rho_inv_apply] using h5
+    exact Quotient.sound (QuotientGroup.leftRel_apply.mpr ⟨hab1, hab2⟩)
+  haveI hfinQ : Finite (Γ F ⧸ Nsub) := Finite.of_injective Q hQinj
+  have hidx : Nsub.index ≤ N₁.index * m := by
+    have h1 : Nsub.index = Nat.card (Γ F ⧸ Nsub) := rfl
+    have h2 : N₁.index = Nat.card (Γ F ⧸ N₁) := rfl
+    calc Nsub.index = Nat.card (Γ F ⧸ Nsub) := h1
+      _ ≤ Nat.card ((Γ F ⧸ N₁) × ↥T) := Nat.card_le_card_of_injective Q hQinj
+      _ = Nat.card (Γ F ⧸ N₁) * Nat.card ↥T := Nat.card_prod _ _
+      _ ≤ N₁.index * m := by
+          rw [← h2]
+          exact Nat.mul_le_mul_left _ (by simpa using hTcard)
+  haveI hNFI : Nsub.FiniteIndex := by
+    refine ⟨?_⟩
+    show Nat.card (Γ F ⧸ Nsub) ≠ 0
+    exact Nat.card_pos.ne'
+  exact ⟨Nsub, ⟨hNnorm, hNopen, hNFI, hidx,
+    fun w hw σ => ⟨hN₁inert w hw σ, hinert0 w hw σ⟩⟩, fun g hg => hg.2⟩
+
 /-- **An unramified-outside-`hilbertHardlyRamifiedPlaces` class dies on a small
 open subgroup** (a SORRY LEAF from its cut on 2026-07-28 until 2026-07-30 (late);
 **PROVEN** that day over the single leaf
@@ -22500,7 +23170,21 @@ act trivially on `M` and the third bullet fails. Not vacuous:
 `hilbertH1TwistUnramified` contains `0`, and the hypotheses on `S` are
 satisfiable (`exists_finset_isUnramifiedAt_hilbert_of_notMem` above supplies
 one, enlarged by the two `finite_setOf_natCast_mem_asIdeal` sets). No hypothesis
-on `ρbar` beyond its type, so no circular discharge is available. -/
+on `ρbar` beyond its type, so no circular discharge is available.
+
+# THE ROUTE ABOVE WAS CARRIED OUT (2026-07-31, flt-lean-290)
+
+Everything in the four bullets is now proven, in
+`exists_forall_mem_hilbertInertiaOutsideSubgroups_eval₁_eq_zero` above — the
+COCYCLE form of this statement — over exactly two inputs:
+`exists_openNormal_trivial_hilbertAdZeroTwist` (the subgroup `N₁`, with all four
+of its properties) and `exists_bound_forall_mem_finset_eval₁_hilbertAdZeroTwist`
+(the uniform bound `m` on `#(image z)` — the ONE surviving leaf, and the
+correction of 2026-07-30 made into a declaration rather than left as prose).
+
+All that is left here is the fourth bullet, the one cohomological line: the
+restricted cocycle is literally the zero function, so its class is zero by
+`cocycleClass_eq_zero_of_eval₁_eq_sub` at `m = 0`. -/
 theorem exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero
     (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
