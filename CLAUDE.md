@@ -9759,3 +9759,47 @@ So the procedure when your target is already closed on `merger`:
 The cost of (3) is the section above: `merger` may not build. Weigh that before FF-ing —
 but note the alternative is worse, since the declaration you need to edit only exists
 there.
+## SPLITTING `A ∧ B` INTO `A` AND `A → B`: THE CHECK IS AGAINST THE *WEAKENED* `A`
+(2026-07-31, `RelativePicard.lean`, third cut of that day.)
+`exists_relPicZeroSubfunctor` carried two classical chapters at once and said so in its own
+docstring — the identity component of a group scheme (SGA3 VI_B 3.10) and properness of `Pic⁰`
+(BLR 9.4) — with "whoever takes the leaf takes both". They share no machinery, so they split:
+one leaf is the old conclusion **minus** `IsProper jstr`, the other takes that entire conclusion
+as its hypotheses and returns `IsProper jstr`. The assembly is `obtain` + repackage.
+**The trap, and it is not the obvious one.** Splitting a conjunction looks faithfulness-neutral
+because each half is implied by the parent. The first half genuinely is. The second half is
+`A → B`, and `A` is now WEAKER than the parent's conclusion — so it admits witnesses that the
+deleted conjunct used to exclude, and `A → B` must hold for **every one of them**, not for the
+intended `J`. Here `J = P`, `incl = id` satisfies the first half's every clause except
+geometric connectedness, and `Pic` is not proper: had the connectedness clause not been there,
+the properness half would have been FALSE while both halves still "followed from the parent".
+So the cut's real cost is one audit paragraph, and it is the only nontrivial thing about the cut:
+**enumerate what the deleted conjunct used to exclude, and name the surviving clause that
+excludes it now.** Write it on the second half, where its owner reads it. If no surviving clause
+does the excluding, the cut is wrong — put the discriminating property back into the first half's
+conclusion rather than hoping the second half's owner will notice.
+## A LAW PROVEN INSIDE AN EXISTENTIAL IS INVISIBLE — RECOVER IT BY UNIQUENESS
+(2026-07-31, same file, and this one is worth more than the cut it enabled.)
+`exists_abelJacobiPoint` is PROVEN and yields `∃ aj, spec ∧ aj_pre ∧ aj_base`. Every leaf below
+it receives `aj` and `spec` as *hypotheses* — and therefore holds neither `aj_pre` (naturality)
+nor `aj_base`. Four leaves had been stated that way. The geometry owner could not even say the
+Abel–Jacobi image passes through the origin, which is the hypothesis of the SGA3 theorem being
+invoked; the identity-component argument was unstartable for a packaging reason.
+Nothing was missing mathematically. **The spec DETERMINES `aj` pointwise** (via the file's own
+`IsRelPicOf.eq_of_relPicEquiv_tensor`), so any family satisfying it *is* that family and both
+laws transport to it. Three short theorems — a uniqueness lemma plus one transport each — put
+them in the hands of any consumer, and the hard proof inside `exists_abelJacobiPoint` is not
+repeated even once: the new lemmas `obtain` its witness and rewrite along uniqueness.
+**Generalisable, and this codebase is full of the pattern.** Whenever a leaf's hypothesis list
+is `(f, one clause about f)` and some proven `exists_f` theorem produces `f` with MORE clauses,
+ask whether the one clause pins `f` uniquely. If it does, every other clause is free to the leaf,
+and withholding them is pure loss. Symptom to grep for: a leaf whose hypothesis is a *choice
+function* plus a *specification*, where a sibling `exists_…` theorem in the same file bundles
+extra laws about the same object.
+Corollary for whoever states such a leaf: **do not hand a consumer a bare `(f, spec)` pair when
+you have proven more about `f`.** Hoist the extra laws to standalone theorems quantified over an
+arbitrary `f` satisfying the spec, and pass them in. It costs a uniqueness lemma once.
+**Unrelated, measured while doing this:** `RelativePicard.lean` takes **11 minutes** under
+`lake env lean`, not the ~25 s a task prompt claimed. Time an iteration before planning around it;
+at that length the scratch-module rule matters more than usual, and batching every edit into one
+verification is not optional.
