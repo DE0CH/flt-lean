@@ -201,6 +201,15 @@ leaves it moved to are, in dependency order:
   rather than asserted.  The two remaining dispatch targets of this cut
   are `exists_isRelPicOverAffines_of_forall_isAffineOpen` (the geometry)
   and `surj_of_isRelPicOverAffines` (BLR 8.1/4);
+
+  **Amended 2026-07-31: both `exists_relPicOf_isAffineOpen` and the gluing
+  leaf now also have to produce a SMOOTH and SEPARATED `pstr`**, and the
+  clause is threaded through `exists_relPicOf_of_forall_isAffineOpen`,
+  `exists_relPicOf_of_hasUniversallyTrivialPushforward` and
+  `exists_relPicFull` into their conclusions.  That is what closed
+  `smooth_of_isRelPicOf` and `isSeparated_of_isRelPicOf`; see the last
+  paragraph of this section for why it is a 9 → 7 move and not a
+  relocation;
 * `exists_relPicZeroOf_of_relPicGroupLaw` — BLR 9.4/4 with `f_*𝒪 = 𝒪`,
   the equivalence relation and the group law on `Pic`'s points supplied.
   **Amended 2026-07-29: this one is now PROVEN**, over a two-leaf cut of
@@ -225,15 +234,18 @@ leaves it moved to are, in dependency order:
     was itself split into `smooth_of_isRelPicOf` (BLR 8.4/2) and
     `isSeparated_of_isRelPicOf` (BLR 8.2/1), which are the two dispatch
     targets; `smooth_isSeparated_of_isRelPicOf` is now their assembly and
-    is PROVEN.
+    is PROVEN.  **Amended 2026-07-31: all three of those are now PROVEN**,
+    so `exists_relPicZeroSubgroup` is the only leaf left in this bullet.
 
-So the direct-sorry set of this module is 9 (verified against the
-compiler's `declaration uses 'sorry'` warnings, and against a
-comment-stripped token count — 9 = 9, so there are no anonymous inner
-sorries hiding behind a warning), and the five that belong to BLR 9.4/4
-are `isInvertibleSheaf_sectionIdeal`, `nonempty_modPullback_sectionIdeal`,
-`smooth_of_isRelPicOf`, `isSeparated_of_isRelPicOf` and
-`exists_relPicZeroSubgroup`.
+So the direct-sorry set of this module is 7 (verified 2026-07-31 against the
+compiler's `declaration uses 'sorry'` warnings — `{902, 2717, 2914, 2996,
+3566, 3607, 3975}` at the commit that introduced this sentence — and against
+a comment-stripped token count, 7 = 7, so there are no anonymous inner
+sorries hiding behind a warning), and the three that belong to BLR 9.4/4 are
+`isInvertibleSheaf_sectionIdeal`, `nonempty_modPullback_sectionIdeal` and
+`exists_relPicZeroSubgroup`.  **Do not quote that number** — regenerate it;
+every previous version of this sentence went stale within a day, and the line
+numbers within hours.
 
 **Amended 2026-07-30 (later the same day): 10 → 9 → 8 → 9.**  Both `modDual`
 leaves closed, `isInvertibleSheaf_modDual` first and then `isIso_modDualEv`,
@@ -261,6 +273,32 @@ now PROVEN as the assembly of `smooth_of_isRelPicOf` and
 downstream changed; `exists_relPicZeroOf_of_relPicGroupLaw` still destructures
 the same conjunction.
 
+**Amended 2026-07-31: 9 → 7, and the mechanism is worth stating because it is
+the reverse of a cut.**  `smooth_of_isRelPicOf` and `isSeparated_of_isRelPicOf`
+were stated for an ARBITRARY `pstr` representing `Pic_{X/S}`.  That is a shape
+the literature never proves — BLR does not show "every representing object is
+smooth", it CONSTRUCTS one and reads the properties off the construction — so
+neither leaf could consume its own citation, and a prover sent at either would
+have had to invent the missing bridge first.
+
+The bridge is `IsRelPicOf.isoOver` (new section above, PROVEN): two schemes
+representing `Pic_{X/S}` are isomorphic over `S`, by Yoneda carried out
+directly on `RelPoint`.  With it, "every" reduces to "some", and "some" is an
+existential that can be threaded up to the point where a scheme is actually
+built.  So a `Smooth ∧ IsSeparated` clause was added to the conclusions of
+`exists_relPicOf_isAffineOpen`, `exists_isRelPicOverAffines_of_forall_isAffineOpen`,
+`exists_relPicOf_of_forall_isAffineOpen`,
+`exists_relPicOf_of_hasUniversallyTrivialPushforward` and `exists_relPicFull`,
+and both leaves closed.
+
+**This MOVED work, and the move is deliberate: it did not delete BLR 8.4/2 or
+8.2/1.**  Those obligations now sit on `exists_relPicOf_isAffineOpen`, which
+is where FGA 232 is done and where anyone doing it has smoothness and
+separatedness in hand anyway.  Two leaves became zero and no leaf was created,
+because the two existing leaves absorbed the clause.  Both were RESTATED, so
+their earlier faithfulness audits are VOID and re-run in place — see their
+docstrings.
+
 Also PROVEN here and worth knowing about before re-deriving them:
 `modTensorMapIso`, `modTensorUnitLeftIso`, `modTensorUnitRightIso`,
 `modTensorSymmIso` (the BRAIDING), `modPullbackUnitIso`,
@@ -273,6 +311,17 @@ Also PROVEN here and worth knowing about before re-deriving them:
 and `IsRelPicOf.zeroPoint/addPoint` with their two classification specs.
 Most of the first group was HOISTED from `AmpleSheaf.lean`; see the
 tensor-calculus section header.
+
+Added 2026-07-31, and useful well beyond the two leaves it closed:
+`IsRelPicOf.cmp` / `sheaf_cmp` / `cmp_cmp` / `cmp_pre` / `toHom` /
+`toHom_comp` / `toHom_comp_toHom` / `isoOver`, i.e. **the representing object
+is unique up to isomorphism over `S`**, plus the two transport corollaries
+`smooth_of_isRelPicOf_of_smooth` and
+`isSeparated_of_isRelPicOf_of_isSeparated`.  Any property of `pstr` that is
+invariant under isomorphism can be moved between representing objects by the
+same two lines; `Smooth` and `IsSeparated` are only the two that were needed
+first.  `cmp_pre` is the only step with content and is where
+`relPicEquiv_modPullback` is spent.
 
 `IsRelPicOf` is `IsRelPicZeroOf` with the group law and the Abel–Jacobi
 fields dropped and a **surjectivity** field added; that field is what
@@ -2471,6 +2520,135 @@ theorem sheaf_addPoint {T : Scheme.{u}} {g : T ⟶ S} (p q : RelPoint pstr g) :
 
 end IsRelPicOf
 
+/-! ### TWO REPRESENTING OBJECTS ARE CANONICALLY ISOMORPHIC OVER `S`
+
+Everything in this subsection is PROVEN, and it is what converts a
+statement about EVERY representing object into a statement about SOME
+representing object.  That conversion is the whole reason the subsection
+exists: the classical literature never proves "any scheme representing
+`Pic_{X/S}` is smooth/separated" — it CONSTRUCTS one and reads the
+properties off the construction (BLR 8.2/1 builds `Pic` as a separated
+`S`-scheme locally of finite type; 8.4/2 adds smoothness).  Without a
+uniqueness statement those two shapes are different theorems, and a leaf
+stated in the "every" shape cannot consume the literature at all.
+
+The argument is pure Yoneda, carried out on `RelPoint` rather than
+through a functor object (there is no functor object here — see the
+universe note on `exists_relPicFull`):
+
+* `cmp` sends a `T`-point of `P` to the unique `T`-point of `Q` carrying
+  the same class, by `surj` for existence and `inj` for uniqueness;
+* `cmp_cmp` is the round trip, by `inj` again;
+* `cmp_pre` is naturality in the test object, and is the only step with
+  any content: it chains `sheaf_pre` on both sides with the transport
+  lemma `relPicEquiv_modPullback`;
+* `toHom` evaluates `cmp` at the TAUTOLOGICAL point `𝟙 P`, and
+  `toHom_comp_toHom` is `cmp_pre` at `h = toHom` composed with `cmp_cmp`.
+
+Note what is NOT claimed: the isomorphism is not shown to be the unique
+one over `S` (it is, by `inj` at `T = P`, but nothing below needs it), and
+no compatibility with `zeroPoint`/`addPoint` is proven. -/
+
+namespace IsRelPicOf
+
+section Comparison
+
+variable {X P Q S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S} {qstr : Q ⟶ S}
+
+/-- **The comparison of two representing objects, on points** (PROVEN):
+the `T`-point of `Q` carrying the same class as a given `T`-point of `P`.
+Obtained by choice from `surj`; it is the CORRECT choice rather than an
+arbitrary one because `inj` makes it unique. -/
+noncomputable def cmp (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr)
+    {T : Scheme.{u}} {g : T ⟶ S} (p : RelPoint pstr g) : RelPoint qstr g :=
+  (hQ.surj (hP.sheaf p) (hP.invertible p)).choose
+
+/-- `cmp` preserves the classified class (PROVEN). -/
+theorem sheaf_cmp (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr)
+    {T : Scheme.{u}} {g : T ⟶ S} (p : RelPoint pstr g) :
+    RelPicEquiv strX g (hQ.sheaf (hP.cmp hQ p)) (hP.sheaf p) :=
+  (hQ.surj (hP.sheaf p) (hP.invertible p)).choose_spec
+
+/-- `cmp` is an involution up to the two structures (PROVEN), by `inj`. -/
+theorem cmp_cmp (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr)
+    {T : Scheme.{u}} {g : T ⟶ S} (p : RelPoint pstr g) :
+    hQ.cmp hP (hP.cmp hQ p) = p :=
+  hP.inj _ _ (relPicEquiv_trans _ _ (hQ.sheaf_cmp hP (hP.cmp hQ p)) (hP.sheaf_cmp hQ p))
+
+/-- `cmp` is NATURAL in the test object (PROVEN) — the only step of the
+comparison with content, and where `relPicEquiv_modPullback` is spent. -/
+theorem cmp_pre (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr)
+    {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g')
+    (p : RelPoint pstr g) :
+    hP.cmp hQ (RelPoint.pre h hg p) = RelPoint.pre h hg (hP.cmp hQ p) := by
+  refine hQ.inj _ _ ?_
+  have h1 : RelPicEquiv strX g' (hQ.sheaf (hP.cmp hQ (RelPoint.pre h hg p)))
+      (modPullback (curveBaseChangeMap strX h hg) (hP.sheaf p)) :=
+    relPicEquiv_trans _ _ (hP.sheaf_cmp hQ (RelPoint.pre h hg p)) (hP.sheaf_pre h hg p)
+  have h2 : RelPicEquiv strX g' (hQ.sheaf (RelPoint.pre h hg (hP.cmp hQ p)))
+      (modPullback (curveBaseChangeMap strX h hg) (hP.sheaf p)) :=
+    relPicEquiv_trans _ _ (hQ.sheaf_pre h hg (hP.cmp hQ p))
+      (relPicEquiv_modPullback strX h hg (hP.sheaf_cmp hQ p))
+  exact relPicEquiv_trans _ _ h1 (relPicEquiv_symm _ _ h2)
+
+/-- **The tautological point** `𝟙 P : RelPoint pstr pstr`, at which `cmp`
+is evaluated to produce a morphism of schemes. -/
+def selfPoint (pstr : P ⟶ S) : RelPoint pstr pstr := ⟨𝟙 P, Category.id_comp pstr⟩
+
+/-- **The comparison morphism `P ⟶ Q` over `S`** (PROVEN). -/
+noncomputable def toHom (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr) : P ⟶ Q :=
+  (hP.cmp hQ (selfPoint pstr)).1
+
+/-- The comparison morphism is a morphism OVER `S` (PROVEN). -/
+theorem toHom_comp (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr) :
+    hP.toHom hQ ≫ qstr = pstr := (hP.cmp hQ (selfPoint pstr)).2
+
+/-- The two comparison morphisms are mutually inverse (PROVEN) — `cmp_pre`
+at `h = toHom`, composed with `cmp_cmp`. -/
+theorem toHom_comp_toHom (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr) :
+    hQ.toHom hP ≫ hP.toHom hQ = 𝟙 Q := by
+  have key := hP.cmp_pre hQ (hQ.toHom hP) (hQ.toHom_comp hP) (selfPoint pstr)
+  have hpre : RelPoint.pre (hQ.toHom hP) (hQ.toHom_comp hP) (selfPoint pstr)
+      = hQ.cmp hP (selfPoint qstr) :=
+    Subtype.ext (Category.comp_id _)
+  rw [hpre, hQ.cmp_cmp hP (selfPoint qstr)] at key
+  exact (congrArg Subtype.val key).symm
+
+/-- **TWO SCHEMES REPRESENTING `Pic_{X/S}` ARE ISOMORPHIC OVER `S`**
+(PROVEN).  The `S`-structure is `toHom_comp`. -/
+noncomputable def isoOver (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr) : P ≅ Q where
+  hom := hP.toHom hQ
+  inv := hQ.toHom hP
+  hom_inv_id := hQ.toHom_comp_toHom hP
+  inv_hom_id := hP.toHom_comp_toHom hQ
+
+instance isIso_toHom (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr) :
+    IsIso (hP.toHom hQ) :=
+  (hP.isoOver hQ).isIso_hom
+
+end Comparison
+
+end IsRelPicOf
+
+/-- **SMOOTHNESS TRANSPORTS BETWEEN REPRESENTING OBJECTS** (PROVEN):
+`pstr = toHom ≫ qstr` with `toHom` an isomorphism, and `Smooth` is stable
+under composition with isomorphisms. -/
+theorem smooth_of_isRelPicOf_of_smooth {X P Q S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    {qstr : Q ⟶ S} (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr)
+    (h : Smooth qstr) : Smooth pstr := by
+  haveI := h
+  rw [← hP.toHom_comp hQ]
+  infer_instance
+
+/-- **SEPARATEDNESS TRANSPORTS BETWEEN REPRESENTING OBJECTS** (PROVEN) —
+same argument as `smooth_of_isRelPicOf_of_smooth`. -/
+theorem isSeparated_of_isRelPicOf_of_isSeparated {X P Q S : Scheme.{u}} {strX : X ⟶ S}
+    {pstr : P ⟶ S} {qstr : Q ⟶ S} (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr)
+    (h : IsSeparated qstr) : IsSeparated pstr := by
+  haveI := h
+  rw [← hP.toHom_comp hQ]
+  infer_instance
+
 /-! ### The Zariski-local decomposition of FGA 232
 
 `exists_relPicOf_of_hasUniversallyTrivialPushforward` below is cut into
@@ -2547,14 +2725,52 @@ with the naive quotient, which is what makes `surj` statable without
 sheafification.
 
 Steps (i)–(ii) are the cheap ones; (iii) is Grothendieck's theorem and is
-the only genuinely research-scale obligation in this file. -/
+the only genuinely research-scale obligation in this file.
+
+**RESTATED 2026-07-31, and the earlier audit is therefore VOID rather than
+inherited** (the rule is CLAUDE.md's, from
+`exists_artinDivisorNormIndex_le_ray_class`: a second restatement voids the
+first audit, which must be re-run against the COMPOSITE statement).  The
+conclusion now also asks the produced `pstr` to be **smooth and separated**
+over `V`.  Three things to know about that change:
+
+* *It is free for whoever proves this leaf.*  BLR 8.2/1 does not merely
+  assert representability — it constructs `Pic_{X_V/V}` as a **separated**
+  `V`-scheme locally of finite type, and BLR 8.4/2 adds smoothness from the
+  vanishing of `H²(X_s, 𝒪)` on a relative curve.  Both properties are read
+  off the construction; nobody proving (iii) can avoid having them in hand.
+* *It is what makes `smooth_of_isRelPicOf` and `isSeparated_of_isRelPicOf`
+  PROVABLE.*  Those two are stated for an ARBITRARY representing object,
+  which is a shape the literature never proves.  `IsRelPicOf.isoOver` above
+  converts "every" into "some", and "some" is exactly what this existential
+  now supplies.  Both leaves closed on 2026-07-31 as a consequence, so this
+  is a 4 → 2 move on the frontier, not extra work.
+* *It cannot be extracted from the old conclusion.*  `IsRelPicOf` says
+  nothing about the topology of `P`; a representing object is smooth and
+  separated because it is ISOMORPHIC to the constructed one, and the
+  isomorphism is only available once one constructed object is known to have
+  the properties.  So the clause has to be produced here, at the point where
+  a scheme is built, and nowhere else.
+
+**RE-AUDIT of the composite statement.**  TRUE.  The hypotheses are
+unchanged, and over an affine `V` the base-changed curve is projective (see
+the section note), so BLR 8.2/1 + 8.4/2 apply verbatim and give a smooth
+separated representing object.  NOT VACUOUS in the new form either: for
+`X = ℙ¹_S` with `V` affine, `Pic_{ℙ¹_V/V} = ℤ × V ⟶ V` is smooth (étale,
+even) and separated, so the strengthened conclusion is satisfied by an
+explicit witness and does not silently make the leaf false.  What the
+strengthening does NOT do is admit a junk witness: `IsRelPicOf` is still
+present as a conjunct, and the `P = V`, `pstr = 𝟙 V` witness — which IS
+smooth and separated — still fails `surj` at any curve of positive genus,
+by the `𝒪(Δ) ⊗ 𝒪(−o)` computation in the `IsRelPicOf` docstring. -/
 theorem exists_relPicOf_isAffineOpen {X S : Scheme.{u}} (strX : X ⟶ S)
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
     (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
     (V : S.Opens) (_hV : IsAffineOpen V) :
     ∃ (P : Scheme.{u}) (pstr : P ⟶ (V : Scheme.{u})),
-      Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr) :=
+      Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr) ∧
+        Smooth pstr ∧ IsSeparated pstr :=
   sorry
 
 /-! ### The Zariski-local half, cut again
@@ -2708,15 +2924,52 @@ Route, in the order a prover meets it:
 
 Both `_o` and `_hpush` are load-bearing at step 2 and must not be dropped
 "because the gluing is formal": without them there is no canonical
-universal sheaf to glue. -/
+universal sheaf to glue.
+
+**RESTATED 2026-07-31 — earlier audit VOID, re-run below.**  `_hloc` now
+hands out local Picard schemes that are **smooth and separated over `V`**,
+and the conclusion asks the same of the glued `pstr` over `S`.  The two
+changes move in opposite directions (a stronger hypothesis WEAKENS the
+leaf, a stronger conclusion strengthens it), which is exactly the shape
+CLAUDE.md records as able to be fatal when composed, so:
+
+**RE-AUDIT of the composite.**  TRUE, and step 4 below costs the prover
+nothing beyond what step 1 already produces.  The gluing of step 1 produces
+`P` together with isomorphisms `P ×_S V ≅ P_V` over `V` — that data IS the
+`RelativeGluingData`, not an extra obligation — and both properties are
+Zariski-local on the TARGET at this pin:
+
+* `AlgebraicGeometry.IsSeparated` carries an explicit
+  `IsZariskiLocalAtTarget @IsSeparated` instance
+  (`Mathlib/AlgebraicGeometry/Morphisms/Separated.lean`);
+* `Smooth` is `HasRingHomProperty @Smooth RingHom.Smooth`
+  (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`), hence local at the
+  target for the same reason.
+
+So `Smooth (pstr ∣_ V)` and `IsSeparated (pstr ∣_ V)` for the affine opens
+`V`, which cover `S`, give the two global clauses.  There is no way for the
+strengthened hypothesis and the strengthened conclusion to conspire here,
+because the conclusion's new clauses are DERIVED from the hypothesis's new
+clauses along the same isomorphisms step 3 already uses to transport
+`inj`/`surj`; they are not an independent assertion about `P`.
+
+Why the clauses are carried at all: `smooth_of_isRelPicOf` and
+`isSeparated_of_isRelPicOf` are stated for an ARBITRARY representing object,
+and `IsRelPicOf.isoOver` above reduces them to "some representing object is
+smooth and separated".  That existential is threaded from
+`exists_relPicOf_isAffineOpen` through this leaf to `exists_relPicFull`, and
+it closed both of those leaves on 2026-07-31.  See the audit on
+`exists_relPicOf_isAffineOpen`. -/
 theorem exists_isRelPicOverAffines_of_forall_isAffineOpen {X S : Scheme.{u}} (strX : X ⟶ S)
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
     (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
     (_hloc : ∀ V : S.Opens, IsAffineOpen V →
       ∃ (P : Scheme.{u}) (pstr : P ⟶ (V : Scheme.{u})),
-        Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr)) :
-    ∃ (P : Scheme.{u}) (pstr : P ⟶ S), Nonempty (IsRelPicOverAffines strX pstr) :=
+        Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr) ∧
+          Smooth pstr ∧ IsSeparated pstr) :
+    ∃ (P : Scheme.{u}) (pstr : P ⟶ S),
+      Nonempty (IsRelPicOverAffines strX pstr) ∧ Smooth pstr ∧ IsSeparated pstr :=
   sorry
 
 /-- **INJECTIVITY IS ZARISKI-LOCAL ON THE BASE** (**PROVEN 2026-07-30**;
@@ -2824,23 +3077,32 @@ counterexample (dualise) and the repair (a rigidified Poincaré bundle).
 The universe warning on the parent's ROUTE AUDIT still stands: do not
 reach for `Scheme.LocalRepresentability.isRepresentable`, which takes a
 `Type u`-valued sheaf while the naive quotient is a priori
-`Type (u+1)`. -/
+`Type (u+1)`.
+
+**Amended 2026-07-31**: `hloc` and the conclusion now also carry
+`Smooth ∧ IsSeparated`, threaded verbatim from
+`exists_isRelPicOverAffines_of_forall_isAffineOpen` — the gluing does not
+change the scheme `P`, so the two clauses pass straight through with no
+argument.  See the audits on `exists_relPicOf_isAffineOpen` and on the
+gluing leaf for why they are carried. -/
 theorem exists_relPicOf_of_forall_isAffineOpen {X S : Scheme.{u}} (strX : X ⟶ S)
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
     (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
     (hloc : ∀ V : S.Opens, IsAffineOpen V →
       ∃ (P : Scheme.{u}) (pstr : P ⟶ (V : Scheme.{u})),
-        Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr)) :
-    ∃ (P : Scheme.{u}) (pstr : P ⟶ S), Nonempty (IsRelPicOf strX pstr) := by
-  obtain ⟨P, pstr, ⟨hP⟩⟩ :=
+        Nonempty (IsRelPicOf (curveBaseChangeProj strX V.ι) pstr) ∧
+          Smooth pstr ∧ IsSeparated pstr) :
+    ∃ (P : Scheme.{u}) (pstr : P ⟶ S),
+      Nonempty (IsRelPicOf strX pstr) ∧ Smooth pstr ∧ IsSeparated pstr := by
+  obtain ⟨P, pstr, ⟨hP⟩, hsm, hsep⟩ :=
     exists_isRelPicOverAffines_of_forall_isAffineOpen strX hproper hsmooth hconn o hpush hloc
   exact ⟨P, pstr, ⟨{ sheaf := hP.sheaf
                      invertible := hP.invertible
                      inj := fun p q h => inj_of_isRelPicOverAffines hP p q h
                      surj := fun L hL =>
                        surj_of_isRelPicOverAffines hproper hsmooth hconn o hpush hP L hL
-                     sheaf_pre := hP.sheaf_pre }⟩⟩
+                     sheaf_pre := hP.sheaf_pre }⟩, hsm, hsep⟩
 
 /-- **EXISTENCE OF THE RELATIVE PICARD SCHEME** — FGA exposé 232,
 Bosch–Lütkebohmert–Raynaud, *Néron Models*, 8.2/1 (**PROVEN 2026-07-29
@@ -3070,7 +3332,8 @@ theorem exists_relPicOf_of_hasUniversallyTrivialPushforward {X S : Scheme.{u}} (
     (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
     (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
     (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g)) :
-    ∃ (P : Scheme.{u}) (pstr : P ⟶ S), Nonempty (IsRelPicOf strX pstr) :=
+    ∃ (P : Scheme.{u}) (pstr : P ⟶ S),
+      Nonempty (IsRelPicOf strX pstr) ∧ Smooth pstr ∧ IsSeparated pstr :=
   exists_relPicOf_of_forall_isAffineOpen strX hproper hsmooth hconn o hpush
     fun V hV => exists_relPicOf_isAffineOpen strX hproper hsmooth hconn o hpush V hV
 
@@ -3105,11 +3368,23 @@ ceremony:
   SATISFIABLE at all, since `surj` produces a classifying point and
   `inj` demands it be unique, and uniqueness of a representative is
   exactly what symmetry and transitivity supply.  A prover of the leaf
-  who did not have `_hequiv` would have to prove it first. -/
+  who did not have `_hequiv` would have to prove it first.
+
+**Amended 2026-07-31 — the conclusion now also produces `Smooth pstr` and
+`IsSeparated pstr`.**  It is threaded unchanged from
+`exists_relPicOf_isAffineOpen` (which is where a scheme is actually built)
+through the gluing leaf; nothing here proves it.  The reason it is carried
+this far is `IsRelPicOf.isoOver`: `smooth_of_isRelPicOf` and
+`isSeparated_of_isRelPicOf` are stated for an ARBITRARY representing object,
+and the comparison isomorphism reduces them to "SOME representing object is
+smooth and separated", which is this existential and is also the only shape
+the literature proves (BLR 8.2/1 builds a separated `Pic`, 8.4/2 makes it
+smooth).  Both of those leaves closed on 2026-07-31 as a result. -/
 theorem exists_relPicFull {X S : Scheme.{u}} (strX : X ⟶ S)
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S)) :
-    ∃ (P : Scheme.{u}) (pstr : P ⟶ S), Nonempty (IsRelPicOf strX pstr) := by
+    ∃ (P : Scheme.{u}) (pstr : P ⟶ S),
+      Nonempty (IsRelPicOf strX pstr) ∧ Smooth pstr ∧ IsSeparated pstr := by
   haveI := hproper
   haveI := hsmooth
   haveI := hconn
@@ -3515,62 +3790,106 @@ theorem exists_abelJacobiPoint {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P �
         (relPicEquiv_of_iso strX (𝟙 S) (modTensorUnitLeftIso _))
     exact hP.eq_of_relPicEquiv_tensor (hI S (𝟙 S) o) (hspec S (𝟙 S) o) hz
 
-/-- **`Pic` IS SMOOTH OVER `S`** (sorry leaf; the smoothness half of
+/-- **`Pic` IS SMOOTH OVER `S`** (**PROVEN 2026-07-31**; the smoothness half of
 `smooth_isSeparated_of_isRelPicOf`, split off from it 2026-07-30) — BLR 8.4/2.
 
-The relative Picard functor of a flat proper morphism is smooth over `S` as
+**HOW IT WENT THROUGH, and the one change to the signature.**  The statement
+quantifies over an ARBITRARY `pstr` with `IsRelPicOf strX pstr`, which is a
+shape the literature never proves: BLR does not show "every scheme
+representing `Pic_{X/S}` is smooth", it CONSTRUCTS one and reads smoothness
+off the construction.  `IsRelPicOf.isoOver` (proven above, pure Yoneda on
+`RelPoint`) closes that gap — two representing objects are isomorphic over
+`S` — so the leaf reduces to `exists_relPicFull`, whose conclusion was
+strengthened the same day to carry `Smooth ∧ IsSeparated`.  The obligation
+therefore did not vanish; it moved to `exists_relPicOf_isAffineOpen`, where a
+scheme is actually built and where BLR 8.4/2 lives.  Net effect on the
+frontier: 4 open leaves in this file became 2.
+
+The signature GAINED a section `_o : RelPoint strX (𝟙 S)`, because
+`exists_relPicFull` needs one (BLR 8.1/4 uses the section to collapse the
+fppf sheaf onto the naive quotient, and the section is also what makes the
+curve relatively projective).  This WEAKENS the leaf and is safe: the sole
+consumer, `exists_relPicZeroOf_of_relPicGroupLaw`, already has `o` in scope
+and passes it.  The statement is in fact still true without a section — a
+representable functor is an fppf sheaf, so a representable naive quotient
+already IS `Pic_{X/S}` — but that argument needs descent theory this
+development does not have, and manufacturing a harder statement for no
+consumer would be the wrong trade.
+
+The classical content, kept because it is what the new owner of
+`exists_relPicOf_isAffineOpen` has to supply: the relative Picard functor of a
+flat proper morphism is smooth over `S` as
 soon as `H²(X_s, 𝒪_{X_s})` vanishes on every fibre, because that group receives
 the obstructions to lifting a line bundle along a square-zero thickening.  On a
 relative CURVE it vanishes for dimension reasons, so this is the one place in
 BLR 9.4/4 where "the fibres are curves" is used as a *cohomological* input
 rather than as a geometric one.
 
-**HYPOTHESIS USAGE, and why the list is not tightened.**  The argument as just
-described spends `hproper` (flat + proper) and `hsmooth` (relative dimension 1,
-for the `H²` vanishing) and appears to spend neither `hconn` nor `hpush`; the
-sibling `isSeparated_of_isRelPicOf` is the reverse.  The full list is
-nevertheless kept on both halves, deliberately.  Dropping a hypothesis
-STRENGTHENS a leaf, and this development has a standing record of leaves that
-became FALSE when a correct-looking restatement composed with an earlier one
-(see `exists_artinDivisorNormIndex_le_ray_class`).  The parent asserted the
-conjunction under all five, so each conjunct is asserted under all five and
-splitting is faithfulness-neutral; a prover who finds a hypothesis genuinely
-idle should delete it THEN, with the proof in hand, which is a strictly better
-piece of evidence than this note.
+**HYPOTHESIS USAGE, now that there is a proof to read it off.**  The proof
+spends `_hproper`, `_hsmooth`, `_hconn` and `_o` (all four go into
+`exists_relPicFull`) and `_hP` (which is the whole content).  `_hpush` is
+GENUINELY IDLE and is deliberately kept, for the same reason `_hequiv` is kept
+on `exists_relPicOf_of_hasUniversallyTrivialPushforward`: it is derivable from
+the other three by
+`hasUniversallyTrivialPushforward_of_isProper_of_smooth`, so it constrains
+nothing and cannot make the statement false, while deleting an input from a
+released signature churns consumers for no mathematical gain.  A reader must
+not treat it as a live obligation — it is not one.
 
-**FAITHFULNESS** is inherited verbatim from the parent's audit below, which
-covers this conjunct: `hP` is the whole content (any non-smooth `pstr` refutes
-it without `hP`), and dropping `hsmooth` refutes it at relative dimension `2`,
-where `H²(X_s, 𝒪)` need not vanish and `Pic` is genuinely obstructed — a K3
-over a non-reduced base is the standard witness. -/
+**FAITHFULNESS.**  `_hP` is the whole content: any non-smooth `pstr` refutes
+the statement without it, e.g. `Spec k[t]/(t²) ⟶ Spec k`.  Dropping `_hsmooth`
+refutes it at relative dimension `2`, where `H²(X_s, 𝒪)` need not vanish and
+`Pic` is genuinely obstructed — a K3 over a non-reduced base is the standard
+witness.  NOT VACUOUS: `IsRelPicOf strX pstr` is satisfiable, by
+`exists_relPicFull`. -/
 theorem smooth_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
-    (_hconn : GeometricallyConnected strX) (_hP : IsRelPicOf strX pstr)
+    (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
+    (_hP : IsRelPicOf strX pstr)
     (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
-    Smooth pstr := sorry
+    Smooth pstr := by
+  obtain ⟨_Q, _qstr, ⟨hQ⟩, hQsmooth, -⟩ :=
+    exists_relPicFull strX _hproper _hsmooth _hconn _o
+  exact smooth_of_isRelPicOf_of_smooth _hP hQ hQsmooth
 
-/-- **`Pic` IS SEPARATED OVER `S`** (sorry leaf; the separatedness half of
-`smooth_isSeparated_of_isRelPicOf`, split off from it 2026-07-30) — BLR 8.2/1,
-`Pic_{X/S}` is a separated `S`-scheme locally of finite type.
+/-- **`Pic` IS SEPARATED OVER `S`** (**PROVEN 2026-07-31**; the separatedness
+half of `smooth_isSeparated_of_isRelPicOf`, split off from it 2026-07-30) —
+BLR 8.2/1, `Pic_{X/S}` is a separated `S`-scheme locally of finite type.
 
-This is where `hpush` is spent: with `f_*𝒪 = 𝒪` universally the sequence
-`0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T)` is exact, so two points of `P` agreeing on a dense
-open of a valuation base agree, and the valuative criterion applies.  Without
-`hpush` the functor is only a *presheaf* quotient and the criterion fails —
-already for `X = S ⊔ S`, the same witness the Zariski-gluing audit uses.
+The route is the sibling's verbatim: `IsRelPicOf.isoOver` reduces the "every
+representing object" shape to the "some representing object" shape, and
+`exists_relPicFull` now supplies the latter.  See `smooth_of_isRelPicOf` above
+for the full account, including why the signature gained the section `_o` and
+why `_hpush` is kept although the proof does not use it.
 
-**One correction to the parent's prose, which this split makes checkable.**  The
-paragraph below says separatedness "is where the section `o` and `_hpush` are
-spent".  The parent has NO section hypothesis — it never had one — and the
-displayed argument uses only `hpush`.  So `o` in that sentence is a carry-over
-from `exists_relPicZeroSubgroup`, where the section IS spent, and it is not an
-omission from the signature.  See `smooth_of_isRelPicOf` above for why the
-hypothesis list is nevertheless left at the parent's five. -/
+The classical content, which is what the owner of
+`exists_relPicOf_isAffineOpen` now has to supply: with `f_*𝒪 = 𝒪` universally
+the sequence `0 ⟶ Pic T ⟶ Pic X_T ⟶ P(T)` is exact, so two points of `P`
+agreeing on a dense open of a valuation base agree, and the valuative
+criterion applies (`AlgebraicGeometry.IsSeparated.of_valuativeCriterion` is the
+pin's entry point, and it also wants `QuasiSeparated`, which the construction
+supplies).  Without `f_*𝒪 = 𝒪` the functor is only a *presheaf* quotient and
+the criterion fails — already for `X = S ⊔ S`, the same witness the
+Zariski-gluing audit uses.
+
+**One correction to the parent's prose, which this split made checkable and
+which the proof has now settled.**  The paragraph below says separatedness "is
+where the section `o` and `_hpush` are spent".  When this was a leaf the
+signature had no section at all, and the displayed classical argument uses only
+`f_*𝒪 = 𝒪`.  The section is now present — but for a different reason than that
+paragraph gives: it is consumed by `exists_relPicFull`, i.e. by
+REPRESENTABILITY, not by the valuative criterion.  So the sentence is still
+wrong about *which* step spends `o`, and it is left visible for the same
+reason the module docstring keeps its stale paragraphs. -/
 theorem isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
-    (_hconn : GeometricallyConnected strX) (_hP : IsRelPicOf strX pstr)
+    (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
+    (_hP : IsRelPicOf strX pstr)
     (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
-    IsSeparated pstr := sorry
+    IsSeparated pstr := by
+  obtain ⟨_Q, _qstr, ⟨hQ⟩, -, hQsep⟩ :=
+    exists_relPicFull strX _hproper _hsmooth _hconn _o
+  exact isSeparated_of_isRelPicOf_of_isSeparated _hP hQ hQsep
 
 /-- **`Pic` IS SMOOTH AND SEPARATED OVER `S`** (PROVEN 2026-07-30 as the
 assembly of the two halves just above; formerly a bare sorry leaf, cut
@@ -3624,14 +3943,26 @@ were welded together only because they were cut out of
 `exists_relPicZeroSubgroup` in one motion, and one owner had to carry both.  See
 `smooth_of_isRelPicOf` and `isSeparated_of_isRelPicOf` below.  Nothing
 downstream changed: `exists_relPicZeroOf_of_relPicGroupLaw` still destructures
-this conjunction. -/
+this conjunction.
+
+**BOTH HALVES PROVEN 2026-07-31**, so this whole node is now sorry-free.  The
+route is `IsRelPicOf.isoOver` (two representing objects are isomorphic over
+`S`) plus a `Smooth ∧ IsSeparated` clause threaded into `exists_relPicFull`'s
+conclusion; the obligation moved up to `exists_relPicOf_isAffineOpen`, where a
+scheme is actually constructed.  **The signature gained a section
+`o : RelPoint strX (𝟙 S)`** — `exists_relPicFull` needs one — and
+`exists_relPicZeroOf_of_relPicGroupLaw` supplies it from its own `o`.  The
+FAITHFULNESS audit below is therefore no longer a promise about an open leaf;
+it is a description of a theorem, and the "not vacuous" clause is now
+witnessed by the proof itself. -/
 theorem smooth_isSeparated_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
-    (hconn : GeometricallyConnected strX) (hP : IsRelPicOf strX pstr)
+    (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hP : IsRelPicOf strX pstr)
     (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX) :
     Smooth pstr ∧ IsSeparated pstr :=
-  ⟨smooth_of_isRelPicOf hproper hsmooth hconn hP hpush,
-    isSeparated_of_isRelPicOf hproper hsmooth hconn hP hpush⟩
+  ⟨smooth_of_isRelPicOf hproper hsmooth hconn o hP hpush,
+    isSeparated_of_isRelPicOf hproper hsmooth hconn o hP hpush⟩
 
 /-- **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (sorry leaf, cut
 2026-07-29) — BLR 9.4/4's geometric half, and the whole of what that
@@ -3751,7 +4082,7 @@ theorem exists_relPicZeroOf_of_relPicGroupLaw {X P S : Scheme.{u}} {strX : X ⟶
   obtain ⟨aj, hajSpec, hajPre, hajBase⟩ :=
     exists_abelJacobiPoint _hproper _hsmooth o hP
   obtain ⟨hPsmooth, hPsep⟩ :=
-    smooth_isSeparated_of_isRelPicOf _hproper _hsmooth _hconn hP _hpush
+    smooth_isSeparated_of_isRelPicOf _hproper _hsmooth _hconn o hP _hpush
   obtain ⟨J, jstr, ab, incl, hinj, hzero, hadd, hpre, himg⟩ :=
     exists_relPicZeroSubgroup _hproper _hsmooth _hconn o hP _hpush hPsmooth hPsep
       _hequiv aj hajSpec
@@ -3968,7 +4299,7 @@ theorem exists_relPicZero {X S : Scheme.{u}} (strX : X ⟶ S)
     (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S)) :
     ∃ (J : Scheme.{u}) (jstr : J ⟶ S) (ab : AbelianSchemeStruct jstr),
       Nonempty (IsRelPicZeroOf strX ab o) := by
-  obtain ⟨_P, _pstr, ⟨hP⟩⟩ := exists_relPicFull strX hproper hsmooth hconn o
+  obtain ⟨_P, _pstr, ⟨hP⟩, -, -⟩ := exists_relPicFull strX hproper hsmooth hconn o
   exact exists_relPicZero_of_isRelPicOf hproper hsmooth hconn o hP
 
 end Fermat
