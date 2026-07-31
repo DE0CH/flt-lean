@@ -12,6 +12,15 @@ public import Mathlib.RingTheory.Ideal.Norm.RelNorm
 public import Mathlib.RingTheory.Invariant.Galois
 public import Mathlib.RingTheory.DedekindDomain.Factorization
 public import Mathlib.RingTheory.ClassGroup.Basic
+-- `public` because the Chebotarev reduction below elaborates inside an `@[expose] public`
+-- declaration and needs `IntermediateField.fixedField` / `fixingSubgroup_fixedField`
+-- and `differentIdeal` / `not_dvd_differentIdeal_iff` to be visible there.
+public import Mathlib.FieldTheory.Galois.Basic
+public import Mathlib.RingTheory.DedekindDomain.Different
+-- `public` because `closure_frobAt_eq_top` below elaborates inside an `@[expose] public`
+-- declaration and needs `ramifiedBelow` / `finite_ramifiedBelow` /
+-- `finrank_eq_one_of_forall_inertiaDeg_eq_one` from it to be visible there.
+public import Fermat.FLT.NumberField.Density
 
 /-!
 # The Artin symbol of a number field, and the two deep inputs of unramified CFT
@@ -68,7 +77,23 @@ coarser than it needed to be.
   Artin map kills the principal ideals.
 * `NumberField.exists_classGroupHom_eq_frobAt` — PROVEN 2026-07-30 over the leaf
   above: the descent of the Artin map to `Cl(𝓞 K)`.
-* `NumberField.closure_frobAt_eq_top` — **OPEN LEAF: CHEBOTAREV.**
+* `NumberField.inertiaDeg_eq_one_of_forall_pow_natCard` — PROVEN. If every element of
+  the residue field `𝓞 F ⧸ q` is a root of `X ^ (N 𝔭) - X` then `f(q | 𝔭) = 1`.
+* `NumberField.finite_ramifiedBelow` — PROVEN, and HOISTED 2026-07-31 into
+  `Fermat/FLT/NumberField/Density.lean` (unchanged in name and signature). Only finitely
+  many primes of `𝓞 K` ramify in `L` (via the different ideal).
+* `NumberField.finrank_eq_one_of_forall_inertiaDeg_eq_one` — THE DENSITY INPUT OF
+  CHEBOTAREV: a finite extension of number fields in which all but finitely many primes of
+  the base have residue degree `1` is trivial. Also HOISTED 2026-07-31 into
+  `Density.lean`, where it is now PROVEN over three Dirichlet-series leaves. It is no
+  longer open here and no longer open anywhere in the form stated; what remains open is
+  the regrouping of `NumberField.dedekindZeta` as a sum over ideals, the injection
+  produced by two primes above almost every `𝔭`, and the constant cost of removing
+  finitely many Euler factors. See `Density.lean` for why the "this must be BUILT, not
+  cited" verdict recorded here on 2026-07-31 was wrong: the pin HAS the Dedekind zeta
+  function and the Dirichlet class number formula.
+* `NumberField.closure_frobAt_eq_top` — PROVEN 2026-07-31 over the density statement, by
+  the fixed-field reduction.
 
 ## The reciprocity cut (2026-07-30)
 
@@ -587,7 +612,45 @@ cut, which must not be re-attempted.
 
 **The check that would refute it**: a finite abelian `L/K` unramified at every
 finite prime and every infinite place, an `x : Kˣ`, and a factorisation of `(x)`
-into primes whose Frobenius elements do not multiply to `1`. -/
+into primes whose Frobenius elements do not multiply to `1`.
+
+**STATUS 2026-07-31 — re-audited, faithful, and NOT usefully decomposable by the
+one cut that suggests itself.** Recorded so the next owner does not spend the
+cycle finding this out, and stated with the reasoning rather than as a verdict,
+because the corresponding verdict on `closure_frobAt_eq_top` was overturned the
+same day (see the `Chebotarev` section) and this one should be re-examined too if
+anyone sees past it.
+
+*Faithfulness.* All four hypotheses were re-checked. `[IsGalois K L]` comes from
+the ambient variable block; `habel` makes `Gal(L/K)` abelian, without which
+`artinMap` is not even definable; `hunr` is unramifiedness at every nonzero prime
+of `𝓞 L`, and `[IsUnramifiedAtInfinitePlaces K L]` at every infinite place. Under
+all four, `L` sits inside the Hilbert class field of `K`, so the statement is the
+classical reciprocity law at modulus `1`, and it is TRUE. The degenerate case
+`L = K` is fine (`Gal(L/K)` trivial).
+
+*The cut that does NOT work.* The obvious analogue of what worked for Chebotarev
+is the cyclic reduction: `Gal(L/K)` abelian decomposes as a product of cyclic
+groups, so `g = 1` can be tested in the cyclic quotients `Gal(M/K)`, `M = L^H`,
+and one is left with reciprocity for CYCLIC `L/K`. That is a correct reduction,
+but it is not progress. It costs the tower functoriality of the Artin symbol
+(`frobAtBelow K M v = restrictNormalHom M (frobAtBelow K L v)`), the compatibility
+of `artinMap` with `restrictNormalHom` through the `∏ᶠ`, and the structure theorem
+for finite abelian groups — several hundred lines — and hands back a leaf which is
+where every classical treatment spends essentially all of its effort. The
+Chebotarev cut was worth making because it removed ALL the Galois-theoretic
+bookkeeping between the leaf and a standard analytic statement; this one removes
+none of the mathematics and adds bookkeeping.
+
+*What a real cut would have to look like.* Something that turns this into a
+statement not mentioning `frobAt` or `Gal(L/K)` — i.e. the second inequality
+(`[I_K : P_K N I_L] ≤ [L : K]`) plus the first, or a Kummer-theoretic statement
+over `K(ζ_ℓ)`. Note the warning in `exists_classField_of_subgroup`
+(`Fermat/FLT/NumberField/UnramifiedClassFieldExistence.lean`) about the naive
+"descend from `K(ζ_ℓ)`" cut, which has a PARI/GP refutation and must not be
+re-attempted. Beware also the weakening trap: "`Frob_𝔭 = 1` for every PRINCIPAL
+prime `𝔭`" is a strictly weaker statement (it constrains only the primes, not the
+products), so it does not suffice as a cut here. -/
 theorem artinMap_toPrincipalIdeal [IsUnramifiedAtInfinitePlaces K L]
     (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
     (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
@@ -639,9 +702,114 @@ theorem exists_classGroupHom_eq_frobAt [IsUnramifiedAtInfinitePlaces K L]
 
 end ArtinMap
 
+section Chebotarev
+
+/-! ### The fixed-field reduction of Chebotarev
+
+`closure_frobAt_eq_top` is PROVEN below over a single input,
+`finrank_eq_one_of_forall_inertiaDeg_eq_one`, which is the classical density
+statement "a nontrivial extension of number fields has infinitely many primes that
+do not split completely". That input was itself PROVEN on 2026-07-31 in
+`Fermat/FLT/NumberField/Density.lean`, over three residual Dirichlet-series leaves;
+this section no longer carries any sorry. Everything between the two — the fixed field of the
+subgroup generated by the Frobenius elements, the fact that every prime unramified
+in `L` splits completely in it, and the finiteness of the exceptional set — is
+proven here.
+
+This reverses the "deliberately NOT decomposed" verdict recorded in the docstring
+of `closure_frobAt_eq_top` on 2026-07-30. That verdict was right about the cut it
+considered (the contrapositive "for every proper `H` there is an unramified `Q`
+with `frobAt K L Q ∉ H`", which is indeed noise) and right about which
+ingredients the fixed-field reduction needs; it was wrong that they are missing.
+Two of its three named obstacles do not have to be paid at all:
+
+* it is NOT necessary to know that the subgroup generated is NORMAL, hence not
+  necessary to transport `Algebra.IsUnramifiedAt` along a `𝓞 K`-automorphism of
+  `𝓞 L`. Normality would be needed to talk about `frobAt K M` for the fixed field
+  `M`; but the only thing wanted about `M` is that its primes have residue degree
+  `1`, and that is read off directly from the congruence `σ x ≡ x ^ (N𝔭) (mod Q)`
+  restricted to `𝓞 M`. No Galois hypothesis on `M/K` is used anywhere below.
+* consequently no functoriality of `arithFrobAt` down a tower is needed either.
+  `Ideal.under_under` and `Ideal.mem_under` do all the tower bookkeeping.
+
+What the reduction does need and mathlib does have: `NumberField.of_intermediateField`
+(an intermediate field of a number field is a number field),
+`RingOfIntegers.inst_isScalarTower` (so `𝓞 K ⊆ 𝓞 M ⊆ 𝓞 L` is a tower),
+`IntermediateField.fixingSubgroup_fixedField` (Galois correspondence) and
+`not_dvd_differentIdeal_iff` (a prime is unramified iff it does not divide the
+different), which is what makes the exceptional set finite. -/
+
+/-- **A RESIDUE-FIELD CRITERION FOR `f = 1`: if every element of `𝓞 F ⧸ q` is a
+root of `X ^ (N 𝔭) - X`, where `𝔭 = q ∩ 𝓞 k`, then `f(q | 𝔭) = 1`** (PROVEN
+2026-07-31).
+
+This is the `→` half of `frobAt_eq_one_iff_inertiaDeg_eq_one` with the Frobenius
+stripped out of it. It is stated for an arbitrary finite extension `F/k` of number
+fields — no Galois hypothesis, no automorphism — because the reduction of
+Chebotarev below applies it to the fixed field of a subgroup, where no Galois
+structure over `k` is available (and none is needed).
+
+**Chain.** The residue field `𝓞 F ⧸ q` has `(N𝔭) ^ f` elements
+(`Ideal.cardQuot_pow_inertiaDeg`), it is cyclic, so its unit group has exponent
+dividing `N𝔭 - 1` (`IsCyclic.exponent_eq_card`), giving `(N𝔭) ^ f - 1 ∣ N𝔭 - 1`;
+with `N𝔭 ≥ 2` that forces `f = 1`. -/
+theorem inertiaDeg_eq_one_of_forall_pow_natCard
+    (k F : Type*) [Field k] [NumberField k] [Field F] [NumberField F] [Algebra k F]
+    (q : Ideal (𝓞 F)) [q.IsMaximal]
+    (h : ∀ z : 𝓞 F ⧸ q, z ^ (Nat.card (𝓞 k ⧸ q.under (𝓞 k))) = z) :
+    q.inertiaDeg (𝓞 k) = 1 := by
+  classical
+  letI := Ideal.Quotient.field q
+  letI : Fintype (𝓞 F ⧸ q) := Fintype.ofFinite _
+  set p : ℕ := Nat.card (𝓞 k ⧸ q.under (𝓞 k)) with hp
+  set f : ℕ := q.inertiaDeg (𝓞 k) with hf
+  have hcard : Nat.card (𝓞 F ⧸ q) = p ^ f := by
+    rw [hp, hf, ← Submodule.cardQuot_apply, ← Submodule.cardQuot_apply]
+    exact (Ideal.cardQuot_pow_inertiaDeg (q.under (𝓞 k)) q).symm
+  have hcard2 : 2 ≤ p ^ f := by
+    rw [← hcard, Nat.card_eq_fintype_card]
+    exact Fintype.one_lt_card
+  have hp2 : 2 ≤ p := by
+    rcases Nat.lt_or_ge p 2 with hcon | hcon
+    · have : p ^ f ≤ 1 ^ f := Nat.pow_le_pow_left (by omega) f
+      simp only [one_pow] at this
+      omega
+    · exact hcon
+  have hu : ∀ u : (𝓞 F ⧸ q)ˣ, u ^ (p - 1) = 1 := by
+    intro u
+    refine Units.ext ?_
+    have hne : (u : 𝓞 F ⧸ q) ≠ 0 := u.ne_zero
+    have hmul : (u : 𝓞 F ⧸ q) ^ (p - 1) * (u : 𝓞 F ⧸ q) = 1 * (u : 𝓞 F ⧸ q) := by
+      rw [one_mul, ← pow_succ, Nat.sub_add_cancel (by omega), h]
+    simpa using mul_right_cancel₀ hne hmul
+  have hdvd : Nat.card (𝓞 F ⧸ q)ˣ ∣ p - 1 := by
+    rw [← IsCyclic.exponent_eq_card]
+    exact Monoid.exponent_dvd_of_forall_pow_eq_one hu
+  rw [Nat.card_eq_fintype_card, Fintype.card_units, ← Nat.card_eq_fintype_card, hcard] at hdvd
+  by_contra hne
+  have hf0 : f ≠ 0 := by
+    rintro h0
+    rw [h0, pow_zero] at hcard2
+    omega
+  have hf2 : 2 ≤ f := by omega
+  have hpow : p ^ 2 ≤ p ^ f := Nat.pow_le_pow_right (by omega) hf2
+  have hsq : p < p ^ 2 := by nlinarith [sq_nonneg p]
+  have hle : p ^ f - 1 ≤ p - 1 := Nat.le_of_dvd (by omega) hdvd
+  omega
+
+/-! The primes ramified below (`ramifiedBelow`, `finite_ramifiedBelow`) and the
+density input (`finrank_eq_one_of_forall_inertiaDeg_eq_one`) were HOISTED on
+2026-07-31 into `Fermat/FLT/NumberField/Density.lean`, unchanged in name and
+signature, so that the analytic development that closes the density leaf does not
+have to live in this file. Density.lean is imported above; the two names below are
+still used verbatim by `closure_frobAt_eq_top`. -/
+
+end Chebotarev
+
 /-- **CHEBOTAREV, IN THE ONLY FORM THIS DEVELOPMENT NEEDS: the Frobenius elements
-of the unramified primes GENERATE `Gal(L/K)`** (SORRY LEAF, cut 2026-07-30 out of
-`exists_surjective_classGroupHom_aut_of_unramified_abelian` in
+of the unramified primes GENERATE `Gal(L/K)`** (PROVEN 2026-07-31 over the single
+density leaf `finrank_eq_one_of_forall_inertiaDeg_eq_one`; itself cut 2026-07-30
+out of `exists_surjective_classGroupHom_aut_of_unramified_abelian` in
 `Fermat/FLT/NumberField/UnramifiedClassFieldBound.lean`).
 
 This is the surjectivity half of the Artin map, separated from the reciprocity
@@ -667,35 +835,51 @@ density material. So this must be built, not cited. Note this leaf needs NO
 abelian hypothesis and NO archimedean hypothesis, which is the sense in which it
 is the smaller of the two.
 
-**STATUS 2026-07-30 — audited, faithful, and deliberately NOT decomposed.** The
-statement was re-checked against the mathlib notion of
-`Algebra.IsUnramifiedAt` (at a maximal `Q` of `𝓞 L` over a number field it is
-`e(Q | 𝔭) = 1`, the residue extension being automatically separable), including
-the degenerate case `L = K`, where `Gal(L/K)` is trivial and the conclusion holds
-vacuously. It is TRUE, and it is deep.
+**STATUS 2026-07-30 — audited and faithful.** The statement was re-checked
+against the mathlib notion of `Algebra.IsUnramifiedAt` (at a maximal `Q` of `𝓞 L`
+over a number field it is `e(Q | 𝔭) = 1`, the residue extension being
+automatically separable), including the degenerate case `L = K`, where `Gal(L/K)`
+is trivial and the conclusion holds vacuously. It is TRUE, and it is deep.
 
-It also does not usefully split, which is worth recording so the next agent does
-not spend the cycle finding that out. The obvious cut — "for every proper
-subgroup `H` there is an unramified `Q` with `frobAt K L Q ∉ H`" — is the
-contrapositive and trades one leaf for an equivalent one; that is noise, not
-decomposition. The cut that WOULD be progress is the fixed-field reduction, and
-it needs three things this file does not have:
+**STATUS 2026-07-31 — the fixed-field reduction was carried out after all.** The
+2026-07-30 note recorded three obstacles to it; two of them turned out not to
+exist, and the third IS the residual leaf. See the `Chebotarev` section above for
+the correction in detail. The short version: the reduction never needs the
+subgroup to be NORMAL, so it needs neither the transport of
+`Algebra.IsUnramifiedAt` along an automorphism (obstacle 1) nor functoriality of
+`arithFrobAt` down a tower (obstacle 2) — the fixed field `M` is used only as a
+ring, `𝓞 K ⊆ 𝓞 M ⊆ 𝓞 L`, and the residue degree of `Q ∩ 𝓞 M` is read off from the
+Frobenius congruence restricted to `𝓞 M`. Obstacle 3, the density input, is
+`finrank_eq_one_of_forall_inertiaDeg_eq_one`.
 
-1. `Algebra.IsUnramifiedAt` transported along the `𝓞 K`-automorphism `τ` of `𝓞 L`
-   (to see that the generating set is conjugation-stable, hence `H` normal and
-   `L^H / K` Galois). No mathlib lemma at this pin does this; it means an algebra
-   iso between `Localization.AtPrime Q` and `Localization.AtPrime (τ • Q)`.
-2. Functoriality of `arithFrobAt` down a tower: for `M` intermediate and Galois
-   over `K`, `frobAt K M (Q.under (𝓞 M)) = (frobAt K L Q).restrict M`. The
-   `IsArithFrobAt` half of this is easy from the definition — the exponent `q` is
-   the same because `Ideal.under` is transitive — but it needs `𝓞 M` for an
-   `IntermediateField`, and multiplicativity of `e` in towers to know
-   `Q.under (𝓞 M)` is unramified.
-3. The density input itself.
+**STATUS 2026-07-31 (later) — obstacle 3 is gone too, and the paragraph below that
+says the analytic half "must be built, not cited" was FALSE.** The pin carries
+`NumberField.dedekindZeta` and `NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`
+(the Dirichlet class number formula, over an arbitrary number field), so the simple
+pole with nonzero residue — the whole depth of the classical argument — is available.
+`finrank_eq_one_of_forall_inertiaDeg_eq_one` is PROVEN from it in
+`Fermat/FLT/NumberField/Density.lean`, and this declaration is now sorry-free. What
+is left there is elementary Dirichlet-series bookkeeping, not class field theory.
 
-What HAS been done for it is the dictionary lemma
-`frobAt_eq_one_iff_inertiaDeg_eq_one` above (splits completely ⟺ Frobenius
-trivial), which is the part of step 2 that needs no tower.
+The 2026-07-30 note was right about the OTHER candidate cut, and that judgement
+stands: "for every proper subgroup `H` there is an unramified `Q` with
+`frobAt K L Q ∉ H`" is the contrapositive, and trades one leaf for an equivalent
+one. What makes the fixed-field cut progress and that one noise is that the
+residual statement here mentions no Frobenius, no Galois group and no `arithFrobAt`
+— it is a statement about residue degrees in an arbitrary finite extension of
+number fields, which is the form a Dedekind-zeta development actually produces.
+
+**Proof.** Let `H` be the subgroup generated and `M = L^H` its fixed field. Let
+`q` be a maximal ideal of `𝓞 M` whose contraction `𝔭` to `𝓞 K` is unramified in
+`L`, and pick `Q` of `𝓞 L` above `q`. Then `σ = frobAt K L Q` lies in `H`, so it
+fixes `M` pointwise; and for `y ∈ 𝓞 M` the defining congruence
+`σ y ≡ y ^ (N𝔭) (mod Q)` therefore reads `y ^ (N𝔭) ≡ y (mod Q)`, hence
+`(mod q)` since `q = Q ∩ 𝓞 M`. Every element of the residue field `𝓞 M ⧸ q` is
+thus a root of `X ^ (N𝔭) - X`, so `f(q | 𝔭) = 1`
+(`inertiaDeg_eq_one_of_forall_pow_natCard`). Only finitely many `𝔭` ramify in `L`
+(`finite_ramifiedBelow`), so the density leaf gives `[M : K] = 1`, i.e. `M = ⊥`,
+and the Galois correspondence (`IntermediateField.fixingSubgroup_fixedField`)
+turns that into `H = ⊤`.
 
 **Non-vacuity.** For `L/K` nontrivial the conclusion is a genuine assertion: the
 right-hand side `⊤` is not the closure of the empty set, and it fails for the
@@ -706,7 +890,54 @@ fields, nontrivial, in which every prime of `𝓞 K` unramified in `L` splits
 completely. -/
 theorem closure_frobAt_eq_top :
     Subgroup.closure {σ : L ≃ₐ[K] L | ∃ (Q : Ideal (𝓞 L)) (_ : Q.IsMaximal),
-      Algebra.IsUnramifiedAt (𝓞 K) Q ∧ σ = frobAt K L Q} = ⊤ :=
-  sorry
+      Algebra.IsUnramifiedAt (𝓞 K) Q ∧ σ = frobAt K L Q} = ⊤ := by
+  classical
+  set H : Subgroup (L ≃ₐ[K] L) :=
+    Subgroup.closure {σ : L ≃ₐ[K] L | ∃ (Q : Ideal (𝓞 L)) (_ : Q.IsMaximal),
+      Algebra.IsUnramifiedAt (𝓞 K) Q ∧ σ = frobAt K L Q} with hH
+  set M : IntermediateField K L := IntermediateField.fixedField H with hM
+  -- every prime of `𝓞 M` whose contraction is unramified in `L` has residue degree one
+  have hsplit : ∀ q : Ideal (𝓞 M), q.IsMaximal → q.under (𝓞 K) ∉ ramifiedBelow K L →
+      q.inertiaDeg (𝓞 K) = 1 := by
+    intro q hq hqS
+    haveI := hq
+    obtain ⟨Q, hQmax, hQu⟩ : ∃ Q : Ideal (𝓞 L), Q.IsMaximal ∧ Q.under (𝓞 M) = q :=
+      Ideal.exists_ideal_over_maximal_of_isIntegral (S := 𝓞 L) q
+        (le_trans (le_of_eq ((RingHom.injective_iff_ker_eq_bot _).mp
+          (FaithfulSMul.algebraMap_injective (𝓞 M) (𝓞 L)))) bot_le)
+    haveI := hQmax
+    have hunder : Q.under (𝓞 K) = q.under (𝓞 K) := by
+      rw [← hQu, Ideal.under_under]
+    have hQunr : Algebra.IsUnramifiedAt (𝓞 K) Q := by
+      by_contra hcon
+      haveI := hQmax.isPrime
+      exact hqS ⟨Q, hQmax.isPrime, hunder, hcon⟩
+    haveI := hQunr
+    have hσH : frobAt K L Q ∈ H := by
+      rw [hH]
+      exact Subgroup.subset_closure ⟨Q, hQmax, hQunr, rfl⟩
+    refine inertiaDeg_eq_one_of_forall_pow_natCard K M q ?_
+    intro z
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective z
+    -- the Frobenius lies in `H`, hence fixes the image of `y` in `𝓞 L`
+    have hyM : ((algebraMap (𝓞 M) (𝓞 L) y : 𝓞 L) : L) ∈ M := (y : M).2
+    have hfix : frobAt K L Q • (algebraMap (𝓞 M) (𝓞 L) y) = algebraMap (𝓞 M) (𝓞 L) y := by
+      refine RingOfIntegers.ext ?_
+      rw [coe_smul_ringOfIntegers]
+      exact (IntermediateField.mem_fixedField_iff H _).mp hyM _ hσH
+    have H1 : IsArithFrobAt (𝓞 K) (frobAt K L Q) Q := isArithFrobAt_frobAt K L Q
+    have hmk : Ideal.Quotient.mk Q (frobAt K L Q • (algebraMap (𝓞 M) (𝓞 L) y))
+        = (Ideal.Quotient.mk Q (algebraMap (𝓞 M) (𝓞 L) y)) ^
+            (Nat.card (𝓞 K ⧸ Q.under (𝓞 K))) := H1.mk_apply _
+    rw [hfix] at hmk
+    rw [← hunder, ← map_pow, Ideal.Quotient.eq, ← hQu, Ideal.mem_under, map_sub, map_pow,
+      ← Ideal.Quotient.eq, map_pow]
+    exact hmk.symm
+  have hrank :=
+    finrank_eq_one_of_forall_inertiaDeg_eq_one K M _ (finite_ramifiedBelow K L) hsplit
+  have hMbot : M = ⊥ := IntermediateField.finrank_eq_one_iff.mp hrank
+  have hfix := IntermediateField.fixingSubgroup_fixedField (F := K) (E := L) H
+  rw [← hM, hMbot, IntermediateField.fixingSubgroup_bot] at hfix
+  exact hfix.symm
 
 end NumberField
