@@ -4522,7 +4522,40 @@ last of these is PROVEN and still present, contrary to a report that it had been
 as free-floating).  **This module still does not import that file**; the import would be
 acyclic (its own imports are `Mathlib`-only) but its cone cost should be measured first.
 Bertini itself is absent from `Mathlib` and from `~/cs/FLT` (`grep -rlni bertini`
-returns nothing in either), so item 4 remains genuinely open. -/
+returns nothing in either), so item 4 remains genuinely open.
+
+**CORRECTION (2026-07-31): THE IMPORT IS ALREADY THERE, AND THE COST WAS ALREADY PAID.**
+The paragraph above says this module does not import `CurveCompactification.lean` and
+prices the import as a decision to be taken.  It is not: compiling a scratch module whose
+only import is this one resolves `AlgebraicGeometry.exists_isOpenImmersion_isProper_of_isAffine`,
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` and
+`AlgebraicGeometry.IsSmoothCompactification` with their full signatures, so that file is in
+this module's `public import` CLOSURE and a prover here needs no import edit.  This is the
+same error class as CORRECTION (A) on `exists_skolemBallDatum_of_projectiveCompactification`
+below — an availability claim that was true when written and was never re-run — and it is
+why the re-check above should have been a COMPILATION rather than a reading of the import
+block: only `public` chains carry visibility, and neither direction of that is visible in a
+grep.
+
+TWO THINGS THAT ARE STILL TRUE, and they are why this is a smaller unblocking than it
+sounds.  What is available is `exists_isOpenImmersion_isProper_of_isAffine`, i.e. an
+ABSTRACT compactification `Spec A ↪ P` with `P` proper over `K` — not the projective
+closure of `Spec A` inside `ℙⁿ` FOR THE GIVEN COORDINATES `y`, which is what THE ROUTE
+above needs, since that route reads the hyperplane `H` and the hyperplane at infinity
+`H_∞` off those same coordinates.  Getting from one to the other is the content of
+`exists_isOpenImmersion_isProper_of_proj` and the `ProjChart` interface, which are the
+parts of that file that are NOT proven.  And
+`exists_isSmoothCompactification_of_isAffine` is unusable here regardless: it carries
+`[SmoothOfRelativeDimension 1 strY]`, i.e. CURVES, whereas this leaf's whole content is
+`dim ≥ 2`.  Bertini itself remains absent from `Mathlib` and from `~/cs/FLT`.
+
+A SMALL OBLIGATION THE ROUTE ABOVE DOES NOT MENTION, recorded so it is not rediscovered:
+`G` must also vanish on the locus `w.castSucc = 0`.  There `ℓ_w` degenerates to the
+constant `−w (Fin.last n)`, which is a UNIT whenever `w (Fin.last n) ≠ 0`, so the quotient
+is the ZERO ring and its `Spec` is EMPTY — and `ConnectedSpace` extends `Nonempty`.  That
+locus is a proper closed subset as soon as `n ≥ 1`, which `hdim` forces (for `n = 0` the
+`hgen` counterexample in the bullet list above already applies), so a factor cutting it out
+costs nothing; it is simply not optional. -/
 theorem exists_bertiniConnectedLocus_isAlgClosed {K : Type u} [Field K] [IsAlgClosed K]
     [CharZero K] {A : Type u} [CommRing A] [Algebra K A] [Algebra.Smooth K A]
     (hirr : IrreducibleSpace (PrimeSpectrum A))
