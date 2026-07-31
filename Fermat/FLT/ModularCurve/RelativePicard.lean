@@ -3754,6 +3754,19 @@ that `RelPicEquiv` crosses.  Neither is a citation; both are routine and both
 are real work.  `isPullback_curveBaseChangeMap` (PROVEN, below) is half of the
 second.
 
+**BOTH OF THOSE ARE WRITTEN AND VERIFIED**, in
+`HANDOFF-flt-lean-266-relpic-transport.md` at the repository root — ~35 lines,
+compiled against this module's olean, and not landed here only because nothing
+consumes them yet.  The fact that makes them cheap, and that no route note in
+this file records, is that mathlib's pasting isomorphism
+`pullbackLeftPullbackSndIso strX V.ι gV : (X ×_S V) ×_V T ≅ X ×_S T` commutes
+with the projection to `T` ON THE NOSE (`pullbackLeftPullbackSndIso_hom_snd`),
+which is exactly the map `RelPicEquiv` twists along — so the relation crosses
+with nothing to fight.  The handoff also says what the recut that consumes them
+looks like, and names the one further generalisation it needs
+(`relPicEquiv_modPullback` for an arbitrary comparison morphism commuting with
+the projections, rather than for `curveBaseChangeMap`).
+
 **Both `_o` and `_hpush` are load-bearing and must not be dropped "because
 the gluing is formal"**: without them there is no canonical universal sheaf
 to glue.  Contrast the sibling leaf
