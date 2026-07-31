@@ -3697,10 +3697,217 @@ theorem exists_levelOneFlag_of_levelOneGeneratingSeq
     refine ⟨x i, AddSubmonoid.subset_closure ⟨i, by simp, rfl⟩, htor i hi, ?_⟩
     rw [hins i, AddSubmonoid.closure_union]
 
+/-- **Two level-one generating sequences concatenate** (PROVEN 2026-07-31; pure
+`AddSubmonoid` lattice theory, no arithmetic, no finiteness).
+
+`x` is a level-one generating sequence for the submonoid `X := closure (x '' Iio n)` it
+generates, and `y` is one for the quotient *relative to `X`* — its clauses are the same two
+but with `X ⊔ ·` inserted everywhere. Then the concatenation
+`z k = if k < n then x k else y (k - n)` is a level-one generating sequence for `X ⊔ Y`.
+
+The conclusion is stated as the identity `closure (z '' Iio (n + m)) = X ⊔ Y` rather than as
+`= ⊤`, so that the lemma composes with itself along a chain without any hypothesis relating
+the two halves; `exists_levelOneGeneratingSeq_of_scalarChain` below is that composition.
+
+Everything reduces to the one set identity
+`z '' Iio j = x '' Iio (min j n) ∪ y '' Iio (j - n)`, whose `closure` splits as a `⊔` by
+`AddSubmonoid.closure_union`; the three clauses are then the hypotheses read off at
+`j = n + m`, `j = k` and `j = k + 1`, with `ℕ`-subtraction handled by `omega`. -/
+theorem levelOneGeneratingSeq_append
+    {Grp : Type*} [Monoid Grp] {M₀ : Type*} [AddCommGroup M₀] [DistribMulAction Grp M₀]
+    (q : ℕ) (S : Grp → Prop) (n m : ℕ) (x y : ℕ → M₀)
+    (hxtor : ∀ k < n, q • x k ∈ AddSubmonoid.closure (x '' Set.Iio k))
+    (hxstab : ∀ σ, S σ → ∀ k < n, σ • x k ∈ AddSubmonoid.closure (x '' Set.Iio (k + 1)))
+    (hytor : ∀ k < m, q • y k ∈
+      AddSubmonoid.closure (x '' Set.Iio n) ⊔ AddSubmonoid.closure (y '' Set.Iio k))
+    (hystab : ∀ σ, S σ → ∀ k < m, σ • y k ∈
+      AddSubmonoid.closure (x '' Set.Iio n) ⊔ AddSubmonoid.closure (y '' Set.Iio (k + 1))) :
+    ∃ z : ℕ → M₀,
+      AddSubmonoid.closure (z '' Set.Iio (n + m)) =
+        AddSubmonoid.closure (x '' Set.Iio n) ⊔ AddSubmonoid.closure (y '' Set.Iio m) ∧
+      (∀ k < n + m, q • z k ∈ AddSubmonoid.closure (z '' Set.Iio k)) ∧
+      (∀ σ, S σ → ∀ k < n + m,
+        σ • z k ∈ AddSubmonoid.closure (z '' Set.Iio (k + 1))) := by
+  classical
+  set z : ℕ → M₀ := fun k => if k < n then x k else y (k - n) with hz
+  have himg : ∀ j : ℕ, z '' Set.Iio j = x '' Set.Iio (min j n) ∪ y '' Set.Iio (j - n) := by
+    intro j
+    ext w
+    constructor
+    · rintro ⟨k, hk, rfl⟩
+      simp only [Set.mem_Iio] at hk
+      by_cases hkn : k < n
+      · exact Or.inl ⟨k, by simp only [Set.mem_Iio, lt_min_iff]; exact ⟨hk, hkn⟩,
+          by simp [hz, hkn]⟩
+      · exact Or.inr ⟨k - n, by simp only [Set.mem_Iio]; omega, by simp [hz, hkn]⟩
+    · rintro (⟨k, hk, rfl⟩ | ⟨k, hk, rfl⟩)
+      · simp only [Set.mem_Iio, lt_min_iff] at hk
+        exact ⟨k, by simp only [Set.mem_Iio]; exact hk.1, by simp [hz, hk.2]⟩
+      · simp only [Set.mem_Iio] at hk
+        refine ⟨n + k, by simp only [Set.mem_Iio]; omega, ?_⟩
+        simp [hz, Nat.not_lt.mpr (Nat.le_add_right n k)]
+  have hclos : ∀ j : ℕ, AddSubmonoid.closure (z '' Set.Iio j) =
+      AddSubmonoid.closure (x '' Set.Iio (min j n)) ⊔
+        AddSubmonoid.closure (y '' Set.Iio (j - n)) := by
+    intro j; rw [himg j, AddSubmonoid.closure_union]
+  refine ⟨z, ?_, ?_, ?_⟩
+  · have h1 : min (n + m) n = n := by omega
+    have h2 : n + m - n = m := by omega
+    rw [hclos (n + m), h1, h2]
+  · intro k hk
+    by_cases hkn : k < n
+    · have hzk : z k = x k := by simp [hz, hkn]
+      rw [hzk, hclos k]
+      have h1 : min k n = k := by omega
+      have h2 : k - n = 0 := by omega
+      rw [h1, h2]
+      exact AddSubmonoid.mem_sup_left (hxtor k hkn)
+    · have hzk : z k = y (k - n) := by simp [hz, hkn]
+      rw [hzk, hclos k]
+      have h1 : min k n = n := by omega
+      rw [h1]
+      exact hytor (k - n) (by omega)
+  · intro σ hσ k hk
+    by_cases hkn : k < n
+    · have hzk : z k = x k := by simp [hz, hkn]
+      rw [hzk, hclos (k + 1)]
+      have h1 : min (k + 1) n = k + 1 := by omega
+      have h2 : k + 1 - n = 0 := by omega
+      rw [h1, h2]
+      exact AddSubmonoid.mem_sup_left (hxstab σ hσ k hkn)
+    · have hzk : z k = y (k - n) := by simp [hz, hkn]
+      rw [hzk, hclos (k + 1)]
+      have h1 : min (k + 1) n = n := by omega
+      have h2 : k + 1 - n = (k - n) + 1 := by omega
+      rw [h1, h2]
+      exact hystab σ hσ (k - n) (by omega)
+
+/-- **A chain whose graded pieces are `q`-torsion with a SCALAR `S`-action refines to a
+level-one generating sequence** (PROVEN 2026-07-31; pure `AddSubmonoid` lattice theory, no
+arithmetic, no finiteness, no `Finite` instance anywhere).
+
+This is step 4's second half — *"refining the `k`-flag to an `𝔽_p`-flag"* in the docstring
+of `exists_inertiaScalarChain_space_of_charpoly` below — discharged once and for all.
+
+The input is a chain `⊥ = N 0 ≤ … ≤ N r = ⊤` in which each step is generated over its
+predecessor by a listed finite family `gen i 0, …, gen i (len i - 1)` (`hstep`) subject to
+two conditions, both stated MODULO `N i`:
+
+* `htor`: `q • gen i k ∈ N i` — the graded piece is killed by `q`;
+* `hscal`: for each `σ` with `S σ` there is ONE natural number `c` (depending on `σ`, `i`
+  and `k`, but not required to be uniform in `k`) with `σ • gen i k - c • gen i k ∈ N i` —
+  i.e. `σ` acts on the graded piece as a scalar in the prime field.
+
+Neither condition asks for anything triangular *inside* a block, and no stability hypothesis
+on the `N i` themselves is needed: stability of `N i` is a CONSEQUENCE (`N i` is the closure
+of the earlier generators, each of whose `σ`-image the induction has already placed inside
+it), which is why it does not appear in the hypothesis list.
+
+WHAT THIS BUYS THE ARITHMETIC PROVER, and it is exactly one step of the argument. Step 2–3
+of `exists_inertiaScalarChain_space_of_charpoly` triangularise over the RESIDUE FIELD `k` of
+`R ⧸ I`, so what falls out is a chain of `k`-lines with inertia acting by an `𝔽_p`-valued
+character — a graded piece of `𝔽_p`-dimension `[k : 𝔽_p]`, not `1`. Here `len i` is that
+dimension and `gen i` is any `𝔽_p`-basis of the line: the conclusion's one-generator-at-a-
+time flag is produced from it by this lemma rather than by hand. The two statements are
+nevertheless EQUIVALENT (take `len i = 1`, `gen i 0 = x i`, `N i = closure (x '' Iio i)`; the
+conclusion's `σ • x i ∈ N i ⊔ closure {x i}` gives the scalar `c` by
+`AddSubmonoid.mem_sup`), so this is a reformulation and not a weakening.
+
+Proof: induction on `r`, one `levelOneGeneratingSeq_append` per step, with `hscal`'s
+decomposition `σ • g = (σ • g - c • g) + c • g` supplying the appended half's stability
+clause — the first summand lands in `N i` and the second in `closure {g}`. -/
+theorem exists_levelOneGeneratingSeq_of_scalarChain
+    {Grp : Type*} [Monoid Grp] {M₀ : Type*} [AddCommGroup M₀] [DistribMulAction Grp M₀]
+    (q : ℕ) (S : Grp → Prop) (r : ℕ) (N : ℕ → AddSubmonoid M₀)
+    (len : ℕ → ℕ) (gen : ℕ → ℕ → M₀)
+    (h0 : N 0 = ⊥) (hr : N r = ⊤)
+    (hstep : ∀ i < r, N (i + 1) = N i ⊔ AddSubmonoid.closure (gen i '' Set.Iio (len i)))
+    (htor : ∀ i < r, ∀ k < len i, q • gen i k ∈ N i)
+    (hscal : ∀ i < r, ∀ σ, S σ → ∀ k < len i, ∃ c : ℕ, σ • gen i k - c • gen i k ∈ N i) :
+    ∃ (n : ℕ) (x : ℕ → M₀),
+      AddSubmonoid.closure (x '' Set.Iio n) = ⊤ ∧
+      (∀ k < n, q • x k ∈ AddSubmonoid.closure (x '' Set.Iio k)) ∧
+      (∀ σ, S σ → ∀ k < n, σ • x k ∈ AddSubmonoid.closure (x '' Set.Iio (k + 1))) := by
+  classical
+  have key : ∀ i ≤ r, ∃ (n : ℕ) (x : ℕ → M₀),
+      AddSubmonoid.closure (x '' Set.Iio n) = N i ∧
+      (∀ k < n, q • x k ∈ AddSubmonoid.closure (x '' Set.Iio k)) ∧
+      (∀ σ, S σ → ∀ k < n, σ • x k ∈ AddSubmonoid.closure (x '' Set.Iio (k + 1))) := by
+    intro i
+    induction i with
+    | zero =>
+      intro _
+      refine ⟨0, fun _ => 0, ?_, ?_, ?_⟩
+      · rw [h0]
+        have h : (fun (_ : ℕ) => (0 : M₀)) '' Set.Iio 0 = (∅ : Set M₀) := by simp
+        rw [h, AddSubmonoid.closure_empty]
+      · intro k hk; omega
+      · intro σ _ k hk; omega
+    | succ i ih =>
+      intro hi
+      obtain ⟨n, x, hgen, hxtor, hxstab⟩ := ih (by omega)
+      have hir : i < r := by omega
+      have hytor : ∀ k < len i, q • gen i k ∈
+          AddSubmonoid.closure (x '' Set.Iio n) ⊔
+            AddSubmonoid.closure (gen i '' Set.Iio k) := by
+        intro k hk
+        exact AddSubmonoid.mem_sup_left (hgen ▸ htor i hir k hk)
+      have hystab : ∀ σ, S σ → ∀ k < len i, σ • gen i k ∈
+          AddSubmonoid.closure (x '' Set.Iio n) ⊔
+            AddSubmonoid.closure (gen i '' Set.Iio (k + 1)) := by
+        intro σ hσ k hk
+        obtain ⟨c, hc⟩ := hscal i hir σ hσ k hk
+        have h1 : σ • gen i k = (σ • gen i k - c • gen i k) + c • gen i k := by simp
+        rw [h1]
+        refine add_mem ?_ ?_
+        · exact AddSubmonoid.mem_sup_left (hgen ▸ hc)
+        · refine AddSubmonoid.mem_sup_right ?_
+          have hmem : gen i k ∈ AddSubmonoid.closure (gen i '' Set.Iio (k + 1)) :=
+            AddSubmonoid.subset_closure ⟨k, by simp, rfl⟩
+          exact nsmul_mem hmem c
+      obtain ⟨z, hzgen, hztor, hzstab⟩ :=
+        levelOneGeneratingSeq_append q S n (len i) x (gen i) hxtor hxstab hytor hystab
+      exact ⟨n + len i, z, by rw [hzgen, hgen, ← hstep i hir], hztor, hzstab⟩
+  obtain ⟨n, x, hgen, h1, h2⟩ := key r le_rfl
+  exact ⟨n, x, by rw [hgen, hr], h1, h2⟩
+
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **THE ARITHMETIC HALF OF `(R1)`, WITH THE GROUP SCHEME REMOVED: the residual
 representation admits an inertia-stable `𝔽_p`-flag** (SORRY LEAF, cut out of
 `hasInertiaLevelOneFlag_of_hopf_package` on 2026-07-28).
+
+**RESTATED 2026-07-31 as a SCALAR CHAIN, and the generating-sequence formulation is now the
+ASSEMBLY `exists_levelOneGeneratingSeq_space_of_charpoly` just below.** The whole of this
+docstring is unchanged in content and every clause of the faithfulness audit at the end
+applies verbatim, because the two statements are EQUIVALENT — see the "WHAT THIS BUYS"
+paragraph of `exists_levelOneGeneratingSeq_of_scalarChain` above, which proves the direction
+this file needs and gives the converse construction in one line. What moved is only WHERE
+the flag is refined from `k`-lines to `𝔽_p`-lines: that refinement (step 4's last sentence)
+is now discharged, once, by that proven lemma, and the prover of THIS leaf stops at the
+`k`-flag — supplying, for each step of the chain, an `𝔽_p`-basis `gen i` of the `k`-line
+together with the ONE scalar `c` by which each `σ` acts on it.
+
+Concretely, against the four steps below: steps 1–3 are untouched; step 4 now ends at
+*"`V̄|_{I_p}` is triangularizable already over the residue field `k`, and each `k`-line is
+acted on by a scalar in `𝔽_p`"*, and everything after that sentence is gone.
+
+**A GAP IN STEP 3 AS PREVIOUSLY WRITTEN, found while auditing this restatement, together
+with its repair — read this before attempting the wild half.** Step 3 below closes the wild
+case with *"a character into `𝔽̄_p^×` (a group of order prime to `p`) out of a pro-`p` group
+is trivial"*. That argument needs `χ̄ᵢ` to be CONTINUOUS, and **continuity of `χ₁`, `χ₂` is
+not among the hypotheses** — `hmul₁`/`hmul₂` are bare multiplicativity, and an abstract
+homomorphism out of a wild inertia group (a free pro-`p` group of infinite rank, hence not
+topologically finitely generated, so Nikolov–Segal does not apply) need not be continuous.
+
+The repair does not need continuity of `χᵢ` and should be used instead: `ρ` IS continuous
+and `R ⧸ I` is finite, so the residual `ρ̄` has finite image, and its restriction to wild
+inertia `P` — a pro-`p` group — has image a finite `p`-subgroup of `GL₂` in characteristic
+`p`, hence UNIPOTENT. So both eigenvalues of `ρ̄ g` are `1` for `g ∈ P`, and reducing
+`hchar` at such a `g` gives `χ̄₁ g = χ̄₂ g = 1` directly. Only `ρ`'s continuity is spent.
+
+(The tame half of step 3 is fine as written: it uses multiplicativity of `χ̄ᵢ` and nothing
+else. `χ̄ᵢ g ≠ 0` — needed to divide — also comes for free: `hchar` at `g = 1` reads
+`(X − 1)² = (X − χ₁ 1)(X − χ₂ 1)`, so `χᵢ 1 = 1`, and `χᵢ g · χᵢ g⁻¹ = 1`.)
 
 **RESTATED 2026-07-30 as a TRIANGULAR GENERATING SEQUENCE, and the flag formulation is now
 the ASSEMBLY `exists_levelOneFlag_space_of_charpoly` just below.** What used to be asked for
@@ -3758,9 +3965,11 @@ THE ARGUMENT, in four steps; each is ordinary representation theory over a finit
    terminates) reduces to the residual `V̄`; by steps 2–3 the `𝔽̄_p`-constituents of
    `V̄|_{I_p}` are `𝔽_p`-rational characters, so `V̄|_{I_p}` is triangularizable already
    over the residue field `k`, and each `k`-line — on which inertia acts by a scalar IN
-   `𝔽_p` — is an `𝔽_p`-vector space every subspace of which is inertia-stable. Refining the
-   `k`-flag to an `𝔽_p`-flag gives the chain of `AddSubmonoid`s with cyclic order-`p`
-   quotients.
+   `𝔽_p` — is an `𝔽_p`-vector space every subspace of which is inertia-stable. **That
+   `k`-flag, with its scalars, IS the conclusion of this leaf**: `N` is the flag, `len i` is
+   `[k : 𝔽_p]`, `gen i` is any `𝔽_p`-basis of the `i`-th line and `c` is the scalar. The
+   refinement to an `𝔽_p`-flag with cyclic order-`p` quotients is no longer asked for here —
+   `exists_levelOneGeneratingSeq_of_scalarChain` above does it.
 
 WHERE EACH HYPOTHESIS GOES, so a prover can tell a load-bearing one from decoration:
 `hchar` is step 2 and is the only source of the two characters; `hmul₁`/`hmul₂` are what
@@ -3782,8 +3991,8 @@ residual representation is irreducible over `𝔽̄_p` and so has no such charpo
 factorisation.
 
 DEGENERATE CASES (checked, both true rather than vacuous). At `I = ⊤` the module is `0`,
-and `n = 0` — the empty generating sequence, `AddSubmonoid.closure ∅ = ⊥ = ⊤` — discharges
-the conclusion. At `V = 0` the same. Neither is excluded by a hypothesis, so a proof must
+and `r = 0` — the one-term chain `N 0 = ⊥ = ⊤`, no blocks at all — discharges the
+conclusion. At `V = 0` the same. Neither is excluded by a hypothesis, so a proof must
 handle them; neither is a counterexample.
 
 FAITHFULNESS. The conclusion is an INERTIA-only condition on a filtration of the module; it
@@ -3791,12 +4000,63 @@ asks for no coordinate, no normal form and no `ℚᵖᵥ`-rationality, so it is 
 unramified twists (an unramified twist changes the `D_p`-action and not the `I_p`-action at
 all). It sits on the safe side of the rule that killed `exists_muType_closure`.
 
+A note on the scalar-chain spelling, so it is not misread as stronger than it is. `N`,
+`len` and `gen` are total functions on `ℕ` and only the indices `i < r` (and within a block
+`k < len i`) are constrained; the rest are junk and no clause mentions them. `gen i` is not
+required to be independent, nor to be a basis of anything, nor to avoid `N i`; the scalar
+`c` is quantified INSIDE the `σ`- and `k`-binders, so it may depend on both — a common
+scalar across a block is what the argument produces, but the statement does not demand it.
+And there is no stability hypothesis on `N`: inertia-stability of each `N i` follows from
+the clauses that are there, which is why the list is shorter than the flag's. -/
+theorem exists_inertiaScalarChain_space_of_charpoly
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R)) :
+    ∃ (r : ℕ) (N : ℕ → AddSubmonoid (((ρ.baseChange (R ⧸ I)).toLocal
+          hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+      (len : ℕ → ℕ) (gen : ℕ → ℕ → (((ρ.baseChange (R ⧸ I)).toLocal
+          hp.out.toHeightOneSpectrumRingOfIntegersRat).Space)),
+      N 0 = ⊥ ∧ N r = ⊤ ∧
+      (∀ i < r, N (i + 1) = N i ⊔ AddSubmonoid.closure (gen i '' Set.Iio (len i))) ∧
+      (∀ i < r, ∀ k < len i, p • gen i k ∈ N i) ∧
+      (∀ i < r, ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ k < len i, ∃ c : ℕ, σ • gen i k - c • gen i k ∈ N i) :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **THE ARITHMETIC HALF OF `(R1)`, IN THE GENERATING-SEQUENCE SPELLING**.
+
+**STATUS 2026-07-31 — NO LONGER A SORRY LEAF. It is a two-line ASSEMBLY** over
+
+* `exists_inertiaScalarChain_space_of_charpoly` — the arithmetic, unchanged in content,
+  asking for the `k`-flag with its `𝔽_p`-scalars rather than for the refined `𝔽_p`-flag;
+* `exists_levelOneGeneratingSeq_of_scalarChain` — PROVEN: such a chain refines to a
+  level-one generating sequence.
+
+The signature is byte-for-byte what it was before the cut, so
+`exists_levelOneFlag_space_of_charpoly` — which passes its arguments positionally — is
+untouched, and so is everything above it. The two statements are equivalent (see the proven
+lemma's docstring for the converse), so this cut moves no mathematics; it moves the last
+sentence of step 4 — refining a `k`-flag to an `𝔽_p`-flag — out of the arithmetic leaf and
+into a proven, reusable, arithmetic-free lemma.
+
 A note on the generating-sequence spelling, so it is not misread as stronger than the flag
 form. `x` is a function on all of `ℕ` and only `x 0, …, x (n-1)` are constrained; the values
 at `k ≥ n` are junk and no clause mentions them. In particular this does NOT ask for a
 `Γ ℚᵖᵥ`-stable basis, nor for the generators to be independent, nor for `n` to be the
 length of the module — only that the listed elements generate, that `p •` moves each one
-strictly earlier, and that inertia moves each one no later than itself. -/
+strictly earlier, and that inertia moves each one no later than itself.
+
+Refuting check on THIS cut, and it is cheap: a proof of the generating-sequence conclusion
+that never produces a chain of inertia-stable submonoids at all — i.e. one that orders the
+generators without ever naming the subspaces they cut out. -/
 theorem exists_levelOneGeneratingSeq_space_of_charpoly
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -3813,8 +4073,12 @@ theorem exists_levelOneGeneratingSeq_space_of_charpoly
       AddSubmonoid.closure (x '' Set.Iio n) = ⊤ ∧
       (∀ k < n, p • x k ∈ AddSubmonoid.closure (x '' Set.Iio k)) ∧
       (∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat, ∀ k < n,
-        σ • x k ∈ AddSubmonoid.closure (x '' Set.Iio (k + 1))) :=
-  sorry
+        σ • x k ∈ AddSubmonoid.closure (x '' Set.Iio (k + 1))) := by
+  obtain ⟨r, N, len, gen, h0, hr, hstep, htor, hscal⟩ :=
+    exists_inertiaScalarChain_space_of_charpoly hZinj hRinj χ₁ χ₂ hmul₁ hmul₂ hchar I hI
+  exact exists_levelOneGeneratingSeq_of_scalarChain p
+    (fun σ => σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat)
+    r N len gen h0 hr hstep htor hscal
 
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **THE ARITHMETIC HALF OF `(R1)`, IN THE FLAG SPELLING THE CONSUMER WANTS**.
