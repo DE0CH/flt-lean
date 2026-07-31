@@ -41,8 +41,19 @@ def gs(rev, path):
 
 
 bad = 0
-for b in sys.argv[1:]:
-    base = subprocess.run(['git', 'merge-base', 'HEAD', b], capture_output=True, text=True).stdout.strip()
+
+# THE BASE MUST BE PRE-MERGE.  Once a branch is merged, `git merge-base HEAD <b>`
+# IS the branch tip, so `added` comes out empty and this script reports a clean
+# tree for every branch -- including one whose payload you deliberately declined.
+# Pass the sha `main`/`merger` sat at BEFORE the batch:
+#     verify_added.py --base <pre-merge sha> <branch>...
+argv = sys.argv[1:]
+PRE = 'HEAD'
+if argv and argv[0] == '--base':
+    PRE = argv[1]; argv = argv[2:]
+
+for b in argv:
+    base = subprocess.run(['git', 'merge-base', PRE, b], capture_output=True, text=True).stdout.strip()
     files = subprocess.run(['git', 'diff', '--name-only', base, b, '--', 'Fermat/'],
                            capture_output=True, text=True).stdout.split()
     miss = {}
