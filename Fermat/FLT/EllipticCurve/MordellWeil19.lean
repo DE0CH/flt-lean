@@ -473,9 +473,6 @@ theorem hesse_kill {u v w : ℤ} (hw : w ≠ 0) (huv : IsCoprime u v)
   · exact h1
   · exact absurd h1 hw
 
-/-- **THE level-`19` statement** (PROVEN 2026-07-30 over `hesse_leaf`): the only
-coprime integral points of the monic model `W² = U³ + 4U² + 16U + 16` of `19a3`
-are `(p, e) = (0, 1)`, i.e. `U = 0`.
 /-! ### `ℤ[θ]` in coordinates: the descent map, its norm, and the square classes
 
 `θ³ + 2θ² + 4θ + 2 = 0`, so `θ³ = −2θ² − 4θ − 2` and `θ⁴ = 6θ + 4`.  The
