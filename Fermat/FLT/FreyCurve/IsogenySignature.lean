@@ -12338,8 +12338,10 @@ lemma isPrimitiveRoot_pairing_of_nondegenerate_basis_fin_two
   exact (ZMod.natCast_eq_zero_iff l N).mp hc
 
 /-- **The `μ_N`-valued Weil pairing over `𝔽_q` at COMPOSITE level, in
-NONDEGENERATE form** (sorry leaf, opened 2026-07-27 by decomposing
-`exists_weilPairing_mu_of_coprime` below): on the `N`-torsion of an elliptic
+NONDEGENERATE form** (opened 2026-07-27 by decomposing
+`exists_weilPairing_mu_of_coprime` below; PROVEN 2026-07-30 by carrying out the
+`p := N` generalization the plan below prescribes, in
+`EllipticCurve/WeilPairing.lean`): on the `N`-torsion of an elliptic
 curve over `𝔽_q`, `N` coprime to `q`, there is a multiplicatively bilinear
 alternating pairing valued in the `N`-th roots of unity of `𝔽̄_q`,
 NONDEGENERATE, and natural for the `q`-power Frobenius:
@@ -12381,8 +12383,39 @@ argument never uses primality. Concretely, in `WeilPairing.lean`:
 
 So the remaining work is confined to `EllipticCurve/WeilPairing.lean` and is
 a mechanical `p := N` generalization of that file's Weil-pairing chain, NOT
-new mathematics. It was deliberately not attempted here because that file has
-a separate owner.
+new mathematics.
+
+**WHAT THE RE-RUN ACTUALLY COST (2026-07-30, done).** The audit above was
+accurate on four of its five points and wrong on the fifth, in both directions:
+
+* `WeilPairingDescent.lean` and `WeilPairingStageB.lean` moved from
+  `[Fact p.Prime]` to `[Fact (1 < p)]` with only arithmetic edits
+  (`p.Prime.ne_zero`, `.pos`, `.two_le` all follow from `1 < p`), plus ONE real
+  simplification: `not_even_of_two_eq_zero` used to exclude `p = 2` by
+  primality and is in fact true at every level from `(p : F) ≠ 0` alone.
+* `hqp` became `¬ q ∣ p`, and `((p : 𝔽̄_q) : _) ≠ 0` comes from
+  `CharP.cast_eq_zero_iff` instead of `CharP.cast_ne_zero_of_ne_of_prime`.
+* The audit's claim that `pairing_trivial_of_radical` "is not needed here" was
+  RIGHT but understated: it was not needed at PRIME level either. The descent
+  core proves the per-point statement directly once it is stated as a COLUMN
+  hypothesis rather than a whole-pairing one — see
+  `WeilPairing.weilValueProp_eq_zero_of_column_one`, restated and renamed for
+  this. That deleted the only field-dependent node outright rather than routing
+  around it, so nondegeneracy is now available at composite level in the same
+  shape as at prime level.
+* The audit MISSED one branch, and it is the one primality was hiding.
+  Alternation is obtained from `z·z = 1` (the swap) together with `z^N = 1`,
+  i.e. `z^gcd(2,N) = 1`. For odd `N` that gives `z = 1`; for `N = 2` the
+  `2`-torsion geometry supplies it (`weilValueProp_self_of_two`, PROVEN); for
+  `N` EVEN AND `> 2` neither applies — `⊖P = P` is false for a point of order
+  `4` — and that branch is EMPTY at prime level, so nothing in the prime-level
+  file covers it. It is now the single open node of the chain,
+  `WeilPairing.weilValueProp_self_of_even_of_ne_two` (Silverman *AEC*
+  III.8.1(b) at arbitrary level).
+
+The two degenerate levels are handled here rather than upstream: `N = 0` is
+excluded by `hNq` (a prime `q` never divides `1`), and at `N = 1` the torsion
+is trivial and the constant pairing `e ≡ 1` satisfies every clause.
 
 WHY IT CANNOT BE REDUCED TO THE PRIME CASE BY CRT: the prime case covers
 `N = p`, not `N = p^k`, and every `N` divisible by a square needs the
@@ -12402,8 +12435,36 @@ theorem exists_weilPairing_mu_nondeg_of_coprime (q : ℕ) [Fact q.Prime]
       (∀ x y, (e x y) ^ N = 1) ∧
       (∀ x y, e (WeilPairing.frobeniusTorsionEnd q Wbar N x)
           (WeilPairing.frobeniusTorsionEnd q Wbar N y) =
-        Units.map (WeilPairing.frobAlgHom q).toRingHom.toMonoidHom (e x y)) :=
-  sorry
+        Units.map (WeilPairing.frobAlgHom q).toRingHom.toMonoidHom (e x y)) := by
+  classical
+  have hgcd : Nat.gcd N q = 1 := hNq
+  -- `q ∤ N`, which is the shape `exists_weilPairing_mu` now takes
+  have hqN : ¬ q ∣ N := by
+    intro hdvd
+    have h1 : q ∣ Nat.gcd N q := Nat.dvd_gcd hdvd dvd_rfl
+    rw [hgcd] at h1
+    exact (Fact.out : q.Prime).ne_one (Nat.dvd_one.mp h1)
+  rcases lt_or_ge 1 N with hN1 | hN1
+  · haveI : Fact (1 < N) := ⟨hN1⟩
+    exact WeilPairing.exists_weilPairing_mu q Wbar N hqN
+  · -- `N = 0` is impossible (`gcd 0 q = q ≠ 1`), so `N = 1` and the torsion is
+    -- trivial: the constant pairing works and nondegeneracy is vacuous.
+    have hN0 : N ≠ 0 := by
+      rintro rfl
+      rw [Nat.gcd_zero_left] at hgcd
+      exact (Fact.out : q.Prime).ne_one hgcd
+    have hN : N = 1 := by omega
+    subst hN
+    have htriv : ∀ x : ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion 1), x = 0 := by
+      intro x
+      have h := (Submodule.mem_torsionBy_iff _ _).mp x.property
+      simp only [Nat.cast_one, one_zsmul] at h
+      exact ZeroMemClass.coe_eq_zero.mp h
+    exact ⟨fun _ _ => 1, fun _ _ _ => (one_mul 1).symm,
+      fun _ _ _ => (one_mul 1).symm, fun _ => rfl,
+      fun x hx => absurd (htriv x) hx, fun _ _ => one_pow 1,
+      fun _ _ => (map_one _).symm⟩
 
 /-- **The `μ_N`-valued Weil pairing over `𝔽_q` at COMPOSITE level** (PROVEN
 2026-07-27 over `exists_weilPairing_mu_nondeg_of_coprime` above): on the
