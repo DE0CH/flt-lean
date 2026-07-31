@@ -7739,3 +7739,98 @@ Two riders that cost real time here:
   zero.
 * `Fermat/SorryGate.lean` contains the token `sorry` twice inside a STRING LITERAL in
   its `elab`.  Any scan must exclude that file or strip string literals.
+
+## A FUNCTORIAL FAMILY OF POINT-BIJECTIONS **IS** A MORPHISM — Yoneda, and it deletes a model
+
+(2026-07-31, `flt-lean-307`, `exists_isCusp_ne_neronGenAut_of_atkinLehnerPin` in
+`MazurTorsion.lean`.)  This development carries several structures whose fields are
+*identifications of relative points* rather than morphisms of schemes —
+`IsX0JNeronDatum.genX/genY/spX/spY`, `IsX0ReductionAt.redX`, and the `Equiv`-valued
+fields of their siblings — always with a docstring explaining that the object "does not
+exist at this pin", so the identification is presented on points.  Those docstrings are
+right about the FIELD and are routinely over-read into a claim about the CONTENT, and
+the over-reading is expensive: it makes every consumer look like it has to keep the whole
+model in its statement.
+
+**Check whether NATURALITY is also a field.**  `genX` comes with `genX_nat`, so the
+family `T ↦ (X(T) ≃ 𝒳(T))` is an isomorphism of FUNCTORS on schemes over `ℚ`, and Yoneda
+turns it into a morphism with two lines of tactic:
+
+    obtain ⟨vR, hvR⟩ : ∃ vR : RelPoint strX strX,
+        d.genX strX (strX ≫ SpecLoc.generic R) rfl vR
+          = RelPoint.post w hw (d.genX strX (strX ≫ SpecLoc.generic R) rfl ⟨𝟙 X, _⟩) :=
+      ⟨(d.genX strX (strX ≫ SpecLoc.generic R) rfl).symm _, Equiv.apply_symm_apply _ _⟩
+
+— evaluate at the object itself, on the tautological point `𝟙 X`.  `genX_nat` then gives
+`neronGenAut d w hw = RelPoint.post vR.1 vR.2` at *every* base point, and `genX_j` plus
+`post_relSectionAlong_of_comm` give the compatibility with the open immersion.  No
+properness, no density, no valuative criterion: it is naturality and
+`Equiv.apply_symm_apply` throughout, ~60 lines.
+
+What that bought here: the leaf's own docstring had (correctly) refuted the tempting cut
+to "an abstract involution `σ` of `X(ℚ)`" — `hX.IsCusp` is *by definition* "not in the
+image of `Y(ℚ)`", so `σ :=` the moduli action on the image together with the IDENTITY on
+the cusps satisfies every hypothesis while fixing every cusp — and concluded *"so the
+model may not be dropped"*.  The conclusion does not follow.  The counterexample is
+killed by `σ` being a MORPHISM (`Y` dense, `X` separated ⟹ unique extension), not by the
+model; and the morphism is available.  So the residue is now
+`exists_isCusp_ne_post_of_atkinLehnerPin`, Atkin–Lehner (1970) §2 over `hc`, `hX`, `al`
+and a bare `v : X ⟶ X` — **`q`, `R`, `toF`, `X'`, `Y'`, `hX'`, `hj`, `d`, `YZ`, `XZ`,
+`ystr`, `xstr`, `jZ`, `w`, `w_𝒴`, `hcomm`, `hinv` and `hgen` all gone**, leaf count 1 → 1.
+
+The generalisable question, and it is cheap: **when a docstring says "this is only a map
+of points, so the ambient apparatus is load-bearing", ask what makes the junk witness junk
+— then ask whether that property, rather than the apparatus, can be a hypothesis.**  Here
+the answer was one binder (`hvj : hX.j ≫ v = wYQ ≫ hX.j`) replacing eighteen.
+
+## VERIFY AGAINST `~/.flt-release-lake` WHEN YOUR MODULE CANNOT BE BUILT AT ALL
+
+(Same run, measured: **8 seconds** per iteration against a module whose own build did not
+finish in three hours and was killed twice by memory pressure.)
+
+The doctrine's scratch-module rule assumes you can build the target once.  Under fleet
+load on a 2 TB box with 32 GB free that assumption can simply fail — `WeilPairing.lean`
+took >50 minutes and the whole `bash -c` wrapper then vanished with no `EXIT=` line, twice.
+The release snapshot is a COMPLETE, CONSISTENT olean set at a known sha, and it is enough:
+
+    cp -rs ~/.flt-release-lake/build/lib /tmp/relean-N/          # symlink farm, 2 s
+    LP=$(lake env printenv LEAN_PATH); LSP=$(lake env printenv LEAN_SRC_PATH)
+    env LEAN_PATH="/tmp/relean-N/lib/lean:$LP" LEAN_SRC_PATH="$LSP" lean Scratch.lean
+
+Use the PRISTINE `~/.flt-release-lake/build`, not your own `.lake/build` — a `.lake` that
+has been partly rebuilt from newer sources is exactly the inconsistent olean set the
+doctrine warns about, and the shim is the way to avoid it rather than a way to live with it.
+
+**The soundness condition is a diff, and it must be run.**  A scratch verified this way
+proves something about the SNAPSHOT's theory.  For it to transfer, every declaration your
+proof names must be unchanged between `$(cat ~/.flt-release-lake/sha)` and your HEAD:
+
+    git show $(cat ~/.flt-release-lake/sha):<file> > /tmp/snap.lean
+    # then diff the STATEMENT lines of each name you use, not a -A window --
+    # a `grep -A 22` bleeds into the next docstring and reports spurious DIFFs
+
+Here that was twelve names (`relPoint_pre_post`, `post_relSectionAlong_of_comm`,
+`neronGenAut`, `neronGenAut_apply`, `IsX0JNeronDatum`, the section's `variable` block, …),
+all identical, and the two apparent DIFFs were both the `-A` window running into unrelated
+prose.  **A target that does not exist in the snapshot is the BEST case**: its name is free,
+so the scratch can use the real final names and is then a character-exact test of the text
+you are about to paste.
+
+And the reverse reading, which is what makes the shim safe to rely on: `lake build <Mod>`
+DELETES `<Mod>.olean` while it runs, so the two cannot be interleaved in `.lake` — but the
+shim reads a different directory entirely and is unaffected.  Iterate in the shim, build once.
+
+## A DETACHED BUILD WITH `ppid = 1` STILL DIES — the missing `EXIT=` is the only tell
+
+(Same run, twice.)  `setsid --fork bash -c '… ; echo EXIT=$? >> log'` gives `ppid = 1` and
+survives session teardown, which is what the doctrine asks for.  It does not survive the
+host's memory pressure: both runs ended with the log stopping mid-stream at
+`[5262/5272]`, no `EXIT=` line, no error text, and no process left.  `grep -i error` on
+that log is empty and `grep -c "declaration uses 'sorry'"` is a plausible number — i.e. by
+every check other than the positive terminator it reads as a finished, clean build.
+
+So the standing rule earns its keep in a third distinct way (after truncated `ssh` and
+`lake: command not found`): **require the literal `EXIT=` line you wrote yourself, and
+`Build completed successfully (NNNN jobs)`, before believing anything.**  When it is
+absent, check `free -g` before re-diagnosing the Lean: at 32 GB free out of 2015 with a
+load average of 117, the build was killed, not broken.
