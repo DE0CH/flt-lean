@@ -1317,3 +1317,52 @@ before writing any "expect to build it" in a docstring is mechanical:
 `Fermat/FLT/Mathlib/**` in particular is where every agent's general-purpose commutative
 algebra lands, it is small, and it is the first place to look — it exists precisely
 because the pin was missing something.
+
+## THE SENTINEL TOKEN IN YOUR PROMPT CAN BE STALE — READ IT FROM THE JOB RECORD
+
+(2026-07-31, `flt-lean-310`. Caught with four commits already on the branch and the
+sentinel already written under the wrong token.)
+
+Every prover agent is told: *"`token` — copy it verbatim or the loop ignores the whole
+file."* That is true, and the token printed in the prompt is **not always the one the
+loop will accept.**
+
+`flt-loop.py` accepts a sentinel whose token is `j["token"]` **or** a member of
+`j["prev_tokens"]` (line ~877). Its comment says a resumed job is the same job, so an
+earlier incarnation's result is still its result. But `grep -n prev_tokens flt-loop.py`
+finds exactly **two** occurrences — the read at 877 and the field-copy at 1033. **Nothing
+ever writes it.** It is always `None`.
+
+Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
+inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
+So on any job with `resume: true` / `retries > 0`:
+
+* the live token is in `~/.flt-loop/jobs/<name>.json` and `<name>.started`;
+* the prompt's token is the pre-resume one;
+* a sentinel written under the prompt's token is rejected, `j["sentinel"]` stays `None`,
+  and `started ∧ ¬alive ∧ ¬sentinel` makes the loop conclude the agent **died**.
+
+The result is the worst shape of failure this file catalogues: completed, committed,
+compiler-verified work is thrown away, and a replacement is dispatched at leaves that are
+already proven — a phantom dispatch manufactured out of a *successful* run.
+
+**So the check is one command, run it before writing the sentinel:**
+
+    python3 -c "import json;j=json.load(open('/home/chend/.flt-loop/jobs/<name>.json'));print(j['token'], j.get('prev_tokens'))"
+    cat /home/chend/.flt-loop/jobs/<name>.started
+
+**Write the token the RECORD holds, not the token the prompt holds.** If they agree,
+nothing is lost by having checked. If they disagree, the record wins — the loop reads
+`j["token"]` out of that file and compares against it, and line 1039 shows the loop
+itself overwrites the sentinel's token with `j["token"]` once it accepts one, which
+settles which of the two is canonical.
+
+This is NOT a `to_medic` case on its own: the workaround is one line and an agent that
+performs it lands its work normally. It is a `to_merger` note, and it belongs here so the
+next agent does not have to rediscover it with its branch already committed.
+
+Generalisation, and it is the same shape as "a `sorry` is a PROMISE" and "ancestry is not
+content": **a value handed to you in a prompt is a claim about state at dispatch time, not
+state now.** Prompts are immutable; the state machine is not. Anything in a prompt that
+names live state — a token, a line number, a leaf that is "still open", a worktree said to
+be owned by someone else — is a hypothesis to check against the state itself.
