@@ -75,3 +75,4 @@
 - [Globalise by normalise-then-choose](flt-globalise-by-normalise-then-choose.md) — "units at the other places" never globalises a one-place ultrametric argument; control ORDERS elsewhere, normalise so one coefficient is a unit, and run the argument at THAT coefficient's place
 
 - [Char-0 machinery is base-generic](flt-char0-machinery-is-base-generic.md) — in TateModule.lean only `cyclotomicCharacter` needs `[NumberField F]`; generalise the char-0 statement instead of writing a finite-base copy
+- [Base-field port: autoParam the free-over-ℚ fact](flt-base-field-port-autoparam.md) — ℚ→F in place with ZERO ℚ call-site churn; and ask whether the morphism already determines the datum (it did: 58 `hom_ext_spec_rat` sites collapsed to two lemmas)
