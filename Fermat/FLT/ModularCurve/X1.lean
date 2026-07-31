@@ -458,7 +458,7 @@ open in them has been split along the theories it needed:
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
 | `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity theorem for `Γ₁(N)`: the `a n` are algebraic integers.  MENTIONS NO SCHEME — the only obligation of `IsIsotypicQuotient` that does not, and it can be attacked from the integral-homology side or from the Hecke recursions plus a bound.  Cannot be an instance of `X0.lean`'s `isIntegral_coeff_of_isWeightTwoEigenform`: the `Γ₁` coefficients generate `ℚ(χ)`. | `ℚ` |
-| `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action AND algebraicity — the "build one factor" half of Eichler-Shimura, and the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.  `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this row and the one above since 2026-07-30, transporting the `Γ₀` recut of the same day; its FALSITY AUDIT was discharged that day too and the statement is TRUE.) | `ℚ` |
+| `exists_isotypicHom_of_isWeightTwoEigenformOn_gamma1` | Eichler-Shimura non-vanishing on `Γ₁(N)`: a NONZERO `a`-isotypic homomorphism out of `J_1(N)`, given the PINNED Hecke action.  Intended witness `B := J`, `v := ` an integer multiple of the isotypic projector, `S := T` — so it needs NO quotient of an abelian scheme, and the `Γ₁`-specific content is only that `f` occurs in the `χ`-eigenspace of `H₁(X_1(N), ℚ)`.  Replaced `exists_isotypicQuotient_of_isIntegral_gamma1` as the leaf on 2026-07-31, when that node was cut on BOTH sides in one commit; the geometric half is not a twin but the SAME declaration, `X0.lean`'s shape-free `exists_isotypicQuotient_of_isIsotypicHom`, and `IsIsotypicHom` and `IsIsotypicQuotient` are both stated once there and reused verbatim.  `exists_isotypicQuotient_of_isIntegral_gamma1` and `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` are **PROVEN** over this row and the one above. | `ℚ` |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and the leaf now carries `hN : N ≠ 0`; see its docstring | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
 | `cuspPeriod_ne_zero_x1TwentyFive` | the `L`-value numerics — the DEEP one, and the only row where `25` survives.  (`lFunction_apply_one_ne_zero_x1TwentyFive` was decomposed along the period 2026-07-28; its analytic half `lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` is PROVEN the same day, as the `G = Γ₁(N)` instance of `lFunction_apply_one_eq_two_pi_mul_cuspPeriodOn`, which is in turn the group-generic form of `X0.lean`'s proven theorem.) | `ℚ` |
@@ -13445,24 +13445,84 @@ theorem isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (_hN : N ≠
     IsIntegral ℤ (a n) :=
   sorry
 
-/-- **SHIMURA'S `A_f` FOR `Γ₁(N)`, GIVEN ALGEBRAICITY OF THE EIGENVALUES**
-(sorry leaf, NEW 2026-07-30) — the GEOMETRIC half of
-`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` below, and the `Γ₁`
-twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.
+/-- **EICHLER–SHIMURA NON-VANISHING FOR `Γ₁(N)`: A WEIGHT-TWO EIGENFORM OF LEVEL
+`N` AND NEBENTYPUS `χ` CUTS OUT A NONZERO ISOTYPIC HOMOMORPHISM OUT OF `J_1(N)`**
+(sorry leaf, NEW 2026-07-31) — the MODULAR half of
+`exists_isotypicQuotient_of_isIntegral_gamma1` below, and the `Γ₁` twin of
+`X0.lean`'s `exists_isotypicHom_of_isWeightTwoEigenform`.
 
-The mathematics, the load-bearing hypotheses (`hmod`, `hN`, and — through `jac`
-and `H` — the identification of `J` as the Jacobian of `X_1(N)`), and the
-inventory of what is still missing are all recorded on the assembly below and
-are not repeated here.  What this leaf does NOT have to do, and the undivided
-statement did, is produce a field about `ℂ`-valued eigenvalues in the middle of
-building an abelian variety: `hint` is handed to it.
+**THE CUT OF 2026-07-31 WAS MADE ON BOTH SIDES IN ONE COMMIT**, which is what
+the docstring on this cluster demands: `IsIsotypicQuotient` is reused verbatim
+from `X0.lean`, so the obligation being split is literally the same obligation
+here, and leaving one side split and the other not is how the two files drift
+into rival cuts of one node.  Concretely, the GEOMETRIC half is not merely a
+twin — it is the SAME declaration,
+`X0.lean`'s `exists_isotypicQuotient_of_isIsotypicHom`, called by both files.
+`IsIsotypicHom` is likewise stated once, in `X0.lean`, and reused verbatim here;
+it is shape-free (no modular form, no compactification, no `IsModularHeckeAction`
+occurs in it).
 
-`hint` is stated for EVERY `n`, not merely for `n` coprime to `N`, because
-`IsIsotypicQuotient.integral` is — `minpoly ℤ (a n) = 0` for a non-integral
-`a n` would degenerate `isotypic` to `(0 : ℤ) • x = 0` at that `n`, and
-`isotypic`'s own restriction to `Nat.Coprime n N` is a statement about which
-`T n` are controlled, not about which `a n` are algebraic. -/
-theorem exists_isotypicQuotient_of_isIntegral_gamma1 (N : ℕ) (_hN : N ≠ 0)
+**TRUE, and the intended witness needs no quotient of an abelian scheme.**  Take
+`B := J`, `S := T`, `v := π` an integer multiple of the projector of
+`End(J_1(N)) ⊗ ℚ` onto the `a`-isotypic part; `v_ne_zero` is then exactly the
+Eichler–Shimura non-vanishing statement that `f` occurs in `H₁(X_1(N), ℚ)`, and
+`equivariant` at the junk arities holds because every endomorphism preserves the
+anemic-isotypic pieces.  `IsIsotypicHom`'s docstring in `X0.lean` writes the
+witness out; nothing in it is `Γ₀`-specific.
+
+**THE `Γ₁`-SPECIFIC PART IS ONLY THE NEBENTYPUS.**  This leaf receives `χ`
+rather than having to produce the decomposition of `S₂(Γ₁(N))` under `(ℤ/N)ˣ`,
+so what it owns beyond the `Γ₀` statement is that `f` occurs in the
+`χ`-eigenspace of `H₁(X_1(N), ℚ)`.  The coefficients generate `ℚ(χ)` rather than
+a subfield of `ℝ`, which is why the algebraicity leaf
+`isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` above cannot be an instance
+of the `Γ₀` one; the non-vanishing here is `Γ₁`-specific for the same reason.
+
+## ⚠ FALSITY AUDIT, RUN AGAINST THIS STATEMENT ON 2026-07-31 AND NOT INHERITED
+
+Both refutations are `X0.lean`'s, and both transfer because neither mentions the
+level structure — the `Γ₁` hypotheses are *stronger* than the `Γ₀` ones at every
+point they are used.
+
+**`hmod` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE.**  Take `T n := 𝟙 J`.
+`equivariant` then forces `S n` to be the identity on the image of `v`, and
+`isotypic` at an arity `n` coprime to `N` becomes
+`(minpoly ℤ (a n)).eval 1 • v = 0` in `Hom(J, B)` (evaluate at the relative
+point `𝟙 J`), which is torsion-free.  At `N = 11`, `n = 2`, `a 2 = −2` the
+minimal polynomial is `X + 2` and `eval 1 = 3 ≠ 0`, so `v = 0`, contradicting
+`v_ne_zero`.  This is the refutation `IsHeckeIsotypicDecompositionGamma1`
+records, with `nontriv` replaced by `v_ne_zero`.
+
+**`hf` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE.**  Take `a n := 0` for
+every `n`; `hint` still holds.  `minpoly ℤ (0 : ℂ) = X`, so `isotypic` at
+`n = 1` says `S 1 ∘ v ∘ x = 0` for every `x`, while `equivariant` at `1` with
+`IsModularHeckeActionGamma1`'s clause `T 1 = 𝟙 J` gives `v = v ≫ S 1`.  Hence
+`v = 0` at `x := 𝟙 J`, contradicting `v_ne_zero`.  Only `hf` excludes this `a`.
+
+**`hN : N ≠ 0` IS LOAD-BEARING, and here it is NOT free** — unlike the `Γ₀`
+side, where `pos_of_isX0Compactification_of_fieldPoint` derives it from the
+compactification.  At level `0` the `hecke` recursion of
+`IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f a` is vacuous (every prime divides
+`0`) and the nebentypus is unconstrained, so the transcendental system
+`a (2 ^ k) = π ^ k`, `a n = 0` otherwise — carried by
+`g τ = ∑_{k ≥ 1} π ^ k q ^ (2 ^ k)` — is admissible.  That witness refutes
+`hint` rather than the conclusion, so strictly it makes the hypotheses
+unsatisfiable rather than the statement false; `hN` is kept because the `N = 0`
+case is genuinely unsupported here and the sibling leaves all carry it.
+
+**`hint` IS NOT LOAD-BEARING FOR TRUTH.**  A transcendental `a n` gives
+`minpoly ℤ (a n) = 0` and degenerates `isotypic` to an empty sum, which makes
+the conclusion easier (`B := J`, `v := 𝟙 J`, `S := T` then works).  It is
+carried because the caller holds it for nothing; it IS load-bearing on
+`exists_isotypicQuotient_of_isIsotypicHom`, which has to produce
+`IsIsotypicQuotient.integral`.
+
+**THE HONEST CAVEAT ON `hmod` SURVIVES THE CUT UNCHANGED**: the non-vacuity of
+`IsModularHeckeActionGamma1` is not proven (`IsGamma1Isogeny` is not yet known
+to be inhabited at the scheme level).  Were it formally vacuous this leaf would
+be exactly as hard as the undecomposed node and no harder, so the cut cannot
+make anything worse. -/
+theorem exists_isotypicHom_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (_hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
@@ -13472,8 +13532,47 @@ theorem exists_isotypicQuotient_of_isIntegral_gamma1 (N : ℕ) (_hN : N ≠ 0)
     (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
     (_hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a)
     (_hint : ∀ n, IsIntegral ℤ (a n)) :
-    Nonempty (IsIsotypicQuotient ab T N a) :=
+    Nonempty (IsIsotypicHom ab T N a) :=
   sorry
+
+/-- **SHIMURA'S `A_f` FOR `Γ₁(N)`, GIVEN ALGEBRAICITY OF THE EIGENVALUES**
+(**PROVEN 2026-07-31** over the leaf immediately above together with `X0.lean`'s
+shape-free `exists_isotypicQuotient_of_isIsotypicHom`; a sorry leaf from
+2026-07-30 until then) — the GEOMETRIC half of
+`exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` below, and the `Γ₁`
+twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.
+
+**THE STATEMENT IS UNCHANGED — every consumer calls it exactly as before.**
+What changed on 2026-07-31 is that the abelian-scheme construction it used to
+own (build `A_f`, build the surjection, build the descended action) is now a
+single shape-free leaf in `X0.lean` shared with the `Γ₀` side — the image of a
+nonzero homomorphism of abelian schemes is an abelian subscheme — and what is
+left here is Eichler–Shimura non-vanishing, immediately above.
+
+The mathematics, the load-bearing hypotheses (`hmod`, `hN`, and — through `jac`
+and `H` — the identification of `J` as the Jacobian of `X_1(N)`) and the falsity
+audits are on that leaf and on `X0.lean`'s
+`exists_isotypicQuotient_of_isIsotypicHom`.
+
+`hint` is stated for EVERY `n`, not merely for `n` coprime to `N`, because
+`IsIsotypicQuotient.integral` is — `minpoly ℤ (a n) = 0` for a non-integral
+`a n` would degenerate `isotypic` to `(0 : ℤ) • x = 0` at that `n`, and
+`isotypic`'s own restriction to `Nat.Coprime n N` is a statement about which
+`T n` are controlled, not about which `a n` are algebraic. -/
+theorem exists_isotypicQuotient_of_isIntegral_gamma1 (N : ℕ) (hN : N ≠ 0)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (hmod : IsModularHeckeActionGamma1 N H jac T T_comp)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a)
+    (hint : ∀ n, IsIntegral ℤ (a n)) :
+    Nonempty (IsIsotypicQuotient ab T N a) :=
+  (exists_isotypicHom_of_isWeightTwoEigenformOn_gamma1 N hN H jac T T_comp T_add hmod
+      χ f a hf hint).elim
+    fun w => exists_isotypicQuotient_of_isIsotypicHom hint w
 
 /-- **SHIMURA'S `A_f` FOR `Γ₁(N)`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N` AND
 ANY NEBENTYPUS CUTS OUT AN ISOTYPIC QUOTIENT OF `J_1(N)`** (**PROVEN
@@ -16458,7 +16557,7 @@ disappearing:
 | `exists_modularHeckeAction_gamma1` | `T_ℓ` as an endomorphism of `J_1(N)` | no | here, **PROVEN 2026-07-28** |
 | `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here, **PROVEN 2026-07-30** over the two rows below.  (This row read "**FALSE as stated**" until 2026-07-30; that was STALE — the FALSITY AUDIT's own header records the repair, which strengthened `IsModularHeckeActionGamma1` and left this statement untouched.) |
 | `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity, no scheme in it | no | here, NEW 2026-07-30 |
-| `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` given algebraicity | no | here, NEW 2026-07-30 — the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral` |
+| `exists_isotypicHom_of_isWeightTwoEigenformOn_gamma1` | Eichler–Shimura non-vanishing: a NONZERO isotypic homomorphism out of `J_1(N)` | no | here, NEW 2026-07-31 — replaced `exists_isotypicQuotient_of_isIntegral_gamma1` (now **PROVEN** over it and `X0.lean`'s shape-free `exists_isotypicQuotient_of_isIsotypicHom`, which BOTH files call) |
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1` | multiplicities, `finite_ker`, `neben` (now under `hN : N ≠ 0`) | no | here |
 | `exists_cuspForm_gamma1GL_zero_lacunary` | the lacunary level-`0` cusp form; input to the `N = 0` refutation | no | here, **PROVEN 2026-07-30** — the `LacunaryLevelZero` section, six lemmas, no theory |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
