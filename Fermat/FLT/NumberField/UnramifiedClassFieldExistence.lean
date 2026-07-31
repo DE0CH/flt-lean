@@ -152,6 +152,74 @@ variable (K M L : Type*) [Field K] [NumberField K] [Field M] [NumberField M]
   [Field L] [NumberField L] [Algebra K M] [Algebra M L] [Algebra K L]
   [IsScalarTower K M L] [IsGalois K L] [IsGalois K M]
 
+/-- **FROBENIUS RESTRICTS TO FROBENIUS: in a tower `K ⊆ M ⊆ L` of number fields with
+**RENAMED 2026-07-31 (release 29).**  `ArtinSymbol.lean` -- which this
+module imports -- declares a DIFFERENT theorem under the name
+`restrictNormalHom_frobAt`: it computes the target ideal as `Q.under (𝓞 M)`
+rather than taking it as a parameter with a defining equation.  Both are
+wanted and the qualified names collided, so this one -- the parametrised
+form, which is what this file's three call sites use -- carries a suffix.
+Collapsing the pair is queued.
+
+`L/K` and `M/K` Galois, the restriction to `M` of the Frobenius at a maximal ideal `Q`
+of `𝓞 L` is the Frobenius at the prime `q = Q ∩ 𝓞 M` below it** (PROVEN 2026-07-30).
+
+Pure ramification theory, and proven exactly like `frobAt_pow_inertiaDeg`: the algebra
+map `𝓞 M → 𝓞 L` intertwines `σ|_M` with `σ` (`AlgEquiv.restrictNormal_commutes`), and
+the two Frobenius congruences use the SAME residue cardinality because
+`(Q ∩ 𝓞 M) ∩ 𝓞 K = Q ∩ 𝓞 K` (`Ideal.under_under`) — so `σ|_M` is an arithmetic
+Frobenius at `q`. The Frobenius at an unramified prime is unique
+(`AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`) and the action of `Gal(M/K)` on `𝓞 M` is
+faithful (`eq_one_of_smul_eq_self`), which turns that into an equality in `Gal(M/K)`.
+
+**Unramifiedness of `q` over `𝓞 K` is load-bearing**: it is what makes the Frobenius at
+`q` unique. At a ramified `q`, `arithFrobAt` makes an arbitrary choice inside the coset
+of the inertia group and the two sides differ by an element of it — the same phenomenon
+recorded on `frobAt_pow_inertiaDeg`, with the same `K = ℚ`, `L = ℚ(i)`, `Q = (1 + i)`
+witness.
+
+Together with `restrictScalars_frobAt` below this is the Frobenius half of the class
+field DICTIONARY: this one gives the `≤` inclusion (norm classes fix the intermediate
+field), that one gives the `≥` inclusion (the norm classes fill it up).
+
+**Placement.** This belongs upstream beside `frobAt` in
+`Fermat/FLT/NumberField/ArtinSymbol.lean`; it is stated here only because that file's
+two open leaves are separately owned and a cross-file edit costs a release cycle. Move
+it when that file is next touched. -/
+theorem restrictNormalHom_frobAt_of_under (Q : Ideal (𝓞 L)) [Q.IsMaximal] (q : Ideal (𝓞 M))
+    [q.IsMaximal] [Algebra.IsUnramifiedAt (𝓞 K) q] (hq : Q.under (𝓞 M) = q) :
+    AlgEquiv.restrictNormalHom M (frobAt K L Q) = frobAt K M q := by
+  classical
+  set σ : L ≃ₐ[K] L := frobAt K L Q with hσdef
+  set τ : M ≃ₐ[K] M := AlgEquiv.restrictNormalHom M σ with hτdef
+  have H : IsArithFrobAt (𝓞 K) σ Q := isArithFrobAt_frobAt K L Q
+  -- the algebra map `𝓞 M → 𝓞 L` intertwines `τ` and `σ`
+  have hint : ∀ x : 𝓞 M, algebraMap (𝓞 M) (𝓞 L) (τ • x) = σ • algebraMap (𝓞 M) (𝓞 L) x := by
+    intro x
+    have hinj : Function.Injective (algebraMap (𝓞 L) L) :=
+      FaithfulSMul.algebraMap_injective (𝓞 L) L
+    refine hinj ?_
+    show algebraMap M L ((τ • x : 𝓞 M) : M) = σ (algebraMap M L (x : M))
+    rw [coe_smul_ringOfIntegers]
+    exact AlgEquiv.restrictNormal_commutes σ M (x : M)
+  -- so `τ` is an arithmetic Frobenius at `q`
+  have Hτ : IsArithFrobAt (𝓞 K) τ q := by
+    intro x
+    have hcard : Nat.card (𝓞 K ⧸ q.under (𝓞 K)) = Nat.card (𝓞 K ⧸ Q.under (𝓞 K)) := by
+      rw [← hq, Ideal.under_under]
+    show τ • x - x ^ Nat.card (𝓞 K ⧸ q.under (𝓞 K)) ∈ q
+    rw [hcard, ← hq, Ideal.mem_under, map_sub, map_pow, hint x]
+    exact H (algebraMap (𝓞 M) (𝓞 L) x)
+  -- uniqueness of the Frobenius at the unramified prime `q`, then faithfulness
+  have heq := Hτ.eq_of_isUnramifiedAt (isArithFrobAt_frobAt K M q)
+    (Ideal.primeCompl_le_nonZeroDivisors q)
+  have hsmul : ∀ x : 𝓞 M, τ • x = frobAt K M q • x := fun x => DFunLike.congr_fun heq x
+  have hone : τ * (frobAt K M q)⁻¹ = 1 := by
+    refine eq_one_of_smul_eq_self _ fun y => ?_
+    rw [mul_smul, hsmul ((frobAt K M q)⁻¹ • y), smul_inv_smul]
+  rwa [mul_inv_eq_one] at hone
+
+
 /-- **THE FROBENIUS OF THE UPPER LAYER IS A POWER OF THE FROBENIUS OF THE WHOLE TOWER:
 in a tower `K ⊆ M ⊆ L` as above, `Frob_{L/M, Q} = Frob_{L/K, Q} ^ f(q | 𝓞 K)`, where
 `q = Q ∩ 𝓞 M`** (PROVEN 2026-07-30).
@@ -192,7 +260,7 @@ theorem restrictScalars_frobAt [IsGalois M L] (Q : Ideal (𝓞 L)) [Q.IsMaximal]
         rw [pow_succ', mul_smul, hmk, ih, ← pow_mul, ← pow_succ]
   -- `σ ^ f` fixes `M` pointwise, so it is an `M`-algebra automorphism of `L`
   have hfix : AlgEquiv.restrictNormalHom M (σ ^ f) = 1 := by
-    rw [map_pow, restrictNormalHom_frobAt K M L Q q hq, hfdef]
+    rw [map_pow, restrictNormalHom_frobAt_of_under K M L Q q hq, hfdef]
     exact frobAt_pow_inertiaDeg K M q
   have hcomm : ∀ x : M, (σ ^ f).toRingEquiv (algebraMap M L x) = algebraMap M L x := by
     intro x
@@ -1245,7 +1313,7 @@ theorem exists_hilbertClassField_artinIso :
     -- the Artin map sends that class to `Frob_Q ^ f`, which restricts to `Frob_q ^ f = 1`
     rw [Subgroup.mem_comap, hbridge, MonoidHom.mem_ker,
       hkey q Q J hQover hJ, map_pow,
-      restrictNormalHom_frobAt K (IntermediateField.lift F) HCF Q q hQover]
+      restrictNormalHom_frobAt_of_under K (IntermediateField.lift F) HCF Q q hQover]
     exact frobAt_pow_inertiaDeg K (IntermediateField.lift F) q
   -- ## The `≥` half: Chebotarev for `HCF/(lift F)` fills up the fixing subgroup
   refine le_antisymm hsub ?_
@@ -1589,7 +1657,7 @@ theorem exists_surjective_aut_classGroupQuotient_intermediateField
         show AlgEquiv.restrictNormalHom HCF
           (AlgEquiv.restrictScalars K (frobAt M E Q)) = _
         rw [restrictScalars_frobAt K M E Q (Q.under (𝓞 M)) rfl, map_pow,
-          restrictNormalHom_frobAt K HCF E Q (Q.under (𝓞 HCF)) rfl, hJpow, map_pow, map_pow]
+          restrictNormalHom_frobAt_of_under K HCF E Q (Q.under (𝓞 HCF)) rfl, hJpow, map_pow, map_pow]
         congr 1
         refine (hArtFrob (Q.under (𝓞 HCF)) hPmax Jp ?_).symm
         show (Q.under (𝓞 M)).under (𝓞 K) = (Q.under (𝓞 HCF)).under (𝓞 K)
