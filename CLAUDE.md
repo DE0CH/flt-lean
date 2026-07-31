@@ -15618,3 +15618,94 @@ Beck–Chevalley compatibility of the counit with it, and `π_*𝒪_Z ≅ 𝒪_T
 `HasTrivialPushforward` (which is a statement about the map of sheaves of RINGS and does not
 hand you the module-level one). None of the three is at this pin; all three are stated in the
 docstring of `exists_modPullback_of_locally_modPullback`.
+
+## TWO COMPLEMENTARY FIELDS ADDED TO ONE STRUCTURE: A MERGE KEEPS ONE, AND SPLITS THE OTHER HALF THE OPPOSITE WAY
+
+(2026-07-31, release 32, `ModularCurve/X1.lean`.  Three errors, one root cause, and it
+was invisible for six releases.)
+
+The class-7 interface split is usually described as *one edit* whose signature half and
+call-site half land on opposite sides of a conflict boundary.  There is a sharper form
+that arises when two branches each repair a DIFFERENT refuted `∀ P` theorem by the same
+move — hoisting its citation onto the structure as a new field:
+
+* `64651d82` (2026-07-30) added `Gamma1GITPresentation.smoothM`, Katz–Mazur 8.2.1, to
+  repair `smoothCurve_A_of_gamma1GITPresentation`;
+* `420bd322` (2026-07-31) added `Gamma1GITPresentation.transitiveM`,
+  Deligne–Rapoport IV.5.5, to repair
+  `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`.
+
+They are COMPLEMENTARY — different citations, different discharging leaves, disjoint
+consumers — and `420bd322` forked before `64651d82`, so its copy of the structure had no
+`smoothM`.  The merge took the STRUCTURE BODY from the later branch and lost `smoothM`
+from **both** `Gamma1GITPresentation` and `Gamma1Rigidification`, along with the `hsm`
+hypothesis of `nonempty_gamma1Rigidification_of_rigidifiedModuli` and its call-site
+argument.
+
+**The tell that identifies it in one screen, and it is the useful part: the damage is
+SYMMETRIC and the two halves point at each other.**  The three errors were
+
+    X1.lean:1694: `smoothM` is not a field of structure `Gamma1GITPresentation`
+    X1.lean:1680: Fields missing: `transitiveM`
+    X1.lean:7063: Invalid field `smoothM`
+
+i.e. the STRUCTURE came from the `transitiveM` branch and one CONSTRUCTOR LITERAL came
+from the `smoothM` branch — each side of the file is internally consistent with a
+different parent.  A single dropped edit cannot produce that pattern; only two rival
+copies of one declaration can.  When "X is not a field of S" and "fields missing: Y"
+appear in the same module, do NOT start weakening either statement: `git log -S` both
+field names, and if the two adding commits are incomparable, the repair is the UNION.
+
+**And the union really is the repair — check it, do not assume it.**  Two fields added
+to one structure are complementary iff they cite different theorems, are discharged by
+different leaves, and have disjoint consumers.  Here all three held and both discharging
+leaves (`smoothOfRelativeDimension_of_gamma1RigidifiedModuli`,
+`transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`) were still present and still
+open, so restoring `smoothM` opened and closed nothing.  If instead one docstring said it
+SUPERSEDES the other, the union would be the duplicated-hypothesis failure that release
+24 recorded — the same shape, opposite resolution.  Both docstrings here said "carried
+verbatim from `Gamma1Rigidification`", i.e. both were written as additions.
+
+**WHY IT SURVIVED SIX RELEASES, and this is the standing lesson rather than the
+instance.**  `X1.lean` is downstream of `X0.lean`; `X0` had been red since release 25;
+`lake build` stops at the first red module in a cone.  So `X1` was not "fine", it was
+UNSEEN — and merge damage had been accumulating in it, unreported, for six releases,
+while every release handover truthfully said "every module except X0 builds".  That
+sentence is always a statement about the modules `lake` REACHED.  **Behind a red module,
+budget repair work in proportion to how long it has been dark**, and elaborate the
+darkened modules directly with `lake env lean` against the previous release's oleans
+rather than waiting for the cone.
+
+## A QUEUE TASK CAN BE WRITTEN FOUR TIMES BY FOUR AUTHORS, AND NOTHING CHECKS FOR IT
+
+(2026-07-31, release 32.)  The release invariant is a COVERAGE condition — every open
+leaf is queued or held — and it is one-sided: it detects a leaf with no task and is blind
+to a task with three rivals.  The divisor-degree reconciliation
+(`CurveDivisorDegree.lean` versus `PrincipalDivisorDegree.lean`) was queued **four
+times**: three entries in `queue1` and one in `queue2`, written by three prover agents and
+one merge worker on three different days, each careful, each ~2–5 kB, none aware of the
+others.  Dispatch is FIFO and blind, so that is four agents making four rival edits to two
+modules plus `X0.lean` — the most conflict-hostile shape there is.
+
+It is invisible to every instrument for a specific reason: the four texts share almost no
+identifiers with each other (they name the modules, not one declaration), so a
+name-keyed scan cannot pair them, and each is INDIVIDUALLY correct, so nothing about any
+one of them looks wrong.  What pairs them is the SENTENCE — "reconcile the two rival
+divisor-degree modules" — in four wordings.
+
+**So the release check has a second half, and it is cheap: cluster the queue by TARGET
+LINE.**  Take each task's first `TARGET:` line, strip the decoration, and look for
+entries naming the same file pair, the same module, or the same declaration.  Anything
+appearing more than once is a collision waiting to be dispatched.  Then keep exactly ONE
+— the most recent, which is the one whose account of the tree is current — and FOLD the
+others' unique facts into it under a `SUPERSEDES` heading rather than deleting them: the
+three losers here carried, between them, the concrete leaf names, the fact that
+`ProgressCensus.lean` imports every module (so the release-31 workaround removed the
+collision from the build target and not from the tree), and the lesson that `xdup.py` must
+be differenced against the last GREEN release.  None of that is in the survivor.
+
+**Corollary for the merge worker's own bookkeeping, learned by nearly getting it wrong:
+after deleting duplicates, RE-RUN the coverage check.**  Dropping three of four copies
+deleted the only queue entries naming two of the three leaves of the dead module — the
+survivor happened to name all three, so coverage held, but that was luck and not design.
+A de-duplication is a queue DELETION and has to be re-verified exactly like one.
