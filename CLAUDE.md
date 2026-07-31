@@ -54,6 +54,46 @@ The identical twin cluster in `ModularCurve/X1.lean`
 `IsBaseChangeOfGamma1.refl` / `.comp` already sit ~2500 lines ABOVE the leaves, so it needs
 no movement at all.
 
+**Same file, same day, the OTHER shape of unpaid debt: a docstring that has already
+worked out the CHEAPER CUT and not taken it.** `exists_qExpansion_gamma0GITPresentation`
+bundled one modular citation (the Tate curve over `ℚ((q))` fed to `P.classify`) with a
+piece of pure commutative algebra (injectivity, from `B` being a one-dimensional
+finite-type `ℚ`-domain). Its own docstring had already established that the OBVIOUS
+split is FALSE — "injectivity of an arbitrary `ℚ`-algebra map `B → ℚ((q))`" is refuted
+by any `ℚ`-rational point of `Y_0(N)`, via `B ↠ B/𝔪 = ℚ ↪ ℚ((q))` — and had named the
+only faithful one, *"`f` is non-constant"*: `∃ f, ∃ x, ¬ IsAlgebraic ℚ (f x)`. Nobody
+took it. It cost ~25 lines and it is now `exists_nonConstant_qExpansion_gamma0GITPresentation`
+plus two proven mathlib-facing theorems.
+
+**The frontier COUNT does not move for this kind of work, and it is still progress.**
+One leaf becomes one leaf. What changes is that everything in the leaf which was not a
+citation is gone: the survivor is dispatchable at somebody who knows the Tate curve and
+nothing else, and the algebra can never be got wrong again. When judging a cut, ask what
+is LEFT in the leaf, not only how many leaves there are — the "fewer OPEN leaves"
+tie-breaker recorded further down is for choosing between rival cuts, not a reason to
+skip a cut that is count-neutral.
+
+Two mechanical traps, both of which cost a round trip:
+
+* **`Ideal.Quotient.field` is NOT a global instance in mathlib.** The idiom is
+  `attribute [local instance] Ideal.Quotient.field in` before the declaration (and it
+  must come BEFORE the docstring, not between docstring and `theorem`). Introducing it
+  with `haveI : Field (B ⧸ I) := Ideal.Quotient.field I` instead creates a
+  `Module ℚ (B ⧸ I)` **diamond** — `Algebra.toModule` against
+  `Submodule.Quotient.module'` — and `finite_of_finite_type_of_isJacobsonRing`
+  (mathlib's Zariski's lemma, `@[stacks 0CY7]`) then fails to apply with a type mismatch
+  that prints two `Module` instances and names no cause.
+* **`set I := RingHom.ker f` makes `I` a let-bound local, and instance search stops
+  seeing through it**: `Field (B ⧸ I)` and even `Algebra ℚ (B ⧸ I)` fail to synthesize.
+  State the ideal-level lemma with the ideal as a genuine VARIABLE and apply it.
+
+And on movement, the mirror of the note above: the three ring facts the algebra needed
+(`IsDomain B`, `Algebra.FiniteType ℚ B`, `ringKrullDim B = 1`) sat 200 lines BELOW, in
+`isRegularRing_coarseRing_of_gamma0GITPresentation`. Moving that ONE theorem up is 85
+lines of text; moving the two consumers down would have been 300. **Move whichever side
+is smaller** — and note the docstring's own suggestion ("re-run its three-line domain
+half here") was wrong about the price: the "three-line" half is a thirty-line proof.
+
 ## Missing tools: brew install is pre-authorized
 
 (Deyao, 2026-07-21.) If a needed tool is missing and available through
