@@ -3141,3 +3141,67 @@ absence of errors* — note the mirror-image hazard: a 4-line log with no `error
 The existing memory `flt-ssh-build-needs-cd-and-elan-path.md` records this for `ssh`
 invocations. It bites identically for a plain local background Bash call on the owning
 host, which is the shape the post-2026-07-30 loop makes agents use most.
+
+## SPECIALISING A LEAF TO ONE CANONICAL BASE CAN MAKE IT HARDER — check the citation's own proviso
+
+(2026-07-31, `flt-lean-19`.) A cut that replaces "for every `R`" by "at the one canonical `R`"
+reads as a strict improvement, and the tie-breakers above endorse it: same leaf count, one
+instance instead of a family, and "a citation instantiated once is what the citation IS". That
+reasoning is right whenever the citation applies at the chosen base. **It is exactly backwards
+when the chosen base is the one where the citation's own hypotheses fail.**
+
+`nonempty_gamma0AtlasOver_specLoc` (Katz–Mazur (8.1.1), the `Γ₀(N)`-atlas) was specialised on
+2026-07-29 from "every `R : Subring ℚ`" to `ℤ`, with every other subring recovered by flat base
+change — `ℤ → R` is flat for all of them, so the derivation is four lines and the cut looks free.
+But Katz–Mazur construct `M(𝒫)` under an explicit proviso — *"to define `M(𝒫)` as an `R`-scheme it
+suffices to do so locally on `R`, so we may assume some integer `n ≥ 3` is invertible in `R`"* —
+and `ℤ` is the **unique** subring of `ℚ` where no `n ≥ 3` is invertible. Every other base
+satisfies the proviso outright. So the specialisation silently folded a two-chart Zariski gluing
+of the ENTIRE atlas (`Y`, the classifying map, the fppf cover *and* the categorical quotient,
+over `D(3)`, `D(5)`, glued along `D(15)`) into a leaf whose docstring still described it as the
+citation. The leaf's own text even named the gluing — "where the whole cost of a non-local base
+sits" — without drawing the conclusion that this made the leaf strictly harder than the family it
+replaced.
+
+Two rules come out of it, and the second is the transferable one.
+
+**1. Before specialising to a canonical instance, check the source's hypotheses AT that instance.**
+"Every base is a flat base change of `B`" makes `B` a sufficient base *logically*; it says nothing
+about whether the theorem you are citing is proved at `B`. Degenerate/extremal bases — `ℤ`, a
+field of small characteristic, `N = 0`, the trivial group — are exactly where citations carry
+provisos, and they are exactly the bases a "one canonical instance" argument selects for.
+
+**2. A hypothesis the CONSUMERS already hold costs nothing, and this is worth checking BEFORE
+inventing machinery to avoid it.** The repair here was to give the leaf Katz–Mazur's own proviso
+(`∃ n ≥ 3, IsUnit (n : R)`) and thread it through three intermediate theorems that lacked `ℓ` in
+scope. Every terminal consumer already carried `IsReductionBase ℓ R toF`, which forces `R = ℤ_(ℓ)`
+and hence supplies the proviso (`n = 3`, or `4` at residue characteristic `3`) — so the leaf got
+strictly weaker and no consumer's statement changed. Same shape as
+`exists_artinDivisorNormIndex_le_ray_class` above: *the missing hypothesis is usually already in
+the caller's hand, and the reason it is not in the statement is that an intermediate theorem
+discarded it.* Trace the consumer chain to its terminal hypotheses before concluding a leaf must
+be stated in the generality it currently is.
+
+Corollary for the generality question in general: the right test is not "which statement is more
+canonical" but **"at which bases is the cited proof actually run"**. Quantifying over a family of
+bases where the citation applies is CHEAPER than one base where it does not, however inelegant the
+family looks.
+
+## A REDUNDANT PRINTED COLUMN IS THE ONLY DRIFT GUARD A COMMENT CAN HAVE
+
+(2026-07-31, same run.) `x0HeckeCharpolyTable`'s docstring prints a human-readable table beside
+the `def`, including three columns — `Tr`, `ℓ+1−Tr`, `det((ℓ+1)−T)` — that are NOT stored and are
+computed from the polynomial by proven lemmas. Its `N = 75` row printed `X⁵ − 9X²` while the
+banked list `[0,0,0,-9,0,1]` is `X⁵ − 9X³`.
+
+The `def` was right and the prose was wrong, and the redundancy is what proves it **without any
+external tool**: the same row prints `det = 28160`, and `8⁵ − 9·8³ = 28160` while
+`8⁵ − 9·8² = 32192`. Two printed columns that must agree, disagreeing.
+
+The general point: a `decide`-backed drift guard (`x0Genus_eq_of_mem_x0HeckeCharpolyTable`,
+`exists_charpolyRow_of_x0WitnessTable`) breaks the BUILD when data drifts, which is why this
+development uses them. **A docstring table is a comment; nothing checks it, and it is read far more
+often than the `def`.** So when banking numerical data, print the derived columns too — they cost
+nothing and they are the only thing standing between a typo and a prover chasing the wrong
+polynomial. And when reading such a table, cross-check a derived column before trusting a row; a
+CAS run is confirmation, not the first line of defence.
