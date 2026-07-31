@@ -826,6 +826,33 @@ attaches rather than restarting (see the single-flight section); and
 splitting oversized modules is what converts idle cores into throughput,
 because the file is the unit of elaboration.
 
+**THE OLEAN-SCRATCH TRICK WORKS FOR A LEAF *INSIDE* THE GIANT FILE TOO**
+(2026-07-31, measured on `heckeOp_traceOp_comm_of_not_dvd`). The doctrine file
+says the "import the built olean" form applies "whenever your new material sits
+*downstream* of the giant file rather than inside it". That is too weak. A
+scratch that `public import`s the already-built `Fermat.FLT.Modularity.Interface`
+olean and RESTATES the target under a primed name verified in **6 seconds**,
+against ~25 minutes for one `lake build` of `Interface` — roughly forty
+edit/verify cycles for the price of one. The finished text was then moved into
+the file verbatim for a single blocking verify.
+
+The one soundness condition, and it is easy to honour: the scratch sees the
+WHOLE file, so **only use names declared BEFORE your target's line**, and check
+each one's line number (`grep -n "theorem <name>"`) before relying on it. Nothing
+else about the scratch differs — same namespace, same `open`s, copied from the
+enclosing section header.
+
+Two things this makes cheap that were not: (a) `#print axioms` on the finished
+proof before it ever touches the real file; (b) warning cleanup — the
+`unusedSimpArgs` / "tactic never executed" linters fire in the scratch at
+6 s/round, so the text that lands in the shared file is already warning-clean.
+
+Seeding for it is free when `main` has not moved in Lean:
+`git diff --stat <release-sha> HEAD -- '*.lean'` empty means
+`rsync -a --delete ~/.flt-release-lake/build/ /scratch/chend-flt/flt-lean-N/.lake/build/`
+gives you a fully current artifact set in about a minute, and the confirming
+`lake build` is a pure replay.
+
 ## Sorry and have discipline (glue-first, no floating)
 
 - **Glue first.** At any frontier, first replace the bare `sorry` with
