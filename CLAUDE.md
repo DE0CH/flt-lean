@@ -16151,3 +16151,44 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## THE LEAF'S OWN DOCSTRING MAY ALREADY CONTAIN ITS RECUT — check `merger` for the unblock
+
+(2026-07-31, `exists_isotypicQuotientFamily_finiteKer_gamma1`.) A leaf can carry, in its own
+prose, a fully specified successor cut written by the agent that CREATED it — successor names
+included — parked behind a condition that has since become true. Here the `Γ₁` leaf's parent
+docstring ended:
+
+> The tidy follow-up, **once that branch is on `main`**, is to split
+> `exists_isotypicQuotientFamily_finiteKer_gamma1` along the same seam
+> (`exists_universalIsotypicQuotient_gamma1` plus a shared joint-kernel statement) and reuse
+> the structure.
+
+The blocking branch — the `Γ₀` twin's cut, which introduced `IsUniversalIsotypicQuotient` —
+HAD landed. Two greps settled it, and the whole task became executing a prescription rather
+than designing a cut:
+
+    grep -n "structure IsUniversalIsotypicQuotient" Fermat/FLT/ModularCurve/X0.lean
+    git show merger:<file> | grep -n "<the successor name the docstring proposes>"
+
+**Why this is worth a standing rule and not just a nice outcome.** Designing a rival cut here
+would have been the default behaviour and it would have been WRONG in the expensive way: the
+parked prescription exists precisely because its author had already decided the seam, and the
+structure it reuses is level-shape agnostic, so an independently-designed `Γ₁` cut would very
+likely have re-declared `IsUniversalIsotypicQuotient` — a `has already been declared` error
+that no textual merge can see (class seven, the interface split). The docstring said so
+explicitly, in the same paragraph, and only because its author had thought about it.
+
+So: **before designing a cut, grep the target's own docstring and its parent's for a
+conditional follow-up, and test the condition against `merger`.** The two forms to look for are
+"once X lands", and "the `Γ₀`/`Γ₁` twin was cut this way" — the second is a prescription too,
+just written as a comparison. And when you take such a prescription, UPDATE the paragraph that
+parked it: an executed follow-up left reading as pending is how the next agent gets sent at
+work that no longer exists.
+
+Corollary on accounting, since the headline number moves the wrong way: this cut took the
+frontier 24 → 25 in `X1.lean` (one closed, two opened). That is the disclosure shape CLAUDE.md
+already describes — the maximality that `finite_ker` needs, and that an arbitrary
+`IsIsotypicQuotient` cannot supply, had been hidden inside one leaf with no name. Both new
+leaves are now the exact twins of two `Γ₀` leaves on `main`, so the pair should be proven in
+one pass and the marginal cost of the split is negative.
