@@ -801,6 +801,8 @@ theorem End.degree_mul [IsAlgClosed F] [W.IsElliptic] (a c : End W) :
   push_cast
   ring
 
+/-! ### Rank-two linear algebra for the `ℓ`-torsion -/
+
 /-! ### The parallelogram law collapses to its UNIT SHIFT
 
 The four theorems below are **unconditional** — they do not consume the file's
