@@ -3767,6 +3767,48 @@ same "does not exist" error. And this is only sound because
 against `main` (check: `git diff --stat <sha> main -- Fermat/` empty, where the
 sha is in `~/.flt-release-lake/sha`); if it is stale in the Lean sources you are
 developing against yesterday's statements.
+**THE SCRATCH DOES NOT HAVE TO IMPORT THE TARGET FILE AT ALL — abstract the
+base ring and the glue compiles without it** (2026-07-31, `flt-lean-193`,
+`exists_pderiv_eq_of_minimalPresentation` in `ModThree.lean`). The rule above
+says "import only what you need", which is usually read as "import the target's
+dependencies". Often you need LESS than that: **the glue of a leaf in a huge
+file typically does not depend on any of that file's content.** Here the whole
+decomposition — build the ideal `ker α + (3)`, prove it differential, feed it to
+the key lemma, divide the result by `3` — mentions `𝒪₃ᵥ` only as "some commutative
+ring". So the prototype was
+    variable {𝒪 : Type} [CommRing 𝒪] {A : Type} [CommRing A] [Algebra 𝒪 A]
+    theorem leaf1 ... := sorry     -- one abstract stand-in per intended leaf
+    theorem main ... := by ...     -- the real glue, verified against the stand-ins
+in a scratch importing one 400-line support file. **30 seconds per iteration
+instead of 25 minutes**, and the transplant into the real file was mechanical:
+substitute `𝒪₃ᵥ` for `𝒪`, rename the stand-ins, and the proof script is unchanged.
+The generalisation, and the reason this is worth writing down separately: the
+scratch's import cone should be sized by **what the PROOF mentions**, not by what
+the STATEMENT lives next to. Deciding those are different is a ten-second read of
+your own proof sketch, and when they are different it is a 50× round trip.
+Two corollaries that fall straight out:
+- **Stand-ins force the decomposition to be honest.** You cannot write the glue
+  against an abstract `leaf1` without first committing to `leaf1`'s exact
+  statement, so the cut is designed before any of it is proved — which is what
+  "glue first" asks for anyway. If a stand-in's statement turns out to be
+  unusable, you find out in seconds rather than after a 25-minute build.
+- **A leaf whose statement is base-ring-agnostic belongs in the support file, not
+  in the giant one.** The key lemma cut here (`MvPowerSeries.pderiv`'s
+  differential-ideal theorem) went into
+  `Fermat/FLT/Mathlib/RingTheory/MvPowerSeries/AdicEval.lean` precisely because
+  nothing in it is about `𝒪₃ᵥ`. Whoever is dispatched at it pays a 30-second
+  import instead of 25 minutes — the placement decision IS a throughput decision,
+  and it is made once, by the agent that cuts the leaf.
+**And check whether the API a leaf's STATEMENT uses actually exists** (same task).
+`MvPowerSeries.pderiv` had been *defined* in `AdicEval.lean` — enough to state
+`pderiv_eq` in a structure field — with exactly one lemma about it
+(`coeff_pderiv`) and NO algebra: no additivity, no Leibniz, nothing about
+constants. This pin has `Polynomial.derivative`, `MvPolynomial.pderiv` and
+`PowerSeries.derivative`, but nothing for `MvPowerSeries`, so there was nothing
+to import either. Any leaf mentioning that definition therefore starts with
+building the API (the Leibniz rule is the load-bearing one; it is a reindexing of
+`antidiagonal (n + eⱼ)` and ran to ~70 lines). A definition existing is not an
+API existing, and a docstring that cites the definition does not tell you which.
 ## Sorry and have discipline (glue-first, no floating)
 
 - **Glue first.** At any frontier, first replace the bare `sorry` with
