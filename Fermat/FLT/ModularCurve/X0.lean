@@ -41623,6 +41623,40 @@ theorem IsEichlerShimuraTransform.prod_one_sub {ℓ : ℕ} {a α : Multiset ℂ}
   rw [Multiset.prod_map_mul]
   simp
 
+/-- **`Σ αᵢ² = Σ aᵢ² − 2ℓ·#a`** (PROVEN 2026-07-31) — the SECOND power sum
+across the Eichler–Shimura pairing, the companion of `sum_eq` one order higher,
+and with all of the modular content removed exactly as in the other two.
+
+Pairwise it is `α² + β² = (α + β)² − 2αβ = (α + β)² − 2ℓ`, summed over the `#a`
+pairs; the `Multiset.replicate k 0` summand contributes `0² = 0` and drops out,
+which is why the "up to zeros" slack in `IsEichlerShimuraTransform` costs
+nothing here (a positive power sum cannot see a zero entry — the same fact that
+makes the slack necessary in the first place).
+
+This is what `isWeilEigenvalues_x0_eichlerShimura`'s docstring said was NOT
+recoverable from its two conclusions: `Σ αᵢ²` is not a function of `Σ αᵢ` and
+`∏ (1 − αᵢ)` once `g ≥ 2`, and correctly so — but it IS a function of the
+PAIRING, which `isEichlerShimuraTransform_x0` supplies one level down.  So the
+sum-of-squares node needed no new modular input at all; it needed the pairing
+that had already been cut. -/
+theorem IsEichlerShimuraTransform.sumSq_eq {ℓ : ℕ} {a α : Multiset ℂ}
+    (h : IsEichlerShimuraTransform ℓ a α) :
+    (α.map (fun x => x ^ 2)).sum
+      = (a.map (fun x => x ^ 2)).sum - 2 * (ℓ : ℂ) * (Multiset.card a : ℂ) := by
+  obtain ⟨p, k, hpa, hmul, hα⟩ := h
+  subst hpa
+  subst hα
+  have hkey : (p.map fun q => (q.1 + q.2) ^ 2)
+      = p.map fun q => (q.1 ^ 2 + q.2 ^ 2) + 2 * (ℓ : ℂ) := by
+    refine Multiset.map_congr rfl ?_
+    intro q hq
+    have hq' := hmul q hq
+    linear_combination 2 * hq'
+  simp only [Multiset.map_add, Multiset.sum_add, Multiset.map_replicate, Multiset.sum_replicate,
+    Multiset.map_map, Function.comp_def, Multiset.card_map, hkey, Multiset.sum_map_add]
+  simp [Multiset.map_const']
+  ring
+
 /-! #### Splitting the PINNING off the Eichler–Shimura leaf
 
 `isEichlerShimuraTransform_x0` below quantifies over an ARBITRARY `α`
@@ -42927,14 +42961,16 @@ plus the two combinatorial lemmas above.
 
 `2 ≤ card n` is needed and not decoration: at `card n = 1` the two coefficient
 indices `card n − 1` and `card n − 2` collide in `ℕ` and the identity reads
-`M₀₀² = M₀₀² + 2M₀₀`. -/
-theorem trace_mul_self_eq_charpoly_coeff {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
-    {R : Type*} [CommRing R] (M : Matrix n n R) (hn : 2 ≤ Fintype.card n) :
-    (M * M).trace = M.trace ^ 2 - 2 * M.charpoly.coeff (Fintype.card n - 2) := by
+`M₀₀² = M₀₀² + 2M₀₀`.
+
+**The MINOR-SUM form below it is the unconditional one**, and it is the form
+the `card n ≤ 1` cases need. -/
+theorem trace_mul_self_eq_sum_minors {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
+    {R : Type*} [CommRing R] (M : Matrix n n R) :
+    (M * M).trace = M.trace ^ 2
+      - 2 * ∑ s ∈ (Finset.univ : Finset n).powersetCard 2,
+          (M.submatrix ((↑) : s → n) ((↑) : s → n)).det := by
   classical
-  have hne : Nonempty n := Fintype.card_pos_iff.1 (by omega)
-  have hmin := Matrix.charpoly_coeff_eq_sum_minors M 2 hn
-  rw [hmin]
   have hkey := two_mul_sum_lt_of_symm
     (fun i j => M i i * M j j - M i j * M j i)
     (by intro i j; ring) (by intro i; ring)
@@ -42944,8 +42980,38 @@ theorem trace_mul_self_eq_charpoly_coeff {n : Type*} [Fintype n] [DecidableEq n]
     simp only [Finset.sum_sub_distrib, Matrix.trace, Matrix.diag, Matrix.mul_apply,
       ← Finset.sum_mul_sum, pow_two]
   rw [hsub] at hkey
-  rw [neg_one_sq, one_mul]
   linear_combination hkey
+
+theorem trace_mul_self_eq_charpoly_coeff {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
+    {R : Type*} [CommRing R] (M : Matrix n n R) (hn : 2 ≤ Fintype.card n) :
+    (M * M).trace = M.trace ^ 2 - 2 * M.charpoly.coeff (Fintype.card n - 2) := by
+  rw [trace_mul_self_eq_sum_minors M, Matrix.charpoly_coeff_eq_sum_minors M 2 hn,
+    neg_one_sq, one_mul]
+
+/-- **Two square matrices of the SAME SIZE with the same trace and the same
+characteristic polynomial have the same `Tr(M²)`** (PROVEN) — the transfer that
+lets the second power sum of a multiset be computed on a DIAGONAL matrix and
+read off on an arbitrary one.
+
+Unconditional in the size: at `card ≤ 1` the `2 × 2` principal minors are an
+empty sum on both sides, so the minor-sum identity degenerates to
+`Tr(M²) = (Tr M)²` and the trace hypothesis alone finishes it.  That is why
+`trace_mul_self_eq_sum_minors` is stated separately above. -/
+theorem trace_mul_self_eq_of_charpoly_eq {n m : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
+    [Fintype m] [DecidableEq m] [LinearOrder m] {R : Type*} [CommRing R]
+    (A : Matrix n n R) (B : Matrix m m R) (hcard : Fintype.card n = Fintype.card m)
+    (htr : A.trace = B.trace) (hchar : A.charpoly = B.charpoly) :
+    (A * A).trace = (B * B).trace := by
+  by_cases h2 : 2 ≤ Fintype.card n
+  · rw [trace_mul_self_eq_charpoly_coeff A h2,
+      trace_mul_self_eq_charpoly_coeff B (hcard ▸ h2), htr, hchar, hcard]
+  · have hA : ((Finset.univ : Finset n).powersetCard 2) = ∅ :=
+      Finset.powersetCard_eq_empty.2 (by simpa [Finset.card_univ] using Nat.lt_of_not_le h2)
+    have hB : ((Finset.univ : Finset m).powersetCard 2) = ∅ :=
+      Finset.powersetCard_eq_empty.2
+        (by simpa [Finset.card_univ, ← hcard] using Nat.lt_of_not_le h2)
+    rw [trace_mul_self_eq_sum_minors A, trace_mul_self_eq_sum_minors B, hA, hB, htr]
+    simp
 
 /-- **`Tr(T_ℓ² ∣ S₂(Γ₀(N)))` from the banked charpoly** (PROVEN, 2026-07-31):
 the companion of `trace_heckeOp_of_charpolyTable` one power sum higher.  The
@@ -42971,6 +43037,135 @@ theorem traceSq_heckeOp_of_charpolyTable {N ℓ d : ℕ} {c : List ℤ} (hd : 2 
     Matrix.trace_eq_neg_charpoly_coeff, hb, Fintype.card_fin, coeff_charpolyOfCoeffs,
     coeff_charpolyOfCoeffs]
   ring
+
+/-! ### The SECOND POWER SUM of a characteristic root multiset
+
+`IsCharRootMultiset T a` (above) carries the FIRST power sum as a field
+(`sum_eq : a.sum = Tr T`) and pins the rest through `prod_eq`.  The
+Eichler–Shimura count over `𝔽_{ℓ²}` needs the SECOND: `Σ aᵢ² = Tr(T²)`.
+
+It is not a field of the structure and does not need to be, because it is a
+THEOREM — and the proof is the Newton identity above, applied twice.  Write `a`
+as a list, let `D` be the DIAGONAL matrix of that list; then `Tr D = a.sum`,
+`Tr(D²) = Σ aᵢ²` and `charpoly D = ∏ (X − aᵢ)`, which `prod_eq` identifies with
+`charpoly T`.  So `D` and the matrix of `T` in any basis have the same size,
+trace and characteristic polynomial, and `trace_mul_self_eq_of_charpoly_eq`
+transfers `Tr(M²)` between them.  No splitting field, no triangularisation, and
+no Newton identity for multisets is needed anywhere.
+
+The `¬ Module.Finite ℂ V` branch is not decoration: `IsCharRootMultiset` is
+deliberately stated without a finiteness hypothesis (see its docstring), and
+there `prod_eq` forces `a = 0` — a nonempty `a` would contribute a factor
+`r − r = 0` at `c = r`, against the junk value `det = 1`.  Both sides are then
+`0`, so the theorems below are unconditional exactly as the structure is. -/
+
+/-- Summing a function over a multiset presented as a list. -/
+theorem list_map_sum {α : Type*} [AddCommMonoid α] (L : List ℂ) (f : ℂ → α) :
+    ((L : Multiset ℂ).map f).sum = ∑ i : Fin L.length, f (L.get i) := by
+  conv_lhs => rw [← List.ofFn_get L]
+  simp
+
+/-- Multiplying a function over a multiset presented as a list. -/
+theorem list_map_prod {α : Type*} [CommMonoid α] (L : List ℂ) (f : ℂ → α) :
+    ((L : Multiset ℂ).map f).prod = ∏ i : Fin L.length, f (L.get i) := by
+  conv_lhs => rw [← List.ofFn_get L]
+  simp
+
+/-- **`∏ (X − aᵢ)` IS the characteristic polynomial** (PROVEN): `prod_eq` says
+the two agree at every `c : ℂ`, and `ℂ` is infinite, so `Polynomial.funext`
+upgrades that to equality of polynomials.  This is the sentence
+`IsCharRootMultiset`'s docstring already states ("two monic polynomials
+agreeing at every point are equal, so `a` is the root multiset of
+`charpoly T`"), proven. -/
+theorem prod_X_sub_C_eq_charpoly_of_isCharRootMultiset {V : Type*} [AddCommGroup V] [Module ℂ V]
+    [Module.Finite ℂ V] (T : Module.End ℂ V) {a : Multiset ℂ} (h : IsCharRootMultiset T a) :
+    (a.map (fun r => _root_.Polynomial.X - _root_.Polynomial.C r)).prod
+      = LinearMap.charpoly T := by
+  refine _root_.Polynomial.funext fun c => ?_
+  have hev := LinearMap.eval_charpoly T c
+  rw [Algebra.algebraMap_eq_smul_one] at hev
+  rw [hev, ← h.prod_eq c, _root_.Polynomial.eval_multiset_prod, Multiset.map_map]
+  simp
+
+/-- **The root multiset has `finrank` entries** (PROVEN, finite case): compare
+degrees in the polynomial identity above. -/
+theorem card_eq_finrank_of_isCharRootMultiset_of_finite {V : Type*} [AddCommGroup V] [Module ℂ V]
+    [Module.Finite ℂ V] (T : Module.End ℂ V) {a : Multiset ℂ} (h : IsCharRootMultiset T a) :
+    Multiset.card a = Module.finrank ℂ V := by
+  have hp := prod_X_sub_C_eq_charpoly_of_isCharRootMultiset T h
+  have hmon : ∀ f ∈ a.map (fun r => _root_.Polynomial.X - _root_.Polynomial.C r),
+      f.Monic := by
+    intro f hf
+    obtain ⟨r, -, rfl⟩ := Multiset.mem_map.1 hf
+    exact _root_.Polynomial.monic_X_sub_C r
+  have h1 : ((a.map fun r => _root_.Polynomial.X - _root_.Polynomial.C r).prod).natDegree
+      = Multiset.card a := by
+    rw [_root_.Polynomial.natDegree_multiset_prod_of_monic _ hmon, Multiset.map_map]
+    simp
+  rw [← h1, hp, LinearMap.charpoly_natDegree]
+
+/-- **Without finiteness the root multiset is EMPTY** (PROVEN): `det` is then
+the junk value `1`, and a nonempty `a` would make `prod_eq` read `0 = 1` at
+`c` any element of `a`. -/
+theorem eq_zero_of_isCharRootMultiset_of_not_finite {V : Type*} [AddCommGroup V] [Module ℂ V]
+    (T : Module.End ℂ V) {a : Multiset ℂ} (h : IsCharRootMultiset T a)
+    (hfin : ¬ Module.Finite ℂ V) : a = 0 := by
+  by_contra hne
+  obtain ⟨r, hr⟩ := Multiset.exists_mem_of_ne_zero hne
+  have hpe := h.prod_eq r
+  rw [LinearMap.det_eq_one_of_not_module_finite hfin,
+    Multiset.prod_eq_zero (Multiset.mem_map.2 ⟨r, hr, by ring⟩)] at hpe
+  exact zero_ne_one hpe
+
+/-- **The root multiset has `finrank` entries** (PROVEN, unconditional): both
+sides are `0` when `V` is not module-finite. -/
+theorem card_eq_finrank_of_isCharRootMultiset {V : Type*} [AddCommGroup V] [Module ℂ V]
+    (T : Module.End ℂ V) {a : Multiset ℂ} (h : IsCharRootMultiset T a) :
+    Multiset.card a = Module.finrank ℂ V := by
+  by_cases hfin : Module.Finite ℂ V
+  · haveI := hfin
+    exact card_eq_finrank_of_isCharRootMultiset_of_finite T h
+  · rw [eq_zero_of_isCharRootMultiset_of_not_finite T h hfin,
+      Module.finrank_of_infinite_dimensional hfin]
+    rfl
+
+/-- **THE SECOND POWER SUM: `Σ aᵢ² = Tr(T²)`** (PROVEN) — the companion of
+`IsCharRootMultiset.sum_eq` one power sum higher, and the linear-algebra half
+of `sumSq_isWeilEigenvalues_x0`.  See the section docstring above for the
+diagonal-matrix argument. -/
+theorem sumSq_eq_trace_mul_self_of_isCharRootMultiset {V : Type*} [AddCommGroup V] [Module ℂ V]
+    (T : Module.End ℂ V) {a : Multiset ℂ} (h : IsCharRootMultiset T a) :
+    (a.map (fun x => x ^ 2)).sum = LinearMap.trace ℂ V (T * T) := by
+  classical
+  by_cases hfin : Module.Finite ℂ V
+  · haveI := hfin
+    obtain ⟨L, rfl⟩ : ∃ L : List ℂ, a = ↑L := ⟨a.toList, (Multiset.coe_toList a).symm⟩
+    set b := Module.finBasis ℂ V with hb
+    set M := LinearMap.toMatrix b b T with hM
+    set D : Matrix (Fin L.length) (Fin L.length) ℂ :=
+      Matrix.diagonal (fun i => L.get i) with hD
+    have hcard : Fintype.card (Fin L.length) = Fintype.card (Fin (Module.finrank ℂ V)) := by
+      simpa using card_eq_finrank_of_isCharRootMultiset_of_finite T h
+    have hDtr : D.trace = ((L : Multiset ℂ)).sum := by
+      rw [hD, Matrix.trace_diagonal]
+      simpa using (list_map_sum L (fun x : ℂ => x)).symm
+    have hMtr : M.trace = LinearMap.trace ℂ V T := (LinearMap.trace_eq_matrix_trace ℂ b T).symm
+    have hDch : D.charpoly = M.charpoly := by
+      rw [hD, Matrix.charpoly_diagonal, hM, LinearMap.charpoly_toMatrix,
+        ← prod_X_sub_C_eq_charpoly_of_isCharRootMultiset T h,
+        list_map_prod L (fun r => _root_.Polynomial.X - _root_.Polynomial.C r)]
+    have hkey := trace_mul_self_eq_of_charpoly_eq D M hcard
+      (by rw [hDtr, hMtr, h.sum_eq]) hDch
+    have hDD : (D * D).trace = (((L : Multiset ℂ)).map (fun x => x ^ 2)).sum := by
+      rw [hD, Matrix.diagonal_mul_diagonal, Matrix.trace_diagonal,
+        list_map_sum L (fun x : ℂ => x ^ 2)]
+      simp [pow_two]
+    have hMM : (M * M).trace = LinearMap.trace ℂ V (T * T) := by
+      rw [hM, ← LinearMap.toMatrix_mul b, ← LinearMap.trace_eq_matrix_trace ℂ b]
+    rw [← hDD, hkey, hMM]
+  · rw [eq_zero_of_isCharRootMultiset_of_not_finite T h hfin,
+      trace_eq_zero_of_not_module_finite hfin]
+    simp
 
 /-- **`det((ℓ+1)·1 − T_ℓ ∣ S₂(Γ₀(N)))` from the banked charpoly** (PROVEN):
 the determinant of an endomorphism is the determinant of its matrix in any
@@ -62478,7 +62673,8 @@ theorem hasDoubleCoverOfAffineLine_specialFibre {N ℓ : ℕ} (_hN : 0 < N) (_h�
   sorry
 
 /-- **EICHLER–SHIMURA, SECOND POWER SUM: `Σ αᵢ² = Tr(T_ℓ²) − 2ℓ·dim
-S₂(Γ₀(N))`** (sorry leaf, 2026-07-28) — the geometric half of
+S₂(Γ₀(N))`** (**PROVEN 2026-07-31** — see the note at the end of this
+docstring; introduced as a sorry leaf 2026-07-28) — the geometric half of
 `card_relPoint_x0OneSixtyNine_quadratic`, and it is **LEVEL-GENERIC**: `N`
 and `ℓ` are arbitrary with `ℓ ∤ N`, and nothing about `169` enters.
 
@@ -62511,10 +62707,31 @@ and pinned by `_hα` (`IsWeilEigenvalues` constrains it by the point counts
 over EVERY finite extension — see the section docstring above), so this is
 an equation between two determined complex numbers.
 
-**`_hℓN` is load-bearing**: at `ℓ ∣ N` the curve has bad reduction, the
+**`hℓN` is load-bearing**: at `ℓ ∣ N` the curve has bad reduction, the
 `αᵢβᵢ = ℓ` half of the pairing fails (the Atkin–Lehner/Steinberg
 eigenvalues are `±1` and `±ℓ` rather than a conjugate pair of norm `ℓ`),
-and the stated identity is false.
+and the stated identity is false.  (It is load-bearing through
+`isEichlerShimuraTransform_x0`, which is where it is consumed.)
+
+**HOW IT WAS PROVEN, 2026-07-31, AND WHY NO NEW MODULAR INPUT WAS NEEDED.**
+The paragraph above is right that `Σ αᵢ²` is not recoverable from
+`isWeilEigenvalues_x0_eichlerShimura`'s two conclusions — but that theorem is
+itself an assembly over `isEichlerShimuraTransform_x0`, which supplies the
+PAIRING, and the pairing determines every power sum.  So the cut this node was
+made against had already moved: the `(sum, product)` form is a lossy read of a
+datum that was still in the file.  Three PROVEN pieces, all added the same day:
+
+* `IsEichlerShimuraTransform.sumSq_eq` — `Σ αᵢ² = Σ aᵢ² − 2ℓ·#a`, pairwise
+  `α² + β² = (α + β)² − 2αβ`, no modular content;
+* `sumSq_eq_trace_mul_self_of_isCharRootMultiset` — `Σ aᵢ² = Tr(T_ℓ²)`, by
+  Newton's second identity on a diagonal matrix (see the section above the
+  banked charpoly table);
+* `card_eq_finrank_of_isCharRootMultiset` — `#a = dim_ℂ S₂(Γ₀(N))`, by
+  comparing degrees.
+
+The moral, which is the same one `trace_heckeOpSq_x0OneSixtyNine` records: a
+"this is not a corollary of X" verdict is only as good as the level it was
+taken at.  X was an assembly, and the corollary held one level down.
 
 ---
 
@@ -62622,10 +62839,10 @@ computation of `Tr(T_3² ∣ S₂(Γ₀(169)))` disagreeing with `20`, or of
 through `T_3² = T_9 + 3·⟨3⟩` (`20 − 3·8 = −4`), which is a third check.
 
 **DECOMPOSED 2026-07-28** over the three leaves below. -/
-theorem sumSq_isWeilEigenvalues_x0 (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ}
-    {j : Y ⟶ X} (_h : IsX0Compactification N strX strY j)
-    {α : Multiset ℂ} (_hα : IsWeilEigenvalues ℓ strX α) :
+theorem sumSq_isWeilEigenvalues_x0 (N ℓ : ℕ) (hN : 0 < N) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ}
+    {j : Y ⟶ X} (h : IsX0Compactification N strX strY j)
+    {α : Multiset ℂ} (hα : IsWeilEigenvalues ℓ strX α) :
     (α.map (fun a => a ^ 2)).sum =
       LinearMap.trace ℂ
           (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
@@ -62633,8 +62850,12 @@ theorem sumSq_isWeilEigenvalues_x0 (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prim
             _root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
         - 2 * (ℓ : ℂ) *
           (Module.finrank ℂ
-            (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) : ℂ) :=
-  sorry
+            (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) : ℂ) := by
+  obtain ⟨a, ha⟩ :=
+    exists_isCharRootMultiset (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
+  have htr := isEichlerShimuraTransform_x0 N ℓ hN hℓ hℓN h hα ha
+  rw [htr.sumSq_eq, sumSq_eq_trace_mul_self_of_isCharRootMultiset _ ha,
+    card_eq_finrank_of_isCharRootMultiset _ ha]
 
 /-- **`dim_ℂ S₂(Γ₀(169)) = 8`** (sorry leaf, 2026-07-28) — equivalently
 `g(X_0(169)) = 8`, and one of the two arithmetic inputs of
