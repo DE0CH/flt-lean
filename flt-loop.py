@@ -797,9 +797,23 @@ def do_spawn(s, name, j):
         # Continue the actual conversation. No prompt file: the agent already
         # knows its task, what it tried and what failed, which is the whole
         # point of resuming instead of starting a stranger in its worktree.
-        act = ("--resume %s -p %s"
-               % (shlex.quote(j["session"]),
-                  shlex.quote("continue")))
+        # Two resume modes, tried in order of transparency.
+        #
+        # `-p ''` continues a DEFERRED session: one that stopped waiting on a
+        # tool call. It resumes from the tool result with no synthetic user
+        # turn at all, so the agent simply carries on its interrupted turn and
+        # has no way to tell it was ever stopped. That is the ideal case and it
+        # is exactly how an agent killed mid-tool-call died.
+        #
+        # If the session was not deferred the CLI says so and exits, and the
+        # fallback adds the smallest possible nudge. It has to be a user turn:
+        # headless mode loads the history, appends a message and responds, and
+        # a conversation ending in a COMPLETE assistant turn has nothing to
+        # continue into without one.
+        r = shlex.quote(j["session"])
+        act = ("--resume %s -p '' || exec -a flt-job-%s %s --model %s "
+               "--dangerously-skip-permissions --resume %s -p continue"
+               % (r, j["token"], shlex.quote(CLAUDE), shlex.quote(MODEL), r))
     else:
         act = "--session-id %s -p \"$(cat %s)\"" % (shlex.quote(j["session"]),
                                                     shlex.quote(str(pf)))
