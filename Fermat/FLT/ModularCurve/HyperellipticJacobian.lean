@@ -136,7 +136,19 @@ and the merged file has neither number: at the release-18 merge the
     finite_kummerCochains_pic, and `two_divisible_pic` at BOTH levels
 
 — TEN declarations, as of 2026-07-30 (a comment-stripped `sorry`-token count agrees, so there
-are no anonymous inner sorries).  The whole of obligations 1b and 1c, and obligation 2a's
+are no anonymous inner sorries).  **Three of those ten no longer exist** (2026-07-31), and
+the count is now ELEVEN:
+
+* `geomPic_divisible` — DELETED.  It asked for divisibility of the whole geometric Picard
+  group at every `n`; the one call site asked only for the image of `bc` at a prime.
+* `finite_kummerCochains_pic` — PROVEN, over `exists_finiteIndex_divisible_pic` and
+  `finite_torsion_pic_geom` (new), by the coset argument `X0.lean` already uses.
+* `geomPic_descent` — PROVEN, over `placeAct_transitive` and `geomPic_descent_divisor`
+  (new), which separate the Galois-orbit bookkeeping from the Hilbert-90 content.
+
+So three closed, four opened, `+1` net — and `act` is now known to be a group action
+(`GeomPic.act_mul`, derived from the pinning rather than assumed), which is what made both
+recuts possible.  The whole of obligations 1b and 1c, and obligation 2a's
 residue-field half, closed that day: `finite_isPlaceFun`, `exists_isPlaceFun_of_affPt`,
 `exists_isPlaceFun_of_infPt` and both `exists_localDenom_*` (hence
 `finrank_residue_pt_eq_one`).  `degOf_divisor_eq_zero`,
@@ -6324,6 +6336,17 @@ and it should be revisited when the Néron/abelian-scheme layer for this curve e
 `finite_quotient_psmul_pic` over `exists_geomPic`, `geomPic_bc_injective`,
 `geomPic_descent`, `geomPic_divisible` and `finite_kummerCochains_pic` (all cohomology
 removed).  The `X0` siblings remain the ones not to duplicate.
+
+**RECUT 2026-07-31, and it makes the `X0` comparison sharper.**  The last two of those five
+are gone: `geomPic_divisible` DELETED (it demanded divisibility of the WHOLE geometric
+Picard group at every `n`, where the single call site asked only for the image of `bc` at a
+prime) and `finite_kummerCochains_pic` PROVEN, both over the two new leaves
+`exists_finiteIndex_divisible_pic` and `finite_torsion_pic_geom` — which are, deliberately,
+the `Pic⁰` transcriptions of the two `X0.lean` statements
+`exists_finiteIndex_divisible_of_abelianScheme` (PROVEN there, over Hermite–Minkowski) and
+`finite_torsion_geomPt_of_abelianScheme`.  So the "do not prove this twice" warning now has
+teeth: the two developments are open at the SAME two statements, and the bridge above would
+close both at once.
 -/
 
 /-- **A finitely generated abelian group `A` with `A = 2·A` is finite** (PROVEN) — the
@@ -6701,6 +6724,173 @@ lemma act_bc (σ : QbarGal) (a : D.Pic) : gp.act σ (gp.bc a) = gp.bc a := by
     rw [divAct_apply, bcDiv_apply, bcDiv_apply]
     rw [← gp.below_placeAct σ ((gp.placeAct σ).symm w), Equiv.apply_symm_apply]
 
+/-!
+#### The pinning, cashed in: `act` IS a group action
+
+The section docstring above argues that `fieldAct σ` is *determined* by its two axioms.
+That argument is made compiler-checked here (`fieldAct_eq_of`), and the consequence is the
+one every descent argument needs and which is NOT a field of the structure:
+`act (σ * τ) = act σ ∘ act τ`.
+
+It matters concretely.  Without it a Kummer cochain has no coset structure, so
+"the cochain is determined by finitely many values" cannot even be stated — which is
+exactly the step `finite_kummerCochains_pic` below is proven by.  Note that the axioms
+were *not* strengthened to get it: `placeAct` is still constrained only by
+`ord_placeAct`, and multiplicativity is derived through `ord_injective`.
+-/
+
+section Pinning
+
+open Polynomial
+
+/-- `fieldAct σ` fixes the abscissa, because the abscissa is `emb D.xx` (PROVEN). -/
+lemma fieldAct_xx (σ : QbarGal) : gp.fieldAct σ gp.Dbar.xx = gp.Dbar.xx := by
+  rw [← gp.emb_xx, gp.fieldAct_emb]
+
+/-- `fieldAct σ` fixes the ordinate (PROVEN). -/
+lemma fieldAct_yy (σ : QbarGal) : gp.fieldAct σ gp.Dbar.yy = gp.Dbar.yy := by
+  rw [← gp.emb_yy, gp.fieldAct_emb]
+
+/-- **A ring map that is `σ` on constants and fixes `xx` carries `q(xx)` to `(σq)(xx)`**
+(PROVEN) — the polynomial half of the pinning argument. -/
+lemma map_aeval_xx (σ : QbarGal) (φ : gp.Dbar.F →+* gp.Dbar.F)
+    (hc : ∀ a : AlgebraicClosure ℚ,
+      φ (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a)
+        = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (σ a))
+    (hx : φ gp.Dbar.xx = gp.Dbar.xx) (q : (AlgebraicClosure ℚ)[X]) :
+    φ (aeval gp.Dbar.xx q)
+      = aeval gp.Dbar.xx (q.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ)) := by
+  induction q using Polynomial.induction_on with
+  | C a => simp [hc a]
+  | add p q hp hq => simp [hp, hq]
+  | monomial n a _ =>
+      simp only [Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_C, Polynomial.map_X,
+        map_mul, map_pow, aeval_X, aeval_C]
+      rw [hc, hx]
+      rfl
+
+/-- **`fieldAct σ` is PINNED** (PROVEN): any ring map that is `σ` on constants and fixes
+the two coordinates IS `fieldAct σ`.  This is the section docstring's claim, made
+mechanical: `Dbar.gen` writes every `z` as `(a(xx) + b(xx)·yy)/d(xx)`, and
+`transcendental_xx` keeps the denominator nonzero after applying `σ` to its
+coefficients. -/
+lemma fieldAct_eq_of (σ : QbarGal) (φ : gp.Dbar.F →+* gp.Dbar.F)
+    (hc : ∀ a : AlgebraicClosure ℚ,
+      φ (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a)
+        = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (σ a))
+    (hx : φ gp.Dbar.xx = gp.Dbar.xx) (hy : φ gp.Dbar.yy = gp.Dbar.yy) (z : gp.Dbar.F) :
+    φ z = gp.fieldAct σ z := by
+  obtain ⟨a, b, d, hd, hz⟩ := gp.Dbar.gen z
+  set ψ : gp.Dbar.F →+* gp.Dbar.F := (gp.fieldAct σ).toRingHom with hψ
+  have hψc : ∀ a : AlgebraicClosure ℚ,
+      ψ (algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a)
+        = algebraMap (AlgebraicClosure ℚ) gp.Dbar.F (σ a) := gp.fieldAct_algebraMap σ
+  have hψx : ψ gp.Dbar.xx = gp.Dbar.xx := gp.fieldAct_xx σ
+  have hψy : ψ gp.Dbar.yy = gp.Dbar.yy := gp.fieldAct_yy σ
+  have hd0 : d ≠ 0 := by
+    rintro rfl
+    simp at hd
+  have hdσ : d.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) ≠ 0 :=
+    (Polynomial.map_ne_zero_iff (RingHom.injective _)).mpr hd0
+  have hne : aeval gp.Dbar.xx (d.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ)) ≠ 0 := by
+    intro h
+    exact gp.Dbar.transcendental_xx ⟨_, hdσ, h⟩
+  have e1 : φ z * aeval gp.Dbar.xx (d.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+      = aeval gp.Dbar.xx (a.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+        + aeval gp.Dbar.xx (b.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+          * gp.Dbar.yy := by
+    have := congrArg φ hz
+    rwa [map_mul, map_add, map_mul, gp.map_aeval_xx σ φ hc hx,
+      gp.map_aeval_xx σ φ hc hx, gp.map_aeval_xx σ φ hc hx, hy] at this
+  have e2 : ψ z * aeval gp.Dbar.xx (d.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+      = aeval gp.Dbar.xx (a.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+        + aeval gp.Dbar.xx (b.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ))
+          * gp.Dbar.yy := by
+    have := congrArg ψ hz
+    rwa [map_mul, map_add, map_mul, gp.map_aeval_xx σ ψ hψc hψx,
+      gp.map_aeval_xx σ ψ hψc hψx, gp.map_aeval_xx σ ψ hψc hψx, hψy] at this
+  exact mul_right_cancel₀ hne (e1.trans e2.symm)
+
+/-- **`fieldAct` is multiplicative** (PROVEN from the pinning, NOT an axiom). -/
+lemma fieldAct_mul (σ τ : QbarGal) (z : gp.Dbar.F) :
+    gp.fieldAct (σ * τ) z = gp.fieldAct σ (gp.fieldAct τ z) := by
+  refine (gp.fieldAct_eq_of (σ * τ)
+    ((gp.fieldAct σ).toRingHom.comp (gp.fieldAct τ).toRingHom) ?_ ?_ ?_ z).symm
+  · intro a
+    show gp.fieldAct σ (gp.fieldAct τ _) = _
+    rw [gp.fieldAct_algebraMap τ a, gp.fieldAct_algebraMap σ (τ a)]
+    rfl
+  · show gp.fieldAct σ (gp.fieldAct τ _) = _
+    rw [gp.fieldAct_xx τ, gp.fieldAct_xx σ]
+  · show gp.fieldAct σ (gp.fieldAct τ _) = _
+    rw [gp.fieldAct_yy τ, gp.fieldAct_yy σ]
+
+/-- **`fieldAct 1` is the identity** (PROVEN from the pinning). -/
+lemma fieldAct_one (z : gp.Dbar.F) : gp.fieldAct 1 z = z := by
+  refine (gp.fieldAct_eq_of 1 (RingHom.id _) ?_ rfl rfl z).symm
+  intro a
+  rfl
+
+end Pinning
+
+/-- **The action on places is multiplicative** (PROVEN), through `ord_injective`. -/
+lemma placeAct_mul (σ τ : QbarGal) (w : gp.Dbar.Places) :
+    gp.placeAct (σ * τ) w = gp.placeAct σ (gp.placeAct τ w) := by
+  have key : (gp.fieldAct (σ * τ)).symm
+      = fun h => (gp.fieldAct τ).symm ((gp.fieldAct σ).symm h) := by
+    funext h
+    apply (gp.fieldAct (σ * τ)).injective
+    rw [RingEquiv.apply_symm_apply, gp.fieldAct_mul, RingEquiv.apply_symm_apply,
+      RingEquiv.apply_symm_apply]
+  refine gp.Dbar.ord_injective (funext fun h => ?_)
+  have h1 := gp.ord_placeAct (σ * τ) w ((gp.fieldAct (σ * τ)).symm h)
+  have h2 := gp.ord_placeAct σ (gp.placeAct τ w) ((gp.fieldAct σ).symm h)
+  have h3 := gp.ord_placeAct τ w ((gp.fieldAct τ).symm ((gp.fieldAct σ).symm h))
+  rw [RingEquiv.apply_symm_apply] at h1 h2 h3
+  rw [h1, h2, h3, key]
+
+/-- **`placeAct 1` is the identity** (PROVEN). -/
+lemma placeAct_one (w : gp.Dbar.Places) : gp.placeAct 1 w = w := by
+  refine gp.Dbar.ord_injective (funext fun h => ?_)
+  have h1 := gp.ord_placeAct 1 w ((gp.fieldAct 1).symm h)
+  rw [RingEquiv.apply_symm_apply] at h1
+  have h2 : (gp.fieldAct 1).symm h = h := by
+    apply (gp.fieldAct 1).injective
+    rw [RingEquiv.apply_symm_apply, gp.fieldAct_one]
+  rw [h1, h2]
+
+lemma divAct_mul (σ τ : QbarGal) (δ : gp.Dbar.Divisors) :
+    gp.divAct (σ * τ) δ = gp.divAct σ (gp.divAct τ δ) := by
+  ext w
+  rw [divAct_apply, divAct_apply, divAct_apply]
+  congr 1
+  apply (gp.placeAct (σ * τ)).injective
+  rw [Equiv.apply_symm_apply, gp.placeAct_mul, Equiv.apply_symm_apply, Equiv.apply_symm_apply]
+
+lemma divAct_one (δ : gp.Dbar.Divisors) : gp.divAct 1 δ = δ := by
+  ext w
+  rw [divAct_apply]
+  congr 1
+  apply (gp.placeAct 1).injective
+  rw [Equiv.apply_symm_apply, gp.placeAct_one]
+
+/-- **The Galois action on `Pic⁰(X_ℚ̄)` is a group action** (PROVEN) — the fact the
+Kummer-cochain argument runs on. -/
+lemma act_mul (σ τ : QbarGal) (y : gp.Dbar.Pic) :
+    gp.act (σ * τ) y = gp.act σ (gp.act τ y) := by
+  induction y using QuotientAddGroup.induction_on with
+  | _ δ =>
+    show QuotientAddGroup.mk (gp.divAct (σ * τ) δ)
+      = QuotientAddGroup.mk (gp.divAct σ (gp.divAct τ δ))
+    rw [gp.divAct_mul]
+
+/-- **`act 1` is the identity** (PROVEN). -/
+lemma act_one (y : gp.Dbar.Pic) : gp.act 1 y = y := by
+  induction y using QuotientAddGroup.induction_on with
+  | _ δ =>
+    show QuotientAddGroup.mk (gp.divAct 1 δ) = _
+    rw [gp.divAct_one]
+
 end GeomPic
 
 /-- **LEAF (weak Mordell–Weil, 1 of 4): the geometric divisor theory exists**, for every
@@ -6744,7 +6934,10 @@ Brauer obstruction; the hypothesis is carried by the structure rather than state
 theorem geomPic_bc_injective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Injective gp.bc := sorry
 
-/-- **LEAF (weak Mordell–Weil, 3 of 4): Galois descent — an invariant geometric class is
+/-!
+#### Galois descent, recut 2026-07-31
+
+**LEAF (weak Mordell–Weil, 3 of 4): Galois descent — an invariant geometric class is
 rational.**
 
 The surjectivity half of `Pic(X_ℚ) ≅ Pic(X_ℚ̄)^{Gal}`, and the half that genuinely uses the
@@ -6755,35 +6948,215 @@ two together say `bc` identifies `Pic⁰(X_ℚ)` with the invariants.
 structure field, `act σ = 0` would satisfy every stated axiom and make this leaf vacuous —
 its hypothesis `∀ σ, act σ y = y` would read `y = 0`.  It is `fieldAct_algebraMap` (which
 forbids `fieldAct σ = id` for `σ ≠ 1`) plus the derivation of `act` from `placeAct` that
-makes the hypothesis mean what it says.  See the section docstring above. -/
+makes the hypothesis mean what it says.  See the section docstring above.
+
+**NO LONGER A LEAF (2026-07-31).**  `geomPic_descent` is PROVEN below over the two leaves
+cut immediately after this docstring, which separate the two things the classical proof does
+and which have nothing to do with each other:
+
+* `placeAct_transitive` — Galois permutes the geometric places above a fixed place of `F`
+  TRANSITIVELY.  This is the divisor-level half: it is what makes an invariant geometric
+  divisor the base change of a rational one, and it is bookkeeping about the constant field
+  extension, not cohomology.
+* `geomPic_descent_divisor` — an invariant CLASS has an invariant REPRESENTATIVE divisor.
+  This is the cohomological half, and it is where Hilbert 90 and the rational base point are
+  actually used.
+
+Everything between them — building the rational divisor by reading off any fibre, checking
+it is finitely supported, and checking its base change is the given divisor — is the proof
+below, and is compiler-checked.  The split is worth `+1` on the frontier and is taken
+anyway, because the two residues are unrelated: one is a statement about Galois orbits of
+places that a future agent can attack with the residue-field description of a place
+(`finrank_residue_pt_eq_one` and the degree theory in this file), the other is Hilbert 90.
+Nothing was learnt by having them fused.
+-/
+
+/-- **LEAF (Galois descent, 1 of 2 — the divisor half): Galois is TRANSITIVE on the
+geometric places above a place of `F`.**
+
+TRUE and standard: the geometric places above `v` are in bijection with the `ℚ`-embeddings
+of the residue field `κ(v)` into `ℚ̄` — `κ(v)/ℚ` is a finite separable extension, `deg v` of
+them, which is exactly the finiteness recorded by the structure field `below_finite` — and
+`Gal(ℚ̄/ℚ)` acts transitively on those embeddings.
+
+**Not vacuous, and load-bearing.**  Without it an invariant geometric divisor need not come
+from a rational one: the coefficients could differ within one fibre, and `bcDiv` — which is
+constant on fibres by construction — could not reach it.  The consumer below uses it exactly
+once, to see that an invariant divisor is constant on fibres. -/
+theorem placeAct_transitive {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (w w' : gp.Dbar.Places)
+    (h : gp.below w = gp.below w') : ∃ σ : QbarGal, gp.placeAct σ w = w' := sorry
+
+/-- **LEAF (Galois descent, 2 of 2 — the cohomological half): an invariant CLASS has an
+invariant REPRESENTATIVE.**
+
+Given `y : Pic⁰(X_ℚ̄)` with `act σ y = y` for every `σ`, produce a divisor `δ` in the class
+of `y` with `divAct σ δ = δ` on the nose.
+
+**Why this is the whole cohomological content.**  Pick any representative `δ₀`.
+Invariance of the class says `divAct σ δ₀ − δ₀ = div g_σ + n_σ·[∞₊]` for each `σ`, and the
+degree count (`degOf_divisor_eq_zero`, and `deg [∞₊] = 1`) forces `n_σ = 0`.  So `σ ↦ g_σ`
+is a `1`-cocycle for `Γ` acting on `F̄^× / ℚ̄^×`; the obstruction to correcting `δ₀` to an
+invariant divisor is its class in `H¹(Γ, F̄^×/ℚ̄^×)`, which sits between `H¹(Γ, F̄^×) = 0`
+(Hilbert 90) and `H²(Γ, ℚ̄^×) = Br(ℚ)`.  The Brauer obstruction is killed by the RATIONAL
+POINT `∞₊` — evaluation at `∞₊` splits it — which is the same fact that
+`geomPic_bc_injective` above relies on and the reason `picRel` carries `ℤ·[∞₊]`.
+
+**FAITHFULNESS.**  This is exactly as strong as the descent theorem it feeds (given the
+sibling leaf), so it inherits its soundness discussion: with the junk action `act σ = 0` the
+hypothesis would read `y = 0` and the statement would be vacuous, and it is the pinning of
+`act` through `fieldAct_algebraMap` — witnessed by `act_bc` and now by `act_mul` — that
+prevents that.  It is NOT vacuous: `divAct σ (bcDiv δ) = bcDiv δ` is proven above (inside
+`act_bc`), so invariant representatives exist for every class in the image of `bc`, which is
+the content being asserted for all invariant classes. -/
+theorem geomPic_descent_divisor {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (y : gp.Dbar.Pic)
+    (hy : ∀ σ : QbarGal, gp.act σ y = y) :
+    ∃ δ : gp.Dbar.Divisors, (∀ σ : QbarGal, gp.divAct σ δ = δ) ∧
+      (QuotientAddGroup.mk δ : gp.Dbar.Pic) = y := sorry
+
+open scoped Classical in
+/-- **Galois descent: an invariant geometric class is rational** (PROVEN 2026-07-31 over the
+two leaves above; see the docstring on `placeAct_transitive` for the cut). -/
 theorem geomPic_descent {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (y : gp.Dbar.Pic)
-    (hy : ∀ σ : QbarGal, gp.act σ y = y) : ∃ a : D.Pic, gp.bc a = y := sorry
+    (hy : ∀ σ : QbarGal, gp.act σ y = y) : ∃ a : D.Pic, gp.bc a = y := by
+  obtain ⟨δbar, hfix, hcl⟩ := geomPic_descent_divisor gp y hy
+  -- an invariant divisor is constant on the fibres of `below`, by transitivity
+  have hconst : ∀ w w' : gp.Dbar.Places, gp.below w = gp.below w' → δbar w = δbar w' := by
+    intro w w' hww'
+    obtain ⟨σ, hσ⟩ := placeAct_transitive gp w w' hww'
+    have h1 : gp.divAct σ δbar (gp.placeAct σ w) = δbar w := by
+      rw [GeomPic.divAct_apply, Equiv.symm_apply_apply]
+    rw [hfix σ, hσ] at h1
+    exact h1.symm
+  -- so it is the base change of the rational divisor reading off any fibre
+  set f : D.Places → ℤ := fun v =>
+    if h : ∃ w : gp.Dbar.Places, gp.below w = v then δbar h.choose else 0 with hf
+  have hfval : ∀ w : gp.Dbar.Places, f (gp.below w) = δbar w := by
+    intro w
+    have hex : ∃ w' : gp.Dbar.Places, gp.below w' = gp.below w := ⟨w, rfl⟩
+    rw [hf]
+    simp only [dif_pos hex]
+    exact hconst _ _ hex.choose_spec
+  set δ : D.Divisors := Finsupp.onFinset (δbar.support.image gp.below) f (by
+    intro v hv
+    rw [hf] at hv
+    by_cases hex : ∃ w : gp.Dbar.Places, gp.below w = v
+    · simp only [dif_pos hex] at hv
+      exact Finset.mem_image.mpr ⟨hex.choose, Finsupp.mem_support_iff.mpr hv, hex.choose_spec⟩
+    · simp only [dif_neg hex] at hv
+      exact absurd rfl hv) with hδ
+  refine ⟨QuotientAddGroup.mk δ, ?_⟩
+  have hbc : gp.bcDiv δ = δbar := by
+    ext w
+    rw [GeomPic.bcDiv_apply]
+    show f (gp.below w) = δbar w
+    exact hfval w
+  show (QuotientAddGroup.mk (gp.bcDiv δ) : gp.Dbar.Pic) = y
+  rw [hbc, hcl]
 
-/-- **LEAF (weak Mordell–Weil, 4 of 4, geometric): `Pic⁰(X_ℚ̄)` is divisible.**
+/-!
+#### RECUT 2026-07-31: `geomPic_divisible` and `finite_kummerCochains_pic` are replaced by
+the two leaves `X0.lean` already runs on
 
-`[n] : J → J` is surjective on `K̄`-points for `n ≠ 0` and any abelian variety over an
-algebraically closed field — it is a finite flat isogeny of degree `n^{2g}`, so surjective
-on geometric points.  Equivalently, and closer to this presentation: a class of degree `0`
-on a curve over an algebraically closed field is `n` times another, because
-`Pic⁰` is a divisible group (it is the group of points of a connected algebraic group over
-an algebraically closed field).
+Until today this cluster had two open leaves here — `geomPic_divisible` (`[n]` is surjective
+on `Pic⁰(X_ℚ̄)`, for EVERY `n ≠ 0` and EVERY `y`) and `finite_kummerCochains_pic` (the whole
+arithmetic).  Both are gone, at no cost to the count and at a real gain in shape:
 
-**FAITHFULNESS.**  `hn` is load-bearing: at `n = 0` the statement reads `∃ z, 0 = y`, which
-is false for every `y ≠ 0`, and `Pic⁰(X_ℚ̄)` is never trivial for a genus-`2` curve.  Note
-this is stated for `Dbar` alone — it does not mention `bc` — so it carries none of the
-arithmetic; the arithmetic is entirely in the cochain leaf. -/
-theorem geomPic_divisible {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
-    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (n : ℕ) (hn : n ≠ 0) (y : gp.Dbar.Pic) :
-    ∃ z : gp.Dbar.Pic, n • z = y := sorry
+* `geomPic_divisible` was **strictly stronger than any consumer needs**.  The single call
+  site was `fun P => geomPic_divisible gp p hp.ne_zero (gp.bc P)`: only at a PRIME, and only
+  at classes in the image of `bc`.  Full divisibility of the geometric Picard group is
+  surjectivity of an isogeny on the points of an abelian surface; divisibility along the
+  image of `bc` is what weak Mordell–Weil actually consumes, and it arrives bundled with the
+  arithmetic below at no extra cost.  DELETED, not sorried elsewhere.
 
-/-- **LEAF (weak Mordell–Weil, the arithmetic): only finitely many Kummer cochains occur.**
+* `finite_kummerCochains_pic` is now **PROVEN** below, over the same two inputs that
+  `X0.lean` uses for `finite_quotient_psmul_of_abelianScheme`: a finite-index subgroup
+  fixing a choice of `p`-division points, and finiteness of the `p`-torsion.  What used to
+  be a leaf is now the coset bookkeeping, and that bookkeeping is compiler-checked.
 
-This is the whole arithmetic content of weak Mordell–Weil, isolated by
-`Fermat.finite_quotient_nsmul_of_kummerCochains`, and it is the only one of the five leaves
-in this cluster that needs a finiteness theorem of algebraic number theory.
+The two leaves below are the exact `Pic⁰` transcriptions of
+`Fermat.exists_finiteIndex_divisible_of_abelianScheme` (PROVEN in `X0.lean` over
+Hermite–Minkowski) and `Fermat.finite_torsion_geomPt_of_abelianScheme`.  That is the point
+of the recut: the cluster now fails in exactly the places the abelian-scheme development
+succeeds, so the bridge discussed in the section docstring — or a transcription of the
+Hermite argument — closes both leaves at once, instead of meeting a divisibility statement
+that has no counterpart there at all.
 
-Two routes, and the second is the one `X0.lean` found cheaper:
+What made the recut possible is `act_mul` above: a Kummer cochain has no coset structure
+until `act` is known to be a group action, and that is a *derived* fact here, not an axiom.
+-/
+
+/-- **LEAF (weak Mordell–Weil, arithmetic, 1 of 2): the `p`-division points of rational
+classes are defined over a FIXED finite extension.**
+
+Precisely: there is a finite-index subgroup `H ≤ Gal(ℚ̄/ℚ)` and, for every rational class
+`P`, a geometric class `y` with `p·y = bc P` that `H` fixes.  Two things at once, and they
+must be bundled because the `H` has to be uniform in `P`:
+
+* **divisibility** along the image of `bc` — surjectivity of `[p]` on `J(ℚ̄)`;
+* **the arithmetic** — the fields `ℚ(y)` are of bounded degree over `ℚ(J[p])` and ramified
+  only above `p·disc(f)`, hence of bounded discriminant, hence (Hermite–Minkowski) finitely
+  many, hence contained in one finite extension `L/ℚ`; take `H = Gal(ℚ̄/L)`.
+
+This is the `Pic⁰` transcription of `Fermat.exists_finiteIndex_divisible_of_abelianScheme`
+(`X0.lean`), which is PROVEN there over
+`exists_discrBound_divisionField_of_abelianScheme` and
+`exists_geomPt_nsmul_eq_of_abelianScheme`.  **Class groups and Dirichlet's unit theorem are
+NOT needed** — that was the old cut's mistake, recorded on the `X0` sibling: the assembly
+meets one division field at a time, never the maximal `S`-ramified exponent-`p` extension.
+
+**FAITHFULNESS.**  The finite-index requirement is what gives the leaf content: `H = ⊤` is
+allowed by the index condition but then demands that every `p`-division point of every
+rational class be Galois-invariant, which is false; `H = ⊥` fixes everything but has
+infinite index, since `Gal(ℚ̄/ℚ)` is infinite.  Only an honest finite extension `L` with
+`J(ℚ) ⊆ p·J(L)` satisfies both, and producing one IS weak Mordell–Weil's arithmetic input.
+`hp` is load-bearing through `p ≠ 0`: at `p = 0` the condition reads `0 = bc P` for every
+`P`, which fails for any `P ≠ 0` by `geomPic_bc_injective`. -/
+theorem exists_finiteIndex_divisible_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (p : ℕ) (hp : p.Prime) :
+    ∃ H : Subgroup QbarGal, Finite (QbarGal ⧸ H) ∧
+      ∀ P : D.Pic, ∃ y : gp.Dbar.Pic, p • y = gp.bc P ∧ ∀ σ ∈ H, gp.act σ y = y := sorry
+
+/-- **LEAF (weak Mordell–Weil, arithmetic, 2 of 2): `J[p](ℚ̄)` is finite.**
+
+The `p`-torsion of `Pic⁰(X_ℚ̄)` is `(ℤ/p)⁴` for a genus-`2` Jacobian in characteristic `0` —
+the kernel of the isogeny `[p]`, of degree `p^{2g}`, which is étale here.  Only finiteness
+is used, and it is used exactly once: a Kummer cochain takes its values in this group.
+
+This is the `Pic⁰` transcription of `Fermat.finite_torsion_geomPt_of_abelianScheme`
+(`X0.lean`).
+
+**FAITHFULNESS.**  `hp` is load-bearing: at `p = 0` the set is all of `Pic⁰(X_ℚ̄)`, which is
+infinite for a genus-`2` curve over `ℚ̄`, so the statement is FALSE there.  Primality is not
+needed — `n`-torsion is finite for every `n ≠ 0` — and the hypothesis is stated as `p ≠ 0`
+rather than `p.Prime` to say so. -/
+theorem finite_torsion_pic_geom {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (p : ℕ) (hp : p ≠ 0) :
+    Finite {y : gp.Dbar.Pic // p • y = 0} := sorry
+
+/-- **Only finitely many Kummer cochains occur** — the whole arithmetic content of weak
+Mordell–Weil, isolated by `Fermat.finite_quotient_nsmul_of_kummerCochains`.
+
+**NO LONGER A LEAF (2026-07-31).**  It is PROVEN below from the two leaves cut immediately
+above, by the argument `X0.lean` uses at `finite_quotient_psmul_of_abelianScheme`:
+
+* every cochain takes its values in the `p`-torsion, because `p·(act σ Q − Q)` is
+  `act σ (bc P) − bc P = 0` by `act_bc`;
+* the chosen division point `Y P` is fixed by `H`, so `σ ↦ act σ (Y P) − Y P` factors
+  through the FINITE coset space `Γ/H` — this step is where `act_mul` is needed, and it is
+  why the pinning had to be cashed in first;
+* an arbitrary `Q` with `p·Q = bc P` differs from `Y P` by a `p`-torsion class `t`, and
+  `act σ Q − Q = (act σ (Y P) − Y P) + (act σ t − t)`.
+
+So every cochain is the image of a pair (a function `Γ/H → J[p]`, an element of `J[p]`),
+of which there are finitely many.  No cohomology, no continuity, no profinite machinery —
+the coset space is finite by hypothesis and the values live in a finite group.
+
+The two routes the old leaf docstring recorded are kept here because they are the routes to
+`exists_finiteIndex_divisible_pic`, which is where the arithmetic now sits:
 
 * the classical one — the cochains land in `J[p](ℚ̄) ≅ (ℤ/p)⁴` and are unramified outside
   the finite set `S` of places over `p·disc(f)`, so they are cut out by the `p`-Selmer group
@@ -6802,11 +7175,53 @@ completely free, so the cochains `σ ↦ act σ Q − Q` range over an infinite 
 `Pic⁰(X_ℚ̄)` has a point with nontrivial Galois orbit — which it does.  Primality is not
 needed for TRUTH, but it is what makes the intended proof available (`J[p]` is an
 `𝔽_p`-vector space, and the sibling reduction `Fermat.finite_quotient_nsmul_of_prime`
-supplies every other `n`), so it is kept rather than weakened to `p ≠ 0`. -/
+supplies every other `n`), so it is kept rather than weakened to `p ≠ 0`; the proof below
+uses it only through `hp.ne_zero`. -/
 theorem finite_kummerCochains_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (p : ℕ) (hp : p.Prime) :
     {c : QbarGal → gp.Dbar.Pic | ∃ (P : D.Pic) (Q : gp.Dbar.Pic),
-      p • Q = gp.bc P ∧ c = fun σ => gp.act σ Q - Q}.Finite := sorry
+      p • Q = gp.bc P ∧ c = fun σ => gp.act σ Q - Q}.Finite := by
+  classical
+  obtain ⟨H, hHfin, hdiv⟩ := exists_finiteIndex_divisible_pic gp p hp
+  haveI := hHfin
+  haveI hT : Finite {y : gp.Dbar.Pic // p • y = 0} := finite_torsion_pic_geom gp p hp.ne_zero
+  choose Y hYp hYfix using hdiv
+  -- the Kummer cochain of the chosen division point takes its values in the `p`-torsion
+  have hval : ∀ (P : D.Pic) (σ : QbarGal), p • (gp.act σ (Y P) - Y P) = 0 := by
+    intro P σ
+    rw [smul_sub, ← map_nsmul (gp.act σ) p (Y P), hYp P, gp.act_bc, sub_self]
+  -- and depends only on the coset of `σ` modulo `H`, since `H` fixes `Y P`
+  have hcoset : ∀ (P : D.Pic) (a b : QbarGal), a⁻¹ * b ∈ H →
+      gp.act a (Y P) = gp.act b (Y P) := by
+    intro P a b hab
+    calc gp.act a (Y P) = gp.act a (gp.act (a⁻¹ * b) (Y P)) := by rw [hYfix P _ hab]
+      _ = gp.act (a * (a⁻¹ * b)) (Y P) := (gp.act_mul _ _ _).symm
+      _ = gp.act b (Y P) := by rw [show a * (a⁻¹ * b) = b by group]
+  set Φ : D.Pic → ((QbarGal ⧸ H) → {y : gp.Dbar.Pic // p • y = 0}) := fun P c =>
+    Quotient.liftOn' c
+      (fun σ : QbarGal => (⟨gp.act σ (Y P) - Y P, hval P σ⟩ : {y : gp.Dbar.Pic // p • y = 0}))
+      (by
+        intro a b hab
+        have hmem : a⁻¹ * b ∈ H := QuotientGroup.leftRel_apply.mp hab
+        apply Subtype.ext
+        show gp.act a (Y P) - Y P = gp.act b (Y P) - Y P
+        rw [hcoset P a b hmem]) with hΦdef
+  -- every cochain is reconstructed from its coset function and one torsion class
+  set g : (((QbarGal ⧸ H) → {y : gp.Dbar.Pic // p • y = 0}) × {y : gp.Dbar.Pic // p • y = 0}) →
+      (QbarGal → gp.Dbar.Pic) := fun ft σ =>
+    ((ft.1 (QuotientGroup.mk σ) : gp.Dbar.Pic))
+      + (gp.act σ (ft.2 : gp.Dbar.Pic) - (ft.2 : gp.Dbar.Pic)) with hgdef
+  refine Set.Finite.subset (Set.finite_range g) ?_
+  rintro c ⟨P, Q, hQ, rfl⟩
+  have ht : p • (Q - Y P) = 0 := by rw [smul_sub, hQ, hYp P, sub_self]
+  refine ⟨(Φ P, ⟨Q - Y P, ht⟩), ?_⟩
+  funext σ
+  have hΦ : ((Φ P (QuotientGroup.mk σ) : {y : gp.Dbar.Pic // p • y = 0}) : gp.Dbar.Pic)
+      = gp.act σ (Y P) - Y P := rfl
+  show ((Φ P (QuotientGroup.mk σ) : {y : gp.Dbar.Pic // p • y = 0}) : gp.Dbar.Pic)
+      + (gp.act σ (Q - Y P) - (Q - Y P)) = gp.act σ Q - Q
+  rw [hΦ, map_sub]
+  abel
 
 /-- **LEAF (Mordell–Weil, arithmetic half): weak Mordell–Weil at a prime —
 `Pic⁰(X_ℚ) / p·Pic⁰(X_ℚ)` is finite**, for every separable monic sextic and every prime `p`.
@@ -6832,9 +7247,10 @@ statement is FALSE for any positive-rank Jacobian; at `p = 1` it is vacuously tr
 exists), which is the same weak-Mordell–Weil obligation as this leaf; see the section
 docstring.
 
-**NO LONGER A LEAF (2026-07-28).**  It is PROVEN below over the four leaves cut
-immediately above — `exists_geomPic`, `geomPic_bc_injective`, `geomPic_descent`,
-`geomPic_divisible` and `finite_kummerCochains_pic` — assembled by the released reduction
+**NO LONGER A LEAF (2026-07-28).**  It is PROVEN below over the leaves cut immediately
+above — `exists_geomPic`, `geomPic_bc_injective`, `geomPic_descent`, and (since the recut of
+2026-07-31) `exists_finiteIndex_divisible_pic` and `finite_torsion_pic_geom`, the last two
+through the now-PROVEN `finite_kummerCochains_pic` — assembled by the released reduction
 `Fermat.finite_quotient_nsmul_of_kummerCochains`.  Note what the assembly does NOT mention:
 no group cohomology, no `H¹`, no profinite topology.  The Kummer cochain is a plain
 function on `QbarGal` and the coboundary relation is never formed. -/
@@ -6842,11 +7258,12 @@ theorem finite_quotient_psmul_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} (D : Pla
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (p : ℕ) (hp : p.Prime) :
     Finite (D.Pic ⧸ (nsmulAddMonoidHom p : D.Pic →+ D.Pic).range) := by
   obtain ⟨gp⟩ := exists_geomPic D hsep
+  obtain ⟨H, hHfin, hdiv⟩ := exists_finiteIndex_divisible_pic gp p hp
   exact finite_quotient_nsmul_of_kummerCochains p (fun σ y => gp.act σ y)
     (fun σ y z => map_sub (gp.act σ) y z)
     (fun a => gp.bc a) (map_zero gp.bc) (fun a b => map_add gp.bc a b)
     (geomPic_bc_injective gp) (geomPic_descent gp)
-    (fun P => geomPic_divisible gp p hp.ne_zero (gp.bc P))
+    (fun P => (hdiv P).imp fun _ hy => hy.1)
     (finite_kummerCochains_pic gp p hp)
 
 /-- **Mordell–Weil for the hyperelliptic Jacobian: `Pic⁰(X_ℚ)` is finitely generated**
