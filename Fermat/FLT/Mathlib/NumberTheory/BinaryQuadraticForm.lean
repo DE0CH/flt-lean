@@ -4113,6 +4113,80 @@ theorem mem_triangularReps {N a b d : ℤ} (ha : 0 < a) (hd : 0 < d) (had : a * 
     Finset.mem_Ico]
   exact ⟨⟨⟨by omega, haN⟩, ⟨hb0, by omega⟩, ⟨by omega, hdN⟩⟩, had, hbd, hgcd⟩
 
+/-- **The converse of `mem_triangularReps` — PROVEN.** Membership unpacks to exactly the data
+that produced it, primitivity included.
+
+The `Finset` is defined by a filter over an ambient box, so the box bounds come back too and
+are discarded here: `a ≤ N`, `d ≤ N` and `b < N` are consequences of `a d = N` and `b < d` and
+carry no information. The one step that is not `omega` is turning `gcd(a, gcd(b, d)) = 1` back
+into the "every common divisor is a unit" form the rest of this file states primitivity in;
+that goes through `Int.isCoprime_iff_gcd_eq_one` and `IsCoprime.isUnit_of_dvd'`, with
+`Nat.dvd_gcd` on `natAbs` supplying `e ∣ gcd(b, d)`. -/
+theorem triangularReps_spec {N a b d : ℤ} (h : (a, b, d) ∈ triangularReps N) :
+    0 < a ∧ 0 < d ∧ a * d = N ∧ 0 ≤ b ∧ b < d ∧
+      (∀ e : ℤ, e ∣ a → e ∣ b → e ∣ d → IsUnit e) := by
+  simp only [triangularReps, Finset.mem_filter, Finset.mem_product, Finset.mem_Icc,
+    Finset.mem_Ico] at h
+  obtain ⟨⟨⟨ha1, _⟩, ⟨hb0, _⟩, ⟨hd1, _⟩⟩, had, hbd, hgcd⟩ := h
+  refine ⟨by omega, by omega, had, hb0, hbd, ?_⟩
+  intro e hea heb hed
+  have h1 : e ∣ ((Int.gcd b d : ℕ) : ℤ) := by
+    have hn : e.natAbs ∣ Int.gcd b d :=
+      Nat.dvd_gcd (Int.natAbs_dvd_natAbs.mpr heb) (Int.natAbs_dvd_natAbs.mpr hed)
+    exact Int.natAbs_dvd.mp (Int.natCast_dvd_natCast.mpr hn)
+  exact (Int.isCoprime_iff_gcd_eq_one.mpr hgcd).isUnit_of_dvd' hea h1
+
+/-- **UNIQUENESS OF THE HERMITE NORMAL FORM — PROVEN.** This is the half that
+`exists_hermite_of_primitive` above does not supply, and `LEAF 3a-i`'s docstring below names it
+as the missing elementary input to `Γ`-invariance of the product.
+
+If `γ · [[a, b], [0, d]] = [[a', b'], [0, d']]` with `γ ∈ SL₂(ℤ)` and both triangular matrices
+normalised (`a, d, a', d' > 0`, `0 ≤ b < d`, `0 ≤ b' < d'`), then the two coincide. So each
+left `Γ`-class of primitive integral matrices of determinant `N` meets `triangularReps N` in
+EXACTLY ONE point — existence from `exists_hermite_of_primitive`, uniqueness here — which is
+what makes `t ↦ t'` a well-defined permutation of `triangularReps N` under right multiplication
+by `γ`, and hence what makes the coefficients of the product `Γ`-invariant.
+
+THE ARGUMENT IS FOUR STEPS AND USES EVERY NORMALISATION. Writing
+`γ · [[a,b],[0,d]] = [[αa, αb+βd], [δa, δb+εd]]`: the lower-left entry gives `δ a = 0`, hence
+`δ = 0` since `a > 0`; then `α ε = 1`, so `α = ±1`, and `a' = α a` with both positive forces
+`α = 1` and therefore `ε = 1`; that gives `a' = a` and `d' = d`; and finally `b' = b + β d`
+with `0 ≤ b, b' < d` traps `β` strictly between `−1` and `1`.
+
+The matrices are written out entrywise rather than as `Matrix (Fin 2) (Fin 2) ℤ` to match
+`exists_hermite_of_primitive`, whose conclusion is stated in exactly these four equations
+(with `p, q, r, s` in place of `a', b', 0, d'`). `hd'` is redundant — `d' = d > 0` — and is
+underscored. -/
+theorem triangular_unique {α β δ ε a b d a' b' d' : ℤ}
+    (hγ : α * ε - β * δ = 1)
+    (ha : 0 < a) (hd : 0 < d) (hb0 : 0 ≤ b) (hbd : b < d)
+    (ha' : 0 < a') (_hd' : 0 < d') (hb0' : 0 ≤ b') (hbd' : b' < d')
+    (h1 : a' = α * a) (h2 : b' = α * b + β * d) (h3 : (0 : ℤ) = δ * a) (h4 : d' = δ * b + ε * d) :
+    a = a' ∧ b = b' ∧ d = d' := by
+  have hδ : δ = 0 := by
+    rcases mul_eq_zero.mp h3.symm with h | h
+    · exact h
+    · omega
+  subst hδ
+  have hαε : α * ε = 1 := by linarith [hγ]
+  have hα : α = 1 := by
+    rcases Int.isUnit_iff.mp (isUnit_of_dvd_one ⟨ε, hαε.symm⟩) with h | h
+    · exact h
+    · exfalso; rw [h] at h1; omega
+  subst hα
+  have hε : ε = 1 := by omega
+  subst hε
+  refine ⟨by omega, ?_, by omega⟩
+  have hβ : β = 0 := by
+    by_contra hβ0
+    rcases lt_or_gt_of_ne hβ0 with h | h
+    · have hle : β * d ≤ -1 * d := mul_le_mul_of_nonneg_right (by omega) hd.le
+      omega
+    · have hle : 1 * d ≤ β * d := mul_le_mul_of_nonneg_right (by omega) hd.le
+      omega
+  rw [hβ] at h2
+  omega
+
 /-- **LEAF 3a-i — THE CONSTRUCTION OF `Φ_N`.** One `Φ ∈ ℤ[Y][X]` whose specialisation at
 `Y = j(z)` is the monic product `∏_{(a,b,d) ∈ triangularReps N} (X − j((a z + b)/d))`, for
 every `z ∈ ℍ` simultaneously.
@@ -4129,8 +4203,10 @@ symmetric functions of the `ψ(N)` numbers `j((a z + b)/d)`. Three things must b
 * those functions of `z` are `Γ`-INVARIANT — right multiplication by `γ ∈ SL₂(ℤ)` permutes the
   triangular representatives modulo left `Γ`-translation, and `j` is `Γ`-invariant
   (`jInvariant_smul`, PROVEN). `exists_hermite_of_primitive` (PROVEN above) is the existence
-  half of that permutation; its uniqueness half — `γ B = B'` with both triangular and
-  normalised forces `B = B'` — is elementary and is not yet in this file;
+  half of that permutation and `triangular_unique` (PROVEN just above) is its uniqueness half,
+  so each left `Γ`-class of primitive matrices of determinant `N` meets `triangularReps N` in
+  exactly one point; `triangularReps_spec` unpacks membership. What is still to be written is
+  the permutation itself and the resulting `Finset.prod_bij` — see the note below;
 * they are holomorphic on `ℍ` and meromorphic at the cusp, hence POLYNOMIALS IN `j`. See the
   partial refutation in the section note below: this step is NOT the missing structure theorem
   `M_* = ℂ[E₄, E₆]`, it is a pole-order induction over `ModularForm.levelOne_weight_zero_const`,
@@ -4155,7 +4231,28 @@ classical `Φ_N` — refute by exhibiting an `N` and a `z` where the two disagre
 `hN` IS NOT LOAD-BEARING and is carried only to match the consumer: for `N ≤ 0` the ambient
 box `Finset.Icc 1 N` is empty, so `triangularReps N = ∅`, the product is `1`, and `Φ = 1`
 works. It is kept because every classical source states the theorem for `N > 0` and because
-dropping it would invite a reader to think the empty case is the interesting one. -/
+dropping it would invite a reader to think the empty case is the interesting one.
+
+THE NEXT STEP, WORKED OUT BUT NOT WRITTEN, so that whoever takes this does not re-derive it.
+The `Γ`-invariance bullet above becomes the statement
+
+    ∏_{t ∈ triangularReps N} (X − C (j(triPoint w t)))
+      = ∏_{t ∈ triangularReps N} (X − C (j(triPoint z t)))
+
+for `w = γ • z`, `γ = [[α,β],[δ,ε]]` unimodular, proved by `Finset.prod_bij`. The map: for
+`t = (a, b, d)` put `(p, q, r, s) = (aα + bδ, aβ + bε, dδ, dε)` — this is `B_t · γ`, of
+determinant `N`, and primitive because `γ⁻¹` is integral. `exists_hermite_of_primitive` turns
+it into `γ' · B_{t'}`; normalise `b'` into `[0, d')` by absorbing `T^k` into `γ'`
+(`b' = d'k + b₀`, exactly as `exists_modularPolynomial_triangular` already does); then
+`triangularReps_spec`/`mem_triangularReps` give `t' ∈ triangularReps N`. The point identity is
+pure algebra: `(a·(γz) + b)/d = (pz + q)/(rz + s) = γ' • ((a'z + b')/d')`, so
+`j(triPoint w t) = j(triPoint z t')` by `jInvariant_smul` — the general Möbius step is the one
+inside `jInvariant_eq_of_act` further down, which is worth extracting first. INJECTIVITY is
+where `triangular_unique` is spent: if `B_{t₁}γ = g₁ B_{t'}` and `B_{t₂}γ = g₂ B_{t'}` then
+cancelling `γ` (unimodular, so cancellable over `ℤ`) gives `B_{t₂} = g₂g₁⁻¹ B_{t₁}`, and
+uniqueness forces `t₁ = t₂`. SURJECTIVITY is then free from injectivity on a finite set
+(`Finset.surj_on_of_inj_on_of_card_le`), so `γ⁻¹` never has to be run through the construction
+a second time. -/
 theorem exists_intPolynomial_eq_prod {N : ℤ} (hN : 0 < N) :
     ∃ Φ : Polynomial (Polynomial ℤ),
       ∀ z : UpperHalfPlane,
