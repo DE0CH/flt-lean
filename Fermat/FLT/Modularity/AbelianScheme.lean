@@ -1035,7 +1035,6 @@ structure DualStruct {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct 
   group is harmless; it is only the nondegeneracy CLAIM about it that was false. -/
   weil_nondegenerate : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
       (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (_hnF : (n : F) ≠ 0) (y : GeomFibrePt f x),
-      (n : F) ≠ 0 →
       y ∈ (m.torsion x I).1 →
       (∀ z : GeomFibrePt dualMap x, z ∈ (dualMult.torsion x I).1 →
         weil x I n hn y z = 1) →
