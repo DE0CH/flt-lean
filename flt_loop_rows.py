@@ -35,9 +35,15 @@ def unjustified(s):
         if not j["alive"]:
             # Every legitimate stopped record is consumed by a row above this
             # one. Surviving to idle means NO row claimed it -- so idle must
-            # not paper over it just because some other job is healthy. This
-            # is what makes "merger reported success but main never moved"
-            # panic without needing a row that anticipates it.
+            # not paper over it just because some other job is healthy.
+            #
+            # This used to be advertised as what makes "merger reported success
+            # but main never moved" panic without a row anticipating it. That
+            # example was a bad one and it fired for real: a merger that holds
+            # a release because the tree is red is obeying its own prompt, and
+            # row 21 now consumes it. The mechanism stands; only the example
+            # was wrong. Reaching idle unconsumed still means the table has no
+            # account of this job, and that is still worth a panic.
             if j["started"]:
                 bad.append((n, f"{j['kind']} stopped and no row consumed it"))
             continue
@@ -79,7 +85,7 @@ def unjustified(s):
 
 
 def idle_guard(s):
-    if s.get("quota_until"):
+    if s.get("quota_block"):
         return (True, "")      # idling on quota is a legitimate wait
     live = [n for n, j in s["jobs"].items() if j["alive"]]
     if not live:
@@ -119,6 +125,35 @@ def finished(j):
 
 def died(j):
     return j["started"] and not j["alive"] and j["sentinel"] is None
+
+
+def relay(s, name, sen):
+    """Deliver a finished job's ADDRESSED fields. Returns (tasks, notes).
+
+    Every sentinel carries at most three things and each has exactly one
+    reader: `queue` -> queue2, `to_merger` -> the merger inbox, `to_medic` ->
+    a panic (row 5, above every consumer). Delivery happens here or it does
+    not happen at all -- nothing else reads a sentinel.
+
+    It lives in ONE function because the delivery must not depend on WHICH row
+    consumes the job. It used to live inside r2_action, so only an agent's
+    sentinel was ever relayed: a MERGER's `to_merger` -- the notes it writes
+    for the next merge worker, which is the only channel between two mergers
+    that never overlap in time -- was dropped on the floor by both of the rows
+    that consume a merger. Release 27 wrote eleven of them, including which
+    branch it declined and why, and the class-7 split it had resolved by hand.
+    """
+    sen = sen or {}
+    # `opened` is the older spelling of `queue`; accept both so a job running
+    # an older prompt is still integrated rather than dropped.
+    tasks = [t for t in (sen.get("queue") or []) + (sen.get("opened") or []) if t]
+    for t in tasks:
+        if t not in s["queue2"]:
+            s["queue2"].append(t)
+    notes = [m for m in (sen.get("to_merger") or []) if m]
+    for m in notes:
+        s["merger_inbox"].append("from %s: %s" % (name, m))
+    return len(tasks), len(notes)
 
 
 # Installed by the runtime. Must launch the job DETACHED -- its own session,
@@ -220,7 +255,7 @@ def spawnable(s, j):
     # The API is refusing work. Spawning now burns an attempt and achieves
     # nothing, so the loop waits instead -- the wait is the correct action,
     # not a degraded one.
-    if s.get("quota_until"):
+    if s.get("quota_block"):
         return False
     # SAFE MODE, enforced at the spawner rather than by row order. SPAWN has
     # to sit ABOVE the SAFE MODE row -- otherwise the row that engages safe
@@ -273,6 +308,13 @@ def rmedic_done_action(s):
     v = j["sentinel"]
     verdict = "GO" if v.get("go") else "NO-GO"
     why = v.get("why", "")
+    # A medic's sentinel carries the same addressed fields as everybody else's,
+    # and they were going nowhere -- the third row found doing this in one
+    # afternoon. It matters most here: a medic that repairs the loop is usually
+    # the only party that knows what the repair means for the next merge worker
+    # ("a held release is legal now, do not force a publish"), and its verdict
+    # field cannot say that.
+    ntasks, nnotes = relay(s, "medic", v)
     # Both verdicts email. A GO is not "nothing happened" -- it means the loop
     # silently reached an illegal state and something rewrote it, which is
     # exactly the thing a human should see even when the repair worked.
@@ -294,16 +336,20 @@ def rmedic_done_action(s):
         for n in cleared:
             s["jobs"][n]["sentinel"]["panic"] = False
         note(s, f"2  medic verdict GO: {why} -- emailed, resuming"
-                + (f" (cleared panic on {', '.join(cleared)})" if cleared else ""))
+                + (f" (cleared panic on {', '.join(cleared)})" if cleared else "")
+                + (f"; {ntasks} task(s) -> queue2, {nnotes} note(s) -> the next "
+                   f"merger" if ntasks or nnotes else ""))
     else:
         s["stop"] = True
-        note(s, f"2  medic verdict NO-GO: {why} -- emailed, STOP written")
+        note(s, f"2  medic verdict NO-GO: {why} -- emailed, STOP written"
+                + (f"; {ntasks} task(s) -> queue2, {nnotes} note(s) -> the next "
+                   f"merger" if ntasks or nnotes else ""))
 
 
 def rmedic_dead_guard(s):
     """The medic died without a verdict. Nothing below can rescue this.
 
-    Every other job's death has a recovery: an agent is respawned as a takeover,
+    Every other job's death has a recovery: an agent resumes its session,
     a merger's claim is restored to the batch. The medic has none, because the
     medic IS the recovery -- and SAFE MODE suspends every row beneath it. So a
     medic that stops without writing a sentinel wedges the loop permanently and
@@ -387,22 +433,13 @@ def r2_action(s):
     for n, j in list(jobs_of(s, "agent").items()):
         if not finished(j):
             continue
-        sen = j["sentinel"]
-        # `opened` is the older spelling of the same thing; accept both so an
-        # agent running an older prompt is still integrated rather than dropped.
-        for task in (sen.get("queue") or []) + (sen.get("opened") or []):
-            if task and task not in s["queue2"]:
-                s["queue2"].append(task)
-        for msg in (sen.get("to_merger") or []):
-            if msg:
-                s["merger_inbox"].append("from %s: %s" % (n, msg))
+        ntasks, nnotes = relay(s, n, j["sentinel"])
         s["batch"].append(j["worktree"])
         s["workers"][j["worktree"]] = "awaiting_merge"   # set BEFORE deleting the record
         s["ancestor"][j["worktree"]] = False
         del s["jobs"][n]
         note(s, "2  integrated %s: batched; %d task(s) -> queue2, %d note(s) -> merger"
-                % (n, len(sen.get("queue") or []) + len(sen.get("opened") or []),
-                   len(sen.get("to_merger") or [])))
+                % (n, ntasks, nnotes))
 
 
 def landed(s):
@@ -464,27 +501,50 @@ def r4_guard(s):
 
 
 def r4_action(s):
-    """Resume = respawn. It cannot be anything else.
+    """A died agent RESUMES its own conversation.
 
-    A stopped agent's conversation is not replayable from the loop's side: the
-    loop is a Python process, not a Claude session, and the ids it holds are
-    not resumable session ids. What survives is the WORK, in the worktree. So
-    the record is returned to unspawned and row 3 starts a fresh agent that is
-    told to read `git status`/`git diff` first and continue what it finds.
+    Every job now carries a session id -- do_spawn assigns one at the first
+    spawn -- so the takeover path is gone. It existed only for records created
+    before sessions were recorded, and told a FRESH agent to reconstruct the
+    situation from `git status`/`git diff`: no idea what had been tried, what
+    had failed, or why. That is a wasted cycle whenever the conversation is
+    still there, and it now always is.
 
-    A NEW token is minted. The old one is what the previous process advertised
-    and what its markers name, so reusing it would let a stale `.started` file
-    -- or a straggler process that is still exiting -- be mistaken for the
-    replacement.
+    A NEW token is minted even though the session is kept: the token names the
+    PROCESS (it is what the liveness sweep matches in argv[0]), the session
+    names the CONVERSATION. Reusing the token would let a stale `.started`
+    marker, or a straggler still exiting, be read as the replacement.
+
+    A record with no session at all just runs its task again from the prompt,
+    which is correct -- no session means nothing was ever said.
     """
     for n, j in jobs_of(s, "agent").items():
         if died(j):
             j["started"] = False
             j["alive"] = False
+            # Keep the OLD token. A new one names the new process, which is
+            # what the liveness sweep needs -- but the sentinel is validated
+            # against the record's token, so rotating it silently discards a
+            # result the agent already wrote. flt-lean-204 finished, wrote a
+            # 17KB sentinel, and was then resumed NINETEEN times: each
+            # replacement found its work done, exited without writing anything,
+            # and the rotated token made the real sentinel invisible for ever.
+            #
+            # `or []` rather than setdefault, and this is not a style choice:
+            # save() persists each record as a FIXED KEY LIST built with
+            # j.get(k), so a field no job has ever written is stored as an
+            # explicit null. It comes back PRESENT, setdefault declines to
+            # replace it, and .append on None took the whole loop down on the
+            # first resume after this field was added -- before it had ever
+            # saved a single retired token. Across the persistence boundary,
+            # absent and null are the same state; only `or` reads them that way.
+            j["prev_tokens"] = ((j.get("prev_tokens") or []) + [j["token"]])[-10:]
             j["token"] = tok()
-            j["takeover"] = True
             j["retries"] += 1
-            note(s, f"4  {n} died -> re-dispatched as takeover (attempt {j['retries']})")
+            j["resume"] = bool(j.get("session"))
+            note(s, "4  %s died -> %s (attempt %d)"
+                    % (n, "resuming its session" if j["resume"]
+                       else "re-running its task", j["retries"]))
 
 
 def r5_guard(s):
@@ -526,8 +586,17 @@ def r5_action(s):
             # from the worktree the record already names.
             j["host"] = (j.get("host") or host_of(s, j["worktree"])
                          or (MEDIC_HOST if j["kind"] == "medic" else None))
+            # `session` used to be recorded here for a transcript resume that
+            # does not exist and cannot: the loop is a Python process, not a
+            # Claude session, and the ids it can obtain are not resumable. It
+            # was written on every record and read by nothing, which made the
+            # capability look real. Dropped; what preserves a dead agent's work
+            # is its SESSION, which row 8 resumes rather than starting a
+            # stranger in its worktree.
             host, pid, sess = SPAWN(s, n, j)
-            j["host"], j["pid"], j["session"] = host, pid, sess
+            j["host"], j["pid"] = host, pid
+            if sess:
+                j["session"] = sess
             # Name what was spawned: row 7 is the ONE spawner for every kind,
             # so a bare "SPAWN" in the transition log is unreadable -- two
             # consecutive firings look like a double-spawn when they are a
@@ -538,10 +607,12 @@ def r5_action(s):
 
 def r6_guard(s):
     # DIED, i.e. no sentinel. A merger that exits WITH a sentinel but without
-    # moving main is not handled here and deliberately has no row of its own:
-    # a merge worker's whole purpose is to move main, so reporting success
-    # without doing it is an illegal state. It reaches PANIC by falling out of
-    # the idle guard, which is where unanticipated configurations belong.
+    # moving main is row 21 (HELD), not this one. It used to have no row at all
+    # -- "a merge worker's whole purpose is to move main, so reporting success
+    # without doing it is illegal" -- and that was wrong, because its own prompt
+    # tells it the opposite in as many words: "if you declined branches or the
+    # build is not clean, do not write it [the snapshot marker]". Release 27
+    # obeyed that, correctly, and the loop panicked on it.
     m = s["jobs"].get("merger")
     if not m:
         return (False, "no merger record")
@@ -591,8 +662,19 @@ def r7_guard(s):
     idle rejects it into PANIC. That is the intended path -- a partial
     delivery is not a case to handle, it is a violation to report.
     """
-    if s["main"] == s["rebaselined"]:
-        return (False, "main == rebaselined -- nothing new to adopt")
+    # NOT `main == rebaselined`. That asked whether the SHA moved, and a sha
+    # moves for reasons that are not releases -- a tooling commit, the loop's
+    # own source commit. With no merger record that was merely a cosmetic
+    # re-baseline; with a FINISHED merger record it was a forgery. Release 27
+    # withheld its release because X0.lean was red, three flt-loop commits then
+    # moved main, and this guard would have signed for a delivery that does not
+    # exist: baseline advanced past a snapshot nobody rebuilt, the merger's
+    # 206-branch claim discharged as honoured, and its held-release sentinel
+    # consumed by the wrong row. A release is Lean content arriving on main --
+    # ask that.
+    if s["rebaseline_current"]:
+        return (False, "main is Lean-identical to the adopted baseline "
+                       f"{s['rebaselined']} -- no release to adopt")
     m = s["jobs"].get("merger")
     if m and m["alive"]:
         return (False, "a merger is still alive")
@@ -618,10 +700,16 @@ def r7_action(s):
     # release behind it -- and in that case .inflight belongs to somebody else.
     # Clearing it unconditionally would drop an outstanding claim on the floor,
     # which is fault 3 all over again by a different door.
-    if s["jobs"].pop("merger", None) is None:
+    m = s["jobs"].pop("merger", None)
+    if m is None:
         note(s, f"7  re-baselined to {s['main']} with no release behind it "
                 f"(main moved without changing any Lean input)")
         return
+    # A successful merger has a sentinel too, and it was being thrown away here.
+    # See relay(): a merger's `to_merger` is the ONLY channel from one merge
+    # worker to the next, and the two never overlap in time, so nothing else can
+    # carry a decline, a rename, or a conflict that will recur.
+    ntasks, nnotes = relay(s, "merger", m["sentinel"] or {})
     # A DELIVERY IS NOT A RECEIPT FOR THE WHOLE CLAIM. Adopting used to
     # discharge .inflight wholesale, on the strength of the release being
     # complete -- and a release is complete when main moved and the snapshot
@@ -667,9 +755,76 @@ def r7_action(s):
     if unmerged:
         s["batch"] = unmerged + [b for b in s["batch"] if b not in unmerged]
     note(s, f"7  ADOPTED release {s['main']}: snapshot current, "
-            f"queue1 AUDITED with {len(s['queue1']['tasks'])} task(s)"
+            f"queue1 AUDITED with {len(s['queue1']['tasks'])} task(s); "
+            f"{ntasks} task(s) -> queue2, {nnotes} note(s) -> the next merger"
             + (f"; {len(unmerged)} claimed branch(es) never landed -> batch"
                if unmerged else ""))
+
+
+def r_merger_held_guard(s):
+    """The merge worker finished and did NOT release. That is a legal outcome.
+
+    This row exists because its absence panicked the loop on release 27, and
+    the panic was the table's fault rather than the merger's. The merger is
+    told, in its own prompt, step 5:
+
+        "If you declined branches or the build is not clean, do not write it
+         [the snapshot marker] -- an absent marker correctly says there is no
+         snapshot to dispatch against, and a wrong one seeds every agent in
+         the fleet with a .lake for the wrong main."
+
+    Release 27 did exactly that. `Fermat/FLT/ModularCurve/X0.lean` was red on
+    the integration branch (248 -> 193 errors over two rounds, inherited from
+    release 25), so publishing would have replaced a GREEN main with a red one
+    and seeded 400 worktrees from a snapshot missing X0's whole cone. It merged
+    19 branches into `merger`, refilled queue1 with 337 audited tasks, wrote
+    eleven notes for its successor, held the release, and stopped. Every one of
+    those is the right call. The table called it an illegal state, nobody
+    consumed the record, and idle rejected it into PANIC.
+
+    So: withholding a release is a RESULT, not a violation. The violation would
+    be publishing a tree that does not build -- which is the entire reason the
+    merge batch exists (CLAUDE.md: "the batch exists to protect a green build,
+    and nothing else").
+
+    The state consequence is identical to row 9's, because the two differ only
+    in whether we get to hear why: nothing was published, so the claim is
+    undischarged and goes back to the batch for the next merger. What is NOT
+    identical is the sentinel -- a held release is the one merger outcome that
+    has something to say, and its `to_merger` notes are addressed to the very
+    worker that inherits the blocker.
+
+    Defers to ADOPT explicitly rather than by table order alone: "finished"
+    and "delivered" are independent observations, and a merger killed after a
+    complete delivery but before reporting satisfies both.
+    """
+    m = s["jobs"].get("merger")
+    if not m:
+        return (False, "no merger record")
+    if not finished(m):
+        return (False, "merger is not started ∧ ¬alive ∧ sentinel")
+    if r7_guard(s)[0]:
+        return (False, "the full delivery is on disk -- ADOPT handles it")
+    return (True, "")
+
+
+def r_merger_held_action(s):
+    m = s["jobs"].pop("merger")
+    ntasks, nnotes = relay(s, "merger", m["sentinel"])
+    # A FOLD, filtered by ancestry -- the same discipline as r7_action, and for
+    # the same reason. Nothing was published, so in the ordinary case no claimed
+    # branch is an ancestor of main and the whole claim returns. The filter is
+    # there for the branch that landed some other way (an earlier release that
+    # this merger re-listed, a decline already recorded): re-batching it would
+    # hand the next merger work that no longer exists.
+    claim = list(s["inflight"] or [])
+    back = [b for b in claim if not s["ancestor"].get(b)]
+    s["inflight"] = None
+    if back:
+        s["batch"] = back + [b for b in s["batch"] if b not in back]
+    note(s, "10a merger HELD the release (nothing published): %d claimed "
+            "branch(es) -> batch, %d task(s) -> queue2, %d note(s) -> the next "
+            "merger" % (len(back), ntasks, nnotes))
 
 
 def r11_guard(s):
@@ -876,6 +1031,107 @@ def inferred_panic(s):
     panic(s, why)
 
 
+# Installed by the runtime: send one probe, and consume a job's refusal
+# evidence. Both are EFFECTS, so they belong to row actions rather than to
+# observation -- the loop learns it is refused by reading state, and decides
+# what to do about it in the table like everything else.
+PROBE = None            # () -> None, sends a probe
+CONSUME_REFUSAL = None  # (name, job) -> None, moves the log aside
+
+
+def now(s):
+    return s.get("now") or __import__("time").time()
+
+
+def refused_jobs(s):
+    return {n: j for n, j in s["jobs"].items() if j.get("refused")}
+
+
+def r_refused_guard(s):
+    """The API refused a job. Stop spawning until it serves us again.
+
+    This is the whole of "out of credit" as far as the machine is concerned:
+    an observation about a job, and a transition. It used to be imperative code
+    inside load(), which meant the one condition that halts the entire fleet
+    was the one condition not expressible in the transition table -- invisible
+    to --dry-run, to the medic, and to anyone reading the rows.
+    """
+    if s.get("quota_block"):
+        return (False, "already blocked")
+    hits = refused_jobs(s)
+    if not hits:
+        return (False, "no job reported an API refusal")
+    n = sorted(hits)[0]
+    return (True, "%s was refused: %s" % (n, hits[n]["refused"].strip().splitlines()[0][:70]))
+
+
+def r_refused_action(s):
+    hits = refused_jobs(s)
+    n = sorted(hits)[0]
+    s["quota_block"] = {"since": int(now(s)),
+                        "why": hits[n]["refused"].strip().splitlines()[0][:200]}
+    for m, j in hits.items():
+        # A refusal is not a death: the record goes back to unspawned so it is
+        # retried once the door opens, and its evidence is consumed so the same
+        # line cannot re-arm the block for ever.
+        j["started"], j["alive"], j["refused"] = False, False, ""
+        # A refusal must not count toward the retry limit. `retries` is the
+        # medic's two-strike budget (rmedic_dead_action), and a strike means
+        # "observed absent while it should have been running" -- an outage is
+        # neither, and it also breaks the consecutiveness the two strikes are
+        # meant to establish. Left uncleared, a quota window silently spends
+        # half the medic's budget before the medic has run at all.
+        j["retries"] = 0
+        if CONSUME_REFUSAL:
+            CONSUME_REFUSAL(m, j)
+    note(s, "quota: refused -- spawning halted, %d record(s) returned to the queue"
+            % len(hits))
+    s["email"].append("flt-loop: quota exhausted, idling -- %s" % s["quota_block"]["why"])
+
+
+def r_unblock_guard(s):
+    if not s.get("quota_block"):
+        return (False, "not blocked")
+    if not s["probe"]["served"]:
+        return (False, "no probe has come back served")
+    return (True, "")
+
+
+def r_unblock_action(s):
+    s["quota_block"] = None
+    s["probe"] = dict(s["probe"], served=False)
+    note(s, "quota: a probe was served -- spawning resumes")
+    s["email"].append("flt-loop: quota available again, resuming")
+
+
+def r_probe_guard(s):
+    """Blocked and no answer yet -- ask again. Every tick, no timer.
+
+    A refused call costs nothing: the API rejects it immediately and it
+    consumes no quota, so there is nothing to ration and no reason to wait
+    between attempts. Probing on every cycle also removes two things that only
+    existed to approximate this one: the staleness interval, and the special
+    case that forced an immediate probe when the rotator swapped credentials.
+    Both were answering "has the answer changed yet?" indirectly. Asking every
+    tick answers it directly, and the block lifts the tick after the door
+    opens rather than up to five minutes later.
+
+    It stops on its own: a served probe fires row 19, which clears the block,
+    and this guard needs the block.
+    """
+    if not s.get("quota_block"):
+        return (False, "not blocked")
+    if s["probe"]["served"]:
+        return (False, "a served probe is waiting to be consumed")
+    return (True, "")
+
+
+def r_probe_action(s):
+    if PROBE:
+        PROBE()
+    note(s, "quota: probed with the credential now on disk")
+
+
 def anomalies(s):
     """Invariants that must hold of the state. Every violation is a bug.
 
@@ -978,6 +1234,9 @@ ROWS = [
     # Id 16, not 3: ids are stable names that IDLE/PANIC/QUIET refer to by
     # number, so a new row is appended to the numbering and inserted in the
     # ORDER. Renumbering would silently repoint those constants at other rows.
+    (18, "API refused a job -> halt spawning", r_refused_guard, r_refused_action),
+    (19, "quota blocked ∧ probe served -> resume", r_unblock_guard, r_unblock_action),
+    (20, "quota blocked ∧ no answer yet -> probe again", r_probe_guard, r_probe_action),
     (16, "medic died without a verdict -> escalate + STOP",
      rmedic_dead_guard, rmedic_dead_action),
     (3, "record ∧ ¬started ∧ no process -> SPAWN", r5_guard, r5_action),
@@ -987,9 +1246,11 @@ ROWS = [
     (6, "agent finished -> integrate, awaiting_merge", r2_guard, r2_action),
     (7, "branch landed -> free its worker, drop it from the merge queue",
      r3_guard, r3_action),
-    (8, "agent died -> resume from transcript", r4_guard, r4_action),
+    (8, "agent died -> resume its session", r4_guard, r4_action),
     (9, "merger died without releasing -> restore .inflight", r6_guard, r6_action),
     (10, "merger delivered main+snapshot+audit -> ADOPT", r7_guard, r7_action),
+    (21, "merger HELD the release (red build) -> relay, restore claim, retire",
+     r_merger_held_guard, r_merger_held_action),
     (11, "batch ∨ derived-from-main is stale -> create merger record", r11_guard, r11_action),
     (12, "dispatch: pop queue1 -> agent records", r15_guard, r15_action),
     (17, "INVARIANT VIOLATED -> notify + medic", anomaly_guard, anomaly_action),
@@ -1052,15 +1313,18 @@ def mutate(s, job, what):
         s["inflight"] = None
         note(s, f"~  merger released {n}; main moved; landed {merged or 'nothing'}")
     elif what == "merger_noop":
-        # ILLEGAL by construction: a merge worker exists to move main, so
-        # reporting success without moving it is not an outcome the table
-        # anticipates. Kept as an injection precisely so the fall-through to
-        # PANIC can be exercised.
+        # A HELD release: the merge worker finished, reported, and did not move
+        # main -- because the tree it built was red and its own prompt tells it
+        # not to publish that. This injection was labelled "illegal by
+        # construction" and kept only to exercise the fall-through to PANIC.
+        # That is what release 27 then did for real, and the panic was the
+        # table's fault. Row 21 consumes it; the injection now exercises THAT.
         m = s["jobs"].get("merger")
         if m:
             m["alive"] = False
-            m["sentinel"] = {"ok": True}
-            note(s, "~  merger reported success but did NOT move main (illegal)")
+            m["sentinel"] = {"queue": [], "to_merger": ["held: the build was red"],
+                             "to_medic": ""}
+            note(s, "~  merger HELD its release: reported, main unmoved")
     elif what == "merger_die":
         m = s["jobs"].get("merger")
         if m:

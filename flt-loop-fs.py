@@ -474,6 +474,11 @@ def load():
         # plain equality is the faithful answer.
         "snapshot_current": bool(snap) and snap["sha"] == main,
         "audit_current": aud is not None and aud == main,
+        # The real loop asks lean_equiv(rebaselined, main) -- "did main gain any
+        # Lean content since the baseline we adopted". This world has no tree
+        # and no tooling commits: every move of main IS a release, so equality
+        # is the whole question.
+        "rebaseline_current": (rd(DIR / "rebaselined", "") or "").strip() == main,
         "queue1": {"audited": aud, "tasks": [t for t in q1 if t.strip()]},
         "queue2": [t for t in (rd(DIR / "queue2", "") or "").splitlines() if t.strip()],
         "batch": [b for b in (rd(DIR / "batch", "") or "").splitlines() if b.strip()],
@@ -779,7 +784,7 @@ function run(){if(timer){clearInterval(timer);timer=null;$('runbtn').textContent
 $('inject').innerHTML=`
  <div class="ctl"><label>merger delivers (merge+build+audit)</label><button onclick="mut(null,'release')">go</button></div>
  <div class="ctl"><label>merger dies (no sentinel)</label><button onclick="mut(null,'merger_die')">go</button></div>
- <div class="ctl"><label>merger reports OK, main unmoved (illegal)</label><button onclick="mut(null,'merger_noop')">go</button></div>
+ <div class="ctl"><label>merger HELDs its release (reports, main unmoved)</label><button onclick="mut(null,'merger_noop')">go</button></div>
  <div class="ctl"><label>corrupt: orphan .inflight</label><button onclick="mut(null,'corrupt')">go</button></div>
  <div class="ctl"><label>a job reports PANIC (broken .lake)</label><button onclick="mut(null,'job_panic')">go</button></div>
  <div class="ctl"><label>medic GO</label><button onclick="mut(null,'medic_go')">go</button></div>
