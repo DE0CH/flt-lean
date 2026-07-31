@@ -5362,10 +5362,20 @@ theorem is NOT in that set. The comment-stripped `sorry` TOKEN count is
 also three, at the same three declarations, so no anonymous inner sorry
 hides behind a warning. The elaboration was run with `LEAN_PATH` pointed
 at the last published release's `.olean` set
-(`~/.flt-release-lake/build`, release 27) ahead of the worktree's, which
-is sound here because the module needs nothing added to its import cone
-since that release — it is exactly the fact that it elaborates against
-them that shows so.
+(`~/.flt-release-lake/build`, release 27) ahead of the worktree's,
+because at the time the worktree's own cone was mid-rebuild. CLAUDE.md
+requires that shim to be justified by checking every name the new text
+takes from the borrowed modules, so: the restored blocks use exactly five
+project names declared outside this file —
+`Field.absoluteGaloisGroup.map` and `localInertiaGroup`
+(`Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`),
+`GaloisRep`, `GaloisRep.baseChange_tmul` and `GaloisRep.toLocal_apply`
+(`…/GaloisRep.lean`), and `IsHardlyRamified`
+(`HardlyRamified/Defs.lean`) — and all three of those files are
+BYTE-IDENTICAL at the release sha and at `merger` (`md5sum` of
+`git show <sha>:<file>`, three for three). Everything else the blocks
+name is either declared in this file above them or comes from mathlib,
+whose pin has not moved. So the shim proves what a real build would.
 
 ## THE WITNESS, in one paragraph
 
