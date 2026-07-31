@@ -929,6 +929,39 @@ structure Gamma1GITPresentation (N : ℕ) (S : Scheme.{0}) where
     Nonempty (IsBaseChangeOfGamma1 (𝟙 (Spec (CommRingCat.of A))) d₁ dM) ∧
     Nonempty (IsBaseChangeOfGamma1
       (Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ))) d₁ dM)
+  /-- **Katz–Mazur 8.2.1**: the rigidified moduli scheme is SMOOTH of relative
+  dimension one over the base.
+
+  **Added 2026-07-30, and it is a repair rather than an enrichment.**  This was
+  a theorem, `smoothCurve_A_of_gamma1GITPresentation`, asserting
+  `Algebra.Smooth K A` for an arbitrary inhabitant over a field base; it was
+  REFUTED that day, and the counterexample is written out in full on that
+  declaration, which is now proven over this field.  The short version: the
+  other fields pin `B` — `classify_dM` says `Spec A ⟶ Spec B` IS the
+  classifying map of the universal family, which pins the TARGET — and they do
+  not pin `A`, so pinching `A₀` along a `G₀`-stable ideal satisfies every one
+  of them with a nodal `A`.
+
+  Stated over `S` rather than at a field base because the structure is written
+  over an arbitrary base scheme and because that is the form Katz–Mazur 8.2.1
+  is actually proved in (smooth of relative dimension one over `ℤ[1/Nn]`, hence
+  over every base where `N` and `n` are invertible).  The ring-level conjuncts
+  the field-base consumers want are read back off it by
+  `algebraSmooth_of_smoothOfRelativeDimension` and
+  `ringKrullDim_eq_of_smoothOfRelativeDimension`; note `ringKrullDim A = 1`
+  could NOT have been a field here, being false over `Spec ℤ[1/N]`.
+
+  **RESTORED at release 32 (2026-07-31).**  This field and `transitiveM` below
+  are two independent repairs made on two branches one day apart, each moving a
+  citation out of a refuted `∀ P` theorem and onto this structure.  They are
+  COMPLEMENTARY — different citations, different consumers — and a merge kept
+  only the later one, so `Gamma1GITPresentation` lost `smoothM` while three
+  consumers went on reading it (`X1.lean` was unbuildable behind the red `X0`
+  for six releases and nobody could see it).  The text here is verbatim from
+  `64651d82`; the sibling field on `Gamma1Rigidification` and the `hsm`
+  hypothesis of `nonempty_gamma1Rigidification_of_rigidifiedModuli` were lost
+  and restored with it. -/
+  smoothM : AlgebraicGeometry.SmoothOfRelativeDimension 1 strM
   /-- **Deligne–Rapoport IV.5.5**: the deck group permutes the geometric
   components of the rigidified moduli scheme transitively.
 
@@ -1490,6 +1523,14 @@ structure Gamma1Rigidification (N : ℕ) (S : Scheme.{0}) where
     IsBaseChangeOfGamma1 a d₁ dM →
     IsBaseChangeOfGamma1 b d₁ dM →
     a ≫ specInvariantsQuotient G A = b ≫ specInvariantsQuotient G A
+  /-- **Katz–Mazur 8.2.1**: the rigidified moduli scheme is SMOOTH of relative
+  dimension one over the base.  Carried verbatim into
+  `Gamma1GITPresentation.smoothM`, whose docstring records why it has to be a
+  field and not a theorem; supplied at the one construction site
+  (`nonempty_gamma1Rigidification_of_rigidifiedModuli`) as a hypothesis, in
+  exactly the way `hcov` is.  Added 2026-07-30, lost to a merge, restored at
+  release 32. -/
+  smoothM : AlgebraicGeometry.SmoothOfRelativeDimension 1 strM
   /-- **Deligne–Rapoport IV.5.5**: the deck group permutes the geometric
   components of the rigidified moduli scheme transitively.  Carried verbatim
   into `Gamma1GITPresentation.transitiveM`, whose docstring records why it has
@@ -5471,6 +5512,7 @@ theorem nonempty_gamma1Rigidification_of_rigidifiedModuli (N n : ℕ) (hn : 3 �
         AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
         Nonempty (IsBaseChangeOfGamma1 p d' d) ∧
         Nonempty (AbelianFullLevelStructure n d'.ab))
+    (hsm : AlgebraicGeometry.SmoothOfRelativeDimension 1 R.strM)
     (htr : letI := R.commRing_A
       ∀ act : MulSemiringAction (gamma0DeckGroup n) R.A,
         letI := act
@@ -5503,6 +5545,7 @@ theorem nonempty_gamma1Rigidification_of_rigidifiedModuli (N n : ℕ) (hn : 3 �
             strM_invariant := hstrinv
             dM_equivariant := hequiv
             coequalises := fun {Z} a b d₁ hab ha hb => hcoeq a b d₁ hab ha hb
+            smoothM := hsm
             transitiveM :=
               htr act hstrinv hequiv
                 (fun {Z} a b d₁ hab ha hb => hcoeq a b d₁ hab ha hb) }⟩
@@ -5709,6 +5752,7 @@ theorem exists_gamma1Rigidification (N : ℕ) (hN : 4 ≤ N) (K : Type) [Field K
   obtain ⟨R⟩ := exists_gamma1RigidifiedModuli N hN n hn K hchar hcn
   exact nonempty_gamma1Rigidification_of_rigidifiedModuli N n hn R
     (fun {_T} g d => exists_gamma1FullLevelStructure_cover n hn K hcn g d)
+    (smoothOfRelativeDimension_of_gamma1RigidifiedModuli N n hN hn K hchar hcn R)
     (fun act h₁ h₂ h₃ =>
       transitiveOnGeometricComponents_of_gamma1RigidifiedModuli N n hN hn K hchar hcn R act
         h₁ h₂ (fun {_Z} a b d₁ hab ha hb => h₃ a b d₁ hab ha hb))
