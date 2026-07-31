@@ -7567,38 +7567,240 @@ noncomputable def sectionIdealPairToConst {Z T : Scheme.{u}} [IrreducibleSpace Z
     (σ τ : T ⟶ Z) : modTensor (sectionIdeal σ) (sectionIdeal τ) ⟶ constSheaf Z :=
   modTensorToUnit (kernel.ι _) (kernel.ι _) ≫ toConstSheaf Z
 
-/-- **THE PRODUCT-IDEAL MAP IS INJECTIVE** (sorry leaf, 2026-07-31) — for two
-INVERTIBLE ideal sheaves on an INTEGRAL scheme, `I ⊗ J ⟶ 𝒪_X` is monic, so
+universe v₁ v₂ u₁ u₂
+
+/-! #### `I ⊗ J ⟶ 𝒪_X` IS MONIC, AND IT IS A FORMAL CONSEQUENCE OF INVERTIBILITY
+
+(2026-07-31.)  `mono_modTensorToUnit` below used to be a sorry leaf routed through a
+LOCAL model — trivialize `I` and `J` on a common `U`, read the map as multiplication
+by `ab ∈ Γ(X, U)`, and use that an integral scheme has domains for section rings.  That
+route needs "monicity is local" for `𝒪`-modules, a compatibility of `modTensor` with
+restriction, and the domain theory; none of it is in the pin, and all of it is
+avoidable.
+
+**The formal route, which is what is taken here, and it needs NO integrality.**
+`modTensorToUnit ιL ιM` is `modTensorMap ιL ιM` followed by the left unitor, and
+`modTensorMap` is by definition the SHEAFIFICATION of the presheaf-level `tensorHom`.
+So work in `ModLM X`, the localized MONOIDAL category the associator section above
+builds: there `⊗` is a genuine bifunctor with a natural associator and unitors, and
+
+* `f ⊗ₘ g = (f ▷ M) ≫ (𝒪 ◁ g)`  (`tensorHom_def`);
+* `- ▷ M` is an EQUIVALENCE when `M` is invertible, because `M ⊗ N ≅ 𝟙_` gives a
+  two-sided natural inverse `- ▷ N` through the associator and the right unitor —
+  hence it preserves monomorphisms;
+* `𝒪 ◁ g` is conjugate to `g` by the LEFT UNITOR, which is natural, hence monic.
+
+**So exactly ONE of the two sheaves has to be invertible, and `[IsIntegral X]` is not
+used at all.**  Both are kept in the signature: they cost the sole call site nothing
+(it has them in hand), a weaker hypothesis set cannot make the statement false, and
+changing a signature is a merge hazard.  See the corrected audit on the theorem.
+
+The bridge from `modTensorMap` to `ModLM`'s `⊗ₘ` is `Functor.Monoidal.map_tensor`
+applied to `modLocA X` (sheafification, as a monoidal functor), plus naturality of
+`modSheafifyValIso`, which is the counit of the sheafification adjunction. -/
+
+/-- **A FUNCTOR WITH A TWO-SIDED POINTWISE-NATURAL INVERSE PRESERVES MONOS** (PROVEN).
+
+The isomorphisms are given POINTWISE, as a family plus its naturality equation, rather
+than as `F ⋙ G ≅ 𝟭 C`.  That is not cosmetic: the components of the latter carry a
+`(𝟭 C).obj X` wrapper which is `rfl`-equal to `X` and NOT syntactically equal to it, so
+`rw` and instance search both fail on goals that print correctly — the trap CLAUDE.md
+records under "the `(𝟭 C).obj X` wrapper on adjunction components breaks `rw`". -/
+theorem mono_map_of_pointwiseInv {C : Type u₁} [Category.{v₁} C] {D : Type u₂}
+    [Category.{v₂} D] (F : C ⥤ D) (G : D ⥤ C)
+    (φ : ∀ X : C, G.obj (F.obj X) ≅ X)
+    (hφ : ∀ {X Y : C} (f : X ⟶ Y), G.map (F.map f) ≫ (φ Y).hom = (φ X).hom ≫ f)
+    (ψ : ∀ Z : D, F.obj (G.obj Z) ≅ Z)
+    (hψ : ∀ {Z W : D} (g : Z ⟶ W), F.map (G.map g) ≫ (ψ W).hom = (ψ Z).hom ≫ g)
+    {A B : C} (u : A ⟶ B) [Mono u] : Mono (F.map u) := by
+  haveI : Mono ((φ A).hom ≫ u) := mono_comp _ _
+  haveI : Mono (G.map (F.map u)) := mono_of_mono_fac (hφ u)
+  constructor
+  intro Z g₁ g₂ h
+  have h1 : G.map g₁ = G.map g₂ := by
+    have hc : G.map g₁ ≫ G.map (F.map u) = G.map g₂ ≫ G.map (F.map u) := by
+      rw [← G.map_comp, ← G.map_comp, h]
+    exact (cancel_mono _).mp hc
+  have key : (ψ Z).hom ≫ g₁ = (ψ Z).hom ≫ g₂ := by
+    refine (hψ g₁).symm.trans (Eq.trans ?_ (hψ g₂))
+    rw [h1]
+  exact (cancel_epi (ψ Z).hom) |>.mp key
+
+/-- `(X ⊗ Y) ⊗ N ≅ X`, from `Y ⊗ N ≅ 𝟙_` — the pointwise inverse of `- ▷ Y`. -/
+noncomputable def tensorRightCancelIso {C : Type u₁} [Category.{v₁} C] [MonoidalCategory C]
+    {Y N : C} (e : Y ⊗ N ≅ 𝟙_ C) (X : C) : (X ⊗ Y) ⊗ N ≅ X :=
+  α_ X Y N ≪≫ whiskerLeftIso X e ≪≫ ρ_ X
+
+/-- `tensorRightCancelIso` is natural (PROVEN) — associator, `whisker_exchange` and the
+right unitor, one rewrite each. -/
+theorem tensorRightCancelIso_naturality {C : Type u₁} [Category.{v₁} C] [MonoidalCategory C]
+    {Y N : C} (e : Y ⊗ N ≅ 𝟙_ C) {X X' : C} (f : X ⟶ X') :
+    (f ▷ Y) ▷ N ≫ (tensorRightCancelIso e X').hom
+      = (tensorRightCancelIso e X).hom ≫ f := by
+  simp only [tensorRightCancelIso, Iso.trans_hom, whiskerLeftIso_hom, Category.assoc]
+  rw [associator_naturality_left_assoc, ← whisker_exchange_assoc, rightUnitor_naturality]
+
+/-- **AN INVERTIBLE OBJECT IS TENSOR-CANCELLABLE ON MONOS** (PROVEN) — if `Y ⊗ N ≅ 𝟙_`
+and `N ⊗ Y ≅ 𝟙_` then `- ▷ Y` is an equivalence, hence preserves monomorphisms.
+
+This is the whole of what invertibility of the sheaf is used for below. -/
+theorem mono_whiskerRight_of_tensorInv {C : Type u₁} [Category.{v₁} C] [MonoidalCategory C]
+    {Y N : C} (e : Y ⊗ N ≅ 𝟙_ C) (e' : N ⊗ Y ≅ 𝟙_ C)
+    {A B : C} (u : A ⟶ B) [Mono u] : Mono (u ▷ Y) :=
+  mono_map_of_pointwiseInv (tensorRight Y) (tensorRight N)
+    (tensorRightCancelIso e) (fun f => tensorRightCancelIso_naturality e f)
+    (tensorRightCancelIso e') (fun g => tensorRightCancelIso_naturality e' g) u
+
+/-- **WHISKERING ON THE LEFT BY AN OBJECT ISOMORPHIC TO THE UNIT PRESERVES MONOS**
+(PROVEN) — `𝟙_ ◁ g` is conjugate to `g` by the left unitor, and `whisker_exchange`
+moves the isomorphism across. -/
+theorem mono_whiskerLeft_of_unitIso {C : Type u₁} [Category.{v₁} C] [MonoidalCategory C]
+    {U : C} (w : U ≅ 𝟙_ C) {A B : C} (g : A ⟶ B) [Mono g] : Mono (U ◁ g) := by
+  haveI : Mono (𝟙_ C ◁ g) := mono_of_mono_fac (leftUnitor_naturality g)
+  haveI : Mono (w.hom ▷ A ≫ 𝟙_ C ◁ g) := mono_comp _ _
+  exact mono_of_mono_fac (whisker_exchange w.hom g)
+
+/-- **`toModLM (modUnit Z)` IS THE MONOIDAL UNIT OF `ModLM Z`** (PROVEN) — the unit of
+the localized structure is `a(𝟙_)` because `modLocEps` is the identity, and
+`(modUnit Z).val` IS the presheaf monoidal unit (`SheafOfModules.unit` is built on
+`PresheafOfModules.unit`, which is `tensorUnit`), both by `rfl`.  So this is
+`modSheafifyValIsoLM` read at `modUnit Z`. -/
+noncomputable def modUnitLMIso (Z : Scheme.{u}) : toModLM (modUnit Z) ≅ 𝟙_ (ModLM Z) :=
+  (modSheafifyValIsoLM (modUnit Z)).symm
+
+/-- **NATURALITY OF `modSheafifyValIso`** (PROVEN) — it is the counit of the
+sheafification adjunction, so this is `NatTrans.naturality` verbatim.  It is what
+identifies `(modLocA Z).map f.val` with `f` itself, up to the two counit isomorphisms. -/
+theorem modSheafifyValIso_naturality {Z : Scheme.{u}} {L M : Z.Modules} (f : L ⟶ M) :
+    (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).map
+        ((SheafOfModules.forget _).map f) ≫ (modSheafifyValIso M).hom
+      = (modSheafifyValIso L).hom ≫ f :=
+  (PresheafOfModules.sheafificationAdjunction (𝟙 Z.ringCatSheaf.obj)).counit.naturality f
+
+/-- **AN INVERTIBLE SHEAF IS AN INVERTIBLE OBJECT OF `ModLM Z`, ON BOTH SIDES** (PROVEN)
+— `exists_modTensor_inv` supplies `M ⊗ N ≅ 𝒪`, `modTensorLocIso` moves it into the
+localized monoidal structure, `modUnitLMIso` identifies `𝒪` with `𝟙_`, and
+`modTensorSymmIso` (the braiding, PROVEN above) gives the other side. -/
+theorem exists_tensorInv_modLM {Z : Scheme.{u}} {M : Z.Modules} (hM : IsInvertibleSheaf M) :
+    ∃ N : Z.Modules, Nonempty (toModLM M ⊗ toModLM N ≅ 𝟙_ (ModLM Z)) ∧
+      Nonempty (toModLM N ⊗ toModLM M ≅ 𝟙_ (ModLM Z)) := by
+  obtain ⟨N, _, ⟨e⟩⟩ := exists_modTensor_inv hM
+  refine ⟨N, ⟨?_⟩, ⟨?_⟩⟩
+  · exact (modTensorLocIso M N).symm ≪≫ (e : toModLM (modTensor M N) ≅ toModLM (modUnit Z)) ≪≫
+      modUnitLMIso Z
+  · exact (modTensorLocIso N M).symm ≪≫
+      (modTensorSymmIso N M : toModLM (modTensor N M) ≅ toModLM (modTensor M N)) ≪≫
+      (e : toModLM (modTensor M N) ≅ toModLM (modUnit Z)) ≪≫ modUnitLMIso Z
+
+/-- **`ιL ⊗ₘ ιM` IS MONIC IN `ModLM X`** (PROVEN) as soon as both factors are and `M` is
+invertible.  Neither integrality of `X` nor invertibility of `L` is used. -/
+theorem mono_tensorHom_modLM {X : Scheme.{u}} {L M : X.Modules}
+    (ιL : toModLM L ⟶ toModLM (modUnit X)) (ιM : toModLM M ⟶ toModLM (modUnit X))
+    (hM : IsInvertibleSheaf M) (hιL : Mono ιL) (hιM : Mono ιM) :
+    Mono (ιL ⊗ₘ ιM) := by
+  haveI := hιL; haveI := hιM
+  obtain ⟨N, ⟨e⟩, ⟨e'⟩⟩ := exists_tensorInv_modLM hM
+  haveI : Mono (ιL ▷ toModLM M) := mono_whiskerRight_of_tensorInv e e' _
+  haveI : Mono (toModLM (modUnit X) ◁ ιM) := mono_whiskerLeft_of_unitIso (modUnitLMIso X) _
+  rw [tensorHom_def]
+  infer_instance
+
+/-- The form the assembly consumes (PROVEN).  The factorisation `hpq` is an EXPLICIT
+argument rather than an instance, so that it is checked up to DEFEQ: `ModLM X` is a type
+synonym for `X.Modules`, so a `⊗ₘ` written here and a `⊗ₘ` written at the call site can
+pick up the monoidal instance by different routes and fail to match syntactically — which
+is exactly what instance search cannot cross and what an explicit argument can. -/
+theorem mono_of_fac_tensorHom_modLM {X : Scheme.{u}} {A B : ModLM X} {L M : X.Modules}
+    (ιL : toModLM L ⟶ toModLM (modUnit X)) (ιM : toModLM M ⟶ toModLM (modUnit X))
+    (hM : IsInvertibleSheaf M) (hιL : Mono ιL) (hιM : Mono ιM)
+    (f : A ⟶ toModLM L ⊗ toModLM M) (hf : IsIso f)
+    (p : A ⟶ B) (q : B ⟶ toModLM (modUnit X) ⊗ toModLM (modUnit X))
+    (hpq : p ≫ q = f ≫ (ιL ⊗ₘ ιM)) : Mono p := by
+  haveI := hf
+  haveI := mono_tensorHom_modLM ιL ιM hM hιL hιM
+  haveI : Mono (f ≫ (ιL ⊗ₘ ιM)) := mono_comp _ _
+  exact mono_of_mono_fac hpq
+
+/-- **`modTensorMap ιL ιM` IS MONIC** (PROVEN) — the whole content of
+`mono_modTensorToUnit` below, which adds only the left unitor.
+
+`modTensorMap ιL ιM` IS `(modLocA X).map (ιL.val ⊗ₘ ιM.val)` by `rfl`, so
+`Functor.Monoidal.map_tensor` rewrites it as an isomorphism, the localized `⊗ₘ` of the
+two sheafified maps, and another isomorphism; and the two sheafified maps are conjugate
+to `ιL`, `ιM` themselves by the counit of the sheafification adjunction. -/
+theorem mono_modTensorMap_of_invertible {X : Scheme.{u}} {L M : X.Modules}
+    (ιL : L ⟶ modUnit X) (ιM : M ⟶ modUnit X) (hM : IsInvertibleSheaf M)
+    (hιL : Mono ιL) (hιM : Mono ιM) : Mono (modTensorMap ιL ιM) := by
+  have hfac :
+      (((modLocA X).map ((SheafOfModules.forget _).map ιL)) ⊗ₘ
+        ((modLocA X).map ((SheafOfModules.forget _).map ιM)))
+        ≫ ((modSheafifyValIsoLM (modUnit X)).hom ⊗ₘ (modSheafifyValIsoLM (modUnit X)).hom)
+      = ((modSheafifyValIsoLM L).hom ⊗ₘ (modSheafifyValIsoLM M).hom)
+        ≫ ((ιL : toModLM L ⟶ toModLM (modUnit X)) ⊗ₘ
+            (ιM : toModLM M ⟶ toModLM (modUnit X))) := by
+    rw [tensorHom_comp_tensorHom, tensorHom_comp_tensorHom]
+    congr 1 <;> exact modSheafifyValIso_naturality _
+  haveI hmid : Mono (((modLocA X).map ((SheafOfModules.forget _).map ιL)) ⊗ₘ
+      ((modLocA X).map ((SheafOfModules.forget _).map ιM))) :=
+    mono_of_fac_tensorHom_modLM (X := X) (L := L) (M := M) ιL ιM hM hιL hιM
+      ((modSheafifyValIsoLM L).hom ⊗ₘ (modSheafifyValIsoLM M).hom) inferInstance _ _ hfac
+  have hmt := Functor.Monoidal.map_tensor (modLocA X)
+    ((SheafOfModules.forget _).map ιL) ((SheafOfModules.forget _).map ιM)
+  have hfin : Mono ((modLocA X).map ((SheafOfModules.forget _).map ιL ⊗ₘ
+      (SheafOfModules.forget _).map ιM)) := by rw [hmt]; infer_instance
+  exact hfin
+
+/-- **THE PRODUCT-IDEAL MAP IS INJECTIVE** (PROVEN 2026-07-31; a sorry leaf for a few
+hours the same day) — for two invertible ideal sheaves, `I ⊗ J ⟶ 𝒪_X` is monic, so
 `I ⊗ J` is again a subsheaf of `𝒪_X` (namely the product ideal `IJ`).
 
-**Route.**  Monicity is local, and both sheaves are locally trivial: near any
-point choose `U` on which `I|_U ≅ 𝒪_U` and `J|_U ≅ 𝒪_U`, with the inclusions
-becoming multiplication by sections `a, b ∈ Γ(X, U)`.  Then `(I ⊗ J)|_U ≅ 𝒪_U`
-and the map is multiplication by `ab`.  On an INTEGRAL scheme `Γ(X, U)` is a
-domain and `a, b ≠ 0` (they are nonzero because `I`, `J` are nonzero subsheaves
-of `𝒪`), so `ab ≠ 0` and multiplication by it is injective.
+**THE ROUTE TAKEN IS NOT THE ONE THE LEAF RECORDED, and the difference is a whole
+development.**  The recorded route was LOCAL: trivialize `I` and `J` on a common `U`,
+read the map as multiplication by `ab ∈ Γ(X, U)`, and use that an integral scheme has
+domains for section rings.  That needs "monicity of a map of `𝒪`-modules is local"
+(absent), a compatibility of `modTensor` with restriction (absent), and the domain
+theory.  The route taken is FORMAL and runs in `ModLM X`, the localized monoidal
+category built for the associator above; see the section header.  It is `tensorHom_def`
+plus the fact that tensoring by an invertible object is an equivalence.
 
-**FAITHFULNESS.  Every hypothesis is load-bearing.**
+**FAITHFULNESS AUDIT — RE-RUN 2026-07-31 AGAINST THE PROOF, AND THE PREVIOUS AUDIT IS
+CORRECTED IN TWO PLACES.**  The audit written while this was a leaf claimed "every
+hypothesis is load-bearing".  Two of the four are not, and one of its counterexamples
+does not satisfy the hypotheses it is offered against.
 
-* Drop integrality: over `X = Spec k[x,y]/(xy)` take `I = (x)`, `J = (y)`.  Both
-  are invertible on the two components separately, `I ⊗ J` is nonzero, and the
-  product map is zero, so it is not monic.  A nonzerodivisor hypothesis is
-  exactly what a domain supplies.
-* Drop invertibility of `J`: for `X` a smooth affine surface and `J = 𝔪` the
-  maximal ideal at a point, `I = 𝒪`, the map `𝒪 ⊗ 𝔪 ⟶ 𝒪` is monic — so this
-  particular drop is not refuted by that witness; invertibility is used to make
-  the LOCAL model available at all, and without it `I ⊗ J` has torsion at the
-  points where the ideals are not principal and the map kills it.  The standard
-  witness is `X = Spec k[x,y]`, `I = J = (x, y)`: `I ⊗ J` has a torsion element
-  `x ⊗ y − y ⊗ x ≠ 0` that maps to `xy − yx = 0`.
+* `[IsIntegral X]` is **NOT** used, and the witness offered against dropping it is not a
+  witness.  It was `X = Spec k[x,y]/(xy)`, `I = (x)`, `J = (y)`, and the audit conceded
+  in the same sentence that these are "invertible on the two components separately" —
+  which is precisely the point: `(x)` is **not** invertible on `X`.  `Ann_R(x) = (y)`, so
+  `(x) ≅ R/(y) ≅ k[x]` as an `R`-module, and at the origin that is a module killed by a
+  nonzero element of the local ring, hence not free of rank one there.  So the
+  hypothesis `IsInvertibleSheaf I` fails at the only point where the conclusion does.
+  The proof below never mentions integrality.
+* `IsInvertibleSheaf L` is **NOT** used either — only ONE of the two sheaves has to be
+  invertible.  By the braiding (`modTensorSymmIso`, proven above) either one will do; the
+  proof below spends `_hM`.  The audit's second bullet is still correct that SOME
+  invertibility is needed, and its witness for that is good: on `X = Spec k[x,y]` with
+  `I = J = (x, y)`, neither is invertible, `I ⊗ J` has the torsion element
+  `x ⊗ y − y ⊗ x ≠ 0`, and it maps to `xy − yx = 0`.
+* `Mono ιL` and `Mono ιM` are both load-bearing and both are used.  Drop either and the
+  statement is false for the trivial reason that `ιL = 0` with `L = M = 𝒪` makes the
+  product map `0` while `I ⊗ J ≅ 𝒪 ≠ 0`.
 
-**NOT VACUOUS.**  Satisfied by `I = J = 𝒪`, and by the pair of section ideals
-of any two sections of a smooth proper relative curve — which is the only place
-it is consumed. -/
+**BOTH UNUSED HYPOTHESES ARE KEPT IN THE SIGNATURE ON PURPOSE.**  The sole call site,
+`exists_units_functionField_of_iso_sectionIdeal` below, has all four in hand and passes
+them; a weaker hypothesis set cannot make a statement false, so nothing is risked by
+keeping them; and changing a signature is the interface-split merge hazard CLAUDE.md
+devotes a section to.  A successor who wants the sharp statement should use
+`mono_modTensorMap_of_invertible` just above, which takes only what it uses.
+
+**NOT VACUOUS.**  Satisfied by `I = J = 𝒪`, and by the pair of section ideals of any two
+sections of a smooth proper relative curve — which is the only place it is consumed. -/
 theorem mono_modTensorToUnit {X : Scheme.{u}} [IsIntegral X] {L M : X.Modules}
     {ιL : L ⟶ modUnit X} {ιM : M ⟶ modUnit X} (_hL : IsInvertibleSheaf L)
-    (_hM : IsInvertibleSheaf M) (_hιL : Mono ιL) (_hιM : Mono ιM) :
-    Mono (modTensorToUnit ιL ιM) := sorry
+    (hM : IsInvertibleSheaf M) (hιL : Mono ιL) (hιM : Mono ιM) :
+    Mono (modTensorToUnit ιL ιM) := by
+  haveI := mono_modTensorMap_of_invertible ιL ιM hM hιL hιM
+  exact mono_comp _ _
 
 /-- **THE DICTIONARY: AN ISOMORPHISM OF INVERTIBLE SUBSHEAVES OF `𝒦_X` IS
 MULTIPLICATION BY AN ELEMENT OF `𝒦_Xˣ`** (sorry leaf, 2026-07-31) — obligation
