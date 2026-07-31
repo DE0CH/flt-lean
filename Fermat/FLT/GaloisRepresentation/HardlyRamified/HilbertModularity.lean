@@ -15899,6 +15899,48 @@ theorem repr_mem_subring_of_trace_mem_hilbert
   rw [show b.repr M i = ((cC i : C) : B) from congrFun hfinal i]
   exact (cC i).2
 
+/-- **The residual module is two-dimensional, from the reduction clause
+alone** (PROVEN — the datum-free form of `rank_eq_two_of_hilbertDeformationDatum`
+above, extracted 2026-07-31 so that the Rouquier–Nyssen chain below can be run
+at RAISED level as well as at bottom level).
+
+Only `hresid` is consumed: the charpoly of `ρ 1` on `Fin 2 → R` has degree `2`
+and reduces to the charpoly of `ρbar 1` on `V`. -/
+theorem rank_eq_two_of_framedResid
+    {F : Type u} [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] {ρbar : GaloisRep ℚ k V}
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R]
+    (ρ : FramedGaloisRep F R (Fin 2)) (π : R →+* k)
+    (hresid : ∀ g : Γ F, ((ρ g).charpoly).map π =
+      ((ρbar.map (algebraMap ℚ F)) g).charpoly) :
+    Module.rank k V = 2 := by
+  have hres := hresid 1
+  have hL : (((ρ 1).charpoly).map π).natDegree = 2 := by
+    rw [(LinearMap.charpoly_monic (ρ 1)).natDegree_map π,
+      LinearMap.charpoly_natDegree, Module.finrank_pi]
+    simp
+  rw [hres, LinearMap.charpoly_natDegree] at hL
+  rw [← Module.finrank_eq_rank, hL]
+  norm_num
+
+/-- **The residue characteristic is `ℓ`, from the reduction map alone**
+(PROVEN — the datum-free form of `natCast_eq_zero_of_hilbertDeformationDatum`
+above, extracted 2026-07-31 for the same reason).
+
+A ring map `R →+* k` out of a `ℤ_ℓ`-algebra makes the FINITE `k` a
+`ℤ_ℓ`-algebra, and `natCast_eq_zero_of_finite_algebra` does the rest.  No
+surjectivity, no local conditions, no datum. -/
+lemma natCast_eq_zero_of_ringHom (ℓ : ℕ) [Fact ℓ.Prime]
+    {k : Type u} [Field k] [Finite k]
+    {R : Type u} [CommRing R] [Algebra ℤ_[ℓ] R] (π : R →+* k) :
+    ((ℓ : ℕ) : k) = 0 := by
+  letI : Algebra ℤ_[ℓ] k := (π.comp (algebraMap ℤ_[ℓ] R)).toAlgebra
+  exact natCast_eq_zero_of_finite_algebra ℓ k
+
+
 /-- **The commutant of `ρbar|_{G_F}` is the scalars** — ABSOLUTE
 irreducibility of the restricted residual representation (PROVEN 2026-07-27
 over the added hypothesis `[NumberField.IsTotallyReal F]`; cut
@@ -16035,14 +16077,24 @@ theorem exists_smul_eq_of_commute_of_isIrreducible_hilbert
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    (ρ : FramedGaloisRep F R (Fin 2))
+    (hdet : ∀ g : Γ F, ρ.det g = algebraMap ℤ_[ℓ] R
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv))
+    (π : R →+* k) (_hpi : Function.Surjective π)
+    (hresid : ∀ g : Γ F, ((ρ g).charpoly).map π =
+      ((ρbar.map (algebraMap ℚ F)) g).charpoly)
+    (_hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (_hcompl : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
     (f : Module.End k V)
     (hf : ∀ g : Γ F, Commute f ((ρbar.map (algebraMap ℚ F)) g)) :
     ∃ c : k, f = c • 1 := by
   classical
   haveI : Representation.IsIrreducible
     (ρbar.map (algebraMap ℚ F)).toRepresentation := hirrF
-  have hrk : Module.rank k V = 2 := rank_eq_two_of_hilbertDeformationDatum 𝒟
+  have hrk : Module.rank k V = 2 := rank_eq_two_of_framedResid ρ π hresid
   have hfr : Module.finrank k V = 2 :=
     Module.finrank_eq_of_rank_eq (by exact_mod_cast hrk)
   -- **Schur's lemma**: an endomorphism commuting with the whole image of the
@@ -16074,7 +16126,7 @@ theorem exists_smul_eq_of_commute_of_isIrreducible_hilbert
   -- **`−1 ≠ 1` in `k`**, because `char k = ℓ` is odd. This is where `hℓ5` is
   -- consumed, and it is consumed nowhere else in the cluster.
   have hℓOdd : Odd ℓ := (Fact.out : ℓ.Prime).odd_of_ne_two (by omega)
-  have hlk : ((ℓ : ℕ) : k) = 0 := natCast_eq_zero_of_hilbertDeformationDatum ℓ 𝒟
+  have hlk : ((ℓ : ℕ) : k) = 0 := natCast_eq_zero_of_ringHom ℓ π
   have hne1 : (-1 : k) ≠ 1 := by
     intro hcon
     have h2 : ((2 : ℕ) : k) = 0 := by
@@ -16098,10 +16150,10 @@ theorem exists_smul_eq_of_commute_of_isIrreducible_hilbert
     rw [hJc, ← map_mul ρbar]
     convert map_one ρbar using 2
     exact complexConj_mul_self
-  -- **Oddness**, through `𝒟`: the determinant clause gives `det (𝒟.ρ c) = −1`,
-  -- and `𝒟.resid` carries it to `J` through the constant charpoly coefficient.
-  have hdet𝒟 : LinearMap.det (𝒟.ρ c) = -1 := by
-    have hd := 𝒟.isHilbertHardlyRamified.det c
+  -- **Oddness**, through `𝒟`: the determinant clause gives `det (ρ c) = −1`,
+  -- and `hresid` carries it to `J` through the constant charpoly coefficient.
+  have hdet𝒟 : LinearMap.det (ρ c) = -1 := by
+    have hd := hdet c
     rw [GaloisRep.det_apply, hc, cyclotomicCharacter_complexConj ℓ hℓOdd] at hd
     rw [hd]
     simp
@@ -16109,11 +16161,11 @@ theorem exists_smul_eq_of_commute_of_isIrreducible_hilbert
     have h1 : LinearMap.det J = J.charpoly.coeff 0 := by
       rw [LinearMap.det_eq_sign_charpoly_coeff, hfr]
       ring
-    have h2 : LinearMap.det (𝒟.ρ c) = (𝒟.ρ c).charpoly.coeff 0 := by
+    have h2 : LinearMap.det (ρ c) = (ρ c).charpoly.coeff 0 := by
       rw [LinearMap.det_eq_sign_charpoly_coeff,
-        show Module.finrank 𝒟.R (Fin 2 → 𝒟.R) = 2 by simp]
+        show Module.finrank R (Fin 2 → R) = 2 by simp]
       ring
-    have h3 : J.charpoly = ((𝒟.ρ c).charpoly).map 𝒟.π := (𝒟.resid c).symm
+    have h3 : J.charpoly = ((ρ c).charpoly).map π := (hresid c).symm
     rw [h1, h3, Polynomial.coeff_map, ← h2, hdet𝒟, map_neg, map_one]
   have hJnot1 : J ≠ 1 := by
     intro hcJ
@@ -16261,41 +16313,51 @@ theorem exists_residual_basis_toMatrix'_hilbert
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    (ρ : FramedGaloisRep F R (Fin 2))
+    (hdet : ∀ g : Γ F, ρ.det g = algebraMap ℤ_[ℓ] R
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv))
+    (π : R →+* k) (_hpi : Function.Surjective π)
+    (hresid : ∀ g : Γ F, ((ρ g).charpoly).map π =
+      ((ρbar.map (algebraMap ℚ F)) g).charpoly)
+    (_hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (_hcompl : IsAdicComplete (IsLocalRing.maximalIdeal R) R) :
     ∃ g : Fin 2 × Fin 2 → Γ F,
       ∃ c : Module.Basis (Fin 2 × Fin 2) k (Matrix (Fin 2) (Fin 2) k),
-        ∀ i, c i = (LinearMap.toMatrix' (𝒟.ρ (g i))).map ⇑𝒟.π := by
+        ∀ i, c i = (LinearMap.toMatrix' (ρ (g i))).map ⇑π := by
   classical
-  -- the residual representation `g ↦ 𝒟.ρ g mod 𝔪`, on `k²`
+  -- the residual representation `g ↦ ρ g mod 𝔪`, on `k²`
   set σ : Representation k (Γ F) (Fin 2 → k) :=
-    { toFun := fun g => Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ g)).map ⇑𝒟.π)
+    { toFun := fun g => Matrix.toLin' ((LinearMap.toMatrix' (ρ g)).map ⇑π)
       map_one' := by
-        show Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ 1)).map ⇑𝒟.π) = 1
-        rw [show (𝒟.ρ 1) = 1 from map_one 𝒟.ρ, LinearMap.toMatrix'_one,
-          Matrix.map_one _ (map_zero 𝒟.π) (map_one 𝒟.π), Matrix.toLin'_one]
+        show Matrix.toLin' ((LinearMap.toMatrix' (ρ 1)).map ⇑π) = 1
+        rw [show (ρ 1) = 1 from map_one ρ, LinearMap.toMatrix'_one,
+          Matrix.map_one _ (map_zero π) (map_one π), Matrix.toLin'_one]
         rfl
       map_mul' := fun g g' => by
-        show Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ (g * g'))).map ⇑𝒟.π)
-          = Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ g)).map ⇑𝒟.π)
-            * Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ g')).map ⇑𝒟.π)
-        rw [show (𝒟.ρ (g * g')) = 𝒟.ρ g * 𝒟.ρ g' from map_mul 𝒟.ρ g g',
+        show Matrix.toLin' ((LinearMap.toMatrix' (ρ (g * g'))).map ⇑π)
+          = Matrix.toLin' ((LinearMap.toMatrix' (ρ g)).map ⇑π)
+            * Matrix.toLin' ((LinearMap.toMatrix' (ρ g')).map ⇑π)
+        rw [show (ρ (g * g')) = ρ g * ρ g' from map_mul ρ g g',
           LinearMap.toMatrix'_mul, Matrix.map_mul, Matrix.toLin'_mul]
         rfl }
   -- dimensions
-  have hrk : Module.rank k V = 2 := rank_eq_two_of_hilbertDeformationDatum 𝒟
+  have hrk : Module.rank k V = 2 := rank_eq_two_of_framedResid ρ π hresid
   have hfrV : Module.finrank k V = 2 :=
     Module.finrank_eq_of_rank_eq (by exact_mod_cast hrk)
   have hfrW : Module.finrank k (Fin 2 → k) = 2 := by simp
   haveI : Nontrivial V :=
     Module.nontrivial_of_finrank_pos (R := k) (by rw [hfrV]; norm_num)
-  -- charpoly agreement: `𝒟.resid`, read through the matrix dictionary
+  -- charpoly agreement: `hresid`, read through the matrix dictionary
   have hcp : ∀ g : Γ F, (σ g).charpoly =
       (((ρbar.map (algebraMap ℚ F))).toRepresentation g).charpoly := by
     intro g
-    show (Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ g)).map ⇑𝒟.π)).charpoly = _
+    show (Matrix.toLin' ((LinearMap.toMatrix' (ρ g)).map ⇑π)).charpoly = _
     rw [Matrix.charpoly_toLin', Matrix.charpoly_map,
       ← charpoly_eq_charpoly_toMatrix']
-    exact 𝒟.resid g
+    exact hresid g
   -- Brauer–Nesbitt: `σ` is conjugate to `ρbar|_{G_F}`
   obtain ⟨e, he⟩ := exists_linearEquiv_of_charpoly_eq hfrV hfrW
     (ρbar.map (algebraMap ℚ F)).toRepresentation σ hirrF hcp
@@ -16319,7 +16381,7 @@ theorem exists_residual_basis_toMatrix'_hilbert
         = (ρbar.map (algebraMap ℚ F)).toRepresentation g * f) →
       ∃ c : k, f = c • 1 :=
     fun f hf =>
-      exists_smul_eq_of_commute_of_isIrreducible_hilbert ℓ hℓ5 F hirrF 𝒟 f
+      exists_smul_eq_of_commute_of_isIrreducible_hilbert ℓ hℓ5 F hirrF ρ hdet π _hpi hresid _hadic _hcompl f
         (fun g => hf g)
   -- Burnside/Jacobson density, on `V`
   have hspanV : Submodule.span k
@@ -16337,7 +16399,7 @@ theorem exists_residual_basis_toMatrix'_hilbert
     simpa [LinearEquiv.conj_apply] using hx
   set Ψ : Module.End k V ≃ₗ[k] Matrix (Fin 2) (Fin 2) k :=
     e.conj.symm.trans LinearMap.toMatrix'
-  have hcomp : (fun g : Γ F => (LinearMap.toMatrix' (𝒟.ρ g)).map ⇑𝒟.π)
+  have hcomp : (fun g : Γ F => (LinearMap.toMatrix' (ρ g)).map ⇑π)
       = fun g => Ψ ((ρbar.map (algebraMap ℚ F)).toRepresentation g) := by
     funext g
     show _ = LinearMap.toMatrix'
@@ -16346,7 +16408,7 @@ theorem exists_residual_basis_toMatrix'_hilbert
     exact (LinearMap.toMatrix'_toLin' _).symm
   have hspanMat : Submodule.span k
       (Set.range (fun g : Γ F =>
-        (LinearMap.toMatrix' (𝒟.ρ g)).map ⇑𝒟.π)) = ⊤ := by
+        (LinearMap.toMatrix' (ρ g)).map ⇑π)) = ⊤ := by
     rw [hcomp]
     have hmap := congrArg (Submodule.map Ψ.toLinearMap) hspanV
     rw [Submodule.map_span, Submodule.map_top,
@@ -16443,66 +16505,76 @@ theorem exists_basis_toMatrix'_isUnit_hilbertTraceGram
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
-    ∃ b : Module.Basis (Fin 4) 𝒟.R (Matrix (Fin 2) (Fin 2) 𝒟.R),
-      (∀ i : Fin 4, ∃ g : Γ F, b i = LinearMap.toMatrix' (𝒟.ρ g)) ∧
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    (ρ : FramedGaloisRep F R (Fin 2))
+    (hdet : ∀ g : Γ F, ρ.det g = algebraMap ℤ_[ℓ] R
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv))
+    (π : R →+* k) (hpi : Function.Surjective π)
+    (hresid : ∀ g : Γ F, ((ρ g).charpoly).map π =
+      ((ρbar.map (algebraMap ℚ F)) g).charpoly)
+    (_hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (_hcompl : IsAdicComplete (IsLocalRing.maximalIdeal R) R) :
+    ∃ b : Module.Basis (Fin 4) R (Matrix (Fin 2) (Fin 2) R),
+      (∀ i : Fin 4, ∃ g : Γ F, b i = LinearMap.toMatrix' (ρ g)) ∧
       IsUnit (Matrix.of (fun i j : Fin 4 =>
         Matrix.trace (b i * b j))).det := by
   classical
-  obtain ⟨g, c, hc⟩ := exists_residual_basis_toMatrix'_hilbert ℓ hℓ5 F hirrF 𝒟
-  -- `𝔪 = ker 𝒟.π`, so an element with nonzero residue is a unit
-  have hker : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
-    IsLocalRing.ker_eq_maximalIdeal 𝒟.π 𝒟.π_surjective
-  have hunit : ∀ x : 𝒟.R, 𝒟.π x ≠ 0 → IsUnit x := by
+  obtain ⟨g, c, hc⟩ := exists_residual_basis_toMatrix'_hilbert ℓ hℓ5 F hirrF ρ hdet π hpi hresid _hadic _hcompl
+  -- `𝔪 = ker π`, so an element with nonzero residue is a unit
+  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal π hpi
+  have hunit : ∀ x : R, π x ≠ 0 → IsUnit x := by
     intro x hx
     refine IsLocalRing.notMem_maximalIdeal.mp ?_
     rw [← hker]
     exact fun hm => hx (RingHom.mem_ker.mp hm)
-  set v : Fin 2 × Fin 2 → Matrix (Fin 2) (Fin 2) 𝒟.R :=
-    fun i => LinearMap.toMatrix' (𝒟.ρ (g i)) with hv
-  set e₀ : Module.Basis (Fin 2 × Fin 2) 𝒟.R (Matrix (Fin 2) (Fin 2) 𝒟.R) :=
-    Matrix.stdBasis 𝒟.R (Fin 2) (Fin 2) with he₀
+  set v : Fin 2 × Fin 2 → Matrix (Fin 2) (Fin 2) R :=
+    fun i => LinearMap.toMatrix' (ρ (g i)) with hv
+  set e₀ : Module.Basis (Fin 2 × Fin 2) R (Matrix (Fin 2) (Fin 2) R) :=
+    Matrix.stdBasis R (Fin 2) (Fin 2) with he₀
   set e₁ : Module.Basis (Fin 2 × Fin 2) k (Matrix (Fin 2) (Fin 2) k) :=
     Matrix.stdBasis k (Fin 2) (Fin 2) with he₁
   -- the change-of-basis matrix reduces to the residual one
-  have hPmap : (e₀.toMatrix v).map ⇑𝒟.π = e₁.toMatrix (fun i => c i) := by
+  have hPmap : (e₀.toMatrix v).map ⇑π = e₁.toMatrix (fun i => c i) := by
     ext p i
-    show 𝒟.π (e₀.repr (v i) p) = e₁.repr (c i) p
+    show π (e₀.repr (v i) p) = e₁.repr (c i) p
     rw [he₀, he₁, stdBasis_repr_apply, stdBasis_repr_apply, hc i]
     rfl
-  -- … which is invertible, so `P.det` is a unit of the local `𝒟.R` (Nakayama)
+  -- … which is invertible, so `P.det` is a unit of the local `R` (Nakayama)
   have hPdet : IsUnit (e₀.toMatrix v).det := by
     refine hunit _ ?_
     rw [RingHom.map_det]
-    show ((e₀.toMatrix v).map ⇑𝒟.π).det ≠ 0
+    show ((e₀.toMatrix v).map ⇑π).det ≠ 0
     rw [hPmap]
     have hu : IsUnit (e₁.det (fun i => c i)) := e₁.isUnit_det c
     rw [Module.Basis.det_apply] at hu
     exact hu.ne_zero
-  have hbi : LinearIndependent 𝒟.R v ∧ Submodule.span 𝒟.R (Set.range v) = ⊤ :=
+  have hbi : LinearIndependent R v ∧ Submodule.span R (Set.range v) = ⊤ :=
     (Module.Basis.is_basis_iff_det e₀).mpr
       (by rw [Module.Basis.det_apply]; exact hPdet)
-  set b₀ : Module.Basis (Fin 2 × Fin 2) 𝒟.R (Matrix (Fin 2) (Fin 2) 𝒟.R) :=
+  set b₀ : Module.Basis (Fin 2 × Fin 2) R (Matrix (Fin 2) (Fin 2) R) :=
     Module.Basis.mk hbi.1 (le_of_eq hbi.2.symm) with hb₀
   have hb₀v : ∀ i, b₀ i = v i := by
     intro i
     rw [hb₀]
     exact congrFun (Module.Basis.coe_mk hbi.1 (le_of_eq hbi.2.symm)) i
   -- the Gram matrix reduces entrywise to the residual Gram matrix
-  set Gr : Matrix (Fin 2 × Fin 2) (Fin 2 × Fin 2) 𝒟.R :=
+  set Gr : Matrix (Fin 2 × Fin 2) (Fin 2 × Fin 2) R :=
     Matrix.of fun i j => Matrix.trace (b₀ i * b₀ j) with hGr
-  have hGrmap : Gr.map ⇑𝒟.π = Matrix.of fun i j => Matrix.trace (c i * c j) := by
+  have hGrmap : Gr.map ⇑π = Matrix.of fun i j => Matrix.trace (c i * c j) := by
     ext i j
-    show 𝒟.π (Matrix.trace (b₀ i * b₀ j)) = Matrix.trace (c i * c j)
+    show π (Matrix.trace (b₀ i * b₀ j)) = Matrix.trace (c i * c j)
     rw [hb₀v, hb₀v, hc i, hc j]
-    rw [show 𝒟.π (Matrix.trace (v i * v j))
-        = Matrix.trace ((v i * v j).map ⇑𝒟.π) by
+    rw [show π (Matrix.trace (v i * v j))
+        = Matrix.trace ((v i * v j).map ⇑π) by
       simp [Matrix.trace, Matrix.diag]]
     rw [Matrix.map_mul]
   have hGrdet : IsUnit Gr.det := by
     refine hunit _ ?_
     rw [RingHom.map_det]
-    show (Gr.map ⇑𝒟.π).det ≠ 0
+    show (Gr.map ⇑π).det ≠ 0
     rw [hGrmap]
     exact det_traceGram_ne_zero c
   -- reindex `Fin 2 × Fin 2` to `Fin 4`
@@ -16553,55 +16625,65 @@ theorem exists_basis_repr_mem_hilbertTraceSubring
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
-    ∃ b : Module.Basis (Fin 4) 𝒟.R (Matrix (Fin 2) (Fin 2) 𝒟.R),
-      (∀ i : Fin 4, ∃ g : Γ F, b i = LinearMap.toMatrix' (𝒟.ρ g)) ∧
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    (ρ : FramedGaloisRep F R (Fin 2))
+    (hdet : ∀ g : Γ F, ρ.det g = algebraMap ℤ_[ℓ] R
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv))
+    (π : R →+* k) (hpi : Function.Surjective π)
+    (hresid : ∀ g : Γ F, ((ρ g).charpoly).map π =
+      ((ρbar.map (algebraMap ℚ F)) g).charpoly)
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (_hcompl : IsAdicComplete (IsLocalRing.maximalIdeal R) R) :
+    ∃ b : Module.Basis (Fin 4) R (Matrix (Fin 2) (Fin 2) R),
+      (∀ i : Fin 4, ∃ g : Γ F, b i = LinearMap.toMatrix' (ρ g)) ∧
       ∀ (g : Γ F) (i : Fin 4),
-        b.repr (LinearMap.toMatrix' (𝒟.ρ g)) i ∈ hilbertTraceSubring ℓ 𝒟.ρ := by
+        b.repr (LinearMap.toMatrix' (ρ g)) i ∈ hilbertTraceSubring ℓ ρ := by
   classical
-  -- the residue field of `𝒟.R` is `k`, hence finite
-  have hker : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
-    IsLocalRing.ker_eq_maximalIdeal 𝒟.π 𝒟.π_surjective
-  haveI : Finite (IsLocalRing.ResidueField 𝒟.R) := by
-    have hlift : IsLocalRing.ResidueField 𝒟.R →+* k :=
-      Ideal.Quotient.lift (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.π
+  -- the residue field of `R` is `k`, hence finite
+  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal π hpi
+  haveI : Finite (IsLocalRing.ResidueField R) := by
+    have hlift : IsLocalRing.ResidueField R →+* k :=
+      Ideal.Quotient.lift (IsLocalRing.maximalIdeal R) π
         (fun a ha => by rwa [← RingHom.mem_ker, hker])
     exact Finite.of_injective hlift hlift.injective
-  have hclosed : IsClosed ((hilbertTraceSubring ℓ 𝒟.ρ : Subring 𝒟.R) :
-      Set 𝒟.R) := Subring.isClosed_topologicalClosure _
-  -- the matrix avatar of `𝒟.ρ`, as a monoid homomorphism
-  set Φ : Γ F →* Matrix (Fin 2) (Fin 2) 𝒟.R :=
-    { toFun := fun g => LinearMap.toMatrix' (𝒟.ρ g)
+  have hclosed : IsClosed ((hilbertTraceSubring ℓ ρ : Subring R) :
+      Set R) := Subring.isClosed_topologicalClosure _
+  -- the matrix avatar of `ρ`, as a monoid homomorphism
+  set Φ : Γ F →* Matrix (Fin 2) (Fin 2) R :=
+    { toFun := fun g => LinearMap.toMatrix' (ρ g)
       map_one' := by rw [map_one]; exact LinearMap.toMatrix'_one
       map_mul' := fun g hg => by
         rw [map_mul]; exact LinearMap.toMatrix'_mul _ _ } with hΦ
   obtain ⟨b, hbrange, hgram⟩ :=
-    exists_basis_toMatrix'_isUnit_hilbertTraceGram ℓ hℓ5 F hirrF 𝒟
+    exists_basis_toMatrix'_isUnit_hilbertTraceGram ℓ hℓ5 F hirrF ρ hdet π hpi hresid hadic _hcompl
   refine ⟨b, hbrange, ?_⟩
-  -- an element of `R'` that is a unit of `𝒟.R` is a unit of `R'`
-  have hunit : ∀ x : hilbertTraceSubring ℓ 𝒟.ρ,
-      IsUnit ((x : 𝒟.R)) → IsUnit x := by
+  -- an element of `R'` that is a unit of `R` is a unit of `R'`
+  have hunit : ∀ x : hilbertTraceSubring ℓ ρ,
+      IsUnit ((x : R)) → IsUnit x := by
     intro x hx
-    refine isUnit_of_isClosed_subring_of_notMem_maximalIdeal 𝒟.isAdic hclosed x ?_
+    refine isUnit_of_isClosed_subring_of_notMem_maximalIdeal hadic hclosed x ?_
     intro hm
     exact ((IsLocalRing.mem_maximalIdeal _).mp hm) hx
-  -- every trace of a value of `𝒟.ρ` lies in `R'`
+  -- every trace of a value of `ρ` lies in `R'`
   have htrS : ∀ M ∈ MonoidHom.mrange Φ,
-      Matrix.trace M ∈ hilbertTraceSubring ℓ 𝒟.ρ := by
+      Matrix.trace M ∈ hilbertTraceSubring ℓ ρ := by
     rintro M ⟨g, rfl⟩
-    have hcp : (LinearMap.toMatrix' (𝒟.ρ g)).charpoly = (𝒟.ρ g).charpoly := by
+    have hcp : (LinearMap.toMatrix' (ρ g)).charpoly = (ρ g).charpoly := by
       rw [← LinearMap.toMatrix_eq_toMatrix']
-      exact LinearMap.charpoly_toMatrix (𝒟.ρ g) (Pi.basisFun 𝒟.R (Fin 2))
-    show Matrix.trace (LinearMap.toMatrix' (𝒟.ρ g)) ∈ hilbertTraceSubring ℓ 𝒟.ρ
-    rw [Matrix.trace_eq_neg_charpoly_coeff (LinearMap.toMatrix' (𝒟.ρ g)), hcp]
-    exact Subring.neg_mem _ (charpoly_coeff_mem_hilbertTraceSubring ℓ 𝒟.ρ g 1)
+      exact LinearMap.charpoly_toMatrix (ρ g) (Pi.basisFun R (Fin 2))
+    show Matrix.trace (LinearMap.toMatrix' (ρ g)) ∈ hilbertTraceSubring ℓ ρ
+    rw [Matrix.trace_eq_neg_charpoly_coeff (LinearMap.toMatrix' (ρ g)), hcp]
+    exact Subring.neg_mem _ (charpoly_coeff_mem_hilbertTraceSubring ℓ ρ g 1)
   have hbS : ∀ i : Fin 4, b i ∈ MonoidHom.mrange Φ := by
     intro i
     obtain ⟨g, hg⟩ := hbrange i
     exact ⟨g, hg.symm⟩
   intro g i
-  exact repr_mem_subring_of_trace_mem_hilbert (hilbertTraceSubring ℓ 𝒟.ρ) hunit
-    (MonoidHom.mrange Φ) htrS b hbS hgram (LinearMap.toMatrix' (𝒟.ρ g))
+  exact repr_mem_subring_of_trace_mem_hilbert (hilbertTraceSubring ℓ ρ) hunit
+    (MonoidHom.mrange Φ) htrS b hbS hgram (LinearMap.toMatrix' (ρ g))
     ⟨g, rfl⟩ i
 
 open scoped Matrix in
@@ -16700,43 +16782,53 @@ theorem exists_conj_entries_mem_hilbertTraceSubring
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
-    (_hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ)) :
-    ∃ E : Matrix (Fin 2) (Fin 2) 𝒟.R, IsUnit E.det ∧
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    (ρ : FramedGaloisRep F R (Fin 2))
+    (hdet : ∀ g : Γ F, ρ.det g = algebraMap ℤ_[ℓ] R
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv))
+    (π : R →+* k) (hpi : Function.Surjective π)
+    (hresid : ∀ g : Γ F, ((ρ g).charpoly).map π =
+      ((ρbar.map (algebraMap ℚ F)) g).charpoly)
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    (_hloc : IsLocalRing (hilbertTraceSubring ℓ ρ)) :
+    ∃ E : Matrix (Fin 2) (Fin 2) R, IsUnit E.det ∧
       ∀ (g : Γ F) (i j : Fin 2),
-        (E⁻¹ * LinearMap.toMatrix' (𝒟.ρ g) * E) i j ∈
-          hilbertTraceSubring ℓ 𝒟.ρ := by
+        (E⁻¹ * LinearMap.toMatrix' (ρ g) * E) i j ∈
+          hilbertTraceSubring ℓ ρ := by
   classical
-  haveI : IsAdicComplete (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R := 𝒟.isAdicComplete
-  -- the residue field of `𝒟.R` is `k`, hence finite
-  have hker : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
-    IsLocalRing.ker_eq_maximalIdeal 𝒟.π 𝒟.π_surjective
-  haveI : Finite (IsLocalRing.ResidueField 𝒟.R) := by
-    have hlift : IsLocalRing.ResidueField 𝒟.R →+* k :=
-      Ideal.Quotient.lift (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.π
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal R) R := hcompl
+  -- the residue field of `R` is `k`, hence finite
+  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal π hpi
+  haveI : Finite (IsLocalRing.ResidueField R) := by
+    have hlift : IsLocalRing.ResidueField R →+* k :=
+      Ideal.Quotient.lift (IsLocalRing.maximalIdeal R) π
         (fun a ha => by rwa [← RingHom.mem_ker, hker])
     exact Finite.of_injective hlift hlift.injective
-  have hclosed : IsClosed ((hilbertTraceSubring ℓ 𝒟.ρ : Subring 𝒟.R) :
-      Set 𝒟.R) := Subring.isClosed_topologicalClosure _
-  -- the matrix avatar of `𝒟.ρ`, as a monoid homomorphism
-  set Φ : Γ F →* Matrix (Fin 2) (Fin 2) 𝒟.R :=
-    { toFun := fun g => LinearMap.toMatrix' (𝒟.ρ g)
+  have hclosed : IsClosed ((hilbertTraceSubring ℓ ρ : Subring R) :
+      Set R) := Subring.isClosed_topologicalClosure _
+  -- the matrix avatar of `ρ`, as a monoid homomorphism
+  set Φ : Γ F →* Matrix (Fin 2) (Fin 2) R :=
+    { toFun := fun g => LinearMap.toMatrix' (ρ g)
       map_one' := by rw [map_one]; exact LinearMap.toMatrix'_one
       map_mul' := fun g hg => by
         rw [map_mul]; exact LinearMap.toMatrix'_mul _ _ } with hΦ
   -- half 1: the `R'`-order
   obtain ⟨b, hbrange, hbrepr⟩ :=
-    exists_basis_repr_mem_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟
+    exists_basis_repr_mem_hilbertTraceSubring ℓ hℓ5 F hirrF ρ hdet π hpi hresid hadic hcompl
   -- half 2: the conjugation splitting it, whose residue-class hypothesis is
   -- the Teichmüller-root clause of `hilbertTraceSubring`
   obtain ⟨E, hEdet, hEmem⟩ :=
-    exists_conj_entries_mem_of_basis_repr_mem 𝒟.isAdic 𝒟.isAdicComplete
-      (hilbertTraceSubring ℓ 𝒟.ρ) hclosed
+    exists_conj_entries_mem_of_basis_repr_mem hadic hcompl
+      (hilbertTraceSubring ℓ ρ) hclosed
       (fun y => by
         obtain ⟨x, hx, hxπ⟩ := exists_mem_teichmullerRootSet_map_eq (ℓ := ℓ)
-          (natCast_eq_zero_of_hilbertDeformationDatum ℓ 𝒟) 𝒟.π 𝒟.π_surjective
-          (𝒟.π y)
-        refine ⟨⟨x, mem_hilbertTraceSubring_of_mem_teichmullerRootSet ℓ 𝒟.ρ hx⟩,
+          (natCast_eq_zero_of_ringHom ℓ π) π hpi
+          (π y)
+        refine ⟨⟨x, mem_hilbertTraceSubring_of_mem_teichmullerRootSet ℓ ρ hx⟩,
           ?_⟩
         rw [← hker, RingHom.mem_ker, map_sub, hxπ, sub_self])
       (MonoidHom.mrange Φ) b
@@ -16801,45 +16893,55 @@ theorem exists_framedGaloisRep_baseChange_hilbertTraceSubring
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
-    (hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ)) :
-    ∃ (ρ' : FramedGaloisRep F (hilbertTraceSubring ℓ 𝒟.ρ) (Fin 2))
-      (e : (𝒟.R ⊗[hilbertTraceSubring ℓ 𝒟.ρ]
-          (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)) ≃ₗ[𝒟.R] (Fin 2 → 𝒟.R)),
-      (ρ'.baseChange 𝒟.R).conj e = 𝒟.ρ := by
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    (ρ : FramedGaloisRep F R (Fin 2))
+    (hdet : ∀ g : Γ F, ρ.det g = algebraMap ℤ_[ℓ] R
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv))
+    (π : R →+* k) (hpi : Function.Surjective π)
+    (hresid : ∀ g : Γ F, ((ρ g).charpoly).map π =
+      ((ρbar.map (algebraMap ℚ F)) g).charpoly)
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    (hloc : IsLocalRing (hilbertTraceSubring ℓ ρ)) :
+    ∃ (ρ' : FramedGaloisRep F (hilbertTraceSubring ℓ ρ) (Fin 2))
+      (e : (R ⊗[hilbertTraceSubring ℓ ρ]
+          (Fin 2 → hilbertTraceSubring ℓ ρ)) ≃ₗ[R] (Fin 2 → R)),
+      (ρ'.baseChange R).conj e = ρ := by
   classical
-  -- the matrix avatar of `𝒟.ρ`, as a monoid homomorphism
-  set Φ : Γ F →* Matrix (Fin 2) (Fin 2) 𝒟.R :=
-    { toFun := fun g => LinearMap.toMatrix' (𝒟.ρ g)
+  -- the matrix avatar of `ρ`, as a monoid homomorphism
+  set Φ : Γ F →* Matrix (Fin 2) (Fin 2) R :=
+    { toFun := fun g => LinearMap.toMatrix' (ρ g)
       map_one' := by rw [map_one]; exact LinearMap.toMatrix'_one
       map_mul' := fun g hg => by
         rw [map_mul]; exact LinearMap.toMatrix'_mul _ _ } with hΦ
-  -- its entries are continuous: they are linear functionals of `𝒟.ρ g`
+  -- its entries are continuous: they are linear functionals of `ρ g`
   have hΦcont : Continuous Φ := by
     refine continuous_matrix fun i j => ?_
-    letI := moduleTopology 𝒟.R (Module.End 𝒟.R (Fin 2 → 𝒟.R))
-    haveI : IsModuleTopology 𝒟.R (Module.End 𝒟.R (Fin 2 → 𝒟.R)) := ⟨rfl⟩
-    set ev : Module.End 𝒟.R (Fin 2 → 𝒟.R) →ₗ[𝒟.R] 𝒟.R :=
+    letI := moduleTopology R (Module.End R (Fin 2 → R))
+    haveI : IsModuleTopology R (Module.End R (Fin 2 → R)) := ⟨rfl⟩
+    set ev : Module.End R (Fin 2 → R) →ₗ[R] R :=
       { toFun := fun φ => φ (Pi.single j 1) i
         map_add' := fun _ _ => rfl
         map_smul' := fun _ _ => rfl }
     have hevc : Continuous ev := IsModuleTopology.continuous_of_linearMap ev
-    have hcomp := hevc.comp (ContinuousMonoidHom.continuous_toFun 𝒟.ρ)
+    have hcomp := hevc.comp (ContinuousMonoidHom.continuous_toFun ρ)
     refine hcomp.congr fun g => ?_
-    show (𝒟.ρ g) (Pi.single j 1) i = LinearMap.toMatrix' (𝒟.ρ g) i j
+    show (ρ g) (Pi.single j 1) i = LinearMap.toMatrix' (ρ g) i j
     rw [LinearMap.toMatrix'_apply,
-      show (Pi.single j (1 : 𝒟.R)) =
-          (fun j' => if j' = j then (1 : 𝒟.R) else 0) from
+      show (Pi.single j (1 : R)) =
+          (fun j' => if j' = j then (1 : R) else 0) from
         funext fun j' => by rw [Pi.single_apply]]
   -- the `R'`-order, and the conjugation splitting it (the arithmetic leaf)
   obtain ⟨E, hEdet, hEmem⟩ :=
-    exists_conj_entries_mem_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟 hloc
+    exists_conj_entries_mem_hilbertTraceSubring ℓ hℓ5 F hirrF ρ hdet π hpi hresid hadic hcompl hloc
   have hEE : E * E⁻¹ = 1 := Matrix.mul_nonsing_inv E hEdet
   have hEE' : E⁻¹ * E = 1 := Matrix.nonsing_inv_mul E hEdet
   -- rebuild a framed representation over `R'` out of the conjugated matrices
   obtain ⟨ρ', hρ'⟩ :=
     exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem
-      (hilbertTraceSubring ℓ 𝒟.ρ) (fun g => E⁻¹ * Φ g * E)
+      (hilbertTraceSubring ℓ ρ) (fun g => E⁻¹ * Φ g * E)
       (fun i j =>
         ((continuous_const.matrix_mul hΦcont).matrix_mul
           continuous_const).matrix_elem i j)
@@ -16851,7 +16953,7 @@ theorem exists_framedGaloisRep_baseChange_hilbertTraceSubring
         noncomm_ring)
       (fun g i j => hEmem g i j)
   refine ⟨ρ', exists_conj_baseChange_of_matrix
-    (hilbertTraceSubring ℓ 𝒟.ρ).subtype continuous_subtype_val ρ' 𝒟.ρ E hEdet
+    (hilbertTraceSubring ℓ ρ).subtype continuous_subtype_val ρ' ρ E hEdet
     ?_⟩
   intro g
   rw [hρ' g, ← Matrix.mul_assoc, ← Matrix.mul_assoc, hEE, Matrix.one_mul]
@@ -17178,7 +17280,8 @@ theorem exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal
   letI := hloc
   -- the Rouquier–Nyssen descent, which is RETRACTION-FREE: it takes `hloc` only
   obtain ⟨ρ', e, he⟩ :=
-    exists_framedGaloisRep_baseChange_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟 hloc
+    exists_framedGaloisRep_baseChange_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟.ρ 𝒟.isHilbertHardlyRamified.det 𝒟.π 𝒟.π_surjective
+      𝒟.resid 𝒟.isAdic 𝒟.isAdicComplete hloc
   -- the structure map of `R'` is the inclusion, hence injective
   have hinj : Function.Injective
       (algebraMap (hilbertTraceSubring ℓ 𝒟.ρ) 𝒟.R) := Subtype.val_injective
@@ -18584,7 +18687,8 @@ theorem exists_framedGaloisRep_hilbertTraceSubring
         (𝒟.ρ g).charpoly := by
   letI := hloc
   obtain ⟨ρ', e, he⟩ :=
-    exists_framedGaloisRep_baseChange_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟 hloc
+    exists_framedGaloisRep_baseChange_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟.ρ 𝒟.isHilbertHardlyRamified.det 𝒟.π 𝒟.π_surjective
+      𝒟.resid 𝒟.isAdic 𝒟.isAdicComplete hloc
   -- the structure map of `R'` is the inclusion, hence injective
   have hinj : Function.Injective
       (algebraMap (hilbertTraceSubring ℓ 𝒟.ρ) 𝒟.R) := Subtype.val_injective
