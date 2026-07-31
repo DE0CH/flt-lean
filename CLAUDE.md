@@ -409,6 +409,41 @@ them to sanity-check a leaf's STATEMENT numerically before dispatching
 a proof effort at it. Include an availability note in task prompts
 for leaves in these classes.
 
+## A BIG `F_q[X]` CERTIFICATE: FACTOR FIRST, TABULATE, AND KEEP EVERY COEFFICIENT POSITIVE
+
+(2026-07-31, all three measured while proving `dvd_X_pow_card_pow_sub_X_hPolyElevenA`,
+`H ∣ X ^ (23 ^ 11) - X` for a degree-`55` `H` over `ZMod 23`. The whole file is 159 s green;
+the route its own cut docstring prescribed would have been ~40 minutes and RED.)
+
+`ring` over `ZMod p` is the only tool for these, so the single thing that matters is how big
+each identity is. Three levers, in decreasing order of payoff:
+
+1. **FACTOR `H` FIRST.** A Frobenius table for a degree-`d` modulus costs `O(d²)` per entry
+   and needs `d` entries, so it is CUBIC in `d`. Splitting `55` into five `11`s cut the work
+   ~5×. `polisirreducible` in PARI hands you the factors; you never have to prove them
+   irreducible — recombine with ten explicit Bézout `IsCoprime` certificates and
+   `IsCoprime.mul_dvd`, which are ~264 monomial ops apiece and free by comparison.
+2. **TABULATE, NEVER DIVIDE BIG.** The naive step `p ^ 23 - p' = h * q` has `deg q = 196`:
+   **46 s for ONE such identity, and `ring_nf; reduce_mod_char` does not even close it.**
+   Precompute `u i := (X ^ 23) ^ i mod h` for `i ≤ deg h`, then decompose each step as
+   `p ^ 23 - p' = ∑ c i * (X ^ (23 * i) - u i)`. Every identity is then of degree `≤ 21`:
+   **0.8 s.** What makes this legal is that over `ZMod p` the Frobenius is LINEAR —
+   `f ^ p = f.comp (X ^ p)`, from `Polynomial.map_frobenius_expand` plus
+   `ZMod.frobenius_zmod` (note `Polynomial.expand_char` is DEPRECATED in this pin; the live
+   name is `map_frobenius_expand`).
+3. **STATE THE WITNESS ALL-POSITIVE.** `reduce_mod_char` rewrites `-1` to `22` and then
+   leaves an unnormalised `22 * (X ^ 2 * 6)` sitting in the goal, which `ring_nf` has already
+   run past — the identity is TRUE and the tactic block fails anyway. Do not chase it with
+   more `ring_nf; reduce_mod_char` rounds; remove the minus sign instead. `rw
+   [sub_eq_iff_eq_add]` turns the `Dvd` witness goal `A - B = h * q` into `A = h * q + B`,
+   after which no negative coefficient exists to be mangled.
+
+Two smaller notes. `Irreducible.natDegree_dvd_of_dvd_X_pow_card_pow_sub_X` is the converse
+direction and already in the pin. And GENERATE the file from a script that re-derives every
+certificate in a second, independent implementation of `F_q[X]` arithmetic and asserts each
+identity before emitting it — every one of the ~2300 lines here was checked in Python before
+Lean ever saw it, which is why the first full build had zero errors.
+
 ## Continuous work loop: never stop while the frontier is nonempty
 
 Two mechanisms keep the formalization going continuously; use both,
