@@ -4518,6 +4518,8 @@ theorem exists_lowerRamificationData_lvl_eq
 
 end FiniteLevelInhabitation
 
+namespace LowerRamificationData
+
 /-! ### The arithmetic inputs to the construction, as NAMED leaves
 
 The four statements below were, until 2026-07-29, anonymous sorried `have`s
@@ -5181,6 +5183,19 @@ theorem exists_pow_sub_one_mem_maximalIdeal_of_isUnit {x : Oᵥ} (hx : IsUnit x)
   exact exists_notMem_asIdeal_pow_sub_one_mem_maximalIdeal v x n hn0 hn
 
 end TeichmullerTorsion
+
+section SerreTameCharacterKernel
+
+variable {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
+local notation "Kᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+local notation "Oᵥ" => IntegralClosure
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+  (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+local notation "Γᵥ" => Field.absoluteGaloisGroup
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
 
 /-- **SERRE, *CORPS LOCAUX* IV §1, LEMMA 1 — THE REMAINING INPUT TO
 `wildInertiaGroup_le_gp_one`** (PROVEN 2026-07-30; cut as a sorry leaf earlier

@@ -1065,7 +1065,7 @@ theorem exists_generic_pDivision_offset_of_avoid {ι : Type*} [Fintype ι]
       rw [eq_sub_iff_add_eq, add_comm]
       exact h1
 
-omit [Fact p.Prime] in
+omit [Fact (1 < p)] in
 /-- **Stage B, leaf 1 (PROVEN): a generic `p`-division offset.**
 Given the Miller data (`Q = p•T'`, `a` generating
 `∏_κ I_{T'⊕κ}·I_{⊖κ}`), a `p`-torsion point `P`, and the setup's
