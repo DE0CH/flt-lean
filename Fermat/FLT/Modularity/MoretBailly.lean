@@ -27172,6 +27172,241 @@ section LocalisedHypersurfaceMembership
 
 open MvPolynomial
 
+/-- Divisibility of polynomials with coefficients in `K` descends from any field
+extension `L / K`. -/
+theorem dvd_of_map_dvd_map_of_field {σ : Type*} {K L : Type*} [Field K] [Field L] [Algebra K L]
+    {u v : MvPolynomial σ K}
+    (h : MvPolynomial.map (algebraMap K L) u ∣ MvPolynomial.map (algebraMap K L) v) :
+    u ∣ v := by
+  classical
+  obtain ⟨w, hw⟩ := h
+  obtain ⟨ρ₀, hρ₀⟩ := (Algebra.linearMap K L).exists_leftInverse_of_injective
+    (LinearMap.ker_eq_bot.mpr (algebraMap K L).injective)
+  have hρ₀alg : ∀ c : K, ρ₀ (algebraMap K L c) = c := by
+    intro c
+    exact congrArg (fun F : K →ₗ[K] K => F c) hρ₀
+  set ρ : MvPolynomial σ L → MvPolynomial σ K := fun p =>
+    ∑ d ∈ p.support, MvPolynomial.monomial d (ρ₀ (MvPolynomial.coeff d p)) with hρdef
+  have hcoeff : ∀ (p : MvPolynomial σ L) (d : σ →₀ ℕ),
+      MvPolynomial.coeff d (ρ p) = ρ₀ (MvPolynomial.coeff d p) := by
+    intro p d
+    simp only [hρdef, MvPolynomial.coeff_sum, MvPolynomial.coeff_monomial]
+    by_cases hd : d ∈ p.support
+    · rw [Finset.sum_eq_single d]
+      · simp
+      · intro c _ hcd; exact if_neg hcd
+      · intro hcon; exact absurd hd hcon
+    · rw [Finset.sum_eq_zero]
+      · rw [MvPolynomial.notMem_support_iff.mp hd, map_zero]
+      · intro c hc
+        have hne : c ≠ d := fun h => hd (h ▸ hc)
+        exact if_neg hne
+  refine ⟨ρ w, ?_⟩
+  apply MvPolynomial.ext
+  intro d
+  have h1 : ρ₀ (MvPolynomial.coeff d (MvPolynomial.map (algebraMap K L) v))
+      = MvPolynomial.coeff d v := by
+    rw [MvPolynomial.coeff_map, hρ₀alg]
+  rw [← h1, hw]
+  rw [MvPolynomial.coeff_mul, map_sum, MvPolynomial.coeff_mul]
+  refine Finset.sum_congr rfl ?_
+  intro x _
+  rw [MvPolynomial.coeff_map, hcoeff]
+  have : (algebraMap K L) (MvPolynomial.coeff x.1 u) * MvPolynomial.coeff x.2 w
+      = (MvPolynomial.coeff x.1 u) • MvPolynomial.coeff x.2 w := (Algebra.smul_def _ _).symm
+  rw [this, map_smul, smul_eq_mul]
+
+
+/-- `map ℚ S` is prime as soon as `map ℚ̄ S` is irreducible. -/
+theorem prime_map_rat_of_irreducible_map_algClosureRat {k : ℕ} (S : MvPolynomial (Fin k) ℤ)
+    (hS : Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S)) :
+    Prime (MvPolynomial.map (Int.castRingHom ℚ) S) := by
+  classical
+  set Sq := MvPolynomial.map (Int.castRingHom ℚ) S with hSq
+  set Sb := MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S with hSb
+  have hmap : MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ)) Sq = Sb := by
+    rw [hSq, hSb]; exact map_map_intCastRingHom _ S
+  have hSbprime : Prime Sb := UniqueFactorizationMonoid.irreducible_iff_prime.mp hS
+  refine ⟨?_, ?_, ?_⟩
+  · intro h0
+    rw [h0, map_zero] at hmap
+    exact hSbprime.1 hmap.symm
+  · intro hu
+    exact hSbprime.2.1 (hmap ▸ hu.map (MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))))
+  · intro p q hpq
+    have hb : Sb ∣ MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ)) p *
+        MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ)) q := by
+      rw [← _root_.map_mul, ← hmap]
+      exact map_dvd _ hpq
+    rcases hSbprime.2.2 _ _ hb with h | h
+    · exact Or.inl (dvd_of_map_dvd_map_of_field (hmap ▸ h))
+    · exact Or.inr (dvd_of_map_dvd_map_of_field (hmap ▸ h))
+
+/-- Normal form modulo `G·T − 1`, over an arbitrary commutative ring. Verbatim the
+proof of `exists_awayNormalForm_int`, with `ℤ` generalised to `R`. -/
+theorem exists_awayNormalForm {R : Type*} [CommRing R] {e : ℕ}
+    (G : MvPolynomial (Fin (e + 1)) R) (q : MvPolynomial (Fin (e + 2)) R) :
+    ∃ (d : ℕ) (h : MvPolynomial (Fin (e + 1)) R),
+      q - MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d
+        ∈ Ideal.span {MvPolynomial.rename Fin.castSucc G *
+            MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+  classical
+  have bump : ∀ (d : ℕ) (h : MvPolynomial (Fin (e + 1)) R) (j : ℕ),
+      MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d
+        - MvPolynomial.rename Fin.castSucc (h * G ^ j) *
+            MvPolynomial.X (Fin.last (e + 1)) ^ (d + j)
+        ∈ Ideal.span {MvPolynomial.rename Fin.castSucc G *
+            MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+    intro d h j
+    have hfac : MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d
+        - MvPolynomial.rename Fin.castSucc (h * G ^ j) *
+            MvPolynomial.X (Fin.last (e + 1)) ^ (d + j)
+        = (MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d) *
+            (1 - (MvPolynomial.rename Fin.castSucc G *
+              MvPolynomial.X (Fin.last (e + 1))) ^ j) := by
+      rw [_root_.map_mul, map_pow]
+      ring
+    rw [hfac]
+    refine Ideal.mul_mem_left _ _ ?_
+    refine Ideal.mem_span_singleton.mpr ?_
+    exact dvd_sub_comm.mp (sub_one_dvd_pow_sub_one _ j)
+  induction q using MvPolynomial.induction_on with
+  | C a => exact ⟨0, MvPolynomial.C a, by simp⟩
+  | add p q hp hq =>
+      obtain ⟨d₁, h₁, hh₁⟩ := hp
+      obtain ⟨d₂, h₂, hh₂⟩ := hq
+      refine ⟨d₁ + d₂, h₁ * G ^ d₂ + h₂ * G ^ d₁, ?_⟩
+      have e₁ : p - MvPolynomial.rename Fin.castSucc (h₁ * G ^ d₂) *
+            MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)
+          ∈ Ideal.span {MvPolynomial.rename Fin.castSucc G *
+              MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+        have hsum := Ideal.add_mem _ hh₁ (bump d₁ h₁ d₂)
+        have hrw : p - MvPolynomial.rename Fin.castSucc (h₁ * G ^ d₂) *
+              MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)
+            = (p - MvPolynomial.rename Fin.castSucc h₁ *
+                MvPolynomial.X (Fin.last (e + 1)) ^ d₁)
+              + (MvPolynomial.rename Fin.castSucc h₁ *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ d₁
+                - MvPolynomial.rename Fin.castSucc (h₁ * G ^ d₂) *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)) := by ring
+        rw [hrw]; exact hsum
+      have e₂ : q - MvPolynomial.rename Fin.castSucc (h₂ * G ^ d₁) *
+            MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)
+          ∈ Ideal.span {MvPolynomial.rename Fin.castSucc G *
+              MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+        have hsum := Ideal.add_mem _ hh₂ (bump d₂ h₂ d₁)
+        have hrw : q - MvPolynomial.rename Fin.castSucc (h₂ * G ^ d₁) *
+              MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)
+            = (q - MvPolynomial.rename Fin.castSucc h₂ *
+                MvPolynomial.X (Fin.last (e + 1)) ^ d₂)
+              + (MvPolynomial.rename Fin.castSucc h₂ *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ d₂
+                - MvPolynomial.rename Fin.castSucc (h₂ * G ^ d₁) *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ (d₂ + d₁)) := by
+          rw [add_comm d₂ d₁]; ring
+        rw [hrw]; exact hsum
+      have hrw2 : p + q - MvPolynomial.rename Fin.castSucc (h₁ * G ^ d₂ + h₂ * G ^ d₁) *
+            MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)
+          = (p - MvPolynomial.rename Fin.castSucc (h₁ * G ^ d₂) *
+              MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂))
+            + (q - MvPolynomial.rename Fin.castSucc (h₂ * G ^ d₁) *
+              MvPolynomial.X (Fin.last (e + 1)) ^ (d₁ + d₂)) := by
+        rw [map_add]; ring
+      rw [hrw2]
+      exact Ideal.add_mem _ e₁ e₂
+  | mul_X p i hp =>
+      obtain ⟨d, h, hh⟩ := hp
+      induction i using Fin.lastCases with
+      | last =>
+          refine ⟨d + 1, h, ?_⟩
+          have hmul := Ideal.mul_mem_right (MvPolynomial.X (Fin.last (e + 1))) _ hh
+          have hrw : p * MvPolynomial.X (Fin.last (e + 1))
+                - MvPolynomial.rename Fin.castSucc h *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ (d + 1)
+              = (p - MvPolynomial.rename Fin.castSucc h *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ d) *
+                MvPolynomial.X (Fin.last (e + 1)) := by ring
+          rw [hrw]; exact hmul
+      | cast j =>
+          refine ⟨d, h * MvPolynomial.X j, ?_⟩
+          have hmul := Ideal.mul_mem_right (MvPolynomial.X (Fin.castSucc j)) _ hh
+          have hrw : p * MvPolynomial.X (Fin.castSucc j)
+                - MvPolynomial.rename Fin.castSucc (h * MvPolynomial.X j) *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ d
+              = (p - MvPolynomial.rename Fin.castSucc h *
+                  MvPolynomial.X (Fin.last (e + 1)) ^ d) *
+                MvPolynomial.X (Fin.castSucc j) := by
+            rw [_root_.map_mul, MvPolynomial.rename_X]; ring
+          rw [hrw]; exact hmul
+
+
+/-- **THE CERTIFICATE IDEAL IS EXACTLY THE KERNEL** (the converse direction of
+`dvd_of_awayNormalForm_mem`): if `π : R[Y] →+* A` has kernel `(S)` and carries `G`
+to a unit `u`, then any `q ∈ R[Y, T]` killed by the evaluation `Y ↦ π Y`,
+`T ↦ u⁻¹` already lies in `(S, G·T − 1)`. -/
+theorem mem_certificateIdeal_of_eval_eq_zero {R : Type*} [CommRing R] {e : ℕ}
+    {S G : MvPolynomial (Fin (e + 1)) R}
+    {A : Type*} [CommRing A] (π : MvPolynomial (Fin (e + 1)) R →+* A)
+    (hSker : ∀ h : MvPolynomial (Fin (e + 1)) R, π h = 0 → S ∣ h)
+    (u : Aˣ) (hu : (u : A) = π G)
+    (q : MvPolynomial (Fin (e + 2)) R)
+    (hq : MvPolynomial.eval₂Hom (π.comp MvPolynomial.C)
+        (Fin.lastCases (↑u⁻¹ : A) (fun j => π (MvPolynomial.X j))) q = 0) :
+    q ∈ Ideal.span {MvPolynomial.rename Fin.castSucc S,
+        MvPolynomial.rename Fin.castSucc G * MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+  classical
+  set v : Fin (e + 2) → A :=
+    Fin.lastCases (↑u⁻¹ : A) (fun j => π (MvPolynomial.X j)) with hv
+  set ev : MvPolynomial (Fin (e + 2)) R →+* A :=
+    MvPolynomial.eval₂Hom (π.comp MvPolynomial.C) v with hev
+  have hrename : ∀ p : MvPolynomial (Fin (e + 1)) R,
+      ev (MvPolynomial.rename Fin.castSucc p) = π p := by
+    intro p
+    have hcomp : ev.comp (MvPolynomial.rename (R := R) Fin.castSucc).toRingHom = π := by
+      refine MvPolynomial.ringHom_ext ?_ ?_
+      · intro r; simp [hev]
+      · intro j; simp [hev, hv]
+    exact congrArg (fun F : MvPolynomial (Fin (e + 1)) R →+* A => F p) hcomp
+  have hTval : ev (MvPolynomial.X (Fin.last (e + 1))) = (↑u⁻¹ : A) := by
+    simp [hev, hv]
+  obtain ⟨d, h, hh⟩ := exists_awayNormalForm G q
+  have hsub : (Ideal.span {MvPolynomial.rename (R := R) Fin.castSucc G *
+        MvPolynomial.X (Fin.last (e + 1)) - 1} : Ideal (MvPolynomial (Fin (e + 2)) R))
+      ≤ Ideal.span {MvPolynomial.rename Fin.castSucc S,
+        MvPolynomial.rename Fin.castSucc G * MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+    apply Ideal.span_mono
+    intro y hy
+    simp only [Set.mem_singleton_iff] at hy
+    simp [hy]
+  have hevh : ev (MvPolynomial.rename Fin.castSucc h *
+      MvPolynomial.X (Fin.last (e + 1)) ^ d) = 0 := by
+    have h1 : ev q = 0 := hq
+    have h2 : ev (q - MvPolynomial.rename Fin.castSucc h *
+        MvPolynomial.X (Fin.last (e + 1)) ^ d) = 0 := by
+      obtain ⟨c, hc⟩ := Ideal.mem_span_singleton.mp hh
+      rw [hc, _root_.map_mul, map_sub, _root_.map_mul, hrename, hTval]
+      rw [map_one, ← hu, Units.mul_inv, sub_self, zero_mul]
+    rw [map_sub, h1, zero_sub, neg_eq_zero] at h2
+    exact h2
+  have hπh : π h = 0 := by
+    rw [_root_.map_mul, map_pow, hrename, hTval] at hevh
+    exact (((u⁻¹).isUnit.pow d).mul_left_eq_zero).mp hevh
+  obtain ⟨c, hc⟩ := hSker h hπh
+  have hmem2 : MvPolynomial.rename (R := R) Fin.castSucc h *
+      MvPolynomial.X (Fin.last (e + 1)) ^ d
+      ∈ Ideal.span {MvPolynomial.rename (R := R) Fin.castSucc S,
+        MvPolynomial.rename Fin.castSucc G * MvPolynomial.X (Fin.last (e + 1)) - 1} := by
+    have : MvPolynomial.rename (R := R) Fin.castSucc h
+        = MvPolynomial.rename Fin.castSucc S * MvPolynomial.rename Fin.castSucc c := by
+      rw [hc, _root_.map_mul]
+    rw [this, mul_assoc]
+    exact Ideal.mul_mem_right _ _ (Ideal.subset_span (by simp))
+  have hq' : q = (q - MvPolynomial.rename Fin.castSucc h *
+      MvPolynomial.X (Fin.last (e + 1)) ^ d)
+      + MvPolynomial.rename Fin.castSucc h * MvPolynomial.X (Fin.last (e + 1)) ^ d := by ring
+  rw [hq']
+  exact Ideal.add_mem _ (hsub hh) hmem2
+
 /-- The evaluation `R[Y₀ … Y_e, T] → S` extending a hom `θ` on `R[Y₀ … Y_e]` by
 `T ↦ t`. -/
 noncomputable def hypEval {e : ℕ} {R S : Type*} [CommRing R] [CommRing S]
@@ -27646,59 +27881,408 @@ theorem exists_ratMembershipData_of_birationalNormalForm
                   (MvPolynomial.rename Fin.castSucc g₀)
                   * MvPolynomial.X (Fin.last (e + 1)) - 1)) := by
   classical
-  obtain ⟨g₀, P, R, w, t, ht, hbdvd, hnd, h1, h2, h3⟩ :=
-    exists_hypEvalData_of_birationalNormalForm f g S₀ hS₀ hS₀irr hassoc a b hb hker eqv
-  set θ := hypQuotAway g b with hθ
-  set S₀q := MvPolynomial.map (Int.castRingHom ℚ) S₀ with hS₀q
-  set g₀q := MvPolynomial.map (Int.castRingHom ℚ) g₀ with hg₀q
-  -- the kernel condition, out of `b ∣ mk g₀` and the localisation
-  have hkr : ∀ Q : MvPolynomial (Fin (e + 1)) ℚ, θ Q = 0 → ∃ M, S₀q ∣ g₀q ^ M * Q := by
-    intro Q hQ
-    rw [hθ, hypQuotAway_apply] at hQ
-    obtain ⟨⟨s, hs⟩, hsQ⟩ :=
-      (IsLocalization.map_eq_zero_iff (Submonoid.powers b) (Localization.Away b)
-        (Ideal.Quotient.mk _ Q)).mp hQ
-    obtain ⟨M, rfl⟩ := hs
-    obtain ⟨v, hv⟩ := hbdvd
-    have hsQ' : b ^ M * Ideal.Quotient.mk
-        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) Q = 0 := by
-      simpa using hsQ
-    refine ⟨M, ?_⟩
-    have hzero : Ideal.Quotient.mk (Ideal.span
-        {MvPolynomial.map (Int.castRingHom ℚ) g}) (g₀q ^ M * Q) = 0 := by
-      rw [map_mul, map_pow, hv, mul_pow]
-      calc b ^ M * v ^ M * Ideal.Quotient.mk
-              (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) Q
-          = v ^ M * (b ^ M * Ideal.Quotient.mk
-              (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) Q) := by ring
-        _ = 0 := by rw [hsQ', mul_zero]
-    have hmem : g₀q ^ M * Q ∈ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} :=
-      Ideal.Quotient.eq_zero_iff_mem.mp hzero
-    exact (Associated.dvd_iff_dvd_left hassoc).mpr (Ideal.mem_span_singleton.mp hmem)
-  -- clause (i): the descent from `ℚ` to `ℚ̄`
-  have hnd' : ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀ ∣
+  -- ## The hypersurface ring and its localization
+  have hSqprime : Prime (MvPolynomial.map (Int.castRingHom ℚ) S₀) :=
+    prime_map_rat_of_irreducible_map_algClosureRat S₀ hS₀irr
+  have hspan : Ideal.span ({MvPolynomial.map (Int.castRingHom ℚ) S₀} :
+        Set (MvPolynomial (Fin (e + 1)) ℚ))
+      = Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} :=
+    Ideal.span_singleton_eq_span_singleton.mpr hassoc
+  haveI hIprime : (Ideal.span ({MvPolynomial.map (Int.castRingHom ℚ) g} :
+      Set (MvPolynomial (Fin (e + 1)) ℚ))).IsPrime := by
+    rw [← hspan]; exact (Ideal.span_singleton_prime hSqprime.1).mpr hSqprime
+  haveI hBdom : IsDomain (MvPolynomial (Fin (e + 1)) ℚ ⧸
+      Ideal.span ({MvPolynomial.map (Int.castRingHom ℚ) g} :
+        Set (MvPolynomial (Fin (e + 1)) ℚ))) :=
+    (Ideal.Quotient.isDomain_iff_prime _).2 hIprime
+  have hbnzd : Submonoid.powers b ≤ nonZeroDivisors _ :=
+    powers_le_nonZeroDivisors_of_noZeroDivisors hb
+  have hBinj : Function.Injective
+      (algebraMap (MvPolynomial (Fin (e + 1)) ℚ ⧸
+        Ideal.span ({MvPolynomial.map (Int.castRingHom ℚ) g} :
+          Set (MvPolynomial (Fin (e + 1)) ℚ))) (Localization.Away b)) :=
+    IsLocalization.injective (Localization.Away b) hbnzd
+  set π : MvPolynomial (Fin (e + 1)) ℚ →+* Localization.Away b :=
+    (algebraMap _ _).comp (Ideal.Quotient.mk
+      (Ideal.span ({MvPolynomial.map (Int.castRingHom ℚ) g} :
+        Set (MvPolynomial (Fin (e + 1)) ℚ)))) with hπdef
+  have hSker : ∀ h : MvPolynomial (Fin (e + 1)) ℚ, π h = 0 →
+      MvPolynomial.map (Int.castRingHom ℚ) S₀ ∣ h := by
+    intro h hh
+    have h0 : (Ideal.Quotient.mk (Ideal.span ({MvPolynomial.map (Int.castRingHom ℚ) g} :
+        Set (MvPolynomial (Fin (e + 1)) ℚ)))) h = 0 := by
+      apply hBinj
+      simpa [hπdef] using hh
+    have hmem : h ∈ Ideal.span ({MvPolynomial.map (Int.castRingHom ℚ) g} :
+        Set (MvPolynomial (Fin (e + 1)) ℚ)) := Ideal.Quotient.eq_zero_iff_mem.mp h0
+    rw [← hspan] at hmem
+    exact Ideal.mem_span_singleton.mp hmem
+  -- ## The map from the affine model
+  set Φ : MvPolynomial (Fin n) ℚ →+* Localization.Away b :=
+    (eqv.toRingHom.comp ((Ideal.Quotient.mk (nilradical (Localization.Away a))).comp
+      ((algebraMap (IntegralSystemModel f ℚ) (Localization.Away a)).comp
+        (Ideal.Quotient.mk (integralSystemIdeal f ℚ))))) with hΦdef
+  have hΦf : ∀ i, Φ (MvPolynomial.map (Int.castRingHom ℚ) (f i)) = 0 := by
+    intro i
+    have h0 : (Ideal.Quotient.mk (integralSystemIdeal f ℚ))
+        (MvPolynomial.map (Int.castRingHom ℚ) (f i)) = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.subset_span ⟨i, rfl⟩)
+    simp [hΦdef, h0]
+  -- ## `a` becomes a unit downstairs
+  set ψL : Localization.Away a →+* Localization.Away b :=
+    eqv.toRingHom.comp (Ideal.Quotient.mk (nilradical (Localization.Away a))) with hψLdef
+  have hΦfac : ∀ p : MvPolynomial (Fin n) ℚ,
+      Φ p = ψL ((algebraMap (IntegralSystemModel f ℚ) (Localization.Away a))
+        ((Ideal.Quotient.mk (integralSystemIdeal f ℚ)) p)) := by
+    intro p; simp [hΦdef, hψLdef]
+  have hUa : IsUnit ((algebraMap (IntegralSystemModel f ℚ) (Localization.Away a)) a) :=
+    IsLocalization.map_units (Localization.Away a)
+      (⟨a, Submonoid.mem_powers a⟩ : Submonoid.powers a)
+  set ua : Localization.Away b :=
+    ψL ((algebraMap (IntegralSystemModel f ℚ) (Localization.Away a)) a) with huadef
+  have hUua : IsUnit ua := hUa.map ψL
+  obtain ⟨ahat, hahat⟩ := Ideal.Quotient.mk_surjective (I := integralSystemIdeal f ℚ) a
+  have hΦahat : Φ ahat = ua := by rw [hΦfac, hahat, huadef]
+  obtain ⟨N₀, w₀, hN₀, hw₀⟩ := exists_intMultiple_map_rat ahat
+  have hCunit : ∀ N : ℤ, N ≠ 0 → IsUnit (Φ (MvPolynomial.C ((N : ℚ)))) := by
+    intro N hN
+    refine IsUnit.map Φ ?_
+    exact IsUnit.map MvPolynomial.C (isUnit_iff_ne_zero.mpr (by exact_mod_cast hN))
+  have hUw₀ : IsUnit (Φ (MvPolynomial.map (Int.castRingHom ℚ) w₀)) := by
+    rw [hw₀, _root_.map_mul, hΦahat]
+    exact (hCunit N₀ hN₀).mul hUua
+  set U : (Localization.Away b)ˣ := hUw₀.unit with hUdef
+  set ζ : Localization.Away b := (↑U⁻¹ : Localization.Away b) with hζdef
+  have hUval : (U : Localization.Away b) = Φ (MvPolynomial.C ((N₀ : ℚ))) * ua := by
+    rw [hUdef, IsUnit.unit_spec, hw₀, _root_.map_mul, hΦahat]
+  have hζua : Φ (MvPolynomial.C ((N₀ : ℚ))) * ζ * ua = 1 := by
+    rw [hζdef]
+    calc Φ (MvPolynomial.C ((N₀ : ℚ))) * (↑U⁻¹ : Localization.Away b) * ua
+        = (↑U⁻¹ : Localization.Away b) * (Φ (MvPolynomial.C ((N₀ : ℚ))) * ua) := by ring
+      _ = (↑U⁻¹ : Localization.Away b) * (U : Localization.Away b) := by rw [hUval]
+      _ = 1 := U.inv_mul
+  -- ## the ambient evaluation `X_j ↦ Φ X_j`, `T ↦ ζ`
+  set Θ : MvPolynomial (Fin (n + 1)) ℚ →+* Localization.Away b :=
+    MvPolynomial.eval₂Hom (Φ.comp MvPolynomial.C)
+      (Fin.lastCases ζ (fun j => Φ (MvPolynomial.X j))) with hΘdef
+  have hΘrename : ∀ p : MvPolynomial (Fin n) ℚ,
+      Θ (MvPolynomial.rename Fin.castSucc p) = Φ p := by
+    intro p
+    have hcomp : Θ.comp (MvPolynomial.rename (R := ℚ) Fin.castSucc).toRingHom = Φ := by
+      refine MvPolynomial.ringHom_ext ?_ ?_
+      · intro r; simp [hΘdef]
+      · intro j; simp [hΘdef]
+    exact congrArg (fun F : MvPolynomial (Fin n) ℚ →+* Localization.Away b => F p) hcomp
+  have hΘlast : Θ (MvPolynomial.X (Fin.last n)) = ζ := by simp [hΘdef]
+  -- ## `Θ` is surjective
+  have hgen : ∀ y : Localization.Away b, ∃ F : MvPolynomial (Fin (n + 1)) ℚ, Θ F = y := by
+    intro y
+    obtain ⟨z, hz⟩ := Ideal.Quotient.mk_surjective
+      (I := nilradical (Localization.Away a)) (eqv.symm y)
+    obtain ⟨⟨mm, s⟩, hs⟩ := IsLocalization.surj (Submonoid.powers a) z
+    obtain ⟨k, hk⟩ := s.2
+    obtain ⟨mhat, hmhat⟩ := Ideal.Quotient.mk_surjective (I := integralSystemIdeal f ℚ) mm
+    have hy : ψL z = y := by
+      rw [hψLdef]; simp [hz]
+    have hkey : y * ua ^ k = Φ mhat := by
+      have := congrArg ψL hs
+      rw [_root_.map_mul, hy] at this
+      rw [hΦfac, hmhat, ← this, ← hk]
+      simp [huadef, map_pow]
+    refine ⟨MvPolynomial.rename Fin.castSucc (mhat * (MvPolynomial.C ((N₀ : ℚ))) ^ k)
+      * MvPolynomial.X (Fin.last n) ^ k, ?_⟩
+    rw [_root_.map_mul, map_pow, hΘrename, hΘlast, _root_.map_mul, map_pow]
+    calc Φ mhat * Φ (MvPolynomial.C ((N₀ : ℚ))) ^ k * ζ ^ k
+        = (y * ua ^ k) * (Φ (MvPolynomial.C ((N₀ : ℚ))) * ζ) ^ k := by
+          rw [hkey, mul_pow]; ring
+      _ = y * (Φ (MvPolynomial.C ((N₀ : ℚ))) * ζ * ua) ^ k := by rw [mul_pow]; ring
+      _ = y := by rw [hζua, one_pow, mul_one]
+  -- ## reading the `Y`-coordinates off `Θ`, and clearing their denominators
+  choose F hF using fun l : Fin (e + 1) => hgen (π (MvPolynomial.X l))
+  choose Nl Fl' hNl hFl' using fun l : Fin (e + 1) => exists_intMultiple_map_rat (F l)
+  set N : ℤ := ∏ l : Fin (e + 1), Nl l with hNdef
+  have hN : N ≠ 0 := Finset.prod_ne_zero_iff.mpr (fun l _ => hNl l)
+  set F2 : Fin (e + 1) → MvPolynomial (Fin (n + 1)) ℤ :=
+    fun l => MvPolynomial.C (∏ l' ∈ Finset.univ.erase l, Nl l') * Fl' l with hF2def
+  have hF2 : ∀ l, MvPolynomial.map (Int.castRingHom ℚ) (F2 l)
+      = MvPolynomial.C ((N : ℚ)) * F l := by
+    intro l
+    have hpe := Finset.prod_erase_mul Finset.univ Nl (Finset.mem_univ l)
+    rw [hF2def, _root_.map_mul, MvPolynomial.map_C, hFl' l, ← mul_assoc, ← MvPolynomial.C_mul]
+    congr 2
+    simp only [eq_intCast]
+    rw [hNdef, ← hpe]
+    push_cast
+    ring
+  -- ## the distinguished function `w` and its inverse `ξ`
+  set w : MvPolynomial (Fin n) ℤ := MvPolynomial.C N * w₀ with hwdef
+  have hΦw : Φ (MvPolynomial.map (Int.castRingHom ℚ) w)
+      = Φ (MvPolynomial.C ((N : ℚ))) * (U : Localization.Away b) := by
+    rw [hwdef, _root_.map_mul, MvPolynomial.map_C, _root_.map_mul, hUdef, IsUnit.unit_spec]
+    norm_num
+  have hUw : IsUnit (Φ (MvPolynomial.map (Int.castRingHom ℚ) w)) := by
+    rw [hΦw]; exact (hCunit N hN).mul U.isUnit
+  set V : (Localization.Away b)ˣ := hUw.unit with hVdef
+  set ξ : Localization.Away b := (↑V⁻¹ : Localization.Away b) with hξdef
+  have hVval : (V : Localization.Away b) = Φ (MvPolynomial.C ((N : ℚ))) *
+      (U : Localization.Away b) := by rw [hVdef, IsUnit.unit_spec, hΦw]
+  have hξζ : Φ (MvPolynomial.C ((N : ℚ))) * ξ = ζ := by
+    refine (Units.mul_left_inj V).mp ?_
+    rw [hξdef, mul_assoc, Units.inv_mul, mul_one, hVval, hζdef, ← mul_assoc,
+      mul_comm (↑U⁻¹ : Localization.Away b), mul_assoc, Units.inv_mul, mul_one]
+  -- ## the shifted evaluation, with `T ↦ ξ`
+  set Θ' : MvPolynomial (Fin (n + 1)) ℚ →+* Localization.Away b :=
+    MvPolynomial.eval₂Hom (Φ.comp MvPolynomial.C)
+      (Fin.lastCases ξ (fun j => Φ (MvPolynomial.X j))) with hΘ'def
+  have hΘ'rename : ∀ p : MvPolynomial (Fin n) ℚ,
+      Θ' (MvPolynomial.rename Fin.castSucc p) = Φ p := by
+    intro p
+    have hcomp : Θ'.comp (MvPolynomial.rename (R := ℚ) Fin.castSucc).toRingHom = Φ := by
+      refine MvPolynomial.ringHom_ext ?_ ?_
+      · intro r; simp [hΘ'def]
+      · intro j; simp [hΘ'def]
+    exact congrArg (fun G : MvPolynomial (Fin n) ℚ →+* Localization.Away b => G p) hcomp
+  have hΘ'last : Θ' (MvPolynomial.X (Fin.last n)) = ξ := by simp [hΘ'def]
+  -- ## `U ↦ N·U` intertwines the two evaluations
+  set subN : MvPolynomial (Fin (n + 1)) ℤ →+* MvPolynomial (Fin (n + 1)) ℤ :=
+    MvPolynomial.eval₂Hom MvPolynomial.C
+      (Fin.lastCases (MvPolynomial.C N * MvPolynomial.X (Fin.last n))
+        (fun j => MvPolynomial.X j.castSucc)) with hsubNdef
+  have hZext : ∀ {σ : Type} (F1 F2 : MvPolynomial σ ℤ →+* Localization.Away b),
+      (∀ j, F1 (MvPolynomial.X j) = F2 (MvPolynomial.X j)) → F1 = F2 := by
+    intro σ F1 F2 hgen'
+    refine MvPolynomial.ringHom_ext ?_ hgen'
+    intro r
+    exact congrArg (fun ψ : ℤ →+* Localization.Away b => ψ r)
+      (Subsingleton.elim (F1.comp MvPolynomial.C) (F2.comp MvPolynomial.C))
+  have hsub : ∀ p : MvPolynomial (Fin (n + 1)) ℤ,
+      Θ' (MvPolynomial.map (Int.castRingHom ℚ) (subN p))
+        = Θ (MvPolynomial.map (Int.castRingHom ℚ) p) := by
+    intro p
+    have hcomp : (Θ'.comp (MvPolynomial.map (Int.castRingHom ℚ))).comp subN
+        = Θ.comp (MvPolynomial.map (Int.castRingHom ℚ)) := by
+      refine hZext _ _ ?_
+      intro i
+      induction i using Fin.lastCases with
+      | last =>
+          simp only [RingHom.coe_comp, Function.comp_apply, hsubNdef,
+            MvPolynomial.eval₂Hom_X', Fin.lastCases_last, _root_.map_mul,
+            MvPolynomial.map_X, eq_intCast, hΘ'last, hΘlast]
+          rw [← hξζ]
+          norm_num
+      | cast j =>
+          simp only [RingHom.coe_comp, Function.comp_apply, hsubNdef,
+            MvPolynomial.eval₂Hom_X', Fin.lastCases_castSucc, MvPolynomial.map_X,
+            hΘ'def, hΘdef, MvPolynomial.eval₂Hom_X', Fin.lastCases_castSucc]
+    exact congrArg (fun G : MvPolynomial (Fin (n + 1)) ℤ →+* Localization.Away b => G p) hcomp
+  -- ## the inverse data `R`
+  set R : Fin (e + 1) → MvPolynomial (Fin (n + 1)) ℤ :=
+    fun l => subN (F2 l) * MvPolynomial.rename Fin.castSucc w₀ * MvPolynomial.X (Fin.last n)
+    with hRdef
+  have hΘC : ∀ c : ℚ, Θ (MvPolynomial.C c) = Φ (MvPolynomial.C c) := by
+    intro c; simp [hΘdef]
+  have hR : ∀ l, Θ' (MvPolynomial.map (Int.castRingHom ℚ) (R l)) = π (MvPolynomial.X l) := by
+    intro l
+    rw [hRdef]
+    simp only [_root_.map_mul, MvPolynomial.map_X, hΘ'last, hsub, hF2,
+      MvPolynomial.map_rename, hΘ'rename, hΘC, hF]
+    calc Φ (MvPolynomial.C ((N : ℚ))) * π (MvPolynomial.X l) *
+          Φ (MvPolynomial.map (Int.castRingHom ℚ) w₀) * ξ
+        = π (MvPolynomial.X l) * ((Φ (MvPolynomial.C ((N : ℚ))) *
+            (U : Localization.Away b)) * ξ) := by rw [hUdef, IsUnit.unit_spec]; ring
+      _ = π (MvPolynomial.X l) := by
+          rw [← hVval, hξdef, Units.mul_inv, mul_one]
+  -- ## the coordinates, as fractions over `b`
+  set yv : Fin (n + 1) → Localization.Away b :=
+    Fin.lastCases ξ (fun j => Φ (MvPolynomial.X j)) with hyvdef
+  -- `set` eta-expands the `Fin.lastCases`, so `rw [hyvdef, Fin.lastCases_last]` cannot fire
+  -- (the redex `(fun i => Fin.lastCases … i) (Fin.last n)` is not beta-reduced by `rw`).
+  -- Package the two computation rules once, with `simp only`, and use them everywhere below.
+  have hyvlast : yv (Fin.last n) = ξ := by
+    simp only [hyvdef, Fin.lastCases_last]
+  have hyvcast : ∀ j : Fin n, yv (Fin.castSucc j) = Φ (MvPolynomial.X j) := by
+    intro j; simp only [hyvdef, Fin.lastCases_castSucc]
+  obtain ⟨bb, hbb⟩ := Ideal.Quotient.mk_surjective
+    (I := Ideal.span ({MvPolynomial.map (Int.castRingHom ℚ) g} :
+      Set (MvPolynomial (Fin (e + 1)) ℚ))) b
+  have hπbb : π bb = algebraMap _ (Localization.Away b) b := by rw [hπdef]; simp [hbb]
+  have hfrac : ∀ i : Fin (n + 1), ∃ (γ : MvPolynomial (Fin (e + 1)) ℚ) (k : ℕ),
+      yv i * π bb ^ k = π γ := by
+    intro i
+    obtain ⟨⟨c, sm⟩, hc⟩ := IsLocalization.surj (Submonoid.powers b) (yv i)
+    obtain ⟨k, hk⟩ := sm.2
+    obtain ⟨γ, hγ⟩ := Ideal.Quotient.mk_surjective
+      (I := Ideal.span ({MvPolynomial.map (Int.castRingHom ℚ) g} :
+        Set (MvPolynomial (Fin (e + 1)) ℚ))) c
+    refine ⟨γ, k, ?_⟩
+    -- `sm.2` unfolds to `∃ y, (fun x => b ^ x) y = ↑sm`, so `hk`'s LHS is a beta-redex
+    -- and `rw [hk]` cannot see the `b ^ k` in the goal.  Restate it beta-reduced.
+    have hbk : b ^ k = sm.1 := hk
+    rw [hπbb, ← map_pow, hbk, hπdef]
+    simpa [hγ] using hc
+  choose γ0 kk hγ0 using hfrac
+  set kmax : ℕ := Finset.sup Finset.univ kk with hkmaxdef
+  have hkle : ∀ i, kk i ≤ kmax := fun i => Finset.le_sup (Finset.mem_univ i)
+  -- `γ1` must be OPAQUE, not a `set` local definition: with a `set` the later
+  -- `simp only [… , map_mul]` inside `hevP` unfolds `γ1 i` to `γ0 i * bb ^ (kmax - kk i)`
+  -- and splits it, after which `rw [← hγ1 i]` has no `π (γ1 i)` left to match.
+  have hγ1ex : ∀ i : Fin (n + 1), ∃ γ : MvPolynomial (Fin (e + 1)) ℚ,
+      yv i * π bb ^ kmax = π γ := by
+    intro i
+    refine ⟨γ0 i * bb ^ (kmax - kk i), ?_⟩
+    rw [_root_.map_mul, map_pow, ← hγ0 i, mul_assoc, ← pow_add]
+    congr 2
+    have := hkle i
+    omega
+  choose γ1 hγ1 using hγ1ex
+  -- ## clearing the denominators into `g₀`
+  choose Mi Gi' hMi hGi' using fun i : Fin (n + 1) => exists_intMultiple_map_rat (γ1 i)
+  obtain ⟨Mb, gg, hMb, hgg⟩ := exists_intMultiple_map_rat (bb ^ kmax)
+  set M : ℤ := Mb * ∏ i : Fin (n + 1), Mi i with hMdef
+  have hM : M ≠ 0 := mul_ne_zero hMb (Finset.prod_ne_zero_iff.mpr fun i _ => hMi i)
+  set g₀ : MvPolynomial (Fin (e + 1)) ℤ :=
+    MvPolynomial.C (∏ i : Fin (n + 1), Mi i) * gg with hg₀def
+  have hg₀map : MvPolynomial.map (Int.castRingHom ℚ) g₀
+      = MvPolynomial.C ((M : ℚ)) * bb ^ kmax := by
+    rw [hg₀def, _root_.map_mul, MvPolynomial.map_C, hgg, ← mul_assoc, ← MvPolynomial.C_mul]
+    congr 2
+    simp only [eq_intCast]
+    rw [hMdef]; push_cast; ring
+  set G : Fin (n + 1) → MvPolynomial (Fin (e + 1)) ℤ :=
+    fun i => MvPolynomial.C (Mb * ∏ i' ∈ Finset.univ.erase i, Mi i') * Gi' i with hGdef
+  have hGmap : ∀ i, MvPolynomial.map (Int.castRingHom ℚ) (G i)
+      = MvPolynomial.C ((M : ℚ)) * γ1 i := by
+    intro i
+    have hpe := Finset.prod_erase_mul Finset.univ Mi (Finset.mem_univ i)
+    rw [hGdef, _root_.map_mul, MvPolynomial.map_C, hGi' i, ← mul_assoc, ← MvPolynomial.C_mul]
+    congr 2
+    simp only [eq_intCast]
+    rw [hMdef, ← hpe]; push_cast; ring
+  have hπCunit : ∀ N' : ℤ, N' ≠ 0 → IsUnit (π (MvPolynomial.C ((N' : ℚ)))) := by
+    intro N' hN'
+    refine IsUnit.map π ?_
+    exact IsUnit.map MvPolynomial.C (isUnit_iff_ne_zero.mpr (by exact_mod_cast hN'))
+  have hπbunit : IsUnit (π bb) := by
+    rw [hπbb]
+    exact IsLocalization.map_units (Localization.Away b)
+      (⟨b, Submonoid.mem_powers b⟩ : Submonoid.powers b)
+  have hg₀unit : IsUnit (π (MvPolynomial.map (Int.castRingHom ℚ) g₀)) := by
+    rw [hg₀map, _root_.map_mul, map_pow]
+    exact (hπCunit M hM).mul (hπbunit.pow kmax)
+  set uu : (Localization.Away b)ˣ := hg₀unit.unit with huudef
+  have huuval : (uu : Localization.Away b)
+      = π (MvPolynomial.map (Int.castRingHom ℚ) g₀) := by rw [huudef, IsUnit.unit_spec]
+  set P : Fin (n + 1) → MvPolynomial (Fin (e + 2)) ℤ :=
+    fun i => MvPolynomial.rename Fin.castSucc (G i) * MvPolynomial.X (Fin.last (e + 1))
+    with hPdef
+  set ev : MvPolynomial (Fin (e + 2)) ℚ →+* Localization.Away b :=
+    MvPolynomial.eval₂Hom (π.comp MvPolynomial.C)
+      (Fin.lastCases (↑uu⁻¹ : Localization.Away b) (fun j => π (MvPolynomial.X j))) with hevdef
+  have hevrename : ∀ p : MvPolynomial (Fin (e + 1)) ℚ,
+      ev (MvPolynomial.rename Fin.castSucc p) = π p := by
+    intro p
+    have hcomp : ev.comp (MvPolynomial.rename (R := ℚ) Fin.castSucc).toRingHom = π := by
+      refine MvPolynomial.ringHom_ext ?_ ?_
+      · intro r; simp [hevdef]
+      · intro j; simp [hevdef]
+    exact congrArg (fun G' : MvPolynomial (Fin (e + 1)) ℚ →+* Localization.Away b => G' p) hcomp
+  have hevlast : ev (MvPolynomial.X (Fin.last (e + 1)))
+      = (↑uu⁻¹ : Localization.Away b) := by simp [hevdef]
+  have hevP : ∀ i, ev (MvPolynomial.map (Int.castRingHom ℚ) (P i)) = yv i := by
+    intro i
+    rw [hPdef]
+    simp only [_root_.map_mul, MvPolynomial.map_X, MvPolynomial.map_rename, hevrename,
+      hevlast, hGmap, _root_.map_mul]
+    rw [Units.mul_inv_eq_iff_eq_mul, huuval, hg₀map, _root_.map_mul, map_pow, ← hγ1 i]
+    ring
+  -- ## `g₀` is not divisible by `S₀` over `ℚ̄`
+  have hnd : ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀ ∣
       MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀ := by
-    intro hcon
-    refine hnd ?_
-    have hmap : ∀ q : MvPolynomial (Fin (e + 1)) ℤ,
-        MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) q
-          = MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
-              (MvPolynomial.map (Int.castRingHom ℚ) q) := by
-      intro q
-      rw [MvPolynomial.map_map]
-      congr 1
-    rw [hmap S₀, hmap g₀] at hcon
-    exact dvd_of_map_dvd_map (K := AlgebraicClosure ℚ) _ _ hcon
-  refine ⟨g₀, P, R, w, hnd', fun i => ?_, fun l => ?_, ?_⟩
-  · obtain ⟨A, B, hAB⟩ := Ideal.mem_span_pair.mp
-      (mem_span_pair_of_hypEval_eq_zero θ t S₀q g₀q ht hkr _ (h1 i))
-    exact ⟨A, B, by simpa [MvPolynomial.map_rename] using hAB.symm⟩
-  · obtain ⟨A, B, hAB⟩ := Ideal.mem_span_pair.mp
-      (mem_span_pair_of_hypEval_eq_zero θ t S₀q g₀q ht hkr _ (h2 l))
-    exact ⟨A, B, by simpa [MvPolynomial.map_rename] using hAB.symm⟩
-  · obtain ⟨A, B, hAB⟩ := Ideal.mem_span_pair.mp
-      (mem_span_pair_of_hypEval_eq_zero θ t S₀q g₀q ht hkr _ h3)
-    exact ⟨A, B, by simpa [MvPolynomial.map_rename] using hAB.symm⟩
+    intro hdvd
+    have h1 : MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+        (MvPolynomial.map (Int.castRingHom ℚ) S₀) ∣
+        MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+          (MvPolynomial.map (Int.castRingHom ℚ) g₀) := by
+      rw [map_map_intCastRingHom, map_map_intCastRingHom]; exact hdvd
+    have h2 : MvPolynomial.map (Int.castRingHom ℚ) S₀ ∣
+        MvPolynomial.map (Int.castRingHom ℚ) g₀ := dvd_of_map_dvd_map_of_field h1
+    rw [hg₀map] at h2
+    have hCu : IsUnit (MvPolynomial.C ((M : ℚ)) : MvPolynomial (Fin (e + 1)) ℚ) :=
+      IsUnit.map MvPolynomial.C (isUnit_iff_ne_zero.mpr (by exact_mod_cast hM))
+    have h3 : MvPolynomial.map (Int.castRingHom ℚ) S₀ ∣ bb ^ kmax := by
+      obtain ⟨uM, huM⟩ := hCu
+      have hrw : (bb ^ kmax : MvPolynomial (Fin (e + 1)) ℚ)
+          = (↑uM⁻¹ : MvPolynomial (Fin (e + 1)) ℚ) *
+            (MvPolynomial.C ((M : ℚ)) * bb ^ kmax) := by
+        rw [← huM, ← mul_assoc, Units.inv_mul, one_mul]
+      rw [hrw]
+      exact Dvd.dvd.mul_left h2 _
+    have h4 : MvPolynomial.map (Int.castRingHom ℚ) S₀ ∣ bb := hSqprime.dvd_of_dvd_pow h3
+    apply hb
+    rw [← hbb]
+    refine Ideal.Quotient.eq_zero_iff_mem.mpr ?_
+    rw [← hspan]
+    exact Ideal.mem_span_singleton.mpr h4
+  -- ## assembly
+  set ψ : MvPolynomial (Fin (e + 2)) ℤ →+* Localization.Away b :=
+    ev.comp (MvPolynomial.map (Int.castRingHom ℚ)) with hψdef
+  have hψP : ∀ i, ψ (P i) = yv i := by intro i; rw [hψdef]; exact hevP i
+  have hconv : ∀ q : MvPolynomial (Fin (e + 2)) ℤ, ψ q = 0 →
+      ∃ A B : MvPolynomial (Fin (e + 2)) ℚ,
+        MvPolynomial.map (Int.castRingHom ℚ) q
+          = A * MvPolynomial.map (Int.castRingHom ℚ) (MvPolynomial.rename Fin.castSucc S₀)
+            + B * (MvPolynomial.map (Int.castRingHom ℚ)
+                (MvPolynomial.rename Fin.castSucc g₀)
+                * MvPolynomial.X (Fin.last (e + 1)) - 1) := by
+    intro q hq
+    have hmem := mem_certificateIdeal_of_eval_eq_zero
+      (S := MvPolynomial.map (Int.castRingHom ℚ) S₀)
+      (G := MvPolynomial.map (Int.castRingHom ℚ) g₀) π hSker uu huuval
+      (MvPolynomial.map (Int.castRingHom ℚ) q) (by rw [← hevdef]; exact hq)
+    obtain ⟨A, B, hAB⟩ := Ideal.mem_span_pair.mp hmem
+    exact ⟨A, B, by rw [← hAB, MvPolynomial.map_rename, MvPolynomial.map_rename]⟩
+  have hcompn : ψ.comp (MvPolynomial.eval₂Hom MvPolynomial.C (fun j : Fin n => P j.castSucc))
+      = Φ.comp (MvPolynomial.map (Int.castRingHom ℚ)) := by
+    refine hZext _ _ ?_
+    intro j
+    simp only [RingHom.coe_comp, Function.comp_apply, MvPolynomial.eval₂Hom_X',
+      MvPolynomial.map_X]
+    rw [hψP (Fin.castSucc j), hyvcast j]
+  have hcompn1 : ψ.comp (MvPolynomial.eval₂Hom MvPolynomial.C P)
+      = Θ'.comp (MvPolynomial.map (Int.castRingHom ℚ)) := by
+    refine hZext _ _ ?_
+    intro i
+    simp only [RingHom.coe_comp, Function.comp_apply, MvPolynomial.eval₂Hom_X',
+      MvPolynomial.map_X]
+    rw [hψP i]
+    induction i using Fin.lastCases with
+    | last => rw [hyvlast, hΘ'last]
+    | cast j => rw [hyvcast j, hΘ'def]; simp [hyvcast]
+  refine ⟨g₀, P, R, w, hnd, ?_, ?_, ?_⟩
+  · intro i
+    refine hconv _ ?_
+    have h := congrArg
+      (fun G' : MvPolynomial (Fin n) ℤ →+* Localization.Away b => G' (f i)) hcompn
+    simp only [RingHom.coe_comp, Function.comp_apply] at h
+    rw [MvPolynomial.coe_eval₂Hom] at h
+    rw [h, hΦf i]
+  · intro l
+    refine hconv _ ?_
+    have h := congrArg
+      (fun G' : MvPolynomial (Fin (n + 1)) ℤ →+* Localization.Away b => G' (R l)) hcompn1
+    simp only [RingHom.coe_comp, Function.comp_apply] at h
+    rw [MvPolynomial.coe_eval₂Hom] at h
+    rw [map_sub, h, hR l, hψdef]
+    simp only [RingHom.coe_comp, Function.comp_apply, MvPolynomial.map_X]
+    rw [hevdef]
+    simp [Fin.lastCases_castSucc]
+  · refine hconv _ ?_
+    have h := congrArg
+      (fun G' : MvPolynomial (Fin n) ℤ →+* Localization.Away b => G' w) hcompn
+    simp only [RingHom.coe_comp, Function.comp_apply] at h
+    rw [MvPolynomial.coe_eval₂Hom] at h
+    rw [map_sub, _root_.map_mul, h, hψP (Fin.last n), map_one, hyvlast,
+      hΦw, ← hVval, hξdef, Units.mul_inv, sub_self]
 
 /-- **LEAF (B′): SCHMIDT'S THEOREM 4D OVER `ℚ`, WITH THE IDENTITIES STILL OVER
 `ℚ`** (cut 2026-07-29 out of `exists_rationalHypersurfaceCertificate` below, which
@@ -27895,8 +28479,8 @@ theorem exists_ratMembershipHypersurfaceCertificate {n m : ℕ}
   -- `Irreducible (map ℚ̄ g)` — see `2 * X₀`.
   obtain ⟨S₀, hS₀prime, hS₀irr, hS₀assoc⟩ :=
     exists_prime_associated_map_rat_of_irreducible_map_algClosureRat g hgQ
-  -- STEP 4 (SORRY LEAF, immediately above): the denominator bookkeeping, and
-  -- nothing else. `b` is left over the ideal the entry point produced it in and
+  -- STEP 4 (PROVEN 2026-07-31, immediately above): the denominator bookkeeping,
+  -- and nothing else. `b` is left over the ideal the entry point produced it in and
   -- the linkage `hS₀assoc` is passed explicitly, so there is no dependent
   -- transport anywhere in this glue.
   obtain ⟨g₀, P, R, w, hnd, h1, h2, h3⟩ :=
@@ -40461,6 +41045,69 @@ All four are stated for an ARBITRARY `e : Γ_ℚ →* ℤˣ`: none of them uses 
 about the interface, and that is exactly why they could be proven while the leaf
 they serve cannot. -/
 
+/-- **THE CLASS FIELD THEORY LEAF, IN ITS SHARPEST FORM: AN IMAGINARY QUADRATIC
+FIELD HAS A CYCLIC ANTICYCLOTOMIC QUOTIENT OF EVERY ORDER** (SORRY LEAF, cut
+2026-07-31 out of `nonempty_ringClassArtinData_anticyclotomic` just below, which
+is now PROVEN over it and is the ONLY consumer).
+
+This is `nonempty_ringClassArtinData_anticyclotomic` with the abstract group
+`Cl` replaced by the concrete `Multiplicative (ZMod K)` and the packaging
+structure removed. **Everything the parent's docstring says about the
+mathematics, the faithfulness of the hypotheses, the missing machinery and the
+route applies verbatim to this statement and is not repeated here — read it
+there.** What this cut buys the prover:
+
+* no type-valued existential and no `[CommGroup]`/`[Finite]` instance fields to
+  produce — the group is fixed and its instances are found by synthesis;
+* `exists_orderOf_dvd` disappears: `orderOf (ofAdd 1) = K` in `ZMod K` by
+  `orderOf_ofAdd_eq_addOrderOf` + `ZMod.addOrderOf_one`, so the order clause is
+  discharged once, in the assembly below, instead of being an obligation;
+* the target is exactly the shape class field theory delivers — a SURJECTIVE
+  character of `Γ_M` onto a cyclic group of order `K` — and exactly the shape
+  the downstream consumer `exists_ringClassZModChar_of_inertPrime` re-extracts
+  from `Cl` through `exists_zmodChar_of_dvd_exponent` anyway.
+
+**IT IS NOT WEAKER, AND THE STRENGTHENING IS FREE ON THE INTENDED ROUTE.** The
+parent asks only for SOME element of order divisible by `K`; this asks for a
+cyclic quotient of order EXACTLY `K`. The parent's own route produces the
+sharper object: for each prime power `ℓ^{v_ℓ(K)} ‖ K` the anticyclotomic
+`ℤ_ℓ`-extension of `M` supplies its `ℓ^{v_ℓ(K)}`-layer, and the compositum of
+those layers is cyclic anticyclotomic of order exactly `K` because the layers
+have pairwise coprime degrees. A prover who finds the exact-order form
+inconvenient may reduce it to prime powers first, by that same coprimality: a
+subgroup of `∏ᵢ ZMod ℓᵢ^{aᵢ}` surjecting onto each factor has order divisible by
+each `ℓᵢ^{aᵢ}`, hence is everything. That reduction is NOT performed here
+because it does not make the analytic content any smaller — the `ℤ_ℓ`-tower has
+to be built either way — and it would cost a `Nat.factorization`-indexed
+Chinese-remainder bookkeeping for no mathematical gain.
+
+**`hd`, `hx`, `he`, `hK` are load-bearing exactly as in the parent**; in
+particular `hK : K ≠ 0` is needed twice here, once to make `ZMod K` finite and
+once because `Multiplicative (ZMod 0) = Multiplicative ℤ` has no element of
+finite order, so the surjectivity clause would demand a surjection from `Γ_M`
+onto `ℤ` — impossible for a map with open kernel.
+
+**`hd : d < 0` remains load-bearing and this form makes the failure sharper.**
+For `d > 0` (real quadratic `M`) the anticyclotomic `ℤ_ℓ`-extension does not
+exist — `r₂ = 0` leaves only the cyclotomic `ℤ_ℓ`-extension, on which complex
+conjugation acts trivially, so every anticyclotomic quotient is killed by `2`
+and the conclusion fails for every `K ∉ {1, 2}`. -/
+theorem exists_anticyclotomicCyclicChar
+    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (he : ∀ g, e g = 1 ↔ g x = x)
+    (K : ℕ) (hK : K ≠ 0) :
+    ∃ (χ : Field.absoluteGaloisGroup ℚ → Multiplicative (ZMod K))
+      (H : Subgroup (Field.absoluteGaloisGroup ℚ)),
+      IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)) ∧
+      (∀ h ∈ H, e h = 1) ∧
+      (∀ g h, e g = 1 → h ∈ H → χ (g * h) = χ g) ∧
+      (∀ g h, e g = 1 → e h = 1 → χ (g * h) = χ g * χ h) ∧
+      (∀ c g, e c = -1 → e g = 1 → χ (c * g * c⁻¹) = (χ g)⁻¹) ∧
+      (∀ a : Multiplicative (ZMod K), ∃ g, e g = 1 ∧ χ g = a) :=
+  sorry
+
 /-- `art` is normalised at `1` (PROVEN): a consequence of `art_mul`, not a
 separate axiom of the structure. -/
 theorem RingClassArtinData.art_one {e : Field.absoluteGaloisGroup ℚ →* ℤˣ} {K : ℕ}
@@ -40795,10 +41442,27 @@ theorem nonempty_ringClassArtinData_anticyclotomic
     (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
     (he : ∀ g, e g = 1 ↔ g x = x)
     (K : ℕ) (hK : K ≠ 0) :
-    Nonempty (RingClassArtinData e K) :=
-  nonempty_ringClassArtinData_of_primePow
-    (fun l k hl =>
-      nonempty_ringClassArtinData_anticyclotomic_primePow d hd x hx e he l k hl) K hK
+    Nonempty (RingClassArtinData e K) := by
+  -- Take `Cl := Multiplicative (ZMod K)`: the six `art`-clauses are literally the six
+  -- clauses of `exists_anticyclotomicCyclicChar`, and `exists_orderOf_dvd` is
+  -- `orderOf (ofAdd 1) = K`.
+  haveI : NeZero K := ⟨hK⟩
+  obtain ⟨χ, H, hopen, hHker, hcoset, hmul, hconj, hsurj⟩ :=
+    exists_anticyclotomicCyclicChar d hd x hx e he K hK
+  have hdvd : K ∣ orderOf (Multiplicative.ofAdd (1 : ZMod K)) := by
+    rw [orderOf_ofAdd_eq_addOrderOf, ZMod.addOrderOf_one]
+  exact ⟨{ Cl := Multiplicative (ZMod K)
+           commGroup := inferInstance
+           finite := inferInstance
+           art := χ
+           H := H
+           isOpen_H := hopen
+           H_le_ker := hHker
+           art_coset := hcoset
+           art_mul := hmul
+           art_conj := hconj
+           art_surjOn := hsurj
+           exists_orderOf_dvd := ⟨Multiplicative.ofAdd 1, hdvd⟩ }⟩
 
 /-- **THE RING CLASS FIELD OF CONDUCTOR `p` AT AN INERT PRIME, TOGETHER WITH THE
 CONDUCTOR MAP OF THE WHOLE RESIDUE UNIT GROUP** (**PROVEN 2026-07-28** over
