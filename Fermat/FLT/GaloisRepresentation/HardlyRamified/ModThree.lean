@@ -56690,7 +56690,11 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class
   obtain ⟨mm, hmm, hmmsupp, Im, A, P, N, d, hAPN, hPNIm, _hNA, hAidx, hidx, hd⟩ :=
     exists_artinIdealGroup_relIndex_ray_class F χ hmul V hVopen hVker hunr ℓ hℓ hℓ3 k
       hord c hcmul hcfrob
-      (fun p S => exists_artinAuxiliaryField_ray_class F χ hmul V hVopen hVker p S)
+      -- the normality clause added 2026-07-31 is dropped here: `hartin` predates it
+      (fun p S => by
+        obtain ⟨m, H, hm0, hmS, hmp, hHopen, hi, hii, hiii, hfrob, -⟩ :=
+          exists_artinAuxiliaryField_ray_class F χ hmul V hVopen hVker p S
+        exact ⟨m, H, hm0, hmS, hmp, hHopen, hi, hii, hiii, hfrob⟩)
       hcycl
   refine ⟨mm, hmm, hmmsupp, ?_⟩
   intro δ hδ0 hδpos hδcong
@@ -58896,7 +58900,11 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_clas
   have hcrux : A ≤ P ⊔ N :=
     artinDivisorKernel_le_sup_ramified_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord
       c hcmul hcfrob
-      (fun p S => exists_artinAuxiliaryField_ray_class F χ hmul V hVopen hVker p S)
+      -- the normality clause added 2026-07-31 is dropped here: `hartin` predates it
+      (fun p S => by
+        obtain ⟨m, H, hm0, hmS, hmp, hHopen, hi, hii, hiii, hfrob, -⟩ :=
+          exists_artinAuxiliaryField_ray_class F χ hmul V hVopen hVker p S
+        exact ⟨m, H, hm0, hmS, hmp, hHopen, hi, hii, hiii, hfrob⟩)
       hcycl mm hmm hmmram φ d Im A P N hd hA hφv hφd hIm hP hN hidx₁ hidx₂
   -- `P ≤ Im`: the divisor of a ray element is supported away from `mm`, because
   -- `δ ≡ 1 (mod mm)` forces `δ ∉ v` for every `v ∣ mm`.
