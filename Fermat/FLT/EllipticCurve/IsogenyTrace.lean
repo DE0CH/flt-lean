@@ -948,17 +948,40 @@ scalar drift with `ψ` and the argument would not close.
   divisor-theoretic pairing built by the *AEC* III.8 route (Dedekind coordinate ring,
   `Point.toClass`, Miller generators, Weil reciprocity), but over `𝔽̄_q`, and its
   naturality clause is for the `q`-power Frobenius of the base — a semilinear
-  automorphism of the coefficients, not an isogeny of the curve. The boundary is
-  sharp and worth knowing before starting: `WeilPairingDescent.lean` and
-  `WeilPairingStageB.lean` are already stated over an arbitrary algebraically closed
-  field, and `exists_millerValue_alternating` and `millerRatio_eval_pow_of_pullback`
-  carry no finite-field hypothesis; but `exists_generic_pDivision_offset` and
-  `exists_millerRatio_eval_translationChar` require a **finite** subfield containing
-  the curve's coefficients, which exists only in characteristic `p`. So the honest
-  description of the work is: redo the *genericity / avoidance* layer over a
-  characteristic-zero base (the alternation and pullback cores transfer unchanged),
-  then add isogeny-naturality — which is the `ψ_* ψ^* = [deg ψ]` computation on
-  divisors — on top.
+  automorphism of the coefficients, not an isogeny of the curve.
+* **THE GENERICITY LAYER IS NOW CHARACTERISTIC-FREE (2026-07-31), and it turned out
+  to be the cheap half.** The boundary recorded by the fourth pass was
+  `exists_generic_pDivision_offset` and `exists_millerRatio_eval_translationChar` in
+  `WeilPairingStageB.lean`, both of which took `{F₁ F₂ : Subfield F}` with
+  `(F₁ : Set F).Finite` — and a finite subfield containing the curve's coefficients
+  exists only in characteristic `p`. That reading was **wrong**, and the compiler
+  said so: the `unusedVariables` linter flagged `hF₁fin`/`hF₂fin` (and, in leaf 3,
+  also `hF₁₂`, `hbad` and four more) as never referenced. The subfield was a pure
+  **avoidance device** — "pick a point outside a small bad set", implemented in
+  characteristic `p` by enumerating a large enough finite field. Reading the proofs:
+  leaf 1's whole field apparatus feeds one local `hkey : ∀ t ∈ G, S ⊖ R ≠ t` applied
+  at exactly four values (`O`, `Q`, `⊖P`, `Q ⊖ P`), and leaf 3's feeds four abscissa
+  separations (`S ≠ R`, `Q⊕R ≠ S`, `Q⊕R ≠ P⊕S`, `R ≠ P⊕S`). Both are now proven in
+  that form as `exists_generic_pDivision_offset_of_avoid` and
+  `exists_millerRatio_eval_translationChar_of_avoid`, with the old statements kept as
+  wrappers so no characteristic-`p` consumer changed. **So characteristic zero is
+  EASIER here, not harder**: over an algebraically closed base of characteristic zero
+  `W.Point` is infinite (`infinite_point` in this file), so the eight inequations are
+  arranged by choosing `S` and `R` off a finite bad set —
+  `WeilPairing.exists_nonsingular_abscissa_notMem` already does exactly that and is
+  already stated for an arbitrary algebraically closed field.
+* **What is therefore left, in two named pieces.** (i) A characteristic-zero
+  analogue of `WeilPairing.exists_weilValueSetup_avoiding`, i.e. the Miller setup
+  `(S, R, aP, aQ)` with the eight inequations, built from
+  `exists_nonsingular_abscissa_notMem` on finite bad sets instead of from
+  `exists_finite_subfield_containing` — mechanical, no new mathematics, but it must
+  be written because the existing one is hard-wired to
+  `AlgebraicClosure (ZMod q)` and to `frobFixed`/`frobPeriod` (the Frobenius
+  naturality clause, which a characteristic-zero pairing does not want at all).
+  (ii) **Isogeny-naturality**, the `ψ_* ψ^* = [deg ψ]` computation on divisors. That
+  is the genuinely new mathematics and the only remaining hard step; nothing in the
+  existing pipeline approximates it, since `exists_weilPairing_mu`'s naturality is
+  for a base automorphism rather than a curve endomorphism.
 
 ### The alternative closure of this file, if the pairing proves harder than expected
 
@@ -1590,6 +1613,17 @@ merely restating that it is missing.
   and pullback cores transfer unchanged — and isogeny-naturality must then be added
   on top. Reporting "the Weil pairing is finite-field-only here" without that split
   overstates the job.
+
+  **SUPERSEDED 2026-07-31 — and the fourth pass's own boundary was too pessimistic.**
+  Both of those finiteness hypotheses were *unused* (the `unusedVariables` linter
+  flagged them; the subfield was only an avoidance device), and both declarations
+  now exist in characteristic-free form as
+  `WeilPairing.exists_generic_pDivision_offset_of_avoid` and
+  `WeilPairing.exists_millerRatio_eval_translationChar_of_avoid`, over eight point-
+  and abscissa-inequations. The full account is in the "Where to construct it"
+  section of `exists_weilPairing_torsionRep_adjoint` above; the short version is that
+  the genericity layer is DONE and what is left is a mechanical characteristic-zero
+  setup lemma plus isogeny-naturality.
 
 **Sanity check of the statement.** At `ψ = [n]`, `ρ_ℓ ψ = n · id` has determinant
 `n²` and `deg [n] = # W[n] = n²` (`n_torsion_card`). At `ψ = 0` both sides are `0`
