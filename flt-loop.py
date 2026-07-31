@@ -24,6 +24,7 @@ import re
 import shlex
 import subprocess
 import urllib.request
+import uuid
 import sys
 import time
 
@@ -780,11 +781,26 @@ def do_spawn(s, name, j):
     # already runs under its own CLAUDE_CONFIG_DIR with a different model.
     # Recorded on the job too, so what ran is auditable from the state alone.
     j["model"] = MODEL
+    # The loop CHOOSES the session id rather than trying to discover one, which
+    # is what makes a real resume possible: --session-id on the first run,
+    # --resume on every later one. Sessions are stored per PROJECT DIRECTORY,
+    # so a resume must run with the same cwd as the original spawn -- row 8
+    # respawns into the same worktree, so that holds by construction.
+    j.setdefault("session", str(uuid.uuid4()))
+    if j.get("resume"):
+        # Continue the actual conversation. No prompt file: the agent already
+        # knows its task, what it tried and what failed, which is the whole
+        # point of resuming instead of starting a stranger in its worktree.
+        act = ("--resume %s -p %s"
+               % (shlex.quote(j["session"]),
+                  shlex.quote("continue")))
+    else:
+        act = "--session-id %s -p \"$(cat %s)\"" % (shlex.quote(j["session"]),
+                                                    shlex.quote(str(pf)))
     inner = ("cd %s 2>/dev/null || cd %s; "
-             "exec -a flt-job-%s %s --model %s --dangerously-skip-permissions "
-             "-p \"$(cat %s)\""
+             "exec -a flt-job-%s %s --model %s --dangerously-skip-permissions %s"
              % (shlex.quote(str(wt)), shlex.quote(str(REPO)), j["token"],
-                shlex.quote(CLAUDE), shlex.quote(MODEL), shlex.quote(str(pf))))
+                shlex.quote(CLAUDE), shlex.quote(MODEL), act))
     cmd = ("setsid --fork nohup bash -c %s >%s 2>&1 </dev/null"
            % (shlex.quote(inner), shlex.quote(str(log))))
     try:
@@ -959,9 +975,7 @@ def load():
         # Plain observed state, like batch or inflight. No decision is taken
         # here: the rows decide, and save() writes back whatever they set.
         "quota_block": json.loads(rd(STATE / "quota-blocked") or "null"),
-        "probe": {"sent_at": float((rd(STATE / "quota-probe", "") or "0").strip() or 0),
-                  "served": (STATE / "quota-probe.json").exists(),
-                  "creds": creds_stamp()},
+        "probe": {"served": (STATE / "quota-probe.json").exists()},
         "log": [], "git": [], "email": [],
     }
 
@@ -977,10 +991,6 @@ def save(s):
         wr(STATE / "quota-blocked", json.dumps(s["quota_block"]))
     else:
         rm(STATE / "quota-blocked")
-    if s.get("probe", {}).get("sent_at"):
-        wr(STATE / "quota-probe", str(s["probe"]["sent_at"]))
-    else:
-        rm(STATE / "quota-probe")
     if not s.get("probe", {}).get("served"):
         rm(STATE / "quota-probe.json")
     wr(STATE / "batch", "".join(b + "\n" for b in s["batch"]))
@@ -1010,7 +1020,7 @@ def save(s):
         # first tick -- spawn, "died", re-dispatch, spawn, every ~15s, which is
         # exactly the churn the grace period exists to stop.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
-                                     "retries", "host", "pid", "session",
+                                     "retries", "host", "pid", "session", "resume",
                                      "takeover", "spawned_at", "model", "inbox")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         if j["started"]:
