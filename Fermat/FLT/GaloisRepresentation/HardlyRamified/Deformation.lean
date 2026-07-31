@@ -17742,30 +17742,91 @@ explicitly.)
    kernel only in `1`) is a homeomorphism onto the open, finite-index subgroup
    `p W`, and the section is glued over the finitely many clopen cosets.
 
-   *And it needs a second brick that is also absent: `D.R` is not known to be
-   COMPACT.* `ProfiniteLocalNoetherian.lean` takes `[CompactSpace R]` as a
+   *It was also claimed here that `D.R` is not known to be COMPACT.* **THAT
+   CLAIM WAS FALSE, and it is corrected in place rather than deleted, because
+   the way it was reached is the reusable part** (2026-07-31, second owner).
+   What it said: `ProfiniteLocalNoetherian.lean` takes `[CompactSpace R]` as a
    HYPOTHESIS throughout (`finite_quotient_of_isOpen`, `isClosed_sup`,
    `exists_pow_le_of_isOpen`, `le_of_le_sup_closure_sq`,
    `fg_maximalIdeal_of_finite_ringHom`,
    `isNoetherianRing_isAdic_of_profinite_of_finite_ringHom`), i.e. it proves the
-   CONVERSE direction — profinite ⟹ Noetherian-adic. The direction this leaf
-   needs is that a `HardlyRamifiedDeformation`'s coefficient ring is compact,
-   which is true (`isNoetherianRing` makes `𝔪` finitely generated, so each
-   `𝔪ⁱ/𝔪ⁱ⁺¹` is a finite-dimensional space over the FINITE residue field `k`,
-   hence each `R ⧸ 𝔪ⁿ` is finite; `isAdic` and `isAdicComplete` then present `R`
-   as the inverse limit of those finite rings) and is nowhere stated.
+   CONVERSE direction — profinite ⟹ Noetherian-adic — so the direction this leaf
+   wants "is nowhere stated". Every clause of that is true about
+   `ProfiniteLocalNoetherian.lean`, and the conclusion drawn from it is wrong.
 
-   *So the honest build order for this leaf is four bricks, not one*, and the
-   first two are pure topology and commutative algebra with no Galois theory in
-   them, hence dispatchable to a separate owner in parallel with (5):
+   **Brick (i) is PROVEN, IN THIS FILE, ~6800 lines above this docstring, and it
+   is already APPLIED TO `D.R`.** `compactSpace_of_isAdic_of_pi` (above, PROVEN)
+   is exactly the wanted direction — a local Noetherian ring with the
+   `𝔪`-adic topology, `𝔪`-adically complete, surjecting onto the finite field
+   `k`, is compact — and `fg_comap_maximalIdeal_traceSubring_of_uniform` above
+   already contains the one line that instantiates it:
 
-   (i) `CompactSpace` for a Noetherian, `𝔪`-adic, `𝔪`-adically complete local
-       ring with finite residue field;
-   (ii) the continuous section above;
+     `haveI : CompactSpace D.R := compactSpace_of_isAdic_of_pi D.isAdic D.π D.π_surjective`
+
+   (paired there with `haveI : T2Space D.R := t2Space_of_isAdic D.isAdic`, which
+   a successor will want too). So brick (i) costs a successor ONE LINE, not a
+   sub-task, and `Ideal.finite_quotient_pow` /
+   `ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient` do not need to be
+   re-assembled — `compactSpace_of_isAdic_of_pi` is that assembly.
+
+   **Why this matters beyond the one line: a re-derivation was written and had
+   to be thrown away.** A `HardlyRamifiedDeformation.compactSpace` wrapper was
+   proven here on 2026-07-31 and verified green before the in-file original was
+   noticed; it was a duplicate of a one-liner, consumed by nothing, hence
+   free-floating, and it was deleted rather than committed. **The lesson, and it
+   generalises past this leaf: an "it is nowhere stated" verdict reached by
+   grepping the file where the machinery OUGHT to live is not a refutation.
+   Grep for the CONCLUSION — here, `CompactSpace` applied to a deformation
+   ring — across the whole tree INCLUDING the file you are editing.** This file
+   is 24 000 lines; "not in this module" is not something an author knows by
+   having read it. (`HilbertModularity.lean` assembles the same fact for its own
+   deformation ring, `hcompact` in `exists_ringHom_hilbertTraceSubring_…`, which
+   is a third independent place the verdict could have been broken.)
+
+   *So the honest build order for this leaf is THREE bricks, and the first is
+   pure topology with no Galois theory in it, hence dispatchable to a separate
+   owner in parallel with (5):*
+
+   (ii) the continuous section above — the one brick of the four that is
+       genuinely absent, and the refuting greps for it stand (re-run
+       2026-07-31 over `Fermat/`, the pin's `Mathlib/Topology/` and
+       `Mathlib/Algebra/`, and `~/cs/FLT`, for `Function.RightInverse` /
+       `hasSection` / `continuousSection` / `exists_continuous_section` in
+       combination with `Continuous`: the only hits are the discrete-group
+       `liftOfRightInverse'` family in `AutomorphicForm/GroupTheoryStuff.lean`,
+       a purely algebraic splitting with no topology in it).
+
+       Two routes, and the SECOND is the cheap one because our pin already has
+       its engine. (a) Serre's argument as sketched above — an open subgroup
+       `W` meeting the finite kernel only in `1`, `p|W` a homeomorphism onto an
+       open finite-index subgroup, glue over the finitely many clopen cosets;
+       this needs a neighbourhood basis of open ADDITIVE subgroups, which
+       `IsAdic` supplies as the `𝔪ⁿ`, plus the delicate step that some `𝔪ⁿ`
+       meets the kernel trivially. (b) **Level-wise, then take the limit:**
+       `S ⧸ K` and `D.R` are both inverse limits of their FINITE `𝔪`-adic
+       quotients (finite by `finite_quotient_of_maximalIdeal_pow_le` above),
+       each level map is a surjection of finite sets, and a compatible system
+       of set-theoretic sections is a point of an inverse limit of NONEMPTY
+       FINITE sets — which is nonempty by
+       `nonempty_sections_of_finite_cofiltered_system` /
+       `nonempty_sections_of_finite_inverse_system`, both in the pin. Route (b)
+       does no point-set topology at all and reuses this module's own
+       finiteness lemma; price it first.
    (iii) the cocycle `c(σ, τ)` and its cocycle identity in the homogeneous
        model, which is where items (2)–(4) of this audit are consumed and is
        the first step that is actually unblocked today;
    (iv) item (5), the local conditions, per clause.
+
+   **A NOTE ON HOW A SUCCESSOR SHOULD LAND (ii), because the deleted wrapper
+   shows the trap.** A brick proven with no consumer is free-floating and may
+   not be committed. Brick (ii) can only be CONSUMED once `S ⧸ K` carries a
+   topology, and this leaf's statement deliberately gives it none — `T`'s
+   `CommRing` is an ordinary argument and the topology is transported from
+   `D'` through the `≃+*` (see `IsDeformationStructureOn` above). So (ii) is
+   not separately committable ahead of (iii): the same owner must topologize
+   `S ⧸ K` (the `𝔪`-adic topology, plus Noetherian/local/complete, which pass
+   to the quotient) and use the section to build the lift. Bricks (ii) and
+   (iii) are ONE task, not two, and only (iv) genuinely splits off.
 
    Note (iii) wants the UNIVERSAL small extension `S ⧸ (𝔪 · ker φ) ↠ D.R`,
    whose kernel is the whole of `ker φ/𝔪 · ker φ`, rather than one `S ⧸ K` at a
@@ -17775,6 +17836,69 @@ explicitly.)
    with no reason to depend linearly on `ψ`, and the linearity is not repairable
    afterwards. This is why the leaf quantifies over `K` INSIDE the `∃ oc` and
    not outside it.
+
+**FAITHFULNESS AUDIT, 2026-07-31 — RUN AGAINST THE COMPOSITE STATEMENT, because
+this leaf has now been restated TWICE and CLAUDE.md voids the earlier audit when
+that happens.  VERDICT: FAITHFUL.**
+
+The two restatements pull in OPPOSITE directions, which is what makes the
+composite worth checking rather than assuming:
+
+* *2026-07-27* replaced the conclusion `∃ s : D.R →+* S ⧸ K, …` by
+  `∃ D', D.IsDeformationStructureOn D' (S ⧸ K) _ q`.  That is a
+  **STRENGTHENING** — see the `≃+*` paragraph above, which is precisely the
+  clause that stops the new conclusion from being discharged by a bare section.
+* *2026-07-31* added `K ≠ RingHom.ker φ` to the inner implication.  That is a
+  **WEAKENING**, and a weakening is monotone: it cannot turn a true statement
+  false.  So no interaction is possible in that direction, and the composite
+  audit reduces to auditing the 2026-07-27 strengthening.  (This is the exact
+  point of difference from the `exists_artinDivisorNormIndex_le_ray_class`
+  episode CLAUDE.md records, where BOTH edits constrained the witness.)
+
+*The strengthening is true.*  When the class of `oc ψ` vanishes, obstruction
+theory does not merely split `S ⧸ K → D.R`; it produces the lifted
+representation, and every field of `HardlyRamifiedDeformation` is then in hand
+with `D'.R := S ⧸ K` and `e := RingEquiv.refl`.  Checked field by field, since
+that is where a strengthening of this shape usually breaks:
+`S = MvPowerSeries (Fin g) Λ` lies in `Type u` because `Λ` does, so the universe
+constraint is met; `Λ` is `ℓ`-adically complete (`Module.Finite ℤ_[ℓ] Λ`) and
+Noetherian, hence so are `S` and `S ⧸ K`, giving `isNoetherianRing`, `isAdic`
+and `isAdicComplete`; `D'.π := D.π ∘ q` is surjective because `q` and `D.π` are;
+`charFrob_compat` for `D'` follows from `D`'s by mapping along `q` first, which
+is the same composite the `IsDeformationStructureOn` clause `D.π.comp p = D'.π`
+asserts.  Nothing here needs `hirr`, `hw` or `ht` — those are consumed only by
+the node below.
+
+*`oc = 0` is NOT a cheat witness, and the reason is worth stating because it
+reads like one.*  Taking `oc := 0` satisfies conjunct (a) for free (the class of
+`0` lies in every submodule), but it makes conjunct (b)'s hypothesis hold for
+EVERY `ψ`, so it demands that every proper small extension pinned by every `ψ`
+admit a lift — which is false as soon as the obstruction is nonzero.  A cheap
+`oc` therefore makes the leaf HARDER, not easier; the `∃` is not a loophole.
+
+*The mirror hazard — an `oc` that is never a coboundary, making (b) vacuous — is
+also not a cheat, and this one is a genuine surprise.*  Such an `oc` exists
+whenever `dim Ш² ≥ dim (ker φ ⧸ 𝔪 · ker φ)`, and it discharges (b) vacuously.
+That is not a defect: it is exactly the conclusion the consumer chain wants, and
+the consumer (`exists_obstructionCocycle_smallExtension_section` below, thence
+`rank_relationSpace_le_of_rank_sha2_le`) uses (b) only contrapositively, to get
+that `ψ ↦ class (oc ψ)` is injective and hence
+`dim relationSpace ≤ dim Ш²`.  So the leaf is faithful in the strong sense: both
+degenerate choices of `oc` land on the right side of the inequality the tree is
+after, and the statement is not weakened by admitting them.  A successor should
+NOT "repair" this by demanding that `oc` be the literal Böckle cocycle.
+
+*The `k`-LINEARITY of `oc` is the one clause that could have been unachievable,
+and it is achievable.*  A family of cocycles indexed by `ψ` has no reason to be
+linear in `ψ`; the note in item (6)(iii) above is what makes it so — build ONE
+cocycle valued in `ad⁰ ⊗_k (ker φ ⧸ 𝔪 · ker φ)` for the UNIVERSAL small
+extension and set `oc ψ := (1 ⊗ ψ)(c)`.  Recorded here as well as there because
+a faithfulness audit that skipped it would be certifying a clause nobody had
+checked was satisfiable.
+
+*No junk-value hazard.*  Every object in the statement is a submodule, a kernel,
+a range or an `∃`; there is no `Nat.card` and no numeric value that could
+silently be `0` (contrast `card_sha1Twist_le_card_dualNumberPoints` below).
 
 References: Böckle, *Presentations of universal deformation rings*; Mazur,
 *Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
@@ -22227,6 +22351,23 @@ sorry-free) with its `linHom`/`iHom` shims; (b) build the local invariant map
 NOWHERE (mathlib has `BrauerGroup` as CSAs modulo Morita and no local invariant
 isomorphism; `~/cs/FLT` has two docstring mentions and nothing else); (c) then
 both leaves.
+
+**THE GATE IS UNCHANGED AS OF 2026-07-31** (re-checked by the owner of the
+2026-07-31 obstruction-leaf cut, at `bccd5d07`, so that the next owner of either
+leaf does not re-run these greps a fourth time). Two searches over `Fermat/`,
+both case-insensitive and by statement shape rather than by expected file:
+`poitou|localInvariant|invariantMap|localClassField|norm.?residue|artin.?map|reciprocity`
+returns only prose mentions and unrelated material (`Norm/Quotient.lean`,
+`BinaryQuadraticForm.lean`, the Weil-pairing chain, and
+`NumberField/UnramifiedClassFieldExistence.lean` /
+`UnramifiedClassFieldBound.lean`, which are GLOBAL unramified class field theory
+at modulus `1` — the Hilbert class field — and contain no local invariant map);
+`localTateDuality|tateDuality|localPairing|localInvariant|invariantMap` outside
+this file returns **nothing at all**. And the cup product is still not vendored:
+the only `CupProduct` hits in `Fermat/` are the citations in this file plus the
+"still to vendor" note in
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`.
+So step (a) has not been started and step (b) has not been started.
 
 **THERE IS A PRECEDENT FOR DODGING THAT GATE, AND IT IS WORTH READING BEFORE
 BUILDING ANYTHING.** `Modularity/Patching.lean` runs the SAME Greenberg–Wiles
