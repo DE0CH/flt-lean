@@ -4427,27 +4427,917 @@ theorem pow_sub_one_apply_mem_maximalIdeal_pow_smul_top
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The connected–étale line of the flat package at `3`** — **SORRY
-LEAF AGAIN since 2026-07-31**, and now the SINGLE finite-flat input of
-everything above it in this file.
+/-- **RAYNAUD LEAF (a): THE CONNECTED LOCUS IS AN `R`-SUBMODULE** — the
+full-faithfulness half of the finite-flat content at `3`.
 
-# WHY IT IS A LEAF AGAIN: THE WHOLE ROUTE UNDER IT WAS REFUTED
+**SORRY LEAF, cut 2026-07-31 (flt-lean-124).** It is one of the two
+leaves that together replace the single `sorry` that sat on
+`exists_connectedEtale_line_of_hopf_package` below; see the STATUS
+section of that theorem's docstring for the ledger and the reasoning
+behind cutting here rather than there.
 
-Between 2026-07-25 and 2026-07-30 this theorem was PROVEN, over a tower
-of `35` declarations occupying lines `2119`–`8419` of this file, whose
-foundation was the arbitrary-Hopf-order Raynaud leaf
+STATEMENT. `M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` is the space of the congruence
+quotient of `ρ`, identified `Γ ℚ₃ᵥ`-equivariantly by `fG` with the
+geometric points of the finite flat `𝒪₃ᵥ`-group scheme `Spec G`, and
+`M⁰ := {m | (point of m) (1 ⊗ e₀) = 1}` is its connected locus — the
+geometric points of the connected component of the identity, cut out by
+the value `1` at the connected counit idempotent `e₀`. This leaf says
+`M⁰` is stable under multiplication by every scalar `r : R`.
+
+WHY IT IS TRUE. Multiplication by `r` is an endomorphism of `M` as a
+`Γ ℚ₃ᵥ`-module (the `R`-action and the Galois action commute), hence,
+transported along `fG`, an endomorphism of the GENERIC FIBRE
+`Spec (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)`. **Raynaud's uniqueness of prolongations at
+`e = 1 < p − 1 = 2`** — `𝒪₃ᵥ ≅ ℤ₃` is absolutely unramified, so `e = 1`,
+and `p = 3` gives `p − 1 = 2` — says the restriction functor from finite
+flat `𝒪₃ᵥ`-group schemes to their generic fibres is FULLY FAITHFUL. So
+that endomorphism extends, uniquely, to `Spec G` itself; and any
+endomorphism of a finite flat group scheme carries the connected
+component of the identity into itself, because the connected component
+is functorial. Reading that back through `fG` is exactly the conclusion.
+
+Nothing residual enters the statement: no `π`, no `w₀`, no `hρ`, no rank
+hypothesis, not even `hV`. That is deliberate — this half is pure
+Raynaud, and the rank half is the sibling leaf
+`connected_locus_le_line_of_hopf_package` just below.
+
+FAITHFULNESS. The conclusion is a VALUE-level identity over `𝒪ᵥ` (the
+value `1` at the `𝒪ᵥ`-rational idempotent `e₀`), never the existence of
+an element of `G` and never a `Γ`-rational coordinate. So it is on the
+true side of this development's `𝒪ᵥ`-descent rule, and it is blind to
+the `p − 1` unramified twists `μ₃ ⊗ ψ` that refuted
+`exists_muType_closure`: a twist changes WHICH line `M⁰` is, not whether
+`M⁰` is `R`-stable.
+
+WHY THE 2026-07-29 REFUTATION DOES NOT REACH IT. This was PROVEN in this
+file from 2026-07-27 to 2026-07-31, over
+`connected_locus_smul_of_hopf_package_aux` and hence over
+`connected_locus_mem_displacement_closure_of_hopf_package`, and so over
+`eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion`, which was
+REFUTED on 2026-07-29 (witness: `E = 37a1`, supersingular at `3`, giving
+a CONNECTED order-`27` object whose wild inertia acts unipotently on a
+`3`-dimensional socle). That kills the old PROOF and not the STATEMENT:
+the witness is about how inertia acts on a large socle and says nothing
+about whether scalar multiplication preserves connectedness. The void
+proof is not restored; recover it if wanted with
+
+    git show dc6836b9^:Fermat/FLT/GaloisRepresentation/HardlyRamified/Threeadic.lean
+
+at `connected_locus_smul_of_hopf_package` (line `5142` there). Note the
+deletion happened inside what became a merge, so `git log -S` will not
+show it — use `git log -m -S '<name>' -- <path>`.
+
+WHERE TO GET IT. `HardlyRamified/Family.lean` carries the same Raynaud
+content coefficient-free and intrinsically on the corner —
+`isMultiplicativeType_corner_of_inertiaLevelOneFlag`, over the still-open
+leaf `isMultiplicativeType_of_connected_of_inertiaLevelOneFlag` — with
+everything downstream of it PROVEN, including
+`connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package` and
+`exists_connectedEtale_cyclotomic_subgroup_of_hopf_package`, which are
+the same shape as this file's chain. `Threeadic` CANNOT import `Family`
+(`Family.lean:16` is `public import Fermat.FLT.Modularity.Interface` and
+`Interface.lean` imports this file, so the edge is a CYCLE), so the
+relocation has to be an extraction DOWNWARD into a module both files
+import — any new module under `HardlyRamified/` that this file imports
+will do, since `Family` reaches this file transitively and therefore
+reaches everything this file imports.
+
+The multiplicative-type layer is also not yet in this file's import
+cone; `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Diagonalizable.lean`
+imports mathlib ONLY, so `public import`ing it wires
+`HopfAlgebra.IsMultiplicativeType`, `HopfAlgebra.cornerIdeal`,
+`HopfAlgebra.isMultiplicativeType_of_isShortExact` and
+`HopfAlgebra.etale_of_isShortExact` in with no new project edge and no
+cycle. Add it in the same commit that first uses it.
+
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102**
+(1974), 3.3.2–3.3.5; Tate, *Finite flat group schemes*, §4, in
+Cornell–Silverman–Stevens; Fontaine, *Il n'y a pas de variété abélienne
+sur `ℤ`*, §1. -/
+theorem connected_locus_smul_of_hopf_package
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    {V : Type v} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (ρ : GaloisRep ℚ R V) (n : ℕ)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hmin₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := 𝒪₃ᵥ) y = (1 : 𝒪₃ᵥ) → y = e₀)
+    (habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (r : R) (x : V)
+    (hx : (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+        ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] x)))
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) :
+    (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+        ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] (r • x))))
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **RAYNAUD LEAF (b): THE CONNECTED LOCUS HAS RANK AT MOST ONE, AND
+ANY RESIDUALLY NONZERO CONNECTED VECTOR GENERATES IT.**
+
+**SORRY LEAF, cut 2026-07-31 (flt-lean-124).** The sibling of
+`connected_locus_smul_of_hopf_package` just above; together the two
+replace the single `sorry` that sat on
+`exists_connectedEtale_line_of_hopf_package` below.
+
+STATEMENT. With `M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` and `M⁰` its connected locus as
+in the leaf above: given `w₁ ∈ M⁰` which is residually NONZERO
+(`1 ⊗ w₁ ≠ 0` in `kk ⊗[R] V`, i.e. `w₁ ∉ 𝔪V`), every `x ∈ M⁰` is an
+`R`-multiple of `w₁` modulo `𝔪ⁿ⁺²V`.
+
+WHY IT IS TRUE. `M⁰` is the connected part of a finite flat model of
+`ρ ⧸ 𝔪ⁿ⁺²`, and the whole point of the residual re-basing (see the
+`# WHY THIS STATEMENT IS TRUE` section of
+`exists_connectedEtale_line_of_hopf_package` below) is that `M⁰` is FREE
+OF RANK ONE over `R ⧸ 𝔪ⁿ⁺²`:
+
+* residually, `hπequiv`/`hπsurj` make `ker π` a `Γ ℚ`-stable `kk`-LINE
+  of `kk ⊗[R] V` with trivial quotient character, and `det ρ = χ_cyc`
+  (part of `IsHardlyRamified`) forces the sub-character to be `ω`, which
+  is RAMIFIED at `3`; so the flat model of `ρ̄` is ordinary with
+  connected part exactly the `kk`-line `ker π = kk · (1 ⊗ w₀)`, of
+  `kk`-dimension `1`;
+* `V` is free of rank `2` over `R`, so `kk ⊗[R] V` has `kk`-dimension
+  `2` for EVERY coefficient ring — the dimension bound is FREE at the
+  residual level, which is precisely why the route was re-based there;
+* lifting to `𝔪ⁿ⁺²` is Wiles's dévissage (*Modular elliptic curves and
+  Fermat's Last Theorem*, ch. 1 prop. 1.1) over Raynaud's uniqueness of
+  prolongations at `e = 1 < p − 1 = 2`: the `𝔪`-adic filtration of
+  `V ⧸ 𝔪ⁿ⁺²V` becomes a filtration of the flat model by finite flat
+  subgroup schemes with residual graded pieces, each of whose connected
+  parts is of multiplicative type by the previous item, and an extension
+  of multiplicative by multiplicative is multiplicative
+  (`HopfAlgebra.isMultiplicativeType_of_isShortExact`, PROVEN in
+  `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean` over
+  `HopfAlgebra.etale_of_isShortExact` and `IsShortExact.cartierDual`,
+  with no classification and no `e < p − 1` spent). So `M⁰` is cyclic of
+  the same length as `R ⧸ 𝔪ⁿ⁺²`, i.e. free of rank one.
+
+Given that, the conclusion is Nakayama in its safe form: write
+`M⁰ = (R ⧸ 𝔪ⁿ⁺²) · w`; then `w₁ = r₁ • w` with `r₁ ∉ 𝔪` (else
+`w₁ ∈ 𝔪V`, against `hw₁ne`), so `r₁` is a unit and `w₁` generates too.
+That last step is written out in the deleted proof (recoverable, see
+below) and needs no flat input; what this leaf owes is the freeness.
+
+**A WARNING THE DELETED PROOF RECORDED, worth keeping.** The naive
+Nakayama argument — "`M⁰` has residually one-dimensional image and
+contains a residually nonzero vector, hence is generated by it" — is
+FALSE. Residual one-dimensionality controls `N ⧸ (N ∩ 𝔪V)`, whereas
+Nakayama needs `N ⧸ 𝔪N`, and the two differ: over `A = ℤ ⧸ 9` with
+`V = A²` the submodule `N = A · (1,0) + A · (0,3)` has residual image
+the line `kk · (1,0)` and contains the residually nonzero `(1,0)`, yet
+`(0,3)` is not an `A`-multiple of `(1,0)`. So freeness of `M⁰` really
+does have to come from the flat theory; it cannot be talked out of the
+residual picture. `le_span_singleton_sup_smul_pow_of_displacement_`
+`surjective` (also deleted, and PROVEN, and independent of the refuted
+leaf) is the pure-algebra lemma that packages the correct substitute —
+surjectivity of a displacement operator on `M⁰` — and is worth
+recovering if the route goes that way.
+
+FAITHFULNESS. Like its sibling, the conclusion is a VALUE-level
+statement over `𝒪ᵥ` and asks for no element of `G` and no `Γ`-rational
+coordinate, so the `𝒪ᵥ`-descent rule of `CLAUDE.md` is satisfied and the
+unramified twists `μ₃ ⊗ ψ` are invisible to it. Note also that `hw₁ne`
+is not decoration: without it the statement is FALSE at `w₁ = 0` as soon
+as `M⁰ ≠ 𝔪ⁿ⁺²V`.
+
+WHY THE 2026-07-29 REFUTATION DOES NOT REACH IT. Proven in this file
+until 2026-07-31 over `connected_locus_cyclic_of_hopf_package`, hence
+over the REFUTED
+`eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion`, so the old
+proof is void. The witness of that refutation (`E = 37a1`, supersingular
+at `3`; a CONNECTED order-`27` object, socle of dimension `3`, wild
+inertia unipotent) cannot arise here: `hπequiv` makes `ρ̄` residually
+REDUCIBLE, hence not `I₃`-simple, and the supersingular obstruction
+needs `E[3]` irreducible over `I₃`. The residual socle here has
+`kk`-dimension `2`, exactly the range in which the refuted leaf's own
+route was sound. Recover the void proof with
+
+    git show dc6836b9^:Fermat/FLT/GaloisRepresentation/HardlyRamified/Threeadic.lean
+
+at `connected_locus_le_line_of_hopf_package` (line `7754` there), using
+`git log -m -S` rather than `git log -S`, since the deletion happened
+inside what became a merge.
+
+WHERE TO GET IT: see the closing section of
+`connected_locus_smul_of_hopf_package` above — `Family.lean`'s
+coefficient-free corner statement is the same mathematics, and the
+relocation must be an extraction DOWNWARD because `Threeadic` cannot
+import `Family` without a cycle.
+
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102**
+(1974), 3.3.2–3.3.6 and 3.4.3; Wiles, *Modular elliptic curves and
+Fermat's Last Theorem*, ch. 1 prop. 1.1; Tate, *Finite flat group
+schemes*, §4, in Cornell–Silverman–Stevens; Oort–Tate, *Group schemes of
+prime order*, Ann. Sci. ÉNS **3** (1970). -/
+theorem connected_locus_le_line_of_hopf_package
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (n : ℕ)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hmin₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := 𝒪₃ᵥ) y = (1 : 𝒪₃ᵥ) → y = e₀)
+    (habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (w₁ : V) (hw₁ne : (1 : kk) ⊗ₜ[R] w₁ ≠ 0)
+    (hw₁conn : (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+        ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] w₁)))
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1)
+    (x : V)
+    (hx : (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+        ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] x)))
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) :
+    ∃ r : R, x - r • w₁ ∈
+      (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) :=
+  sorry
+
+/-- **Raynaud step (3): the connected locus is a residually nonzero
+cyclic line** (PROVEN 2026-07-26 over the two leaves
+`connected_locus_smul_of_hopf_package` (Raynaud full faithfulness) and
+`connected_locus_le_line_of_hopf_package` (rank at most one) just above;
+was itself a SORRY LEAF, cut 2026-07-26 out of
+`exists_connected_line_generator_of_hopf_package` just below, which is
+now PROVEN over this leaf together with its step-(4) sibling
+`exists_localInertia_moves_connected_point_of_hopf_package`).
+
+This is the FINITE-FLAT half of the old single Raynaud leaf, and the
+half that spends the absolute unramifiedness of `ℤ₃`. Nothing residual,
+nothing about `w₀`, nothing about `π` enters the CONCLUSION: it says
+only that the connected locus
+`M⁰ = {x | (point of 1 ⊗ x)(1 ⊗ e₀) = 1} ⊆ M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V`
+is the image of a single vector's `R`-line, and that this generator does
+not vanish residually (i.e. the connected part has rank EXACTLY one, not
+zero).
+
+ROUTE. Multiplication by a scalar of `R` is an endomorphism of the
+generic fibre `Spec (ℚ₃ᵥ ⊗ G)`; **Raynaud's full faithfulness at
+`e = 1 < p − 1 = 2`** (Raynaud, Bull. SMF 102 (1974), 3.3.2–3.3.5)
+extends it to the finite flat model `Spec G` over `𝒪ᵥ ≅ ℤ₃`, so it
+carries the connected component of the identity into itself. Hence `M⁰`
+is an `R ⧸ 𝔪ⁿ⁺²`-SUBMODULE of `M`, not merely the additive subgroup
+that `exists_connectedEtale_subgroup_at_three_of_threePowTorsion` above
+already provides. Its rank is `1` rather than `0` or `2`: a rank-`2`
+connected (multiplicative-type) model would force
+`det ρ̄ |ᵢₙₑᵣₜᵢₐ = ω²` and a rank-`0` one (étale model) `det ρ̄ |ᵢₙₑᵣₜᵢₐ = 1`,
+while `det ρ̄ = ω` is ramified at `3` and `ω ≠ ω²` because `ω ≠ 1` on
+inertia. `mem_span_natCast_of_inertia_invariant`
+(`Fermat/FLT/GroupScheme/ConnectedEtale.lean`) spends the same
+absolute-unramifiedness input and is the proof to read first.
+
+**WHAT THE ASSEMBLY BELOW CONTRIBUTES (2026-07-26), so that the two
+leaves are only the finite-flat content.** The two halves of the route
+above are exactly the two leaves — `connected_locus_smul_of_hopf_package`
+is the full-faithfulness half (`M⁰` is an `R`-submodule) and
+`connected_locus_le_line_of_hopf_package` the rank half (`M⁰` is at most
+a line). Everything else is written out below and costs no flat theory:
+
+* the GENERATOR is produced outright, with no classification input. Take
+  `σ ∈ I₃` with `ω σ ≠ 1`
+  (`exists_localInertia_cyclotomicCharacterModL_three_ne_one` above) and
+  set `w₁ := ρ σ w₀ − w₀`. It is CONNECTED because it is an inertia
+  displacement (`inertia_displacement_apply_connected_idempotent_eq_one`,
+  the étale half of the dichotomy), and it is residually NONZERO because
+  residually `w₁ ≡ (a σ − 1) • w₀` with `a ≡ ω` by
+  `residual_twist_eq_cyclotomicCharacterModL`, so `a σ ≡ −1` and
+  `a σ − 1 ≡ 1 mod 𝔪` is a UNIT (`3 ∈ 𝔪`, the one place `p = 3` is
+  spent). This is why the leaves do NOT have to establish rank `≥ 1`:
+  the ramifiedness of `ω` at `3` already exhibits a connected vector
+  outside `𝔪V`.
+* the `⟸` direction of the displayed `↔` is the full-faithfulness leaf
+  applied to `w₁`, plus the fact that `𝔪ⁿ⁺²V` is invisible in the
+  congruence quotient (`one_tmul_quotient_eq_zero_of_mem_smul_top`).
+* the `⟹` direction is the rank leaf verbatim.
+
+So of the three things the old single leaf owed — `R`-stability, rank
+`≥ 1`, rank `≤ 1` — the middle one is now PROVEN here and only the
+outer two remain open.
+
+FAITHFULNESS. The conclusion asks for a VALUE-level identity over
+`𝒪ᵥ` — the connected locus, defined by the value `1` at the
+`𝒪ᵥ`-rational idempotent `e₀`, coincides with an `R`-line of `V` — and
+never for an element of `G` or for `Γ`-rationality of a coordinate. It
+is therefore on the true side of the development's `𝒪ᵥ`-descent rule,
+and blind to the `p − 1` unramified twists `μ_p ⊗ ψ` that killed
+`exists_muType_closure`: a twist changes WHICH line, not whether the
+connected locus is one.
+
+Tate, *Finite flat group schemes*, §4, in Cornell–Silverman–Stevens;
+Fontaine, *Il n'y a pas de variété abélienne sur `ℤ`*, §1. -/
+theorem exists_connected_line_of_hopf_package
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (n : ℕ)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hmin₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := 𝒪₃ᵥ) y = (1 : 𝒪₃ᵥ) → y = e₀)
+    (habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀) :
+    ∃ w₁ : V, (1 : kk) ⊗ₜ[R] w₁ ≠ 0 ∧
+      ∀ x : V,
+        ((Additive.toMul ((Equiv.ofBijective fG hfG).symm
+            ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] x)))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 ↔
+        ∃ r : R, x - r • w₁ ∈
+          (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) := by
+  classical
+  -- an inertia element at `3` off the kernel of `ω`
+  obtain ⟨σ, hσ, hσω⟩ := exists_localInertia_cyclotomicCharacterModL_three_ne_one
+  set g₀ : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ with hg₀
+  -- the residual `w₀`-line and its diagonal entry `a`
+  obtain ⟨a, _c, hac⟩ := exists_residual_matrix_entries hV kk hsurj π hπsurj hπequiv
+    w₀ v₀ hw₀π hw₀ne
+  have ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := fun g => (hac g).1
+  -- `a g₀ ≡ −1 mod 𝔪`, hence `a g₀ − 1 ≡ 1 mod 𝔪` is a UNIT (`3 ∈ 𝔪`)
+  have hα : a g₀ + 1 ∈ IsLocalRing.maximalIdeal R :=
+    (residual_twist_eq_cyclotomicCharacterModL V hV hρ kk hsurj π hπsurj hπequiv
+      v₀ hv₀ w₀ hw₀π hw₀ne a ha g₀).2 hσω
+  have hunit : IsUnit (a g₀ - 1) := by
+    have h1 : (a g₀ - 1) - 1 ∈ IsLocalRing.maximalIdeal R := by
+      have h2 : (a g₀ - 1) - 1 = (a g₀ + 1) - 3 := by ring
+      rw [h2]
+      exact Submodule.sub_mem _ hα three_mem_maximalIdeal
+    have h3 : a g₀ - 1 ∉ IsLocalRing.maximalIdeal R := by
+      intro hmem
+      have h4 := Submodule.sub_mem _ hmem h1
+      simp only [sub_sub_cancel] at h4
+      exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top
+        (Ideal.eq_top_of_isUnit_mem _ h4 isUnit_one)
+    exact IsLocalRing.notMem_maximalIdeal.mp h3
+  -- the generator: the inertia displacement of `w₀`, residually `(a g₀ − 1) • w₀`
+  have hw₁ne : (1 : kk) ⊗ₜ[R] (ρ g₀ w₀ - w₀) ≠ 0 := by
+    intro h0
+    have hmem := mem_maximalIdeal_smul_top_of_one_tmul_eq_zero kk hsurj h0
+    have hsm : (a g₀ - 1) • w₀ ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+      have h1 : (a g₀ - 1) • w₀ = (ρ g₀ w₀ - w₀) - (ρ g₀ w₀ - a g₀ • w₀) := by
+        rw [sub_smul, one_smul]; abel
+      rw [h1]
+      exact Submodule.sub_mem _ hmem (ha g₀)
+    exact (IsLocalRing.notMem_maximalIdeal.mpr hunit)
+      (mem_maximalIdeal_of_smul_mem_smul_top kk hsurj hw₀ne hsm)
+  refine ⟨ρ g₀ w₀ - w₀, hw₁ne, ?_⟩
+  -- the displacement is a CONNECTED point of the model
+  have hw₁conn : (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+      ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] (ρ g₀ w₀ - w₀))))
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    have h := inertia_displacement_apply_connected_idempotent_eq_one
+      (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))) G e₀ he₀ hε₀
+      fG hfG σ hσ ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] w₀)
+    rw [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+      ← TensorProduct.tmul_sub, ← hg₀] at h
+    exact h
+  intro x
+  constructor
+  · -- rank at most one
+    exact connected_locus_le_line_of_hopf_package V hV hρ kk hsurj π hπsurj
+      hπequiv v₀ hv₀ w₀ hw₀π hw₀ne n G fG hfG e₀ he₀ hε₀ hmin₀ habs₀
+      (ρ g₀ w₀ - w₀) hw₁ne hw₁conn x
+  · -- the line is connected: `R`-stability (full faithfulness) plus the fact
+    -- that `𝔪ⁿ⁺²V` is invisible in the congruence quotient
+    rintro ⟨r, hr⟩
+    have h0 : (1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] x =
+        (1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R]
+          (r • (ρ g₀ w₀ - w₀)) := by
+      have h1 := one_tmul_quotient_eq_zero_of_mem_smul_top
+        (IsLocalRing.maximalIdeal R ^ (n + 2)) hr
+      rwa [TensorProduct.tmul_sub, sub_eq_zero] at h1
+    rw [h0]
+    exact connected_locus_smul_of_hopf_package ρ n G fG hfG e₀ he₀ hε₀
+      hmin₀ habs₀ r (ρ g₀ w₀ - w₀) hw₁conn
+
+/-- **Raynaud step (4): the connected part is RAMIFIED at `3`** (PROVEN
+2026-07-26, INDEPENDENTLY of its step-(3) sibling; was a SORRY LEAF cut
+2026-07-26 out of
+`exists_connected_line_generator_of_hopf_package` just below, together
+with its step-(3) sibling `exists_connected_line_of_hopf_package` above).
+
+Some point of the connected locus is moved RESIDUALLY by some element of
+the local inertia group at `3`. Equivalently: local inertia does not act
+trivially on `M⁰ ⊗ kk`.
+
+WHY THIS IS THE WHOLE OF STEP (4). The consumer below needs to know that
+the connected line reduces onto the `w₀`-line, i.e. `π (1 ⊗ w₁) = 0`.
+That is derived there, not assumed: the line is `Γ ℚ₃ᵥ`-stable (step (1)
+of the old route, now real Lean in the consumer, from the
+`𝒪ᵥ`-rationality of `e₀` and the `Γ ℚ₃ᵥ`-equivariance of `fG`), so it
+carries a diagonal entry `E`; if the generator did NOT lie residually in
+`ker π` then `hπequiv` would force `Ē g = 1` for EVERY `g` in the
+decomposition group at `3`, in particular on inertia — which is exactly
+what this leaf forbids. So "connected ⇒ ramified" is all that is
+missing, and the ω-isotypic bookkeeping of the old route is subsumed by
+it.
+
+ROUTE AS PROVEN (2026-07-26). The recorded route below expected this
+leaf to spend the Oort–Tate classification of the connected part as a
+`μ₃`-type line. **It does not have to**, and the shorter route is the
+one written: the WITNESS is already in the tree, and the moved point is
+the inertia displacement of `w₀` itself.
+
+Take `σ ∈ I₃` with `ω σ ≠ 1`
+(`exists_localInertia_cyclotomicCharacterModL_three_ne_one` above — the
+inertia-level ramifiedness of `ω`, i.e. `ℚ₃(ζ₃)/ℚ₃` totally tamely
+ramified of degree `φ(3) = 2`, and the mirror image of
+`cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup` below, which
+proves `ω` UNRAMIFIED at every `p ≠ 3`), write `g₀` for its image in
+`Γ ℚ`, and take `x := ρ g₀ w₀ − w₀`. Then:
+
+* `x` is CONNECTED for free — it is an inertia displacement, and
+  `inertia_displacement_apply_connected_idempotent_eq_one` above says
+  every inertia displacement takes the value `1` on `e₀` (that is the
+  étale half of the connected–étale dichotomy: the étale quotient has
+  unramified points, so displacements die in it). No classification
+  input is consumed here.
+* `x` is moved AGAIN by the same `σ`. Residually the `w₀`-line is
+  `Γ ℚ`-stable with diagonal entry `a` (`exists_residual_matrix_entries`)
+  and `a ≡ ω` (`residual_twist_eq_cyclotomicCharacterModL`, the
+  determinant identification), so `ω g₀ ≠ 1` gives `a g₀ ≡ −1 mod 𝔪`,
+  hence `a g₀ − 1 ≡ 1 mod 𝔪` is a UNIT — this is the one place `p = 3`
+  is spent, since `3 ∈ 𝔪` makes `−2 ≡ 1`. Modulo `𝔪V` therefore
+  `x ≡ (a g₀ − 1) • w₀` and `ρ g₀ x − x ≡ (a g₀ − 1)² • w₀`, a UNIT
+  multiple of the residually nonzero `w₀`, so it is NOT in `𝔪V`. The
+  two `𝔪V`-corrections are absorbed because `ρ g₀` preserves `𝔪V`
+  (`apply_mem_smul_top`).
+
+So step (4) needs NO Oort–Tate/Raynaud input at all: it is the residual
+determinant plus the already-proven étale half. The finite-flat content
+of the cut therefore sits ENTIRELY in step (3)'s two leaves
+(`connected_locus_smul_of_hopf_package`,
+`connected_locus_le_line_of_hopf_package`) — a redistribution worth
+recording, since the original cut expected both steps to owe
+classification.
+
+HYPOTHESIS AUDIT. `_hmin₀` (minimality of `e₀`) and `_habs₀` (comul
+absorption) are UNUSED and underscore-prefixed so this is mechanically
+visible. That is not vacuity: the conclusion has real content, and both
+would be needed by the longer classification route. They are kept in the
+signature so the consumer's call site does not have to change, and
+because any future strengthening of this leaf will want them.
+
+FAITHFULNESS. The quantifier is over `localInertiaGroup 𝔭₃` and NOT
+over `Γ ℚ₃ᵥ`, deliberately: over the full decomposition group the
+connected character is `ω · ψ` with `ψ` an unramified twist, and the
+statement would be FALSE for `ψ = ω⁻¹` — this is the development's
+signature error (a `localInertiaGroup` quantifier widened to `Γ`) in the
+exact place where it would bite. Inertia-only conclusions are
+twist-blind, which is why this form is the true one. The conclusion asks
+only for a VALUE-level non-membership over `𝒪ᵥ`, never for an element of
+`G`.
+
+Raynaud, Bull. SMF 102 (1974), 3.3.2–3.3.5; Oort–Tate, *Group schemes of
+prime order*; Tate, *Finite flat group schemes*, §4, in
+Cornell–Silverman–Stevens. -/
+theorem exists_localInertia_moves_connected_point_of_hopf_package
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (n : ℕ)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (_hmin₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := 𝒪₃ᵥ) y = (1 : 𝒪₃ᵥ) → y = e₀)
+    (_habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀) :
+    ∃ σ ∈ localInertiaGroup 𝔭₃, ∃ x : V,
+      ((Additive.toMul ((Equiv.ofBijective fG hfG).symm
+          ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] x)))
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) ∧
+      ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) x - x ∉
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+  classical
+  -- an inertia element at `3` off the kernel of `ω`
+  obtain ⟨σ, hσ, hσω⟩ := exists_localInertia_cyclotomicCharacterModL_three_ne_one
+  set g₀ : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ with hg₀
+  -- the residual `w₀`-line and its diagonal entry `a`
+  obtain ⟨a, _c, hac⟩ := exists_residual_matrix_entries hV kk hsurj π hπsurj hπequiv
+    w₀ v₀ hw₀π hw₀ne
+  have ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := fun g => (hac g).1
+  -- `a g₀ ≡ −1 mod 𝔪`, hence `a g₀ − 1 ≡ 1 mod 𝔪` is a UNIT (`3 ∈ 𝔪`)
+  have hα : a g₀ + 1 ∈ IsLocalRing.maximalIdeal R :=
+    (residual_twist_eq_cyclotomicCharacterModL V hV hρ kk hsurj π hπsurj hπequiv
+      v₀ hv₀ w₀ hw₀π hw₀ne a ha g₀).2 hσω
+  have hunit : IsUnit (a g₀ - 1) := by
+    have h1 : (a g₀ - 1) - 1 ∈ IsLocalRing.maximalIdeal R := by
+      have h2 : (a g₀ - 1) - 1 = (a g₀ + 1) - 3 := by ring
+      rw [h2]
+      exact Submodule.sub_mem _ hα three_mem_maximalIdeal
+    have h3 : a g₀ - 1 ∉ IsLocalRing.maximalIdeal R := by
+      intro hmem
+      have h4 := Submodule.sub_mem _ hmem h1
+      simp only [sub_sub_cancel] at h4
+      exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top
+        (Ideal.eq_top_of_isUnit_mem _ h4 isUnit_one)
+    exact IsLocalRing.notMem_maximalIdeal.mp h3
+  refine ⟨σ, hσ, ρ g₀ w₀ - w₀, ?_, ?_⟩
+  · -- the displacement is a CONNECTED point of the model
+    have h := inertia_displacement_apply_connected_idempotent_eq_one
+      (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))) G e₀ he₀ hε₀
+      fG hfG σ hσ ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] w₀)
+    rw [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+      ← TensorProduct.tmul_sub, ← hg₀] at h
+    exact h
+  · -- residually the displacement is `(a g₀ − 1) • w₀`, and `ρ g₀` moves it again
+    intro hmem
+    have hy : ρ g₀ w₀ - a g₀ • w₀ ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := ha g₀
+    have hsplit : ρ g₀ (ρ g₀ w₀ - w₀) - (ρ g₀ w₀ - w₀) =
+        ((a g₀ - 1) * (a g₀ - 1)) • w₀ +
+          ((a g₀ - 1) • (ρ g₀ w₀ - a g₀ • w₀)
+            + (ρ g₀ (ρ g₀ w₀ - a g₀ • w₀) - (ρ g₀ w₀ - a g₀ • w₀))) := by
+      simp only [map_sub, map_smul]
+      module
+    have hcorr : ((a g₀ - 1) • (ρ g₀ w₀ - a g₀ • w₀)
+        + (ρ g₀ (ρ g₀ w₀ - a g₀ • w₀) - (ρ g₀ w₀ - a g₀ • w₀))) ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) :=
+      Submodule.add_mem _ (Submodule.smul_of_tower_mem _ _ hy)
+        (Submodule.sub_mem _ (apply_mem_smul_top _ hy) hy)
+    have hsq : ((a g₀ - 1) * (a g₀ - 1)) • w₀ ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+      have h1 : ((a g₀ - 1) * (a g₀ - 1)) • w₀ =
+          (ρ g₀ (ρ g₀ w₀ - w₀) - (ρ g₀ w₀ - w₀))
+            - ((a g₀ - 1) • (ρ g₀ w₀ - a g₀ • w₀)
+              + (ρ g₀ (ρ g₀ w₀ - a g₀ • w₀) - (ρ g₀ w₀ - a g₀ • w₀))) := by
+        rw [hsplit]; abel
+      rw [h1]
+      exact Submodule.sub_mem _ hmem hcorr
+    have hmem2 : (a g₀ - 1) * (a g₀ - 1) ∈ IsLocalRing.maximalIdeal R :=
+      mem_maximalIdeal_of_smul_mem_smul_top kk hsurj hw₀ne hsq
+    exact (IsLocalRing.notMem_maximalIdeal.mpr (hunit.mul hunit)) hmem2
+
+/-- **The connected part of the flat package at `3` is a line, generated
+by a lift of `w₀`** (PROVEN 2026-07-26 over the two Raynaud leaves
+`exists_connected_line_of_hopf_package` (step (3)) and
+`exists_localInertia_moves_connected_point_of_hopf_package` (step (4))
+just above; was itself a SORRY LEAF, cut 2026-07-26 out of
+`exists_connectedEtale_line_of_hopf_package` just below, which is
+PROVEN over it).
+
+**WHAT THE ASSEMBLY BELOW CONTRIBUTES, so that the two leaves are only
+the finite-flat content.** Given the connected locus as an `R`-line
+(step (3)) and the ramifiedness of the connected part (step (4)),
+everything else is elementary and is written out below:
+
+* the connected locus is `Γ ℚ₃ᵥ`-STABLE, because `e₀` is `𝒪ᵥ`-rational
+  and the Galois action on points is post-composition — so the line
+  carries a diagonal entry `E` (this is the same `hstable` argument the
+  consumer below performs, needed here one level earlier);
+* hence, if the generator did NOT reduce into `ker π`, then `hπequiv`
+  would give `Ē g · π (1 ⊗ w₁) = π (1 ⊗ w₁)` with `π (1 ⊗ w₁) ≠ 0`,
+  forcing `Ē g = 1` for EVERY `g` in the decomposition group at `3`, in
+  particular for the inertia element supplied by step (4) — which is
+  precisely what that leaf forbids. So `π (1 ⊗ w₁) = 0`;
+* `ker π` is a `kk`-line (rank–nullity in the 2-dimensional residual
+  space) containing the nonzero `1 ⊗ w₀`, so the generator is a nonzero
+  `kk`-multiple of `1 ⊗ w₀`; the multiplier lifts to a UNIT of the local
+  ring `R` (its residue is nonzero), and rescaling by that unit
+  normalises `w₁ ≡ w₀ mod 𝔪V` without changing the line `R · w₁`.
+
+Statement. `M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` is the space of the congruence
+quotient `ρ.baseChange (R ⧸ 𝔪ⁿ⁺²)`, `Γ ℚ₃ᵥ`-equivariantly identified by
+`fG` with the geometric points of the generic fibre of the finite flat
+Hopf order `G` over `𝒪ᵥ ≅ ℤ₃`; a point is CONNECTED when it takes the
+value `1` on the connected counit idempotent `e₀`. The claim is that the
+connected locus `M⁰ ⊆ M` is exactly the image of a free rank-one line
+`R · w₁`, whose generator can be normalised to `w₁ ≡ w₀ mod 𝔪V`.
+(The `x ↦ 1 ⊗ x` presentation is harmless: `V → (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` is
+surjective with kernel `𝔪ⁿ⁺² • ⊤`, so the displayed `↔` says precisely
+`M⁰ = image of R · w₁`.)
+
+FAITHFULNESS. The conclusion asks only for VALUES and an inertia-only
+comparison over `𝒪ᵥ` — never for an element of `G`, never for
+`Γ`-rationality of a coordinate — so it is on the true side of the
+development's `𝒪ᵥ`-descent rule, and the unramified twists that killed
+`exists_muType_closure` are invisible to it: they are absorbed by the
+inertia-only form of step (4). The `Γ`-stability that the consumer
+needs is LOCAL at `3` (see that node's faithfulness note) and is
+derived, not assumed, here.
+
+Tate, *Finite flat group schemes*, §4, in Cornell–Silverman–Stevens;
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102 (1974),
+3.3.2–3.3.5; Fontaine, *Il n'y a pas de variété abélienne sur `ℤ`*,
+§1. -/
+theorem exists_connected_line_generator_of_hopf_package
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (n : ℕ)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hmin₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := 𝒪₃ᵥ) y = (1 : 𝒪₃ᵥ) → y = e₀)
+    (habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀) :
+    ∃ w₁ : V,
+      w₁ - w₀ ∈ (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) ∧
+      ∀ x : V,
+        ((Additive.toMul ((Equiv.ofBijective fG hfG).symm
+            ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] x)))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 ↔
+        ∃ r : R, x - r • w₁ ∈
+          (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) := by
+  classical
+  -- Raynaud step (3): the connected locus is a residually nonzero cyclic line
+  obtain ⟨w₁, hw₁ne, hline⟩ :=
+    exists_connected_line_of_hopf_package V hV hρ kk hsurj π hπsurj hπequiv
+      v₀ hv₀ w₀ hw₀π hw₀ne n G fG hfG e₀ he₀ hε₀ hmin₀ habs₀
+  -- Raynaud step (4): local inertia at `3` moves some connected point
+  obtain ⟨σ, -, x₀, hx₀conn, hx₀move⟩ :=
+    exists_localInertia_moves_connected_point_of_hopf_package V hV hρ kk hsurj
+      π hπsurj hπequiv v₀ hv₀ w₀ hw₀π hw₀ne n G fG hfG e₀ he₀ hε₀ hmin₀ habs₀
+  have hker : RingHom.ker (algebraMap R kk) = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective _ hsurj)
+  have hpowle : (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) ≤
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) :=
+    Submodule.smul_mono_left (Ideal.pow_le_self (by omega))
+  -- (i) inertia moves the GENERATOR of the line residually: any connected
+  -- point is `r • w₁` up to `𝔪ⁿ⁺²V`, and `ρ σ` preserves `𝔪V`
+  have hmove : ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) w₁ - w₁ ∉
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    intro hmem
+    refine hx₀move ?_
+    obtain ⟨r, hr⟩ := (hline x₀).1 hx₀conn
+    have hsplit : ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) x₀ - x₀ =
+        (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) (x₀ - r • w₁)
+          - (x₀ - r • w₁))
+        + r • (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) w₁ - w₁) := by
+      simp only [map_sub, map_smul, smul_sub]
+      abel
+    rw [hsplit]
+    refine Submodule.add_mem _ (Submodule.sub_mem _ ?_ (hpowle hr)) ?_
+    · exact hpowle (apply_mem_smul_top _ hr)
+    · exact Submodule.smul_of_tower_mem _ _ hmem
+  -- the generator is itself a connected point
+  set gG := Equiv.ofBijective fG hfG
+  have hfs : ∀ y, fG (gG.symm y) = y := fun y => gG.apply_symm_apply y
+  have hw₁conn :
+      (Additive.toMul (gG.symm ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))
+          ⊗ₜ[R] w₁))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 :=
+    (hline w₁).2 ⟨1, by rw [one_smul, sub_self]; exact Submodule.zero_mem _⟩
+  -- the connected locus is `Γ ℚ₃ᵥ`-stable, because `e₀` is `𝒪ᵥ`-rational and
+  -- the Galois action on points is post-composition
+  have hstable : ∀ (g : Γ ℚ₃ᵥ)
+      (m : (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗[R] V),
+      (Additive.toMul (gG.symm m)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (Additive.toMul (gG.symm
+        (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃)
+          g m))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    intro g m hm
+    have hsym : gG.symm
+        (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃)
+          g m) = g • gG.symm m := by
+      apply gG.injective
+      show fG (gG.symm _) = fG (g • gG.symm m)
+      rw [map_smul fG, hfs, hfs]
+      rfl
+    rw [hsym]
+    have hact : Additive.toMul (g • gG.symm m) =
+        (g.toAlgHom : ℚ₃ᵥᵃˡᵍ →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ).comp
+          (Additive.toMul (gG.symm m)) := AlgHom.ext fun _ => rfl
+    rw [hact, AlgHom.comp_apply, hm, map_one]
+  -- (ii) hence the line has a diagonal entry at every `g : Γ ℚ₃ᵥ`
+  have hE : ∀ g : Γ ℚ₃ᵥ, ∃ r : R,
+      ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) g) w₁ - r • w₁ ∈
+        (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) := by
+    intro g
+    refine (hline _).1 ?_
+    have h1 := hstable g _ hw₁conn
+    rwa [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul] at h1
+  -- (iii) the generator reduces into `ker π`: otherwise `hπequiv` forces the
+  -- diagonal entry to be residually `1` at the inertia element of step (4)
+  have hw₁π : π ((1 : kk) ⊗ₜ[R] w₁) = 0 := by
+    by_contra hne
+    obtain ⟨r, hr⟩ := hE σ
+    have hr' := hpowle hr
+    have h0 : (1 : kk) ⊗ₜ[R]
+        (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) w₁ - r • w₁) = 0 :=
+      one_tmul_eq_zero_of_mem_maximalIdeal_smul_top kk hsurj hr'
+    rw [TensorProduct.tmul_sub, one_tmul_smul, sub_eq_zero] at h0
+    have hinv : π ((1 : kk) ⊗ₜ[R]
+        (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) w₁)) =
+        π ((1 : kk) ⊗ₜ[R] w₁) := by
+      have h := hπequiv (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ)
+        ((1 : kk) ⊗ₜ[R] w₁)
+      rwa [GaloisRep.baseChange_tmul] at h
+    rw [h0, map_smul, smul_eq_mul] at hinv
+    have hz : (algebraMap R kk r - 1) * π ((1 : kk) ⊗ₜ[R] w₁) = 0 := by
+      rw [sub_mul, one_mul, hinv, sub_self]
+    have hr1 : algebraMap R kk r = 1 := by
+      rcases mul_eq_zero.mp hz with h | h
+      · exact sub_eq_zero.mp h
+      · exact absurd h hne
+    refine hmove ?_
+    have hsplit : ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) w₁ - w₁ =
+        (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) w₁ - r • w₁)
+          + (r - 1) • w₁ := by
+      rw [sub_smul, one_smul]; abel
+    rw [hsplit]
+    refine Submodule.add_mem _ hr' (Submodule.smul_mem_smul ?_ trivial)
+    rw [← hker, RingHom.mem_ker, map_sub, hr1, map_one, sub_self]
+  -- (iv) `ker π` is a `kk`-line spanned by `1 ⊗ w₀` (rank–nullity in the
+  -- 2-dimensional residual space), so the generator is a unit multiple of `w₀`
+  haveI : Module.Finite kk (kk ⊗[R] V) :=
+    Module.Finite.of_basis ((Module.Free.chooseBasis R V).baseChange kk)
+  have hfr : Module.finrank kk (kk ⊗[R] V) = 2 :=
+    Module.finrank_eq_of_rank_eq (by rw [Module.rank_baseChange, hV]; simp)
+  have hker1 : Module.finrank kk (LinearMap.ker π) = 1 := by
+    have h := LinearMap.finrank_range_add_finrank_ker π
+    rw [LinearMap.range_eq_top.mpr hπsurj, finrank_top, Module.finrank_self,
+      hfr] at h
+    omega
+  have hspan : (Submodule.span kk {(1 : kk) ⊗ₜ[R] w₀}) = LinearMap.ker π := by
+    refine Submodule.eq_of_le_of_finrank_eq ?_ ?_
+    · rw [Submodule.span_le, Set.singleton_subset_iff]
+      exact hw₀π
+    · rw [finrank_span_singleton hw₀ne, hker1]
+  have hw₁mem : ((1 : kk) ⊗ₜ[R] w₁) ∈ Submodule.span kk {(1 : kk) ⊗ₜ[R] w₀} := by
+    rw [hspan]
+    exact hw₁π
+  obtain ⟨c, hc'⟩ := Submodule.mem_span_singleton.mp hw₁mem
+  have hcne : c ≠ 0 := by
+    intro h0
+    rw [h0, zero_smul] at hc'
+    exact hw₁ne hc'.symm
+  obtain ⟨r₀, hr₀⟩ := hsurj c
+  have hr₀unit : IsUnit r₀ := by
+    rw [← IsLocalRing.notMem_maximalIdeal, ← hker, RingHom.mem_ker, hr₀]
+    exact hcne
+  obtain ⟨u, hu⟩ := hr₀unit
+  -- rescaling by that unit normalises the generator without moving the line
+  refine ⟨(↑u⁻¹ : R) • w₁, ?_, ?_⟩
+  · refine mem_maximalIdeal_smul_top_of_one_tmul_eq_zero kk hsurj ?_
+    rw [TensorProduct.tmul_sub, one_tmul_smul, ← hc', smul_smul]
+    have hone : algebraMap R kk (↑u⁻¹ : R) * c = 1 := by
+      rw [← hr₀, ← hu, ← map_mul]
+      norm_num
+    rw [hone, one_smul, sub_self]
+  · intro y
+    rw [hline y]
+    constructor
+    · rintro ⟨r, hr⟩
+      refine ⟨r * (u : R), ?_⟩
+      have hu1 : (r * (u : R)) * (↑u⁻¹ : R) = r := by
+        rw [mul_assoc, Units.mul_inv, mul_one]
+      rwa [smul_smul, hu1]
+    · rintro ⟨r, hr⟩
+      exact ⟨r * (↑u⁻¹ : R), by rwa [mul_smul]⟩
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The connected–étale line of the flat package at `3`** — **PROVEN
+AGAIN since 2026-07-31 (flt-lean-124)**, over the two Raynaud leaves
+`connected_locus_smul_of_hopf_package` and
+`connected_locus_le_line_of_hopf_package` above.
+
+# STATUS: WHAT HAPPENED HERE, AND WHY THE CUT MOVED DOWN
+
+Between 2026-07-25 and 2026-07-30 this theorem was PROVEN over a tower
+of `35` declarations occupying lines `2119`–`8419` of the pre-cut file,
+whose foundation was the arbitrary-Hopf-order Raynaud leaf
 `eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion`. That leaf
-was REFUTED on 2026-07-29 and the refutation was independently
-re-verified on 2026-07-30. Its docstring carried the audit, the PARI/GP
-transcript, the measurement of the damage (`39` declarations in its
-upward cone) and the prescription — *delete the tower, keep one true
-leaf* — but the deletion was never performed, so a FALSE `sorry` with
-`39` live consumers sat in the tree for two days, and `three_adic` was
-resting on it.
+was REFUTED on 2026-07-29 (witness below) and the refutation was
+independently re-verified on 2026-07-30, so a FALSE `sorry` with `39`
+live consumers sat in the tree for two days with `three_adic` resting on
+it. Commit `dc6836b9` performed the prescribed deletion: the tower went,
+and this theorem — TRUE, and vouched for below — became the single leaf.
 
-This commit performs the deletion. The tower is gone; this theorem,
-which is TRUE and is vouched for below, is the one leaf that replaces
-it. Nothing above line `8420` changed.
+**This commit reduces that leaf.** The refutation poisons the PROOFS in
+the deleted tower, not their STATEMENTS, and only `18` of the `35`
+deleted declarations actually reached the false leaf. Walking the
+dependency graph of the pre-cut file (`dc6836b9^`) and marking every
+declaration that transitively cites
+`eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion` shows the
+poison enters at
+`smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion` and
+that the chain from there to here splits cleanly. So the four
+declarations restored above this one —
+`exists_connected_line_of_hopf_package`,
+`exists_localInertia_moves_connected_point_of_hopf_package`,
+`exists_connected_line_generator_of_hopf_package`, and this theorem's
+own assembly — are PROVEN again with their original, previously verified
+proofs, and the finite-flat debt is now carried by exactly two crisp
+leaves:
+
+* `connected_locus_smul_of_hopf_package` — Raynaud full faithfulness at
+  `e = 1 < p − 1`: the connected locus is an `R`-SUBMODULE;
+* `connected_locus_le_line_of_hopf_package` — the rank half: it has rank
+  at most one, and any residually nonzero connected vector generates it.
+
+LEDGER: one `sorry` here becomes two `sorry`s below, and roughly `840`
+lines of previously verified proof — including the whole generator
+argument, which spends NO flat theory — return to the tree. That is the
+trade `CLAUDE.md` prescribes ("fewer OPEN leaves after, not fewer leaves
+created" is the tie-breaker between RIVAL CUTS of one node; here the two
+statements are strictly smaller than the one they replace, and the
+mathematics left open is strictly less). Both new statements are
+coefficient-free finite-flat facts that match `Family.lean`'s
+`isMultiplicativeType_corner_of_inertiaLevelOneFlag` cone directly,
+which is what the eventual extraction wants; the old single leaf did
+not, because it bundled the Raynaud content together with the residual
+bookkeeping that is now proven above.
+
+`exists_localInertia_cyclotomicCharacterModL_three_ne_one`, listed as
+deleted below, is present again at the top of this file and is what the
+restored generator argument uses.
 
 ## THE WITNESS, in one paragraph
 
@@ -4551,7 +5441,11 @@ are not a field, and a regular unipotent `u ∈ GL₃(𝔽₃)` has commutant
 witness at level `𝔪ⁿ⁺²`; only a FIELD of scalars does, and that is the
 residual level.
 
-FIRST STEP FOR WHOEVER PROVES THIS. The multiplicative-type layer is
+FIRST STEP FOR WHOEVER PROVES THE TWO LEAVES (this paragraph was written
+for the single leaf that used to sit here; it applies verbatim to
+`connected_locus_smul_of_hopf_package` and
+`connected_locus_le_line_of_hopf_package` above, which is where the
+finite-flat debt now lives). The multiplicative-type layer is
 NOT in this file's import cone: a probe importing only
 `…HardlyRamified.Threeadic` reports `unknown constant` for
 `HopfAlgebra.IsMultiplicativeType`, `HopfAlgebra.cornerIdeal`,
@@ -4565,6 +5459,39 @@ because an import with no use is a build-time cost paid by every
 consumer of this file; add it in the same commit that first uses it.
 
 # WHAT WAS DELETED, AND HOW TO GET IT BACK
+
+**Five of the `35` are back as of 2026-07-31** and are struck from the
+list below by this paragraph rather than by editing it, so that the
+original inventory stays readable:
+`exists_localInertia_cyclotomicCharacterModL_three_ne_one` (PROVEN, at
+the top of this file), `exists_connected_line_of_hopf_package` (PROVEN,
+over the two new leaves), `connected_locus_smul_of_hopf_package` and
+`connected_locus_le_line_of_hopf_package` (STATEMENTS restored as the
+two `sorry` leaves; their old proofs are void and were NOT restored),
+`exists_localInertia_moves_connected_point_of_hopf_package` and
+`exists_connected_line_generator_of_hopf_package` (both PROVEN, original
+proofs).
+
+The remaining `29` are still gone. Of those, `16` are PROVEN and do NOT
+depend on the refuted leaf — `one_tmul_quotient_eq_zero_of_mem_smul_top`,
+`finite_points_of_hopf_order`, `exists_pos_nsmul_eq_zero_of_hopf_package`,
+`eq_convOne_of_convPow_natCast_isUnit`,
+`connected_point_eq_one_of_pow_coprime_three`,
+`connected_vector_threePow_torsion_of_hopf_package`,
+`exists_localInertia_generator_of_wildInertia_trivial`,
+`le_span_singleton_sup_smul_pow_of_displacement_surjective`,
+`mem_smul_top_of_one_tmul_quotient_eq_zero`, `exists_one_tmul_quotient`,
+`exists_uniform_nsmul_of_forall_nsmul_three_torsion`,
+`exists_uniform_pow_localInertia_smul_connected_of_threeTorsion_uniform`
+(itself a leaf), `exists_uniform_pow_localInertia_smul_connected_of_hopf_package`,
+`eq_of_unipotent_of_pow_coprime_three`,
+`pow_sub_one_apply_mem_maximalIdeal_pow_smul_top` — so they are free for
+the taking if a route wants them, and in particular
+`le_span_singleton_sup_smul_pow_of_displacement_surjective` is the
+pure-algebra packaging of the correct (non-naive) Nakayama step that
+`connected_locus_le_line_of_hopf_package` will want. They were not
+restored here only because nothing consumes them yet and free-floating
+code is not allowed.
 
 `35` declarations, lines `2119`–`8419` of the parent commit, recoverable
 with `git show <parent>:Fermat/FLT/GaloisRepresentation/HardlyRamified/
@@ -4756,7 +5683,24 @@ rather than taken from the commit message:
 Also confirmed for whoever proves this: `HopfAlgebra/Diagonalizable.lean`
 imports mathlib ONLY, so the `public import` the paragraph above
 prescribes wires the multiplicative-type layer in with no project edge
-and no cycle. -/
+and no cycle.
+
+**PARTIAL RE-DERIVATION, 2026-07-31 (flt-lean-124) — the ledger above is
+now `2 → 2`, not `2 → 1`, and this theorem is PROVEN.** See the STATUS
+section at the head of this docstring. The two audits quoted above stand
+as written; what changed is that the refutation was found to poison only
+`18` of the `35` deleted declarations, so the chain from
+`connected_locus_smul_of_hopf_package` /
+`connected_locus_le_line_of_hopf_package` up to here could be restored
+with its original proofs. The mechanical check behind that claim: build
+the citation graph of the pre-cut file `dc6836b9^` restricted to the
+`35` deleted names, then take the transitive closure of
+`eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion`'s consumers.
+`17` names lie outside it; `exists_localInertia_moves_connected_point_of_`
+`hopf_package` is one of them and is what the restored generator
+argument needs, together with
+`exists_localInertia_cyclotomicCharacterModL_three_ne_one`, which had
+already returned to the top of this file on `merger`. -/
 theorem exists_connectedEtale_line_of_hopf_package
     {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
@@ -4826,8 +5770,57 @@ theorem exists_connectedEtale_line_of_hopf_package
           (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) v₀
         - (v₀ + c • w₁) ∈
-          (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) :=
-  sorry
+          (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) := by
+  classical
+  -- the Raynaud content: the connected locus IS a line, generated by a
+  -- lift of `w₀` (steps (3) and (4) of the route)
+  obtain ⟨w₁, hw₁, hline⟩ :=
+    exists_connected_line_generator_of_hopf_package V hV hρ kk hsurj π
+      hπsurj hπequiv v₀ hv₀ w₀ hw₀π hw₀ne n G fG hfG e₀ he₀ hε₀ hmin₀ habs₀
+  set gG := Equiv.ofBijective fG hfG with hgG
+  have hfs : ∀ x, fG (gG.symm x) = x := fun x => gG.apply_symm_apply x
+  -- the generator of the line is itself a connected point
+  have hw₁conn :
+      (Additive.toMul (gG.symm ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))
+          ⊗ₜ[R] w₁))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 :=
+    (hline w₁).2 ⟨1, by rw [one_smul, sub_self]; exact Submodule.zero_mem _⟩
+  -- step (1): the connected locus is `Γ ℚ₃ᵥ`-stable, because `e₀` is
+  -- `𝒪ᵥ`-rational and the Galois action on points is post-composition
+  have hstable : ∀ (g : Γ ℚ₃ᵥ)
+      (m : (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗[R] V),
+      (Additive.toMul (gG.symm m)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (Additive.toMul (gG.symm
+        (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃)
+          g m))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    intro g m hm
+    have hsym : gG.symm
+        (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃)
+          g m) = g • gG.symm m := by
+      apply gG.injective
+      show fG (gG.symm _) = fG (g • gG.symm m)
+      rw [map_smul fG, hfs, hfs]
+      rfl
+    rw [hsym]
+    have hact : Additive.toMul (g • gG.symm m) =
+        (g.toAlgHom : ℚ₃ᵥᵃˡᵍ →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ).comp
+          (Additive.toMul (gG.symm m)) := AlgHom.ext fun _ => rfl
+    rw [hact, AlgHom.comp_apply, hm, map_one]
+  refine ⟨w₁, hw₁, ?_, ?_⟩
+  · -- the diagonal entry of the `Γ ℚ₃ᵥ`-stable line
+    have hkey : ∀ g : Γ ℚ₃ᵥ, ∃ r : R,
+        ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) g) w₁ - r • w₁ ∈
+          (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) := by
+      intro g
+      refine (hline _).1 ?_
+      have h1 := hstable g _ hw₁conn
+      rwa [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul] at h1
+    exact ⟨fun g => (hkey g).choose, fun g => (hkey g).choose_spec⟩
+  · -- step (2): local inertia acts trivially on the étale quotient
+    have h3 := hconn ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] v₀)
+    rw [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+      ← TensorProduct.tmul_sub] at h3
+    obtain ⟨c, hc⟩ := (hline _).1 h3
+    exact ⟨c, by rw [← sub_sub]; exact hc⟩
 
 /-- **The ω-defect dies on the cyclotomic kernel of the local inertia at
 `3`** (PROVEN 2026-07-26 over the connected–étale line leaf
