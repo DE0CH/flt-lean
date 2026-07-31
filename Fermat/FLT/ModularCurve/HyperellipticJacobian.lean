@@ -310,6 +310,27 @@ public import Fermat.FLT.Mathlib.NumberTheory.ProjectiveHeight
 -- consumer of this file (`FreyCurve/MazurTorsion.lean`, which already reaches it through
 -- `ModularCurve/X0.lean`).
 public import Fermat.FLT.Modularity.AbelianScheme
+-- `Fermat.IsRelPicZeroOf` and `Fermat.exists_relPicZero` — the representability of the
+-- degree-zero relative Picard functor by an abelian scheme, over an ARBITRARY base and
+-- universe-polymorphically.  `IsRelPicZeroOf` occurs in the STATEMENT of
+-- `nonempty_addEquiv_pic_of_isRelPicZeroOf` below, so this edge must be `public`.
+--
+-- NO CYCLE, and this was CHECKED by transitive closure rather than on the direct edge —
+-- which is the mistake that took the whole project down on 2026-07-31 (see the comment on
+-- the `AbelianCubeModel` edge below).  `RelativePicard.lean`'s entire `Fermat` import
+-- closure is five modules — `Modularity/AbelianScheme`, `Mathlib/AlgebraicGeometry/
+-- ProperPushforward` and two `Mathlib/Algebra/Category/ModuleCat/Presheaf/*` — and does
+-- not contain this file.  It was ALREADY in this file's import closure (non-publicly,
+-- through `Modularity/AbelianCubeModel`), so this edge adds no module to anybody's cone;
+-- what it changes is only that the names are re-exported, which a statement needs.
+public import Fermat.FLT.ModularCurve.RelativePicard
+-- `AlgebraicGeometry.Scheme.functionField` — the stalk at the generic point — which is how
+-- `exists_smoothProperCurve_ringEquiv_functionField` below says that the scheme it builds
+-- is the smooth projective model OF `D`, and nothing else.  Note the linkage is a bare
+-- `RingEquiv` and not a `ℚ`-algebra equivalence: `ℚ` is the PRIME field, so every ring
+-- homomorphism out of it is automatically `ℚ`-linear, which is what lets the statement be
+-- made without first constructing an `Algebra ℚ ↥X.functionField` instance on a stalk.
+public import Mathlib.AlgebraicGeometry.FunctionField
 -- `Fermat.exists_cubeModel_of_abelianScheme`, used only inside the PROOF BODY of
 -- `exists_cubeModel_pic_of_infinite`, which a NON-PUBLIC import reaches (theorem
 -- bodies are elided by the module system).
@@ -7778,14 +7799,161 @@ def cubeModelCongr {A B : Type*} [AddCommGroup A] [AddCommGroup B]
   cube_nonvanishing := cm.cube_nonvanishing
 
 open AlgebraicGeometry CategoryTheory in
-/-- **LEAF (Mordell–Weil, geometric half — THE JACOBIAN BRIDGE): the Jacobian of the smooth
-model exists as an abelian scheme over `ℚ`, and its `ℚ`-points are `Pic⁰`.**
+/-- **LEAF (the JACOBIAN BRIDGE, half one — THE MODEL): the smooth projective model of the
+function field exists as a scheme over `ℚ`, it has a rational point, and its function field
+is `D.F`.**
 
-This is the leaf the section docstring above has been calling *"the right long-term
-repair"* since 2026-07-28, and as of 2026-07-31 it is the only open obligation on this
-file's geometric half: `exists_cubeModel_pic_of_infinite` below is PROVEN over it.
+Cut on 2026-07-31 out of `exists_abelianScheme_addEquiv_pic` below, together with
+`nonempty_addEquiv_pic_of_isRelPicZeroOf`.  This half is pure algebraic geometry and
+mentions neither `Pic`, nor an abelian scheme, nor the Jacobian: it is the classical
+statement that a function field of one variable over `ℚ` has a smooth projective model,
+specialised to the hyperelliptic field `D.F` — Hartshorne I.6.9 (a curve is determined by
+its function field), Stichtenoth I.1 and I.6, Milne *Jacobian Varieties* §1.  It is
+therefore dispatchable at somebody who has never read `PlaceData.Pic`.
 
-`SpecQ` is not named because it is declared in `X0.lean`; it is an `abbrev` for
+## WHAT THE LINKAGE IS, AND WHY IT IS A BARE `RingEquiv`
+
+`X.functionField` is the stalk of `X` at its generic point (mathlib's
+`AlgebraicGeometry.Scheme.functionField`), which is a FIELD once `X` is integral; the last
+conjunct says it is `D.F`.  That single conjunct is the whole of "`X` is the model OF `D`",
+and it pins everything the comparison half needs:
+
+* `PlaceData.ord_complete` together with `ord_injective` say that `D.ord` is a BIJECTION
+  from `D.Places` onto the normalised `ℚ`-trivial discrete valuations of `D.F` — so
+  `D.Places` is not extra data, it is a function of `D.F`;
+* the closed points of a smooth proper curve over `ℚ` are exactly those valuations
+  (valuative criterion); so the ring equivalence already identifies `D.Divisors` with the
+  divisors of `X`, and `D.princ` with the principal ones.
+
+**It does not have to be a `ℚ`-algebra equivalence, and deliberately is not.**  `ℚ` is the
+prime field, so every ring homomorphism between `ℚ`-algebras is automatically `ℚ`-linear;
+demanding `≃ₐ[ℚ]` would buy nothing and would first require an `Algebra ℚ ↥X.functionField`
+instance to be built on a stalk, which this pin does not carry.
+
+## TRUE, AND NOT DEGENERATELY SATISFIABLE
+
+`D` exists, so `D.F = ℚ(xx)[yy]/(yy² − f(xx))` with `xx` transcendental (`transcendental_xx`,
+`gen`, `eqn`); with `hsep` it is a genuine genus-`2` hyperelliptic function field, and its
+smooth projective model is a curve of genus `2` over `ℚ`.  The two points at infinity are
+`ℚ`-rational — a MONIC sextic has square leading coefficient — which is where the
+`Nonempty (RelPoint strX (𝟙 _))` conjunct comes from, and it is recorded already on
+`PlaceData.infPlus` and used by `ord_pt_infinite`.
+
+The junk witness that the parent's docstring worries about — `X = Spec ℚ`, `strX = 𝟙` — is
+excluded here TWICE OVER and without any appeal to `Infinite D.Pic`: its relative dimension
+is `0`, not `1`, and its function field is `ℚ`, which is not isomorphic to `D.F` because the
+latter contains a transcendental.  That is why `hinf` does not appear in either half of this
+cut (see the parent).
+
+*What is not owed.*  No compatibility between the ring equivalence and `D.pt`, `D.ord`,
+`D.aj` or the Galois action, and no uniqueness of `X`: the comparison half re-derives what
+it needs from `ord_complete`.  Uniqueness is true (Hartshorne I.6.12) and is not used.
+
+`hsep` is passed because the call site holds it and because it is what makes the model a
+genus-`2` curve rather than a conic; it is very likely NOT load-bearing for this half —
+monicity already forces the constant field to be `ℚ`, so geometric connectedness survives
+even when `f` is a square, and the model is then `ℙ¹`.  A prover who does not need it
+should say so and drop it, after checking that the model is still smooth of relative
+dimension `1` in that degenerate case. -/
+theorem exists_smoothProperCurve_ringEquiv_functionField {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) :
+    ∃ (X : Scheme.{0}) (strX : X ⟶ Spec (CommRingCat.of ℚ))
+      (hX : AlgebraicGeometry.IsIntegral X),
+      IsProper strX ∧ SmoothOfRelativeDimension 1 strX ∧ GeometricallyConnected strX ∧
+        Nonempty (RelPoint strX (𝟙 (Spec (CommRingCat.of ℚ)))) ∧
+        (letI := hX; Nonempty (D.F ≃+* ↥X.functionField)) := sorry
+
+open AlgebraicGeometry CategoryTheory in
+/-- **LEAF (the JACOBIAN BRIDGE, half two — THE COMPARISON): the divisor-theoretic `Pic⁰`
+of `D` is the group of `ℚ`-points of any abelian scheme representing `Pic⁰` of the model.**
+
+The other half of the 2026-07-31 cut of `exists_abelianScheme_addEquiv_pic` below.  It
+constructs nothing: the curve arrives as a hypothesis from
+`exists_smoothProperCurve_ringEquiv_functionField`, and the abelian scheme arrives as a
+hypothesis from `Fermat.exists_relPicZero` (`ModularCurve/RelativePicard.lean`, PROVEN
+there over `exists_relPicFull` and `exists_relPicZero_of_isRelPicOf`).  This is Milne,
+*Jacobian Varieties* (Cornell–Silverman) §1, Prop. 1.1 and §1.3; Hindry–Silverman A.8;
+Bosch–Lütkebohmert–Raynaud 8.1/4 and 9.4.
+
+## WHAT IT OWES, STEP BY STEP
+
+1. **Places are closed points.**  `ord_complete` and `ord_injective` make `D.ord` a
+   bijection from `D.Places` onto the normalised `ℚ`-trivial valuations of `D.F`; `e`
+   transports those to `↥X.functionField`; and for a smooth proper curve over `ℚ` these
+   are exactly the closed points.  Hence `D.Divisors ≅ Div X` carrying `D.princ` to the
+   principal divisors — note `D.divisor` is defined from `ord` alone, so nothing beyond
+   the valuations is needed for this step.
+2. **The base class has degree one.**  `D.picRel` is `princ ⊔ ℤ·[D.pt ∞₊]`, so
+   `D.Pic = Div/(princ + ℤ·[v₀])`, and this is `Pic⁰` exactly because `deg v₀ = 1`.  That
+   is `finrank_residue_pt_eq_one` ABOVE in this file — PROVEN 2026-07-30, and the one place
+   `hsep` is genuinely load-bearing here: it is what makes the model smooth at a rational
+   point.  Without it the quotient would be `Pic⁰ ⊕ ℤ/deg v₀` and the leaf would be FALSE.
+3. **`Pic⁰(X_ℚ) ≅ J(ℚ)`.**  Injectivity is `IsRelPicZeroOf.inj` read at `T = Spec ℚ`, where
+   `RelPicEquiv` is plain isomorphism because `Pic(Spec ℚ) = 0`.  Surjectivity is the
+   classical step and is where `o` is spent: the obstruction to a `ℚ`-rational divisor class
+   coming from a `ℚ`-rational divisor lies in `Br ℚ` and is killed by `X(ℚ) ≠ ∅`.  Note
+   `IsRelPicZeroOf` has an `inj` field and NO `surj` field — the identification of `J` with
+   the whole of `Pic⁰` rests on the Abel–Jacobi image generating, which is the same content
+   as `IsRelPicZeroOf.eq_of_aj_eq` (`ModularCurve/X0.lean`); a prover may find it cheaper to
+   route step 3 through that theorem than to redo it.
+
+## FAITHFULNESS
+
+*Not vacuous*: `exists_smoothProperCurve_ringEquiv_functionField` produces a curve
+satisfying every hypothesis, and `Fermat.exists_relPicZero` produces the `IsRelPicZeroOf`
+from exactly the three geometric hypotheses carried here.
+
+*No junk witness*, because the conclusion is a `∀`-statement in `X`, `J` and `o` — there is
+nothing for a prover to choose.  In particular `Infinite D.Pic` is not needed and is not
+taken: the degenerate `J = Spec ℚ` is not admissible as a HYPOTHESIS unless it really does
+carry an `IsRelPicZeroOf` for the curve, which it does not at genus `2`.
+
+*The base point is not pinned to `∞₊`, on purpose.*  `o` is an arbitrary rational point and
+need not correspond to `D.pt ∞₊`: `Div/(princ + ℤ·[v₀]) ≅ Pic⁰` for EVERY degree-one `v₀`,
+and `Pic⁰ ≅ J(ℚ)` for EVERY rational base point, so the two choices are independent and the
+resulting `AddEquiv` is simply not canonical.  That is admissible because the consumer
+(`cubeModelCongr`) reads no compatibility whatever — see the parent.  A consumer that later
+needs `e ∘ D.aj = P.aj` must ask for it as a separate strengthening, and should expect to
+pay for pinning `o = ∞₊` as part of it. -/
+theorem nonempty_addEquiv_pic_of_isRelPicZeroOf {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable)
+    {X J : Scheme.{0}} {strX : X ⟶ Spec (CommRingCat.of ℚ)}
+    {jstr : J ⟶ Spec (CommRingCat.of ℚ)} [AlgebraicGeometry.IsIntegral X]
+    (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX)
+    {o : RelPoint strX (𝟙 (Spec (CommRingCat.of ℚ)))}
+    {ab : AbelianSchemeStruct jstr} (P : IsRelPicZeroOf strX ab o)
+    (e : D.F ≃+* ↥X.functionField) :
+    letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of ℚ)))
+    Nonempty (D.Pic ≃+ RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ)))) := sorry
+
+open AlgebraicGeometry CategoryTheory in
+/-- **THE JACOBIAN BRIDGE: the Jacobian of the smooth model exists as an abelian scheme
+over `ℚ`, and its `ℚ`-points are `Pic⁰`** — **PROVEN 2026-07-31**, over the two leaves
+immediately above and `Fermat.exists_relPicZero`.
+
+This is the node the section docstring above has been calling *"the right long-term
+repair"* since 2026-07-28; `exists_cubeModel_pic_of_infinite` below is PROVEN over it, and
+it is now itself PROVEN, as the three-line assembly
+
+    the model  →  representability of `Pic⁰`  →  the comparison
+
+of `exists_smoothProperCurve_ringEquiv_functionField` (above),
+`Fermat.exists_relPicZero` (`ModularCurve/RelativePicard.lean`, PROVEN there) and
+`nonempty_addEquiv_pic_of_isRelPicZeroOf` (above).
+
+**ACCOUNTING, and it is not a closure.**  One leaf became TWO, so the direct-sorry count
+went UP by one; what was bought is that the representability of `Pic⁰` by an abelian scheme
+— Grothendieck FGA 232, BLR 8.2/1 and 9.4/4, by a long way the largest single ingredient —
+is no longer owed here at all.  It is owed ONCE, upstream, where `X0.lean` already owes it,
+which is exactly the "do not prove this twice" this file's section docstring is built
+around.  Judge the two survivors by what is LEFT in each: one builds a scheme and mentions
+neither `Pic` nor an abelian scheme, the other compares two groups and builds nothing.
+
+`SpecQ` is not named because it is declared in `X0.lean` — which this file must NOT import,
+the edge closing a build cycle (see the import block) — it is an `abbrev` for
 `Spec (CommRingCat.of ℚ)`, which is what appears here, so the two are interchangeable and
 `Fermat.exists_cubeModel_of_abelianScheme` applies to this `jstr` on the nose.
 
@@ -7806,11 +7974,11 @@ be proving it twice:
   an `AddEquiv`, which is what lets the model produced on `RelPoint jstr (𝟙 SpecQ)` be read
   on `D.Pic`.
 
-So the frontier count is unchanged (one leaf in, one leaf out) and what is bought is that
-the *shared* obligation is shared: the very-ample-symmetric-sheaf and theorem-of-the-cube
-content is now owed ONCE, in `X0`/`AbelianSchemeIsogeny`, instead of once there and once
-here.  Judge this cut by what is LEFT in the leaf — a Jacobian and a comparison theorem,
-with no mention of coordinates, Segre ideals, homogeneous forms or `ℙⁿ` — not by the delta.
+So the very-ample-symmetric-sheaf and theorem-of-the-cube content is owed ONCE, in
+`X0`/`AbelianSchemeIsogeny`, instead of once there and once here — and, since 2026-07-31,
+the representability of `Pic⁰` is shared in the same way, through
+`Fermat.exists_relPicZero`.  What is left below the two survivors has no mention of
+coordinates, Segre ideals, homogeneous forms or `ℙⁿ`.
 
 ## TRUE, AND WHY
 
@@ -7838,16 +8006,29 @@ any abelian variety over `ℚ` — e.g. an uncountable one.  `ord_complete` is t
 forecloses it, and its own docstring says so ("without it a presentation could omit points
 and make `Pic` anything at all").
 
-## NOT DEGENERATELY SATISFIABLE, AND WHERE `hinf` GOES
+## NOT DEGENERATELY SATISFIABLE, AND WHY `_hinf` IS NOW UNUSED
 
 `AbelianSchemeStruct` has NO nontriviality axiom — CLAUDE.md's standing warning — so the
 ZERO abelian scheme `J = SpecQ`, `jstr = 𝟙` satisfies `proper`, `smooth` and `connected`
 with fibres points.  It is not a witness here: `RelPoint (𝟙 SpecQ) (𝟙 SpecQ)` is a
 SINGLETON, so an `AddEquiv` out of `D.Pic` would force `Subsingleton D.Pic`, which `hinf`
-refutes.  So `hinf` is retained deliberately — it is what makes the degenerate witness
-inadmissible — even though the statement is true without it (the honest Jacobian works at
-every `D`).  `hsep` is genuinely load-bearing: without it `sextPoly` may be a square in
-`ℚ[x]`, and the "curve" is not a curve.
+refutes.
+
+**The 2026-07-31 cut moved that exclusion off the hypothesis and into the first half, so
+`hinf` is no longer consumed and the binder is now `_hinf`.**  The degenerate `J` is
+excluded because `exists_smoothProperCurve_ringEquiv_functionField` hands over a curve of
+relative dimension `1` whose function field is `D.F`, and `Spec ℚ` is neither; the abelian
+scheme is then produced by `Fermat.exists_relPicZero` FROM that curve rather than chosen.
+This confirms in Lean what the previous version of this docstring already asserted in
+prose — that the statement is true without `hinf`, the honest Jacobian working at every
+`D`.  The binder is KEPT (renamed, not deleted) because the signature is positional and
+`exists_cubeModel_pic_of_infinite` below passes it; deleting it is a signature change with
+a call site, and it buys nothing.
+
+`hsep` is genuinely load-bearing, and both halves take it: without it `sextPoly` may be a
+square in `ℚ[x]` and the "curve" is not a curve, and — the sharper reason, in half two —
+`finrank_residue_pt_eq_one` is FALSE without it, which is what makes `[∞₊]` a degree-one
+class and hence `D.Pic` a `Pic⁰` rather than a `Pic⁰ ⊕ ℤ/d`.
 
 *What a prover owes and what it does not.*  The `AddEquiv` is asked for RAW: no
 compatibility with `D.aj`, with `red`, or with the Galois action is required, because
@@ -7856,11 +8037,17 @@ form its construction produces should not feel obliged to prove more; if a later
 needs `aj`-compatibility, that is a separate strengthening and should be recorded as one. -/
 theorem exists_abelianScheme_addEquiv_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (hinf : Infinite D.Pic) :
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (_hinf : Infinite D.Pic) :
     ∃ (J : Scheme.{0}) (jstr : J ⟶ Spec (CommRingCat.of ℚ))
       (ab : AbelianSchemeStruct jstr),
       letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of ℚ)))
-      Nonempty (D.Pic ≃+ RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ)))) := sorry
+      Nonempty (D.Pic ≃+ RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ)))) := by
+  obtain ⟨X, strX, hX, hproper, hsmooth, hconn, ⟨o⟩, he⟩ :=
+    exists_smoothProperCurve_ringEquiv_functionField D hsep
+  letI := hX
+  obtain ⟨e⟩ := he
+  obtain ⟨J, jstr, ab, ⟨P⟩⟩ := exists_relPicZero strX hproper hsmooth hconn o
+  exact ⟨J, jstr, ab, nonempty_addEquiv_pic_of_isRelPicZeroOf D hsep hproper hsmooth hconn P e⟩
 
 open AlgebraicGeometry CategoryTheory in
 /-- **LEAF (Mordell–Weil, geometric half, ANALYSIS-FREE): `Pic⁰(X_ℚ)` embeds in projective
