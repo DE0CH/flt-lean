@@ -19435,6 +19435,88 @@ have to move to `k'`. It is one edit that must land ATOMICALLY across a
 hazard of CLAUDE.md's seventh invisibility class, where the signature edits merge
 cleanly and the call sites do not. It is queued as a single task for one owner.
 
+**FOURTH PASS (2026-07-31, flt-lean-110, second dispatch) — THE COUNTEREXAMPLE'S
+`F` IS TOTALLY IMAGINARY, AND THAT IS NOT A DETAIL: it decides between two
+repairs whose costs differ by an order of magnitude.** Everything the three
+audits above assert is re-confirmed (see the re-verification note at the end of
+this section). What none of them noticed is which hypothesis of the CONSUMERS the
+witness quietly spends.
+
+THE OBSERVATION, in two lines. In the counterexample `ρ̄(Γ F) = H ⊆ SL₂(𝔽₇)`, so
+`det ρ̄(Γ F) = {1}`. The determinant clause of the datum says `det ρ̄|_{Γ F} = χ̄_ℓ`.
+Hence `χ̄_ℓ(Γ F) = {1}`, i.e. `Γ F ⊆ ker χ̄_ℓ`, i.e.
+
+    F ⊇ ℚ(ζ_ℓ),
+
+and `ℚ(ζ_ℓ)` is a CM field for `ℓ ≥ 3`, so **`F` is totally imaginary**. This is
+not an artefact of the particular `F = F₀·M` chosen above; it is forced by the
+determinant clause alone, for ANY witness of this shape. Equivalently and more
+usefully: if `F` is totally real then complex conjugation `c ∈ Γ F` has
+`det ρ̄(c) = χ̄_ℓ(c) = −1`, so `ρ̄(Γ F) ⊄ SL₂(k)` and the witness cannot be built
+at all.
+
+WHY IT MATTERS. `NumberField.IsTotallyReal F` is **not** among this leaf's
+hypotheses, but it IS carried by the eventual consumer
+`injective_classifyingMap_hilbertHeckeDatum` (as the explicit `htr`), and it is
+already threaded as an instance binder `[NumberField.IsTotallyReal F]` through
+the whole block at lines ~15150–17950 of this file. Threading it down the eight
+declarations of the Taylor–Wiles chain is a PLAIN HYPOTHESIS addition — no type
+changes, no change to `IsHilbertTaylorWilesPrimeSet`, no cohomology base change —
+and it is discharged at the top from `htr`, so nothing escapes to the root. That
+is a completely different order of cost from (β). **This exact repair has been
+made once already in this file** (see "THE REPAIR, MADE 2026-07-27 and now in
+force: `[NumberField.IsTotallyReal F]`" above), so it is a known-good move here.
+
+SO: THE FIRST THING THE REPAIR OWNER MUST SETTLE, before touching (β), is
+whether the leaf becomes TRUE once `IsTotallyReal F` is added.
+
+AND HERE IS THE HONEST ANSWER AS FAR AS IT COULD BE PUSHED: **total realness is
+NOT a group-theoretic obstruction, so the leaf is probably still false — but the
+witness must be REBUILT to say so, and the one on record does not do it.** The
+group theory survives verbatim: put `G = N(T_ns) ⊆ GL₂(𝔽₇)` (order `96`) rather
+than `H`. Then `det G = 𝔽₇ˣ` in full, so `χ̄_7` can be surjective on `Γ F`; the
+elements needed to be images of complex conjugation are present — the coset
+elements `[[a, −3b], [b, −a]]` square to `(a² − 3b²)·1`, so those with
+`a² − 3b² = 1` are involutions of determinant `−1`, and there are exactly `8` of
+them; and `G ∩ SL₂ = H`, whose discriminants are still `{0, 3, 5}`. Since any `σ`
+fixing `μ_{ℓⁿ}` for `n ≥ 1` has `χ̄_ℓ(σ) = 1` and hence `ρ̄(σ) ∈ G ∩ SL₂ = H`, the
+conclusion fails exactly as before. What is NOT established is the arithmetic
+half: that a totally real `F` and a hardly-ramified datum over it realise
+`ρ̄(Γ F) = N(T_ns)`. Such a `ρ̄` is dihedral — induced from a character of a
+quadratic field, since `T_ns ≅ 𝔽₄₉ˣ` has index `2` in `N(T_ns)` — and `54b1` is
+NOT such a witness, its mod-`7` image being all of `GL₂(𝔽₇)`. Note the elliptic
+curve cannot simply be re-used: for `ρ̄` surjective over `ℚ` no totally real `F`
+gives `ρ̄(Γ F) = N(T_ns)` at all, because `F` totally real forces `ρ̄(Γ F)` to
+contain EVERY `GL₂(𝔽₇)`-conjugate of `ρ̄(c)` (the complex conjugations are a
+single conjugacy class), and only `8` of the `56` involutions of determinant `−1`
+lie in `N(T_ns)`.
+
+The decision procedure for the repair owner is therefore:
+
+* build a dihedral `ρ̄ : Γ ℚ → GL₂(𝔽₇)` with image `N(T_ns)` and `det = χ̄_7`, and
+  a totally real `F` linearly disjoint from its cut-out field carrying a hardly
+  ramified datum. If it exists, the leaf is false even with `htr`, and (β) is
+  forced — do (β) and nothing else;
+* if the local conditions at `2` and `7` cannot be met by any such dihedral
+  datum, `htr` IS the repair: thread `[NumberField.IsTotallyReal F]` through the
+  eight declarations and prove the leaf with complex conjugation in hand.
+
+Until that is settled, (β) must NOT be started: it is the expensive branch, and
+half of the reason it looks forced is an audit that never checked its witness
+against the consumers' hypothesis list.
+
+RE-VERIFICATION DONE ON THIS PASS, so the next reader need not repeat it. The
+group theory was re-enumerated independently in Python: `|H| = 16`,
+`{tr² − 4·det : g ∈ H} = {0, 3, 5}`, squares mod `7` `= {0, 1, 2, 4}`,
+intersection `{0}` — agreeing with the two enumerations and the by-hand
+derivation above, a fourth time. The curve was re-checked in PARI/GP rather than
+quoted from Cremona: `ellinit([1,−1,1,1,−1])` has conductor `54`,
+`j = 9261/8 = 3³·7³/2³`, `elllocalred` at `2` returning Kodaira code `7 = 4 + 3`
+(type `I₃`, multiplicative) and at `7` returning `[0, 1, …]` (`f = 0`, type `I₀`,
+GOOD reduction). Non-CM follows from `v₂(j) = −3 < 0` alone — a CM `j`-invariant
+is an algebraic integer — which is a cleaner argument than the database lookup
+the audit above used.
+
 **The Taylor–Wiles Galois element over `F`, in discriminant form** (LEAF —
 new 2026-07-27; this is the whole mathematical content of
 `exists_hilbertFixing_rootsOfUnity_charpoly_split` below, which is now PROVEN
