@@ -70,3 +70,5 @@
 
 - [Hoist vs concurrent proof](flt-hoist-vs-concurrent-proof.md) — relocating a leaf and proving it in place merge into a duplicate declaration; keep the hoisted location, move the proof
 - [Opaque carrier blocks a quotient lemma](lean-opaque-carrier-blocks-quotient-lemma.md) — a structure field over an opaque `CommRingCat` carries `Algebra.toModule`, so a helper written over a literal `A[σ] ⧸ I` can never apply; keep the carrier abstract, and write towers over `(bs, b₀, hb₀)` not `bs.restrict i₀`
+- [Char-p parity lives downstairs](flt-char-p-parity-lives-downstairs.md) — before building a function field to get a ramification/parity fact, try the ultrametric case split on the Artin–Schreier form of the equation over the BASE; it closed the char-2 half of DifferentialCharacter
+- [A hoisted leaf can be orphaned by a re-proof](flt-hoisted-leaf-orphaned-by-reproof.md) — the parent's next proof need not preserve the consumer edge hoisting created; the orphan looks exactly like live work
