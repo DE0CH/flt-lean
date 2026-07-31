@@ -21869,14 +21869,35 @@ witness.  It used to return `Nonempty (AuxDeformationDatum hpodd Q ρbar)` and s
 DISCARD the carrier; **since 2026-07-31 it names it**, at zero cost to its proof
 (three `rfl` clauses) and without a new leaf, unlike the `𝒟univ` route above.
 
-**AND THE CONCLUSION OF THIS GLUE CHANGED THE SAME DAY.**  It now also
-existentially quantifies `𝒟Q` itself, because the RING sub-leaf
-`exists_auxDeformationPresSurjection` PRODUCES the datum rather than receiving
-it — read its FALSITY AUDIT (2026-07-31): weak universality is existence-only,
-so a received `𝒟Q` is unpinned from above and `(Λ_𝒪 ⧸ I) ≃+* 𝒟Q.R` is refuted by
-`𝒟Q.R := 𝒟Q⁰.R[[y_1, …, y_m]]`.  What arrives here instead is the nonemptiness
-guard `hwu`, and `exists_auxDeformationDiamondControl` is handed this glue's own
-`pres` so that its clauses 2-3 are pinned too.
+**THE UNPINNING FALSITY, AND THE TWO RIVAL REPAIRS OF IT — THIS TREE TAKES
+`hgenQ`** (paragraph corrected 2026-07-31, `flt-lean-78`).  Weak universality is
+existence-only, so a RECEIVED `𝒟Q` is unpinned from above:
+`𝒟Q.R := 𝒟Q⁰.R[[y_1, …, y_m]]` with everything base-changed along
+`MvPowerSeries.C` satisfies every hypothesis while `μ(𝔪)` grows without bound,
+which refutes `(Λ_𝒪 ⧸ I) ≃+* 𝒟Q.R` here and the `q`-generator surjection in the
+sub-leaf.  Two repairs were cut for it, and they are RIVALS, not complements:
+
+* *the producer owns the datum* (`flt-lean-247`, 2026-07-31): the sub-leaf takes
+  a nonemptiness guard `hwu : ∃ 𝒟, 𝒟.IsWeaklyUniversal` and RETURNS its own
+  `𝒟Q`, so this glue existentially quantifies `𝒟Q` too;
+* *Carayol minimality at raised level* (`flt-lean-69`, 2026-07-30): the datum is
+  still received, and `hgenQ : IsTraceGeneratedDeformation p 𝒟Q.ρ 𝒟Q.S` pins it
+  — a power-series inflation is not trace-generated, so the counterexample dies
+  where it stands.
+
+**THIS TREE IMPLEMENTS THE SECOND**, here and in the sub-leaf; the first was
+declined at integration.  The assembly `exists_taylorWilesAuxLevelPresentedDatum`
+below already routes its `𝒟Q` through `exists_traceGenerated_auxDeformationDatum`
+and so holds `hgenQ` for free, whereas re-quantifying `𝒟Q` would have forced
+`exists_auxHeckeModuleData` and every consumer of `I` and `φ` to be restated.
+So do NOT read the sub-leaf as producing its datum — it receives one.
+
+*Why this paragraph is called out rather than silently rewritten*: it previously
+described the `hwu` cut as though it had landed.  It had not — the merge kept
+`flt-lean-247`'s DOCSTRING and declined its STATEMENT — and the surviving prose
+was read back as fact and dispatched an agent at a signature that does not exist
+in this tree.  That is CLAUDE.md's seventh invisibility class in its documentary
+form: the half of an interface change that lands unexamined is not always code.
 
 References: Wiles, Ann. of Math. 141 (1995), ch. 3; Taylor–Wiles, ibid. §2;
 Darmon–Diamond–Taylor §2.49 and §5.3; Fujiwara §3; Kisin, Ann. of Math. 170
@@ -21931,17 +21952,17 @@ theorem exists_auxDeformationRingPresentation.{s, t, uK, uW, uR}
     (n : ℕ) (Q : Finset ℕ) (hQcard : Q.card = q)
     (hQ : IsTaylorWilesPrimeSet p ρbar (n + 1) Q)
     (𝒟Q : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
-    (h𝒟Q : 𝒟Q.IsWeaklyUniversal) :
+    (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (hgenQ : IsTraceGeneratedDeformation p 𝒟Q.ρ 𝒟Q.S) :
     ∃ I : Ideal (MvPowerSeries (Fin q) coeff.carrier),
       Nonempty ((MvPowerSeries (Fin q) coeff.carrier ⧸ I) ≃+* 𝒟Q.R) := by
   -- LEAF A2′-3a (Greenberg–Wiles): the `q`-generator surjection onto `R_Q`, in
   -- quotient form.  Since the 2026-07-30 re-cut this is ALL this theorem does
   -- — `diamond`, `e` and `toRuniv` are produced downstream of the freeness
   -- leaf; see the RE-CUT note in the docstring above.
-      (∀ i, n ≤ e i) ∧
   obtain ⟨pres, hpres⟩ :=
     exists_auxDeformationPresSurjection.{uK, uW, uR} hpodd hW hres hirr hπuniv
-      q0 q hq0 coeff hcoeff hcohen n Q hQcard hQ 𝒟Q h𝒟Q
+      q0 q hq0 coeff hcoeff hcohen n Q hQcard hQ 𝒟Q h𝒟Q hgenQ
   exact ⟨RingHom.ker pres, ⟨pres.quotientKerEquivOfSurjective hpres⟩⟩
 
 set_option linter.checkUnivs false in
@@ -22901,9 +22922,16 @@ existence-only, so a RECEIVED `𝒟Q` is unpinned from above and both ring leave
 were refuted by `𝒟Q.R := 𝒟Q⁰.R[[y_1, …, y_m]]` (see the FALSITY AUDIT of
 `exists_auxDeformationPresSurjection` and FALSITY AUDIT #2 of
 `exists_auxDeformationDiamondControl` above).  The repair is the principle this
-audit states: `exists_auxDeformationPresSurjection` now PRODUCES the datum, and
-`exists_auxDeformationDiamondControl` RECEIVES its `pres`, which pins `𝒟Q.R` as
-a quotient of `Λ_𝒪`.
+audit states — pin `𝒟Q.R` rather than merely receive it — but note WHICH of the
+two rival pins this tree took (corrected 2026-07-31, `flt-lean-78`; the RIVAL
+REPAIRS paragraph on `exists_auxDeformationRingPresentation` below has the full
+comparison).  `exists_auxDeformationPresSurjection` still RECEIVES its datum and
+is pinned by `hgenQ : IsTraceGeneratedDeformation p 𝒟Q.ρ 𝒟Q.S`, Carayol
+minimality at raised level, which a power-series inflation fails; the
+`flt-lean-247` variant in which that leaf PRODUCES the datum out of a
+nonemptiness guard `hwu` was declined at integration and is not in this tree.
+`exists_auxDeformationDiamondControl` is pinned the other way, by RECEIVING
+`φ : (Λ_𝒪 ⧸ I) ≃+* 𝒟Q.R`, which exhibits `𝒟Q.R` as a quotient of `Λ_𝒪`.
 
 **Two consequences here, and neither changes the statement below.**
 
@@ -23744,7 +23772,7 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
   obtain ⟨I, ⟨φ⟩⟩ :=
     exists_auxDeformationRingPresentation.{s, t, uK, uW, uR} hpodd hW hres hirr
       hadic hcomplete hranku hρuniv hπuniv hunivred hfact hgen q0 q hq0 coeff hcoeff hcohen
-      n Q hQcard hQ 𝒟Q h𝒟Q
+      n Q hQcard hQ 𝒟Q h𝒟Q hgenQ
   -- LEAF A2′-4 (HECKE): the auxiliary Hecke module on the coordinate model,
   -- together with the diamonds, the exponent vector and the control map.
   obtain ⟨e, diamond, toRuniv, actR, projM, he, htoRuniv, hker, hlam, hsurj,
