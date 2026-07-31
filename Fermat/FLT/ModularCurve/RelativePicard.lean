@@ -315,13 +315,14 @@ tensor-calculus section header.
 Added 2026-07-31, and useful well beyond the two leaves it closed:
 `IsRelPicOf.cmp` / `sheaf_cmp` / `cmp_cmp` / `cmp_pre` / `toHom` /
 `toHom_comp` / `toHom_comp_toHom` / `isoOver`, i.e. **the representing object
-is unique up to isomorphism over `S`**, plus the two transport corollaries
+is unique up to isomorphism over `S`**, plus `transport_of_isRelPicOf` — ANY
+`W : MorphismProperty Scheme` with a `RespectsIso` instance moves between
+representing objects — and its two named instances
 `smooth_of_isRelPicOf_of_smooth` and
-`isSeparated_of_isRelPicOf_of_isSeparated`.  Any property of `pstr` that is
-invariant under isomorphism can be moved between representing objects by the
-same two lines; `Smooth` and `IsSeparated` are only the two that were needed
-first.  `cmp_pre` is the only step with content and is where
-`relPicEquiv_modPullback` is spent.
+`isSeparated_of_isRelPicOf_of_isSeparated`.  `LocallyOfFiniteType`,
+`QuasiSeparated`, `Flat` and `IsProper` are available from the same line the
+moment something needs them.  `cmp_pre` is the only step with content and is
+where `relPicEquiv_modPullback` is spent.
 
 `IsRelPicOf` is `IsRelPicZeroOf` with the group law and the Abel–Jacobi
 fields dropped and a **surjectivity** field added; that field is what
@@ -2630,24 +2631,37 @@ end Comparison
 
 end IsRelPicOf
 
-/-- **SMOOTHNESS TRANSPORTS BETWEEN REPRESENTING OBJECTS** (PROVEN):
-`pstr = toHom ≫ qstr` with `toHom` an isomorphism, and `Smooth` is stable
-under composition with isomorphisms. -/
+/-- **EVERY ISOMORPHISM-INVARIANT PROPERTY OF THE STRUCTURE MORPHISM
+TRANSPORTS BETWEEN REPRESENTING OBJECTS** (PROVEN): `pstr = toHom ≫ qstr`
+with `toHom` an isomorphism, so `MorphismProperty.cancel_left_of_respectsIso`
+finishes.
+
+Stated at this generality on purpose.  `Smooth` and `IsSeparated` are only
+the two that were needed first; `LocallyOfFiniteType`, `QuasiSeparated`,
+`Flat`, `IsProper` and anything else in `MorphismProperty Scheme` with a
+`RespectsIso` instance comes for free from the same line, and that is what
+converts a "SOME representing object" existence statement — which is the only
+shape the literature proves — into the "EVERY representing object" statement a
+consumer wants. -/
+theorem transport_of_isRelPicOf {X P Q S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    {qstr : Q ⟶ S} {W : MorphismProperty Scheme.{u}} [W.RespectsIso]
+    (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr) (h : W qstr) : W pstr := by
+  rw [← hP.toHom_comp hQ]
+  exact (MorphismProperty.cancel_left_of_respectsIso W (hP.toHom hQ) qstr).mpr h
+
+/-- **SMOOTHNESS TRANSPORTS BETWEEN REPRESENTING OBJECTS** (PROVEN) — the
+`W = @Smooth` instance of `transport_of_isRelPicOf`. -/
 theorem smooth_of_isRelPicOf_of_smooth {X P Q S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     {qstr : Q ⟶ S} (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr)
-    (h : Smooth qstr) : Smooth pstr := by
-  haveI := h
-  rw [← hP.toHom_comp hQ]
-  infer_instance
+    (h : Smooth qstr) : Smooth pstr :=
+  transport_of_isRelPicOf (W := @Smooth) hP hQ h
 
-/-- **SEPARATEDNESS TRANSPORTS BETWEEN REPRESENTING OBJECTS** (PROVEN) —
-same argument as `smooth_of_isRelPicOf_of_smooth`. -/
+/-- **SEPARATEDNESS TRANSPORTS BETWEEN REPRESENTING OBJECTS** (PROVEN) — the
+`W = @IsSeparated` instance of `transport_of_isRelPicOf`. -/
 theorem isSeparated_of_isRelPicOf_of_isSeparated {X P Q S : Scheme.{u}} {strX : X ⟶ S}
     {pstr : P ⟶ S} {qstr : Q ⟶ S} (hP : IsRelPicOf strX pstr) (hQ : IsRelPicOf strX qstr)
-    (h : IsSeparated qstr) : IsSeparated pstr := by
-  haveI := h
-  rw [← hP.toHom_comp hQ]
-  infer_instance
+    (h : IsSeparated qstr) : IsSeparated pstr :=
+  transport_of_isRelPicOf (W := @IsSeparated) hP hQ h
 
 /-! ### The Zariski-local decomposition of FGA 232
 
