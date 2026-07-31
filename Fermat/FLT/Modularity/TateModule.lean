@@ -16327,6 +16327,346 @@ theorem eq_zero_of_red_eq_red_zero (q n : ℕ) (hq : q.Prime)
 
 end IsAbelianReductionDatum
 
+/-! #### STEP 3 of `exists_finset_abelianReductionDatum_of_mult`: THE GALOIS
+HALF, cut free of the geometry
+
+The docstring of `exists_finset_abelianReductionDatum_of_mult` names three
+steps, and they sit in three different books:
+
+1. SPREAD OUT `A_x` to an abelian scheme over `Spec 𝒪_F[1/N]` (BLR 1.2/1.4);
+2. properness and smoothness of that model at almost every `w`, and its base
+   change to the valuation ring of `F̄` at a place `w̄ ∣ w` (BLR 7.4);
+3. the DECOMPOSITION GROUP at `w̄` preserves that valuation ring, hence acts
+   on the base change, inducing `Frob_w` on the generic fibre and the
+   `N w`-power map on the special fibre — i.e. `frobPt`, `gen_frob`,
+   `sp_frob`.
+
+Steps 1 and 2 are abelian-scheme geometry and there is no Néron model in the
+pin (`grep -i neron Mathlib/` is empty).  Step 3 is Galois theory of `F̄/F`
+and of residue fields, it needs none of that geometry, and this subsection
+cuts it out so that it can be owned and proved on its own.
+
+The cut has two halves, and NEITHER mentions `AbelianSchemeStruct`:
+
+* the ARITHMETIC half, `exists_localRing_arithFrob_of_heightOneSpectrum`:
+  the local ring `O` of `F̄` at a place above `w`, with the five conditions
+  that pin it (`ι_injective`, `π_surjective`, `ker_π`, `valuationRing`,
+  `lift_int` — the five fields of `IsAbelianReductionDatum` that mention
+  neither `𝒜` nor `A'`), together with the ring automorphism `gO` induced by
+  `Frob_w` and the fact that it reduces to the `N w`-power map.  This is
+  PROVEN here over two disjoint sub-leaves, one of valuation theory and one
+  of local class field theory;
+* the FUNCTORIAL half, `exists_frobPt_of_semilinearIso`: given ANY scheme
+  `fO : 𝒜 ⟶ Spec O` carrying a semilinear automorphism over `Spec gO`, the
+  field `frobPt` EXISTS and satisfies `gen_frob` and `sp_frob`.  This is
+  PROVEN outright.  It is the only place the two Frobenius fields of the
+  structure are ever produced, and it shows they cost nothing beyond the
+  semilinear automorphism: they are the SAME morphism read on two fibres.
+
+So a prover of `exists_finset_abelianReductionDatum_of_mult` now owes only
+steps 1–2 — the abelian scheme over `O` and the two fibre identifications —
+plus the Galois-equivariance of those identifications, which is what
+`hgen`/`hsp` below ask for. -/
+
+/-- **THE FROBENIUS OF `κ(w)`, PINNED BY THE `N w`-POWER MAP** (PROVEN).
+The specialisation of `exists_absoluteGaloisGroup_pow_natCard_of_finite` to
+the residue field at a finite place: `κ(w)` is finite with `N w` elements, so
+the element of `Γ_{κ(w)}` that `exists_finset_abelianReductionDatum_of_mult`
+quantifies over exists.
+
+It is unique with this property, so producing it costs nothing; the leaf
+takes it as an input only so that the same `σ` can be threaded through the
+consumer. -/
+theorem exists_absoluteGaloisGroup_pow_absNorm {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    ∃ σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField,
+      ∀ z : AlgebraicClosure w.asIdeal.ResidueField,
+        (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+          AlgebraicClosure w.asIdeal.ResidueField) z = z ^ Ideal.absNorm w.asIdeal := by
+  obtain ⟨σ, hσ⟩ := exists_absoluteGaloisGroup_pow_natCard_of_finite
+    (finite_residueField_heightOneSpectrum w)
+  refine ⟨σ, fun z => ?_⟩
+  rw [hσ z, natCard_residueField_heightOneSpectrum w]
+
+/-- **A SEMILINEAR RING SQUARE BECOMES A COMMUTING SQUARE OF `Spec`s**
+(PROVEN).  If `j : O ⟶ F̄` intertwines a ring endomorphism `gO` of `O` with
+the Galois element `h`, then `Spec j` intertwines `Spec gO` with `specGal h`.
+
+This is the only step where the ring-level data of
+`exists_localRing_arithFrob_of_heightOneSpectrum` is converted into the
+scheme-level hypotheses of `exists_frobPt_of_semilinearIso`, and it is used
+TWICE: once at `ι` with `h = Frob_w`, once at `π` with `h = σ`.  That the two
+uses are literally the same lemma is the reason `gen_frob` and `sp_frob` are
+not two independent conditions. -/
+theorem specMap_comp_specMap_of_semilinear {O : CommRingCat.{u}} {F : Type u} [Field F]
+    (j : O ⟶ CommRingCat.of (AlgebraicClosure F)) (gO : O ⟶ O)
+    (h : Field.absoluteGaloisGroup F)
+    (hcomm : ∀ z : O, j.hom (gO.hom z) =
+      (h : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (j.hom z)) :
+    Spec.map j ≫ Spec.map gO = specGal h ≫ Spec.map j := by
+  rw [specGal, ← Spec.map_comp, ← Spec.map_comp]
+  congr 1
+  ext z
+  exact hcomm z
+
+/-- **THE ACTION OF A SEMILINEAR AUTOMORPHISM ON THE INTEGRAL POINTS**
+(PROVEN).  `Φ` is an automorphism of `𝒜` lying over the automorphism `t` of
+the base `Spec O`; a point `u : Spec O ⟶ 𝒜` is carried to
+`t ≫ u ≫ Φ⁻¹`, which is again a section because `Φ⁻¹` lies over `t⁻¹`.
+
+This is `frobPt`.  Nothing about abelian schemes is used — not the group law,
+not properness — because `frobPt` is a bare function in
+`IsAbelianReductionDatum` and its two axioms are about fibres, not about
+addition. -/
+noncomputable def relPointTwist {O : CommRingCat.{u}} {𝒜 : Scheme.{u}} {fO : 𝒜 ⟶ Spec O}
+    {Φ : 𝒜 ≅ 𝒜} {t : Spec O ≅ Spec O} (hΦ : Φ.hom ≫ fO = fO ≫ t.hom)
+    (u : RelPoint fO (𝟙 (Spec O))) : RelPoint fO (𝟙 (Spec O)) :=
+  ⟨t.hom ≫ u.1 ≫ Φ.inv, by
+    have hinv : Φ.inv ≫ fO = fO ≫ t.inv := by
+      rw [Iso.eq_comp_inv, Category.assoc, ← hΦ, Iso.inv_hom_id_assoc]
+    calc t.hom ≫ u.1 ≫ Φ.inv ≫ fO = t.hom ≫ u.1 ≫ fO ≫ t.inv := by rw [hinv]
+      _ = 𝟙 (Spec O) := by
+          rw [← Category.assoc u.1 fO t.inv, u.2, Category.id_comp, t.hom_inv_id]⟩
+
+/-- **THE TWIST READ ON A FIBRE** (PROVEN).  Restricting `relPointTwist`
+along any `j : T ⟶ Spec O` whose composite with `t` is `s ≫ j` gives the
+`s`-twist of the restriction, still composed with `Φ⁻¹`.
+
+`gen_frob` and `sp_frob` are the two instances `j = Spec ι`, `s = specGal
+Frob_w` and `j = Spec π`, `s = specGal σ`. -/
+theorem pre_relPointTwist {O : CommRingCat.{u}} {𝒜 : Scheme.{u}} {fO : 𝒜 ⟶ Spec O}
+    {Φ : 𝒜 ≅ 𝒜} {t : Spec O ≅ Spec O} (hΦ : Φ.hom ≫ fO = fO ≫ t.hom)
+    {T : Scheme.{u}} (j : T ⟶ Spec O) (s : T ⟶ T) (hs : j ≫ t.hom = s ≫ j)
+    (u : RelPoint fO (𝟙 (Spec O))) :
+    (RelPoint.pre j (Category.comp_id j) (relPointTwist hΦ u)).1
+      = s ≫ (RelPoint.pre j (Category.comp_id j) u).1 ≫ Φ.inv := by
+  show j ≫ t.hom ≫ u.1 ≫ Φ.inv = s ≫ (j ≫ u.1) ≫ Φ.inv
+  rw [← Category.assoc j t.hom, hs]
+  simp [Category.assoc]
+
+/-- **`frobPt`, `gen_frob` AND `sp_frob` COME FOR FREE FROM A SEMILINEAR
+AUTOMORPHISM OF THE MODEL** (PROVEN).  This is the functorial half of step 3
+of `exists_finset_abelianReductionDatum_of_mult`, and it is stated for an
+ARBITRARY scheme `fO : 𝒜 ⟶ Spec O`: no `AbelianSchemeStruct`, no `Mult`, no
+relative dimension, no properness.
+
+The input is
+* `Φ`, an automorphism of `𝒜` lying over an automorphism `t` of `Spec O` —
+  in the intended application `t = Spec gO` for the `gO` produced by
+  `exists_localRing_arithFrob_of_heightOneSpectrum`, and `Φ` is the base
+  change of the identity along it;
+* the two commuting squares `hι`, `hπ`, which
+  `specMap_comp_specMap_of_semilinear` produces from the two ring-level
+  clauses of that theorem;
+* `hgen`, `hsp`: the two fibre identifications are SEMILINEAR for the twist.
+  These are the Galois-equivariance of `gen` and `sp`, and they are what a
+  producer of the model gets from the base-change construction — a geometric
+  point of the generic fibre is a point of `A_x` and the Galois action is
+  precomposition with `Spec σ` on both sides.
+
+The output is exactly the three remaining fields of
+`IsAbelianReductionDatum`.  Note that `ab.galSMul` does not appear: it is
+`RelPoint.pre (specGal ·)` by `AbelianSchemeStruct.galSMul_def`, which is
+what is written here, so a consumer rewrites with that lemma and is done. -/
+theorem exists_frobPt_of_semilinearIso {O : CommRingCat.{u}} {𝒜 : Scheme.{u}} {fO : 𝒜 ⟶ Spec O}
+    {Φ : 𝒜 ≅ 𝒜} {t : Spec O ≅ Spec O} (hΦ : Φ.hom ≫ fO = fO ≫ t.hom)
+    {F : Type u} [Field F] {A S : Scheme.{u}} {f : A ⟶ S} {x : Spec (CommRingCat.of F) ⟶ S}
+    {ι : O ⟶ CommRingCat.of (AlgebraicClosure F)} (g : Field.absoluteGaloisGroup F)
+    (hι : Spec.map ι ≫ t.hom = specGal g ≫ Spec.map ι)
+    (gen : GeomFibrePt f x ≃ RelPoint fO (Spec.map ι))
+    (hgen : ∀ y : GeomFibrePt f x,
+      (gen (RelPoint.pre (specGal g) (specGal_comp_base x g) y)).1
+        = specGal g ≫ (gen y).1 ≫ Φ.inv)
+    {k : Type u} [Field k] {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    {π : O ⟶ CommRingCat.of (AlgebraicClosure k)} (σ : Field.absoluteGaloisGroup k)
+    (hπ : Spec.map π ≫ t.hom = specGal σ ≫ Spec.map π)
+    (sp : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) ≃ RelPoint fO (Spec.map π))
+    (hsp : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      (sp (RelPoint.pre (specGal σ) (specGal_comp_base (𝟙 (Spec (CommRingCat.of k))) σ) y)).1
+        = specGal σ ≫ (sp y).1 ≫ Φ.inv) :
+    ∃ frobPt : RelPoint fO (𝟙 (Spec O)) → RelPoint fO (𝟙 (Spec O)),
+      (∀ u : RelPoint fO (𝟙 (Spec O)),
+        gen (RelPoint.pre (specGal g) (specGal_comp_base x g)
+            (gen.symm (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) u)))
+          = RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) (frobPt u)) ∧
+      (∀ u : RelPoint fO (𝟙 (Spec O)),
+        RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) (frobPt u)
+          = sp (RelPoint.pre (specGal σ) (specGal_comp_base (𝟙 (Spec (CommRingCat.of k))) σ)
+              (sp.symm (RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) u)))) := by
+  refine ⟨relPointTwist hΦ, fun u => ?_, fun u => ?_⟩
+  · apply Subtype.ext
+    rw [hgen, Equiv.apply_symm_apply, pre_relPointTwist hΦ (Spec.map ι) (specGal g) hι]
+  · apply Subtype.ext
+    rw [hsp, Equiv.apply_symm_apply, pre_relPointTwist hΦ (Spec.map π) (specGal σ) hπ]
+
+/-- **THE RESIDUE FIELD OF A VALUATION RING OF `F̄` CENTRED ON `w` IS AN
+ALGEBRAIC CLOSURE OF `κ(w)`** (sorry leaf — valuation theory; Bourbaki
+*Commutative Algebra* VI, Engler–Prestel *Valued Fields* §3.2, Neukirch II
+§§4, 8).
+
+`V` is a valuation subring of the ALGEBRAICALLY CLOSED field `F̄` whose
+centre on `𝓞_F` is `w` (that is what `hcentre` and `hw` say: every algebraic
+integer is in `V`, and it is a non-unit exactly when it lies in `w`).  The
+claim is that `κ(V) = V/𝔪_V` is an algebraic closure of `κ(w)`, presented
+here as: there is a ring map `p : V → κ(w)ᵃˡᵍ` which is surjective and whose
+kernel is exactly `𝔪_V`.
+
+Two classical facts, and both are needed:
+
+* `κ(V)` is ALGEBRAICALLY CLOSED, because `V` is a valuation ring of an
+  algebraically closed field: a monic polynomial over `V` splits over `F̄`,
+  and each root has non-negative valuation because the polynomial is monic,
+  so it already lies in `V` and reduces to a root in `κ(V)`;
+* `κ(V)` is ALGEBRAIC over `κ(w)`, because `F̄/F` is algebraic: the residue
+  extension of an algebraic extension of valued fields is algebraic
+  (reduce a monic equation over `𝒪_{F,w}` satisfied by a lift).
+
+Together these make `κ(V)` an algebraic closure of `κ(w)`, and any two
+algebraic closures are isomorphic, which gives `p` as the composite of the
+residue map with such an isomorphism.
+
+WHY NO COMPATIBILITY IS ASKED OF `p`.  The isomorphism to `κ(w)ᵃˡᵍ` is not
+canonical, and nothing downstream needs it to be: the five pinning fields of
+`IsAbelianReductionDatum` constrain `π` only through its KERNEL, and the
+Frobenius clause is `π (gO z) = (π z) ^ N w`, which any ring map respects
+once the congruence `gO z ≡ z ^ N w (mod 𝔪_V)` is known.  That is exactly why
+`exists_valuationSubring_arithFrob_of_heightOneSpectrum` below states the
+Frobenius condition as a membership in `𝔪_V` rather than as an identity in
+`κ(w)ᵃˡᵍ`, and it is what makes the two leaves independent.
+
+MATHLIB STATUS, checked at this pin: there is no `IsAlgClosed` instance for
+the residue field of a valuation ring (`grep` over `Mathlib/` for
+`IsAlgClosed.*ResidueField` is empty), and
+`Fermat/FLT/Mathlib/RingTheory/Valuation/AlgebraicExtension.lean` builds the
+`ℚ`-valued extension of a valuation to an algebraic extension but says
+nothing about residue fields.  Both halves have to be written. -/
+theorem exists_residueField_ringHom_of_valuationSubring {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (V : ValuationSubring (AlgebraicClosure F))
+    (hcentre : ∀ a : 𝓞 F,
+      algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∈ V)
+    (hw : ∀ a : 𝓞 F,
+      (⟨_, hcentre a⟩ : V) ∈ IsLocalRing.maximalIdeal V ↔ a ∈ w.asIdeal) :
+    ∃ p : V →+* AlgebraicClosure w.asIdeal.ResidueField,
+      Function.Surjective p ∧ ∀ z : V, p z = 0 ↔ z ∈ IsLocalRing.maximalIdeal V :=
+  sorry
+
+/-- **THE ARITHMETIC FROBENIUS AT `w` STABILISES A VALUATION RING OF `F̄` AND
+REDUCES TO THE `N w`-POWER MAP** (sorry leaf — local class field theory;
+Neukirch II §9 and *Class Field Theory*, Serre *Local Fields* I §7).
+
+The element in question is the one
+`IsAbelianReductionDatum.gen_frob` names,
+`Field.absoluteGaloisGroup.map (algebraMap F F_w) (adicArithFrob w)`: the
+image in `Γ_F` of the arithmetic Frobenius of the COMPLETION, along the
+embedding `F̄ ↪ F̄_w` that `Field.absoluteGaloisGroup.mapAux` chooses.  The
+claim is that the valuation ring belonging to THAT embedding is stabilised by
+it, and that it acts on the residue field as `z ↦ z ^ N w`.
+
+THE CONSTRUCTION, which is why the statement is true rather than merely
+plausible.  Write `L := AlgebraicClosure.map (algebraMap F F_w) : F̄ → F̄_w`
+for the chosen embedding and put
+
+  `V := L ⁻¹' (localValuationSubring w)`,
+
+the pullback of the integral closure of `𝒪_w` in `F̄_w`
+(`Fermat/FLT/Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`,
+which already proves that this integral closure IS a valuation subring, via
+the spectral-norm dichotomy).  Then
+
+* `V` is a valuation subring of `F̄`: the preimage of a valuation subring
+  under a field embedding is one, since `L (z⁻¹) = (L z)⁻¹`;
+* `hcentre` holds because every `a : 𝓞 F` is integral over `𝒪_w`, and `hw`
+  holds because `a` is a non-unit of `V` exactly when `w(a) > 0`;
+* `V` is STABILISED by the Frobenius, by
+  `Field.absoluteGaloisGroup.lift_map` (`L (g z) = Frob_w (L z)`) together
+  with `mem_decompositionSubgroup_localValuationSubring` (every
+  `F_w`-automorphism of `F̄_w` preserves integrality over `𝒪_w`).  Applying
+  the same to `g⁻¹` makes the restriction bijective, which is `gV`;
+* the congruence `gV z ≡ z ^ N w (mod 𝔪_V)` is
+  `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`, whose content is
+  literally `Frob_w x - x ^ Nat.card (𝒪_w ⧸ 𝔪_w) ∈ 𝔪`, transported down
+  along the injection `κ(V) ↪ κ(localValuationSubring w)`; the exponent is
+  `N w` because `𝒪_w ⧸ 𝔪_w ≅ κ(w)` and `Ideal.absNorm w.asIdeal =
+  Nat.card κ(w)` (`natCard_residueField_heightOneSpectrum`).
+
+WHY THE COMPLETION CANNOT BE AVOIDED, since it is the one design choice worth
+recording.  Over the GLOBAL field there is no canonical Frobenius lift: at a
+maximal ideal `Q` of the integral closure of `𝓞_F` in `F̄` the residue field
+is `κ(w)ᵃˡᵍ`, which is INFINITE, so `IsArithFrobAt.exists_of_isInvariant`
+(which needs `Finite (S ⧸ Q)`) does not apply and the decomposition group
+surjects onto `Γ_{κ(w)}` with infinite kernel.  The statement of `gen_frob`
+already commits to the completion's Frobenius, so `V` must be the valuation
+ring belonging to the SAME embedding — which is why this leaf produces `V`
+and `gV` together rather than quantifying over an arbitrary pinned `V`.
+Quantifying universally would make it FALSE: a `V` belonging to a different
+place above `w` is not stabilised by this particular element. -/
+theorem exists_valuationSubring_arithFrob_of_heightOneSpectrum {F : Type u} [Field F]
+    [NumberField F] (w : HeightOneSpectrum (𝓞 F)) :
+    ∃ (V : ValuationSubring (AlgebraicClosure F)) (gV : V ≃+* V)
+      (hcentre : ∀ a : 𝓞 F,
+        algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∈ V),
+      (∀ a : 𝓞 F, (⟨_, hcentre a⟩ : V) ∈ IsLocalRing.maximalIdeal V ↔ a ∈ w.asIdeal) ∧
+      (∀ z : V, ((gV z : AlgebraicClosure F)) =
+        ((Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+            (Field.AbsoluteGaloisGroup.adicArithFrob w) :
+          Field.absoluteGaloisGroup F) :
+            AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (z : AlgebraicClosure F)) ∧
+      (∀ z : V, gV z - z ^ Ideal.absNorm w.asIdeal ∈ IsLocalRing.maximalIdeal V) :=
+  sorry
+
+/-- **THE ARITHMETIC HALF OF STEP 3** (PROVEN over the two leaves above).
+The local ring `O` of `F̄` at a place above `w`, with the five conditions that
+pin it — which are LITERALLY the five fields `ι_injective`, `π_surjective`,
+`ker_π`, `valuationRing`, `lift_int` of `IsAbelianReductionDatum` — together
+with the ring automorphism `gO` induced by the arithmetic Frobenius at `w`
+and the two clauses saying what it does on `F̄` and on the residue field.
+
+The two clauses are exactly what `specMap_comp_specMap_of_semilinear` turns
+into the hypotheses `hι` and `hπ` of `exists_frobPt_of_semilinearIso`, with
+`h = Frob_w` and `h = σ` respectively — the `σ` being the one produced by
+`exists_absoluteGaloisGroup_pow_absNorm`, since `π (gO z) = (π z) ^ N w` says
+precisely that `gO` induces the `N w`-power map on `κ(w)ᵃˡᵍ`.
+
+Nothing here mentions a scheme.  Together with
+`exists_frobPt_of_semilinearIso` this discharges step 3 of
+`exists_finset_abelianReductionDatum_of_mult` down to the two leaves above,
+leaving that theorem's prover only steps 1–2. -/
+theorem exists_localRing_arithFrob_of_heightOneSpectrum {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    ∃ (O : CommRingCat.{u}) (ι : O ⟶ CommRingCat.of (AlgebraicClosure F))
+      (π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField)) (gO : O ≅ O),
+      Function.Injective ι.hom ∧
+      Function.Surjective π.hom ∧
+      (∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z) ∧
+      (∀ z : AlgebraicClosure F, z ≠ 0 →
+        (∃ u : O, ι.hom u = z) ∨ (∃ u : O, ι.hom u = z⁻¹)) ∧
+      (∀ a : 𝓞 F, ∃ z : O,
+        ι.hom z = algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∧
+          (π.hom z = 0 ↔ a ∈ w.asIdeal)) ∧
+      (∀ z : O, ι.hom (gO.hom.hom z) =
+        ((Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+            (Field.AbsoluteGaloisGroup.adicArithFrob w) :
+          Field.absoluteGaloisGroup F) :
+            AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (ι.hom z)) ∧
+      (∀ z : O, π.hom (gO.hom.hom z) = (π.hom z) ^ Ideal.absNorm w.asIdeal) := by
+  obtain ⟨V, gV, hcentre, hw, hgal, hfrob⟩ :=
+    exists_valuationSubring_arithFrob_of_heightOneSpectrum w
+  obtain ⟨p, hpsurj, hpker⟩ :=
+    exists_residueField_ringHom_of_valuationSubring w V hcentre hw
+  have hunit : ∀ z : V, z ∈ IsLocalRing.maximalIdeal V ↔ ¬ IsUnit z := fun z => by
+    simp [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+  refine ⟨CommRingCat.of V, CommRingCat.ofHom V.subtype, CommRingCat.ofHom p,
+    gV.toCommRingCatIso, Subtype.val_injective, hpsurj, fun z => ?_, fun z hz => ?_,
+    fun a => ?_, fun z => hgal z, fun z => ?_⟩
+  · exact (hpker z).trans (hunit z)
+  · rcases V.mem_or_inv_mem z with h | h
+    · exact Or.inl ⟨⟨z, h⟩, rfl⟩
+    · exact Or.inr ⟨⟨z⁻¹, h⟩, rfl⟩
+  · exact ⟨⟨_, hcentre a⟩, rfl, (hpker _).trans (hw a)⟩
+  · have h0 : p (gV z - z ^ Ideal.absNorm w.asIdeal) = 0 := (hpker _).mpr (hfrob z)
+    rw [map_sub, map_pow, sub_eq_zero] at h0
+    exact h0
+
 /-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES** (sorry leaf —
 SPREADING OUT; BLR *Néron Models* 1.2/1.4 and 7.4, Mumford *AV* §6).
 
@@ -16358,7 +16698,29 @@ prover has to build:
 `hσ` is used only in step 3, to say WHICH element of `Γ_{κ(w)}` the
 Frobenius reduces to; it is not an assumption, since
 `exists_absoluteGaloisGroup_pow_natCard_of_finite` produces such a `σ`
-and it is unique. -/
+and it is unique.
+
+**UPDATE 2026-07-31 — STEP 3 IS NO LONGER PART OF THIS LEAF.**  The
+subsection above cuts the Galois half out, so a prover of this theorem owes
+only steps 1 and 2.  Concretely:
+
+* `exists_localRing_arithFrob_of_heightOneSpectrum` produces `O`, `ι`, `π`
+  and the semilinear `gO`, and discharges the five pinning fields
+  `ι_injective`, `π_surjective`, `ker_π`, `valuationRing`, `lift_int`
+  outright;
+* `specMap_comp_specMap_of_semilinear` turns its two Frobenius clauses into
+  the commuting `Spec` squares at `ι` and at `π`;
+* `exists_frobPt_of_semilinearIso` then produces `frobPt` together with
+  `gen_frob` and `sp_frob`, for an ARBITRARY scheme over `Spec O` carrying an
+  automorphism over `Spec gO`.
+
+What is left for steps 1–2 is the abelian scheme `abO` over that `O` with its
+real multiplication, the special fibre `A'`, the two identifications `gen`
+and `sp` with their additivity and `𝒪_D`-equivariance, the valuative
+criterion `neron`, and the SEMILINEARITY of `gen` and `sp` (`hgen`, `hsp`),
+which the base-change construction supplies.  `σ` should be taken from
+`exists_absoluteGaloisGroup_pow_absNorm`, which is the specialisation of
+`hσ` to `κ(w)`. -/
 theorem exists_finset_abelianReductionDatum_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
