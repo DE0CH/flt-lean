@@ -4917,3 +4917,118 @@ the same failure shape as [Inventory audits understate what exists] and
 [Audits search production, not invariants], now in a third place. Treat "not in the
 tree" in a docstring exactly as CLAUDE.md already tells you to treat "still open,
 owned elsewhere" in a commit message: **a hypothesis to check, never a fact.**
+
+## TWIST THE EMBEDDING, DON'T MOVE THE PRIME — a conjugated local element is a local element
+
+(2026-07-31, `flt-lean-24`, proving `localInertia_le_fixingSubgroup_of_isUnramifiedAt_muSubfield`.)
+
+Every local-to-global inertia leaf in this development quantifies over `σ * ñ * σ⁻¹`, a
+CONJUGATE of the image of a local element `n ∈ localInertiaGroup ℓ`. The obvious reading — and
+the one both leaf docstrings prescribed — is "build the embedding prime `Q₀ = ι⁻¹(𝔪)`, then move
+it along the Galois orbit by `σ` and propagate by transitivity", which is what
+`MinkowskiUnramified.lean`'s `inertia_eq_bot_of_exists_prime_over` does and what makes that file
+long.
+
+**The conjugation can be absorbed into the EMBEDDING instead.** With `ι : ℚ̄ → (ℚ_ℓ)ᵃˡᵍ` the
+embedding underlying `Field.absoluteGaloisGroup.map`, set
+
+    j := ι ∘ σ⁻¹.
+
+`j` is another ring embedding `ℚ̄ → (ℚ_ℓ)ᵃˡᵍ`, and for `g = σ ñ σ⁻¹` one gets, from `lift_map`
+alone and with no orbit argument at all,
+
+    j (g x) = n (j x)     for every x.
+
+So relative to `j`, the global `g` acts exactly as the local `n` acts relative to `ι`. The prime
+`j⁻¹(𝔪)` is then directly `g`-inertial, and the conjugacy-propagation step does not appear.
+Cost: three lines. The orbit route needs a transitivity theorem, `IsGaloisGroup` instances and
+`exists_smul_eq_of_isGaloisGroup`.
+
+**Second trick from the same proof: `by_cases` on the prime being `⊥` beats proving it proper.**
+`Ideal.comap ψ 𝔪` is prime for free, but the inertia nodes want `Q ≠ ⊥`, and showing the
+embedding prime is proper (`ℓ ∈ 𝔪`, i.e. `1/ℓ` is not integral over `ℤ_ℓ`) is where the
+corresponding absolute proof spends most of its length. It is never needed: if `Q = ⊥` then
+`τ • x - x ∈ ⊥` says `τ • x = x` outright, and `NumberField.eq_one_of_smul_eq_self` closes that
+branch in two lines. Split on it rather than ruling it out.
+
+**And the reason the whole thing was cheap: READ THE CALL SITE BEFORE PROVING ANYTHING.** Both
+`muSubfield` inertia leaves were stated WITHOUT `IsGalois (muSubfield p) (extendScalars hEle)`,
+and without it neither is reachable without first proving "a compositum of everywhere-unramified
+extensions is everywhere-unramified" and passing to a normal closure. Both call sites already
+held that instance — one `obtain`s it out of `exists_transport_unramifiedAbelian_to_muSubfield`,
+the other proves it three lines earlier — so adding it to the statement changed no call site at
+all. That is the same shape as `exists_artinDivisorNormIndex_le_ray_class` above: **the missing
+hypothesis is usually already in the caller's hand, and a leaf's own docstring will not tell you
+so.** Grep the call sites before deciding a leaf needs new theory.
+
+Note `IsGalois ℚ L₀` is NOT similarly available and a prover should not reach for it: the caller
+builds `L₀` as `IntermediateField.fixedField M'` for a subgroup `M'` that is only normal in
+`Γ_{ℚ(μ_p)}` (it contains the commutators of `ker χ`), not in `Γℚ`. So the absolute node
+`isUnramifiedAt_of_inertia_le_fixingSubgroup`, which needs `IsGalois ℚ L`, does not apply to `L₀`
+directly — the sibling leaf's docstring suggestion to "reuse the absolute node at every `ℓ ≠ p`"
+needs a normal closure first, and that is a real cost, not a bookkeeping step.
+
+## TRANSPORT THE AMBIENT CLOSURE — a "new arithmetic" leaf is often an existing theorem in the wrong `ℚ̄`
+
+(2026-07-31, `flt-lean-24`, the sibling leaf
+`isUnramifiedAt_of_localInertia_le_fixingSubgroup_muSubfield`.)
+
+That leaf's own docstring prescribed a split: "at every `ℓ ≠ p` the absolute statement does
+apply … only the place above `p` needs the genuinely relative argument." Following it produces a
+proof plus a NEW SORRY LEAF for the `ℓ = p` case — which is what the rival cut on `merger` did
+(`isUnramifiedAt_muSubfield_of_localInertia_at_p`, one consumer, still open).
+
+No split is needed. `HardlyRamified/HilbertModularity.lean` already proves the RELATIVE
+dictionary `isUnramifiedAt_of_hilbertInertiaTrivialAt` — inertia-trivial at `w` ⟹ unramified
+above `w`, for a finite Galois subextension of any number field `F`, `p` included. The ONLY
+obstruction was that it is stated inside Lean's canonical `AlgebraicClosure F`, whereas the
+consumer's whole Galois dictionary (`Γℚ`, `ker χ`, `muSubfield p`) lives in `AlgebraicClosure ℚ`.
+Two transports (now `NumberField/RelativeUnramifiedTransport.lean`, ~250 lines, sorry-free) close
+the gap and the leaf becomes a 40-line assembly with NO new leaf:
+
+* the dictionary along an `F`-isomorphism `ee : Fᵃˡᵍ ≃ₐ[F] Ω`, with its inertia hypothesis
+  phrased as an equation in `Ω` so a consumer never mentions `Fᵃˡᵍ`;
+* the group-side companion: a local inertia element of `F` at `w`, read through `ee`, IS a
+  `Γ K`-conjugate `σ κ̃ σ⁻¹` of a local inertia element of the base `K`. That is what turns a
+  `K`-level hypothesis into an `F`-level one, and it is the ALL-PLACES form of
+  `GaloisRepTransport.lean`'s `exists_finset_conj_localInertiaGroup_le` — whose finite exceptional
+  set is fatal here, because the excluded place is exactly the one the leaf exists to handle.
+  Deleting the `S`/`T` bookkeeping from that proof is the whole of the new proof.
+
+**So before believing a leaf needs arithmetic the tree does not have, ask whether the tree has it
+in a DIFFERENT ALGEBRAIC CLOSURE.** This development runs three at once (`AlgebraicClosure ℚ`,
+`AlgebraicClosure CF`, `AlgebraicClosure (muSubfield p)`) and a statement is not reusable across
+them without an explicit `ee`. Keep `ee` a HYPOTHESIS rather than building `IsAlgClosure.equiv`
+inside, for the reason recorded at
+`NumberField.exists_unramifiedAbelian_of_algebraicClosureEquiv`: with it opaque, no defeq check
+can try to unfold `IsAlgClosed.lift`.
+
+**Two mechanical traps met on the way, both cheap once named.**
+
+1. *A scratch module that `public import`s the target file does NOT see what the target sees.*
+   `exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat` is `unknown constant` in a scratch that
+   imports `Modularity/Interface`, because `Interface.lean:426` imports `Threeadic`
+   NON-publicly — visible inside `Interface`, not re-exported. **Copy the target's non-`public`
+   imports into the scratch**, or you will "discover" that a constant the target file can cite
+   does not exist.
+2. *`Algebra ℚ ℚ_ℓ` has two live spellings*, `DivisionRing.toRatAlgebra` (what you get writing
+   `algebraMap ℚ (v.adicCompletion ℚ)` in your own `have`) and
+   `HeightOneSpectrum.instAlgebraAdicCompletion` (what the transport theorems carry). They are
+   NOT defeq at default transparency, so `exact` fails with three instance arguments differing at
+   once. The standing idiom, already all over `Threeadic.lean`, is one `Subsingleton.elim` plus
+   `▸`:
+
+       have halg : (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+           (NumberField.RingOfIntegers ℚ) ℚ hℓ.toHeightOneSpectrumRingOfIntegersRat) =
+           (DivisionRing.toRatAlgebra) := Subsingleton.elim _ _
+       …
+       exact halg ▸ hfin
+
+**And the release-window check is worth running BEFORE the proof, not after** (it caught all
+THREE of this task's targets, already proven on `merger` and invisible from `main`). It also
+changes what the task is: with a rival cut in hand the question stops being "can I prove it" and
+becomes **"which cut leaves fewer OPEN leaves"** — here mine leaves zero and `merger`'s leaves
+one, so the right output is a `to_merger` note naming the leaf that becomes consumerless, not a
+proof race. One command:
+
+    git show merger:Fermat/FLT/Modularity/Interface.lean | grep -n -A3 '^theorem <name>'
