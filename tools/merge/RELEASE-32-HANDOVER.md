@@ -268,3 +268,26 @@ de-duplication is a queue deletion and can strand a leaf.
   absence audits, and it bit me inside the same release in which I wrote it down:
   a scan that UNDER-reports does not merely miss things, it CERTIFIES — I had
   already written the wrong claim into this file before re-running the check.
+
+## THE BUILD TESTS THE WORKING TREE; THE RELEASE PUBLISHES THE COMMIT
+
+Caught here with the release build already 15 minutes in.  The `X1.lean` repair
+was two edits: the `smoothM` field, which I committed, and the one-line
+`transitiveM := R.transitiveM` at the constructor, which I made afterwards,
+verified with `lake env lean`, and did NOT commit.  The full build then ran
+against a working tree that was green and a `HEAD` that was not.  `git status`
+in an unrelated call is the only reason it was noticed.
+
+Nothing in the pipeline compares the two.  `lake` reads the working tree;
+`git branch -f main` publishes `HEAD`; the snapshot marker names `HEAD`.  A green
+build plus a dirty tree publishes a main that has never been compiled — and it
+would have been X1, red, behind X0, i.e. invisible again for another six
+releases.
+
+`/tmp/publish32.sh` now refuses on `git status --porcelain` being non-empty, and
+that check belongs in every future publish script:
+
+    test -z "$(git -C ~/flt-staging status --porcelain)" || exit 1
+
+Run it BEFORE the build too, not only before the publish, so the artifacts you
+rsync belong to the commit you name.
