@@ -47,6 +47,12 @@ public import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 -- built on it.  `smoothOfRelativeDimension_one_fromNormalization` below consumes the
 -- backward direction; `Fermat/FLT/ModularCurve/X0.lean` consumes the forward one.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
+-- `nonempty_projChart_of_surjective` below builds the descended chart as a graded QUOTIENT of
+-- the given one, so it needs the grading on `A ⧸ I` for a homogeneous `I`.
+public import Fermat.FLT.Mathlib.RingTheory.GradedAlgebra.Quotient
+-- The grading induced on `A ⧸ I` by a homogeneous ideal `I`, absent from mathlib at this pin.
+-- `nonempty_projChart_of_surjective` builds its descended chart as such a quotient.
+public import Fermat.FLT.Mathlib.RingTheory.GradedAlgebra.Quotient
 
 /-!
 # Smooth compactification of a smooth curve over a field
@@ -785,8 +791,323 @@ theorem nonempty_projChart_mvPolynomial (n : ℕ) :
 
 end ProjChartMvPolynomial
 
-/-- **Projective closure: a chart descends along a surjection** (PROVEN 2026-07-30 over
-`Fermat/FLT/Mathlib/RingTheory/GradedAlgebra/ProjectiveClosure.lean`).
+section ProjChartDescent
+
+/-!
+### Descending a projective chart along a surjection
+
+The construction proving `nonempty_projChart_of_surjective` below.  Given a graded `K`-algebra
+`𝒜` with `f ∈ 𝒜 1` and an arbitrary ring hom `π : (A_f)₀ → B`, one builds a graded map
+`Φ : A → B[t]` sending a homogeneous `a` of degree `d` to `π (a / f^d) · t^d`, takes
+`I := ker Φ` (a homogeneous ideal, because `Φ` is graded and `B[t]` is graded by `t`-degree)
+and `A' := A ⧸ I` with `HomogeneousIdeal.quotientGrading`.  Then `(A'_{f̄})₀ ≅ B` as soon as
+`π` is surjective: surjectivity of the comparison map is surjectivity of `π`, and its
+injectivity is exactly the definition of `I`.
+
+This is the "construct `A` as an IMAGE" route recorded on the leaf: the saturation of `I` is
+not proved, it is what `ker Φ` *is*.
+-/
+
+namespace ProjChartDescent
+
+variable {A : Type u} [CommRing A] [Algebra K A]
+variable (𝒜 : ℕ → Submodule K A) [GradedAlgebra 𝒜]
+variable {f : A} (hf : f ∈ 𝒜 1)
+variable {B : Type u} [CommRing B]
+
+/-- `a / f ^ d`, for `a` homogeneous of degree `d` and `f` of degree one. -/
+noncomputable def mk1 (d : ℕ) (a : A) (ha : a ∈ 𝒜 d) :
+    HomogeneousLocalization.Away 𝒜 f :=
+  HomogeneousLocalization.Away.mk 𝒜 hf d a (by simpa using ha)
+
+theorem val_mk1 (d : ℕ) (a : A) (ha : a ∈ 𝒜 d) :
+    (mk1 𝒜 hf d a ha).val
+      = Localization.mk a (⟨f ^ d, ⟨d, rfl⟩⟩ : Submonoid.powers f) := by
+  rw [mk1, HomogeneousLocalization.Away.val_mk]
+
+theorem mk1_zero (d : ℕ) : mk1 𝒜 hf d 0 (zero_mem _) = 0 := by
+  rw [HomogeneousLocalization.ext_iff_val, val_mk1, HomogeneousLocalization.val_zero,
+    Localization.mk_zero]
+
+theorem mk1_add (d : ℕ) (a b : A) (ha : a ∈ 𝒜 d) (hb : b ∈ 𝒜 d) :
+    mk1 𝒜 hf d (a + b) (add_mem ha hb) = mk1 𝒜 hf d a ha + mk1 𝒜 hf d b hb := by
+  rw [HomogeneousLocalization.ext_iff_val, HomogeneousLocalization.val_add, val_mk1, val_mk1,
+    val_mk1, Localization.add_mk_self]
+
+theorem mk1_one : mk1 𝒜 hf 0 1 (SetLike.GradedOne.one_mem) = 1 := by
+  rw [HomogeneousLocalization.ext_iff_val, val_mk1, HomogeneousLocalization.val_one]
+  rw [show ((⟨f ^ 0, ⟨0, rfl⟩⟩ : Submonoid.powers f)) = 1 by ext; simp]
+  exact Localization.mk_one
+
+theorem mk1_mul (d e : ℕ) (a b : A) (ha : a ∈ 𝒜 d) (hb : b ∈ 𝒜 e) :
+    mk1 𝒜 hf (d + e) (a * b) (SetLike.mul_mem_graded ha hb)
+      = mk1 𝒜 hf d a ha * mk1 𝒜 hf e b hb := by
+  rw [HomogeneousLocalization.ext_iff_val, HomogeneousLocalization.val_mul, val_mk1, val_mk1,
+    val_mk1, Localization.mk_mul]
+  congr 1
+  ext
+  simp [pow_add]
+
+variable (π : HomogeneousLocalization.Away 𝒜 f →+* B)
+
+/-- The degree-`d` piece of the graded map to `B[t]`: `a ↦ π (a / f ^ d)`. -/
+noncomputable def phi (d : ℕ) : ↥(𝒜 d) →+ B where
+  toFun a := π (mk1 𝒜 hf d a a.2)
+  map_zero' := by
+    show π (mk1 𝒜 hf d (0 : A) (zero_mem _)) = 0
+    rw [mk1_zero, map_zero]
+  map_add' a b := by
+    show π (mk1 𝒜 hf d ((a : A) + b) (add_mem a.2 b.2)) = _
+    rw [mk1_add, map_add]
+
+@[simp] theorem phi_apply (d : ℕ) (a : ↥(𝒜 d)) :
+    phi 𝒜 hf π d a = π (mk1 𝒜 hf d a a.2) := rfl
+
+/-- The degree-`d` piece of `Φ : A → B[t]`. -/
+noncomputable def gpiece (d : ℕ) : ↥(𝒜 d) →+ Polynomial B :=
+  (Polynomial.monomial d).toAddMonoidHom.comp (phi 𝒜 hf π d)
+
+@[simp] theorem gpiece_apply (d : ℕ) (a : ↥(𝒜 d)) :
+    gpiece 𝒜 hf π d a = Polynomial.monomial d (π (mk1 𝒜 hf d a a.2)) := rfl
+
+/-- **The graded map `Φ : A → B[t]`** attached to a surjection `π` out of the
+degree-zero part of `A[1/f]`: on a homogeneous `a` of degree `d` it is
+`π (a / f ^ d) · t ^ d`. -/
+noncomputable def bigPhiAux : DirectSum ℕ (fun i => ↥(𝒜 i)) →+* Polynomial B :=
+  DirectSum.toSemiring (gpiece 𝒜 hf π)
+    (by
+      show Polynomial.monomial 0 (π (mk1 𝒜 hf 0 (1 : A) SetLike.GradedOne.one_mem)) = 1
+      rw [mk1_one, map_one]
+      simp)
+    (by
+      intro i j ai aj
+      show Polynomial.monomial (i + j)
+        (π (mk1 𝒜 hf (i + j) ((ai : A) * (aj : A)) (SetLike.mul_mem_graded ai.2 aj.2))) = _
+      rw [mk1_mul, map_mul, gpiece_apply, gpiece_apply,
+        Polynomial.monomial_mul_monomial])
+
+theorem bigPhiAux_of (i : ℕ) (a : ↥(𝒜 i)) :
+    bigPhiAux 𝒜 hf π (DirectSum.of (fun i => ↥(𝒜 i)) i a)
+      = gpiece 𝒜 hf π i a := by
+  exact DirectSum.toSemiring_of (gpiece 𝒜 hf π) _ _ i a
+
+noncomputable def bigPhi : A →+* Polynomial B :=
+  (bigPhiAux 𝒜 hf π).comp (DirectSum.decomposeRingEquiv 𝒜).toRingHom
+
+theorem bigPhi_of_mem {d : ℕ} {a : A} (ha : a ∈ 𝒜 d) :
+    bigPhi 𝒜 hf π a = Polynomial.monomial d (π (mk1 𝒜 hf d a ha)) := by
+  show bigPhiAux 𝒜 hf π (DirectSum.decompose 𝒜 a) = _
+  rw [DirectSum.decompose_of_mem 𝒜 ha, bigPhiAux_of, gpiece_apply]
+
+theorem coeff_bigPhi (n : ℕ) (x : A) :
+    (bigPhi 𝒜 hf π x).coeff n = phi 𝒜 hf π n (DirectSum.decompose 𝒜 x n) := by
+  classical
+  have key : ∀ y : DirectSum ℕ (fun i => ↥(𝒜 i)),
+      (bigPhi 𝒜 hf π ((DirectSum.decompose 𝒜).symm y)).coeff n = phi 𝒜 hf π n (y n) := by
+    intro y
+    refine DirectSum.induction_on y ?_ ?_ ?_
+    · simp [mk1_zero]
+    · intro i a
+      rw [DirectSum.decompose_symm_of, bigPhi_of_mem 𝒜 hf π a.2, Polynomial.coeff_monomial]
+      by_cases h : i = n
+      · subst h
+        rw [if_pos rfl, DirectSum.of_eq_same]
+        rfl
+      · rw [if_neg h, DirectSum.of_eq_of_ne _ _ _ (Ne.symm h), map_zero]
+    · intro a b ha hb
+      rw [DirectSum.decompose_symm_add, map_add, Polynomial.coeff_add, ha, hb,
+        DirectSum.add_apply, map_add]
+  have h2 := key (DirectSum.decompose 𝒜 x)
+  rwa [Equiv.symm_apply_apply] at h2
+
+/-- **The kernel of `Φ` is a homogeneous ideal.** -/
+theorem isHomogeneous_ker_bigPhi :
+    (RingHom.ker (bigPhi 𝒜 hf π)).IsHomogeneous 𝒜 := by
+  intro i x hx
+  rw [RingHom.mem_ker] at hx ⊢
+  have hc : (bigPhi 𝒜 hf π x).coeff i = 0 := by rw [hx]; simp
+  rw [coeff_bigPhi] at hc
+  rw [bigPhi_of_mem 𝒜 hf π (DirectSum.decompose 𝒜 x i).2]
+  show Polynomial.monomial i (phi 𝒜 hf π i (DirectSum.decompose 𝒜 x i)) = 0
+  rw [hc, Polynomial.monomial_zero_right]
+
+theorem mem_ker_bigPhi_of_mem {d : ℕ} {a : A} (ha : a ∈ 𝒜 d)
+    (h : π (mk1 𝒜 hf d a ha) = 0) : a ∈ RingHom.ker (bigPhi 𝒜 hf π) := by
+  rw [RingHom.mem_ker, bigPhi_of_mem 𝒜 hf π ha, h, Polynomial.monomial_zero_right]
+
+/-- The "evaluate `t` at `1`" composite `A → B`. -/
+noncomputable def ev : A →+* B := (Polynomial.evalRingHom 1).comp (bigPhi 𝒜 hf π)
+
+theorem ev_of_mem {d : ℕ} {a : A} (ha : a ∈ 𝒜 d) :
+    ev 𝒜 hf π a = π (mk1 𝒜 hf d a ha) := by
+  show Polynomial.eval 1 (bigPhi 𝒜 hf π a) = _
+  rw [bigPhi_of_mem 𝒜 hf π ha]
+  simp
+
+theorem mk1_self : mk1 𝒜 hf 1 f hf = 1 := by
+  have hs : (⟨f ^ 1, ⟨1, rfl⟩⟩ : ↥(Submonoid.powers f))
+      = (⟨f, ⟨1, pow_one f⟩⟩ : ↥(Submonoid.powers f)) := by
+    ext; simp
+  rw [HomogeneousLocalization.ext_iff_val, val_mk1, HomogeneousLocalization.val_one, hs]
+  exact Localization.mk_self (⟨f, ⟨1, pow_one f⟩⟩ : ↥(Submonoid.powers f))
+
+/-! ### The descended chart -/
+
+/-- The homogeneous ideal cut out by `π`: the kernel of the graded map `Φ`. -/
+noncomputable def kerIdeal : HomogeneousIdeal 𝒜 :=
+  ⟨RingHom.ker (bigPhi 𝒜 hf π), isHomogeneous_ker_bigPhi 𝒜 hf π⟩
+
+/-- The homogeneous coordinate ring of the descended chart. -/
+abbrev Quo : Type u := A ⧸ (kerIdeal 𝒜 hf π).toIdeal
+
+/-- Its grading. -/
+noncomputable abbrev qgr : ℕ → Submodule K (Quo 𝒜 hf π) :=
+  HomogeneousIdeal.quotientGrading 𝒜 (kerIdeal 𝒜 hf π)
+
+/-- The image of `f` in the quotient. -/
+noncomputable def fbar : Quo 𝒜 hf π := Ideal.Quotient.mk _ f
+
+theorem fbar_mem : fbar 𝒜 hf π ∈ qgr 𝒜 hf π 1 :=
+  HomogeneousIdeal.mk_mem_quotientGrading hf
+
+/-- The descended "evaluate `t` at `1`" map. -/
+noncomputable def evbar : Quo 𝒜 hf π →+* B :=
+  Ideal.Quotient.lift _ (ev 𝒜 hf π) (fun a ha => by
+    have h0 : bigPhi 𝒜 hf π a = 0 := RingHom.mem_ker.mp ha
+    show Polynomial.eval 1 (bigPhi 𝒜 hf π a) = 0
+    rw [h0, Polynomial.eval_zero])
+
+theorem evbar_mk (a : A) :
+    evbar 𝒜 hf π (Ideal.Quotient.mk _ a) = ev 𝒜 hf π a := rfl
+
+theorem evbar_fbar : evbar 𝒜 hf π (fbar 𝒜 hf π) = 1 := by
+  rw [fbar, evbar_mk, ev_of_mem 𝒜 hf π hf, mk1_self, map_one]
+
+theorem evbar_fbar_mul_one : evbar 𝒜 hf π (fbar 𝒜 hf π) * 1 = 1 := by
+  rw [evbar_fbar, mul_one]
+
+/-- The ring map out of the degree-zero part of the descended away-localisation. -/
+noncomputable def theta :
+    HomogeneousLocalization.Away (qgr 𝒜 hf π) (fbar 𝒜 hf π) →+* B :=
+  (Localization.awayLift (evbar 𝒜 hf π) (fbar 𝒜 hf π)
+    (isUnit_iff_exists_inv.mpr ⟨1, evbar_fbar_mul_one 𝒜 hf π⟩)).comp (algebraMap _ _)
+
+theorem theta_mk1 (d : ℕ) (x : Quo 𝒜 hf π) (hx : x ∈ qgr 𝒜 hf π d) :
+    theta 𝒜 hf π (mk1 (qgr 𝒜 hf π) (fbar_mem 𝒜 hf π) d x hx) = evbar 𝒜 hf π x := by
+  show Localization.awayLift (evbar 𝒜 hf π) (fbar 𝒜 hf π)
+      (isUnit_iff_exists_inv.mpr ⟨1, evbar_fbar_mul_one 𝒜 hf π⟩)
+      (mk1 (qgr 𝒜 hf π) (fbar_mem 𝒜 hf π) d x hx).val = _
+  rw [val_mk1, Localization.awayLift_mk _ _ _ 1 (evbar_fbar_mul_one 𝒜 hf π)]
+  simp
+
+theorem theta_mk1_mk (d : ℕ) (a : A) (ha : a ∈ 𝒜 d) :
+    theta 𝒜 hf π (mk1 (qgr 𝒜 hf π) (fbar_mem 𝒜 hf π) d (Ideal.Quotient.mk _ a)
+      (HomogeneousIdeal.mk_mem_quotientGrading ha)) = π (mk1 𝒜 hf d a ha) := by
+  rw [theta_mk1, evbar_mk, ev_of_mem 𝒜 hf π ha]
+
+theorem theta_surjective (hπ : Function.Surjective π) :
+    Function.Surjective (theta 𝒜 hf π) := by
+  intro b
+  obtain ⟨z, rfl⟩ := hπ b
+  obtain ⟨d, a, ha, rfl⟩ := HomogeneousLocalization.Away.mk_surjective 𝒜 hf z
+  have ha' : a ∈ 𝒜 d := by simpa using ha
+  refine ⟨mk1 (qgr 𝒜 hf π) (fbar_mem 𝒜 hf π) d (Ideal.Quotient.mk _ a)
+    (HomogeneousIdeal.mk_mem_quotientGrading ha'), ?_⟩
+  rw [theta_mk1_mk 𝒜 hf π d a ha']
+  rfl
+
+theorem theta_injective : Function.Injective (theta 𝒜 hf π) := by
+  refine (injective_iff_map_eq_zero _).mpr ?_
+  intro z hz
+  obtain ⟨d, x, hx, rfl⟩ :=
+    HomogeneousLocalization.Away.mk_surjective (qgr 𝒜 hf π) (fbar_mem 𝒜 hf π) z
+  have hx' : x ∈ qgr 𝒜 hf π d := by simpa using hx
+  obtain ⟨a, ha, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hx'
+  have hz' : π (mk1 𝒜 hf d a ha) = 0 := by
+    rw [← theta_mk1_mk 𝒜 hf π d a ha]
+    exact hz
+  have hker : a ∈ (kerIdeal 𝒜 hf π).toIdeal := mem_ker_bigPhi_of_mem 𝒜 hf π ha hz'
+  have : Ideal.Quotient.mk (kerIdeal 𝒜 hf π).toIdeal a = 0 :=
+    Ideal.Quotient.eq_zero_iff_mem.mpr hker
+  rw [HomogeneousLocalization.ext_iff_val, HomogeneousLocalization.Away.val_mk, this,
+    HomogeneousLocalization.val_zero, Localization.mk_zero]
+
+theorem fromZero_eq_mk1 (r : K) :
+    (HomogeneousLocalization.fromZeroRingHom 𝒜 (Submonoid.powers f))
+        (algebraMap K ↥(𝒜 0) r)
+      = mk1 𝒜 hf 0 (algebraMap K A r) (SetLike.algebraMap_mem_graded 𝒜 r) := by
+  rw [HomogeneousLocalization.ext_iff_val]
+  simp [HomogeneousLocalization.fromZeroRingHom, mk1, HomogeneousLocalization.Away.mk,
+    Algebra.algebraMap_eq_smul_one]
+
+variable [Algebra.FiniteType ↥(𝒜 0) A] [Module.Finite K ↥(𝒜 0)]
+
+omit [Algebra.FiniteType ↥(𝒜 0) A] in
+theorem finite_qgr_zero : Module.Finite K ↥(qgr 𝒜 hf π 0) := by
+  refine Module.Finite.iff_fg.mpr ?_
+  exact Submodule.FG.map _ (Module.Finite.iff_fg.mp inferInstance)
+
+theorem finiteType_qgr : Algebra.FiniteType ↥(qgr 𝒜 hf π 0) (Quo 𝒜 hf π) := by
+  haveI hT : IsScalarTower K ↥(𝒜 0) A := by
+    constructor
+    intro x y z
+    show ((x • y : ↥(𝒜 0)) : A) * z = x • ((y : A) * z)
+    rw [Submodule.coe_smul, smul_mul_assoc]
+  haveI : Algebra.FiniteType K A :=
+    Algebra.FiniteType.trans (Module.Finite.finiteType ↥(𝒜 0)) inferInstance
+  haveI : IsScalarTower K ↥(qgr 𝒜 hf π 0) (Quo 𝒜 hf π) := by
+    constructor
+    intro x y z
+    show ((x • y : ↥(qgr 𝒜 hf π 0)) : Quo 𝒜 hf π) * z = x • ((y : Quo 𝒜 hf π) * z)
+    rw [Submodule.coe_smul, smul_mul_assoc]
+  exact Algebra.FiniteType.of_restrictScalars_finiteType (R := K) _ _
+
+/-- **The descended chart.** -/
+theorem nonempty_projChart_aux (hπ : Function.Surjective π)
+    (bK : CommRingCat.of.{u} K ⟶ CommRingCat.of.{u} B)
+    (hbK : ∀ r : K, bK.hom r
+      = π (mk1 𝒜 hf 0 (algebraMap K A r) (SetLike.algebraMap_mem_graded 𝒜 r))) :
+    Nonempty (ProjChart K (CommRingCat.of B) bK) := by
+  haveI := finite_qgr_zero 𝒜 hf π
+  haveI := finiteType_qgr 𝒜 hf π
+  refine ⟨{ A := Quo 𝒜 hf π
+            grading := qgr 𝒜 hf π
+            f := fbar 𝒜 hf π
+            f_deg := fbar_mem 𝒜 hf π
+            awayIso := (RingEquiv.ofBijective (theta 𝒜 hf π)
+              ⟨theta_injective 𝒜 hf π, theta_surjective 𝒜 hf π hπ⟩).toCommRingCatIso
+            compat := ?_ }⟩
+  refine CommRingCat.hom_ext (RingHom.ext fun r => ?_)
+  show theta 𝒜 hf π ((HomogeneousLocalization.fromZeroRingHom (qgr 𝒜 hf π)
+    (Submonoid.powers (fbar 𝒜 hf π))) (algebraMap K ↥(qgr 𝒜 hf π 0) r)) = bK.hom r
+  rw [fromZero_eq_mk1 (qgr 𝒜 hf π) (fbar_mem 𝒜 hf π) r, hbK r]
+  have halg : (algebraMap K (Quo 𝒜 hf π)) r
+      = Ideal.Quotient.mk (kerIdeal 𝒜 hf π).toIdeal (algebraMap K A r) := rfl
+  rw [theta_mk1]
+  rw [halg, evbar_mk, ev_of_mem 𝒜 hf π (SetLike.algebraMap_mem_graded 𝒜 r)]
+
+end ProjChartDescent
+
+end ProjChartDescent
+
+/-- **Projective closure: a chart descends along a surjection** (PROVEN 2026-07-30, by the
+IMAGE route recorded below rather than the saturated-ideal route).
+
+The construction is in `section ProjChartDescent` above: with `π := q ∘ C.awayIso` a surjection
+out of `(A'_{f'})₀`, the graded map `Φ : A' → B[t]`, `a ∈ 𝒜'_d ↦ π (a / f'^d) · t^d`, is
+assembled from its degreewise pieces by `DirectSum.toSemiring`; `I := ker Φ` is homogeneous
+because `Φ` lands in degree `d` on `𝒜'_d` and the monomials `t^d` are independent; and
+`A := A' ⧸ I` graded by `HomogeneousIdeal.quotientGrading` has `(A_{f̄})₀ ≅ B`, the comparison
+map being `Localization.awayLift` of the descent of `Polynomial.eval 1 ∘ Φ`.  Surjectivity of
+that comparison is surjectivity of `π`; its injectivity is the definition of `I`.  The
+finiteness obligations are inherited: `𝒜₀ = 𝒜'₀ ⧸ I₀` is an image of a finite `K`-module, and
+`A` is of finite type over `K` hence over `𝒜₀`.
+
+The degenerate case `B = 0` is handled uniformly, as predicted: then `π = 0`, `I = A'`,
+`A = 0` and `𝒜₀ = 0`, which is finite over `K` and not `≅ K` — which is exactly why
+`ProjChart` asks only for `Module.Finite K 𝒜₀`.
+
+The original plan, kept for the record:
 
 Given a chart `(A', 𝒜', f')` for `B'` and a surjection `q : B' ↠ B`, the coordinate ring of the
 projective closure is `A' ⧸ I` where `I` is the homogeneous vanishing ideal of `Spec B` inside
