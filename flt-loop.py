@@ -23,6 +23,8 @@ import pathlib
 import re
 import shlex
 import socket
+import tempfile
+import shutil
 import subprocess
 import traceback
 import urllib.request
@@ -850,6 +852,15 @@ def do_spawn(s, name, j):
     # spawn path. Every job record reaching here has been through save() at
     # least once, so this is the normal case, not the corner one.
     j["session"] = j.get("session") or str(uuid.uuid4())
+    # The commit this job STARTED on, captured once. Row 22 resets to it when a
+    # job is thrown away: `main` moves while an agent works, so resetting to
+    # main would hand the replacement a different tree than the one its prompt
+    # was written against. Read locally -- $HOME is shared, and the worktree
+    # source lives there even though .lake does not.
+    if not j.get("base"):
+        r = subprocess.run(["git", "-C", str(wt), "rev-parse", "HEAD"],
+                           capture_output=True, text=True)
+        j["base"] = (r.stdout or "").strip() or None
     # ...and a session that ALREADY EXISTS on disk can only be resumed:
     # `--session-id <existing>` is an error, so the flag alone is not a safe
     # basis for the choice. It went wrong exactly once and it mattered: the
@@ -893,6 +904,106 @@ def do_spawn(s, name, j):
     return (host, None, None)
 
 
+GRAVEYARD_DIR = pathlib.Path.home() / "flt-graveyard"
+
+
+def do_graveyard(name, j):
+    """Archive everything about a wedged job, then reset its worktree.
+
+    "Throw the work away" has to stay recoverable, because the thing being
+    discarded is a real agent's real output and the reason for discarding it is
+    a guess about randomness. Everything goes into one tarball: the worktree,
+    the job record, the prompt, every job log the token ever wrote, and the
+    session transcript.
+
+    Two things are deliberately NOT archived and NOT deleted. `.lake` is a
+    symlink into machine-local /scratch holding gigabytes of oleans -- tar
+    stores the link, not the target, which is what we want. And `git clean`
+    runs WITHOUT -x, so ignored paths (.lake, .report-server, listed in
+    .git/info/exclude) survive; -x here would delete a worktree's whole build
+    and cost an hour of rebuilding for no reason.
+    """
+    ts = time.strftime("%Y%m%dT%H%M%S")
+    GRAVEYARD_DIR.mkdir(parents=True, exist_ok=True)
+    wt = pathlib.Path.home() / j["worktree"]
+    tomb = GRAVEYARD_DIR / ("%s-%s-%s.tar.gz" % (name, ts, j["token"]))
+
+    # The base commit. Recorded at first spawn -- but records created before
+    # that field existed have none, so fall back to where the branch left
+    # main's history, which IS the commit it was dispatched at.
+    base = j.get("base")
+    if not base:
+        r = subprocess.run(["git", "-C", str(wt), "merge-base", "HEAD", "main"],
+                           capture_output=True, text=True)
+        base = (r.stdout or "").strip()
+        j["base"] = base or None
+
+    # Stage the loop-side artifacts beside the worktree in the tarball.
+    stage = pathlib.Path(tempfile.mkdtemp(prefix="tomb-"))
+    try:
+        meta = stage / "loop-state"
+        meta.mkdir()
+        for f in (STATE / "jobs").glob(name + ".*"):
+            try:
+                shutil.copy2(f, meta / f.name)
+            except OSError:
+                pass
+        logs = meta / "joblogs"
+        logs.mkdir()
+        for t in [j["token"]] + (j.get("prev_tokens") or []):
+            for f in (STATE / "joblogs").glob("%s-%s.log*" % (name, t)):
+                try:
+                    shutil.copy2(f, logs / f.name)
+                except OSError:
+                    pass
+        if j.get("session"):
+            proj = str(wt).replace("/", "-").replace(".", "-")
+            tr = (pathlib.Path.home() / ".claude" / "projects" / proj
+                  / (j["session"] + ".jsonl"))
+            if tr.exists():
+                try:
+                    shutil.copy2(tr, meta / tr.name)
+                except OSError:
+                    pass
+        wr(meta / "why.txt",
+           "%s\nretries=%s base=%s host=%s session=%s\n"
+           "Exceeded the resume cap; work discarded and the task restarted "
+           "from scratch in the same worktree at the same base commit.\n"
+           % (ts, j.get("retries"), base, j.get("host"), j.get("session")))
+        subprocess.run(
+            ["tar", "czf", str(tomb),
+             "-C", str(wt.parent), "--exclude=.lake", "--exclude=.report-server",
+             wt.name, "-C", str(stage), "loop-state"],
+            capture_output=True, text=True, timeout=900)
+    except Exception as e:
+        notify("flt-loop: graveyard archive FAILED",
+               "%s: %r -- NOT resetting its worktree, since the work would be "
+               "lost unrecoverably." % (name, e))
+        return "ARCHIVE FAILED -- worktree left untouched"
+    finally:
+        shutil.rmtree(stage, ignore_errors=True)
+
+    # Only now is it safe to destroy anything.
+    if base:
+        subprocess.run(["git", "-C", str(wt), "reset", "--hard", base],
+                       capture_output=True, text=True, timeout=300)
+    # Plain -fd: the .lake symlink goes with everything else, and that is fine
+    # (Deyao, 2026-07-31 -- "the .lake file does not need to be saved"). Agents
+    # own their own .lake and the prompt already tells them the artifacts may
+    # need rebuilding, so preserving a pointer into machine-local /scratch is
+    # not this row's job. A clean slate means a clean slate.
+    subprocess.run(["git", "-C", str(wt), "clean", "-fd"],
+                   capture_output=True, text=True, timeout=300)
+    if j.get("session"):
+        proj = str(wt).replace("/", "-").replace(".", "-")
+        rm(pathlib.Path.home() / ".claude" / "projects" / proj
+           / (j["session"] + ".jsonl"))
+    for f in (STATE / "joblogs").glob(name + "-*.log"):
+        rm(f)
+    return str(tomb)
+
+
+flt_loop_rows.GRAVEYARD = do_graveyard
 flt_loop_rows.SPAWN = do_spawn
 flt_loop_rows.PROBE = send_probe
 flt_loop_rows.CONSUME_REFUSAL = consume_refusal
@@ -1124,7 +1235,8 @@ def save(s):
         # exactly the churn the grace period exists to stop.
         rec = {k: j.get(k) for k in ("kind", "worktree", "payload", "token",
                                      "retries", "host", "pid", "session", "resume",
-                                     "spawned_at", "model", "inbox", "resume", "prev_tokens")}
+                                     "spawned_at", "model", "inbox", "resume", "prev_tokens",
+                                     "base")}
         wr(STATE / "jobs" / (n + ".json"), json.dumps(rec, indent=1))
         # BOTH values, not just the true one. `started` is a marker FILE, and
         # a save that can only ever create it cannot express "un-started" -- so
