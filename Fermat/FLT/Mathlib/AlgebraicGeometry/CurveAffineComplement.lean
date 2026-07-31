@@ -49,10 +49,20 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
 * `exists_notIsIntegralElem_section_compl_singleton` — **sorry leaf, RIEMANN–ROCH**, and after
   the 2026-07-31 cut this is all Riemann–Roch is asked for: ONE element of `Γ(X, X ∖ {z})` not
   integral over `K`.  No morphism, no `𝔸¹`, no quasi-finiteness.
-* `locallyQuasiFinite_of_notIsIntegralElem_coordOf` — **sorry leaf**: a nonconstant section
-  classifies a QUASI-FINITE morphism.  Commutative algebra of a one-dimensional finite-type
-  domain; no Riemann–Roch, no genus, no divisor, and no puncture — it is stated at a general
-  open.  Independent of the leaf above and meant for a different owner.
+* `coordHom_apply_eq_eval₂`, `base_genericPoint_asIdeal_eq_bot`,
+  `finite_of_isClosed_of_forall_isClosed_singleton` — **PROVEN 2026-07-31, no sorry**.  The
+  middle one is the CONVERSE of the pole argument's MOVE 3: a nonconstant section sends the
+  generic point of `U` to the generic point of `𝔸¹_K`.  The last is pure topology (a closed set
+  of closed points in a noetherian scheme is finite).
+* `isClosed_singleton_of_ne_genericPoint` — **sorry leaf**: on a smooth curve, every point other
+  than the generic one is CLOSED.  Dimension one, stated topologically; no morphism to `𝔸¹`, no
+  polynomial, no quasi-finiteness.  It arguably belongs in `CurveExtension.lean`.
+* `locallyQuasiFinite_of_notIsIntegralElem_coordOf` — **PROVEN 2026-07-31** over that one leaf: a
+  nonconstant section classifies a QUASI-FINITE morphism.  Two cases, and neither is
+  Riemann–Roch: over the generic point of `𝔸¹_K` the fibre is the generic point of `U` alone
+  (`Scheme.Hom.closePoints_subset_preimage_closedPoints`, `Spec K[T]` being Jacobson, plus the
+  fact that `(0)` is not a closed point); over a closed point the fibre is closed and misses the
+  generic point, hence finite.
 * `exists_locallyQuasiFinite_toAffineLine_compl_singleton` — **PROVEN 2026-07-31** over those
   two, in four lines: a nonconstant regular function on `X ∖ {z}`, packaged as a quasi-finite
   `K`-morphism.
@@ -237,6 +247,22 @@ noncomputable def affineLineOver (K : Type u) [Field K] :
     Spec (CommRingCat.of (Polynomial K)) ⟶ Spec (CommRingCat.of K) :=
   Spec.map (CommRingCat.ofHom (algebraMap K (Polynomial K)))
 
+/-- **The affine line is of finite type over its base field** (PROVEN 2026-07-30).
+
+`K[T]` is generated as a `K`-algebra by `T` (`Polynomial.adjoin_X`), which is exactly
+`RingHom.FiniteType (algebraMap K K[T])`; `LocallyOfFiniteType` is a
+`HasRingHomProperty` for that, so `HasRingHomProperty.Spec_iff` transports it.
+
+This is the side condition of the right-cancellation
+`locallyOfFiniteType_of_comp`, and it is the only reason
+`isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` can get
+`LocallyOfFiniteType g` out of its `hover` clause. -/
+theorem locallyOfFiniteType_affineLineOver (K : Type u) [Field K] :
+    LocallyOfFiniteType (affineLineOver K) := by
+  rw [affineLineOver, HasRingHomProperty.Spec_iff (P := @LocallyOfFiniteType)]
+  exact RingHom.finiteType_algebraMap.mpr
+    ⟨⟨{Polynomial.X}, by simp [Polynomial.adjoin_X (R := K)]⟩⟩
+
 /-- **The regular function on `U` that a morphism `U ⟶ 𝔸¹_K` classifies**: the pull-back of the
 coordinate `T`.
 
@@ -263,6 +289,67 @@ noncomputable def structHom {K : Type u} [Field K] {X : Scheme.{u}}
     CommRingCat.of K ⟶ X.presheaf.obj (Opposite.op U) :=
   (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strX.appTop ≫
     X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op
+
+/-- **The restriction `Γ(X, ⊤) ⟶ Γ(X, U)` is `ι.appTop` followed by `topIso`**
+(PROVEN 2026-07-31, no sorry).
+
+This is `ι_appLE_top_eq_topIso_inv` and `appLE_top_top_eq_appTop` below, glued by
+`Scheme.Hom.map_appLE`; their proofs are repeated inline rather than reused because those two
+lemmas are declared *after* the sub-sub-leaf this one serves, and the leaf must precede its own
+consumer. -/
+theorem res_top_eq_appTop_topIso {X : Scheme.{u}} (U : X.Opens) :
+    X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op =
+      (Scheme.Opens.ι U).appTop ≫ (Scheme.Opens.topIso U).hom := by
+  have h1 : (Scheme.Opens.ι U).appLE U ⊤ (by simp) = (Scheme.Opens.topIso U).inv := by
+    rw [Scheme.Opens.ι_appLE, Scheme.Opens.topIso]
+    simp only [Functor.mapIso_inv, Iso.op_inv, eqToIso.inv]
+    congr 1
+  have h2 : ∀ {Y Z : Scheme.{u}} (f : Y ⟶ Z) e, f.appLE ⊤ ⊤ e = f.appTop := by
+    intro Y Z f e; simp [Scheme.Hom.appLE, Scheme.Hom.appTop]
+  have key : X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op ≫ (Scheme.Opens.topIso U).inv
+      = (Scheme.Opens.ι U).appTop := by
+    rw [← h1, Scheme.Hom.map_appLE, h2]
+  rw [← key, Category.assoc, Iso.inv_hom_id, Category.comp_id]
+
+/-- **The classifying ring map `K[T] ⟶ Γ(X, U)` of a morphism `U ⟶ 𝔸¹_K`** — `coordOf` is its
+value at `T`, and this packaging is what lets a POLYNOMIAL identity be pushed through it. -/
+noncomputable def coordHom {K : Type u} [Field K] {X : Scheme.{u}} (U : X.Opens)
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K))) :
+    CommRingCat.of (Polynomial K) ⟶ X.presheaf.obj (Opposite.op U) :=
+  (Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv ≫ g.appTop ≫
+    (Scheme.Opens.topIso U).hom
+
+/-- **`coordHom` sends `T` to `coordOf`** (PROVEN, `rfl`). -/
+theorem coordHom_apply_X {K : Type u} [Field K] {X : Scheme.{u}} (U : X.Opens)
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K))) :
+    (coordHom U g).hom Polynomial.X = coordOf U g := rfl
+
+/-- **`coordHom` is `K`-linear, for the `K`-algebra structure `strX` gives `Γ(X, U)`**
+(PROVEN 2026-07-31, no sorry) — and this is the ONLY place `hover` is consumed in the
+extension argument.
+
+Read on the constants of `K[T]`, the triangle `hover` says exactly that the two ways of
+turning a scalar into a section of `Γ(X, U)` — through `𝔸¹_K` and through `Spec K` — agree.
+Without it `g` is a morphism of schemes over `ℤ` and its restriction `K → Γ(X, U)` need not be
+the structure map at all; see `affineLineOver`. -/
+theorem coordHom_comp_C {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) (U : X.Opens)
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
+    (hover : g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX) :
+    CommRingCat.ofHom (Polynomial.C : K →+* Polynomial K) ≫ coordHom U g =
+      structHom strX U := by
+  have h := congrArg (fun m : U.toScheme ⟶ Spec (CommRingCat.of K) => m.appTop) hover
+  simp only [Scheme.Hom.comp_appTop, affineLineOver] at h
+  rw [structHom, ← Category.assoc]
+  have hC : (CommRingCat.ofHom (Polynomial.C : K →+* Polynomial K)) =
+      CommRingCat.ofHom (algebraMap K (Polynomial K)) := by
+    rw [Polynomial.algebraMap_eq]
+  rw [hC, coordHom, ← Category.assoc, Scheme.ΓSpecIso_inv_naturality,
+    res_top_eq_appTop_topIso U]
+  simp only [Category.assoc]
+  rw [← Category.assoc
+      ((Spec.map (CommRingCat.ofHom (algebraMap K (Polynomial K)))).appTop) g.appTop,
+    h, Category.assoc]
 
 /-- **EVERY SECTION CLASSIFIES A `K`-MORPHISM TO `𝔸¹_K`** (PROVEN 2026-07-31, no sorry).
 
@@ -353,6 +440,117 @@ theorem exists_notIsIntegralElem_section_compl_singleton
       ¬ (structHom strX (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens)).hom.IsIntegralElem f :=
   sorry
 
+/-- **`coordHom` IS `eval₂` AGAINST `structHom` AND `coordOf`** (PROVEN 2026-07-31, no sorry).
+
+A ring map out of `K[T]` is determined by what it does to `K` and to `T` (`Polynomial.ringHom_ext`),
+and `coordHom_comp_C`/`coordHom_apply_X` say what those are.  So a polynomial identity satisfied by
+`coordOf U g` transports to the kernel of `coordHom U g` and back. -/
+theorem coordHom_apply_eq_eval₂ {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) (U : X.Opens)
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
+    (hover : g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX) (p : Polynomial K) :
+    (coordHom U g).hom p =
+      Polynomial.eval₂ (structHom strX U).hom (coordOf U g) p := by
+  have hsplit : (coordHom U g).hom = Polynomial.eval₂RingHom
+      ((coordHom U g).hom.comp (Polynomial.C : K →+* Polynomial K))
+      ((coordHom U g).hom Polynomial.X) :=
+    Polynomial.ringHom_ext (fun a => by simp) (by simp)
+  have hcc : (coordHom U g).hom.comp (Polynomial.C : K →+* Polynomial K) =
+      (structHom strX U).hom :=
+    congrArg CommRingCat.Hom.hom (coordHom_comp_C strX U g hover)
+  conv_lhs => rw [hsplit]
+  show Polynomial.eval₂ _ _ p = _
+  rw [hcc, coordHom_apply_X]
+
+/-- **A NONCONSTANT SECTION SENDS THE GENERIC POINT TO THE GENERIC POINT OF `𝔸¹_K`**
+(PROVEN 2026-07-31, no sorry) — the exact CONVERSE of MOVE 3 of
+`false_of_res_eq_coordOf_of_locallyQuasiFinite` far below, and proven off the same
+`basicOpen`/`PrimeSpectrum.mem_basicOpen` chain.
+
+If a polynomial `p` lay in the prime `g(η)` then `T`'s pull-back would be a non-unit in the stalk
+at `η`; that stalk is the FUNCTION FIELD, so a non-unit there is `0`, and germs are injective on
+an integral scheme, so `p` would already vanish in `Γ(X, U)`.  Over a field the leading
+coefficient can be inverted, so a nonzero such `p` would exhibit `coordOf U g` as integral over
+`K` — which is exactly what `htr` forbids. -/
+theorem base_genericPoint_asIdeal_eq_bot {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) (U : X.Opens) [IsIntegral U.toScheme]
+    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
+    (hover : g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX)
+    (htr : ¬ (structHom strX U).hom.IsIntegralElem (coordOf U g)) :
+    (g.base (genericPoint U.toScheme)).asIdeal = ⊥ := by
+  refine (Submodule.eq_bot_iff _).mpr fun p hp => ?_
+  by_contra hpne
+  have hnm : genericPoint U.toScheme ∉ (U.toScheme).basicOpen
+      (g.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p)) := by
+    rw [← Scheme.preimage_basicOpen_top, basicOpen_eq_of_affine]
+    exact fun h => (PrimeSpectrum.mem_basicOpen p _).mp h hp
+  rw [Scheme.mem_basicOpen_top] at hnm
+  have hzero : g.appTop.hom
+      ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p) = 0 := by
+    refine germ_injective_of_isIntegral U.toScheme (U := (⊤ : (U.toScheme).Opens))
+      (genericPoint U.toScheme) trivial ?_
+    rw [map_zero]
+    exact not_not.mp fun _ => hnm (isUnit_iff_ne_zero.mpr (by simpa using ‹_›))
+  have hco : (coordHom U g).hom p = 0 := by
+    have hexp : (coordHom U g).hom p = (Scheme.Opens.topIso U).hom.hom
+        (g.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv.hom p)) := rfl
+    rw [hexp, hzero, map_zero]
+  rw [coordHom_apply_eq_eval₂ strX U g hover] at hco
+  refine htr ⟨p * Polynomial.C (p.leadingCoeff)⁻¹,
+    Polynomial.monic_mul_leadingCoeff_inv hpne, ?_⟩
+  rw [Polynomial.eval₂_mul, hco, zero_mul]
+
+/-- **EVERY POINT OF A SMOOTH CURVE OTHER THAN THE GENERIC POINT IS CLOSED** (sorry leaf, cut
+2026-07-31 out of `locallyQuasiFinite_of_notIsIntegralElem_coordOf` just below, which is now
+PROVEN over it and is the whole of what that leaf still needed).
+
+This is DIMENSION ONE, stated topologically, and it mentions no morphism to `𝔸¹`, no polynomial
+and no quasi-finiteness.  It arguably belongs in `CurveExtension.lean` beside the other
+dimension facts; it is here only because that is where its consumer is.
+
+TRUE.  Suppose `x` is neither generic nor closed.  Then `closure {x} ⊋ {x}`, so there is
+`w ≠ x` with `x ⤳ w`, and `η ⤳ x ⤳ w` is a chain of THREE distinct points (`η ≠ w`, since
+`η ⤳ w` and `w ⤳ ... ` would force `η = x` by `T0`).  Generizations of `w` are exactly the range
+of `Spec 𝒪_{X,w} ⟶ X` (`Scheme.range_fromSpecStalk`), and that map is injective and reflects
+specialization, so `Spec 𝒪_{X,w}` carries a strict chain of three primes — i.e.
+`ringKrullDim 𝒪_{X,w} ≥ 2`.  That contradicts
+`ringKrullDim_stalk_le_of_smoothOfRelativeDimension` (`CurveExtension.lean`), which gives `≤ 1`
+for `SmoothOfRelativeDimension 1`.
+
+**WHAT THE PROVER SHOULD CHECK FIRST**: whether the pin already has "a scheme of Krull dimension
+≤ 1 is `T1` away from the generic point" in some form, and what the cleanest way is to turn a
+three-term specialization chain into `2 ≤ Order.krullDim (PrimeSpectrum R)` — `Order.LTSeries`
+and `Order.LTSeries.length_le_krullDim` are the intended tools, with the chain built from
+`Scheme.range_fromSpecStalk` plus injectivity of `Scheme.fromSpecStalk`.
+
+**`SmoothOfRelativeDimension 1` IS LOAD-BEARING and the statement is FALSE without it**: on a
+smooth SURFACE the generic point of a curve on it is neither generic nor closed.
+
+**`IsIntegral X` IS LOAD-BEARING for the statement to be about anything** — without
+irreducibility there is no `genericPoint X` to except. -/
+theorem isClosed_singleton_of_ne_genericPoint {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [SmoothOfRelativeDimension 1 strX] [IsIntegral X]
+    {x : X} (hx : x ≠ genericPoint X) : IsClosed ({x} : Set X) :=
+  sorry
+
+/-- **A CLOSED SET OF CLOSED POINTS IN A NOETHERIAN SCHEME IS FINITE** (PROVEN 2026-07-31, no
+sorry) — pure topology.
+
+A noetherian space writes every closed set as a FINITE union of irreducible closed sets
+(`NoetherianSpace.exists_finite_set_isClosed_irreducible`); a scheme is sober, so each piece is
+the closure of a point of itself; and that point is closed by hypothesis, so each piece is a
+singleton. -/
+theorem finite_of_isClosed_of_forall_isClosed_singleton {W : Scheme.{u}} [NoetherianSpace W]
+    {Z : Set W} (hZ : IsClosed Z) (h : ∀ x ∈ Z, IsClosed ({x} : Set W)) : Z.Finite := by
+  obtain ⟨S, hSf, hSc, hSi, rfl⟩ :=
+    TopologicalSpace.NoetherianSpace.exists_finite_set_isClosed_irreducible hZ
+  refine hSf.sUnion fun t ht => ?_
+  obtain ⟨x, hx⟩ := QuasiSober.sober (hSi t ht) (hSc t ht)
+  have hxt : x ∈ t := hx ▸ subset_closure rfl
+  have ht' : t = {x} := by rw [← hx]; exact (h x (Set.mem_sUnion_of_mem hxt ht)).closure_eq
+  rw [ht']
+  exact Set.finite_singleton x
+
 /-- **A NONCONSTANT SECTION CLASSIFIES A QUASI-FINITE MORPHISM** (sorry leaf, cut 2026-07-31 out
 of `exists_locallyQuasiFinite_toAffineLine_compl_singleton` below).
 
@@ -400,8 +598,74 @@ theorem locallyQuasiFinite_of_notIsIntegralElem_coordOf
     (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
     (hover : g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX)
     (htr : ¬ (structHom strX U).hom.IsIntegralElem (coordOf U g)) :
-    LocallyQuasiFinite g :=
-  sorry
+    LocallyQuasiFinite g := by
+  haveI : IsIntegral X :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hconn
+  haveI : Nonempty ↥(U.toScheme) := inferInstanceAs (Nonempty ↥U)
+  haveI : IsIntegral U.toScheme := isIntegral_of_isOpenImmersion (Scheme.Opens.ι U)
+  haveI := locallyOfFiniteType_affineLineOver K
+  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace strX
+  haveI : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian strX
+  haveI : IsNoetherian X := ⟨⟩
+  haveI : NoetherianSpace U.toScheme := by
+    show NoetherianSpace (U : Set X)
+    infer_instance
+  haveI : LocallyOfFiniteType (g ≫ affineLineOver K) := by rw [hover]; infer_instance
+  haveI : LocallyOfFiniteType g := locallyOfFiniteType_of_comp g (affineLineOver K)
+  haveI : QuasiCompact g := inferInstance
+  -- every point of `U` other than its generic point is closed, transported from `X`
+  have hcl : ∀ x : U.toScheme, x ≠ genericPoint U.toScheme → IsClosed ({x} : Set U.toScheme) := by
+    intro x hxne
+    have hinj : Function.Injective (Scheme.Opens.ι U).base :=
+      (Scheme.Opens.ι U).isOpenEmbedding.injective
+    have hgen : (Scheme.Opens.ι U).base (genericPoint U.toScheme) = genericPoint X :=
+      genericPoint_eq_of_isOpenImmersion (Scheme.Opens.ι U)
+    have hne : (Scheme.Opens.ι U).base x ≠ genericPoint X := by
+      rw [← hgen]; exact fun h => hxne (hinj h)
+    have hclX : IsClosed ({(Scheme.Opens.ι U).base x} : Set X) :=
+      isClosed_singleton_of_ne_genericPoint strX hne
+    have hpre : ({x} : Set U.toScheme)
+        = (Scheme.Opens.ι U).base ⁻¹' {(Scheme.Opens.ι U).base x} := by
+      ext w
+      simp only [Set.mem_singleton_iff, Set.mem_preimage]
+      exact ⟨fun h => by rw [h], fun h => hinj h⟩
+    rw [hpre]
+    exact hclX.preimage (Scheme.Opens.ι U).base.hom.continuous
+  have hbot := base_genericPoint_asIdeal_eq_bot strX U g hover htr
+  rw [locallyQuasiFinite_iff_finite_preimage_singleton]
+  intro y
+  by_cases hy : y = g.base (genericPoint U.toScheme)
+  · -- the fibre over the GENERIC point of `𝔸¹_K` can only be the generic point of `U`, because
+    -- a closed point of `U` maps to a closed point and `(0)` is not closed in `Spec K[T]`.
+    refine Set.Finite.subset (Set.finite_singleton (genericPoint U.toScheme)) ?_
+    intro x hx
+    by_contra hxne
+    have hgx : g.base x = y := hx
+    have hxcl : x ∈ closedPoints U.toScheme := hcl x hxne
+    have hycl : IsClosed ({y} : Set (Spec (CommRingCat.of (Polynomial K)))) := by
+      have h1 := g.closePoints_subset_preimage_closedPoints hxcl
+      rw [← hgx]
+      exact h1
+    have hmax := (PrimeSpectrum.isClosed_singleton_iff_isMaximal y).mp hycl
+    rw [hy, hbot] at hmax
+    have hXne : (Ideal.span {(Polynomial.X : Polynomial K)}) ≠ ⊥ := by
+      rw [Ne, Ideal.span_singleton_eq_bot]
+      exact Polynomial.X_ne_zero
+    have htop : Ideal.span {(Polynomial.X : Polynomial K)} = ⊤ := by
+      by_contra hne
+      exact hXne (hmax.eq_of_le hne bot_le).symm
+    exact Polynomial.not_isUnit_X (Ideal.span_singleton_eq_top.mp htop)
+  · -- otherwise `y` is a CLOSED point, so the fibre is closed and misses the generic point
+    have hyne : y.asIdeal ≠ ⊥ := by
+      intro h
+      exact hy (PrimeSpectrum.ext (by rw [h, hbot]))
+    haveI : y.asIdeal.IsMaximal := _root_.IsPrime.to_maximal_ideal hyne
+    have hycl : IsClosed ({y} : Set (Spec (CommRingCat.of (Polynomial K)))) :=
+      (PrimeSpectrum.isClosed_singleton_iff_isMaximal y).mpr ‹_›
+    refine finite_of_isClosed_of_forall_isClosed_singleton
+      (hycl.preimage g.base.hom.continuous) fun x hx => hcl x ?_
+    intro hxg
+    exact hy (by rw [← hxg]; exact (Set.mem_singleton_iff.mp hx).symm)
 
 /-- **RIEMANN–ROCH: a nonconstant regular function on the punctured curve** (cut 2026-07-28 out
 of `isAffineOpen_compl_singleton_of_isSmoothProperCurve`; **DECOMPOSED and PROVEN over its two
@@ -485,22 +749,6 @@ theorem exists_locallyQuasiFinite_toAffineLine_compl_singleton
   obtain ⟨g, hcoord, hover⟩ := exists_toAffineLine_coordOf_eq strX _ f
   exact ⟨g, locallyQuasiFinite_of_notIsIntegralElem_coordOf strX hconn _ g hover
     (hcoord ▸ hf), hover⟩
-
-/-- **The affine line is of finite type over its base field** (PROVEN 2026-07-30).
-
-`K[T]` is generated as a `K`-algebra by `T` (`Polynomial.adjoin_X`), which is exactly
-`RingHom.FiniteType (algebraMap K K[T])`; `LocallyOfFiniteType` is a
-`HasRingHomProperty` for that, so `HasRingHomProperty.Spec_iff` transports it.
-
-This is the side condition of the right-cancellation
-`locallyOfFiniteType_of_comp`, and it is the only reason
-`isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` can get
-`LocallyOfFiniteType g` out of its `hover` clause. -/
-theorem locallyOfFiniteType_affineLineOver (K : Type u) [Field K] :
-    LocallyOfFiniteType (affineLineOver K) := by
-  rw [affineLineOver, HasRingHomProperty.Spec_iff (P := @LocallyOfFiniteType)]
-  exact RingHom.finiteType_algebraMap.mpr
-    ⟨⟨{Polynomial.X}, by simp [Polynomial.adjoin_X (R := K)]⟩⟩
 
 /-! ### The classifying local homomorphism of a `Spec (local ring)`-point, and its naturality
 
@@ -644,67 +892,6 @@ a universally closed scheme over an affine base are INTEGRAL over it.  So an ext
 `f` is algebraic over `K` outright, `g` classifies a root of a nonzero polynomial, and `g` is
 therefore constant — no fibre dichotomy, no `IsFinite.of_isProper_of_locallyQuasiFinite`, and
 no need to build the morphism `ĝ : X ⟶ 𝔸¹_K` at all (only the SECTION `F` is needed). -/
-
-/-- **The restriction `Γ(X, ⊤) ⟶ Γ(X, U)` is `ι.appTop` followed by `topIso`**
-(PROVEN 2026-07-31, no sorry).
-
-This is `ι_appLE_top_eq_topIso_inv` and `appLE_top_top_eq_appTop` below, glued by
-`Scheme.Hom.map_appLE`; their proofs are repeated inline rather than reused because those two
-lemmas are declared *after* the sub-sub-leaf this one serves, and the leaf must precede its own
-consumer. -/
-theorem res_top_eq_appTop_topIso {X : Scheme.{u}} (U : X.Opens) :
-    X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op =
-      (Scheme.Opens.ι U).appTop ≫ (Scheme.Opens.topIso U).hom := by
-  have h1 : (Scheme.Opens.ι U).appLE U ⊤ (by simp) = (Scheme.Opens.topIso U).inv := by
-    rw [Scheme.Opens.ι_appLE, Scheme.Opens.topIso]
-    simp only [Functor.mapIso_inv, Iso.op_inv, eqToIso.inv]
-    congr 1
-  have h2 : ∀ {Y Z : Scheme.{u}} (f : Y ⟶ Z) e, f.appLE ⊤ ⊤ e = f.appTop := by
-    intro Y Z f e; simp [Scheme.Hom.appLE, Scheme.Hom.appTop]
-  have key : X.presheaf.map (homOfLE (le_top : U ≤ ⊤)).op ≫ (Scheme.Opens.topIso U).inv
-      = (Scheme.Opens.ι U).appTop := by
-    rw [← h1, Scheme.Hom.map_appLE, h2]
-  rw [← key, Category.assoc, Iso.inv_hom_id, Category.comp_id]
-
-/-- **The classifying ring map `K[T] ⟶ Γ(X, U)` of a morphism `U ⟶ 𝔸¹_K`** — `coordOf` is its
-value at `T`, and this packaging is what lets a POLYNOMIAL identity be pushed through it. -/
-noncomputable def coordHom {K : Type u} [Field K] {X : Scheme.{u}} (U : X.Opens)
-    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K))) :
-    CommRingCat.of (Polynomial K) ⟶ X.presheaf.obj (Opposite.op U) :=
-  (Scheme.ΓSpecIso (CommRingCat.of (Polynomial K))).inv ≫ g.appTop ≫
-    (Scheme.Opens.topIso U).hom
-
-/-- **`coordHom` sends `T` to `coordOf`** (PROVEN, `rfl`). -/
-theorem coordHom_apply_X {K : Type u} [Field K] {X : Scheme.{u}} (U : X.Opens)
-    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K))) :
-    (coordHom U g).hom Polynomial.X = coordOf U g := rfl
-
-/-- **`coordHom` is `K`-linear, for the `K`-algebra structure `strX` gives `Γ(X, U)`**
-(PROVEN 2026-07-31, no sorry) — and this is the ONLY place `hover` is consumed in the
-extension argument.
-
-Read on the constants of `K[T]`, the triangle `hover` says exactly that the two ways of
-turning a scalar into a section of `Γ(X, U)` — through `𝔸¹_K` and through `Spec K` — agree.
-Without it `g` is a morphism of schemes over `ℤ` and its restriction `K → Γ(X, U)` need not be
-the structure map at all; see `affineLineOver`. -/
-theorem coordHom_comp_C {K : Type u} [Field K] {X : Scheme.{u}}
-    (strX : X ⟶ Spec (CommRingCat.of K)) (U : X.Opens)
-    (g : U.toScheme ⟶ Spec (CommRingCat.of (Polynomial K)))
-    (hover : g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX) :
-    CommRingCat.ofHom (Polynomial.C : K →+* Polynomial K) ≫ coordHom U g =
-      structHom strX U := by
-  have h := congrArg (fun m : U.toScheme ⟶ Spec (CommRingCat.of K) => m.appTop) hover
-  simp only [Scheme.Hom.comp_appTop, affineLineOver] at h
-  rw [structHom, ← Category.assoc]
-  have hC : (CommRingCat.ofHom (Polynomial.C : K →+* Polynomial K)) =
-      CommRingCat.ofHom (algebraMap K (Polynomial K)) := by
-    rw [Polynomial.algebraMap_eq]
-  rw [hC, coordHom, ← Category.assoc, Scheme.ΓSpecIso_inv_naturality,
-    res_top_eq_appTop_topIso U]
-  simp only [Category.assoc]
-  rw [← Category.assoc
-      ((Spec.map (CommRingCat.ofHom (algebraMap K (Polynomial K)))).appTop) g.appTop,
-    h, Category.assoc]
 
 /-- **Two sections of an INTEGRAL scheme with the same germ at one common point glue**
 (PROVEN 2026-07-31, no sorry).
