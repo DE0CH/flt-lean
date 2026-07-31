@@ -56551,9 +56551,438 @@ theorem exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_not_dvd_ray_class
   have hfinal := hgt.trans_le (hsplit.trans (add_le_add le_rfl htail))
   exact (ENNReal.add_lt_add_iff_right hDne).mp hfinal
 
+/-- **FINITENESS OF THE NARROW RAY CLASSES MOD `mm·∞`, IN THE FORM THE
+PRIME SUMS NEED** (**PROVEN 2026-07-31**): a finite set `T` of primes
+away from `mm` meets every narrow ray class mod `mm·∞` that contains a
+prime.  This is the finiteness of the narrow ray class group of modulus
+`mm·∞` (Lang *ANT* VI §1, Neukirch *ANT* VI §1), packaged as a covering
+of the primes rather than as a quotient type, which is exactly what the
+`ENNReal.tsum_biUnion_le` step of
+`tsum_rpow_neg_natCard_quotient_prime_le_mul_tsum_isNarrowRayEquivMod_add_ray_class`
+below consumes.
+
+REPRESENTATIVES ARE THEMSELVES PRIMES, and that is deliberate, not
+cosmetic: it keeps the statement free of `FractionalIdeal.count`
+bookkeeping (a prime `v ∤ mm` is automatically nonzero and coprime to
+`mm`), and — the point that matters — it avoids any claim that a class
+NOT containing a prime is represented.  Asserting that would be
+Dirichlet's theorem for ray classes, i.e. the very thing this cluster is
+building; here the classifying map is defined ON primes, so no
+circularity can enter.
+
+PROVEN on the template of `Chebotarev.lean`'s
+`exists_finset_forall_isNarrowRayEquiv` (which is written for the single
+modulus `Ideal.span {(ℓ : 𝓞 F)}`, `ℓ` a rational prime), by
+classification into finite data: for each realized ideal class `c` an
+auxiliary `J₀(c)` coprime to `mm` with `w·J₀(c)` principal, a chosen
+generator `δ_w`, and the classifying map
+`w ↦ (cls w, δ_w mod mm, sign vector of δ_w)` into the FINITE type
+`ClassGroup (𝓞 F) × (𝓞 F ⧸ mm) × ((F →+* ℝ) → Prop)`
+(class-group finiteness, `Ideal.finiteQuotientOfFreeOfNeBot` — this is
+where `hmm` is spent — and finiteness of the real embeddings).
+
+**THE ONE STEP THAT IS NOT CHEBOTAREV'S, AND WHY IT IS NEEDED.**
+`IsNarrowRayEquiv` asks only that the two multipliers be congruent to
+EACH OTHER; `IsNarrowRayEquivMod` normalises both at `1`, which is what
+makes it match `exists_prime_narrowRay_fractionalIdeal_ray_class`
+verbatim.  Chebotarev's witness pair `(δ_J², δ_J·δ_I)` therefore does
+not transport — it is congruent, not congruent to `1`.  Normalising at
+`1` looks like it needs an inverse mod `mm` with prescribed signs, i.e.
+an approximation theorem.  It does not: with
+`n := Nat.card (𝓞 F ⧸ mm)ˣ` and `k := 2n − 1`, the pair
+
+    δ₁ := δ_I ^ (k+1) = δ_I ^ (2n),      δ₂ := δ_J · δ_I ^ k
+
+works.  Both are `≡ 1 (mod mm)` — `δ_I^n ≡ 1` because `δ_I` is a unit
+mod `mm` (`pow_card_eq_one'`), hence `δ_I^{2n} − 1 = (δ_I^n−1)(δ_I^n+1)`,
+and `δ_J·δ_I^k − 1 = (δ_I^{k+1} − 1) − (δ_I − δ_J)·δ_I^k`; both are
+totally positive — `δ₁` because `2n` is EVEN and `δ_I ≠ 0`, `δ₂` because
+`k` is ODD and the sign vectors agree, which is exactly the third
+component of the classifying datum; and
+`(δ₂)·w_I = (δ₁)·w_J` follows from `(δ_J)·w_I = (δ_I)·w_J` by
+multiplying by `(δ_I)^k`.  So the exponent does the work that
+approximation would otherwise have to do. -/
+theorem exists_finset_forall_isNarrowRayEquivMod_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥) :
+    ∃ T : Finset (IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers F)),
+      (∀ v ∈ T, ¬ v.asIdeal ∣ mm) ∧
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        ¬ w.asIdeal ∣ mm →
+        ∃ v ∈ T, IsNarrowRayEquivMod mm
+          (v.asIdeal : FractionalIdeal
+            (nonZeroDivisors (NumberField.RingOfIntegers F)) F)
+          (w.asIdeal : FractionalIdeal
+            (nonZeroDivisors (NumberField.RingOfIntegers F)) F) := by
+  classical
+  haveI : Finite (NumberField.RingOfIntegers F ⧸ mm) :=
+    Ideal.finiteQuotientOfFreeOfNeBot _ hmm
+  -- the exponent killing the unit group mod `mm`
+  set n : ℕ := Nat.card (NumberField.RingOfIntegers F ⧸ mm)ˣ with hndef
+  have hn0 : 0 < n := Nat.card_pos
+  -- an element coprime to `mm` has `n`-th power `≡ 1 (mod mm)`
+  have hpow1 : ∀ a : NumberField.RingOfIntegers F,
+      IsCoprime (Ideal.span {a}) mm → a ^ n - 1 ∈ mm := by
+    intro a hcop
+    have h1 : (1 : NumberField.RingOfIntegers F) ∈ Ideal.span {a} ⊔ mm := by
+      rw [Ideal.isCoprime_iff_sup_eq.mp hcop]; exact Submodule.mem_top
+    obtain ⟨y, hy, m, hm, hym⟩ := Submodule.mem_sup.mp h1
+    obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp hy
+    have hunit : (Ideal.Quotient.mk mm a) * (Ideal.Quotient.mk mm c) = 1 := by
+      have h2 : Ideal.Quotient.mk mm (c * a + m) =
+          Ideal.Quotient.mk mm (1 : NumberField.RingOfIntegers F) := by rw [hym]
+      rw [map_add, map_mul, Ideal.Quotient.eq_zero_iff_mem.mpr hm, add_zero, map_one] at h2
+      rw [mul_comm]; exact h2
+    have hu : (⟨Ideal.Quotient.mk mm a, Ideal.Quotient.mk mm c, hunit,
+        by rw [mul_comm]; exact hunit⟩ :
+        (NumberField.RingOfIntegers F ⧸ mm)ˣ) ^ n = 1 := pow_card_eq_one'
+    have h3 : (Ideal.Quotient.mk mm a) ^ n = 1 := by
+      have h4 := congrArg (Units.val) hu
+      simpa using h4
+    rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_pow, h3, map_one, sub_self]
+  -- Chebotarev's auxiliary-ideal lemma, for a general modulus
+  have haux : ∀ I₀ : Ideal (NumberField.RingOfIntegers F), I₀ ≠ 0 → IsCoprime I₀ mm →
+      ∃ (J₀ : Ideal (NumberField.RingOfIntegers F)) (γ₀ : NumberField.RingOfIntegers F),
+        J₀ ≠ 0 ∧ IsCoprime J₀ mm ∧
+        (∀ φ : F →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers F) F γ₀)) ∧
+        Ideal.span {γ₀} = I₀ * J₀ := by
+    intro I₀ h0 hcop
+    obtain ⟨x, hxI, hx1, hx0⟩ : ∃ x : NumberField.RingOfIntegers F,
+        x ∈ I₀ ∧ x - 1 ∈ mm ∧ x ≠ 0 := by
+      have h1 : (1 : NumberField.RingOfIntegers F) ∈ I₀ ⊔ mm := by
+        rw [Ideal.isCoprime_iff_sup_eq.mp hcop]; exact Submodule.mem_top
+      obtain ⟨x, hxI, b, hb, hxb⟩ := Submodule.mem_sup.mp h1
+      by_cases hx : x = 0
+      · -- `b = 1 ∈ mm`, so `mm = ⊤`; any nonzero element of `I₀` will do
+        have hb1 : b = 1 := by rw [hx] at hxb; simpa using hxb
+        have hmtop : mm = ⊤ := (Ideal.eq_top_iff_one _).mpr (hb1 ▸ hb)
+        obtain ⟨y, hyI, hy0⟩ : ∃ y ∈ I₀, y ≠ 0 := by
+          by_contra hcon
+          refine h0 ?_
+          rw [Ideal.zero_eq_bot]
+          refine (Submodule.eq_bot_iff _).mpr fun y hy => ?_
+          by_contra hy0
+          exact hcon ⟨y, hy, hy0⟩
+        exact ⟨y, hyI, by rw [hmtop]; exact Submodule.mem_top, hy0⟩
+      · refine ⟨x, hxI, ?_, hx⟩
+        have h2 : x - 1 = -b := by linear_combination hxb
+        rw [h2]; exact neg_mem hb
+    have hxcop : IsCoprime (Ideal.span {x}) mm := by
+      rw [Ideal.isCoprime_iff_sup_eq, Ideal.eq_top_iff_one,
+        show (1 : NumberField.RingOfIntegers F) = x - (x - 1) by ring]
+      exact Submodule.sub_mem _
+        (Submodule.mem_sup_left (Ideal.mem_span_singleton_self x))
+        (Submodule.mem_sup_right hx1)
+    obtain ⟨J, hJ⟩ := Ideal.dvd_span_singleton.mpr hxI
+    have hJcop : IsCoprime J mm := by
+      have h3 := hxcop
+      rw [hJ] at h3
+      exact h3.of_mul_left_right
+    have hxspan : Ideal.span {x} ≠ (0 : Ideal (NumberField.RingOfIntegers F)) := by
+      rw [Ne, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
+      exact hx0
+    have hJ0 : J ≠ 0 := by
+      rintro rfl
+      rw [mul_zero] at hJ
+      exact hxspan hJ
+    refine ⟨J * Ideal.span {x}, x ^ 2, mul_ne_zero hJ0 hxspan,
+      hJcop.mul_left hxcop, fun φ => ?_, ?_⟩
+    · have h4 : φ (algebraMap (NumberField.RingOfIntegers F) F x) ≠ 0 := by
+        intro h
+        apply hx0
+        apply IsFractionRing.injective (NumberField.RingOfIntegers F) F
+        apply φ.injective
+        rw [h, map_zero, map_zero]
+      rw [map_pow, map_pow]
+      exact (sq_nonneg _).lt_of_ne fun h =>
+        h4 ((pow_eq_zero_iff two_ne_zero).mp h.symm)
+    · rw [pow_two, ← Ideal.span_singleton_mul_span_singleton]
+      nth_rewrite 1 [hJ]
+      rw [mul_assoc]
+  -- a prime away from `mm` is coprime to `mm`
+  have hprimecop : ∀ w : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), ¬ w.asIdeal ∣ mm → IsCoprime w.asIdeal mm := by
+    intro w hw
+    have hmax : w.asIdeal.IsMaximal := w.isPrime.isMaximal w.ne_bot
+    rw [Ideal.isCoprime_iff_sup_eq]
+    refine hmax.out.2 _ (lt_of_le_of_ne le_sup_left ?_)
+    intro h
+    have h2 : mm ≤ w.asIdeal := by rw [h]; exact le_sup_right
+    exact hw (Ideal.dvd_iff_le.mpr h2)
+  -- the subtype of primes away from `mm`, and their ideal classes
+  have hVne0 : ∀ w : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), w.asIdeal ≠ 0 := by
+    intro w
+    rw [Ne, Ideal.zero_eq_bot]
+    exact w.ne_bot
+  set V := {w : IsDedekindDomain.HeightOneSpectrum
+    (NumberField.RingOfIntegers F) // ¬ w.asIdeal ∣ mm} with hVdef
+  let cls : V → ClassGroup (NumberField.RingOfIntegers F) := fun w =>
+    ClassGroup.mk0 ⟨w.1.asIdeal, mem_nonZeroDivisors_of_ne_zero (hVne0 w.1)⟩
+  -- for every realized ideal class, an auxiliary ideal making products principal
+  have hcls : ∀ c : ClassGroup (NumberField.RingOfIntegers F),
+      ∃ (J₀ : Ideal (NumberField.RingOfIntegers F))
+        (γ₀ : NumberField.RingOfIntegers F),
+      (∃ w : V, cls w = c) →
+      (J₀ ≠ 0 ∧ IsCoprime J₀ mm) ∧
+      ∃ A : V, cls A = c ∧ Ideal.span {γ₀} = A.1.asIdeal * J₀ := by
+    intro c
+    by_cases h : ∃ w : V, cls w = c
+    · obtain ⟨w, hw⟩ := h
+      obtain ⟨J₀, γ₀, hJ0, hJcop, -, hspan⟩ :=
+        haux w.1.asIdeal (hVne0 w.1) (hprimecop w.1 w.2)
+      exact ⟨J₀, γ₀, fun _ => ⟨⟨hJ0, hJcop⟩, w, hw, hspan⟩⟩
+    · exact ⟨⊤, 1, fun h' => absurd h' h⟩
+  choose J₀f γ₀f hdataf using hcls
+  -- a chosen generator of `w · J₀(cls w)` for every prime away from `mm`
+  have hδex : ∀ w : V, ∃ δ : NumberField.RingOfIntegers F,
+      Ideal.span {δ} = w.1.asIdeal * J₀f (cls w) := by
+    intro w
+    obtain ⟨⟨hJ0, -⟩, A, hA, hAspan⟩ := hdataf (cls w) ⟨w, rfl⟩
+    have hγ0 : γ₀f (cls w) ≠ 0 := by
+      intro h
+      rw [h] at hAspan
+      have h2 : A.1.asIdeal * J₀f (cls w) = 0 := by
+        rw [← hAspan, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
+      rcases mul_eq_zero.mp h2 with h3 | h3
+      · exact hVne0 A.1 h3
+      · exact hJ0 h3
+    have h4 : ClassGroup.mk0 ⟨A.1.asIdeal, mem_nonZeroDivisors_of_ne_zero (hVne0 A.1)⟩ =
+        (ClassGroup.mk0 ⟨J₀f (cls w), mem_nonZeroDivisors_of_ne_zero hJ0⟩)⁻¹ :=
+      ClassGroup.mk0_eq_mk0_inv_iff.mpr ⟨γ₀f (cls w), hγ0, hAspan.symm⟩
+    have h5 : ClassGroup.mk0 ⟨w.1.asIdeal, mem_nonZeroDivisors_of_ne_zero (hVne0 w.1)⟩ =
+        (ClassGroup.mk0 ⟨J₀f (cls w), mem_nonZeroDivisors_of_ne_zero hJ0⟩)⁻¹ := by
+      rw [show (ClassGroup.mk0 ⟨w.1.asIdeal, mem_nonZeroDivisors_of_ne_zero (hVne0 w.1)⟩ :
+        ClassGroup (NumberField.RingOfIntegers F)) =
+        ClassGroup.mk0 ⟨A.1.asIdeal, mem_nonZeroDivisors_of_ne_zero (hVne0 A.1)⟩ from hA.symm]
+      exact h4
+    obtain ⟨δ, -, hδ⟩ := ClassGroup.mk0_eq_mk0_inv_iff.mp h5
+    exact ⟨δ, hδ.symm⟩
+  choose δf hδf using hδex
+  have hδcop : ∀ w : V, IsCoprime (Ideal.span {δf w}) mm := by
+    intro w
+    obtain ⟨⟨-, hJcop⟩, -⟩ := hdataf (cls w) ⟨w, rfl⟩
+    rw [hδf w]
+    exact (hprimecop w.1 w.2).mul_left hJcop
+  have hδ0 : ∀ w : V, δf w ≠ 0 := by
+    intro w
+    obtain ⟨⟨hJ0, -⟩, -⟩ := hdataf (cls w) ⟨w, rfl⟩
+    intro h
+    have h2 : Ideal.span {δf w} = (0 : Ideal (NumberField.RingOfIntegers F)) := by
+      rw [h, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
+    rw [hδf w] at h2
+    rcases mul_eq_zero.mp h2 with h3 | h3
+    · exact hVne0 w.1 h3
+    · exact hJ0 h3
+  have hδφ : ∀ (w : V) (φ : F →+* ℝ),
+      φ (algebraMap (NumberField.RingOfIntegers F) F (δf w)) ≠ 0 := by
+    intro w φ h
+    apply hδ0 w
+    apply IsFractionRing.injective (NumberField.RingOfIntegers F) F
+    apply φ.injective
+    rw [h, map_zero, map_zero]
+  -- equal classification data implies narrow ray equivalence
+  have key : ∀ I J : V, cls I = cls J →
+      δf I - δf J ∈ mm →
+      (∀ φ : F →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers F) F (δf I)) ↔
+        0 < φ (algebraMap (NumberField.RingOfIntegers F) F (δf J))) →
+      IsNarrowRayEquivMod mm
+        (I.1.asIdeal : FractionalIdeal
+          (nonZeroDivisors (NumberField.RingOfIntegers F)) F)
+        (J.1.asIdeal : FractionalIdeal
+          (nonZeroDivisors (NumberField.RingOfIntegers F)) F) := by
+    intro I J hc hsub hsgn
+    obtain ⟨⟨hJ0, -⟩, -⟩ := hdataf (cls I) ⟨I, rfl⟩
+    have hJspan : Ideal.span {δf J} = J.1.asIdeal * J₀f (cls I) := by
+      rw [hc]; exact hδf J
+    have hbase : Ideal.span {δf J} * I.1.asIdeal = Ideal.span {δf I} * J.1.asIdeal := by
+      refine mul_right_cancel₀ hJ0 ?_
+      calc Ideal.span {δf J} * I.1.asIdeal * J₀f (cls I)
+          = Ideal.span {δf J} * (I.1.asIdeal * J₀f (cls I)) := mul_assoc _ _ _
+        _ = Ideal.span {δf J} * Ideal.span {δf I} := by rw [← hδf I]
+        _ = Ideal.span {δf I} * Ideal.span {δf J} := mul_comm _ _
+        _ = Ideal.span {δf I} * (J.1.asIdeal * J₀f (cls I)) := by rw [← hJspan]
+        _ = Ideal.span {δf I} * J.1.asIdeal * J₀f (cls I) := (mul_assoc _ _ _).symm
+    -- the multipliers, normalised at `1` by an exponent killing `(𝓞/mm)ˣ`
+    set k : ℕ := 2 * n - 1 with hkdef
+    have hk1 : k + 1 = 2 * n := by omega
+    have hkodd : Odd k := ⟨n - 1, by omega⟩
+    have hpowI : δf I ^ n - 1 ∈ mm := hpow1 (δf I) (hδcop I)
+    have h2n : δf I ^ (k + 1) - 1 ∈ mm := by
+      have h5 : δf I ^ (k + 1) - 1 = (δf I ^ n - 1) * (δf I ^ n + 1) := by
+        rw [hk1, two_mul, pow_add]; ring
+      rw [h5]
+      exact Ideal.mul_mem_right _ _ hpowI
+    have hδ2mem : δf J * δf I ^ k - 1 ∈ mm := by
+      have h5 : δf J * δf I ^ k - 1 =
+          (δf I ^ (k + 1) - 1) + (-(δf I - δf J)) * δf I ^ k := by
+        rw [pow_succ]; ring
+      rw [h5]
+      exact add_mem h2n (Ideal.mul_mem_right _ _ (neg_mem hsub))
+    refine ⟨δf I ^ (k + 1), δf J * δf I ^ k, pow_ne_zero _ (hδ0 I),
+      mul_ne_zero (hδ0 J) (pow_ne_zero _ (hδ0 I)), fun φ => ?_, fun φ => ?_,
+      h2n, hδ2mem, ?_⟩
+    · rw [map_pow, map_pow]
+      exact (Even.pow_pos_iff (by rw [hk1]; exact even_two_mul n) (by omega)).mpr (hδφ I φ)
+    · rw [map_mul, map_mul, map_pow, map_pow]
+      rcases lt_or_gt_of_ne (hδφ I φ) with hneg | hpos
+      · have hnJ : φ (algebraMap (NumberField.RingOfIntegers F) F (δf J)) < 0 := by
+          have h6 : ¬ (0 < φ (algebraMap (NumberField.RingOfIntegers F) F (δf J))) :=
+            fun h6 => absurd ((hsgn φ).mpr h6) (not_lt.mpr hneg.le)
+          exact lt_of_le_of_ne (not_lt.mp h6) (hδφ J φ)
+        exact mul_pos_of_neg_of_neg hnJ (hkodd.pow_neg hneg)
+      · exact mul_pos ((hsgn φ).mp hpos) (pow_pos hpos k)
+    · have hprod : Ideal.span {δf J * δf I ^ k} * I.1.asIdeal
+          = Ideal.span {δf I ^ (k + 1)} * J.1.asIdeal := by
+        calc Ideal.span {δf J * δf I ^ k} * I.1.asIdeal
+            = Ideal.span {δf I ^ k} * (Ideal.span {δf J} * I.1.asIdeal) := by
+              rw [← Ideal.span_singleton_mul_span_singleton]; ring
+          _ = Ideal.span {δf I ^ k} * (Ideal.span {δf I} * J.1.asIdeal) := by rw [hbase]
+          _ = Ideal.span {δf I ^ (k + 1)} * J.1.asIdeal := by
+              rw [pow_succ, ← Ideal.span_singleton_mul_span_singleton]; ring
+      rw [← FractionalIdeal.coeIdeal_mul, ← FractionalIdeal.coeIdeal_mul, hprod]
+  -- the classifying map into a finite type, and a section over its range
+  let gmap : V → ClassGroup (NumberField.RingOfIntegers F) ×
+      (NumberField.RingOfIntegers F ⧸ mm) × ((F →+* ℝ) → Prop) := fun w =>
+    (cls w, Ideal.Quotient.mk mm (δf w),
+      fun φ => 0 < φ (algebraMap (NumberField.RingOfIntegers F) F (δf w)))
+  have hfin : (Set.range gmap).Finite := Set.toFinite _
+  have hsec : ∀ t : {t // t ∈ Set.range gmap}, ∃ w : V, gmap w = t.1 :=
+    fun t => t.2
+  choose sec hsec' using hsec
+  refine ⟨hfin.toFinset.attach.image fun t =>
+    (sec ⟨t.1, (hfin.mem_toFinset).mp t.2⟩).1, ?_, ?_⟩
+  · intro v hv
+    rw [Finset.mem_image] at hv
+    obtain ⟨t, -, rfl⟩ := hv
+    exact (sec _).2
+  · intro w hw
+    obtain ⟨t, ht⟩ : ∃ t : {t // t ∈ Set.range gmap},
+        t.1 = gmap ⟨w, hw⟩ :=
+      ⟨⟨gmap ⟨w, hw⟩, Set.mem_range_self _⟩, rfl⟩
+    have hg : gmap (sec t) = gmap ⟨w, hw⟩ := (hsec' t).trans ht
+    simp only [gmap, Prod.mk.injEq] at hg
+    obtain ⟨hc, hq0, hs0⟩ := hg
+    have hq : δf (sec t) - δf ⟨w, hw⟩ ∈ mm :=
+      (Ideal.Quotient.mk_eq_mk_iff_sub_mem _ _).mp hq0
+    have hsg : ∀ φ : F →+* ℝ,
+        0 < φ (algebraMap (NumberField.RingOfIntegers F) F (δf (sec t))) ↔
+        0 < φ (algebraMap (NumberField.RingOfIntegers F) F (δf ⟨w, hw⟩)) :=
+      fun φ => iff_of_eq (congrFun hs0 φ)
+    refine ⟨(sec t).1, ?_, key (sec t) ⟨w, hw⟩ hc hq hsg⟩
+    have hmem' : t.1 ∈ hfin.toFinset := (hfin.mem_toFinset).mpr t.2
+    exact Finset.mem_image.mpr ⟨⟨t.1, hmem'⟩, Finset.mem_attach _ _, rfl⟩
+
+/-- **THE ANALYTIC CORE OF DEURING'S ROUTE FOR THE NARROW RAY CLASS
+GROUP: ONE CLASS DOMINATES ANOTHER UP TO A BOUNDED ERROR** (sorry leaf,
+created 2026-07-31 as the SINGLE remaining sub-leaf of
+`tsum_rpow_neg_natCard_quotient_prime_le_mul_tsum_isNarrowRayEquivMod_add_ray_class`
+just below, which is now PROVEN AS GLUE over it and the PROVEN
+`exists_finset_forall_isNarrowRayEquivMod_ray_class` just above).
+
+For a prime `v ∤ mm` and any nonzero `X` supported away from `mm`, the
+prime sum over the narrow ray class of `v` is at most the prime sum over
+the narrow ray class of `X`, plus an error bounded uniformly in `s > 1`.
+Everything is `ℝ≥0∞`-valued and the comparison is additive, so no
+`ENNReal` subtraction and no summability side conditions occur.
+
+This is the EXACT analogue, for the narrow ray classes of modulus
+`mm·∞`, of `Chebotarev.lean`'s PROVEN pairwise-comparison leaf
+`tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow_le_tsum_add`
+— whose congruence classes are those of `Gal(F(ζ_ℓ)/F)` and whose proof
+is Dirichlet-character orthogonality. **Read that proof first; the shape
+of this one is the same and the ONE input that has no analogue in tree
+is the nonvanishing of `L(1, ψ)` for a nontrivial RAY CLASS character
+`ψ`** (`Chebotarev.lean`'s nonvanishing input
+`exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le`,
+`Chebotarev.lean:10701`, is stated for `DirichletCharacter`s of
+`ZMod ℓ`, not for characters of a ray class group).
+
+**INTENDED PROOF.** With `H := I_F(mm)/P⁺_{F,mm}` (finite — that
+finiteness is exactly what the leaf above establishes, in covering
+form), orthogonality of the characters of `H` gives
+`∑_ψ conj(ψ(c))·L(s, ψ) = h·∑_{w ∈ c} N(w)^{-s} + O(1)` for each class
+`c`; the trivial character contributes the pole of the ray class zeta
+function, identically for `c = [v]` and `c = [X]`, and `L(1, ψ) ≠ 0` for
+`ψ ≠ 1` keeps every other term bounded near `s = 1`. Away from `s = 1`
+the comparison is trivial because both sides are antitone in `s`, so a
+single finite `B` serves all `s > 1`.
+
+**WHAT IS IN TREE TO BUILD ON** (`Chebotarev.lean` is sorry-free):
+`IsNarrowRayEquiv` (`:3033`) with `symm`/`trans`/`mul_mul`, the
+auxiliary totally-positive generator
+`exists_ideal_forall_pos_span_singleton_eq_mul` (`:3134`), the per-class
+Weber count `exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`
+(`:5981`), the ideal Euler product
+`tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum` (`:2295`),
+and the twisted `L`-series bounds
+`exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` (`:10554`).
+Note those are written against the modulus `Ideal.span {(ℓ : 𝓞 F)}` and
+against `IsNarrowRayEquiv` rather than `IsNarrowRayEquivMod`; the
+finiteness half of that generalisation is now DONE and needs no redoing.
+
+**FAITHFULNESS (audited 2026-07-31). TRUE as stated, and `hX0`, `hXco`
+are load-bearing while `hv` is not needed for TRUTH — it is carried
+because the caller has it and it removes the degenerate case.**
+
+* *True*: the route above; each class sum is `(1/h)·log(1/(s−1)) + O(1)`
+  and the higher-degree primes in either class contribute
+  `∑_{deg ≥ 2} N(w)^{-s} ≤ ∑_{deg ≥ 2} N(w)^{-1} = O(1)` for `s > 1`, so
+  including them (which the statement does, on BOTH sides) only shifts
+  `B`.
+* *`hX0 : X ≠ 0`*: at `X = 0` no `w` satisfies `(δ₂)·0 = (δ₁)·w`, so the
+  RIGHT-hand class sum is `0` while the left is the full class sum of a
+  genuine prime, which is unbounded as `s → 1⁺` (the divergence
+  statement `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_not_dvd_ray_class`
+  above, restricted to a class, via the leaf above).
+* *`hXco`*: at a `v₀ ∣ mm` with `count v₀ X ≠ 0` the same collapse
+  occurs — taking `FractionalIdeal.count F v₀` of `(δ₂)·X = (δ₁)·w`
+  gives `count v₀ X = 0`, because `w ≠ v₀` and both `(δᵢ)` are coprime
+  to `mm`.
+* *`hv`*: with `v ∣ mm` the left class is EMPTY by the same count
+  argument, so the statement holds with `B = 0`; the hypothesis costs
+  the prover nothing and spares that case.
+
+**Check that would refute it**: an `mm`, `X`, `v` and a sequence
+`s_i ↓ 1` along which the left sum outruns the right by an unbounded
+amount — equivalently, a narrow ray class of modulus `mm·∞` whose
+Dirichlet density is `0` while another class has positive density. -/
+theorem tsum_rpow_neg_natCard_quotient_isNarrowRayEquivMod_le_tsum_add_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (X : FractionalIdeal
+      (nonZeroDivisors (NumberField.RingOfIntegers F)) F)
+    (hX0 : X ≠ 0)
+    (hXco : ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F),
+      v.asIdeal ∣ mm → FractionalIdeal.count F v X = 0)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hv : ¬ v.asIdeal ∣ mm) :
+    ∃ B : ENNReal, B ≠ ⊤ ∧ ∀ s : ℝ, 1 < s →
+      (∑' w : {w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F) //
+          ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm
+            (v.asIdeal : FractionalIdeal
+              (nonZeroDivisors (NumberField.RingOfIntegers F)) F)
+            (w.asIdeal : FractionalIdeal
+              (nonZeroDivisors (NumberField.RingOfIntegers F)) F)},
+        (Nat.card (NumberField.RingOfIntegers F ⧸
+          (w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s))
+        ≤ (∑' w : {w : IsDedekindDomain.HeightOneSpectrum
+              (NumberField.RingOfIntegers F) //
+            ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm X
+              (w.asIdeal : FractionalIdeal
+                (nonZeroDivisors (NumberField.RingOfIntegers F)) F)},
+          (Nat.card (NumberField.RingOfIntegers F ⧸
+            (w : IsDedekindDomain.HeightOneSpectrum
+              (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)) + B :=
+  sorry
+
 /-- **THE `L`-FUNCTION HALF OF DEURING'S ROUTE FOR THE NARROW RAY CLASS
-GROUP** (sorry node, created 2026-07-29 as the single remaining
-mathematical sub-leaf of
+GROUP** (**PROVEN AS GLUE 2026-07-31**; created 2026-07-29 as the single
+remaining mathematical sub-leaf of
 `exists_prime_narrowRay_fractionalIdeal_ray_class` just below, which is
 now PROVEN AS GLUE over it and the divergence statement
 `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_not_dvd_ray_class`
@@ -56712,8 +57141,122 @@ theorem tsum_rpow_neg_natCard_quotient_prime_le_mul_tsum_isNarrowRayEquivMod_add
                   (nonZeroDivisors (NumberField.RingOfIntegers F)) F)},
             (Nat.card (NumberField.RingOfIntegers F ⧸
               (w : IsDedekindDomain.HeightOneSpectrum
-                (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)) + B :=
-  sorry
+                (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)) + B := by
+  classical
+  obtain ⟨T, hTmem, hcover⟩ :=
+    exists_finset_forall_isNarrowRayEquivMod_ray_class F mm hmm
+  -- one bounded error per class representative; junk `0` off `T`
+  have hB : ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F),
+      ∃ B : ENNReal, B ≠ ⊤ ∧ (v ∈ T → ∀ s : ℝ, 1 < s →
+        (∑' w : {w : IsDedekindDomain.HeightOneSpectrum
+              (NumberField.RingOfIntegers F) //
+            ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm
+              (v.asIdeal : FractionalIdeal
+                (nonZeroDivisors (NumberField.RingOfIntegers F)) F)
+              (w.asIdeal : FractionalIdeal
+                (nonZeroDivisors (NumberField.RingOfIntegers F)) F)},
+          (Nat.card (NumberField.RingOfIntegers F ⧸
+            (w : IsDedekindDomain.HeightOneSpectrum
+              (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s))
+          ≤ (∑' w : {w : IsDedekindDomain.HeightOneSpectrum
+                (NumberField.RingOfIntegers F) //
+              ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm X
+                (w.asIdeal : FractionalIdeal
+                  (nonZeroDivisors (NumberField.RingOfIntegers F)) F)},
+            (Nat.card (NumberField.RingOfIntegers F ⧸
+              (w : IsDedekindDomain.HeightOneSpectrum
+                (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)) + B) := by
+    intro v
+    by_cases hv : v ∈ T
+    · obtain ⟨B, hBne, hBle⟩ :=
+        tsum_rpow_neg_natCard_quotient_isNarrowRayEquivMod_le_tsum_add_ray_class
+          F mm hmm X hX0 hXco v (hTmem v hv)
+      exact ⟨B, hBne, fun _ => hBle⟩
+    · exact ⟨0, by simp, fun h => absurd h hv⟩
+  choose Bf hBfne hBfle using hB
+  refine ⟨T.card, ∑ v ∈ T, Bf v,
+    ENNReal.sum_ne_top.mpr fun v _ => hBfne v, ?_⟩
+  intro s hs
+  have hsub : {P : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F) |
+      (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal)).Prime ∧
+        ¬ P.asIdeal ∣ mm} ⊆
+      ⋃ v ∈ T, {w : IsDedekindDomain.HeightOneSpectrum
+        (NumberField.RingOfIntegers F) |
+        ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm
+          (v.asIdeal : FractionalIdeal
+            (nonZeroDivisors (NumberField.RingOfIntegers F)) F)
+          (w.asIdeal : FractionalIdeal
+            (nonZeroDivisors (NumberField.RingOfIntegers F)) F)} := by
+    rintro P ⟨-, hPmm⟩
+    obtain ⟨v, hvT, hvP⟩ := hcover P hPmm
+    exact Set.mem_biUnion hvT ⟨hPmm, hvP⟩
+  calc (∑' P : {P : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F) //
+        (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal)).Prime ∧
+          ¬ P.asIdeal ∣ mm},
+      (Nat.card (NumberField.RingOfIntegers F ⧸
+        (P : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s))
+      ≤ ∑' P : (⋃ v ∈ T, {w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F) |
+          ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm
+            (v.asIdeal : FractionalIdeal
+              (nonZeroDivisors (NumberField.RingOfIntegers F)) F)
+            (w.asIdeal : FractionalIdeal
+              (nonZeroDivisors (NumberField.RingOfIntegers F)) F)}),
+        (Nat.card (NumberField.RingOfIntegers F ⧸
+          (P : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s) :=
+        ENNReal.tsum_mono_subtype
+          (fun P : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F) =>
+            (Nat.card (NumberField.RingOfIntegers F ⧸ P.asIdeal) : ENNReal) ^ (-s)) hsub
+    _ ≤ ∑ v ∈ T, ∑' w : {w : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F) |
+        ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm
+          (v.asIdeal : FractionalIdeal
+            (nonZeroDivisors (NumberField.RingOfIntegers F)) F)
+          (w.asIdeal : FractionalIdeal
+            (nonZeroDivisors (NumberField.RingOfIntegers F)) F)},
+        (Nat.card (NumberField.RingOfIntegers F ⧸
+          (w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s) :=
+        ENNReal.tsum_biUnion_le
+          (fun w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F) =>
+            (Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) : ENNReal) ^ (-s)) T _
+    _ ≤ ∑ _v ∈ T, ((∑' w : {w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F) //
+          ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm X
+            (w.asIdeal : FractionalIdeal
+              (nonZeroDivisors (NumberField.RingOfIntegers F)) F)},
+        (Nat.card (NumberField.RingOfIntegers F ⧸
+          (w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)) + Bf _v) :=
+        Finset.sum_le_sum fun v hv => hBfle v hv s hs
+    _ = T.card • (∑' w : {w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F) //
+          ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm X
+            (w.asIdeal : FractionalIdeal
+              (nonZeroDivisors (NumberField.RingOfIntegers F)) F)},
+        (Nat.card (NumberField.RingOfIntegers F ⧸
+          (w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)) +
+        ∑ v ∈ T, Bf v := by
+        rw [Finset.sum_add_distrib, Finset.sum_const]
+    _ = (T.card : ENNReal) *
+          (∑' w : {w : IsDedekindDomain.HeightOneSpectrum
+              (NumberField.RingOfIntegers F) //
+            ¬ w.asIdeal ∣ mm ∧ IsNarrowRayEquivMod mm X
+              (w.asIdeal : FractionalIdeal
+                (nonZeroDivisors (NumberField.RingOfIntegers F)) F)},
+          (Nat.card (NumberField.RingOfIntegers F ⧸
+            (w : IsDedekindDomain.HeightOneSpectrum
+              (NumberField.RingOfIntegers F)).asIdeal) : ENNReal) ^ (-s)) +
+          ∑ v ∈ T, Bf v := by
+        rw [nsmul_eq_mul]
 
 /-- **DIRICHLET'S THEOREM FOR THE NARROW RAY CLASS GROUP, IN ITS
 CLASSICAL FRACTIONAL-IDEAL FORM: EVERY CLASS OF `I_F(mm)/P⁺_{F,mm}`

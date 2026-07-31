@@ -1573,6 +1573,36 @@ that whole tree can also just be `rsync`ed over a stale `.lake/build` instead of
 
 This is what let one agent prove two independent leaves in the time of one build.
 
+**AND THE FIRST THING A SCRATCH WILL TELL YOU IS `unknown identifier` — that is
+almost never a missing import** (2026-07-31, cost one cycle). A scratch that
+`public import`s a giant `module` file and names one of its declarations gets
+
+    Unknown identifier `IsNarrowRayEquivMod`
+    ... Lean's `autoImplicit` option causes an unknown identifier to be treated
+    as an implicitly bound variable ...
+
+and the hint points at imports. The real cause is usually an enclosing
+**`namespace` opened near the top of the file and never closed** —
+`ModThree.lean` opens `namespace GaloisRepresentation.IsHardlyRamified` at line
+437 and runs 60 000 lines inside it, so every declaration is
+`GaloisRepresentation.IsHardlyRamified.foo`. The fix is one `open` line.
+
+Two things make this hard to see, and both are worth knowing because they are
+properties of THIS repo rather than of Lean:
+
+* the declaration's own source line is at column 0 with no visible indentation,
+  so nothing near it suggests a namespace;
+* **scanning for the enclosing scope with `grep '^end '` is wrong twice over.**
+  It misses a bare `end` (no trailing space), and — because this project's
+  docstrings are prose — it MATCHES lines like
+  `end of this docstring carries the counterexample`, which are inside `/-- -/`
+  and are not scope delimiters at all. A depth counter built on that grep
+  reported the wrong nesting depth by three.
+
+  The reliable check is to grep `^namespace` alone (there are few) and read the
+  hits, or just ask the compiler: `#check @Some.Namespace.name` in a two-line
+  scratch costs seconds against the built olean.
+
 ## Sorry and have discipline (glue-first, no floating)
 
 - **Glue first.** At any frontier, first replace the bare `sorry` with
