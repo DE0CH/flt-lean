@@ -7544,7 +7544,7 @@ theorem isRegularRing_tensorAlgebraicClosure_of_isInvariant
     IsRegularRing (TensorProduct k (AlgebraicClosure k) R) := by
   haveI : Algebra.IsIntegral k (AlgebraicClosure k) :=
     (AlgebraicClosure.isAlgebraic k).isIntegral
-  exact Fermat.InvariantTensorRegular.isRegularRing_tensorProduct_of_isInvariant
+  exact _root_.Fermat.InvariantTensorRegular.isRegularRing_tensorProduct_of_isInvariant
     k (AlgebraicClosure k) R S G hinj hdim
 
 /-- **The coarse ring `B = A^G` is FORMALLY SMOOTH over `K`** (**PROVEN

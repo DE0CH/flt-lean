@@ -6740,6 +6740,20 @@ earlier incarnation's result is still its result. But `grep -n prev_tokens flt-l
 finds exactly **two** occurrences — the read at 877 and the field-copy at 1033. **Nothing
 ever writes it.** It is always `None`.
 
+**CORRECTED 2026-07-31 (`flt-lean-325`), measured rather than grepped: `prev_tokens` IS
+populated.** That worktree's `jobs/flt-lean-325.json` read
+`token = 9b53d9c6`, `prev_tokens = ['c409d64f', 'b4e2c3b0']`, `resume = true` — and
+`c409d64f` was exactly the token printed in the prompt, i.e. the fallback path really does
+cover the stale-prompt case on that job. So the failure this section describes is REAL in
+shape and is **not guaranteed** to fire; a sentinel written from a stale prompt token may
+be accepted after all. Do not let that soften the rule: `prev_tokens` is a fallback whose
+population you cannot check without reading the file, and reading the file is the whole of
+the recommended procedure anyway. **Read `token` from the job record and write that** — it
+is correct whether or not the fallback exists, and it costs one command. The grep that
+produced the "always `None`" claim was reading the wrong writer; treat a claim about
+`flt-loop.py`'s behaviour derived from grepping it as a hypothesis, exactly like every
+other absence claim in this file.
+
 Meanwhile resume mints a NEW token, deliberately, so the old `.started` marker goes
 inert. The agent's prompt is the ORIGINAL payload and still carries the ORIGINAL token.
 So on any job with `resume: true` / `retries > 0`:
