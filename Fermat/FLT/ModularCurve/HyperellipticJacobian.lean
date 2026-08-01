@@ -91,8 +91,8 @@ covering collection.  Each namespace now reads top-down:
       → finite_kummerCochains_pic PROVEN: finitely many Kummer cochains
       → finite_quotient_psmul_pic PROVEN: weak Mordell–Weil, Pic⁰/p·Pic⁰ is finite
       → fg_pic                    PROVEN: Mordell–Weil, by the descent theorem
-    X18.two_divisible_pic / X13.two_divisible_pic
-                                  LEAF: rank 0 — every class is 2-divisible
+    X18.torsion_pic / X13.torsion_pic
+                                  LEAF: rank 0 — every class is torsion
       → X18.finite_pic / X13.finite_pic
                                   PROVEN: finite, from `fg_pic` and 2-divisibility
       → exists_jacobianPackage    PROVEN: the four obligations assembled
@@ -153,7 +153,7 @@ these TWENTY-TWO:
     degOf_poleDivisor_eq_finrank_of_transcendental,
     exists_smoothModel, exists_cubeModel_pic, exists_geomPic,
     geomPic_bc_injective, geomPic_descent, geomPic_divisible_place,
-    finite_kummerCochains_pic, and `two_divisible_pic` at BOTH levels
+    finite_kummerCochains_pic, and `torsion_pic` at BOTH levels
 
 — TEN declarations, re-read off a green `lake build` of this module on 2026-07-31 (a
 comment-stripped `sorry`-token count agrees, so there are no anonymous inner sorries).  It
@@ -176,17 +176,17 @@ multiplied — the count is unchanged.)
 `exists_degreeMap`, `sub_single_pt_notMem_princ`, `exists_descentHeight_pic`,
 `geomPic_divisible`, `divisible_of_prime`, `divisible_of_finsuppSingle`,
 `finite_quotient_psmul_pic` and both `finite_pic` are PROVEN; earlier text here
-listing them as open is stale.  All of the above except `two_divisible_pic` are
+listing them as open is stale.  All of the above except `torsion_pic` are
 generic in the sextic and
 the prime, so ONE genus-`2` divisor-theory development closes them for both levels at once;
-only `X18.two_divisible_pic` and `X13.two_divisible_pic`, which are `rank J(ℚ) = 0`, are
+only `X18.torsion_pic` and `X13.torsion_pic`, which are `rank J(ℚ) = 0`, are
 specific to the curves.  (The count rose from five while
 `exists_placeData`, `aj_injective_of_separable`, `exists_reduction` and both `finite_pic`
 all became PROVEN:
 that is decomposition, and with it the two arguments that used to be sketched only in prose
 — `pt_injective` from the valuation axioms, and torsion-freeness from a formal-group
 filtration — are now machine-checked.)  Read the
-`two_divisible_pic` docstrings for the Magma certificates (re-run from scratch 2026-07-27: rank
+`torsion_pic` docstrings for the Magma certificates (re-run from scratch 2026-07-27: rank
 `0` sharp at both levels, `J(ℚ)_tors ≅ ℤ/21` and `ℤ/19`, `#J(𝔽₅) = 21`,
 `#J(𝔽₃) = #J(𝔽₅) = 19`, `Chabauty0` returning exactly six points at each level) and the
 `exists_jacobianPackage` docstrings for the refutation of route 1.
@@ -648,16 +648,18 @@ discharge:
 | 1 | `exists_placeData` — the function field, its places, and the divisor theory exist | PROVEN 2026-07-28 from `exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt` |
 | 2 | `aj_injective_of_separable` — Abel–Jacobi is injective, because the genus is `2 ≥ 1` | PROVEN 2026-07-28 from `exists_degreeMap`, `sub_single_pt_notMem_princ` |
 | 3 | `exists_reduction` — good reduction: the homomorphism, its compatibility with `redPt`, and torsion-freeness of its kernel | PROVEN 2026-07-28 from `exists_reductionFiltration`, itself PROVEN the same day from `exists_smoothModel`, itself PROVEN 2026-07-31 from `exists_picReduction` |
-| 4 | `X18.finite_pic`, `X13.finite_pic` — Mordell–Weil together with `rank J(ℚ) = 0` | PROVEN 2026-07-28 from `fg_pic` (over `exists_descentHeight_pic`, `finite_quotient_psmul_pic`) and `two_divisible_pic` |
+| 4 | `X18.finite_pic`, `X13.finite_pic` — Mordell–Weil together with `rank J(ℚ) = 0` | PROVEN 2026-07-28 from `fg_pic` (over `exists_descentHeight_pic`, `finite_quotient_psmul_pic`) and `torsion_pic` |
 
 and `X18.exists_jacobianPackage` / `X13.exists_jacobianPackage` become PROVEN assemblies.
 
 **Obligation 4 was split again on 2026-07-28** and both `finite_pic` are now PROVEN too;
 the `MordellWeil` section below separates the generic Mordell–Weil half (`fg_pic`, over
 `exists_descentHeight_pic` and `finite_quotient_psmul_pic`) from the level-specific rank-`0`
-half (`X18.two_divisible_pic`, `X13.two_divisible_pic`).  Note that the same
-pin-then-cut argument applies there: `2`-divisibility is a statement ABOUT the defined
-`Pic`, and no exhibited structure discharges it.
+half (`X18.torsion_pic`, `X13.torsion_pic`).  Note that the same
+pin-then-cut argument applies there: being torsion is a statement ABOUT the defined
+`Pic`, and no exhibited structure discharges it.  (Those two said `Pic = 2·Pic` and were
+named `two_divisible_pic` until 2026-08-01; the weakening and the rename are argued in the
+`MordellWeil` section docstring.)
 
 ### Why `Pic` is `Pic⁰` although no degree map appears
 
@@ -671,7 +673,7 @@ being asked to be finite really is the Mordell–Weil group.
 ### Why quantifying over an arbitrary `PlaceData` is safe
 
 `aj_injective_of_separable`, `exists_reduction`, the two Mordell–Weil leaves and
-`two_divisible_pic` are `∀`-quantified over
+`torsion_pic` are `∀`-quantified over
 presentations, which is exactly the shape that made the naive field-wise cut unsound.  It
 is sound here because the axioms **pin the presentation up to isomorphism**:
 
@@ -7615,22 +7617,61 @@ equally level-specific, and the file was mis-cut along that line:
   sextic over `ℚ`.  Nothing about `X₁(18)` or `X₁(13)` enters it, so it belongs beside
   `exists_placeData`, `aj_injective_of_separable` and `exists_reduction`, which are generic
   in the same way.  It is `fg_pic` below, and it is PROVEN over two leaves.
-* **Rank `0`** is the whole of what is specific to the two curves, and its sharpest
-  self-contained form is *not* "`Pic` is torsion" (which re-imports Mordell–Weil) but
-  `Pic = 2·Pic`, the literal output of a `2`-descent: `J(ℚ)/2J(ℚ) ↪ Sel₂(J/ℚ) = 0`.  That
-  is `X18.two_divisible_pic` and `X13.two_divisible_pic`.
+* **Rank `0`** is the whole of what is specific to the two curves.  It is
+  `X18.torsion_pic` and `X13.torsion_pic`: `∀ z : Pic, ∃ n > 0, n • z = 0`.
 
-The join is `finite_of_fg_of_two_divisible`, PROVEN below: a finitely generated abelian
-group `A` with `A = 2A` is finite.  Note that neither half alone gives finiteness — `ℤ` is
-finitely generated and `ℚ` is `2`-divisible, and both are infinite — so the cut is not
-a repackaging of the conclusion.
+The join is `finite_of_fg_of_torsion`, PROVEN below: a finitely generated torsion abelian
+group is finite.  Note that neither half alone gives finiteness — `ℤ` is finitely generated
+and `ℚ/ℤ` is torsion, and both are infinite — so the cut is not a repackaging of the
+conclusion.
 
-**Why `Pic = 2·Pic` rather than `rank = 0` spelled some other way.**  `Sel₂ = 0` was
+**WEAKENED 2026-08-01 FROM `Pic = 2·Pic` TO `Pic` TORSION, and this is the one interface
+change in this cluster since it was cut.**  The two leaves said `∀ z, ∃ w, z = 2 • w` from
+2026-07-28 until then, on the ground — recorded below, and correct as far as it goes — that
+`2`-divisibility is the literal output of a `2`-descent (`J(ℚ)/2J(ℚ) ↪ Sel₂ = 0`) whereas
+"torsion" is equivalent to rank `0` only in the presence of Mordell–Weil.  What that
+reasoning never asked is what the CONSUMER needs, and the consumer is `finite_pic` and
+nothing else.  For a finitely generated `A`,
+
+    A = 2·A   ⟺   rank A = 0  ∧  #A_tors is ODD,
+
+and only the first conjunct is used: `Finite A` follows from `AddGroup.FG A` plus torsion
+alone.  So the old statement carried a second, separate obligation — that `#J(ℚ)` is odd,
+i.e. `21` and `19` rather than merely finite — which nothing downstream reads, and which
+would have to be established through `#J(𝔽ₚ)` (not available in this file: only `#C(𝔽ₚ)`
+is).  Dropping it is the same narrowing as the 2026-07-31 deletion of `geomPic_divisible`
+recorded further down, and for the same reason.
+
+The Mordell–Weil objection does not survive either, because `fg_pic` is PROVEN and sits
+immediately above both leaves: a prover who does reach `Pic/2Pic = 0` by descent closes
+`torsion_pic` from it in a few lines (finitely generated plus `2`-divisible gives torsion
+by the determinant trick — that argument was `finite_of_fg_of_two_divisible`, deleted here
+as free-floating once its two call sites were rewired, and recoverable verbatim with
+`git show fe5131ca:Fermat/FLT/ModularCurve/HyperellipticJacobian.lean`).  So no route is
+closed off by the weakening and one obligation is removed from both leaves.
+
+**Everything recorded below transfers, and here is why rather than an assertion that it
+does.**  The new statement is IMPLIED by the old one given `fg_pic`, so every *falsity*
+audit — the Magma and PARI tables, the `Sel₂ = 1` certificates, the `RankBound = 0` runs —
+certifies the new statement as well; a weakened conclusion cannot become false.  The
+*non-vacuity* witness narrows and is called out at each leaf: `y² = x⁶ + x² + 1` (rank `1`)
+still refutes the torsion form, while "even torsion" no longer does, that being exactly the
+conjunct dropped.  The *atomicity* verdicts were re-derived rather than inherited, since a
+weaker statement could in principle admit a cut the stronger one did not; it admits none —
+every candidate ("`Pic` finite", "reduction injective on `Pic`") is `finite_pic` itself or
+circular through it.
+
+**Why `Pic = 2·Pic` rather than `rank = 0` spelled some other way** (the pre-2026-08-01
+reasoning, kept because the arithmetic in it is the certificate for both phrasings).
+`Sel₂ = 0` was
 verified independently for both curves on 2026-07-28 (Magma, `SetClassGroupBounds("GRH")`,
 `TwoSelmerGroup(J)` of order `1` at both levels, `RankBound(J) = 0` at both); together with
 `TorsionSubgroup(J) = ℤ/21` and `ℤ/19` — both of ODD order — that is exactly
 `J(ℚ) = 2J(ℚ)`.  The refuting check is `#TwoSelmerGroup(Jacobian(HyperellipticCurve(f)))`
-returning anything but `1`, or a torsion subgroup of even order.
+returning anything but `1`, or a torsion subgroup of even order.  **Only the first of those
+two refutes the statement now in force**: an even torsion subgroup would refute
+`Pic = 2·Pic` and is consistent with `Pic` being torsion, which is precisely the strength
+that was given up above.  `RankBound(J)` returning a positive lower bound refutes both.
 
 **Relation to `Fermat/FLT/ModularCurve/X0.lean`.**  That file carries the same two
 obligations for a scheme-theoretic abelian variety, assembled into
@@ -7671,8 +7712,8 @@ generic leaves below is a live option worth about `−2` on the frontier.
 
 **The bridge does NOT help the two level-specific leaves.**  `X0.lean` does not prove rank
 `0` anywhere: it *assumes* it, as the `Prop`-valued hypothesis `HasRankZeroJacobian`
-(`X0.lean:22356`), whose consumers take it as an argument.  So `X18.two_divisible_pic` and
-`X13.two_divisible_pic` are the same obligation appearing as honest leaves rather than as
+(`X0.lean:22356`), whose consumers take it as an argument.  So `X18.torsion_pic` and
+`X13.torsion_pic` are the same obligation appearing as honest leaves rather than as
 a hypothesis, and no amount of X0 machinery discharges them.
 
 The bridge is nevertheless still **not cheap**, for a different and much better reason:
@@ -7701,38 +7742,40 @@ teeth: the two developments are open at the SAME two statements, and the bridge 
 close both at once.
 -/
 
-/-- **A finitely generated abelian group `A` with `A = 2·A` is finite** (PROVEN) — the
-join of the two halves of obligation 4.
+/-- **A finitely generated torsion abelian group is finite** (PROVEN) — the join of the two
+halves of obligation 4.
 
-The determinant trick (Nakayama's lemma, `Submodule.exists_sub_one_mem_and_smul_eq_zero_of_fg_of_le_smul`,
-applied to `I = (2)` and `N = ⊤`) produces an integer `r` with `r ≡ 1 (mod 2)` killing all
-of `A`.  Being odd, `r ≠ 0`, so `A` is a finitely generated `ℤ`-torsion module, hence
-finite by `Module.finite_of_fg_torsion`.
+`AddGroup.FG A` is `Module.Finite ℤ A`, and the hypothesis is `Module.IsTorsion ℤ A` once
+`n • z` is read as `(n : ℤ) • z`; `Module.finite_of_fg_torsion` is then the whole proof.
+The only thing worth saying is that the `ℕ`-valued `n` must be pushed into the
+NON-ZERO-DIVISORS of `ℤ`, which is where `0 < n` is spent — the statement is FALSE without
+it, `n = 0` being satisfiable by every element of every group.
 
-Neither hypothesis can be dropped: `ℤ` is finitely generated and infinite, `ℚ` satisfies
-`hdiv` and is infinite.  Concretely, for `J₁(18)(ℚ) ≅ ℤ/21` the `r` produced is any odd
-multiple-of-`2`-plus-one killing the group, e.g. `21`. -/
-theorem finite_of_fg_of_two_divisible {A : Type*} [AddCommGroup A]
-    (hfg : AddGroup.FG A) (hdiv : ∀ z : A, ∃ w : A, z = 2 • w) : Finite A := by
+Neither hypothesis can be dropped: `ℤ` is finitely generated and infinite, `ℚ/ℤ` is torsion
+and infinite.
+
+**Replaces `finite_of_fg_of_two_divisible` (deleted 2026-08-01).**  That lemma took
+`∀ z, ∃ w, z = 2 • w` in place of the torsion hypothesis and reached the same conclusion
+through the determinant trick (Nakayama,
+`Submodule.exists_sub_one_mem_and_smul_eq_zero_of_fg_of_le_smul` at `I = (2)`, `N = ⊤`,
+producing an odd `r` killing `A`).  It went when its two call sites were rewired onto the
+weaker leaves — see the section docstring — and, having no other consumer, would otherwise
+have been free-floating.  Recover it with
+`git show fe5131ca:Fermat/FLT/ModularCurve/HyperellipticJacobian.lean`; it is worth
+restoring, as a step to THIS lemma rather than to `Finite`, the moment anything in the tree
+proves a `2`-divisibility statement, since it is exactly the bridge a `2`-descent needs. -/
+theorem finite_of_fg_of_torsion {A : Type*} [AddCommGroup A]
+    (hfg : AddGroup.FG A) (htor : ∀ z : A, ∃ n : ℕ, 0 < n ∧ n • z = 0) : Finite A := by
   haveI hmf : Module.Finite ℤ A := Module.Finite.iff_addGroup_fg.mpr hfg
-  have htop : (⊤ : Submodule ℤ A).FG := Module.finite_def.mp hmf
-  have hin : (⊤ : Submodule ℤ A) ≤ Ideal.span {(2 : ℤ)} • (⊤ : Submodule ℤ A) := by
-    intro z _
-    obtain ⟨w, rfl⟩ := hdiv z
-    have hz : (2 : ℕ) • w = (2 : ℤ) • w := by
-      rw [← Nat.cast_smul_eq_nsmul ℤ]
-      norm_num
-    rw [hz]
-    exact Submodule.smul_mem_smul (Ideal.mem_span_singleton_self (2 : ℤ)) Submodule.mem_top
-  obtain ⟨r, hr1, hr0⟩ := Submodule.exists_sub_one_mem_and_smul_eq_zero_of_fg_of_le_smul
-    (Ideal.span {(2 : ℤ)}) ⊤ htop hin
-  have hrne : r ≠ 0 := by
-    obtain ⟨k, hk⟩ := Ideal.mem_span_singleton'.mp hr1
-    rintro rfl
-    omega
-  have htor : Module.IsTorsion ℤ A := fun z =>
-    ⟨⟨r, mem_nonZeroDivisors_of_ne_zero hrne⟩, hr0 z Submodule.mem_top⟩
-  exact Module.finite_of_fg_torsion A htor
+  have h : Module.IsTorsion ℤ A := by
+    intro z
+    obtain ⟨n, hn, hz⟩ := htor z
+    refine ⟨⟨(n : ℤ), mem_nonZeroDivisors_of_ne_zero ?_⟩, ?_⟩
+    · exact_mod_cast hn.ne'
+    · show (n : ℤ) • z = 0
+      rw [Nat.cast_smul_eq_nsmul ℤ]
+      exact hz
+  exact Module.finite_of_fg_torsion A h
 
 /-- **A cube model transports along an isomorphism of abelian groups** (PROVEN).
 
@@ -11314,7 +11357,7 @@ lemma separable_sextPoly {K : Type} [Field K] (h : (144 : K) ≠ 0) :
     _ = 1 := hc
 
 /-- **LEAF (obligation 4, LEVEL-SPECIFIC HALF) AT LEVEL `18`: `rank J₁(18)(ℚ) = 0`, in the
-form `J₁(18)(ℚ) = 2·J₁(18)(ℚ)`.**
+form "`J₁(18)(ℚ)` is torsion".**
 
 This is what is left of `finite_pic` once Mordell–Weil — which is generic in the sextic —
 has been split off as `fg_pic`; see the `MordellWeil` section docstring for why the cut
@@ -11322,18 +11365,29 @@ runs here and not elsewhere.  `D.Pic` is `Pic⁰` of the smooth projective model
 `y² = x⁶ − 4x⁵ + 10x⁴ − 10x³ + 5x² − 2x + 1` over `ℚ`, which is `J₁(18)(ℚ)` because the
 curve has a rational point.
 
-**Why `2`-divisibility is the right statement of rank `0`.**  It is the literal output of a
-`2`-descent — `J(ℚ)/2J(ℚ) ↪ Sel₂(J/ℚ)`, and `Sel₂(J/ℚ) = 0` here — so a prover can close it
-without first proving Mordell–Weil.  The alternative phrasing "`Pic` is torsion" is
-equivalent only *given* finite generation, and would therefore silently re-import the
-generic half into this level-specific leaf.
+**WEAKENED 2026-08-01 from `∀ z, ∃ w, z = 2 • w` (the old `two_divisible_pic`), and this
+leaf was RENAMED with it.**  The full argument is in the `MordellWeil` section docstring;
+in one line, `A = 2·A` for a finitely generated `A` is `rank A = 0` TOGETHER WITH `#A_tors`
+odd, `finite_pic` reads only the first conjunct, and `#J(ℚ)` being odd rather than merely
+finite is a separate obligation that would have to go through `#J(𝔽₅) = 21` — a quantity
+this file does not have, carrying only `#C(𝔽₅) = 6`.  Nothing downstream lost anything: the
+sole consumer is `finite_pic` immediately below, and `Finite` follows from `AddGroup.FG`
+plus torsion by `finite_of_fg_of_torsion`.
+
+A `2`-descent still discharges this leaf, one step further on: `Sel₂ = 0` gives
+`Pic/2·Pic = 0`, and finitely generated plus `2`-divisible gives torsion by the determinant
+trick (the deleted `finite_of_fg_of_two_divisible`, recoverable at `fe5131ca`).  That step
+is a few lines and needs no arithmetic, so the descent route — which is why the old
+phrasing was chosen — is not penalised.
 
 Quantifying over an arbitrary `D` is safe because `PlaceData` pins the presentation up to
 isomorphism; see the `Picard` section docstring.
 
 **Not vacuous, and not implied by the shape of `Pic`.**  `Pic⁰` of a positive-rank
-Jacobian is not `2`-divisible, and neither is one with even torsion; the statement fails,
-for instance, for `y² = x⁶ + x² + 1` (rank `1`).
+Jacobian is not torsion; the statement fails, for instance, for `y² = x⁶ + x² + 1`
+(rank `1`).  **Half of the old witness no longer applies and that is deliberate**: even
+torsion refuted `Pic = 2·Pic` and is consistent with `Pic` being torsion, that being
+exactly the strength given up.
 
 ## The arithmetic that makes this true (untrusted searchers, not proofs)
 
@@ -11408,6 +11462,17 @@ forbids, or `#S = #Sᶜ = 3`, which is odd and so not in the group at all.  But 
 carries no description of `Pic[2]` in terms of the sextic, so even that half means building the
 `2`-torsion theory of hyperelliptic Jacobians from the valuation axioms.  Two leaves, one of
 them of unchanged difficulty and the other a fresh development: not a cut worth making.
+
+**SUPERSEDED 2026-08-01 BY THE WEAKENING, WHICH IS THE SAME OBSERVATION TAKEN ONE STEP
+FURTHER.**  Both passes above ask whether `Pic = 2·Pic` should be SPLIT into "`Pic` is
+torsion" and "`Pic[2] = 0`", and both answer no because the second half is a fresh
+development for no gain.  Neither asks whether the second half is needed AT ALL — and it is
+not, `finite_pic` reading only the first.  So the right move was never a split but a
+DELETION: this leaf is now "`Pic` is torsion" and the `Pic[2] = 0` half, correctly costed
+above as a `2`-torsion theory of hyperelliptic Jacobians built from the valuation axioms, is
+simply gone.  Two careful passes priced a sub-obligation instead of asking who reads it;
+the audits above are kept because their pricing of that development stands and is what a
+future `Pic = 2·Pic` statement, if one is ever wanted, would have to pay.
 
 ## ATOMICITY AUDIT (2026-07-28) — which AXES were searched, and what would refute each
 
@@ -11492,20 +11557,22 @@ points.**  Every cut of the shape "a `δ` with `ker δ ⊆ 2·Pic` exists" plus 
 vanishes" is discharged by `δ = 0` and is therefore vacuous, by the first bullet.  Note the
 2026-07-30 amendment there: the obstruction is the PINNING, not the absence of residue
 fields, which the file has carried since the degree layer landed. -/
-theorem two_divisible_pic (D : PlaceData 1 (-2) 5 (-10) 10 (-4) ℚ) (z : D.Pic) :
-    ∃ w : D.Pic, z = 2 • w := sorry
+theorem torsion_pic (D : PlaceData 1 (-2) 5 (-10) 10 (-4) ℚ) (z : D.Pic) :
+    ∃ n : ℕ, 0 < n ∧ n • z = 0 := sorry
 
 /-- **`J₁(18)(ℚ)` is FINITE** — obligation 4 at level `18` — a LEAF from its creation until
 2026-07-28, now PROVEN over the generic Mordell–Weil node `fg_pic` and the level-specific
-rank-`0` leaf `two_divisible_pic` above.
+rank-`0` leaf `torsion_pic` above.
 
 Only FINITENESS is asked for, not the order: `redPt_injective` needs nothing sharper, and
-`card_coprime` is deliberately absent for the reason given on `JacobianPackage`.
+`card_coprime` is deliberately absent for the reason given on `JacobianPackage`.  That is
+also why `torsion_pic` was weakened from `2`-divisibility on 2026-08-01: the order was the
+only thing the stronger form pinned down, and nothing asks for it.
 
 The smoothness side condition is `separable_sextPoly` at `144 ≠ 0` in `ℚ`. -/
 theorem finite_pic (D : PlaceData 1 (-2) 5 (-10) 10 (-4) ℚ) : Finite D.Pic :=
-  finite_of_fg_of_two_divisible (fg_pic D (separable_sextPoly (by norm_num)))
-    (two_divisible_pic D)
+  finite_of_fg_of_torsion (fg_pic D (separable_sextPoly (by norm_num)))
+    (torsion_pic D)
 
 /-- **`Pic⁰(X_1(18))` exists, has rank `0`, and reduces injectively at `5`** — a LEAF from
 its creation on 2026-07-27 until later the same day, now PROVEN by decomposition.
@@ -11521,7 +11588,7 @@ four named leaves, three of them generic in the sextic and one specific to this 
    torsion-freeness of its kernel: `exists_reduction`;
 4. `rank J(ℚ) = 0`, i.e. Mordell–Weil plus rank zero: `finite_pic` above, itself PROVEN
    since 2026-07-28 over the generic Mordell–Weil node `fg_pic` and the level-specific
-   rank-`0` leaf `two_divisible_pic`.
+   rank-`0` leaf `torsion_pic`.
 
 The smoothness side conditions are discharged by `separable_sextPoly` from an explicit
 Bézout certificate, at `144 ≠ 0` in `ℚ` and in `𝔽₅`.
@@ -11532,7 +11599,7 @@ by a junk structure; that is a property of an existential over a STRUCTURE, and 
 survive the cut, because `PlaceData.Pic` is a definition.  There is no free `𝔽₂`-vector
 space to exhibit against `finite_pic`: it asks that the divisor class group of a specific
 curve be finite, and only Mordell–Weil and rank `0` can answer.  The same holds of
-`two_divisible_pic`, into which its level-specific half was split on 2026-07-28.
+`torsion_pic`, into which its level-specific half was split on 2026-07-28.
 
 ## ROUTE 1 (elliptic Chabauty over `ℚ(√−2)`) IS DEAD — why this file no longer
 carries it
@@ -11883,17 +11950,26 @@ lemma separable_sextPoly {K : Type} [Field K] (h : (104 : K) ≠ 0) :
     _ = 1 := hc
 
 /-- **LEAF (obligation 4, LEVEL-SPECIFIC HALF) AT LEVEL `13`: `rank J₁(13)(ℚ) = 0`, in the
-form `J₁(13)(ℚ) = 2·J₁(13)(ℚ)`.**
+form "`J₁(13)(ℚ)` is torsion".**
 
-The level-`13` counterpart of `X18.two_divisible_pic`, and what is left of `finite_pic`
+The level-`13` counterpart of `X18.torsion_pic`, and what is left of `finite_pic`
 once the generic Mordell–Weil node `fg_pic` has been split off; see the `MordellWeil`
 section docstring for why the cut runs here.  `D.Pic` is `Pic⁰` of the smooth projective
 model of `y² = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1` over `ℚ`, which is `J₁(13)(ℚ)`.  The
 classical proof of rank `0` is Mazur–Tate, *Points of order 13 on elliptic curves*, Invent.
 Math. 22 (1973), subsumed in Mazur, IHÉS 47 (1977), Thm 7.
 
-As at level `18`, `2`-divisibility rather than "torsion" is the honest phrasing: it is the
-direct output of a `2`-descent and does not presuppose finite generation.
+**WEAKENED 2026-08-01 from `∀ z, ∃ w, z = 2 • w` (the old `two_divisible_pic`), and
+RENAMED with it, exactly as at level `18` and for the same reason.**  The paragraph this
+replaces said "`2`-divisibility rather than torsion is the honest phrasing: it is the direct
+output of a `2`-descent and does not presuppose finite generation".  Both clauses are true
+and neither is a reason to state the leaf that way: the sole consumer `finite_pic` reads
+only rank `0`, while `A = 2·A` for finitely generated `A` is rank `0` TOGETHER WITH `#A_tors`
+odd — here `19` — and that second conjunct would have to be established through
+`#J(𝔽₃) = 19`, which this file does not carry.  Finite generation is not presupposed either:
+it is `fg_pic`, PROVEN, immediately above.  A `2`-descent still closes this leaf one step
+further on; see `X18.torsion_pic` for the full argument and for the recovery command for the
+deleted bridge `finite_of_fg_of_two_divisible`.
 
 ## The arithmetic that makes this true (untrusted searchers, not proofs)
 
@@ -11934,7 +12010,7 @@ reproducing the quoted numerator exactly, hence `#C(𝔽₃) = 3 + 1 + 2 = 6` an
 
 ## DECISION 2026-07-30: NOT DECOMPOSED
 
-Left atomic for the reasons recorded at `X18.two_divisible_pic`, whose re-cut rejection was
+Left atomic for the reasons recorded at `X18.torsion_pic`, whose re-cut rejection was
 re-derived this cycle and holds verbatim here ("`Pic` torsion" + "`J(ℚ)[2] = 0`" is strictly
 stronger than `Pic = 2·Pic`, `ℚ` being the separating example).  The descent-axis target
 group is corrected below, as at level `18`.
@@ -11947,12 +12023,18 @@ split carries the whole difficulty into one of its two halves; the other half, `
 does follow from `f` irreducible over `ℚ` (PARI, this cycle — the six Weierstrass points are a
 single Galois orbit, and a stable class `{S, Sᶜ} ≠ {∅, all}` would need `#S` even and stable,
 or `#S = 3`, which is odd) but needs a description of `Pic[2]` in terms of the sextic that
-`PlaceData` does not carry.  See `X18.two_divisible_pic` for the full statement.
+`PlaceData` does not carry.  See `X18.torsion_pic` for the full statement.
+
+**SUPERSEDED 2026-08-01, as at level `18`.**  Both passes above debate SPLITTING
+`Pic = 2·Pic` into "torsion" plus "`Pic[2] = 0`"; neither asks whether the second half has a
+consumer.  It has none, so the resolution was a deletion rather than a split, and this leaf
+IS the first half.  The `Pic[2] = 0` costing above is kept: it is what a `Pic = 2·Pic`
+statement would cost if one is ever wanted again.
 
 ## ATOMICITY AUDIT (2026-07-28)
 
 The axes searched, and the refuting check for each, are written out in full on
-`X18.two_divisible_pic`; every one of them applies verbatim here, the two leaves differing
+`X18.torsion_pic`; every one of them applies verbatim here, the two leaves differing
 only in the sextic and the good prime.  The load-bearing item is the first: a `2`-descent
 cut needs the map `δ : Pic → L*/(L*² · ℚ*)`, `L = ℚ[x]/(f)`, pinned by a CONSTRUCTION, and
 pinning it by its values on rational points is powerless because `#Sel₂ = 1` makes the
@@ -11978,17 +12060,17 @@ already recorded below from the diamond `⟨5⟩`, so the elliptic axis is doubl
 and `#J(𝔽₃) = 19 = #J(ℚ)` makes reduction at `3` an isomorphism, which is the sharpest that
 the reduction axis can ever be — and it still yields no rank information, since the kernel
 of reduction is where all the rank would live. -/
-theorem two_divisible_pic (D : PlaceData 1 4 6 2 1 2 ℚ) (z : D.Pic) :
-    ∃ w : D.Pic, z = 2 • w := sorry
+theorem torsion_pic (D : PlaceData 1 4 6 2 1 2 ℚ) (z : D.Pic) :
+    ∃ n : ℕ, 0 < n ∧ n • z = 0 := sorry
 
 /-- **`J₁(13)(ℚ)` is FINITE** — obligation 4 at level `13` — a LEAF from its creation until
 2026-07-28, now PROVEN over the generic Mordell–Weil node `fg_pic` and the level-specific
-rank-`0` leaf `two_divisible_pic` above.
+rank-`0` leaf `torsion_pic` above.
 
 The smoothness side condition is `separable_sextPoly` at `104 ≠ 0` in `ℚ`. -/
 theorem finite_pic (D : PlaceData 1 4 6 2 1 2 ℚ) : Finite D.Pic :=
-  finite_of_fg_of_two_divisible (fg_pic D (separable_sextPoly (by norm_num)))
-    (two_divisible_pic D)
+  finite_of_fg_of_torsion (fg_pic D (separable_sextPoly (by norm_num)))
+    (torsion_pic D)
 
 /-- **`Pic⁰(X_1(13))` exists, has rank `0`, and reduces injectively at `3`** — a LEAF from
 its creation on 2026-07-27 until later the same day, now PROVEN by the same decomposition
@@ -12002,11 +12084,11 @@ The four obligations, at `p = 3` instead of `p = 5`:
 3. good reduction at `3`, the reduction homomorphism, its compatibility with `redPt`, and
    torsion-freeness of its kernel: `exists_reduction`;
 4. `rank J(ℚ) = 0` together with Mordell–Weil: `finite_pic` above, itself PROVEN since
-   2026-07-28 over the generic `fg_pic` and the level-specific `two_divisible_pic`.
+   2026-07-28 over the generic `fg_pic` and the level-specific `torsion_pic`.
 
 Leaves 1–3 are shared verbatim with level `18` — they are generic in the sextic and the
 prime, as are the two Mordell–Weil leaves under `fg_pic` — so the only level-`13`-specific
-obligations left are `two_divisible_pic` and the smoothness certificate
+obligations left are `torsion_pic` and the smoothness certificate
 `separable_sextPoly`, the latter PROVEN.
 
 ## ROUTE 1 (elliptic Chabauty over `ℚ(i)`) IS DEAD HERE TOO
