@@ -5012,11 +5012,119 @@ theorem hasInertiaLevelOneFlag_quotient_cornerIdeal
 
 set_option synthInstance.maxHeartbeats 1000000 in
 include hpodd in
+/-- **RAYNAUD'S DÉVISSAGE, ONE STEP** (SORRY LEAF, cut out of
+`isMultiplicativeType_of_connected_of_inertiaLevelOneFlag` below on 2026-08-01 — this is
+route (a) of that statement's own recommendation, taken).
+
+*Either* `Spec A` is already of multiplicative type (which is what happens at
+`Module.finrank 𝒪ᵖᵥ A = 1`, where `Spec A` is the trivial group scheme), *or* `Spec A` has a
+closed subgroup scheme `Spec A'` of multiplicative type with quotient `Spec A''` of strictly
+smaller rank, and the quotient again carries a level-one inertia flag.
+
+This is steps 1 and 2 of the four-step programme in the consumer's docstring, and NOTHING
+ELSE: step 3 (`HopfAlgebra.isMultiplicativeType_of_isShortExact`, PROVEN in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`) and the assembly of the whole
+chain by strong induction on the rank are now written out below and are no longer part of
+any leaf.
+
+WHY THE DISJUNCTION AND NOT `1 < Module.finrank 𝒪ᵖᵥ A → ∃ …`. The consumer's docstring
+prescribes "*either `𝒪(A)` has rank 1, or there are `A''`, `A'` with `IsShortExact i π`,
+`A'` of `μ`-type and `rank A'' < rank A`*". The left disjunct is stated here as the
+CONCLUSION at rank one rather than as the hypothesis `rank = 1`, which is strictly the
+weaker (hence easier) obligation and saves the induction below a separate base-case leaf:
+at rank one `Spec A` is the trivial group scheme, its Cartier dual is `Spec 𝒪ᵖᵥ`, and that
+is étale. A prover who would rather prove the rank-one case first and then assume
+`1 < rank A` throughout may do so — that implication is exactly this disjunction.
+
+THE MATHEMATICS, so the next owner does not re-derive it:
+
+1. *The point group is nontrivial when `1 < rank A`.* `ℚᵖᵥ` has characteristic zero, so by
+   Cartier's theorem `ℚᵖᵥ ⊗[𝒪ᵖᵥ] A` is étale (this is the reason the consumer carries no
+   `Algebra.Etale` hypothesis — see its docstring), whence
+   `#(ℚᵖᵥ ⊗[𝒪ᵖᵥ] A →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ) = Module.finrank 𝒪ᵖᵥ A > 1`. So `hflag`'s chain has at
+   least one step at which the generator `x` is not already in `M i`; a chain all of whose
+   steps are degenerate has `⊤ = M n = M 0 = ⊥`.
+2. *The first nondegenerate step lifts.* `e = v(p) = 1 < p − 1` (this is where `hpodd` is
+   spent, and it is why `p = 2` is excluded), so by Raynaud Th. 3.3.3 / Cor. 3.3.6 the
+   prolongation functor from the generic fibre is fully faithful and the inertia-stable
+   subgroup `M 1` of `A`'s geometric points is the group of geometric points of a unique
+   finite flat closed subgroup scheme `Spec A'` of `Spec A`, of order `p`.
+3. *`Spec A'` is of `μ`-type.* Order `p` puts it in the Oort–Tate family `X^p = δX` with
+   `0 ≤ v(δ) ≤ e = 1`, so it is étale (`v(δ) = 0`) or of `μ`-type (`v(δ) = 1`); `hconn`
+   excludes étale. The POINT-LEVEL form of this dichotomy is already sorry-free in
+   `Fermat/FLT/GroupScheme/ConnectedEtale.lean`
+   (`OortTate.inertia_character_trivial_or_cyclotomic`,
+   `not_inertia_character_trivial_of_connected`, `exists_muType_coordinate`); what step 2
+   hands it is the group-scheme form.
+4. *The quotient inherits the flag.* `Spec A'' = Spec A / Spec A'`, so on `ℚᵖᵥᵃˡᵍ`-points
+   precomposition with `i` identifies `A''`'s points with the QUOTIENT of `A`'s points by
+   `M 1`, and the image of an inertia-stable level-one flag under an equivariant surjection
+   is one. (Note the direction: the file has
+   `exists_levelOneFlag_of_injective_equivariant` and
+   `exists_levelOneFlag_of_bijective_equivariant`, both PROVEN, but no SURJECTIVE version —
+   so this conjunct is a genuine part of the leaf and not free.)
+5. *The rank drops.* `rank A = rank A' * rank A'' = p * rank A''` with `p ≥ 3`.
+
+WHAT THE CONSUMER DERIVES AND THIS LEAF THEREFORE DOES **NOT** HAVE TO PRODUCE:
+`hconn` for `A''`. A short exact sequence has `i` injective
+(`HopfAlgebra.IsShortExact.injective`, from faithful flatness), and an idempotent of `A''`
+maps to an idempotent of `A`, so `hconn` for `A` pulls back along `i` in four lines. That
+derivation is written out below. Do not add the conjunct back: it would be redundant, and
+a redundant conjunct in an existential is an obligation somebody has to discharge.
+
+FAITHFULNESS. Each of the three hypotheses is load-bearing for the same reason, and by the
+same explicit witnesses, as in the consumer's own audit — the statements differ only by the
+disjunction, and adding a disjunct can only WEAKEN, so that audit transfers verbatim rather
+than being inherited without argument. Restating the three witnesses for a reader of this
+declaration alone: without `hflag`, the `p`-torsion of a supersingular elliptic curve over
+`ℤ_p` (tame inertia acts through the LEVEL-`2` fundamental characters, and `E[p]` is
+self-dual, so neither disjunct holds — it is not of multiplicative type, and it has no
+`μ`-type subgroup scheme of order `p`); without `hconn`, the constant group scheme `ℤ/p`
+(whose dual `μ_p` is not étale, and whose only order-`p` subgroup is itself, étale);
+without `hpodd`, `p = 2`, where `e = 1 = p − 1`, Raynaud's rigidity fails, and step 2 has no
+gap to exploit. NON-VACUITY: at `A = 𝒪(μ_p)` over `ℤ_p` the LEFT disjunct holds (the Cartier
+dual is the constant group scheme `ℤ/p`, étale); at `A = 𝒪(μ_p × μ_p)` the RIGHT one does,
+with `A' = A'' = 𝒪(μ_p)`.
+
+THE ENCODING. `∃ (A'' : Type) (_ : CommRing A'') (_ : HopfAlgebra 𝒪ᵖᵥ A'') …` is the
+mathlib idiom for an existential over a type carrying instances (see
+`Mathlib/RingTheory/AdjoinRoot.lean`'s `exists_finite_free_of_…`, the same shape with
+`CommRing`/`Algebra`/`Module.Finite`/`Module.Free`): the anonymous binders DO become local
+instances for the binders after them, which is what makes `HasInertiaLevelOneFlag p A''`
+and `Module.finrank 𝒪ᵖᵥ A''` writable here at all. `Module.Flat 𝒪ᵖᵥ A''` is deliberately
+NOT among them — it is synthesised from `Module.Free`, and listing it would create a second
+instance for a `Prop` class to no purpose. Consume the existential with
+`rcases … with h | ⟨A'', _, _, _, _, _, A', _, _, _, _, _, i, π, hse, hmul', hflag'', hlt⟩`;
+the underscores are the instances and Lean picks them up. -/
+theorem exists_devissage_step_of_connected_of_inertiaLevelOneFlag
+    (A : Type) [CommRing A]
+    [HopfAlgebra 𝒪ᵖᵥ A] [Module.Flat 𝒪ᵖᵥ A] [Module.Finite 𝒪ᵖᵥ A]
+    [Coalgebra.IsCocomm 𝒪ᵖᵥ A] [Module.Free 𝒪ᵖᵥ A]
+    (hflag : HasInertiaLevelOneFlag p A)
+    (hconn : ∀ z : A, IsIdempotentElem z → z = 0 ∨ z = 1) :
+    HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ A ∨
+      ∃ (A'' : Type) (_ : CommRing A'') (_ : HopfAlgebra 𝒪ᵖᵥ A'')
+        (_ : Module.Finite 𝒪ᵖᵥ A'') (_ : Coalgebra.IsCocomm 𝒪ᵖᵥ A'')
+        (_ : Module.Free 𝒪ᵖᵥ A'')
+        (A' : Type) (_ : CommRing A') (_ : HopfAlgebra 𝒪ᵖᵥ A')
+        (_ : Module.Finite 𝒪ᵖᵥ A') (_ : Coalgebra.IsCocomm 𝒪ᵖᵥ A')
+        (_ : Module.Free 𝒪ᵖᵥ A')
+        (i : A'' →ₐc[𝒪ᵖᵥ] A) (π : A →ₐc[𝒪ᵖᵥ] A'),
+        HopfAlgebra.IsShortExact i π ∧
+        HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ A' ∧
+        HasInertiaLevelOneFlag p A'' ∧
+        Module.finrank 𝒪ᵖᵥ A'' < Module.finrank 𝒪ᵖᵥ A :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+include hpodd in
 /-- **THE CITATION ITSELF, COEFFICIENT-FREE, WITH CONNECTEDNESS INTRINSIC AND — SINCE
 2026-07-31 — STATED ON AN ABSTRACT `A`: a connected finite flat Hopf order over `𝒪ᵖᵥ` of
-LEVEL ONE is of multiplicative type** (SORRY LEAF — this is Raynaud, and after this cut it
-is the only statement in the cluster that is not either commutative algebra or
-representation theory).
+LEVEL ONE is of multiplicative type** (**PROVEN 2026-08-01** by strong induction on the rank
+over the single dévissage step `exists_devissage_step_of_connected_of_inertiaLevelOneFlag`
+immediately above, which is now the leaf carrying Raynaud and is the only statement in the
+cluster that is not either commutative algebra or representation theory; the accounting for
+that recut is at the end of this docstring).
 
 **CHANGE 2026-07-31**: the carrier is now an abstract `A`, not `G ⧸ cornerIdeal e₀`, and
 BOTH hypotheses are intrinsic to it. This is what route (a) below has been blocked on since
@@ -5164,15 +5272,92 @@ moved:
     extension on the nose, and the argument that it is one needs the primality of `p` (or,
     without it, a maximal-order choice of generator). It is
     `exists_levelOneFlag_of_injective_equivariant` above — PROVEN, and much longer than the
-    bijective transport it sits beside. -/
+    bijective transport it sits beside.
+
+**ROUTE (a) HAS NOW BEEN TAKEN (2026-08-01), AND THIS STATEMENT IS NO LONGER A LEAF.** The
+paragraphs above are kept because their route analysis is still the route; what has changed
+is that the part of it this tree has the machinery for is now WRITTEN. The strong induction
+on `Module.finrank 𝒪ᵖᵥ` that every paragraph above calls for is the proof below, and the
+single dévissage step it induces over is
+`exists_devissage_step_of_connected_of_inertiaLevelOneFlag`, immediately above.
+
+**ACCOUNTING: THIS IS A RECUT AND THE COUNT DID NOT MOVE, 1 → 1.** One sorry leaves this
+declaration and one arrives at the step above; a `−1 +1` delta in the warning set is
+indistinguishable from "nothing happened", so here is what got smaller. Four things left
+the frontier for good:
+
+* **the induction itself** — strong induction on `Module.finrank 𝒪ᵖᵥ B` over an abstract
+  `B`, which is what the 2026-07-31 restatement of this declaration onto an abstract `A`
+  was *for* and which nobody had cashed in;
+* **step 3, the extension step `(R3)`** — the application of
+  `HopfAlgebra.isMultiplicativeType_of_isShortExact` at each link of the chain. It was
+  PROVEN all along, in `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, and
+  simply had no call site;
+* **the inheritance of `hconn` by the sub-quotient** — `i` is injective
+  (`HopfAlgebra.IsShortExact.injective`, from the faithful-flatness field), so an
+  idempotent of `A''` maps to an idempotent of `A` and `hconn` pulls back. The paragraph
+  above headed "CONNECTEDNESS IS DONE" asserted this without proving it; it is now four
+  lines of Lean rather than a sentence;
+* **the base case** — absorbed into the step's LEFT disjunct rather than opened as a second
+  leaf. See that declaration's docstring for why the disjunctive form is the weaker
+  obligation.
+
+What is LEFT in the residual leaf is Raynaud and only Raynaud: the unique-prolongation
+theorem at `e = 1 < p − 1` and the Oort–Tate dichotomy at order `p`. It mentions no
+composition series, no `Fin (n + 1)`-indexed family of types, and no encoding — which was
+the stated obstruction to route (a) in the first place, and it is gone.
+
+**FAITHFULNESS OF THE RECUT.** This declaration's own statement is UNCHANGED — same name,
+same binders, same conclusion — so its audit above stands untouched and no consumer moved.
+The new leaf is strictly weaker than this statement (it is this statement's conclusion in
+disjunction with something), so the audit transfers to it in the only direction that needs
+argument; the three witnesses are restated on it explicitly all the same, because a reader
+who arrives at that declaration alone should not have to come here for them. -/
 theorem isMultiplicativeType_of_connected_of_inertiaLevelOneFlag
     (A : Type) [CommRing A]
     [HopfAlgebra 𝒪ᵖᵥ A] [Module.Flat 𝒪ᵖᵥ A] [Module.Finite 𝒪ᵖᵥ A]
     [Coalgebra.IsCocomm 𝒪ᵖᵥ A] [Module.Free 𝒪ᵖᵥ A]
     (hflag : HasInertiaLevelOneFlag p A)
     (hconn : ∀ z : A, IsIdempotentElem z → z = 0 ∨ z = 1) :
-    HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ A :=
-  sorry
+    HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ A := by
+  -- Strong induction on the rank, in the `∀ B, finrank B ≤ n → …` form: `B` ranges over
+  -- ALL finite free cocommutative Hopf orders, so the sub-quotient `A''` produced by the
+  -- dévissage step — which is not presented as a corner of anything — is in range.
+  suffices H : ∀ n : ℕ, ∀ (B : Type) [CommRing B] [HopfAlgebra 𝒪ᵖᵥ B]
+      [Module.Finite 𝒪ᵖᵥ B] [Coalgebra.IsCocomm 𝒪ᵖᵥ B] [Module.Free 𝒪ᵖᵥ B],
+      Module.finrank 𝒪ᵖᵥ B ≤ n → HasInertiaLevelOneFlag p B →
+      (∀ z : B, IsIdempotentElem z → z = 0 ∨ z = 1) →
+      HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ B from
+    H (Module.finrank 𝒪ᵖᵥ A) A le_rfl hflag hconn
+  intro n
+  induction n with
+  | zero =>
+    intro B _ _ _ _ _ hle hfB hcB
+    rcases exists_devissage_step_of_connected_of_inertiaLevelOneFlag hpodd B hfB hcB with
+      h | ⟨A'', _, _, _, _, _, A', _, _, _, _, _, i, π, hse, hmul', hflag'', hlt⟩
+    · exact h
+    · -- The right disjunct cannot occur at `n = 0`: it would give `finrank A'' < 0`.
+      omega
+  | succ n ih =>
+    intro B _ _ _ _ _ hle hfB hcB
+    rcases exists_devissage_step_of_connected_of_inertiaLevelOneFlag hpodd B hfB hcB with
+      h | ⟨A'', _, _, _, _, _, A', _, _, _, _, _, i, π, hse, hmul', hflag'', hlt⟩
+    · exact h
+    · -- `hconn` is inherited by the sub-quotient: `i` is injective because a faithfully
+      -- flat ring map is, and a ring map carries idempotents to idempotents.
+      have hinj : Function.Injective i := hse.injective
+      have hconn'' : ∀ z : A'', IsIdempotentElem z → z = 0 ∨ z = 1 := by
+        intro z hz
+        have hiz : IsIdempotentElem (i z) := by
+          show i z * i z = i z
+          rw [← map_mul]
+          exact congrArg i hz
+        rcases hcB _ hiz with h0 | h1
+        · exact Or.inl (hinj (by rw [h0, map_zero]))
+        · exact Or.inr (hinj (by rw [h1, map_one]))
+      -- `(R3)`: an extension of multiplicative type by multiplicative type.
+      exact HopfAlgebra.isMultiplicativeType_of_isShortExact hse
+        (ih A'' (by omega) hflag'' hconn'') hmul'
 
 set_option synthInstance.maxHeartbeats 1000000 in
 -- NO `include hpodd in` HERE.  One stood here and made this pure-algebra lemma take
