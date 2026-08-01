@@ -16151,3 +16151,80 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A HOIST THAT NEVER WROTE THE DELEGATION STRANDS THE WHOLE NEW MODULE — and unlike the duplicate-name case, NOTHING reports it
+
+(2026-08-01, `flt-lean-301`, on
+`exists_nonconstant_toAbelianScheme_of_baseChange_relPoint`.)  CLAUDE.md already
+records the loud half of this: **a hoist that never deleted its source** leaves
+two declarations of one name in one import cone, which is a hard
+`has already been declared` and stops the build.  The quiet half is commoner and
+strictly worse, because the build stays GREEN:
+
+> the hoist lands the statement **and its proof** in a new upstream module, under
+> a NEW NAMESPACE — so there is no name collision, no error, and nothing forces
+> anybody to notice — and the old site is never redirected.
+
+`Fermat/FLT/Mathlib/AlgebraicGeometry/WeilRestriction.lean` was created on
+2026-07-31 holding `Fermat.WeilRestriction.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint`,
+**PROVEN** over two named atoms, with a docstring saying in as many words *"That
+declaration should be replaced by a one-line delegation to this one."*  Nobody
+wrote the delegation.  `X1.lean` kept its own
+`Fermat.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint` as a `sorry`,
+and — because `X1.lean` also gained a `public import` of the new module, with a
+header comment asserting the theorem is "Stated and PROVEN there" — every
+signal pointed at a job that had been done.
+
+**Both halves are invisible, and they are invisible to DIFFERENT instruments:**
+
+* the OLD leaf is a real `sorry` in a reachable module, so `lake build` warns on
+  it, `flt-frontier.py` counts it, and `own.py`/`leafstat.py` correctly report it
+  unowned.  It reads as ordinary open work and it **draws dispatches** — it drew
+  this one;
+* the NEW module is **free-floating**: `git grep` for its theorem's qualified
+  name returned exactly one hit tree-wide, a PROSE line in `X1.lean`'s import
+  block.  So the hoisted proof had no consumer, and its two atoms
+  (`exists_finiteEtale_point_of_smooth`,
+  `exists_nonconstant_toAbelianScheme_of_finiteEtale_descent`) were counted by
+  every frontier scan while being reachable from nothing.
+
+So the frontier said `1 + 2 = 3` open leaves where the mathematics owed was `2`,
+and the one leaf anybody could be sent at was the one that no longer had any
+content.
+
+**THE CHECK, and it is one command run at the moment you land a hoist or arrive
+at a leaf whose module imports a suspiciously on-topic sibling:**
+
+    git grep -n '<UpstreamNamespace>.<theoremName>' -- '*.lean'   # CODE hits, not prose
+
+Zero code hits for a PROVEN upstream theorem means the delegation was never
+written.  Equivalently, from the leaf's side: **before proving a leaf, grep the
+tree for its own statement's NEW HOME** — a `public import` of a module named
+after your leaf's residue is the tell, and the import comment will usually tell
+you the theorem is already proven there.
+
+**THE REPAIR IS A DELEGATION, NOT A DELETION, WHILE THE FILE IS CONTENDED.**
+Deleting the old declaration and repointing its call site is one word and is
+what the duplicate-statement doctrine prefers in the abstract; it is also an API
+rename in a 23 000-line file during a release window, and here the name was cited
+by a consumer plus four docstrings.  A delegation costs one line, keeps every
+citation true, and is what the upstream author prescribed.  Say in the docstring
+that a successor may finish the job by deleting and repointing, and that the
+signatures are identical so it is a one-word edit.
+
+**THE ACCOUNTING, and it must be stated because the count understates it in one
+direction and overstates it in the other.**  Direct frontier: `-1` (the
+duplicate leaf).  Mathematics owed: **unchanged** — the same two atoms, no
+theorem became provable that was not provable before.  What actually changed is
+that a proven module and both its atoms stopped being free-floating and entered
+the root cone, and a leaf that was drawing agents at already-done work is gone.
+Report a delegation that way; a reader who sees only `-1` will believe a theory
+gap closed.
+
+**Generalisable beyond hoists: a docstring sentence of the form "X should be
+replaced by a one-line delegation to this one" is a TASK WITH NO OWNER**, exactly
+like the "the repair is queued as one owned cut-level task" and "it is written
+down here instead of performed" sentences this file already catalogues.  Under
+the loop there is nobody for such a sentence to defer to.  If you write one,
+perform it in the same commit or queue it; if you read one, check whether it was
+performed before believing anything else the docstring says.

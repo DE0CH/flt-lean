@@ -22546,58 +22546,48 @@ theorem hasNoFibreAffineLine_of_notGeometricallyRational
 
 /-- **THE BASE-POINT-FREE REDUCTION: a nonconstant map to an abelian variety
 DESCENDS from an extension over which the curve acquires a rational point**
-(sorry leaf, NEW 2026-07-30) — the second residue of
-`exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` below, and
-the ONLY place where the missing section is still owed.
+(**PROVEN 2026-08-01 by delegation**; a sorry leaf here from 2026-07-30 to
+2026-08-01) — the second residue of
+`exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` below.
 
-It is the exact statement of the gap that leaf's audit names first: Abel–Jacobi
-`x ↦ [x] − [o]` needs a `K`-rational base point, and a smooth proper
-geometrically connected curve over `K` need not have one — a genus-`1` curve
-with `C(K) = ∅` is the standard witness.
+**THE RELOCATION THIS DECLARATION'S OWN 2026-07-30 DOCSTRING ASKED FOR HAS
+HAPPENED.**  That docstring ended with a RELOCATION NOTE observing that nothing
+here is `Γ₁`- or even modular-specific and that `X0.lean`'s open
+`exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` wants the same theorem
+verbatim.  It was acted on: the statement was reproduced, character for
+character, in `Fermat/FLT/Mathlib/AlgebraicGeometry/WeilRestriction.lean` as
+`Fermat.WeilRestriction.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint`,
+and PROVEN there by the classical repair, over two atoms.  This module already
+`public import`s that one (see the import block's own note, which says so).  So
+the copy here was a stale DUPLICATE of a proven theorem — open, counted by every
+frontier scan, and drawing dispatches — and it is now the one-line delegation
+that the upstream docstring prescribes in as many words: *"That declaration
+should be replaced by a one-line delegation to this one."*
 
-TRUE, by the classical repair.  `hconn` makes `C` nonempty, and `C` is of
-finite type over `K` by `hproper`, so it has a closed point; `C` is smooth over
-`K`, so it has a closed point whose residue field `L` is a FINITE SEPARABLE
-extension of `K` (the `K^sep`-points of a smooth `K`-scheme are dense).  The
-graph of that point is an `L`-rational point of `C_L`, so `hsec L` applies and
-gives an abelian variety `A/L` with a nonconstant `c : C_L ⟶ A`.  Weil
-restriction `Res_{L/K} A` along the finite étale `L/K` is then an abelian
-variety over `K`, the unit `C ⟶ Res_{L/K}(C_L)` is a `K`-morphism, and the
-composite `C ⟶ Res_{L/K}(C_L) ⟶ Res_{L/K}(A)` is the required map.  It is
-nonconstant because base changing it to `L` and composing with the counit
-`(Res_{L/K} A)_L ⟶ A` recovers `c`, and a constant map stays constant under
-both operations.
+**THE ENTIRE MATHEMATICAL CONTENT OF THE OLD DOCSTRING IS UPSTREAM, VERBATIM,**
+and is deliberately not repeated here: the classical repair (closed point ⇒
+finite separable residue field ⇒ graph is an `L`-point ⇒ Weil restriction), the
+`grep` record that Weil restriction is absent from this pin, the falsity audit
+of the tempting `L = K, ℓ = 𝟙` reading, and the per-hypothesis account of why
+`hproper`, `hsmooth` and `hconn` are each load-bearing.  Read
+`WeilRestriction.lean` — not this docstring — before touching any of it.
 
-**WHAT A PROVER MUST BUILD**: Weil restriction along a finite locally free
-morphism, and the fact that it preserves `AbelianSchemeStruct`.  That is the
-whole residue, and it does not exist at this pin — checked 2026-07-30 with
-`grep -rniE "weil.?restriction" Fermat/ .lake/packages/mathlib/Mathlib/AlgebraicGeometry/`,
-which returns NOTHING.  (Do not run the check as
-`grep restrictScalars` instead: that returns two dozen hits in
-`Modularity/HeckeFrameForm.lean`, all of them `Submodule.restrictScalars`,
-which is module theory and has nothing to do with the scheme-level
-construction.)  Separability of `L/K` is what makes
-`Res_{L/K} A` SMOOTH, which is why the paragraph above insists on a closed
-point with separable residue field rather than an arbitrary one.
+**WHERE THE RESIDUE NOW LIVES**, so that nobody is dispatched here again: the
+two open atoms are `Fermat.WeilRestriction.exists_finiteEtale_point_of_smooth`
+(a nonempty smooth finite-type `K`-scheme has a point over a finite separable
+extension) and
+`Fermat.WeilRestriction.exists_nonconstant_toAbelianScheme_of_finiteEtale_descent`
+(Weil restriction along a finite étale extension of fields, in applied form).
+Neither is `Γ₁`-specific and neither should be restated in this file.
 
-**FALSITY AUDIT — `hsec` IS NOT VACUOUS AND IS NOT THE CONCLUSION.**  The
-tempting reading is that `hsec` at `L = K`, `ℓ = 𝟙`, already IS the
-conclusion, making this leaf trivial.  It is not: `hsec` is only usable at an
-`L` for which `C_L` HAS an `L`-rational point, and the whole difficulty is
-that `L = K` need not be such an `L`.  Conversely `hsec` is not vacuous —
-its consumer discharges it, for every `L` at once, from
-`exists_nonconstant_toAbelianScheme_of_hasNoFibreAffineLine` above.
-
-**`hproper`, `hsmooth`, `hconn` ARE ALL LOAD-BEARING**, and each for a
-different step: `hconn` for nonemptiness, `hproper` for finite type (hence a
-closed point with finite residue extension), `hsmooth` for separability of that
-extension.  Dropping `hsmooth` does not obviously refute the statement, but it
-removes the only reason `Res_{L/K} A` is smooth, so it is not decoration.
-
-**RELOCATION NOTE**, as for the two theorems above: nothing here is `Γ₁`- or
-even modular-specific, and `X0.lean`'s open
-`exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` would consume it
-verbatim. -/
+**WHY A DELEGATION AND NOT A DELETION.**  The name is consumed one screen below,
+by `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational`, and is cited
+by four further docstrings in this file (the module header, the two summary
+tables, and the audit at the `Pic⁰` leaf).  Keeping it costs one line and one
+duplicated *statement*; deleting it would rename an API in a heavily contended
+file during a release window for no mathematical gain.  A successor who wants the
+duplicate gone should delete this declaration and repoint that single call site
+at the upstream name — the signatures are identical, so it is a one-word edit. -/
 theorem exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
     {C : Scheme.{0}} {K : Type} [Field K] {cstr : C ⟶ Spec (CommRingCat.of K)}
     (hproper : IsProper cstr) (hsmooth : SmoothOfRelativeDimension 1 cstr)
@@ -22611,7 +22601,8 @@ theorem exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
     ∃ (A : Scheme.{0}) (astr : A ⟶ Spec (CommRingCat.of K)) (_ : AbelianSchemeStruct astr)
       (c : C ⟶ A), c ≫ astr = cstr ∧
         ∀ s : Spec (CommRingCat.of K) ⟶ A, c ≠ cstr ≫ s :=
-  sorry
+  WeilRestriction.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
+    hproper hsmooth hconn hsec
 
 /-- **`Pic⁰` AND THE DEGREE-`n` ABEL–JACOBI MAP: a GEOMETRICALLY
 non-rational fibre receives a nonconstant map to an abelian variety**
