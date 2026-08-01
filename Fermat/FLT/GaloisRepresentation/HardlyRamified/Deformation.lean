@@ -19407,7 +19407,52 @@ def HardlyRamifiedDeformation.HasHardlyRamifiedLift
       ∀ n, q ((ρ'.charFrob hr.toHeightOneSpectrumRingOfIntegersRat).coeff n) =
         (D.ρ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat).coeff n
 
-/-- **Böckle's obstruction COCYCLE, in its DEFORMATION-THEORETIC form** (sorry
+/-! #### `exists_obstructionCocycle_smallExtension_lift` was DELETED on 2026-08-01
+
+**It was a character-for-character DUPLICATE of the PROVEN
+`exists_obstructionCocycle_smallExtension_deformation` immediately below** —
+same binders, same conclusion, differing only in the name — while itself being a
+`sorry` with **ZERO consumers anywhere in `Fermat/`**.  Measured with
+`tools/merge/reach.py`; the statements were compared by normalising whitespace
+and the declaration name, and came out byte-identical at 960 characters.
+
+How it got here is the rival-cut mechanism `CLAUDE.md` records at
+*TWO RIVAL CUTS OF ONE PARENT CAN BE COMPLEMENTARY*: this node was cut on
+2026-07-27, and `_deformation` was later re-proven through
+`_deformation_ne_zero` (which rests on `_deformation_of_section`, the leaf that
+is still open).  The winning chain is
+
+    _section  <-  _deformation  <-  _deformation_ne_zero  <-  _deformation_of_section
+
+and `_lift` simply lost its call site.  Nothing points at it; the docstrings at
+`_deformation` and at `_section` that say the `sorry` "is in
+`exists_obstructionCocycle_smallExtension_lift` above" were true when written and
+have not been true since `_ne_zero` landed.  **Read a proof BODY, not a docstring,
+for which leaf a theorem rests on.**
+
+**THE PROSE BELOW IS KEPT DELIBERATELY AND IS STILL LIVE.**  Two later passages
+in this file cite *"item (6) of the machinery audit on
+`exists_obstructionCocycle_smallExtension_lift`"* — the OPEN FALSITY SUSPICION
+against conjunct (b), that it asserts `r ≤ dim_k Ш²_S(ad⁰)` where Mazur's
+classical bound is by the ambient `dim_k H²(G_{ℚ,S}, ad⁰)`.  That audit applies
+verbatim to `_deformation`, which carries the identical statement, and to
+`_deformation_of_section` beneath it, which is where the `sorry` now is.  Deleting
+the declaration must not delete the audit, so the docstring is retained here as a
+section note.
+
+The CIRCULARITY GUARD it also carried is NOT lost: an identical copy already sits
+on `exists_obstructionCocycle_smallExtension_deformation_of_section` above, which
+is the declaration that still contains the `sorry` — which is exactly where that
+guard's own text says it belongs.
+
+Recover the deleted declaration with
+`git show 3a29d55c:Fermat/FLT/GaloisRepresentation/HardlyRamified/Deformation.lean`
+if a consumer for it ever appears; but note that it would be a duplicate of a
+PROVEN theorem, so the thing to reach for is `_deformation` itself.
+
+What follows is that declaration's original docstring, unchanged.
+
+**Böckle's obstruction COCYCLE, in its DEFORMATION-THEORETIC form** (sorry
 node, cut out of `exists_obstructionCocycle_smallExtension_section` below on
 2026-07-27, which is now PROVEN over it together with
 `exists_ringHom_section_of_isWeaklyUniversal_isTraceGenerated` above;
@@ -19691,58 +19736,6 @@ mismatch.  Restated here over `adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)
 matching `exists_obstructionCocycle_smallExtension_section` below; nothing was
 proven or weakened, and the mathematical content is unchanged — this is the same
 statement over the group `Sha2` is now indexed by. -/
-theorem exists_obstructionCocycle_smallExtension_lift
-    (hℓ5 : 5 ≤ ℓ)
-    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (D : HardlyRamifiedDeformation hℓOdd ρbar)
-    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
-    letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
-    letI := D.isLocalRing; letI := D.algebra
-    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
-      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
-      (_ : Module.Finite ℤ_[ℓ] Λ),
-      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
-      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
-        (hsurj : Function.Surjective φ),
-        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
-          algebraMap ℤ_[ℓ] D.R →
-        RingHom.ker φ ≤
-          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
-            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
-        letI : Module k (↥(RingHom.ker φ) ⧸
-            (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
-              (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
-          Module.compHom _
-            (residueRingEquivOfSurjective (D.π.comp φ)
-              (D.π_surjective.comp hsurj)).symm.toRingHom
-        ∃ oc : Module.Dual k (↥(RingHom.ker φ) ⧸
-              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
-                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
-            ↥(TopModuleCat.ker
-              ((TopRep.homogeneousCochains
-                (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))).d 2 3)),
-          (∀ ψ, ContinuousCohomology.cocycleClass
-              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2 (oc ψ) ∈
-            Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ∧
-          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer
-              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2).hom.range →
-            ∀ (K : Ideal (MvPowerSeries (Fin g) Λ))
-              (hK : K ≤ RingHom.ker φ),
-              letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
-                Ideal.Quotient.nontrivial_of_le_ker hK
-              IsSmallExtension (Ideal.Quotient.lift K φ fun _ ha => hK ha) →
-              (∀ j : ↥(RingHom.ker φ),
-                (j : MvPowerSeries (Fin g) Λ) ∈ K ↔
-                  ψ (Submodule.Quotient.mk j) = 0) →
-              letI : TopologicalSpace (MvPowerSeries (Fin g) Λ ⧸ K) :=
-                (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K)).adicTopology
-              letI : IsTopologicalRing (MvPowerSeries (Fin g) Λ ⧸ K) :=
-                isTopologicalRing_adicTopology _
-              HardlyRamifiedDeformation.HasHardlyRamifiedLift hℓOdd D
-                (MvPowerSeries (Fin g) Λ ⧸ K)
-                (Ideal.Quotient.lift K φ fun _ ha => hK ha) :=
-  sorry
 
 /-- **Böckle's obstruction COCYCLE, in its MAZUR-CATEGORY form** (**PROVEN
 2026-07-30** over `exists_obstructionCocycle_smallExtension_lift` immediately
