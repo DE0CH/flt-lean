@@ -16151,3 +16151,65 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A CUT'S OWN DOCSTRING CAN STATE THE ARCHITECTURAL REQUIREMENT THE CUT THEN VIOLATES
+
+(2026-08-01, `flt-lean-400`, `exists_localInertia_subgroup_relIndex_dvd_twelve_of_padicValRat_j_nonneg`.)
+
+The "seventh invisibility class" above — an OPEN leaf that is also DEAD — has a
+sub-case whose repair is the OPPOSITE of the recorded one, and telling them apart
+takes one command.  There, the consumer had been deleted and the leaf was garbage.
+Here **the consumer exists, is itself still open, and sits UPSTREAM of the leaf**, so
+Lean forbids the citation and both leaves stand open for ever.  Deleting would have
+destroyed a correct cut; the repair is a HOIST.
+
+What makes this instance worth recording is the tell, and it is in the leaf's own
+docstring.  The cut was made on 2026-07-31 and its `WHY THIS CUT` paragraph says, in
+as many words:
+
+> It mentions no `J`, no `relIndex` of a pinned stabiliser and no determinant — only
+> `localInertiaGroup` and the action on torsion points — **so it can be stated and
+> proved in an UPSTREAM module and imported**
+
+and then the leaf was written in `FreyCurve/MazurTorsion.lean`, which
+`public import`s `FreyCurve/IsogenySignature.lean`, where the consumer lives.  Every
+mathematical judgement in that paragraph is right; the one architectural sentence in
+it is what the cut failed to do, and nothing checks that sentence.  A grep for the
+leaf's name returns exactly one hit — its own declaration — and reads as ordinary
+dead code.
+
+**So the check when you are dispatched at a leaf, and it is two commands:**
+
+    grep -rn '<yourLeaf>' --include=*.lean Fermat/            # zero consumers?
+    # then find the INTENDED consumer named in the docstring, and:
+    grep -n 'import Fermat.FLT.<consumer's module>' <your leaf's module>
+
+A hit on the second means the consumer is upstream and the leaf can never be used
+where it stands.  **Do not read a docstring's "so it can be stated UPSTREAM" as a
+statement about where it IS.**  It is a statement about where it MUST BE, written by
+someone who did not then check, and it is the most under-read line in the docstring
+for the same reason "these hypotheses are unused" is.
+
+**The repair, and it was cheap: move the OBLIGATION up, then cash the cut in.**  The
+leaf's docstring had priced its consumer at "four lines of index arithmetic over it",
+and that was exactly right — `I' ≤ J` from the pinning `iff`, then
+`Subgroup.relIndex_mul_relIndex I' J I_N` gives `[I_N : J] ∣ [I_N : I'] ∣ 12`, and
+`5 ∤ 12`.  Verified in a scratch module in **4 seconds**.  Frontier `43 → 42` across
+the two files, and — the part the count cannot show — the surviving leaf now has a
+consumer, so closing it will move the project instead of only the number.
+
+Three riders, all mechanical:
+
+* **Hoist the leaf's remaining blockers in the same commit.**  Its `hj`-to-`j.den`
+  bridge (`TameBaseAux.not_dvd_den_of_padicValRat_nonneg`) was 1500 lines below the
+  new site.  Its statement names nothing from `TameBaseAux` and its proof is
+  mathlib-only, so it moved with a `Counter(lines)`-unchanged receipt and its three
+  consumers all sit far below.  A leaf handed on with its inputs still out of scope
+  is a leaf the next agent will bounce off.
+* **Check the intended route is not ALSO stranded before you promise it.**  The
+  alternative route this cluster records (cyclicity + exponent 12) needs
+  `relIndex_eq_orderOf_of_cyclic_image`, which is in `MazurTorsion.lean` — downstream
+  again.  Say so at the leaf, or the next prover rediscovers it.
+* **The prose that described the leaf stays on the CONSUMER when the consumer is
+  proven.**  Retitle it ("everything from here down is about `X′` above") rather than
+  moving it; the reader arrives at the named theorem, not at its input.

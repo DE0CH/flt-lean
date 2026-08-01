@@ -3467,16 +3467,160 @@ theorem WeierstrassCurve.det_galoisRep_five_eq_one_of_mem_localInertiaGroup
           hN.toHeightOneSpectrumRingOfIntegersRat)) τ)) = 1 :=
   sorry
 
+/-- `ℓ`-integrality of a rational is exactly `ℓ ∤ den`. The argument is the one inside
+`TameBaseAux.exists_intCast_sub_valuation_lt_one`, isolated so that both phrasings of
+`j`-integrality — `0 ≤ padicValRat q j` here, `¬ q ∣ j.den` in
+`padicValRat_Δ_le_of_jIntegral` — can be used interchangeably. -/
+theorem WeierstrassCurve.TameBaseAux.not_dvd_den_of_padicValRat_nonneg {ℓ : ℕ}
+    [hℓ : Fact ℓ.Prime] {x : ℚ} (hx : 0 ≤ padicValRat ℓ x) : ¬ (ℓ ∣ x.den) := by
+  intro hdvd
+  have hd1 : 1 ≤ padicValNat ℓ x.den := one_le_padicValNat_of_dvd x.den_nz hdvd
+  have hnum1 : 1 ≤ padicValInt ℓ x.num := by
+    have h := hx; rw [padicValRat_def] at h; omega
+  have hnum0 : ℓ ∣ x.num.natAbs := by
+    by_contra h
+    have : padicValInt ℓ x.num = 0 := padicValNat.eq_zero_of_not_dvd h
+    omega
+  have h1 : ℓ = 1 := Nat.Coprime.eq_one_of_dvd
+    (Nat.Coprime.coprime_dvd_left hnum0 x.reduced) hdvd
+  exact hℓ.out.one_lt.ne' h1
+
+/-- **`A₀-3a-i-c′` — potentially good reduction, as a statement about INERTIA
+SUBGROUPS ONLY** (sorry leaf, cut 2026-07-31 out of `A₀-3a-i-c` below, which is
+now four lines of index arithmetic over it): at `0 ≤ v_N(j)` there is a subgroup
+`I′ ≤ I_N` of index dividing `12` acting trivially on `E[5]`.
+
+**WHY IT IS HERE, AND WHY IT WAS NOT** (RELOCATED 2026-08-01 from
+`FreyCurve/MazurTorsion.lean`, where it was cut on 2026-07-31).  The cut itself is
+right, and its stated purpose — "so it can be stated and proved in an UPSTREAM
+module and imported" — is exactly what did NOT happen: the leaf was written in
+`MazurTorsion.lean`, which `public import`s THIS file, so `A₀-3a-i-c` below could
+never cite it.  Both leaves therefore stood open, the leaf had **ZERO consumers
+anywhere in the tree** (comment-stripped grep, 2026-08-01), and closing it there
+would have moved the frontier count and nothing else.  Moving the OBLIGATION up
+rather than the consumers down is the repair, and `A₀-3a-i-c` is now four lines
+over it (`Subgroup.relIndex_mul_relIndex` plus `5 ∤ 12`) — exactly as the original
+cut predicted.
+
+`A₀-3a-i-c` is stated in terms of `J` — the pointwise stabiliser of `E[5]`, pinned
+by an `iff` — and concludes `5 ∤ [I_N : J]`.  This leaf mentions no `J`, no
+`relIndex` of a pinned stabiliser and no determinant — only `localInertiaGroup`
+and the action on torsion points — which is what makes it statable this far up the
+file, above everything `A₀-3a-i-c` needs.
+
+**WHAT IS ASKED.**  Take `I′ = I_K`, the inertia subgroup of the field `K` over
+which `E` acquires good reduction (morally `ℚ_N(N^{1/12})`).  Then
+
+* `I′ ≤ I_N` — inertia over a bigger field is smaller;
+* `[I_N : I′] ∣ 12` — this is `e(K/ℚ_N) = 12`, total tame ramification;
+* `I′` acts trivially on `E[5]` — Néron–Ogg–Shafarevich over `K`.
+
+**EVERY INPUT IS PROVEN AND IN THIS MODULE'S CONE** — re-checked on 2026-08-01 by
+`#check`ing each name in a scratch module against this file's own olean, not by
+grep:
+`exists_tameGoodModel_of_jIntegral` (`EllipticCurve/TorsionReduction.lean:1842`,
+sorry-free file, `public import`ed here) produces the good model from
+`¬ N ∣ E.j.den`; `WeierstrassCurve.torsion_unramified_of_good_reduction`
+(`KnownIn1980s/EllipticCurves/GoodReduction.lean:995`, sorry-free, reachable
+through `PointReduction → Flat → GoodReduction`) is Néron–Ogg–Shafarevich over an
+ARBITRARY DVR base, so it applies over `K`; and
+`WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction` (`FreyCurve/Semistable.lean`)
+is a complete worked assembly of NOS in this file's `localInertiaGroup`
+vocabulary — a TEMPLATE to copy, since `Semistable.lean` is not in this cone,
+though every ingredient it uses is imported here.
+
+**THE ONE DECLARATION-ORDER OBSTACLE HAS BEEN CLEARED FOR YOU.**  The bridge
+`0 ≤ v_N(j) → ¬ N ∣ E.j.den` is
+`WeierstrassCurve.TameBaseAux.not_dvd_den_of_padicValRat_nonneg`, which was
+declared ~1500 lines BELOW this point and so was not citable here.  Its statement
+— `∀ {ℓ : ℕ} [Fact ℓ.Prime] {x : ℚ}, 0 ≤ padicValRat ℓ x → ¬ ℓ ∣ x.den` — mentions
+nothing from `TameBaseAux`, and its proof uses only mathlib `padicValNat` /
+`padicValInt` / `Nat.Coprime` lemmas, so it was HOISTED to just above this leaf on
+2026-08-01 as part of this relocation.  It is a pure move (line multiset unchanged)
+and its three consumers all sit far below.  So `hj` reaches
+`exists_tameGoodModel_of_jIntegral` in one step from here, and every named input of
+this leaf is now both PROVEN and ABOVE it.
+
+**THE `∣ 12` IS LOAD-BEARING AND A `≤ 12` WILL NOT DO.**  The consumer needs
+`5 ∤ [I_N : J]`, and `[I_N : J]` divides `[I_N : I′]`; but `[I_N : J]` already
+ranges over the divisors of `4`, `6` and `10`
+(`pow_eq_one_of_det_eq_one_finrank_two_five`), i.e. `{1,2,3,4,5,6,10}`, and both
+`5` and `10` are `≤ 12`.  So a group-theoretic index BOUND — which is all that
+`I′ = I_N ∩ Gal(ℚ̄/K)` plus `[Gal(ℚ̄/ℚ) : Gal(ℚ̄/K)] = 12` gives — is not enough.
+The divisibility is the statement that the index of the inertia subgroups IS the
+ramification index.  Note also that neither `TameBase` nor `TameGoodModel`
+currently EXPORTS the degree: `TameBase.π_pow` (`π¹² = ℓ`) carries the
+ramification and `TameBaseAux` builds `AdjoinRoot (X¹² − ℓ)` with
+`qpoly_natDegree = 12` and `qpoly_irreducible`, so `Module.finrank ℚ L = 12` is
+one `AdjoinRoot.powerBasis` away, but a producer-side field or lemma has to be
+added for it.
+
+**FAITHFULNESS.**  `hj` is load-bearing and this leaf is FALSE without it: for
+`N = 23` and `E : y² = x³ − 2x² − 7x + 6` (`j = 40000/23`, `v₂₃(q) = 1`) the
+image of `I₂₃` in `Aut(E[5])` is cyclic of order `5`, so any `I′` acting
+trivially on `E[5]` has `[I₂₃ : I′]` divisible by `5`, which divides no divisor
+of `12`.  `19 < N` is used only through `5 ≤ N` (the residue characteristic
+condition of the tame construction) and `N ≠ 5` (so that `E[5]` is prime to the
+residue characteristic and NOS applies at all); at `N = 2, 3` the tame
+construction fails outright.  `I′ = ⊥` does NOT satisfy the statement — `⊥` acts
+trivially and is contained in `I_N`, but `[I_N : ⊥] = Nat.card I_N` is infinite
+(`Nat.card = 0` there, and `0 ∤ 12`), so the index clause is not satisfiable by
+a degenerate witness.  Nor is `I′ = I_N` except when `E[5]` is unramified at
+`N`, which is the `[I_N : J] = 1` case and is consistent.
+
+**NON-VACUITY.**  At `v_N(j) ≥ 0` with `E` already of good reduction at `N`,
+`I′ = I_N` works with index `1 ∣ 12`, so the statement has witnesses. -/
+theorem WeierstrassCurve.exists_localInertia_subgroup_relIndex_dvd_twelve_of_padicValRat_j_nonneg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hj : 0 ≤ padicValRat N E.j) :
+    ∃ I' : Subgroup (Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hN.toHeightOneSpectrumRingOfIntegersRat)),
+      I' ≤ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat ∧
+      I'.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) ∣ 12 ∧
+      ∀ σ ∈ I', ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, (5 : ℕ) • P = 0 →
+        Affine.Point.map
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P :=
+  sorry
+
 /-- **`A₀-3a-i-c` — potentially good reduction: `5` does not divide the
-semistability defect** (sorry leaf, cut 2026-07-30; Serre–Tate, Ann. of Math.
-88 (1968), Thm. 2 and Cor. 3; Serre, Invent. Math. 15 (1972), §5.6).
+semistability defect** (**PROVEN 2026-08-01** over `A₀-3a-i-c′`
+`exists_localInertia_subgroup_relIndex_dvd_twelve_of_padicValRat_j_nonneg`
+immediately above, in four lines and with no Serre–Tate input of its own;
+Serre–Tate, Ann. of Math. 88 (1968), Thm. 2 and Cor. 3; Serre, Invent. Math. 15
+(1972), §5.6).
+
+**THE PROOF, AND WHY IT IS FOUR LINES.**  `A₀-3a-i-c′` hands over an `I′ ≤ I_N`
+of index dividing `12` acting trivially on `E[5]`.  The PINNING clause `hJmem`
+says `J` is *exactly* the trivially-acting part of `I_N`, so `I′ ≤ J` on the
+nose; `Subgroup.relIndex_mul_relIndex` then gives
+`[J : I′] · [I_N : J] = [I_N : I′]`, so `[I_N : J] ∣ [I_N : I′] ∣ 12`, and
+`5 ∤ 12`.  Nothing here uses `hj`, cyclicity, the determinant or the reduction:
+all of that is inside `A₀-3a-i-c′`, which is where the Serre–Tate content now
+lives, and which is where the refuting witness below bites.
+
+The route below through `A₀-3a-i-a` plus exponent `12` was the alternative and
+was NOT taken: it needs `relIndex_eq_orderOf_of_cyclic_image`, which is declared
+in `FreyCurve/MazurTorsion.lean` (DOWNSTREAM of this file), and a bridge from
+`VariableChange.pow_twelve_eq_one_of_smul_eq` to the mod-`5` representation
+which is the same Serre–Tate content as `A₀-3a-i-c′` itself.  It is recorded
+here because it is still the cheapest route to `A₀-3a-i-c′`.
+
+**EVERYTHING FROM HERE DOWN IS ABOUT `A₀-3a-i-c′` ABOVE, NOT ABOUT THIS
+THEOREM**, and is kept at this declaration because this is where a reader looking
+for the Serre–Tate content of `A₀-3a-i` will arrive.  `hj` is forwarded verbatim
+and is spent entirely inside `A₀-3a-i-c′`.
 
 **THIS IS WHERE `hj` LIVES, and it is the whole of the Serre–Tate input.**  The
 other two inputs of `A₀-3a-i` (`-a` cyclicity, `-b` determinant one) are PROVEN
 above and neither uses `hj`; the decomposition was chosen so that the one
 remaining leaf is exactly the statement that fails on the refuting curve.
 
-**The refuting witness of `A₀-3a` refutes precisely THIS leaf**, which is the
+**The refuting witness of `A₀-3a` refutes precisely `A₀-3a-i-c′`**, which is the
 check that the cut is at the right place.  Take `N = 23` and
 `E : y² = x³ − 2x² − 7x + 6` (type `I₁` at `23`, `j = 40000/23`, so
 `v₂₃(j) = −1 < 0` and `hj` FAILS).  Over `ℚ₂₃^{nr}` this is the Tate curve with
@@ -3522,8 +3666,17 @@ theorem WeierstrassCurve.not_five_dvd_relIndex_of_padicValRat_j_nonneg
               (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
                 hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
               AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P)) :
-    ¬ (5 ∣ J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat)) :=
-  sorry
+    ¬ (5 ∣ J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat)) := by
+  obtain ⟨I', hI'le, hI'idx, hI'triv⟩ :=
+    E.exists_localInertia_subgroup_relIndex_dvd_twelve_of_padicValRat_j_nonneg hN hN19 hj
+  -- Every element of `I'` lies in `I_N` and acts trivially on `E[5]`, so the
+  -- PINNING `hJmem` puts it in `J`.
+  have hI'J : I' ≤ J := fun σ hσ => (hJmem σ (hI'le hσ)).mpr (hI'triv σ hσ)
+  -- `[I_N : I'] = [J : I'] · [I_N : J]`, so `[I_N : J] ∣ [I_N : I'] ∣ 12`.
+  have hdvd : J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) ∣ 12 :=
+    dvd_trans (Dvd.intro_left _ (Subgroup.relIndex_mul_relIndex I' J
+      (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) hI'J hJle)) hI'idx
+  exact fun h5 => absurd (dvd_trans h5 hdvd) (by norm_num)
 
 /-- **`A₀-3a-i` — Serre–Kraus: the semistability defect embeds in the
 automorphism group of the reduction** (DECOMPOSED and PROVEN 2026-07-30 over
@@ -4983,24 +5136,6 @@ structure declared in `TorsionReduction.lean` has to be dischargeable there. Tha
 exactly what previously stopped a `TameGoodModel` from being transported into
 `PotentiallyGoodModel` — see the note on `exists_potentiallyGoodModel_of_tameBase`
 below. -/
-
-/-- `ℓ`-integrality of a rational is exactly `ℓ ∤ den`. The argument is the one inside
-`TameBaseAux.exists_intCast_sub_valuation_lt_one`, isolated so that both phrasings of
-`j`-integrality — `0 ≤ padicValRat q j` here, `¬ q ∣ j.den` in
-`padicValRat_Δ_le_of_jIntegral` — can be used interchangeably. -/
-theorem WeierstrassCurve.TameBaseAux.not_dvd_den_of_padicValRat_nonneg {ℓ : ℕ}
-    [hℓ : Fact ℓ.Prime] {x : ℚ} (hx : 0 ≤ padicValRat ℓ x) : ¬ (ℓ ∣ x.den) := by
-  intro hdvd
-  have hd1 : 1 ≤ padicValNat ℓ x.den := one_le_padicValNat_of_dvd x.den_nz hdvd
-  have hnum1 : 1 ≤ padicValInt ℓ x.num := by
-    have h := hx; rw [padicValRat_def] at h; omega
-  have hnum0 : ℓ ∣ x.num.natAbs := by
-    by_contra h
-    have : padicValInt ℓ x.num = 0 := padicValNat.eq_zero_of_not_dvd h
-    omega
-  have h1 : ℓ = 1 := Nat.Coprime.eq_one_of_dvd
-    (Nat.Coprime.coprime_dvd_left hnum0 x.reduced) hdvd
-  exact hℓ.out.one_lt.ne' h1
 
 open IsDiscreteValuationRing IsDedekindDomain.HeightOneSpectrum IsLocalRing in
 /-- **An integral Weierstrass equation with unit discriminant is already minimal**
