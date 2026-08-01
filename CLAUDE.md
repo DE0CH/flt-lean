@@ -16151,3 +16151,66 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A ROUTE NOTE NAMING A DECLARATION ITS OWN PROOF DOES NOT CALL IS A DROPPED FALSITY REPAIR — and the orphan is FALSE, not merely redundant
+
+(2026-08-01, `flt-lean-201`, `Modularity/Patching.lean`.)  The detector recorded
+at `flt-lean-272` — *a proven parent whose docstring names a different leaf from
+its proof body* — fired a second time, and the second instance is worse than a
+duplicate cut, so it is worth separating.
+
+`exists_auxDeformationPresSurjection` is PROVEN GLUE.  Its docstring ends *"the
+arithmetic is now the single named leaf `exists_auxDeformationTangentGenerators`
+immediately above … Dispatch there, not here."*  Its `by` block calls
+`exists_cohenGenerators_maximalIdeal_auxDeformation` instead.  The two are not
+rivals: they are the **PRE-** and **POST-REPAIR** versions of one leaf.  A
+FALSITY AUDIT had refuted the pre-repair form (weak universality is
+existence-only, so the inflation `𝒟Q.R[[y_1 … y_m]]` is again weakly universal
+and blows up the relative cotangent space), the repair was the clause
+`hgenQ : IsTraceGeneratedDeformation …`, and it was made by CUTTING A NEW LEAF
+and rewiring the glue onto it.  The old leaf was left in the file, still without
+`hgenQ`, hence **still FALSE**, and — because the rewiring took its only consumer
+— also **free-floating**.
+
+**So the tell is stronger than "somebody is duplicating work".**  When a proof
+body and its own route note disagree, ask which of the two names is OLDER, and
+check the newer one's binder list for a hypothesis the older one lacks.  If there
+is one, the older declaration is a refuted statement that no scan can see: it
+emits an honest `sorry` warning, it passes the three-part ownership test, and its
+docstring is a careful, correct account of a statement that has been withdrawn.
+
+**Delete it; do not repair it.**  Adding the missing clause back would make it a
+strictly weaker duplicate of the leaf that replaced it — two agents on one piece
+of mathematics.  Leave a tombstone comment saying it was refuted, by which
+witness, and that it must not be restored; the next reader of the neighbourhood
+will otherwise re-cut it, because its route note still reads well.
+
+Three cheap riders from the same run, each of which cost or nearly cost a cycle:
+
+* **`grep -c "declaration uses 'sorry'"` ALWAYS RETURNS 0.**  Lean writes
+  ``declaration uses `sorry` `` with BACKTICKS, not apostrophes.  Every doctrine
+  section in this file quotes it with apostrophes, so the copy-paste is the
+  natural thing to do — and a green elaboration then reports `EXIT=0`, `0`
+  errors and `0` sorries, which reads exactly like a file that never elaborated.
+  Match on `declaration uses` alone, and cross-check the LINE NUMBERS against
+  `tools/merge/frontier.py --root .`; agreement in both directions is the real
+  receipt (here `11 = 11`, on the nose).
+* **A task prompt's ASCII rendering of a SUBSCRIPTED name manufactures a
+  phantom.**  One of ten targets was given as
+  `cocycleClass_eq_zero_of_eval1_kerFix_eq_zero`; the declaration is
+  `…_of_eval₁_kerFix_eq_zero`, with `eval₁`.  `grep` for the prompt's spelling
+  returns nothing, in the file, on `main` and on `merger`, and `git log -m -S`
+  finds nothing either — i.e. every phantom-leaf check in this file agrees the
+  name was never cut.  Before reporting a phantom, re-grep with the ASCII digits
+  replaced by their subscripts (`1 → ₁`, `2 → ₂`, `0 → ₀`), or just grep a
+  distinctive FRAGMENT (`kerFix`) rather than the whole name.
+* **"Your module has not been built since release N" is a claim about a release
+  that may since have published.**  This prompt said `Patching.lean` sits behind
+  `X0` and must be scratch-verified through the `LEAN_PATH` farm.  Release 33 had
+  published, so `git diff --stat $(cat ~/.flt-release-lake/sha) main -- Fermat/`
+  was EMPTY, the snapshot contained a current `Patching.olean`, and one
+  `rsync -a --delete ~/.flt-release-lake/build/ .lake/build/` made
+  `lake env lean Fermat/FLT/Modularity/Patching.lean` a genuine in-file
+  verification — `EXIT=0`, zero errors — instead of the materially weaker
+  scratch claim.  Run that one `git diff --stat` before accepting any prompt's
+  account of what you can and cannot build.
