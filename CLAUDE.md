@@ -16151,3 +16151,96 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A STRUCTURE THAT PINS AN INVARIANT RATHER THAN THE OBJECT IS NOT RIGID — `∃ C` DOES NOT GIVE `∀ C`
+
+(2026-07-31, `flt-lean-226`, `range_base_atkinLehner_cusp` in `ModularCurve/X0.lean`.)
+
+The standing repair for a leaf quantified over EVERY object of some structure is
+recorded above twice: prove rigidity (any two inhabitants are uniquely
+isomorphic), and the `∀`-form collapses onto the `∃`-form for free — *"a
+`∃`-shaped citation delivers every `∀`-shaped consumer"*. That is right whenever
+the structure's universal property PINS the object. **It fails, silently and in a
+way that looks identical from the statements, when the structure pins only a
+NUMERICAL INVARIANT of the object.**
+
+`IsX0Compactification.CuspLocus` carries `degree : finrank ℚ (K d) = φ(gcd(d, N/d))`.
+That pins the DIMENSION of the residue algebra and not the algebra. A morphism
+`Spec L ⟶ X` out of a field factors through `Spec κ(p)` at its image point, so a
+rival cusp locus may present the same cusp by ANY field of the right degree
+*containing* the residue field. Two cusp loci therefore differ by a permutation
+`π` of the index set about which the axioms say nothing numerical: all one gets
+is that the residue field embeds in both presentations, and that bounds neither
+degree by the other. So the file's two rival cuts of one node — `∃ C, (w swaps
+the cusps of C)` and `∀ C, (w swaps them)` under a rigidity hypothesis —
+**neither implied the other**, and no amount of Yoneda would have made them.
+
+**The check, before reaching for the rigidity repair: read the structure's
+fields and ask whether any of them determines the object, or only measures it.**
+A field of the shape `finrank … = …`, `card … = …`, `degree … = …`,
+`ringKrullDim … = …` measures. A field of the shape `∃!` or a universal property
+determines. Only the second licenses `∃ ⟹ ∀`.
+
+**The repair is the same one either way, and it is what keeps the count from
+rising: thread the missing pinning into the EXISTENCE leaf, never into a new
+leaf of its own.** Here one conjunct — *"whenever another cusp locus names the
+same point by `b`, this locus's degree at `a` divides that one's at `b`"*, i.e.
+*"the Deligne–Rapoport `K` is the residue field, not merely a field of the right
+degree"* — went onto the existential leaf, which already carried the
+Deligne–Rapoport citation and satisfies the conjunct for free. The `∀`-form then
+closed with NO new leaf: the cluster went from two open leaves to one. A separate
+leaf would have been a second sorry consumed by exactly one theorem.
+
+Two riders.
+
+* **State the threaded conjunct in its WEAKEST local form and do the global
+  upgrade yourself.** The conjunct here is a DIVISIBILITY, which is the purely
+  local fact (one point, one embedding of fields); the EQUALITY the consumer
+  needs is a global consequence, and the leaf should not be made to carry it.
+  The upgrade is the cycle argument, and **it needs no cycles**: for a bijection
+  `σ` of a finite type and `f > 0` with `f (σ a) ∣ f a` pointwise, `Nat.le_of_dvd`
+  gives `f ∘ σ ≤ f` pointwise, `Equiv.sum_comp` gives `∑ f ∘ σ = ∑ f`, and
+  `Finset.sum_eq_sum_iff_of_le` turns those into `f ∘ σ = f`. Six lines, no
+  `Equiv.Perm` cycle API — and the audit that priced this step had described it as
+  a chain of divisibilities closing along a cycle, which reads far more expensive
+  than it is.
+* **Check how far the axioms get WITHOUT the threaded conjunct, and say so.**
+  Here `ratPoint` already forces a cusp with residue field `ℚ` to have `φ = 1` in
+  EVERY cusp locus, so the degree-`1` case needs nothing new; the conjunct is only
+  ever spent on the irrational cusps. That sentence tells the leaf's future owner
+  which half of their citation is load-bearing.
+
+## A STALE DOCSTRING PROPAGATES INTO A DISPATCH — fixing the prose is fixing the queue
+
+(Same run, and it is why the docstring repair is not cosmetic.)
+
+`range_base_atkinLehner_cusp` had **zero code consumers anywhere in `Fermat/`** —
+the seventh invisibility class, an OPEN leaf that is also DEAD. It became dead
+when the rival cut landed and `noFixedRationalCusp_atkinLehner_x0OneSixtyNine`
+was re-proven through the existential form. Both docstrings still said the
+consumer rested on it; only the `by` block knew otherwise, exactly as the
+duplicate-cut detector above predicts.
+
+What is new is where the stale sentence went. **My task prompt asserted, as
+established fact, that "the sole consumer, `noFixedRationalCusp_atkinLehner_x0OneSixtyNine`,
+discharges it with `decide` (verified)".** That sentence is a paraphrase of the
+stale docstring, and the leaf has no consumer at all. Two further premises of the
+same prompt were stale the same way: that `X0.lean` has an inherited RED baseline
+(release 33 published and its cone is green), and that the existential sibling
+was worth "cutting as a SIBLING leaf" (it had been cut a day earlier and is the
+live one).
+
+So a docstring in this tree is not documentation, it is **queue input**: the loop
+generates task text from it, and nobody re-reads the `by` block on the way. Three
+consequences worth acting on:
+
+* **Correct a stale docstring in the same commit as the work**, and say what it
+  used to claim — a reader who only sees the corrected text cannot tell that the
+  dispatch it generated was wrong.
+* **When a prompt asserts a consumer, verify it by a comment-stripped grep before
+  believing anything downstream of it.** One command, and it changed this task
+  from "prove a hard leaf" to "resolve a duplicated cut".
+* **A prompt's account of the BUILD is dated too.** Check `tools/merge/RELEASE-*-HANDOVER.md`
+  for the newest release before accepting that a module cannot be built green;
+  five consecutive releases were held here, and the sixth published, so "red
+  baseline" advice written during the hold survives into prompts written after it.
