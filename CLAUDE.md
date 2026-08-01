@@ -16151,3 +16151,86 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## "EXTEND THE PLACE OF `K(g)` AT INFINITY" IS **LYING OVER IN THE TOWER `K[1/g]`** — and the machinery is usually already generic
+
+(2026-08-01, `flt-lean-328`, closing `geomPic_exists_const_of_divisor_eq_zero` in
+`ModularCurve/HyperellipticJacobian.lean` — the `2b` sub-leaf of `geomPic_bc_injective`.)
+
+That leaf's docstring named its route exactly, and the naming is what made it look expensive:
+
+> `ℚ̄(h) ⊆ F̄` is a rational subfield and **the place of `ℚ̄(h)` at infinity extends to a place
+> of `F̄`** at which `ord h < 0`.
+
+"A place extends to a finite extension" reads as valuation theory — Chevalley extension, or the
+integral closure of a DVR in a finite separable extension — and this pin's coverage of it is
+patchy enough that pricing the leaf off that sentence gives a whole development. **It is the
+same statement as `Ideal.exists_ideal_over_maximal_of_isIntegral`**, and the file had already
+packaged it: `PlaceFromDedekind.exists_heightOneSpectrum_over_maximal` produces, for any
+maximal ideal `m` of `K[X]`, a height-one prime of `integralClosure K[X] F` positive on `m`.
+Send `X ↦ 1/h`, lie over `(X)`, and the place with `ord (1/h) > 0` — i.e. the pole of `h` — is
+handed to you. No valuation is extended by hand; `ord_complete` is used exactly once, at the
+end, to turn the resulting `IsPlaceFun` into a place of the structure.
+
+**The general rule, and it is a translation rather than a technique: "the place at infinity of
+`K(g)` extends" ⟺ "lie over the maximal ideal `(X)` of `K[X]` in the tower `X ↦ 1/g`".** The
+first phrasing is the one every textbook uses and the one every route note in this tree
+inherits; the second is the one mathlib supports directly. Whenever a leaf's route asks you to
+extend, restrict, or normalise a valuation along a finite extension, look for the tower and the
+lying-over statement before pricing the valuation theory.
+
+**AND THE MACHINERY THAT LOOKS TOWER-SPECIFIC IS USUALLY GENERIC — READ ITS `variable` LINE,
+NOT ITS CALL SITES.** `PlaceFromDedekind.Tower` takes `[Algebra K[X] F] [Algebra (RatFunc K) F]`
+as SECTION VARIABLES, so it never mentions the abscissa and is generic in the choice of
+transcendental element. Every one of its call sites in that 12 000-line file is at `t = x` or
+`t = 1/x` (that is what `finite_isPlaceFun_core` needs), and a file's call sites are what a
+reader generalises from — so the block reads as "the machinery for the two charts of THIS
+curve" and nobody had tried it at a third `t`. The check is one `sed` of the section's
+`variable` line and it is decisive: **if the specific object does not appear there, the
+machinery is already general and the only cost is providing its instances at your `t`.**
+
+### Generalise the HARD-CODED PARAMETER of a proven theorem; do not transcribe its proof
+
+The instances the new tower needs are `[FiniteDimensional (RatFunc K) F]` and
+`[Algebra.IsSeparable (RatFunc K) F]`. The second is free in characteristic zero. The first
+was PROVEN in the same file — as `finiteDimensional_adjoin_of_transcendental`, stated at
+`K⟮g⟯` because that was its first consumer — and **its proof never uses anything about `K⟮g⟯`
+beyond `g` living in it.** Replacing `K⟮g⟯` by an arbitrary field `L` between `K` and `F` with
+`(gL : L) (hgL : algebraMap L F gL = g)` was a mechanical edit of two theorems, and the two old
+statements came back as one-line corollaries whose `hgL` is `rfl`:
+
+    isIntegral_xx_of_transcendental D hg (gL := ⟨g, IntermediateField.mem_adjoin_simple_self K g⟩) rfl
+
+**Prefer that to writing a second copy at your own `L`.** A general version and a specific
+version of one proof are NOT the same statement, so `tools/merge/dupstmt.py` cannot flag the
+pair — the duplication is invisible to every scan and survives for ever. Editing the existing
+theorem's body while leaving its name, statement and argument order untouched moves no call
+site and is safe to merge; check first (`diff <(git show merger:<path>) <path>`) that the file
+is identical on `main` and `merger`, which it was here.
+
+The generalisable smell: **a theorem whose statement hard-codes an object that its proof only
+ever uses through one property.** `K⟮g⟯` was used only as "a field containing `g`"; the
+quadratic relation the proof builds has coefficients `g²a − 2gb + c` with `a, b, c ∈ K`, so it
+is expressible over any such field. Read the proof for what it consumes before assuming the
+statement's generality is the right one.
+
+### The characteristic hypothesis is real, and it is not the one the leaf mentions
+
+`CharZero K` is load-bearing for this route and must be stated rather than inherited from the
+consumer being over `ℚ̄`: `integralClosure.isDedekindDomain` wants `F/K(t)` SEPARABLE, and in
+characteristic `p` that fails for an arbitrary transcendental `t` — take `t = x^p`, where
+`K(x)/K(x^p)` is purely inseparable. So "a transcendental function has a pole" as proved here
+is a characteristic-zero theorem, while the statement is true in every characteristic. Say so
+on the declaration; the next owner of a characteristic-`p` consumer needs to know that the
+obstruction is the CHOICE OF TOWER and not the mathematics, and that picking a separating `t`
+(or running the argument at `1/g` only when `g` is separating) is the repair.
+
+### Accounting
+
+`−1` on the frontier, no new leaf, and the two theorems that were generalised stayed proven.
+Worth recording separately: the target is a `PlaceData`-level statement and `GeomPic` is used
+only to name `gp.Dbar`, so the general form (`exists_algebraMap_eq_of_divisor_eq_zero`, over any
+algebraically closed `K` of characteristic zero) sits in the `Picard` section and is available
+to every other `PlaceData` consumer — including the still-open
+`degOf_poleDivisor_eq_finrank_of_transcendental`, whose "≥" half is exactly the statement that
+the poles it now knows exist have enough total degree.
