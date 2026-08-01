@@ -16151,3 +16151,71 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A LEAF THAT ASKS FOR A BUNDLED STRUCTURE MAY ONLY NEED ITS RAW SKELETON — and the "decorative" hypothesis is usually the WITNESS
+
+(2026-08-01, `flt-lean-198`, cutting `exists_gamma0AtlasOver_bcQuotient_of_flat`
+in `ModularCurve/X0.lean` — Katz–Mazur (8.1.6)(2).)
+
+That leaf reads `∃ A' : Gamma0AtlasOver N (Spec R), A'.BcQuotient (Spec f)`, and
+its own docstring had already established that closing it means GLUING the coarse
+space out of GIT models over `D(3)` and `D(5)`.  Priced as an ATLAS — nine
+fields, including a rigidified moduli scheme `M` over `Spec R`, a universal
+family `dM` on it and an fppf `cover` statement — that gluing is a chapter: you
+would have to glue a `Gamma0Datum` across a Zariski cover, which nothing in the
+tree can do.
+
+**Two observations already recorded IN THE FILE cut it to five fields and made
+the assembly eight lines.**
+
+* `BcQuotient` reduces to `BcUniversal` (`bcQuotient_of_bcUniversal`, PROVEN),
+  and `BcUniversal`'s own docstring says it "mentions the atlas only through
+  `str` and `classify`".  Turning that sentence into a DEFINITION —
+  `IsBcUniversalOn str classify q`, with
+  `A.BcUniversal q = IsBcUniversalOn A.str A.classify q` by **`rfl`** — lets the
+  residual leaf ask for an `IsCoarseModuliY0` instead of an atlas.  `M`, `strM`,
+  `dM` and `cover` then appear in nobody's obligation.
+* The leaf's `_A` — carried, said the docstring, "only so that the leaf is not a
+  bare existence claim" — is the **WITNESS**.  The residual leaf hands back a
+  FOREIGN coarse space; `exists_isIso_classify_of_isCoarseModuliY0_base` compares
+  it with `A.toIsCoarseModuliY0` and `exists_unique_pullbackClassify_transport`
+  carries the base-change property across, so `A' := A`.
+
+**The generalisable check, and it costs one `rfl`: when a leaf's conclusion is a
+property `P` of a bundled structure, unfold `P` and list the fields it names.  If
+they are a proper subset, state the residual leaf over THOSE FIELDS ALONE.**  The
+saving is not cosmetic — the dropped fields are exactly what a construction would
+have had to build, and here they were the entire "glue a universal family" half of
+the work.  The tell that it will work is a docstring sentence of the form *"this
+predicate mentions the structure only through `X` and `Y`"*; such sentences are
+written by whoever noticed the fact and are then never cashed in.
+
+Three riders.
+
+* **A docstring section headed "WHAT IS LEFT, PRECISELY" that names pieces (a)
+  and (b) is an EXECUTABLE CUT PLAN.**  This one was, verbatim: the two new leaves
+  are its (a) and (b), under the names it chose.  Performing a cut a previous
+  owner has already designed is the cheapest progress available — and it is
+  invisible to every frontier scan, which sees one open leaf and no plan.
+* **What the assembly contributes is what nobody then has to re-derive.**  Here:
+  the ARITHMETIC of the cover (`2·3 − 5 = 1`, so `D(3) ∪ D(5) = Spec R` for EVERY
+  ring — neither successor has to choose an odd prime), and the DEGENERATE LEVEL
+  `N = 0`, which needs no base-change theorem at all because
+  `isEmpty_of_gamma0Datum_zero` makes both the coarse space and the rigidified
+  moduli scheme initial.  Both are small; both would otherwise be paid twice, and
+  the second is what lets the citation leaf keep Katz–Mazur's `0 < N` while the
+  theorem above it carries none (its vacuity audit forbids one).
+* **Count `1 → 2`, and that is the right trade only because the two survivors
+  share no technique**: (a) is a Katz–Mazur citation with no gluing in it, (b) is
+  Zariski gluing with no modular input.  Say so in the commit; a `−1 +2` delta
+  reads as a regression to every instrument.
+
+**And the circularity that makes this leaf's shape non-negotiable, re-verified
+here:** the tempting "restrict the given atlas to `D(3)`, prove it there, glue"
+is an instance of the theorem being proved, because restriction along the open
+immersion `Spec R[1/3] ⟶ Spec R` is base change along a FLAT ring map.  It is not
+repaired by adding a `restrict` operation either — `Gamma0AtlasOver.baseChange`
+already builds seven of the eight fields along an arbitrary base morphism and the
+eighth IS `BcQuotient`.  What the `∃ A'` exists to permit is CONSTRUCTING a rival
+object from the GIT models; what the observations above buy is that the rival
+object need not be an atlas.
