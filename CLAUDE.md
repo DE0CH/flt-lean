@@ -16151,3 +16151,40 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## FORMALLY SMOOTH GIVES EXISTENCE; FORMALLY ÉTALE GIVES UNIQUENESS — AND UNIQUENESS IS WHAT MAKES A SECTION A COALGEBRA MAP
+
+(2026-08-01, `flt-lean-295`, on `algEquiv_connected_tensor_reduced_of_finite_hopf` in
+`ModThree.lean`.)  That leaf carried a paragraph headed **"A CHEAPER-LOOKING ROUTE THAT DOES
+NOT CLOSE, recorded so it is not re-attempted blind"**, whose operative sentences were:
+
+> `s` is only an ALGEBRA section … needs `s` to be a COALGEBRA map as well.
+> **Nothing in formal smoothness supplies that.**
+
+Both sentences are true about formal SMOOTHNESS and the inference from them is wrong, because
+the object in hand is formally ÉTALE.  Smoothness gives a lift along a nilpotent-kernel
+surjection; étaleness gives a lift that is **UNIQUE** — and uniqueness is a coalgebra-map
+machine, because the two maps you want to identify are both lifts of the same thing:
+
+    Δ_A ∘ s   and   (s ⊗ s) ∘ Δ_E   are k-algebra maps E → A ⊗ A,
+    and (π ⊗ π) sends BOTH to Δ_E,  so they agree mod ker (π ⊗ π).
+
+The counit half needs no uniqueness at all (`ε_A ∘ s = (ε_E ∘ π) ∘ s = ε_E`, four lines,
+because `Bialgebra.Quotient.counit_comp_mkₐ` is `rfl`); the comultiplication half is ten lines
+over `Algebra.FormallyUnramified.lift_unique_of_ringHom`.  All of it elaborated first try.
+
+**The generalisable check, and it is one word in a hypothesis: whenever an audit prices a
+route off "formally smooth only gives existence", ask whether the algebra is formally
+UNRAMIFIED as well** — over a field, every étale algebra is, and this development produces
+étale quotients constantly (`etale_quotient_nilradical`, `etale_of_isReduced_of_finite`).
+`Algebra.FormallyUnramified.{lift_unique, ext, lift_unique_of_ringHom, ext_of_iInf}` are the
+whole toolkit and they are stated for a NILPOTENT ideal, not merely a square-zero one.
+
+**The rider that keeps this honest, and it is why the audit's VERDICT survived while its
+REASON did not:** a corrected route does not have to close the leaf.  Here the dead end moved
+one lemma further on — with `s` a Hopf map one has a group-theoretic retraction `G_red ↪ G`,
+and getting from there to `A ≅ A₀ ⊗ E` is Radford's structure theorem for a Hopf algebra with
+a projection, which the pin does not have.  **Correcting the REASON is worth as much as
+removing the blocker**: a blocker with the wrong reason attracts repairs that cannot work, and
+here it had been telling successors to look at formal smoothness when the whole question is
+about a tensor-kernel computation in commutative algebra.
