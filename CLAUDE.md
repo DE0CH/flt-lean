@@ -16151,3 +16151,97 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A LEAF'S HEAVY MORPHISM HYPOTHESES ARE BOUGHT FOR A HANDFUL OF ELEMENTARY FACTS — BUY THEM IN THE ASSEMBLY AND STATE THE LEAF AT THE CITATION'S HYPOTHESES
+
+(2026-08-01, `flt-lean-289`, cutting `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen`
+in `Modularity/AbelianSchemeIsogeny.lean`.)
+
+A leaf whose binders are two or three *morphism properties* over a base — `IsProper fK`,
+`Smooth fK`, `GeometricallyConnected fK` — is almost never stated at the generality its
+citation is stated at.  Hartshorne II Ex. 3.5 asks for **noetherian, integral, separated**;
+II Prop. 6.11 adds **regular**.  None of those is a morphism property and none mentions a
+field.  The three heavy hypotheses are there because the CALL SITE has them, and they are
+spent, in one place each, producing the four or five elementary facts the citation wants.
+
+**So the cheapest real improvement to such a leaf is to derive those facts in the assembly
+and restate the leaf over them.**  It is `1 → 1` on the count and it deletes the entire
+unpacking step from the prover's job — here the residue went from "smooth proper
+geometrically connected `K`-scheme" to `[IsIntegral X] [IsLocallyNoetherian X]
+[CompactSpace X] [X.IsSeparated] (hreg : ∀ x, IsRegularLocalRing (X.presheaf.stalk x))`,
+i.e. to Hartshorne's hypothesis list with no `K`, no `fK` and no group law in it.
+
+The five derivations, all one-liners once you know the names, and worth having written down
+because three of them do NOT come from `infer_instance` alone:
+
+    haveI : AlgebraicGeometry.IsIntegral X := isIntegral_of_smooth_of_geometricallyConnected fK hconn
+    haveI : IsLocallyNoetherian (Spec (CommRingCat.of K)) := inferInstance   -- REQUIRED first
+    haveI : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian fK
+    haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace fK
+    haveI : X.IsSeparated := by constructor; rw [← terminal.comp_from fK]; infer_instance
+
+`IsSeparated fK`, `QuasiCompact fK` and `LocallyOfFiniteType fK` all fall out of
+`IsProper fK` by plain instance search once `hproper` is in the local context — Lean uses
+local hypotheses of class type, so a bare `haveI := hproper` is enough and no destructuring
+is needed.
+
+**AND CHECK THE PROJECT'S OWN VERSION OF EACH FACT FOR AN UNUSED PARAMETER.**
+`CurveExtension.lean`'s `isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`
+carries `[SmoothOfRelativeDimension n strX]` and spends `n` on its FIRST LINE,
+`haveI : Smooth strX := SmoothOfRelativeDimension.smooth n strX`, and nowhere else.  Deleting
+that line gives the `[Smooth strX]` form, which is what a non-curve consumer needs; the rest
+of the proof is unchanged, character for character.  This is the standing "FOLLOW THE
+HYPOTHESIS" rule in its cheapest form — the hypothesis is spent producing a WEAKER one, so
+the theorem was always about the weaker one.  Restate it downstream rather than editing
+`CurveExtension.lean`, whose cone is `X0.lean`, and say in the docstring that the upstream
+copy should become a delegation next time that file is opened.
+
+## `PresheafOfModules.Submodule` IS WHY `𝒪(D)` NEEDS NO GLUING THEOREM
+
+(Same task, and it is the survey that decided the shape of the sheaf-theoretic half.)
+
+Mathlib at this pin has **no descent or gluing for `SheafOfModules`** — `Mathlib/Algebra/
+Category/ModuleCat/Sheaf/` is `Abelian`, `ChangeOfRings`, `Colimits`, `Free`, `Generators`,
+`Limits`, `Localization`, `LocallyFree`, `Pullback*`, `Pushforward*`, `Quasicoherent`, and
+that is all.  So "glue `𝒪_{V i}` along the transition units" is a theory build before it is
+a construction, and any route note that prescribes it has mispriced the leaf.
+
+It is not needed.  `𝒪(D)` is a SUBSHEAF of something already in hand:
+
+* `(Scheme.Modules.pushforward U.ι).obj (modUnit ↥U)` is `j_* 𝒪_U`, sections over `W` being
+  `Γ(U ⊓ W, 𝒪)` — the pushforward functor is already used in `AmpleSheaf.lean`;
+* `PresheafOfModules.Submodule` (`Mathlib/Algebra/Category/ModuleCat/Presheaf/Submodule.lean`)
+  supplies `toPresheafOfModules`, `ι`, `Mono ι` and a `CompleteLattice`.
+
+Take the submodule whose sections over `W` are the `g` with `(f i) · g` extending to
+`V i ⊓ W` for every `i`, and `s := 1`.  Multiplication by `f i` trivializes it on `V i` and
+carries `s` to `f i`, which is exactly what `nonvanishingAt_iff_trivializedSection` consumes.
+
+**Generalisable: before pricing a "glue an invertible sheaf" step, ask whether the sheaf is a
+SUBOBJECT of a pushforward you already have.**  For anything of the form `𝒪(D)`, `I_Z`, or a
+fractional ideal it is, and the sub-object API is present at this pin while the gluing API is
+not.
+
+## PAIRWISE UNIT RATIOS ARE NOT A COCYCLE — the cancellation is a hypothesis
+
+(Same task, caught while writing the cut rather than after.)  A "local equations" statement of
+the shape
+
+    ∀ i j, ∃ u, IsUnit u ∧ (f i)|_{V i ⊓ V j} = u * (f j)|_{V i ⊓ V j}
+
+looks like Cartier data and is strictly weaker than it: it constrains PAIRS and says nothing
+about triples, so `u i j * u j k = u i k` on `V i ⊓ V j ⊓ V k` — which every construction of
+`𝒪(D)` needs, gluing or not — does not follow.  It follows from
+`u i j * u j k * f k = u i k * f k` only after cancelling `f k`, i.e. only if `f k` restricts
+to a NONZERODIVISOR on the triple overlap.
+
+So a cut through such data owes the cancellation, and the two cheap ways to buy it are
+`[IsIntegral X]` plus a clause forcing each `f i ≠ 0` (here: every member of the cover MEETS
+`U`, which on an integral scheme is free because a nonempty open is dense), or an explicit
+triple-overlap clause.  **Prefer the first when the call site has integrality**; the second is
+the honest general statement and is strictly more for the geometric half to produce.
+
+Note what this does to a degenerate-case audit: the parent's `hUne` was *decoration* (at
+`U = ⊥` take `L = 𝒪_X`, `s = 0`), and in the geometric half it becomes LOAD-BEARING FOR
+TRUTH, because a cover of a nonempty `X` by opens all meeting `U = ⊥` cannot exist.  **A
+hypothesis's audit does not survive the cut that moves it** — re-run it on each side.

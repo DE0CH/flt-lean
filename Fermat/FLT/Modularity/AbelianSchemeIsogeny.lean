@@ -16340,46 +16340,235 @@ Read the FALSITY AUDIT on the second before cutting it further: the obvious next
 terms of `K`-automorphisms of `X` and the theorem of the square, is FALSE, and the witness
 is `y² + y = x³ + x + 1` over `𝔽₂`, which has exactly one rational point.
 
-So the open leaves of this block are `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_
-isAffineOpen`, `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` and `nonempty_cubeIdentity`
-— pairwise independent, one theory build each. -/
+**UPDATE 2026-08-01 — the divisor half is CUT IN TWO and its bridge is PROVEN.**
+`exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen` is now a theorem over
+
+* `exists_localEquations_compl_of_isAffineOpen` — the GEOMETRY (Hartshorne II Ex. 3.5 +
+  II Prop. 6.11), stated over an integral, locally Noetherian, quasi-compact, separated
+  scheme with regular stalks and containing no sheaf of modules; and
+* `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_localEquations` — the SHEAF THEORY
+  (`𝒪(D)`, Hartshorne II Prop. 6.13), containing no geometry.
+
+The five facts the parent's three morphism hypotheses were bought for are proven in the
+assembly, one of them — `isIntegral_of_smooth_of_geometricallyConnected`, the
+relative-dimension-free form of `CurveExtension.lean`'s theorem — as a reusable lemma.
+
+So the open leaves of this block are `exists_localEquations_compl_of_isAffineOpen`,
+`exists_isInvertibleSheaf_nonvanishingLocus_eq_of_localEquations`,
+`isAmpleSheaf_of_nonvanishingLocus_eq_of_field` and `nonempty_cubeIdentity` — pairwise
+independent, one theory build each. -/
+
+/-- **A SMOOTH GEOMETRICALLY CONNECTED SCHEME OVER A FIELD IS INTEGRAL** (PROVEN
+2026-08-01) — the relative-dimension-free form of `CurveExtension.lean`'s
+`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`.
+
+That theorem carries `[SmoothOfRelativeDimension n strX]` and spends `n` in exactly one
+place: its first line, `haveI : Smooth strX := SmoothOfRelativeDimension.smooth n strX`.
+Deleting that line and asking for `[Smooth strX]` is the whole difference; the proof
+below is otherwise character-for-character the same.  It is restated here rather than
+generalised in place because `CurveExtension.lean` is upstream of `X0.lean` and every
+consumer of that module would have to be re-elaborated for a change that adds nothing to
+them.  **`CurveExtension.lean`'s version should be replaced by this one and re-exported
+when someone is next editing that file**; at that point this declaration becomes a
+one-line delegation.
+
+The three inputs are all `Smooth`-only: the stalks of a smooth scheme over a field are
+regular local (`isRegularLocalRing_stalk_of_smooth_over_field`), hence domains, which
+gives both reducedness and — with local noetherianity from `LocallyOfFiniteType` — an
+irreducible open neighbourhood of every point; `GeometricallyConnected` over a
+one-point base gives connectedness; and a connected space each of whose points has an
+irreducible open neighbourhood is irreducible. -/
+theorem isIntegral_of_smooth_of_geometricallyConnected {K : Type u} [Field K]
+    {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
+    [Smooth strX] (hconn : GeometricallyConnected strX) :
+    AlgebraicGeometry.IsIntegral X := by
+  haveI hdom : ∀ x : X, IsDomain (X.presheaf.stalk x) := fun x => by
+    haveI := GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field
+      strX inferInstance x
+    exact GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing _
+  haveI : ∀ x : X, _root_.IsReduced (X.presheaf.stalk x) := fun x => inferInstance
+  haveI : AlgebraicGeometry.IsReduced X := isReduced_of_isReduced_stalk X
+  haveI : IsLocallyNoetherian (Spec (CommRingCat.of K)) := inferInstance
+  haveI : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian strX
+  haveI := hconn
+  haveI : Subsingleton (Spec (CommRingCat.of K)) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum K))
+  haveI : Nonempty (Spec (CommRingCat.of K)) :=
+    inferInstanceAs (Nonempty (PrimeSpectrum K))
+  haveI : ConnectedSpace X := GeometricallyConnected.connectedSpace_of_subsingleton strX
+  haveI : IrreducibleSpace X :=
+    _root_.irreducibleSpace_of_isOpen_isIrreducible_nhds
+      (fun x => exists_isOpen_isIrreducible_nhds_of_isDomain_stalk x (hdom x))
+  exact isIntegral_of_irreducibleSpace_of_isReduced X
+
+/-- **THE COMPLEMENT OF A NONEMPTY AFFINE OPEN IN A REGULAR NOETHERIAN INTEGRAL
+SEPARATED SCHEME IS AN EFFECTIVE CARTIER DIVISOR** (sorry leaf, cut 2026-08-01 out of
+`exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen` below) — Hartshorne II
+Ex. 3.5 + II Prop. 6.11 / [Stacks 0BCQ] + [Stacks 0BE0].
+
+*`U` is cut out inside a cover of `X` by ONE EQUATION each, and the equations agree up
+to units on overlaps.*
+
+This is the GEOMETRIC half of the cut, and it contains no sheaf of modules at all: the
+conclusion is a family of opens, a family of ring elements, and two equations between
+ring elements.  Its companion
+`exists_isInvertibleSheaf_nonvanishingLocus_eq_of_localEquations` below turns that data
+into `𝒪(D)` and its canonical section, and contains no geometry.
+
+**THE HYPOTHESES ARE EXACTLY THE CITATION'S, WHICH IS THE POINT OF THIS RESTATEMENT.**
+The parent carries `IsProper`, `Smooth` and `GeometricallyConnected` over a field; those
+are three heavy morphism properties, and a prover would have to unpack them before
+reaching any mathematics.  All they are spent on is the four elementary facts asked for
+here — `IsIntegral`, `IsLocallyNoetherian`, `CompactSpace`, `Scheme.IsSeparated` and
+regularity of the stalks — and the parent's proof below derives all five, so nothing is
+lost and there is no field, no morphism and no group law left in this statement.
+
+**THE ROUTE.**  If `U = ⊤` take the one-element cover `V = ⊤`, `f = 1`.  Otherwise:
+
+* `X` is noetherian (locally noetherian and quasi-compact), integral and separated, and
+  `U` is a nonempty hence DENSE affine open, so every irreducible component of the
+  closed set `X ∖ U` has codimension one — Hartshorne II Ex. 3.5, [Stacks 0BCQ].  This
+  is the algebraic-Hartogs step and it is where affineness of `U` is spent;
+* `X` regular is locally factorial, so the RADICAL ideal sheaf `I` of `X ∖ U` is locally
+  generated by a single nonzerodivisor — Hartshorne II Prop. 6.11, [Stacks 0BE0].  Take
+  `V i` a cover by opens on which `I` is generated by one element `f i`;
+* `basicOpen (f i) = U ⊓ V i` because `I` is radical, so its zero set is `X ∖ U`;
+* on `V i ⊓ V j` both `f i` and `f j` generate `I`, and two generators of the same
+  nonzero principal ideal of a domain differ by a unit.
+
+**`hUne` IS LOAD-BEARING FOR TRUTH HERE, unlike in the parent.**  The parent's docstring
+correctly records that at `U = ⊥` its own statement is discharged by `L = 𝒪_X`, `s = 0`.
+That is not available here: `hmeet` asks every member of the cover to meet `U`, and a
+cover of the nonempty `X` by opens missing `U = ⊥` cannot exist.  The clause is what
+makes the companion leaf's cocycle coherent (see its docstring), so it stays, and `hUne`
+stays with it.
+
+**WHY `hmeet` COSTS THE PROVER NOTHING.**  `X` is integral and `U` is a nonempty open,
+hence dense, so an open missing `U` is empty; discard the empty members of any cover and
+`hcov` still holds.
+
+**NON-VACUOUS.**  At `X = Spec K` the only nonempty affine open is `⊤` and the witness is
+the one-element cover with `f = 1`. -/
+theorem exists_localEquations_compl_of_isAffineOpen {X : Scheme.{u}}
+    [AlgebraicGeometry.IsIntegral X] [IsLocallyNoetherian X] [CompactSpace X]
+    [X.IsSeparated] (hreg : ∀ x : X, IsRegularLocalRing (X.presheaf.stalk x))
+    (U : X.Opens) (hU : IsAffineOpen U) (hUne : (U : Set X).Nonempty) :
+    ∃ (ι : Type u) (V : ι → X.Opens) (f : ∀ i, Γ(X, V i)),
+      (⨆ i, V i) = ⊤ ∧
+      (∀ i, ((U ⊓ V i : X.Opens) : Set X).Nonempty) ∧
+      (∀ i, X.basicOpen (f i) = U ⊓ V i) ∧
+      (∀ i j, ∃ u : Γ(X, V i ⊓ V j), IsUnit u ∧
+        X.presheaf.map (homOfLE (inf_le_left : V i ⊓ V j ≤ V i)).op (f i)
+          = u * X.presheaf.map (homOfLE (inf_le_right : V i ⊓ V j ≤ V j)).op (f j)) :=
+  sorry
+
+/-- **THE INVERTIBLE SHEAF OF AN EFFECTIVE CARTIER DIVISOR, WITH ITS CANONICAL SECTION**
+(sorry leaf, cut 2026-08-01 out of
+`exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen` below) — Hartshorne II
+Prop. 6.13 / [Stacks 01X0]; the construction of `𝒪(D)`.
+
+*Local equations for `U` produce an invertible sheaf with a global section whose
+non-vanishing locus is exactly `U`.*
+
+This is the SHEAF-THEORETIC half of the cut and it contains no geometry: no smoothness,
+no properness, no field, no group law, no regularity, no affineness of `U`.  It is a
+general-purpose statement and the only thing in this development that needs it twice
+would be any other divisor construction, so **it belongs in
+`Fermat/FLT/Modularity/AmpleSheaf.lean`, beside `nonvanishingLocus`**; it is stated here
+only because `AmpleSheaf.lean` is `public import`ed by this module and by
+`ModularCurve/X0.lean`, so editing it re-elaborates the largest cone in the tree for a
+declaration that currently has one consumer.  Move it when that file is next opened.
+
+**THE ROUTE, AND IT DOES NOT NEED GLUING.**  The obvious construction — glue `𝒪_{V i}`
+along the transition units — needs a gluing theorem for `SheafOfModules`, which mathlib
+does not have at this pin (checked 2026-08-01: `Mathlib/Algebra/Category/ModuleCat/
+Sheaf/` has `Abelian`, `ChangeOfRings`, `Colimits`, `Free`, `Generators`, `Limits`,
+`Localization`, `LocallyFree`, `Pullback*`, `Pushforward*`, `Quasicoherent` and no
+descent or gluing).  It is not needed.  `𝒪(D)` is a SUBSHEAF of a sheaf already in
+hand, and both ingredients exist:
+
+* `P := (Scheme.Modules.pushforward U.ι).obj (modUnit ↥U)`, i.e. `j_* 𝒪_U`, whose
+  sections over `W` are `Γ(U ⊓ W, 𝒪)` — the pushforward functor is already used in this
+  development (`modPushforwardTensor` and friends in `AmpleSheaf.lean`);
+* `PresheafOfModules.Submodule` (`Mathlib/Algebra/Category/ModuleCat/Presheaf/
+  Submodule.lean`) with its `toPresheafOfModules`, `ι` and `CompleteLattice` API.
+
+Take `L` to be the submodule of `P` whose sections over `W` are the `g ∈ Γ(U ⊓ W, 𝒪)`
+such that `(f i) · g` extends to `V i ⊓ W` for every `i`, and `s := 1 ∈ Γ(U, 𝒪) =
+Γ(P, ⊤)`.  Then multiplication by `f i` is an isomorphism `L|_{V i} ≅ 𝒪_{V i}` carrying
+`s` to `f i`, so `trivializedSection` of that trivialization IS `f i` and
+`nonvanishingAt_iff_trivializedSection` (`AmpleSheaf.lean`, PROVEN) turns `hbasic` into
+`nonvanishingLocus L s ⊓ V i = U ⊓ V i`; `hcov` finishes.  Being a subpresheaf cut out
+by a local condition, `L` is a sheaf.
+
+**`[IsIntegral X]` AND `hmeet` ARE LOAD-BEARING FOR THE ROUTE, AND THE STATEMENT IS NOT
+CLAIMED EITHER WAY WITHOUT THEM.**  `hunit` asserts a unit `u i j` for each PAIR and
+says nothing about triples, so on `V i ⊓ V j ⊓ V k` the identity `u i j * u j k = u i k`
+— which every construction of `𝒪(D)` needs, gluing or not — does not follow formally: it
+follows from `u i j * u j k * f k = u i k * f k` only after cancelling `f k`.  Integrality
+plus `hmeet` is what cancels it: `Γ(X, W)` is a domain for nonempty `W`, restriction
+between nonempty opens is injective (`map_injective_of_isIntegral`), and `f k` restricts
+to a nonzero element of every nonempty open of `V k` because `basicOpen (f k) = U ⊓ V k`
+is nonempty.  Both hypotheses are free at the call site.  A prover who removes them owes
+a triple-overlap clause in `hunit` instead; that is the honest general statement and it
+is strictly more to produce.
+
+**NON-VACUOUS.**  `U = ⊤`, one-element cover `V = ⊤`, `f = 1`: `L = 𝒪_X`, `s = 1`,
+`nonvanishingLocus = ⊤` by `nonvanishingLocus_modUnit`. -/
+theorem exists_isInvertibleSheaf_nonvanishingLocus_eq_of_localEquations {X : Scheme.{u}}
+    [AlgebraicGeometry.IsIntegral X] {ι : Type u}
+    (U : X.Opens) (V : ι → X.Opens) (f : ∀ i, Γ(X, V i))
+    (hcov : (⨆ i, V i) = ⊤)
+    (hmeet : ∀ i, ((U ⊓ V i : X.Opens) : Set X).Nonempty)
+    (hbasic : ∀ i, X.basicOpen (f i) = U ⊓ V i)
+    (hunit : ∀ i j, ∃ u : Γ(X, V i ⊓ V j), IsUnit u ∧
+        X.presheaf.map (homOfLE (inf_le_left : V i ⊓ V j ≤ V i)).op (f i)
+          = u * X.presheaf.map (homOfLE (inf_le_right : V i ⊓ V j ≤ V j)).op (f j)) :
+    ∃ (L : X.Modules) (s : Γ(L, ⊤)), IsInvertibleSheaf L ∧
+      nonvanishingLocus L s = (U : Set X) :=
+  sorry
 
 /-- **AN EFFECTIVE CARTIER DIVISOR CUTTING OUT THE COMPLEMENT OF A GIVEN AFFINE OPEN**
-(sorry leaf, cut 2026-07-31 out of `exists_isAmpleSheaf_of_field` below) — Hartshorne II
+(**PROVEN 2026-08-01** over the two leaves immediately above, which are its 2026-08-01
+CUT; cut 2026-07-31 out of `exists_isAmpleSheaf_of_field` below) — Hartshorne II
 Prop. 6.11 + Ex. 3.5 / [Stacks 0BCQ]; the "geometric input" half of Mumford *Abelian
 Varieties* §6, Application 1.
 
-*On a smooth proper geometrically connected `K`-scheme, every affine open `U` is the
-non-vanishing locus of a global section of an invertible sheaf.*
+*On a smooth proper geometrically connected `K`-scheme, every nonempty affine open `U`
+is the non-vanishing locus of a global section of an invertible sheaf.*
 
-This is `L = 𝒪(D)` for `D = X ∖ U` with its canonical section, and it is the ONE place
-in the projectivity argument where divisors occur.  **It says nothing about the group
-law** — that is the point of the cut; a prover needs to know only that `X` is a smooth
-proper variety.
+**THE 2026-08-01 CUT.**  The statement bundled two things that share no machinery, and
+they are now separated, with everything that was neither of them proven here:
 
-**THE ROUTE, and every step of it is classical.**  `ab.proper` makes `X` Noetherian
-and separated over `K`; `ab.smooth` makes it regular, hence normal; normal plus
-`ab.connected` makes it IRREDUCIBLE, so `X` is a variety and the nonempty open `U` is
-dense.  Then:
+* `exists_localEquations_compl_of_isAffineOpen` — the GEOMETRY.  `X ∖ U` is cut out by
+  one equation on each member of a cover, the equations agreeing up to units on
+  overlaps.  Hartshorne II Ex. 3.5 (codimension one) plus II Prop. 6.11 (locally
+  factorial ⇒ Weil is Cartier).  **No sheaf of modules occurs in it**, and neither does
+  `K`, `fK`, properness, smoothness or connectedness: those are spent HERE, on the five
+  elementary facts the citation actually asks for;
+* `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_localEquations` — the SHEAF THEORY,
+  i.e. `𝒪(D)` and its canonical section.  **No geometry occurs in it.**  Its docstring
+  records that this needs no gluing theorem for `SheafOfModules` — `𝒪(D)` is a
+  `PresheafOfModules.Submodule` of `j_* 𝒪_U`, and both of those are in the pin.
 
-* the complement of a nonempty affine open in a Noetherian integral separated scheme
-  is of PURE CODIMENSION ONE (Hartshorne II Ex. 3.5 for varieties, [Stacks 0BCQ]; the
-  normality supplied by smoothness is what makes the algebraic-Hartogs proof run);
-* `X` regular is locally factorial, so that codimension-one closed subset, with its
-  reduced structure, is an effective CARTIER divisor `D` (Hartshorne II 6.11);
-* `𝒪(D)` is invertible and its canonical section `s_D` vanishes exactly on `D`, i.e.
-  `nonvanishingLocus 𝒪(D) s_D = X ∖ D = U`.
+The count goes `1 → 2` and the trade is the usual one: what is LEFT in each leaf is a
+single named classical theorem, statable to someone who has never opened this file.
 
-None of `𝒪(D)`, Weil divisors, Cartier divisors or linear equivalence exists at this
-pin — see the SURVEY on the parent below — so this leaf is a THEORY BUILD, and the
-theory is divisors on a regular scheme.  It is however strictly smaller than the parent
-and completely independent of the abelian-variety half.
+**WHAT IS PROVEN HERE, AND IT WAS THE ONE THING BOTH HALVES WOULD OTHERWISE HAVE
+DUPLICATED**: that `hproper`, `hsmooth` and `hconn` deliver
 
-**`hUne` IS NOT NEEDED FOR TRUTH, AND IS KEPT ANYWAY.**  At `U = ⊥` the statement is
+* `IsIntegral X` — `isIntegral_of_smooth_of_geometricallyConnected` above, itself the
+  relative-dimension-free form of `CurveExtension.lean`'s theorem;
+* `IsLocallyNoetherian X` — `LocallyOfFiniteType.isLocallyNoetherian`, `Spec K` being
+  Noetherian;
+* `CompactSpace X` — `QuasiCompact.compactSpace_of_compactSpace`, `Spec K` being a point;
+* `X.IsSeparated` — `terminal.comp_from` plus `Spec K` affine;
+* regularity of every stalk — `isRegularLocalRing_stalk_of_smooth_over_field`.
+
+**`hUne` IS NOT NEEDED FOR TRUTH HERE, AND IS KEPT ANYWAY.**  At `U = ⊥` the statement is
 discharged by `L = 𝒪_X`, `s = 0`, whose non-vanishing locus is `∅` (`basicOpen 0 = ⊥`).
-It is kept because the caller has it for free and it removes a degenerate case a prover
-would otherwise have to dispose of before reaching the mathematics; and because the
-statement should not be stated wider than the single call site needs.
+It is kept because the caller has it for free, and because the geometric leaf above DOES
+need it for truth — see its docstring — so the assembly has to supply it.
 
 **NON-VACUOUS AND NON-DEGENERATE.**  At `dim X = 0` (`X = Spec K`, the zero-dimensional
 abelian variety) the only nonempty affine open is `⊤` and the witness is `L = 𝒪_X`,
@@ -16391,8 +16580,24 @@ theorem exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen {X : Schem
     (hproper : IsProper fK) (hsmooth : Smooth fK) (hconn : GeometricallyConnected fK)
     (U : X.Opens) (hU : IsAffineOpen U) (hUne : (U : Set X).Nonempty) :
     ∃ (L : X.Modules) (s : Γ(L, ⊤)), IsInvertibleSheaf L ∧
-      nonvanishingLocus L s = (U : Set X) :=
-  sorry
+      nonvanishingLocus L s = (U : Set X) := by
+  haveI := hproper
+  haveI := hsmooth
+  haveI : AlgebraicGeometry.IsIntegral X :=
+    isIntegral_of_smooth_of_geometricallyConnected fK hconn
+  haveI : IsLocallyNoetherian (Spec (CommRingCat.of K)) := inferInstance
+  haveI : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian fK
+  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace fK
+  haveI : X.IsSeparated := by
+    constructor
+    rw [← terminal.comp_from fK]
+    infer_instance
+  obtain ⟨ι, V, f, hcov, hmeet, hbasic, hunit⟩ :=
+    exists_localEquations_compl_of_isAffineOpen
+      (fun x => GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field
+        fK hsmooth x) U hU hUne
+  exact exists_isInvertibleSheaf_nonvanishingLocus_eq_of_localEquations
+    U V f hcov hmeet hbasic hunit
 
 /-- **AN INVERTIBLE SHEAF WITH A SECTION WHOSE NON-VANISHING LOCUS IS A NONEMPTY AFFINE
 OPEN IS AMPLE, ON AN ABELIAN VARIETY** (sorry leaf, cut 2026-07-31 out of
