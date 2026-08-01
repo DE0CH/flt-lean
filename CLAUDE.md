@@ -16151,3 +16151,78 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A LEAF WHOSE ROUTE SAYS "RETURN THE DATUM THAT THEOREM X DISCARDS" MAY ALREADY BE RECEIVING IT
+
+(2026-07-31, `flt-lean-56`, `exists_x0CurveModel_of_base_moduli` in `X0.lean` — cut
+one day, closed the next, in fifteen lines.)
+
+This file already records that a leaf's route note is a *cost hypothesis*. There is
+a specific and very cheap sub-case, and it is common because it is exactly the shape
+this development's repairs take: **a leaf cut to carry a datum that some upstream
+theorem "produces and throws away", where the upstream theorem has since been
+repaired and the datum is already arriving.**
+
+That leaf's docstring prescribed three steps: (1) expose `classify` through
+`exists_x0IntegralCompactification` and `exists_genericFibreOpen_of_x0IntegralModel`,
+whose `Nonempty`/anonymous-`∃` conclusions hid it; (2) return the intertwining that
+`exists_iso_of_isCoarseModuliY0` proves and discards; (3) compose through
+`IsX0CurveModel.genericOpen`. **Steps 1 and 2 had landed in release 32**, one day
+before the leaf was cut, by the repair recorded in the `2026-07-30` paragraphs of
+`exists_x0CompactificationModel` — which already returns the datum as a second
+conjunct. Step 3's bridge, `IsX0CurveModel.classify_genericOpen`, was PROVEN the
+same day and written for precisely that crossing. Nothing was left but to keep a
+conjunct that one consumer drops.
+
+**The tell was not in the leaf's docstring — it was an inline comment at the DISCARD
+SITE, naming the leaf**, five hundred lines away:
+
+    -- `hι.1` is the equation; `hι.2` is exactly the clause
+    -- `exists_x0CurveModel_of_base_moduli` is a sorry LEAF for
+
+So the check, and it is one `grep` plus one read:
+
+1. read the CONCLUSION of the theorem the route says discards the datum. If it is
+   already a conjunction — or already returns a strengthened structure — step 1 of
+   the route is done;
+2. read the CONSUMER's `obtain` pattern and proof body. `⟨…, hι⟩` followed by `hι.1`
+   means the datum is flowing and being dropped, i.e. the leaf is a REPACKAGING;
+3. `grep` the leaf's own name across the file. A route note is written once and never
+   revisited, but a repair that touches the discard site usually leaves a comment
+   there, because that is where its author was working.
+
+Generalising past the instance: **a route note is dated evidence about the tree, and
+the freshest statement about a leaf is usually not in the leaf.** Grep the name
+before believing the plan.
+
+### `apply`, not `refine f _ …`, when the GOAL is what pins a metavariable
+
+Both iterations this task cost went to elaboration order, and the second is reusable
+anywhere a theorem's later arguments mention an earlier implicit one.
+
+`IsX0CurveModel.classify_genericOpen` takes `(cm) (hX) (ι) (hι : ι.hom ≫
+IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j)`, so `hι`'s TYPE mentions
+`cm`. Writing `refine IsX0CurveModel.classify_genericOpen _ hX ι hι ?_ g g₀ h dd`
+fails with
+
+    Application type mismatch: the argument hι has type
+      ι.hom ≫ eGen.openSection ⋯ = hX.j
+    but is expected to have type
+      ι.hom ≫ (IsX0CurveModel.genIdent ?m.386).openSection ⋯ = hX.j
+
+— i.e. `hι` is checked against a type still containing the `?cm` metavariable,
+because `refine` elaborates arguments before unifying the result with the goal.
+`apply IsX0CurveModel.classify_genericOpen (hc := hc)` unifies the CONCLUSION first,
+which pins `cm`, `ι` and `hι` from the goal, and everything then lands. Reach for
+`apply` whenever the goal determines an argument that a later argument's type
+mentions; supplying that argument explicitly is the expensive way, since here it is
+a six-field structure literal.
+
+The first iteration was the standing `have`-on-data trap, met in its exact
+documented form: `have hXfull : IsX0Compactification … := hX.toX0Compactification hc …`
+makes `hXfull.coarse` stop reducing to `hc`, so the returned clause is about a
+definitionally opaque copy of the caller's own coarse structure and `exact` fails on
+two terms that print almost identically. Binding it INLINE inside the `obtain` — no
+name at all — fixes it. Worth knowing that this bites even when the structure is
+only ever PROJECTED, if one of the projections has to be defeq to something the
+caller supplied.
