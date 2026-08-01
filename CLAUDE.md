@@ -16213,3 +16213,29 @@ One PARI trap met on the way, because it fails silently: **a `for(...)` spanning
 does not survive being fed to `gp` on stdin** — each newline ends a statement, so the loop body
 is lost and the script exits `0` having printed nothing. Put the loop on one physical line, and
 assert on the number of records you got back rather than on the exit code.
+
+### THE SCALING LAW, so the `p = 37` row is priced rather than merely forbidden
+
+The same measurement prices the row that CLAUDE.md already tells you not to dispatch a plain
+computation at, and it is worth having the number rather than the prohibition. Two factors move
+independently, and both are read off the statement before any Lean is written:
+
+* **steps** `≈ 1.5 · log₂(q ^ m)` — square-and-multiply, one squaring per bit and a multiply on
+  about half of them;
+* **the degree of the identity handed to `ring_nf`**, which is `< 2 · deg f` whatever the
+  exponent — that is the whole point of square-and-multiply, and it is why `deg f`, not `m`,
+  is what has to be kept small.
+
+At `p = 17` (`q = 67`, `m = 34`, `deg f = 34`): ~310 steps at degree `< 68`, measured at ~50 min
+and 794 MB of `.olean.private` for one factor module. At `p = 37` (`q = 397`, `m = 222`,
+`H = 222³`, so three factors of degree `222`): ~2 875 steps at degree `< 444` — **9.3× the steps
+and 6.5× the degree**, i.e. **61× if `ring_nf` were linear in the degree and ~400× if it is
+quadratic, so 2 to 14 DAYS per factor module and tens of GB of olean apiece.** Splitting per
+factor does not rescue it: a degree-`222` irreducible cannot be split further, which is exactly
+the ceiling lever 1 of the certificate note runs into.
+
+**So the `p = 37` row needs a different route, and the number says which knob is worth turning:
+`deg f`, quadratically, not `m`.** Anything that replaces the `ring_nf` identity by a
+cheaper-per-step check — a `decide` over an explicit coefficient vector, `Nat`-level arithmetic,
+or a reflection tactic — attacks the `6.5×` and leaves the `9.3×`, and is the only direction with
+enough headroom.
