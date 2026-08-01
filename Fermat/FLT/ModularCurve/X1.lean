@@ -5655,8 +5655,65 @@ theorem transitiveOnGeometricComponents_of_gamma1RigidifiedModuli (N n : ℕ) (_
     IsTransitiveOnGeometricComponents R.A (gamma0DeckGroup n) R.strM :=
   sorry
 
+/-- **A natural number prime to the characteristic is a unit of a field** (PROVEN)
+— the two-line bridge between the `¬ ringChar K ∣ m` idiom this file uses at a field
+base and the `IsUnit ((m : ℕ) : A)` idiom the base-general statements below use.
+
+It is what makes every `Field K` statement in this file a one-line corollary of its
+`CommRing A` generalisation, so that generalising a leaf costs no call site. -/
+theorem isUnit_natCast_of_not_dvd_ringChar (K : Type) [Field K] {m : ℕ}
+    (h : ¬ ringChar K ∣ m) : IsUnit ((m : ℕ) : K) := by
+  haveI := ringChar.charP K
+  have hz : ((m : ℕ) : K) ≠ 0 :=
+    fun hz => h ((CharP.cast_eq_zero_iff K (ringChar K) m).mp hz)
+  exact hz.isUnit
+
+/-- **The rigidified moduli scheme is smooth of relative dimension one over ANY
+BASE RING in which `N` and `n` are invertible** (sorry leaf, NEW 2026-08-01) —
+Katz–Mazur 8.2.1, Deligne–Rapoport III.1, at the generality Katz–Mazur prove it.
+
+This is the base-general form of `smoothOfRelativeDimension_of_gamma1RigidifiedModuli`
+immediately below, which is now PROVEN over it and whose signature is unchanged.  It
+was opened because the `Γ₁(N)`-atlas over `ℤ_(ℓ)`
+(`nonempty_gamma1Atlas_specLoc` below) needs exactly this citation at a base that is
+NOT a field, and because the field form's own docstring already states the general
+form as its justification: *"`𝔐([Γ₁(N)], [Γ(n)])` is smooth of relative dimension one
+over `ℤ[1/Nn]`, hence over every base in which `Nn` is invertible, and
+`SmoothOfRelativeDimension` is stable under base change"*.  So the generalisation is
+the argument that was already written down, stated.
+
+**THE `∀ R` AUDIT IS INHERITED, AND HERE IS WHY IT TRANSFERS.**  The field form's
+audit — reproduced below, and still the reason this is a legitimate `∀` — turns on
+ONE field of `Gamma1RigidifiedModuli`: `universal` is FINE moduli WITH a uniqueness
+clause, so any two inhabitants are related by a unique isomorphism over `S` and
+`Spec R.A` is pinned up to unique isomorphism.  That argument never inspects the
+base: `S` enters `universal` only as the type of a binder that is passed on, exactly
+as `X0.lean`'s `nonempty_rigidifiedModuliData_of_iso` records for its own
+transcription.  So it holds verbatim over `Spec A`.
+
+**THE HYPOTHESES ARE THE SAME TWO FACTS IN THE OTHER IDIOM, AND BOTH ARE STILL
+LOAD-BEARING FOR TRUTH.**  `_hNA` replaces `¬ ringChar K ∣ N`: at a base where `N` is
+not invertible a point of exact order `N` acquires an infinitesimal part and the
+moduli problem is not smooth.  `_hnA` replaces `¬ ringChar K ∣ n`: the `n`-torsion is
+not étale there and the level-`n` cover degenerates.  `_hN` is `0 < N` rather than the
+field form's `4 ≤ N`, because rigidity is ASSERTED by `R.universal` and is not needed
+again here; the field form still passes `4 ≤ N` and it is still redundant there for
+the same reason.
+
+*The check that would refute this*: two inhabitants of `Gamma1RigidifiedModuli N n S`
+whose `Spec A` are not isomorphic over `S`, for `S = Spec A` with `N`, `n` units. -/
+theorem smoothOfRelativeDimension_of_gamma1RigidifiedModuli_of_isUnit (N n : ℕ)
+    (_hN : 0 < N) (_hn : 3 ≤ n) (A : Type) [CommRing A]
+    (_hNA : IsUnit ((N : ℕ) : A)) (_hnA : IsUnit ((n : ℕ) : A))
+    (R : Gamma1RigidifiedModuli N n (Spec (CommRingCat.of A))) :
+    AlgebraicGeometry.SmoothOfRelativeDimension 1 R.strM :=
+  sorry
+
 /-- **The rigidified moduli scheme is smooth of relative dimension one over a
-field in which `N` and `n` are invertible** (sorry leaf, opened 2026-07-30) —
+field in which `N` and `n` are invertible** (**PROVEN 2026-08-01** over
+`smoothOfRelativeDimension_of_gamma1RigidifiedModuli_of_isUnit` immediately above,
+which is the same citation at the base generality Katz–Mazur state it; it was itself
+the sorry leaf from 2026-07-30 until then, and its signature has not changed) —
 Katz–Mazur 8.2.1, Deligne–Rapoport III.1.
 
 TRUE and classical, and this is the form 8.2.1 is actually proved in:
@@ -5702,12 +5759,13 @@ redundant here, since `R.universal` ASSERTS representability, and they are
 carried only because the sole call site
 (`exists_gamma1Rigidification`) holds them and because dropping a hypothesis
 from a citation is how a leaf becomes false. -/
-theorem smoothOfRelativeDimension_of_gamma1RigidifiedModuli (N n : ℕ) (_hN : 4 ≤ N)
-    (_hn : 3 ≤ n) (K : Type) [Field K] (_hchar : ¬ ringChar K ∣ N)
-    (_hcn : ¬ ringChar K ∣ n)
+theorem smoothOfRelativeDimension_of_gamma1RigidifiedModuli (N n : ℕ) (hN : 4 ≤ N)
+    (hn : 3 ≤ n) (K : Type) [Field K] (hchar : ¬ ringChar K ∣ N)
+    (hcn : ¬ ringChar K ∣ n)
     (R : Gamma1RigidifiedModuli N n (Spec (CommRingCat.of K))) :
     AlgebraicGeometry.SmoothOfRelativeDimension 1 R.strM :=
-  sorry
+  smoothOfRelativeDimension_of_gamma1RigidifiedModuli_of_isUnit N n (by omega) hn K
+    (isUnit_natCast_of_not_dvd_ringChar K hchar) (isUnit_natCast_of_not_dvd_ringChar K hcn) R
 
 /-- **The Katz–Mazur rigidified moduli scheme of `[Γ₁(N)]` over a field in
 which `N` is invertible exists** (PROVEN 2026-07-28 from the three leaves
@@ -13478,37 +13536,260 @@ isomorphism of coarse spaces OVER THE BASE compatible with nothing, i.e. the bar
 `IsCoarseModuliY1.exists_inverse` is already here.  It is left undone because it
 trades one leaf for one leaf and this subsection is already the cut that pays. -/
 
-/-- **KATZ–MAZUR ch. 8: the `Γ₁(N)`-ATLAS EXISTS OVER `ℤ_(ℓ)`** (sorry leaf, NEW
-2026-07-31) — the twin of `X0.lean`'s `nonempty_gamma0AtlasOver_specLoc`, and the
-moduli half of `exists_x1IntegralSmoothProperModel` below.
+/-! #### The `Γ₁(N)`-atlas over an arbitrary base, 2026-08-01
 
-TRUE and classical: Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*, (8.1.1)
-builds the rigidified moduli scheme `𝔐([Γ₁(N)], [Γ(n)])` and its GIT quotient over
-any base in which some `n ≥ 3` is invertible, and `ℤ_(ℓ)` with `ℓ ∤ N` is such a base.
+`nonempty_gamma1Atlas_specLoc` used to be a sorry leaf here, asking for the whole
+Katz–Mazur ch. 8 package over `ℤ_(ℓ)` in one statement: the rigidified moduli scheme,
+its universal family, the fpqc rigidifying cover, the smoothness, the deck action and
+the categorical quotient.  Its own docstring recorded that *"what the citation
+actually needs is the Katz–Mazur proviso `∃ n : ℕ, 3 ≤ n ∧ IsUnit (n : ↥R)`"* and
+invited a prover to restate it over that proviso.  This block takes the invitation and
+then finds that only TWO of the six ingredients were ever citations at all.
 
-**Why the ATLAS and not the coarse space.**  `Gamma1Atlas.toIsCoarseModuliY1` is
-PROVEN, at an ARBITRARY base, so `exists_isCoarseModuliY1_loc` immediately below is
-free over this leaf; and the atlas is what the construction actually produces — the
-rigidified scheme, the universal family, the fpqc rigidifying cover and the
-categorical quotient — whereas the coarse space is only its shadow.  A leaf stated at
-the shadow would ask a Katz–Mazur specialist to throw away four fifths of what they
-built.  This is the shape `X0.lean` converged on after several rounds and it is
-transported here rather than re-derived.
+Everything else was already in the tree, stated over an arbitrary base and PROVEN —
+`nonempty_gamma1RigidifiedModuli_of_isAffine`,
+`nonempty_gamma1Rigidification_of_rigidifiedModuli`,
+`nonempty_gamma1GITPresentation_of_rigidification` and
+`Gamma1GITPresentation.toGamma1Atlas` — and this is the same discovery `X0.lean`
+records on `nonempty_gamma0AtlasOver_specLoc`: *"the mixed-characteristic base was
+never the obstruction … the `𝔽_ℓ` route simply had not been read at a base that is not
+a field."*  The `Γ₁` chain had not been read there either.
 
-**The hypotheses, and one that could honestly be weakened.**  `_hℓ` and `_hbase` are
-carried because every call site holds them; what the citation actually needs is the
-Katz–Mazur proviso `∃ n : ℕ, 3 ≤ n ∧ IsUnit (n : ↥R)`, which `_hbase` supplies
-(`X0.lean`'s `exists_unit_natCast_of_isReductionBase`).  Restating this leaf over the
-proviso alone would make it the exact twin of `nonempty_gamma0AtlasOver_specLoc`,
-strictly stronger, and reusable at every subring of `ℚ` except `ℤ` itself; a prover
-who takes this leaf should feel free to do that, and no consumer changes.  `_hℓN` is
-good reduction and is load-bearing for TRUTH: at `ℓ ∣ N` the `Γ₁(N)`-problem is not
-étale over `ℤ_(ℓ)` and its special fibre acquires the Deligne–Rapoport singularities.
-It also forces `0 < N`, so the degenerate level never reaches this leaf. -/
-theorem nonempty_gamma1Atlas_specLoc (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
-    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF) :
-    Nonempty (Gamma1Atlas N (SpecLoc R)) :=
+## THE ACCOUNTING, stated plainly because the count does not move
+
+`−2 +2`.  Closed: `nonempty_gamma1Atlas_specLoc` (below) and
+`smoothOfRelativeDimension_of_gamma1RigidifiedModuli` (above).  Opened:
+`smoothOfRelativeDimension_of_gamma1RigidifiedModuli_of_isUnit` (above) and
+`exists_isAffine_gamma1RigidifiedModuliScheme_of_isUnit` (below).  Both new leaves are
+the base-general form of a citation the file already owed at a field, so a prover who
+discharges one discharges the field form for free; both are the exact twins of leaves
+the `Γ₀` side already carries
+(`exists_rigidifiedModuliSchemeData_of_isUnit`, `isAffine_rigidifiedModuliSchemeData_of_isUnit`).
+
+What changed is what is LEFT in the leaves.  Before: one leaf bundling six things over
+one base.  After: two leaves each naming ONE clause of Katz–Mazur over an arbitrary
+ring, and ~120 lines of assembly — the fpqc cover, the deck-group transitivity, the
+GIT descent and the atlas — that nobody has to write again at any base.
+
+## WHY THE TWO-STEP FIELD TOWER IS LEFT ALONE
+
+`exists_isAffine_gamma1RigidifiedModuliScheme` (over a field) is PROVEN over the tower
+`exists_isAffine_gamma1ModuliScheme` + `exists_isAffineHom_fullLevelModuli`, cut
+2026-07-31 (evening).  The new leaf below could be made to subsume it — generalise the
+tower's two leaves in place and the field form falls out — and that was DECLINED here,
+deliberately:
+
+* the tower's BOTTOM carries `4 ≤ N`, load-bearing for TRUTH (at `N = 3`, `j = 0`, the
+  order-`3` automorphism fixes a point of exact order `3`, so `[Γ₁(N)]` alone is not
+  rigid), while this leaf must hold at every `0 < N` — `nonempty_gamma1Atlas_specLoc`
+  carries only `¬ ℓ ∣ N`, and threading `4 ≤ N` down to it means adding a hypothesis to
+  **ten** declarations (`exists_isCoarseModuliY1_loc`, `exists_x1IntegralModel`,
+  `exists_x1IntegralCompactification`, `exists_x1CompactificationModel`,
+  `exists_x1CurveReductionModel`, `exists_x1CurveModel_of_base`, `exists_x1ReductionAt`,
+  `exists_injective_reduction_of_rankZeroJacobian`, and the two dead-ends) in a file
+  with concurrent editors, which is the interface-split hazard for the sake of one leaf;
+* the rigidified problem `[Γ₁(N)], [Γ(n)]` is rigid for EVERY `N ≥ 1` once `n ≥ 3`, so
+  the leaf below is true where the tower's bottom is false, and is the honest statement
+  of (8.1.1).
+
+**What would change my mind**: a `4 ≤ N` appearing on `exists_x1IntegralSmoothProperModel`
+or on `IsX1Compactification` for another reason.  Then the tower generalises in place,
+the leaf below becomes PROVEN, and the frontier drops by one. -/
+
+/-- **The fpqc level-`n` cover at any base where `n` is a unit** (PROVEN) — the
+base-general form of `exists_gamma1FullLevelStructure_cover`, and the `Γ₁`
+transcription of `X0.lean`'s `exists_fullLevelStructure_cover_isUnitBase`, line for
+line.
+
+`N` plays no role: the level structure is data on the underlying elliptic scheme,
+which is why `IsUnit (N : A)` is not a hypothesis — it is consumed by the
+representability citation instead.  The geometry is `X0.lean`'s and is already stated
+over an arbitrary base (`exists_isomTorsor_of_etale_nTorsion_of_geomBasis`,
+`etale_nTorsion_of_isUnitBase`, `natCast_ne_zero_geomPoint_of_isUnitBase`); only the
+transport into an `AbelianFullLevelStructure` is `Γ₁`-specific, and that is
+`nonempty_abelianFullLevelStructure_of_geomBasis` above. -/
+theorem exists_gamma1FullLevelStructure_cover_isUnitBase (N n : ℕ) (hn : 3 ≤ n)
+    {A : Type} [CommRing A] (hnA : IsUnit ((n : ℕ) : A))
+    {T : Scheme.{0}} (g : T ⟶ Spec (CommRingCat.of A)) (d : Gamma1Datum N T) :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T'),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      Nonempty (IsBaseChangeOfGamma1 p d' d) ∧
+      Nonempty (AbelianFullLevelStructure n d'.ab) := by
+  obtain ⟨T', p, hflat, hqc, P, Q, hb, hlift, hnP, hnQ⟩ :=
+    exists_isomTorsor_of_etale_nTorsion_of_geomBasis n hn d.ab
+      (fun K _ _ t => exists_zmodBasis_torsion_geomPoint_natCast n hn d.ab
+        d.relativeDimensionOne K t (natCast_ne_zero_geomPoint_of_isUnitBase n hnA g K t))
+      (etale_nTorsion_of_isUnitBase n (by omega) hnA d.ab g)
+  obtain ⟨d', ⟨bc⟩⟩ := exists_gamma1Datum_baseChange p d
+  exact ⟨T', p, d', hflat,
+    surjective_of_exists_lift_geomPoint p (fun K _ _ t => hlift K t
+      (exists_torsionBasis_geomPoint_natCast n hn d.ab d.relativeDimensionOne K t
+        (natCast_ne_zero_geomPoint_of_isUnitBase n hnA g K t))),
+    hqc, ⟨bc⟩, nonempty_abelianFullLevelStructure_of_geomBasis bc P Q hnP hnQ hb⟩
+
+/-- **Over `Spec ℤ_(ℓ)` the deck group is transitive on geometric components for
+nothing at all** (PROVEN) — `IsTransitiveOnGeometricComponents` is VACUOUS at a base
+which is not the spectrum of a field, and `Spec ℤ_(ℓ)` is not one.
+
+`IsTransitiveOnGeometricComponents A G strM` quantifies over fields `K` with
+`Spec K ≅ S`, and there is no such `K` here: `Spec` is fully faithful, so such an
+isomorphism gives a ring isomorphism `↥R ≃+* K`, hence makes `↥R` a field; but
+`ℓ` is a nonzero NON-UNIT of `↥R` — nonzero because `↥R ⊆ ℚ` has characteristic zero,
+a non-unit because `toF ℓ = 0` and `IsReductionBase.ker_eq_nonunits` reads the kernel
+as the non-units.
+
+This is the one input of the atlas assembly below that is genuinely base-specific, and
+it is base-specific in the CHEAP direction: over a field the clause is
+Deligne–Rapoport IV.5.5 and a leaf
+(`transitiveOnGeometricComponents_of_gamma1RigidifiedModuli` above), and over a
+mixed-characteristic base it is free.  The reason is not an accident of the
+formalisation — `IsTransitiveOnGeometricComponents` is a statement about the geometric
+FIBRES of `Spec A ⟶ S`, and the notion of "the geometric components of the whole of
+`Spec A`" only makes sense when `S` has one point. -/
+theorem isTransitiveOnGeometricComponents_specLoc {ℓ : ℕ} (hℓ : ℓ.Prime) {R : Subring ℚ}
+    {toF : R →+* ZMod ℓ} (hbase : IsReductionBase ℓ R toF)
+    (B : Type) [CommRing B] (G : Type) [Group G] [MulSemiringAction G B]
+    (str : Spec (CommRingCat.of B) ⟶ SpecLoc R) :
+    IsTransitiveOnGeometricComponents B G str := by
+  intro K _ _ hex
+  exfalso
+  obtain ⟨e, -⟩ := hex
+  set f : ↥R ≃+* K := (Spec.fullyFaithful.preimageIso e).unop.commRingCatIsoToRingEquiv with hf
+  have hne : ((ℓ : ℕ) : ↥R) ≠ 0 := by
+    intro h
+    have h2 : ((ℓ : ℕ) : ℚ) = 0 := by
+      have := congrArg (Subring.subtype R) h
+      simpa using this
+    exact hℓ.ne_zero (by exact_mod_cast h2)
+  have hnu : ¬ IsUnit ((ℓ : ℕ) : ↥R) := by
+    refine (hbase.ker_eq_nonunits _).mp ?_
+    rw [map_natCast]
+    exact ZMod.natCast_self ℓ
+  refine hnu ?_
+  have hfne : f ((ℓ : ℕ) : ↥R) ≠ 0 := fun h => hne ((map_eq_zero_iff f f.injective).mp h)
+  have hu : IsUnit (f ((ℓ : ℕ) : ↥R)) := hfne.isUnit
+  have := hu.map (f.symm : K →+* ↥R)
+  simpa using this
+
+/-- **KATZ–MAZUR (8.1.1): the rigidified `Γ₁` moduli problem is representable by an
+AFFINE scheme over ANY BASE RING in which `N` and the auxiliary level `n` are
+invertible** (sorry leaf, NEW 2026-08-01) — the base-general form of
+`exists_isAffine_gamma1RigidifiedModuliScheme` above, and the exact twin of
+`X0.lean`'s pair `exists_rigidifiedModuliSchemeData_of_isUnit` /
+`isAffine_rigidifiedModuliSchemeData_of_isUnit`.
+
+## What the prover of this node owes, and what it does NOT owe
+
+Exactly the field statement above, with `Field K` and `¬ ringChar K ∣ ·` replaced by
+`CommRing A` and `IsUnit ((· : ℕ) : A)`.  The citations are the ones its docstring
+already quotes and are not repeated: (4.7.1)/(4.7.2) for representability of the
+rigidified problem, (5.1.1) for finiteness of `[Γ₁(N)]` over `(Ell)`, (6.6.2) for
+affineness of the composite.  Katz–Mazur state all three over an arbitrary base ring
+under exactly the proviso carried here — *"to define `𝔐(𝒫)` as an `R`-scheme it
+suffices to do so locally on `R`, so we may assume some integer `n ≥ 3` is invertible
+in `R`"* — so this is the citation and the field form is the specialisation, not the
+other way round.
+
+It does NOT owe smoothness (that is
+`smoothOfRelativeDimension_of_gamma1RigidifiedModuli_of_isUnit` above), the fpqc cover
+(`exists_gamma1FullLevelStructure_cover_isUnitBase` above, PROVEN), the deck action
+(`exists_gamma1DeckAction`, PROVEN), or the GIT quotient
+(`nonempty_gamma1GITPresentation_of_rigidification`, PROVEN).
+
+## FALSITY AUDIT (2026-08-01) — the hypotheses, one by one
+
+* `_hnA` is load-bearing: at a base where `n` is not invertible `E[n]` is not étale,
+  `[Γ(n)]` is not relatively representable, and the rigidified problem is not a scheme.
+* `_hNA` is load-bearing, and is carried for the reason `X0.lean`'s citation leaves
+  carry it (see their FALSITY AUDITs, which decline to inherit the unchecked Drinfeld
+  claim at `p ∣ N`): at `p ∣ N` a point of exact order `N` is not the right level
+  structure and `[Γ₁(N)]` must become a Drinfeld structure, which this development has
+  not checked `PointOfExactOrder` to be.  It does not follow from `_hnA`
+  (`A = ℤ_(5)`, `N = 5`, `n = 3`).
+* `_hN : 0 < N` excludes the degenerate level: `PointOfExactOrder ab 0` asks for a
+  section of infinite order and `[Γ₁(0)]` is not a Katz–Mazur moduli problem.
+* `_hn : 3 ≤ n` is rigidity of `[Γ(n)]`; at `n ≤ 2` the automorphism `-1` survives, the
+  rigidified problem has automorphisms, and no fine moduli scheme exists.
+
+**NOT VACUOUS.**  Both `IsUnit` hypotheses hold at every field of characteristic prime
+to `Nn` and at `ℤ_(ℓ)` for every `ℓ ∤ Nn`, which is the base
+`nonempty_gamma1Atlas_specLoc` below instantiates it at.
+
+**Note it is NOT stated with `4 ≤ N`**, unlike `exists_isAffine_gamma1ModuliScheme`:
+that leaf is about `[Γ₁(N)]` ALONE, which is rigid only for `N ≥ 4`, whereas the
+RIGIDIFIED problem here is rigid at every `N ≥ 1` because `[Γ(n)]` with `n ≥ 3`
+already is.  See the section comment above for why the field tower is nevertheless
+left alone. -/
+theorem exists_isAffine_gamma1RigidifiedModuliScheme_of_isUnit (N n : ℕ) (_hN : 0 < N)
+    (_hn : 3 ≤ n) (A : Type) [CommRing A] (_hNA : IsUnit ((N : ℕ) : A))
+    (_hnA : IsUnit ((n : ℕ) : A)) :
+    ∃ R : Gamma1RigidifiedModuliScheme N n (Spec (CommRingCat.of A)), IsAffine R.M :=
   sorry
+
+/-- **The Katz–Mazur atlas of `Y_1(N)` over any ring in which `N` and some `n ≥ 3` are
+invertible and on whose spectrum the deck group is transitive for free** (PROVEN) —
+the base-general form of everything `nonempty_gamma1Atlas_specLoc` below asks for, and
+the `Γ₁` twin of `X0.lean`'s `nonempty_gamma0AtlasOver_of_isUnit`.
+
+`htriv` is the one input that does not come for free at a general base, and it is the
+`Γ₁` counterpart of the `hS : ∀ Z, Subsingleton (Z ⟶ Spec A)` that
+`nonempty_gamma0AtlasOver_of_isUnit` carries: over a field it is Deligne–Rapoport
+IV.5.5 (`transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`), and over
+`Spec ℤ_(ℓ)` it is `isTransitiveOnGeometricComponents_specLoc` above, i.e. free.
+Stating it as a hypothesis rather than choosing one of the two is what lets this
+theorem serve both bases.
+
+The coarse space is `Spec (A^G)`, hence affine; that conjunct is available
+(`inferInstance`) and is not asserted here because no consumer reads it. -/
+theorem nonempty_gamma1Atlas_of_isUnit (N n : ℕ) (hN : 0 < N) (hn : 3 ≤ n)
+    (A : Type) [CommRing A] (hNA : IsUnit ((N : ℕ) : A)) (hnA : IsUnit ((n : ℕ) : A))
+    (htriv : ∀ (B : Type) [CommRing B] (G : Type) [Group G] [MulSemiringAction G B]
+      (str : Spec (CommRingCat.of B) ⟶ Spec (CommRingCat.of A)),
+        IsTransitiveOnGeometricComponents B G str) :
+    Nonempty (Gamma1Atlas N (Spec (CommRingCat.of A))) := by
+  obtain ⟨Rs, hRaff⟩ :=
+    exists_isAffine_gamma1RigidifiedModuliScheme_of_isUnit N n hN hn A hNA hnA
+  obtain ⟨Rd⟩ := nonempty_gamma1RigidifiedModuli_of_isAffine Rs hRaff
+  obtain ⟨Rg⟩ := nonempty_gamma1Rigidification_of_rigidifiedModuli N n hn Rd
+    (fun {_T} g d => exists_gamma1FullLevelStructure_cover_isUnitBase N n hn hnA g d)
+    (smoothOfRelativeDimension_of_gamma1RigidifiedModuli_of_isUnit N n hN hn A hNA hnA Rd)
+    (fun act _ _ _ => by
+      letI := Rd.commRing_A
+      letI := act
+      exact htriv Rd.A (gamma0DeckGroup n) Rd.strM)
+  exact ⟨(nonempty_gamma1GITPresentation_of_rigidification Rg).some.toGamma1Atlas⟩
+
+/-- **KATZ–MAZUR ch. 8: the `Γ₁(N)`-ATLAS EXISTS OVER `ℤ_(ℓ)`** (**PROVEN 2026-08-01**
+over `nonempty_gamma1Atlas_of_isUnit` above; a sorry leaf from 2026-07-31 until then,
+and its signature is unchanged) — the twin of `X0.lean`'s
+`nonempty_gamma0AtlasOver_specLoc`, and the moduli half of
+`exists_x1IntegralSmoothProperModel` below.
+
+`_hbase` supplies the Katz–Mazur proviso through `X0.lean`'s
+`exists_unit_natCast_of_isReductionBase` (some `n ≥ 3` is a unit of `ℤ_(ℓ)`), and
+`_hbase` with `_hℓN` supplies `IsUnit (N : ↥R)` through
+`isUnit_natCast_of_isReductionBase_of_not_dvd`; `_hℓ` is spent only in
+`isTransitiveOnGeometricComponents_specLoc`, to know that `ℓ ≠ 0` in `↥R`.  `_hℓN`
+also forces `0 < N`, so the degenerate level never reaches the citation.
+
+The underscores have come off the three hypothesis binders, which are now all consumed;
+the binders are positional and the single call site (`exists_isCoarseModuliY1_loc`
+immediately below) passes them positionally, so no call site changes.
+
+**Why the ATLAS and not the coarse space** (unchanged, and still the reason the
+statement has this shape): `Gamma1Atlas.toIsCoarseModuliY1` is PROVEN at an arbitrary
+base, so `exists_isCoarseModuliY1_loc` immediately below is free over this theorem; and
+the atlas is what the construction actually produces — the rigidified scheme, the
+universal family, the fpqc rigidifying cover and the categorical quotient — whereas the
+coarse space is only its shadow. -/
+theorem nonempty_gamma1Atlas_specLoc (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF) :
+    Nonempty (Gamma1Atlas N (SpecLoc R)) := by
+  obtain ⟨n, hn, hnu⟩ := exists_unit_natCast_of_isReductionBase hbase
+  have hNu : IsUnit ((N : ℕ) : ↥R) := isUnit_natCast_of_isReductionBase_of_not_dvd hbase hℓN
+  have hN : 0 < N := Nat.pos_of_ne_zero (by rintro rfl; exact hℓN (dvd_zero ℓ))
+  exact nonempty_gamma1Atlas_of_isUnit N n hN hn ↥R hNu hnu
+    (fun B _ G _ _ str => isTransitiveOnGeometricComponents_specLoc hℓ hbase B G str)
 
 /-- **The `Γ₁(N)`-coarse space exists over `ℤ_(ℓ)`** (PROVEN over the atlas leaf
 above, through `Gamma1Atlas.toIsCoarseModuliY1`) — the twin of `X0.lean`'s

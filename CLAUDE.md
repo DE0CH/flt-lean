@@ -16151,3 +16151,79 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A "GEOMETRIC COMPONENTS" CLAUSE CAN BE **FREE** AT A BASE THAT IS NOT THE SPECTRUM OF A FIELD
+
+(2026-08-01, `flt-lean-368`, closing `nonempty_gamma1Atlas_specLoc` in `ModularCurve/X1.lean`.)
+
+Transporting a field-based moduli chain to a mixed-characteristic base, the reflex is that
+every *geometric* clause gets HARDER: over `Spec ℤ_(ℓ)` there are two fibres, so anything
+about "the geometric components" ought to need more than it did over a field. For the
+clause this development actually states, the opposite holds and it costs **nothing** — and
+the same is likely true of every clause in the tree written in that shape.
+
+`IsTransitiveOnGeometricComponents A G strM` (`X1.lean`) reads
+
+    ∀ (K : Type) [Field K] [Algebra K A], (∃ e : Spec K ≅ S, …) → …
+
+i.e. it constrains the components of `Spec A` **only when the base `S` is a POINT**, and
+says nothing whatever when `S` is not the spectrum of a field. So at `S = Spec ℤ_(ℓ)` it is
+VACUOUS, and the whole of Deligne–Rapoport IV.5.5 — a `sorry` leaf at every field
+(`transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`) — is discharged in twelve
+lines: `Spec` is fully faithful, so an iso `Spec K ≅ Spec A` gives a ring iso and makes
+`ℤ_(ℓ)` a field; but `ℓ` is a nonzero NON-UNIT there
+(`IsReductionBase.ker_eq_nonunits` reads the kernel of `toF` as the non-units).
+
+**The check, and it is one read of the DEFINITION rather than of the docstring: does the
+clause quantify over geometric POINTS of the total space, or over a field whose spectrum is
+the BASE?** The two are easy to conflate — both say "geometric", both mention
+`Field`/`IsAlgClosed` — and they behave in opposite ways under a change of base. The first
+transports and gets no harder; the second is a statement that the base is a point, so it is
+free at every base that is not one. Before pricing a field-based chain at `ℤ_(ℓ)`, sort its
+clauses into those two piles; the second pile is not work.
+
+What DOES get harder is representability, and that is where the citation leaves belong. The
+whole transport here was: two citation leaves restated over `CommRing A` + `IsUnit` (the
+exact twins of the `Γ₀` side's `exists_rigidifiedModuliSchemeData_of_isUnit`), one fpqc-cover
+lemma transcribed verbatim from its `Γ₀` twin, and the geometric clause free. Four of the six
+ingredients of the old bundled leaf were ALREADY proven over an arbitrary base and nobody had
+read the chain there — the same discovery `X0.lean` records on
+`nonempty_gamma0AtlasOver_specLoc`, arriving a second time in the twin file.
+
+### Reusable: `Spec K ≅ Spec A` ⟹ `A ≃+* K`, in one line
+
+    (AlgebraicGeometry.Spec.fullyFaithful.preimageIso e).unop.commRingCatIsoToRingEquiv
+
+`Spec.fullyFaithful : Scheme.Spec.FullyFaithful` is in the pin
+(`Mathlib/AlgebraicGeometry/GammaSpecAdjunction.lean`), `Spec A` is `Scheme.Spec.obj (op A)`
+definitionally, and `Iso.commRingCatIsoToRingEquiv` is in `Algebra/Category/Ring/Basic.lean`.
+Note the `.unop` reverses the direction, which is what you want. Do NOT build this by hand
+out of `ΓSpecIso` and `Scheme.Hom.appTop`; the one-liner elaborates first try.
+
+### MEASURE THE THREADING COST BEFORE CHOOSING BETWEEN TWO CUTS — the consumer closure is one script
+
+The cheaper-looking cut here was to generalise the existing two-step field tower in place
+(count `−1` instead of `0`). It was declined because the tower's bottom carries `4 ≤ N`,
+load-bearing for truth, while the target carries only `¬ ℓ ∣ N` — so taking it means adding a
+hypothesis to every declaration between them. **That number is not a guess; compute it.**
+Comment-strip the file, attribute each occurrence of a name to its enclosing declaration by
+walking backwards to the nearest header, and take the transitive closure upwards:
+
+    seen=set(); frontier=[target]
+    while frontier: n=frontier.pop(); … print(n,'<-',consumers(n)); frontier+=consumers(n)
+
+Ten declarations here, in a file with concurrent editors — the class-7 interface-split hazard
+for the sake of one leaf, so the wider (`0 < N`) leaf was opened instead. Record the number
+and the condition that would reverse the decision (here: a `4 ≤ N` appearing on the chain for
+another reason); a decline with a measured cost and a named trigger is a decision the next
+agent can act on, and one without is a question nobody will answer.
+
+### And say `−2 +2` out loud
+
+Closed `nonempty_gamma1Atlas_specLoc` and `smoothOfRelativeDimension_of_gamma1RigidifiedModuli`;
+opened their two base-general forms. The `declaration uses 'sorry'` warning set of `X1.lean` is
+**24 before and 24 after**, so to every frontier instrument this cycle did nothing. What changed
+is that one leaf bundling six things over one base became two leaves each naming ONE clause of
+Katz–Mazur over an arbitrary ring, plus ~120 lines of assembly nobody has to write again at any
+base — and that the FIELD form of the smoothness citation is now a corollary of its own
+general form, so a prover who discharges either new leaf discharges the field statement for free.
