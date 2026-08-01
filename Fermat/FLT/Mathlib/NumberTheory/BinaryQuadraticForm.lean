@@ -147,16 +147,25 @@ PROVEN, over three new analytic leaves:
   `Heegner.cexp_heegnerPoint` (`q = −Q` at `τ₀`), `Heegner.E_second_order` (the shared
   `q`-expansion split) and `Heegner.abs_tsum_shift_le` (a geometric-majorant tail bound).
 
-So this file has FOUR open leaves. The list below was REGENERATED from the merged source at
-this merge (release 25, 2026-07-30) by a direct-sorry scan, not inherited from any of the seven
-sides that have disagreed about it — and each of them was RIGHT about its own base, which is
-exactly why none of their lists survives:
-`Heegner.natDegree_minpoly_weberAlpha_le`, `Heegner.exists_modularPolynomial_prod`,
-`Heegner.exists_rat_jInvariant_heegnerPoint` and `Heegner.exists_rat_gammaTwo_of_multiplier`
-(the last recut TWICE on 2026-07-31, `exists_ratCube_… → exists_intCube_… →
-exists_rat_gammaTwo_of_multiplier`, both predecessors now PROVEN — the COUNT is unchanged at
-four through both recuts, and was re-confirmed against the `declaration uses 'sorry'` warning
-set of a green `lake build` of this module, not inherited).
+So this file has FIVE open leaves, as of 2026-08-01. **This list is regenerated from the
+`declaration uses 'sorry'` warning set of a green `lake build` of this module every time it is
+touched, and is never inherited** — seven merge sides have disagreed about it, each of them
+RIGHT about its own base, which is exactly why none of their lists survives:
+
+* `Heegner.exists_ratPoly_weberAlpha_pow_four`;
+* `Heegner.exists_isBoundedAtImInfty_coeff_prod` and
+  `Heegner.exists_intPolynomial_map_of_eq_prod` — the two halves of the CONSTRUCTION of `Φ_N`
+  (Cox Theorem 11.18), split on 2026-07-31;
+* `Heegner.exists_posDefForm_root_of_aeval_minpoly_jInvariant`;
+* `Heegner.exists_rat_gammaTwo_of_multiplier` (recut TWICE on 2026-07-31,
+  `exists_ratCube_… → exists_intCube_… → exists_rat_gammaTwo_of_multiplier`, both
+  predecessors now PROVEN).
+
+The count read FOUR at release 25 and the two 2026-07-31 splits took it to six; it is five now
+because **Kronecker's leading coefficient closed on 2026-08-01**
+(`Heegner.isUnit_leadingCoeff_diag_of_eq_prod`, Cox Lemma 11.23), over mathlib alone and with
+no new leaf. `Heegner.exists_modularPolynomial_prod` is therefore PROVEN modulo the
+construction half only.
 
 **THE `η`-CLUSTER IS CLOSED** (release 24). It is worth saying plainly, because the leaf that
 went is the one this file had been calling its hard analytic input for three releases:
@@ -3842,9 +3851,14 @@ rationality — not for integrality.
 
 WHAT IS LEFT OPEN HERE IS EXACTLY ONE STATEMENT, `exists_modularPolynomial_prod` (as of
 2026-07-30 — it used to be `exists_modularPolynomial`, whose quantifier over primitive
-matrices is now discharged), and the chain down to it is fully written and compiling:
+matrices is now discharged), and the chain down to it is fully written and compiling.
+**STALE AS OF 2026-07-31/08-01, AND KEPT ONLY FOR THE CHAIN BELOW IT**: that statement is
+itself PROVEN now, over the two halves it was split into on 2026-07-31, of which the Kronecker
+half closed on 2026-08-01 and the construction half was split again — so the open statements
+under this line are `exists_isBoundedAtImInfty_coeff_prod` and
+`exists_intPolynomial_map_of_eq_prod`, and nothing here is a leaf about Kronecker any more:
 
-  `exists_modularPolynomial_prod`  (LEAF: `Φ_N` specialises to `∏(X − j((az+b)/d))`; Kronecker)
+  `exists_modularPolynomial_prod`  (PROVEN; `Φ_N` specialises to `∏(X − j((az+b)/d))`; Kronecker)
     → `exists_modularPolynomial_triangular`   (normalise `b` mod `d`; PROVEN)
     → `exists_modularPolynomial`              (Hermite + `Γ`-invariance of `j`; PROVEN)
     → `isIntegral_jInvariant_of_fixedPoint`   (put `w = z`; PROVEN, via `isIntegral_of_eval_diag`)
@@ -3996,7 +4010,9 @@ finitely many TRIANGULAR representatives is now proved away here, so the survivi
 
 The chain, all of it below and all of it compiling:
 
-  `exists_modularPolynomial_prod`      (LEAF: `Φ` specialises to the product; Kronecker's `±1`)
+  `exists_modularPolynomial_prod`      (PROVEN 2026-07-31/08-01, was the LEAF: `Φ` specialises
+                                        to the product; Kronecker's `±1`. Its residue is the
+                                        CONSTRUCTION half only — see the two leaves there)
     → `exists_modularPolynomial_triangular`  (PROVEN; one factor of the product vanishes)
     → `exists_modularPolynomial`             (PROVEN; Hermite normal form + `Γ`-invariance)
 
@@ -5001,8 +5017,11 @@ discharged here rather than left to the prover. Write `Ψ = Σ_k c_k(Y) X^k` wit
 the product, for every `z ∈ ℍ`. If `Ψ₁` and `Ψ₂` both satisfy it then `c_k^{(1)} − c_k^{(2)}`
 vanishes at every value of `j`, and `j` is non-constant on `ℍ` (indeed surjective onto `ℂ`),
 so that difference has infinitely many roots and is `0`. Hence `Ψ₁ = Ψ₂`. This is the same
-argument the Kronecker leaf `isUnit_leadingCoeff_diag_of_eq_prod` below runs over `ℤ[Y][X]`,
-and it is what makes both of this file's "about ANY `Φ` satisfying `hprod`" statements honest.
+argument `isUnit_leadingCoeff_diag_of_eq_prod` below runs over `ℤ[Y][X]` (that was the other
+half of the same split, and is PROVEN as of 2026-08-01), and it is what makes both of this
+file's "about ANY `Φ` satisfying `hprod`" statements honest. **So this declaration is now the
+ONLY open half of `exists_modularPolynomial_prod`**: the Kronecker clause is discharged and
+what is left is Cox Theorem 11.18's integrality step alone.
 
 **`hinv` DOES NOT CROSS THE SPLIT, AND THAT IS NOT AN ACCIDENT.** One might expect the
 integrality half to need `Γ`-invariance too, to know that the `c_k` are power series in `q`
@@ -5107,10 +5126,11 @@ theorem exists_intPolynomial_eq_prod_of_smul_invariant {N : ℤ} (hN : 0 < N)
 `prod_triangularReps_jInvariant_smul`. Same statement it had as a leaf; only its proof moved.
 
 This is the first of the two halves that `exists_modularPolynomial_prod` was split into on
-2026-07-31; the second is `isUnit_leadingCoeff_diag_of_eq_prod` (Kronecker). Read the section
-note on `exists_modularPolynomial_prod` below for why the split is possible and what each half
-inherits. In one line: this half is Cox Theorem 11.18, the other is Cox Lemma 11.23, and
-neither uses the other's technique. -/
+2026-07-31; the second is `isUnit_leadingCoeff_diag_of_eq_prod` (Kronecker), PROVEN 2026-08-01.
+Read the section note on `exists_modularPolynomial_prod` below for why the split is possible
+and what each half inherits. In one line: this half is Cox Theorem 11.18, the other is Cox
+Lemma 11.23, and neither uses the other's technique — which is what let the second one close
+on its own. -/
 theorem exists_intPolynomial_eq_prod {N : ℤ} (hN : 0 < N) :
     ∃ Φ : Polynomial (Polynomial ℤ),
       ∀ z : UpperHalfPlane,
@@ -5120,10 +5140,337 @@ theorem exists_intPolynomial_eq_prod {N : ℤ} (hN : 0 < N) :
   exists_intPolynomial_eq_prod_of_smul_invariant hN
     (fun γ z => prod_triangularReps_jInvariant_smul hN γ z)
 
-/-- **LEAF 3a-ii — KRONECKER'S LEADING COEFFICIENT.** The diagonal `Φ_N(Y, Y) ∈ ℤ[Y]` of ANY
-`Φ` satisfying the product formula has leading coefficient `±1` when `N` is not a square.
+section KroneckerLeadingCoeff
+
+open Complex UpperHalfPlane ModularForm Filter Function
+open scoped Real MatrixGroups Topology Manifold
+
+/-! ### The `q`-expansion asymptotics behind Kronecker's leading coefficient
+
+Everything from here to `isUnit_leadingCoeff_diag_of_eq_prod` was added on 2026-08-01 to
+PROVE that leaf.  The classical route (Cox Lemma 11.23) reads off the leading `q`-coefficient
+of each factor `j(z) − j(t·z)` as a ROOT OF UNITY and then invokes Kronecker's theorem that a
+root of unity in `ℤ` is `±1`.  **Neither the roots of unity nor Kronecker's theorem appear
+below**, and that is the whole reason this leaf turned out to be affordable: the argument only
+ever needs the ABSOLUTE VALUE of the leading coefficient, and passing to `‖·‖` at the very
+first step kills every root of unity on the spot.  What is left is one analytic input,
+
+  `tendsto_jInvariant_mul_qParam_atImInfty`:  `j(z)·q → 1` as `Im z → ∞`,
+
+which is not a leaf either — it is `E₄ → 1` (mathlib's `EisensteinSeries.E_qExpansion_coeff_
+zero`, through the cusp function) divided by `Δ/q → 1` (mathlib's
+`ModularForm.tendsto_atImInfty_tprod_one_sub_eta_q_pow`) — plus elementary filter algebra.
+
+THE SHAPE OF THE ARGUMENT, since it is not the one the leaf's docstring prescribes.  Write
+`r(z) = |q| = e^{−2π Im z}` and, for `t = (a, b, d)`, `m_t = max(1, a/d)`.
+
+* `‖j(z)‖·r(z) → 1`, and at a triangular point `‖j(t·z)‖·r(z)^{a/d} → 1`, because
+  `Im(t·z) = (a/d)·Im z` (`im_triPoint`) and `t·(−)` pushes `atImInfty` to `atImInfty`.
+* Hence `‖j(z) − j(t·z)‖·r(z)^{m_t} → 1` by a two-sided squeeze (`tendsto_norm_sub_mul`),
+  the subtracted term decaying strictly faster.  **This is exactly where `hns` is spent**: the
+  squeeze needs `a ≠ d`, and `a = d` forces `N = a²` (`triangularReps_fst_ne`).  At `a = d`
+  the two leading terms have the SAME `q`-power and can cancel — which is the `N = 4`, `N = 9`
+  failure recorded below, now visible as the one step of the proof that breaks.
+* Multiplying over `t` gives `‖∏_t (j(z) − j(t·z))‖·r(z)^M → 1` with `M = ∑_t m_t : ℝ`.
+* Independently, writing `Q ∈ ℂ[Y]` for the diagonal mapped into `ℂ` and expanding
+  `Q(j(z))·q^D = ∑_{k ≤ D} a_k (j(z)q)^k q^{D−k}` termwise (`tendsto_eval_mul_qParam_pow`)
+  gives `Q(j(z))·q^D → leadingCoeff Q`, i.e. `‖Q(j(z))‖·r(z)^D → ‖c‖`, `D = deg Q`.
+* `hprod` identifies `Q(j(z))` with the product (`eval_diag_eq_prod`), so dividing the two
+  limits leaves `r(z)^{D−M} → ‖c‖`.  A limit of that shape forces `D = M` and `‖c‖ = 1`:
+  `D > M` would send it to `0`, hence `c = 0`, hence `Q = 0`, contradicting the limit `1`;
+  `D < M` would send it to `∞`, which has no finite limit at all on the `NeBot` filter
+  `atImInfty`.  So `‖c‖ = 1`, and an integer of absolute value `1` is a unit.
+
+Note what this does NOT need, all of which the classical account uses: the `q`-expansion of
+`j` beyond its leading term, `q^{1/d}`-Puiseux expansions, the `d`-th roots of unity `ζ_d^{−b}`,
+Kronecker's theorem, and the VALUE of `D` (the degree is never computed — it is forced to be
+`M` by the comparison, which is why `M` may be an a-priori real number).
+-/
+
+/-- A level-one modular form tends to the constant term of its `q`-expansion at `i∞`. -/
+theorem tendsto_atImInfty_of_modularForm {k : ℤ} (f : ModularForm 𝒮ℒ k) :
+    Tendsto (fun z : ℍ => f z) atImInfty (𝓝 ((qExpansion 1 (⇑f)).coeff 0)) := by
+  have hA : AnalyticAt ℂ (cuspFunction 1 (⇑f)) 0 :=
+    ModularFormClass.analyticAt_cuspFunction_zero f one_pos one_mem_strictPeriods_SL
+  have hc : (qExpansion 1 (⇑f)).coeff 0 = cuspFunction 1 (⇑f) 0 := by
+    simp [UpperHalfPlane.qExpansion_coeff]
+  rw [hc]
+  have h2 : Tendsto (fun z : ℍ => cuspFunction 1 (⇑f) (Periodic.qParam 1 (z : ℂ)))
+      atImInfty (𝓝 (cuspFunction 1 (⇑f) 0)) :=
+    hA.continuousAt.tendsto.comp (qParam_tendsto_atImInfty one_pos)
+  refine h2.congr fun z => ?_
+  exact SlashInvariantFormClass.eq_cuspFunction (f := f) z one_mem_strictPeriods_SL one_ne_zero
+
+theorem tendsto_E₄_atImInfty : Tendsto (fun z : ℍ => ModularForm.E₄ z) atImInfty (𝓝 1) := by
+  have := tendsto_atImInfty_of_modularForm ModularForm.E₄
+  rwa [EisensteinSeries.E_qExpansion_coeff_zero (by norm_num) (by norm_num)] at this
+
+/-- **`j ~ q⁻¹` at the cusp.** -/
+theorem tendsto_jInvariant_mul_qParam_atImInfty :
+    Tendsto (fun z : ℍ => jInvariant z * Periodic.qParam 1 (z : ℂ)) atImInfty (𝓝 1) := by
+  have hP : Tendsto (fun z : ℍ => ∏' (n : ℕ), (1 - ModularForm.eta_q n (z : ℂ)) ^ 24)
+      atImInfty (𝓝 1) := ModularForm.tendsto_atImInfty_tprod_one_sub_eta_q_pow
+  have hE : Tendsto (fun z : ℍ => ModularForm.E₄ z ^ 3) atImInfty (𝓝 1) := by
+    simpa using tendsto_E₄_atImInfty.pow 3
+  have hquot : Tendsto (fun z : ℍ =>
+      ModularForm.E₄ z ^ 3 / ∏' (n : ℕ), (1 - ModularForm.eta_q n (z : ℂ)) ^ 24)
+      atImInfty (𝓝 1) := by
+    have h := hE.div hP one_ne_zero
+    rw [div_one] at h
+    exact h
+  refine hquot.congr fun z => ?_
+  have hq : Periodic.qParam (1 : ℝ) (z : ℂ) ≠ 0 := Periodic.qParam_ne_zero _
+  have hΔ : ModularForm.discriminant z ≠ 0 := ModularForm.discriminant_ne_zero z
+  have hPz : (∏' (n : ℕ), (1 - ModularForm.eta_q n (z : ℂ)) ^ 24) ≠ 0 := by
+    intro h
+    rw [ModularForm.discriminant_eq_q_prod z, h, mul_zero] at hΔ
+    exact hΔ rfl
+  rw [jInvariant, ModularForm.discriminant_eq_q_prod z]
+  field_simp
+
+/-- The norm of the standard parameter `q = e^{2πiz}`. -/
+theorem norm_qParam_one (z : ℍ) :
+    ‖Periodic.qParam (1 : ℝ) (z : ℂ)‖ = Real.exp (-(2 * π * z.im)) := by
+  simp [Periodic.qParam, Complex.norm_exp]
+
+/-- The `im` of a triangular point scales by `a/d`. -/
+theorem im_triPoint {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) (z : ℍ) :
+    (triPoint z (a, b, d)).im = (a : ℝ) / (d : ℝ) * z.im := by
+  have h1 : ((d : ℤ) : ℂ) = ((d : ℝ) : ℂ) := by push_cast; ring
+  have hc := coe_triPoint (b := b) z ha hd
+  show ((triPoint z (a, b, d) : ℍ) : ℂ).im = _
+  rw [hc, h1, Complex.div_ofReal_im]
+  simp only [Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im]
+  show ((a : ℝ) * (z : ℂ).im + 0 * (z : ℂ).re + 0) / (d : ℝ) = _
+  rw [UpperHalfPlane.coe_im]
+  field_simp
+  ring
+
+/-- Triangular substitution sends `i∞` to `i∞`. -/
+theorem tendsto_triPoint_atImInfty {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) :
+    Tendsto (fun z : ℍ => triPoint z (a, b, d)) atImInfty atImInfty := by
+  have ha' : (0 : ℝ) < (a : ℝ) / (d : ℝ) := by
+    have : (0 : ℝ) < (a : ℝ) := by exact_mod_cast ha
+    have : (0 : ℝ) < (d : ℝ) := by exact_mod_cast hd
+    positivity
+  rw [atImInfty, tendsto_comap_iff]
+  have : (UpperHalfPlane.im ∘ fun z : ℍ => triPoint z (a, b, d))
+      = fun z : ℍ => (a : ℝ) / (d : ℝ) * z.im := by
+    funext z; exact im_triPoint ha hd z
+  rw [this]
+  exact Filter.Tendsto.const_mul_atTop ha' tendsto_comap
+
+
+/-- The exponential decay factor `|q|^c = e^{-2πc·Im z}`. -/
+theorem exp_decay_pos (c : ℝ) (z : ℍ) : 0 < Real.exp (-(2 * π * c * z.im)) := Real.exp_pos _
+
+theorem exp_decay_mul (c c' : ℝ) (z : ℍ) :
+    Real.exp (-(2 * π * c * z.im)) * Real.exp (-(2 * π * c' * z.im))
+      = Real.exp (-(2 * π * (c + c') * z.im)) := by
+  rw [← Real.exp_add]; ring_nf
+
+theorem tendsto_exp_decay {c : ℝ} (hc : 0 < c) :
+    Tendsto (fun z : ℍ => Real.exp (-(2 * π * c * z.im))) atImInfty (𝓝 0) := by
+  have hpi : (0 : ℝ) < 2 * π * c := by positivity
+  have him : Tendsto (fun z : ℍ => z.im) atImInfty atTop := tendsto_comap
+  have h1 : Tendsto (fun z : ℍ => 2 * π * c * z.im) atImInfty atTop :=
+    Filter.Tendsto.const_mul_atTop hpi him
+  exact Real.tendsto_exp_atBot.comp (tendsto_neg_atTop_atBot.comp h1)
+
+/-- **`‖j‖ ~ |q|⁻¹` at the cusp**, the norm form of `tendsto_jInvariant_mul_qParam_atImInfty`. -/
+theorem tendsto_norm_jInvariant_atImInfty :
+    Tendsto (fun z : ℍ => ‖jInvariant z‖ * Real.exp (-(2 * π * 1 * z.im))) atImInfty (𝓝 1) := by
+  have h := tendsto_jInvariant_mul_qParam_atImInfty.norm
+  simp only [norm_one, norm_mul, norm_qParam_one] at h
+  refine h.congr fun z => ?_
+  congr 2
+  ring
+
+
+/-- `‖j(t·z)‖ ~ |q|^{-a/d}` at the cusp. -/
+theorem tendsto_norm_jInvariant_triPoint {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) :
+    Tendsto (fun z : ℍ => ‖jInvariant (triPoint z (a, b, d))‖ *
+        Real.exp (-(2 * π * ((a : ℝ) / (d : ℝ)) * z.im))) atImInfty (𝓝 1) := by
+  have h := tendsto_norm_jInvariant_atImInfty.comp (tendsto_triPoint_atImInfty (b := b) ha hd)
+  refine h.congr fun z => ?_
+  simp only [comp_apply]
+  rw [im_triPoint ha hd z]
+  congr 2
+  ring
+
+/-- Multiplying a bounded-away-from-zero profile by a strictly faster decay gives `0`. -/
+theorem tendsto_mul_exp_decay_of {f : ℍ → ℝ} {c c' : ℝ} (hc : 0 < c' - c)
+    (hf : Tendsto (fun z : ℍ => f z * Real.exp (-(2 * π * c * z.im))) atImInfty (𝓝 1)) :
+    Tendsto (fun z : ℍ => f z * Real.exp (-(2 * π * c' * z.im))) atImInfty (𝓝 0) := by
+  have h : Tendsto (fun z : ℍ => (f z * Real.exp (-(2 * π * c * z.im))) *
+      Real.exp (-(2 * π * (c' - c) * z.im))) atImInfty (𝓝 (1 * 0)) :=
+    hf.mul (tendsto_exp_decay hc)
+  rw [one_mul] at h
+  refine h.congr fun z => ?_
+  rw [mul_assoc, exp_decay_mul]
+  congr 2
+  ring
+
+/-- Squeeze: if `‖u‖·e → 1` and `‖v‖·e → 0` then `‖u − v‖·e → 1`. -/
+theorem tendsto_norm_sub_mul {α : Type*} {l : Filter α} {u v : α → ℂ} {e : α → ℝ}
+    (he : ∀ x, 0 ≤ e x)
+    (hu : Tendsto (fun x => ‖u x‖ * e x) l (𝓝 1))
+    (hv : Tendsto (fun x => ‖v x‖ * e x) l (𝓝 0)) :
+    Tendsto (fun x => ‖u x - v x‖ * e x) l (𝓝 1) := by
+  have hlo : Tendsto (fun x => ‖u x‖ * e x - ‖v x‖ * e x) l (𝓝 1) := by
+    simpa using hu.sub hv
+  have hhi : Tendsto (fun x => ‖u x‖ * e x + ‖v x‖ * e x) l (𝓝 1) := by
+    simpa using hu.add hv
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le hlo hhi (fun x => ?_) (fun x => ?_)
+  · calc ‖u x‖ * e x - ‖v x‖ * e x = (‖u x‖ - ‖v x‖) * e x := by ring
+      _ ≤ ‖u x - v x‖ * e x := mul_le_mul_of_nonneg_right (norm_sub_norm_le _ _) (he x)
+  · calc ‖u x - v x‖ * e x ≤ (‖u x‖ + ‖v x‖) * e x :=
+        mul_le_mul_of_nonneg_right (norm_sub_le _ _) (he x)
+      _ = ‖u x‖ * e x + ‖v x‖ * e x := by ring
+
+/-- **Each factor of the diagonal product has a root-of-unity leading coefficient**, in the
+only form the argument needs: its ABSOLUTE VALUE is asymptotic to `|q|^{-max(1, a/d)}`. -/
+theorem tendsto_norm_factor {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) (hne : a ≠ d) :
+    Tendsto (fun z : ℍ => ‖jInvariant z - jInvariant (triPoint z (a, b, d))‖ *
+        Real.exp (-(2 * π * max 1 ((a : ℝ) / (d : ℝ)) * z.im))) atImInfty (𝓝 1) := by
+  have ha' : (0 : ℝ) < (a : ℝ) := by exact_mod_cast ha
+  have hd' : (0 : ℝ) < (d : ℝ) := by exact_mod_cast hd
+  rcases lt_or_gt_of_ne hne with h | h
+  · -- `a < d`, so `a/d < 1` and the factor is dominated by `j(z)`
+    have hlt : (a : ℝ) / (d : ℝ) < 1 := by
+      rw [div_lt_one hd']; exact_mod_cast h
+    rw [max_eq_left hlt.le]
+    refine tendsto_norm_sub_mul (fun z => (exp_decay_pos _ z).le)
+      tendsto_norm_jInvariant_atImInfty ?_
+    exact tendsto_mul_exp_decay_of (by linarith) (tendsto_norm_jInvariant_triPoint ha hd)
+  · -- `a > d`, so `a/d > 1` and the factor is dominated by `j(t·z)`
+    have hgt : (1 : ℝ) < (a : ℝ) / (d : ℝ) := by
+      rw [lt_div_iff₀ hd', one_mul]; exact_mod_cast h
+    rw [max_eq_right hgt.le]
+    have hsub : Tendsto (fun z : ℍ =>
+        ‖jInvariant (triPoint z (a, b, d)) - jInvariant z‖ *
+          Real.exp (-(2 * π * ((a : ℝ) / (d : ℝ)) * z.im))) atImInfty (𝓝 1) := by
+      refine tendsto_norm_sub_mul (fun z => (exp_decay_pos _ z).le)
+        (tendsto_norm_jInvariant_triPoint ha hd) ?_
+      exact tendsto_mul_exp_decay_of (by linarith) tendsto_norm_jInvariant_atImInfty
+    refine hsub.congr fun z => ?_
+    rw [norm_sub_rev]
+
+
+/-- When `N` is not a square, no triangular representative has `a = d`. -/
+theorem triangularReps_fst_ne {N : ℤ} (hns : ¬ IsSquare N)
+    {t : ℤ × ℤ × ℤ} (ht : t ∈ triangularReps N) : t.1 ≠ t.2.2 := by
+  intro h
+  obtain ⟨-, -, had, -⟩ := triangularReps_spec ht
+  exact hns ⟨t.1, by rw [← had, h]⟩
+
+/-- **The absolute value of the whole diagonal product**, asymptotic to `|q|^{-M}` with
+`M = ∑_t max(1, a/d)`. -/
+theorem tendsto_norm_prod_atImInfty {N : ℤ} (hns : ¬ IsSquare N) :
+    Tendsto (fun z : ℍ => (∏ t ∈ triangularReps N,
+          ‖jInvariant z - jInvariant (triPoint z t)‖) *
+        Real.exp (-(2 * π * (∑ t ∈ triangularReps N, max 1 ((t.1 : ℝ) / (t.2.2 : ℝ))) * z.im)))
+      atImInfty (𝓝 1) := by
+  have hfac : ∀ t ∈ triangularReps N,
+      Tendsto (fun z : ℍ => ‖jInvariant z - jInvariant (triPoint z t)‖ *
+        Real.exp (-(2 * π * max 1 ((t.1 : ℝ) / (t.2.2 : ℝ)) * z.im))) atImInfty (𝓝 1) := by
+    intro t ht
+    obtain ⟨ha, hd, -, -⟩ := triangularReps_spec ht
+    exact tendsto_norm_factor ha hd (triangularReps_fst_ne hns ht)
+  have hprod := tendsto_finsetProd (triangularReps N) hfac
+  rw [Finset.prod_const_one] at hprod
+  refine hprod.congr fun z => ?_
+  rw [Finset.prod_mul_distrib, ← Real.exp_sum]
+  congr 1
+  have hre : ∀ m : ℝ, -(2 * π * m * z.im) = (-(2 * π * z.im)) * m := by intro m; ring
+  simp only [hre]
+  rw [← Finset.mul_sum]
+
+
+/-- **The diagonal specialises to the product of differences.** -/
+theorem eval_diag_eq_prod {N : ℤ} (Φ : Polynomial (Polynomial ℤ))
+    (hprod : ∀ z : UpperHalfPlane,
+      Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
+        = ∏ t ∈ triangularReps N,
+            (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))) (z : ℍ) :
+    ((Φ.eval Polynomial.X).map (Int.castRingHom ℂ)).eval (jInvariant z)
+      = ∏ t ∈ triangularReps N, (jInvariant z - jInvariant (triPoint z t)) := by
+  have hX : (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z)) Polynomial.X
+      = jInvariant z := by simp
+  have key : ∀ g : Polynomial ℤ →+* ℂ,
+      g (Φ.eval Polynomial.X) = (Φ.map g).eval (g Polynomial.X) := by
+    intro g
+    rw [Polynomial.eval_map]
+    have h := Polynomial.hom_eval₂ Φ (RingHom.id (Polynomial ℤ)) g Polynomial.X
+    rw [RingHom.comp_id] at h
+    exact h
+  have h1 : (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z)) (Φ.eval Polynomial.X)
+      = (Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))).eval
+          (jInvariant z) := by
+    rw [key, hX]
+  have h2 : (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z)) (Φ.eval Polynomial.X)
+      = ((Φ.eval Polynomial.X).map (Int.castRingHom ℂ)).eval (jInvariant z) := by
+    rw [Polynomial.eval_map]; rfl
+  rw [← h2, h1, hprod z, Polynomial.eval_prod]
+  simp
+
+/-- **The leading coefficient of a polynomial, read off the `q`-expansion at the cusp.** -/
+theorem tendsto_eval_mul_qParam_pow (Q : Polynomial ℂ) :
+    Tendsto (fun z : ℍ => Q.eval (jInvariant z) * Periodic.qParam 1 (z : ℂ) ^ Q.natDegree)
+      atImInfty (𝓝 Q.leadingCoeff) := by
+  have hD : ∀ z : ℍ, Q.eval (jInvariant z) * Periodic.qParam 1 (z : ℂ) ^ Q.natDegree
+      = ∑ k ∈ Finset.range (Q.natDegree + 1),
+        Q.coeff k * (jInvariant z * Periodic.qParam 1 (z : ℂ)) ^ k *
+          Periodic.qParam 1 (z : ℂ) ^ (Q.natDegree - k) := by
+    intro z
+    rw [Polynomial.eval_eq_sum_range, Finset.sum_mul]
+    refine Finset.sum_congr rfl fun k hk => ?_
+    have hk' : k ≤ Q.natDegree := Nat.lt_succ_iff.mp (Finset.mem_range.mp hk)
+    have hq : Periodic.qParam (1 : ℝ) (z : ℂ) ^ Q.natDegree
+        = Periodic.qParam (1 : ℝ) (z : ℂ) ^ k *
+            Periodic.qParam (1 : ℝ) (z : ℂ) ^ (Q.natDegree - k) := by
+      rw [← pow_add, Nat.add_sub_cancel' hk']
+    rw [hq, mul_pow]
+    ring
+  have hterm : ∀ k ∈ Finset.range (Q.natDegree + 1),
+      Tendsto (fun z : ℍ => Q.coeff k * (jInvariant z * Periodic.qParam 1 (z : ℂ)) ^ k *
+        Periodic.qParam 1 (z : ℂ) ^ (Q.natDegree - k)) atImInfty
+        (𝓝 (Q.coeff k * 1 ^ k * (0 : ℂ) ^ (Q.natDegree - k))) := fun k _ =>
+    (tendsto_const_nhds.mul (tendsto_jInvariant_mul_qParam_atImInfty.pow k)).mul
+      ((qParam_tendsto_atImInfty one_pos).pow _)
+  have hsum := tendsto_finsetSum (Finset.range (Q.natDegree + 1)) hterm
+  have hval : ∑ k ∈ Finset.range (Q.natDegree + 1),
+      Q.coeff k * 1 ^ k * (0 : ℂ) ^ (Q.natDegree - k) = Q.leadingCoeff := by
+    rw [Finset.sum_eq_single Q.natDegree]
+    · simp only [Nat.sub_self, pow_zero, one_pow, mul_one]
+      rfl
+    · intro k hk hne
+      have hk' : k < Q.natDegree := lt_of_le_of_ne (Nat.lt_succ_iff.mp (Finset.mem_range.mp hk)) hne
+      have : Q.natDegree - k ≠ 0 := by omega
+      simp [zero_pow this]
+    · intro h
+      exact absurd (Finset.self_mem_range_succ Q.natDegree) h
+  rw [hval] at hsum
+  exact hsum.congr fun z => (hD z).symm
+
+
+theorem tendsto_exp_growth {c : ℝ} (hc : c < 0) :
+    Tendsto (fun z : ℍ => Real.exp (-(2 * π * c * z.im))) atImInfty atTop := by
+  have hpi : (0 : ℝ) < -(2 * π * c) := by nlinarith [Real.pi_pos]
+  have him : Tendsto (fun z : ℍ => z.im) atImInfty atTop := tendsto_comap
+  have h1 : Tendsto (fun z : ℍ => -(2 * π * c) * z.im) atImInfty atTop :=
+    Filter.Tendsto.const_mul_atTop hpi him
+  exact Real.tendsto_exp_atTop.comp (h1.congr fun z => by ring)
+
+/-- **KRONECKER'S LEADING COEFFICIENT — PROVEN 2026-08-01, WAS `LEAF 3a-ii`.** The diagonal
+`Φ_N(Y, Y) ∈ ℤ[Y]` of ANY `Φ` satisfying the product formula has leading coefficient `±1`
+when `N` is not a square.
 
 The second of the two halves `exists_modularPolynomial_prod` was split into on 2026-07-31.
+It is no longer a leaf: the proof is the section note above, and it rests on nothing but
+mathlib. Everything below this paragraph is the leaf's original docstring, kept because its
+faithfulness audit and its machine-checked witnesses are still the record of WHY the
+statement is what it is; the closing paragraph says which parts the proof took.
 
 **WHY IT MAY BE STATED ABOUT AN ARBITRARY `Φ`, WHICH IS WHAT MAKES THE SPLIT POSSIBLE.** The
 product formula PINS `Φ` DOWN uniquely. Write `Φ = Σ_k c_k(Y) X^k` with `c_k ∈ ℤ[Y]`;
@@ -5162,15 +5509,89 @@ there.
 
 MACHINE-CHECKED (`PARI/GP`, `polmodular` at prime level): `Φ_2(X, X)` has degree `4` and
 leading coefficient `−1`, `Φ_3` degree `6` and `−1`, `Φ_5` degree `10` and `−1`. Refute by
-exhibiting a non-square `N` whose diagonal has a non-unit leading coefficient. -/
-theorem isUnit_leadingCoeff_diag_of_eq_prod {N : ℤ} (hN : 0 < N) (hns : ¬ IsSquare N)
+exhibiting a non-square `N` whose diagonal has a non-unit leading coefficient.
+
+PROVEN 2026-08-01 over mathlib alone, by the absolute-value route set out in the section note
+above; no new leaf was opened and nothing in the file changed except this proof and the
+machinery above it.  The clauses of the argument sketched above are all still accurate — they
+are just not how it was formalised: the roots of unity are invisible to `‖·‖`, so the three
+cases collapse to the single statement `‖j(z) − j(t·z)‖·|q|^{max(1,a/d)} → 1`, proven by
+squeezing.  `hns` enters exactly once, at `triangularReps_fst_ne`.
+
+`_hN` IS UNUSED BY THE PROOF and is underscored to make that mechanically visible; it is kept
+in the signature because the sole call site (`exists_modularPolynomial_prod` below) has it in
+hand and because dropping it would be a signature change for no gain. -/
+theorem isUnit_leadingCoeff_diag_of_eq_prod {N : ℤ} (_hN : 0 < N) (hns : ¬ IsSquare N)
     (Φ : Polynomial (Polynomial ℤ))
     (hprod : ∀ z : UpperHalfPlane,
       Φ.map (Polynomial.eval₂RingHom (Int.castRingHom ℂ) (jInvariant z))
         = ∏ t ∈ triangularReps N,
             (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))) :
-    IsUnit (Φ.eval Polynomial.X).leadingCoeff :=
-  sorry
+    IsUnit (Φ.eval Polynomial.X).leadingCoeff := by
+  set P : Polynomial ℤ := Φ.eval Polynomial.X with hPdef
+  set Q : Polynomial ℂ := P.map (Int.castRingHom ℂ) with hQdef
+  set M : ℝ := ∑ t ∈ triangularReps N, max 1 ((t.1 : ℝ) / (t.2.2 : ℝ)) with hMdef
+  have hinj : Function.Injective (⇑(Int.castRingHom ℂ)) := by
+    intro a b h
+    simp only [eq_intCast] at h
+    exact_mod_cast h
+  have hnd : Q.natDegree = P.natDegree := Polynomial.natDegree_map_eq_of_injective hinj P
+  -- the polynomial asymptotic
+  have hA : Tendsto (fun z : ℍ => ‖Q.eval (jInvariant z)‖ *
+      Real.exp (-(2 * π * (Q.natDegree : ℝ) * z.im))) atImInfty (𝓝 ‖Q.leadingCoeff‖) := by
+    have h := (tendsto_eval_mul_qParam_pow Q).norm
+    simp only [norm_mul, norm_pow, norm_qParam_one] at h
+    refine h.congr fun z => ?_
+    congr 1
+    rw [← Real.exp_nat_mul]
+    congr 1
+    ring
+  -- the modular asymptotic
+  have hB : Tendsto (fun z : ℍ => ‖Q.eval (jInvariant z)‖ *
+      Real.exp (-(2 * π * M * z.im))) atImInfty (𝓝 1) := by
+    refine (tendsto_norm_prod_atImInfty hns).congr fun z => ?_
+    rw [hQdef, hPdef, eval_diag_eq_prod Φ hprod z, norm_prod]
+  have hnz : ∀ᶠ z : ℍ in atImInfty, ‖Q.eval (jInvariant z)‖ ≠ 0 := by
+    have h2 := hB.eventually (eventually_gt_nhds (show (0 : ℝ) < 1 by norm_num))
+    filter_upwards [h2] with z hz
+    intro h0
+    rw [h0, zero_mul] at hz
+    exact lt_irrefl 0 hz
+  have hdiv : Tendsto (fun z : ℍ =>
+      Real.exp (-(2 * π * ((Q.natDegree : ℝ) - M) * z.im))) atImInfty
+      (𝓝 ‖Q.leadingCoeff‖) := by
+    have h := hA.div hB one_ne_zero
+    rw [div_one] at h
+    refine h.congr' ?_
+    filter_upwards [hnz] with z hz
+    simp only [Pi.div_apply]
+    rw [mul_div_mul_left _ _ hz, ← Real.exp_sub]
+    congr 1
+    ring
+  have hcnorm : ‖Q.leadingCoeff‖ = 1 := by
+    rcases lt_trichotomy ((Q.natDegree : ℝ) - M) 0 with hs | hs | hs
+    · exact absurd hdiv (not_tendsto_nhds_of_tendsto_atTop (tendsto_exp_growth hs) _)
+    · rw [hs] at hdiv
+      simp only [mul_zero, zero_mul, neg_zero, Real.exp_zero] at hdiv
+      exact (tendsto_nhds_unique tendsto_const_nhds hdiv).symm
+    · have h0 : ‖Q.leadingCoeff‖ = 0 := tendsto_nhds_unique hdiv (tendsto_exp_decay hs)
+      have hQ0 : Q = 0 := Polynomial.leadingCoeff_eq_zero.mp (norm_eq_zero.mp h0)
+      rw [hQ0] at hB
+      simp only [Polynomial.eval_zero, norm_zero, zero_mul] at hB
+      exact absurd (tendsto_nhds_unique tendsto_const_nhds hB) (by norm_num)
+  -- descend to `ℤ`
+  have hlc : Q.leadingCoeff = ((P.leadingCoeff : ℤ) : ℂ) := by
+    rw [Polynomial.leadingCoeff, Polynomial.leadingCoeff, hnd, hQdef, Polynomial.coeff_map]
+    rfl
+  rw [hlc] at hcnorm
+  rw [show (((P.leadingCoeff : ℤ)) : ℂ) = (((P.leadingCoeff : ℤ) : ℝ) : ℂ) by push_cast; ring,
+    Complex.norm_real, Real.norm_eq_abs] at hcnorm
+  refine Int.isUnit_iff.mpr ?_
+  rcases (abs_eq (by norm_num : (0 : ℝ) ≤ 1)).mp hcnorm with h | h
+  · left; exact_mod_cast h
+  · right; exact_mod_cast h
+
+end KroneckerLeadingCoeff
 
 /-- **LEAF 3a — THE MODULAR POLYNOMIAL `Φ_N`, WITH KRONECKER'S LEADING COEFFICIENT.**
 
@@ -5306,17 +5727,24 @@ CM content of this cluster sits in the class-field leaves and not here.
 **SPLIT 2026-07-31 INTO ITS TWO INDEPENDENT HALVES, WHICH ARE DIFFERENT MATHEMATICS.** This
 declaration is no longer a leaf: it is PROVEN in one line from `exists_intPolynomial_eq_prod`
 (the CONSTRUCTION of `Φ`) and `isUnit_leadingCoeff_diag_of_eq_prod` (KRONECKER's leading
-coefficient), stated and left open just below. The split is possible at all because the
-product formula PINS `Φ` DOWN — see the uniqueness argument in the second one's docstring —
-so Kronecker's clause can be stated about *any* `Φ` satisfying the first, with no existential
-tying the two together.
+coefficient). The split is possible at all because the product formula PINS `Φ` DOWN — see the
+uniqueness argument in the second one's docstring — so Kronecker's clause can be stated about
+*any* `Φ` satisfying the first, with no existential tying the two together.
 
 Against the three-item "untooled" list above: the construction leaf inherits the
 representatives and the integrality of the coefficients (Cox Theorem 11.18); the Kronecker
 leaf inherits the leading coefficient (Cox Lemma 11.23) and, with it, the whole of the
 `¬ IsSquare N` hypothesis and the `q`-expansion analysis that hypothesis exists for. Neither
 half needs the other's technique, and the second may ASSUME `Φ` exists — which is most of what
-made the combined statement forbidding. -/
+made the combined statement forbidding.
+
+**AND THE SECOND HALF CLOSED ON 2026-08-01**, which is the payoff of the split: the Kronecker
+half was PROVEN outright over mathlib (see the section note above
+`isUnit_leadingCoeff_diag_of_eq_prod`), so the three-item list is down to two — the
+representatives `C(N)` and the INTEGRALITY of the coefficients, both inside
+`exists_intPolynomial_map_of_eq_prod`, which is now the ONLY leaf under this declaration. The
+`q`-expansion analysis the third item was costing turned out to need only `j·q → 1`, and that
+is a theorem here now (`tendsto_jInvariant_mul_qParam_atImInfty`) rather than a citation. -/
 theorem exists_modularPolynomial_prod {N : ℤ} (hN : 0 < N) :
     ∃ Φ : Polynomial (Polynomial ℤ),
       (¬ IsSquare N → IsUnit (Φ.eval Polynomial.X).leadingCoeff) ∧
@@ -5959,9 +6387,12 @@ of primitive positive definite forms of discriminant `−p`, and each such `f` w
 WHAT IT WOULD TAKE, unchanged from the statement it replaces: complex multiplication and ring
 class fields are absent from mathlib at this pin, from `~/cs/FLT` and from this project. The
 route is Cox §11 through the modular polynomial `Φ_N`, whose existence is
-`exists_modularPolynomial` — PROVEN above, over the separate leaf
-`exists_modularPolynomial_prod`. So the two open CM leaves of this file are not independent:
-closing `exists_modularPolynomial_prod` is a prerequisite for the intended proof of this one.
+`exists_modularPolynomial` — PROVEN above, over `exists_modularPolynomial_prod`. So this leaf
+and the modular-polynomial cluster are not independent: closing that cluster is a prerequisite
+for the intended proof of this one. **UPDATED 2026-08-01**: `exists_modularPolynomial_prod` is
+itself PROVEN now; what this leaf still waits on is its CONSTRUCTION half, i.e.
+`exists_isBoundedAtImInfty_coeff_prod` and `exists_intPolynomial_map_of_eq_prod`. Kronecker's
+leading coefficient is no longer on the path.
 
 WHY THE EXISTENTIAL IS NOT WEAKENED BY DROPPING PRIMITIVITY. The conclusion asks only for
 SOME positive definite `f` of discriminant `−p`; imprimitive forms enlarge the target set and
@@ -7157,7 +7588,9 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
   `Heegner.exists_int_gammaTwo`: `α⁴` is a root of `x³ − γ₂(τ₀)x − 16` by the definition of
   `γ₂`, so an integral `γ₂(τ₀)` already forces an integral `α`;
 * `Heegner.exists_modularPolynomial_prod` — the modular polynomial `Φ_N` with Kronecker's
-  leading coefficient (integrality of the class equation). **NARROWED 2026-07-30** from
+  leading coefficient (integrality of the class equation). **NO LONGER A LEAF**: split on
+  2026-07-31 and PROVEN, the Kronecker half (`Heegner.isUnit_leadingCoeff_diag_of_eq_prod`)
+  closing on 2026-08-01 over mathlib alone. **NARROWED 2026-07-30** from
   `Heegner.exists_modularPolynomial`, which is now PROVEN from it, as are
   `Heegner.exists_modularPolynomial_triangular`,
   `Heegner.isIntegral_jInvariant_of_fixedPoint`,
