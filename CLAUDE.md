@@ -16151,3 +16151,68 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A MISSING ESTIMATE MAY BE MISSING BECAUSE YOU ARE TESTING THE WRONG ELEMENT — look for a MULTIPLIER, not a finer bound
+
+(2026-08-01, `flt-lean-233`, closing `exists_isUnit_rawConstant` in
+`Modularity/TateModule.lean`.)
+
+That leaf carried three screens of analysis, every clause of it correct, whose
+conclusion was that the perfectness clause needs an estimate that provably does
+not exist.  The setting is the standard one for this development: a functional
+`θ : O → ℤ_q` whose only one-sided bounds are indexed by the `q`-adic
+filtration, and a goal — `IsUnit c` — indexed by the FINER `(jπ)`-adic one.
+The docstring's reasoning was:
+
+> `IsUnit c` is `c ∉ 𝔪`, so what is needed is `c ∈ span {j π} ⟹ ∀ b, θ (j b c) ∈ (q)`,
+> and the `θ_m` analysis shows no such estimate exists at exponents that are not
+> multiples of the ramification index `e`.
+
+Both halves are true, and the inference from them is wrong.  **Do not look for
+an estimate on a finer filtration step; look for a MULTIPLIER carrying the
+coarse gap into the fine one.**  Over a ramified `I` with `v(q) = e`,
+
+  `v(c) ≥ 1  ⟺  v(π^{e-1} c) ≥ e  ⟺  π^{e-1} c ∈ (q)`,
+
+so multiplying by `π^{e-1}` converts *"`c` is a non-unit"*, which `θ` cannot
+see, into *"`c` is divisible by `q`"*, which `θ` sees through the CRUDEST bound
+available — here `c ∈ span {(q:O)}^k ⟹ θ c ∈ (q)^k`, which is the `ℤ_q`-LINEARITY
+clause of `IsTraceDualFunctional` and needs no new hypothesis whatever.  The
+whole leaf then closes over binders the cut had merely dropped.
+
+**The multiplier is only usable if it is available on the OTHER side of the
+comparison, and that is the check to run first.**  Here the geometric side is
+`hCspec`, which quantifies over ALL `b ∈ 𝒪_D`, so `b = π^{e·N-1}` was free —
+and, better, it is the value at which the pairing is read at the BOTTOM of the
+Tate tower (`π^{e·N-1} · t.1 (e·N) = t.1 1`), which is exactly where the leaf's
+nonzero-torsion hypothesis puts a point.  The two halves meet at one exponent
+and only there.  **When a leaf's estimate and its geometry are indexed by two
+filtrations, compute the exponent at which they meet BEFORE pricing either.**
+
+Two riders, both of which generalise past this leaf.
+
+* **A CUT CAN DROP A BINDER THAT IS LOAD-BEARING FOR TRUTH, and the tell is the
+  standing one: the conclusion asserts a UNIT.**  The parent carries
+  `hqe2 : q ∉ I^{e+1}` — that `e` is the FULL ramification index and not merely a
+  lower bound — and the cut kept only `hqe : q ∈ I^e`.  Without `hqe2` the leaf
+  is FALSE: if `v_I(q) = E > e` then the functional being represented kills
+  `I^{e·N}`, so every admissible constant lies in `(jπ)^{(E-e)N} ⊆ 𝔪` and no
+  value is a unit.  Same family as A DECOMPOSITION CAN LEAVE A HYPOTHESIS ON
+  ONLY ONE HALF and THE DEGENERATE OBJECT REFUTES EVERY UNGUARDED PERFECTNESS
+  CLAUSE — **diff the child's binder list against the parent's, and for every
+  binder the child lacks, ask what the conclusion asserts that it was pinning.**
+* **"Threading `hdense` down" was FOUR one-line signature edits and terminates at
+  a caller that already holds it.**  The docstring had recorded that as a cost
+  worth paying only together with a second repair.  Before pricing a threading,
+  walk the chain to its top: here `exists_tateWeilSystem_of_mult` has `hdense`
+  in its binder list and every intervening theorem forwards it unchanged, so no
+  consumer outside the module sees any interface change at all.
+
+Mechanical note worth copying: the CRT step *"write `q^N 𝒪_D = I^{e·N}·J` with
+`J` coprime to `I`"* does not need ideal factorization at the call site.
+`LevelFrame.exists_notMem_forall_mul_mem_span` (added here, over the existing
+`exists_pow_mul_not_le_of_isMaximal`) returns the prime-to-`I` part as an
+ELEMENT `β ∉ I` with `β · I^{d·N} ⊆ (a^N)`, and `I` maximal then gives the
+partition of unity `1 = α + δβ` directly.  Its hypothesis is ONE-SIDED —
+`a ∉ I^{d+1}`, i.e. `v_I(a) ≤ d` — which is why `hqe` turned out to be unused
+and `hqe2` to be the whole of what the arithmetic needs.
