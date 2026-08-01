@@ -196,6 +196,16 @@ import Fermat.FLT.Mathlib.AlgebraicGeometry.BirationalBaseChange
 import Fermat.FLT.Mathlib.RingTheory.InvariantTensorRegular
 import Fermat.FLT.ModularCurve.EllipticScheme
 
+-- The three modules the DEGENERATION subsection below runs on, and all three are
+-- `public` because they occur in STATEMENTS: `ValuativeCommSq` and
+-- `IsProper.eq_valuativeCriterion` in `exists_lift_of_isProper_of_valuationRing`,
+-- and `PowerSeries K` / `LaurentSeries K` in every declaration from
+-- `specialiseAtZero` onwards, including the leaf
+-- `exists_tateDegeneration_x1_field`.
+public import Mathlib.AlgebraicGeometry.ValuativeCriterion
+public import Mathlib.RingTheory.LaurentSeries
+public import Mathlib.RingTheory.PowerSeries.Inverse
+
 @[expose] public section
 
 universe u
@@ -9600,9 +9610,425 @@ theorem exists_rationalCuspPoints_of_sections {K : Type} [Field K] {X Y : Scheme
   · intro i
     exact residueDegreeOver_eq_one_of_residueSection (p i).1 (g i) (hg i)
 
+/-! ### DEGENERATION OVER THE `q`-DISC: the scheme-theoretic half of the cusp route
+
+Everything in this subsection is PROVEN (2026-08-01, `flt-lean-134`) and is the
+part of the Tate route to `exists_rationalCuspSectionsX1_field` that involves no
+moduli input whatever: properness of `X` turns a `K⸨q⸩`-point into a `K⟦q⟧`-point,
+evaluation at `q = 0` turns that into a `K`-RATIONAL SECTION, and the resulting
+section is a CUSP as soon as the `K⸨q⸩`-point of `Y` does not itself extend over
+`K⟦q⟧`.  What is left after it is `exists_tateDegeneration_x1_field`, which is
+pure arithmetic: exhibit the Tate family and show its limits are distinct and do
+not extend.
+
+The subsection replaces no leaf and closes none; it moves the boundary.  Before
+it, a prover of the cusp leaf owed the valuative criterion, the two-point
+topology of `Spec K⟦q⟧`, the open-immersion factorisation and the arithmetic;
+now they owe only the arithmetic, and they owe it in the shape
+"the family has no good reduction at `q = 0`", which is what the literature
+proves. -/
+
+variable {K : Type} [Field K] {X : Scheme.{0}} {strX : X ⟶ Spec (CommRingCat.of K)}
+
+/-- **The valuative criterion of properness, in the shape a degeneration uses**
+(PROVEN 2026-08-01).
+
+`X0.lean`'s `bijective_pre_generic_of_isProper` is this argument for the one
+valuation ring `R ⊆ ℚ` of an `IsReductionBase`, and it is stated for schemes over
+`Spec R` rather than over a FIELD.  Here the base is `Spec K` and the valuation
+ring is auxiliary: the square is
+
+    Spec F  ⟶  X
+      ↓          ↓ strX
+    Spec R  ⟶  Spec K
+
+so the lift is a point of `X` over `R` restricting to the given `F`-point.  That
+is the only form a degeneration argument can use, because the modular curve is
+NOT a scheme over the disc — it is a scheme over `K`, and the disc is the
+parameter.
+
+`hcompat` is `IsScalarTower K R F` spelled as an equation.  It is passed
+explicitly rather than as an instance because mathlib registers
+`Algebra K K⟦q⟧`, `Algebra K⟦q⟧ K⸨q⸩` and `Algebra K K⸨q⸩` by three unrelated
+routes (`MvPowerSeries.instAlgebra`, `HahnSeries.ofPowerSeries`,
+`HahnSeries.instAlgebra`) and does NOT register the tower between them —
+checked 2026-08-01, `IsScalarTower K (PowerSeries K) K⸨X⸩` fails to synthesize.
+`algebraMap_laurentSeries_comp_powerSeries` below is the equation at that
+instance, proven in two lines. -/
+theorem exists_lift_of_isProper_of_valuationRing (hp : IsProper strX)
+    {R : Type} [CommRing R] [IsDomain R] [ValuationRing R]
+    {F : Type} [Field F] [Algebra R F] [IsFractionRing R F]
+    [Algebra K R] [Algebra K F]
+    (hcompat : (algebraMap R F).comp (algebraMap K R) = algebraMap K F)
+    (x : Spec (CommRingCat.of F) ⟶ X)
+    (hx : x ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K F))) :
+    ∃ l : Spec (CommRingCat.of R) ⟶ X,
+      Spec.map (CommRingCat.ofHom (algebraMap R F)) ≫ l = x ∧
+      l ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K R)) := by
+  rw [IsProper.eq_valuativeCriterion] at hp
+  have hvc : ValuativeCriterion strX := hp.1.1.1
+  let sq : ValuativeCommSq strX :=
+    { R := R, K := F, i₁ := x, i₂ := Spec.map (CommRingCat.ofHom (algebraMap K R))
+      commSq := ⟨by rw [hx, ← Spec.map_comp, ← CommRingCat.ofHom_comp, hcompat]⟩ }
+  obtain ⟨l, hl₁, hl₂⟩ := (hvc sq).some.default
+  exact ⟨l, hl₁, hl₂⟩
+
+/-- **The lift of the previous theorem is UNIQUE** (PROVEN 2026-08-01).
+
+This is what makes `laurentSpecialise` below usable: it is defined by
+`Classical.choose`, and without uniqueness a prover could say nothing about it.
+With uniqueness, `laurentSpecialise_eq` identifies it with ANY lift the prover
+can name — for instance one coming from a Néron model or from a moduli-theoretic
+extension — so the choice never has to be unfolded. -/
+theorem lift_unique_of_isProper_of_valuationRing (hp : IsProper strX)
+    {R : Type} [CommRing R] [IsDomain R] [ValuationRing R]
+    {F : Type} [Field F] [Algebra R F] [IsFractionRing R F]
+    [Algebra K R] [Algebra K F]
+    (hcompat : (algebraMap R F).comp (algebraMap K R) = algebraMap K F)
+    (x : Spec (CommRingCat.of F) ⟶ X)
+    (hx : x ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K F)))
+    {l l' : Spec (CommRingCat.of R) ⟶ X}
+    (hl₁ : Spec.map (CommRingCat.ofHom (algebraMap R F)) ≫ l = x)
+    (hl₂ : l ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K R)))
+    (hl₁' : Spec.map (CommRingCat.ofHom (algebraMap R F)) ≫ l' = x)
+    (hl₂' : l' ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K R))) :
+    l = l' := by
+  rw [IsProper.eq_valuativeCriterion] at hp
+  have hvc : ValuativeCriterion strX := hp.1.1.1
+  let sq : ValuativeCommSq strX :=
+    { R := R, K := F, i₁ := x, i₂ := Spec.map (CommRingCat.ofHom (algebraMap K R))
+      commSq := ⟨by rw [hx, ← Spec.map_comp, ← CommRingCat.ofHom_comp, hcompat]⟩ }
+  have hu : Unique sq.commSq.LiftStruct := (hvc sq).some
+  have e : (⟨l, hl₁, hl₂⟩ : sq.commSq.LiftStruct) = ⟨l', hl₁', hl₂'⟩ :=
+    (hu.uniq _).trans (hu.uniq _).symm
+  exact congrArg CategoryTheory.CommSq.LiftStruct.l e
+
+/-- **`K ⊆ K⟦q⟧ ⊆ K⸨q⸩` is a tower** (PROVEN 2026-08-01), as an equation of ring
+maps rather than an `IsScalarTower` instance — see
+`exists_lift_of_isProper_of_valuationRing` for why the instance is unavailable. -/
+theorem algebraMap_laurentSeries_comp_powerSeries (K : Type) [Field K] :
+    (algebraMap (PowerSeries K) (LaurentSeries K)).comp (algebraMap K (PowerSeries K))
+      = algebraMap K (LaurentSeries K) := by
+  ext x
+  simp [LaurentSeries.coe_algebraMap, LaurentSeries.algebraMap_apply]
+
+/-- **Evaluation at `q = 0` retracts `K ⊆ K⟦q⟧`** (PROVEN 2026-08-01). -/
+theorem constantCoeff_comp_algebraMap (K : Type) [Field K] :
+    (PowerSeries.constantCoeff (R := K)).comp (algebraMap K (PowerSeries K)) = RingHom.id K := by
+  ext x
+  simp
+
+/-- **A `K⟦q⟧`-point of `X` over `K`, evaluated at `q = 0`, is a `K`-rational
+section** (PROVEN 2026-08-01).
+
+The section property is exactly `constantCoeff_comp_algebraMap` pushed through
+`Spec`; no properness and no geometry enter. -/
+noncomputable def specialiseAtZero (l : Spec (CommRingCat.of (PowerSeries K)) ⟶ X)
+    (hl : l ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K (PowerSeries K)))) :
+    RelPoint strX (𝟙 (Spec (CommRingCat.of K))) :=
+  ⟨Spec.map (CommRingCat.ofHom (PowerSeries.constantCoeff (R := K))) ≫ l, by
+    rw [Category.assoc, hl, ← Spec.map_comp, ← CommRingCat.ofHom_comp,
+      constantCoeff_comp_algebraMap, CommRingCat.ofHom_id, Spec.map_id]⟩
+
+/-- **The unique extension of a `K⸨q⸩`-point of a proper `X` over the disc**
+(PROVEN 2026-08-01).  `K⟦q⟧` is a discrete valuation ring with fraction field
+`K⸨q⸩` (`Mathlib/RingTheory/PowerSeries/Inverse.lean`,
+`Mathlib/RingTheory/LaurentSeries.lean`), so
+`exists_lift_of_isProper_of_valuationRing` applies. -/
+noncomputable def laurentLift (hp : IsProper strX)
+    (x : Spec (CommRingCat.of (LaurentSeries K)) ⟶ X)
+    (hx : x ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K (LaurentSeries K)))) :
+    Spec (CommRingCat.of (PowerSeries K)) ⟶ X :=
+  (exists_lift_of_isProper_of_valuationRing hp
+    (algebraMap_laurentSeries_comp_powerSeries K) x hx).choose
+
+theorem laurentLift_restrict (hp : IsProper strX)
+    (x : Spec (CommRingCat.of (LaurentSeries K)) ⟶ X)
+    (hx : x ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K (LaurentSeries K)))) :
+    Spec.map (CommRingCat.ofHom (algebraMap (PowerSeries K) (LaurentSeries K)))
+        ≫ laurentLift hp x hx = x :=
+  (exists_lift_of_isProper_of_valuationRing hp
+    (algebraMap_laurentSeries_comp_powerSeries K) x hx).choose_spec.1
+
+theorem laurentLift_comp (hp : IsProper strX)
+    (x : Spec (CommRingCat.of (LaurentSeries K)) ⟶ X)
+    (hx : x ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K (LaurentSeries K)))) :
+    laurentLift hp x hx ≫ strX
+      = Spec.map (CommRingCat.ofHom (algebraMap K (PowerSeries K))) :=
+  (exists_lift_of_isProper_of_valuationRing hp
+    (algebraMap_laurentSeries_comp_powerSeries K) x hx).choose_spec.2
+
+/-- **The `K`-rational limit of a `K⸨q⸩`-point of a proper `X` over `K`**
+(PROVEN 2026-08-01): extend over the disc, then evaluate at `q = 0`. -/
+noncomputable def laurentSpecialise (hp : IsProper strX)
+    (x : Spec (CommRingCat.of (LaurentSeries K)) ⟶ X)
+    (hx : x ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K (LaurentSeries K)))) :
+    RelPoint strX (𝟙 (Spec (CommRingCat.of K))) :=
+  specialiseAtZero (laurentLift hp x hx) (laurentLift_comp hp x hx)
+
+/-- **Any lift computes the limit** (PROVEN 2026-08-01) — the usability half of
+`laurentSpecialise`, so that its `Classical.choose` never has to be unfolded. -/
+theorem laurentSpecialise_eq (hp : IsProper strX)
+    (x : Spec (CommRingCat.of (LaurentSeries K)) ⟶ X)
+    (hx : x ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K (LaurentSeries K))))
+    {l : Spec (CommRingCat.of (PowerSeries K)) ⟶ X}
+    (hl₁ : Spec.map (CommRingCat.ofHom (algebraMap (PowerSeries K) (LaurentSeries K))) ≫ l = x)
+    (hl₂ : l ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K (PowerSeries K)))) :
+    laurentSpecialise hp x hx = specialiseAtZero l hl₂ := by
+  have he : laurentLift hp x hx = l :=
+    lift_unique_of_isProper_of_valuationRing hp
+      (algebraMap_laurentSeries_comp_powerSeries K) x hx
+      (laurentLift_restrict hp x hx) (laurentLift_comp hp x hx) hl₁ hl₂
+  simp only [laurentSpecialise, specialiseAtZero, he]
+
+/-! #### `Spec K⟦q⟧` has exactly two points, and both are accounted for -/
+
+/-- **Every prime of `K⟦q⟧` is `⊥` or the maximal ideal** (PROVEN 2026-08-01):
+`K⟦q⟧` is a DVR, hence a principal ideal domain, hence of dimension `≤ 1`. -/
+theorem powerSeries_prime_eq (K : Type) [Field K] (p : PrimeSpectrum (PowerSeries K)) :
+    p.asIdeal = ⊥ ∨ p.asIdeal = IsLocalRing.maximalIdeal (PowerSeries K) := by
+  rcases eq_or_ne p.asIdeal ⊥ with hq | hq
+  · exact Or.inl hq
+  · exact Or.inr (IsLocalRing.eq_maximalIdeal (p.2.isMaximal hq))
+
+/-- **The closed point of `Spec K⟦q⟧` is the image of `Spec K`** (PROVEN
+2026-08-01), because the maximal ideal is the kernel of `constantCoeff`. -/
+theorem mem_range_base_constantCoeff (K : Type) [Field K]
+    {p : PrimeSpectrum (PowerSeries K)}
+    (hp : p.asIdeal = IsLocalRing.maximalIdeal (PowerSeries K)) :
+    ∃ z : Spec (CommRingCat.of K),
+      (Spec.map (CommRingCat.ofHom (PowerSeries.constantCoeff (R := K)))).base z = p := by
+  refine ⟨⟨⊥, by simpa using Ideal.isPrime_bot⟩, ?_⟩
+  apply PrimeSpectrum.ext
+  show Ideal.comap _ ⊥ = p.asIdeal
+  rw [hp, ← PowerSeries.ker_coeff_eq_max_ideal]
+  rfl
+
+/-- **The generic point of `Spec K⟦q⟧` is the image of `Spec K⸨q⸩`** (PROVEN
+2026-08-01), because `K⟦q⟧ ↪ K⸨q⸩` is injective. -/
+theorem mem_range_base_laurent (K : Type) [Field K]
+    {p : PrimeSpectrum (PowerSeries K)} (hp : p.asIdeal = ⊥) :
+    ∃ z : Spec (CommRingCat.of (LaurentSeries K)),
+      (Spec.map (CommRingCat.ofHom
+        (algebraMap (PowerSeries K) (LaurentSeries K)))).base z = p := by
+  refine ⟨⟨⊥, by simpa using Ideal.isPrime_bot⟩, ?_⟩
+  apply PrimeSpectrum.ext
+  show Ideal.comap _ ⊥ = p.asIdeal
+  rw [hp]
+  ext y
+  simp only [Ideal.mem_comap, Ideal.mem_bot]
+  exact ⟨fun hy => (IsFractionRing.to_map_eq_zero_iff).mp hy, fun hy => by simp [hy]⟩
+
+/-- **A limit is a CUSP as soon as the family does not extend inside `Y`**
+(PROVEN 2026-08-01) — the step that removes `IsCusp`, a negative statement about
+`K`-points of `X`, from the arithmetic leaf and replaces it by a statement about
+`Y` alone over the disc.
+
+The argument is the two-point topology of `Spec K⟦q⟧` and nothing else.  If the
+limit were NOT a cusp it would be `y ≫ jY` for a `K`-point `y` of `Y`; the
+generic point of `Spec K⟦q⟧` already maps into the image of `jY` (the family was
+given as a point OF `Y`), and by `powerSeries_prime_eq` those are the only two
+points, so the whole lift factors through the open immersion.  The factorisation
+is an extension of the family over the disc inside `Y`, contradicting `hno`.
+
+**What this buys the arithmetic.**  "The limit is a cusp" is a statement about a
+scheme (`X`) that the moduli problem does not describe.  "The family does not
+extend over `K⟦q⟧` inside `Y`" is a statement about the AFFINE modular curve and
+is the formal content of *the Tate curve has multiplicative reduction at `q = 0`*
+— the sentence Deligne–Rapoport actually proves.  So the leaf below never
+mentions `X` in its hard clause. -/
+theorem isCusp_laurentSpecialise_of_not_extends {N : ℕ} {Y : Scheme.{0}}
+    {strY : Y ⟶ Spec (CommRingCat.of K)} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY)
+    {x : Spec (CommRingCat.of (LaurentSeries K)) ⟶ X}
+    (hx : x ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap K (LaurentSeries K))))
+    (p : Spec (CommRingCat.of (LaurentSeries K)) ⟶ Y) (hpx : p ≫ jY = x)
+    (hno : ¬ ∃ y : Spec (CommRingCat.of (PowerSeries K)) ⟶ Y,
+        y ≫ strY = Spec.map (CommRingCat.ofHom (algebraMap K (PowerSeries K))) ∧
+        Spec.map (CommRingCat.ofHom (algebraMap (PowerSeries K) (LaurentSeries K))) ≫ y = p) :
+    h.IsCusp (laurentSpecialise h.isProper x hx) := by
+  haveI := h.isOpen
+  rintro ⟨y, hy⟩
+  have hy' : y.1 ≫ jY
+      = Spec.map (CommRingCat.ofHom (PowerSeries.constantCoeff (R := K)))
+          ≫ laurentLift h.isProper x hx := congrArg Subtype.val hy
+  have hl₁ := laurentLift_restrict h.isProper x hx
+  have hl₂ := laurentLift_comp h.isProper x hx
+  have hrange : Set.range (laurentLift h.isProper x hx).base ⊆ Set.range jY.base := by
+    rintro _ ⟨q, rfl⟩
+    rcases powerSeries_prime_eq K q with hq | hq
+    · obtain ⟨z, hz⟩ := mem_range_base_laurent K hq
+      refine ⟨p.base z, ?_⟩
+      have e : (laurentLift h.isProper x hx).base
+          ((Spec.map (CommRingCat.ofHom
+            (algebraMap (PowerSeries K) (LaurentSeries K)))).base z) = x.base z :=
+        congrArg (fun m : Spec (CommRingCat.of (LaurentSeries K)) ⟶ X => m.base z) hl₁
+      have e2 : jY.base (p.base z) = x.base z :=
+        congrArg (fun m : Spec (CommRingCat.of (LaurentSeries K)) ⟶ X => m.base z) hpx
+      rw [← hz, e]
+      exact e2
+    · obtain ⟨z, hz⟩ := mem_range_base_constantCoeff K hq
+      refine ⟨y.1.base z, ?_⟩
+      have e3 : jY.base (y.1.base z)
+          = (laurentLift h.isProper x hx).base
+            ((Spec.map (CommRingCat.ofHom (PowerSeries.constantCoeff (R := K)))).base z) :=
+        congrArg (fun m : Spec (CommRingCat.of K) ⟶ X => m.base z) hy'
+      rw [← hz]
+      exact e3
+  have hfac : IsOpenImmersion.lift jY (laurentLift h.isProper x hx) hrange ≫ jY
+      = laurentLift h.isProper x hx := IsOpenImmersion.lift_fac _ _ _
+  refine hno ⟨IsOpenImmersion.lift jY _ hrange, ?_, ?_⟩
+  · have hstr : (IsOpenImmersion.lift jY (laurentLift h.isProper x hx) hrange ≫ jY) ≫ strX
+        = Spec.map (CommRingCat.ofHom (algebraMap K (PowerSeries K))) := by
+      rw [hfac]; exact hl₂
+    rw [Category.assoc, h.comm] at hstr
+    exact hstr
+  · rw [← cancel_mono jY, Category.assoc, hfac, hl₁, hpx]
+
+/-! #### The classifying point of a `Γ₁(N)`-structure over `K⸨q⸩` -/
+
+/-- **The `K⸨q⸩`-point of `X` classifying a `Γ₁(N)`-structure over `K⸨q⸩`**
+(PROVEN 2026-08-01): `h.coarse.classify` lands in `Y`, and `jY` pushes it into
+`X`. -/
+noncomputable def laurentModuliPoint {N : ℕ} {Y : Scheme.{0}}
+    {strY : Y ⟶ Spec (CommRingCat.of K)} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY)
+    (d : Gamma1Datum N (Spec (CommRingCat.of (LaurentSeries K)))) :
+    Spec (CommRingCat.of (LaurentSeries K)) ⟶ X :=
+  (h.coarse.classify (Spec.map (CommRingCat.ofHom (algebraMap K (LaurentSeries K)))) d).1 ≫ jY
+
+theorem laurentModuliPoint_comp {N : ℕ} {Y : Scheme.{0}}
+    {strY : Y ⟶ Spec (CommRingCat.of K)} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY)
+    (d : Gamma1Datum N (Spec (CommRingCat.of (LaurentSeries K)))) :
+    laurentModuliPoint h d ≫ strX
+      = Spec.map (CommRingCat.ofHom (algebraMap K (LaurentSeries K))) := by
+  rw [laurentModuliPoint, Category.assoc, h.comm,
+    (h.coarse.classify (Spec.map (CommRingCat.ofHom (algebraMap K (LaurentSeries K)))) d).2]
+
+/-- **The `K`-rational point of `X` obtained by degenerating a `Γ₁(N)`-structure
+over `K⸨q⸩` to `q = 0`** (PROVEN 2026-08-01).
+
+For the Tate family `(E_{q^N}, q^k)` this is the cusp of `X_1(N)` labelled by
+`k ∈ (ℤ/N)ˣ/±1`. -/
+noncomputable def laurentCuspPoint {N : ℕ} {Y : Scheme.{0}}
+    {strY : Y ⟶ Spec (CommRingCat.of K)} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY)
+    (d : Gamma1Datum N (Spec (CommRingCat.of (LaurentSeries K)))) :
+    RelPoint strX (𝟙 (Spec (CommRingCat.of K))) :=
+  laurentSpecialise h.isProper (laurentModuliPoint h d) (laurentModuliPoint_comp h d)
+
+/-- **The Tate family degenerates to `φ(N)/2` distinct cusps** (sorry leaf, cut
+2026-08-01 out of `exists_rationalCuspSectionsX1_field`, which is now PROVEN over
+it and over the subsection above; Deligne–Rapoport VI.5, Ogg 1973).
+
+**RECUT, count unchanged 1 → 1.**  What left the leaf is every scheme-theoretic
+step of the route — the valuative criterion, the two-point topology of the disc,
+the open-immersion factorisation and the passage from `IsCusp` to non-extension —
+all of which are proven immediately above.  What is left is the arithmetic, and
+it is now stated in the vocabulary the literature uses.
+
+## What a prover owes
+
+Exactly two things, for `φ(N)/2` values of the parameter:
+
+1. **The family.**  A `Gamma1Datum N (Spec K⸨q⸩)` for each `k` in a set of
+   representatives of `(ℤ/N)ˣ/±1`: the Tate curve `E_{q^N}` with the level point
+   `q^k`.  In `E_{q^N}(K⸨q⸩) = K⸨q⸩ˣ/q^{Nℤ}` an element `q^j u` (`u` a unit of
+   `K⟦q⟧`) satisfies `(q^j u)^m ∈ q^{Nℤ}` iff `jm ∈ Nℤ` and `u^m = 1`, so `q^k`
+   has order exactly `N/gcd(k, N)`; at `gcd(k, N) = 1` that is `N`, for EVERY
+   field `K` and with no root of unity in sight.  This is the `N`-gon orbit, and
+   taking the `1`-gon orbit instead — `(E_q, ζ_N)` — is the error
+   `numRationalCuspsX1`'s 2026-07-28 correction records: it is FALSE over `ℚ`
+   whenever `φ(N) > 2`.
+2. **Non-extension.**  The classifying point of the family does not extend to a
+   `K⟦q⟧`-point of `Y`.  This is *the Tate curve has multiplicative reduction at
+   `q = 0`*, i.e. the family is not the generic fibre of a family of honest
+   elliptic curves over the disc — and it is where the moduli input is spent,
+   since `IsCoarseModuliY1` does not by itself let one go back from a point of
+   `Y` to a curve.
+3. **Distinctness of the limits**, which is the injectivity clause.  It is the
+   one clause that still mentions `X`, and it cannot be got from distinctness of
+   the generic points: two `K⸨q⸩`-points can have the same limit.  Initiality
+   (`h.coarse.universal`) is the tool — any `Y'` receiving a natural
+   transformation from the moduli problem receives a map from `Y`, so an
+   invariant separating the data separates their images in `Y` — but separating
+   the LIMITS needs the separating map to extend over the cusps.
+
+## What was checked, and what is available
+
+Measured against the compiler on 2026-08-01, for a bare `(K : Type) [Field K]`:
+`TopologicalSpace K⸨q⸩`, `CompleteSpace K⸨q⸩`, `Field K⸨q⸩`,
+`IsDiscreteValuationRing K⟦q⟧`, `ValuationRing K⟦q⟧` and
+`IsFractionRing K⟦q⟧ K⸨q⸩` all synthesize, and
+`WeierstrassCurve.tateCurve q : WeierstrassCurve K⸨q⸩` elaborates with no
+hypothesis on `K` and no characteristic assumption — so the CURVE is free and the
+difficulty is the level structure and the limits.
+
+The in-tree Tate development is `Fermat/FLT/KnownIn1980s/EllipticCurves/`
+(`TateParameter`, `TateCurve`, `TateCurveConstruction`, `TateUniformization`,
+`TateCurveBaseChange`, `TateSepClosure`; `TateSepClosure` is `public import`ed by
+`FreyCurve/Semistable.lean`, so all of it compiles on every build).  A recorded
+claim that it was DELETED as free-floating in `52297bf2` is STALE — it was
+deleted on 2026-07-18 and REBUILT; do not `git show` it, read the tree.
+
+Two obstructions to instantiating it, in the order they bite:
+
+* `ValuativeRel K⸨q⸩` is missing.  Mathlib has `Valued K⸨X⸩ ℤᵐ⁰`
+  (`RingTheory/LaurentSeries.lean`) and a `Valued`-to-`ValuativeRel` bridge
+  (`Topology/Algebra/Valued/ValuativeRel.lean`) and nobody has connected them.
+  Small, self-contained, no modular content — do it first.
+* everything in `TateCurve.lean` past the definitions carries
+  `[IsNonarchimedeanLocalField k]`, which mathlib defines as valuative topology +
+  LOCALLY COMPACT + nontrivial.  So `𝔽_ℓ⸨q⸩` qualifies and `ℚ⸨q⸩` does not.  The
+  uniformisation `kˣ/q^ℤ ≅ E_q(k)` is therefore reachable at `K = 𝔽_ℓ` and not at
+  `K = ℚ` with the API as it stands; the mathematics needs only completeness.
+  **Attack `K = 𝔽_ℓ` first**, and treat `ℚ` either as the harder fibre or as a
+  reason to generalise the uniformisation away from local compactness.
+
+To get the abelian scheme underlying the datum, cite
+`exists_ellipticScheme_weierstrassChart_addEquiv_field` (`EllipticScheme.lean`):
+for any field `k` with `[DecidableEq k]` and any `E : WeierstrassCurve k` with
+`[E.IsElliptic]` it produces an `AbelianSchemeStruct` with
+`SmoothOfRelativeDimension 1` and `RelPoint ≃+ (E⁄k).Point`.  It is itself open —
+over `exists_projGroupLaw_relPointAddEquiv_field` and
+`exists_affineChart_projModel_field` — which is normal here and is not a reason to
+avoid it.
+
+## Faithfulness
+
+TRUE: the Tate family witnesses it, for every `K` and every `N`, and
+`_hNK` is unused exactly as it is unused in the parent.  The leaf is NOT
+vacuously satisfiable: at `numRationalCuspsX1 N = 0` (`N ≤ 2`) `Fin 0` is empty
+and it is trivially true, which is the same degenerate case the parent has and the
+same one `exists_rationalCuspPointsX1` splits on.
+
+It is STRICTLY STRONGER than the parent in one respect, deliberately: the parent
+could in principle be satisfied by cusps produced any other way, whereas this asks
+for them to come from `Γ₁(N)`-data over `K⸨q⸩`.  That is the route the leaf's own
+docstring has prescribed since 2026-07-31, and committing to it in CODE rather
+than in prose is the point of the recut.  A successor who finds a better route
+should restate this leaf rather than work around it, and should say so in
+`to_merger`. -/
+theorem exists_tateDegeneration_x1_field (N : ℕ) (K : Type) [Field K]
+    (_hNK : IsUnit ((N : ℕ) : K))
+    {X Y : Scheme.{0}} {strX : X ⟶ Spec (CommRingCat.of K)}
+    {strY : Y ⟶ Spec (CommRingCat.of K)} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY) :
+    ∃ d : Fin (numRationalCuspsX1 N) →
+        Gamma1Datum N (Spec (CommRingCat.of (LaurentSeries K))),
+      Function.Injective (fun i => laurentCuspPoint h (d i)) ∧
+      ∀ i, ¬ ∃ y : Spec (CommRingCat.of (PowerSeries K)) ⟶ Y,
+        y ≫ strY = Spec.map (CommRingCat.ofHom (algebraMap K (PowerSeries K))) ∧
+        Spec.map (CommRingCat.ofHom (algebraMap (PowerSeries K) (LaurentSeries K))) ≫ y
+          = (h.coarse.classify
+              (Spec.map (CommRingCat.ofHom (algebraMap K (LaurentSeries K)))) (d i)).1 :=
+  sorry
+
 /-- **`X_1(N)` has `φ(N)/2` distinct `K`-rational cusp SECTIONS, for any field
-`K` in which `N` is invertible** (sorry leaf — Deligne–Rapoport VI.5, and ALL
-that is left of the cusp route on BOTH sides).
+`K` in which `N` is invertible** (PROVEN 2026-08-01 over
+`exists_tateDegeneration_x1_field` and the DEGENERATION subsection above; a bare
+sorry leaf from 2026-07-28 until then — Deligne–Rapoport VI.5).
 
 **The form is the one Deligne–Rapoport actually delivers.**  Over `ℤ[1/N]` the
 `φ(N)/2` cusps of the distinguished orbit are SECTIONS of the smooth model, and
@@ -9655,6 +10081,21 @@ isomorphism with no cusps at all, and that is excluded only because
 rather than scheme-theoretic bookkeeping.
 
 **ROUTE, RE-AUDITED 2026-07-31, correcting the two previous reconnaissances.**
+
+**PERFORMED 2026-08-01 (`flt-lean-134`), as far as it goes without arithmetic.**
+Everything below that is scheme theory is now Lean, in the DEGENERATION
+subsection immediately above this one, and this declaration is its assembly.  The
+open residue is `exists_tateDegeneration_x1_field`; read ITS docstring, not this
+one, before attacking anything — this one is kept because its account of what is
+in the tree and what is missing from it is still the best there is, and because
+the two paragraphs below it (the refutation axis, and the `Gamma1Datum` false
+wall) are what make the route legitimate.  The one clause below that is now
+out of date is "generalising its thirty lines to an arbitrary DVR over `K` is
+the whole of the scheme-theoretic cost": that generalisation is
+`exists_lift_of_isProper_of_valuationRing`, it is done, and it turned out to be
+about a quarter of the scheme-theoretic cost — the rest was the two-point
+topology of `Spec K⟦q⟧` and the open-immersion factorisation that converts
+`IsCusp` into non-extension.
 
 *The refutation axis is CLOSED — do not spend a session looking for a junk
 inhabitant.*  The paragraph immediately above is true of `finite_compl` taken
@@ -9799,8 +10240,11 @@ theorem exists_rationalCuspSectionsX1_field (N : ℕ) (K : Type) [Field K]
     {strY : Y ⟶ Spec (CommRingCat.of K)} {jY : Y ⟶ X}
     (h : IsX1Compactification N strX strY jY) :
     ∃ σ : Fin (numRationalCuspsX1 N) → RelPoint strX (𝟙 (Spec (CommRingCat.of K))),
-      Function.Injective σ ∧ ∀ i, h.IsCusp (σ i) :=
-  sorry
+      Function.Injective σ ∧ ∀ i, h.IsCusp (σ i) := by
+  obtain ⟨d, hinj, hno⟩ := exists_tateDegeneration_x1_field N K _hNK h
+  exact ⟨fun i => laurentCuspPoint h (d i), hinj, fun i =>
+    isCusp_laurentSpecialise_of_not_extends h _
+      (h.coarse.classify _ (d i)).1 rfl (hno i)⟩
 
 /-- **`X_1(N)` has `φ(N)/2` cusps rational over ANY field `K` in which `N` is
 invertible** (PROVEN 2026-07-28 over `exists_rationalCuspSectionsX1_field`; a
