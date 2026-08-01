@@ -16151,3 +16151,64 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A THEOREM NUMBER IS NOT A STATEMENT — READ THE DEFINITION ITS CONCLUSION QUANTIFIES OVER
+
+(2026-08-01, `flt-lean-223`, cutting `exists_weakNeronModelData` in
+`ModularCurve/X0.lean`.)
+
+That leaf was cut from Bosch–Lütkebohmert–Raynaud, *Néron Models*, cited as
+"3.5/1 and 3.5/2", and its conclusion asks for a SINGLE smooth separated
+`R`-model of finite type in which every étale point extends.  BLR's Definition
+3.5/1 defines a weak Néron model as a **FINITE COLLECTION** `(X_i)_{i ∈ I}` of
+models, each `K^sh`-valued point extending in AT LEAST ONE of them, and their
+Theorem 3.5/2 produces exactly that.  **So a prover following the cited theorem
+never reaches the cited statement** — and nothing warns them: the theorem
+numbers are correct, the book is on disk, and the leaf's own sentence is TRUE.
+
+The single-model form is a *different sentence in the same section*, and it has
+two sources at very different prices: for an ABELIAN VARIETY it is the
+projective embedding (BLR §3.5, p. 74 — *"we can take `X` to be the schematic
+closure of `X_K` in `P^n_R`"*), and in general it is Proposition 3.5/6, which
+merges a finite family into one model by Raynaud–Gruson flattening and which
+**BLR explicitly decline to use**.  Neither of the two is Theorem 3.5/2.
+
+**So when a leaf cites a numbered result, open the book and read the DEFINITION
+that result's conclusion quantifies over, not only the result's sentence.**  The
+cheap tell is an ARITY mismatch: a leaf whose conclusion is a bare `∃ x` against
+a citation whose conclusion is about a FAMILY, a COVER, a NEIGHBOURHOOD or a
+SEQUENCE.  Two objects of different arity is the commonest way a
+faithful-looking citation turns out unusable, and it survives every check in
+this file, because the leaf is still true and the citation is still real.
+
+Corollary for the cut that follows: **record WHICH SENTENCE of the source you
+are stating, with its page, not only its theorem number.**
+`exists_finiteTypeModelData`'s docstring now does, and it is the difference
+between a prover spending an afternoon on Theorem 3.5/2 and one going straight
+at the projective embedding — which is the actual missing input, and which the
+tree is already half-way to through `exists_isAmpleSheaf_of_field`.
+
+### AND A DECOMPOSITION EXPOSES SHARED OBLIGATIONS THAT NO SINGLE LEAF'S AUDIT CAN NAME
+
+Same run.  All four leaves of that block quantify their extension clause over an
+ARBITRARY étale `Z ⟶ Spec ↥R`, whereas BLR quantify over `R^sh`-valued points
+alone.  The two are equivalent for a separated model of finite type over a
+Dedekind base — extensions over overlapping opens glue by separatedness plus
+generic density, at a closed point the local ring is a discrete valuation ring,
+BLR's hypothesis extends the point over its strict henselization, that descends
+because the two pullbacks agree on the generic fibre into a separated target,
+and finite type spreads the result out — but the equivalence is a REAL step, and
+it is owed by every leaf in the block SEPARATELY.
+
+**No leaf's own audit could have named it.**  An audit checks its own hypotheses
+against its own conclusion; this obligation is a property of the IDIOM the whole
+block is stated in, so it is invisible from inside any one leaf.  It surfaced
+only because two leaves were written side by side and the same justifying
+paragraph had to be written twice.
+
+So: **when a cut makes you write the same justification on both halves, that
+justification is a third obligation.**  Hoist it into the section heading, and
+say whether it can be a leaf yet.  Here it cannot, for exactly the reason the
+same block's DVR reduction cannot — the tree cannot yet name a discrete
+valuation ring étale over `↥R` — and whoever builds that naming should take both
+reductions at once, since they need the same machinery.
