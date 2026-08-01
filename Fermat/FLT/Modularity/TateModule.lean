@@ -19846,6 +19846,17 @@ theorem exists_pow_eq_app_of_forall_stalk {X Y : Scheme.{u}} [AlgebraicGeometry.
 over the two leaves in this subsection.  They are `d ∘ [p]^{\#} = 0` and
 "`d b = 0 ⟹ b` is a `p`-th power", and the composite is exactly the old leaf.
 
+**THE FIRST HALF IS PROVEN (2026-08-01)**, so this subsection now owes ONE leaf
+and not two, and the cut paid for itself in a day.  The last bullet below is
+CORRECTED by that proof and the correction is worth reading before costing the
+second half: `kaehler_stalkMap_mulByNat_prime_eq_zero` did NOT need `Ω` of the
+group scheme, nor invariant differentials, nor the additivity of `f ↦ f^*`.  It
+needed only that `ker (A'(R) ⟶ A'(R₀))` is a `k`-VECTOR SPACE for a square-zero
+thickening — which was already PROVEN, on 2026-07-27, as
+`nonempty_module_infKernel_of_squareZero` in
+`Modularity/AbelianSchemeIsogeny.lean`, a module this one already imports.  See
+that leaf's own docstring for the full account.
+
 **THE ACCOUNTING IS HONEST: this trades ONE leaf for TWO.**  What buys the extra
 leaf is that the two halves need DISJOINT theories and disjoint hypotheses, and
 the split is sharp enough to be checked rather than asserted:
@@ -19860,9 +19871,10 @@ the split is sharp enough to be checked rather than asserted:
 * neither half needs the Verschiebung.  The classical route to the old leaf goes
   through quotients by infinitesimal group schemes and fppf descent (`ker Fr` is
   killed by `p`, and `Fr` exhibits `A'` as the quotient by it), none of which
-  exists at this pin.  The first half needs only `Ω` of the group scheme and the
-  additivity of `f ↦ f^*` on invariant differentials; the second is Cartier's
-  criterion, standard commutative algebra with a `p`-basis.
+  exists at this pin.  The first half was priced here at `Ω` of the group scheme
+  plus the additivity of `f ↦ f^*` on invariant differentials — an over-estimate,
+  see the paragraph above; the second is Cartier's criterion, standard
+  commutative algebra with a `p`-basis.
 
 Refuting check for the claim that the split is sharp, one grep each: the first
 leaf's statement contains no `Finite k` and no `PerfectField`, the second
@@ -19883,63 +19895,317 @@ introduced two different ways would give two different `Ω[𝒪_{X,x}⁄k]`. -/
   (((Scheme.ΓSpecIso (CommRingCat.of k)).inv ≫ aX.appTop ≫
       X.presheaf.germ ⊤ x trivial).hom).toAlgebra
 
-/-- **`[p]^{\#}` KILLS KÄHLER DIFFERENTIALS ON EVERY STALK** (sorry leaf, cut
-2026-07-30 out of `exists_pow_eq_stalkMap_mulByNat_prime` below — Mumford
-*Abelian Varieties* §11 and §13, Milne *Abelian Varieties* §I.2).  This is the
-ABELIAN-VARIETY half of that leaf, and it carries all of its group theory.
+/-! #### The tangent-space machinery behind `kaehler_stalkMap_mulByNat_prime_eq_zero`
+
+Everything in this section exists to instantiate
+`nonempty_module_infKernel_of_squareZero` (`Modularity/AbelianSchemeIsogeny.lean`)
+at the UNIVERSAL square-zero extension `R ⊕ Ω[R⁄k]` of a stalk `R = 𝒪_{A', x}`.
+The two `local instance`s are the right action of a COMMUTATIVE ring on one of
+its modules; they are deliberately `local`, because a global
+`Module Rᵐᵒᵖ M` would be a rival of mathlib's `Module Rᵐᵒᵖ R` at `M = R` and so
+an instance diamond.  Nothing outside this section may mention
+`TrivSqZeroExt R Ω[R⁄k]`, and nothing needs to: the two statements below that
+are consumed later (`stalkMap_comp_eq_of_squareZero` and
+`kaehler_stalkMap_eq_zero_aux`) do not name it. -/
+
+section KaehlerMulByNatStalk
+
+local instance moduleMulOppositeOfComm {R : Type u} [CommRing R] {M : Type u}
+    [AddCommGroup M] [Module R M] : Module Rᵐᵒᵖ M :=
+  Module.compHom M ((RingHom.id R).fromOpposite fun x y => mul_comm x y)
+
+local instance isCentralScalarOfComm {R : Type u} [CommRing R] {M : Type u}
+    [AddCommGroup M] [Module R M] : IsCentralScalar R M := ⟨fun _ _ => rfl⟩
+
+/-- **A DERIVATION, READ AS A RING HOMOMORPHISM INTO THE SQUARE-ZERO EXTENSION**:
+`r ↦ (r, D r)`.  Multiplicativity IS the Leibniz rule, and nothing else is used. -/
+noncomputable def tsqzOfDeriv {k : Type u} [Field k] {R : Type u} [CommRing R] [Algebra k R]
+    {M : Type u} [AddCommGroup M] [Module R M] [Module k M] (D : Derivation k R M) :
+    R →+* TrivSqZeroExt R M where
+  toFun r := TrivSqZeroExt.inl r + TrivSqZeroExt.inr (D r)
+  map_one' := by ext <;> simp
+  map_mul' a b := by
+    ext
+    · simp [TrivSqZeroExt.fst_mul]
+    · simp [TrivSqZeroExt.snd_mul, add_comm]
+  map_zero' := by ext <;> simp
+  map_add' a b := by ext <;> simp
+
+/-- `r ↦ (r, d r)` into the universal square-zero extension of `R` by `Ω[R⁄k]`.
+
+`R` is EXPLICIT on purpose.  With it implicit, unifying it against
+`↥(A'.presheaf.stalk x)` unfolds `Presheaf.stalk` to its colimit, and the
+`Algebra k _` instance is then searched for in the unfolded form and is not
+found — a failure that reports as `failed to synthesize Algebra k
+↑(Limits.colimit.cocone …)` and looks like a missing instance rather than a
+unification accident. -/
+noncomputable def tsqzKaehler {k : Type u} [Field k] (R : Type u) [CommRing R] [Algebra k R] :
+    R →+* TrivSqZeroExt R (KaehlerDifferential k R) :=
+  tsqzOfDeriv (KaehlerDifferential.D k R)
+
+/-- the projection `(r, ω) ↦ r` -/
+noncomputable def tsqzFst {k : Type u} [Field k] (R : Type u) [CommRing R] [Algebra k R] :
+    TrivSqZeroExt R (KaehlerDifferential k R) →+* R :=
+  (TrivSqZeroExt.fstHom R R (KaehlerDifferential k R)).toRingHom
+
+/-- the inclusion `r ↦ (r, 0)` -/
+noncomputable def tsqzInl {k : Type u} [Field k] (R : Type u) [CommRing R] [Algebra k R] :
+    R →+* TrivSqZeroExt R (KaehlerDifferential k R) :=
+  TrivSqZeroExt.inlHom R (KaehlerDifferential k R)
+
+variable {k : Type u} [Field k] (R : Type u) [CommRing R] [Algebra k R]
+
+@[simp] lemma tsqzKaehler_snd (r : R) :
+    ((tsqzKaehler (k := k) R) r).snd = KaehlerDifferential.D k R r := by
+  simp [tsqzKaehler, tsqzOfDeriv]
+
+@[simp] lemma tsqzInl_snd (r : R) : ((tsqzInl (k := k) R) r).snd = 0 := by
+  simp [tsqzInl]
+
+@[simp] lemma tsqzFst_tsqzKaehler (r : R) :
+    (tsqzFst (k := k) R) ((tsqzKaehler (k := k) R) r) = r := by
+  simp [tsqzFst, tsqzKaehler, tsqzOfDeriv]
+
+@[simp] lemma tsqzFst_tsqzInl (r : R) : (tsqzFst (k := k) R) ((tsqzInl (k := k) R) r) = r := by
+  simp [tsqzFst, tsqzInl]
+
+lemma tsqzFst_surjective : Function.Surjective (tsqzFst (k := k) R) :=
+  fun r => ⟨tsqzInl (k := k) R r, tsqzFst_tsqzInl R r⟩
+
+lemma tsqzFst_ker_sq : RingHom.ker (tsqzFst (k := k) R) ^ 2 = ⊥ := by
+  rw [pow_two, eq_bot_iff, Ideal.mul_le]
+  intro a ha b hb
+  rw [RingHom.mem_ker] at ha hb
+  have ha' : a.fst = 0 := ha
+  have hb' : b.fst = 0 := hb
+  rw [Ideal.mem_bot]
+  refine TrivSqZeroExt.ext ?_ ?_
+  · simp [TrivSqZeroExt.fst_mul, ha']
+  · simp [TrivSqZeroExt.snd_mul, ha', hb']
+
+/-- `d` kills the base field, so the two lifts agree on scalars. -/
+lemma tsqzKaehler_algebraMap (a : k) :
+    (tsqzKaehler (k := k) R) (algebraMap k R a) = (tsqzInl (k := k) R) (algebraMap k R a) := by
+  refine TrivSqZeroExt.ext ?_ ?_
+  · simp [tsqzKaehler, tsqzOfDeriv, tsqzInl]
+  · simp
+
+/-- **THE STRUCTURE MORPHISM OF `Spec 𝒪_{X,x}` OVER `Spec k` IS `Spec` OF THE
+ALGEBRA MAP** that `stalkAlgebraOver` installs.  Two mathlib lemmas and one
+naturality: `Scheme.SpecMap_stalkMap_fromSpecStalk`, `Spec.fromSpecStalk_eq` and
+`Scheme.Hom.germ_stalkMap` at `U = ⊤`. -/
+theorem fromSpecStalk_comp_eq {k : Type u} [Field k] {X : Scheme.{u}}
+    (aX : X ⟶ Spec (CommRingCat.of k)) (x : X) :
+    X.fromSpecStalk x ≫ aX =
+      Spec.map (CommRingCat.ofHom (@algebraMap k _ _ _ (stalkAlgebraOver aX x))) := by
+  have h := Scheme.SpecMap_stalkMap_fromSpecStalk aX (x := x)
+  rw [Spec.fromSpecStalk_eq] at h
+  rw [← h, ← Spec.map_comp]
+  congr 1
+  show _ = ((Scheme.ΓSpecIso (CommRingCat.of k)).inv ≫ aX.appTop ≫
+      X.presheaf.germ ⊤ x trivial)
+  simp only [Category.assoc]
+  congr 1
+  simpa [Scheme.Hom.appTop] using Scheme.Hom.germ_stalkMap aX ⊤ x trivial
+
+/-- **`[p]` DOES NOT SEE A SQUARE-ZERO THICKENING OF A STALK, IN CHARACTERISTIC
+`p`** (PROVEN 2026-08-01).  This is the whole of the group theory of
+`kaehler_stalkMap_mulByNat_prime_eq_zero`, stated over an ARBITRARY square-zero
+extension `fstc : Ec ↠ 𝒪_{A', x}` with two sections `dltc`, `inlc` agreeing on
+scalars: `[p]^{\#}` composed with the two agree.
+
+**THE ARGUMENT, and note that no differential appears in it.**  `dltc` and
+`inlc` are two `Spec Ec`-points `V`, `C` of `A'` over `Spec k` (the base map is
+`Spec (algc ≫ inlc)`, which they share because `halg` says the two sections
+agree on `k`).  They have the SAME restriction along `Spec fstc`, because
+`fstc` retracts both; so `V - C` lies in `ab'.infKernel (Spec fstc)`.  That
+kernel is a `k`-VECTOR SPACE — `nonempty_module_infKernel_of_squareZero`,
+PROVEN 2026-07-27 in `Modularity/AbelianSchemeIsogeny.lean` — so `p • (V - C)`
+is `(p : k) • (V - C) = 0`, i.e. `p • V = p • C`.  `nsmul_val` turns that into
+`V.1 ≫ [p] = C.1 ≫ [p]`; `Scheme.SpecMap_stalkMap_fromSpecStalk` rewrites both
+sides through `[p]`'s stalk map, and `X.fromSpecStalk` is a MONO (it is an
+`IsPreimmersion`, and mathlib registers `IsPreimmersion ⟹ Mono`), so
+`Spec.map_injective` finishes.
+
+**WHAT IS LOAD-BEARING.**  `hp0` is: in characteristic `0` the kernel is a
+`ℚ`-vector space and `p • (V - C)` is `0` only if `V = C`.  `ab'` is, through
+`nonempty_module_infKernel_of_squareZero`, which is where the group law and
+`ab'.smooth` are spent.  Nothing here needs `k` finite or perfect, and nothing
+needs `p` prime. -/
+theorem stalkMap_comp_eq_of_squareZero {k : Type u} [Field k] (p : ℕ)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)} (ab' : AbelianSchemeStruct f')
+    (hp0 : (p : k) = 0) {x : A'}
+    {Ec : CommRingCat.{u}} (fstc : Ec ⟶ A'.presheaf.stalk x)
+    (dltc inlc : A'.presheaf.stalk x ⟶ Ec)
+    (algc : CommRingCat.of k ⟶ A'.presheaf.stalk x)
+    (hbase : A'.fromSpecStalk x ≫ f' = Spec.map algc)
+    (hsurj : Function.Surjective fstc.hom)
+    (hker : RingHom.ker fstc.hom ^ 2 = ⊥)
+    (hd : dltc ≫ fstc = 𝟙 _) (hi : inlc ≫ fstc = 𝟙 _)
+    (halg : algc ≫ dltc = algc ≫ inlc) :
+    (ab'.mulByNat p).stalkMap x ≫ dltc = (ab'.mulByNat p).stalkMap x ≫ inlc := by
+  have hvq : (Spec.map dltc ≫ A'.fromSpecStalk x) ≫ f' = Spec.map (algc ≫ inlc) := by
+    rw [Category.assoc, hbase, ← Spec.map_comp, halg]
+  have hcq : (Spec.map inlc ≫ A'.fromSpecStalk x) ≫ f' = Spec.map (algc ≫ inlc) := by
+    rw [Category.assoc, hbase, ← Spec.map_comp]
+  letI := ab'.addCommGroup (Spec.map (algc ≫ inlc))
+  letI := ab'.addCommGroup (Spec.map fstc ≫ Spec.map (algc ≫ inlc))
+  let V : RelPoint f' (Spec.map (algc ≫ inlc)) := ⟨Spec.map dltc ≫ A'.fromSpecStalk x, hvq⟩
+  let C : RelPoint f' (Spec.map (algc ≫ inlc)) := ⟨Spec.map inlc ≫ A'.fromSpecStalk x, hcq⟩
+  have hpre : ab'.preAddHom (Spec.map fstc) rfl V = ab'.preAddHom (Spec.map fstc) rfl C := by
+    apply Subtype.ext
+    show Spec.map fstc ≫ (Spec.map dltc ≫ A'.fromSpecStalk x) =
+      Spec.map fstc ≫ (Spec.map inlc ≫ A'.fromSpecStalk x)
+    rw [← Category.assoc, ← Category.assoc, ← Spec.map_comp, ← Spec.map_comp, hd, hi]
+  have hmem : V - C ∈ ab'.infKernel (Spec.map fstc)
+      (rfl : Spec.map fstc ≫ Spec.map (algc ≫ inlc)
+        = Spec.map fstc ≫ Spec.map (algc ≫ inlc)) := by
+    show ab'.preAddHom (Spec.map fstc) rfl (V - C) = 0
+    rw [map_sub, hpre, sub_self]
+  obtain ⟨minst⟩ := nonempty_module_infKernel_of_squareZero k ab' fstc hsurj hker
+    (q := Spec.map (algc ≫ inlc))
+  letI := minst
+  have hkill : p • (⟨V - C, hmem⟩ :
+      ↥(ab'.infKernel (Spec.map fstc)
+        (rfl : Spec.map fstc ≫ Spec.map (algc ≫ inlc)
+          = Spec.map fstc ≫ Spec.map (algc ≫ inlc)))) = 0 := by
+    rw [← Nat.cast_smul_eq_nsmul k, hp0, zero_smul]
+  have hVC : p • (V - C) = 0 := congrArg Subtype.val hkill
+  have hpV : p • V = p • C := sub_eq_zero.mp (by rw [← smul_sub]; exact hVC)
+  have hmor : (Spec.map dltc ≫ A'.fromSpecStalk x) ≫ ab'.mulByNat p =
+      (Spec.map inlc ≫ A'.fromSpecStalk x) ≫ ab'.mulByNat p := by
+    have h1 := ab'.nsmul_val p V
+    have h2 := ab'.nsmul_val p C
+    rw [hpV] at h1
+    rw [h2] at h1
+    exact h1.symm
+  have hst := Scheme.SpecMap_stalkMap_fromSpecStalk (ab'.mulByNat p) (x := x)
+  rw [Category.assoc, Category.assoc, ← hst, ← Category.assoc, ← Category.assoc,
+    ← Spec.map_comp, ← Spec.map_comp] at hmor
+  exact Spec.map_injective ((cancel_mono (A'.fromSpecStalk ((ab'.mulByNat p).base x))).mp hmor)
+
+/-- **THE PRECEDING THEOREM AT THE UNIVERSAL SQUARE-ZERO EXTENSION** (PROVEN
+2026-08-01): `Ec := 𝒪_{A',x} ⊕ Ω[𝒪_{A',x}⁄k]`, `dltc := (r ↦ (r, d r))`,
+`inlc := (r ↦ (r, 0))`.  Reading the second components of the resulting equality
+of ring maps IS the conclusion `d ([p]^{\#} y) = 0`.
+
+The `Algebra k ↥(A'.presheaf.stalk x)` is an ordinary instance BINDER rather
+than a `letI` inside the proof, and that is what makes the statement usable: a
+`letI` in the proof is not found by instance search once `Presheaf.stalk` is
+unfolded during unification. -/
+theorem kaehler_stalkMap_eq_zero_aux {k : Type u} [Field k] (p : ℕ)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)} (ab' : AbelianSchemeStruct f')
+    (hp0 : (p : k) = 0) (x : A') [alg : Algebra k ↥(A'.presheaf.stalk x)]
+    (hbase : A'.fromSpecStalk x ≫ f' =
+      Spec.map (CommRingCat.ofHom (algebraMap k ↥(A'.presheaf.stalk x))))
+    (y : A'.presheaf.stalk ((ab'.mulByNat p).base x)) :
+    (KaehlerDifferential.D k ↥(A'.presheaf.stalk x))
+      (((ab'.mulByNat p).stalkMap x).hom y) = 0 := by
+  have key := stalkMap_comp_eq_of_squareZero (k := k) p ab' hp0 (x := x)
+    (Ec := CommRingCat.of (TrivSqZeroExt ↥(A'.presheaf.stalk x)
+      (KaehlerDifferential k ↥(A'.presheaf.stalk x))))
+    (CommRingCat.ofHom (tsqzFst (k := k) ↥(A'.presheaf.stalk x)))
+    (CommRingCat.ofHom (tsqzKaehler (k := k) ↥(A'.presheaf.stalk x)))
+    (CommRingCat.ofHom (tsqzInl (k := k) ↥(A'.presheaf.stalk x)))
+    (CommRingCat.ofHom (algebraMap k ↥(A'.presheaf.stalk x))) hbase
+    (tsqzFst_surjective (k := k) ↥(A'.presheaf.stalk x))
+    (tsqzFst_ker_sq (k := k) ↥(A'.presheaf.stalk x))
+    (by ext r; exact tsqzFst_tsqzKaehler (k := k) ↥(A'.presheaf.stalk x) r)
+    (by ext r; exact tsqzFst_tsqzInl (k := k) ↥(A'.presheaf.stalk x) r)
+    (by
+      apply CommRingCat.hom_ext
+      apply RingHom.ext
+      intro a
+      exact tsqzKaehler_algebraMap (k := k) ↥(A'.presheaf.stalk x) a)
+  have h3 : ((ab'.mulByNat p).stalkMap x ≫
+        CommRingCat.ofHom (tsqzKaehler (k := k) ↥(A'.presheaf.stalk x))).hom y
+      = ((ab'.mulByNat p).stalkMap x ≫
+        CommRingCat.ofHom (tsqzInl (k := k) ↥(A'.presheaf.stalk x))).hom y := by rw [key]
+  have h5 : (tsqzKaehler (k := k) ↥(A'.presheaf.stalk x)
+        (((ab'.mulByNat p).stalkMap x).hom y)).snd
+      = (tsqzInl (k := k) ↥(A'.presheaf.stalk x)
+        (((ab'.mulByNat p).stalkMap x).hom y)).snd :=
+    congrArg
+      (fun t : TrivSqZeroExt ↥(A'.presheaf.stalk x)
+        (KaehlerDifferential k ↥(A'.presheaf.stalk x)) => t.snd) h3
+  rw [tsqzKaehler_snd, tsqzInl_snd] at h5
+  exact h5
+
+end KaehlerMulByNatStalk
+
+/-- **`[p]^{\#}` KILLS KÄHLER DIFFERENTIALS ON EVERY STALK** (**PROVEN
+2026-08-01**; cut 2026-07-30 out of `exists_pow_eq_stalkMap_mulByNat_prime`
+below).  This is the ABELIAN-VARIETY half of that leaf, and it carries all of
+its group theory.
 
 Since `d` is natural — `d (φ b)` is the image of `d b` under the map
 `Ω[𝒪_{A', [p]x}⁄k] ⟶ Ω[𝒪_{A', x}⁄k]` induced by `φ = ([p])^{\#}_x` — the
 statement says precisely that **that induced map is ZERO**, i.e. that
 `[p]^* = 0` on differentials.
 
-**THE CLASSICAL PROOF, in two steps neither of which leaves the group scheme.**
+**THE ROUTE THAT WAS TAKEN, AND WHY IT IS NOT THE ONE THIS DOCSTRING USED TO
+PRESCRIBE.**  The paragraph that stood here priced the leaf at the classical
+argument — `Ω_{A'/k}` is FREE on the invariant differentials, and `f ↦ f^*` is
+ADDITIVE on them, so `[p]^* = p = 0` — and that is a correct proof and a large
+one: it needs a sheaf of differentials for a group scheme, the translation
+action, and the freeness theorem, none of which this pin has.
 
-* `Ω_{A'/k}` is a FREE `𝒪_{A'}`-module on the INVARIANT differentials, i.e.
-  `Ω_{A'/k} ≅ 𝒪_{A'} ⊗_k e^* Ω_{A'/k}` for `e` the zero section.  This holds for
-  every smooth group scheme over a field and is proved by translating: the
-  translation `T_y` is an isomorphism, so an invariant differential is determined
-  by its value at `e` and every value at `e` extends.
-* `f ↦ f^*` is ADDITIVE on invariant differentials: for `ω` invariant,
-  `m^* ω = pr₁^* ω + pr₂^* ω` on `A' × A'` (this IS invariance, read on the
-  multiplication), so `(f + g)^* ω = f^* ω + g^* ω`.  Applied to
-  `[p] = id + ⋯ + id` this gives `[p]^* ω = p · ω`, which is `0` because
-  `p = 0` on sections (`hchar`).
+**The crux of it was already PROVEN, five thousand lines away, under a name
+sharing no keyword with this leaf**: `nonempty_module_infKernel_of_squareZero`
+(`Modularity/AbelianSchemeIsogeny.lean`, 2026-07-27) says that for a square-zero
+thickening `Spec R₀ ⟶ Spec R` the kernel `ker (A'(R) ⟶ A'(R₀))` is a
+`k`-VECTOR SPACE.  That IS "the tangent space is a module, and `[n]` acts on it
+by `n`", which is exactly the content the freeness-plus-additivity route is
+after; and its own docstring says so ("the classical isomorphism
+`ker(G(R) ⟶ G(R₀)) ≅ Hom_{R₀}(e^* Ω_{G/S} ⊗ R₀, ker φ)` … is valid for every
+group scheme", and "the proof below never constructs `Ω`").
 
-Then `d b = Σ f_i ω_i` with `ω_i` invariant, and its image is
-`Σ φ(f_i) · [p]^* ω_i = 0`.
+Given it, this leaf is bookkeeping: take the square-zero thickening to be the
+UNIVERSAL one, `𝒪_{A',x} ⊕ Ω[𝒪_{A',x}⁄k] ↠ 𝒪_{A',x}`, whose two sections are
+`r ↦ (r, d r)` and `r ↦ (r, 0)`; they define two `Spec`-points of `A'` with the
+same restriction, so their difference is killed by `p`, so `[p]` does not
+separate them, so `d` kills the image of `[p]^{\#}`.  See
+`stalkMap_comp_eq_of_squareZero` and `kaehler_stalkMap_eq_zero_aux` above.
 
 **WHAT IS LOAD-BEARING, AND WHAT IS DELIBERATELY ABSENT.**  `ab'` is essential —
-without a group law `[p]` is not even defined, and the additivity step is the
-whole argument.  `hchar` is essential: in characteristic `0`, `[p]^* = p ≠ 0`.
-But `k` is NOT assumed finite and NOT assumed perfect, and neither may be added
-by a well-meaning successor "for symmetry with the consumer": this leaf is TRUE
-over every field of characteristic `p`, including `𝔽_p(u)`, and that is exactly
-what localises the imperfection obstruction in the SECOND leaf rather than here.
-Refuting check, one grep: `Finite` and `PerfectField` do not occur in the
-statement below.
+without a group law `[p]` is not even defined, and it is also what
+`nonempty_module_infKernel_of_squareZero` consumes.  `hchar` is essential: it is
+used ONLY to get `(p : k) = 0` (in characteristic `0`, `[p]^* = p ≠ 0`), and a
+successor may weaken it to that.  `k` is NOT assumed finite and NOT assumed
+perfect, and neither may be added by a well-meaning successor "for symmetry with
+the consumer": this leaf is TRUE over every field of characteristic `p`,
+including `𝔽_p(u)`, and that is exactly what localises the imperfection
+obstruction in the SECOND leaf rather than here.  Refuting check, one grep:
+`Finite` and `PerfectField` do not occur in the statement below.
 
-**`hp` IS NOT CONSUMED**, and the sketch above says why: `[p]^* ω = p · ω` and
-`hchar` are the whole argument, and neither cares whether `p` is prime — the
-statement is true for every natural number `p` killing the sections.  It is
-retained for the same reason `exists_pow_eq_app_mulByNat` retains `hN`: the
-consumer holds it, and dropping it would change that consumer for no gain.  A
-successor proving this leaf should NOT go looking for the step that uses
-primality; there is none.  (Primality is genuinely used in the SECOND leaf, where
-the `p`-basis expansion needs it.)
+**`hp` IS NOT CONSUMED** — the proof below never mentions it, exactly as the
+pre-2026-08-01 docstring predicted — and it is now spelled `_hp`.  It is
+retained rather than deleted for the same reason `exists_pow_eq_app_mulByNat`
+retains `hN`: the consumer holds it and passes it POSITIONALLY, so dropping it
+would change that consumer for no gain.  (Primality is genuinely used in the
+SECOND leaf, where the `p`-basis expansion needs it.)
 
 WHERE THIS BELONGS: beside the sheaf of differentials of an abelian scheme, once
 this development has one; it is stated here to keep the cut inside one region. -/
 theorem kaehler_stalkMap_mulByNat_prime_eq_zero
-    {k : Type u} [Field k] (p : ℕ) (hp : p.Prime)
+    {k : Type u} [Field k] (p : ℕ) (_hp : p.Prime)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
     (ab' : AbelianSchemeStruct f')
     (hchar : ∀ U : A'.Opens, (p : Γ(A', U)) = 0)
     (x : A') (y : A'.presheaf.stalk ((ab'.mulByNat p).base x)) :
     letI : Algebra k (A'.presheaf.stalk x) := stalkAlgebraOver f' x
     (KaehlerDifferential.D k (A'.presheaf.stalk x))
-      (((ab'.mulByNat p).stalkMap x).hom y) = 0 :=
-  sorry
+      (((ab'.mulByNat p).stalkMap x).hom y) = 0 := by
+  letI : Algebra k ↥(A'.presheaf.stalk x) := stalkAlgebraOver f' x
+  -- `p = 0` in the base field: it is `0` on sections, hence in the stalk, and
+  -- `k ⟶ 𝒪_{A', x}` is a ring map out of a field into a LOCAL (hence nonzero) ring
+  have hp0 : (p : k) = 0 := by
+    have h1 : (p : ↥(A'.presheaf.stalk x)) = 0 := by
+      have h2 := congrArg (fun t : Γ(A', ⊤) => (A'.presheaf.germ ⊤ x trivial).hom t) (hchar ⊤)
+      simpa using h2
+    refine (algebraMap k ↥(A'.presheaf.stalk x)).injective ?_
+    rw [map_natCast, h1, map_zero]
+  exact kaehler_stalkMap_eq_zero_aux p ab' hp0 x (fromSpecStalk_comp_eq f' x) y
 
 /-- **CARTIER'S CRITERION: A GERM KILLED BY `d` IS A `p`-th POWER** (sorry leaf,
 cut 2026-07-30 out of `exists_pow_eq_stalkMap_mulByNat_prime` below — Matsumura
