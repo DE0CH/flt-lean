@@ -38192,561 +38192,116 @@ theorem nonempty_isBaseChangeOf_of_classify_eq {p : ℕ} (hp : 0 < p)
   rw [huc (specAlgClos ℚ ≫ 𝟙 SpecQ) d₁, huc (specAlgClos ℚ ≫ 𝟙 SpecQ) d₂,
     congrArg Subtype.val h]
 
-/-! ### The `j ∈ {0, 1728}` core, decomposed along the CM automorphism (2026-07-30)
+/-! ### The `j ∈ {0, 1728}` core — DELEGATED UPSTREAM (2026-08-01, flt-lean-271)
 
-`eq_two_or_three_of_stableCyclic_j_special` below is PROVEN over the single new leaf
-`StableCyclicSpecialJ.eq_two_or_three_of_stableCyclic_autMove`.  The dichotomy the old
-docstring prescribed — "`C` is `𝒪_K`-stable" versus "`C` is not" — is carried out here
-verbatim, and **case 1 turns out to be elementary**: no `End`, no `E[p]`-module structure,
-no class number.  Only case 2 is left open, and its route is recorded on the leaf.
+`eq_two_or_three_of_stableCyclic_j_special` below is now PROVEN by citing
+`ModularCurve/X0.lean`'s `Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_zero` and
+`Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_1728`, which are
+hypothesis-for-hypothesis the same statement, carry the same SHARP conclusion
+`p = 2 ∨ p = 3`, and were PROVEN upstream on 2026-07-31 over
+`eq_two_or_eq_three_of_stableCyclic_of_autPoint_not_stable` and the arithmetic leaf
+`exists_galoisFixing_cyclotomic_not_isSquare` — both also proven that day.
 
-The two case-1 computations, with `Ω = ℚ̄` and `[u]` the automorphism `(x, y) ↦ (u²x, u³y)`:
+That is exactly what the consumer's own docstring below has prescribed since
+2026-07-30: *"a prover who closes either should transplant to the other and delete the
+loser; the natural end state is this statement in `X0.lean` with the membership form
+derived from it"*.  The end state HAS been reached upstream —
+`Fermat.mem_mazurIsogenyPrimes_of_stableCyclic_j_special` is four lines over the sharp
+pair — so the transplant reduces to a citation and the loser is this block.
 
-* `j = 1728`, `u² = −1`.  If `[u]⟨g⟩ = ⟨g⟩` write `[u]g = c·g`.  Pick `σ ∈ Γ_ℚ` with
-  `σu ≠ u`; then `σu = −u`, so `σ ∘ [u] = [−u] ∘ σ = −[u] ∘ σ`.  Evaluating at `g` and
-  using `σg = l·g` gives `(cl)·g = −(cl)·g`, i.e. `p ∣ 2cl`.  Neither `c` nor `l` is
-  divisible by `p` (`[u]² = [−1]` and `Point.map σ` is injective), so `p = 2`.
-* `j = 0`, `u² + u + 1 = 0`.  If `[u]⟨g⟩ = ⟨g⟩` write `[u]g = c·g`.  Pick `σ` with
-  `σu ≠ u`; then `σu = u²`, so `σ ∘ [u] = [u]² ∘ σ`, giving `cl ≡ lc²`, hence `c ≡ 1`:
-  `[u]` FIXES `g`.  But `[u](x, y) = (u²x, y)` and `u² ≠ 1`, so `g = (0, y)`; on
-  `y² = x³ + a₆` the tangent at `(0, y)` is horizontal, so `2g = −g` and `p = 3`.
+## WHAT WAS DELETED, AND HOW TO GET IT BACK
 
-The reduction to the normal forms `y² = x³ + a₄x` / `y² = x³ + a₆` is over `ℚ`
-(`exists_smul_eq_quarticModel`, `exists_smul_eq_sexticModel`) and the level structure
-travels along it by `Affine.Point.equivVariableChangeBaseChange`, which is
-`Γ_ℚ`-equivariant because `C₀` has rational coefficients.
+A `namespace StableCyclicSpecialJ` of twelve declarations occupied this position, ~490
+lines, cut 2026-07-30 by flt-lean-292/322: the two case-1 computations
+(`eq_two_of_stableCyclic_autMap_stable_quartic`,
+`eq_three_of_stableCyclic_autMap_stable_sextic`) with their five helper lemmas
+(`autMap_diag_mul`, `exists_absoluteGaloisGroup_ne`, `notMem_range_of_sq_eq_neg_one`,
+`notMem_range_of_cube_root`, `three_nsmul_eq_zero_of_abscissa_zero`,
+`abscissa_eq_zero_of_autMap_fix`, `ordinate_ne_zero_of_abscissa_zero`), the normal-form
+transport `transport_stableCyclic`, the assembly
+`eq_two_or_three_of_stableCyclic_j_special_aux`, and the SORRY LEAF
+`eq_two_or_three_of_stableCyclic_autMove` (case 2, the CM automorphism MOVES the line).
+Recover with `git show <the commit that deleted this>^:Fermat/FLT/FreyCurve/MazurTorsion.lean`
+and read lines 38195 to 38717.
 
-**A NOTE FOR ANYONE EDITING THIS BLOCK.**  `WeierstrassCurve.map_autMap_diag` is stated in
-`QuarticTwist.lean`, where `(E⁄Ω).IsElliptic` and `Algebra ℚ ℚ̄` resolve along a different
-path than they do here (`AlgebraicClosure.instAlgebra` versus `DivisionRing.toRatAlgebra`;
-this is the hazard `X0.mem_range_algebraMap_of_galoisFixed`'s docstring records).  The two
-are defeq but the kernel takes **five minutes** to see it.  So a closed-term
-`Eq.trans` against that lemma's right-hand side is not affordable: absorb it with a
-metavariable instead (`key.trans (autMap_diag_mul … _).symm`, as below), which lets
-unification assign rather than compare.  The same edit measured 5 min versus 12 s. -/
+A comment-stripped scan of the whole tree found exactly ONE use of any of the twelve
+outside the namespace — the assembly's call in the consumer below — so redirecting that
+citation upstream leaves the entire block free-floating, which this project forbids.
 
-namespace StableCyclicSpecialJ
+## WHY DELETE RATHER THAN KEEP THE PROVEN HALF
 
-open WeierstrassCurve WeierstrassCurve.Affine WeierstrassCurve.Affine.Point
-open scoped WeierstrassCurve.Affine
+Both case-1 theorems are genuinely proven and genuinely duplicate the upstream route:
+`X0.lean`'s pair runs the SAME dichotomy over `exists_autPoint_of_j_eq_zero` /
+`exists_autPoint_of_j_eq_1728` and closes case 1 inline.  Keeping the local copies would
+leave proven theorems with no consumer.
 
-/-- **Composition of diagonal automorphisms**: `[u] ∘ [v] = [uv]` on points.  The missing
-companion of `autMap_diag_sq`/`autMap_diag_neg`/`autMap_diag_one` in `QuarticTwist.lean`,
-and the only one the `j = 0` case needs, where `Aut` is `μ₆` rather than `μ₄`. -/
-lemma autMap_diag_mul {F : Type*} [Field F] [DecidableEq F]
-    {W : WeierstrassCurve F} [W.IsElliptic] {u v : Fˣ}
-    (hu : (⟨u, 0, 0, 0⟩ : VariableChange F) • W = W)
-    (hv : (⟨v, 0, 0, 0⟩ : VariableChange F) • W = W)
-    (huv : (⟨u * v, 0, 0, 0⟩ : VariableChange F) • W = W)
-    (P : W.toAffine.Point) :
-    Point.autMap hu (Point.autMap hv P) = Point.autMap huv P := by
-  rcases P with _ | ⟨x, y, hns⟩
-  · show Point.autMap hu (Point.autMap hv 0) = Point.autMap huv 0
-    simp only [_root_.map_zero]
-  · rw [Point.autMap_apply hv, Point.equivOfEq_some, Point.mapVariableChangeFun_some,
-      Point.autMap_apply, Point.equivOfEq_some, Point.mapVariableChangeFun_some,
-      Point.autMap_apply huv, Point.equivOfEq_some, Point.mapVariableChangeFun_some]
-    refine Point.some_eq_some W ?_ ?_ <;> push_cast <;> ring
+The ONE thing the deleted block had that upstream does not is the `VariableChange`-level
+presentation of the CM automorphism — `autMap_diag_mul` composing `[u] ∘ [v] = [uv]`, and
+the `smul_diag_self` / `smul_diag_self_sextic` route from a rational normal form to an
+automorphism of the base-changed curve.  Upstream works with a bare additive endomorphism
+`ψ` instead, which is weaker and sufficient there.  A successor who needs `Aut(E⁄ℚ̄)` in
+the `VariableChange` form should read the deleted block rather than rebuild it.
 
-/-- **An element of `ℚ̄` outside `ℚ` is moved by some element of `Γ_ℚ`** — the
-contrapositive of `Fermat.mem_range_algebraMap_of_galoisFixed`. -/
-theorem exists_absoluteGaloisGroup_ne {a : AlgebraicClosure ℚ}
-    (ha : a ∉ Set.range (algebraMap ℚ (AlgebraicClosure ℚ))) :
-    ∃ σ : Field.absoluteGaloisGroup ℚ, σ a ≠ a := by
-  by_contra h
-  push Not at h
-  exact ha (Fermat.mem_range_algebraMap_of_galoisFixed a h)
+## ACCOUNTING
 
-/-- `√−1` is irrational. -/
-lemma notMem_range_of_sq_eq_neg_one {a : AlgebraicClosure ℚ} (ha : a ^ 2 = -1) :
-    a ∉ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
-  rintro ⟨q, rfl⟩
-  have hz : (algebraMap ℚ (AlgebraicClosure ℚ)) (q ^ 2 + 1) = 0 := by
-    rw [map_add, map_pow, map_one, ha]; ring
-  have hq : q ^ 2 + 1 = 0 := (map_eq_zero _).mp hz
-  nlinarith [sq_nonneg q]
-
-/-- A primitive cube root of unity is irrational. -/
-lemma notMem_range_of_cube_root {a : AlgebraicClosure ℚ} (ha : a ^ 2 + a + 1 = 0) :
-    a ∉ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
-  rintro ⟨q, rfl⟩
-  have hz : (algebraMap ℚ (AlgebraicClosure ℚ)) (q ^ 2 + q + 1) = 0 := by
-    rw [map_add, map_add, map_pow, map_one]; exact ha
-  have hq : q ^ 2 + q + 1 = 0 := (map_eq_zero _).mp hz
-  nlinarith [sq_nonneg (2 * q + 1)]
-
-/-- **CASE 1 AT `j = 1728`: if the automorphism `[i]` preserves `⟨g⟩` then `p = 2`.**
-
-This is the `𝒪_K`-stable case of the old prescription, and the conjugation `σ[i]σ⁻¹ = [i]⁻¹`
-replaces "complex conjugation carries `𝔭` to `𝔭̄`" with a two-line computation on points. -/
-theorem eq_two_of_stableCyclic_autMap_stable_quartic {p : ℕ} (hp : p.Prime)
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (h₁ : (E⁄(AlgebraicClosure ℚ)).a₁ = 0) (h₂ : (E⁄(AlgebraicClosure ℚ)).a₂ = 0)
-    (h₃ : (E⁄(AlgebraicClosure ℚ)).a₃ = 0) (h₆ : (E⁄(AlgebraicClosure ℚ)).a₆ = 0)
-    (g : (E⁄(AlgebraicClosure ℚ)).toAffine.Point) (hg : addOrderOf g = p)
-    (hstab : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
-      Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x
-        ∈ AddSubgroup.zmultiples g)
-    {u : (AlgebraicClosure ℚ)ˣ} (hu : ((u : AlgebraicClosure ℚ)) ^ 2 = -1)
-    (hι : (⟨u, 0, 0, 0⟩ : VariableChange (AlgebraicClosure ℚ)) • (E⁄(AlgebraicClosure ℚ))
-      = (E⁄(AlgebraicClosure ℚ)))
-    (hA : Point.autMap hι g ∈ AddSubgroup.zmultiples g) :
-    p = 2 := by
-  set Ω := AlgebraicClosure ℚ
-  have hg0 : g ≠ 0 := by
-    rintro rfl
-    simp only [addOrderOf_zero] at hg
-    exact hp.one_lt.ne hg
-  obtain ⟨c, hc⟩ := AddSubgroup.mem_zmultiples_iff.mp hA
-  -- `u` is irrational, so some `σ` moves it, and then `σ u = -u`
-  obtain ⟨σ, hσ⟩ := exists_absoluteGaloisGroup_ne (notMem_range_of_sq_eq_neg_one hu)
-  have hσsq : ((σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (u : Ω)) ^ 2 = -1 := by
-    rw [← _root_.map_pow, hu, _root_.map_neg, _root_.map_one]
-  have hσu : (σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (u : Ω) = -(u : Ω) := by
-    have hfac : ((σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (u : Ω) - (u : Ω))
-        * ((σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (u : Ω) + (u : Ω)) = 0 := by
-      linear_combination hσsq - hu
-    rcases mul_eq_zero.mp hfac with hne | hne
-    · exact absurd (sub_eq_zero.mp hne) hσ
-    · exact eq_neg_of_add_eq_zero_left hne
-  -- the conjugate automorphism `[-u]`, which acts as `-[u]`
-  have hu4 : ((-u : Ωˣ) : Ω) ^ 4 = 1 := by
-    have hpow : ((-u : Ωˣ) : Ω) ^ 4 = ((u : Ω) ^ 2) ^ 2 := by push_cast; ring
-    rw [hpow, hu]; norm_num
-  have hι' : (⟨-u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) :=
-    WeierstrassCurve.smul_diag_self h₁ h₂ h₃ h₆ hu4
-  have key := WeierstrassCurve.map_autMap_diag (E := E) (σ : Ω ≃ₐ[ℚ] Ω) hι hι'
-    (by rw [Units.val_neg, ← hσu]) g
-  obtain ⟨l, hl⟩ := AddSubgroup.mem_zmultiples_iff.mp
-    (hstab σ g (AddSubgroup.mem_zmultiples g))
-  -- `σ ([u] g) = (c l) • g` and `- [u] (σ g) = -((c l) • g)`
-  have hL : Point.map (σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (Point.autMap hι g) = (c * l) • g := by
-    rw [← hc, _root_.map_zsmul, ← hl, smul_smul]
-  have hR : - Point.autMap hι (Point.map (σ : Ω ≃ₐ[ℚ] Ω).toAlgHom g) = -((c * l) • g) := by
-    rw [← hl, _root_.map_zsmul, ← hc, smul_smul, mul_comm l c]
-  have hkey : (2 * (c * l)) • g = 0 := by
-    have h2 : (c * l) • g = -((c * l) • g) :=
-      hL.symm.trans (key.trans
-        ((WeierstrassCurve.autMap_diag_neg h₁ h₃ hι hι' _).trans hR))
-    rw [mul_zsmul, two_zsmul]
-    nth_rewrite 2 [h2]
-    exact add_neg_cancel _
-  have hdvd : ((p : ℤ)) ∣ 2 * (c * l) := by
-    rw [← hg]; exact addOrderOf_dvd_iff_zsmul_eq_zero.mpr hkey
-  -- `p ∤ c`, because `[u]² = [-1]`
-  have hcne : ¬ ((p : ℤ) ∣ c) := by
-    intro hd
-    have hcz : c • g = 0 := addOrderOf_dvd_iff_zsmul_eq_zero.mp (by rw [hg]; exact hd)
-    have h0 : Point.autMap hι g = 0 := by rw [← hc, hcz]
-    have hsq := WeierstrassCurve.autMap_diag_sq h₁ h₃ hu hι g
-    rw [h0, _root_.map_zero] at hsq
-    exact hg0 (neg_eq_zero.mp hsq.symm)
-  -- `p ∤ l`, because `Point.map σ` is injective
-  have hlne : ¬ ((p : ℤ) ∣ l) := by
-    intro hd
-    have hlz : l • g = 0 := addOrderOf_dvd_iff_zsmul_eq_zero.mp (by rw [hg]; exact hd)
-    rw [hl] at hlz
-    exact hg0 (Point.map_injective _ (by rw [hlz, _root_.map_zero]))
-  have hpZ : Prime ((p : ℤ)) := Nat.prime_iff_prime_int.mp hp
-  rcases (hpZ.dvd_mul).mp hdvd with h2 | hcl
-  · have hp2 : p ∣ 2 := by exact_mod_cast h2
-    exact (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp hp2
-  · rcases (hpZ.dvd_mul).mp hcl with h | h
-    · exact absurd h hcne
-    · exact absurd h hlne
-
-/-- **`(0, y)` on `y² = x³ + a₆` is `3`-torsion.**  The tangent there is horizontal
-(`slope = 0` because `a₁ = a₂ = a₄ = 0`), so `2·(0, y) = (0, −y) = −(0, y)`. -/
-lemma three_nsmul_eq_zero_of_abscissa_zero {F : Type*} [Field F] [DecidableEq F] [CharZero F]
-    {W : WeierstrassCurve F} [W.IsElliptic]
-    (h₁ : W.a₁ = 0) (h₂ : W.a₂ = 0) (h₃ : W.a₃ = 0) (h₄ : W.a₄ = 0)
-    {y : F} (hy : y ≠ 0) (hns : W.toAffine.Nonsingular 0 y) :
-    (3 : ℕ) • (Point.some 0 y hns) = 0 := by
-  have hnegY : W.toAffine.negY 0 y = -y := by
-    simp only [Affine.negY, h₁, h₃]; ring
-  have hyne : y ≠ W.toAffine.negY 0 y := by
-    rw [hnegY]
-    intro hcon
-    apply hy
-    have h2 : (2 : F) * y = 0 := by linear_combination hcon
-    rcases mul_eq_zero.mp h2 with h | h
-    · exact absurd h two_ne_zero
-    · exact h
-  have hslope : W.toAffine.slope 0 0 y y = 0 := by
-    rw [Affine.slope_of_Y_ne rfl hyne]
-    have hnum : (3 : F) * 0 ^ 2 + 2 * W.toAffine.a₂ * 0 + W.toAffine.a₄
-        - W.toAffine.a₁ * y = 0 := by
-      show (3 : F) * 0 ^ 2 + 2 * W.a₂ * 0 + W.a₄ - W.a₁ * y = 0
-      rw [h₂, h₄, h₁]; ring
-    rw [hnum, zero_div]
-  have hsum : Point.some 0 y hns + Point.some 0 y hns = -(Point.some 0 y hns) := by
-    have haddX : W.toAffine.addX 0 0 0 = 0 := by
-      show (0 : F) ^ 2 + W.a₁ * 0 - W.a₂ - 0 - 0 = 0
-      rw [h₁, h₂]; ring
-    rw [Point.add_of_Y_ne hyne, Point.neg_some]
-    refine Point.some_eq_some W ?_ ?_
-    · rw [hslope]; exact haddX
-    · rw [hslope]
-      show W.toAffine.negY (W.toAffine.addX 0 0 0) (W.toAffine.negAddY 0 0 y 0)
-        = W.toAffine.negY 0 y
-      rw [haddX]
-      congr 1
-      show (0 : F) * (W.toAffine.addX 0 0 0 - 0) + y = y
-      rw [haddX]; ring
-  rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul, hsum, neg_add_cancel]
-
-/-- If a diagonal automorphism with `u² ≠ 1` FIXES a nonzero point, that point has
-abscissa `0`: `[u](x, y) = (u²x, u³y)`, so `u²x = x`. -/
-lemma abscissa_eq_zero_of_autMap_fix {F : Type*} [Field F] [DecidableEq F]
-    {W : WeierstrassCurve F} [W.IsElliptic] {u : Fˣ} (hu2 : (u : F) ^ 2 ≠ 1)
-    (h : (⟨u, 0, 0, 0⟩ : VariableChange F) • W = W) {P : W.toAffine.Point} (hP : P ≠ 0)
-    (hfix : Point.autMap h P = P) :
-    ∃ (y : F) (hns : W.toAffine.Nonsingular 0 y), P = Point.some 0 y hns := by
-  rcases P with _ | ⟨x, y, hns⟩
-  · exact absurd rfl hP
-  · rw [Point.autMap_apply, Point.equivOfEq_some, Point.mapVariableChangeFun_some] at hfix
-    have hx : (u : F) ^ 2 * x + 0 = x := by injection hfix
-    have hx0 : x = 0 := by
-      have hfac : ((u : F) ^ 2 - 1) * x = 0 := by linear_combination hx
-      rcases mul_eq_zero.mp hfac with hcu | hcx
-      · exact absurd (by linear_combination hcu : (u : F) ^ 2 = 1) hu2
-      · exact hcx
-    subst hx0
-    exact ⟨y, hns, rfl⟩
-
-/-- On `y² = x³ + a₆` with `a₆ ≠ 0`, a point with abscissa `0` has nonzero ordinate. -/
-lemma ordinate_ne_zero_of_abscissa_zero {F : Type*} [Field F]
-    {W : WeierstrassCurve F} (h₆ : W.a₆ ≠ 0) {y : F}
-    (hns : W.toAffine.Nonsingular 0 y) : y ≠ 0 := by
-  rintro rfl
-  exact h₆ (WeierstrassCurve.Affine.equation_zero.mp hns.1)
-
-/-- **CASE 1 AT `j = 0`: if the automorphism `[ζ₃]` preserves `⟨g⟩` then `p = 3`.**
-
-Unlike its `j = 1728` sibling the conjugation does not close the argument on its own: it
-forces `c ≡ 1`, i.e. `[ζ₃]` FIXES `g`, and the conclusion then comes from the coordinates —
-the fixed locus of `[ζ₃]` is `{O, (0, ±√a₆)}`, which is the `3`-torsion. -/
-theorem eq_three_of_stableCyclic_autMap_stable_sextic {p : ℕ} (hp : p.Prime)
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (h₁ : (E⁄(AlgebraicClosure ℚ)).a₁ = 0) (h₂ : (E⁄(AlgebraicClosure ℚ)).a₂ = 0)
-    (h₃ : (E⁄(AlgebraicClosure ℚ)).a₃ = 0) (h₄ : (E⁄(AlgebraicClosure ℚ)).a₄ = 0)
-    (h₆ : (E⁄(AlgebraicClosure ℚ)).a₆ ≠ 0)
-    (g : (E⁄(AlgebraicClosure ℚ)).toAffine.Point) (hg : addOrderOf g = p)
-    (hstab : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
-      Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x
-        ∈ AddSubgroup.zmultiples g)
-    {u : (AlgebraicClosure ℚ)ˣ}
-    (hu : (u : AlgebraicClosure ℚ) ^ 2 + (u : AlgebraicClosure ℚ) + 1 = 0)
-    (hν : (⟨u, 0, 0, 0⟩ : VariableChange (AlgebraicClosure ℚ)) • (E⁄(AlgebraicClosure ℚ))
-      = (E⁄(AlgebraicClosure ℚ)))
-    (hA : Point.autMap hν g ∈ AddSubgroup.zmultiples g) :
-    p = 3 := by
-  set Ω := AlgebraicClosure ℚ
-  have hg0 : g ≠ 0 := by
-    rintro rfl
-    simp only [addOrderOf_zero] at hg
-    exact hp.one_lt.ne hg
-  have hcube : (u : Ω) ^ 3 = 1 := by linear_combination ((u : Ω) - 1) * hu
-  have hsqne : (u : Ω) ^ 2 ≠ 1 := by
-    intro hcon
-    have hum2 : (u : Ω) = -2 := by linear_combination hu - hcon
-    have h30 : (3 : Ω) = 0 := by linear_combination hcon - ((u : Ω) - 2) * hum2
-    exact absurd h30 (by norm_num)
-  -- the automorphisms `[u²]` and `[u³] = 1`
-  have h3c : ((u * u * u : Ωˣ) : Ω) = 1 := by push_cast; linear_combination hcube
-  have h2six : ((u * u : Ωˣ) : Ω) ^ 6 = 1 := by
-    push_cast
-    calc ((u : Ω) * (u : Ω)) ^ 6 = ((u : Ω) ^ 3) ^ 4 := by ring
-      _ = 1 := by rw [hcube]; norm_num
-  have hν2 : (⟨u * u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) :=
-    WeierstrassCurve.smul_diag_self_sextic h₁ h₂ h₃ h₄ h2six
-  have hν3 : (⟨u * u * u, 0, 0, 0⟩ : VariableChange Ω) • (E⁄Ω) = (E⁄Ω) :=
-    WeierstrassCurve.smul_diag_self_sextic h₁ h₂ h₃ h₄ (by rw [h3c]; norm_num)
-  obtain ⟨c, hc⟩ := AddSubgroup.mem_zmultiples_iff.mp hA
-  have hnu2g : Point.autMap hν2 g = (c * c) • g := by
-    have hmul := (autMap_diag_mul hν hν hν2 g).symm
-    rw [← hc, _root_.map_zsmul, ← hc, smul_smul] at hmul
-    exact hmul
-  -- `[u]³ = 1`, so `c³ ≡ 1`
-  have hcube3 : (c * (c * c)) • g = g := by
-    have h1 : Point.autMap hν2 (Point.autMap hν g) = Point.autMap hν3 g :=
-      autMap_diag_mul hν2 hν hν3 g
-    rw [← hc, _root_.map_zsmul, hnu2g, smul_smul,
-      WeierstrassCurve.autMap_diag_one h3c hν3 g] at h1
-    exact h1
-  -- some `σ` sends `u` to `u²`
-  obtain ⟨σ, hσ⟩ := exists_absoluteGaloisGroup_ne (notMem_range_of_cube_root hu)
-  have hs : ((σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (u : Ω)) ^ 2
-      + (σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (u : Ω) + 1 = 0 := by
-    rw [← _root_.map_pow, ← _root_.map_one (σ : Ω ≃ₐ[ℚ] Ω).toAlgHom, ← _root_.map_add,
-      ← _root_.map_add, hu, _root_.map_zero]
-  have hσu : (σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (u : Ω) = (u : Ω) ^ 2 := by
-    have hfac : ((σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (u : Ω) - (u : Ω))
-        * ((σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (u : Ω) - (u : Ω) ^ 2) = 0 := by
-      linear_combination hs - (σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (u : Ω) * hu + hcube
-    rcases mul_eq_zero.mp hfac with hne | hne
-    · exact absurd (sub_eq_zero.mp hne) hσ
-    · exact sub_eq_zero.mp hne
-  have hv : ((u * u : Ωˣ) : Ω) = (σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (u : Ω) := by
-    rw [hσu]; push_cast; ring
-  have key := WeierstrassCurve.map_autMap_diag (E := E) (σ : Ω ≃ₐ[ℚ] Ω) hν hν2 hv g
-  obtain ⟨l, hl⟩ := AddSubgroup.mem_zmultiples_iff.mp
-    (hstab σ g (AddSubgroup.mem_zmultiples g))
-  have hL : Point.map (σ : Ω ≃ₐ[ℚ] Ω).toAlgHom (Point.autMap hν g) = (c * l) • g := by
-    rw [← hc, _root_.map_zsmul, ← hl, smul_smul]
-  -- absorb `key`'s right-hand side with a metavariable; see the block note above
-  have heqU := key.trans (autMap_diag_mul hν hν hν2 _).symm
-  have hνl : Point.autMap hν (l • g) = (l * c) • g := by
-    rw [_root_.map_zsmul, ← hc, smul_smul]
-  have hR2 : Point.autMap hν (Point.autMap hν
-      (Point.map (σ : Ω ≃ₐ[ℚ] Ω).toAlgHom g)) = (l * c * c) • g := by
-    rw [← hl, hνl, _root_.map_zsmul, ← hc, smul_smul]
-  have heq : (c * l) • g = (l * c * c) • g := hL.symm.trans (heqU.trans hR2)
-  have hz : (c * l * (1 - c)) • g = 0 := by
-    have hrw : c * l * (1 - c) = c * l - l * c * c := by ring
-    rw [hrw, sub_zsmul]
-    exact sub_eq_zero_of_eq heq
-  have hdvd : ((p : ℤ)) ∣ c * l * (1 - c) := by
-    rw [← hg]; exact addOrderOf_dvd_iff_zsmul_eq_zero.mpr hz
-  have hcne : ¬ ((p : ℤ) ∣ c) := by
-    intro hd
-    have hcz : (c * (c * c)) • g = 0 :=
-      addOrderOf_dvd_iff_zsmul_eq_zero.mp (by rw [hg]; exact hd.mul_right _)
-    exact hg0 (hcube3.symm.trans hcz)
-  have hlne : ¬ ((p : ℤ) ∣ l) := by
-    intro hd
-    have hlz : l • g = 0 := addOrderOf_dvd_iff_zsmul_eq_zero.mp (by rw [hg]; exact hd)
-    rw [hl] at hlz
-    exact hg0 (Point.map_injective _ (by rw [hlz, _root_.map_zero]))
-  have hpZ : Prime ((p : ℤ)) := Nat.prime_iff_prime_int.mp hp
-  have hone : (p : ℤ) ∣ 1 - c := by
-    rcases (hpZ.dvd_mul).mp hdvd with hcl | h1c
-    · rcases (hpZ.dvd_mul).mp hcl with h | h
-      · exact absurd h hcne
-      · exact absurd h hlne
-    · exact h1c
-  have hfix : Point.autMap hν g = g := by
-    have h1z : (1 - c) • g = 0 :=
-      addOrderOf_dvd_iff_zsmul_eq_zero.mp (by rw [hg]; exact hone)
-    rw [sub_zsmul, one_zsmul] at h1z
-    rw [← hc]
-    exact (sub_eq_zero.mp h1z).symm
-  -- so `g` has abscissa `0`, hence is `3`-torsion
-  obtain ⟨y, hns, hP⟩ := abscissa_eq_zero_of_autMap_fix hsqne hν hg0 hfix
-  have hy : y ≠ 0 := ordinate_ne_zero_of_abscissa_zero h₆ hns
-  have h3 : (3 : ℕ) • g = 0 := by
-    rw [hP]
-    exact three_nsmul_eq_zero_of_abscissa_zero h₁ h₂ h₃ h₄ hy hns
-  have hdvd3 : p ∣ 3 := by
-    rw [← hg]; exact addOrderOf_dvd_of_nsmul_eq_zero h3
-  exact (Nat.prime_dvd_prime_iff_eq hp Nat.prime_three).mp hdvd3
-
-/-- **Transport of a Galois-stable cyclic subgroup along a variable change defined over
-`ℚ`** — `Affine.Point.equivVariableChangeBaseChange` plus its `Γ_ℚ`-equivariance. -/
-theorem transport_stableCyclic {p : ℕ} (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (C₀ : VariableChange ℚ)
-    (g : (E⁄(AlgebraicClosure ℚ)).toAffine.Point) (hg : addOrderOf g = p)
-    (hstab : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
-      Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x
-        ∈ AddSubgroup.zmultiples g) :
-    ∃ g₁ : ((C₀ • E)⁄(AlgebraicClosure ℚ)).toAffine.Point, addOrderOf g₁ = p ∧
-      ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
-        Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x
-          ∈ AddSubgroup.zmultiples g₁ := by
-  set Θ := Affine.Point.equivVariableChangeBaseChange E C₀ (AlgebraicClosure ℚ) with hΘdef
-  have hΘg : Θ (Θ.symm g) = g := Θ.apply_symm_apply g
-  have hmemΘ : ∀ x : ((C₀ • E)⁄(AlgebraicClosure ℚ)).toAffine.Point,
-      x ∈ AddSubgroup.zmultiples (Θ.symm g) ↔ Θ x ∈ AddSubgroup.zmultiples g := by
-    intro x
-    simp only [AddSubgroup.mem_zmultiples_iff]
-    constructor
-    · rintro ⟨n, hn⟩
-      exact ⟨n, by rw [← hn, _root_.map_zsmul, hΘg]⟩
-    · rintro ⟨n, hn⟩
-      exact ⟨n, Θ.injective (by rw [_root_.map_zsmul, hΘg, hn])⟩
-  refine ⟨Θ.symm g, ?_, ?_⟩
-  · have hord : addOrderOf (Θ (Θ.symm g)) = addOrderOf (Θ.symm g) := Θ.addOrderOf_eq _
-    rw [hΘg] at hord
-    rw [← hord]; exact hg
-  · intro σ x hx
-    have hgal := Affine.Point.equivVariableChangeBaseChange_galois E C₀ (AlgebraicClosure ℚ)
-      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) x
-    have hmem := hstab σ _ ((hmemΘ x).mp hx)
-    rw [hmemΘ]
-    exact hgal.symm ▸ hmem
-
-/-- **CASE 2, AND THE ONLY RESIDUE: an automorphism of `E⁄ℚ̄` that MOVES a Galois-stable
-cyclic subgroup of prime order `p` forces `p ∈ {2, 3}`** (LEAF, cut 2026-07-30 by
-flt-lean-292 out of `eq_two_or_three_of_stableCyclic_j_special`, which is PROVEN over it).
-
-`j` has disappeared from the statement, and that is honest rather than a weakening: for
-`j ∉ {0, 1728}` the automorphism group of `E⁄ℚ̄` is `{±1}` and `[±1]⟨g⟩ = ⟨g⟩` always
-(`WeierstrassCurve.autMap_eq_self_or_neg`), so `hmove` is unsatisfiable there and the leaf
-is vacuous outside the two special `j`.  Inside them `hmove` is exactly "`C` is not
-`𝒪_K`-stable".
-
-## THE ROUTE, AND IT IS NOT THE CM CLASS NUMBER
-
-The parent's old docstring priced this case as the first main theorem of complex
-multiplication: `E/C` acquires CM by the order of conductor `p`, `j(E/C) ∈ ℚ`, hence
-`h(p²·disc K) = 1`, hence `p ∈ {2, 3}`.  That works — `WeierstrassCurve.classNumberOne_of_end_closure_eq_top`
-is in this file and covers `disc = −4p²` with the reduced form `(2, 2, (p²+1)/2)`, which is
-primitive for every odd `p` — but it needs a `ψ² = [−n] + b·ψ` generalisation of the
-encoding for `disc = −3p²`, which nothing in the tree has.
-
-**There is a cheaper route, and it needs only the Weil pairing.**  Let `p` be odd.
-
-* `j = 1728`, `ι = [i]`, `ι² = [−1]`.  `ι⟨g⟩` is ALSO `Γ_ℚ`-stable — for `σ` trivial on
-  `ℚ(i)`, `σ(ιx) = ι(σx)`, and otherwise `σ(ιx) = ι⁻¹(σx) = −ι(σx)`, and `⟨ιg⟩` absorbs the
-  sign.  With `hmove` the two lines are distinct, so `E[p] = ⟨g⟩ ⊕ ι⟨g⟩` and the mod-`p`
-  representation is DIAGONAL, `ρ = diag(λ, μ)`.  The same computation gives `μ = λ·ε` with
-  `ε` the quadratic character of `ℚ(i)`, while the Weil pairing gives `λμ = χ_p`.  Hence
-  `λ² = χ_p·ε`.  But `λ²` takes values in the SQUARES of `𝔽_p^×`, an index-`2` subgroup,
-  whereas `χ_p·ε` is onto `𝔽_p^×` (`ℚ(ζ_p)` and `ℚ(i)` are linearly disjoint for `p` odd).
-  Contradiction: no odd `p` survives, so `p = 2`.
-* `j = 0`, `ν = [ζ₃]`, `ν³ = 1`.  If `ν⟨g⟩ ≠ ⟨g⟩` then `⟨g⟩`, `ν⟨g⟩`, `ν²⟨g⟩` are three
-  DISTINCT lines in `E[p]`, each stable under `Γ_{ℚ(√−3)}` (`σ` merely permutes the last
-  two).  A `2 × 2` matrix fixing three distinct lines is scalar, so `ρ|_{Γ_{ℚ(√−3)}} = α`
-  is scalar with `α² = χ_p|_{Γ_{ℚ(√−3)}}`, and for `p ≥ 5` that restriction is still onto
-  `𝔽_p^×` (`ℚ(√−3) ∩ ℚ(ζ_p) = ℚ`) while `α²` lands in the squares.  So `p ≤ 3`.
-
-So the missing input is `det ρ_{E,p} = χ_p` for `E/ℚ`, i.e. Galois equivariance of the
-Weil pairing on `E[p]` over a number field — NOT the main theorem of CM.  `WeilPairing.lean`
-in this tree is about Frobenius in characteristic `p` and does not supply it; that is the
-gap a successor should price.
-
-**THE CHECK THAT WOULD REFUTE THIS**: an odd prime `p` and `E/ℚ` with `j ∈ {0, 1728}`
-carrying a `Γ_ℚ`-stable cyclic subgroup of order `p` NOT preserved by the CM automorphism.
-Equivalently a rational point of `Y_0(p)` with CM by an order of conductor `p` inside
-`ℤ[i]` or `ℤ[ζ₃]`.
-
-**NOT VACUOUS**: at `p = 2`, `E : y² = x³ + 1` has `E[2] = {O, (−1,0), (−ζ₃,0), (−ζ₃²,0)}`,
-`[ζ₃]` permutes the three order-`2` subgroups cyclically, and `⟨(−1, 0)⟩` is `Γ_ℚ`-stable —
-so every hypothesis is satisfiable and the conclusion is not a disguised `False`. -/
-theorem eq_two_or_three_of_stableCyclic_autMove {p : ℕ} (_hp : p.Prime)
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (g : (E⁄(AlgebraicClosure ℚ)).toAffine.Point) (_hg : addOrderOf g = p)
-    (_hstab : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
-      Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x
-        ∈ AddSubgroup.zmultiples g)
-    {C : VariableChange (AlgebraicClosure ℚ)}
-    (hC : C • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ)))
-    (_hmove : Point.autMap hC g ∉ AddSubgroup.zmultiples g) :
-    p = 2 ∨ p = 3 :=
-  sorry
-
-/-- **The assembly**: put `E` in normal form over `ℚ`, transport `g`, and split on whether
-the CM automorphism preserves `⟨g⟩`. -/
-theorem eq_two_or_three_of_stableCyclic_j_special_aux {p : ℕ} (hp : p.Prime)
-    (E : WeierstrassCurve ℚ) [E.IsElliptic] (hj : E.j = 0 ∨ E.j = 1728)
-    (g : (E⁄(AlgebraicClosure ℚ)).toAffine.Point) (hg : addOrderOf g = p)
-    (hstab : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
-      Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x
-        ∈ AddSubgroup.zmultiples g) :
-    p = 2 ∨ p = 3 := by
-  -- a normal form over `ℚ`, in both cases
-  obtain ⟨C₀, hnf⟩ : ∃ C₀ : VariableChange ℚ,
-      ((C₀ • E).a₁ = 0 ∧ (C₀ • E).a₂ = 0 ∧ (C₀ • E).a₃ = 0) ∧
-        (((C₀ • E).a₄ = 0 ∧ (C₀ • E).a₆ ≠ 0) ∨ ((C₀ • E).a₆ = 0 ∧ (C₀ • E).a₄ ≠ 0)) := by
-    rcases hj with hj | hj
-    · obtain ⟨C₀, b, hb, hC₀⟩ := WeierstrassCurve.exists_smul_eq_sexticModel E hj
-      exact ⟨C₀, ⟨by simp [hC₀], by simp [hC₀], by simp [hC₀]⟩,
-        Or.inl ⟨by simp [hC₀], by simpa [hC₀] using hb⟩⟩
-    · obtain ⟨C₀, a, ha, hC₀⟩ := WeierstrassCurve.exists_smul_eq_quarticModel E hj
-      exact ⟨C₀, ⟨by simp [hC₀], by simp [hC₀], by simp [hC₀]⟩,
-        Or.inr ⟨by simp [hC₀], by simpa [hC₀] using ha⟩⟩
-  obtain ⟨⟨ha₁, ha₂, ha₃⟩, hcase⟩ := hnf
-  have hb₁ : ((C₀ • E)⁄(AlgebraicClosure ℚ)).a₁ = 0 := by
-    show algebraMap ℚ (AlgebraicClosure ℚ) ((C₀ • E).a₁) = 0
-    rw [ha₁, _root_.map_zero]
-  have hb₂ : ((C₀ • E)⁄(AlgebraicClosure ℚ)).a₂ = 0 := by
-    show algebraMap ℚ (AlgebraicClosure ℚ) ((C₀ • E).a₂) = 0
-    rw [ha₂, _root_.map_zero]
-  have hb₃ : ((C₀ • E)⁄(AlgebraicClosure ℚ)).a₃ = 0 := by
-    show algebraMap ℚ (AlgebraicClosure ℚ) ((C₀ • E).a₃) = 0
-    rw [ha₃, _root_.map_zero]
-  obtain ⟨g₁, hg₁, hstab₁⟩ := transport_stableCyclic E C₀ g hg hstab
-  rcases hcase with ⟨ha₄, ha₆⟩ | ⟨ha₆, ha₄⟩
-  · -- `j = 0`: the sextic normal form `y² = x³ + a₆`
-    have hb₄ : ((C₀ • E)⁄(AlgebraicClosure ℚ)).a₄ = 0 := by
-      show algebraMap ℚ (AlgebraicClosure ℚ) ((C₀ • E).a₄) = 0
-      rw [ha₄, _root_.map_zero]
-    have hb₆ : ((C₀ • E)⁄(AlgebraicClosure ℚ)).a₆ ≠ 0 := by
-      show algebraMap ℚ (AlgebraicClosure ℚ) ((C₀ • E).a₆) ≠ 0
-      exact fun h0 => ha₆ ((map_eq_zero _).mp h0)
-    obtain ⟨w, hw⟩ :=
-      IsAlgClosed.exists_pow_nat_eq (k := AlgebraicClosure ℚ) (-3) (n := 2) two_pos
-    have hzeta : ((-1 + w) / 2) ^ 2 + ((-1 + w) / 2) + 1 = 0 := by
-      field_simp
-      linear_combination hw
-    have hzne : (-1 + w) / 2 ≠ 0 := by
-      intro h0
-      rw [h0] at hzeta
-      norm_num at hzeta
-    have hcube : ((-1 + w) / 2) ^ 3 = 1 := by
-      linear_combination ((-1 + w) / 2 - 1) * hzeta
-    have hsix : ((Units.mk0 _ hzne : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ 6 = 1 := by
-      show ((-1 + w) / 2) ^ 6 = 1
-      calc ((-1 + w) / 2) ^ 6 = (((-1 + w) / 2) ^ 3) ^ 2 := by ring
-        _ = 1 := by rw [hcube]; norm_num
-    have hν := WeierstrassCurve.smul_diag_self_sextic hb₁ hb₂ hb₃ hb₄ hsix
-    by_cases hA : Point.autMap hν g₁ ∈ AddSubgroup.zmultiples g₁
-    · exact Or.inr (eq_three_of_stableCyclic_autMap_stable_sextic hp (C₀ • E) hb₁ hb₂ hb₃ hb₄
-        hb₆ g₁ hg₁ hstab₁ hzeta hν hA)
-    · exact eq_two_or_three_of_stableCyclic_autMove hp (C₀ • E) g₁ hg₁ hstab₁ hν hA
-  · -- `j = 1728`: the quartic normal form `y² = x³ + a₄x`
-    have hb₆ : ((C₀ • E)⁄(AlgebraicClosure ℚ)).a₆ = 0 := by
-      show algebraMap ℚ (AlgebraicClosure ℚ) ((C₀ • E).a₆) = 0
-      rw [ha₆, _root_.map_zero]
-    obtain ⟨i, hi⟩ :=
-      IsAlgClosed.exists_pow_nat_eq (k := AlgebraicClosure ℚ) (-1) (n := 2) two_pos
-    have hine : i ≠ 0 := by
-      intro h0
-      rw [h0] at hi
-      norm_num at hi
-    have hfour : ((Units.mk0 i hine : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ 4 = 1 := by
-      show i ^ 4 = 1
-      calc i ^ 4 = (i ^ 2) ^ 2 := by ring
-        _ = 1 := by rw [hi]; norm_num
-    have hι := WeierstrassCurve.smul_diag_self hb₁ hb₂ hb₃ hb₆ hfour
-    by_cases hA : Point.autMap hι g₁ ∈ AddSubgroup.zmultiples g₁
-    · exact Or.inl (eq_two_of_stableCyclic_autMap_stable_quartic hp (C₀ • E) hb₁ hb₂ hb₃ hb₆
-        g₁ hg₁ hstab₁ hi hι hA)
-    · exact eq_two_or_three_of_stableCyclic_autMove hp (C₀ • E) g₁ hg₁ hstab₁ hι hA
-
-end StableCyclicSpecialJ
+Frontier −1 for this module, and NO MATHEMATICS WAS DONE: the theorem was already proven
+upstream, the local leaf was DEAD by the seventh-invisibility-class test (open, counted,
+unowned, and reaching nothing), and this is merge repair of a duplication whose own
+docstring predicted it.
+-/
 
 /-- **THE CM/RAMIFICATION CORE, IN THE SHARP FORM: an elliptic curve over `ℚ`
 with `j ∈ {0, 1728}` carrying a Galois-stable cyclic subgroup of PRIME order `p`
-forces `p ∈ {2, 3}`** (**PROVEN 2026-07-30** by flt-lean-292 over the single new leaf
-`StableCyclicSpecialJ.eq_two_or_three_of_stableCyclic_autMove`; a bare sorry leaf, cut
-2026-07-30 by flt-lean-322 as the sole residue
-of `eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ` above, which is
-PROVEN over it).
+forces `p ∈ {2, 3}`** (opened 2026-07-30 by flt-lean-322 as the sole residue of
+`eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ` above; **PROVEN
+2026-08-01 by flt-lean-271 as a two-line citation of `ModularCurve/X0.lean`'s
+`Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_zero` and
+`Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_1728`**, which had been proven
+upstream on 2026-07-31 and which this statement duplicates
+hypothesis-for-hypothesis.)
 
 Elementary in vocabulary: no scheme, no moduli space, no datum, no base change.
 An elliptic curve over `ℚ`, a `ℚ̄`-point of order `p`, and Galois-stability of
 the subgroup it generates.
 
-## THIS IS `Fermat.mem_mazurIsogenyPrimes_of_stableCyclic_j_special` WITH THE CONCLUSION IT ACTUALLY PROVES, AND THE DUPLICATION IS DELIBERATE
+## THE DUPLICATION, AND HOW IT WAS RESOLVED
 
-`X0.lean`'s leaf has hypothesis-for-hypothesis the same statement and concludes
-the WEAKER `p ∈ mazurIsogenyPrimes`.  Read its docstring's route to the end: both
-of its cases land on `p ∈ {2, 3}` and only the last line weakens that to
-membership, via `{2, 3} ⊆ mazurIsogenyPrimes`.  So:
+This statement was cut on 2026-07-30 in deliberate duplication of `X0.lean`, and
+the paragraph that recorded the duplication also prescribed its repair.  Kept
+verbatim, because its analysis is what made the repair mechanical:
 
-* **this leaf implies that one** in one line (`{2,3} ⊆ mazurIsogenyPrimes`);
-* **that one does NOT imply this one** — `mazurIsogenyPrimes` contains
-  `43, 67, 163`, which is exactly why the consumer above could not cite it;
-* and **either proof closes both**, because the argument is the same.
+> `X0.lean`'s leaf has hypothesis-for-hypothesis the same statement and concludes
+> the WEAKER `p ∈ mazurIsogenyPrimes`.  Read its docstring's route to the end: both
+> of its cases land on `p ∈ {2, 3}` and only the last line weakens that to
+> membership, via `{2, 3} ⊆ mazurIsogenyPrimes`.  So:
+>
+> * **this leaf implies that one** in one line (`{2,3} ⊆ mazurIsogenyPrimes`);
+> * **that one does NOT imply this one** — `mazurIsogenyPrimes` contains
+>   `43, 67, 163`, which is exactly why the consumer above could not cite it;
+> * and **either proof closes both**, because the argument is the same.
+>
+> It is stated twice rather than hoisted because `X0.lean` is upstream of this
+> module (`public import Fermat.FLT.ModularCurve.X0`) *and* its copy was a live
+> `TARGET:` of another worker when this cut was made, so neither editing it in
+> place nor citing this one from there was available.  **A prover who closes
+> either should transplant to the other and delete the loser**; the natural end
+> state is this statement in `X0.lean` with the membership form derived from it,
+> which is what the consumer's docstring above has prescribed since 2026-07-28.
 
-It is stated twice rather than hoisted because `X0.lean` is upstream of this
-module (`public import Fermat.FLT.ModularCurve.X0`) *and* its copy was a live
-`TARGET:` of another worker when this cut was made, so neither editing it in
-place nor citing this one from there was available.  **A prover who closes
-either should transplant to the other and delete the loser**; the natural end
-state is this statement in `X0.lean` with the membership form derived from it,
-which is what the consumer's docstring above has prescribed since 2026-07-28.
+That prediction came true on 2026-07-31, one level higher than it anticipated: the
+other worker SPLIT `X0.lean`'s membership leaf into the two sharp `j`-halves
+`eq_two_or_eq_three_of_stableCyclic_j_eq_zero` / `_j_eq_1728`, proved BOTH, and
+derived the membership form from them by `decide`.  So the sharp statement now
+exists upstream after all, the "either proof closes both" clause fired, and the
+loser is the local development — deleted, with its inventory recorded in the
+section note above.
+
+**What the resolution did NOT need**: the first main theorem of complex
+multiplication, `classNumberOne_of_end_closure_eq_top`, or any `ψ² = [−n] + b·ψ`
+generalisation of the encoding.  The upstream proof runs the Weil-pairing route
+(`det ρ̄ = χ̄_cyc`, plus "a square character cannot be surjective on `𝔽_p^×`"),
+which is what the deleted leaf's own docstring had correctly identified as the
+cheap one.
 
 ## THE ARGUMENT (copied from the `X0.lean` twin so this leaf stands alone)
 
@@ -38778,9 +38333,9 @@ each priced a route, and both prices were wrong.**
 1. "`classNumberOne_of_end_closure_eq_top` is exactly case 2's CM engine … a
    generalisation of the encoding (`ψ² = [−n] + b·ψ`) is owed for `j = 0`."  That
    generalisation is NOT owed, because case 2 does not need the class number at all: see
-   the Weil-pairing route on
-   `StableCyclicSpecialJ.eq_two_or_three_of_stableCyclic_autMove`, which kills every odd
-   `p` from `det ρ = χ_p` plus "a square character cannot be surjective".  (The CM route
+   the Weil-pairing route in `X0.lean`'s
+   `Fermat.eq_two_or_eq_three_of_stableCyclic_of_autPoint_not_stable`, which kills every
+   odd `p` from `det ρ = χ_p` plus "a square character cannot be surjective".  (The CM route
    does work; it is simply the expensive one.  For the record, `disc = −4p²` needs no
    search: `(2, 2, (p²+1)/2)` is reduced, primitive and has `a = 2` for every odd `p`.)
 2. "**Genuinely missing everywhere**: `End(E⁄ℚ̄) = ℤ[i]` / `ℤ[ζ₃]`."  Still true, and
@@ -38818,8 +38373,10 @@ theorem eq_two_or_three_of_stableCyclic_j_special {p : ℕ} (hp : p.Prime)
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
-    p = 2 ∨ p = 3 :=
-  StableCyclicSpecialJ.eq_two_or_three_of_stableCyclic_j_special_aux hp E hj g hg hstab
+    p = 2 ∨ p = 3 := by
+  rcases hj with hj0 | hj1728
+  · exact Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_zero hp E hj0 g hg hstab
+  · exact Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_1728 hp E hj1728 g hg hstab
 
 /-- **A `Γ₀(p)`-datum over `ℚ̄` with field of moduli `ℚ` and `j ∈ {0, 1728}`
 forces `p ∈ {2, 3}`** (a sorry leaf from 2026-07-28, opened by the cut of
