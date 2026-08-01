@@ -16151,3 +16151,78 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A "THIS LEAF CONTAINS OPEN LEAF X" DISPATCH HAZARD EXPIRES — AND X MAY HAVE MOVED *ABOVE* YOU
+
+(2026-08-01, `flt-lean-208`, on `pow_sum_eq_of_isEichlerShimuraTransform_x0` in
+`ModularCurve/X0.lean`.)  A mature leaf here often carries a warning of the form
+*"THIS LEAF CONTAINS `X`, an open leaf ~700 lines BELOW it; you cannot finish without
+proving `X` too, and a successor must not treat that step as bookkeeping."*  The
+argument is usually correct — this one was, in full, and the task prompt repeated it
+with an instruction not to start before `X` and not to hoist it, `X` being owned.
+
+**Both halves of the warning had expired within hours of being written, in the two ways
+such a warning can expire, and they compound:**
+
+* **`X` was PROVEN.**  `finrank_cuspForm_eq_x0Genus` closed the same day the warning was
+  written.  An obligation the leaf *contains* stops being an obligation the moment it is
+  discharged elsewhere; what remains is a consistency check.
+* **`X` had MOVED from BELOW the leaf to ABOVE it.**  The docstring said "~700 lines
+  below"; it was 3200 lines above.  That is the difference between "unusable, and a hoist
+  under another owner" and "a citable input".
+
+Neither is visible from the warning, and the prompt inherited it verbatim.  So the check,
+before believing any "contains an open leaf" hazard — two commands, and they answer two
+different questions:
+
+    grep -n '^theorem <X>' <the file>          # is it ABOVE your leaf now?
+    sed -n '<its line>,+15p' <the file> | grep -c sorry   # is it still open?
+
+**The ordering half is the one nobody runs**, because a docstring's "below" reads as a
+fact about the file rather than as a measurement that decays — and in a file that grows by
+tens of thousands of lines per release, relative position is exactly what decays.  This is
+the standing "direction words are order assertions to check" rule arriving through a
+DISPATCH HAZARD, where the cost of believing it is the whole task: the prompt's own
+instruction was to not start.
+
+Corollary for whoever writes such a hazard: name the leaf and say what would discharge it,
+never a line count.  And when you discharge one, grep for docstrings that cite it as an
+obstruction — that grep is cheap and it is the only thing that retires the warning.
+
+## A POWER-SUM IDENTITY OVER PAIRS OF FIXED PRODUCT IS A **TRACE** IDENTITY — Dickson eliminates every multiset
+
+(Same task, and it is what made the recut possible.)  A statement of the shape *"the `n`-th
+power sum of a multiset whose entries pair up as `(r₁, r₂)` with `r₁ r₂ = ℓ` and
+`r₁ + r₂` running through `a`"* is not a statement about the pairs at all.  Each pair
+contributes `r₁ⁿ + r₂ⁿ = Dₙ(r₁ + r₂)` for the **universal** Lucas/Dickson polynomial
+`D₀ = 2`, `D₁ = X`, `Dₙ₊₂ = X·Dₙ₊₁ − ℓ·Dₙ`, so the power sum is `Σ_{c ∈ a} Dₙ(c)` — a
+function of `a` alone.  And if `a` is the characteristic-root multiset of an operator `T`,
+linearity of the trace turns that into `Tr(Dₙ(T))`.
+
+So the whole multiset layer collapses to one trace, and a leaf stated over three multisets
+and three predicates becomes a leaf stated over a curve, an operator and a number.  Here
+that took `pow_sum_eq_of_isEichlerShimuraTransform_x0` — `α`, `β`, `a`,
+`IsWeilEigenvalues`, `IsEichlerShimuraTransform`, `IsCharRootMultiset`, six binders — to
+`#X_0(N)(𝔽_{ℓⁿ}) = ℓⁿ + 1 − Tr(Dₙ(T_ℓ) ∣ S₂(Γ₀(N)))`, which is the formula
+Diamond–Shurman states.  Count unchanged, `1 → 1`; judge it by what is LEFT.
+
+Three things worth having in advance:
+
+* **`Mathlib.RingTheory.Polynomial.Dickson` has exactly this**: `Polynomial.dickson 1 a n`,
+  with `dickson_zero`, `dickson_one` and `dickson_add_two` being the three recursion
+  clauses on the nose.  Its `dickson_one_one_eval_add_inv` is the evaluation lemma only at
+  `a = 1`; the general-`a` version is the identical two-step induction, eight lines.
+* **Do not add the import to a giant module for five lines.**  `X0.lean` does not have
+  `Dickson.lean` in its cone, and an import there rebuilds the largest cone in the tree.
+  Re-derive the recursion locally and say in the docstring that it equals
+  `Polynomial.dickson 1 (ℓ : ℂ)` and should be replaced if that module ever arrives.
+* **`Σᵢ p(aᵢ) = Tr(p(T))` for all `p` is `Polynomial.induction_on'` over the existing
+  `sum_pow_eq`**, ~12 lines: the `add` case is `Multiset.sum_map_add` plus `map_add`, and
+  the `monomial` case is `Multiset.sum_map_mul_left` plus `Polynomial.aeval_monomial`,
+  `← Algebra.smul_def`, `map_smul`.  Do not build it from `eval_eq_sum_range`.
+
+**And check the ELIMINATION does not duplicate a delegated leaf.**  The tempting further
+split — reintroduce `H¹`, cut into Lefschetz (`#X = ℓⁿ + 1 − Tr(Frobⁿ)`) plus the
+congruence relation — is `1 → 2` where the first half DUPLICATES the rationality leaf this
+cluster already delegates to.  Eliminating the Tate module rather than introducing it is
+what keeps the recut at `1 → 1`.
