@@ -4427,103 +4427,253 @@ theorem pow_sub_one_apply_mem_maximalIdeal_pow_smul_top
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
+/-- **RAYNAUD FULL FAITHFULNESS AT `e = 1 < p − 1 = 2`, IN ITS
+COEFFICIENT-FREE FORM: a `Γ ℚ₃ᵥ`-EQUIVARIANT ENDOMORPHISM OF THE
+GEOMETRIC POINTS COMES FROM AN ENDOMORPHISM OF THE MODEL.**
+
+**SORRY LEAF, cut 2026-08-01 (flt-lean-331) out of
+`connected_locus_smul_of_hopf_package` just below**, which is PROVEN
+over it and over nothing else. RECUT, count unchanged `1 → 1`; what
+left the leaf is described at the head of that theorem's docstring.
+
+STATEMENT. `Spec G` is a finite flat `𝒪₃ᵥ`-group scheme with étale
+generic fibre, and `Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)` is its
+group of geometric points, written additively (the multiplication on the
+bare-hom type is CONVOLUTION — `vendored_mul_eq_convMul` /
+`liftEquiv_symm_convMul` in
+`Deformations/RepresentationTheory/FlatProlongation.lean` — so an
+ADDITIVE map is exactly a homomorphism of the point group). Given a map
+`F` of those points that is additive (`hFadd`) and commutes with the
+`Γ ℚ₃ᵥ`-action (`hFgal`), there is an `𝒪₃ᵥ`-algebra endomorphism `u` of
+`G` which preserves the counit and induces `F` by pullback:
+`(F φ) (1 ⊗ y) = φ (1 ⊗ u y)`.
+
+WHY IT IS TRUE. Two steps, and only the second is Raynaud.
+
+* **Galois descent on the generic fibre.** `Spec (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)` is a
+  FINITE ÉTALE `ℚ₃ᵥ`-group scheme, so `H ↦ H (ℚ₃ᵥᵃˡᵍ)` is an equivalence
+  from finite étale `ℚ₃ᵥ`-group schemes to finite `Γ ℚ₃ᵥ`-modules. `F`
+  is a morphism in the target category, so it is `f_η (ℚ₃ᵥᵃˡᵍ)` for a
+  unique group-scheme endomorphism `f_η` of the generic fibre.
+* **Raynaud's uniqueness of prolongations at `e < p − 1`.**
+  `𝒪₃ᵥ ≅ ℤ₃` is ABSOLUTELY UNRAMIFIED, so `e = 1`, and `p = 3` gives
+  `p − 1 = 2`; Raynaud, Bull. SMF **102** (1974), 3.3.6 (and Tate,
+  *Finite flat group schemes*, §4, in Cornell–Silverman–Stevens) then
+  says the generic-fibre functor from finite flat `𝒪₃ᵥ`-group schemes to
+  finite flat `ℚ₃ᵥ`-group schemes is FULLY FAITHFUL. So `f_η` extends,
+  uniquely, to an endomorphism `f` of `Spec G` over `𝒪₃ᵥ`, and `u` is
+  its comorphism. (Faithfulness alone is cheap — `G` is `𝒪₃ᵥ`-flat, so
+  `G → ℚ₃ᵥ ⊗ G` is injective and two extensions agreeing generically
+  agree. FULLNESS is the content, and it is exactly where `e < p − 1` is
+  spent: at `e ≥ p − 1` prolongations stop being unique and the functor
+  stops being full — the same input the `p − 1` unramified twists
+  `μ₃ ⊗ ψ` obstruct, which is what refuted `exists_muType_closure`.)
+
+WHAT IS ASKED OF `u`, AND WHY IT IS THE WEAKEST HONEST FORM. Raynaud's
+extension is a morphism of GROUP SCHEMES, so its comorphism is a
+bialgebra endomorphism; this leaf asks only for an `𝒪₃ᵥ`-ALGEBRA
+endomorphism together with `ε ∘ u = ε`. The first clause is `f` being a
+morphism of affine `𝒪₃ᵥ`-schemes and the second is `f` preserving the
+IDENTITY SECTION — which is forced anyway, since `F` is additive and
+therefore fixes the identity point. Nothing about comultiplication is
+requested, because the consumer below does not need it: see the
+idempotent-transport paragraph there.
+
+FAITHFULNESS.
+
+* The conclusion is an identity of VALUES of `ℚ₃ᵥᵃˡᵍ`-points at
+  `𝒪₃ᵥ`-rational elements `1 ⊗ y`; it never asks for an element of `G`
+  over a larger ring, never for a coordinate, and never for `Γ`-wide
+  rationality. So it is on the true side of this development's
+  `𝒪ᵥ`-descent rule (identities and VALUES descend from `𝒪ⁿʳ`, the
+  EXISTENCE of a coordinate does not).
+* `Module.Flat` and `Module.Finite` are load-bearing: without them
+  `Spec G` is not a finite flat group scheme and there is no
+  prolongation theory at all.
+* `Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)` is load-bearing for the descent
+  step as stated. It is in principle redundant — `ℚ₃ᵥ` has
+  characteristic `0`, so every finite flat `ℚ₃ᵥ`-group scheme is étale —
+  but that implication is not in this tree, which is exactly why
+  `GaloisRep.HasFlatProlongationAt` carries the clause as a hypothesis;
+  see its docstring in
+  `Deformations/RepresentationTheory/GaloisRep.lean`.
+* **`e = 1 < p − 1` is not a hypothesis: it is the BASE.** It enters
+  only through `𝒪₃ᵥ` being the ring of integers of `ℚ₃ᵥ`, which is
+  absolutely unramified, and through `p = 3`. So this statement CANNOT
+  be generalised to an arbitrary place by replacing `𝔭₃`: at a place
+  above `p` with `e ≥ p − 1` it is false. Any generalisation must carry
+  the ramification bound explicitly.
+* There is no degenerate instance to worry about: at `G = 𝒪₃ᵥ` the point
+  group is trivial, `F` is the identity, and `u = 𝟙` works.
+
+WHERE TO GET IT. `HardlyRamified/Family.lean` carries the same Raynaud
+content coefficient-free and intrinsically on the corner —
+`isMultiplicativeType_corner_of_inertiaLevelOneFlag`, over the still-open
+leaf `isMultiplicativeType_of_connected_of_inertiaLevelOneFlag`, with
+everything downstream of it PROVEN. `Threeadic` CANNOT import `Family`
+(`Family.lean:16` is `public import Fermat.FLT.Modularity.Interface` and
+`Interface.lean` imports this file, so the edge is a CYCLE), so the
+relocation has to be an extraction DOWNWARD into a module both files
+import; since `Family` reaches this file transitively, ANY new module
+under `HardlyRamified/` that this file imports is automatically visible
+to `Family`. That extraction is queued as its own task, and this leaf is
+a better target for it than the coefficient-carrying statement it
+replaces: it mentions no `R`, no `V`, no `ρ`, no congruence level and no
+idempotent.
+
+The multiplicative-type layer is still not in this file's import cone;
+`public import`ing
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Diagonalizable.lean` wires
+`HopfAlgebra.IsMultiplicativeType`, `HopfAlgebra.cornerIdeal`,
+`HopfAlgebra.isMultiplicativeType_of_isShortExact` and
+`HopfAlgebra.etale_of_isShortExact` in with NO CYCLE (measured
+2026-07-31: its transitive closure is nine modules, all under
+`Fermat/FLT/Mathlib/RingTheory/`, none of them downstream of this file).
+It is deliberately not added here, because an import with no use is a
+build-time cost paid by every consumer of this file; add it in the same
+commit that first uses it. Note `ShortExact.lean` is not sorry-free
+(`IsShortExact.exists_lift_span_sup_jacobson_cartierDual` is an open leaf
+there).
+
+THE NATURAL GENERALISATION, not taken because nothing consumes it: the
+same statement for a `Γ ℚ₃ᵥ`-equivariant additive map between the points
+of TWO finite flat Hopf orders `G₁`, `G₂`, producing `u : G₂ →ₐ[𝒪₃ᵥ] G₁`.
+Raynaud's theorem is stated in that generality and the proof of the
+endomorphism case will prove it; a successor who needs it should widen
+this statement rather than add a second leaf.
+
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102**
+(1974), 3.3.2–3.3.6; Tate, *Finite flat group schemes*, §4, in
+Cornell–Silverman–Stevens; Fontaine, *Il n'y a pas de variété abélienne
+sur `ℤ`*, §1. -/
+theorem exists_algHom_of_galoisEquivariant_endomorphism
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (F : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →
+      Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ))
+    (hFadd : ∀ φ ψ, F (φ + ψ) = F φ + F ψ)
+    (hFgal : ∀ (σ : Γ ℚ₃ᵥ) (φ), F (σ • φ) = σ • F φ) :
+    ∃ u : G →ₐ[𝒪₃ᵥ] G,
+      (∀ y : G, Coalgebra.counit (R := 𝒪₃ᵥ) (u y) = Coalgebra.counit (R := 𝒪₃ᵥ) y) ∧
+      ∀ (φ : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)) (y : G),
+        (Additive.toMul (F φ)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] y)
+          = (Additive.toMul φ) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] u y) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **RAYNAUD LEAF (a): THE CONNECTED LOCUS IS AN `R`-SUBMODULE** — the
 full-faithfulness half of the finite-flat content at `3`.
 
-**SORRY LEAF, cut 2026-07-31 (flt-lean-124).** It is one of the two
-leaves that together replace the single `sorry` that sat on
-`exists_connectedEtale_line_of_hopf_package` below; see the STATUS
-section of that theorem's docstring for the ledger and the reasoning
-behind cutting here rather than there.
+**PROVEN 2026-08-01 (flt-lean-331)** over the single leaf
+`exists_algHom_of_galoisEquivariant_endomorphism` immediately above.
+It was a SORRY LEAF from 2026-07-31 (cut by flt-lean-124 out of
+`exists_connectedEtale_line_of_hopf_package` below, together with its
+rank sibling `connected_locus_le_line_of_hopf_package`); before that it
+was PROVEN, from 2026-07-27 to 2026-07-31, by a DIFFERENT and now VOID
+route — see the two paragraphs at the end of this docstring.
 
 STATEMENT. `M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` is the space of the congruence
 quotient of `ρ`, identified `Γ ℚ₃ᵥ`-equivariantly by `fG` with the
 geometric points of the finite flat `𝒪₃ᵥ`-group scheme `Spec G`, and
 `M⁰ := {m | (point of m) (1 ⊗ e₀) = 1}` is its connected locus — the
 geometric points of the connected component of the identity, cut out by
-the value `1` at the connected counit idempotent `e₀`. This leaf says
+the value `1` at the connected counit idempotent `e₀`. This theorem says
 `M⁰` is stable under multiplication by every scalar `r : R`.
 
-WHY IT IS TRUE. Multiplication by `r` is an endomorphism of `M` as a
-`Γ ℚ₃ᵥ`-module (the `R`-action and the Galois action commute), hence,
-transported along `fG`, an endomorphism of the GENERIC FIBRE
-`Spec (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)`. **Raynaud's uniqueness of prolongations at
-`e = 1 < p − 1 = 2`** — `𝒪₃ᵥ ≅ ℤ₃` is absolutely unramified, so `e = 1`,
-and `p = 3` gives `p − 1 = 2` — says the restriction functor from finite
-flat `𝒪₃ᵥ`-group schemes to their generic fibres is FULLY FAITHFUL. So
-that endomorphism extends, uniquely, to `Spec G` itself; and any
-endomorphism of a finite flat group scheme carries the connected
-component of the identity into itself, because the connected component
-is functorial. Reading that back through `fG` is exactly the conclusion.
+# WHAT THIS PROOF CONTRIBUTES, so that the leaf above is only Raynaud
 
-Nothing residual enters the statement: no `π`, no `w₀`, no `hρ`, no rank
-hypothesis, not even `hV`. That is deliberate — this half is pure
-Raynaud, and the rank half is the sibling leaf
-`connected_locus_le_line_of_hopf_package` just below.
+Both halves of the classical argument are here, and neither of them is
+finite-flat content.
 
-FAITHFULNESS. The conclusion is a VALUE-level identity over `𝒪ᵥ` (the
-value `1` at the `𝒪ᵥ`-rational idempotent `e₀`), never the existence of
-an element of `G` and never a `Γ`-rational coordinate. So it is on the
-true side of this development's `𝒪ᵥ`-descent rule, and it is blind to
-the `p − 1` unramified twists `μ₃ ⊗ ψ` that refuted
-`exists_muType_closure`: a twist changes WHICH line `M⁰` is, not whether
-`M⁰` is `R`-stable.
+* **Multiplication by `r` is a `Γ ℚ₃ᵥ`-equivariant endomorphism of the
+  point group.** `M` is a module over the congruence quotient
+  `Q := R ⧸ 𝔪ⁿ⁺²` and `(ρ.baseChange Q).toLocal 𝔭₃` lands in
+  `Module.End Q M`, so the `R`-action and the Galois action commute
+  (`map_smul`); `fG` is an additive `Γ ℚ₃ᵥ`-map, so conjugating gives an
+  additive `Γ ℚ₃ᵥ`-equivariant `F` on the geometric points, which is
+  exactly the input of the leaf. This is where `hfG` is spent.
+* **THE CONNECTED COMPONENT IS PRESERVED, AND THAT STEP IS FORMAL.** The
+  geometric half of the classical argument reads *"a morphism of group
+  schemes carries the connected component of the identity into itself,
+  because a connected subset containing the identity lies in the
+  identity component"*. In the Hopf-algebra language it is three lines
+  and needs no topology, no geometry and no flatness:
+  `u e₀` is an idempotent (`u` is an algebra map), so `hprim₀` —
+  MINIMALITY of `e₀`, through `mul_eq_zero_or_mul_eq_of_minimal` in
+  `GroupScheme/ConnectedEtale.lean` — forces `u e₀ * e₀ ∈ {0, e₀}`; and
+  the counit is an ALGEBRA map (`Bialgebra.counitAlgHom`), so
+  `ε (u e₀ * e₀) = ε (u e₀) · ε e₀ = 1 · 1 = 1 ≠ 0` kills the first
+  branch. Hence `u e₀ * e₀ = e₀`, and applying the point `φ` of `1 ⊗ x`
+  to that identity turns `φ (1 ⊗ e₀) = 1` into `φ (1 ⊗ u e₀) = 1`, which
+  is the conclusion. The whole use of `hmin₀` and `hε₀` is here.
 
-WHY THE 2026-07-29 REFUTATION DOES NOT REACH IT. This was PROVEN in this
-file from 2026-07-27 to 2026-07-31, over
+So the leaf above owes ONLY the extension of `F` to the model, i.e.
+Raynaud's fullness — and it owes it in a statement mentioning no
+coefficient ring, no representation, no congruence level and no
+idempotent.
+
+`_habs₀` — the comultiplication absorption `Δe₀ · (e₀ ⊗ e₀) = e₀ ⊗ e₀`
+— is **NOT USED** by this route and is underscored accordingly. The VOID
+route below needed it (it proved `M⁰` is an additive SUBMONOID by
+convolving two connected points, which is what absorption is for); the
+route above never forms a convolution, because it transports the single
+idempotent `e₀` instead. It is retained in the signature because the
+sole call site (`exists_connected_line_of_hopf_package` below) holds it
+for free and because it is what makes `M⁰` a subgroup — a fact a rival
+route may want. Removing it would be an interface change with a live
+consumer, for no gain.
+
+ROUTE, in the classical language, for orientation. Multiplication by `r`
+is an endomorphism of the `Γ ℚ₃ᵥ`-module `M`, i.e. of the geometric
+points of the generic fibre `Spec (ℚ₃ᵥ ⊗ G)`. Raynaud's full
+faithfulness at `e = 1 < p − 1 = 2` extends it to an endomorphism of the
+model `Spec G` over `𝒪ᵥ ≅ ℤ₃`; a morphism of schemes carries the
+connected component of the identity into the connected component of the
+identity, so it preserves `M⁰`. Note that `e = 1` is genuinely used:
+over a base with `e ≥ p − 1` the functor is no longer full (the `p − 1`
+unramified twists `μ_p ⊗ ψ` become distinguishable only over `𝒪ᵥ`, and
+prolongations stop being unique), which is the same input that
+`mem_span_natCast_of_inertia_invariant`
+(`Fermat/FLT/GroupScheme/ConnectedEtale.lean`) spends.
+
+FAITHFULNESS. The conclusion is a VALUE-level identity over `𝒪ᵥ`: it
+asserts that a certain point takes the value `1` at the `𝒪ᵥ`-rational
+idempotent `e₀`, and never asks for an element of `G`, for a coordinate,
+or for `Γ`-wide rationality. It is therefore on the true side of the
+development's `𝒪ᵥ`-descent rule and blind to the unramified twists that
+killed `exists_muType_closure`: a twist changes WHICH line the connected
+locus is, not whether it is stable under `R`.
+
+# THE ROUTE THAT WAS VOIDED, AND WHY THE REFUTATION DOES NOT REACH THE
+# STATEMENT
+
+From 2026-07-27 to 2026-07-31 this was PROVEN over
 `connected_locus_smul_of_hopf_package_aux` and hence over
-`connected_locus_mem_displacement_closure_of_hopf_package`, and so over
+`connected_locus_mem_displacement_closure_of_hopf_package` (`M⁰` is
+contained in the additive submonoid generated by the inertia
+displacements `ρ'(σ) y − y`), and so over
 `eq_one_of_smul_eq_mul_localInertia_connected_threeTorsion`, which was
 REFUTED on 2026-07-29 (witness: `E = 37a1`, supersingular at `3`, giving
 a CONNECTED order-`27` object whose wild inertia acts unipotently on a
-`3`-dimensional socle). That kills the old PROOF and not the STATEMENT:
+`3`-dimensional socle). That killed the old PROOF and not the STATEMENT:
 the witness is about how inertia acts on a large socle and says nothing
-about whether scalar multiplication preserves connectedness. The void
-proof is not restored; recover it if wanted with
+about whether scalar multiplication preserves connectedness. Both of the
+deleted declarations are recoverable with
 
     git show dc6836b9^:Fermat/FLT/GaloisRepresentation/HardlyRamified/Threeadic.lean
 
-at `connected_locus_smul_of_hopf_package` (line `5142` there). Note the
+at `connected_locus_smul_of_hopf_package` (line `5142` there); the
 deletion happened inside what became a merge, so `git log -S` will not
 show it — use `git log -m -S '<name>' -- <path>`.
 
-WHERE TO GET IT. `HardlyRamified/Family.lean` carries the same Raynaud
-content coefficient-free and intrinsically on the corner —
-`isMultiplicativeType_corner_of_inertiaLevelOneFlag`, over the still-open
-leaf `isMultiplicativeType_of_connected_of_inertiaLevelOneFlag` — with
-everything downstream of it PROVEN, including
-`connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package` and
-`exists_connectedEtale_cyclotomic_subgroup_of_hopf_package`, which are
-the same shape as this file's chain. `Threeadic` CANNOT import `Family`
-(`Family.lean:16` is `public import Fermat.FLT.Modularity.Interface` and
-`Interface.lean` imports this file, so the edge is a CYCLE), so the
-relocation has to be an extraction DOWNWARD into a module both files
-import — any new module under `HardlyRamified/` that this file imports
-will do, since `Family` reaches this file transitively and therefore
-reaches everything this file imports.
-
-The multiplicative-type layer is also not yet in this file's import
-cone. `public import`ing
-`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Diagonalizable.lean` wires
-`HopfAlgebra.IsMultiplicativeType`, `HopfAlgebra.cornerIdeal`,
-`HopfAlgebra.isMultiplicativeType_of_isShortExact` and
-`HopfAlgebra.etale_of_isShortExact` in with NO CYCLE. Add it in the same
-commit that first uses it.
-
-**CORRECTION, 2026-07-31, measured rather than repeated.** The version of
-this paragraph that stood here until today said `Diagonalizable.lean`
-"imports mathlib ONLY". That is FALSE: it `public import`s six project
-modules, and their transitive closure is NINE modules —
-`HopfAlgebra/{CartierDual, CartierDualExamples, Corner, GroupFunctions,
-ShortExact, AlphaP, AlphaPSelfDual, Diagonalizable}` and
-`Henselian/FiniteSplit`. What is TRUE, and is the only thing the claim
-was ever used for, is that all nine live under
-`Fermat/FLT/Mathlib/RingTheory/` and NONE of them is in this file's
-downstream cone, so the edge is acyclic. Also note `ShortExact.lean` is
-not sorry-free: `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`
-is an open leaf there, so `isMultiplicativeType_of_isShortExact` is
-direct-sorry-free but not necessarily axiom-clean — check with
-`#print axioms` appended to that module if it matters to you.
+**The route taken above is not a repair of that one, and does not
+reinstate any part of it.** The displacement route reduced the whole
+statement to `M⁰ ⊆ P`, which is the assertion that the connected part
+has no nonzero unramified quotient — TRUE, but a genuine piece of the
+classification of simple objects at `e < p − 1`, and strictly more than
+the fullness this route needs. The route above never forms `P` at all.
 
 Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102**
 (1974), 3.3.2–3.3.5; Tate, *Finite flat group schemes*, §4, in
@@ -4547,15 +4697,84 @@ theorem connected_locus_smul_of_hopf_package
     (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
     (hmin₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
       Coalgebra.counit (R := 𝒪₃ᵥ) y = (1 : 𝒪₃ᵥ) → y = e₀)
-    (habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (_habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
     (r : R) (x : V)
     (hx : (Additive.toMul ((Equiv.ofBijective fG hfG).symm
         ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] x)))
       ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) :
     (Additive.toMul ((Equiv.ofBijective fG hfG).symm
         ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] (r • x))))
-      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 :=
-  sorry
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+  classical
+  set Q := R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)) with hQ
+  set g := Equiv.ofBijective fG hfG with hg
+  have hfs : ∀ y, fG (g.symm y) = y := fun y => g.apply_symm_apply y
+  -- the connected counit idempotent is primitive
+  have hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀ :=
+    fun y hy => mul_eq_zero_or_mul_eq_of_minimal he₀ hε₀ hmin₀ y hy
+  -- multiplication by the image of `r`, as a linear endomorphism of the module:
+  -- the `Space` synonym carries no `Module` instance, so the scalar action has to
+  -- be named on the module itself and applied across the (definitional) synonym
+  obtain ⟨La, hLa⟩ : ∃ La : (Q ⊗[R] V) →ₗ[Q] (Q ⊗[R] V),
+      ∀ z, La z = (algebraMap R Q r) • z :=
+    ⟨(algebraMap R Q r) • LinearMap.id, fun z => rfl⟩
+  -- the `R`-action and the Galois action commute, because the base-changed
+  -- representation is `Q`-linear
+  have hLagal : ∀ (σ : Γ ℚ₃ᵥ) (z : Q ⊗[R] V),
+      La (((ρ.baseChange Q).toLocal 𝔭₃) σ z)
+        = ((ρ.baseChange Q).toLocal 𝔭₃) σ (La z) := by
+    intro σ z
+    rw [hLa, hLa, map_smul]
+  -- multiplication by `r`, transported through `fG` to the geometric points
+  obtain ⟨F, hFdef⟩ : ∃ F : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →
+      Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ), ∀ φ, F φ = g.symm (La (fG φ)) :=
+    ⟨fun φ => g.symm (La (fG φ)), fun _ => rfl⟩
+  have hFadd : ∀ φ ψ, F (φ + ψ) = F φ + F ψ := by
+    intro φ ψ
+    apply g.injective
+    rw [hFdef, hFdef, hFdef]
+    show fG (g.symm (La (fG (φ + ψ)))) = fG (g.symm (La (fG φ)) + g.symm (La (fG ψ)))
+    rw [hfs, map_add fG, map_add fG, hfs, hfs]
+    exact map_add La _ _
+  have hFgal : ∀ (σ : Γ ℚ₃ᵥ) (φ), F (σ • φ) = σ • F φ := by
+    intro σ φ
+    apply g.injective
+    rw [hFdef, hFdef]
+    show fG (g.symm (La (fG (σ • φ)))) = fG (σ • g.symm (La (fG φ)))
+    rw [hfs, map_smul fG, map_smul fG, hfs]
+    exact hLagal σ _
+  -- Raynaud: `F` is the pullback along an endomorphism `u` of the model
+  obtain ⟨u, hucounit, hu⟩ :=
+    exists_algHom_of_galoisEquivariant_endomorphism G F hFadd hFgal
+  -- `u e₀` is an idempotent with counit `1`, so minimality forces it to meet `e₀`
+  have hue₀ : IsIdempotentElem (u e₀) := by
+    show u e₀ * u e₀ = u e₀
+    rw [← map_mul, he₀.eq]
+  have hkey : u e₀ * e₀ = e₀ := by
+    rcases hprim₀ _ hue₀ with h | h
+    · exfalso
+      have hmulc : Coalgebra.counit (R := 𝒪₃ᵥ) (u e₀ * e₀)
+          = Coalgebra.counit (R := 𝒪₃ᵥ) (u e₀) * Coalgebra.counit (R := 𝒪₃ᵥ) e₀ :=
+        map_mul (Bialgebra.counitAlgHom 𝒪₃ᵥ G) (u e₀) e₀
+      rw [h, hucounit, hε₀, mul_one, map_zero] at hmulc
+      exact zero_ne_one hmulc
+    · exact h
+  -- `1 ⊗ (r • x)` is the image of `1 ⊗ x` under multiplication by `r`
+  have htmul : (1 : Q) ⊗ₜ[R] (r • x) = La ((1 : Q) ⊗ₜ[R] x) := by
+    rw [hLa, TensorProduct.tmul_smul, IsScalarTower.algebraMap_smul]
+  rw [htmul]
+  have hFapp : g.symm (La ((1 : Q) ⊗ₜ[R] x)) = F (g.symm ((1 : Q) ⊗ₜ[R] x)) := by
+    rw [hFdef, hfs]
+  rw [hFapp, hu]
+  -- and `u e₀ · e₀ = e₀` turns the value at `u e₀` into the value at `e₀`
+  have hmulφ : (Additive.toMul (g.symm ((1 : Q) ⊗ₜ[R] x)))
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] (u e₀)) *
+      (Additive.toMul (g.symm ((1 : Q) ⊗ₜ[R] x))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀)
+      = (Additive.toMul (g.symm ((1 : Q) ⊗ₜ[R] x)))
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] (u e₀ * e₀)) := by
+    rw [← map_mul, Algebra.TensorProduct.tmul_mul_tmul, one_mul]
+  rw [hkey, hx, mul_one] at hmulφ
+  exact hmulφ
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -4567,6 +4786,16 @@ ANY RESIDUALLY NONZERO CONNECTED VECTOR GENERATES IT.**
 `connected_locus_smul_of_hopf_package` just above; together the two
 replace the single `sorry` that sat on
 `exists_connectedEtale_line_of_hopf_package` below.
+
+**STATUS OF THE SIBLING, 2026-08-01 (flt-lean-331): it is no longer a
+leaf.** `connected_locus_smul_of_hopf_package` was RECUT and is now
+PROVEN over `exists_algHom_of_galoisEquivariant_endomorphism` — Raynaud
+full faithfulness stated coefficient-free, with no `R`, no `V`, no `ρ`,
+no congruence level and no idempotent in it. So the finite-flat debt of
+this cluster is carried by THAT leaf and by this one; the count did not
+move. Whoever takes this leaf should read the new one, because the two
+want DIFFERENT halves of Raynaud (fullness there, the rank/classification
+half here) and can go to different owners.
 
 STATEMENT. With `M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` and `M⁰` its connected locus as
 in the leaf above: given `w₁ ∈ M⁰` which is residually NONZERO
@@ -5336,6 +5565,27 @@ leaves:
   `e = 1 < p − 1`: the connected locus is an `R`-SUBMODULE;
 * `connected_locus_le_line_of_hopf_package` — the rank half: it has rank
   at most one, and any residually nonzero connected vector generates it.
+
+**CORRECTION, 2026-08-01 (flt-lean-331): the first of those two is no
+longer a leaf, and the leaf it was RECUT into has a different name.**
+`connected_locus_smul_of_hopf_package` is now PROVEN over
+`exists_algHom_of_galoisEquivariant_endomorphism` (above it in this
+file), which is Raynaud's fullness in coefficient-free form: *a
+`Γ ℚ₃ᵥ`-equivariant additive endomorphism of the geometric points of a
+finite flat `𝒪₃ᵥ`-Hopf order with étale generic fibre is the pullback
+along an `𝒪₃ᵥ`-algebra endomorphism of the order that preserves the
+counit*. Count unchanged, `2 → 2`. What left the leaf is the whole
+coefficient side (the `R`-action commutes with Galois because the
+base-changed representation is `Q`-linear) TOGETHER WITH the step the
+classical account calls geometric — *a morphism of group schemes carries
+the connected component of the identity into itself* — which turns out
+to be three formal lines: `u e₀` is idempotent, minimality of `e₀`
+(`mul_eq_zero_or_mul_eq_of_minimal`) puts `u e₀ · e₀` in `{0, e₀}`, and
+the counit being an ALGEBRA map (`Bialgebra.counitAlgHom`) gives
+`ε (u e₀ · e₀) = 1 ≠ 0`, which kills the zero branch. So the debt of
+this cluster is now `exists_algHom_of_galoisEquivariant_endomorphism`
+plus `connected_locus_le_line_of_hopf_package`, and any queue entry
+naming `connected_locus_smul_of_hopf_package` as an open leaf is stale.
 
 LEDGER: one `sorry` here becomes two `sorry`s below, and roughly `840`
 lines of previously verified proof — including the whole generator
