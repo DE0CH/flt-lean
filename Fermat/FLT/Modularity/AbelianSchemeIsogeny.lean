@@ -99,17 +99,23 @@ warning set is still FIVE, and it is:
 * `exists_le_idealTensorComparison_eq_zero_of_isNoetherianFlatDescentSystem` — HALF A of
   Stacks 00R6.  Half B, `rTensor_map_maximalIdeal_injective_of_idealTensorComparison_eq_
   zero_of_isNoetherianFlatDescentSystem`, was closed 2026-07-30 and is sorry-free;
-* `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen` and
-  `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` — the 2026-07-31 CUT of
-  `exists_isAmpleSheaf_of_field` (PROJECTIVITY of an abelian variety), which is now
-  PROVEN over them.  The first is `𝒪(X ∖ U)` for an affine open `U` and needs Weil
-  divisors, `𝒪(D)` and nothing about the group law; the second is Mumford's
-  Application 1 and needs the theorem of the square and nothing about divisors;
+* `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen` — `𝒪(X ∖ U)` for an
+  affine open `U`; needs Weil divisors, `𝒪(D)` and nothing about the group law.  It is
+  one half of the 2026-07-31 CUT of `exists_isAmpleSheaf_of_field` (PROJECTIVITY of an
+  abelian variety), which is PROVEN over it and the next two;
+* `isAmpleSheaf_of_isAmpleSheaf_modPullback_fieldExtension` and
+  `isAmpleSheaf_of_nonvanishingLocus_eq_of_isAlgClosed` — the 2026-08-01 CUT of the OTHER
+  half, `isAmpleSheaf_of_nonvanishingLocus_eq_of_field`, which is now PROVEN over them.
+  The first is EGA IV 2.7.2 (ampleness may be checked after a field extension), pure
+  scheme theory with no group law and no divisors; the second is Mumford's Application 1
+  over an ALGEBRAICALLY CLOSED field, needing the theorem of the square and nothing about
+  divisors.  The `[IsAlgClosed K]` is what makes the second one cuttable at all — the
+  falsity audit that forbids cutting the general-`K` form does not instantiate it;
 * `nonempty_cubeIdentity` — THE THEOREM OF THE CUBE, cut 2026-07-31 out of
   `hasCubeIso_of_symm_of_normalized` (which is now PROVEN over it).  Needs the seesaw
   principle, hence coherent-sheaf cohomology and flat base change.
 
-The last three are the only mathlib-scale statements in the module, they are INDEPENDENT
+The last four are the only mathlib-scale statements in the module, they are INDEPENDENT
 of each other, and each is a theory build rather than a proof problem.  As always: this
 list is stamped to a commit and is stale the moment anything merges — regenerate it from a
 build rather than quoting it.
@@ -16340,8 +16346,28 @@ Read the FALSITY AUDIT on the second before cutting it further: the obvious next
 terms of `K`-automorphisms of `X` and the theorem of the square, is FALSE, and the witness
 is `y² + y = x³ + x + 1` over `𝔽₂`, which has exactly one rational point.
 
+**UPDATE 2026-08-01 — `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` is PROVEN too, and
+its content is CUT IN TWO along the seam its own docstring had already named.**  The
+audit just quoted is what forces the seam: the `𝔽₂` witness refutes the translation cut of
+the general-`K` statement and does NOT instantiate the algebraically closed one, so the
+two pieces are
+
+* `isAmpleSheaf_of_isAmpleSheaf_modPullback_fieldExtension` — EGA IV 2.7.2, ampleness may
+  be checked after a field extension.  No group law, no divisors, no abelian varieties;
+* `isAmpleSheaf_of_nonvanishingLocus_eq_of_isAlgClosed` — the same statement WITH
+  `[IsAlgClosed K]`, i.e. Mumford's Application 1 where the translation argument is valid.
+
+This is the ROUTE 9 move ("WLOG the base field is algebraically closed") that
+`isQuasiAffine_ker_mulByNat_of_isAlgClosed` below already makes for `ker[p]`, and it is a
+strengthening of the hypotheses rather than a restatement of the conclusion.  The count
+went `1 → 2`: this is DISCLOSURE, and what it buys is that the algebraically closed half
+is further cuttable — into the theorem of the square (derivable from
+`nonempty_cubeIdentity`, not a new citation) and an avoidance statement — where the
+general-`K` one was not.
+
 So the open leaves of this block are `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_
-isAffineOpen`, `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` and `nonempty_cubeIdentity`
+isAffineOpen`, `isAmpleSheaf_of_isAmpleSheaf_modPullback_fieldExtension`,
+`isAmpleSheaf_of_nonvanishingLocus_eq_of_isAlgClosed` and `nonempty_cubeIdentity`
 — pairwise independent, one theory build each. -/
 
 /-- **AN EFFECTIVE CARTIER DIVISOR CUTTING OUT THE COMPLEMENT OF A GIVEN AFFINE OPEN**
@@ -16394,17 +16420,181 @@ theorem exists_isInvertibleSheaf_nonvanishingLocus_eq_of_isAffineOpen {X : Schem
       nonvanishingLocus L s = (U : Set X) :=
   sorry
 
+/-- **AMPLENESS MAY BE CHECKED AFTER A FIELD EXTENSION** (sorry leaf, cut 2026-08-01 out of
+`isAmpleSheaf_of_nonvanishingLocus_eq_of_field` below) — EGA IV 2.7.2, the fpqc descent of
+(relative) ampleness, specialised to `S' = Spec K' ⟶ Spec K = S`.
+
+*If `L_{K'}` is ample on `X_{K'} = X ×_K K'`, then `L` is ample on `X`.*
+
+**NOTHING ABELIAN APPEARS.**  This is pure scheme theory: no group law, no divisors, no
+theorem of the cube.  It is one half of the 2026-08-01 cut of the leaf below, and the
+half that a mathlib-facing worker can take without reading a line of abelian-variety
+theory.  The other half is `isAmpleSheaf_of_nonvanishingLocus_eq_of_isAlgClosed`
+immediately below.
+
+**WHY THE CUT IS ALONG THIS SEAM, AND IT IS THE SEAM THE CONSUMER'S OWN DOCSTRING ASKS
+FOR.**  `exists_isAmpleSheaf_of_field`'s docstring says, in as many words: *"A prover who
+can only do the algebraically closed case should prove that first and then descend, not
+weaken this statement."*  This is that descent, and it is what makes the algebraically
+closed half attackable — see the CORRECTION on the next leaf's falsity audit, which is the
+whole reason the leaf below could not be cut further where it stood.
+
+**WHAT EGA IV 2.7.2 SAYS AND WHY THE SPECIALISATION IS THE RIGHT SHAPE.**  The general
+statement is that for a faithfully flat quasi-compact `S' ⟶ S` and a quasi-compact
+`X ⟶ S`, an invertible `L` on `X` is `S`-ample iff `L_{S'}` is `S'`-ample.  Here
+`S = Spec K`, `S' = Spec K'`, and `Spec K' ⟶ Spec K` is faithfully flat (a field extension
+is free, hence flat, and both spectra are one-point spaces so the map is surjective) and
+quasi-compact (both are affine).  Over an AFFINE base, relative ampleness and the absolute
+`IsAmpleSheaf` of `Modularity/AmpleSheaf.lean` — "every point lies in an AFFINE
+non-vanishing locus of a section of some positive power" — agree for a quasi-compact
+separated `X`, which is why `[CompactSpace X]` and `hsep` are asked for.  A prover who
+proves the general fpqc form should keep this specialisation as its corollary rather than
+rewire the call site.
+
+**EVERY HYPOTHESIS IS FREE AT THE CALL SITE.**  `hsep` and `[CompactSpace X]` both come out
+of `ab.proper` in one line each (`IsProper.isSeparated`,
+`QuasiCompact.compactSpace_of_compactSpace`), and `hL` is what the consumer is already
+carrying.  They are asked for because EGA asks for them, not because a route was found that
+needs them; a prover who finds one of them unused should say so rather than delete it.
+
+**FAITHFULNESS.**  The statement runs in the DESCENT direction only, which is the hard one;
+the ascent `L` ample `⟹ L_{K'}` ample is not asserted here and is not needed.  Degenerate
+cases are honest rather than vacuous: at `X = ∅` both sides hold, and at `X = Spec K` with
+`L = 𝒪` both sides hold.  There is no choice of `K'` that makes the hypothesis vacuous —
+`K' = K` makes it the conclusion, which is consistent (the base change is then an
+isomorphism), and any larger `K'` makes it strictly stronger-looking and equivalent by
+2.7.2.
+
+**VERIFIED 2026-08-01** that this statement plus the next one assemble to the leaf below:
+the assembly is written out there and compiles, so the two hypotheses this leaf receives
+from the consumer are exactly the ones produced. -/
+theorem isAmpleSheaf_of_isAmpleSheaf_modPullback_fieldExtension {X : Scheme.{u}}
+    {K : Type u} [Field K] (fK : X ⟶ Spec (CommRingCat.of K)) [CompactSpace X]
+    (hsep : IsSeparated fK) (K' : Type u) [Field K'] [Algebra K K']
+    {L : X.Modules} (hL : IsInvertibleSheaf L)
+    (h : IsAmpleSheaf (modPullback
+      (pullback.fst fK (Spec.map (CommRingCat.ofHom (algebraMap K K')))) L)) :
+    IsAmpleSheaf L :=
+  sorry
+
 /-- **AN INVERTIBLE SHEAF WITH A SECTION WHOSE NON-VANISHING LOCUS IS A NONEMPTY AFFINE
-OPEN IS AMPLE, ON AN ABELIAN VARIETY** (sorry leaf, cut 2026-07-31 out of
+OPEN IS AMPLE, ON AN ABELIAN VARIETY OVER AN ALGEBRAICALLY CLOSED FIELD** (sorry leaf, cut
+2026-08-01 out of `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` below) — Mumford
+*Abelian Varieties* §6, Application 1.
+
+*If `X ∖ D` is affine and nonempty for the effective divisor `D` cut out by `s`, then
+`L` is ample.*
+
+This is the abelian-variety half of the 2026-08-01 cut, and it is where the THEOREM OF THE
+SQUARE is spent.  It knows nothing about how `L` was produced: divisors do not occur in its
+statement, only a sheaf, a section, and the affineness of the section's non-vanishing
+locus.  The other half — the descent that removes `[IsAlgClosed K]` — is
+`isAmpleSheaf_of_isAmpleSheaf_modPullback_fieldExtension` immediately above.
+
+**THE CLASSICAL PROOF, and over an algebraically closed field it is the whole proof.**  For
+a closed point `a` — which over `K = K̄` is a `K`-RATIONAL point, and this is the only place
+`IsAlgClosed` is spent — the theorem of the square (a formal consequence of the theorem of
+the cube, `nonempty_cubeIdentity` below, at `x = a`, `y = -a`, `z` the tautological point)
+gives `t_a^* L ⊗ t_{-a}^* L ≅ L^{⊗2}`.  The pulled-back sections `t_a^* s`, `t_{-a}^* s`
+have non-vanishing loci `t_a⁻¹(U)`, `t_{-a}⁻¹(U)` (this is `nonvanishingLocus_modPullback`,
+PROVEN in `AmpleSheaf.lean`), each affine because a translation is an isomorphism; their
+tensor is a section of `L^{⊗2}` whose locus is the INTERSECTION
+(`nonvanishingLocus_tensorSection` below), affine because `X` is separated over the affine
+`Spec K` (`IsAffineOpen.inf`, exactly as in `isAmpleSheaf_modTensor` below).  Given `z`, the
+set of `a` with `z ∈ D + a` is a proper closed subset, so over an algebraically closed field
+— where the rational points are Zariski dense — one may choose `a` avoiding it and its
+negative.
+
+**FALSITY AUDIT, INHERITED FROM THE PARENT AND CORRECTED FOR THIS STATEMENT.**  The parent
+`isAmpleSheaf_of_nonvanishingLocus_eq_of_field` carried, correctly, a refutation of the
+obvious further cut
+
+> for every `z : X` there are `K`-automorphisms `f₁, …, f_k` of `X` with
+> `z ∈ ⋂ᵢ fᵢ⁻¹(U)` and `Nonempty (⨂ᵢ fᵢ^* L ≅ L^{⊗k})`,
+
+by the finite witness `E : y² + y = x³ + x + 1` over `K = 𝔽₂`: `E` is nonsingular
+(`b₂ = 0`, `b₄ = 2`, `b₆ = 1`, `b₈ = -1`, so `Δ = -91`, odd) and `E(𝔽₂) = {O}`, because over
+`𝔽₂` the left side `y² + y` is `0` for both `y` while the right side `x³ + x + 1` is `1` for
+both `x`.  With `U = E ∖ {O}` and `L = 𝒪((O))`, every `K`-automorphism `f` of the SCHEME `E`
+sends the unique `K`-point `O` to a `K`-point, hence fixes `O`, hence satisfies
+`f ⁻¹ᵁ U = U` — so no tensor of pullbacks of `s` along automorphisms has `z = O` in its
+non-vanishing locus.
+
+**THAT WITNESS DOES NOT INSTANTIATE THIS LEAF, AND THAT IS THE POINT OF THE CUT.**  `𝔽₂` is
+not algebraically closed, and the refutation spends exactly that: it needs a field over
+which `X` has too few RATIONAL points, while over `K = K̄` the rational points ARE the closed
+points and they are Zariski dense.  So the cut the parent forecloses is available HERE, and
+a successor should take it — see the queued follow-on, whose two halves are the theorem of
+the square (derivable from `nonempty_cubeIdentity` below, NOT a new citation) and the
+avoidance statement "for every `z` some rational `a` has `z ∈ t_a⁻¹(U) ∩ t_{-a}⁻¹(U)"`.
+This is CLAUDE.md's standing rule that a counterexample licenses exactly one claim: it
+refutes the cut of the PARENT, and it says nothing about the cut of this leaf.  Re-run it
+before believing this paragraph: instantiate the witness and check `IsAlgClosed 𝔽₂`, which
+fails.
+
+**`hUne` IS LOAD-BEARING HERE, unlike on the sibling divisor leaf.**  Drop it and the
+statement is FALSE: take `s = 0`, whose non-vanishing locus is `∅`, an affine open; the
+conclusion would then say that `𝒪_X` is ample on `X`, i.e. (with `X` proper) that `X` is
+affine, which fails for every abelian variety of positive dimension.  It is the divisor
+being EFFECTIVE AND NONEMPTY-COMPLEMENT that carries the ampleness.
+
+**`[IsAlgClosed K]` IS LOAD-BEARING FOR THE ROUTE AND NOT FOR THE TRUTH.**  The statement
+without it is the parent, which is TRUE (it is the parent) — so this is a strengthening of
+the hypotheses in the sense of CLAUDE.md's ROUTE 9, "WLOG the base field is algebraically
+closed", the same move `isQuasiAffine_ker_mulByNat_of_isAlgClosed` below already makes for
+`ker[p]`, and the descent that pays for it is the leaf above.  Nothing here is weaker than
+the parent in any way a consumer can see: the parent is PROVEN over the two, below. -/
+theorem isAmpleSheaf_of_nonvanishingLocus_eq_of_isAlgClosed {X : Scheme.{u}} (K : Type u)
+    [Field K] [IsAlgClosed K] {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK)
+    {L : X.Modules} (hL : IsInvertibleSheaf L) (s : Γ(L, ⊤))
+    (U : X.Opens) (hU : IsAffineOpen U) (hUne : (U : Set X).Nonempty)
+    (hloc : nonvanishingLocus L s = (U : Set X)) :
+    IsAmpleSheaf L :=
+  sorry
+
+/-- **AN INVERTIBLE SHEAF WITH A SECTION WHOSE NON-VANISHING LOCUS IS A NONEMPTY AFFINE
+OPEN IS AMPLE, ON AN ABELIAN VARIETY** (**PROVEN 2026-08-01** over the two leaves
+immediately above, which are its 2026-08-01 CUT; itself cut 2026-07-31 out of
 `exists_isAmpleSheaf_of_field` below) — Mumford *Abelian Varieties* §6, Application 1.
 
 *If `X ∖ D` is affine and nonempty for the effective divisor `D` cut out by `s`, then
 `L` is ample.*
 
-This is the abelian-variety half of the cut, and it is where the THEOREM OF THE SQUARE
-is spent.  It knows nothing about how `L` was produced: divisors do not occur in its
+This is the abelian-variety half of the 2026-07-31 cut, and it is where the THEOREM OF THE
+SQUARE is spent.  It knows nothing about how `L` was produced: divisors do not occur in its
 statement, only a sheaf, a section, and the affineness of the section's non-vanishing
 locus.
+
+**THE 2026-08-01 CUT, AND THE HONEST ACCOUNTING: THE FRONTIER WENT `1 → 2`.**  This
+declaration is no longer a leaf; it is now PROVEN over
+
+* `isAmpleSheaf_of_isAmpleSheaf_modPullback_fieldExtension` — EGA IV 2.7.2, that ampleness
+  may be checked after a field extension.  Pure scheme theory, no group law, no divisors;
+* `isAmpleSheaf_of_nonvanishingLocus_eq_of_isAlgClosed` — this very statement with
+  `[IsAlgClosed K]` added.  Mumford §6 Application 1, no descent.
+
+That is a DISCLOSURE, not a reduction: one leaf became two, and no mathematics was removed.
+What it buys is the thing the falsity audit below makes impossible where this statement
+stands — **the algebraically closed half CAN be cut further, and this one cannot.**  The
+`𝔽₂` witness below refutes the translation cut of THIS statement and does not instantiate
+the algebraically closed one, so a successor there may hand out the theorem of the square
+and the avoidance statement as separate leaves.  Judge the trade by that, not by the count.
+The other thing it buys is that the descent half is stated in mathlib's vocabulary and can
+be taken by somebody who has never read an abelian-variety argument.
+
+Do NOT read this as "the algebraically closed case is the easy case".  Both halves are
+theory builds; they are simply INDEPENDENT theory builds, and neither owes anything to the
+other.
+
+**THE ASSEMBLY, and every step of it is in the proof below.**  Base change along
+`g : Spec K̄ ⟶ Spec K`; `AbelianSchemeStruct.baseChange g` transports the group law;
+`isInvertibleSheaf_modPullback` and `modPullbackSection` transport `L` and `s`;
+`IsAffineOpen.preimage` transports `U` (the projection `π` is affine, being a base change of
+the affine `g`); `Scheme.Hom.surjective` transports `hUne` (`π` is surjective, being a base
+change of the surjective `g`); and `nonvanishingLocus_modPullback` — PROVEN in
+`AmpleSheaf.lean` — is exactly the statement that the non-vanishing locus of the transported
+section is the preimage of the transported one, which is what makes `hloc` survive.  No
+sheaf is descended anywhere; only the PROPERTY `IsAmpleSheaf` is, and that is the leaf.
 
 **THE CLASSICAL PROOF, over an algebraically closed field.**  For a closed point `a`,
 the theorem of the square (a formal consequence of the theorem of the cube —
@@ -16454,12 +16644,16 @@ Kolyvagin.  That witness rests on an untrusted searcher and a hard theorem; the 
 above rests on four lines of arithmetic and is the one to quote.
 
 **WHAT THE CORRECT FIELD-INDEPENDENT ROUTE IS, since the audit forecloses the cheap
-one.**  Two options, and both need machinery that is absent at this pin:
+one.**  Two options, and both need machinery that is absent at this pin.  **THE FIRST WAS
+TAKEN ON 2026-08-01** and is the cut recorded above; the second is recorded because it is
+the alternative a prover of the descent leaf may prefer, and because its `𝔽₂` instance is
+the concrete picture of why the audit's witness is not a counterexample to the mathematics:
 
 * base change to `K̄`, where closed points ARE Zariski dense, run the translation
   argument there, and DESCEND ampleness along `K → K̄` (faithfully flat descent of
   ampleness — note that it is `L` itself, produced over `K` by the sibling leaf, that is
-  base-changed, so no sheaf has to be descended, only the property);
+  base-changed, so no sheaf has to be descended, only the property).  **TAKEN**: the two
+  halves are the two leaves above;
 * stay over `K`: translate by a `κ`-point on `X_κ` for `κ/K` finite, then push the
   resulting section down by the NORM along the finite flat `X_κ → X`, and use
   Chevalley's theorem (a Noetherian scheme admitting a finite surjective morphism from
@@ -16471,14 +16665,38 @@ one.**  Two options, and both need machinery that is absent at this pin:
 is FALSE: take `s = 0`, whose non-vanishing locus is `∅`, an affine open; the conclusion
 would then say that `𝒪_X` is ample on `X`, i.e. (with `X` proper) that `X` is affine,
 which fails for every abelian variety of positive dimension.  It is the divisor being
-EFFECTIVE AND NONEMPTY-COMPLEMENT that carries the ampleness. -/
+EFFECTIVE AND NONEMPTY-COMPLEMENT that carries the ampleness.  The note transfers verbatim
+to the algebraically closed leaf above, where it is restated. -/
 theorem isAmpleSheaf_of_nonvanishingLocus_eq_of_field {X : Scheme.{u}} (K : Type u) [Field K]
     {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK)
     {L : X.Modules} (hL : IsInvertibleSheaf L) (s : Γ(L, ⊤))
     (U : X.Opens) (hU : IsAffineOpen U) (hUne : (U : Set X).Nonempty)
     (hloc : nonvanishingLocus L s = (U : Set X)) :
-    IsAmpleSheaf L :=
-  sorry
+    IsAmpleSheaf L := by
+  -- `X` is quasi-compact and separated over `Spec K`: both from `ab.proper`.
+  haveI : IsProper fK := ab.proper
+  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace fK
+  -- the algebraic closure, and the projection `π : X_{K̄} ⟶ X`
+  set g : Spec (CommRingCat.of (AlgebraicClosure K)) ⟶ Spec (CommRingCat.of K) :=
+    Spec.map (CommRingCat.ofHom (algebraMap K (AlgebraicClosure K))) with hg
+  set π : (pullback fK g : Scheme.{u}) ⟶ X := pullback.fst fK g with hπ
+  -- it is enough to be ample after base change to `K̄`
+  refine isAmpleSheaf_of_isAmpleSheaf_modPullback_fieldExtension fK inferInstance
+    (AlgebraicClosure K) hL ?_
+  -- `π` is AFFINE (base change of the affine `g`), so `π ⁻¹ᵁ U` is again affine
+  haveI hAffg : IsAffineHom g := by rw [hg]; infer_instance
+  haveI hAff : IsAffineHom π := MorphismProperty.pullback_fst _ _ hAffg
+  -- `π` is SURJECTIVE (base change of the surjective `g`), so `π ⁻¹ᵁ U` is again nonempty
+  have hne : ((π ⁻¹ᵁ U : (pullback fK g : Scheme.{u}).Opens) :
+      Set (pullback fK g : Scheme.{u})).Nonempty := by
+    obtain ⟨x, hx⟩ := hUne
+    obtain ⟨y, hy⟩ := Scheme.Hom.surjective π x
+    exact ⟨y, by show π.base y ∈ U; rw [hy]; exact hx⟩
+  -- and `nonvanishingLocus_modPullback` is exactly what makes `hloc` survive the transport
+  exact isAmpleSheaf_of_nonvanishingLocus_eq_of_isAlgClosed (AlgebraicClosure K)
+    (ab.baseChange g) (isInvertibleSheaf_modPullback π hL) (modPullbackSection π L s)
+    (π ⁻¹ᵁ U) (hU.preimage π) hne
+    (by rw [nonvanishingLocus_modPullback π hL s, hloc]; rfl)
 
 /-- **AN ABELIAN VARIETY OVER A FIELD IS PROJECTIVE** (**PROVEN 2026-07-31** over the two
 leaves immediately above, which are its 2026-07-31 CUT; cut 2026-07-30 out of
@@ -16496,6 +16714,10 @@ independent things at once, and they are now separated:
   proper variety;
 * `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` — MUMFORD'S APPLICATION 1, that such
   an `L` is ample.  Needs no divisors, only the group law and the theorem of the square.
+  **It is no longer a leaf either**: on 2026-08-01 it was cut in two, into EGA IV 2.7.2
+  (`isAmpleSheaf_of_isAmpleSheaf_modPullback_fieldExtension`) and Application 1 over an
+  algebraically closed field (`isAmpleSheaf_of_nonvanishingLocus_eq_of_isAlgClosed`), and
+  is PROVEN over them.  Its call site here did not move.
 
 What is left here, and is proven: `X` is NONEMPTY — the zero section `ab.zero` is a
 `K`-point and `Spec K` has a point, which is the only use of the group structure in this
