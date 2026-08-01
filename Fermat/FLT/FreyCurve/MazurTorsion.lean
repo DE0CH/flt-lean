@@ -20280,8 +20280,308 @@ evaluation. -/
 -- to X0's, and the sign discussion the third one carried is reproduced on
 -- `cuspPeriod_ne_zero_atkinLehnerMinus_oneTwentyFive` below.
 
+/-! ##### The head/tail cut of the `125` numerics (2026-08-01)
+
+Everything from here to `norm_tsum_tail_le_oneTwentyFive` is the level-`125`
+transposition of the block `oneSixtyNineWeight` … `norm_tsum_tail_le_oneSixtyNine`
+in `ModularCurve/X0.lean`, and it discharges the ANALYTIC half of the numerics
+that `tsum_coeff_ne_zero_atkinLehnerMinus_oneTwentyFive` used to carry.  After
+it, the only arithmetic input left at level `125` is a lower bound on a sum of
+TWELVE explicit complex numbers.
+
+**The one place `125` is genuinely harder than `169`: `√125` is irrational.**
+At `169` the sibling opens with `sqrt_oneSixtyNine : Real.sqrt 169 = 13`, and
+every later constant is exact rational arithmetic.  Here no such identity is
+available, so each numeric step is run through the two-sided enclosure
+`Real.sqrt 125 < 11.181` (`sqrt_oneTwentyFive_lt`) together with
+`Real.pi_gt_d6`.  That is the only structural difference; the shape of the
+argument, and the order of the declarations, is the sibling's. -/
+
+/-- `√125 > 0` (PROVEN). -/
+theorem Fermat.sqrt_oneTwentyFive_pos : (0 : ℝ) < Real.sqrt 125 :=
+  Real.sqrt_pos.mpr (by norm_num)
+
+/-- `√125 < 11.181` (PROVEN), from `11.181² = 125.014761 > 125`.  The true value
+is `11.1803398…`, so this is loose by `6 · 10⁻⁴`.  This is the enclosure that
+replaces the sibling's exact `√169 = 13`. -/
+theorem Fermat.sqrt_oneTwentyFive_lt : Real.sqrt 125 < 11181 / 1000 := by
+  rw [show (11181 : ℝ) / 1000 = Real.sqrt ((11181 / 1000) ^ 2) from
+    (Real.sqrt_sq (by norm_num)).symm]
+  exact Real.sqrt_lt_sqrt (by norm_num) (by norm_num)
+
+/-- `2π/√125 ≥ 0.5619` (PROVEN), from `π > 3.141592` and `√125 < 11.181`.  The
+true value is `0.56198517…`. -/
+theorem Fermat.twoPi_div_sqrt_oneTwentyFive_ge :
+    (5619 : ℝ) / 10000 ≤ 2 * Real.pi / Real.sqrt 125 := by
+  have hs := Fermat.sqrt_oneTwentyFive_lt
+  have hsp := Fermat.sqrt_oneTwentyFive_pos
+  have hpi : (3.141592 : ℝ) < Real.pi := Real.pi_gt_d6
+  rw [le_div_iff₀ hsp]
+  nlinarith [hs, hsp, hpi]
+
+/-- `r = e^{-2π/√125} ≤ 13/20` (PROVEN), from `x + 1 ≤ eˣ` alone — the same
+one-term route the sibling's `exp_neg_twoPi_div_thirteen_le` takes.  The true
+value is `0.5700766…`, and `x + 1 ≤ eˣ` alone gives `0.6402…`, so the recorded
+`0.65` is loose on both counts; nothing below is sensitive to it. -/
+theorem Fermat.exp_neg_twoPi_div_sqrt_oneTwentyFive_le :
+    Real.exp (-(2 * Real.pi / Real.sqrt 125)) ≤ 13 / 20 := by
+  rw [Real.exp_neg]
+  have h1 : 2 * Real.pi / Real.sqrt 125 + 1 ≤ Real.exp (2 * Real.pi / Real.sqrt 125) :=
+    Real.add_one_le_exp _
+  have h2 := Fermat.twoPi_div_sqrt_oneTwentyFive_ge
+  have hx : (15619 : ℝ) / 10000 ≤ Real.exp (2 * Real.pi / Real.sqrt 125) := by linarith
+  have hpos : (0 : ℝ) < Real.exp (2 * Real.pi / Real.sqrt 125) := Real.exp_pos _
+  have hinv : (Real.exp (2 * Real.pi / Real.sqrt 125))⁻¹
+      * Real.exp (2 * Real.pi / Real.sqrt 125) = 1 := inv_mul_cancel₀ hpos.ne'
+  have hinvpos : (0 : ℝ) < (Real.exp (2 * Real.pi / Real.sqrt 125))⁻¹ := inv_pos.mpr hpos
+  nlinarith [hx, hinv, hinvpos]
+
+/-- `√125/π ≤ 89/25` (PROVEN).  The true value is `3.558835…`; this is the
+level-`125` analogue of the sibling's exact `13/π ≤ 13/3`. -/
+theorem Fermat.sqrt_oneTwentyFive_div_pi_le : Real.sqrt 125 / Real.pi ≤ 89 / 25 := by
+  have hs := Fermat.sqrt_oneTwentyFive_lt
+  have hpi : (3.141592 : ℝ) < Real.pi := Real.pi_gt_d6
+  have hpip : (0 : ℝ) < Real.pi := Real.pi_pos
+  rw [div_le_iff₀ hpip]
+  nlinarith [hs, hpi]
+
+/-- The `n`-th weight of the level-`125` sum, i.e. the real factor multiplying
+`aₙ₊₁` in `tsum_coeff_ne_zero_atkinLehnerMinus_oneTwentyFive`.  Definitionally
+equal to the expression appearing there, so the two are interchangeable by
+`rfl`; this is the analogue of `oneSixtyNineWeight`. -/
+noncomputable def Fermat.oneTwentyFiveWeight (n : ℕ) : ℝ :=
+  Real.exp (-(2 * Real.pi / Real.sqrt 125 * ((n : ℝ) + 1)))
+    / (2 * Real.pi / Real.sqrt 125 * ((n : ℝ) + 1))
+
+/-- The weight is positive (PROVEN). -/
+theorem Fermat.oneTwentyFiveWeight_pos (n : ℕ) : 0 < Fermat.oneTwentyFiveWeight n := by
+  have hd : (0 : ℝ) < 2 * Real.pi / Real.sqrt 125 * ((n : ℝ) + 1) := by
+    have := Fermat.sqrt_oneTwentyFive_pos
+    have := Real.pi_pos
+    positivity
+  rw [Fermat.oneTwentyFiveWeight]
+  positivity
+
+/-- **THE CANCELLATION THAT MAKES THE TAIL GEOMETRIC** (PROVEN):
+`2(n+1) · w_n = (√125/π) · r^{n+1}` with `r = e^{-2π/√125}`.
+
+Exactly as at `169`: the `n` of the Deligne bound `‖aₙ‖ ≤ 2n` and the `1/n` of
+the weight cancel, leaving a pure geometric majorant with no `n`-dependent
+factor.  The constant `2/c = √N/π` is the only thing that changes with the
+level. -/
+theorem Fermat.two_mul_succ_mul_oneTwentyFiveWeight (n : ℕ) :
+    2 * ((n : ℝ) + 1) * Fermat.oneTwentyFiveWeight n
+      = Real.sqrt 125 / Real.pi * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ (n + 1) := by
+  have hpi : (0 : ℝ) < Real.pi := Real.pi_pos
+  have hs : (0 : ℝ) < Real.sqrt 125 := Fermat.sqrt_oneTwentyFive_pos
+  have hn : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  have hexp : Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ (n + 1)
+      = Real.exp (-(2 * Real.pi / Real.sqrt 125 * ((n : ℝ) + 1))) := by
+    rw [← Real.exp_nat_mul]
+    congr 1
+    push_cast
+    ring
+  rw [Fermat.oneTwentyFiveWeight, hexp]
+  field_simp
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **THE `n`-TH TERM IS DOMINATED BY A GEOMETRIC TERM** (PROVEN), for ANY
+weight-two eigenform of level `125` — no Atkin–Lehner hypothesis, no certified
+basis. -/
+theorem Fermat.norm_coeff_mul_oneTwentyFiveWeight_le {f : CuspForm (Gamma0GL 125) 2}
+    {a : ℕ → ℂ} (hf : IsWeightTwoEigenform 125 f a) (n : ℕ) :
+    ‖a (n + 1) * ((Fermat.oneTwentyFiveWeight n : ℝ) : ℂ)‖
+      ≤ Real.sqrt 125 / Real.pi * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ (n + 1) := by
+  have hw := Fermat.oneTwentyFiveWeight_pos n
+  have hb : ‖a (n + 1)‖ ≤ 2 * ((n : ℝ) + 1) := by
+    have h := norm_coeff_le_two_mul_self (M := 125) (by norm_num) hf (n + 1)
+    push_cast at h
+    linarith
+  rw [norm_mul, Complex.norm_real, Real.norm_of_nonneg hw.le,
+    ← Fermat.two_mul_succ_mul_oneTwentyFiveWeight]
+  exact mul_le_mul_of_nonneg_right hb hw.le
+
+/-- `r = e^{-2π/√125} < 1` (PROVEN). -/
+theorem Fermat.exp_neg_twoPi_div_sqrt_oneTwentyFive_lt_one :
+    Real.exp (-(2 * Real.pi / Real.sqrt 125)) < 1 := by
+  refine Real.exp_lt_one_iff.mpr (neg_lt_zero.mpr ?_)
+  have := Fermat.sqrt_oneTwentyFive_pos
+  have := Real.pi_pos
+  positivity
+
+/-- The geometric series in `r = e^{-2π/√125}` converges (PROVEN). -/
+theorem Fermat.summable_exp_neg_twoPi_div_sqrt_oneTwentyFive_pow :
+    Summable fun n : ℕ => Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ n :=
+  summable_geometric_of_lt_one (Real.exp_pos _).le
+    Fermat.exp_neg_twoPi_div_sqrt_oneTwentyFive_lt_one
+
+/-- Re-indexing the majorant past the twelfth term (PROVEN). -/
+theorem Fermat.oneTwentyFiveMajorant_shift (n : ℕ) :
+    Real.sqrt 125 / Real.pi * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ 13
+        * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ n
+      = Real.sqrt 125 / Real.pi
+          * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ (n + 12 + 1) := by
+  rw [show n + 12 + 1 = 13 + n by omega, pow_add]
+  ring
+
+/-- The shifted majorant is summable (PROVEN). -/
+theorem Fermat.summable_oneTwentyFiveMajorant_tail :
+    Summable fun n : ℕ => Real.sqrt 125 / Real.pi
+      * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ (n + 12 + 1) :=
+  (Fermat.summable_exp_neg_twoPi_div_sqrt_oneTwentyFive_pow.mul_left _).congr
+    Fermat.oneTwentyFiveMajorant_shift
+
+/-- The shifted majorant sums to `(√125/π) r¹³/(1 − r)` (PROVEN). -/
+theorem Fermat.tsum_oneTwentyFiveMajorant_tail :
+    (∑' n : ℕ, Real.sqrt 125 / Real.pi
+        * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ (n + 12 + 1))
+      = Real.sqrt 125 / Real.pi * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ 13
+          * (1 - Real.exp (-(2 * Real.pi / Real.sqrt 125)))⁻¹ := by
+  rw [← tsum_congr Fermat.oneTwentyFiveMajorant_shift, tsum_mul_left,
+    tsum_geometric_of_lt_one (Real.exp_pos _).le
+      Fermat.exp_neg_twoPi_div_sqrt_oneTwentyFive_lt_one]
+
+/-- **THE MAJORANT TAIL IS AT MOST `1/10`** (PROVEN): `√125/π ≤ 89/25`,
+`r¹³ ≤ 37/10⁴` and `(1 − r)⁻¹ ≤ 20/7` multiply to `0.0376`.
+
+Feeding the crude `r ≤ 13/20` through gives `0.0376`; the true value of
+`(√125/π) r¹³/(1 − r)` is `0.005560`, and the true DELIGNE tail — with `d(n)√n`
+in place of the cruder `2n` — is smaller again.  So the recorded `1/10` is loose
+by a factor of `2.7` even along this deliberately crude chain, and by a factor
+of `18` against the truth.  The level-`125` tail is FASTER than the `169` one
+(`r = 0.5701` against `0.6167`, since `√125 < √169`), which is why the same
+twelve-term cut leaves more room here than there. -/
+theorem Fermat.oneTwentyFiveMajorant_tail_le_tenth :
+    Real.sqrt 125 / Real.pi * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ 13
+        * (1 - Real.exp (-(2 * Real.pi / Real.sqrt 125)))⁻¹ ≤ 1 / 10 := by
+  have hA := Fermat.sqrt_oneTwentyFive_div_pi_le
+  have hrle := Fermat.exp_neg_twoPi_div_sqrt_oneTwentyFive_le
+  have hr0 : (0 : ℝ) ≤ Real.exp (-(2 * Real.pi / Real.sqrt 125)) := (Real.exp_pos _).le
+  have hB : Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ 13 ≤ 37 / 10000 := by
+    calc Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ 13 ≤ (13 / 20 : ℝ) ^ 13 :=
+          pow_le_pow_left₀ hr0 hrle 13
+      _ ≤ 37 / 10000 := by norm_num
+  have hB0 : (0 : ℝ) ≤ Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ 13 := by positivity
+  have hsub : (7 : ℝ) / 20 ≤ 1 - Real.exp (-(2 * Real.pi / Real.sqrt 125)) := by linarith
+  have hsubpos : (0 : ℝ) < 1 - Real.exp (-(2 * Real.pi / Real.sqrt 125)) := by linarith
+  have hinv : (1 - Real.exp (-(2 * Real.pi / Real.sqrt 125)))⁻¹
+      * (1 - Real.exp (-(2 * Real.pi / Real.sqrt 125))) = 1 := inv_mul_cancel₀ hsubpos.ne'
+  have hinvpos : (0 : ℝ) < (1 - Real.exp (-(2 * Real.pi / Real.sqrt 125)))⁻¹ :=
+    inv_pos.mpr hsubpos
+  have hC : (1 - Real.exp (-(2 * Real.pi / Real.sqrt 125)))⁻¹ ≤ 20 / 7 := by
+    nlinarith [hsub, hinv, hinvpos]
+  calc Real.sqrt 125 / Real.pi * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ 13
+        * (1 - Real.exp (-(2 * Real.pi / Real.sqrt 125)))⁻¹
+      ≤ 89 / 25 * (37 / 10000) * (20 / 7) :=
+        mul_le_mul (mul_le_mul hA hB hB0 (by norm_num)) hC hinvpos.le (by norm_num)
+    _ ≤ 1 / 10 := by norm_num
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **THE TAIL OF THE `125` SUM PAST `n = 12` IS AT MOST `1/10`** (PROVEN
+2026-08-01), for EVERY weight-two eigenform of level `125` — no Atkin–Lehner
+hypothesis, no certified basis, no arithmetic input at all.
+
+This is the half of `tsum_coeff_ne_zero_atkinLehnerMinus_oneTwentyFive` that the
+old single-`sorry` shape was hiding behind the arithmetic half, and it is the
+exact analogue of `norm_tsum_tail_le_oneSixtyNine` in `ModularCurve/X0.lean`.
+The estimate is `‖aₙ‖ ≤ 2n` (`norm_coeff_le_two_mul_self`, level-generic)
+against a weight carrying `1/n`; the two `n`'s cancel
+(`two_mul_succ_mul_oneTwentyFiveWeight`), and what is left is a geometric series
+that `oneTwentyFiveMajorant_tail_le_tenth` bounds. -/
+theorem Fermat.norm_tsum_tail_le_oneTwentyFive {f : CuspForm (Gamma0GL 125) 2} {a : ℕ → ℂ}
+    (hf : IsWeightTwoEigenform 125 f a) :
+    ‖∑' n : ℕ, a (n + 12 + 1)
+        * ((Fermat.oneTwentyFiveWeight (n + 12) : ℝ) : ℂ)‖ ≤ 1 / 10 := by
+  have hbd : ∀ n : ℕ, ‖a (n + 12 + 1) * ((Fermat.oneTwentyFiveWeight (n + 12) : ℝ) : ℂ)‖
+      ≤ Real.sqrt 125 / Real.pi
+          * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ (n + 12 + 1) := fun n =>
+    Fermat.norm_coeff_mul_oneTwentyFiveWeight_le hf (n + 12)
+  have hsum : Summable fun n : ℕ =>
+      ‖a (n + 12 + 1) * ((Fermat.oneTwentyFiveWeight (n + 12) : ℝ) : ℂ)‖ :=
+    Summable.of_nonneg_of_le (fun _ => norm_nonneg _) hbd
+      Fermat.summable_oneTwentyFiveMajorant_tail
+  calc ‖∑' n : ℕ, a (n + 12 + 1) * ((Fermat.oneTwentyFiveWeight (n + 12) : ℝ) : ℂ)‖
+      ≤ ∑' n : ℕ, ‖a (n + 12 + 1) * ((Fermat.oneTwentyFiveWeight (n + 12) : ℝ) : ℂ)‖ :=
+        norm_tsum_le_tsum_norm hsum
+    _ ≤ ∑' n : ℕ, Real.sqrt 125 / Real.pi
+          * Real.exp (-(2 * Real.pi / Real.sqrt 125)) ^ (n + 12 + 1) :=
+        hsum.tsum_le_tsum hbd Fermat.summable_oneTwentyFiveMajorant_tail
+    _ = _ := Fermat.tsum_oneTwentyFiveMajorant_tail
+    _ ≤ 1 / 10 := Fermat.oneTwentyFiveMajorant_tail_le_tenth
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **THE `125` HEAD SUM IS BOUNDED BELOW ON THE ATKIN–LEHNER-MINUS
+EIGENSPACE** (sorry leaf, 2026-08-01) — the certified-basis gate of the
+level-`125` numerics, and after the head/tail cut the only thing at `125` that a
+certified basis is needed for.
+
+`∑_{m=1}^{12} a_m · (√125/(2πm)) e^{-2πm/√125}` is a sum of TWELVE terms.
+Everything past `m = 12` is `norm_tsum_tail_le_oneTwentyFive`, which needs no
+arithmetic input; `3/8 − 1/10 > 0` is the whole of the consumer's proof.
+
+## What a certified basis has to provide, exactly
+
+`S₂(Γ₀(125))` is `8`-dimensional and entirely NEW — the "no oldforms" half is
+`not_isWeightTwoEigenform_of_properDivisor_oneTwentyFive`, already PROVEN above
+(`X₀(1)`, `X₀(5)` and `X₀(25)` all have genus `0`).  The eight normalized
+eigenforms fall into three Galois orbits, of dimensions `2, 2, 4`, with
+`w₁₂₅`-eigenvalues `−1, +1, −1`, so the MINUS eigenspace carries exactly SIX
+normalized eigenforms.  Over their real embeddings the twelve-term head sum
+takes the values
+
+    1.05447086…   1.56436515…      (orbit 1)
+    1.63047436…   0.61366393…   1.73450102…   0.43964936…      (orbit 3)
+
+whose minimum exceeds the recorded `3/8` by `17%`.  Both constants therefore
+have room: `3/8` by `17%` and the companion `1/10` by a factor of `2.7`.
+
+Note `a₅ = 0` at every embedding, since `5² ∣ 125`; so of the twelve
+coefficients only `a₁ = 1` and the ten with `m ∈ {2,3,4,6,7,8,9,10,11,12}` carry
+information.
+
+## FALSITY AUDIT (2026-08-01)
+
+TRUE.  Recomputed from scratch in PARI/GP 2.17.4 (`mfinit([125,2],0)`,
+`mfeigenbasis`, `mfatkineigenvalues`, `mfembed`): `mfdim` is `8`, the orbit
+dimensions are `2, 2, 4`, and the Atkin–Lehner pattern is
+`[[-1,-1], [1,1], [-1,-1,-1,-1]]` — the refuting check named on the consumer
+below, executed rather than quoted, and passing.
+
+The head values above are cross-checked against the six `L`-values the consumer
+records, by a route sharing no step past `mfinit`:
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` at `ε = −1` reads
+`L(f,1) = (4π/√125) · S` with `S` the full sum, and `(4π/√125)` times the six
+converged sums reproduces `1.18492403…, 1.75892613…` and
+`1.83208150…, 0.69024708…, 1.94894295…, 0.49408575…` to the digits recorded
+there.  Two computations agreeing.
+
+**`_hw` IS NOT LOAD-BEARING FOR THIS STATEMENT, and the consumer's docstring was
+WRONG to say otherwise — corrected 2026-08-01.**  The witness previously offered
+against dropping it is orbit `2`, on the ground that `L(f,1) = 0` there.  That
+is true of the `L`-VALUE and says nothing about this sum: at `ε = +1` the factor
+`(1 − ε)` in `cuspPeriod_eq_one_sub_mul_integral_Ioi_one` is what kills the
+period, and the tail integral itself is left untouched.  Computed, the two PLUS
+embeddings have head sums `0.79702565…` and `0.52590422…` — both comfortably
+above `3/8`, so the bound recorded here holds at all EIGHT embeddings and the
+statement survives deleting `_hw`.
+
+`_hw` is nevertheless KEPT, deliberately, for two reasons: it costs a prover
+nothing (a hypothesis may be ignored), and it halves the certification burden
+from eight embeddings to six.  It cannot make the leaf false.  What genuinely
+needs `_hw` is one level up, at `cuspPeriod_ne_zero_atkinLehnerMinus_oneTwentyFive`,
+where the sign is the whole point — see that theorem's docstring, which is
+correct as written. -/
+theorem Fermat.norm_sum_range_ge_atkinLehnerMinus_oneTwentyFive
+    (f : CuspForm (Gamma0GL 125) 2) (a : ℕ → ℂ) (_hf : IsWeightTwoEigenform 125 f a)
+    (_hw : IsAtkinLehnerMinusForm 125 f) :
+    (3 : ℝ) / 8
+      ≤ ‖∑ n ∈ Finset.range 12,
+          a (n + 1) * ((Fermat.oneTwentyFiveWeight n : ℝ) : ℂ)‖ :=
+  sorry
+
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat _root_.MeasureTheory in
-/-- **THE `125` NUMERICS, ON THE COEFFICIENT SEQUENCE** (LEAF, 2026-07-30) — the
+/-- **THE `125` NUMERICS, ON THE COEFFICIENT SEQUENCE** (PROVEN 2026-08-01 over
+the head-bound leaf above; a LEAF from 2026-07-30 until then) — the
 arithmetic half of `integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneTwentyFive`
 below, with the analysis discharged into the PROVEN, LEVEL-FREE
 `hasSum_integral_Ioi_one_axisRestrict` (termwise integration of the `q`-series
@@ -20303,22 +20603,41 @@ every embedding of the two MINUS orbits has `L(f^σ, 1) ≠ 0` (values
 `1.18492403…, 1.75892613…` and `1.83208150…, 0.69024708…, 1.94894295…,
 0.49408575…`).
 
-**`_hw` MAY NOT BE DROPPED, and the witness is orbit `2`** — two embeddings of an
-eigenform of level `125` with `w_125 = +1` and `ord_{s=1} L = 1`, i.e. `L(f, 1) = 0`
-to `57` digits, which is exactly why `125 ∉ kenkuLevels` and exactly where
-`rank J_0(125)(ℚ) = 2` sits.  **`_hf` may not be dropped either**: it is what makes
-`a` the coefficient sequence of `f` rather than an arbitrary one, and `_hw`
-constrains `f` alone.
+**`_hw` IS NOT LOAD-BEARING HERE — the paragraph that used to stand in this
+place was WRONG, and is corrected 2026-08-01.**  It read *"`_hw` MAY NOT BE
+DROPPED, and the witness is orbit `2`"*, on the ground that the two `w_125 = +1`
+embeddings have `L(f, 1) = 0` to `57` digits.  That last fact is true and it is
+a fact about the `L`-VALUE, not about this sum.  At `ε = +1` what kills the
+period is the FACTOR `(1 − ε)` in `cuspPeriod_eq_one_sub_mul_integral_Ioi_one`;
+the tail integral — which is exactly the sum written here — is untouched by it.
+Computed, the two PLUS embeddings give `0.79714187…` and `0.52567152…`, both
+nonzero, so orbit `2` is not a witness against anything here and this statement
+survives deleting `_hw`.
+
+So this is the failure mode CLAUDE.md records as *a counterexample must be
+checked against the hypothesis it refutes*: the witness was real, and it was
+offered against the wrong clause.  `_hw` is nevertheless KEPT — it costs a
+prover nothing and it halves the certification burden below from eight
+embeddings to six — and the place it is genuinely load-bearing is one level up,
+at `cuspPeriod_ne_zero_atkinLehnerMinus_oneTwentyFive`, whose own docstring
+explains the sign correctly.
+
+**`_hf` may not be dropped**: it is what makes `a` the coefficient sequence of
+`f` rather than an arbitrary one, and it is what
+`norm_tsum_tail_le_oneTwentyFive` consumes to bound the tail at all.
 
 **`f` has NOT been eliminated from the statement, deliberately** — the same reason
 the `169` sibling gives: `IsAtkinLehnerMinusForm` is a condition on the slash action
 of `W_125` on `f`, with no known expression in terms of `a` alone at this pin, so a
 leaf phrased purely on `a` would have to invent one.
 
-**What this leaf still needs** is what the `169` sibling and the Kenku leaf
+**What is still needed** is what the `169` sibling and the Kenku leaf
 `integral_Ioi_one_axisRestrict_ne_zero` need: an explicit certified basis of
 `S₂(Γ₀(125))^{new}` with its Atkin–Lehner decomposition.  A prover who builds that
-certified-evaluation machinery closes all three.
+certified-evaluation machinery closes all three.  Since 2026-08-01 that is ALL
+this statement needs — the head/tail cut above has moved it into
+`norm_sum_range_ge_atkinLehnerMinus_oneTwentyFive`, a lower bound on TWELVE
+explicit terms, and everything else here is proven.
 
 **The check that refutes it**: `lfunorderzero` returning a nonzero value at any
 embedding of orbit `1` or `3`, or `mfatkineigenvalues(mfinit([125,2],0), 125)`
@@ -20335,16 +20654,57 @@ six embeddings of orbits `1` and `3` — with `L(f, 1)` equal to
 `1.9489429536773031731432457198369610213`,
 `0.49408575916223099641954634211021656764` (orbit `3`), reproducing the recorded
 values to every digit recorded — and `1` at both embeddings of orbit `2`, whose
-`L(f, 1)` is `0` to `57` and `58` digits respectively.  So the statement is
-sound and `_hw` is genuinely load-bearing; the leaf is open for want of the
-certified-evaluation machinery, not for want of confidence in what it says. -/
+`L(f, 1)` is `0` to `57` and `58` digits respectively.
+
+**RE-RUN AGAIN 2026-08-01 (PARI 2.17.4), and sharpened into a genuine
+cross-check.**  Both refuting checks pass unchanged.  In addition, the six
+converged sums were computed directly from `mfembed` coefficients and multiplied
+by `4π/√125`, giving
+
+    1.18492403720173431789…   1.75892613218741079463…
+    1.83208150489871883455…   0.69024708350441477201…
+    1.94894295367730337586…   0.49408575916223069481…
+
+which reproduces the six `L`-values recorded just above to SIXTEEN significant
+digits or better, by a route sharing no step past `mfinit`.  So the statement is
+sound; what was wrong in the earlier audit was only the attribution of orbit `2`
+to `_hw`, corrected above. -/
 theorem Fermat.tsum_coeff_ne_zero_atkinLehnerMinus_oneTwentyFive
-    (f : CuspForm (Gamma0GL 125) 2) (a : ℕ → ℂ) (_hf : IsWeightTwoEigenform 125 f a)
-    (_hw : IsAtkinLehnerMinusForm 125 f) :
+    (f : CuspForm (Gamma0GL 125) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform 125 f a)
+    (hw : IsAtkinLehnerMinusForm 125 f) :
     ∑' n : ℕ, a (n + 1) *
         ((Real.exp (-(2 * Real.pi / Real.sqrt 125 * (n + 1))) /
-          (2 * Real.pi / Real.sqrt 125 * (n + 1)) : ℝ) : ℂ) ≠ 0 :=
-  sorry
+          (2 * Real.pi / Real.sqrt 125 * (n + 1)) : ℝ) : ℂ) ≠ 0 := by
+  have hdef : ∀ n : ℕ,
+      ((Real.exp (-(2 * Real.pi / Real.sqrt 125 * ((n : ℝ) + 1))) /
+        (2 * Real.pi / Real.sqrt 125 * ((n : ℝ) + 1)) : ℝ) : ℂ)
+        = ((Fermat.oneTwentyFiveWeight n : ℝ) : ℂ) := fun _ => rfl
+  have hsummable : Summable fun n : ℕ =>
+      a (n + 1) * ((Fermat.oneTwentyFiveWeight n : ℝ) : ℂ) :=
+    (hasSum_integral_Ioi_one_axisRestrict (M := 125) (by norm_num) hf).summable
+  simp only [hdef]
+  rw [← hsummable.sum_add_tsum_nat_add 12]
+  intro hzero
+  have h1 := Fermat.norm_sum_range_ge_atkinLehnerMinus_oneTwentyFive f a hf hw
+  have h2 := Fermat.norm_tsum_tail_le_oneTwentyFive hf
+  have h3 : ‖∑ n ∈ Finset.range 12,
+        a (n + 1) * ((Fermat.oneTwentyFiveWeight n : ℝ) : ℂ)‖
+      ≤ ‖(∑ n ∈ Finset.range 12, a (n + 1) * ((Fermat.oneTwentyFiveWeight n : ℝ) : ℂ))
+          + ∑' n : ℕ, a (n + 12 + 1)
+              * ((Fermat.oneTwentyFiveWeight (n + 12) : ℝ) : ℂ)‖
+        + ‖∑' n : ℕ, a (n + 12 + 1)
+            * ((Fermat.oneTwentyFiveWeight (n + 12) : ℝ) : ℂ)‖ := by
+    calc ‖∑ n ∈ Finset.range 12, a (n + 1) * ((Fermat.oneTwentyFiveWeight n : ℝ) : ℂ)‖
+        = ‖((∑ n ∈ Finset.range 12,
+              a (n + 1) * ((Fermat.oneTwentyFiveWeight n : ℝ) : ℂ))
+            + ∑' n : ℕ, a (n + 12 + 1)
+                * ((Fermat.oneTwentyFiveWeight (n + 12) : ℝ) : ℂ))
+              - ∑' n : ℕ, a (n + 12 + 1)
+                  * ((Fermat.oneTwentyFiveWeight (n + 12) : ℝ) : ℂ)‖ := by
+          congr 1; ring
+      _ ≤ _ := norm_sub_le _ _
+  rw [hzero, norm_zero] at h3
+  linarith
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat _root_.MeasureTheory in
 /-- **THE NUMERICS AT `125`, ON THE TAIL-INTEGRAL CARRIER** (PROVEN 2026-07-30
