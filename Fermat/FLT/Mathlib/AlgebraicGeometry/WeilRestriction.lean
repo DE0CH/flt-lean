@@ -24,11 +24,17 @@ a genus-`1` curve with `C(K) = ∅` is the standard witness.
 
 ## The classical repair, and the two atoms it leaves
 
-1.  `hconn` makes `C` nonempty and `hproper` makes it finite type over
-    `K`, so `C` has a closed point; `hsmooth` makes some closed point have
+1.  `hconn` makes `C` nonempty and `hsmooth` makes some point have
     residue field `L` a **finite separable** extension of `K` — the
     `K^sep`-points of a smooth `K`-scheme are dense.  That is
-    `exists_finiteEtale_point_of_smooth` below, ATOM 1.
+    `exists_finiteEtale_point_of_smooth` below, ATOM 1, **PROVEN
+    2026-08-01** over the single commutative-algebra leaf
+    `exists_finiteSeparable_algHom_of_smooth_of_infinite`: a nonzero
+    smooth algebra over an INFINITE field admits a `K`-algebra map to a
+    finite separable extension.  The perfect-field case (which covers
+    every finite field) is proven, as is all of the scheme-to-ring glue,
+    so nothing about schemes, curves or properness is left in the leaf.
+    Note `hproper` turned out NOT to be used by ATOM 1 at all.
 2.  The graph of that point is an `L`-rational point of `C_L`, so the
     hypothesis applies at `L` and yields an abelian variety `A/L` with a
     nonconstant `c : C_L ⟶ A`.  This step is pure category theory and is
@@ -125,53 +131,186 @@ namespace Fermat.WeilRestriction
 
 /-! ### ATOM 1 — a smooth curve has a point over a finite separable extension -/
 
+/-- **A nonzero étale algebra over a field maps to a finite separable field
+extension** (PROVEN).  This is the last step of ATOM 1's route, isolated so
+that whoever attacks the residual leaf below does not have to redo it:
+`Algebra.Etale.iff_exists_algEquiv_prod` writes a nonzero étale `K`-algebra as
+a nonempty finite product of finite separable extensions, and one projects. -/
+theorem exists_finiteSeparable_algHom_of_etale (K : Type) [Field K] (B : Type) [CommRing B]
+    [Nontrivial B] [Algebra K B] [Algebra.Etale K B] :
+    ∃ (L : Type) (_ : Field L) (_ : Algebra K L),
+      Module.Finite K L ∧ Algebra.IsSeparable K L ∧ Nonempty (B →ₐ[K] L) := by
+  obtain ⟨I, _, Ai, _, _, e, hAi⟩ := (Algebra.Etale.iff_exists_algEquiv_prod K B).mp ‹_›
+  have hI : Nonempty I := by
+    by_contra h
+    rw [not_nonempty_iff] at h
+    haveI : Subsingleton B := e.injective.subsingleton
+    exact false_of_nontrivial_of_subsingleton B
+  obtain ⟨i⟩ := hI
+  exact ⟨Ai i, inferInstance, inferInstance, (hAi i).1, (hAi i).2,
+    ⟨(Pi.evalAlgHom K Ai i).comp e.toAlgHom⟩⟩
+
+/-- **THE COMMUTATIVE-ALGEBRA CORE OF ATOM 1, over an INFINITE field**
+(sorry leaf).  A nonzero smooth algebra over an infinite field `K` admits a
+`K`-algebra map to a finite separable extension of `K`.
+
+**THIS IS THE WHOLE CONTENT OF ATOM 1.**  Everything else that leaf used to
+bundle — nonemptiness of `C`, the passage to an affine chart, the fact that
+the residue field of a closed point is finite, and the translation between
+`Module.Finite`/`Algebra.IsSeparable` and the scheme-level `IsFinite`/`Etale`
+— is proven below.  The statement mentions no scheme, no curve, no
+properness and no relative dimension, and it is exactly the classical
+assertion that *the separable points of a smooth scheme over a field are
+dense*.
+
+**WHY `Infinite K` IS FREE.**  The complementary case is discharged by
+`exists_finiteSeparable_algHom_of_smooth_of_perfectField` below: a finite
+field is perfect, and over a perfect field every finite extension is
+separable, so any maximal ideal will do and smoothness is not needed at all.
+Since `PerfectField` is implied by `Finite`, splitting on
+`finite_or_infinite K` covers everything — see
+`exists_finiteSeparable_algHom_of_smooth`.  So the hypothesis costs a prover
+nothing and buys the density of `K`-rational points that the route below
+needs.
+
+**THE ROUTE, which is EGA IV 17.15.x / Stacks 056U, and the pieces that are
+already at this pin.**  `A` smooth over `K` is Zariski-locally standard
+smooth, so some nonzero localisation `A_f` admits, by
+`Algebra.IsStandardSmoothOfRelativeDimension.exists_etale_mvPolynomial`
+(`Mathlib.RingTheory.RingHom.StandardSmooth`), an étale `K`-algebra map
+`K[X_1, …, X_n] → A_f`.  An étale morphism is open, so the image of
+`Spec A_f` in affine `n`-space contains a nonempty basic open `D(h)`;
+because `K` is infinite there is `a ∈ K^n` with `h(a) ≠ 0`
+(`MvPolynomial.exists_eval_ne_zero_of_ne_zero`-style), i.e. a `K`-rational
+point of that open.  The fibre `A_f ⊗_{K[X]} K` over it is then a NONZERO
+étale `K`-algebra, and
+`exists_finiteSeparable_algHom_of_etale` above finishes.
+
+**LOAD-BEARING, and the witness for smoothness is the original one**: over
+an imperfect `K` of characteristic `p`, `K = k(t)`, the finite type
+`K`-algebra `K[X]/(X^p - t)` is a field, purely inseparable over `K`, and
+has NO `K`-algebra map to any separable extension.  It is not smooth, and
+that is the only thing that excludes it.
+
+**NOT VACUOUS**: `A = K` satisfies the conclusion with `L = K`. -/
+theorem exists_finiteSeparable_algHom_of_smooth_of_infinite
+    (K : Type) [Field K] [Infinite K] (A : Type) [CommRing A] [Nontrivial A]
+    [Algebra K A] [Algebra.Smooth K A] :
+    ∃ (L : Type) (_ : Field L) (_ : Algebra K L),
+      Module.Finite K L ∧ Algebra.IsSeparable K L ∧ Nonempty (A →ₐ[K] L) :=
+  sorry
+
+/-- **Over a PERFECT field the core needs no smoothness** (PROVEN): a nonzero
+finite-type algebra has a maximal ideal, its residue field is finite over `K`
+by Zariski's lemma (`finite_of_finite_type_of_isJacobsonRing`), and a finite —
+indeed any algebraic — extension of a perfect field is separable. -/
+theorem exists_finiteSeparable_algHom_of_smooth_of_perfectField
+    (K : Type) [Field K] [PerfectField K] (A : Type) [CommRing A] [Nontrivial A]
+    [Algebra K A] [Algebra.FiniteType K A] :
+    ∃ (L : Type) (_ : Field L) (_ : Algebra K L),
+      Module.Finite K L ∧ Algebra.IsSeparable K L ∧ Nonempty (A →ₐ[K] L) := by
+  obtain ⟨m, hm⟩ := Ideal.exists_maximal A
+  letI : Field (A ⧸ m) := Ideal.Quotient.field m
+  haveI : Algebra.FiniteType K (A ⧸ m) :=
+    Algebra.FiniteType.of_surjective (Ideal.Quotient.mkₐ K m) Ideal.Quotient.mk_surjective
+  haveI : Module.Finite K (A ⧸ m) := finite_of_finite_type_of_isJacobsonRing K (A ⧸ m)
+  haveI : Algebra.IsAlgebraic K (A ⧸ m) := Algebra.IsAlgebraic.of_finite K (A ⧸ m)
+  exact ⟨A ⧸ m, inferInstance, inferInstance, inferInstance, inferInstance,
+    ⟨Ideal.Quotient.mkₐ K m⟩⟩
+
+/-- **The core of ATOM 1 over an arbitrary field** (PROVEN over the leaf
+above): split on `finite_or_infinite K`, a finite field being perfect. -/
+theorem exists_finiteSeparable_algHom_of_smooth (K : Type) [Field K] (A : Type) [CommRing A]
+    [Nontrivial A] [Algebra K A] [Algebra.Smooth K A] :
+    ∃ (L : Type) (_ : Field L) (_ : Algebra K L),
+      Module.Finite K L ∧ Algebra.IsSeparable K L ∧ Nonempty (A →ₐ[K] L) := by
+  rcases finite_or_infinite K with h | h
+  · exact exists_finiteSeparable_algHom_of_smooth_of_perfectField K A
+  · exact exists_finiteSeparable_algHom_of_smooth_of_infinite K A
+
+/-- `Spec` of a finite extension is a finite morphism (PROVEN). -/
+theorem isFinite_specMap_algebraMap (K L : Type) [Field K] [Field L] [Algebra K L]
+    [Module.Finite K L] : IsFinite (Spec.map (CommRingCat.ofHom (algebraMap K L))) := by
+  rw [IsFinite.SpecMap_iff, CommRingCat.hom_ofHom]
+  exact RingHom.finite_algebraMap.mpr inferInstance
+
+/-- `Spec` of a finite separable extension is an étale morphism (PROVEN). -/
+theorem etale_specMap_algebraMap (K L : Type) [Field K] [Field L] [Algebra K L]
+    [Module.Finite K L] [Algebra.IsSeparable K L] :
+    Etale (Spec.map (CommRingCat.ofHom (algebraMap K L))) := by
+  haveI : Algebra.FinitePresentation K L := Algebra.FinitePresentation.of_finiteType.mp inferInstance
+  haveI : Algebra.FormallyEtale K L := Algebra.FormallyEtale.of_isSeparable K L
+  haveI : Algebra.Etale K L := ⟨inferInstance, inferInstance⟩
+  rw [HasRingHomProperty.Spec_iff (P := @Etale), CommRingCat.hom_ofHom]
+  exact RingHom.etale_algebraMap.mpr inferInstance
+
 /-- **A nonempty smooth finite-type `K`-scheme has a point over a finite
-separable extension of `K`** (sorry leaf).
+separable extension of `K`** (**PROVEN 2026-08-01** over the single
+commutative-algebra leaf
+`exists_finiteSeparable_algHom_of_smooth_of_infinite` above; it was a sorry
+leaf until then).
 
 Concretely: there are a field `L`, a finite étale `ℓ : Spec L ⟶ Spec K`
 — which for a morphism of spectra of fields says exactly that `L/K` is
 finite separable — and a `K`-morphism `p : Spec L ⟶ C`.
 
-**THE MATHEMATICS.**  `hconn` gives `Nonempty C` (mathlib derives
-`[GeometricallyConnected f] : Surjective f` as a low-priority instance,
-and `Spec K` is nonempty), and `hproper` gives `LocallyOfFiniteType cstr`.
-A nonempty finite-type scheme over a field has a closed point, and at a
-closed point `x` the morphism `C.fromSpecResidueField x` is locally of
-finite type (`Mathlib.AlgebraicGeometry.Morphisms.Finite`, the
-`IsClosed {x} ↔ LocallyOfFiniteType (X.fromSpecResidueField x)`
-characterisation), so `κ(x)/K` is a finite extension by Zariski's lemma.
-That much is available at this pin and is *not* the content of this leaf.
+**WHAT THE PROOF DOES.**  `hconn` gives `Surjective cstr` (a low-priority
+mathlib instance) and `Spec K` is nonempty, so `C` has a point `x`; take an
+affine open `Spec R` around it.  `Smooth cstr` and `Smooth j` for the open
+immersion make the composite smooth, and since both ends are affine it is
+`Spec.map` of a ring map, so `R` is a nonzero smooth `K`-algebra.  The core
+leaf above hands back a finite separable `L` and a `K`-algebra map
+`R →ₐ[K] L`; `Spec` of it, composed with `j`, is the point, and
+`isFinite_specMap_algebraMap` / `etale_specMap_algebraMap` supply the two
+morphism properties.  The compatibility `p ≫ cstr = ℓ` is `AlgHom.commutes`.
 
-**THE CONTENT is separability**, and it is the only place smoothness is
-used: a smooth morphism admits sections étale-locally (EGA IV 17.16.3),
-equivalently the points of a smooth `K`-scheme whose residue field is
-separable over `K` are dense.  Over a perfect `K` every finite extension
-is separable and the leaf is immediate from the paragraph above; over an
-imperfect `K` it is not, and a non-smooth witness shows the hypothesis is
-needed: `Spec k(t^{1/p})` over `k(t)` in characteristic `p` is finite,
-proper, geometrically connected and has *no* point over any finite
-separable extension, being purely inseparable.  So `hsmooth` is
-load-bearing and `SmoothOfRelativeDimension 1` is used only through
-`Smooth`.
+**`hproper` IS NOT USED, and that was a genuine discovery of 2026-08-01.**
+The docstring this replaces said properness was what supplied
+`LocallyOfFiniteType cstr`.  It is not needed: smoothness already gives
+local finite presentation, hence finite type, and the affine-chart route
+never asks for a CLOSED point — any point of a nonempty affine chart does.
+The binder is kept, named `_hproper`, because the sole call site holds it
+for free and an unused hypothesis costs a prover nothing; a successor who
+wants the sharp statement may delete it, and nothing in this file would
+change.
+
+**`hsmooth` IS load-bearing**, and the witness is the classical one:
+`Spec k(t^{1/p})` over `k(t)` in characteristic `p` is finite, proper and
+geometrically connected, and has *no* point over any finite separable
+extension, being purely inseparable.  It fails only smoothness.
+`SmoothOfRelativeDimension 1` is used only through `Smooth`, so the
+relative dimension is decoration here.
 
 **NOT VACUOUS**: `C = Spec K` itself satisfies the conclusion with
-`L = K`, `ℓ = 𝟙`.
-
-**RELATED MATERIAL AT THIS PIN**, for whoever attacks it:
-`Mathlib.AlgebraicGeometry.Sites.EtalePoint` has
-`Scheme.exists_fac_of_etale_of_isSepClosed`, which lifts a point valued
-in a separably closed field through an étale morphism; and
-`Mathlib.RingTheory.Etale.Field` characterises étale field extensions.
-The missing direction is the descent from a `K^sep`-point to a point over
-a *finite* subextension, which is a finite-presentation/spreading-out
-argument. -/
+`L = K`, `ℓ = 𝟙`. -/
 theorem exists_finiteEtale_point_of_smooth
     {C : Scheme.{0}} {K : Type} [Field K] {cstr : C ⟶ Spec (CommRingCat.of K)}
-    (hproper : IsProper cstr) (hsmooth : SmoothOfRelativeDimension 1 cstr)
+    (_hproper : IsProper cstr) (hsmooth : SmoothOfRelativeDimension 1 cstr)
     (hconn : GeometricallyConnected cstr) :
     ∃ (L : Type) (_ : Field L) (ℓ : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of K))
-      (p : Spec (CommRingCat.of L) ⟶ C), IsFinite ℓ ∧ Etale ℓ ∧ p ≫ cstr = ℓ :=
-  sorry
+      (p : Spec (CommRingCat.of L) ⟶ C), IsFinite ℓ ∧ Etale ℓ ∧ p ≫ cstr = ℓ := by
+  haveI := hsmooth
+  haveI := hconn
+  haveI : Smooth cstr := SmoothOfRelativeDimension.smooth 1 cstr
+  obtain ⟨x, -⟩ := (Surjective.surj (f := cstr)) (default : Spec (CommRingCat.of K))
+  obtain ⟨R, j, hj, hx, -⟩ :=
+    Scheme.exists_affine_mem_range_and_range_subset (X := C) (x := x) (U := ⊤) (by simp)
+  haveI := hj
+  have hspec : Spec.map (Spec.preimage (j ≫ cstr)) = j ≫ cstr := Spec.map_preimage _
+  algebraize [(Spec.preimage (j ≫ cstr)).hom]
+  haveI : Algebra.Smooth K R := by
+    have h1 : Smooth (Spec.map (Spec.preimage (j ≫ cstr))) := by rw [hspec]; infer_instance
+    rw [HasRingHomProperty.Spec_iff (P := @Smooth)] at h1
+    exact RingHom.smooth_algebraMap.mp h1
+  haveI : Nontrivial R := PrimeSpectrum.nontrivial (Set.mem_range.mp hx).choose
+  obtain ⟨L, _, _, hfin, hsep, ⟨ψ⟩⟩ := exists_finiteSeparable_algHom_of_smooth K R
+  refine ⟨L, inferInstance, Spec.map (CommRingCat.ofHom (algebraMap K L)),
+    Spec.map (CommRingCat.ofHom ψ.toRingHom) ≫ j, isFinite_specMap_algebraMap K L,
+    etale_specMap_algebraMap K L, ?_⟩
+  rw [Category.assoc, ← hspec, ← Spec.map_comp]
+  congr 1
+  ext k
+  exact ψ.commutes k
 
 /-! ### ATOM 2 — Weil restriction along a finite étale extension of fields -/
 
