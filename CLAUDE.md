@@ -16151,3 +16151,71 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## THE *LEAF'S OWN* DOCSTRING CAN BE THE LIAR — and the orphan's proven helper has a one-line reusability test
+
+(2026-08-01, `flt-lean-390`, `exists_level_smul_unif_eq_mul_of_prime` in
+`ArtinConductor.lean`.)  CLAUDE.md already records that a PROVEN PARENT whose
+docstring names a different leaf from its proof body is a duplicate-cut detector.
+**The mirror fires just as often and nothing above covers it: the LEAF names its
+parent, and asserts the parent is proven over it.**  This leaf's docstring said,
+in bold, *"everything downstream of it … is PROVEN, in
+`exists_lowerRamificationData_phi_one_le` below"* and *"this is the ONLY
+arithmetic still owed on this branch"*.  Both sentences were true when written and
+false when read: the parent had since been proven OUTRIGHT by an independent
+route, and the leaf plus its three companions were unreachable — 331 lines of dead
+code emitting an ordinary `declaration uses 'sorry'` warning that every frontier
+instrument counted as real work.  It drew this dispatch.
+
+So the consumer grep must run in BOTH directions, and the parent's PROOF BODY is
+the only witness in either.  One command settles it before you read the
+mathematics:
+
+    # does anything actually reach my target?  (comment-stripped, whole tree)
+    # then: does the parent my docstring names actually CALL me?
+    grep -n 'theorem <parent>' -A40 <file> | grep '<my target>'
+
+Zero hits in the parent's body, plus zero consumers for my consumer, means the
+task is a deletion and not a proof.
+
+**THE NEW OPERATIONAL CONTENT — before deleting an orphan cluster, test whether
+its PROVEN helpers are reusable in the live route, and the test is one line.**
+The temptation is to keep them "because they are proven"; the opposite temptation
+is to delete on sight.  Neither is a decision.  **Read which OBJECT the orphan's
+hypothesis is stated about, and ask whether the live proof ever puts a test
+element there.**  Here `le_relIndex_gp_one_of_smul_unif_eq_mul` is PROVEN and
+demands `σ • D.unif = ζ · D.unif` — an eigenvector equation on `D.unif`, i.e. on
+an element of valuation exactly `1`.  That is precisely what the dead arithmetic
+leaf existed to supply, and precisely what the live route *deliberately avoids
+needing*: it takes an `n`-th root `Z` of a base uniformizer, chooses the level to
+FIX `Z` rather than to make `Z` a uniformizer, and injects `μ_n` into `G₀ ⧸ G₁`
+without ever mentioning `v(Z)`.  So the helper is unusable in the live proof by
+construction, and the cluster is superseded rather than merely unconsumed.
+Where the answer comes out the other way, repurposing beats deleting and the same
+one line tells you so.
+
+**And the tie-break is decidable rather than a matter of taste: count the leaves
+each route leaves OPEN.**  Live route: zero.  Dead route: one.  A route that
+leaves zero open leaves supersedes one that leaves any, whatever the relative
+elegance — and that is the whole argument for deleting proven work here.
+
+Three riders, each of which cost a check:
+
+* **Leave a note where the cluster stood, and put the recovery sha in it.**  A
+  deletion with no explanation is a cut somebody will make a third time — this one
+  had already been made twice.  Fold in whatever the deleted docstring said that
+  nothing else records: here a genuine refutation (taking the `n`-th root itself
+  as the test element fails whenever the chosen level's fixed field is ramified —
+  over `ℚ₃` with the level cutting out `ℚ₃(√3)` and `n = 5`, `e = 10` so
+  `v_L(X) = 2`).  And write the delimiters in PROSE inside that note, never as
+  literal characters, or you reopen the comment you are writing.
+* **Do not delete the other unreachable declarations you find on the way.**  The
+  reachability scan flagged 12; only 4 were mine.  Several of the rest have names
+  ending `_normal` and are `instance`s reached by TYPECLASS SEARCH, which a token
+  scan structurally cannot see — the elaboration-invisible dependency class.  Cut
+  the contiguous block you were dispatched at and report the others.
+* **Regenerate the file's leaf list while you are there, and expect it stale in
+  BOTH directions.**  This file's list of "the FIVE that remain" had three names
+  since PROVEN and was missing two live sorries — and its own text already said
+  *"do not read a leaf list in prose as current; regenerate it from the `sorry`
+  set"*.  The advice was right and nobody had followed it, including its author.
