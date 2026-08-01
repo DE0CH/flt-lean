@@ -5267,7 +5267,18 @@ name the wrong gate.**
   over ONE scheme and carries no projective embedding.  That is why
   `exists_relPicOf_of_isAffineBase` above has to say "affine base" instead
   of "projective", and why step (ii) of FGA 232 cannot be cut out as a leaf
-  of its own — there is nothing to state it in terms of. -/
+  of its own — there is nothing to state it in terms of.
+  **CORRECTED 2026-08-01, and the correction lives on
+  `exists_relPicOf_of_isAffineBase` itself, which is where a prover reads
+  it**: the first two sentences are right and the last one is wrong.  There
+  is indeed no `IsProjective` and no ampleness for MORPHISMS — but at an
+  AFFINE base, which is the base that leaf has, projectivity is expressible
+  without any of that, as a closed immersion into
+  `Proj (MvPolynomial.homogeneousSubmodule (Fin (n+1)) A)` over
+  `Spec (𝒜 0)` via `AlgebraicGeometry.Proj.toSpecZero`.  Step (ii) IS
+  cuttable; it is declined for a different reason (it needs Riemann–Roch,
+  which the tree does not have).  Read the audit on that leaf before acting
+  on this paragraph. -/
 theorem exists_relPicOf_of_hasUniversallyTrivialPushforward {X S : Scheme.{u}} (strX : X ⟶ S)
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
