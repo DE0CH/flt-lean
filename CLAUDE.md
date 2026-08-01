@@ -8735,6 +8735,24 @@ different curve `W.map σ`.  That transport, and with it the transport of
 API is absent), is a real ~200-line build in `Isogeny.lean`.  Price it before
 promising it.
 
+> **CORRECTED 2026-08-01 (`flt-lean-179`): THE TRANSPORT WAS BUILT, and this
+> paragraph's absence claim has been false since it was written into a tree that
+> already contained the answer.**  Everything above about MATHLIB is still exactly
+> right — `Affine.Point.map` really is base-change-only — and that is precisely
+> what made the paragraph convincing.  But `Fermat/FLT/EllipticCurve/Isogeny.lean`
+> has a `GaloisTransport` section carrying `Affine.Point.mapRingHom`,
+> `Affine.Point.mapRingEquiv`, `conjHom`, `IsRationalMap.transport`,
+> `IsIsogeny.transport`, `isRationalMap_conjHom_iff`, `isIsogeny_conjHom_iff`,
+> `AddEquiv.conjAddMonoidEnd` and — the payoff —
+> `WeierstrassCurve.End.mapRingEquiv : End W ≃+* End (W.map σ)`, all PROVEN.  Over
+> it, `MazurTorsion.lean`'s `isCMJInvariantOfRel_algEquiv` is **~25 lines**
+> (`map_j` for the `j`-invariant; `map_intCast` for the CM relation;
+> `RingHom.map_closure` plus surjectivity for `Subring.closure {φ} = ⊤`).  The
+> "~200 lines, price it before promising it" estimate was honest and is spent.
+> See the section at the end of this file for how the machinery was eventually
+> found — a listing of the module's SECTION NAMES, not a name grep — and for why
+> a name grep cannot find it.
+
 **What IS free, and was harvested 2026-07-31**: over `ℚ̄/ℚ`, `∃ σ, σ x = y` and
 `minpoly ℚ x = minpoly ℚ y` are interchangeable in one line —
 `Normal.minpoly_eq_iff_mem_orbit` (`Mathlib/FieldTheory/Normal/Basic.lean`).
