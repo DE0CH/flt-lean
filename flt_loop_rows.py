@@ -1152,7 +1152,11 @@ def r_refused_action(s):
             CONSUME_REFUSAL(m, j)
     note(s, "quota: refused -- spawning halted, %d record(s) returned to the queue"
             % len(hits))
-    s["email"].append("flt-loop: quota exhausted, idling -- %s" % s["quota_block"]["why"])
+    # NOT notified (Deyao, 2026-08-01). Running out of credit is a WAIT, not a
+    # fault: rows 18/19/20 handle it end to end, the block lifts on evidence,
+    # and nothing is lost meanwhile. It fired often enough to be noise, and
+    # noise on the alert channel is what makes a real alert easy to miss. The
+    # transition log and `flt-loop-status.py` still show it.
 
 
 def r_unblock_guard(s):
@@ -1167,7 +1171,8 @@ def r_unblock_action(s):
     s["quota_block"] = None
     s["probe"] = dict(s["probe"], served=False)
     note(s, "quota: a probe was served -- spawning resumes")
-    s["email"].append("flt-loop: quota available again, resuming")
+    # Silent for the same reason as the refusal above: nobody needs a message
+    # saying a wait ended normally.
 
 
 def r_probe_guard(s):
