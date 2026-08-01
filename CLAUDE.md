@@ -16151,3 +16151,105 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A FORWARDED HYPOTHESIS IS NOT AN UNUSED ONE — and a GLOSS that differs from the TYPE is a falsity waiting for its first consumer
+
+(2026-08-01, `flt-lean-351`, `FreyCurve/MazurTorsion.lean`'s `AtkinLehnerModelCut`.
+**Third confirmed instance of the identical defect in one file**, and this time the
+file had predicted it in writing and still shipped it.)
+
+A cut's declarations routinely carry a guard hypothesis that no proof body reads —
+each one just passes it to the next. The natural verdict is "genuinely UNUSED, so
+the statement is unaffected and strengthening it would be churn", and that verdict
+is what this section's `hqN : q ≠ N` carried, in a ⚠ note, beside a gloss saying it
+"is INTENDED as `q ∤ N`, i.e. good reduction". Both halves were written honestly.
+The note even added the correct escape clause — *"a prover who starts consuming
+`_hqN` must strengthen it FIRST"*.
+
+**The clause fired, and it was already too late when it was written: the leaf at the
+BOTTOM of the forwarding chain was consuming it, and was FALSE.**
+`exists_isNIsogenyPair_of_x0JNeronDatum` asks for the Deligne–Rapoport quotient over
+a `ℤ_(q)`-scheme, which needs `N` invertible on the base; `q.Prime` and `q ≠ N` give
+that only when `N` is prime. Refuted at **`q = 2`, `N = 4`**, by the sibling leaf's
+own falsity witness instantiated there: over `𝔽̄_2` an ordinary `E` has
+`E(K)[4] ≅ ℤ/4`, so `(E, E(K)[4])` is a genuine `Gamma0Datum 4`, and `ker_map` +
+`dual_map` + `ker_dual` force `ker h.dual` to have ONE point while `geom_cyclic`
+demands an element of order `4`.
+
+**So "unused" is the wrong predicate. Ask instead: is it FORWARDED?** A hypothesis
+that is passed on is used — by a *different declaration, with its own truth
+conditions*, which may be a `sorry` whose statement nobody has re-audited since the
+guard was chosen. The mechanical check is one grep per binder:
+
+    grep -n '\bhqN\b' <the file>     # every hit that is an ARGUMENT, not a binder
+
+and then read the STATEMENT of each callee, not its docstring.
+
+**The tell is cheap and it is textual: a hypothesis whose docstring gloss and whose
+Lean type are different sentences.** `q ≠ N` glossed as "`q ∤ N`, good reduction" is
+the shape; in this file it has been a real defect every single time
+(`formalImmersion_of_cuspFormalImmersionCert`,
+`exists_isCusp_ne_neronSpAut_of_atkinLehnerPin`, both 2026-07-30, and this one).
+Grep for it directly — `grep -n 'q ≠ N' <file>` against `grep -n 'q ∤ N\|¬ q ∣ N'` —
+before believing any "the hypothesis is decorative" note.
+
+**And the repair is almost always free at the top.** Strengthening a guard weakens
+every declaration that carries it, so no call site above the chain can break; the
+only work is discharging the stronger form ONCE at the terminal consumer, which in
+this development invariably carries the extra arithmetic already
+(`exists_atkinLehnerModelAut_of_jNeronDatum` has `N.Prime`, so
+`Nat.prime_dvd_prime_iff_eq` closes it in one line — and was already using exactly
+that one-liner three lines further down for a *different* hypothesis of the same
+shape). Four binder types and one call site; nothing outside the section moved.
+
+## "WEAKENING IT IS A STATEMENT CHANGE NOBODY CURRENTLY NEEDS" IS A DATED CLAIM — it expires when the second base is cut
+
+(Same task, and it is what took the frontier down rather than sideways.)
+
+A falsity audit that installs a hypothesis often names, correctly, the SHARP
+hypothesis it is standing in for, and then declines to use it. `exists_isNIsogenyPair`
+(`X0.lean`) said, of the `ℚ`-structure it had just acquired as a falsity repair:
+
+> **The sharp hypothesis is `N` invertible on `T`** … `T ⟶ SpecQ` is stronger than
+> necessary and is chosen because it is exactly what every consumer here already
+> has; **weakening it to invertibility is a statement change nobody currently
+> needs.**
+
+That is a claim about the CONSUMER SET on the day it was written, and this project
+cuts new consumers daily. Three days later the identical citation was cut a second
+time over `Spec ℤ_(q)` in another file — a second `sorry` for one theorem, invisible
+to every duplicate scan because the two statements share no identifier and sit in
+different modules. **So: when an audit names a sharp hypothesis and declines it,
+that sentence is a standing invitation, and the trigger is the appearance of a
+SECOND base.** Grep for the citation, not for the name.
+
+The fusion itself was mechanical once the shape was seen, and the pieces were all
+already in the tree — which is the usual outcome:
+
+* **the house form for "`N` is invertible on the base" is `{A : Type} [CommRing A]
+  (IsUnit (N : A))` together with `T ⟶ Spec (CommRingCat.of A)`.** `X0.lean` already
+  runs a whole sub-subsection on it (`natCast_ne_zero_geomPoint_of_isUnitBase` and
+  the base-general Katz–Mazur atlas). Use the file's own idiom; do not invent a
+  predicate;
+* **both delegations are one line.** `ℚ` is a field, and
+  `isUnit_natCast_of_isReductionBase_of_not_dvd` — PROVEN, and written for an
+  unrelated consumer — turns `¬ q ∣ N` into `IsUnit ((N : ℕ) : ↥R)` directly;
+* **the enlarged class needs its own falsity audit, and it can be discharged by a
+  THEOREM rather than an argument.** The inherited witness lives at residue
+  characteristic `p ∣ N`; `natCast_ne_zero_geomPoint_of_isUnitBase` says a geometric
+  point of a scheme over `Spec A` sees `(N : K) ≠ 0` when `N` is a unit of `A`, so
+  the witness is excluded outright. Cite it — a re-run audit backed by a proven
+  lemma is worth more than three paragraphs;
+* **the degenerate parameter does NOT come along, and that is a feature.**
+  `IsUnit (0 : A)` forces the zero ring, so `N = 0` had to be peeled off. It is
+  ~20 lines and PROVEN, not a second leaf: `isEmpty_of_gamma0Datum_zero` empties the
+  base, a scheme mapping to an empty scheme is empty (`Function.isEmpty g.base`), so
+  every test scheme is INITIAL and all four equations plus both kernel iffs are
+  `Limits.IsInitial.hom_ext`. Peeling a degenerate case out of a leaf is nearly
+  always this cheap, and it permanently removes it from the leaf's scope.
+
+**Report it with the two receipts, because the shape is `-1 +1` in one file and
+`-1` in the other**, which no count alone explains:
+
+    git diff HEAD -- X0.lean          | grep -E '^[+-] *sorry *$'   # +1 -1  (RECUT)
+    git diff HEAD -- MazurTorsion.lean| grep -E '^[+-] *sorry *$'   # -1     (CLOSED)
