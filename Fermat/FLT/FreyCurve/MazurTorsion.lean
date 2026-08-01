@@ -40716,6 +40716,29 @@ ORBIT-COUNTING half of the classical argument — real Lean rather than prose:
 So the net on this file's direct-sorry set is `1 → 2`, a genuine reduction, and the
 two survivors are different theorems with no machinery in common.
 
+**THE `MazurCMForm` TWIN TAKES THE OTHER SHAPE, AND THE TWO MUST NOT BOTH BE
+PROVEN.**  `minpoly_eq_of_isCMJInvariant` (~line 26324, the `ψ² = [−n]` predicate of
+discriminant `−4n`) is PROVEN over the SINGLE leaf
+`exists_monic_irreducible_vanishing_isCMJInvariant` — "some monic irreducible
+`p ∈ ℚ[X]` vanishes at every CM `j`-invariant of the order", i.e. the class
+polynomial, bundled.  That is the one-leaf cut this note declines above, and it is a
+legitimate rival: it is one open leaf against two.
+
+Anyone proving the `X² − X + m` analogue of that class-polynomial statement closes
+`minpoly_eq_of_isCMJInvariantOfRel` in three lines and makes BOTH leaves in this
+block consumerless — so do not dispatch that and these leaves at the same time.  The
+reason the finer cut is kept here anyway: `ncard_setOf_isCMJInvariantOfRel_le` is the
+same mathematics stated as an inequality between natural numbers with no polynomial
+in it, and `finite_setOf_isCMJInvariantOfRel` is a genuinely separate theorem
+(finiteness of the class number) that a different owner can take.  Whichever route
+lands first, the other's leaves must be DELETED rather than left floating.
+
+The two shapes share one prerequisite and it is worth naming, because a dispatcher
+costing them as disjoint will pay for it twice: both need the correspondence between
+elliptic curves with `End = O` and proper fractional `O`-ideals (Silverman *ATAEC*
+II.1.2, Cox §10).  An owner who finds themselves building it should take both leaves
+of this block, and should say so.
+
 **WHAT THE ASSEMBLY PROVES, so that the third leaf's owner knows what is already
 theirs.**  The REVERSE inequality `[ℚ(j) : ℚ] ≤ h(D)` is not a leaf: it falls out
 of the first two.  The Galois orbit of `x` is exactly the root set of
