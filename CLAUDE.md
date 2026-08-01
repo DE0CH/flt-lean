@@ -16151,3 +16151,107 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A LEAF WHOSE ROUTE RUNS THROUGH AN `L`-FUNCTION SHOULD BE RECUT AT THE **LOGARITHM** — and the transport that gets you there is INDEX-FREE
+
+(2026-08-01, `flt-lean-141`, on `exists_bound_norm_tsum_narrowRayCharacter_ray_class`
+in `ModThree.lean` — the `L(1, χ) ≠ 0` half of the narrow-ray-class Deuring
+argument.  Two recuts, both `1 → 1`, and after them the node owes the classical
+`L`-function package and nothing else.)
+
+**1. THE SHAPE.  An `L`-function controls only its own LOGARITHM.**  A leaf of the
+form *"the character prime sum `∑_w χ(w) N(w)^{-s}` is bounded uniformly for
+`s > 1`"* is never proved directly: the Euler product gives `exp 𝒮(w) = L(w)`
+with `𝒮(w) = ∑_w -log(1 - χ(w) N(w)^{-w})`, so what the analysis produces is a
+bound on `𝒮`, and the prime sum is `𝒮` minus a log-Taylor remainder.  **Recut at
+`𝒮`.**  The remainder is then discharged once, forever, by a statement with no
+arithmetic in it: for `‖c i‖ ≤ 1` and `N i ≥ 2` and real `s > 1`,
+
+    ‖∑ᵢ c i · N i^{-s}‖ ≤ ‖∑ᵢ -log(1 - c i · N i^{-s})‖ + ∑ᵢ N i^{-2}
+
+(`Complex.norm_log_one_add_sub_self_le` for the remainder `≤ ‖z‖² ≤ N^{-2s}`,
+`Complex.norm_log_one_add_half_le_self` for the summability).  Whenever a prime
+sum and its log-sum both appear in a route sketch, that inequality is the seam.
+
+**2. DO NOT TRANSPORT A PROOF INTO YOUR VOCABULARY — RESTATE IT WITH NO
+VOCABULARY.**  This is the lever, and it is worth more than the instance.
+`Chebotarev.lean:10715–11132` is the same argument for a `DirichletCharacter`,
+PROVEN, ~430 lines.  The obvious move is to copy it with
+`χ (N P : ZMod ℓ)` rewritten to `χ (P.asIdeal : FractionalIdeal …)` and the index
+type changed to a subtype — a genuine rewrite, in a 59 000-line file.  The right
+move is to notice that **none of those 430 lines uses a number field, a place, a
+character or an ideal.**  Restated for `N : ι → ℝ` with `N i ≥ 2`, `c : ι → ℂ`
+with `‖c i‖ ≤ 1`, and an abstract `L : ℂ → ℂ` with `exp 𝒮 = L`, the whole thing
+is two lemmas (~60 and ~170 lines) that **elaborate in a MATHLIB-ONLY scratch at
+~9 s a round**, and the instantiation at the real objects is fifteen lines
+(`exact <abstract lemma> _ hN2 _ (fun w => hnorm _) …`).
+
+Three things follow, and they generalise to every "transport the Chebotarev/
+mathlib proof" task in this tree:
+
+* **the round trip collapses.**  A mathlib-only scratch beats even the
+  `public import`-the-target scratch (9 s vs 10 s here, and far more when the
+  target module is large or red), and it is immune to the target being
+  unbuildable at all;
+* **the abstraction IS the audit.**  A glue lemma that compiles without the
+  arithmetic hypotheses is demonstrably not smuggling any of the leaf's content
+  into the residue.  Here it proved that `hmm`, `hmul`, `hcls` and `hne` are
+  spent ONLY inside the surviving leaf;
+* **transplant it programmatically, never by retyping.**  Slice the verified
+  text out of the scratch, `assert` the anchor is unique, and check
+  `git diff --stat`.  A 170-line proof retyped into an `Edit` is a 170-line
+  opportunity for a silent truncation.
+
+**3. WHERE THE REAL RESIDUE IS, once both recuts are made.**  The leaf becomes
+*"there is an `L` with `exp 𝒮 = L` on `re w > 1`, and `0 < cc ≤ ‖L‖ ≤ CC`,
+`‖L'‖ ≤ CC` on `(1, 2]`"* — i.e. the Euler product plus `L(1, χ) ≠ 0`.
+**Existentially quantifying `L` is safe here and it is worth checking why**: the
+Euler conjunct pins `L` on the whole half-plane, and `deriv L` is read only at
+real `s > 1`, which is INTERIOR to that open set, so `L'` is pinned too.  An
+existential over a function is a junk-witness trap exactly when the other
+conjuncts fail to determine it; say which conjunct does the pinning in the
+docstring.
+
+**4. AND SAY THE COUNT DID NOT MOVE, TWICE.**  Two recuts, `1 → 1` each, so every
+frontier instrument reports two cycles of nothing.  The receipt that distinguishes
+a recut from a no-op is one command, and it belongs in the commit message:
+
+    git diff HEAD^ HEAD -- <file> | grep -E '^[+-] *sorry *$'    # one `+`, one `-`
+
+What changed is what is LEFT: no Taylor remainder, no summability, no Weierstrass
+differentiability, no mean value argument — the surviving leaf is the statement
+the literature proves, and its docstring can therefore itemise the remaining
+obligations with line numbers into `Chebotarev.lean` instead of describing a
+route.
+
+### The rider that decides how the successor should attack it
+
+Chebotarev's own nonvanishing IS proven in tree
+(`integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`, `:10383`) by the
+Landau-free contradiction, and **it does not transport, for one identifiable
+reason worth extracting before anyone starts.**  That argument bounds
+`∑_ψ Re 𝒮_ψ(s)` above near `s = 1` (the trivial character's pole is cancelled by
+the assumed zero, `#zeros ≥ #poles`) and below by `h·∑_{P ∈ principal class}
+N(P)^{-s}`, because `∑_ψ -log(1 - ψ(a)T) = -(h/f_a)·log(1 - T^{f_a}) ≥ 0` and only
+`f_a = 1` diverges.  So it needs **primes in the PRINCIPAL class with divergent
+prime sum** — which Chebotarev gets free from the degree-one primes of the
+cyclotomic field, and which for a general modulus is the RAY CLASS FIELD, i.e.
+class field theory.  Before building that, cost the two substitutes: the `3-4-1`
+inequality `ζ(σ)³|L(σ,χ)|⁴|L(σ,χ²)| ≥ 1` settles every `χ` with `χ² ≠ 1` with no
+auxiliary field at all, and only the REAL characters need the harder argument.
+**A "the Chebotarev proof transports" claim in a task prompt is about the SHAPE;
+find the one step that is about the auxiliary FIELD and price that separately.**
+
+### Two smaller facts, both measured
+
+* **`tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le` (`Chebotarev.lean:8967`)
+  takes `{c : ℕ → ℂ}` — it is already generic in the coefficient sequence.**  So
+  is `exists_forall_norm_sum_log_mul_le_rpow`.  A chunk of that file's analytic
+  machinery is reusable verbatim by anything with a Dirichlet series, and a reader
+  who greps for `dirichletCharacter` in the names will not find it.
+* **A task prompt's "your target exists ONLY on `merger`, and `merger` is RED" can
+  be stale because a release PUBLISHED in between.**  Here release 33 was the first
+  publish in six releases, so `main` already carried the target at the very line the
+  prompt quoted and `lake build` worked normally.  `git show main:<file> | grep -n
+  <name>` costs one command and is the first thing to run after the fast-forward —
+  the release window closes as well as opens.
