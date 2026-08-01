@@ -2932,9 +2932,24 @@ theorem isDiffChar_degreeFormEnd_one (q : ℕ) [Fact q.Prime]
 
 end Separability
 
-/-- **The ORDINARY criterion, in its POLYNOMIAL form** (sorry leaf, opened
-2026-07-30; Silverman *AEC* V.3.1, Deuring): a curve whose Frobenius trace is
-prime to `q` has a NON-CONSTANT `q`-division polynomial.
+/-- **`deg ΨSqₙ` is insensitive to base change** (PROVEN): `ΨSqₙ` is defined over
+the base and its formation commutes with `map` (`WeierstrassCurve.map_ΨSq`), while
+`natDegree` is preserved by an injective ring hom — and a field hom is injective.
+
+This is the bridge that lets the ordinary criterion be STATED over the prime field
+`𝔽_q`, where the polynomial is finite and machine-checkable, while being PROVEN over
+`𝔽̄_q`, where the geometry lives. -/
+theorem natDegree_ΨSq_baseChange (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) (n : ℤ) :
+    ((Wbar⁄(AlgebraicClosure (ZMod q))).ΨSq n).natDegree = (Wbar.ΨSq n).natDegree := by
+  rw [show (Wbar⁄(AlgebraicClosure (ZMod q))) =
+      Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) from rfl,
+    WeierstrassCurve.map_ΨSq]
+  exact Polynomial.natDegree_map _
+
+/-- **The ORDINARY criterion, in its POLYNOMIAL form** (**PROVEN 2026-08-01** by the
+TWELFTH CUT's Wronskian argument; Silverman *AEC* V.3.1, Deuring): a curve whose
+Frobenius trace is prime to `q` has a NON-CONSTANT `q`-division polynomial.
 
 This is `exists_ne_zero_qTorsion` below with the point-group layer stripped off.
 The two are equivalent through
@@ -2975,149 +2990,60 @@ free integer.
 sweep above, which is in short-Weierstrass form; the `q = 2` argument is the
 explicit one recorded below.
 
-THE ROUTE IS UNCHANGED — Deuring's congruence, and everything said about it
-below still applies, because the equivalence used to get here is proven and
-costs nothing.  What the successor now has to produce is
-`deg ψ_q > 0`, and the classical bridge to Deuring is that `ψ_q` is constant
-exactly when the Hasse invariant `H` (the coefficient of `x^{q−1}` in
-`g^{(q−1)/2}`) vanishes, while `c ≡ H (mod q)`.
+THE ROUTE TAKEN, 2026-08-01, and it is NOT Deuring's congruence.  The docstring
+that stood here prescribed the Hasse invariant (`ψ_q` is constant exactly when
+`H`, the coefficient of `x^{q−1}` in `g^{(q−1)/2}`, vanishes, while `c ≡ H mod q`)
+and said the route was "unchanged".  It did not need to be run: the TWELFTH CUT's
+separability argument, ~200 lines above, already closes this leaf, and the whole
+of Deuring's congruence, the Hasse invariant and the Cartier operator are
+UNNECESSARY.  In outline —
 
-THE CHECK THAT WOULD REFUTE the claim that this is the minimal atom: a proof
-of `deg ψ_q > 0` from the kernel counts alone.  The model `A` recorded on
-`natCard_ker_degreeFormEnd_le` above rules that out — it satisfies every
-`ℤ[F]` identity this module proves, for any `c` prime to `q`, with `A[q] = 0`. -/
+* `deg ΨSq_q = 0` gives `E[q] = 0` by
+  `TorsionCharP.exists_ne_zero_torsion_iff_natDegree_ΨSq_ne_zero`, read on `𝔽̄_q`
+  through `natDegree_ΨSq_baseChange` just above;
+* so `[q]` is injective, and `[q] = V ∘ F` with `F` bijective
+  (`bijective_frobeniusPointEnd`) makes the Verschiebung `V = [c] − F` injective;
+* `λ(V) = c ≠ 0` in `𝔽̄_q` (`isDiffChar_degreeFormEnd_one`, whose own content is
+  `λ(F) = 0`, i.e. `derivative (X^q) = 0`), so
+  `exists_xWitness_natDegree_le_one_of_injective` gives `V` an `x`-map `A/B` with
+  `max (deg A) (deg B) ≤ 1`;
+* `x([q]P) = (A/B)(x(P)^q)` then reads `Φ_q · B(X^q) = A(X^q) · ΨSq_q` as an
+  identity of polynomials, `Φ_q` is coprime to `ΨSq_q` (`isCoprime_Φ_ΨSq`), so
+  `Φ_q ∣ A(X^q)` and `q² = deg Φ_q ≤ q · deg A ≤ q`, false for `q ≥ 2`.
+
+Note the last step does NOT use `deg ΨSq_q = 0` a second time: the contradiction
+is a degree count that holds whatever `ΨSq_q` is.  The hypothesis is spent exactly
+once, at the first bullet.
+
+THE CHECK THAT REFUTED the claim that this is the minimal atom: it is not minimal
+and never was — the same argument proves it directly.  What the old note got right
+is that no proof can come from the kernel counts alone: the model `A` recorded on
+`natCard_ker_degreeFormEnd_le` above satisfies every `ℤ[F]` identity this module
+proves, for any `c` prime to `q`, with `A[q] = 0`.  The proof below duly uses the
+GEOMETRY — `veluPointX_nsmul` and the Wronskian — and not `ℤ[F]`. -/
 theorem natDegree_ΨSq_ne_zero_of_not_dvd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
     (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
       = c • frobeniusPointEnd q Wbar
         - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
     (hqc : ¬ ((q : ℤ) ∣ c)) :
-    (Wbar.ΨSq (q : ℤ)).natDegree ≠ 0 :=
-  sorry
-
-/-- **The ORDINARY criterion** (PROVEN 2026-07-30 over
-`natDegree_ΨSq_ne_zero_of_not_dvd` above; Silverman *AEC*
-V.3.1, Deuring): a curve whose Frobenius trace is prime to `q` has a NONZERO
-`q`-torsion point over `𝔽̄_q`.
-
-This is the last characteristic-`q` input of the degree theory, and the only
-place the ordinary/supersingular dichotomy enters.  Everything `q`-primary is
-proven from it: `natCard_ker_zsmul_q` (`#E[q] = q`), then
-`natCard_ker_frobeniusConj` (`#ker([c] − F) = q`), then
-`natCard_ker_degreeFormEnd_of_dvd` (the whole `q ∣ d` family).
-
-`hqc` IS LOAD-BEARING and the statement is FALSE without it: a supersingular
-curve has `E[q] = 0` outright.  Witness `y² = x³ + 1` over `𝔽₅`, where the
-affine points are `(0, ±1)`, `(2, ±2)`, `(4, 0)` — so `#E(𝔽₅) = 6`, `c = 0`,
-and `E[5] = 0`.  `hc` is load-bearing too, because it is what pins `c` to the
-Frobenius trace rather than leaving it a free integer: `c` is UNIQUE given
-`hc`, since two solutions differ by an integer annihilating `F`'s image, i.e.
-all of `Wbar(𝔽̄_q)`, which has points of order `n` for every `q ∤ n`
-(`TorsionCard.card_torsionBy`).
-
-WHAT IS FREE HERE, AND A CORRECTION.  The note this leaf replaces claimed the
-upper half `#ker([c] − F) ≤ q` was "already free" from
-`natCard_ker_degreeFormEnd_le` at `(m, n) = (c, 1)`.  That is not free: that
-declaration is itself an OPEN leaf.  The upper half is genuinely free, but from
-`TorsionCharP.exists_zsmul_eq_of_charP` — the `q`-torsion in characteristic `q`
-is CYCLIC, PROVEN 2026-07-25 out of the vanishing of `ΨSqₚ′` — which gives
-`#E[q] ∣ q` outright.  `natCard_ker_zsmul_q` below now takes it from there, so
-the `q`-primary count no longer depends on `natCard_ker_degreeFormEnd_le` at
-all.  What is missing is exactly the LOWER bound `E[q] ≠ 0`, which is this
-leaf, stated as the existence of ONE point rather than as a count.
-
-IT IS NOT DERIVABLE FROM THE ALGEBRA IN THIS FILE, and that is worth recording
-because several route notes have proposed rearranging the peeling to get it.
-Take `A = ⨁_{ℓ ≠ q} (ℚ_ℓ/ℤ_ℓ)²` with `F` acting on each `T_ℓ = ℤ_ℓ²` by the
-companion matrix of `X² − c·X + q`, for ANY `c` prime to `q`.  Then `F` is
-bijective, `F² = c·F − q`, and `#ker([m] − [n]F) = |d| / q^{v_q(d)}` for every
-`(m, n)` — so `#ker F = 1` and every `q ∤ d` count agrees with
-`natCard_ker_degreeFormEnd_of_not_dvd` and with `degreeFormEnd_peel` — and yet
-`A[q] = 0`.  Every algebraic identity this module proves holds in that model,
-so any proof of this leaf must use the GEOMETRY of the curve, not `ℤ[F]`.
-
-A SECOND ROUTE, AND A CORRECTION TO THE STEER BELOW (2026-07-30).  The note
-below says "no invariant differentials", and that was written when this tree had
-no invariant-differential machinery.  It now does:
-`EllipticCurve/DifferentialCharacter.lean` defines `IsDiffChar φ c` ("`φ` pulls
-the invariant differential `ω = dx/(2y + a₁x + a₃)` back to `c·ω`") and proves it
-additive, multiplicative on composites, and equal to `n` on `[n]`.  That is
-exactly the classical route's first half: `λ(F) = 0` because `d(x^q) = 0`, so
-`λ([c] − F) = c`, and `hqc` says `c ≠ 0` in `𝔽_q` — i.e. the Verschiebung
-`V = [c] − F` is SEPARABLE precisely when `q ∤ c`.  Note this half needs
-`isIsogeny_frobeniusPointEnd`/`isRationalMap_frobeniusPointEnd` above to have a
-certificate for `F` at all, which is new as of the EIGHTH CUT.
-
-What that route still needs, and it is why it is recorded rather than taken:
-"separable and non-constant ⟹ `#ker = deg > 1`".  The tree has no
-scheme-theoretic `deg` (see the same discussion on
-`natCard_ker_degreeFormEnd_le`), and `DifferentialCharacter`'s own injectivity
-statement `eq_zero_of_isDiffChar_zero` carries `[CharZero F]` — necessarily, since
-`F` itself has `λ(F) = 0` and `F ≠ 0`.  So the missing atom is a fibre-counting
-statement for a separable rational map of curves, which is a real piece of work
-but is a statement about ONE-VARIABLE POLYNOMIALS (the `x`-witness `A/B` and its
-Wronskian `A′B − AB′`, both already handled in that file) rather than about
-`𝔽_{q^n}`-point counts.  Weigh it against the character-sum route below.
-
-THE FIRST ROUTE, and it is elementary: no invariant differentials, no dual
-isogeny, no Cartier operator, no `E[q^∞]` structure theorem.  It is Deuring's
-congruence, used twice.  For `q` odd write the curve as `y² = g(x)` with
-`deg g = 3`, set `G = g^{(q−1)/2}` and let `H ∈ 𝔽_q` be the coefficient of
-`x^{q−1}` in `G` (the Hasse invariant).
-
-1. `#E(𝔽_{q^n}) ≡ 1 − Hₙ (mod q)`, where `Hₙ` is the coefficient of
-   `x^{q^n − 1}` in `g^{(q^n − 1)/2}`.  Pure character sum:
-   `#E(𝔽_{q^n}) = q^n + 1 + Σ_x χ(g(x))` with `χ(u) = u^{(q^n − 1)/2}`, and
-   `Σ_{x ∈ 𝔽_{q^n}} x^k = −1` exactly when `k > 0` and `(q^n − 1) ∣ k`.
-2. `Hₙ = H^n` in `𝔽_q`.  `g^{(q^n − 1)/2} = ∏_{i < n} G^{q^i}` and
-   `G^{q^i} = Σ_j a_j^{q^i} x^{j·q^i}`, so the coefficient of `x^{q^n − 1}` is
-   a sum over `Σ_i j_i q^i = q^n − 1` with `0 ≤ j_i ≤ deg G = 3(q−1)/2`.  Since
-   `3(q−1)/2 < 2q − 1`, the congruence `j₀ ≡ −1 (mod q)` forces `j₀ = q − 1`,
-   and induction forces every `j_i = q − 1`.  Hence
-   `Hₙ = ∏_i H^{q^i} = H^{1 + q + ⋯ + q^{n−1}} = H^n`, using `H^q = H` for
-   `H ∈ 𝔽_q`.
-3. `n = 1` gives `c = q + 1 − #E(𝔽_q) ≡ H (mod q)`, so `hqc` says `H ≠ 0`;
-   then `n = q − 1` gives `H^{q−1} = 1`, so `q ∣ #E(𝔽_{q^{q−1}})`, and Cauchy
-   produces a point of order `q` over `𝔽_{q^{q−1}} ⊆ 𝔽̄_q`.
-
-The cost of that route is not the argument but the INFRASTRUCTURE it needs:
-point counting over `𝔽_{q^n}` (this module only ever counts over `𝔽_q`, in
-`natCard_ker_one_sub_frobeniusPointEnd`) and the power-sum identity.  `q = 2`
-is not covered by it — completing the square fails — but there the whole
-statement is finite and explicit: in characteristic `2`,
-`−(x, y) = (x, y + a₁x + a₃)`, so `P = −P` forces `a₁x = 0`; hence for `a₁ ≠ 0`
-the point `(0, y)` with `y² + a₃y = a₆` is a nonzero `2`-torsion point, and
-`a₁ = 0` is exactly the supersingular case over `𝔽₂` (where `2 ∣ c`), which
-`hqc` excludes.
-
-THE CHECK THAT WOULD REFUTE the claim that this is the minimal atom: a proof of
-`E[q] ≠ 0` from the kernel counts alone.  The model above rules that out.
-
-SEVENTH CUT, 2026-07-30 — THE POINT-GROUP LAYER IS GONE.  The statement above is
-now PROVEN, over the strictly smaller `natDegree_ΨSq_ne_zero_of_not_dvd` just
-below, which says the same thing about a SINGLE EXPLICIT POLYNOMIAL over the
-PRIME field.  What closed is the dictionary, and it is general enough to be worth
-naming: `TorsionCharP.exists_ne_zero_torsion_iff_natDegree_ΨSq_ne_zero`,
-
-    (∃ P ≠ 0, n • P = 0)  ↔  (ΨSqₙ).natDegree ≠ 0
-
-over an algebraically closed field, in ANY characteristic and for every `n ≠ 0`.
-Everything above about the model `A` and about the geometry being unavoidable
-remains correct and now applies verbatim to the surviving leaf. -/
-theorem exists_ne_zero_qTorsion (q : ℕ) [Fact q.Prime]
-    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
-    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
-      = c • frobeniusPointEnd q Wbar
-        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
-    (hqc : ¬ ((q : ℤ) ∣ c)) :
-    ∃ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, P ≠ 0 ∧ (q : ℤ) • P = 0 := by
+    (Wbar.ΨSq (q : ℤ)).natDegree ≠ 0 := by
   haveI hell : ((Wbar⁄(AlgebraicClosure (ZMod q))).toAffine).IsElliptic :=
     inferInstanceAs (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).IsElliptic
-  by_contra hcon
+  haveI hell2 : (Wbar⁄(AlgebraicClosure (ZMod q))).IsElliptic :=
+    inferInstanceAs (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).IsElliptic
+  intro hdeg
+  have hqZ0 : ((q : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : q.Prime).ne_zero
+  -- `deg ΨSq_q = 0` is exactly `E[q] = 0`, read on the algebraic closure
   have hqinj : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (q : ℤ) • P = 0 → P = 0 := by
     intro P hP
     by_contra hP0
-    exact hcon ⟨P, hP0, hP⟩
+    refine (TorsionCharP.exists_ne_zero_torsion_iff_natDegree_ΨSq_ne_zero
+      (Wbar⁄(AlgebraicClosure (ZMod q))) hqZ0).mp ⟨P, hP0, hP⟩ ?_
+    rw [show (((Wbar⁄(AlgebraicClosure (ZMod q)))⁄(AlgebraicClosure (ZMod q))).ΨSq ((q : ℕ) : ℤ))
+        = ((Wbar⁄(AlgebraicClosure (ZMod q))).ΨSq ((q : ℕ) : ℤ)) from rfl,
+      natDegree_ΨSq_baseChange]
+    exact hdeg
   have hcP : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
       frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
         = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
@@ -3223,6 +3149,144 @@ theorem exists_ne_zero_qTorsion (q : ℕ) [Fact q.Prime]
   have hA1 : A.natDegree ≤ 1 := le_trans (le_max_left _ _) hdeg
   have h2q := (Fact.out : q.Prime).two_le
   nlinarith [hle, hA1, h2q]
+
+/-- **The ORDINARY criterion** (PROVEN 2026-07-30 over
+`natDegree_ΨSq_ne_zero_of_not_dvd` above; Silverman *AEC*
+V.3.1, Deuring): a curve whose Frobenius trace is prime to `q` has a NONZERO
+`q`-torsion point over `𝔽̄_q`.
+
+This is the last characteristic-`q` input of the degree theory, and the only
+place the ordinary/supersingular dichotomy enters.  Everything `q`-primary is
+proven from it: `natCard_ker_zsmul_q` (`#E[q] = q`), then
+`natCard_ker_frobeniusConj` (`#ker([c] − F) = q`), then
+`natCard_ker_degreeFormEnd_of_dvd` (the whole `q ∣ d` family).
+
+`hqc` IS LOAD-BEARING and the statement is FALSE without it: a supersingular
+curve has `E[q] = 0` outright.  Witness `y² = x³ + 1` over `𝔽₅`, where the
+affine points are `(0, ±1)`, `(2, ±2)`, `(4, 0)` — so `#E(𝔽₅) = 6`, `c = 0`,
+and `E[5] = 0`.  `hc` is load-bearing too, because it is what pins `c` to the
+Frobenius trace rather than leaving it a free integer: `c` is UNIQUE given
+`hc`, since two solutions differ by an integer annihilating `F`'s image, i.e.
+all of `Wbar(𝔽̄_q)`, which has points of order `n` for every `q ∤ n`
+(`TorsionCard.card_torsionBy`).
+
+WHAT IS FREE HERE, AND A CORRECTION.  The note this leaf replaces claimed the
+upper half `#ker([c] − F) ≤ q` was "already free" from
+`natCard_ker_degreeFormEnd_le` at `(m, n) = (c, 1)`.  That is not free: that
+declaration is itself an OPEN leaf.  The upper half is genuinely free, but from
+`TorsionCharP.exists_zsmul_eq_of_charP` — the `q`-torsion in characteristic `q`
+is CYCLIC, PROVEN 2026-07-25 out of the vanishing of `ΨSqₚ′` — which gives
+`#E[q] ∣ q` outright.  `natCard_ker_zsmul_q` below now takes it from there, so
+the `q`-primary count no longer depends on `natCard_ker_degreeFormEnd_le` at
+all.  What is missing is exactly the LOWER bound `E[q] ≠ 0`, which is this
+leaf, stated as the existence of ONE point rather than as a count.
+
+IT IS NOT DERIVABLE FROM THE ALGEBRA IN THIS FILE, and that is worth recording
+because several route notes have proposed rearranging the peeling to get it.
+Take `A = ⨁_{ℓ ≠ q} (ℚ_ℓ/ℤ_ℓ)²` with `F` acting on each `T_ℓ = ℤ_ℓ²` by the
+companion matrix of `X² − c·X + q`, for ANY `c` prime to `q`.  Then `F` is
+bijective, `F² = c·F − q`, and `#ker([m] − [n]F) = |d| / q^{v_q(d)}` for every
+`(m, n)` — so `#ker F = 1` and every `q ∤ d` count agrees with
+`natCard_ker_degreeFormEnd_of_not_dvd` and with `degreeFormEnd_peel` — and yet
+`A[q] = 0`.  Every algebraic identity this module proves holds in that model,
+so any proof of this leaf must use the GEOMETRY of the curve, not `ℤ[F]`.
+
+A SECOND ROUTE, AND A CORRECTION TO THE STEER BELOW (2026-07-30).  The note
+below says "no invariant differentials", and that was written when this tree had
+no invariant-differential machinery.  It now does:
+`EllipticCurve/DifferentialCharacter.lean` defines `IsDiffChar φ c` ("`φ` pulls
+the invariant differential `ω = dx/(2y + a₁x + a₃)` back to `c·ω`") and proves it
+additive, multiplicative on composites, and equal to `n` on `[n]`.  That is
+exactly the classical route's first half: `λ(F) = 0` because `d(x^q) = 0`, so
+`λ([c] − F) = c`, and `hqc` says `c ≠ 0` in `𝔽_q` — i.e. the Verschiebung
+`V = [c] − F` is SEPARABLE precisely when `q ∤ c`.  Note this half needs
+`isIsogeny_frobeniusPointEnd`/`isRationalMap_frobeniusPointEnd` above to have a
+certificate for `F` at all, which is new as of the EIGHTH CUT.
+
+What that route still needs, and it is why it is recorded rather than taken:
+"separable and non-constant ⟹ `#ker = deg > 1`".  The tree has no
+scheme-theoretic `deg` (see the same discussion on
+`natCard_ker_degreeFormEnd_le`), and `DifferentialCharacter`'s own injectivity
+statement `eq_zero_of_isDiffChar_zero` carries `[CharZero F]` — necessarily, since
+`F` itself has `λ(F) = 0` and `F ≠ 0`.  So the missing atom is a fibre-counting
+statement for a separable rational map of curves, which is a real piece of work
+but is a statement about ONE-VARIABLE POLYNOMIALS (the `x`-witness `A/B` and its
+Wronskian `A′B − AB′`, both already handled in that file) rather than about
+`𝔽_{q^n}`-point counts.  Weigh it against the character-sum route below.
+
+THE FIRST ROUTE, and it is elementary: no invariant differentials, no dual
+isogeny, no Cartier operator, no `E[q^∞]` structure theorem.  It is Deuring's
+congruence, used twice.  For `q` odd write the curve as `y² = g(x)` with
+`deg g = 3`, set `G = g^{(q−1)/2}` and let `H ∈ 𝔽_q` be the coefficient of
+`x^{q−1}` in `G` (the Hasse invariant).
+
+1. `#E(𝔽_{q^n}) ≡ 1 − Hₙ (mod q)`, where `Hₙ` is the coefficient of
+   `x^{q^n − 1}` in `g^{(q^n − 1)/2}`.  Pure character sum:
+   `#E(𝔽_{q^n}) = q^n + 1 + Σ_x χ(g(x))` with `χ(u) = u^{(q^n − 1)/2}`, and
+   `Σ_{x ∈ 𝔽_{q^n}} x^k = −1` exactly when `k > 0` and `(q^n − 1) ∣ k`.
+2. `Hₙ = H^n` in `𝔽_q`.  `g^{(q^n − 1)/2} = ∏_{i < n} G^{q^i}` and
+   `G^{q^i} = Σ_j a_j^{q^i} x^{j·q^i}`, so the coefficient of `x^{q^n − 1}` is
+   a sum over `Σ_i j_i q^i = q^n − 1` with `0 ≤ j_i ≤ deg G = 3(q−1)/2`.  Since
+   `3(q−1)/2 < 2q − 1`, the congruence `j₀ ≡ −1 (mod q)` forces `j₀ = q − 1`,
+   and induction forces every `j_i = q − 1`.  Hence
+   `Hₙ = ∏_i H^{q^i} = H^{1 + q + ⋯ + q^{n−1}} = H^n`, using `H^q = H` for
+   `H ∈ 𝔽_q`.
+3. `n = 1` gives `c = q + 1 − #E(𝔽_q) ≡ H (mod q)`, so `hqc` says `H ≠ 0`;
+   then `n = q − 1` gives `H^{q−1} = 1`, so `q ∣ #E(𝔽_{q^{q−1}})`, and Cauchy
+   produces a point of order `q` over `𝔽_{q^{q−1}} ⊆ 𝔽̄_q`.
+
+The cost of that route is not the argument but the INFRASTRUCTURE it needs:
+point counting over `𝔽_{q^n}` (this module only ever counts over `𝔽_q`, in
+`natCard_ker_one_sub_frobeniusPointEnd`) and the power-sum identity.  `q = 2`
+is not covered by it — completing the square fails — but there the whole
+statement is finite and explicit: in characteristic `2`,
+`−(x, y) = (x, y + a₁x + a₃)`, so `P = −P` forces `a₁x = 0`; hence for `a₁ ≠ 0`
+the point `(0, y)` with `y² + a₃y = a₆` is a nonzero `2`-torsion point, and
+`a₁ = 0` is exactly the supersingular case over `𝔽₂` (where `2 ∣ c`), which
+`hqc` excludes.
+
+THE CHECK THAT WOULD REFUTE the claim that this is the minimal atom: a proof of
+`E[q] ≠ 0` from the kernel counts alone.  The model above rules that out.
+
+SEVENTH CUT, 2026-07-30 — THE POINT-GROUP LAYER IS GONE.  This statement is
+PROVEN, over `natDegree_ΨSq_ne_zero_of_not_dvd` **above**, which says the same
+thing about a SINGLE EXPLICIT POLYNOMIAL over the PRIME field.  What closed is the
+dictionary, and it is general enough to be worth naming:
+`TorsionCharP.exists_ne_zero_torsion_iff_natDegree_ΨSq_ne_zero`,
+
+    (∃ P ≠ 0, n • P = 0)  ↔  (ΨSqₙ).natDegree ≠ 0
+
+over an algebraically closed field, in ANY characteristic and for every `n ≠ 0`.
+Everything above about the model `A` and about the geometry being unavoidable
+remains correct and applies verbatim to the polynomial statement.
+
+REPAIR, 2026-08-01 — THE DEPENDENCY HAD BEEN INVERTED BY A LATER CUT, AND BOTH
+DOCSTRINGS WENT ON DESCRIBING THE INTENDED ARRANGEMENT.  The TWELFTH CUT
+(separability, ~250 lines above) rewrote THIS proof to run the Wronskian argument
+inline, so from 2026-07-31 to 2026-08-01 the body here did not mention
+`natDegree_ΨSq_ne_zero_of_not_dvd` at all — leaving that leaf OPEN with **no
+consumer anywhere in the tree**, i.e. an open leaf nothing reached, while this
+docstring and the leaf's own both said it was the primitive.  The Wronskian body
+has been moved up onto the leaf, where it belongs, and this theorem is once again
+the three-line corollary its docstring always claimed it was.  The paragraph
+above about `q = 2` and about point counting over `𝔽_{q^n}` describes a route that
+was never taken and is kept only as a record of what was searched. -/
+theorem exists_ne_zero_qTorsion (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
+      = c • frobeniusPointEnd q Wbar
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)))
+    (hqc : ¬ ((q : ℤ) ∣ c)) :
+    ∃ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, P ≠ 0 ∧ (q : ℤ) • P = 0 := by
+  haveI hell2 : (Wbar⁄(AlgebraicClosure (ZMod q))).IsElliptic :=
+    inferInstanceAs (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).IsElliptic
+  have hqZ0 : ((q : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : q.Prime).ne_zero
+  refine (TorsionCharP.exists_ne_zero_torsion_iff_natDegree_ΨSq_ne_zero
+    (Wbar⁄(AlgebraicClosure (ZMod q))) hqZ0).mpr ?_
+  rw [show (((Wbar⁄(AlgebraicClosure (ZMod q)))⁄(AlgebraicClosure (ZMod q))).ΨSq ((q : ℕ) : ℤ))
+      = ((Wbar⁄(AlgebraicClosure (ZMod q))).ΨSq ((q : ℕ) : ℤ)) from rfl,
+    natDegree_ΨSq_baseChange]
+  exact natDegree_ΨSq_ne_zero_of_not_dvd q Wbar hc hqc
 
 
 /-- **`#E[q] = q` in the ordinary case** (PROVEN 2026-07-29 over

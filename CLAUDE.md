@@ -16151,3 +16151,71 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## AN INLINING REFACTOR ORPHANS THE LEAF IT WAS CUT FROM — AND BOTH DOCSTRINGS GO ON NAMING IT AS THE PRIMITIVE
+
+(2026-08-01, `flt-lean-283`, `natDegree_ΨSq_ne_zero_of_not_dvd` in
+`EllipticCurve/HasseBound.lean`.)  The standing detector *"a proven parent whose
+docstring names a different leaf from its proof body is a duplicate-cut detector"*
+is written for a MERGE that lands two rival cuts.  The same tell fires with **no
+merge and no second branch**, from an ordinary same-file refactor, and the repair
+is different — so it is worth recognising separately.
+
+The mechanism, in one file, over two days and two commits by two agents:
+
+* the SEVENTH CUT split `exists_ne_zero_qTorsion` into a polynomial leaf
+  (`natDegree_ΨSq_ne_zero_of_not_dvd`, "the same thing about ONE explicit
+  polynomial over the prime field") plus a proven dictionary;
+* the TWELFTH CUT, the next day, built the separability/Wronskian machinery
+  ~250 lines above and **rewrote `exists_ne_zero_qTorsion`'s body to run that
+  argument inline**, closing it outright.
+
+Each edit is correct.  Together they leave the leaf **OPEN with no consumer
+anywhere in the tree** — the seventh invisibility class — while *both* docstrings
+still say it is the primitive: the leaf's own said "THE ROUTE IS UNCHANGED …
+what the successor now has to produce is `deg ψ_q > 0`", and the parent's said
+"PROVEN over the strictly smaller `natDegree_ΨSq_ne_zero_of_not_dvd`".  Every
+instrument agreed it was ordinary open work; it drew a dispatch.
+
+**The tell is that the TWELFTH CUT's own section docstring spells out the whole
+argument under a heading naming only the parent** — *"WHY THIS CLOSES THE ORDINARY
+CRITERION"* — without noticing the same argument closes the leaf the parent was
+cut over.  When a cut lands machinery that closes a node, grep the file for the
+node's SIBLINGS and RESIDUES: the thing it closes is rarely just the one theorem
+whose name is in the heading.
+
+**THE REPAIR IS NOT "PROVE IT" AND NOT "DELETE IT" — IT IS TO INVERT THE
+DEPENDENCY BACK.**  Both obvious moves are wrong here:
+
+* *prove the leaf standalone* → a PROVEN theorem with no consumer, i.e.
+  free-floating code, which this project forbids;
+* *delete the leaf* → throws away a true, numerically-audited statement that is
+  strictly better to own than its parent (it is about one polynomial over `𝔽_q`,
+  with no algebraic closure and no point group in it).
+
+What works, and it is cheap: **MOVE the inlined body up onto the leaf, and
+re-derive the parent over it in three lines.**  Both docstrings become true again,
+the leaf is consumed, and the frontier drops by one with no new leaf.  Here the
+whole edit was one 105-line block move plus an eight-line new opening (`intro
+hdeg` and one application of the dictionary in place of `by_contra`), plus one
+five-line base-change bridge — and the transplanted body compiled UNCHANGED,
+because the argument never mentioned the parent's conclusion: it consumed only
+`hqinj : ∀ P, q • P = 0 → P = 0`, which the dictionary supplies from the leaf's
+hypothesis just as `by_contra` supplied it from the parent's.
+
+**The generalisable check, before you accept a leaf as work:** grep its name over
+the comment-stripped tree, and CLASSIFY each hit.  Hits that are only its own
+declaration line plus docstrings mean it is dead — and then ask whether some
+theorem in the file is proven by an argument that would also prove it.  If the
+parent's proof body does not name the leaf, that parent's body IS the missing
+proof; check whether the hypothesis it opens with (`by_contra` on the parent's
+conclusion) is interderivable with the leaf's, which for a cut through a proven
+`iff` it always is.
+
+Rider on cost, and it is why the route note was worth ignoring: the leaf's
+docstring prescribed **Deuring's congruence and the Hasse invariant** and called
+that route "unchanged".  None of it was needed — the file had grown the machinery
+that closes the leaf one day BEFORE the note was last touched.  A route note's
+"unchanged" is a claim about the tree on the day it was written, and in this fleet
+the tree moves under a docstring in hours; re-read the file's own newest section
+headings before costing anything off a route.
