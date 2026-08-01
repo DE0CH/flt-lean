@@ -16151,3 +16151,61 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A COST TRIAGE CAN PRICE THE WRONG OBJECT — ask what the method's INNER LOOP runs over
+
+(2026-08-01, `flt-lean-325`, the two `p = 37` rows of Mazur's non-CM table in `X0.lean`.)
+
+Both rows carried, in capitals and in three separate docstrings, **DO NOT DISPATCH A PLAIN
+COMPUTATION AT THIS ROW**, backed by a numbered cost triage, a re-verified falsity audit, an
+exhaustive table of certificate primes, and a measured comparison against the cheapest
+sibling. Two rival queue entries had been written against them and both concluded "the cost
+verdict is unchanged". Everything in those passages was carefully done and one arithmetic
+step was wrong, and that step was worth a factor of `35`.
+
+The triage said: the certificate is `H ∣ X ^ (ℓ ^ m) - X`, the Frobenius table for it is
+`≈ deg H` identities at degree `≤ 2 · deg H`, and **`deg H = 666` is forced at every `ℓ`** —
+so no choice of `ℓ` helps and the row is out of reach. The middle clause is the error.
+`deg H = 666` really is forced, and the table is **not built over `H`**: the method FACTORS
+`H` and builds one table per irreducible factor, which is exactly what the `p = 11` row the
+same paragraph cites for comparison does — five degree-`11` tables, not one degree-`55`
+table. The cost is cubic in the FACTOR degree, and the factor degree is precisely what `ℓ`
+controls. Moving `ℓ` from `397` (factors of degree `222`) to `1259` (degree `37`) takes the
+row from `≈ 200 h` to `≈ 6 h` and additionally discharges three coprimality side conditions,
+because `37` is prime and `> n = 36`.
+
+**The check, and it is one question: what does the method's INNER LOOP range over?** A cost
+verdict of the form *"quantity `X` is forced, therefore choosing `Y` cannot help"* is only as
+good as the claim that the cost lives on `X`. Here `X` was a genuinely invariant quantity
+(`deg H`), correctly identified as invariant, and the cost lived on a different quantity that
+the very table printed underneath the verdict showed varying with `Y`. So the refuting
+evidence was already on the page, in the author's own hand, one paragraph away.
+
+Three riders, each of which cost something here:
+
+* **A triage that cites a WORKED sibling has handed you its own test.** Ask whether the
+  formula being applied actually describes the sibling. `≈ deg H` identities at degree
+  `≤ 2 · deg H` does not describe the `p = 11` row at all, and checking that takes one look
+  at the generated file's first `def`.
+* **"The parameter is forced" and "the cost is forced" are different claims.** Forcing
+  `deg H` forces the identity COUNT and nothing else; the DEGREE at which `ring_nf` has to
+  close each identity is free, and it is the degree that dominates because `ring_nf` is
+  quadratic in it. Separate the two before believing either.
+* **Re-run the prescribed sweep even when you expect to reproduce it.** Mine reproduced the
+  2026-07-31 certificate-prime table row for row and found one prime missing (`ℓ = 2579`).
+  It changed no conclusion, but the table was advertised as EXHAUSTIVE, and a table that is
+  wrong once is a table the next reader cannot use as a stopping condition.
+
+**And the recut itself was six sites, because the bridge was already prime-generic.**
+`not_monic_dvd_preΨ_of_mod` binds `{ℓ p n : ℕ} [Fact ℓ.Prime]`, so retargeting a row costs
+the two `def`s, the two `map` lemmas, the leaf statement and one `Fact` — no consumer's
+statement moves, and the whole thing elaborated first try in a `5 s` scratch against the
+built olean. **When a leaf is priced at a wall, check whether the wall is in the STATEMENT or
+in a parameter the statement merely happens to have fixed.** A parameter fixed by an earlier
+agent's search is not a constraint; it is a choice, and choices are re-openable.
+
+Accounting, in the shape this file asks for: the count did **not** move, `2 → 2`, and the
+diff touches no `sorry` line (`git diff | grep -E '^[+-]\s*sorry\s*$'` is empty, which is the
+mechanical receipt). What changed is that the residue went from a job nobody could be sent at
+to `18` independent blocks of a shape that is already generated, closed and green elsewhere
+in the tree.
