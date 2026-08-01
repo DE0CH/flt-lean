@@ -16151,3 +16151,60 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## "A FINITE COMPUTATION AT THE CHOSEN `ℓ`" — COUNT THE SET, THEN COUNT THE COUNTEREXAMPLES IN IT
+
+(2026-08-01, `flt-lean-293`, `ajMinusTorsion_eq_zero_x0OneTwentyFive` in
+`FreyCurve/MazurTorsion.lean`.)  A sieve/reduction route almost always ends
+*"so it suffices that `P(x̄)` holds in the special fibre, which is a finite
+computation at the chosen `ℓ`"*.  That sentence is doing two things and only
+one of them is usually checked: it asserts a REDUCTION (sound, and normally
+the part the author verified) and it asserts that the residue is a UNIVERSAL
+statement over a finite set (unsound whenever some element of that set is a
+counterexample).  **The second half is refuted or confirmed by one CAS call,
+and it is the half nobody runs.**
+
+Here the route reduced *"the anti-invariant torsion class `[(P)] − [(w P)]`
+vanishes"* to `[P̄] = [w̄ P̄]` in `J_0(125)(𝔽_3)`.  PARI gives
+`#X_0(125)(𝔽_3) = 4` (genus `8`, `Tr T_3 = 0`, so `3 + 1 − 0`), and the cusp
+count gives that **two of those four points are cusps** — at which the class
+is provably NONZERO, by the very injectivity-on-torsion the route invokes.  So
+the "finite computation" is a computation whose answer is *false at half the
+points*, and the route silently needs a LOCUS restriction (`P̄` non-cuspidal,
+i.e. `v_3(j(P)) ≥ 0`) that it never states, plus a separate argument excluding
+the other locus.  That excluded case is the real residue and it is a named
+theorem — Mazur's formal immersion at the cusp — not a computation.
+
+**The mechanical check, and it is two numbers:**
+
+* count the finite set the final step quantifies over (`#X(𝔽_ℓ) = ℓ + 1 − Tr T_ℓ`
+  for a modular curve, one `mfheckemat` call);
+* count how many of its elements the CONCLUSION is false at.  If that is not
+  zero, the route is incomplete and the missing locus restriction is a new,
+  uncosted obligation.
+
+**Where the counterexamples live is predictable: they are the CUSPS.**  A sieve
+of this shape is always applied to a statement that holds on the OPEN part and
+fails on the boundary — the restriction to `strY` in the leaf's own signature is
+the tell — and reduction carries the boundary into the special fibre, where it
+is indistinguishable from the interior to any point count.  So on any
+`X_0(N)`-shaped leaf, ask how many `𝔽_ℓ`-points are cusp reductions BEFORE
+believing a residue phrased over all of `X(𝔽_ℓ)`.
+
+**AND THE ROUTE'S OWN RECORDED REFUTING CHECK WILL PASS.**  This leaf carried
+two of them — the `gcd` of `#J_0(125)(𝔽_ℓ)` stabilising at `25`, and an
+Atkin–Lehner eigenvalue pattern — both re-run and both correct.  They test the
+TORSION BOUND, which is the half the author doubted; the break is in the
+quantifier of the final step, and no count of `#J(𝔽_ℓ)` can see it.  This is
+[[flt-audit-refuting-check-unrun]] one step further on: the check was run, it
+passed, and it was the wrong check.  **When you inherit a refuting check, ask
+which CLAUSE of the route it tests before treating a pass as clearance.**
+
+Corollary on what to deliver when this happens.  Correcting the route is worth
+as much as a cut and must be done IN THE LEAF'S DOCSTRING, because a route that
+cannot close attracts repairs that cannot work — three dispatches had already
+been priced off this one.  Do NOT take the case-split cut it exposes unless the
+apparatus for both halves exists: here it would have traded one leaf for the
+formal-immersion existential, a two-point check, and a reduction datum at
+`(125, 3)` that is nowhere in the tree, with the arithmetic unchanged.  Say in
+the commit that the count did not move and what got smaller instead.
