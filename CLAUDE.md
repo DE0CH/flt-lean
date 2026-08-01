@@ -16151,3 +16151,67 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+## A ROUTE THAT PRICES A STEP THROUGH *QUASI-FINITENESS* WHEN THE HYPOTHESIS IS *UNRAMIFIED* IS PRICING A DETOUR
+
+(2026-08-01, `flat_of_mono_of_curve_over_field` in `ModularCurve/X0.lean`, PROVEN the
+same day it was read.)  That leaf carried a three-bullet route note, written by whoever
+cut it, pricing two of miracle flatness's four inputs.  Both prices were wrong, in the
+same direction and for the same reason, and correcting them halved the leaf.
+
+* `hfib` — *the fibre ring `T ⧸ 𝔪_R T` is zero-dimensional* — was priced at "restate
+  `Fermat.ringKrullDim_quotient_map_maximalIdeal_stalkMap` over `[LocallyQuasiFinite u]`
+  (it is stated with `[IsFinite u]`, which is not available), and derive
+  `LocallyQuasiFinite u` from `Mono u` via unramified-plus-finite-type.  Bookkeeping,
+  but it is not zero."  **It is zero.**  `Algebra.FormallyUnramified.isField_quotient_map_maximalIdeal`
+  (`Mathlib/RingTheory/Unramified/LocalRing.lean`, Stacks 00UW) says that fibre ring is a
+  FIELD, so `ringKrullDim_eq_zero_of_isField` closes it in one line.
+* `hdim` — *the two stalks have equal Krull dimension* — was priced as needing BOTH
+  "generic ↦ generic" AND "closed ↦ closed".  The second is three lines from
+  `Algebra.FormallyUnramified.map_maximalIdeal` (`𝔪_R · T = 𝔪_T`, so a field downstairs
+  forces a field upstairs); only the first survives as a leaf.
+
+**The tell is a vocabulary mismatch between the HYPOTHESIS and the ROUTE.**  The leaf's
+hypothesis is `Mono u`, i.e. *unramified*; the route reasons in *quasi-finite*, because
+that is the word the classical narrative uses ("a quasi-finite morphism between regular
+schemes of the same dimension is flat").  Quasi-finiteness is the weaker property, so its
+API is the one that has to be assembled by hand, and every step of the assembly gets
+priced.  Unramifiedness has its own LOCAL-RING API in the pin, and that API already
+contains everything the assembly was going to produce:
+
+    Algebra.FormallyUnramified.map_maximalIdeal            -- 𝔪_R · S = 𝔪_S
+    Algebra.FormallyUnramified.isField_quotient_map_maximalIdeal   -- the fibre is a FIELD
+    instance … : Module.Finite (ResidueField R) (ResidueField S)   -- 00UW(2)
+    instance … : Algebra.IsSeparable (ResidueField R) (ResidueField S)
+
+all under `[IsLocalRing R] [IsLocalRing S] [IsLocalHom (algebraMap R S)]
+[Algebra.EssFiniteType R S] [Algebra.FormallyUnramified R S]`.  **So: before costing a
+quasi-finiteness step, check whether what you hold is unramifiedness, and grep
+`Mathlib/RingTheory/Unramified/LocalRing.lean` before anything else.**  Same family as
+[[audit-lacks-x-is-about-x]] — the absence claim was about the object the author
+searched for, not about the obligation.
+
+Three riders, all cheap and all reusable in this development:
+
+* **The stalk side of the bridge is four `haveI`s and mathlib writes them for you.**
+  `algebraize [(u.stalkMap x).hom]`, then `IsLocalHom` by `inferInstanceAs`,
+  `Algebra.EssFiniteType` from `LocallyOfFiniteType.stalkMap u x` and
+  `Algebra.FormallyUnramified` from `FormallyUnramified.stalkMap u x`, each through
+  `rw [← RingHom.essFiniteType_algebraMap, RingHom.algebraMap_toAlgebra]`.  That exact
+  block is copied from the `Algebra.IsSeparable` instance in
+  `Mathlib/AlgebraicGeometry/Morphisms/FormallyUnramified.lean`; copy it rather than
+  re-deriving it.
+* **`Mono u ⟹ FormallyUnramified u` is `inferInstance`** — `instance [Mono f] : IsIso (diagonal f)`
+  in `Mathlib/CategoryTheory/Limits/Shapes/Diagonal.lean` plus
+  `instance [IsOpenImmersion (pullback.diagonal f)] : FormallyUnramified f`.  No
+  `LocallyOfFiniteType` needed for that direction.
+* **`AlgebraicGeometry.ringKrullDim_stalk_eq_coheight`** (`Mathlib/AlgebraicGeometry/Properties.lean`)
+  turns every "the stalk has dimension `0`/`1`" statement into a statement about the
+  SPECIALIZATION ORDER, where `coheight z = 0 ↔ IsMax z`.  Worth knowing before writing
+  any scheme-level dimension argument; and for a regular (hence domain) stalk,
+  `ringKrullDim = 0 ↔ IsField`, which is the usable form.
+
+And the `WithBot ℕ∞` note, since the interval `[0,1]` really does have two elements and
+proving it directly means peeling two coercions: to get `d = 1` from `d ≤ 1` and
+`¬ IsField`, copy `Mathlib/RingTheory/KrullDimension/LocalRing.lean`'s own idiom —
+`Ring.KrullDimLE.isField_of_isDomain` gives `¬ ringKrullDim R ≤ 0`, and
+`Order.succ_le_of_lt (lt_of_not_ge ·)` is the arithmetic.  Four lines, no coercion.
