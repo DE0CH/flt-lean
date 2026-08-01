@@ -2089,9 +2089,10 @@ statement *"every factor congruent to the Eisenstein series has
 That is the shape the next cut of the leaf below should take. -/
 
 /-- **The `ℚ`-fibre of this file's curve hypotheses is an
-`IsX0Compactification`** (sorry leaf, new 2026-07-31) — the bridge from
-`IsCompactificationY0` + `IsCoarseModuliY0` to the interface all of
-`X0.lean`'s curve theory is stated over.
+`IsX0Compactification`** (PROVEN 2026-08-01, in one line, over two
+declarations that were already in `X0.lean`; was a sorry leaf cut
+2026-07-31) — the bridge from `IsCompactificationY0` + `IsCoarseModuliY0`
+to the interface all of `X0.lean`'s curve theory is stated over.
 
 TRUE, and it carries NO modular content beyond what `hc` already asserts.
 `IsCompactificationY0` records `j`, its being a morphism over `ℚ`, an open
@@ -2111,19 +2112,37 @@ exactly three further clauses:
 * `finite_compl : (Set.range j.base)ᶜ.Finite` — the complement of a dense
   open in an integral curve is a finite set of closed points.
 
-**WHY IT IS A LEAF RATHER THAN A PROOF.**  All three are transfers along
-`j`, and `X0.lean` proves each of them for the compactification IT
-constructs (`exists_x0Compactification`, whose `connected` and
-`finite_compl` come out of
-`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` and
-`geometricallyConnected_of_isSmoothCompactification`).  What is missing is
-the statement for an ARBITRARY `IsCompactificationY0`, which is what this
-file's hypotheses hand us; recovering it means re-running those transfers
-rather than quoting them.  A prover should look first at
-`isSmoothCurve_of_isCoarseModuliY0` and at
-`CurveCompactification.lean`, and should expect this to be a
-`CurveCompactification`-level statement about dense open immersions, with
-nothing about `Γ₀(N)` in it.
+**WHY IT WAS A LEAF, AND WHY IT WAS NOT ONE.**  The paragraph that stood
+here read: *"`X0.lean` proves each of them for the compactification IT
+constructs … what is missing is the statement for an ARBITRARY
+`IsCompactificationY0` … recovering it means re-running those transfers
+rather than quoting them."*  The first clause is true and the second is
+FALSE, and it was false on the day the leaf was cut.  `X0.lean` had, since
+2026-07-27 and four days before this leaf existed, both halves of exactly
+that statement for an arbitrary `IsCompactificationY0`:
+
+* `isX0Compactification_data_of_compactificationY0` (`X0.lean`, PROVEN) —
+  the three missing clauses, over
+  `smoothOfRelativeDimension_finite_compl_of_compactificationY0` and
+  `geometricallyConnected_of_isSmoothCompactification`, which is precisely
+  the "re-run the transfers along a dense open immersion" work;
+* `IsCompactificationY0.toX0Compactification` (`X0.lean`, PROVEN) — the
+  packaging of those three with `hX`'s own four fields.
+
+So the proof is `⟨hX.toX0Compactification hc (…)⟩`, and no
+`CurveCompactification`-level statement had to be written.  Both live
+around `X0.lean:79215`, in a section about the `j`-layer's integral models
+rather than about compactifications, which is why a reader looking for
+compactification theory does not meet them.
+
+**The check that would have caught it, and it is one command.**  Grep
+`X0.lean` for the CONCLUSION rather than for the machinery the transfers
+would need — `grep -n 'toX0Compactification\|IsX0Compactification N strX
+strY hX.j' X0.lean`.  The route pointers this docstring gave
+(`isSmoothCurve_of_isCoarseModuliY0`, `CurveCompactification.lean`) were
+individually correct and sent a prover to re-derive a proven theorem; a
+grep for the shape of the conclusion, in the one module the leaf's own
+statement names, does not.
 
 **`hN` IS LOAD-BEARING.**  At `N = 0` the `Γ₀(0)`-problem is degenerate
 (`isSmoothCurve_of_isCoarseModuliY0` takes `0 < N`), and this file's
@@ -2133,11 +2152,11 @@ consumers all have `N` prime, so nothing is lost by asking for it.
 `IsX0Compactification` over `ℚ` for every `0 < N`, and its underlying data
 IS an `IsCompactificationY0`, so the hypothesis is satisfiable and the
 conclusion is not asking for something that does not exist. -/
-theorem nonempty_isX0Compactification_of_isCompactificationY0 (N : ℕ) (_hN : N ≠ 0)
+theorem nonempty_isX0Compactification_of_isCompactificationY0 (N : ℕ) (hN : N ≠ 0)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    (_hc : IsCoarseModuliY0 N strY) (hX : IsCompactificationY0 strY strX) :
+    (hc : IsCoarseModuliY0 N strY) (hX : IsCompactificationY0 strY strX) :
     Nonempty (IsX0Compactification N strX strY hX.j) :=
-  sorry
+  ⟨hX.toX0Compactification hc (isX0Compactification_data_of_compactificationY0 N hN hc hX)⟩
 
 /-- **The two cusp predicates agree** (PROVEN) — an
 `IsX0Compactification.IsCusp` for the compactification built on `hX.j` is
