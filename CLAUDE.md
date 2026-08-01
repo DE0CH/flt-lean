@@ -16151,3 +16151,71 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A RECUT'S "DELETED" IS A CLAIM ABOUT AN ACTION — AND THE ACTION IS THE HALF THAT GETS DROPPED
+
+(2026-08-01, `flt-lean-2`, dispatched at `geomPic_divisible_place` in
+`ModularCurve/HyperellipticJacobian.lean`.)  A 2026-07-31 RECUT in that file replaced
+`geomPic_divisible` by a bundled `exists_finiteIndex_divisible_pic`, and wrote, in bold,
+in its own section docstring:
+
+> `geomPic_divisible` was **strictly stronger than any consumer needs** … **DELETED, not
+> sorried elsewhere.**
+
+Nothing was deleted.  `geomPic_divisible`, `geomPic_divisible_place`, `divisible_of_prime`
+and `divisible_of_finsuppSingle` were all still in the file; only the CALL SITE had moved.
+So the tree carried `geomPic_divisible_place → geomPic_divisible → ∅` — an OPEN leaf whose
+only consumer was PROVEN and consumed by nothing at all — for a day, and it drew a dispatch.
+
+**This is not the same failure as a stale docstring, and it is more predictable than one.**
+A recut has two halves: *state and re-point the new leaf*, which is the interesting work and
+gets done first, and *delete the old one*, which is bookkeeping and gets done last — i.e. it
+is the half that a context limit, a session boundary, or a merge drops.  So **treat every
+"DELETED"/"removed"/"no longer in the tree" in a recut note as the LEAST reliable sentence
+in it**, exactly inverting how confidently it reads.
+
+**The detector is one `grep` and it is at the PROVEN PARENT, not at your leaf.**  This file
+already records that a parent's docstring can name a different leaf from its proof body.
+The recut case makes that mechanical: after a recut, the parent's docstring lists the leaves
+of the *intended* arrangement and its `by` block calls the leaves of the *actual* one.
+
+    grep -n 'theorem <the parent>' -A20 <file>    # read the `by` block, not the docstring
+
+Here `finite_quotient_psmul_pic`'s docstring named `geomPic_divisible_place` among "the open
+ones reached from here" while its body called `exists_finiteIndex_divisible_pic`.  That
+single mismatch is the whole diagnosis, and it costs seconds.
+
+### THE REPAIR IS USUALLY NOT DELETION — check whether the proven sibling has the SPLIT
+
+The reflex on finding a dead leaf is to perform the announced deletion.  Do the cheaper
+check first: **a recut's own docstring usually names the development it is imitating — go
+read how THAT one is actually structured.**  This recut said its point was that "the cluster
+now fails in exactly the places the abelian-scheme development succeeds", and named
+`Fermat.exists_finiteIndex_divisible_of_abelianScheme` in `X0.lean`.  That theorem is PROVEN
+there over **exactly the split the recut had just collapsed**:
+
+    exists_geomPt_nsmul_eq_of_abelianScheme          -- divisibility on geometric points
+    exists_discrBound_divisionField_of_abelianScheme -- the arithmetic
+
+So the dead leaf was not redundant, it was *displaced*: restoring the split revives it as a
+genuine input, and the assembly is four lines transcribed from the sibling.  Deleting would
+have thrown away an audited statement that the model development treats as load-bearing.
+
+**And the recut's stated REASON for bundling was refuted by that same model.**  It said the
+two halves "must be bundled because the `H` has to be uniform in `P`".  They need not be:
+**quantify the arithmetic half over EVERY division point** — `∀ P y, p • y = bc P → ∀ σ ∈ H,
+σ y = y` — rather than over a chosen one, and the uniformity is free, because the assembly
+picks `y` from the geometry and hands that same `y` back to the arithmetic.  `X0.lean`'s
+arithmetic leaf is stated with exactly that `∀ y`.  **Whenever a leaf bundles "∃ x, P x ∧ Q x"
+on the ground that a parameter must be uniform, try `∃`-half plus `∀ x, P x → Q x`**; that
+shape is uniform by construction and splits with nothing left over.
+
+### Accounting, and why it must be said out loud
+
+`1 → 1` on the frontier: one bundled live sorry plus one dead sorry became two live sorries.
+A warning-set delta of zero is indistinguishable from "nothing happened", so the commit and
+the docstring have to say what changed instead — here, that no leaf in the cluster is a
+phantom any more, and that the geometry and the arithmetic became separately dispatchable.
+**Reviving a dead leaf is worth the same as closing one** (it stops the phantom dispatches)
+and is worth more than deleting it whenever the statement is TRUE and someone downstream needs
+it; but neither shows up in any count, so neither will be believed unless it is written down.
