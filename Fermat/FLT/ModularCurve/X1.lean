@@ -20064,7 +20064,89 @@ false for every `ℓ`.  A prover who did not have `hN` would have to notice all
 three and re-derive the guard; having it in the binder means the Euler-system
 argument may be written for a genuine level without a word about the degenerate
 one.  The hypothesis is therefore a strict weakening of the obligation, not a
-restatement: the leaf as it stood was provable only by first proving this. -/
+restatement: the leaf as it stood was provable only by first proving this.
+
+**REACHABILITY AUDIT (2026-08-01) — THIS LEAF IS LIVE, AND HERE IS THE CHAIN,
+SO THAT NOBODY RE-DERIVES IT.**  Every prover dispatched here is told by the
+standing doctrine to establish that the leaf has a CONSUMER before proving it
+(an open leaf nothing reaches moves the count and not the project), and that
+check costs a run each time it is repeated.  It has been run, on a
+comment-stripped scan of all of `Fermat/`, and the answer is that the leaf is
+consumed all the way into Mazur's torsion theorem.  The upward closure of the
+one live consumer of the whole `Γ₁` Kolyvagin chain is exactly eight
+declarations and no branch of it dies:
+
+    this leaf
+      -> isTorsion_factor_of_heckeIsotypic_gamma1          (wrapper, discharges `hN`)
+      -> isTorsion_jacobian_of_lFunction_ne_zero_gamma1
+      -> isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape   (at `.gamma1 25`)
+      -> isTorsion_jacobian_x1TwentyFive
+      -> hasRankZeroJacobian_x1TwentyFive                  (this file)
+      -> exists_cuspidalCountingDatum_twentyFive           (this file)
+      -> exists_isX1TwentyFiveDatum                        (`MazurTorsion.lean`)
+      -> WeierstrassCurve.tateNormalForm_origin_order_ne_25
+      -> WeierstrassCurve.no_torsion_order_25
+
+so the arithmetic this leaf carries is spent at exactly one level, `N = 25`,
+and it is spent on the order-`25` case of Mazur.  Two consequences worth
+stating.  The leaf may NOT be deleted as dead — the seventh invisibility class
+does not apply here.  And a successor who wants a cheaper route to the SAME
+consumer should attack `isTorsion_jacobian_x1TwentyFive` at `N = 25` directly
+rather than this leaf in general `N`; nothing else in the tree instantiates it.
+
+**THE SHAPE-FREE MERGE WITH THE `Γ₀` SIBLING IS BLOCKED BY IMPORT ORDER, AND
+THE BLOCK IS STRUCTURAL** (checked 2026-08-01).  This is the first thing this
+project's own "two leaves may be one theorem written twice" rule sends an agent
+at, because the case for it looks overwhelming: `X0.lean`'s
+`isTorsion_factor_of_heckeIsotypic` (line ~59756 there) and this leaf are the
+same citation, over two structures that differ in exactly one field (`neben`),
+and `ModularLevelShape` already exists precisely to state such things once.  It
+cannot be done, and the reason is not mathematical:
+
+* `ModularLevelShape` is declared in THIS file (line ~15776), because it must
+  mention both `IsX0Compactification` and `IsX1Compactification`;
+* this file `public import`s `X0.lean` (line 129), so `X0.lean` cannot see any
+  shape-free statement;
+* therefore a shape-free Kolyvagin–Logachev leaf can only be declared here, and
+  `X0.lean`'s leaf — 59000 lines up in a file that does not import this one —
+  cannot be proven over it.  The merge would net `2 -> 1`, and there is no
+  position at which the surviving leaf could sit.
+
+This is exactly why `isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape`
+above is proven at `.gamma0` by CITING `X0.lean`'s theorem rather than the
+other way round: at the JACOBIAN level both sides are already proven, so the
+wrapper only has to dispatch, whereas at the FACTOR level both sides are open
+and a wrapper cannot dispatch to a leaf its own consumer cannot see.  The only
+arrangement that would unblock it is hoisting `ModularLevelShape` together with
+both compactification structures into a module upstream of `X0.lean` — a
+multi-thousand-line relocation across the two hottest files in the tree, for a
+frontier gain of one.  It is not worth it, and it is recorded here so that the
+measurement is not repeated.
+
+**THE THREE ABSENCE CLAIMS RE-RUN AGAIN, 2026-08-01, AND ALL THREE STILL
+HOLD**, over `Fermat/`, `.lake/packages/mathlib/Mathlib/` and `~/cs/FLT/FLT/`:
+no Hasse–Weil `L`-function of a variety (the only `hasseWeil` hits are
+`IsogenySignature.lean`'s Frobenius-trace Weil bound and this file's own prose
+about it), no Poincaré reducibility (the `poincar` hits are the Poincaré
+conjecture, Poincaré–Birkhoff–Witt, the Poincaré metric and Poincaré
+recurrence), and no Heegner points anywhere (mathlib's one `heegner` hit is a
+remark about Heegner NUMBERS in the Chudnovsky `π` file).  The verdict that
+this leaf is atomic at this pin therefore stands for a third consecutive day,
+and a successor should treat it as settled rather than re-grepping.
+
+**AND THE SHARPENING IS CHEAPER THAN THE PARAGRAPH ABOVE MAKES IT SOUND, FOR A
+REASON THAT CUTS BOTH WAYS** (2026-08-01).  Sharpening `hL` to its single
+instance at `i` looks as though it must additionally buy the propagation of
+non-vanishing to the GALOIS CONJUGATES of `coeff i`, since the classical input
+is `ord_{s=1} L(A_g, s) = 0` and `L(A_g, s) = ∏_σ L(g^σ, s)`.  It does not,
+because the full `hL` does not buy that either: to apply `hL` at a conjugate
+system one must first PRODUCE `g^σ` as an inhabitant of
+`CuspForm (Gamma1GL N) 2`, which is Shimura's theorem that the conjugate of a
+modular form is a modular form, and that is absent from all three trees as
+well.  So both forms of the hypothesis leave the same residue and the
+sharpening really is free in content; what it is not is free in RISK, since it
+strengthens the statement, and the audit it needs is the one this paragraph
+just performed and not an inherited one. -/
 theorem isTorsion_factor_of_heckeIsotypic_gamma1_of_ne_zero (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     {h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY} {jstr : J ⟶ SpecQ}
