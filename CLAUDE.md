@@ -16151,3 +16151,110 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A TOWER CANNOT BE ASSEMBLED FROM A CLOSURE PROPERTY — THE RECURSION HAS NO BASE CASE, AND THAT IS WHAT FORCES THE UNIQUENESS CITATION
+
+(2026-08-01, `flt-lean-371`, on `nonempty_pDivisibleTowerAt_of_forall_hasFlatProlongationAt`
+in `Modularity/Interface.lean`.)
+
+A leaf of the shape *"a property holds at every level; choose the witnesses
+COMPATIBLY"* — a `p`-divisible group out of its truncations, a coherent system
+of lattices, a compatible family of models — looks like it should fall to the
+file's existing closure lemmas, and this tree has good ones:
+`IsFlatPointsGroupAt.of_surjective` (`FlatPointsGroup.lean`) takes a flat model
+of `X` and an equivariant surjection `X ↠ Y` and produces a flat model of `Y`
+**as a Hopf order inside the given one**, i.e. exactly the comparison map the
+tower wants. It does not close the leaf, and the reason is worth having in
+advance because it costs an afternoon to rediscover:
+
+> **A closure property runs DOWN the tower and the tower is infinite UP.**
+> Building `G k` from `G (k+1)` has no base case; building `G (k+1)` from
+> `G k` is "the model of level `k` inside any model of level `k+1` is
+> isomorphic to the one I already chose", which is UNIQUENESS. Both
+> directions were checked before the cut was made.
+
+So the citation is unavoidable, and the honest move is the DECOMPOSITION: name
+it, state it in the one shape the consumer consumes, and prove the leaf over
+it. Here that was Raynaud–Fontaine full faithfulness at `e < p − 1`, cut as
+`exists_algHom_of_hom_flatProlongation` — *an equivariant homomorphism of the
+geometric point groups of two finite flat `𝒪ᵥ`-Hopf algebras is induced by an
+`𝒪ᵥ`-algebra map* — and the leaf then closed in about twenty lines (`choose` a
+model at every level; the tower's reduction map is equivariant because
+`ρ.baseChange` acts through the RIGHT tensor factor while the reduction acts on
+the LEFT, one `TensorProduct.induction_on`; feed it to the citation). Count
+`1 → 1`; what left the leaf is every mention of `ρ`, `R`, the tower and the
+modular form.
+
+**HOW TO TELL A GENUINELY-NEW CITATION FROM ONE THE TREE ALREADY HAS, WITHOUT
+GREPPING FOR IT: read what the neighbouring docstrings say they DECLINED.**
+`grep -rn "Fontaine\|fully faithful\|prolongation"` over `Fermat/` returns
+prose only on this point, which is weak evidence. What is strong evidence is
+that `Deformation.lean`'s `hasFlatProlongationAt_of_prod_injection` says in as
+many words *"Raynaud's bound governs the UNIQUENESS of a prolongation with a
+given generic fibre, which is not asserted here; EXISTENCE by schematic closure
+holds over an arbitrary DVR"*, and `isFlatAt_of_fibreProduct` records that the
+route through Raynaud uniqueness *"is not the route taken"*. A development that
+has deliberately routed around a theorem several times, and written down why,
+is telling you the theorem is absent far more reliably than any name search —
+and it is also telling you which hypothesis (`e < p − 1`, i.e. `Odd p` at
+`ℚ`/`p`) the new leaf must carry.
+
+**STATE THE CITATION AT THE STRENGTH THE CONSUMER READS, AND SAY WHAT YOU LEFT
+OUT.** Raynaud's theorem gives a UNIQUE BIALGEBRA map for every `(K, v)` with
+`e < p − 1`. The consumer reads none of that: `PDivisibleTowerAt` has no clause
+relating `incl k` to `incl (k+1)`, so uniqueness is unused; its `incl` is an
+`AlgHom` because `pts_incl` already forces the coalgebra compatibility; and the
+tree has no ramification-index vocabulary for a general `𝒪ᵥ`, so a general
+statement would mean inventing vocabulary for a single consumer. Each omission
+is one clause in the docstring naming what would reverse it — in particular
+*"if `PDivisibleTowerAt` ever grows a cocycle clause, this leaf must become
+`∃!` in the same commit"*, because those two changes are one change.
+
+**AND THE `p = 2` WITNESS IS CONCRETE, SO WRITE IT OUT.** At `e = 1 = p − 1`
+take `A := ℤ_2 × ℤ_2` (constant `ℤ/2`) and `B := ℤ_2[x]/(x² − 1)` (`μ_2`): both
+free of rank `2`, both with étale generic fibre (`2` is invertible in `ℚ_2`),
+both with point group `ℤ/2` and TRIVIAL Galois action (`μ_2(ℚ̄_2) = {±1} ⊆ ℚ_2`).
+An `ι : A →ₐ[ℤ_2] B` inducing the identity would be an isomorphism generically,
+and both such isomorphisms send `(1, 0)` to `(1 ± x)/2 ∉ B`. Note the
+ASYMMETRY, which is what makes the leaf's direction load-bearing: the map the
+other way, `x ↦ (1, −1)`, IS integral. So at `p = 2` the functor is faithful
+and not full, and an `∃ ι` statement must fix which side is the source.
+
+## VERIFY AN EDIT TO AN 80 000-LINE MODULE BY EXTRACTING IT PROGRAMMATICALLY — 12 SECONDS AGAINST 30 MINUTES
+
+(Same task. The existing rule — restate your new declarations in a scratch that
+`public import`s the target module — is right, and it has a sharper form that
+removes its one weakness.)
+
+The weakness of a hand-written parallel copy is that **the text you verified is
+not the text you commit**. Remove it: make the edit in the real file FIRST,
+then slice the new declarations out of it by NAME with a script, rewrite each
+new name by a mechanical suffix (so it cannot collide with the copy inside the
+imported olean), and elaborate that. `lake env lean` consumes the STALE olean,
+which still has everything your new text depends on, so the round trip is
+seconds.
+
+    i1 = next(i for i,l in enumerate(src) if l.startswith('theorem <new name>'))
+    ...                       # slice each block, then .replace('<new name>','<new name>X')
+    open('Fermat/ScratchN.lean','w').write(header + blocks + '\nend <Namespace>\n')
+
+Three things this buys that the hand-copied version does not:
+
+* it tests the REAL binder names, so the `unusedVariables` linter fires here
+  rather than at the end of a 30-minute build (this repository does not
+  underscore a sorry leaf's hypotheses, and that convention is only checkable
+  against the real text);
+* the header must reproduce the target's `namespace`, its `open`s and its
+  `local notation`s — and **its `variable` block, which in this repository
+  routinely continues onto INDENTED lines**. A scanner keyed on
+  `line.startswith('variable')` reports the wrong scope: `Interface.lean`'s
+  `p`/`hpodd` line continues for five more lines and is where `R`, `V` and `ρ`
+  are actually declared. Same trap as the `open ... \n  ConjAct` continuation
+  already recorded for hoists;
+* it cannot drift, so it can be re-run after every edit at no thinking cost.
+
+What it still does not check — unchanged from the existing rule — is the
+target's own import surface, notation scope, and DECLARATION ORDER (the scratch
+imports the whole module, so it sees names declared below your insertion
+point). Grep the line number of every non-local name you cite and compare it
+with your insertion line before the one real build.
