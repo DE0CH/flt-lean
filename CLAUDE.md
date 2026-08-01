@@ -16151,3 +16151,67 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## `Module.finrank ≤ n` AS A **HYPOTHESIS** IS SATISFIED BY AN INFINITE-RANK MODULE — use `Module.rank`
+
+(2026-07-31, `flt-lean-137`, caught while cutting
+`exists_finite_toAffineLine_specialFibre_of_model` in `ModularCurve/X0.lean`.)
+`Module.finrank R M` is `Cardinal.toNat (Module.rank R M)`, and `toNat` of an
+infinite cardinal is **`0`**.  So `Module.finrank R M ≤ 2` holds for every
+infinite-dimensional `M`.
+
+Everyone knows this as a fact about CONCLUSIONS — "a `finrank` conclusion needs a
+finiteness side condition" — and it is filed away as a nuisance.  **In a
+HYPOTHESIS the sign flips and it stops being a nuisance**: a leaf carrying
+`(hdeg : Module.finrank K(f) K(X) ≤ 2)` is quantified over the junk instances
+too, so it asserts the conclusion for an `f` with `[K(X) : K(f)]` INFINITE.
+That makes the leaf STRICTLY STRONGER than the classical statement it is meant
+to be, and possibly FALSE; at best its proof has to open with an argument that
+the junk case cannot arise, which is work nobody costed.
+
+**`Module.rank … ≤ 2` in `Cardinal` has no junk value**, says exactly the
+classical thing, and additionally *gives* finite-dimensionality rather than
+presupposing it.  Use it on the hypothesis side; `finrank` is right on the
+conclusion side, where the junk value makes the statement weaker and therefore
+safe.  The same asymmetry governs `Nat.card`, `Nat.find`, `sSup` on `ℕ` and
+every other `toNat`-shaped truncation: **ask which side of the turnstile the
+junk value sits on before choosing the spelling.**
+
+Rider: the junk case really was unreachable here (`K(X)` has transcendence
+degree `1` over `K`, so `K(X)/K(f)` is finite for every transcendental `f`), and
+that is exactly why it would have survived review — the statement is true either
+way, and only the PROOF pays.  Record the reasoning in the docstring when you
+pick `rank`, or the next reader will "simplify" it back.
+
+## A CUT MAY DERIVE ITS OWN INSTANCES IN ITS **STATEMENT** — `letI` in the conclusion, not `[…]` in the binders
+
+(Same task.)  A leaf cut out of a larger node often needs instances the parent
+had derived internally — here `Fact ℓ.Prime` (for `Field (ZMod ℓ)`) and
+`IsIntegral (special fibre)` (for `Scheme.functionField` and for
+`functionFieldAlgebra`).  The reflex is to expose them as instance binders
+`[Fact ℓ.Prime] [IsIntegral …]`, which type-checks and is wrong twice: the
+consumer has to supply what the leaf's own hypotheses already imply, and a
+reader cannot tell an instance binder that is DERIVABLE from one that is extra
+strength.
+
+A `letI` chain in the STATEMENT closes both holes, and it composes with a data
+instance (`functionFieldAlgebra` is a `def`, deliberately not an `instance`):
+
+    theorem foo … (hbase : IsReductionBase ℓ R toF) (hcurve : …) (hconn : …) … :
+        letI : Fact ℓ.Prime := ⟨hbase.prime⟩
+        letI : IsIntegral P := isIntegral_pullbackSpecial_of_isReductionBase hbase hcurve hconn
+        letI := AlgebraicGeometry.functionFieldAlgebra (k := ZMod ℓ) strP
+        ∃ f : P.functionField, Transcendental (ZMod ℓ) f ∧ …
+
+Three things this buys, all checked here.  The leaf is **self-contained** — its
+signature names only its own hypotheses.  The hypotheses used by the `letI`s
+**stop being underscored**, which is this tree's own tell for "load-bearing", so
+the binder list documents itself.  And at the call site the assembly's ordinary
+`haveI`s **unify with the `letI`s for free** when the terms are written
+identically: `Prop`-valued classes by proof irrelevance, and a DATA instance
+because its `Prop` arguments are irrelevant, so `obtain … := foo hbase …` just
+works and no transport appears.
+
+The cost is one elaboration of each derivation inside the statement; measured
+here that is invisible.  Prefer it to instance binders whenever the leaf can
+derive them, and reserve `[…]` for the genuinely extra.
