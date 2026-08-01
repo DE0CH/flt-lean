@@ -12686,6 +12686,101 @@ is importable here but is NOT applicable from this leaf's hypotheses, so
 leaf and not a wrapper. -/
 
 open CategoryTheory AlgebraicGeometry in
+/-- **THE `ℚ_[p]`-POINTS OF A SMOOTH GEOMETRICALLY IRREDUCIBLE `ℚ`-VARIETY ARE
+ZARISKI-DENSE** (LEAF, cut 2026-08-01 out of
+`exists_totallyReal_point_padicEmbedding_of_geometricallyIrreducible` below,
+which is PROVEN over this leaf and nothing else new).
+
+If `X` is smooth, separated, locally of finite type, quasi-compact and
+geometrically irreducible over `ℚ`, and `X` has a `ℚ_[p]`-point, then so does
+every NONEMPTY open subscheme `U ⊆ X`.
+
+**WHY THIS IS THE RESIDUE.** The chain in `Modularity/MoretBailly.lean` proves
+Moret–Bailly by shrinking `X` to an affine open around the REAL point and then
+cutting to a curve; the Bertini step
+`Modularity.exists_affineCurve_of_affine_geometricallyIrreducible` and the
+Moret–Bailly step `Modularity.exists_normalRealPoint_of_affine_curve` both
+already carry a prescribed set `S₀` of primes with `ℚ_[p]`-points, and the
+latter already CONCLUDES `∀ p ∈ S₀, IsTotallySplitAt F p`. The one thing nothing
+in that chain supplies is that the prescribed `ℚ_[p]`-point SURVIVES the affine
+shrink — which is exactly this statement, since the affine open produced there
+is nonempty (it carries the real point).
+
+**THE CLASSICAL CONTENT, and why it is analytic rather than scheme-theoretic.**
+Base-change to `ℚ_p`: `X_{ℚ_p}` is smooth and geometrically irreducible with a
+`ℚ_p`-point, so `X(ℚ_p)` is Zariski-dense in `X` — around any `x ∈ X(ℚ_p)` the
+`p`-adic implicit function theorem gives a neighbourhood `p`-adically
+homeomorphic to a ball in `ℚ_p^{dim X}`, and a nonempty ball is not contained in
+the zero locus of a nonzero analytic function. `X ∖ U` is a PROPER closed
+subscheme (`U` nonempty, `X` irreducible), so it cannot contain a Zariski-dense
+set. Reference: this is the standard "`X(ℚ_p)` is Zariski dense for smooth
+geometrically integral `X` with `X(ℚ_p) ≠ ∅`"; it is the `S = {p}`,
+`Ω_p = X(ℚ_p)` case of the local-solvability bookkeeping in Moret–Bailly,
+*Groupes de Picard et problèmes de Skolem II*, Ann. Sci. É.N.S. **22** (1989).
+
+**MISSING MACHINERY (grepped 2026-08-01, over `Fermat/` AND
+`.lake/packages/mathlib`, by CONCEPT and not only by name).** `padicManifold`,
+`AnalyticManifold` over `ℚ_[p]`, an implicit function theorem over a
+nonarchimedean field, and `ZariskiDense` for a set of rational points all return
+nothing usable. `Mathlib/Analysis/Normed/.../ImplicitFunction` is over a
+`RCLike` field only. So this is a theory build and is correctly a leaf; it is
+NOT an artefact of the import cone.
+
+# FALSITY AUDIT (2026-08-01) — BOTH SUBSTANTIVE HYPOTHESES ARE LOAD-BEARING,
+# with one witness that refutes the statement without EITHER of them
+
+* **`hgi` (geometric irreducibility) may not be dropped.** Take
+  `X = 𝔸¹_ℚ ⊔ Spec ℚ(i)`, which is smooth, separated, of finite type and
+  quasi-compact over `ℚ`, and `U = Spec ℚ(i)`, an open subscheme (a connected
+  component) and nonempty. `X` has a `ℚ_[2]`-point on the `𝔸¹` component, while
+  `U(ℚ_[2]) = ∅` because `2` RAMIFIES in `ℚ(i)`, so `ℚ(i)` admits no ring
+  homomorphism to `ℚ_[2]`. Conclusion false, every surviving hypothesis
+  satisfied.
+* **`hsmooth` may not be dropped, and the witness is a CONE.** Take
+  `X = Spec ℚ[x,y,z]/(x² + y² + z²)`, the quadric cone. It is geometrically
+  irreducible (a rank-`3` quadratic form is irreducible over `ℚ̄`), separated, of
+  finite type, quasi-compact, and singular exactly at the origin. The form
+  `x² + y² + z²` is ANISOTROPIC over `ℚ_2` — it is a subform of the norm form of
+  the ramified quaternion algebra `(-1,-1)_{ℚ_2}` — so `X(ℚ_[2]) = {(0,0,0)}`.
+  Take `U = X ∖ {origin}`, nonempty since `X` has dimension `2`. Then
+  `U(ℚ_[2]) = ∅` while `X(ℚ_[2]) ≠ ∅`. Conclusion false, and note the SAME
+  witness works at `ℝ`, where `x² + y² + z²` is anisotropic for the same reason.
+  This is the precise sense in which the ROUTE AUDIT below is right that the
+  repair "is FALSE without smoothness".
+* **`hUne` may not be dropped**, trivially: `U = ⊥` has no points at all.
+* **`hsep`, `hft`, `hqc` are RETAINED DEFENSIVELY and no witness is offered for
+  them.** They are free at the only call site (it holds all three) and a
+  hypothesis that cannot make a leaf false costs a prover nothing. A prover who
+  finds them unused should say so rather than delete them, since deleting a
+  hypothesis from a `sorry` is an unaudited new claim.
+
+**NON-VACUITY.** `X = 𝔸¹_ℚ`, `U = 𝔸¹ ∖ {0}`, `p = 2`: `X` is smooth, separated,
+of finite type, quasi-compact and geometrically irreducible, `U` is nonempty,
+and both have `ℚ_[2]`-points. So the hypotheses are jointly satisfiable and the
+conclusion is not vacuously about an empty class.
+
+**WHERE THIS BELONGS.** `Modularity/MoretBailly.lean`, immediately beside
+`Modularity.exists_isAffineOpen_hasRationalPoint`, whose docstring's own comment
+asks for exactly this repair. It is stated HERE instead only to keep the edit off
+a 61 000-line module with concurrent editors — this module `public import`s that
+one, so every name in the signature is already in scope. A hoist is justified the
+moment a SECOND consumer appears in that file; at that point delete this
+declaration and re-point the proof below. -/
+theorem hasRationalPoint_opens_padic
+    {X : AlgebraicGeometry.Scheme.{u}}
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fX)
+    (hsep : AlgebraicGeometry.IsSeparated fX)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fX)
+    (hqc : AlgebraicGeometry.QuasiCompact fX)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fX)
+    (U : X.Opens) (hUne : Nonempty (U : AlgebraicGeometry.Scheme.{u}))
+    (p : ℕ) [Fact p.Prime]
+    (hpad : Modularity.HasRationalPoint fX (ULift.{u} ℚ_[p])) :
+    Modularity.HasRationalPoint (U.ι ≫ fX) (ULift.{u} ℚ_[p]) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
 /-- **MORET–BAILLY WITH ONE PRESCRIBED `ℚ_[2]`-POINT** (LEAF, cut 2026-07-31 out
 of `exists_hilbertBlumenthalPoint_padicEmbedding_of_five_le` below, which is
 PROVEN over this leaf together with its sibling
@@ -12705,8 +12800,49 @@ Sci. É.N.S. **22** (1989), Thm 1.3, prescribes for each place `v` of a finite s
 meet. The declaration in `Modularity/MoretBailly.lean` runs at `S = ∅`; this one
 runs at `S = {2}` with `Ω_2 = X(ℚ_2)`.
 
+# STATUS 2026-08-01 (flt-lean-303): PROVEN, over the single geometric leaf
+# `hasRationalPoint_opens_padic` immediately above
+
+Of the two obstructions the ROUTE AUDIT below records, **one was already
+repaired upstream and the audit is STALE about it**, and the other is now the
+named leaf above. Neither reading required any new arithmetic.
+
+* **OBSTRUCTION (ii) IS GONE, and was gone when the audit was written.**
+  `Modularity.exists_evenDegree_totallyReal_of_sup_eq_top` ALREADY returns the
+  transfer conjunct `Nonempty (F →+* ℚ_[2]) → Nonempty (F' →+* ℚ_[2])` — read
+  its statement, not its route — and the `Q = 8 · ∏ p` repair the audit
+  prescribes is what produced it. What the audit was actually looking at is
+  `Modularity.exists_totallyReal_point_of_geometricallyIrreducible`, whose body
+  binds that conjunct as `-` **and says so in a comment** ("The `ℚ_[2]`-transfer
+  conjunct that theorem also returns (2026-07-31) is DISCARDED here and only
+  here"). So the parity step never destroyed anything; a WRAPPER threw the
+  transfer away, and this proof simply does not call that wrapper.
+* **OBSTRUCTION (i) is the residue**, and it is stated above as
+  `hasRationalPoint_opens_padic` in the form the audit's own repair paragraph
+  names — except that the leaf asked for there ("ONE affine open carrying the
+  real point together with finitely many prescribed local points") is strictly
+  stronger than what is needed. Since a nonempty open of an irreducible `X` is
+  dense, ANY nonempty affine open will do, so the leaf is the DENSITY statement
+  about a fixed open rather than an existence statement about opens. That is
+  what makes it a citable classical fact instead of a moving lemma.
+* **Item (ii) of the recorded Break-E work list — "stop discarding
+  `IsTotallySplitAt` in the affine wrapper" — is not performed here and does not
+  need to be.** `Modularity.exists_normalRealPoint_of_affine_curve` returns the
+  conjunct directly, so this proof calls IT and the Bertini step separately
+  rather than going through
+  `Modularity.exists_totallyReal_point_of_affine_geometricallyIrreducible`,
+  which is the wrapper that drops it. The residue-degree form that wrapper does
+  keep is NOT enough: `f = 1` at every prime above `p` does not give a
+  `ℚ_[p]`-embedding (`ℚ(i)` at `p = 2` has `e = 2`, `f = 1`), and there is no
+  adapter in that direction because there is no such implication.
+
 # ROUTE AUDIT, RE-RUN 2026-07-31 (flt-lean-210) — TWO INDEPENDENT OBSTRUCTIONS,
 # AND THE SPLITTING HALF IS NOT ONE OF THEM
+#
+# KEPT VERBATIM BELOW because its reading of the chain is otherwise correct and
+# is what made the assembly cheap; see the STATUS block above for which of its
+# two verdicts survived. Its `ℚ_[2]`-side analysis of the parity step remains
+# the reason that step is safe.
 
 Read off the binders and bodies rather than inherited from the Break-E bullet
 below, which named only the first of these.
@@ -12794,8 +12930,75 @@ theorem exists_totallyReal_point_padicEmbedding_of_geometricallyIrreducible
       Even (Module.finrank ℚ F) ∧
       N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ ∧
       Nonempty (F →+* ℚ_[2]) ∧
-      Modularity.HasRationalPoint fX F :=
-  sorry
+      Modularity.HasRationalPoint fX F := by
+  classical
+  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  -- (i) shrink `X` to an affine open neighbourhood of the REAL point, exactly as
+  -- `Modularity.exists_totallyReal_point_of_geometricallyIrreducible` does
+  obtain ⟨U, hU, hUreal⟩ := Modularity.exists_isAffineOpen_hasRationalPoint fX hreal
+  haveI : IsAffine (U : Scheme.{u}) := hU
+  -- (ii) that open is nonempty — it carries the real point
+  haveI hUne : Nonempty (U : Scheme.{u}) := by
+    obtain ⟨z, -⟩ := hUreal
+    obtain ⟨w⟩ : Nonempty ↥(Spec (CommRingCat.of (ULift.{u} ℝ))) := inferInstance
+    exact ⟨z.base w⟩
+  -- (iii) hence it still surjects onto the one-point base `Spec ℚ`, which is what
+  -- upgrades geometric irreducibility along the open immersion
+  haveI : Surjective (U.ι ≫ fX) :=
+    ⟨fun _ => ⟨Classical.arbitrary _, Subsingleton.elim _ _⟩⟩
+  haveI : GeometricallyIrreducible fX := hgi
+  -- (iv) THE ONLY NEW INPUT: the prescribed `ℚ_[2]`-point survives the shrink.
+  -- This is where the Break-E obstruction sat; `U` is nonempty by (ii), so the
+  -- density leaf applies and no moving lemma is needed.
+  have hUpad : Modularity.HasRationalPoint (U.ι ≫ fX) (ULift.{u} ℚ_[2]) :=
+    hasRationalPoint_opens_padic fX hsmooth hsep hft hqc hgi U hUne 2 hpad
+  have hS₀prime : ∀ q ∈ ({2} : Finset ℕ), Nat.Prime q := by
+    intro q hq
+    simp only [Finset.mem_singleton] at hq
+    subst hq
+    exact Nat.prime_two
+  -- (v) Bertini down to an affine curve, carrying BOTH local points
+  obtain ⟨C, hCaff, g, hCsm, hCsep, hCft, hCqc, hCgi, hCreal, hCpad, hCdim⟩ :=
+    Modularity.exists_affineCurve_of_affine_geometricallyIrreducible (U.ι ≫ fX)
+      (MorphismProperty.comp_mem _ _ _ inferInstance hsmooth)
+      (MorphismProperty.comp_mem _ _ _ inferInstance hsep)
+      (MorphismProperty.comp_mem _ _ _ inferInstance hft)
+      inferInstance inferInstance hUreal
+      ({2} : Finset ℕ) hS₀prime
+      (by
+        intro q _ hq
+        simp only [Finset.mem_singleton] at hq
+        subst hq
+        exact hUpad)
+  haveI : AlgebraicGeometry.IsAffine C := hCaff
+  -- (vi) Moret–Bailly on the curve, KEEPING the complete-splitting conjunct that
+  -- `Modularity.exists_totallyReal_point_of_affine_geometricallyIrreducible`
+  -- discards.  This is why that wrapper is bypassed rather than called.
+  obtain ⟨F, hF, hNF, hnorm, ι, hsplit, -, hsup, hpt⟩ :=
+    Modularity.exists_normalRealPoint_of_affine_curve (g ≫ (U.ι ≫ fX))
+      hCsm hCsep hCft hCqc hCgi hCreal hCdim N hNopen
+      ({2} : Finset ℕ) hS₀prime hCpad
+  haveI : Normal ℚ F := hnorm
+  -- normality + one real embedding ⟹ totally real; char. zero ⟹ Galois
+  have hsep' : Algebra.IsSeparable ℚ F := inferInstance
+  haveI hFtr : NumberField.IsTotallyReal F :=
+    Modularity.isTotallyReal_of_normal_of_realEmbedding ι
+  haveI hFgal : IsGalois ℚ F := { to_isSeparable := hsep', to_normal := hnorm }
+  -- (vii) complete splitting at `2` IS the `ℚ_[2]`-embedding
+  have hemb : Nonempty (F →+* ℚ_[2]) :=
+    Modularity.nonempty_ringHom_padic_of_isTotallySplitAt F hF hNF 2
+      (hsplit 2 (Finset.mem_singleton_self 2))
+  -- (viii) a point of the curve is a point of the open is a point of `X`
+  have hFptX : Modularity.HasRationalPoint fX F :=
+    Modularity.HasRationalPoint.of_comp U.ι fX
+      (Modularity.HasRationalPoint.of_comp g (U.ι ≫ fX) hpt)
+  -- (ix) PARITY.  `Modularity.exists_evenDegree_totallyReal_of_sup_eq_top`
+  -- TRANSPORTS the `ℚ_[2]`-embedding along the enlargement `F ↝ F(√d)` — the
+  -- conjunct `htr2` — so obstruction (ii) of the ROUTE AUDIT does not arise.
+  obtain ⟨F', hF', hNF', hFtr', hFgal', ιFF', hev, htr2, hsup'⟩ :=
+    Modularity.exists_evenDegree_totallyReal_of_sup_eq_top F N hNopen hsup
+  exact ⟨F', hF', hNF', hFtr', hFgal', hev, hsup', htr2 hemb,
+    Modularity.HasRationalPoint.of_ringHom fX F F' hF hNF hF' hNF' ιFF' hFptX⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **BREAK B PROPER: the twisted Hilbert–Blumenthal moduli scheme HAS A
