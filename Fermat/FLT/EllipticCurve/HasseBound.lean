@@ -104,19 +104,49 @@ Its docstring carries an elementary route (Deuring's congruence via character
 sums, twice) whose cost is the missing `𝔽_{q^n}` point-counting
 infrastructure rather than the argument.
 
-What remains open is EXACTLY FOUR declarations, each strictly smaller than what
-it replaced, and this list is the one to dispatch from — verified against the
-build's `declaration uses 'sorry'` warning set on 2026-07-30, four warnings and
-four `sorry` tokens, so there are no anonymous inner sorries here either:
-`exists_sq_frobeniusPointEnd_prime_to_char` and
-`sq_frobeniusPointEnd_qPrimary_ordinary` (the two halves of the Frobenius
-characteristic equation on points, `F² = c·F − q`, split along the
-torsion-primary decomposition — the umbrella `exists_sq_frobeniusPointEnd` is
-PROVEN over them, see the FOURTH CUT below, and so is
-`sq_frobeniusPointEnd_qPrimary`, see the SIXTH CUT, so do NOT dispatch at
-either of those two names), `natCard_ker_degreeFormEnd_le` (separable degree
-≤ degree, one-sided, no hypothesis on `m`), and `exists_ne_zero_qTorsion`
-(the curve is ORDINARY when `q ∤ c`).
+SEVENTH CUT, 2026-08-01: `exists_sq_frobeniusPointEnd_prime_to_char` is PROVEN,
+over two leaves that split it exactly along the line its own docstring drew.
+Both halves it named are now separated in code:
+
+* `sq_frobeniusPointEnd_level` — Cayley–Hamilton for `F` on `Wbar[n]` at EVERY
+  level `n` prime to `q` — is PROVEN, and cheaply.  The "prime-power/composite
+  generalisation" that the old docstring set as a successor's first task turned
+  out to be needed for only ONE of its two inputs: `Wbar[n] ≅ (ℤ/n)²` holds at
+  every level already (`WeierstrassCurve.n_torsion_dimension`, of which the
+  prime-level `p_torsion_rank` the docstring pointed at is a corollary), so only
+  `det(F | Wbar[n]) = q` is genuinely prime-level here.
+* that determinant is `det_frobeniusTorsionEnd_of_not_dvd`, a leaf that is NOT
+  mathematics: the composite-level statement is PROVEN downstream in
+  `FreyCurve/MazurTorsion.lean` as `det_frobeniusTorsionEnd_of_coprime`, and the
+  repair is a RELOCATION of that chain into `EllipticCurve/WeilPairing.lean`.
+  Its docstring lists the exact block to move.  The move is frontier-NEUTRAL:
+  this leaf closes and the still-open `exists_weilPairing_mu_nondeg_of_coprime`
+  arrives, having left `MazurTorsion.lean`.
+* `exists_bound_sq_frobeniusPointEnd_level` is the ARCHIMEDEAN half alone, and
+  it is stated as what it is: a BOUND on the per-level traces.  The
+  compatible-system-in-`Ẑ` bookkeeping that converts a bound into a single `c` is
+  `exists_uniform_of_bounded_sq_frobeniusPointEnd`, PROVEN by pigeonhole, so it
+  will not need doing again.  Its docstring carries the Lefschetz-congruence
+  route, the reason that congruence cannot be imported from downstream (its
+  proof there consumes the leaf being cut), and a RECORDED DEAD END: over
+  `ZMod n` a kernel cardinality determines the determinant only up to a unit, so
+  `natCard_ker_one_sub_frobeniusPointEnd` — a cardinality, and PROVEN — does not
+  by itself supply the bound.
+
+What remains open is EXACTLY FIVE declarations, and this list is the one to
+dispatch from — verified against the build's `declaration uses 'sorry'` warning
+set on 2026-08-01, five warnings and five `sorry` tokens after comment
+stripping, so there are no anonymous inner sorries here either:
+`det_frobeniusTorsionEnd_of_not_dvd` (a MOVE, not a proof) and
+`exists_bound_sq_frobeniusPointEnd_level` (the archimedean half) from the
+seventh cut; `sq_frobeniusPointEnd_qPrimary_ordinary` (the `q`-primary half of
+`F² = c·F − q` — the umbrella `exists_sq_frobeniusPointEnd` is PROVEN over it,
+see the FOURTH CUT below, and so is `sq_frobeniusPointEnd_qPrimary`, see the
+SIXTH CUT, so do NOT dispatch at either of those two names, nor at
+`exists_sq_frobeniusPointEnd_prime_to_char`, which is now proven);
+`natCard_ker_degreeFormEnd_le` (separable degree ≤ degree, one-sided, no
+hypothesis on `m`); and `exists_ne_zero_qTorsion` (the curve is ORDINARY when
+`q ∤ c`).
 
 SIXTH CUT, 2026-07-30: `sq_frobeniusPointEnd_qPrimary` is PROVEN, over the
 strictly smaller `sq_frobeniusPointEnd_qPrimary_ordinary`.  Its own docstring
@@ -439,38 +469,378 @@ theorem exists_pos_nsmul_eq_zero (q : ℕ) [Fact q.Prime] (Wbar : WeierstrassCur
         (AlgebraicClosure (ZMod q)) P' = WeierstrassCurve.Affine.Point.some x y h := rfl
     rw [← hmap, ← map_zsmul, natCast_zsmul, addOrderOf_nsmul_eq_zero, map_zero]
 
-/-- **The characteristic equation away from `q`** (sorry leaf, opened 2026-07-28;
+/-! ### SEVENTH CUT (2026-08-01): Cayley–Hamilton at every level, and a BOUND
+
+`exists_sq_frobeniusPointEnd_prime_to_char` is PROVEN below, over two leaves, and
+the two-part analysis its own docstring had recorded in prose is now carried out
+in code.  What that docstring called "a successor's first task" — the
+prime-power/composite generalisation of the rank-two and determinant inputs — is
+done, and it cost less than it looked:
+
+* **the rank-two input was already free at COMPOSITE level.**  The docstring
+  pointed at `WeierstrassCurve.p_torsion_rank`, which is stated for PRIME `p`
+  and does need generalising; but that declaration is itself a corollary of
+  `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`), which
+  gives `Wbar[n] ≅ (ℤ/n)²` for EVERY `n` invertible in the base with no
+  primality hypothesis anywhere.  So `nonempty_basis_nTorsion_of_not_dvd` below
+  is six lines, and no generalisation was needed at all — only reading one level
+  further down the chain than the docstring did.
+* **only the DETERMINANT is genuinely prime-level here**, and it is not open
+  mathematics but a RELOCATION: see `det_frobeniusTorsionEnd_of_not_dvd`.
+* `sq_frobeniusPointEnd_level` is then Cayley–Hamilton for a `2 × 2` matrix
+  (`Matrix.det_fin_two`, `Matrix.trace_fin_two`), transported to points along
+  the `rfl` identification of `WeilPairing.frobeniusTorsionEnd` with the
+  restriction of `frobeniusPointEnd` to `Wbar[n]`.
+* what is left is the ARCHIMEDEAN half alone, isolated as
+  `exists_bound_sq_frobeniusPointEnd_level`: not "the traces are compatible"
+  (they are, and that is free) but "they are BOUNDED".  The passage from a
+  bounded coefficient at every level to ONE coefficient at all levels — the
+  `Ẑ`-compatible-system bookkeeping — is
+  `exists_uniform_of_bounded_sq_frobeniusPointEnd`, PROVEN by pigeonhole, and it
+  will not need doing again whatever route supplies the bound.
+
+FRONTIER ACCOUNTING, stated honestly: this is `1 → 2`, and only one of the two
+is new mathematics.  `det_frobeniusTorsionEnd_of_not_dvd` is a MOVE, closable
+today by an agent that never opens a mathematics book;
+`exists_bound_sq_frobeniusPointEnd_level` is equivalent to the leaf it replaces
+(the target trivially implies it, and the pigeonhole recovers the target from
+it), so the cut cannot make the frontier harder, and it names the difficulty. -/
+
+/-- **Cayley–Hamilton in rank two, at the level of matrices** (PROVEN
+2026-08-01), over an arbitrary commutative ring: `M² = tr(M)·M − det(M)·1`.
+
+Mathlib's `Matrix.aeval_self_charpoly` is the general Cayley–Hamilton theorem,
+but extracting this shape from it costs more than proving it: at size `2` both
+`Matrix.trace_fin_two` and `Matrix.det_fin_two` are explicit polynomials in the
+four entries and the identity is four `ring` calls.
+
+NAME, AND A DUPLICATE TO COLLAPSE AT THE RELOCATION.  The `Module.End` version of
+this — same statement with `LinearMap.trace`/`LinearMap.det` and a `Fin 2` basis
+supplied — already exists DOWNSTREAM in `FreyCurve/MazurTorsion.lean` as
+`sq_eq_trace_smul_sub_det_smul_fin_two` (root namespace).  This one is prefixed
+`matrix_` so that the two cannot become ambiguous if anything ever writes
+`open HasseBound` in that file; whoever performs the relocation described on
+`det_frobeniusTorsionEnd_of_not_dvd` should move that version up too and delete
+this one, since the `Module.End` form subsumes it. -/
+theorem matrix_sq_eq_trace_smul_sub_det_smul_fin_two {R : Type*} [CommRing R]
+    (M : Matrix (Fin 2) (Fin 2) R) :
+    M * M = M.trace • M - M.det • (1 : Matrix (Fin 2) (Fin 2) R) := by
+  ext i j
+  fin_cases i <;> fin_cases j <;>
+    simp [Matrix.mul_apply, Fin.sum_univ_two, Matrix.trace_fin_two, Matrix.det_fin_two] <;> ring
+
+/-- **`Wbar[n]` is free of rank two over `ZMod n` for every `n` prime to `q`**
+(PROVEN 2026-08-01).
+
+This is the composite-level rank-two input that
+`exists_sq_frobeniusPointEnd_prime_to_char`'s docstring listed as needing a
+"prime-power/composite generalisation" of `WeierstrassCurve.p_torsion_rank`.  No
+generalisation is needed: `p_torsion_rank` is derived in `Torsion.lean` from
+`WeierstrassCurve.n_torsion_dimension`, which is stated for arbitrary `n` with
+`(n : k) ≠ 0` — the primality in `p_torsion_rank` is there only because its
+consumer wanted a `Module.rank`, which needs a field of scalars.  A `Fin 2`
+BASIS does not, so the composite level is free.
+
+The hypothesis `¬ q ∣ n` enters only through `CharP.cast_eq_zero_iff` to give
+`(n : 𝔽̄_q) ≠ 0`.  This is `FreyCurve/MazurTorsion.lean`'s
+`nonempty_basis_nTorsion` with `Nat.Coprime n q` traded for the `¬ q ∣ n` that
+this module's statements use; it is stated here rather than cited because that
+module is DOWNSTREAM. -/
+theorem nonempty_basis_nTorsion_of_not_dvd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (n : ℕ) (hn : ¬ (q ∣ n)) :
+    Nonempty (Module.Basis (Fin 2) (ZMod n)
+      ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion n)) := by
+  haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+  have hNk : ((n : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 := fun hz =>
+    hn ((CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod q)) q n).mp hz)
+  obtain ⟨φ⟩ := WeierstrassCurve.n_torsion_dimension
+    (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))) hNk
+  let ψ : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion n) ≃ₗ[ZMod n] (ZMod n × ZMod n) :=
+    { φ with map_smul' := ZMod.map_smul φ.toAddMonoidHom }
+  exact ⟨(Module.Basis.finTwoProd (ZMod n)).map ψ.symm⟩
+
+/-- **LEAF (opened 2026-08-01): `det(F | Wbar[n]) = q` for every `n` prime to
+`q`.**  THIS LEAF IS A RELOCATION, NOT MATHEMATICS — do not prove it, MOVE it.
+
+It is PROVEN, verbatim, in `Fermat/FLT/FreyCurve/MazurTorsion.lean` as
+`det_frobeniusTorsionEnd_of_coprime` (the hypothesis there is `Nat.Coprime N q`,
+which is `¬ q ∣ N` for prime `q`).  That module `public import`s this one, so it
+is strictly DOWNSTREAM and cannot be cited here; hence the restatement.
+
+**HOW TO CLOSE IT**, and the whole job is a move into
+`Fermat/FLT/EllipticCurve/WeilPairing.lean`, which is upstream of this module and
+already holds the PRIME-level `WeilPairing.det_frobeniusTorsionEnd`.  The block to
+move, in dependency order, is (all in `MazurTorsion.lean`, all PROVEN except the
+first):
+
+* `exists_weilPairing_mu_nondeg_of_coprime` — **itself still a `sorry` leaf**: the
+  `μ_N`-valued Weil pairing at composite level.  Its own docstring records that
+  what remains is a mechanical `p := N` generalisation of `WeilPairing.lean`'s
+  pairing chain, and that it was left open only because that file had a separate
+  owner.  Moving it there is therefore the natural home for it as well;
+* `pairing_map_eq_det_mul_fin_two`, `det_eq_of_pairing_scaling_fin_two`,
+  `det_eq_of_conj_of_basis_fin_two`,
+  `isPrimitiveRoot_pairing_of_nondegenerate_basis_fin_two` — rank-two linear
+  algebra over an arbitrary `CommRing`, nothing elliptic in them;
+* `exists_weilPairing_mu_of_coprime`, `exists_weilPairing_frobenius_of_coprime`,
+  `det_frobeniusTorsionEnd_of_coprime`.
+
+`nonempty_basis_nTorsion_of_not_dvd` above already replaces
+`MazurTorsion.nonempty_basis_nTorsion`, so that one does not need moving.
+
+**NET FRONTIER EFFECT OF THE MOVE IS ZERO, NOT `+1`**: this leaf closes and
+`exists_weilPairing_mu_nondeg_of_coprime` arrives, having left `MazurTorsion.lean`.
+Whoever does the move must DELETE the moved declarations from `MazurTorsion.lean`
+and re-point its call sites (`det_frobeniusTorsionEnd_of_coprime` is used there at
+two places) — leaving both copies is the duplicate-declaration failure that
+`CLAUDE.md`'s SEVENTH invisibility class describes.
+
+THE CHECK THAT WOULD REFUTE the "relocation only" claim: a use of anything
+`MazurTorsion.lean`-specific inside the block above.  The axis searched was the
+transitive citation list of `det_frobeniusTorsionEnd_of_coprime` as printed in
+its own and its inputs' docstrings (2026-08-01); everything in it is either
+`WeilPairing.lean` material or ring-generic linear algebra. -/
+theorem det_frobeniusTorsionEnd_of_not_dvd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (n : ℕ) (hn : ¬ (q ∣ n)) :
+    LinearMap.det (WeilPairing.frobeniusTorsionEnd q Wbar n) = (q : ZMod n) :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **Cayley–Hamilton for `F` at a single level `n` prime to `q`** (PROVEN
+2026-08-01): SOME integer `t` — depending on `n` — satisfies
+`F² = t·F − q` on `Wbar[n]`.
+
+This is the first of the two halves into which
+`exists_sq_frobeniusPointEnd_prime_to_char`'s docstring splits that leaf, and it
+is now machine-checked.  The proof is three moves and no elliptic-curve input
+beyond the two cited theorems:
+
+* `nonempty_basis_nTorsion_of_not_dvd` puts a `Fin 2` basis on `Wbar[n]`, so
+  `LinearMap.toMatrixAlgEquiv` turns `Module.End (ZMod n) (Wbar[n])` into
+  `2 × 2` matrices;
+* `matrix_sq_eq_trace_smul_sub_det_smul_fin_two` is Cayley–Hamilton there, and
+  `det_frobeniusTorsionEnd_of_not_dvd` identifies the determinant with `q`;
+* `t := (tr F).val` lifts the trace to `ℤ`, and `Int.cast_smul_eq_zsmul` turns
+  both `ZMod n`-scalar actions into the `ℤ`-actions the conclusion is stated in.
+
+THE TRANSPORT TO POINTS IS `rfl`.  `WeilPairing.frobeniusTorsionEnd q Wbar n` and
+`frobeniusPointEnd q Wbar` are built from the SAME `Point.map (frobAlgHom q)`,
+the first through `TorsionCounting.endRestrict`, so
+`((frobeniusTorsionEnd q Wbar n x).val) = frobeniusPointEnd q Wbar x.val`
+definitionally; and `(Wbar⁄𝔽̄_q)` and `((Wbar.map (algebraMap _ 𝔽̄_q))⁄𝔽̄_q)` are
+definitionally equal Weierstrass curves, which is what lets the two spellings of
+the point type meet.  Both are `rfl` but neither is *syntactic*: a `simpa` that
+normalises the goal first will fail on the mismatch, and `exact` is what closes
+it.  Worth knowing before repeating the exercise.
+
+WHAT IT DOES NOT GIVE, and this is the whole remaining difficulty: nothing here
+relates `t` at level `n` to `t` at level `m`.  Compatibility is free (`Wbar[m] ⊆
+Wbar[nm]`), but a compatible system of residues is an element of `Ẑ`, and only a
+BOUND makes it an integer — see `exists_bound_sq_frobeniusPointEnd_level`. -/
+theorem sq_frobeniusPointEnd_level (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (n : ℕ) (hn : ¬ (q ∣ n)) :
+    ∃ t : ℤ, ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
+      frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+        = t • frobeniusPointEnd q Wbar P - (q : ℤ) • P := by
+  classical
+  have hn0 : n ≠ 0 := by rintro rfl; exact hn (dvd_zero q)
+  haveI : NeZero n := ⟨hn0⟩
+  obtain ⟨b⟩ := nonempty_basis_nTorsion_of_not_dvd q Wbar n hn
+  set f := WeilPairing.frobeniusTorsionEnd q Wbar n with hf
+  set M := LinearMap.toMatrix b b f with hM
+  set t : ℤ := ((M.trace).val : ℤ) with ht
+  have htcast : ((t : ℤ) : ZMod n) = M.trace := by
+    rw [ht]; push_cast; simp
+  have hdetM : M.det = (q : ZMod n) := by
+    rw [hM, LinearMap.det_toMatrix b f, det_frobeniusTorsionEnd_of_not_dvd q Wbar n hn]
+  have hCH : f * f = M.trace • f - (q : ZMod n) • (1 : Module.End (ZMod n) _) := by
+    apply (LinearMap.toMatrixAlgEquiv b).injective
+    simp only [map_mul, map_sub, map_smul, map_one]
+    rw [← hdetM]
+    exact matrix_sq_eq_trace_smul_sub_det_smul_fin_two M
+  refine ⟨t, ?_⟩
+  intro P hP
+  have hPmem : P ∈ Submodule.torsionBy ℤ (Wbar⁄(AlgebraicClosure (ZMod q))).Point (n : ℤ) :=
+    (Submodule.mem_torsionBy_iff _ _).mpr hP
+  set x : (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion n :=
+    ⟨P, hPmem⟩ with hx
+  have happ := congrArg (fun g : Module.End (ZMod n) _ => g x) hCH
+  simp only [Module.End.mul_apply, LinearMap.sub_apply, LinearMap.smul_apply,
+    Module.End.one_apply] at happ
+  rw [← htcast, Int.cast_smul_eq_zsmul,
+    show ((q : ZMod n)) = (((q : ℤ)) : ZMod n) by push_cast; ring,
+    Int.cast_smul_eq_zsmul] at happ
+  have hval := congrArg Subtype.val happ
+  simp only [Submodule.coe_sub, SetLike.val_smul] at hval
+  exact hval
+
+/-- **LEAF (opened 2026-08-01): the per-level Frobenius traces are BOUNDED.**
+This is the ARCHIMEDEAN half of `exists_sq_frobeniusPointEnd_prime_to_char`, and
+after the seventh cut it is all that is left of it.
+
+The hypothesis `hlevel` is exactly `sq_frobeniusPointEnd_level` above, PROVEN,
+and is passed in rather than cited so that this leaf's statement says what it
+depends on: for each `n` prime to `q` it supplies SOME integer `t` with
+`F² = t·F − q` on `Wbar[n]`.  Those residues are automatically compatible (`Wbar[m] ⊆ Wbar[nm]`), so they assemble to an element of `Ẑ`; this
+leaf says that element is an INTEGER, in the only form in which that is a
+statement about integers rather than about `Ẑ`: **the `t`'s can be chosen inside
+a single finite window `[−B, B]`.**  `exists_uniform_of_bounded_sq_frobeniusPointEnd`
+below then collapses them to one `c`.
+
+**EQUIVALENT TO THE LEAF IT REPLACES, DELIBERATELY.**  The target trivially
+implies this (take `B := c.natAbs`), and the pigeonhole recovers the target from
+it, so no difficulty has been moved or hidden.  What the restatement buys is
+that the difficulty is now NAMED: nothing in it is about compatibility,
+Cayley–Hamilton, the Weil pairing or `ZMod n`-linear algebra — those are all
+discharged above — and a route that does not produce a bound cannot close it.
+
+**THE CLASSICAL SUPPLY OF THE BOUND, and why it is not available here yet.**
+Take `c := q + 1 − #Wbar(𝔽_q)`; then `B := q + 1 + #Wbar(𝔽_q)` works, PROVIDED
+one knows the LEFSCHETZ CONGRUENCE `det(1 − F | Wbar[n]) ≡ #Wbar(𝔽_q) (mod n)` —
+for a `2 × 2` matrix with `det F = q`, `det(1 − F) = 1 − tr(F) + q`, so the
+congruence pins `t ≡ q + 1 − #Wbar(𝔽_q)` at EVERY level and the bound is
+immediate (indeed the pigeonhole becomes unnecessary).  `#ker(1 − F) =
+#Wbar(𝔽_q)` is PROVEN here as `natCard_ker_one_sub_frobeniusPointEnd`.  What is
+missing is the passage from that CARDINALITY to that DETERMINANT, i.e.
+`deg ψ = det(ψ | Wbar[n])` — classically `#ker ψ = deg ψ` for separable `ψ`
+together with multiplicativity of `deg`, which in Silverman comes from the DUAL
+isogeny.
+
+**A DEAD END, RECORDED SO IT IS NOT RE-WALKED — AND INDEPENDENTLY CONFIRMED.**
+`FreyCurve/MazurTorsion.lean`'s
+`det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed` carries the same audit,
+reached from the other side (2026-07-27), and adds one observation this one does
+not: even the `ℓ`-adic valuations are not enough, because POSITIVITY of the
+degree is not group theory — for a bare group endomorphism `#ker` and `det` agree
+only up to sign.  The two audits agree, and were made independently; treat the
+route as closed.  In detail: `#ker(ψ | Wbar[n])` alone does
+NOT determine `det(ψ | Wbar[n])`, so no amount of kernel counting substitutes for
+the degree.  Over `ZMod n` a rank-two endomorphism has a Smith normal form
+`diag(d₁, d₂)` with `d₁ ∣ d₂ ∣ n`, and `#ker = d₁·d₂` while `det = u·d₁·d₂` for an
+unknown UNIT `u`; already at `n = 5`, `diag(1, 2)` and `diag(1, 3)` have the same
+(trivial) kernel and different determinants.  So the natural-looking route
+"`natCard_ker_one_sub_frobeniusPointEnd` is a cardinality, hence a bound" fails
+at exactly this step, and the two-line version of it that the target's old
+docstring suggested ("`c = q + 1 − #Wbar(𝔽_q)` is visibly an integer") is only
+valid once the congruence is in hand.
+
+**AND THE CONGRUENCE CANNOT BE IMPORTED.**  `MazurTorsion.lean`'s
+`det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed` states it, but is
+downstream AND its proof consumes the very leaf being cut here, so relocating it
+is a cycle.  It has to be proven from the degree side, HERE.  The other classical
+supply — `#ker ψ = deg ψ` via the dual isogeny — is unavailable in characteristic
+`q`: `Isogeny.lean`'s `degree` is `Nat.card (ker ·)`, which is the classical
+degree only for SEPARABLE isogenies, and the file's
+`Isogeny.NotIsRationalMapDualHom` machine-refutes the dual without `CharZero`
+(over `𝔽̄₂` the Frobenius of `y² + y = x³` has trivial kernel, so a dual would
+invert it).
+
+THE CHECK THAT WOULD REFUTE the claim that a bound is the only thing missing: an
+`ℓ`-adic-only proof, for a single prime `ℓ ≠ q`, that `∃ c : ℤ` works at every
+level `ℓ^k`.  Any such proof must smuggle in a bound, since a compatible system
+of residues mod `ℓ^k` is a general element of `ℤ_ℓ` and only boundedness makes it
+rational. -/
+theorem exists_bound_sq_frobeniusPointEnd_level (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (hlevel : ∀ n : ℕ, ¬ (q ∣ n) → ∃ t : ℤ,
+      ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
+        frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+          = t • frobeniusPointEnd q Wbar P - (q : ℤ) • P) :
+    ∃ B : ℕ, ∀ n : ℕ, ¬ (q ∣ n) → ∃ t : ℤ, t.natAbs ≤ B ∧
+      ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
+        frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+          = t • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
+  sorry
+
+/-- **Pigeonhole: a uniformly BOUNDED supply of per-level coefficients collapses
+to ONE** (PROVEN 2026-08-01).  This is the `Ẑ`-compatible-system bookkeeping of
+the archimedean half, and it is the part of it that is not mathematics.
+
+The argument uses no compatibility hypothesis, because compatibility is already
+built into the shape of the statement: `n ∣ m` and `(n : ℤ) • P = 0` give
+`(m : ℤ) • P = 0`, so a coefficient valid at level `m` is valid at every level
+dividing `m` — a `Finset`-indexed product of counterexample levels is therefore a
+single level at which every candidate would have to fail simultaneously.  In
+detail: assuming no uniform `c` exists, choose for each `c` a level `lvl c` where
+it fails, form `N := ∏ c ∈ [−B, B], lvl c` (prime to `q`, since `q` is prime and
+divides no factor), and apply the hypothesis at `N`; the resulting `t` lies in
+`[−B, B]`, so `lvl t ∣ N`, so `t` works at `lvl t` — contradiction.
+
+Reusable as stated for any endomorphism identity of this shape; nothing in the
+proof looks at `frobeniusPointEnd`. -/
+theorem exists_uniform_of_bounded_sq_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) (B : ℕ)
+    (hbdd : ∀ n : ℕ, ¬ (q ∣ n) → ∃ t : ℤ, t.natAbs ≤ B ∧
+      ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
+        frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+          = t • frobeniusPointEnd q Wbar P - (q : ℤ) • P) :
+    ∃ c : ℤ, ∀ n : ℕ, ¬ (q ∣ n) →
+      ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
+        frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+          = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P := by
+  classical
+  by_contra hcon
+  push Not at hcon
+  set lvl : ℤ → ℕ := fun c => (hcon c).choose with hlvl
+  have hlvlspec : ∀ c : ℤ, ¬ (q ∣ lvl c) ∧
+      ∃ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (lvl c : ℤ) • P = 0 ∧
+        frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+          ≠ c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
+    fun c => (hcon c).choose_spec
+  set S : Finset ℤ := Finset.Icc (-(B : ℤ)) (B : ℤ) with hS
+  set N : ℕ := ∏ c ∈ S, lvl c with hN
+  have hqN : ¬ (q ∣ N) := by
+    rw [hN]
+    intro hdvd
+    obtain ⟨c, _, hc⟩ :=
+      (Nat.Prime.prime (Fact.out : q.Prime)).dvd_finsetProd_iff _ |>.mp hdvd
+    exact (hlvlspec c).1 hc
+  obtain ⟨t, htB, ht⟩ := hbdd N hqN
+  have htS : t ∈ S := by
+    rw [hS, Finset.mem_Icc]
+    omega
+  obtain ⟨P, hP0, hPne⟩ := (hlvlspec t).2
+  refine hPne (ht P ?_)
+  obtain ⟨k, hk⟩ : lvl t ∣ N := Finset.dvd_prod_of_mem _ htS
+  rw [hk]
+  push_cast
+  rw [mul_comm, mul_smul, hP0]
+  simp
+
+/-- **The characteristic equation away from `q`** (PROVEN 2026-08-01 over
+`sq_frobeniusPointEnd_level` and `exists_bound_sq_frobeniusPointEnd_level`;
 Silverman *AEC* V.2.3.1, prime-to-`q` half): there is ONE rational integer `c`
 with `F(F P) = c·F P − q·P` for every point `P` whose order is prime to `q`.
 
-WHAT IS IN THIS LEAF, and it is two things that classical treatments prove
-together but that are separately identifiable here.
+THE TWO THINGS THAT WERE IN THIS LEAF, and where each of them now lives.
 
-* *Cayley–Hamilton at level `n`.*  For `q ∤ n` the group `Wbar(𝔽̄_q)[n]` is free
-  of rank `2` over `ZMod n` — `TorsionCard.card_torsionBy` (PROVEN) already
-  counts it as `n²` — the Frobenius acts `ZMod n`-linearly on it, and
-  `det(F | Wbar[n]) = q`.  That determinant is PROVEN from the Weil pairing as
-  `WeilPairing.det_frobeniusTorsionEnd`, but **only for PRIME `n`**, over
-  `WeierstrassCurve.p_torsion_rank`, which is likewise stated for prime `n`.  So
-  a successor's first task is the prime-power/composite generalisation of those
-  two, after which `F² = t_n·F − q` holds on `Wbar[n]` with
-  `t_n = tr(F | Wbar[n]) ∈ ZMod n`.
-* *Integrality of the trace.*  The residues `t_n` are compatible (each is the
-  reduction of the next, because `Wbar[n] ⊆ Wbar[nm]` and `F` is injective), so
-  they assemble to an element of `Ẑ`; the content of this leaf is that that
-  element is a rational INTEGER.  That is the archimedean half, and it is where
-  the difficulty of Hasse's bound actually lives: an element of `Ẑ` is an integer
-  exactly when it is bounded, and no purely `ℓ`-adic argument supplies a bound.
+* *Cayley–Hamilton at level `n`* is `sq_frobeniusPointEnd_level`, PROVEN
+  2026-08-01.  The previous version of this paragraph said a successor's first
+  task was "the prime-power/composite generalisation" of
+  `WeierstrassCurve.p_torsion_rank` and `WeilPairing.det_frobeniusTorsionEnd`.
+  That was half right, and the half that was wrong was the expensive-looking
+  half: `p_torsion_rank` needed NO generalisation, because it is a corollary of
+  `WeierstrassCurve.n_torsion_dimension`, which holds at every level invertible
+  in the base — see `nonempty_basis_nTorsion_of_not_dvd`.  Only the DETERMINANT
+  is genuinely prime-level here, and it is not open mathematics either: the
+  composite-level statement is PROVEN downstream and the repair is a move, which
+  is why it is stated as `det_frobeniusTorsionEnd_of_not_dvd` rather than
+  attacked.
+* *Integrality of the trace* is `exists_bound_sq_frobeniusPointEnd_level`, and
+  it is the whole of what is still open.  Compatibility of the residues `t_n` is
+  free and is not what that leaf asks for: it asks for a BOUND, which is the
+  form in which "this element of `Ẑ` is a rational integer" is a statement about
+  integers.  The step from bounded-at-each-level to one-`c`-at-all-levels is
+  `exists_uniform_of_bounded_sq_frobeniusPointEnd`, PROVEN by pigeonhole.
 
-The classical supply of the bound is the DEGREE: `deg(1 − F) = #ker(1 − F)` is a
-cardinality, and `#ker(1 − F) = #Wbar(𝔽_q)` is PROVEN here as
-`natCard_ker_one_sub_frobeniusPointEnd`, so `c = q + 1 − #Wbar(𝔽_q)` is visibly
-an integer once one knows `det(1 − F | Wbar[n]) ≡ #Wbar(𝔽_q) (mod n)` — the
-LEFSCHETZ CONGRUENCE.  That congruence is exactly the shape
-`FreyCurve/MazurTorsion.lean`'s
-`natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` states, and it is
-DOWNSTREAM of this module, so it cannot be cited here; a successor that proves
-the congruence should prove it HERE and let `MazurTorsion.lean` consume it.
+The classical supply of the bound is the DEGREE, through the LEFSCHETZ
+CONGRUENCE `det(1 − F | Wbar[n]) ≡ #Wbar(𝔽_q) (mod n)`; that route, the reason
+it cannot simply be imported from `MazurTorsion.lean`, and a recorded DEAD END
+(kernel cardinalities do not determine determinants over `ZMod n`) are all
+written out on `exists_bound_sq_frobeniusPointEnd_level`.
 
 THE COEFFICIENT IS EXISTENTIAL ON PURPOSE, for the same reason as in
 `exists_sq_frobeniusPointEnd`: naming `c = frobeniusTrace` would fold the
@@ -490,8 +860,10 @@ theorem exists_sq_frobeniusPointEnd_prime_to_char (q : ℕ) [Fact q.Prime]
     ∃ c : ℤ, ∀ n : ℕ, ¬ (q ∣ n) →
       ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
         frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
-          = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
-  sorry
+          = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P := by
+  obtain ⟨B, hB⟩ := exists_bound_sq_frobeniusPointEnd_level q Wbar
+    (fun n hn => sq_frobeniusPointEnd_level q Wbar n hn)
+  exact exists_uniform_of_bounded_sq_frobeniusPointEnd q Wbar B hB
 
 /-- **LEAF (opened 2026-07-30, the ORDINARY half of `sq_frobeniusPointEnd_qPrimary`;
 Silverman *AEC* V.3.1): the characteristic equation on the `q`-primary torsion, given
