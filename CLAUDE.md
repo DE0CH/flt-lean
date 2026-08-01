@@ -1066,6 +1066,31 @@ first from the other two — a module with no `declaration uses 'sorry'` warning
 *direct*-clean and says nothing about the cone — and the fleet has repeatedly
 paid a worker to rediscover the difference.
 
+**CORRECTED 2026-07-31 (`flt-lean-135`): `#print axioms` DOES work from a scratch
+module that imports the target, and that is the cheap way to run it — 13 SECONDS
+against a 15-to-40-minute re-elaboration of the declaring file.** The paragraph
+below says it does not, on the grounds that the module system elides imported
+proof bodies; that is true of a `module` file WITHOUT `@[expose] public section`,
+and every project file here has one, so the bodies are exposed and the traversal
+walks them. Measured, with a control to prove the traversal is real rather than
+vacuous:
+
+    module
+    public import Fermat.FLT.FreyCurve.MazurTorsion
+    #print axioms exists_fundamentalCharacter_of_relIndex_localInertiaGroup
+    -- => [propext, Classical.choice, Quot.sound]
+    #print axioms
+      WeierstrassCurve.exists_localInertia_subgroup_relIndex_dvd_twelve_of_padicValRat_j_nonneg
+    -- => [propext, sorryAx, Classical.choice, Quot.sound]   -- a KNOWN leaf in the same file
+
+**Always run the control.** A scratch importer that reported everything clean
+would be indistinguishable from a traversal that found nothing, and that is the
+failure the paragraph below was written about; one known-sorried name from the
+same file separates the two in the same run. The in-file recipe stays valid and
+is the fallback when the target module has no `@[expose] public section` or when
+its olean is stale — note the scratch reads the OLEAN, so it answers about the
+last BUILD, not about your unsaved edit.
+
 `#print axioms <name>` gives it exactly, but **it must be appended to the END OF
 THE FILE THAT DECLARES THE NAME**, not written in a scratch module that imports
 it. The module system elides imported proof bodies (`value? = none`, and
@@ -16250,3 +16275,17 @@ so do not price a scratch loop, or decide to split a file, off a failing run.
   `rfl`-equal to `σ • x.val`, so `exact congrArg Subtype.val h` works exactly where
   `rw [IntegralClosure.coe_smul]` fails with "did not find an occurrence of the
   pattern" on a goal that displays it.
+
+### The result, and the cheap way it was certified
+
+`exists_fundamentalCharacter_of_relIndex_localInertiaGroup` came back
+`[propext, Classical.choice, Quot.sound]` — FULLY axiom-clean, not merely
+direct-sorry-free — so the whole `ArtinConductor.lean` wild-inertia block it rests
+on (`exists_pow_eq_of_mem_wildInertiaGroup`,
+`exists_localInertia_generator_mod_pow_wildInertiaGroup`, `tameCharacter`,
+`mem_subgroupOf_wild_of_forall_mem_tameLevel`) is sorry-free too. **Those
+declarations' own docstrings still describe some of their inputs as "the one open
+leaf"; they have since been proven and the prose was not updated.** That is the
+standing "a docstring's absence claim is dated evidence" rule, and `#print axioms`
+is what settles it in seconds — see the correction at the top of this file about
+running it from an importer.
