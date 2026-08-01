@@ -16151,3 +16151,62 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## WHEN BOTH RIVAL ROOTS ARE STILL OPEN, THE ORPHAN CANNOT BE DELEGATED — DELETE IT, AND THE IMPLICATION DECIDES WHICH
+
+(2026-08-01, `flt-lean-353`, `exists_chartAtInfinity_of_finite_toAffineLine` in
+`ModularCurve/X0.lean`.  Fourth recorded instance of the rival-cut orphan, and the
+first where the repair the existing notes prescribe is not available.)
+
+The sections above on rival cuts prescribe two repairs for the losing leaf: prove it
+from the winner (`flt-lean-296`), or transplant the winner's inline block into it
+(`flt-lean-96`).  **Both presuppose the winning cut is CLOSED.**  When the winner is
+itself an open leaf, neither works, and the live options are only DELETE and RE-POINT.
+
+Here `card_relPoint_not_liesIn_le_of_finite_toAffineLine` was cut twice in two days:
+
+* 2026-07-30, the "second chart" seam → `exists_chartAtInfinity_of_finite_toAffineLine`,
+  which produces an actual coordinate at infinity `(V, jV : V ⟶ X, ψ : V ⟶ 𝔸¹_S)`;
+* 2026-07-31, the "largest field fibre" seam → `card_fibre_le_two_of_forall_three`
+  (PROVEN) plus `card_relPoint_not_liesIn_le_of_forall_card_fibre_le` (open).
+
+Both merged — the two new declarations landed 70 lines apart in regions neither branch
+touched — and the parent's proof body took the second.  So the chart leaf had **zero
+consumers anywhere in the tree**, comment-stripped, while its own docstring and the
+parent's both went on naming it as the thing the node rests on.
+
+**The direction is decidable and it is the rule already in this file: keep the
+arrangement whose root is IMPLIED by the rival's root.**  The chart implies the
+fibre-count leaf (the complement injects into one `ψ`-fibre, and two complement points
+with the same lift are equal because `v ≫ jV` is the point); the fibre-count leaf does
+not imply the chart, because it produces no scheme `V`.  So the chart is strictly
+STRONGER, the survivor is the weaker obligation, and deleting the chart leaves the file
+owing strictly less.  **Re-pointing the parent at the orphan instead would have traded
+an open leaf for a harder open leaf while moving no count** — which is exactly what a
+prover dispatched at the orphan is about to do if nobody has checked.
+
+**AND A RIVAL CUT INFLATES THE QUEUE, NOT ONLY THE FRONTIER — with two entries that no
+duplicate-task check can pair.**  The queue-clustering rule above keys on the `TARGET:`
+line, and here the two tasks name two DIFFERENT declarations, so they cluster as
+unrelated work.  This cluster carried two queue entries for one obligation, and the one
+naming the dead leaf is the one that got dispatched.  So when you find a rival-cut
+orphan, the repair is not finished at the deletion: grep both queues for the dead name
+and say in `to_merger` which surviving entry already covers the node, or the next
+release re-queues it.
+
+Corollary for the accounting, since it is the shape that makes this look like nothing:
+**deleting a dead leaf is a real `−1` and no mathematics.**  Say both halves.  Nothing
+became provable that was not provable before; what went away is a phantom frontier slot
+that had already drawn one dispatch and would have drawn more.
+
+### Measurement worth having: a 119 000-line module elaborates in TWO MINUTES
+
+Same run.  `lake env lean` on `X0.lean` — 118 964 lines — took **~2 minutes** with
+`.lake/build` freshly rsynced from `~/.flt-release-lake`, against the 25–40 minutes
+several sections above quote for "a build of X0".  The two figures are not in conflict
+and the difference is worth knowing: `lake build <Module>` re-elaborates the module AND
+its stale downstream cone, while `lake env lean <file>` elaborates ONE file against
+whatever oleans are on disk.  For an edit that only touches one module, the second is
+the check you want, and it is cheap enough to run before every commit.  Confirm the
+seed is valid first (`git diff --stat $(cat ~/.flt-release-lake/sha) HEAD -- Fermat/`
+empty), and require the `EXIT=` line you appended yourself.
