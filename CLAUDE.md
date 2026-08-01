@@ -16151,3 +16151,81 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A REFACTOR DECLINED ON *MOVEMENT COST* IS FREE IN THE TWIN THAT HAS NOT BEEN WRITTEN YET
+
+(2026-08-01, `flt-lean-227`, cutting `exists_commutingHeckeAlbaneseFamilyGamma1`
+in `X1.lean`.)  This tree is full of Γ₀/Γ₁ twins, and the standing advice on them
+is *transport the sibling's cut*.  There is a case where the sibling's cut is the
+WRONG thing to transport and the sibling's file says so itself.
+
+`X0.lean` carries two rival cuts of the Γ₀ node, both authored 2026-07-31 and both
+merged at release 29: `exists_commutingHeckeAlbaneseFamily_values` (morphism-level,
+plus a value clause) and `exists_pointwiseCommutingHeckeAlbaneseFamily`
+(points-level, ~19 700 lines BELOW its parent).  `_values` won and the points-level
+one is a PROVEN orphan.  Its docstring then records, in full, the repair it would
+have preferred — hoist the points-level statement, strengthen it with the value
+clause *and* with `∀ n, ¬(n.Prime ∧ ¬ n ∣ N) → w n = 𝟙 J`, and prove `_values` over
+it — and declines it because *"it costs ~150 lines of movement in the file with the
+most concurrent editors in the repository, against a saving that is
+presentational"*.
+
+That reasoning is correct **and it is entirely about the Γ₀ file**.  At Γ₁ the leaf
+was being written for the first time, so there is no block to move, no conflict to
+risk, and the better shape costs nothing.  The Γ₁ cut was therefore written in the
+shape `X0.lean` names as right for BOTH sides, and if that file ever takes its own
+recommended refactor the two statements become the same modulo the level and one
+proof serves both.
+
+**So the check, before transporting a twin's cut: read the twin's docstring for a
+refactor it DECLINED, and ask what it was declined ON.**  Declined for a
+mathematical reason (the residue would be false, the input does not exist) —
+inherit the decline.  Declined on movement cost, merge risk, or a contended file —
+**that reason does not transport**, and the twin being written fresh should take
+the better shape.  The tell is the phrase *"left as a decision for the merge
+worker"* or *"not taken unilaterally"*: those are cost verdicts, not verdicts about
+the mathematics.
+
+Two riders, both measured on the same run.
+
+* **A hoist can leave a declaration in the WRONG NAMESPACE, and the error message
+  names the name that does not exist rather than the one that does.**
+  `IsJacobianOf.eq_of_post_aj_eq` was hoisted into `X0.lean` INSIDE
+  `namespace RelPoint`, so its real name is
+  `Fermat.RelPoint.IsJacobianOf.eq_of_post_aj_eq`.  From any consumer not inside
+  that namespace, `jac.eq_of_post_aj_eq` fails with *"The environment does not
+  contain `Fermat.IsJacobianOf.eq_of_post_aj_eq`"* — while `grep` finds the
+  theorem, spelled exactly as you typed it, in the file you are importing.  That
+  combination reads as a stale olean or a broken import and is neither.  **Ask the
+  ENVIRONMENT, not the source**, with a five-line probe in a scratch that imports
+  the target:
+
+      open Lean in
+      run_cmd do
+        let env ← Lean.getEnv
+        for (n, _) in env.constants.toList do
+          if (n.toString.splitOn "<the suffix you want>").length >= 2 then
+            Lean.logInfo n.toString
+
+  It returned the full name in seconds after a source grep had confirmed the wrong
+  one.  Same family as the standing "namespace, not oleans" note, with the twist
+  that here the enclosing namespace is *unrelated to the declaration's own prefix*,
+  so nothing about the name suggests where to look.
+* **Dot notation on a `def`-valued `Prop` silently resolves to `Function.comp`.**
+  `IsAdditiveOn` is a `def` unfolding to a `∀`, so `(h₁).comp h₂` elaborates
+  `Function.comp` and reports `?m ∘ ?m has type ?m → ?m but is expected to have
+  type ∀ (x y : RelPoint …), …` — a type error that mentions neither `IsAdditiveOn`
+  nor `comp`.  Write `IsAdditiveOn.comp h₁ h₂`.
+
+**And report a value clause you keep WITHOUT a consumer as the decision it is.**
+The Γ₁ leaf carries `∀ n, w n = v n ∨ w n = 𝟙 J`, which nothing in `X1.lean`
+projects: at Γ₀ it exists solely to make the Atkin–Lehner sibling free, and
+`IsModularHeckeActionGamma1` records that the DIAMOND operators — the Γ₁-specific
+extra structure — are deliberately not part of the data that pin constrains, so no
+Γ₁ sibling is anticipated.  It was kept anyway, because it is what makes the
+morphism-level statement follow and it costs the producer two lines (the witness is
+one `if` and both value clauses fall out of a `by_cases` on its condition).  State
+the reversal condition in the docstring: nothing projects the clause, so deleting it
+later moves no consumer and is one line in the safe direction.  A conjunct kept on a
+hunch and a conjunct kept with its exit written down are different objects to the
+next owner.
