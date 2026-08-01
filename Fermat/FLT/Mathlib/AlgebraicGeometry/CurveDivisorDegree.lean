@@ -8,6 +8,13 @@ module
 public import Mathlib.AlgebraicGeometry.OrderOfVanishing
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.BirationalFunctionField
+-- `PrincipalDivisorDegree` is the OTHER branch's development of the same divisor-degree
+-- layer.  This file used to re-declare its `Scheme.ord_one` and `Scheme.ord_inv`, which
+-- made the two modules un-co-importable (`environment already contains …`) and cost
+-- `X0.lean` the import of this file at release 31.  The two pairs were character-for-character
+-- the same statements, both with `@[simp]` on `ord_one`, so the duplicates are deleted here
+-- and taken from there instead.  See the note above `Scheme.ord_div` below.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.PrincipalDivisorDegree
 
 /-!
 # Divisors and degrees on a smooth proper curve over a field
@@ -94,17 +101,12 @@ namespace Scheme
 
 variable {X : Scheme.{u}} [IsIntegral X] [IsLocallyNoetherian X]
 
-@[simp]
-lemma ord_one (z : X) : ord (1 : X.functionField) z = 0 := by
-  have h := ord_mul (X := X) (x := z) (f := 1) (g := 1) one_ne_zero one_ne_zero
-  rw [one_mul] at h
-  omega
-
-lemma ord_inv {f : X.functionField} (hf : f ≠ 0) (z : X) : ord f⁻¹ z = - ord f z := by
-  have h := ord_mul (X := X) (x := z) (f := f) (g := f⁻¹) hf (inv_ne_zero hf)
-  rw [mul_inv_cancel₀ hf, ord_one] at h
-  omega
-
+-- `ord_one` and `ord_inv` USED TO BE DECLARED HERE, character-for-character as in
+-- `PrincipalDivisorDegree` (which is now imported above), `@[simp]` and all.  Two branches
+-- built this layer independently and both landed; the duplicate pair is what made the two
+-- modules un-co-importable, and `X0.lean` dropped ITS import of this file at release 31
+-- rather than resolve it.  Deleted 2026-08-01; recover with
+-- `git show 280981f1:Fermat/FLT/Mathlib/AlgebraicGeometry/CurveDivisorDegree.lean`.
 lemma ord_div {f g : X.functionField} (hf : f ≠ 0) (hg : g ≠ 0) (z : X) :
     ord (f / g) z = ord f z - ord g z := by
   rw [div_eq_mul_inv, ord_mul hf (inv_ne_zero hg), ord_inv hg]
