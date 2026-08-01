@@ -2089,8 +2089,395 @@ lemma modTensorUnitLeftIso_tensorSection_one (W : Scheme.{u}) :
   erw [ModuleCat.MonoidalCategory.leftUnitor_hom_apply]
   simp
 
-/-- **LEAF (2026-07-30) — RESTRICTION COMMUTES WITH `modTensor`, CANONICALLY: the
-comparison `(L ⊗ M)|_W ≅ L|_W ⊗ M|_W` PINNED on tensors of sections.**
+/-! ### Restriction to an open commutes with `modTensor`, CANONICALLY
+
+**ADDED 2026-08-01 (`flt-lean-13`); this section CLOSES
+`exists_restrict_modTensor_tensorSection` below, which was the module's one live leaf.**
+
+The route is NOT the one that leaf's docstring prescribed (transport the pullback
+comparison along `modRestrictPullbackIso`, then chase the section identity), and the
+reason is worth recording, because the same trap is waiting on every leaf in this file
+whose statement quantifies over sections over an ARBITRARY open.
+
+*The pullback route pins only the restrictions of GLOBAL sections.*
+`modPullbackTensorComparison_tensorSection` is stated at `⊤`, and the bridge from
+`(A.restrict f)`-sections to `modPullbackSection` is the unit of `restrictAdjunction`,
+whose value at `V` is `A.presheaf.map (homOfLE (f.image_preimage_le V)).op`.  At
+`V = f ''ᵁ U` that map is the identity *only up to the propositional equality*
+`f ⁻¹ᵁ (f ''ᵁ U) = U`, so every use of it costs an `eqToHom` transport.  The leaf
+quantifies over ALL `a : Γ(L.restrict W.ι, ⊤)`, not just restrictions of global sections,
+so the transports cannot be avoided that way.
+
+*Building the comparison in the OTHER DIRECTION out of the sheafification adjunction makes
+the pinning free and transport-free.*  `modTensor L' M'` is a sheafification, so a map OUT
+of it is a presheaf map, and the presheaf map wanted here is objectwise:
+
+    Γ(L, f ''ᵁ U) ⊗_{Γ(X,U)} Γ(M, f ''ᵁ U)  --μ-->  Γ(L, f ''ᵁ U) ⊗_{Γ(Y,f ''ᵁ U)} Γ(M, f ''ᵁ U)
+                                            --mk-->  Γ(L ⊗ M, f ''ᵁ U)
+
+`μ` being mathlib's lax structure map of `ModuleCat.restrictScalars`, exactly as in
+`modPushforwardTensorPreApp` above with `f ⁻¹ᵁ V` replaced by `f ''ᵁ U`.  The transpose
+`modRestrictTensorInv` then satisfies
+
+    (modRestrictTensorInv f L M).val.app (op U) (tensorSectionAt (L|_f) (M|_f) a b)
+      = tensorSectionAt L M a b
+
+**at every open `U`, by the adjunction triangle alone** — no transport anywhere.  The leaf
+is that at `U = ⊤`, with the isomorphism inverted.
+
+*What is left is `IsIso`, and it is the only mathematics.*  `modRestrictTensorInv` is the
+transpose of `ψ = μ ≫ (restriction of modTensorMk)`, so it is an isomorphism as soon as
+`ψ` is LOCALLY BIJECTIVE, and `ψ` factors as an objectwise-bijective map followed by the
+restriction of `modTensorMk` along `f.opensFunctor`:
+
+* `μ` is bijective because the ring map `(f.appIso U).inv` is SURJECTIVE — that is
+  `bijective_restrictScalars_mu` below, and it is the general statement "for a surjective
+  `φ : R → S` and `S`-modules `A`, `B`, the canonical `A ⊗_R B → A ⊗_S B` is bijective",
+  proved by `TensorProduct.liftAddHom` (the balanced pairing is available precisely because
+  every `s` is a `φ r`);
+* `modTensorMk` is `toSheafify`, hence locally bijective on `Opens Y`, and
+  `f.opensFunctor` is `IsCocontinuous` (a mathlib instance for any open immersion), so
+  mathlib's `Presheaf.isLocallySurjective_whisker` / `isLocallyInjective_whisker` transfer
+  that to `Opens X` with nothing to prove.
+
+**So "sheafification commutes with restriction to an open subsite" — which the leaf's
+docstring named as the content — is `CategoryTheory/Sites/PreservesLocallyBijective.lean`
+plus one instance, and the residue is the change-of-rings statement above.**  Neither is
+about schemes; the only geometric input anywhere is that `f.appIso U` is an isomorphism. -/
+
+open scoped TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+/-- **CHANGE OF RINGS ALONG A SURJECTION IS AN ISOMORPHISM ON TENSOR PRODUCTS.**
+
+For a SURJECTIVE ring map `φ : R ⟶ S` and `S`-modules `A`, `B`, the canonical
+`A ⊗_R B ⟶ A ⊗_S B` — mathlib's `Functor.LaxMonoidal.μ (ModuleCat.restrictScalars φ)` — is
+bijective.  Surjectivity holds for any `φ` (pure tensors generate); INJECTIVITY is where
+surjectivity of `φ` is spent, and it is spent exactly once, to see that
+`(s • a) ⊗ₜ[R] b = a ⊗ₜ[R] (s • b)` — write `s = φ r` and this is `TensorProduct.smul_tmul`.
+That balanced pairing is what `TensorProduct.liftAddHom` needs, and the resulting additive
+map is a left inverse.
+
+Stated for a bare `R →+* S` rather than for an isomorphism because that is what the proof
+uses, and because the caller's ring map is a `RingCat` hom whose surjectivity is read off
+`ConcreteCategory.bijective_of_isIso`. -/
+theorem bijective_restrictScalars_mu {R S : Type u} [CommRing R] [CommRing S] (φ : R →+* S)
+    (hφ : Function.Surjective φ) (A B : ModuleCat.{u} S) :
+    Function.Bijective (ConcreteCategory.hom
+      (Functor.LaxMonoidal.μ (ModuleCat.restrictScalars φ) A B)) := by
+  set A' := (ModuleCat.restrictScalars φ).obj A with hA'
+  set B' := (ModuleCat.restrictScalars φ).obj B with hB'
+  set m0 := ConcreteCategory.hom (Functor.LaxMonoidal.μ (ModuleCat.restrictScalars φ) A B)
+    with hm0
+  have hval : ∀ (a : A') (b : B'), m0 (a ⊗ₜ[R] b) = ((a : A) ⊗ₜ[S] (b : B) : A ⊗[S] B) :=
+    fun a b => ModuleCat.restrictScalars_μ_tmul φ A B a b
+  have hbal : ∀ (s : S) (m : A) (n : B),
+      (TensorProduct.mk R A' B' (s • m)) n = (TensorProduct.mk R A' B' m) (s • n) := by
+    intro s m n
+    obtain ⟨r, rfl⟩ := hφ s
+    have key : ∀ (x : A') (y : B'),
+        (TensorProduct.mk R A' B' (r • x)) y = (TensorProduct.mk R A' B' x) (r • y) :=
+      fun x y => TensorProduct.smul_tmul r x y
+    exact key m n
+  set g : A →+ (B →+ (A' ⊗[R] B')) :=
+    AddMonoidHom.mk' (fun m => (TensorProduct.mk R A' B' m).toAddMonoidHom)
+      (fun m m' => by
+        ext n
+        have key : ∀ (x x' : A') (y : B'),
+            ((x + x' : A') ⊗ₜ[R] y : A' ⊗[R] B') = x ⊗ₜ[R] y + x' ⊗ₜ[R] y :=
+          fun x x' y => TensorProduct.add_tmul x x' y
+        exact key m m' n) with hg
+  set ν : ((ModuleCat.restrictScalars φ).obj (MonoidalCategory.tensorObj A B)) →+ (A' ⊗[R] B') :=
+    TensorProduct.liftAddHom g hbal with hν
+  have hνtmul : ∀ (a : A') (b : B'), ν ((a : A) ⊗ₜ[S] (b : B)) = a ⊗ₜ[R] b :=
+    fun a b => TensorProduct.liftAddHom_tmul g hbal a b
+  refine ⟨?_, ?_⟩
+  · have hleft : ∀ x : A' ⊗[R] B', ν (m0 x) = x := by
+      intro x
+      induction x using TensorProduct.induction_on with
+      | zero =>
+          have h0 : m0 0 = 0 := map_zero _
+          rw [h0, map_zero]
+      | tmul a b => rw [hval a b, hνtmul a b]
+      | add x₁ x₂ h₁ h₂ =>
+          have ha : m0 (x₁ + x₂) = m0 x₁ + m0 x₂ := map_add _ _ _
+          rw [ha, map_add, h₁, h₂]
+    exact Function.LeftInverse.injective hleft
+  · intro y
+    induction y using TensorProduct.induction_on with
+    | zero => exact ⟨0, map_zero _⟩
+    | tmul a b => exact ⟨(a : A') ⊗ₜ[R] (b : B'), hval a b⟩
+    | add y₁ y₂ h₁ h₂ =>
+        obtain ⟨x₁, hx₁⟩ := h₁
+        obtain ⟨x₂, hx₂⟩ := h₂
+        refine ⟨x₁ + x₂, ?_⟩
+        have ha : m0 (x₁ + x₂) = m0 x₁ + m0 x₂ := map_add _ _ _
+        rw [ha, hx₁, hx₂]
+
+/-- **The ring map underlying `Scheme.Modules.restrictFunctor`, given a name.**
+
+Mathlib's `restrictFunctor f` is `SheafOfModules.pushforward` along `f.opensFunctor` with
+this `α`, bound by a `letI` inside the definition and therefore not citable.  Re-declaring
+it verbatim makes `(L.restrict f).val = (PresheafOfModules.pushforward (restrictPhi f)).obj
+L.val` hold by `rfl`, which is what lets the presheaf-level comparison below be built with
+mathlib's `pushforward` API rather than by hand.  Naturality is
+`Scheme.Hom.appIso_inv_naturality`; mathlib discharges it with `cat_disch`, which does not
+fire outside its own file. -/
+noncomputable def restrictAlpha {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f] :
+    X.presheaf ⟶ f.opensFunctor.op ⋙ Y.presheaf where
+  app U := (f.appIso U.unop).inv
+  naturality _ _ i := f.appIso_inv_naturality i
+
+/-- `restrictAlpha` at the level of `RingCat`, which is the form
+`PresheafOfModules.pushforward` takes. -/
+noncomputable abbrev restrictPhi {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f] :
+    (X.presheaf ⋙ forget₂ CommRingCat RingCat) ⟶
+      f.opensFunctor.op ⋙ (Y.presheaf ⋙ forget₂ CommRingCat RingCat) :=
+  Functor.whiskerRight (restrictAlpha f) (forget₂ CommRingCat RingCat)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **`μ` AT ONE OPEN, for RESTRICTION** — the exact analogue of
+`modPushforwardTensorPreApp` above with `f ⁻¹ᵁ V` replaced by `f ''ᵁ U`, and for the same
+reason: `PresheafOfModules.Monoidal.tensorObj` is objectwise and `(L.restrict f).val.obj U`
+is `ModuleCat.restrictScalars ((f.appIso U).inv)` applied to `L.val.obj (f ''ᵁ U)`. -/
+noncomputable def modRestrictTensorMuApp {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (L M : Y.Modules) (U : (Opens ↥X)ᵒᵖ) :
+    (PresheafOfModules.Monoidal.tensorObj (R := X.presheaf)
+        (L.restrict f).val (M.restrict f).val).obj U ⟶
+      ((PresheafOfModules.pushforward (restrictPhi f)).obj
+        (PresheafOfModules.Monoidal.tensorObj (R := Y.presheaf) L.val M.val)).obj U :=
+  Functor.LaxMonoidal.μ (ModuleCat.restrictScalars _)
+      (L.val.obj (op (f ''ᵁ U.unop))) (M.val.obj (op (f ''ᵁ U.unop)))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The pinning clause for `modRestrictTensorMuApp`, at one open.**  The right-hand side
+is written with `@TensorProduct.tmul` and its ring spelled out, exactly as in
+`prePushTensorApp_tmul` above: the two `⊗ₜ` are over DIFFERENT rings and the elaborator
+cannot recover the target's one from the expected type.  The two `letI`s are the
+`CommRing`-re-keying described at `exists_modPushforwardTensorPre`. -/
+lemma modRestrictTensorMuApp_tmul {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (L M : Y.Modules) (U : (Opens ↥X)ᵒᵖ)
+    (a : ↑((L.restrict f).val.obj U)) (b : ↑((M.restrict f).val.obj U)) :
+    modRestrictTensorMuApp f L M U (a ⊗ₜ b) =
+      @TensorProduct.tmul
+        ↑((Y.presheaf ⋙ forget₂ CommRingCat RingCat).obj (op (f ''ᵁ U.unop))) _
+        ↑(L.val.obj (op (f ''ᵁ U.unop))) ↑(M.val.obj (op (f ''ᵁ U.unop)))
+        _ _ _ _ a b := by
+  letI : CommRing ↑(X.ringCatSheaf.obj.obj U) := inferInstanceAs (CommRing ↑(X.presheaf.obj U))
+  letI : CommRing ↑(Y.ringCatSheaf.obj.obj (op (f ''ᵁ U.unop))) :=
+    inferInstanceAs (CommRing ↑(Y.presheaf.obj (op (f ''ᵁ U.unop))))
+  unfold modRestrictTensorMuApp
+  exact ModuleCat.restrictScalars_μ_tmul _ _ _ _ _
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **`μ` as a morphism of presheaves of modules.**  Naturality is `rfl` on pure tensors
+after `modRestrictTensorMuApp_tmul`, exactly as for `prePushTensor`. -/
+noncomputable def modRestrictTensorMu {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (L M : Y.Modules) :
+    PresheafOfModules.Monoidal.tensorObj (R := X.presheaf)
+        (L.restrict f).val (M.restrict f).val ⟶
+      (PresheafOfModules.pushforward (restrictPhi f)).obj
+        (PresheafOfModules.Monoidal.tensorObj (R := Y.presheaf) L.val M.val) where
+  app := modRestrictTensorMuApp f L M
+  naturality := fun {U U'} g => by
+    apply ModuleCat.MonoidalCategory.tensor_ext
+    intro m n
+    rw [ConcreteCategory.comp_apply, ConcreteCategory.comp_apply]
+    show modRestrictTensorMuApp f L M U'
+          (((L.restrict f).val.map g m) ⊗ₜ ((M.restrict f).val.map g n))
+        = ((PresheafOfModules.pushforward (restrictPhi f)).obj
+            (PresheafOfModules.Monoidal.tensorObj (R := Y.presheaf) L.val M.val)).map g
+              (modRestrictTensorMuApp f L M U (m ⊗ₜ n))
+    rw [modRestrictTensorMuApp_tmul, modRestrictTensorMuApp_tmul]
+    rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **THE PRESHEAF-LEVEL COMPARISON, `L|_f ⊗_pre M|_f ⟶ ((L ⊗ M)|_f).val`.**  Note the
+direction: OUT of the presheaf tensor of the restrictions, which is the side that
+sheafifies to `modTensor (L|_f) (M|_f)`.  That is what makes the pinning below free. -/
+noncomputable def modRestrictTensorPre {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (L M : Y.Modules) :
+    PresheafOfModules.Monoidal.tensorObj (R := X.presheaf)
+        (L.restrict f).val (M.restrict f).val ⟶
+      (((modTensor L M).restrict f).val) :=
+  modRestrictTensorMu f L M ≫
+    (PresheafOfModules.pushforward (restrictPhi f)).map (modTensorMk L M)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- `modRestrictTensorPre` on pure tensors is `modTensorMk` at the shifted open. -/
+lemma modRestrictTensorPre_tmul {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (L M : Y.Modules) (U : (Opens ↥X)ᵒᵖ)
+    (a : ↑((L.restrict f).val.obj U)) (b : ↑((M.restrict f).val.obj U)) :
+    (modRestrictTensorPre f L M).app U (a ⊗ₜ b) =
+      (modTensorMk L M).app (op (f ''ᵁ U.unop)) (a ⊗ₜ b) := by
+  show ((PresheafOfModules.pushforward (restrictPhi f)).map (modTensorMk L M)).app U
+      (modRestrictTensorMuApp f L M U (a ⊗ₜ b)) = _
+  rw [modRestrictTensorMuApp_tmul]
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **THE COMPARISON MAP `L|_W ⊗ M|_W ⟶ (L ⊗ M)|_W`**, as the transpose of
+`modRestrictTensorPre` along the sheafification adjunction. -/
+noncomputable def modRestrictTensorInv {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (L M : Y.Modules) :
+    modTensor (L.restrict f) (M.restrict f) ⟶ (modTensor L M).restrict f :=
+  ((PresheafOfModules.sheafificationAdjunction (𝟙 X.ringCatSheaf.obj)).homEquiv _ _).symm
+    (modRestrictTensorPre f L M)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **THE PINNING, AT EVERY OPEN AND WITH NO TRANSPORT**: `a ⊗ b ↦ a ⊗ b`.
+
+This is the whole payoff of building the comparison in this direction.  `Γ(L.restrict f, U)`
+IS `Γ(L, f ''ᵁ U)` by `rfl` (`Scheme.Modules.restrict_obj`), so both sides are literally
+`modTensorMk`-images of `a ⊗ₜ b`, one at `U` and one at `f ''ᵁ U`, and the identity is the
+adjunction triangle followed by `modRestrictTensorPre_tmul`. -/
+lemma modRestrictTensorInv_tensorSectionAt {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (L M : Y.Modules) (U : X.Opens)
+    (a : Γ(L.restrict f, U)) (b : Γ(M.restrict f, U)) :
+    (modRestrictTensorInv f L M).val.app (op U)
+        (tensorSectionAt (L.restrict f) (M.restrict f) a b)
+      = tensorSectionAt L M (V := f ''ᵁ U) a b := by
+  have h : ((PresheafOfModules.sheafificationAdjunction (𝟙 X.ringCatSheaf.obj)).homEquiv _ _)
+      (modRestrictTensorInv f L M) = modRestrictTensorPre f L M :=
+    Equiv.apply_symm_apply _ _
+  rw [Adjunction.homEquiv_unit] at h
+  exact (congr($(h).app (op U) (a ⊗ₜ b))).trans
+    (modRestrictTensorPre_tmul f L M (op U) a b)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- `μ` is bijective at every open, because `(f.appIso U).inv` is an isomorphism of rings
+and therefore surjective. -/
+lemma bijective_modRestrictTensorMuApp {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (L M : Y.Modules) (U : (Opens ↥X)ᵒᵖ) :
+    Function.Bijective (ConcreteCategory.hom (modRestrictTensorMuApp f L M U)) := by
+  letI : CommRing ↑((X.presheaf ⋙ forget₂ CommRingCat RingCat).obj U) :=
+    inferInstanceAs (CommRing ↑(X.presheaf.obj U))
+  letI : CommRing
+      ↑((f.opensFunctor.op ⋙ Y.presheaf ⋙ forget₂ CommRingCat RingCat).obj U) :=
+    inferInstanceAs (CommRing ↑(Y.presheaf.obj (op (f ''ᵁ U.unop))))
+  have hsurj : Function.Surjective ((restrictPhi f).app U).hom :=
+    (ConcreteCategory.bijective_of_isIso (f.appIso U.unop).inv).2
+  exact bijective_restrictScalars_mu _ hsurj _ _
+
+set_option backward.isDefEq.respectTransparency false in
+instance isLocallySurjective_modRestrictTensorMu {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [IsOpenImmersion f] (L M : Y.Modules) :
+    Presheaf.IsLocallySurjective (Opens.grothendieckTopology ↥X)
+      ((PresheafOfModules.toPresheaf _).map (modRestrictTensorMu f L M)) :=
+  Presheaf.isLocallySurjective_of_surjective _ _
+    (fun U => (bijective_modRestrictTensorMuApp f L M U).2)
+
+set_option backward.isDefEq.respectTransparency false in
+instance isLocallyInjective_modRestrictTensorMu {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [IsOpenImmersion f] (L M : Y.Modules) :
+    Presheaf.IsLocallyInjective (Opens.grothendieckTopology ↥X)
+      ((PresheafOfModules.toPresheaf _).map (modRestrictTensorMu f L M)) :=
+  Presheaf.isLocallyInjective_of_injective _ _
+    (fun U => (bijective_modRestrictTensorMuApp f L M U).1)
+
+/-- **`modTensorMk` IS LOCALLY INJECTIVE** — the companion of
+`isLocallySurjective_modTensorMk` above, and for the same reason: it is `toSheafify`. -/
+lemma isLocallyInjective_modTensorMk {Z : Scheme.{u}} (L M : Z.Modules) :
+    Presheaf.IsLocallyInjective (Opens.grothendieckTopology Z)
+      ((PresheafOfModules.toPresheaf (Z.presheaf ⋙ forget₂ CommRingCat RingCat)).map
+        (modTensorMk L M)) := by
+  show Presheaf.IsLocallyInjective _ (CategoryTheory.toSheafify _ _)
+  infer_instance
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **THE ONE STEP THAT IS ABOUT SITES, AND MATHLIB DOES IT.**  Restriction along an open
+immersion is precomposition with `f.opensFunctor`, which carries an `IsCocontinuous`
+instance (`Mathlib/AlgebraicGeometry/OpenImmersion.lean`), so
+`Presheaf.isLocallySurjective_whisker` transfers local surjectivity from `Opens Y` to
+`Opens X` with nothing to prove.  The identification of
+`toPresheaf.map ((pushforward _).map _)` with `whiskerLeft f.opensFunctor.op _` is `rfl`,
+by `PresheafOfModules.pushforwardCompToPresheaf` being `Iso.refl`. -/
+instance isLocallySurjective_pushforward_modTensorMk {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [IsOpenImmersion f] (L M : Y.Modules) :
+    Presheaf.IsLocallySurjective (Opens.grothendieckTopology ↥X)
+      ((PresheafOfModules.toPresheaf _).map
+        ((PresheafOfModules.pushforward (restrictPhi f)).map (modTensorMk L M))) := by
+  haveI := isLocallySurjective_modTensorMk L M
+  exact Presheaf.isLocallySurjective_whisker (Opens.grothendieckTopology ↥X)
+    (Opens.grothendieckTopology ↥Y) f.opensFunctor
+    ((PresheafOfModules.toPresheaf _).map (modTensorMk L M))
+
+set_option backward.isDefEq.respectTransparency false in
+instance isLocallyInjective_pushforward_modTensorMk {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [IsOpenImmersion f] (L M : Y.Modules) :
+    Presheaf.IsLocallyInjective (Opens.grothendieckTopology ↥X)
+      ((PresheafOfModules.toPresheaf _).map
+        ((PresheafOfModules.pushforward (restrictPhi f)).map (modTensorMk L M))) := by
+  haveI := isLocallyInjective_modTensorMk L M
+  exact Presheaf.isLocallyInjective_whisker (Opens.grothendieckTopology ↥X)
+    (Opens.grothendieckTopology ↥Y) f.opensFunctor
+    ((PresheafOfModules.toPresheaf _).map (modTensorMk L M))
+
+set_option backward.isDefEq.respectTransparency false in
+instance isLocallySurjective_modRestrictTensorPre {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [IsOpenImmersion f] (L M : Y.Modules) :
+    Presheaf.IsLocallySurjective (Opens.grothendieckTopology ↥X)
+      ((PresheafOfModules.toPresheaf _).map (modRestrictTensorPre f L M)) := by
+  unfold modRestrictTensorPre
+  rw [Functor.map_comp]
+  infer_instance
+
+set_option backward.isDefEq.respectTransparency false in
+instance isLocallyInjective_modRestrictTensorPre {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [IsOpenImmersion f] (L M : Y.Modules) :
+    Presheaf.IsLocallyInjective (Opens.grothendieckTopology ↥X)
+      ((PresheafOfModules.toPresheaf _).map (modRestrictTensorPre f L M)) := by
+  unfold modRestrictTensorPre
+  rw [Functor.map_comp]
+  infer_instance
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **THE COMPARISON IS AN ISOMORPHISM.**
+
+`modRestrictTensorInv` is the transpose of `modRestrictTensorPre`, so by the adjunction
+triangle the sheafification unit `toSheafify` composed with its underlying presheaf map IS
+`modRestrictTensorPre`.  `toSheafify` is locally bijective, so
+`Presheaf.comp_isLocallySurjective_iff` / `comp_isLocallyInjective_iff` hand the local
+bijectivity of `modRestrictTensorPre` straight down to the comparison, and a locally
+bijective map of SHEAVES is an isomorphism (`Sheaf.isLocallyBijective_iff_isIso`).
+
+The `ReflectsIsomorphisms` instance is supplied by hand rather than by `inferInstance`:
+mathlib declares it in a section whose variables include the locally bijective
+`α : R₀ ⟶ R.obj`, which is a metavariable here, so instance search does not fire. -/
+instance isIso_modRestrictTensorInv {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (L M : Y.Modules) : IsIso (modRestrictTensorInv f L M) := by
+  have h : ((PresheafOfModules.sheafificationAdjunction (𝟙 X.ringCatSheaf.obj)).homEquiv _ _)
+      (modRestrictTensorInv f L M) = modRestrictTensorPre f L M :=
+    Equiv.apply_symm_apply _ _
+  rw [Adjunction.homEquiv_unit] at h
+  have hfac : CategoryTheory.toSheafify (Opens.grothendieckTopology ↥X)
+        (PresheafOfModules.Monoidal.tensorObj (R := X.presheaf)
+          (L.restrict f).val (M.restrict f).val).presheaf ≫
+        ((SheafOfModules.toSheaf _).map (modRestrictTensorInv f L M)).hom
+      = (PresheafOfModules.toPresheaf _).map (modRestrictTensorPre f L M) := by
+    have h2 := congrArg
+      (PresheafOfModules.toPresheaf (X.presheaf ⋙ forget₂ CommRingCat RingCat)).map h
+    rw [Functor.map_comp,
+      PresheafOfModules.toPresheaf_map_sheafificationAdjunction_unit_app] at h2
+    exact h2
+  haveI hsurjZ : Presheaf.IsLocallySurjective (Opens.grothendieckTopology ↥X)
+      ((SheafOfModules.toSheaf _).map (modRestrictTensorInv f L M)).hom :=
+    (Presheaf.comp_isLocallySurjective_iff (Opens.grothendieckTopology ↥X) _ _).1
+      (by rw [hfac]; infer_instance)
+  haveI hinjZ : Presheaf.IsLocallyInjective (Opens.grothendieckTopology ↥X)
+      ((SheafOfModules.toSheaf _).map (modRestrictTensorInv f L M)).hom :=
+    (Presheaf.comp_isLocallyInjective_iff (Opens.grothendieckTopology ↥X) _ _).1
+      (by rw [hfac]; infer_instance)
+  haveI : IsIso ((SheafOfModules.toSheaf _).map (modRestrictTensorInv f L M)) :=
+    (Sheaf.isLocallyBijective_iff_isIso _).1 ⟨hinjZ, hsurjZ⟩
+  haveI : (SheafOfModules.toSheaf X.ringCatSheaf).ReflectsIsomorphisms := by
+    have : (SheafOfModules.toSheaf X.ringCatSheaf ⋙ sheafToPresheaf _ _).ReflectsIsomorphisms :=
+      inferInstanceAs (SheafOfModules.forget X.ringCatSheaf ⋙
+        PresheafOfModules.toPresheaf _).ReflectsIsomorphisms
+    exact reflectsIsomorphisms_of_comp _ (sheafToPresheaf _ _)
+  exact isIso_of_reflects_iso _ (SheafOfModules.toSheaf _)
+
+/-- **PROVEN 2026-08-01 (`flt-lean-13`) — RESTRICTION COMMUTES WITH `modTensor`,
+CANONICALLY: the comparison `(L ⊗ M)|_W ≅ L|_W ⊗ M|_W` PINNED on tensors of sections.**
 
 This is the `Nonempty` statement `nonempty_restrict_modTensor` above, strengthened to a
 NAMED isomorphism with a known effect on `tensorSection`, and it is the residue of the
@@ -2110,30 +2497,40 @@ is `Iso.refl` at this pin (`restrict_obj` is `rfl`), so `Γ(L.restrict W.ι, ⊤
 `Γ(L, W.ι ''ᵁ ⊤)`, and `tensorSectionAt L M a b` on the left is literally a section of
 `(L ⊗ M).restrict W.ι` over `⊤`.
 
-**WHAT IT WILL TAKE.**  `modTensor (L|_W) (M|_W)` is the sheafification of the restriction
-and `(L ⊗ M)|_W` is the restriction of the sheafification.  The comparison map itself is
-free — maps OUT of a sheafification are supplied by the universal property from presheaf
-data, and the presheaf tensor is OBJECTWISE while restriction to an open subsite is
-precomposition, so the required presheaf map is `modTensorMk` at shifted opens and the
-pinning clause is then true by construction.  What has to be proven is that it is an
-ISOMORPHISM, i.e. that sheafification commutes with restriction to an open subsite.  The
-honest route is local bijectivity: `modTensorMk` is locally injective and locally surjective
-(both are mathlib instances on `toSheafify`), a covering sieve of `V ≤ W` in `W` is a
-covering sieve in `Z`, so both legs are locally bijective and a locally bijective map of
-SHEAVES is an isomorphism (`J.W_of_isLocallyBijective`, `homEquivOfIsLocallyBijective`).
+**WHAT IT TOOK, and the route audit that stood here was right about the shape and wrong
+about the DIRECTION.**  The audit said: build the comparison map out of the sheafification's
+universal property, whose pinning clause is then true by construction, and prove `IsIso` by
+local bijectivity.  Both halves are exactly what the section above does — but only in the
+direction `L|_W ⊗ M|_W ⟶ (L ⊗ M)|_W` (`modRestrictTensorInv`), because that is the one
+whose SOURCE is a sheafification.  Stated the other way round, as this theorem is, the
+pinning is not free at all: the map is then a map INTO a sheafification, its value on
+`modTensorMk`-images is not given by any universal property, and every route to it goes
+through the unit of `restrictAdjunction`, i.e. through `eqToHom` transports along
+`f ⁻¹ᵁ (f ''ᵁ U) = U`.  So the theorem is proven by inverting `modRestrictTensorInv`; see
+the section docstring above for why the pullback route, which the earlier audit preferred,
+pins only the restrictions of GLOBAL sections and therefore cannot serve this statement.
+
+Two claims in the audit as it stood were stale and are corrected here.  The site step is
+not a covering-sieve argument to be written by hand: `f.opensFunctor.IsCocontinuous` is a
+mathlib instance for every open immersion and
+`CategoryTheory/Sites/PreservesLocallyBijective.lean` does the transfer.  And
+`isIso_modPullbackTensorComparison` has been PROVEN since 2026-07-30, so the last sentence
+below — that proving this discharges `nonempty_restrict_modTensor`'s dependence on it — has
+nothing left to discharge.
 
 **FAITHFUL.**  Not vacuous: at `W = ⊤` it is `Scheme.Modules.restrictFunctorId` and holds.
 It is not under-pinned either — the `∀ a b` clause pins `e` on every pure tensor of sections
 over `W`, which is exactly what the consumer consumes, and an `e` differing by a unit fails
-it.  The direction is chosen to match `nonempty_restrict_modTensor`, so a proof of this leaf
-also DISCHARGES that theorem's dependence on the still-open
-`isIso_modPullbackTensorComparison`. -/
+it.  The direction is chosen to match `nonempty_restrict_modTensor`. -/
 theorem exists_restrict_modTensor_tensorSection {Z : Scheme.{u}} (L M : Z.Modules)
     (W : Z.Opens) :
     ∃ e : (modTensor L M).restrict W.ι ≅ modTensor (L.restrict W.ι) (M.restrict W.ι),
       ∀ (a : Γ(L.restrict W.ι, ⊤)) (b : Γ(M.restrict W.ι, ⊤)),
-        e.hom.val.app (op ⊤) (tensorSectionAt L M a b) = tensorSection a b :=
-  sorry
+        e.hom.val.app (op ⊤) (tensorSectionAt L M a b) = tensorSection a b := by
+  refine ⟨(asIso (modRestrictTensorInv W.ι L M)).symm, fun a b => ?_⟩
+  rw [← modRestrictTensorInv_tensorSectionAt W.ι L M ⊤ a b]
+  exact presheafHom_congr_apply
+    (congrArg SheafOfModules.Hom.val (IsIso.hom_inv_id (modRestrictTensorInv W.ι L M))) (op ⊤) _
 
 set_option maxHeartbeats 1600000 in
 /-- **THE LOCAL-SECTION HALF OF STACKS 01CV** (**PROVEN 2026-07-30** over the single leaf
