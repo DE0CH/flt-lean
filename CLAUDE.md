@@ -16151,3 +16151,77 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## "GENERAL CASE = SPECIAL CASE + GLUING" IS A CUT YOU MUST INSTANTIATE BEFORE YOU WRITE IT
+
+(2026-08-01, `flt-lean-369`, on `exists_isGaloisTwistForm_of_semilinearAction` in
+`Modularity/MoretBailly.lean`.)  The commonest cut offered by a hard geometry leaf
+is *prove the affine/local case, then glue*.  It is offered because it is how the
+textbook proof reads, and in this development it FAILS about as often as it works —
+for a reason that is invisible in the two statements and obvious the moment you try
+to apply one to the other.
+
+**The test costs one paragraph and no Lean: take the objects the GLUING half
+actually produces, and check they are instances of the SPECIAL half's hypotheses.**
+
+Here the gluing half's objects are the `a`-stable affine opens `V` that Serre's
+criterion hands out, and the special half was going to be "this statement plus
+`IsAffine`".  Those `V` are open subschemes of `X₀ ⊗ K`; the statement is about
+schemes presented as `pullback fY (specRatMap K)`, i.e. as BASE CHANGES from `ℚ`.
+A twisted-stable affine open is not one — witness `X₀ = 𝔾_{m,ℚ}` with the norm-one
+torus cocycle of `ℚ(i)`, where `𝔾_{m,K}` minus the single point `i` is affine and
+stable for the twisted action while not being stable for the canonical one, hence
+not a preimage from `X₀`.  So the cut typechecks as a pair of statements and can
+never be assembled.
+
+Three generalisations, in the order they are worth checking:
+
+* **A presentation in the hypotheses is a constraint on what the leaf can be
+  applied to.**  Any leaf whose subject is written `pullback f g`, `Spec A`,
+  `X ⊗_k K`, or `Y.restrict U` can only ever be instantiated at objects you can
+  present that way, and the local pieces a covering argument produces usually
+  cannot be.  A leaf meant to be used LOCALLY must be stated INTRINSICALLY.
+* **The intrinsic restatement can fail on ONE hypothesis, and that hypothesis is
+  usually the continuity/finiteness one.**  Here everything translated except
+  `hopen`, which says the action agrees with the canonical one on an open subgroup
+  and therefore mentions the presentation.  When that happens the presentation is
+  load-bearing for EXPRESSIBILITY, not merely for truth, and the citation-shaped
+  recut is unavailable — say so, because it is the first thing the next owner will
+  try.  (The escape, when there is one, is that the AFFINE case admits a different
+  intrinsic spelling of the same condition: for `Spec B`, "every element of `B` has
+  open stabiliser".  Look for a spelling in terms of SECTIONS before giving up.)
+* **A hypothesis that looks like bookkeeping for the gluing may be what makes the
+  theorem TRUE.**  Weakening Serre's orbit criterion to a bare cover by stable
+  affines makes the glue data typecheck and makes the leaf FALSE, because
+  effectivity of descent needs each orbit inside ONE affine and the standard
+  counterexamples are covered by stable affines with an orbit split across two.
+  Check the classical counterexamples against the weakened hypothesis, not against
+  the original.
+
+## AN ABSENCE SURVEY THAT NAMES THE LAST STEP CAN BE SILENT ABOUT AN EARLIER ONE
+
+(Same leaf.)  That node carried a careful, dated, correct survey — descent data for
+schemes, effectivity, the quotient by a finite group and `IsStack` for schemes are
+all absent — and every clause re-verified at the current pin.  It reads as "only the
+GLUING is missing", and two things it does not say are what actually price the work:
+
+* **Galois descent for MODULES and VECTOR SPACES is absent too**, so the AFFINE case
+  is itself a theory build rather than a lookup.  Checked: no `Speiser`, no
+  `FixedPoints` against a tensor product, no file matching `Galois descent`, and
+  `Mathlib/Algebra/Category/ModuleCat/Descent.lean` proves only that extension of
+  scalars along a faithfully flat map is COMONADIC — effective descent is an explicit
+  `TODO` in its own header.  `Mathlib/RingTheory/Flat/FaithfullyFlat/Descent.lean` is
+  about descending `injective`/`surjective`/`bijective` for RING MAPS and is unrelated
+  to module descent, which is exactly the kind of near-miss a filename grep rewards.
+* **The MORPHISM half of descent is PRESENT and the survey does not mention it.**
+  `Mathlib/AlgebraicGeometry/Sites/Fpqc.lean` defines `fpqcTopology` and proves
+  `instance : fpqcTopology.Subcanonical`, plus `EffectiveEpi` for every quasi-compact
+  surjective flat morphism.  Subcanonicity IS descent for morphisms.  So any estimate
+  that budgets for gluing morphisms along an fpqc cover is too large, and any route
+  whose hard step turns out to be a MORPHISM rather than an OBJECT is already done.
+
+**The reusable rule: a survey states what its author looked for, and the author
+looked for the step they were stuck on.**  Before costing a node off one, walk the
+proof from the BEGINNING and price every step, not just the one the survey names —
+and check the two directions of descent separately, since this pin has one and not
+the other.

@@ -46485,7 +46485,114 @@ reason recorded below: without them `K = ℚ` with the trivial action forces
 `c ≡ 𝟙` while `Spec ℚ ⊔ Spec ℚ` carries a surjective continuous
 `Γ_ℚ ↠ ℤ/2` admitting no twist. `hsm`, `hlft`, `hqc` are carried but not known
 to be needed; `hsep` is now known to be needed, by
-`exists_isAffineOpen_stableUnder_semilinearAction`. -/
+`exists_isAffineOpen_stableUnder_semilinearAction`.
+
+## CUT-OBSTRUCTION AUDIT, 2026-08-01 (`flt-lean-369`)
+
+Four cuts were designed and each was REJECTED for a reason that is checkable
+without a build. They are recorded with their witnesses so that the next three
+owners do not re-derive them; the fifth entry is the one decomposition that does
+compose, written out as an interface so it can be executed by a dedicated owner.
+
+**CUT 1 — affine case plus gluing, with the affine case stated as THIS statement
+plus `IsAffine (pullback fX₀ (specRatMap K))`. DOES NOT COMPOSE.** The gluing
+half has to apply the affine half to the `a`-stable affine opens `V` that `hstab`
+produces, and those are NOT base changes of `ℚ`-schemes, so they are not of the
+form `pullback fY (specRatMap K)` and the affine half cannot be instantiated at
+them. Witness, and it is concrete rather than an appeal to generality: take
+`X₀ = 𝔾_{m,ℚ}` and `c` the cocycle of the norm-one torus of `ℚ(i)`, i.e.
+`c σ = inv` when `σ` moves `i` and `c σ = 𝟙` otherwise, so that
+`a σ (x) = σ(x)^{χ(σ)}` for the quadratic character `χ` of `ℚ(i)`. That is an
+action (`χ` is a homomorphism), it is semilinear, and `hopen` holds with
+`N = Γ_{ℚ(i)}`. Now let `V` be `𝔾_{m,K}` with the single point `i` removed:
+it is AFFINE and `a`-STABLE — for `σ` in `N` the point `i` is fixed, and for `σ` outside it
+`i` goes to `σ(i)^{-1} = (-i)^{-1} = i` — while it is NOT stable under
+`baseAct`, which sends `i` to `-i`. The `baseAct`-stable opens of
+`X₀ ⊗ K` ARE exactly the preimages `π ⁻¹ᵁ U` (over `K = ℚ̄` the group acts
+transitively on each fibre of `π`), so `V` is not one, and no `fY` presents it.
+
+**CUT 2 — restate the leaf intrinsically, for a `K`-scheme with a semilinear
+`Γ_ℚ`-action, deleting `X₀`, `fX₀`, `hsm`, `hsep`, `hlft`, `hqc` from the
+signature. NOT EXPRESSIBLE.** Everything in the statement survives the
+translation except `hopen`, which says `a σ = b.baseAct fX₀ σ` for `σ` in `N`
+and therefore MENTIONS the presentation. `hopen` is the continuity of the
+action, and the classical intrinsic spelling of continuity — the pair is defined
+over a finite subextension — is a statement about a presentation over `L = K^N`,
+i.e. it presupposes the `K`-to-`L` descent this leaf is for. So `fX₀` is
+load-bearing for EXPRESSIBILITY, not merely for truth, and the tempting
+citation-shaped restatement is unavailable. (There is one intrinsic spelling
+that does work, and it only works in the AFFINE case: for `V = Spec B` ask that
+every element of `B` have open stabiliser in `Γ_ℚ`. See CUT 5.)
+
+**CUT 3 — weaken `hstab` from Serre orbit form to a bare cover by `a`-stable
+affine opens, which is what a gluing argument visibly consumes. FALSE.** With
+`hsep` in hand the pairwise intersections of such a cover are affine and the
+glue data does typecheck, which is what makes the weakening look free. It is not:
+effectivity of Galois descent genuinely needs each ORBIT inside one affine, and
+the standard counterexamples to effectivity are covered by stable affines with an
+orbit split across two of them. Keep `hstab` as stated.
+
+**CUT 4 — split the conclusion into "the quotient `q : P ⟶ X` exists" and "the
+canonical map `P ⟶ X ×_ℚ K` is an isomorphism". CIRCULAR.** The second half is
+the entire content, and the first half does not pin `X`: without the isomorphism
+clause any `X` receiving an `a`-invariant `q` qualifies, `X = Spec ℚ` included.
+
+### CORRECTED ABSENCE SURVEY (re-verified 2026-08-01 at this pin)
+
+The survey above is right that the object half of descent is missing, and it is
+WRONG BY OMISSION in one direction and OVER-PESSIMISTIC in another. Both matter
+for costing the work.
+
+* **The MORPHISM half of descent is PRESENT.**
+  `Mathlib/AlgebraicGeometry/Sites/Fpqc.lean` defines `fpqcTopology` and proves
+  `instance : fpqcTopology.Subcanonical`, plus `EffectiveEpi` for any
+  quasi-compact surjective flat morphism. Subcanonicity IS descent for
+  morphisms: a morphism out of `P` that is compatible on `P ×_X P` glues. So
+  nothing in the fully faithful half has to be built, and any estimate that
+  budgets for it is too large.
+* **Galois descent for MODULES and for VECTOR SPACES is absent**, which the
+  survey above does not say and which is the finding that most changes the
+  price. Checked: no `Speiser`, no occurrence of `FixedPoints` against a tensor
+  product, no file matching `Galois descent`, and
+  `Mathlib/Algebra/Category/ModuleCat/Descent.lean` proves only that extension
+  of scalars along a faithfully flat map is COMONADIC, with effective descent
+  left as an explicit `TODO` in its own header.
+  `Mathlib/RingTheory/Flat/FaithfullyFlat/Descent.lean` is about descending
+  `injective`/`surjective`/`bijective` for ring maps and is unrelated.
+  Consequently the AFFINE case of this leaf is itself a theory build, not a
+  lookup — the survey above reads as though only the gluing were open.
+* `IsStack` still has no `AlgebraicGeometry` instance: `IsStack` and
+  `DescentData` match zero lines under `Mathlib/AlgebraicGeometry/`. The
+  quotient of a scheme by a finite group is still absent. `~/cs/FLT` has a file
+  named `GaloisDescent.lean` but it is 73 lines about a variable change on a
+  Weierstrass curve over a quadratic extension and contains nothing reusable.
+
+### CUT 5 — THE DECOMPOSITION THAT DOES COMPOSE
+
+Three leaves, and each is a statement with a name in the literature. It is
+written out here rather than performed because the third is large and because a
+half-designed interface is worse than none.
+
+1. *Affine Galois descent, intrinsic form.* `B` a `K`-algebra carrying a
+   `Γ_ℚ`-action which is semilinear over `b.gal` and for which EVERY ELEMENT HAS
+   OPEN STABILISER; then there is a `ℚ`-algebra `A` and an equivariant
+   `K`-algebra isomorphism `A ⊗_ℚ K ≅ B`. This is the one place the open
+   stabiliser condition is expressible without a presentation, which is what
+   makes CUT 1 work here and fail in scheme form.
+2. *Continuity of the sections.* For `V` an `a`-stable affine open of
+   `X₀ ⊗ K`, every element of `Γ(V, 𝒪)` has open stabiliser. This is where
+   `hopen` is spent, and the route is the cofiltered presentation
+   `X₀ ⊗ K = lim_L (X₀ ⊗ L)` over the finite subextensions, for which
+   `Mathlib/AlgebraicGeometry/AffineTransitionLimit.lean` supplies
+   `isLimitOpensCone` and the affine transition machinery.
+3. *The gluing.* The target, given 1 and 2. `hstab` supplies the cover, `hsep`
+   makes the pairwise intersections affine, `Scheme.GlueData` from
+   `Mathlib/AlgebraicGeometry/Gluing.lean` assembles `X`, and the comparison
+   `X ⊗ K ≅ X₀ ⊗ K` is checked on the cover, where it is 1.
+
+A prover who takes this on should do 1 and 2 in a separate mathlib-facing module
+under `Fermat/FLT/Mathlib/`, since neither mentions this file's vocabulary, and
+should expect 3 to be the bulk. -/
 theorem exists_isGaloisTwistForm_of_semilinearAction {K : Type u} [Field K] [Algebra ℚ K]
     (hac : IsAlgClosed K) (halg : Algebra.IsAlgebraic ℚ K)
     (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
