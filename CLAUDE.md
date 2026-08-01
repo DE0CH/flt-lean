@@ -16151,3 +16151,69 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A CROSS-FILE PREDICATE BRIDGE LEAVES THE ROUTE IF YOU MAKE THE OTHER CASE A DISJUNCT IN YOUR OWN VOCABULARY
+
+(2026-08-01, `flt-lean-335`, `norm_coeff_le_one_of_sq_not_dvd_of_isNewEigenformAt`
+in `ModularCurve/X0.lean`.)
+
+A leaf whose hypothesis is a NEGATIVE predicate of your own file
+(`hnew : IsNewEigenformAt M b`, which is `¬ IsOldEigenformAt M b` by
+definition) and whose proof needs a theorem stated over a DOWNSTREAM file's
+POSITIVE predicate (`Modularity.IsWeightTwoNewform`) owes a BRIDGE
+`¬ P_mine → Q_theirs`.  That bridge is routinely the hardest thing on the
+route — here its contrapositive IS the oldform decomposition, and the leaf's
+own docstring correctly identified it as obstacle 3 of 3 and as "the HARDER
+one".
+
+**The bridge leaves the route entirely if you move the negative hypothesis
+into the CONCLUSION as a disjunct.**  Restate
+
+    (hnew : ¬ P b) : C b          as          C' b ∨ P b
+
+with `C'` the sharp form of `C`.  The two are interchangeable at the consumer
+(`rcases`, then `absurd`), so it is a `1 → 1` recut — but the new statement
+never mentions the downstream predicate, because the disjunct `P b` is what
+the classical argument's bad case LITERALLY produces, in your own vocabulary.
+
+Why this is not a trick: the bridge existed only because the leaf ASKED for
+the classical dichotomy's good branch while offering the bad branch's
+negation in a foreign spelling.  A dichotomy has no such asymmetry — each
+branch is stated where it is produced.
+
+Three checks before taking it:
+
+* **the disjunct must be your file's own predicate AND be what the bad case
+  produces**, not merely something implied by it.  Here `IsOldEigenformAt` is
+  a ONE-STEP stabilization from a proper divisor level, and that definition's
+  own docstring already records why one step suffices, so the classical
+  `p`-old case produces it on the nose;
+* **strengthen the good branch to what the citation actually proves** (here
+  `a_p² = 1`, not `‖a_p‖ ≤ 1`), so the eventual reconciliation with the
+  downstream theorem is a MATCH and not a weakening — downstream
+  `qCoeff_sq_eq_one_of_exactly_dvd` proves exactly `a_q² = 1`.  The consumer
+  loses nothing: `‖x‖ ≤ 1` follows from `x² = 1` in two lines;
+* **re-run the falsity audit from scratch.**  Hypotheses were REMOVED and the
+  conclusion STRENGTHENED, so nothing of the old audit transfers, and the
+  strengthening is where it bites: the old `‖a_p‖ ≤ 1` tolerated `a_p = 0`,
+  so its audit could afford to be relaxed about `¬ p² ∣ M`; `a_p² = 1` cannot.
+  `M = 32`, `p = 2` — the CM curve `32a`, `a_2 = 0` by additive reduction,
+  the unique newform at that level — makes BOTH disjuncts fail if that
+  hypothesis is dropped.  (Checked in PARI/GP, with `M = 11`, `M = 75` and
+  `M = 22` for the other three clauses.)
+
+**And the dividend worth looking for: a leaf freed of a `hnew`-style
+hypothesis usually becomes the input a SIBLING leaf was also waiting for.**
+Dropping `hnew` made this statement about EVERY eigenform, which is exactly
+the `U_p` computation that `norm_coeff_le_sqrt_of_dvd_level` (still open,
+~2 400 lines above in the same file) says in its own docstring it needs —
+"the oldform/newform theory (`IsNewEigenformAt` and the degeneracy maps)".
+The two are now visibly ONE development and must be dispatched together,
+rather than two agents each rebuilding the oldform decomposition.
+
+Accounting, in the shape the RECUT rule asks for: **the count did not move,
+`1 → 1`, and the mechanical receipt is one `+ sorry` and one `- sorry` in
+`git diff` with the module's warning total unchanged (101 → 101) and the
+warning LINE moved from the target to the new leaf.**  Quote that, because a
+`−1 +1` delta is otherwise indistinguishable from one closure plus one
+unrelated disclosure.
