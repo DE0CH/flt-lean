@@ -16151,3 +16151,76 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A FOURTH CAUSE OF "MY TARGET DOES NOT EXIST": RIVAL-CUT ARBITRATION — and then the SURVIVOR is your target, narrowed
+
+(2026-08-01, `flt-lean-370`.)  This file already records three reasons a named
+target can be absent from your tree: a stale worktree, a cut living only on an
+unmerged branch, and a merge that DECLINED the cut.  There is a fourth, it is not
+a defect, and it is the only one where **the mathematics in your prompt is still
+exactly right while the declaration is gone for good.**
+
+My target was `not_forall_galoisScalar_of_cmEndomorphism_ramified`, one of three
+regime sub-leaves (`_two` / `_ramified` / `_unramifiedOdd`) that the prompt placed
+in `X0.lean` at named lines "on `merger`".  It is on neither `main` nor `merger`.
+Nothing was lost: on 2026-07-31 an arbitration between two rival cuts of that
+cluster (recorded in this file under *TWO RIVAL CUTS OF ONE PARENT*) kept the
+NARROWING to `q = p` and deleted the regime split — and narrowing to `q = p` is
+narrowing to the RAMIFIED case, because `q` ramifies in `K = ℚ(√−p)` exactly when
+`q = p`.  So the surviving parent *is* the leaf I was sent at, and the prompt's
+whole mathematical account of it applied verbatim.
+
+**The tell, and it costs one command.**  When the target is missing, grep the file
+for the PARENT rather than for the target, and read the section docstring:
+
+    grep -n '<the target name minus its regime suffix>' <the file>
+
+A suffixed name (`_ramified`, `_two`, `_odd`, `_split`, `_good`, `_ell`) is a
+REGIME of some parent, and a regime split is exactly the kind of cut an
+arbitration collapses.  Here the surviving subsection said so in as many words —
+*"the ramified branch is no longer one of two: it is the whole of the file's CM
+content, and the parent has been narrowed to `q = p` accordingly"* — so one read
+of the enclosing docstring turned a phantom report into an ordinary task.
+
+**Do NOT re-create the deleted sub-leaf.**  That is a rival cut of an arbitrated
+cluster, which is the single most expensive thing to hand a merge worker: it has
+no author left to adjudicate it.  Work the survivor.
+
+### The dividend: the audit that blocked it was stale in the standard way
+
+The narrowed parent carried a long, careful, correct audit ending *"what is
+missing on the elliptic-curve side of BOTH routes is `End(E_ℚ̄)` as a RING acting
+on the points, and `E[p]` as a free rank-1 module over `O_K/pO_K` … it is the
+MODULE structure on `E[p]` that has to be built."*  Both objects had been built
+the day before, in `EllipticCurve/EndomorphismOrder.lean`, which `X0.lean`
+**already `public import`s** — `cmOrderHom` (+ `cmOrderHom_injective`) and
+`cmTorsionModule`.  That is [[flt-inventory-audits-understate-what-exists]] in its
+commonest form, and the reason it survived is worth naming: **an audit written
+the day a leaf is cut is never re-read when its named blocker lands**, because
+the person who lands the blocker is working in a different file.
+
+So the standing rule earns a corollary for whoever ADDS a general API: **grep for
+audits that name your new object as missing, and correct them in place.**  One
+`grep -rn 'has to be built\|is missing\|not in the pin' Fermat/` at the end of an
+API-building run would have closed the gap at its source.
+
+### What the recut bought, since the count did not move
+
+`1 → 1`, receipt `+sorry`/`-sorry`.  What left the leaf is all of the
+group-theoretic bookkeeping: the residue no longer mentions a scalar `c`, a
+negation, or the `∀ σ` quantifier, and reads as the classical wild-ramification
+statement *"the inertia image at `p` contains `1 + 𝔭`"* — one existential over a
+single `σ`.  The bookkeeping went into `not_scalar_of_fixed_of_moved`, PROVEN,
+which has **no geometry in it at all**: it is a fact about an arbitrary abelian
+group, isolated so that no successor pays for it again.
+
+**Two things that made the glue cheap and are worth copying.**  A `σ` that scales
+`u` and `v` by ONE `c` scales every `ℤ`-combination by `c`, so a single FIXED
+nonzero `R = a·u + b·v` forces `p ∣ c − 1` (via `addOrderOf R = p`) and hence
+forces `σ` to fix `u` and `v` — so the leaf need only produce *one* fixed point
+and *one* moved point.  And the tempting simplification — let the leaf say
+"`σ u = u ∧ σ v ≠ v`" — is **FALSE**, because `u` is an arbitrary basis vector: a
+non-scalar `a + bε` fixes a nonzero point only when `a = 1`, and then only on
+`ker ε`, which need not contain `u`.  The fixed point must stay EXISTENTIAL.
+That is the degenerate-witness check applied to a *convenience* rewrite of a leaf,
+and it is where this cut would have gone false.
