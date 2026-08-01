@@ -32898,25 +32898,180 @@ theorem isNoetherianRing_isAdic_hilbertTraceSubring_of_descent_aux
     hbasis (IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ))
     Ideal.Quotient.mk_surjective hresidcont hhom
 
-/-- **CARAYOL'S THÉORÈME 1 PROPER AT RAISED LEVEL `Q`: the framed deformation
-DESCENDS to the trace subring, local conditions and all** (LEAF — cut
-2026-07-31 out of the `sorry` body of
-`exists_isWeaklyUniversal_isTraceGenerated_hilbertAux_of_isWeaklyUniversal`
-below, which is now PROVEN over it and carries no direct `sorry` of its own.
-It is the exact raised-level twin of the base-level LEAF
-`exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal`
-above, and the SOLE remaining atom of the raised-level trace-descent cluster.)
+open scoped TensorProduct in
+/-- **THE TAME CLAUSE AT `w ∣ 2` DESCENDS TO THE TRACE SUBRING, AT RAISED
+LEVEL** (LEAF — cut 2026-07-31 out of
+`exists_framedGaloisRep_descent_hilbertAuxTraceSubring_of_isWeaklyUniversal`
+below, which is now PROVEN over this leaf and
+`isHilbertAuxSplitTorusAt_of_baseChange_hilbertAuxTraceSubring` and carries no
+direct `sorry` of its own).
 
-**WHAT THIS CUT BOUGHT, since the leaf count did not move (1 → 1).** The old
-statement bundled Carayol's Théorème 1 together with Carayol's Lemme 1 (the
-coefficient-ring structure of `R'`), the construction of the descended datum,
-and the composition glue for weak universality. All three of those are now
-PROVEN — Lemme 1 as
-`isNoetherianRing_isAdic_hilbertTraceSubring_of_descent_aux` immediately above,
-the rest in the consumer below — and what is left is a statement about framed
-Galois representations and local conditions with no ring theory, no topology
-and no universal property in it. It is dispatchable at somebody who knows
-Carayol and Wiles ch. 3 and nothing about this file.
+It is the verbatim raised-level twin of
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring_of_isWeaklyUniversal`
+above — same conclusion, same hypotheses, with `HilbertDeformationDatum`
+replaced by `HilbertAuxDeformationDatum ℓ F Q` — and **the base-level twin is
+itself still open**, so this is not a transcription that a successor can
+perform: the two are one piece of mathematics stated at two levels.
+
+**WHY IT IS A SEPARATE LEAF FROM THE BASE-LEVEL ONE AND NOT AN APPLICATION OF
+IT.** `IsWeaklyUniversal` is a property of the datum's own deformation
+category, and the raised-level category is a different one (its objects are
+unramified outside `2ℓQ`, not outside `2ℓ`), so `h𝒟` here is not the base-level
+hypothesis and the base-level statement cannot be instantiated. Everything else
+about the two is identical, which is why the base-level FALSITY AUDIT transfers
+verbatim: the witness `R' = ℤ_7[[Z]] ↪ ℤ_7[[Y]]` by `Z ↦ 7Y` over
+`F = ℚ(ζ₇)⁺`, `ℓ = 7` refutes the `h𝒟`-free form here exactly as it does there,
+and the quotient CHARACTER again needs no descent (`δ(g)² = 1` in a local ring
+where `2` is a unit forces `δ(g) = ±1`, already in the image of `ℤ_ℓ ⊆ R'`);
+only the unimodular eigenROW is at issue.
+
+`Q` plays no role in the conclusion: the place `w` lies above `2`, and a
+Taylor–Wiles prime does not (`IsHilbertTaylorWilesPrimeSet` puts every `w ∈ Q`
+above a rational prime `≡ 1 mod ℓ^n`, so `w ∤ 2`). It is carried only because
+the datum is indexed by it. -/
+theorem isHilbertAuxTameAtTwo_of_baseChange_hilbertAuxTraceSubring_of_isWeaklyUniversal
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (Q : Finset (HeightOneSpectrum (𝓞 F)))
+    (𝒟 : HilbertAuxDeformationDatum ℓ F Q ρbar) (h𝒟 : 𝒟.IsWeaklyUniversal)
+    (hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ))
+    (ρ' : FramedGaloisRep F (hilbertTraceSubring ℓ 𝒟.ρ) (Fin 2))
+    (e : (𝒟.R ⊗[hilbertTraceSubring ℓ 𝒟.ρ]
+        (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)) ≃ₗ[𝒟.R] (Fin 2 → 𝒟.R))
+    (he : (ρ'.baseChange 𝒟.R).conj e = 𝒟.ρ)
+    (w : HeightOneSpectrum (𝓞 F)) (hw : ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal) :
+    ∃ (p : (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)
+        →ₗ[hilbertTraceSubring ℓ 𝒟.ρ] (hilbertTraceSubring ℓ 𝒟.ρ))
+      (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) (hilbertTraceSubring ℓ 𝒟.ρ)
+        (hilbertTraceSubring ℓ 𝒟.ρ)),
+      (∀ g : Γ (w.adicCompletion F),
+        ∀ x : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ,
+        p (ρ'.toLocal w g x) = δ g (p x)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 :=
+  sorry
+
+open scoped TensorProduct in
+/-- **THE SPLIT-TORUS CLAUSE AT `w ∈ Q` DESCENDS TO THE TRACE SUBRING** (LEAF —
+cut 2026-07-31 out of
+`exists_framedGaloisRep_descent_hilbertAuxTraceSubring_of_isWeaklyUniversal`
+below, together with the tame leaf above).
+
+**THIS IS THE ONE CLAUSE WITH NO BASE-LEVEL COUNTERPART**, and it is what the
+old bundled leaf's docstring named as "what is genuinely new here". The
+eigenbasis `e : (Fin 2 → R) ≃ₗ[R] R × R` and the two characters `χ`, `δ` live
+over `R = 𝒟.R`; the descent must produce them over the SUBRING
+`R' = hilbertTraceSubring ℓ 𝒟.ρ`. They do descend, because the two characters
+are the two eigenvalues of the local `charpoly` — which lies in `R'` by
+construction of the generating set — and the eigenbasis is then pinned by the
+DISTINCTNESS of the residual eigenvalues at `w ∈ Q`, i.e. by the third clause
+of `IsHilbertTaylorWilesPrimeSet`. **That is why `n` and `hQ` are hypotheses
+here rather than decoration, and this is the only place they are spent.**
+
+**WHAT THE FINITE-LEVEL ANALOGUE ALREADY GIVES, AND EXACTLY WHAT IS LEFT**
+(measured 2026-07-31, so that a successor does not re-derive it).
+`isHilbertSplitTorusAt_of_subring_entries` above is this statement for a
+subring `C` of a ring `A` that is `[Finite A]` and `[DiscreteTopology A]`, and
+its proof spends those two instances in exactly FOUR places:
+
+1. `haveI : Finite C := Subtype.finite`;
+2. `haveI : IsAdicComplete (IsLocalRing.maximalIdeal C) C := inferInstance`;
+3. `hpcont : Continuous C.subtype := continuous_of_discreteTopology`;
+4. `halgC`, the agreement of the two `ℤ_ℓ`-algebra structures, via
+   `hilbertRingHom_padicInt_ext_finite` — which needs `[Finite A]` outright.
+
+Three of the four are free HERE and none of them needs finiteness: (2) is the
+conclusion of `isNoetherianRing_isAdic_hilbertTraceSubring_of_descent_aux`
+above, applied to `R'`; (3) is continuity of a subring inclusion; and (4) is
+`rfl`, because `R'` contains `Set.range (algebraMap ℤ_[ℓ] 𝒟.R)` BY
+CONSTRUCTION, so the inclusion is a `ℤ_ℓ`-algebra map on the nose. Only (1) has
+no substitute, and it is not used for anything but (2). **So the honest residue
+is `isHilbertSplitTorusAt_of_subring_entries` restated with `[Finite A]` and
+`[DiscreteTopology A]` replaced by `(hCcompl : IsAdicComplete …)`,
+`(hpcont : Continuous C.subtype)` and `(halgC : …)`** — and the checks that
+matter were run: `exists_frobEigenBasis_of_charFrob_map_eq`, which is the
+arithmetic core, already asks only for `[IsLocalRing R]` and
+`[IsAdicComplete (IsLocalRing.maximalIdeal R) R]`, and none of
+`commute_toLocal_of_isHilbertSplitTorusAt`,
+`toLocal_diagonal_of_frobDiagonal_of_commute`,
+`exists_splitTorus_of_frobDiagonal_of_commute`,
+`forall_map_eq_one_of_isHilbertSplitTorusAt_of_mul_eq_one` or
+`det_eq_mul_of_toLocal_diagonal` mentions finiteness at all.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: exhibit a raised-level datum whose
+split-torus eigenbasis at some `w ∈ Q` is not defined over the closure of the
+trace subring — i.e. whose two local characters are not separated by the
+residual eigenvalues. `hQ`'s distinctness clause is what forbids that, through
+`isHilbertAuxResidualDistinctClause`.
+
+References: Wiles, Ann. of Math. 141 (1995), ch. 3 (the local condition at
+`Q`); Taylor–Wiles §2. -/
+theorem isHilbertAuxSplitTorusAt_of_baseChange_hilbertAuxTraceSubring
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (𝒟 : HilbertAuxDeformationDatum ℓ F Q ρbar)
+    (hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ))
+    (ρ' : FramedGaloisRep F (hilbertTraceSubring ℓ 𝒟.ρ) (Fin 2))
+    (e : (𝒟.R ⊗[hilbertTraceSubring ℓ 𝒟.ρ]
+        (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)) ≃ₗ[𝒟.R] (Fin 2 → 𝒟.R))
+    (he : (ρ'.baseChange 𝒟.R).conj e = 𝒟.ρ)
+    (w : HeightOneSpectrum (𝓞 F)) (hw : w ∈ Q) :
+    ∃ (eb : (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) ≃ₗ[hilbertTraceSubring ℓ 𝒟.ρ]
+        (hilbertTraceSubring ℓ 𝒟.ρ) × (hilbertTraceSubring ℓ 𝒟.ρ))
+      (χ δ : GaloisRep (w.adicCompletion F) (hilbertTraceSubring ℓ 𝒟.ρ)
+        (hilbertTraceSubring ℓ 𝒟.ρ)),
+      (∀ (g : Γ (w.adicCompletion F))
+          (v : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ),
+        eb (ρ'.toLocal w g v) = (χ g (eb v).1, δ g (eb v).2)) ∧
+      localInertiaGroup w ≤ δ.ker :=
+  sorry
+
+open scoped TensorProduct in
+/-- **CARAYOL'S THÉORÈME 1 PROPER AT RAISED LEVEL `Q`: the framed deformation
+DESCENDS to the trace subring, local conditions and all** (**PROVEN 2026-07-31**
+over the two clause-level leaves immediately above —
+`isHilbertAuxTameAtTwo_of_baseChange_hilbertAuxTraceSubring_of_isWeaklyUniversal`
+and `isHilbertAuxSplitTorusAt_of_baseChange_hilbertAuxTraceSubring` — and the
+generalised Rouquier–Nyssen chain; it carries no direct `sorry` of its own.
+Its consumer
+`exists_isWeaklyUniversal_isTraceGenerated_hilbertAux_of_isWeaklyUniversal`
+below has been PROVEN over it since the cut of 2026-07-31.)
+
+**STATUS CORRECTION 2026-07-31.** This header used to call
+`exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal` above
+"the base-level LEAF". **That theorem is PROVEN**, and has been since the
+2026-07-27 hoist; what is open at base level is the single clause
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring_of_isWeaklyUniversal`.
+The stale word sent at least one prover to transcribe a proof that already
+existed, so the raised-level structure is now the same as the base-level one:
+a PROVEN descent over open CLAUSE leaves, not an open descent.
+
+**WHAT THE 2026-07-31 CUT BOUGHT: 1 leaf → 2, and the ~800-line transcription
+is gone for good.** The old statement bundled four things — the Rouquier–Nyssen
+conjugation, the three formal clauses (`det`, `isUnramified`, `isFlat`) and the
+charpoly comparison, the tame clause at `w ∣ 2`, and the split-torus clause at
+`w ∈ Q`. The first two are now discharged here: the conjugation because the
+bottom-level chain no longer asks for a `HilbertDeformationDatum` (it reads only
+`R`, `ρ`, `π`, `π_surjective`, `resid`, `isAdic`, `isAdicComplete` and the `det`
+clause, and `IsHilbertRaisedLevelHardlyRamified.det` IS that clause), and the
+formal clauses because they are the base-level proof line for line, with
+`isUnramified` differing only by the extra `w ∉ Q` binder. What is left is the
+two clauses that genuinely differ between the levels, each stated on its own and
+each dispatchable at somebody who knows Carayol and Wiles ch. 3 and nothing
+about this file.
 
 **WHY `h𝒟` IS LOAD-BEARING AND MAY NOT BE DROPPED**, verbatim as at base level:
 the Nyssen–Rouquier construction produces the descended representation from the
@@ -32970,8 +33125,78 @@ theorem exists_framedGaloisRep_descent_hilbertAuxTraceSubring_of_isWeaklyUnivers
       IsHilbertRaisedLevelHardlyRamified ℓ F Q
         (rank_finTwoPi (hilbertTraceSubring ℓ 𝒟.ρ)) ρ' ∧
       ∀ g : Γ F, ((ρ' g).charpoly).map (hilbertTraceSubring ℓ 𝒟.ρ).subtype =
-        (𝒟.ρ g).charpoly :=
-  sorry
+        (𝒟.ρ g).charpoly := by
+  letI := hloc
+  -- the Rouquier–Nyssen descent, which is RETRACTION-FREE: it takes `hloc`
+  -- only.  It is the BOTTOM-LEVEL chain, applied here at raised level: since
+  -- 2026-07-31 those six theorems take the deformation's ingredients rather
+  -- than a `HilbertDeformationDatum`, and the only local-condition fact any of
+  -- them reads is the `det` clause, which the raised-level predicate carries
+  -- character for character.
+  obtain ⟨ρ', e, he⟩ :=
+    exists_framedGaloisRep_baseChange_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟.ρ
+      𝒟.isHilbertRaisedLevelHardlyRamified.det 𝒟.π 𝒟.π_surjective 𝒟.resid
+      𝒟.isAdic 𝒟.isAdicComplete hloc
+  -- the structure map of `R'` is the inclusion, hence injective
+  have hinj : Function.Injective
+      (algebraMap (hilbertTraceSubring ℓ 𝒟.ρ) 𝒟.R) := Subtype.val_injective
+  -- `𝒟.ρ` acts on the image of the standard `R'`-frame through `ρ'`
+  have hbc : ∀ g : Γ F, ∀ x : Fin 2 → (hilbertTraceSubring ℓ 𝒟.ρ),
+      𝒟.ρ g (e ((1 : 𝒟.R) ⊗ₜ[hilbertTraceSubring ℓ 𝒟.ρ] x)) =
+        e ((1 : 𝒟.R) ⊗ₜ[hilbertTraceSubring ℓ 𝒟.ρ] (ρ' g x)) := by
+    intro g x
+    have hg : ((ρ'.baseChange 𝒟.R).conj e) g = 𝒟.ρ g := by rw [he]
+    calc 𝒟.ρ g (e ((1 : 𝒟.R) ⊗ₜ[hilbertTraceSubring ℓ 𝒟.ρ] x))
+        = ((ρ'.baseChange 𝒟.R).conj e) g
+            (e ((1 : 𝒟.R) ⊗ₜ[hilbertTraceSubring ℓ 𝒟.ρ] x)) := by rw [hg]
+      _ = e ((1 : 𝒟.R) ⊗ₜ[hilbertTraceSubring ℓ 𝒟.ρ] (ρ' g x)) := by
+            rw [GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+              LinearEquiv.symm_apply_apply]
+            congr 1
+  -- an element killed by `𝒟.ρ` is killed by `ρ'`: the frame is injective
+  have hkey : ∀ g : Γ F, 𝒟.ρ g = 1 → ρ' g = 1 := by
+    intro g hg1
+    refine LinearMap.ext fun x => ?_
+    have h2 := hbc g x
+    rw [hg1, Module.End.one_apply] at h2
+    rw [Module.End.one_apply]
+    exact (one_tmul_injective_hilbert hinj (Fin 2) (e.injective h2)).symm
+  refine ⟨ρ', ⟨?_, ?_, ?_, ?_, ?_⟩, ?_⟩
+  · -- the determinant is the cyclotomic character, by injectivity
+    intro g
+    have hg : ((ρ'.baseChange 𝒟.R).conj e) g = 𝒟.ρ g := by rw [he]
+    have hdet : (algebraMap (hilbertTraceSubring ℓ 𝒟.ρ) 𝒟.R) (ρ'.det g) =
+        𝒟.ρ.det g := by
+      rw [GaloisRep.det_apply 𝒟.ρ g, ← hg, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply, LinearMap.comp_assoc, LinearMap.det_conj]
+      show _ = LinearMap.det (LinearMap.baseChange 𝒟.R (ρ' g))
+      rw [LinearMap.det_baseChange, GaloisRep.det_apply ρ' g]
+    rw [𝒟.isHilbertRaisedLevelHardlyRamified.det g] at hdet
+    exact hinj hdet
+  · -- unramifiedness away from `2ℓ` AND away from `Q` — the single change from
+    -- the base-level proof, and it is a change to the quantifier only
+    intro w hwQ hw2 hwl
+    have hun := 𝒟.isHilbertRaisedLevelHardlyRamified.isUnramified w hwQ hw2 hwl
+    exact ⟨fun σ hσ => hkey _ (hun.localInertiaGroup_le hσ)⟩
+  · -- flatness at every `w ∣ ℓ`: conjugation, then the subring descent
+    intro w hw
+    exact isFlatAt_of_subring_baseChange_of_numberField w 𝒟.isAdic
+      (isFlatAt_of_conj_eq_of_numberField w e he
+        (𝒟.isHilbertRaisedLevelHardlyRamified.isFlat w hw))
+  · -- the tame quadratic quotient at every `w ∣ 2`: NOT formal, and the only
+    -- place `h𝒟` is spent
+    intro w hw
+    exact isHilbertAuxTameAtTwo_of_baseChange_hilbertAuxTraceSubring_of_isWeaklyUniversal
+      ℓ hℓ5 F hirrF Q 𝒟 h𝒟 hloc ρ' e he w hw
+  · -- the split torus at every `w ∈ Q`: the clause with no base-level
+    -- counterpart, and the only place `n` and `hQ` are spent
+    intro w hw
+    exact isHilbertAuxSplitTorusAt_of_baseChange_hilbertAuxTraceSubring
+      ℓ hℓ5 F hirrF n Q hQ 𝒟 hloc ρ' e he w hw
+  · -- the characteristic polynomials, through the base change
+    intro g
+    conv_rhs => rw [← he]
+    exact (charpoly_baseChange_conj_hilbert ρ' e g).symm
 
 /-- **Carayol trace descent at RAISED level `Q`** (PROVEN GLUE since
 2026-07-31, over the LEAF
