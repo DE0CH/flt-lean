@@ -18375,8 +18375,19 @@ theorem isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 
 /-- **EICHLER–SHIMURA NON-VANISHING FOR `Γ₁(N)`: A WEIGHT-TWO EIGENFORM OF LEVEL
 `N` AND NEBENTYPUS `χ` CUTS OUT A NONZERO ISOTYPIC HOMOMORPHISM OUT OF `J_1(N)`**
 (sorry leaf, NEW 2026-07-31) — the MODULAR half of
-`exists_isotypicQuotient_of_isIntegral_gamma1` below, and the `Γ₁` twin of
-`X0.lean`'s `exists_isotypicHom_of_isWeightTwoEigenform`.
+`exists_isotypicQuotient_of_isIntegral_gamma1` below.
+
+**ITS `Γ₀` TWIN NO LONGER EXISTS (2026-07-31).**  `X0.lean`'s
+`exists_isotypicHom_of_isWeightTwoEigenform` was deleted later the same day: a rival
+cut of the `Γ₀` node, through `IsUniversalIsotypicQuotient`, had landed in the same
+release and the root cone was already carrying it, so the `Γ₀` parent is now proven
+over that one leaf and the `IsIsotypicHom` half became consumerless there.  See the
+section note at `X0.lean`'s deletion site for the argument and for the recovery
+command.  **This leaf is NOT thereby obsolete**: the `Γ₁` side has no
+universal-quotient leaf to route through, so `exists_isotypicQuotient_of_isIsotypicHom`
+and `IsIsotypicHom` are now kept in `X0.lean` for THIS consumer alone.  A successor
+who builds a `Γ₁` universal isotypic quotient should expect to retire this leaf the
+same way, and should say so here rather than leaving two routes standing.
 
 **THE CUT OF 2026-07-31 WAS MADE ON BOTH SIDES IN ONE COMMIT**, which is what
 the docstring on this cluster demands: `IsIsotypicQuotient` is reused verbatim
