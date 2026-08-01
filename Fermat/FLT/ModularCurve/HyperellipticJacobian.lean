@@ -5659,6 +5659,93 @@ theorem mul_degOf_le_finrank_adjoin_of_ord_neg (D : PlaceData c₀ c₁ c₂ c�
   push_cast at this ⊢
   exact this
 
+/-! ### The residue field over an ALGEBRAICALLY CLOSED constant field (PROVEN)
+
+`finite_residue_of_ord_neg` above says `κ(v)` is a finite-dimensional `K`-algebra at every
+place.  Over an algebraically closed `K` that is already the whole of Stichtenoth I.1.14 for
+this development: a finite-dimensional `K`-algebra which is a DOMAIN is a finite field
+extension of `K`, hence `K` itself, so every element of `O_v` is congruent to a constant.
+
+**No chart, no smoothness, no case split.**  The classical proof of "residue field = constant
+field" goes through the local coordinate at the point — `exists_localDenom_chart`, which needs
+the sextic to be separable at the point in question and which splits into an affine case and a
+case at infinity.  None of that is needed: the only input is that SOME element has a pole at
+`v`, and a uniformiser's inverse is one at every place by `ord_surjective`.  In particular the
+statement below holds at a place over a SINGULAR point of the affine model, where the chart
+machinery does not apply and where `hsep` is unavailable — which is exactly the generality
+`geomPic_exists_const_of_ord_nonneg` needs, `GeomPic` carrying no separability hypothesis. -/
+
+/-- **The maximal ideal at a place is PRIME** (PROVEN), so `κ(v)` is a domain.
+
+`ord_v` is a valuation, so `ord_v (xy) > 0` with both factors in `O_v` forces one of the two
+orders to be positive; the `x·y = 0` branch is the junk convention `ord_v 0 = 0` showing
+through and is settled by `D.F` being a field.  `ne_top` is `residue_nontrivial`. -/
+lemma valMax_isPrime (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) :
+    (D.valMax v).IsPrime := by
+  constructor
+  · exact Ideal.Quotient.nontrivial_iff.mp (residue_nontrivial D v)
+  · intro x y hxy
+    have h : D.VanishesAt v ((x : D.F) * (y : D.F)) := hxy
+    rcases h with h0 | hpos
+    · rcases mul_eq_zero.mp h0 with h | h
+      · exact Or.inl (Or.inl h)
+      · exact Or.inr (Or.inl h)
+    · rcases eq_or_ne (x : D.F) 0 with hx0 | hx0
+      · exact Or.inl (Or.inl hx0)
+      rcases eq_or_ne (y : D.F) 0 with hy0 | hy0
+      · exact Or.inr (Or.inl hy0)
+      rw [D.ord_mul v _ _ hx0 hy0] at hpos
+      rcases lt_or_ge 0 (D.ord v (x : D.F)) with h | h
+      · exact Or.inl (Or.inr h)
+      · exact Or.inr (Or.inr (by have hx := x.2; omega))
+
+/-- **PROVEN: over an algebraically closed constant field every function regular at a place is
+congruent there to a CONSTANT** — i.e. every place has residue field `K` and degree `1`.
+
+The four steps, none of which mentions the sextic:
+
+1. a uniformiser exists (`ord_surjective`), so `g := t⁻¹` has `ord_v g = −1 < 0`;
+2. `g` is TRANSCENDENTAL over `K`, because an algebraic element is a unit at every place
+   (`ord_eq_zero_of_isAlgebraic`) and `−1 ≠ 0`;
+3. hence `κ(v)` is a finite-dimensional `K`-algebra (`finite_residue_of_ord_neg`, i.e. the
+   single-place bound `e_v·f_v ≤ [F : K⟮g⟯]` above), and it is a domain (`valMax_isPrime`);
+4. a finite — hence integral — domain extension of an algebraically closed field is that
+   field, `IsAlgClosed.algebraMap_bijective_of_isIntegral`.
+
+`hz` is load-bearing: at `ord_v z < 0` no constant is congruent to `z`, since
+`ord_v (z − a) = ord_v z < 0` for every `a`.  The junk convention `ord_v 0 = 0` puts `z = 0`
+inside the hypothesis, where `a = 0` works. -/
+theorem exists_const_sub_vanishesAt_of_isAlgClosed [IsAlgClosed K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) {z : D.F} (hz : 0 ≤ D.ord v z) :
+    ∃ a : K, D.VanishesAt v (z - algebraMap K D.F a) := by
+  obtain ⟨t, ht⟩ := D.ord_surjective v
+  have ht0 : t ≠ 0 := by intro h; rw [h, D.ord_zero] at ht; omega
+  have hginv : D.ord v t⁻¹ = -1 := by rw [D.ord_inv v t ht0, ht]
+  have hgtr : Transcendental K t⁻¹ := by
+    intro halg
+    rw [ord_eq_zero_of_isAlgebraic D v halg] at hginv
+    omega
+  haveI : Module.Finite K (D.residue v) :=
+    finite_residue_of_ord_neg D hgtr v (by omega)
+  haveI : (D.valMax v).IsPrime := valMax_isPrime D v
+  haveI : IsDomain (D.residue v) := inferInstance
+  obtain ⟨a, ha⟩ :=
+    (IsAlgClosed.algebraMap_bijective_of_isIntegral (k := K) (K := D.residue v)).2
+      (Ideal.Quotient.mk (D.valMax v) ⟨z, hz⟩)
+  refine ⟨a, ?_⟩
+  have ha' : Ideal.Quotient.mk (D.valMax v) (algebraMap K (D.valRing v) a)
+      = Ideal.Quotient.mk (D.valMax v) ⟨z, hz⟩ := ha
+  have hvan : D.VanishesAt v ((algebraMap K (D.valRing v) a : D.F) - z) :=
+    Ideal.Quotient.eq.mp ha'
+  have hneg := vanishesAt_neg hvan
+  rwa [neg_sub] at hneg
+
+/-- **Every place has degree `1` over an algebraically closed constant field** (PROVEN). -/
+lemma degOf_eq_one_of_isAlgClosed [IsAlgClosed K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (v : D.Places) : D.degOf v = 1 := by
+  rw [degOf, finrank_residue_eq_one_of_forall_exists_const D v
+    (fun z hz => exists_const_sub_vanishesAt_of_isAlgClosed D v hz), Nat.cast_one]
+
 end PlaceData
 
 end SinglePlaceBound
@@ -10549,7 +10636,7 @@ theorem geomPic_descent_divisor {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : Place
     ∃ δ : gp.Dbar.Divisors, (∀ σ : QbarGal, gp.divAct σ δ = δ) ∧
       (QuotientAddGroup.mk δ : gp.Dbar.Pic) = y := sorry
 
-/-- **LEAF (weak Mordell–Weil, 3a of 4): the residue field at a geometric place is `ℚ̄`**,
+/-- **PROVEN 2026-08-01 (was leaf 3a of 4): the residue field at a geometric place is `ℚ̄`**,
 i.e. every function regular at a geometric place has a VALUE there.
 
 Standard: `κ(w)` is a finite extension of the constant field for any place of a function
@@ -10557,7 +10644,7 @@ field of one variable [Stichtenoth I.1.14], and `ℚ̄` is algebraically closed,
 `κ(w) = ℚ̄`.  The statement is the surjectivity of `ℚ̄ → κ(w)` written out with `VanishesAt`
 in place of a quotient, which is the form both consumers want.
 
-Two things come out of it, and it is why the cut is worth making as ONE leaf rather than
+Two things come out of it, and it is why the cut was worth making as ONE leaf rather than
 two:
 
 * `geomPic_degOf_eq_one` — every geometric place has degree `1`, which with the PROVEN degree
@@ -10566,17 +10653,35 @@ two:
   base point and the cocycle below is not a cocycle;
 * the residue map itself, used as the `Γ`-equivariant normalisation `g ↦ g/g(∞̄₊)`.
 
+## It is a one-line instance of the SINGLE-PLACE BOUND, which was already in this file
+
+`PlaceData.exists_const_sub_vanishesAt_of_isAlgClosed` — proven in the `SinglePlaceBound`
+section, over an arbitrary algebraically closed constant field — is the whole of it.  The
+route the citation suggests (localise at the point, trivialise the residue in the chart)
+was NOT taken, and the four-line one that was is worth recording because two earlier
+docstrings in this file price this leaf off the chart machinery:
+
+`finite_residue_of_ord_neg` already says `[κ(v) : K] < ∞` at every place, from
+`mul_card_le_finrank_adjoin_of_ord_neg` applied to `g := t⁻¹` for a uniformiser `t`; `κ(v)`
+is a domain because `ord_v` is a valuation; and a finite domain extension of an
+algebraically closed field is that field.  **So the chart machinery is not on the path at
+all** — in particular this needs no `hsep`, which is what makes it statable over `GeomPic`,
+a structure carrying no separability hypothesis, and what makes it true at a place over a
+SINGULAR point of the affine model, where `exists_localDenom_chart` does not apply.
+
 **FAITHFULNESS.**  `hz` is load-bearing: with `ord w z < 0` the conclusion is FALSE — a
 function with a pole at `w` is congruent to no constant there, since `ord w (z − a) < 0` for
 every `a`.  The junk convention `ord w 0 = 0` puts `z = 0` inside the hypothesis, where the
 conclusion holds with `a = 0`.  Note the statement is about `Dbar` alone and says nothing
 about `D`: over `ℚ` it is FALSE, the places of degree `> 1` being exactly the ones it fails
-at, and that asymmetry is the whole content of the constant field extension. -/
+at, and that asymmetry is the whole content of the constant field extension — formally, it
+is `[IsAlgClosed K]` that the general theorem consumes, and `ℚ` does not satisfy it. -/
 theorem geomPic_exists_const_of_ord_nonneg {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
     (w : gp.Dbar.Places) {z : gp.Dbar.F} (hz : 0 ≤ gp.Dbar.ord w z) :
     ∃ a : AlgebraicClosure ℚ,
-      gp.Dbar.VanishesAt w (z - algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a) := sorry
+      gp.Dbar.VanishesAt w (z - algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a) :=
+  PlaceData.exists_const_sub_vanishesAt_of_isAlgClosed gp.Dbar w hz
 
 /-- **LEAF (weak Mordell–Weil, 3b of 4): a Galois-invariant geometric divisor is a base
 change.**
@@ -10665,13 +10770,12 @@ theorem geomPic_hilbert90 {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     (hinfl : ∀ σ τ, (∀ x ∈ L, σ x = τ x) → A σ = A τ) :
     ∃ γ : gp.Dbar.F, γ ≠ 0 ∧ ∀ σ, gp.fieldAct σ γ = A σ * γ := sorry
 
-/-- **Every geometric place has degree `1`** (PROVEN from `geomPic_exists_const_of_ord_nonneg`
-and `finrank_residue_eq_one_of_forall_exists_const`). -/
+/-- **Every geometric place has degree `1`** (PROVEN): the `ℚ̄` instance of
+`PlaceData.degOf_eq_one_of_isAlgClosed`, which is itself
+`geomPic_exists_const_of_ord_nonneg` fed to `finrank_residue_eq_one_of_forall_exists_const`. -/
 lemma geomPic_degOf_eq_one {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
-    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (w : gp.Dbar.Places) : gp.Dbar.degOf w = 1 := by
-  rw [PlaceData.degOf,
-    PlaceData.finrank_residue_eq_one_of_forall_exists_const gp.Dbar w
-      (fun z hz => geomPic_exists_const_of_ord_nonneg gp w hz), Nat.cast_one]
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (w : gp.Dbar.Places) : gp.Dbar.degOf w = 1 :=
+  PlaceData.degOf_eq_one_of_isAlgClosed gp.Dbar w
 
 /-- **Degree is Galois-invariant** (PROVEN): `divAct σ` permutes the places, and every
 geometric place has the same degree `1`. -/
