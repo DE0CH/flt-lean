@@ -11865,52 +11865,20 @@ free, the group law is not.
 Recover the deleted declaration with `git show 8a6d1575:Fermat/FLT/ModularCurve/X1.lean`
 if a consumer for the pinned rigidity ever appears; the right place to put the
 content, though, is `exists_ellipticScheme_weierstrassChart_addEquiv_field`
-itself, where it pays out at both consumers at once. -/
+itself, where it pays out at both consumers at once.
 
-/-- **RIGIDITY: the Weierstrass dictionary is ADDITIVE** (sorry leaf, NEW
-2026-07-31) — all that is left of
-`exists_relPointAddEquiv_of_weierstrassModel_finiteField`, which is PROVEN over
-this leaf alone.
-
-TRUE, and it is the classical rigidity lemma: two algebraic group structures on
-the same proper variety over a field sharing an identity element coincide.  Here
-`ι` identifies `A ∖ O` with the affine chart of `W`, so `A` is the smooth
-projective model of `W` with `O` the point at infinity; `ab.add` and the
-chord-and-tangent law are two group laws on it with the same identity — the
-dictionary `relPointWeierstrassEquiv` sends `ab.zero` to `Point.zero` by
-construction, since `relPointOfOption` sends `none` to `ab.zero` — so they agree.
-
-**THIS IS THE SAME OBLIGATION THE ℚ SIDE MEETS AND DISCHARGES**, which is where
-a successor should look first: `X0.lean` proves
-`exists_geomFibreAddEquiv_of_weierstrassModel` through `relPointPost_add`, i.e.
-by transporting the group law along a morphism rather than by re-deriving it.
-The `𝔽_ℓ` statement here is STRICTLY WEAKER than that one (no `Γ_ℚ`-equivariance,
-sections rather than geometric fibres), so the route is available; what is NOT
-available is the statement itself, since that chain is hard-wired to `Spec ℚ` —
-see the route audit on `exists_weierstrassEquiv_of_gamma1Datum` below.
-
-**What is NO LONGER part of this leaf** (2026-07-31): the bijection.  A prover
-here may take `relPointWeierstrassEquiv` as given and has to produce exactly one
-equation.  Every scheme-theoretic step — the open-immersion factorisation, the
-`Spec`–`Hom` adjunction, the coordinate-ring functor of points, the
-`Equation`/`Nonsingular` identification — is proven above and none of it is
-restated here.
-
-Stated with `ab.add x y` rather than `x + y` so that the statement does not
-depend on the `AddCommGroup` instance being in scope; the two are definitionally
-equal because `AbelianSchemeStruct.addCommGroup` is `@[reducible]`. -/
-theorem map_add_relPointWeierstrassEquiv {ℓ : ℕ} [Fact (Nat.Prime ℓ)]
-    (W : WeierstrassCurve (ZMod ℓ)) [W.IsElliptic]
-    {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
-    (ι : Spec (CommRingCat.of W.toAffine.CoordinateRing) ⟶ A) [IsOpenImmersion ι]
-    (hcomm : ι ≫ f = Spec.map (CommRingCat.ofHom
-      (algebraMap (ZMod ℓ) W.toAffine.CoordinateRing)))
-    (hrange : Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ)
-    (x y : RelPoint f (𝟙 (SpecF ℓ))) :
-    relPointWeierstrassEquiv W ab ι hcomm hrange (ab.add x y)
-      = relPointWeierstrassEquiv W ab ι hcomm hrange x
-        + relPointWeierstrassEquiv W ab ι hcomm hrange y :=
-  sorry
+**THE DELETION WAS LOST ONCE AND RE-PERFORMED ON 2026-08-01.**  This note landed
+and the removal it describes did not, so for a day the file carried a paragraph
+saying the declaration had been deleted with that declaration sitting directly
+underneath it.  That is not carelessness: `tools/merge/semmerge.py` propagates a
+branch's ADDITIONS and never its DELETIONS, so a commit that is half prose and
+half removal merges as prose only, and no duplicate-name, comment-balance or
+frontier scan can see the difference.  The general form is in `CLAUDE.md` under
+*A DELETION-ONLY BRANCH IS INVISIBLE TO `semmerge`*; the standing consequence
+for a reader is that a sentence of the form "X was deleted" is a HYPOTHESIS
+about the tree, and one `grep` settles it.  If this paragraph is ever again
+followed by `theorem map_add_relPointWeierstrassEquiv`, delete that declaration
+rather than believing the paragraph. -/
 
 /-- **A Weierstrass model of an abelian scheme over `Spec 𝔽_ℓ` computes
 its `𝔽_ℓ`-SECTIONS** (introduced 2026-07-28 as the TRANSPORT half of
