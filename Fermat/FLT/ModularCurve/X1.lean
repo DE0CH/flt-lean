@@ -490,7 +490,7 @@ open in them has been split along the theories it needed:
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | ~~`exists_weierstrassModel_of_abelianSchemeStruct_finiteField`~~ | PROVEN 2026-07-30; no longer a leaf.  The row used to say "the ℚ-side chain in `EllipticScheme.lean` is hardcoded to `Spec ℚ` … so there is nothing to instantiate", and named the condition under which the row would die: that the chain be made base-generic.  It was — `exists_weierstrassModel_of_ellipticScheme_field` (`X0.lean`) holds over any PERFECT field, and a finite field is perfect — so this is now `exact`. | — |
 | ~~`exists_relPointAddEquiv_of_weierstrassModel_finiteField`~~ | PROVEN 2026-07-30 the same way, from `exists_addEquiv_of_weierstrassModel_field` (`X0.lean`) at `k = ZMod ℓ`; `(W⁄ZMod ℓ) = W.toAffine` is `rfl`, so no transport was needed.  Its rigidity content lives on in `EllipticScheme.lean`'s `nonempty_addEquiv_relPoint_of_isIso` and `exists_isIso_of_affineCharts_field`, and what is left open under BOTH former leaves is the single shared citation `exists_ellipticScheme_weierstrassChart_addEquiv_field`.  **2026-07-31**: its `Equiv`-only shadow `nonempty_relPointEquiv_of_weierstrassModel_finiteField` is proven OUTRIGHT over the `relPointWeierstrassEquiv` dictionary — no citation at all — and `MazurTorsion.lean`'s consumer, which only ever used `e.toEquiv`, was moved onto it.  `map_add_relPointWeierstrassEquiv`, the rigidity equation `8a6d1575` cut against a stale copy of this file, was DELETED the same day: it had no consumer and is strictly harder than the shared citation.  See the note beside the dictionary. | — |
-| `exists_cuspSymbolEmbedding_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic: the `𝔽_ℓ`-rational cusp points inject into the Frobenius-fixed cusp symbols `Γ_1(N)∖ℙ¹(ℚ)`.  Carries NO counting — that is `card_fixedCuspSymbolX1` (`ModularCurve/CuspSymbolX1.lean`), PROVEN, and `card_cuspLocusPoints_x1_finiteField_le` is PROVEN over the two.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
+| `exists_geometricCuspEquiv_x1_finiteField` | the hard direction of Ogg's description, DECOMPOSED 2026-07-28 into geometry and arithmetic and again 2026-07-31 (the consumer `exists_cuspSymbolEmbedding_x1_finiteField` is now PROVEN over this leaf; only the MODULI half is open): the `𝔽_ℓ`-rational cusp points inject into the Frobenius-fixed cusp symbols `Γ_1(N)∖ℙ¹(ℚ)`.  Carries NO counting — that is `card_fixedCuspSymbolX1` (`ModularCurve/CuspSymbolX1.lean`), PROVEN, and `card_cuspLocusPoints_x1_finiteField_le` is PROVEN over the two.  The lower bound is the `exists_rationalCuspPointsX1_field` row above. | `𝔽_ℓ`, `ℓ ∤ N`, `N ≥ 5` |
 | `exists_x1SmoothProperCurveModel` | Deligne-Rapoport VI.6.9: the smooth proper model over `ℤ_(ℓ)` together with the identification of its GENERIC fibre.  NO moduli in the conclusion — the modular input is the hypothesis `hX`.  (Replaces `exists_x1CurveReductionModel`, which is **PROVEN** over this row alone since 2026-07-30: the special fibre is the pullback along the closed point, so `spX`/`spX_nat` are `fibreIdentPullback`, and `properX` is `bijective_pre_generic_of_isProper` — the three obligations that need no modular geometry, discharged as `X0.lean` had already done on the `Γ₀` side.) | `ℚ → 𝔽_ℓ` |
 | `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.  Since 2026-07-30 the row above is the weaker `exists_x1SmoothProperCurveModel`; the leaf COUNT here is unchanged.) | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
@@ -9792,7 +9792,46 @@ The axes searched for a further cut are recorded on
 `exists_rationalCuspPointsX1` immediately below, which is now a corollary
 of this leaf and keeps them; they are unchanged by the base-field
 generalisation, since every one of them was about the CUSP description and
-none about `ℚ`. -/
+none about `ℚ`.
+
+MERGE VERDICT, 2026-08-01 — DECLINED, and the proposal that produced it is
+DEAD AT ITS PREMISE.  A 2026-07-31 task proposed folding this leaf and
+`exists_cuspSymbolEmbedding_x1_finiteField` into one Galois-equivariant
+cusp-symbol indexing structure, `2` leaves becoming `1`.  That sibling was
+PROVEN the same day (its `(sorry leaf)` header stayed stale for a day,
+which is where the proposal came from), so the merge as specified is a
+RENAME: it would close nothing and would re-cut
+`exists_geometricCuspEquiv_x1_finiteField`, a leaf cut hours earlier — the
+rival-cut hazard, in the file with the most concurrent editors in the tree.
+
+The REVISED merge — fold THIS leaf into
+`exists_geometricCuspEquiv_x1_finiteField` by stating one geometric-cusp
+equivalence over a general base field `K`, an algebraically closed `Ω` over
+`K`, and an arbitrary `τ : Ω →ₐ[K] Ω` acting on symbols through its
+cyclotomic character — is also declined, for a reason worth recording
+because it is not obvious: over `𝔽_ℓ` that statement DOES give this leaf
+(see the next paragraph), but over a general `K` it does NOT, because
+recovering a `K`-RATIONAL cusp from a `Gal`-fixed geometric one is descent
+and needs `κ(c)/K` separable plus `Ω` a separable closure.  That descent is
+a second obligation, so the trade is `2 → 2` with both survivors strictly
+larger.  A merged leaf that must be discharged at full generality in `K`,
+`Ω` and `τ` is harder than either leaf it replaces.
+
+WHAT *IS* AVAILABLE, and is the one genuine reduction here: over `𝔽_ℓ` this
+leaf's instance is DERIVABLE from `exists_geometricCuspEquiv_x1_finiteField`
+and needs no moduli input of its own.  Take a unit symbol `[(u, 0)]`
+(primitive, and fixed by `cuspFrobX1 N t` for EVERY `t` by
+`cuspFrob_fixed_of_isUnit`), pull it back through the equivalence to
+`⟨c, σ⟩`, and read the equivariance clause: `Φ ⟨c, geomFrobF ℓ σ⟩` and
+`Φ ⟨c, σ⟩` have equal first components, hence are equal, hence
+`geomFrobF ℓ σ = σ`; then the CONVERSE of
+`geomFrobF_eq_self_of_residueFDegree_eq_one` — true, and stated nowhere
+today — gives `residueFDegree strX c = 1`.  `card_fixedCuspSymbolX1 N hN 0`
+supplies `φ(N)/2` such symbols and `cuspOfUnit_eq_iff` their distinctness.
+That is count-neutral (this leaf stays open, for `K = ℚ`) and it takes
+`card_cuspLocusPoints_x1_finiteField` from resting on TWO moduli leaves to
+resting on ONE.  It is queued rather than done here because it is a
+separable ~60-line job and this run's budget went to the audit above. -/
 theorem exists_rationalCuspSectionsX1_field (N : ℕ) (K : Type) [Field K]
     (_hNK : IsUnit ((N : ℕ) : K))
     {X Y : Scheme.{0}} {strX : X ⟶ Spec (CommRingCat.of K)}
@@ -12728,9 +12767,19 @@ theorem exists_geometricCuspEquiv_x1_finiteField (N ℓ : ℕ) [Fact (Nat.Prime 
   sorry
 
 /-- **The `𝔽_ℓ`-rational points of the cusp locus of `X_1(N)_{𝔽_ℓ}` inject
-into the Frobenius-fixed cusp symbols** (sorry leaf — the hard direction of
-Ogg's description of the cusps, and after the 2026-07-28 decomposition ALL
-that is left of `card_cuspLocusPoints_x1_finiteField`).
+into the Frobenius-fixed cusp symbols** (PROVEN 2026-07-31 over
+`exists_geometricCuspEquiv_x1_finiteField` above and
+`geomFrobF_eq_self_of_residueFDegree_eq_one`; a sorry leaf until then).
+
+**THE `(sorry leaf)` HEADER THIS PARAGRAPH REPLACED WAS STALE FOR A DAY AND
+COST A WHOLE DISPATCH** (corrected 2026-08-01).  The 2026-07-31 cut proved
+this declaration and moved its moduli content to
+`exists_geometricCuspEquiv_x1_finiteField`, but left the header — and the
+`AXES SEARCHED` paragraph below — describing the OLD leaf.  A task was then
+generated off that header proposing to merge this declaration with
+`exists_rationalCuspSectionsX1_field`; see that leaf's MERGE VERDICT for why
+the merge is now dead.  When a cut closes a declaration, the first line of
+its docstring is the thing to edit, because it is what the queue reads.
 
 TRUE and classical (Ogg 1973; Deligne–Rapoport VI.5; Diamond–Shurman §3.8
 for the cusp set and §9.3 for the Galois action).  The content is one
@@ -12795,14 +12844,17 @@ So at `ℓ ≡ 1` this leaf asserts an injection of `28` rational cusps into `28
 primitive symbols, which is true; what fails there is the CONSUMER's bound, and it
 fails on the other factor, exactly as the paragraph above says.
 
-AXES SEARCHED.  The BIJECTION-vs-INJECTION axis is TAKEN (weakened to the
-half that is consumed).  The BASE-FIELD axis is NOT available: the statement
-is about Frobenius, so it is specific to a finite base field; the `ℚ`-side
-analogue is `exists_rationalCuspPointsX1_field`, already separate.  The
-SYMBOL-SET axis — replacing `CuspSymbolX1` by the moduli description (Néron
-`d`-gons with a point of order `N`) — is available and would be a
-REFORMULATION, not a reduction: the two index sets are isomorphic and the
-Galois actions correspond, so nothing is bought. -/
+AXES SEARCHED — HISTORICAL, and retained only because the axes still apply
+to `exists_geometricCuspEquiv_x1_finiteField`, which is where the moduli
+content went.  This declaration itself is PROVEN and has no axes left.  The
+BIJECTION-vs-INJECTION axis is TAKEN (weakened to the half that is
+consumed).  The BASE-FIELD axis is NOT available: the statement is about
+Frobenius, so it is specific to a finite base field; the `ℚ`-side analogue
+is `exists_rationalCuspPointsX1_field`, already separate.  The SYMBOL-SET
+axis — replacing `CuspSymbolX1` by the moduli description (Néron `d`-gons
+with a point of order `N`) — is available and would be a REFORMULATION, not
+a reduction: the two index sets are isomorphic and the Galois actions
+correspond, so nothing is bought. -/
 theorem exists_cuspSymbolEmbedding_x1_finiteField (N ℓ : ℕ) (hℓ : ℓ.Prime) (hN : 5 ≤ N)
     (hℓN : ¬ ℓ ∣ N)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
