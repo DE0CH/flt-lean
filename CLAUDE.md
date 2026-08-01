@@ -16151,3 +16151,111 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## AN "AXIS NOT SEARCHED" BULLET NAMES A THEORY, AND A THEORY CANNOT BE GREPPED — GREP THE CONCLUSION
+
+(2026-08-01, `flt-lean-185`, on `exists_trace_heckeOpN_int_of_two_le` in
+`Modularity/Interface.lean` — the Eichler–Selberg integrality leaf.)
+
+That leaf carries one of the most careful docstrings in the tree: a PARI/GP
+numeric table, a cut-obstruction audit that EXHIBITS a thirteen-step dependency
+cycle, a refutation of the obvious termwise decomposition, and an AXIS SEARCHED
+paragraph listing two axes as **not** searched. The first of those read:
+
+> *Eichler–Shimura point counting.* For `p ∤ N` prime,
+> `Tr(T_p | S₂(Γ₀(N))) = p + 1 − #X₀(N)(𝔽_p)` … **but it needs modular-curve
+> geometry over `ℤ` that this pin does not have.**
+
+Every other clause of that docstring is correct. That one was **already false
+when it was written**, and it is why the axis sat unexplored for three days:
+`ModularCurve/X0.lean` — which `Interface.lean` `public import`s — had carried
+the whole Eichler–Shimura cluster since 2026-07-27/29, and the wanted statement
+is a NAMED PROVEN THEOREM there, `Fermat.card_relPoint_x0_eichlerShimura`. The
+prime case of the leaf is four lines over it, opens NO new leaf, and rests only
+on two pre-existing separately-owned leaves in `X0.lean`.
+
+**Why no ownership or frontier check could have caught it, and what does.** The
+absence claim is about a *theory* — "modular-curve geometry over `ℤ`" — and a
+theory has no identifier. Every grep an agent naturally runs (`grep -rn
+DeligneRapoport`, `grep -rn IntegralModel`, `grep -rn Eichler` over mathlib) comes
+back empty and CONFIRMS the claim, exactly as
+[[flt-inventory-audits-understate-what-exists]] predicts. The grep that refutes it
+is for the **CONCLUSION** the axis needs, in this tree's own vocabulary:
+
+    grep -rn "eichlerShimura\|card_relPoint" --include=*.lean Fermat/
+
+**So the standing rule, and it is the third distinct instance in this file:
+before believing that an axis is blocked on missing GEOMETRY, ask which
+DIRECTORY of this project would own that geometry and read its declaration
+list.** `Fermat/ModularCurve/` owns modular curves, `Fermat/FLT/Mathlib/` owns
+general-purpose commutative algebra and scheme theory. Both are small enough to
+scan and both are routinely `public import`ed by the file making the absence
+claim. An absence claim that has not looked there is worth nothing, however many
+mathlib greps it quotes.
+
+Corollary about what such a find is worth: it does NOT move the direct-sorry
+count (one leaf in, one leaf out — the residue is `m` composite or sharing a
+factor with `N`, which still needs Eichler–Selberg). What it buys is that the one
+family of `m` for which the tree already contains a proof stops being cited as
+missing, and that a wrong availability claim stops deterring the next agent. Say
+"1 → 1" in the commit, or a reader counting warnings will see nothing happened.
+
+### The half of that axis that IS reachable, worked out so nobody re-derives it
+
+Eichler–Shimura sees exactly one operator per good prime, so it gives `Tr(T_ℓ)`
+and nothing else — composite `m` needs `Tr(T_a T_b)`, i.e. all of `Tr(𝕋) ⊆ ℤ`.
+But prime POWERS are reachable from the SAME input, because `IsWeilEigenvalues`
+carries the whole zeta function rather than the `s = 1` count alone. With `aᵢ`
+the `T_ℓ`-eigenvalues paired as `aᵢ = uᵢ + vᵢ`, `uᵢvᵢ = ℓ`, the `T_{ℓ^k}`
+eigenvalue is `Σ_{j≤k} uᵢ^j vᵢ^{k−j}`, and pairing `j` with `k − j` (which swaps
+`u` and `v`) gives, with `S_m := Σᵢ(uᵢ^m + vᵢ^m) = ℓ^m + 1 − #X₀(N)(𝔽_{ℓ^m})`:
+
+    Tr(T_{ℓ^k}) = Σ_{2j < k} ℓ^j · S_{k−2j} + (if k even then ℓ^{k/2} · dim S₂ else 0)
+
+— **no binomial coefficients**, because it is the geometric-series pairing and
+not a binomial expansion. Every term is an integer. What is not free is the
+spectral bookkeeping (`T_{ℓ^k} = U_k(T_ℓ)` for the recursion's integer
+polynomial, plus `Tr(U_k(T)) = Σ U_k(aᵢ)`, of which the tree has only the
+monomial case `trace_pow_eq_sum_roots_pow`).
+
+## A STALENESS CHECK GOES STALE INSIDE YOUR OWN SESSION — the pool shares one object store
+
+(Same run, and it cost about two hours of build.) `git rev-list --count
+HEAD..origin/main` returned **0** at the start of the task and **1538** ninety
+minutes later, with no `git fetch` from me in between. The pool's worktrees share
+the main repository's object store and refs, so `origin/main` advances whenever
+ANY worktree or the merge worker fetches — a release landing mid-task moves it
+under you.
+
+Two consequences, both measured here:
+
+* **A `lake build` started against the stale tree is thrown away.** Mine spent
+  ~90 minutes rebuilding `Patching`, `KhareWintenberger`, `ModThree`, … from
+  1538-commit-old sources; after `git merge --ff-only origin/main` plus
+  `rsync -a --delete ~/.flt-release-lake/build/ .lake/build/` the same target
+  built in **under 10 minutes with 5671 jobs already cached**.
+* **`~/.flt-release-lake/sha` is the reference to compare against, not
+  `origin/main`**, because it is a FILE and does not move. `cat` it, check
+  `git merge-base --is-ancestor $(cat …/sha) HEAD`, and if that FAILS you are
+  behind the last published release whatever any earlier count said.
+
+So run the staleness check **immediately before the expensive step**, not once at
+the top of the task, and seed `.lake` from the release snapshot before the first
+build rather than after discovering the rebuild.
+
+**And the failure that hid it for an hour: `lake` is not on `PATH`, and a
+background build then reports `EXIT=127` in four lines with NO `error:` in
+them.** `grep -i error` on that log is empty and `grep -c "declaration uses
+'sorry'"` is `0` — indistinguishable from a fast clean build. The standing rule
+(require the positive terminator `Build completed successfully (NNNN jobs)` AND
+an `EXIT=0` you wrote yourself) is what catches it; I recorded a "green baseline"
+that had never run. Prefix every invocation with
+`export PATH="$HOME/.elan/bin:$PATH"`.
+
+**Detach the build, keep the waiter.** `Interface.lean` alone elaborates in
+~10–25 minutes, over the harness's 600 s foreground limit, and a
+`run_in_background` build is killed at a session restart (three times here, each
+losing everything). The shape that survives both is the one this file already
+records: `setsid nohup bash -c '… ; echo EXIT=$? >> LOG; touch DONE' &` for the
+WORK, and a separate harness-backgrounded `until [ -f DONE ]; do sleep 30; done`
+for the WAITER.
