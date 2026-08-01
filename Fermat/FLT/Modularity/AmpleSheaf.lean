@@ -1462,7 +1462,29 @@ proven. -/
 
 This — not the general pullback statement — is what the ampleness theory below
 actually consumes, and it is strictly weaker; see the ROUTE AUDIT on
-`nonempty_modPullback_modTensor`. -/
+`nonempty_modPullback_modTensor`.
+
+**SUPERSEDED IN CONTENT 2026-08-01 (`flt-lean-13`), AND KEPT ONLY FOR DECLARATION ORDER.**
+`modRestrictTensorInv` (far below, in *Restriction to an open commutes with `modTensor`,
+CANONICALLY*) proves the SAME isomorphism for an open immersion **without** the pullback
+comparison, hence without the still-open `modLocW_modPullbackTensorPre` that this proof
+drags in through `isIso_modPullbackTensorComparison`.  Every consumer of this theorem that
+is declared BELOW that section has been re-routed onto it, which is why
+`exists_trivialization_of_modTensor_trivial` and `isInvertibleSheaf_of_isAmpleSheaf` are now
+sorry-free in their whole cones.
+
+The ONE consumer that could not be re-routed is `isInvertibleSheaf_modTensor` immediately
+below, which is declared ABOVE `modRestrictTensorInv` and so cannot cite it.  Re-routing it
+is a RELOCATION, and the block to move is bounded and known: `bijective_restrictScalars_mu`,
+`restrictAlpha`/`restrictPhi`, `modRestrictTensorMuApp`(+`_tmul`), `modRestrictTensorMu`,
+`modRestrictTensorPre`(+`_tmul`), `modRestrictTensorInv`, `bijective_modRestrictTensorMuApp`,
+the four local-bijectivity instances, `isLocallyInjective_modTensorMk` and
+`isIso_modRestrictTensorInv` — everything in that section EXCEPT
+`modRestrictTensorInv_tensorSectionAt` and the leaf, which need `tensorSectionAt` and
+`presheafHom_congr_apply` from further down.  Its only in-file input below this line is
+`isLocallySurjective_modTensorMk`, six lines depending on `modTensorMk` alone, which must
+move with it.  Not done here because it is a ~350-line move in a file with concurrent
+editors and it closes no leaf; do it when the file is quiet. -/
 theorem nonempty_restrict_modTensor {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
     (L M : Y.Modules) :
     Nonempty ((modTensor L M).restrict f ≅ modTensor (L.restrict f) (M.restrict f)) := by
@@ -3168,10 +3190,21 @@ theorem exists_trivialization_of_modTensor_trivial {Z : Scheme.{u}} {L N : Z.Mod
     {z : Z} (hz : z ∈ U) :
     ∃ W : Z.Opens, W ≤ U ∧ z ∈ W ∧ Nonempty (L.restrict W.ι ≅ modUnit (W : Scheme.{u})) := by
   -- Run the whole argument on the scheme `U`, where the tensor product is trivial on the
-  -- WHOLE space; `nonempty_restrict_modTensor` is what moves `hν` there, and it is used for
-  -- EXISTENCE only, which is all it has.
+  -- WHOLE space; the comparison `(L ⊗ N)|_U ≅ L|_U ⊗ N|_U` is what moves `hν` there, and it
+  -- is used for EXISTENCE only, which is all that is needed.
+  --
+  -- **RE-ROUTED 2026-08-01 (`flt-lean-13`) off `nonempty_restrict_modTensor`.**  That
+  -- theorem is proven through `isIso_modPullbackTensorComparison`, hence through the still
+  -- open `modLocW_modPullbackTensorPre`, so citing it here would leave this theorem — and
+  -- `isInvertibleSheaf_of_isAmpleSheaf` above it — transitively sorried for no reason:
+  -- `modRestrictTensorInv` gives the same isomorphism for an OPEN IMMERSION with no
+  -- pullback comparison anywhere.  `nonempty_restrict_modTensor` keeps its own consumer
+  -- (`isInvertibleSheaf_modTensor`), which is declared above `modRestrictTensorInv` and so
+  -- cannot be re-routed without a relocation; see the note on that theorem.
   obtain ⟨ν⟩ := hν
-  obtain ⟨d⟩ := nonempty_restrict_modTensor U.ι L N
+  obtain ⟨d⟩ : Nonempty ((modTensor L N).restrict U.ι ≅
+      modTensor (L.restrict U.ι) (N.restrict U.ι)) :=
+    ⟨(asIso (modRestrictTensorInv U.ι L N)).symm⟩
   obtain ⟨W', hzW', α, γ, hiso⟩ :=
     exists_modUnitHom_isIso_modTensorMap (d.symm ≪≫ ν) (⟨z, hz⟩ : (U : Scheme.{u}))
   haveI hα : IsIso α := isIso_of_isIso_modTensorMap α γ hiso
@@ -3786,7 +3819,12 @@ theorem exists_trivialization_modTensor {Z : Scheme.{u}} {L M : Z.Modules} {U : 
       ∀ (a : Γ(L, ⊤)) (b : Γ(M, ⊤)),
         trivializedSection θ (tensorSection a b)
           = trivializedSection φ a * trivializedSection χ b := by
-  obtain ⟨e⟩ := nonempty_restrict_modTensor U.ι L M
+  -- RE-ROUTED 2026-08-01 (`flt-lean-13`) off `nonempty_restrict_modTensor`, for the reason
+  -- recorded at `exists_trivialization_of_modTensor_trivial`: that theorem carries the still
+  -- open `modLocW_modPullbackTensorPre` in its cone and `modRestrictTensorInv` does not.
+  obtain ⟨e⟩ : Nonempty ((modTensor L M).restrict U.ι ≅
+      modTensor (L.restrict U.ι) (M.restrict U.ι)) :=
+    ⟨(asIso (modRestrictTensorInv U.ι L M)).symm⟩
   obtain ⟨ν⟩ : Nonempty ((modTensor L M).restrict U.ι ≅ modUnit (U : Scheme.{u})) :=
     ⟨e ≪≫ modTensorMapIso φ χ ≪≫ modTensorUnitLeftIso _⟩
   have hfac : trivializationMulHom φ χ = ν.hom ≫ (ν.inv ≫ trivializationMulHom φ χ) := by
