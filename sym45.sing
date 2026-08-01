@@ -1,0 +1,21 @@
+LIB "brnoeth.lib";
+printlevel = -1;
+ring qsring = 7,(x,y),lp;
+poly qspoly = x^4 + 5*x^2 + 1 + 5*x*y + 5*x^2*y^2 + 3*y^2 + 4*y^4;
+list QC = Adj_div(qspoly); intvec qshh = 1,2,3; QC = NSplaces(qshh, QC);
+def QPR = QC[1][2]; setring QPR;
+int qsNP = size(QC[3]);
+"conductor:", QC[4];
+proc pr(intvec DD, list CC) { list LL = BrillNoether(DD, CC); return(size(LL)>0); }
+// random degree-0 divisors supported on the 8 deg-1 places (indices 3..10)
+int trial, i, s, a, b, bad, npr;
+intvec DD;
+for (trial=1; trial<=300; trial++)
+{ DD = 0; DD[qsNP]=0; s = 0;
+  for (i=3; i<=9; i++) { a = random(-6,6); DD[i] = a; s = s + a; }
+  DD[10] = -s;
+  if (pr(DD,QC) != pr(-DD,QC)) { bad++; if (bad<4) { "ASYMMETRIC:", DD; } }
+  if (pr(DD,QC)) { npr++; }
+}
+"N=45 quartic: 300 random deg-0 divisors, asymmetric:", bad, " principal:", npr;
+quit;

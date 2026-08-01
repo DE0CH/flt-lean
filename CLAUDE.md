@@ -16151,3 +16151,66 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A CAS THAT PRINTS AN ERROR AND STILL RETURNS A VALUE WILL SILENTLY CORRUPT YOUR ANSWER — and the free check is an INVOLUTION the answer must respect
+
+(2026-08-01, computing the `N = 45` and `N = 54` rows of the Mordell–Weil sieve
+residue in `X0.lean` with `Singular`'s `brnoeth.lib`.)  The CAS doctrine here is
+*untrusted searcher, never prover* — find a witness, verify it in Lean.  That is
+right and it is not enough, because a computation whose OUTPUT is a number rather
+than a witness has nothing to verify in Lean, and this project banks such numbers
+into docstrings so a future prover aims at a known answer.  Two failure modes hit
+in one afternoon, both silent, both fatal to the number:
+
+* **`BrillNoether` returned `dim L(D) = 1` and `dim L(−D) = 0` for the same
+  degree-`0` divisor, with ZERO error output.**  That is impossible — `f ∈ L(D)`
+  gives `1/f ∈ L(−D)` — and taken at face value it made every point of
+  `X_0(54)(𝔽_5)` "survive" the sieve, i.e. it manufactured a REFUTATION of a true
+  statement.  Only false positives, never false negatives, so a hand check of the
+  returned function's vanishing pattern did NOT catch it.
+* **A genuine crash inside the library (`extra_place` → `hnexpansion`, `ring with
+  polynomial data must be the base ring or compatible`) did not stop the call from
+  returning.**  35 error lines scrolled past and the run reported an element order
+  that is not a divisor of the group order.
+
+Two rules, and the first is the reusable one:
+
+**1. Find an INVOLUTION (or any identity) the answer must satisfy, and test it on
+every call.**  Here `D ~ 0 ⟺ −D ~ 0` costs one extra call and killed every false
+positive.  Cheap invariants of this kind exist for almost every CAS primitive —
+`deg`, `gcd(a,b) = gcd(b,a)`, `f(f⁻¹(x)) = x`, a group law's associativity on a
+random triple.  A self-check that is *this* cheap should be unconditional, not a
+debugging step you reach for after the answer looks wrong.
+
+**2. Count the CAS's error lines and treat a nonzero count as a FAILED RUN.**
+`grep -c '^ *?' log` for Singular, and the analogous pattern elsewhere.  The
+temptation is to read the tail of the log, see the answer printed, and move on;
+the errors are hundreds of lines above it.  This is the truncated-build-log rule
+in a new suit: **a result is only as good as the positive terminator you demand
+for it**, and "the number printed" is not one.
+
+Corollaries worth having in advance for divisor arithmetic on curves, since the
+next owner of this cluster will need them:
+
+* **`brnoeth` is reliable on a SMOOTH plane model and unreliable on a singular
+  one** — the faulty path is only reached through the adjunction/conductor
+  machinery.  `N = 45` (smooth quartic) gave bit-for-bit the same answer before
+  and after the involution filter was added; `N = 54` (singular sextic) did not.
+* A smooth plane model **does not exist** for most genera: smooth plane curves have
+  genus `(d−1)(d−2)/2 ∈ {0,1,3,6,10,…}`, so genus `4`, `5`, `7`, … force a singular
+  model and hence force the filter.
+* **`hess.lib`'s `RiemannRochHess` is not an alternative in small characteristic**:
+  it reaches `linalg.lib::busadj`, which is Faddeev–LeVerrier and divides by the
+  loop index, so it dies with `div. by 0` over `𝔽_5` and `𝔽_7`.
+* When projecting a canonical curve to a plane model, **reject the projection unless
+  the points you must NAME land on distinct SMOOTH points**.  Two of the first three
+  random projections put a cusp on a triple point, where several places lie over one
+  point and the cusp cannot be identified at all.  That filter is most of the work
+  and it is one gradient evaluation per point.
+
+Two Singular-specific traps that cost a build cycle each and are invisible from the
+error text: **a local named `t`, `a` or `z` shadows a ring variable the library
+needs** (`brnoeth` reports `ringvar expected` from inside its own `local_IN`), and
+**naming a ring `qsr` and then declaring `int qsr` makes the whole declaration fail**,
+leaving every later loop variable undefined so the loops silently do nothing and the
+script still prints a plausible answer.
