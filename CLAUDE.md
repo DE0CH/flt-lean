@@ -16151,3 +16151,102 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## QUOTIENT-FREE CLASS COUNTING: an explicit `rep : ℤ → Fin h → _` plus one `∃!` beats a `Setoid`
+
+(2026-07-31, `flt-lean-383`, decomposing `exists_riemannRochGrowth_of_effectiveDivisorCount`
+in `Modularity/Interface.lean` — the Riemann–Roch growth identity
+`(q−1)·A_n + h = h·q^{n+1−g}`.)
+
+The classical proof of any "count the objects of degree `n` by grouping them into
+classes" identity is a fibration over a class group, and the reflex in Lean is to build
+the equivalence relation as a `Setoid`, take the `Quotient`, prove it finite, and count
+fibres. That is three obligations before any mathematics: the relation is reflexive,
+symmetric and transitive; the quotient is finite; and the degree descends to it.
+
+**All three vanish if the leaf hands back an explicit family of representatives instead
+of a quotient.** State the class-group input as
+
+    ∃ (h : ℕ) (rep : ℤ → Fin h → (X → ℤ)),
+      (∀ m i, IsDivisorOn X (rep m i) ∧ divisorDegree strX (rep m i) = m) ∧
+      (∀ m D, IsDivisorOn X D → divisorDegree strX D = m →
+        ∃! i : Fin h, LinEquivDivisor (rep m i) D)
+
+and then:
+
+* **the `∃!` does the work of symmetry and transitivity.** The glue never needs either —
+  it needs "every object is in exactly one class", which is what `∃!` says. So the
+  relation can stay a bare `∃ f, D' = D + div f` with no `Setoid` instance and no
+  algebraic lemmas about it;
+* **`Fin h` is finite by construction**, so `Nat.card_sigma` applies with no finiteness
+  proof about a quotient;
+* **`h ≥ 1` is FORCED, not asserted** — apply the second clause at the degree the zero
+  object has, and it produces an element of `Fin h`. So the leaf cannot be discharged by
+  taking `h = 0`, which is the junk escape a `Nat.card`-of-a-quotient formulation leaves
+  wide open;
+* **surjectivity of the degree map is encoded by the FIRST clause**, because it demands
+  `rep m i` of degree `m` on the nose for EVERY `m`. Two classical theorems (finiteness
+  of `Pic⁰` and F. K. Schmidt) become one clause with no extra vocabulary.
+
+The assembly is then four lines of mathlib: `choose cls hclsP using (fun E => (huniq …).exists)`,
+`Equiv.subtypeEquivRight` to identify the fibre of `cls` over `i` with the class of
+`rep n i`, `Equiv.sigmaFiberEquiv cls` and `Nat.card_sigma`. Measured here: the whole
+glue — instance derivation, classification, fibration and the `ℕ` arithmetic — compiled
+on the SECOND attempt, the only error being a `SmoothOfRelativeDimension ?n` metavariable
+that wanted `(n := 1)` supplied.
+
+**Two riders on stating such leaves.**
+
+* **A `Nat.card` on the left of a count identity needs an explicit `Finite` conjunct; on
+  the right it does not.** `Nat.card` is `0` on an infinite type, so
+  `(q−1)·Nat.card S + 1 = Nat.card T` is satisfiable vacuously by an infinite `S` with
+  `Nat.card T = 1`. But `Nat.card T = q ^ e` with `q ≥ 2` forces `T` finite by itself,
+  since the right-hand side is never `0`. Check which side you are on before adding the
+  conjunct — one of the four leaves here needed it and one provably did not.
+* **Split the per-class count into the BIJECTION and the CARDINALITY.** "Each class
+  contains `(q^{ℓ(D)}−1)/(q−1)` effective divisors" is two unrelated theorems: the
+  `𝔽_q^×`-torsor argument, whose only real input is `H⁰(X,𝒪_X) = 𝔽_q`, and
+  `#V = q^{dim V}` for a finite-dimensional space over `𝔽_q`. Splitting costs one leaf
+  and buys two citable statements from two different chapters — and it is what exposed
+  that the second half is exactly the `span`-equals-`set` debt `CurveGenus.lean`'s own
+  docstring declines to pay and tells its consumers to state.
+
+## A DECOMPOSITION'S RECEIPT IS A **DIFFERENTIAL EXTRACTION**, AND IT COSTS SECONDS
+
+(Same task, measured: **13 s** per side, against 20–35 min for one `lake build` of the
+82 000-line `Interface.lean`.)
+
+The extraction trick already in this file — copy the `section` verbatim into a standalone
+module importing one file far below the damage — has a second use that is not about red
+upstreams at all: **run it on the PRE-EDIT file too, and diff the `declaration uses
+'sorry'` sets.** That is the exact receipt a decomposition owes, and nothing else
+produces it:
+
+    git show HEAD:<path> > /tmp/base.lean
+    # extract `section …` from BOTH files into two standalone modules
+    lake env lean Fermat/ExtractBase.lean ; lake env lean Fermat/Extract.lean
+    # then map each warning LINE back to its enclosing declaration
+
+Here that printed, in full:
+
+    BASE : eulerCount_eq_effectiveDivisorCount , exists_riemannRochGrowth_of_effectiveDivisorCount
+    MINE : eulerCount_eq_effectiveDivisorCount , <the four new leaves>
+
+— i.e. the target left the warning set, one pre-existing leaf is untouched, four named
+leaves entered, and both sides are `EXIT=0` with zero errors. A reviewer can re-run it in
+half a minute. Compare that with the usual evidence for a decomposition, which is the
+author's prose plus a count.
+
+**Map warnings to DECLARATIONS, never quote line numbers.** An insertion shifts every
+later warning, so the two line-number sets always differ and say nothing; walking
+backwards from each warning line to the nearest declaration header is one `sed | grep |
+tail -1` and makes the two sets directly comparable.
+
+**And the extraction is cheap for a reason worth knowing: it is statements, not proofs.**
+A decomposition block is a handful of `sorry`d theorems plus glue, so almost all of the
+13 s is loading the imported `.olean`. The cost of this check does NOT scale with the
+size of the section you extract — 1 949 lines here — only with the size of what you
+actually elaborate.
+
+**Do not leave the extraction files behind.** A `.lean` file under `Fermat/` that nothing
+imports is the fourth invisibility class; delete both before committing.
