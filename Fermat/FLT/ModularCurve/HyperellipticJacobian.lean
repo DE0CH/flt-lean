@@ -77,12 +77,20 @@ covering collection.  Each namespace now reads top-down:
       / _exists_emb_of_fieldAct_fixed
                                   LEAF ×4: the constant field extension F̄ = F·ℚ̄
       → geomPic_bc_injective      PROVEN: Pic⁰(X_ℚ) ↪ Pic⁰(X_ℚ̄), by Hilbert 90
-    geomPic_exists_const_of_ord_nonneg / _exists_bcDiv_of_divAct_fixed
-      / _exists_finiteLevel_divisor / geomPic_hilbert90
-                                  LEAF ×4: κ(w) = ℚ̄, Galois transitivity on fibres,
-                                  finite level of a divisor, Hilbert 90 for F̄/F
+    geomPic_descent_divisor       LEAF: an invariant CLASS has an invariant REPRESENTATIVE —
+                                  the whole cohomological content in one statement
+      → geomPic_exists_bcDiv_of_divAct_fixed
+                                  PROVEN 2026-08-01: an invariant divisor is a base change
       → geomPic_descent           PROVEN: the invariants are rational — the Brauer
                                   obstruction killed by the rational point ∞₊
+    geomPic_exists_const_of_ord_nonneg / _exists_finiteLevel_divisor / geomPic_hilbert90
+                                  LEAF ×3, and DEAD since a rival cut of geomPic_descent
+                                  won on 2026-07-30: κ(w) = ℚ̄, finite level of a divisor,
+                                  Hilbert 90 for F̄/F.  Nothing reaches them; they are the
+                                  better decomposition of geomPic_descent_divisor and are
+                                  kept for the queued task that proves it over them.  Do
+                                  not prove one in isolation — see the section header at
+                                  "The four sub-leaves of geomPic_descent"
     geomPic_divisible             LEAF: Pic⁰(X_ℚ̄) is divisible — [n] is surjective
     geomPic_finite_torsion        LEAF: J[n](ℚ̄) is finite — [n] has a finite kernel
     geomPic_exists_finiteCover_kummer
@@ -10035,16 +10043,59 @@ theorem geomPic_bc_injective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceDat
 
 /-! ### The four sub-leaves of `geomPic_descent` (cut 2026-07-30)
 
-`geomPic_descent` below is PROVEN over exactly these four statements.  The obstruction it has
-to get past is the BRAUER obstruction — the cokernel of `Pic(X_ℚ) → Pic(X_ℚ̄)^{Gal}` injects
-into `Br(ℚ)`, which is very far from zero — and what kills it is the rational base point
-`∞₊`, through a normalisation that no cohomological machinery is needed to state.  See the
-docstring of `geomPic_descent` for the assembly in order.
+The obstruction `geomPic_descent` has to get past is the BRAUER obstruction — the cokernel of
+`Pic(X_ℚ) → Pic(X_ℚ̄)^{Gal}` injects into `Br(ℚ)`, which is very far from zero — and what
+kills it is the rational base point `∞₊`, through a normalisation that no cohomological
+machinery is needed to state.
 
 None of the four mentions `Pic`, `picRel` or `bc`; three of them do not mention Galois at
 all.  They are faithful for the reason recorded on the sibling block above: `PlaceData` pins
 its model up to isomorphism, so `Dbar.F` really is the constant field extension of `D.F` and
-`Dbar.Places` really is all of its places. -/
+`Dbar.Places` really is all of its places.
+
+## CORRECTED 2026-08-01 — THIS BLOCK IS THE RESIDUE OF A CUT THAT LOST, AND THREE OF ITS FOUR
+## MEMBERS HAD NO CONSUMER
+
+The heading above used to read *"`geomPic_descent` below is PROVEN over exactly these four
+statements"*, and `geomPic_descent`'s own docstring still described the seven-step assembly
+over them.  **Its proof body has not done that since the rival cut landed.**  Two agents
+decomposed `geomPic_descent` on the same day along two different seams and both cuts merged
+cleanly, because each put its new declarations in a region the other never touched:
+
+* **cut A**, this block: `geomPic_descent` = steps 1–7 over 3a/3b/3c/3d, with the whole
+  degree-count / normalisation / cocycle / inflation / Hilbert-90 argument written out;
+* **cut B**, which won: `geomPic_descent` = `geomPic_descent_divisor` (the entire
+  cohomological content, as ONE leaf) + `placeAct_transitive`, with only the fibrewise
+  bookkeeping written out.
+
+`geomPic_descent` kept ONE proof, so cut B became live and cut A's four leaves were orphaned.
+A comment-stripped scan on 2026-08-01 found **one code occurrence each** — their own
+declaration lines — for `geomPic_exists_bcDiv_of_divAct_fixed`,
+`geomPic_exists_finiteLevel_divisor` and `geomPic_hilbert90`, and the fourth,
+`geomPic_exists_const_of_ord_nonneg`, was reached only through `geomPic_degOf_eq_one` →
+`geomPic_degHom_divAct` → *nothing*.  So the dead set was FOUR open leaves plus two proven
+lemmas, and every frontier instrument counted all four as ordinary open work: they emit
+`declaration uses 'sorry'`, a source scan finds them, `own.py` correctly reports them
+unowned.  Three separate dispatches have been drawn to this block.
+
+**What was done, and what was deliberately not.**  Leaf 3b is now PROVEN and LIVE — cut B's
+own body was carrying its argument inline, so abstracting that block closed it and
+`geomPic_descent` calls it (the pattern CLAUDE.md records as *the winner's INLINE block is
+almost always your proof*).  Leaves 3a, 3c and 3d are still open and still have no consumer.
+They were NOT deleted, because cut A is the better DECOMPOSITION and its residue is what a
+successor needs: `geomPic_descent_divisor` bundles five separable classical inputs, whereas
+3a (`κ(w) = ℚ̄`), 3c (a divisor is defined at a finite Galois level) and 3d (Hilbert 90 for
+`F̄/F`, whose sibling one field down is PROVEN in `Fermat/FLT/Mathlib/FieldTheory/
+AbsoluteHilbert90.lean`) are three statements with names in the literature.
+
+**DO NOT PROVE 3a, 3c OR 3d IN ISOLATION.**  Proving a leaf nothing reaches moves the count
+and not the project, and a PROVEN declaration with no consumer is free-floating code, which
+this project forbids — so a successor who closes one of them has to delete it again.  The
+task that pays is to prove **`geomPic_descent_divisor`** over them, i.e. to write cut A's
+steps 1–5 and 7; that closes the live leaf, makes all three live at once, and revives
+`geomPic_degOf_eq_one` and `geomPic_degHom_divAct` with it.  It is queued.  The step-by-step
+assembly is on `geomPic_descent_divisor` itself, moved there on 2026-08-01 from
+`geomPic_descent`, where it no longer described anything. -/
 
 section GaloisTransitivity
 
@@ -10542,7 +10593,49 @@ hypothesis would read `y = 0` and the statement would be vacuous, and it is the 
 `act` through `fieldAct_algebraMap` — witnessed by `act_bc` and now by `act_mul` — that
 prevents that.  It is NOT vacuous: `divAct σ (bcDiv δ) = bcDiv δ` is proven above (inside
 `act_bc`), so invariant representatives exist for every class in the image of `bc`, which is
-the content being asserted for all invariant classes. -/
+the content being asserted for all invariant classes.
+
+## THE ROUTE, and it is the task that revives three dead leaves (moved here 2026-08-01)
+
+The seven steps below were written on 2026-07-30 as the assembly of `geomPic_descent` over
+the four sub-leaves 3a/3b/3c/3d in the block below.  A rival cut through THIS statement
+landed the same day and won, so those steps never became Lean and three of the four leaves
+have had no consumer since; see the section header of that block.  **Writing steps 1–5 and 7
+here is what closes this leaf and makes 3a, 3c and 3d live at the same time** — one leaf out,
+three smaller and separately citable ones in, and `geomPic_degOf_eq_one` /
+`geomPic_degHom_divAct` revived with them.  It is the only route in the file that does not
+leave dead code behind.
+
+1. **Normalise the representative.**  `Pic` is `Div/(Prin + ℤ·[∞₊])`, so subtracting
+   `δ₀(∞̄₊)·[∞̄₊]` — a member of `picRel` on the nose — replaces `y`'s representative by a
+   `δ` with `δ(∞̄₊) = 0`.  This step is what the quotient by `ℤ·[∞₊]` is FOR.
+2. **The `ℤ·[∞̄₊]` component of the invariance relation vanishes.**  Invariance of `y` gives
+   `divAct σ δ − δ = div g + n_σ·[∞̄₊]`; applying the degree homomorphism kills the principal
+   part (`degOf_divisor_eq_zero'`) and the `divAct` part (`geomPic_degHom_divAct`), leaving
+   `n_σ · deg ∞̄₊ = 0`, and `deg ∞̄₊ = 1` by `geomPic_degOf_eq_one`.  So the relation is
+   PRINCIPAL: `divAct σ δ − δ = div g_σ`.  **Without this the whole argument fails**, because
+   `σ ↦ g_σ` is then a cocycle only up to the unknown `n_σ`.
+3. **`g_σ` is a unit at the base point**, since the relation has coefficient `0` at `∞̄₊`;
+   so it has a nonzero value there (leaf 3a) and can be scaled to `A σ := g_σ/g_σ(∞̄₊)`,
+   which satisfies `A σ ≡ 1` at `∞̄₊` and has the same divisor.
+4. **`A` is a genuine `1`-cocycle.**  `A (στ)` and `A σ · fieldAct σ (A τ)` have the same
+   divisor — this is `divAct_mul` and `divAct_divisor`, and `divAct_mul` rests on
+   `placeAct_mul`, which `GeomPic` does not postulate — so their ratio is a CONSTANT
+   (`geomPic_exists_const_of_divisor_eq_zero`).  **That constant is the Brauer obstruction**,
+   a `2`-cocycle with values in `ℚ̄ˣ`, and it is `1` because both sides are `≡ 1` at `∞̄₊` and
+   `ord_infPlus_fieldAct` makes that normalisation `Γ`-equivariant.  This is the step the
+   rational point buys, and the only one.
+5. **`A` is inflated** from the finite Galois level of `δ` (leaf 3c): a `ρ` fixing the level
+   pointwise has `divAct ρ δ = δ`, so `A ρ` is a constant `≡ 1` at `∞̄₊`, hence `A ρ = 1`, and
+   the cocycle identity turns that into `A σ = A τ` whenever `σ|_L = τ|_L`.
+6. **Hilbert 90** for `F̄/F` (leaf 3d, `geomPic_hilbert90`) trivialises `A` as
+   `fieldAct σ γ / γ`.
+7. **`δ − div γ` is Galois-invariant on the nose**, which is this statement's conclusion, and
+   `div γ ∈ picRel` so the class is unchanged.
+
+Note what does NOT appear: no `H¹`, no `H²`, no `Br`, no profinite topology — the only trace
+of continuity is `hinfl` in leaf 3d.  (Step 7 used to end *"hence a base change (leaf 3b)"*;
+that last half-step is now `geomPic_descent`'s two-line body and is already proven.) -/
 theorem geomPic_descent_divisor {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (y : gp.Dbar.Pic)
     (hy : ∀ σ : QbarGal, gp.act σ y = y) :
@@ -10571,7 +10664,16 @@ function with a pole at `w` is congruent to no constant there, since `ord w (z �
 every `a`.  The junk convention `ord w 0 = 0` puts `z = 0` inside the hypothesis, where the
 conclusion holds with `a = 0`.  Note the statement is about `Dbar` alone and says nothing
 about `D`: over `ℚ` it is FALSE, the places of degree `> 1` being exactly the ones it fails
-at, and that asymmetry is the whole content of the constant field extension. -/
+at, and that asymmetry is the whole content of the constant field extension.
+
+**DEAD AS OF 2026-08-01 — DO NOT PROVE THIS IN ISOLATION.**  Its only consumer is
+`geomPic_degOf_eq_one`, whose only consumer is `geomPic_degHom_divAct`, which has none: the
+rival cut recorded in this block's section header took `geomPic_descent` through
+`geomPic_descent_divisor` and the degree count went with it.  Closing this leaf alone would
+produce a proven theorem no proof term reaches, i.e. free-floating code, which this project
+forbids.  What revives it — and 3c and 3d, and both degree lemmas — is proving
+`geomPic_descent_divisor` over the seven steps recorded on that declaration; step 2 spends
+this leaf through `geomPic_degHom_divAct` and step 3 spends it directly. -/
 theorem geomPic_exists_const_of_ord_nonneg {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
     (w : gp.Dbar.Places) {z : gp.Dbar.F} (hz : 0 ≤ gp.Dbar.ord w z) :
@@ -10598,11 +10700,57 @@ so the sibling leaf `geomPic_below_surjective` is not among its hypotheses.
 
 **FAITHFULNESS.**  `hδ` is load-bearing at the obvious place: the image of `bcDiv` is exactly
 the set of divisors constant on fibres, and a `δ` taking two different values on one fibre is
-not a base change. -/
+not a base change.
+
+## PROVEN 2026-08-01, by abstracting the block that was sitting INLINE in `geomPic_descent`
+
+This was one of the three members of this block that the rival cut left DEAD (see the section
+header above).  It did not need proving from scratch: transitivity has meanwhile been proven
+as `placeAct_transitive`, and `geomPic_descent` was carrying this exact argument — fibrewise
+constancy, then `Finsupp.onFinset` on `below '' supp δ` — in its own body.  That block is now
+here and `geomPic_descent` calls it, so the statement is both proven and CONSUMED.
+
+The one change to the signature is `hsep`, which `placeAct_transitive` needs and which the
+docstring above did not anticipate ("transitivity is the only input" is right, and
+transitivity itself costs separability of the sextic — a rational singular point would let two
+geometric places over one rational place be Galois-inequivalent).  Adding a hypothesis can only
+weaken the statement, so the faithfulness audit above transfers verbatim; and the sole call
+site already has `hsep` in scope, so nothing above this line moved. -/
 theorem geomPic_exists_bcDiv_of_divAct_fixed {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable)
     {δ : gp.Dbar.Divisors} (hδ : ∀ σ : QbarGal, gp.divAct σ δ = δ) :
-    ∃ ε : D.Divisors, gp.bcDiv ε = δ := sorry
+    ∃ ε : D.Divisors, gp.bcDiv ε = δ := by
+  classical
+  -- an invariant divisor is constant on the fibres of `below`, by transitivity
+  have hconst : ∀ w w' : gp.Dbar.Places, gp.below w = gp.below w' → δ w = δ w' := by
+    intro w w' hww'
+    obtain ⟨σ, hσ⟩ := placeAct_transitive gp hsep w w' hww'
+    have h1 : gp.divAct σ δ (gp.placeAct σ w) = δ w := by
+      rw [GeomPic.divAct_apply, Equiv.symm_apply_apply]
+    rw [hδ σ, hσ] at h1
+    exact h1.symm
+  -- so it is the base change of the rational divisor reading off any fibre
+  set f : D.Places → ℤ := fun v =>
+    if h : ∃ w : gp.Dbar.Places, gp.below w = v then δ h.choose else 0 with hf
+  have hfval : ∀ w : gp.Dbar.Places, f (gp.below w) = δ w := by
+    intro w
+    have hex : ∃ w' : gp.Dbar.Places, gp.below w' = gp.below w := ⟨w, rfl⟩
+    rw [hf]
+    simp only [dif_pos hex]
+    exact hconst _ _ hex.choose_spec
+  refine ⟨Finsupp.onFinset (δ.support.image gp.below) f (by
+    intro v hv
+    rw [hf] at hv
+    by_cases hex : ∃ w : gp.Dbar.Places, gp.below w = v
+    · simp only [dif_pos hex] at hv
+      exact Finset.mem_image.mpr ⟨hex.choose, Finsupp.mem_support_iff.mpr hv, hex.choose_spec⟩
+    · simp only [dif_neg hex] at hv
+      exact absurd rfl hv), ?_⟩
+  ext w
+  rw [GeomPic.bcDiv_apply]
+  show f (gp.below w) = δ w
+  exact hfval w
 
 /-- **LEAF (weak Mordell–Weil, 3c of 4): every geometric divisor is defined over a finite
 Galois level.**
@@ -10622,7 +10770,16 @@ pointwise — that is all the assembly needs.
 **Not vacuous.**  `IsGalois ℚ L` is what the consumer needs and not merely `FiniteDimensional`:
 `Hilbert 90` inflates from `Gal(L/ℚ)`, and the stability of `L` under all of `Γ` that the
 argument uses is `Normal ℚ L` read through `AlgEquiv.restrictNormalHom_apply` (the same
-step `geomPic_exists_finiteLevel` records). -/
+step `geomPic_exists_finiteLevel` records).
+
+**DEAD AS OF 2026-08-01 — DO NOT PROVE THIS IN ISOLATION.**  A comment-stripped scan of the
+whole tree finds exactly one code occurrence of this name, its own declaration line: the
+rival cut recorded in this block's section header took `geomPic_descent` through
+`geomPic_descent_divisor`, and the inflation step went with it.  Closing this leaf alone
+would produce a proven theorem no proof term reaches, i.e. free-floating code, which this
+project forbids.  What revives it — together with 3a and 3d — is proving
+`geomPic_descent_divisor` over the seven steps recorded on that declaration; this leaf is
+its step 5. -/
 theorem geomPic_exists_finiteLevel_divisor {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
     (δ : gp.Dbar.Divisors) :
@@ -10655,7 +10812,34 @@ infinite Galois extension is a statement about CONTINUOUS cocycles, i.e. exactly
 inflated from a finite level.  `hLgal` is load-bearing in step 2 and `hLfin` in step 4; both
 are passed explicitly rather than as instances because at the literal base field `ℚ` the two
 `Algebra ℚ ↥L` instances form a diamond (see `AbsoluteHilbert90`'s implementation notes and
-`geomPic_bc_injective`'s STEP 6). -/
+`geomPic_bc_injective`'s STEP 6).
+
+## DEAD AS OF 2026-08-01 — DO NOT PROVE THIS IN ISOLATION
+
+A comment-stripped scan of the whole tree finds exactly **one** code occurrence of this name,
+its own declaration line; the two other hits are prose, at the module docstring and at this
+one.  The rival cut recorded in this block's section header took `geomPic_descent` through
+`geomPic_descent_divisor`, which bundles Hilbert 90 with the four other classical inputs, and
+nothing has reached this statement since.  It is open, unowned, correctly counted by every
+frontier instrument, and worth nothing to close on its own: a PROVEN declaration with no
+consumer is free-floating code, which this project forbids, so a successor who closes it has
+to delete it again.
+
+**What revives it** — together with 3a and 3c — is proving `geomPic_descent_divisor` over the
+seven steps recorded on that declaration; this leaf is its step 6, and it is the only step
+that is a named classical theorem rather than bookkeeping.  That task is queued.
+
+**Step 3 is where the cost is, and it is not in the route above.**  The route says every
+`A σ` lies in `F̄^{N} = F·L`.  `F̄^{N} = F·L` is not available: `GeomPic` gives the ABSOLUTE
+fixed-field statement as its own separate leaf (`geomPic_exists_emb_of_fieldAct_fixed`, "an
+element fixed by `fieldAct` comes from `F`", still open at line ~9240), and what step 3 needs
+is the RELATIVE version at the open subgroup `N`.  So this leaf is not the transcription of
+`Field.exists_ne_zero_forall_absoluteGalois_apply_eq_mul` that its first paragraph suggests —
+transcribing that gives steps 1, 2 and 4, and step 3 is a fifth statement about the fixed
+field of an open subgroup that nothing in the file currently provides.  A successor should
+expect to cut it, and should cut it as a strengthening of
+`geomPic_exists_emb_of_fieldAct_fixed` (which is LIVE, so the strengthening is consumed) and
+not as a new sibling here, or the dead-leaf problem is simply reproduced one level down. -/
 theorem geomPic_hilbert90 {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
     (L : IntermediateField ℚ (AlgebraicClosure ℚ))
@@ -10696,82 +10880,38 @@ its hypothesis `∀ σ, act σ y = y` would read `y = 0`.  It is `fieldAct_algeb
 forbids `fieldAct σ = id` for `σ ≠ 1`) plus the derivation of `act` from `placeAct` that
 makes the hypothesis mean what it says.  See the section docstring above.
 
-## DECOMPOSED 2026-07-30 — now PROVEN over four named sub-leaves
+## PROVEN — over `geomPic_descent_divisor` and leaf 3b
 
 **What the obstruction is.**  For a smooth projective geometrically integral `X/K`, the
 Hochschild–Serre sequence reads `0 → Pic(X_K) → Pic(X_K̄)^{Gal} → Br(K) → Br(X_K)`, so this
 leaf is FALSE without the rational point — and `Br(ℚ)` is not zero, so no amount of
 Hilbert 90 alone can prove it.  The point `∞₊` makes `Br(K) → Br(X_K)` split injective
-(evaluate at the point), and the argument below is that splitting written out by hand, with
-no `H²` and no Brauer group anywhere in the statement or the proof.
+(evaluate at the point).
 
-The assembly, in order:
+The whole of that is `geomPic_descent_divisor` — *an invariant CLASS has an invariant
+REPRESENTATIVE* — and what is left here is two lines: an invariant divisor is a base change
+(leaf 3b, PROVEN 2026-08-01 over `placeAct_transitive`), and a base change of a divisor is
+a base change of its class.
 
-1. **Normalise the representative.**  `Pic` is `Div/(Prin + ℤ·[∞₊])`, so subtracting
-   `δ₀(∞̄₊)·[∞̄₊]` — a member of `picRel` on the nose — replaces `y`'s representative by a
-   `δ` with `δ(∞̄₊) = 0`.  This step is what the quotient by `ℤ·[∞₊]` is FOR.
-2. **The `ℤ·[∞̄₊]` component of the invariance relation vanishes.**  Invariance of `y` gives
-   `divAct σ δ − δ = div g + n_σ·[∞̄₊]`; applying the degree homomorphism kills the principal
-   part (`degOf_divisor_eq_zero'`) and the `divAct` part (`geomPic_degHom_divAct`), leaving
-   `n_σ · deg ∞̄₊ = 0`, and `deg ∞̄₊ = 1` by `geomPic_degOf_eq_one`.  So the relation is
-   PRINCIPAL: `divAct σ δ − δ = div g_σ`.  **Without this the whole argument fails**, because
-   `σ ↦ g_σ` is then a cocycle only up to the unknown `n_σ`.
-3. **`g_σ` is a unit at the base point**, since the relation has coefficient `0` at `∞̄₊`;
-   so it has a nonzero value there (leaf 3a) and can be scaled to `A σ := g_σ/g_σ(∞̄₊)`,
-   which satisfies `A σ ≡ 1` at `∞̄₊` and has the same divisor.
-4. **`A` is a genuine `1`-cocycle.**  `A (στ)` and `A σ · fieldAct σ (A τ)` have the same
-   divisor — this is `divAct_mul` and `divAct_divisor`, and `divAct_mul` rests on
-   `placeAct_mul`, which `GeomPic` does not postulate — so their ratio is a CONSTANT
-   (`geomPic_exists_const_of_divisor_eq_zero`).  **That constant is the Brauer obstruction**,
-   a `2`-cocycle with values in `ℚ̄ˣ`, and it is `1` because both sides are `≡ 1` at `∞̄₊` and
-   `ord_infPlus_fieldAct` makes that normalisation `Γ`-equivariant.  This is the step the
-   rational point buys, and the only one.
-5. **`A` is inflated** from the finite Galois level of `δ` (leaf 3c): a `ρ` fixing the level
-   pointwise has `divAct ρ δ = δ`, so `A ρ` is a constant `≡ 1` at `∞̄₊`, hence `A ρ = 1`, and
-   the cocycle identity turns that into `A σ = A τ` whenever `σ|_L = τ|_L`.
-6. **Hilbert 90** for `F̄/F` (leaf 3d) trivialises `A` as `fieldAct σ γ / γ`.
-7. **`δ − div γ` is Galois-invariant on the nose**, hence a base change (leaf 3b), and
-   `div γ ∈ picRel` so the class is unchanged.
-
-Steps 1–4, 5's cocycle manipulation and 7's bookkeeping are Lean; the leaves are 3a (used
-twice, in step 2 and step 3), 3b, 3c and 3d.  Note what does NOT appear: no `H¹`, no `H²`,
-no `Br`, no profinite topology — the only trace of continuity is `hinfl` in leaf 3d. -/
+**DOCSTRING CORRECTED 2026-08-01.**  This paragraph used to read *"DECOMPOSED 2026-07-30 —
+now PROVEN over four named sub-leaves"* and set out a seven-step assembly over
+3a/3b/3c/3d.  The body has never done that: a rival cut through `geomPic_descent_divisor`
+landed on the same day, merged cleanly because the two cuts touched disjoint regions of the
+file, and won here — leaving cut A's four leaves with no consumer at all.  The seven steps
+are a correct and useful route, so they have been MOVED, unchanged, to
+`geomPic_descent_divisor`, which is the statement they actually prove; see the section
+header above for the full account and for what a successor should do about it.  A docstring
+that names a route its proof body does not take is the duplicate-cut detector CLAUDE.md
+records, and this cluster is where it fired. -/
 theorem geomPic_descent {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (y : gp.Dbar.Pic)
     (hy : ∀ σ : QbarGal, gp.act σ y = y) : ∃ a : D.Pic, gp.bc a = y := by
   obtain ⟨δbar, hfix, hcl⟩ := geomPic_descent_divisor gp y hy
-  -- an invariant divisor is constant on the fibres of `below`, by transitivity
-  have hconst : ∀ w w' : gp.Dbar.Places, gp.below w = gp.below w' → δbar w = δbar w' := by
-    intro w w' hww'
-    obtain ⟨σ, hσ⟩ := placeAct_transitive gp hsep w w' hww'
-    have h1 : gp.divAct σ δbar (gp.placeAct σ w) = δbar w := by
-      rw [GeomPic.divAct_apply, Equiv.symm_apply_apply]
-    rw [hfix σ, hσ] at h1
-    exact h1.symm
-  -- so it is the base change of the rational divisor reading off any fibre
-  set f : D.Places → ℤ := fun v =>
-    if h : ∃ w : gp.Dbar.Places, gp.below w = v then δbar h.choose else 0 with hf
-  have hfval : ∀ w : gp.Dbar.Places, f (gp.below w) = δbar w := by
-    intro w
-    have hex : ∃ w' : gp.Dbar.Places, gp.below w' = gp.below w := ⟨w, rfl⟩
-    rw [hf]
-    simp only [dif_pos hex]
-    exact hconst _ _ hex.choose_spec
-  set δ : D.Divisors := Finsupp.onFinset (δbar.support.image gp.below) f (by
-    intro v hv
-    rw [hf] at hv
-    by_cases hex : ∃ w : gp.Dbar.Places, gp.below w = v
-    · simp only [dif_pos hex] at hv
-      exact Finset.mem_image.mpr ⟨hex.choose, Finsupp.mem_support_iff.mpr hv, hex.choose_spec⟩
-    · simp only [dif_neg hex] at hv
-      exact absurd rfl hv) with hδ
+  -- an invariant divisor is a base change (leaf 3b, PROVEN 2026-08-01 over
+  -- `placeAct_transitive`; this block used to sit inline here)
+  obtain ⟨δ, hbc⟩ := geomPic_exists_bcDiv_of_divAct_fixed gp hsep hfix
   refine ⟨QuotientAddGroup.mk δ, ?_⟩
-  have hbc : gp.bcDiv δ = δbar := by
-    ext w
-    rw [GeomPic.bcDiv_apply]
-    show f (gp.below w) = δbar w
-    exact hfval w
   show (QuotientAddGroup.mk (gp.bcDiv δ) : gp.Dbar.Pic) = y
   rw [hbc, hcl]
 
