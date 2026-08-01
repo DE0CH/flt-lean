@@ -127,8 +127,18 @@ run is for `pushoutSection`, not for `directImage`.
     theorem above adds is the lift-and-subtract step, which the maximal-ideal ↔ point
     dictionary (`exists_point_ker_Γevaluation_eq_of_isMaximal`,
     `surjective_appTop_fiberι_comp_appTop`, both PROVEN 2026-07-30) discharges.
+  * `exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber_baseChange`
+    — **THE LEAF, and the ONLY leaf in this file** (RECUT 2026-08-01, count-neutral `1 -> 1`).
+    It is the statement immediately below with the fibrewise hypothesis replaced by its
+    base-change-closed form `hbc`, which is EQUIVALENT to it: the forward direction is the
+    PROVEN `isIso_appTop_fiberToSpecResidueField_baseChange` above it (audit block (F)'s
+    positive half, formalised), and the converse is the instance `g = 𝟙 S`.  Since `IsProper`,
+    `Flat` and `LocallyOfFinitePresentation` are already instance-stable under base change,
+    `hbc` is what makes the WHOLE hypothesis package of this file base-change stable, and that
+    is what licenses each *"one may now assume `R` local / artinian / a quotient"* step in the
+    routes recorded throughout this file — steps that no route could previously take.
   * `exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` —
-    **LEAF** (CUT 2026-07-31), and **the ONLY leaf in this file**: Grothendieck's finite free
+    **PROVEN** (2026-08-01) over the leaf above, in one line: Grothendieck's finite free
     complex in degree `0` (EGA III 6.10.5 / Mumford *AV* §5 / Hartshorne III.12.2), with
     `Module.Projective R (range d)` in place of the usual flatness of the image.  The whole
     commutative-algebra bridge from it to the statement below is proven, in
@@ -1410,9 +1420,153 @@ theorem ker_eq_span_of_projective_range_of_forall_isMaximal
     simpa using this
   simpa [hLdef, Submodule.Quotient.mk_eq_zero] using hz
 
-/-- **LEAF 1a⁗ — GROTHENDIECK'S DEGREE-`0` COMPLEX, FINITE FREE, WITH PROJECTIVE IMAGE**
-(LEAF, CUT 2026-07-31 out of `self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` immediately
-below, which is now PROVEN over it together with the bridge above).
+/-- **`Γ(Z, ⊤) = K` ASCENDS ALONG ANY FIELD EXTENSION** (PROVEN, 2026-08-01) — the converse
+direction of `isIso_appTop_of_isIso_appTop_baseChange` above, in `IsPullback` form so that it
+applies to a square produced by somebody else rather than only to `Limits.pullback`.
+
+If `g : Z ⟶ Spec K` is quasi-compact and quasi-separated over a field `K` with
+`Γ(Spec K, ⊤) ⟶ Γ(Z, ⊤)` an isomorphism, and `W` is the base change of `Z` along
+`Spec L ⟶ Spec K` for any `K`-algebra `L`, then `Γ(Spec L, ⊤) ⟶ Γ(W, ⊤)` is an isomorphism
+too.
+
+**The content is the same flat base change the descent direction uses**, and only the last
+step differs: `isIso_pushoutSection_of_isQuasiSeparated_of_flat_right` identifies
+`Γ(W, ⊤)` with the pushout `Γ(Z, ⊤) ⊗_{Γ(Spec K, ⊤)} Γ(Spec L, ⊤)`, and then the OPPOSITE
+leg of a pushout square along an isomorphism is an isomorphism
+(`CategoryTheory.IsPushout.isIso_inr_of_isIso`) — where the descent direction has to work for
+its conclusion through `isIso_of_isPushout_of_isField`.  So `L` need NOT be a field here, and
+`hK` is the only field hypothesis: it is what makes `L` flat over `K`, hence what makes the
+base change compute `Γ` at all.
+
+**The two `QuasiCompact` / `QuasiSeparated` arguments are EXPLICIT, not instance-implicit, and
+that is load-bearing.**  The intended `g` is `f.fiberToSpecResidueField y`, which is a `def`
+that instance search does not unfold; supplying the two facts as ordinary arguments lets them
+be checked up to definitional unfolding instead.  With them as instance binders the call site
+below fails with `failed to synthesize QuasiSeparated (…fiberToSpecResidueField f (g s'))`
+against a hypothesis that is literally in context and prints identically. -/
+theorem isIso_appTop_of_isPullback_of_isField {K L : CommRingCat.{u}}
+    (hK : IsField K) {φ : K ⟶ L} {Z W : Scheme.{u}} {g : Z ⟶ Spec K}
+    {q : W ⟶ Z} {p : W ⟶ Spec L} (H : IsPullback q p g (Spec.map φ))
+    (hqc : QuasiCompact g) (hqs : QuasiSeparated g)
+    (h : IsIso g.appTop) : IsIso p.appTop := by
+  haveI := hqc; haveI := hqs
+  letI : Field ↥K := hK.toField
+  haveI : Flat (Spec.map φ) := by
+    rw [Flat.SpecMap_iff]
+    letI := φ.hom.toAlgebra
+    exact (inferInstance : Module.Flat ↥K ↥L)
+  haveI : CompactSpace Z := (quasiCompact_iff_compactSpace g).mp inferInstance
+  haveI : QuasiSeparatedSpace Z := (quasiSeparated_iff_quasiSeparatedSpace g).mp inferInstance
+  have hpo := isIso_pushoutSection_of_isQuasiSeparated_of_flat_right (H := H)
+    (hUST := (le_top : (⊤ : (Spec L).Opens) ≤ _)) (hUSX := (le_top : (⊤ : Z.Opens) ≤ _))
+    (hUY := (by simp : (⊤ : W.Opens) = _))
+    (isAffineOpen_top _) (isAffineOpen_top _) (by simpa using isCompact_univ (X := Z))
+    (by simpa using isQuasiSeparated_univ (α := Z))
+  rw [isIso_pushoutSection_iff] at hpo
+  haveI : IsIso (g.appLE ⊤ ⊤ (by simp)) := (isIso_appLE_top_iff g (by simp)).mpr h
+  refine (isIso_appLE_top_iff p (by simp)).mp ?_
+  exact hpo.isIso_inr_of_isIso
+
+/-- **THE FIBREWISE HYPOTHESIS `h` IS STABLE UNDER ARBITRARY BASE CHANGE** (PROVEN,
+2026-08-01).  This is the positive half of audit block (F) on
+`self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` below, which named it as *"the only part
+of this audit a prover should carry forward"* and left it unformalised.
+
+For `g : S' ⟶ S` arbitrary — no affineness, no flatness, no finiteness on `S'` or on `g` — the
+base change `pullback.snd f g : X ×_S S' ⟶ S'` again has `Γ(fibre) = residue field` at every
+point of `S'`.
+
+**Why it is what every recorded route needs.**  `IsProper`, `Flat` and
+`LocallyOfFinitePresentation` are each stable under base change and are already registered as
+instances, so the ONLY clause of this file's hypothesis package that was not known to
+base-change was `h`.  With this theorem the whole package is, and that is exactly what
+licenses each *"one may now assume `R` is local / artinian / a quotient of `R`"* step in the
+routes recorded on the leaf below and on `finiteType_appTop_of_isProper` — none of which could
+previously be taken, because after such a reduction the reduced morphism was not known to
+satisfy `h`.
+
+**The mathematics** is Künneth in degree `0`, and it is free at this pin: the fibre of a base
+change is the base change of the fibre (`isPullback_fiberToSpecResidueField_of_isPullback`,
+which is where `S'` is allowed to be arbitrary), and over the FIELD `κ(g s')` flat base change
+gives `Γ(X_{s'}, 𝒪) = Γ(X_{g s'}, 𝒪) ⊗_{κ(g s')} κ(s')`, which is `κ(s')` by `h (g s')`.
+
+`f` is only asked to be quasi-compact and quasi-separated, both of which `IsProper f`
+supplies. -/
+theorem isIso_appTop_fiberToSpecResidueField_baseChange (f : X ⟶ S)
+    [QuasiCompact f] [QuasiSeparated f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop)
+    {S' : Scheme.{u}} (g : S' ⟶ S) (s' : S') :
+    IsIso ((pullback.snd f g).fiberToSpecResidueField s').appTop := by
+  have H : IsPullback (pullback.fst f g) (pullback.snd f g) f g := IsPullback.of_hasPullback _ _
+  have hfib := isPullback_fiberToSpecResidueField_of_isPullback H s'
+  exact isIso_appTop_of_isPullback_of_isField (Field.toIsField _) hfib
+    (MorphismProperty.pullback_snd (P := @QuasiCompact) _ _ inferInstance)
+    (MorphismProperty.pullback_snd (P := @QuasiSeparated) _ _ inferInstance) (h _)
+
+/-- **LEAF 1a⁗⁺ — GROTHENDIECK'S DEGREE-`0` COMPLEX, WITH THE FIBREWISE HYPOTHESIS ALREADY
+CLOSED UNDER BASE CHANGE** (LEAF; RECUT 2026-08-01 out of
+`exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` immediately
+below, which is now PROVEN over it in one line).
+
+**THE COUNT DID NOT MOVE, `1 -> 1`, AND THAT IS THE INTENDED OUTCOME.**  What changed is the
+HYPOTHESIS: instead of `h` at the points of `S` only, a prover is handed `h` for every base
+change of `f`, which is the form every route recorded in this file actually consumes.
+
+**THE TWO HYPOTHESES ARE EQUIVALENT, so every audit on the statement below transfers
+verbatim and none is voided.**  One direction is
+`isIso_appTop_fiberToSpecResidueField_baseChange` immediately above — PROVEN, and it is what
+the derivation below uses.  The converse is the instance `g = 𝟙 S`, under which
+`pullback.snd f (𝟙 S)` is `f` composed with an isomorphism and the fibres agree; it is not
+formalised because nothing consumes it, and it is recorded here so that the equivalence is not
+merely asserted.  In particular the FALSITY AUDITS (A) on `finiteType_appTop_of_isProper` and
+(D1), (E), (F) below, and the non-vacuity and faithfulness paragraphs on the statement below,
+all apply to this leaf unchanged.
+
+**WHAT A PROVER GETS FOR FREE, and it was checked rather than assumed** (2026-08-01): for any
+`g : S' ⟶ S`, `IsProper (pullback.snd f g)`, `Flat (pullback.snd f g)` and
+`LocallyOfFinitePresentation (pullback.snd f g)` are all found by `inferInstance`, and
+`IsProper f` supplies `QuasiCompact f` and `QuasiSeparated f`.  So the reduction *"replace `S`
+by `Spec R'` for any `Γ(S, ⊤)`-algebra `R'` and `f` by its base change"* is now available with
+the FULL hypothesis package intact, including `h`, at the cost of one application of `hbc`.
+
+**WHAT IS STILL OWED IS UNCHANGED AND IS RECORDED BELOW**: it is the coherence theorem, and
+audit blocks (A)-(D) on `finiteType_appTop_of_isProper` together with (D1), (E), (F) on
+`self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` rule out every shortcut so far proposed.
+The two named theories that would close it are (i) OBJECT DESCENT along limits, EGA IV 8.8.2 /
+Stacks 01ZM, plus descent of `IsProper` and `Flat` to a finite stage (EGA IV 8.10.5, 11.2.6) —
+audit block (B) records that `Mathlib/AlgebraicGeometry/AffineTransitionLimit.lean` already has
+the MORPHISM half and not the OBJECT half; and (ii) the flat Čech complex with its base-change
+clause, which closes the ARTINIAN case outright by the dévissage written out below and is the
+object the coherence theorem improves.  **`hbc` is the hypothesis both of those need and
+neither previously had.** -/
+theorem exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber_baseChange
+    (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (hbc : ∀ ⦃S' : Scheme.{u}⦄ (g : S' ⟶ S) (s' : S'),
+      IsIso ((pullback.snd f g).fiberToSpecResidueField s').appTop) :
+    letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+    ∃ (n₀ n₁ : ℕ) (d : (Fin n₀ → ↥Γ(S, ⊤)) →ₗ[↥Γ(S, ⊤)] (Fin n₁ → ↥Γ(S, ⊤)))
+      (e : ↥Γ(X, ⊤) ≃ₗ[↥Γ(S, ⊤)] LinearMap.ker d),
+      Module.Projective ↥Γ(S, ⊤) ↥(LinearMap.range d) ∧
+      ∀ m : Ideal ↥Γ(S, ⊤), m.IsMaximal →
+        Submodule.comap d (m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₁ → ↥Γ(S, ⊤)))) =
+          Submodule.span ↥Γ(S, ⊤) {((e 1 : LinearMap.ker d) : Fin n₀ → ↥Γ(S, ⊤))} ⊔
+            m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₀ → ↥Γ(S, ⊤))) :=
+  sorry
+
+/-- **GROTHENDIECK'S DEGREE-`0` COMPLEX, FINITE FREE, WITH PROJECTIVE IMAGE** — **PROVEN**
+(2026-08-01) over `…_baseChange` immediately above, which is the SAME statement with the
+fibrewise hypothesis already closed under base change.  It was CUT 2026-07-31 out of
+`self_mem_smul_adjoin_self_of_appTop_fiberι_eq_zero` immediately below, which is PROVEN over
+it together with the bridge above, and it was itself the file's only `sorry` until the recut.
+
+**IT IS NO LONGER THE LEAF, AND THE RECUT WAS COUNT-NEUTRAL (`1 -> 1`).**  The open obligation
+is now `…_baseChange` above; this statement is a one-line consequence of it, obtained by
+feeding it `isIso_appTop_fiberToSpecResidueField_baseChange`.  Everything below in this
+docstring — the description of the statement, the equivalence with the leaf beneath it, the
+faithfulness and non-vacuity paragraphs, the route notes and the dévissage — describes the
+mathematics of BOTH statements, which the recut did not change, and is kept here verbatim
+rather than moved.  A prover should read it and then work on `…_baseChange` above.
 
 **THIS IS THE ONLY GEOMETRIC OBLIGATION LEFT IN THIS FILE**, and it is a NAMED CLASSICAL
 THEOREM rather than an ad-hoc algebraic one: it is the degree-`0` part of the finite free
@@ -1520,7 +1674,8 @@ theorem exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop
         Submodule.comap d (m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₁ → ↥Γ(S, ⊤)))) =
           Submodule.span ↥Γ(S, ⊤) {((e 1 : LinearMap.ker d) : Fin n₀ → ↥Γ(S, ⊤))} ⊔
             m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₀ → ↥Γ(S, ⊤))) :=
-  sorry
+  exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber_baseChange f
+    fun _ g s' => isIso_appTop_fiberToSpecResidueField_baseChange f h g s'
 
 /-- **1a‴ — `a|_{X_s} = 0 ⟹ a ∈ 𝔪 · R[a]`, FOR ITS OWN `a`** — **PROVEN** (2026-07-31) over
 `exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` and
