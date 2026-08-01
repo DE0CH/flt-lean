@@ -16977,11 +16977,509 @@ theorem auxQuotient_inf_isLevel (Q : Finset ℕ) (hQp : ∀ q ∈ Q, q ≠ p)
         rw [hxy]
         exact hv
 
-/-- **THE SPLIT-TORUS CLAUSE DESCENDS TO THE IMAGE SUBRING** (SORRY LEAF, new
-2026-07-30, `flt-lean-38`) — the `ℚ`-side twin of
+/-! ### Ring-theoretic helpers for the raised-level SUBRING DESCENT
+
+(2026-08-01, `flt-lean-229`.)  The block below closes
+`isSplitTorusAt_of_subring_entries`, the last leaf of the raised-level
+Schlessinger machine, by an induction on `Nat.card A` — NOT by the chain
+dévissage its own docstring proposed.  See that docstring for why the chain
+does not close the recursion and what replaces it.  Everything here is
+level-agnostic and transcribes verbatim to the Hilbert twin
+`isHilbertSplitTorusAt_of_subring_entries`. -/
+
+section SubringDescent
+
+open _root_.IsLocalRing
+
+/-- A proper quotient of a finite ring is strictly smaller. -/
+theorem card_quotient_lt {A : Type*} [CommRing A] [Finite A] (J : Ideal A)
+    (hJ : J ≠ ⊥) : Nat.card (A ⧸ J) < Nat.card A := by
+  haveI : Finite (A ⧸ J) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  have hle : Nat.card (A ⧸ J) ≤ Nat.card A :=
+    Nat.card_le_card_of_surjective _ Ideal.Quotient.mk_surjective
+  rcases lt_or_eq_of_le hle with h | h
+  · exact h
+  · exfalso
+    have hbij : Function.Bijective (Ideal.Quotient.mk J) :=
+      Function.Surjective.bijective_of_nat_card_le Ideal.Quotient.mk_surjective
+        (le_of_eq h.symm)
+    refine hJ ?_
+    rw [← Ideal.mk_ker (I := J), (RingHom.injective_iff_ker_eq_bot _).mp hbij.injective]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **`charFrob` transports along an entrywise embedding.** -/
+theorem charFrob_map_of_toMatrix'_entries {C : Type*} [CommRing C]
+    [TopologicalSpace C] [IsTopologicalRing C]
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    (ι : C →+* A)
+    {ρC : GaloisRep ℚ C (Fin 2 → C)} {ρA : GaloisRep ℚ A (Fin 2 → A)}
+    (hent : ∀ (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2),
+      ι (LinearMap.toMatrix' (ρC g) i j) = LinearMap.toMatrix' (ρA g) i j)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    (ρC.charFrob v).map ι = ρA.charFrob v := by
+  show ((ρC.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly).map ι =
+    (ρA.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly
+  rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply,
+    ← LinearMap.charpoly_toMatrix _ (Pi.basisFun C (Fin 2)),
+    ← LinearMap.charpoly_toMatrix _ (Pi.basisFun A (Fin 2)),
+    ← Matrix.charpoly_map]
+  congr 1
+  ext i j
+  exact hent _ i j
+
+/-- In a finite local ring with nonzero maximal ideal there is a nonzero ideal
+inside and killed by the maximal ideal: the last nonvanishing power. -/
+theorem exists_ne_bot_le_mul_maximalIdeal_eq_bot {A : Type*} [CommRing A] [Finite A]
+    [IsLocalRing A] (hm : maximalIdeal A ≠ ⊥) :
+    ∃ I : Ideal A, I ≠ ⊥ ∧ I ≤ maximalIdeal A ∧ maximalIdeal A * I = ⊥ := by
+  classical
+  haveI : IsArtinianRing A := isArtinian_of_finite
+  have hnil : ∃ n, maximalIdeal A ^ n = ⊥ := by
+    obtain ⟨c, hc⟩ : IsNilpotent (maximalIdeal A) := by
+      have h := IsArtinianRing.isNilpotent_jacobson_bot (R := A)
+      rwa [jacobson_eq_maximalIdeal (⊥ : Ideal A) bot_ne_top] at h
+    exact ⟨c, hc⟩
+  have hnspec : maximalIdeal A ^ (Nat.find hnil) = ⊥ := Nat.find_spec hnil
+  have h0 : Nat.find hnil ≠ 0 := by
+    intro h
+    rw [h, pow_zero, Ideal.one_eq_top] at hnspec
+    exact absurd hnspec top_ne_bot
+  have h1 : Nat.find hnil ≠ 1 := by
+    intro h
+    rw [h, pow_one] at hnspec
+    exact hm hnspec
+  have hn1 : 1 < Nat.find hnil := by omega
+  refine ⟨maximalIdeal A ^ (Nat.find hnil - 1), Nat.find_min hnil (by omega),
+    Ideal.pow_le_self (by omega), ?_⟩
+  have hstep : maximalIdeal A * maximalIdeal A ^ (Nat.find hnil - 1)
+      = maximalIdeal A ^ (Nat.find hnil) := by
+    rw [← pow_succ']
+    congr 1
+    omega
+  rw [hstep]
+  exact hnspec
+
+/-- **The key ring-theoretic step of the subring descent.** -/
+theorem exists_ideal_coe_eq_inter {A : Type*} [CommRing A] [IsLocalRing A]
+    (R : Subring A) (hR : ∀ a : A, ∃ r ∈ R, a - r ∈ maximalIdeal A)
+    (I : Ideal A) (hI : maximalIdeal A * I = ⊥) :
+    ∃ J : Ideal A, (J : Set A) = (R : Set A) ∩ (I : Set A) := by
+  refine ⟨{ carrier := (R : Set A) ∩ (I : Set A)
+            add_mem' := ?_
+            zero_mem' := ⟨R.zero_mem, I.zero_mem⟩
+            smul_mem' := ?_ }, rfl⟩
+  · rintro x y ⟨hx1, hx2⟩ ⟨hy1, hy2⟩
+    exact ⟨R.add_mem hx1 hy1, I.add_mem hx2 hy2⟩
+  · rintro c x ⟨hx1, hx2⟩
+    obtain ⟨r, hrR, hrm⟩ := hR c
+    have hzero : (c - r) * x = 0 := by
+      have hmem : (c - r) * x ∈ maximalIdeal A * I := Ideal.mul_mem_mul hrm hx2
+      rw [hI] at hmem
+      simpa using hmem
+    have hcx : c • x = r * x := by
+      have : c * x - r * x = 0 := by rw [← sub_mul]; exact hzero
+      simpa [smul_eq_mul] using sub_eq_zero.mp this
+    rw [hcx]
+    exact ⟨R.mul_mem hrR hx1, I.mul_mem_left _ hx2⟩
+
+/-- **`ι(C) + 𝔪 = A`** from "the subring surjects onto the residue field". -/
+theorem exists_sub_mem_maximalIdeal_of_surjective_comp {C A : Type*} [CommRing C]
+    [CommRing A] [IsLocalRing A] {k : Type*} [Field k] (πA : A →+* k)
+    (hπA : Function.Surjective πA) (ι : C →+* A)
+    (hsurj : Function.Surjective (πA.comp ι)) (a : A) :
+    ∃ c : C, a - ι c ∈ maximalIdeal A := by
+  obtain ⟨c, hc⟩ := hsurj (πA a)
+  refine ⟨c, ?_⟩
+  have hker : RingHom.ker πA = maximalIdeal A :=
+    IsLocalRing.eq_maximalIdeal (RingHom.ker_isMaximal_of_surjective πA hπA)
+  rw [← hker, RingHom.mem_ker, map_sub, sub_eq_zero]
+  simpa using hc.symm
+
+/-- If `ι(C) + 𝔪 = A` and `𝔪 = ⊥` then `ι` is already onto. -/
+theorem surjective_of_maximalIdeal_eq_bot {C A : Type*} [CommRing C] [CommRing A]
+    [IsLocalRing A] (ι : C →+* A) (hm : maximalIdeal A = ⊥)
+    (h : ∀ a : A, ∃ c : C, a - ι c ∈ maximalIdeal A) : Function.Surjective ι := by
+  intro a
+  obtain ⟨c, hc⟩ := h a
+  rw [hm] at hc
+  exact ⟨c, (sub_eq_zero.mp (by simpa using hc)).symm⟩
+
+/-- **THE CARTESIAN SQUARE.** -/
+theorem exists_eq_of_sub_mem_of_le_range {C A : Type*} [CommRing C] [CommRing A]
+    (ι : C →+* A) (𝔧 : Ideal A) (h𝔧 : (𝔧 : Set A) ⊆ Set.range ι)
+    (c : C) (a : A) (hca : ι c - a ∈ 𝔧) :
+    ∃ c' : C, ι c' = a ∧ c' - c ∈ Ideal.comap ι 𝔧 := by
+  obtain ⟨d, hd⟩ := h𝔧 hca
+  refine ⟨c - d, ?_, ?_⟩
+  · rw [map_sub, hd]; ring
+  · rw [Ideal.mem_comap, show c - d - c = -d by ring, map_neg, hd]
+    exact neg_mem hca
+
+/-- **CASE (ii) OF THE DESCENT.** -/
+theorem injective_quotient_comp_of_inter_eq_bot {C A : Type*} [CommRing C]
+    [CommRing A] (ι : C →+* A) (hι : Function.Injective ι) (I : Ideal A)
+    (hIC : ∀ x : A, x ∈ Set.range ι → x ∈ I → x = 0) :
+    Function.Injective ((Ideal.Quotient.mk I).comp ι) := by
+  intro x y hxy
+  simp only [RingHom.coe_comp, Function.comp_apply, Ideal.Quotient.eq] at hxy
+  have h0 : ι x - ι y = 0 := hIC _ ⟨x - y, by rw [map_sub]⟩ hxy
+  exact hι (sub_eq_zero.mp h0)
+
+set_option linter.checkUnivs false in
+open scoped TensorProduct in
+/-- **From the `pushforwardFrame` form to the `baseChange` form along an
+ARBITRARY continuous ring hom** — the general-`ψ` companion of
+`isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame`. -/
+theorem isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame'
+    (Q : Finset ℕ)
+    {C : Type*} [CommRing C] [TopologicalSpace C] [IsTopologicalRing C]
+    [IsLocalRing C] [Algebra ℤ_[p] C]
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[p] A]
+    {ρ : GaloisRep ℚ C (Fin 2 → C)} (ψ : C →+* A) (hψ : Continuous ψ)
+    (h : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A)
+      (pushforwardFrame ψ hψ ρ)) :
+    letI : Algebra C A := ψ.toAlgebra
+    letI : ContinuousSMul C A := continuousSMul_of_algebraMap C A
+      (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+    ∀ hdim : Module.rank A (A ⊗[C] (Fin 2 → C)) = 2,
+      IsRaisedLevelHardlyRamified hpodd Q hdim (ρ.baseChange A) := by
+  letI : Algebra C A := ψ.toAlgebra
+  letI : ContinuousSMul C A := continuousSMul_of_algebraMap C A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  intro hdim
+  have hcancel : (pushforwardFrame ψ hψ ρ).conj
+      (TensorProduct.piScalarRight C A A (Fin 2)).symm = ρ.baseChange A := by
+    show ((ρ.baseChange A).conj
+      (TensorProduct.piScalarRight C A A (Fin 2))).conj _ = _
+    rw [LevelLimit.conj_trans, LinearEquiv.self_trans_symm, LevelLimit.conj_refl]
+  rw [← hcancel]
+  exact isRaisedLevelHardlyRamified_conj Q hdim h _
+
+
+set_option linter.checkUnivs false in
+set_option maxHeartbeats 1600000 in
+open scoped TensorProduct in
+/-- **THE SUBRING DESCENT, BY INDUCTION ON `Nat.card A`.** -/
+theorem isRaisedLevelHardlyRamified_of_injective_entries_aux (Q : Finset ℕ)
+    (hQp : ∀ q ∈ Q, q ≠ p)
+    {k : Type uFk} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uFw} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    (hglue : IsAuxFibreProductClause.{uSm, uFk, uFw} hpodd Q ρbar) (n : ℕ) :
+    ∀ {A : Type uSm} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+      [IsLocalRing A] [Algebra ℤ_[p] A] [Finite A] [DiscreteTopology A],
+      Nat.card A ≤ n →
+      ∀ (πA : A →+* k), Function.Surjective πA →
+      ∀ {C : Type uSm} [CommRing C] [TopologicalSpace C] [IsTopologicalRing C]
+        [IsLocalRing C] [Algebra ℤ_[p] C] [Finite C] [DiscreteTopology C]
+        (ι : C →+* A), Function.Injective ι →
+        Function.Surjective (πA.comp ι) →
+      ∀ {ρC : GaloisRep ℚ C (Fin 2 → C)} {ρA : GaloisRep ℚ A (Fin 2 → A)},
+        (∀ (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2),
+          ι (LinearMap.toMatrix' (ρC g) i j) = LinearMap.toMatrix' (ρA g) i j) →
+        (∀ (q : ℕ) (hq : q.Prime),
+          πA ((ρA.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+            (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) →
+        IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρA →
+        IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun C) ρC := by
+  induction n with
+  | zero =>
+    intro A _ _ _ _ _ _ _ hcard
+    have hpos : 0 < Nat.card A := Nat.card_pos
+    omega
+  | succ n ih =>
+    intro A _ _ _ _ _ _ _ hcard πA hπAsurj C _ _ _ _ _ _ _ ι hιinj hsurjcomp ρC ρA
+      hent hcfA hHRA
+    have hkerπ : RingHom.ker πA = maximalIdeal A :=
+      IsLocalRing.eq_maximalIdeal (RingHom.ker_isMaximal_of_surjective πA hπAsurj)
+    by_cases hsurjι : Function.Surjective ι
+    · -- **BASE OF THE RECURSION**: `ι` is an isomorphism.
+      set e : C ≃+* A := RingEquiv.ofBijective ι ⟨hιinj, hsurjι⟩ with he
+      have hea : ∀ c : C, e c = ι c := fun _ => rfl
+      set ιinv : A →+* C := (e.symm : A ≃+* C).toRingHom with hιinvdef
+      have hιinvι : ∀ c : C, ιinv (ι c) = c := by
+        intro c
+        show e.symm (ι c) = c
+        rw [← hea c, e.symm_apply_apply]
+      have hpf : pushforwardFrame ιinv continuous_of_discreteTopology ρA = ρC := by
+        refine framedGaloisRep_ext_toMatrix' fun g => ?_
+        rw [toMatrix'_pushforwardFrame]
+        ext i j
+        rw [Matrix.map_apply, ← hent g i j, hιinvι]
+      rw [← hpf]
+      exact isRaisedLevelHardlyRamified_pushforwardFrame Q ιinv
+        continuous_of_discreteTopology (ringHom_padicInt_ext_finite _ _) hHRA
+    · -- **INDUCTIVE STEP**: `ι` is not onto, so `𝔪_A ≠ ⊥`.
+      have hres : ∀ a : A, ∃ c : C, a - ι c ∈ maximalIdeal A :=
+        exists_sub_mem_maximalIdeal_of_surjective_comp πA hπAsurj ι hsurjcomp
+      have hm : maximalIdeal A ≠ ⊥ := fun h =>
+        hsurjι (surjective_of_maximalIdeal_eq_bot ι h hres)
+      obtain ⟨I, hIne, hIle, hImul⟩ := exists_ne_bot_le_mul_maximalIdeal_eq_bot hm
+      obtain ⟨J, hJset⟩ := exists_ideal_coe_eq_inter ι.range
+        (fun a => by
+          obtain ⟨c, hc⟩ := hres a
+          exact ⟨ι c, ⟨c, rfl⟩, hc⟩) I hImul
+      have hJmem : ∀ x : A, x ∈ J ↔ (x ∈ Set.range ι ∧ x ∈ I) := by
+        intro x
+        constructor
+        · intro hx
+          have hx' : x ∈ (J : Set A) := hx
+          rw [hJset] at hx'
+          exact ⟨by simpa using hx'.1, hx'.2⟩
+        · intro hx
+          show x ∈ (J : Set A)
+          rw [hJset]
+          exact ⟨by simpa using hx.1, hx.2⟩
+      have hJle : J ≤ I := fun x hx => ((hJmem x).1 hx).2
+      have hJlem : J ≤ maximalIdeal A := hJle.trans hIle
+      have hJrange : (J : Set A) ⊆ Set.range ι := fun x hx => ((hJmem x).1 hx).1
+      by_cases hJbot : J = ⊥
+      · -- **CASE `J = 0`**: the SAME `C` embeds in the strictly smaller `A ⧸ I`.
+        have hIC : ∀ x : A, x ∈ Set.range ι → x ∈ I → x = 0 := by
+          intro x hx1 hx2
+          have hxJ : x ∈ J := (hJmem x).2 ⟨hx1, hx2⟩
+          rw [hJbot] at hxJ
+          simpa using hxJ
+        haveI : Finite (A ⧸ I) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+        letI : TopologicalSpace (A ⧸ I) := ⊥
+        haveI : DiscreteTopology (A ⧸ I) := ⟨rfl⟩
+        haveI : IsTopologicalRing (A ⧸ I) := inferInstance
+        haveI : Nontrivial (A ⧸ I) := Ideal.Quotient.nontrivial_iff.mpr
+          (fun htop => (maximalIdeal.isMaximal A).ne_top (top_le_iff.mp (htop ▸ hIle)))
+        haveI : IsLocalRing (A ⧸ I) :=
+          IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+        have hmkI : Continuous (Ideal.Quotient.mk I) := continuous_of_discreteTopology
+        set π' : (A ⧸ I) →+* k := Ideal.Quotient.lift I πA (fun a ha => by
+          have : a ∈ RingHom.ker πA := by rw [hkerπ]; exact hIle ha
+          simpa [RingHom.mem_ker] using this) with hπ'def
+        have hπ'mk : ∀ a : A, π' (Ideal.Quotient.mk I a) = πA a := fun a =>
+          Ideal.Quotient.lift_mk I πA _
+        have hπ'surj : Function.Surjective π' := by
+          intro y
+          obtain ⟨a, ha⟩ := hπAsurj y
+          exact ⟨Ideal.Quotient.mk I a, by rw [hπ'mk, ha]⟩
+        have hentI : ∀ (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2),
+            ((Ideal.Quotient.mk I).comp ι) (LinearMap.toMatrix' (ρC g) i j) =
+              LinearMap.toMatrix'
+                ((pushforwardFrame (Ideal.Quotient.mk I) hmkI ρA) g) i j := by
+          intro g i j
+          rw [toMatrix'_pushforwardFrame, Matrix.map_apply]
+          show Ideal.Quotient.mk I (ι _) = _
+          rw [hent g i j]
+        have hcfI : ∀ (q : ℕ) (hq : q.Prime),
+            π' (((pushforwardFrame (Ideal.Quotient.mk I) hmkI ρA).charFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+              (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+          intro q hq
+          have hmapI := charFrob_map_of_toMatrix'_entries (Ideal.Quotient.mk I)
+            (ρC := ρA) (ρA := pushforwardFrame (Ideal.Quotient.mk I) hmkI ρA)
+            (fun g i j => by
+              rw [toMatrix'_pushforwardFrame, Matrix.map_apply])
+            hq.toHeightOneSpectrumRingOfIntegersRat
+          rw [← hmapI, Polynomial.coeff_map, hπ'mk]
+          exact hcfA q hq
+        have hHRI := isRaisedLevelHardlyRamified_pushforwardFrame Q
+          (Ideal.Quotient.mk I) hmkI (ringHom_padicInt_ext_finite _ _) hHRA
+        have hcard' : Nat.card (A ⧸ I) ≤ n := by
+          have := card_quotient_lt I hIne
+          omega
+        exact ih hcard' π' hπ'surj ((Ideal.Quotient.mk I).comp ι)
+          (injective_quotient_comp_of_inter_eq_bot ι hιinj I hIC)
+          (by
+            intro y
+            obtain ⟨c, hc⟩ := hsurjcomp y
+            exact ⟨c, by simpa [hπ'mk] using hc⟩)
+          hentI hcfI hHRI
+      · -- **CASE `J ≠ 0`**: one fibre-product step against `hglue`.
+        haveI : Finite (A ⧸ J) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+        letI : TopologicalSpace (A ⧸ J) := ⊥
+        haveI : DiscreteTopology (A ⧸ J) := ⟨rfl⟩
+        haveI : IsTopologicalRing (A ⧸ J) := inferInstance
+        haveI : Nontrivial (A ⧸ J) := Ideal.Quotient.nontrivial_iff.mpr
+          (fun htop => (maximalIdeal.isMaximal A).ne_top (top_le_iff.mp (htop ▸ hJlem)))
+        haveI : IsLocalRing (A ⧸ J) :=
+          IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+        have hmkJ : Continuous (Ideal.Quotient.mk J) := continuous_of_discreteTopology
+        set Jc : Ideal C := Ideal.comap ι J with hJcdef
+        have hJcmem : ∀ c : C, c ∈ Jc ↔ ι c ∈ J := by
+          intro c; rw [hJcdef]; exact Ideal.mem_comap
+        haveI : Finite (C ⧸ Jc) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+        letI : TopologicalSpace (C ⧸ Jc) := ⊥
+        haveI : DiscreteTopology (C ⧸ Jc) := ⟨rfl⟩
+        haveI : IsTopologicalRing (C ⧸ Jc) := inferInstance
+        haveI : Nontrivial (C ⧸ Jc) := Ideal.Quotient.nontrivial_iff.mpr (by
+          intro htop
+          have h1 : (1 : C) ∈ Jc := htop ▸ Submodule.mem_top
+          have h2 : (1 : A) ∈ J := by simpa using (hJcmem 1).mp h1
+          exact (maximalIdeal.isMaximal A).ne_top
+            (top_le_iff.mp ((Ideal.eq_top_iff_one J).mpr h2 ▸ hJlem)))
+        haveI : IsLocalRing (C ⧸ Jc) :=
+          IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+        have hmkJc : Continuous (Ideal.Quotient.mk Jc) := continuous_of_discreteTopology
+        -- the induced injection of quotients
+        set ῑ : (C ⧸ Jc) →+* (A ⧸ J) :=
+          Ideal.Quotient.lift Jc ((Ideal.Quotient.mk J).comp ι) (fun c hc => by
+            simpa [Ideal.Quotient.eq_zero_iff_mem] using (hJcmem c).mp hc) with hῑdef
+        have hῑmk : ∀ c : C, ῑ (Ideal.Quotient.mk Jc c) =
+            Ideal.Quotient.mk J (ι c) := fun c =>
+          Ideal.Quotient.lift_mk Jc _ _
+        have hῑinj : Function.Injective ῑ := by
+          rw [injective_iff_map_eq_zero]
+          intro x hx
+          obtain ⟨c, rfl⟩ := Ideal.Quotient.mk_surjective x
+          rw [hῑmk, Ideal.Quotient.eq_zero_iff_mem] at hx
+          exact Ideal.Quotient.eq_zero_iff_mem.mpr hx
+        set π'' : (A ⧸ J) →+* k := Ideal.Quotient.lift J πA (fun a ha => by
+          have : a ∈ RingHom.ker πA := by rw [hkerπ]; exact hJlem ha
+          simpa [RingHom.mem_ker] using this) with hπ''def
+        have hπ''mk : ∀ a : A, π'' (Ideal.Quotient.mk J a) = πA a := fun a =>
+          Ideal.Quotient.lift_mk J πA _
+        have hπ''surj : Function.Surjective π'' := by
+          intro y
+          obtain ⟨a, ha⟩ := hπAsurj y
+          exact ⟨Ideal.Quotient.mk J a, by rw [hπ''mk, ha]⟩
+        -- the two pushed-forward representations
+        set ρAq := pushforwardFrame (Ideal.Quotient.mk J) hmkJ ρA with hρAqdef
+        set ρCq := pushforwardFrame (Ideal.Quotient.mk Jc) hmkJc ρC with hρCqdef
+        have hentq : ∀ (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2),
+            ῑ (LinearMap.toMatrix' (ρCq g) i j) =
+              LinearMap.toMatrix' (ρAq g) i j := by
+          intro g i j
+          rw [hρCqdef, hρAqdef, toMatrix'_pushforwardFrame,
+            toMatrix'_pushforwardFrame, Matrix.map_apply, Matrix.map_apply, hῑmk,
+            hent g i j]
+        have hcfq : ∀ (q : ℕ) (hq : q.Prime),
+            π'' ((ρAq.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+              (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+          intro q hq
+          have hmapJ := charFrob_map_of_toMatrix'_entries (Ideal.Quotient.mk J)
+            (ρC := ρA) (ρA := ρAq)
+            (fun g i j => by
+              rw [hρAqdef, toMatrix'_pushforwardFrame, Matrix.map_apply])
+            hq.toHeightOneSpectrumRingOfIntegersRat
+          rw [← hmapJ, Polynomial.coeff_map, hπ''mk]
+          exact hcfA q hq
+        have hHRAq : IsRaisedLevelHardlyRamified hpodd Q
+            (rank_finTwoFun (A ⧸ J)) ρAq :=
+          isRaisedLevelHardlyRamified_pushforwardFrame Q (Ideal.Quotient.mk J) hmkJ
+            (ringHom_padicInt_ext_finite _ _) hHRA
+        have hcard' : Nat.card (A ⧸ J) ≤ n := by
+          have := card_quotient_lt J hJbot
+          omega
+        -- the inductive hypothesis at the smaller ambient ring
+        have hHRCq : IsRaisedLevelHardlyRamified hpodd Q
+            (rank_finTwoFun (C ⧸ Jc)) ρCq :=
+          ih hcard' π'' hπ''surj ῑ hῑinj
+            (by
+              intro y
+              obtain ⟨c, hc⟩ := hsurjcomp y
+              exact ⟨Ideal.Quotient.mk Jc c, by
+                simpa [hῑmk, hπ''mk] using hc⟩)
+            hentq hcfq hHRAq
+        -- `pushforwardFrame ι ρC` IS `ρA`
+        have hpfι : pushforwardFrame ι continuous_of_discreteTopology ρC = ρA := by
+          refine framedGaloisRep_ext_toMatrix' fun g => ?_
+          rw [toMatrix'_pushforwardFrame]
+          ext i j
+          rw [Matrix.map_apply]
+          exact hent g i j
+        -- the fibre-product square
+        refine hglue ῑ (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective
+          (Ideal.Quotient.mk Jc) ι hmkJc continuous_of_discreteTopology
+          (ringHom_padicInt_ext_finite _ _) (ringHom_padicInt_ext_finite _ _)
+          ?_ ?_ ?_ (πA.comp ι) ∅ hsurjcomp hQp ?_ ?_ ?_
+        · exact RingHom.ext fun c => hῑmk c
+        · intro b₁ b₂ hb
+          exact hιinj (congrArg Prod.snd hb)
+        · rintro a₁ a₂ ha
+          obtain ⟨c, rfl⟩ := Ideal.Quotient.mk_surjective a₁
+          rw [hῑmk, Ideal.Quotient.eq] at ha
+          obtain ⟨c', hc'1, hc'2⟩ := exists_eq_of_sub_mem_of_le_range ι J hJrange
+            c a₂ ha
+          exact ⟨c', by
+            rw [Ideal.Quotient.eq, hJcdef]
+            exact hc'2, hc'1⟩
+        · intro q hq _
+          rw [RingHom.comp_apply]
+          have hmapι := charFrob_map_of_toMatrix'_entries ι hent
+            hq.toHeightOneSpectrumRingOfIntegersRat
+          rw [show ι ((ρC.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+              = ((ρC.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ι).coeff 1
+            from (Polynomial.coeff_map _ _).symm, hmapι]
+          exact hcfA q hq
+        · exact isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame' Q
+            (Ideal.Quotient.mk Jc) hmkJc hHRCq
+        · exact isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame' Q ι
+            continuous_of_discreteTopology (by rw [hpfι]; exact hHRA)
+
+end SubringDescent
+
+/-- **THE SPLIT-TORUS CLAUSE DESCENDS TO THE IMAGE SUBRING** (cut 2026-07-30,
+`flt-lean-38`; **PROVEN 2026-08-01, `flt-lean-229`**, over
+`isRaisedLevelHardlyRamified_of_injective_entries_aux` in the `SubringDescent`
+section immediately above) — the `ℚ`-side twin of
 `isHilbertSplitTorusAt_of_subring_entries` (`HardlyRamified/HilbertModularity.lean`,
-itself still open), and the ONE genuinely new obligation in the whole
-raised-level `ℚ`-side frame-ring construction.
+which is PROVEN by the OTHER of the two routes below, residual distinctness),
+and the last leaf of the raised-level `ℚ`-side frame-ring construction.
+
+# THE TWO HYPOTHESES THAT WERE ADDED, AND WHY THE STATEMENT NEEDED THEM
+
+**`hCsurj : Function.Surjective (πA.comp C.subtype)`** — the docstring below
+already assumed it in prose (*"`C` and `A` having the same residue field"*) and
+BOTH recorded routes need it; it was not in the signature.  Without it the
+statement is not provable by either route, and the shape of a counterexample is
+`A = 𝔽₄ ⊇ C = 𝔽₂` with `ρ(Frob) = [[0,1],[1,1]]`, whose characteristic
+polynomial `x²+x+1` splits over `𝔽₄` and not over `𝔽₂`.  (That refutes the naive
+statement, not the statement plus `hglue`, so it is evidence that the hypothesis
+is load-bearing rather than a refutation of the leaf.)
+
+**`hQp : ∀ q ∈ Q, q ≠ p`** — an arrow of `IsAuxFibreProductClause` since
+`flt-lean-38`, so `hglue` cannot be applied without it.
+
+Both are discharged for free at the top of the chain, inside
+`exists_levelIdealSystem_aux_of_clauses`: `hQp` is a hypothesis of that theorem,
+and `hc2' : πA.comp f = ι.comp ev` with `ev` and `ι` surjective gives
+`Function.Surjective (πA.comp f)`, whose range is exactly `C = f.range`.  Three
+signatures changed (this one, `isRaisedLevelHardlyRamified_of_subring_entries`
+and `auxFrameLevels_repClause_ker`) and no proof above them did; none of the
+three has a consumer outside this file.
+
+# THE ROUTE TAKEN — ONE FIBRE PRODUCT, AND INDUCTION ON `Nat.card A`
+
+**Route 2 below is right about `hglue` and WRONG about the chain**, and the
+correction is the whole content of the `SubringDescent` section.  The chain
+`C = C₀ ⊂ ⋯ ⊂ C_n = A` obtained by adjoining one element of `𝔪_A` at a time does
+not close the recursion: each of its steps needs the raised-level condition on a
+QUOTIENT of the smaller ring, which going UP the chain is never available, so the
+recursion is not well-founded on the index.
+
+What works is a single fibre product per step with the induction on the
+CARDINALITY OF THE AMBIENT RING.  Let `I := 𝔪_A^{n-1}` be the last nonvanishing
+power, so `I ≠ ⊥`, `I ≤ 𝔪_A` and `𝔪_A · I = ⊥`; put `J := ι(C) ∩ I`.
+
+* `J` is an IDEAL OF `A`, not merely an `ι(C)`-submodule — this is the one step
+  that spends `hCsurj`: every `a ∈ A` is `ι c + m` with `m ∈ 𝔪_A`, and for
+  `x ∈ I` one has `m·x ∈ 𝔪_A·I = 0`, so `a·x = ι(c)·x ∈ ι(C) ∩ I`.
+* **`J ≠ ⊥`**: `C ≅ A ×_{A/J} (C/ι⁻¹J)`, because `J ⊆ ι(C)` makes an element of
+  `A` congruent mod `J` to something in `ι(C)` itself lie in `ι(C)`.  Feed that
+  square to `hglue` with `A₁ := C ⧸ ι⁻¹J`, `A₂ := A`, `A₀ := A ⧸ J`, `B := C`;
+  the `A₂` input is `hHRA` read through `pushforwardFrame ι ρC = ρA`, and the
+  `A₁` input is the INDUCTIVE HYPOTHESIS at `C ⧸ ι⁻¹J ↪ A ⧸ J`, both converted
+  from `pushforwardFrame` shape to `baseChange` shape by
+  `isRaisedLevelHardlyRamified_baseChange_of_pushforwardFrame'`.
+  `Nat.card (A ⧸ J) < Nat.card A`.
+* **`J = ⊥`**: then `Ideal.Quotient.mk I ∘ ι` is still injective, so the SAME `C`
+  embeds in the strictly smaller `A ⧸ I` and the inductive hypothesis concludes
+  the goal verbatim — no transport at all.
+* **Base of the recursion**: `ι` surjective (which is what `𝔪_A = ⊥` forces), and
+  then `ρC` IS `pushforwardFrame ι⁻¹ ρA`.
+
+The induction proves the FULL `IsRaisedLevelHardlyRamified` on `ρC` and this
+statement is its `isSplitTorusAt` field.  **It never calls
+`isRaisedLevelHardlyRamified_of_subring_entries`**, which is proven over it, so
+there is no circularity.
 
 **IT IS NOT A TRANSCRIPTION OF THE BASE LEVEL, and the reason is not
 proof-search difficulty.** The base-level chain `frameLevels_classification →
@@ -17045,8 +17543,14 @@ adds nothing at base level.
 Every hypothesis is discharged for free at the single call site
 `auxFrameLevels_repClause_ker` below: `hglue` is threaded there (it is unused at
 the base level), `πA`/`hπAsurj` are hypotheses of that theorem, and `hcfA` is its
-residual-identification hypothesis read through `hmat`. -/
-theorem isSplitTorusAt_of_subring_entries (Q : Finset ℕ)
+residual-identification hypothesis read through `hmat`.
+
+**WHY ROUTE 1 IS NOT THE ONE TAKEN HERE, THOUGH IT IS THE HILBERT TWIN'S.**  The
+twin receives a separate `IsHilbertAuxResidualDistinctClause` and underscores its
+`hglue`; this leaf has no such clause and its consumer supplies none, so route 2
+is the only one available on the `ℚ` side.  That asymmetry is real and is the
+reason the two twins are proven by different arguments. -/
+theorem isSplitTorusAt_of_subring_entries (Q : Finset ℕ) (hQp : ∀ q ∈ Q, q ≠ p)
     {k : Type uFk} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uFw} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -17056,6 +17560,7 @@ theorem isSplitTorusAt_of_subring_entries (Q : Finset ℕ)
     [IsLocalRing A] [Algebra ℤ_[p] A] [Finite A] [DiscreteTopology A]
     (πA : A →+* k) (hπAsurj : Function.Surjective πA)
     (C : Subring A) [IsLocalRing C] [Algebra ℤ_[p] C]
+    (hCsurj : Function.Surjective (πA.comp C.subtype))
     {ρC : GaloisRep ℚ C (Fin 2 → C)} {ρA : GaloisRep ℚ A (Fin 2 → A)}
     (hent : ∀ (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2),
       ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
@@ -17073,8 +17578,12 @@ theorem isSplitTorusAt_of_subring_entries (Q : Finset ℕ)
           (v : Fin 2 → C),
         e (ρC.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g v) =
           (χ g (e v).1, δ g (e v).2)) ∧
-      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker :=
-  sorry
+      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker := by
+  haveI : Finite C := Subtype.finite
+  haveI : DiscreteTopology ↥C := inferInstance
+  exact (isRaisedLevelHardlyRamified_of_injective_entries_aux Q hQp hglue
+    (Nat.card A) le_rfl πA hπAsurj C.subtype Subtype.val_injective hCsurj
+    hent hcfA hHRA).isSplitTorusAt q hqQ hq
 
 set_option linter.unusedVariables false in
 open scoped TensorProduct in
@@ -17089,8 +17598,15 @@ clause, so it does not care which of the two local conditions supplied them), an
 `isUnramified` is the same "an element killed by `ρA` is killed by `ρC`"
 argument, merely restricted to `q ∉ Q`. The fifth clause, `isSplitTorusAt`, is
 the leaf — see its docstring for the counterexample showing it is NOT a
-transcription. -/
+transcription.
+
+**TWO HYPOTHESES ADDED 2026-08-01 (`flt-lean-229`)**, both forwarded verbatim to
+that leaf and neither used by the four base-level clauses: `hQp` (an arrow of
+`IsAuxFibreProductClause`) and `hCsurj` (`C` surjects onto the residue field).
+See the leaf's docstring for why the second is load-bearing for TRUTH and where
+both are discharged. -/
 theorem isRaisedLevelHardlyRamified_of_subring_entries (Q : Finset ℕ)
+    (hQp : ∀ q ∈ Q, q ≠ p)
     {k : Type uFk} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uFw} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -17101,6 +17617,7 @@ theorem isRaisedLevelHardlyRamified_of_subring_entries (Q : Finset ℕ)
     (h2 : IsUnit (2 : A))
     (πA : A →+* k) (hπAsurj : Function.Surjective πA)
     (C : Subring A) [IsLocalRing C] [Algebra ℤ_[p] C]
+    (hCsurj : Function.Surjective (πA.comp C.subtype))
     {ρC : GaloisRep ℚ C (Fin 2 → C)} {ρA : GaloisRep ℚ A (Fin 2 → A)}
     (hent : ∀ (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2),
       ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
@@ -17433,8 +17950,8 @@ theorem isRaisedLevelHardlyRamified_of_subring_entries (Q : Finset ℕ)
       rw [hδapp, hδapp, ← mul_assoc, hεsq, one_mul]
   · -- the split torus at each `q ∈ Q`: the leaf
     intro q hqQ hq
-    exact isSplitTorusAt_of_subring_entries Q hglue πA hπAsurj C hent hcfA hHRA
-      q hqQ hq
+    exact isSplitTorusAt_of_subring_entries Q hQp hglue πA hπAsurj C hCsurj hent
+      hcfA hHRA q hqQ hq
 
 set_option linter.unusedVariables false in
 /-- **THE REPRESENTATION CLAUSE FOR `ker f` AT RAISED LEVEL** (PROVEN
@@ -17446,8 +17963,15 @@ subring descent and a `pushforwardFrame` in place of the base-level transport.
 **`hglue` IS NO LONGER DEAD HERE, and that is the one substantive difference
 from the base level**, where it is underscored because nothing uses it: at
 raised level it is the input the split-torus descent needs.  Same for `πA`,
-`hπAsurj` and `hcfA`. -/
-theorem auxFrameLevels_repClause_ker (Q : Finset ℕ)
+`hπAsurj` and `hcfA`.
+
+**`hQp` and `hπfsurj` ADDED 2026-08-01 (`flt-lean-229`)** for the same descent:
+`hπfsurj : Function.Surjective (πA.comp f)` is exactly "the image subring
+`C = f.range` surjects onto the residue field", which is what the split-torus
+descent spends to make `ι(C) ∩ 𝔪_A^{n-1}` an ideal of `A`.  At the sole call site
+(`exists_levelIdealSystem_aux_of_clauses`) it is `hc2' ▸ (hιsurj.comp hevsurj)`
+and `hQp` is a hypothesis there, so nothing upstream moved. -/
+theorem auxFrameLevels_repClause_ker (Q : Finset ℕ) (hQp : ∀ q ∈ Q, q ≠ p)
     {k : Type uFk} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uFw} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -17463,7 +17987,7 @@ theorem auxFrameLevels_repClause_ker (Q : Finset ℕ)
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     {P : Type uSm} [CommRing P] [Algebra ℤ_[p] P]
     (Mf : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) P)
-    (f : P →+* A)
+    (f : P →+* A) (hπfsurj : Function.Surjective (πA.comp f))
     (hmat : ∀ g : Field.absoluteGaloisGroup ℚ,
       (Mf g).map ⇑f = LinearMap.toMatrix' (ρA g)) :
     ∀ [Finite (P ⧸ RingHom.ker f)] [IsLocalRing (P ⧸ RingHom.ker f)]
@@ -17533,9 +18057,13 @@ theorem auxFrameLevels_repClause_ker (Q : Finset ℕ)
     intro g i j
     rw [hρCtm g, ← hmatC g]
     rfl
+  have hCsurj : Function.Surjective (πA.comp C.subtype) := by
+    intro y
+    obtain ⟨x, hx⟩ := hπfsurj y
+    exact ⟨⟨f x, ⟨x, rfl⟩⟩, hx⟩
   have hHRC : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun C) ρC :=
-    isRaisedLevelHardlyRamified_of_subring_entries Q hglue h2 πA hπAsurj C
-      hentC hcfA hHRA
+    isRaisedLevelHardlyRamified_of_subring_entries Q hQp hglue h2 πA hπAsurj C
+      hCsurj hentC hcfA hHRA
   -- transport along the isomorphism `range f ≃+* P ⧸ ker f`
   obtain ⟨σr, hσfC⟩ : ∃ σr : C →+* (P ⧸ RingHom.ker f),
       ∀ x : P, σr (fC x) = Ideal.Quotient.mk (RingHom.ker f) x := by
@@ -18023,7 +18551,8 @@ theorem exists_levelIdealSystem_aux_of_clauses.{uK, uW, uR}
       rw [Ideal.Quotient.lift_mk, Ideal.Quotient.lift_mk] at hxy
       rw [Ideal.Quotient.eq, RingHom.mem_ker, map_sub, hxy, sub_self]
     · intro _ _ _ _ _
-      exact auxFrameLevels_repClause_ker Q hglue A πA hπsurj ρA hHRA hcfA MM f hc3
+      exact auxFrameLevels_repClause_ker Q hQp hglue A πA hπsurj ρA hHRA hcfA MM f
+        (by rw [hc2']; exact hιsurj.comp hevsurj) hc3
   · -- RIGIDITY
     intro A _ _ _ πA f₁ f₂ h₁ h₂ hM
     refine frameRing_rigid p (Shrink.{uR} k) σ e0' A (ιinv.comp πA) f₁ f₂ ?_ ?_ hM
