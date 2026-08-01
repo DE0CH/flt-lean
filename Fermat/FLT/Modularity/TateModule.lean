@@ -11936,6 +11936,25 @@ what was actually done.**  Fix `N ≥ 1` and write `M = e·N ≥ 1`.
 5. If `C N t s` were a non-unit, step 4's element would lie in `span {(q:O)}^N`
    by the displayed chain, hence its `θ` in `(q)^N`.  Contradiction.
 
+**AXIOM AUDIT, 2026-08-01, run in-file with `#print axioms`.**  This declaration
+comes back `[propext, sorryAx, Classical.choice, Quot.sound]`, and **every path
+to `sorryAx` leaves this declaration immediately and was there before it**:
+
+  `exists_isUnit_rawConstant → exists_tatePt_val_eq
+     → exists_mem_torsion_act_uniformizer_eq → exists_nsmul_eq_geomFibrePt
+     → exists_comp_mulByNat_eq`  (`Modularity/AbelianSchemeIsogeny.lean`),
+
+whose one open piece is the FLATNESS of `[N]`, i.e. the theorem of the cube.
+That is the leaf the whole `TatePt` development already rests on — the tower of
+a Tate point cannot be built without it — so the parent
+`exists_tateWeilRawFamily_of_qAdicWeilSystem` was `sorryAx` before this proof
+and is `sorryAx` after it, for the same reason and no other.  Nothing here adds
+a dependency: the two declarations this proof introduces are
+`LevelFrame.exists_notMem_forall_mul_mem_span`, which audits
+`[propext, Classical.choice, Quot.sound]`, and the body below.  DO NOT dispatch
+a prover at this declaration off a transitive census; the open work is in
+`AbelianSchemeIsogeny.lean` and is somebody else's.
+
 **THE ANALYSIS THAT WAS CUT WITH THE LEAF — every clause of it is correct, and
 the conclusion it draws (that an upper bound over `span {j π}` is what is
 missing) is what the paragraph above replaces.**
