@@ -16151,3 +16151,71 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## DIVIDING A FAMILY BY A COMMON FACTOR DEGRADES ITS CONTINUITY CLAUSE — so a "normalise at the end" step must be a DEPTH in the input
+
+(2026-08-01, `flt-lean-310`, porting the characteristic-zero Tate-pairing chain of
+`Modularity/TateModule.lean` to a finite base.)
+
+A recurring shape here: a family `C k` approximates an object `E` modulo `𝔪^k`, the
+limit is taken, and the result has to be PRIMITIVE (some value a unit).  Over a base
+where primitivity is not free, the natural prescription is *"carry a bounded-depth
+non-vanishing clause through the limit, then divide by the largest common power
+`ϖ^{t₀}`"*.  That prescription is what the leaf's own route note said, and it does not
+work — for one clause only, and it is not the one anybody checks.
+
+**Every clause of such a predicate is homogeneous of degree one in `C` EXCEPT
+CONTINUITY, and continuity is the one that does not survive the division.**  The other
+clauses (bi-additivity, alternating, linearity, equivariance, the Cauchy clause) are
+`ϖ^{t₀} · (clause for the quotient)`, so they divide out.  Continuity says *agreement
+of the level-`k` data forces a difference in `𝔪^k`*; after dividing by `ϖ^{t₀}` the
+quotient inherits it only at level `k − t₀`.  Concretely with `O = ℤ_p`, `ϖ = p`,
+`t₀ = 1`: `E = p·E'` continuous at level `k` gives `E'` continuous at level `k−1` and
+no better, and the consumer demands it undegraded.
+
+**No bound on `t₀` repairs this.**  A hypothesis "the difference lies in `𝔪^{k+r}`"
+with `t₀ ≤ r` is the wrong direction (`𝔪^{k+r} ⊆ 𝔪^{k+t₀}`), so it is not implied by
+the truth, and one cannot ask for it.
+
+**The formulation that DOES separate the scaling from the construction is to put the
+depth into the input predicate**: state every congruence at `𝔪^{t₀+N}`, add
+`∀ N t s, ∃ z, C N t s = ϖ^{t₀} · z` and `∀ N ≥ 1, ∃ t s, C N t s ∉ 𝔪^{t₀+1}`, and
+existentially quantify `t₀` in the producing leaf.  The division is then a genuinely
+separate PROVEN step (cancellation by a non-zero-divisor, ~90 lines), the two extra
+clauses pin `t₀` to the exact minimum valuation so nothing is vacuous, and a PRODUCER
+meets it by reindexing — `C N := Const (N + t₀)` — which costs it nothing, because the
+construction is where `t₀` is known anyway.
+
+**The generalisable question, and it is one line of algebra per clause: which clauses
+of the predicate are homogeneous in the family, and which are not?**  A
+renormalisation can be postponed past exactly the homogeneous ones.  Ask it before
+designing the cut, not after writing the limit.
+
+### Two things this cost that were already in the tree
+
+* **A "worked out but deliberately not formalised, it would be free-floating" proof in
+  a task prompt may be strictly weaker than something already PROVEN.**  The prompt
+  handed me a page-long argument that `j π` is a non-zero-divisor, from `hdense`,
+  `hker` and `IsHausdorff`.  `isDomain_of_adicPin` — same file, ~12000 lines above,
+  proven 2026-07-30, taking exactly the binders the consumer already holds — gives
+  `IsDomain O` outright, and `pow_span_uniformizer_ne_zero_of_adicPin` gives
+  `(j π)^t ≠ 0`.  Two lines instead of thirty.  **Grep the file you are editing for the
+  CONCLUSION before transcribing any hand proof a prompt gives you**, however carefully
+  it is written; a prompt is assembled from docstrings and inherits their absence
+  claims.
+* **The instance a predicate carries "for one thing only" is usually removable, and the
+  proofs never notice.**  `IsTateWeilApprox` and `IsTateWeilRawFamily` carry
+  `[NumberField F]`, `q`, `[Fact q.Prime]` and `[Algebra ℤ_[q] O]` solely to name the
+  cyclotomic multiplier `χ_cyc σ`.  Their two proofs treat the multiplier as an opaque
+  scalar — no `rw`, no lemma about it — so the finite-base analogues (fixed `σ`,
+  multiplier `j χ`) are the SAME PROOFS with the multiplier substituted and the
+  `σ`-quantifier dropped, and `q` disappears entirely from the predicates.  Both ported
+  first try.  **Before pricing such a port, grep the two proof BODIES for the name of
+  the thing the instance exists for**; if it does not occur, the port is mechanical.
+
+Accounting note in the shape this file asks for: **the direct-sorry count did not move,
+one leaf in and one leaf out.**  What changed is that the residual leaf is the
+CONSTRUCTION of the trace-duality constants and nothing else — no limit, no reindexing,
+no division, and no `IsAdicComplete` in its proof — and that the finite-base chain is
+now the same four declarations as the characteristic-zero one, so whoever proves either
+residual leaf can transcribe to the other.
