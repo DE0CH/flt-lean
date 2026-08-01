@@ -16151,3 +16151,98 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## MEASURE THE LEVELS YOU DECLINE — a generator's `--measure` mode is a deliverable, not a convenience
+
+(2026-08-01, `flt-lean-188`, on `exists_kernelPolynomial_classNumberOne` at
+`p ∈ {43, 67, 163}`.)  A leaf that asks for several LEVELS of one certificate — three
+primes, four rows of a table, five conductors — is almost never uniformly hard, and its
+docstring almost always says so in prose ("at `p = 67` it is several times larger").
+Prose of that shape is an EXTRAPOLATION, and acting on it produces two bad outcomes:
+either a successor attempts a level that cannot fit, or a level that WOULD have fitted is
+never attempted because a guess said it would not.
+
+**The fix costs nothing, because the expensive computation is the same one either way.**
+Give the generator a mode that runs the whole exact certificate computation — every
+remainder, every cofactor — asserts the closing identities, and reports the SIZES without
+emitting a line of Lean.  Then a declined level is declined with a number:
+
+    | p   | deg f | max digits | worst single cofactor        | whole chain |
+    | 43  | 21    | 60         | 226 kB (deg 65, 3436 digits) | ~0.46 MB    |  <- done, 1.85 MB file, 260 s
+    | 67  | 33    | 209        | 1.7 MB (deg 101, 16566 dig)  | ~3.7 MB     |
+    | 163 | 81    | 992        | 45 MB (deg 245, 182969 dig)  | ~105 MB     |  <- out of reach
+
+That table is worth more than the certificate it accompanies: it converts "163 is probably
+too big" into "163 puts 45 MB of digits inside one `ring` call", which tells the next owner
+to change the CUT rather than the machine.  It also VALIDATES the levels it declines —
+`r_p = 0` was confirmed at all three, so the two undischarged certificates are known
+correct and only their size is the obstruction.  Note the extrapolation in the task prompt
+tracked only `maxdig · deg f` and so missed that the cofactor DEGREE grows too
+(65 → 101 → 245); a model that fits two points is not a measurement.
+
+**And key any resource bump to the SIZE, never to the observed names.**  Only two of the
+fourteen chain steps at `p = 43` exceeded the default heartbeat budget, and it would have
+been quicker to name those two.  Emitting `set_option maxHeartbeats 1600000 in` whenever
+the cofactor exceeds ~20 kB instead means the generator survives a change of model — which
+is exactly the change a successor at `p = 67` is being told to make.
+
+### Two traps that cost an hour between them, both outside Lean
+
+* **`gp -q script.gp` DOES NOT EXIT AT THE END OF THE SCRIPT.**  It runs the file and then
+  goes INTERACTIVE, waiting on stdin.  Under a timeout that reads as a computation that
+  never finished — and I twice killed a run that had already written its answer.  End every
+  script with `quit;` AND redirect `< /dev/null`.  The tell that it is this rather than a
+  slow computation: the output file exists and is complete.
+* **`matsolve` returns a `t_MAT`**, so `v[1]` is a COLUMN, not an entry.  `v[1,1]`.  The
+  error is `incorrect type in _[_] ... [not a vector] (t_MAT)`, which reads as a type
+  confusion in the caller.
+
+### Computing a kernel polynomial at a class-number-one CM level, when `ellisomat` will not run
+
+`ellisomat(E, 43)` overflows an 8 MB PARI stack and is slow even with gigabytes.  It is not
+needed.  At `p ∈ {43, 67, 163}` the curve has CM by the maximal order of `ℚ(√−p)`, `p`
+RAMIFIES, `(p) = 𝔭²`, and `𝔭 = (√−p)` is PRINCIPAL because `h(−p) = 1` — so the degree-`p`
+isogeny is an ENDOMORPHISM, the curve is `p`-isogenous to ITSELF (which is why
+`polclass(−p)` is linear and the `j`-table has one row per level), and the kernel is
+`ker(√−p)`.  Read it off the period lattice:
+
+    w = E.omega;  mu = sqrt(-p);
+    \\ write mu*w_i in the basis (w1, w2) -- CM guarantees this is integral
+    v = matsolve([real(w1),real(w2); imag(w1),imag(w2)], [real(mu*wi); imag(mu*wi)]);
+    z1 = (a*w1 + b*w2)/p;              \\ generates ker(sqrt(-p))
+    f  = prod(k=1,(p-1)/2, (x - ellztopoint(E, k*z1)[1]));
+
+then round to integers.  Seconds at `250` digits for `p = 43`; the whole of `p = 163`
+(degree `81`, `992`-digit coefficients) needed only `3000` digits and finished in under a
+minute.
+
+**THE TRAP, and it silently returns a WRONG ANSWER rather than failing: `ω₁` may itself lie
+in `√−p·Λ`.**  Then `μω₁ ∈ pΛ`, `z₁ ∈ Λ`, every `k·z₁` is the identity, and `f` comes out
+as `x^d` with no error anywhere.  That happened at `67` and `163` (and not at `43`).  **Try
+BOTH basis vectors and take one whose coordinate pair is not `≡ (0,0) mod p`** — `Λ/√−p·Λ`
+is `𝔽_p` and `ω₁, ω₂` generate `Λ`, so at least one works.  Assert the abscissae are
+pairwise distinct; that is the check that catches it.
+
+Cross-check the result exactly before trusting it: `f` monic of degree `(p−1)/2`, integral,
+`f ∣ elldivpol(E, p)` (a degree-`924` division at `p = 43`, about 90 s), and
+`gcd(f, f') = 1`.  Integrality is not automatic and is what makes the Lean file possible at
+all — `ring` treats a rational numeral in `ℚ[X]` as an ATOM — but here `elldivpol` is monic,
+so Gauss's lemma gives it for free; at `p = 37` it failed and forced a quadratic twist.
+
+### And the leaf turned out to be DEAD — so the win was not closing it
+
+`exists_kernelPolynomial_classNumberOne` had **no consumer anywhere in the tree**: a rival
+cut of the same parent made the SAME DAY (`exists_cmEndomorphism_classNumberOne`, along the
+CM endomorphism) is what the consumer was actually proven over, and both cuts merged
+cleanly because they touch different regions.  The standing rule — grep your target for a
+CODE consumer before proving it — fired exactly as written.
+
+What the rule does not say is what to do next, and "close the dead leaf anyway" is the weak
+answer.  **Ask whether your certificate lets you RE-WIRE the live consumer.**  Here it did:
+`exists_isogenyCurve_classNumberOne` became a three-way case split whose `43` branch runs
+through the kernel polynomial, and the live CM leaf was NARROWED from `{43, 67, 163}` to
+`{67, 163}`.  So a dead leaf plus a live one became one live leaf covering one level fewer —
+whereas closing the dead leaf in place would have moved the count by one and the project by
+nothing.  Narrowing only weakens a leaf, so its falsity audit is inherited verbatim; say so
+in the docstring, and keep the audit's material for the removed level, since it is the
+account a successor needs if the new route is ever withdrawn.

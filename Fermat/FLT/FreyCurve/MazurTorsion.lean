@@ -188,6 +188,12 @@ public import Fermat.FLT.EllipticCurve.GenusOneKernelPolynomials
 -- reason as the line above: the witnesses (`ThirtySevenKernel.curve₁`, …) and
 -- their `IsElliptic` instances are used in the proof term.
 public import Fermat.FLT.EllipticCurve.ThirtySevenKernelPolynomials
+-- the explicit kernel-polynomial certificate at level `43`, which discharges
+-- `exists_kernelPolynomial_fortyThree` below and thereby removes `p = 43` from
+-- `exists_cmEndomorphism_classNumberOne`. `public` for the same reason as the
+-- two lines above: the witness (`ClassNumberOneKernel.curve₄₃`) and its
+-- `IsElliptic` instance are used in the proof term.
+public import Fermat.FLT.EllipticCurve.ClassNumberOneKernelPolynomials
 -- mathlib's reduction theory of Weierstrass equations over a DVR
 -- (`IsMinimal`, `HasGoodReduction`, `reduction`). It already reaches this file
 -- publicly through `TorsionReduction → GoodReduction`, and is named here
@@ -35154,6 +35160,19 @@ the tabulated `j`, with no subgroup and no torsion in the statement.  The
 subgroup was a degree computation, not a piece of the theory of orders; see
 the sub-block above `exists_zmultiples_eq_of_natCard_prime`.
 
+**UPDATE (2026-08-01, flt-lean-188): `p = 43` is off the CM leaf, and the
+count is still THREE.**  `exists_cmEndomorphism_classNumberOne` was narrowed
+from `{43, 67, 163}` to `{67, 163}`, because `p = 43` now goes through an
+explicit degree-`21` kernel polynomial (`exists_kernelPolynomial_fortyThree`,
+PROVEN over `ClassNumberOneKernelPolynomials.lean`) exactly as `p = 37` does.
+The DEAD rival leaf `exists_kernelPolynomial_classNumberOne` — flt-lean-152's
+2026-07-30 cut of the same parent, which had no consumer anywhere in the tree
+after flt-lean-63's cut won — is gone, replaced by the `p = 43` theorem that
+does have one.  So this file's direct-sorry count went `37 → 36` — one leaf
+removed, none opened — while the surviving CM leaf lost a level; `67` and `163`
+are what remain, and the measured reason they were not taken the same way is on
+`exists_kernelPolynomial_fortyThree`.
+
 **`forall_jm_mem_of_pointBound` also subsumes the counting step of
 `exists_jMap_genusOne`.**  That proof is left byte-identical here — it is
 another owner's declaration — but a successor consolidating this file
@@ -46094,59 +46113,61 @@ theorem exists_isogenyCurve_thirtySeven (j : ℚ) (hj : ((37 : ℕ), j) ∈ thir
   exact ⟨E, hE, g, hord,
     fun σ x hx => hstab (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) x hx, hjE⟩
 
-/-- **The three kernel-polynomial certificates at `p ∈ {43, 67, 163}`** (sorry
-leaf, introduced 2026-07-30 by flt-lean-152's refutation of the
-"needs complex multiplication" verdict on the theorem below; it is the whole of
-that theorem's residue, and it mentions no scheme, no moduli space and no CM).
+/-- **The kernel-polynomial certificate at `p = 43`** (PROVEN 2026-08-01,
+flt-lean-188, over `ClassNumberOneKernelPolynomials.lean`).
 
-The exact analogue at these three levels of
-`exists_kernelPolynomial_of_genusOneJTable` (PROVEN above at `p ∈ {11, 17, 19}`
-over `GenusOneKernelPolynomials.lean`), and of what
-`ThirtySevenKernelPolynomials.lean` supplies at `p = 37`.  A successor should
-read one of those two files and copy it; nothing here is new mathematics.
+The exact analogue at this level of `exists_kernelPolynomial_of_genusOneJTable`
+(PROVEN above at `p ∈ {11, 17, 19}` over `GenusOneKernelPolynomials.lean`) and of
+what `ThirtySevenKernelPolynomials.lean` supplies at `p = 37`.
 
-TRUE, and the certificates were exhibited in PARI/GP (2026-07-30, flt-lean-152;
-untrusted searcher, so this is a statement check and not a proof).  For each
-level, `ellisomat(E, p)` at the tabulated `j` returns the isogeny-degree matrix
-`[1, p; p, 1]`, and its isogeny's `h`-component is a MONIC INTEGRAL polynomial
-of degree exactly `(p−1)/2` dividing `elldivpol(E, p)`:
+**THIS REPLACES `exists_kernelPolynomial_classNumberOne`**, which asked for all
+three of `p ∈ {43, 67, 163}` at once, was introduced 2026-07-30 by flt-lean-152,
+and was DEAD: it had no consumer anywhere in the tree, because a rival cut of the
+same parent made the same day (flt-lean-63's `exists_cmEndomorphism_classNumberOne`,
+along the CM ENDOMORPHISM rather than along the kernel polynomial) is what
+`exists_isogenyCurve_classNumberOne` below was actually proven over.  Both cuts
+merged cleanly — they touch different regions — so the loser survived as an
+ordinary-looking open leaf.  See the note on the theorem below for how the two
+are now reconciled: `p = 43` goes through THIS theorem and no longer touches the
+CM leaf at all.
 
-| `p` | `(p−1)/2` | a model at the tabulated `j` | max digits in `f` |
-|-----|-----------|------------------------------|-------------------|
-| 43 | 21 | `[0, 0, 1, -1053500, -416198344]` | 60 |
-| 67 | 33 | `[0, 0, 1, -9448325444250, 11178418945712742281]` | 209 |
-| 163 | 81 | `[0, 0, 1, -7514043658424998278160500, 7927909515466992811382076444040042781]` | 992 |
+**WHY ONLY `p = 43`, AND THE MEASUREMENT THAT DECIDES IT.**  The three levels are
+not of comparable difficulty, and the gap is far wider than the degrees suggest.
+`gen_cm_kernel.py --measure` runs the whole exact computation at a level and
+reports the sizes without emitting a line; run on all three (2026-08-01, and
+`r_p = 0` was CONFIRMED at each, so all three certificates are correct):
 
-`dvd_multComp` needs no separate check: `f` is the kernel polynomial of an
-actual subgroup, so its root set is closed under `x(P) ↦ x(m ⬝ P)` for every
-`m`; and `generates` is satisfied by `znprimroot p`.
+| `p` | `deg f` | max digits in `f` | worst single cofactor | whole `preΨ'` chain |
+|-----|---------|-------------------|-----------------------|---------------------|
+| 43 | 21 | 60 | 226 kB (deg 65, 3436 digits) | ~0.46 MB |
+| 67 | 33 | 209 | 1.7 MB (deg 101, 16566 digits) | ~3.7 MB |
+| 163 | 81 | 992 | **45 MB** (deg 245, 182969 digits) | ~105 MB |
 
-**THE MODEL IS FREE, and choosing it well is the whole of the cost.**  Only
-`E.j = j` is demanded, and a rational cyclic `p`-isogeny is twist-invariant, so
-any twist may be taken; the models above are the smallest found in a short
-search over `d ∈ {±1, ±2, ±p, ±2p}` and are probably not optimal — the
-minimal-conductor CM twist at each level will be smaller, and every digit saved
-in `f` propagates through the whole remainder chain.  At `p = 37` the same
-choice mattered decisively (see `exists_isogenyCurve_thirtySeven`).
+The `p = 43` file is 1.85 MB and elaborates in 260 s.  `p = 67` would be roughly
+eight times that, with a single `ring` identity of 1.7 MB — plausible but
+unpleasant, and worth attempting only after trying to shrink `f` by a better
+choice of model (see below).  **`p = 163` is out of reach in this style by two
+orders of magnitude and needs a different cut, not a bigger machine**: the
+`preΨ'` cofactor at the last step alone is 45 MB inside one `ring` call.
 
-**HONEST SCALE NOTE, so nobody is surprised.**  The three levels are NOT of
-equal difficulty, and the leaf asks for all three at once.  At `p = 43` the
-certificate is the size of the two at `p = 37` (degree 21 against 18, 60 digits
-against 74) and the `preNormEDS'` DAG visits about eighteen indices.  At
-`p = 67` it is several times larger.  At `p = 163` — degree 81, ~992-digit
-coefficients, remainders with 82 coefficients each — the file would be very
-large in this style, and a successor who cannot make that level fit should say
-so and cut the leaf by LEVEL rather than silently produce two of three.
+The models are those found by flt-lean-152 in PARI/GP.  **THE MODEL IS FREE, and
+choosing it well is the whole of the cost**: only `E.j = j` is demanded, and a
+rational cyclic `p`-isogeny is twist-invariant, so any twist may be taken.  Every
+digit saved in `f` propagates through the whole remainder chain, so a smaller
+model at `p = 67` is the first thing to try there.  At `p = 37` the choice
+mattered decisively for a different reason — integrality; see
+`ThirtySevenKernelPolynomials.lean`.
 
-NOT VACUOUS: the inner data is exhibited above at each of the three levels, and
-`E.j = j` with `(p, j) ∈ classNumberOneJTable` pins `j` to the level's table
-entry rather than leaving it free. -/
-theorem exists_kernelPolynomial_classNumberOne (p : ℕ)
-    (_hp : p ∈ ({43, 67, 163} : Finset ℕ)) :
-    ∃ j : ℚ, (p, j) ∈ classNumberOneJTable ∧
+NOT VACUOUS: the inner data is exhibited in the imported module, and `E.j = j`
+with `(43, j) ∈ classNumberOneJTable` pins `j` to the level's table entry rather
+than leaving it free. -/
+theorem exists_kernelPolynomial_fortyThree :
+    ∃ j : ℚ, ((43 : ℕ), j) ∈ classNumberOneJTable ∧
       ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (f : Polynomial ℚ) (m : ℕ),
-        E.j = j ∧ E.IsKernelPolynomial p f m :=
-  sorry
+        E.j = j ∧ E.IsKernelPolynomial 43 f m :=
+  ⟨-884736000, by decide, ClassNumberOneKernel.curve₄₃, inferInstance,
+    ClassNumberOneKernel.ker₄₃, 3, ClassNumberOneKernel.curve₄₃_j,
+    ClassNumberOneKernel.curve₄₃_isKernelPolynomial⟩
 
 /-! #### The class-number-one residue, re-cut at the CM ENDOMORPHISM
 (2026-07-30, flt-lean-63)
@@ -46328,10 +46349,29 @@ theorem exists_stableCyclic_of_end_sq_eq_neg
   · show ψ (WeierstrassCurve.Affine.Point.map _ x) = 0
     rw [h x, hx', map_zero, neg_zero]
 
-/-- **The CM endomorphism `√−p` at `p ∈ {43, 67, 163}`** (sorry leaf,
+/-- **The CM endomorphism `√−p` at `p ∈ {67, 163}`** (sorry leaf,
 introduced 2026-07-30, flt-lean-63 as the residue of
 `exists_isogenyCurve_classNumberOne`; ALL the complex multiplication of the
-constructive half at those three levels, and nothing else).
+constructive half at those levels, and nothing else).
+
+**NARROWED FROM `{43, 67, 163}` TO `{67, 163}` on 2026-08-01 (flt-lean-188).**
+`p = 43` is now discharged by `exists_kernelPolynomial_fortyThree` above — an
+explicit degree-`21` kernel polynomial — which needs no complex multiplication at
+all, so that level no longer reaches this leaf.  Narrowing only WEAKENS the
+statement, so the falsity audit below is inherited verbatim rather than re-run:
+every counterexample to the `{67, 163}` form is a counterexample to the
+`{43, 67, 163}` form, and the audit's witnesses at `67` and `163` are untouched.
+The audit's `p = 43` material is kept below because it is still the reference
+account of why the CM route is available at that level too, and because it is what
+a successor would need if the kernel-polynomial route were ever withdrawn.
+
+**THE SAME NARROWING IS NOT AVAILABLE AT `67` AND `163` AS THINGS STAND**, and the
+reason is measured rather than guessed — see the size table on
+`exists_kernelPolynomial_fortyThree`.  At `p = 163` the last cofactor of the
+`preΨ'` chain alone is `45 MB` of digits inside a single `ring` call.  A successor
+who wants to remove `67` from this leaf as well should start from a smaller model
+(the model is free up to twist, and every digit saved propagates), not from a
+bigger heartbeat budget.
 
 The level's tabulated `j`-invariant is realised by an elliptic curve `E/ℚ`
 whose base change to `ℚ̄` carries an isogeny `ψ` with `ψ² = [−p]`, and for
@@ -46370,7 +46410,7 @@ and — new here — the endomorphism-ring side, where the degree/trace theory
 of `Fermat.FLT.EllipticCurve.IsogenyTrace` supplies everything about `ψ`
 EXCEPT its existence.  See the sub-block note above for exactly how far that
 theory gets. -/
-theorem exists_cmEndomorphism_classNumberOne (p : ℕ) (_hp : p ∈ ({43, 67, 163} : Finset ℕ)) :
+theorem exists_cmEndomorphism_classNumberOne (p : ℕ) (_hp : p ∈ ({67, 163} : Finset ℕ)) :
     ∃ j : ℚ, (p, j) ∈ classNumberOneJTable ∧
       ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic)
         (ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point),
@@ -46421,6 +46461,23 @@ isolated in `exists_cmEndomorphism_classNumberOne`, whose statement mentions
 no subgroup and no scheme.  See the sub-block note above for the reduction
 and for why the `±` Galois clause stays a hypothesis there.
 
+**`p = 43` NO LONGER USES THE CM ROUTE AT ALL** (2026-08-01, flt-lean-188).  The
+proof below is a three-way case split, and the `43` branch goes through the
+explicit kernel polynomial of `exists_kernelPolynomial_fortyThree` and
+`WeierstrassCurve.exists_point_of_isKernelPolynomial` — exactly as
+`exists_isogenyCurve_thirtySeven` does at `p = 37` — so it consumes no complex
+multiplication.  Only `67` and `163` still reach
+`exists_cmEndomorphism_classNumberOne`, which was narrowed to match.
+
+That reconciles two RIVAL CUTS of this theorem, both made on 2026-07-30 and both
+merged cleanly because they touch different regions: flt-lean-63's CM-endomorphism
+cut (which won, and is what this proof used) and flt-lean-152's kernel-polynomial
+cut (which lost, and whose leaf `exists_kernelPolynomial_classNumberOne` was left
+with NO consumer anywhere in the tree — an open leaf that was also dead, and that
+was still drawing dispatches ten months of fleet-time later).  The loser is not
+discarded: at `p = 43` it is strictly the better route, because it is FINITE
+CERTIFICATE ARITHMETIC rather than a theory this project does not have.
+
 AXIS SEARCHED: the moduli side (discharged at `exists_x0ClassNumberOnePoints`),
 the class-polynomial side (`Fermat.classPoly`, which does not reach a curve),
 and the endomorphism-ring side (`Fermat.FLT.EllipticCurve.IsogenyTrace`,
@@ -46434,11 +46491,34 @@ theorem exists_isogenyCurve_classNumberOne (p : ℕ) (hp : p ∈ ({43, 67, 163} 
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
             AddSubgroup.zmultiples g) ∧
         E.j = j := by
-  have hprime : p.Prime := by fin_cases hp <;> norm_num
-  obtain ⟨j, hjmem, E, hE, ψ, hisog, hsq, hgal, hj⟩ := exists_cmEndomorphism_classNumberOne p hp
-  obtain ⟨g, hord, hstable⟩ :=
-    exists_stableCyclic_of_end_sq_eq_neg p hprime E ψ hisog hsq hgal
-  exact ⟨j, hjmem, E, hE, g, hord, hstable, hj⟩
+  -- `p ∈ {67, 163}`: the CM-endomorphism route, unchanged.
+  have hcm : p ∈ ({67, 163} : Finset ℕ) →
+      ∃ j : ℚ, (p, j) ∈ classNumberOneJTable ∧
+        ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
+          addOrderOf g = p ∧
+          (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+            Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+              AddSubgroup.zmultiples g) ∧
+          E.j = j := by
+    intro hp'
+    have hprime : p.Prime := by fin_cases hp' <;> norm_num
+    obtain ⟨j, hjmem, E, hE, ψ, hisog, hsq, hgal, hj⟩ :=
+      exists_cmEndomorphism_classNumberOne p hp'
+    obtain ⟨g, hord, hstable⟩ :=
+      exists_stableCyclic_of_end_sq_eq_neg p hprime E ψ hisog hsq hgal
+    exact ⟨j, hjmem, E, hE, g, hord, hstable, hj⟩
+  fin_cases hp
+  · -- `p = 43`: the KERNEL-POLYNOMIAL route, which needs no complex multiplication.
+    obtain ⟨j, hjmem, E, hE, f, m, hjE, hker⟩ := exists_kernelPolynomial_fortyThree
+    haveI := hE
+    obtain ⟨g, hord, hstab⟩ :=
+      WeierstrassCurve.exists_point_of_isKernelPolynomial
+        (L := AlgebraicClosure ℚ) (by norm_num) (by norm_num) hker
+    exact ⟨j, hjmem, E, hE, g, hord,
+      fun σ x hx => hstab (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) x hx, hjE⟩
+  · exact hcm (by decide)
+  · exact hcm (by decide)
 
 /-- **The rational points of `X_0(37)` with their `j`-invariants** (PROVEN
 2026-07-27, flt-lean-26, over `exists_isogenyCurve_thirtySeven` through
