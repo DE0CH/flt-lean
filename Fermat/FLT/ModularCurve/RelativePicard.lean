@@ -7466,190 +7466,53 @@ theorem isProper_relPicIdentityComponent {X P J S : Scheme.{u}} {strX : X ⟶ S}
       ∃ p : RelPoint jstr g, incl T g p = aj T g x) :
     IsProper jstr := sorry
 
-/-- **A smooth `S`-group scheme with geometrically connected fibres, WITHOUT the
-properness that would make it abelian** — every field of `AbelianSchemeStruct`
-except `proper`.
 
-This is what the identity-component construction can produce before the
-valuative criterion has been run, and `toAbelianSchemeStruct` below is the one
-line that closes the gap. -/
-structure RelGroupSchemeStruct {A S : Scheme.{u}} (f : A ⟶ S) where
-  /-- addition of relative points -/
-  add : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint f g → RelPoint f g
-  /-- the zero section, read as a relative point -/
-  zero : ∀ {T : Scheme.{u}} (g : T ⟶ S), RelPoint f g
-  /-- inversion of relative points -/
-  neg : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint f g
-  /-- associativity of the group law -/
-  add_assoc : ∀ {T : Scheme.{u}} {g : T ⟶ S} (x y z : RelPoint f g),
-    add (add x y) z = add x (add y z)
-  /-- commutativity of the group law -/
-  add_comm : ∀ {T : Scheme.{u}} {g : T ⟶ S} (x y : RelPoint f g), add x y = add y x
-  /-- the unit law -/
-  zero_add : ∀ {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint f g), add (zero g) x = x
-  /-- the inverse law -/
-  neg_add : ∀ {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint f g), add (neg x) x = zero g
-  /-- naturality of addition -/
-  pre_add : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
-    (hg : h ≫ g = g') (x y : RelPoint f g),
-    RelPoint.pre h hg (add x y) = add (RelPoint.pre h hg x) (RelPoint.pre h hg y)
-  /-- naturality of the zero section -/
-  pre_zero : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
-    (hg : h ≫ g = g'), RelPoint.pre h hg (zero g) = zero g'
-  /-- smooth over the base -/
-  smooth : Smooth f
-  /-- geometrically connected fibres -/
-  connected : GeometricallyConnected f
+/-! **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (PROVEN 2026-07-31 over
+`exists_relPicZeroSubfunctor`; the audit above this subsection is the one
+written while it was one node, and still says what a reader needs).
 
-/-- **Properness is the only thing between the two structures** (PROVEN). -/
-def RelGroupSchemeStruct.toAbelianSchemeStruct {A S : Scheme.{u}} {f : A ⟶ S}
-    (G : RelGroupSchemeStruct f) (hproper : IsProper f) : AbelianSchemeStruct f where
-  add := G.add
-  zero := G.zero
-  neg := G.neg
-  add_assoc := G.add_assoc
-  add_comm := G.add_comm
-  zero_add := G.zero_add
-  neg_add := G.neg_add
-  pre_add := G.pre_add
-  pre_zero := G.pre_zero
-  proper := hproper
-  smooth := G.smooth
-  connected := G.connected
+**MERGE REPAIR, 2026-08-01 — this node had been cut TWICE and the tree carried
+both cuts.**  A 2026-07-30 branch cut it into `exists_relPicZeroGroupScheme`
+(a `RelGroupSchemeStruct` on `Pic⁰`) plus `isProper_of_relPicZeroGroupScheme`,
+glued by `RelGroupSchemeStruct.toAbelianSchemeStruct`; a 2026-07-31 branch cut
+it into `exists_relPicIdentityComponent` plus `isProper_relPicIdentityComponent`,
+assembled by `exists_relPicZeroSubfunctor`, with the group axioms transported
+here rather than demanded of the geometry.  The two landed in regions far enough
+apart not to conflict, so the merge kept BOTH — and resolved the one line they
+share, this theorem's body, to the 07-30 side.  The result was invisible to
+every instrument: four open leaves where two suffice, `exists_relPicZeroSubfunctor`
+PROVEN with no consumer anywhere in the tree (free-floating), and this
+declaration's docstring naming a leaf its own proof body did not call.
 
-/-- **The five point-level clauses that pin `Pic⁰` inside `Pic`**, abbreviated so
-that the two leaves below and the assembly all read exactly the same list rather
-than three copies that can drift apart.
+The 07-31 cut is kept, for three reasons: its leaves do not ask the geometry
+owner for the nine group axioms (they are transported below, and none of them
+is geometry); `isProper_relPicIdentityComponent` receives its sibling's FULL
+conclusion, including `GeometricallyConnected jstr`, so the `J = P` junk witness
+is killed on the leaf rather than by an appeal to how `J` was built; and its
+audit carries a five-step proof plan the 07-30 pair did not have.  The 07-30
+block — `RelGroupSchemeStruct`, its `toAbelianSchemeStruct`, `IsRelPicZeroIncl`
+and the two leaves — is DELETED, since after this repair nothing reaches it;
+recover it with `git show <this commit>^:Fermat/FLT/ModularCurve/RelativePicard.lean`.
+Frontier: 4 open leaves → 2, with no mathematics done and none owed that was not
+owed before.
 
-It is the conclusion of `exists_relPicZeroSubgroup` verbatim, with
-`ab : AbelianSchemeStruct jstr` replaced by `G : RelGroupSchemeStruct jstr` —
-the clauses mention only `G.zero` and `G.add`, so nothing is lost. -/
-def IsRelPicZeroIncl {X P S J : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S} {jstr : J ⟶ S}
-    (hP : IsRelPicOf strX pstr) (G : RelGroupSchemeStruct jstr)
-    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
-    (incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g) : Prop :=
-  (∀ (T : Scheme.{u}) (g : T ⟶ S) (p q : RelPoint jstr g), incl T g p = incl T g q → p = q) ∧
-    (∀ (T : Scheme.{u}) (g : T ⟶ S), incl T g (G.zero g) = hP.zeroPoint g) ∧
-      (∀ (T : Scheme.{u}) (g : T ⟶ S) (p q : RelPoint jstr g),
-          incl T g (G.add p q) = hP.addPoint (incl T g p) (incl T g q)) ∧
-        (∀ (T' T : Scheme.{u}) (h : T' ⟶ T) (g : T ⟶ S) (g' : T' ⟶ S) (hg : h ≫ g = g')
-            (p : RelPoint jstr g),
-            incl T' g' (RelPoint.pre h hg p) = RelPoint.pre h hg (incl T g p)) ∧
-          (∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
-              ∃ p : RelPoint jstr g, incl T g p = aj T g x)
+One correction to the deleted prose, recorded because it would otherwise be
+re-derived: `isProper_of_relPicZeroGroupScheme`'s docstring claimed to be
+non-vacuous because "`J = P`, `incl = id`, `G` the group data of `Pic` itself
+satisfies `IsRelPicZeroIncl` in full".  That witness does NOT satisfy its
+hypotheses — `G : RelGroupSchemeStruct pstr` carries `connected`, and `Pic` is
+not geometrically connected over `S` (one component per degree).  The leaf was
+therefore not self-refuting, as a literal reading of that paragraph suggests;
+it was merely superseded.
 
-/-- **THE IDENTITY COMPONENT OF `Pic` AS AN OPEN SUBGROUP SCHEME** (sorry leaf,
-cut 2026-07-30 out of `exists_relPicZeroSubgroup`) — BLR 9.4/4 step two, and the
-step that is genuinely absent from the pin.
-
-`Pic ⟶ S` is smooth (`_hPsmooth`) and separated (`_hPsep`), so its fibres are
-smooth group schemes over fields and each has an open-and-closed identity
-component; SGA 3 VI_B 3.10 assembles these into an open subgroup scheme
-`Pic⁰ ⊆ Pic`, smooth over `S` because `Pic` is and open immersions are smooth,
-with geometrically connected fibres by construction.  The Abel–Jacobi clause
-holds because `aj T g x` is the class of `𝒪(x − o)`, which has degree `0` on
-every geometric fibre, and the degree-`0` part of `Pic` of a geometrically
-connected smooth proper curve IS the identity component.
-
-**FAITHFULNESS.**  The three clauses that pin `Pic⁰` are analysed in the parent's
-audit and every word of it applies here unchanged, with ONE difference that
-matters: this leaf does *not* claim properness, so the junk witness the parent
-rules out by properness — `J = P`, `incl = id` — is **not** ruled out here.  That
-is deliberate and is the entire content of the cut: `J = P` satisfies every
-clause of `IsRelPicZeroIncl` and is killed only by
-`isProper_of_relPicZeroGroupScheme` below, which is therefore not a formality.
-Two of the parent's three clauses do still bite here:
-
-* drop the **Abel–Jacobi clause** and `J = S`, `jstr = 𝟙 S` survives, exactly as
-  the parent records — `RelPoint (𝟙 S) g` is a singleton, so injectivity,
-  the homomorphism clause and naturality are free, and `𝟙 S` is smooth with
-  connected fibres;
-* drop **injectivity** of `incl` and any smooth connected group scheme mapping
-  onto `Pic⁰` will do, e.g. `Pic⁰ × 𝔾ₐ`.
-
-`_hpush` and `_hequiv` are carried because the parent carries them and because
-the degree function used to identify the Abel–Jacobi image with `Pic⁰` is only
-well defined on the quotient `Pic(X_T)/Pic(T)`.
-
-**NOT VACUOUS.**  `IsRelPicOf strX pstr` is satisfiable (`exists_relPicFull`),
-and the conclusion is an existential over a nonempty class — `J = P` is a
-witness of everything except what the next leaf adds. -/
-theorem exists_relPicZeroGroupScheme {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
-    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
-    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
-    (hP : IsRelPicOf strX pstr)
-    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
-    (_hPsmooth : Smooth pstr) (_hPsep : IsSeparated pstr)
-    (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g))
-    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
-    (_haj : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
-      RelPicEquiv strX g (modTensor (hP.sheaf (aj T g x)) (sectionIdeal (relSection x)))
-        (sectionIdeal (relSection (relBasePoint o g)))) :
-    ∃ (J : Scheme.{u}) (jstr : J ⟶ S) (G : RelGroupSchemeStruct jstr)
-      (incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g),
-      IsRelPicZeroIncl hP G aj incl :=
-  sorry
-
-/-- **THE IDENTITY COMPONENT IS PROPER** (sorry leaf, cut 2026-07-30 out of
-`exists_relPicZeroSubgroup`) — BLR 9.4/4 step three, the valuative criterion for
-line bundles on a relative curve, and the clause that turns the group scheme of
-the previous leaf into an ABELIAN scheme.
-
-`Pic⁰ ⟶ S` is of finite type and separated (inherited from `Pic`), so
-properness is the existence half of the valuative criterion: given a discrete
-valuation ring `R` with fraction field `K` over `S` and a degree-`0` line bundle
-on `X_K`, extend it to `X_R`.  On a REGULAR total space this is the classical
-"take the closure of the divisor" argument — `X_R` is regular because `X ⟶ S` is
-smooth and `R` is regular — and the extension is unique up to a twist from `R`,
-i.e. unique in the relative Picard group, which is the uniqueness half.  This is
-where the smooth-relative-CURVE hypothesis is spent a second time, and it is the
-only place in this file where a valuation base appears.
-
-**FAITHFULNESS — this leaf is NOT vacuous and NOT free.**  Its hypotheses
-include the entire output of `exists_relPicZeroGroupScheme`, so a reader may
-suspect it is implied by them.  It is not: the junk witness `J = P`,
-`incl = id`, `G` the group data of `Pic` itself satisfies `IsRelPicZeroIncl` in
-full, and `Pic ⟶ S` is **not** proper — it has infinitely many components,
-one per degree, already for `X` an elliptic curve over `S = Spec k`.  So the
-conclusion is false for that witness and this leaf is exactly the statement
-that the witness handed over was the identity component rather than all of
-`Pic`.  In particular it may NOT be proven from `_hincl` alone; a prover must
-use how `J` was constructed, which is why the two leaves are stated with the
-same hypothesis list.
-
-**Where the hypotheses are spent.**  `_hproper`/`_hsmooth`/`_hconn` give the
-regularity of `X_R` and the degree theory on the geometric fibres; `o` and
-`_hpush` are what make the relative Picard group a quotient SET in which
-"unique up to a twist" is literally uniqueness; `_hPsep` supplies separatedness,
-without which the valuative criterion gives at most universal closedness. -/
-theorem isProper_of_relPicZeroGroupScheme {X P S J : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
-    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
-    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
-    (hP : IsRelPicOf strX pstr)
-    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
-    (_hPsmooth : Smooth pstr) (_hPsep : IsSeparated pstr)
-    (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g))
-    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
-    (_haj : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
-      RelPicEquiv strX g (modTensor (hP.sheaf (aj T g x)) (sectionIdeal (relSection x)))
-        (sectionIdeal (relSection (relBasePoint o g))))
-    {jstr : J ⟶ S} (_G : RelGroupSchemeStruct jstr)
-    (_incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g)
-    (_hincl : IsRelPicZeroIncl hP _G aj _incl) :
-    IsProper jstr :=
-  sorry
-
-/-! **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (PROVEN 2026-07-30 over
-`exists_relPicZeroGroupScheme` and `isProper_of_relPicZeroGroupScheme`; the
-audit above this subsection is the one written while it was one node, and still
-says what a reader needs).
-
-The assembly is the one line the cut was made for: take the group scheme the
-first leaf produces, feed its data to the second to get properness, and
-`RelGroupSchemeStruct.toAbelianSchemeStruct` closes the gap.  The five clauses
-are `IsRelPicZeroIncl` unfolded, and they are literally the same propositions —
-`toAbelianSchemeStruct` leaves `add` and `zero` untouched, which is why no
-rewrite is needed anywhere below.
+The assembly below is the transport of a group structure along an injection
+whose image is a subgroup: `ab.add p q` is the unique preimage of
+`hP.addPoint (incl p) (incl q)`, existing by the closure clause and unique by
+`hinj`, and each of the nine remaining fields is `hinj` applied to a rewrite
+chain ending in the corresponding law on `Pic` (`addPoint_assoc`,
+`addPoint_comm`, `zeroPoint_addPoint`, `negPoint_addPoint`, `pre_addPoint`,
+`pre_zeroPoint`, all PROVEN above).  Not one of them touches the geometry, which
+is the point of the cut.
 
 (RELEASE 26: the two paragraphs below and above were TWO docstrings with the
 declaration between them deleted at an earlier release, so the second one was
@@ -7801,11 +7664,33 @@ theorem exists_relPicZeroSubgroup {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : 
             incl T' g' (RelPoint.pre h hg p) = RelPoint.pre h hg (incl T g p)) ∧
         (∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
             ∃ p : RelPoint jstr g, incl T g p = aj T g x) := by
-  obtain ⟨J, jstr, G, incl, hincl⟩ := exists_relPicZeroGroupScheme _hproper _hsmooth _hconn o hP
-    _hpush _hPsmooth _hPsep _hequiv aj _haj
-  exact ⟨J, jstr, G.toAbelianSchemeStruct (isProper_of_relPicZeroGroupScheme _hproper _hsmooth
-    _hconn o hP _hpush _hPsmooth _hPsep _hequiv aj _haj G incl hincl), incl, hincl.1,
-    hincl.2.1, hincl.2.2.1, hincl.2.2.2.1, hincl.2.2.2.2⟩
+  classical
+  obtain ⟨J, jstr, incl, hproper, hsm, hcn, hinj, hpre, hzero, hadd, hneg, himg⟩ :=
+    exists_relPicZeroSubfunctor _hproper _hsmooth _hconn o hP _hpush _hPsmooth _hPsep
+      _hequiv aj _haj
+  -- the three operations, as opaque functions with their characterising equations
+  choose Z hZ using hzero
+  choose A hA using hadd
+  choose N hN using hneg
+  refine ⟨J, jstr,
+    { add := fun {T g} p q => A T g p q
+      zero := fun {T} g => Z T g
+      neg := fun {T g} p => N T g p
+      add_assoc := fun {T g} x y z => hinj T g _ _ (by
+        simp only [hA]; exact hP.addPoint_assoc _ _ _)
+      add_comm := fun {T g} x y => hinj T g _ _ (by
+        simp only [hA]; exact hP.addPoint_comm _ _)
+      zero_add := fun {T g} x => hinj T g _ _ (by
+        simp only [hA, hZ]; exact hP.zeroPoint_addPoint _)
+      neg_add := fun {T g} x => hinj T g _ _ (by
+        simp only [hA, hN, hZ]; exact hP.negPoint_addPoint _)
+      pre_add := fun {T' T} h {g g'} hg x y => hinj T' g' _ _ (by
+        simp only [hpre, hA, hP.pre_addPoint])
+      pre_zero := fun {T' T} h {g g'} hg => hinj T' g' _ _ (by
+        simp only [hpre, hZ, hP.pre_zeroPoint])
+      proper := hproper
+      smooth := hsm
+      connected := hcn }, incl, hinj, hZ, hA, hpre, himg⟩
 
 /-- **`Pic⁰` IS AN ABELIAN SCHEME, GIVEN `Pic`** — BLR 9.4/4 (PROVEN
 2026-07-29, over `exists_abelJacobiPoint` and `exists_relPicZeroSubgroup`).
