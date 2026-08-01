@@ -3794,8 +3794,9 @@ end IsLocalizationTensorComp
 
 /-! ### THE CUT OF 10.127.11 INTO A MODEL HALF AND A LOCALIZATION HALF
 
-(2026-07-30; the model half was PROVEN 2026-07-31, so of the three pieces below only
-`exists_isLocalization_tensorProduct_localizationAtPrime` is still open.)
+(2026-07-30; the model half was PROVEN 2026-07-31 and the last leaf of the localization
+half on 2026-08-01, so **all three pieces below are now closed** and this whole cut is
+sorry-free.)
 `exists_noetherianLocalExtSystem_of_essFinitePresentation` below used to
 be one sorry leaf carrying the whole of 10.127.11.  Its own SURVEY paragraph already
 named the seam — finding 1 said the MODEL half is in the pin
@@ -3813,14 +3814,15 @@ the leaf is cut along exactly that line, into three pieces of which the FIRST is
   a finitely presented `R`-algebra `T` is, from some stage on, the filtered colimit of
   finitely presented models `T_λ` over `R_λ` that base-change to one another.  No
   localization, no locality, no prime occurs in it.
-* `exists_noetherianLocalExtSystem_of_noetherianModelTower` (**PROVEN**, over one leaf) —
-  the localization half: given such a tower and a prime `𝔮` of `T` with `B = T_𝔮`, take
+* `exists_noetherianLocalExtSystem_of_noetherianModelTower` (**PROVEN**) — the
+  localization half: given such a tower and a prime `𝔮` of `T` with `B = T_𝔮`, take
   `𝔮_λ = ` the contraction of `𝔮` to `T_λ` and `S_λ = (T_λ)_{𝔮_λ}`, and the sixteen
   fields of the rung follow.  No presentation, no polynomial ring and no coefficient
   descent occurs in it.  Fifteen of the sixteen are proven there outright; the
   sixteenth, `isLocalizationMidT`, is
-  `exists_isLocalization_tensorProduct_localizationAtPrime` (**LEAF**) — one square of
-  rings, one pushout hypothesis and one prime, with every tower stripped away.
+  `exists_isLocalization_tensorProduct_localizationAtPrime` (**PROVEN 2026-08-01**) —
+  one square of rings, one pushout hypothesis and one prime, with every tower stripped
+  away.
 
 **WHY THIS SEAM AND NOT ANOTHER.**  The two halves are written in disjoint vocabularies:
 the model half is `MvPolynomial`/`Ideal.span`/`Algebra.FinitePresentation` and never
@@ -4469,9 +4471,189 @@ theorem exists_noetherianModelTower_of_finitePresentation {R T : Type u}
   rw [← hG, ← hrange]
   exact congrArg Ideal.span (congrArg Set.range (funext fun k => (hF k).symm))
 
-/-- **BASE CHANGE OF A LOCALIZATION AT A PRIME, THEN LOCALIZE AGAIN** (sorry leaf, cut
-2026-07-30 out of `exists_noetherianLocalExtSystem_of_noetherianModelTower` below, of
-which it is the ONLY remaining field — the other fifteen are proven there).
+/-- **TWO RING HOMOMORPHISMS OUT OF A PUSHOUT AGREEING ON BOTH LEGS ARE EQUAL** (PROVEN
+2026-08-01; the extensionality half of
+`exists_isLocalization_tensorProduct_localizationAtPrime` below).
+
+*If `C' = A' ⊗_A C`, two ring maps out of `C'` agreeing on `a' '' A'` and on `m '' C` are
+equal.*
+
+Surjectivity of the pushout comparison plus one `TensorProduct.induction_on`; the
+multiplicativity of the two maps is what turns "agree on the two legs" into "agree on
+every `a' u * m c`".
+
+**WHY THIS IS A SEPARATE LEMMA, AND NOT A `have` INSIDE THE CONSUMER.**  Its conclusion
+mentions NEITHER `A' ⊗[A] C` NOR any `Algebra A C`, so the consumer can apply it without
+ever putting `Algebra A C` into its own instance cache — which is exactly what the
+consumer must avoid; see the instance note on
+`exists_isLocalization_tensorProduct_localizationAtPrime` below.  `hpush` may be passed
+in because its own type carries its `Algebra` instances as `let`s, so applying this
+lemma triggers no instance search in the caller's context. -/
+theorem ringHom_ext_of_isPushout
+    {A A' C C' : Type u} [CommRing A] [CommRing A'] [CommRing C] [CommRing C']
+    (f : A →+* A') (a : A →+* C) (a' : A' →+* C') (m : C →+* C')
+    (hsq : a'.comp f = m.comp a)
+    (hpush :
+      letI : Algebra A C := a.toAlgebra
+      letI : Algebra A A' := f.toAlgebra
+      letI : Algebra A C' := (a'.comp f).toAlgebra
+      letI : Algebra A' C' := a'.toAlgebra
+      letI : Algebra C C' := m.toAlgebra
+      haveI : IsScalarTower A A' C' := IsScalarTower.of_algebraMap_eq fun _ => rfl
+      haveI : IsScalarTower A C C' :=
+        IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun hsq x
+      Function.Bijective (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom A A' C')
+        (IsScalarTower.toAlgHom A C C') fun _ _ => Commute.all _ _))
+    {Z : Type u} [CommRing Z] (g h : C' →+* Z)
+    (hu : ∀ u : A', g (a' u) = h (a' u)) (hc : ∀ c : C, g (m c) = h (m c)) : g = h := by
+  letI algAC : Algebra A C := a.toAlgebra
+  letI algAA' : Algebra A A' := f.toAlgebra
+  letI algAC' : Algebra A C' := (a'.comp f).toAlgebra
+  letI algA'C' : Algebra A' C' := a'.toAlgebra
+  letI algCC' : Algebra C C' := m.toAlgebra
+  haveI towAA'C' : IsScalarTower A A' C' := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI towACC' : IsScalarTower A C C' :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun hsq x
+  set L : (A' ⊗[A] C) →ₐ[A] C' :=
+    Algebra.TensorProduct.lift (IsScalarTower.toAlgHom A A' C')
+      (IsScalarTower.toAlgHom A C C') (fun _ _ => Commute.all _ _) with hLdef
+  have hLtmul : ∀ (u : A') (c : C), L (u ⊗ₜ[A] c) = a' u * m c := fun u c => rfl
+  ext c'
+  obtain ⟨x, rfl⟩ := hpush.surjective c'
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | tmul u c => rw [hLtmul, map_mul, map_mul, hu, hc]
+  | add x y hx hy => rw [map_add, map_add, map_add, hx, hy]
+
+/-- **A PUSHOUT OF A LOCALIZATION IS A LOCALIZATION OF THE PUSHOUT** (PROVEN 2026-08-01;
+the mathematical half of `exists_isLocalization_tensorProduct_localizationAtPrime` below).
+
+*If `C' = A' ⊗_A C` and `D` is the localization of `C` at `M`, then `A' ⊗_A D` is the
+localization of `C'` at `m(M)`.*
+
+**THE PROOF, IN TWO STEPS.**  Write `X := A' ⊗[A] C` and `Y := A' ⊗[A] D`.
+
+1. *Localization commutes with base change*:
+   `IsLocalization.tensorProduct_tensorProduct_right` (`Mathlib/RingTheory/Localization/
+   BaseChange.lean`) says `Y` is the localization of `X` at `M.map includeRight`.  Its
+   `Algebra X Y` is supplied by hand, as `Algebra.TensorProduct.map (AlgHom.id A A')
+   (IsScalarTower.toAlgHom A C D)`, exactly as mathlib's own
+   `tensorProductEquivOfMapIncludeRight` does — do NOT let it be searched for.
+2. *Transport along `hpush`*: `X ≃+* C'` as bare rings, so
+   `isLocalization_comap_of_ringEquiv` above (written for exactly this move) makes `Y` a
+   localization of `C'` at `(M.map includeRight).comap ε⁻¹`, and that submonoid IS
+   `M.map m`, because `ε (1 ⊗ₜ s) = a' 1 * m s = m s`.
+
+**WHY `D` IS ABSTRACT, AND THIS IS THE WHOLE REASON THE LEMMA EXISTS.**  The consumer
+below wants `D = Localization.AtPrime p`.  If `Algebra A C` is in scope at the same time
+as `Algebra C (Localization.AtPrime p)`, then `SMul A (Localization.AtPrime p)` resolves
+to `OreLocalization.instSMulOfIsScalarTower` and NOT to the `Algebra A (Localization.
+AtPrime p)` that the consumer's statement names — measured, in both `letI` orders — after
+which `A' ⊗[A] Localization.AtPrime p` in a new term is a DIFFERENT type from the one in
+the goal and `IsScalarTower.of_algebraMap_eq` fails with an error naming `SMul`
+instances.  Keeping `D` abstract removes the competing instance entirely: there is no
+`OreLocalization` structure on a variable, so `Algebra A D` can only be the one passed
+in.  The proof below may therefore introduce `Algebra A C` freely.
+
+The `Algebra A D` is a `letI` rather than an instance binder so that it is SYNTACTICALLY
+the consumer's own instance, in the same spelling; likewise `Algebra A A'`. -/
+theorem exists_ringHom_isLocalization_of_isPushout
+    {A A' C C' D : Type u} [CommRing A] [CommRing A'] [CommRing C] [CommRing C'] [CommRing D]
+    (f : A →+* A') (a : A →+* C) (a' : A' →+* C') (m : C →+* C')
+    (hsq : a'.comp f = m.comp a)
+    [Algebra C D] (M : Submonoid C) [IsLocalization M D]
+    (hpush :
+      letI : Algebra A C := a.toAlgebra
+      letI : Algebra A A' := f.toAlgebra
+      letI : Algebra A C' := (a'.comp f).toAlgebra
+      letI : Algebra A' C' := a'.toAlgebra
+      letI : Algebra C C' := m.toAlgebra
+      haveI : IsScalarTower A A' C' := IsScalarTower.of_algebraMap_eq fun _ => rfl
+      haveI : IsScalarTower A C C' :=
+        IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun hsq x
+      Function.Bijective (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom A A' C')
+        (IsScalarTower.toAlgHom A C C') fun _ _ => Commute.all _ _)) :
+    letI : Algebra A A' := f.toAlgebra
+    letI : Algebra A D := ((algebraMap C D).comp a).toAlgebra
+    ∃ φ : C' →+* (A' ⊗[A] D),
+      (∀ u : A', φ (a' u) = u ⊗ₜ[A] (1 : D)) ∧
+      (∀ c : C, φ (m c) = (1 : A') ⊗ₜ[A] algebraMap C D c) ∧
+      @IsLocalization C' _ (M.map m) _ _ φ.toAlgebra := by
+  letI algAA' : Algebra A A' := f.toAlgebra
+  letI algAD : Algebra A D := ((algebraMap C D).comp a).toAlgebra
+  letI algAC : Algebra A C := a.toAlgebra
+  letI algAC' : Algebra A C' := (a'.comp f).toAlgebra
+  letI algA'C' : Algebra A' C' := a'.toAlgebra
+  letI algCC' : Algebra C C' := m.toAlgebra
+  haveI towAA'C' : IsScalarTower A A' C' := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI towACC' : IsScalarTower A C C' :=
+    IsScalarTower.of_algebraMap_eq fun x => DFunLike.congr_fun hsq x
+  haveI towACD : IsScalarTower A C D := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  -- ## the pushout isomorphism `A' ⊗[A] C ≃+* C'`
+  set L : (A' ⊗[A] C) →ₐ[A] C' :=
+    Algebra.TensorProduct.lift (IsScalarTower.toAlgHom A A' C')
+      (IsScalarTower.toAlgHom A C C') (fun _ _ => Commute.all _ _) with hLdef
+  have hLtmul : ∀ (u : A') (c : C), L (u ⊗ₜ[A] c) = a' u * m c := fun u c => rfl
+  set eqv : (A' ⊗[A] C) ≃+* C' := RingEquiv.ofBijective L.toRingHom hpush with heqv
+  have heqvapp : ∀ x : A' ⊗[A] C, eqv x = L x := fun _ => rfl
+  -- ## STEP 1: localization commutes with base change
+  letI algXY : Algebra (A' ⊗[A] C) (A' ⊗[A] D) :=
+    (Algebra.TensorProduct.map (AlgHom.id A A')
+      (IsScalarTower.toAlgHom A C D)).toRingHom.toAlgebra
+  haveI towA'XY : IsScalarTower A' (A' ⊗[A] C) (A' ⊗[A] D) :=
+    IsScalarTower.of_algebraMap_eq fun x => by
+      simp [RingHom.algebraMap_toAlgebra, Algebra.TensorProduct.algebraMap_def]
+  haveI hcore : IsLocalization
+      (M.map (Algebra.TensorProduct.includeRight (R := A) (A := A'))) (A' ⊗[A] D) :=
+    IsLocalization.tensorProduct_tensorProduct_right A A' M D
+      (by ext c; simp [RingHom.algebraMap_toAlgebra])
+  -- ## STEP 2: transport along the pushout isomorphism
+  refine ⟨((Algebra.TensorProduct.map (AlgHom.id A A')
+      (IsScalarTower.toAlgHom A C D)).toRingHom).comp (eqv.symm : C' →+* (A' ⊗[A] C)),
+    ?_, ?_, ?_⟩
+  · intro u
+    have h1 : eqv ((u : A') ⊗ₜ[A] (1 : C)) = a' u := by
+      rw [heqvapp, hLtmul]; simp
+    have h2 : eqv.symm (a' u) = (u : A') ⊗ₜ[A] (1 : C) := by
+      rw [← h1, eqv.symm_apply_apply]
+    show (Algebra.TensorProduct.map (AlgHom.id A A')
+      (IsScalarTower.toAlgHom A C D)) (eqv.symm (a' u)) = _
+    rw [h2, Algebra.TensorProduct.map_tmul]
+    simp
+  · intro c
+    have h1 : eqv ((1 : A') ⊗ₜ[A] c) = m c := by
+      rw [heqvapp, hLtmul]; simp
+    have h2 : eqv.symm (m c) = (1 : A') ⊗ₜ[A] c := by
+      rw [← h1, eqv.symm_apply_apply]
+    show (Algebra.TensorProduct.map (AlgHom.id A A')
+      (IsScalarTower.toAlgHom A C D)) (eqv.symm (m c)) = _
+    rw [h2, Algebra.TensorProduct.map_tmul]
+    rfl
+  · have hsub : (M.map (Algebra.TensorProduct.includeRight (R := A) (A := A'))).comap
+        (eqv.symm : C' →+* (A' ⊗[A] C)) = M.map m := by
+      ext c'
+      simp only [Submonoid.mem_comap, Submonoid.mem_map]
+      constructor
+      · rintro ⟨s, hs, hse⟩
+        refine ⟨s, hs, ?_⟩
+        have hse' : (eqv.symm c' : A' ⊗[A] C) = (1 : A') ⊗ₜ[A] s := hse.symm
+        have h2 : c' = eqv ((1 : A') ⊗ₜ[A] s) := eqv.symm_apply_eq.mp hse'
+        rw [heqvapp, hLtmul] at h2
+        simpa using h2.symm
+      · rintro ⟨s, hs, rfl⟩
+        refine ⟨s, hs, ?_⟩
+        have h1 : eqv ((1 : A') ⊗ₜ[A] s) = m s := by rw [heqvapp, hLtmul]; simp
+        show ((1 : A') ⊗ₜ[A] s) = eqv.symm (m s)
+        exact (eqv.symm_apply_eq.mpr h1.symm).symm
+    rw [← hsub]
+    exact isLocalization_comap_of_ringEquiv eqv.symm
+      (algebraMap (A' ⊗[A] C) (A' ⊗[A] D)) _ hcore
+
+set_option maxHeartbeats 1000000 in
+/-- **BASE CHANGE OF A LOCALIZATION AT A PRIME, THEN LOCALIZE AGAIN** (**PROVEN
+2026-08-01** over the two lemmas immediately above; cut 2026-07-30 out of
+`exists_noetherianLocalExtSystem_of_noetherianModelTower` below, of
+which it was the ONLY remaining field — the other fifteen are proven there).
 
 *If `C' = A' ⊗_A C` and `p = m⁻¹(p')`, then `C'_{p'}` is a localization of
 `A' ⊗_A C_p`.*
@@ -4488,18 +4670,39 @@ the localization half of 10.127.11 where `NoetherianModelTower.isPushoutModT` is
    is the localization of `X` at the image of `p.primeCompl` under `includeRight`.
 2. *Transport along `hpush`*: `X ≃+* C'` as rings, so step 1 makes `Y` a localization of
    `C'` at a submonoid `W₀`.  `isLocalization_comap_of_ringEquiv` above is written for
-   exactly this move, and is the reason it is stated for BARE ring homomorphisms.
+   exactly this move, and is the reason it is stated for BARE ring homomorphisms.  That
+   `W₀` is `p.primeCompl.map m`, because `ε (1 ⊗ₜ s) = a' 1 * m s = m s`.
 3. *Compose*: `W₀ ≤ p'.primeCompl`, because `x ∉ p ↔ m x ∉ p'` — that IS `hp` — so
    `IsLocalization.isLocalization_of_submonoid_le` makes `C'_{p'}` a localization of `Y`
    at the image of `p'.primeCompl`, which is the required `W`.
 
-**THE THREE INSTANCE TRAPS** recorded in `exists_isLocalization_tensor_comp`'s docstring
-above apply verbatim here and are the real difficulty, not the mathematics: the `Algebra`
-instances in the conclusion are the ones the CONSUMER names, and a hand-rolled
-`RingHom.toAlgebra` version of one that mathlib supplies through
-`Algebra.TensorProduct.leftAlgebra` has a different `SMul` even when extensionally equal,
-after which `IsScalarTower.of_algebraMap_eq` cannot be applied at all and the error names
-`SMul` instances rather than anything mathematical.  Read that docstring before starting.
+Steps 1 and 2 are `exists_ringHom_isLocalization_of_isPushout` immediately above; step 3
+is the proof below, whose only other input is `ringHom_ext_of_isPushout` for the scalar
+tower `C' → Y → C'_{p'}` that `isLocalization_of_submonoid_le` demands.
+
+**THE INSTANCE TRAP, WHICH IS WHY THE PROOF IS SPLIT ACROSS THREE DECLARATIONS RATHER
+THAN WRITTEN INLINE.**  The three traps recorded in `exists_isLocalization_tensor_comp`'s
+docstring above apply verbatim here, and there is a FOURTH, which is the one that decides
+the shape and which no amount of care with `letI` avoids:
+
+> With `Algebra A C` in the instance cache, `SMul A (Localization.AtPrime p)` resolves to
+> `OreLocalization.instSMulOfIsScalarTower` — lifted from `SMul A C` through the Ore
+> localization — and NOT to the `Algebra A (Localization.AtPrime p)` that this statement
+> names.
+
+Measured 2026-08-01, in both `letI` orders: with `Algebra A C` in scope,
+`(inferInstance : SMul A (Localization.AtPrime p)) = algALp.toSMul` is not `rfl`; without
+it, it is.  So a proof that introduces `Algebra A C` — which it must, in order to write
+`A' ⊗[A] C` at all — is thereafter unable to name the `A' ⊗[A] Localization.AtPrime p` of
+its own goal: a fresh occurrence elaborates to a DIFFERENT type, and
+`IsScalarTower.of_algebraMap_eq` then fails with an error naming `SMul` instances rather
+than anything mathematical.  The escape is to keep the localization ABSTRACT wherever
+`Algebra A C` is needed, which is what `exists_ringHom_isLocalization_of_isPushout` does:
+there is no `OreLocalization` structure on a variable, so `Algebra A D` can only be the
+one passed in.  The proof below therefore never mentions `A' ⊗[A] C` and never introduces
+`Algebra A C`, `Algebra A C'`, `Algebra A' C'` or `Algebra C C'`.  `hpush` may still be
+passed to the two helpers, because its own type carries its `Algebra` instances as
+`let`s and so triggers no instance search in this context.
 
 **FAITHFULNESS.**  Every hypothesis is a field of `NoetherianModelTower` or a property of
 contracted primes, and the conclusion is one of `NoetherianLocalExtSystem`'s own fields,
@@ -4550,12 +4753,75 @@ theorem exists_isLocalization_tensorProduct_localizationAtPrime
         (IsScalarTower.toAlgHom A (Localization.AtPrime p) (Localization.AtPrime p'))
         fun _ _ => Commute.all _ _).toRingHom.toAlgebra
     ∃ W : Submonoid (A' ⊗[A] Localization.AtPrime p),
-      IsLocalization W (Localization.AtPrime p') :=
-  sorry
+      IsLocalization W (Localization.AtPrime p') := by
+  -- ## the conclusion's instance block, transcribed verbatim.  NOTE: `Algebra A C`,
+  -- `Algebra A C'`, `Algebra A' C'` and `Algebra C C'` must NOT be introduced here —
+  -- see THE INSTANCE TRAP in the docstring above.
+  letI algALp : Algebra A (Localization.AtPrime p) :=
+    ((algebraMap C (Localization.AtPrime p)).comp a).toAlgebra
+  letI algAA' : Algebra A A' := f.toAlgebra
+  letI algALp' : Algebra A (Localization.AtPrime p') :=
+    (((algebraMap C' (Localization.AtPrime p')).comp a').comp f).toAlgebra
+  letI algA'Lp' : Algebra A' (Localization.AtPrime p') :=
+    ((algebraMap C' (Localization.AtPrime p')).comp a').toAlgebra
+  letI algLpLp' : Algebra (Localization.AtPrime p) (Localization.AtPrime p') :=
+    (Localization.localRingHom p p' m hp).toAlgebra
+  haveI towAA'Lp' : IsScalarTower A A' (Localization.AtPrime p') :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI towALpLp' : IsScalarTower A (Localization.AtPrime p) (Localization.AtPrime p') :=
+    IsScalarTower.of_algebraMap_eq fun x => by
+      show algebraMap C' (Localization.AtPrime p') (a' (f x))
+        = Localization.localRingHom p p' m hp
+            (algebraMap C (Localization.AtPrime p) (a x))
+      rw [Localization.localRingHom_to_map]
+      exact congrArg _ (DFunLike.congr_fun hsq x)
+  letI algYLp' : Algebra (A' ⊗[A] Localization.AtPrime p) (Localization.AtPrime p') :=
+    (Algebra.TensorProduct.lift
+      (IsScalarTower.toAlgHom A A' (Localization.AtPrime p'))
+      (IsScalarTower.toAlgHom A (Localization.AtPrime p) (Localization.AtPrime p'))
+      fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  -- ## STEPS 1 AND 2, at the abstract localization `D := C_p`
+  obtain ⟨φ, hφa', hφm, hloc⟩ :=
+    exists_ringHom_isLocalization_of_isPushout (D := Localization.AtPrime p)
+      f a a' m hsq p.primeCompl hpush
+  letI algC'Y : Algebra C' (A' ⊗[A] Localization.AtPrime p) := φ.toAlgebra
+  haveI hlocY : IsLocalization (p.primeCompl.map m) (A' ⊗[A] Localization.AtPrime p) := hloc
+  -- ## STEP 3: `m(C ∖ p) ⊆ C' ∖ p'` is exactly `hp`, and then compose
+  have hle : p.primeCompl.map m ≤ p'.primeCompl := by
+    rintro _ ⟨s, hs, rfl⟩
+    intro hmem
+    exact hs (by rw [hp]; exact hmem)
+  haveI towC'YLp' :
+      IsScalarTower C' (A' ⊗[A] Localization.AtPrime p) (Localization.AtPrime p') := by
+    refine IsScalarTower.of_algebraMap_eq' ?_
+    refine ringHom_ext_of_isPushout f a a' m hsq hpush _ _ ?_ ?_
+    · intro u
+      show algebraMap C' (Localization.AtPrime p') (a' u)
+        = algebraMap (A' ⊗[A] Localization.AtPrime p) (Localization.AtPrime p') (φ (a' u))
+      rw [hφa']
+      show _ = Algebra.TensorProduct.lift _ _ _ (u ⊗ₜ[A] (1 : Localization.AtPrime p))
+      rw [Algebra.TensorProduct.lift_tmul]
+      simp
+      rfl
+    · intro c
+      show algebraMap C' (Localization.AtPrime p') (m c)
+        = algebraMap (A' ⊗[A] Localization.AtPrime p) (Localization.AtPrime p') (φ (m c))
+      rw [hφm]
+      show _ = Algebra.TensorProduct.lift _ _ _
+        ((1 : A') ⊗ₜ[A] algebraMap C (Localization.AtPrime p) c)
+      rw [Algebra.TensorProduct.lift_tmul]
+      show _ = algebraMap A' (Localization.AtPrime p') 1 *
+        Localization.localRingHom p p' m hp (algebraMap C (Localization.AtPrime p) c)
+      rw [Localization.localRingHom_to_map]
+      simp
+  exact ⟨p'.primeCompl.map (algebraMap C' (A' ⊗[A] Localization.AtPrime p)),
+    IsLocalization.isLocalization_of_submonoid_le (A' ⊗[A] Localization.AtPrime p)
+      (Localization.AtPrime p') _ p'.primeCompl hle⟩
 
 /-- **THE LOCALIZATION HALF OF 10.127.11** (PROVEN 2026-07-30 over the single leaf
 `exists_isLocalization_tensorProduct_localizationAtPrime` immediately above, which is its
-`isLocalizationMidT` field; cut 2026-07-30 out of
+`isLocalizationMidT` field and which was itself **PROVEN 2026-08-01**, so this theorem is
+now sorry-free; cut 2026-07-30 out of
 `exists_noetherianLocalExtSystem_of_essFinitePresentation` below; read the section note
 "THE CUT OF 10.127.11 INTO A MODEL HALF AND A LOCALIZATION HALF" above first).
 
