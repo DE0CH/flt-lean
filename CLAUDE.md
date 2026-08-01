@@ -16151,3 +16151,71 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A RECUT LEAVES ITS DOCSTRING BEHIND ON THE PROVEN HALF — and that stale label is a phantom-dispatch generator
+
+(2026-08-01, `flt-lean-281`. The whole run was a phantom dispatch caused by exactly
+one instance, and a sweep then found **76 more** across the modules one build reaches.)
+
+CLAUDE.md already records that stale `(sorry leaf)` labels are "a third source of
+phantom work, since leaf lists get harvested from them", and that they come in
+clusters. This is the MECHANISM that manufactures them in bulk, and it is specific
+enough to defend against:
+
+**A RECUT COPIES THE DOCSTRING ONTO THE RESIDUE AND LEAVES THE ORIGINAL IN PLACE.**
+`exists_flatSurj_ajListSum` was recut on 2026-07-31 into a DIVISOR half
+(`exists_flatSurj_relPicEquiv_sectionIdealProd`, still a leaf) and a formal half
+(proven on the spot). The geometric discussion — Riemann–Roch, the `[CompactSpace T]`
+falsity witness, the `P`-free falsity audit, the non-vacuity argument — was copied
+verbatim onto the residue, where it is correct. The ORIGINAL copy stayed on the
+now-proven declaration, still headed `(sorry leaf, 2026-07-30)`. So the file carried
+the same paragraphs twice: one copy true, one copy rotted the instant the recut
+landed. A task prompt was generated from the rotted copy and an agent was sent at a
+declaration with a complete `by` proof.
+
+**Why nothing catches it.** No `sorry` token, no error, no duplicate NAME, no
+unreachable module, and the build is green — so every instrument in this file is
+correct and silent. `own.py`/`leafstat.py` reason about records, not docstrings. The
+frontier scan is right (it reads the compiler). Only the *prose* is wrong, and prose
+is what the queue is built from.
+
+**THE SWEEP IS `tools/merge/stalelabel.py`, and the ground truth is the BUILD LOG:**
+
+    lake build <Mod> > /tmp/b.log 2>&1
+    python3 tools/merge/stalelabel.py /tmp/b.log
+
+It takes the sorried set from `declaration uses 'sorry'` WARNING LINE NUMBERS (never
+a source grep), attributes each to its enclosing declaration over comment-MASKED
+source, and reports every PROVEN declaration whose OPENING docstring still claims a
+leaf. Four things make it usable rather than noise, each learned by getting it wrong:
+
+* **only the first three lines of the docstring.** Whole-docstring scanning is
+  useless here — these docstrings cite other leaves constantly. (This is the existing
+  rule; it holds.)
+* **reject when a declaration lies between the `/--` and the declaration**, or when
+  another comment terminator does. Without that, a helper with only a plain `/- -/`
+  above it gets attributed to a docstring hundreds of lines up; that alone was 3 of
+  the first 69 hits.
+* **reject heads that also contain `PROVEN` or `stale`.** A docstring may mention its
+  own former label while recording that it was corrected — `y0HasNoRationalPoint_prod_two_primes`
+  says exactly that, and it is not a defect.
+* **files with no warning in the log are SKIPPED, not treated as clean.** A module the
+  build never reached contributes no warnings and would otherwise look entirely
+  proven — the fourth invisibility class, arriving through the scanner.
+
+**FIX THE HEADER, NOT THE BODY, AND FIX IT AT THE TOP.** The commonest shape is a
+docstring whose body SELF-CORRECTS far down: `IsRelPicZeroOf.eq_of_aj_eq` opens
+`(sorry node)` and says `SUPERSEDED 2026-07-30: THIS IS NO LONGER A LEAF` **38 lines
+later**. That is the structural reason the label rots — the closing agent appends at
+the END, and every harvester reads the BEGINNING. A two-line header edit is the whole
+repair and it is worth doing on sight.
+
+**When the body is a stale DUPLICATE rather than merely a stale label, delete the
+duplicate and point at the twin** — but check the twin really carries it first (diff
+the two docstrings), and say in the replacement where the material went. Keeping two
+copies of a falsity audit guarantees that the next recut rots one of them again.
+
+Accounting note, since it is the shape that hides this work: **the frontier does not
+move and no mathematics is done.** What changes is that a declaration stops drawing
+dispatches for ever. Report it as merge/bookkeeping repair with the count stated
+(here `101 → 101` in X0), or the delta reads as nothing having happened.
