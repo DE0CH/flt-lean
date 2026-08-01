@@ -981,9 +981,12 @@ structure Gamma1GITPresentation (N : ℕ) (S : Scheme.{0}) where
   Carried verbatim from `Gamma1Rigidification.transitiveM`; supplied at the one
   construction site (`nonempty_gamma1Rigidification_of_rigidifiedModuli`) as a
   hypothesis, in exactly the way `hcov` is, and discharged at
-  `exists_gamma1Rigidification` from the leaf
+  `exists_gamma1Rigidification` from
   `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`, where the object
-  IS pinned by `universal` and where `lvlM` carries the level-`n` structure. -/
+  IS pinned by `universal` and where `lvlM` carries the level-`n` structure.
+  That declaration is PROVEN since 2026-08-01; the leaf it rests on is
+  `exists_weilPairingElt_gamma1RigidifiedModuli`, which is IV.5.5 stated about
+  the Weil pairing of `lvlM` and about nothing else. -/
   transitiveM : IsTransitiveOnGeometricComponents A G strM
 
 /-- **A GIT presentation IS an atlas** (PROVEN 2026-07-27): the
@@ -5555,9 +5558,420 @@ theorem nonempty_gamma1Rigidification_of_rigidifiedModuli (N n : ℕ) (hn : 3 �
   obtain ⟨m, ⟨hmg, bcm, -⟩, -⟩ := R.universal (p ≫ g) d' L
   exact ⟨T', p, d', m, hf, hs, hq, hmg.symm, ⟨bp⟩, ⟨bcm⟩⟩
 
+/-! #### The geometric-component leaf, recut through the Weil pairing (2026-08-01)
+
+The leaf below used to be the whole of Deligne–Rapoport IV.5.5 **plus** every
+piece of bookkeeping that stands between IV.5.5 and
+`IsTransitiveOnGeometricComponents`: the passage from an arbitrary field
+extension `L/K` to an algebraically closed one, the extraction of the value of
+the Weil pairing at a component, the arithmetic of primitive `n`-th roots of
+unity, and the stability of `minimalPrimes` under the twist by a deck
+transformation.  None of that is IV.5.5 and all of it had to be redone by
+whoever took the leaf.
+
+It is now PROVEN over one leaf which mentions **no scheme, no field extension
+and no minimal prime of a base change**: the Weil pairing of the universal
+level-`n` structure is a root of the `n`-th cyclotomic polynomial in `A`, the
+deck group realises every power of it, and two geometric components carrying
+the same value of it coincide.  Count `1 → 1`; what left the leaf is the six
+declarations between here and it.
+
+**Where the three clauses come from, and why they are one leaf rather than
+three.**  `Φ_n(ζ) = 0` and the surjectivity clause are the two halves of
+IV.5.5's first sentence (`e_n(P, Q)` is a primitive `n`-th root of unity, and
+`GL₂(ℤ/n)` moves it through `det`, which is onto `(ℤ/n)ˣ`); the separation
+clause is IV.5.5 proper (the fibres of the pairing are connected, i.e. the
+level-`n` moduli problem is geometrically irreducible over `ℚ(ζ_n)`).  They
+are **not** separable into two leaves, and the reason is worth recording: the
+separation clause is a statement about *the* Weil pairing and is FALSE for an
+arbitrary root of `Φ_n` in `A` — a component-wise perturbation of `ζ` by
+powers still satisfies the first two clauses — so a leaf quantified over any
+`ζ` satisfying the first two would be a different and possibly false
+statement.  Any further cut has to pin `ζ` first, i.e. has to construct the
+pairing, which is the second half of the leaf's own content.
+
+**The surjectivity clause is where `hcoeq` is spent**, and it is the clause a
+candidate proof must be tested against.  `act` is quantified, so nothing ties
+it to `det` a priori: `hstrinv` and `hequiv` alone are satisfied by the
+TRIVIAL action, for which the surjectivity clause fails at every `u ≠ 1` (a
+trivial action sends `ζ` to `ζ`, and `ζ ≠ ζ ^ u` for a primitive `n`-th root
+with `n ≥ 3`).  So a proof of the leaf that does not use `hcoeq` is wrong. -/
+
+/-- The twist of `A ⊗[K] L` by a deck transformation `σ`, i.e. `σ ⊗ 1`.  This
+is the map whose `Ideal.comap` the transitivity clause of
+`IsTransitiveOnGeometricComponents` is stated with; it is an `abbrev` so that
+the two are definitionally the same and no bridge lemma is needed. -/
+noncomputable abbrev tensorTwist {A : Type} [CommRing A] {G : Type} [Group G]
+    [MulSemiringAction G A] {K : Type} [Field K] [Algebra K A]
+    (hfix : ∀ (σ : G) (k : K),
+      MulSemiringAction.toRingHom G A σ (algebraMap K A k) = algebraMap K A k)
+    (L : Type) [Field L] [Algebra K L] (σ : G) :
+    TensorProduct K A L →ₐ[K] TensorProduct K A L :=
+  Algebra.TensorProduct.map (AlgHom.mk (MulSemiringAction.toRingHom G A σ) (hfix σ))
+    (AlgHom.id K L)
+
+/-- **The twist by `σ` is bijective**, `σ⁻¹` giving a two-sided inverse. -/
+theorem tensorTwist_bijective {A : Type} [CommRing A] {G : Type} [Group G]
+    [MulSemiringAction G A] {K : Type} [Field K] [Algebra K A]
+    (hfix : ∀ (σ : G) (k : K),
+      MulSemiringAction.toRingHom G A σ (algebraMap K A k) = algebraMap K A k)
+    (L : Type) [Field L] [Algebra K L] (σ : G) :
+    Function.Bijective (tensorTwist hfix L σ) := by
+  have hinv : ∀ (τ : G) (x : TensorProduct K A L),
+      tensorTwist hfix L τ⁻¹ (tensorTwist hfix L τ x) = x := by
+    intro τ x
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a l => simp [tensorTwist, MulSemiringAction.toRingHom]
+    | add x y hx hy => rw [map_add, map_add, hx, hy]
+  refine ⟨Function.LeftInverse.injective (g := tensorTwist hfix L σ⁻¹) (hinv σ), fun y => ?_⟩
+  exact ⟨tensorTwist hfix L σ⁻¹ y, by simpa using hinv σ⁻¹ y⟩
+
+/-- **A deck transformation permutes the geometric components**: the twist by
+`σ` being bijective, `Ideal.comap` along it carries `minimalPrimes` into
+itself. -/
+theorem comap_tensorTwist_mem_minimalPrimes {A : Type} [CommRing A] {G : Type} [Group G]
+    [MulSemiringAction G A] {K : Type} [Field K] [Algebra K A]
+    (hfix : ∀ (σ : G) (k : K),
+      MulSemiringAction.toRingHom G A σ (algebraMap K A k) = algebraMap K A k)
+    (L : Type) [Field L] [Algebra K L] (σ : G) {p : Ideal (TensorProduct K A L)}
+    (hp : p ∈ minimalPrimes (TensorProduct K A L)) :
+    Ideal.comap (tensorTwist hfix L σ).toRingHom p ∈ minimalPrimes (TensorProduct K A L) := by
+  obtain ⟨hinj, hsurj⟩ := tensorTwist_bijective hfix L σ
+  have h := Ideal.comap_minimalPrimes_eq_of_surjective
+    (f := (tensorTwist hfix L σ).toRingHom) hsurj ⊥
+  rw [Ideal.comap_bot_of_injective (tensorTwist hfix L σ).toRingHom hinj] at h
+  rw [show minimalPrimes (TensorProduct K A L) = (⊥ : Ideal (TensorProduct K A L)).minimalPrimes
+    from rfl, h]
+  exact ⟨p, hp, rfl⟩
+
+/-- **Transitivity descends along any `K`-algebra map of the coefficient
+field.**  Only INJECTIVITY of `A ⊗[K] L ⟶ A ⊗[K] M` is used, and that is free
+because `K` is a field: `A` is flat over it, so `A ⊗[K] ι` is injective for
+every field embedding `ι : L ↪ M`.  A minimal prime of the smaller ring is
+then the contraction of one of the larger (`Ideal.exists_minimalPrimes_comap_eq`,
+Stacks 00FK), the twists commute with the comparison map, and contracting the
+transitivity relation upstairs gives it downstairs. -/
+theorem comap_tensorTwist_descend {A : Type} [CommRing A] {G : Type} [Group G]
+    [MulSemiringAction G A] {K : Type} [Field K] [Algebra K A]
+    (hfix : ∀ (σ : G) (k : K),
+      MulSemiringAction.toRingHom G A σ (algebraMap K A k) = algebraMap K A k)
+    (L M : Type) [Field L] [Field M] [Algebra K L] [Algebra K M] (ι : L →ₐ[K] M)
+    (H : ∀ p ∈ minimalPrimes (TensorProduct K A M), ∀ q ∈ minimalPrimes (TensorProduct K A M),
+        ∃ σ : G, Ideal.comap (tensorTwist hfix M σ).toRingHom p = q) :
+    ∀ p ∈ minimalPrimes (TensorProduct K A L), ∀ q ∈ minimalPrimes (TensorProduct K A L),
+      ∃ σ : G, Ideal.comap (tensorTwist hfix L σ).toRingHom p = q := by
+  intro p hp q hq
+  have hcoe : ∀ x : TensorProduct K A L,
+      (Algebra.TensorProduct.map (AlgHom.id K A) ι) x
+        = LinearMap.lTensor A ι.toLinearMap x := by
+    intro x
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a l => simp
+    | add x y hx hy => simp [hx, hy, map_add]
+  have hinj : Function.Injective (Algebra.TensorProduct.map (AlgHom.id K A) ι) := by
+    have h2 := Module.Flat.lTensor_preserves_injective_linearMap
+      (M := A) (f := ι.toLinearMap) (ι.toRingHom.injective)
+    intro x y hxy
+    exact h2 (by rw [← hcoe, ← hcoe]; exact hxy)
+  have lift : ∀ r ∈ minimalPrimes (TensorProduct K A L),
+      ∃ r' ∈ minimalPrimes (TensorProduct K A M),
+        Ideal.comap (Algebra.TensorProduct.map (AlgHom.id K A) ι).toRingHom r' = r := by
+    intro r hr
+    refine Ideal.exists_minimalPrimes_comap_eq
+      (Algebra.TensorProduct.map (AlgHom.id K A) ι).toRingHom r ?_
+    rwa [Ideal.comap_bot_of_injective
+      (Algebra.TensorProduct.map (AlgHom.id K A) ι).toRingHom hinj]
+  obtain ⟨p', hp', hpp'⟩ := lift p hp
+  obtain ⟨q', hq', hqq'⟩ := lift q hq
+  obtain ⟨σ, hσ⟩ := H p' hp' q' hq'
+  refine ⟨σ, ?_⟩
+  have hsq : (tensorTwist hfix M σ).toRingHom.comp
+        (Algebra.TensorProduct.map (AlgHom.id K A) ι).toRingHom
+      = (Algebra.TensorProduct.map (AlgHom.id K A) ι).toRingHom.comp
+        (tensorTwist hfix L σ).toRingHom := by
+    refine RingHom.ext fun x => ?_
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a l => simp
+    | add x y hx hy => rw [map_add, map_add, hx, hy]
+  calc Ideal.comap (tensorTwist hfix L σ).toRingHom p
+      = Ideal.comap (tensorTwist hfix L σ).toRingHom
+          (Ideal.comap (Algebra.TensorProduct.map (AlgHom.id K A) ι).toRingHom p') := by
+        rw [hpp']
+    _ = Ideal.comap ((Algebra.TensorProduct.map (AlgHom.id K A) ι).toRingHom.comp
+          (tensorTwist hfix L σ).toRingHom) p' := by rw [Ideal.comap_comap]
+    _ = Ideal.comap ((tensorTwist hfix M σ).toRingHom.comp
+          (Algebra.TensorProduct.map (AlgHom.id K A) ι).toRingHom) p' := by rw [hsq]
+    _ = Ideal.comap (Algebra.TensorProduct.map (AlgHom.id K A) ι).toRingHom
+          (Ideal.comap (tensorTwist hfix M σ).toRingHom p') := by rw [Ideal.comap_comap]
+    _ = q := by rw [hσ, hqq']
+
+/-- `IsTransitiveOnGeometricComponents` with the field extension restricted to
+be ALGEBRAICALLY CLOSED.  This is the form Deligne–Rapoport IV.5.5 is a
+statement about — the *geometric* components — and by
+`isTransitiveOnGeometricComponents_of_algClosed` it is equivalent to the
+unrestricted form. -/
+def IsTransitiveOnGeometricComponentsAlgClosed {S : Scheme.{0}} (A : Type) [CommRing A]
+    (G : Type) [Group G] [MulSemiringAction G A]
+    (strM : Spec (CommRingCat.of A) ⟶ S) : Prop :=
+  ∀ (K : Type) [Field K] [Algebra K A],
+    (∃ e : Spec (CommRingCat.of K) ≅ S,
+        Spec.map (CommRingCat.ofHom (algebraMap K A)) ≫ e.hom = strM) →
+      ∀ (hfix : ∀ (σ : G) (k : K),
+          MulSemiringAction.toRingHom G A σ (algebraMap K A k) = algebraMap K A k)
+        (L : Type) [Field L] [Algebra K L] [IsAlgClosed L],
+        ∀ p ∈ minimalPrimes (TensorProduct K A L),
+          ∀ q ∈ minimalPrimes (TensorProduct K A L),
+            ∃ σ : G, Ideal.comap (tensorTwist hfix L σ).toRingHom p = q
+
+/-- **The geometric case is the whole case** (PROVEN 2026-08-01): transitivity
+over every ALGEBRAICALLY CLOSED extension gives transitivity over every
+extension, by descending along `L ↪ AlgebraicClosure L`. -/
+theorem isTransitiveOnGeometricComponents_of_algClosed {S : Scheme.{0}} (A : Type) [CommRing A]
+    (G : Type) [Group G] [MulSemiringAction G A]
+    (strM : Spec (CommRingCat.of A) ⟶ S)
+    (H : IsTransitiveOnGeometricComponentsAlgClosed A G strM) :
+    IsTransitiveOnGeometricComponents A G strM := by
+  intro K _ _ he hfix L _ _
+  exact comap_tensorTwist_descend hfix L (AlgebraicClosure L) (IsScalarTower.toAlgHom K L _)
+    (fun p hp q hq => H K he hfix (AlgebraicClosure L) p hp q hq)
+
+/-- **A root of `Φ_n` in a domain over an algebraically closed field is the
+image of a primitive `n`-th root of unity of that field.**  `Φ_n` splits into
+distinct linear factors over `L`, so the product of `x - c` over its roots
+vanishes at `x`, and a domain has no zero divisors. -/
+theorem exists_isPrimitiveRoot_eq_algebraMap {n : ℕ} {L D : Type} [Field L] [CommRing D]
+    [IsDomain D] [IsAlgClosed L] [Algebra L D] [NeZero ((n : ℕ) : L)] (x : D)
+    (hx : Polynomial.aeval x (Polynomial.cyclotomic n ℤ) = 0) :
+    ∃ c : L, IsPrimitiveRoot c n ∧ x = algebraMap L D c := by
+  haveI : IsScalarTower ℤ L D := IsScalarTower.of_algebraMap_eq fun z => by
+    simp [algebraMap_int_eq, map_intCast]
+  have hL : Polynomial.aeval x (Polynomial.cyclotomic n L) = 0 := by
+    rw [← Polynomial.map_cyclotomic n (algebraMap ℤ L), Polynomial.aeval_map_algebraMap]
+    exact hx
+  have hmonic : (Polynomial.cyclotomic n L).Monic := Polynomial.cyclotomic.monic n L
+  have hsplits : (Polynomial.cyclotomic n L).Splits := IsAlgClosed.splits _
+  have hprod := hsplits.eq_prod_roots_of_monic hmonic
+  rw [hprod, map_multiset_prod, Multiset.map_map] at hL
+  have hzero := (Multiset.prod_eq_zero_iff).mp hL
+  simp only [Multiset.mem_map, Function.comp_apply, map_sub, Polynomial.aeval_X,
+    Polynomial.aeval_C] at hzero
+  obtain ⟨c, hcroot, hceq⟩ := hzero
+  exact ⟨c, by rw [← Polynomial.isRoot_cyclotomic_iff]; exact Polynomial.isRoot_of_mem_roots hcroot,
+    sub_eq_zero.mp hceq⟩
+
+/-- **`n` stays invertible along an isomorphism of the base** — the one place
+the base field of `IsTransitiveOnGeometricComponents`, which is quantified
+with only a `Spec`-level tie to `S`, is compared with the field the theorem is
+stated over.  `Spec` is fully faithful, so the tie produces an honest ring map
+`K₀ →+* K`, which is injective because `K₀` is a field. -/
+theorem natCast_ne_zero_of_specIso {K K₀ : Type} [Field K] [Field K₀] {n : ℕ}
+    (hcn : ¬ ringChar K₀ ∣ n)
+    (e : Spec (CommRingCat.of K) ≅ Spec (CommRingCat.of K₀)) : ((n : ℕ) : K) ≠ 0 := by
+  have h0 : ((n : ℕ) : K₀) ≠ 0 := fun h => hcn ((ringChar.spec K₀ n).mp h)
+  intro hcon
+  refine h0 ?_
+  have hinj : Function.Injective (Spec.preimage e.hom).hom :=
+    (Spec.preimage e.hom).hom.injective
+  apply hinj
+  rw [map_natCast, map_zero]
+  exact hcon
+
+/-- **The Weil pairing separates the geometric components, so the deck group
+permutes them transitively** (PROVEN 2026-08-01).
+
+This is the whole of the passage from Deligne–Rapoport IV.5.5 — stated as the
+three clauses on `ζ` — to `IsTransitiveOnGeometricComponentsAlgClosed`.  The
+argument: over an algebraically closed `L` the value of `ζ` at a component is
+a primitive `n`-th root of unity of `L` (`exists_isPrimitiveRoot_eq_algebraMap`);
+two primitive `n`-th roots differ by a unit exponent `u`; the surjectivity
+clause supplies a `σ` acting on `ζ` by that exponent; the twisted component
+`comap σ p` then carries the value of `q`; and the separation clause identifies
+them. -/
+theorem isTransitiveOnGeometricComponentsAlgClosed_of_weilPairingElt {S : Scheme.{0}}
+    {A : Type} [CommRing A] {n : ℕ} (hn : 3 ≤ n)
+    {G : Type} [Group G] [MulSemiringAction G A]
+    {strM : Spec (CommRingCat.of A) ⟶ S} (ζ : A)
+    (hcyc : Polynomial.aeval ζ (Polynomial.cyclotomic n ℤ) = 0)
+    (hsurj : ∀ u : (ZMod n)ˣ, ∃ σ : G,
+        MulSemiringAction.toRingHom G A σ ζ = ζ ^ ((u : ZMod n).val))
+    (hchar : ∀ (K : Type) [Field K] [Algebra K A],
+        (∃ e : Spec (CommRingCat.of K) ≅ S,
+            Spec.map (CommRingCat.ofHom (algebraMap K A)) ≫ e.hom = strM) → ((n : ℕ) : K) ≠ 0)
+    (hsep : ∀ (K : Type) [Field K] [Algebra K A],
+        (∃ e : Spec (CommRingCat.of K) ≅ S,
+            Spec.map (CommRingCat.ofHom (algebraMap K A)) ≫ e.hom = strM) →
+        ∀ (L : Type) [Field L] [Algebra K L] [IsAlgClosed L] (c : L)
+          (p q : Ideal (TensorProduct K A L)),
+          p ∈ minimalPrimes (TensorProduct K A L) → q ∈ minimalPrimes (TensorProduct K A L) →
+          ζ ⊗ₜ[K] (1 : L) - (1 : A) ⊗ₜ[K] c ∈ p → ζ ⊗ₜ[K] (1 : L) - (1 : A) ⊗ₜ[K] c ∈ q →
+          p = q) :
+    IsTransitiveOnGeometricComponentsAlgClosed A G strM := by
+  intro K _ _ he hfix L _ _ _ p hp q hq
+  haveI : NeZero n := ⟨by omega⟩
+  haveI : NeZero ((n : ℕ) : L) := ⟨by
+    have h0 := hchar K he
+    have hnl : ((n : ℕ) : L) = algebraMap K L ((n : ℕ) : K) := by rw [map_natCast]
+    rw [hnl]
+    exact fun hcon => h0 ((algebraMap K L).injective (by rw [hcon, map_zero]))⟩
+  have val : ∀ r : Ideal (TensorProduct K A L), r.IsPrime →
+      ∃ c : L, IsPrimitiveRoot c n ∧ (ζ ⊗ₜ[K] (1 : L) - (1 : A) ⊗ₜ[K] c) ∈ r := by
+    intro r hr
+    haveI := hr
+    letI : Algebra L (TensorProduct K A L ⧸ r) :=
+      ((Ideal.Quotient.mk r).comp
+        (Algebra.TensorProduct.includeRight : L →ₐ[K] TensorProduct K A L).toRingHom).toAlgebra
+    haveI : IsDomain (TensorProduct K A L ⧸ r) := Ideal.Quotient.isDomain r
+    have hZ : Polynomial.aeval (Ideal.Quotient.mk r (ζ ⊗ₜ[K] (1 : L)))
+        (Polynomial.cyclotomic n ℤ) = 0 := by
+      have hg : ((Ideal.Quotient.mk r).comp
+          (Algebra.TensorProduct.includeLeftRingHom : A →+* TensorProduct K A L)) ζ
+          = Ideal.Quotient.mk r (ζ ⊗ₜ[K] (1 : L)) := rfl
+      have h2 := congrArg (((Ideal.Quotient.mk r).comp
+        (Algebra.TensorProduct.includeLeftRingHom : A →+* TensorProduct K A L)).toIntAlgHom) hcyc
+      rw [map_zero, ← Polynomial.aeval_algHom_apply] at h2
+      rw [← hg]; exact h2
+    obtain ⟨c, hc, hxc⟩ := exists_isPrimitiveRoot_eq_algebraMap (L := L) _ hZ
+    refine ⟨c, hc, ?_⟩
+    rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, hxc]
+    exact sub_self _
+  obtain ⟨c, hc, hcp⟩ := val p hp.isPrime
+  obtain ⟨c', hc', hcq⟩ := val q hq.isPrime
+  obtain ⟨i, hilt, hic⟩ := hc.eq_pow_of_pow_eq_one hc'.pow_eq_one
+  have hcop : Nat.Coprime i n := by
+    rw [← hc.pow_iff_coprime (by omega) i, hic]; exact hc'
+  obtain ⟨σ, hσ⟩ := hsurj (ZMod.unitOfCoprime i hcop)
+  rw [ZMod.coe_unitOfCoprime, ZMod.val_natCast_of_lt hilt] at hσ
+  refine ⟨σ, ?_⟩
+  refine (hsep K he L c' (Ideal.comap (tensorTwist hfix L σ).toRingHom p) q
+    (comap_tensorTwist_mem_minimalPrimes hfix L σ hp) hq ?_ hcq)
+  rw [Ideal.mem_comap]
+  have hT : (tensorTwist hfix L σ) (ζ ⊗ₜ[K] (1 : L) - (1 : A) ⊗ₜ[K] c')
+      = (ζ ^ i) ⊗ₜ[K] (1 : L) - (1 : A) ⊗ₜ[K] c' := by
+    simp [tensorTwist, hσ]
+  show (tensorTwist hfix L σ) _ ∈ p
+  rw [hT, ← Ideal.Quotient.eq_zero_iff_mem, map_sub, sub_eq_zero]
+  have h1 : Ideal.Quotient.mk p (ζ ⊗ₜ[K] (1 : L))
+      = Ideal.Quotient.mk p ((1 : A) ⊗ₜ[K] c) := by
+    rw [← sub_eq_zero, ← map_sub, Ideal.Quotient.eq_zero_iff_mem]; exact hcp
+  calc Ideal.Quotient.mk p ((ζ ^ i) ⊗ₜ[K] (1 : L))
+      = Ideal.Quotient.mk p ((ζ ⊗ₜ[K] (1 : L)) ^ i) := by
+        rw [Algebra.TensorProduct.tmul_pow, one_pow]
+    _ = (Ideal.Quotient.mk p (ζ ⊗ₜ[K] (1 : L))) ^ i := by rw [map_pow]
+    _ = (Ideal.Quotient.mk p ((1 : A) ⊗ₜ[K] c)) ^ i := by rw [h1]
+    _ = Ideal.Quotient.mk p (((1 : A) ⊗ₜ[K] c) ^ i) := by rw [map_pow]
+    _ = Ideal.Quotient.mk p ((1 : A) ⊗ₜ[K] c') := by
+        rw [Algebra.TensorProduct.tmul_pow, one_pow, hic]
+
+/-- **The Weil pairing of the universal level-`n` structure** (sorry leaf,
+opened 2026-08-01) — Deligne–Rapoport IV.5.5, Katz–Mazur (8.1.1).
+
+This is what is left of
+`transitiveOnGeometricComponents_of_gamma1RigidifiedModuli` after the recut of
+2026-08-01, and it mentions no scheme, no field extension and no minimal prime
+of a base change.  Writing `ζ = e_n(lvlM.P, lvlM.Q)` for the Weil pairing of
+the universal full level-`n` structure carried by `R`, the three clauses are:
+
+* `Φ_n(ζ) = 0` — `ζ` is a primitive `n`-th root of unity in `A`.  It is a root
+  of the `n`-th cyclotomic polynomial rather than merely a unit of order `n`
+  because that is the form which survives every ring map, and the consumer
+  reads it in the residue field of a geometric component;
+* **`det` is onto**: every `u ∈ (ℤ/n)ˣ` is realised by a deck transformation,
+  `σ • ζ = ζ ^ u`.  Classically this is `e_n(σP, σQ) = e_n(P, Q) ^ det σ`
+  together with surjectivity of `det : GL₂(ℤ/n) → (ℤ/n)ˣ`;
+* **the pairing separates the geometric components**: over an algebraically
+  closed `L`, two minimal primes of `A ⊗[K'] L` at which `ζ` takes the same
+  value `c` are equal.  This is IV.5.5 proper — the fibres of `ζ` are the
+  geometric components, i.e. `𝔐([Γ₁(N)], [Γ(n)])` is geometrically irreducible
+  over `ℚ(ζ_n)`.
+
+## WHY THE THREE CLAUSES ARE ONE LEAF
+
+The third is a statement about **this** `ζ` and is not a consequence of the
+first two: a `ζ'` obtained from `ζ` by permuting its values on the components
+satisfies the first two clauses and may fail the third.  So a leaf quantified
+over an arbitrary root of `Φ_n` satisfying the first two clauses would be a
+DIFFERENT statement, and one this development has no reason to believe.  Any
+further cut therefore has to pin `ζ` first — i.e. to construct the pairing,
+which is the leaf's own first half.
+
+## WHERE THE HYPOTHESES GO, AND THE TEST A CANDIDATE PROOF MUST PASS
+
+`hequiv` is what makes `σ` an automorphism of the moduli problem, so that
+`universal` identifies `Spec σ` with the transport of `lvlM` along a matrix of
+`GL₂(ℤ/n)`; that matrix is the `det` the second clause is about.  `hstrinv` is
+what makes `σ` a `K`-algebra map.  **`hcoeq` is spent on the second clause**,
+and it is the clause a candidate proof must be tested against: `act` is
+quantified, so `hstrinv` and `hequiv` alone are satisfied by the TRIVIAL
+action, for which the second clause fails at every `u ≠ 1`.  What `hcoeq` buys
+is that `Spec A ⟶ Spec A^G` identifies any two rigidifications of one datum,
+and by `universal` two rigidifications differ by an arbitrary element of
+`GL₂(ℤ/n)`; an `act` whose image missed a `det`-class — one factoring through
+`SL₂(ℤ/n)`, say — would leave those rigidifications unidentified.  **A proof
+that never uses `hcoeq` is wrong.**
+
+`_hchar` and `_hcn` are load-bearing for truth, exactly as on the theorem
+below: at `char K ∣ N` the moduli problem is not smooth, and at `char K ∣ n`
+the `n`-torsion is not étale, `μ_n` is not reduced, and `ζ` is not a root of
+`Φ_n`.  `_hN` and `_hn` are the rigidity hypotheses, carried because the sole
+call site holds them.
+
+*The check that would refute this leaf*: an inhabitant `R` over a field `K`
+with `char K ∤ Nn` together with an action satisfying the three clauses for
+which no element of `A` is a root of `Φ_n` — equivalently, for which the
+`n`-torsion of the universal curve carries no Weil pairing. -/
+theorem exists_weilPairingElt_gamma1RigidifiedModuli (N n : ℕ) (_hN : 4 ≤ N)
+    (_hn : 3 ≤ n) (K : Type) [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (_hcn : ¬ ringChar K ∣ n)
+    (R : Gamma1RigidifiedModuli N n (Spec (CommRingCat.of K)))
+    (act : letI := R.commRing_A; MulSemiringAction (gamma0DeckGroup n) R.A) :
+    letI := R.commRing_A
+    letI := act
+    (∀ σ : gamma0DeckGroup n,
+        Spec.map (CommRingCat.ofHom
+          (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ)) ≫ R.strM = R.strM) →
+    (∀ σ : gamma0DeckGroup n, ∃ d₁ : Gamma1Datum N (Spec (CommRingCat.of R.A)),
+        Nonempty (IsBaseChangeOfGamma1 (𝟙 (Spec (CommRingCat.of R.A))) d₁ R.dM) ∧
+        Nonempty (IsBaseChangeOfGamma1
+          (Spec.map (CommRingCat.ofHom
+            (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ))) d₁ R.dM)) →
+    (∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of R.A)) (d₁ : Gamma1Datum N Z),
+        a ≫ R.strM = b ≫ R.strM →
+        IsBaseChangeOfGamma1 a d₁ R.dM → IsBaseChangeOfGamma1 b d₁ R.dM →
+        a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
+          = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A) →
+    ∃ ζ : R.A,
+      Polynomial.aeval ζ (Polynomial.cyclotomic n ℤ) = 0 ∧
+      (∀ u : (ZMod n)ˣ, ∃ σ : gamma0DeckGroup n,
+          MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ ζ = ζ ^ ((u : ZMod n).val)) ∧
+      (∀ (K' : Type) [Field K'] [Algebra K' R.A],
+          (∃ e : Spec (CommRingCat.of K') ≅ Spec (CommRingCat.of K),
+              Spec.map (CommRingCat.ofHom (algebraMap K' R.A)) ≫ e.hom = R.strM) →
+          ∀ (L : Type) [Field L] [Algebra K' L] [IsAlgClosed L] (c : L)
+            (p q : Ideal (TensorProduct K' R.A L)),
+            p ∈ minimalPrimes (TensorProduct K' R.A L) →
+            q ∈ minimalPrimes (TensorProduct K' R.A L) →
+            ζ ⊗ₜ[K'] (1 : L) - (1 : R.A) ⊗ₜ[K'] c ∈ p →
+            ζ ⊗ₜ[K'] (1 : L) - (1 : R.A) ⊗ₜ[K'] c ∈ q → p = q) :=
+  sorry
+
+
 /-- **The deck group permutes the geometric components of the rigidified moduli
-scheme transitively** (sorry leaf, opened 2026-07-31) — Deligne–Rapoport
-IV.5.5, Katz–Mazur (8.1.1).
+scheme transitively** (**PROVEN 2026-08-01** over the single leaf
+`exists_weilPairingElt_gamma1RigidifiedModuli` above; a sorry leaf from
+2026-07-31 until then) — Deligne–Rapoport IV.5.5, Katz–Mazur (8.1.1).
+
+**RECUT 2026-08-01, count `1 → 1`.**  Everything below this line is the
+analysis that produced the recut and is unchanged; what the recut removed from
+the leaf is the passage from an arbitrary field extension `L/K` to an
+algebraically closed one (`isTransitiveOnGeometricComponents_of_algClosed`),
+the extraction of the value of the pairing at a geometric component, the
+arithmetic of primitive `n`-th roots of unity, and the stability of
+`minimalPrimes` under a deck twist.  None of that is IV.5.5; the residue
+mentions no scheme, no field extension and no minimal prime of a base change.
+See the section comment before `tensorTwist` for the full account.
 
 TRUE and classical.  The geometric components of `𝔐([Γ₁(N)], [Γ(n)])` are
 indexed by the value of the Weil pairing `e_n(α(e₁), α(e₂))` on the universal
@@ -5652,8 +6066,16 @@ theorem transitiveOnGeometricComponents_of_gamma1RigidifiedModuli (N n : ℕ) (_
         IsBaseChangeOfGamma1 a d₁ R.dM → IsBaseChangeOfGamma1 b d₁ R.dM →
         a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
           = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A) →
-    IsTransitiveOnGeometricComponents R.A (gamma0DeckGroup n) R.strM :=
-  sorry
+    IsTransitiveOnGeometricComponents R.A (gamma0DeckGroup n) R.strM := by
+  letI := R.commRing_A
+  letI := act
+  intro hstrinv hequiv hcoeq
+  obtain ⟨ζ, hcyc, hsurj, hsep⟩ :=
+    exists_weilPairingElt_gamma1RigidifiedModuli N n _hN _hn K _hchar _hcn R act hstrinv hequiv
+      (fun {_Z} a b d₁ hab ha hb => hcoeq a b d₁ hab ha hb)
+  refine isTransitiveOnGeometricComponents_of_algClosed _ _ _
+    (isTransitiveOnGeometricComponentsAlgClosed_of_weilPairingElt _hn ζ hcyc hsurj
+      (fun K' _ _ he => he.elim fun e _ => natCast_ne_zero_of_specIso _hcn e) hsep)
 
 /-- **The rigidified moduli scheme is smooth of relative dimension one over a
 field in which `N` and `n` are invertible** (sorry leaf, opened 2026-07-30) —
@@ -9039,7 +9461,8 @@ LIVE leaves are:
   `exists_gamma1DeckAction` (`exists_gamma1Rigidification` and
   `exists_gamma1GITPresentation` are PROVEN over them);
 * the domain property — `exists_gamma1Datum_fieldExtension` and (since
-  2026-07-31) `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`,
+  2026-08-01) `exists_weilPairingElt_gamma1RigidifiedModuli`, over which
+  `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli` is PROVEN,
   the IV.5.5 citation having moved off
   `transitiveMinimalPrimes_tensorProduct_of_gamma1GITPresentation`
   onto the object that is pinned and that carries the level-`n` structure
