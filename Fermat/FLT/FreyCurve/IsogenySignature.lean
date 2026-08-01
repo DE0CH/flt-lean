@@ -3467,6 +3467,99 @@ theorem WeierstrassCurve.det_galoisRep_five_eq_one_of_mem_localInertiaGroup
           hN.toHeightOneSpectrumRingOfIntegersRat)) τ)) = 1 :=
   sorry
 
+open scoped Pointwise in
+open scoped Pointwise in
+open scoped Pointwise in
+open scoped Pointwise in
+set_option maxHeartbeats 1000000 in
+open scoped Pointwise in
+open scoped Pointwise in
+/-- **`A₀-3a-i-c′` — potentially good reduction, as a statement about INERTIA
+SUBGROUPS ONLY** (sorry leaf, cut 2026-07-31 out of `A₀-3a-i-c` below, which is
+now four lines of index arithmetic over it): at `0 ≤ v_N(j)` there is a subgroup
+`I′ ≤ I_N` of index dividing `12` acting trivially on `E[5]`.
+
+**WHY THIS CUT, AND WHY IT IS NOT A RESTATEMENT.**  `A₀-3a-i-c` is stated in
+terms of `J` — the pointwise stabiliser of `E[5]`, pinned by an `iff` — and
+concludes `5 ∤ [I_N : J]`.  Every ingredient of a proof of it lives either
+UPSTREAM of this module or ~1500 lines BELOW it, and the two halves could not
+meet: the good-model interface `PotentiallyGoodModel` is below (and hoisting it
+was rejected twice — see `A₀-3a-i`'s docstring), while `TameGoodModel` is
+upstream and imported.  This leaf is the half that can be built where its
+inputs are.  It mentions no `J`, no `relIndex` of a pinned stabiliser and no
+determinant — only `localInertiaGroup` and the action on torsion points — so it
+can be stated and proved in an UPSTREAM module and imported, which is exactly
+what `A₀-3a`'s "the extension is presented by its INERTIA SUBGROUP, not by a
+model" paragraph exists to make possible.  Nothing below is duplicated: the
+downstream half is PROVEN glue, not a second cut.
+
+**WHAT IS ASKED.**  Take `I′ = I_K`, the inertia subgroup of the field `K` over
+which `E` acquires good reduction (morally `ℚ_N(N^{1/12})`).  Then
+
+* `I′ ≤ I_N` — inertia over a bigger field is smaller;
+* `[I_N : I′] ∣ 12` — this is `e(K/ℚ_N) = 12`, total tame ramification;
+* `I′` acts trivially on `E[5]` — Néron–Ogg–Shafarevich over `K`.
+
+**EVERY INPUT IS PROVEN AND IN THIS MODULE'S CONE**; see `A₀-3a-i-c`'s docstring
+below for the full inventory with line numbers.  In brief:
+`exists_tameGoodModel_of_jIntegral` (`EllipticCurve/TorsionReduction.lean:1842`,
+sorry-free file, `public import`ed here at line 174) produces the good model
+from `¬ N ∣ E.j.den`, which is `TameBaseAux.not_dvd_den_of_padicValRat_nonneg hj`;
+`WeierstrassCurve.torsion_unramified_of_good_reduction`
+(`KnownIn1980s/EllipticCurves/GoodReduction.lean:995`, sorry-free, reachable
+through `PointReduction → Flat → GoodReduction`) is NOS over an ARBITRARY DVR
+base, so it applies over `K`; and
+`WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction` (`FreyCurve/Semistable.lean`)
+is a complete worked assembly of NOS in this file's `localInertiaGroup`
+vocabulary — a TEMPLATE to copy, since `Semistable.lean` is not in this cone,
+though every ingredient it uses is imported here.
+
+**THE `∣ 12` IS LOAD-BEARING AND A `≤ 12` WILL NOT DO.**  The consumer needs
+`5 ∤ [I_N : J]`, and `[I_N : J]` divides `[I_N : I′]`; but `[I_N : J]` already
+ranges over the divisors of `4`, `6` and `10`
+(`pow_eq_one_of_det_eq_one_finrank_two_five`), i.e. `{1,2,3,4,5,6,10}`, and both
+`5` and `10` are `≤ 12`.  So a group-theoretic index BOUND — which is all that
+`I′ = I_N ∩ Gal(ℚ̄/K)` plus `[Gal(ℚ̄/ℚ) : Gal(ℚ̄/K)] = 12` gives — is not enough.
+The divisibility is the statement that the index of the inertia subgroups IS the
+ramification index.  Note also that neither `TameBase` nor `TameGoodModel`
+currently EXPORTS the degree: `TameBase.π_pow` (`π¹² = ℓ`) carries the
+ramification and `TameBaseAux` builds `AdjoinRoot (X¹² − ℓ)` with
+`qpoly_natDegree = 12` and `qpoly_irreducible`, so `Module.finrank ℚ L = 12` is
+one `AdjoinRoot.powerBasis` away, but a producer-side field or lemma has to be
+added for it.
+
+**FAITHFULNESS.**  `hj` is load-bearing and this leaf is FALSE without it: for
+`N = 23` and `E : y² = x³ − 2x² − 7x + 6` (`j = 40000/23`, `v₂₃(q) = 1`) the
+image of `I₂₃` in `Aut(E[5])` is cyclic of order `5`, so any `I′` acting
+trivially on `E[5]` has `[I₂₃ : I′]` divisible by `5`, which divides no divisor
+of `12`.  `19 < N` is used only through `5 ≤ N` (the residue characteristic
+condition of the tame construction) and `N ≠ 5` (so that `E[5]` is prime to the
+residue characteristic and NOS applies at all); at `N = 2, 3` the tame
+construction fails outright.  `I′ = ⊥` does NOT satisfy the statement — `⊥` acts
+trivially and is contained in `I_N`, but `[I_N : ⊥] = Nat.card I_N` is infinite
+(`Nat.card = 0` there, and `0 ∤ 12`), so the index clause is not satisfiable by
+a degenerate witness.  Nor is `I′ = I_N` except when `E[5]` is unramified at
+`N`, which is the `[I_N : J] = 1` case and is consistent.
+
+**NON-VACUITY.**  At `v_N(j) ≥ 0` with `E` already of good reduction at `N`,
+`I′ = I_N` works with index `1 ∣ 12`, so the statement has witnesses. -/
+theorem WeierstrassCurve.exists_localInertia_subgroup_relIndex_dvd_twelve_of_padicValRat_j_nonneg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hj : 0 ≤ padicValRat N E.j) :
+    ∃ I' : Subgroup (Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hN.toHeightOneSpectrumRingOfIntegersRat)),
+      I' ≤ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat ∧
+      I'.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) ∣ 12 ∧
+      ∀ σ ∈ I', ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, (5 : ℕ) • P = 0 →
+        Affine.Point.map
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P :=
+  sorry
+
 /-- **`A₀-3a-i-c` — potentially good reduction: `5` does not divide the
 semistability defect** (sorry leaf, cut 2026-07-30; Serre–Tate, Ann. of Math.
 88 (1968), Thm. 2 and Cor. 3; Serre, Invent. Math. 15 (1972), §5.6).
@@ -3506,7 +3599,33 @@ and it is why this leaf, rather than the `{2,4,6}` bound, is what was cut.)
 
 The good-model input still has to be built UPSTREAM: `PotentiallyGoodModel` is
 declared ~1300 lines below and release-12 deliberately rejected hoisting it (see
-`A₀-3a-i`'s docstring). -/
+`A₀-3a-i`'s docstring).
+
+**PROVEN 2026-08-01 over `A₀-3a-i-c′`
+`exists_localInertia_subgroup_relIndex_dvd_twelve_of_padicValRat_j_nonneg`
+immediately above**, which is exactly the four lines of index arithmetic that
+leaf's own docstring promised, and nothing else:
+
+* `I′` acts trivially on `E[5]` and `I′ ≤ I_N`, so `hJmem` — which pins `J` as
+  EXACTLY the trivially-acting part of `I_N` — gives `I′ ≤ J`;
+* `Subgroup.relIndex_dvd_of_le_left` turns that into
+  `[I_N : J] ∣ [I_N : I′] ∣ 12`;
+* and `5 ∤ 12`.
+
+Note the direction: `hJmem` is used only through its `mpr`, so the `iff` is
+stronger than this proof needs — but it is what makes `J` pinned, and dropping
+it to a one-sided implication would make the leaf satisfiable by `J = ⊥`, whose
+relative index is `Nat.card I_N = 0` (the inertia group is infinite) and which
+therefore satisfies `¬ 5 ∣ ·` vacuously. Do not weaken it.
+
+**THE RELOCATION IS WHAT MADE THIS PROVABLE, and it is worth recording why**:
+`A₀-3a-i-c′` was cut on 2026-07-31 in `FreyCurve/MazurTorsion.lean`, i.e. BELOW
+this file, because the hoist that created this module had already moved this
+consumer upstream a day earlier. Lean's declaration order then forbade the
+citation, so both sat open, and `A₀-3a-i-c′` had no consumer anywhere in the
+tree. Moving the OBLIGATION up (rather than this consumer down, which would
+have dragged `A₀-3a-i` and its `X0`-facing cone with it) took the pair from two
+open leaves to one. -/
 theorem WeierstrassCurve.not_five_dvd_relIndex_of_padicValRat_j_nonneg
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
     (hN : N.Prime) (hN19 : 19 < N)
@@ -3522,8 +3641,14 @@ theorem WeierstrassCurve.not_five_dvd_relIndex_of_padicValRat_j_nonneg
               (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
                 hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
               AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P)) :
-    ¬ (5 ∣ J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat)) :=
-  sorry
+    ¬ (5 ∣ J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat)) := by
+  obtain ⟨I', hI'le, hI'idx, hI'act⟩ :=
+    E.exists_localInertia_subgroup_relIndex_dvd_twelve_of_padicValRat_j_nonneg hN hN19 hj
+  have hle : I' ≤ J := fun σ hσ => (hJmem σ (hI'le hσ)).mpr (hI'act σ hσ)
+  intro h5
+  have h12 : (5 : ℕ) ∣ 12 :=
+    h5.trans ((Subgroup.relIndex_dvd_of_le_left _ hle).trans hI'idx)
+  norm_num at h12
 
 /-- **`A₀-3a-i` — Serre–Kraus: the semistability defect embeds in the
 automorphism group of the reduction** (DECOMPOSED and PROVEN 2026-07-30 over
