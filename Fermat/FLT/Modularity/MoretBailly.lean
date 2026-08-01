@@ -42773,69 +42773,6 @@ All four are stated for an ARBITRARY `e : Γ_ℚ →* ℤˣ`: none of them uses 
 about the interface, and that is exactly why they could be proven while the leaf
 they serve cannot. -/
 
-/-- **THE CLASS FIELD THEORY LEAF, IN ITS SHARPEST FORM: AN IMAGINARY QUADRATIC
-FIELD HAS A CYCLIC ANTICYCLOTOMIC QUOTIENT OF EVERY ORDER** (SORRY LEAF, cut
-2026-07-31 out of `nonempty_ringClassArtinData_anticyclotomic` just below, which
-is now PROVEN over it and is the ONLY consumer).
-
-This is `nonempty_ringClassArtinData_anticyclotomic` with the abstract group
-`Cl` replaced by the concrete `Multiplicative (ZMod K)` and the packaging
-structure removed. **Everything the parent's docstring says about the
-mathematics, the faithfulness of the hypotheses, the missing machinery and the
-route applies verbatim to this statement and is not repeated here — read it
-there.** What this cut buys the prover:
-
-* no type-valued existential and no `[CommGroup]`/`[Finite]` instance fields to
-  produce — the group is fixed and its instances are found by synthesis;
-* `exists_orderOf_dvd` disappears: `orderOf (ofAdd 1) = K` in `ZMod K` by
-  `orderOf_ofAdd_eq_addOrderOf` + `ZMod.addOrderOf_one`, so the order clause is
-  discharged once, in the assembly below, instead of being an obligation;
-* the target is exactly the shape class field theory delivers — a SURJECTIVE
-  character of `Γ_M` onto a cyclic group of order `K` — and exactly the shape
-  the downstream consumer `exists_ringClassZModChar_of_inertPrime` re-extracts
-  from `Cl` through `exists_zmodChar_of_dvd_exponent` anyway.
-
-**IT IS NOT WEAKER, AND THE STRENGTHENING IS FREE ON THE INTENDED ROUTE.** The
-parent asks only for SOME element of order divisible by `K`; this asks for a
-cyclic quotient of order EXACTLY `K`. The parent's own route produces the
-sharper object: for each prime power `ℓ^{v_ℓ(K)} ‖ K` the anticyclotomic
-`ℤ_ℓ`-extension of `M` supplies its `ℓ^{v_ℓ(K)}`-layer, and the compositum of
-those layers is cyclic anticyclotomic of order exactly `K` because the layers
-have pairwise coprime degrees. A prover who finds the exact-order form
-inconvenient may reduce it to prime powers first, by that same coprimality: a
-subgroup of `∏ᵢ ZMod ℓᵢ^{aᵢ}` surjecting onto each factor has order divisible by
-each `ℓᵢ^{aᵢ}`, hence is everything. That reduction is NOT performed here
-because it does not make the analytic content any smaller — the `ℤ_ℓ`-tower has
-to be built either way — and it would cost a `Nat.factorization`-indexed
-Chinese-remainder bookkeeping for no mathematical gain.
-
-**`hd`, `hx`, `he`, `hK` are load-bearing exactly as in the parent**; in
-particular `hK : K ≠ 0` is needed twice here, once to make `ZMod K` finite and
-once because `Multiplicative (ZMod 0) = Multiplicative ℤ` has no element of
-finite order, so the surjectivity clause would demand a surjection from `Γ_M`
-onto `ℤ` — impossible for a map with open kernel.
-
-**`hd : d < 0` remains load-bearing and this form makes the failure sharper.**
-For `d > 0` (real quadratic `M`) the anticyclotomic `ℤ_ℓ`-extension does not
-exist — `r₂ = 0` leaves only the cyclotomic `ℤ_ℓ`-extension, on which complex
-conjugation acts trivially, so every anticyclotomic quotient is killed by `2`
-and the conclusion fails for every `K ∉ {1, 2}`. -/
-theorem exists_anticyclotomicCyclicChar
-    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
-    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
-    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
-    (he : ∀ g, e g = 1 ↔ g x = x)
-    (K : ℕ) (hK : K ≠ 0) :
-    ∃ (χ : Field.absoluteGaloisGroup ℚ → Multiplicative (ZMod K))
-      (H : Subgroup (Field.absoluteGaloisGroup ℚ)),
-      IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)) ∧
-      (∀ h ∈ H, e h = 1) ∧
-      (∀ g h, e g = 1 → h ∈ H → χ (g * h) = χ g) ∧
-      (∀ g h, e g = 1 → e h = 1 → χ (g * h) = χ g * χ h) ∧
-      (∀ c g, e c = -1 → e g = 1 → χ (c * g * c⁻¹) = (χ g)⁻¹) ∧
-      (∀ a : Multiplicative (ZMod K), ∃ g, e g = 1 ∧ χ g = a) :=
-  sorry
-
 /-- `art` is normalised at `1` (PROVEN): a consequence of `art_mul`, not a
 separate axiom of the structure. -/
 theorem RingClassArtinData.art_one {e : Field.absoluteGaloisGroup ℚ →* ℤˣ} {K : ℕ}
@@ -43146,6 +43083,69 @@ theorem nonempty_ringClassArtinData_anticyclotomic_primePow
     (he : ∀ g, e g = 1 ↔ g x = x)
     (l k : ℕ) (hl : l.Prime) :
     Nonempty (RingClassArtinData e (l ^ k)) :=
+  sorry
+
+/-- **THE CLASS FIELD THEORY LEAF, IN ITS SHARPEST FORM: AN IMAGINARY QUADRATIC
+FIELD HAS A CYCLIC ANTICYCLOTOMIC QUOTIENT OF EVERY ORDER** (SORRY LEAF, cut
+2026-07-31 out of `nonempty_ringClassArtinData_anticyclotomic` just below, which
+is now PROVEN over it and is the ONLY consumer).
+
+This is `nonempty_ringClassArtinData_anticyclotomic` with the abstract group
+`Cl` replaced by the concrete `Multiplicative (ZMod K)` and the packaging
+structure removed. **Everything the parent's docstring says about the
+mathematics, the faithfulness of the hypotheses, the missing machinery and the
+route applies verbatim to this statement and is not repeated here — read it
+there.** What this cut buys the prover:
+
+* no type-valued existential and no `[CommGroup]`/`[Finite]` instance fields to
+  produce — the group is fixed and its instances are found by synthesis;
+* `exists_orderOf_dvd` disappears: `orderOf (ofAdd 1) = K` in `ZMod K` by
+  `orderOf_ofAdd_eq_addOrderOf` + `ZMod.addOrderOf_one`, so the order clause is
+  discharged once, in the assembly below, instead of being an obligation;
+* the target is exactly the shape class field theory delivers — a SURJECTIVE
+  character of `Γ_M` onto a cyclic group of order `K` — and exactly the shape
+  the downstream consumer `exists_ringClassZModChar_of_inertPrime` re-extracts
+  from `Cl` through `exists_zmodChar_of_dvd_exponent` anyway.
+
+**IT IS NOT WEAKER, AND THE STRENGTHENING IS FREE ON THE INTENDED ROUTE.** The
+parent asks only for SOME element of order divisible by `K`; this asks for a
+cyclic quotient of order EXACTLY `K`. The parent's own route produces the
+sharper object: for each prime power `ℓ^{v_ℓ(K)} ‖ K` the anticyclotomic
+`ℤ_ℓ`-extension of `M` supplies its `ℓ^{v_ℓ(K)}`-layer, and the compositum of
+those layers is cyclic anticyclotomic of order exactly `K` because the layers
+have pairwise coprime degrees. A prover who finds the exact-order form
+inconvenient may reduce it to prime powers first, by that same coprimality: a
+subgroup of `∏ᵢ ZMod ℓᵢ^{aᵢ}` surjecting onto each factor has order divisible by
+each `ℓᵢ^{aᵢ}`, hence is everything. That reduction is NOT performed here
+because it does not make the analytic content any smaller — the `ℤ_ℓ`-tower has
+to be built either way — and it would cost a `Nat.factorization`-indexed
+Chinese-remainder bookkeeping for no mathematical gain.
+
+**`hd`, `hx`, `he`, `hK` are load-bearing exactly as in the parent**; in
+particular `hK : K ≠ 0` is needed twice here, once to make `ZMod K` finite and
+once because `Multiplicative (ZMod 0) = Multiplicative ℤ` has no element of
+finite order, so the surjectivity clause would demand a surjection from `Γ_M`
+onto `ℤ` — impossible for a map with open kernel.
+
+**`hd : d < 0` remains load-bearing and this form makes the failure sharper.**
+For `d > 0` (real quadratic `M`) the anticyclotomic `ℤ_ℓ`-extension does not
+exist — `r₂ = 0` leaves only the cyclotomic `ℤ_ℓ`-extension, on which complex
+conjugation acts trivially, so every anticyclotomic quotient is killed by `2`
+and the conclusion fails for every `K ∉ {1, 2}`. -/
+theorem exists_anticyclotomicCyclicChar
+    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (he : ∀ g, e g = 1 ↔ g x = x)
+    (K : ℕ) (hK : K ≠ 0) :
+    ∃ (χ : Field.absoluteGaloisGroup ℚ → Multiplicative (ZMod K))
+      (H : Subgroup (Field.absoluteGaloisGroup ℚ)),
+      IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)) ∧
+      (∀ h ∈ H, e h = 1) ∧
+      (∀ g h, e g = 1 → h ∈ H → χ (g * h) = χ g) ∧
+      (∀ g h, e g = 1 → e h = 1 → χ (g * h) = χ g * χ h) ∧
+      (∀ c g, e c = -1 → e g = 1 → χ (c * g * c⁻¹) = (χ g)⁻¹) ∧
+      (∀ a : Multiplicative (ZMod K), ∃ g, e g = 1 ∧ χ g = a) :=
   sorry
 
 /-- **AN IMAGINARY QUADRATIC FIELD HAS ANTICYCLOTOMIC ABELIAN QUOTIENTS OF EVERY
