@@ -7431,10 +7431,354 @@ theorem WeierstrassCurve.exists_localInertia_subgroup_relIndex_dvd_twelve_of_pad
             AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P :=
   sorry
 
+section TameFundamentalCharacter
+
+/-!
+### The tame quotient `T = I_v / P_v`, and the level-one fundamental character
+
+Five general local-Galois lemmas, added 2026-07-31 while closing `A₀-3b-i-a`
+below.  They are stated for an ARBITRARY number field `K` and place `v`, in the
+vocabulary of `Deformations/RepresentationTheory/ArtinConductor.lean` (whose
+`tameGens` / `tameCharacter` / `mem_subgroupOf_wild_of_forall_mem_tameLevel` are
+the only inputs beyond mathlib), and none of them mentions an elliptic curve.
+-/
+
+open NumberField IsDedekindDomain
+
+universe uK
+
+variable {K : Type uK} [Field K] [NumberField K]
+variable (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
+local notation "Kᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+local notation "Oᵥ" => IntegralClosure
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+  (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+local notation "Γᵥ" => Field.absoluteGaloisGroup
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+
+/-- **THE TAME QUOTIENT IS ABELIAN.** -/
+theorem commutator_mem_wildInertiaGroup {a b : Γᵥ}
+    (ha : a ∈ localInertiaGroup v) (hb : b ∈ localInertiaGroup v) :
+    a * b * a⁻¹ * b⁻¹ ∈ wildInertiaGroup v := by
+  have key := mem_subgroupOf_wild_of_forall_mem_tameLevel v
+    ((⟨a, ha⟩ : localInertiaGroup v) * ⟨b, hb⟩ * (⟨a, ha⟩ : localInertiaGroup v)⁻¹
+      * (⟨b, hb⟩ : localInertiaGroup v)⁻¹) ?_
+  · rw [Subgroup.mem_subgroupOf] at key
+    exact key
+  · intro F
+    rw [mem_tameLevel_iff]
+    intro x _
+    refine (tameGenChar_eq_one_iff v x _).mp ?_
+    simp only [map_mul, map_inv]
+    set u := tameGenChar v x ⟨a, ha⟩
+    set w := tameGenChar v x ⟨b, hb⟩
+    rw [mul_comm u w]
+    group
+
+/-- **THE TAME QUOTIENT IS TORSION-FREE** at exponents prime to the residue
+characteristic. -/
+theorem mem_wildInertiaGroup_of_pow_mem {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {t : Γᵥ} (ht : t ∈ localInertiaGroup v)
+    (htn : t ^ n ∈ wildInertiaGroup v) :
+    t ∈ wildInertiaGroup v := by
+  have hn0 : n ≠ 0 := ne_zero_of_natCast_notMem v hn
+  rw [wildInertiaGroup, Subgroup.mem_inf] at htn
+  have key := mem_subgroupOf_wild_of_forall_mem_tameLevel v (⟨t, ht⟩ : localInertiaGroup v) ?_
+  · rw [Subgroup.mem_subgroupOf] at key; exact key
+  · intro F
+    rw [mem_tameLevel_iff]
+    intro x _
+    set m := tameExp v x with hmdef
+    have hm0 : m ≠ 0 := ne_zero_of_natCast_notMem v (tameExp_notMem v x)
+    obtain ⟨a, ha⟩ := tameExp_pow v x
+    have hxa : ((x : Oᵥ).1 : Kᵥᵃˡᵍ) ^ m = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ a := congrArg Subtype.val ha
+    obtain ⟨y, hy⟩ := IsAlgClosed.exists_pow_nat_eq ((x : Oᵥ).1 : Kᵥᵃˡᵍ) (Nat.pos_of_ne_zero hn0)
+    have hy0 : y ≠ 0 := by
+      intro h
+      rw [h, zero_pow hn0] at hy
+      exact tameGen_ne_zero v x hy.symm
+    have hynm : y ^ (n * m) = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ a := by rw [pow_mul, hy, hxa]
+    have hnm : ((n * m : ℕ) : 𝓞 K) ∉ v.asIdeal := by
+      push_cast
+      intro hmem
+      rcases v.isPrime.mem_or_mem hmem with h | h
+      · exact hn h
+      · exact tameExp_notMem v x h
+    have hfix : ∀ σ : Γᵥ, σ • (y ^ (n * m)) = y ^ (n * m) := by
+      intro σ
+      rw [hynm]
+      exact smul_algebraMap_algebraicClosure_eq v σ a
+    have hyint : y ∈ integralClosure 𝒪ᵥ Kᵥᵃˡᵍ := by
+      refine ⟨Polynomial.X ^ (n * m) - Polynomial.C a,
+        Polynomial.monic_X_pow_sub_C a (Nat.mul_ne_zero hn0 hm0), ?_⟩
+      simp [Polynomial.eval₂_sub, hynm]
+    -- `t ^ n` is wild, hence fixes the tame generator `y`
+    have hpowfix : ((⟨t, ht⟩ : localInertiaGroup v) ^ n : Γᵥ) • y = y := by
+      have h1 : (t ^ n) • (⟨y, hyint⟩ : Oᵥ) = (⟨y, hyint⟩ : Oᵥ) :=
+        htn.2 (n * m) hnm ⟨y, hyint⟩ ⟨a, Subtype.ext (by exact hynm)⟩
+      exact congrArg Subtype.val h1
+    set θ := tameCharacter v hnm hy0 hfix with hθdef
+    have hθn : θ ((⟨t, ht⟩ : localInertiaGroup v) ^ n) = 1 :=
+      (tameCharacter_eq_one_iff v hnm hy0 hfix _).mpr hpowfix
+    have hval : ((θ (⟨t, ht⟩ : localInertiaGroup v) : Kᵥᵃˡᵍˣ) : Kᵥᵃˡᵍ) ^ n = 1 := by
+      have := congrArg (fun u : rootsOfUnity (n * m) Kᵥᵃˡᵍ => ((u : Kᵥᵃˡᵍˣ) : Kᵥᵃˡᵍ))
+        (hθn.symm.trans (map_pow θ (⟨t, ht⟩ : localInertiaGroup v) n).symm.symm)
+      simpa using (congrArg (fun u : rootsOfUnity (n * m) Kᵥᵃˡᵍ => ((u : Kᵥᵃˡᵍˣ) : Kᵥᵃˡᵍ))
+        ((map_pow θ (⟨t, ht⟩ : localInertiaGroup v) n).symm.trans hθn))
+    refine Subtype.ext ?_
+    rw [IntegralClosure.coe_smul, ← hy, smul_pow_algebraicClosure]
+    have hty : t • y = ((θ (⟨t, ht⟩ : localInertiaGroup v) : Kᵥᵃˡᵍˣ) : Kᵥᵃˡᵍ) * y := by
+      rw [tameCharacter_apply_val]
+      exact tameChar_smul_eq v hy0 t
+    rw [hty, mul_pow, hval, one_mul]
+
+/-- The tame quotient `I_v / P_v` is COMMUTATIVE. -/
+theorem tameQuotient_mul_comm
+    (a b : localInertiaGroup v ⧸ (wildInertiaGroup v).subgroupOf (localInertiaGroup v)) :
+    a * b = b * a := by
+  induction a using QuotientGroup.induction_on with
+  | _ g =>
+    induction b using QuotientGroup.induction_on with
+    | _ h =>
+      rw [← QuotientGroup.mk_mul, ← QuotientGroup.mk_mul, QuotientGroup.eq,
+        Subgroup.mem_subgroupOf]
+      have heq : ((((g * h)⁻¹ * (h * g) : localInertiaGroup v)) : Γᵥ)
+          = (h : Γᵥ)⁻¹ * (g : Γᵥ)⁻¹ * ((h : Γᵥ)⁻¹)⁻¹ * ((g : Γᵥ)⁻¹)⁻¹ := by
+        push_cast
+        group
+      rw [heq]
+      exact commutator_mem_wildInertiaGroup v
+        ((localInertiaGroup v).inv_mem h.2) ((localInertiaGroup v).inv_mem g.2)
+
+/-- **`x ^ n ≡ y ^ n` mod `P_v` implies `x ≡ y` mod `P_v`.** -/
+theorem mem_wildInertiaGroup_of_pow_mul_inv_pow {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {x y : Γᵥ} (hx : x ∈ localInertiaGroup v) (hy : y ∈ localInertiaGroup v)
+    (h : x ^ n * (y ^ n)⁻¹ ∈ wildInertiaGroup v) :
+    x * y⁻¹ ∈ wildInertiaGroup v := by
+  have hxy : x * y⁻¹ ∈ localInertiaGroup v :=
+    (localInertiaGroup v).mul_mem hx ((localInertiaGroup v).inv_mem hy)
+  refine mem_wildInertiaGroup_of_pow_mem v hn hxy ?_
+  set F := QuotientGroup.mk' ((wildInertiaGroup v).subgroupOf (localInertiaGroup v)) with hF
+  have hone : ∀ g : localInertiaGroup v, F g = 1 ↔ (g : Γᵥ) ∈ wildInertiaGroup v := by
+    intro g
+    rw [hF, QuotientGroup.mk'_apply, QuotientGroup.eq_one_iff, Subgroup.mem_subgroupOf]
+  have h1 : F ((⟨x, hx⟩ : localInertiaGroup v) ^ n
+      * ((⟨y, hy⟩ : localInertiaGroup v) ^ n)⁻¹) = 1 := by
+    rw [hone]
+    push_cast
+    exact h
+  rw [map_mul, map_inv, map_pow, map_pow, mul_inv_eq_one] at h1
+  have hcm : Commute (F (⟨x, hx⟩ : localInertiaGroup v))
+      (F (⟨y, hy⟩ : localInertiaGroup v))⁻¹ := tameQuotient_mul_comm v _ _
+  have h2 : F (((⟨x, hx⟩ : localInertiaGroup v) * (⟨y, hy⟩ : localInertiaGroup v)⁻¹) ^ n) = 1 := by
+    rw [map_pow, map_mul, map_inv, hcm.mul_pow, inv_pow, h1, mul_inv_cancel]
+  have h3 : ((((⟨x, hx⟩ : localInertiaGroup v)
+      * (⟨y, hy⟩ : localInertiaGroup v)⁻¹) ^ n : localInertiaGroup v) : Γᵥ)
+      = (x * y⁻¹) ^ n := by push_cast; rfl
+  rw [← h3]
+  exact (hone _).mp h2
+
+/-- **Pigeonhole in a coset space**: a subgroup of finite index `d` contains a positive
+power at most `d` of every element. -/
+theorem Subgroup.exists_pow_le_index_mem {G : Type*} [Group G] (H : Subgroup G)
+    (hfin : H.index ≠ 0) (u : G) :
+    ∃ d : ℕ, 0 < d ∧ d ≤ H.index ∧ u ^ d ∈ H := by
+  classical
+  haveI : Finite (G ⧸ H) := Nat.finite_of_card_ne_zero hfin
+  haveI : Fintype (G ⧸ H) := Fintype.ofFinite _
+  have hcard : Fintype.card (G ⧸ H) = H.index := by
+    rw [← Nat.card_eq_fintype_card]; rfl
+  have main : ∀ i j : Fin (H.index + 1), (i : ℕ) < (j : ℕ) →
+      (QuotientGroup.mk (u ^ (i : ℕ)) : G ⧸ H) = QuotientGroup.mk (u ^ (j : ℕ)) →
+      ∃ d : ℕ, 0 < d ∧ d ≤ H.index ∧ u ^ d ∈ H := by
+    intro i j hlt heq
+    have hj := j.isLt
+    refine ⟨(j : ℕ) - (i : ℕ), by omega, by omega, ?_⟩
+    have h1 : (u ^ (i : ℕ))⁻¹ * u ^ (j : ℕ) ∈ H := QuotientGroup.eq.mp heq
+    have h2 : (u ^ (i : ℕ))⁻¹ * u ^ (j : ℕ) = u ^ ((j : ℕ) - (i : ℕ)) := by
+      rw [inv_mul_eq_iff_eq_mul, ← pow_add]
+      congr 1
+      omega
+    rwa [h2] at h1
+  obtain ⟨i, j, hij, hfeq⟩ := Fintype.exists_ne_map_eq_of_card_lt
+    (fun k : Fin (H.index + 1) => (QuotientGroup.mk (u ^ (k : ℕ)) : G ⧸ H))
+    (by simp [hcard])
+  rcases lt_or_gt_of_ne (fun hc : (i : ℕ) = (j : ℕ) => hij (Fin.ext hc)) with hlt | hlt
+  · exact main i j hlt hfeq
+  · exact main j i hlt hfeq.symm
+
+set_option maxHeartbeats 1000000 in
+/-- **THE LEVEL-ONE FUNDAMENTAL CHARACTER OF A TAME SUBEXTENSION, ABSTRACTLY.** -/
+theorem exists_fundamentalCharacter_of_relIndex_aux
+    {e : ℕ} (he0 : 0 < e)
+    (hefac : ((Nat.factorial e : ℕ) : 𝓞 K) ∉ v.asIdeal)
+    {J : Subgroup Γᵥ} (hJle : J ≤ localInertiaGroup v)
+    (hindex : J.relIndex (localInertiaGroup v) = e)
+    {A : Type*} [CommGroup A] (chi : localInertiaGroup v →* A)
+    (hchiwild : ∀ w : localInertiaGroup v, (w : Γᵥ) ∈ wildInertiaGroup v → chi w = 1)
+    (hchisurj : Function.Surjective chi) :
+    ∃ ψ : J →* A, Function.Surjective ψ ∧
+      (∀ σ : J, ∃ t : localInertiaGroup v,
+        (t : Γᵥ) ^ e * ((σ : Γᵥ))⁻¹ ∈ wildInertiaGroup v ∧ ψ σ = chi t) ∧
+      (∀ σ : J, chi ⟨(σ : Γᵥ), hJle σ.2⟩ = ψ σ ^ e) := by
+  classical
+  have heN : ((e : ℕ) : 𝓞 K) ∉ v.asIdeal := by
+    intro hmem
+    obtain ⟨c, hc⟩ := Nat.dvd_factorial he0 (le_refl e)
+    refine hefac ?_
+    rw [hc]
+    push_cast
+    exact Ideal.mul_mem_right _ _ hmem
+  have hKidx : (J.subgroupOf (localInertiaGroup v)).index = e := hindex
+  -- STEP 1: `P_v ≤ J`, automatic from the index alone.
+  have hPJ : ∀ w : Γᵥ, w ∈ wildInertiaGroup v → w ∈ J := by
+    intro w hw
+    obtain ⟨u, hu, hueq⟩ := exists_pow_eq_of_mem_wildInertiaGroup v hefac hw
+    have huI : u ∈ localInertiaGroup v := wildInertiaGroup_le_localInertiaGroup v hu
+    obtain ⟨d, hd0, hdle, hdmem⟩ :=
+      Subgroup.exists_pow_le_index_mem (J.subgroupOf (localInertiaGroup v))
+        (by rw [hKidx]; omega) ⟨u, huI⟩
+    rw [hKidx] at hdle
+    obtain ⟨c, hc⟩ := Nat.dvd_factorial hd0 hdle
+    have hud : u ^ d ∈ J := by
+      have h := (Subgroup.mem_subgroupOf).mp hdmem
+      simpa using h
+    have hw' : w = (u ^ d) ^ c := by rw [← pow_mul, ← hc, hueq]
+    rw [hw']
+    exact J.pow_mem hud c
+  -- STEP 2: `J ∩ I` is NORMAL in `I`, because the tame quotient is abelian.
+  haveI hKnorm : (J.subgroupOf (localInertiaGroup v)).Normal := by
+    constructor
+    intro a ha g
+    rw [Subgroup.mem_subgroupOf] at ha ⊢
+    have hcm := hPJ _ (commutator_mem_wildInertiaGroup v g.2 a.2)
+    have heq : ((g * a * g⁻¹ : localInertiaGroup v) : Γᵥ)
+        = ((g : Γᵥ) * (a : Γᵥ) * (g : Γᵥ)⁻¹ * (a : Γᵥ)⁻¹) * (a : Γᵥ) := by
+      push_cast; group
+    rw [heq]
+    exact J.mul_mem hcm ha
+  set p := QuotientGroup.mk' (J.subgroupOf (localInertiaGroup v)) with hp
+  set F := QuotientGroup.mk' ((wildInertiaGroup v).subgroupOf (localInertiaGroup v)) with hF
+  have hKone : ∀ g : localInertiaGroup v, p g = 1 ↔ (g : Γᵥ) ∈ J := by
+    intro g
+    rw [hp, QuotientGroup.mk'_apply, QuotientGroup.eq_one_iff, Subgroup.mem_subgroupOf]
+  have hFone : ∀ g : localInertiaGroup v, F g = 1 ↔ (g : Γᵥ) ∈ wildInertiaGroup v := by
+    intro g
+    rw [hF, QuotientGroup.mk'_apply, QuotientGroup.eq_one_iff, Subgroup.mem_subgroupOf]
+  have hFchar : ∀ (t : localInertiaGroup v) (σ : Γᵥ) (hσ : σ ∈ localInertiaGroup v),
+      ((t : Γᵥ) ^ e * σ⁻¹ ∈ wildInertiaGroup v) ↔
+        F t ^ e = F (⟨σ, hσ⟩ : localInertiaGroup v) := by
+    intro t σ hσ
+    have hco : (((t ^ e * (⟨σ, hσ⟩ : localInertiaGroup v)⁻¹ : localInertiaGroup v)) : Γᵥ)
+        = (t : Γᵥ) ^ e * σ⁻¹ := by push_cast; rfl
+    rw [← hco, ← hFone, map_mul, map_inv, map_pow, mul_inv_eq_one]
+  have hCcard : Nat.card (localInertiaGroup v ⧸ J.subgroupOf (localInertiaGroup v)) = e := hKidx
+  haveI : Finite (localInertiaGroup v ⧸ J.subgroupOf (localInertiaGroup v)) :=
+    Nat.finite_of_card_ne_zero (by rw [hCcard]; omega)
+  -- STEP 3: the coset space is cyclic, generated by the procyclic generator `s`.
+  obtain ⟨s, hs⟩ := exists_localInertia_generator_mod_pow_wildInertiaGroup v (n := e) he0.ne'
+  have hCgen : ∀ c, ∃ k : ℕ, p s ^ k = c := by
+    intro c
+    obtain ⟨τ, rfl⟩ := QuotientGroup.mk_surjective c
+    obtain ⟨k, ρ, w, hwP, hτ⟩ := hs τ
+    refine ⟨k, ?_⟩
+    have hw1 : p w = 1 := (hKone w).mpr (hPJ _ hwP)
+    have hρ1 : p ρ ^ e = 1 := by rw [← hCcard]; exact pow_card_eq_one'
+    show p s ^ k = p τ
+    rw [hτ, map_mul, map_mul, map_pow, map_pow, hρ1, hw1, mul_one, mul_one]
+  have hsord : orderOf (p s) = e := by
+    have htop : Subgroup.zpowers (p s) = ⊤ := by
+      rw [eq_top_iff]
+      rintro c -
+      obtain ⟨k, hk⟩ := hCgen c
+      exact Subgroup.mem_zpowers_iff.mpr ⟨(k : ℤ), by rw [zpow_natCast]; exact hk⟩
+    rw [← Nat.card_zpowers, htop, ← hCcard]
+    exact Nat.card_congr (Subgroup.topEquiv).toEquiv
+  -- STEP 4: every element of `J` is an `e`-th power modulo the wild inertia.
+  have hexists : ∀ σ : J, ∃ t : localInertiaGroup v,
+      (t : Γᵥ) ^ e * ((σ : Γᵥ))⁻¹ ∈ wildInertiaGroup v := by
+    intro σ
+    obtain ⟨k, ρ, w, hwP, hτ⟩ := hs (⟨(σ : Γᵥ), hJle σ.2⟩ : localInertiaGroup v)
+    have hσK : p (⟨(σ : Γᵥ), hJle σ.2⟩ : localInertiaGroup v) = 1 := (hKone _).mpr σ.2
+    have hρe : p ρ ^ e = 1 := by rw [← hCcard]; exact pow_card_eq_one'
+    have hw1 : p w = 1 := (hKone w).mpr (hPJ _ hwP)
+    have hsk : p s ^ k = 1 := by
+      have hcg := congrArg p hτ
+      rw [hσK, map_mul, map_mul, map_pow, map_pow, hρe, hw1, mul_one, mul_one] at hcg
+      exact hcg.symm
+    obtain ⟨c, hc⟩ : e ∣ k := by rw [← hsord]; exact orderOf_dvd_of_pow_eq_one hsk
+    refine ⟨s ^ c * ρ, (hFchar _ _ (hJle σ.2)).mpr ?_⟩
+    have hFw : F w = 1 := (hFone w).mpr hwP
+    have hcm : Commute (F (s ^ c)) (F ρ) := tameQuotient_mul_comm v _ _
+    have e1 : F (s ^ c * ρ) ^ e = F (s ^ (c * e)) * F (ρ ^ e) := by
+      rw [map_mul, hcm.mul_pow, ← map_pow, ← map_pow, pow_mul]
+    have e2 : F (⟨(σ : Γᵥ), hJle σ.2⟩ : localInertiaGroup v) = F (s ^ k) * F (ρ ^ e) := by
+      rw [hτ, map_mul, map_mul, hFw, mul_one]
+    rw [e1, e2, show c * e = k by rw [hc, Nat.mul_comm]]
+  choose tf htf using hexists
+  -- STEP 5: `chi` is constant on the `e`-th roots, so `ψ` is well defined.
+  have hchiP : ∀ a b : localInertiaGroup v,
+      ((a : Γᵥ) * (b : Γᵥ)⁻¹ ∈ wildInertiaGroup v) → chi a = chi b := by
+    intro a b hab
+    have h1 : chi (a * b⁻¹) = 1 := hchiwild _ (by push_cast; exact hab)
+    rw [map_mul, map_inv, mul_inv_eq_one] at h1
+    exact h1
+  have huniq : ∀ (σ : Γᵥ) (hσ : σ ∈ localInertiaGroup v) (a b : localInertiaGroup v),
+      (a : Γᵥ) ^ e * σ⁻¹ ∈ wildInertiaGroup v →
+      (b : Γᵥ) ^ e * σ⁻¹ ∈ wildInertiaGroup v → chi a = chi b := by
+    intro σ hσ a b ha hb
+    have hab : F a ^ e = F b ^ e :=
+      ((hFchar a σ hσ).mp ha).trans ((hFchar b σ hσ).mp hb).symm
+    have hmem : ((a ^ e * (b ^ e)⁻¹ : localInertiaGroup v) : Γᵥ) ∈ wildInertiaGroup v := by
+      rw [← hFone, map_mul, map_inv, map_pow, map_pow, mul_inv_eq_one]
+      exact hab
+    push_cast at hmem
+    exact hchiP a b (mem_wildInertiaGroup_of_pow_mul_inv_pow v heN a.2 b.2 hmem)
+  -- STEP 6: assemble.
+  refine ⟨{ toFun := fun σ => chi (tf σ), map_one' := ?_, map_mul' := ?_ }, ?_, ?_, ?_⟩
+  · refine (huniq ((1 : J) : Γᵥ) (hJle (1 : J).2) _ 1 (htf 1) ?_).trans (map_one chi)
+    simp
+  · intro σ₁ σ₂
+    have hmul : ((tf σ₁ * tf σ₂ : localInertiaGroup v) : Γᵥ) ^ e
+        * (((σ₁ * σ₂ : J) : Γᵥ))⁻¹ ∈ wildInertiaGroup v := by
+      refine (hFchar _ _ (hJle (σ₁ * σ₂).2)).mpr ?_
+      have h1 := (hFchar _ _ (hJle σ₁.2)).mp (htf σ₁)
+      have h2 := (hFchar _ _ (hJle σ₂.2)).mp (htf σ₂)
+      have hcm : Commute (F (tf σ₁)) (F (tf σ₂)) := tameQuotient_mul_comm v _ _
+      rw [map_mul, hcm.mul_pow, h1, h2, ← map_mul]
+      rfl
+    exact (huniq _ (hJle (σ₁ * σ₂).2) _ _ (htf (σ₁ * σ₂)) hmul).trans (map_mul chi _ _)
+  · intro a
+    obtain ⟨t, ht⟩ := hchisurj a
+    have hmem : ((t : Γᵥ) ^ e) ∈ J := by
+      have h1 : p (t ^ e) = 1 := by rw [map_pow, ← hCcard]; exact pow_card_eq_one'
+      have h2 := (hKone (t ^ e)).mp h1
+      simpa using h2
+    refine ⟨⟨(t : Γᵥ) ^ e, hmem⟩, ?_⟩
+    show chi (tf ⟨(t : Γᵥ) ^ e, hmem⟩) = a
+    rw [← ht]
+    refine huniq _ (hJle hmem) _ t (htf _) ?_
+    simp
+  · intro σ
+    exact ⟨tf σ, htf σ, rfl⟩
+  · intro σ
+    show chi (⟨(σ : Γᵥ), hJle σ.2⟩ : localInertiaGroup v) = chi (tf σ) ^ e
+    rw [← map_pow]
+    refine (hchiP _ _ ?_).symm
+    have h := htf σ
+    push_cast
+    exact h
+
+end TameFundamentalCharacter
+
+set_option maxHeartbeats 1000000 in
 /-- **`A₀-3b-i-a` — the level-one fundamental character of `L = (ℚ̄_N)^J`,
-PINNED by its defining compatibility with `χ`** (sorry leaf, cut 2026-07-31 out
-of `A₀-3b-i` below; Serre, Invent. Math. 15 (1972), §1.7; Serre, *Corps
-Locaux* IV §2; Neukirch II.7): let `J ≤ I_N` have relative index
+PINNED by its defining compatibility with `χ`** (**PROVEN 2026-07-31**; cut
+2026-07-31 out of `A₀-3b-i` below; Serre, Invent. Math. 15 (1972), §1.7; Serre,
+*Corps Locaux* IV §2; Neukirch II.7): let `J ≤ I_N` have relative index
 `e ∈ {1,2,3,4,6}`.  Then there is a SURJECTIVE character `ψ : J → 𝔽_N^×` with
 
 * (PINNING) for every `σ ∈ J` some `τ ∈ I_N` has `τ^e σ⁻¹` WILD, and
@@ -7517,7 +7861,53 @@ asks for `τ^e σ⁻¹ ∈ P_N` itself rather than in the kernel of one finite
 quotient.  The extra ingredient is exactly torsion-freeness of `T` in the
 form *`x^e y^{-e} ∈ P_N` implies `x y⁻¹ ∈ P_N` for `x, y ∈ I_N` and
 `0 < e < N`* — a statement about `I_N` alone, worth cutting out as its own
-lemma when this leaf is attacked. -/
+lemma when this leaf is attacked.
+
+**HOW IT WAS ACTUALLY PROVED (2026-07-31), AND WHY THE ROUTE ABOVE IS NOT THE
+ONE TAKEN.**  The prescribed route is correct and it is the EXPENSIVE one: it
+routes everything through ONE finite quotient, and then owes the pinning clause,
+which no finite quotient can see.  Turn that round — prove the two structural
+facts about `T = I_N/P_N` FIRST, and the finite quotient collapses to a single
+Lagrange step:
+
+* `commutator_mem_wildInertiaGroup` — **`T` IS ABELIAN.**  `P_v` is the
+  intersection of the kernels of the tame characters `θ_z` attached to the tame
+  generators `z` (`mem_subgroupOf_wild_of_forall_mem_tameLevel`), and each `θ_z`
+  lands in `rootsOfUnity`, which is COMMUTATIVE.  So every commutator dies in
+  every `θ_z`.  Three lines.
+* `mem_wildInertiaGroup_of_pow_mem` — **`T` IS TORSION-FREE** at exponents prime
+  to `N`.  Given `t^n ∈ P_v` and a tame generator `z` of exponent `m`, pick an
+  `n`-th root `z'` of `z` in `ℚ̄_N` (algebraically closed!).  It is again a tame
+  generator, of exponent `n·m`, and `θ_z(t) = θ_{z'}(t)^n = θ_{z'}(t^n) = 1`.
+  This is the one place the ALGEBRAIC CLOSURE is used and it is what makes the
+  statement true; the individual finite levels cannot see it.
+
+Those two give `mem_wildInertiaGroup_of_pow_mul_inv_pow`, i.e. exactly the
+torsion-freeness form the paragraph above asks for — and with them the whole
+construction is short and the tame character `θ` at level `e(N−1)` is NOT needed
+at all, nor is `exists_localInertia_tameCharacter_orbit`:
+
+1. `P_N ≤ J` — pigeonhole (`Subgroup.exists_pow_le_index_mem`) gives `d ≤ e` with
+   `u^d ∈ J` for the `e!`-th root `u ∈ P_N` of any `w ∈ P_N`, and `d ∣ e!`, so
+   `w = (u^d)^{e!/d} ∈ J`.  `N ∤ e!` is `Nat.Prime.dvd_factorial` and `e ≤ 6 < N`.
+   No permutation representation and no `normalCore` is needed.
+2. `J ⊓ I_N` is then NORMAL in `I_N`, because `T` is abelian and `P_N ≤ J`.
+3. `C = I_N/(J ⊓ I_N)` has order `e` and is generated by the image of the
+   procyclic generator `s` of `exists_localInertia_generator_mod_pow_wildInertiaGroup`
+   at `n = e` (the `ρ^e` factor dies by LAGRANGE in `C`, the wild factor by (1)).
+   So `orderOf s̄ = e`, and for `σ ∈ J` the decomposition `σ = s^k ρ^e w` forces
+   `e ∣ k`; then `τ := s^{k/e} ρ` satisfies `τ^e σ⁻¹ ∈ P_N` BY ABELIANNESS of `T`.
+   That is the pinning clause, on the nose.
+4. Uniqueness of `χ(τ)` is torsion-freeness; multiplicativity is abelianness;
+   surjectivity is `A₀-1` (`exists_mem_localInertiaGroup_cyclotomicCharacterModL_eq`)
+   together with `τ^e ∈ J` for EVERY `τ ∈ I_N`, again Lagrange in `C`.
+
+The general statement is `exists_fundamentalCharacter_of_relIndex_aux` in the
+section above, over an arbitrary number field `K`, an arbitrary place `v` and an
+arbitrary commutative-group-valued character of `I_v` that kills `P_v` and is
+surjective; this declaration is its instantiation at `K = ℚ`, `v = N` and
+`χ = χ̄_N`, whose two side conditions are `χ̄(P_N) = 1` (the wild inertia is
+`(N−1)`-divisible and `#(ZMod N)ˣ = N − 1`) and `A₀-1`. -/
 theorem exists_fundamentalCharacter_of_relIndex_localInertiaGroup
     {N : ℕ} (hN : N.Prime) (hN19 : 19 < N) {e : ℕ}
     (he : e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 6)
@@ -7539,8 +7929,63 @@ theorem exists_fundamentalCharacter_of_relIndex_localInertiaGroup
       (∀ σ : J, (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
           (Field.absoluteGaloisGroup.map (algebraMap ℚ
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-              hN.toHeightOneSpectrumRingOfIntegersRat)) (σ : _))) = ψ σ ^ e) :=
-  sorry
+              hN.toHeightOneSpectrumRingOfIntegersRat)) (σ : _))) = ψ σ ^ e) := by
+  haveI : NeZero N := ⟨hN.ne_zero⟩
+  have hcast : ∀ m : ℕ, ¬ N ∣ m →
+      ((m : ℕ) : NumberField.RingOfIntegers ℚ) ∉ hN.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
+    intro m hm hmem
+    rw [hN.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal, map_natCast,
+      Int.natCast_dvd_natCast] at hmem
+    exact hm hmem
+  have he0 : 0 < e := by rcases he with rfl | rfl | rfl | rfl | rfl <;> norm_num
+  have hele : e ≤ 6 := by rcases he with rfl | rfl | rfl | rfl | rfl <;> norm_num
+  have hefac : ((Nat.factorial e : ℕ) : NumberField.RingOfIntegers ℚ) ∉
+      hN.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
+    refine hcast _ ?_
+    rw [hN.dvd_factorial]
+    omega
+  let chi := (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩).comp
+    ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hN.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom.comp
+      (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat).subtype)
+  have hchiwild : ∀ w : localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
+      (w : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hN.toHeightOneSpectrumRingOfIntegersRat)) ∈
+        wildInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat → chi w = 1 := by
+    intro w hw
+    have hNm1 : ¬ N ∣ (N - 1) := by
+      intro hd
+      have := Nat.le_of_dvd (by omega) hd
+      omega
+    obtain ⟨u, hu, hueq⟩ := exists_pow_eq_of_mem_wildInertiaGroup
+      hN.toHeightOneSpectrumRingOfIntegersRat (hcast (N - 1) hNm1) hw
+    have huI : u ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat :=
+      wildInertiaGroup_le_localInertiaGroup _ hu
+    have hweq : w = (⟨u, huI⟩ : localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) ^
+        (N - 1) := by
+      apply Subtype.ext
+      push_cast
+      exact hueq.symm
+    have hcard : Fintype.card (ZMod N)ˣ = N - 1 := by
+      haveI : Fact N.Prime := ⟨hN⟩
+      rw [ZMod.card_units_eq_totient, Nat.totient_prime hN]
+    rw [hweq, map_pow, ← hcard]
+    exact pow_card_eq_one
+  have hchisurj : Function.Surjective chi := by
+    intro u
+    obtain ⟨σ, hσ, hval⟩ := exists_mem_localInertiaGroup_cyclotomicCharacterModL_eq hN u
+    exact ⟨⟨σ, hσ⟩, hval⟩
+  obtain ⟨ψ, hsurj, hpin, hpow⟩ :=
+    exists_fundamentalCharacter_of_relIndex_aux hN.toHeightOneSpectrumRingOfIntegersRat
+      he0 hefac hJle hindex chi hchiwild hchisurj
+  refine ⟨ψ, hsurj, ?_, ?_⟩
+  · intro σ
+    obtain ⟨t, ht, hval⟩ := hpin σ
+    exact ⟨(t : _), t.2, ht, hval⟩
+  · intro σ
+    exact hpow σ
 
 /-- **`A₀-3b-i-b` — Raynaud's exponent, against a PINNED fundamental
 character** (sorry leaf, cut 2026-07-31 out of `A₀-3b-i` below; Raynaud, Bull.
