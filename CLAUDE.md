@@ -16151,3 +16151,55 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A CONDITIONAL REDUCTION WITH NO CONSUMER IS A PASS THAT STOPPED ONE STEP SHORT — MOVE THE `sorry` TO THE SHAPE IT EARNED
+
+(2026-08-01, `flt-lean-259`, eleventh pass on `EllipticCurve/IsogenyTrace.lean`.)
+
+The tenth pass proved four theorems reducing the parallelogram law to its **unit-shift
+inequality** `deg (χ+1) + deg (χ−1) ≤ 2 deg χ + 2` — ONE endomorphism, no polynomials —
+and wrote in its own section header that *"the residue of the whole file is therefore the
+single inequality above, **or** its `F[X]` face, leaf (B)"*. It then left the `sorry` on
+leaf (B): a statement over a PAIR of endomorphisms, eight polynomials, four nonvanishing
+hypotheses and a cofinite `IsXNormalForm` certificate whose gap the same header called
+*"the first obstacle on the route, and it is not discussed anywhere else in this file"*.
+
+So the reduction was proven and never applied. **The tell is mechanical and costs one
+grep: a PROVEN conditional theorem with ZERO consumers.**
+
+    grep -n '<the conditional reduction>' <file>   # own decl line only ⇒ never wired in
+
+`End.degree_add_add_degree_sub_of_unitShift_le` had exactly one hit — its own
+declaration. A conditional theorem `hypothesis → goal` exists to be discharged; if
+nothing discharges it, either the hypothesis is not a leaf (so make it one) or the
+theorem is dead. Here it was the first, and moving the `sorry` onto its hypothesis took
+the residue from two endomorphisms to one, from four hypotheses to none, and deleted
+`F[X]`, `IsXNormalForm` and the certificate gap from the obligation entirely.
+
+**The count does not move — 1 leaf in, 1 leaf out — and that must be said in the commit**,
+because a `−1 +1` warning-set delta is indistinguishable from one closure plus one
+unrelated disclosure. Judge it by what is LEFT in the leaf: the arity drop is exactly the
+one CLAUDE.md's *"a `DO NOT SHUFFLE THIS SORRY AGAIN` note is about ARITY"* section calls
+the difference between a lap of the circle and a reduction.
+
+**AND MACHINE-CHECK BOTH DIRECTIONS, so "this is not a strengthening" is a receipt.** A
+recut voids the earlier faithfulness audit; proving the converse restores it in one line
+of prose instead of a re-derivation. State the converse over the OLD form as an explicit
+HYPOTHESIS rather than citing the theorem that currently carries it — then the receipt is
+`sorry`-free, and it still compiles if a later pass moves the `sorry` back.
+
+### The lemma that made it possible was PROVEN INSIDE AN EXISTENTIAL'S BODY
+
+The bridge is well-posedness — `max A.natDegree B.natDegree = deg φ` for an **arbitrary**
+normal form — and it was already proven, inside `End.exists_isXNormalForm_degree`, whose
+body never used that its pair came from `End.exists_isXNormalForm`. Deleting one `obtain`
+turns that proof into the general statement. Several docstrings in the file assert the
+fact in prose ("a reduced pair is unique up to a unit, so the `max` depends only on `φ`")
+and none could cite it.
+
+This is the standing *"a fact proven inside a body that exports a comparison"* pattern in
+its cheapest form, and the check is the same one: **when a docstring asserts a general
+fact in prose, grep the BODIES of the theorems that would have had to know it.** The tell
+is an `∃`-theorem whose proof opens with `obtain ⟨x, hx⟩ := <some existence lemma>` and
+then never mentions where `x` came from — everything after that `obtain` is a theorem
+about an arbitrary `x`.
