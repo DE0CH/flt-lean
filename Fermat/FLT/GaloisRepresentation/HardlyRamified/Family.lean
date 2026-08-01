@@ -3558,7 +3558,27 @@ run in reverse.
 
 `p` is EXPLICIT: it is not determined by `G` (only by `G`'s instance-implicit
 `HopfAlgebra 𝒪ᵖᵥ G`, which synthesis cannot run against a metavariable), so leaving it
-implicit would make every use site fail to elaborate. -/
+implicit would make every use site fail to elaborate.
+
+**THIS PREDICATE HAS EXACTLY ONE PRODUCER, AND IT IS THE BOTTLENECK FOR THE SIBLING FILE**
+(surveyed 2026-08-01 at `280981f1`). `hasInertiaLevelOneFlag_of_hopf_package` below is the
+only declaration in this file whose CONCLUSION is a flag; the six other occurrences of the
+name are all `hflag` binders. That producer runs through
+`exists_levelOneFlag_space_of_charpoly`, hence carries `χ₁`, `χ₂`, `hchar`,
+`[Algebra R (AlgebraicClosure ℚ_[p])]`, `hZinj` and `hRinj` — GLOBAL reducibility of `ρ`
+over `ℚ̄_p` by two continuous characters, i.e. the `¬ IsIrreducible` branch.
+
+`GaloisRepresentation/HardlyRamified/Threeadic.lean`'s two Raynaud leaves
+(`connected_locus_smul_of_hopf_package`, `connected_locus_le_line_of_hopf_package`) want
+exactly `isMultiplicativeType_corner_of_inertiaLevelOneFlag` below, whose closure is only
+6 declarations and 489 lines and is acyclic with that file — but they carry no global
+reducibility, only RESIDUAL reducibility with trivial quotient character, so the producer
+above cannot be instantiated there and the extraction on its own buys them nothing. The
+measurement, the full cone sizes and the flag construction that IS available from residual
+data alone (the residual sub character is `ω`, whose values lie in the PRIME FIELD, which
+is precisely item (iv) above) are written up in that file, on
+`connected_locus_smul_of_hopf_package`. A second, `hchar`-free producer of this predicate
+is the thing to write; it would serve both files. -/
 def HasInertiaLevelOneFlag (G : Type) [CommRing G]
     [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G] : Prop :=
   ∃ (n : ℕ) (M : ℕ → AddSubmonoid (Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ))),
