@@ -1050,7 +1050,24 @@ sharpens the "false one generality up" clause above rather than contradicting it
 counterexample is a functor that does NOT preserve the relevant products, and preserving
 them is exactly what the site supplies here.  So there is no hypothesis about the site
 left in the development at all — only a hypothesis about `F`, discharged in two lines
-because `Opens` is thin and `Opens.map` preserves `⊓`. -/
+because `Opens` is thin and `Opens.map` preserves `⊓`.
+
+**AND THE THIRD AMENDMENT'S DOWNSTREAM PRESCRIPTION IS WITHDRAWN.**  It says
+`isIso_modPullbackTensorComparison`, `modPullbackTensorComparison` and
+`modPullbackTensorComparison_tensorSection` in `Modularity/AmpleSheaf.lean` should be
+DELETED once the leaf here is closed.  Do NOT act on that: measured 2026-08-01,
+`isIso_modPullbackTensorComparison` is an `instance`, PROVEN, and it is the CONSUMER
+chain rather than a duplicate — it rests on that module's one remaining open leaf
+`modLocW_modPullbackTensorPre`, and `exists_modPullback_modTensor` (which has consumers
+in `AbelianSchemeIsogeny.lean` and `X0.lean`) rests on it in turn.  What the work here
+does buy that module is different and better: `modLocW_modPullbackTensorPre` is now a
+CONSEQUENCE rather than a leaf, because `modPrePullback`/`modPreAdj` there are literally
+`presheafModPullback`/`pullbackPushforwardAdjunction` here, so
+`isIso_pullback_delta h.c (isIso_presheafModPullback_delta_freeYoneda h)` gives `IsIso`
+of `δ` at ALL presheaves.  Note also that its docstring's claim that
+`(PresheafOfModules.pushforward φ).LaxMonoidal` "does not exist at this pin" is stale —
+it is `PresheafOfModules.pushforwardLaxMonoidal`, and its `μ` is the identity on
+elements (`pushforward_μ_app_tmul`), which is exactly what `prePushTensor` computes. -/
 
 /-- **The PRESHEAF-level pullback** of presheaves of modules along a morphism of
 schemes, i.e. `Scheme.Modules.pullback h` before sheafification.
