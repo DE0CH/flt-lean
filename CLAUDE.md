@@ -14577,6 +14577,64 @@ What actually blocks the tail now is smaller and nobody had looked: it reference
 (`RelPoint.ofSection`, `PointOfExactOrder`, `Gamma1Datum`, `IsBaseChangeOfGamma1` and the
 namespace block), roughly 270 lines. So the remaining two Mazur-Theorem-1 leaves are one
 270-line relocation plus a replay away, not "no route exists".
+
+### CORRECTION (2026-07-31, `flt-lean-247`): THE `X1` VERDICT IS ITSELF A FALSE POSITIVE, AND THE REAL BLOCKER IS A CYCLE THE SCANNER COULD NOT SEE
+
+The paragraph immediately above is wrong twice, and both errors are instructive because
+the section's own thesis — re-measure, do not inherit — is what catches them.
+
+**1. `IsBaseChangeOfGamma1` is not referenced at all.** The token
+`IsBaseChangeOfGamma1` occurs **zero** times in the 258-declaration closure.
+`flt-cyclecheck.py` matched on the SHORT names `refl`, `comp`, `along_injective`, whose
+real referents are `Equiv.refl`, `AlgHom.comp` and the block's **own**
+`MazurIsogenyPrimeJ.IsEllipticIsoOf.along_injective`; the `Interface.lean` hit
+`Modularity.val_neg` is `Units.val_neg`. Verified by instantiating each occurrence. So
+"one 270-line relocation away" was an invitation to relocate something nothing needs.
+That scanner now carries a PREFIX GUARD, and — this is the part worth copying — it
+requires the **innermost** namespace component, not *some* component: this project puts
+almost everything under `Fermat`, so an `any()` over the components passes on `Fermat`
+alone and suppresses nothing. Suppressed hits are still printed, in their own list.
+
+**2. THE BLOCKER IS A CYCLE THROUGH THE TARGET LEAF ITSELF, AND NO SCANNER IN THIS TREE
+WAS LOOKING FOR ONE.** Every cycle check here — including this section — asks *does the
+closure reach a module that IMPORTS the destination*. That is one half of the question,
+and it is the half answerable by reading other files. The other half is *does the closure
+reach the destination's OWN material declared BELOW where the block would land*, and the
+worst case of it is that the closure reaches **the very leaf the hoist exists to close**.
+Here it does, along a seven-link chain of genuine call sites:
+
+    exists_jMap_classNumberOne → card_le_of_isogenyPrimeHigherGenus → card_y0Le_classNumberOne
+      → nonempty_isCMByRamifiedMaximalOrder_of_classify_eq → …_of_isBaseChangeOf
+      → …_of_isBaseChangeOf_of_endMinpoly → exists_relSchemeEnd_of_endMinpoly_of_weierstrassModel
+      → exists_endMinpoly_of_stable_cyclic_isolatedJ
+      → **`Fermat.mem_isolatedJInvariants_of_stable_classNumberOne`** (MazurTorsion.lean:41417)
+
+`card_y0Le_classNumberOne`'s step **2** is literally commented *"Mazur: each of them is a
+CM datum"*. So the ordering constraints are contradictory and **the hoist is impossible
+under every arrangement of files** — it would survive merging the two modules into one.
+`flt-cyclecheck.py` grew a section 4, DEST-SIDE FORWARD REFERENCES, which reports exactly
+this; run it with `--at <the insertion line>`.
+
+**The generalisable rules, and the second is the one this cost a day on:**
+
+* **A "PROVEN" theorem next door is not independent evidence for the leaf it would close
+  — check whether its proof CONSUMES that leaf.** `card_y0Le_classNumberOne` is proven
+  *relative to* the node it is offered as a route to, so the whole cluster is
+  `sorryAx`-tainted through it. This is the [[flt-a-leaf-can-contain-a-leaf]] trap in the
+  direction nobody checks: not "my leaf secretly contains another", but "the theorem
+  offered as my leaf's proof secretly contains my leaf".
+* **A hoist has TWO cycle questions and the tooling only ever asked one.** Before pricing
+  any relocation, grep the closure for the target's OWN name. It is one command and it is
+  the difference between a three-hour measurement and a three-minute one.
+
+**And the split verdict this produced, since a cost wall is a result:** the same
+measurement shows `p = 37` IS free. `card_le_of_isogenyPrimeHigherGenus`'s `37` branch
+calls only `card_y0Le_thirtySeven`, whose 47-declaration closure touches no leaf of
+`X0.lean`; splitting that theorem by level gives `exists_jMap_thirtySeven` a closure of
+**57 declarations / 3117 lines, all inside the tail, zero forward references**. So of the
+two leaves this section promised, one is a bounded relocation and the other cannot be done
+at all until `card_y0Le_classNumberOne` is cut back to a leaf — which is the honest cut
+anyway, since `#Y_0(p)(ℚ) ≤ 1` at `p ∈ {43,67,163}` IS Mazur's Eisenstein-ideal descent.
 ## A PIN AUDIT THAT GREPS MATHLIB AND STOPS IS HALF THE SEARCH — GREP THE PROJECT TOO
 (2026-07-31, `flt-lean-255`, cutting `exists_isCMJInvariant_ne_of_not_equivalent`.)
 The CM SURVEY written for this cluster the same day is careful, explicitly says every line

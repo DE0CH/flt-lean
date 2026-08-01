@@ -35,16 +35,47 @@ WHAT IT REPORTS.
      means the hoist is legal, non-empty names exactly what has to move first.
   3. for each offending module, the within-file closure of the offending
      declarations — i.e. the price of moving them upstream instead.
+  4. **DEST-SIDE FORWARD REFERENCES** — declarations of DEST ITSELF that the
+     closure references and that are declared at or after the insertion point.
+     See below; this is the check that decides a hoist and it was missing.
 
 USAGE
     ./flt-cyclecheck.py --block Fermat/FLT/FreyCurve/MazurTorsion.lean 50383 57658 \
-                        --dest Fermat/FLT/ModularCurve/X0.lean
+                        --dest Fermat/FLT/ModularCurve/X0.lean [--at LINE]
+
+`--at` is the line of DEST the block would land at (default: end of file).  A
+hit in section 4 is a cycle that NO relocation, module split or import change
+can repair, because it does not run through the import graph at all.
+
+**WHY SECTION 4 EXISTS** (2026-07-31, flt-lean-247).  Sections 2 and 3 ask
+"does the closure reach a module that imports DEST".  That is only half the
+question, and it is the half that happens to be answerable by looking at other
+files.  The other half is: *does the closure reach DEST's own material that
+sits BELOW where the block would land* — in particular **the very leaf the
+hoist is meant to close**.  Measured on the `MazurIsogenyPrimeJ` higher-genus
+tail: sections 2 and 3 reported two cycles, both FALSE POSITIVES (see the
+prefix guard below), so the hoist read as legal; and it is impossible, because
+`exists_jMap_classNumberOne` transitively calls
+`exists_endMinpoly_of_stable_cyclic_isolatedJ`, whose proof CONSUMES
+`Fermat.mem_isolatedJInvariants_of_stable_classNumberOne` — the target.  The
+ordering constraints are contradictory and no arrangement of files satisfies
+them.
 
 WHAT IT CANNOT SEE, and it is the same short list every scanner here has:
 anonymous `instance`s (no name to scan for), `simp`-set membership, and
-notation.  It matches on the SHORT name, which OVER-approximates references —
-the safe direction for a "would this be a cycle" question, since a false cycle
-costs a read and a missed one costs a build.
+notation.
+
+**THE PREFIX GUARD, and why a bare short-name match is useless here.**  A hit is
+reported only when the referencing body ALSO mentions the declaration's
+namespace prefix.  Without that guard this scanner reported
+`Fermat.IsBaseChangeOfGamma1.{refl, comp, along_injective}` in `X1.lean` and
+`GaloisRepresentation.Modularity.val_neg` in `Interface.lean` as cycles; the
+four real referents were `Equiv.refl`, `AlgHom.comp`, the block's OWN
+`MazurIsogenyPrimeJ.IsEllipticIsoOf.along_injective`, and `Units.val_neg`, and
+the token `IsBaseChangeOfGamma1` does not occur in the closure at all.  That
+false verdict was recorded as fact in two X0 docstrings and in CLAUDE.md and
+was believed for a day.  Dot notation needs a term of the type, so the type's
+name appears in the referencing body — which is what makes the guard sound.
 """
 
 import argparse
@@ -193,10 +224,42 @@ def importers_of(dest, root='Fermat'):
     return {m: m.replace('.', '/') + '.lean' for m in sorted(target)}
 
 
+def refers(ctok, full, short):
+    """Verdict on whether a closure with token set `ctok` references `full`.
+
+    -> 'strong' | 'weak' | None
+
+    The short name alone is worthless for a common suffix (`refl`, `comp`,
+    `one`, `mul`, `val_neg`), because dot notation makes every mathlib lemma
+    ending that way look like a hit.  So also require the INNERMOST namespace
+    component — for `A.B.foo` that is `B`, the type dot notation resolves
+    through, whose name therefore appears in the referencing body.
+
+    It must be the innermost and not merely *some* component: this project puts
+    almost everything under `Fermat`, so an `any()` over the components passes
+    on `Fermat` alone and suppresses nothing.  That is exactly how
+    `Fermat.IsBaseChangeOfGamma1.refl` came to be recorded as a real cycle.
+
+    A hit that has the short name but not the prefix is returned as 'weak'
+    rather than dropped — `open B` lets a reference omit the prefix, so
+    suppressing silently could hide a real cycle.  Weak hits are reported in
+    their own list; the caller must eyeball them, which is seconds, instead of
+    believing them, which was a day."""
+    if short not in ctok:
+        return None
+    prefix = full[: -(len(short) + 1)] if full.endswith('.' + short) else ''
+    if not prefix:
+        return 'strong'
+    inner = prefix.split('.')[-1]
+    return 'strong' if inner in ctok else 'weak'
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--block', nargs=3, metavar=('FILE', 'LO', 'HI'), required=True)
     ap.add_argument('--dest', required=True)
+    ap.add_argument('--at', type=int, default=None,
+                    help='line of DEST the block would land at (default: EOF)')
     ap.add_argument('--root', default='Fermat')
     a = ap.parse_args()
     src, lo, hi = a.block[0], int(a.block[1]), int(a.block[2])
@@ -220,13 +283,15 @@ def main():
 
     mods = importers_of(a.dest, a.root)
     print(f'\nDEST   {a.dest}  ({len(mods)} modules transitively import it)')
-    cycles = 0
+    cycles, weak = 0, []
     for mod, path in mods.items():
         if not os.path.exists(path) or os.path.abspath(path) == os.path.abspath(src):
             continue
         mb, mt, mbs = index(path)
-        hit = sorted((mb[f][0], f) for s, v in mbs.items()
-                     if s in ctok and len(s) >= 4 for f in v)
+        graded = [(mb[f][0], f, refers(ctok, f, s))
+                  for s, v in mbs.items() if len(s) >= 4 for f in v]
+        hit = sorted((ln, f) for ln, f, g in graded if g == 'strong')
+        weak += sorted((mod, ln, f) for ln, f, g in graded if g == 'weak')
         if not hit:
             continue
         cycles += len(hit)
@@ -236,8 +301,37 @@ def main():
         for ln, f in hit:
             print(f'    {ln:7d}  {f}')
     if cycles == 0:
-        print('\n  NO CYCLE: the closure references nothing declared in any module '
-              'that imports the destination.')
+        print('\n  NO CYCLE via importers: the closure references nothing declared '
+              'in any module that imports the destination.')
+    if weak:
+        print(f'\n  {len(weak)} SHORT-NAME-ONLY hits, suppressed by the prefix guard '
+              '(see the docstring).\n  Almost always a mathlib name of the same '
+              'suffix, or the block\'s own declaration.\n  Check by hand only if the '
+              'strong list is empty and the hoist still fails:')
+        for mod, ln, f in weak[:12]:
+            print(f'    {ln:7d}  {f}   [{mod}]')
+
+    # ---- 4. DEST-SIDE FORWARD REFERENCES ------------------------------------
+    # The half of the question that lives inside DEST itself.  A hit here is
+    # fatal in a way an import cycle is not: it survives every relocation,
+    # every module split and every import edit, because the constraint is
+    # `target < X` and `X < ... < block < target` simultaneously.
+    db, dt, dbs = index(a.dest)
+    at = a.at if a.at is not None else max(v[0] for v in db.values()) + 1
+    fwd = sorted((db[f][0], f) for s, v in dbs.items()
+                 if len(s) >= 4 for f in v
+                 if db[f][0] >= at and refers(ctok, f, s) == "strong")
+    print(f'\nDEST-SIDE FORWARD REFERENCES  (insertion point: line {at})')
+    if not fwd:
+        print('  none: everything the closure needs from the destination is '
+              'declared above the insertion point.')
+    else:
+        print(f'  *** {len(fwd)} — THE HOIST IS IMPOSSIBLE AS CUT. ***  The closure '
+              'needs these,\n      and they are declared BELOW where it would land.  '
+              'No relocation, module\n      split or import change repairs this; the '
+              'cut itself has to move.')
+        for ln, f in fwd:
+            print(f'    {ln:7d}  {f}')
     return 0
 
 
