@@ -16151,3 +16151,75 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A CONSUMER SCAN THAT EXCLUDES DOTTED USES REPORTS A LIVE LEAF AS DEAD
+
+(2026-08-01, `flt-lean-288`, caught one step before it produced a false report.)
+The standing "is this leaf DEAD" check is a comment-stripped transitive scan for
+consumers. The obvious way to write it is to guard the name with a lookbehind
+that excludes a preceding dot, so that `hA.gamma0_mul` is not counted as a use of
+`gamma0_mul`:
+
+    (?<![A-Za-z0-9_.'])<name>(?![A-Za-z0-9_.'])
+
+**That guard also excludes every NAMESPACE-QUALIFIED use**, and this tree is full
+of them: a module outside `namespace Fermat` writes `Fermat.foo`, not `foo`. My
+scan walked the chain up from the target through eight consumers and reported the
+top — `exists_weilFrobeniusSystem_of_mult` — as CONSUMED BY NOTHING, i.e. the
+whole chain dead. It is consumed, at `Modularity/MoretBailly.lean:59749`, as
+`Fermat.exists_weilFrobeniusSystem_of_mult`. Reporting the chain dead would have
+turned an ordinary decomposition task into a spurious "delete this subtree".
+
+The existing note in this file about dot notation is the OPPOSITE direction (a
+whole-token scan misses `hA.gamma0_mul`, so it under-reports), and defending
+against it is what produces this over-correction. Both are fixed at once by
+keying on the LAST DOTTED COMPONENT — index every declaration by every suffix of
+its qualified name, and match tokens of the form `[A-Za-z_][A-Za-z0-9_.']*` by
+their suffixes. **And whatever the scan says, before writing "DEAD" in a report,
+run one plain `grep -rn '<name>' --include=*.lean .` and read the hits by eye**;
+it takes five seconds and it is the only check that cannot be defeated by a regex
+bug.
+
+## A STRUCTURE FIELD OVER `κ` CANNOT BE BUILT FROM DATA WHOSE RESIDUE FIELD IS `κᵃˡᵍ`
+
+(2026-08-01, `flt-lean-288`, cutting `exists_finset_abelianReductionDatum_of_placeAbove`
+in `Modularity/TateModule.lean`.) The leaf hands in a valuation ring `O` of `F̄`
+above `w` and asks for, among other things, an abelian scheme `f' : A' ⟶ Spec κ(w)`.
+The obvious cut — "build the model over `O`, take `A'` to be its closed fibre" —
+is not merely awkward, it is **impossible from the data given**: the residue field
+of `O` is `κ(w)ᵃˡᵍ`, and descending the closed fibre from `κ(w)ᵃˡᵍ` to `κ(w)` needs
+the whole of `Γ_{κ(w)}`, while the hypotheses supply exactly ONE element `σ`.
+
+So the cut has to go through a base whose residue field is `κ(w)` ON THE NOSE, and
+in this development that is `Localization.AtPrime w.asIdeal` — because mathlib's
+`Ideal.ResidueField I` is *defined* as `IsLocalRing.ResidueField (Localization.AtPrime I)`,
+so `w.asIdeal.ResidueField` is that local ring's residue field with no comparison
+map to build. Its fraction field is `F`, so the generic fibre is right too; it is
+the smallest base carrying both fibres.
+
+**Generalisable check, and it is one line: for each object the conclusion asks
+for, write down the FIELD (or ring) it must live over, and compare with the residue
+field of the base you were planning to build the model over.** A mismatch by an
+algebraic closure is a descent obligation that the hypotheses will not fund, and it
+decides where the cut must go before any mathematics is attempted.
+
+Two riders from the same run:
+
+* **The base-ring map is not a further leaf — it is provable, and proving it makes
+  the transport half strictly smaller.** `𝒪_{F,w} ⟶ O` comes out of the leaf's own
+  pinning clauses: `lift_int` plus injectivity of `ι` give a ring map `𝓞 F ⟶ O` (the
+  preimage is unique, and uniqueness is what makes it additive and multiplicative),
+  `lift_int` plus `ker_π` make every element outside `w` a unit, and
+  `IsLocalization.lift` extends it. Its three properties — the composite to `F̄` is
+  canonical, the Frobenius fixes it, and it is local — are ~100 lines in total.
+  Hand it to the open half as a HYPOTHESIS discharged at the call site, so the proven
+  theorem has a consumer and is not free-floating.
+* **`hρπ` makes the map local, and locality does NOT pin the induced residue
+  embedding.** `π ∘ ρ` kills the maximal ideal, so it induces `κ(w) ↪ κ(w)ᵃˡᵍ` —
+  but nothing in the hypotheses makes that the canonical `algebraMap`. What IS
+  forced is that its image is the subfield `𝔽_{N w}`: combine "the Frobenius fixes
+  `𝒪_{F,w}`" with `hgalπ` and `hσ` to get `π(ρ a)^{N w} = π(ρ a)`. So it is the
+  canonical embedding composed with an automorphism of `κ(w)`, and a prover who
+  assumes it is canonical will be unable to close the special-fibre identification.
+  Record that in the open leaf's docstring; it is invisible from the statement and
+  it costs only a twist to absorb.
