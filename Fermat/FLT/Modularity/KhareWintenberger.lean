@@ -127,6 +127,7 @@ module
 -- (`henselianLocalRing_adicCompletionIntegers`), on which both LOCAL leaves of
 -- STEP 1a-i′ rest.  This is the module's ONLY consumer.
 public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.AdicCompletionIsAdic
+public import Fermat.FLT.Mathlib.NumberTheory.PrimeCyclicInertia
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 -- The VENDORED quaternionic automorphic-forms development (weight-2 forms on a
 -- totally definite quaternion algebra over a totally real field, with their
@@ -19813,8 +19814,14 @@ theorem charFrob_baseChange_eq_of_absNorm_eq {ℓ : ℕ}
 
 /-- **ARTHUR–CLOZEL DESCENT FOR ONE PRIME-DEGREE CYCLIC STEP — THE HECKE-FIELD
 HALF, AND ALL THAT IS LEFT OF IT** (sorry LEAF; cut 2026-07-30, TENTH OWNER,
-out of `exists_baseChangeDickson_of_prime_cyclic_step_of_inert` immediately
-below, which is now a PROVEN assembly over this leaf).
+out of `exists_baseChangeDickson_of_prime_cyclic_step_of_inert` below;
+**RECUT 2026-08-01, ELEVENTH OWNER — the place clause was PEELED and PROVEN,
+count unchanged `1 -> 1`**, see THE PEEL below).
+
+The theorem that carries the old name,
+`exists_baseChangeHeckeField_of_prime_cyclic_step_of_inert`, is now a PROVEN
+assembly over this leaf and over
+`Fermat.exists_absNorm_eq_pow_of_prime_index`, so no consumer moved.
 
 WHAT THIS LEAF ASSERTS, and it is the whole automorphic content of the descent
 step: the Frobenius TRACES of `ρ` over `M = F^D` are ALGEBRAIC, and lie in ONE
@@ -19878,16 +19885,101 @@ the `M` side, in the determinant that `D_p` consumes.
 
 FAITHFULNESS OF WHAT REMAINS.  The trace clause is the Hecke-field statement of
 Arthur–Clozel Ch. 3 Thm 4.2(d) (via Carayol local–global compatibility), with
-the twist absorbed as above; it is TRUE and it is a citation.  The place clause
-is elementary and would be the natural NEXT CUT: for `L/M` cyclic of prime
-degree `p`, a `w` whose residue cardinality is realised by no good place of `L`
-is inert, and the unique place above it has `Nv = Nw^p`.  That is ordinary
-ramification theory (`Ideal.sum_ramification_inertia`) and needs no automorphic
-input; it is left here only because peeling it requires the `L/M` tower
-instances, which this statement deliberately does not carry.
+the twist absorbed as above; it is TRUE and it is a citation.  **Nothing else is
+left**: this leaf is now PURELY that citation.
+
+**THE PEEL (2026-08-01).**  The place clause — for `L/M` cyclic of prime degree
+`p`, a `w` whose residue cardinality is realised by no good place of `L` is
+inert, so the place above it has `Nv = Nw^p` — was named here as "the natural
+NEXT CUT", correctly priced as ordinary ramification theory needing no
+automorphic input, and declined "only because peeling it requires the `L/M`
+tower instances, which this statement deliberately does not carry".
+
+That last clause is right about the instances and wrong about where they must
+live.  The tower `M = F^D ⊆ F^C = L` is definable inside the PROOF, so the
+peeled statement mentions only `Subgroup (F ≃ₐ[ℚ] F)` and the two fixed fields —
+exactly the vocabulary already used here — and every instance is introduced by
+`letI`/`haveI` in the proof body.  It is now PROVEN, as
+`Fermat.exists_absNorm_eq_pow_of_prime_index` in
+`Fermat/FLT/Mathlib/NumberTheory/PrimeCyclicInertia.lean`, over the fundamental
+identity `e·f·g = p` for a Galois extension
+(`Ideal.ncard_primesOver_mul_ramificationIdxIn_mul_inertiaDegIn`): the residue
+degree divides `p` and is not `1`, hence is `p`.  Galois is load-bearing there —
+without it `∑ e_v f_v = p` permits `(e,f) = (1,2)` and `(1,3)` at `p = 5` — and
+it comes from `(C.subgroupOf D).Normal` by the standard conjugation argument.
+
+THE AUDITS ABOVE TRANSFER VERBATIM.  This recut only DELETED a conjunct from the
+conclusion, so the statement is strictly WEAKER than the one they were written
+against; every counterexample to this leaf is a counterexample to that one.  In
+particular the `ζ`-torsor analysis, and its correction of the ninth-owner audit,
+are untouched.  (The hypothesis `∀ v ∉ SL, Nv ≠ Nw` is RETAINED even though the
+trace clause does not need it — it costs a prover nothing, and keeping it is
+what makes the "strictly weaker" claim, hence the inheritance, immediate.)
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_baseChangeHeckeFieldTrace_of_prime_cyclic_step_of_inert
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
+    (hnormal : (C.subgroupOf D).Normal)
+    (p : ℕ) (hp : p.Prime)
+    (hcard : Nat.card (D ⧸ C.subgroupOf D) = p)
+    (EL : Type u) [Field EL] [NumberField EL]
+    (ψL : EL →+* AlgebraicClosure ℚ_[ℓ])
+    (SL : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C))))
+    (PL : HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C)) → Polynomial EL)
+    (hPL : ∀ v ∉ SL,
+      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
+        v).map Wit.ιO = (PL v).map ψL) :
+    ∃ (EM : Type u) (_ : Field EM) (_ : NumberField EM)
+      (ψM : EM →+* AlgebraicClosure ℚ_[ℓ]) (ιM : EL →+* EM),
+      (∀ x : EL, ψM (ιM x) = ψL x) ∧
+      ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField D))))
+        (a : HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField D)) → EM),
+        ∀ w ∉ S,
+          (∀ v ∉ SL, Ideal.absNorm v.asIdeal ≠ Ideal.absNorm w.asIdeal) →
+          Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+            w).coeff 1) = ψM (a w) :=
+  sorry
+
+open scoped Classical in
+/-- **ARTHUR–CLOZEL DESCENT FOR ONE PRIME-DEGREE CYCLIC STEP — THE TRACE AND
+THE PLACE TOGETHER** (**PROVEN 2026-08-01, ELEVENTH OWNER**; this carries the
+name and the exact statement the cut of 2026-07-30 gave it, so that its consumer
+`exists_baseChangeDickson_of_prime_cyclic_step_of_inert` below did not move).
+
+It is the conjunction of
+`exists_baseChangeHeckeFieldTrace_of_prime_cyclic_step_of_inert` above — the
+Arthur–Clozel citation, and now the ONLY open content of this step — with
+`Fermat.exists_absNorm_eq_pow_of_prime_index`, the ramification-theoretic place
+clause, which is PROVEN in
+`Fermat/FLT/Mathlib/NumberTheory/PrimeCyclicInertia.lean`.
+
+The two exceptional sets are simply unioned; `Wit.galoisF` is what supplies
+`IsGalois ℚ Wit.F` to the place clause. -/
 theorem exists_baseChangeHeckeField_of_prime_cyclic_step_of_inert
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -19934,8 +20026,17 @@ theorem exists_baseChangeHeckeField_of_prime_cyclic_step_of_inert
           Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
             w).coeff 1) = ψM (a w) ∧
           ∃ v, v ∉ SL ∧
-            Ideal.absNorm v.asIdeal = Ideal.absNorm w.asIdeal ^ p :=
-  sorry
+            Ideal.absNorm v.asIdeal = Ideal.absNorm w.asIdeal ^ p := by
+  classical
+  obtain ⟨EM, fEM, nEM, ψM, ιM, hcompat, S, a, ha⟩ :=
+    exists_baseChangeHeckeFieldTrace_of_prime_cyclic_step_of_inert hℓodd hℓ5 hZinj
+      hrank hρ hW hρbar hirr π hπsurj hπ Wit C D hCD hnormal p hp hcard EL ψL SL PL hPL
+  haveI := Wit.galoisF
+  obtain ⟨S', hS'⟩ :=
+    Fermat.exists_absNorm_eq_pow_of_prime_index hCD hnormal hp hcard SL
+  refine ⟨EM, fEM, nEM, ψM, ιM, hcompat, S ∪ S', a, fun w hw hinert => ⟨?_, ?_⟩⟩
+  · exact ha w (fun h => hw (Finset.mem_union_left _ h)) hinert
+  · exact hS' w (fun h => hw (Finset.mem_union_right _ h)) hinert
 
 /-- **ARTHUR–CLOZEL DESCENT FOR ONE PRIME-DEGREE CYCLIC STEP — THE ALGEBRAIC
 HALF** (**PROVEN 2026-07-30, TENTH OWNER**, as an assembly over
