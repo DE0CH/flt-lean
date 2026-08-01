@@ -39285,10 +39285,32 @@ because `43, 67, 163 ≠ 37`.
 
 So the Eisenstein-ideal/`j`-invariant argument and the scheme-theoretic bridge —
 which have entirely different owners in the literature and entirely different
-failure modes — no longer sit behind one `sorry`. -/
+failure modes — no longer sit behind one `sorry`.
+
+**WITHDRAWN 2026-08-01, and the two paragraphs above are kept only as history.**
+The "DEEP half" they name, `exists_endMinpoly_of_isogenySignature_six`, and the
+`{43, 67, 163}`-level form `exists_endMinpoly_of_stable_cyclic_mazurLevel` proven
+over it, have both been DELETED.  They were correct and proven; they were also,
+after 2026-07-31, a closed loop — the signature-`6` route reached the CM
+structure only through `nonempty_isCMByRamifiedMaximalOrder_geomPoint_mazurLevel`,
+which was proven over `exists_endMinpoly_of_stable_cyclic_isolatedJ`, which has
+the SAME statement as the `_mazurLevel` form the route was supposed to establish.
+The whole tower is gone; the surviving statement of Mazur-in-Weierstrass-form is
+`exists_endMinpoly_of_stable_cyclic_isolatedJ`, and the surviving arithmetic is
+`X0.lean`'s two `j`-invariant leaves.  See the deletion note above
+`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf` for the cycle written out
+and the recovery command.  The Serre isogeny-signature analysis those paragraphs
+describe is UNAFFECTED and still has consumers; it is only the assembly layer
+above it that went. -/
 
 /-!
 ### The signature-`6` node, cut into modular geometry and the maximal order
+
+**WITHDRAWN 2026-08-01 — every declaration this subsection describes has been
+DELETED.  Kept as history, because the mathematics in it is correct and is the
+best record of what the Vélu/Atkin–Lehner route was.**  `git show
+280981f1:Fermat/FLT/FreyCurve/MazurTorsion.lean` recovers all of it.  Read the
+rest of this note in the past tense.
 
 (2026-07-28, and it makes `exists_endMinpoly_of_isogenySignature_six` PROVEN
 over ONE new leaf rather than a bare `sorry`.)
@@ -39341,561 +39363,32 @@ All three Mazur levels satisfy `43 ≡ 67 ≡ 163 ≡ 3 (mod 8)`, so nothing is 
 a successor generalising this should replace the hypothesis by a form-existence
 hypothesis rather than by a class-number function. -/
 
-/-- **`End W` is torsion free** (PROVEN 2026-07-28): if `[n] ∘ X = 0` for some
-`n ≠ 0` then `X = 0`.
+/-! #### DELETED HERE 2026-08-01: the `ψ = √−N`-as-a-morphism block and the
+self-isogeny/Atkin–Lehner pair that rested on it (22 declarations, 556 lines)
 
-A nonzero isogeny is SURJECTIVE (`IsIsogeny.surjective`), so `[n] ∘ X = 0` with
-`X ≠ 0` would make every point of `W` be `n`-torsion, and the `n`-torsion is
-finite (`finite_nsmulKer`) while `W.Point` is infinite (`infinite_point`).
+Recover with `git show 280981f1:Fermat/FLT/FreyCurve/MazurTorsion.lean`, lines
+39344–39899.  What stood here: `eq_zero_of_natCast_mul_eq_zero`,
+`exists_two_mul_sub_one_eq_of_endSq_eq_neg`, the whole
+`namespace IsCMByRamifiedMaximalOrder` block (`psiPt`, `psiPt_def`, `phiHom`,
+`phiHom_apply`, `psiPt_add`, `psiHom`, `psiHom_apply`, `psiPt_pre`, `psiMor`,
+`psiMor_comp`, `psiPt_val`, `post_psiMor`, `psiNegMor`, `psiNegMor_comp`,
+`psiNegPt_val`, `post_psiNegMor`, `psiSq_group_identity`, `psiPt_psiPt`), and
+then `nonempty_isNIsogenyPair_self_of_isCMByRamifiedMaximalOrder` and
+`atkinLehnerFixed_of_isNIsogenyPair_self_geom`.  All PROVEN; none was false.
 
-This is the cancellation that lets an identity proven after multiplying by `4`
-— which is how `φ² + (N+1)/4 = φ` is obtained from `(2φ − 1)² = [−N]` — be
-divided back down. -/
-theorem eq_zero_of_natCast_mul_eq_zero {F : Type*} [Field F]
-    [DecidableEq F] [IsAlgClosed F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
-    {n : ℕ} (hn : n ≠ 0) {X : WeierstrassCurve.End W}
-    (h : (n : WeierstrassCurve.End W) * X = 0) : X = 0 := by
-  have hcoe := congrArg (fun f : WeierstrassCurve.End W => (f : AddMonoid.End W.Point)) h
-  have hpt : ∀ P : W.Point, n • ((X : AddMonoid.End W.Point) P) = 0 := by
-    intro P
-    have h2 := congrArg (fun f : AddMonoid.End W.Point => f P) hcoe
-    simpa using h2
-  by_cases hne : ((X : AddMonoid.End W.Point) : W.Point →+ W.Point) = 0
-  · exact Subtype.ext hne
-  · exfalso
-    have hsurj := X.2.surjective hne
-    have hall : ∀ Q : W.Point, n • Q = 0 := by
-      intro Q
-      obtain ⟨P, hP⟩ := hsurj Q
-      rw [← hP]
-      exact hpt P
-    have hfin : (Set.univ : Set W.Point).Finite :=
-      (WeierstrassCurve.finite_nsmulKer (W := W) hn).subset (fun P _ => hall P)
-    haveI := WeierstrassCurve.infinite_point W
-    exact (Set.infinite_univ (α := W.Point)) hfin
+**Why they went.**  Their only consumer, directly or transitively, was
+`ajFixed_x0MazurLevel` — the entry point of the tautology deleted at the second
+site below.  Once that tower goes, every declaration listed here is
+consumerless, i.e. free-floating, which this project forbids.  The two
+mathematically interesting survivors of the block —
+*a CM datum for `𝒪_{−N}` is `N`-isogenous to itself* and *a self-`N`-isogenous
+`ℚ̄`-moduli point is `w_N`-fixed* — are LEVEL-GENERIC and were proven outright,
+so they are worth restoring the moment anything wants them; the recovery command
+above is the whole cost.  Nothing else in the tree referenced them: verified by a
+comment-stripped, dot-notation-aware scan of every `.lean` file under `Fermat/`.
 
-/-- **THE MAXIMAL-ORDER STEP: `ψ² = [−N]` over `ℚ` forces `(1 + ψ)/2` to be an
-endomorphism** (PROVEN 2026-07-28, over `End.exists_intBasis` and
-`classNumberOne_of_end_closure_eq_top`; no new leaf).
-
-`E` is defined over `ℚ`, so `j(E) ∈ ℚ`, so the CM order has class number one;
-`ℤ[ψ] = ℤ[√−N]` has discriminant `−4N` and class number `> 1` for every prime
-`N ≥ 23`.  Hence `ℤ[ψ]` is a PROPER suborder of `End(E_ℚ̄)`, and the only order
-strictly between `ℤ[√−N]` and its fraction field that can occur is `O_{−N}`,
-which contains `(1 + √−N)/2`.  See the section note above for the argument in
-coordinates, for why `23 ≤ N` is load-bearing (`N = 7` is a counterexample
-without it), and for the role of `N % 8 = 3`.
-
-**Faithfulness of the CONCLUSION.** `2 * φ − 1 = ψ` is the honest form: it says
-`φ` is a genuine element of `WeierstrassCurve.End`, which carries an
-`IsRationalMap` certificate, so this is a statement about complex multiplication
-and not about `M₂(Ẑ)`.  Do NOT weaken it to `ψ² = [−N]` alone — that pins only
-`ℤ[√−N]`, of discriminant `−4N`, where `h = 3` at all three Mazur levels. -/
-theorem exists_two_mul_sub_one_eq_of_endSq_eq_neg
-    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
-    (hN : N.Prime) (hN23 : 23 ≤ N) (hN8 : N % 8 = 3)
-    (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
-    (hsq : ψ * ψ
-      = ((-(N : ℤ) : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) :
-    ∃ φ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine, 2 * φ - 1 = ψ := by
-  classical
-  have hNpos : (0 : ℤ) < (N : ℤ) := by exact_mod_cast hN.pos
-  -- `ψ` is not an integer, since its square is negative.
-  have hnotint : ¬ ∃ c : ℤ,
-      ψ = ((c : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
-    rintro ⟨c, rfl⟩
-    have hc : ((c * c : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
-        = ((-(N : ℤ) : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
-      push_cast; push_cast at hsq; exact hsq
-    have hcc := WeierstrassCurve.End.intCast_injective
-      (W := (E⁄(AlgebraicClosure ℚ)).toAffine) hc
-    nlinarith [mul_self_nonneg c]
-  obtain ⟨ω, a, b, hω, hspan, hindep⟩ := WeierstrassCurve.End.exists_intBasis ψ hnotint
-  obtain ⟨u, v, huv⟩ := hspan ψ
-  have hexp : ψ * ψ
-      = ((u * u - v * v * b : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
-      + (2 * u * v + v * v * a) • ω := by
-    conv_lhs => rw [huv]
-    exact MazurCMOrder.sq_intBasis_expand ω a b hω u v
-  have hzero : ((u * u - v * v * b + (N : ℤ) : ℤ) :
-        WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
-      + (2 * u * v + v * v * a) • ω = 0 := by
-    have hsplit : ((u * u - v * v * b + (N : ℤ) : ℤ) :
-          WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
-          + (2 * u * v + v * v * a) • ω
-        = (((u * u - v * v * b : ℤ) :
-              WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
-            + (2 * u * v + v * v * a) • ω)
-          + ((N : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
-      push_cast; abel
-    rw [hsplit, ← hexp, hsq]
-    push_cast
-    abel
-  obtain ⟨h1, h2⟩ := hindep _ _ hzero
-  have hv0 : v ≠ 0 := by
-    rintro rfl
-    exact hnotint ⟨u, by simpa using huv⟩
-  have hkey : 2 * u + v * a = 0 := by
-    have hfac : v * (2 * u + v * a) = 0 := by linear_combination h2
-    rcases mul_eq_zero.1 hfac with h | h
-    · exact absurd h hv0
-    · exact h
-  rcases Int.even_or_odd a with ⟨a', ha'⟩ | ⟨a', ha'⟩
-  · -- `a` even: `End(E_ℚ̄) = ℤ[ψ]` has discriminant `−4N`, contradicting `h(−4N) = 1`.
-    exfalso
-    have hu : u = -(v * a') := by rw [ha'] at hkey; linarith
-    have hvsq : v * v * (b - a' * a') = (N : ℤ) := by
-      rw [hu] at h1; linear_combination -h1
-    have hvnat : v.natAbs * v.natAbs ∣ N := by
-      have hdvd : (v * v) ∣ (N : ℤ) := ⟨b - a' * a', hvsq.symm⟩
-      have hd2 := Int.natAbs_dvd_natAbs.2 hdvd
-      simpa [Int.natAbs_mul] using hd2
-    have hvone : v * v = 1 := by
-      have hv1 : v.natAbs ∣ N := dvd_trans (dvd_mul_right _ _) hvnat
-      rcases (Nat.Prime.eq_one_or_self_of_dvd hN _ hv1) with hh | hh
-      · rcases Int.natAbs_eq_iff.1 hh with h' | h' <;> simp [h']
-      · exfalso
-        rw [hh] at hvnat
-        have hle := Nat.le_of_dvd hN.pos hvnat
-        nlinarith [hN.two_le]
-    have hψ : ψ = v • (ω - ((a' : ℤ) :
-        WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) := by
-      have hva : v • ((a' : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
-          = ((v * a' : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
-        rw [zsmul_eq_mul, ← Int.cast_mul]
-      rw [huv, hu, smul_sub, hva]
-      push_cast
-      abel
-    have hωmem : ω ∈ Subring.closure ({ψ} :
-        Set (WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) := by
-      have hωeq : ω = v • ψ + ((a' : ℤ) :
-          WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
-        rw [hψ, smul_smul, hvone, one_smul]; abel
-      rw [hωeq]
-      exact add_mem (zsmul_mem (Subring.subset_closure (Set.mem_singleton _)) v)
-        (_root_.intCast_mem _ _)
-    have htop : Subring.closure ({ψ} :
-        Set (WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) = ⊤ := by
-      refine top_unique (fun χ _ => ?_)
-      obtain ⟨u₂, v₂, hχ⟩ := hspan χ
-      rw [hχ]
-      exact add_mem (_root_.intCast_mem _ _) (zsmul_mem hωmem v₂)
-    obtain ⟨m, hm⟩ : ∃ m : ℤ, (N : ℤ) = 8 * m + 3 := by
-      refine ⟨((N : ℤ) - 3) / 8, ?_⟩
-      have hN8' : (N : ℤ) % 8 = 3 := by omega
-      omega
-    have hm3 : 3 ≤ m := by
-      have hN23' : (23 : ℤ) ≤ (N : ℤ) := by exact_mod_cast hN23
-      omega
-    have hgcd : Int.gcd (4 : ℤ) ((Int.gcd (2 : ℤ) (2 * m + 1) : ℕ) : ℤ) = 1 := by
-      have h2c : Int.gcd (2 : ℤ) (2 * m + 1) = 1 :=
-        Int.isCoprime_iff_gcd_eq_one.1 ⟨-m, 1, by ring⟩
-      rw [h2c]
-      norm_num
-    have hres := E.classNumberOne_of_end_closure_eq_top (N : ℤ) ψ hsq htop
-      4 2 (2 * m + 1) (by rw [hm]; ring) hgcd (by norm_num) (by norm_num) (by norm_num)
-      (by omega)
-    norm_num at hres
-  · -- `a` odd: `(1 + ψ)/2` is an integer combination of `1` and `ω`.
-    have hev : Even (v * a) := ⟨-u, by linarith⟩
-    have hveven : ∃ v' : ℤ, v = v' + v' := by
-      rcases Int.even_mul.1 hev with hv2 | ha2
-      · exact hv2
-      · exfalso
-        obtain ⟨r, hr⟩ := ha2
-        rw [ha'] at hr
-        omega
-    obtain ⟨v', hv'⟩ := hveven
-    rw [hv'] at hkey
-    have hu : u = -(v' * a) := by linarith
-    have hv'sq : v' * v' * (4 * b - a * a) = (N : ℤ) := by
-      rw [hv', hu] at h1; linear_combination -h1
-    have hv'nat : v'.natAbs * v'.natAbs ∣ N := by
-      have hdvd : (v' * v') ∣ (N : ℤ) := ⟨4 * b - a * a, hv'sq.symm⟩
-      have hd2 := Int.natAbs_dvd_natAbs.2 hdvd
-      simpa [Int.natAbs_mul] using hd2
-    have hv'one : v' = 1 ∨ v' = -1 := by
-      have hv1 : v'.natAbs ∣ N := dvd_trans (dvd_mul_right _ _) hv'nat
-      rcases (Nat.Prime.eq_one_or_self_of_dvd hN _ hv1) with hh | hh
-      · rcases Int.natAbs_eq_iff.1 hh with h' | h' <;> simp [h']
-      · exfalso
-        rw [hh] at hv'nat
-        have hle := Nat.le_of_dvd hN.pos hv'nat
-        nlinarith [hN.two_le]
-    rcases hv'one with rfl | rfl
-    · refine ⟨ω - ((a' : ℤ) :
-        WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine), ?_⟩
-      rw [huv, hu, hv', zsmul_eq_mul, ha']
-      push_cast
-      noncomm_ring
-    · refine ⟨-ω + ((a' + 1 : ℤ) :
-        WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine), ?_⟩
-      rw [huv, hu, hv', zsmul_eq_mul, ha']
-      push_cast
-      noncomm_ring
-
-/-! ### The Atkin–Lehner descent at the Mazur levels `43, 67, 163`
-
-Cut 2026-07-28 by `flt-lean-262` off `atkinLehnerFixed_x0MazurLevel`, which is
-PROVEN below over the single leaf that opens this block.
-
-## RE-CUT 2026-07-30 (flt-lean-184), AND THE PRESCRIBED ROUTE WAS WRONG
-
-`ajFixed_x0MazurLevel` is now **PROVEN**, over ONE new leaf
-(`nonempty_isCMByRamifiedMaximalOrder_geomPoint_mazurLevel`) plus two theorems
-proved here.  Three corrections, each of which cost a route:
-
-**1. THE JACOBIAN, THE PRYM AND THE EISENSTEIN IDEAL ARE NOT NEEDED.**  The
-version of `ajFixed_x0MazurLevel`'s docstring written when it was cut listed as
-requirements the Prym of `w_N` (`exists_prym_of_involution`), the Atkin–Lehner
-isotypic decomposition, the analytic-rank table `1, 2, 6`, and "Mazur's
-Eisenstein-ideal descent on `J_0(N)⁻`, which is what forces the VANISHING".
-**None of that is used, and none of it is necessary.**
-`atkinLehnerFixed_of_isNIsogenyPair_self_geom` below derives `w P = P` — which
-is STRONGER than the anti-invariant class vanishing, and implies it by
-`congrArg` — from `IsAtkinLehner`'s own pin plus the fact that `Spec ℚ̄ ⟶ Spec ℚ`
-is an epimorphism.  It mentions no Jacobian, no `aj`, no Prym, no `x0Genus`, and
-it is LEVEL-GENERIC.  The arithmetic that is genuinely irreducible is Mazur's
-isogeny theorem, and nothing else.
-
-**2. THE "`#Y_0(N)(ℚ) ≤ 1`" ROUTE IS CIRCULAR — and every check short of
-following the citations says it is available.**  `card_y0Le_classNumberOne`
-below is PROVEN, is stated at exactly these three levels, and gives
-`Subsingleton (Y_0(N)(ℚ))`, from which `w P = P` looks like two lines.  It
-cannot be used.  Its proof is transitively DOWNSTREAM of this very leaf — the
-chain, each step a citation in the next one's proof body (no line numbers, they
-go stale within the day; `grep` the names):
-
-    card_y0Le_classNumberOne
-      <- nonempty_isCMByRamifiedMaximalOrder_of_classify_eq
-      <- nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf
-      <- exists_endMinpoly_of_stable_cyclic_mazurLevel
-      <- exists_endMinpoly_of_isogenySignature_six
-      <- exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel
-      <- atkinLehnerFixed_x0MazurLevel
-      <- ajFixed_x0MazurLevel                                 (THIS BLOCK)
-
-Lean's declaration order already forbids the citation, so the trap costs a
-reconnaissance cycle rather than a wrong proof — but note that NO ordering
-repairs it: hoisting the CM block above this block would hoist this block above
-itself.  The same argument rules out
-`nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` (Mazur-as-CM over `ℚ̄`) and
-everything else in that chain.
-
-**3. WHY THE NEW LEAF OVERLAPS `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq`,
-AND WHY THAT IS THE FINDING RATHER THAN A DUPLICATION.**  The new leaf asserts
-what that theorem concludes.  That is forced: by (2) the only way to use the CM
-route at all is to assert Mazur's theorem at a position where it is not derived
-from Atkin–Lehner fixedness.  So the pair is not redundancy — it is the same
-mathematical fact stated once where it can be used and once where it is
-obtained by a circular-by-design detour.  **Consequence a follow-up should
-act on, NOT done here:** once the new leaf is closed,
-`nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` follows from it by a single
-`exact` — the two now have IDENTICAL binders and conclusion, which is what the
-tightening recorded on the leaf's own docstring bought — and the
-six-declaration chain listed in (2), whose ONLY consumer is that theorem,
-becomes redundant.  Removing it is a separate task, because it deletes ~650
-lines of another owner's PROVEN work and would leave
-`atkinLehnerFixed_x0MazurLevel` itself without a consumer.
-
-Item (2)'s circularity was RE-VERIFIED against the source on 2026-07-30 rather
-than inherited: the load-bearing edge is the citation of
-`atkinLehnerFixed_x0MazurLevel` inside the proof body of
-`exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel`, and every member of the
-chain is declared BELOW `atkinLehnerFixed_x0MazurLevel` in this file.
-
-**4. NAMESPACE, recorded because every docstring in this tree gets it wrong.**
-This block is in the ROOT-LEVEL namespace `MazurIsogenyPrimeJ` (opened at 46365
-with `open _root_.Fermat`), NOT inside `Fermat`.  So the full names are
-`MazurIsogenyPrimeJ.ajFixed_x0MazurLevel` and
-`MazurIsogenyPrimeJ.atkinLehnerFixed_x0MazurLevel`; the many docstrings that
-write `Fermat.atkinLehnerFixed_x0MazurLevel` name nothing.  Verified against
-`MazurTorsion.ilean`, which is also the cheapest way to check such a claim. -/
-
-/-! #### `ψ = √−N` as a MORPHISM, and the self-`N`-isogeny of a CM datum
-
-`IsCMByRamifiedMaximalOrder` (declared far above) carries `φ` as a
-base-NATURAL operation on relative points rather than as a morphism of
-schemes — its `phi_pre` field is exactly that naturality, and its own
-docstring says the field exists so that `φ` "is an endomorphism of the
-scheme and not merely of one fibre".  This sub-block cashes that in: by
-Yoneda, `ψ = 2φ − 1` is precomposition with a morphism `E ⟶ E`, and the
-construction is the one `AbelianSchemeStruct.mulByNat` already uses —
-apply the operation to the TAUTOLOGICAL relative point `RelPoint.self`
-and read off the underlying morphism, then recover the general case with
-`RelPoint.pre_self`.  No fibre products and no chosen pullbacks.
-
-**Note this does NOT go through a Weierstrass model, which is why it is
-elementary here while `exists_end_of_isCMByRamifiedMaximalOrder` below —
-the same translation into `WeierstrassCurve.End` — is still a leaf.** -/
-
-namespace IsCMByRamifiedMaximalOrder
-
-variable {N : ℕ} {T : Scheme.{0}} {d : Gamma0Datum N T}
-
-/-- `ψ = 2φ − 1`, the square root of `−N`, on relative points.  Written in the
-`AddCommGroup` notation of `d.ab.addCommGroup g` so that the instance path in
-the unfolding is the one a proof gets from `letI` — the two are defeq but not
-syntactically equal, and `rw` cannot see through the difference. -/
-noncomputable def psiPt (h : IsCMByRamifiedMaximalOrder N d) {T' : Scheme.{0}} {g : T' ⟶ T}
-    (x : RelPoint d.f g) : RelPoint d.f g :=
-  letI := d.ab.addCommGroup g
-  h.phi x + h.phi x - x
-
-theorem psiPt_def (h : IsCMByRamifiedMaximalOrder N d) {T' : Scheme.{0}} {g : T' ⟶ T}
-    (x : RelPoint d.f g) :
-    letI := d.ab.addCommGroup g
-    h.psiPt x = h.phi x + h.phi x - x := rfl
-
-/-- `φ` on the relative points over one base point, as an `AddMonoidHom` — this
-is only a repackaging of `phi_add`, and it exists so that `map_neg` is
-available. -/
-noncomputable def phiHom (h : IsCMByRamifiedMaximalOrder N d) {T' : Scheme.{0}} (g : T' ⟶ T) :
-    letI := d.ab.addCommGroup g
-    RelPoint d.f g →+ RelPoint d.f g :=
-  letI := d.ab.addCommGroup g
-  AddMonoidHom.mk' (fun x => h.phi x) (fun x y => h.phi_add x y)
-
-theorem phiHom_apply (h : IsCMByRamifiedMaximalOrder N d) {T' : Scheme.{0}} (g : T' ⟶ T)
-    (x : RelPoint d.f g) :
-    letI := d.ab.addCommGroup g
-    h.phiHom g x = h.phi x := rfl
-
-/-- `ψ` is additive. -/
-theorem psiPt_add (h : IsCMByRamifiedMaximalOrder N d) {T' : Scheme.{0}} {g : T' ⟶ T}
-    (x y : RelPoint d.f g) :
-    letI := d.ab.addCommGroup g
-    h.psiPt (x + y) = h.psiPt x + h.psiPt y := by
-  letI := d.ab.addCommGroup g
-  have hadd : ∀ a b : RelPoint d.f g, h.phi (a + b) = h.phi a + h.phi b :=
-    fun a b => h.phi_add a b
-  show h.phi (x + y) + h.phi (x + y) - (x + y)
-      = (h.phi x + h.phi x - x) + (h.phi y + h.phi y - y)
-  rw [hadd]
-  abel
-
-/-- `ψ` on the relative points over one base point, as an `AddMonoidHom`. -/
-noncomputable def psiHom (h : IsCMByRamifiedMaximalOrder N d) {T' : Scheme.{0}} (g : T' ⟶ T) :
-    letI := d.ab.addCommGroup g
-    RelPoint d.f g →+ RelPoint d.f g :=
-  letI := d.ab.addCommGroup g
-  AddMonoidHom.mk' (fun x => h.psiPt x) (fun x y => h.psiPt_add x y)
-
-theorem psiHom_apply (h : IsCMByRamifiedMaximalOrder N d) {T' : Scheme.{0}} (g : T' ⟶ T)
-    (x : RelPoint d.f g) :
-    letI := d.ab.addCommGroup g
-    h.psiHom g x = h.psiPt x := rfl
-
-/-- `ψ` is natural in the base point — this is `phi_pre` together with the
-naturality of the group law (`pre_add`, `pre_neg`). -/
-theorem psiPt_pre (h : IsCMByRamifiedMaximalOrder N d) {T'' T' : Scheme.{0}} (k : T'' ⟶ T')
-    {g : T' ⟶ T} {g' : T'' ⟶ T} (hg : k ≫ g = g') (x : RelPoint d.f g) :
-    h.psiPt (RelPoint.pre k hg x) = RelPoint.pre k hg (h.psiPt x) := by
-  letI := d.ab.addCommGroup g
-  letI := d.ab.addCommGroup g'
-  have e1 : ∀ a b : RelPoint d.f g, a - b = d.ab.add a (d.ab.neg b) :=
-    fun a b => sub_eq_add_neg a b
-  have e2 : ∀ a b : RelPoint d.f g', a - b = d.ab.add a (d.ab.neg b) :=
-    fun a b => sub_eq_add_neg a b
-  have e3 : ∀ a b : RelPoint d.f g, a + b = d.ab.add a b := fun _ _ => rfl
-  have e4 : ∀ a b : RelPoint d.f g', a + b = d.ab.add a b := fun _ _ => rfl
-  show h.phi (RelPoint.pre k hg x) + h.phi (RelPoint.pre k hg x) - RelPoint.pre k hg x
-      = RelPoint.pre k hg (h.phi x + h.phi x - x)
-  rw [e1, e2, e3, e4, h.phi_pre k hg, d.ab.pre_add k hg, d.ab.pre_neg k hg,
-    d.ab.pre_add k hg]
-
-/-- **`ψ`, as a MORPHISM `E ⟶ E`** — the Yoneda realization of the natural
-operation `psiPt`, exactly as `AbelianSchemeStruct.mulByNat` realizes `n • ·`. -/
-noncomputable def psiMor (h : IsCMByRamifiedMaximalOrder N d) : d.E ⟶ d.E :=
-  (h.psiPt (RelPoint.self d.f)).1
-
-theorem psiMor_comp (h : IsCMByRamifiedMaximalOrder N d) : h.psiMor ≫ d.f = d.f :=
-  (h.psiPt (RelPoint.self d.f)).2
-
-theorem psiPt_val (h : IsCMByRamifiedMaximalOrder N d) {T' : Scheme.{0}} {g : T' ⟶ T}
-    (x : RelPoint d.f g) : (h.psiPt x).1 = x.1 ≫ h.psiMor := by
-  conv_lhs => rw [← RelPoint.pre_self x]
-  rw [h.psiPt_pre x.1 x.2 (RelPoint.self d.f)]
-  rfl
-
-/-- **Postcomposition with `psiMor` computes `ψ` on every relative point** —
-this is what makes `psiMor` deserve the name. -/
-theorem post_psiMor (h : IsCMByRamifiedMaximalOrder N d) {T' : Scheme.{0}} {g : T' ⟶ T}
-    (x : RelPoint d.f g) :
-    RelPoint.post h.psiMor h.psiMor_comp x = h.psiPt x :=
-  Subtype.ext (h.psiPt_val x).symm
-
-/-- **`ψ̄ = −ψ`, the DUAL isogeny, as a morphism `E ⟶ E`.**  It is `−ψ` and not
-`ψ` because `ψ² = [−N]`, so `ψ · (−ψ) = [N]`; taking `ψ` for both `map` and
-`dual` would give `dual_map = [−N]` and is exactly the sign error to avoid. -/
-noncomputable def psiNegMor (h : IsCMByRamifiedMaximalOrder N d) : d.E ⟶ d.E :=
-  (d.ab.neg (h.psiPt (RelPoint.self d.f))).1
-
-theorem psiNegMor_comp (h : IsCMByRamifiedMaximalOrder N d) : h.psiNegMor ≫ d.f = d.f :=
-  (d.ab.neg (h.psiPt (RelPoint.self d.f))).2
-
-theorem psiNegPt_val (h : IsCMByRamifiedMaximalOrder N d) {T' : Scheme.{0}} {g : T' ⟶ T}
-    (x : RelPoint d.f g) : (d.ab.neg (h.psiPt x)).1 = x.1 ≫ h.psiNegMor := by
-  conv_lhs => rw [← RelPoint.pre_self x]
-  rw [h.psiPt_pre x.1 x.2 (RelPoint.self d.f), ← d.ab.pre_neg x.1 x.2]
-  rfl
-
-theorem post_psiNegMor (h : IsCMByRamifiedMaximalOrder N d) {T' : Scheme.{0}} {g : T' ⟶ T}
-    (x : RelPoint d.f g) :
-    RelPoint.post h.psiNegMor h.psiNegMor_comp x = d.ab.neg (h.psiPt x) :=
-  Subtype.ext (h.psiNegPt_val x).symm
-
-/-- The pure abelian-group identity behind `ψ² = [−N]`: with `a = φx`,
-`b = k·x` and `φ²x = a − b`, expanding `ψ(ψ x)` leaves `x − 4b`.  Split out
-because `abel` is the whole proof and it should not be re-run inside the
-scheme-theoretic argument. -/
-theorem psiSq_group_identity {G : Type*} [AddCommGroup G] (a b x : G) :
-    (a - b + (a - b) - a) + (a - b + (a - b) - a) - (a + a - x)
-      = x - (b + b + (b + b)) := by
-  abel
-
-/-- **`ψ² = [−N]`**, from `phi_sq` alone.
-
-`phi_sq` says `φ² + k = φ` with `k = (N+1)/4`, so `ψ² = 4φ² − 4φ + 1 = −4k + 1`,
-and `hN : N % 4 = 3` is exactly what makes `4k = N + 1` — i.e. what makes the
-ℕ-division in `phi_sq` EXACT.  Without it the identity is false: at `N % 4 ≠ 3`
-the order `ℤ[φ]` of `phi_sq` has discriminant `1 − 4k ≠ −N`. -/
-theorem psiPt_psiPt (h : IsCMByRamifiedMaximalOrder N d) (hN : N % 4 = 3)
-    {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g) :
-    letI := d.ab.addCommGroup g
-    h.psiPt (h.psiPt x) = -((N : ℕ) • x) := by
-  letI := d.ab.addCommGroup g
-  have hadd : ∀ u v : RelPoint d.f g, h.phi (u + v) = h.phi u + h.phi v :=
-    fun u v => h.phi_add u v
-  -- `φ² = φ − k`, where `k = (N+1)/4`
-  have hsq : h.phi (h.phi x) = h.phi x - ((N + 1) / 4 : ℕ) • x :=
-    eq_sub_of_add_eq (h.phi_sq x)
-  -- `4k = N + 1`, spelled as a fourfold sum so that only `add_nsmul` is needed
-  have h4b : ((N + 1) / 4 : ℕ) • x + ((N + 1) / 4 : ℕ) • x
-      + (((N + 1) / 4 : ℕ) • x + ((N + 1) / 4 : ℕ) • x) = (N : ℕ) • x + x := by
-    have hsum : ((N + 1) / 4 + (N + 1) / 4 + ((N + 1) / 4 + (N + 1) / 4) : ℕ) = N + 1 := by
-      omega
-    have hx : ((N + 1) / 4 + (N + 1) / 4 + ((N + 1) / 4 + (N + 1) / 4) : ℕ) • x
-        = (N : ℕ) • x + x := by
-      rw [hsum, add_nsmul]
-      congr 1
-      simp
-    simp only [add_nsmul] at hx
-    exact hx
-  have hphineg : ∀ a : RelPoint d.f g, h.phi (-a) = -(h.phi a) :=
-    fun a => (h.phiHom g).map_neg a
-  -- `φ(ψ x) = φ²x + φ²x − φx`
-  have hp : h.phi (h.psiPt x) = h.phi (h.phi x) + h.phi (h.phi x) - h.phi x := by
-    rw [h.psiPt_def x, sub_eq_add_neg, hadd, hadd, hphineg]
-    abel
-  calc h.psiPt (h.psiPt x)
-      = h.phi (h.psiPt x) + h.phi (h.psiPt x) - h.psiPt x := h.psiPt_def _
-    _ = (h.phi (h.phi x) + h.phi (h.phi x) - h.phi x)
-          + (h.phi (h.phi x) + h.phi (h.phi x) - h.phi x)
-          - (h.phi x + h.phi x - x) := by rw [hp, h.psiPt_def x]
-    _ = -((N : ℕ) • x) := by
-        rw [hsq, psiSq_group_identity, h4b]
-        abel
-
-end IsCMByRamifiedMaximalOrder
-
-/-- **A CM `Γ₀(N)`-datum for the ramified maximal order of discriminant `−N` is
-`N`-ISOGENOUS TO ITSELF** (PROVEN 2026-07-30) — `ψ = √−N` is the isogeny and
-`ψ̄ = −ψ` is its dual.
-
-This is the formal content of the sentence every docstring in this block quotes
-as "visible without any descent": `𝔭 = (√−N)` satisfies `𝔭² = (N)` and is
-PRINCIPAL, so `E/C ≅ E` and `φ(E[N]) = φ(E[𝔭²]) = E[𝔭] = C`.  In
-`IsNIsogenyPair`'s vocabulary all four clauses are read off `IsCMByRamifiedMaximalOrder`:
-
-* `ker_map`, `ker_dual` — `liesIn_iff` says the level structure IS `ker ψ`,
-  verbatim, and `ker(−ψ) = ker ψ`;
-* `dual_map`, `map_dual` — `psiPt_psiPt`, i.e. `ψ² = [−N]`, so `−ψ · ψ = [N]`.
-
-`hN : N % 4 = 3` is LOAD-BEARING and does exactly one job: it makes the
-ℕ-division `(N+1)/4` in `phi_sq` exact, so that `ℤ[φ]` really has discriminant
-`−N`.  It holds at `43, 67, 163`, which is where every consumer lives.
-
-**LEVEL-GENERIC**: nothing here knows the class number, the `j`-invariants, or
-Mazur.  It is the CONVERSE of `exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel`
-below, which goes from Atkin–Lehner fixedness to an endomorphism with
-`ψ² = [−N]`; together the two say that at these levels *fixed by `w_N`* and *CM
-by `𝒪_{−N}`* are interderivable, which is the fact that makes the re-cut above
-sound and also the fact that makes the chain in item (2) of the block docstring
-redundant. -/
-theorem nonempty_isNIsogenyPair_self_of_isCMByRamifiedMaximalOrder (N : ℕ) (hN : N % 4 = 3)
-    {T : Scheme.{0}} {d : Gamma0Datum N T} (h : IsCMByRamifiedMaximalOrder N d) :
-    Nonempty (IsNIsogenyPair N d d) := by
-  refine ⟨{ map := h.psiMor, comm := h.psiMor_comp,
-            dual := h.psiNegMor, dual_comm := h.psiNegMor_comp,
-            ker_map := ?_, ker_dual := ?_, dual_map := ?_, map_dual := ?_ }⟩
-  · -- `ker ψ = C`: this is `liesIn_iff` and nothing else
-    intro T' g x
-    letI := d.ab.addCommGroup g
-    rw [h.post_psiMor x, h.psiPt_def x]
-    have hz : (h.phi x + h.phi x - x = d.ab.zero g) ↔ (h.phi x + h.phi x - x = 0) := Iff.rfl
-    rw [hz, sub_eq_zero]
-    exact (h.liesIn_iff x).symm
-  · -- `ker ψ̄ = ker (−ψ) = ker ψ = C`
-    intro T' g y
-    letI := d.ab.addCommGroup g
-    rw [h.post_psiNegMor y]
-    have hn : (d.ab.neg (h.psiPt y) = d.ab.zero g) ↔ (-(h.psiPt y) = 0) := Iff.rfl
-    rw [hn, neg_eq_zero, h.psiPt_def y, sub_eq_zero]
-    exact (h.liesIn_iff y).symm
-  · -- `ψ̄ ∘ ψ = −ψ² = [N]`
-    intro T' g x
-    letI := d.ab.addCommGroup g
-    rw [h.post_psiMor x, h.post_psiNegMor (h.psiPt x)]
-    show -(h.psiPt (h.psiPt x)) = (N : ℕ) • x
-    rw [h.psiPt_psiPt hN x, neg_neg]
-  · -- `ψ ∘ ψ̄ = −ψ² = [N]`
-    intro T' g y
-    letI := d.ab.addCommGroup g
-    rw [h.post_psiNegMor y]
-    show RelPoint.post h.psiMor h.psiMor_comp (-(h.psiPt y)) = (N : ℕ) • y
-    rw [h.post_psiMor (-(h.psiPt y)), ← h.psiHom_apply g (-(h.psiPt y)), map_neg,
-      h.psiHom_apply, h.psiPt_psiPt hN y, neg_neg]
-
-/-- **If the `ℚ̄`-moduli point of a rational point `y` of `Y_0(N)` is
-`N`-ISOGENOUS TO ITSELF, then `y` is FIXED by the Atkin–Lehner involution**
-(PROVEN 2026-07-30) — LEVEL-GENERIC, and this is the declaration that shows the
-Jacobian half of the old cut was never needed.
-
-The whole proof is `IsAtkinLehner`'s own pin read at `T = Spec ℚ̄`.  That pin is
-quantified over EVERY test object, not over `ℚ`-points, so a `ℚ̄`-datum is a
-legal input; `hd` puts it at (the base change of) `y`; a self-`N`-isogeny makes
-the pin's two sides the same point; `RelPoint.post_pre` slides the two
-postcompositions past the base change; and `Spec ℚ̄ ⟶ Spec ℚ` is an EPIMORPHISM
-(`epi_specMap_of_fieldHom` — `Spec` of a map of FIELDS), which cancels it back
-down to `ℚ`.  That last step is `Y(ℚ) ↪ Y(ℚ̄)` and is the same one
-`card_y0Le_classNumberOne` runs.
-
-**Why the hypothesis has to be about a `ℚ̄`-datum and CANNOT be about a
-`ℚ`-datum.**  `IsCMByRamifiedMaximalOrder N d` for `d : Gamma0Datum N SpecQ` is
-UNSATISFIABLE, so the `ℚ`-form of the sibling leaf below would be FALSE, not
-merely unprovable.  By the Yoneda construction above, such a `φ` would BE a
-group-scheme endomorphism of `E` over `ℚ`, and `ψ = 2φ − 1` would satisfy
-`ψ² = [−N]` in `End_ℚ(E) = ℤ` — impossible, since `−N` is not a square.  CM is
-never defined over `ℚ`; it needs `ℚ(√−N)`.  This is why every CM statement in
-this block quantifies over `Spec ℚ̄`, and it is worth stating because the
-`ℚ`-form is the more natural-looking cut and it is a false one. -/
-theorem atkinLehnerFixed_of_isNIsogenyPair_self_geom {N : ℕ}
-    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (hX : IsX0Compactification N strX strY jY)
-    (w : X ⟶ X) (hw : w ≫ strX = strX) (hal : IsAtkinLehner N hX w hw)
-    (y : RelPoint strY (𝟙 SpecQ))
-    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-    (hd : hX.coarse.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d
-      = RelPoint.pre (specAlgClos ℚ) rfl y)
-    (pair : IsNIsogenyPair N d d) :
-    RelPoint.post w hw (RelPoint.post jY hX.comm y) = RelPoint.post jY hX.comm y := by
-  haveI : Epi (specAlgClos ℚ) := by
-    show Epi (Spec.map (CommRingCat.ofHom (algebraMap ℚ (AlgebraicClosure ℚ))))
-    exact epi_specMap_of_fieldHom _
-  have key := hal (specAlgClos ℚ ≫ 𝟙 SpecQ) d d pair
-  rw [hd, RelPoint.post_pre, RelPoint.post_pre] at key
-  exact Subtype.ext ((cancel_epi (specAlgClos ℚ)).mp (congrArg Subtype.val key))
+**This is a deletion of proven mathematics and it moves no frontier.**  No
+`sorry` was added or removed anywhere by it. -/
 
 /-! #### The residue of the moduli↔Weierstrass bridge, CUT (2026-07-30)
 
@@ -40544,8 +40037,8 @@ endomorphism of an unrelated curve.
 
 **NOT VACUOUS**: `hmodel` is satisfiable for every `d₀` — that is
 `Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_gamma0Datum`, PROVEN — and
-`φ` with `hsq` is satisfiable by `exists_endMinpoly_of_stable_cyclic_mazurLevel`
-above at `n = (p+1)/4`, `p ∈ {43, 67, 163}`; `n = 0` with `φ = 0` realises it at
+`φ` with `hsq` is satisfiable by `exists_endMinpoly_of_stable_cyclic_isolatedJ`
+below at `n = (p+1)/4`, `p ∈ {43, 67, 163}`; `n = 0` with `φ = 0` realises it at
 every level. -/
 theorem exists_relSchemeEnd_geomEquiv_of_weierstrassModel {N : ℕ} (n : ℕ)
     {d₀ : Gamma0Datum N SpecQ}
@@ -41354,16 +40847,23 @@ LEAVES** (PROVEN 2026-07-31): a Galois-stable cyclic subgroup of order
 `p ∈ {43, 67, 163}` on a curve `E/ℚ` is the kernel of `√−p`, for an
 endomorphism `φ = (1 + √−p)/2` of `E_ℚ̄` satisfying `φ² + (p+1)/4 = φ`.
 
-**This is `exists_endMinpoly_of_stable_cyclic_mazurLevel`, restated ABOVE the
-`ℚ̄`-moduli leaf and proven a completely different way.**  The declaration below
-of that name reaches the same conclusion through Serre's isogeny-signature
-pipeline and the Atkin–Lehner/Vélu packaging; this one goes straight to
-`X0.lean`'s statement of Mazur's Theorem 1 in `j`-invariant form.  It exists
-because the moduli-side leaf
-`nonempty_isCMByRamifiedMaximalOrder_geomPoint_mazurLevel` is declared between
-the two, and Lean's declaration order made the sibling below uncitable from it —
-that is the circularity of item (2) of the block docstring, and this is what
-breaks it.
+**THIS IS NOW THE ONLY STATEMENT OF MAZUR-IN-WEIERSTRASS-FORM IN THE FILE**
+(2026-08-01).  It was written on 2026-07-31 as a second copy, declared ABOVE the
+`ℚ̄`-moduli leaf, because a twin named `exists_endMinpoly_of_stable_cyclic_mazurLevel`
+sat below that leaf and Lean's declaration order made it uncitable from there.
+The twin reached the same conclusion through Serre's isogeny-signature pipeline
+and the Atkin–Lehner/Vélu packaging — and, once this declaration existed, it did
+so **by a five-declaration detour that came back here**, i.e. it derived itself
+from this theorem.  That tautology and its whole tower were deleted on
+2026-08-01; see the deletion note above
+`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf` below for the recovery
+command, the cycle written out, and the check that the Serre analysis survives.
+
+So this theorem no longer has a twin, and the route it takes — straight to
+`X0.lean`'s statement of Mazur's Theorem 1 in `j`-invariant form — is the only
+one the file has.  Its consumers are
+`exists_relSchemeEnd_of_endMinpoly_of_weierstrassModel` above and
+`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf` below.
 
 **Three ingredients, all upstream in `X0.lean`, none of them new here.**
 
@@ -41814,7 +41314,9 @@ named above, whose statement is written entirely in `X0.lean`'s and
 untouched.  `harith` is nevertheless KEPT as a hypothesis: the cut is worth
 having on its own terms — its consumer
 `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf` discharges it in three
-lines from `exists_endMinpoly_of_stable_cyclic_mazurLevel`, and keeping the
+lines from `exists_endMinpoly_of_stable_cyclic_isolatedJ` (it was
+`..._mazurLevel` until that declaration was deleted as a duplicate on
+2026-08-01; the two statements are character-identical), and keeping the
 arithmetic out of this statement is what makes the residue below purely
 formal.
 
@@ -41997,7 +41499,7 @@ arithmetic in it at all.  That clause is a statement ABOUT `IsWeierstrassModel`
 and belongs in `X0.lean`; it does not exist yet.
 
 **NOT VACUOUS.**  `harith` is satisfiable — it is exactly
-`exists_endMinpoly_of_stable_cyclic_mazurLevel`, which is proven above — and
+`exists_endMinpoly_of_stable_cyclic_isolatedJ`, which is proven below — and
 `Gamma0Datum p SpecQ` is inhabited at all three levels (the CM curve with its
 ramified `p`-isogeny), so `d₀` and `bc` are satisfiable too.  Contrast
 `Fermat.exists_gamma0Datum_descent`, which is true only through vacuity.
@@ -42100,941 +41602,73 @@ theorem nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly (p :
     exists_relSchemeEnd_of_endMinpoly_of_weierstrassModel p hp bc E hmodel e he φ hsq hliesIn
   exact nonempty_isCMByRamifiedMaximalOrder_of_relSchemeEnd p Ψ hΨ hadd hself hgeom
 
-/-- **MAZUR AT `43, 67, 163`: the `ℚ̄`-moduli point of a rational point of
-`Y_0(N)` is a CM datum for the maximal order of discriminant `−N`**
-(opened as a LEAF 2026-07-30 by the re-cut of `ajFixed_x0MazurLevel`; **PROVEN
-2026-07-31** over `exists_endMinpoly_of_stable_cyclic_isolatedJ` immediately
-above, the field-of-moduli descent, and the bridge
-`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly` — which
-was MOVED above this declaration in the same change, its whole
-"#### The residue of the moduli↔Weierstrass bridge" subsection with it, since
-nothing in that subsection depends on anything between.  **No new sorry was created anywhere.**  The long docstring
-below is kept in full: everything in it was true when written, the final section
-records the route that was taken, and the reasoning it preserves is the reason
-the leaf closed.  Read it with that ending in mind — in particular, the repeated
-warnings that the CM chain in THIS FILE is circular remain correct, and are
-exactly why the proof goes UPSTREAM to `X0.lean` instead.)
-
-TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. **44** (1978),
-Theorem 1 and the table following it.  At every prime `p ≥ 23` other than `37`
-the non-cuspidal rational points of `X_0(p)` are CM points, and at `43, 67, 163`
-the discriminant is `−N` itself: the curves of `j`-invariant `−884736000`,
-`−147197952000`, `−262537412640768000`, with CM by the MAXIMAL order (`h(−43) =
-h(−67) = h(−163) = 1`, PARI/GP `qfbclassno`), carrying `C = E[𝔭]` for `𝔭` the
-ramified prime above `N`.
-
-**EVERY NUMBER IN THE PARAGRAPH ABOVE RE-VERIFIED IN PARI/GP, 2026-07-30
-(flt-lean-184), independently rather than inherited.**  For each `N ∈ {43, 67,
-163}`: `N` is prime and `N ≡ 3 (mod 4)`, so `−N` is itself a fundamental
-discriminant; `qfbclassno(−N) = 1`; `idealprimedec(bnfinit(x²+N), N)` returns a
-SINGLE prime with `e = 2`, which is the `𝔭` of the statement — so "ramified" and
-"maximal order" are both confirmed, and `𝔭` is unique, which is what makes
-`C = E[𝔭]` well defined.  `polclass(−N)` is LINEAR at all three, equal to
-`x + 884736000`, `x + 147197952000`, `x + 262537412640768000` — matching the
-three tabulated `j`-invariants exactly, and its linearity re-confirms `h = 1`
-independently of `qfbclassno`.  Two neighbouring figures the surrounding
-docstrings quote were checked at the same time: the genus of `X_0(N)` is
-`3, 5, 13` (`1 + μ/12 − ν₂/4 − ν₃/3 − ν_∞/2` with `μ = N+1`, `ν₂ = 0` since
-`N ≡ 3 mod 4`, `ν₃ = 2` since `N ≡ 1 mod 3`, `ν_∞ = 2`), and the order of the
-cuspidal class `[(0)] − [(∞)]` is `numerator((N−1)/12) = 7, 11, 27`.  That last
-number is the reason FINITENESS of the anti-invariant subgroup does not close
-this block: `w_N` swaps the two rational cusps, so a NONZERO torsion
-anti-invariant class exists at every one of these levels.
-
-**THIS IS THE WHOLE REMAINING ARITHMETIC OF THE BLOCK.**  Everything else —
-the self-isogeny, the Atkin–Lehner action, the descent to `ℚ`, the
-Abel–Jacobi step — is discharged above.  In particular a prover should NOT
-build the Prym of `w_N`, the Atkin–Lehner isotypic decomposition, or any
-Eisenstein-ideal descent on `J_0(N)⁻`: the old route list asked for all of
-that and none of it enters.
-
-**NOT VACUOUS, and testable.**  `Y_0(N)(ℚ)` is a ONE-point set at each level, so
-`y` really can exist; and the conclusion holds of that point, so a wrong proof
-can fail.  Contrast the `125`, `169` and `25` siblings, which are vacuous.
-
-**THE `ℚ̄` IN THE STATEMENT IS LOAD-BEARING — the `ℚ`-datum form is FALSE.**  See
-`atkinLehnerFixed_of_isNIsogenyPair_self_geom`'s docstring: `End_ℚ(E) = ℤ`, so
-`IsCMByRamifiedMaximalOrder N d` is unsatisfiable for `d : Gamma0Datum N SpecQ`.
-Do not "simplify" this leaf by descending it.
-
-**DO NOT PROVE IT FROM `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq`,
-which is this statement.**  That theorem is PROVEN, roughly 1900 lines below,
-and its proof runs through `ajFixed_x0MazurLevel` — i.e. through this leaf's own
-consumer.  Lean's declaration order blocks the citation, and no reordering
-repairs it; the chain is spelled out with line numbers in item (2) of the block
-docstring.  What IS legitimately reusable from down there is everything on the
-`d₀`-over-`ℚ` side: `exists_gamma0Datum_descent_mazurLevel` (above this leaf,
-PROVEN over one descent leaf) and `Fermat.exists_gamma0Datum_geomClassify`
-(PROVEN, in `X0.lean`) between them reduce this leaf to Mazur's theorem over a
-`ℚ`-MODEL, which is
-`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly`'s
-hypothesis shape — and THAT declaration takes the arithmetic as a hypothesis
-precisely so it can be supplied non-circularly.
-
-**TIGHTENED 2026-07-30, SAME DAY IT WAS OPENED — `d` AND `hd` ARE NOW
-HYPOTHESES RATHER THAN AN EXISTENTIAL, AND THAT IS A REDUCTION IN WHAT IS
-ASSUMED.**  As first written this leaf read
-
-    ∃ d, hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d = RelPoint.pre (specAlgClos ℚ) rfl y
-           ∧ Nonempty (IsCMByRamifiedMaximalOrder N d)
-
-i.e. it asserted the SURJECTIVITY of `classify` on `ℚ̄`-points alongside the
-arithmetic.  That first conjunct is not arithmetic and is not open: it is
-`Fermat.exists_gamma0Datum_geomClassify`, PROVEN in `X0.lean`, hence UPSTREAM of
-this block and freely citable — the consumer now obtains `d` from it and passes
-it in.  (`card_y0Le_classNumberOne` below already gets its two data exactly this
-way, which is the check that this really is the same map.)  A `sorry` should
-promise the minimum, and the minimum here is Mazur's theorem alone.
-
-The tightening has a second payoff: the statement is now LITERALLY that of
-`nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` below — same binders, same
-conclusion — so the deduplication described in item (3) of the block docstring
-becomes `exact nonempty_isCMByRamifiedMaximalOrder_geomPoint_mazurLevel p hp hc y d hd`
-rather than an argument that the two are morally the same fact.
-
-**AND THE TIGHTENING DOES NOT SMUGGLE IN EXTRA STRENGTH, which is the one thing
-to check when a leaf moves from `∃ d, P d ∧ Q d` to `∀ d, P d → Q d`** — the
-second is formally the stronger shape, so it is NOT automatically safe.  It is
-safe because `P` cuts out a single datum up to isomorphism: the coarse space's
-geometric-INJECTIVITY clause `nonempty_isBaseChangeOf_of_classify_eq` (ABOVE
-this leaf, PROVEN, and itself resting on `exists_isCoarseModuliY0_geomInjective`)
-says any two `ℚ̄`-data classifying to the same `ℚ̄`-point are related by
-`IsBaseChangeOf (𝟙 _)`; `IsCMByRamifiedMaximalOrder` is a structure on `d`'s
-FUNCTOR OF POINTS only — `phi` together with `phi_add`/`phi_pre`/`phi_sq`/
-`liesIn_iff` — so it transports across any such identification.  Together with
-surjectivity the two shapes are equivalent, and the promise this `sorry` makes is
-the same one as before, with the non-arithmetic conjunct discharged rather than
-assumed.
-
-**CORRECTED 2026-07-30 (flt-lean-184): the paragraph above previously named
-`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf` as that transport, and
-that citation was wrong in three separate ways** — recorded because it is the
-exact trap the NEXT paragraph warns against, wearing a different name.
-
-1. *Wrong statement.*  It is not a transport.  Its hypothesis is
-   `bc : IsBaseChangeOf (specAlgClos ℚ) d d₀` with `d₀ : Gamma0Datum p SpecQ` —
-   "`d` DESCENDS to a `ℚ`-model" — not "`d₁ ≅ d₂` over `ℚ̄`".  It also carries
-   `hp : p ∈ {43, 67, 163}`, so it is level-specific Mazur, not plumbing.
-2. *Wrong side of the file.*  It is declared BELOW this leaf, so Lean's
-   declaration order forbids citing it here regardless.
-3. *Circular.*  Its proof runs through `exists_endMinpoly_of_stable_cyclic_mazurLevel`,
-   i.e. through this leaf's own consumer chain — precisely the loop item (2) of
-   the block docstring spells out.
-
-**And the honest form of the correction: NO transport lemma for
-`IsCMByRamifiedMaximalOrder` exists anywhere in the tree.**  Verified by grep
-over all of `Fermat/` — the structure is used in only two modules, and the only
-declarations concluding `Nonempty (IsCMByRamifiedMaximalOrder …)` are this leaf
-and the three members of the level-specific Mazur chain below it.  So the
-equivalence of the two shapes is a sound MATHEMATICAL observation, not a
-derivation available in Lean today.  Two consequences for whoever closes this
-leaf: prove the `∀`-form DIRECTLY (it is what Mazur gives and what the consumer
-needs — do not route through an `∃`-form hoping to convert), and if a transport
-along `IsBaseChangeOf (𝟙 _)` is ever wanted, it has to be written.  It would be
-level-generic and shallow, and it belongs ABOVE this leaf.
-
-**What VOUCHES for the promise is Mazur 1978, NOT the twin below.**  It is
-tempting to say "the identical statement is already a proven theorem in this
-file, so the `sorry` is certainly closable" — that reasoning is CIRCULAR and
-must not be recorded as reassurance: `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq`
-is transitively downstream of THIS leaf by the chain in item (2), so it proves
-nothing about it.  The warrant is the literature citation above and nothing
-else.
-
-**The check that refutes this leaf**: a non-cuspidal rational point of `X_0(N)`
-at one of these three levels whose `j`-invariant is not the tabulated one, or a
-second class-number-one discriminant `D ≠ −N` in which `N` ramifies.
-
-**THAT REFUTING CHECK WAS RUN, 2026-07-30, AND CAME BACK NEGATIVE.**  PARI/GP
-over the COMPLETE list of imaginary-quadratic ORDER discriminants with `h = 1`
-(`-3, -4, -7, -8, -11, -12, -16, -19, -27, -28, -43, -67, -163`): the only one
-divisible by `43` is `−43`, by `67` is `−67`, by `163` is `−163`.  So no second
-class-number-one discriminant admits a ramified `N`, and the CM point is unique
-at each level, which is the half of the statement a counterexample would have to
-break.  `polclass(−N)` is linear and equals `x + 884736000`, `x + 147197952000`,
-`x + 262537412640768000`, matching the three tabulated `j`-invariants exactly.
-Independent of the earlier PARI run recorded above, not a copy of it.
-
-## THE ARITHMETIC OF THIS WHOLE CLUSTER IS ONE STATEMENT, AND IT HAS TWO FORMS
-
-(Verified declaration by declaration on 2026-07-30 against the source, not
-inherited.)  Item (2) of the block docstring gives the circular chain; what it
-does not say is where that chain BOTTOMS OUT.  It bottoms out at
-`exists_endMinpoly_of_stable_cyclic_mazurLevel`, whose statement is
-CHARACTER-FOR-CHARACTER the `harith` hypothesis of
-`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly` (checked
-by diffing the two; `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf`
-discharges `harith` by `exact`ing it).  Writing `harith` for that statement — *a
-Galois-stable cyclic subgroup of order `N` on an elliptic curve over `ℚ` comes
-from a `φ ∈ End(E_ℚ̄)` with `φ² + (N+1)/4 = φ` and `ker(2φ − 1) = ⟨g⟩`* — i.e.
-Mazur in ELEMENTARY WEIERSTRASS FORM — the cluster is exactly
-
-    THIS LEAF  --(+ 6 proven steps)-->  harith  --(+ `_of_endMinpoly`)-->  THIS LEAF
-
-so **this leaf and `harith` are INTERDERIVABLE in the present tree**, modulo the
-second open leaf `_of_endMinpoly`.  Two consequences for whoever takes this on:
-
-* **The cluster contains exactly ONE piece of irreducible arithmetic**, not the
-  several its ~2000 lines suggest.  Every other declaration between here and
-  `card_y0Le_classNumberOne` is plumbing or is derived from that one fact.
-* **`harith` is the better attack surface, and it is what Mazur's paper actually
-  proves.**  It is an equation in `WeierstrassCurve.End` about an elliptic curve
-  over `ℚ` — no coarse moduli space, no `classify`, no `IsBaseChangeOf`.  A
-  non-circular proof of `harith` closes this leaf too (via
-  `exists_gamma0Datum_descent_mazurLevel`, PROVEN and ABOVE this leaf, then
-  `_of_endMinpoly`), and it retires the six-declaration chain of item (2) in the
-  same stroke.
-
-**CORRECTION to the paragraph above that names `_of_endMinpoly` as the
-reduction target: `_of_endMinpoly` IS ITSELF AN OPEN LEAF** (its `sorry` is the
-transport of `φ` across `IsWeierstrassModel` to a natural endomorphism of `d`'s
-functor of points; the route note sits on its own body).  The paragraph is not
-wrong — it claims only that the *hypothesis shape* is non-circular, and that is
-true, `_of_endMinpoly`'s body cites nothing in the chain — but a reader who
-takes it as "route through this and you are done" will exchange one leaf for
-two.  Said explicitly so the next agent does not spend the cycle finding out.
-
-**The predecessor's re-cut was independently re-checked here and stands.**
-`IsAtkinLehner`'s pin is `∀ d d', IsNIsogenyPair N d d' → w ∘ classify d =
-classify d'`, quantified over every test object, so feeding it `d' = d` with a
-self-isogeny really does yield `w P = P`; and the pin is SATISFIABLE rather than
-vacuous, since `Fermat.exists_atkinLehner_x0` (PROVEN, `X0.lean`) produces a `w`
-meeting it.  The circularity of item (2) was re-derived from the proof BODIES
-and is genuine — it is not an artifact of declaration order, so no hoist
-repairs it.
-
-## FAITHFULNESS AUDIT (2026-07-30, flt-lean-184) — THE LEAF IS TRUE AS STATED
-
-This is Mazur, *Rational isogenies of prime degree*, Invent. Math. **44** (1978),
-Theorem 1 together with its class-number-one corollary: for `N` prime,
-`Y_0(N)(ℚ) ≠ ∅` only for `N ∈ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`, and
-at `N = 43, 67, 163` the unique rational point is the CM point of discriminant
-`−N`, whose `j` is the linear `polclass(−N)` root tabulated above.  `37` is the
-level that has a NON-CM rational point, which is why it is excluded here and
-handled by its own declarations.
-
-**The `∀ d` is not too strong, and the ingredient that makes it safe is PROVEN
-and 1240 lines above.**  This was the one clause worth checking, because
-`IsCoarseModuliY0` is a bare universal property: its fields are `classify`,
-`classify_natural` and initiality, and *nothing in the structure says that two
-`ℚ̄`-data with the same classifying point are isomorphic*.  Without that,
-"`y` corresponds to the CM class" would not give "this particular `d` is CM", and
-the `∀` form would be unprovable however true.  It is available:
-`nonempty_isBaseChangeOf_of_classify_eq` (THIS FILE, PROVEN, and declared above
-this leaf) is exactly geometric injectivity of `classify` over `ℚ̄`, and
-`IsCoarseModuliY0`'s own docstring records the pair
-`exists_gamma0Datum_of_algClosPoint` / `nonempty_isBaseChangeOf_of_classify_eq`
-as the two halves of the geometric bijection, both proven, both deliberately kept
-out of the structure.  **So the predecessor's tightening of this leaf from the
-`∃ d`-form to the `∀ d`-form cost nothing** — it traded a proven surjectivity
-conjunct for a proven injectivity one — and the worry that it had smuggled in an
-unavailable fibre fact is discharged.  Written down so the next reader does not
-re-run the audit.
-
-Not vacuous, checked in both directions: `y` is given rather than produced, and
-rational points DO exist at these levels (the CM point), so the hypothesis set is
-inhabited; and no `finrank`/`card`-style junk value is involved, the conclusion
-being a `Nonempty` of a structure.
-
-## THE CIRCLE OF ITEM (2) IS NOT THE ONLY ROUTE — THERE IS AN UPSTREAM ONE
-
-Item (2) shows the CM chain in THIS FILE is circular, and concludes that Mazur
-has to be asserted here.  That conclusion is too strong: it searched this file
-only.  `X0.lean` — `public import`ed here, hence strictly UPSTREAM and immune to
-the circularity — already carries Mazur's theorem at these levels, cut along a
-different seam and in Weierstrass vocabulary:
-
-* `Fermat.mem_isolatedJInvariants_of_stable_classNumberOne` (open): a curve
-  `E/ℚ` with a Galois-stable cyclic subgroup `⟨g⟩` of order `p ∈ {43, 67, 163}`
-  has `E.j ∈ isolatedJInvariants p`.  **This is the same mathematical fact as
-  this leaf**, so the tree currently states Mazur-at-these-levels twice, and
-  this file's copy is the one that should eventually go.
-* `Fermat.exists_cmEndomorphism_of_mem_isolatedCMJInvariants` (open): from
-  `E.j ∈ isolatedJInvariants p ∩ isolatedCMJInvariants`, an isogeny `φ` with
-  `φ (φ P) + ((p+1)/4 : ℕ) • P = φ P` — i.e. precisely the minimal-polynomial
-  half of the `harith` hypothesis of
-  `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly`.
-
-Both are still open on `merger` as of 2026-07-30, so this is a re-routing rather
-than a closure.  The route, for whoever takes it: descend `d` to a `ℚ`-datum with
-`exists_gamma0Datum_descent_mazurLevel` (PROVEN, above this leaf), read off `E`
-and `⟨g⟩`, apply the two `X0.lean` leaves, then transport with `_of_endMinpoly`.
-
-**Two things about that route are worth knowing before starting.**  The
-intersection step is free and COMPILER-CHECKED here:
-`isolatedJInvariants p ⊆ isolatedCMJInvariants` for `p ∈ {43, 67, 163}` goes by
-`fin_cases hp <;> decide` (and equally by
-`fin_cases hp <;> simp [isolatedJInvariants, isolatedCMJInvariants]`), since each
-of those three rows is a singleton listed in `isolatedCMJInvariants`.  It is NOT
-added as a lemma here because it would have no consumer and would be
-free-floating.  What is genuinely missing is the **kernel clause**
-`ker (2φ − 1) = ⟨g⟩`, which `exists_cmEndomorphism_of_mem_isolatedCMJInvariants`
-does not deliver and which `harith` needs; that is real arithmetic (at these
-levels the unique Galois-stable order-`p` subgroup of the CM curve is `E[𝔭]`) and
-would have to become a named leaf.  So the route trades this leaf for one new
-named leaf while deleting a duplicate statement of Mazur — better structurally,
-not better on the direct count.  Do not start it expecting a free win.
-
-## THAT ROUTE WAS TAKEN, 2026-07-31, AND THE LEAF IS NOW PROVEN OVER IT
-
-**And it WAS a free win: the "genuinely missing kernel clause" was not missing.**
-The paragraph above is correct in every particular except its last three
-sentences.  `ker (2φ − 1) = ⟨g⟩` is not new arithmetic and did not have to become
-a leaf — it is `Fermat.not_twoStableLines_of_cmEndomorphism`'s own STEP 2 + STEP
-3, which prove exactly it for each of that theorem's two lines and then compare
-them.  The comparison was exported; the fact itself was not.  Hoisting it out
-(`Fermat.ker_cmSqrt_eq_zmultiples_of_stable`, `X0.lean`, PROVEN, and
-`not_twoStableLines_of_cmEndomorphism` is now three lines over it) closed this
-leaf with **no new sorry anywhere in the tree**.
-
-**The general shape of the mistake is worth keeping**: the audit that declared
-the clause missing had searched for a declaration *concluding* it.  What existed
-was a declaration whose BODY establishes it twice and then throws it away.  An
-absence verdict about a fact is only as good as a search of proof bodies, not of
-statements.
-
-The assembly is `exists_endMinpoly_of_stable_cyclic_isolatedJ` (immediately
-above, PROVEN over the two `X0.lean` leaves) fed to
-`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly`, after the
-field-of-moduli descent.  The `hinv` derivation below is copied verbatim from
-`exists_gamma0Datum_descent_mazurLevel` above, which discards the
-`IsBaseChangeOf` this proof needs; the alternative was to widen that theorem's
-conclusion, and duplicating twenty lines was judged cheaper than changing a
-signature four other declarations depend on.
-
-**WHAT THIS FILE NOW ASSERTS ABOUT MAZUR: nothing.**  Before this change the tree
-stated Mazur-at-`{43,67,163}` twice — here, and as `X0.lean`'s
-`mem_isolatedJInvariants_of_stable_classNumberOne` — and this copy was the
-sorried one.  It is now derived from that one.  The two `X0.lean` leaves are the
-sole remaining home of the arithmetic, which is where the docstring above already
-said it belonged.
-
-**THE REDUNDANCY THIS LEAVES, stated so the next owner does not have to find it.**
-`exists_endMinpoly_of_stable_cyclic_mazurLevel` (BELOW, PROVEN) has the same
-statement as `exists_endMinpoly_of_stable_cyclic_isolatedJ` (ABOVE, PROVEN), and
-its proof runs the long way round: through this theorem, `ajFixed_x0MazurLevel`,
-`atkinLehnerFixed_x0MazurLevel`, `exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel`
-and `exists_endMinpoly_of_isogenySignature_six` — i.e. it now derives itself from
-its own twin by a five-declaration detour.  That is a genuine tautology and it was
-NOT cleaned up here, deliberately: retiring it means DELETING about 1500 lines of
-proven mathematics (the Vélu/Atkin–Lehner packaging and the signature-`6` route to
-the maximal order), which is a deliberate editorial decision and not a side effect
-of closing a leaf.  A follow-up task has been queued for it.  Whoever takes that
-decision should note that the five declarations are a linear chain with exactly one
-entry and one exit and NO other consumers, so they stand or fall together. -/
-theorem nonempty_isCMByRamifiedMaximalOrder_geomPoint_mazurLevel (N : ℕ)
-    (hN : N ∈ ({43, 67, 163} : Finset ℕ))
-    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 N strY)
-    (y : RelPoint strY (𝟙 SpecQ))
-    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-    (hd : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d = RelPoint.pre (specAlgClos ℚ) rfl y) :
-    Nonempty (IsCMByRamifiedMaximalOrder N d) := by
-  have hpos : 0 < N := by fin_cases hN <;> norm_num
-  haveI : Epi (specAlgClos ℚ) := by
-    show Epi (Spec.map (CommRingCat.ofHom (algebraMap ℚ (AlgebraicClosure ℚ))))
-    exact epi_specMap_of_fieldHom _
-  -- **1.** the field of moduli of `d` is `ℚ`, because its class is a rational
-  -- point.  Verbatim from `exists_gamma0Datum_descent_mazurLevel`, which throws
-  -- away the `IsBaseChangeOf` that step **2** needs.
-  have key : ∀ (dd : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-      (g g' : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ SpecQ), g = g' →
-      (hc.classify g dd).1 = (hc.classify g' dd).1 := by
-    rintro dd g _ rfl
-    rfl
-  have hdv : (hc.classify (specAlgClos ℚ) d).1 = specAlgClos ℚ ≫ y.1 :=
-    (key d _ _ (Category.comp_id (specAlgClos ℚ))).symm.trans (congrArg Subtype.val hd)
-  have hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
-      (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
-      IsBaseChangeOf (specGal σ) dσ d →
-        Nonempty (IsBaseChangeOf
-          (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d) := by
-    intro σ dσ hbc
-    refine IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq hpos hc dσ d
-      (Subtype.ext ?_)
-    calc (hc.classify (specAlgClos ℚ) dσ).1
-        = specGal σ ≫ (hc.classify (specAlgClos ℚ) d).1 :=
-          congrArg Subtype.val (hc.classify_natural (specGal σ)
-            (specGal_comp_specAlgClos σ) hbc)
-      _ = (hc.classify (specAlgClos ℚ) d).1 := by
-          rw [hdv]; exact specGal_comp_base y.1 σ
-  -- **2.** the descent proper: a `ℚ`-model `d₀` of which `d` is the base change.
-  obtain ⟨d₀, ⟨bc⟩⟩ := exists_gamma0Datum_descent_isBaseChangeOf_mazurLevel N hN d hinv
-  -- **3.** Mazur over that model, in Weierstrass vocabulary, transported to `d`'s
-  -- functor of points by the bridge.
-  exact nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly N hN bc
-    (fun E _ g hgord hgstab => exists_endMinpoly_of_stable_cyclic_isolatedJ E hN g hgord hgstab)
-
-/-- **The Atkin–Lehner ANTI-INVARIANT DIVISOR CLASS of a rational point of the
-OPEN part `Y_0(N)` VANISHES, at `N ∈ {43, 67, 163}`** (opened 2026-07-28 as a
-bare `sorry`; **PROVEN 2026-07-30** over the single leaf
-`nonempty_isCMByRamifiedMaximalOrder_geomPoint_mazurLevel` above) — in Prym
-vocabulary, `c(P) = [P] − [w_N P] = 0` in the anti-invariant part of
-`J_0(N)(ℚ)`.
-
-**WHAT THE PROOF ACTUALLY DOES, AND WHY IT IS THREE LINES.**  It proves the
-strictly stronger statement `w_N P = P` — an equality of scheme points, not of
-divisor classes — and gets this one by `congrArg`.  So `J`, `ab`, `o` and `jac`
-are consumed only by the `congrArg`, and the Jacobian plays no mathematical
-role at all.  The two ingredients are
-`nonempty_isNIsogenyPair_self_of_isCMByRamifiedMaximalOrder` (a CM datum for
-`𝒪_{−N}` is `N`-isogenous to itself) and
-`atkinLehnerFixed_of_isNIsogenyPair_self_geom` (a self-`N`-isogenous `ℚ̄`-moduli
-point is `w_N`-fixed); both are PROVEN above and both are LEVEL-GENERIC.
-
-**THE OLD ROUTE LIST ON THIS DOCSTRING WAS WRONG, and it is worth saying so
-explicitly because it named a large theory build that is not needed.**  It
-asked for the Prym of `w_N` (`Fermat.exists_prym_of_involution`), the
-Atkin–Lehner isotypic decomposition
-(`Fermat.exists_heckeIsotypicDecomposition_atkinLehnerDescent`), the analytic
-rank table `1, 2, 6`, and "Mazur's Eisenstein-ideal descent on `J_0(N)⁻`, which
-is what forces the VANISHING rather than merely bounding the group".  **None of
-those four is used.**  What forces the vanishing is that the point is
-`w_N`-FIXED, which `IsAtkinLehner`'s own pin delivers from a self-isogeny —
-and the pin is quantified over every test object, so it can be read at
-`T = Spec ℚ̄` where the CM endomorphism actually lives.
-
-The one paragraph of the old docstring that was right, and remains right, is
-the warning against the finiteness argument, kept here because it is the
-tempting wrong proof: *"the anti-invariant subgroup of `J_0(N)(ℚ)` is finite,
-and a torsion anti-invariant class on a curve of genus `> 0` is `0` by
-Abel–Jacobi injectivity"* is INVALID.  Injectivity of `aj` says nothing about a
-class being zero, and the anti-invariant group is finite but emphatically NOT
-trivial: `w_N` swaps the two rational cusps `0` and `∞`
-(`rationalCuspDivisors N = {1, N}` at prime level), so `[(0)] − [(∞)]` is a
-NONZERO torsion anti-invariant class, of order `num((N−1)/12)` — that is
-`7, 11, 27` at `43, 67, 163`.  Finiteness is NECESSARY BUT NOT SUFFICIENT.
-That is also why the quantifier runs over the OPEN part `strY`: over
-`RelPoint strX (𝟙 SpecQ)` the statement is FALSE, refuted at either rational
-cusp by exactly that class.
-
-TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
-Thm 1 and the table following it.  At each of `43, 67, 163` the non-cuspidal
-rational points of `X_0(N)` number exactly ONE, and it is the CM point of
-discriminant `−N`: the curve of `j`-invariant `−884736000`, `−147197952000`,
-`−262537412640768000`, with CM by the MAXIMAL order `O_{−N}` (`h(−N) = 1`,
-PARI/GP `qfbclassno`), carrying `C = E[𝔭]` where `𝔭 = (√−N)` is the ramified
-prime above `N`.  That point is `w_N`-fixed outright, for a reason visible
-without any descent — `𝔭² = (N)` and `𝔭` is principal, so `E/C ≅ E` and
-`φ(E[N]) = φ(E[𝔭²]) = E[𝔭] = C`.  **That sentence is now a THEOREM rather than
-a remark**: it is `nonempty_isNIsogenyPair_self_of_isCMByRamifiedMaximalOrder`.
-
-**NOT VACUOUS, and that is what separates these three levels from their `125`,
-`169` and `25` siblings.**  `Y_0(125)(ℚ) = ∅` (Kenku), so
-`atkinLehnerFixed_x0OneTwentyFive` is vacuously true and no candidate proof of
-it can ever be tested; here `Y_0(N)(ℚ)` is a ONE-point set at each of the three
-levels.  A wrong proof can therefore fail, and a proof must NOT proceed by
-showing the point set is empty.
-
-**THE `169` TEMPLATE WARNING, retained.**  The chain
-`isTorsion_minusFactor_of_lFunction_ne_zero` →
-`isTorsion_antiInvariant_jacobian_x0OneSixtyNine` →
-`finite_antiInvariant_jacobian_x0OneSixtyNine` →
-`exists_atkinLehnerPrym_x0OneSixtyNine` is a template for the FINITENESS half
-ONLY.  Its endpoint at `169` is fixed-point-FREENESS obtained from a CM count,
-the OPPOSITE conclusion to this one, and `injective_ajMinus_x0OneSixtyNine`
-consumes fixed-point-freeness as a HYPOTHESIS, which is false here — the CM
-point of discriminant `−N` IS a fixed point.  With this node proven the warning
-is only of historical use, but the same trap sits on the `125` sibling.
-
-**A STALE CLAIM ABOUT THE `125` SIBLING, CORRECTED 2026-07-30.**  This node was
-dispatched with the note that `Fermat.atkinLehnerFixed_x0OneTwentyFive` "is
-still a bare `sorry`", offered as a correction of an earlier claim that it had
-been closed.  **The dispatched note is wrong and the claim it "corrected" was
-substantially RIGHT** — re-checked declaration by declaration on 2026-07-30.
-`Fermat.atkinLehnerFixed_x0OneTwentyFive` is PROVEN, and it emits no
-`declaration uses 'sorry'` warning (checked against a green
-`lake build Fermat.FLT.FreyCurve.MazurTorsion`, which is the only reliable
-evidence for such a claim).  Its proof runs over
-`Fermat.finite_antiInvariant_jacobian_x0OneTwentyFive` and
-`Fermat.ajMinus_eq_zero_x0OneTwentyFive` — and its LAST step is
-`injective_aj_of_one_le_x0Genus 125 (by decide) hX jac`, which is exactly the
-declaration the retracted claim had named.  So the retraction inverted a true
-statement; do not let it propagate a third time.  Note also that its full name
-really does begin `Fermat.` — it is declared with that prefix, unlike
-everything in this block.
-
-**AND THE TWO ROUTES DO NOT TRANSPOSE, IN EITHER DIRECTION.**  `125` goes by
-exactly the Prym/minus-part argument this docstring's old route list prescribed
-here — `rank J_0(125)⁻(ℚ) = 0`, then Riemann–Roch — and that works there and
-not here, because the analytic ranks at `43, 67, 163` are `1, 2, 6`.  Conversely
-the CM route proved here does not reach `125`:
-`nonempty_isNIsogenyPair_self_of_isCMByRamifiedMaximalOrder` needs `N % 4 = 3`
-and `125 % 4 = 1`, and `125` is not prime, so there is no ramified prime of a
-class-number-one imaginary quadratic order to be the isogeny.  The two levels
-are genuinely different problems; a prover sent at the "pair" should expect no
-shared arithmetic beyond
-`atkinLehnerFixed_of_isNIsogenyPair_self_geom`, which is level-generic. -/
-theorem ajFixed_x0MazurLevel {N : ℕ} (hN : N ∈ ({43, 67, 163} : Finset ℕ))
-    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (hX : IsX0Compactification N strX strY jY)
-    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    (jac : IsJacobianOf strX ab o)
-    (w : X ⟶ X) (hw : w ≫ strX = strX) (_hw2 : w ≫ w = 𝟙 X)
-    (hal : IsAtkinLehner N hX w hw) :
-    ∀ y : RelPoint strY (𝟙 SpecQ),
-      jac.aj (𝟙 SpecQ) (RelPoint.post w hw (RelPoint.post jY hX.comm y))
-        = jac.aj (𝟙 SpecQ) (RelPoint.post jY hX.comm y) := by
-  intro y
-  have hprime : N.Prime := by fin_cases hN <;> norm_num
-  -- the rational point is classified by SOME `ℚ̄`-datum: PROVEN upstream in
-  -- `X0.lean`, so this half is not assumed
-  obtain ⟨d, hd⟩ :=
-    exists_gamma0Datum_geomClassify hprime.pos hX.coarse (RelPoint.pre (specAlgClos ℚ) rfl y)
-  -- Mazur: that datum is a CM datum for the maximal order
-  obtain ⟨hcm⟩ :=
-    nonempty_isCMByRamifiedMaximalOrder_geomPoint_mazurLevel N hN hX.coarse y d hd
-  -- `𝔭` is principal, so that datum is `N`-isogenous to ITSELF
-  obtain ⟨pair⟩ := nonempty_isNIsogenyPair_self_of_isCMByRamifiedMaximalOrder N
-    (by fin_cases hN <;> norm_num) hcm
-  -- so `w_N` fixes the point outright, and the divisor classes agree a fortiori
-  exact congrArg (jac.aj (𝟙 SpecQ))
-    (atkinLehnerFixed_of_isNIsogenyPair_self_geom hX w hw hal y d hd pair)
-
-/-- **Every rational point of `Y_0(N)` is fixed by the Atkin–Lehner involution
-`w_N`, at `N ∈ {43, 67, 163}`** (opened 2026-07-28 as a bare `sorry`; **PROVEN
-the same day** over the single new leaf `ajFixed_x0MazurLevel` immediately
-above) — LEVEL-SPECIFIC, and the exact sibling of
-`Fermat.atkinLehnerFixed_x0OneTwentyFive`, whose statement this is with `125`
-replaced by the membership hypothesis.
-
-**THE CUT, in one line**: `P = w_N P` splits as *the anti-invariant divisor
-class `[P] − [w_N P]` vanishes* (the leaf above, where every bit of the
-arithmetic lives) followed by *Abel–Jacobi is injective on a curve of positive
-genus* (discharged here).  The second step needs only `1 ≤ x0Genus N`, which is
-`decide +kernel` on the classical genus formula — `3, 5, 13` at `43, 67, 163` —
-plus a rational cusp for a base point (`Fermat.exists_rationalCusps` with
-`numRationalCusps_pos`) and the Jacobian over it
-(`Fermat.exists_jacobianOf_x0`); all four are PROVEN and all four are
-LEVEL-GENERIC.  So the frontier is one leaf for one leaf and the survivor is
-strictly narrower: it is an equation in the abelian group `J_0(N)(ℚ)`, where
-the Prym and rank-`0` apparatus applies, rather than an equation of scheme
-points.
-
-**Read the leaf's docstring before attacking it** — in particular the reason
-finiteness of the anti-invariant subgroup is necessary but NOT sufficient, and
-the reason the `169` chain transposes only halfway.
-
-**NOTE ON `decide +kernel`, which is not a resource bump.**  Plain `decide`
-closes `1 ≤ x0Genus N` at `43` and `67` and hits `maximum recursion depth` at
-`163` (the elaborator's `whnf` unfolding `Finset.range 163`).  The fix is the
-KERNEL evaluator, not `set_option maxRecDepth`: same decision procedure, no
-widened search space for the next real failure to hide in.
-
-
-TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
-Thm 1 and the table following it.  At each of `43, 67, 163` the non-cuspidal
-rational points of `X_0(N)` number exactly ONE, and it is the CM point of
-discriminant `−N`: the curve of `j`-invariant `−884736000`, `−147197952000`,
-`−262537412640768000` with CM by the MAXIMAL order `O_{−N}` (`h(−N) = 1`, PARI/GP
-`qfbclassno`), carrying the subgroup `C = E[𝔭]` where `𝔭 = (√−N)` is the
-ramified prime above `N`.  That point IS `w_N`-fixed, and for a reason visible
-without any descent: `𝔭² = (N)` and `𝔭` is principal, so `E/C ≅ E` and
-`φ(E[N]) = φ(E[𝔭²]) = E[𝔭] = C` — which is exactly `(E, C) ≅ (E/C, E[N]/C)`.
-
-**NOT VACUOUS, and that is what separates this leaf from its `125`, `169` and
-`25` siblings.**  `Y_0(125)(ℚ) = ∅` (Kenku), so
-`Fermat.atkinLehnerFixed_x0OneTwentyFive` is vacuously true and no candidate
-proof of it can ever be tested.  Here `Y_0(N)(ℚ)` is a ONE-point set at each of
-the three levels, so this statement has content and a wrong proof can fail.
-Two corollaries for a prover: the unrestricted statement over
-`RelPoint strX (𝟙 SpecQ)` would be FALSE, since `w_N` swaps the two rational
-cusps of `X_0(N)` at prime level (`rationalCuspDivisors N = {1, N}`), which is
-why the quantifier runs over the OPEN part `strY` exactly as at `125`; and a
-proof must not proceed by showing the point set is empty, because it is not.
-
-**Why only ONE CM point, checked rather than quoted.**  A rational cyclic
-`N`-isogeny on a CM curve needs `N` to be non-inert in the CM order AND the
-prime above `N` to have trivial class; at a SPLIT prime the two kernels are
-exchanged by complex conjugation, so neither is individually `ℚ`-rational.  So
-only RAMIFIED `N` contributes, and among the thirteen class-number-one
-discriminants `N` ramifies only in `ℚ(√−N)` itself.  Mazur's Thm 1 supplies the
-other half — that there are no non-CM points at these levels.
-
-**WHAT REMAINS TO PROVE NOW LIVES ENTIRELY IN `ajFixed_x0MazurLevel` above**,
-whose docstring carries the requirement list, the `169`-template warning and the
-refuting check.  One item of the list the previous version of this docstring
-carried is now GONE rather than moved: "Abel–Jacobi injectivity on the minus
-part" is not needed at all: what discharges the last step is injectivity of `aj`
-on the WHOLE Jacobian, which follows from `1 ≤ x0Genus N` alone
-(`Fermat.injective_aj_of_one_le_x0Genus`, PROVEN and level-generic) and knows
-nothing about `w_N`.
-
-**The check that refutes this statement**: a non-cuspidal rational point of
-`X_0(N)` at one of these three levels that is not `w_N`-fixed, or a second CM
-point (a class-number-one discriminant `D ≠ −N` in which `N` ramifies). -/
-theorem atkinLehnerFixed_x0MazurLevel {N : ℕ} (hN : N ∈ ({43, 67, 163} : Finset ℕ))
-    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (hX : IsX0Compactification N strX strY jY)
-    (w : X ⟶ X) (hw : w ≫ strX = strX) (hw2 : w ≫ w = 𝟙 X)
-    (hal : IsAtkinLehner N hX w hw) :
-    ∀ y : RelPoint strY (𝟙 SpecQ),
-      RelPoint.post w hw (RelPoint.post jY hX.comm y)
-        = RelPoint.post jY hX.comm y := by
-  classical
-  have hN0 : N ≠ 0 := by fin_cases hN <;> norm_num
-  have hg : 1 ≤ x0Genus N := by fin_cases hN <;> decide +kernel
-  obtain ⟨s, hs, -⟩ := exists_rationalCusps N hX
-  obtain ⟨o, -⟩ : s.Nonempty :=
-    Finset.card_pos.mp (by rw [hs]; exact numRationalCusps_pos hN0)
-  obtain ⟨J, jstr, ab, ⟨jac⟩⟩ := exists_jacobianOf_x0 N hX o
-  intro y
-  exact injective_aj_of_one_le_x0Genus N hg hX jac
-    (ajFixed_x0MazurLevel hN hX jac w hw hw2 hal y)
-
-/-- **THE MODULAR HALF: at `N ∈ {43, 67, 163}` a Galois-stable cyclic subgroup of
-order `N` is a fixed point of the Atkin–Lehner involution `w_N`** (opened
-2026-07-28 by the cut of `exists_endMinpoly_of_isogenySignature_six`; PROVEN the
-same day over the single new leaf `atkinLehnerFixed_x0MazurLevel` immediately
-above, by transposing the level-`125` template this docstring already named).
-
-**CUT TAKEN 2026-07-28, AND IT WAS EXACTLY THE TRANSPOSITION THIS DOCSTRING
-PRESCRIBED** — read the next paragraph, then this one.  The `125` assembly is
-`exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125`, PROVEN over
-`exists_atkinLehnerIsom_of_veluQuotient_order_125`, which is in turn PROVEN over
-**two** leaves: `Fermat.atkinLehnerFixed_x0OneTwentyFive` (LEVEL-SPECIFIC) and
-`WeierstrassCurve.exists_atkinLehnerIsom_of_x0Fixed` (LEVEL-GENERIC, nothing in
-it mentions `125`).  Only the first has to be re-cut here; the second is reused
-verbatim, and the `X_0(N)` compactification and the involution itself come from
-the already-PROVEN level-generic `Fermat.exists_x0Compactification` and
-`Fermat.exists_atkinLehner_x0`.  So the intermediate
-`..._of_veluQuotient_...` layer is not needed at all at these levels: the Vélu
-plumbing (`exists_velu_quotient_isogeny_model`, `isIsogeny_of_veluQuotient`,
-`IsIsogeny.comp`) is discharged directly in the proof below.
-
-**The frontier is unchanged in size — one leaf replaced by one leaf — and the
-survivor is strictly narrower**: `atkinLehnerFixed_x0MazurLevel` mentions no
-elliptic curve, no isogeny, no endomorphism ring and no Vélu model, only
-`X_0(N)`, its open part and `w_N`.  It is also the exact sibling of the
-level-`125` leaf, four fifths of whose requirements are level-generic, so
-whoever builds the Prym/rank-`0` apparatus for `125` gets these three levels for
-the cost of a rank table.  A prover should therefore be sent at the PAIR, not at
-either one alone.
-
-TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
-Thm 1 and §5: at these three levels `X_0(N)(ℚ)` consists of the two cusps and a
-single non-cuspidal point, which is the CM point of discriminant `−N`.  For that
-curve `ψ := √−N` is an endomorphism with `ker ψ = ⟨g⟩` and
-`ψ (E[N]) = ker ψ̄ = ker (−ψ) = ⟨g⟩`, since `N` RAMIFIES in `ℚ(√−N)` — so both
-conjuncts hold, which is exactly what "`(E, ⟨g⟩)` is fixed by `w_N`" means.
-
-**THIS IS THE SAME STATEMENT AS THE LEVEL-`125` NODE, AND THE TEMPLATE FOR ITS
-PROOF IS ALREADY IN THIS FILE.**  Compare
-`WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125`,
-which is PROVEN over the single modular leaf
-`exists_atkinLehnerIsom_of_veluQuotient_order_125`: the Vélu quotient is
-constructed by `exists_velu_quotient_isogeny_model` (available because `N` is
-odd), its `IsIsogeny` certificate by `isIsogeny_of_veluQuotient`, and `ψ := ι ∘ φ`
-lands in `endSubring` by `IsIsogeny.comp`.  Everything in that proof transposes
-verbatim; what has to be supplied at these levels is the isomorphism `ι` of PAIRS,
-i.e. the analogue of `exists_atkinLehnerIsom_of_veluQuotient_order_125`.
-
-**NOT VACUOUS — and this is where it differs from every prime-power sibling in
-this file.**  The level-`125`, `169` and `25` nodes are vacuously true (no
-elliptic curve over `ℚ` has a rational cyclic isogeny of those degrees), so
-nothing can ever be tested against them.  Here the hypotheses ARE satisfiable:
-at each of `43, 67, 163` the curve of `j`-invariant `−884736000`,
-`−147197952000`, `−262537412640768000` has CM by the maximal order of
-discriminant `−N` (class number one — PARI/GP `qfbclassno(-43) =
-qfbclassno(-67) = qfbclassno(-163) = 1`) and carries its ramified `N`-isogeny
-over `ℚ` (`ellisomat (ellfromj j)` returns `[1, N; N, 1]`).  So a prover here is
-proving something with content, and a REFUTATION is not available: the leaf is
-true and the witness is explicit.
-
-**THE SECOND CONJUNCT IS NOT DECORATION**, exactly as at level `125`: the
-consumer is `End.sq_eq_neg_natCast_of_atkinLehner`, whose FALSITY AUDIT exhibits
-`j = 1728`, `α = 11 + 2i` of norm `125` — a cyclic kernel with `E/C ≅ E` and
-`α² ≠ [−125]` — as the counterexample to keeping only `hker`.  At a RAMIFIED
-prime that particular failure cannot occur (`(ψ) = (ψ̄)`), but the conjunct is
-still what the consumer consumes, and it must be produced rather than assumed
-away.
-
-**AXIS SEARCHED, so the next owner knows the width of this leaf.**  The routes
-refuted for the parent node all concerned the RATIONAL POINTS of `X_0(N)`: the
-rank-`0` Jacobian (analytic ranks `1, 2, 6` at the three levels), effective
-Chabauty–Coleman (`15, 19, 64` against `3`), the rank-`0` quotient (`#A(ℚ)` is
-`0, 7, 11, 27`, never `1`), and `classPoly` (linear at `h(−N) = 1`, hence a
-restatement of the conclusion).  NOT searched: the Eisenstein-ideal descent on
-`J_0(N)^-` itself — which is Mazur's own route and needs `rank J_0(N)^-(ℚ) = 0`,
-the same missing minus-part rank predicate that level `125` records — and the
-possibility of getting `w_N`-fixedness from the isogeny character directly, which
-at these levels is not obviously dead the way it is at `125` (the demonstration
-recorded under `exists_atkinLehnerIsom_of_veluQuotient_order_125` turns on
-`p = 5` being small, and `43, 67, 163` are not). -/
-theorem exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel
-    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
-    (hN : N ∈ ({43, 67, 163} : Finset ℕ))
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
-    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      ∀ x ∈ AddSubgroup.zmultiples g,
-        Affine.Point.map
-          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g) :
-    ∃ ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
-      AddMonoidHom.ker
-          ((ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
-            (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
-        = AddSubgroup.zmultiples g ∧
-      (fun P => (ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P) ''
-          {P : (E⁄(AlgebraicClosure ℚ)).Point | N • P = 0}
-        = (AddSubgroup.zmultiples g : Set (E⁄(AlgebraicClosure ℚ)).Point) := by
-  classical
-  have hNodd : Odd N := by fin_cases hN <;> decide
-  have hNpos : 0 < N := by fin_cases hN <;> norm_num
-  -- the stable subgroup `C = ⟨g⟩`, finite of odd order `N`
-  have hCcard : Nat.card (AddSubgroup.zmultiples g) = N := by
-    rw [Nat.card_zmultiples, hg]
-  haveI : Finite (AddSubgroup.zmultiples g) :=
-    Nat.finite_of_card_ne_zero (by rw [hCcard]; omega)
-  have hCfin : ((AddSubgroup.zmultiples g :
-      AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point)) :
-      Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite :=
-    Set.finite_coe_iff.mp inferInstance
-  have hCodd : Odd (Nat.card (AddSubgroup.zmultiples g)) := by rw [hCcard]; exact hNodd
-  -- the Vélu quotient `E' = E.veluModel t wV` and the isogeny `φ` with kernel `C`
-  obtain ⟨t, wV, hell', φ, -, -, hgal, hker, hcoord⟩ :=
-    WeierstrassCurve.exists_velu_quotient_isogeny_model E
-      (AddSubgroup.zmultiples g) hCfin hCodd hstable
-  haveI := hell'
-  have hφ : WeierstrassCurve.IsIsogeny φ :=
-    WeierstrassCurve.isIsogeny_of_veluQuotient E (E.veluModel t wV)
-      (AddSubgroup.zmultiples g) hCfin hCodd φ hker hcoord
-  -- Atkin–Lehner fixedness: the quotient pair is isomorphic to the original pair
-  obtain ⟨X, Y, strX, strY, jY, ⟨hX⟩⟩ := Fermat.exists_x0Compactification N hNpos
-  obtain ⟨wAL, hw, hw2, hal⟩ := Fermat.exists_atkinLehner_x0 N hX
-  obtain ⟨ι, hιiso, hιinj, himg⟩ :=
-    WeierstrassCurve.exists_atkinLehnerIsom_of_x0Fixed hNpos hX wAL hw hw2 hal
-      (atkinLehnerFixed_x0MazurLevel hN hX wAL hw hw2 hal) E g hg hstable
-      (E.veluModel t wV) hell' φ hφ hgal hker
-  -- `ψ := ι ∘ φ`; its kernel is `ker φ = C` because `ker ι` is trivial
-  have hkerc : AddMonoidHom.ker
-      (ι.comp φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
-      = AddSubgroup.zmultiples g := by
-    ext Q
-    simp only [AddMonoidHom.mem_ker, AddMonoidHom.coe_comp, Function.comp_apply]
-    refine ⟨fun hz => (hker Q).mp (hιinj _ hz), fun hz => ?_⟩
-    have h0 : φ Q = 0 := (hker Q).mpr hz
-    exact (congrArg (⇑ι) h0).trans (map_zero ι)
-  exact ⟨⟨(ι.comp φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point),
-      hφ.comp hιiso⟩, hkerc, himg⟩
-
-/-- **FROM ISOGENY SIGNATURE `6` TO COMPLEX MULTIPLICATION BY THE MAXIMAL ORDER
-OF DISCRIMINANT `−N`** (opened 2026-07-28 as a bare `sorry`; PROVEN the same day
-over the single new leaf `exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel` —
-see the section note above for the anatomy of the cut; the DEEP half of
-`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf`).
-
-TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978), §5;
-Serre, *Propriétés galoisiennes…*, Invent. Math. 15 (1972), §5.4.  The
-hypotheses are **verbatim** those of
-`WeierstrassCurve.mem_classNumberOnePrimes_of_isogenySignature_six`, which is
-PROVEN and concludes `N ∈ {43, 67, 163}` from them; at those levels `h(−N) = 1`,
-the `j`-invariant is rational and `E` has CM by the MAXIMAL order `O_{−N}` with
-the rational `N`-isogeny the ramified prime `(√−N)`.  So this leaf is the step
-`mem_classNumberOnePrimes_of_isogenySignature_six` stops short of: not *which*
-primes, but *what the curve is* at them.
-
-**The mathematics, in one paragraph.**  Signature `6` says `λ¹² = χ⁶`, i.e.
-`λ²χ⁻¹` has order dividing `6`; the class-number-one branch shows every odd prime
-`q < N/4` is inert in `ℚ(√−N)`, and Baker–Heegner–Stark then pins
-`N ∈ {43, 67, 163}`.  At those `N`, `λ² = χ · ψ_{−N}` with `ψ_{−N}` the quadratic
-character of `ℚ(√−N)`, whence `End(E) ⊗ ℚ = ℚ(√−N)` and the rational subgroup is
-the kernel of the ramified prime.  `h(−N) = 1` makes the order maximal, so
-`φ = (1 + √−N)/2` is itself an endomorphism; `ψ := 2φ − 1` is `√−N`.
-
-**WHY `φ` AND NOT `ψ² = [−N]`, which is the shape the prime-POWER siblings use.**
-`ψ² = [−N]` pins only `ℤ[√−N]`, of discriminant `−4N`, and
-`h(−4·43) = h(−4·67) = h(−4·163) = 3` (`qfbclassno`, PARI/GP) — three classes,
-not one — so the consumer
-`nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder` would be FALSE in that
-form.  The relation `φ² + (N+1)/4 = φ` has discriminant `1 − (N+1) = −N`, which is
-the maximal order exactly.  `(N + 1) / 4` is NATURAL division, exact because
-`hmod : N % 4 = 3`; at `43, 67, 163` it is `11, 17, 41`.
-
-**THE PRIME-POWER ROUTE IS A TEMPLATE FOR THE SHAPE, NOT FOR THE ARGUMENT** (this
-paragraph CORRECTS its predecessor, which said the route was "a template for the
-STATEMENT only"; the cut taken below reuses more of it than that allowed, and
-less than a naive reading would).  What transfers is the `End`-level packaging:
-`exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125` produces exactly the
-pair of conjuncts `ker ψ = ⟨g⟩` and `ψ (E[N]) = ⟨g⟩`, and
-`End.sq_eq_neg_natCast_of_atkinLehner` turns them into `ψ² = [−N]` uniformly in
-`N > 4`; the new leaf below is stated in that same shape and the Vélu plumbing
-is identical.  What does NOT transfer is the reason `(E, C)` is `w_N`-fixed: at
-`k ≥ 2` it is the collapse of `rank J_0(p^k)^-`, whereas at PRIME level it is
-Mazur's Thm 1 determination of `X_0(N)(ℚ)` at `N = 43, 67, 163`.  Confusing those
-two is the trap the doctrine records; keeping the packaging while replacing the
-argument is not.
-
-**NOT VACUOUS.**  The hypotheses are satisfiable: at each of `43, 67, 163` the
-curve of `j`-invariant `−884736000`, `−147197952000`, `−262537412640768000`
-carries its ramified `N`-isogeny over `ℚ` (`ellisomat (ellfromj j)` returns
-`[1, N; N, 1]`), its isogeny character has signature `6`, and it has potentially
-good reduction away from `2` and `N`.  The conclusion is also not junk-satisfiable:
-`WeierstrassCurve.End` members carry an `IsRationalMap` certificate, which is
-exactly what rules out the `M₂(Ẑ)` matrices that satisfied the old additive-map
-formulation for EVERY curve — see the note on
-`exists_endSq_neg125_of_stable_cyclic_subgroup_order_125`.
-
-**AXES ALREADY REFUTED** (inherited, and recorded on the parent): the rank-`0`
-Jacobian (analytic ranks `1, 2, 6` at the three levels), effective
-Chabauty–Coleman (`15, 19, 64` against `3`), the rank-`0` QUOTIENT (dies by
-STRENGTH: `#A(ℚ)` is `0`, `7`, `11` or `27`, never `1`), and `classPoly`
-(linear at `h(−N) = 1`, so "`j` is its root" is this leaf's own conclusion
-rewritten).
-
-**AXIS SEARCHED, so the next owner knows what this verdict does NOT cover**: the
-survey behind those refutations ranged over MODULAR-CURVE-shaped routes to the
-rational points.  It did not range over routes that take the class-number-one
-input as given and reconstruct the endomorphism analytically (Deuring lifting,
-or the CM theory of `ℚ(√−N)` acting on `ℂ/O_{−N}`).
-
-**CUT TAKEN 2026-07-28, AND THIS DECLARATION IS NOW PROVEN.**  The paragraph just
-above told a prover to start from the class-number-one input and reconstruct the
-endomorphism.  That is what happened, and it turned out to need NO new deep
-input: `End.exists_intBasis` (PROVEN) plus the pre-existing CM leaf
-`classNumberOne_of_end_closure_eq_top` already force the endomorphism ring to be
-the MAXIMAL order once an endomorphism with `ψ² = [−N]` exists, so the entire
-`ℤ[√−N]`-versus-`O_{−N}` question is discharged here by
-`exists_two_mul_sub_one_eq_of_endSq_eq_neg`.  The only thing that had to become
-a leaf is the EXISTENCE of `ψ`, i.e. `w_N`-fixedness, which is
-`exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel`.
-
-So the frontier is unchanged in size — one leaf replaced by one leaf — and the
-surviving leaf is purely modular, with no complex multiplication, no class
-number and no endomorphism-ring plumbing left in it.  See the section note above
-for the coordinates.
-
-The assembly is five steps: `hstable` from `hlam`
-(`stable_zmultiples_of_isogenyCharacter`); `N ∈ {43, 67, 163}` from
-`mem_classNumberOnePrimes_of_isogenySignature_six`; the new leaf for `ψ`;
-`End.sq_eq_neg_natCast_of_atkinLehner` for `ψ² = [−N]` (applicable since
-`4 < 23 ≤ N`); and `exists_two_mul_sub_one_eq_of_endSq_eq_neg` for `φ`, whose
-`N % 8 = 3` side condition is read off the three levels.  The minimal polynomial
-`φ² + (N+1)/4 = φ` then follows from `(2φ − 1)² = [−N]` by multiplying out and
-cancelling the `4` with `eq_zero_of_natCast_mul_eq_zero`. -/
-theorem exists_endMinpoly_of_isogenySignature_six
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
-    (hN : N.Prime) (hN23 : 23 ≤ N)
-    (hg : addOrderOf g = N)
-    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
-    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      WeierstrassCurve.Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
-        ((lam σ : ZMod N).val) • g)
-    (hpg : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j)
-    (hsig : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ 6)
-    (hmod : N % 4 = 3) :
-    ∃ φ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
-      φ * φ + (((N + 1) / 4 : ℕ) :
-          WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) = φ ∧
-        AddMonoidHom.ker
-            (((2 * φ - 1 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) :
-                AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
-              (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
-          = AddSubgroup.zmultiples g := by
-  -- Step 1: the stable subgroup, from the isogeny character.
-  have hstable := E.stable_zmultiples_of_isogenyCharacter g lam hlam
-  -- Step 2: the hypotheses already force `N ∈ {43, 67, 163}`.
-  have hmem := E.mem_classNumberOnePrimes_of_isogenySignature_six g hN hN23 hg lam hlam hpg
-    hsig hmod
-  -- Step 3: Atkin–Lehner fixedness at those three levels — the one new leaf.
-  obtain ⟨ψ, hker, himg⟩ :=
-    exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel E hmem g hg hstable
-  -- Step 4: the two conjuncts give `ψ² = [−N]`, uniformly in `N > 4`.
-  have hsq : ψ * ψ
-      = -((N : ℕ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) :=
-    WeierstrassCurve.End.sq_eq_neg_natCast_of_atkinLehner ψ N (by omega) g hg hker himg
-  have hsq' : ψ * ψ
-      = ((-(N : ℤ) : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
-    rw [hsq]; push_cast; abel
-  -- Step 5: `h(−4N) ≠ 1` forces the MAXIMAL order, so `(1 + ψ)/2` is an endomorphism.
-  have hN8 : N % 8 = 3 := by fin_cases hmem <;> norm_num
-  obtain ⟨φ, hφ⟩ :=
-    exists_two_mul_sub_one_eq_of_endSq_eq_neg E hN hN23 hN8 ψ hsq'
-  refine ⟨φ, ?_, ?_⟩
-  · -- `4 (φ² + (N+1)/4 − φ) = (2φ − 1)² − 1 + (N + 1) = ψ² + N = 0`, then cancel the `4`.
-    have h4 : 4 * ((N + 1) / 4) = N + 1 := by omega
-    have h4c := congrArg
-      (fun k : ℕ => (k : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) h4
-    push_cast at h4c
-    have hX : ((4 : ℕ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
-        * (φ * φ + (((N + 1) / 4 : ℕ) :
-            WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) - φ) = 0 := by
-      push_cast
-      have hexp : (4 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
-          * (φ * φ + (((N + 1) / 4 : ℕ) :
-              WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) - φ)
-          = (2 * φ - 1) * (2 * φ - 1) - 1
-            + 4 * (((N + 1) / 4 : ℕ) :
-                WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
-        noncomm_ring
-      rw [hexp, hφ, hsq, h4c]
-      abel
-    exact sub_eq_zero.1
-      (eq_zero_of_natCast_mul_eq_zero (n := 4) (by norm_num) hX)
-  · rw [hφ]; exact hker
-
-/-- **MAZUR AT `43, 67, 163`, IN `WeierstrassCurve` VOCABULARY: a Galois-stable
-cyclic subgroup of order `p` is the kernel of `√−p`** (PROVEN 2026-07-28 over
-`exists_endMinpoly_of_isogenySignature_six`).
-
-This is the arithmetic half of
-`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf`, stated with the same
-`hstable` hypothesis that every other `(E, g)`-shaped leaf in this file uses, so
-it plugs into the bridge below with nothing reformulated at the boundary.
-
-The proof is the pipeline of
-`WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree`, stopped one step
-earlier.  `exists_isogenyCharacter` turns `hstable` into the character `λ`;
-`potentiallyGoodReduction_of_isogenyCharacter` supplies `hpg` (this is where
-Mazur's formal-immersion theorem is consumed); `exists_isogenySignature`
-(Serre–Raynaud) produces `s ∈ {0, 4, 6, 8, 12}`; and
-`not_isogenyCharacter_of_isogenySignature_ne_six` — the resultant elimination —
-derives `False` from every value but `6`, applicable because `43, 67, 163 ≠ 37`.
-At `s = 6` the signature leaf applies, with `hmod` supplied by
-`exists_isogenySignature`'s own `s = 6 → N % 4 = 3` clause. -/
-theorem exists_endMinpoly_of_stable_cyclic_mazurLevel
-    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ}
-    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = p)
-    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
-      WeierstrassCurve.Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-        AddSubgroup.zmultiples g) :
-    ∃ φ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
-      φ * φ + (((p + 1) / 4 : ℕ) :
-          WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) = φ ∧
-        AddMonoidHom.ker
-            (((2 * φ - 1 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) :
-                AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
-              (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
-          = AddSubgroup.zmultiples g := by
-  have hN : p.Prime := by fin_cases hp <;> norm_num
-  have hN23 : 23 ≤ p := by fin_cases hp <;> norm_num
-  have h37 : p ≠ 37 := by fin_cases hp <;> norm_num
-  have hN19 : 19 < p := by omega
-  obtain ⟨lam, hlam⟩ := E.exists_isogenyCharacter g hN.pos hg hstable
-  have hpg := E.potentiallyGoodReduction_of_isogenyCharacter g hN hN19 hg lam hlam
-  obtain ⟨s, hsmem, hsig, hs6⟩ := E.exists_isogenySignature g hN hN19 hg lam hlam
-  simp only [Finset.mem_insert, Finset.mem_singleton] at hsmem
-  rcases hsmem with rfl | rfl | rfl | rfl | rfl
-  · exact (E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam
-      hpg (by decide) hsig).elim
-  · exact (E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam
-      hpg (by decide) hsig).elim
-  · exact exists_endMinpoly_of_isogenySignature_six E g hN hN23 hg lam hlam hpg hsig
-      (hs6 rfl)
-  · exact (E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam
-      hpg (by decide) hsig).elim
-  · exact (E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam
-      hpg (by decide) hsig).elim
-
+/-! #### DELETED HERE 2026-08-01: THE TAUTOLOGY (6 declarations, 931 lines)
+
+Recover with `git show 280981f1:Fermat/FLT/FreyCurve/MazurTorsion.lean`, lines
+42103–43033.  What stood here, in declaration order:
+`nonempty_isCMByRamifiedMaximalOrder_geomPoint_mazurLevel`,
+`ajFixed_x0MazurLevel`, `atkinLehnerFixed_x0MazurLevel`,
+`exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel`,
+`exists_endMinpoly_of_isogenySignature_six`,
+`exists_endMinpoly_of_stable_cyclic_mazurLevel`.  All PROVEN; none was false.
+
+**They were a CYCLE, and the cycle proved nothing.**  When
+`exists_endMinpoly_of_stable_cyclic_isolatedJ` was proven on 2026-07-31 over
+`X0.lean`'s two open leaves, the tower above it became a closed loop between two
+pairs of IDENTICAL statements:
+
+    exists_endMinpoly_of_stable_cyclic_mazurLevel   ==  ..._isolatedJ   (above)
+      <- exists_endMinpoly_of_isogenySignature_six
+      <- exists_atkinLehnerEnd_of_stable_cyclic_mazurLevel
+      <- atkinLehnerFixed_x0MazurLevel
+      <- ajFixed_x0MazurLevel
+      <- ..._geomPoint_mazurLevel  ==  ..._of_classify_eq   (below)
+      <- exists_endMinpoly_of_stable_cyclic_isolatedJ   <-- back where it started
+
+So the six derived each of their two endpoints from the other endpoint by a
+detour, and the arithmetic they appear to supply was `..._isolatedJ`'s all along.
+
+**Both duplications are gone rather than shortened.**  A one-line
+`exact <the twin>` between two character-identical statements is the same
+tautology with fewer lines, and it is what `tools/merge/dupstmt.py` exists to
+flag; the survivors are `exists_endMinpoly_of_stable_cyclic_isolatedJ` (above)
+and `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` (below).
+`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf` immediately below now
+cites `..._isolatedJ` directly — a one-word change, and the only edit the
+deletion required outside these two ranges.
+
+**The Serre isogeny-signature analysis SURVIVES UNTOUCHED.**  It was the one
+thing worth checking before deleting, since `..._mazurLevel`'s body was its only
+visible consumer here.  It is not:
+`WeierstrassCurve.exists_isogenyCharacter`, `..._isogenySignature`,
+`not_isogenyCharacter_of_isogenySignature_ne_six`,
+`mem_classNumberOnePrimes_of_isogenySignature_six` and
+`potentiallyGoodReduction_of_isogenyCharacter` are all consumed by
+`WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree` in this file and
+by `false_of_stable_of_forall_padicValRat_nonneg` in `X0.lean`.  Only the thin
+assembly layer above them was dead.
+
+**And this discharged, for free, the `hinv` duplication that was queued
+separately.**  The ~20 lines of field-of-moduli `hinv` derivation copied verbatim
+out of `exists_gamma0Datum_descent_mazurLevel` lived in
+`..._geomPoint_mazurLevel`'s body, so deleting that body removed the duplicate
+without widening `exists_gamma0Datum_descent_mazurLevel`'s conclusion.  The
+signature change that task proposed is no longer wanted: nothing needs the
+`IsBaseChangeOf` that theorem discards.
+
+**FRONTIER: UNCHANGED.**  Every one of the six was proven, and the surviving
+route to `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` rests on exactly
+the leaves it rested on before — `X0.lean`'s
+`mem_isolatedJInvariants_of_stable_classNumberOne` and
+`exists_cmEndomorphism_of_mem_isolatedCMJInvariants`, through
+`..._isolatedJ`, plus the bridge's own residue.  No `sorry` was added or removed
+anywhere in the tree. -/
 
 /-- **MAZUR'S ISOGENY THEOREM at `43, 67, 163`: a `Γ₀(p)`-structure defined
 over `ℚ` is a CM structure for the maximal order of discriminant `−p`**
-(PROVEN 2026-07-28 over the two leaves immediately above — the arithmetic
-`exists_endMinpoly_of_isogenySignature_six` and the moduli↔Weierstrass bridge
+(PROVEN 2026-07-28; re-pointed 2026-08-01 at
+`exists_endMinpoly_of_stable_cyclic_isolatedJ` — see the deletion note
+immediately above — over the moduli↔Weierstrass bridge
 `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly`; a sorry
 leaf from 2026-07-27 until then.  It was the DEEP third of
 `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq`, and the only third that
@@ -43105,8 +41739,12 @@ and not for the proof.
 scheme-level identification of `d₀.E` with the projective Weierstrass model.
 
 **BOTH PARAGRAPHS ABOVE ARE NOW DISCHARGED AS LEAVES, 2026-07-28** — the block
-quote is verbatim `exists_endMinpoly_of_isogenySignature_six` (reached from
-`hstable` by `exists_endMinpoly_of_stable_cyclic_mazurLevel`, PROVEN), and the
+quote is verbatim what `exists_endMinpoly_of_stable_cyclic_isolatedJ` proves
+(2026-08-01: it was reached from `hstable` by
+`exists_endMinpoly_of_stable_cyclic_mazurLevel` via
+`exists_endMinpoly_of_isogenySignature_six` until both were deleted as the
+tautology described in the note above this declaration; `..._isolatedJ` has the
+same statement and is cited directly), and the
 bridge is `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly`.
 The section note's refutation check came back POSITIVE:
 `Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` produces
@@ -43133,7 +41771,7 @@ theorem nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf (p : ℕ)
   refine nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly p hp bc ?_
   intro E hE g hg hstable
   letI := hE
-  exact exists_endMinpoly_of_stable_cyclic_mazurLevel E hp g hg hstable
+  exact exists_endMinpoly_of_stable_cyclic_isolatedJ E hp g hg hstable
 
 /-- **MAZUR: a rational point of `Y_0(p)` at `p = 43, 67, 163` is a CM point
 for the maximal order of discriminant `−p`** (PROVEN 2026-07-27 over the three
