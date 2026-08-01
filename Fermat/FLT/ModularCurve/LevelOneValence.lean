@@ -222,12 +222,13 @@ theorem comp_ofComplex_apply {k : ℤ} (F : ModularForm 𝒮ℒ k) (z : ℍ) :
 
 /-! ### Consequences of the leaves -/
 
-theorem analyticOrderAt_E₄_I : analyticOrderAt (⇑E₄ ∘ ofComplex) Complex.I = 0 := by
-  rw [analyticOrderAt_eq_zero]
-  right
-  rw [show (Complex.I : ℂ) = ((IH : ℍ) : ℂ) from rfl, comp_ofComplex_apply]
-  exact E₄_apply_IH_ne_zero
+/-- `E₆` does NOT vanish at `ρ`, so it contributes nothing to the order there.
 
+There is no `analyticOrderAt_E₄_I` counterpart in this file even though `E₄(i) ≠ 0` holds
+(`E₄_apply_IH_ne_zero`): the induction below runs on `c` first and only then on `b`, so the
+`E₄`-division step is only ever taken at `c = 0` and never has to transport an order at `i`.
+A version of that lemma was written and DELETED as free-floating; recover it from
+`E₄_apply_IH_ne_zero` in two lines if a different induction order ever needs it. -/
 theorem analyticOrderAt_E₆_rho : analyticOrderAt (⇑E₆ ∘ ofComplex) rho = 0 := by
   rw [analyticOrderAt_eq_zero]
   right
