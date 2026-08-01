@@ -4487,111 +4487,20 @@ at `connected_locus_smul_of_hopf_package` (line `5142` there). Note the
 deletion happened inside what became a merge, so `git log -S` will not
 show it — use `git log -m -S '<name>' -- <path>`.
 
-WHERE TO GET IT — SURVEYED AND MEASURED 2026-08-01 AT `280981f1`
-(`merger` = `fe5131ca` is an ancestor of it), AND THE ANSWER IS NOT THE
-ONE THIS PARAGRAPH USED TO GIVE. `HardlyRamified/Family.lean` does carry
-the same Raynaud content coefficient-free and intrinsically on the
-corner — `isMultiplicativeType_corner_of_inertiaLevelOneFlag`, over the
-still-open leaves `isMultiplicativeType_of_connected_of_inertiaLevelOne`
-`Flag` and `hasInertiaLevelOneFlag_quotient_cornerIdeal` — and
-`Threeadic` CANNOT import `Family` (`Family.lean:16` is
-`public import Fermat.FLT.Modularity.Interface` and `Interface.lean`
-imports this file, so the edge is a CYCLE), so any relocation has to be
-an extraction DOWNWARD. What the survey adds is three numbers, one
-correction and one refutation.
-
-**CORRECTION, and it matters for how the extraction has to be wired.**
-The sentence that stood here — "any new module under `HardlyRamified/`
-that this file imports will do, since `Family` reaches this file
-transitively and therefore reaches everything this file imports" — is
-FALSE. `Interface.lean:436` reaches this file by a NON-PUBLIC `import`,
-so nothing behind that edge is re-exported and `Family` cannot name this
-file's declarations at all; `Family.lean:3527` says so itself, about
-`finite_points_of_hopf_order`. An extracted module must therefore be
-imported EXPLICITLY by `Family` as well as by this file. That is
-acyclic and cheap, but it is two import-block edits, not one.
-
-**THE RELOCATION IS NOT WHAT IS EXPENSIVE — THE PAYOFF IS ABSENT.**
-Transitive decl/use closures inside `Family.lean`, comment-stripped:
-
-* `isMultiplicativeType_corner_of_inertiaLevelOneFlag` — 6 decls, 489 lines
-* `exists_levelOneFlag_space_of_charpoly` — 8 decls, 689 lines
-* `isMultiplicativeType_corner_of_hopf_package` — 18 decls, 1454 lines
-* `connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package` —
-  105 decls, 5752 lines
-* `exists_connectedEtale_cyclotomic_subgroup_of_hopf_package` —
-  107 decls, 6123 lines
-
-The coefficient-free Raynaud core really is only SIX declarations and
-489 lines; it is acyclic (its one new dependency is the ten-module
-`Diagonalizable` cluster under `Fermat/FLT/Mathlib/RingTheory/`, whose
-own import closure does not contain this file), and it carries its two
-open leaves with it, so extracting it is leaf-count-neutral.
-**Extracting it nevertheless buys this file NOTHING**, for two
-independent reasons:
-
-* its conclusion is `IsMultiplicativeType` of the CORNER HOPF ALGEBRA,
-  and the bridge from there to any statement about the connected LOCUS
-  OF POINTS is the 105-declaration / 5752-line chain, not the
-  6-declaration core. A prompt costing this task at "~2600 lines" is
-  measuring neither of those two numbers;
-* its single hypothesis `HasInertiaLevelOneFlag 3 G` has exactly ONE
-  producer in the tree — `hasInertiaLevelOneFlag_of_hopf_package`
-  (`Family.lean:4816`, the only declaration in that file whose
-  CONCLUSION is a flag; the other six occurrences are all `hflag`
-  binders) — and that producer is gated on `hchar`.
-
-**THE HYPOTHESIS THAT KILLS THE DIRECT ROUTE IS `hchar`.** Every
-declaration in `Family.lean` from `hasInertiaLevelOneFlag_of_hopf_`
-`package` upward carries
-
-    (χ₁ χ₂ : Γ ℚ → AlgebraicClosure ℚ_[p])   (hmul₁ hmul₂ : multiplicative)
-    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p]))
-               = (X - C (χ₁ g)) * (X - C (χ₂ g)))
-
-together with `[Algebra R (AlgebraicClosure ℚ_[p])]`, `hZinj` and
-`hRinj`. That is GLOBAL reducibility of `ρ` over `ℚ̄_p` by two CONTINUOUS
-characters — the `¬ IsIrreducible` branch, which is where `Family.lean`
-produces it (`exists_char_charpoly_map_eq_of_not_isIrreducible`).
-**Neither leaf here has it.** This one has no `hρ` at all; its sibling
-has `hρ` plus RESIDUAL reducibility with trivial quotient character
-(`hπequiv`), and residual reducibility does not give two global
-characters. So the `Family` chain cannot be instantiated at either leaf
-as it stands, and relocating it would land a theorem whose hypothesis
-nothing here can discharge.
-
-**WHAT IS ACTUALLY MISSING, AND IT IS SMALLER THAN THE CHAIN.**
-`HasInertiaLevelOneFlag p G` is INTRINSIC — a chain of
-`localInertiaGroup`-stable `AddSubmonoid`s of the geometric points from
-`⊥` to `⊤` with successive quotients cyclic of order dividing `p`, i.e.
-"every Jordan–Hölder factor of the points as an `𝔽_p` module over
-inertia is one-dimensional" — and it transports along `fG` by
-`exists_levelOneFlag_of_bijective_equivariant` (PROVEN, pure
-`AddSubmonoid` lattice theory, no arithmetic). In THIS file's setting it
-is derivable from what the sibling leaf already carries, with no global
-reducibility anywhere:
-
-* `hπequiv` makes the residual QUOTIENT character trivial;
-* `residual_twist_eq_cyclotomicCharacterModL` above pins the residual
-  SUB character `a` against `ω`, and the values it records are
-  `a g ≡ 1` or `a g ≡ −1 mod 𝔪` — so both graded pieces of the residual
-  two-step flag carry an inertia action by a scalar in the PRIME FIELD
-  `𝔽₃ ⊆ kk`;
-* a prime-field-valued scalar action makes EVERY `𝔽₃`-subspace of each
-  `kk`-line inertia-stable, so each `kk`-line refines into `[kk : 𝔽₃]`
-  steps with order-`3` quotients — which is exactly what
-  `Family.lean`'s own docstring on `HasInertiaLevelOneFlag` calls
-  item (iv), the step that makes the eigenvalue characters `𝔽_p`-valued
-  ON INERTIA;
-* refining that through the `𝔪`-adic filtration of
-  `(R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` gives the full flag.
-
-That construction — `hasInertiaLevelOneFlag_of_residual_reducible`, say
-— is the honest next task, and the `𝔽₃`-valuedness of `ω` is what makes
-it work. Note that it consumes the RESIDUAL package, which this leaf
-does not carry and its sibling does: closing this leaf by that route
-means giving it the sibling's residual binders, which its single call
-site `exists_connected_line_of_hopf_package` below supplies for free.
+WHERE TO GET IT. `HardlyRamified/Family.lean` carries the same Raynaud
+content coefficient-free and intrinsically on the corner —
+`isMultiplicativeType_corner_of_inertiaLevelOneFlag`, over the still-open
+leaf `isMultiplicativeType_of_connected_of_inertiaLevelOneFlag` — with
+everything downstream of it PROVEN, including
+`connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package` and
+`exists_connectedEtale_cyclotomic_subgroup_of_hopf_package`, which are
+the same shape as this file's chain. `Threeadic` CANNOT import `Family`
+(`Family.lean:16` is `public import Fermat.FLT.Modularity.Interface` and
+`Interface.lean` imports this file, so the edge is a CYCLE), so the
+relocation has to be an extraction DOWNWARD into a module both files
+import — the numbers, and why the extraction does NOT pay, are recorded
+on the SIBLING leaf `connected_locus_le_line_of_hopf_package` below
+(surveyed 2026-08-01 at `280981f1`); read that before planning one.
 
 The multiplicative-type layer is also not yet in this file's import
 cone. `public import`ing
@@ -4742,23 +4651,91 @@ WHERE TO GET IT: see the closing section of
 `connected_locus_smul_of_hopf_package` above — `Family.lean`'s
 coefficient-free corner statement is the same mathematics, and the
 relocation must be an extraction DOWNWARD because `Threeadic` cannot
-import `Family` without a cycle. **SURVEYED 2026-08-01 at `280981f1`,
-and the relocation as such is not the obstruction**: the
-coefficient-free Raynaud core is 6 declarations and 489 lines, but its
-one hypothesis `HasInertiaLevelOneFlag 3 G` has a single producer in the
-tree and that producer is gated on GLOBAL reducibility of `ρ` over `ℚ̄₃`
-by two continuous characters, which this leaf does not have. The full
-numbers, the refutation, and the flag construction that IS available
-from THIS leaf's own residual binders (`hπequiv` plus
-`residual_twist_eq_cyclotomicCharacterModL`, whose `𝔽₃`-valued sub
-character is what supplies "level one") are recorded there.
+import `Family` without a cycle.
 
-**THIS LEAF IS THE ONE THAT CAN REACH THE FLAG.** Its sibling above has
-no residual hypotheses at all, so the construction has to start here;
-whoever takes it should expect to prove
-`hasInertiaLevelOneFlag_of_residual_reducible` first and then hand it to
-BOTH leaves, giving the sibling the residual binders that its single
-call site already holds.
+# THE EXTRACTION WAS SURVEYED AND MEASURED — 2026-08-01, at `280981f1`
+
+(`merger` = `fe5131ca` is an ancestor of that commit, so these numbers
+are the release's.) The verdict is **do not do it as specified**: the
+relocation is not too big, it is too small to help. Three numbers, one
+correction and one refutation, so that nobody re-derives them.
+
+**THE BLOCK YOU WOULD MEASURE IS NOT THE BLOCK THAT PAYS.** Transitive
+decl/use closures inside `Family.lean`, comment-stripped:
+
+* `isMultiplicativeType_corner_of_inertiaLevelOneFlag` — 6 decls, 489 lines
+* `exists_levelOneFlag_space_of_charpoly` — 8 decls, 689 lines
+* `isMultiplicativeType_corner_of_hopf_package` — 18 decls, 1454 lines
+* `connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package` —
+  105 decls, 5752 lines
+* `exists_connectedEtale_cyclotomic_subgroup_of_hopf_package` —
+  107 decls, 6123 lines
+
+The coefficient-free Raynaud core really is only SIX declarations and
+489 lines; it is acyclic (its one new dependency is the ten-module
+`Diagonalizable` cluster under `Fermat/FLT/Mathlib/RingTheory/`, whose
+own import closure does not contain this file), and it carries its two
+open leaves with it, so extracting it is leaf-count-neutral. It
+nevertheless buys these two leaves NOTHING: its conclusion is
+`IsMultiplicativeType` of the CORNER HOPF ALGEBRA, and the bridge from
+there to any statement about the connected LOCUS OF POINTS is the
+105-declaration chain, twelve times bigger. A plan costing this at
+"~2600 lines" is measuring neither.
+
+**AND THE HYPOTHESIS THAT KILLS IT IS `hchar`.** Every declaration in
+`Family.lean` from `hasInertiaLevelOneFlag_of_hopf_package` upward
+carries
+
+    (χ₁ χ₂ : Γ ℚ → AlgebraicClosure ℚ_[p])  (hmul₁ hmul₂ : multiplicative)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p]))
+               = (X - C (χ₁ g)) * (X - C (χ₂ g)))
+
+with `[Algebra R (AlgebraicClosure ℚ_[p])]`, `hZinj` and `hRinj` — GLOBAL
+reducibility of `ρ` over `ℚ̄_p` by two CONTINUOUS characters, i.e. the
+`¬ IsIrreducible` branch, which is where `Family.lean` produces it
+(`exists_char_charpoly_map_eq_of_not_isIrreducible`). This leaf has only
+RESIDUAL reducibility with trivial quotient character (`hπequiv`), and
+its sibling above has no `hρ` at all. `HasInertiaLevelOneFlag` LOOKS
+free to supply, being coefficient-free and intrinsic; it is not, because
+it has exactly ONE producer in the tree (`Family.lean:4816` — the only
+declaration there whose CONCLUSION is a flag; the other six occurrences
+of the name are `hflag` binders) and that producer is the gated one.
+
+**CORRECTION, and it matters for how any extraction has to be wired.**
+It is often said that `Family` reaches this file transitively and so
+would see anything this file imports. FALSE: `Interface.lean:436` is a
+NON-PUBLIC `import`, so nothing behind that edge is re-exported;
+`Family.lean:3527` says exactly this about `finite_points_of_hopf_order`.
+An extracted module needs an EXPLICIT import in both files.
+
+**WHAT IS ACTUALLY MISSING IS SMALLER THAN THE CHAIN, AND THIS LEAF IS
+THE ONE THAT CAN REACH IT.** `HasInertiaLevelOneFlag p G` is intrinsic —
+a chain of `localInertiaGroup`-stable `AddSubmonoid`s of the geometric
+points from `⊥` to `⊤` with successive quotients cyclic of order
+dividing `p` — and it transports along `fG` by
+`exists_levelOneFlag_of_bijective_equivariant` (PROVEN, pure
+`AddSubmonoid` lattice theory). From THIS leaf's own binders it is
+constructible with no global reducibility anywhere:
+
+* `hπequiv` makes the residual QUOTIENT character trivial;
+* `residual_twist_eq_cyclotomicCharacterModL` above pins the residual SUB
+  character `a` against `ω`, and the values it records are `a g ≡ 1` or
+  `a g ≡ −1 mod 𝔪` — so both graded pieces of the residual two-step flag
+  carry an inertia action by a scalar in the PRIME FIELD `𝔽₃ ⊆ kk`;
+* a prime-field-valued scalar action makes EVERY `𝔽₃`-subspace of each
+  `kk`-line inertia-stable, so each line refines into `[kk : 𝔽₃]` steps
+  with order-`3` quotients — which is exactly what `Family.lean`'s
+  docstring on `HasInertiaLevelOneFlag` calls item (iv), the step that
+  makes the eigenvalue characters `𝔽_p`-valued ON INERTIA;
+* refining that through the `𝔪`-adic filtration of `(R ⧸ 𝔪ⁿ⁺²) ⊗[R] V`
+  gives the full flag.
+
+That is a bounded new leaf — `hasInertiaLevelOneFlag_of_residual_`
+`reducible` — and it is what a second, `hchar`-free producer of the
+predicate would be. The sibling leaf above cannot reach it as stated
+(no residual binders); its single call site
+`exists_connected_line_generator_of_hopf_package` below holds them, so
+the route there is to give the sibling this leaf's residual package.
 
 Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102**
 (1974), 3.3.2–3.3.6 and 3.4.3; Wiles, *Modular elliptic curves and
