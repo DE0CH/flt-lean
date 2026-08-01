@@ -17127,71 +17127,33 @@ theorem stepanov_totalFilt_jet_stepanovAnsatzBlock (d : ℕ) (hd : 2 ≤ d) (p :
   stepanov_totalFilt_stepanovJet d hd hdegY hcoeff M _ ν _
     (stepanov_totalFilt_stepanovAnsatzBlock d p A hAdeg j k)
 
-/-- **THE REDUCTION TO A LINEAR SYSTEM, STEPS 3 AND 4** (SORRY LEAF, cut
-2026-07-31 out of `exists_stepanovJetLinearForms`) — Schmidt Chapter III §4,
-pp. 110–112.
+/-! #### A RIVAL CUT, RETIRED 2026-08-01
 
-The parent's four-step argument is listed on its own docstring below. Steps 1
-(FROBENIUS SPLITTING) and 2 (LEMMA 3A) are **PROVEN** immediately above and are
-handed in here as `hsplit` and `hjetblock`; what is left is steps 3 and 4:
+`exists_stepanovJetLinearForms_of_frobeniusSplit` stood here from 2026-07-31 to
+2026-08-01: a SECOND cut of `exists_stepanovJetLinearForms`, made one day after the
+`exists_stepanovJetSpanningFinset` cut below and merged beside it rather than
+against it. The parent's proof body selected this one, so the whole spanning-finset
+cluster — `stepanovCoefficientSpace`, `StepanovJetIndex`, `stepanovJetEvalMap`, the
+leaf, and the PROVEN step 4 `exists_linearForms_of_mem_span_finset` — was left with
+no consumer anywhere in the tree, while the parent's own docstring went on naming
+it. That is the shape a duplicate cut always takes here, and the tell is exactly
+that mismatch: a proven declaration whose docstring names one leaf and whose proof
+body calls another.
 
-3. **ELIMINATION.** At `x ∈ 𝔽_p` with `F(x, y) = 0` and `y ∉ 𝔽_p`, put
-   `y' := y^p`. Then `x^{pj} = x^j` (Fermat), `y^{pk} = y'^k`,
-   `F(x, y') = F(x, y)^p = 0` and `y ≠ y'`, so `e₂(x, y, y') = 0` for the `e₂`
-   defined by `F(X, Y) − F(X, Y') = (Y − Y')·e₂(X, Y, Y')`. Feeding `hsplit`
-   through `stepanovEvalPoint` therefore gives `a^{(ν)}(x, y) = D^{(ν)}(x, y, y')`
-   for the three-variable
-   `D^{(ν)} := ∑_{k<d, j≤K} (stepanovJet F M ν (stepanovAnsatzBlock d A j k))·X^j·Y'^k`,
-   and reducing `D^{(ν)}` modulo `F` in `Y` and modulo `e₂` in `Y'` changes none
-   of its values at such points.
-4. **THE FORMS.** `Φ A` is the tuple of coefficients of the reduced `D^{(ν)}`
-   for `ν < M`. Every operation is `𝔽_p`-LINEAR in `A`
-   (`Polynomial.modByMonicHom` for the two reductions), and by `hjetblock` the
-   reduced `D^{(ν)}` has `deg_X ≤ p/d − d + (2d−3)ν`, `deg_Y ≤ d − 1`,
-   `deg_{Y'} ≤ d − 2`, so the surviving coefficients number at most
-   `∑_{ν<M} d(d−1)(p/d + (2d−3)ν) ≤ stepanovEquationCount d p M`. Padding with
-   zero forms is free, so producing FEWER equations is fine.
+The two cuts differ only in packaging: this one produced the linear forms directly,
+the surviving one produces a spanning finset and lets
+`exists_linearForms_of_mem_span_finset` convert. **The surviving one is kept because
+step 4 is proven and is proven BELOW this point** — a prover standing here could
+never cite it, so every route from here had to redo it, whereas the cut below has it
+in scope. The hypotheses this cut carried are the better ones and were the right
+half of it: `hsplit` in BLOCK form and `hjetblock` (Lemma 3A) are now taken by
+`exists_stepanovJetSpanningFinset` and forwarded to its leaf. This cut's account of
+step 3, and its survey of what `e₂` still costs, are folded into
+`exists_stepanovJetReducedCoeffs`.
 
-**WHAT IS STILL MISSING AT THIS PIN** (grepped 2026-07-31 across `Fermat/`):
-`e₂` occurs only in PROSE — at the section note above `stepanovEquationCount`,
-in `stepanov_irreducible_stepanovFZ`'s docstring and in
-`stepanov_pow_X_sub_C_dvd_of_jet_vanishing`'s — and has NO definition anywhere.
-It has to be written here, together with: it is monic in `Y'` of degree `d − 1`
-(so `Polynomial.modByMonic` applies in the `Y'` direction, exactly as
-`stepanov_exists_wd_rem` above already handles the `Y` direction), and the
-defining identity, which is `geom_sum₂_mul` applied coefficientwise to `F`.
-
-NOTE the hypothesis `hAdeg` is the SHARP constraint `deg + d + i + j + k ≤ p/d`,
-not the weak `deg + d ≤ p/d` the grandparent exports. `hp : 250 d⁵ < p` is NOT
-needed here and is not taken.
-
-CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
-theorem exists_stepanovJetLinearForms_of_frobeniusSplit (d : ℕ) (hd : 2 ≤ d) (p : ℕ)
-    [Fact p.Prime] (F : Polynomial (Polynomial (ZMod p)))
-    (hmon : F.Monic) (hdegY : F.natDegree = d)
-    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
-    (M K : ℕ) (hK : K = (d - 1) * M / d + d - 2)
-    (hsplit : ∀ (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) (ν : ℕ),
-      stepanovJet F M ν (stepanovAnsatz d p K A)
-        = ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
-            stepanovJet F M ν (stepanovAnsatzBlock d A j k) *
-              Polynomial.monomial (p * k) (Polynomial.X ^ (p * j)))
-    (hjetblock : ∀ (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)),
-      (∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d) →
-      ∀ j k ν, (stepanovTotalFilt (ZMod p)).mem (p / d - d - j - k + (2 * d - 3) * ν)
-        (stepanovJet F M ν (stepanovAnsatzBlock d A j k))) :
-    ∃ Φ : (ℕ → ℕ → ℕ → Polynomial (ZMod p)) →ₗ[ZMod p]
-        (Fin (stepanovEquationCount d p M) → ZMod p),
-      ∀ A : ℕ → ℕ → ℕ → Polynomial (ZMod p),
-        (∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d) →
-        (∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0) →
-        Φ A = 0 →
-        ∀ (x : ZMod p) (y : AlgebraicClosure (ZMod p)),
-          stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
-          (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
-          ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
-            (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 :=
-  sorry
+Nothing was lost: both cuts were open leaves, and after the repair the cluster owes
+ONE leaf where it owed two. Recover the deleted text from the parent of the commit
+that removed it. -/
 
 /-- **THE FACTOR THAT PASSES THROUGH THE WHOLE RECURSION.** A factor `c` killed by
 BOTH derivations — `∂_X c = 0` and `∂_Y c = 0` — is a constant for every step of
@@ -17461,65 +17423,219 @@ theorem exists_linearForms_of_mem_span_finset
   have h2 : (⟨Φ' a, hmem⟩ : U) = 0 := hιinj (by rw [h1, map_zero])
   simpa using congrArg Subtype.val h2
 
-/-! ##### The residual leaf: steps 2 and 3, and the count -/
+/-! ##### The count, the spanning set, and the residual leaf
 
-/-- **STEPS 2 AND 3 OF SCHMIDT III §4: THE JET VALUES SPAN A SPACE OF DIMENSION
-`≤ B`** (SORRY LEAF, cut 2026-07-30 out of `exists_stepanovJetLinearForms`, which
-is PROVEN over it and `exists_linearForms_of_mem_span_finset` immediately above).
+The count and the spanning-set packaging are PROVEN here (2026-08-01); what is left
+open is Schmidt's step 3 alone, `exists_stepanovJetReducedCoeffs`. Steps 1 and 2 are
+proven far above (`stepanov_jet_stepanovAnsatz`,
+`stepanov_totalFilt_jet_stepanovAnsatzBlock`) and are threaded through as
+hypotheses. -/
 
-WHAT IS BEING ASKED, and why it is the whole remaining content. Exhibit at most
-`stepanovEquationCount d p M` many vectors spanning a subspace that contains the
-image of `stepanovCoefficientSpace d p K` under `stepanovJetEvalMap`. By
-`exists_linearForms_of_mem_span_finset` that is EQUIVALENT to the parent's "at most
-`B` linear forms cut the conditions out"; no linear algebra is left in it, only
-Schmidt's degree bookkeeping.
+/-- `d(d−1)` is even, so the halving in `stepanovEquationCount` is exact. -/
+theorem stepanov_two_mul_half (d : ℕ) (hd : 2 ≤ d) : d * (d - 1) / 2 * 2 = d * (d - 1) := by
+  obtain ⟨m, rfl⟩ : ∃ m, d = m + 1 := ⟨d - 1, by omega⟩
+  have : Even ((m + 1) * (m + 1 - 1)) := by
+    simpa [Nat.add_sub_cancel, mul_comm] using Nat.even_mul_succ_self m
+  exact Nat.div_mul_cancel this.two_dvd
 
-WHAT IS HANDED IN. `hsplit` is step 1, the Frobenius splitting — it is NOT an
-assumption anybody has to discharge, since the caller supplies
-`stepanovJet_stepanovAnsatz` (proven above). It is passed as a hypothesis only so
-that the prover has it in the exact shape the argument consumes.
+/-- **THE COUNT.** Summing `d(d−1)(p/d − d + (2d−3)ν + 1)` — the number of monomials
+`X^a Y^b Y'^c` with `a ≤ p/d − d + (2d−3)ν`, `b < d`, `c < d − 1` — over the `M` jet
+orders `ν < M` gives at most `stepanovEquationCount d p M`.
 
-THE INTENDED SPANNING SET, which is where the count comes from. Fix an irrational
-point `(x, y)` and put `y' := y^p`. Since `x ∈ 𝔽_p` we have `x^{pj} = x^j`, and
-`y^{pk} = y'^k`; moreover `F(x, y') = F(x, y)^p = 0` and `y' ≠ y`, so writing
-`F(X, Y) − F(X, Y') = (Y − Y')·e₂(X, Y, Y')` gives `e₂(x, y, y') = 0`. Hence by
-`hsplit`
+Two savings are consumed and neither may be dropped: `d·(p/d) ≤ p` turns the `M`
+copies of `d(d−1)(p/d)` into `(d−1)pM`, and `∑_{ν<M} ν = M(M−1)/2` leaves exactly
+`(2d−3)·(d(d−1)/2)·M` of slack, which is what absorbs the `+1`. At `p/d < d` the
+truncated `p/d − d` is `0` rather than negative and the `+1` has to be paid for out
+of that slack — which is why `2 ≤ p` is taken. -/
+theorem stepanov_spanningCount_le (d p M : ℕ) (hd : 2 ≤ d) (hp : 2 ≤ p) :
+    ∑ ν ∈ Finset.range M, (p / d - d + (2 * d - 3) * ν + 1) * (d * (d - 1))
+      ≤ stepanovEquationCount d p M := by
+  rw [stepanovEquationCount]
+  set E := d * (d - 1) / 2 with hE
+  have hE2 : E * 2 = d * (d - 1) := stepanov_two_mul_half d hd
+  have hgauss : (∑ ν ∈ Finset.range M, ν) * 2 = M * (M - 1) := Finset.sum_range_id_mul_two M
+  set S := ∑ ν ∈ Finset.range M, ν with hS
+  have hexp : ∀ ν : ℕ, (p / d - d + (2 * d - 3) * ν + 1) * (d * (d - 1))
+      = (p / d - d + 1) * (d * (d - 1)) + ((2 * d - 3) * (d * (d - 1))) * ν := by
+    intro ν; ring
+  rw [Finset.sum_congr rfl (fun ν _ => hexp ν), Finset.sum_add_distrib, Finset.sum_const,
+    Finset.card_range, ← Finset.mul_sum, smul_eq_mul, ← hS]
+  have key : (p / d - d + 1) * (d * (d - 1)) ≤ (d - 1) * p + (2 * d - 3) * E := by
+    rcases Nat.lt_or_ge (p / d) d with h | h
+    · have h0 : p / d - d + 1 = 1 := by omega
+      rw [h0, one_mul, ← hE2]
+      rcases Nat.lt_or_ge d 3 with h3 | h3
+      · have hd2 : d = 2 := by omega
+        subst hd2
+        norm_num at hE2 ⊢
+        omega
+      · have : 2 * E ≤ (2 * d - 3) * E := Nat.mul_le_mul_right E (by omega)
+        omega
+    · have h1 : p / d - d + 1 ≤ p / d := by omega
+      have h2 : (p / d - d + 1) * (d * (d - 1)) ≤ (p / d) * (d * (d - 1)) :=
+        Nat.mul_le_mul_right _ h1
+      have h3 : (p / d) * (d * (d - 1)) = ((p / d) * d) * (d - 1) := by ring
+      have h4 : (p / d) * d ≤ p := Nat.div_mul_le_self p d
+      have h5 : ((p / d) * d) * (d - 1) ≤ p * (d - 1) := Nat.mul_le_mul_right _ h4
+      calc (p / d - d + 1) * (d * (d - 1)) ≤ (p / d) * (d * (d - 1)) := h2
+        _ = ((p / d) * d) * (d - 1) := h3
+        _ ≤ p * (d - 1) := h5
+        _ ≤ (d - 1) * p + (2 * d - 3) * E := by rw [mul_comm]; omega
+  have hMS : M + 2 * S = M ^ 2 := by
+    rcases Nat.eq_zero_or_pos M with rfl | hM
+    · simp [hS]
+    · obtain ⟨n, rfl⟩ : ∃ n, M = n + 1 := ⟨M - 1, by omega⟩
+      have : S * 2 = (n + 1) * n := by simpa using hgauss
+      nlinarith [this]
+  have step1 : M * ((p / d - d + 1) * (d * (d - 1)))
+      ≤ M * ((d - 1) * p + (2 * d - 3) * E) := Nat.mul_le_mul_left _ key
+  have step2 : (2 * d - 3) * (d * (d - 1)) * S = (2 * d - 3) * E * (2 * S) := by
+    rw [← hE2]; ring
+  have step3 : M * ((2 * d - 3) * E) + (2 * d - 3) * E * (2 * S)
+      = (2 * d - 3) * E * (M + 2 * S) := by ring
+  calc M * ((p / d - d + 1) * (d * (d - 1))) + (2 * d - 3) * (d * (d - 1)) * S
+      ≤ M * ((d - 1) * p + (2 * d - 3) * E) + (2 * d - 3) * E * (2 * S) := by
+        rw [step2] at *; omega
+    _ = M * ((d - 1) * p) + ((2 * d - 3) * E * (M + 2 * S)) := by rw [← step3]; ring
+    _ = (d - 1) * p * M + E * (2 * d - 3) * M ^ 2 := by rw [hMS]; ring
 
-  `a^{(ν)}(x, y) = D^{(ν)}(x, y, y')`,  `D^{(ν)} := ∑_{i,j,k} (Y^i A_{ijk})^{(ν)}·X^j·Y'^k`,
+/-- The value at the index point `q` of the monomial `X^a Y^b Y'^c`, read as a
+vector in the target of `stepanovJetEvalMap` and supported on the single jet order
+`ν`. Reading `Y' := Y^p` is what makes the three-variable reduced `D^{(ν)}` of
+Schmidt's step 3 into a function of the SAME point `(x, y)`, and the `if` is what
+lets the `M` jet orders be spanned independently. -/
+noncomputable def stepanovSpanningVec (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p))) (M ν a b e : ℕ) :
+    StepanovJetIndex p F M → AlgebraicClosure (ZMod p) :=
+  fun q => if (q.2 : ℕ) = ν then
+    (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) q.1.1.1) ^ a * q.1.1.2 ^ b
+      * (q.1.1.2 ^ p) ^ e else 0
 
-a THREE-variable polynomial, and reducing `D^{(ν)}` modulo `F` in `Y` (monic of
-degree `d`) and modulo `e₂` in `Y'` (whose `Y'^{d−1}`-coefficient is `−1`) changes
-none of its values at such points. Take as spanning set the evaluation vectors of
-the surviving monomials `X^a Y^b Y'^c`, one for each jet order `ν < M`:
+/-- The monomials surviving Schmidt's two reductions at jet order `ν`:
+`deg_X ≤ p/d − d + (2d−3)ν` (Lemma 3A), `deg_Y ≤ d − 1` (reduction modulo the
+monic `F`), `deg_{Y'} ≤ d − 2` (reduction modulo `e₂`). -/
+def stepanovSpanningBox (d p ν : ℕ) : Finset (ℕ × ℕ × ℕ) :=
+  (Finset.range (p / d - d + (2 * d - 3) * ν + 1)) ×ˢ
+    ((Finset.range d) ×ˢ (Finset.range (d - 1)))
 
-  `v_{ν,a,b,c} : q ↦ if q.2 = ν then x^a y^b y'^c else 0`,
-  `a ≤ p/d − d + (2d−3)ν`,  `b < d`,  `c < d − 1`.
+theorem card_stepanovSpanningBox (d p ν : ℕ) : (stepanovSpanningBox d p ν).card
+    = (p / d - d + (2 * d - 3) * ν + 1) * (d * (d - 1)) := by
+  simp [stepanovSpanningBox, Finset.card_product]
+/-- **STEP 3 OF SCHMIDT III §4: THE ELIMINATION AND THE TWO REDUCTIONS**
+(SORRY LEAF, cut 2026-08-01 out of `exists_stepanovJetSpanningFinset` below, which
+is PROVEN over it together with `stepanov_spanningCount_le` above and
+`exists_linearForms_of_mem_span_finset`).
 
-That is `d(d−1)(p/d + (2d−3)ν)` vectors for each `ν`, and
-`∑_{ν<M} d(d−1)(p/d + (2d−3)ν) ≤ stepanovEquationCount d p M`.
+WHAT IS BEING ASKED. One `𝔽_p`-valued coefficient family `c` per jet order `ν`,
+supported on the box of `stepanovSpanningBox`, whose monomial expansion reproduces
+`a^{(ν)}(x, y)` at EVERY irrational point of the curve simultaneously. That the
+same `c` works at every point is the whole content: `c` is the coefficient family
+of a POLYNOMIAL, and the points only enter through `F(x, y) = 0` and `y ∉ 𝔽_p`.
 
-The `deg_X` bound is Lemma 3A in the WEIGHTED degree `w(P) := maxₙ (deg (P.coeff n) + n)`:
-`w(F) ≤ d` is exactly `hcoeff`, so `w(F_Y), w(F_X) ≤ d − 1` and
-`w(F_{YX}), w(F_{YY}) ≤ d − 2`, and each of the three terms of `stepanovJet`'s
-recursion raises `w` by at most `(d−2) + (d−1) = 2d − 3` — the middle and last
-terms because `∂_X` and `∂_Y` each LOWER `w` by one, which is what pays for the
-squared `F_Y`. Starting from `w(Y^i A_{ijk}) + j + k ≤ p/d − d` (the SHARP
-hypothesis `hAdeg`, and this is where the `−(i + j + k)` is spent) gives
-`w(D^{(ν)}) ≤ p/d − d + (2d−3)ν`, and both reductions preserve `w`:
-`Y^d ≡ −∑_{i<d} F_i Y^i` with `w(F_i Y^i) ≤ (d − i) + i = d = w(Y^d)`, and likewise
-for `e₂`.
+WHAT IS HANDED IN, and it is now everything except step 3 itself.
+* `hsplit` is **step 1**, the Frobenius splitting, PROVEN above as
+  `stepanov_jet_stepanovAnsatz`;
+* `hjetblock` is **step 2**, Lemma 3A in the weighted total degree, PROVEN above as
+  `stepanov_totalFilt_jet_stepanovAnsatzBlock`. Note it is the BLOCK form, i.e.
+  already summed over `i < d`, which is the form the reduction consumes.
+Both are passed as hypotheses rather than called, so that the prover has them in
+the exact shape the argument uses and so that this leaf carries no dependency on
+how they are proved.
+
+THE ROUTE. Fix `x ∈ 𝔽_p` and `y` with `F(x, y) = 0`, `y ∉ 𝔽_p`; put `y' := y^p`.
+Then `x^{pj} = x^j` (Fermat), `y^{pk} = y'^k`, `F(x, y') = F(x, y)^p = 0` and
+`y ≠ y'` (else `y ∈ 𝔽_p`), so `e₂(x, y, y') = 0` for the `e₂` defined by
+`F(X, Y) − F(X, Y') = (Y − Y')·e₂(X, Y, Y')`. Pushing `hsplit` through
+`stepanovEvalPoint` therefore gives `a^{(ν)}(x, y) = D^{(ν)}(x, y, y')` for the
+three-variable
+
+  `D^{(ν)} := ∑_{k<d, j≤K} (stepanovJet F M ν (stepanovAnsatzBlock d A j k))·X^j·Y'^k`,
+
+and reducing `D^{(ν)}` modulo `F` in `Y` and modulo `e₂` in `Y'` changes none of
+its values at such points. `c` is then the coefficient family of the reduced
+`D^{(ν)}`, and `hjetblock` plus the two `mem_mono`/`mem_mul` steps of
+`stepanovTotalFilt` bound its `X`-degree by `p/d − d + (2d−3)ν`: the `X^j·Y'^k`
+factor costs `j + k`, which is exactly the `−j − k` `hjetblock` carries, and BOTH
+reductions preserve the weighted degree (`Y^d ≡ −∑_{i<d} F_i Y^i` with
+`w(F_i Y^i) ≤ (d − i) + i = d = w(Y^d)`, and likewise for `e₂`).
+
+**WHAT IS STILL MISSING AT THIS PIN** (re-grepped 2026-08-01 across `Fermat/` and
+`.lake/packages/mathlib/`): `e₂` occurs only in PROSE — at the section note above
+`stepanovEquationCount`, in `stepanov_irreducible_stepanovFZ`'s docstring and in
+`stepanov_pow_X_sub_C_dvd_of_jet_vanishing`'s — and has NO definition anywhere. It
+has to be written here, together with: it is monic in `Y'` of degree `d − 1` up to
+sign (so `Polynomial.modByMonic` applies in the `Y'` direction exactly as
+`stepanov_exists_wd_rem` above already handles the `Y` direction), and the defining
+identity, which is `geom_sum₂_mul` applied coefficientwise to `F`.
+
+**WHAT IS NOT MISSING, and the earlier statement of this leaf said it was**: the
+weighted-degree API. `StepanovFilt` (line ~16232) is a full filtration calculus —
+`mem_add/_sub/_mul/_sum/_prod/_det`, `lift`, `mem_derivative`, `mem_derivX`,
+`stepanov_exists_wd_rem` (division by a monic `F` preserving the filtration) — and
+`stepanovTotalFilt R` is exactly `w(P) = maxₙ (deg (P.coeff n) + n)`. Lemma 3A over
+it is PROVEN (`stepanov_totalFilt_stepanovJet`). Do not rebuild any of it.
 
 **THE MARGIN IS THIN AND THE CONSTANTS MAY NOT BE WEAKENED** — see the section note
-on `stepanovEquationCount` above. Replacing `2d − 3` by `2d − 2` makes the sibling
+on `stepanovEquationCount`. Replacing `2d − 3` by `2d − 2` makes the sibling
 inequality `B < A` FALSE (first failure `d = 2`, `M = 124`, `p = 34849`), and
 dropping the reduction modulo `e₂` (i.e. allowing `c < d` rather than `c < d − 1`)
-inflates the count by a factor `d/(d−1)`, which the margin does not absorb either.
-So a sloppier bound followed by padding is NOT available here.
+inflates the count by `d/(d−1)`, which the margin does not absorb either. So a
+sloppier bound followed by padding is NOT available here.
 
-MISSING AT THIS PIN: nothing named `[Ss]tepanov`, and no weighted-degree API — `w`
-and its three properties (`w(P + Q) ≤ max`, `w(PQ) ≤ w(P) + w(Q)`,
-`w(∂P) ≤ w(P) − 1`) have to be written here. `Polynomial.modByMonic` covers both
-reductions.
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_stepanovJetReducedCoeffs (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (M K : ℕ) (hK : K = (d - 1) * M / d + d - 2)
+    (hsplit : ∀ (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) (ν : ℕ),
+      stepanovJet F M ν (stepanovAnsatz d p K A)
+        = ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+            stepanovJet F M ν (stepanovAnsatzBlock d A j k) *
+              Polynomial.monomial (p * k) (Polynomial.X ^ (p * j)))
+    (hjetblock : ∀ (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)),
+      (∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d) →
+      ∀ j k ν, (stepanovTotalFilt (ZMod p)).mem (p / d - d - j - k + (2 * d - 3) * ν)
+        (stepanovJet F M ν (stepanovAnsatzBlock d A j k)))
+    (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) (hA : A ∈ stepanovCoefficientSpace d p K)
+    (ν : ℕ) :
+    ∃ c : ℕ → ℕ → ℕ → ZMod p,
+      ∀ (x : ZMod p) (y : AlgebraicClosure (ZMod p)),
+        stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
+        (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
+        stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+            (stepanovJet F M ν (stepanovAnsatz d p K A)) x y
+          = ∑ a ∈ Finset.range (p / d - d + (2 * d - 3) * ν + 1),
+              ∑ b ∈ Finset.range d, ∑ e ∈ Finset.range (d - 1),
+                algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (c a b e)
+                  * (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x) ^ a
+                  * y ^ b * (y ^ p) ^ e :=
+  sorry
+
+/-- **STEPS 2 AND 3 OF SCHMIDT III §4: THE JET VALUES SPAN A SPACE OF DIMENSION
+`≤ B`** (cut 2026-07-30 out of `exists_stepanovJetLinearForms`; **PROVEN
+2026-08-01** over `exists_stepanovJetReducedCoeffs` above).
+
+Exhibit at most `stepanovEquationCount d p M` many vectors spanning a subspace that
+contains the image of `stepanovCoefficientSpace d p K` under `stepanovJetEvalMap`.
+By `exists_linearForms_of_mem_span_finset` that is EQUIVALENT to the parent's "at
+most `B` linear forms cut the conditions out".
+
+WHAT IS PROVEN HERE, and it is everything except Schmidt's step 3. The spanning set
+is the `stepanovSpanningVec` family over `stepanovSpanningBox`, one block per jet
+order `ν < M`; the card bound is `stepanov_spanningCount_le`; and the span
+membership is the observation that the `M` blocks are supported on disjoint jet
+orders, so the coefficient families produced by `exists_stepanovJetReducedCoeffs`
+assemble into a single `𝔽_p`-linear combination with no interaction between orders.
+
+**THE HYPOTHESES CHANGED ON 2026-08-01.** `hsplit` is now the BLOCK form
+(`stepanov_jet_stepanovAnsatz`) rather than the monomial form
+(`stepanovJet_stepanovAnsatz`), and `hjetblock` — Lemma 3A, PROVEN above — is now
+taken as well. Both are forwarded unchanged to the leaf, which is where they are
+consumed; the sole call site supplies both from proven theorems above it. This is
+the signature the rival cut `exists_stepanovJetLinearForms_of_frobeniusSplit`
+carried, which is why it could be retired: see the note on
+`exists_stepanovJetLinearForms` below.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_stepanovJetSpanningFinset (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
@@ -17527,16 +17643,70 @@ theorem exists_stepanovJetSpanningFinset (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fac
     (hmon : F.Monic) (hdegY : F.natDegree = d)
     (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
     (M K : ℕ) (hK : K = (d - 1) * M / d + d - 2)
-    (hsplit : ∀ (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) (ℓ : ℕ),
-      stepanovJet F M ℓ (stepanovAnsatz d p K A)
-        = ∑ i ∈ Finset.range d, ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
-            stepanovJet F M ℓ (Polynomial.monomial i (A i j k))
-              * Polynomial.monomial (p * k) ((Polynomial.X : Polynomial (ZMod p)) ^ (p * j))) :
+    (hsplit : ∀ (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) (ν : ℕ),
+      stepanovJet F M ν (stepanovAnsatz d p K A)
+        = ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+            stepanovJet F M ν (stepanovAnsatzBlock d A j k) *
+              Polynomial.monomial (p * k) (Polynomial.X ^ (p * j)))
+    (hjetblock : ∀ (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)),
+      (∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d) →
+      ∀ j k ν, (stepanovTotalFilt (ZMod p)).mem (p / d - d - j - k + (2 * d - 3) * ν)
+        (stepanovJet F M ν (stepanovAnsatzBlock d A j k))) :
     ∃ s : Finset (StepanovJetIndex p F M → AlgebraicClosure (ZMod p)),
       s.card ≤ stepanovEquationCount d p M ∧
       ∀ A ∈ stepanovCoefficientSpace d p K,
-        stepanovJetEvalMap d p K M F A ∈ Submodule.span (ZMod p) (s : Set _) :=
-  sorry
+        stepanovJetEvalMap d p K M F A ∈ Submodule.span (ZMod p) (s : Set _) := by
+  classical
+  refine ⟨(Finset.range M).biUnion (fun ν =>
+    (stepanovSpanningBox d p ν).image
+      (fun t => stepanovSpanningVec p F M ν t.1 t.2.1 t.2.2)), ?_, ?_⟩
+  · calc ((Finset.range M).biUnion (fun ν =>
+          (stepanovSpanningBox d p ν).image
+            (fun t => stepanovSpanningVec p F M ν t.1 t.2.1 t.2.2))).card
+        ≤ ∑ ν ∈ Finset.range M, ((stepanovSpanningBox d p ν).image
+            (fun t => stepanovSpanningVec p F M ν t.1 t.2.1 t.2.2)).card :=
+          Finset.card_biUnion_le
+      _ ≤ ∑ ν ∈ Finset.range M, (stepanovSpanningBox d p ν).card :=
+          Finset.sum_le_sum (fun ν _ => Finset.card_image_le)
+      _ = ∑ ν ∈ Finset.range M, (p / d - d + (2 * d - 3) * ν + 1) * (d * (d - 1)) :=
+          Finset.sum_congr rfl (fun ν _ => card_stepanovSpanningBox d p ν)
+      _ ≤ stepanovEquationCount d p M :=
+          stepanov_spanningCount_le d p M hd (Fact.out (p := p.Prime)).two_le
+  · intro A hA
+    choose c hc using fun ν => exists_stepanovJetReducedCoeffs d hd p F hmon hdegY hcoeff
+      M K hK hsplit hjetblock A hA ν
+    have hrepr : stepanovJetEvalMap d p K M F A
+        = ∑ ν ∈ Finset.range M, ∑ t ∈ stepanovSpanningBox d p ν,
+            (c ν t.1 t.2.1 t.2.2) • stepanovSpanningVec p F M ν t.1 t.2.1 t.2.2 := by
+      funext q
+      rw [Finset.sum_apply]
+      have hq : (q.2 : ℕ) ∈ Finset.range M := Finset.mem_range.mpr q.2.isLt
+      rw [Finset.sum_eq_single_of_mem (q.2 : ℕ) hq]
+      · rw [Finset.sum_apply]
+        have hval : ∀ t : ℕ × ℕ × ℕ,
+            ((c (q.2 : ℕ) t.1 t.2.1 t.2.2) •
+                stepanovSpanningVec p F M (q.2 : ℕ) t.1 t.2.1 t.2.2) q
+              = algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (c (q.2 : ℕ) t.1 t.2.1 t.2.2)
+                * (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) q.1.1.1) ^ t.1
+                * q.1.1.2 ^ t.2.1 * (q.1.1.2 ^ p) ^ t.2.2 := by
+          intro t
+          simp only [Pi.smul_apply, stepanovSpanningVec, if_true, Algebra.smul_def]
+          ring
+        rw [Finset.sum_congr rfl (fun t _ => hval t), stepanovSpanningBox, Finset.sum_product]
+        show stepanovEvalPoint _ (stepanovJet F M (q.2 : ℕ) (stepanovAnsatz d p K A))
+            q.1.1.1 q.1.1.2 = _
+        rw [hc (q.2 : ℕ) q.1.1.1 q.1.1.2 q.1.2.1 q.1.2.2]
+        refine Finset.sum_congr rfl (fun a _ => ?_)
+        rw [Finset.sum_product]
+      · intro ν hν hne
+        rw [Finset.sum_apply]
+        refine Finset.sum_eq_zero (fun t _ => ?_)
+        simp only [Pi.smul_apply, stepanovSpanningVec, if_neg (Ne.symm hne), smul_zero]
+    rw [hrepr]
+    refine Submodule.sum_mem _ (fun ν hν => Submodule.sum_mem _ (fun t ht => ?_))
+    refine Submodule.smul_mem _ _ (Submodule.subset_span ?_)
+    exact Finset.mem_coe.mpr (Finset.mem_biUnion.mpr
+      ⟨ν, hν, Finset.mem_image.mpr ⟨t, ht, rfl⟩⟩)
 
 end StepanovLinearSystemReduction
 
@@ -17546,17 +17716,29 @@ end StepanovLinearSystemReduction
 This is the part of the dimension count that does MATHEMATICS; the two siblings
 only count.
 
-**STATUS (2026-07-30).** Of the four steps below, steps **1** and **4** are
-DISCHARGED here and are nobody's problem any more: step 1 is
-`stepanovJet_stepanovAnsatz` (off the derivation calculus for
-`stepanovDerivX`/`stepanovJet`), step 4 is
-`exists_linearForms_of_mem_span_finset` (pure linear algebra over a field:
-"at most `B` forms" ⟺ "the image lies in the span of at most `B` vectors").
-Steps **2** and **3** — Lemma 3A in the weighted degree, and the elimination
-`y' = y^p` with the double reduction modulo `F` and `e₂`, together with the
-coefficient count — are exactly what `exists_stepanovJetSpanningFinset` asks
-for. The description below is kept in full because it is the route that leaf
-implements.
+**STATUS (2026-08-01).** Of the four steps below, **1, 2 and 4 are DISCHARGED**
+and are nobody's problem any more, and so is the coefficient count:
+
+* step 1 is `stepanov_jet_stepanovAnsatz` (off the derivation calculus for
+  `stepanovDerivX`/`stepanovJet`);
+* step 2 is `stepanov_totalFilt_jet_stepanovAnsatzBlock`, i.e. Lemma 3A in the
+  weighted total degree `stepanovTotalFilt`, applied to Schmidt's block `b_{jk}`;
+* step 4 is `exists_linearForms_of_mem_span_finset` (pure linear algebra over a
+  field: "at most `B` forms" ⟺ "the image lies in the span of at most `B`
+  vectors"), and the arithmetic that turns `∑_{ν<M} d(d−1)(p/d + (2d−3)ν)` into
+  `stepanovEquationCount d p M` is `stepanov_spanningCount_le`.
+
+`exists_stepanovJetSpanningFinset` — which this theorem is proven over, together
+with step 4 — is itself PROVEN over the single remaining leaf
+`exists_stepanovJetReducedCoeffs`: **step 3 alone**, the elimination `y' = y^p`
+with the double reduction modulo `F` and `e₂`. Steps 1 and 2 are threaded down to
+it as hypotheses so that it carries no dependency on how they are proved. The
+description below is kept in full because it is the route that leaf implements.
+
+(Before 2026-08-01 a second, rival cut of this theorem stood above —
+`exists_stepanovJetLinearForms_of_frobeniusSplit` — and the proof body selected
+it, leaving the whole spanning-finset cluster consumerless. See the note where it
+used to sit.)
 
 WHAT IT SAYS. There are at most `stepanovEquationCount d p M` many `𝔽_p`-linear
 forms in the coefficient family `A` whose simultaneous vanishing already forces
@@ -17671,10 +17853,21 @@ theorem exists_stepanovJetLinearForms (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p
           (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
           ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
             (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 :=
-  exists_stepanovJetLinearForms_of_frobeniusSplit d hd p F hmon hdegY hcoeff M K hK
-    (fun A ν => stepanov_jet_stepanovAnsatz d K A F M ν)
-    (fun A hAdeg j k ν =>
-      stepanov_totalFilt_jet_stepanovAnsatzBlock d hd p hdegY hcoeff M A hAdeg j k ν)
+  by
+  classical
+  obtain ⟨s, hcard, hspan⟩ :=
+    exists_stepanovJetSpanningFinset d hd p F hmon hdegY hcoeff M K hK
+      (fun A ν => stepanov_jet_stepanovAnsatz d K A F M ν)
+      (fun A hAdeg j k ν =>
+        stepanov_totalFilt_jet_stepanovAnsatzBlock d hd p hdegY hcoeff M A hAdeg j k ν)
+  obtain ⟨Φ, hΦ⟩ :=
+    exists_linearForms_of_mem_span_finset (stepanovJetEvalMap d p K M F)
+      (stepanovCoefficientSpace d p K) (stepanovEquationCount d p M) s hcard hspan
+  refine ⟨Φ, fun A hAdeg hAsupp hΦA x y hxy hirr ℓ hℓ => ?_⟩
+  have hzero := hΦ A (mem_stepanovCoefficientSpace hAdeg hAsupp) hΦA
+  have h2 : stepanovJetEvalMap d p K M F A (⟨(x, y), hxy, hirr⟩, ⟨ℓ, hℓ⟩) = 0 := by
+    rw [hzero]; rfl
+  simpa [stepanovJetEvalMap] using h2
 
 /-- **THE UNKNOWNS ARE `stepanovUnknownCount d p K` MANY** (**PROVEN 2026-07-30**;
 cut 2026-07-27 out of `exists_stepanovJetSolution`) — Schmidt Chapter III §4, p. 112,

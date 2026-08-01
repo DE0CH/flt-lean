@@ -16151,3 +16151,60 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## WHEN TWO RIVAL CUTS BOTH LAND, DECLARATION ORDER CAN OUTRANK THE CALL SITE
+
+(2026-08-01, `flt-lean-339`, `Modularity/MoretBailly.lean`.) The standing rule for
+two rival cuts of one parent is *the CALL SITE is the arbiter* — whichever leaf the
+parent's proof body actually calls is the live one. That rule is right about which
+cut WON the merge. It is not always right about which cut should SURVIVE, and the
+tie-breaker it is missing is Lean's linear order.
+
+Here `exists_stepanovJetLinearForms` had been cut twice:
+
+* **cut A (2026-07-30)** → `exists_stepanovJetSpanningFinset` (a spanning finset of
+  size `≤ B`) **plus** `exists_linearForms_of_mem_span_finset`, the step-4 linear
+  algebra, PROVEN;
+* **cut B (2026-07-31)** → `exists_stepanovJetLinearForms_of_frobeniusSplit`
+  (the linear forms directly), stated **1300 lines ABOVE** cut A's cluster.
+
+The merge kept cut B's proof body, so cut A's leaf had **zero consumers** — the
+seventh invisibility class, and it drew this dispatch. The obvious reading is
+"cut B won, delete cut A". It is backwards, because **cut A's proven step 4 sits
+BELOW cut B's leaf, so no prover standing at cut B could ever cite it.** Cut B's
+residue was therefore cut A's residue PLUS a re-derivation of forty lines of linear
+algebra that the file already owned and would have stranded for ever.
+
+**So add one question to the rival-cut arbitration, and it is one `grep -n`: for
+each candidate leaf, is the machinery that would discharge it DECLARED ABOVE IT?**
+A leaf that cannot reach its own file's proven inputs is the worse cut however the
+merge resolved, and the call site's verdict is then a fact about a merge rather
+than about the mathematics.
+
+**The clean retirement keeps the loser's HYPOTHESES.** The two cuts here differed
+only in packaging and in what they were handed: cut B took `hsplit` in the BLOCK
+form plus `hjetblock` (Lemma 3A, proven above both), cut A took only the weaker
+monomial-form `hsplit`. Restating the SURVIVOR with the RETIRED cut's hypothesis
+list — a free change, since a consumerless leaf has no call site to break — makes
+the retirement lossless and the merge story one sentence: *the deleted leaf is now
+proven, under its own hypotheses, one packaging layer down.* Fold whatever its
+docstring said that the survivor's did not (here: the whole account of `e₂`, which
+is still the only record of what step 3 costs) into the survivor.
+
+**AND THE LOSER'S DOCSTRING IS STALE ABOUT THE WINNER'S OWN FILE.** Cut A's leaf
+said, in its `MISSING AT THIS PIN` paragraph, *"no weighted-degree API — `w` and its
+three properties have to be written here"*. At the moment it was written that was
+true; by the next day `StepanovFilt` (a complete filtration calculus with
+`mem_add/_mul/_sum/_prod/_det`, `lift`, `mem_derivative`, `mem_derivX`, and division
+by a monic preserving the filtration) sat **1300 lines above it in the same file**,
+and Lemma 3A over it was PROVEN 440 lines above it. Both landed with cut B. So the
+rival cut did not merely orphan the leaf — it **falsified the leaf's own cost
+estimate**, in the one direction nobody re-reads. When you find a duplicate cut,
+re-grep every absence claim in the survivor's docstring before quoting it into a
+queue entry: the rival is the single most likely source of the thing it says is
+missing.
+
+Accounting note, in the shape the RECUT rule asks for: the cluster went from **two**
+open leaves to **one**, `20 → 19` on the module's `declaration uses 'sorry'` set,
+with zero errors introduced — and no mathematics was done. It is merge repair plus
+the linear-algebra and counting layer of one leaf; report it that way.
