@@ -56912,9 +56912,35 @@ theorem exists_weilPairing_mu_nondeg_of_natCast_ne_zero {k : Type u} [Field k]
   WeilPairingDet.exists_weilPairing_mu_nondeg_of_natCast_ne_zero E n hnk
 
 /-- **THE MOD-`n` GALOIS DETERMINANT IS THE CYCLOTOMIC CHARACTER, OVER AN
-ARBITRARY CHARACTERISTIC-ZERO FIELD** (sorry leaf, cut 2026-07-30 out of
-`exists_weilPairing_mu_charZero` below, which is now PROVEN over it).  This is the
-ONE genuinely missing piece of mathematics in the whole archimedean cluster.
+ARBITRARY CHARACTERISTIC-ZERO FIELD** (**PROVEN 2026-08-01** over
+`WeilPairingDet.galois_apply_primitiveRoot_eq_pow_det`; cut 2026-07-30 out of
+`exists_weilPairing_mu_charZero` below).
+
+**READ THIS BEFORE THE HISTORICAL PARAGRAPHS BELOW, WHICH ARE NOW STALE IN THEIR
+COST CLAIMS.**  Between 2026-07-30 and 2026-08-01 this declaration was an ORPHAN:
+it was cut for `exists_weilPairing_mu_charZero`, that theorem was then re-proven
+by a different route (over `exists_weilPairing_mu_nondeg_of_natCast_ne_zero`
+above), and nothing in the tree consumed this one — a comment-stripped scan of
+`Fermat/` on 2026-08-01 found exactly ONE occurrence of the name in code, its own
+declaration.  It was therefore a live `sorry` that no proof term reached, i.e. it
+drew dispatches and could not move the project.  It is now a theorem.
+
+THE PROOF, and it is not new mathematics.  The general-base leaf
+`WeilPairingDet.galois_apply_primitiveRoot_eq_pow_det` says
+`σ ζ = ζ ^ (det (σ | E[n])).val` at every PRIMITIVE `n`-th root `ζ` of `F̄`; the
+hypothesis `hc` says `τ ζ = ζ ^ c` at every `n`-th root, in particular at that
+one.  A primitive `ζ` has order exactly `n`, so the two exponents agree modulo
+`n` (`IsOfFinOrder.pow_eq_pow_iff_modEq`), which is the conclusion.  `CharZero`
+plus `1 ≤ n` supplies `(n : F) ≠ 0`, hence a primitive root
+(`AlgebraicClosure.hasEnoughRootsOfUnity`) and the leaf's own hypothesis.
+
+So the archimedean cluster now bottoms out in exactly ONE leaf,
+`WeilPairingDet.galois_apply_primitiveRoot_eq_pow_det` — `det ρ_{E,n} = χ_n` over
+an arbitrary field with `char k ∤ n` — and this statement is a corollary of it
+rather than a rival cut of the same mathematics.  The two are in fact
+EQUIVALENT: `hc` at a primitive `ζ` names the cyclotomic exponent, so reading the
+implication backwards recovers the leaf.  Nothing was made harder and nothing was
+made easier; one of two names for one obligation stopped being a frontier node.
 
 WHAT IT SAYS.  `τ` acts on the `n`-th roots of unity of `F̄` by a single exponent
 `c` — the hypothesis `hc`, which is not a restriction on `τ` but a naming of its
@@ -56978,8 +57004,37 @@ theorem det_nTorsion_eq_cyclotomicExponent {F : Type u} [Field F] [CharZero F]
             (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ))
           : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
             ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n))
-      = (c : ZMod n) :=
-  sorry
+      = (c : ZMod n) := by
+  letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+  have hn0 : n ≠ 0 := by omega
+  haveI : NeZero n := ⟨hn0⟩
+  have hnF : ((n : ℕ) : F) ≠ 0 := Nat.cast_ne_zero.mpr hn0
+  haveI : NeZero ((n : ℕ) : F) := ⟨hnF⟩
+  -- a primitive `n`-th root of unity of `F̄`
+  obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure F) n
+  -- the general-base leaf, at this `ζ`
+  have hleaf := WeilPairingDet.galois_apply_primitiveRoot_eq_pow_det E n hnF
+    (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) ζ hζ
+  -- the hypothesis, at this `ζ`
+  have hcz := hc ζ hζ.pow_eq_one
+  -- `ζ` has order exactly `n`, so the two exponents agree modulo `n`
+  have hfin : IsOfFinOrder ζ := isOfFinOrder_iff_pow_eq_one.mpr ⟨n, by omega, hζ.pow_eq_one⟩
+  have horder : orderOf ζ = n := hζ.eq_orderOf.symm
+  -- the determinant is abstracted into `d`, so that the instance path Lean picked
+  -- when elaborating the STATEMENT is the one used here; rewriting the
+  -- `endRestrict` term instead re-elaborates `Point.map` under a different
+  -- `AddZeroClass` path, and the two are not syntactically equal
+  have key : ∀ d : ZMod n,
+      (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) ζ = ζ ^ d.val →
+      d = (c : ZMod n) := by
+    intro d hd
+    have heq : ζ ^ d.val = ζ ^ c := hd.symm.trans hcz
+    have hmod : d.val ≡ c [MOD n] := by
+      have h := hfin.pow_eq_pow_iff_modEq.mp heq
+      rwa [horder] at h
+    have hcast := (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+    rwa [ZMod.natCast_val, ZMod.cast_id] at hcast
+  exact key _ hleaf
 
 /-- **THE `μ_n`-VALUED WEIL PAIRING OVER THE ALGEBRAIC CLOSURE OF A
 CHARACTERISTIC-ZERO FIELD** (**PROVEN 2026-07-30** over the single leaf
@@ -57095,14 +57150,21 @@ trace of the real place is the hypothesis `hinv`, which
 
 This is `det(τ | E[n]) = χ_n(τ)` (Silverman *AEC* III.8.1(e) plus
 III.8.1(a)–(d)) specialized to `χ_n(τ) = −1`.  The cluster's one remaining piece
-of missing mathematics is now `det_nTorsion_eq_cyclotomicExponent` above — the
-same identity at a general exponent, which since 2026-07-30 is where the whole
-archimedean chain bottoms out.  NOTE for a successor: this theorem is derivable
-from that leaf in a few lines (take `c = n − 1`, so `(c : ZMod n) = −1`), and the
-discrete-logarithm route below would then be dead code.  It has deliberately NOT
-been rewritten that way, because the route below is what keeps
-`exists_weilPairing_mu_charZero` — a genuinely reusable statement — inside the
-cone of the root theorem rather than free-floating.
+of missing mathematics is `WeilPairingDet.galois_apply_primitiveRoot_eq_pow_det`
+— `det ρ_{E,n} = χ_n` over an arbitrary field with `char k ∤ n` — reached from
+here through `exists_weilPairing_mu_charZero` above.
+
+CORRECTED 2026-08-01: this paragraph used to name
+`det_nTorsion_eq_cyclotomicExponent` above as where the chain bottoms out, and
+to record that the present theorem had deliberately NOT been rewritten over it
+so as to keep `exists_weilPairing_mu_charZero` in the root cone.  Both clauses
+were overtaken by events on 2026-07-30, when `exists_weilPairing_mu_charZero`
+was re-proven over `exists_weilPairing_mu_nondeg_of_natCast_ne_zero` instead:
+after that, `det_nTorsion_eq_cyclotomicExponent` had NO consumer anywhere in the
+tree, so it was not where anything bottomed out — it was an orphan.  It is now a
+PROVEN corollary of the general-base leaf, and the decision recorded here is
+therefore moot: the discrete-logarithm route below is the live route and is not
+dead code.
 
 THE PROOF, which is now real code (2026-07-28 — this is the "NATURAL FURTHER
 CUT" the previous version of this docstring described and declined).  The
