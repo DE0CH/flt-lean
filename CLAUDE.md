@@ -16151,3 +16151,73 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A `universal` FIELD THAT BINDS THE BASE MAP AND NEVER USES IT IS NOT A FINE-MODULI PROPERTY — and the object its own docstring names FAILS IT
+
+(2026-08-01, `flt-lean-145`, `exists_fullLevelModuliSchemeData_of_isUnit` in
+`ModularCurve/X0.lean`.)  This development states representability through
+structures whose universal property reads
+
+    universal : ∀ {T} (_g : T ⟶ S) (e) (L), ∃! m : T ⟶ M, ∃ bc, <pinning>
+
+— note `_g` is bound and **never mentioned again**, in particular there is no
+clause `m ≫ strM = _g`.  Three structures in `X0.lean` have this shape
+(`RigidifiedModuliScheme`, `RigidifiedModuliSchemeData`,
+`FullLevelModuliSchemeData`), and the file records, correctly, that the missing
+clause is a *help* for the assemblies built over them: a rival `m'` never has to
+be exhibited as an `S`-morphism.
+
+**It is the opposite of a help for the LEAF, and it makes the prescribed object
+fail.**  With `M = Y(n) ×_{Spec ℤ[1/n]} Spec R` — which is what the leaf's own
+docstring names as the witness — a morphism `T ⟶ M` is a PAIR `(t, s)`, the
+`Spec ℤ[1/n]` compatibility being automatic because `ℤ → ℤ[1/n]` is a ring
+epimorphism.  The universal object `eM` is pulled back along the FIRST
+projection, so the existential `∃ bc, <pinning>` constrains `t` and says nothing
+about `s`.  Hence every `(t, s)` with the correct `t` satisfies the predicate,
+and the `∃!` fails as soon as `Hom(T, Spec R)` has two elements — at `n = 3`,
+`R = ℚ(ζ₃)`, `T = Spec R`, take `s = 𝟙` and `s = Spec(complex conjugation)`.
+
+So the leaf could not be discharged by its own route, and no scan could see it:
+the statement compiles, the docstring is thorough, the FALSITY AUDIT on it is
+correct as far as it goes, and the audit is about the HYPOTHESES while the
+defect is in the CONCLUSION's quantifier.
+
+**The check, and it is one question per structure:** for a `universal` field of
+this shape, write down the intended witness and ask *which of its data the
+predicate actually constrains*.  If the witness is a fibre product and the
+predicate mentions only one projection, the other projection is free and the
+`∃!` is false.  The tell is a BOUND-AND-UNUSED binder in the field's own type —
+`grep -n '(_g :' <file>` finds every one of them in seconds.
+
+**Two repairs, and the cheap one is a HYPOTHESIS.**
+
+* *Canonical*: put the clause into the structure (`∃! m, m ≫ strM = g ∧ …`).
+  This needs no hypothesis on the base and is the genuine fine-moduli property.
+  It does NOT stay local: every assembly that proves a WEAKER `universal` from a
+  STRONGER one breaks, because its rival `m'` supplies no compatibility — so the
+  clause propagates to every structure in the chain, and to everything that
+  reads their `universal` (here `nonempty_iso`, `eq_id_of_isBaseChangeOf_self`,
+  and three more).  That is a five-to-ten declaration interface change in the
+  file's hottest region.
+* *Contained*: add `hS : ∀ Z, Subsingleton (Z ⟶ Spec (CommRingCat.of R))` — the
+  base is SUBTERMINAL, equivalently `ℤ → R` is a ring epimorphism — which forces
+  the free component and makes the prescribed object correct.  **Adding a
+  hypothesis cannot make a true leaf false, so the existing audit transfers
+  verbatim**, and in this development it costs nothing at all: every base
+  instantiated anywhere is a localisation or quotient of `ℤ`, and the file
+  already carries `subsingleton_hom_specQ`, `subsingleton_hom_specF` and
+  `subsingleton_hom_specLoc` for exactly this.
+
+Prefer the second unless you own the whole cluster.  **And measure the threading
+before choosing**: here it was four signatures, and it TERMINATED at
+`nonempty_gamma0AtlasOver_of_isUnit`, which had been carrying precisely that
+hypothesis under precisely that name since before the repair.  This is the
+standing rule *the missing hypothesis is usually already in the caller's hand*
+firing at the far end of a chain rather than at the immediate call site — so
+walk the chain to its END before pricing a hypothesis as expensive.
+
+**Corollary, and it is the reusable half: a subterminality hypothesis is what
+converts "represents the functor on `Sch`" into "represents it on `Sch/S`".**
+Whenever a leaf quantifies over morphisms `T ⟶ M` in `Sch` while meaning
+`S`-morphisms, that is the gap, and `Spec` of a localisation or quotient of `ℤ`
+closes it for free.
