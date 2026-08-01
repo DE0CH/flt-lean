@@ -16180,6 +16180,18 @@ theory this tree does not have. When a leaf's own docstring reaches for the
 second, check whether the first is available — the tell is that the object being
 stabilised is a ROOT of something the whole Galois group fixes.
 
+**AND THE RESIDUAL SHOULD BE STATED UPSTAIRS, IN `ℚ̄`, NOT DOWNSTAIRS.** The
+obvious phrasing of what is left — "`σ ∈ I_N` fixing a twelfth root `π ∈ ℚ̄_N` of
+`N` acts trivially on `E[5]`" — makes a prover complete `ℚ(N^{1/12})` before
+touching any geometry. Take `α ∈ ℚ̄` with `α¹² = N` instead, push it DOWN with
+`AlgebraicClosure.map`, and hypothesise that the image of `σ` in `Γ ℚ` fixes `α`.
+The two are equivalent by `Field.absoluteGaloisGroup.lift_map` plus injectivity
+of that map (four lines, in the consumer), and the upstairs version is the one
+whose field IS the number field the producer builds and whose `E[5]` is already
+in scope. **General form: when a leaf's hypothesis names an element of a
+COMPLETION's algebraic closure, ask whether it is algebraic over the base — if it
+is, state it upstairs and cross once in the glue.**
+
 **AND THE MACHINERY WAS ALREADY IN THE CONE. I nearly duplicated 150 lines of
 it.** `Deformations/RepresentationTheory/ArtinConductor.lean` carries the entire
 development — `tameCharacter` (`I_v →* rootsOfUnity n Kᵥᵃˡᵍ`, for ANY `X` with
