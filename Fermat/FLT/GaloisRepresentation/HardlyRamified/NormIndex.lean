@@ -231,15 +231,15 @@ BOTH a finite and an infinite part; specialising the infinite part to "all real 
 this leaf and specialising it to "none, under `IsUnramifiedAtInfinitePlaces`" gives that one.
 Taking the recut here alone would trade a closed leaf for an open harder one, which is why
 this file still ends in `sorry`. -/
-theorem exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class
+theorem exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class {KK : Type*} [Field KK]
     (F : Type u) [Field F] [NumberField F]
-    (χ : Γ F → Dickson.K 3)
+    (χ : Γ F → KK)
     (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
     (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
     (hVker : ∀ a ∈ V, χ a = 1)
-    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓchar : ((ℓ : ℕ) : KK) ≠ 0) (k : ℕ)
     (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
-    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (c : Ideal (NumberField.RingOfIntegers F) → KK)
     (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
       c (I * J) = c I * c J)
     (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
@@ -253,7 +253,7 @@ theorem exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class
       w.asIdeal ∣ mm₀) :
     ∃ t : ℕ,
       ∀ (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
-          (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (NumberField.RingOfIntegers F) →₀ ℤ) →* KKˣ)
         (d : NumberField.RingOfIntegers F → Multiplicative
           (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
         (Im P N : Subgroup (Multiplicative
@@ -262,10 +262,10 @@ theorem exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class
           ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
             (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v)) →
         (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
-          ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
+          ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : KK)
             = χ (globalFrob v)) →
         (∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
-          ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ})) →
+          ((φ (d δ) : KK)) = c (Ideal.span {δ})) →
         (∀ x, x ∈ Im ↔ ∀ v : IsDedekindDomain.HeightOneSpectrum
           (NumberField.RingOfIntegers F), v.asIdeal ∣ mm₀ →
             Multiplicative.toAdd x v = 0) →
@@ -301,15 +301,15 @@ The proof is bookkeeping in two steps.
   out by the CONGRUENCE `δ - 1 ∈ mm`, is untouched and is where the enlargement acts.
 * *The trivial case.* If `Nat.card (Im.map φ) ≤ 1` the conclusion needs only
   `(P ⊔ N).relIndex Im ≠ 0`, which follows from `P.relIndex Im ≠ 0` and `P ≤ P ⊔ N`. -/
-theorem exists_natCard_charDivisorImage_le_normIndex_ray_class
+theorem exists_natCard_charDivisorImage_le_normIndex_ray_class {KK : Type*} [Field KK]
     (F : Type u) [Field F] [NumberField F]
-    (χ : Γ F → Dickson.K 3)
+    (χ : Γ F → KK)
     (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
     (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
     (hVker : ∀ a ∈ V, χ a = 1)
-    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓchar : ((ℓ : ℕ) : KK) ≠ 0) (k : ℕ)
     (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
-    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (c : Ideal (NumberField.RingOfIntegers F) → KK)
     (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
       c (I * J) = c I * c J)
     (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
@@ -325,7 +325,7 @@ theorem exists_natCard_charDivisorImage_le_normIndex_ray_class
       (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
         w.asIdeal ∣ mm → w.asIdeal ∣ mm₀) ∧
       ∀ (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
-          (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (NumberField.RingOfIntegers F) →₀ ℤ) →* KKˣ)
         (d : NumberField.RingOfIntegers F → Multiplicative
           (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
         (Im P N : Subgroup (Multiplicative
@@ -334,10 +334,10 @@ theorem exists_natCard_charDivisorImage_le_normIndex_ray_class
           ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
             (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v)) →
         (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
-          ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
+          ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : KK)
             = χ (globalFrob v)) →
         (∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
-          ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ})) →
+          ((φ (d δ) : KK)) = c (Ideal.span {δ})) →
         (∀ x, x ∈ Im ↔ ∀ v : IsDedekindDomain.HeightOneSpectrum
           (NumberField.RingOfIntegers F), v.asIdeal ∣ mm →
             Multiplicative.toAdd x v = 0) →
@@ -351,7 +351,7 @@ theorem exists_natCard_charDivisorImage_le_normIndex_ray_class
         P ≤ Im → N ≤ Im → P.relIndex Im ≠ 0 →
         Nat.card (Im.map φ) ≤ (P ⊔ N).relIndex Im := by
   obtain ⟨t, ht⟩ := exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class
-    F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c hcmul hcfrob mm₀ hmm₀ hmm₀ram
+    F χ hmul V hVopen hVker ℓ hℓ hℓchar k hord c hcmul hcfrob mm₀ hmm₀ hmm₀ram
   -- `mm₀` and `mm₀ ^ (t+1)` have the SAME prime support: `→` because a height-one prime is
   -- a prime element of the ideal monoid, `←` because `mm₀ ∣ mm₀ ^ (t+1)`.
   have hdvd : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
