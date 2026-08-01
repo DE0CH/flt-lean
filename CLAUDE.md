@@ -16151,3 +16151,68 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A DENSITY OBLIGATION RARELY NEEDS THE DENSE SET ITS DOCSTRING NAMES — ASK FOR *ANY* DENSE SET
+
+(2026-08-01, `flt-lean-182`, closing the density half of
+`exists_commutingHeckeAlbaneseFamily_values` in `ModularCurve/X0.lean`.)
+
+That leaf's PROOF PLAN named its second step as *"THE REAL GAP IS DENSITY OF THE
+MODULI POINTS IN `X`"* and listed four inputs it would need:
+`IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint` to make `classify`
+surjective on `ℚ̄`-points of `Y`, `isSmoothCurve_of_isCoarseModuliY0` and
+`infinite_of_isX0Compactification_of_fieldPoint` to make those points infinite,
+and the dense-open-ness of `Y` in `X`.  Every clause is true and the plan is
+followable.  **All four inputs are unnecessary**, and the step is thirty lines.
+
+The conclusion being proved is *two morphisms `X ⟶ J` are equal*.  Nothing in it
+mentions the moduli points; they entered only because they are where the
+hypothesis happened to be available.  So the obligation is **not** "the moduli
+points are dense" but "**some** set of `ℚ̄`-points at which the hypothesis holds
+is dense" — and the hypothesis in a leaf of this shape is normally quantified
+over ALL `ℚ̄`-points already, so the cheapest dense set wins.  Here that is
+`closedPoints X`:
+
+* dense because `X` is a `JacobsonSpace` (`LocallyOfFiniteType.jacobsonSpace`,
+  and a proper morphism is locally of finite type);
+* each one carries a `ℚ̄`-point, because Zariski's lemma at the scheme level
+  (`finite_specPreimage_of_isClosed_singleton`, ALREADY IN THAT FILE) makes
+  `κ(p)` module-finite over `ℚ`, hence algebraic, so `IsAlgClosed.lift` supplies
+  `κ(p) →ₐ[ℚ] ℚ̄`;
+* and mathlib's `AlgebraicGeometry.ext_of_fromSpecResidueField_eq` takes a bare
+  `Dense S` plus agreement of `X.fromSpecResidueField p ≫ ·` on `S` and returns
+  the equality, running the reduced-source / separated-target equaliser argument
+  internally.
+
+**So: before building the dense set a plan names, restate the obligation with the
+dense set EXISTENTIALLY quantified and pick the cheapest one the hypothesis
+covers.**  A plan's dense set is chosen for its relevance to the *hypothesis*; the
+proof only cares that it is dense.  Same failure family as
+[[flt-leaf-cost-estimates-are-hypotheses]], with the over-specification in the
+*conclusion of a sub-step* rather than in a cost.
+
+Three mechanical facts that made it go through first try, worth having in advance:
+
+* **`closedPoints X` membership IS `IsClosed {p}`** definitionally, so a
+  `∀ p ∈ closedPoints X` hypothesis hands you the closedness with no unfolding;
+  and `Dense (closedPoints X)` is `JacobsonSpace.closure_inter_closedPoints
+  isClosed_univ` plus `dense_iff_closure_eq`.
+* **To cancel `Spec ℚ̄ ⟶ Spec κ(p)`, use DOMINANCE, not epimorphy.**  `Spec` of a
+  field is a ONE-POINT space, so the map is surjective on points and
+  `Function.Surjective.denseRange` gives `IsDominant`; then
+  `ext_of_isDominant_of_isSeparated` cancels it.  Chasing faithful flatness or
+  `Spec.map_epi_iff` instead is a much longer road to the same place.
+* **The `RelPoint` side condition is `Spec.map_preimage` plus `AlgHom.commutes`.**
+  `residueQAlgebra` is defined through `Spec.preimage` exactly so that
+  `X.fromSpecResidueField p ≫ strX = Spec.map (algebraMap ℚ κ(p))` holds on the
+  nose; then a `ℚ`-algebra map `κ(p) ⟶ ℚ̄` composes to `algebraMap ℚ ℚ̄`, which is
+  `specAlgClos ℚ` by definition.  Its own docstring says this and it is easy to
+  read past.
+
+**And the docstring that sent me there named a lemma that does not exist.**  Step
+1 of the same plan cited `IsJacobianOf.eq_of_comp_aj`; `grep` returns exactly one
+hit, that docstring.  The real lemma is `IsJacobianOf.eq_of_post_aj_eq`, and it
+sits ~20 000 lines BELOW the leaf, so it cannot be cited there at all — its
+five-line proof has to be inlined.  **A plan that names a lemma is naming a
+hypothesis about the file; `grep -n` it and compare the LINE NUMBER with your
+own before budgeting anything.**
