@@ -16151,3 +16151,100 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## REACHABILITY IS A SCRIPT NOW, NOT A PARAGRAPH — `tools/merge/reach.py`
+
+(2026-08-01, `flt-lean-380`, sweeping for the free-floating leaves the release-27
+merges manufactured.)  This file already describes the seventh invisibility class
+— a leaf that is OPEN, compiles, emits its `declaration uses 'sorry'` warning,
+passes every ownership test, and is worth nothing to close because nothing
+consumes it — and it already prescribes the fix: grep for the leaf's CONSUMERS,
+then walk up to a fixpoint.  Nobody ran it, because "walk the usage graph to a
+fixpoint" is not something you do by hand in a 23 000-declaration tree.
+
+`tools/merge/reach.py` does it in about twenty seconds:
+
+    python3 tools/merge/reach.py --root .            # orphaned sorried leaves
+    python3 tools/merge/reach.py --root . --why NAME # that leaf's consumers, live or dead
+    python3 tools/merge/reach.py --root . --all      # every unreached declaration
+
+It comment-strips, makes one node per top-level declaration, adds an edge
+whenever a declaration's text mentions a name, and BFSes from
+`fermat_last_theorem`.  Measured at release 33: **22 964 declarations, 18 549
+reached, 380 sorried, of which 85 UNREACHED.**
+
+**Two biases, both deliberate, both towards FEWER false orphans.** Names are
+indexed by every dotted SUFFIX, so `hA.gamma0_mul` and a bare `gamma0_mul` both
+resolve — this OVER-links (two declarations sharing a last component are
+conflated), and over-linking can only make a dead declaration look alive, never
+the reverse.  And a declaration's STATEMENT counts as part of it, so a leaf named
+only in a live theorem's binder list is reached.  A tool for this must fail in
+that direction: a false orphan costs a deletion, a missed orphan costs nothing
+you did not already have.
+
+### READ THE OUTPUT WITH THE CONSUMER COUNT, OR YOU WILL DELETE A LIVE SUBTREE
+
+The 85 are not 85 merge casualties, and the discriminator is one column:
+
+* **zero consumers** (36 of the 85) — nothing anywhere mentions the name.  This
+  is the merge-manufactured orphan proper, and it is the only class where
+  deletion is even a candidate.
+* **consumers that are themselves unreached** (49) — an ordinary development
+  built bottom-up whose top is not yet wired into the root cone.
+  `HyperellipticJacobian.lean` alone accounts for 21.  **These are normal and
+  must not be touched.**  Closing one is real work; deleting one destroys a
+  subtree somebody is mid-way through.
+
+So the report to act on is *zero consumers*, and even there the next question is
+whether anybody is already on it — see below.
+
+### THE DECISIVE SIGNATURE: PROSE CLAIMING A DELETION, DECLARATION STILL PRESENT
+
+Intersect the zero-consumer set with a grep for `was DELETED` / `should be
+DELETED` / `Recover the deleted` / `consumerless`.  That intersection is tiny
+(four hits here) and it is nearly self-proving, because a file that says a
+declaration was deleted *and still contains it* is reporting a merge that lost
+half of a commit.
+
+`X1.lean` carried the paragraph *"Recover the deleted declaration with `git show
+8a6d1575:…`"* with `theorem map_add_relPointWeierstrassEquiv` sitting directly
+underneath it, in two places (the module's own status table at line 492 said the
+same), for a day.  The cause is structural and is worth having in front of you:
+**`semmerge.py` propagates a branch's ADDITIONS and never its DELETIONS**, so a
+commit that is half prose and half removal merges as prose only.  No
+duplicate-name scan, no comment-balance scan, no frontier scan and no build can
+see the difference — the tree is green either way.
+
+**Corollary for readers**: a sentence of the form "X was deleted" is a hypothesis
+about the tree, and one `grep` settles it.  **Corollary for authors**: say in
+`to_merger` that your branch is a DELETION and must go in with plain `git merge`;
+if `semmerge` touches it the work evaporates and the merge report will say the
+merge was clean.
+
+### CHECK THE QUEUE BEFORE ACTING — 83 OF THE 85 WERE ALREADY KNOWN
+
+The sweep's most useful number was the least expected one.  Intersecting the 85
+orphans against `~/.flt-loop/queue1`, `queue2` and every live `jobs/*.prompt`:
+**83 were already named somewhere, and 2 were not.**  Two of the four
+prose-confirmed orphans had a queue2 task written for them already, and one
+(`exists_pow_Pz_mul_mem_idl`) was the LIVE TARGET of `flt-lean-24` at the moment
+I was looking at it.
+
+So the sweep's deliverable was not a pile of deletions.  It was one deletion that
+nobody else could see, two queue entries, and this tool.  **Run the coverage
+intersection before touching anything** — acting on an orphan that has a live
+owner is a rival cut, and the fact that a leaf is dead does not make it yours:
+
+    grep -l '<shortName>' ~/.flt-loop/queue1 ~/.flt-loop/queue2 ~/.flt-loop/jobs/*.prompt
+
+### AND `exists_pow_X7_mul_mem_idl` IS PROVEN WHILE ITS TWIN IS THE ONLY SORRY LEFT
+
+Found on the way and left alone because it has a live owner, but the shape
+generalises.  `ProjectiveEquationAdd2.lean` carries two decompositions of
+`idl_isPrime` under two names each; `idl_isPrime` calls the **X7**-named pair,
+`exists_pow_X7_mul_mem_idl` is PROVEN, and `exists_pow_Pz_mul_mem_idl` — the
+module's ONLY remaining direct sorry — has zero consumers and is that theorem
+with the `∃` and the `∨` commuted, i.e. three lines away.  The module docstring
+says the opposite, that "the `X7`-named pair should be DELETED".  **When a
+docstring names which of two duplicates to keep, check which one the CONSUMER
+calls; the docstring records an intention and the call site records the tree.**
