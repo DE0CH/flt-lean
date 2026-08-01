@@ -4577,7 +4577,14 @@ theorem ord_eq_zero_of_isAlgebraic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ 
     have : D.ord v g⁻¹ < 0 := by rw [D.ord_inv v g hg0]; omega
     exact absurd this (main g⁻¹ hinv)
 
-/-- `div_∞ g = 0` for `g` algebraic over `K` (PROVEN). -/
+/-- `div_∞ g = 0` for `g` algebraic over `K` (PROVEN).
+
+The CONVERSE — a transcendental `g` really does have a pole, so `div_∞ g ≠ 0` — is
+`exists_isPlaceFun_ord_neg_of_transcendental` further down (PROVEN 2026-08-01, over
+`CharZero K`).  It is a much weaker statement than either half of the fundamental identity
+`deg (div_∞ g) = [F : K⟮g⟯]`, and it does NOT help with those two leaves; it is recorded here
+because "does a transcendental function have a pole at all" is the question a reader of this
+theorem asks next, and until then the answer needed the identity. -/
 theorem poleDivisor_eq_zero_of_isAlgebraic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     {g : D.F} (hg : IsAlgebraic K g) : D.poleDivisor g = 0 := by
   ext v
