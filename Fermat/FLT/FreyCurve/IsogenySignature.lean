@@ -9330,31 +9330,51 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.frobenius_of_isTorsionR
 /-- **A CHANGE OF VARIABLES BETWEEN TWO INTEGRAL WEIERSTRASS MODELS WITH UNIT
 DISCRIMINANT HAS INTEGRAL ENTRIES** (PROVEN 2026-07-28, while proving
 `exists_aut_of_isTorsionReduction` below; this is the one genuinely
-valuation-theoretic step of the Serre–Tate route recorded on that leaf).
+valuation-theoretic step of the Serre–Tate route recorded on that leaf.
+**RESTATED AND REPROVED 2026-07-30 WITHOUT ANY HYPOTHESIS ON THE RESIDUE
+CHARACTERISTIC**, which is what closed the `q = 2` leaf below).
 
 Silverman *AEC* VII.1.3(b) for a valuation subring `𝒪` of an arbitrary field
 `F`, stated with `𝒪.valuation` so that "coefficient in `𝒪`" reads
 `valuation ≤ 1` and "unit discriminant" reads `valuation = 1`.
 
-WHY `2` MUST BE A UNIT, AND WHY `3` NEED NOT BE. The `a₁`-relation
+**THE OLD HYPOTHESIS `h2 : 𝒪.valuation (2 : F) = 1` IS GONE, AND THE PARAGRAPH
+THAT JUSTIFIED IT WAS WRONG.**  It read: "the `a₁`-relation
 `u · (C • W).a₁ = W.a₁ + 2s` is the only source of information about `s`, so
-`2 ∈ 𝒪ˣ` is genuinely used (and is exactly the hypothesis `q ≠ 2` at the
-call site). It is tempting to read `r` off the `a₂`-relation
-`u² · (C • W).a₂ = W.a₂ - s·W.a₁ + 3r - s²` the same way, but that would need
-`3 ∈ 𝒪ˣ` and the consumers of this file explicitly need `q = 3`. The
-`a₆`-relation supplies `r` with no such cost: `r³` is the unique term of
-strictly largest valuation there once `v r > 1`, since the `a₃`-relation
-already forces `v t ≤ max 1 (v r)`, so every other term has valuation at most
-`(v r)²` while `v (r³) = (v r)³`. -/
+`2 ∈ 𝒪ˣ` is genuinely used".  The premise is false — the `a₂`-relation
+constrains `s` too, and it does so in a form that needs no division at all.
+The price is two further integrality hypotheses on the transformed model
+(`hc₂` and `hc₄`, in place of the discarded `h2`), and at the one call site
+below they are already in hand.
+
+**THE ARGUMENT, and why it is division-free: every one of `r`, `s`, `t`
+satisfies a MONIC polynomial over `𝒪`, and a valuation ring is integrally
+closed.**  The three polynomials are
+
+* `r⁴ = r·u⁶·b₆' − u⁸·b₈' + b₄·r² + 2·b₆·r + b₈`, obtained as
+  `r · (u⁶b₆'-relation) − (u⁸b₈'-relation)` from mathlib's
+  `variableChange_b₆` / `variableChange_b₈`.  The two leading terms `4r³` and
+  `3r⁴` cancel to `r⁴` — that combination is the whole trick, and it is what
+  makes the step uniform in the residue characteristic rather than splitting
+  on whether `2` or `3` is a unit;
+* `s² = a₂ − s·a₁ + 3r − u²·a₂'` (the `a₂`-relation, once `r` is integral);
+* `t² = a₆ + r·a₄ + r²·a₂ + r³ − t·a₃ − r·t·a₁ − u⁶·a₆'` (the `a₆`-relation).
+
+In each case, if the root had `v > 1` then its leading power would strictly
+dominate every term on the right, since each of those has valuation at most
+`v(root)` (degree `2` cases) or `v r ^ 2` (degree `4` case).  Integral
+closedness is therefore used in its bare valuation-theoretic form and no
+`IsIntegrallyClosed` instance is needed.
+
+`v u = 1` is unchanged: `u¹²` is the ratio of two unit discriminants. -/
 theorem WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one
     {F : Type*} [Field F] (𝒪 : ValuationSubring F)
     (W : WeierstrassCurve F) (C : WeierstrassCurve.VariableChange F)
-    (h2 : 𝒪.valuation (2 : F) = 1)
     (ha₁ : 𝒪.valuation W.a₁ ≤ 1) (ha₂ : 𝒪.valuation W.a₂ ≤ 1)
     (ha₃ : 𝒪.valuation W.a₃ ≤ 1) (ha₄ : 𝒪.valuation W.a₄ ≤ 1)
     (ha₆ : 𝒪.valuation W.a₆ ≤ 1)
-    (hc₁ : 𝒪.valuation (C • W).a₁ ≤ 1)
-    (hc₃ : 𝒪.valuation (C • W).a₃ ≤ 1)
+    (hc₁ : 𝒪.valuation (C • W).a₁ ≤ 1) (hc₂ : 𝒪.valuation (C • W).a₂ ≤ 1)
+    (hc₃ : 𝒪.valuation (C • W).a₃ ≤ 1) (hc₄ : 𝒪.valuation (C • W).a₄ ≤ 1)
     (hc₆ : 𝒪.valuation (C • W).a₆ ≤ 1)
     (hΔ : 𝒪.valuation W.Δ = 1) (hΔ' : 𝒪.valuation (C • W).Δ = 1) :
     𝒪.valuation (C.u : F) = 1 ∧ 𝒪.valuation C.r ≤ 1 ∧ 𝒪.valuation C.s ≤ 1 ∧
@@ -9393,79 +9413,147 @@ theorem WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one
           _ = v (C.u : F) ^ 12 := (pow_succ _ 11).symm
       rw [hu12] at hle
       exact absurd (h.trans_le hle) (lt_irrefl 1)
-  -- Step 2 : `v s ≤ 1`, from the `a₁`-relation and `2 ∈ 𝒪ˣ`.
-  have hs : v C.s ≤ 1 := by
-    have h := W.variableChange_a₁ C
+  -- the integers are integral, and hence so are the `b`-invariants of both models
+  have hnat : ∀ n : ℕ, v ((n : ℕ) : F) ≤ 1 := fun n =>
+    (ValuationSubring.valuation_le_one_iff 𝒪 _).mpr (natCast_mem 𝒪 n)
+  have h2 : v (2 : F) ≤ 1 := by simpa using hnat 2
+  have h3 : v (3 : F) ≤ 1 := by simpa using hnat 3
+  have h4 : v (4 : F) ≤ 1 := by simpa using hnat 4
+  have hbint : ∀ V : WeierstrassCurve F, v V.a₁ ≤ 1 → v V.a₂ ≤ 1 → v V.a₃ ≤ 1 →
+      v V.a₄ ≤ 1 → v V.a₆ ≤ 1 → v V.b₄ ≤ 1 ∧ v V.b₆ ≤ 1 ∧ v V.b₈ ≤ 1 := by
+    intro V k₁ k₂ k₃ k₄ k₆
+    have mul_le : ∀ x y : F, v x ≤ 1 → v y ≤ 1 → v (x * y) ≤ 1 := by
+      intro x y hx hy
+      rw [map_mul]
+      exact (mul_le_mul' hx hy).trans_eq (one_mul 1)
+    refine ⟨?_, ?_, ?_⟩
+    · rw [WeierstrassCurve.b₄]
+      exact Valuation.map_add_le v (mul_le _ _ h2 k₄) (mul_le _ _ k₁ k₃)
+    · rw [WeierstrassCurve.b₆]
+      refine Valuation.map_add_le v ?_ (mul_le _ _ h4 k₆)
+      rw [map_pow]
+      exact pow_le_one' k₃ 2
+    · rw [WeierstrassCurve.b₈]
+      refine Valuation.map_sub_le v (Valuation.map_add_le v (Valuation.map_sub_le v
+        (Valuation.map_add_le v ?_ ?_) ?_) ?_) ?_
+      · exact mul_le _ _ (by rw [map_pow]; exact pow_le_one' k₁ 2) k₆
+      · exact mul_le _ _ (mul_le _ _ h4 k₂) k₆
+      · exact mul_le _ _ (mul_le _ _ k₁ k₃) k₄
+      · exact mul_le _ _ k₂ (by rw [map_pow]; exact pow_le_one' k₃ 2)
+      · rw [map_pow]; exact pow_le_one' k₄ 2
+  obtain ⟨hb₄, hb₆, hb₈⟩ := hbint W ha₁ ha₂ ha₃ ha₄ ha₆
+  obtain ⟨-, hb₆', hb₈'⟩ := hbint (C • W) hc₁ hc₂ hc₃ hc₄ hc₆
+  -- Step 2 : `v r ≤ 1`, from a MONIC quartic satisfied by `r`.
+  have hq6 : ((C.u : F)) ^ 6 * (C • W).b₆
+      = W.b₆ + 2 * C.r * W.b₄ + C.r ^ 2 * W.b₂ + 4 * C.r ^ 3 := by
+    have h := W.variableChange_b₆ C
     rw [Units.val_inv_eq_inv_val] at h
-    have key : (2 : F) * C.s = (C.u : F) * (C • W).a₁ - W.a₁ := by
-      rw [h]; field_simp; ring
-    have hb : v ((2 : F) * C.s) ≤ 1 := by
-      rw [key]
-      refine Valuation.map_sub_le v ?_ ha₁
-      rw [map_mul, huval, one_mul]; exact hc₁
-    rw [map_mul, h2, one_mul] at hb
-    exact hb
-  -- Step 3 : `v t ≤ max 1 (v r)`, from the `a₃`-relation.
-  have key3 : (2 : F) * C.t = (C.u : F) ^ 3 * (C • W).a₃ - W.a₃ - C.r * W.a₁ := by
-    have h := W.variableChange_a₃ C
+    rw [h]; field_simp
+  have hq8 : ((C.u : F)) ^ 8 * (C • W).b₈
+      = W.b₈ + 3 * C.r * W.b₆ + 3 * C.r ^ 2 * W.b₄ + C.r ^ 3 * W.b₂ + 3 * C.r ^ 4 := by
+    have h := W.variableChange_b₈ C
     rw [Units.val_inv_eq_inv_val] at h
-    rw [h]; field_simp; ring
-  have ht_le : v C.t ≤ max 1 (v C.r) := by
-    have hb : v ((2 : F) * C.t) ≤ max 1 (v C.r) := by
-      rw [key3]
-      refine Valuation.map_sub_le v (Valuation.map_sub_le v ?_ ?_) ?_
-      · rw [map_mul, map_pow, huval, one_pow, one_mul]
-        exact hc₃.trans (le_max_left _ _)
-      · exact ha₃.trans (le_max_left _ _)
-      · rw [map_mul]
-        calc v C.r * v W.a₁ ≤ v C.r * 1 := mul_le_mul_left' ha₁ _
-          _ = v C.r := mul_one _
-          _ ≤ max 1 (v C.r) := le_max_right _ _
-    rw [map_mul, h2, one_mul] at hb
-    exact hb
-  -- Step 4 : `v r ≤ 1`, because `r³` would dominate the `a₆`-relation.
+    rw [h]; field_simp
+  have hquartic : C.r ^ 4
+      = C.r * ((C.u : F) ^ 6 * (C • W).b₆) - ((C.u : F) ^ 8 * (C • W).b₈)
+        + C.r ^ 2 * W.b₄ + 2 * C.r * W.b₆ + W.b₈ := by
+    linear_combination hq8 - C.r * hq6
   have hr : v C.r ≤ 1 := by
     by_contra hcon
     push_neg at hcon
     have hr0 : v C.r ≠ 0 := ne_of_gt (lt_trans zero_lt_one hcon)
-    have htr : v C.t ≤ v C.r := ht_le.trans (max_le hcon.le le_rfl)
     have h1r2 : (1 : 𝒪.ValueGroup) ≤ v C.r ^ 2 := one_le_pow_of_one_le' hcon.le 2
     have hrr2 : v C.r ≤ v C.r ^ 2 := by
       calc v C.r = 1 * v C.r := (one_mul _).symm
         _ ≤ v C.r * v C.r := mul_le_mul_right' hcon.le _
         _ = v C.r ^ 2 := (pow_two _).symm
-    have key6 : C.r ^ 3 = (C.u : F) ^ 6 * (C • W).a₆ - W.a₆ - C.r * W.a₄ - C.r ^ 2 * W.a₂
-        + C.t * W.a₃ + C.t ^ 2 + C.r * C.t * W.a₁ := by
-      have h := W.variableChange_a₆ C
-      rw [Units.val_inv_eq_inv_val] at h
-      rw [h]; field_simp; ring
-    have hb : v (C.r ^ 3) ≤ v C.r ^ 2 := by
-      rw [key6]
+    have hb : v (C.r ^ 4) ≤ v C.r ^ 2 := by
+      rw [hquartic]
       refine Valuation.map_add_le v (Valuation.map_add_le v (Valuation.map_add_le v
-        (Valuation.map_sub_le v (Valuation.map_sub_le v (Valuation.map_sub_le v ?_ ?_) ?_) ?_)
-        ?_) ?_) ?_
-      · rw [map_mul, map_pow, huval, one_pow, one_mul]; exact hc₆.trans h1r2
-      · exact ha₆.trans h1r2
-      · rw [map_mul]
-        exact ((mul_le_mul_left' ha₄ _).trans_eq (mul_one _)).trans hrr2
+        (Valuation.map_sub_le v ?_ ?_) ?_) ?_) ?_
+      · rw [map_mul, map_mul, map_pow, huval, one_pow, one_mul]
+        exact ((mul_le_mul_left' hb₆' _).trans_eq (mul_one _)).trans hrr2
+      · rw [map_mul, map_pow, huval, one_pow, one_mul]
+        exact hb₈'.trans h1r2
       · rw [map_mul, map_pow]
-        exact (mul_le_mul_left' ha₂ _).trans_eq (mul_one _)
-      · rw [map_mul]
-        exact ((mul_le_mul_left' ha₃ _).trans_eq (mul_one _)).trans (htr.trans hrr2)
-      · rw [map_pow]
-        exact pow_le_pow_left' htr 2
+        exact (mul_le_mul_left' hb₄ _).trans_eq (mul_one _)
       · rw [map_mul, map_mul]
-        calc v C.r * v C.t * v W.a₁ ≤ v C.r * v C.t * 1 := mul_le_mul_left' ha₁ _
-          _ = v C.r * v C.t := mul_one _
-          _ ≤ v C.r * v C.r := mul_le_mul_left' htr _
-          _ = v C.r ^ 2 := (pow_two _).symm
+        calc v (2 : F) * v C.r * v W.b₆ ≤ 1 * v C.r * 1 :=
+              mul_le_mul' (mul_le_mul_right' h2 _) hb₆
+          _ = v C.r := by rw [one_mul, mul_one]
+          _ ≤ v C.r ^ 2 := hrr2
+      · exact hb₈.trans h1r2
     rw [map_pow] at hb
-    have hlast : v C.r ^ 2 * v C.r ≤ v C.r ^ 2 * 1 := by
+    have hle : v C.r ^ 2 * v C.r ^ 2 ≤ v C.r ^ 2 * 1 := by
       rw [mul_one]
-      calc v C.r ^ 2 * v C.r = v C.r ^ 3 := (pow_succ _ 2).symm
+      calc v C.r ^ 2 * v C.r ^ 2 = v C.r ^ 4 := by rw [← pow_add]
         _ ≤ v C.r ^ 2 := hb
-    exact absurd (hcon.trans_le (cancel (pow_ne_zero 2 hr0) hlast)) (lt_irrefl 1)
-  exact ⟨huval, hr, hs, ht_le.trans (max_le le_rfl hr)⟩
+    exact absurd (hcon.trans_le (hrr2.trans (cancel (pow_ne_zero 2 hr0) hle)))
+      (lt_irrefl 1)
+  -- Step 3 : `v s ≤ 1`, from the MONIC quadratic the `a₂`-relation gives.
+  have hquads : C.s ^ 2
+      = W.a₂ - C.s * W.a₁ + 3 * C.r - (C.u : F) ^ 2 * (C • W).a₂ := by
+    have h := W.variableChange_a₂ C
+    rw [Units.val_inv_eq_inv_val] at h
+    rw [h]; field_simp; ring
+  have hs : v C.s ≤ 1 := by
+    by_contra hcon
+    push_neg at hcon
+    have hs0 : v C.s ≠ 0 := ne_of_gt (lt_trans zero_lt_one hcon)
+    have hb : v (C.s ^ 2) ≤ v C.s := by
+      rw [hquads]
+      refine Valuation.map_sub_le v (Valuation.map_add_le v (Valuation.map_sub_le v ?_ ?_) ?_) ?_
+      · exact ha₂.trans hcon.le
+      · rw [map_mul]
+        exact (mul_le_mul_left' ha₁ _).trans_eq (mul_one _)
+      · rw [map_mul]
+        exact ((mul_le_mul' h3 hr).trans_eq (one_mul 1)).trans hcon.le
+      · rw [map_mul, map_pow, huval, one_pow, one_mul]
+        exact hc₂.trans hcon.le
+    rw [map_pow] at hb
+    have hle : v C.s * v C.s ≤ v C.s * 1 := by
+      rw [mul_one]
+      calc v C.s * v C.s = v C.s ^ 2 := (pow_two _).symm
+        _ ≤ v C.s := hb
+    exact absurd (hcon.trans_le (cancel hs0 hle)) (lt_irrefl 1)
+  -- Step 4 : `v t ≤ 1`, from the MONIC quadratic the `a₆`-relation gives.
+  have hquadt : C.t ^ 2
+      = W.a₆ + C.r * W.a₄ + C.r ^ 2 * W.a₂ + C.r ^ 3 - C.t * W.a₃ - C.r * C.t * W.a₁
+        - (C.u : F) ^ 6 * (C • W).a₆ := by
+    have h := W.variableChange_a₆ C
+    rw [Units.val_inv_eq_inv_val] at h
+    rw [h]; field_simp; ring
+  have ht : v C.t ≤ 1 := by
+    by_contra hcon
+    push_neg at hcon
+    have ht0 : v C.t ≠ 0 := ne_of_gt (lt_trans zero_lt_one hcon)
+    have hb : v (C.t ^ 2) ≤ v C.t := by
+      rw [hquadt]
+      refine Valuation.map_sub_le v (Valuation.map_sub_le v (Valuation.map_sub_le v
+        (Valuation.map_add_le v (Valuation.map_add_le v (Valuation.map_add_le v ?_ ?_) ?_) ?_)
+        ?_) ?_) ?_
+      · exact ha₆.trans hcon.le
+      · rw [map_mul]
+        exact ((mul_le_mul' hr ha₄).trans_eq (one_mul 1)).trans hcon.le
+      · rw [map_mul, map_pow]
+        exact ((mul_le_mul' (pow_le_one' hr 2) ha₂).trans_eq (one_mul 1)).trans hcon.le
+      · rw [map_pow]
+        exact (pow_le_one' hr 3).trans hcon.le
+      · rw [map_mul]
+        exact (mul_le_mul_left' ha₃ _).trans_eq (mul_one _)
+      · rw [map_mul, map_mul]
+        calc v C.r * v C.t * v W.a₁ ≤ 1 * v C.t * 1 :=
+              mul_le_mul' (mul_le_mul_right' hr _) ha₁
+          _ = v C.t := by rw [one_mul, mul_one]
+      · rw [map_mul, map_pow, huval, one_pow, one_mul]
+        exact hc₆.trans hcon.le
+    rw [map_pow] at hb
+    have hle : v C.t * v C.t ≤ v C.t * 1 := by
+      rw [mul_one]
+      calc v C.t * v C.t = v C.t ^ 2 := (pow_two _).symm
+        _ ≤ v C.t := hb
+    exact absurd (hcon.trans_le (cancel ht0 hle)) (lt_irrefl 1)
+  exact ⟨huval, hr, hs, ht⟩
 
 /-- **The good model of `D`, placed inside `ℚ̄` by an ARBITRARY `ℚ`-embedding**
 (PROVEN 2026-07-28, while proving `exists_aut_of_isTorsionReduction` below).
@@ -9551,7 +9639,9 @@ theorem WeierstrassCurve.autTorsionEnd_val_some {F : Type*} [Field F] [Decidable
 
 open scoped Pointwise in
 /-- **THE INERTIA VARIABLE CHANGE, AND ITS REDUCTION — the Serre–Tate step**
-(PROVEN 2026-07-28 over `variableChange_valuation_of_valuation_Δ_eq_one`).
+(PROVEN 2026-07-28 over `variableChange_valuation_of_valuation_Δ_eq_one`;
+**`hq2 : q ≠ 2` DELETED 2026-07-30**, when that lemma was reproved with no
+hypothesis on the residue characteristic — this statement is now uniform in `q`).
 
 `τ` need not fix `K`, so it does not commute with `modelEquiv`; the FAILURE to
 commute is the automorphism. Concretely: `τ` carries the placed variable change
@@ -9564,7 +9654,7 @@ INERTIA it fixes `κ(𝒪)` pointwise, so the two models reduce to the same `Ẽ
 `C` is an automorphism of it. -/
 theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_inertiaVariableChange
     {E : WeierstrassCurve ℚ} [E.IsElliptic] {q : ℕ} [Fact q.Prime] {hq : q.Prime}
-    (hq2 : q ≠ 2) {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
     (τ : Field.absoluteGaloisGroup ℚ)
     (hdecT : τ ∈ (GaloisRepresentation.globalValuationSubring
       hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ)
@@ -9661,27 +9751,8 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_inertiaVariableC
     have h := hROunit _ hΔRunit
     convert h using 2
     exact congrArg Fr.emb (WeierstrassCurve.integralModel_Δ_eq D.R D.V).symm
-  -- `2` is a unit of `𝒪`, because `q ≠ 2`
-  have h2Runit : IsUnit (2 : D.R) := by
-    refine IsLocalRing.notMem_maximalIdeal.mp fun hcon => ?_
-    rw [← IsLocalRing.residue_eq_zero_iff, map_ofNat] at hcon
-    have hz : (2 : ZMod q) = 0 := by
-      have := congrArg D.resEquiv hcon
-      rwa [map_ofNat, map_zero] at this
-    have hz' : ((2 : ℕ) : ZMod q) = 0 := by exact_mod_cast hz
-    exact hq2 ((Nat.prime_dvd_prime_iff_eq (Fact.out : q.Prime) Nat.prime_two).mp
-      ((ZMod.natCast_eq_zero_iff 2 q).mp hz'))
-  have h2mem : (2 : AlgebraicClosure ℚ) ∈ Ob := by
-    have h := hRO (2 : D.R)
-    rwa [map_ofNat, map_ofNat] at h
-  have h2unit : IsUnit (⟨(2 : AlgebraicClosure ℚ), h2mem⟩ : Ob) := by
-    have h := hROunit (2 : D.R) h2Runit
-    convert h using 2
-    rw [map_ofNat, map_ofNat]
   have hval_le : ∀ (z : AlgebraicClosure ℚ), z ∈ Ob → Ob.valuation z ≤ 1 :=
     fun z hz => (ValuationSubring.valuation_le_one_iff Ob z).mpr hz
-  have h2val : Ob.valuation (2 : AlgebraicClosure ℚ) = 1 :=
-    (ValuationSubring.valuation_eq_one_iff Ob ⟨(2 : AlgebraicClosure ℚ), h2mem⟩).mp h2unit
   have hΔval : Ob.valuation (Fr.emb D.V.Δ) = 1 :=
     (ValuationSubring.valuation_eq_one_iff Ob ⟨Fr.emb D.V.Δ, hΔmem⟩).mp hΔunit
   -- the `τ`-conjugate embedding, and the second integral model
@@ -9702,10 +9773,12 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_inertiaVariableC
     rw [Fr.model_eq, hm2, ← mul_smul, hpin]
   -- the change of variables between the two integral models has integral entries
   obtain ⟨huval, hrval, hsval, htval⟩ :=
-    WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one Ob (D.V.map Fr.emb) Dτ h2val
+    WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one Ob (D.V.map Fr.emb) Dτ
       (hval_le _ ha₁) (hval_le _ ha₂) (hval_le _ ha₃) (hval_le _ ha₄) (hval_le _ ha₆)
       (by rw [hsmul]; exact hval_le _ (hτmem _ ha₁))
+      (by rw [hsmul]; exact hval_le _ (hτmem _ ha₂))
       (by rw [hsmul]; exact hval_le _ (hτmem _ ha₃))
+      (by rw [hsmul]; exact hval_le _ (hτmem _ ha₄))
       (by rw [hsmul]; exact hval_le _ (hτmem _ ha₆))
       (by rw [WeierstrassCurve.map_Δ]; exact hΔval)
       (by
@@ -9808,11 +9881,8 @@ both, and the pinning `Dτ · C₁ = C₁ᵗᵃᵘ` turns that into
 
 WHERE EACH HYPOTHESIS IS USED. `hτin` (inertia, not merely decomposition) is
 used twice and both uses are essential: it makes the two models reduce to the
-SAME `Ẽ`, and it is what erases `τ` from the residue coordinates. `hq2`
-(`q ≠ 2`) is used exactly once, inside
-`variableChange_valuation_of_valuation_Δ_eq_one`, to solve the `a₁`-relation for
-`Dτ.s`; note `q = 3` is NOT excluded and must not be, since the consumers of
-this file need it. `hqN` is not used here at all — it belongs to
+SAME `Ẽ`, and it is what erases `τ` from the residue coordinates. `hqN` is not
+used here at all — it belongs to
 `exists_isTorsionReduction`, which is where the torsion arithmetic lives — and
 is kept only because the statement is quantified uniformly with its siblings.
 
@@ -9836,29 +9906,29 @@ THE GLOBAL/CHEBOTAREV AXIS IS A DEAD END for this statement; the reason is
 structural rather than technical and is recorded in full on
 `exists_torsionFrame` below.
 
-**`hq2 : q ≠ 2` IS LOAD-BEARING FOR THE ROUTE ABOVE, AND ONLY FOR IT** (audited
-2026-07-29 while closing the `2`-adic leaf under `B₀²ᵃ` far below; the audit was
-begun in order to DELETE this hypothesis and concluded the opposite, so it is
-recorded here rather than repeated).
+**`hq2 : q ≠ 2` WAS DELETED 2026-07-30, AND THE 2026-07-29 AUDIT THAT KEPT IT
+WAS WRONG.** That audit ran: (a) the statement is true at `q = 2`; (b) the route
+"both models have unit discriminant, hence `Dτ` has integral entries" is
+`variableChange_valuation_of_valuation_Δ_eq_one`, which inverted `2`, because
+`2s = u a₁' − a₁` and `2t = u³a₃' − a₃ − r a₁` were taken to be the only sources
+of information about `s` and `t`; (c) therefore keep `hq2` here and open a
+separate `q = 2` leaf.
 
-* The STATEMENT is true at `q = 2`. Serre–Tate embeds the semistability defect
-  into `Aut(Ẽ)` in every residue characteristic — that embedding is exactly what
-  Kraus's `q = 2` classification presupposes when it names `Q₈` and `SL₂(𝔽₃)`. So
-  a `q = 2` version of this leaf is a promise that can be kept, and the separate
-  leaf `exists_aut_of_isTorsionReduction_two` below states it.
-* The ROUTE above nevertheless inverts `2`, at exactly one step and unavoidably
-  in that form: "both models have unit discriminant, hence `Dτ` has unit entries"
-  is `variableChange_valuation_of_valuation_Δ_eq_one`, whose hypothesis
-  `h2 : 𝒪.valuation (2 : F) = 1` says `2 ∈ 𝒪ˣ`. It is genuinely used — the
-  `aᵢ`-transformation formulas give `2s = u a₁' - a₁` and `2t = u³a₃' - a₃ - r a₁`,
-  so integrality of `s` and `t` is read off only after dividing by `2`. At `q = 2`
-  that division loses `v(2) > 0` and the argument does not merely get harder, it
-  stops.
-* So the honest split is: this leaf keeps `hq2` and keeps its elementary proof;
-  `q = 2` is a SEPARATE leaf with a genuinely different integrality argument
-  (minimal models are unique up to integral change of variables in every residue
-  characteristic — Silverman *AEC* VII.1.3(b) — but at `2` that needs the smooth
-  model, or a `v`-case analysis, rather than the division above).
+Clause (b) is false, and with it (c). The `a₂`- and `a₆`-relations constrain `s`
+and `t` too, and they do so through MONIC quadratics — `s² + a₁ s = a₂ + 3r −
+u²a₂'` and `t² + (a₃ + r a₁) t = a₆ + r a₄ + r²a₂ + r³ − u⁶a₆'` — whose
+coefficients are integral, so integral closedness of a valuation ring gives `s`
+and `t` with no division at all. The same trick supplies `r` from the monic
+QUARTIC `r⁴ = r u⁶ b₆' − u⁸ b₈' + b₄ r² + 2 b₆ r + b₈`, in which the `4r³` of
+the `b₆`-relation and the `3r⁴` of the `b₈`-relation cancel to `r⁴`. So the
+route is uniform in the residue characteristic, this leaf carries `q = 2`, and
+`exists_aut_of_isTorsionReduction_two` below is a one-line corollary of it.
+
+The moral for the next audit of this kind: "hypothesis `H` is used at step `S`"
+is evidence about the PROOF; concluding that `H` is load-bearing for the
+STATEMENT additionally requires that no other relation in the system constrains
+the same unknown, and that is a claim about the whole transformation table, not
+about the two formulas one happened to write down.
 
 WHAT IS *NOT* THE `q = 2` DIFFICULTY, since three docstrings in this cluster said
 it was: the CLASSIFICATION of the group generated by the resulting automorphisms.
@@ -9868,7 +9938,7 @@ field), and this leaf never asks for it — it produces ONE automorphism per
 inertia element and says nothing about how many there are. -/
 theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_aut_of_isTorsionReduction
     {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
-    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (hq2 : q ≠ 2) (hqN : q ≠ N)
+    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (hqN : q ≠ N)
     {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
     (ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
       ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N))
@@ -9891,7 +9961,7 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_aut_of_isTorsion
         WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x) := by
   classical
   obtain ⟨Dτ, hu, hr, hs, ht, C, hC, hpin, hCu, hCr, hCs, hCt⟩ :=
-    Fr.exists_inertiaVariableChange hq2 τ hdecT hτin
+    Fr.exists_inertiaVariableChange τ hdecT hτin
   refine ⟨C, hC, fun P => ?_⟩
   set Ob := GaloisRepresentation.globalValuationSubring
     hq.toHeightOneSpectrumRingOfIntegersRat with hObdef
@@ -10045,11 +10115,28 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_aut_of_isTorsion
   rw [hRHS]
   exact WeierstrassCurve.Affine.Point.some_eq_some _ hresX hresY
 
-/-- **SERRE–TATE AT THE WILD PRIME `2`** (sorry leaf, opened 2026-07-29): the
-statement of `exists_aut_of_isTorsionReduction` immediately above, with
-`hq2 : q ≠ 2` replaced by `hq2 : q = 2`.  Together the two are uniform in `q`, and
-that is the whole point of the pair: **this is the ONLY place where the residue
-characteristic `2` costs the `B₀` cluster anything.**
+/-- **SERRE–TATE AT THE WILD PRIME `2`** (sorry leaf, opened 2026-07-29;
+**PROVEN 2026-07-30**, and the way it was proven deleted the pair: the leaf above
+no longer carries `hq2 : q ≠ 2` at all, so this is now literally a specialisation
+of it and the residue characteristic `2` costs the `B₀` cluster NOTHING).  The
+statement is kept, with its now-unused `hq2 : q = 2`, only so that the two call
+sites downstream do not have to change; a later cleanup should delete it and
+collapse the three-line case split at
+`exists_inertiaAut_of_padicValRat_j_nonneg` onto the uniform leaf.
+
+**WHAT ACTUALLY UNLOCKED IT** (recorded because the diagnosis below was right
+about the obstruction and wrong about its inevitability): route 2 works, and it
+works better than this docstring guessed — the `v`-case analysis is not needed
+either.  Each of `r`, `s`, `t` satisfies a MONIC polynomial over `𝒪`
+(`r⁴ = r u⁶b₆' − u⁸b₈' + b₄r² + 2b₆r + b₈`, and the two quadratics from the
+`a₂`- and `a₆`-relations), and a valuation ring is integrally closed.  The
+`r`-quartic is the combination `r ·(b₆-relation) − (b₈-relation)`, in which the
+`4r³` and `3r⁴` cancel to `r⁴`; that cancellation is the whole content, and it is
+insensitive to which small primes are units.  See
+`variableChange_valuation_of_valuation_Δ_eq_one`, which now carries no
+hypothesis on the residue characteristic.
+
+The historical diagnosis follows, unchanged.
 
 WHERE THIS LEAF CAME FROM, and it is a relocation of an existing leaf rather than
 a new obligation.  `WeierstrassCurve.exists_inertiaAut_of_padicValRat_j_nonneg_two`
@@ -10122,7 +10209,7 @@ unit discriminant, related by a NON-integral change of variables — which would
 contradict uniqueness of minimal models over `𝒪`. -/
 theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_aut_of_isTorsionReduction_two
     {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
-    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (hq2 : q = 2) (hqN : q ≠ N)
+    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (_hq2 : q = 2) (hqN : q ≠ N)
     {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
     (ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
       ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N))
@@ -10143,7 +10230,7 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_aut_of_isTorsion
             (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q)))),
       ∀ x, ψ₀ (E.galoisRep N hN.pos τ x) =
         WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x) :=
-  sorry
+  Fr.exists_aut_of_isTorsionReduction hN hqN ψ₀ hψ₀ τ hdecT hτin
 
 /-- **THE ATOM: the reduction map on `N`-torsion, and its two equivariances**
 (opened 2026-07-27 by cutting `exists_reductionFrame_of_potentiallyGoodModel`
@@ -10303,7 +10390,7 @@ conjugation identities, so together they pin `ρ(σ)` and `ρ(τ)` into
 witness would have to reprove that. -/
 theorem WeierstrassCurve.PotentiallyGoodModel.exists_torsionFrame
     {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
-    {q : ℕ} [Fact q.Prime] (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N)
+    {q : ℕ} [Fact q.Prime] (hq : q.Prime) (_hq2 : q ≠ 2) (hqN : q ≠ N)
     (D : E.PotentiallyGoodModel q) (Fr : D.LocalFrame hq)
     (σ τ : Field.absoluteGaloisGroup ℚ)
     (hdecS : σ ∈ (GaloisRepresentation.globalValuationSubring
@@ -10336,7 +10423,7 @@ theorem WeierstrassCurve.PotentiallyGoodModel.exists_torsionFrame
         WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x)) := by
   obtain ⟨ψ₀, hψ₀⟩ := Fr.exists_isTorsionReduction hN hqN
   obtain ⟨C, hC, haut⟩ :=
-    Fr.exists_aut_of_isTorsionReduction hN hq2 hqN ψ₀ hψ₀ τ hdecT hτin
+    Fr.exists_aut_of_isTorsionReduction hN hqN ψ₀ hψ₀ τ hdecT hτin
   exact ⟨ψ₀, C, hC,
     Fr.frobenius_of_isTorsionReduction hN hqN ψ₀ hψ₀ σ hdecS hσK hσres, haut⟩
 
@@ -10928,7 +11015,7 @@ theorem WeierstrassCurve.exists_inertiaAut_of_padicValRat_j_nonneg
     · exact Fr.exists_aut_of_isTorsionReduction_two hN hq2 hqN ψ₀ hψ₀ τ
         (GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring _ σ)
         (GaloisRepresentation.map_mem_inertiaSubgroup_globalValuationSubring _ σ hσ)
-    · exact Fr.exists_aut_of_isTorsionReduction hN hq2 hqN ψ₀ hψ₀ τ
+    · exact Fr.exists_aut_of_isTorsionReduction hN hqN ψ₀ hψ₀ τ
         (GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring _ σ)
         (GaloisRepresentation.map_mem_inertiaSubgroup_globalValuationSubring _ σ hσ)
   refine ⟨D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))), inferInstance,
@@ -12806,8 +12893,36 @@ theorem exists_weilPairing_mu_nondeg_of_coprime (q : ℕ) [Fact q.Prime]
       (∀ x y, (e x y) ^ N = 1) ∧
       (∀ x y, e (WeilPairing.frobeniusTorsionEnd q Wbar N x)
           (WeilPairing.frobeniusTorsionEnd q Wbar N y) =
-        Units.map (WeilPairing.frobAlgHom q).toRingHom.toMonoidHom (e x y)) :=
-  sorry
+        Units.map (WeilPairing.frobAlgHom q).toRingHom.toMonoidHom (e x y)) := by
+  classical
+  have hgcd : Nat.gcd N q = 1 := hNq
+  -- `q ∤ N`, which is the shape `exists_weilPairing_mu` now takes
+  have hqN : ¬ q ∣ N := by
+    intro hdvd
+    have h1 : q ∣ Nat.gcd N q := Nat.dvd_gcd hdvd dvd_rfl
+    rw [hgcd] at h1
+    exact (Fact.out : q.Prime).ne_one (Nat.dvd_one.mp h1)
+  rcases lt_or_ge 1 N with hN1 | hN1
+  · haveI : Fact (1 < N) := ⟨hN1⟩
+    exact WeilPairing.exists_weilPairing_mu q Wbar N hqN
+  · -- `N = 0` is impossible (`gcd 0 q = q ≠ 1`), so `N = 1` and the torsion is
+    -- trivial: the constant pairing works and nondegeneracy is vacuous.
+    have hN0 : N ≠ 0 := by
+      rintro rfl
+      rw [Nat.gcd_zero_left] at hgcd
+      exact (Fact.out : q.Prime).ne_one hgcd
+    have hN : N = 1 := by omega
+    subst hN
+    have htriv : ∀ x : ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion 1), x = 0 := by
+      intro x
+      have h := (Submodule.mem_torsionBy_iff _ _).mp x.property
+      simp only [Nat.cast_one, one_zsmul] at h
+      exact ZeroMemClass.coe_eq_zero.mp h
+    exact ⟨fun _ _ => 1, fun _ _ _ => (one_mul 1).symm,
+      fun _ _ _ => (one_mul 1).symm, fun _ => rfl,
+      fun x hx => absurd (htriv x) hx, fun _ _ => one_pow 1,
+      fun _ _ => (map_one _).symm⟩
 
 /-- **The `μ_N`-valued Weil pairing over `𝔽_q` at COMPOSITE level** (PROVEN
 2026-07-27 over `exists_weilPairing_mu_nondeg_of_coprime` above): on the
