@@ -6114,7 +6114,7 @@ is what lets the class polynomial be a plain `Finset.prod` over forms with no de
 bookkeeping.
 
 **THERE IS A RICHER TWIN ONE MODULE DOWNSTREAM, AND IT SHOULD EVENTUALLY ABSORB THIS ONE.**
-`Fermat.MazurIsogenyPrimeJ.formPoint` (`FreyCurve/MazurTorsion.lean`, section
+`MazurCMForm.formPoint` (`FreyCurve/MazurTorsion.lean`, section
 `FormPointDictionary`) is the same point with the positive definiteness as an EXPLICIT
 argument, and it carries the API this one does not: `formPoint_re`, `formPoint_im`,
 `eq_formPoint_of_quadratic` (uniqueness in `ℍ`), `eq_of_formPoint_eq` (injectivity at fixed
@@ -6123,8 +6123,9 @@ cited here — it is downstream — which is why this exists at all, and the two
 given DIFFERENT names so that the module that imports both does not see an ambiguity.
 
 The bodies were aligned on 2026-07-31 so that consolidating them is mechanical: for
-`hf : f.IsPosDef` the equation `formPoint f hf = posDefPoint f` is `dif_pos hf` after
-unfolding, so the hoist is "move the downstream section up to here, restate it over
+`hf : f.IsPosDef` the equation `MazurCMForm.formPoint f hf = posDefPoint f` is CHECKED, by
+`rw [posDefPoint, dif_pos hf, MazurCMForm.formPoint]; simp [posDefPointC]`, so the hoist is
+"move the downstream section up to here, restate it over
 `posDefPoint`, and delete the `hf` argument at its call sites". That is queued rather than
 done because `MazurTorsion.lean` is 26 000 lines and has its own live cluster. -/
 noncomputable def posDefPoint (f : BinaryQuadraticForm) : UpperHalfPlane :=
@@ -6223,7 +6224,7 @@ inputs, in this project:
   domain `𝒟`, `exists_smul_mem_fd` and the stabiliser computations but no `j` and no
   order-counting; `ModularForms/LevelOne/DimensionFormula.lean` gets the level-one dimensions
   by dividing by `Δ`, not by valence. **BUT IT IS ALREADY A NAMED LEAF OF THIS PROJECT**,
-  one module downstream: `Fermat.MazurIsogenyPrimeJ.exists_smul_eq_of_jInvariant_eq`
+  one module downstream: `MazurCMForm.exists_smul_eq_of_jInvariant_eq`
   (`FreyCurve/MazurTorsion.lean`, `LEAF B` of the CM-`j`-invariant cut), stated in exactly
   that form and open. So the two clusters share it, and whoever proves it pays once.
 
