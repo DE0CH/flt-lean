@@ -101,6 +101,59 @@ formulation — not a second proof.  The full argument, including why
 `HyperellipticJacobian.lean`'s `PlaceSystem` is already general enough to be the meeting
 point, is in `poleDegree_inv_eq_poleDegree`'s own docstring.  Read it before starting.
 
+## THE RIVAL MODULE `CurveDivisorDegree.lean`, AND WHY IT WAS DELETED (2026-07-31)
+
+Two branches built this layer twice.  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveDivisorDegree.lean`
+was the other one; it is DELETED, and this module is the survivor.  Recover its text with
+`git show fe5131ca:Fermat/FLT/Mathlib/AlgebraicGeometry/CurveDivisorDegree.lean`.
+
+The two were the SAME NOTION, not two notions under one name — machine-checked, not read
+off: its `divDegree strX f` unfolds to `∑ᶠ z, Scheme.ord f z * (strX.residueDegree z : ℤ)`,
+which is this module's `Scheme.Hom.divDegree strX f` by `rfl`, and its `finite_support_ord`
+has literally this module's `finite_divSupport` conclusion (`Scheme.divSupport` IS
+`Function.support (Scheme.ord ·)` by `rfl`).  So the deletion is a de-duplication and not a
+choice between rival mathematics.  This module was kept because it is strictly stronger on
+every axis: it is stated over an ARBITRARY base `S` where the other fixed
+`Spec (CommRingCat.of K)`; it carries the zero/pole decomposition, the two counting lemmas
+and the `K`-rational-point bridge, none of which the other had; and its `divDegree_eq_zero`
+needs no `g ≠ 0` where the other's `divDegree_eq_zero_curve` was a `sorry` leaf that did.
+Nothing anywhere in `Fermat/` used a `CurveDivisorDegree`-only name, and no module imported
+it at all, so its three leaves were compiled by nothing and were invisible to every build
+and to the census — CLAUDE.md's FOURTH INVISIBILITY CLASS.
+
+**WHAT WAS LOST, AND IT IS WORTH REINSTATING WITH A CONSUMER.**  Two of its three leaves
+were duplicates of this module's (above).  The third was not, and neither was the theorem
+built on it:
+
+* `exists_hom_functionField_ratFunc_of_ord_eq_sub` (leaf) — a rational function with a
+  single simple pole at a `K`-rational point generates the function field, so
+  `K(X) ↪ K(t)`.  Stichtenoth I.4.11 in its sharp form;
+* `birationalOver_affineLine_of_ord_eq_sub` (PROVEN over it, ~18 lines) — from
+  `div f = [x] − [y]` with `x ≠ y` both `K`-rational, the curve is
+  `Scheme.BirationalOver` the affine line, assembled from
+  `BirationalFunctionField.lean`'s three sorry-free theorems.
+
+That pair was aimed at `X0.lean`'s open leaf
+`birationalOver_affineLine_of_relPicEquiv_sectionIdeal`, and it went with the module because
+it had no consumer: a `sorry`-bodied leaf contributes no dependency edges, so reinstating it
+on its own would be FREE-FLOATING CODE, which this project forbids.  It becomes legal the
+moment the same edit rewrites that `X0.lean` leaf's body to consume it, which needs one
+further sheaf-theoretic leaf — "an isomorphism `𝒪(−x) ≅ 𝒪(−y)` of invertible sheaves on an
+integral scheme is multiplication by a rational function whose divisor is `[x] − [y]`".
+That is a `1 → 2` trade in leaf count and a large gain in captured geometry; it is queued.
+
+**AND THE COLLISION THAT KEPT THE TWO MODULES APART WAS ALREADY GONE.**  `X0.lean` carried
+a note (release 31) saying the two collide on `AlgebraicGeometry.Scheme.ord_one` and
+`Scheme.ord_inv`, and dropped its import of the other module on that basis.  Measured
+2026-07-31: they do NOT collide, and importing both is green.  Lean's module system rejects
+a duplicate full name across imports only when the two declarations DIFFER in what it
+serialises — and THEOREM proof bodies are elided, so two theorems with the SAME STATEMENT
+and different proofs are silently accepted, one shadowing the other with no diagnostic.
+`ord_one` and `ord_inv` have the same statement in both files.  The collision release 29
+really hit was `AlgebraicGeometry.divDegree_eq_zero`, whose two statements differed by an
+`f ≠ 0`, and release 29 fixed it by renaming the other file's copy to
+`divDegree_eq_zero_curve`.  See CLAUDE.md for the reproduction.
+
 ## References
 
 Hartshorne, *Algebraic Geometry*, II.6.10 and IV.1; Stichtenoth, *Algebraic Function
