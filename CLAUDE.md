@@ -16151,3 +16151,73 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## `IsIntegral` NEEDS A MODULE, NOT AN OPERATOR ALGEBRA — and the module is usually the object's own multiplicative relations
+
+(2026-08-01, `flt-lean-20`, `isIntegral_qExpansionCoeff_prime` in
+`ModularCurve/WeightTwoEigenform.lean` — Shimura algebraicity, `a_p` is an
+algebraic integer.)
+
+A leaf of the form *"this eigenvalue is an algebraic integer"* reads as *"build the
+Hecke algebra, make it act faithfully on an integral lattice, take a characteristic
+polynomial"*, and this development had priced it exactly that way three times over:
+its own docstring sent a prover at `H₁(X₀(N), ℤ)` or Eichler–Selberg and said in
+bold *"should NOT start by building a Hecke-stable lattice"*; `Modularity/Interface.lean`
+carries a CUT-OBSTRUCTION AUDIT showing that its version of the lattice route is
+CIRCULAR against its own copy of the same theorem. Every one of those factual clauses
+re-checked out. **The conclusion was still wrong, and the theorem needed no operator
+at all.**
+
+**Read the integrality criterion.** `isIntegral_of_smul_mem_submodule` (mathlib,
+`RingTheory/IntegralClosure/Algebra/Basic.lean`) asks for a NONZERO FINITELY
+GENERATED `R`-submodule of the ambient ring, stable under multiplication by `x`.
+It does not ask for an algebra, an operator, or a faithful action. So the two
+questions to put to any such leaf are:
+
+1. **what module?** — and for an eigenvalue the answer is almost always *the
+   `ℤ`-span of the eigen-sequence itself*, `span ℤ {a_n : n ≥ 1}`. It contains `1`
+   by normalisation, so it is nonzero for free;
+2. **why is it stable?** — and the answer is *the recursions the leaf already
+   hypothesises*. Here `a_p · a_n = a_{np} + p · a_{n/p}` (good `p`) resp. `a_{np}`
+   (bad `p`) is a consequence of multiplicativity plus the prime-power recursions,
+   by splitting `n = p^r · m` with `p ∤ m` — about 40 lines, no geometry, and it was
+   itself an item the module's own survey had recorded as *"still unwritten"*.
+
+**THE STEP THAT BREAKS THE CIRCULARITY IS FINITE GENERATION, AND IT IS MUCH WEAKER
+THAN A FULL LATTICE.** This is the part worth carrying furthest. Given ANY finite
+family `g₁ … g_d` of integral objects spanning the ambient space over `ℂ` — not a
+basis, not of the right cardinality, coordinates not unique — write `f = ∑ cᵢ • gᵢ`;
+then every coefficient `a_n(f) = ∑ cᵢ · (integer)` lies in `span ℤ {c₁ … c_d}`, and
+`Submodule.FG.of_le` over Noetherian `ℤ` makes the eigen-span finitely generated.
+**Faithfulness is what forces an integral lattice to be FULL, and faithfulness is
+exactly where these chains go circular.** A route that never needs the action to be
+faithful never enters the cycle. So the residual leaf is the `q`-expansion principle
+(*some* finite integral spanning family exists), not the full-rank lattice — and
+that leaf, stated in a module whose import block is pure mathlib, cannot be circular
+with anything.
+
+**The generalisable check, and it costs one read of the criterion's signature:
+before accepting an audit's price for an "is an algebraic integer" leaf, write down
+the module the criterion actually wants and ask whether the leaf's own hypotheses
+already make it stable.** An audit prices the ROUTE ITS AUTHOR HAD, and the operator
+route is the one every textbook narrates; the module route is invisible from it
+because the operator never appears in the statement.
+
+Three riders from the same run:
+
+* **A "WHAT REMAINS GENUINELY MISSING" paragraph is about the route, and its
+  factual clauses can all be true while its verdict is false.** Correct the verdict
+  IN PLACE and keep the clauses — they are still the evidence about what the pin
+  lacks, and the next reader needs to know that `H₁(X₀(N), ℤ)` really is absent even
+  though it is not needed here.
+* **The linear functional the assembly needs may be 800 lines BELOW the leaf.**
+  `qExpansionCoeffL` (coefficient extraction as a `ℂ`-linear map) was declared in the
+  file's last section; the fix is a verbatim hoist together with that section's own
+  `open` lines — `qExpansion_smul` resolves to `UpperHalfPlane.qExpansion_smul` there
+  and to `ModularForm.qExpansion_smul` elsewhere, so moving the block without its
+  `open`s silently changes which lemma it names. Move the `open`s with the block.
+* **Report a 1 → 1 RECUT as such.** The direct-sorry count did not move. What moved
+  is that the surviving leaf mentions no eigenform, no prime, no `f`, and no Hecke
+  operator — it is one classical citation per LEVEL rather than one per `(f, p)` —
+  and that `Interface.lean`'s `integralCuspForms_span_eq_top` can now be re-pointed
+  at an upstream, non-circular statement of the same content.

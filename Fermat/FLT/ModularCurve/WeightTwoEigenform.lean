@@ -15,6 +15,8 @@ public import Mathlib.NumberTheory.LSeries.Basic
 public import Mathlib.NumberTheory.LSeries.AbstractFuncEq
 public import Mathlib.NumberTheory.LSeries.MellinEqDirichlet
 public import Mathlib.Analysis.Analytic.Basic
+public import Mathlib.RingTheory.IntegralClosure.Algebra.Basic
+public import Mathlib.RingTheory.Noetherian.Basic
 
 /-!
 # Weight-two Hecke eigenforms on `Γ₀(N)` and their `L`-functions
@@ -350,8 +352,289 @@ theorem qExpansion_coeff_eq_of_isWeightTwoEigenform {N : ℕ} {f : CuspForm (Gam
   (ModularFormClass.qExpansion_coeff_unique one_pos (one_mem_strictPeriods_Gamma0GL N)
     (hasSum_qExpansion_of_isWeightTwoEigenform hf) m).symm
 
-/-- **SHIMURA'S ALGEBRAICITY THEOREM AT A PRIME, CARRIER-FREE** (sorry
-leaf, new 2026-07-31) — `a_p` is an algebraic integer for every prime
+section ShimuraAlgebraicity
+
+open ModularForm Matrix.SpecialLinearGroup
+open scoped Manifold
+
+/-- The `m`-th `q`-expansion coefficient of a weight-`2` level-`N` cusp form,
+as a `ℂ`-linear functional — additivity and scalar equivariance through the
+pin's `qExpansion_add`/`qExpansion_smul`, which need analyticity of the cusp
+function and hence `1` being a strict period.
+
+**MOVED UP HERE on 2026-08-01** from `section SturmFiniteness` at the end of
+the file, verbatim and with this section's two `open` lines, so that
+`fg_coeffSpanZ_qExpansion` below can push a `ℂ`-linear combination of cusp
+forms through coefficient extraction.  Its other consumer,
+`cuspForm_finiteDimensional`, is far below and is unaffected. -/
+noncomputable def qExpansionCoeffL (N m : ℕ) : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] ℂ where
+  toFun f := (qExpansion 1 ⇑f).coeff m
+  map_add' f g := by
+    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos
+      (one_mem_strictPeriods_Gamma0GL N)
+    have hga := ModularFormClass.analyticAt_cuspFunction_zero g one_pos
+      (one_mem_strictPeriods_Gamma0GL N)
+    show (qExpansion 1 ⇑(f + g)).coeff m = _
+    rw [CuspForm.coe_add, qExpansion_add hfa hga]
+    simp
+  map_smul' c f := by
+    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos
+      (one_mem_strictPeriods_Gamma0GL N)
+    show (qExpansion 1 ⇑(c • f)).coeff m = _
+    rw [CuspForm.IsGLPos.coe_smul, qExpansion_smul hfa]
+    simp
+
+@[simp] theorem qExpansionCoeffL_apply (N m : ℕ) (f : CuspForm (Gamma0GL N) 2) :
+    qExpansionCoeffL N m f = (qExpansion 1 ⇑f).coeff m := rfl
+
+end ShimuraAlgebraicity
+
+/-! ### Shimura algebraicity, reduced to the `q`-expansion principle
+
+Added 2026-08-01.  `isIntegral_qExpansionCoeff_prime` far below was a bare
+`sorry` leaf carrying the whole of Shimura's algebraicity theorem, with a
+docstring directing a prover at the integral homology `H₁(X₀(N), ℤ)` as a
+Hecke module or at the Eichler–Selberg trace formula.  **Neither is
+needed, and no Hecke operator is needed either.**  The theorem is now
+PROVEN over the single leaf `exists_integralSpanningFamily_cuspForm`
+below — the `q`-expansion principle, i.e. that `S₂(Γ₀(N))` is spanned
+over `ℂ` by cusp forms whose Fourier coefficients are rational integers.
+
+The three steps, all proven here:
+
+1. `coeff_mul_mem_coeffSpanZ` — **the general-`n` Hecke relation is a
+   consequence of the prime-power recursions.**  This is the "second,
+   elementary item in the RIVAL CARRIERS survey", recorded there as
+   *still unwritten*; it is written now.  Splitting `n = p^r · m` with
+   `p ∤ m` and running `hmul` twice turns `hgood`/`hbad` into
+   `a_p · a_n = a_{np} + p · a_{n/p}` (good `p`) resp. `a_p · a_n = a_{np}`
+   (bad `p`), which is exactly `IsWeightTwoEigenform`'s `hecke`/`atkin`.
+   In particular the `ℤ`-span `coeffSpanZ` of the `a_n` (`n ≥ 1`) is
+   **stable under multiplication by `a_p`**, with no arithmetic input.
+2. `fg_coeffSpanZ_qExpansion` — writing `f = ∑ c i • g i` over an integral
+   spanning family makes every `a_n(f) = ∑ c i · (integer)` lie in the
+   `ℤ`-span of the finitely many coordinates `c i`.  So `coeffSpanZ` is a
+   submodule of a finitely generated `ℤ`-module, hence itself finitely
+   generated (`Submodule.FG.of_le`, `ℤ` being Noetherian).
+3. `isIntegral_of_coeffSpanZ_fg` — a nonzero finitely generated
+   `ℤ`-submodule of `ℂ` stable under multiplication by `x` makes `x`
+   integral (`isIntegral_of_smul_mem_submodule`).  `1 = a_1` is in
+   `coeffSpanZ` by `hone`, so it is nonzero.
+
+**WHY THIS IS NOT THE HECKE-STABLE-LATTICE ROUTE THE OLD DOCSTRING WARNED
+OFF.**  That route needs the Hecke algebra to act FAITHFULLY on a
+finitely generated `ℤ`-module, and faithfulness is what forces the
+integral lattice to be FULL — which is where `Modularity/Interface.lean`'s
+chain becomes circular against its own copy of this theorem (see the
+CUT-OBSTRUCTION AUDIT on `exists_trace_heckeOpN_int` there).  Nothing
+here mentions an operator: the module is a `ℤ`-submodule of `ℂ`, its
+stability under `a_p` is the elementary Hecke relation of step 1, and its
+finite generation comes from *any* integral spanning family, full rank or
+not.  So the leaf below is **not** the faithfulness statement and the
+cycle is not re-entered. -/
+
+/-- The `ℤ`-span of the positive-index values of a coefficient sequence.
+This is the module the integrality argument runs on: it contains `1` when
+the sequence is normalized, and the Hecke relations make it stable under
+multiplication by any `a_p`. -/
+abbrev coeffSpanZ (A : ℕ → ℂ) : Submodule ℤ ℂ :=
+  Submodule.span ℤ (Set.range fun m : ℕ => A (m + 1))
+
+theorem mem_coeffSpanZ (A : ℕ → ℂ) {k : ℕ} (hk : 0 < k) : A k ∈ coeffSpanZ A := by
+  obtain ⟨j, rfl⟩ : ∃ j : ℕ, k = j + 1 := ⟨k - 1, by omega⟩
+  exact Submodule.subset_span ⟨j, rfl⟩
+
+/-- **THE GENERAL-`n` HECKE RELATION FOLLOWS FROM THE PRIME-POWER
+RECURSIONS** (PROVEN 2026-08-01), in the form the integrality argument
+consumes: `a_p · a_n` lies in the `ℤ`-span of the `a_k`, `k ≥ 1`.
+
+The module docstring's RIVAL CARRIERS survey listed this implication as
+the outstanding elementary item — `IsWeightTwoEigenform`'s general-`n`
+`hecke`/`atkin` fields visibly imply `hgood`/`hbad` (take `n = q^r`), and
+the converse was unwritten.  It is the `p`-adic decomposition
+`n = p^r · m`, `p ∤ m`: `hmul` splits `a_n = a_{p^r} a_m` and
+`a_{p^j m} = a_{p^j} a_m`, and then `hbad` gives
+`a_p a_{p^r} = a_{p^{r+1}}` while `hgood` at `r − 1` gives
+`a_p a_{p^r} = a_{p^{r+1}} + p · a_{p^{r-1}}` (the case `r = 0` being
+`a_p · a_1 = a_p` by `hone`).
+
+No hypothesis on `f` is used — this is a statement about any sequence
+satisfying the four recursions, and `N` enters only through which primes
+are good. -/
+theorem coeff_mul_mem_coeffSpanZ {A : ℕ → ℂ} {N : ℕ}
+    (hone : A 1 = 1)
+    (hmul : ∀ m n : ℕ, Nat.Coprime m n → A (m * n) = A m * A n)
+    (hgood : ∀ q : ℕ, q.Prime → ¬ q ∣ N → ∀ r : ℕ,
+      A (q ^ (r + 2)) = A q * A (q ^ (r + 1)) - q * A (q ^ r))
+    (hbad : ∀ q : ℕ, q.Prime → q ∣ N → ∀ r : ℕ,
+      A (q ^ (r + 1)) = A q * A (q ^ r))
+    (p : ℕ) (hp : p.Prime) (n : ℕ) :
+    A p * A (n + 1) ∈ coeffSpanZ A := by
+  set n1 := n + 1 with hn1def
+  have hn1 : n1 ≠ 0 := by omega
+  set r := n1.factorization p with hrdef
+  set m := n1 / p ^ r with hmdef
+  have hnm : p ^ r * m = n1 := Nat.ordProj_mul_ordCompl_eq_self n1 p
+  have hm0 : m ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at hnm
+    exact hn1 hnm.symm
+  have hpm : ¬ p ∣ m := Nat.not_dvd_ordCompl hp hn1
+  have hcop : Nat.Coprime p m := (Nat.Prime.coprime_iff_not_dvd hp).mpr hpm
+  have hsplit : ∀ j : ℕ, A (p ^ j * m) = A (p ^ j) * A m := fun j =>
+    hmul _ _ (Nat.Coprime.pow_left j hcop)
+  have hpos : ∀ j : ℕ, 0 < p ^ j * m :=
+    fun j => Nat.mul_pos (pow_pos hp.pos j) (Nat.pos_of_ne_zero hm0)
+  have hAn1 : A n1 = A (p ^ r) * A m := by rw [← hnm, hsplit]
+  by_cases hpN : p ∣ N
+  · have h := hbad p hp hpN r
+    have hEq : A p * A n1 = A (p ^ (r + 1) * m) := by
+      rw [hAn1, hsplit, h]; ring
+    rw [hEq]
+    exact mem_coeffSpanZ A (hpos _)
+  · match r, hrdef with
+    | 0, _ =>
+      have hEq : A p * A n1 = A (p ^ 1 * m) := by
+        rw [hAn1, hsplit, pow_zero, hone, pow_one]; ring
+      rw [hEq]
+      exact mem_coeffSpanZ A (hpos _)
+    | (s + 1), _ =>
+      have h := hgood p hp hpN s
+      have hEq : A p * A n1 = A (p ^ (s + 2) * m) + (p : ℤ) • A (p ^ s * m) := by
+        rw [hAn1, hsplit, hsplit, zsmul_eq_mul]
+        push_cast
+        have hstep : A p * A (p ^ (s + 1)) = A (p ^ (s + 2)) + (p : ℂ) * A (p ^ s) := by
+          rw [h]; ring
+        linear_combination A m * hstep
+      rw [hEq]
+      exact Submodule.add_mem _ (mem_coeffSpanZ A (hpos _))
+        (Submodule.smul_mem _ _ (mem_coeffSpanZ A (hpos _)))
+
+/-- **INTEGRALITY FROM FINITENESS OF THE COEFFICIENT SPAN** (PROVEN
+2026-08-01).  Pure algebra: `coeffSpanZ A` is nonzero because `a_1 = 1`
+lies in it, it is stable under multiplication by `a_p` by
+`coeff_mul_mem_coeffSpanZ`, and a nonzero finitely generated
+`ℤ`-submodule of `ℂ` stable under `x` makes `x` integral. -/
+theorem isIntegral_of_coeffSpanZ_fg {A : ℕ → ℂ} {N : ℕ}
+    (hFG : (coeffSpanZ A).FG)
+    (hone : A 1 = 1)
+    (hmul : ∀ m n : ℕ, Nat.Coprime m n → A (m * n) = A m * A n)
+    (hgood : ∀ q : ℕ, q.Prime → ¬ q ∣ N → ∀ r : ℕ,
+      A (q ^ (r + 2)) = A q * A (q ^ (r + 1)) - q * A (q ^ r))
+    (hbad : ∀ q : ℕ, q.Prime → q ∣ N → ∀ r : ℕ,
+      A (q ^ (r + 1)) = A q * A (q ^ r))
+    (p : ℕ) (hp : p.Prime) :
+    IsIntegral ℤ (A p) := by
+  have hne : coeffSpanZ A ≠ ⊥ := by
+    intro h
+    have h1 : A 1 ∈ coeffSpanZ A := mem_coeffSpanZ A one_pos
+    rw [h, Submodule.mem_bot, hone] at h1
+    exact one_ne_zero h1
+  refine isIntegral_of_smul_mem_submodule (coeffSpanZ A) hne hFG (A p) ?_
+  intro x hx
+  induction hx using Submodule.span_induction with
+  | mem y hy =>
+    obtain ⟨j, rfl⟩ := hy
+    rw [smul_eq_mul]
+    exact coeff_mul_mem_coeffSpanZ hone hmul hgood hbad p hp j
+  | zero => simp
+  | add y z _ _ hy hz => rw [smul_add]; exact Submodule.add_mem _ hy hz
+  | smul a y _ hy => rw [smul_comm]; exact Submodule.smul_mem _ _ hy
+
+/-- **THE `q`-EXPANSION PRINCIPLE FOR `S₂(Γ₀(N))`** (sorry leaf, new
+2026-08-01): the weight-two cusp space is spanned over `ℂ` by finitely
+many cusp forms all of whose Fourier coefficients are rational integers.
+
+TRUE, and classical: Shimura, *Introduction to the arithmetic theory of
+automorphic functions*, Thm 3.52; Diamond–Shurman §6.5; equivalently
+`H₁(X₀(N), ℤ) ⊗ ℂ ≅ S₂(Γ₀(N)) ⊕ \overline{S₂(Γ₀(N))}`, or the
+`q`-expansion principle for the modular curve over `ℤ`.  A `ℤ`-BASIS is
+what the literature supplies; only SPANNING is asked here, which is
+strictly weaker and is all the consumer uses.
+
+**THIS IS THE WHOLE ARITHMETIC CONTENT OF SHIMURA ALGEBRAICITY IN THIS
+DEVELOPMENT**, and everything else about `isIntegral_qExpansionCoeff_prime`
+below is now proven over it.
+
+**FALSITY AUDIT** (2026-08-01).  `hN : N ≠ 0` IS LOAD-BEARING, and it is
+the *same* level-`0` obstruction that the theorem below records, seen one
+step earlier: `Gamma0 0` is `{± Tⁿ}`, the group of integer translations
+up to sign, whose weight-two cusp space is INFINITE-dimensional (it
+contains `∑ c_k q^k` for every rapidly decreasing `c`), so no finite
+family spans it and the conclusion fails outright.  `hN` is spent exactly
+once in the whole cluster — here — which is why the theorem below keeps
+its own audit unchanged.
+
+**NON-VACUITY.**  At `N = 1` the space is `0`, witnessed by `d = 0`; at
+`N = 11` it is one-dimensional, spanned by `η(τ)²η(11τ)²`, whose
+`q`-expansion is a product of integer power series.  So the statement is
+inhabited and is not junk-satisfiable: `d` may not be taken `0` unless
+the space really is trivial, since the span must be `⊤`.
+
+**WHY IT IS NOT CIRCULAR.**  `Modularity/Interface.lean` proves the same
+content as `integralCuspForms_span_eq_top`, but THROUGH
+`exists_heckeSubring_zForm`, and that chain runs back into its own copy of
+Shimura algebraicity — the cycle its CUT-OBSTRUCTION AUDIT exhibits.  This
+module imports nothing from the project at all (its import block is pure
+mathlib), so a proof landed here cannot be circular; and once it exists,
+`integralCuspForms_span_eq_top` downstream should be re-pointed at it,
+which breaks that cycle for every node above it.
+
+**WHAT A PROVER NEEDS.**  Either `H₁(X₀(N), ℤ)` with its Hecke action, or
+the modular curve over `ℤ` and the `q`-expansion principle, or — the
+cheapest classical route at weight two and the one to try first —
+Eichler–Shimura for `Γ₀(N)` cut down to the statement that the period
+lattice of the integral homology spans.  Archimedean bounds cannot
+substitute: `1/2` satisfies every bound in this file. -/
+theorem exists_integralSpanningFamily_cuspForm (N : ℕ) (hN : N ≠ 0) :
+    ∃ (d : ℕ) (g : Fin d → CuspForm (Gamma0GL N) 2),
+      (∀ (i : Fin d) (m : ℕ), ∃ z : ℤ, (qExpansion 1 ⇑(g i)).coeff m = (z : ℂ)) ∧
+      Submodule.span ℂ (Set.range g) = ⊤ :=
+  sorry
+
+/-- **THE COEFFICIENT SPAN OF A CUSP FORM IS FINITELY GENERATED** (PROVEN
+2026-08-01 over `exists_integralSpanningFamily_cuspForm`).
+
+Write `f = ∑ᵢ cᵢ • gᵢ` over the integral spanning family.  Coefficient
+extraction is `ℂ`-linear (`qExpansionCoeffL`), so
+`a_n(f) = ∑ᵢ cᵢ · a_n(gᵢ)` with every `a_n(gᵢ)` a rational integer — i.e.
+every `a_n(f)` lies in the `ℤ`-span of the finitely many coordinates
+`cᵢ`.  Since `ℤ` is Noetherian, the submodule `coeffSpanZ` of that
+finitely generated module is finitely generated.
+
+Note what this does NOT need: the family need not be a basis, need not be
+of the right cardinality, and the coordinates `cᵢ` are not required to be
+unique. -/
+theorem fg_coeffSpanZ_qExpansion (N : ℕ) (hN : N ≠ 0) (f : CuspForm (Gamma0GL N) 2) :
+    (coeffSpanZ fun m : ℕ => (qExpansion 1 ⇑f).coeff m).FG := by
+  classical
+  obtain ⟨d, g, hint, hspan⟩ := exists_integralSpanningFamily_cuspForm N hN
+  have hfmem : f ∈ Submodule.span ℂ (Set.range g) := by rw [hspan]; trivial
+  obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun ℂ).mp hfmem
+  refine Submodule.FG.of_le (T := Submodule.span ℤ (Set.range c))
+    (Submodule.fg_span (Set.finite_range c)) ?_
+  rw [Submodule.span_le]
+  rintro _ ⟨j, rfl⟩
+  have hval : (qExpansion 1 ⇑f).coeff (j + 1)
+      = ∑ i : Fin d, c i * (qExpansion 1 ⇑(g i)).coeff (j + 1) := by
+    have := congrArg (qExpansionCoeffL N (j + 1)) hc
+    simp only [map_sum, map_smul, qExpansionCoeffL_apply, smul_eq_mul] at this
+    exact this.symm
+  choose z hz using hint
+  have hval2 : (qExpansion 1 ⇑f).coeff (j + 1) = ∑ i : Fin d, (z i (j + 1)) • c i := by
+    rw [hval]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [hz i (j + 1), zsmul_eq_mul]
+    ring
+  show (qExpansion 1 ⇑f).coeff (j + 1) ∈ (Submodule.span ℤ (Set.range c) : Submodule ℤ ℂ)
+  rw [hval2]
+  exact Submodule.sum_mem _ fun i _ =>
+    Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
+
+/-- **SHIMURA'S ALGEBRAICITY THEOREM AT A PRIME, CARRIER-FREE**
+(**PROVEN 2026-08-01** over the single leaf
+`exists_integralSpanningFamily_cuspForm` above; a `sorry` leaf from
+2026-07-31 until then) — `a_p` is an algebraic integer for every prime
 `p`, stated about mathlib's own `q`-expansion coefficients and about no
 project predicate at all.
 
@@ -417,20 +700,30 @@ and unattached to `f`.  Here the coefficients ARE read off `f`, so that
 failure mode does not exist and the audit item is discharged rather than
 inherited.
 
-**WHAT REMAINS GENUINELY MISSING** (re-checked 2026-07-31): the integral
-homology `H₁(X₀(N), ℤ)` as a Hecke module exists neither here, nor in
-mathlib at this pin, nor in `~/cs/FLT`.  Archimedean bounds cannot
-substitute — `X0.lean` has `‖a_p‖ ≤ 2√p` and integrality is not an
-archimedean condition; `1/2` satisfies every such bound.  A Hecke-stable
-lattice and `IsIntegral ℤ (heckeEndo N q)` DO exist in
-`Modularity/Interface.lean` and are sorry-free in source, but that file
-is strictly downstream of this one AND its chain is circular against its
-own copy of this theorem — read the CUT-OBSTRUCTION AUDIT on
-`exists_trace_heckeOpN_int` there, which exhibits the cycle and
-identifies the Eichler–Selberg trace formula (`Tr(T_m) ∈ ℤ`) as the
-single non-circular arithmetic entry point.  A prover sent here should
-take Eichler–Selberg or `H₁(X₀(N), ℤ)`, and should NOT start by building
-a Hecke-stable lattice. -/
+**WHAT REMAINS GENUINELY MISSING — CORRECTED 2026-08-01, AND IT IS
+SMALLER THAN THIS PARAGRAPH USED TO SAY.**  The paragraph that stood here
+directed a prover at the integral homology `H₁(X₀(N), ℤ)` as a Hecke
+module or at the Eichler–Selberg trace formula, and told them NOT to
+start from a Hecke-stable lattice.  Its factual clauses were all true —
+`H₁(X₀(N), ℤ)` is in neither this tree, nor the pin, nor `~/cs/FLT`;
+archimedean bounds cannot substitute; `Modularity/Interface.lean`'s chain
+really is circular against its own copy of this theorem.  Its CONCLUSION
+was wrong: **no Hecke operator, no homology and no trace formula is
+needed to get from the arithmetic input to this statement.**  What the
+route above uses is only
+
+* the elementary fact that the `ℤ`-span of the `a_n` is stable under
+  multiplication by `a_p` (`coeff_mul_mem_coeffSpanZ` — the general-`n`
+  Hecke relation, derived from the prime-power recursions), and
+* ANY finite family of integral cusp forms spanning `S₂(Γ₀(N))` over `ℂ`
+  (`exists_integralSpanningFamily_cuspForm`), full rank or not.
+
+The second is the sole surviving leaf, and the reason it escapes the
+circularity is that faithfulness of a Hecke action — the thing that
+forces an integral lattice to be FULL, and the step at which
+`Interface.lean` re-enters its own cycle — is never used.  A prover
+should take the `q`-expansion principle, and needs nothing else from
+this file. -/
 theorem isIntegral_qExpansionCoeff_prime (N : ℕ) (hN : N ≠ 0)
     (f : CuspForm (Gamma0GL N) 2)
     (hone : (UpperHalfPlane.qExpansion 1 f).coeff 1 = 1)
@@ -448,7 +741,8 @@ theorem isIntegral_qExpansionCoeff_prime (N : ℕ) (hN : N ≠ 0)
             * (UpperHalfPlane.qExpansion 1 f).coeff (q ^ r))
     (p : ℕ) (hp : p.Prime) :
     IsIntegral ℤ ((UpperHalfPlane.qExpansion 1 f).coeff p) :=
-  sorry
+  isIntegral_of_coeffSpanZ_fg (N := N) (fg_coeffSpanZ_qExpansion N hN f)
+    hone hmul hgood hbad p hp
 
 /-- **`L` is *the* `L`-function of the coefficient sequence `a`.**
 
@@ -1194,29 +1488,14 @@ section SturmFiniteness
 open ModularForm Matrix.SpecialLinearGroup
 open scoped Manifold
 
-/-- The `m`-th `q`-expansion coefficient of a weight-`2` level-`N` cusp form,
-as a `ℂ`-linear functional — additivity and scalar equivariance through the
-pin's `qExpansion_add`/`qExpansion_smul`, which need analyticity of the cusp
-function and hence `1` being a strict period. -/
-noncomputable def qExpansionCoeffL (N m : ℕ) : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] ℂ where
-  toFun f := (qExpansion 1 ⇑f).coeff m
-  map_add' f g := by
-    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos
-      (one_mem_strictPeriods_Gamma0GL N)
-    have hga := ModularFormClass.analyticAt_cuspFunction_zero g one_pos
-      (one_mem_strictPeriods_Gamma0GL N)
-    show (qExpansion 1 ⇑(f + g)).coeff m = _
-    rw [CuspForm.coe_add, qExpansion_add hfa hga]
-    simp
-  map_smul' c f := by
-    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos
-      (one_mem_strictPeriods_Gamma0GL N)
-    show (qExpansion 1 ⇑(c • f)).coeff m = _
-    rw [CuspForm.IsGLPos.coe_smul, qExpansion_smul hfa]
-    simp
-
-@[simp] theorem qExpansionCoeffL_apply (N m : ℕ) (f : CuspForm (Gamma0GL N) 2) :
-    qExpansionCoeffL N m f = (qExpansion 1 ⇑f).coeff m := rfl
+/-! `qExpansionCoeffL` and `qExpansionCoeffL_apply` **used to be stated HERE** and
+were MOVED UP on 2026-08-01, to just above `isIntegral_qExpansionCoeff_prime`, so
+that the Shimura-algebraicity assembly there can use `ℂ`-linearity of coefficient
+extraction.  The move is verbatim, together with the two `open` lines this section
+carries, and the block's only in-file input is `one_mem_strictPeriods_Gamma0GL`
+(far above both sites).  Its only consumers are `cuspForm_finiteDimensional`
+immediately below and the new assembly above, so nothing between the two positions
+was disturbed. -/
 
 /-- **Sturm bound for `S₂(Γ₀(N))`**: there is a finite bound `B` — here
 `2·[SL(2,ℤ):Γ₀(N)]/12 + 1` — such that a weight-2 level-`N` cusp form whose
