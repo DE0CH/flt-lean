@@ -16151,3 +16151,61 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A SUM OF RESIDUE DEGREES IS A COUNT OF GEOMETRIC POINTS — cross the base field before pricing a leaf's GALOIS content
+
+(2026-08-01, `flt-lean-300`, on `sum_residueQDegree_compl_le_sum_totient` in
+`ModularCurve/X0.lean`.)  A leaf whose conclusion sums residue degrees over the
+closed points of a `k`-scheme — a divisor degree, a cuspidal degree, a
+ramification count — is a statement over `k`.  The literature that would discharge
+it is almost always a classification over `k̄`.  The gap between the two is exactly
+the GALOIS ORBIT STRUCTURE, and **it can be paid once, in Lean, and taken out of
+the leaf**, because
+
+    ∑_{x ∈ S} [κ(x) : k]  =  #{ k̄-points of X lying over S }
+
+is an EQUALITY, not an estimate.  So the re-cut is faithful — leaf and theorem are
+interchangeable, the count does not move (`1 → 1`), and the earlier faithfulness
+audit transfers verbatim rather than having to be re-run.
+
+What it buys is not size but SHAPE.  Deligne–Rapoport §V.5.1 classifies the cusps
+of `M(n)` over an algebraically closed field and states the `Gal(ℚ̄/ℚ)`-compatibility
+as a *separate sentence*; the degree-sum form of the leaf forced a prover to know
+how the geometric cusps group into closed points before the sum could be evaluated,
+i.e. to prove that the `φ(gcd(d, N/d))` cusps above `d` form a SINGLE orbit.  The
+geometric form does not: a model in which they split into two orbits refutes nothing
+about the count upstairs.  The sibling `exists_cuspAboveDivisor_neron` had had the
+same orbit statement taken off its critical path a day earlier, so after both cuts
+the PAIR asks the book only for the classification over `k̄`.
+
+**The bridge is ~60 lines of mathlib and needs no scheme theory** (in char `0`;
+separability is what makes it an equality):
+
+* `NumberField.Embeddings.card K A : Fintype.card (K →+* A) = finrank ℚ K`, for `A`
+  algebraically closed of characteristic zero — note the `→+*` form, which is what
+  you want, since `ℚ →+* K` is unique so a ring map is automatically a `ℚ`-algebra
+  map and **no `Algebra` instance appears in the leaf's statement at all**;
+* `Nat.card_sigma` to turn `∑_x #(κ(x) →+* k̄)` into `Nat.card (Σ x, …)`;
+* `Module.finite_of_finrank_pos` to get `FiniteDimensional` from the `finrank ≠ 0`
+  that a "no junk value" lemma already supplies.
+
+**The one friction, and it is a two-line fix: the project's `Algebra ℚ κ(x)` is not
+mathlib's.**  `NumberField` is stated over `DivisionRing.toRatAlgebra`, while a
+scheme-theoretic residue degree carries a bespoke instance (here `residueQAlgebra`,
+built through `Spec.preimage`).  `Subsingleton (Algebra ℚ R)` IS an instance
+(`algebra_rat_subsingleton`, `Mathlib/Algebra/Algebra/Rat.lean`), so
+
+    have halg : inst = DivisionRing.toRatAlgebra := Subsingleton.elim _ _
+    subst halg
+
+closes it — `subst` works because the instance is a named binder.  Without it the
+final goal prints as `finrank ℚ K = finrank ℚ K` and no `rfl` closes it, which is
+this development's recurring `ℚ`-algebra diamond wearing its least helpful face.
+State such helpers with `[inst : Algebra ℚ K]` explicit and `finrank ℚ K ≠ 0` (not
+`FiniteDimensional`) so they apply where the consumer stands.
+
+**The generalisable check, and it costs one read of the conclusion: if a leaf's
+statement is a SUM over closed points and its citation is a CLASSIFICATION, ask
+which field each lives over.**  When they differ, the descent is a separate,
+mechanical, provable step — and leaving it inside the leaf makes a prover pay for a
+theorem (the orbit structure) that the count does not need.
