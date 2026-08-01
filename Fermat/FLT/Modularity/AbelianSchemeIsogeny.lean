@@ -16543,7 +16543,76 @@ without it is the parent, which is TRUE (it is the parent) — so this is a stre
 the hypotheses in the sense of CLAUDE.md's ROUTE 9, "WLOG the base field is algebraically
 closed", the same move `isQuasiAffine_ker_mulByNat_of_isAlgClosed` below already makes for
 `ker[p]`, and the descent that pays for it is the leaf above.  Nothing here is weaker than
-the parent in any way a consumer can see: the parent is PROVEN over the two, below. -/
+the parent in any way a consumer can see: the parent is PROVEN over the two, below.
+
+**READ THIS BEFORE STARTING: THE CUT IS BLOCKED BY DECLARATION ORDER, NOT BY MATHEMATICS,
+AND THE MEASUREMENT IS BELOW.**  Every input the further cut needs is declared BELOW this
+line, so the cut cannot be written where this leaf stands.  Measured 2026-08-01 (re-measure
+before acting — these numbers move with every merge):
+
+* `nonvanishingLocus_tensorSection` (~16842) — the locus of a tensor of two sections;
+* `isAmpleSheaf_modTensor` (~16900) — the template proof to copy, and the place
+  `IsAffineOpen.inf` and `Scheme.IsSeparated X` are already assembled;
+* `nonempty_iso_modUnit_of_isInvertibleSheaf_of_field` (~16956) — `Pic (Spec K) = 0`, which
+  is what kills the four constant-point factors of the cube identity;
+* `nonempty_modTensorPow_two` (~16984) — `L^{⊗2} ≅ L ⊗ L`;
+* `nonempty_cubeIdentity` (~17056) — THE THEOREM OF THE CUBE, from which the theorem of the
+  square is DERIVED rather than cited.
+
+This whole run (`nonempty_modTensorPow_modTensor` at ~16810 through
+`end AbelianSchemeStruct` at ~17066, ≈ 257 lines) sits below `exists_isAmpleSheaf_of_field`,
+i.e. below the entire ample cluster that consumes it.  So a successor's FIRST commit should
+be a PURE RELOCATION of that block to just above the ample cluster, verified by the standard
+receipt — the sorted line multiset of the file is unchanged, and the block references no
+name declared in the region it jumps (the region declares only the five ample-cluster
+theorems, and the block mentions them in DOCSTRINGS only, so strip comments before checking).
+Moving the machinery UP is the smaller side: the machinery is ≈257 lines and the ample
+cluster it would otherwise have to jump is ≈410.  Fix the "above"/"below" direction words in
+the moved docstrings in the same commit, and do the mathematics in a SECOND commit.
+
+**THE DERIVATION OF THE THEOREM OF THE SQUARE FROM `nonempty_cubeIdentity`, worked out
+2026-08-01 so that nobody re-derives it.**  It is an instantiation, not a new citation.
+Take `T = Spec K`, `q = fK`, `T' = X`, `g = fK`, so the points live in `RelPoint fK fK`
+(morphisms `X ⟶ X` over `Spec K`), and put, for `a : RelPoint fK (𝟙 (Spec K))`,
+
+  `x := RelPoint.pre fK (Category.comp_id fK) a`,   `y := -x`,   `z := RelPoint.self fK`.
+
+Then, reading off the seven pullbacks of the cube identity:
+
+* `x + y + z = z`, so the first factor is `modPullback (𝟙 X) L ≅ L`;
+* `x.1 = fK ≫ a.1` and `y.1 = fK ≫ (-a).1` are CONSTANT maps, so
+  `modPullback x.1 L ≅ modPullback fK (modPullback a.1 L) ≅ modPullback fK (modUnit (Spec K))
+  ≅ modUnit X` — by `modPullbackCompIso`, then
+  `nonempty_iso_modUnit_of_isInvertibleSheaf_of_field` (this is where `Pic (Spec K) = 0` is
+  spent), then `nonempty_modPullback_modUnit`.  Same for `y`, for `x + y = 0` and for
+  `ab.zero fK`, all four being `fK ≫ (something out of Spec K)`;
+* `z.1 = 𝟙 X` gives a second `L`;
+* `(y + z).1` and `(x + z).1` are the TRANSLATIONS `t_{-a}` and `t_a`.
+
+So the identity collapses to `L ⊗ 𝒪 ⊗ (𝒪 ⊗ L) ≅ 𝒪 ⊗ t_{-a}^*L ⊗ (t_a^*L ⊗ 𝒪)`, i.e., after
+the unitors and `nonempty_modTensorPow_two` and `modTensorComm`,
+
+  `modTensorPow L 2 ≅ modTensor (modPullback t_a L) (modPullback t_{-a} L)`.
+
+**`translate` DOES NOT EXIST IN THIS TREE and has to be defined; it is three lines, on the
+`mulByNat` pattern.**  With `letI := ab.addCommGroup f`,
+`translate a := (RelPoint.pre f (Category.comp_id f) a + RelPoint.self f).1 : A ⟶ A`.
+`translate 0 = 𝟙 A` and `translate a ≫ translate b = translate (a + b)` follow from
+`pre_add`/`pre_zero` and `nsmul_val`'s pattern, and together they make `translate a` an
+ISOMORPHISM with inverse `translate (-a)` — which is what makes `t_a ⁻¹ᵁ U` affine
+(`IsAffineOpen.preimage_of_isIso`).  The file's repeated remark that "the translations are
+not `K`-morphisms at non-rational points" is about a DIFFERENT construction (translation by
+a closed point that is not rational); translation by a `K`-POINT is a `K`-morphism, which is
+exactly why this leaf carries `[IsAlgClosed K]`.
+
+**WHAT IS LEFT AFTER THAT IS ONE HONEST LEAF, and it is not the square.**  It is the
+AVOIDANCE statement: over an algebraically closed field, for every `z : X` and every
+nonempty open `U` there is a rational `a` with `t_a z ∈ U` and `t_{-a} z ∈ U`.  Its content
+is that `X` is IRREDUCIBLE (smooth + geometrically connected) and that the rational points
+are Zariski dense in a nonempty open of a variety over `K = K̄` — i.e. the Nullstellensatz /
+Jacobson-scheme half, a completely different theory from the cube.  The bad set for `a` is
+`t_z⁻¹(X ∖ U)` together with its reflection, two PROPER closed subsets, so their union is
+not all of `X`. -/
 theorem isAmpleSheaf_of_nonvanishingLocus_eq_of_isAlgClosed {X : Scheme.{u}} (K : Type u)
     [Field K] [IsAlgClosed K] {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK)
     {L : X.Modules} (hL : IsInvertibleSheaf L) (s : Γ(L, ⊤))
