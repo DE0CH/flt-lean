@@ -15574,6 +15574,90 @@ will otherwise keep drawing dispatches — this one had already drawn mine.  Rep
 merge repair, with the count delta stated (`2 → 1`), or the next reader will believe a
 theory gap closed.
 
+## A GROUP ACTION IN A LEAF'S CONCLUSION IS A FIXED COST — PAY IT ONCE, OFF THE SUBJECT MATTER
+
+(2026-08-01, `flt-lean-330`, `exists_geometricCuspEquiv_x1_finiteField` in
+`ModularCurve/X1.lean`.) A leaf whose conclusion is an EQUIVARIANT bijection carries two
+independent things: the mathematics, and the structure of the group action. The second is
+almost never about your subject, and if it is not, it can be proven separately over mathlib
+and deleted from the leaf for good.
+
+Here the leaf asked for `Σ c ∈ X∖Y, Hom(κ(c), 𝔽̄_ℓ) ≃ {primitive cusp symbols}` matching the
+arithmetic Frobenius against `cuspFrobX1 N ℓ` — Deligne–Rapoport VI.5, a real theory build.
+But *"the geometric points above a point of residue degree `d` are a `ZMod d`-torsor under
+Frobenius"* is not modular, not cuspidal and not even about a scheme. Proving it (~180 lines)
+lets the leaf be restated over `ZMod (residueFDegree strX c)`, where the action is literally
+`+1`, so the residue mentions **no `AlgebraicClosure`, no `→+*` and no Frobenius** and reads
+as the sentence the literature states: *the cusps, indexed by their residue degrees, are the
+`cuspFrob`-orbits on the symbols.*
+
+**The mathlib toolkit, because none of it had been used in this tree and it is the whole
+reason the cut is cheap:**
+
+* `FiniteField.orderOf_frobeniusAlgHom` — the order of Frobenius on a finite extension **is**
+  its degree. That is the FREENESS of the torsor, and it makes every subfield / cyclic-group /
+  `a^d − 1 ∣ a^k − 1` argument unnecessary;
+* `AlgHom.card` — an algebraically closed target receives exactly `finrank` embeddings. That
+  is TRANSITIVITY, obtained **by cardinality**: an injective map between finite sets of equal
+  size is bijective, so no Galois theory of finite fields appears anywhere;
+* `FiniteField.pow_card` for the periodicity `Frob^[d] = id`;
+* `RingHom.ext_zmod` to state the whole thing about BARE ring maps rather than `𝔽_ℓ`-algebra
+  maps — which is what keeps the `letI`-only `residueFAlgebra` out of the statement.
+
+**The generalisable question, and it costs one read of the conclusion: is the group acting on
+one side of your bijection acting the same way on EVERY instance of the problem?** Frobenius
+on `Hom(κ(x), 𝔽̄_ℓ)`, `Gal(K̄/K)` on embeddings, `μ_n` on a torsor, deck transformations on a
+cover — all yes. If so its orbit structure is a lemma about the group, not about your leaf,
+and it belongs outside.
+
+**Report it as a RECUT and give the receipt, because the delta cannot show it.** Count
+unchanged, `24 → 24` in the file and `191 → 191` in the build, and
+`git diff | grep -E '^[+-] *sorry *$'` exactly one `+` and one `-`. No mathematics was proven;
+what changed is what is LEFT in the leaf.
+
+Two riders from the same run:
+
+* **The positivity conjunct (`0 < residueFDegree`) is carried, not derived, on purpose.** It
+  says the cusps are closed points — true, and a separate piece of scheme theory (closedness
+  of the points of a finite complement in a proper curve, plus Jacobson-ness) that the moduli
+  owner should not have to do. When a torsor cut needs a finiteness side condition, put it in
+  the leaf's conclusion and say in the docstring both why it is true and how to avoid it;
+  making it a fourth leaf would be the expensive kind of `1 → 2`.
+* **Prototype the group-theoretic half in a MATHLIB-ONLY scratch.** It mentions none of the
+  project, so iterations are seconds; then re-verify the same text in a scratch that
+  `public import`s the target module (7 s here) to catch the namespace and `open` problems —
+  the first such run failed with *"invalid use of explicit universe parameters, `Scheme` is a
+  local variable"*, which is the standing autoImplicit tell for a missing
+  `open CategoryTheory AlgebraicGeometry` and nothing to do with universes.
+
+## AN "AXIS NOT AVAILABLE BECAUSE THE CONSUMER NEEDS X" CLAIM IS REFUTABLE BY A COMPILE
+
+(Same run, and it is the cheapest audit in this file.) An `AXES SEARCHED` paragraph that
+rules an axis out **on the strength of what a consumer needs** is not a mathematical claim at
+all — it is a claim about a proof that is sitting in the same file, and it can be settled in
+ten minutes instead of argued about.
+
+This leaf's read: *"the BIJECTION-vs-INJECTION axis is NOT available here … the consumer needs
+only an injection, but an injection of GEOMETRIC points would not let the degree-one points be
+separated, since two distinct cusps of the same degree are distinguished only by the fibre
+structure a bijection records."* Plausible, specific, and FALSE: the consumer separates two
+cusps with `Subtype.ext (congrArg Sigma.fst (Φ.injective (Subtype.ext hab)))`, which is
+`Function.Injective Φ` and nothing else.
+
+**The check: restate the CONSUMER in a scratch, with the weakened form of the leaf as an
+explicit hypothesis, and elaborate it.** If it compiles, the axis is available. Do not read
+the proof and reason about it — a proof that "uses the `Equiv`" is exactly what an injection
+also provides, and that is the confusion the claim was built on.
+
+**Then decide, and record the decision rather than the option.** I did not take the axis:
+surjectivity here is "the model has no cusps beyond `Γ_1(N)∖ℙ¹(ℚ)`", which falls out of the
+same Deligne–Rapoport construction as injectivity, so weakening buys a successor almost
+nothing and gives up the form a future exact count would need. That is a judgement, so the
+docstring says what would reverse it — *a successor who finds the completeness half genuinely
+separable should weaken the `≃` to `Function.Injective`; every consumer compiles unchanged.*
+An axis paragraph that records a checked-and-declined option is worth more than one that
+records a wrong reason for never checking.
+
 ## A FROZEN `main` ROTS THE QUEUE SILENTLY — AUDIT queue1 AGAINST `merger`, NOT AGAINST `main`
 
 (2026-07-31, release 32.  Measured: **48 of 265 queue1 tasks, 18%, named a leaf
