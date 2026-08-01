@@ -16151,3 +16151,67 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A CONJUNCTIVE `grep A | grep B` IS A PER-LINE TEST, AND LEAN SIGNATURES WRAP — it is a near-guaranteed FALSE NEGATIVE
+
+(2026-08-01, `flt-lean-321`.  This is the mechanism behind an absence claim that
+was written as **"CHECKED by name rather than assumed"** and was nevertheless
+false, and it is the cheapest-to-avoid failure in this whole file.)
+
+`exists_gamma0Datum_specQ_isBaseChangeOf_specPt_of_weierstrassQForm`'s docstring
+(`X0.lean`) declared that *a `VariableChange` induces an isomorphism of affine
+Weierstrass coordinate rings* is
+
+> **NOT in the tree, in either direction**, and a grep for `CoordinateRing`
+> against `VariableChange`/`smul` over mathlib's `EllipticCurve/` and over
+> `Fermat/` returns nothing usable.
+
+and concluded *"the honest further cut of this leaf is that one lemma"*.  Acting
+on that instruction would have re-derived **285 lines of already-proven code**.
+The development exists, PROVEN since 2026-07-30, in `FreyCurve/MazurTorsion.lean`
+(sixteen declarations over an arbitrary `CommRing R`), topped by
+`nonempty_algEquiv_coordinateRing_of_variableChange`.
+
+**The grep really was run and really did return nothing.  Here is why, and it is
+not about scope, capitalisation, or unicode:**
+
+    44687 theorem nonempty_algEquiv_coordinateRing_of_variableChange … [CommRing R]
+    44688     (W : WeierstrassCurve R) (C : WeierstrassCurve.VariableChange R) :     <- VariableChange
+    44689     Nonempty (W.toAffine.CoordinateRing ≃ₐ[R] (C • W).toAffine.CoordinateRing) :=   <- CoordinateRing
+
+The two searched tokens sit on **adjacent but different lines**.  `grep` is
+line-oriented, so `grep CoordinateRing | grep VariableChange` matches nothing —
+while `grep CoordinateRing Fermat/` alone returns 3334 hits including this one.
+A Lean signature longer than ~80 characters wraps, and in this project almost
+every interesting signature does; so **a two-token conjunctive grep over Lean
+source is a false negative by construction**, and it fails in the direction that
+produces confident absence claims.
+
+**The rule: never establish an absence with `grep A | grep B`.**  Use one token —
+the most distinctive one — and read the hits; or search a WINDOW
+(`grep -A6 A | grep B`, `rg -U`, or a declaration-level scan).  The cost of
+reading forty hits is a minute; the cost of the false negative here was a
+docstring instructing every future agent to duplicate a proven module.
+
+Two riders, both of which apply independently of the grep bug:
+
+* **"nothing usable" and "not in the tree" are different claims, and conflating
+  them turns a HOIST into a RE-CUT.**  `MazurTorsion.lean` carries
+  `public import Fermat.FLT.ModularCurve.X0`, so from `X0.lean` the block is
+  genuinely unreachable — "not usable *here*" was true.  The summary sentence
+  promoted it to "not in the tree", and only the summary sentence survives into
+  the next agent's task prompt.  When you find something real but unreachable,
+  write **"exists at `<file>:<line>`, DOWNSTREAM, needs a hoist"** — never
+  "missing".
+* **Before believing any absence claim, ask what the block would DEPEND on if it
+  existed.**  A token scan of the block against every declaration in its own file
+  (ten lines of Python) showed all sixteen project-local names it uses are
+  declared inside the block itself — i.e. it is self-contained and hoistable
+  verbatim.  That measurement turns "somebody should build this" into "move these
+  285 lines", and it is available before any of the mathematics is understood.
+
+**And a receipt worth reusing for any comment-only repair**: strip comments from
+the file before and after the edit and compare the results.  Byte-identical
+stripped output PROVES the Lean is untouched, so no rebuild is needed to know the
+change is safe — which is what makes correcting a docstring in a 119 000-line
+module a cheap action rather than a multi-hour one.

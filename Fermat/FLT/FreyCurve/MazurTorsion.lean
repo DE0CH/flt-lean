@@ -44206,11 +44206,32 @@ The route the docstring above describes is exactly the route taken, and every
 geometric step of it was already in this module's *public* import surface; what
 was missing was one piece of pure commutative algebra and a handful of `ℚ̄`
 restatements of `ℚ`-shaped helpers.  The five declarations below are the whole
-of it, and only the first is a leaf.
+of it.  (This sentence used to end "and only the first is a leaf"; that is stale
+— the first was CLOSED on 2026-07-30 and the cluster has been sorry-free since.
+Corrected 2026-08-01, flt-lean-321.)
 
-* `nonempty_algEquiv_coordinateRing_of_variableChange` — **LEAF**, and the ONLY
-  one: a change of variables induces an `R`-algebra isomorphism of affine
-  Weierstrass coordinate rings.  No schemes, no base, no level, no `ℚ̄`.
+* `nonempty_algEquiv_coordinateRing_of_variableChange` — **PROVEN** (2026-07-30;
+  it was a leaf when this list was written, and the stale "LEAF, and the ONLY
+  one" label stood here until 2026-08-01): a change of variables induces an
+  `R`-algebra isomorphism of affine Weierstrass coordinate rings.  No schemes,
+  no base, no level, no `ℚ̄`.  It has a term proof, over `coordinateRingMap`,
+  `bijective_coordinateRingMap` and `coordinateRingMap_commutes`, all of them
+  sorry-free.
+
+  **THIS BLOCK IS WANTED UPSTREAM AND CANNOT BE SEEN FROM THERE.**  Lines
+  44392–44676 here — `variableChangeSubX` through
+  `nonempty_algEquiv_coordinateRing_of_variableChange`, sixteen declarations over
+  an arbitrary `CommRing R` — are exactly the development that
+  `ModularCurve/X0.lean`'s `exists_gamma0Datum_specQ_isBaseChangeOf_specPt_of_`
+  `weierstrassQForm` needs and whose docstring declared "NOT in the tree, in
+  either direction" on 2026-07-31, because this module carries
+  `public import Fermat.FLT.ModularCurve.X0` and is therefore DOWNSTREAM of it.
+  A token scan against every declaration in this file (2026-08-01) shows the
+  block is SELF-CONTAINED: all sixteen project-local names it uses are declared
+  inside the block, so it may move verbatim to
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/VariableChange.lean`.  Do
+  not re-cut it upstream — hoist it, and delete these copies in the same commit,
+  since a declaration-level merge propagates additions and never deletions.
 * `exists_isIso_weierstrassAffine_of_algEquiv` — PROVEN: `Spec` of that, with
   the structure morphisms, i.e. the chart isomorphism as schemes over the base.
 * `dense_compl_singleton_of_isOpen`, `range_hom_specField_eq_singleton`,
