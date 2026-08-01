@@ -16151,3 +16151,77 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## AN AUDIT'S CHOICE BETWEEN TWO REPAIRS IS A HYPOTHESIS — ASK HOW THE OFFENDING PARAMETER IS *PRODUCED*
+
+(2026-08-01, `flt-lean-388`, `globalFrob_map_mul_inv_mem_of_isArithFrobAt` in
+`NumberField/CyclotomicIdealSymbol.lean`.)  That leaf carried a correct FALSITY
+AUDIT — a `p = 23` counterexample, two candidate repairs, both accurately
+described — and a recommendation.  The recommendation was backwards, and one
+`grep` decides it: **where does the offending parameter come from?**
+
+The defect was that a free parameter `ι : CF →ₐ[ℚ] ℚ̄` was mixed with the
+canonical embedding buried in `Field.absoluteGaloisGroup.map`.  Repair 1 was
+*pin `ι` with a hypothesis and thread it down the chain* — "cheapest at this
+end, a cascade at the other".  Repair 2 was *twist the conclusion instead* —
+"the one that keeps the interface".  The audit chose 2.
+
+`ι` is not a datum anybody is stuck with: it is `obtain`ed from
+`Interface.lean`'s `exists_frobeniusIdeal_cyclotomic`, which produces it
+EXISTENTIALLY and whose proof is GENERIC in it (`set ι := IsAlgClosed.lift`,
+then never a word about `ι` again).  So repair 1's producer-side cost is ONE
+LINE — hand back a better `ι` — plus one conjunct in that producer's
+conclusion, plus an UNUSED hypothesis threaded down the eight intermediate
+theorems.  Threading an unused hypothesis WEAKENS each of them, so no
+faithfulness audit above is disturbed and no proof body moves.  Repair 2
+changes a CONCLUSION clause, so every consumer has to be re-read rather than
+merely re-signed — and it still needs the comparison repair 1 needs.
+
+**The rule: when a leaf is false because two objects that ought to agree do not,
+read how EACH IS PRODUCED before pricing the repair.**  A parameter that is
+universally quantified in every statement you can see may still be
+existentially produced at the top of the chain, and then pinning it is nearly
+free.  Cost intuition runs the wrong way here because "add a hypothesis to N
+signatures" LOOKS like N units of work and "change one conclusion" looks like
+one: in fact a hypothesis added to a `∀`-theorem can invalidate nothing, and a
+changed conclusion can invalidate every consumer.
+
+Three riders, all measured on that edit:
+
+* **State the pinning hypothesis so that it PINS rather than constrains.**
+  `AlgebraicClosure.map` is injective, so
+  `∀ z, AlgebraicClosure.map (algebraMap ℚ CF) (ι z) = algebraMap CF (AlgebraicClosure CF) z`
+  determines `ι` uniquely.  The repaired leaf then quantifies over a
+  ONE-ELEMENT class and the recorded counterexample is not merely excluded, it
+  is unstateable.
+* **Replacing `set x := <term>` by `obtain ⟨x, hx⟩ := <existence lemma>` makes
+  `x` OPAQUE, and a `rw` that used to close by `rfl` can stop closing.**
+  Exactly one step broke in the whole edit, as
+  `unsolved goals ⊢ g⁻¹ (ι x) = g⁻¹ (ι x)`.  `exact congrArg _ (h x)` in place
+  of `rw [h x]` is the fix — the standing "printed pattern equals printed
+  target ⟹ switch to a defeq-checking tactic" trap, reached by DE-opaquing.
+* **The unused-variable linter tells you which threaded hypotheses to drop.**
+  Of eight theorems, seven consumed `hι` transitively and one
+  (`exists_ideal_artinIdealMap_congr_of_kerChar`, a SIBLING of the chain rather
+  than an ancestor of the leaf) did not; the linter named it, and dropping that
+  binder shrank the merge surface for free.
+
+**And the availability fact it needed, which is reusable wherever two
+constructions in this tree disagree about which copy of a number field sits
+inside `ℚ̄`: `AlgebraicClosure.map (algebraMap K L)` is BIJECTIVE whenever `L/K`
+is algebraic.**  Three lines — `Algebra.IsAlgebraic.algHom_bijective` applied to
+`F ∘ g` for any `g : Lᵃˡᵍ →ₐ[K] Kᵃˡᵍ`, whose surjectivity forces `F`'s — and it
+is now `NumberField.bij_algebraicClosure_map` /
+`exists_algHom_algebraicClosure_map_eq` in `CyclotomicIdealSymbol.lean`.  Note
+WHICH embedding `Field.absoluteGaloisGroup.map` is about: the one
+`Field.absoluteGaloisGroup.lift_map` intertwines with, i.e.
+`AlgebraicClosure.map`, and NOT the `IsAlgClosed.lift` inside `mapAux`.
+
+Corollary for a docstring that says **"DO NOT ATTEMPT TO PROVE IT — the repair
+belongs to whoever owns the other side of the interface"**: under the loop
+nobody owns anything, so that sentence names a task that will never be
+dispatched.  It is the same failure this file already records under *A FALSITY
+AUDIT THAT PRESCRIBES A CUT MUST BE PERFORMED*, and the response is the same —
+the agent that reads it is the owner.  Perform the repair, keep the audit
+verbatim underneath as the EVIDENCE for the new hypothesis, and say in the
+module docstring that a proof effort may now be dispatched.

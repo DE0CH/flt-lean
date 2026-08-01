@@ -38,14 +38,18 @@ already supplies `adicCompletionMap`, `adicCompletionMap_coe` and
 the module's live frontier is the single leaf
 `globalFrob_map_mul_inv_mem_of_isArithFrobAt` (the Frobenius comparison).
 
-**THAT REMAINING LEAF IS FALSE AS STATED** — see the FALSITY AUDIT at the end of
-its docstring, with a `p = 23` counterexample.  It mixes the free embedding
-parameter `ι` with the fixed embedding buried in `Field.absoluteGaloisGroup.map`,
-and asks for `[w] = [γ w]` in `Cl(ℚ(μ_p))`.  **Do not dispatch a proof effort at
-it**; the repair is a statement change that also touches `Interface.lean`, and
-the audit sets out the two candidate routes.  Its last step is already proven
-here, as `mul_inv_mem_of_conj_localInertia_mul_commutator`, and is unaffected by
-whichever repair is chosen.
+**THAT REMAINING LEAF WAS FALSE AS STATED, AND WAS REPAIRED ON 2026-08-01.**  It
+mixed the free embedding parameter `ι` with the fixed embedding buried in
+`Field.absoluteGaloisGroup.map`, and asked for `[w] = [γ w]` in `Cl(ℚ(μ_p))`; the
+FALSITY AUDIT at the end of its docstring keeps the `p = 23` counterexample in
+full, because it is the evidence for the hypothesis that now excludes it.  The
+repair is the audit's own route 1: a hypothesis `hι` pinning `ι` to the canonical
+embedding, satisfiable by `exists_algHom_algebraicClosure_map_eq` proven below and
+threaded down `Interface.lean`'s chain from `exists_frobeniusIdeal_cyclotomic`,
+which chooses `ι` existentially and whose proof is generic in it.  The leaf is now
+TRUE and open, and a proof effort MAY be dispatched at it; its last step is
+already proven here, as `mul_inv_mem_of_conj_localInertia_mul_commutator`, and was
+unaffected by the repair.
 
 `exists_idealSymbolMonoidHom` is proven here and is pure Dedekind-domain
 theory.
@@ -159,6 +163,69 @@ theorem exists_conj_of_two_embeddings
   let F₁' : AlgebraicClosure k →ₐ[k] Ω := { F₁ with commutes' := h }
   refine ⟨F₁'.restrictNormal' (AlgebraicClosure k), fun x => ?_⟩
   exact (AlgHom.restrictNormal_commutes F₁' (AlgebraicClosure k) x).symm
+
+/-- **`AlgebraicClosure.map` OF AN ALGEBRAIC EXTENSION IS BIJECTIVE** (PROVEN
+2026-08-01).
+
+`AlgebraicClosure.map (algebraMap K L) : Kᵃˡᵍ →+* Lᵃˡᵍ` is injective for free
+(it is a map of fields).  It is also SURJECTIVE as soon as `L/K` is algebraic,
+because then `Lᵃˡᵍ/K` is algebraic too, so composing with any `K`-embedding
+`g : Lᵃˡᵍ →ₐ[K] Kᵃˡᵍ` (which exists, `Kᵃˡᵍ` being algebraically closed) gives a
+`K`-algebra ENDOMORPHISM of `Lᵃˡᵍ`, and an algebra endomorphism of an algebraic
+extension is bijective (`Algebra.IsAlgebraic.algHom_bijective`).  Surjectivity
+of the composite forces surjectivity of the outer factor.
+
+The same three-line shape as `Interface.lean`'s `exists_conj_map_of_ratRingEquiv`,
+which needs exactly this for a ring ISOMORPHISM of the base. -/
+theorem bij_algebraicClosure_map (K L : Type*) [Field K] [Field L] [Algebra K L]
+    [Algebra.IsAlgebraic K L] :
+    Function.Bijective (AlgebraicClosure.map (algebraMap K L)) := by
+  haveI : IsScalarTower K L (AlgebraicClosure L) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : Algebra.IsAlgebraic K (AlgebraicClosure L) :=
+    Algebra.IsAlgebraic.trans (S := L) K (AlgebraicClosure L)
+  let F : AlgebraicClosure K →ₐ[K] AlgebraicClosure L :=
+    { AlgebraicClosure.map (algebraMap K L) with
+      commutes' := fun x => AlgebraicClosure.map_algebraMap _ _ }
+  let g : AlgebraicClosure L →ₐ[K] AlgebraicClosure K := IsAlgClosed.lift
+  have hbij : Function.Bijective (F.comp g) := Algebra.IsAlgebraic.algHom_bijective _
+  refine ⟨(AlgebraicClosure.map (algebraMap K L)).injective, fun y => ?_⟩
+  obtain ⟨x, hx⟩ := hbij.2 y
+  exact ⟨g x, hx⟩
+
+/-- **THE CANONICAL COPY OF `L` INSIDE `Kᵃˡᵍ`** (PROVEN 2026-08-01).
+
+`Field.absoluteGaloisGroup.map (algebraMap K L)` is built by restricting along
+the CANONICAL comparison `AlgebraicClosure.map (algebraMap K L) : Kᵃˡᵍ →+* Lᵃˡᵍ`
+— that, and not the `IsAlgClosed.lift` inside `mapAux`, is what
+`Field.absoluteGaloisGroup.lift_map` intertwines with.  So the embedding of `L`
+into `Kᵃˡᵍ` that `map` is implicitly about is the preimage of `L ⊆ Lᵃˡᵍ` under
+that comparison, and this lemma produces it.
+
+It is UNIQUE, `AlgebraicClosure.map` being injective, so `hι` below pins `ι`
+completely rather than merely constraining it.
+
+**THIS IS THE REPAIR OF THE FALSITY RECORDED ON
+`globalFrob_map_mul_inv_mem_of_isArithFrobAt` BELOW**, and it is why the repair
+is cheap: `Interface.lean`'s `exists_frobeniusIdeal_cyclotomic` produces its `ι`
+EXISTENTIALLY and its proof is generic in `ι` (it only ever feeds `ι` to
+`cycFrobPrime` and to `sigma_apply_eq_galEquivZMod`), so that producer may simply
+hand back THIS `ι` instead of a bare `IsAlgClosed.lift`, at the cost of one extra
+conjunct in its conclusion and one extra hypothesis threaded down the chain. -/
+theorem exists_algHom_algebraicClosure_map_eq (K L : Type*) [Field K] [Field L]
+    [Algebra K L] [Algebra.IsAlgebraic K L] :
+    ∃ ι : L →ₐ[K] AlgebraicClosure K,
+      ∀ z : L, AlgebraicClosure.map (algebraMap K L) (ι z)
+        = algebraMap L (AlgebraicClosure L) z := by
+  set e := RingEquiv.ofBijective _ (bij_algebraicClosure_map K L) with he
+  have hee : ∀ x, e x = AlgebraicClosure.map (algebraMap K L) x := fun _ => rfl
+  refine ⟨⟨(e.symm : AlgebraicClosure L →+* AlgebraicClosure K).comp
+    (algebraMap L (AlgebraicClosure L)), fun k => ?_⟩, fun z => ?_⟩
+  · show e.symm (algebraMap L (AlgebraicClosure L) (algebraMap K L k))
+      = algebraMap K (AlgebraicClosure K) k
+    rw [← AlgebraicClosure.map_algebraMap (algebraMap K L) k, ← hee, e.symm_apply_apply]
+  · show AlgebraicClosure.map (algebraMap K L)
+      (e.symm (algebraMap L (AlgebraicClosure L) z)) = _
+    rw [← hee, e.apply_symm_apply]
 
 /-- **THE INERTIA TRANSPORT, WITH THE LOCAL EMBEDDING OF COMPLETIONS GIVEN**
 (PROVEN 2026-07-30).  This is the whole mathematical content of
@@ -548,12 +615,12 @@ at an unramified prime.
 
 ---
 
-**FALSITY AUDIT, 2026-07-31: THIS LEAF IS FALSE AS STATED, AND THE DEFECT IS
-`ι`.  DO NOT ATTEMPT TO PROVE IT — the repair is a STATEMENT change and it
-belongs to whoever owns `Interface.lean`'s side of the interface.**
+**FALSITY AUDIT, 2026-07-31 — REPAIRED 2026-08-01 BY ADDING `hι`, WHICH IS
+EXACTLY ITS ROUTE 1.  The audit is kept in full below because it is the
+EVIDENCE for the hypothesis: delete `hι` and every word of it applies again.**
 
-The statement mixes TWO DIFFERENT embeddings of `CF` into `ℚ̄`, and is only true
-when they agree.
+The statement mixed TWO DIFFERENT embeddings of `CF` into `ℚ̄`, and is only true
+when they agree — which is what `hι` now says.
 
 * `hxfrob` pins `x` through the PARAMETER `ι`: the prime `Q` at which `x|_M` is
   an arithmetic Frobenius contracts along `jj` — and `jj` is `ι` corestricted —
@@ -601,33 +668,52 @@ about which prime each side sits over — the conjugator `g` does lie in `ker χ
 but only because transitivity on the primes above a FIXED prime of `F` is by
 `Γ_F`, which presupposes the two primes lie over the same one.
 
-**THE TWO CANDIDATE REPAIRS**, neither of which can be made from inside this
-module, since both change what the consumer must supply:
+**THE TWO CANDIDATE REPAIRS**, as the audit recorded them:
 
-1. *Pin `ι`.*  Add
-   `hι : ∀ z : CF, AlgebraicClosure.map (algebraMap ℚ CF) (ι z) =
-     algebraMap CF (AlgebraicClosure CF) z`
-   (i.e. `ι = ι₀`) here, and thread it up through
-   `Interface.lean`'s `exists_zmodIdealSymbol_of_frobIdeal` and
-   `prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_primePowChar`, which both
-   carry `ι` as a free parameter.  Cheapest at this end, a cascade at the other.
+1. *Pin `ι`.*  Add `hι` (i.e. `ι = ι₀`) here, and thread it down through
+   `Interface.lean`'s chain of theorems carrying `ι` as a free parameter.
+   Cheapest at this end, a cascade at the other.
 2. *Twist the symbol instead.*  `exists_zmodIdealSymbol_of_frobIdeal` produces
    its `c` EXISTENTIALLY, so its proof may instead define the symbol by
    `c(w) := χ'(globalFrob (γ⁻¹ w))`.  Nothing above it changes, but `hcfrob`
    (`c` pinned at every height-one prime by `χ' ∘ globalFrob`) must be restated
-   with the same twist, and `γ` must be produced from `ι` — which needs
-   `IsAlgClosed.lift` to be compared with `ι`, i.e. `exists_conj_of_two_embeddings`
-   above.
+   with the same twist, and `γ` must be produced from `ι`.
 
-Route 2 is the one that keeps the interface, and `exists_conj_of_two_embeddings`
-— already proven in this file, for exactly this class of problem — is most of
-what it needs.  **Recorded here rather than acted on because changing either
-statement breaks `Interface.lean`, which is not this module's to break.**
+**ROUTE 1 WAS TAKEN, 2026-08-01, and the audit's own cost comparison — which
+recommended route 2 as "the one that keeps the interface" — is corrected here.**
+The cascade route 1 was priced at is much smaller than it looks, and route 2 is
+much larger, for one reason each:
 
-What SURVIVES the repair unchanged is the last step,
-`mul_inv_mem_of_conj_localInertia_mul_commutator` immediately above: it is
-proven, and it consumes only the shape of the discrepancy, not the geometry that
-produces it. -/
+* `ι` is not a datum the fleet is stuck with: it is produced EXISTENTIALLY, by
+  `Interface.lean`'s `exists_frobeniusIdeal_cyclotomic`, whose proof is GENERIC
+  in `ι` (it opens `set ι := IsAlgClosed.lift` and then never uses anything about
+  it, feeding `ι` only to `cycFrobPrime` and to `sigma_apply_eq_galEquivZMod`).
+  So that producer hands back `exists_algHom_algebraicClosure_map_eq`'s `ι`
+  instead, and gains one conjunct in its conclusion; nothing in its proof moves.
+  What remains is one extra hypothesis threaded, unused, down the eight
+  intermediate theorems between the producer and this leaf — a WEAKENING of each,
+  so no faithfulness audit anywhere above is disturbed.
+* Route 2 changes a CONCLUSION clause (`hcfrob`) instead of adding a hypothesis,
+  so every consumer of the ideal symbol has to be re-read rather than merely
+  re-signed; and it still needs `γ` constructed from `ι`, i.e. all of route 1's
+  comparison work plus the twist.
+
+`hι` PINS `ι` COMPLETELY rather than constraining it — `AlgebraicClosure.map` is
+injective — so the repaired leaf quantifies over a one-element class and the
+`p = 23` counterexample above cannot be instantiated: it needs `ι = ι₀ ∘ c` with
+`c` complex conjugation, and `hι` forbids exactly that.
+
+**WHAT IS LEFT TO PROVE, and it is untouched by the repair.**  The route at the
+top of this docstring, now with both sides sitting over the SAME prime of `ℚ̄`:
+`map ι₀ (globalFrob w)` and `x` restrict, at every finite normal `M/ℚ` carrying an
+`ι`-compatible copy of `CF`, to arithmetic Frobenius elements at primes `Q`, `Q'`
+of `𝓞 M` both contracting to `w`.  `Gal(M/CF)` is transitive on those, so the two
+differ by a conjugation by an element of the image of `Γ CF` composed with an
+inertia element; and `mul_inv_mem_of_conj_localInertia_mul_commutator` immediately
+above absorbs exactly that shape into `N`.  **The step that is not bookkeeping is
+producing an honest `n ∈ localInertiaGroup ℓ` from a compatible family of
+level-wise inertia elements** — an inverse-limit argument over the finite levels,
+which is where a successor should expect to spend the run. -/
 theorem globalFrob_map_mul_inv_mem_of_isArithFrobAt {p : ℕ} [hp : Fact p.Prime]
     {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
     (χ : Field.absoluteGaloisGroup ℚ →* kk')
@@ -636,6 +722,8 @@ theorem globalFrob_map_mul_inv_mem_of_isArithFrobAt {p : ℕ} [hp : Fact p.Prime
         (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
     (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
     (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (hι : ∀ z : CF, AlgebraicClosure.map (algebraMap ℚ CF) (ι z)
+      = algebraMap CF (AlgebraicClosure CF) z)
     (N : Subgroup (Field.absoluteGaloisGroup ℚ))
     (hNinert : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime)
         (n : Field.absoluteGaloisGroup
