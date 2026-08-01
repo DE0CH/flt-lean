@@ -112,6 +112,13 @@ public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 -- imported BY — can share it. Imported directly rather than relied on
 -- transitively through `Modularity/Interface`.
 public import Fermat.FLT.Mathlib.RingTheory.PadicIntegralClosure
+-- `CommonEigenvector.exists_scalar_eigenvector_mod_submonoid`: the PURE ALGEBRA half of the
+-- triangularisation step `exists_inertiaEigenvector_space_of_charpoly` below — a group acting
+-- on a finite `p`-power-torsion abelian group whose commutators act unipotently and each of
+-- whose elements satisfies a split quadratic has a common eigenvector with scalar in the prime
+-- field, modulo any proper stable submonoid. Appears in a proof body only, but the module is
+-- small and mathlib-facing, so the edge is public.
+public import Fermat.FLT.Mathlib.GroupTheory.CommonEigenvector
 import Mathlib.Algebra.Field.ULift
 import Mathlib.Topology.Algebra.IntermediateField
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
@@ -4152,10 +4159,211 @@ theorem exists_scalarChain_of_exists_eigenvector
     simp
   exact key (Nat.card M₀) ⊥ hbot (by simp)
 
+/-- **A finite `ℤ_[p]`-algebra kills a power of `p`** (PROVEN 2026-08-01; elementary).
+
+If two DISTINCT powers of `p` agree in a `ℤ_[p]`-algebra `A` then the smaller one is already
+`0`: writing `m = j - i ≥ 1`, the element `1 - p ^ m` is a UNIT of `ℤ_[p]` (because `p ^ m`
+lies in the maximal ideal `(p)`, and in a local ring `1 - x` is a unit for every non-unit
+`x`), hence a unit of `A`, and `p ^ i * (1 - p ^ m) = p ^ i - p ^ j = 0`.
+
+Consumed by `exists_inertiaEigenvector_space_of_charpoly` below, where `A = R ⧸ I` is FINITE:
+the powers of `p` then repeat, so `p` is nilpotent there and the residual space is a
+`p`-power-torsion abelian group — which is the hypothesis
+`CommonEigenvector.exists_scalar_eigenvector_mod_submonoid` needs and the only place `hI` is
+spent inside that assembly. -/
+theorem pow_natCast_eq_zero_of_pow_eq_pow {A : Type*} [CommRing A]
+    [Algebra ℤ_[p] A] {i j : ℕ} (hij : i < j) (h : ((p : A) ^ i) = ((p : A) ^ j)) :
+    (p : A) ^ i = 0 := by
+  set m := j - i with hm
+  have hm1 : 1 ≤ m := by omega
+  have hmem : ((p : ℤ_[p]) ^ m) ∈ nonunits ℤ_[p] := by
+    rw [← IsLocalRing.mem_maximalIdeal]
+    have h1 : (p : ℤ_[p]) ∈ IsLocalRing.maximalIdeal ℤ_[p] := by
+      rw [PadicInt.maximalIdeal_eq_span_p]
+      exact Ideal.mem_span_singleton_self _
+    exact Ideal.pow_mem_of_mem _ h1 m hm1
+  have hu : IsUnit ((1 : ℤ_[p]) - (p : ℤ_[p]) ^ m) :=
+    IsLocalRing.isUnit_one_sub_self_of_mem_nonunits _ hmem
+  have hU : IsUnit ((1 : A) - (p : A) ^ m) := by
+    have := hu.map (algebraMap ℤ_[p] A)
+    simpa using this
+  have hzero : ((p : A) ^ i) * ((1 : A) - (p : A) ^ m) = 0 := by
+    rw [mul_sub, mul_one, ← pow_add, show i + m = j by omega, ← h, sub_self]
+  obtain ⟨u, hu2⟩ := hU
+  have h5 : ((p : A) ^ i) * (u : A) = 0 := by rw [hu2]; exact hzero
+  calc (p : A) ^ i = ((p : A) ^ i * (u : A)) * ((u⁻¹ : Aˣ) : A) := by
+        rw [mul_assoc, Units.mul_inv, mul_one]
+    _ = 0 := by rw [h5, zero_mul]
+
+variable (ρ) in
+/-- **The action of local inertia at `p` on the residual space, as a monoid homomorphism into
+the additive endomorphism ring.**
+
+The `DistribMulAction (Γ ℚᵖᵥ)` on `((ρ.baseChange (R ⧸ I)).toLocal p).Space` restricted along
+`localInertiaGroup ↪ Γ ℚᵖᵥ`. Two things make this the right packaging for the leaf below.
+
+* `AddMonoid.End` is a RING, so "the operator `(σ - a)(σ - b)` is nilpotent" — which is what
+  Cayley–Hamilton over the finite local ring `R ⧸ I` delivers, and what the algebraic
+  triangularisation step consumes — is expressible as `IsNilpotent` of a ring element rather
+  than as an iterated-composition statement about a function.
+* Taking the source to be the inertia SUBGROUP as a group in its own right is what makes
+  `commutator ↥(localInertiaGroup …)` a legal expression; the wild half of the arithmetic is
+  precisely a statement about that subgroup.
+
+`residualInertiaEnd_apply` is the `rfl`-lemma back to `σ • x`. -/
+noncomputable def residualInertiaEnd (I : Ideal R) :
+    ↥(localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat) →*
+      AddMonoid.End (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space) :=
+  (DistribMulAction.toAddMonoidEnd _ _).comp
+    (localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat).subtype
+
+theorem residualInertiaEnd_apply (I : Ideal R)
+    (σ : ↥(localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat))
+    (x : ((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space) :
+    residualInertiaEnd ρ I σ x = (σ : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.out.toHeightOneSpectrumRingOfIntegersRat)) • x := rfl
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **THE ARITHMETIC OF `(R1)`: ON INERTIA THE RESIDUAL REPRESENTATION SATISFIES A SPLIT
+QUADRATIC WITH ROOTS IN THE PRIME FIELD, AND ITS COMMUTATORS ACT UNIPOTENTLY** (SORRY LEAF,
+cut out of `exists_inertiaEigenvector_space_of_charpoly` on 2026-08-01).
+
+This is what is LEFT of that leaf once the pure algebra is removed: steps 1–3 of its argument,
+plus the one-line Cayley–Hamilton bridge that turns them into operator statements. Everything
+downstream — the `p`-group fixed-point argument, the minimal stable subgroup, the eigenspace
+argument, and all the `AddSubmonoid` bookkeeping — is
+`CommonEigenvector.exists_scalar_eigenvector_mod_submonoid`, PROVEN, with no arithmetic in it.
+
+THE TWO CLAUSES, and why they are the whole of the arithmetic.
+
+* *Commutators act unipotently.* `χ̄₁`, `χ̄₂` are MULTIPLICATIVE (`hmul₁`, `hmul₂`) and land in
+  the commutative group `𝔽̄_p^×`, so they are trivial on the commutator subgroup of inertia.
+  At such a `σ` the residual characteristic polynomial is `(X − 1)²`, and Cayley–Hamilton over
+  `R ⧸ I` gives `(σ − 1)² ∈ 𝔪 · End`, hence nilpotent because `𝔪` is nilpotent in the finite
+  local ring `R ⧸ I`.
+* *Every inertia element satisfies a split quadratic with roots in `ℕ`.* This is step 3, the
+  Frobenius-conjugation argument: `χ̄ᵢ|_{I_p}` is `𝔽_p^×`-valued, so its values lift to natural
+  numbers `a`, `b`, and the same Cayley–Hamilton computation gives `(σ − a)(σ − b) ∈ 𝔪 · End`.
+
+THE ROUTE, in the four steps the consumer's docstring records, with the correction to step 3.
+
+1. *The characters are integral, and reduce.* `χ₁`, `χ₂` are multiplicative on `Γ ℚ` and are
+   roots of the monic `(ρ g).charpoly` over `R` (`hchar`), hence integral over `ℤ_p` — `hZinj`
+   is what makes that argument about `ρ` — so they take values in the valuation ring of `ℚ̄_p`
+   and reduce to multiplicative `χ̄₁, χ̄₂ : Γ ℚ → 𝔽̄_p^×`. `hRinj` is what makes `hchar` a
+   statement about `ρ` rather than about a degenerate image.
+2. *Brauer–Nesbitt is NOT needed for this statement.* The consumer's old argument passed
+   through the semisimplification; the operator form asked for here is reached directly from
+   `hchar` by Cayley–Hamilton, since `V` is free of rank `2` (which `hchar` itself forces: the
+   charpoly is monic of degree `Module.finrank R V` and maps to a monic quadratic along the
+   injective `hRinj`). `BrauerNesbitt.lean` remains the local supply if a prover prefers it.
+3. *Frobenius conjugation makes the characters `𝔽_p`-valued ON INERTIA.* For `τ` in TAME
+   inertia and a Frobenius lift `F` in `Γ ℚᵖᵥ`, `F τ F⁻¹ = τ^p` in the tame quotient, and `χ̄`
+   is a character of the whole decomposition group, so
+   `χ̄(τ)^p = χ̄(τ^p) = χ̄(F τ F⁻¹) = χ̄(τ)` — hence `χ̄(τ) ∈ 𝔽_p^×`. (`χ̄ᵢ g ≠ 0` comes for
+   free: `hchar` at `g = 1` reads `(X − 1)² = (X − χ₁ 1)(X − χ₂ 1)`, so `χᵢ 1 = 1`, and
+   `χᵢ g · χᵢ g⁻¹ = 1`.)
+
+   **THE WILD HALF, AND THE CONTINUITY GAP THE CONSUMER'S DOCSTRING RECORDS.** Do NOT close it
+   with "a character into `𝔽̄_p^×`, a group of order prime to `p`, out of a pro-`p` group is
+   trivial": that needs `χ̄ᵢ` CONTINUOUS, and continuity of `χ₁`, `χ₂` is not among the
+   hypotheses — `hmul₁`/`hmul₂` are bare multiplicativity, and an abstract homomorphism out of
+   a wild inertia group (a free pro-`p` group of infinite rank, so not topologically finitely
+   generated, so Nikolov–Segal does not apply) need not be continuous. The repair spends only
+   `ρ`'s OWN continuity: `ρ` is continuous and `R ⧸ I` is finite, so the residual `ρ̄` has
+   finite image, and its restriction to wild inertia `P` — a pro-`p` group — has image a finite
+   `p`-subgroup of `GL₂` in characteristic `p`, hence UNIPOTENT. So both eigenvalues of `ρ̄ g`
+   are `1` for `g ∈ P`, and reducing `hchar` at such a `g` gives `χ̄₁ g = χ̄₂ g = 1` directly.
+4. *Cayley–Hamilton over `R ⧸ I`.* `hI` makes `R ⧸ I` a FINITE local artinian ring, so its
+   maximal ideal is nilpotent. `V` free of rank `2` gives
+   `f² − (tr f) f + (det f) = 0` on the residual space, and steps 1–3 give
+   `tr f ≡ a + b`, `det f ≡ a b` modulo the maximal ideal; so
+   `(f − a)(f − b) = (a + b − tr f) f + (det f − a b)` has coefficients in `𝔪`, and a
+   polynomial in `f` with coefficients in a nilpotent ideal is nilpotent (its `k`-th power has
+   coefficients in `𝔪^k = 0`). `Polynomial.mem_map_C_iff` is the mathlib idiom for the last
+   step; `Matrix.charpoly_fin_two` and `LinearMap.charpoly_baseChange` for the first.
+
+WHERE EACH HYPOTHESIS GOES. `hchar` is the only source of the two characters; `hmul₁`/`hmul₂`
+are what make `χ̄ᵢ` a CHARACTER, without which neither clause is even a statement (step 3's
+`χ̄(τ)^p = χ̄(τ^p)` for the second, triviality on commutators for the first); `hRinj` is what
+makes `hchar` a statement about `ρ`; `hZinj` is step 1's integrality; `hI` is step 4's
+finiteness. `hpodd` is NOT here — it is spent entirely in
+`isMultiplicativeType_corner_of_inertiaLevelOneFlag`.
+
+FAITHFULNESS. Both clauses are INERTIA-only conditions on the residual space; they ask for no
+coordinate, no normal form and no `ℚᵖᵥ`-rationality, so they are blind to unramified twists
+(an unramified twist changes the `D_p`-action and not the `I_p`-action at all). They sit on
+the safe side of the rule that killed `exists_muType_closure`.
+
+NON-VACUITY, and the contrast that shows the clauses carry the intended content. On the
+witness of item (C2) below — `R = ℤ_[p]`, `I = (p)`, `ρ = χ_cyc ⊕ 1` — the module is
+`𝔽_p(1) ⊕ 𝔽_p`, inertia acts diagonally through `𝔽_p^×`, both clauses hold with `a`, `b` the
+two characters. On the SUPERSINGULAR witness of item (iii) the residual representation is an
+irreducible `𝔽_p[I_p]`-module of dimension `2` (tame inertia acts through the LEVEL-TWO
+fundamental characters, valued in `𝔽_{p²}^×` and not in `𝔽_p^×`), so the second clause FAILS —
+as it must, and it is exactly `hchar` that the supersingular witness does not satisfy.
+
+DEGENERATE CASES. At `I = ⊤` the residual space is `0`, every operator is `0 = 1`, and both
+clauses hold trivially (take `a = b = 1`); at `V = 0` the same. Neither is excluded by a
+hypothesis and neither is a counterexample. -/
+theorem exists_inertiaCharpolyScalars_space_of_charpoly
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R)) :
+    (∀ σ ∈ commutator ↥(localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat),
+        IsNilpotent (residualInertiaEnd ρ I σ - 1)) ∧
+      (∀ σ, ∃ a b : ℕ,
+        IsNilpotent ((residualInertiaEnd ρ I σ -
+            (a : AddMonoid.End (((ρ.baseChange (R ⧸ I)).toLocal
+              hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))) *
+          (residualInertiaEnd ρ I σ -
+            (b : AddMonoid.End (((ρ.baseChange (R ⧸ I)).toLocal
+              hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))))) :=
+  sorry
+
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **THE ARITHMETIC HALF OF `(R1)`, WITH THE GROUP SCHEME REMOVED: the residual
-representation admits an inertia-stable `𝔽_p`-flag** (SORRY LEAF, cut out of
+representation admits an inertia-stable `𝔽_p`-flag** (cut out of
 `hasInertiaLevelOneFlag_of_hopf_package` on 2026-07-28).
+
+**STATUS 2026-08-01 — NO LONGER A SORRY LEAF. It is an ASSEMBLY** over
+
+* `exists_inertiaCharpolyScalars_space_of_charpoly` — THE ARITHMETIC, and nothing else:
+  on inertia the residual representation's commutators act UNIPOTENTLY, and every inertia
+  element satisfies a SPLIT QUADRATIC with roots in the prime field. That is steps 1–4 of the
+  argument below with the algebra removed, and its docstring carries the whole route,
+  including the repair of the step-3 continuity gap recorded further down here;
+* `CommonEigenvector.exists_scalar_eigenvector_mod_submonoid` — PROVEN, and it contains no
+  arithmetic at all: a group acting on a finite `p`-power-torsion abelian group with those two
+  properties has, modulo any proper stable submonoid, a vector on which every group element
+  acts by an integer scalar. Its four moves are (i) a unipotent endomorphism of a `p`-torsion
+  group has `p`-power order, (ii) so the commutator subgroup acts through a `p`-group and has
+  a nonzero fixed subgroup `Fix`, (iii) inside `Fix` all the operators COMMUTE, so in a
+  MINIMAL nonzero stable subgroup `W ≤ Fix` every eigenspace is stable, and (iv) the split
+  quadratic then forces each element to act on `W` by a scalar.
+
+The signature is byte-for-byte what it was before that cut, so
+`exists_inertiaScalarChain_space_of_charpoly` just below — and everything above it — is
+untouched. The FRONTIER COUNT DID NOT MOVE (`1 → 1`); what left the leaf is every trace of
+the module theory, the `𝔽̄_p`-constituents and the simple-module argument the route below
+prescribes. **Note in particular that the residue no longer mentions Brauer–Nesbitt, a
+Jordan–Hölder factor, a simple `𝔽_p[I_p]`-module or the algebraic closure `𝔽̄_p`**: the
+common eigenvector is produced by the `p`-group fixed-point theorem plus minimality, not by
+a constituent analysis, so the "simple module all of whose geometric constituents are
+`𝔽_p`-rational characters is a line" step that the paragraph below asks for is NOT owed by
+anybody. The one thing the assembly spends beyond the two inputs is that the residual space
+is `p`-power torsion, which is `pow_natCast_eq_zero_of_pow_eq_pow` above applied to the
+FINITE ring `R ⧸ I` — the second place `hI` is load-bearing.
 
 **RESTATED 2026-07-31 (second pass, same day) as ONE TRIANGULARISATION STEP, and the
 scalar-chain formulation is now the ASSEMBLY `exists_inertiaScalarChain_space_of_charpoly`
@@ -4336,8 +4544,62 @@ theorem exists_inertiaEigenvector_space_of_charpoly
       ∀ x ∈ N, σ • x ∈ N) :
     ∃ x, x ∉ N ∧ p • x ∈ N ∧
       ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
-        ∃ c : ℕ, σ • x - c • x ∈ N :=
-  sorry
+        ∃ c : ℕ, σ • x - c • x ∈ N := by
+  classical
+  -- ### the residual space is FINITE (the same derivation as in the assembly just below)
+  haveI : Module.IsTorsionFree ℤ_[p] R :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  haveI : Module.Free ℤ_[p] R := Module.free_of_finite_type_torsion_free'
+  let eR : R ≃ₗ[ℤ_[p]] (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    (Module.Free.chooseBasis ℤ_[p] R).equivFun
+  have hcontR₁ : Continuous eR := IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcontR₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let homR : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcontR₁
+      continuous_invFun := hcontR₂ }
+  haveI : CompactSpace R := homR.symm.compactSpace
+  haveI : Finite (R ⧸ I) := AddSubgroup.quotient_finite_of_isOpen _ hI
+  haveI : Module.Finite (R ⧸ I) ((R ⧸ I) ⊗[R] V) :=
+    Module.Finite.of_basis ((Module.Free.chooseBasis R V).baseChange (R ⧸ I))
+  haveI hfin : Finite (((ρ.baseChange (R ⧸ I)).toLocal
+      hp.out.toHeightOneSpectrumRingOfIntegersRat).Space) :=
+    Module.finite_of_finite (R ⧸ I) (M := ((R ⧸ I) ⊗[R] V))
+  haveI hmod : Module (R ⧸ I) (((ρ.baseChange (R ⧸ I)).toLocal
+      hp.out.toHeightOneSpectrumRingOfIntegersRat).Space) :=
+    inferInstanceAs (Module (R ⧸ I) ((R ⧸ I) ⊗[R] V))
+  -- ### and is `p`-power torsion: `p` is nilpotent in the finite `ℤ_[p]`-algebra `R ⧸ I`
+  have hnilp : ∃ k : ℕ, ((p : R ⧸ I) ^ k) = 0 := by
+    obtain ⟨i, j, hij, hpow⟩ :
+        ∃ i j : ℕ, i ≠ j ∧ ((p : R ⧸ I) ^ i) = ((p : R ⧸ I) ^ j) :=
+      Finite.exists_ne_map_eq_of_infinite (fun n : ℕ => (p : R ⧸ I) ^ n)
+    rcases lt_or_gt_of_ne hij with h | h
+    · exact ⟨i, pow_natCast_eq_zero_of_pow_eq_pow h hpow⟩
+    · exact ⟨j, pow_natCast_eq_zero_of_pow_eq_pow h hpow.symm⟩
+  obtain ⟨k, hk⟩ := hnilp
+  have hpgp : ∀ x : (((ρ.baseChange (R ⧸ I)).toLocal
+      hp.out.toHeightOneSpectrumRingOfIntegersRat).Space), ∃ n : ℕ, (p ^ n) • x = 0 := by
+    intro x
+    refine ⟨k, ?_⟩
+    have h1 : ((p ^ k : ℕ) : R ⧸ I) • x = (p ^ k : ℕ) • x :=
+      Nat.cast_smul_eq_nsmul (R ⧸ I) (p ^ k) x
+    rw [← h1, Nat.cast_pow, hk, zero_smul]
+  -- ### the arithmetic input
+  obtain ⟨hcomm, hquad⟩ :=
+    exists_inertiaCharpolyScalars_space_of_charpoly hZinj hRinj χ₁ χ₂ hmul₁ hmul₂ hchar I hI
+  -- ### and the algebraic triangularisation step
+  obtain ⟨x, hxN, hpx, hsc⟩ :=
+    CommonEigenvector.exists_scalar_eigenvector_mod_submonoid (p := p)
+      (residualInertiaEnd ρ I) N hNtop
+      (fun g y hy => hNstab (g : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat)) g.2 y hy)
+      hpgp hcomm hquad
+  refine ⟨x, hxN, hpx, ?_⟩
+  intro σ hσ
+  obtain ⟨c, hc⟩ := hsc ⟨σ, hσ⟩
+  exact ⟨c, hc⟩
 
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **THE ARITHMETIC HALF OF `(R1)`, IN THE SCALAR-CHAIN SPELLING**.
