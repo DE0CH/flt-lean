@@ -16151,3 +16151,85 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A DEPENDENCY SCAN THAT RESOLVES A NAME TO THE DECLARATION IT IS INSIDE IS ANSWERING THE WRONG QUESTION
+
+(2026-08-01, `flt-lean-148`, carrying nine `b897b395`-era proofs back upstream.)
+Every hoist in this development is priced by a scan: *which names does this block
+use that are not available at the destination?* Three ways that scan lies, all
+met in one run, all cheap to defend against, and the first is the dangerous one
+because it reports **zero blockers** rather than too many.
+
+**1. A WRAPPER CITES ITS TARGET BY THE SAME SHORT NAME, VIA `_root_`.**
+`X0GenusOne.ringKrullDim_stalk_eq_zero_of_mono_of_curve_over_field` is a one-line
+wrapper whose body is
+`_root_.AlgebraicGeometry.ringKrullDim_stalk_eq_zero_of_mono_of_curve_over_field`.
+A suffix-matching scan resolves that reference to **the wrapper itself**, calls
+it self-referential, and drops it — so the scan reported the hoist as needing no
+new import, and the build failed with `Unknown identifier` on a name whose short
+form is right there in the block. **Never let a reference resolve to the
+declaration you are scanning**; when it does, resolve it against the FULL
+qualified path instead and check that path is reachable at the destination. In
+this tree the wrapper-with-the-same-short-name is a common shape, because a
+`Fermat/FLT/Mathlib/**` lemma is routinely re-exported under a project namespace.
+
+**2. DOT NOTATION IS ONE TOKEN, AND ITS SUFFIXES ARE THE REFERENCES.**
+`E.exists_localInertia_subgroup_relIndex_dvd_twelve_of_padicValRat_j_nonneg` is a
+single identifier token once `.` is an identifier character — so a scan that
+looks its tokens up whole finds nothing, and again reports zero blockers. Expand
+every dotted token to all of its dotted SUFFIXES before lookup. Without that the
+first pass here missed the single helper the first target needed.
+
+**3. THE IDENTIFIER REGEX IN `tools/merge/blocks.py` EXCLUDES GREEK.**
+`variableChange_valuation_of_valuation_Δ_eq_one` is indexed as
+`WeierstrassCurve.variableChange_valuation_of_valuation_` — the name is truncated
+at `Δ`. It is truncated CONSISTENTLY in every file, so `transplant.py` and the
+block extents are still correct and a transplant keyed on the truncated name
+works; but a lookup keyed on the real name raises `KeyError`, which reads as "the
+declaration is not there". Same family as
+[[lean-identifier-regex-swallows-brackets]]: check what your identifier class
+actually contains before believing an absence.
+
+**And the check that finds what the task list did not: DIFF EVERY NAME THE TWO
+FILES SHARE, not only the ones you were sent at.** A nine-item task list came out
+of the earlier de-duplication; diffing all 170 names `IsogenySignature.lean`
+shares with `b897b395^`'s `MazurTorsion.lean` found a TENTH
+(`exists_weilPairing_mu_nondeg_of_coprime`, `sorry` upstream and PROVEN
+downstream over a lemma the file already imports). The same sweep is what proves
+there is nothing else left, which is worth as much as the extra closure.
+
+### CARRYING A PROOF UPSTREAM HAS A CEILING: THE MODULE ITS OWN DEPENDENCIES LIVE IN
+
+Of ten divergences only nine could move, and the tenth failed for a reason no
+amount of hoisting fixes. `X0GenusOne.exists_x0Compactification_relPoint_equiv_point`
+is declared in `ModularCurve/X0.lean` and its newer proof cites two declarations
+in `ModularCurve/X1.lean` — **which `public import`s `X0.lean`**. So that proof is
+not expressible at its declaration's own site at all, and hoisting its seven
+`X0GenusOne` helpers up anyway would have stranded them free-floating.
+
+**So price a "carry the proof back" job in two steps, and do the second first:**
+resolve every name the newer body cites to its DECLARING MODULE, and check each
+against the destination's import cone — not merely against the destination FILE.
+A name in a module that imports the destination is a hard stop; a name in a
+module the destination could import is an import edge to justify (here one:
+`Fermat.FLT.Mathlib.AlgebraicGeometry.CurveDimension`, which imports nothing from
+`Fermat/` and so cannot cycle). Only the first kind is fatal, and it is the one a
+same-file scan cannot see.
+
+**When you hit the ceiling, keep the upstream `sorry` and say so precisely.**
+The proof is vouched, verbatim, in a commit; write the recovery command, the
+blocking names, the module they live in, and the MEASURED size of the hoist that
+would unblock it (here: `X1.lean:11278..11814`, 22 declarations, 466 lines,
+self-contained within X1, plus up to seven of X1's imports for `X0.lean`). That
+turns a dead end into a queueable task instead of a note nobody can act on.
+
+### THE COUNT: SAY WHICH SORRIES CLOSED AND WHICH ONES MERELY MOVED
+
+A hoist that carries a proof up also carries its open leaves up. Here nine
+targets closed and four sorried helpers relocated with them, so the upstream
+files' own counts move by far less than the number of proofs recovered — 
+`IsogenySignature.lean` went `6 -> 6` on the first instalment while closing three
+targets, because three sorried helpers arrived in the same edit. Report both
+numbers and the project-wide total (`251 -> 244` across this task), or a reader
+comparing one file's warning set will conclude nothing happened. And say plainly
+that **zero mathematics was done**: every proof already existed.
