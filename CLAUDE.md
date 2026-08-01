@@ -16214,3 +16214,34 @@ file already records; one sentence of argument is the whole price.
   `(RelPoint.pre c hc x).1 = …` that `congrArg` produces, because `RelPoint.pre` is a
   structure literal and the projection reduces — that defeq check is cheap and is the
   thing that makes the whole transport short.
+
+### CORRECTION, measured 2026-08-01: `#print axioms` DOES work from a scratch IMPORTER
+
+The section "AND THE PER-DECLARATION ANSWER IS `#print axioms`, RUN IN-FILE" above says it
+"**must be appended to the END OF THE FILE THAT DECLARES THE NAME**", because the module
+system elides imported proof bodies and "from a scratch importer the traversal has nothing
+to walk". That was true when written and is not true at this toolchain. Measured on
+`Modularity/AbelianSchemeIsogeny.lean` (18 600 lines): a two-line scratch
+
+    module
+    public import Fermat.FLT.Modularity.AbelianSchemeIsogeny
+    @[expose] public section
+    #print axioms Fermat.AbelianSchemeStruct.CubeIdentity.pre
+    end
+
+returned in **3.5 s** and gave the right answers — including `sorryAx` for a control
+declaration known to be sorried, which is what proves the traversal really ran. Appending
+to the real file instead costs a full elaboration of it, here ~7 minutes.
+
+**Always include a KNOWN-SORRIED control in the same scratch.** That is the whole
+difference between "clean" and "the traversal found nothing", and it costs one line.
+
+**And read a `sorryAx` on a body you just wrote as a question about its INPUTS, not about
+your proof.** `CubeIdentity.pre` has no `sorry` and emits no warning, and it reports
+`sorryAx`, because `nonempty_modPullback_modTensorPic` is transitively sorried over
+`isIso_presheafModPullback_delta_freeYoneda` in `ModularCurve/RelativePicard.lean`. The
+useful follow-up is one more `#print axioms`, on whatever the CONSUMER already used
+(`nonempty_modPullback_modTensorPow` here) — if that is tainted by the same leaf, your
+proof adds no `sorryAx` path the cone did not already have, and that is the fact to put in
+the docstring. Reporting "proven" without it overstates; reporting "tainted" without it
+understates.

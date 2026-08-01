@@ -16881,7 +16881,16 @@ identity holds for the three pulled-back points.  Two ingredients and nothing el
   pseudo-functor and is monoidal.
 
 No geometry: `ab.proper`, `ab.smooth`, `ab.connected` and invertibility of `L` are all
-unused here, and a prover should not expect them to be. -/
+unused here, and a prover should not expect them to be.
+
+**AXIOM AUDIT (2026-08-01), because "no `sorry` in the body" is not the same as clean and
+the difference matters to whoever reads the cone.**  `#print axioms` on this declaration
+returns `sorryAx`: `nonempty_modPullback_modTensorPic` is itself transitively sorried, over
+`isIso_presheafModPullback_delta_freeYoneda` in `ModularCurve/RelativePicard.lean`.  That
+edge is NOT new — the consumer `hasCubeIso_of_symm_of_normalized` below already reached the
+same upstream leaf through `nonempty_modPullback_modTensorPow`, so this proof adds no
+`sorryAx` path that the cone did not already have.  `relTripleLift_str` and
+`relTripleLift_pt₁/₂/₃` are axiom-clean. -/
 theorem CubeIdentity.pre {X T : Scheme.{u}} {q : X ⟶ T} {ab : AbelianSchemeStruct q}
     {L : X.Modules} {W T' : Scheme.{u}} {w : W ⟶ T} {x y z : RelPoint q w}
     (h : CubeIdentity ab L x y z) {g : T' ⟶ T} (c : T' ⟶ W) (hc : c ≫ w = g) :
@@ -17035,19 +17044,42 @@ other way, for the reason recorded in the section note "WHY THE TWO-VARIABLE FOR
 RIGHT PRIMITIVE" — a statement about a pair of points does not see three independent
 ones.
 
-**THE NEXT CUT A PROVER SHOULD CONSIDER, and what it costs.**  Mumford's route factors
-this into (a) the theorem of the cube proper — *an invertible sheaf on `A ×_T A ×_T A`
-whose restriction to each of the three coordinate crosses is trivial is itself trivial* —
-and (b) the verification that the difference sheaf
-`Θ(L) = (LHS) ⊗ (RHS)^{-1}` is trivial on the crosses.  Half (b) is FORMAL here and is
-worth knowing before starting: because the `0^* L` correction term is kept, setting any one
-of the three points to `0` makes the two sides of the identity the same four factors in a
-different order, so each cross is a tautology up to the associator and the braiding.  What
-(b) costs in Lean is not mathematics but INVERSES: `Θ(L)` cannot be written without a
-chosen `L^{-1}`, and while `modDual` exists (`ModularCurve/RelativePicard.lean`) the
-cancellation `L ⊗ L^∨ ≅ 𝒪` for an invertible `L` is NOT proven at this pin, so that cut
-opens a second leaf before it opens the first.  A prover who takes it should cut the
-cancellation lemma first and say so.
+**THE NEXT CUT A PROVER SHOULD MAKE, AND IT NEEDS NO INVERSES.**  Mumford's route factors
+this into (a) the theorem of the cube proper and (b) the verification that the difference
+sheaf `Θ(L)` is trivial on the three coordinate crosses.  Stated with `Θ(L)` that cut is
+expensive here — `Θ(L) = (LHS) ⊗ (RHS)^{-1}` cannot be written without a chosen inverse,
+and while `modDual` exists (`ModularCurve/RelativePicard.lean`) the cancellation
+`L ⊗ L^∨ ≅ 𝒪` for an invertible `L` is NOT proven at this pin, so it would open a second
+leaf before opening the first.
+
+**State it with TWO SHEAVES instead and the inverse disappears**, exactly as `CubeIdentity`
+itself is written with all factors on the two sides:
+
+> *for invertible `M N` on `A ×_T A ×_T A`, if `ιᵢ^* M ≅ ιᵢ^* N` for each of the three
+> cross inclusions `ιᵢ : A ×_T A ⟶ A ×_T A ×_T A` (the zero section in slot `i`), then
+> `M ≅ N`.*
+
+That is the theorem of the cube, it mentions no inverse, and the leaf above is it at
+`M = LHS`, `N = RHS`.
+
+**AND THE THREE CROSS HYPOTHESES ARE THEN FREE — they are TAUTOLOGIES, because the
+`0^* L` correction term is kept.**  Setting any one of the three points to `0` leaves the
+two sides the same four factors permuted:
+
+* `x = 0`:  `(y+z)^*L ⊗ 0^*L ⊗ y^*L ⊗ z^*L`   vs  `y^*L ⊗ (y+z)^*L ⊗ z^*L ⊗ 0^*L`;
+* `y = 0`:  `(x+z)^*L ⊗ x^*L ⊗ 0^*L ⊗ z^*L`   vs  `x^*L ⊗ z^*L ⊗ (x+z)^*L ⊗ 0^*L`;
+* `z = 0`:  `(x+y)^*L ⊗ x^*L ⊗ y^*L ⊗ 0^*L`   vs  `(x+y)^*L ⊗ y^*L ⊗ x^*L ⊗ 0^*L`.
+
+So `CubeIdentity ab L (ab.zero g) y z` and its two siblings are PROVABLE, from
+`ab.zero_add` / `ab.add_comm` (for the point equalities, through `modPullbackCongrIso`) and
+the symmetric monoidal calculus this pin has: `nonempty_modTensor_assoc`,
+`modTensorSymmIso`, `nonempty_modTensor_middleFourPic`, `modTensorMapIso`.  A prover taking
+that cut needs one more piece of plumbing, and it is already three quarters written: the
+SIDE transport `modPullback c (LHS at x y z) ≅ LHS at (pre x) (pre y) (pre z)` (and the
+same for the right side), which is the first and last third of `CubeIdentity.pre`'s proof
+above and should be factored out of it rather than rewritten.
+
+After that cut what is LEFT is the genuine seesaw content and nothing else.
 
 **MISSING MACHINERY — RE-SURVEYED 2026-08-01 AND UNCHANGED.**  `grep -rln
 'Seesaw\|seesaw\|TheoremOfTheCube'` over `.lake/packages/mathlib/Mathlib` returns NOTHING;
