@@ -20686,6 +20686,18 @@ case split on `padicValRat 3 (jm y)`, and BOTH halves have apparatus in
   `nonempty_isEisensteinFormalImmersionAt_iff` reducing it to the two clauses
   `hX'.IsCusp (redX x) → redX x = redX z → x = z` and `cusp_lift`.
 
+**AND THAT SECOND HALF DOES NOT REACH `125` AS THE TREE STANDS — checked, not
+assumed.**  The producer `exists_eisensteinFormalImmersionAt` and the leaf
+under it, `exists_x0JReductionDatum_cuspInjective` (`X0.lean`, still a bare
+`sorry`), both carry `_hp : p.Prime` together with `_hmem : p ∉ mazurIsogenyPrimes`,
+and `125` is not prime.  This is not a stray hypothesis to be dropped: Mazur's
+Cor. 4.4 runs on the EISENSTEIN QUOTIENT of `J_0(p)`, which is a prime-level
+object, and at `125` the corresponding input is Kenku's rather than Mazur's.
+So the second half of the corrected route is not "apply an existing interface
+at `q = 3`"; it is a prime-power analogue of a cluster whose prime case is
+itself open.  A successor who prices this leaf off the existence of
+`IsEisensteinFormalImmersionAt` will be wrong by a whole cluster.
+
 **WHY THE RECORDED REFUTING CHECK MISSES THIS.**  Both of the checks the next
 paragraph names PASS: the `ℓ = 3` row reproduces character for character, the
 `gcd` argument is unaffected, and the Atkin–Lehner eigenvalue pattern is not
