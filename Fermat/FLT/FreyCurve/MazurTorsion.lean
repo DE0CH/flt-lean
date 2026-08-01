@@ -40742,9 +40742,93 @@ theorem minpoly_eq_of_isCMJInvariantOfRel (m : ℤ) (hm : 0 < 4 * m - 1)
     minpoly ℚ y = minpoly ℚ x :=
   sorry
 
-/-- **LEAF (cut 2026-07-31, flt-lean-393) — CLASS NUMBER ONE AT `43, 67, 163`, in
-the form `[ℚ(j) : ℚ] = 1`**: a CM `j`-invariant for the maximal order of
-discriminant `−p` is RATIONAL.
+/-- **LEAF (RECUT 2026-08-01, flt-lean-209) — CLASS NUMBER ONE AT `43, 67, 163`,
+in its CONSTRUCTIVE form: SOME CM `j`-invariant of the maximal order of
+discriminant `−p` is RATIONAL.**
+
+This replaces the degree statement that `exists_rat_of_isCMJInvariantOfRel`
+(immediately below) used to carry.  That theorem is now PROVEN over this leaf and
+`minpoly_eq_of_isCMJInvariantOfRel` above: the sibling says all CM `j`-invariants
+of one order share a minimal polynomial, so ONE rational witness forces that
+polynomial to be `X − c`, and then every CM `j`-invariant of the order equals `c`.
+Leaf count `1 → 1`; what left the leaf is the first main theorem in its
+*degree*-computing direction, and what is left is an existence statement with a
+tabulated witness.
+
+**THE INTENDED WITNESSES, and they are classical** (PARI/GP, re-verified
+2026-08-01: `E.j` and `ellglobalred(E)[1]` for each):
+
+| `p` | curve over `ℚ` | `j` | conductor |
+|---|---|---|---|
+| `43` | `y² + y = x³ − 860x + 9707` | `−884736000` | `43² = 1849` |
+| `67` | `y² + y = x³ − 7370x + 243528` | `−147197952000` | `67² = 4489` |
+| `163` | `y² + y = x³ − 2174420x + 1234136692` | `−262537412640768000` | `163² = 26569` |
+
+each with `End` over `ℚ̄` the maximal order `O_{−p} = ℤ[(1 + √−p)/2]`, in which
+`φ = (1 + √−p)/2` satisfies `φ² − φ + (p+1)/4 = 0`.  `qfbclassno(-p) = 1` and
+`polclass(-p) = x + |j|` at all three levels (same run).
+
+**HOW TO DISCHARGE IT, and the shape that makes the `htop` clause free.**  Take
+`E` over `ℚ` from the table and `W := E.map (algebraMap ℚ ℚ̄)`.  Then
+`W.j = algebraMap ℚ ℚ̄ E.j` is `WeierstrassCurve.map_j`, so only the `φ` has to be
+built; and the `Subring.closure {φ} = ⊤` clause is then NOT extra work, because
+`closure_singleton_eq_top_of_maximalOrderRel` derives it from the relation alone.
+That lemma and its squarefreeness input `sq_eq_one_of_sq_mul_eq_neg` are PROVEN in
+this file but are declared ~2700 lines BELOW this point, so they cannot be cited
+here; a successor who states the leaf in the curve-over-`ℚ` form
+
+    ∃ (E : WeierstrassCurve ℚ) (hE : E.IsElliptic), letI := hE
+      ∃ φ : WeierstrassCurve.End (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).toAffine,
+        φ * φ + ((((p + 1) / 4 : ℕ) : ℤ) : _) = φ
+
+gets this leaf from it in four lines (verified in a scratch, 2026-08-01):
+
+    refine ⟨E.j, E.map (algebraMap ℚ (AlgebraicClosure ℚ)), inferInstance, ?_, φ, hrel, ?_⟩
+    · exact WeierstrassCurve.map_j E (algebraMap ℚ (AlgebraicClosure ℚ))
+    · refine closure_singleton_eq_top_of_maximalOrderRel (p : ℤ) (((p + 1) / 4 : ℕ) : ℤ)
+        ?_ ?_ (sq_eq_one_of_sq_mul_eq_neg p hp) φ hrel
+      · fin_cases hp <;> norm_num
+      · fin_cases hp <;> norm_num
+
+That is the recommended route, and taking it needs a hoist of those two
+declarations to just above this point.  The hoist was NOT done here because they
+sit outside `FixedLocusOfAdditive` (they are `MazurIsogenyPrimeJ.…`, this
+namespace runs 40453–40956), so moving them into it would rename them and break
+their four consumers below; the correct hoist puts them above line 40453 instead.
+
+**THIS LEAF IS STRICTLY STRONGER THAN THE THEOREM IT REPLACES, and the extra
+strength is EXISTENCE.**  `exists_rat_of_isCMJInvariantOfRel` is vacuously true if
+no curve has CM by `O_{−p}`; this asserts one does.  That is not a new conjecture:
+it is the NOT VACUOUS clause that both this leaf's predecessor and
+`jInvariant_eq_of_end_closure_eq_top` already asserted in prose, now made formal
+and given a witness — which is the cheaper half of paying that debt, since the
+table above is checkable.  The mathematics is Deuring's theorem plus `h(−p) = 1`.
+
+**FALSITY AUDIT — `hp` IS LOAD-BEARING TWICE, with the SAME explicit
+counterexample that refutes the theorem below**, so nothing was lost in the recut.
+First, `(p + 1) / 4` is NATURAL division and is exact only when `p ≡ 3 mod 4`; at
+other `p` the discriminant is not `−p` and the statement is about a different
+order.  Second, and independently, at `p = 23` — prime, `≡ 3 mod 4`, so
+`(23 + 1)/4 = 6` is exact and the order IS the maximal order of discriminant `−23`
+— this leaf is FALSE: `h(−23) = 3` and `polclass(-23)` is the irreducible cubic
+`x³ + 3491750x² − 5151296875x + 12771880859375`, so EVERY CM `j`-invariant of
+`O_{−23}` has degree `3` over `ℚ` and none of them is rational, whence no witness
+`c : ℚ` exists (PARI/GP, re-verified 2026-08-01 including `polisirreducible`).
+
+**THE CHECK THAT WOULD REFUTE IT**: a proof that no elliptic curve over `ℚ̄` with
+`End = O_{−p}` has rational `j`, at one of the three levels — equivalently
+`h(−p) > 1` there. -/
+theorem exists_rat_isCMJInvariantOfRel (p : ℕ)
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ)) :
+    ∃ c : ℚ, IsCMJInvariantOfRel (((p + 1) / 4 : ℕ) : ℤ)
+      (algebraMap ℚ (AlgebraicClosure ℚ) c) :=
+  sorry
+
+/-- **CLASS NUMBER ONE AT `43, 67, 163`, in the form `[ℚ(j) : ℚ] = 1`**: a CM
+`j`-invariant for the maximal order of discriminant `−p` is RATIONAL.  A bare
+sorry leaf from the 2026-07-31 cut by flt-lean-393 until 2026-08-01, when
+flt-lean-209 PROVED it over `exists_rat_isCMJInvariantOfRel` immediately above
+together with `minpoly_eq_of_isCMJInvariantOfRel`.
 
 This is the ONLY place `p ∈ {43, 67, 163}` enters the cut of
 `jInvariant_eq_of_end_closure_eq_top`; the companion leaf
@@ -40773,12 +40857,38 @@ including the irreducibility check).
 **NOT VACUOUS**: at each of the three levels the hypothesis is satisfied by the CM
 curve of the tabulated `j`-invariant with its ramified `p`-isogeny (see the
 `IsCMByRamifiedMaximalOrder` docstring for the `ellisomat` check), and the two
-declarations above supply `hrel` and `htop` for it. -/
+declarations above supply `hrel` and `htop` for it.
+
+## HOW IT IS PROVEN (2026-08-01, flt-lean-209)
+
+`exists_rat_isCMJInvariantOfRel` supplies ONE rational `c` with
+`IsCMJInvariantOfRel m (algebraMap ℚ ℚ̄ c)`; `minpoly_eq_of_isCMJInvariantOfRel`
+above then equates `minpoly ℚ x` with `minpoly ℚ (algebraMap ℚ ℚ̄ c)`, which is
+`X − C c` by `minpoly.eq_X_sub_C`.  So `x` is a root of `X − C c`
+(`minpoly.aeval`, which holds unconditionally), i.e. `x = c`.  No Galois theory:
+`Normal ℚ ℚ̄` is not used, and neither is integrality of `x` — `minpoly.aeval` is
+`0 = 0` when `x` is transcendental, and the sibling has already ruled that out by
+handing back a degree-one polynomial.
+
+The statement, its hypotheses and the falsity audit above are UNCHANGED by the
+recut — only the `sorry` moved, and the `p = 23` counterexample refutes the new
+leaf by the same computation, so the audit transfers verbatim rather than by
+inheritance.  See that leaf's docstring for why the trade is worth making at an
+unchanged leaf count, and for the curve-over-`ℚ` form a successor should prefer. -/
 theorem exists_rat_of_isCMJInvariantOfRel (p : ℕ)
     (hp : p ∈ ({43, 67, 163} : Finset ℕ)) (x : AlgebraicClosure ℚ)
     (hx : IsCMJInvariantOfRel (((p + 1) / 4 : ℕ) : ℤ) x) :
-    ∃ q : ℚ, x = algebraMap ℚ (AlgebraicClosure ℚ) q :=
-  sorry
+    ∃ q : ℚ, x = algebraMap ℚ (AlgebraicClosure ℚ) q := by
+  obtain ⟨c, hc⟩ := exists_rat_isCMJInvariantOfRel p hp
+  refine ⟨c, ?_⟩
+  have hm : 0 < 4 * ((((p + 1) / 4 : ℕ) : ℤ)) - 1 := by fin_cases hp <;> norm_num
+  have hmin := minpoly_eq_of_isCMJInvariantOfRel _ hm x
+    (algebraMap ℚ (AlgebraicClosure ℚ) c) hx hc
+  rw [minpoly.eq_X_sub_C (AlgebraicClosure ℚ) c] at hmin
+  have hroot := minpoly.aeval ℚ x
+  rw [← hmin] at hroot
+  simp only [map_sub, Polynomial.aeval_X, Polynomial.aeval_C, sub_eq_zero] at hroot
+  exact hroot
 
 /-- The tautological equation of the equaliser, with the `𝟙` evaluated away. -/
 theorem iota_comp_self : equalizer.ι v (𝟙 d.E) ≫ v = equalizer.ι v (𝟙 d.E) := by
@@ -44151,7 +44261,39 @@ are isogenous by a principal ideal.
 
 NOT VACUOUS: satisfiable at each of the three levels by the CM curve of the
 tabulated `j`-invariant with its ramified `p`-isogeny; and both `hrelᵢ` and
-`htopᵢ` are supplied by the two declarations above. -/
+`htopᵢ` are supplied by the two declarations above.
+
+## HOW IT IS PROVEN (2026-08-01, flt-lean-209) — AND WHAT THAT REPAIRED
+
+`FixedLocusOfAdditive.IsCMJInvariantOfRel` and its two leaves were cut out of THIS
+theorem on 2026-07-31 (flt-lean-393) and then **never wired in**: on 2026-08-01
+this theorem was still an independent `sorry`, and a comment-stripped grep of the
+whole tree found the cut's three declarations consumed by NOTHING — not by this
+theorem, not by anything else.  So the file owed the class-number-one input TWICE,
+and the cluster was the seventh invisibility class (an OPEN leaf that is also
+DEAD), which every frontier instrument reports as ordinary open work.  Wiring it
+in is what makes the cut pay: three open leaves in the cluster became two.
+
+The proof is the cut's own intended assembly and is four steps.  `hrelᵢ`/`htopᵢ`
+ARE `IsCMJInvariantOfRel ((p+1)/4) Wᵢ.j` by definition, modulo the one cast
+`Int.cast_natCast` this theorem's own docstring predicted the consumer would need.
+`exists_rat_of_isCMJInvariantOfRel` makes both `j`s rational, `q₁` and `q₂`;
+`minpoly_eq_of_isCMJInvariantOfRel` equates their minimal polynomials, which are
+`X − C q₁` and `X − C q₂` by `minpoly.eq_X_sub_C`; comparing constant terms gives
+`q₁ = q₂`.
+
+The three cluster names are written out in full below rather than reached through
+an `open FixedLocusOfAdditive in`: that namespace closes at line 40956 and this
+theorem is in the enclosing `MazurIsogenyPrimeJ`, and a scope modifier must sit
+ABOVE the doc comment, not between it and the `theorem` (which is a parse error).
+Qualifying touches nothing outside the proof body.
+
+Nothing above changes: the statement, the hypotheses, the falsity audit and the
+WHAT IS MISSING list are unaltered, and the missing theory named there is now
+owed by the two cluster leaves instead of by this theorem.  In particular the
+pairwise-versus-literal trade recorded above is unaffected — the literal is still
+not asked for anywhere, and the rationality that this proof routes through is
+`∃ q`, not a tabulated value. -/
 theorem jInvariant_eq_of_end_closure_eq_top (p : ℕ)
     (hp : p ∈ ({43, 67, 163} : Finset ℕ))
     (W₁ W₂ : _root_.WeierstrassCurve (AlgebraicClosure ℚ))
@@ -44162,8 +44304,24 @@ theorem jInvariant_eq_of_end_closure_eq_top (p : ℕ)
     (hrel₂ : φ₂ * φ₂ + (((p + 1) / 4 : ℕ) : _root_.WeierstrassCurve.End W₂.toAffine) = φ₂)
     (htop₁ : Subring.closure ({φ₁} : Set (_root_.WeierstrassCurve.End W₁.toAffine)) = ⊤)
     (htop₂ : Subring.closure ({φ₂} : Set (_root_.WeierstrassCurve.End W₂.toAffine)) = ⊤) :
-    W₁.j = W₂.j :=
-  sorry
+    W₁.j = W₂.j := by
+  have hx₁ : FixedLocusOfAdditive.IsCMJInvariantOfRel (((p + 1) / 4 : ℕ) : ℤ) W₁.j :=
+    ⟨W₁, inferInstance, rfl, φ₁, by rw [Int.cast_natCast]; exact hrel₁, htop₁⟩
+  have hx₂ : FixedLocusOfAdditive.IsCMJInvariantOfRel (((p + 1) / 4 : ℕ) : ℤ) W₂.j :=
+    ⟨W₂, inferInstance, rfl, φ₂, by rw [Int.cast_natCast]; exact hrel₂, htop₂⟩
+  obtain ⟨q₁, hq₁⟩ :=
+    FixedLocusOfAdditive.exists_rat_of_isCMJInvariantOfRel p hp W₁.j hx₁
+  obtain ⟨q₂, hq₂⟩ :=
+    FixedLocusOfAdditive.exists_rat_of_isCMJInvariantOfRel p hp W₂.j hx₂
+  have hm : 0 < 4 * ((((p + 1) / 4 : ℕ) : ℤ)) - 1 := by fin_cases hp <;> norm_num
+  have hmin :=
+    FixedLocusOfAdditive.minpoly_eq_of_isCMJInvariantOfRel _ hm W₁.j W₂.j hx₁ hx₂
+  rw [hq₁, hq₂, minpoly.eq_X_sub_C (AlgebraicClosure ℚ) q₁,
+    minpoly.eq_X_sub_C (AlgebraicClosure ℚ) q₂] at hmin
+  have hq : q₂ = q₁ := by
+    have := congrArg (fun f => Polynomial.coeff f 0) hmin
+    simpa using this
+  rw [hq₁, hq₂, hq]
 
 /-- **A change of variables between Weierstrass models is an isomorphism of the
 elliptic schemes** (sorry leaf, introduced 2026-07-28 by the cut of
