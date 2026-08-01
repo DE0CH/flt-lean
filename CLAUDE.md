@@ -16183,6 +16183,29 @@ theorem — Mazur's formal immersion at the cusp — not a computation.
   zero, the route is incomplete and the missing locus restriction is a new,
   uncosted obligation.
 
+**AND FIRST, SIMPLIFY THE RESIDUE — a class equality on a curve of genus `≥ 1`
+is a POINT equality.**  Abel–Jacobi injectivity holds on the special fibre too,
+so a residue of the form `[P̄] = [w̄ P̄]` is EQUIVALENT to `P̄ = w̄ P̄`: the
+"finite computation" is really the question *does `P` reduce to a FIXED POINT
+of `w̄`*, and that is a completely different and much more answerable question.
+At `125` it settles the route outright.  The fixed points of `w_N` are CM
+points of discriminant `−4N`, so their `𝔽_ℓ`-rationality is one
+`factormod(polclass(-4N), ℓ)`; here `polclass(-500)` stays a single degree-`10`
+irreducible mod `3`, so `w̄_125` fixes NO point of `X_0(125)(𝔽_3)` — all four
+`𝔽_3`-points are in `w̄`-swapped pairs, and the sieve at `3` returns a NONZERO
+class for EVERY rational point.  Completing it would prove `Y_0(125)(ℚ) = ∅`,
+which is the one route that cluster's own vacuity audit forbids.  So the route
+was not merely incomplete at the prime its docstring called "the cheapest"; it
+was incapable of producing the leaf there at all.
+
+**The cross-checks are free and you should take all of them.**  The
+fixed-point count came out `10` three independent ways — `h(−500)`,
+Riemann–Hurwitz `2g−2 = 2(2g⁺−2) + R`, and the Lefschetz number
+`#Fix(w̄ ∘ Frob_ℓ) = 1 + ℓ − Tr(w T_ℓ)` — and the split/inert/ramified counts
+`r + 2s = #X(𝔽_ℓ)`, `r + s + i = #X⁺(𝔽_ℓ)`, `r + 2i = #Fix` are three equations
+you can check against each other before believing any of them.  When a CAS
+answer decides a route, make it answer twice.
+
 **Where the counterexamples live is predictable: they are the CUSPS.**  A sieve
 of this shape is always applied to a statement that holds on the OPEN part and
 fails on the boundary — the restriction to `strY` in the leaf's own signature is
