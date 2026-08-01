@@ -272,6 +272,11 @@ public import Mathlib.Algebra.Module.ZMod
 public import Mathlib.GroupTheory.SpecificGroups.Cyclic
 public import Fermat.FLT.Mathlib.FieldTheory.KaehlerField
 public import Fermat.FLT.Modularity.AbelianSchemeGrpObj
+-- `AlgebraicGeometry.exists_lift_of_range_subset`: a morphism out of a REDUCED
+-- scheme whose image lands in a REDUCED closed subscheme factors through it.
+-- Added 2026-08-01 for `exists_grpObj_closure_of_divisibleGaloisSubmodule_finiteBase`,
+-- whose 𝒪_D-action and point-lifting clauses are exactly two applications of it.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.ReducedClosedSubscheme
 
 @[expose] public section
 
@@ -23395,6 +23400,121 @@ theorem push_injective {A B S : Scheme.{u}} (f : A ⟶ S) (ι : B ⟶ A) [Mono �
 end RelPoint
 
 open _root_.NumberField in
+/-- **THE ZARISKI CLOSURE OF A DIVISIBLE, GALOIS-STABLE SUBGROUP OF `A'(k̄)`
+IS A GEOMETRICALLY INTEGRAL CLOSED SUBGROUP SCHEME** (SORRY LEAF — cut
+2026-08-01 out of
+`exists_grpObj_closure_of_divisibleGaloisSubmodule_finiteBase` immediately
+below, which is now PROVEN over it; Chevalley's theorem that the Zariski
+closure of a subgroup of a group variety is a subgroup variety, together
+with Galois descent; Mumford *Abelian Varieties* §II.4, Milne *Abelian
+Varieties* §I.1 and *Algebraic Groups* I.1, SGA 3 VI_A 0.2 and VI_B 1.3.1,
+Springer *Linear Algebraic Groups* 2.2.5).
+
+**WHAT THE CUT REMOVED, AND WHY IT IS NOT COSMETIC.**  The consumer's three
+bullets — CHEVALLEY, CONNECTEDNESS, DESCENT — are all still here; what is
+gone is everything that is NOT those three, and it is most of the
+statement's surface:
+
+* **the entire `𝒪_D` layer.**  `D`, `[Field D]`, `[NumberField D]`, the
+  `Mult` structure `m'` and the stability hypothesis `hTact` do not appear.
+  They were never needed for the closure to be a subgroup scheme: `𝒪_D`
+  acts through endomorphisms of `A'`, which move the closure of an
+  `𝒪_D`-stable set into itself for purely topological reasons.  The
+  consumer recovers the action by `Mult.act_val` (Yoneda at the
+  tautological point) plus `AlgebraicGeometry.exists_lift_of_range_subset`,
+  in about twenty lines and with no geometry;
+* **`IsProper (ι ≫ f')`**, which is free: a closed immersion is finite
+  hence proper, and `f'` is proper by `ab'.proper`;
+* **the point-lifting clause** `∀ y ∈ T, ∃ z, push z = y`, which is one more
+  application of `exists_lift_of_range_subset`, `Spec k̄` being reduced and
+  every `y ∈ T` landing in the closure by `subset_closure`;
+* **the `act`-restriction clause**, which is `lift_fac` and associativity.
+
+So a prover dispatched HERE sees an abstract subgroup of the geometric
+points of an abelian variety over a finite field and nothing else.  There is
+no number field, no ideal, no torsion and no `Mult` in the statement.
+
+**`hTdiv` IS STATED WITH `nsmul` RATHER THAN `m'.act (M : 𝒪_D)`** for the
+same reason: with `m'` gone there is nothing else to state it with.  The two
+agree — `Mult.module`'s scalar action IS `Mult.act`, and
+`Nat.cast_smul_eq_nsmul` identifies `(M : 𝒪_D) • z` with `M • z` — and the
+consumer performs exactly that translation.  It is also the honest form:
+what kills the component group is divisibility by INTEGERS, the component
+group being a finite abelian group, and asking for divisibility by every
+nonzero element of `𝒪_D` would be strictly stronger for no gain (the
+consumer's own docstring records this).  The `letI` is the price of naming
+`nsmul` at all; `AbelianSchemeStruct` carries its group law as a family of
+operations rather than as an instance.
+
+**THE THREE STEPS, unchanged from the consumer's account.**
+
+* CHEVALLEY: the Zariski closure `Z` of `T` in `A'_{k̄}` is a closed
+  subgroup scheme.  `grep -rl` over
+  `.lake/packages/mathlib/Mathlib/AlgebraicGeometry/` and over `~/cs/FLT`
+  finds nothing (re-checked 2026-08-01: `Mathlib/AlgebraicGeometry/Group/`
+  still holds exactly `Abelian.lean` and `Smooth.lean`, and
+  `~/cs/FLT/FLT/GroupScheme/` still holds only `FiniteFlat.lean`), so this
+  is a construction to write.  What the pin DOES now supply, and what a
+  prover should build on rather than re-derive, is the reduced induced
+  closed subscheme itself: `Scheme.IdealSheafData.vanishingIdeal Z` together
+  with `IdealSheafData.subscheme`, `range_subschemeι` and `ker_subschemeι`,
+  plus this tree's `AlgebraicGeometry.exists_lift_of_range_subset` for its
+  universal property against reduced test objects.  The remaining content is
+  that the multiplication `A' ×_k A' ⟶ A'` carries `B ×_k B` into `B`, which
+  is where the classical translation argument goes;
+* CONNECTEDNESS, which is where `hTdiv` and only `hTdiv` is used: the
+  components of `Z` are open, so `T` surjects onto the finite component
+  group `Z/Z⁰`, and a finite quotient of a DIVISIBLE group is trivial.
+  With reducedness — `Z` is reduced by construction and `k` is perfect by
+  `hfin`, so `Z` is smooth — connected plus reduced plus finite type over a
+  field is INTEGRAL, which is the `GeometricallyIntegral` conjunct;
+* DESCENT: `Z` is `Γ_k`-stable by `hTgal`, so it descends to a closed
+  subscheme `B` of `A'` over `k`, and the displayed closure equation holds
+  in `|A'|` because `|A'_{k̄}| → |A'|` is continuous, closed and surjective
+  (`Spec k̄ ⟶ Spec k` is integral, hence universally closed).
+
+**FAITHFULNESS.**  The audit of the consumer transfers, because every
+hypothesis here is one of its hypotheses and the conclusion is a CONJUNCT of
+its conclusion — so any counterexample to this leaf is a counterexample to
+that one.  Restated for a reader of this statement alone:
+
+* without `hTdiv` the leaf is FALSE.  Take `T = {0, y}` for `y` a point of
+  order two on an elliptic curve over `k`: a `Γ_k`-stable subgroup whose
+  Zariski closure is two reduced points.  That is a closed subgroup scheme,
+  so the `GrpObj` and the restriction clause survive, and it is not
+  IRREDUCIBLE, so `GeometricallyIntegral` fails.  Any finite subgroup
+  refutes it, so this is not a corner case;
+* without `hTgal` the closure need not be defined over `k` and there is no
+  `B` over `Spec k` at all;
+* without `hTzero`/`hTadd` the closure is not a subgroup and neither the
+  `GrpObj` nor the restriction clause is available;
+* the last conjunct `Set.range ι.base = closure …` is what PINS `B`; drop it
+  and `B = A'`, `ι = 𝟙` discharges everything else;
+* `hfin` is used ONLY for perfectness of `k` (so that the reduced closure is
+  smooth, hence irreducible once connected).  A perfect field would do; it
+  is stated as `Finite k` because that is what the consumer has. -/
+theorem exists_grpObjClosure_of_divisibleGaloisSubgroup_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (T : Set (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))))
+    (hTzero : ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) ∈ T)
+    (hTadd : ∀ y ∈ T, ∀ z ∈ T, ab'.add y z ∈ T)
+    (hTgal : ∀ σ : Field.absoluteGaloisGroup k, ∀ y ∈ T,
+      ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y ∈ T)
+    (hTdiv : ∀ M : ℕ, M ≠ 0 → ∀ y ∈ T, ∃ z ∈ T,
+      letI := ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+      M • z = y) :
+    ∃ (B : Scheme.{u}) (ι : B ⟶ A') (_grp : GrpObj (Over.mk (ι ≫ f'))),
+      IsClosedImmersion ι ∧
+      GeometricallyIntegral (ι ≫ f') ∧
+      (∀ {W : Scheme.{u}} {g : W ⟶ Spec (CommRingCat.of k)} (y z : RelPoint (ι ≫ f') g),
+        RelPoint.push f' ι (grpAdd (ι ≫ f') y z)
+          = ab'.add (RelPoint.push f' ι y) (RelPoint.push f' ι z)) ∧
+      Set.range ι.base = closure {x : A' | ∃ y ∈ T, x ∈ Set.range y.1.base} :=
+  sorry
+
+open _root_.NumberField in
 /-- **THE ZARISKI CLOSURE OF A DIVISIBLE, GALOIS-STABLE, `𝒪_D`-STABLE
 SUBGROUP OF `A'(k̄)` IS A CLOSED SUBGROUP SCHEME** (SORRY LEAF — cut
 2026-07-31 out of
@@ -23456,7 +23576,38 @@ of a finite subgroup is a finite non-connected group scheme, so
 separate assumption on `B` — a closed immersion is proper and `f'` is
 proper by `ab'.proper`, so it is a consequence of the construction rather
 than an extra demand, and it is listed because `AbelianSchemeStruct` stores
-properness as data. -/
+properness as data.
+
+**PROVEN 2026-08-01 over
+`exists_grpObjClosure_of_divisibleGaloisSubgroup_finiteBase` immediately
+above (RECUT, leaf count unchanged 1 → 1).**  Everything above this
+paragraph was written when this was itself a leaf and is still accurate
+about the mathematics; what changed is that the three bullets it names —
+CHEVALLEY, CONNECTEDNESS, DESCENT — are now the WHOLE of the residual leaf,
+and the four clauses that are not geometry are proved here:
+
+* `IsProper (ι ≫ f')` is free (`IsClosedImmersion → IsFinite → IsProper`,
+  and `ab'.proper`);
+* the `𝒪_D`-action is `Mult.mulByElt` and `Mult.act_val` — Yoneda at the
+  tautological point, already in this file since 2026-07-2x and giving an
+  honest endomorphism `[a] : A' ⟶ A'` — followed by the
+  observation that `[a]` carries the set `S` underlying `T` into itself
+  (that is `hTact`, and nothing else uses it), hence carries `closure S`
+  into itself by continuity, hence restricts to `B` by
+  `AlgebraicGeometry.exists_lift_of_range_subset`;
+* the two restriction clauses are `IsClosedImmersion.lift_fac` and
+  associativity;
+* the point-lifting clause is `exists_lift_of_range_subset` again, at
+  `y.1 : Spec k̄ ⟶ A'`.
+
+The only inputs beyond the residual leaf are that `B` is REDUCED (from
+`GeometricallyIntegral` through
+`GeometricallyIntegral.isIntegral_of_subsingleton`, the base being `Spec` of
+a field) and that both sources are quasi-compact (`A'` is compact and
+quasi-separated, being proper over an affine base).  **So `hTact` and the
+whole `𝒪_D` layer are consumed HERE and never reach the geometry** — which
+is the point of the recut, and the reason the residual leaf's statement
+contains no number field. -/
 theorem exists_grpObj_closure_of_divisibleGaloisSubmodule_finiteBase
     {k : Type u} [Field k] (hfin : Finite k)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -23485,8 +23636,97 @@ theorem exists_grpObj_closure_of_divisibleGaloisSubmodule_finiteBase
         RelPoint.push f' ι (act a y) = m'.act a (RelPoint.push f' ι y)) ∧
       (∀ y ∈ T, ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
         RelPoint.push f' ι z = y) ∧
-      closure {x : A' | ∃ y ∈ T, x ∈ Set.range y.1.base} = Set.range ι.base :=
-  sorry
+      closure {x : A' | ∃ y ∈ T, x ∈ Set.range y.1.base} = Set.range ι.base := by
+  classical
+  haveI : IsProper f' := ab'.proper
+  -- STEP 0: `hTdiv` in the `nsmul` form the geometry leaf is stated with.  The
+  -- two agree because `Mult.module`'s scalar action IS `Mult.act`.
+  have hTdiv' : ∀ M : ℕ, M ≠ 0 → ∀ y ∈ T, ∃ z ∈ T,
+      letI := ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+      M • z = y := by
+    intro M hM y hy
+    obtain ⟨z, hz, hzy⟩ := hTdiv M hM y hy
+    refine ⟨z, hz, ?_⟩
+    letI := ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    letI := m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    rw [← Nat.cast_smul_eq_nsmul (NumberField.RingOfIntegers D) M z]
+    exact hzy
+  obtain ⟨B, ι, grp, hcl, hint, hadd, hclos⟩ :=
+    exists_grpObjClosure_of_divisibleGaloisSubgroup_finiteBase hfin ab' T hTzero hTadd
+      hTgal hTdiv'
+  haveI := hcl
+  haveI := hint
+  -- `B` is REDUCED: geometrically integral over `Spec` of a field, whose space
+  -- is a single point.  This is the one thing the geometry leaf supplies that
+  -- the factorisation lemma below needs.
+  haveI : IsIntegral B := GeometricallyIntegral.isIntegral_of_subsingleton (ι ≫ f')
+  haveI : IsReduced B := inferInstance
+  haveI : CompactSpace A' := QuasiCompact.compactSpace_of_compactSpace f'
+  haveI : CompactSpace B := QuasiCompact.compactSpace_of_compactSpace (ι ≫ f')
+  haveI : QuasiSeparatedSpace A' := quasiSeparatedSpace_of_quasiSeparated f'
+  -- STEP 1: Yoneda.  `m'.act a` is a family of maps on the functor of points;
+  -- evaluating it at the tautological point turns it into an endomorphism of
+  -- `A'`, which is what a statement about SUBSETS of `|A'|` can consume.
+  set S : Set A' := {x : A' | ∃ y ∈ T, x ∈ Set.range y.1.base} with hSdef
+  set α : NumberField.RingOfIntegers D → (A' ⟶ A') := fun a => m'.mulByElt a with hαdef
+  have hα : ∀ a, α a ≫ f' = f' := fun a => m'.mulByElt_comp a
+  have hαval : ∀ (a : NumberField.RingOfIntegers D) {W : Scheme.{u}}
+      {g : W ⟶ Spec (CommRingCat.of k)} (y : RelPoint f' g),
+      (m'.act a y).1 = y.1 ≫ α a := fun a _ _ y => m'.act_val a y
+  -- STEP 2: `α a` preserves `S` — this is `hTact`, and it is the only place it
+  -- is used — hence preserves `closure S` by continuity.
+  have hS : ∀ a, (α a).base '' S ⊆ S := by
+    rintro a _ ⟨x, ⟨y, hy, p, rfl⟩, rfl⟩
+    refine ⟨m'.act a y, hTact a y hy, p, ?_⟩
+    rw [hαval a y]
+    rfl
+  have hclosure : ∀ a, (α a).base '' (closure S) ⊆ closure S := by
+    intro a _ hx
+    obtain ⟨x, hx, rfl⟩ := hx
+    exact closure_mono (hS a)
+      (image_closure_subset_closure_image (α a).base.hom.continuous ⟨x, hx, rfl⟩)
+  -- STEP 3: so `α a` restricts to `B`, `B` being the reduced closed subscheme
+  -- supported on `closure S`.
+  have hrange : ∀ a, Set.range (ι ≫ α a).base ⊆ Set.range ι.base := by
+    intro a
+    have hcomp : Set.range (ι ≫ α a).base = (α a).base '' (Set.range ι.base) := by
+      simp only [Scheme.Hom.comp_base, TopCat.coe_comp]
+      exact Set.range_comp _ _
+    rw [hcomp, hclos]
+    exact hclosure a
+  have hex : ∀ a, ∃ h : B ⟶ B, h ≫ ι = ι ≫ α a :=
+    fun a => exists_lift_of_range_subset ι (ι ≫ α a) (hrange a)
+  choose actHom hactHom using hex
+  -- STEP 4: the induced action on the relative points of `B`.
+  have hact_aux : ∀ (a : NumberField.RingOfIntegers D) {W : Scheme.{u}}
+      {g : W ⟶ Spec (CommRingCat.of k)} (y : RelPoint (ι ≫ f') g),
+      (y.1 ≫ actHom a) ≫ (ι ≫ f') = g := by
+    intro a W g y
+    have h1 : (y.1 ≫ actHom a) ≫ ι ≫ f' = y.1 ≫ (actHom a ≫ ι) ≫ f' := by
+      simp only [Category.assoc]
+    rw [h1, hactHom a]
+    calc y.1 ≫ (ι ≫ α a) ≫ f' = y.1 ≫ ι ≫ (α a ≫ f') := by simp only [Category.assoc]
+      _ = y.1 ≫ (ι ≫ f') := by rw [hα a]
+      _ = g := y.2
+  refine ⟨B, ι, grp, fun {W} {g} a y => ⟨y.1 ≫ actHom a, hact_aux a y⟩,
+    hcl, inferInstance, hint, hadd, ?_, ?_, hclos.symm⟩
+  · -- the action commutes with `push`
+    intro W g a y
+    apply Subtype.ext
+    show (y.1 ≫ actHom a) ≫ ι = (m'.act a (RelPoint.push f' ι y)).1
+    rw [hαval a (RelPoint.push f' ι y)]
+    show (y.1 ≫ actHom a) ≫ ι = (y.1 ≫ ι) ≫ α a
+    rw [Category.assoc, hactHom a, ← Category.assoc]
+  · -- every point of `T` lifts to `B`
+    intro y hy
+    have hr : Set.range y.1.base ⊆ Set.range ι.base := by
+      rw [hclos]
+      rintro _ ⟨p, rfl⟩
+      exact subset_closure ⟨y, hy, p, rfl⟩
+    obtain ⟨l, hl⟩ := exists_lift_of_range_subset ι y.1 hr
+    refine ⟨⟨l, ?_⟩, Subtype.ext hl⟩
+    rw [← Category.assoc, hl]
+    exact y.2
 
 open _root_.NumberField in
 /-- **THE ZARISKI CLOSURE OF A DIVISIBLE, GALOIS-STABLE, `𝒪_D`-STABLE

@@ -16151,3 +16151,112 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## THE PIN HAS THE REDUCED INDUCED SUBSCHEME — what was missing is its UNIVERSAL PROPERTY, and it is now a theorem
+
+(2026-08-01, `flt-lean-361`, recutting
+`exists_grpObj_closure_of_divisibleGaloisSubmodule_finiteBase` in
+`Modularity/TateModule.lean`.)
+
+Leaves in this tree are repeatedly priced at "construct the reduced closed
+subscheme supported on a closed set". **That construction is in the pin**, and
+has been for a while:
+
+    Scheme.IdealSheafData.vanishingIdeal (Z : Closeds X) : IdealSheafData X
+    Scheme.IdealSheafData.subscheme / subschemeι / range_subschemeι / ker_subschemeι
+    AlgebraicGeometry.IsClosedImmersion.lift   (+ lift_fac, isIso_of_ker_eq)
+
+What is NOT in the pin, and is what every consumer of them actually wants, is the
+UNIVERSAL PROPERTY: **a morphism out of a REDUCED scheme whose image lands in a
+reduced closed subscheme factors through it** — i.e. that `IsClosedImmersion.lift`'s
+scheme-theoretic hypothesis `ι.ker ≤ g.ker` is implied by the purely TOPOLOGICAL
+`Set.range g.base ⊆ Set.range ι.base`. It is now
+`AlgebraicGeometry.exists_lift_of_range_subset` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/ReducedClosedSubscheme.lean`, and the whole
+proof is four lines over the `support`/`vanishingIdeal` Galois connection
+(`vanishingIdeal_antimono`, `vanishingIdeal_support : vanishingIdeal I.support =
+I.radical`, `Scheme.Hom.support_ker`) plus ONE fact the pin does not state —
+`Scheme.Hom.radical_ker`, the kernel of a quasi-compact morphism out of a reduced
+scheme is radical, six lines through `Scheme.Hom.ker_apply`.
+
+**It had been identified TWICE, in prose, and written neither time.**
+`ModularCurve/X0.lean`'s 2026-07-27 route audit on leaf (iii-b) of
+`exists_addHom_factor_zmulPts` states the argument exactly — *"Both kernels are
+radical because their sources are reduced, so by `Scheme.Hom.support_ker` and
+`Scheme.IdealSheafData.vanishingIdeal` (antitone) the target follows from
+`Set.range … ⊆ closure (Set.range d)`"* — as its "Route 2". That leaf was then
+closed by a different, pointwise route, so the paragraph is marked SUPERSEDED and
+the lemma was never extracted; the next consumer paid for it again.
+
+**So: a route a SUPERSEDED audit describes is still a lemma.** The audit is
+superseded about ITS leaf, not about the mathematics. When you close a leaf by
+route A, spend ten minutes asking whether route B's core is short and reusable,
+and if it is, extract it into a mathlib-facing module rather than leaving it in a
+paragraph that is now labelled as not applying.
+
+## A LEAF THAT BUNDLES GEOMETRY WITH A FUNCTOR-OF-POINTS ACTION SPLITS — the action layer is YONEDA PLUS TOPOLOGY and carries no geometry
+
+(Same task; this is the recut that landed, `1 → 1`, and it deleted the whole
+number-field layer from the residue.)
+
+The target asked for a closed subgroup scheme `B ⊆ A'` supported on the closure of
+a subgroup `T ⊆ A'(k̄)`, TOGETHER WITH an `𝒪_D`-action on `B`'s relative points
+restricting `A'`'s, properness, and a clause lifting every point of `T`. It reads
+as one indivisible construction. Three of those four are **free of geometry**:
+
+* an `𝒪_D`-action on the functor of points is not a morphism, so evaluate it at
+  the TAUTOLOGICAL point — here `Mult.mulByElt`/`Mult.act_val`, already in the
+  file — and it becomes an honest `[a] : A' ⟶ A'`;
+* `[a]` carries the point set `S` under `T` into itself (that is the stability
+  hypothesis, and it is the ONLY place it is used), hence carries `closure S` into
+  itself **by continuity alone**;
+* so `[a]` restricts to the reduced subscheme supported on `closure S`, by
+  `exists_lift_of_range_subset`. Same lemma lifts every `y ∈ T`, `Spec k̄` being
+  reduced. Properness is `IsClosedImmersion → IsFinite → IsProper` composed with
+  the ambient one.
+
+**The general check: for each conjunct of a bundled conclusion, ask whether it is
+a statement about the SUBSET or about the SCHEME.** Anything about the subset —
+stability under an endomorphism, containing a given set of points — is topology
+plus the factorisation lemma, and belongs in the assembly. Only the conjuncts that
+constrain the SCHEME STRUCTURE (here: that the closure carries a group law at all,
+and that it is geometrically integral) are the citation. The residue then stops
+mentioning the number field, the `Mult`, and the stability hypothesis entirely,
+and a prover sees "an abstract subgroup of the geometric points of an abelian
+variety over a finite field" and nothing else.
+
+Two riders. **The `GeometricallyIntegral` conjunct must stay in the residue even
+though the consumer also demands it** — the assembly needs `IsReduced B` to run
+the factorisation lemma at all, and gets it from
+`GeometricallyIntegral.isIntegral_of_subsingleton` (the base being `Spec` of a
+field, whose space is a point). And a hypothesis phrased through the removed layer
+has to be re-phrased: `hTdiv` was `m'.act (M : 𝒪_D) z = y` and becomes
+`M • z = y` under `letI := ab'.addCommGroup …`, the two agreeing by
+`Nat.cast_smul_eq_nsmul` since `Mult.module`'s scalar action IS `Mult.act`. That
+is also the HONEST form — what kills a finite component group is divisibility by
+integers.
+
+## `grep … | head -N` IS HOW YOU MANUFACTURE A FALSE ABSENCE — the hit in the file you are editing is the one that gets truncated
+
+(Same task, caught by the build rather than by me.) Before adding a helper I ran
+the duplicate check this file prescribes, scoped to the right directory:
+
+    grep -rn 'act_val\|RelPoint.self\|…' Fermat/FLT/Modularity/*.lean | … | head -20
+
+and read "no `act_val`". `Mult.act_val` was already declared **in the very file I
+was editing**, 20 000 lines above my insertion point — and the twenty lines were
+filled by hits from a *different* file that sorts earlier. `lake build` then said
+`has already been declared`, which is cheap, but only because the name collided;
+had I named it differently I would have shipped a duplicate proof of an existing
+Yoneda lemma, which nothing would have caught.
+
+**So a duplicate-check grep must never be truncated.** Either drop the `head` and
+read the whole thing, or `grep -c` first and only then look, or — best, and it is
+one extra command — grep the TARGET FILE on its own line:
+
+    grep -n '<name>' <the file you are about to edit>     # never piped into head
+
+This is the mirror of the standing "grep the file you are editing" rule: I did
+grep it, and the pipe threw the answer away. The general form is that any
+`| head` on a check whose ANSWER IS AN ABSENCE converts "I found no hits in the
+first N" into "there are no hits", and those are different claims.
