@@ -16151,3 +16151,76 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A RIVAL-CUT RECONCILIATION ORPHANS THE LOSER'S WHOLE SUPPORT BLOCK — AND THE DEAD LEAF KEEPS DRAWING DISPATCHES
+
+(2026-08-01, `flt-lean-244`, `HardlyRamified/Deformation.lean`. This is the
+sequel to the section immediately above, and it is what that reconciliation left
+behind.)
+
+Release 33 correctly reconciled two rival cuts of
+`exists_obstructionCocycle_smallExtension_deformation`; the note above is
+accurate. What it does not say is what became of the THIRD cut. That node had
+been PROVEN on 2026-07-30 over `exists_obstructionCocycle_smallExtension_lift`,
+whose conclusion was `HasHardlyRamifiedLift` and which came with **five support
+declarations written only for it** — the predicate itself, plus four ring-theory
+lemmas making `S ⧸ K` a complete local topological ring. The reconciliation
+re-routed the node through `…_ne_zero` → `…_of_section`, which never forms
+`S ⧸ K` as a topological ring at all. All six lost their only consumer, silently,
+and the file kept them.
+
+The result is the SEVENTH invisibility class at scale: an OPEN `sorry` with zero
+consumers, plus five PROVEN free-floating declarations. Every instrument called it
+ordinary work — it emitted its `declaration uses 'sorry'` warning, the frontier
+scan counted it, `own.py` correctly reported it unowned — and the queue dispatched
+an agent at it.
+
+**Two checks, and the second is the one nobody runs.**
+
+* *Upward*: grep the comment-stripped tree for CONSUMERS of your target. Already
+  doctrine, one command. Here it returned the target's own declaration line and
+  nothing else.
+* *Downward*: **then walk DOWN from the orphan and ask what existed only to serve
+  it.** A cut never arrives alone — it arrives with the machinery someone wrote to
+  package it. Deleting the leaf and leaving that machinery converts one dead leaf
+  into five free-floating declarations, which this project forbids and which no
+  sorry-scan can see. It is the same scan run to a FIXPOINT: for each declaration
+  the orphan uses, count ITS consumers, and iterate.
+
+**Delete; do not delegate.** A one-line `exact <the winner> …` is tempting and
+leaves a proven theorem nothing consumes. Keep the copy with the live call sites.
+
+**But move what is NOT duplicated first, and diff the docstrings to find it.** The
+orphan carried item (6) of its machinery audit — a developed OPEN FALSITY
+SUSPICION against a conjunct the LIVE leaf shares verbatim — and that analysis
+existed nowhere else in the tree. Deleting the block wholesale would have
+destroyed the most valuable thing in it. What is duplicated goes; what is unique
+moves, onto whichever declaration still carries the `sorry`.
+
+Accounting, stated the way this file asks: **frontier 7 → 6 in that module, and no
+mathematics was done.** One dead leaf and five free-floating declarations left;
+nothing became provable that was not provable before. Report it as merge repair.
+
+### And RUN the "cheapest next action" a docstring prescribes — it is usually still unrun
+
+Same leaf. Item (6) ended: *"Böckle's papers are NOT in `sources/` and should be
+downloaded, and that is the single cheapest next action on this leaf"*, written
+2026-07-30. Nobody had. **Two `WebFetch` calls settled it**, and the answer is
+that the suspicion was right:
+
+* `arXiv:2606.23918` gives the UNRESTRICTED bound `r ≤ dim H²(G_{ℚ,S}, ad⁰ρ̄)`,
+  with the Greenberg–Wiles decomposition
+  `= dim Ш¹(ε̄_ℓ ⊗ ad⁰ρ̄) + Σ_{p ∈ S} dim H⁰(G_p, ε̄_ℓ ⊗ ad⁰ρ̄)`;
+* `arXiv:2108.13480` Prop. 3.2 gives the CONDITIONED bound
+  `r ≤ dim H¹_{L^⊥}(G_S, ad⁰ρ̄*)`, the dual Selmer group.
+
+Both exceed `dim Ш²_S(ad⁰)`, generically strictly — so no standard presentation
+theorem yields the leaf's conjunct (b). That is not a refutation (`r` need not
+attain its bound), but it closes the cheap way of discharging the suspicion and
+tells the next owner not to search the literature again.
+
+This is the standing rule that *an audit which NAMES its own refuting check has
+probably not RUN it*, in its cheapest possible form: here the check was two web
+fetches, and it had been written down, in bold, as the recommended next action,
+for two days. **When a docstring names the action, do the action before doing the
+mathematics** — it costs minutes and it can decide whether the leaf should exist.

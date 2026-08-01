@@ -537,10 +537,16 @@ import Mathlib.LinearAlgebra.Dimension.ErdosKaplansky
 -- `𝔪`-adic precompleteness of `Λ[[x₁,…,x_g]]` over a precomplete local base)
 -- and `PowerSeriesAdicComplete.isPrecomplete_of_surjective` (precompleteness
 -- descends along a surjection, with the image ideal). Together they are what
--- makes `isAdicComplete_quotient_mvPowerSeries` below — hence the whole Mazur
+-- made `isAdicComplete_quotient_mvPowerSeries` below — hence the whole Mazur
 -- ring structure on `Λ[[x]] ⧸ K` — a theorem rather than a leaf. The module
 -- lives under `Fermat/FLT/Mathlib/` and imports only mathlib, so this adds no
 -- project dependency beyond itself.
+-- UNUSED SINCE 2026-08-01: that block was deleted as dead (its only consumer,
+-- the `…_lift` cut of the obstruction leaf, lost its own consumer at release 33
+-- when the node was re-routed through `…_deformation_of_section`). This import
+-- is therefore a removal candidate; it is kept because dropping an import is a
+-- build-graph change with no correctness gain, and because the deleted proofs
+-- are the natural thing to restore if a later cut needs `S ⧸ K` complete.
 import Fermat.FLT.Mathlib.RingTheory.PowerSeries.AdicComplete
 -- proof-only: `Module.free_of_finite_type_torsion_free'`, which upgrades the
 -- module-finite DOMAIN `Λ` over the PID `ℤ_ℓ` to a FREE module, feeding
@@ -18218,24 +18224,34 @@ def HardlyRamifiedDeformation.IsDeformationStructureOn
       (D'.ρ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat).map p =
         D.ρ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat
 
-/-! ### The Mazur ring structure on `Λ[[x₁,…,x_g]] ⧸ K`
+/-! ### The DEGENERATE branch of the obstruction leaf: `S ⧸ K ≅ D.R`
 
-Four lemmas and one predicate, added 2026-07-30 to peel the RING-THEORETIC half
-off the obstruction leaf below. Böckle's construction produces a hardly ramified
-representation over the quotient `S ⧸ K` of the presenting power-series ring; the
-leaf used to ask, on top of that, for the whole `HardlyRamifiedDeformation`
-record — Noetherian, local, `𝔪`-adic, `𝔪`-adically complete — which is
-commutative algebra with no Galois input and which is now PROVEN here.
+**This header replaced one titled "The Mazur ring structure on `Λ[[x₁,…,x_g]] ⧸ K`"
+on 2026-08-01, and the replacement is the point.** That header introduced four
+ring-theory lemmas and one predicate (`HasHardlyRamifiedLift`), added 2026-07-30
+to peel the RING-THEORETIC half off a cut of the obstruction leaf that concluded
+`D.HasHardlyRamifiedLift (S ⧸ K) …`. Release 33 reconciled two rival cuts of that
+leaf and re-routed its consumer through
+`…_deformation_ne_zero` → `…_deformation_of_section`, which never forms `S ⧸ K` as
+a topological ring at all — so all six declarations lost their only consumer. They
+were DEAD, not merely unused: an open `sorry` with no consumer keeps drawing
+dispatches for ever. They were deleted on 2026-08-01; recover with
+`git show <that commit>^`.
 
-The only step that is not immediate is `𝔪`-adic completeness of the quotient,
-and it factors as: `Λ` is precomplete (it is module-finite over `ℤ_ℓ`, and a
-domain, hence FREE over the PID `ℤ_ℓ` — unless `ℓ = 0` in `Λ`, in which case
-`𝔪_Λ = (ℓ) = ⊥` and precompleteness is mathlib's `IsPrecomplete.bot`); hence so
-is `S = Λ[[x₁,…,x_g]]`; hence so is any quotient of `S`, precompleteness
-descending along a surjection with the image ideal, and the image of `𝔪_S` in
-`S ⧸ K` being `𝔪_{S ⧸ K}`. Hausdorffness is free — a Noetherian local ring is
-`𝔪`-adically Hausdorff by Krull's intersection theorem, which mathlib has as an
-instance. -/
+**Two things about them are worth knowing before anyone re-derives them.** The
+four lemmas were genuine, PROVEN commutative algebra — `ℤ_ℓ → Λ` injective for a
+domain with `(ℓ : Λ) ≠ 0`; `𝔪`-adic precompleteness of `Λ`, of `Λ[[x]]` and of its
+quotients; and `IsTopologicalRing` for an adic topology — so if a later cut of
+this leaf again needs `S ⧸ K` as a complete local topological ring, the proofs are
+one `git show` away and should not be rewritten. And the file's import of
+`Fermat.FLT.Mathlib.RingTheory.PowerSeries.AdicComplete` (see the comment on that
+import) existed only for them; it is now unused by this module and is a removal
+candidate, left in place deliberately because dropping an import is a build-graph
+change with no correctness gain.
+
+What survives here is the one declaration that is still consumed: the DEGENERATE
+case of the obstruction leaf, where the pinning hypothesis forces `K = ker φ` and
+hence makes `S ⧸ K ↠ D.R` an isomorphism. -/
 
 -- The `omit [Field k] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
 -- [DiscreteTopology k] in` that stood here was rejected at release 32 with
@@ -18758,6 +18774,211 @@ explicitly.)
    components of the obstruction class vanish, which is precisely why conjunct
    (a) says `Ш²` and not `H²`. State it that way, per local condition, and
    expect one sub-leaf per clause of `IsHardlyRamified`.
+6. *The CORRECTION STEP behind conjunct (b) — a SIXTH item, raised 2026-07-30,
+   and it is an OPEN FALSITY SUSPICION rather than a missing lemma.* **Read this
+   before starting on conjunct (b); it may be that the statement, and with it
+   this whole subtree's route, needs changing.** IT IS NOT A REFUTATION: no
+   witness is offered and none was found. What follows is one specific,
+   cheaply-checkable question, and it was not asked by any of the five audits
+   above, all of which are about conjunct (a).
+
+   *The observation.* Conjunct (b) reads: if `oc ψ` is a COBOUNDARY — i.e. the
+   obstruction class vanishes in `H²(G_{ℚ,S}, ad⁰)`, the cohomology of the
+   UNCONDITIONED fixed-determinant problem — then a HARDLY RAMIFIED lift exists
+   over `S ⧸ K`. The classical route to that conclusion has two steps and only
+   the first is controlled by `H²(G_{ℚ,S}, ad⁰)`:
+
+   (i) the class vanishing gives a lift `ρ̃ : G_{ℚ,S} → GL₂(S ⧸ K)` of `D.ρ`
+       with the right determinant, but with NO local conditions;
+   (ii) `ρ̃|_{G_v}` need not be flat at `ℓ` or tame at `2`. Item (5)'s
+        liftability gives, for each `v ∈ S`, a good local lift, hence a class
+        `c_v ∈ H¹(G_v, ad⁰)` measuring the discrepancy modulo `L_v`; to correct
+        `ρ̃` GLOBALLY one needs `(c_v)_v` to come from `H¹(G_{ℚ,S}, ad⁰)`.
+
+   So conjunct (b) silently asserts that the tuple in step (ii) is always in the
+   image of `H¹(G_{ℚ,S}, ad⁰) → ⊕_{v ∈ S} H¹(G_v, ad⁰) / L_v`. Nothing in the
+   leaf's hypotheses makes that map surjective, and its cokernel is the
+   obstruction group of the CONDITIONED functor modulo `Ш²`. (The precise
+   identification of that cokernel with a dual Selmer group was NOT verified
+   here and is deliberately not asserted; the recorded gap is the surjectivity
+   itself, which is what step (ii) needs.)
+
+   *Why this matters beyond this leaf, and the QUANTIFIED version — this part IS
+   verified against the literature.* Conjuncts (a) and (b) together make `oc`
+   INJECTIVE, which is exactly how the consumer chain uses it: `oc ψ = 0` forces
+   a lift, hence a section by weak universality, hence `ker φ ⊆ K_ψ`, hence
+   `ψ = 0`. So this leaf asserts `r ≤ dim_k Ш²_S(ad⁰)` for the minimal
+   presentation. **Mazur's classical bound for the UNRESTRICTED problem — no
+   local conditions at all, so no correction step and no room to argue about
+   `L` — is `r ≤ dim_k H²(G_{ℚ,S}, ad⁰)`, and that group is STRICTLY LARGER
+   than `Ш²_S(ad⁰)` by a computable amount:**
+
+     `dim_k H²(G_{ℚ,S}, ad⁰) = dim_k Ш²_S(ad⁰) + Σ_{v ∈ S} dim_k H⁰(G_v, ad⁰(1))`.
+
+   That identity is the tail of the nine-term Poitou–Tate sequence
+   `H²(G_S, ad⁰) → ⊕_{v ∈ S} H²(G_v, ad⁰) → H⁰(G_S, ad⁰(1))^∨ → 0` combined with
+   local duality `H²(G_v, ad⁰) ≅ H⁰(G_v, ad⁰(1))^∨` and with
+   `h⁰(G_S, ad⁰(1)) = 0`, which `hirr` supplies (the same vanishing
+   `card_sha1Twist_le_card_dualNumberPoints` below calls load-bearing). It is
+   the Greenberg–Wiles formula in the form quoted in the 2026 survey *A
+   Local-Global Study of Obstructed Deformation Problems II*
+   (`arXiv:2606.23918`, §2.1–2.2), which also states the presentation bound as
+   `d₂ = dim_κ H²(G_{ℚ,S}, ad ρ̄)` — the AMBIENT `H²`, not `Ш²`.
+
+   The gap term is not a corner case. At `v = ℓ` the flat/ordinary
+   `ρbar|_{G_ℓ}` routinely has `H⁰(G_ℓ, ad⁰(1)) ≠ 0`, so bounding `r` by `Ш²`
+   rather than by `H²` is a strictly stronger claim by a positive amount.
+   Imposing the hardly ramified local conditions is exactly what is supposed to
+   cut `H²` down towards `Ш²` — and that cutting-down IS step (ii). So the two
+   halves of this item are the same gap seen twice: the leaf cannot be reached
+   by the unrestricted route (`H²` is too big), and the restricted route owes
+   the correction step.
+
+   *And the CONDITIONED bound in the literature is the DUAL SELMER dimension,
+   which is also `≥ dim Ш²`, strictly.* For a deformation problem with local
+   conditions `L = (L_v)_{v ∈ S}` the standard presentation has `g = dim H¹_L`
+   generators and `r ≤ dim_k H¹_{L^⊥}(ad⁰(1))` relations. Now `Ш¹_S(ad⁰(1))` is
+   `H¹_{L^⊥}(ad⁰(1))` with `L_v^⊥` replaced by `0` at every `v ∈ S`, so
+
+     `Ш¹_S(ad⁰(1)) ⊆ H¹_{L^⊥}(ad⁰(1))`, with EQUALITY iff `L_v^⊥ = 0` for all
+     `v ∈ S`, i.e. iff `L_v = H¹(G_v, ad⁰)` — no condition at all at `v`.
+
+   The hardly ramified problem imposes a PROPER condition at `v = ℓ` (flatness),
+   so `L_ℓ^⊥ ≠ 0` and the containment has no reason to be an equality. Combined
+   with `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨` (the pairing leaf below), the leaf's
+   `r ≤ dim Ш²_S(ad⁰)` is therefore strictly stronger than BOTH standard bounds,
+   and it is stronger in the direction the local conditions are supposed to make
+   ROOM in, not remove it. **That is the closest thing to a witness offered here,
+   and it is why this is filed as a suspicion and not as a note.**
+
+   *The discriminating question, and it is a literature question, not a Lean
+   one.* Does Böckle's local-global principle (*Presentations of universal
+   deformation rings*, LMS Lecture Notes 2007; *A local-global principle for
+   deformations of Galois representations*) give `r ≤ dim Ш²` for a deformation
+   condition of this kind, under hypotheses `ρbar` here satisfies — or only a
+   bound by the dual Selmer group? Secondary sources describe his conditions as
+   "involving the vanishing of a second Shafarevich–Tate group and auxiliary
+   primes", which is consistent with `Ш²` being the right home only under extra
+   hypotheses. Neither Böckle paper is in `sources/`; both should be downloaded,
+   and that is the single cheapest next action on this leaf. If the answer is the
+   former, this item retires with a citation and nothing in the tree changes. If
+   the latter, conjunct (b) is FALSE AS STATED and must be weakened — and the
+   leaf must then say WHICH group, because the consumer chain reads the answer
+   off it.
+
+   *What was searched, 2026-07-30, so it is not repeated.* Wiles 1995 was
+   obtained and text-extracted in full: its Chapter 1 develops the Selmer groups
+   `H¹_D` and their duals but does NOT state a generators-and-relations
+   presentation, so it does not settle the question directly. The relation bound
+   as `dim` dual Selmer is stated in secondary literature on Böckle's method;
+   the unrestricted bound as `dim H²(G_{ℚ,S}, ad ρbar)` is stated in
+   `arXiv:2606.23918` §2.2. Kisin's deformation notes as served online are
+   Lecture 1 only and do not reach the presentation. The Anna's Archive MCP is
+   NOT registered in this session, so Böckle could not be fetched from here.
+
+   *The repair, if it is needed, is known in shape and is CHEAPER than the
+   current route — which is the other reason to settle this before proving
+   anything.* Replace `Ш²_S(ad⁰)` by `H¹_{L^⊥}(ad⁰(1))^∨` throughout the chain.
+   Then `exists_poitouTatePairing_sha2_sha1Twist` below — the file's single most
+   expensive leaf, gated on local class field theory and the local invariant map,
+   neither of which exists in this tree — is NO LONGER NEEDED: the chain becomes
+   `r ≤ dim H¹_{L^⊥}(ad⁰(1)) = dim H¹_L = g` by Greenberg–Wiles alone. The cost
+   is STATING `H¹_{L^⊥}`, which the section header above `adZeroCycloChar`
+   correctly says needs the local Tate pairing *if* written as an orthogonal
+   complement — but `Modularity/Patching.lean` describes the same dual Selmer
+   group directly, as an explicit unramified-outside-`S` condition
+   (`h1TwistUnramified`, `h1TwistLocalKer`, the `DualSelmerVocabulary` section),
+   and pays no pairing at all. That module is DOWNSTREAM of this one, so nothing
+   there is consumable here and the vocabulary would have to be hoisted; see the
+   same discussion on `card_sha1Twist_le_card_dualNumberPoints` below, which
+   reaches the identical conclusion from the other end of the chain.
+
+   *What was checked, so the next reader does not repeat it.* `Sha2` and
+   `Sha1Twist` above impose the ZERO local condition at each `v ∈ S`, so
+   `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨` (the pairing leaf) is the correct reading of
+   Poitou–Tate for THOSE groups and is not in question here — the question is
+   only whether `Ш²` is the right home for the obstruction. The OCR text of
+   Cornell–Silverman–Stevens in `sources/css1997mfflt.txt` was searched
+   (`obstruct`, `Selmer`, `relations`, `presentation`); Mazur's article there
+   discusses unobstructed deformation theory and de Smit–Lenstra's gives the
+   presentation, but neither states the relation bound in a form this OCR
+   renders legibly, so the question stands open. Böckle's papers are NOT in
+   `sources/` and should be downloaded.
+
+   *INDEPENDENTLY RE-DERIVED AND SHARPENED TO AN EXACT CRITERION, 2026-08-01,
+   while deleting the orphaned `…_lift` cut this item used to live on.* The
+   Poitou–Tate arithmetic above was re-checked from scratch and is CORRECT: the
+   tail `H²(G_S, ad⁰) → ⊕_{v∈S} H²(G_v, ad⁰) → H⁰(G_S, ad⁰(1))^∨ → 0`, together
+   with local duality `H²(G_v, ad⁰) ≅ H⁰(G_v, ad⁰(1))^∨`, gives
+   `dim H²(G_S, ad⁰) = dim Ш²_S(ad⁰) + Σ_{v∈S} dim H⁰(G_v, ad⁰(1))` once
+   `h⁰(G_S, ad⁰(1)) = 0`. And `Sha2` in this file really is the classical group —
+   `⨅ v ∈ S, ker (locRes …)`, the ZERO local condition at every `v ∈ S` — so that
+   reading of the leaf is the right one and not an artefact of the formalisation.
+
+   **The two halves of this item are literally ONE group, and it is nameable.**
+   The Selmer-complex exact sequence
+
+     `H¹(G_S, ad⁰) --loc--> ⊕_{v∈S} H¹(G_v, ad⁰)/L_v → H²_L(ad⁰) → Ш²_S(ad⁰) → 0`
+
+   gives `dim H²_L(ad⁰) = dim Ш²_S(ad⁰) + dim coker(loc)`, and `r ≤ dim H²_L` is
+   the standard presentation bound. Hence:
+
+     **this leaf is TRUE exactly when `coker(loc) = 0`** — equivalently, by
+     Greenberg–Wiles duality, exactly when `H¹_{L^⊥}(ad⁰(1)) = Ш¹_S(ad⁰(1))`.
+
+   `coker(loc) = 0` IS the surjectivity step (ii) needs, so the "`H²` is too big"
+   half and the "correction step is owed" half are the same vanishing — which
+   this item already suspected, and which is now a criterion rather than a
+   suspicion.
+
+   *Which way it goes for the hardly ramified problem.* `Ш¹_S ⊆ H¹_{L^⊥}` always,
+   with equality iff `L_v^⊥ = 0` for every `v ∈ S`, i.e. iff `L_v` is ALL of
+   `H¹(G_v, ad⁰)`. The hardly ramified problem imposes a PROPER condition at
+   `v ∣ ℓ` (flatness), so `L_ℓ^⊥ ≠ 0` and there is no reason for equality. That
+   is NOT a counterexample — `r` need not attain its bound — so this stays a
+   SUSPICION. What it does settle is that **this leaf cannot be reached by any
+   route through the standard presentation bound**, because that bound is
+   strictly weaker than what conjunct (b) claims.
+
+   *THE LITERATURE CHECK THIS ITEM ASKED FOR HAS NOW BEEN RUN, 2026-08-01, AND
+   IT CONFIRMS THE SUSPICION.* This item's own "single cheapest next action" was
+   to settle whether any standard presentation theorem gives `r ≤ dim Ш²`. Two
+   independent sources were read and NEITHER does:
+
+   * *A Local-Global Study of Obstructed Deformation Problems II*
+     (`arXiv:2606.23918`, the survey this item already cited) states the
+     UNRESTRICTED bound as `r ≤ d₂ = dim_κ H²(G_{ℚ,S}, ad⁰ρ̄)`, and gives the
+     Greenberg–Wiles decomposition
+     `d₂ = dim_κ Ш¹(G_{ℚ,S}, ε̄_ℓ ⊗ ad⁰ρ̄) + Σ_{p ∈ S} dim_κ H⁰(G_p, ε̄_ℓ ⊗ ad⁰ρ̄)`
+     — which is the identity re-derived above, so the arithmetic is confirmed
+     from two directions.
+   * *Arithmetic Statistics for Galois deformation rings* (`arXiv:2108.13480`,
+     Prop. 3.2) states the bound WITH local conditions as
+     `r ≤ dim H¹_{L^⊥}(G_S, ad⁰ρ̄*)` — the DUAL SELMER group — and says the ring
+     is unobstructed exactly when that group vanishes.
+
+   Both bounds are `≥ dim Ш²_S(ad⁰)`, generically STRICTLY: the first exceeds it
+   by `Σ_{v ∈ S} h⁰(G_v, ad⁰(1))`, the second by `dim coker(loc)` above. So the
+   position is now settled as far as the literature goes: **no standard
+   presentation theorem yields this leaf's conjunct (b), and the leaf asserts
+   strictly more than either classical bound.**
+
+   *What this still does NOT do is refute the leaf.* No witness is offered: `r`
+   need not attain its bound, so for the particular hardly ramified `ρbar` the
+   claim could hold accidentally. It stays a SUSPICION — but one that has now
+   exhausted the cheap way of discharging it, so the next owner should NOT spend
+   another cycle searching the literature for a `Ш²` presentation theorem.
+
+   *The decidable next action, accordingly.* Weaken conjunct (b) from `Ш²` to the
+   DUAL SELMER bound and re-route the consumer chain. That is a STATEMENT change
+   with downstream consumers (`Sha1Twist`,
+   `card_sha1Twist_le_card_dualNumberPoints`,
+   `exists_poitouTatePairing_sha2_sha1Twist`) and it is the same repair the two
+   notes further down this file already arrive at from the other end of the
+   chain — including the observation that `Modularity/Patching.lean` states the
+   dual Selmer group directly, with no local Tate pairing, and would have to be
+   hoisted. It belongs to whoever owns that chain rather than to a passer-by; it
+   is queued as its own task.
 
 References: Böckle, *Presentations of universal deformation rings*; Mazur,
 *Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
@@ -19271,501 +19492,31 @@ theorem exists_obstructionCocycle_smallExtension_deformation_ne_zero
       D.hasUniformSections Λ ‹_› ‹_› ‹_› ‹_› ‹_› ‹_› hΛmax g φ hsurj hcompat hmin
   exact ⟨oc, hsha, fun ψ hψ K hK _hne hsmall hpin => hlift ψ hψ K hK hsmall hpin⟩
 
-/-- **`ℤ_ℓ → Λ` is injective when `ℓ ≠ 0` in the domain `Λ`** (PROVEN
-2026-07-30). Every nonzero ideal of `ℤ_ℓ` is `(ℓ^n)`
-(`PadicInt.ideal_eq_span_pow_p`, from its discrete valuation ring structure), so
-a nonzero kernel would force `(ℓ : Λ)^n = 0` for some `n` — impossible in a
-domain when `(ℓ : Λ) ≠ 0`, and impossible at `n = 0` because `Λ` is nontrivial.
--/
-theorem injective_algebraMap_padicInt_of_natCast_ne_zero
-    (Λ : Type*) [CommRing Λ] [IsDomain Λ] [Algebra ℤ_[ℓ] Λ] (hne : (ℓ : Λ) ≠ 0) :
-    Function.Injective (algebraMap ℤ_[ℓ] Λ) := by
-  rw [RingHom.injective_iff_ker_eq_bot]
-  by_contra hker
-  obtain ⟨n, hn⟩ := PadicInt.ideal_eq_span_pow_p hker
-  have hmem : ((ℓ : ℤ_[ℓ]) ^ n) ∈ RingHom.ker (algebraMap ℤ_[ℓ] Λ) := by
-    rw [hn]; exact Ideal.subset_span rfl
-  rw [RingHom.mem_ker, map_pow, map_natCast] at hmem
-  rcases Nat.eq_zero_or_pos n with rfl | hpos
-  · simp at hmem
-  · exact hne (pow_eq_zero_iff (by omega) |>.mp hmem)
+/-- **Böckle's obstruction COCYCLE, in its MAZUR-CATEGORY form** (PROVEN; the
+mathematical record for this node is the long docstring on
+`exists_obstructionCocycle_smallExtension_deformation_of_section` above, which
+is where the `sorry` is).
 
-omit [Field k] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
-  [DiscreteTopology k] in
-/-- **The coefficient ring of a presentation is `𝔪`-adically precomplete**
-(PROVEN 2026-07-30): a Noetherian local DOMAIN `Λ`, module-finite over `ℤ_ℓ`,
-with `𝔪_Λ = (ℓ)`, is `𝔪_Λ`-adically precomplete.
+**RE-ROUTED 2026-07-31 (release 33), AND THE OLD ROUTE DELETED 2026-08-01.**
+This node was briefly PROVEN over a rival cut
+`exists_obstructionCocycle_smallExtension_lift`, which concluded
+`D.HasHardlyRamifiedLift (S ⧸ K) …` and was packaged into this statement by four
+ring-theory lemmas (`injective_algebraMap_padicInt_of_natCast_ne_zero`,
+`isPrecomplete_maximalIdeal_of_domain_finite`,
+`isAdicComplete_quotient_mvPowerSeries`, `isTopologicalRing_adicTopology`) plus
+the predicate `HasHardlyRamifiedLift`. Release 33 reconciled two rival cuts of
+this node and re-routed the proof below through
+`…_deformation_ne_zero` → `…_deformation_of_section` instead; that left the
+`…_lift` cut with NO consumer anywhere in the tree — an OPEN leaf that was also
+DEAD, still drawing dispatches. It and the five declarations that existed only
+to serve it were deleted on 2026-08-01 (`git show <this commit>^` to recover);
+the one thing on it that was not duplicated elsewhere, item (6) of the machinery
+audit, was moved onto the live leaf above, where the `sorry` is.
 
-Two cases, and the degenerate one is not a corner case worth dodging: if
-`(ℓ : Λ) = 0` then `𝔪_Λ = (0) = ⊥` and `IsPrecomplete.bot` applies (`Λ` is then
-a finite field). Otherwise `ℤ_ℓ → Λ` is injective, so `Λ` is a torsion-free
-module-finite module over the PID `ℤ_ℓ`, hence FREE, and
-`isPrecomplete_span_natCast_of_free_finite` above applies.
-
-This is exactly the hypothesis `surjective_of_mvPowerSeries_ringHom` above
-demands of `Λ` and that its callers had to supply by hand; the obstruction
-leaf's `Λ` is universally quantified with only these properties, so it had to be
-derived rather than assumed. -/
-theorem isPrecomplete_maximalIdeal_of_domain_finite
-    (Λ : Type*) [CommRing Λ] [IsDomain Λ] [IsLocalRing Λ] [Algebra ℤ_[ℓ] Λ]
-    [Module.Finite ℤ_[ℓ] Λ]
-    (hΛmax : IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)}) :
-    IsPrecomplete (IsLocalRing.maximalIdeal Λ) Λ := by
-  by_cases hne : (ℓ : Λ) = 0
-  · have hbot : IsLocalRing.maximalIdeal Λ = ⊥ := by
-      rw [hΛmax, hne, Ideal.span_singleton_eq_bot]
-    rw [hbot]; infer_instance
-  · have hinj := injective_algebraMap_padicInt_of_natCast_ne_zero (ℓ := ℓ) Λ hne
-    haveI : Module.IsTorsionFree ℤ_[ℓ] Λ :=
-      Module.IsTorsionFree.comap (S := Λ) (algebraMap ℤ_[ℓ] Λ)
-        (fun r hr => by
-          rw [isRegular_iff_ne_zero] at hr ⊢
-          exact fun hc => hr (hinj (by simpa using hc)))
-        (fun r m => (Algebra.smul_def r m).symm)
-    haveI : Module.Free ℤ_[ℓ] Λ := Module.free_of_finite_type_torsion_free'
-    rw [hΛmax]
-    exact isPrecomplete_span_natCast_of_free_finite Λ
-
-omit [Field k] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
-  [DiscreteTopology k] in
-/-- **Every proper quotient of `Λ[[x₁,…,x_g]]` is `𝔪`-adically complete**
-(PROVEN 2026-07-30) — the `isAdicComplete` field of the deformation record built
-on `S ⧸ K` below.
-
-`IsPrecomplete` travels from `Λ` (previous lemma) to `S = Λ[[x₁,…,x_g]]`
-(`PowerSeriesAdicComplete.isPrecomplete_mvPowerSeries`) to `S ⧸ K`
-(`PowerSeriesAdicComplete.isPrecomplete_of_surjective`, which yields
-precompleteness for the IMAGE ideal `(𝔪_S).map (mk K)`; that image IS
-`𝔪_{S ⧸ K}` by `IsLocalRing.maximalIdeal_quotient`). `IsHausdorff` is the
-mathlib instance for a Noetherian local ring (Krull intersection), for which the
-Noetherianity of `S` — `isNoetherianRing_mvPowerSeries` above — is what is
-needed. -/
-theorem isAdicComplete_quotient_mvPowerSeries
-    (Λ : Type*) [CommRing Λ] [IsDomain Λ] [IsLocalRing Λ] [Algebra ℤ_[ℓ] Λ]
-    [IsNoetherianRing Λ] [Module.Finite ℤ_[ℓ] Λ] (g : ℕ)
-    (hΛmax : IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)})
-    (K : Ideal (MvPowerSeries (Fin g) Λ))
-    [Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K)] :
-    IsAdicComplete (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K))
-      (MvPowerSeries (Fin g) Λ ⧸ K) := by
-  haveI : IsPrecomplete (IsLocalRing.maximalIdeal Λ) Λ :=
-    isPrecomplete_maximalIdeal_of_domain_finite (ℓ := ℓ) Λ hΛmax
-  haveI hNS : IsNoetherianRing (MvPowerSeries (Fin g) Λ) :=
-    isNoetherianRing_mvPowerSeries g
-  haveI : IsPrecomplete (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ))
-      (MvPowerSeries (Fin g) Λ) := PowerSeriesAdicComplete.isPrecomplete_mvPowerSeries g
-  haveI : IsPrecomplete (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K))
-      (MvPowerSeries (Fin g) Λ ⧸ K) := by
-    rw [IsLocalRing.maximalIdeal_quotient K]
-    exact PowerSeriesAdicComplete.isPrecomplete_of_surjective _ (Ideal.Quotient.mk K)
-      Ideal.Quotient.mk_surjective
-  exact ⟨⟩
-
-omit [Field k] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
-  [DiscreteTopology k] in
-/-- **The `I`-adic topology makes `R` a topological ring** (PROVEN 2026-07-30;
-mathlib states this only through `Ideal.nonarchimedean`, which returns a
-`NonarchimedeanRing` and whose `IsTopologicalRing` parent has to be projected
-out by hand — there is no `IsTopologicalRing` instance keyed on
-`Ideal.adicTopology`).
-
-This is what lets the leaf below name a topology on `S ⧸ K` in its own
-CONCLUSION: the `isAdic` field of the deformation record is then `rfl`, because
-`IsAdic J` is by definition the equation `topology = J.adicTopology`. -/
-theorem isTopologicalRing_adicTopology {R : Type*} [CommRing R] (I : Ideal R) :
-    @IsTopologicalRing R I.adicTopology _ :=
-  (Ideal.nonarchimedean I).toIsTopologicalRing
-
-/-- **`T` carries a hardly ramified LIFT of `D.ρ` along `q`** — the
-Galois-theoretic payload of Böckle's construction, with the Mazur-category
-bookkeeping stripped off (2026-07-30).
-
-`q : T → D.R` is a bare FUNCTION and `T`'s ring/topology/algebra structures are
-instance arguments, for the same reason `IsDeformationStructureOn` above is
-shaped that way: elaborating `ρ'.charFrob` underneath the `∃ oc : … →ₗ[k] …`
-binder of the obstruction leaf below fails with an `unknown free variable`
-internal error unless the compatibility clause is hoisted into a top-level
-definition. Keep it here. For the same reason the reduction compatibility is
-stated COEFFICIENTWISE (`q (coeff n …) = coeff n …`) rather than as
-`Polynomial.map q`, which would need `q` to be a `RingHom` and so would drag
-`D.R`'s ring structure into this signature.
-
-The two clauses are exactly the two fields of `HardlyRamifiedDeformation` that
-are not commutative algebra: the representation is hardly ramified, and it
-reduces to `D.ρ` along `q`. Everything else about `S ⧸ K` — Noetherian, local,
-`𝔪`-adic, complete, the reduction map to `k` and its surjectivity — is supplied
-by the four lemmas above and by `D` itself. -/
-def HardlyRamifiedDeformation.HasHardlyRamifiedLift
-    {ρbar : GaloisRep ℚ k V} (D : HardlyRamifiedDeformation hℓOdd ρbar)
-    (T : Type u) [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
-    [IsLocalRing T] [Algebra ℤ_[ℓ] T] (q : T → D.R) : Prop :=
-  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
-  letI := D.isLocalRing; letI := D.algebra
-  ∃ ρ' : FramedGaloisRep ℚ T (Fin 2),
-    IsHardlyRamified hℓOdd (rank_finTwoFun T) ρ' ∧
-    ∀ r (hr : r.Prime), r ≠ 2 → r ≠ ℓ →
-      ∀ n, q ((ρ'.charFrob hr.toHeightOneSpectrumRingOfIntegersRat).coeff n) =
-        (D.ρ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat).coeff n
-
-/-- **Böckle's obstruction COCYCLE, in its DEFORMATION-THEORETIC form** (sorry
-node, cut out of `exists_obstructionCocycle_smallExtension_section` below on
-2026-07-27, which is now PROVEN over it together with
-`exists_ringHom_section_of_isWeaklyUniversal_isTraceGenerated` above;
-**RE-CUT 2026-07-30 — see the RE-CUT paragraph, which is why this declaration is
-now called `…_lift` and the `…_deformation` name below is PROVEN over it**):
-
-same hypotheses and same `oc`, but conjunct (b) asks for what obstruction theory
-actually PRODUCES — a hardly ramified REPRESENTATION over the ring `S ⧸ K` —
-rather than for the ring-theoretic section that is read off it afterwards. So
-where the node two below concludes
-
-  `∃ s : D.R →+* S ⧸ K, …`,
-
-this leaf concludes
-
-  `D.HasHardlyRamifiedLift (S ⧸ K) (S ⧸ K ↠ D.R)`.
-
-**RE-CUT 2026-07-30 — the Mazur-category bookkeeping left this leaf and is now
-PROVEN.**  Until today the conclusion was
-
-  `∃ D' : HardlyRamifiedDeformation hℓOdd ρbar,
-     D.IsDeformationStructureOn D' (S ⧸ K) _ (S ⧸ K ↠ D.R)`,
-
-i.e. the leaf also owed the whole `HardlyRamifiedDeformation` RECORD on
-`S ⧸ K` — Noetherian, local, `𝔪`-adic, `𝔪`-adically complete, with its
-reduction map and Frobenius compatibility — on top of the representation. None
-of that is obstruction theory and none of it needs a Galois group. It is now
-discharged by the four lemmas in the section header above, and
-`exists_obstructionCocycle_smallExtension_deformation` immediately below is the
-former statement, PROVEN over this one. **The leaf count did not move**; what
-moved is that the arithmetic owner no longer meets `IsAdicComplete`.
-
-The one thing the re-cut does NOT weaken is the demand for a genuine lift: the
-old `≃+*` inside `IsDeformationStructureOn` was there to stop the leaf being
-discharged by `D' := D` with the section as the identification, and
-`HasHardlyRamifiedLift` is stronger still — it asks outright for a
-`FramedGaloisRep ℚ (S ⧸ K) (Fin 2)`, so there is nothing to take `D` for.
-
-The residual obligation is `𝔪`-adic completeness of `S ⧸ K`, and it is a
-theorem rather than an assumption, so no hypothesis was smuggled into the
-consumer: `isAdicComplete_quotient_mvPowerSeries` takes only the properties of
-`Λ` that this leaf's own binders already carry.
-
-**What the 2026-07-27 cut removes from the leaf, and what it leaves.** It
-removes the last mile — Carayol's splitting argument, which is pure
-category-of-deformations formalism and is now PROVEN as
-`exists_ringHom_section_of_isWeaklyUniversal_isTraceGenerated` above. The
-hypotheses `hw` and `ht` are consumed THERE and nowhere else, which is why they
-appear in this leaf's signature only to be passed along. What is left here is
-exactly the obstruction calculus, with no ring theory attached:
-
-1. build the continuous set-theoretic lift `ρ̃` of `D.ρ` along the small
-   extension `S ⧸ K ↠ D.R` and its 2-cochain
-   `c(σ, τ) = ρ̃(σ) ρ̃(τ) ρ̃(στ)⁻¹ − 1 ∈ ad⁰`, written in the HOMOGENEOUS model
-   through `F(g₀,g₁,g₂) = g₀ · c(g₀⁻¹g₁, g₁⁻¹g₂)`;
-2. check it is a cocycle, and that its class lies in `Ш²_S(ad⁰)` — conjunct (a),
-   which is what item (5) of the audit below is about;
-3. when the class vanishes, correct `ρ̃` to a genuine HOMOMORPHISM and check
-   `isHardlyRamified` for the corrected lift. (The ring-theoretic packaging that
-   used to sit here — `S = Λ[[x₁,…,x_g]]` is Noetherian, local and `𝔪`-adically
-   complete, and these pass to `S ⧸ K` — left this leaf on 2026-07-30 and is
-   PROVEN in the section header above.)
-
-**MACHINERY AUDIT — items (1)–(4) are DISCHARGED; only (5) remains, and it is
-what conjunct (a) rests on.** (Moved here from the node below when that node was
-proven; a machinery audit on a proven consumer audits nothing. A stale "this is
-impossible" note costs more than an open sorry, so the discharges are recorded
-explicitly.)
-
-1. *No small-extension API anywhere.* **DISCHARGED 2026-07-27.** Written as
-   `Fermat/FLT/Mathlib/RingTheory/SmallExtension.lean`: `IsSmallExtension`,
-   `ker_le_maximalIdeal`, `ker_sq_eq_bot`, `isTorsionBySet_ker`, the constructor
-   `isSmallExtension_quotientLift`, the local-quotient instances
-   (`IsLocalRing.instQuotientOfNontrivial`, `IsLocalRing.maximalIdeal_quotient`)
-   and the semilinearity lemma `apply_smul_of_residueEquiv`. It was genuinely
-   absent from mathlib, from our pin and from `~/cs/FLT` — the audit's own
-   refuting grep was re-run and still found nothing — and it is now consumed
-   both in the SIGNATURE of this leaf and in the proofs of the two nodes below.
-2. *No obstruction class exists as a formal object.* **DISCHARGED**: the arrow
-   `ContinuousCohomology.cocycleClass` exists, so a cocycle can be turned into a
-   class. What is still missing is the cocycle `c(σ,τ)` itself, which is what
-   this leaf asserts to exist.
-3. *No inhomogeneous cochains in our pin.* STILL TRUE, and NOT BINDING: the
-   homogeneous model has elements and a cocycle condition, and the dictionary
-   above expresses `c(σ,τ)` inside it.
-4. *No long exact sequence, no connecting map, no cup product.* **DISCHARGED for
-   the part this leaf needs**: the binding gap was the absence of any `Z/B` model
-   of `continuousCohomology`, now vendored (`cohomologyIsoQuot`, `cocycleClass`).
-   A cup product is still absent and is still needed by
-   `rank_sha2_le_rank_sha1_twist` below, but NOT here.
-5. *Liftability of the four hardly ramified local conditions along a small
-   extension* is nowhere stated. REFUTED BY: a lemma about `IsHardlyRamified`
-   being preserved under a square-zero surjection. **STILL OPEN**, and this is
-   the single binding item; it is what conjunct (a) — the landing in `Ш²`
-   rather than merely in `H²` — rests on. With (1) in hand it is expressible:
-   the statement wanted is `IsSmallExtension π → IsHardlyRamified … → …`.
-
-   **A WARNING FOR WHOEVER TAKES IT** (recorded 2026-07-27, from an attempt to
-   state item (5) directly). The naive reading — "if `π ∘ ρ̃` is hardly ramified
-   and `π` is a small extension, then `ρ̃` is hardly ramified" — is **FALSE**,
-   and every clause of `IsHardlyRamified` fails it separately:
-
-   * `det`: `det ρ̃` agrees with the cyclotomic character only modulo `ker π`, so
-     it differs from it by a character valued in `1 + ker π`. (It can be
-     CORRECTED — `ker π` is a `k`-vector space with `char k = ℓ` odd, so
-     squaring is bijective on `1 + ker π` and one may scale `ρ̃` by the square
-     root of the ratio — but that is a choice, not an implication.)
-   * `isUnramified`: `ρ̃(I_p) ⊆ 1 + M₂(ker π)`, an abelian group, and a
-     continuous map from inertia into it need not be trivial.
-   * `isFlat` and `isTameAtTwo`: likewise conditions on the chosen lift.
-
-   So item (5) is not a preservation lemma. It is the assertion that the lift
-   can be CHOSEN to satisfy the four conditions — equivalently that the local
-   components of the obstruction class vanish, which is precisely why conjunct
-   (a) says `Ш²` and not `H²`. State it that way, per local condition, and
-   expect one sub-leaf per clause of `IsHardlyRamified`.
-
-6. *The CORRECTION STEP behind conjunct (b) — a SIXTH item, raised 2026-07-30,
-   and it is an OPEN FALSITY SUSPICION rather than a missing lemma.* **Read this
-   before starting on conjunct (b); it may be that the statement, and with it
-   this whole subtree's route, needs changing.** IT IS NOT A REFUTATION: no
-   witness is offered and none was found. What follows is one specific,
-   cheaply-checkable question, and it was not asked by any of the five audits
-   above, all of which are about conjunct (a).
-
-   *The observation.* Conjunct (b) reads: if `oc ψ` is a COBOUNDARY — i.e. the
-   obstruction class vanishes in `H²(G_{ℚ,S}, ad⁰)`, the cohomology of the
-   UNCONDITIONED fixed-determinant problem — then a HARDLY RAMIFIED lift exists
-   over `S ⧸ K`. The classical route to that conclusion has two steps and only
-   the first is controlled by `H²(G_{ℚ,S}, ad⁰)`:
-
-   (i) the class vanishing gives a lift `ρ̃ : G_{ℚ,S} → GL₂(S ⧸ K)` of `D.ρ`
-       with the right determinant, but with NO local conditions;
-   (ii) `ρ̃|_{G_v}` need not be flat at `ℓ` or tame at `2`. Item (5)'s
-        liftability gives, for each `v ∈ S`, a good local lift, hence a class
-        `c_v ∈ H¹(G_v, ad⁰)` measuring the discrepancy modulo `L_v`; to correct
-        `ρ̃` GLOBALLY one needs `(c_v)_v` to come from `H¹(G_{ℚ,S}, ad⁰)`.
-
-   So conjunct (b) silently asserts that the tuple in step (ii) is always in the
-   image of `H¹(G_{ℚ,S}, ad⁰) → ⊕_{v ∈ S} H¹(G_v, ad⁰) / L_v`. Nothing in the
-   leaf's hypotheses makes that map surjective, and its cokernel is the
-   obstruction group of the CONDITIONED functor modulo `Ш²`. (The precise
-   identification of that cokernel with a dual Selmer group was NOT verified
-   here and is deliberately not asserted; the recorded gap is the surjectivity
-   itself, which is what step (ii) needs.)
-
-   *Why this matters beyond this leaf, and the QUANTIFIED version — this part IS
-   verified against the literature.* Conjuncts (a) and (b) together make `oc`
-   INJECTIVE, which is exactly how the consumer chain uses it: `oc ψ = 0` forces
-   a lift, hence a section by weak universality, hence `ker φ ⊆ K_ψ`, hence
-   `ψ = 0`. So this leaf asserts `r ≤ dim_k Ш²_S(ad⁰)` for the minimal
-   presentation. **Mazur's classical bound for the UNRESTRICTED problem — no
-   local conditions at all, so no correction step and no room to argue about
-   `L` — is `r ≤ dim_k H²(G_{ℚ,S}, ad⁰)`, and that group is STRICTLY LARGER
-   than `Ш²_S(ad⁰)` by a computable amount:**
-
-     `dim_k H²(G_{ℚ,S}, ad⁰) = dim_k Ш²_S(ad⁰) + Σ_{v ∈ S} dim_k H⁰(G_v, ad⁰(1))`.
-
-   That identity is the tail of the nine-term Poitou–Tate sequence
-   `H²(G_S, ad⁰) → ⊕_{v ∈ S} H²(G_v, ad⁰) → H⁰(G_S, ad⁰(1))^∨ → 0` combined with
-   local duality `H²(G_v, ad⁰) ≅ H⁰(G_v, ad⁰(1))^∨` and with
-   `h⁰(G_S, ad⁰(1)) = 0`, which `hirr` supplies (the same vanishing
-   `card_sha1Twist_le_card_dualNumberPoints` below calls load-bearing). It is
-   the Greenberg–Wiles formula in the form quoted in the 2026 survey *A
-   Local-Global Study of Obstructed Deformation Problems II*
-   (`arXiv:2606.23918`, §2.1–2.2), which also states the presentation bound as
-   `d₂ = dim_κ H²(G_{ℚ,S}, ad ρ̄)` — the AMBIENT `H²`, not `Ш²`.
-
-   The gap term is not a corner case. At `v = ℓ` the flat/ordinary
-   `ρbar|_{G_ℓ}` routinely has `H⁰(G_ℓ, ad⁰(1)) ≠ 0`, so bounding `r` by `Ш²`
-   rather than by `H²` is a strictly stronger claim by a positive amount.
-   Imposing the hardly ramified local conditions is exactly what is supposed to
-   cut `H²` down towards `Ш²` — and that cutting-down IS step (ii). So the two
-   halves of this item are the same gap seen twice: the leaf cannot be reached
-   by the unrestricted route (`H²` is too big), and the restricted route owes
-   the correction step.
-
-   *And the CONDITIONED bound in the literature is the DUAL SELMER dimension,
-   which is also `≥ dim Ш²`, strictly.* For a deformation problem with local
-   conditions `L = (L_v)_{v ∈ S}` the standard presentation has `g = dim H¹_L`
-   generators and `r ≤ dim_k H¹_{L^⊥}(ad⁰(1))` relations. Now `Ш¹_S(ad⁰(1))` is
-   `H¹_{L^⊥}(ad⁰(1))` with `L_v^⊥` replaced by `0` at every `v ∈ S`, so
-
-     `Ш¹_S(ad⁰(1)) ⊆ H¹_{L^⊥}(ad⁰(1))`, with EQUALITY iff `L_v^⊥ = 0` for all
-     `v ∈ S`, i.e. iff `L_v = H¹(G_v, ad⁰)` — no condition at all at `v`.
-
-   The hardly ramified problem imposes a PROPER condition at `v = ℓ` (flatness),
-   so `L_ℓ^⊥ ≠ 0` and the containment has no reason to be an equality. Combined
-   with `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨` (the pairing leaf below), the leaf's
-   `r ≤ dim Ш²_S(ad⁰)` is therefore strictly stronger than BOTH standard bounds,
-   and it is stronger in the direction the local conditions are supposed to make
-   ROOM in, not remove it. **That is the closest thing to a witness offered here,
-   and it is why this is filed as a suspicion and not as a note.**
-
-   *The discriminating question, and it is a literature question, not a Lean
-   one.* Does Böckle's local-global principle (*Presentations of universal
-   deformation rings*, LMS Lecture Notes 2007; *A local-global principle for
-   deformations of Galois representations*) give `r ≤ dim Ш²` for a deformation
-   condition of this kind, under hypotheses `ρbar` here satisfies — or only a
-   bound by the dual Selmer group? Secondary sources describe his conditions as
-   "involving the vanishing of a second Shafarevich–Tate group and auxiliary
-   primes", which is consistent with `Ш²` being the right home only under extra
-   hypotheses. Neither Böckle paper is in `sources/`; both should be downloaded,
-   and that is the single cheapest next action on this leaf. If the answer is the
-   former, this item retires with a citation and nothing in the tree changes. If
-   the latter, conjunct (b) is FALSE AS STATED and must be weakened — and the
-   leaf must then say WHICH group, because the consumer chain reads the answer
-   off it.
-
-   *What was searched, 2026-07-30, so it is not repeated.* Wiles 1995 was
-   obtained and text-extracted in full: its Chapter 1 develops the Selmer groups
-   `H¹_D` and their duals but does NOT state a generators-and-relations
-   presentation, so it does not settle the question directly. The relation bound
-   as `dim` dual Selmer is stated in secondary literature on Böckle's method;
-   the unrestricted bound as `dim H²(G_{ℚ,S}, ad ρbar)` is stated in
-   `arXiv:2606.23918` §2.2. Kisin's deformation notes as served online are
-   Lecture 1 only and do not reach the presentation. The Anna's Archive MCP is
-   NOT registered in this session, so Böckle could not be fetched from here.
-
-   *The repair, if it is needed, is known in shape and is CHEAPER than the
-   current route — which is the other reason to settle this before proving
-   anything.* Replace `Ш²_S(ad⁰)` by `H¹_{L^⊥}(ad⁰(1))^∨` throughout the chain.
-   Then `exists_poitouTatePairing_sha2_sha1Twist` below — the file's single most
-   expensive leaf, gated on local class field theory and the local invariant map,
-   neither of which exists in this tree — is NO LONGER NEEDED: the chain becomes
-   `r ≤ dim H¹_{L^⊥}(ad⁰(1)) = dim H¹_L = g` by Greenberg–Wiles alone. The cost
-   is STATING `H¹_{L^⊥}`, which the section header above `adZeroCycloChar`
-   correctly says needs the local Tate pairing *if* written as an orthogonal
-   complement — but `Modularity/Patching.lean` describes the same dual Selmer
-   group directly, as an explicit unramified-outside-`S` condition
-   (`h1TwistUnramified`, `h1TwistLocalKer`, the `DualSelmerVocabulary` section),
-   and pays no pairing at all. That module is DOWNSTREAM of this one, so nothing
-   there is consumable here and the vocabulary would have to be hoisted; see the
-   same discussion on `card_sha1Twist_le_card_dualNumberPoints` below, which
-   reaches the identical conclusion from the other end of the chain.
-
-   *What was checked, so the next reader does not repeat it.* `Sha2` and
-   `Sha1Twist` above impose the ZERO local condition at each `v ∈ S`, so
-   `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨` (the pairing leaf) is the correct reading of
-   Poitou–Tate for THOSE groups and is not in question here — the question is
-   only whether `Ш²` is the right home for the obstruction. The OCR text of
-   Cornell–Silverman–Stevens in `sources/css1997mfflt.txt` was searched
-   (`obstruct`, `Selmer`, `relations`, `presentation`); Mazur's article there
-   discusses unobstructed deformation theory and de Smit–Lenstra's gives the
-   presentation, but neither states the relation bound in a form this OCR
-   renders legibly, so the question stands open. Böckle's papers are NOT in
-   `sources/` and should be downloaded.
-
-References: Böckle, *Presentations of universal deformation rings*; Mazur,
-*Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
-*Fermat's Last Theorem*, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII;
-Schlessinger, *Functors of Artin rings*.
-
-**CIRCULARITY GUARD — MOVED HERE, NOT DROPPED.** This is its FIFTH move (off
-`rank_relationSpace_le_of_rank_sha2_le`, then off
-`exists_injective_dual_relationSpace_to_sha2`, then off
-`exists_obstructionHom_relationSpace_sha2`, then off
-`exists_obstructionCocycle_relationSpace_sha2`, and now off
-`exists_obstructionCocycle_smallExtension_section`); a guard on a proven consumer
-guards nothing, so it belongs on whichever declaration still contains the
-`sorry`. The BANNED INPUTS clause binds: neither
-`not_isIrreducible_of_isHardlyRamified_of_five_le`
-(`Modularity/KhareWintenberger.lean`) nor
-`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
-— nor anything proven over them — may be used to discharge this leaf, since
-their intended proofs run through modularity lifting, which is proven over the
-very bound this leaf supplies. A green build and an honest `#print axioms`
-would BOTH survive such a discharge; only a human reading catches it. `hℓ5`
-is carried for the same reason: it keeps
-`IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to the
-prime `3`) inapplicable, so that route stays closed mathematically rather than
-merely by import scope.
-
-INTEGRATION REPAIR (2026-07-28, and it is the SECOND time this exact defect has
-crossed a release).  This leaf was cut from a base on which the cocycle lived in
-`adZeroTopRep ρbar`, i.e. cohomology over the full `Γ_ℚ`.  `Sha2` had meanwhile
-been restated over `G_{ℚ,S}` — it is now a submodule of
-`continuousCohomology 2 (adZeroRestricted ρbar S)` — so the `∈ Sha2 …` clause had
-no `Membership` instance and the consumer's `refine ⟨oc, hsha, …⟩` was a type
-mismatch.  Restated here over `adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)`,
-matching `exists_obstructionCocycle_smallExtension_section` below; nothing was
-proven or weakened, and the mathematical content is unchanged — this is the same
-statement over the group `Sha2` is now indexed by. -/
-theorem exists_obstructionCocycle_smallExtension_lift
-    (hℓ5 : 5 ≤ ℓ)
-    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (D : HardlyRamifiedDeformation hℓOdd ρbar)
-    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
-    letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
-    letI := D.isLocalRing; letI := D.algebra
-    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
-      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
-      (_ : Module.Finite ℤ_[ℓ] Λ),
-      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
-      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
-        (hsurj : Function.Surjective φ),
-        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
-          algebraMap ℤ_[ℓ] D.R →
-        RingHom.ker φ ≤
-          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
-            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
-        letI : Module k (↥(RingHom.ker φ) ⧸
-            (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
-              (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
-          Module.compHom _
-            (residueRingEquivOfSurjective (D.π.comp φ)
-              (D.π_surjective.comp hsurj)).symm.toRingHom
-        ∃ oc : Module.Dual k (↥(RingHom.ker φ) ⧸
-              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
-                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
-            ↥(TopModuleCat.ker
-              ((TopRep.homogeneousCochains
-                (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))).d 2 3)),
-          (∀ ψ, ContinuousCohomology.cocycleClass
-              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2 (oc ψ) ∈
-            Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ∧
-          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer
-              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2).hom.range →
-            ∀ (K : Ideal (MvPowerSeries (Fin g) Λ))
-              (hK : K ≤ RingHom.ker φ),
-              letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
-                Ideal.Quotient.nontrivial_of_le_ker hK
-              IsSmallExtension (Ideal.Quotient.lift K φ fun _ ha => hK ha) →
-              (∀ j : ↥(RingHom.ker φ),
-                (j : MvPowerSeries (Fin g) Λ) ∈ K ↔
-                  ψ (Submodule.Quotient.mk j) = 0) →
-              letI : TopologicalSpace (MvPowerSeries (Fin g) Λ ⧸ K) :=
-                (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K)).adicTopology
-              letI : IsTopologicalRing (MvPowerSeries (Fin g) Λ ⧸ K) :=
-                isTopologicalRing_adicTopology _
-              HardlyRamifiedDeformation.HasHardlyRamifiedLift hℓOdd D
-                (MvPowerSeries (Fin g) Λ ⧸ K)
-                (Ideal.Quotient.lift K φ fun _ ha => hK ha) :=
-  sorry
-
-/-- **Böckle's obstruction COCYCLE, in its MAZUR-CATEGORY form** (**PROVEN
-2026-07-30** over `exists_obstructionCocycle_smallExtension_lift` immediately
-above plus the four ring-theory lemmas in the section header above — NOT a sorry
-node any more; the mathematical record for this node is the long docstring on
-the leaf above, which is where it belongs).
-
-This is the statement the leaf above USED to carry, verbatim: conjunct (b)
-produces a `HardlyRamifiedDeformation` whose coefficient ring is `S ⧸ K` up to
-isomorphism. The proof is the packaging, and it contains no arithmetic — every
-field of the record is either commutative algebra (`isNoetherianRing` from
-`isNoetherianRing_mvPowerSeries`, `isAdic` by `rfl` because the topology is
-NAMED as the adic one in the leaf's conclusion, `isAdicComplete` from
-`isAdicComplete_quotient_mvPowerSeries`), or is read off `D` and the lift
-(`π := D.π ∘ q`, surjective because both are; `charFrob_compat` by composing the
-lift's reduction compatibility with `D`'s).
-
-**Why `e := RingEquiv.refl` is legitimate here** and not a way of dodging the
-`≃+*`: the deformation built below IS carried by `S ⧸ K` on the nose, because
-the leaf above hands out a representation over that very ring together with the
-topology the record needs. The `≃+*` in `IsDeformationStructureOn` exists so
-that a *different* ring cannot be substituted; producing the ring itself is the
-strongest way to satisfy it, not the weakest.
+The proof below is the packaging and contains no arithmetic: the DEGENERATE
+branch (`K = ker φ`, where the small extension is an isomorphism) is
+`HardlyRamifiedDeformation.isDeformationStructureOn_self_of_bijective` above, and
+the non-degenerate branch is `…_deformation_ne_zero` verbatim.
 
 The only consumer is `exists_obstructionCocycle_smallExtension_section`
 immediately below, whose call site is unchanged — this node has the same name,
@@ -19918,10 +19669,11 @@ read off by lifting `s a` through the surjection `S ↠ S ⧸ K`. Without `ht` t
 compatible map exists but need not be unique, hence need not split.
 
 **MACHINERY AUDIT and CIRCULARITY GUARD — MOVED, NOT DROPPED.** Both now sit on
-`exists_obstructionCocycle_smallExtension_lift` above, which is where the
-`sorry` is (they moved off `exists_obstructionCocycle_smallExtension_deformation`
-on 2026-07-30, when the ring-theoretic packaging was peeled off that node and it
-became PROVEN). Items (1)–(4) of that audit are DISCHARGED; item (5) — liftability
+`exists_obstructionCocycle_smallExtension_deformation_of_section` above, which is
+where the `sorry` is (they moved off
+`exists_obstructionCocycle_smallExtension_deformation` on 2026-07-30, then off
+the `…_lift` cut when that was deleted as dead on 2026-08-01).
+Items (1)–(4) of that audit are DISCHARGED; item (5) — liftability
 of the four hardly ramified local conditions along a small extension — is the
 single binding item, and the audit there records why its naive "preservation"
 reading is FALSE. Nothing in the proof below touches either banned input; it is
@@ -20047,8 +19799,9 @@ that class back as the cocycle being a coboundary; both are vendored in
 `Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`.
 
 **MACHINERY AUDIT and CIRCULARITY GUARD — MOVED, NOT DROPPED.** Both now sit on
-`exists_obstructionCocycle_smallExtension_lift` above, which is where the
-`sorry` is (they moved off `exists_obstructionCocycle_smallExtension_section` on
+`exists_obstructionCocycle_smallExtension_deformation_of_section` above, which is
+where the `sorry` is (they moved off
+`exists_obstructionCocycle_smallExtension_section` on
 2026-07-27 when that node was proven, and off
 `exists_obstructionCocycle_smallExtension_deformation` on 2026-07-30 when the
 ring-theoretic packaging was peeled off it). Item (1) of that audit — the missing
@@ -22390,8 +22143,9 @@ on the local invariant map.**
 
 **READ FIRST, 2026-07-30 — THIS LEAF MAY BE UNNECESSARY, AND SETTLING THAT IS
 CHEAPER THAN PROVING IT.** Item (6) of the machinery audit on
-`exists_obstructionCocycle_smallExtension_lift` above raises an OPEN FALSITY
-SUSPICION against that leaf's conjunct (b): it asserts the relation bound
+`exists_obstructionCocycle_smallExtension_deformation_of_section` above (it lived
+on the `…_lift` cut until that was deleted as dead on 2026-08-01) raises an OPEN
+FALSITY SUSPICION against that leaf's conjunct (b): it asserts the relation bound
 `r ≤ dim_k Ш²_S(ad⁰)`, whereas Mazur's classical bound is by the AMBIENT
 `dim_k H²(G_{ℚ,S}, ad⁰)`, and
 
@@ -24923,7 +24677,8 @@ that literature stated in dimensions can be applied to it without a further
 re-cut — and, per the rule, a fourth re-cut would void this audit too.
 
 **AND THAT HOIST HAS ACQUIRED A SECOND, INDEPENDENT REASON, 2026-07-30.** Item
-(6) of the machinery audit on `exists_obstructionCocycle_smallExtension_lift`
+(6) of the machinery audit on
+`exists_obstructionCocycle_smallExtension_deformation_of_section`
 above arrives at the same hoist from the OTHER end of the chain: the obstruction
 leaf asserts `r ≤ dim Ш²_S(ad⁰)` where the literature gives
 `r ≤ dim H¹_{L^⊥}(ad⁰(1))`, and the repair — if the suspicion recorded there is
