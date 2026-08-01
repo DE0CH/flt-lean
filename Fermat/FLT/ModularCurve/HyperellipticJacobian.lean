@@ -4401,47 +4401,6 @@ def PlaceData.toPlaceSystem {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c
   ord_complete := D.ord_complete
   ord_finite := D.ord_finite
 
-/-- **LEAF: the only poles of the abscissa are the two points at infinity.**
-
-`ord_v x < 0` forces `v ∈ {∞₊, ∞₋}`.  This is the fundamental inequality
-`Σ_{v | ∞} e(v) f(v) ≤ [F : K(x)] = 2` ([Stichtenoth, *Algebraic Function Fields and Codes*,
-III.1.11]) read at the infinite place of `K(x)`, and nothing more: the two rational points at
-infinity are already exhibited by `PlaceData` (`ord_pt_infinite` gives `ord x = -1`, so
-`e = 1`, and `finrank_residue_pt_eq_one` gives `f = 1`), they are distinct by `pt_injective`,
-so they saturate the bound and there is no room for a third pole of `x`.
-
-**Strictly weaker than the fundamental identity**
-`degOf_poleDivisor_eq_finrank_of_transcendental`: it is one inequality, at one place, for the
-one function `x` — no weak approximation and no dimension count.  Anyone proving that leaf
-gets this one for free (`deg (div_∞ x) = [F : K(x)] = 2` with two degree-`1` poles already
-present leaves no third), so it should be DELETED rather than proven separately if the
-fundamental identity lands first.
-
-**What would refute it**: a place with `ord_v x = -2` (`x = ∞` inert with `e = 2`) or one with
-`f = 2`, in addition to `∞±`.  Neither can occur, because `∞±` alone already contribute
-`1·1 + 1·1 = 2 = [F : K(x)]`; the *existence* of both is where the monic sextic and `2 ≠ 0`
-are used, and both are `PlaceData` fields rather than things to prove. -/
-theorem pt_infinite_of_ord_xx_neg {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (v : D.Places) (hv : D.ord v D.xx < 0) : ∃ s : Bool, v = D.pt (Sum.inr s) := sorry
-
-/-- **PROVEN from `pt_infinite_of_ord_xx_neg`: a place with a simple pole of `x` lying on the
-`s` branch at infinity IS `∞_s`.**  The branch separation is `isPlaceOfPt_injective`, whose
-`2 ≠ 0` comes from `PlaceData.two_ne_zero`. -/
-theorem pt_inr_eq_of_ord_xx {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (s : Bool) (v : D.Places) (h1 : D.ord v D.xx = -1)
-    (h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3)) :
-    v = D.pt (Sum.inr s) := by
-  obtain ⟨s', rfl⟩ := pt_infinite_of_ord_xx_neg D v (by omega)
-  have hbr : ∀ (t : Bool) (w : D.Places), D.ord w D.xx = -1 →
-      -3 < D.ord w (D.yy - (if t then (1 : D.F) else -1) * D.xx ^ 3) →
-      IsPlaceOfPt D.toFunctionFieldData D.toPlaceSystem (Sum.inr t) w :=
-    fun _ _ ha hb => ⟨ha, hb⟩
-  have hkey := isPlaceOfPt_injective D.toFunctionFieldData D.toPlaceSystem D.two_ne_zero
-    (hbr s _ h1 h2)
-    (hbr s' _ (D.ord_pt_infinite s').1 (D.ord_pt_infinite s').2)
-  rw [Sum.inr.injEq] at hkey
-  rw [hkey]
-
 end Presentation
 
 section Genus
@@ -4869,8 +4828,7 @@ coefficient `1` being a square, which is the whole reason `Pt` has a `Bool` summ
 The hypothesis is carried because every consumer has it and a weaker leaf is an easier one;
 a proof that does not use it should underscore it. -/
 theorem exists_localDenom_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
-    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (_hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (sgn : Bool)
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (sgn : Bool)
     {z : D.F} (hz : 0 ≤ D.ord (D.pt (Sum.inr sgn)) z) :
     ∃ a b e₁ e₂ : K[X],
       Polynomial.eval 0 e₁ + Polynomial.eval 0 e₂ * (if sgn then (1 : K) else -1) ≠ 0 ∧
@@ -4999,10 +4957,10 @@ The chart congruences are computed here rather than read off an axiom: `ord u = 
 `VanishesAt`, not an omission. -/
 theorem exists_const_sub_vanishesAt_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (s : Bool)
+    (_hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (s : Bool)
     {z : D.F} (hz : 0 ≤ D.ord (D.pt (Sum.inr s)) z) :
     ∃ c : K, D.VanishesAt (D.pt (Sum.inr s)) (z - algebraMap K D.F c) := by
-  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_infinite D hsep s hz
+  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_infinite D s hz
   obtain ⟨hx1, hx2⟩ := D.ord_pt_infinite s
   set v := D.pt (Sum.inr s) with hv
   have hxne : D.xx ≠ 0 := by
@@ -5771,6 +5729,59 @@ lemma vanishesAt_or_of_mul (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : 
     D.VanishesAt v a ∨ D.VanishesAt v b :=
   (valMax_isPrime D v).mem_or_mem (show (⟨a, ha⟩ * ⟨b, hb⟩ : D.valRing v) ∈ D.valMax v from h)
 
+/-- **PROVEN: at a POLE of the abscissa the chart at infinity has a value `±1`.**
+
+The half of `exists_chartValue_of_isAlgClosed` below that needs NEITHER algebraic closure
+NOR separability: `w := y·x⁻³` satisfies `w² = revSext (x⁻¹)`, whose value at `x⁻¹ ≡ 0` is
+`1` because the sextic is MONIC, so `(w − 1)(w + 1)` vanishes at `v` and one factor does.
+Split out because `pt_infinite_of_ord_xx_neg` is stated over an arbitrary `K`. -/
+theorem exists_chartValue_infinite_of_ord_xx_neg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (v : D.Places) (hxx : D.ord v D.xx < 0) :
+    ∃ s : Bool, 0 < D.ord v D.xx⁻¹ ∧
+      D.VanishesAt v
+        (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if s then (1 : K) else -1)) := by
+  have hxne : D.xx ≠ 0 := D.xx_ne_zero
+  have hine : D.xx⁻¹ ≠ 0 := inv_ne_zero hxne
+  have hu : 0 < D.ord v D.xx⁻¹ := by rw [D.ord_inv v _ hxne]; omega
+  have humem : D.xx⁻¹ ∈ D.valRing v := le_of_lt hu
+  have hcurve : (D.yy * D.xx⁻¹ ^ 3) ^ 2
+      = PlaceAtInfinity.revSext c₀ c₁ c₂ c₃ c₄ c₅ D.xx⁻¹ := by
+    rw [PlaceAtInfinity.revSext_inv_eq _ _ _ _ _ _ hxne, ← D.eqn]
+    field_simp
+  have hw : 0 ≤ D.ord v (D.yy * D.xx⁻¹ ^ 3) := by
+    rcases eq_or_ne (D.yy * D.xx⁻¹ ^ 3) 0 with h | h
+    · rw [h, D.ord_zero]
+    · have h2 : D.ord v ((D.yy * D.xx⁻¹ ^ 3) ^ 2) = 2 * D.ord v (D.yy * D.xx⁻¹ ^ 3) := by
+        rw [ord_pow D v _ h]; norm_num
+      have hrevord : 0 ≤ D.ord v (PlaceAtInfinity.revSext c₀ c₁ c₂ c₃ c₄ c₅ D.xx⁻¹) := by
+        have h' := aeval_mem_valRing D v humem
+          (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+        rwa [PlaceAtInfinity.aeval_revSextPoly] at h'
+      rw [hcurve] at h2
+      omega
+  have hu0 : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F 0) := by
+    rw [map_zero, sub_zero]; exact Or.inr hu
+  have hvan : D.VanishesAt v
+      ((D.yy * D.xx⁻¹ ^ 3 + 1) * (D.yy * D.xx⁻¹ ^ 3 - 1)) := by
+    have hid : (D.yy * D.xx⁻¹ ^ 3 + 1) * (D.yy * D.xx⁻¹ ^ 3 - 1)
+        = PlaceAtInfinity.revSext c₀ c₁ c₂ c₃ c₄ c₅ D.xx⁻¹ - 1 := by
+      linear_combination hcurve
+    have h := vanishesAt_aeval_sub_eval D v humem hu0
+      (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+    rw [PlaceAtInfinity.aeval_revSextPoly] at h
+    have heval : (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).eval 0 = 1 := by
+      simp [PlaceAtInfinity.revSextPoly]
+    rw [heval, map_one] at h
+    rw [hid]
+    exact h
+  have hone : (0 : ℤ) ≤ D.ord v (D.yy * D.xx⁻¹ ^ 3 + 1) :=
+    (D.valRing v).add_mem hw ((D.valRing v).one_mem)
+  have hone' : (0 : ℤ) ≤ D.ord v (D.yy * D.xx⁻¹ ^ 3 - 1) :=
+    (D.valRing v).sub_mem hw ((D.valRing v).one_mem)
+  rcases vanishesAt_or_of_mul D v hone hone' hvan with h | h
+  · exact ⟨false, hu, by simpa using h⟩
+  · exact ⟨true, hu, by simpa using h⟩
+
 /-- **PROVEN: over an algebraically closed constant field EVERY place has a chart value** —
 either an affine one `(α, β)` on the curve, or the value `±1` of `y/x³` at infinity.
 
@@ -5819,48 +5830,8 @@ theorem exists_chartValue_of_isAlgClosed [IsAlgClosed K] (D : PlaceData c₀ c�
       · have h := vanishesAt_aeval_sub_eval D v hxmem hα (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
         rwa [aeval_sextPoly, eval_sextPoly] at h
     exact ⟨⟨(α, β), by linear_combination hsq⟩, hα, hβ⟩
-  · -- the chart at INFINITY
-    right
-    have hine : D.xx⁻¹ ≠ 0 := inv_ne_zero hxne
-    have hu : 0 < D.ord v D.xx⁻¹ := by rw [D.ord_inv v _ hxne]; omega
-    have humem : D.xx⁻¹ ∈ D.valRing v := le_of_lt hu
-    have hcurve : (D.yy * D.xx⁻¹ ^ 3) ^ 2
-        = PlaceAtInfinity.revSext c₀ c₁ c₂ c₃ c₄ c₅ D.xx⁻¹ := by
-      rw [PlaceAtInfinity.revSext_inv_eq _ _ _ _ _ _ hxne, ← D.eqn]
-      field_simp
-    have hw : 0 ≤ D.ord v (D.yy * D.xx⁻¹ ^ 3) := by
-      rcases eq_or_ne (D.yy * D.xx⁻¹ ^ 3) 0 with h | h
-      · rw [h, D.ord_zero]
-      · have h2 : D.ord v ((D.yy * D.xx⁻¹ ^ 3) ^ 2) = 2 * D.ord v (D.yy * D.xx⁻¹ ^ 3) := by
-          rw [ord_pow D v _ h]; norm_num
-        have hrevord : 0 ≤ D.ord v (PlaceAtInfinity.revSext c₀ c₁ c₂ c₃ c₄ c₅ D.xx⁻¹) := by
-          have h' := aeval_mem_valRing D v humem
-            (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
-          rwa [PlaceAtInfinity.aeval_revSextPoly] at h'
-        rw [hcurve] at h2
-        omega
-    have hu0 : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F 0) := by
-      rw [map_zero, sub_zero]; exact Or.inr hu
-    have hvan : D.VanishesAt v
-        ((D.yy * D.xx⁻¹ ^ 3 + 1) * (D.yy * D.xx⁻¹ ^ 3 - 1)) := by
-      have hid : (D.yy * D.xx⁻¹ ^ 3 + 1) * (D.yy * D.xx⁻¹ ^ 3 - 1)
-          = PlaceAtInfinity.revSext c₀ c₁ c₂ c₃ c₄ c₅ D.xx⁻¹ - 1 := by
-        linear_combination hcurve
-      have h := vanishesAt_aeval_sub_eval D v humem hu0
-        (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
-      rw [PlaceAtInfinity.aeval_revSextPoly] at h
-      have heval : (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).eval 0 = 1 := by
-        simp [PlaceAtInfinity.revSextPoly]
-      rw [heval, map_one] at h
-      rw [hid]
-      exact h
-    have hone : (0 : ℤ) ≤ D.ord v (D.yy * D.xx⁻¹ ^ 3 + 1) :=
-      (D.valRing v).add_mem hw ((D.valRing v).one_mem)
-    have hone' : (0 : ℤ) ≤ D.ord v (D.yy * D.xx⁻¹ ^ 3 - 1) :=
-      (D.valRing v).sub_mem hw ((D.valRing v).one_mem)
-    rcases vanishesAt_or_of_mul D v hone hone' hvan with h | h
-    · exact ⟨false, hu, by simpa using h⟩
-    · exact ⟨true, hu, by simpa using h⟩
+  · -- the chart at INFINITY: no algebraic closure is used, see the lemma above
+    exact Or.inr (exists_chartValue_infinite_of_ord_xx_neg D v hxx)
 
 /-! ### A place is DETERMINED by its chart value (PROVEN)
 
@@ -5918,10 +5889,12 @@ theorem eq_pt_affine_of_chartValue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ 
   omega
 
 /-- **PROVEN: a place at which `x` has a pole and `y/x³ ≡ ε` IS the point at infinity of
-sign `ε`.**  `hsep` is passed only because `exists_localDenom_infinite` takes it; that
-theorem underscores it, the chart at infinity being smooth for every monic sextic. -/
+sign `ε`.**  NO separability: `exists_localDenom_infinite` had carried an underscored
+`_hsep` since 2026-07-30 — the chart at infinity is smooth for every monic sextic — and that
+unused binder has been deleted, which is what makes this statement, and
+`pt_infinite_of_ord_xx_neg` below it, `hsep`-free. -/
 theorem eq_pt_infinite_of_chartValue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (sgn : Bool) (v : D.Places)
+    (sgn : Bool) (v : D.Places)
     (hu : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F 0))
     (hw : D.VanishesAt v
       (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if sgn then (1 : K) else -1))) :
@@ -5934,7 +5907,7 @@ theorem eq_pt_infinite_of_chartValue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c�
   intro z hzP
   rcases eq_or_ne z 0 with rfl | hz0
   · rw [D.ord_zero]
-  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_infinite D hsep sgn hzP
+  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_infinite D sgn hzP
   have hden0 : aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0 := by
     intro h0
     have hV := vanishesAt_chart_sub D v hu hw e₁ e₂
@@ -5951,6 +5924,52 @@ theorem eq_pt_infinite_of_chartValue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c�
 end PlaceData
 
 end SinglePlaceBound
+
+/-- **PROVEN 2026-08-01 (was a LEAF): the only poles of the abscissa are the two points at
+infinity.**  `ord_v x < 0` forces `v ∈ {∞₊, ∞₋}`.
+
+The leaf's own account of itself was the fundamental inequality
+`Σ_{v | ∞} e(v) f(v) ≤ [F : K(x)] = 2` ([Stichtenoth, *Algebraic Function Fields and Codes*,
+III.1.11]) read at the infinite place of `K(x)` — and it added that anyone proving the
+fundamental identity `degOf_poleDivisor_eq_finrank_of_transcendental` "gets this one for
+free, so it should be DELETED rather than proven separately".  Neither was needed: the two
+theorems immediately above give it directly, and no degree theory appears.
+
+**MOVED here from ~1500 lines above on 2026-08-01**, because both of its inputs
+(`exists_chartValue_infinite_of_ord_xx_neg` and `PlaceData.eq_pt_infinite_of_chartValue`)
+live at the end of the `SinglePlaceBound` section.  The move is safe by inspection: neither
+this theorem nor `pt_inr_eq_of_ord_xx` below it is consumed anywhere between the old and the
+new position — their only call sites are in `ConstFieldExtension`, some 4000 lines further
+down — and both are still declared at the `Fermat.Hyperelliptic` level, so no name changed.
+
+**What would have refuted it**: a place with `ord_v x = -2` (`x = ∞` inert with `e = 2`) or
+one with `f = 2`, in addition to `∞±`.  Neither can occur, and the proof now says why
+without any counting: at such a place `y·x⁻³` is congruent to `±1` (the sextic being MONIC),
+which pins the chart value, and a place is determined by its chart value. -/
+theorem pt_infinite_of_ord_xx_neg {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (v : D.Places) (hv : D.ord v D.xx < 0) : ∃ s : Bool, v = D.pt (Sum.inr s) := by
+  obtain ⟨s, hu, hw⟩ := PlaceData.exists_chartValue_infinite_of_ord_xx_neg D v hv
+  refine ⟨s, PlaceData.eq_pt_infinite_of_chartValue D s v ?_ hw⟩
+  rw [map_zero, sub_zero]
+  exact Or.inr hu
+
+/-- **PROVEN from `pt_infinite_of_ord_xx_neg`: a place with a simple pole of `x` lying on the
+`s` branch at infinity IS `∞_s`.**  The branch separation is `isPlaceOfPt_injective`, whose
+`2 ≠ 0` comes from `PlaceData.two_ne_zero`. -/
+theorem pt_inr_eq_of_ord_xx {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (s : Bool) (v : D.Places) (h1 : D.ord v D.xx = -1)
+    (h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3)) :
+    v = D.pt (Sum.inr s) := by
+  obtain ⟨s', rfl⟩ := pt_infinite_of_ord_xx_neg D v (by omega)
+  have hbr : ∀ (t : Bool) (w : D.Places), D.ord w D.xx = -1 →
+      -3 < D.ord w (D.yy - (if t then (1 : D.F) else -1) * D.xx ^ 3) →
+      IsPlaceOfPt D.toFunctionFieldData D.toPlaceSystem (Sum.inr t) w :=
+    fun _ _ ha hb => ⟨ha, hb⟩
+  have hkey := isPlaceOfPt_injective D.toFunctionFieldData D.toPlaceSystem D.two_ne_zero
+    (hbr s _ h1 h2)
+    (hbr s' _ (D.ord_pt_infinite s').1 (D.ord_pt_infinite s').2)
+  rw [Sum.inr.injEq] at hkey
+  rw [hkey]
 
 /-- **LEAF (fundamental identity, first inequality): `deg (div_∞ g) ≤ [F : K⟮g⟯]`.**
 
@@ -10494,7 +10513,7 @@ theorem pt_surjective_of_isAlgClosed {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : 
   intro v
   rcases exists_chartValue_of_isAlgClosed D v with ⟨q, hx, hy⟩ | ⟨s, hu, hw⟩
   · exact ⟨Sum.inl q, (eq_pt_affine_of_chartValue D hsep q v hx hy).symm⟩
-  · refine ⟨Sum.inr s, (eq_pt_infinite_of_chartValue D hsep s v ?_ hw).symm⟩
+  · refine ⟨Sum.inr s, (eq_pt_infinite_of_chartValue D s v ?_ hw).symm⟩
     rw [map_zero, sub_zero]
     exact Or.inr hu
 
