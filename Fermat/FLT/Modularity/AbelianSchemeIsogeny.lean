@@ -105,9 +105,12 @@ warning set is still FIVE, and it is:
   PROVEN over them.  The first is `𝒪(X ∖ U)` for an affine open `U` and needs Weil
   divisors, `𝒪(D)` and nothing about the group law; the second is Mumford's
   Application 1 and needs the theorem of the square and nothing about divisors;
-* `nonempty_cubeIdentity` — THE THEOREM OF THE CUBE, cut 2026-07-31 out of
-  `hasCubeIso_of_symm_of_normalized` (which is now PROVEN over it).  Needs the seesaw
-  principle, hence coherent-sheaf cohomology and flat base change.
+* `nonempty_cubeIdentity_universal` — THE THEOREM OF THE CUBE, for the three PROJECTIONS
+  of `A ×_T A ×_T A`.  Cut 2026-07-31 out of `hasCubeIso_of_symm_of_normalized` as
+  `nonempty_cubeIdentity` (arbitrary triple of relative points) and restated in the
+  universal form 2026-08-01; `nonempty_cubeIdentity` is now PROVEN over it, by transport
+  along the classifying morphism (`CubeIdentity.pre`), and both consumers are unchanged.
+  Needs the seesaw principle, hence coherent-sheaf cohomology and flat base change.
 
 The last three are the only mathlib-scale statements in the module, they are INDEPENDENT
 of each other, and each is a theory build rather than a proof problem.  As always: this
@@ -16342,7 +16345,21 @@ is `y² + y = x³ + x + 1` over `𝔽₂`, which has exactly one rational point.
 
 So the open leaves of this block are `exists_isInvertibleSheaf_nonvanishingLocus_eq_of_
 isAffineOpen`, `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` and `nonempty_cubeIdentity`
-— pairwise independent, one theory build each. -/
+— pairwise independent, one theory build each.
+
+**UPDATE 2026-08-01 — the cube leaf is now the UNIVERSAL one, and the count is again
+unchanged (`1 → 1`).**  `nonempty_cubeIdentity` is PROVEN; the leaf is
+`nonempty_cubeIdentity_universal`, the same identity for the three PROJECTIONS of
+`A ×_T A ×_T A`.  The two are EQUIVALENT — instantiation one way, transport along the
+classifying morphism `relTripleLift` the other — so the faithfulness audit is unchanged
+and is stated once, on the leaf.
+
+What the restatement buys, since the count does not show it: the functorial half of the
+theorem is now proven once and for all in `CubeIdentity.pre` (the six naturality
+identities of the group law, plus pseudo-functoriality and monoidality of `c^*`), and the
+leaf is a statement about ONE invertible sheaf on ONE scheme.  That is the only shape the
+seesaw principle acts on, so the reduction is a strict prerequisite of any proof rather
+than a repackaging: against the `∀ T' x y z` shape a prover cannot start at all. -/
 
 /-- **AN EFFECTIVE CARTIER DIVISOR CUTTING OUT THE COMPLEMENT OF A GIVEN AFFINE OPEN**
 (sorry leaf, cut 2026-07-31 out of `exists_isAmpleSheaf_of_field` below) — Hartshorne II
@@ -16763,14 +16780,200 @@ theorem nonempty_modTensorPow_two {Z : Scheme.{u}} (M : Z.Modules) :
     Nonempty (modTensorPow M 2 ≅ modTensor M M) :=
   ⟨modTensorMapIso (Iso.refl M) (modTensorUnitRightIso M)⟩
 
+/-! ### The universal triple of relative points
+
+`X ×_T X ×_T X` with its three projections, read as relative points.  This is the
+object that CLASSIFIES triples of relative points of `q`: for any base point
+`g : T' ⟶ T` and any `x y z : RelPoint q g` there is a morphism `relTripleLift x y z`
+carrying the three projections to `x`, `y`, `z` (`relTripleLift_pt₁/₂/₃`).
+
+Nothing here is about abelian schemes; it is the functor-of-points statement that the
+triple fibre product represents `A × A × A`, written out.  It exists so that
+`nonempty_cubeIdentity_universal` below can be stated at ONE triple of points on ONE
+scheme, with the general form derived from it. -/
+
+section RelTriple
+
+variable {X T : Scheme.{u}} {q : X ⟶ T}
+
+/-- The structure morphism `X ×_T X ×_T X ⟶ T`, taken through the FIRST factor. -/
+noncomputable def relTripleStr (q : X ⟶ T) : pullback (pullback.fst q q ≫ q) q ⟶ T :=
+  pullback.fst (pullback.fst q q ≫ q) q ≫ pullback.fst q q ≫ q
+
+/-- The first projection of `X ×_T X ×_T X`, as a relative point. -/
+noncomputable def relTriplePt₁ (q : X ⟶ T) : RelPoint q (relTripleStr q) :=
+  ⟨pullback.fst (pullback.fst q q ≫ q) q ≫ pullback.fst q q, by
+    simp [relTripleStr, Category.assoc]⟩
+
+/-- The second projection of `X ×_T X ×_T X`, as a relative point. -/
+noncomputable def relTriplePt₂ (q : X ⟶ T) : RelPoint q (relTripleStr q) :=
+  ⟨pullback.fst (pullback.fst q q ≫ q) q ≫ pullback.snd q q, by
+    simp [relTripleStr, Category.assoc, pullback.condition]⟩
+
+/-- The third projection of `X ×_T X ×_T X`, as a relative point. -/
+noncomputable def relTriplePt₃ (q : X ⟶ T) : RelPoint q (relTripleStr q) :=
+  ⟨pullback.snd (pullback.fst q q ≫ q) q, pullback.condition.symm⟩
+
+variable {T' : Scheme.{u}} {g : T' ⟶ T}
+
+/-- **The classifying morphism of a triple of relative points.** -/
+noncomputable def relTripleLift (x y z : RelPoint q g) :
+    T' ⟶ pullback (pullback.fst q q ≫ q) q :=
+  pullback.lift (pullback.lift x.1 y.1 (x.2.trans y.2.symm)) z.1 (by
+    rw [← Category.assoc, pullback.lift_fst, x.2, z.2])
+
+theorem relTripleLift_str (x y z : RelPoint q g) :
+    relTripleLift x y z ≫ relTripleStr q = g := by
+  rw [relTripleStr, relTripleLift, ← Category.assoc, pullback.lift_fst, ← Category.assoc,
+    pullback.lift_fst, x.2]
+
+theorem relTripleLift_pt₁ (x y z : RelPoint q g) :
+    RelPoint.pre (relTripleLift x y z) (relTripleLift_str x y z) (relTriplePt₁ q) = x :=
+  Subtype.ext (by
+    show relTripleLift x y z ≫ (relTriplePt₁ q).1 = x.1
+    rw [relTriplePt₁, relTripleLift, ← Category.assoc, pullback.lift_fst, pullback.lift_fst])
+
+theorem relTripleLift_pt₂ (x y z : RelPoint q g) :
+    RelPoint.pre (relTripleLift x y z) (relTripleLift_str x y z) (relTriplePt₂ q) = y :=
+  Subtype.ext (by
+    show relTripleLift x y z ≫ (relTriplePt₂ q).1 = y.1
+    rw [relTriplePt₂, relTripleLift, ← Category.assoc, pullback.lift_fst, pullback.lift_snd])
+
+theorem relTripleLift_pt₃ (x y z : RelPoint q g) :
+    RelPoint.pre (relTripleLift x y z) (relTripleLift_str x y z) (relTriplePt₃ q) = z :=
+  Subtype.ext (by
+    show relTripleLift x y z ≫ (relTriplePt₃ q).1 = z.1
+    rw [relTriplePt₃, relTripleLift, pullback.lift_snd])
+
+end RelTriple
+
 namespace AbelianSchemeStruct
 
-/-- **THE THEOREM OF THE CUBE** (sorry leaf, cut 2026-07-31 out of
-`hasCubeIso_of_symm_of_normalized` below) — Mumford, *Abelian Varieties* §6, Corollary 2;
-for an abelian SCHEME, Mumford *GIT* Ch. 6 §2 / Moret-Bailly, *Pinceaux de variétés
-abéliennes* I.
+/-- **THE THIRD FINITE DIFFERENCE OF `w ↦ w^* L`, AS A PROPOSITION.**
 
-For three `T'`-points `x, y, z` of `A` over a common base point,
+  `(x+y+z)^* L ⊗ x^* L ⊗ y^* L ⊗ z^* L  ≅  (x+y)^* L ⊗ (y+z)^* L ⊗ (x+z)^* L ⊗ 0^* L`
+
+for three relative points `x, y, z` over a common base point.  The theorem of the cube
+(`nonempty_cubeIdentity` below) is the assertion that this holds for every triple; it is
+named so that the UNIVERSAL instance and the general one can be stated in the same words,
+and so that the transport between them (`CubeIdentity.pre`) has a readable statement.
+
+The bracketing of the four factors on each side is the one the consumer
+`hasCubeIso_of_symm_of_normalized` wants and is otherwise immaterial: `modTensor` has an
+associator (`nonempty_modTensor_assoc`) and a braiding (`modTensorSymmIso`) at this pin. -/
+def CubeIdentity {X T : Scheme.{u}} {q : X ⟶ T} (ab : AbelianSchemeStruct q) (L : X.Modules)
+    {T' : Scheme.{u}} {g : T' ⟶ T} (x y z : RelPoint q g) : Prop :=
+  Nonempty (
+    modTensor (modTensor (modPullback (ab.add (ab.add x y) z).1 L) (modPullback x.1 L))
+        (modTensor (modPullback y.1 L) (modPullback z.1 L))
+      ≅ modTensor (modTensor (modPullback (ab.add x y).1 L) (modPullback (ab.add y z).1 L))
+        (modTensor (modPullback (ab.add x z).1 L) (modPullback (ab.zero g).1 L)))
+
+/-- **THE CUBE IDENTITY IS STABLE UNDER CHANGE OF TEST OBJECT** (PROVEN 2026-08-01) —
+the whole of the reduction of the theorem of the cube to its universal instance.
+
+Given the identity for `x, y, z : RelPoint q w` and any `c : T' ⟶ W` over the base, the
+identity holds for the three pulled-back points.  Two ingredients and nothing else:
+
+* the two NATURALITY fields of `AbelianSchemeStruct` (`pre_add`, `pre_zero`), which say
+  that `c ≫ (x + y) = (c ≫ x) + (c ≫ y)` and `c ≫ 0 = 0` — the six point identities;
+* `modPullbackCompIso` and `nonempty_modPullback_modTensorPic`, i.e. that `c^*` is a
+  pseudo-functor and is monoidal.
+
+No geometry: `ab.proper`, `ab.smooth`, `ab.connected` and invertibility of `L` are all
+unused here, and a prover should not expect them to be. -/
+theorem CubeIdentity.pre {X T : Scheme.{u}} {q : X ⟶ T} {ab : AbelianSchemeStruct q}
+    {L : X.Modules} {W T' : Scheme.{u}} {w : W ⟶ T} {x y z : RelPoint q w}
+    (h : CubeIdentity ab L x y z) {g : T' ⟶ T} (c : T' ⟶ W) (hc : c ≫ w = g) :
+    CubeIdentity ab L (RelPoint.pre c hc x) (RelPoint.pre c hc y) (RelPoint.pre c hc z) := by
+  obtain ⟨e⟩ := h
+  -- `c^*` distributes over the four-fold tensor, on either side
+  have D : ∀ a b d f : W.Modules,
+      Nonempty (modPullback c (modTensor (modTensor a b) (modTensor d f))
+        ≅ modTensor (modTensor (modPullback c a) (modPullback c b))
+          (modTensor (modPullback c d) (modPullback c f))) := by
+    intro a b d f
+    obtain ⟨e0⟩ := nonempty_modPullback_modTensorPic c (modTensor a b) (modTensor d f)
+    obtain ⟨e1⟩ := nonempty_modPullback_modTensorPic c a b
+    obtain ⟨e2⟩ := nonempty_modPullback_modTensorPic c d f
+    exact ⟨e0 ≪≫ modTensorMapIso e1 e2⟩
+  obtain ⟨d1⟩ := D (modPullback (ab.add (ab.add x y) z).1 L) (modPullback x.1 L)
+    (modPullback y.1 L) (modPullback z.1 L)
+  obtain ⟨d2⟩ := D (modPullback (ab.add x y).1 L) (modPullback (ab.add y z).1 L)
+    (modPullback (ab.add x z).1 L) (modPullback (ab.zero w).1 L)
+  -- the six point identities, from naturality of the group law
+  have hA0 : RelPoint.pre c hc (ab.add (ab.add x y) z)
+      = ab.add (ab.add (RelPoint.pre c hc x) (RelPoint.pre c hc y)) (RelPoint.pre c hc z) := by
+    rw [ab.pre_add, ab.pre_add]
+  have hA : c ≫ (ab.add (ab.add x y) z).1
+      = (ab.add (ab.add (RelPoint.pre c hc x) (RelPoint.pre c hc y)) (RelPoint.pre c hc z)).1 :=
+    congrArg Subtype.val hA0
+  have hS : c ≫ (ab.add x y).1 = (ab.add (RelPoint.pre c hc x) (RelPoint.pre c hc y)).1 :=
+    congrArg Subtype.val (ab.pre_add c hc x y)
+  have hU : c ≫ (ab.add y z).1 = (ab.add (RelPoint.pre c hc y) (RelPoint.pre c hc z)).1 :=
+    congrArg Subtype.val (ab.pre_add c hc y z)
+  have hV : c ≫ (ab.add x z).1 = (ab.add (RelPoint.pre c hc x) (RelPoint.pre c hc z)).1 :=
+    congrArg Subtype.val (ab.pre_add c hc x z)
+  have h0 : c ≫ (ab.zero w).1 = (ab.zero g).1 :=
+    congrArg Subtype.val (ab.pre_zero c hc)
+  -- the eight transport isomorphisms
+  have fA : modPullback c (modPullback (ab.add (ab.add x y) z).1 L)
+      ≅ modPullback (ab.add (ab.add (RelPoint.pre c hc x) (RelPoint.pre c hc y))
+          (RelPoint.pre c hc z)).1 L :=
+    modPullbackCompIso c _ L ≪≫ modPullbackCongrIso hA L
+  have fx : modPullback c (modPullback x.1 L) ≅ modPullback (RelPoint.pre c hc x).1 L :=
+    modPullbackCompIso c x.1 L
+  have fy : modPullback c (modPullback y.1 L) ≅ modPullback (RelPoint.pre c hc y).1 L :=
+    modPullbackCompIso c y.1 L
+  have fz : modPullback c (modPullback z.1 L) ≅ modPullback (RelPoint.pre c hc z).1 L :=
+    modPullbackCompIso c z.1 L
+  have fS : modPullback c (modPullback (ab.add x y).1 L)
+      ≅ modPullback (ab.add (RelPoint.pre c hc x) (RelPoint.pre c hc y)).1 L :=
+    modPullbackCompIso c _ L ≪≫ modPullbackCongrIso hS L
+  have fU : modPullback c (modPullback (ab.add y z).1 L)
+      ≅ modPullback (ab.add (RelPoint.pre c hc y) (RelPoint.pre c hc z)).1 L :=
+    modPullbackCompIso c _ L ≪≫ modPullbackCongrIso hU L
+  have fV : modPullback c (modPullback (ab.add x z).1 L)
+      ≅ modPullback (ab.add (RelPoint.pre c hc x) (RelPoint.pre c hc z)).1 L :=
+    modPullbackCompIso c _ L ≪≫ modPullbackCongrIso hV L
+  have f0 : modPullback c (modPullback (ab.zero w).1 L) ≅ modPullback (ab.zero g).1 L :=
+    modPullbackCompIso c _ L ≪≫ modPullbackCongrIso h0 L
+  exact ⟨modTensorMapIso (modTensorMapIso fA.symm fx.symm) (modTensorMapIso fy.symm fz.symm)
+    ≪≫ d1.symm ≪≫ modPullbackMapIso c e ≪≫ d2
+    ≪≫ modTensorMapIso (modTensorMapIso fS fU) (modTensorMapIso fV f0)⟩
+
+/-- **THE THEOREM OF THE CUBE, UNIVERSAL FORM** (sorry leaf; restated 2026-08-01 out of
+`nonempty_cubeIdentity`, which is now PROVEN over it and is unchanged) — Mumford,
+*Abelian Varieties* §6, Corollary 2; for an abelian SCHEME, Mumford *GIT* Ch. 6 §2 /
+Moret-Bailly, *Pinceaux de variétés abéliennes* I.
+
+The identity for the THREE PROJECTIONS of `A ×_T A ×_T A`, i.e. for the universal triple
+of relative points.  Written out, with `pᵢ` the projections and `0` the zero section,
+
+  `(p₁+p₂+p₃)^* L ⊗ p₁^* L ⊗ p₂^* L ⊗ p₃^* L
+     ≅ (p₁+p₂)^* L ⊗ (p₂+p₃)^* L ⊗ (p₁+p₃)^* L ⊗ 0^* L`
+
+as invertible sheaves on `A ×_T A ×_T A`.
+
+**IT IS EQUIVALENT TO THE GENERAL FORM, IN BOTH DIRECTIONS, AND THAT IS WHY THE
+FAITHFULNESS AUDIT BELOW TRANSFERS VERBATIM.**  `general ⟹ universal` is instantiation at
+`(relTriplePt₁ q, relTriplePt₂ q, relTriplePt₃ q)`; `universal ⟹ general` is
+`CubeIdentity.pre` applied to `relTripleLift x y z`, which is exactly how
+`nonempty_cubeIdentity` below is proven.  So no statement was strengthened or weakened by
+the restatement, and every clause of the audit — which is about the SHAPE of the identity
+and not about the test object — says the same thing here.
+
+**WHY THE UNIVERSAL FORM IS THE ONE TO LEAVE OPEN.**  The general form quantifies over
+every test scheme `T'` and every triple of points, which makes it look as though a proof
+must be functorial.  It is not: every proof of the theorem of the cube — Mumford's
+included — proves the single statement above, about ONE invertible sheaf on ONE scheme,
+and then transports.  The seesaw principle and cohomology-and-base-change act on a sheaf
+on a scheme, not on a family of Picard-group identities, so a prover cannot even begin
+against the general shape.  That transport is ~120 lines of `pre_add` / `modPullbackCompIso`
+bookkeeping, it is now PROVEN once and for all in `CubeIdentity.pre`, and no successor has
+to write it again.
+
+For three `T'`-points `x, y, z` of `A` over a common base point the general form reads
 
   `(x+y+z)^* L ⊗ x^* L ⊗ y^* L ⊗ z^* L  ≅  (x+y)^* L ⊗ (y+z)^* L ⊗ (x+z)^* L ⊗ 0^* L`.
 
@@ -16830,7 +17033,56 @@ that module — `Modularity/Seesaw.lean` — and should not expect a route throu
 **Do not attempt to prove it from the two-variable form below**: the implication runs the
 other way, for the reason recorded in the section note "WHY THE TWO-VARIABLE FORM IS THE
 RIGHT PRIMITIVE" — a statement about a pair of points does not see three independent
-ones. -/
+ones.
+
+**THE NEXT CUT A PROVER SHOULD CONSIDER, and what it costs.**  Mumford's route factors
+this into (a) the theorem of the cube proper — *an invertible sheaf on `A ×_T A ×_T A`
+whose restriction to each of the three coordinate crosses is trivial is itself trivial* —
+and (b) the verification that the difference sheaf
+`Θ(L) = (LHS) ⊗ (RHS)^{-1}` is trivial on the crosses.  Half (b) is FORMAL here and is
+worth knowing before starting: because the `0^* L` correction term is kept, setting any one
+of the three points to `0` makes the two sides of the identity the same four factors in a
+different order, so each cross is a tautology up to the associator and the braiding.  What
+(b) costs in Lean is not mathematics but INVERSES: `Θ(L)` cannot be written without a
+chosen `L^{-1}`, and while `modDual` exists (`ModularCurve/RelativePicard.lean`) the
+cancellation `L ⊗ L^∨ ≅ 𝒪` for an invertible `L` is NOT proven at this pin, so that cut
+opens a second leaf before it opens the first.  A prover who takes it should cut the
+cancellation lemma first and say so.
+
+**MISSING MACHINERY — RE-SURVEYED 2026-08-01 AND UNCHANGED.**  `grep -rln
+'Seesaw\|seesaw\|TheoremOfTheCube'` over `.lake/packages/mathlib/Mathlib` returns NOTHING;
+`ls Mathlib/AlgebraicGeometry/` has no `AbelianVariety` and no coherent-cohomology
+directory; `grep -rln 'seesaw\|Seesaw\|cube\|Cube' ~/cs/FLT/FLT` returns one file
+(`KnownIn1980s/EllipticCurves/TateCurveConstruction.lean`) and nothing relevant in it.  So
+the survey below stands: this is a THEORY BUILD and the theory is `H⁰` of an invertible
+sheaf on the fibres of a proper flat morphism, its semicontinuity, and the seesaw
+principle. -/
+theorem nonempty_cubeIdentity_universal {X T : Scheme.{u}} {q : X ⟶ T}
+    (ab : AbelianSchemeStruct q) (L : X.Modules) (hinv : IsInvertibleSheaf L) :
+    CubeIdentity ab L (relTriplePt₁ q) (relTriplePt₂ q) (relTriplePt₃ q) :=
+  sorry
+
+/-- **THE THEOREM OF THE CUBE, FOR AN ARBITRARY TRIPLE OF RELATIVE POINTS**
+(**PROVEN 2026-08-01** over `nonempty_cubeIdentity_universal` immediately above; the
+statement is unchanged from when it was a leaf, so its consumer
+`hasCubeIso_of_symm_of_normalized` below is untouched).
+
+For three `T'`-points `x, y, z` of `A` over a common base point,
+
+  `(x+y+z)^* L ⊗ x^* L ⊗ y^* L ⊗ z^* L  ≅  (x+y)^* L ⊗ (y+z)^* L ⊗ (x+z)^* L ⊗ 0^* L`.
+
+The proof is the universal identity, transported along the classifying morphism
+`relTripleLift x y z : T' ⟶ A ×_T A ×_T A` by `CubeIdentity.pre`.  See the docstring of
+the leaf above for the faithfulness audit, which is about the SHAPE of the identity and
+applies verbatim to both forms, and for why the universal form is the one left open.
+
+**ACCOUNTING: the direct-sorry count did NOT move, `1 → 1`, and that must not be read as
+"nothing happened".**  What left the leaf is the whole functorial half of the theorem —
+the six naturality identities of the group law, the pseudo-functoriality and monoidality
+of `c^*`, and the construction of the classifying morphism — about 120 lines that every
+successor would otherwise have rebuilt before reaching any geometry.  What is LEFT in the
+leaf is a statement about ONE invertible sheaf on ONE scheme, which is the only shape the
+seesaw principle can be applied to. -/
 theorem nonempty_cubeIdentity {X T : Scheme.{u}} {q : X ⟶ T} (ab : AbelianSchemeStruct q)
     (L : X.Modules) (hinv : IsInvertibleSheaf L)
     {T' : Scheme.{u}} {g : T' ⟶ T} (x y z : RelPoint q g) :
@@ -16838,8 +17090,11 @@ theorem nonempty_cubeIdentity {X T : Scheme.{u}} {q : X ⟶ T} (ab : AbelianSche
       modTensor (modTensor (modPullback (ab.add (ab.add x y) z).1 L) (modPullback x.1 L))
           (modTensor (modPullback y.1 L) (modPullback z.1 L))
         ≅ modTensor (modTensor (modPullback (ab.add x y).1 L) (modPullback (ab.add y z).1 L))
-          (modTensor (modPullback (ab.add x z).1 L) (modPullback (ab.zero g).1 L))) :=
-  sorry
+          (modTensor (modPullback (ab.add x z).1 L) (modPullback (ab.zero g).1 L))) := by
+  have h := (nonempty_cubeIdentity_universal ab L hinv).pre (relTripleLift x y z)
+    (relTripleLift_str x y z)
+  rw [relTripleLift_pt₁, relTripleLift_pt₂, relTripleLift_pt₃] at h
+  exact h
 
 end AbelianSchemeStruct
 
