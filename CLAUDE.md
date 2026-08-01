@@ -16151,3 +16151,60 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A DUPLICATE CUT ACROSS A NAMESPACE BOUNDARY SHADOWS THE PROVEN COPY — and no duplicate scan can see it
+
+(2026-08-01, `flt-lean-365`, on `exists_finiteEtale_point_of_smooth`.) The
+duplicate-cut sections above are all about two copies that COLLIDE — same name,
+same namespace, `has already been declared`, or two rival statements a merge kept
+side by side. There is a quieter shape that compiles perfectly and silently kills
+a whole module:
+
+* `Fermat/FLT/Mathlib/AlgebraicGeometry/WeilRestriction.lean` was created to cut
+  `X1.lean`'s leaf `exists_nonconstant_toAbelianScheme_of_baseChange_relPoint`
+  into two atoms. It restates that leaf **verbatim** in its own namespace
+  (`Fermat.WeilRestriction`), PROVES it over the atoms, and its docstring says
+  *"that declaration should be replaced by a one-line delegation to this one"*.
+* The delegation was never made. `X1.lean` kept its own `sorry` copy in namespace
+  `Fermat`, and its consumer refers to the name **unqualified**.
+* `Fermat.exists_…` shadows `Fermat.WeilRestriction.exists_…` for every
+  unqualified reference inside `namespace Fermat`, and `WeilRestriction` is never
+  `open`ed. So the proven assembly had **zero consumers**, and both its atoms
+  were open leaves that were also DEAD.
+
+**No instrument sees it.** The two qualified names DIFFER, so a cross-file
+name-level scan (`xdup.py`'s qualified pass) reports nothing; `dupstmt.py` is
+per-file, so it cannot pair them; both modules build green; every
+`declaration uses 'sorry'` warning is honest; `own.py` and `leafstat.py`
+correctly report each leaf open and unowned. The only symptom is that closing
+either atom moves the count and not the project.
+
+**The check is the consumer grep the doctrine already prescribes, applied to the
+TOP of your module's chain rather than to your own leaf:**
+
+    grep -rn '<the theorem your leaf feeds>' --include=*.lean Fermat/ | grep -v '<your file>:'
+
+Zero code hits means your whole module is unreachable, and the task is a
+delegation, not a proof.
+
+**The tell that turns "unreachable" into "duplicate", and it is one command:**
+when the consumer file declares a name whose LAST COMPONENT matches yours, and
+its namespace is a proper ANCESTOR of yours, it shadows you. Compare the two
+statements mechanically — normalise whitespace and tolerate the `:=` versus
+`:= by` terminator, since only the proof differs:
+
+    # grab both declarations, `re.sub(r'\s+',' ',…)`, compare
+    # here they were identical to the character, 810 vs 813 bytes -- the `by`
+
+**The repair is the delegation, and it belongs to whoever finds it.** One line in
+the consumer file, fully qualified, with a comment saying why. It closes the
+consumer's leaf, makes the proven module live, and conflicts with nobody — the
+edit is a `sorry` token replaced by a term. Do NOT instead delete the proven
+module's copy: it is the better cut (it is a decomposition of the same statement),
+and the doctrine's tie-break — fewer OPEN leaves after — points at keeping it.
+
+Corollary for whoever CUTS a leaf into a new module: **a "should be replaced by a
+delegation" note is an unpaid debt exactly like the `∀`-rigidity paragraphs above,
+and it is worse, because until it is paid your module is invisible to the build in
+the only way that matters.** Make the delegation in the same commit, or your
+decomposition is dead on arrival.
