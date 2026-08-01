@@ -40700,17 +40700,21 @@ def IsCMJInvariantOfRel (m : ℤ) (x : AlgebraicClosure ℚ) : Prop :=
 /-! #### The first main theorem of complex multiplication, cut into three
 
 (2026-08-01, flt-lean-179.)  `minpoly_eq_of_isCMJInvariantOfRel` below is now
-PROVEN over the three leaves in this block.  The cut separates a piece that is
-provable with today's machinery from the class-field-theoretic core, and it makes
-the assembly — the ORBIT-COUNTING half of the classical argument — real Lean
-rather than prose:
+PROVEN over the two OPEN leaves in this block, plus one that was cut and then
+closed in the same run.  The cut separates what is provable with today's machinery
+from the class-field-theoretic core, and it makes the assembly — the
+ORBIT-COUNTING half of the classical argument — real Lean rather than prose:
 
-* `isCMJInvariantOfRel_algEquiv` — the predicate is `Gal(ℚ̄/ℚ)`-STABLE.  Elementary
-  and uniform in `m`: conjugate the curve.  No class field theory.
+* `isCMJInvariantOfRel_algEquiv` — the predicate is `Gal(ℚ̄/ℚ)`-STABLE.  **PROVEN**:
+  conjugate the curve, over `Isogeny.lean`'s `GaloisTransport` section, which
+  already had every piece.  No class field theory, and no new machinery.
 * `finite_setOf_isCMJInvariantOfRel` — there are only FINITELY many CM
-  `j`-invariants of a fixed order (classically `h(D)` of them).
+  `j`-invariants of a fixed order (classically `h(D)` of them).  OPEN.
 * `ncard_setOf_isCMJInvariantOfRel_le` — `h(D) ≤ [ℚ(j) : ℚ]`.  THE CORE, and the
-  only one of the three that needs the ring class field.
+  only one of the three that needs the ring class field.  OPEN.
+
+So the net on this file's direct-sorry set is `1 → 2`, a genuine reduction, and the
+two survivors are different theorems with no machinery in common.
 
 **WHAT THE ASSEMBLY PROVES, so that the third leaf's owner knows what is already
 theirs.**  The REVERSE inequality `[ℚ(j) : ℚ] ≤ h(D)` is not a leaf: it falls out
@@ -40736,49 +40740,68 @@ because leaf 1 is attackable today and leaf 2 is a different theorem from leaf 3
 the price is that the leaf count goes `1 → 3`, which is DISCLOSURE and not
 regression — see the accounting rule in `CLAUDE.md`. -/
 
-/-- **LEAF — `IsCMJInvariantOfRel` IS STABLE UNDER `Gal(ℚ̄/ℚ)`** (cut 2026-08-01,
+/-- **`IsCMJInvariantOfRel` IS STABLE UNDER `Gal(ℚ̄/ℚ)`** (cut and PROVEN 2026-08-01,
 flt-lean-179, out of `minpoly_eq_of_isCMJInvariantOfRel`).
 
 Uniform in `m`, and it carries NO negativity hypothesis: it is true for every `m`,
 including the degenerate ones where the predicate collapses to "`End(W) = ℤ`" —
 that class is Galois-stable too.
 
-**THE ARGUMENT, and it is elementary.**  Let `W` be the curve `hx` supplies and let
-`W^σ := W.map σ` be its conjugate.  Then:
+**THE ARGUMENT** is four lines of bookkeeping over machinery that was already in the
+tree.  Let `W^σ := W.map σ` be the conjugate curve.  `WeierstrassCurve.map_j` gives
+`j(W^σ) = σ (j W) = σ x`, and `(W.map f).IsElliptic` is a mathlib instance, so `W^σ`
+is again elliptic.  For the endomorphism ring,
+`WeierstrassCurve.End.mapRingEquiv W.toAffine σ` is a RING ISOMORPHISM
+`End W ≃+* End W^σ`; being a ring isomorphism it preserves the integer cast, so
+`φ * φ + m = φ` transports verbatim, and `Subring.closure {φ} = ⊤` transports by
+`RingHom.map_closure` plus surjectivity.
 
-* `j(W^σ) = σ (j W) = σ x` — mathlib's `WeierstrassCurve.map_j`, and
-  `(W.map f).IsElliptic` is an instance there, so `W^σ` is again elliptic;
-* the coordinatewise map `some x y h ↦ some (σ x) (σ y) _` is a bijection
-  `W(ℚ̄) → W^σ(ℚ̄)`, ADDITIVE because the addition formulas commute with a ring
-  homomorphism (`WeierstrassCurve.Affine.map_negY`, `map_addX`, `map_addY`,
-  `map_slope`, all in `Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Formula.lean`,
-  and `map_nonsingular` in `Affine/Basic.lean` — which is an IFF given injectivity,
-  hence gives surjectivity as well);
-* conjugation by that bijection is a ring isomorphism
-  `AddMonoid.End W(ℚ̄) ≃+* AddMonoid.End W^σ(ℚ̄)` which carries `endSubring W` ONTO
-  `endSubring W^σ`.  `IsRationalMap` transports by applying `σ` to the coefficients
-  of the five certificate polynomials — `veluPointX (e P) = σ (veluPointX P)` and
-  likewise for `y`, both by cases on `P` — and `surjective`/`finite_ker` transport
-  because `e` is a bijection.  Integer casts are preserved by any ring
-  isomorphism, so `φ' * φ' + m = φ'` survives, and `Subring.closure {φ'} = ⊤`
-  follows from `Subring.closure {φ} = ⊤` by pushing the closure through the
-  isomorphism.
-
-**WHAT IS MISSING FROM THE TREE, and it is a construction rather than a theory.**
-mathlib's `WeierstrassCurve.Affine.Point.map` moves points between BASE CHANGES of
-one curve over a fixed subring; here `W` and `W^σ` are genuinely different curves
-over `ℚ̄`, so that declaration does not apply and the coordinatewise map has to be
-built.  Every ingredient it needs is in the pin, at the names listed above.  The
-natural home is `Fermat/FLT/EllipticCurve/Isogeny.lean`, beside `endSubring`, as a
-transport of `End` along a ring isomorphism of the base.
+**THIS LEAF WAS CUT AGAINST A "WHAT IS MISSING" PARAGRAPH THAT WAS FALSE, and the
+correction is the reusable part.**  The paragraph said the coordinatewise map
+`W(ℚ̄) → W^σ(ℚ̄)` "has to be built", on the correct observation that mathlib's
+`WeierstrassCurve.Affine.Point.map` moves points between BASE CHANGES of one curve
+and so does not apply to two genuinely different curves over `ℚ̄`.  That observation
+is true and the conclusion drawn from it was not: the whole transport already
+existed, in `Fermat/FLT/EllipticCurve/Isogeny.lean`'s `GaloisTransport` section —
+`Affine.Point.mapRingHom`, `Affine.Point.mapRingEquiv`, `conjHom`,
+`IsRationalMap.transport`, `IsIsogeny.transport`, `isRationalMap_conjHom_iff`,
+`isIsogeny_conjHom_iff`, `AddEquiv.conjAddMonoidEnd` and `End.mapRingEquiv`, all
+PROVEN, in a module this file already `public import`s.  That section's own
+docstring even names its intended consumer as "`MazurCMForm.IsCMJInvariant.map`:
+the CM `j`-invariants of a fixed order are stable under `Gal(ℚ̄/ℚ)`" — i.e. exactly
+this statement, one predicate over.  About 250 lines were re-derived from scratch
+in a scratch module before the grep that found it; see the note in `CLAUDE.md`.
 
 **NOT VACUOUS**: `σ = 1` gives the hypothesis back, and the conclusion at a
 nontrivial `σ` is exactly what makes the orbit-counting in
 `minpoly_eq_of_isCMJInvariantOfRel` nonempty of content. -/
 theorem isCMJInvariantOfRel_algEquiv (m : ℤ)
     (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) {x : AlgebraicClosure ℚ}
-    (hx : IsCMJInvariantOfRel m x) : IsCMJInvariantOfRel m (σ x) :=
-  sorry
+    (hx : IsCMJInvariantOfRel m x) : IsCMJInvariantOfRel m (σ x) := by
+  classical
+  obtain ⟨W, hW, hj, φ, hrel, htop⟩ := hx
+  letI := hW
+  refine ⟨W.map (σ.toRingEquiv : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ), inferInstance,
+    ?_, ?_⟩
+  · rw [WeierstrassCurve.map_j]
+    exact congrArg _ hj
+  · set Ψ := WeierstrassCurve.End.mapRingEquiv W.toAffine σ.toRingEquiv
+    refine ⟨Ψ φ, ?_, ?_⟩
+    · have h := congrArg Ψ hrel
+      rw [map_add, map_mul, map_intCast] at h
+      exact h
+    · rw [Subring.eq_top_iff']
+      intro y
+      have hmemtop : Ψ.symm y ∈ Subring.closure ({φ} : Set (WeierstrassCurve.End W.toAffine)) := by
+        rw [htop]; exact Subring.mem_top _
+      have hmem : y
+          ∈ Subring.map (Ψ : WeierstrassCurve.End W.toAffine →+*
+              WeierstrassCurve.End (W.toAffine.map (σ.toRingEquiv : AlgebraicClosure ℚ →+*
+                AlgebraicClosure ℚ)))
+            (Subring.closure ({φ} : Set (WeierstrassCurve.End W.toAffine))) :=
+        Subring.mem_map.2 ⟨Ψ.symm y, hmemtop, Ψ.apply_symm_apply y⟩
+      rw [RingHom.map_closure, Set.image_singleton] at hmem
+      exact hmem
 
 /-- **LEAF — THERE ARE ONLY FINITELY MANY CM `j`-INVARIANTS OF A FIXED ORDER**
 (cut 2026-08-01, flt-lean-179, out of `minpoly_eq_of_isCMJInvariantOfRel`).
@@ -40851,12 +40874,12 @@ theorem ncard_setOf_isCMJInvariantOfRel_le (m : ℤ) (hm : 0 < 4 * m - 1)
 `ℚ`**, stated as: any two CM `j`-invariants of that order have the SAME minimal
 polynomial over `ℚ`.
 
-**PROVEN 2026-08-01 (flt-lean-179)** over the three leaves of the block above —
-`isCMJInvariantOfRel_algEquiv`, `finite_setOf_isCMJInvariantOfRel` and
-`ncard_setOf_isCMJInvariantOfRel_le`.  The orbit-counting half of the classical
-argument is the proof below; what is left in the leaves is Galois stability of the
-CM condition, finiteness of the class number, and the ring class field.  Read the
-subsection note above before attacking any of them.
+**PROVEN 2026-08-01 (flt-lean-179)** over the block above.  Of the three statements
+cut out of it, `isCMJInvariantOfRel_algEquiv` (Galois stability) was closed in the
+same run; the two that remain OPEN are `finite_setOf_isCMJInvariantOfRel`
+(finiteness of the class number) and `ncard_setOf_isCMJInvariantOfRel_le` (the ring
+class field).  The orbit-counting half of the classical argument is the proof
+below.  Read the subsection note above before attacking either leaf.
 
 This is the first main theorem of complex multiplication and NOTHING ELSE: it is
 uniform in `m`, mentions no prime, no level and no class number, and it is the only
