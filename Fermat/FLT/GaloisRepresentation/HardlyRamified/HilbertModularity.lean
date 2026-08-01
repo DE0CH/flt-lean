@@ -24905,93 +24905,96 @@ theorem exists_hilbertAdZeroTrivializing_notMem_range_sub
           (hilbertAdZeroTwist F ρbar).ρ σ m - m :=
   sorry
 
-/-- **The NONEMPTINESS half of DDT Lemma 2.48 over `F`** (SORRY LEAF, cut out
-2026-07-30 from `isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus`
-below, whose openness half is `isOpen_hilbertSurvivingLocus` immediately above
-and is now PROVEN).
+/-! ### `nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus` — DELETED 2026-08-01
 
-This is the deep half — the "nonemptiness step" of DDT §2 — and it is where
-absolute irreducibility of `ρbar|_{G_F}` is used classically. Everything the old
-combined leaf's docstring said about the OPENNESS half is discharged; what
-remains is exactly the paragraph below.
+It was the LOSING half of a rival cut, and it was FALSE AS STATED. Both facts
+were established before deleting it; neither was inherited.
 
-# ROUTE
+TWO BRANCHES CUT THE NONEMPTINESS HALF of DDT 2.48 out of
+`isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus` on 2026-07-30.
+One added the repair `[NumberField.IsTotallyReal F]` and PROVED the result; the
+other did not. Both landed, in regions far enough apart that nothing conflicted,
+so the tree carried the repaired
+`exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus` (PROVEN, below)
+and the unrepaired `nonempty_inter_…` side by side, with identical conclusions.
+The consumer calls the former. A comment-stripped scan of all of `Fermat/` found
+the latter with ZERO code occurrences outside its own declaration line: an OPEN,
+DEAD leaf, which every frontier instrument nevertheless counted as ordinary work
+and which had already drawn one dispatch.
 
-Let `M = ad⁰ρbar(1)` and `L = F(M, μ_{ℓⁿ})`, a finite Galois extension of `F`.
-`Γ L` acts trivially on `M`, so `z|_{Γ L}` is a HOMOMORPHISM `Γ L → M`, and
-`Γ L` is normal, so `hilbertTaylorWilesLocus` contains the whole coset `σ · Γ L`
-of any `σ` in it — and `exists_hilbertFixing_rootsOfUnity_charpoly_split` above
-supplies one. Restriction `H¹(Γ F, M) → Hom(Γ L, M)` is injective on classes
-unramified outside `hilbertHardlyRamifiedPlaces ℓ F` because
-`H¹(Gal(L/F), M) = 0` — this is the step needing absolute irreducibility of
-`ρbar|_{G_{F(ζ_ℓ)}}`, which at `ℓ ≥ 5` follows from `hirrF` — so `z|_{Γ L} ≠ 0`.
-Now `ρ σ` has two DISTINCT eigenvalues, so `(ρ σ − 1) · M` is a PROPER subspace
-of `M`; if `z σ ∈ (ρ σ − 1) · M`, pick `τ ∈ Γ L` with `z τ` outside it and use
-`z (σ τ) = z σ + ρ σ (z τ)`
-(`ContinuousCohomology.cocycles₁_eval₁_mul`) to move out. Either `σ` or `σ τ`
-then lies in the intersection.
+WHY IT WAS ALSO FALSE. Its hypothesis list is that of the proven twin MINUS
+`[NumberField.IsTotallyReal F]`, and that hypothesis is not recoverable from
+`𝒟₀`: `HilbertDeformationDatum` has fields `R`, `isAdic`, `isAdicComplete`,
+`isHilbertHardlyRamified` and `resid`, and no `totallyReal` — it is
+`PotentialHeckeDatum` that carries one. So the `54b1` witness of the FALSITY
+AUDIT on the twin applies verbatim: at `ℓ = 7`, `k = 𝔽₇`, residual image
+`H = N(T_ns) ∩ SL₂(𝔽₇)` of order `16`, and `F ⊇ ℚ(μ₇)` totally imaginary,
+`hilbertTaylorWilesLocus ℓ F ρbar n` is EMPTY at every `n`, so the intersection
+is empty and the conclusion fails, while `hc0` stays satisfiable because
+`hilbertH1TwistUnramified` is large over a totally imaginary base.
 
-**THE DATUM `𝒟₀` IS LOAD-BEARING AND MAY NOT BE DROPPED.** It is what supplies
-the Galois element, through
-`exists_hilbertFixing_rootsOfUnity_charpoly_split`; and deviation (1) of
-`exists_hilbertTaylorWilesPrime`'s docstring records why no `k`-side hypothesis
-can replace it in this module.
+THE GROUP-THEORETIC HALF WAS MACHINE-CHECKED ON 2026-08-01, and is recorded here
+because the first attempt at it built the wrong coset and has to be got right:
+`H` is the union of the `8` elements of `T_ns ∩ SL₂` (norm-one `α`) and the `8`
+products of Frobenius with an `α` of norm `−1`; it has order `16`, is closed
+under multiplication, and every element has determinant `1`. NONE of the `16`
+has two distinct `𝔽₇`-rational eigenvalues — the norm-one part has eigenvalues
+`α, α⁻¹` with `α ∈ μ₈ ⊂ 𝔽₄₉`, which are `𝔽₇`-rational only for `α = ±1`, where
+they coincide; and the other coset has trace `0` and determinant `1`, hence
+characteristic polynomial `X² + 1`, irreducible over `𝔽₇` because `−1` is not a
+square there. Taking the coset to be all of `T_ns` times the Frobenius matrix
+instead gives elements of determinant `−1` and spuriously reports `8` regular
+semisimple elements; check `det = 1` on every element before believing such a
+count.
 
-**WARNING, inherited from that supplier and not to be discovered twice**:
-`exists_hilbertFixing_rootsOfUnity_charpoly_split` rests on
-`exists_hilbertFixing_rootsOfUnity_discrim_isSquare`, which carries a FALSITY
-AUDIT (2026-07-27) giving an explicit counterexample — curve `54b1`, `ℓ = 7`,
-`k = 𝔽₇`, residual image the order-`16` group `N(T_ns) ∩ SL₂(𝔽₇)`. So the
-Galois element this route asks for is NOT available at the stated generality,
-and a prover of this leaf will hit that wall. The honest repair recorded there
-is a quadratic ENLARGEMENT of `k`, threaded through `IsHilbertTaylorWilesPrimeSet`;
-it is a cut-level change to the cluster, not a proof obligation of this leaf.
+Nothing was queued against the deleted name — `queue1` and `queue2` both had
+zero references on 2026-08-01 — so no task was stranded. The deleted text is
+recoverable with
+`git show fe5131ca:Fermat/FLT/GaloisRepresentation/HardlyRamified/HilbertModularity.lean`,
+and its ROUTE paragraph is reproduced in full on the proven twin below, so
+nothing is lost by the deletion.
 
-Both-ways audit: at the intended instantiation this is the cited Taylor–Wiles
-separation step. It is not vacuous — `hc0` is satisfiable as soon as
-`hilbertH1TwistUnramified ≠ ⊥`, and when that submodule IS `⊥` the leaf is
-vacuously true, which is harmless because `exists_hilbertTaylorWilesPrimeSet_core`
-then never calls it.
+THE LIVE LEAF OF THIS CLUSTER IS
+`exists_hilbertAdZeroTrivializing_notMem_range_sub` IMMEDIATELY ABOVE: it
+carries the repair, it is consumed by the proven twin, and it is where the
+remaining DDT §2 separation content sits. A prover sent at this cluster wants
+that one. -/
 
-CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
-`Modularity/*` or `Deformation.lean`; in particular a proof ending in `exfalso`
-on `hirrF` through `not_isIrreducible_of_isHardlyRamified_of_five_le` is
-FORBIDDEN, that dichotomy being proven over pillar α, which is proven over this
-cluster. -/
-theorem nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus
-    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
-    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
-    [Module.Free k V]
-    {ρbar : GaloisRep ℚ k V}
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ)
-    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
-    {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
-    (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
-    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
-    (hilbertSurvivingLocus F ρbar z ∩
-      hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty :=
-  sorry
+/-- **The NONEMPTINESS half of DDT Lemma 2.48 over `F`** (cut out 2026-07-28 as
+part of the combined statement; **PROVEN 2026-07-30** over the PROVEN
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` and the leaf
+`exists_hilbertAdZeroTrivializing_notMem_range_sub` above — this declaration
+carries no direct `sorry` of its own).
 
-/-- **The GLOBAL half of DDT Lemma 2.48 over `F`** (cut out
-2026-07-28; **its OPENNESS clause PROVEN 2026-07-30** by
-`isOpen_hilbertSurvivingLocus` above, its nonemptiness clause left over the
-single named leaf `nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus`
-immediately above — this declaration carries no direct `sorry` of its own).
+HEADER CORRECTED 2026-08-01, and the correction is the diagnostic rather than a
+tidy-up. It previously called this declaration the GLOBAL half and said its
+nonemptiness clause was "left over the single named leaf
+`nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus` immediately
+above". Three things were wrong, all of them the rival-cut signature: the
+conclusion here is the nonemptiness clause ALONE and carries no openness
+conjunct; this declaration PROVES it rather than deferring it; and the leaf it
+named was the unrepaired LOSER of the same 2026-07-30 cut — FALSE for want of
+`[NumberField.IsTotallyReal F]`, reached by no proof term in the project, and
+deleted on 2026-08-01 (the note immediately above records the counterexample and
+how to recover the text). What happened is that a merge kept the loser's
+DOCSTRING and the winner's STATEMENT. The conjunction with openness is
+`isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus` below.
 
 For a cocycle `z` representing a nonzero class `c` unramified
-outside `hilbertHardlyRamifiedPlaces ℓ F`, the surviving locus of `z` is OPEN and
-MEETS the Taylor–Wiles locus of `F` at level `n`. (The representative itself is
+outside `hilbertHardlyRamifiedPlaces ℓ F`, the surviving locus of `z` MEETS the
+Taylor–Wiles locus of `F` at level `n`. (The representative itself is
 supplied by `ContinuousCohomology.exists_cocycleClass_eq`, in the consumer.)
 
-WHY THE SPLIT. The two clauses have nothing in common: openness is a
-two-discreteness-hypotheses fact about the cochain model and costs neither the
-datum nor irreducibility, while nonemptiness is the arithmetic core and rests on
-a supplier that is currently REFUTED at the stated generality (see the warning on
-the leaf). Carrying them in one `sorry` hid a proven half behind an open one and
-made the leaf look uniformly deep.
+WHY THE SPLIT FROM OPENNESS. The two clauses have nothing in common: openness is
+a two-discreteness-hypotheses fact about the cochain model and costs neither the
+datum nor irreducibility, while nonemptiness is the arithmetic core. Carrying
+them in one `sorry` hid a proven half behind an open one and made the leaf look
+uniformly deep. The claim that used to stand here — that nonemptiness "rests on a
+supplier that is currently REFUTED at the stated generality" — is ALSO stale as
+of 2026-08-01: that supplier is `exists_hilbertFixing_rootsOfUnity_charpoly_split`,
+it took the same `[NumberField.IsTotallyReal F]` repair, and it is now PROVEN.
+The one open obligation left underneath this theorem is the separation leaf
+`exists_hilbertAdZeroTrivializing_notMem_range_sub`.
 
 This is the deep half — the "nonemptiness step" of DDT §2 — and it is where
 absolute irreducibility of `ρbar|_{G_F}` is used classically.
