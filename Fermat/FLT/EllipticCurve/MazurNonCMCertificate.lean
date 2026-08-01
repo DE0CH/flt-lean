@@ -18,6 +18,8 @@ public import Mathlib.FieldTheory.Finiteness
 public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius
 public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.ElevenA
 public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.ElevenB
+public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.SeventeenA
+public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.SeventeenB
 
 /-!
 # A mod-`ℓ` degree obstruction, and the `p = 11` certificate of Mazur's non-CM table
@@ -54,13 +56,20 @@ Lean from mathlib's EDS recursion — `Ψ₂Sq, Ψ₃, preΨ₄, preΨ' 5, preΨ
 than in `X0.lean` because elaboration is single-threaded per file and `X0.lean` is already the
 slowest file in the tree; nothing here mentions a modular curve.
 
-**THE `p = 11` ROWS ARE CLOSED** (2026-07-31): `dvd_X_pow_card_pow_sub_X_hPolyElevenA` and its
-`ElevenB` twin are PROVEN, in the generated modules `MazurNonCMFrobenius/ElevenA.lean` and
-`…/ElevenB.lean`.  **THE FOUR REMAINING OPEN LEAVES ARE ALL ON THE `p = 17` ROWS**:
-`dvd_X_pow_card_pow_sub_X_hPolySeventeenA` / `…SeventeenB` and `isCoprime_hPolySeventeenA` /
-`…SeventeenB`.  Each is a pure statement about two polynomials over `ZMod 67` — no curve, no
-`ℚ`, no Galois theory — and `dvd_X_pow_card_pow_sub_X_hPolySeventeenA`'s docstring records both
-the route and the one thing that stopped it, which is file size and not mathematics.
+**ALL FOUR COMPUTATIONAL ROWS ARE CLOSED** (2026-07-31): this module has no `sorry` left.  The
+six certificates — `dvd_X_pow_card_pow_sub_X_hPoly{ElevenA,ElevenB,SeventeenA,SeventeenB}` and
+`isCoprime_hPoly{SeventeenA,SeventeenB}` — are PROVEN in generated modules under
+`MazurNonCMFrobenius/`, all in this namespace, so they are simply in scope here.
+
+**THE `p = 17` ROWS ARE SPLIT ONE MODULE PER FACTOR, AND THAT IS WHAT MADE THEM BUILD.**  They
+were generated correctly on 2026-07-31 and abandoned for a reason that was never mathematical:
+a single 14 200-line module was still elaborating after 60 minutes at 47 GB resident.  `H` is a
+product of four pairwise-coprime degree-`34` factors whose square-and-multiply chains share
+nothing but the factor definitions, so each chain now lives in
+`MazurNonCMFrobenius/SeventeenA/Factor{1,2,3,4}.lean` (and the `SeventeenB` twin), which `lake`
+elaborates CONCURRENTLY; `SeventeenA.lean` keeps only what mentions more than one factor.  The
+generator does this itself — see `gen_row.SPLIT` and `gen_factored.generate_row_split` — and
+`python3 gen_modules.py .` reproduces every one of these modules.
 -/
 
 @[expose] public section
@@ -711,38 +720,12 @@ theorem preΨ'_seventeen_seventeenAMod :
   ring_nf
   reduce_mod_char
 
-/-- **OPEN LEAF**: every irreducible factor of `H` has degree dividing `34`.
-
-TRUE, machine-checked twice on 2026-07-31 — PARI/GP 2.15.4 (`Mod(x, H) ^ (67 ^ 34) == x`) and
-an independent Python reimplementation.  `H` is a product of four irreducibles of degree
-exactly `34`.
-
-**THE ROUTE IS FULLY WORKED OUT AND MECHANICAL, AND THE `p = 11` ROWS ARE THE WORKED EXAMPLE.**
-`MazurNonCMFrobenius/ElevenA.lean` and `…/ElevenB.lean` are the same statement at `ℓ = 23`,
-`m = 11`, and they are PROVEN.  `gen_modules.py` at the repo root emits this row too, from the
-same code path, and its output was checked to be mathematically correct.
-
-**WHAT STOPPED IT WAS FILE SIZE, NOT MATHEMATICS.**  The generated `SeventeenA.lean` is 14 287
-lines and about 2 500 theorems; elaboration is single-threaded per FILE, and it was still
-running after 60 minutes at 47 GB resident when it was stopped.  The `p = 11` rows, 2 390
-lines, take 2 minutes each.  The fix is to SPLIT PER FACTOR: `H` has four degree-`34` factors,
-each chain is independent, so emit `MazurNonCMFrobenius/SeventeenA/Factor1.lean` … `Factor4.lean`
-(≈3 500 lines apiece, elaborating in parallel) and leave only the four Bézout coprimalities,
-the product identity and the `xpow_mul` assembly in `SeventeenA.lean`. -/
-theorem dvd_X_pow_card_pow_sub_X_hPolySeventeenA :
-    hPolySeventeenA ∣ X ^ (Nat.card (ZMod 67)) ^ 34 - X :=
-  sorry
-
-/-- **OPEN LEAF**: `H` has no irreducible factor of degree `1` or `2`.
-TRUE, machine-checked 2026-07-31: `gcd(H, lift(Mod(x, H) ^ (67 ^ 2)) - x) = 1`.
-
-This single coprimality is what the `p = 17` rows need in place of the `p = 11` rows'
-root-freeness: the divisors of `m = 34` that are at most `n = 16` are `1` and `2`, and both
-divide `2`.  The generator emits it from the SAME chain — a second, 13-step square-and-multiply
-run at the smaller exponent `67 ^ 2`, then one Bézout pair against `r₂ - X`. -/
-theorem isCoprime_hPolySeventeenA :
-    IsCoprime hPolySeventeenA (X ^ (Nat.card (ZMod 67)) ^ 2 - X) :=
-  sorry
+/-! `dvd_X_pow_card_pow_sub_X_hPolySeventeenA` (every irreducible factor of `H` has degree
+dividing `34`) and `isCoprime_hPolySeventeenA` (`H` has no irreducible factor of degree `1` or
+`2` — the divisors of `m = 34` that are at most `n = 16` are `1` and `2`, and both divide `2`)
+used to be SORRIED HERE.  Both are PROVEN as of 2026-07-31, in this same namespace, in the
+generated `MazurNonCMFrobenius/SeventeenA.lean` over its four `SeventeenA/Factor{i}.lean`; they
+are in scope through this module's imports, so the two consumers below need no change. -/
 
 /-- **Row `p = 17`, `j = −882216989/131072`: `Ψ₁₇ mod 67` has no monic divisor of degree `16`**
 (PROVEN 2026-07-31 over the two computational leaves above).
@@ -954,19 +937,10 @@ theorem preΨ'_seventeen_seventeenBMod :
   ring_nf
   reduce_mod_char
 
-/-- **OPEN LEAF**: every irreducible factor of `H` has degree dividing `34`.
-TRUE, machine-checked 2026-07-31 in PARI/GP and in Python.  Word for word
-`dvd_X_pow_card_pow_sub_X_hPolySeventeenA` with a different `H`; see that docstring for the
-route, the worked `p = 11` example, and why the generated module has to be split per factor. -/
-theorem dvd_X_pow_card_pow_sub_X_hPolySeventeenB :
-    hPolySeventeenB ∣ X ^ (Nat.card (ZMod 67)) ^ 34 - X :=
-  sorry
-
-/-- **OPEN LEAF**: `H` has no irreducible factor of degree `1` or `2`.
-TRUE, machine-checked 2026-07-31.  See `isCoprime_hPolySeventeenA`. -/
-theorem isCoprime_hPolySeventeenB :
-    IsCoprime hPolySeventeenB (X ^ (Nat.card (ZMod 67)) ^ 2 - X) :=
-  sorry
+/-! `dvd_X_pow_card_pow_sub_X_hPolySeventeenB` and `isCoprime_hPolySeventeenB` used to be
+SORRIED HERE, word for word the `SeventeenA` pair with a different `H`.  Both are PROVEN as of
+2026-07-31 in the generated `MazurNonCMFrobenius/SeventeenB.lean` over its four
+`SeventeenB/Factor{i}.lean`. -/
 
 /-- **Row `p = 17`, `j = −297756989/2`: `Ψ₁₇ mod 67` has no monic divisor of degree `16`**
 (PROVEN 2026-07-31 over the two computational leaves above).

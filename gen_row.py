@@ -4,9 +4,14 @@ import io
 import sys
 
 from gen_all import ROWS, extract
-from gen_factored import generate_row
+from gen_factored import generate_row, generate_row_split
+from gen_frobenius import parse_poly
 
 COPRIME_AT = {"SeventeenA": 2, "SeventeenB": 2}
+
+#  Rows whose module is SPLIT one file per factor.  See `generate_row_split`: elaboration is
+#  single-threaded per module, and at `q = 67`, `m = 34` a single file does not finish.
+SPLIT = {"SeventeenA", "SeventeenB"}
 
 
 def factors(tag):
@@ -30,6 +35,19 @@ def body(tag, doc=""):
     generate_row(hname, extract(hname), factors(tag), q, m, tag,
                  COPRIME_AT.get(tag), doc, out)
     return out.getvalue()
+
+
+def body_split(tag, doc=""):
+    """`(parent body, [factor bodies], factor degree)` for a row emitted one module per factor."""
+    hname, q, m = ROWS[tag]
+    fs = factors(tag)
+    out = io.StringIO()
+    fouts = [io.StringIO() for _ in fs]
+    generate_row_split(hname, extract(hname), fs, q, m, tag,
+                       COPRIME_AT.get(tag), doc, out, fouts)
+    degs = {len(parse_poly(s, q)) - 1 for s in fs}
+    assert len(degs) == 1, f"factors of unequal degree: {sorted(degs)}"
+    return out.getvalue(), [o.getvalue() for o in fouts], degs.pop()
 
 
 SCRATCH_HEAD = """import Mathlib.Data.ZMod.Basic
