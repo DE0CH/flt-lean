@@ -25666,13 +25666,32 @@ half of the search; grep the project too.
   exactly `ℤ[√−n]`, and its `j` is the algebraic number `j(τ_f)`. This is where
   ALL the CM content now sits, and it is the only place `hprim` is consumed.
 
-Everything else is proved here: the dictionary `f ↦ τ_f` is well defined
+Everything else is proved: the dictionary `f ↦ τ_f` is well defined
 (`formPoint`), satisfies the defining quadratic (`formPoint_quadratic`), is the
 UNIQUE root in `ℍ` (`eq_formPoint_of_quadratic`), is INJECTIVE on forms of a
 fixed discriminant (`eq_of_formPoint_eq`), and is `SL₂(ℤ)`-EQUIVARIANT
 (`formPoint_moebius`, `formPoint_act`). Those five give
 `jInvariant_formPoint_ne_of_not_equivalent` from LEAF B, and the target follows
 by applying LEAF A to `f` and to `⟨1, 0, n⟩`.
+
+**WHERE THE DICTIONARY LIVES NOW (moved 2026-08-01).** `formPoint` and its whole
+calculus, LEAF B, and `jInvariant_formPoint_ne_of_not_equivalent` are NOT in this
+file any more: they are `Fermat.BinaryQuadraticForm.*`, in
+`Fermat/FLT/Mathlib/NumberTheory/BinaryQuadraticForm.lean`, in a section of the
+same name near the end of `namespace BinaryQuadraticForm`. They belong there —
+not one of them mentions an elliptic curve, an endomorphism ring or complex
+multiplication, and both `BinaryQuadraticForm` and `Heegner.jInvariant` are
+DEFINED in that file, whereas this one merely consumes them. Two things follow
+that are worth knowing before editing either end: LEAF B
+(`exists_smul_eq_of_jInvariant_eq`) is now citable by the Heegner /
+class-number-one cluster, which sits ABOVE it in that file and could not reach it
+across the import direction before; and iterating on any of those lemmas now
+costs one `BinaryQuadraticForm.lean` elaboration rather than one of THIS file,
+which is a difference of more than an order of magnitude.
+
+What stays here is exactly the part that is about CM: `complexEmbedding`, LEAF A,
+and the target `exists_isCMJInvariant_ne_of_not_equivalent`. They cite the moved
+names under their new `Fermat.BinaryQuadraticForm.` qualification.
 
 **WHERE `hprim` WENT, and why LEAF B does not have it.** The old docstring's
 counterexample — `n = 4`, `f = ⟨2, 0, 2⟩`, `h(−16) = 1` — is a counterexample to
@@ -25689,310 +25708,9 @@ and `⟨2, 0, 2⟩` (discriminant `−16`) are not properly equivalent — they 
 even have the same discriminant, which is a proper-equivalence invariant — yet
 both have `τ = i`, hence literally equal `j`. -/
 
-section FormPointDictionary
+section CMJInvariantFromDictionary
 
 open Fermat.BinaryQuadraticForm.Heegner
-open scoped MatrixGroups
-
-/-- **The point of `ℍ` attached to a positive definite form**: the root of
-`a X² + b X + c` in the upper half plane, `τ_f = (−b + i√(−D))/(2a)`.
-
-The hypothesis `hf` is genuinely needed — with `discr ≥ 0` the roots are real
-and there is no point of `ℍ` to name — and costs nothing downstream, `IsPosDef`
-being a `Prop`. -/
-noncomputable def formPoint (f : Fermat.BinaryQuadraticForm) (hf : f.IsPosDef) :
-    UpperHalfPlane :=
-  UpperHalfPlane.mk
-    ((((-f.b : ℝ) / (2 * (f.a : ℝ)) : ℝ) : ℂ) +
-      (((Real.sqrt (-(f.discr : ℝ)) / (2 * (f.a : ℝ))) : ℝ) : ℂ) * Complex.I) <| by
-    have ha : (0 : ℝ) < (f.a : ℝ) := by exact_mod_cast hf.a_pos
-    have hd : (0 : ℝ) < -((f.discr : ℤ) : ℝ) := by
-      have h := hf.discr_neg
-      have h' : ((f.discr : ℤ) : ℝ) < 0 := by exact_mod_cast h
-      linarith
-    have hs : 0 < Real.sqrt (-((f.discr : ℤ) : ℝ)) := Real.sqrt_pos.mpr hd
-    simp only [Complex.add_im, Complex.ofReal_im, Complex.mul_im, Complex.I_re, Complex.I_im,
-      Complex.ofReal_re, zero_add, mul_zero, mul_one, add_zero]
-    exact div_pos hs (by linarith)
-
-lemma formPoint_re (f : Fermat.BinaryQuadraticForm) (hf : f.IsPosDef) :
-    (formPoint f hf : ℂ).re = (-f.b : ℝ) / (2 * (f.a : ℝ)) := by
-  simp only [formPoint, UpperHalfPlane.coe_mk, Complex.add_re, Complex.mul_re,
-    Complex.ofReal_re, Complex.ofReal_im, Complex.I_re, Complex.I_im, mul_zero, zero_mul,
-    sub_self, add_zero]
-
-lemma formPoint_im (f : Fermat.BinaryQuadraticForm) (hf : f.IsPosDef) :
-    (formPoint f hf : ℂ).im = Real.sqrt (-(f.discr : ℝ)) / (2 * (f.a : ℝ)) := by
-  simp only [formPoint, UpperHalfPlane.coe_mk, Complex.add_im, Complex.mul_im,
-    Complex.ofReal_re, Complex.ofReal_im, Complex.I_re, Complex.I_im, mul_zero,
-    mul_one, zero_add, add_zero]
-
-lemma coe_formPoint (f : Fermat.BinaryQuadraticForm) (hf : f.IsPosDef) :
-    (formPoint f hf : ℂ) =
-      (-(f.b : ℂ) + Complex.I * ((Real.sqrt (-(f.discr : ℝ)) : ℝ) : ℂ)) / (2 * (f.a : ℂ)) := by
-  have ha : ((f.a : ℤ) : ℂ) ≠ 0 := by exact_mod_cast ne_of_gt hf.a_pos
-  simp only [formPoint, UpperHalfPlane.coe_mk]
-  push_cast
-  field_simp
-
-lemma sq_sqrt_neg_discr (f : Fermat.BinaryQuadraticForm) (hf : f.IsPosDef) :
-    ((Real.sqrt (-(f.discr : ℝ)) : ℝ) : ℂ) ^ 2 = -((f.discr : ℤ) : ℂ) := by
-  have hd : (0 : ℝ) ≤ -((f.discr : ℤ) : ℝ) := by
-    have h := hf.discr_neg
-    have h' : ((f.discr : ℤ) : ℝ) < 0 := by exact_mod_cast h
-    linarith
-  have h1 : Real.sqrt (-((f.discr : ℤ) : ℝ)) ^ 2 = -((f.discr : ℤ) : ℝ) := Real.sq_sqrt hd
-  have h2 : ((Real.sqrt (-((f.discr : ℤ) : ℝ)) ^ 2 : ℝ) : ℂ)
-      = ((-((f.discr : ℤ) : ℝ) : ℝ) : ℂ) := by rw [h1]
-  push_cast at h2
-  linear_combination h2
-
-lemma discr_cast (f : Fermat.BinaryQuadraticForm) :
-    ((f.discr : ℤ) : ℂ) = (f.b : ℂ) ^ 2 - 4 * (f.a : ℂ) * (f.c : ℂ) := by
-  simp only [Fermat.BinaryQuadraticForm.discr]
-  push_cast
-  ring
-
-/-- `2 a τ + b = i √(−D)`, the closed form of the root. -/
-lemma two_mul_coe_formPoint (f : Fermat.BinaryQuadraticForm) (hf : f.IsPosDef) :
-    2 * (f.a : ℂ) * (formPoint f hf : ℂ) + (f.b : ℂ)
-      = Complex.I * ((Real.sqrt (-(f.discr : ℝ)) : ℝ) : ℂ) := by
-  have ha : ((f.a : ℤ) : ℂ) ≠ 0 := by exact_mod_cast ne_of_gt hf.a_pos
-  rw [coe_formPoint]
-  field_simp
-  ring
-
-/-- **The defining quadratic relation**, `a τ² + b τ + c = 0`. Proved by
-completing the square: `4a(aτ² + bτ + c) = (2aτ + b)² − D`, and `(2aτ + b)²` is
-`(i√(−D))² = D`. -/
-lemma formPoint_quadratic (f : Fermat.BinaryQuadraticForm) (hf : f.IsPosDef) :
-    (f.a : ℂ) * (formPoint f hf : ℂ) ^ 2 + (f.b : ℂ) * (formPoint f hf : ℂ) + (f.c : ℂ) = 0 := by
-  have ha4 : (4 * (f.a : ℂ)) ≠ 0 := by
-    have h : ((f.a : ℤ) : ℂ) ≠ 0 := by exact_mod_cast ne_of_gt hf.a_pos
-    simpa using h
-  have hk := two_mul_coe_formPoint f hf
-  have hsq := sq_sqrt_neg_discr f hf
-  have hdisc := discr_cast f
-  have hI : (Complex.I) ^ 2 = -1 := Complex.I_sq
-  apply mul_left_cancel₀ ha4
-  linear_combination (2 * (f.a : ℂ) * (formPoint f hf : ℂ) + (f.b : ℂ)
-      + Complex.I * ((Real.sqrt (-(f.discr : ℝ)) : ℝ) : ℂ)) * hk
-    + ((Real.sqrt (-(f.discr : ℝ)) : ℝ) : ℂ) ^ 2 * hI + (-1 : ℂ) * hsq + hdisc
-
-/-- **`formPoint f` is the UNIQUE root of `f` in `ℍ`.** The two roots of a real
-quadratic of negative discriminant are complex conjugates, so exactly one has
-positive imaginary part: from `(2az + b)² = (i√(−D))²` the second factor
-`2az + b + i√(−D)` cannot vanish, its imaginary part being `2a·Im z + √(−D) > 0`. -/
-lemma eq_formPoint_of_quadratic (f : Fermat.BinaryQuadraticForm) (hf : f.IsPosDef)
-    (z : UpperHalfPlane)
-    (h : (f.a : ℂ) * (z : ℂ) ^ 2 + (f.b : ℂ) * (z : ℂ) + (f.c : ℂ) = 0) :
-    z = formPoint f hf := by
-  have hapos : (0 : ℝ) < (f.a : ℝ) := by exact_mod_cast hf.a_pos
-  have ha : (2 * (f.a : ℂ)) ≠ 0 := by
-    have h' : ((f.a : ℤ) : ℂ) ≠ 0 := by exact_mod_cast ne_of_gt hf.a_pos
-    simpa using h'
-  have hd : (0 : ℝ) < -((f.discr : ℤ) : ℝ) := by
-    have h0 := hf.discr_neg
-    have h' : ((f.discr : ℤ) : ℝ) < 0 := by exact_mod_cast h0
-    linarith
-  have hspos : 0 < Real.sqrt (-((f.discr : ℤ) : ℝ)) := Real.sqrt_pos.mpr hd
-  have hI : (Complex.I) ^ 2 = -1 := Complex.I_sq
-  have hsq := sq_sqrt_neg_discr f hf
-  have hdisc := discr_cast f
-  have key : (2 * (f.a : ℂ) * (z : ℂ) + (f.b : ℂ)) ^ 2
-      = (Complex.I * ((Real.sqrt (-(f.discr : ℝ)) : ℝ) : ℂ)) ^ 2 := by
-    linear_combination (4 * (f.a : ℂ)) * h + (-1 : ℂ) * hdisc
-      + (-(((Real.sqrt (-(f.discr : ℝ)) : ℝ) : ℂ) ^ 2)) * hI + hsq
-  have hfac : (2 * (f.a : ℂ) * (z : ℂ) + (f.b : ℂ)
-        - Complex.I * ((Real.sqrt (-(f.discr : ℝ)) : ℝ) : ℂ))
-      * (2 * (f.a : ℂ) * (z : ℂ) + (f.b : ℂ)
-        + Complex.I * ((Real.sqrt (-(f.discr : ℝ)) : ℝ) : ℂ)) = 0 := by
-    linear_combination key
-  have hz : (2 * (f.a : ℂ) * (z : ℂ) + (f.b : ℂ))
-      = Complex.I * ((Real.sqrt (-(f.discr : ℝ)) : ℝ) : ℂ) := by
-    rcases mul_eq_zero.mp hfac with h1 | h1
-    · linear_combination h1
-    · exfalso
-      have him : (2 * (f.a : ℝ) * (z : ℂ).im
-          + Real.sqrt (-((f.discr : ℤ) : ℝ))) = 0 := by
-        have h2 := congrArg Complex.im h1
-        simpa using h2
-      have hzim : 0 < (z : ℂ).im := z.im_pos
-      nlinarith [him, hzim, hapos, hspos]
-  rw [← UpperHalfPlane.coe_inj, coe_formPoint, eq_div_iff ha]
-  linear_combination hz
-
-/-- **`formPoint` is injective on positive definite forms of a fixed
-discriminant.** The imaginary part `√(−D)/(2a)` recovers `a`, the real part
-`−b/(2a)` then recovers `b`, and `D = b² − 4ac` recovers `c`.
-
-Injectivity FAILS across discriminants — `⟨1, 0, 1⟩` and `⟨2, 0, 2⟩` share the
-point `i` — which is why `hd` is a hypothesis and not a conclusion. -/
-lemma eq_of_formPoint_eq {f g : Fermat.BinaryQuadraticForm} (hf : f.IsPosDef) (hg : g.IsPosDef)
-    (hd : f.discr = g.discr) (he : formPoint f hf = formPoint g hg) : f = g := by
-  have hfa : (0 : ℝ) < (f.a : ℝ) := by exact_mod_cast hf.a_pos
-  have hga : (0 : ℝ) < (g.a : ℝ) := by exact_mod_cast hg.a_pos
-  have hdlt : (0 : ℝ) < -((g.discr : ℤ) : ℝ) := by
-    have h0 := hg.discr_neg
-    have h' : ((g.discr : ℤ) : ℝ) < 0 := by exact_mod_cast h0
-    linarith
-  have hspos : 0 < Real.sqrt (-((g.discr : ℤ) : ℝ)) := Real.sqrt_pos.mpr hdlt
-  have hcoe : (formPoint f hf : ℂ) = (formPoint g hg : ℂ) := by rw [he]
-  have him := congrArg Complex.im hcoe
-  have hre := congrArg Complex.re hcoe
-  rw [formPoint_im, formPoint_im, hd] at him
-  rw [formPoint_re, formPoint_re] at hre
-  have hfa2 : (2 * (f.a : ℝ)) ≠ 0 := by positivity
-  have hga2 : (2 * (g.a : ℝ)) ≠ 0 := by positivity
-  have haeq : (f.a : ℝ) = (g.a : ℝ) := by
-    rw [div_eq_div_iff hfa2 hga2] at him
-    have := mul_left_cancel₀ (ne_of_gt hspos) him
-    linarith
-  have ha : f.a = g.a := by exact_mod_cast haeq
-  have hb : f.b = g.b := by
-    rw [haeq, div_eq_div_iff hga2 hga2] at hre
-    have h2 := mul_right_cancel₀ hga2 hre
-    have h3 : (f.b : ℝ) = (g.b : ℝ) := by linarith
-    exact_mod_cast h3
-  have hc : f.c = g.c := by
-    have hdd : f.b ^ 2 - 4 * f.a * f.c = g.b ^ 2 - 4 * g.a * g.c := hd
-    rw [ha, hb] at hdd
-    have hga' : (0 : ℤ) < g.a := hg.a_pos
-    have h4 : (4 * g.a : ℤ) ≠ 0 := by positivity
-    exact mul_left_cancel₀ h4 (by linarith)
-  exact Fermat.BinaryQuadraticForm.ext ha hb hc
-
-/-- A Möbius denominator `r z + s` with `(r, s) ≠ (0, 0)` cannot vanish at a
-point of `ℍ`: its imaginary part is `r · Im z`. -/
-lemma denom_ne_zero_aux (z : UpperHalfPlane) {r s : ℤ} (h : ¬(r = 0 ∧ s = 0)) :
-    (r : ℂ) * (z : ℂ) + (s : ℂ) ≠ 0 := by
-  intro h0
-  have hz : (0 : ℝ) < (z : ℂ).im := z.im_pos
-  have him : (r : ℝ) * (z : ℂ).im = 0 := by
-    have h1 := congrArg Complex.im h0
-    simpa using h1
-  have hr : r = 0 := by
-    rcases mul_eq_zero.mp him with h1 | h1
-    · exact_mod_cast h1
-    · linarith
-  have hs : s = 0 := by
-    rw [hr] at h0
-    have h1 := congrArg Complex.re h0
-    simp at h1
-    exact_mod_cast h1
-  exact h ⟨hr, hs⟩
-
-/-- **THE DICTIONARY IS `SL₂(ℤ)`-EQUIVARIANT**, in Möbius form: the point
-`(pτ_f + q)/(rτ_f + s)` is the `formPoint` of `f ∘ [[s, −q], [−r, p]]`.
-
-THE IDENTITY, and it is why the inverse matrix appears. Writing
-`f'(X, Y) = f(sX − qY, −rX + pY)` and putting `(X, Y) = (pτ + q, rτ + s)` gives
-`sX − qY = (ps − qr)τ` and `−rX + pY = ps − qr`, so
-`f'(X, Y) = (ps − qr)² · f(τ, 1) = 0`. Dividing by `(rτ + s)²` is legal by
-`denom_ne_zero_aux`, and uniqueness of the root in `ℍ` finishes. -/
-lemma formPoint_moebius (f : Fermat.BinaryQuadraticForm) (hf : f.IsPosDef) {p q r s : ℤ}
-    (hdet : p * s - q * r = 1) (hf' : (f.act s (-q) (-r) p).IsPosDef) (w : UpperHalfPlane)
-    (hw : (w : ℂ) = ((p : ℂ) * (formPoint f hf : ℂ) + (q : ℂ)) /
-      ((r : ℂ) * (formPoint f hf : ℂ) + (s : ℂ))) :
-    w = formPoint (f.act s (-q) (-r) p) hf' := by
-  have hquad := formPoint_quadratic f hf
-  have hden : (r : ℂ) * (formPoint f hf : ℂ) + (s : ℂ) ≠ 0 := by
-    refine denom_ne_zero_aux _ ?_
-    rintro ⟨h1, h2⟩
-    rw [h1, h2] at hdet
-    simp at hdet
-  have hinv : ((r : ℂ) * (formPoint f hf : ℂ) + (s : ℂ))
-      * ((r : ℂ) * (formPoint f hf : ℂ) + (s : ℂ))⁻¹ = 1 := mul_inv_cancel₀ hden
-  have hdetC : ((p : ℂ) * (s : ℂ) - (q : ℂ) * (r : ℂ)) = 1 := by exact_mod_cast hdet
-  have hexp : ((f.act s (-q) (-r) p).a : ℂ)
-        * ((p : ℂ) * (formPoint f hf : ℂ) + (q : ℂ)) ^ 2
-      + ((f.act s (-q) (-r) p).b : ℂ) * ((p : ℂ) * (formPoint f hf : ℂ) + (q : ℂ))
-        * ((r : ℂ) * (formPoint f hf : ℂ) + (s : ℂ))
-      + ((f.act s (-q) (-r) p).c : ℂ)
-        * ((r : ℂ) * (formPoint f hf : ℂ) + (s : ℂ)) ^ 2 = 0 := by
-    have h1 : ((f.act s (-q) (-r) p).a : ℂ)
-          * ((p : ℂ) * (formPoint f hf : ℂ) + (q : ℂ)) ^ 2
-        + ((f.act s (-q) (-r) p).b : ℂ) * ((p : ℂ) * (formPoint f hf : ℂ) + (q : ℂ))
-          * ((r : ℂ) * (formPoint f hf : ℂ) + (s : ℂ))
-        + ((f.act s (-q) (-r) p).c : ℂ)
-          * ((r : ℂ) * (formPoint f hf : ℂ) + (s : ℂ)) ^ 2
-        = ((p : ℂ) * (s : ℂ) - (q : ℂ) * (r : ℂ)) ^ 2
-          * ((f.a : ℂ) * (formPoint f hf : ℂ) ^ 2 + (f.b : ℂ) * (formPoint f hf : ℂ)
-              + (f.c : ℂ)) := by
-      simp only [Fermat.BinaryQuadraticForm.act, Fermat.BinaryQuadraticForm.eval]
-      push_cast
-      ring
-    rw [h1, hdetC, one_pow, one_mul, hquad]
-  apply eq_formPoint_of_quadratic
-  rw [hw]
-  apply mul_left_cancel₀ (pow_ne_zero 2 hden)
-  linear_combination hexp + (((f.act s (-q) (-r) p).a : ℂ)
-      * ((p : ℂ) * (formPoint f hf : ℂ) + (q : ℂ)) ^ 2
-      * (((r : ℂ) * (formPoint f hf : ℂ) + (s : ℂ))
-          * ((r : ℂ) * (formPoint f hf : ℂ) + (s : ℂ))⁻¹ + 1)
-    + ((f.act s (-q) (-r) p).b : ℂ) * ((p : ℂ) * (formPoint f hf : ℂ) + (q : ℂ))
-      * ((r : ℂ) * (formPoint f hf : ℂ) + (s : ℂ))) * hinv
-
-/-- **THE DICTIONARY IS `SL₂(ℤ)`-EQUIVARIANT**, as an action statement. -/
-lemma formPoint_act (f : Fermat.BinaryQuadraticForm) (hf : f.IsPosDef) (γ : SL(2, ℤ))
-    (hdet : γ 1 1 * (γ 0 0) - (-(γ 0 1)) * (-(γ 1 0)) = 1)
-    (hf' : (f.act (γ 1 1) (-(γ 0 1)) (-(γ 1 0)) (γ 0 0)).IsPosDef) :
-    γ • formPoint f hf = formPoint (f.act (γ 1 1) (-(γ 0 1)) (-(γ 1 0)) (γ 0 0)) hf' := by
-  refine formPoint_moebius f hf (p := γ 0 0) (q := γ 0 1) (r := γ 1 0) (s := γ 1 1)
-    (by linear_combination hdet) hf' _ ?_
-  rw [UpperHalfPlane.coe_specialLinearGroup_apply]
-  simp only [algebraMap_int_eq, eq_intCast, Complex.ofReal_intCast]
-
-/-- **LEAF B (cut 2026-07-31) — `j` SEPARATES `SL₂(ℤ)`-ORBITS ON `ℍ`.** This is
-the injectivity half of the classical uniformisation `j : ℍ/SL₂(ℤ) ≃ ℂ`; the
-`SL₂(ℤ)`-invariance half is `Fermat.BinaryQuadraticForm.Heegner.jInvariant_smul`,
-already PROVEN, and surjectivity is not needed anywhere here.
-
-**THE ARGUMENT** (Serre, *A Course in Arithmetic*, VII.3.3; Diamond–Shurman
-§3.1; Cox §11.A). `j` is a weight-zero modular function, holomorphic on `ℍ` with
-a simple pole at `∞`, so by the valence formula
-`∑_{P ∈ ℍ/SL₂(ℤ)} (1/e_P)·ord_P(j − c) = 1` for every `c ∈ ℂ`, whence `j − c`
-has exactly one zero in the fundamental domain. Two points with the same `j` are
-therefore in the same orbit. The route through the fundamental domain
-`|Re z| ≤ 1/2`, `|z| ≥ 1` needs the standard reduction theory of `SL₂(ℤ)` acting
-on `ℍ`, which mathlib HAS
-(`UpperHalfPlane.exists_smul_mem_fd`, `ModularGroup.fd`); what it does not have
-is the valence formula for `j`, and that is the whole cost of this leaf.
-
-**NO PRIMITIVITY, NO POSITIVE DEFINITENESS, NO CM** — the statement is about
-`ℍ` and `j` alone, which is exactly why it is worth cutting out separately.
-
-**THE CHECK THAT WOULD REFUTE IT**: two points of `ℍ` with equal `j` in
-different `SL₂(ℤ)`-orbits. None exists; and note the numerical values quoted in
-this file's Heegner development (`j((3+√−163)/2) = −262537412640768000`, etc.)
-are consistent with it, those being five points in five distinct orbits with
-five distinct `j`. -/
-theorem exists_smul_eq_of_jInvariant_eq {v w : UpperHalfPlane}
-    (h : jInvariant v = jInvariant w) : ∃ γ : SL(2, ℤ), γ • v = w :=
-  sorry
-
-/-- **PROVEN from LEAF B**: two positive definite forms of one discriminant that
-are not properly equivalent have distinct `j`-invariants.
-
-Given `γ` with `γ • τ_f = τ_g`, equivariance identifies `τ_{f ∘ γ'}` with `τ_g`
-for `γ' = [[γ₁₁, −γ₀₁], [−γ₁₀, γ₀₀]]` (determinant `1`), and injectivity at fixed
-discriminant then gives `f ∘ γ' = g`, i.e. `f` and `g` ARE properly equivalent. -/
-theorem jInvariant_formPoint_ne_of_not_equivalent {f g : Fermat.BinaryQuadraticForm}
-    (hf : f.IsPosDef) (hg : g.IsPosDef) (hd : f.discr = g.discr) (hne : ¬ f.Equivalent g) :
-    jInvariant (formPoint f hf) ≠ jInvariant (formPoint g hg) := by
-  intro hj
-  obtain ⟨γ, hγ⟩ := exists_smul_eq_of_jInvariant_eq hj
-  have hdet : γ 0 0 * γ 1 1 - γ 0 1 * γ 1 0 = 1 := by
-    have h := γ.2
-    rw [Matrix.det_fin_two] at h
-    exact h
-  have hdet' : γ 1 1 * (γ 0 0) - (-(γ 0 1)) * (-(γ 1 0)) = 1 := by linear_combination hdet
-  have hpd : (f.act (γ 1 1) (-(γ 0 1)) (-(γ 1 0)) (γ 0 0)).IsPosDef := hf.act hdet'
-  have heq : formPoint (f.act (γ 1 1) (-(γ 0 1)) (-(γ 1 0)) (γ 0 0)) hpd = formPoint g hg := by
-    rw [← formPoint_act f hf γ hdet' hpd, hγ]
-  have hdiscr : (f.act (γ 1 1) (-(γ 0 1)) (-(γ 1 0)) (γ 0 0)).discr = g.discr := by
-    rw [Fermat.BinaryQuadraticForm.discr_act, hdet', one_pow, one_mul, hd]
-  exact hne ⟨γ 1 1, -(γ 0 1), -(γ 1 0), γ 0 0, hdet', eq_of_formPoint_eq hpd hg hdiscr heq⟩
 
 /-- **A FIXED COMPLEX PLACE OF `ℚ̄`.** Any `ℚ`-embedding will do — the statement
 of LEAF A is invariant under precomposing with an automorphism of `ℚ̄` — but ONE
@@ -26053,7 +25771,7 @@ than `ℤ[√−n]`. -/
 theorem exists_isCMJInvariant_complexEmbedding_eq (n : ℤ) (g : Fermat.BinaryQuadraticForm)
     (hg : g.IsPosDef) (hdisc : g.discr = -(4 * n)) (hprim : IsPrimitive g) :
     ∃ x : AlgebraicClosure ℚ, IsCMJInvariant n x ∧
-      complexEmbedding x = jInvariant (formPoint g hg) :=
+      complexEmbedding x = jInvariant (Fermat.BinaryQuadraticForm.formPoint g hg) :=
   sorry
 
 /-- **PROVEN 2026-07-31 (was a leaf, cut 2026-07-28) — THE CLASS GROUP ACTS
@@ -26132,10 +25850,11 @@ theorem exists_isCMJInvariant_ne_of_not_equivalent
   obtain ⟨y, hy, hyj⟩ :=
     exists_isCMJInvariant_complexEmbedding_eq n ⟨1, 0, n⟩ hppd hpdiscr hpprim
   refine ⟨x, y, hx, hy, fun hxy => ?_⟩
-  exact jInvariant_formPoint_ne_of_not_equivalent hpd hppd (by rw [hdisc, hpdiscr]) hne
+  exact Fermat.BinaryQuadraticForm.jInvariant_formPoint_ne_of_not_equivalent hpd hppd
+    (by rw [hdisc, hpdiscr]) hne
     (by rw [← hxj, ← hyj, hxy])
 
-end FormPointDictionary
+end CMJInvariantFromDictionary
 
 /-- **`ℚ̄/ℚ` IS NORMAL** (PROVEN 2026-07-31, and it has to be proven BY HAND).
 
