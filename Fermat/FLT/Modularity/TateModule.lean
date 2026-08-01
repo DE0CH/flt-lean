@@ -21721,14 +21721,332 @@ def IsQAdicBoundedPolarizationHom {A S : Scheme.{u}} {f : A ⟶ S}
       y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ b})).1)
 
 open _root_.NumberField in
+/-- **PERFECTNESS OF THE `q`-TOWER WEIL PAIRING IN THE SECOND VARIABLE** — the
+mirror of `DualStruct.weil_nondegenerate`, restricted to the `q`-power levels of
+one geometric fibre.
+
+*If `z ∈ Â[q^M]` pairs trivially with every `y ∈ A[q^M]`, then `z = 0`.*
+
+`DualStruct` asserts nondegeneracy in the FIRST variable only, and that asymmetry
+is not an oversight — it is what makes the structure cheap to inhabit at a level
+where `A[I]` is small.  But the classical pairing
+`e_n : A[n] × Â[n] ⟶ μ_n` is PERFECT for `n` invertible on the base (Mumford *AV*
+§16, Milne *AV* I.13), so the second-variable statement is true of the intended
+`d` at exactly the levels this predicate names, and it costs a producer nothing
+beyond what it is already proving.
+
+**WHY IT IS WORTH ASKING FOR: it is what converts a BOUNDED KERNEL into a BOUNDED
+RADICAL**, which is the last and least citable clause of
+`IsQAdicBoundedPolarizationHom`.  See
+`isQAdicBoundedPolarizationHom_of_kernelBounded` below, which is that conversion
+and is PROVEN.
+
+**AND IT IS WHAT KILLS THE JUNK WITNESS OF THE ATOMICITY AUDIT** on
+`exists_dualPolarization_field` below.  That audit refuses to split the dual off
+from the polarization because `DualStruct`'s axioms do not pin `d`: for any
+abelian `C` the datum `dualScheme = Â' × C`, paired through the first projection,
+satisfies every field.  It does NOT satisfy this one — take `z = (0, c)` with
+`c ≠ 0` in `C[q^M]` and the pairing against all of `A[q^M]` is constantly `1`
+while `z ≠ 0`.  So a successor who wants that split should carry this predicate;
+it is a necessary condition for the split to be safe, and the audit's open
+question (whether some ADMISSIBLE `d` admits no `hom`) should be re-asked with it
+in force.
+
+A separate `Prop` rather than a field of `DualStruct`, for the reason
+`IsQAdicWeilTower` gives: it is needed only at the `q`-power levels of one fibre,
+and adding a field would disturb every consumer of that structure in
+`Modularity/AbelianScheme.lean`. -/
+def IsQAdicWeilPerfect {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    {m : Mult ab (NumberField.RingOfIntegers D)}
+    (d : DualStruct ab m)
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) : Prop :=
+  ∀ (M : ℕ) (z : GeomFibrePt d.dualMap x),
+    z ∈ (d.dualMult.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
+    (∀ y : GeomFibrePt f x,
+        y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
+        d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+          (natCast_pow_mem_span_pow D q M) y z = 1) →
+    z = d.dualAb.zero (specAlgClos F ≫ x)
+
+open _root_.NumberField in
+/-- **AN `𝒪_D`-LINEAR POLARIZATION WITH A BOUNDED `q`-PRIMARY KERNEL** —
+`IsQAdicBoundedPolarizationHom` with its last clause replaced by the statement
+that the classical proof actually produces.
+
+The first five clauses are copied character for character: additivity,
+`𝒪_D`-linearity, preservation of `q^M`-torsion, `Γ_F`-equivariance, and the
+strong `𝒪_D`-ALTERNATING clause.  Only the sixth differs:
+
+* `IsQAdicBoundedPolarizationHom` asks for a bounded RADICAL — *if `y ∈ A[q^M]`
+  pairs trivially with `λ(A[q^M])` then `y ∈ A[q^b]`*;
+* this predicate asks for a bounded KERNEL — *if `y ∈ A[q^M]` and `λ y = 0` then
+  `y ∈ A[q^b]`*.
+
+**WHY THE KERNEL FORM IS THE ONE TO ASK A GEOMETER FOR.**  It is one sentence of
+the classical package: `ker λ` is a FINITE group scheme, so `(ker λ)(k̄)` is a
+finite group, so its `q`-primary part is killed by `q^b` for some `b`, and that
+`b` works at every level `M` at once.  Nothing about pairings, radicals or
+orthogonal complements enters.  The radical form, by contrast, is a derived
+statement that no reference states, and deriving it needs the second-variable
+perfectness of the Weil pairing — which is why that is asked for separately, as
+`IsQAdicWeilPerfect`, where it is also one sentence of the classical package.
+
+`isQAdicBoundedPolarizationHom_of_kernelBounded` below is the derivation and is
+PROVEN, so the two predicates together deliver the old one with nothing left
+over. -/
+def IsQAdicKernelBoundedPolarizationHom {A S : Scheme.{u}} {f : A ⟶ S}
+    {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    {m : Mult ab (NumberField.RingOfIntegers D)}
+    (d : DualStruct ab m)
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q b : ℕ)
+    (hom : GeomFibrePt f x → GeomFibrePt d.dualMap x) : Prop :=
+  (∀ y z : GeomFibrePt f x, hom (ab.add y z) = d.dualAb.add (hom y) (hom z)) ∧
+  (∀ (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      hom (m.act a y) = d.dualMult.act a (hom y)) ∧
+  (∀ (M : ℕ) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
+      hom y ∈ (d.dualMult.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1) ∧
+  (∀ (σ : Field.absoluteGaloisGroup F) (y : GeomFibrePt f x),
+      hom (ab.galSMul x σ y) = d.dualAb.galSMul x σ (hom y)) ∧
+  (∀ (M : ℕ) (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
+      d.weil x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M}) (q ^ M)
+        (natCast_pow_mem_span_pow D q M) (m.act a y) (hom y) = 1) ∧
+  (∀ (M : ℕ) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ M})).1 →
+      hom y = d.dualAb.zero (specAlgClos F ≫ x) →
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ b})).1)
+
+open _root_.NumberField in
+/-- **A BOUNDED KERNEL PLUS A PERFECT PAIRING GIVES A BOUNDED RADICAL** (PROVEN
+2026-08-01) — the formal half of the 2026-08-01 recut of
+`exists_dualPolarization_field`, and the reason that recut costs the geometry
+nothing.
+
+The argument is four steps and uses no geometry at all.
+
+1. **The induced form `⟨y, z⟩ := e_{q^M}(y, λ z)` is ALTERNATING**, i.e.
+   `⟨w, w⟩ = 1`.  This is the fifth clause at `a = 1`, through `Mult.act_one`.
+   It is worth noticing that the fifth clause is stated for every `a ∈ 𝒪_D` and
+   that only `a = 1` is used here; the rest of its strength is spent downstream,
+   in `isQAdicPolarizedSystem_of_dualPolarization`.
+2. **Hence SKEW**: expanding `⟨y + w, y + w⟩ = 1` by `weil_add_left` and
+   `weil_add_right` and cancelling the two diagonal terms gives
+   `⟨y, w⟩ ⟨w, y⟩ = 1`.  The `q^M`-torsion is a `Submodule`, so `y + w` is again
+   `q^M`-torsion and `λ` carries it there by the third clause.
+3. So a `y` in the RADICAL — `⟨y, w⟩ = 1` for every `w ∈ A[q^M]` — has
+   `⟨w, y⟩ = 1` for every such `w`, i.e. `λ y ∈ Â[q^M]` pairs trivially with all
+   of `A[q^M]`.  **`IsQAdicWeilPerfect` then gives `λ y = 0`**, and this is the
+   only place it is used.
+4. **The bounded-kernel clause finishes.**
+
+**WHAT THIS IS NOT.**  It is not a weakening: the composite hypothesis implies
+`IsQAdicBoundedPolarizationHom` outright, so the recut leaf below is a priori
+STRONGER than the leaf it replaces.  That is deliberate and it is free
+classically — both added demands are single sentences of the standard package
+(perfectness of `e_n` for `n` invertible; finiteness of `ker λ`) — but it must be
+said out loud, because a restatement voids the earlier faithfulness audit in the
+direction that matters here.  See the audit on `exists_dualPerfectPolarization_field`. -/
+theorem isQAdicBoundedPolarizationHom_of_kernelBounded
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    {m : Mult ab (NumberField.RingOfIntegers D)}
+    (d : DualStruct ab m)
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q b : ℕ)
+    (hom : GeomFibrePt f x → GeomFibrePt d.dualMap x)
+    (hperf : IsQAdicWeilPerfect d x q)
+    (hpol : IsQAdicKernelBoundedPolarizationHom d x q b hom) :
+    IsQAdicBoundedPolarizationHom d x q b hom := by
+  obtain ⟨hadd, hact, htors, hgal, halt, hker⟩ := hpol
+  refine ⟨hadd, hact, htors, hgal, halt, ?_⟩
+  intro M y hy hrad
+  -- the ambient module structures on the `q^M`-torsion of both sides
+  letI := ab.addCommGroup (specAlgClos F ≫ x)
+  letI := m.module (specAlgClos F ≫ x)
+  letI := d.dualAb.addCommGroup (specAlgClos F ≫ x)
+  letI := d.dualMult.module (specAlgClos F ≫ x)
+  set I : Ideal (NumberField.RingOfIntegers D) :=
+    Ideal.span {(q : NumberField.RingOfIntegers D) ^ M} with hI
+  -- STEP 1: the induced form is ALTERNATING, i.e. the fifth clause at `a = 1`
+  have hselfw : ∀ w : GeomFibrePt f x, w ∈ (m.torsion x I).1 →
+      d.weil x I (q ^ M) (natCast_pow_mem_span_pow D q M) w (hom w) = 1 := by
+    intro w hw
+    have h := halt M 1 w hw
+    rwa [m.act_one] at h
+  -- STEP 2: hence SKEW, so the radical condition transposes
+  have hskew : ∀ w : GeomFibrePt f x, w ∈ (m.torsion x I).1 →
+      d.weil x I (q ^ M) (natCast_pow_mem_span_pow D q M) w (hom y) = 1 := by
+    intro w hw
+    have hsum : ab.add y w ∈ (m.torsion x I).1 :=
+      (Submodule.torsionBySet (NumberField.RingOfIntegers D) (GeomFibrePt f x)
+        (I : Set (NumberField.RingOfIntegers D))).add_mem hy hw
+    have h := hselfw (ab.add y w) hsum
+    rw [hadd y w] at h
+    rw [d.weil_add_left x I (q ^ M) (natCast_pow_mem_span_pow D q M) y w
+        (d.dualAb.add (hom y) (hom w)) hy hw
+        ((Submodule.torsionBySet (NumberField.RingOfIntegers D) (GeomFibrePt d.dualMap x)
+          (I : Set (NumberField.RingOfIntegers D))).add_mem (htors M y hy) (htors M w hw)),
+      d.weil_add_right x I (q ^ M) (natCast_pow_mem_span_pow D q M) y (hom y) (hom w) hy
+        (htors M y hy) (htors M w hw),
+      d.weil_add_right x I (q ^ M) (natCast_pow_mem_span_pow D q M) w (hom y) (hom w) hw
+        (htors M y hy) (htors M w hw),
+      hselfw y hy, hselfw w hw, hrad w hw] at h
+    simpa using h
+  -- STEP 3: perfectness in the second variable kills `λ y`
+  have hz : hom y = d.dualAb.zero (specAlgClos F ≫ x) :=
+    hperf M (hom y) (htors M y hy) hskew
+  -- STEP 4: the bounded kernel
+  exact hker M y hy hz
+
+open _root_.NumberField in
+/-- **THE DUAL ABELIAN VARIETY, ITS PERFECT `q`-TOWER WEIL PAIRING, AND AN
+`𝒪_D`-LINEAR POLARIZATION WITH BOUNDED `q`-PRIMARY KERNEL, OVER AN ARBITRARY
+FIELD** (SORRY LEAF; **RECUT 2026-08-01** out of `exists_dualPolarization_field`
+immediately below, which is now PROVEN over it in three lines through
+`isQAdicBoundedPolarizationHom_of_kernelBounded`.  The direct-sorry count did NOT
+move, `1 → 1`).  Mumford *Abelian Varieties* §6, §13, §16, §23; Milne *AV* I.7.1,
+I.8 and I.13; Silverman *AEC* III.8.1.
+
+**WHAT THE RECUT CHANGED, AND WHY.**  Only the last clause of the polarization
+half.  `exists_dualPolarization_field` asked for a bounded RADICAL — *a `y` that
+pairs trivially with `λ(A[q^M])` lies in `A[q^b]`* — and that is a DERIVED
+statement which no reference states and which a geometer would have to
+reverse-engineer.  What the classical construction hands over instead is two
+sentences, one about the pairing and one about the map:
+
+* `IsQAdicWeilPerfect` — `e_{q^M} : A[q^M] × Â[q^M] ⟶ μ_{q^M}` is nondegenerate
+  in the SECOND variable as well as the first.  This is Mumford *AV* §16 /
+  Milne *AV* I.13: the pairing is PERFECT whenever the level is invertible on the
+  base, which `hqk` guarantees at every level of the `q`-tower;
+* the sixth clause of `IsQAdicKernelBoundedPolarizationHom` — the `q`-primary
+  part of `ker λ` is bounded.  `ker λ` is a FINITE group scheme, so
+  `(ker λ)(k̄)` is a finite group and some `q^b` kills its `q`-primary part; that
+  `b` then works at every level `M` at once.
+
+`isQAdicBoundedPolarizationHom_of_kernelBounded` shows the two together deliver
+the old clause, so nothing is lost.  **Read that theorem's proof before adding
+anything here**: it is four steps of group algebra in `μ_{q^M}(F̄)` and it uses
+the fifth clause only at `a = 1`, so the recut consumes no strength that the
+downstream assembly needs.
+
+**FAITHFULNESS: THIS LEAF IS A PRIORI STRONGER THAN THE ONE IT REPLACES, AND THE
+EARLIER AUDIT DOES NOT TRANSFER IN THE DANGEROUS DIRECTION.**  The composite
+implies `exists_dualPolarization_field`, so a counterexample to THAT is a
+counterexample to THIS, and the `hqk` falsity audit below transfers verbatim.
+What does NOT transfer for free is the converse: adding demands can only make a
+leaf false, so both additions need their own check, and both are made above —
+each is a single sentence of the standard package, and each is true at exactly
+the levels this statement names.  Concretely:
+
+* second-variable perfectness needs `q^M` invertible in the geometric fibre
+  field.  Here `x = 𝟙` and the fibre field is `AlgebraicClosure k`, so `hqk`
+  gives it at every `M`.  At `M = 0` the clause is vacuous rather than false:
+  `I = (1) = ⊤` kills every point, so `Â[⊤] = 0` and the conclusion `z = 0`
+  holds of the only `z` there is;
+* the bounded kernel is `ker λ` finite, which is part of `λ` being an ISOGENY and
+  is what the word "polarization" already asserts.
+
+**FALSITY AUDIT (2026-07-31, INHERITED) — `hqk` IS LOAD-BEARING.**  At
+`q = char k` the leaf is FALSE: `rootsOfUnity (q^M) (AlgebraicClosure k)` is
+TRIVIAL, so `d.weil` at every level of the `q`-tower is constantly `1`; then
+`IsQAdicWeilPerfect` at `M ≥ 1` demands `Â[q^M] = 0`, which fails on the dual of
+an ORDINARY elliptic curve over `𝔽_p`.  Note the recut moves WHERE the
+characteristic bites — the old statement died on the radical clause, this one
+dies one clause earlier, on perfectness — but it dies at exactly the same
+hypothesis, which is the check that matters.
+
+**ATOMICITY (2026-08-01): the three refusals recorded on
+`exists_dualPolarization_field` below all still stand, and one of them is
+MISDIAGNOSED.**  Cut (3) there says that splitting off "`A'` carries a
+polarization as a MORPHISM" is *"not expressible: the target of such a morphism
+is `Pic⁰(A')`, and the only representability statement in this tree is
+`exists_relPicZeroSubgroup` (`ModularCurve/RelativePicard.lean`), which is itself
+open and is about relative CURVES"*.  Measured on 2026-08-01, at
+`280981f1`:
+
+* **"not expressible" is FALSE.**  `IsRelPicOf strX pstr`
+  (`RelativePicard.lean:2859`) has NO hypothesis on `strX` at all — not proper,
+  not smooth, not a curve — and `curveBaseChange strX g` is a `noncomputable
+  abbrev` for `pullback strX g` (line 2416), so the "curve" in the names is
+  vocabulary and not content.  `IsRelPicOf f' pstr` for `f' : A' ⟶ Spec k` is
+  therefore statable today, verbatim;
+* **"itself open" is FALSE as stated.**  `exists_relPicZeroSubgroup` (line 7781)
+  is a `theorem` with a `by` proof.  What is open is two leaves UNDER it,
+  `exists_relPicZeroGroupScheme` and `isProper_of_relPicZeroGroupScheme`, plus
+  `exists_relPicOf_of_isAffineBase` (line 3238) further up;
+* **the CONCLUSION survives, for a different reason.**  `exists_relPicZeroSubgroup`
+  and `exists_relPicIdentityComponent` (line 7314) both carry
+  `SmoothOfRelativeDimension 1 strX` AND a curve-specific Abel–Jacobi hypothesis
+  — `RelPicEquiv strX g (modTensor (sheaf (aj x)) (sectionIdeal (relSection x)))
+  (sectionIdeal (relSection (relBasePoint o g)))`, i.e. `𝒪(x − o)`, which is
+  invertible only on a curve.  So neither applies to an abelian variety, and the
+  route needs abelian-variety analogues of both.  Cutting here really would trade
+  one open leaf for two (representability of `Pic_{A'/k}`, and its identity
+  component being an abelian scheme), plus the unwritten construction of the Weil
+  pairing from the Poincaré bundle.
+
+That correction is worth having because it changes the PRICE rather than the
+verdict: the two residues are named citations — Grothendieck FGA 232 for
+representability (whose projectivity hypothesis is discharged for `A'/k` by
+`exists_isAmpleSheaf_of_field`, `Modularity/AbelianSchemeIsogeny.lean`, PROVEN),
+and BLR 9.4 / Mumford *AV* §13 for the identity component — rather than something
+that cannot be written down.  A successor who wants the cut should take it
+knowing it is `1 → 3` and that the third piece is the largest.
+
+**AND THE CUT (1) REFUSAL NOW HAS A NAMED PRECONDITION.**  That refusal rests on
+`DualStruct` not pinning `d`, witnessed by `dualScheme = Â' × C` paired through
+the projection.  `IsQAdicWeilPerfect` excludes that witness (see its docstring).
+So the open question the audit names — *does some ADMISSIBLE `d` admit no
+`hom`?* — should be re-asked with `IsQAdicWeilPerfect` in force before anyone
+concludes the split is unsafe; the counterexample that motivated the refusal no
+longer applies to the class this leaf produces. -/
+theorem exists_dualPerfectPolarization_field
+    {k : Type u} [Field k]
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (q : ℕ) (hq : q.Prime) (hqk : (q : k) ≠ 0) :
+    ∃ (b : ℕ) (d : DualStruct ab' m')
+      (hom : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        GeomFibrePt d.dualMap (𝟙 (Spec (CommRingCat.of k)))),
+      IsQAdicWeilTower d (𝟙 (Spec (CommRingCat.of k))) q ∧
+      IsQAdicWeilPerfect d (𝟙 (Spec (CommRingCat.of k))) q ∧
+      IsQAdicKernelBoundedPolarizationHom d (𝟙 (Spec (CommRingCat.of k))) q b hom :=
+  sorry
+
+open _root_.NumberField in
 /-- **THE DUAL ABELIAN VARIETY AND AN `𝒪_D`-LINEAR POLARIZATION OF BOUNDED
-`q`-RADICAL, OVER AN ARBITRARY FIELD** (SORRY LEAF; **RECUT 2026-07-31** out of
+`q`-RADICAL, OVER AN ARBITRARY FIELD** (**PROVEN 2026-08-01** over
+`exists_dualPerfectPolarization_field` immediately above; formerly a SORRY LEAF,
+**RECUT 2026-07-31** out of
 `exists_dualPolarization_finiteBase` immediately below, which is now PROVEN over
 it in three lines — the direct-sorry count did NOT move, `1 → 1`).  Mumford
 *Abelian Varieties* §6, §13, §16, §23; Milne *AV* I.7.1 and I.13; Silverman
 *AEC* III.8.1.
 
-**WHAT THE RECUT DELETED, AND WHY IT WAS FREE.**  The finite-base form carried
+**WHERE THE GEOMETRY LIVES NOW (2026-08-01).**  This declaration is an assembly
+and there is nothing to prove here.  The open leaf is
+`exists_dualPerfectPolarization_field` immediately above, which is this statement
+with the bounded-RADICAL clause replaced by second-variable perfectness of the
+Weil pairing plus a bounded `q`-primary KERNEL; the bridge is
+`isQAdicBoundedPolarizationHom_of_kernelBounded`, PROVEN.  Everything below —
+the account of what the 2026-07-31 recut deleted, the falsity audit on `hqk`, the
+ramified-ideal audit and the atomicity audit — is about the GEOMETRY and is
+therefore about that leaf; it is kept here because it is where three days of
+audits were written, and the leaf above cites it by name rather than duplicating
+it.  **The atomicity audit's cut (3) is corrected there**: two of its three
+clauses are false as stated, though its conclusion survives.
+
+**WHAT THE 2026-07-31 RECUT DELETED, AND WHY IT WAS FREE.**  The finite-base form carried
 `hfin : Finite k`, `N`, `hN : Nat.card k = N` and `hqN : ¬ q ∣ N`.  Its
 docstring accounted for `hfin` like this, and the sentence is worth quoting
 because it is the thing that was wrong:
@@ -21881,8 +22199,11 @@ theorem exists_dualPolarization_field
       (hom : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
         GeomFibrePt d.dualMap (𝟙 (Spec (CommRingCat.of k)))),
       IsQAdicWeilTower d (𝟙 (Spec (CommRingCat.of k))) q ∧
-      IsQAdicBoundedPolarizationHom d (𝟙 (Spec (CommRingCat.of k))) q b hom :=
-  sorry
+      IsQAdicBoundedPolarizationHom d (𝟙 (Spec (CommRingCat.of k))) q b hom := by
+  obtain ⟨b, d, hom, htower, hperf, hpol⟩ :=
+    exists_dualPerfectPolarization_field ab' m' q hq hqk
+  exact ⟨b, d, hom, htower,
+    isQAdicBoundedPolarizationHom_of_kernelBounded d _ q b hom hperf hpol⟩
 
 open _root_.NumberField in
 /-- **THE DUAL ABELIAN VARIETY AND AN `𝒪_D`-LINEAR POLARIZATION OF BOUNDED

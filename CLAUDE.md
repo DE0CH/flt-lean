@@ -16151,3 +16151,79 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A "THE RESIDUE WOULD BE `∀ d`-SHAPED" REFUSAL NAMES A MISSING CLAUSE, NOT A DEAD AXIS
+
+(2026-08-01, `flt-lean-373`, on `exists_dualPolarization_field` in
+`Modularity/TateModule.lean`.)  A leaf of the shape `∃ d, P d ∧ Q d` is
+routinely refused a split into `∃ d, P d` and `∀ d, P d → Q d`, on the correct
+ground that the axioms of `d`'s type do not PIN `d`, so the universal half
+quantifies over junk.  That refusal is right, and it is also a *diagnosis*:
+**the junk witness is the specification of the clause the statement is
+missing.**
+
+Here `DualStruct`'s `weil_nondegenerate` is asserted in the FIRST variable only,
+so the audit's junk was `dualScheme = Â' × C` paired through the projection —
+every field satisfied, `C` arbitrary.  Write down what excludes it: a `z =
+(0, c)` pairs trivially with everything, so what excludes it is **nondegeneracy
+in the SECOND variable**.  And the intended object satisfies that for free (the
+classical `e_n : A[n] × Â[n] ⟶ μ_n` is PERFECT for `n` invertible), so adding it
+costs the producer nothing.
+
+So the move is not to take the refused split, and not to stop: **add the clause
+that kills the witness, keep the existential bundled, and record that the
+audit's open question should be re-asked with the clause in force.**  The next
+owner then inherits a decidable question instead of a warning.
+
+**AND THE CLAUSE USUALLY PAYS FOR ITSELF SOMEWHERE ELSE.**  Look for the leaf's
+least citable clause and ask whether the new clause derives it.  Here the
+conclusion's last clause was a bounded RADICAL — *if `y ∈ A[q^M]` pairs
+trivially with `λ(A[q^M])` then `y ∈ A[q^b]`* — a derived statement no reference
+states.  With second-variable perfectness it is a four-step consequence of a
+bounded KERNEL (*`λ y = 0` and `y ∈ A[q^M]` ⟹ `y ∈ A[q^b]`*), which is one
+sentence of the classical package: `ker λ` is finite.  The four steps are pure
+group algebra — alternating at `a = 1`, expand `⟨y+w, y+w⟩ = 1` to get skew,
+transpose the radical condition, apply perfectness — and they compiled first
+try.  Net: `1 → 1`, and the residue is two textbook sentences instead of one
+reverse-engineered one.
+
+**Report it as a priori STRONGER, because it is.**  The composite implies the
+old leaf, so the old falsity audit transfers in the safe direction only; each
+ADDED demand needs its own check, and "it is a standard sentence" is the check —
+write which sentence, and at which levels it is true.  Here both are true
+exactly where `hqk : (q : k) ≠ 0` puts them, which is also where the old leaf
+died, so the characteristic hypothesis is still the only load-bearing one.
+
+## "NOT EXPRESSIBLE FOR X" IS A CLAIM ABOUT A PREDICATE'S BINDERS — THE NAMES LIE
+
+(Same task, and it corrected an audit clause that had priced a whole axis.)  An
+atomicity audit refused a cut on the ground that the target object *"is not
+expressible: the only representability statement in this tree is
+`exists_relPicZeroSubgroup`, which is itself open and is about relative CURVES"*.
+Both halves are false, and both are one `grep` away:
+
+* **`IsRelPicOf strX pstr` (`RelativePicard.lean:2859`) has NO hypothesis on
+  `strX`** — not proper, not smooth, not a curve — and `curveBaseChange strX g`
+  is a `noncomputable abbrev` for `pullback strX g`.  **The word "curve" in that
+  file is vocabulary, not content**, and the file's own docstring says the names
+  exist "only so that the statements below read as geometry".  So the predicate
+  applies to an abelian variety verbatim;
+* `exists_relPicZeroSubgroup` is a `theorem` with a `by` proof.  What is open is
+  two leaves UNDER it.  "Itself open" and "transitively sorried" are different
+  claims and only the second was true.
+
+**The check is to read the PREDICATE's binder list, never the existence
+theorem's.**  Curve hypotheses in this development live on the producers; the
+predicates are usually stated at full generality on purpose, and an audit that
+looks at the producer concludes the wrong thing about what can be *stated*.
+
+The audit's CONCLUSION survived — `exists_relPicZeroSubgroup` and
+`exists_relPicIdentityComponent` both carry `SmoothOfRelativeDimension 1` *and* a
+curve-specific Abel–Jacobi hypothesis (`𝒪(x − o)` through `sectionIdeal`, which
+is invertible only on a curve), so neither applies — but the corrected verdict
+prices the axis instead of closing it: the residues are named citations (FGA 232
+for representability, whose projectivity hypothesis is already discharged by the
+PROVEN `exists_isAmpleSheaf_of_field`; BLR 9.4 for the identity component).
+**Correcting the REASON of a blocker is worth as much as removing it** — a
+blocker with the wrong reason attracts repairs that cannot work, and hides the
+ones that can.
