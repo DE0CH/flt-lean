@@ -43085,17 +43085,64 @@ theorem nonempty_ringClassArtinData_anticyclotomic_primePow
     Nonempty (RingClassArtinData e (l ^ k)) :=
   sorry
 
-/-- **THE CLASS FIELD THEORY LEAF, IN ITS SHARPEST FORM: AN IMAGINARY QUADRATIC
-FIELD HAS A CYCLIC ANTICYCLOTOMIC QUOTIENT OF EVERY ORDER** (SORRY LEAF, cut
-2026-07-31 out of `nonempty_ringClassArtinData_anticyclotomic` just below, which
-is now PROVEN over it and is the ONLY consumer).
+/-- **AN IMAGINARY QUADRATIC FIELD HAS A CYCLIC ANTICYCLOTOMIC QUOTIENT OF EVERY
+ORDER, AS A CONCRETE `ZMod K`-CHARACTER** (**PROVEN 2026-07-31**; it was a SORRY
+LEAF for one day, cut earlier the same day out of
+`nonempty_ringClassArtinData_anticyclotomic` just below).
+
+**WHAT THE 2026-07-31 PROOF DID, AND WHY IT IS A REPAIR RATHER THAN A PROOF OF
+THE CLASS FIELD THEORY.** When this leaf was cut it was placed ABOVE
+`nonempty_ringClassArtinData_anticyclotomic_primePow` and the general-`K`
+compositum machinery, so it could reach neither, and the file was left carrying
+TWO open leaves for one piece of mathematics: this one and the prime-power one.
+Worse, the recut silently ORPHANED four proven declarations —
+`RingClassArtinData.ofDvd`, `.imageSubgroup`, `.lcm` and
+`nonempty_ringClassArtinData_of_primePow` — together with the prime-power leaf
+they serve, since after the recut nothing in the tree consumed any of them
+(their only remaining occurrences were their own declaration lines and
+docstrings). That is the free-floating-code condition, and it is invisible to
+every frontier scan: both `sorry`s are honest, both compile, and both look like
+ordinary open work.
+
+The repair is a RELOCATION plus a derivation, and it costs no mathematics. This
+declaration was moved verbatim (a checked line-multiset permutation of the file)
+to sit BELOW the prime-power leaf, and is now PROVEN over exactly three inputs,
+all of which already existed:
+
+* `nonempty_ringClassArtinData_anticyclotomic_primePow` — the class field
+  theory, at prime powers. **This is now the ONLY open leaf of the cluster**,
+  and its docstring is where the missing-machinery survey, the faithfulness
+  audit and the refutation of the Kummer route live;
+* `nonempty_ringClassArtinData_of_primePow` — the compositum, finite group
+  theory, proven 2026-07-30 and orphaned by the recut until now;
+* `exists_zmodChar_of_dvd_exponent` — the character extension, proven
+  2026-07-27. Note it is what makes the SURJECTIVITY clause available at all:
+  `K ∣ orderOf a` for a single `a` does NOT give a `ZMod K`-character nonzero at
+  `a` (`Cl = ZMod 4`, `a = 2`, `K = 2` refutes it), and the repair goes through
+  the exponent.
+
+Surjectivity comes out of `χ b = ofAdd 1` plus `art_surjOn`: `ofAdd 1` generates
+`Multiplicative (ZMod K)`, so an arbitrary `t` is `(ofAdd 1) ^ (toAdd t).val`,
+and pulling `b ^ (toAdd t).val` back through the Artin map hits it.
+
+**THE ROUND TRIP IS DELIBERATE AND IS THE CHEAPEST CORRECT SHAPE.** The route now
+runs *prime-power data → general-`K` data → this character → back into general-`K`
+data* in `nonempty_ringClassArtinData_anticyclotomic` below. Collapsing it — by
+proving that consumer directly as `nonempty_ringClassArtinData_of_primePow …` and
+deleting this declaration — would work and would remove ~20 lines of repackaging,
+but it would also delete a statement that downstream docstrings and queued tasks
+name, and this form is the one a class-field-theory prover would rather be handed
+(no type-valued existential, no instance fields). Whoever prefers the collapse may
+take it; the mathematics is identical either way.
+
+**FAITHFULNESS: THE AUDIT BELOW IS INHERITED VERBATIM AND NEEDS NO RE-RUN**,
+because nothing about the STATEMENT changed — only its position in the file and
+its proof. The clauses, the hypothesis list and the order of the binders are
+byte-identical to the 2026-07-31 cut.
 
 This is `nonempty_ringClassArtinData_anticyclotomic` with the abstract group
 `Cl` replaced by the concrete `Multiplicative (ZMod K)` and the packaging
-structure removed. **Everything the parent's docstring says about the
-mathematics, the faithfulness of the hypotheses, the missing machinery and the
-route applies verbatim to this statement and is not repeated here — read it
-there.** What this cut buys the prover:
+structure removed:
 
 * no type-valued existential and no `[CommGroup]`/`[Finite]` instance fields to
   produce — the group is fixed and its instances are found by synthesis;
@@ -43107,19 +43154,16 @@ there.** What this cut buys the prover:
   the downstream consumer `exists_ringClassZModChar_of_inertPrime` re-extracts
   from `Cl` through `exists_zmodChar_of_dvd_exponent` anyway.
 
-**IT IS NOT WEAKER, AND THE STRENGTHENING IS FREE ON THE INTENDED ROUTE.** The
-parent asks only for SOME element of order divisible by `K`; this asks for a
-cyclic quotient of order EXACTLY `K`. The parent's own route produces the
-sharper object: for each prime power `ℓ^{v_ℓ(K)} ‖ K` the anticyclotomic
-`ℤ_ℓ`-extension of `M` supplies its `ℓ^{v_ℓ(K)}`-layer, and the compositum of
-those layers is cyclic anticyclotomic of order exactly `K` because the layers
-have pairwise coprime degrees. A prover who finds the exact-order form
-inconvenient may reduce it to prime powers first, by that same coprimality: a
-subgroup of `∏ᵢ ZMod ℓᵢ^{aᵢ}` surjecting onto each factor has order divisible by
-each `ℓᵢ^{aᵢ}`, hence is everything. That reduction is NOT performed here
-because it does not make the analytic content any smaller — the `ℤ_ℓ`-tower has
-to be built either way — and it would cost a `Nat.factorization`-indexed
-Chinese-remainder bookkeeping for no mathematical gain.
+**IT IS NOT WEAKER THAN THE PARENT.** The parent asks only for SOME element of
+order divisible by `K`; this asks for a cyclic quotient of order EXACTLY `K`.
+The prime-power route produces the sharper object: for each prime power
+`ℓ^{v_ℓ(K)} ‖ K` the anticyclotomic `ℤ_ℓ`-extension of `M` supplies its
+`ℓ^{v_ℓ(K)}`-layer, and the compositum of those layers is cyclic anticyclotomic
+of order exactly `K` because the layers have pairwise coprime degrees. That
+compositum step is what `nonempty_ringClassArtinData_of_primePow` above
+discharges, and the exact-order form is then recovered here through the
+exponent — which is why no `Nat.factorization`-indexed Chinese-remainder
+bookkeeping is needed anywhere.
 
 **`hd`, `hx`, `he`, `hK` are load-bearing exactly as in the parent**; in
 particular `hK : K ≠ 0` is needed twice here, once to make `ZMod K` finite and
@@ -43131,7 +43175,9 @@ onto `ℤ` — impossible for a map with open kernel.
 For `d > 0` (real quadratic `M`) the anticyclotomic `ℤ_ℓ`-extension does not
 exist — `r₂ = 0` leaves only the cyclotomic `ℤ_ℓ`-extension, on which complex
 conjugation acts trivially, so every anticyclotomic quotient is killed by `2`
-and the conclusion fails for every `K ∉ {1, 2}`. -/
+and the conclusion fails for every `K ∉ {1, 2}`. In the proof below `hd`, `hx`
+and `he` are spent in exactly one place — they are forwarded to the prime-power
+leaf, which is where the arithmetic of `M` actually enters. -/
 theorem exists_anticyclotomicCyclicChar
     (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
     (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
@@ -43145,21 +43191,56 @@ theorem exists_anticyclotomicCyclicChar
       (∀ g h, e g = 1 → h ∈ H → χ (g * h) = χ g) ∧
       (∀ g h, e g = 1 → e h = 1 → χ (g * h) = χ g * χ h) ∧
       (∀ c g, e c = -1 → e g = 1 → χ (c * g * c⁻¹) = (χ g)⁻¹) ∧
-      (∀ a : Multiplicative (ZMod K), ∃ g, e g = 1 ∧ χ g = a) :=
-  sorry
+      (∀ a : Multiplicative (ZMod K), ∃ g, e g = 1 ∧ χ g = a) := by
+  haveI : NeZero K := ⟨hK⟩
+  -- the class field theory, at prime powers, plus the compositum
+  obtain ⟨D⟩ := nonempty_ringClassArtinData_of_primePow
+    (fun l k hl => nonempty_ringClassArtinData_anticyclotomic_primePow d hd x hx e he l k hl) K hK
+  -- `K ∣ orderOf a ∣ exponent Cl`, so `Cl` has a `ZMod K`-character hitting `ofAdd 1`
+  obtain ⟨a, ha⟩ := D.exists_orderOf_dvd
+  obtain ⟨φ, b, hb⟩ := exists_zmodChar_of_dvd_exponent (ha.trans (Monoid.order_dvd_exponent a))
+  refine ⟨fun g => φ (D.art g), D.H, D.isOpen_H, D.H_le_ker, ?_, ?_, ?_, ?_⟩
+  · intro g h hg hh
+    dsimp only
+    rw [D.art_coset g h hg hh]
+  · intro g h hg hh
+    dsimp only
+    rw [D.art_mul g h hg hh, map_mul]
+  · intro c g hc hg
+    dsimp only
+    rw [D.art_conj c g hc hg, map_inv]
+  · -- `ofAdd 1` generates, so `t = (ofAdd 1) ^ (toAdd t).val = φ (b ^ (toAdd t).val)`
+    intro t
+    obtain ⟨g, hg, hgb⟩ := D.art_surjOn (b ^ (Multiplicative.toAdd t).val)
+    refine ⟨g, hg, ?_⟩
+    dsimp only
+    rw [hgb, map_pow, hb, ← ofAdd_nsmul, nsmul_eq_mul, mul_one, ZMod.natCast_val, ZMod.cast_id]
+    rfl
 
 /-- **AN IMAGINARY QUADRATIC FIELD HAS ANTICYCLOTOMIC ABELIAN QUOTIENTS OF EVERY
 ORDER** (**PROVEN 2026-07-30** as an assembly; it was the sorry node cut
 2026-07-28).
 
-Two inputs, and nothing else:
+ONE input: `exists_anticyclotomicCyclicChar` immediately above, which is the same
+statement with `Cl` fixed to `Multiplicative (ZMod K)`. The six `art`-clauses of
+the structure are literally its six clauses, and `exists_orderOf_dvd` is
+`orderOf (ofAdd 1) = K`.
+
+**THE ROUTE UNDERNEATH THAT, since the docstring above used to name it directly
+and it is what a reader wants to see** (corrected 2026-07-31, when
+`exists_anticyclotomicCyclicChar` was moved below the two and proven):
 
 * `nonempty_ringClassArtinData_anticyclotomic_primePow` — the class field theory,
-  i.e. the `ℓ`-primary case. That leaf carries every hypothesis this statement
-  does, and its docstring is where the missing-machinery survey and the
-  faithfulness audit now live;
+  i.e. the `ℓ`-primary case, and **the only open leaf of the whole cluster**.
+  That leaf carries every hypothesis this statement does, and its docstring is
+  where the missing-machinery survey and the faithfulness audit now live;
 * `nonempty_ringClassArtinData_of_primePow` — the compositum, which is finite
   group theory.
+
+So the chain runs *prime-power data → general-`K` data → character → this
+structure*. The middle round trip is redundant repackaging and is kept
+deliberately; see the note on `exists_anticyclotomicCyclicChar` above for what
+collapsing it would cost.
 
 WHAT THIS MEANS FOR THE CONSUMER
 (`exists_ringClassArtinData_conductorMap_of_inertPrime`): nothing. The statement,
