@@ -12578,13 +12578,22 @@ over. Measured: the target's upward closure was **3 declarations, depth 2, root 
 reached**, while the two surviving leaves 700 lines below had closures of **20 487
 declarations** reaching the root. That is not a judgement call, and it is ten lines:
 
-    # comment-strip; index every decl by LAST dotted component;
-    # users[x] = {decls whose body mentions x};  BFS upward from the target;
-    # then test `'fermat_last_theorem' in closure`
+    python3 tools/merge/deadleaf.py          # added with this note; --root DIR to aim it
 
 **Run it on your target before your first edit**, not after. It costs seconds against a
 file whose elaboration is minutes, and a dead leaf is the one outcome where every further
 hour is wasted by construction.
+
+**AND READ ITS OUTPUT THE WAY THE SCRIPT SAYS, because the class is common and only a
+few members of it are garbage.** It splits the out-of-cone leaves into PENDING (the
+closure reaches a SORRIED consumer — ordinary bottom-up work, leave it) and CANDIDATE
+(every maximal element is PROVEN and consumed by nothing). On 2026-08-01 that was 37 and
+47. **A CANDIDATE IS NOT A DELETION ORDER**: most are proven top-level package theorems
+whose consumer has not been written yet, and deleting those is precisely the `dc6836b9`
+failure this section is a sequel to. What promoted mine from candidate to *dead* was one
+further, non-mechanical check — the island's intended consumer was verifiably ABSENT,
+deleted with a refuted cone in a named commit, occurring nowhere on `main` or `merger`.
+Look for that evidence; the closure alone does not supply it.
 
 ### HOW THESE ISLANDS ARE MADE: a merge that preserves a PROOF can orphan it
 
