@@ -17583,7 +17583,194 @@ def IsHeckeAlbaneseRecipeGamma1 (N : ℕ)
           (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))))
         + RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) e
 
-/-- **THE `Γ₁` HECKE CORRESPONDENCES COMMUTE** (sorry leaf, new 2026-07-30 at the
+/-! ### The `Γ₁` transcription of the Hecke-commutation cut
+
+Added 2026-08-01 by `flt-lean-184`, together with the `Γ₀` original in
+`ModularCurve/X0.lean` (subsection *THE HECKE COMMUTATION, CUT*, immediately
+above `exists_commutingHeckeAlbaneseFamily_values` there).  READ THAT
+SUBSECTION'S HEADER FIRST: it explains why the cut is along this seam and not at
+the `∀ a b pinned, a ≫ b = b ≫ a` the older docstrings consider, and why the
+base-point constant is a `ℚ`-POINT and therefore costs no base change.
+
+**ONLY THE ENUMERATION LEAF IS TRANSCRIBED.**  The density half,
+`HeckeCommute.eq_of_forall_algClosPoint_comp_eq`, is LEVEL-FREE — it takes the
+five geometric fields that `IsX0Compactification` and `IsX1Compactification`
+share field-for-field, and no moduli problem — so it is stated once in `X0.lean`
+and consumed here unchanged, as is the whole `HeckeCommute` helper block apart
+from the four declarations below. -/
+
+namespace HeckeCommute
+
+section
+variable {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+  {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+
+def IsGamma1IsogenyEnumeration (N l : ℕ) (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) {m : ℕ}
+    (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) : Prop :=
+  ∃ iso : ∀ k, IsGamma1Isogeny N l d (dq k),
+    (∀ k k' : Fin m,
+      (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+        RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') ∧
+    (∀ D : CyclicSubgroupOfOrder d.ab l, ∃ k : Fin m,
+      ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+        RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x)
+
+noncomputable def ajModuliPt1 {N : ℕ} (h : IsX1Compactification N strX strY jY)
+    (jac : IsJacobianOf strX ab o)
+    (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :
+    RelPoint jstr (specAlgClos ℚ) :=
+  jac.aj (specAlgClos ℚ) (RelPoint.post jY h.comm (h.coarse.classify (specAlgClos ℚ) d))
+
+theorem recipeApply1 {N l : ℕ} (h : IsX1Compactification N strX strY jY)
+    (jac : IsJacobianOf strX ab o) {w : J ⟶ J} {hw : w ≫ jstr = jstr}
+    {e : RelPoint jstr (𝟙 SpecQ)} (hrec : IsHeckeAlbaneseRecipeGamma1 N h jac l w hw e)
+    (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) {m : ℕ}
+    {dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (henum : IsGamma1IsogenyEnumeration N l d dq) :
+    letI := ab.addCommGroup (specAlgClos ℚ)
+    RelPoint.post w hw (ajModuliPt1 h jac d)
+      = (∑ k : Fin m, ajModuliPt1 h jac (dq k))
+        + RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) e := by
+  obtain ⟨iso, hinj, hsurj⟩ := henum
+  exact hrec d m dq iso hinj hsurj
+
+theorem expand1 {N : ℕ} (h : IsX1Compactification N strX strY jY)
+    (jac : IsJacobianOf strX ab o) {p q : ℕ} {A B : J ⟶ J}
+    {hA : A ≫ jstr = jstr} {hB : B ≫ jstr = jstr} (hAB : (A ≫ B) ≫ jstr = jstr)
+    (hBadd : IsAdditiveOn ab ab B hB) {eA eB : RelPoint jstr (𝟙 SpecQ)}
+    (recA : IsHeckeAlbaneseRecipeGamma1 N h jac p A hA eA)
+    (recB : IsHeckeAlbaneseRecipeGamma1 N h jac q B hB eB)
+    (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (dq : Fin (p + 1) → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (henum : IsGamma1IsogenyEnumeration N p d dq)
+    (dd : Fin (p + 1) → Fin (q + 1) →
+      Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hdd : ∀ k, IsGamma1IsogenyEnumeration N q (dq k) (dd k)) :
+    letI := ab.addCommGroup (specAlgClos ℚ)
+    RelPoint.post (A ≫ B) hAB (ajModuliPt1 h jac d)
+      = (∑ k : Fin (p + 1), ∑ j : Fin (q + 1), ajModuliPt1 h jac (dd k j))
+        + ((p + 1) • RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) eB
+            + RelPoint.post B hB
+                (RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) eA)) := by
+  letI := ab.addCommGroup (specAlgClos ℚ)
+  rw [postCompAssoc hA hB hAB, recipeApply1 h jac recA d henum, post_add hBadd, post_finsetSum hBadd]
+  have hk : ∀ k : Fin (p + 1), RelPoint.post B hB (ajModuliPt1 h jac (dq k))
+      = (∑ j : Fin (q + 1), ajModuliPt1 h jac (dd k j))
+        + RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) eB :=
+    fun k => recipeApply1 h jac recB (dq k) (hdd k)
+  simp only [hk, Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+  abel
+
+/-- **THE `Γ₁`-CORRESPONDENCE AT TWO DISTINCT PRIMES, AND ITS COMMUTATIVITY**
+(sorry leaf, new 2026-08-01) — everything the Hecke commutation needs from the
+moduli geometry, and nothing else.
+
+For a `ℚ̄`-point `y` of `Y_0(N)` and distinct primes `ℓ, ℓ' ∤ N` it asserts
+
+* `y` is classified by a datum `d`.  On the `Γ₀` side this conjunct is free,
+  from the PROVEN `IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint`; there is
+  no `Γ₁` analogue in the tree (`grep exists_gamma1Datum_of_algClosPoint` returns
+  nothing), so here it is part of the leaf.  It is true for the same reason — a
+  coarse moduli space is surjective on geometric points — and a successor who
+  proves the `Γ₁` analogue separately makes this conjunct free too;
+* the cyclic `ℓ`-subgroups of `d` are realised by `ℓ + 1` `Γ₁`-isogenies out of
+  `d`, injectively on kernels and exhaustively, and likewise at `ℓ'`;
+* the same at `ℓ'` out of each `d/D_k` and at `ℓ` out of each `d/D'_j`;
+* and the two double sums of Abel–Jacobi images agree,
+  `∑_{k,j} aj[(d/D_k)/D'_j] = ∑_{j,k} aj[(d/D'_j)/D_k]`.
+
+TRUE, and classical: the enumeration is the existence of the quotient of an
+elliptic scheme by a finite flat subgroup scheme — this file's own
+`X0.lean`'s `exists_isNIsogenyPair` is the same missing object, and
+`exists_heckeCorrespondenceFamilyGamma1` waits on it too — and the symmetry is
+Diamond–Shurman Prop. 5.2.4: `gcd(ℓ, ℓ') = 1` makes `D + D'` cyclic of order
+`ℓℓ'` with a UNIQUE decomposition, so both double sums enumerate the same
+multiset of quotients.
+
+**IT CANNOT BE REFUTED BY A PARTIALLY-VACUOUS PIN, AND THAT IS WHY THE CUT IS
+HERE.**  `exists_commutingHeckeAlbaneseFamily_values`'s own audit shows that
+*"any two additive `a, b` pinned by `IsHeckeAlbaneseRecipeGamma1` at `ℓ` and `ℓ'`
+commute"* is NOT KNOWN TO BE TRUE — at a datum where no valid decomposition data
+exists the recipe constrains `a` not at all — and that objection applies verbatim
+to the DIFFERENCE form as well, so no `∀ a b pinned, …` statement may be cut
+here.  This one mentions no endomorphism of `J` at all: it is an EXISTENTIAL
+over moduli data, i.e. exactly the non-vacuity whose absence made that shape
+possibly-false.  In the fully vacuous regime it is vacuously true for a
+different reason: with `Gamma1Datum N ℚ̄` empty the empty scheme is a cocone for
+the moduli problem, so `IsCoarseModuliY1.universal` forces `Y = ∅` and there is
+no `y`.
+
+**THE ARITY `ℓ + 1` IS PART OF THE STATEMENT AND IS LOAD-BEARING.**  The
+constant that survives the two-step expansion is `m • e_b + post b e_a` with `m`
+the arity of the `ℓ`-enumeration; if `m` were existential the constant would
+depend on `d` and `HeckeCommute.comm_of_pinned1` would not close.  Classically
+`m = ℓ + 1` always, so pinning it costs a prover nothing. -/
+theorem exists_gamma1IsogenyEnumeration_doubleSum (N : ℕ) (h : IsX1Compactification N strX strY jY)
+    (jac : IsJacobianOf strX ab o)
+    {l l' : ℕ} (_hl : l.Prime) (_hlN : ¬ l ∣ N) (_hl' : l'.Prime) (_hl'N : ¬ l' ∣ N)
+    (_hne : l ≠ l') (y : RelPoint strY (specAlgClos ℚ)) :
+    ∃ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+      (dq : Fin (l + 1) → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+      (dq' : Fin (l' + 1) → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+      (dd : Fin (l + 1) → Fin (l' + 1) →
+        Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+      (dd' : Fin (l' + 1) → Fin (l + 1) →
+        Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      h.coarse.classify (specAlgClos ℚ) d = y ∧
+      IsGamma1IsogenyEnumeration N l d dq ∧ IsGamma1IsogenyEnumeration N l' d dq' ∧
+      (∀ k, IsGamma1IsogenyEnumeration N l' (dq k) (dd k)) ∧ (∀ j, IsGamma1IsogenyEnumeration N l (dq' j) (dd' j)) ∧
+      (letI := ab.addCommGroup (specAlgClos ℚ)
+       (∑ k : Fin (l + 1), ∑ j : Fin (l' + 1), ajModuliPt1 h jac (dd k j))
+         = ∑ j : Fin (l' + 1), ∑ k : Fin (l + 1), ajModuliPt1 h jac (dd' j k)) := sorry
+
+/-- the commutation at two distinct pinned primes -/
+theorem comm_of_pinned1 (N : ℕ) (h : IsX1Compactification N strX strY jY)
+    (jac : IsJacobianOf strX ab o)
+    (y₀ : RelPoint strY (specAlgClos ℚ))
+    (v : ℕ → (J ⟶ J)) (v_comp : ∀ n, v n ≫ jstr = jstr)
+    (v_add : ∀ n, IsAdditiveOn ab ab (v n) (v_comp n))
+    (v_pin : ∀ l : ℕ, l.Prime → ¬ l ∣ N →
+      ∃ e, IsHeckeAlbaneseRecipeGamma1 N h jac l (v l) (v_comp l) e)
+    (l l' : ℕ) (hl : l.Prime) (hlN : ¬ l ∣ N) (hl' : l'.Prime) (hl'N : ¬ l' ∣ N)
+    (hne : l ≠ l') : v l ≫ v l' = v l' ≫ v l := by
+  obtain ⟨ea, hea⟩ := v_pin l hl hlN
+  obtain ⟨eb, heb⟩ := v_pin l' hl' hl'N
+  have hA : (v l ≫ v l') ≫ jstr = jstr := by rw [Category.assoc, v_comp, v_comp]
+  have hB : (v l' ≫ v l) ≫ jstr = jstr := by rw [Category.assoc, v_comp, v_comp]
+  letI := ab.addCommGroup (specAlgClos ℚ)
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  refine eq_of_forall_algClosPoint_shift h.comm h.isOpen h.smooth h.connected h.finite_compl
+    jac y₀ (isAdditiveOn_comp (v_add l) (v_add l') hA)
+    (isAdditiveOn_comp (v_add l') (v_add l) hB)
+    (((l + 1) • eb + RelPoint.post (v l') (v_comp l') ea)
+      - ((l' + 1) • ea + RelPoint.post (v l) (v_comp l) eb)) ?_
+  intro y
+  obtain ⟨d, dq, dq', dd, dd', hcl, he1, he2, he3, he4, hsum⟩ :=
+    exists_gamma1IsogenyEnumeration_doubleSum N h jac hl hlN hl' hl'N hne y
+  have hy : jac.aj (specAlgClos ℚ) (RelPoint.post jY h.comm y) = ajModuliPt1 h jac d := by
+    rw [ajModuliPt1, hcl]
+  have hpre : RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ))
+        (((l + 1) • eb + RelPoint.post (v l') (v_comp l') ea)
+          - ((l' + 1) • ea + RelPoint.post (v l) (v_comp l) eb))
+      = ((l + 1) • RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) eb
+          + RelPoint.post (v l') (v_comp l')
+              (RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) ea))
+        - ((l' + 1) • RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) ea
+          + RelPoint.post (v l) (v_comp l)
+              (RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) eb)) := by
+    rw [pre_sub ab, pre_add' ab, pre_add' ab, pre_nsmul ab, pre_nsmul ab, post_pre, post_pre]
+  rw [hy, expand1 h jac hA (v_add l') hea heb d dq he1 dd he3,
+    expand1 h jac hB (v_add l) heb hea d dq' he2 dd' he4, hsum, hpre]
+  abel
+
+end
+
+end HeckeCommute
+
+/-- **THE `Γ₁` HECKE CORRESPONDENCES COMMUTE** (**PROVEN 2026-08-01** over the level-free
+`HeckeCommute.eq_of_forall_algClosPoint_comp_eq` in `X0.lean` and
+`HeckeCommute.exists_gamma1IsogenyEnumeration_doubleSum` immediately above;
+formerly a sorry leaf, new 2026-07-30 at the
 release-25 merge) — the `Γ₁` transport of `X0.lean`'s
 `exists_commutingHeckeAlbaneseFamily`, and needed for exactly the same reason.
 
@@ -17761,8 +17948,44 @@ theorem exists_commutingHeckeAlbaneseFamilyGamma1 (N : ℕ)
       (∀ n, IsAdditiveOn ab ab (u n) (u_comp n)) ∧
         (∀ m n : ℕ, u m ≫ u n = u n ≫ u m) ∧
         (∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
-          ∃ e, IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (u ℓ) (u_comp ℓ) e) :=
-  sorry
+          ∃ e, IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (u ℓ) (u_comp ℓ) e) := by
+  classical
+  by_cases hnon : Nonempty (Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+  · -- the genuine regime
+    obtain ⟨d₀⟩ := hnon
+    have key := HeckeCommute.comm_of_pinned1 N H jac
+      (H.coarse.classify (specAlgClos ℚ) d₀) v v_comp _v_add _v_pin
+    have ucomp : ∀ n : ℕ,
+        ((if n.Prime ∧ ¬ n ∣ N then v n else 𝟙 J) : J ⟶ J) ≫ jstr = jstr := by
+      intro n; split_ifs with hn
+      · exact v_comp n
+      · exact Category.id_comp jstr
+    refine ⟨fun n => if n.Prime ∧ ¬ n ∣ N then v n else 𝟙 J, ucomp, ?_, ?_, ?_⟩
+    · intro n
+      by_cases hn : n.Prime ∧ ¬ n ∣ N
+      · simp only [if_pos hn]; exact _v_add n
+      · simp only [if_neg hn]
+        exact fun x y => by simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta]
+    · intro m n
+      by_cases hm : m.Prime ∧ ¬ m ∣ N <;> by_cases hn : n.Prime ∧ ¬ n ∣ N
+      · by_cases hmn : m = n
+        · subst hmn; rfl
+        · simp only [if_pos hm, if_pos hn]
+          exact key m n hm.1 hm.2 hn.1 hn.2 hmn
+      · simp only [if_pos hm, if_neg hn, Category.comp_id, Category.id_comp]
+      · simp only [if_neg hm, if_pos hn, Category.comp_id, Category.id_comp]
+      · simp only [if_neg hm, if_neg hn]
+    · intro ℓ hℓ hℓN
+      obtain ⟨e, he⟩ := _v_pin ℓ hℓ hℓN
+      exact ⟨e, by simp only [if_pos (And.intro hℓ hℓN)]; exact he⟩
+  · -- the VACUOUS regime: `IsHeckeAlbaneseRecipeGamma1` opens with
+    -- `∀ d : Gamma1Datum N ℚ̄`, so with that type empty every clause is satisfied
+    -- by the constant family `𝟙 J`
+    refine ⟨fun _ => 𝟙 J, fun _ => Category.id_comp jstr, fun n => ?_, fun m n => rfl,
+      fun ℓ _ _ => ⟨ab.zero (𝟙 SpecQ), ?_⟩⟩
+    · exact fun x y => by simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta]
+    · intro d
+      exact absurd ⟨d⟩ hnon
 
 /-- **THE HECKE CORRESPONDENCE ACTS ON `J_1(N)`** (**PROVEN 2026-07-28**,
 over the single leaf `exists_heckeCorrespondenceFamilyGamma1` above) — the
