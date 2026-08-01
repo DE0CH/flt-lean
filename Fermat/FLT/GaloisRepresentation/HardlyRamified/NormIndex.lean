@@ -230,7 +230,37 @@ uses the WIDE one at modulus `1` and buys admissibility with
 BOTH a finite and an infinite part; specialising the infinite part to "all real places" gives
 this leaf and specialising it to "none, under `IsUnramifiedAtInfinitePlaces`" gives that one.
 Taking the recut here alone would trade a closed leaf for an open harder one, which is why
-this file still ends in `sorry`. -/
+this file still ends in `sorry`.
+
+**FAITHFULNESS AUDIT RE-RUN 2026-08-01, because the STATEMENT changed.** Two things
+moved: the value field is now a variable `KK` rather than `Dickson.K 3`, and
+`hℓ3 : ℓ ≠ 3` is now `hℓchar : ((ℓ : ℕ) : KK) ≠ 0`. Both make the leaf strictly MORE
+GENERAL, so the earlier audits do not transfer of their own accord; here is why the
+statement is nevertheless true, and what would still refute it.
+
+*The mathematics does not see the value field.* This is the first inequality of class
+field theory, Neukirch VI (4.1)/(4.6): for a CYCLIC extension `L/F` of `ℓ`-power degree
+one has `[I_𝔪 : P_𝔪 · N_{L/F} I_L] ≥ [L : F]`, proved from the Herbrand quotient
+`h(C_L) = [L : F]`. Every object in that argument — the ideal groups `Im`, `P`, `N`,
+the divisor map `d`, the modulus `mm₀` — lives over `F`, and `χ` and `φ` occur only as
+NAMES for the cyclic quotient `Im.map φ` whose order is bounded by `hcard`. Replacing
+the field in which those names take their values changes no instance of the inequality
+and no admissible `(Im, P, N)`.
+
+*What `hℓchar` is, and why it is the honest form.* `hℓ3` was never a statement about
+`ℓ`. Over `𝔽̄₃`, `((ℓ : ℕ) : 𝔽̄₃) ≠ 0` is exactly `ℓ ≠ 3`, and it is exactly the
+condition under which `μ_{ℓ ^ k}` is nontrivial there — i.e. under which `hord` permits
+a character of order `ℓ ^ k` at all. Written this way the hypothesis is available at
+`ℓ = 3` over a value field of characteristic zero, which is the point of the change.
+Note it is kept rather than deleted: it costs a prover nothing (it cannot make the leaf
+false, and every consumer supplies it), and dropping it would make the leaf cover the
+degenerate case `char KK = ℓ`, where `hord` forces `χ ≡ 1` and the statement, while
+still true, is vacuous.
+
+*What would refute it, unchanged in substance.* A cyclic `L/F` of `ℓ`-power degree, a
+modulus `mm₀` carrying the ramified primes, and data `(φ, d, Im, P, N)` satisfying every
+hypothesis with `Nat.card (Im.map φ) > (P ⊔ N).relIndex Im`. Nothing in that description
+mentions `KK`, which is the audit. -/
 theorem exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class {KK : Type*} [Field KK]
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → KK)
