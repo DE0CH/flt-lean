@@ -79,9 +79,27 @@ carries 3 `sorry`s that no build has counted since release 31. Release 33's
 handover recorded `frontier.py` reporting 380 rows against 377 compiler warnings
 and correctly diagnosed the three extras as this module; that discrepancy is now
 gone, because the compiler can see them. **Say so in the commit, or a `+3` reads
-as a regression.** (While checking, the tree's new sole unreachable module is
-`Fermat/FLT/Mathlib/RingTheory/Localization/BaseChange.lean` — a different orphan,
-queued.)
+as a regression.** With the edge restored, **every one of the 409 modules under
+`Fermat/` is now in the root closure** — the fourth invisibility class is, for the
+moment, empty.
+
+### The closure scan itself has a trap, and it manufactures a PHANTOM ORPHAN
+
+Measuring the above, my first scan reported
+`Fermat/FLT/Mathlib/RingTheory/Localization/BaseChange.lean` as a second orphan.
+It is not — it is imported by `Fermat/FLT/DedekindDomain/IntegralClosure.lean`,
+whose import line reads
+
+    public import Fermat.FLT.Mathlib.RingTheory.Localization.BaseChange -- removing this breaks a simp proof
+
+and my regex was `^\s*(?:public\s+)?import\s+(Fermat[\w.]*)\s*$` — **anchored at
+end of line, so a trailing comment silently drops the edge**. This tree annotates
+imports constantly (the whole point of the `CurveDivisorDegree` note above is an
+import comment), so an end-anchored import regex will under-report the closure and
+invent orphans. **Strip `--` comments before matching, and do not anchor at `$`.**
+The failure is silent and it errs toward the answer you were looking for, which is
+the same shape as the standing rule that a closure BFS must ASSERT each visited
+file exists rather than swallowing a `FileNotFoundError`.
 
 This repository was split out of Deyao's dissertation repo on
 2026-07-22 (`git subtree split --prefix=fermat`); the full commit
