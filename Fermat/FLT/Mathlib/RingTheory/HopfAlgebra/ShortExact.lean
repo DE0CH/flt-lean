@@ -123,9 +123,15 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   `exists_lift_ker_le_span_cartierDual`) was the only sorry left in this file.
   **On 2026-07-31 `exists_lift_ker_le_span_cartierDual` was REFUTED as stated** — an explicit
   counterexample over `ℤ[√-5]` is written out in its docstring, and the two earlier falsity audits
-  are marked there as computations in a degenerate sub-family. It and the four statements above it
-  in the chain now carry `[IsLocalRing R]`, in which form it is **PROVEN**. The rest, including
+  are marked there as computations in a degenerate sub-family. It and the statements *below* it in
+  the chain now carry `[IsLocalRing R]`, in which form it is **PROVEN**. The rest, including
   `etale_of_isShortExact`, is untouched and still holds over an arbitrary base.
+  **(2026-08-01: on 2026-07-31 the hypothesis reached only the CONSUMERS — this sentence used to
+  say "the four statements above it", which was the intention and not the code. The two
+  declarations at the top of the chain, `exists_lift_ker_le_span_cartierDual` itself and the leaf
+  `exists_lift_span_sup_jacobson_cartierDual`, did not carry it, and the derivations between them
+  and the repaired consumers do not use it — so the refutation was still live and the open leaf was
+  FALSE AS STATED for a day. Both now carry it. Details on the leaf.)**
 
   **The single sorry in this file is `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`**
   (2026-07-31). Two rival arrangements of the dual normal basis reached this file from two
@@ -176,10 +182,11 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   mathematics and all of its audits live and which is itself **PROVEN** (2026-07-30) by Nakayama
   from `IsShortExact.exists_lift_span_sup_jacobson_cartierDual`.
 * `HopfAlgebra.IsShortExact.exists_lift_span_sup_jacobson_cartierDual` — the residual leaf of the
-  generation half: generation modulo the Jacobson radical of `D(A')`. **OPEN.** Equivalent to the
-  statement it replaces over a general base, and over a *local* base equal to the classical
-  statement over the residue field (Takeuchi). Its docstring records why, and that the only
-  consumer of this cluster in the tree works over `ℤ_p`.
+  generation half: generation modulo the Jacobson radical of `D(A')`. **OPEN**, and carrying
+  `[IsLocalRing R]` since 2026-08-01, without which it is FALSE (it is equivalent to
+  `exists_lift_ker_le_span_cartierDual`, whose `ℤ[√-5]` counterexample therefore refutes it too).
+  Over a *local* base it is the classical statement over the residue field (Takeuchi). Its
+  docstring records why, and that the only consumer of this cluster in the tree works over `ℤ_p`.
 * `HopfAlgebra.IsShortExact.nonempty_linearEquiv_cartierDual` and its unpackaged form
   `HopfAlgebra.IsShortExact.finrank_eq_mul` — the rank count. **PROVEN** (2026-07-28) from the
   two leaves below, which share nothing with each other.
@@ -1785,8 +1792,8 @@ which are proven. The split is by *where the mathematics is*:
 | `surjective_cartierDual_map` | **PROVEN** from the above | functionals extend along `i` |
 | `le_ker_cartierDual` | **PROVEN** | the easy half of the dual kernel condition |
 | `span_sup_ker_cartierDual_map_eq_top` | **PROVEN** | a lift of an `R`-basis spans modulo `ker (map i)` |
-| `exists_lift_span_sup_jacobson_cartierDual` | **OPEN** | that lift can be chosen to generate modulo the Jacobson radical of `D(A')` |
-| `exists_lift_ker_le_span_cartierDual` | **PROVEN** (2026-07-30) by Nakayama from the above | that lift can be chosen to swallow `ker (map i)` |
+| `exists_lift_span_sup_jacobson_cartierDual` | **OPEN**, `[IsLocalRing R]` | that lift can be chosen to generate modulo the Jacobson radical of `D(A')` |
+| `exists_lift_ker_le_span_cartierDual` | **PROVEN** (2026-07-30) by Nakayama from the above, `[IsLocalRing R]` | that lift can be chosen to swallow `ker (map i)` |
 | `exists_spanning_cartierDual` | **PROVEN** from the two above | `D(A)` is *generated* over `D(A')` by `rk_R A''` elements |
 | `nonempty_linearEquiv_cartierDual` | **PROVEN** from the two below | the rank count `rk_R A = rk_R A'' · rk_R A'` |
 | `finrank_eq_mul` | **PROVEN** from the two below | that same rank count, before packaging |
@@ -2024,18 +2031,59 @@ OPEN, and since 2026-07-30 this is the residual leaf of the generation half:
 Nakayama's lemma (`Submodule.le_of_le_smul_of_le_jacobson_bot`, legitimate because `D(A)` is a
 *finite* `D(A')`-module), and everything above that is unchanged.
 
+## `[IsLocalRing R]` ADDED 2026-08-01 — WITHOUT IT THIS LEAF IS FALSE, AND IT WAS FALSE FOR A DAY
+
+**The 2026-07-31 repair put `[IsLocalRing R]` on this leaf's CONSUMERS and not on the leaf.** That
+is the whole defect and it is invisible to every scan: the file built green, the frontier was one
+leaf, the module docstring said (correctly, as an intention) that "it and the four statements above
+it in the chain now carry `[IsLocalRing R]`" — and the four statements *above*
+`exists_lift_ker_le_span_cartierDual` did not carry it, this one included. Only the statements
+*below* it were repaired.
+
+A hypothesis that is present on every consumer and absent from the leaf is **dead weight**: the
+consumers never use it, so the refutation passes straight through them into the leaf. Checked by
+the compiler on 2026-08-01 rather than argued — `exists_spanning_cartierDual` and
+`exists_basis_cartierDual` were restated in a scratch module with `[IsLocalRing R]` DELETED and
+their proofs copied verbatim, and both compile (8 s, `EXIT=0`). So, before this edit:
+
+    this leaf (no hypothesis)
+      ⟹ exists_lift_ker_le_span_cartierDual   (Nakayama; no hypothesis)
+      ⟹ exists_spanning_cartierDual           (its `[IsLocalRing R]` unused)
+      ⟹ exists_basis_cartierDual              (its `[IsLocalRing R]` unused)
+
+and `exists_basis_cartierDual` without `[IsLocalRing R]` is **refuted over `ℤ[√-5]`** by the
+REFUTATION section on `exists_lift_ker_le_span_cartierDual` (`G' = μ₂`, `G'' = ℤ/4`, `O(K) ≅ R⁸`
+free over `R` and not free over `O(ℤ/4) = R⁴`). Hence the leaf as it stood was FALSE, and the
+`ℤ[√-5]` witness is a witness against *it*, not merely against its consumers.
+
+The repair is the one the 2026-07-31 note intended: `[IsLocalRing R]` here and on
+`exists_lift_ker_le_span_cartierDual`. Both have exactly one consumer, both consumers already
+carried the instance, so no signature outside those two moved and nothing outside this file
+changed. With it the whole chain's `[IsLocalRing R]` becomes load-bearing rather than decorative.
+
+**The general check, worth running whenever a falsity repair adds a hypothesis to a cluster:
+delete the new hypothesis in a scratch and see whether the chain still compiles.** If it does, the
+hypothesis is on the wrong declarations and the refutation is still live. A repair applied to the
+consumers of a leaf instead of to the leaf leaves the frontier carrying a false statement while
+every instrument — build, warning set, frontier scan, ownership check — reports ordinary work.
+
 **Read `IsShortExact.exists_lift_ker_le_span_cartierDual`'s docstring for the mathematics** — the
 atomicity audit, the two falsity audits, the four axes searched and the literature check all live
 there and are all still current. This docstring records only what is new.
 
-## HONEST LABEL: over a general base this is a REFORMULATION, not a reduction
+## HONEST LABEL: this is a REFORMULATION, not a reduction
 
 Nakayama makes it equivalent to the statement it replaces, because `D(A)` is a *finite* `D(A')`-
-module; the equivalence holds over every base, with no hypothesis. In particular it is *no weaker
-at all* when `Ideal.jacobson ⊥ = ⊥` in `D(A')`, which is the typical situation over a base like
-`ℤ`: a finitely generated `ℤ`-algebra is a Jacobson ring, so there `J` is the nilradical and
-vanishes as soon as `D(A')` is reduced. So a prover must not read "mod `J`" as slack that is there
-for the taking.
+module; the equivalence holds over every base, with no hypothesis. **That sentence is exactly why
+the unhypothesised form of this leaf was FALSE** — see the section above: an equivalence transports
+a refutation in both directions, so the `ℤ[√-5]` counterexample against
+`exists_basis_cartierDual` was always a counterexample against this statement too.
+
+The reformulation is *no weaker at all* when `Ideal.jacobson ⊥ = ⊥` in `D(A')`, which is what
+happens over a base like `ℤ`: a finitely generated `ℤ`-algebra is a Jacobson ring, so there `J` is
+the nilradical and vanishes as soon as `D(A')` is reduced. So a prover must not read "mod `J`" as
+slack that is there for the taking; under `[IsLocalRing R]` the slack is real, and it is exactly
+`𝔪 · D(A')`, which is what the next section is about.
 
 Its value is in one thing it settles and one direction of attack it opens.
 
@@ -2060,8 +2108,11 @@ be useful when `R` is **local**, and then it is big enough for everything.
   Hopf subalgebra (Takeuchi 1972 for the commutative case, which is this one; Nichols–Zoeller 1989
   without commutativity). No fppf descent, no torsor triviality.
 
-So over a local base this leaf is a theorem in the literature, and the residual difficulty of the
-global statement is *entirely* the passage from local to global.
+So over a local base this leaf is a theorem in the literature — and since the global statement is
+now REFUTED (above), that is the *only* form in which it can be attacked. **The residual difficulty
+is no longer "the passage from local to global"; it is the local statement itself**, i.e. the
+classical field case plus the two reductions in the bullets above. The passage from local to global
+does not exist as a target, because there is nothing at the far end of it.
 
 **And the intended consumer of this cluster is over a local base — but it does not exist yet, so
 this is a claim about the PLAN, not about a call site.** Checked 2026-07-30 by two independent
@@ -2079,13 +2130,18 @@ What the plan says is nonetheless specific and does support the patch: `Family.l
 this leaf and to the five declarations that consume it in this file
 (`exists_lift_ker_le_span_cartierDual`, `exists_spanning_cartierDual`,
 `exists_basis_cartierDual`, `ker_cartierDual_le`, `faithfullyFlat_cartierDual`, and hence
-`IsShortExact.cartierDual` and `isMultiplicativeType_of_isShortExact`) would cost the *project*
-nothing and would replace a statement nobody can prove by one that is in the literature.
+`IsShortExact.cartierDual` and `isMultiplicativeType_of_isShortExact`) costs the *project*
+nothing and replaces a statement nobody can prove by one that is in the literature.
 
-**That patch is deliberately NOT applied here.** It weakens `IsShortExact.cartierDual` — "Cartier
-duality is exact" — from an arbitrary base to a local one, which is a scope decision rather than a
-proof step, and the global statement has not been refuted. It is the recommended next move, and it
-is cheap: the hypothesis is an instance, so no call site outside this file changes.
+**That patch was applied to the five consumers on 2026-07-31 and to this leaf and
+`exists_lift_ker_le_span_cartierDual` on 2026-08-01**, when the split was found: applied to the
+consumers alone it discharges nothing, because they never use the hypothesis (section above). The
+paragraph that used to stand here said the patch was "deliberately NOT applied … the global
+statement has not been refuted"; the global statement WAS refuted the same day, one declaration
+below, so the sentence was stale within hours of being written. It is quoted rather than deleted
+because it is the reason the split survived: the two edits — the refutation-and-repair below, and
+this leaf's docstring above — were each correct and were made against different versions of the
+paragraph.
 
 ## What the global statement is, stripped of Cartier duality
 
@@ -2160,15 +2216,29 @@ of the torsor class under `det` of the regular representation of `K`. `O(H)` and
 already trivial (`N ∣ N(N-1)/2`), which is exactly why the even case is closed by a determinant and
 the odd case needs `K₀`.
 
-## FAITHFULNESS
+## FAITHFULNESS (re-run 2026-08-01, after the hypothesis was added)
 
 Equivalent to the statement it replaces — Nakayama one way, `le_sup_left` the other — hence neither
-stronger nor weaker than `exists_basis_cartierDual` for any base, and the faithfulness audit there
-applies verbatim, non-vacuity included. (Over a field `J` is the nilradical of the finite-
-dimensional algebra `D(A')`, not `0`, so the "mod `J`" form is *not* literally the generation
-statement even there; the equivalence is Nakayama's, not an accident of the base.) Not
-over-constrained: a dual normal basis satisfies both clauses. -/
-theorem IsShortExact.exists_lift_span_sup_jacobson_cartierDual (h : IsShortExact i π) :
+stronger nor weaker than `exists_basis_cartierDual` **at the same base**, and the faithfulness
+audit there applies verbatim, non-vacuity included. (Over a field `J` is the nilradical of the
+finite-dimensional algebra `D(A')`, not `0`, so the "mod `J`" form is *not* literally the
+generation statement even there; the equivalence is Nakayama's, not an accident of the base.) Not
+over-constrained: a dual normal basis satisfies both clauses.
+
+The three words "at the same base" are the whole of the 2026-08-01 correction, and the version of
+this paragraph that said "for any base" is what made the defect invisible: it is a true statement
+that reads as reassurance and is in fact the transport that carried the refutation from
+`exists_basis_cartierDual` up into this leaf. **An equivalence is a two-way street for
+counterexamples as well as for proofs** — so when a sibling is refuted, a docstring asserting
+equivalence to it is not evidence of safety, it is the proof of danger.
+
+Adding a hypothesis only shrinks the class of instances, so the audit cannot have been broken in
+the other direction by this edit: everything the previous audit certified about the statement at a
+LOCAL base still holds, and non-vacuity in particular survives, since the local case is where all
+three of its witnesses (a field, `ℤ_p`, the zero ring) live anyway. What the previous audit
+certified about non-local bases is withdrawn, because there the statement is false. -/
+theorem IsShortExact.exists_lift_span_sup_jacobson_cartierDual [IsLocalRing R]
+    (h : IsShortExact i π) :
     letI : Algebra (CartierDual R A') (CartierDual R A) :=
       ((CartierDual.map π).toAlgHom.toRingHom :
         CartierDual R A' →+* CartierDual R A).toAlgebra
@@ -2201,6 +2271,16 @@ out. Everything downstream of this leaf as far as
 the change nothing outside this file consumed any of those declarations at term level, and the
 intended consumer (`Family.lean`, over `𝒪ᵖᵥ`) has a local base, so the restriction costs the
 development nothing.
+
+**CORRECTION, 2026-08-01: on 2026-07-31 the hypothesis went onto this declaration's CONSUMERS and
+not onto this declaration, nor onto the leaf above it.** So for one day the repair discharged
+nothing: `exists_spanning_cartierDual` and `exists_basis_cartierDual` carried `[IsLocalRing R]`
+and never used it — verified by restating both in a scratch with the instance deleted and their
+proofs copied verbatim, which compiles — and the refutation below therefore still applied, through
+those two unconditional derivations, to this statement and to
+`exists_lift_span_sup_jacobson_cartierDual`. Both now carry the hypothesis. **A falsity repair
+that adds a hypothesis to a chain must be applied at the TOP of the chain; applied at the bottom it
+is decorative, because the derivations in between do not consume it.**
 
 ## ATOMICITY AUDIT (2026-07-28) — this is a REFORMULATION, not a reduction, and deliberately so
 
@@ -2441,7 +2521,7 @@ is recorded on it and not repeated here: the "fibrewise, then Nakayama" axis clo
 **closed for the wrong reason** and is in fact open; the forgetful form of this statement is FALSE
 with an explicit witness; and the counterexample criterion is sharpened to a concrete question in
 `K₀` of a base of Krull dimension `≥ 3`. -/
-theorem IsShortExact.exists_lift_ker_le_span_cartierDual (h : IsShortExact i π) :
+theorem IsShortExact.exists_lift_ker_le_span_cartierDual [IsLocalRing R] (h : IsShortExact i π) :
     letI : Algebra (CartierDual R A') (CartierDual R A) :=
       ((CartierDual.map π).toAlgHom.toRingHom :
         CartierDual R A' →+* CartierDual R A).toAlgebra
