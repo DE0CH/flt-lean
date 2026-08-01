@@ -360,3 +360,177 @@ theorem eq_zero_of_sum_smul_xm_eq_zero (p : ℕ) (hp : p.Prime) [CharP K p]
 
 end HeightOneCore
 ```
+
+## STEP 1 IS ALSO VERIFIED, AND IT IS HERE
+
+Elaborated 2026-08-01 in the same worktree, `0 errors, 0 sorry`, against the header
+
+    module
+    public import Fermat.FLT.GroupScheme.Cartier
+    public import Mathlib.LinearAlgebra.Dimension.Finite
+    public import Mathlib.LinearAlgebra.FiniteDimensional.Defs
+    @[expose] public section
+    open Bialgebra HopfAlgebra Coalgebra CartierTheorem
+    namespace Step1
+    variable {K A : Type} [Field K] [CommRing A] [HopfAlgebra K A] [Module.Finite K A]
+    local notation "ε" => (Bialgebra.counitAlgHom K A)
+
+`exists_generators_and_derivations` below produces, in one shot, EVERYTHING the core lemma
+needs plus the input to step 2:
+
+* `x : Fin r -> A` lifting a `k`-basis of `I/I²` (with `r = finrank k (A ⧸ W)`),
+* derivations `D i` of `A` with `ε (D i (x j)) = δᵢⱼ`,
+* and `∀ a ∈ I, ∃ c, a - ∑ cᵢ xᵢ ∈ I²`, which is the hypothesis of step 2.
+
+The trick that makes it short is to take the quotient by `W := I² + k·1` **as a `k`-submodule of
+`A`**, not by `I²` inside `I`: then `A ⧸ W ≅ I/I²`, `Module.finBasis` gives a basis, every class
+has a representative in `I` (subtract `ε(a)·1`), the dual functionals are
+`b.coord i ∘ₗ W.mkQ` and they kill `1` and `I²` BY CONSTRUCTION -- which is exactly the
+hypothesis `pointDerivation_hmul` needs.  No `Ideal.Cotangent`, no `IsLocalRing.CotangentSpace`,
+and no residue-field bookkeeping anywhere.
+
+```lean
+namespace Step1
+variable {K A : Type} [Field K] [CommRing A] [HopfAlgebra K A] [Module.Finite K A]
+local notation "ε" => (Bialgebra.counitAlgHom K A)
+
+
+variable {K A : Type} [Field K] [CommRing A] [HopfAlgebra K A] [Module.Finite K A]
+
+local notation "ε" => (Bialgebra.counitAlgHom K A)
+
+/-- The `k`-subspace `k·1 + I²`, whose quotient is `I/I²`. -/
+noncomputable def W : Submodule K A :=
+  Submodule.restrictScalars K (RingHom.ker (ε : A →+* K) * RingHom.ker (ε : A →+* K))
+    ⊔ (K ∙ (1 : A))
+
+/-- Every class in `A ⧸ W` has a representative in the augmentation ideal. -/
+lemma exists_rep_mem_ker (v : A ⧸ (W (K := K) (A := A))) :
+    ∃ a : A, ε a = 0 ∧ Submodule.Quotient.mk a = v := by
+  obtain ⟨b, rfl⟩ := Submodule.Quotient.mk_surjective _ v
+  refine ⟨b - algebraMap K A (ε b), by simp, ?_⟩
+  rw [Submodule.Quotient.eq]
+  have hrw : b - algebraMap K A (ε b) - b = -(algebraMap K A (ε b)) := by ring
+  rw [hrw]
+  refine neg_mem ?_
+  rw [Algebra.algebraMap_eq_smul_one]
+  exact Submodule.mem_sup_right (Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _))
+
+/-- A functional killing `W` kills `1` and `I²`, hence is a POINT DERIVATION. -/
+lemma pointDerivation_hmul (D : A →ₗ[K] K) (hW : ∀ y ∈ (W (K := K) (A := A)), D y = 0) :
+    (∀ a b : A, D (a * b) = ε a * D b + D a * ε b) ∧ D 1 = 0 := by
+  have hone : D 1 = 0 :=
+    hW 1 (Submodule.mem_sup_right (Submodule.mem_span_singleton_self _))
+  have hDII : ∀ y ∈ RingHom.ker (ε : A →+* K) * RingHom.ker (ε : A →+* K), D y = 0 :=
+    fun y hy => hW y (Submodule.mem_sup_left hy)
+  refine ⟨?_, hone⟩
+  intro a b
+  have hlin : ∀ (c : K) (z : A), D (algebraMap K A c * z) = c * D z := by
+    intro c z; rw [← Algebra.smul_def, map_smul, smul_eq_mul]
+  have hmemI : ∀ z : A, z ∈ RingHom.ker (ε : A →+* K) ↔ ε z = 0 := fun _ => RingHom.mem_ker
+  have ha : a - algebraMap K A (ε a) ∈ RingHom.ker (ε : A →+* K) := by
+    rw [hmemI]; simp
+  have hb : b - algebraMap K A (ε b) ∈ RingHom.ker (ε : A →+* K) := by
+    rw [hmemI]; simp
+  have hprod : D ((a - algebraMap K A (ε a)) * (b - algebraMap K A (ε b))) = 0 :=
+    hDII _ (Ideal.mul_mem_mul ha hb)
+  have hexp : (a - algebraMap K A (ε a)) * (b - algebraMap K A (ε b))
+      = a * b - algebraMap K A (ε a) * b - algebraMap K A (ε b) * a
+        + algebraMap K A (ε a * ε b) * 1 := by
+    rw [map_mul]; ring
+  rw [hexp] at hprod
+  simp only [map_add, map_sub, hlin, hone, mul_zero, add_zero] at hprod
+  linear_combination hprod
+
+/-- `W ∩ ker ε = I²`. -/
+lemma mem_sq_of_mem_W_of_counit_eq_zero (a : A) (haW : a ∈ (W (K := K) (A := A)))
+    (ha : ε a = 0) :
+    a ∈ RingHom.ker (ε : A →+* K) * RingHom.ker (ε : A →+* K) := by
+  obtain ⟨z, hz, u, hu, rfl⟩ := Submodule.mem_sup.mp haW
+  obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hu
+  have hzI : ε z = 0 := by
+    have : z ∈ RingHom.ker (ε : A →+* K) := Ideal.mul_le_left hz
+    simpa [RingHom.mem_ker] using this
+  have hc : c = 0 := by
+    have := ha
+    rw [map_add, hzI, zero_add] at this
+    simpa [Algebra.smul_def] using this
+  have hz' : z ∈ RingHom.ker (ε : A →+* K) * RingHom.ker (ε : A →+* K) :=
+    (Submodule.restrictScalars_mem K _ _).mp hz
+  simpa [hc] using hz'
+
+/-- **STEP 1: the generators and the dual invariant derivations.** -/
+lemma exists_generators_and_derivations :
+    ∃ (r : ℕ) (x : Fin r → A) (D : Fin r → Derivation K A A),
+      (∀ i, ε (x i) = 0) ∧
+      (∀ i j, ε (D i (x j)) = if i = j then 1 else 0) ∧
+      (∀ a : A, ε a = 0 → ∃ c : Fin r → K,
+          a - ∑ i, c i • x i ∈ RingHom.ker (ε : A →+* K) * RingHom.ker (ε : A →+* K)) := by
+  classical
+  haveI : Module.Finite K (A ⧸ (W (K := K) (A := A))) :=
+    Module.Finite.of_surjective (Submodule.mkQ _) (Submodule.mkQ_surjective _)
+  set b := Module.finBasis K (A ⧸ (W (K := K) (A := A))) with hbdef
+  choose x hx hxb using fun i => exists_rep_mem_ker (K := K) (A := A) (b i)
+  -- the functionals
+  set d : Fin (Module.finrank K (A ⧸ (W (K := K) (A := A)))) → (A →ₗ[K] K) :=
+    fun i => (b.coord i).comp (Submodule.mkQ (W (K := K) (A := A))) with hddef
+  have hdW : ∀ i, ∀ y ∈ (W (K := K) (A := A)), d i y = 0 := by
+    intro i y hy
+    simp only [hddef, LinearMap.comp_apply, Submodule.mkQ_apply]
+    rw [(Submodule.Quotient.mk_eq_zero _).mpr hy, map_zero]
+  have hdual : ∀ i j, d i (x j) = if i = j then 1 else 0 := by
+    intro i j
+    simp only [hddef, LinearMap.comp_apply, Submodule.mkQ_apply, hxb j,
+      Module.Basis.coord_apply, Module.Basis.repr_self, Finsupp.single_apply]
+    by_cases h : i = j
+    · simp [h]
+    · simp [h, Ne.symm h]
+  refine ⟨_, x, fun i => pointDerivation (d i) (pointDerivation_hmul (d i) (hdW i)).1
+    (pointDerivation_hmul (d i) (hdW i)).2, hx, ?_, ?_⟩
+  · intro i j
+    rw [counit_pointDerivation]
+    exact hdual i j
+  · intro a ha
+    refine ⟨fun i => b.repr (Submodule.Quotient.mk a) i, ?_⟩
+    have hcount : ε (a - ∑ i, (b.repr (Submodule.Quotient.mk a)) i • x i) = 0 := by
+      rw [map_sub, map_sum, ha]
+      simp [hx]
+    refine mem_sq_of_mem_W_of_counit_eq_zero _ ?_ hcount
+    refine (Submodule.Quotient.mk_eq_zero _).mp ?_
+    rw [← Submodule.mkQ_apply, map_sub, map_sum]
+    simp only [map_smul, Submodule.mkQ_apply, hxb]
+    rw [Module.Basis.sum_repr, sub_self]
+
+end Step1
+```
+
+## WHAT IS LEFT AFTER THIS (steps 2-4), and the one place I hit friction
+
+With the core and step 1 above, the height-one leaf needs only:
+
+* **step 2** -- `Algebra.adjoin K (Set.range x) = ⊤`, hence `Surjective (aeval x)`.  The
+  induction that works is on the FILTRATION, and the naive form is FALSE, so use this one:
+
+      ∀ n, ∀ a ∈ I ^ n, ∃ m, m ∈ S ∧ m ∈ I ^ n ∧ a - m ∈ I ^ (n+1)
+
+  (`S := Algebra.adjoin K (Set.range x)`).  The `m ∈ I ^ n` conjunct is load-bearing: without it
+  the product step needs `mᵤ * z ∈ I^(n+2)` for `z ∈ I²` and an arbitrary `mᵤ ∈ S`, which is
+  false.  `Submodule.mul_induction_on` on `I^(n+1) = I^n * I` is the step, the base case is
+  `m = algebraMap K A (ε a)`, and then chain `I ⊆ S ⊔ I² ⊆ S ⊔ I³ ⊆ … ⊆ S ⊔ I^N = S` using
+  nilpotence.  **I got the `key` induction to within two small errors and ran out of budget; the
+  chaining step after it is untouched.**  Nilpotence of `I`: `isArtinian_of_tower k inferInstance`
+  then `IsArtinianRing.isNilpotent_jacobson_bot` rewritten by
+  `IsLocalRing.jacobson_eq_maximalIdeal (⊥ : Ideal A) bot_ne_top` (this is elaborated and
+  recorded on the leaf's own docstring in `ModThree.lean`).
+* **step 3** -- `finrank k A ≤ p ^ r` from surjectivity of `aeval x` and `x i ^ p = 0`.  Do NOT
+  re-derive it: `algEquiv_monomialQuotient_of_surjective_aeval` in `ModThree.lean` contains
+  exactly this argument in its `hspan`/`hle` steps (span by standard monomials, then
+  `finrank_le_of_span_eq_top`, then `LinearMap.finrank_le_finrank_of_surjective`).
+* **step 4** -- `finrank k A ≥ p ^ r` from the core lemma.  The core is stated for a
+  `Finset (Multiset σ)`; to feed `LinearIndependent.fintype_card_le_finrank` (which gives
+  `Fintype.card ι ≤ finrank`) index the box by `ι := Fin r → Fin p`, whose card is `p ^ r`, and
+  push a relation over `Finset ι` forward along the injective `f : ι → Multiset σ` with
+  `Finset.sum_image`.  `f m` is the multiset with `count i = m i`.
+
+Finally note `x i ^ p = 0` is immediate from the leaf's height-one hypothesis `_hh` applied to
+`x i`, since `ε (x i) = 0`.
