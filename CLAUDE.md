@@ -16151,3 +16151,89 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A ROUTE AUDIT THAT DECLINES A SPLIT DECLINES **ONE** SPLIT — AND ITS OWN "DELIVERABLE" PARAGRAPH USUALLY NAMES THE ONE THAT WORKS
+
+(2026-08-01, `flt-lean-360`, decomposing `exists_isNIsogenyPair` in
+`ModularCurve/X0.lean` — a leaf three prior audits had left whole.)
+
+That leaf carried a **ROUTE AUDIT, 2026-07-31 — A MEASURED COST WALL, AND THE CUT
+WAS DECLINED**, with a heading that reads as a verdict on the node. Its stated
+reason was correct and checkable:
+
+> **Why no cut was taken.** The naive split — quotient existence, the dual
+> isogeny, cyclicity of `E[N]/C` — turns one unreachable leaf into three,
+> because all three sit behind those same four theories.
+
+Every clause is true **of that split**. Six paragraphs later, the same audit
+ends:
+
+> So the deliverable that closes this leaf is exactly: `E'` an elliptic scheme
+> over `T`; `φ` additive, finite, flat and surjective with `ker φ = d.cyc`; and
+> a `CyclicSubgroupOfOrder d'.ab N` structure on `ker ψ`.
+
+**That is a DIFFERENT split, it is a TWO-way one, and the declining reason does
+not apply to it.** Performed, it makes the leaf a fourteen-line assembly over two
+leaves, and the assembly compiled FIRST TRY in a 6-second scratch.
+
+Two things collapsed the "three" to "two", and the audit had established both
+itself without connecting them to its own verdict:
+
+* **the audit PROVED the dual is not a leaf** — "if the quotient is delivered as
+  a CATEGORICAL quotient, the dual isogeny and both `[N]` equations are formal,
+  not geometry" — so it is carried INSIDE the quotient leaf, not split off;
+* **the second half is about a GIVEN isogeny**, so it is not behind the quotient
+  construction at all: it is dischargeable by somebody who never learns how the
+  quotient was built.
+
+**THE TEST FOR WHETHER A SPLIT IS REAL, and it is one question: do the two halves
+have DISJOINT INPUTS?** "Turns one leaf into N" is not the objection — a split
+whose pieces all wait on the same missing theory is a rename, and a split whose
+pieces wait on *different* things is a cut even when the count goes up. Ask what
+each half CONSUMES, not how many halves there are.
+
+So, on any leaf carrying a declined-cut verdict: **read the audit to its end and
+look for a "what would close this" / "the deliverable is" paragraph.** An audit's
+verdict is about the split its author tried; its deliverable paragraph is about
+the shape of the answer, and the two are routinely inconsistent because nobody
+re-reads the verdict after writing the deliverable. Same family as
+[[flt-audit-recommended-axis-may-be-worse]] and the standing rule that an
+audit is scoped to what it searched — arriving here through a *self*-inconsistency
+rather than through staleness.
+
+### RE-RUNNING THE FALSITY AUDIT AGAINST THE HALVES LOCALISES THE REPAIR — a finding invisible from the bundled statement
+
+CLAUDE.md already requires re-running a falsity audit after a restatement rather
+than inheriting it. On a SPLIT there is a specific payoff worth expecting: the
+witness usually refutes **one** half, and saying which is new information.
+
+Here the parent's witness (an ordinary `E/𝔽̄_p` with `p ∣ N`, `C = (E[p])_red`)
+kills the CYCLICITY of `ker ψ` and leaves the quotient-plus-dual half standing —
+the quotient exists perfectly well in characteristic `p`. So the `ℚ`-structure,
+recorded on the parent as load-bearing for the whole statement, is load-bearing
+for exactly one of the two halves, and the other very likely does not need it at
+all (Deligne: a finite flat commutative group scheme of order `n` is killed by
+`n`, which is all the `ℚ`-structure was buying for the dual).
+
+**Keep the hypothesis on both halves anyway** — dropping it is a statement change
+needing its own audit, and it costs a prover nothing — but RECORD which half
+needs it. That sentence is the whole value of having split.
+
+### THE DIFFERENTIAL RECEIPT FOR A GIANT FILE IS TWO CONCURRENT `lake env lean` RUNS
+
+`lake env lean` writes no olean, so two of them in one worktree cannot race — and
+unlike `lake build` neither deletes the target's olean, so the 6-second
+scratch loop stays alive throughout. Stage the pre-edit file at a REAL module
+path and elaborate both at once:
+
+    git show HEAD:<path> > Fermat/.../X0Base360.lean     # a real module path
+    setsid --fork bash -c '... lake env lean -DmaxErrors=400 <edited>   > A; echo EXIT=$? >> A; touch A.done' &
+    setsid --fork bash -c '... lake env lean -DmaxErrors=400 <baseline> > B; echo EXIT=$? >> B; touch B.done' &
+    # poll IN-TURN for both .done files, then diff the counts
+
+Measured on a 119 000-line `X0.lean`: **244 s wall for both**, giving
+`errors 0 → 0` and `sorry 101 → 102`. That `+1` IS the deliverable of a `1 → 2`
+cut and must be reported as such — a reader seeing only "the count went up" would
+read it as a regression, and a reader seeing only the proof would read it as a
+closure. **Delete the staged baseline before committing**: an unimported module
+under `Fermat/` is the fourth invisibility class.
