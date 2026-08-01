@@ -1039,7 +1039,18 @@ as well as the leaf count.**
   notation and once without.  Both are now proven, the second by `exact` over the first.
   Worth a general moral: a wrapper `abbrev` hides identity as effectively as it hides
   complexity, and two wrappers around one term will not be noticed by any frontier
-  scan, which counts declarations. -/
+  scan, which counts declarations.
+
+**Amended a fifth time 2026-08-01: the whole sub-subsection is now sorry-free.**  The
+generator case `isIso_presheafModPullback_delta_freeYoneda` is PROVEN, over the general
+`PresheafOfModules.isIso_pullback_delta_freeYoneda_of_prod`
+(`…/Presheaf/PullbackMonoidal.lean`), which is stated for an ARBITRARY `F : C ⥤ D`
+carrying a binary product `V` of `U`, `U'` to a binary product of `F U`, `F U'`.  That
+sharpens the "false one generality up" clause above rather than contradicting it: the
+counterexample is a functor that does NOT preserve the relevant products, and preserving
+them is exactly what the site supplies here.  So there is no hypothesis about the site
+left in the development at all — only a hypothesis about `F`, discharged in two lines
+because `Opens` is thin and `Opens.map` preserves `⊓`. -/
 
 /-- **The PRESHEAF-level pullback** of presheaves of modules along a morphism of
 schemes, i.e. `Scheme.Modules.pullback h` before sheafification.
@@ -1092,11 +1103,12 @@ noncomputable abbrev presheafModPullbackDelta {Z W : Scheme.{u}} (h : W ⟶ Z)
   Functor.OplaxMonoidal.δ
     (PresheafOfModules.pullback.{u} (PresheafOfModules.ringCatHomOfCommRingCatHom h.c)) P Q
 
-/-- **THE GENERATOR CASE OF "THE PRESHEAF PULLBACK IS STRONG MONOIDAL"** (sorry leaf, cut
-2026-07-31 out of `nonempty_presheafModPullback_tensor` — which is now PROVEN over it).
+/-- **THE GENERATOR CASE OF "THE PRESHEAF PULLBACK IS STRONG MONOIDAL"** (**PROVEN
+2026-08-01**; cut 2026-07-31 out of `nonempty_presheafModPullback_tensor`, which was
+already proven over it, and which is therefore now sorry-free).
 
-This is ALL that is left of "pullback commutes with `⊗`" at presheaf level: the comparison
-`δ` on the free presheaves of modules on representables.  Everything else — the existence
+This was ALL that was left of "pullback commutes with `⊗`" at presheaf level: the
+comparison `δ` on the free presheaves of modules on representables.  Everything else — the existence
 of `δ`, its naturality, and the dévissage from arbitrary `P`, `Q` down to this case — is
 proven, in `Fermat/FLT/Mathlib/Algebra/Category/ModuleCat/Presheaf/PullbackMonoidal.lean`
 (`PresheafOfModules.pullbackOplaxMonoidal` and `isIso_pullback_delta`).
@@ -1107,33 +1119,35 @@ collapsing two objects of a discrete `C` onto one, `δ` compares `k²` with `k�
 generators and is not invertible.  The dévissage above is valid for ANY `F`; it is this
 leaf that is false for a general `F` and true for `Opens.map h.base`.
 
-**ROUTE.**  Write `S := Z.ringCatSheaf.obj`, `R := W.ringCatSheaf.obj`, `L := pullback`.
-Three ingredients, and the meet-preservation of `Opens.map h.base` is used twice:
+**HOW IT WAS PROVEN, and where.**  The whole argument is in
+`Fermat/FLT/Mathlib/Algebra/Category/ModuleCat/Presheaf/PullbackMonoidal.lean`, as
+`PresheafOfModules.isIso_pullback_delta_freeYoneda_of_prod`, stated for an arbitrary
+`F : C ⥤ D` under the ONLY hypothesis that makes it true: that `U` and `U'` have a binary
+product `V` in `C` **and that `F` carries it to a binary product of `F U` and `F U'`**.
+Both hypotheses are phrased as bijectivity of `g ↦ (g ≫ ι, g ≫ ι')` on hom-sets, and on a
+site of opens both are free — `U ⊓ U'` is the product, `Opens.map` preserves binary meets
+(`rfl` on underlying sets), and `bijective_hom_of_thin` supplies the bijections from
+thinness alone, with no compatibility to check.  So the two lines below really are the
+whole of "the site enters here".
 
-1. `L ((free S).obj (yoneda.obj U)) ≅ (free R).obj (yoneda.obj (h ⁻¹ᵁ U))`.  Free from the
-   pin: `PresheafOfModules.pushforwardCompCoyonedaFreeYonedaCorepresentableBy` corepresents
-   `N ↦ ((free S).obj (yoneda.obj U) ⟶ (pushforward φ).obj N)` by
-   `(free R).obj (yoneda.obj (h ⁻¹ᵁ U))`, and `Adjunction.corepresentableBy` corepresents
-   the same functor by `L ((free S).obj (yoneda.obj U))`; then
-   `Functor.CorepresentableBy.uniqueUpToIso`.
-2. `(free S).obj (yoneda.obj U) ⊗ (free S).obj (yoneda.obj U') ≅
-   (free S).obj (yoneda.obj (U ⊓ U'))`, and the same on the `W` side.  Sectionwise at `V`
-   this is `Free(V ≤ U) ⊗_{S(V)} Free(V ≤ U') ≅ Free(V ≤ U ⊓ U')`: in a POSET both
-   `Hom`-types are subsingletons, so both sides are `S(V)` when `V ≤ U ⊓ U'` and `0`
-   otherwise.  **This is the first use of binary meets, and it is the step that has no
-   analogue for a general site.**
-3. `h ⁻¹ᵁ (U ⊓ U') = h ⁻¹ᵁ U ⊓ h ⁻¹ᵁ U'` (`TopologicalSpace.Opens.map` preserves `⊓` — it
-   is `rfl` for the underlying sets).  **Second use.**
+Three things about the proof, recorded because each cost a round and each is reusable:
 
-With 1–3, both source and target of `δ` are isomorphic to
-`(free R).obj (yoneda.obj (h ⁻¹ᵁ (U ⊓ U')))`.  What is then left, and it is the real work,
-is to check that `δ` ITSELF is the resulting isomorphism and not some other map.  The
-cheapest way found so far avoids computing `δ` on elements: `δ = (adj.homEquiv).symm ν`
-with `ν = (unit ⊗ₘ unit) ≫ μ (pushforward φ)`, so `δ ≫ g` transposes to `ν ≫ (pushforward
-φ).map g` (`Adjunction.homEquiv_naturality_right_symm`), and `δ` is invertible iff
-`g ↦ ν ≫ (pushforward φ).map g` is bijective for every `N` — which by 1–3 and
-`PresheafOfModules.freeYonedaEquiv` is a map `N.obj (op (h ⁻¹ᵁ U ⊓ h ⁻¹ᵁ U')) →
-N.obj (op (h ⁻¹ᵁ (U ⊓ U')))` between two hom-sets that 1–3 identify.
+1. **The step-2 isomorphism `free (yoneda U) ⊗ free (yoneda U') ≅ free (yoneda (U ⊓ U'))`
+   needed no `Finsupp` combinatorics.**  `ModuleCat.free : Type u ⥤ ModuleCat R` is
+   ALREADY a monoidal functor in the pin (`ModuleCat.FreeMonoidal.μIso`,
+   `μIso_hom_freeMk_tmul_freeMk`), so sectionwise the map is `μIso.inv` composed with
+   `free` of the product bijection.  It is also true for ANY binary product, not just in a
+   poset — the poset is used only to produce the bijection.
+2. **`δ` is never computed on elements, and cannot be**: `pullback` is a partial left
+   adjoint with no formula.  Everything happens after transposing,
+   `adj.homEquiv δ = (unit ⊗ₘ unit) ≫ μ (pushforward φ)`, where `μ (pushforward φ)` IS
+   computable — mathlib gives `pushforward₀` the tensorator `Iso.refl _`
+   (`PushforwardZeroMonoidal`), so the whole of it is `ModuleCat.restrictScalars`'s
+   base-change comparison `m₁ ⊗ₜ m₂ ↦ m₁ ⊗ₜ m₂`.
+3. **What is left after that is a single element identity that does not mention `N`**
+   (`freeYonedaEquiv_homEquiv_delta`), and it holds essentially by `rfl`: both sides are
+   `(pullback φ (free S (yoneda U))).map (F.map ι).op` applied to the unit's value at
+   `freeMk (𝟙 U)`, tensored with the `U'` counterpart.
 
 **NOT VACUOUS and NOT trivially reducible.**  Take `h` a closed immersion of a
 point into `𝔸¹` and `P = Q` the ideal sheaf of the point: `h^*P` is the
@@ -1146,7 +1160,14 @@ theorem isIso_presheafModPullback_delta_freeYoneda {Z W : Scheme.{u}} (h : W ⟶
     IsIso (presheafModPullbackDelta h
       ((PresheafOfModules.free Z.ringCatSheaf.obj).obj (yoneda.obj U))
       ((PresheafOfModules.free Z.ringCatSheaf.obj).obj (yoneda.obj U'))) :=
-  sorry
+  PresheafOfModules.isIso_pullback_delta_freeYoneda_of_prod h.c
+    (homOfLE inf_le_left) (homOfLE inf_le_right)
+    (fun X => PresheafOfModules.bijective_hom_of_thin _ _
+      (fun _ a b => homOfLE (le_inf a.le b.le)) X)
+    -- `(Opens.map h.base).obj (U ⊓ U')` is NOT syntactically an `⊓`, so the meet-preservation
+    -- is spelled out on the underlying sets rather than fed through `le_inf`.
+    (fun Y => PresheafOfModules.bijective_hom_of_thin _ _
+      (fun _ a b => homOfLE (fun _ hx => ⟨a.le hx, b.le hx⟩)) Y)
 
 /-- **THE PRESHEAF PULLBACK IS STRONG MONOIDAL ON THE SITE OF OPENS** (**PROVEN
 2026-07-31** over the single generator leaf `isIso_presheafModPullback_delta_freeYoneda`;
