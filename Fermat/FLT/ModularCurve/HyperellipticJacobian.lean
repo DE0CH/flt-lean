@@ -83,11 +83,16 @@ covering collection.  Each namespace now reads top-down:
                                   finite level of a divisor, Hilbert 90 for F̄/F
       → geomPic_descent           PROVEN: the invariants are rational — the Brauer
                                   obstruction killed by the rational point ∞₊
-    geomPic_divisible             LEAF: Pic⁰(X_ℚ̄) is divisible — [n] is surjective
-    geomPic_finite_torsion        LEAF: J[n](ℚ̄) is finite — [n] has a finite kernel
-    geomPic_exists_finiteCover_kummer
-                                  LEAF: one finite cover of Γ inflates every Kummer
-                                  cochain — Hermite–Minkowski, ALL the arithmetic
+    exists_abelianScheme_geomAddEquiv_pic
+                                  LEAF: THE GEOMETRIC JACOBIAN BRIDGE — J/ℚ as an
+                                  abelian scheme with Pic⁰(X_ℚ) ≃ J(ℚ) AND
+                                  Pic⁰(X_ℚ̄) ≃ J(ℚ̄), compatibly with bc and Galois
+      → exists_finiteIndex_divisible_pic
+                                  PROVEN (2026-08-01): the p-division points of
+                                  rational classes lie over ONE finite extension —
+                                  transported from X0's Hermite–Minkowski assembly
+      → finite_torsion_pic_geom   PROVEN (2026-08-01): J[p](ℚ̄) is finite —
+                                  transported from X0's torsion finiteness
       → finite_kummerCochains_pic PROVEN: finitely many Kummer cochains
       → finite_quotient_psmul_pic PROVEN: weak Mordell–Weil, Pic⁰/p·Pic⁰ is finite
       → fg_pic                    PROVEN: Mordell–Weil, by the descent theorem
@@ -148,13 +153,45 @@ amended this paragraph on the same day, one saying "eight" and one saying "TEN",
 and the merged file has neither number.  Regenerate it with `lake build`; the
 list below is stamped to the commit that decomposed `geomPic_descent`
 (2026-07-30), at which the `declaration uses 'sorry'` set of this module is
-these TWENTY-TWO:
+these TWENTY-TWO.
 
-    degOf_poleDivisor_eq_finrank_of_transcendental,
-    exists_smoothModel, exists_cubeModel_pic, exists_geomPic,
-    geomPic_bc_injective, geomPic_descent, geomPic_divisible_place,
-    finite_kummerCochains_pic, and `two_divisible_pic` at BOTH levels
+**REGENERATED 2026-08-01** off a green `lake build` of this module, cross-checked against a
+comment-stripped `sorry`-token count (both **20**, so there are no anonymous inner sorries):
 
+    pt_infinite_of_ord_xx_neg
+    degOf_poleDivisor_le_finrank_of_transcendental
+    finrank_le_degOf_poleDivisor_of_transcendental
+    exists_picReduction
+    exists_abelianScheme_addEquiv_pic
+    geomPic_exists_finiteLevel
+    geomPic_exists_emb_of_fieldAct_fixed
+    geomPic_exists_const_of_divisor_eq_zero
+    constFieldExt_exists_uniformizer
+    pt_surjective_of_isAlgClosed
+    geomPic_descent_divisor
+    geomPic_exists_const_of_ord_nonneg
+    geomPic_exists_bcDiv_of_divAct_fixed
+    geomPic_exists_finiteLevel_divisor
+    geomPic_hilbert90
+    exists_abelianScheme_geomAddEquiv_pic          -- new 2026-08-01, replaces two
+    geomPic_divisible_place
+    geomPic_exists_finiteCover_kummer
+    two_divisible_pic (at BOTH levels)
+
+**THREE of those are CONSUMERLESS** — `geomPic_exists_finiteCover_kummer`, and
+`geomPic_divisible_place` through the PROVEN-but-unused `geomPic_divisible` — orphaned by
+the 2026-07-31 recut of `finite_kummerCochains_pic`, which re-pointed it onto
+`exists_finiteIndex_divisible_pic` / `finite_torsion_pic_geom`.  They emit ordinary
+`declaration uses 'sorry'` warnings and every frontier scan counts them, so they will keep
+drawing dispatches until somebody deletes them; see the note on `geomPic_finite_torsion`,
+which was a FOURTH orphan and is now a one-line delegation.  Note also that the paragraph
+below saying `geomPic_divisible` was "DELETED" is false — it is still declared, proven, and
+used by nothing.
+
+The older list read: `degOf_poleDivisor_eq_finrank_of_transcendental`,
+`exists_smoothModel`, `exists_cubeModel_pic`, `exists_geomPic`, `geomPic_bc_injective`,
+`geomPic_descent`, `geomPic_divisible_place`, `finite_kummerCochains_pic` and
+`two_divisible_pic` at both levels
 — TEN declarations, re-read off a green `lake build` of this module on 2026-07-31 (a
 comment-stripped `sorry`-token count agrees, so there are no anonymous inner sorries).  It
 said `exists_cubeModel_pic` until 2026-07-31, when that became PROVEN by a finite/infinite
@@ -323,6 +360,34 @@ public import Fermat.FLT.Modularity.AbelianScheme
 -- declarations were moved out of X0 into the module below, which sits upstream of
 -- both and carries no cycle.
 import Fermat.FLT.Modularity.AbelianCubeModel
+-- `Fermat.finite_torsion_geomPt_of_abelianScheme` and
+-- `Fermat.exists_finiteIndex_divisible_of_abelianScheme` (both PROVEN in `X0.lean`), used
+-- ONLY inside the proof bodies of `finite_torsion_pic_geom` and
+-- `exists_finiteIndex_divisible_pic`, which a NON-PUBLIC import reaches.  The statement of
+-- the leaf they are consumed under, `exists_abelianScheme_geomAddEquiv_pic`, deliberately
+-- names NOTHING from `X0.lean` — it spells `Spec (CommRingCat.of ℚ)` rather than `SpecQ`
+-- and `RelPoint.pre (specAlgClos ℚ) rfl` rather than `ratToGeom`, both of which are the
+-- X0 abbreviation/definition unfolded — so this edge is not `public` and X0's ~100 000
+-- names are not re-exported through this module.
+--
+-- **THE CYCLE HAZARD, and it is REAL: this exact edge broke the whole project on
+-- 2026-07-31.**  The comment above records it.  `X0` imports `FreyCurve/IsogenySignature`,
+-- which then imported THIS file, so `HyperellipticJacobian → X0` closed a loop and
+-- `lake build` failed on the ROOT target with `build cycle detected`.  That edge
+-- (`IsogenySignature → HyperellipticJacobian`) has since been REMOVED — see the
+-- `REMOVED 2026-07-31` comment at `FreyCurve/IsogenySignature.lean:276` — so the loop is
+-- open again and the check below passes at this commit:
+--
+--     the import closure of `X0` is 178 `Fermat` modules and does NOT contain this one;
+--     the only modules importing this one are `FreyCurve/MazurTorsion.lean` and nothing else.
+--
+-- **Anyone restoring `IsogenySignature → HyperellipticJacobian` must delete THIS import
+-- first**, and the repair is the one that was used before: move the two `X0` theorems named
+-- above into a module upstream of both (`Modularity/AbelianCubeModel.lean` is where
+-- `exists_cubeModel_of_abelianScheme` went for exactly this reason).  Re-run the check with
+-- a transitive closure, never with a grep for the direct edge — the direct edge was absent
+-- both times and the closure is what decides.
+import Fermat.FLT.ModularCurve.X0
 public import Mathlib.GroupTheory.FiniteAbelian.Basic
 public import Mathlib.RingTheory.Finiteness.Nakayama
 -- the construction of the function field `K(x)[y]/(y² − f)` in `exists_functionFieldData`:
@@ -7699,6 +7764,29 @@ the `Pic⁰` transcriptions of the two `X0.lean` statements
 `finite_torsion_geomPt_of_abelianScheme`.  So the "do not prove this twice" warning now has
 teeth: the two developments are open at the SAME two statements, and the bridge above would
 close both at once.
+
+**AND IT DID, 2026-08-01.**  Both are now PROVEN over one new leaf,
+`exists_abelianScheme_geomAddEquiv_pic` (declared just above them, far below here) — the
+GEOMETRIC half of the bridge this section has been describing since 2026-07-28: an abelian
+scheme `J/ℚ` together with `D.Pic ≃+ J(ℚ)` AND `gp.Dbar.Pic ≃+ J(ℚ̄)`, compatibly with base
+change and with the Galois action.  Three corrections to the paragraphs above, all of them
+things this section asserted and none of them still true:
+
+* *"the bridge is nevertheless still not cheap … that would replace two leaves by one
+  substantially harder one, plus a 50k-line module in this file's own build cone"* — the
+  cone objection is right about the build ORDER and wrong about the trade.  It is two
+  leaves for one, and the one is a single classical comparison theorem, whereas the two
+  were the `Pic⁰` copies of a subtree `X0` has already cut down to one leaf.
+* *the arithmetic half was never the place the bridge helps* — this section says the bridge
+  helps the GEOMETRIC half (`fg_pic`).  It helps the arithmetic half too, and in fact more:
+  the geometric half's bridge (`exists_abelianScheme_addEquiv_pic`) needs only a raw
+  `AddEquiv` on rational points, while the arithmetic half needs the geometric points and
+  the Galois action, which is what the new leaf supplies.
+* *the two bridges overlap and should become one.*  The new leaf's `e` IS
+  `exists_abelianScheme_addEquiv_pic`'s conclusion, so that declaration is provable over it
+  (feed it `exists_geomPic D hsep`; its `hinf` is then unnecessary).  It was left untouched
+  on 2026-08-01 only because it had a live owner at that moment.  Collapsing the two is a
+  further `−1` and changes no consumer.
 -/
 
 /-- **A finitely generated abelian group `A` with `A = 2·A` is finite** (PROVEN) — the
@@ -10805,10 +10893,147 @@ that has no counterpart there at all.
 
 What made the recut possible is `act_mul` above: a Kummer cochain has no coset structure
 until `act` is known to be a group action, and that is a *derived* fact here, not an axiom.
+
+#### THE BRIDGE WAS TAKEN, 2026-08-01: `2 → 1`, and the arithmetic is now owed ONCE
+
+Both of those "two leaves below" are now PROVEN, over the single new leaf
+`exists_abelianScheme_geomAddEquiv_pic` — the geometric Jacobian bridge, i.e. the option
+the paragraph above calls "the bridge discussed in the section docstring".  The other
+option it names, "a transcription of the Hermite argument", was **measured and rejected**:
+`X0` reaches `exists_finiteIndex_divisible_of_abelianScheme` through
+`exists_discrBound_divisionField_of_abelianScheme`, itself a four-way cut over a torsion
+field, a Kummer degree bound, Néron–Ogg–Shafarevich and Hermite–Minkowski, of which only
+one leaf (`exists_inertiaSet_geomPt`) is still open.  Transcribing that here needs a field
+of definition, a discriminant, a degree bound and a ramification set for a geometric
+PICARD CLASS — the whole subtree again, in this file's vocabulary.  It is not the cheaper
+move, and the "cheaper local move" reading of it should not be repeated.
+
+What the bridge costs is one non-public `import Fermat.FLT.ModularCurve.X0` (see the
+comment on that import line, which records the cycle that this exact edge caused on
+2026-07-31 and the closure check that says it is open again), and what it buys is that the
+two developments stop being open at the same two statements.  The frontier moved `2 → 1`;
+judge the cut by what is LEFT in the surviving leaf — a Jacobian and a comparison of point
+groups, with no Kummer theory, no discriminant and no finite-index subgroup in it.
 -/
 
-/-- **LEAF (weak Mordell–Weil, arithmetic, 1 of 2): the `p`-division points of rational
-classes are defined over a FIXED finite extension.**
+open AlgebraicGeometry CategoryTheory in
+/-- **LEAF (THE GEOMETRIC JACOBIAN BRIDGE): the Jacobian exists as an abelian scheme over
+`ℚ`, and BOTH Picard groups are its points — `Pic⁰(X_ℚ) = J(ℚ)` and `Pic⁰(X_ℚ̄) = J(ℚ̄)` —
+compatibly with base change and with the Galois action.**
+
+Cut 2026-08-01.  It replaces the two arithmetic leaves below, which are now PROVEN over it
+together with two theorems of `ModularCurve/X0.lean` that are **already PROVEN there**:
+
+* `Fermat.finite_torsion_geomPt_of_abelianScheme` gives `finite_torsion_pic_geom`;
+* `Fermat.exists_finiteIndex_divisible_of_abelianScheme` gives
+  `exists_finiteIndex_divisible_pic`.
+
+## WHY THIS IS THE CUT, AND NOT A TRANSCRIPTION OF HERMITE–MINKOWSKI
+
+The two leaves below were, by construction, the `Pic⁰` transcriptions of exactly those two
+`X0` statements — the section docstring above says so and calls the bridge "the right
+long-term repair".  There were two ways to act on that, and they are not close:
+
+* **transcribe** the Hermite–Minkowski assembly here.  `X0` proves
+  `exists_finiteIndex_divisible_of_abelianScheme` over
+  `exists_discrBound_divisionField_of_abelianScheme` (itself a four-way cut over the
+  torsion field, a Kummer degree bound, a ramification set — Néron–Ogg–Shafarevich — and
+  Hermite–Minkowski) plus `exists_geomPt_nsmul_eq_of_abelianScheme`.  Transcribing that to
+  `Pic` needs a field of definition `ℚ(y)` for a geometric Picard CLASS, its discriminant,
+  its degree bound and its ramification — i.e. re-deriving that whole subtree in this file's
+  vocabulary.  It is not "the cheaper local move"; it is the whole arithmetic, twice.
+* **bridge**, which is this leaf: ONE comparison theorem, after which the arithmetic is
+  owed once, in `X0`, where it is already discharged down to a single leaf
+  (`exists_inertiaSet_geomPt`).
+
+So the frontier goes `2 → 1` and — the part the count cannot show — what is LEFT is a
+statement with no Kummer theory, no discriminant, no ramification and no finite-index
+subgroup in it: a Jacobian and a comparison of point groups.
+
+## TRUE, AND WHY
+
+`PlaceData` pins `D` as the smooth projective model `X/ℚ` of `y² = f(x)` (`eqn`,
+`transcendental_xx`, `gen` pin the function field; `ord_injective` with `ord_complete` pin
+`Places` as its closed points), and `GeomPic` pins `gp.Dbar` as the SAME curve over `ℚ̄`
+(`emb_algebraMap`, `emb_xx`, `emb_yy` with `PlaceData.gen`), `gp.below` as the map of
+places, `gp.fieldAct`/`gp.placeAct` as the Galois action — see the section docstring above
+the structure, which is the argument that all of this is pinned rather than chosen.
+
+Let `J = Pic⁰_{X/ℚ}`, an abelian variety over `ℚ` of dimension the genus.  Then:
+
+* `D.picRel` is `princ ⊔ ℤ·[∞₊]` and `[∞₊]` has degree `1`, so `D.Pic` is the group of
+  degree-`0` `ℚ`-rational divisor classes, i.e. `Pic⁰_{div}(X/ℚ)`.  The comparison
+  `Pic⁰_{div}(X/ℚ) → J(ℚ)` is always injective and is SURJECTIVE here because
+  `X(ℚ) ≠ ∅` — `∞₊` again — which kills the Brauer obstruction.  That is `e`.
+* Over `ℚ̄` the same reading gives `gp.Dbar.Pic ≅ Pic⁰(X_ℚ̄) = J(ℚ̄)` with no obstruction at
+  all, `ℚ̄` being algebraically closed.  That is `ebar`.
+* `gp.bcDiv` is the pullback of divisors, which on classes is the inclusion
+  `J(ℚ) ⊆ J(ℚ̄)`; `RelPoint.pre (specAlgClos ℚ) rfl` is that inclusion on the scheme side
+  (it is `Fermat.ratToGeom` with the definition unfolded, spelled out so that this
+  STATEMENT names nothing from `X0.lean`).  That is the first clause.
+* `gp.act` is the action induced by `gp.fieldAct`/`gp.placeAct` on divisor classes, and
+  `AbelianSchemeStruct.galSMul` is precomposition with `Spec σ`; both are the standard
+  action of `Γ_ℚ` on `J(ℚ̄)`.  That is the second clause.
+
+`QbarGal` is `AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ`, which is
+`Field.absoluteGaloisGroup ℚ` unfolded, so the second clause typechecks with `galSMul`'s
+`Γ_ℚ` on the nose — checked, along with `Subgroup` and quotient transport, before this cut
+was taken.
+
+## FAITHFULNESS
+
+*Not degenerately satisfiable.*  `AbelianSchemeStruct` has no nontriviality axiom, so the
+ZERO abelian scheme `J = Spec ℚ`, `jstr = 𝟙` satisfies `proper`, `smooth` and `connected`.
+It is not a witness: `RelPoint (𝟙 _) (𝟙 _)` and `GeomFibrePt (𝟙 _) (𝟙 _)` are SINGLETONS,
+so `e` would force `Subsingleton D.Pic` and `ebar` would force `Subsingleton gp.Dbar.Pic`,
+neither of which is available — the whole Mordell–Weil development in this file is written
+for a `D.Pic` that may be infinite, and `geomPic_bc_injective` embeds it in `gp.Dbar.Pic`.
+(`exists_abelianScheme_addEquiv_pic` carries `hinf : Infinite D.Pic` for exactly this
+purpose; it is not needed here, because ASKING FOR `ebar` AS WELL blocks the same witness
+without it, and this leaf must hold with no hypothesis on `D` beyond a `GeomPic`, since its
+two consumers have none.)
+
+*The two clauses are not decoration.*  Without the `bc` clause `e` and `ebar` could be any
+two unrelated isomorphisms and `exists_finiteIndex_divisible_pic` would not follow — the
+division points produced downstream are division points OF `ratToGeom (e P)`, and it is the
+clause that says that is `ebar (bc P)`.  Without the `act` clause the finite-index subgroup
+fixing them would say nothing about `gp.act`.  Both are consumed in the proofs below, so
+neither can be dropped.
+
+*No hypothesis on the sextic.*  `hsep` is deliberately absent: a `GeomPic` is already the
+curve over both fields, and the classical construction needs nothing else.  Where the
+sextic degenerates the statement stays true — the Jacobian of the smooth model is still an
+abelian variety, of smaller dimension, possibly the zero one — and where it degenerates so
+far that no two places lie over `x = ∞`, `PlaceData` itself is uninhabited and there is no
+`gp` to quantify over.
+
+## RELATION TO `exists_abelianScheme_addEquiv_pic`, AND WHAT A MERGE MUST DO
+
+This leaf's `e` is exactly the conclusion of `exists_abelianScheme_addEquiv_pic` above, so
+**this statement strictly implies that one** (feed it a `gp` from `exists_geomPic D hsep`,
+which the other leaf's `hsep` supplies; its `hinf` is then not needed).  That declaration
+is NOT touched here because it had a live owner when this was written.  When both have
+landed the right shape is one leaf, not two: prove `exists_abelianScheme_addEquiv_pic` over
+this one and delete nothing else, for a further `−1`.  If instead its owner proves it
+outright, the Jacobian it constructs is the same object this leaf asks for and most of this
+leaf comes with it. -/
+theorem exists_abelianScheme_geomAddEquiv_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) :
+    ∃ (J : Scheme.{0}) (jstr : J ⟶ Spec (CommRingCat.of ℚ))
+      (ab : AbelianSchemeStruct jstr),
+      letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of ℚ)))
+      letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 (Spec (CommRingCat.of ℚ)))
+      ∃ (e : D.Pic ≃+ RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ))))
+        (ebar : gp.Dbar.Pic ≃+ GeomFibrePt jstr (𝟙 (Spec (CommRingCat.of ℚ)))),
+        (∀ P : D.Pic, ebar (gp.bc P) = RelPoint.pre (specAlgClos ℚ) rfl (e P)) ∧
+        (∀ (σ : QbarGal) (y : gp.Dbar.Pic),
+          ebar (gp.act σ y)
+            = ab.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (ebar y)) := sorry
+
+open AlgebraicGeometry CategoryTheory in
+/-- **The `p`-division points of rational classes are defined over a FIXED finite
+extension** (PROVEN 2026-08-01 — was a leaf, is now the `Pic⁰` reading of `X0.lean`'s
+`Fermat.exists_finiteIndex_divisible_of_abelianScheme`, which is PROVEN there).
 
 Precisely: there is a finite-index subgroup `H ≤ Gal(ℚ̄/ℚ)` and, for every rational class
 `P`, a geometric class `y` with `p·y = bc P` that `H` fixes.  Two things at once, and they
@@ -10832,29 +11057,66 @@ rational class be Galois-invariant, which is false; `H = ⊥` fixes everything b
 infinite index, since `Gal(ℚ̄/ℚ)` is infinite.  Only an honest finite extension `L` with
 `J(ℚ) ⊆ p·J(L)` satisfies both, and producing one IS weak Mordell–Weil's arithmetic input.
 `hp` is load-bearing through `p ≠ 0`: at `p = 0` the condition reads `0 = bc P` for every
-`P`, which fails for any `P ≠ 0` by `geomPic_bc_injective`. -/
+`P`, which fails for any `P ≠ 0` by `geomPic_bc_injective`.
+
+**THE PROOF (2026-08-01).**  Transport along `ebar`, and nothing else.  The `H` is `X0`'s,
+unchanged: `QbarGal` IS `Field.absoluteGaloisGroup ℚ` unfolded, so its subgroups and the
+finiteness of its quotients need no transport at all.  What the two clauses of the bridge
+buy is exactly the two clauses here — `hbc` turns `p • y' = ratToGeom (e P)` into
+`p • ebar.symm y' = bc P`, and `hact` turns `galSMul σ y' = y'` into `act σ (ebar.symm y')
+= ebar.symm y'`. -/
 theorem exists_finiteIndex_divisible_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
     (p : ℕ) (hp : p.Prime) :
     ∃ H : Subgroup QbarGal, Finite (QbarGal ⧸ H) ∧
-      ∀ P : D.Pic, ∃ y : gp.Dbar.Pic, p • y = gp.bc P ∧ ∀ σ ∈ H, gp.act σ y = y := sorry
+      ∀ P : D.Pic, ∃ y : gp.Dbar.Pic, p • y = gp.bc P ∧ ∀ σ ∈ H, gp.act σ y = y := by
+  obtain ⟨J, jstr, ab, he⟩ := exists_abelianScheme_geomAddEquiv_pic gp
+  letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of ℚ)))
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 (Spec (CommRingCat.of ℚ)))
+  obtain ⟨e, ebar, hbc, hact⟩ := he
+  obtain ⟨H, hHfin, hdiv⟩ := exists_finiteIndex_divisible_of_abelianScheme ab p hp
+  refine ⟨H, hHfin, fun P => ?_⟩
+  obtain ⟨y', hy'p, hy'fix⟩ := hdiv (e P)
+  refine ⟨ebar.symm y', ?_, ?_⟩
+  · apply ebar.injective
+    rw [map_nsmul, ebar.apply_symm_apply, hy'p]
+    exact (hbc P).symm
+  · intro σ hσ
+    apply ebar.injective
+    rw [hact, ebar.apply_symm_apply]
+    exact hy'fix σ hσ
 
-/-- **LEAF (weak Mordell–Weil, arithmetic, 2 of 2): `J[p](ℚ̄)` is finite.**
+open AlgebraicGeometry CategoryTheory in
+/-- **`J[p](ℚ̄)` is finite** (PROVEN 2026-08-01 — was a leaf, is now the `Pic⁰` reading of
+`X0.lean`'s `Fermat.finite_torsion_geomPt_of_abelianScheme`, which is PROVEN there).
 
 The `p`-torsion of `Pic⁰(X_ℚ̄)` is `(ℤ/p)⁴` for a genus-`2` Jacobian in characteristic `0` —
 the kernel of the isogeny `[p]`, of degree `p^{2g}`, which is étale here.  Only finiteness
 is used, and it is used exactly once: a Kummer cochain takes its values in this group.
 
-This is the `Pic⁰` transcription of `Fermat.finite_torsion_geomPt_of_abelianScheme`
-(`X0.lean`).
-
 **FAITHFULNESS.**  `hp` is load-bearing: at `p = 0` the set is all of `Pic⁰(X_ℚ̄)`, which is
 infinite for a genus-`2` curve over `ℚ̄`, so the statement is FALSE there.  Primality is not
 needed — `n`-torsion is finite for every `n ≠ 0` — and the hypothesis is stated as `p ≠ 0`
-rather than `p.Prime` to say so. -/
+rather than `p.Prime` to say so.  The `X0` statement is stated at `n ≠ 0` for the same
+reason, so the two match without a `Nat.Prime` detour.
+
+**THE PROOF (2026-08-01).**  `ebar` is an `AddEquiv`, so it restricts to a bijection of the
+`p`-torsion subsets; only INJECTIVITY is used, and only the second half of the bridge —
+neither `e` nor either compatibility clause appears. -/
 theorem finite_torsion_pic_geom {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (p : ℕ) (hp : p ≠ 0) :
-    Finite {y : gp.Dbar.Pic // p • y = 0} := sorry
+    Finite {y : gp.Dbar.Pic // p • y = 0} := by
+  obtain ⟨J, jstr, ab, he⟩ := exists_abelianScheme_geomAddEquiv_pic gp
+  letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of ℚ)))
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 (Spec (CommRingCat.of ℚ)))
+  obtain ⟨e, ebar, hbc, hact⟩ := he
+  haveI : Finite {y : GeomFibrePt jstr (𝟙 (Spec (CommRingCat.of ℚ))) // p • y = 0} :=
+    finite_torsion_geomPt_of_abelianScheme ab p hp
+  refine Finite.of_injective
+    (β := {z : GeomFibrePt jstr (𝟙 (Spec (CommRingCat.of ℚ))) // p • z = 0})
+    (fun y => ⟨ebar y.1, by rw [← map_nsmul, y.2, map_zero]⟩) ?_
+  intro a b hab
+  exact Subtype.ext (ebar.injective (Subtype.ext_iff.mp hab))
 
 /-- **Divisibility at every prime gives divisibility at every nonzero `n`** (PROVEN, pure
 group theory, no hypothesis on `G` beyond `AddCommGroup`).
@@ -11060,10 +11322,25 @@ finiteness of its kernel, both instances of "`[n]` is a finite flat isogeny of d
 **FAITHFULNESS.**  `hn` is load-bearing and is the whole of it: at `n = 0` the set is all of
 `Pic⁰(X_ℚ̄)`, which is NOT finite — it is a `2`-dimensional abelian variety over an
 algebraically closed field, so it is not even countable.  Stated at every `n ≠ 0` rather than
-at a prime because the proof does not care and the consumer only needs one value. -/
+at a prime because the proof does not care and the consumer only needs one value.
+
+**NO LONGER A LEAF (2026-08-01), AND IT NEVER WAS A SECOND ONE.**  This is
+`finite_torsion_pic_geom` above, spelled with `Set.Finite` instead of with `Finite` of the
+subtype — the same proposition, and the two were cut a day apart out of the same node.  It
+is now a one-line delegation, via `Set.finite_coe_iff`.
+
+**IT IS ALSO CONSUMERLESS**, and was so before this delegation: the 2026-07-31 recut
+re-pointed `finite_kummerCochains_pic` onto `finite_torsion_pic_geom`, and a
+comment-stripped scan of `Fermat/` on 2026-08-01 finds this name exactly once — at its own
+declaration.  So it is free-floating and should be DELETED rather than kept; it is left
+standing here only because deleting it belongs with the other two orphans of that recut
+(`geomPic_exists_finiteCover_kummer`, and the chain `geomPic_divisible_place` →
+`geomPic_divisible`), one of which had a live owner when this was written.  Closing it is
+still worth doing on its own: an open leaf with no consumer draws dispatches forever. -/
 theorem geomPic_finite_torsion {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (n : ℕ) (hn : n ≠ 0) :
-    {y : gp.Dbar.Pic | n • y = 0}.Finite := sorry
+    {y : gp.Dbar.Pic | n • y = 0}.Finite :=
+  Set.finite_coe_iff.mp (finite_torsion_pic_geom gp n hn)
 
 /-- **LEAF (weak Mordell–Weil, arithmetic 2 of 2): every Kummer cochain is constant on the
 blocks of ONE finite cover of `Γ`.**
