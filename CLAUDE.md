@@ -16151,3 +16151,92 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A "MOVE, NOT A PROOF" TASK IS FULLY VERIFIABLE BEFORE YOU TOUCH EITHER FILE — and the namespace is the whole design decision
+
+(2026-08-01, `flt-lean-257`, closing `Fermat.exists_isWeilEigenvalues_galoisField`
+by relocating 1749 lines out of `Modularity/Interface.lean` into
+`ModularCurve/X0.lean`.)
+
+The declaration-order class is well documented above: a leaf whose proof already
+exists in a module that IMPORTS it, so the repair is a relocation. What is not
+written down is that such a task has a **cheap total verification that runs before
+any edit**, and that the expensive part of it is not the move but a namespace
+decision nobody frames as one.
+
+**1. VERIFY THE BLOCK IN A SCRATCH THAT IMPORTS THE DESTINATION.** Extract the
+candidate lines verbatim, prepend nothing but
+
+    module
+    public import <the DESTINATION module>
+    @[expose] public section
+    namespace <the block's ORIGINAL namespace>
+    open <the block's own open line, verbatim>
+
+and elaborate. If that is green, the block is self-contained relative to the
+destination and the relocation cannot fail for a mathematical reason. Measured
+here: **a few minutes, against a 1–2 hour build of the two real files**, and it
+gave the exact expected `sorry` warning count as a bonus. Two things it cannot
+check, so check them separately and they are one script each: that the block
+references no declaration of the SOURCE file outside itself (comment-stripped
+token scan — 0 hits here), and that every name it takes from the DESTINATION is
+declared ABOVE the insertion point (compare line numbers — expect
+`induction ... with | zero | succ` case labels as false positives).
+
+**2. KEEP THE BLOCK'S NAMESPACE; CLOSE AND REOPEN THE DESTINATION'S.** The
+obvious move is to rename the block into the destination's namespace and fix the
+stragglers with an `open`/`export` — and the leaf's own docstring had costed
+exactly that ("all fixed by one `open _root_.Fermat`"). It is the wrong trade.
+Writing
+
+    end Fermat
+    namespace GaloisRepresentation.Modularity
+    <the block, verbatim>
+    end GaloisRepresentation.Modularity
+    namespace Fermat
+
+costs FOUR LINES and makes every full name unchanged — so the use sites left
+behind in the source file resolve through the existing public import with **no
+edit, no delegation stub, and no name declared twice**. The rename costs 89
+renamed declarations plus an `open` whose effect on name resolution in an 80k-line
+file nobody has audited. Check first that the destination already uses the
+close/reopen idiom (`grep -n '^end Fermat$'` — this file did, twice), which is
+also your evidence that it is acceptable style there.
+
+**3. THE DESTINATION IS FORCED BY WHERE THE BLOCK'S DEPENDENCIES LIVE, and the
+repo's usual shape may be unavailable.** Every previous hoist out of
+`Interface.lean` here went into a NEW upstream module (`HeckeOperator.lean`,
+`HeckeQExpansion.lean`, `HeckeAtkinLehner.lean`), so that is the shape to reach
+for. It was impossible this time: the block consumes `Fermat.SpecF`,
+`Fermat.RelPoint` and `Fermat.finite_relPoint_of_isProper`, all declared IN
+`X0.lean`, so nothing upstream of `X0.lean` can host it. **Resolve the three or
+four names the block takes from outside itself BEFORE choosing the destination**;
+that is a two-minute grep and it decides the whole shape of the task.
+
+**4. THE LEAF'S OWN RELOCATION PLAN IS RIGHT ABOUT THE DIRECTION AND STALE IN
+EVERY NUMBER.** This one recorded "1499 lines, 80 declarations, exactly one
+`sorry`" — measured against `merger` at release 25, and correct then. The tree
+had 1749 lines, 89 declarations and **two** sorries, because a TWENTY-THIRD
+decomposition had since re-cut STEP 3 into 3a (`eulerCount_eq_effectiveDivisorCount`,
+the divisor dictionary) and 3b (`exists_riemannRochGrowth_of_effectiveDivisorCount`,
+the growth estimate). Same lesson as [A RELOCATION PLAN MUST BE MEASURED AGAINST
+`merger`], now from the other side of a publish: **after a release lands, a plan
+measured against the pre-release `merger` is stale too.** Re-derive the block
+boundaries by NAME and re-count; inherit only the argument.
+
+**THE RECEIPT FOR A PURE RELOCATION, and it is stronger than reading the diff.**
+git realigns a 1749-line move into an unreadable insertion/deletion pair. Instead
+assert, in one script: the moved lines appear as a CONTIGUOUS run exactly ONCE in
+the new destination and ZERO times in the new source, and
+`Counter(old_source) - Counter(new_source)` is exactly the block with nothing
+left over. That is a complete proof that nothing inside the moved text was edited,
+and it costs milliseconds. Quote it in the commit message — the merge worker can
+then re-apply the move rather than merging it textually.
+
+**AND REPORT THE COUNT HONESTLY, because it is not the win.** One leaf closed
+here and two changed address, so the delta across the two files is `−1`. The
+actual gain is that the tree stopped carrying two independent proofs of one
+theorem, and that the destination file's obligation dropped from *the whole of
+Weil rationality for curves* to *one Riemann–Roch growth estimate plus one
+divisor count*. A relocation that closes a leaf will always look, to a
+warning-set diff, like a leaf that was proven; say which it was.
