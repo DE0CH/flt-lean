@@ -271,6 +271,11 @@ public import Mathlib.Algebra.Algebra.ZMod
 public import Mathlib.Algebra.Module.ZMod
 public import Mathlib.GroupTheory.SpecificGroups.Cyclic
 public import Fermat.FLT.Mathlib.FieldTheory.KaehlerField
+-- `isIntegrallyClosed_stalk_of_smooth_over_field`, the normality half of Cartier's
+-- criterion (`exists_pow_eq_of_kaehler_stalk_eq_zero` below).  Its `Fermat` closure is
+-- four modules (`AbelianScheme`, `RegularStalks` and their imports), all of them already
+-- in this file's cone, so the edge adds no build order and creates no cycle.
+public import Fermat.FLT.Mathlib.RingTheory.RegularLocalNormal
 public import Fermat.FLT.Modularity.AbelianSchemeGrpObj
 
 @[expose] public section
@@ -19941,28 +19946,102 @@ theorem kaehler_stalkMap_mulByNat_prime_eq_zero
       (((ab'.mulByNat p).stalkMap x).hom y) = 0 :=
   sorry
 
-/-- **CARTIER'S CRITERION: A GERM KILLED BY `d` IS A `p`-th POWER** (sorry leaf,
-cut 2026-07-30 out of `exists_pow_eq_stalkMap_mulByNat_prime` below — Matsumura
-*Commutative Ring Theory* §26 and §30, Bourbaki *Algèbre* V §13 (`p`-bases)).
-This is the COMMUTATIVE-ALGEBRA half of that leaf, and it carries all of its use
-of perfectness.  There is no group law and no abelian variety in it.
+/-- **THE STALK OF A SCHEME SMOOTH OVER A FIELD IS ESSENTIALLY OF FINITE TYPE**
+(PROVEN 2026-08-01), for the `k`-algebra structure `stalkAlgebraOver` and no other.
 
-**THE CLASSICAL PROOF, in three steps.**
+This is the one piece of scheme-theoretic bookkeeping that
+`exists_pow_eq_of_kaehler_stalk_eq_zero` below needs, and it is what converts that
+leaf from a statement about schemes into a statement about `Algebra.EssFiniteType`,
+which is the hypothesis `FLT.D_algebraMap_eq_zero_iff_exists_pow` is stated over.
 
-* `𝒪_{X,x}` is a regular local ring (`isRegularLocalRing_stalk_of_smooth`, proven
-  in `Modularity/AbelianSchemeIsogeny.lean`) hence a normal domain
-  (`isDomain_of_isRegularLocalRing`, used the same way by
-  `isReduced_of_smooth_over_field_stalkwise` above).  Write `K` for its fraction
-  field.
-* `ker (d : K ⟶ Ω[K⁄k]) = K^p`.  `K` is finitely generated over the PERFECT
-  field `k`, hence separably generated, so it has a `p`-basis `x₁, …, xₙ`: the
-  monomials `x^α` with `0 ≤ αᵢ < p` are a `K^p`-basis of `K`, and `d x₁, …, d xₙ`
-  are a `K`-basis of `Ω[K⁄k]`.  Expanding `b = Σ_α c_α^p x^α` and differentiating
-  gives `Σ_α αᵢ c_α^p x^{α - eᵢ} = 0` for each `i`; those monomials are
-  `K^p`-independent, so `c_α = 0` unless every `αᵢ ≡ 0 (mod p)`, i.e. unless
-  `α = 0`.  Hence `b = c_0^p`.
-* The root descends: `c ∈ K` satisfies `c^p - b = 0` with `b ∈ 𝒪_{X,x}`, so `c`
-  is integral over `𝒪_{X,x}`, which is integrally closed; hence `c ∈ 𝒪_{X,x}`.
+THE PROOF is the standard chart argument and is copied in shape from
+`isIntegrallyClosed_stalk_of_smooth_over_field`
+(`Fermat/FLT/Mathlib/RingTheory/RegularLocalNormal.lean`): take an affine `V ∋ x`;
+`HasRingHomProperty.appLE` makes `Γ(X, V)` smooth over `Γ(Spec k, ⊤) ≃+* k`, hence
+of finite presentation, hence of finite type, hence essentially of finite type;
+`IsAffineOpen.isLocalization_stalk` presents `𝒪_{X,x}` as a localisation of
+`Γ(X, V)`, which is essentially of finite type over it; and `EssFiniteType.comp`
+composes the two.  The only step with any content is the `IsScalarTower`: the
+composite `k ⟶ Γ(Spec k, ⊤) ⟶ Γ(X, V) ⟶ 𝒪_{X,x}` is `stalkAlgebraOver` because
+`appLE ⊤ V = appTop ≫ res` and `germ` is compatible with restriction
+(`TopCat.Presheaf.germ_res`).
+
+The same proof gives `Algebra.FormallySmooth k 𝒪_{X,x}` in two more lines
+(`Algebra.FormallySmooth.of_isLocalization` in place of
+`Algebra.EssFiniteType.of_isLocalization`, then `FormallySmooth.comp`); it is not
+stated because nothing consumes it. -/
+theorem essFiniteType_stalk_of_smooth {k : Type u} [Field k] {X : Scheme.{u}}
+    (aX : X ⟶ Spec (CommRingCat.of k)) [Smooth aX] (x : X) :
+    letI := stalkAlgebraOver aX x
+    Algebra.EssFiniteType k (X.presheaf.stalk x) := by
+  letI instS : Algebra k (X.presheaf.stalk x) := stalkAlgebraOver aX x
+  obtain ⟨_, ⟨V, hV, rfl⟩, hxV, -⟩ :=
+    X.isBasis_affineOpens.exists_subset_of_mem_open (Set.mem_univ x) isOpen_univ
+  letI instV : Algebra k Γ(X, V) :=
+    (((Scheme.ΓSpecIso (CommRingCat.of k)).inv ≫ aX.appLE ⊤ V le_top).hom).toAlgebra
+  have hsm : RingHom.Smooth (aX.appLE ⊤ V le_top).hom :=
+    HasRingHomProperty.appLE (P := @Smooth) aX ‹Smooth aX› ⟨⊤, isAffineOpen_top _⟩ ⟨V, hV⟩ le_top
+  have hsm' : RingHom.Smooth (algebraMap k Γ(X, V)) := by
+    have h2 := RingHom.Smooth.propertyIsLocal.respectsIso.2 _
+      (Scheme.ΓSpecIso (CommRingCat.of k)).symm.commRingCatIsoToRingEquiv hsm
+    rw [RingHom.algebraMap_toAlgebra, CommRingCat.hom_comp]
+    exact h2
+  haveI : Algebra.Smooth k Γ(X, V) := RingHom.smooth_algebraMap.mp hsm'
+  letI instVS : Algebra Γ(X, V) (X.presheaf.stalk x) :=
+    TopCat.Presheaf.algebra_section_stalk X.presheaf ⟨x, hxV⟩
+  haveI hloc := hV.isLocalization_stalk ⟨x, hxV⟩
+  haveI : IsScalarTower k Γ(X, V) (X.presheaf.stalk x) := by
+    apply IsScalarTower.of_algebraMap_eq'
+    rw [RingHom.algebraMap_toAlgebra, RingHom.algebraMap_toAlgebra, RingHom.algebraMap_toAlgebra,
+      ← CommRingCat.hom_comp]
+    congr 1
+    rw [Scheme.Hom.appLE, Category.assoc, Category.assoc, X.presheaf.germ_res]
+    simp [Scheme.Hom.appTop]
+  haveI : Algebra.EssFiniteType Γ(X, V) (X.presheaf.stalk x) :=
+    Algebra.EssFiniteType.of_isLocalization _ (hV.primeIdealOf ⟨x, hxV⟩).asIdeal.primeCompl
+  exact Algebra.EssFiniteType.comp k Γ(X, V) (X.presheaf.stalk x)
+
+/-- **CARTIER'S CRITERION: A GERM KILLED BY `d` IS A `p`-th POWER**
+(**PROVEN 2026-08-01**; it was a sorry leaf from 2026-07-30, cut out of
+`exists_pow_eq_stalkMap_mulByNat_prime` below — Matsumura *Commutative Ring
+Theory* §26 and §30, Bourbaki *Algèbre* V §13 (`p`-bases)).  This is the
+COMMUTATIVE-ALGEBRA half of that leaf, and it carries all of its use of
+perfectness.  There is no group law and no abelian variety in it.
+
+**BOTH HALVES OF THE ROUTE BELOW WERE ALREADY IN THE TREE WHEN THIS WAS CUT, AND
+THE DOCSTRING PRICED THEM AS MISSING.**  The route recorded here on 2026-07-30 —
+`𝒪_{X,x}` is a normal domain, `ker(d : K ⟶ Ω[K⁄k]) = K^p` for `K` its fraction
+field, then descend the root — is exactly right, and every one of its three steps
+landed on `main` on 2026-07-31, one day after the cut, in two modules neither of
+which this file imported:
+
+* `FLT.D_eq_zero_iff_exists_pow` and `FLT.D_algebraMap_eq_zero_iff_exists_pow`
+  (`Fermat/FLT/Mathlib/FieldTheory/KaehlerField.lean`, sorry-free) are the second
+  and third steps TOGETHER: for `K` a field with `[PerfectField k]`,
+  `[Algebra.EssFiniteType k K]` and `[CharP K p]`, and `R` an integrally closed
+  domain with `IsFractionRing R K`, `d (algebraMap R K x) = 0 ↔ ∃ z : R, z ^ p = x`.
+  This file has imported that module since before the cut;
+* `AlgebraicGeometry.isIntegrallyClosed_stalk_of_smooth_over_field`
+  (`Fermat/FLT/Mathlib/RingTheory/RegularLocalNormal.lean`, sorry-free) is the
+  first step, and its own docstring says in as many words that it is *"for
+  `exists_pow_eq_stalkMap_mulByNat_prime`"* and that **"the OTHER half of that
+  leaf, the criterion `{y ∈ K : d y = 0} = K ^ p` … is separate missing library
+  and is NOT supplied here"**.  That sentence was false on the day it was written:
+  the criterion is the `KaehlerField.lean` theorem above, which landed the same
+  day.  Two agents built the two halves of one route and each recorded the other
+  half as missing.
+
+So the whole of what was left was PLUMBING, and it is the three `haveI`s below
+plus `essFiniteType_stalk_of_smooth` above: present `𝒪_{X,x}` as a domain
+(`isDomain_stalk_of_smooth_over_field`), integrally closed (the theorem above),
+of characteristic `p` (from `hchar` through the germ map, `map_natCast`) and
+essentially of finite type over `k`; push `hb` along
+`KaehlerDifferential.map k k 𝒪_{X,x} K` into the fraction field, where
+`KaehlerDifferential.map_D` turns `d b` into `d (algebraMap b)`; and read off the
+conclusion.  **The lesson is the standing one and it cost this leaf two days: an
+absence claim in a docstring is scoped to the import cone and to the day it was
+written.  Grep `Fermat/` for the CONCLUSION — here `D_eq_zero`, `pthPowers`,
+`IsIntegrallyClosed` — before pricing a route off a missing input.**
 
 **FALSITY AUDIT — `PerfectField k` IS NECESSARY, with an explicit witness.**
 This is the SAME witness that stood on `exists_pow_eq_stalkMap_mulByNat_prime`
@@ -19982,10 +20061,9 @@ used only to know `p = 0` in the stalk; a successor may replace it by
 `(p : k) = 0`, which follows from it because `k ⟶ 𝒪_{X,x}` is a ring map out of
 a field into a nonzero ring, hence injective.
 
-WHERE THIS BELONGS: `Fermat/FLT/Mathlib/RingTheory/Kaehler/`, as a statement
-about a localisation of a smooth algebra over a perfect field; it is stated in
-scheme form here because that is the form the consumer needs and because the
-regular-local input is already available in that form. -/
+WHERE THIS BELONGS: the mathematics is all in `Fermat/FLT/Mathlib/FieldTheory/`
+and `Fermat/FLT/Mathlib/RingTheory/`; what is left here is the scheme-to-ring
+bookkeeping, which is where the consumer wants it. -/
 theorem exists_pow_eq_of_kaehler_stalk_eq_zero
     {k : Type u} [Field k] [PerfectField k] (p : ℕ) (hp : p.Prime)
     {X : Scheme.{u}} (aX : X ⟶ Spec (CommRingCat.of k)) [Smooth aX]
@@ -19993,8 +20071,33 @@ theorem exists_pow_eq_of_kaehler_stalk_eq_zero
     (x : X) (b : X.presheaf.stalk x)
     (hb : letI : Algebra k (X.presheaf.stalk x) := stalkAlgebraOver aX x
       (KaehlerDifferential.D k (X.presheaf.stalk x)) b = 0) :
-    ∃ c : X.presheaf.stalk x, c ^ p = b :=
-  sorry
+    ∃ c : X.presheaf.stalk x, c ^ p = b := by
+  letI instS : Algebra k (X.presheaf.stalk x) := stalkAlgebraOver aX x
+  haveI : IsDomain (X.presheaf.stalk x) :=
+    _root_.GaloisRepresentation.Modularity.isDomain_stalk_of_smooth_over_field aX
+      ‹Smooth aX› x
+  haveI : IsIntegrallyClosed (X.presheaf.stalk x) :=
+    _root_.AlgebraicGeometry.isIntegrallyClosed_stalk_of_smooth_over_field aX ‹Smooth aX› x
+  haveI : Fact p.Prime := ⟨hp⟩
+  have hpS : (p : X.presheaf.stalk x) = 0 := by
+    have h1 := hchar ⊤
+    have h2 : (X.presheaf.germ ⊤ x trivial).hom ((p : ℕ) : Γ(X, ⊤)) = 0 := by
+      rw [h1, map_zero]
+    rwa [map_natCast] at h2
+  haveI : CharP (X.presheaf.stalk x) p := (CharP.charP_iff_prime_eq_zero hp).mpr hpS
+  haveI : CharP (FractionRing (X.presheaf.stalk x)) p :=
+    charP_of_injective_algebraMap
+      (IsFractionRing.injective (X.presheaf.stalk x) (FractionRing (X.presheaf.stalk x))) p
+  haveI : Algebra.EssFiniteType k (X.presheaf.stalk x) := essFiniteType_stalk_of_smooth aX x
+  haveI : Algebra.EssFiniteType (X.presheaf.stalk x) (FractionRing (X.presheaf.stalk x)) :=
+    Algebra.EssFiniteType.of_isLocalization _ (nonZeroDivisors (X.presheaf.stalk x))
+  haveI : Algebra.EssFiniteType k (FractionRing (X.presheaf.stalk x)) :=
+    Algebra.EssFiniteType.comp k (X.presheaf.stalk x) (FractionRing (X.presheaf.stalk x))
+  have hbK : KaehlerDifferential.D k (FractionRing (X.presheaf.stalk x))
+      (algebraMap (X.presheaf.stalk x) (FractionRing (X.presheaf.stalk x)) b) = 0 := by
+    rw [← KaehlerDifferential.map_D k k (X.presheaf.stalk x)
+      (FractionRing (X.presheaf.stalk x)), hb, map_zero]
+  exact (_root_.FLT.D_algebraMap_eq_zero_iff_exists_pow p b).mp hbK
 
 /-- **THE STALK MAPS OF `[p]` LAND IN `p`-th POWERS** (**PROVEN 2026-07-30** over
 the two leaves immediately above; it was a sorry leaf from earlier the same day,
