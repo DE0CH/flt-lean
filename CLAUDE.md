@@ -16151,3 +16151,96 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## COLLAPSING TWO COPIES OF ONE STRUCTURE: the `abbrev` is free, the MOVE is what needs thought
+
+(2026-08-01, `flt-lean-57`, collapsing `AtkinLehnerMorphism` (`X0.lean`) into
+`AtkinLehnerMorphismOver` (`MazurTorsion.lean`).)
+
+When a base-general twin of a structure has been cut in a downstream file — the
+standard move when the upstream file is hot, and the standard debt it creates —
+the collapse is cheaper than it looks and has one trap that is not where you
+expect it.
+
+**The `abbrev` really is invisible to every consumer.** Replacing
+`structure S (N : ℕ) where <fields>` by
+`abbrev S (N : ℕ) := SOver N FixedBase` changed **no call site**: `abbrev` is
+reducible, so dot notation whnf's through it to find the projections; the field
+names are identical; anonymous-constructor literals still elaborate; and
+`Nonempty (S N)` is the same proposition. Five call sites across two files, zero
+edits. It also costs nothing that the fixed base is `noncomputable` (`SpecQ` is a
+`noncomputable abbrev`): a `Type`-valued definition is a type former, which the
+code generator skips, so no `noncomputable` marker is needed on the `abbrev`.
+
+**THE TRAP IS THE MOVE, AND A TASK PROMPT CAN PRESCRIBE A LOCATION LEAN FORBIDS.**
+The prompt said to move the structure *and* its existence theorem "immediately
+above" the declaration being replaced. The structure belongs there — it is what
+the `abbrev` names. The THEOREM cannot go there: its inputs
+(`nonempty_isBaseChangeOf_of_isNIsogenyPair`) were declared ~580 lines BELOW the
+structure, so the prescribed position is a forward reference. **Split the move:
+the structure goes where the abbrev needs it, the theorem goes immediately above
+the specialised theorem it now proves** — which is exactly where its inputs are
+in scope, because that specialised theorem used to have the same proof body.
+
+This is the declaration-order rule in a new suit, and the general form is worth
+having: **a move location named in prose is a claim about scope, and the cheap
+check is one `grep -n` per input against the destination line.** It costs
+seconds and it is not implied by anything else in the task.
+
+**THE RECEIPT FOR A PURE REFACTOR IS A FRONTIER NAME-SET DIFF, not a leaf count.**
+"No leaf opened or closed" is checkable exactly, without a baseline build, by
+running the frontier scan against a pristine checkout of your own base:
+
+    mkdir -p /tmp/base/<the dirs> && git show HEAD:<file> > /tmp/base/<file>   # per file
+    cp tools/merge/frontier.py /tmp/base/tools/merge/
+    python3 tools/merge/frontier.py --root /tmp/base | ... > /tmp/front-base.txt
+    python3 tools/merge/frontier.py --root .         | ... > /tmp/front-new.txt
+    diff /tmp/front-base.txt /tmp/front-new.txt        # empty == pure refactor
+
+Compare NAMES, never line numbers — a refactor moves every line below it. Here
+both sides were 101 leaves in `X0.lean` and 37 in `MazurTorsion.lean`, and the
+two builds' per-file `declaration uses 'sorry'` counts were 101 and 37 on the
+nose, which is the independent validation of the scan that CLAUDE.md's frontier
+section asks for. **A count alone would not have been evidence**: one leaf
+closed plus one opened is also count-neutral, and only the name-set diff
+separates them.
+
+Two smaller notes. `tools/merge/parsecheck.py` and `commentscan.py` take FILE
+arguments, not a directory — passing `.` gives `IsADirectoryError`, which reads
+like a broken tool. And `xdup.py`'s qualified pass is the one that matters after
+a move like this (it must stay at zero); its `XDUP-LAST` last-component pass
+reports ~7500 pre-existing pairs on this tree and is a review list, not a check.
+
+**AND THE COLLAPSE IS NOT AVAILABLE FOR MOST SUCH PAIRS — the reason is that
+`SpecQ` IS SUBTERMINAL.**  Having done one, the obvious next move is to sweep the
+tree for other `X` / `XOver` twins and repeat.  Do the sweep — it is ten lines
+over comment-stripped sources — but expect the answer to be no, and check the
+FIELD TYPES rather than the field NAMES.  `X0.lean` has two further pairs and
+NEITHER is collapsible:
+
+* `Gamma0GITPresentation` has 21 fields and `Gamma0GITPresentationOver` has 20
+  (`splitAlgClos` is missing from the general one).  A field-NAME count settles
+  this one instantly, and it settles it in the direction that says the FIXED-base
+  structure is the stronger — so no `abbrev` in either direction.
+* `Gamma0Atlas` and `Gamma0AtlasOver` have the same 9 field names and differ in
+  the TYPES of two of them: the general `cover` carries an extra conjunct
+  `p ≫ g = m ≫ strM`, and the general `quotient` takes an extra argument
+  `str' : Y' ⟶ S` with `φ ≫ str' = strM`, adds a premise `a ≫ strM = b ≫ strM`
+  and adds `ψ ≫ str' = str` to its conclusion.
+
+Those extra clauses are exactly the "everything in sight lies over the base"
+bookkeeping, and over `SpecQ` they are **free**, because `Hom(T, SpecQ)` is a
+subsingleton (`subsingleton_hom_specQ`; `ℚ` is the prime field, so `ℚ →+* A` is
+a subsingleton — see the standing note that `Spec R` is subterminal exactly when
+`ℤ → R` is a ring epimorphism).  So a fixed-base structure gets to OMIT every
+such clause and a base-general one must state them, and the two are then
+genuinely different statements with neither an instance of the other.
+
+**So the discriminator, and it costs one diff: does the fixed-base structure
+have a field whose type would need a "lies over the base" side condition at a
+general base?**  If yes, the pair is not an `abbrev` collapse and must not be
+made into one — weakening the general structure to force the collapse would
+silently destroy the clause its integral consumer exists to use.  If no — which
+is what `AtkinLehnerMorphism` turned out to be, all four of its fields being
+statements about `Gamma0Datum` and `IsBaseChangeOf` with the base appearing only
+as the type of a binder that is passed on — the collapse is free.
