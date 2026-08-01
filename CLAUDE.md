@@ -16151,3 +16151,79 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A PARENT CUT TWICE LEAVES 2N LEAVES WHERE N SUFFICE — AND THE WINNER IS THE FREE-FLOATING ONE
+
+(2026-08-01, `flt-lean-87`, `ModularCurve/RelativePicard.lean`, the SECOND
+instance of this in that one file.)  The sections above cover two branches
+cutting the same LEAF two ways.  The commoner and more expensive shape is two
+branches cutting the same PARENT: each lands its own pair of residues plus its
+own assembly, the two pairs sit a few hundred lines apart so nothing conflicts,
+and the merge keeps **both cuts in full**.  The parent has one body, so one cut
+is live and the other is not — and the file now owes FOUR classical theorems
+where it owes two.
+
+`exists_relPicZeroSubgroup` was cut on 2026-07-30 into
+`exists_relPicZeroGroupScheme` + `isProper_of_relPicZeroGroupScheme`, and again
+on 2026-07-31 into `exists_relPicIdentityComponent` +
+`isProper_relPicIdentityComponent` under the assembly
+`exists_relPicZeroSubfunctor`.  Both landed.
+
+**THE ORIENTATION IS THE OPPOSITE OF THE OBVIOUS ONE, AND THAT IS THE WHOLE
+TRAP.**  The surviving BODY is the LOSER's, because a body is what a merge has
+to choose between and the older one was already there.  So:
+
+* the **loser's** two leaves are CONSUMED, hence in the root cone, hence
+  counted, hence dispatched at — I was dispatched at one of them;
+* the **winner's** assembly has **ZERO consumers**, so it and both of its leaves
+  are FREE-FLOATING, which this project forbids and which no frontier scan
+  reports as anything but ordinary open work.
+
+Asking "which route is live?" therefore gives the wrong answer every time.
+
+**Two detectors this file already records both fire, and either one is enough:**
+
+* *a proven parent whose DOCSTRING names a different leaf from its PROOF BODY.*
+  The docstring is written once at the moment of the cut and cannot change under
+  a merge; the body is the half a merge resolves.  Here the parent's docstring
+  said "PROVEN 2026-07-31 over `exists_relPicZeroSubfunctor`" while its body
+  called the 2026-07-30 pair;
+* *a PROVEN declaration with no consumer.*  `exists_relPicZeroSubfunctor` had
+  none.
+
+**THE TIE-BREAK, when both routes leave the same NUMBER of leaves — and they
+usually do, because both are cuts of one parent along one seam.**  Do not count.
+Read what each geometry leaf ASKS FOR.  Here the survivor asks for three closure
+existentials (`∃ z, incl z = zeroPoint`, and the same for `addPoint`/`negPoint`)
+and the loser asked for a twelve-field `RelGroupSchemeStruct`, nine fields of
+which are group axioms that have nothing to do with the identity component.
+Deleting those nine was the entire point of the later recut, and it was one
+merge from being lost silently.
+
+**And the queue settles it in one grep, at no cost:**
+
+    for n in <name1> <name2> <name3> <name4>; do echo "$n: $(grep -c $n ~/.flt-loop/queue1)"; done
+
+The two survivors were named 5 and 4 times; the two I deleted, ZERO.  A queue
+that has stopped naming a leaf is the fleet's own verdict on which cut won, and
+it is independent of anything in the file.
+
+**The repair is cheap and it is the reason to bother: re-point the parent, then
+delete the loser's pair.**  The transport the parent needs is the same either
+way — here `choose` on the three closure clauses plus six `hinj`-and-rewrite
+laws over `addPoint_assoc` and its siblings, ~25 lines, developed in a scratch
+against the release olean at 5.6 s per round and pasted in unchanged.  Net:
+13 → 11 sorried declarations in the file, the free-floating violation repaired,
+and the better-shaped pair of leaves left standing.
+
+**Report it as merge repair and give the count delta.**  No mathematics was
+proven and none was lost; both routes still owe SGA3 VI_B 3.10 and BLR 9.4.
+A `−2` from a repair reads exactly like a `−2` from a theory closure otherwise.
+
+**Rider — keep the loser's abstraction ALIVE if the new proof can use it.**
+`RelGroupSchemeStruct` and its `toAbelianSchemeStruct` were introduced for the
+deleted cut and would have become free-floating with it.  Routing the new proof
+through them (build the group data, then add the properness the subfunctor
+supplies as a separate conjunct) keeps both consumed, is the honest shape of the
+argument, and shrinks the diff in a hot file by not deleting a structure.  Check
+for that before extending a deletion to everything the loser touched.
