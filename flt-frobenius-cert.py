@@ -1,31 +1,39 @@
 #!/usr/bin/env python3
 """Generate a Lean certificate for  `H ∣ X ^ (q ^ m) - X`  over `ZMod q`.
 
-*** SUPERSEDED (2026-07-31) — DO NOT POINT `--out` AT A COMMITTED MODULE. ***
+*** IN USE (2026-07-31): this generator owns the two `p = 17` rows. ***
 
-`gen_modules.py` (with `gen_all.py`, `gen_frobenius.py`, `gen_coprime.py`) is the generator
-the tree now uses.  It emits `Fermat/FLT/EllipticCurve/MazurNonCMFrobenius.lean` as the
-SHARED machinery only — `XPow`, the step lemmas, and the four `H` — and one module per row
-under `MazurNonCMFrobenius/`, which is the arrangement `MazurNonCMCertificate.lean` consumes.
+Two generators live here and they emit DIFFERENT SHAPES.  Neither is superseded; do not point
+one at the other's output.
 
-This script emits the older single-file shape instead: one module carrying `pow_frob`,
-`chain_step` and a hand-rolled `namespace F1` … `namespace F5` chain.  That output was
-DELETED from the tree on 2026-07-31 — it had had no consumer since the generated
-`MazurNonCMFrobenius/ElevenA.lean` and `…/ElevenB.lean` landed, and it cost 530 s of build
-time in `MazurNonCMFrobenius.lean` plus 235 s in a sibling module `MazurNonCMFrobeniusB.lean`
-that was deleted with it.  Re-running the invocation below would overwrite the shared
-machinery and break both generated row modules.  Keep it for the measurements and the
-`F_q[X]` arithmetic below; regenerate through `gen_modules.py`.
+* `gen_modules.py` (with `gen_all.py`, `gen_frobenius.py`, `gen_coprime.py`) owns the `p = 11`
+  rows.  It emits `Fermat/FLT/EllipticCurve/MazurNonCMFrobenius.lean` as SHARED machinery —
+  `XPow`, the step lemmas, and the four `H` — plus one module per row under
+  `MazurNonCMFrobenius/`, which import that shared module and reuse its `H` definitions.
+* THIS script emits a SELF-CONTAINED module: its own `pow_frob`, `chain_step` and
+  `isCoprime_of_dvd_sub`, a `namespace F1` … `namespace Fn` chain, and `H` written out as a
+  literal rather than imported.  That is why its output is a SIBLING
+  (`MazurNonCMFrobeniusSevA.lean`, `…SevB.lean`) and not a module under
+  `MazurNonCMFrobenius/`: it does not import the shared machinery, so filing it there would
+  claim a relationship it does not have.
 
-This is the machinery that first closed `dvd_X_pow_card_pow_sub_X_hPolyElevenA`
-(2026-07-31).  It was a tool rather than a one-off script because the same certificate is
-wanted on further rows of Mazur's non-CM table in `Fermat/FLT/ModularCurve/X0.lean`, and
-rediscovering the shape costs a cycle.
+  Running it at `--namespace Fermat.MazurNonCMFrobenius --out …/MazurNonCMFrobenius.lean`
+  would OVERWRITE the shared machinery and break both `p = 11` row modules.  It emitted that
+  file once, in the shape described above, and that output was deleted on 2026-07-31 once the
+  generated `ElevenA.lean` / `ElevenB.lean` landed; it cost 530 s there plus 235 s in a
+  sibling `MazurNonCMFrobeniusB.lean` deleted with it.
 
-    # HISTORICAL — the module this wrote no longer has this shape:
-    python3 flt-frobenius-cert.py --prime 23 --exponent 11 \
-        --namespace Fermat.MazurNonCMFrobenius --module-doc-target hPolyElevenA \
-        --poly-file H.txt --out Fermat/FLT/EllipticCurve/MazurNonCMFrobenius.lean
+This is the machinery that first closed `dvd_X_pow_card_pow_sub_X_hPolyElevenA`, and then
+closed all four `p = 17` leaves (2026-07-31) — `dvd_X_pow_card_pow_sub_X_hPolySeventeenA` /
+`…B` and `isCoprime_hPolySeventeenA` / `…B`.  The invocation for those:
+
+    python3 flt-frobenius-cert.py --prime 67 --exponent 34 \
+        --namespace Fermat.MazurNonCMFrobeniusSevA --module-doc-target hPolySeventeenA \
+        --coprime-exponent 2 \
+        --poly-file HA.txt --out Fermat/FLT/EllipticCurve/MazurNonCMFrobeniusSevA.lean
+
+Regenerating a committed output must reproduce it BYTE FOR BYTE; that check has caught two
+real bugs and is worth running after any change here.
 
 `--poly-file` holds the modulus' coefficients, HIGHEST degree first, whitespace- or
 comma-separated — which is exactly what `lift(Vec(H))` prints in PARI/GP.
@@ -486,6 +494,61 @@ theorem isCoprime_of_dvd_sub {{R : Type*}} [CommRing R] {{a b c : R}}
 '''
 
 
+def product_block(factors, H, target):
+    """`H = h_1 ⋯ h_n`, multiplied in ONE FACTOR AT A TIME.
+
+    MEASURED 2026-07-31, and the reason this is not the obvious one-shot
+    `simp only [F1.h, …]; ring_nf; reduce_mod_char`.  At `deg H = 136`, `n = 4` that shape
+    DOES NOT CLOSE: `ring_nf` gets through (it is not the bottleneck) and `reduce_mod_char`
+    then dies with `(deterministic) timeout at isDefEq` after **269 s** at `maxHeartbeats
+    1000000`.  Fully expanding a 4-fold product first pushes the intermediate coefficients up
+    to `≈ 10 ^ 12` — 35 terms cubed, times `66 ^ 4` — and it is reducing 137 numerals of that
+    size, not the polynomial algebra, that runs out.
+
+    Staged, every intermediate is already reduced mod `P`, so no numeral ever exceeds
+    `deg · (P-1)²  ≈ 4 · 10 ^ 5`, and each identity is a product of just TWO explicit
+    polynomials.  Same three tactics, same final statement: **224 s and EXIT=0**.
+
+    It also emits the identity ONCE.  The previous shape inlined it as a `have` in both
+    `dvd_X_pow_sub_X_hPoly` and `isCoprime_hPoly`, paying for it twice.
+    """
+    n = len(factors)
+    o = []
+    A = o.append
+    if n == 1:
+        A(f"/-- `H` is the single factor `F1.h`. -/")
+        A(f"theorem factor_hPoly : ({wrap(L(H), indent=' ' * 6)} : (ZMod {P})[X])\n"
+          f"    = F1.h := by rw [F1.h]\n")
+        return "\n".join(o)
+
+    acc = factors[0]
+    partial = []
+    for j in range(1, n):
+        acc = mul(acc, factors[j])
+        partial.append(acc[:])
+    assert partial[-1] == H, "the staged product does not reproduce H"
+
+    for k, g in enumerate(partial, 2):
+        A(f"/-- `g{k} = h_1 ⋯ h_{k}`, of degree `{deg(g)}`.  The partial products are named so "
+          f"that no\nsingle `ring_nf` ever sees more than two explicit polynomials at a "
+          f"time. -/")
+        A(f"noncomputable def g{k} : (ZMod {P})[X] :=\n    {wrap(L(g))}\n")
+    for k in range(2, n + 1):
+        lhs = "F1.h * F2.h" if k == 2 else f"g{k-1} * F{k}.h"
+        args = ", ".join(["F1.h", "F2.h"] if k == 2 else [f"g{k-1}", f"F{k}.h"])
+        A(f"/-- `h_1 ⋯ h_{k} = g{k}`. -/")
+        A(f"theorem hg{k} : {lhs} = g{k} := by")
+        A(f"  simp only [{args}, g{k}]")
+        A(f"  ring_nf")
+        A(f"  reduce_mod_char\n")
+    prod = " * ".join(f"F{i}.h" for i in range(1, n + 1))
+    A(f"/-- **`{target} = h_1 ⋯ h_{n}`**, the factorisation both certificates below run on. -/")
+    A(f"theorem factor_hPoly : ({wrap(L(H), indent=' ' * 6)} : (ZMod {P})[X])\n"
+      f"    = {prod} := by")
+    A("  rw [" + ", ".join([f"hg{k}" for k in range(2, n + 1)] + [f"g{n}"]) + "]\n")
+    return "\n".join(o)
+
+
 def emit(factors, H, m, ns, target, path, cop=None):
     n = len(factors)
     out = [preamble(m, ns, target, [deg(f) for f in factors])]
@@ -501,18 +564,15 @@ def emit(factors, H, m, ns, target, path, cop=None):
                 f"  ⟨{wrap(L(s))},\n    {wrap(L(t))},\n"
                 f"    by simp only [F{i}.h, F{j}.h]; ring_nf; reduce_mod_char⟩\n")
 
-    prod = " * ".join(f"F{i}.h" for i in range(1, n + 1))
+    out.append(product_block(factors, H, target))
+
     body = [f"/-- **THE CERTIFICATE**: `H ∣ X ^ ({P} ^ {m}) - X`.\n",
             f"`H` is the degree-`{deg(H)}` polynomial `{target}` of",
             "`Fermat/FLT/EllipticCurve/MazurNonCMCertificate.lean`, written out here so that "
             "this module\ndoes not have to import that one. -/",
             f"theorem dvd_X_pow_sub_X_hPoly :",
             f"    ({wrap(L(H), indent=' ' * 6)} : (ZMod {P})[X]) ∣ X ^ ({P} : ℕ) ^ {m} - X := by",
-            f"  have hfac : ({wrap(L(H), indent=' ' * 6)} : (ZMod {P})[X]) = {prod} := by",
-            "    simp only [" + ", ".join(f"F{i}.h" for i in range(1, n + 1)) + "]",
-            "    ring_nf",
-            "    reduce_mod_char",
-            "  rw [hfac]"]
+            "  rw [factor_hPoly]"]
     # Fold the factors in one at a time.  `IsCoprime (h1 * … * h_{j-1}) h_j` is built from
     # the pairwise certificates by `IsCoprime.mul_left`, and then `IsCoprime.mul_dvd` adds
     # `h_j` to the accumulated product.
@@ -543,11 +603,7 @@ def emit(factors, H, m, ns, target, path, cop=None):
             f"theorem isCoprime_hPoly :",
             f"    IsCoprime ({wrap(L(H), indent=' ' * 6)} : (ZMod {P})[X])",
             f"      (X ^ ({P} : ℕ) ^ {cop} - X) := by",
-            f"  have hfac : ({wrap(L(H), indent=' ' * 6)} : (ZMod {P})[X]) = {prod} := by",
-            "    simp only [" + ", ".join(f"F{i}.h" for i in range(1, n + 1)) + "]",
-            "    ring_nf",
-            "    reduce_mod_char",
-            "  rw [hfac]",
+            "  rw [factor_hPoly]",
             f"  exact {acc}\n"]))
 
     out.append(f"end {ns}\n\nend\n")
