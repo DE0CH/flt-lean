@@ -7167,7 +7167,119 @@ add the coefficient hypothesis it needs and thread it through this one call
 site; a refuter should look for an `A`, `M` where `finrank` is not the dimension
 of a genuine representation — a spot check on `A = ℤ`, `M = ℤ ⊕ ℤ/2` and on
 `M = ℤ²` found nothing, because an odd-order group acting on a `ℤ`-lattice
-cannot have smaller invariant rank than its rational invariants. -/
+cannot have smaller invariant rank than its rational invariants.
+
+# FALSITY AUDIT, 2026-08-01: **FALSE AS STATED**, and the search above looked
+# on the wrong axis
+
+The residual risk named in the paragraph above is REAL and the spot checks that
+probed it were run at the wrong coefficient rings. Both probes (`A = ℤ`) keep
+`Module.finrank` honest, which is exactly why they found nothing. The statement
+fails at `ringChar A = p`, the RESIDUE characteristic at `v` — the one place
+where the classical theory does not claim it, because the Swan conductor is a
+theorem about representations over a ring in which the order of the wild
+inertia image is INVERTIBLE. Nothing in the binder list says so, and `A` here
+is an arbitrary topological `CommRing`.
+
+THE COUNTEREXAMPLE, and every hypothesis is checked on it below.
+
+* `K = ℚ`, `v = (3)`, so `Kᵥ = ℚ₃` and the residue characteristic is `p = 3`.
+* `L = ℚ₃(ζ₃, 3^(1/3))`, the splitting field of `X ^ 3 - 3`. It is the
+  completion at the unique prime above `3` of the global `ℚ(ζ₃, 3^(1/3))`,
+  whose ramification PARI confirms: one prime above `3`, `e = 6`, `f = 1`, so
+  `L/ℚ₃` is Galois, TOTALLY RAMIFIED of degree `6`, with
+  `Gal(L/ℚ₃) ≅ S₃` and decomposition group everything.
+* Its lower filtration is `G₀ = S₃`, `G₁ = G₂ = G₃ = A₃ ≅ ℤ/3`, `G₄ = 1`.
+  Computed twice and in agreement. By hand: with `π = ζ₃ - 1` and `β = 3^(1/3)`
+  one has `v_L(π) = 3`, `v_L(β) = 2`, so `ϖ = π / β` is a uniformizer; the
+  generator `σ` of `A₃` sends `β` to `ζ₃ β`, hence `σϖ - ϖ = ϖ (ζ₃⁻¹ - 1)` has
+  `v_L = 1 + 3 = 4`, so `σ ∈ G_m` exactly for `m ≤ 3`. Numerically: the
+  different exponent at `3` is `11`, and
+  `∑ (|G_i| - 1) = (6-1) + 3 · (3-1) = 11`, which pins the filtration.
+* `A = ZMod 3` with the discrete topology, `M = (ZMod 3) ^ 2` carrying the
+  standard two-dimensional `𝔽₃`-representation of `S₃`, i.e.
+  `{(a, b, c) : a + b + c = 0} ⊆ 𝔽₃ ^ 3` with `S₃` permuting coordinates. In
+  characteristic `3` this is INDECOMPOSABLE and `A₃` fixes exactly the line
+  spanned by `(1, 1, 1)` — which lies in the subspace precisely because
+  `3 = 0`. So `finrank A M = 2` and `finrank A (M ^ A₃) = 1`.
+* `ρ : GaloisRep ℚ A M` is `Γ ℚ ↠ Gal(ℚ(ζ₃, 3^(1/3)) / ℚ) ≅ S₃` followed by
+  that representation. Its image is finite and its kernel is open, so it is a
+  continuous monoid hom into `Module.End A M` and a legitimate `GaloisRep`.
+* `D` is the `LowerRamificationData` of the level `lvl = Gal(Kᵥᵃˡᵍ / L)`, which
+  is open and normal, with `unif` any uniformizer of `𝒪_L`.
+* `T = 4`.
+
+CHECKING THE HYPOTHESES, one at a time, as the discipline requires:
+
+* `hfin`: take `N = lvl`, which is open and acts trivially on `M` because
+  `ρ.toLocal v` factors through `Gal(L/ℚ₃)`. Satisfied.
+* `hD`: `lvl` acts trivially on all of `M`, a fortiori `lvl ⊓ P_v` does.
+  Satisfied.
+* `hT`: `D.gp 4 = lvl`, so `D.gp 4 ⊓ P_v ≤ lvl` acts trivially and the fixed
+  submodule is `⊤`. Satisfied.
+
+CHECKING THE CONCLUSION. `P_v` surjects onto the wild part `A₃` of
+`Gal(L/ℚ₃)`, and `D.gp m` is the FULL preimage of `G_m`, so `P_v ≤ D.gp m` and
+therefore `D.gp m ⊓ P_v = P_v` for `m = 1, 2, 3`, whose image is `A₃`. Hence
+`ρ.fixedSubmodule v (D.gp m ⊓ P_v)` is the `A₃`-invariant line for those `m`,
+and the numerator is `2 - 1 = 1`. At `m = 4` the numerator is `2 - 2 = 0`.
+`(D.gp m).relIndex (D.gp 0) = [G₀ : G_m] = 2` for `m = 1, 2, 3`. So the sum is
+
+  `1/2 + 1/2 + 1/2 + 0/6 = 3/2`,
+
+and no natural number casts to `3/2`. The leaf is FALSE.
+
+WHY THE COUNTEREXAMPLE IS NOT AN ACCIDENT OF THE GENERAL `A`. Two independent
+things break at once, and it is worth separating them because only the second
+is repairable by a hypothesis on `A`:
+
+1. `L/Kᵥ` is NOT ABELIAN, so Hasse–Arf does not apply to it and the jump of the
+   lower filtration sits at a NON-INTEGRAL value of `φ`, namely
+   `φ_D(3) = 3/2`. Any attempted cut of this leaf through the pure
+   group-theoretic statement *the jumps of the lower filtration occur at
+   integer values of `D.phi`* is therefore REFUTED by the same witness, with no
+   representation in it at all. That cut is the first one a prover reaches for
+   (it makes the residue mention no `A`, no `M` and no `ρ`, which reads as a
+   strict improvement) and it must not be taken. Recorded here so it is not
+   re-derived.
+2. What rescues the CLASSICAL statement in spite of (1) is the representation:
+   over a coefficient ring in which `|G₁| = 3` is invertible, `M` splits as
+   `M ^ {A₃} ⊕ N` with `N` an `S₃`-stable complement having no `A₃`-invariants,
+   and the tame quotient `ℤ/2` acts on the nontrivial `A₃`-characters occurring
+   in `N` by inversion, PAIRING them; so the numerator is EVEN and `3 c / 2` is
+   an integer. In characteristic `3` there is no complement, the numerator is
+   `1`, and the pairing argument has nothing to pair.
+
+THE REPAIR, and it is a hypothesis rather than a restatement of the sum. Add
+
+  `(hwild : IsUnit ((D.lvl.relIndex (D.gp 1) : ℕ) : A))`
+
+— the order of the wild part `G₁(L/Kᵥ)` of the level is invertible in the
+coefficient ring. It is stated in objects already bound by the leaf, it
+excludes the witness above on the nose (`3` is not a unit in `ZMod 3`), and it
+is supplied for free at the intended call sites, where `A` is an `ℓ`-adic
+coefficient ring and `|G₁|` is a power of the residue characteristic `p ≠ ℓ`.
+It is the formal content of the standing hypothesis of the classical theory.
+
+WHY THE REPAIR IS NOT PERFORMED HERE. It is an INTERFACE change and it does not
+stop at this leaf: the same witness refutes the whole chain above it, since
+each link is stated at the same generality and the sum is the same sum —
+`exists_nat_eq_sum_breaks` (take the genuine upper-numbering filtration and
+`μ 0 = 3/2`; its `hμ` and `hpos` both hold), hence
+`exists_nat_forall_sum_breaks_eq`, hence `exists_isSwanExponentAt`, whose only
+CODE consumer outside this file is in `Modularity/Interface.lean`. Threading a
+new binder across four declarations here and one call site in a 90 000-line
+module that several agents edit concurrently is the interface-split hazard
+CLAUDE.md describes, and it belongs to one owner doing nothing else. The
+terminus is dischargeable — that call site is at a prime `q ≠ p` with `λ`-adic
+coefficients — which is what makes the repair a repair and not an exported
+obligation. A task is queued.
+
+WHAT IS UNAFFECTED. Everything in this section that does not divide by
+`relIndex`: the codimension function, `wildCodim`, the break machinery, the
+Herbrand comparison `fixedSubmodule_gp_phi_eq` and the tame theory are all
+untouched by this audit, which is about integrality of a rational SUM and
+nothing else. -/
 theorem exists_nat_eq_sum_lowerSwan (ρ : GaloisRep K A M)
     (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
     (D : LowerRamificationData v) (T : ℕ)
@@ -7958,7 +8070,19 @@ and `μ = (1/2, 0)`: the counting clause holds and `∑ μ = 1/2`, which is no
 natural number. The same slack refutes UNIQUENESS of the Swan exponent —
 `μ = (3, 0)` and `μ = (3, −1)` have identical counting functions and sums
 `3` and `2` — which is why `GaloisRep.IsSwanExponentAt` now carries the
-positivity clause too. -/
+positivity clause too.
+
+**FALSE AS STATED, 2026-08-01 — see the FALSITY AUDIT on
+`exists_nat_eq_sum_lowerSwan` above, which is both this theorem's only
+mathematical input and the source of the refutation.** The witness is a
+mod-`p` representation at the residue characteristic (`K = ℚ`, `v = (3)`,
+`A = ZMod 3`, `M` the standard two-dimensional `𝔽₃`-representation of
+`S₃ = Gal(ℚ₃(ζ₃, 3^(1/3)) / ℚ₃)`); taking `F` the genuine upper-numbering
+filtration and `μ 0 = 3/2` satisfies `hpos` and `hμ`, and the conclusion
+asserts that a natural number equals `3/2`. The repair is the coefficient
+hypothesis named there, threaded from the leaf through this theorem. Until
+it lands, the proof below is a correct derivation from a false premise and
+this statement must not be cited as established. -/
 theorem exists_nat_eq_sum_breaks (ρ : GaloisRep K A M)
     (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
     (F : RamificationFiltration v) (μ : ℕ → ℚ)
@@ -8427,7 +8551,13 @@ the shape of the argument is unchanged:
 
 `gp_herbrand` is therefore load-bearing rather than decorative: remove it and
 `fixedSubmodule_gp_phi_eq` fails, and with it the independence half of this
-theorem — precisely the half the scale-invariance refutation broke. -/
+theorem — precisely the half the scale-invariance refutation broke.
+
+**FALSE AS STATED, 2026-08-01, inherited from `exists_nat_eq_sum_breaks`
+above and ultimately from the FALSITY AUDIT on
+`exists_nat_eq_sum_lowerSwan`.** The same mod-`p` witness refutes it. The
+repair is the coefficient hypothesis named there; this declaration is one of
+the four links that must carry it. -/
 theorem exists_nat_forall_sum_breaks_eq (ρ : GaloisRep K A M)
     (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v)
     (F₀ : RamificationFiltration v) :
@@ -8606,7 +8736,19 @@ leaf it was recut onto, and it replaces it here one-for-one.)
 
 The residual FALSITY risk is concentrated in
 `exists_breaks_of_hasFiniteWildMonodromyAt`, for the reason its own docstring
-gives. -/
+gives.
+
+**CORRECTION, 2026-08-01: the sentence above is no longer where the risk is,
+and this theorem is FALSE AS STATED.** See the FALSITY AUDIT on
+`exists_nat_eq_sum_lowerSwan`. At `ringChar A` equal to the residue
+characteristic at `v` the Swan sum is not an integer — witness `K = ℚ`,
+`v = (3)`, `A = ZMod 3`, `M` the standard two-dimensional
+`𝔽₃`-representation of `S₃ = Gal(ℚ₃(ζ₃, 3^(1/3)) / ℚ₃)`, for which the sum
+is `3/2`. This is the TERMINUS of the chain inside this file, and it is the
+declaration whose signature change reaches `Modularity/Interface.lean`
+(one CODE call site, at a prime `q` different from the coefficient
+characteristic, so the hypothesis is dischargeable there). The repair is the
+coefficient hypothesis named in that audit. -/
 theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
     (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v) :
     ∃ s : ℕ, ρ.IsSwanExponentAt v s := by
