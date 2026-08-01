@@ -14635,6 +14635,25 @@ calls only `card_y0Le_thirtySeven`, whose 47-declaration closure touches no leaf
 two leaves this section promised, one is a bounded relocation and the other cannot be done
 at all until `card_y0Le_classNumberOne` is cut back to a leaf — which is the honest cut
 anyway, since `#Y_0(p)(ℚ) ≤ 1` at `p ∈ {43,67,163}` IS Mazur's Eisenstein-ideal descent.
+
+**THE `p = 37` HALF WAS THEN DONE, SAME RUN, GREEN FIRST TRY** (`flt-hoist-thirtyseven.py`;
+2906 lines, 56 declarations, four contiguous runs). `Fermat.mem_isolatedJInvariants_of_stable_thirtySeven`
+— Mazur's Theorem 1 at `37` — is PROVEN. Frontier: X0 `101 → 104`, MazurTorsion `37 → 33`,
+tree `138 → 137`. **Report a hoist's count as BOTH files plus the tree total**: `+3` in the
+destination reads as a regression on its own, and it is four leaves arriving from next door
+against one closing.
+
+Two things made it green first try and are worth copying to any hoist:
+
+* **assert the three properties in the SCRIPT, not in the report** — that each run is
+  gap-free (no declaration inside a moved range is outside the closure), that the runs cover
+  the closure, and that no forward reference into the destination exists. The script refuses
+  to write otherwise, so a mis-specified range cannot reach a build;
+* **the purity receipt is a line-multiset difference ACROSS the two files**:
+  `Counter(pre_src) − Counter(post_src)` minus `Counter(post_dst) − Counter(pre_dst)` must be
+  exactly your intended edits. Here it was two lines — the re-pointed call site and one
+  `sorry` — against 2906 moved. That is far stronger than reading a 3000-line diff, and it
+  catches a dropped or mangled line that `git diff --stat` cannot.
 ## A PIN AUDIT THAT GREPS MATHLIB AND STOPS IS HALF THE SEARCH — GREP THE PROJECT TOO
 (2026-07-31, `flt-lean-255`, cutting `exists_isCMJInvariant_ne_of_not_equivalent`.)
 The CM SURVEY written for this cluster the same day is careful, explicitly says every line
