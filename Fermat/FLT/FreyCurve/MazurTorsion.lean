@@ -20673,9 +20673,10 @@ case split on `padicValRat 3 (jm y)`, and BOTH halves have apparatus in
 `X0.lean` already:
 
 * `0 ≤ padicValRat 3 (jm y)`: then `P̄` lies in `Y_0(125)(𝔽_3)`, a set of
-  size `2`, and the sieve closes as soon as `w_125` is checked to fix those
-  two points — a genuine two-element computation, and the only part of the
-  recorded route that survives intact;
+  size `2`, and the sieve would close if `w_125` fixed those two points.
+  **IT DOES NOT — checked below, and that is what kills the route at `3`
+  rather than merely restricting it.**  Read the next block before pricing
+  anything off this bullet;
 * `padicValRat 3 (jm y) < 0`: then `P̄` IS a cusp, by the PROVEN
   `isCusp_redX_of_padicValRat_neg` (`X0.lean`, Mazur's Cor. 4.4 dictionary),
   and by the paragraph above the class reduces to something NONZERO.  Since
@@ -20707,14 +20708,55 @@ nothing that counts `#J_0(125)(𝔽_ℓ)` can detect it.  This is the standing
 lesson that an audit's refuting check is scoped to the failure its author had
 in mind — recorded in CLAUDE.md, with this as the worked instance.
 
+**AND THE FIRST BULLET FAILS AT `ℓ = 3` TOO, SO THE ROUTE IS DEAD AT THAT
+PRIME RATHER THAN MERELY INCOMPLETE.**  Two observations, the first of which
+holds at every `ℓ` and collapses the whole "finite computation" idea:
+
+* the special fibre also has genus `8`, so by Abel–Jacobi injectivity there
+  `[Q̄] = [w̄ Q̄]` is EQUIVALENT to `Q̄ = w̄ Q̄`.  The residue the sieve asks for
+  is therefore not a class computation at all: it is *the reduction of `P` is
+  a FIXED POINT of `w̄_125`*.  Since `w_125` swaps the two rational cusps at
+  every `ℓ ∤ 125`, the universal form fails at every prime, which is the
+  `ℓ`-independent half of this audit;
+* at `ℓ = 3` the non-cuspidal points fail as well, and the fixed-point count
+  settles it with nothing left over.  `w_125` acts on `S₂(Γ₀(125))` with
+  `trace = −4`, so `dim⁺ = 2`, `dim⁻ = 6` (the recorded eigenvalue pattern,
+  confirmed), `Tr(T_3 | ⁺) = −3`, and `#X_0(125)⁺(𝔽_3) = 3 + 1 + 3 = 7`.
+  With `#X_0(125)(𝔽_3) = 4` and `#Fix(w̄ ∘ Frob_3) = 1 + 3 − Tr(w T_3) = 10`,
+  writing `r, s, i` for the ramified, split and inert points of the quotient
+  gives `r + 2s = 4`, `r + s + i = 7`, `r + 2i = 10`.  The fixed points of
+  `w_125` are the CM points of discriminant `−4 · 125 = −500`, of which there
+  are `h(−500) = 10` — matching Riemann–Hurwitz `2·8−2 = 2(2·2−2) + R` on the
+  nose — and `polclass(-500)` is irreducible of degree `10` over `ℚ` AND
+  stays a single irreducible of degree `10` mod `3`.  So no fixed point has
+  an `𝔽_3`-rational `j`-invariant, `r = 0`, hence `s = 2` and `i = 5`.
+
+**`w̄_125` therefore fixes NO point of `X_0(125)(𝔽_3)`**: the four points are
+two `w̄`-swapped pairs, the two cusps and the two non-cuspidal points.  So for
+EVERY rational point `P` of `X_0(125)`, cuspidal or not, `[P̄] ≠ [w̄ P̄]`, the
+sieve at `3` returns a NONZERO class, and completing it would prove not the
+leaf but `Y_0(125)(ℚ) = ∅` — the one route this cluster's VACUITY AUDIT
+forbids, because it strands `MazurLevel125.classPoly500_no_rat_root`.  The
+docstring's "`ℓ = 3` is the cheapest" is exactly backwards: `3` is the one
+prime at which the sieve provably cannot deliver this leaf.
+
+(Two free corroborations fell out and are worth keeping: `polclass(-500)`
+irreducible over `ℚ` re-proves `classPoly500_no_rat_root`'s content
+independently, and `h(−500) = 10` is confirmed three ways — the class number,
+the Riemann–Hurwitz ramification count, and the Lefschetz number of
+`w̄ ∘ Frob_3`.)
+
 **WHAT A SUCCESSOR SHOULD TAKE FROM THIS.**  Do not attempt the route as
-recorded; it cannot close.  The second bullet above is the whole residue and
-it is NOT a computation, so a decomposition along the case split trades this
-one leaf for the formal-immersion existential plus the two-point check plus
-the reduction datum at `(125, 3)`, which does not exist in the tree either.
-That is why no cut was taken here on 2026-08-01: the count would go up and
-the arithmetic would be unchanged.  What did change is that the residue now
-has a NAME in the literature and an interface in the tree.
+recorded; at `ℓ = 3` it cannot close, and at any other `ℓ` its final step is
+the unstated requirement that `P` reduce to a CM point of discriminant `−500`
+— i.e. it needs `polclass(-500)` to have a root mod `ℓ` before it can even
+begin.  The genuine residue is the second bullet of the case split, and it is
+NOT a computation, so a decomposition trades this one leaf for the
+formal-immersion existential (which does not reach `125`, see below) plus a
+reduction datum at `(125, ℓ)` that does not exist in the tree either.  That is
+why no cut was taken here on 2026-08-01: the count would go up and the
+arithmetic would be unchanged.  What did change is that the route is no longer
+one a successor can be sent at, and the residue has a name.
 
 **The check that refutes this leaf**: a non-cuspidal rational point of
 `X_0(125)` whose class `[(P) − (w_125 P)]` is nonzero — the same check the
