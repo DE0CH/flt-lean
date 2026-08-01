@@ -16151,3 +16151,71 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A VACUOUS-REGIME ESCAPE HATCH BLOCKS EVERY `∀`-SHAPED FACTORISATION — PROVE THE DEGENERATE BRANCH INSTEAD OF ROUTING AROUND IT
+
+(2026-08-01, `flt-lean-197`, the two Hecke-correspondence leaves in
+`ModularCurve/X0.lean`.)  A cluster whose leaves all carry the same
+"if `<some structure>` turns out to be uninhabited the recipe is vacuous and this
+leaf is cheap" paragraph is a cluster in which **no `∀`-shaped cut can ever be
+made**, and that is a structural fact rather than a shortage of ideas.
+
+The task said the two leaves "are ONE construction, not two", and they are: one
+is the other plus a `w_N`-equivariance clause on the SAME morphism `κ`.  Every
+natural factorisation — *given a `κ` satisfying the recipe, the extra clause
+holds* — is **FALSE** in the vacuous regime, because there the recipe constrains
+nothing and `κ` is an arbitrary morphism.  So each leaf must re-assert the
+construction existentially, and the sharing stays a description rather than a
+formal reduction.  **Before designing a cut, check whether the hypothesis you
+intend to factor through is known to be non-vacuous; if it is not, only
+`∃`-shaped cuts are available and the construction cannot be hoisted out.**
+
+**What IS available, and it is the move to make: prove the degenerate branch.**
+`by_cases` on the non-vacuity witness, discharge the degenerate side outright,
+and hand the witness to the residue as a hypothesis.  Here that was
+`Nonempty (Gamma0Datum N ℚ̄)`: empty ⟹ the recipe clause is a `∀` over an empty
+type and the constant morphism at the zero section satisfies everything, ~15
+lines; nonempty ⟹ the residue, which now carries `d₀`.  Count `1 → 1`, no
+mathematics, and three things change that are worth the commit:
+
+* the residue may ASSUME the witness, which every density-flavoured route needs
+  (a dense set must be nonempty) — the same role `d₀` already played on a sibling
+  leaf in the same file, so the cluster now speaks with one voice;
+* the "this leaf might be cheap" hedge stops being an open question at that end,
+  so a successor cannot mistake the degenerate case for the whole problem;
+* the faithfulness audit transfers with a ONE-LINE argument and no re-run,
+  because adding a hypothesis can only weaken a statement.  Say that explicitly —
+  CLAUDE.md's standing rule is that a restatement VOIDS the earlier audit, and a
+  reader who sees a changed signature will assume a re-audit is owed.
+
+**And the degenerate branch is usually already written, in prose, in the leaf's
+own "HOW IT DEGRADES" paragraph.**  Both leaves here spelled the witness and the
+argument out exactly; nobody had compiled it.  A paragraph that says "in that
+world this leaf is cheap" is a proof obligation somebody has already discharged
+on paper — collect it.
+
+### The two corrections that came out of reading the cluster rather than proving it
+
+* **A clause that looks like a statement about a morphism can be an identity in
+  `End(J)`.**  The `w_N`-equivariance clause here is EXACTLY `T_ℓ ≫ w_J = w_J ≫ T_ℓ`:
+  the normalised family `x ↦ P x − pre (P o)` is natural and pointed, so
+  `IsJacobianOf.universal` factors it through `aj` as a unique additive
+  `u : J ⟶ J`; the clause's right-hand side is then `post u (ajTwist w hw g x)`
+  by additivity of `u` and the *definition* of `ajTwist`, hence
+  `post (wJ ≫ u) (aj x)` by the character relation, while its left-hand side is
+  `post (u ≫ wJ) (aj x)`.  `IsJacobianOf.eq_of_post_aj_eq` makes that
+  EQUIVALENT to the commutation.  So the `⟸` direction is pure rewriting, and
+  the cluster's older ask — *differences of non-cuspidal `ℚ̄`-points generate
+  `J₀(N)(ℚ̄)`* — is **not** needed for it; only density in `X` is, which is
+  strictly weaker.  **When a leaf's clause is an equation between two natural
+  families, factor both through the universal property before pricing it.**
+* **The density step is IN THE PIN.**  `AlgebraicGeometry.ext_of_fromSpecResidueField_eq`
+  (`Mathlib/AlgebraicGeometry/Morphisms/Separated.lean`) is *`f g : X ⟶ Y`,
+  `i : Y ⟶ Z` separated, `X` reduced, `S : Set X` dense, agreement after
+  `X.fromSpecResidueField x` on `S` ⟹ `f = g`* — together with
+  `ext_of_isDominant_of_isSeparated'` next to it.  Several docstrings in this
+  cluster say "the inputs are all present" without naming one; naming the lemma
+  turns "build the density theory" into three checkable obligations (`IsReduced X`,
+  Zariski-density of the moduli points, and the passage from a `ℚ̄`-point to its
+  residue field).  **A docstring that asserts an input exists but does not name it
+  is an absence claim in disguise — grep for the lemma and write its name down.**
