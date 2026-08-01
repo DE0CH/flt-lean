@@ -22611,7 +22611,15 @@ theorem exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
     ∃ (A : Scheme.{0}) (astr : A ⟶ Spec (CommRingCat.of K)) (_ : AbelianSchemeStruct astr)
       (c : C ⟶ A), c ≫ astr = cstr ∧
         ∀ s : Spec (CommRingCat.of K) ⟶ A, c ≠ cstr ≫ s :=
-  sorry
+  -- DELEGATION, 2026-08-01.  This declaration was a verbatim DUPLICATE of
+  -- `Fermat.WeilRestriction.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint`
+  -- (statement compared character for character, modulo the `:=` terminator), which
+  -- `WeilRestriction.lean` PROVES over its two atoms and whose own docstring asks for
+  -- exactly this delegation.  Because this copy sits in namespace `Fermat` and the
+  -- consumer below refers to it unqualified, this copy shadowed the proven one and the
+  -- whole of `WeilRestriction.lean` was unreachable -- an open leaf that was also DEAD.
+  Fermat.WeilRestriction.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
+    hproper hsmooth hconn hsec
 
 /-- **`Pic⁰` AND THE DEGREE-`n` ABEL–JACOBI MAP: a GEOMETRICALLY
 non-rational fibre receives a nonconstant map to an abelian variety**
