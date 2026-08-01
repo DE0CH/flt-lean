@@ -16217,3 +16217,39 @@ Two riders from the same run, both cheap:
   `nonvanishingAt_iff_ratOfSpecQ` into garbage.  Use
   `re.sub(r"(?<![A-Za-z0-9_'])SpecQ(?![A-Za-z0-9_'])", …)` and assert afterwards that
   the compound names SURVIVED.  Here that was 35 real occurrences against 51 raw hits.
+
+### The check is now a script: `tools/merge/deadleaf.py`
+
+Because a consumerless leaf is the ONLY trace this failure leaves, and because
+"grep each open leaf for a consumer" is a paragraph nobody runs, it is now a
+scanner.  It takes `frontier.py`'s open-leaf list and reports every leaf whose
+short name does not occur anywhere in comment-stripped `Fermat/` outside its own
+declaration:
+
+    python3 tools/merge/deadleaf.py          # --root defaults to the repo it lives in
+
+Measured on the 2026-08-01 tree: **37 consumerless open leaves out of 379**, i.e.
+roughly one frontier slot in ten is work that would move the count and not the
+project.  Calibrated against the two cases CLAUDE.md already records by name —
+`geomPic_hilbert90` (dead, correctly flagged) and my own two halves (live after
+the repair, correctly NOT flagged).
+
+Three things about reading it:
+
+* **a hit is one grep, not a verdict.** The scan is sound in the useful direction —
+  a leaf it does NOT flag certainly has an occurrence — but a flagged leaf could
+  still be reached through an `open`ed abbreviation the scan does not model;
+* **the repair is usually not deletion.** Ask first whether the leaf is the loser
+  of a duplicated cut (derive it from the winner, one line) or whether a
+  RELOCATION merely put it on the wrong side of an import edge (move it back —
+  that is a strict frontier win with no mathematics done, which is this whole
+  section). Only when neither applies is it garbage;
+* **never delete a flagged leaf that has a live owner** in `~/.flt-loop/jobs`.
+  Tidiness is not worth destroying an in-flight target.
+
+Two artifacts it has to defend against, both of which produced false positives in
+the first draft and both of which CLAUDE.md already records elsewhere: a frontier
+row for a declaration with explicit universe parameters ends in `.`, so a naive
+`split('.')[-1]` is the empty string and reports every such leaf as dead; and
+`Fermat/SorryGate.lean` carries the token `sorry` inside a STRING LITERAL, so any
+scan must exclude that file or be off by two.
