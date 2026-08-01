@@ -47,8 +47,13 @@ ring so that a consumer can discharge them by commutative algebra.
   added 2026-07-30 for a consumer that receives the scheme-level property as
   given data and has to read the two ring-level conjuncts back off it.  The
   smoothness half is PROVEN (three rewrites, and no domain hypothesis); the
-  dimension half is a **LEAF**, and it is the pure dimension theory of smooth
-  algebras that this pin does not have — see its docstring.
+  dimension half was a leaf and is **PROVEN 2026-08-01**, over this file's own
+  `Algebra.trdeg_fractionRing_eq_of_ringKrullDim` plus a reduction of the general case to
+  the DOMAIN case over the minimal primes of `B`.  Its docstring records why the
+  2026-07-30 "missing from the pin" verdict was wrong: all three of its greps were run
+  over `Mathlib/` and none over this file.
+
+  **This module is sorry-free again**, as it was before 2026-07-30.
 * `Algebra.linearIndepOn_pow_of_formallySmooth` — a formally smooth field extension
   is separable in MacLane's sense, Stacks `0323` (**PROVEN 2026-07-28**).  It is what
   the previous item pays for dropping `PerfectField`; mathlib records the same
@@ -93,6 +98,10 @@ public import Mathlib.RingTheory.KrullDimension.Basic
 public import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.FieldTheory.PerfectClosure
 public import Fermat.FLT.Mathlib.RingTheory.Smooth.RegularLocal
+-- (added 2026-08-01 to close `ringKrullDim_eq_of_smoothOfRelativeDimension`: its reduction to
+-- the DOMAIN case runs over the minimal primes of `B`, and needs `B` reduced.  That module has
+-- no `Fermat` imports at all, so the edge cannot cycle; checked by walking its import block.)
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 -- (restored at the release-12 integration: these were dropped when an import-block
 -- conflict was resolved to one SIDE instead of as a UNION.  Every one is needed by a
 -- proof that is already in this file.)
@@ -1253,10 +1262,331 @@ theorem algebraSmooth_of_smoothOfRelativeDimension
   rw [CommRingCat.hom_ofHom] at h2
   exact RingHom.smooth_algebraMap.mp h2
 
+/-! #### The dimension half: the reduction to the DOMAIN case
+
+`ringKrullDim_eq_of_smoothOfRelativeDimension` at the end of this section was a sorry leaf
+from 2026-07-30 to 2026-08-01, on the strength of an audit — reproduced and CORRECTED on
+its own docstring — saying that the dimension theory it needs is absent from the pin.  Every
+clause of that audit is true of MATHLIB, and the decisive tool was in THIS FILE four hundred
+lines above it: `Algebra.trdeg_fractionRing_eq_of_ringKrullDim`, PROVEN 2026-07-27, which is
+"Krull dimension = transcendence degree" for a finite-type DOMAIN over a field.
+
+What the leaf owed on top of that is the reduction of the general case to the domain case,
+and it is elementary.  `B` is reduced (`Algebra.Smooth.isReduced_of_isField`) and Noetherian,
+so it has finitely many minimal primes; `ringKrullDim B` is the supremum of the
+`ringKrullDim (B ⧸ q)` over them, because every chain of primes lies above a minimal prime;
+and for each minimal `q` there is a `t ∉ q` ANNIHILATING `q` — any element of all the *other*
+minimal primes, since `t * x` then lies in every minimal prime, hence in the nilradical,
+hence is `0`.  For such a `t` the localization `B_t` is a nontrivial DOMAIN and is
+simultaneously a localization of `B ⧸ q` away from `t`, so the two have the same dimension
+and the domain case applies to `B_t`.
+
+Note what this does NOT need: no local irreducibility of `Spec B`, hence no regularity of `B`
+and no "smooth ⟹ regular" (which is genuinely absent from the pin).  A smooth algebra over a
+field need not be a domain — `K[x] × K[y]` is smooth of relative dimension `1` — and the
+argument never pretends otherwise; what the class does force is EQUIDIMENSIONALITY, and the
+minimal-prime reduction is exactly the formal shape of that.
+
+The seven declarations below are that reduction, in dependency order. -/
+
+/-- **The Krull dimension of a nontrivial finite-type algebra over a field is a natural
+number** (PROVEN 2026-08-01).
+
+Noether normalisation plus `ringKrullDim_eq_of_isIntegral_of_injective`; this is the middle
+step of `Algebra.trdeg_fractionRing_eq_of_ringKrullDim`'s proof, extracted because it needs
+no `IsDomain` and is what makes every dimension below a NUMBER rather than an element of
+`WithBot ℕ∞`. -/
+theorem exists_ringKrullDim_eq_natCast (K B : Type u) [Field K] [CommRing B] [Nontrivial B]
+    [Algebra K B] [Algebra.FiniteType K B] : ∃ m : ℕ, ringKrullDim B = m := by
+  obtain ⟨s, g, hginj, hgfin⟩ := exists_finite_inj_algHom_of_fg K B
+  letI : Algebra (MvPolynomial (Fin s) K) B := g.toRingHom.toAlgebra
+  haveI : Module.Finite (MvPolynomial (Fin s) K) B := hgfin
+  haveI : Algebra.IsIntegral (MvPolynomial (Fin s) K) B := Algebra.IsIntegral.of_finite _ _
+  refine ⟨s, ?_⟩
+  rw [ringKrullDim_eq_of_isIntegral_of_injective _ B hginj,
+    MvPolynomial.ringKrullDim_of_isNoetherianRing, ringKrullDim_eq_zero_of_field]
+  simp
+
+/-- **`Algebra.trdeg_fractionRing_eq_of_ringKrullDim` with the fraction field left abstract**
+(PROVEN 2026-08-01).
+
+Same proof, with `FractionRing D` replaced by an arbitrary `L` carrying `IsFractionRing D L`.
+That generality is what lets ONE field serve as the fraction field of a domain and of a
+localization of it, which is how `ringKrullDim_localizationAway_eq_of_isDomain` below compares
+their dimensions without ever transporting a transcendence basis along an `AlgEquiv`. -/
+theorem trdeg_eq_of_ringKrullDim (K D L : Type u) [Field K] [CommRing D] [IsDomain D]
+    [Algebra K D] [Algebra.FiniteType K D] [Field L] [Algebra D L] [IsFractionRing D L]
+    [Algebra K L] [IsScalarTower K D L] (n : ℕ) (hdim : ringKrullDim D = n) :
+    Algebra.trdeg K L = n := by
+  obtain ⟨s, g, hginj, hgfin⟩ := exists_finite_inj_algHom_of_fg K D
+  letI : Algebra (MvPolynomial (Fin s) K) D := g.toRingHom.toAlgebra
+  haveI : IsScalarTower K (MvPolynomial (Fin s) K) D :=
+    IsScalarTower.of_algebraMap_eq fun x ↦ (g.commutes x).symm
+  haveI : Module.Finite (MvPolynomial (Fin s) K) D := hgfin
+  haveI : Algebra.IsIntegral (MvPolynomial (Fin s) K) D := Algebra.IsIntegral.of_finite _ _
+  haveI : FaithfulSMul (MvPolynomial (Fin s) K) D :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr hginj
+  haveI : FaithfulSMul D L :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr (IsFractionRing.injective D L)
+  have hdimP : ringKrullDim (MvPolynomial (Fin s) K) = (s : ℕ∞) := by
+    rw [MvPolynomial.ringKrullDim_of_isNoetherianRing, ringKrullDim_eq_zero_of_field]
+    simp
+  have hns : (n : WithBot ℕ∞) = (s : ℕ∞) := by
+    rw [← hdim, ringKrullDim_eq_of_isIntegral_of_injective _ D hginj, hdimP]
+  have hb1 : IsTranscendenceBasis K
+      (algebraMap (MvPolynomial (Fin s) K) D ∘ (MvPolynomial.X : Fin s → _)) :=
+    (IsTranscendenceBasis.mvPolynomial (Fin s) K).algebraMap_comp
+  haveI : Algebra.IsAlgebraic D L := IsLocalization.isAlgebraic _ (nonZeroDivisors D)
+  have hb2 := hb1.algebraMap_comp (A := L)
+  have hcard : (s : Cardinal.{u}) = Algebra.trdeg K L := by
+    simpa using hb2.lift_cardinalMk_eq_trdeg
+  rw [← hcard]
+  have : n = s := by exact_mod_cast hns
+  simp [this]
+
+/-- **Localizing a finite-type domain over a field away from a nonzero element does not change
+the Krull dimension** (PROVEN 2026-08-01).
+
+Both rings are finite-type domains over `K` with finite Krull dimension, and `FractionRing D`
+is a fraction field of `Dt` as well as of `D`
+(`IsFractionRing.isFractionRing_of_isDomain_of_isLocalization`), so `trdeg_eq_of_ringKrullDim`
+computes the SAME transcendence degree twice and the two dimensions agree.
+
+This is the only place in the reduction where anything about dimension theory is used, and it
+is the direction that is genuinely not formal: `dim Dt ≤ dim D` holds for any localization,
+while `dim D ≤ dim Dt` says a maximal chain of primes can be moved into `D(t)`, which for a
+general ring is FALSE. -/
+theorem ringKrullDim_localizationAway_eq_of_isDomain (K D Dt : Type u) [Field K] [CommRing D]
+    [IsDomain D] [Algebra K D] [Algebra.FiniteType K D] [CommRing Dt] [Algebra D Dt]
+    [Algebra K Dt] [IsScalarTower K D Dt] (t : D) (ht : t ≠ 0) [IsLocalization.Away t Dt] :
+    ringKrullDim Dt = ringKrullDim D := by
+  have hp : Submonoid.powers t ≤ nonZeroDivisors D :=
+    Submonoid.powers_le.mpr (mem_nonZeroDivisors_of_ne_zero ht)
+  haveI hloc : IsLocalization (Submonoid.powers t) Dt := inferInstanceAs (IsLocalization.Away t Dt)
+  haveI : IsDomain Dt := IsLocalization.isDomain_of_le_nonZeroDivisors Dt hp
+  haveI : Algebra.FinitePresentation D Dt := IsLocalization.Away.finitePresentation t
+  haveI : Algebra.FiniteType K Dt :=
+    Algebra.FiniteType.trans (R := K) (S := D) (A := Dt) inferInstance inferInstance
+  letI : Algebra Dt (FractionRing D) :=
+    IsLocalization.localizationAlgebraOfSubmonoidLe (S := Dt) (T := FractionRing D)
+      (Submonoid.powers t) (nonZeroDivisors D) hp
+  haveI : IsScalarTower D Dt (FractionRing D) :=
+    IsLocalization.localization_isScalarTower_of_submonoid_le (S := Dt) (T := FractionRing D)
+      (Submonoid.powers t) (nonZeroDivisors D) hp
+  haveI : IsFractionRing Dt (FractionRing D) :=
+    IsFractionRing.isFractionRing_of_isDomain_of_isLocalization (Submonoid.powers t) Dt _
+  haveI : IsScalarTower K Dt (FractionRing D) := by
+    refine IsScalarTower.of_algebraMap_eq fun x ↦ ?_
+    rw [IsScalarTower.algebraMap_apply K D (FractionRing D),
+      IsScalarTower.algebraMap_apply D Dt (FractionRing D),
+      ← IsScalarTower.algebraMap_apply K D Dt]
+  obtain ⟨m, hm⟩ := exists_ringKrullDim_eq_natCast K D
+  obtain ⟨m', hm'⟩ := exists_ringKrullDim_eq_natCast K Dt
+  have e1 : Algebra.trdeg K (FractionRing D) = m :=
+    trdeg_eq_of_ringKrullDim K D (FractionRing D) m hm
+  have e2 : Algebra.trdeg K (FractionRing D) = m' :=
+    trdeg_eq_of_ringKrullDim K Dt (FractionRing D) m' hm'
+  have : m' = m := by exact_mod_cast e2.symm.trans e1
+  rw [hm, hm', this]
+
+/-- **A nontrivial `B` smooth of relative dimension `n` over `K` has a nonzero `t` with `B_t`
+standard smooth of relative dimension `n`** (PROVEN 2026-08-01).
+
+This is `HasRingHomProperty.Spec_iff` for `@SmoothOfRelativeDimension n` read backwards: it
+produces the covering family of `Locally (IsStandardSmoothOfRelativeDimension n)` and picks a
+member that is nonzero, which is possible because a family of zeroes spans `⊥` and `B` is
+nontrivial.  It is the exact converse of the `refine ⟨s \ {0}, _, _⟩` step of
+`smoothOfRelativeDimension_specMap_algebraMap_of_smooth` above. -/
+theorem exists_ne_zero_isStandardSmoothOfRelativeDimension
+    (K B : Type u) [Field K] [CommRing B] [Nontrivial B] [Algebra K B] (n : ℕ)
+    (h : SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B)))) :
+    ∃ t : B, t ≠ 0 ∧ Algebra.IsStandardSmoothOfRelativeDimension n K (Localization.Away t) := by
+  rw [HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension n)] at h
+  rw [CommRingCat.hom_ofHom] at h
+  obtain ⟨s, hspan, hs⟩ := h
+  have hex : ∃ t ∈ s, t ≠ 0 := by
+    by_contra hcon
+    have h1 : Ideal.span s ≤ (⊥ : Ideal B) := Ideal.span_le.mpr fun x hx => by
+      have hx0 : x = 0 := by by_contra hx0; exact hcon ⟨x, hx, hx0⟩
+      simp [hx0]
+    rw [hspan] at h1
+    exact bot_ne_top (top_le_iff.mp h1)
+  obtain ⟨t, hts, ht0⟩ := hex
+  refine ⟨t, ht0, ?_⟩
+  have hcomp : (algebraMap B (Localization.Away t)).comp (algebraMap K B)
+      = algebraMap K (Localization.Away t) :=
+    (IsScalarTower.algebraMap_eq K B (Localization.Away t)).symm
+  have hst := hs t hts
+  rw [hcomp, RingHom.isStandardSmoothOfRelativeDimension_algebraMap] at hst
+  exact hst
+
+/-- **The dimension half of the converse, for a DOMAIN** (PROVEN 2026-08-01).
+
+`B` is a finite-type domain, so `ringKrullDim B` is some natural number `m`
+(`exists_ringKrullDim_eq_natCast`), and then
+`Algebra.isStandardSmoothOfRelativeDimension_localizationAway_of_smooth` — the chart-level
+lemma proved above for the forward direction — makes any nonzero chart standard smooth of
+relative dimension `m`.  The hypothesis makes the same chart standard smooth of relative
+dimension `n`, and `Ω` of a nontrivial standard smooth algebra has rank the relative
+dimension, so `m = n`.  No new mathematics: the whole content is that the forward direction's
+chart computation is an equality of RANKS, and a rank determines the number it is equal to. -/
+theorem ringKrullDim_eq_of_smoothOfRelativeDimension_of_isDomain
+    (K B : Type u) [Field K] [CommRing B] [IsDomain B] [Algebra K B] (n : ℕ)
+    (h : SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B)))) :
+    ringKrullDim B = n := by
+  haveI : Algebra.Smooth K B := algebraSmooth_of_smoothOfRelativeDimension K B n h
+  haveI : Algebra.FiniteType K B := inferInstance
+  obtain ⟨m, hm⟩ := exists_ringKrullDim_eq_natCast K B
+  obtain ⟨t, ht0, hst⟩ := exists_ne_zero_isStandardSmoothOfRelativeDimension K B n h
+  haveI := hst
+  haveI : Algebra.IsStandardSmooth K (Localization.Away t) :=
+    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth n
+  have hp : Submonoid.powers t ≤ nonZeroDivisors B :=
+    Submonoid.powers_le.mpr (mem_nonZeroDivisors_of_ne_zero ht0)
+  haveI : Nontrivial (Localization.Away t) :=
+    (IsLocalization.injective (Localization.Away t) hp).nontrivial
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension m K (Localization.Away t) :=
+    Algebra.isStandardSmoothOfRelativeDimension_localizationAway_of_smooth K B m hm t ht0
+  have e1 : Module.rank (Localization.Away t) Ω[Localization.Away t⁄K] = (n : Cardinal) :=
+    Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential n
+  have e2 : Module.rank (Localization.Away t) Ω[Localization.Away t⁄K] = (m : Cardinal) :=
+    Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential m
+  have hmn : (m : ℕ) = n := by exact_mod_cast e2.symm.trans e1
+  rw [hm, hmn]
+
+/-- **`SmoothOfRelativeDimension n` passes to a basic open** (PROVEN 2026-08-01).
+
+`Spec (B_t) ⟶ Spec B` is an open immersion, hence smooth of relative dimension `0`, and
+relative dimensions add along a composition. -/
+theorem smoothOfRelativeDimension_localizationAway
+    (K B : Type u) [Field K] [CommRing B] [Algebra K B] (n : ℕ)
+    (h : SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B)))) (t : B) :
+    SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K (Localization.Away t)))) := by
+  haveI := h
+  have he : (ofHom (algebraMap K B) : CommRingCat.of K ⟶ CommRingCat.of B) ≫
+      ofHom (algebraMap B (Localization.Away t))
+      = ofHom (algebraMap K (Localization.Away t)) := by
+    ext x
+    exact (IsScalarTower.algebraMap_apply K B (Localization.Away t) x).symm
+  rw [← he, Spec.map_comp]
+  have h2 : SmoothOfRelativeDimension (0 + n)
+      (Spec.map (ofHom (algebraMap B (Localization.Away t))) ≫
+        Spec.map (ofHom (algebraMap K B))) := inferInstance
+  simpa using h2
+
+/-- **In a reduced Noetherian ring a minimal prime is annihilated by an element outside it**
+(PROVEN 2026-08-01).
+
+Take `t` in all the OTHER minimal primes and not in `q` — possible because a prime containing
+the (finite) infimum of the others would contain one of them, and two distinct minimal primes
+are incomparable.  Then for `x ∈ q` the product `t * x` lies in EVERY minimal prime, hence in
+every prime, hence in the nilradical, which is `0`.
+
+This is the whole of what replaces "smooth ⟹ locally a domain" in the reduction below: it
+does not say `q` is the only minimal prime under any given prime — which is false for a
+general reduced ring and is what would need regularity — only that `q` becomes the zero ideal
+after inverting `t`. -/
+theorem exists_notMem_mul_eq_zero_of_mem_minimalPrimes (B : Type u) [CommRing B]
+    [IsNoetherianRing B] [_root_.IsReduced B] {q : Ideal B} (hq : q ∈ minimalPrimes B) :
+    ∃ t : B, t ∉ q ∧ ∀ x ∈ q, t * x = 0 := by
+  haveI hqp : q.IsPrime := hq.1.1
+  set s : Finset (Ideal B) := (minimalPrimes.finite_of_isNoetherianRing B).toFinset.erase q with hs
+  have hnle : ¬ (s.inf id) ≤ q := by
+    intro hle
+    obtain ⟨q', hq's, hq'le⟩ := (Ideal.IsPrime.inf_le' hqp).mp hle
+    have hq'mem : q' ∈ minimalPrimes B := by
+      have := Finset.mem_of_mem_erase hq's
+      simpa [hs] using this
+    exact (Finset.ne_of_mem_erase hq's) (le_antisymm hq'le (hq.2 hq'mem.1 hq'le))
+  obtain ⟨t, htmem, htq⟩ := SetLike.not_le_iff_exists.mp hnle
+  refine ⟨t, htq, fun x hx => ?_⟩
+  have hmem : ∀ J : Ideal B, J.IsPrime → t * x ∈ J := by
+    intro J hJ
+    haveI := hJ
+    obtain ⟨q'', hq''min, hq''le⟩ :=
+      Ideal.exists_minimalPrimes_le (I := (⊥ : Ideal B)) (J := J) bot_le
+    refine hq''le ?_
+    by_cases hqq : q'' = q
+    · exact hqq ▸ Ideal.mul_mem_left _ _ (hqq ▸ hx)
+    · have hq''s : q'' ∈ s := Finset.mem_erase.mpr ⟨hqq, by simpa [hs] using hq''min⟩
+      exact Ideal.mul_mem_right _ _ ((Finset.inf_le (f := id) hq''s) htmem)
+  have hnil : t * x ∈ nilradical B := by
+    rw [nilradical_eq_sInf]
+    exact Ideal.mem_sInf.mpr fun {J} hJ => hmem J hJ
+  rw [nilradical_eq_zero B] at hnil
+  simpa using hnil
+
+/-- **Every minimal-prime quotient of a smooth algebra has dimension `n`** (PROVEN
+2026-08-01).
+
+With `t` from the previous lemma, `q` is contained in the kernel of `B ⟶ B_t` (because `t` is
+a unit there and `t * q = 0`), so `B_t` is an algebra over `B ⧸ q` — and it is the
+localization of `B ⧸ q` away from the image of `t`, all three `IsLocalization` clauses being
+inherited from the corresponding clauses over `B`.  Hence `B_t` is a nontrivial domain of the
+same dimension as `B ⧸ q`, and the domain case computes that dimension to be `n`. -/
+theorem ringKrullDim_quotient_minimalPrime_eq
+    (K B : Type u) [Field K] [CommRing B] [Algebra K B] [Algebra.FiniteType K B]
+    [_root_.IsReduced B] (n : ℕ)
+    (h : SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B))))
+    {q : Ideal B} (hq : q ∈ minimalPrimes B) : ringKrullDim (B ⧸ q) = n := by
+  haveI hqp : q.IsPrime := hq.1.1
+  haveI : IsNoetherianRing B := Algebra.FiniteType.isNoetherianRing K B
+  obtain ⟨t, htq, ht0⟩ := exists_notMem_mul_eq_zero_of_mem_minimalPrimes B hq
+  have hu : IsUnit (algebraMap B (Localization.Away t) t) :=
+    IsLocalization.map_units _ (⟨t, Submonoid.mem_powers t⟩ : Submonoid.powers t)
+  have hker : ∀ x ∈ q, algebraMap B (Localization.Away t) x = 0 := by
+    intro x hx
+    refine hu.mul_right_eq_zero.mp ?_
+    rw [← map_mul, ht0 x hx, map_zero]
+  letI : Algebra (B ⧸ q) (Localization.Away t) :=
+    (Ideal.Quotient.lift q (algebraMap B (Localization.Away t)) hker).toAlgebra
+  have hmap : ∀ b : B, algebraMap (B ⧸ q) (Localization.Away t) (Ideal.Quotient.mk q b)
+      = algebraMap B (Localization.Away t) b := fun _ => rfl
+  haveI : IsScalarTower B (B ⧸ q) (Localization.Away t) :=
+    IsScalarTower.of_algebraMap_eq fun x => (hmap x).symm
+  haveI : IsScalarTower K (B ⧸ q) (Localization.Away t) := by
+    refine IsScalarTower.of_algebraMap_eq fun x => ?_
+    rw [IsScalarTower.algebraMap_apply K B (Localization.Away t),
+      IsScalarTower.algebraMap_apply B (B ⧸ q) (Localization.Away t),
+      ← IsScalarTower.algebraMap_apply K B (B ⧸ q)]
+  haveI hawayq : IsLocalization.Away (Ideal.Quotient.mk q t) (Localization.Away t) := by
+    refine (isLocalization_iff (Submonoid.powers (Ideal.Quotient.mk q t))
+      (Localization.Away t)).mpr ⟨?_, ?_, ?_⟩
+    · rintro ⟨y, k, rfl⟩
+      rw [show ((⟨(Ideal.Quotient.mk q t) ^ k, k, rfl⟩ :
+          Submonoid.powers (Ideal.Quotient.mk q t)) : B ⧸ q) = Ideal.Quotient.mk q (t ^ k) by
+        simp, hmap, map_pow]
+      exact hu.pow k
+    · intro z
+      obtain ⟨⟨b, ⟨u, k, hk⟩⟩, e⟩ := IsLocalization.surj (Submonoid.powers t) z
+      refine ⟨⟨Ideal.Quotient.mk q b,
+        ⟨Ideal.Quotient.mk q u, ⟨k, by rw [← hk]; simp⟩⟩⟩, ?_⟩
+      simpa [hmap] using e
+    · intro x y hxy
+      obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective x
+      obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective y
+      rw [hmap, hmap] at hxy
+      obtain ⟨⟨c, k, hk⟩, hc⟩ := IsLocalization.exists_of_eq (M := Submonoid.powers t) hxy
+      refine ⟨⟨Ideal.Quotient.mk q c, ⟨k, by rw [← hk]; simp⟩⟩, ?_⟩
+      simpa using congrArg (Ideal.Quotient.mk q) hc
+  have hmkne : Ideal.Quotient.mk q t ≠ 0 := by
+    simpa [Ideal.Quotient.eq_zero_iff_mem] using htq
+  haveI : IsDomain (Localization.Away t) :=
+    IsLocalization.isDomain_of_le_nonZeroDivisors (M := Submonoid.powers (Ideal.Quotient.mk q t))
+      (Localization.Away t)
+      (Submonoid.powers_le.mpr (mem_nonZeroDivisors_of_ne_zero hmkne))
+  have hd1 : ringKrullDim (Localization.Away t) = n :=
+    ringKrullDim_eq_of_smoothOfRelativeDimension_of_isDomain K (Localization.Away t) n
+      (smoothOfRelativeDimension_localizationAway K B n h t)
+  have hd2 : ringKrullDim (Localization.Away t) = ringKrullDim (B ⧸ q) :=
+    ringKrullDim_localizationAway_eq_of_isDomain K (B ⧸ q) (Localization.Away t)
+      (Ideal.Quotient.mk q t) hmkne
+  rw [← hd2, hd1]
+
 /-- **A nontrivial algebra smooth of relative dimension `n` over a field has
-Krull dimension `n`** (sorry leaf, opened 2026-07-30) — the dimension half of
-the converse, and the reason it is a leaf rather than three rewrites like its
-twin above.
+Krull dimension `n`** (opened as a sorry leaf 2026-07-30; **PROVEN 2026-08-01**) — the
+dimension half of the converse, and the reason it was a leaf rather than three rewrites
+like its twin above.
 
 TRUE and standard.  `SmoothOfRelativeDimension n` says every point of `Spec B`
 has an affine open neighbourhood `Spec B_t` with
@@ -1276,10 +1606,26 @@ every point: `B = K × K[x]` is smooth, but is not smooth of relative dimension
 irreducibility or domain hypothesis is needed here, and none is available at the
 call site.
 
-## WHAT IS MISSING FROM THE PIN
+## WHAT IS MISSING FROM THE PIN — **THE VERDICT WAS WRONG, AND HOW** (2026-08-01)
 
-Checked 2026-07-30, and it is dimension theory rather than anything about
-smoothness:
+The three bullets below were checked on 2026-07-30 and every one of them is TRUE **of
+mathlib**.  The verdict drawn from them — that this leaf needs dimension theory nobody has
+— is false, because all three greps were run over `Mathlib/` and none was run over the file
+they were written in.  `Algebra.trdeg_fractionRing_eq_of_ringKrullDim`, four hundred lines
+above, is *precisely* "`ringKrullDim` = `Algebra.trdeg` for a finite-type domain over a
+field", PROVEN here on 2026-07-27; bullet 2 says such a theorem exists nowhere and cites the
+`IsDomain` hypothesis as the reason it could not be used anyway.
+
+Both halves of that reading are wrong.  The theorem exists, and `IsDomain` is not an
+obstruction but a REDUCTION TARGET: the general case follows from the domain case over the
+minimal primes of `B`, which costs only that `B` is reduced.  See the section preceding
+this one for the four-step reduction and
+`ringKrullDim_eq_of_smoothOfRelativeDimension_of_isDomain` for the domain case.  Bullets 1
+and 3 are true and were never needed — no regular sequence and no quotient of one is formed
+anywhere in the proof, and neither is any dimension theory of `Morphisms/Smooth.lean`.
+
+The three bullets are retained verbatim, as the record of what the pin does and does not
+have, and because bullet 1's absence is a real gap that a different route WOULD have hit:
 
 * `Mathlib/RingTheory/KrullDimension/` has `ringKrullDim (MvPolynomial (Fin n) R)
   = ringKrullDim R + n` and the polynomial-ring inequalities, but nothing that
@@ -1294,8 +1640,9 @@ smoothness:
 * `Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` contains no dimension theory
   whatsoever; this module's header records that check.
 
-*The check that would refute this audit*: any of those three greps returning a
-usable statement.
+*The check that refuted this audit*, and it costs one command: `grep -n trdeg` **in this
+file**.  An absence claim is scoped to the trees it searched, and the tree an author is
+least likely to search is the one they are writing in.
 
 *The check that would refute the STATEMENT*: a nontrivial `K`-algebra `B` with
 `SmoothOfRelativeDimension n (Spec (algebraMap K B))` and `ringKrullDim B ≠ n`.
@@ -1303,8 +1650,35 @@ By the paragraph above such a `B` would have to fail equidimensionality, which
 the class forbids pointwise. -/
 theorem ringKrullDim_eq_of_smoothOfRelativeDimension
     (K B : Type u) [Field K] [CommRing B] [Nontrivial B] [Algebra K B] (n : ℕ)
-    (_h : SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B)))) :
-    ringKrullDim B = n :=
-  sorry
+    (h : SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B)))) :
+    ringKrullDim B = n := by
+  haveI : Algebra.Smooth K B := algebraSmooth_of_smoothOfRelativeDimension K B n h
+  haveI : Algebra.FiniteType K B := inferInstance
+  haveI : _root_.IsReduced B := Algebra.Smooth.isReduced_of_isField (R := K) (Field.toIsField K)
+  refine le_antisymm ?_ ?_
+  · -- every chain of primes lies above a minimal prime, so it is a chain in some `B ⧸ q`
+    rw [ringKrullDim, Order.krullDim]
+    refine iSup_le fun l => ?_
+    obtain ⟨q, hqmin, hqle⟩ :=
+      Ideal.exists_minimalPrimes_le (I := (⊥ : Ideal B)) (J := l.head.asIdeal) bot_le
+    haveI : q.IsPrime := hqmin.1.1
+    have hmemZ : ∀ i, (l i) ∈ PrimeSpectrum.zeroLocus (q : Set B) := by
+      intro i
+      rw [PrimeSpectrum.mem_zeroLocus]
+      exact fun z hz =>
+        le_trans hqle ((PrimeSpectrum.asIdeal_le_asIdeal _ _).mpr (l.head_le i)) hz
+    let e := (q.primeSpectrumQuotientOrderIsoZeroLocus).symm
+    let l' : LTSeries (PrimeSpectrum (B ⧸ q)) :=
+      { length := l.length
+        toFun := fun i => e ⟨l i, hmemZ i⟩
+        step := fun i => e.lt_iff_lt.mpr (l.step i) }
+    have hle : (l.length : WithBot ℕ∞) ≤ ringKrullDim (B ⧸ q) :=
+      Order.LTSeries.length_le_krullDim l'
+    rwa [ringKrullDim_quotient_minimalPrime_eq K B n h hqmin] at hle
+  · -- and each of those quotients has dimension exactly `n`
+    obtain ⟨⟨q, hq⟩⟩ := Ideal.nonempty_minimalPrimes (I := (⊥ : Ideal B)) bot_ne_top
+    calc (n : WithBot ℕ∞) = ringKrullDim (B ⧸ q) :=
+          (ringKrullDim_quotient_minimalPrime_eq K B n h hq).symm
+      _ ≤ ringKrullDim B := ringKrullDim_quotient_le q
 
 end AlgebraicGeometry
