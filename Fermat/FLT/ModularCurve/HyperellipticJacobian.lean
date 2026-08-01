@@ -83,11 +83,11 @@ covering collection.  Each namespace now reads top-down:
                                   finite level of a divisor, Hilbert 90 for F̄/F
       → geomPic_descent           PROVEN: the invariants are rational — the Brauer
                                   obstruction killed by the rational point ∞₊
-    geomPic_divisible             LEAF: Pic⁰(X_ℚ̄) is divisible — [n] is surjective
-    geomPic_finite_torsion        LEAF: J[n](ℚ̄) is finite — [n] has a finite kernel
-    geomPic_exists_finiteCover_kummer
-                                  LEAF: one finite cover of Γ inflates every Kummer
-                                  cochain — Hermite–Minkowski, ALL the arithmetic
+    exists_finiteIndex_divisible_pic
+                                  LEAF: ONE finite-index H ≤ Gal(ℚ̄/ℚ) fixes a
+                                  p-division point of every rational class —
+                                  Hermite–Minkowski, ALL the arithmetic
+    finite_torsion_pic_geom       LEAF: J[p](ℚ̄) is finite — [p] has a finite kernel
       → finite_kummerCochains_pic PROVEN: finitely many Kummer cochains
       → finite_quotient_psmul_pic PROVEN: weak Mordell–Weil, Pic⁰/p·Pic⁰ is finite
       → fg_pic                    PROVEN: Mordell–Weil, by the descent theorem
@@ -145,32 +145,46 @@ arithmetic inputs that people usually hand-wave are discharged by the kernel:
 
 **DO NOT TRUST A LEAF COUNT WRITTEN HERE — ASK THE COMPILER.**  Two branches
 amended this paragraph on the same day, one saying "eight" and one saying "TEN",
-and the merged file has neither number.  Regenerate it with `lake build`; the
-list below is stamped to the commit that decomposed `geomPic_descent`
-(2026-07-30), at which the `declaration uses 'sorry'` set of this module is
-these TWENTY-TWO:
+and the merged file had neither number; the list that stood here until 2026-08-01
+said "TWENTY-TWO" and then named ten declarations, six of which were PROVEN.
+Regenerate it — `python3 tools/merge/frontier.py --root .` agrees with the
+`declaration uses 'sorry'` set of a green `lake build` and takes a second.
 
-    degOf_poleDivisor_eq_finrank_of_transcendental,
-    exists_smoothModel, exists_cubeModel_pic, exists_geomPic,
-    geomPic_bc_injective, geomPic_descent, geomPic_divisible_place,
-    finite_kummerCochains_pic, and `two_divisible_pic` at BOTH levels
+Stamped to `280981f1` (2026-08-01), the set is these TWENTY:
 
-— TEN declarations, re-read off a green `lake build` of this module on 2026-07-31 (a
-comment-stripped `sorry`-token count agrees, so there are no anonymous inner sorries).  It
-said `exists_cubeModel_pic` until 2026-07-31, when that became PROVEN by a finite/infinite
-case split and the residual `exists_cubeModel_pic_of_infinite` took its place: the count is
-unchanged, and the change is a rename of one entry, not progress in the count.  The whole of obligations 1b and 1c, and obligation 2a's
-residue-field half, closed that day: `finite_isPlaceFun`, `exists_isPlaceFun_of_affPt`,
-`exists_isPlaceFun_of_infPt` and both `exists_localDenom_*` (hence
-`finrank_residue_pt_eq_one`).  `degOf_divisor_eq_zero`,
+    pt_infinite_of_ord_xx_neg
+    degOf_poleDivisor_le_finrank_of_transcendental
+    finrank_le_degOf_poleDivisor_of_transcendental
+    exists_picReduction
+    exists_abelianScheme_addEquiv_pic
+    PlaceData.pt_surjective_of_isAlgClosed
+    constFieldExt_exists_uniformizer
+    geomPic_exists_finiteLevel, _exists_emb_of_fieldAct_fixed,
+      _exists_const_of_divisor_eq_zero
+    geomPic_descent_divisor, geomPic_exists_const_of_ord_nonneg,
+      geomPic_exists_bcDiv_of_divAct_fixed, geomPic_exists_finiteLevel_divisor,
+      geomPic_hilbert90
+    exists_finiteIndex_divisible_pic, finite_torsion_pic_geom
+    geomPic_divisible_place
+    X18.two_divisible_pic, X13.two_divisible_pic
+
+Two entries left that set on 2026-08-01 and NO mathematics was done for it:
+`geomPic_finite_torsion` and `geomPic_exists_finiteCover_kummer` were the losing
+half of two rival cuts of `finite_kummerCochains_pic` that both merged, they had
+no consumer anywhere in `Fermat/`, and the first was a verbatim duplicate of
+`finite_torsion_pic_geom`.  See the deletion note above that theorem.
+
+`exists_smoothModel`, `exists_cubeModel_pic`, `exists_geomPic`,
+`geomPic_bc_injective`, `geomPic_descent` and `finite_kummerCochains_pic` were in
+the old list and are now PROVEN; `degOf_poleDivisor_eq_finrank_of_transcendental`
+has since been cut into its two inequalities, which is why two entries appear
+where the old list had one.  The whole of obligations 1b and 1c, and obligation
+2a's residue-field half, closed on 2026-07-31: `finite_isPlaceFun`,
+`exists_isPlaceFun_of_affPt`, `exists_isPlaceFun_of_infPt` and both
+`exists_localDenom_*` (hence `finrank_residue_pt_eq_one`).  `degOf_divisor_eq_zero`,
 `isRationalGenerator_of_divisor_eq_sub_single` and `not_isRationalGenerator` had already been
-reduced to `degOf_poleDivisor_eq_finrank_of_transcendental`, which is now the single remaining
+reduced to the pole-divisor pair, which is the remaining
 node of the divisor theory — Stichtenoth I.4.11, weak approximation plus a dimension count.
-
-(`geomPic_divisible_place` replaced `geomPic_divisible` in that set on
-2026-07-30: the general `∀ n ≠ 0, ∀ y` form is now PROVEN from the
-single-place, single-prime instance, so the leaf moved rather than
-multiplied — the count is unchanged.)
 
 `exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt`,
 `exists_degreeMap`, `sub_single_pt_notMem_princ`, `exists_descentHeight_pic`,
@@ -7690,9 +7704,11 @@ and it should be revisited when the Néron/abelian-scheme layer for this curve e
 removed).  The `X0` siblings remain the ones not to duplicate.
 
 **RECUT 2026-07-31, and it makes the `X0` comparison sharper.**  The last two of those five
-are gone: `geomPic_divisible` DELETED (it demanded divisibility of the WHOLE geometric
+left the chain: `geomPic_divisible` UNPLUGGED (it demanded divisibility of the WHOLE geometric
 Picard group at every `n`, where the single call site asked only for the image of `bc` at a
-prime) and `finite_kummerCochains_pic` PROVEN, both over the two new leaves
+prime — the recut commit `50c80802` deleted it, a later merge put it back, and it stands
+today as a PROVEN theorem with no consumer on this branch; see the deletion note beside
+`finite_kummerCochains_pic`) and `finite_kummerCochains_pic` PROVEN, both over the two new leaves
 `exists_finiteIndex_divisible_pic` and `finite_torsion_pic_geom` — which are, deliberately,
 the `Pic⁰` transcriptions of the two `X0.lean` statements
 `exists_finiteIndex_divisible_of_abelianScheme` (PROVEN there, over Hermite–Minkowski) and
@@ -10788,7 +10804,14 @@ arithmetic).  Both are gone, at no cost to the count and at a real gain in shape
   at classes in the image of `bc`.  Full divisibility of the geometric Picard group is
   surjectivity of an isogeny on the points of an abelian surface; divisibility along the
   image of `bc` is what weak Mordell–Weil actually consumes, and it arrives bundled with the
-  arithmetic below at no extra cost.  DELETED, not sorried elsewhere.
+  arithmetic below at no extra cost.  Deleted by the recut commit `50c80802`, and NOT
+  sorried elsewhere — but **this paragraph was false from the first merge after that commit
+  until 2026-08-01**: `semmerge.py` propagates additions and never deletions, so a branch
+  forked before the recut restored `geomPic_divisible` and its sub-leaf
+  `geomPic_divisible_place`, and both are declared below to this day.  They are kept
+  deliberately (an unmerged 2026-08-01 branch re-points `exists_finiteIndex_divisible_pic`
+  onto `geomPic_divisible`, which puts them back in the cone); the other two survivors of
+  the same resurrection, having no consumer on any branch, were deleted on 2026-08-01.
 
 * `finite_kummerCochains_pic` is now **PROVEN** below, over the same two inputs that
   `X0.lean` uses for `finite_quotient_psmul_of_abelianScheme`: a finite-index subgroup
@@ -11031,79 +11054,39 @@ theorem geomPic_divisible {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c
   divisible_of_prime
     (fun p hp y => divisible_of_finsuppSingle p (geomPic_divisible_place gp p hp) y) n hn y
 
-/-! ### The two sub-leaves of `finite_kummerCochains_pic` (cut 2026-07-30)
+/-! ### DELETED 2026-08-01: the two sub-leaves of the 2026-07-30 cut of
+`finite_kummerCochains_pic`
 
-The cut separates the two things the classical proof (Silverman *AEC* VIII.1.1) actually uses,
-which are of completely different natures:
+On 2026-07-30 `finite_kummerCochains_pic` was cut into `geomPic_finite_torsion` (`J[n](ℚ̄)`
+is finite) and `geomPic_exists_finiteCover_kummer` (every Kummer cochain is constant on the
+blocks of one finite cover of `Γ`).  On 2026-07-31 it was RECUT — proven, instead, over
+`exists_finiteIndex_divisible_pic` and `finite_torsion_pic_geom` above — and the recut
+commit `50c80802` removed both sub-leaves.  A later merge put them back, because
+`tools/merge/semmerge.py` propagates a branch's ADDITIONS and never its DELETIONS, so a
+branch forked before the recut re-adds whatever the recut removed.  From that merge until
+today the file therefore carried BOTH cuts of one node, and the losing cut's two leaves were
+open, consumerless, and drawing dispatches.  A comment-stripped scan of `Fermat/` on
+2026-08-01 found each of them occurring exactly once, at its own declaration line.
 
-* `geomPic_finite_torsion` — `J[n](ℚ̄)` is finite.  GEOMETRY, and the same kind of statement
-  as `geomPic_divisible` beside it: both say `[n] : J → J` is a finite flat isogeny, one
-  asking for surjectivity and one for the size of the kernel.  Nothing arithmetic in it.
-* `geomPic_exists_finiteCover_kummer` — every Kummer cochain is constant on the blocks of ONE
-  finite cover of `Γ`.  ARITHMETIC, and all of it: this is where Hermite–Minkowski (or the
-  class group and the unit theorem) enters, and it is the only place.
+`geomPic_finite_torsion` was in addition a verbatim DUPLICATE of `finite_torsion_pic_geom`
+two hundred lines above it — the `Set.Finite` spelling of the same statement, with the same
+hypothesis (`n ≠ 0` against `p ≠ 0`) — so proving it would have been proving one theorem
+twice under two names.  `Set.finite_coe_iff` is the whole difference.
 
-What is Lean between them is that the cochains take their values in `J[p]` — which is
-`act_bc` applied to `p·Q = bc P` — and the bookkeeping that a function determined on a finite
-cover, with values in a finite set, ranges over a finite set. -/
+Recover the deleted text, including
+`geomPic_exists_finiteCover_kummer`'s faithfulness argument (the trivial cover `S = {univ}`
+would force every Kummer cochain to vanish, hence `Pic⁰(X_ℚ)/p·Pic⁰(X_ℚ) = 0` for every
+separable monic sextic, which `y² = x⁶ + x² + 1` refutes), with
+`git show 280981f1:Fermat/FLT/ModularCurve/HyperellipticJacobian.lean`.  That argument is
+not lost: the same content is on `exists_finiteIndex_divisible_pic` above, which is the
+surviving cut's arithmetic leaf.
 
-/-- **LEAF (weak Mordell–Weil, arithmetic 1 of 2, geometric): `J[n](ℚ̄)` is finite.**
-
-For an abelian variety of dimension `g` over an algebraically closed field of characteristic
-`0`, `J[n] ≅ (ℤ/n)^{2g}`; here `g = 2`, so `#J[n] = n⁴`.  Only FINITENESS is asked for — the
-order is never used, and neither is the group structure of the kernel.
-
-The sibling of `geomPic_divisible`: that leaf is the surjectivity of `[n]` and this one is the
-finiteness of its kernel, both instances of "`[n]` is a finite flat isogeny of degree
-`n^{2g}`".  A prover closing one should look at the other.
-
-**FAITHFULNESS.**  `hn` is load-bearing and is the whole of it: at `n = 0` the set is all of
-`Pic⁰(X_ℚ̄)`, which is NOT finite — it is a `2`-dimensional abelian variety over an
-algebraically closed field, so it is not even countable.  Stated at every `n ≠ 0` rather than
-at a prime because the proof does not care and the consumer only needs one value. -/
-theorem geomPic_finite_torsion {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
-    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (n : ℕ) (hn : n ≠ 0) :
-    {y : gp.Dbar.Pic | n • y = 0}.Finite := sorry
-
-/-- **LEAF (weak Mordell–Weil, arithmetic 2 of 2): every Kummer cochain is constant on the
-blocks of ONE finite cover of `Γ`.**
-
-This is the arithmetic of weak Mordell–Weil and nothing else.  In the classical language: all
-the Kummer cochains attached to `p·Q = bc P` are inflated from a SINGLE finite Galois
-extension `M/ℚ` — the maximal exponent-`p` extension of `L = ℚ(J[p])` unramified outside the
-finite set of places over `p·disc(f)` — so each is constant on the cosets of `Gal(ℚ̄/M)`, and
-those cosets are a finite cover of `Γ`.  The statement is phrased as a finite COVER rather
-than as a subgroup or a quotient so that no Galois theory, no profinite topology and no
-`IntermediateField` appears in it: the consumer needs exactly "finitely many blocks, and each
-cochain is constant on each block", and `AlgEquiv.restrictNormalHom` brings with it the
-`Algebra ℚ ↥L` instance diamond that `AbsoluteHilbert90` documents.
-
-Two routes to it, and the second is the one `X0.lean` found cheaper:
-
-* the classical one — the cochains are unramified outside `S` and are therefore cut out by the
-  `p`-Selmer group of `L`, finite by finiteness of `Cl(L)` and Dirichlet's unit theorem;
-* **Hermite–Minkowski**, which `X0.lean` uses at
-  `exists_finiteIndex_divisible_of_abelianScheme` after recording that the class group and the
-  unit theorem are *not* what is needed: the assembly meets one division field `ℚ(J[p], Q)` at
-  a time, each of degree at most `#J[p]` over `ℚ(J[p])`, and there are only finitely many
-  number fields of bounded degree and bounded discriminant.
-
-**FAITHFULNESS — the trivial cover does NOT discharge it.**  `S = {univ}` is a finite cover,
-and with it the conclusion reads "`σ ↦ act σ Q − Q` is constant on all of `Γ`", hence (at
-`σ = 1`, where `act 1 = id` follows from `fieldAct_one`) identically `0` — i.e. every Kummer
-cochain vanishes, i.e. `Pic⁰(X_ℚ)/p·Pic⁰(X_ℚ) = 0` for EVERY separable monic sextic.  That is
-false: the family contains positive-rank Jacobians (`y² = x⁶ + x² + 1` has rank `1`).  So the
-number of blocks is genuinely bounded below by the arithmetic, and a prover cannot cheat by
-making the cover coarse.
-
-`hp` is inherited from the consumer and is used only through `p ≠ 0`; the intended proofs both
-want `J[p]` to be an `𝔽_p`-vector space, which is why it is kept rather than weakened. -/
-theorem geomPic_exists_finiteCover_kummer {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
-    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
-    (p : ℕ) (hp : p.Prime) :
-    ∃ S : Set (Set QbarGal), S.Finite ∧ (∀ σ : QbarGal, ∃ s ∈ S, σ ∈ s) ∧
-      ∀ (P : D.Pic) (Q : gp.Dbar.Pic), p • Q = gp.bc P →
-        ∀ s ∈ S, ∀ σ ∈ s, ∀ τ ∈ s, gp.act σ Q - Q = gp.act τ Q - Q := sorry
+`geomPic_divisible_place` and `geomPic_divisible` are the OTHER two declarations of the same
+losing cut and are deliberately KEPT — they were revived on 2026-08-01 by an unmerged branch
+that re-points `exists_finiteIndex_divisible_pic` onto `geomPic_divisible` plus a new
+arithmetic leaf, which puts them back in the root cone.  Deleting them would be a rival cut
+against landed work.  If that branch is ever declined, they become dead again and go the same
+way as these two. -/
 
 /-- **LEAF (weak Mordell–Weil, the arithmetic): only finitely many Kummer cochains occur.**
 
@@ -11119,12 +11102,15 @@ needed for TRUTH, but it is what makes the intended proof available (`J[p]` is a
 `𝔽_p`-vector space, and the sibling reduction `Fermat.finite_quotient_nsmul_of_prime`
 supplies every other `n`), so it is kept rather than weakened to `p ≠ 0`.
 
-## DECOMPOSED 2026-07-30 — now PROVEN over two named sub-leaves
+## RECUT 2026-07-31 — PROVEN over `exists_finiteIndex_divisible_pic` and
+`finite_torsion_pic_geom`
 
-The two routes that used to be recorded here are now recorded on
-`geomPic_exists_finiteCover_kummer`, which is where the arithmetic went; see the section
-docstring above for why the cut runs between geometry and arithmetic rather than along the
-two routes.  What the assembly does:
+The two routes that used to be recorded here are recorded on
+`exists_finiteIndex_divisible_pic` above, which is where the arithmetic went.  (Until
+2026-08-01 this paragraph named `geomPic_exists_finiteCover_kummer` instead — the
+corresponding leaf of the SUPERSEDED 2026-07-30 cut, which the recut deleted and a merge
+restored; it was deleted again on 2026-08-01 and the note above this theorem records why.)
+What the assembly does:
 
 1. **The values are `p`-torsion.**  `p·(act σ Q − Q) = act σ (p·Q) − p·Q = act σ (bc P) − bc P`,
    which is `0` by `act_bc` (PROVEN) — so every cochain maps into the finite set
