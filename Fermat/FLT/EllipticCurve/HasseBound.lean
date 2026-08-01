@@ -2238,16 +2238,27 @@ not circular.  Write `νₙ = Φₙ/Ψₙ²` for the `x`-map of `[n]`
   set, so `Ψₙ²(x(u P_s)) = 0`, i.e. `u P_s` is `n`-torsion, i.e. `P_s` is (`u` is an
   automorphism), i.e. `Ψₙ²(s) = 0` — contradicting `s` being outside the bad set.
 
-**DECLARATION ORDER: the proof cannot be written HERE as the file now stands.**
+**DECLARATION ORDER: the proof cannot be written HERE as the file now stands, and
+the repair is a HOIST that has been MEASURED rather than guessed.**
 `exists_xWitness_natDegree_le_one_of_injective` is ~700 lines BELOW this line, in
-`section Separability` of the TWELFTH CUT, and Lean has no forward references.  That
-section is self-contained — it names only `Isogeny.lean`/`DifferentialCharacter.lean`
-declarations plus its own `no_common_root` and
-`exists_root_derivative_of_unique_root` — so the successor's FIRST step is to HOIST
-`section Separability … end Separability` above the TENTH CUT, as its own commit,
-with the sorted-line-multiset receipt (`sort` the file before and after: a pure move
-leaves the multiset unchanged).  Do NOT restate the theorem here; that manufactures
-a duplicate cut.
+`section Separability` of the TWELFTH CUT, and Lean has no forward references.  So
+the successor's FIRST step is to move `section Separability … end Separability`
+above the TENTH CUT, as its OWN commit touching nothing else.  Checked at this
+commit, on all three axes a hoist can fail on:
+
+* `flt-hoistcheck.py … --block 2925 3198 --to 1928` reports **HITS: 0** — the block
+  references NOTHING declared in the 17 declarations it would jump over;
+* the block contains no `@[simp]`, no `instance` and no `attribute`, so no simp set
+  and no instance search changes behaviour by moving it earlier;
+* it carries its OWN `open _root_.Polynomial` and
+  `variable {F : Type*} [Field F] [DecidableEq F] {W W' : Affine F}` INSIDE the
+  section, and the jumped region has no depth-`0` `variable` line, so the scope
+  travels with it and nothing between the two positions is re-scoped.
+
+Take the sorted-line-multiset receipt anyway (`sort` the file before and after: a
+pure move leaves the multiset unchanged), since the line numbers above will have
+moved by the time anyone reads this — re-run the check rather than trusting them.
+Do NOT restate the theorem here; that manufactures a duplicate cut.
 
 **NON-VACUITY.**  The group is nonempty and contains `±1`, and for `j ≠ 0, 1728` it
 is exactly `{±1}`, so neither this leaf nor `finite_units_end` is satisfied by an
