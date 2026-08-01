@@ -16218,3 +16218,33 @@ theorem, or the delta reads as CFT progress that did not happen.
   the new character leaf — the same *docstring names a different leaf from the proof
   body* signal already recorded above, arising from a recut instead of from a merge.
   It is worth grepping for on its own: read the body, then read the docstring.
+
+**THE CHECK PAID TWICE MORE IN THE SAME FILE, IMMEDIATELY.** Running it over
+`MoretBailly.lean`'s other 18 leaves (comment-stripped tree-wide count of each leaf's
+short name; `1` means its own declaration line and nothing else) found two further
+orphans of exactly this shape, both with the same tell — *the parent's docstring names
+a different leaf from the one its proof body calls*:
+
+* `exists_stepanovJetSpanningFinset` (`:17525`). `exists_stepanovJetLinearForms`'s
+  docstring says it is "PROVEN 2026-07-30 over the single smaller leaf
+  `exists_stepanovJetSpanningFinset` above"; its body calls
+  `exists_stepanovJetLinearForms_of_frobeniusSplit` (`:17169`) instead. Two open
+  leaves, one piece of mathematics;
+* `exists_hypEvalData_of_birationalNormalForm` (`:29099`).
+  `exists_ratMembershipData_of_birationalNormalForm`'s docstring says it is "PROVEN
+  over `exists_hypEvalData_of_birationalNormalForm` immediately above"; its body does
+  not mention it.
+
+And one that is NOT damage and must not be lumped in with them:
+`det_nTorsion_eq_cyclotomicExponent` (`:57050`) is consumerless **on purpose**, and
+its neighbour's docstring says so in as many words ("this theorem is derivable from
+that leaf in a few lines … it has deliberately NOT been"). So the sweep's output is
+a list of CANDIDATES, and the discriminator is one read of the neighbouring
+docstring: a leaf whose prose says a consumer *is* proven over it, where the consumer
+is not, is damage; a leaf whose prose says a consumer *could be* proven over it is a
+pending decision.
+
+**So the sweep is worth running on any file a recut has touched, and it is ten lines
+of Python.** Strip comments, list the file's `sorry` leaves from the build's warning
+line numbers, and count each short name across `Fermat/`. A count of `1` is the whole
+signal.
