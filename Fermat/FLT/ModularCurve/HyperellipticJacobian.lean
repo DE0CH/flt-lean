@@ -6039,6 +6039,15 @@ makes this true rather than merely plausible — it is what forbids a presentati
 the places where the classical model has poles.  Extending a valuation along the finite
 extension `F` over `K(z)` is the missing machinery, and nothing in the pin does it.
 
+**IT ALSO CLOSES A SECOND LEAF IN THIS FILE, and both have been waiting on the same
+theorem.**  `geomPic_exists_const_of_divisor_eq_zero` further down asks that a function `h`
+of `gp.Dbar` with `divisor h = 0` be a constant, and its own docstring names exactly this
+route: "the place of `ℚ̄(h)` at infinity extends to a place of `F̄` at which `ord h < 0`".
+That is this leaf — `divisor h = 0` gives `0 ≤ ord v h` at every place, so `h` is algebraic
+over `ℚ̄`, which is algebraically closed, so `h` lies in it.  Whoever builds Chevalley
+extension should close both rather than prove it twice.  The two are stated over different
+`PlaceData` and share no identifier, so nothing but this paragraph links them.
+
 **What would refute it**: a `PlaceData` and a transcendental `z` with `0 ≤ ord v z` at
 every place.  The sextic, `hsep` and the characteristic are all irrelevant here — this is
 general function-field theory, which is why the statement carries no side condition. -/
