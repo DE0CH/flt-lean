@@ -16151,3 +16151,82 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## GENERALISE A `ℚ`-ONLY CHAIN **IN PLACE** — the `_field` twin is a duplicate cut, and the base is inferred anyway
+
+(2026-08-01, `flt-lean-143`, closing `exists_affineChart_projModel_field` in
+`ModularCurve/EllipticScheme.lean`.)  A port leaf of the shape *"this is the proven
+`ℚ` theorem over an arbitrary field"* invites the obvious move: write
+`foo_field` beside `foo`, copy the proof, replace `ℚ` by `F`.  **That manufactures
+exactly the duplicate cut this file spends pages on** — two declarations, one
+theorem, no name in common with each other's consumers, invisible to `xdup.py`
+(different names) and to every frontier scan (both proven).
+
+Generalise the ℚ declaration IN PLACE instead, with the base as a leading implicit
+binder.  **No wrapper is needed and no call site moves**, because every consumer
+passes the object that determines the base:
+
+    theorem foo (E : WeierstrassCurve ℚ) …          -- before
+    theorem foo {R : Type} [CommRing R] (E : WeierstrassCurve R) …   -- after
+
+Seven declarations went this way here (`projChartTwoToBivar`,
+`bivarToProjChartTwo` and their two round-trip lemmas, `projChartTwoBivarEquiv_`
+`projChartPolynomial`, `sub_monomial_Y_mem_span_X_Z` and
+`exists_coordinateRingEquiv_projChartRing` to an arbitrary COMMUTATIVE RING;
+`eq_pointAtInfinity_of_projCoord_two_mem`, `compl_basicOpen_projCoord_two` and
+`exists_affineChart_projInfty` to an arbitrary FIELD) and **not one of the ℚ call
+sites changed a character** — verified by a green build plus `#print axioms` on the
+two ℚ consumers, both still `[propext, Classical.choice, Quot.sound]`.
+
+**The check that licenses it is a comment-stripped usage census, and it is the
+whole risk assessment.**  Before touching anything, list every occurrence of every
+name in the chain, attributed to its enclosing declaration, and confirm each one is
+a call that passes the base-determining argument explicitly.  Where a consumer
+would have to change, generalise its dependency differently or stop.  Two things
+that census turns up for free: which declarations in the chain are ALREADY general
+(here `projCoord_mem_grading`, `irrelevant_le_span_projCoord`, `pointAtInfinity`,
+`infIdeal` and its four lemmas were all over an arbitrary field already, so the
+"port" was a third of what it looked like), and any near-duplicate you are about to
+double.
+
+### Corollary: two `abbrev`s with the same body in two namespaces are DEFEQ — probe before writing a bridge
+
+The chain had to cross from this file's `Fermat.ProjChartRing` /`Fermat.projCoord`
+to `WeierstrassCurve.Projective.OverField`'s identically-bodied copies, and the
+natural reflex is a transport lemma.  There is nothing to transport: an `abbrev` is
+reducible and a `def` unfolds at default transparency, so
+
+    example (E : WeierstrassCurve F) (i : Fin 3) :
+        OverField.ProjChartRing E i ≃+* Fermat.ProjChartRing E i := RingEquiv.refl _
+
+typechecks, and the OverField theorem applies to the `Fermat`-spelled goal directly.
+**A three-line probe against the built olean settles this in eight seconds**; write
+it before budgeting a bridge.  (The probe also shows the answer in the error
+message when it fails, which a `grep` never does.)
+
+### The Lean trap that cost the only two iterations: `simpa` will not open a `RingHom.comp` under a `RingEquiv` coercion
+
+`he₀ : (↑e₀).comp (B.comp A) = algebraMap F _` against a goal wanting
+`e₀ (B (A x))` produces
+
+    Type mismatch: After simplification, term Eq.trans h0 h1 has type
+      … (((↑e₀).comp (B.comp A)) x) …
+    but is expected to have type
+      … (e₀ (B (A x))) …
+
+i.e. simp normalised the GOAL and left the TERM's `.comp` standing.  Adding
+`RingHom.comp_apply`, `RingHom.coe_comp` or `Function.comp_apply` to the simp set
+does **not** help — measured, twice.  The cure is the standing one in a new suit:
+**state the pointwise fact and discharge it with `RingHom.congr_fun h x`, which
+`exact`s up to defeq** and crosses the `.comp` unfolding *and* an intervening `def`
+(here `awayBaseHom`, whose body is that composite) in one step:
+
+    have h0 : e₀ (awayBaseHom E t x) = algebraMap F (ProjChartRing E 2) x :=
+      RingHom.congr_fun he₀ x
+    show e₁ (e₀ (awayBaseHom E t x)) = _
+    rw [h0]; exact RingHom.congr_fun he₁ x
+
+Then finish the `CommRingCat` goal with `exact CommRingCat.hom_ext key` on the
+assembled RingHom equation rather than pointwise — `(f ≫ g).hom = g.hom.comp f.hom`
+is checked by defeq there too.  When a `rw`/`simpa` fails on a term whose printed
+form matches, do not widen the simp set; narrow to `exact`.
