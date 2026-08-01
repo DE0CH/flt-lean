@@ -16151,3 +16151,79 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A LEAF'S CLASSICAL INPUTS CANNOT BE STATED AS LEAVES IF THEY MENTION AN OBJECT THE TREE DOES NOT HAVE — cut where the statement is EXPRESSIBLE
+
+(2026-08-01, `flt-lean-269`, on `atkinLehnerFactor_eq_pm_one_of_new` in `X0.lean`.)
+A mature leaf's `What proving it needs` line names classical theorems — here
+multiplicity one in the sharp form (SEP), and `End⁰(A_g) = K_g` (Shimura). The
+obvious decomposition is to state each as its own named leaf and prove the parent
+over them. **That is not available when the named theorems mention an object the
+development does not have**: both of these are about `A_g`, the abelian variety
+attached to a newform, which does not exist here — so a leaf mentioning it has no
+consumer, is FREE-FLOATING, and this project forbids that. Writing them anyway
+manufactures two floating declarations and leaves the parent's `sorry` untouched:
+the worst available outcome, and it looks like a decomposition.
+
+**The cut that IS available is the one at the last expressible step**, and a
+well-audited leaf usually names it without labelling it as the cut. Here the
+docstring's own ROUTE MAP paragraph said: *"the conclusion is precisely 'the
+Hecke-commuting endomorphisms of `A i` have no zero divisors'"* — i.e. `1 − w`
+and `1 + w` have composite `1 − w² = 0`, so `w = ±1` **is** a no-zero-divisor
+statement. That statement mentions only the structure's own fields, so it is a
+leaf that can be consumed, and the three classical inputs move onto it verbatim.
+Count `1 → 1`; what leaves the statement is the entire Atkin–Lehner packaging
+(`wJ`, `hwJ`, `IsAtkinLehnerFactorwise`, the involution). Judge it by what is
+LEFT in the leaf.
+
+**AND THE PROMPT MAY QUOTE THE OLDER AUDIT.** The task named (SEP) and (END) on
+the strength of a 2026-07-30 AUDIT REFINEMENT. A ROUTE MAP added 2026-07-31 to
+the same docstring says in terms that *"a route that proves only (SEP) does not
+close this leaf"* and adds a THIRD input (each `A_g` occurs in `J₀(N)^new`
+exactly once, which is what `u_surj` is spent against and which (SEP) does not
+imply). Both paragraphs are correct; only the later one is current. **Read a
+leaf's docstring to the END before accepting the cut a prompt prescribes** — the
+newest paragraph is at the bottom, and prompts are written from whichever
+paragraph the writer read.
+
+### Read a natural family off at the UNIVERSAL POINT — and the pointwise version is FALSE
+
+The functor-of-points presentation here (`AbelianSchemeStruct`) has **no
+morphism-level group law**: `add`/`neg` act on `RelPoint f g`, so `1 − w` is not
+a morphism you can write down. Yoneda supplies it in one line: take
+`U : RelPoint (astr i) (astr i) := ⟨𝟙 (A i), Category.id_comp _⟩`, form the
+expression at `U`, and its underlying morphism is the map you wanted. The
+naturality identity that makes this work is
+
+    RelPoint.pre x.1 x.2 U = x                       -- `Subtype.ext (Category.comp_id _)`
+    RelPoint.post E.1 E.2 x = RelPoint.pre x.1 x.2 E  -- `Subtype.ext rfl`
+
+so `post E x` is computed by pushing `pre` through `pre_add`, `pre_neg` and
+`← RelPoint.post_pre` until every `U` becomes `x`. The whole 1 − w / 1 + w
+construction, its additivity, its Hecke commutation and `Ψ ∘ Φ = 0` came to ~100
+lines and compiled essentially first try.
+
+**State such a leaf over MORPHISMS, never over pointwise families, and this is
+load-bearing.** The family version — additive and Hecke-commuting *at each `T`
+separately* — is FALSE with no arithmetic in the witness: at `T := A ⊔ A` over
+`g := (astr, astr)` the point group is a SQUARE with the Hecke action diagonal,
+so `Φ (a,b) := (a,0)` and `Ψ (a,b) := (0,b)` there (and `Φ := id`, `Ψ := 0`
+everywhere else) are additive, commute with a diagonal action, have `Φ ∘ Ψ = 0`
+and neither vanishes. A morphism is exactly a NATURAL family, and naturality is
+what excludes it. Record this in the leaf, or a successor will "generalise" the
+statement into a false one.
+
+### `IsAdditiveOn` is a `def` unfolding to a Pi type, so DOT NOTATION SILENTLY RETARGETS
+
+`h.postNeg` for `h : IsAdditiveOn abA abB u hu` does not resolve to
+`IsAdditiveOn.postNeg`. `IsAdditiveOn` is a `def` whose body is a `∀`, so Lean
+sees a function type and reports
+
+    Invalid field `postNeg`: The environment does not contain `Function.postNeg`
+
+which reads as a missing lemma rather than as a namespace miss. Write
+`IsAdditiveOn.postNeg h` explicitly. Same for every other projection-style lemma
+on a `Prop`-valued `def` in this file (`.postZero`, `.post_listSum`, …); the
+structure-valued predicates (`IsAtkinLehnerFactorwise`, `IsHeckeIsotypicDecomposition`)
+are genuine structures and dot notation works on them, which is what makes the
+inconsistency easy to trip over.
