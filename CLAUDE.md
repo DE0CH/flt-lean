@@ -16215,3 +16215,57 @@ proving it directly means peeling two coercions: to get `d = 1` from `d ≤ 1` a
 `¬ IsField`, copy `Mathlib/RingTheory/KrullDimension/LocalRing.lean`'s own idiom —
 `Ring.KrullDimLE.isField_of_isDomain` gives `¬ ringKrullDim R ≤ 0`, and
 `Order.succ_le_of_lt (lt_of_not_ge ·)` is the arithmetic.  Four lines, no coercion.
+
+## THE LEAF YOU ARE ABOUT TO CUT MAY BE PROVEN IN A MATHLIB-FACING MODULE THAT ONLY YOUR *DOWNSTREAM* CONSUMER IMPORTS
+
+(2026-08-01, `flt-lean-358`.  Found AFTER the leaf had been cut, stated, documented and
+verified green, by running the standing consumer-grep one last time before writing the
+sentinel.)
+
+The residue of `flat_of_mono_of_curve_over_field` was *a monomorphism of smooth curves
+over a field carries generic points to generic points*.  It had been **PROVEN, sorry-free,
+the previous day**, as `AlgebraicGeometry.ringKrullDim_stalk_eq_zero_of_mono_of_curve_over_field`
+in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveDimension.lean` — a module whose imports are
+**entirely `Mathlib`**, so it could have been imported into `X0.lean` at any time with no
+risk of a cycle.  It was not, because the only module importing it was
+`FreyCurve/MazurTorsion.lean`, which is DOWNSTREAM of `X0.lean`.  So:
+
+* a grep of `X0.lean`'s own import cone finds nothing;
+* a grep of the whole tree for the leaf's NAME finds nothing (the names share no
+  component: `isField_stalk_of_isField_stalk_of_curve_over_field` against
+  `ringKrullDim_stalk_eq_zero_of_mono_of_curve_over_field`);
+* `#check` in a scratch importing the target module fails;
+* and `MazurTorsion.lean` carried a universe-`0` WRAPPER of the theorem, in `X0.lean`'s own
+  namespace `X0GenusOne`, **that nothing consumes** — the tell that somebody had already
+  hit the same wall from the other side and worked around it downstream.
+
+**THE CHECK THAT FOUND IT IS ONE YOU ARE ALREADY TOLD TO RUN, FOR A DIFFERENT REASON.**
+The doctrine says to grep the tree for CONSUMERS of your target before proving anything,
+to establish that the leaf is reachable.  Run it, and read the hits that are *docstrings*
+rather than call sites:
+
+    grep -rn '<yourTarget>' --include=*.lean Fermat/ | grep -v '<your own file>:'
+
+The single hit here was a docstring line in `MazurTorsion.lean` reading *"(cut 2026-07-30
+out of `flat_of_mono_of_curve_over_field` below; **PROVEN 2026-07-31**)"* — i.e. the
+downstream file said, in prose, that the thing had been proven.  **A reachability grep is
+also an answer grep.**
+
+Three things generalise:
+
+* **`Fermat/FLT/Mathlib/**` modules are upstream-compatible by construction** — they import
+  only `Mathlib` — so "is it reachable from my file?" is almost always *yes, add one line*.
+  Check the import list of the module holding your answer before assuming the direction is
+  wrong; the import GRAPH is what matters, never which file happens to import it today.
+* **A consumerless wrapper of a general theorem, sitting in another file''s namespace, is a
+  fossil of exactly this situation.**  Whoever wrote it could not reach the theorem from
+  where it was needed and re-exported it where they could.  Grep for one before cutting.
+* **The DOWNSTREAM half of the rule is the one that keeps firing.**  This file already
+  records *missing machinery may be DOWNSTREAM*; the sharpened form is that a mathlib-facing
+  module can be simultaneously upstream-compatible and downstream-only-imported, which no
+  reasoning about "direction" will detect and one `grep -c "import Fermat"` settles.
+
+Accounting note: this took the run from a 1 -> 1 RECUT to a genuine **-1**, and the leaf''s
+own docstring had to be rewritten from a route sketch into a record of why the answer was
+invisible.  Both versions are in the history; the recut commit is the parent of the closing
+one, so the intermediate statement is recoverable if the import is ever undesirable.
