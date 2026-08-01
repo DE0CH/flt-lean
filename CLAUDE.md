@@ -16199,6 +16199,34 @@ Corollary for the accounting, since it is the shape that makes this look like no
 became provable that was not provable before; what went away is a phantom frontier slot
 that had already drawn one dispatch and would have drawn more.
 
+### THE DETECTOR: `tools/merge/deadleaf.py`, and 36 of 378 leaves are unreachable
+
+Written the same day, because a check worth running every release should be a script
+with a name rather than a paragraph.  It comment-strips the tree, attributes each
+`sorry` to its enclosing declaration, and reports the ones whose name occurs in NO
+other line of code:
+
+    python3 tools/merge/deadleaf.py            # ~6 min, no build, no oleans
+
+At the release-33 tree: **378 sorried declarations, 36 with zero code consumers** —
+i.e. roughly one leaf in ten that the frontier offers for dispatch is worth nothing to
+close.  It independently rediscovers two orphans this file already documents from other
+tasks (`map_add_relPointWeierstrassEquiv`, `exists_pow_Pz_mul_mem_idl`), which is the
+calibration; **re-run that calibration whenever you touch the script**, since a scanner
+that reports nothing looks exactly like a scanner that is broken.
+
+Three things it is not, and the script's own docstring repeats them because acting on
+the list without them is how a good proof gets deleted: a fresh cut legitimately has no
+consumer until its parent is rewired; when it IS a rival-cut orphan the direction of the
+repair is still decided by which root implies which; and it deliberately UNDER-reports
+(matching is by last name component, so any unrelated same-named declaration masks a
+dead one) because a false "live" costs nothing and a false "dead" invites a wrong
+deletion.
+
+Match on the LAST NAME COMPONENT with a preceding character class that ALLOWS `.` —
+excluding it was the first version's bug and it inflated the report from 36 to 61 by
+missing every dot-notation and namespace-qualified consumer.
+
 ### Measurement worth having: a 119 000-line module elaborates in TWO MINUTES
 
 Same run.  `lake env lean` on `X0.lean` — 118 964 lines — took **~2 minutes** with
