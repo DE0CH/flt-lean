@@ -42773,69 +42773,6 @@ All four are stated for an ARBITRARY `e : Γ_ℚ →* ℤˣ`: none of them uses 
 about the interface, and that is exactly why they could be proven while the leaf
 they serve cannot. -/
 
-/-- **THE CLASS FIELD THEORY LEAF, IN ITS SHARPEST FORM: AN IMAGINARY QUADRATIC
-FIELD HAS A CYCLIC ANTICYCLOTOMIC QUOTIENT OF EVERY ORDER** (SORRY LEAF, cut
-2026-07-31 out of `nonempty_ringClassArtinData_anticyclotomic` just below, which
-is now PROVEN over it and is the ONLY consumer).
-
-This is `nonempty_ringClassArtinData_anticyclotomic` with the abstract group
-`Cl` replaced by the concrete `Multiplicative (ZMod K)` and the packaging
-structure removed. **Everything the parent's docstring says about the
-mathematics, the faithfulness of the hypotheses, the missing machinery and the
-route applies verbatim to this statement and is not repeated here — read it
-there.** What this cut buys the prover:
-
-* no type-valued existential and no `[CommGroup]`/`[Finite]` instance fields to
-  produce — the group is fixed and its instances are found by synthesis;
-* `exists_orderOf_dvd` disappears: `orderOf (ofAdd 1) = K` in `ZMod K` by
-  `orderOf_ofAdd_eq_addOrderOf` + `ZMod.addOrderOf_one`, so the order clause is
-  discharged once, in the assembly below, instead of being an obligation;
-* the target is exactly the shape class field theory delivers — a SURJECTIVE
-  character of `Γ_M` onto a cyclic group of order `K` — and exactly the shape
-  the downstream consumer `exists_ringClassZModChar_of_inertPrime` re-extracts
-  from `Cl` through `exists_zmodChar_of_dvd_exponent` anyway.
-
-**IT IS NOT WEAKER, AND THE STRENGTHENING IS FREE ON THE INTENDED ROUTE.** The
-parent asks only for SOME element of order divisible by `K`; this asks for a
-cyclic quotient of order EXACTLY `K`. The parent's own route produces the
-sharper object: for each prime power `ℓ^{v_ℓ(K)} ‖ K` the anticyclotomic
-`ℤ_ℓ`-extension of `M` supplies its `ℓ^{v_ℓ(K)}`-layer, and the compositum of
-those layers is cyclic anticyclotomic of order exactly `K` because the layers
-have pairwise coprime degrees. A prover who finds the exact-order form
-inconvenient may reduce it to prime powers first, by that same coprimality: a
-subgroup of `∏ᵢ ZMod ℓᵢ^{aᵢ}` surjecting onto each factor has order divisible by
-each `ℓᵢ^{aᵢ}`, hence is everything. That reduction is NOT performed here
-because it does not make the analytic content any smaller — the `ℤ_ℓ`-tower has
-to be built either way — and it would cost a `Nat.factorization`-indexed
-Chinese-remainder bookkeeping for no mathematical gain.
-
-**`hd`, `hx`, `he`, `hK` are load-bearing exactly as in the parent**; in
-particular `hK : K ≠ 0` is needed twice here, once to make `ZMod K` finite and
-once because `Multiplicative (ZMod 0) = Multiplicative ℤ` has no element of
-finite order, so the surjectivity clause would demand a surjection from `Γ_M`
-onto `ℤ` — impossible for a map with open kernel.
-
-**`hd : d < 0` remains load-bearing and this form makes the failure sharper.**
-For `d > 0` (real quadratic `M`) the anticyclotomic `ℤ_ℓ`-extension does not
-exist — `r₂ = 0` leaves only the cyclotomic `ℤ_ℓ`-extension, on which complex
-conjugation acts trivially, so every anticyclotomic quotient is killed by `2`
-and the conclusion fails for every `K ∉ {1, 2}`. -/
-theorem exists_anticyclotomicCyclicChar
-    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
-    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
-    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
-    (he : ∀ g, e g = 1 ↔ g x = x)
-    (K : ℕ) (hK : K ≠ 0) :
-    ∃ (χ : Field.absoluteGaloisGroup ℚ → Multiplicative (ZMod K))
-      (H : Subgroup (Field.absoluteGaloisGroup ℚ)),
-      IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)) ∧
-      (∀ h ∈ H, e h = 1) ∧
-      (∀ g h, e g = 1 → h ∈ H → χ (g * h) = χ g) ∧
-      (∀ g h, e g = 1 → e h = 1 → χ (g * h) = χ g * χ h) ∧
-      (∀ c g, e c = -1 → e g = 1 → χ (c * g * c⁻¹) = (χ g)⁻¹) ∧
-      (∀ a : Multiplicative (ZMod K), ∃ g, e g = 1 ∧ χ g = a) :=
-  sorry
-
 /-- `art` is normalised at `1` (PROVEN): a consequence of `art_mul`, not a
 separate axiom of the structure. -/
 theorem RingClassArtinData.art_one {e : Field.absoluteGaloisGroup ℚ →* ℤˣ} {K : ℕ}
@@ -43005,6 +42942,50 @@ node, cut 2026-07-28 out of `exists_ringClassArtinData_conductorMap_of_inertPrim
 below; **RESTATED AT PRIME POWERS 2026-07-30**, the general `K` now being PROVEN
 over this one by `nonempty_ringClassArtinData_of_primePow` just above).
 
+**A RIVAL CUT OF THIS SAME NODE WAS DELETED ON 2026-08-01, AND THIS LEAF IS THE
+SURVIVOR.** Two cuts of `nonempty_ringClassArtinData_anticyclotomic` had both
+landed and both were live in the file:
+
+* the 2026-07-30 cut — THIS leaf (prime powers only) plus the PROVEN compositum
+  `nonempty_ringClassArtinData_of_primePow`;
+* a 2026-07-31 cut — `exists_anticyclotomicCyclicChar`, the same statement for an
+  ARBITRARY `K` with the abstract `Cl` replaced by `Multiplicative (ZMod K)` and
+  surjectivity onto it.
+
+They did not conflict textually, so the merge kept both, and the parent's proof
+body was re-pointed at the 2026-07-31 leaf while its docstring went on naming
+this one. That left THIS leaf and the whole 2026-07-30 compositum block
+(`ofDvd`, `imageSubgroup`, `lcm`, `nonempty_ringClassArtinData_of_primePow` —
+all PROVEN) with **no consumer anywhere in the tree**, i.e. open-and-dead, while
+a second copy of the same class field theory was carried as a live sorry.
+
+**WHY THIS COPY IS THE ONE THAT SURVIVED**, by the standing rule that one keeps
+the arrangement whose root leaf is IMPLIED by the rival's root: this statement is
+the rival at `K = l ^ k` (weaker in three separate ways — prime powers only, an
+arbitrary finite abelian `Cl` rather than a fixed cyclic one, and `l ^ k ∣
+orderOf a` rather than exact order), so the rival implied it in one line and not
+conversely. The rival's own docstring conceded the point, recording that a prover
+"may reduce it to prime powers first" and declining to do so on the ground that
+the reduction "does not make the analytic content any smaller" — but that
+reduction was already DONE and PROVEN twenty lines above it, so declining it
+bought nothing and cost a duplicated leaf. Deleting the rival is `−1` on the
+frontier with no mathematics done; the surviving obligation is strictly weaker
+and the compositum block now has a consumer. Recover the deleted text with
+`git show <this commit>^:Fermat/FLT/Modularity/MoretBailly.lean`.
+
+**TWO THINGS FOLDED IN FROM THE DELETED DOCSTRING**, being the only claims it
+made that are not already below:
+
+* **the abstract `Cl` costs the consumer nothing**, because the downstream
+  `exists_ringClassZModChar_of_inertPrime` re-extracts a cyclic `ZMod`-valued
+  character from `Cl` through `exists_zmodChar_of_dvd_exponent` (PROVEN, ~350
+  lines above) in any case. So the sharper cyclic form was never load-bearing;
+* **`hd : d < 0` fails SHARPLY, not merely for want of a proof.** For `d > 0`
+  (real quadratic `M`) there is no anticyclotomic `ℤ_ℓ`-extension at all: `r₂ = 0`
+  leaves only the cyclotomic one, on which complex conjugation acts trivially, so
+  every anticyclotomic quotient is killed by `2` and the conclusion fails for
+  every order outside `{1, 2}`.
+
 **WHAT THE 2026-07-30 RESTATEMENT DID, AND WHY IT IS NOT A RECUT OF THE
 MATHEMATICS.** The FAITHFULNESS note below already described the intended proof as
 "the anticyclotomic `ℤ_ℓ`-extension exists for every prime `ℓ` … and the
@@ -43152,6 +43133,14 @@ theorem nonempty_ringClassArtinData_anticyclotomic_primePow
 ORDER** (**PROVEN 2026-07-30** as an assembly; it was the sorry node cut
 2026-07-28).
 
+**THE PROOF BODY BELOW WAS RE-POINTED ON 2026-08-01 AND NOW AGREES WITH THIS
+DOCSTRING AGAIN.** Between 2026-07-31 and then it did not: a rival cut
+(`exists_anticyclotomicCyclicChar`) had been spliced in and the body ran through
+it while these two bullets went on naming the other arrangement, which is what
+made the mismatch the detector for the duplicated cut. The rival is deleted; see
+`nonempty_ringClassArtinData_anticyclotomic_primePow` above for the resolution
+and for what was folded in from its docstring.
+
 Two inputs, and nothing else:
 
 * `nonempty_ringClassArtinData_anticyclotomic_primePow` — the class field theory,
@@ -43170,27 +43159,11 @@ theorem nonempty_ringClassArtinData_anticyclotomic
     (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
     (he : ∀ g, e g = 1 ↔ g x = x)
     (K : ℕ) (hK : K ≠ 0) :
-    Nonempty (RingClassArtinData e K) := by
-  -- Take `Cl := Multiplicative (ZMod K)`: the six `art`-clauses are literally the six
-  -- clauses of `exists_anticyclotomicCyclicChar`, and `exists_orderOf_dvd` is
-  -- `orderOf (ofAdd 1) = K`.
-  haveI : NeZero K := ⟨hK⟩
-  obtain ⟨χ, H, hopen, hHker, hcoset, hmul, hconj, hsurj⟩ :=
-    exists_anticyclotomicCyclicChar d hd x hx e he K hK
-  have hdvd : K ∣ orderOf (Multiplicative.ofAdd (1 : ZMod K)) := by
-    rw [orderOf_ofAdd_eq_addOrderOf, ZMod.addOrderOf_one]
-  exact ⟨{ Cl := Multiplicative (ZMod K)
-           commGroup := inferInstance
-           finite := inferInstance
-           art := χ
-           H := H
-           isOpen_H := hopen
-           H_le_ker := hHker
-           art_coset := hcoset
-           art_mul := hmul
-           art_conj := hconj
-           art_surjOn := hsurj
-           exists_orderOf_dvd := ⟨Multiplicative.ofAdd 1, hdvd⟩ }⟩
+    Nonempty (RingClassArtinData e K) :=
+  -- Prime powers from the class field theory leaf; general `K` by the compositum.
+  nonempty_ringClassArtinData_of_primePow
+    (fun l k hl => nonempty_ringClassArtinData_anticyclotomic_primePow d hd x hx e he l k hl)
+    K hK
 
 /-- **THE RING CLASS FIELD OF CONDUCTOR `p` AT AN INERT PRIME, TOGETHER WITH THE
 CONDUCTOR MAP OF THE WHOLE RESIDUE UNIT GROUP** (**PROVEN 2026-07-28** over
