@@ -52,7 +52,12 @@ for p in sorted(ROOT.glob('Fermat/**/*.lean')):
             if stack and (not m.group(1) or m.group(1) == stack[-1]): stack.pop()
             continue
         m = DECL.match(ln)
-        if m: heads.append((i, '.'.join(stack + [m.group(2)]) if m.group(2) else '?'))
+        # `.rstrip('.')`: `theorem foo.{u}` captures `foo.`, because the name class
+        # contains `.` and the match stops at `{`.  A row ending in `.` has an EMPTY
+        # last component, and CLAUDE.md's queue audit keys on exactly that component
+        # -- so an un-normalised row silently matched every task.  Fixed at source
+        # here rather than in each consumer.
+        if m: heads.append((i, '.'.join(stack + [m.group(2).rstrip('.')]) if m.group(2) else '?'))
     seen = set()
     for i, ln in enumerate(code):
         if not SORRY.search(ln): continue

@@ -74,7 +74,14 @@ def decls(path):
             if stack and (not m.group(1) or m.group(1) == stack[-1]): stack.pop()
             continue
         m = DECL.match(ln)
-        if m: res.setdefault('.'.join(stack + [m.group(1)]), i)
+        # `theorem foo.{u}` -- an EXPLICIT UNIVERSE list.  The name character class
+        # contains `.` (names are namespace-qualified), so the match stops at `{`
+        # and captures `foo.` with a trailing dot.  A Lean identifier can never end
+        # in `.`, so stripping one is always safe -- and NOT stripping it made every
+        # such declaration's last component the EMPTY STRING, which matches every
+        # other one: 196 declarations here, 6008 of the 7538 XDUP-LAST pairs, i.e.
+        # 80% of the review list was one complete graph of false positives.
+        if m: res.setdefault('.'.join(stack + [m.group(1).rstrip('.')]), i)
     return res
 
 
