@@ -16151,3 +16151,71 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A LEAF THAT *CITES* A CLASSICAL THEOREM MAY BE ONE LINE OVER IT — AND THE THEOREM IS OFTEN IN THE SAME FILE, FILED UNDER ANOTHER HEADLINE
+
+(2026-08-01, `flt-lean-25`, `geomPic_exists_const_of_ord_nonneg` in
+`ModularCurve/HyperellipticJacobian.lean`, closed in one line plus ~20 lines of general
+lemma.)
+
+That leaf's docstring opened with its own citation, correctly:
+
+> Standard: `κ(w)` is a finite extension of the constant field for any place of a function
+> field of one variable [Stichtenoth I.1.14], and `ℚ̄` is algebraically closed, so `κ(w) = ℚ̄`.
+
+**Stichtenoth I.1.14 was already PROVEN in that file, 5 000 lines above the leaf**, as
+`PlaceData.finite_residue_of_ord_neg` (`Module.Finite K (D.residue v)` at every pole of a
+transcendental `g`), over the single-place bound `e_v·f_v ≤ [F : K⟮g⟯]`. Nobody had put the
+two together, and the reason is worth naming because it is repeatable:
+
+**A lemma proven as a STEP TOWARDS a different headline is filed under that headline.**
+`finite_residue_of_ord_neg` lives in a section called `SinglePlaceBound` whose docstring is
+about the FUNDAMENTAL IDENTITY (`deg div_∞ g ≤ [F : K⟮g⟯]`). So every search in the leaf's own
+vocabulary — "residue field", "degree 1", "chart", `finrank_residue_*` — returns the
+CHART-based rational-point machinery (`finrank_residue_pt_eq_one`, `exists_localDenom_chart`)
+and never the general finiteness theorem. The search that works is for the **cited theorem's
+CONCLUSION SHAPE**:
+
+    grep -n 'Module.Finite K (D.residue\|finite_residue' <the file>      # one hit, instantly
+
+So: when a leaf's docstring names a classical theorem `T` as what it needs, grep the file for
+`T`'s conclusion written in Lean, not for the leaf's subject matter and not for section
+headings. This is the in-file cousin of
+[[flt-inventory-audits-understate-what-exists]] — there the theorem is in another module,
+here it is above you in your own, and here it is *harder* to find, because a reader assumes
+they would have noticed.
+
+**And the route the docstring implies was not merely expensive, it was IMPOSSIBLE at the
+leaf's generality — which is a signal, not an obstacle.** The chart route runs through
+`exists_localDenom_chart`, whose hypothesis `hsm : 2β ≠ 0 ∨ (β = 0 ∧ h.eval α ≠ 0)` is
+smoothness of the sextic at the point. `GeomPic` carries no `hsep`, and at a place over a
+SINGULAR point of the affine model no such `hsm` exists. A prover following the implied route
+would have got stuck there and concluded that the leaf needs `hsep` ADDED — a signature change
+with three call sites, to repair a statement that was true as written. **When a leaf's implied
+route needs a hypothesis the leaf does not carry, suspect the route before the statement:**
+places are about valuations, and valuation arguments do not see the singularities of one
+affine model.
+
+Two reusable pieces from the four-line proof that replaced it:
+
+* **Every place has an element with a pole, for free.** `ord_surjective` gives `t` with
+  `ord_v t = 1`, so `g := t⁻¹` has `ord_v g = −1 < 0`; and `g` is automatically TRANSCENDENTAL,
+  because `ord_eq_zero_of_isAlgebraic` makes every algebraic element a unit at every place and
+  `−1 ≠ 0`. That two-line move is what turns a theorem whose hypothesis is
+  `∃ g, Transcendental K g ∧ ord_v g < 0` into a hypothesis-free one, and it applies to every
+  theorem in this development stated at a pole.
+* **"Finite-dimensional + domain + algebraically closed base" is three instances and one
+  mathlib lemma.** `Algebra.IsIntegral.of_finite` is an INSTANCE; `Ideal.Quotient.isDomain` is
+  an INSTANCE given `[I.IsPrime]`; the ideal `valMax v` is prime because `ord_v` is a valuation
+  (`ord_v (xy) > 0` with both factors in `O_v` forces one order positive — six lines); and
+  `IsAlgClosed.algebraMap_bijective_of_isIntegral` finishes. Note `Ideal.Quotient.isDomain_iff_prime`
+  is NOT reachable from this cone while the instance is — reach for `inferInstance`, not the iff.
+
+**Corollary about what to state.** The result generalises with no extra work to any
+`PlaceData` over any algebraically closed constant field, so it was stated that way
+(`PlaceData.exists_const_sub_vanishesAt_of_isAlgClosed`) and the `ℚ̄` leaf is its instance.
+That is worth doing even when only one consumer exists: the general form is what makes the
+NEXT leaf cheap — here `pt_surjective_of_isAlgClosed`, whose recorded six-step plan spends
+steps 4 and 5 (a triviality-of-`ord` argument on `K(xx)` plus an induction on `natDegree`)
+proving exactly "some `α` has `ord_v (xx − α) ≠ 0`", which is now one application of the
+general theorem to `z := xx`.
