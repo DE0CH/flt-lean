@@ -4802,6 +4802,154 @@ lemma coeffDelta_slash {N : ℤ}
     zpow_ne_zero _ hden
   field_simp
 
+/-- **The low coefficients of `X − C c` have total norm at most `1 + ‖c‖` — PROVEN.** Only
+`i = 0` and `i = 1` contribute, so the sum over `range (k+1)` is `‖c‖ + 1` once `k ≥ 1` and
+`‖c‖` at `k = 0`. Stated as a sum over `range (k+1)` because that is the shape the
+antidiagonal of `Polynomial.coeff_mul` produces. -/
+lemma sum_norm_coeff_X_sub_C_le (c : ℂ) (k : ℕ) :
+    ∑ i ∈ Finset.range (k + 1), ‖(Polynomial.X - Polynomial.C c).coeff i‖ ≤ 1 + ‖c‖ := by
+  induction k with
+  | zero =>
+    simp [Polynomial.coeff_sub, Polynomial.coeff_X_zero, Polynomial.coeff_C_zero]
+  | succ k ih =>
+    rw [Finset.sum_range_succ]
+    rcases Nat.eq_zero_or_pos k with rfl | hk
+    · simp only [Polynomial.coeff_sub, Polynomial.coeff_C]
+      norm_num
+      linarith
+    · have hz : (Polynomial.X - Polynomial.C c).coeff (k + 1) = 0 := by
+        rw [Polynomial.coeff_sub, Polynomial.coeff_X, Polynomial.coeff_C]
+        rw [if_neg (by omega), if_neg (by omega)]
+        ring
+      rw [hz]
+      simpa using ih
+
+/-- **A UNIFORM COEFFICIENTWISE BOUND FOR A PRODUCT OF MONIC LINEAR FACTORS — PROVEN.** If
+every root satisfies `‖b t‖ ≤ M` then EVERY coefficient of `∏_{t ∈ s} (X − C (b t))` has norm
+at most `(1 + M)^{#s}`, uniformly in the index `k`.
+
+The bound is crude — the sharp one is `binom(#s, k) M^{#s−k}` — and crudeness is the point:
+the consumer needs one `m` serving every `k` at once, so a `k`-independent bound is what makes
+the induction go through in one pass. `Polynomial.coeff_mul`'s antidiagonal, `norm_sum_le`, and
+`sum_norm_coeff_X_sub_C_le` for the one-step factor. -/
+lemma norm_coeff_prod_X_sub_C_le {ι : Type*} [DecidableEq ι] (b : ι → ℂ) {M : ℝ} (hM : 0 ≤ M) :
+    ∀ (s : Finset ι), (∀ t ∈ s, ‖b t‖ ≤ M) → ∀ k : ℕ,
+      ‖(∏ t ∈ s, (Polynomial.X - Polynomial.C (b t))).coeff k‖ ≤ (1 + M) ^ s.card := by
+  intro s
+  induction s using Finset.induction_on with
+  | empty =>
+    intro _ k
+    simp only [Finset.prod_empty, Polynomial.coeff_one, Finset.card_empty, pow_zero]
+    split <;> simp
+  | insert a s ha ih =>
+    intro hb k
+    have hbs : ∀ t ∈ s, ‖b t‖ ≤ M := fun t ht => hb t (Finset.mem_insert_of_mem ht)
+    have hba : ‖b a‖ ≤ M := hb a (Finset.mem_insert_self a s)
+    have hpos : (0 : ℝ) ≤ (1 + M) ^ s.card := by positivity
+    rw [Finset.prod_insert ha, Polynomial.coeff_mul]
+    refine le_trans (norm_sum_le _ _) ?_
+    have hterm : ∀ x ∈ Finset.antidiagonal k,
+        ‖(Polynomial.X - Polynomial.C (b a)).coeff x.1
+            * (∏ t ∈ s, (Polynomial.X - Polynomial.C (b t))).coeff x.2‖
+          ≤ ‖(Polynomial.X - Polynomial.C (b a)).coeff x.1‖ * (1 + M) ^ s.card := by
+      intro x _
+      rw [norm_mul]
+      exact mul_le_mul_of_nonneg_left (ih hbs x.2) (norm_nonneg _)
+    refine le_trans (Finset.sum_le_sum hterm) ?_
+    rw [← Finset.sum_mul, Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk]
+    rw [Finset.card_insert_of_notMem ha, pow_succ, mul_comm ((1 + M) ^ s.card) (1 + M)]
+    refine mul_le_mul_of_nonneg_right ?_ hpos
+    calc ∑ i ∈ Finset.range (k + 1), ‖(Polynomial.X - Polynomial.C (b a)).coeff i‖
+        ≤ 1 + ‖b a‖ := sum_norm_coeff_X_sub_C_le _ _
+      _ ≤ 1 + M := by linarith
+
+/-- `atImInfty` eventuality, spelled as a half-plane. This is `UpperHalfPlane.atImInfty_mem`
+with the set written as a predicate; it is what turns every `=O[atImInfty]` in what follows
+into a bound valid on `{Im ≥ A}`, which is the form the triangular substitution needs (the
+bound is applied at `(a z + b)/d`, not at `z`). -/
+lemma eventually_atImInfty_iff {p : UpperHalfPlane → Prop} :
+    (∀ᶠ z in atImInfty, p z) ↔ ∃ A : ℝ, ∀ z : UpperHalfPlane, A ≤ z.im → p z :=
+  UpperHalfPlane.atImInfty_mem _
+
+/-- **`|j(w)| ≤ C e^{2π Im w}` on a half-plane — PROVEN.** This is the pole order of `j` at
+the cusp, in the crude form the growth estimate below needs, and BOTH of its inputs are in
+mathlib already:
+
+* `ModularForm.exp_isBigO_discriminant` is the LOWER bound `e^{−2π Im w} = O(Δ)`, i.e. exactly
+  the "`|Δ| ≥ c|q|` for `Im w` large" that the analytic half of `LEAF 3a-i″` was priced at.
+  Mathlib proves it from `Δ = q ∏(1 − qⁿ)²⁴` plus the product tending to `1`, so the
+  `cuspFunction`/`qExpansion`-coefficient route the leaf's docstring proposed is not needed;
+* `ModularFormClass.bdd_at_infty ModularForm.E₄` is the upper bound on the numerator.
+
+Then `j = E₄³/Δ` (which is the DEFINITION of `jInvariant` here) gives the claim with
+`C = |c₂|³|c₁|`. Both constants are replaced by their absolute values so that no nonnegativity
+has to be extracted from the (possibly empty-looking) hypotheses. -/
+lemma exists_norm_jInvariant_le :
+    ∃ C A : ℝ, 0 ≤ C ∧ ∀ w : UpperHalfPlane, A ≤ w.im →
+      ‖jInvariant w‖ ≤ C * Real.exp (2 * π * w.im) := by
+  obtain ⟨c₁, hc₁⟩ := Asymptotics.isBigO_iff.mp ModularForm.exp_isBigO_discriminant
+  obtain ⟨A₁, hA₁⟩ := eventually_atImInfty_iff.mp hc₁
+  obtain ⟨c₂, A₂, hc₂⟩ :=
+    UpperHalfPlane.isBoundedAtImInfty_iff.mp (ModularFormClass.bdd_at_infty ModularForm.E₄)
+  refine ⟨|c₂| ^ 3 * |c₁|, max A₁ A₂, by positivity, ?_⟩
+  intro w hw
+  have hw1 : A₁ ≤ w.im := le_trans (le_max_left _ _) hw
+  have hw2 : A₂ ≤ w.im := le_trans (le_max_right _ _) hw
+  have hD : (0 : ℝ) < ‖ModularForm.discriminant w‖ :=
+    norm_pos_iff.mpr (ModularForm.discriminant_ne_zero w)
+  have h1 : Real.exp (-2 * π * w.im) ≤ |c₁| * ‖ModularForm.discriminant w‖ := by
+    have h := hA₁ w hw1
+    rw [Real.norm_of_nonneg (Real.exp_pos _).le] at h
+    exact h.trans (mul_le_mul_of_nonneg_right (le_abs_self c₁) (norm_nonneg _))
+  have h2 : ‖ModularForm.E₄ w‖ ≤ |c₂| := (hc₂ w hw2).trans (le_abs_self c₂)
+  have hex : Real.exp (-2 * π * w.im) * Real.exp (2 * π * w.im) = 1 := by
+    rw [← Real.exp_add]
+    norm_num
+  have hjn : ‖jInvariant w‖ = ‖ModularForm.E₄ w‖ ^ 3 / ‖ModularForm.discriminant w‖ := by
+    rw [jInvariant, norm_div, norm_pow]
+  rw [hjn, div_le_iff₀ hD]
+  have hcube : ‖ModularForm.E₄ w‖ ^ 3 ≤ |c₂| ^ 3 :=
+    pow_le_pow_left₀ (norm_nonneg _) h2 3
+  have hexp : (0 : ℝ) < Real.exp (2 * π * w.im) := Real.exp_pos _
+  have hstep : |c₂| ^ 3
+      ≤ |c₂| ^ 3 * |c₁| * Real.exp (2 * π * w.im) * ‖ModularForm.discriminant w‖ := by
+    have hmul : Real.exp (-2 * π * w.im) * Real.exp (2 * π * w.im)
+        ≤ (|c₁| * ‖ModularForm.discriminant w‖) * Real.exp (2 * π * w.im) :=
+      mul_le_mul_of_nonneg_right h1 hexp.le
+    rw [hex] at hmul
+    nlinarith [pow_nonneg (abs_nonneg c₂) 3]
+  linarith
+
+/-- **`|Δ(z)| ≤ C e^{−2π Im z}` on a half-plane — PROVEN**, the cusp-form decay, from
+`CuspFormClass.exp_decay_atImInfty` at `h = 1`. This is the factor that pays for the pole of
+`c_k`; note `-2 * π * z.im / 1` needs the `div_one` rewrite before it matches. -/
+lemma exists_norm_discriminant_le :
+    ∃ C A : ℝ, 0 ≤ C ∧ ∀ z : UpperHalfPlane, A ≤ z.im →
+      ‖ModularForm.discriminant z‖ ≤ C * Real.exp (-2 * π * z.im) := by
+  obtain ⟨c, hc⟩ := Asymptotics.isBigO_iff.mp
+    (CuspFormClass.exp_decay_atImInfty (h := 1) CuspForm.discriminant one_pos
+      one_mem_strictPeriods_SL)
+  obtain ⟨A, hA⟩ := eventually_atImInfty_iff.mp hc
+  refine ⟨|c|, A, abs_nonneg _, fun z hz => ?_⟩
+  have h := hA z hz
+  rw [Real.norm_of_nonneg (Real.exp_pos _).le] at h
+  simp only [div_one, CuspForm.coe_discriminant] at h
+  exact h.trans (mul_le_mul_of_nonneg_right (le_abs_self c) (Real.exp_pos _).le)
+
+/-- **`Im((a z + b)/d) = a·Im z/d` — PROVEN.** The one geometric input of the growth estimate:
+on `triangularReps N` one has `1 ≤ a ≤ N` and `1 ≤ d ≤ N`, so `a/d` lies between `1/N` and `N`,
+which is what makes ONE half-plane threshold and ONE exponential rate serve every `t` at once. -/
+lemma im_triPoint (z : UpperHalfPlane) {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) :
+    (triPoint z (a, b, d)).im = (a : ℝ) * z.im / (d : ℝ) := by
+  have h1 : ((d : ℤ) : ℂ) = ((d : ℝ) : ℂ) := by push_cast; ring
+  show (((triPoint z (a, b, d) : UpperHalfPlane) : ℂ)).im = _
+  rw [coe_triPoint z ha hd, h1, Complex.div_ofReal_im]
+  simp only [Complex.add_im, Complex.mul_im, Complex.intCast_re, Complex.intCast_im]
+  show ((a : ℝ) * (z : ℂ).im + 0 * (z : ℂ).re + 0) / (d : ℝ) = (a : ℝ) * z.im / (d : ℝ)
+  have hzi : (z : ℂ).im = z.im := rfl
+  rw [hzi]
+  ring
+
 /-- **LEAF 3a-i″ — THE ANALYTIC PACKAGING: each coefficient of `∏_t (X − j(t·z))`, times a
 power of `Δ`, IS A MODULAR FORM.**
 
@@ -4856,8 +5004,91 @@ theorem exists_isBoundedAtImInfty_coeff_prod {N : ℤ} (hN : 0 < N) (k : ℕ) :
       (fun z : UpperHalfPlane =>
         ((∏ t ∈ triangularReps N,
             (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k)
-          * ModularForm.discriminant z ^ m) :=
-  sorry
+          * ModularForm.discriminant z ^ m) := by
+  classical
+  obtain ⟨Cj, Aj, hCj0, hCj⟩ := exists_norm_jInvariant_le
+  obtain ⟨CD, AD, hCD0, hCD⟩ := exists_norm_discriminant_le
+  set n := (triangularReps N).card with hn
+  set Nn := N.toNat with hNndef
+  have hNr : ((Nn : ℕ) : ℝ) = (N : ℝ) := by
+    rw [hNndef]; exact_mod_cast Int.toNat_of_nonneg hN.le
+  have hN1 : (1 : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN
+  refine ⟨Nn * n, ?_⟩
+  rw [UpperHalfPlane.isBoundedAtImInfty_iff]
+  refine ⟨(1 + Cj) ^ n * CD ^ (Nn * n), max ((N : ℝ) * max Aj 1) (max AD 0), fun z hz => ?_⟩
+  have hzN : (N : ℝ) * max Aj 1 ≤ z.im := le_trans (le_max_left _ _) hz
+  have hzD : AD ≤ z.im := le_trans (le_trans (le_max_left _ _) (le_max_right _ _)) hz
+  have hzim : (0 : ℝ) < z.im := z.im_pos
+  -- Every triangular point is deep enough for the `j`-bound, and no deeper than `N · Im z`.
+  have hjbd : ∀ t ∈ triangularReps N,
+      ‖jInvariant (triPoint z t)‖ ≤ Cj * Real.exp (2 * π * ((N : ℝ) * z.im)) := by
+    rintro ⟨a, b, d⟩ ht
+    obtain ⟨ha, hd, had, -, -, -⟩ := triangularReps_spec ht
+    have ha' : (1 : ℝ) ≤ (a : ℝ) := by exact_mod_cast ha
+    have hd' : (0 : ℝ) < (d : ℝ) := by exact_mod_cast hd
+    have haN : (a : ℝ) ≤ (N : ℝ) := by
+      have : a ≤ N := by nlinarith
+      exact_mod_cast this
+    have hdN : (d : ℝ) ≤ (N : ℝ) := by
+      have : d ≤ N := by nlinarith
+      exact_mod_cast this
+    have him : (triPoint z (a, b, d)).im = (a : ℝ) * z.im / (d : ℝ) := im_triPoint z ha hd
+    have hlow : Aj ≤ (triPoint z (a, b, d)).im := by
+      rw [him]
+      have h1 : max Aj 1 ≤ z.im / (N : ℝ) := by
+        rw [le_div_iff₀ (by linarith)]
+        linarith [hzN]
+      have h2 : z.im / (N : ℝ) ≤ (a : ℝ) * z.im / (d : ℝ) := by
+        rw [div_le_div_iff₀ (by linarith) hd']
+        nlinarith [mul_le_mul_of_nonneg_left hdN hzim.le,
+          mul_nonneg (sub_nonneg.mpr ha') (mul_nonneg hzim.le (by linarith : (0:ℝ) ≤ (N : ℝ)))]
+      linarith [le_max_left Aj 1]
+    have hd1 : (1 : ℝ) ≤ (d : ℝ) := by exact_mod_cast hd
+    have hhigh : (triPoint z (a, b, d)).im ≤ (N : ℝ) * z.im := by
+      rw [him, div_le_iff₀ hd']
+      nlinarith [mul_le_mul_of_nonneg_right haN hzim.le,
+        mul_nonneg (mul_nonneg (by linarith : (0:ℝ) ≤ (N : ℝ)) hzim.le)
+          (sub_nonneg.mpr hd1)]
+    refine le_trans (hCj _ hlow) ?_
+    exact mul_le_mul_of_nonneg_left
+      (Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_left hhigh
+        (by positivity : (0:ℝ) ≤ 2 * π))) hCj0
+  -- so the crude coefficient bound applies with one `M` for all `k` at once.
+  have hcoeff : ‖(∏ t ∈ triangularReps N,
+      (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k‖
+      ≤ (1 + Cj * Real.exp (2 * π * ((N : ℝ) * z.im))) ^ n :=
+    norm_coeff_prod_X_sub_C_le (fun t => jInvariant (triPoint z t))
+      (by positivity) _ hjbd k
+  have hNz : (0 : ℝ) ≤ (N : ℝ) * z.im := mul_nonneg (by linarith) hzim.le
+  have hexp1 : (1 : ℝ) ≤ Real.exp (2 * π * ((N : ℝ) * z.im)) :=
+    Real.one_le_exp (mul_nonneg (by positivity) hNz)
+  have hstep : (1 + Cj * Real.exp (2 * π * ((N : ℝ) * z.im))) ^ n
+      ≤ (1 + Cj) ^ n * Real.exp (2 * π * ((N : ℝ) * z.im)) ^ n := by
+    rw [← mul_pow]
+    refine pow_le_pow_left₀ (by positivity) ?_ n
+    nlinarith
+  have hDpow : ‖ModularForm.discriminant z ^ (Nn * n)‖
+      ≤ CD ^ (Nn * n) * Real.exp (-2 * π * z.im) ^ (Nn * n) := by
+    rw [norm_pow, ← mul_pow]
+    exact pow_le_pow_left₀ (norm_nonneg _) (hCD z hzD) _
+  -- `m = N·ψ(N)` is exactly the exponent that cancels the growth.
+  have hcancel : Real.exp (2 * π * ((N : ℝ) * z.im)) ^ n
+      * Real.exp (-2 * π * z.im) ^ (Nn * n) = 1 := by
+    rw [← Real.exp_nat_mul, ← Real.exp_nat_mul, ← Real.exp_add]
+    rw [Real.exp_eq_one_iff]
+    push_cast [hNr]
+    ring
+  rw [norm_mul]
+  calc ‖(∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t))) : Polynomial ℂ).coeff k‖
+        * ‖ModularForm.discriminant z ^ (Nn * n)‖
+      ≤ ((1 + Cj) ^ n * Real.exp (2 * π * ((N : ℝ) * z.im)) ^ n)
+          * (CD ^ (Nn * n) * Real.exp (-2 * π * z.im) ^ (Nn * n)) := by
+        refine mul_le_mul (le_trans hcoeff hstep) hDpow (norm_nonneg _) (by positivity)
+    _ = (1 + Cj) ^ n * CD ^ (Nn * n)
+          * (Real.exp (2 * π * ((N : ℝ) * z.im)) ^ n * Real.exp (-2 * π * z.im) ^ (Nn * n)) := by
+        ring
+    _ = (1 + Cj) ^ n * CD ^ (Nn * n) := by rw [hcancel, mul_one]
 
 /-- **THE ANALYTIC PACKAGING — PROVEN (2026-07-31)** over `exists_isBoundedAtImInfty_coeff_prod`
 and the four lemmas above. Same statement it had as a leaf; only its proof moved.
@@ -4984,7 +5215,70 @@ theorem exists_complexPolynomial_eq_prod_of_smul_invariant {N : ℤ} (hN : 0 < N
 
 end ModularFunctionRigidity
 
-/-- **LEAF 3a-i‴ — THOSE POLYNOMIALS HAVE INTEGER COEFFICIENTS.** ANY `Ψ ∈ ℂ[Y][X]` satisfying
+/-- **LEAF 3a-i‴ (RECUT 2026-07-31) — EACH COEFFICIENT OF `Φ_N`, AS A POLYNOMIAL IN `j`, HAS
+INTEGER COEFFICIENTS.** If `P ∈ ℂ[Y]` represents the `k`-th coefficient of
+`∏_{t ∈ triangularReps N} (X − j(t·z))` as a polynomial in `j(z)`, then `P` lies in the image
+of `ℤ[Y]`.
+
+This is Cox Theorem 11.18's integrality step, and it is now stated exactly as Cox states it:
+about ONE polynomial in ONE variable, with no `Polynomial (Polynomial ℂ)`, no `Polynomial.map`
+and no `Ψ` anywhere. `exists_intPolynomial_map_of_eq_prod` below is PROVEN over it, so the
+count is unchanged (`1 → 1`); what the recut bought is the SHAPE of what is left.
+
+**`hP` PINS `P`, so the statement is not a `∀`-over-junk.** Two polynomials agreeing at every
+value of `j` differ by a polynomial with infinitely many roots (`j` is non-constant on `ℍ` —
+indeed surjective onto `ℂ`), hence are equal. So `P` really is the classical `k`-th
+coefficient of `Φ_N(X, Y)` and nothing weaker. That argument is PROSE here and not Lean,
+because non-constancy of `jInvariant` is not proven anywhere in this tree (checked
+2026-07-31: no `jInvariant_surjective`, no non-constancy lemma, and mathlib has no `j` at
+all); it is not needed for the statement to be true, only for it to be non-vacuous, and
+non-vacuity is witnessed instead by `exists_complexPolynomial_eq_prod_of_smul_invariant`
+together with `prod_triangularReps_jInvariant_smul`, which produce such a `P` for every
+`N > 0` and every `k`.
+
+**WHAT PROVING IT NEEDS, MEASURED RATHER THAN GUESSED (2026-07-31).** The classical route is:
+the `q`-expansion of `j((a z + b)/d)` is `ζ_d^{−b} q^{−a/d} + 744 + ⋯` with coefficients in
+`ℤ[ζ_N]`; the elementary symmetric functions are `Gal(ℚ(ζ_N)/ℚ)`-stable because the Galois
+action permutes `triangularReps N`, hence lie in `ℤ((q))`; and then the reduction of `P` along
+`j = q⁻¹ + 744 + ⋯` keeps the coefficients integral. NONE of the three inputs exists here:
+
+* there is NO `q`-expansion of `j` in this tree or in mathlib — `grep` for `744` over
+  `Fermat/` returns only unrelated numerals, and mathlib has no `jInvariant`;
+* there is NO Puiseux / `q^{1/N}` expansion anywhere (mathlib's `qExpansion` is a
+  `PowerSeries`, so it cannot even name a pole, let alone a fractional exponent);
+* integrality of the `q`-expansions of `E₄` and `Δ` — which is what a pole-free
+  reformulation would need instead — is also absent: mathlib proves
+  `discriminant_qExpansion_coeff_one` and `CuspFormClass.qExpansion_coeff_zero` and nothing
+  about the remaining coefficients.
+
+**THE POLE-FREE REFORMULATION IS THE ONE TO TAKE, and it is why this leaf should be attacked
+through `Δ`, not through Laurent series.** `exists_modularForm_coeff_prod_of_smul_invariant`
+above already gives `m` and `G ∈ M_{12m}(SL₂(ℤ))` with `c_k · Δ^m = G`, so with
+`D := max (deg P) m` the function `z ↦ P(j(z))·Δ(z)^D` is a genuine MODULAR FORM and has an
+honest `PowerSeries` `q`-expansion. Writing `P = Σ_i a_i Y^i` gives
+`P(j)·Δ^D = Σ_i a_i (E₄³)^i Δ^{D−i}`, and `(E₄³)^i Δ^{D−i} = q^{D−i}(1 + O(q))`, a TRIANGULAR
+system: the coefficient of `q^{D−i}` determines `a_i` from `a_D, …, a_{i+1}`. So the leaf
+reduces to (i) integrality of the `q`-expansions of `E₄` and `Δ`, and (ii) integrality of the
+`q`-expansion of `c_k · Δ^m`, which is where the `ζ_N` argument still has to be run. That is a
+subtree, not a leaf, and it is the honest cost of this node.
+
+FALSITY AUDIT. NOT VACUOUS: see the pinning paragraph. TRUE: by the pinning argument the only
+such `P` is the `k`-th coefficient of the classical `Φ_N` viewed in `ℂ[Y]`, and
+`Φ_N ∈ ℤ[Y][X]`. `hN` IS NOT LOAD-BEARING and is carried to match the siblings: for `N ≤ 0`
+the ambient box `Finset.Icc 1 N` is empty, so `triangularReps N = ∅`, the product is `1`,
+`hP` forces `P(j(z)) = 1` for `k = 0` and `= 0` otherwise, and `P = 1` resp. `P = 0` by the
+same pinning argument — both of which lift. Refute by exhibiting an `N`, a `k` and a `P`
+satisfying `hP` with a coefficient outside `ℤ`. -/
+theorem lifts_of_eval_jInvariant_eq_coeff_prod {N : ℤ} (hN : 0 < N) (k : ℕ)
+    (P : Polynomial ℂ)
+    (hP : ∀ z : UpperHalfPlane, P.eval (jInvariant z)
+      = (∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).coeff k) :
+    P ∈ Polynomial.lifts (Int.castRingHom ℂ) :=
+  sorry
+
+/-- **THOSE POLYNOMIALS HAVE INTEGER COEFFICIENTS — PROVEN (2026-07-31)** over
+`lifts_of_eval_jInvariant_eq_coeff_prod`. ANY `Ψ ∈ ℂ[Y][X]` satisfying
 the product formula is the image of a `Φ ∈ ℤ[Y][X]`.
 
 The second half of the split described on `exists_complexPolynomial_eq_prod_of_smul_invariant`
@@ -5020,7 +5314,17 @@ only such `Ψ` is the classical `Φ_N` mapped into `ℂ[Y][X]`, and `Φ_N ∈ �
 LOAD-BEARING and is carried to match the two siblings: for `N ≤ 0` the ambient box
 `Finset.Icc 1 N` is empty, so `triangularReps N = ∅`, `hprod` forces `Ψ = 1` by the same
 pinning argument, and `Φ = 1` works. Refute by exhibiting an `N` and a `Ψ` satisfying `hprod`
-with a coefficient outside `ℤ`. -/
+with a coefficient outside `ℤ`.
+
+**RECUT 2026-07-31 — ONE LEAF FOR ONE LEAF, AND THE RESIDUE IS NOW ONE-VARIABLE.** The leaf
+that used to stand here is stated below as `lifts_of_eval_jInvariant_eq_coeff_prod`, and this
+statement is PROVEN over it; the count did not move and the CONSUMER's statement did not
+change, so everything in this docstring still applies. What left the leaf is every mention of
+`Polynomial (Polynomial ℂ)`, of `Polynomial.map`, and of `Ψ`: the residue is a statement about
+a SINGLE `P ∈ ℂ[Y]` and the hypothesis `∀ z, P(j(z)) = c_k(z)`, which is exactly the shape
+Cox Theorem 11.18 proves ("the coefficients of `Φ_N`, as polynomials in `j`, are integral")
+and exactly the shape the pinning paragraph above is about — so the move-2 obligation is now
+carried by the leaf's own hypothesis rather than by prose around it. -/
 theorem exists_intPolynomial_map_of_eq_prod {N : ℤ} (hN : 0 < N)
     (Ψ : Polynomial (Polynomial ℂ))
     (hprod : ∀ z : UpperHalfPlane,
@@ -5028,8 +5332,18 @@ theorem exists_intPolynomial_map_of_eq_prod {N : ℤ} (hN : 0 < N)
         = ∏ t ∈ triangularReps N,
             (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))) :
     ∃ Φ : Polynomial (Polynomial ℤ),
-      Φ.map (Polynomial.mapRingHom (Int.castRingHom ℂ)) = Ψ :=
-  sorry
+      Φ.map (Polynomial.mapRingHom (Int.castRingHom ℂ)) = Ψ := by
+  rw [← Polynomial.mem_lifts, Polynomial.lifts_iff_coeff_lifts]
+  intro k
+  have hPk : ∀ z : UpperHalfPlane, (Ψ.coeff k).eval (jInvariant z)
+      = (∏ t ∈ triangularReps N,
+          (Polynomial.X - Polynomial.C (jInvariant (triPoint z t)))).coeff k := by
+    intro z
+    have h := congrArg (fun p : Polynomial ℂ => p.coeff k) (hprod z)
+    simpa [Polynomial.coeff_map] using h
+  obtain ⟨q, hq⟩ :=
+    (Polynomial.mem_lifts _).mp (lifts_of_eval_jInvariant_eq_coeff_prod hN k _ hPk)
+  exact ⟨q, hq⟩
 
 /-- **LEAF 3a-i′ — THE CONSTRUCTION OF `Φ_N`, WITH `Γ`-INVARIANCE DISCHARGED. NO LONGER A
 LEAF: PROVEN 2026-07-31** over the two halves above, `exists_complexPolynomial_eq_prod_of_
