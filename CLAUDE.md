@@ -16151,3 +16151,83 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A COCYCLE OVER PROPOSITIONALLY-EQUAL OBJECTS: MOVE TO A COMMON HOME AND THE `eqToIso` PILE DISAPPEARS
+
+(2026-08-01, `flt-lean-189`, closing `exists_relativeGluingData_isRelPicOf` in
+`ModularCurve/RelativePicard.lean` — Stacks 01JJ.)
+
+That leaf's route note priced its cost honestly and named it precisely: functoriality
+of the gluing datum needs a cocycle for the comparison isomorphisms of curves, and
+*"what it is, is a substantial amount of `eqToIso` bookkeeping, because
+`curveBaseChange strX g` for propositionally equal `g` are propositionally and not
+definitionally equal SCHEMES.  A prover should expect that bookkeeping to be the bulk
+of the work."* Every clause is true about the objects. **There is no `eqToIso` anywhere
+in the proof**, because the proof never compares two of those schemes.
+
+**THE MOVE, and it is the transferable part.** The three comparison isomorphisms
+`X_U ≅ X_V`, `X_V ≅ X_W`, `X_U ≅ X_W` sit over three different bases and their targets
+are indexed by composites (`(k ≫ j_{UV}) ≫ j_{VW}` versus `k ≫ j_{UW}`) that are equal
+only propositionally. Instead, identify EVERY local curve with the base change of the
+ORIGINAL `strX` along the composite `gS : T ⟶ S` — one canonical object, the **common
+home** — by a variant of the comparison iso that takes `gS` as a PARAMETER with a
+factorisation hypothesis `k ≫ h = gS` rather than spelling it `k ≫ h`:
+
+    theorem isPullback_curveBaseChangeOfFactor (hX : IsPullback φ strX' strX h) (k : T ⟶ S')
+        {gS : T ⟶ S} (hk : k ≫ h = gS) :
+        IsPullback (pullback.fst strX' k ≫ φ) (curveBaseChangeProj strX' k) strX gS := by
+      subst hk; exact (IsPullback.of_hasPullback strX' k).paste_horiz hX
+
+`subst hk` is the whole trick: `gS` is a variable, so the parameterised form is proved
+from the literal one for free, and the resulting iso lands in `curveBaseChange strX gS`.
+Now the transported sheaf has type `(curveBaseChange strX gS).Modules`, which depends on
+`gS` **alone** and not on the varying local base `k`. So the sheaves over `U`, `V` and `W`
+are objects of ONE category, the three-way cocycle collapses to a single two-open
+statement, and that statement is two `pullback.hom_ext` checks against the projections.
+
+**The general rule: when a cocycle looks like it needs transport across propositional
+equalities, look for a canonical target that all the objects map to and whose TYPE
+depends only on data the whole diagram shares.** Move there first and the equalities stop
+being type-level. In a pullback-heavy development the common home is almost always "base
+change of the original object", and the parameterised-factorisation form above is how you
+get to it; the isomorphisms are then pinned by their projections, so *every* identity
+about them is a `hom_ext` and none is an `eqToIso`.
+
+### STATE A TRANSPORT LEMMA SO THE CALLER CHOOSES THE INDEX — it is the difference between 6 s and a `whnf` timeout
+
+Same proof, and it was the only real obstacle. The master lemma says "`gmap` carries the
+classified class along". Stated with its target point at the *computed* base `k ≫ j`, the
+caller then has to move that point onto the base it needs (`p.1 ≫ gmap` at
+`pstr U ≫ homOfLE hUW`), which means a congruence lemma plus a `rw`. That version **timed
+out at `whnf` at 1 000 000 heartbeats** — not a heartbeat shortage, a unification blow-up:
+the congruence's `hpp' := rfl` forces Lean to unify subtype projections of two
+metavariables before either point is known.
+
+Stated instead with the target point `p'` at an **arbitrary** base `k'`, constrained only
+by `hp' : p'.1 = p.1 ≫ gmap …`, the caller supplies the composite directly at whichever
+of the two propositionally-equal bases it wants, `hp'` is `rfl`, and the lemma's own
+`subst` reconciles the bases once, inside, where they are still variables. Same
+mathematics, **6 seconds**, and the congruence lemma was deleted as unused.
+
+Generalisable: **a transport/naturality lemma whose target index is DERIVED is hard to
+chain; one whose target index is a parameter plus an equation on the underlying datum
+chains for free.** Prefer the second whenever the index is determined by the datum anyway
+(here `k' = p'.1 ≫ pstr V`), and bisect a `whnf` timeout by `sorry`ing successive `have`s
+rather than raising `maxHeartbeats` — the limit was not the problem and raising it turned
+a 7-second failure into a 68-second one.
+
+### Two smaller things from the same run
+
+* **A docstring's "declared AFTER this point, so you must hoist it" is a LINE-NUMBER claim
+  and rots like any other.** This leaf's route said its curve-side input
+  `isPullback_curveBaseChangeMap` was "PROVEN below — it is declared AFTER this point in
+  the file, so a prover taking this leaf must hoist it", and the task prompt repeated it
+  with a recipe for the hoist and its sorted-line-multiset receipt. It is at line 2697 and
+  the leaf at 3951: **above**, by 1250 lines, and no hoist was needed. One `grep -n` per
+  named dependency settles it, and it is the cheapest check in a decomposition — the
+  ordering claim was presumably true when the two were cut, and one of them moved.
+* **`∃` cannot hold a `Type`-valued body.** `obtain ⟨P, pstr, HP⟩ : ∃ P pstr, ∀ U,
+  IsRelPicOf …` fails with *"has type `Type (u+1)` … but is expected to have type `Prop`"*,
+  because `IsRelPicOf` is a structure in `Type`. The idiom that works, and that still gives
+  a genuine free variable rather than a `let`, is `Nonempty` of the whole Pi type:
+  `obtain ⟨HP⟩ : Nonempty (∀ U, IsRelPicOf …) := ⟨fun U => (hP U).some⟩`.
