@@ -16151,3 +16151,74 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## THE TREE AN ABSENCE AUDIT LEAST OFTEN SEARCHES IS THE FILE IT IS WRITTEN IN
+
+(2026-08-01, `flt-lean-19`, closing `ringKrullDim_eq_of_smoothOfRelativeDimension` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean`.)
+
+This file already records, several times, that an "absent from the pin" verdict is scoped to
+the trees it searched: check `Fermat/FLT/Mathlib/**`, check DOWNSTREAM modules, check your own
+import list. There is one more scope and it is the sharpest, because it is the one the author
+is most confident about: **the file the audit is being written in.**
+
+That leaf carried a dated three-bullet `WHAT IS MISSING FROM THE PIN` audit with its greps
+quoted verbatim. Bullet 2 read:
+
+> There is no `ringKrullDim`-vs-`Algebra.trdeg` theorem at all
+> (`grep -rn 'ringKrullDim.*trdeg' Mathlib/` is empty), so the classical route
+> "`dim B = trdeg_K Frac B` for a finite-type domain" is not available either — and it would
+> want `IsDomain B`, which this statement deliberately does not have.
+
+`Algebra.trdeg_fractionRing_eq_of_ringKrullDim` — exactly that theorem — is **four hundred
+lines above the leaf, in the same file**, PROVEN three days before the audit was written, by
+the same development. All three of the audit's greps were run over `Mathlib/` and none over
+`SmoothConnectedCriteria.lean`. The refuting check is `grep -n trdeg` in the file you are
+editing, and it costs nothing.
+
+**And the second clause is a distinct trap worth its own line: A HYPOTHESIS CITED AS THE
+REASON A TOOL CANNOT BE USED IS OFTEN A REDUCTION TARGET.** "It would want `IsDomain B`,
+which this statement does not have" reads as a refutation and is an instruction: prove the
+domain case, then reduce. In this development that reduction is nearly always over the
+MINIMAL PRIMES, and it is worth knowing in advance how cheap it is.
+
+### Reducing a dimension statement to the domain case, without regularity
+
+The standard route to "locally a domain" is *regular ⟹ locally a domain*, and this pin has
+no `smooth ⟹ regular` in any form — so an audit that reaches for it correctly reports a wall.
+It is not needed. For a REDUCED NOETHERIAN `B`:
+
+* `ringKrullDim B = ⨆ over minimal primes q of ringKrullDim (B ⧸ q)`, because every chain of
+  primes lies above a minimal prime (`Ideal.exists_minimalPrimes_le`, then
+  `Ideal.primeSpectrumQuotientOrderIsoZeroLocus` to move the chain into `Spec (B ⧸ q)`);
+* for each minimal `q` there is `t ∉ q` with `t · q = 0` — take `t` in all the OTHER minimal
+  primes (finitely many, `minimalPrimes.finite_of_isNoetherianRing`; the infimum of the others
+  is not `≤ q` by `Ideal.IsPrime.inf_le'` plus incomparability of minimal primes). Then for
+  `x ∈ q`, `t · x` lies in EVERY minimal prime, hence in every prime, hence in the nilradical,
+  which is `0`;
+* so `B_t` is a nontrivial DOMAIN and is simultaneously the localization of `B ⧸ q` away from
+  the image of `t` — all three `IsLocalization` clauses are inherited from the ones over `B`,
+  ~25 lines — whence `dim (B ⧸ q) = dim B_t` and the domain case applies.
+
+**What this does NOT prove, and must not be read as proving, is local irreducibility.** It
+does not say `q` is the only minimal prime under a given prime — false for a general reduced
+ring, and *that* is what would need regularity. It says only that `q` becomes the zero ideal
+after inverting one element. That is enough for every EQUIDIMENSIONALITY statement, which is
+the shape most dimension leaves have. A smooth algebra over a field need not be a domain
+(`K[x] × K[y]` is smooth of relative dimension `1`); the class forces equidimensionality, not
+irreducibility, and the minimal-prime reduction is the formal shape of exactly that.
+
+Two riders, both reusable:
+
+* **`dim D_t = dim D` for a finite-type DOMAIN and `t ≠ 0` is the one non-formal step** —
+  `≤` is free for any localization, and `≥` says a maximal chain can be moved into `D(t)`,
+  which is false for a general ring. Prove it by computing `Algebra.trdeg` twice against ONE
+  field: `IsFractionRing.isFractionRing_of_isDomain_of_isLocalization` makes `FractionRing D`
+  a fraction field of `D_t` as well, so no transcendence basis is transported along an
+  `AlgEquiv`. That is why the trdeg theorem is worth restating with the fraction field left
+  ABSTRACT; the `FractionRing D`-specific form cannot do it.
+* **Noether normalisation alone makes `ringKrullDim` a NATURAL NUMBER** for any nontrivial
+  finite-type algebra over a field (`exists_finite_inj_algHom_of_fg` plus
+  `ringKrullDim_eq_of_isIntegral_of_injective`) — no `IsDomain`. Finiteness of the dimension
+  is usually assumed to need the domain case and does not, and it is what lets two dimensions
+  be compared as numbers rather than in `WithBot ℕ∞`.
