@@ -16151,3 +16151,78 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A RE-CUT ORPHANS THE LOSING ROUTE ENTIRELY — ITS LEAF *AND* ITS PROVEN SUPPORT — WITH NO MERGE INVOLVED
+
+(2026-07-31, `flt-lean-22`, `exists_localExtension_of_abelianScheme` in `X0.lean`.)
+Every orphan class already recorded above is blamed on a MERGE: two branches, a
+clean textual merge, a stranded declaration. This one needs no second branch. A
+single agent re-proving a parent by a better route, on one branch, in one commit,
+orphans the *whole* of the route it replaced — and unlike a merge there is no
+conflict, no marker and no diff anomaly to notice.
+
+The shape, and it is worth recognising because the collateral is much larger than
+the leaf:
+
+* `exists_weilExtension_of_abelianScheme` was PROVEN 2026-07-30 by noetherian
+  induction plus gluing, over a LOCAL leaf `exists_localExtension_of_abelianScheme`;
+* on 2026-07-31 one commit re-proved it over a NEW leaf `exists_weilExtension_purity`
+  (EGA IV₄ 20.4.12) in four lines;
+* the local leaf became a DEAD `sorry`, **and four PROVEN helpers built solely for
+  the old route became consumerless with it** — `isNoetherianRing_subring_rat`,
+  `noetherianSpace_of_isProper`, `exists_hom_of_forall_enlargeOpen`,
+  `exists_hom_sup_of_agree`, about 200 lines of verified machinery.
+
+**Every instrument reported the dead leaf as ordinary open work**: it emits its
+`declaration uses 'sorry'` warning, a source scan finds it, `own.py` and
+`leafstat.py` correctly call it unowned, and the release-window check against
+`merger` correctly shows it still `sorry` there. It drew a dispatch on exactly
+that evidence.
+
+**THE DETECTOR IS THE PARENT'S DOCSTRING AGAINST THE PARENT'S `by` BLOCK.** This
+file already records that mismatch as a *duplicate-cut* detector; it is a
+*rival-route* detector too, and here it was the only signal. The parent's
+docstring said in its header line "PROVEN 2026-07-30 … over
+`exists_localExtension_of_abelianScheme` above" and repeated it in a closing
+paragraph, while its `by` block called `exists_weilExtension_purity`. A docstring
+is written once, at the moment of the cut; the body is what the re-cut edits. So
+when they disagree, **the body is current and the docstring is archaeology** —
+and the leaf the docstring names is the one to check for consumers.
+
+**The measurement, one comment-stripped scan over the whole tree, and read the
+COUNT rather than the hits**: a declaration whose name occurs exactly ONCE is its
+own declaration and nothing else — dead. Run it on the target *and on every
+declaration in its neighbourhood*, because a re-cut orphans a cluster, not a
+name. Five names came back `1` here and that count is what identified the whole
+losing route.
+
+**THE RESOLUTION IS ASYMMETRIC, and getting it uniform in either direction is a
+loss.** Delete the dead `sorry`; KEEP the proven helpers.
+
+* The dead leaf must go. It is a frontier slot that reaches nothing, so closing
+  it would move the count and not the project, and while it stands it will keep
+  drawing agents — the doctrine's own "closing a leaf nothing reaches" rule.
+* The proven helpers must stay. They are true, audited, general, and deleting
+  ~200 lines of verified machinery to score a floater count is exactly the trade
+  this file warns against elsewhere. Document them in place instead: say they are
+  consumerless, say WHY, and say what would re-consume them. That converts an
+  invisible floater into a deliberate, reversible decision — and the next agent
+  needs it, because four proven lemmas sitting unused look like an oversight.
+
+**Choosing which route survives is decidable and the tie-breaks are the standing
+ones.** Here the two leaves IMPLY EACH OTHER over the surviving machinery, so
+"fewer open leaves after" and "named beats anonymous" both tie, and the decision
+falls to "already integrated and consumed" — the purity leaf. It is also the
+better-shaped residue, being a named citation (EGA IV₄ 20.4.12) that BLR's own
+text deduces 4.4/1 from, where the loser was "the one-point step of BLR 4.4/1",
+which is not a theorem anybody has written down.
+
+**Report the arithmetic honestly: this is `−1` on the frontier and ZERO
+mathematics.** Nothing became provable that was not provable before, and the
+transitive cone did not move. Say so, or the delta reads as a theory gap closing.
+
+**Corollary for whoever DOES the re-cut, and it costs one grep: when your new
+proof of a parent stops calling the old leaf, grep the old leaf and everything it
+consumed for consumers, in the same commit.** You are the only person who will
+ever know both routes; the next reader sees a live leaf, a dead leaf and four
+unused lemmas with no way to tell which belong together.
