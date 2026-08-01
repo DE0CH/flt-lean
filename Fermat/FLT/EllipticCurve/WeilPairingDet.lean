@@ -70,12 +70,44 @@ Not less than the Weil pairing itself.  The two routes visible from here:
   clause quantifies over a pair of subfields `F ≤ F'` of `k̄` REQUIRED TO BE
   FINITE, and in characteristic zero no such `F` contains the given
   coordinates, so the predicate is unsatisfiable for every pair of nonzero
-  points.  A port must first replace that genericity device (the natural
-  replacement over any `k̄` is a finitely generated subfield, since an
-  algebraically closed field is never finitely generated, so points outside
-  `E(F)` always exist) and then re-run the 94 assembly steps.  The LEVEL
-  generalisation `p ↦ n` is by contrast mechanical: `weilValueProp` already
-  takes a bare `(p : ℕ)`.
+  points.  The LEVEL generalisation `p ↦ n` is by contrast mechanical:
+  `weilValueProp` already takes a bare `(p : ℕ)`.
+
+  **RE-PRICED 2026-08-01, AND THIS HALVES THE ROUTE — the paragraph above used
+  to continue "a port must first replace that genericity device … and THEN
+  re-run the 94 assembly steps".  The device has ALREADY been replaced, and not
+  by the finitely-generated-subfield construction that sentence guessed.**
+  `EllipticCurve/WeilPairingStageB.lean` — the divisor/Miller core, i.e. all of
+  the hard mathematics — is stated over
+  `variable {F : Type*} [Field F] [DecidableEq F] [IsAlgClosed F]` (line 79):
+  an ARBITRARY algebraically closed field, with no finiteness anywhere.  Its two
+  load-bearing theorems now come in `_of_avoid` form —
+  `exists_generic_pDivision_offset_of_avoid` (line 947) and
+  `exists_millerRatio_eval_translationChar_of_avoid` (line 3751) — which take
+  `(hp : (p : F) ≠ 0)` together with EXPLICIT AVOIDANCE INEQUATIONS
+  (`hne0`, `hneQ`, `hneP`, `hneQP`) in place of the subfield pair; the old
+  finite-`F ≤ F'` statements survive only as wrappers over them.  That
+  generalisation was made because the finiteness hypotheses turned out to be
+  DEAD in those proofs (they were `_`-bound in the source and named by the
+  `unusedVariables` linter), which is the same finding CLAUDE.md records under
+  "An audit's 'this is the blocker' can name a hypothesis the proof never
+  reads".
+
+  So what is left of route 2 is exactly the ASSEMBLY layer, and it is
+  mechanical rather than inventive: `WeilPairing.weilValueProp`
+  (`WeilPairing.lean:3081`) is still written at `WeierstrassCurve (ZMod q)`
+  with `Subfield (AlgebraicClosure (ZMod q))` in its admissibility clause, and
+  the three theorems that PRODUCE such an `F ≤ F'` pair (lines ~4720, ~4904,
+  ~5485) are the finite-subfield device itself.  Restating `weilValueProp` with
+  the avoidance inequations Stage B already consumes, deleting those three
+  producers, and re-running the 94 steps is the whole of the remaining work —
+  and Stage B's `_of_avoid` signatures tell you exactly what shape the restated
+  clause has to be, which is the part that previously had to be guessed.
+
+  THE CHECK THAT WOULD REFUTE THIS RE-PRICING: a use of finiteness of `F` or
+  `F'` inside `WeilPairingStageB.lean` that is not merely forwarded to a
+  wrapper — i.e. a `_of_avoid` theorem whose proof still needs the subfield to
+  be finite.  Grepped 2026-08-01: none.
 
 ## Faithfulness
 
