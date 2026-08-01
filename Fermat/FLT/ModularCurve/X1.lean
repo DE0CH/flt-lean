@@ -184,6 +184,12 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Affine
 -- mentions it, and `X0.lean` reaches the same file only through its private
 -- `EllipticScheme` import, which this module does not inherit.
 import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveAffineComplement
+-- `Fermat.IsPoleDegree`, `Fermat.poleSubmodule` and
+-- `Fermat.exists_weierstrassGenerators_of_isPoleDegree`: the ALGEBRAIC half of Silverman
+-- *AEC* III.3.1, i.e. everything after the Riemann–Roch dimension count.  The import is
+-- PUBLIC because `IsPoleDegree` and `poleSubmodule` occur in the STATEMENT of
+-- `exists_isPoleDegree_of_abelianSchemeChart` below.  That module imports mathlib only.
+public import Fermat.FLT.Mathlib.RingTheory.WeierstrassPoleDegree
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.FieldTheory.Finite.Basic
 import Fermat.FLT.Mathlib.AlgebraicGeometry.BirationalBaseChange
@@ -11142,20 +11148,156 @@ very ample exactly when the model is nonsingular.
 has no plane-cubic model at all), and so is `_ab` — a proper smooth connected
 curve with a rational point need not have genus one, and it is the GROUP
 structure, through the trivial tangent bundle, that forces genus `1`.  Both are
-underscore-prefixed only because a `sorry` body consumes nothing. -/
-theorem exists_weierstrassGenerators_of_abelianSchemeChart {ℓ : ℕ} [Fact ℓ.Prime]
+underscore-prefixed only because a `sorry` body consumes nothing.
+
+## DECOMPOSED 2026-08-01 — this declaration is PROVEN below, over two leaves
+
+The paragraphs above are kept because they are still accurate about the
+MATHEMATICS, WITH ONE CORRECTION recorded below.  What has changed is that the
+statement is no longer a single leaf: the two halves the account above runs
+together have been separated, and the second of them is now PROVEN.
+
+**THE CORRECTION, and it is why `W.IsElliptic` became a leaf rather than a
+step.**  The paragraph headed "`W.IsElliptic` IS DELIBERATELY LEFT HERE" ends
+*"a prover who has produced `x` and `y` out of `L(3[O])` has the nondegeneracy in
+hand for free"*.  That is TRUE of the geometry and FALSE of the linear algebra,
+and the distinction is not pedantic: the pole filtration alone does not see
+`Δ ≠ 0`.  The coordinate ring of the CUSPIDAL cubic `y² = x³`, namely
+`𝔽_ℓ[t², t³]`, has `d(t^m) = m` multiplicative and ultrametric, vanishing exactly
+on the constants, and `dim L(n) = n` for every `n ≥ 1` — the value semigroup
+`⟨2, 3⟩` omits exactly `1`, and a singular plane cubic has arithmetic genus one
+too.  So `Δ ≠ 0` is NOT free once the dimension count is all one holds, and the
+smoothness of `A` has to be spent a second time; that is
+`isElliptic_of_weierstrassGenerators_of_abelianSchemeChart` below.
+
+* `exists_isPoleDegree_of_abelianSchemeChart` — the dimension count
+  `dim_{𝔽_ℓ} L(n·[O]) = n`, packaged as a pole-order function on `R`.  **This is
+  the Riemann–Roch content and it is the only leaf left in the geometry.**
+* `Fermat.exists_weierstrassGenerators_of_isPoleDegree`
+  (`Fermat/FLT/Mathlib/RingTheory/WeierstrassPoleDegree.lean`) — everything
+  after the dimension count: the two coordinates, the relation among the seven
+  monomials, the rescaling, and the generation clause.  **PROVEN, no `sorry`,
+  and it mentions no scheme.**
+* `isElliptic_of_weierstrassGenerators_of_abelianSchemeChart` — `W.Δ ≠ 0`, which
+  the pole filtration provably CANNOT give (see that leaf's docstring for the
+  cuspidal-cubic witness). -/
+theorem exists_isPoleDegree_of_abelianSchemeChart {ℓ : ℕ} [Fact ℓ.Prime]
     {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (_ab : AbelianSchemeStruct f)
     (_hdim : SmoothOfRelativeDimension 1 f)
     (R : Type) [CommRing R] [Algebra (ZMod ℓ) R]
     (ι : Spec (CommRingCat.of R) ⟶ A) (_hopen : IsOpenImmersion ι)
     (_hover : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap (ZMod ℓ) R)))
     (_hrange : Set.range ι.base = (Set.range (_ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ) :
+    ∃ (d : R → ℕ) (hd : IsPoleDegree (ZMod ℓ) R d),
+      (∀ n : ℕ, Module.Finite (ZMod ℓ) (poleSubmodule hd n)) ∧
+      (∀ n : ℕ, 1 ≤ n → Module.finrank (ZMod ℓ) (poleSubmodule hd n) = n) :=
+  sorry
+
+/-- **`Δ ≠ 0`: the plane cubic produced from the chart is NONSINGULAR** (sorry
+leaf, NEW 2026-08-01, cut out of
+`exists_weierstrassGenerators_of_abelianSchemeChart` below together with the
+Riemann–Roch leaf above).
+
+TRUE, and it is the one part of Silverman *AEC* III.3.1 that is not linear
+algebra over the pole filtration.
+
+**WHY IT IS A LEAF OF ITS OWN, with the witness that makes the point sharp.**
+The obvious hope is that `Δ ≠ 0` falls out of the Riemann–Roch leaf.  It cannot,
+and the reason is not a weakness of the packaging: the coordinate ring of the
+CUSPIDAL cubic `y² = x³`, namely `𝔽_ℓ[t², t³] ⊆ 𝔽_ℓ[t]`, satisfies EVERY clause
+of `Fermat.IsPoleDegree` — with `d(t^m) = m`, so `d` is multiplicative,
+ultrametric, and vanishes exactly on the constants — and has
+`dim L(n) = #{m ≤ n : m ≠ 1} = n` for every `n ≥ 1`, because the value semigroup
+`⟨2,3⟩` omits exactly `1`.  A singular plane cubic has arithmetic genus one, so
+its pole filtration is indistinguishable from a smooth one.  No hypothesis
+available to `exists_isPoleDegree_of_abelianSchemeChart` could exclude it, and a
+prover who tries to derive `Δ ≠ 0` there is chasing a false statement.
+
+**WHAT SEPARATES THEM IS NORMALITY, AND THAT IS WHERE THIS LEAF'S HYPOTHESES GO
+IN.**  `𝔽_ℓ[t², t³]` is not integrally closed; the ring of functions on a SMOOTH
+affine curve is.  So the route is:
+
+1. `Spec R` is an open subscheme of `A` (`_hopen`), and `A` is smooth of relative
+   dimension one over `𝔽_ℓ` (`_hdim`), so every local ring of `Spec R` is a DVR.
+   `isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`
+   (`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`) is exactly this
+   statement and is PROVEN; the transport along an open immersion is
+   `Scheme.Hom.stalkIso` for `IsOpenImmersion`.
+2. `_hrel` and `_hgen` present `R` as `W.toAffine.CoordinateRing`: feed them to
+   `exists_surjective_coordinateRingHom_of_generators` and
+   `injective_of_surjective_coordinateRing`
+   (`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveAffineComplement.lean`, both
+   PROVEN; the `IsDomain`/`¬ IsField` side conditions are the four-line chain in
+   `exists_weierstrassRingEquiv_of_abelianSchemeChart` below).
+3. If `Δ = 0` the affine cubic has a SINGULAR POINT, and for a Weierstrass
+   equation that point is `𝔽_ℓ`-RATIONAL — it is cut out by the two partial
+   derivatives, which are linear in `y` and quadratic in `x` with a repeated
+   root, so its coordinates are rational functions of the `aᵢ`.  The local ring
+   there has a two-generated maximal ideal, hence is not a DVR, contradicting
+   step 1.
+
+Step 3 is the only piece that is not already in the tree.  Note it needs `ℓ` to
+be arbitrary, so the characteristic-`2` and `3` cases have to be included; the
+uniform statement is that the singular point of a singular Weierstrass curve is
+rational, which is true in every characteristic.
+
+**WHY THE CHART HYPOTHESES MAY NOT BE DROPPED.**  Without `_hopen`/`_hover`/
+`_hrange` the ring `R` is arbitrary and `W` is an arbitrary Weierstrass curve
+admitting a presentation by two generators — e.g. `W : y² = x³` itself over
+`R = 𝔽_ℓ[t², t³]`, which satisfies `_hrel` and `_hgen` and has `Δ = 0`.  So the
+statement is FALSE without them, and the smoothness of `A` is what this leaf is
+really about. -/
+theorem isElliptic_of_weierstrassGenerators_of_abelianSchemeChart {ℓ : ℕ} [Fact ℓ.Prime]
+    {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (_ab : AbelianSchemeStruct f)
+    (_hdim : SmoothOfRelativeDimension 1 f)
+    (R : Type) [CommRing R] [Algebra (ZMod ℓ) R]
+    (ι : Spec (CommRingCat.of R) ⟶ A) (_hopen : IsOpenImmersion ι)
+    (_hover : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap (ZMod ℓ) R)))
+    (_hrange : Set.range ι.base = (Set.range (_ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ)
+    (W : WeierstrassCurve (ZMod ℓ)) (x y : R)
+    (_hrel : y ^ 2 + (algebraMap (ZMod ℓ) R W.a₁ * x + algebraMap (ZMod ℓ) R W.a₃) * y
+      = x ^ 3 + algebraMap (ZMod ℓ) R W.a₂ * x ^ 2
+        + algebraMap (ZMod ℓ) R W.a₄ * x + algebraMap (ZMod ℓ) R W.a₆)
+    (_hgen : Subring.closure (Set.range (algebraMap (ZMod ℓ) R) ∪ {x, y}) = ⊤) :
+    W.IsElliptic :=
+  sorry
+
+/-- **RIEMANN–ROCH: the affine chart of an abelian scheme curve over `𝔽_ℓ` is
+generated by a Weierstrass pair** (**PROVEN 2026-08-01**, over the two leaves
+immediately above plus the fully proven
+`Fermat.exists_weierstrassGenerators_of_isPoleDegree`; a bare `sorry` from
+2026-07-31 until then).
+
+The mathematical account is in `exists_isPoleDegree_of_abelianSchemeChart`'s
+docstring above, which inherits this declaration's; what is worth recording here
+is the ACCOUNTING, because the direct-sorry count did not improve.  One leaf
+became two, and what left the frontier for good is the ~200 lines of elementary
+linear algebra that used to be bundled with the citation: the existence of `x`
+and `y` of pole orders `2` and `3`, the relation among `1, x, y, x², xy, y², x³`
+with `y²` and `x³` both occurring, the rescaling that normalises the two leading
+coefficients, and the induction showing `x` and `y` generate.  None of that will
+have to be done again, at any level or over any base.
+
+Judge the cut by what is LEFT in the two leaves: one is a dimension count with no
+Weierstrass equation in it, the other is `Δ ≠ 0` with no Riemann–Roch in it. -/
+theorem exists_weierstrassGenerators_of_abelianSchemeChart {ℓ : ℕ} [Fact ℓ.Prime]
+    {A : Scheme.{0}} {f : A ⟶ SpecF ℓ} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f)
+    (R : Type) [CommRing R] [Algebra (ZMod ℓ) R]
+    (ι : Spec (CommRingCat.of R) ⟶ A) (hopen : IsOpenImmersion ι)
+    (hover : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap (ZMod ℓ) R)))
+    (hrange : Set.range ι.base = (Set.range (ab.zero (𝟙 (SpecF ℓ))).1.base)ᶜ) :
     ∃ (W : WeierstrassCurve (ZMod ℓ)) (_ : W.IsElliptic) (x y : R),
       y ^ 2 + (algebraMap (ZMod ℓ) R W.a₁ * x + algebraMap (ZMod ℓ) R W.a₃) * y
           = x ^ 3 + algebraMap (ZMod ℓ) R W.a₂ * x ^ 2
             + algebraMap (ZMod ℓ) R W.a₄ * x + algebraMap (ZMod ℓ) R W.a₆ ∧
-        Subring.closure (Set.range (algebraMap (ZMod ℓ) R) ∪ {x, y}) = ⊤ :=
-  sorry
+        Subring.closure (Set.range (algebraMap (ZMod ℓ) R) ∪ {x, y}) = ⊤ := by
+  obtain ⟨d, hd, hfd, hrank⟩ :=
+    exists_isPoleDegree_of_abelianSchemeChart ab hdim R ι hopen hover hrange
+  obtain ⟨W, x, y, hrel, hgen⟩ :=
+    exists_weierstrassGenerators_of_isPoleDegree hd hfd hrank
+  exact ⟨W, isElliptic_of_weierstrassGenerators_of_abelianSchemeChart ab hdim R ι hopen
+    hover hrange W x y hrel hgen, x, y, hrel, hgen⟩
 
 /-- **RIEMANN–ROCH: the affine chart of an abelian scheme curve over `𝔽_ℓ` IS a
 Weierstrass coordinate ring** (sorry leaf, NEW 2026-07-31 — the whole
