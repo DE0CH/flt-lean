@@ -54,7 +54,13 @@ CLAUDE = str(pathlib.Path.home() / ".local" / "bin" / "claude")
 # a negligible cost and Deyao wants the probe answering the "will the API serve
 # us" question on exactly the model the fleet uses, so a refusal it sees is a
 # refusal the workers would see.
-MODEL = "opus[1m]"
+#
+# fable[1m] since 2026-08-03 (Deyao): "opus is not working very well, i want to
+# switch to fable 5 entirely" -- a quality call, not a quota one. (Measured the
+# same day: fable is NOT a separate quota pool; the all-models weekly binds it
+# identically, so expect no capacity change from the switch.) Verified served
+# before pinning; the probe moves with the fleet model as always.
+MODEL = "fable[1m]"
 TICK = 10
 HOST_REFRESH = 300          # seconds; a loadavg older than this is not useful
 ALIVE_CACHE = 20            # seconds; one ssh sweep per host, not per job
