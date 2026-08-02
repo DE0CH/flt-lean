@@ -107,11 +107,21 @@ written and the frontier moves.
   representations because no global form is true — see the section header for
   the two global readings and why each fails. Carries a REQUIRED falsity audit
   (whether the residual datum must be named) on the declaration
-- `exists_tameLocalLift_of_isSmallExtension` — **OPEN.** (item (5)(d),
-  stated 2026-07-31) Smoothness of the ordinary/tame local condition at `2`.
-  Two of its three data — the unramified quadratic character and the free
-  rank-`1` quotient — lift with no obstruction; the equivariance is the content.
-  Carries a REQUIRED falsity audit on the declaration
+- `exists_tameLocalLift_of_isSmallExtension_of_charPm` — **OPEN.** (item (5)(d),
+  stated 2026-07-31, RECUT 2026-08-02) Smoothness of the ordinary/tame local
+  condition at `2`. Its falsity audit was PERFORMED 2026-08-02: the first
+  statement of the clause was **FALSE**, refuted by `ZMod 16 ↠ ZMod 8` (a square
+  root of `1` in the target need not lift), and it is repaired by the hypothesis
+  `IsUnit (2 : S)` — the same one clause (5a) already carries, discharged at the
+  call site by `isUnit_two_of_oddPrime hℓOdd`, and NOT a hypothesis on `ℓ`. With
+  it, the character half is free: `isTameAtTwoLocal_char_eq_pm` (PROVEN) pins the
+  tame character to `±1` pointwise with no appeal to unramifiedness, so this leaf
+  receives the tame structure already in `±1`-pinned form and only the
+  EQUIVARIANCE is left. `exists_tameLocalLift_of_isSmallExtension`, the shape the
+  obstruction leaf consumes, is now PROVEN over it. Count unchanged, `1 → 1`. A
+  second axis — topological separation of `1` from `-1` in `R`, needed for the
+  lifted character to be continuous — is recorded on the declaration as checked
+  and deliberately left open
 - ~~`finiteDimensional_h1_adZeroTwistRestricted`~~ — PROVEN (verified 2026-07-30;
   this one had already caused a phantom dispatch in the 2026-07-28 release
   window, per CLAUDE.md's list of leaves agents were sent at after they closed)
@@ -17892,31 +17902,159 @@ one at a time and none of them is obstructed:
 * the EQUIVARIANCE: this is the only place any correction is needed, and it is
   the statement that the associated local deformation condition is smooth.
 
-**FALSITY AUDIT — REQUIRED BEFORE PROVING.** The clause quantifies over an
-arbitrary local `R`, with no residual representation named. The audit must check
-whether the equivariance step needs the residual datum (a `ρbar` over `k` to
-which `ρ2` reduces), as the corresponding statement in the literature is phrased
-for a deformation functor. If it does, carry the residual datum exactly as
-described in the audit on `exists_flatLocalLift_of_isSmallExtension` above.
-Unlike (5c), NO hypothesis on `ℓ` is expected to be needed here: the place is
-`2` and the condition is about `Γ ℚ_2`, so `ℓ` does not enter — if a proof turns
-out to need it, that is a signal the statement is wrong rather than that a
-hypothesis is missing.
+**FALSITY AUDIT — PERFORMED 2026-08-02, AND THE STATEMENT AS FIRST WRITTEN WAS
+FALSE.** The audit was asked to check whether the equivariance step needs the
+residual datum. It does not; what the statement was missing is a hypothesis on
+the COEFFICIENT RING, and it is the same one the sibling clause (5a) already
+carries: `IsUnit (2 : S)`.
+
+*The witness.* The conclusion asserts a lift `τ` carrying a character `δ̃` with
+`δ̃ * δ̃ = 1`, so it entails, at every `g`, that a square root of `1` in `R`
+lifts to a square root of `1` in `S`. That is FALSE for a perfectly ordinary
+small extension as soon as `2` is not invertible. Take
+
+  `S = ZMod 16`, `R = ZMod 8`, `ψ = ZMod.castHom (8 ∣ 16)`.
+
+`ψ` is a surjection of local rings and `𝔪_S · ker ψ = (2) · (8) = (16) = 0`, so
+it is an `IsSmallExtension`. The square roots of `1` are `{1, 3, 5, 7}` in
+`ZMod 8` and `{1, 7, 9, 15}` in `ZMod 16`, and the latter reduce to `{1, 7}`
+only — so `3` and `5` are square roots of `1` in `R` that lift to NO square root
+of `1` in `S`. Machine-checked, three `decide`s, ten seconds:
+
+  `(3 : ZMod 8) * 3 = 1`;
+  `∀ y : ZMod 16, y * y = 1 → ZMod.castHom (by norm_num) (ZMod 8) y ≠ 3`;
+  `∀ x y : ZMod 16, ZMod.castHom (by norm_num) (ZMod 8) y = 0 → ¬ IsUnit x → x * y = 0`.
+
+*Why that refutes the theorem and not merely one route.* Take `ρ2` SCALAR,
+`ρ2 g = δ g • id` for an unramified quadratic `δ` with `δ(Frob) = 3`; such a `δ`
+exists because `ℚ_2` has a quadratic unramified extension, and it makes
+`IsTameAtTwoLocal ρ2` hold with any surjective `p`. Now let `τ` be ANY lift with
+ANY tame structure `(p̃, δ̃)`. Pushing `p̃ (τ g w) = δ̃ g (p̃ w)` through `ψ` and
+using that `ψ` is surjective gives `p̄ (ρ2 g v) = ψ (δ̃ g) · p̄ v` for all `v`,
+where `p̄` is the reduction of `p̃` and is again surjective; evaluating at `v`
+with `p̄ v = 1` and using `ρ2 g = δ g • id` yields `ψ (δ̃ g) = δ g`. So `δ̃ g` is
+a square root of `1` in `S` reducing to `3`, and there is none. The refutation is
+therefore independent of the choice of `τ`, `p̃` and `δ̃`.
+
+*Corroboration from the leaf's own sketch.* The route above says `δ` "is
+determined by `δ(Frob) ∈ {±1}`". That step is itself valid only when `2` is a
+unit — otherwise `δ(Frob)` is merely SOME square root of `1`, as `3 ∈ ZMod 8`
+shows. So the intended proof was already using the missing hypothesis.
+
+*The repair, and why it is the right one.* `IsUnit (2 : S)` is exactly what (5a)
+carries, for exactly this reason (see its docstring: "where `hℓOdd` enters, and
+it is the only place it does"). It is discharged at the call site: the small
+extension there has source `MvPowerSeries (Fin g) Λ ⧸ K` with `Λ` a
+`ℤ_[ℓ]`-algebra, so `isUnit_two_of_oddPrime hℓOdd` applies. **Note this is NOT a
+hypothesis on `ℓ`** — the discriminating check recorded when the leaf was cut
+stands: `ℓ` does not appear here, the place is still `2`, and `IsUnit (2 : S)` is
+a condition on the coefficient ring alone. The residual datum (`ρbar` over `k`)
+is NOT needed and is not carried.
+
+**WHAT THE REPAIR BUYS, AND THE RECUT BELOW.** With `2` a unit the character is
+pinned much harder than the route claimed, and with no appeal to unramifiedness
+at all: `δ g * δ g = 1` in a LOCAL ring with `2` invertible forces `δ g 1 = ±1`
+POINTWISE (`eq_one_or_eq_neg_one_of_mul_self_eq_one`). That is
+`isTameAtTwoLocal_char_eq_pm` below, PROVEN. Since `1 ≠ -1` in `R` and `ψ` is a
+local surjection, the lifted character is then UNIQUELY determined — there is no
+choice in the character at all, and the first of the route's three bullets is
+free rather than merely unobstructed. The leaf is accordingly recut as
+`exists_tameLocalLift_of_isSmallExtension_of_charPm`, which receives the tame
+structure of `ρ2` already in `±1`-pinned form; this theorem is PROVEN over it.
+Count unchanged, `1 → 1`; what left the leaf is the character bookkeeping.
+
+*What the recut deliberately does NOT do.* It does not hand in a lifted `p̃` or
+`δ̃`. That would not be a reduction: the content is that they can be chosen
+COMPATIBLY with a lift `τ`, so a `p̃` supplied independently of `τ` is worth
+nothing. The `±1` pinning is a statement about `ρ2`'s own structure — the INPUT
+— which is why it is a genuine reduction and the other two bullets are not.
+
+**A SECOND AXIS, CHECKED AND LEFT OPEN DELIBERATELY: topology.** Constructing
+`δ̃` needs `{g : δ g = 1}` to be OPEN, so that the `±1`-valued lift is
+continuous. That follows from continuity of `δ` as soon as `1` and `-1` are
+topologically separated in `R`, which holds in the application (`D.R` is
+`𝔪`-adically complete, hence Hausdorff) but does NOT follow from the hypotheses
+as stated — an indiscrete `R` is not excluded. This was not turned into a
+hypothesis because no witness was produced that the module topology on
+`Module.End R R` is coarse enough for the pathology to occur, and shipping an
+unjustified hypothesis is worse than recording the gap. **Whoever proves the
+leaf should add a separation hypothesis on `R` the moment they need it: it is
+free at the call site.**
 
 **BANNED INPUTS**: as for (5c) above.
 
 References: Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §2.4 (ordinary and
 tame local conditions); Wiles, Ch. 2; Serre, *Sur les représentations modulaires
 de degré 2 de Gal(Q̄/Q)*, Duke 54 (1987), §4.1. -/
-theorem exists_tameLocalLift_of_isSmallExtension
+theorem exists_tameLocalLift_of_isSmallExtension_of_charPm
     {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S] [IsLocalRing S]
     {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
     (ψ : S →+* R) (hψ : Continuous ψ) (hsm : IsSmallExtension ψ)
-    (ρ2 : GaloisRep ℚ_[2] R (Fin 2 → R)) (htame : IsTameAtTwoLocal ρ2) :
+    (ρ2 : GaloisRep ℚ_[2] R (Fin 2 → R))
+    (hpm : ∃ (p : (Fin 2 → R) →ₗ[R] R) (_ : Function.Surjective p) (δ : GaloisRep ℚ_[2] R R),
+      (∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ w : Fin 2 → R, p (ρ2 g w) = δ g (p w)) ∧
+      (AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+      (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g 1 = 1 ∨ δ g 1 = -1)) :
     ∃ τ : GaloisRep ℚ_[2] S (Fin 2 → S),
       (∀ g w i, ψ (τ g w i) = ρ2 g (fun j => ψ (w j)) i) ∧
       IsTameAtTwoLocal τ :=
   sorry
+
+/-- **The tame character is `±1`-valued pointwise when `2` is a unit** (PROVEN
+2026-08-02). No unramifiedness is used: `δ g * δ g = 1` in `Module.End R R`,
+evaluated at `1` and using `R`-linearity of `δ g`, says `c * c = 1` for
+`c = δ g 1`, and in a local ring with `2` invertible that forces `c = ±1`.
+
+This is the formal content of the first bullet of the route recorded on
+`exists_tameLocalLift_of_isSmallExtension` — and it is strictly stronger than
+that bullet, which reached `±1` only through the unramified quotient and the
+value at Frobenius. The inertia clause is carried through unchanged so that
+nothing is lost in the recut. -/
+theorem isTameAtTwoLocal_char_eq_pm {R : Type*} [CommRing R] [TopologicalSpace R]
+    [IsLocalRing R] (h2 : IsUnit (2 : R))
+    {ρ2 : GaloisRep ℚ_[2] R (Fin 2 → R)} (htame : IsTameAtTwoLocal ρ2) :
+    ∃ (p : (Fin 2 → R) →ₗ[R] R) (_ : Function.Surjective p) (δ : GaloisRep ℚ_[2] R R),
+      (∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ w : Fin 2 → R, p (ρ2 g w) = δ g (p w)) ∧
+      (AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+      (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g 1 = 1 ∨ δ g 1 = -1) := by
+  obtain ⟨p, hp, δ, hδ⟩ := htame
+  refine ⟨p, hp, δ, fun g w => (hδ g w).1, ((hδ 1 0).2).1, fun g => ?_⟩
+  have hsq : δ g * δ g = 1 := ((hδ g 0).2).2 g
+  have happ : (δ g * δ g) (1 : R) = (1 : R) := by rw [hsq]; rfl
+  have hlin : δ g (δ g (1 : R)) = δ g 1 * δ g 1 := by
+    have h := (δ g).map_smul (δ g (1 : R)) (1 : R)
+    simp only [smul_eq_mul, mul_one] at h
+    exact h
+  refine eq_one_or_eq_neg_one_of_mul_self_eq_one h2 ?_
+  rw [← hlin]; exact happ
+
+/-- **(5d) THE TAME-AT-`2` LOCAL DEFORMATION CONDITION IS SMOOTH**, in the shape
+the obstruction leaf consumes (PROVEN 2026-08-02 over the recut leaf
+`exists_tameLocalLift_of_isSmallExtension_of_charPm` above, whose docstring
+carries the falsity audit that added `h2`).
+
+`h2 : IsUnit (2 : S)` is the hypothesis the first statement of this clause was
+missing; it is refuted without it by `ZMod 16 ↠ ZMod 8`, and it is discharged at
+the call site by `isUnit_two_of_oddPrime hℓOdd`. It is a condition on the
+coefficient ring, NOT a hypothesis on `ℓ`. -/
+theorem exists_tameLocalLift_of_isSmallExtension
+    {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S] [IsLocalRing S]
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
+    (ψ : S →+* R) (hψ : Continuous ψ) (hsm : IsSmallExtension ψ)
+    (h2 : IsUnit (2 : S))
+    (ρ2 : GaloisRep ℚ_[2] R (Fin 2 → R)) (htame : IsTameAtTwoLocal ρ2) :
+    ∃ τ : GaloisRep ℚ_[2] S (Fin 2 → S),
+      (∀ g w i, ψ (τ g w i) = ρ2 g (fun j => ψ (w j)) i) ∧
+      IsTameAtTwoLocal τ := by
+  have h2R : IsUnit (2 : R) := by
+    have h := h2.map ψ
+    rwa [map_ofNat] at h
+  exact exists_tameLocalLift_of_isSmallExtension_of_charPm ψ hψ hsm ρ2
+    (isTameAtTwoLocal_char_eq_pm h2R htame)
 
 /-! ### Rank transfer for the obstruction bound
 
@@ -19147,8 +19285,20 @@ explicitly.)
      correct about preservation and not about what is needed.
    * `isFlat` at `ℓ` — **OPEN**, `exists_flatLocalLift_of_isSmallExtension`
      (Ramakrishna: the flat local deformation condition is smooth).
-   * `isTameAtTwo` at `2` — **OPEN**, `exists_tameLocalLift_of_isSmallExtension`
-     (smoothness of the ordinary/tame local condition at `2`).
+   * `isTameAtTwo` at `2` — **OPEN**,
+     `exists_tameLocalLift_of_isSmallExtension_of_charPm` (smoothness of the
+     ordinary/tame local condition at `2`). Its falsity audit was PERFORMED
+     2026-08-02 and the clause as first stated was **FALSE**: it entails that a
+     square root of `1` in `R` lifts to one in `S`, which `ZMod 16 ↠ ZMod 8`
+     refutes (`3` squares to `1` mod `8` and lifts to no square root of `1` mod
+     `16`). The repair is `IsUnit (2 : S)` — the hypothesis clause (5a) already
+     carries, discharged here by `isUnit_two_of_oddPrime hℓOdd` since the source
+     of the small extension is `MvPowerSeries (Fin g) Λ ⧸ K` with `Λ` a
+     `ℤ_[ℓ]`-algebra. It is a condition on the coefficient ring and NOT a
+     hypothesis on `ℓ`, so the discriminating check recorded when the clause was
+     cut is unaffected. `exists_tameLocalLift_of_isSmallExtension`, the shape
+     consumed here, now carries `h2` and is PROVEN over the recut leaf; **the
+     consumer must pass `isUnit_two_of_oddPrime hℓOdd` when it is wired up.**
 
    The two open ones are stated on LOCAL representations (`GaloisRep ℚ_v`),
    with `IsFlatAtLocal` / `IsTameAtTwoLocal`, each `Iff.rfl`-equal to the global
