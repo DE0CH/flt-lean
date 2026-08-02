@@ -20821,3 +20821,61 @@ split — reintroduce `H¹`, cut into Lefschetz (`#X = ℓⁿ + 1 − Tr(Frobⁿ
 congruence relation — is `1 → 2` where the first half DUPLICATES the rationality leaf this
 cluster already delegates to.  Eliminating the Tate module rather than introducing it is
 what keeps the recut at `1 → 1`.
+## A "DO NOT WEAKEN THIS TO `∃`" PROHIBITION USUALLY CONFLATES *PROVING* AN INHABITANT WITH *TAKING* ONE
+(2026-08-01, `flt-lean-21`, `isReduced_isIntegrallyClosed_ringKrullDim_of_rigidifiedModuliData_specF`
+in `ModularCurve/X0.lean`.)  A `∀ x, P x` leaf over a fine-moduli structure routinely
+carries a paragraph forbidding the `∃`-shaped form, on the ground that
+> representability is already a separate leaf, so an `∃ R` form would re-bundle it here
+> and be strictly the harder obligation (`∃ R, P R` gives `∀ R, P R` by the rigidity
+> above, but not conversely without an inhabitant).
+The parenthesis is CORRECT and the conclusion drawn from it is FALSE.  What it shows is
+that the `∃` form must **take** an inhabitant, not that it must **prove** one.  Give the
+`∃` leaf a `hne : Nonempty _` binder and discharge it at the call site from the `∀`
+statement's own binder (`⟨R⟩`) — the two forms are then EQUIVALENT and nothing is
+re-bundled.  Here the same file's `ℚ` side had been doing exactly that since the day
+before: `isDedekindDomain_rigidifiedModuli` (`∀`, proven) over
+`exists_dedekind_rigidifiedModuli` (`∃` + `Nonempty` hypothesis) plus
+`nonempty_iso_rigidifiedModuliScheme`.  **When a docstring forbids a shape, check whether
+the file's own twin at another base already uses it.**
+**The recut is only legal once the rigidity debt is PAID**, and paying it is the durable
+half.  `RigidifiedModuliData.eq_id_of_isBaseChangeOf_self` /
+`nonempty_iso_rigidifiedModuliData` / `nonempty_ringEquiv_rigidifiedModuliData` are the
+`ℚ`-side `RigidifiedModuliScheme` pair transcribed with `S.M` spelled as
+`Spec (CommRingCat.of R.A)` and `R.strM` supplying `universal`'s unused base binder —
+**four declarations, compiled first try, at an arbitrary base, with no hypothesis on `N`
+or `n` and no inhabitant.**  They also answer, in the confirming direction, two standing
+*"the check that would refute this: exhibit two non-isomorphic inhabitants"* lines that
+were sitting 39 000 lines apart.  Report such a recut as `1 → 1` with what got smaller;
+a `−1 +1` warning-set delta is otherwise indistinguishable from nothing happening.
+**A bare `RingEquiv` between two `ZMod n`-algebras IS a `ZMod n`-algebra equivalence**,
+because `RingHom.ext_zmod` makes `ZMod n →+* B` unique.  So a transport lemma over
+`ZMod n` (or `ℚ`, or any quotient/localization of `ℤ`) should take a `RingEquiv` and
+build the `AlgEquiv` internally with `AlgEquiv.ofRingEquiv`; demanding an `AlgEquiv` in
+the statement pushes an obligation onto every call site for nothing.  The four transports
+wanted here were `isReduced_of_injective` (note: `Function.Injective.isReduced` does NOT
+exist — the lemma is stated the other way round, from an injective hom INTO a reduced
+ring), `IsIntegrallyClosed.of_equiv`, `Algebra.FiniteType.equiv` and
+`ringKrullDim_eq_of_ringEquiv`.
+### MEASURED at this pin: the regularity route to "normal of dimension one" is BLOCKED
+Recorded because the leaf's own docstring prices this algebra as free and it is not, and
+because both readings are one grep each:
+* **`IsRegularLocalRing` / `IsRegularRing` EXIST** (`Mathlib/RingTheory/RegularLocalRing/`)
+  **and the theory is otherwise empty** — `Defs.lean` and `Polynomial.lean` are the only
+  two files in mathlib that mention `IsRegularLocalRing`.  So there is no
+  `regular ⟹ reduced`, no `regular ⟹ normal`, no `regular local ⟹ domain`, and any cut
+  of the form "leaf gives regularity, algebra gives the rest" leaves an unbridgeable gap.
+* **the product route is real but is a several-hundred-line development.**
+  `IsReduced (∀ i, A i)` and `IsNoetherianRing (∀ i, A i)` are INSTANCES (`infer_instance`).
+  `ringKrullDim` of a finite product, `IsIntegrallyClosed` of a finite product, and the
+  localization theory they need — `(∀ i, A i)⁰ = Submonoid.pi …`, `IsLocalization` of a
+  product — are all ABSENT.  **`PrimeSpectrum.sigmaHomeoPi` is a name that appears only in
+  a mathlib COMMENT**, so a grep for it "finds" a declaration that does not exist; probe
+  with `#check`, not with `grep`.
+### The mid-docstring edit trap: replacing a paragraph can append a terminator
+Editing a paragraph in the MIDDLE of a long docstring, it is natural to end the
+replacement with a comment terminator — which closes the docstring early and leaves the
+remaining prose in code position.  This is the delimiter-inside-a-comment hazard already
+recorded, arriving through a paragraph replacement rather than through a quoted example.
+**Re-run `tools/merge/parsecheck.py <file>` and `flt-comment-balance.py` after every
+docstring edit**; both are seconds and both catch it, and the compiler's version of the
+same message arrives thousands of lines away.
