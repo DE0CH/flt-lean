@@ -1147,12 +1147,20 @@ theorem exists_unramifiedAbelian_relNormClassSubgroup_eq_bot :
 /-- **THE EXISTENCE THEOREM OF UNRAMIFIED CLASS FIELD THEORY, IN THE ONLY FORM THE ARTIN
 ISOMORPHISM NEEDS: `K` has a finite ABELIAN extension inside `AlgebraicClosure K`,
 unramified at every finite prime and at every infinite place, of degree AT LEAST `h_K`**
-(SORRY LEAF, cut 2026-07-30 out of `exists_hilbertClassField_artinIso` below, which is
-now PROVEN from it, from `exists_classGroupHom_eq_frobAt` (RECIPROCITY) and
+(was a SORRY LEAF, cut 2026-07-30 out of `exists_hilbertClassField_artinIso` below, which
+is PROVEN from it, from `exists_classGroupHom_eq_frobAt` (RECIPROCITY) and
 `closure_frobAt_eq_top` (CHEBOTAREV) of `Fermat/FLT/NumberField/ArtinSymbol.lean`, and
-from nothing else).
+from nothing else; **itself DECOMPOSED AND PROVEN 2026-07-31** over
+`exists_unramifiedAbelian_relNormClassSubgroup_eq_bot` and
+`index_relNormClassSubgroup_le_finrank_of_isUnramifiedAtInfinitePlaces`, both above).
 
-**THIS IS NOW THE WHOLE REMAINING GAP in the Hilbert-class-field half of this cluster**,
+**THE `SORRY LEAF` LABEL THAT USED TO OPEN THIS DOCSTRING WAS STALE from 2026-07-31 and
+was corrected on 2026-07-31**; the paragraph below calling this "the whole remaining gap"
+is likewise history, and is kept because its account of what the statement is for is still
+the best one in the file. The gap moved DOWN, to the two leaves just named. Regenerate the
+open-leaf list from the build's warnings; do not read it off these headers.
+
+**THIS WAS THE WHOLE REMAINING GAP in the Hilbert-class-field half of this cluster**,
 and it is the classical EXISTENCE theorem and nothing else: no Artin map, no dictionary,
 no intermediate fields. Everything the old leaf also demanded — that the Artin map is an
 isomorphism, and that the norm class group of an intermediate field is the subgroup
