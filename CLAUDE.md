@@ -25348,3 +25348,80 @@ about `e`, and `ℚ(i)` at `p = 2` has `e = 2`, `f = 1` with NO `ℚ_[2]`-embedd
 There is no adapter in that direction because there is no such implication — the
 file ships adapters both ways for the OTHER pair (`IsTotallySplitAt` ⟷ embedding)
 and the asymmetry is the tell.
+## TWO AGENTS BUILT THE TWO HALVES OF ONE ROUTE, AND EACH RECORDED THE OTHER HALF AS MISSING
+(2026-08-01, `exists_pow_eq_of_kaehler_stalk_eq_zero` in `Modularity/TateModule.lean`
+— Cartier's criterion, cut 2026-07-30, closed today in ~35 lines of plumbing.)
+The standing rule is that an absence claim is scoped to its import cone and its
+date. Here is its sharpest instance, and it is a SHAPE rather than a slip.
+That leaf's docstring wrote out the classical route in three steps: (1) the stalk is
+a normal domain; (2) `ker(d : K ⟶ Ω[K⁄k]) = K^p` for `K` its fraction field, `k`
+perfect; (3) the `p`-th root descends because the stalk is integrally closed. Every
+step landed on `main` **the next day**, and neither of the two agents who built them
+knew the other existed:
+* `Fermat/FLT/Mathlib/FieldTheory/KaehlerField.lean` — `FLT.D_eq_zero_iff_exists_pow`
+  and `FLT.D_algebraMap_eq_zero_iff_exists_pow`, steps (2) AND (3) together,
+  sorry-free, over `[PerfectField k] [Algebra.EssFiniteType k K] [CharP K p]` plus
+  `[IsIntegrallyClosed R] [IsFractionRing R K]`. **`TateModule.lean` had imported
+  that module since before the leaf was cut**;
+* `Fermat/FLT/Mathlib/RingTheory/RegularLocalNormal.lean` —
+  `AlgebraicGeometry.isIntegrallyClosed_stalk_of_smooth_over_field`, step (1),
+  sorry-free. Its own docstring names *this leaf* as its consumer and then says, in
+  bold, that **"the OTHER half of that leaf, the criterion `{y ∈ K : d y = 0} = K^p`
+  … is separate missing library and is NOT supplied here"** — which was false on the
+  day it was written, by a module that had landed hours earlier.
+**Why nothing catches it.** Both halves are PROVEN, so no `sorry` scan sees
+anything; both modules are in the root closure, so no reachability check fires; the
+leaf is open and unowned, so `own.py` and `leafstat.py` are correct and useless; and
+the two halves share no identifier with the leaf or with each other. The only
+artefact that pointed at the answer was a docstring sentence asserting the answer
+did not exist.
+**The check, and it is one grep per STEP rather than one per leaf.** A docstring
+that writes out a multi-step classical route has, by writing it out, made each step
+individually greppable — in mathlib vocabulary, which is what the tree files these
+things under. Grep the CONCLUSION of every step before pricing any of them:
+    grep -rn 'D_eq_zero\|pthPowers\|IsIntegrallyClosed' --include=*.lean Fermat/
+Three riders, each of which cost time here:
+* **Grep your own import list.** Half the answer was in a module this file already
+  `public import`s. Nobody re-reads their own header, and an absence claim is at its
+  most convincing about a file you believe you know.
+* **When a mathlib-facing module's docstring names your leaf as its consumer, read
+  the WHOLE docstring, including what it says is still missing — and then check that
+  clause.** A module written *for* your leaf is written by somebody who surveyed the
+  same ground you are about to, one day earlier, and their absence claims decay at
+  the same rate as yours.
+* **`Fermat/FLT/Mathlib/**` is where the fleet's general-purpose commutative algebra
+  and field theory land, it is small, and its filenames are named after the
+  MACHINERY rather than after any consumer.** `ls` it before concluding a theory is
+  absent; `KaehlerField.lean` and `RegularLocalNormal.lean` are both one-line
+  additions to any such survey.
+### The scheme-to-ring bookkeeping recipe, since it is the reusable part
+What was actually left was converting `Smooth aX` into ring-level hypotheses about
+`X.presheaf.stalk x` for the `stalkAlgebraOver` structure. That is now
+`essFiniteType_stalk_of_smooth`, and the recipe is worth copying whole:
+* an affine `V ∋ x` from `X.isBasis_affineOpens.exists_subset_of_mem_open`;
+* `HasRingHomProperty.appLE (P := @Smooth) aX ‹Smooth aX› ⟨⊤, isAffineOpen_top _⟩
+  ⟨V, hV⟩ le_top` gives `RingHom.Smooth (aX.appLE ⊤ V le_top).hom`;
+* `RingHom.Smooth.propertyIsLocal.respectsIso.2` moves it across
+  `Scheme.ΓSpecIso`, and `RingHom.smooth_algebraMap` turns it into
+  `Algebra.Smooth k Γ(X, V)`;
+* `IsAffineOpen.isLocalization_stalk` presents the stalk as a localisation, so
+  `Algebra.EssFiniteType.of_isLocalization` and `Algebra.FormallySmooth.of_isLocalization`
+  both apply, and `.comp` finishes;
+* the `IsScalarTower` is the only step with content and it is four lines:
+  `appLE ⊤ V = appTop ≫ res` (`Scheme.Hom.appLE`) plus `TopCat.Presheaf.germ_res`.
+Two traps in it, both costing a round:
+* **`TopCat.Presheaf.algebra_section_stalk` IS an instance and still will not be
+  found.** It is stated for `x : ↥U`, so `Algebra Γ(X, V) (X.presheaf.stalk x)` with
+  a bare `x : X` gives instance search nothing to unify `U` against. `letI` it
+  explicitly with `⟨x, hxV⟩`; the `isLocalization_stalk` you get back then matches.
+* **`have e : R ≃+* S := …` DESTROYS the defeq you need.** `commRingCatIsoToRingEquiv`
+  bound with `have` makes `e.toRingHom` opaque, so the `exact` against
+  `((ΓSpecIso).inv ≫ f).hom` fails on two terms that print identically; inlining the
+  equiv at its use site makes the same `exact` close. This is the standing
+  `have`-on-data rule, met in its commonest disguise.
+**And the accounting is a real `−1`, which is worth stating because a route-recovery
+commit looks like bookkeeping.** The module went 15 → 14 open leaves — comment-stripped
+sorry tokens and the build's `declaration uses 'sorry'` set agreeing at 14, with the
+target's line absent and the sibling leaf still present — and `#print axioms` from an
+importer, run with that sibling as a live `sorryAx` control, returns
+`[propext, Classical.choice, Quot.sound]`.

@@ -42,7 +42,17 @@ needs exactly this: `A'` is integral, so every stalk `𝒪_{A',x}` injects into 
 `𝒪_{A',x}`, hence lies in `𝒪_{A',x}` as soon as that ring is integrally closed.  With
 `isIntegrallyClosed_stalk_of_smooth_over_field` the leaf's `∀ x : A'` collapses to a single
 statement about a single field.  **That leaf is NOT touched here** — its other half, the
-field-level criterion `{x ∈ K : d x = 0} = K ^ p`, is separate missing library.
+field-level criterion `{x ∈ K : d x = 0} = K ^ p`, is separate library.
+
+**CORRECTION 2026-08-01: that other half was NOT missing, and had landed the same day.**
+It is `FLT.D_eq_zero_iff_exists_pow` / `FLT.D_algebraMap_eq_zero_iff_exists_pow` in
+`Fermat/FLT/Mathlib/FieldTheory/KaehlerField.lean`, sorry-free, and the second of those
+already bundles the descent step this file supplies the input for.  With the two
+together `Fermat.exists_pow_eq_of_kaehler_stalk_eq_zero` is PROVEN
+(`Modularity/TateModule.lean`), so the sentence above and its counterpart below are
+retained only as the record of the miss: two agents built the two halves of one route on
+one day and each wrote the other down as absent.  See CLAUDE.md, "TWO AGENTS BUILT THE
+TWO HALVES OF ONE ROUTE".
 
 ## THE WALL, stated precisely: `IsRegularLocalRing R → IsIntegrallyClosed R` alone is NOT
 ## reachable at this pin, and the reason is one named mathlib TODO
@@ -531,9 +541,12 @@ WHAT THIS IS FOR.  Together with `isDomain_stalk_of_smooth_over_field` it makes 
 of `exists_pow_eq_stalkMap_mulByNat_prime` to the FUNCTION FIELD available: `𝒪_{A',x}` is a
 domain, so it embeds in `k(A')`, and it is integrally closed, so a `p`-th root in `k(A')` of
 an element of `𝒪_{A',x}` — being a root of the monic `T ^ p - b` — lies back in `𝒪_{A',x}`.
-The leaf's `∀ x : A'` then collapses to one statement about one field.  **The OTHER half of
+The leaf's `∀ x : A'` then collapses to one statement about one field.  ~~**The OTHER half of
 that leaf, the criterion `{y ∈ K : d y = 0} = K ^ p` for `K` the function field of a smooth
-variety over a perfect field, is separate missing library and is NOT supplied here.** -/
+variety over a perfect field, is separate missing library and is NOT supplied here.**~~
+**FALSE WHEN WRITTEN, CORRECTED 2026-08-01**: that criterion is
+`FLT.D_eq_zero_iff_exists_pow` in `Fermat/FLT/Mathlib/FieldTheory/KaehlerField.lean`,
+sorry-free and landed the same day.  See the correction in this file's module docstring. -/
 theorem Fermat.AbelianSchemeStruct.isIntegrallyClosed_stalk {k : Type u} [Field k]
     {A : Scheme.{u}} {f : A ⟶ Spec (CommRingCat.of k)} (ab : Fermat.AbelianSchemeStruct f)
     (x : A) : IsIntegrallyClosed ↥(A.presheaf.stalk x) :=
