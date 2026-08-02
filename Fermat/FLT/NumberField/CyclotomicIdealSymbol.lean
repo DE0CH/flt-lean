@@ -592,16 +592,32 @@ DECOMPOSITION group.  `hNinert` kills the inertia discrepancy — after the
 transport of `exists_conj_localInertia_rat_of_localInertia` above, which is
 why the two leaves are stated together — and `hNab` makes `Γℚ/N` receive
 every commutator of `ker χ`, so `N` absorbs the conjugation as well: both
-elements lie in `ker χ` (the image of `Γ CF` does, by `hχcyc`; and `x` by
+elements lie in `ker χ` (the image of `Γ CF` does, by `hχCF`; and `x` by
 `hx`), and conjugation is trivial on an abelian quotient.
 
-**WHY `hχcyc` IS LOAD-BEARING AND NOT DECORATION.** `hNab` only supplies
+**WHY `hχCF` IS LOAD-BEARING AND NOT DECORATION.** `hNab` only supplies
 commutators of elements of `ker χ`.  The conjugating element produced by
 the decomposition-group step is a priori an arbitrary element of `Γℚ`, and
 for it to be absorbed it must be recognised as lying in `ker χ` — which is
-`Γ_{ℚ(μ_p)}` precisely because `χ` is the mod-`p` cyclotomic character.
-This is the same identification (item 1 of the consumer's list) that makes
-`Γ CF → ker χ` well defined.
+exactly what `hχCF` says about the image of `Γ CF`, and it is the same
+identification (item 1 of the consumer's list) that makes `Γ CF → ker χ`
+well defined.
+
+**`hχCF` REPLACED `hχcyc` ON 2026-08-01, and this is what makes the leaf
+attackable AT ALL from inside this module.**  The route spends the cyclotomic
+character in exactly one place, "`Γ CF` maps into `ker χ`"; the derivation of
+that from `hχcyc` is `Interface.lean`'s
+`chi_map_eq_one_of_isCyclotomicExtension`, whose proof needs the roots-of-unity
+computation and lives DOWNSTREAM of this module, so a prover working here would
+have had to duplicate it and collide with that file at merge — the friction
+`mul_inv_mem_of_conj_localInertia_mul_commutator` above already records.  Taking
+the CONSEQUENCE as the hypothesis removes it; the sole call site discharges it
+with that very theorem, in one line.  The leaf is formally STRONGER for it
+(`hχcyc → hχCF` and not conversely), and nothing in the route notices: the
+geometry is about primes and Galois groups and mentions no character, and the
+absorption step is already proven over `hχCF` and not over `hχcyc`.
+`[IsCyclotomicExtension {p} ℚ CF]` is RETAINED although the route does not use
+it — the call site has it for free, and a hypothesis cannot make a leaf false.
 
 **Why `hNker` is NOT among the hypotheses.** The argument needs `N ⊆ ker χ`
 nowhere; it only ever needs to put elements INTO `N`.  The consumer holds
@@ -717,10 +733,9 @@ which is where a successor should expect to spend the run. -/
 theorem globalFrob_map_mul_inv_mem_of_isArithFrobAt {p : ℕ} [hp : Fact p.Prime]
     {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
     (χ : Field.absoluteGaloisGroup ℚ →* kk')
-    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
-      algebraMap ℤ_[p] kk'
-        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
     (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (hχCF : ∀ h : Field.absoluteGaloisGroup CF,
+      χ (Field.absoluteGaloisGroup.map (algebraMap ℚ CF) h) = 1)
     (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
     (hι : ∀ z : CF, AlgebraicClosure.map (algebraMap ℚ CF) (ι z)
       = algebraMap CF (AlgebraicClosure CF) z)
