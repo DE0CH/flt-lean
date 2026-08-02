@@ -418,7 +418,7 @@ open in them has been split along the theories it needed:
 | `exists_x1SmoothProperCurveModel` | Deligne-Rapoport VI.6.9: the smooth proper model over `ℤ_(ℓ)` together with the identification of its GENERIC fibre.  NO moduli in the conclusion — the modular input is the hypothesis `hX`.  (Replaces `exists_x1CurveReductionModel`, which is **PROVEN** over this row alone since 2026-07-30: the special fibre is the pullback along the closed point, so `spX`/`spX_nat` are `fibreIdentPullback`, and `properX` is `bijective_pre_generic_of_isProper` — the three obligations that need no modular geometry, discharged as `X0.lean` had already done on the `Γ₀` side.) | `ℚ → 𝔽_ℓ` |
 | `exists_isX1Compactification_specialFibre` | Igusa / Katz-Mazur 5.1.1: the special fibre of that model IS `X_1(N)` over `𝔽_ℓ`.  (`exists_x1CurveModel_of_base` is PROVEN over this row and the one above, 2026-07-28, splitting the two classical theorems it had cited jointly; `exists_x1ReductionAt` is PROVEN over that plus the moduli-free `NeronReduction.lean`.  Since 2026-07-30 the row above is the weaker `exists_x1SmoothProperCurveModel`; the leaf COUNT here is unchanged.) | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
-| `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence as a natural family on points — the geometric half, and the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceFamily`.  (`exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is now **PROVEN** over this row and the next, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over this row alone.) | `ℚ` |
+| `exists_heckeCorrespondenceMorphismGamma1` | the `Γ₁` Hecke correspondence as ONE morphism `X_1(N) ⟶ J_1(N)` over `ℚ` — the `Γ₁` twin of `X0.lean`'s `exists_heckeCorrespondenceMorphism`.  (`exists_heckeCorrespondenceFamilyGamma1`, the natural-family form, was a leaf from 2026-07-28 to 2026-08-01 and is now **PROVEN** over this row alone: Yoneda plus the base-point constant, both formal.  `exists_heckeAction_isotypicQuotients_gamma1` was a leaf until 2026-07-28 and is **PROVEN** over the family form and the next row, via the `Γ₁` moduli pin `IsModularHeckeActionGamma1`; `exists_modularHeckeAction_gamma1` is PROVEN over the family form alone.) | `ℚ` |
 | `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity theorem for `Γ₁(N)` AT A PRIME: `a p` is an algebraic integer.  MENTIONS NO SCHEME — the only obligation of `IsIsotypicQuotient` that does not.  Needs the integral homology `H₁(X_1(N), ℤ)` as a Hecke module; the archimedean bounds in this file cannot substitute.  Cannot be an instance of `X0.lean`'s `isIntegral_coeff_prime_of_isWeightTwoEigenform`: the `Γ₁` coefficients generate `ℚ(χ)`.  (The general-`n` form `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this since 2026-07-31, by multiplicativity and the prime-power recursions.) | `ℚ` |
 | `exists_isotypicQuotient_of_isIntegral_gamma1` | Shimura's `A_f` on `Γ₁(N)`, one factor, given the PINNED Hecke action AND algebraicity — the "build one factor" half of Eichler-Shimura, and the `Γ₁` twin of `X0.lean`'s `exists_isotypicQuotient_of_isIntegral`.  (`IsIsotypicQuotient` is reused verbatim from `X0.lean`; it is shape-free.  `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` is **PROVEN** over this row and the one above since 2026-07-30, transporting the `Γ₀` recut of the same day; its FALSITY AUDIT was discharged that day too and the statement is TRUE.) | `ℚ` |
 | ~~`exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`~~ | the "assemble the factors" half: finiteness of the index set, the oldform multiplicities, `finite_ker`, and the `neben` labelling.  It no longer owns the `N = 0` case: that case was REFUTED on 2026-07-28 (`isEmpty_isHeckeIsotypicDecompositionGamma1_zero`) and it carries `hN : N ≠ 0`; see its docstring.  **NO LONGER A LEAF — PROVEN 2026-07-31** over `finite_setOf_isWeightTwoEigenformOn_gamma1` (the pure modular-forms half) and `exists_isotypicQuotientFamily_finiteKer_gamma1` (the geometry), which is itself **PROVEN the same day** over the two rows below. | `ℚ` |
@@ -19736,10 +19736,147 @@ The paragraph this subsection used to carry, that
 `IsHeckeIsotypicDecompositionGamma1` "does **not** acquire a `heckeModuli` field
 here", was true when written and is now STALE: that field exists. -/
 
+/-- **THE `Γ₁` HECKE CORRESPONDENCE AS ONE MORPHISM `X_1(N) ⟶ J_1(N)`** (sorry leaf,
+new 2026-08-01) — the whole remaining mathematical content of
+`exists_heckeCorrespondenceFamilyGamma1` immediately below, which is PROVEN over it
+and nothing else.  This is the `Γ₁` transport of `X0.lean`'s
+`exists_heckeCorrespondenceMorphism`, made a day later and for the same reason.
+
+In words: *at a prime `ℓ ∤ N` there is a morphism `κ : X ⟶ J` over `ℚ` whose value at
+the moduli point of a `Γ₁(N)`-datum `d` over `ℚ̄` is the sum of the Abel–Jacobi classes
+of the `ℓ + 1` quotients `d/D`.*  That is the trace of the correspondence `X_1(N, ℓ)`
+along its degeneracy maps, composed with Abel–Jacobi, and nothing else — no naturality
+hypothesis, no base-point clause, no constant.
+
+**WHAT THE REDUCTION BELOW DISCHARGES, i.e. what a prover no longer writes.**
+
+* **YONEDA.**  The parent asks for a NATURAL family
+  `c : ∀ {T} (g : T ⟶ SpecQ), RelPoint strX g → RelPoint jstr g` together with its
+  naturality clause.  By Yoneda in the slice over `SpecQ` such a family IS a single
+  morphism `X ⟶ J` over `SpecQ`, and `RelPoint.post κ hκ` is natural by construction:
+  the parent's clause is `Subtype.ext (Category.assoc _ _ _)`.
+* **THE BASE-POINT CONSTANT.**  The parent's remaining two clauses — `c o = 0`, and the
+  recipe shifted by an existentially bound `e` — are ONE datum, the failure `ε` of the
+  correspondence to fix the base point, and it is entirely formal.  The parent's witness
+  is `c := post κ − (post κ o)` and `e := −(post κ o)`, and its three clauses then follow
+  from `pre_add`, `pre_neg`, `Category.assoc` and `Category.id_comp` alone.  **This is
+  exactly the constant whose ABSENCE made the parent FALSE AS STATED until 2026-07-31**;
+  its `N = 11`, `ℓ = 2` CUSP witness is recorded in full on the parent below, and note
+  that the `Γ₀` witness does NOT transport (`X_1(N)` has no non-cuspidal rational point
+  of positive genus).  Moving the constant into compiled glue is the point of this cut:
+  a prover of the trace can no longer be asked to get that normalisation right by hand.
+
+**THIS IS AN EQUIVALENCE, NOT A STRENGTHENING**, and saying so matters precisely because
+the recipe here carries NO constant while the parent's binds one existentially.  The
+constant is absorbed by the choice of `κ`: given the parent's `(c, e)`, Yoneda gives `κ₁`
+with `c = post κ₁`, and `κ := κ₁ ≫ τ` for `τ` the translation by `−e` satisfies this
+statement, since `post τ y = y + pre (−e)` at every base.  `τ` is writable at this pin —
+the base is `SpecQ` and `AbelianSchemeStruct.addHom` exists there (`X0.lean` ~10802).  So
+the converse is true and classical; it is not compiled here because nothing consumes it
+and it would cost a `pullback.lift` bookkeeping block.  Only the direction that is USED —
+this leaf ⟹ the parent — is proven below.
+
+## FALSITY AUDIT 2026-08-01 — FRESH, AGAINST THIS STATEMENT
+
+It does NOT transpose from the parent's.  This is the parent's SECOND restatement (the
+constant was ADDED on 2026-07-31 and is REMOVED again here by absorbing it into `κ`), and
+CLAUDE.md records that a second restatement VOIDS the first audit — this cluster being the
+one where two individually-correct edits already made a leaf FALSE.
+
+**THE TRANSLATION CHECK** (CLAUDE.md, "WHEN A CUT ABSORBS A CONSTANT, EVERY OTHER CLAUSE
+MUST BE INVARIANT UNDER THE TRANSLATION IT ABSORBED"), run clause by clause.  The symmetry
+the removed existential was absorbing is translation of the witness,
+`κ ↦ κ ≫ τ_δ` for `δ : RelPoint jstr (𝟙 SpecQ)`, i.e. `post κ ↦ post κ + pre δ`:
+
+* `hκ : κ ≫ jstr = strX` — INVARIANT.  `τ_δ` is a morphism `J ⟶ J` over `SpecQ`, so
+  `κ ≫ τ_δ ≫ jstr = κ ≫ jstr`.
+* the recipe — NOT invariant: the left side gains `pre δ` and the right side is a sum of
+  Abel–Jacobi classes, which does not mention `κ`.  **That is the intended and required
+  state of affairs, and it is why this cut is safe**: the recipe is the ONLY clause, so it
+  is free to pin the translate absolutely, and there is no second clause for it to
+  disagree with.  The Atkin–Lehner half of the `Γ₀` cluster went wrong on 2026-07-31
+  precisely by carrying a second clause that was written in absolute rather than
+  difference form; there is no such clause here, and no Atkin–Lehner sibling of this leaf
+  exists in this file (`IsAtkinLehner` does not occur in `X1.lean`), so no second cut is
+  owed.  If one is ever added, its equivariance clause must be stated in the DIFFERENCE
+  form `w_J (P x − P o) = P (w x) − P (w o)`.
+* **the base-point clause is GONE rather than dropped, and that is what makes the
+  removal of `e` legitimate.**  Carrying `post κ o = 0` beside this recipe would
+  reproduce the parent's pre-2026-07-31 defect exactly: the two together force
+  `ε := T_ℓ[o] − (ℓ+1)[o] = 0`, which the parent's cusp witness refutes.  The content
+  that clause used to carry is now the DEFINITION of the parent's `c` in the glue below.
+
+**TRUE, with the classical witness.**  `κ` represents `x ↦ ∑_D aj([x/D])`, `D` running over
+the `ℓ + 1` cyclic subgroups of order `ℓ`.  That is what the two hypotheses on `(m, dq, iso)`
+pin the right-hand side to be — the first makes `k ↦ ker (iso k)` injective and the second
+makes it hit every `CyclicSubgroupOfOrder d.ab ℓ`, so the sum runs over each `D` exactly once
+and does not depend on the enumeration.  In terms of the classical operator,
+`κ = ajMor ≫ T_ℓ ≫ τ_{−ε}` with `ε = T_ℓ[o] − (ℓ + 1)[o]`; the parent's `c` is `T_ℓ ∘ aj` on
+the nose, which is why the two differ by exactly that translation and by nothing else.  At
+`Γ₁` the classical `ε` is genuinely nonzero (the cusp computation on the parent), and that is
+harmless here — it is absorbed, not assumed away.
+
+**NOT satisfied by the zero morphism unless the recipe is vacuous** — the same
+`IsGamma1Isogeny`-inhabitation question the parent records at length, which is NOT settled.
+Same degradation, same direction: if the pin is formally vacuous this leaf is cheap and so is
+everything above it.  The cut does not change the worst case in either direction.
+
+`_hℓ` and `_hℓN` are recorded and unused, as in the parent: primality and coprimality are what
+make the classical witness exist (they make the correspondence finite locally free of degree
+`ℓ + 1`), and they are not consumed by the statement.  `jac` is load-bearing — it is what `aj`
+on the right-hand side is — and so is `H`, being what `classify` is.
+
+**WHAT REMAINS GENUINELY MISSING is unchanged**, and is recorded in full on the parent below:
+the correspondence scheme `X_1(N, ℓ)` with its two degeneracy maps, and the trace of a finite
+locally free morphism on the functor of points, which is SHARED with `X0.lean`'s
+`IsRelPicZeroOf.listSum_map_post_eq_of_listSum_aj_eq` and should be built once, over an
+arbitrary finite locally free morphism, not twice — and, as the parent says, the `Γ₀` and `Γ₁`
+sides of it are the same object and should be taken together.  This cut adds no new missing
+theory; it removes from the prover's obligation everything that was not that. -/
+theorem exists_heckeCorrespondenceMorphismGamma1 (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    ∃ (κ : X ⟶ J) (hκ : κ ≫ jstr = strX),
+      ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+        (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+        (iso : ∀ k, IsGamma1Isogeny N ℓ d (dq k)),
+        (∀ k k' : Fin m,
+          (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+            RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+        (∀ D : CyclicSubgroupOfOrder d.ab ℓ, ∃ k : Fin m,
+          ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+            RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+        letI := ab.addCommGroup (specAlgClos ℚ)
+        RelPoint.post κ hκ
+            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d))
+          = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+              (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))) :=
+  sorry
+
 /-- **THE `Γ₁` HECKE CORRESPONDENCE, AS A NATURAL FAMILY ON POINTS**
-(sorry leaf, new 2026-07-28) — the geometric half of
+(**PROVEN 2026-08-01** over `exists_heckeCorrespondenceMorphismGamma1`
+immediately above and nothing else; a sorry leaf from 2026-07-28 to
+2026-08-01) — the geometric half of
 `exists_modularHeckeAction_gamma1` below, and the `Γ₁` transport of
 `X0.lean`'s `exists_heckeCorrespondenceFamily`.
+
+**THE PROOF, and what it discharges** (2026-08-01, the `Γ₁` transport of the
+`Γ₀` cut of 2026-07-31).  All three clauses are now formal, over the single
+morphism `κ` the leaf above supplies: `c := post κ − pre (post κ o)` and
+`e := −(post κ o)`.  Naturality is `Subtype.ext (Category.assoc _ _ _)`, the
+base-point clause is `Category.id_comp` plus `neg_add`, and the recipe is the
+leaf's own recipe plus `ab.pre_neg`.  So **the base-point constant `e` — whose
+ABSENCE made this statement FALSE until 2026-07-31, see the FALSITY AUDIT below
+— is no longer something a prover has to get right by hand.**  The audit below
+is RETAINED rather than deleted: it is the record of why `e` is in this
+signature, and its `N = 11`, `ℓ = 2` cusp witness is what the leaf above cites.
+
+**THE SIGNATURE IS DELIBERATELY UNCHANGED.**  Its sole consumer,
+`exists_modularHeckeAction_gamma1` below, destructures the conclusion
+POSITIONALLY as `⟨c, e, hnat, hzero, hrec⟩`, and this cluster is the one where
+two individually-correct edits to one statement made a leaf FALSE.
 
 TRUE, and the witness is `c := RelPoint.post (T_ℓ) _ ∘ jac.aj` for the
 genuine `T_ℓ`: that family is natural because `aj` is and `RelPoint.post`
@@ -19892,8 +20029,40 @@ theorem exists_heckeCorrespondenceFamilyGamma1 (N ℓ : ℕ) (_hℓ : ℓ.Prime)
               (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d))
             = (∑ k : Fin m, jac.aj (specAlgClos ℚ)
                 (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))))
-              + RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) e :=
-  sorry
+              + RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) e := by
+  obtain ⟨κ, hκ, hrec⟩ := exists_heckeCorrespondenceMorphismGamma1 N ℓ _hℓ _hℓN H jac
+  -- `ε` is the failure of the correspondence trace to fix the base point: the
+  -- constant whose absence made this statement FALSE before 2026-07-31.
+  set ε : RelPoint jstr (𝟙 SpecQ) := RelPoint.post κ hκ o with _hε
+  -- naturality of `post κ`, and of the constant term, are both one associativity
+  have hpostpre : ∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+      (hg : p ≫ g = g') (x : RelPoint strX g),
+      RelPoint.post κ hκ (RelPoint.pre p hg x) = RelPoint.pre p hg (RelPoint.post κ hκ x) := by
+    intro T' T p g g' hg x
+    exact Subtype.ext (Category.assoc _ _ _)
+  have hprepre : ∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+      (hg : p ≫ g = g'),
+      RelPoint.pre p hg (RelPoint.pre g (Category.comp_id g) ε)
+        = RelPoint.pre g' (Category.comp_id g') ε := by
+    intro T' T p g g' hg
+    refine Subtype.ext ?_
+    show p ≫ g ≫ ε.1 = g' ≫ ε.1
+    rw [← Category.assoc, hg]
+  refine ⟨fun {T} g x =>
+      ab.add (RelPoint.post κ hκ x) (ab.neg (RelPoint.pre g (Category.comp_id g) ε)),
+    ab.neg ε, ?_, ?_, ?_⟩
+  · intro T' T p g g' hg x
+    beta_reduce
+    rw [hpostpre p hg x, ab.pre_add, ab.pre_neg, hprepre p hg]
+  · have hid : RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ)) ε = ε :=
+      Subtype.ext (Category.id_comp _)
+    beta_reduce
+    rw [hid, ab.add_comm]
+    exact ab.neg_add _
+  · intro d m dq iso hinj hcov
+    beta_reduce
+    rw [hrec d m dq iso hinj hcov, ab.pre_neg]
+    rfl
 
 /-- **THE `Γ₁` MODULI RECIPE FOR ONE ALBANESE ENDOMORPHISM**, factored out of
 `exists_modularHeckeAction_gamma1`'s `key` so that
@@ -20455,7 +20624,10 @@ theorem exists_commutingHeckeAlbaneseFamilyGamma1 (N : ℕ)
       exact absurd ⟨d⟩ hne
 
 /-- **THE HECKE CORRESPONDENCE ACTS ON `J_1(N)`** (**PROVEN 2026-07-28**,
-over the single leaf `exists_heckeCorrespondenceFamilyGamma1` above) — the
+over `exists_heckeCorrespondenceFamilyGamma1` above — which is itself PROVEN
+since 2026-08-01, so the single geometric leaf under this theorem is now
+`exists_heckeCorrespondenceMorphismGamma1`, together with
+`exists_commutingHeckeAlbaneseFamilyGamma1` below) — the
 `Γ₁` transport of `X0.lean`'s PROVEN `exists_modularHeckeAction`, and the
 half of `exists_heckeAction_isotypicQuotients_gamma1` that carries the
 *construction* of `T_ℓ`.
@@ -27665,7 +27837,7 @@ disappearing:
 | `isTorsion_jacobian_of_lFunction_ne_zero_gamma1` | Eichler–Shimura + Kolyvagin, `Γ₁` half | no | here, **PROVEN** |
 | `exists_heckeIsotypicDecomposition_gamma1` | Eichler–Shimura | no | here, **PROVEN 2026-07-28** |
 | `exists_heckeAction_isotypicQuotients_gamma1` | Shimura's `A_f` + the Hecke action | no | here, **PROVEN 2026-07-28** |
-| `exists_heckeCorrespondenceFamilyGamma1` | the `Γ₁` Hecke correspondence, on points | no | here |
+| `exists_heckeCorrespondenceMorphismGamma1` | the `Γ₁` Hecke correspondence, as one morphism (the on-points form `exists_heckeCorrespondenceFamilyGamma1` is PROVEN over it since 2026-08-01) | no | here |
 | `exists_modularHeckeAction_gamma1` | `T_ℓ` as an endomorphism of `J_1(N)` | no | here, **PROVEN 2026-07-28** |
 | `exists_isotypicQuotient_of_isWeightTwoEigenformOn_gamma1` | Shimura's `A_f`, one factor | no | here, **PROVEN 2026-07-30** over the two rows below.  (This row read "**FALSE as stated**" until 2026-07-30; that was STALE — the FALSITY AUDIT's own header records the repair, which strengthened `IsModularHeckeActionGamma1` and left this statement untouched.) |
 | `isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1` | Shimura's algebraicity AT A PRIME, no scheme in it | no | here, NEW 2026-07-31 — the general-`n` `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` (NEW 2026-07-30) is **PROVEN** over it, transporting `X0.lean`'s 2026-07-30 cut to primes |

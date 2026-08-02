@@ -18871,6 +18871,32 @@ represented — it hides it. The witness is still determined only up to the tran
 that is not is pinning something the datum does not determine, and it is FALSE for
 exactly the reason the pre-absorption statement was false.
 
+**CORRECTION AND SHARPENING (2026-08-01, `flt-lean-73`, running this check on the `Γ₁`
+twin): "every clause must be blind to `δ`" is over-stated, and read literally it
+condemns every correct cut of this shape.** The statement is an EXISTENTIAL over `κ`,
+so if no clause saw `δ` the statement would determine nothing and would be satisfied by
+any translate — the absorbed constant would not have been absorbed, only discarded. The
+rule that is actually true, and that the section's own worked example obeys:
+
+> **AT MOST ONE clause may see `δ`, and it is the clause that FIXES the translate.
+> Every OTHER clause must be blind to it.**
+
+So the check has a per-clause verdict with THREE outcomes, not two: *invariant* (fine),
+*sensitive and it is the pinning clause* (fine, and necessary), *sensitive and it is not*
+(the defect). On the `Γ₀` Atkin–Lehner leaf there were two clauses, the recipe (pinning,
+sensitive) and the equivariance — and the equivariance in naive form was the third case,
+which is what made it false. On the `Γ₁` twin, which has the recipe and nothing else, the
+recipe is sensitive and there is nothing for it to disagree with, so the cut is safe; a
+reader applying the over-stated rule would have rejected a correct statement.
+
+**And the clause you must check is absent, not merely present-and-invariant.** What makes
+dropping `e` legitimate is that the parent's base-point clause `c o = 0` is GONE. Carry it
+over as `post κ o = 0` — invariant under nothing, and the obvious thing to keep, since it
+looks like a harmless normalisation — and it plus the recipe force `ε = 0`, i.e. exactly
+the parent's pre-repair defect, in a statement that has no constant left to blame. So run
+the check over the clauses you DELETED as well as the ones you kept, and record in the
+docstring which deletion is load-bearing.
+
 Concretely, the clause here was `w_J (c x) = c (w x) − c (w o)`. Its two candidate
 morphism-form readings look equally natural:
 
