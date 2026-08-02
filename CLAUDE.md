@@ -21499,3 +21499,57 @@ the reversal condition in the docstring: nothing projects the clause, so deletin
 later moves no consumer and is one line in the safe direction.  A conjunct kept on a
 hunch and a conjunct kept with its exit written down are different objects to the
 next owner.
+## "THE OTHER SIX FIELDS ARE ORDINARY BASE-CHANGE STABILITY" IS SIX CLAIMS — COUNT THEM, AND GREP THE FILE FOR THE ONES ALREADY PROVEN
+(2026-08-01, `flt-lean-23`, closing `exists_isX1Compactification_baseChange` in
+`ModularCurve/X1.lean`.)  A leaf whose conclusion is a STRUCTURE comes with a route that
+prices the fields in two buckets — "the hard one" and "the rest is routine".  Both buckets
+are usually wrong, in opposite directions, and the two errors are found by the same one-pass
+read: **go through the fields ONE AT A TIME and ask, per field, (a) is it base-change stable,
+and (b) is it already proven somewhere in this file.**
+Here the route named STEP 1 (rigidity) and STEP 2 (representability) as the content and said
+*"the other six fields are ordinary base-change stability"*.  Per field:
+* **`coarse` is not one obligation but three.**  `IsCoarseModuliY1` has `classify`,
+  `classify_natural` and `universal`, and the first two were **already PROVEN 7 500 lines
+  above in the same file** as `IsCoarseModuliY1.classifyPullback` / `…_natural`, at an
+  ARBITRARY base morphism and with no hypothesis at all.  So the Katz–Mazur leaf is the `∃!`
+  alone.  Nobody had connected the two, because the proven pair was written for the
+  special-fibre identification over `𝔽_ℓ` and its docstring talks about `SpecLoc.special`.
+* **`finite_compl` is NOT base-change stable**, and the route's own sketch for it — each of
+  the finitely many complement points has residue field finite over the base — is TRUE and
+  is a statement about the FIBRES of `X ×_S Spec K ⟶ X`, i.e. dimension theory plus the
+  Nullstellensatz, not "ordinary stability".
+* the remaining five really are stable.
+**AND THE UNSTABLE FIELD IS THE ONE TO REDERIVE, NOT TRANSPORT.**  `X_K` is again a smooth
+proper curve over a FIELD, so `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`
+plus `finite_of_isClosed_of_ne_univ_of_topologicalKrullDim_le_one`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`) make **every proper
+closed subset finite**, with no fibre theory anywhere.  What is then left of `finite_compl`
+is one word — the complement must be PROPER, i.e. `Y_K ≠ ∅` — and that single non-degeneracy
+is exactly what the leaf's own falsity audit had already identified its characteristic
+hypothesis as buying.  A field that does not transport is worth re-reading as "which
+degenerate case does the target statement have to exclude"; the answer is routinely a
+`Nonempty`, and a `Nonempty` is a much better leaf than a fibre computation.
+Net on this node: `1 → 2`, and the two residues share no theory — representability of
+`[Γ₁(N)]` with no curve, cusp or topology in it, and "an algebraically closed field of
+characteristic prime to `N` carries an elliptic curve with a point of exact order `N`" with
+no moduli in it, whose two hard halves (`WeierstrassCurve.n_torsion_dimension`,
+`nonempty_gamma1Datum_of_weierstrassPoint`) are already in the tree.
+### Four mechanical facts, each of which cost a round
+* **`IsProper`, `GeometricallyConnected` and `IsOpenImmersion` base-change by INSTANCE;
+  `SmoothOfRelativeDimension` does NOT.**  It is `smoothOfRelativeDimension_isStableUnderBaseChange`,
+  a *lemma*, so `infer_instance` fails with `failed to synthesize SmoothOfRelativeDimension 1
+  (pullback.snd …)` — which reads as "the pin lacks this" and does not.  `haveI :=
+  smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)` then
+  `MorphismProperty.pullback_snd _ _ inferInstance`.
+* **"the base change of an open immersion" is `IsPullback.of_bot`, three lines.**  For
+  `jY : Y ⟶ X` over `S` and `k : T ⟶ S`, the induced `Y ×_S T ⟶ X ×_S T` sits in a cartesian
+  square over `jY`: the outer rectangle is the pullback defining `Y ×_S T` (after rewriting
+  the composite by `pullback.lift_snd` and `jY ≫ strX = strY`), the bottom is the one
+  defining `X ×_S T`.  Then `MorphismProperty.of_isPullback` transports every stable
+  property, and `IsOpenImmersion` comes with `isOpenEmbedding.isOpen_range` for free.
+* **`Nonempty X`, `CompactSpace X` and `topologicalKrullDim X` for a `X : Scheme` all need
+  `↥X`.**  Without the arrow Lean elaborates the argument in `Type` and reports
+  `@pullback (Type ?u) types … k` / `failed to synthesize TopologicalSpace (pullback ?m ?m)`
+  — which reads as a universe or instance problem and is a missing coercion.
+* **`exact?` on a goal mentioning `IsPullback` of schemes blows the heartbeat budget.**  It
+  is not evidence the lemma is absent; construct the pasting by hand.

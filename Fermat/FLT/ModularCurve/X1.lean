@@ -23894,10 +23894,248 @@ theorem isTorsion_jacobian_x1TwentyFive {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ
         exists_isLFunctionOf_of_isWeightTwoEigenformOn .gamma1 25 (by norm_num) χ trivial f a hf
       ⟨L, hLf, lFunction_apply_one_ne_zero_x1TwentyFive χ f a hf L hLf⟩
 
+section X1CompactificationBaseChange
+open CategoryTheory CategoryTheory.Limits AlgebraicGeometry
+
+/-! ### The fibre of an `X_1(N)`-compactification
+
+`exists_isX1Compactification_baseChange` below is PROVEN (2026-08-01) over the
+two leaves in this subsection.  Its docstring priced the node as "STEP 1
+rigidity + STEP 2 representability, the other six fields ordinary base-change
+stability".  That reading is right about STEP 2 and wrong about the six: FIVE
+of them are stable and the sixth, `finite_compl`, is NOT — the complement of
+`Y_K` in `X_K` is the preimage of a finite set under `X ×_S Spec K ⟶ X`, whose
+fibres are `Spec (κ(x) ⊗ K)` and are finite only after a genuine argument about
+residue fields.
+
+**That argument is not made here, and does not have to be.**  Following
+`CurveCompactification.lean`'s own recipe, finiteness is REDERIVED downstream
+rather than TRANSPORTED: `X_K` is again a smooth proper curve over the field
+`K`, so `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` bounds its
+dimension and `finite_of_isClosed_of_ne_univ_of_topologicalKrullDim_le_one`
+turns *any* proper closed subset into a finite one.  What is left of
+`finite_compl` is therefore the single word NONEMPTY: the complement is proper
+exactly when `Y_K ≠ ∅`, and that is `nonempty_gamma1Datum_isAlgClosed` below —
+which is where `hchar` is spent, exactly as the parent's falsity audit says.
+
+Likewise `coarse` is not one obligation but three, and two of them were already
+in this file: `IsCoarseModuliY1.classifyPullback` and its naturality (both
+PROVEN 2026-07-30) supply `classify` and `classify_natural` for the base change
+with no hypothesis at all.  So the Katz–Mazur content is exactly the INITIALITY
+clause, and that is `universal_classifyPullback_baseChange` below.
+
+Net: one leaf becomes two, and neither carries the other's theory.  One is
+representability of `[Γ₁(N)]` with no curve, no cusp and no topology in it; the
+other is "an algebraically closed field of characteristic prime to `N` carries
+an elliptic curve with a point of exact order `N`", with no moduli in it. -/
+
+/-- **The open immersion `Y ×_S T ⟶ X ×_S T` base-changed from `jY : Y ⟶ X`.**
+
+The pair `(pullback.fst strY k ≫ jY, pullback.snd strY k)` lands in `X ×_S T`
+because `jY` is a morphism over `S`. -/
+noncomputable def curveBaseChangeOpen {X Y S T : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S}
+    {jY : Y ⟶ X} (comm : jY ≫ strX = strY) (k : T ⟶ S) :
+    curveBaseChange strY k ⟶ curveBaseChange strX k :=
+  pullback.lift (pullback.fst strY k ≫ jY) (pullback.snd strY k)
+    (by rw [Category.assoc, comm, pullback.condition])
+
+/-- **`curveBaseChangeOpen` covers `jY`** (PROVEN, `pullback.lift_fst`). -/
+theorem curveBaseChangeOpen_fst {X Y S T : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S}
+    {jY : Y ⟶ X} (comm : jY ≫ strX = strY) (k : T ⟶ S) :
+    curveBaseChangeOpen comm k ≫ pullback.fst strX k = pullback.fst strY k ≫ jY :=
+  pullback.lift_fst _ _ _
+
+/-- **`curveBaseChangeOpen` is a morphism over `T`** (PROVEN, `pullback.lift_snd`) —
+this is the `comm` field of the base-changed compactification. -/
+theorem curveBaseChangeOpen_snd {X Y S T : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S}
+    {jY : Y ⟶ X} (comm : jY ≫ strX = strY) (k : T ⟶ S) :
+    curveBaseChangeOpen comm k ≫ curveBaseChangeProj strX k = curveBaseChangeProj strY k :=
+  pullback.lift_snd _ _ _
+
+/-- **`curveBaseChangeOpen` IS the base change of `jY`** (PROVEN) — the square
+
+    Y ×_S T --curveBaseChangeOpen--> X ×_S T
+        |                                |
+       fst                              fst
+        v                                v
+        Y  ---------- jY ------------->  X
+
+is cartesian.  Vertical pasting: the outer rectangle is the pullback square
+defining `Y ×_S T` (after `curveBaseChangeOpen_snd` and `comm` rewrite the two
+composites), the bottom square is the one defining `X ×_S T`, so
+`IsPullback.of_bot` gives the top.
+
+This is what makes every base-change-stable property of `jY` free. -/
+theorem isPullback_curveBaseChangeOpen {X Y S T : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S}
+    {jY : Y ⟶ X} (comm : jY ≫ strX = strY) (k : T ⟶ S) :
+    IsPullback (pullback.fst strY k) (curveBaseChangeOpen comm k) jY (pullback.fst strX k) := by
+  refine IsPullback.of_bot ?_ (curveBaseChangeOpen_fst comm k).symm
+    (IsPullback.of_hasPullback strX k)
+  rw [curveBaseChangeOpen_snd comm k, comm]
+  exact IsPullback.of_hasPullback strY k
+
+/-- **AN ALGEBRAICALLY CLOSED FIELD OF CHARACTERISTIC PRIME TO `N` CARRIES A
+`Γ₁(N)`-STRUCTURE** (sorry leaf, NEW 2026-08-01) — i.e. an elliptic curve over
+`L` together with a point of exact order `N`.
+
+This is the whole of what `hchar` buys the parent, isolated: the parent's own
+FALSITY AUDIT names non-emptiness of the moduli problem over `K̄` as the one
+place the hypothesis is used, and this is that statement with the moduli
+vocabulary removed.  No `X`, no `Y`, no coarse space, no cusps, no base `S`.
+
+TRUE and classical.  `E[N] ≅ (ℤ/N)²` for every elliptic curve `E` over a
+separably closed field of characteristic prime to `N`, so a point of exact order
+`N` exists; and `L` algebraically closed carries an elliptic curve at all.
+
+**THE ROUTE, and both halves are short.**
+
+* *the torsion half is already in the tree*: `WeierstrassCurve.n_torsion_dimension`
+  (`Fermat/FLT/EllipticCurve/Torsion.lean`) is exactly
+  `Nonempty (E.nTorsion n ≃+ ZMod n × ZMod n)` under `[IsSepClosed k]` and
+  `(n : k) ≠ 0`.  Transport `(1, 0)`, whose additive order is `N`, and read the
+  order in `E.toAffine.Point` through the injective inclusion of the submodule.
+* *the packaging half is already in the tree too*:
+  `nonempty_gamma1Datum_of_weierstrassPoint` (PROVEN 2026-07-30) turns a
+  Weierstrass curve over any field with a point of order `N` into a
+  `Gamma1Datum`, `geom_order` included.
+
+**WHAT IS GENUINELY MISSING is only the EXISTENCE of an elliptic curve over `L`,
+and it is a one-parameter family plus one non-vanishing.**  Neither mathlib nor
+this tree has "every field carries an elliptic curve" (grepped 2026-08-01:
+`Fermat/`, `.lake/packages/mathlib/Mathlib/AlgebraicGeometry/EllipticCurve/`).
+The uniform witness avoiding a characteristic case split is
+`a₁ = 1, a₂ = a₃ = a₄ = 0, a₆ = t`, for which `b₂ = 1`, `b₄ = 0`, `b₆ = 4t`,
+`b₈ = t` and
+
+> `Δ = −b₂²b₈ − 8b₄³ − 27b₆² + 9b₂b₄b₆ = −t − 432 t²`,
+
+a NONZERO polynomial in `t` in every characteristic (its linear coefficient is
+`−1`).  `L` is algebraically closed, hence infinite, so it has a non-root, and
+that `t` gives `Δ ≠ 0`, i.e. `IsElliptic`.  Nothing else is needed; in
+particular no case split on `2`, `3` or `433`.
+
+**FAITHFULNESS.**  `(N : L) ≠ 0` forces `N ≠ 0`, so "exact order `N`" is a
+genuine finite-order condition and the degenerate reading (`addOrderOf = 0`,
+i.e. infinite order) is excluded.  Dropping `hchar` makes the leaf FALSE: in
+characteristic `p` with `p ∣ N` write `N = p^a M`; then `E[p^a]` is `0` or
+cyclic of order `p^a`, and for `a ≥ 2` no point of exact order `N` exists on a
+supersingular curve.  `IsAlgClosed` may not be weakened to a general field
+either — over `ℚ` there is no elliptic curve with a rational point of order
+`11`, by Mazur. -/
+theorem nonempty_gamma1Datum_isAlgClosed {N : ℕ} (L : Type) [Field L] [IsAlgClosed L]
+    (hchar : (N : L) ≠ 0) : Nonempty (Gamma1Datum N (Spec (CommRingCat.of L))) :=
+  sorry
+
+/-- **THE BASE CHANGE OF THE COARSE MODULI SPACE IS INITIAL** (sorry leaf, NEW
+2026-08-01) — Katz–Mazur 4.7.0, and the ONLY part of
+`exists_isX1Compactification_baseChange` that is genuinely absent at this pin.
+
+The parent's docstring says it in as many words: *"initiality ALONE does not
+base-change (coarse moduli spaces are not stable under base change in general),
+and fineness is recorded on `IsCoarseModuliY1` as something it deliberately does
+not carry as a field"*.  What is new here is that the OTHER TWO fields of
+`IsCoarseModuliY1` are free — `IsCoarseModuliY1.classifyPullback` and
+`IsCoarseModuliY1.classifyPullback_natural`, both PROVEN 2026-07-30, supply
+`classify` and `classify_natural` for `pullback.snd strY k` with no hypothesis
+on `f`, on `S`, on `N` or on the field — so the residual leaf is the `∃!` alone,
+stated over the classifying map those two already build.
+
+TRUE, by representability.  `[Γ₁(N)]` is RIGID for `N ≥ 5` in every
+characteristic — see the parent's STEP 1, which proves it outright from
+`deg(α − 1) = 2 − Tr α ≤ 4 < 5 ≤ N` — hence representable by Katz–Mazur 4.7.0,
+so `strY` is the fine moduli scheme up to unique isomorphism; the fine moduli
+scheme base-changes trivially, and a representing object is initial by Yoneda.
+
+**WHAT THIS FILE ALREADY HAS FOR IT.**  `exists_isFineGamma1Moduli_of_atlas`
+and `Gamma1Atlas.ofFineModuli` are the two formal halves of that argument, both
+PROVEN; `exists_gamma1AffineModel` supplies an atlas over ANY field of
+characteristic prime to `N`.  What is NOT available is the last step of
+`Gamma1Atlas.toIsCoarseModuliY1`, whose `hsub : ∀ Z, Subsingleton (Z ⟶ S)` holds
+at `SpecQ` and `SpecF ℓ` and FAILS at a general `Spec K` — so a prover cannot
+route through the atlas unchanged, and the comparison of `Y ×_S Spec K` with the
+atlas's own coarse space is the step to write.
+
+**HYPOTHESES.**  `hN` is load-bearing: it is rigidity, and at `N = 3` the
+automorphism `ζ₃` fixes points of exact order `3`, so `[Γ₁(3)]` is not rigid and
+its coarse space genuinely fails to base-change.  `hchar` is retained
+DEFENSIVELY — the parent's audit records it as needed only for non-emptiness,
+which is `nonempty_gamma1Datum_isAlgClosed` above — and it is free at the sole
+call site, so keeping it costs a prover nothing and cannot make the leaf
+false. -/
+theorem universal_classifyPullback_baseChange {N : ℕ} (hN : 5 ≤ N) {Y S : Scheme.{0}}
+    {strY : Y ⟶ S} (h : IsCoarseModuliY1 N strY) (K : Type) [Field K]
+    (k : Spec (CommRingCat.of K) ⟶ S) (hchar : (N : K) ≠ 0)
+    {Y' : Scheme.{0}} (str' : Y' ⟶ Spec (CommRingCat.of K))
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ Spec (CommRingCat.of K)),
+      Gamma1Datum N T → RelPoint str' g)
+    (hc : ∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ Spec (CommRingCat.of K)}
+      {g' : T' ⟶ Spec (CommRingCat.of K)} (hg : p ≫ g = g') {d' : Gamma1Datum N T'}
+      {d : Gamma1Datum N T}, IsBaseChangeOfGamma1 p d' d →
+      c g' d' = RelPoint.pre p hg (c g d)) :
+    ∃! u : pullback strY k ⟶ Y', u ≫ str' = pullback.snd strY k ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ Spec (CommRingCat.of K)) (d : Gamma1Datum N T),
+        (c g d).1 = (h.classifyPullback k g d).1 ≫ u :=
+  sorry
+
+/-- **The base change of a coarse moduli space for `[Γ₁(N)]` is one over the new
+base** (PROVEN 2026-08-01 over `universal_classifyPullback_baseChange`).
+
+Two of the three fields need no hypothesis and were already in this file; only
+`universal` is a leaf.  See that leaf's docstring. -/
+noncomputable def isCoarseModuliY1_baseChange {N : ℕ} (hN : 5 ≤ N) {Y S : Scheme.{0}}
+    {strY : Y ⟶ S} (h : IsCoarseModuliY1 N strY) (K : Type) [Field K]
+    (k : Spec (CommRingCat.of K) ⟶ S) (hchar : (N : K) ≠ 0) :
+    IsCoarseModuliY1 N (curveBaseChangeProj strY k) where
+  classify := h.classifyPullback k
+  classify_natural := by
+    intro T' T p g g' hg d' d hb
+    exact h.classifyPullback_natural k p hg hb
+  universal := by
+    intro Y' str' c hc
+    exact universal_classifyPullback_baseChange hN h K k hchar str' c hc
+
+end X1CompactificationBaseChange
+
 /-- **THE FIBRE OF AN `X_1(N)`-COMPACTIFICATION IS AN
-`X_1(N)`-COMPACTIFICATION OF ITS OWN BASE FIELD** (sorry leaf, cut
-2026-07-30 out of `not_birationalOver_affineLine_of_one_le_x1Genus_algClosed`
+`X_1(N)`-COMPACTIFICATION OF ITS OWN BASE FIELD** (**PROVEN 2026-08-01** over
+the two leaves in the subsection immediately above; cut 2026-07-30 out of
+`not_birationalOver_affineLine_of_one_le_x1Genus_algClosed`
 below) — the MODULI half of that leaf, carrying no genus and no `x1Genus`.
+
+**WHAT THE ROUTE BELOW GOT RIGHT AND WHAT IT GOT WRONG** (recorded 2026-08-01,
+because the wrong half is the expensive one).  STEP 2 is right and is now the
+leaf `universal_classifyPullback_baseChange` — but only its INITIALITY clause,
+because `IsCoarseModuliY1.classifyPullback` and its naturality (both PROVEN
+2026-07-30, ~7500 lines above) already supply the other two fields of
+`IsCoarseModuliY1` for the base change, with no hypothesis whatever.  The claim
+that "the other six fields are ordinary base-change stability" is right for
+FIVE of them and **wrong for `finite_compl`**: the argument sketched for it
+below — that the residue field of each of the finitely many complement points
+is finite over the residue field of its image in `S` — is TRUE but is not
+"ordinary base-change stability"; it is a statement about the FIBRES of
+`X ×_S Spec K ⟶ X` and needs dimension theory and the Nullstellensatz.
+
+That argument is not made, and does not have to be.  Following
+`CurveCompactification.lean`'s own recipe, finiteness is REDERIVED over `K`
+rather than transported: `X_K` is again a smooth proper curve over a field, so
+`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` and
+`finite_of_isClosed_of_ne_univ_of_topologicalKrullDim_le_one` make EVERY proper
+closed subset of it finite.  What survives of `finite_compl` is therefore only
+that the complement is PROPER, i.e. that `Y_K ≠ ∅` — and that is
+`nonempty_gamma1Datum_isAlgClosed`, which is where `hchar` is spent, exactly as
+the falsity audit below says.  `IsIntegral (X ×_S Spec K)`, needed for the
+irreducibility that lemma asks for, is
+`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected` applied to
+the base change, so it too costs nothing.
+
+**ACCOUNTING: one leaf becomes two, and that is disclosure rather than
+regression.**  Neither residue carries the other's theory: one is
+representability of `[Γ₁(N)]` with no curve, no cusp and no topology in it; the
+other is "an algebraically closed field of characteristic prime to `N` carries
+an elliptic curve with a point of exact order `N`", with no moduli in it, and
+its two hard halves are already in the tree (`WeierstrassCurve.n_torsion_dimension`
+and `nonempty_gamma1Datum_of_weierstrassPoint`), leaving only the existence of
+one elliptic curve over `L`.
 
 `hmodel` is a statement over `S`; every consumer below is a statement about
 the FIBRE `X_K = X ×_S Spec K`.  Passing between them was an undischarged
@@ -23983,8 +24221,64 @@ theorem exists_isX1Compactification_baseChange {N : ℕ} (hN : 5 ≤ N)
     (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S) (hchar : (N : K) ≠ 0) :
     ∃ (Y' : Scheme.{0}) (strY' : Y' ⟶ Spec (CommRingCat.of K))
       (jY' : Y' ⟶ curveBaseChange strX k),
-      Nonempty (IsX1Compactification N (curveBaseChangeProj strX k) strY' jY') :=
-  sorry
+      Nonempty (IsX1Compactification N (curveBaseChangeProj strX k) strY' jY')
+    := by
+  haveI := hmodel.isOpen
+  haveI := hmodel.isProper
+  haveI := hmodel.smooth
+  haveI := hmodel.connected
+  -- the five base-change-stable fields
+  haveI hop : IsOpenImmersion (curveBaseChangeOpen hmodel.comm k) :=
+    MorphismProperty.of_isPullback (isPullback_curveBaseChangeOpen hmodel.comm k) inferInstance
+  haveI hpr : IsProper (curveBaseChangeProj strX k) := inferInstance
+  haveI hsm : SmoothOfRelativeDimension 1 (curveBaseChangeProj strX k) := by
+    haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+    exact MorphismProperty.pullback_snd _ _ inferInstance
+  haveI hcon : GeometricallyConnected (curveBaseChangeProj strX k) := inferInstance
+  -- `X_K` is INTEGRAL: smooth over a field and geometrically connected
+  haveI hint : IsIntegral (curveBaseChange strX k) :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1)
+      (curveBaseChangeProj strX k) hcon
+  -- `Y_K` is NONEMPTY: the moduli problem has a datum over `K̄`, and its
+  -- classifying point is a `K̄`-point of `Y ×_S Spec K`.  This is the one
+  -- place `hchar` is spent, exactly as the falsity audit above records.
+  have hchar' : (N : AlgebraicClosure K) ≠ 0 := by
+    intro hz
+    exact hchar ((map_eq_zero_iff _ (algebraMap K (AlgebraicClosure K)).injective).mp
+      ((map_natCast (algebraMap K (AlgebraicClosure K)) N).trans hz))
+  obtain ⟨d⟩ := nonempty_gamma1Datum_isAlgClosed (N := N) (AlgebraicClosure K) hchar'
+  obtain ⟨z⟩ : Nonempty ↥(Spec (CommRingCat.of (AlgebraicClosure K))) := inferInstance
+  have hpt : Nonempty ↥(curveBaseChange strY k) :=
+    ⟨(hmodel.coarse.classifyPullback k (specAlgClos K) d).1.base z⟩
+  -- `finite_compl` is REDERIVED over `K`, not transported: `X_K` is a smooth
+  -- proper curve over a field, so every PROPER closed subset of it is finite.
+  have hdim : topologicalKrullDim ↥(curveBaseChange strX k) ≤ 1 :=
+    topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one (curveBaseChangeProj strX k)
+  haveI : IsNoetherianRing (CommRingCat.of K) := inferInstanceAs (IsNoetherianRing K)
+  haveI : IsLocallyNoetherian (curveBaseChange strX k) :=
+    LocallyOfFiniteType.isLocallyNoetherian (curveBaseChangeProj strX k)
+  haveI : CompactSpace ↥(curveBaseChange strX k) :=
+    QuasiCompact.compactSpace_of_compactSpace (curveBaseChangeProj strX k)
+  haveI : IsNoetherian (curveBaseChange strX k) := ⟨⟩
+  refine ⟨curveBaseChange strY k, curveBaseChangeProj strY k,
+    curveBaseChangeOpen hmodel.comm k, ⟨?_⟩⟩
+  refine
+   { comm := curveBaseChangeOpen_snd hmodel.comm k
+     coarse := isCoarseModuliY1_baseChange hN hmodel.coarse K k hchar
+     isOpen := hop
+     isProper := hpr
+     smooth := hsm
+     connected := hcon
+     finite_compl := ?_ }
+  refine finite_of_isClosed_of_ne_univ_of_topologicalKrullDim_le_one hdim
+    (isClosed_compl_iff.mpr
+      (curveBaseChangeOpen hmodel.comm k).isOpenEmbedding.isOpen_range) ?_
+  intro hcontra
+  obtain ⟨y⟩ := hpt
+  exact (hcontra ▸ Set.mem_univ ((curveBaseChangeOpen hmodel.comm k).base y) :
+      (curveBaseChangeOpen hmodel.comm k).base y ∈
+        (Set.range (curveBaseChangeOpen hmodel.comm k).base)ᶜ)
+    (Set.mem_range_self y)
 
 /-- **THE GENUS FORMULA AT `Γ₁`, GEOMETRICALLY, OVER A SINGLE FIELD: an
 `X_1(N)` over an ALGEBRAICALLY CLOSED field is not a rational curve when
