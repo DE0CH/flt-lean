@@ -36688,6 +36688,17 @@ criterion for `y² − f`, two charts), `exists_compl_pair_sexticThirtySeven` (t
 second chart of the hyperelliptic gluing has a two-point fibre over `u = 0`),
 and the modular `exists_isX0Compactification_sexticThirtySeven`.
 
+*ACTED ON AGAIN 2026-08-02 (flt-lean-48): `exists_compl_pair_sexticThirtySeven`
+is PROVEN, over two leaves of its own — `exists_chartData_sexticThirtySeven`
+(bookkeeping over an open immersion) and
+`exists_pair_valuationSubring_sexticThirtySeven` (at most two valuation subrings
+of `ℚ(x, y)` omit `x`) — with the geometry between them proven in general.  The
+count is `1 → 2`; what left the leaf is every mention of a scheme on the
+arithmetic side and every mention of arithmetic on the geometric side.  So the
+section's open frontier is now FOUR leaves: those two,
+`smoothOfRelativeDimension_sexticThirtySeven`, and
+`exists_isX0Compactification_sexticThirtySeven`.*
+
 See the Magma reconnaissance
 block below, which is what fixed the shape: the two cusps of `X_0(37)` are NOT
 the two points at infinity, so `Y_0(37)` is not the affine chart.
@@ -37259,11 +37270,338 @@ theorem card_le_two_of_compl_pair {K : Type u} [Field K] {X U : Scheme.{u}}
     le_trans (Finset.card_insert_le _ _) (by simp)
   exact le_trans (Finset.card_le_card hsub) htwo
 
+/-! #### The complement of an affine chart, by VALUATION SUBRINGS of the function field
+
+(2026-08-02, `flt-lean-48`, cutting `exists_compl_pair_sexticThirtySeven` below.)
+
+The classical count "the affine sextic misses exactly the two places over `x = ∞`" is a
+statement about the VALUATIONS of the function field, and the passage from valuations to
+POINTS of `X` is general scheme theory that no consumer of this file has had.  It is
+supplied here, PROVEN and with no sextic and no level `37` in it:
+
+* `mem_range_of_forall_mem_stalkRange` — **a point lies in an affine chart as soon as its
+  local ring swallows the chart's coordinate ring**;
+* `eq_of_stalkRange_eq` — **a point of a separated integral scheme is DETERMINED by its
+  local ring, read inside the function field**;
+* `stalkValuationSubring` / `exists_pair_of_two_stalkValuationSubrings` — the packaging that
+  turns "at most two valuation subrings" into "at most two points".
+
+**Neither needs the valuative criterion.**  The first audit of this cut routed both through
+`AlgebraicGeometry.IsSeparated.valuativeCriterion` and a `ValuativeCommSq`; that is the
+EXISTENCE half of the valuative criterion and is not what is wanted.  Uniqueness of a
+morphism out of `Spec R` agreeing with a given one on `Spec (Frac R)` is
+`AlgebraicGeometry.ext_of_isDominant` — reducedness of the source, dominance of
+`Spec (Frac R) ⟶ Spec R`, and separatedness of the target — and it needs no valuation ring
+at all.  A prover who reaches for `ValuativeCommSq` here will pay for a hypothesis the
+argument does not use.
+
+**These four declarations mention neither the sextic nor level `37` and belong in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveAffineComplement.lean`**, beside the other
+function-field-versus-points material.  They are kept here for the same reason the
+`ringHom_retraction_unique` / `relPointBase_injective` block above is: to hold this
+branch's edits inside one contiguous region of one file, so that the merge is an insertion.
+Whoever hoists them should take the whole block; nothing in it refers to anything declared
+in this file. -/
+
+/-- `Spec (Frac R) ⟶ Spec R` is DOMINANT (PROVEN): its image is the generic point `(0)`,
+whose closure is `Spec R`. -/
+theorem isDominant_specMap_algebraMap {R : Type} [CommRing R] [IsDomain R]
+    {L : Type} [Field L] [Algebra R L] [IsFractionRing R L] :
+    IsDominant (Spec.map (CommRingCat.ofHom (algebraMap R L))) := by
+  constructor
+  have hb : (Spec.map (CommRingCat.ofHom (algebraMap R L))).base
+      (⊥ : PrimeSpectrum L) = (⊥ : PrimeSpectrum R) := by
+    apply PrimeSpectrum.ext
+    show Ideal.comap (algebraMap R L) ⊥ = ⊥
+    simp [Ideal.comap_bot_of_injective _ (IsFractionRing.injective R L)]
+  intro x
+  have hmem : (⊥ : PrimeSpectrum R) ∈
+      Set.range (Spec.map (CommRingCat.ofHom (algebraMap R L))).base := ⟨_, hb⟩
+  refine closure_mono (Set.singleton_subset_iff.mpr hmem) ?_
+  rw [PrimeSpectrum.closure_singleton]
+  simp
+
+/-- `AlgebraicGeometry.ext_of_isDominant` with the dominance passed as an EXPLICIT argument
+(PROVEN).
+
+Instance search does not find `IsDominant (Spec.map (CommRingCat.ofHom (algebraMap …)))`
+from a `haveI` at the use site — the two elaborations of the `algebraMap` pick their
+`Algebra` instance up by different routes and are defeq but not syntactically equal, which
+is exactly the situation CLAUDE.md records under "pass a factorisation equation as an
+EXPLICIT argument, never as an instance".  An explicit argument is checked up to defeq and
+goes through. -/
+theorem ext_of_isDominant_explicit {W Y Z : Scheme.{0}} [IsReduced Y] [Z.IsSeparated]
+    {f g : Y ⟶ Z} (ι : W ⟶ Y) (hι : IsDominant ι) (hU : ι ≫ f = ι ≫ g) : f = g :=
+  haveI := hι; ext_of_isDominant ι hU
+
+/-- A scheme separated over an AFFINE base is separated (PROVEN). -/
+theorem isSeparated_of_isSeparated_over_field {K : Type} [Field K] {X : Scheme.{0}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [IsSeparated strX] : X.IsSeparated := by
+  rw [Scheme.isSeparated_iff, ← Limits.terminal.comp_from strX]
+  infer_instance
+
+/-- `Spec K(X) ⟶ Spec 𝒪_{X,z} ⟶ X` is the generic point of `X` (PROVEN) — the algebra map
+`𝒪_{X,z} ⟶ K(X)` IS `stalkSpecializes` along `η ⤳ z`, so this is
+`Scheme.SpecMap_stalkSpecializes_fromSpecStalk`. -/
+theorem specMap_algebraMap_comp_fromSpecStalk {X : Scheme.{0}} [IsIntegral X] (z : X) :
+    Spec.map (CommRingCat.ofHom (algebraMap (X.presheaf.stalk z) (X.functionField)))
+        ≫ X.fromSpecStalk z = X.fromSpecStalk (genericPoint X) := by
+  have hsp : genericPoint X ⤳ z := (genericPoint_spec X).specializes trivial
+  rw [← Scheme.SpecMap_stalkSpecializes_fromSpecStalk hsp]
+  congr 1
+
+/-- **A POINT LIES IN AN AFFINE CHART AS SOON AS ITS LOCAL RING SWALLOWS THE CHART'S
+COORDINATE RING** (PROVEN).
+
+`α : A ⟶ K(X)` is the chart's "generic value" map, pinned by `hα`: composing `Spec α` with
+the chart's inclusion is the canonical `Spec K(X) ⟶ X`.  If every value `α s` lies in the
+image of `𝒪_{X,z} ⟶ K(X)`, then `z` is in the chart.
+
+The proof builds the ring map `A ⟶ 𝒪_{X,z}` that `h` provides, and compares the two
+morphisms `Spec 𝒪_{X,z} ⟶ X` — the one through the chart and `X.fromSpecStalk z` — on the
+generic point.  `Spec 𝒪_{X,z}` is reduced, `Spec K(X) ⟶ Spec 𝒪_{X,z}` is dominant and `X`
+is separated, so `ext_of_isDominant` identifies them; the closed point then exhibits `z` in
+the range. -/
+theorem mem_range_of_forall_mem_stalkRange {K : Type} [Field K] {X : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of K)} [IsIntegral X] [IsSeparated strX]
+    {A : CommRingCat.{0}} (uX : Spec A ⟶ X) (α : A ⟶ X.functionField)
+    (hα : Spec.map α ≫ uX = X.fromSpecStalk (genericPoint X)) (z : X)
+    (h : ∀ s : A, ∃ a : X.presheaf.stalk z,
+      algebraMap (X.presheaf.stalk z) X.functionField a = α s) :
+    z ∈ Set.range uX.base := by
+  haveI : X.IsSeparated := isSeparated_of_isSeparated_over_field strX
+  have hinj : Function.Injective (algebraMap (X.presheaf.stalk z) X.functionField) :=
+    IsFractionRing.injective _ _
+  have hbij : Function.Bijective
+      (RingHom.rangeRestrict (algebraMap (X.presheaf.stalk z) X.functionField)) :=
+    ⟨fun a b hab => hinj (congrArg Subtype.val hab), RingHom.rangeRestrict_surjective _⟩
+  have hrange : ∀ s : A, α.hom s ∈
+      (algebraMap (X.presheaf.stalk z) X.functionField).range := fun s => h s
+  let φ : A ⟶ X.presheaf.stalk z :=
+    CommRingCat.ofHom
+      ((RingEquiv.ofBijective _ hbij).symm.toRingHom.comp (α.hom.codRestrict _ hrange))
+  have hφ : φ ≫ CommRingCat.ofHom (algebraMap (X.presheaf.stalk z) X.functionField) = α := by
+    ext s
+    show algebraMap (X.presheaf.stalk z) X.functionField
+        ((RingEquiv.ofBijective _ hbij).symm ⟨α.hom s, hrange s⟩) = α.hom s
+    exact congrArg Subtype.val
+      ((RingEquiv.ofBijective _ hbij).apply_symm_apply ⟨α.hom s, hrange s⟩)
+  have hsp : genericPoint X ⤳ z := (genericPoint_spec X).specializes trivial
+  have key : Spec.map φ ≫ uX = X.fromSpecStalk z := by
+    refine ext_of_isDominant_explicit
+      (Spec.map (CommRingCat.ofHom
+        (algebraMap (X.presheaf.stalk z) (X.functionField))))
+      (isDominant_specMap_algebraMap (R := ↥(X.presheaf.stalk z))
+        (L := ↥X.functionField)) ?_
+    rw [← Category.assoc, ← Spec.map_comp, hφ, hα]
+    rw [← Scheme.SpecMap_stalkSpecializes_fromSpecStalk hsp]
+    congr 1
+  refine ⟨(Spec.map φ).base (IsLocalRing.closedPoint (X.presheaf.stalk z)), ?_⟩
+  have := congrArg (fun m : Spec (X.presheaf.stalk z) ⟶ X =>
+    m.base (IsLocalRing.closedPoint (X.presheaf.stalk z))) key
+  simpa [Scheme.fromSpecStalk_closedPoint] using this
+
+/-- **A POINT OF A SEPARATED INTEGRAL SCHEME IS DETERMINED BY ITS LOCAL RING, READ INSIDE
+THE FUNCTION FIELD** (PROVEN).
+
+Equality of the two subrings gives a canonical ring isomorphism `𝒪_{X,z₂} ≃+* 𝒪_{X,z₁}` over
+`K(X)`; it is a local isomorphism, so `Spec` of it carries closed point to closed point, and
+`ext_of_isDominant` again identifies `Spec 𝒪_{X,z₁} ⟶ X` with the transported
+`X.fromSpecStalk z₂`. -/
+theorem eq_of_stalkRange_eq {K : Type} [Field K] {X : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of K)} [IsIntegral X] [IsSeparated strX] (z₁ z₂ : X)
+    (h : (algebraMap (X.presheaf.stalk z₁) X.functionField).range
+       = (algebraMap (X.presheaf.stalk z₂) X.functionField).range) :
+    z₁ = z₂ := by
+  haveI : X.IsSeparated := isSeparated_of_isSeparated_over_field strX
+  have hinj : ∀ z : X, Function.Injective
+      (algebraMap (X.presheaf.stalk z) X.functionField) := fun z => IsFractionRing.injective _ _
+  have hbij : ∀ z : X, Function.Bijective
+      (RingHom.rangeRestrict (algebraMap (X.presheaf.stalk z) X.functionField)) := fun z =>
+    ⟨fun a b hab => hinj z (congrArg Subtype.val hab), RingHom.rangeRestrict_surjective _⟩
+  let θ : (X.presheaf.stalk z₂) ≃+* (X.presheaf.stalk z₁) :=
+    ((RingEquiv.ofBijective _ (hbij z₂)).trans
+      (RingEquiv.subringCongr h.symm)).trans (RingEquiv.ofBijective _ (hbij z₁)).symm
+  have hθ : ∀ a, algebraMap (X.presheaf.stalk z₁) X.functionField (θ a)
+      = algebraMap (X.presheaf.stalk z₂) X.functionField a := by
+    intro a
+    exact congrArg Subtype.val
+      ((RingEquiv.ofBijective _ (hbij z₁)).apply_symm_apply
+        (RingEquiv.subringCongr h.symm (RingEquiv.ofBijective _ (hbij z₂) a)))
+  haveI : IsLocalHom (CommRingCat.ofHom θ.toRingHom).hom :=
+    ⟨fun a ha => by simpa using ha.map θ.symm.toRingHom⟩
+  have key : Spec.map (CommRingCat.ofHom θ.toRingHom) ≫ X.fromSpecStalk z₂
+      = X.fromSpecStalk z₁ := by
+    refine ext_of_isDominant_explicit
+      (Spec.map (CommRingCat.ofHom
+        (algebraMap (X.presheaf.stalk z₁) (X.functionField))))
+      (isDominant_specMap_algebraMap (R := ↥(X.presheaf.stalk z₁))
+        (L := ↥X.functionField)) ?_
+    rw [← Category.assoc, ← Spec.map_comp,
+      specMap_algebraMap_comp_fromSpecStalk (X := X) z₁]
+    have hcomp : CommRingCat.ofHom θ.toRingHom
+        ≫ CommRingCat.ofHom (algebraMap (X.presheaf.stalk z₁) (X.functionField))
+        = CommRingCat.ofHom (algebraMap (X.presheaf.stalk z₂) (X.functionField)) := by
+      ext a; exact hθ a
+    rw [hcomp, specMap_algebraMap_comp_fromSpecStalk (X := X) z₂]
+  have hcl := congrArg (fun m : Spec (X.presheaf.stalk z₁) ⟶ X =>
+    m.base (IsLocalRing.closedPoint (X.presheaf.stalk z₁))) key
+  simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply,
+    AlgebraicGeometry.Spec_closedPoint, Scheme.fromSpecStalk_closedPoint] at hcl
+  exact hcl.symm.trans Scheme.fromSpecStalk_closedPoint
+
+/-- The local ring at `z`, as a VALUATION SUBRING of the function field. -/
+noncomputable def stalkValuationSubring {X : Scheme.{0}} [IsIntegral X]
+    (hval : ∀ z : X, ValuationRing (X.presheaf.stalk z)) (z : X) :
+    ValuationSubring X.functionField :=
+  ValuationSubring.ofSubring
+    ((algebraMap (X.presheaf.stalk z) X.functionField).range) (by
+      intro w
+      haveI := hval z
+      rcases ValuationRing.isInteger_or_isInteger (X.presheaf.stalk z) w with ⟨a, ha⟩ | ⟨a, ha⟩
+      · exact Or.inl ⟨a, ha⟩
+      · exact Or.inr ⟨a, ha⟩)
+
+theorem mem_stalkValuationSubring_iff {X : Scheme.{0}} [IsIntegral X]
+    (hval : ∀ z : X, ValuationRing (X.presheaf.stalk z)) (z : X) (w : X.functionField) :
+    w ∈ stalkValuationSubring hval z ↔
+      ∃ a : X.presheaf.stalk z, algebraMap (X.presheaf.stalk z) X.functionField a = w :=
+  Iff.rfl
+
+/-- **AT MOST TWO VALUATION SUBRINGS ⟹ AT MOST TWO POINTS** (PROVEN over
+`eq_of_stalkRange_eq`). -/
+theorem exists_pair_of_two_stalkValuationSubrings {K : Type} [Field K] {X : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of K)} [IsIntegral X] [IsSeparated strX]
+    (hval : ∀ z : X, ValuationRing (X.presheaf.stalk z))
+    (R : Set X) (V₁ V₂ : ValuationSubring X.functionField)
+    (hcov : ∀ z : X, z ∉ R → stalkValuationSubring hval z = V₁ ∨
+      stalkValuationSubring hval z = V₂) :
+    ∃ a b : X, ∀ z : X, z ∉ R → z = a ∨ z = b := by
+  classical
+  have hinj : Function.Injective (stalkValuationSubring (X := X) hval) := by
+    intro z₁ z₂ hz
+    exact eq_of_stalkRange_eq (strX := strX) z₁ z₂ (congrArg ValuationSubring.toSubring hz)
+  by_cases hA : ∃ z : X, z ∉ R ∧ stalkValuationSubring hval z = V₁
+  · by_cases hB : ∃ z : X, z ∉ R ∧ stalkValuationSubring hval z = V₂
+    · refine ⟨hA.choose, hB.choose, fun z hz => ?_⟩
+      rcases hcov z hz with hh | hh
+      · exact Or.inl (hinj (hh.trans hA.choose_spec.2.symm))
+      · exact Or.inr (hinj (hh.trans hB.choose_spec.2.symm))
+    · refine ⟨hA.choose, hA.choose, fun z hz => ?_⟩
+      rcases hcov z hz with hh | hh
+      · exact Or.inl (hinj (hh.trans hA.choose_spec.2.symm))
+      · exact absurd ⟨z, hz, hh⟩ hB
+  · by_cases hB : ∃ z : X, z ∉ R ∧ stalkValuationSubring hval z = V₂
+    · refine ⟨hB.choose, hB.choose, fun z hz => ?_⟩
+      rcases hcov z hz with hh | hh
+      · exact absurd ⟨z, hz, hh⟩ hA
+      · exact Or.inl (hinj (hh.trans hB.choose_spec.2.symm))
+    · refine ⟨genericPoint X, genericPoint X, fun z hz => ?_⟩
+      rcases hcov z hz with hh | hh
+      · exact absurd ⟨z, hz, hh⟩ hA
+      · exact absurd ⟨z, hz, hh⟩ hB
+
+/-! #### The two residual leaves: the chart dictionary, and the valuation count -/
+
+/-- **THE AFFINE SEXTIC'S CHART DICTIONARY** (SORRY LEAF, cut 2026-08-02 by `flt-lean-48`
+out of `exists_compl_pair_sexticThirtySeven`).
+
+The two coordinate functions of the plane model, read in the function field of the smooth
+compactification, together with the three properties that make them a chart:
+
+1. they satisfy the sextic relation — `sexticThirtySevenPoly` says exactly this;
+2. they GENERATE the function field, i.e. `K(X) = ℚ(x, y)`;
+3. `ℚ` is contained in every local ring of `X` — `X` is a `ℚ`-scheme, so this is the
+   `ℚ`-algebra structure of `𝒪_{X,z}` together with `IsScalarTower ℚ 𝒪_{X,z} K(X)`;
+4. the chart is EXACTLY the locus where `x` is regular.
+
+**All four are bookkeeping over an open immersion; there is no arithmetic in this leaf.**
+Clause 4 is the only one with content and it is one application of
+`mem_range_of_forall_mem_stalkRange` above: take `α` to be the chart's generic-value map
+(`A ≅ Γ(X, uX.opensRange)` for an open immersion, then `Scheme.germToFunctionField`, so that
+`hα` is `IsAffineOpen.fromSpecStalk_eq_fromSpecStalk` at the generic point), and observe
+that `A = ℚ[X₀, X₁]/(F)` is generated over `ℚ` by `x := α X₀` and `y := α X₁`, so a local
+ring containing `ℚ`, `x` and `y` contains the whole of `α`'s image — and it contains `y`
+as soon as it contains `x`, because `y² = f(x)` makes `y` integral over it and a valuation
+ring is integrally closed.
+
+**What a prover needs, and nothing else**: `AlgebraicGeometry.Scheme.Hom.appIso` (for an open
+immersion `f`, `Γ(Y, f ''ᵁ U) ≅ Γ(X, U)`, so `Γ(X, uX.opensRange) ≅ A`),
+`AlgebraicGeometry.isAffineOpen_opensRange`, `IsAffineOpen.range_fromSpec`,
+`AlgebraicGeometry.IsAffineOpen.fromSpecStalk_eq_fromSpecStalk`,
+`AlgebraicGeometry.functionField_isFractionRing_of_isAffineOpen` (for clause 2), and
+`MvPolynomial.induction_on` through `Ideal.Quotient.mk_surjective` (for the generation used
+in clause 4).
+
+**NOT VACUOUS.** The hypothesis is satisfiable — `smoothOfRelativeDimension_sexticThirtySeven`
+and `isIntegral_planeCurveSchemeQ_sexticThirtySeven` feed
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` — and the conclusion is not
+free: clause 4 pins the chart, and clause 2 pins `x, y` up to the automorphisms of `K(X)`
+over `ℚ`.
+
+**Nothing here may cite a level-`37` cardinality bound**, for the reason recorded on the
+consumer below: `exists_x0Compactification_thirtySeven_cardLe` and `card_y0Le_thirtySeven`
+are proven FROM that consumer. -/
+theorem exists_chartData_sexticThirtySeven {X : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {uX : planeCurveSchemeQ sexticThirtySevenPoly ⟶ X} [IsIntegral X]
+    (_h : IsSmoothCompactification (planeCurveStrQ sexticThirtySevenPoly) strX uX) :
+    ∃ (ι : ℚ →+* X.functionField) (x y : X.functionField),
+      y ^ 2 = x ^ 6 + 8 * x ^ 5 - 20 * x ^ 4 + 28 * x ^ 3 - 24 * x ^ 2 + 12 * x - 4 ∧
+      Subfield.closure ({x, y} : Set X.functionField) = ⊤ ∧
+      (∀ (z : X) (q : ℚ), ∃ a : X.presheaf.stalk z,
+          algebraMap (X.presheaf.stalk z) X.functionField a = ι q) ∧
+      (∀ z : X, (∃ a : X.presheaf.stalk z,
+          algebraMap (X.presheaf.stalk z) X.functionField a = x) →
+        z ∈ Set.range uX.base) :=
+  sorry
+
+/-- **AT MOST TWO PLACES OF `ℚ(x, y)` HAVE A POLE AT `x`** (SORRY LEAF, cut 2026-08-02 by
+`flt-lean-48` out of `exists_compl_pair_sexticThirtySeven`; it is the ARITHMETIC half, and
+it mentions no scheme, no level `37` and no modular curve).
+
+`L` is the function field `ℚ(x, y)` of the affine sextic `y² = f(x)`, `f` of degree `6` with
+leading coefficient `1`.  A valuation subring `V ⊆ L` containing `ℚ` and NOT containing `x`
+is a place at infinity, and there are exactly two of them because the leading coefficient is
+a SQUARE.
+
+TRUE, and this is the classical statement `deg (x)_∞ = [L : ℚ(x)] = 2` (Stichtenoth I.4.11)
+made concrete.  **The elementary route, which needs no degree theory:**
+
+* `x ∉ V` gives `u := x⁻¹ ∈ V` with `u` in the maximal ideal (`V` is a valuation ring, so
+  `x ∉ V ⟹ x⁻¹ ∈ V`, and `x⁻¹` cannot be a unit or `x` would be in `V`);
+* put `v := y * u ^ 3`.  Then `v² = u⁶ y² = u⁶ f(1/u) = 1 + 8u − 20u² + 28u³ − 24u⁴ + 12u⁵
+  − 4u⁶ =: g(u)`, so `v` is integral over `ℚ[u] ⊆ V` and `V` is integrally closed, whence
+  `v ∈ V` and `A₂ := ℚ[u, v] ⊆ V`;
+* `A₂ ⧸ (u) ≅ ℚ[v] ⧸ (v² − 1) ≅ ℚ × ℚ`, so `𝔪_V ∩ A₂` is ONE OF TWO primes of `A₂` — the
+  kernels of `v ↦ 1` and `v ↦ −1` — and `u` is in both;
+* at each of those two primes `P`, the localisation `(A₂)_P` is a DISCRETE valuation ring
+  with uniformiser `u` — at `v = 1`, `(v − 1)(v + 1) = g(u) − 1 = u·h(u)` and `v + 1` is a
+  unit, so `𝔪 = (u)` — and `Frac (A₂)_P = L` because `ℚ(u, v) = ℚ(x, y) = L`;
+* a valuation subring of `L` containing a valuation subring `(A₂)_P` of `L` and dominated by
+  nothing bigger is equal to it: `(A₂)_P ⊆ V`, both have fraction field `L`, and `V`
+  dominates `(A₂)_P` at `P`, so `V = (A₂)_P`.  Hence `V` is determined by `P`, and there are
+  two.
+
+**THE `ℚ`-CONTAINMENT IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT.**  Drop it, and the
+`p`-adic valuation of `ℚ`, extended to `L` with `v(x) = −1`, is a counterexample for every
+prime `p`: there are then infinitely many valuation subrings omitting `x`.
+
+**`hgen` IS LOAD-BEARING TOO**: over a strictly larger field `L ⊋ ℚ(x, y)` — say
+`ℚ(x, y, t)` — the places over `x = ∞` form an infinite family. -/
+theorem exists_pair_valuationSubring_sexticThirtySeven {L : Type} [Field L]
+    (ι : ℚ →+* L) (x y : L)
+    (hxy : y ^ 2 = x ^ 6 + 8 * x ^ 5 - 20 * x ^ 4 + 28 * x ^ 3 - 24 * x ^ 2 + 12 * x - 4)
+    (hgen : Subfield.closure ({x, y} : Set L) = ⊤) :
+    ∃ V₁ V₂ : ValuationSubring L, ∀ V : ValuationSubring L,
+      (∀ q : ℚ, ι q ∈ V) → x ∉ V → V = V₁ ∨ V = V₂ :=
+  sorry
+
 /-- **The complement of the affine chart in the smooth compactification is
-covered by TWO points** (SORRY LEAF, cut 2026-07-31 by flt-lean-273 out of
-`card_le_two_compl_sexticThirtySeven`; it is the GEOMETRIC half, and the only
-half left, since the rational-point bookkeeping is discharged above by
-`card_le_two_of_compl_pair`).
+covered by TWO points** (PROVEN 2026-08-02 by `flt-lean-48` over the two leaves
+`exists_chartData_sexticThirtySeven` and
+`exists_pair_valuationSubring_sexticThirtySeven` immediately above, plus the
+general geometry of the block above them; a sorry leaf from 2026-07-31, when
+`flt-lean-273` cut it out of `card_le_two_compl_sexticThirtySeven`).
 
 TRUE: `X ∖ V(F)` is the fibre over `x = ∞` of a sextic whose leading coefficient
 `1` is a SQUARE, so it consists of exactly two points — the `(1 : ±1 : 0)` of
@@ -37271,22 +37609,63 @@ the reconnaissance above.  Note the statement asks only for a COVER by two
 points, not for exactly two: `a = b` is permitted, and no rationality of `a, b`
 is asserted, because the rational-point count is done downstream.
 
-The concrete model to compute against is the standard hyperelliptic gluing,
-second chart `v² = u⁶ f(1/u) = 1 + 8u − 20u² + 28u³ − 24u⁴ + 12u⁵ − 4u⁶` via
-`u = 1/x`, `v = y/x³`, whose `u = 0` fibre is `v² = 1`.  This is legitimate
-because the smooth compactification of a smooth curve is unique up to unique
-isomorphism (`exists_unique_extension_of_isSmoothProperCurve` in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean` is the extension
-property behind it), so the hypothesis pins `X` up to isomorphism.
+**THE CUT, AND WHY IT IS NOT THE HYPERELLIPTIC GLUING.**  The docstring this one
+replaces prescribed building the second chart
+`v² = u⁶ f(1/u) = 1 + 8u − 20u² + 28u³ − 24u⁴ + 12u⁵ − 4u⁶` (`u = 1/x`,
+`v = y/x³`) as a SCHEME and gluing it to `V(F)` along `x ≠ 0`.  That route needs
+the second chart's integrality and smoothness as two further concrete leaves, the
+overlap isomorphism as an explicit ring iso, `exists_unique_extension_of_`
+`isSmoothProperCurve` to produce the glued morphism, and *still* the valuative
+argument below to show the two charts COVER.  The route taken instead never
+builds the second chart at all: it works with the VALUATION SUBRINGS of `K(X)`
+directly, where "the second chart" is the observation that a valuation ring
+containing `ℚ` and not containing `x` automatically contains `u` and `v`.
 
-**Nothing here may cite a level-`37` cardinality bound**:
+So the residue splits along the seam the mathematics has:
+
+* `exists_chartData_sexticThirtySeven` — pure BOOKKEEPING over an open immersion:
+  the two coordinates as elements of `K(X)`, the relation, that they generate, and
+  that the chart is exactly where `x` is regular.  No arithmetic;
+* `exists_pair_valuationSubring_sexticThirtySeven` — pure ARITHMETIC: at most two
+  valuation subrings of `ℚ(x, y)` omit `x`.  No scheme, no level `37`, no
+  modular curve.
+
+Everything between them — that a point lies in an affine chart as soon as its
+local ring swallows the chart's coordinate ring, and that a point of a separated
+integral scheme is DETERMINED by its local ring — is PROVEN in the block above
+and mentions neither the sextic nor level `37`.
+
+**Nothing here cites a level-`37` cardinality bound**:
 `exists_x0Compactification_thirtySeven_cardLe` and `card_y0Le_thirtySeven` are
 proven FROM the consumer of this leaf, so citing either closes a cycle. -/
 theorem exists_compl_pair_sexticThirtySeven {X : Scheme.{0}} {strX : X ⟶ SpecQ}
     {uX : planeCurveSchemeQ sexticThirtySevenPoly ⟶ X}
-    (_h : IsSmoothCompactification (planeCurveStrQ sexticThirtySevenPoly) strX uX) :
-    ∃ a b : X, ∀ z : X, z ∉ Set.range uX.base → z = a ∨ z = b :=
-  sorry
+    (h : IsSmoothCompactification (planeCurveStrQ sexticThirtySevenPoly) strX uX) :
+    ∃ a b : X, ∀ z : X, z ∉ Set.range uX.base → z = a ∨ z = b := by
+  haveI : IsOpenImmersion uX := h.isOpenImmersion
+  haveI : IsDominant uX := h.isDominant
+  haveI : IsProper strX := h.isProper
+  haveI : SmoothOfRelativeDimension 1 strX := h.smooth
+  haveI : AlgebraicGeometry.IsIntegral (planeCurveSchemeQ sexticThirtySevenPoly) :=
+    isIntegral_planeCurveSchemeQ_sexticThirtySeven
+  haveI : IrreducibleSpace X :=
+    irreducibleSpace_of_denseRange (Scheme.Hom.continuous uX) uX.denseRange
+  haveI : AlgebraicGeometry.IsReduced X := by
+    haveI : Smooth strX := SmoothOfRelativeDimension.smooth 1 strX
+    haveI : ∀ w : X, IsDomain (X.presheaf.stalk w) := fun w => by
+      haveI := GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field
+        strX inferInstance w
+      exact GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing _
+    haveI : ∀ w : X, _root_.IsReduced (X.presheaf.stalk w) := fun w => inferInstance
+    exact isReduced_of_isReduced_stalk X
+  haveI : AlgebraicGeometry.IsIntegral X := isIntegral_of_irreducibleSpace_of_isReduced X
+  have hval : ∀ z : X, ValuationRing (X.presheaf.stalk z) :=
+    valuationRing_stalk_of_smoothOfRelativeDimension_one strX
+  obtain ⟨ι, x, y, hxy, hgen, hQ, hchart⟩ := exists_chartData_sexticThirtySeven h
+  obtain ⟨V₁, V₂, hV⟩ := exists_pair_valuationSubring_sexticThirtySeven ι x y hxy hgen
+  refine exists_pair_of_two_stalkValuationSubrings (strX := strX) hval
+    (Set.range uX.base) V₁ V₂ (fun z hz => ?_)
+  exact hV _ (fun q => hQ z q) (fun hx => hz (hchart z hx))
 
 /-- **The affine sextic misses at most `2` rational points of its smooth
 compactification** (PROVEN 2026-07-31 by flt-lean-273 over the single geometric
