@@ -148,7 +148,9 @@ amended this paragraph on the same day, one saying "eight" and one saying "TEN",
 and the merged file has neither number.  Regenerate it with `lake build`; the
 list below is stamped to the commit that decomposed `geomPic_descent`
 (2026-07-30), at which the `declaration uses 'sorry'` set of this module is
-these TWENTY-TWO:
+these TWENTY-TWO.  **2026-08-02: it is TWENTY-ONE** — `pt_infinite_of_ord_xx_neg` is
+now PROVEN (see its own docstring; no new leaf was opened, and the entry below that
+still lists it as open is stale):
 
     degOf_poleDivisor_eq_finrank_of_transcendental,
     exists_smoothModel, exists_cubeModel_pic, exists_geomPic,
@@ -4240,6 +4242,595 @@ theorem exists_localDenom_chart (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) 
 
 
 
+section OrdAtInfinity
+
+/-! ### Places at which the abscissa has a POLE
+
+The three steps of `pt_infinite_of_ord_xx_neg`, which is proven in the `Presentation` section
+below over what is collected here:
+
+1. the VALUE GROUP at such a place is `(−ord x)·ℤ` (`dvd_ord_of_ord_xx_neg`), so
+   `ord_surjective` forces the pole to be SIMPLE (`ord_xx_eq_neg_one_of_ord_xx_neg`);
+2. the curve equation in the chart at infinity then puts `w = y/x³` at `±1`, i.e. the place
+   lies on one of the two branches;
+3. a place at infinity on a given branch is UNIQUE (`eq_of_ord_xx_eq_neg_one_of_branch`),
+   because `exists_localDenom_chart` describes its valuation ring by data that does not
+   mention the place. -/
+
+variable (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+
+/-- The ordinate is nonzero (PROVEN).  `PlaceClassify.yy_ne_zero` says the same thing about a
+`FunctionFieldData`, but `PlaceData.toFunctionFieldData` is declared BELOW this section, so the
+two-line proof is repeated here rather than routed through it. -/
+lemma yy_ne_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.yy ≠ 0 := by
+  intro h0
+  have hsext0 : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K ≠ 0 := fun hz => by
+    have hd := natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+    rw [hz] at hd; simp at hd
+  refine D.transcendental_xx ⟨sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K, hsext0, ?_⟩
+  have heq := D.eqn
+  rw [h0] at heq
+  rw [aeval_sextPoly, ← heq]
+  ring
+
+/-- `ord (p(x)) = deg p · ord x` at any place where `x` has a POLE (PROVEN). -/
+lemma ord_aeval_of_ord_xx_neg_aux (hv : D.ord v D.xx < 0) (n : ℕ) :
+    ∀ p : K[X], p.natDegree ≤ n → p ≠ 0 →
+      D.ord v (aeval D.xx p) = (p.natDegree : ℤ) * D.ord v D.xx := by
+  induction n with
+  | zero =>
+      intro p hp hp0
+      obtain ⟨a, ha⟩ := Polynomial.natDegree_eq_zero.mp (Nat.le_zero.mp hp)
+      subst ha
+      have ha0 : a ≠ 0 := by
+        intro h
+        rw [h] at hp0
+        simp at hp0
+      simp [D.ord_algebraMap v a ha0]
+  | succ m ih =>
+      intro p hp hp0
+      rcases le_or_gt p.natDegree m with h | h
+      · exact ih p h hp0
+      have hxx := D.xx_ne_zero
+      have ha0 : p.leadingCoeff ≠ 0 := leadingCoeff_ne_zero.mpr hp0
+      have haF : algebraMap K D.F p.leadingCoeff ≠ 0 :=
+        (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr ha0
+      have hleadval : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree)
+          = algebraMap K D.F p.leadingCoeff * D.xx ^ p.natDegree := by simp
+      have hleadne : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree) ≠ 0 := by
+        rw [hleadval]
+        exact mul_ne_zero haF (pow_ne_zero _ hxx)
+      have hlead : D.ord v (aeval D.xx (C p.leadingCoeff * X ^ p.natDegree))
+          = (p.natDegree : ℤ) * D.ord v D.xx := by
+        rw [hleadval, D.ord_mul v _ _ haF (pow_ne_zero _ hxx),
+          D.ord_algebraMap v _ ha0, D.ord_pow v D.xx hxx]
+        ring
+      have hsplit : aeval D.xx (C p.leadingCoeff * X ^ p.natDegree)
+          + aeval D.xx p.eraseLead = aeval D.xx p := by
+        rw [← map_add, add_comm]
+        exact congrArg _ p.eraseLead_add_C_mul_X_pow
+      rcases eq_or_ne p.eraseLead 0 with he | he
+      · rw [← hsplit, he, map_zero, add_zero]
+        exact hlead
+      · have hle : p.eraseLead.natDegree ≤ m := by
+          have h1 := Polynomial.eraseLead_natDegree_le p
+          omega
+        have herase := ih p.eraseLead hle he
+        have hne : aeval D.xx p.eraseLead ≠ 0 := D.aeval_xx_ne_zero he
+        have hltord : D.ord v (aeval D.xx (C p.leadingCoeff * X ^ p.natDegree))
+            < D.ord v (aeval D.xx p.eraseLead) := by
+          rw [hlead, herase]
+          refine mul_lt_mul_of_neg_right ?_ hv
+          have c1 : (p.eraseLead.natDegree : ℤ) ≤ (m : ℤ) := by exact_mod_cast hle
+          have c2 : (m : ℤ) < (p.natDegree : ℤ) := by exact_mod_cast h
+          omega
+        rw [← hsplit, D.ord_add_of_lt v hleadne hne hltord, hlead]
+
+/-- **At a place where `x` has a pole, `ord (p(x)) = deg p · ord x`** (PROVEN). -/
+lemma ord_aeval_of_ord_xx_neg (hv : D.ord v D.xx < 0) {p : K[X]} (hp : p ≠ 0) :
+    D.ord v (aeval D.xx p) = (p.natDegree : ℤ) * D.ord v D.xx :=
+  D.ord_aeval_of_ord_xx_neg_aux v hv p.natDegree p le_rfl hp
+
+/-- The reciprocal of the abscissa is transcendental too (PROVEN). -/
+lemma transcendental_xx_inv : Transcendental K D.xx⁻¹ := fun h =>
+  D.transcendental_xx (IsAlgebraic.inv_iff.1 h)
+
+/-- A nonzero polynomial does not vanish at `1/x` (PROVEN). -/
+lemma aeval_xx_inv_ne_zero {p : K[X]} (hp : p ≠ 0) : aeval D.xx⁻¹ p ≠ 0 := fun h =>
+  D.transcendental_xx_inv ⟨p, hp, h⟩
+
+lemma xx_inv_ne_zero : D.xx⁻¹ ≠ 0 := inv_ne_zero D.xx_ne_zero
+
+lemma ord_xx_inv : D.ord v D.xx⁻¹ = - D.ord v D.xx :=
+  D.ord_inv v D.xx D.xx_ne_zero
+
+/-- **At a place where `x` has a pole, `ord y = 3 · ord x`** (PROVEN): the sextic has degree
+`6`, so `2·ord y = 6·ord x`. -/
+lemma ord_yy_of_ord_xx_neg (hv : D.ord v D.xx < 0) :
+    D.ord v D.yy = 3 * D.ord v D.xx := by
+  have hyy : D.yy ≠ 0 := D.yy_ne_zero
+  have hsext0 : sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K ≠ 0 := fun hz => by
+    have hd := natDegree_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+    rw [hz] at hd; simp at hd
+  have heq : D.yy ^ 2 = aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    rw [aeval_sextPoly]; exact D.eqn
+  have h1 : D.ord v (D.yy ^ 2) = 2 * D.ord v D.yy := by
+    rw [D.ord_pow v D.yy hyy]; norm_num
+  have h2 : D.ord v (aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K))
+      = 6 * D.ord v D.xx := by
+    rw [D.ord_aeval_of_ord_xx_neg v hv hsext0, natDegree_sextPoly]
+    norm_num
+  rw [heq, h2] at h1
+  omega
+
+lemma xx_inv_mem_valRing (hv : D.ord v D.xx < 0) : D.xx⁻¹ ∈ D.valRing v := by
+  rw [D.mem_valRing_iff v, D.ord_xx_inv v]
+  omega
+
+lemma vanishesAt_xx_inv (hv : D.ord v D.xx < 0) :
+    D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F 0) := by
+  refine Or.inr ?_
+  rw [map_zero, sub_zero, D.ord_xx_inv v]
+  omega
+
+/-- **A polynomial with nonzero constant term is a unit at a place where `x` has a pole**
+(PROVEN): `1/x` vanishes there, so `q(1/x) ≡ q(0) ≠ 0`. -/
+lemma ord_aeval_xx_inv_eq_zero (hv : D.ord v D.xx < 0) {q : K[X]} (hq : q.coeff 0 ≠ 0) :
+    D.ord v (aeval D.xx⁻¹ q) = 0 := by
+  have hval := D.vanishesAt_aeval_sub_eval v (D.xx_inv_mem_valRing v hv)
+    (D.vanishesAt_xx_inv v hv) q
+  have hev : q.eval 0 = q.coeff 0 := (Polynomial.coeff_zero_eq_eval_zero q).symm
+  rw [hev] at hval
+  exact (D.ord_eq_zero_of_vanishesAt_sub v hq hval).2
+
+lemma ord_aeval_xx_inv_nonneg (hv : D.ord v D.xx < 0) (q : K[X]) :
+    0 ≤ D.ord v (aeval D.xx⁻¹ q) :=
+  (D.mem_valRing_iff v).1 (D.aeval_mem_valRing v (D.xx_inv_mem_valRing v hv) q)
+
+/-- **The order of a polynomial in `1/x` is a multiple of the ramification index** (PROVEN),
+by peeling factors of `X`. -/
+lemma dvd_ord_aeval_xx_inv_aux (hv : D.ord v D.xx < 0) :
+    ∀ N : ℕ, ∀ p : K[X], p.natDegree ≤ N → p ≠ 0 →
+      (- D.ord v D.xx) ∣ D.ord v (aeval D.xx⁻¹ p) := by
+  intro N
+  induction N with
+  | zero =>
+      intro p hp hp0
+      have h0 : p.coeff 0 ≠ 0 := by
+        intro h
+        obtain ⟨a, ha⟩ := Polynomial.natDegree_eq_zero.mp (Nat.le_zero.mp hp)
+        subst ha
+        simp only [Polynomial.coeff_C_zero] at h
+        exact hp0 (by rw [h, map_zero])
+      rw [D.ord_aeval_xx_inv_eq_zero v hv h0]
+      exact dvd_zero _
+  | succ m ih =>
+      intro p hp hp0
+      by_cases h0 : p.coeff 0 = 0
+      · obtain ⟨q, rfl⟩ := (Polynomial.X_dvd_iff).mpr h0
+        have hq0 : q ≠ 0 := by rintro rfl; simp at hp0
+        have hdm : (X * q).natDegree = q.natDegree + 1 := by
+          rw [Polynomial.natDegree_mul Polynomial.X_ne_zero hq0, Polynomial.natDegree_X]
+          omega
+        have hdeg : q.natDegree ≤ m := by omega
+        have hae : aeval D.xx⁻¹ (X * q) = D.xx⁻¹ * aeval D.xx⁻¹ q := by simp
+        rw [hae, D.ord_mul v _ _ (D.xx_inv_ne_zero) (D.aeval_xx_inv_ne_zero hq0),
+          D.ord_xx_inv v]
+        exact Dvd.dvd.add (dvd_refl _) (ih q hdeg hq0)
+      · rw [D.ord_aeval_xx_inv_eq_zero v hv h0]
+        exact dvd_zero _
+
+lemma dvd_ord_aeval_xx_inv (hv : D.ord v D.xx < 0) {p : K[X]} (hp : p ≠ 0) :
+    (- D.ord v D.xx) ∣ D.ord v (aeval D.xx⁻¹ p) :=
+  D.dvd_ord_aeval_xx_inv_aux v hv p.natDegree p le_rfl hp
+
+/-! ### The chart at infinity -/
+
+/-- The ordinate in the chart at infinity, `w = y/x³`. -/
+noncomputable def wInf (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : D.F := D.yy * D.xx⁻¹ ^ 3
+
+lemma wInf_ne_zero : D.wInf ≠ 0 :=
+  mul_ne_zero (D.yy_ne_zero)
+    (pow_ne_zero _ D.xx_inv_ne_zero)
+
+lemma ord_wInf (hv : D.ord v D.xx < 0) : D.ord v D.wInf = 0 := by
+  have hyy : D.yy ≠ 0 := D.yy_ne_zero
+  rw [wInf, D.ord_mul v _ _ hyy (pow_ne_zero _ D.xx_inv_ne_zero),
+    D.ord_pow v _ D.xx_inv_ne_zero, D.ord_xx_inv v, D.ord_yy_of_ord_xx_neg v hv]
+  push_cast
+  ring
+
+/-- The curve equation in the chart at infinity: `w² = revSext (1/x)` (PROVEN). -/
+lemma wInf_sq : D.wInf ^ 2 = aeval D.xx⁻¹ (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+  rw [PlaceAtInfinity.aeval_revSextPoly,
+    PlaceAtInfinity.revSext_inv_eq c₀ c₁ c₂ c₃ c₄ c₅ D.xx_ne_zero, ← D.eqn, wInf]
+  ring
+
+lemma ord_two_eq_zero : D.ord v (2 : D.F) = 0 := by
+  have h := D.ord_algebraMap v (2 : K) D.two_ne_zero
+  rwa [map_ofNat] at h
+
+lemma two_ne_zero_F : (2 : D.F) ≠ 0 := by
+  have h : algebraMap K D.F (2 : K) ≠ 0 :=
+    (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr D.two_ne_zero
+  rwa [map_ofNat] at h
+
+/-- **The key divisibility** (PROVEN): at a place where `x` has a pole, every
+`P(1/x) + Q(1/x)·w` has order divisible by `−ord x`.
+
+This is the whole content of the leaf.  The argument is the conjugate trick: `g·ḡ` is a
+polynomial in `1/x`, `g + ḡ = 2P(1/x)` and `g − ḡ = 2Q(1/x)·w` are too (up to a unit), and
+when `P` and `Q` are not both divisible by `X` one of the latter two is a UNIT — which pins
+`ord g` to `0` in the only case the first two do not already settle. -/
+lemma dvd_ord_chart_aux (hv : D.ord v D.xx < 0) :
+    ∀ N : ℕ, ∀ P Q : K[X], P.natDegree + Q.natDegree ≤ N →
+      aeval D.xx⁻¹ P + aeval D.xx⁻¹ Q * D.wInf ≠ 0 →
+      (- D.ord v D.xx) ∣ D.ord v (aeval D.xx⁻¹ P + aeval D.xx⁻¹ Q * D.wInf) := by
+  intro N
+  induction N using Nat.strong_induction_on with
+  | _ N ih =>
+    intro P Q hdeg hne
+    by_cases hboth : P.coeff 0 = 0 ∧ Q.coeff 0 = 0
+    · -- both divisible by `X`: peel one factor and recurse
+      obtain ⟨P', rfl⟩ := (Polynomial.X_dvd_iff).mpr hboth.1
+      obtain ⟨Q', rfl⟩ := (Polynomial.X_dvd_iff).mpr hboth.2
+      have hfac : aeval D.xx⁻¹ (X * P') + aeval D.xx⁻¹ (X * Q') * D.wInf
+          = D.xx⁻¹ * (aeval D.xx⁻¹ P' + aeval D.xx⁻¹ Q' * D.wInf) := by
+        simp only [map_mul, aeval_X]
+        ring
+      have hne' : aeval D.xx⁻¹ P' + aeval D.xx⁻¹ Q' * D.wInf ≠ 0 := by
+        intro h
+        rw [hfac, h, mul_zero] at hne
+        exact hne rfl
+      have hnb : ¬ (P' = 0 ∧ Q' = 0) := by
+        rintro ⟨rfl, rfl⟩
+        simp at hne'
+      have hdrop : P'.natDegree + Q'.natDegree < N := by
+        rcases eq_or_ne P' 0 with rfl | hP'
+        · have hQ' : Q' ≠ 0 := fun h => hnb ⟨rfl, h⟩
+          have h1 : (X * Q').natDegree = Q'.natDegree + 1 := by
+            rw [Polynomial.natDegree_mul Polynomial.X_ne_zero hQ', Polynomial.natDegree_X]
+            omega
+          simp only [mul_zero, Polynomial.natDegree_zero] at hdeg ⊢
+          omega
+        · have h1 : (X * P').natDegree = P'.natDegree + 1 := by
+            rw [Polynomial.natDegree_mul Polynomial.X_ne_zero hP', Polynomial.natDegree_X]
+            omega
+          rcases eq_or_ne Q' 0 with rfl | hQ'
+          · simp only [mul_zero, Polynomial.natDegree_zero] at hdeg ⊢
+            omega
+          · have h2 : (X * Q').natDegree = Q'.natDegree + 1 := by
+              rw [Polynomial.natDegree_mul Polynomial.X_ne_zero hQ', Polynomial.natDegree_X]
+              omega
+            omega
+      rw [hfac, D.ord_mul v _ _ D.xx_inv_ne_zero hne', D.ord_xx_inv v]
+      exact Dvd.dvd.add (dvd_refl _) (ih _ hdrop P' Q' le_rfl hne')
+    · -- the main step
+      have hw0 : D.ord v D.wInf = 0 := D.ord_wInf v hv
+      have hwne : D.wInf ≠ 0 := D.wInf_ne_zero
+      set A := aeval D.xx⁻¹ P with hA
+      set B := aeval D.xx⁻¹ Q with hB
+      have hAnn : 0 ≤ D.ord v A := D.ord_aeval_xx_inv_nonneg v hv P
+      have hBnn : 0 ≤ D.ord v B := D.ord_aeval_xx_inv_nonneg v hv Q
+      -- one of `A`, `B` is a unit
+      have hunit : D.ord v A = 0 ∨ D.ord v B = 0 := by
+        rcases not_and_or.mp hboth with h | h
+        · exact Or.inl (D.ord_aeval_xx_inv_eq_zero v hv h)
+        · exact Or.inr (D.ord_aeval_xx_inv_eq_zero v hv h)
+      rcases eq_or_ne Q 0 with rfl | hQ0
+      · -- `g = A`
+        have hP0 : P ≠ 0 := by
+          rintro rfl
+          simp [hA, hB] at hne
+        simp only [hB, map_zero, zero_mul, add_zero]
+        exact D.dvd_ord_aeval_xx_inv v hv hP0
+      rcases eq_or_ne P 0 with rfl | hP0
+      · -- `g = B·w`
+        have hBne : B ≠ 0 := D.aeval_xx_inv_ne_zero hQ0
+        simp only [hA, map_zero, zero_add]
+        rw [D.ord_mul v _ _ hBne hwne, hw0, add_zero]
+        exact D.dvd_ord_aeval_xx_inv v hv hQ0
+      have hAne : A ≠ 0 := D.aeval_xx_inv_ne_zero hP0
+      have hBne : B ≠ 0 := D.aeval_xx_inv_ne_zero hQ0
+      have hBwne : B * D.wInf ≠ 0 := mul_ne_zero hBne hwne
+      have hordBw : D.ord v (B * D.wInf) = D.ord v B := by
+        rw [D.ord_mul v _ _ hBne hwne, hw0, add_zero]
+      set g := A + B * D.wInf with hg
+      set gb := A - B * D.wInf with hgb
+      have h2ne := D.two_ne_zero_F
+      have h2ord := D.ord_two_eq_zero v
+      have hsum : g + gb = 2 * A := by rw [hg, hgb]; ring
+      have hdif : g - gb = 2 * (B * D.wInf) := by rw [hg, hgb]; ring
+      have hordsum : D.ord v (g + gb) = D.ord v A := by
+        rw [hsum, D.ord_mul v _ _ h2ne hAne, h2ord, zero_add]
+      have horddif : D.ord v (g - gb) = D.ord v B := by
+        rw [hdif, D.ord_mul v _ _ h2ne hBwne, h2ord, zero_add, hordBw]
+      rcases eq_or_ne gb 0 with hgb0 | hgb0
+      · -- `A = B·w`, so `g = 2A` and both are units
+        have hAeq : D.ord v A = D.ord v B := by
+          have : A = B * D.wInf := by
+            have : A - B * D.wInf = 0 := by rw [← hgb]; exact hgb0
+            linear_combination this
+          rw [this, hordBw]
+        have : D.ord v g = D.ord v A := by
+          have hgeq : g = 2 * A := by
+            rw [hg]
+            have : A - B * D.wInf = 0 := by rw [← hgb]; exact hgb0
+            linear_combination -this
+          rw [hgeq, D.ord_mul v _ _ h2ne hAne, h2ord, zero_add]
+        rw [this]
+        rcases hunit with h | h
+        · rw [h]; exact dvd_zero _
+        · rw [hAeq, h]; exact dvd_zero _
+      -- `gb ≠ 0`: use the norm
+      have hprod : g * gb
+          = aeval D.xx⁻¹ (P ^ 2 - Q ^ 2 * PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+        have hws := D.wInf_sq
+        simp only [map_sub, map_mul, map_pow, hg, hgb, hA, hB]
+        rw [← hws]
+        ring
+      have hRne : g * gb ≠ 0 := mul_ne_zero hne hgb0
+      have hR0 : P ^ 2 - Q ^ 2 * PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K ≠ 0 := by
+        intro h
+        rw [h, map_zero] at hprod
+        exact hRne hprod
+      have hdvdR : (- D.ord v D.xx) ∣ D.ord v (g * gb) := by
+        rw [hprod]
+        exact D.dvd_ord_aeval_xx_inv v hv hR0
+      have hsplit : D.ord v g + D.ord v gb = D.ord v (g * gb) :=
+        (D.ord_mul v _ _ hne hgb0).symm
+      rcases lt_trichotomy (D.ord v g) (D.ord v gb) with hlt | heq | hlt
+      · have := D.ord_add_of_lt v hne hgb0 hlt
+        rw [hordsum] at this
+        rw [← this]
+        exact D.dvd_ord_aeval_xx_inv v hv hP0
+      · -- equal orders: `g` is a unit
+        have hgeA : D.ord v g ≤ D.ord v A := by
+          have h1 := D.ord_add v g gb hne hgb0 (by rw [hsum]; exact mul_ne_zero h2ne hAne)
+          rw [hordsum] at h1
+          omega
+        have hgeB : D.ord v g ≤ D.ord v B := by
+          have h1 := D.ord_add v g (-gb) hne (neg_ne_zero.mpr hgb0)
+            (by rw [← sub_eq_add_neg, hdif]; exact mul_ne_zero h2ne hBwne)
+          rw [D.ord_neg v gb hgb0, ← sub_eq_add_neg, horddif] at h1
+          omega
+        have hgnn : 0 ≤ D.ord v g := by
+          have h1 := D.ord_add v A (B * D.wInf) hAne hBwne (by rw [← hg]; exact hne)
+          rw [hordBw, ← hg] at h1
+          omega
+        have : D.ord v g = 0 := by
+          rcases hunit with h | h
+          · omega
+          · omega
+        rw [this]
+        exact dvd_zero _
+      · have := D.ord_add_of_lt v hgb0 hne hlt
+        rw [add_comm gb g, hordsum] at this
+        have hgb_eq : D.ord v gb = D.ord v A := this.symm
+        have : D.ord v g = D.ord v (g * gb) - D.ord v A := by omega
+        rw [this]
+        exact dvd_sub hdvdR (D.dvd_ord_aeval_xx_inv v hv hP0)
+
+
+/-! ### From the divisibility to `ord x = −1` -/
+
+/-- `F = K(1/x)(y)`: the generator statement transported to the chart at infinity (PROVEN),
+by reflecting the three polynomials. -/
+lemma gen_xx_inv : ∀ z : D.F, ∃ a b d : K[X], aeval D.xx⁻¹ d ≠ 0 ∧
+    z * aeval D.xx⁻¹ d = aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * D.yy := by
+  intro z
+  obtain ⟨a, b, d, hd, hz⟩ := D.gen z
+  set m : ℕ := max d.natDegree (max a.natDegree b.natDegree) with hm
+  have hdm : d.natDegree ≤ m := by rw [hm]; exact le_max_left _ _
+  have ham : a.natDegree ≤ m := by
+    rw [hm]; exact le_trans (le_max_left _ b.natDegree) (le_max_right _ _)
+  have hbm : b.natDegree ≤ m := by
+    rw [hm]; exact le_trans (le_max_right a.natDegree _) (le_max_right _ _)
+  refine ⟨Polynomial.reflect m a, Polynomial.reflect m b, Polynomial.reflect m d, ?_, ?_⟩
+  · rw [PlaceClassify.aeval_inv_reflect D.xx_ne_zero d m hdm]
+    exact mul_ne_zero hd (pow_ne_zero _ D.xx_inv_ne_zero)
+  · rw [PlaceClassify.aeval_inv_reflect D.xx_ne_zero d m hdm,
+      PlaceClassify.aeval_inv_reflect D.xx_ne_zero a m ham,
+      PlaceClassify.aeval_inv_reflect D.xx_ne_zero b m hbm]
+    linear_combination (D.xx⁻¹ ^ m) * hz
+
+/-- **Every function has order divisible by `−ord x`** (PROVEN): the value group of a place
+where `x` has a pole is `(−ord x)·ℤ`. -/
+lemma dvd_ord_of_ord_xx_neg (hv : D.ord v D.xx < 0) {z : D.F} (hz : z ≠ 0) :
+    (- D.ord v D.xx) ∣ D.ord v z := by
+  obtain ⟨a, b, d, hd, hzz⟩ := D.gen_xx_inv z
+  have hd0 : d ≠ 0 := by rintro rfl; rw [map_zero] at hd; exact hd rfl
+  have hxi := D.xx_inv_ne_zero
+  have hkey : z * (aeval D.xx⁻¹ d * D.xx⁻¹ ^ 3)
+      = aeval D.xx⁻¹ (X ^ 3 * a) + aeval D.xx⁻¹ b * D.wInf := by
+    rw [wInf, map_mul, map_pow, aeval_X]
+    linear_combination (D.xx⁻¹ ^ 3) * hzz
+  have hne : aeval D.xx⁻¹ (X ^ 3 * a) + aeval D.xx⁻¹ b * D.wInf ≠ 0 := by
+    rw [← hkey]
+    exact mul_ne_zero hz (mul_ne_zero hd (pow_ne_zero _ hxi))
+  have hdvd := D.dvd_ord_chart_aux v hv
+    ((X ^ 3 * a).natDegree + b.natDegree) (X ^ 3 * a) b le_rfl hne
+  have hd1 : (- D.ord v D.xx) ∣ D.ord v (aeval D.xx⁻¹ d) := D.dvd_ord_aeval_xx_inv v hv hd0
+  have hd2 : (- D.ord v D.xx) ∣ 3 * (- D.ord v D.xx) := ⟨3, by ring⟩
+  have hsplit : D.ord v (aeval D.xx⁻¹ (X ^ 3 * a) + aeval D.xx⁻¹ b * D.wInf)
+      = D.ord v z + D.ord v (aeval D.xx⁻¹ d) + 3 * (- D.ord v D.xx) := by
+    rw [← hkey, D.ord_mul v _ _ hz (mul_ne_zero hd (pow_ne_zero _ hxi)),
+      D.ord_mul v _ _ hd (pow_ne_zero _ hxi), D.ord_pow v _ hxi, D.ord_xx_inv v]
+    push_cast
+    ring
+  rw [hsplit] at hdvd
+  have : D.ord v z
+      = (D.ord v z + D.ord v (aeval D.xx⁻¹ d) + 3 * (- D.ord v D.xx))
+        - D.ord v (aeval D.xx⁻¹ d) - 3 * (- D.ord v D.xx) := by ring
+  rw [this]
+  exact dvd_sub (dvd_sub hdvd hd1) hd2
+
+/-- **A pole of the abscissa is a SIMPLE pole** (PROVEN).
+
+`ord_surjective` says the value group is all of `ℤ`, and `dvd_ord_of_ord_xx_neg` says it is
+contained in `(−ord x)·ℤ`; so `−ord x` divides `1`. -/
+lemma ord_xx_eq_neg_one_of_ord_xx_neg (hv : D.ord v D.xx < 0) : D.ord v D.xx = -1 := by
+  obtain ⟨t, ht⟩ := D.ord_surjective v
+  have ht0 : t ≠ 0 := by
+    intro h; rw [h, D.ord_zero] at ht; omega
+  have hdvd := D.dvd_ord_of_ord_xx_neg v hv ht0
+  rw [ht] at hdvd
+  have := Int.le_of_dvd one_pos hdvd
+  omega
+
+lemma ord_neg_one_F : D.ord v (-1 : D.F) = 0 := by
+  have h := D.ord_algebraMap v (-1 : K) (by norm_num)
+  rwa [map_neg, map_one] at h
+
+/-! ### Uniqueness of the place at infinity on a given branch -/
+
+/-- `D.ord v` satisfies the `IsPlaceFun` axioms (PROVEN, by projection). -/
+lemma isPlaceFun_ord : IsPlaceFun K D.F (D.ord v) where
+  map_zero := D.ord_zero v
+  map_mul := D.ord_mul v
+  ultra := D.ord_add v
+  map_algebraMap := D.ord_algebraMap v
+  normalised := D.ord_surjective v
+
+/-- A chart expression whose value at the point is nonzero is itself nonzero (PROVEN). -/
+lemma chart_ne_zero_of_eval_ne_zero {t s : D.F} {α β : K}
+    (ht : D.VanishesAt v (t - algebraMap K D.F α))
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) {e₁ e₂ : K[X]}
+    (hden : e₁.eval α + e₂.eval α * β ≠ 0) : aeval t e₁ + aeval t e₂ * s ≠ 0 := by
+  intro h0
+  have hV := vanishesAt_chart_sub D v ht hs e₁ e₂
+  rw [h0, zero_sub] at hV
+  have h2 := vanishesAt_neg hV
+  rw [neg_neg] at h2
+  exact hden (D.eq_zero_of_vanishesAt_algebraMap v h2)
+
+/-- The two chart congruences at a place lying at infinity on the branch `s` (PROVEN). -/
+lemma vanishesAt_chart_infinite (s : Bool) (h1 : D.ord v D.xx = -1)
+    (h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3)) :
+    D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F (0 : K)) ∧
+      D.VanishesAt v (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if s then (1 : K) else -1)) := by
+  have hxne := D.xx_ne_zero
+  have hine := D.xx_inv_ne_zero
+  have hiord : D.ord v D.xx⁻¹ = 1 := by rw [D.ord_inv v _ hxne, h1]; norm_num
+  refine ⟨?_, ?_⟩
+  · rw [map_zero, sub_zero]
+    exact Or.inr (by rw [hiord]; norm_num)
+  · have hεF : (if s then (1 : D.F) else -1)
+        = algebraMap K D.F (if s then (1 : K) else -1) := by cases s <;> simp
+    have hchart : D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if s then (1 : K) else -1)
+        = (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3) * D.xx⁻¹ ^ 3 := by
+      rw [← hεF]; field_simp
+    rw [hchart]
+    rcases eq_or_ne (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3) 0 with hA | hA
+    · exact Or.inl (by rw [hA, zero_mul])
+    · refine Or.inr ?_
+      rw [D.ord_mul v _ _ hA (pow_ne_zero _ hine), D.ord_pow v _ hine 3, hiord]
+      push_cast
+      omega
+
+/-- **`O_v` is the local ring of the chart at infinity, at ANY place lying at infinity on the
+branch `s`** (PROVEN).
+
+This is `exists_localDenom_infinite` with the hypothesis `v = pt (Sum.inr s)` replaced by the
+two properties of `v` that its proof uses — which is what makes it a UNIQUENESS statement:
+the right-hand side mentions `v` only through those two properties. -/
+theorem exists_localDenom_at_infinity (s : Bool) (h1 : D.ord v D.xx = -1)
+    (h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3))
+    {z : D.F} (hz : 0 ≤ D.ord v z) :
+    ∃ a b e₁ e₂ : K[X],
+      Polynomial.eval 0 e₁ + Polynomial.eval 0 e₂ * (if s then (1 : K) else -1) ≠ 0 ∧
+      z * (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
+        = aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3) := by
+  have hxne := D.xx_ne_zero
+  have hine := D.xx_inv_ne_zero
+  have hyne : D.yy ≠ 0 := D.yy_ne_zero
+  obtain ⟨ht, hs⟩ := D.vanishesAt_chart_infinite v s h1 h2
+  have hcurve : (D.yy * D.xx⁻¹ ^ 3) ^ 2
+      = aeval D.xx⁻¹ (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    rw [PlaceAtInfinity.aeval_revSextPoly, PlaceAtInfinity.revSext_inv_eq _ _ _ _ _ _ hxne,
+      ← D.eqn]
+    field_simp
+  have hε2 : (if s then (1 : K) else -1) ^ 2 = 1 := by cases s <;> norm_num
+  have hg : PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+      = Polynomial.C ((if s then (1 : K) else -1) ^ 2)
+        + (Polynomial.X - Polynomial.C (0 : K))
+          * ((c₅ : K[X]) + (c₄ : K[X]) * X + (c₃ : K[X]) * X ^ 2
+              + (c₂ : K[X]) * X ^ 3 + (c₁ : K[X]) * X ^ 4 + (c₀ : K[X]) * X ^ 5) := by
+    rw [hε2]
+    simp only [PlaceAtInfinity.revSextPoly, map_one, map_zero, sub_zero]
+    ring
+  have ht0 : D.xx⁻¹ - algebraMap K D.F (0 : K) ≠ 0 := by
+    rw [map_zero, sub_zero]; exact hine
+  have hs0 : D.yy * D.xx⁻¹ ^ 3 ≠ 0 := mul_ne_zero hyne (pow_ne_zero _ hine)
+  have hsm : (2 : K) * (if s then (1 : K) else -1) ≠ 0 := by
+    have h2' := D.two_ne_zero
+    cases s <;> simpa using h2'
+  have hkey : ∀ (p : K[X]) (m : ℕ), p.natDegree ≤ m →
+      aeval D.xx⁻¹ (Polynomial.reflect m p) = aeval D.xx p * D.xx⁻¹ ^ m :=
+    fun p m hp => PlaceClassify.aeval_inv_reflect hxne p m hp
+  have hgen : ∀ y : D.F, ∃ A B e₁ e₂ : K[X],
+      (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0) ∧
+      y * (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
+        = aeval D.xx⁻¹ A + aeval D.xx⁻¹ B * (D.yy * D.xx⁻¹ ^ 3) := by
+    intro y
+    obtain ⟨a, b, d, hd, hy⟩ := D.gen y
+    set m : ℕ := max d.natDegree (max a.natDegree b.natDegree) with hm
+    have hdm : d.natDegree ≤ m + 3 := by rw [hm]; omega
+    have ham : a.natDegree ≤ m + 3 := by
+      rw [hm]
+      have : a.natDegree ≤ max d.natDegree (max a.natDegree b.natDegree) :=
+        le_trans (le_max_left _ b.natDegree) (le_max_right _ _)
+      omega
+    have hbm : b.natDegree ≤ m := by
+      rw [hm]
+      exact le_trans (le_max_right a.natDegree _) (le_max_right _ _)
+    refine ⟨Polynomial.reflect (m + 3) a, Polynomial.reflect m b,
+      Polynomial.reflect (m + 3) d, 0, ?_, ?_⟩
+    · rw [hkey d (m + 3) hdm]
+      simp only [map_zero, zero_mul, add_zero]
+      exact mul_ne_zero hd (pow_ne_zero _ hine)
+    · rw [hkey d (m + 3) hdm, hkey a (m + 3) ham, hkey b m hbm]
+      simp only [map_zero, zero_mul, add_zero]
+      calc y * (aeval D.xx d * D.xx⁻¹ ^ (m + 3))
+          = (y * aeval D.xx d) * D.xx⁻¹ ^ (m + 3) := by ring
+        _ = (aeval D.xx a + aeval D.xx b * D.yy) * D.xx⁻¹ ^ (m + 3) := by rw [hy]
+        _ = aeval D.xx a * D.xx⁻¹ ^ (m + 3)
+              + aeval D.xx b * D.xx⁻¹ ^ m * (D.yy * D.xx⁻¹ ^ 3) := by
+          rw [pow_add]; ring
+  exact D.exists_localDenom_chart v hcurve hg ht ht0 hs hs0 (Or.inl hsm) hgen hz
+
+/-- **THE UNIQUENESS OF THE PLACE AT INFINITY ON A BRANCH** (PROVEN).
+
+Both valuation rings are the local ring of the chart at `(0, ε)`, a description that does not
+mention the place; `isPlaceFun_eq_of_le` turns the resulting inclusion into equality of the
+valuations, and `ord_injective` into equality of the places. -/
+theorem eq_of_ord_xx_eq_neg_one_of_branch (s : Bool) {v w : D.Places}
+    (hv1 : D.ord v D.xx = -1)
+    (hv2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3))
+    (hw1 : D.ord w D.xx = -1)
+    (hw2 : -3 < D.ord w (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3)) :
+    v = w := by
+  obtain ⟨htv, hsv⟩ := D.vanishesAt_chart_infinite v s hv1 hv2
+  refine D.ord_injective (PlaceClassify.isPlaceFun_eq_of_le (D.isPlaceFun_ord v)
+    (D.isPlaceFun_ord w) ?_ D.xx_inv_ne_zero ?_)
+  · intro z hz
+    rcases eq_or_ne z 0 with rfl | hz0
+    · rw [D.ord_zero]
+    obtain ⟨a, b, e₁, e₂, hden, heq⟩ := D.exists_localDenom_at_infinity w s hw1 hw2 hz
+    have hdenne : aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0 :=
+      D.chart_ne_zero_of_eval_ne_zero v htv hsv hden
+    have hden0 : D.ord v (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3)) = 0 :=
+      (D.ord_chart_eq_zero_iff v htv hsv hdenne).2 hden
+    have hnum : 0 ≤ D.ord v (aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3)) :=
+      D.chart_mem_valRing v htv hsv a b
+    have hmul : D.ord v z + D.ord v (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
+        = D.ord v (aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3)) := by
+      rw [← D.ord_mul v _ _ hz0 hdenne, heq]
+    omega
+  · rw [D.ord_inv w D.xx D.xx_ne_zero, hw1]; norm_num
+
+end OrdAtInfinity
+
 end PlaceData
 
 section Presentation
@@ -4401,28 +4992,104 @@ def PlaceData.toPlaceSystem {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c
   ord_complete := D.ord_complete
   ord_finite := D.ord_finite
 
-/-- **LEAF: the only poles of the abscissa are the two points at infinity.**
+/-- **PROVEN 2026-08-02: the only poles of the abscissa are the two points at infinity.**
 
-`ord_v x < 0` forces `v ∈ {∞₊, ∞₋}`.  This is the fundamental inequality
-`Σ_{v | ∞} e(v) f(v) ≤ [F : K(x)] = 2` ([Stichtenoth, *Algebraic Function Fields and Codes*,
-III.1.11]) read at the infinite place of `K(x)`, and nothing more: the two rational points at
-infinity are already exhibited by `PlaceData` (`ord_pt_infinite` gives `ord x = -1`, so
-`e = 1`, and `finrank_residue_pt_eq_one` gives `f = 1`), they are distinct by `pt_injective`,
-so they saturate the bound and there is no room for a third pole of `x`.
+`ord_v x < 0` forces `v ∈ {∞₊, ∞₋}`.  Three steps, all in `section OrdAtInfinity` above:
 
-**Strictly weaker than the fundamental identity**
-`degOf_poleDivisor_eq_finrank_of_transcendental`: it is one inequality, at one place, for the
-one function `x` — no weak approximation and no dimension count.  Anyone proving that leaf
-gets this one for free (`deg (div_∞ x) = [F : K(x)] = 2` with two degree-`1` poles already
-present leaves no third), so it should be DELETED rather than proven separately if the
-fundamental identity lands first.
+1. **the pole is SIMPLE.**  Write `u = 1/x` and `w = y/x³`, so `ord u = −ord x > 0` and
+   `ord w = 0` (from `2·ord y = 6·ord x`, the sextic having degree `6`).  Every element of `F`
+   is `(P(u) + Q(u)·w)/(u³·d(u))` (`gen_xx_inv`, by reflecting the polynomials of `gen`), and
+   `ord (P(u) + Q(u)·w)` is ALWAYS a multiple of `−ord x` (`dvd_ord_chart_aux`).  So the value
+   group is contained in `(−ord x)·ℤ`, and `ord_surjective` — the value group is all of `ℤ` —
+   forces `−ord x = 1`.
+2. **the branch.**  `w² = revSext u` has constant term `1`, so `ord (w² − 1) > 0`, and `2 ≠ 0`
+   makes exactly one of `w ∓ 1` a nonunit; that sign is the `Bool`.  With `ord x = −1`,
+   `y − ε·x³ = x³·(w − ε)` then has order `> −3`, i.e. `IsPlaceOfPt` holds at `∞_ε`.
+3. **uniqueness on a branch** (`eq_of_ord_xx_eq_neg_one_of_branch`): `exists_localDenom_chart`
+   in the chart `(u, w)` at `(0, ε)` describes `O_v` by data that does not mention `v` — a
+   fraction of chart expressions whose denominator does not vanish at `(0, ε)` — so two places
+   with the same `(ord x = −1, branch)` have the same valuation ring, and
+   `PlaceClassify.isPlaceFun_eq_of_le` plus `ord_injective` make them equal.
 
-**What would refute it**: a place with `ord_v x = -2` (`x = ∞` inert with `e = 2`) or one with
-`f = 2`, in addition to `∞±`.  Neither can occur, because `∞±` alone already contribute
-`1·1 + 1·1 = 2 = [F : K(x)]`; the *existence* of both is where the monic sextic and `2 ≠ 0`
-are used, and both are `PlaceData` fields rather than things to prove. -/
+**The recorded route was more expensive than the statement needs, and this corrects it.**  The
+old docstring priced the leaf at the fundamental inequality `Σ_{v | ∞} e(v) f(v) ≤ [F : K(x)]`
+([Stichtenoth III.1.11]) and said it would come free from
+`degOf_poleDivisor_eq_finrank_of_transcendental`, so that this declaration "should be DELETED
+rather than proven separately if the fundamental identity lands first".  Neither is used:
+step 1 replaces `Σ e f ≤ 2` by the RAMIFICATION half alone (`e = 1`), which is a statement
+about ONE place and is exactly what the `dvd`-argument above gives; step 3 replaces the
+INERTIA/counting half by the chart description of `O_v`, which the file already had.  So this
+theorem is independent of the Riemann–Roch layer and must NOT be deleted when that lands.
+
+**What would refute it**: a place with `ord_v x = −2` (`x = ∞` inert with `e = 2`) or a third
+place on a branch already occupied.  The first is killed by step 1, the second by step 3; note
+that step 1 uses `ord_surjective` essentially — a non-normalised valuation with `ord x = −2`
+exists, and is excluded by `PlaceData` demanding value group `ℤ`. -/
 theorem pt_infinite_of_ord_xx_neg {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (v : D.Places) (hv : D.ord v D.xx < 0) : ∃ s : Bool, v = D.pt (Sum.inr s) := sorry
+    (v : D.Places) (hv : D.ord v D.xx < 0) : ∃ s : Bool, v = D.pt (Sum.inr s) := by
+  have h1 : D.ord v D.xx = -1 := D.ord_xx_eq_neg_one_of_ord_xx_neg v hv
+  have hw0 : D.ord v D.wInf = 0 := D.ord_wInf v hv
+  have hwne : D.wInf ≠ 0 := D.wInf_ne_zero
+  have hxx := D.xx_ne_zero
+  -- the branch: `w ≡ ε` for at least one sign
+  have hbranch : ∃ s : Bool, D.wInf - (if s then (1 : D.F) else -1) = 0 ∨
+      0 < D.ord v (D.wInf - (if s then (1 : D.F) else -1)) := by
+    by_cases hsq : D.wInf ^ 2 - 1 = 0
+    · have hfac : (D.wInf - 1) * (D.wInf + 1) = 0 := by linear_combination hsq
+      rcases mul_eq_zero.mp hfac with h | h
+      · exact ⟨true, Or.inl (by simpa using h)⟩
+      · refine ⟨false, Or.inl ?_⟩
+        simp only [Bool.false_eq_true, if_false, sub_neg_eq_add]
+        exact h
+    · obtain ⟨G, hG⟩ : (X : K[X]) ∣ (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K - 1) := by
+        refine (Polynomial.X_dvd_iff).mpr ?_
+        simp [PlaceAtInfinity.revSextPoly]
+      have hGval : D.wInf ^ 2 - 1 = D.xx⁻¹ * aeval D.xx⁻¹ G := by
+        have hh : aeval D.xx⁻¹ (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K - 1)
+            = aeval D.xx⁻¹ (X * G) := by rw [hG]
+        rw [map_sub, map_one, map_mul, aeval_X, ← D.wInf_sq] at hh
+        linear_combination hh
+      have hG0 : aeval D.xx⁻¹ G ≠ 0 := by
+        intro h; rw [h, mul_zero] at hGval; exact hsq hGval
+      have hpos : 0 < D.ord v (D.wInf ^ 2 - 1) := by
+        rw [hGval, D.ord_mul v _ _ D.xx_inv_ne_zero hG0, D.ord_xx_inv v, h1]
+        have := D.ord_aeval_xx_inv_nonneg v hv G
+        omega
+      have hfac : (D.wInf - 1) * (D.wInf + 1) = D.wInf ^ 2 - 1 := by ring
+      have hm1 : D.wInf - 1 ≠ 0 := by
+        intro h; rw [h, zero_mul] at hfac; rw [← hfac, D.ord_zero] at hpos; omega
+      have hp1 : D.wInf + 1 ≠ 0 := by
+        intro h; rw [h, mul_zero] at hfac; rw [← hfac, D.ord_zero] at hpos; omega
+      have hsplit : D.ord v (D.wInf - 1) + D.ord v (D.wInf + 1) = D.ord v (D.wInf ^ 2 - 1) := by
+        rw [← hfac, D.ord_mul v _ _ hm1 hp1]
+      have hm1nn : 0 ≤ D.ord v (D.wInf - 1) := by
+        have h := D.ord_add v D.wInf (-1) hwne (by norm_num) (by rwa [← sub_eq_add_neg])
+        rw [← sub_eq_add_neg, D.ord_neg_one_F v, hw0] at h
+        simpa using h
+      have hp1nn : 0 ≤ D.ord v (D.wInf + 1) := by
+        have h := D.ord_add v D.wInf 1 hwne one_ne_zero hp1
+        rw [D.ord_one v, hw0] at h
+        simpa using h
+      rcases lt_or_ge 0 (D.ord v (D.wInf - 1)) with h | h
+      · exact ⟨true, Or.inr (by simpa using h)⟩
+      · refine ⟨false, Or.inr ?_⟩
+        simp only [Bool.false_eq_true, if_false, sub_neg_eq_add]
+        omega
+  obtain ⟨s, hs⟩ := hbranch
+  have hchart : D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3
+      = D.xx ^ 3 * (D.wInf - (if s then (1 : D.F) else -1)) := by
+    simp only [PlaceData.wInf]
+    field_simp
+  have h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3) := by
+    rcases hs with h | h
+    · rw [hchart, h, mul_zero, D.ord_zero]; omega
+    · have hne : D.wInf - (if s then (1 : D.F) else -1) ≠ 0 := by
+        intro hzz; rw [hzz, D.ord_zero] at h; omega
+      rw [hchart, D.ord_mul v _ _ (pow_ne_zero _ hxx) hne, D.ord_pow v _ hxx, h1]
+      push_cast
+      omega
+  exact ⟨s, D.eq_of_ord_xx_eq_neg_one_of_branch s h1 h2 (D.ord_pt_infinite s).1
+    (D.ord_pt_infinite s).2⟩
 
 /-- **PROVEN from `pt_infinite_of_ord_xx_neg`: a place with a simple pole of `x` lying on the
 `s` branch at infinity IS `∞_s`.**  The branch separation is `isPlaceOfPt_injective`, whose
@@ -9773,10 +10440,13 @@ action".  It is now assembled from `exists_constFieldExt` — which supplies eve
 
 * `constFieldExt_exists_uniformizer` — the constant field extension is UNRAMIFIED
   (Stichtenoth III.6.3(b)).  It is what makes `below` and `ord_emb` definable at all.
-* `pt_infinite_of_ord_xx_neg` — the only poles of `x` are the two points at infinity, i.e.
-  the fundamental inequality `Σ_{v | ∞} e f ≤ [F : K(x)] = 2` at one place for one function.
+* `pt_infinite_of_ord_xx_neg` — the only poles of `x` are the two points at infinity.
+  **PROVEN 2026-08-02, and NOT by the fundamental inequality this bullet predicted**: the
+  ramification half `e = 1` comes from `ord_surjective` plus a value-group computation, and
+  the inertia/counting half from `exists_localDenom_chart`, which describes `O_v` at a point
+  at infinity by data that does not mention the place.  See its own docstring.
 
-So the count went `1 → 2`, and what was bought is that the 14 fields of `GeomPic` are no
+So the count went `1 → 2` and is now `1 → 1`, and what was bought is that the 14 fields of `GeomPic` are no
 longer an existence claim: `emb` and `fieldAct` are CONSTRUCTED (not chosen), `below` is a
 definition rather than data, and `below_finite`, `below_infPlus`, `ord_emb`, `ord_placeAct`
 are theorems.  Both new leaves are single valuation-theoretic facts with textbook references,
