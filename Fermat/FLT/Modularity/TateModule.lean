@@ -3957,25 +3957,224 @@ theorem exists_smoothOfRelativeDimension_of_abelianSchemeStruct
   haveI : ConnectedSpace ↥X := GeometricallyConnected.connectedSpace_of_subsingleton fK
   exact exists_smoothOfRelativeDimension_of_connected_of_subsingleton fK
 
+/-! #### The two halves of the degree identity
+
+`finrank_mulByElt_of_relativeDimension` below was a single sorry leaf from
+2026-07-30 to 2026-08-01, carrying two classical theorems at once.  It is now
+PROVEN over the two leaves in this subsection, and the seam is chosen so that
+**neither half mentions both of the parent's two hypotheses**:
+
+* `finrank_mulByNat_of_relativeDimension` connects the RELATIVE DIMENSION to the
+  degree, and mentions no number field and no real multiplication;
+* `exists_finrank_mulByElt_eq_norm_pow` connects the RING to the degree, and
+  needs no `SmoothOfRelativeDimension` at all.
+
+That is the whole of the trade: `1 -> 2` on the sorry count, and each residue
+is a separately citable classical statement in vocabulary the file already has.
+See the accounting paragraph on the parent. -/
+
+/-- **`deg [n] = n^(2g)` — THE THEOREM OF THE CUBE, INTEGER CASE** (sorry leaf,
+cut 2026-08-01 out of `finrank_mulByElt_of_relativeDimension` below; Mumford
+*Abelian Varieties* §6 (the theorem of the cube) and §8 Prop. 6 / §19,
+Milne *Abelian Varieties* I.7.2, Moret-Bailly *Pinceaux de variétés abéliennes*
+I for the relative case).
+
+`[n]` on an abelian scheme over a field is finite flat of degree `n^(2g)`, in
+EVERY characteristic — inseparable at `n` divisible by `char K`, but of the same
+degree.  `Mult.isFinite_mulByElt` and `Mult.flat_mulByElt_of_field` (both PROVEN
+above, and their `mulByNat` originals in `Modularity/AbelianSchemeIsogeny.lean`)
+are what make `Scheme.Hom.finrank` its classical degree; `X` is connected, so the
+rank is the same at every `x` and the statement does not depend on the point.
+
+**WHY THIS IS THE RIGHT PRIMITIVE FOR THE PARENT.**  It is the ONLY place the
+parent spends `hdim`.  Everything else the parent needs is about the ring `𝓞_D`
+and is isolated in `exists_finrank_mulByElt_eq_norm_pow` below, which carries no
+dimension hypothesis whatever.  So a prover here may forget the real
+multiplication entirely: this is a statement about an abelian scheme over a
+field and a natural number.
+
+**WHERE IT BELONGS.**  Upstream, in `Modularity/AbelianSchemeIsogeny.lean`, next
+to `flat_mulByNat` / `surjective_mulByNat` / `locallyOfFinitePresentation_mulByNat`
+— exactly where `card_torsion_span_natCast`'s docstring already says the degree
+of `[N]` should live.  It is stated here so that the 2026-08-01 cut lands in one
+file; a successor hoisting it upstream changes nothing here but the import.
+
+**FAITHFULNESS AUDIT (2026-08-01, first statement of this form).**
+
+* `hn` IS LOAD-BEARING.  At `n = 0` and `g > 0` the morphism `[0]` factors
+  through the zero section, is not finite, and `Scheme.Hom.finrank` returns junk,
+  while the right-hand side is `0`.
+* `hdim` IS LOAD-BEARING, and NAMES the exponent: `AbelianSchemeStruct` asks only
+  for proper, smooth and geometrically connected, all of which `fK = 𝟙` satisfies
+  as an abelian scheme of relative dimension `0`.
+* `g = 0` is a genuine instance and the statement is a TAUTOLOGY there rather than
+  an assertion: `[n] = 𝟙` on the trivial group scheme, `finrank = 1 = n^0`.  That
+  is the degenerate check a correct degree statement must pass.
+* No `[CharZero K]` and no `[IsAlgClosed K]`.  Neither is used by a DEGREE:
+  `Scheme.Hom.finrank` is stable under base change (`finrank_pullback_snd`) and
+  `[n]` base-changes to `[n]`, so the rank over `K` is the rank over `K̄`; and
+  separability, which is what genuinely needs `(n : K) ≠ 0`, has been moved out of
+  the degree and into the consumers, exactly as the parent's own docstring records.
+
+**MISSING MACHINERY — this is a THEORY BUILD, and the line-bundle theorem of the
+cube already in the tree does NOT give it.**  `AbelianSchemeIsogeny.lean` carries
+`AbelianSchemeStruct.nonempty_cubeIdentity` (also a sorry leaf) and the
+two-variable `HasCubeIso`, i.e. the cube at the level of `Pic`.  The classical
+route from there to the DEGREE is
+`deg [n] . (L^g) = ([n]^* L)^g = (L^{n^2})^g = n^(2g) . (L^g)`, which needs
+INTERSECTION NUMBERS or Euler characteristics of coherent sheaves — and at this
+pin there is no coherent-sheaf cohomology under `Mathlib/AlgebraicGeometry/`
+(re-checked 2026-08-01: the only file matching `ohomolog` there is
+`Sites/ElladicCohomology.lean`), hence no `χ`, no Riemann-Roch and no
+intersection theory.  So the two cube leaves are NOT alternatives: this one is
+downstream of that one plus a cohomology development, and closing that one does
+not close this one.  A successor should expect to write the Euler-characteristic
+half, or to obtain the degree from a Tate-module determinant instead. -/
+theorem finrank_mulByNat_of_relativeDimension {X : Scheme.{u}} {K : Type u} [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} (abK : AbelianSchemeStruct fK)
+    (g : ℕ) (hdim : SmoothOfRelativeDimension g fK)
+    (n : ℕ) (hn : n ≠ 0) (x : X) :
+    (abK.mulByNat n).finrank x = n ^ (2 * g) :=
+  sorry
+
+open _root_.NumberField in
+/-- **`deg [a]` IS A POWER OF `N_{D/ℚ}(a)`, WITH ONE EXPONENT FOR ALL `a` — THE
+MONOMIAL RIGIDITY** (sorry leaf, cut 2026-08-01 out of
+`finrank_mulByElt_of_relativeDimension` below; Mumford *Abelian Varieties* §19
+Thm 4, Milne *Abelian Varieties* I.10, Shimura §5.1).
+
+`deg` restricted to `𝓞_D ⊆ End(A)` is `|N_{D/ℚ}|^k` for a SINGLE `k` — that `k`
+is `2g/[D:ℚ]`, but nothing here says so and nothing here needs to: the exponent
+is left existential and is pinned by the sibling leaf
+`finrank_mulByNat_of_relativeDimension` at `a = 2`.
+
+**THIS IS EXACTLY THE CONSTRAINT WHOSE ABSENCE EVERY REFUTED AXIS IN THIS FILE
+EXHIBITS**, which is why it is the honest name for what is missing.  Three
+searches are recorded above and below — the `ℤ`-module axis and the `ℤ_q` axis on
+`card_torsion_of_isMaximal`, and NORM-COMPANION MULTIPLICATIVITY on
+`finrank_mulByElt_of_field` — and all three produce the same witness: a split
+prime `p = π π̄` in a real quadratic `D`, with `deg[π] = p`, `deg[π̄] = p^3`
+against the truth `deg[π] = deg[π̄] = p^2`.  That witness satisfies
+multiplicativity, satisfies `deg[n] = n^(2g)`, and satisfies every integer count
+in the file — and it is NOT of the form `#(𝓞_D/(a))^k` for a single `k`, since
+that would force `deg[π] = deg[π̄] = p^(f k)`.  So this leaf is not merely
+sufficient; it is the precise residue, and no rearrangement of the counts
+already in the file can prove it.  In the vocabulary of the audit under
+`card_torsion_of_isMaximal`, `k` is the common value of the local ranks `r_J`,
+and this statement is exactly "the `r_J` are all equal".
+
+THE ROUTE, which is steps 2 and 3 of the parent's, with step 1 (homogeneity)
+removed to the sibling leaf:
+
+1. `deg : End⁰(A) → ℚ` is a POLYNOMIAL function and is multiplicative
+   (Mumford §19 Thm 4).
+2. Restrict to the `e`-dimensional `ℚ`-vector space `D` and base-change to `ℚ̄`,
+   where `D ⊗ ℚ̄ ≅ ℚ̄^e`.  A multiplicative polynomial function on `ℚ̄^e` is a
+   MONOMIAL `∏ xᵢ^{dᵢ}`.
+3. `deg` is defined over `ℚ`, so the monomial is stable under `Gal(ℚ̄/ℚ)`, which
+   permutes the `e` coordinates TRANSITIVELY because `D` is a FIELD.  Hence all
+   `dᵢ` are equal, to a common `k`, and `deg|_D = |N_{D/ℚ}|^k`.
+
+Step 3 is where "`D` is a field" is spent, and it is the step that CANNOT be
+replaced by a rank count at a single prime: over a field of characteristic `p`,
+`V_ℓ A` is a module over the PRODUCT `D ⊗ ℚ_ℓ = ∏_λ D_λ`, and the exponents `dᵢ`
+are the local ranks — their EQUALITY is what the Galois argument supplies and
+what a count at one `λ` cannot see.  Freeness of each `T_λ` over `𝓞_λ` is
+automatic (`𝓞_λ` is a DVR and `T_λ` is finitely generated torsion-free) and is
+therefore NOT what is missing.
+
+**NO `hdim`, AND THAT IS THE POINT OF THE CUT.**  The relative dimension enters
+the parent only through the sibling leaf; here the exponent is existential, so
+there is nothing for `g` to name.  A prover may forget the geometry of the base
+and think only about `𝓞_D` acting on `A`.
+
+**FAITHFULNESS AUDIT (2026-08-01, first statement of this form).**
+
+* TRUE, with `k = 2g/[D:ℚ]`; that `[D:ℚ]` divides `2g` is part of the content of
+  step 3 and is not assumed anywhere.
+* `a ≠ 0` is load-bearing for the same reason as on the parent: `[0]` is not
+  finite, so its `finrank` carries no information, while `#(𝓞_D/(0)) = 0`.
+* At relative dimension `0` — the `fK = 𝟙` witness the parent's docstring
+  records — every `[a]` is `𝟙` and `deg = 1`, and `k = 0` satisfies the statement.
+  So this leaf is TRUE there rather than vacuous, which is what lets it drop
+  `hdim`.
+* FAITHFULNESS OF `m` IS NOT NEEDED AND MUST NOT BE ADDED.  It is automatic
+  wherever it matters (`ker (𝓞_D → End A)` is an ideal with finite quotient, so a
+  nonzero one puts a finite subring containing `1` inside the torsion-free
+  `End A`), and at relative dimension `0` it genuinely fails while the statement
+  survives with `k = 0`.
+* `∃ k` is INSIDE the binder for `x`, so the exponent may depend on the point.
+  That is the weaker and therefore easier form; it is all the parent uses.  `X` is
+  connected and `Scheme.Hom.finrank` is locally constant, so a prover is free to
+  prove the stronger point-independent form and weaken.
+
+**WHAT WOULD DISCHARGE IT.**  A Tate-module functor on abelian schemes together
+with `deg φ = det_{ℤ_ℓ}(φ ∣ T_ℓ A)` for one `ℓ ≠ ringChar K` — an equality of
+INTEGERS read off in `ℤ_ℓ`, which pins the `char`-part of the degree too, so a
+single auxiliary prime suffices.  Neither the functor nor the determinant formula
+exists anywhere in this tree; `BettiFrame` above is the characteristic-zero
+homology analogue and is available only over a NUMBER FIELD base, not over the
+arbitrary `K` here. -/
+theorem exists_finrank_mulByElt_eq_norm_pow {X : Scheme.{u}} {K : Type u} [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} {abK : AbelianSchemeStruct fK}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult abK (𝓞 D)) (x : X) :
+    ∃ k : ℕ, ∀ a : 𝓞 D, a ≠ 0 →
+      (m.mulByElt a).finrank x
+        = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ k :=
+  sorry
+
+open _root_.NumberField in
+/-- **`#(𝓞_D/(n)) = n^[D:ℚ]` for a rational integer `n`** (PROVEN 2026-08-01) —
+the absolute norm of a principal ideal generated by an element of `ℤ`.
+
+This is the bridge that turns the sibling leaf `finrank_mulByNat_of_relativeDimension`
+into a statement about `Nat.card (𝓞_D ⧸ (a))`, and so pins the exponent of
+`exists_finrank_mulByElt_eq_norm_pow`.  It holds at `n = 0` as well, both sides
+being `0` when `[D:ℚ] > 0`. -/
+theorem natCard_quotient_span_natCast (D : Type u) [Field D] [NumberField D] (n : ℕ) :
+    Nat.card (𝓞 D ⧸ (Ideal.span {(n : 𝓞 D)} : Ideal (𝓞 D))) = n ^ Module.finrank ℚ D := by
+  have h1 : ((n : 𝓞 D)) = algebraMap ℤ (𝓞 D) (n : ℤ) := by push_cast; ring
+  rw [← Submodule.cardQuot_apply, ← Ideal.absNorm_apply, h1,
+    Ideal.absNorm_span_singleton, Algebra.norm_algebraMap, NumberField.RingOfIntegers.rank]
+  simp
+
 open _root_.NumberField in
 /-- **THE DEGREE OF `[a]` IS `N_{D/ℚ}(a)^{2g/[D:ℚ]}`, WITH THE RELATIVE
-DIMENSION `g` FREE — THE THEOREM OF THE CUBE** (sorry leaf, cut
-2026-07-30; Mumford *Abelian Varieties* §6, §16, §18, §19 (Thm 4: `deg`
-is a homogeneous polynomial function of degree `2g` on `End⁰(A)`), Milne
+DIMENSION `g` FREE — THE THEOREM OF THE CUBE** (**PROVEN 2026-08-01** over the
+two leaves `finrank_mulByNat_of_relativeDimension` and
+`exists_finrank_mulByElt_eq_norm_pow` immediately above; it was a sorry leaf from
+2026-07-30 until then.  Mumford *Abelian Varieties* §6, §16, §18, §19 (Thm 4:
+`deg` is a homogeneous polynomial function of degree `2g` on `End⁰(A)`), Milne
 *Abelian Varieties* I.7, I.10, Shimura §5.1).
 
-This is `finrank_mulByElt_of_field` below with the hypothesis
-`g = [D : ℚ]` DROPPED, and it SUBSUMES it — that declaration is now
-proven from this one in three lines, so the theorem of the cube is stated
-exactly once in this file.
+**ACCOUNTING, stated plainly because the count moves the wrong way: this cut is
+`1 -> 2`, and no mathematics was proven.**  What changed is that the two
+classical theorems this leaf was carrying at once are now stated separately, in
+vocabulary the file already had, and **neither residue mentions both of this
+statement's two hypotheses**:
 
-**THE `[D:ℚ]`-TH POWER IS THE POINT OF THE STATEMENT'S SHAPE.**  The
-classical identity is `deg [a] = |N_{D/ℚ}(a)|^{2g/e}` with
-`e = [D : ℚ]`, and `e ∣ 2g` is part of its content rather than a
-hypothesis one may assume.  Raising to the `e`-th power removes the
-division without weakening anything: `deg [a]^e = |N(a)|^{2g}` is
-equivalent to the identity whenever `|N(a)| ≥ 2` and is the form every
-consumer can use, since `x ↦ x^e` is injective on `ℕ` for `e ≥ 1`.
+* `finrank_mulByNat_of_relativeDimension` — the DIMENSION half, `deg [n] = n^(2g)`.
+  It is the only place `hdim` is spent, it mentions no number field, and it is
+  reusable by anything in the tree that needs the degree of `[n]`.
+* `exists_finrank_mulByElt_eq_norm_pow` — the RING half, `deg [a] = #(𝓞_D/(a))^k`
+  for a single `k`.  It carries NO relative-dimension hypothesis, and it is
+  exactly the constraint whose absence the file's three recorded refuted axes all
+  exhibit (see its docstring).
+
+The assembly is arithmetic: read the ring half at `a = 2`, where the dimension
+half evaluates the same degree, to get `[D:ℚ] * k = 2 * g`, then substitute.  Both
+hypotheses of this statement are consumed — `hdim` by the first leaf, `ha` by the
+second — so neither is decoration.
+
+This statement is `finrank_mulByElt_of_field` below with the hypothesis
+`g = [D : ℚ]` DROPPED, and it SUBSUMES it — that declaration is proven from this
+one in three lines, so the degree identity is stated exactly once in this file
+and the two leaves above are the only open form of it.
+
+Everything below is unchanged.  The route the docstring records is the route
+through the two leaves, split at step 1 (homogeneity, which is the dimension
+half) versus steps 2 and 3 (the monomial rigidity, which is the ring half).
 
 THE ROUTE, which is Mumford §19 Theorem 4 plus one rigidity step, and is
 the same in every characteristic:
@@ -4000,6 +4199,14 @@ precisely what the Galois argument supplies and what a count at one `λ`
 cannot see.  A successor should prove the polynomiality of `deg` and the
 monomial rigidity, NOT the freeness of a Tate module.
 
+**THE `[D:ℚ]`-TH POWER IS THE POINT OF THE STATEMENT'S SHAPE.**  The
+classical identity is `deg [a] = |N_{D/ℚ}(a)|^{2g/e}` with
+`e = [D : ℚ]`, and `e ∣ 2g` is part of its content rather than a
+hypothesis one may assume.  Raising to the `e`-th power removes the
+division without weakening anything: `deg [a]^e = |N(a)|^{2g}` is
+equivalent to the identity whenever `|N(a)| ≥ 2` and is the form every
+consumer can use, since `x ↦ x^e` is injective on `ℕ` for `e ≥ 1`.
+
 **`hdim` IS LOAD-BEARING**, though not in the way the specialised
 statement needed it: with `g` free the identity is TRUE at `g = 0`
 (`fK = 𝟙 (Spec K)` has `[a] = 𝟙`, `deg = 1 = N(a)^0`), so it is no
@@ -4016,7 +4223,8 @@ information, while `Nat.card (𝒪_D ⧸ (0)) = 0` makes the right-hand side
 below — `card_torsion_span_singleton_of_field`,
 `card_torsion_of_isMaximal_finiteBase`, `exists_bettiFrame`, the whole
 char-`0` cluster — is proven over THIS statement, directly or through
-`finrank_mulByElt_of_field`. -/
+`finrank_mulByElt_of_field`.  The same warning applies verbatim to the two
+leaves above, which is why the cut was made here rather than lower down. -/
 theorem finrank_mulByElt_of_relativeDimension {X : Scheme.{u}} {K : Type u} [Field K]
     {fK : X ⟶ Spec (CommRingCat.of K)} {abK : AbelianSchemeStruct fK}
     {D : Type u} [Field D] [NumberField D]
@@ -4024,8 +4232,16 @@ theorem finrank_mulByElt_of_relativeDimension {X : Scheme.{u}} {K : Type u} [Fie
     (g : ℕ) (hdim : SmoothOfRelativeDimension g fK)
     (a : 𝓞 D) (ha : a ≠ 0) (x : X) :
     (m.mulByElt a).finrank x ^ Module.finrank ℚ D
-      = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ (2 * g) :=
-  sorry
+      = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ (2 * g) := by
+  -- the RING half: one exponent `k` works for every `a`
+  obtain ⟨k, hk⟩ := exists_finrank_mulByElt_eq_norm_pow m x
+  -- read both halves at `a = 2` to pin `k`: `2 ^ (2 * g) = (2 ^ [D:ℚ]) ^ k`
+  have h2 : ((2 : ℕ) : 𝓞 D) ≠ 0 := by exact_mod_cast (by norm_num : (2 : ℕ) ≠ 0)
+  have hA := finrank_mulByNat_of_relativeDimension abK g hdim 2 (by norm_num) x
+  have hB := hk ((2 : ℕ) : 𝓞 D) h2
+  rw [Mult.mulByElt_natCast, hA, natCard_quotient_span_natCast D 2, ← pow_mul] at hB
+  have hek : 2 * g = Module.finrank ℚ D * k := Nat.pow_right_injective (le_refl 2) hB
+  rw [hk a ha, ← pow_mul, hek, mul_comm (Module.finrank ℚ D) k]
 
 open _root_.NumberField in
 /-- **THE DEGREE OF `[a]` IS `N_{D/ℚ}(a)²`, OVER AN ARBITRARY FIELD BASE

@@ -24389,3 +24389,51 @@ supersession. Two riders, both of which cost time here:
 Why it matters: every leaf reachable only through a superseded chain is one an agent can close
 without moving the project — the seventh invisibility class, arrived at through a RESTATEMENT rather
 than through a deletion.
+## WHEN A LEAF IS ATOMIC ON EVERY RECORDED AXIS, CUT ALONG ITS **HYPOTHESIS LIST** — the seam is where two hypotheses are never spent together
+(2026-08-01, `flt-lean-28`, `finrank_mulByElt_of_relativeDimension` in
+`Modularity/TateModule.lean` — a leaf carrying three dated audits and three
+separately-refuted axes, none of which had asked this question.)
+Every cut-finding rule in this file looks at the CONCLUSION: split a conjunction,
+peel a degenerate case, restate an existential, pin a witness.  When all of those
+are exhausted — and on a mature leaf they usually are, because the audits
+enumerate them — there is one more place to look, and it is cheap: **read the
+BINDER LIST and ask, for each pair of hypotheses, whether any single step of the
+classical proof spends both.**  A pair that is never spent together is a seam,
+and cutting there produces residues each of which mentions strictly fewer of the
+leaf's own hypotheses.
+The instance.  `deg [a]^{[D:ℚ]} = #(𝓞_D/(a))^{2g}` carries a relative-dimension
+hypothesis `hdim` and a real multiplication `m : Mult abK (𝓞 D)`.  The classical
+route (Mumford *AV* §19 Thm 4) spends them in disjoint steps — homogeneity of
+degree `2g` is where the DIMENSION enters, and the monomial-plus-Galois rigidity
+is where the FIELD `D` enters — so the leaf split into
+* `finrank_mulByNat_of_relativeDimension` : `deg [n] = n^(2g)`, which mentions no
+  number field and no `Mult`, and
+* `exists_finrank_mulByElt_eq_norm_pow` : `∃ k, ∀ a ≠ 0, deg [a] = #(𝓞_D/(a))^k`,
+  which carries **no `SmoothOfRelativeDimension` at all**,
+with an assembly that reads the second at `a = 2`, where the first evaluates the
+same degree, to get `[D:ℚ] * k = 2g`.  Both halves are stated in vocabulary the
+file already had, so no definition was invented and no theory was budgeted.
+**Report it as `1 -> 2`, and say what the count cannot.**  Nothing was proven;
+what changed is that two classical theorems that were being carried as one are
+now separately citable, and each residue is dispatchable at someone who needs to
+know only half of the setting.  The tie-breaker "fewer OPEN leaves after" is for
+choosing between RIVAL cuts and is not an argument against a split whose halves
+are genuinely independent theorems — but the burden is on the splitter to show
+they are, and the hypothesis-disjointness test is exactly that demonstration.
+### The companion technique: SEVERAL REFUTED AXES WITH ONE COMMON COUNTEREXAMPLE NAME THEIR OWN RESIDUE
+The same leaf's file recorded three independently-searched-and-refuted axes (the
+`ℤ`-module count, the `ℤ_q` count, and norm-companion multiplicativity), each
+with a witness.  Read together, **all three witnesses are the same object** — a
+split prime `p = π π̄` in a real quadratic `D` with `deg[π] = p`, `deg[π̄] = p³`
+against the truth `p²` — because each axis fails to see the primes separately.
+So: **when a file records more than one refutation, put the witnesses side by
+side and ask what single statement kills all of them.**  That statement is the
+honest residue, and it is checkable rather than a matter of taste: here
+"`deg [a] = #(𝓞_D/(a))^k` for a SINGLE `k`" excludes the common witness on sight
+(it would force `deg[π] = deg[π̄] = p^{f k}`), which is what makes it the right
+leaf rather than merely a sufficient one.  A cut justified this way comes with
+its own proof of minimality, and the docstring should say so — otherwise the next
+agent re-runs the three searches.
+Corollary for whoever WRITES a refutation: record the WITNESS, not only the
+verdict.  Three verdicts with three witnesses are comparable; three verdicts
+without them are three dead ends.
