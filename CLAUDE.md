@@ -21989,3 +21989,64 @@ attribution moved, which is a different and much more serious claim.
   `<repo>/tools/merge/` died with a bare `IndexError: 2` before `--root` was ever
   read — which, with `2>&1` into the output file, looks exactly like a scan that
   returned seven rows.  Parse the override first.
+## "FOR EVERY FIELD EXTENSION `L/K`" REDUCES TO "FOR EVERY ALGEBRAICALLY CLOSED `L`" FOR FREE — and the reduction needs INJECTIVITY, not flatness
+(2026-08-01, `flt-lean-217`, recutting `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`,
+Deligne–Rapoport IV.5.5.)  This development states its geometric-irreducibility and
+geometric-connectedness leaves over an ARBITRARY field extension `L/K` — that is what
+`IsTransitiveOnGeometricComponents`, `geometricallyConnected_*` and every
+`minimalPrimes (A ⊗[K] L)` clause quantify over.  The citation behind them is always
+about the GEOMETRIC object, i.e. about `L` algebraically closed, so a leaf stated in the
+general form is carrying a reduction its citation does not contain — and the reduction is
+about eighty lines of pure commutative algebra that every successor would otherwise redo.
+**Do it once, and do not reach for flatness.**  The reflex is faithfully-flat descent
+(`L → L̄` free, hence faithfully flat, hence `Spec` surjective, hence going-down …).  None
+of that is needed: **`Ideal.exists_minimalPrimes_comap_eq` (Stacks 00FK) lifts a minimal
+prime along ANY ring map whose kernel is `⊥`**, and over a FIELD base `A ⊗[K] ι` is
+injective for every field embedding `ι : L ↪ M` because `A` is flat over `K`
+(`Module.Flat.lTensor_preserves_injective_linearMap`).  So the whole reduction is: lift
+`p`, `q` to `A ⊗[K] L̄`, apply the geometric statement, and CONTRACT the relation back —
+the group action commutes with the comparison map, so `comap ι (comap σ_M p̃) =
+comap σ_L (comap ι p̃)` and the contraction is one `Ideal.comap_comap` each way.
+Two riders that make it cheap:
+* **the twist is an ISOMORPHISM, so it permutes `minimalPrimes`** — `σ⁻¹` is a two-sided
+  inverse by one `TensorProduct.induction_on`, and then
+  `Ideal.comap_minimalPrimes_eq_of_surjective` at `I = ⊥` plus
+  `Ideal.comap_bot_of_injective` gives `comap σ '' minimalPrimes = minimalPrimes`
+  outright.  Do not look for a `MorphismProperty` or an order-iso argument;
+* **`AlgebraicClosure L` already carries the tower instances** — `Algebra K (AlgebraicClosure L)`
+  and `IsScalarTower K L (AlgebraicClosure L)` are both found by `inferInstance` given
+  `[Algebra K L]`.  Building them by hand with `RingHom.toAlgebra` produces a rival
+  `SMul` and the `IsScalarTower` then fails to typecheck against
+  `AlgebraicClosure.instSMulOfIsScalarTower`.
+**AND THE INSTANCE FAILURE THAT COSTS A ROUND, in a new shape: `set` breaks the search and
+the CURE IS TO HOIST, not to fight.**  `set D := C ⧸ r with hD` makes `D` a let-bound
+local, and `IsScalarTower ℤ L D` then fails to synthesize while `Algebra L D` (supplied by
+a `letI`) succeeds — so the failure looks arbitrary rather than structural.  The standing
+note says not to use `set`; the useful addition is what to do instead when the step is
+genuinely about a constructed object.  **Extract it as a standalone lemma over an abstract
+carrier** — here `exists_isPrimitiveRoot_eq_algebraMap` over `{L D} [Field L] [CommRing D]
+[IsDomain D] [IsAlgClosed L] [Algebra L D]`, with no tensor product and no quotient in
+sight.  It compiled first try, it is reusable, and the let-binding problem cannot recur
+inside it because every variable is a genuine one.
+### Measuring a RECUT: run the compiler on BOTH versions, not on one
+A recut is `1 → 1` and therefore indistinguishable from "nothing happened" to every scan.
+The receipt costs one extra elaboration and belongs in the commit message:
+    cp F.lean /tmp/new.lean
+    git show HEAD:F.lean > F.lean;  lake env lean F.lean | grep -c "declaration uses"
+    cp /tmp/new.lean F.lean;        lake env lean F.lean | grep -c "declaration uses"
+Equal counts is the claim; anything else means the recut also closed or opened something
+and the commit must say which.  Pair it with `git diff | grep '^-'` — for a recut that
+only replaces a proof, the ONLY removed lines should be `:=` and `sorry`, which is
+simultaneously the proof that no consumer can break.
+### Deciding how far to cut: the separation clause must stay with the object that produces it
+The tempting further split here was ζ-existence (the pairing) as one leaf and ζ-separation
+(the components) as another.  **It is not available, and the reason generalises: the second
+clause is about THE object the first produces, and is FALSE for an arbitrary object
+satisfying the first.**  A component-wise perturbation of the Weil pairing by unit powers
+satisfies "`Φ_n(ζ) = 0`" and "`det` is onto" and can fail separation.  So a leaf quantified
+over any `ζ` satisfying the first two clauses is a DIFFERENT statement that nothing in the
+development supports.  **Before splitting `∃ x, P x ∧ Q x` into `∃ x, P x` and
+`∀ x, P x → Q x`, ask whether `P` PINS `x`** — the rule is already recorded for
+`Φ_N`-style splits, and it is the same test here.  When `P` does not pin, keep one leaf and
+say in the docstring what would make the split legal; that sentence is what stops the next
+agent making a false leaf out of a plausible-looking cut.
