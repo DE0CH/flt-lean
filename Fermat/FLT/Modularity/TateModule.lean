@@ -23814,11 +23814,194 @@ theorem exists_abelianSubscheme_closure_torsionGeomPt_finiteBase
     · rintro ⟨n, y, hy, hx⟩; exact ⟨y, ⟨n, hy⟩, hx⟩
     · rintro ⟨y, ⟨n, hy⟩, hx⟩; exact ⟨n, y, hy, hx⟩
 
+/-! ### What a producer of the quotient actually has to hand over
+
+(2026-08-02.)  The leaf below used to DEMAND a ten-field
+`AbelianSchemeStruct` and a six-field `Mult` on the quotient, both in
+functor-of-points form.  Neither is what a quotient construction produces,
+and asking for them BLOCKS the two mathlib theorems that discharge the two
+hardest fields for free.  Since 2026-07-31 `Modularity/AbelianSchemeGrpObj.lean`
+— a `public import` of this file — carries the bridge
+
+* `AbelianSchemeStruct.ofGrpObjOfGeometricallyIntegral`: a PROPER,
+  GEOMETRICALLY INTEGRAL group object of `Over (Spec k)` is an abelian scheme
+  in this development's sense, smoothness coming from
+  `AlgebraicGeometry.smooth_of_grpObj` and commutativity from
+  `AlgebraicGeometry.isCommMonObj_of_isProper_of_geometricallyIntegral`.
+
+So the leaf's old claim that a prover "must … first build the
+`AbelianSchemeStruct ↔ GrpObj` translation" was STALE: that translation
+landed the same day the leaf was cut.  What is still genuinely absent is the
+QUOTIENT itself — re-checked 2026-08-02, `Mathlib/AlgebraicGeometry/Group/`
+contains exactly `Abelian.lean` and `Smooth.lean`, and there is no fppf
+quotient, no `Poincaré` reducibility and no group-scheme quotient anywhere in
+the pin, in `Fermat/`, or in `~/cs/FLT`.
+
+`Mult.ofPostComp` is the corresponding bridge for the `𝒪_D`-action.  It is the
+converse of the Yoneda layer this file already has (`Mult.mulByElt`,
+`Mult.act_val`): a `Mult` is EXACTLY a family of morphisms `γ a : A ⟶ A` over
+the base, and its six functorial axioms are three equations of MORPHISMS
+(`γ 1 = 𝟙`, `γ (a*b) = γ b ≫ γ a`, `γ (a+b) = γ a + γ b`) plus one clause
+saying each `γ a` is additive.  `pre_act` is free — precomposition and
+postcomposition commute.
+
+Both are consumed immediately below, by the derivation of
+`exists_abelianQuotient_of_range_ne_univ` from the recut leaf; neither is
+free-floating. -/
+
+/-- **The `GrpObj → AbelianSchemeStruct` bridge with its instance arguments
+made EXPLICIT**, so that it can be applied to data bound by an existential —
+inside `∃ (inst : GrpObj (Over.mk h)), …` nothing is an instance, and
+`AbelianSchemeStruct.ofGrpObjOfGeometricallyIntegral` takes all three of its
+geometric inputs by instance search. -/
+noncomputable def abelianOfGrpObj {C : Scheme.{u}} {K : Type u} [Field K]
+    (h : C ⟶ Spec (CommRingCat.of K)) (inst : GrpObj (Over.mk h))
+    (hp : IsProper h) (hgi : GeometricallyIntegral h) : AbelianSchemeStruct h :=
+  letI := inst
+  letI := hp
+  letI := hgi
+  AbelianSchemeStruct.ofGrpObjOfGeometricallyIntegral h
+
+/-- **A `Mult` built from a family of MORPHISMS** — the converse of the Yoneda
+layer `Mult.mulByElt` / `Mult.act_val`.
+
+`act a` is postcomposition with `γ a`, so naturality in the test object
+(`pre_act`) is associativity of composition and needs no hypothesis at all,
+and `act_mul` / `act_one` are the two morphism equations read through it.
+`act_add` is the one step with content: it is the additivity equation for `γ`
+in `RelPoint f f`, transported to an arbitrary base point by the naturality
+`ab.pre_add` of the group law — i.e. by the Yoneda lemma, exactly as
+`act_val` transports `mulByElt`. -/
+noncomputable def Mult.ofPostComp {A S : Scheme.{u}} {f : A ⟶ S}
+    (ab : AbelianSchemeStruct f) {R : Type u} [CommRing R]
+    (γ : R → (A ⟶ A)) (hγ : ∀ a, γ a ≫ f = f)
+    (h1 : γ 1 = 𝟙 A)
+    (hmul : ∀ a b, γ (a * b) = γ b ≫ γ a)
+    (hadd : ∀ a b, γ (a + b) = (ab.add ⟨γ a, hγ a⟩ ⟨γ b, hγ b⟩).1)
+    (haddPt : ∀ (a : R) {T : Scheme.{u}} {g : T ⟶ S} (y z : RelPoint f g),
+      RelPoint.postComp (γ a) (hγ a) (ab.add y z)
+        = ab.add (RelPoint.postComp (γ a) (hγ a) y) (RelPoint.postComp (γ a) (hγ a) z)) :
+    Mult ab R where
+  act := fun {T} {g} a y => RelPoint.postComp (γ a) (hγ a) y
+  act_add := by
+    intro T g a b y
+    have hpre := ab.pre_add y.1 y.2 ⟨γ a, hγ a⟩ ⟨γ b, hγ b⟩
+    refine Subtype.ext ?_
+    show y.1 ≫ γ (a + b) = (ab.add _ _).1
+    rw [hadd a b]
+    exact congrArg Subtype.val hpre
+  act_mul := by
+    intro T g a b y
+    refine Subtype.ext ?_
+    show y.1 ≫ γ (a * b) = (y.1 ≫ γ b) ≫ γ a
+    rw [hmul a b, Category.assoc]
+  act_one := by
+    intro T g y
+    refine Subtype.ext ?_
+    show y.1 ≫ γ 1 = y.1
+    rw [h1, Category.comp_id]
+  act_addPt := by
+    intro T g a y z
+    exact haddPt a y z
+  pre_act := by
+    intro T' T hh g g' hg a y
+    refine Subtype.ext ?_
+    show hh ≫ (y.1 ≫ γ a) = (hh ≫ y.1) ≫ γ a
+    rw [Category.assoc]
+
 open _root_.NumberField in
-/-- **THE QUOTIENT ABELIAN VARIETY `A'/B`, WITH ITS `𝒪_D`-ACTION** (sorry
-leaf — cut 2026-07-31 out of
-`range_eq_univ_of_abelianSubscheme_torsion_finiteBase`, which is now PROVEN
-over this leaf and the one below it; Mumford *Abelian Varieties* §12
+/-- **THE QUOTIENT ABELIAN VARIETY `A'/B`, IN PRODUCIBLE FORM** (sorry leaf —
+RECUT 2026-08-02 out of `exists_abelianQuotient_of_range_ne_univ`, which is
+now PROVEN over this leaf and nothing else; **the direct-sorry count did not
+move, `1 → 1`**).
+
+Same mathematics as the statement below — Mumford *Abelian Varieties* §12,
+Milne *Abelian Varieties* §I.8, SGA 3 VI_A, stacks 03BJ — and the same
+hypotheses.  What changed is WHAT THE PRODUCER OWES.  Instead of a ten-field
+`AbelianSchemeStruct` and a six-field `Mult`, both quantified over an
+arbitrary test scheme, it owes
+
+* `inst : GrpObj (Over.mk h)` — a group-object structure on `C`, which is
+  what any quotient construction produces, in mathlib's own language;
+* `hp : IsProper h` and `hgi : GeometricallyIntegral h` — two geometric
+  properties, from which SMOOTHNESS and COMMUTATIVITY are then free
+  (`smooth_of_grpObj`, `isCommMonObj_of_isProper_of_geometricallyIntegral`);
+* `γ : 𝒪_D → (C ⟶ C)` with three equations of MORPHISMS and one additivity
+  clause, in place of the functorial `Mult`.
+
+Everything else — assembling those into `AbelianSchemeStruct` and `Mult`, and
+deriving the `𝒪_D`-equivariance of `π` on relative points from the single
+morphism equation `[a] ≫ π = π ≫ γ a` — is the proof of the theorem below,
+and is now written out.  The three point-level clauses (`hker`, `hsurj`,
+`hnz`) are carried over VERBATIM; see the faithfulness audit there, which
+transfers unchanged because those three conjuncts are untouched.
+
+**WHY THE `𝒪_D`-ACTION IS STILL ASKED FOR RATHER THAN DERIVED.**  The obvious
+further cut is to give the quotient's UNIVERSAL PROPERTY instead of `γ`, and
+let `γ a` be the unique factorisation of `[a] ≫ π` — which would delete `𝒪_D`,
+`m'` and `mB` from the leaf entirely and leave a statement of pure geometry.
+That is the right next step and it is NOT taken here for one identified
+reason: `act_addPt` — that each `γ a` is a homomorphism — is an equation of
+relative points at an ARBITRARY test object, and `π` being an epimorphism of
+schemes does not make `RelPoint.postComp π hπ` surjective at an arbitrary `T`.
+Deriving it needs `π × π` to be epi, i.e. faithful flatness of `π` and its
+stability under base change, which is a further clause a producer would have
+to supply anyway.  A successor who states the universal property should state
+it with that clause included. -/
+theorem exists_abelianQuotientGrpObj_of_range_ne_univ
+    {k : Type u} [Field k]
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    {B : Scheme.{u}} (ι : B ⟶ A') (abB : AbelianSchemeStruct (ι ≫ f'))
+    (mB : Mult abB (NumberField.RingOfIntegers D))
+    (hιcl : IsClosedImmersion ι)
+    (hadd : ∀ {T : Scheme.{u}} {g : T ⟶ Spec (CommRingCat.of k)} (y z : RelPoint (ι ≫ f') g),
+      RelPoint.push f' ι (abB.add y z)
+        = ab'.add (RelPoint.push f' ι y) (RelPoint.push f' ι z))
+    (hact : ∀ {T : Scheme.{u}} {g : T ⟶ Spec (CommRingCat.of k)}
+      (a : NumberField.RingOfIntegers D) (y : RelPoint (ι ≫ f') g),
+      RelPoint.push f' ι (mB.act a y) = m'.act a (RelPoint.push f' ι y))
+    (hne : Set.range ι.base ≠ Set.univ) :
+    ∃ (C : Scheme.{u}) (h : C ⟶ Spec (CommRingCat.of k))
+      (inst : GrpObj (Over.mk h)) (hp : IsProper h) (hgi : GeometricallyIntegral h)
+      (π : A' ⟶ C) (hπ : π ≫ h = f')
+      (γ : NumberField.RingOfIntegers D → (C ⟶ C)) (hγ : ∀ a, γ a ≫ h = h),
+      (∀ {T : Scheme.{u}} {g : T ⟶ Spec (CommRingCat.of k)} (y z : RelPoint f' g),
+        RelPoint.postComp π hπ (ab'.add y z)
+          = (abelianOfGrpObj h inst hp hgi).add
+              (RelPoint.postComp π hπ y) (RelPoint.postComp π hπ z)) ∧
+      γ 1 = 𝟙 C ∧
+      (∀ a b, γ (a * b) = γ b ≫ γ a) ∧
+      (∀ a b, γ (a + b)
+        = ((abelianOfGrpObj h inst hp hgi).add ⟨γ a, hγ a⟩ ⟨γ b, hγ b⟩).1) ∧
+      (∀ (a : NumberField.RingOfIntegers D) {T : Scheme.{u}}
+          {g : T ⟶ Spec (CommRingCat.of k)} (y z : RelPoint h g),
+        RelPoint.postComp (γ a) (hγ a) ((abelianOfGrpObj h inst hp hgi).add y z)
+          = (abelianOfGrpObj h inst hp hgi).add
+              (RelPoint.postComp (γ a) (hγ a) y) (RelPoint.postComp (γ a) (hγ a) z)) ∧
+      (∀ a, m'.mulByElt a ≫ π = π ≫ γ a) ∧
+      (∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+        RelPoint.postComp π hπ y
+            = (abelianOfGrpObj h inst hp hgi).zero
+                (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) ↔
+          ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
+            RelPoint.push f' ι z = y) ∧
+      (∀ c : GeomFibrePt h (𝟙 (Spec (CommRingCat.of k))),
+        ∃ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+          RelPoint.postComp π hπ y = c) ∧
+      (∃ c : GeomFibrePt h (𝟙 (Spec (CommRingCat.of k))),
+        c ≠ (abelianOfGrpObj h inst hp hgi).zero
+              (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))) :=
+  sorry
+
+open _root_.NumberField in
+/-- **THE QUOTIENT ABELIAN VARIETY `A'/B`, WITH ITS `𝒪_D`-ACTION** (**PROVEN
+2026-08-02** over `exists_abelianQuotientGrpObj_of_range_ne_univ` immediately
+above, and over nothing else — cut 2026-07-31 out of
+`range_eq_univ_of_abelianSubscheme_torsion_finiteBase`, which is PROVEN
+over this statement and the one below it; Mumford *Abelian Varieties* §12
 (quotients by finite and by abelian subgroup schemes), Milne *Abelian
 Varieties* §I.8, SGA 3 VI_A, stacks 03BJ).
 
@@ -23869,17 +24052,35 @@ connected, hence geometrically integral) rather than merely a non-dense
 subset.  Without it a non-closed image could be dense and `C` would be
 zero.
 
-**WHAT IS MISSING FROM THE TREE, AND WHERE IT IS NOT** (searched 2026-07-31
-and again by the owner of this cut).  Nothing in this tree, in the pin, or
-in `~/cs/FLT` constructs a quotient abelian variety or Poincaré
+**WHAT IS MISSING FROM THE TREE — HALF OF THE 2026-07-31 CLAIM WAS ALREADY
+STALE WHEN IT WAS WRITTEN, AND THE OTHER HALF STILL STANDS** (re-checked
+2026-08-02).  The original paragraph here ended "a prover must either build
+the fppf quotient here or first build the `AbelianSchemeStruct ↔ GrpObj`
+translation and then the quotient on the mathlib side".  The second
+alternative is not owed: `Modularity/AbelianSchemeGrpObj.lean` was added the
+SAME DAY this leaf was cut, is a `public import` of this file, and supplies
+`AbelianSchemeStruct.ofGrpObjOfGeometricallyIntegral` — which is why the
+recut leaf above asks only for `GrpObj` plus `IsProper` plus
+`GeometricallyIntegral`, and gets `Smooth` and commutativity for free from
+`smooth_of_grpObj` and
+`isCommMonObj_of_isProper_of_geometricallyIntegral` (stacks 0BFD).
+
+What still stands, and was re-grepped on 2026-08-02: nothing in this tree, in
+the pin, or in `~/cs/FLT` constructs a quotient abelian variety or Poincaré
 reducibility.  `Mathlib/AlgebraicGeometry/Group/` contains exactly
-`Abelian.lean` (`isCommMonObj_of_isProper_of_geometricallyIntegral`,
-stacks 0BFD) and `Smooth.lean` (`smooth_of_grpObj`), both stated for
-mathlib's `GrpObj (Over.mk f)` rather than for this file's
-`AbelianSchemeStruct`; `~/cs/FLT/FLT/GroupScheme/` contains only
-`FiniteFlat.lean`.  So a prover must either build the fppf quotient here or
-first build the `AbelianSchemeStruct ↔ GrpObj` translation and then the
-quotient on the mathlib side. -/
+`Abelian.lean` and `Smooth.lean` — no quotient, no fppf descent of a group
+scheme; `grep -ri poincar` over `Fermat/` returns only prose; and
+`~/cs/FLT/FLT/GroupScheme/` contains only `FiniteFlat.lean`.  So the fppf
+quotient is the whole of what a prover owes, and it is a chapter of Mumford.
+
+**THE COUNTING ROUTE AND THE POINCARÉ ROUTE ARE NOT CHEAPER, AND BOTH ARE
+ALREADY PRICED** in the ROUTE AUDIT of
+`range_eq_univ_of_abelianSubscheme_torsion_finiteBase` below; do not re-derive
+them.  Note only that a COMPLEMENTARY abelian subvariety (Poincaré) would be
+an IMAGE rather than a quotient, which by the standing image-for-quotient rule
+is the cheaper kind of object — but it changes the consumer's proof, and the
+consumer is already PROVEN over this statement, so taking it would trade a
+landed proof for a fresh decomposition. -/
 theorem exists_abelianQuotient_of_range_ne_univ
     {k : Type u} [Field k]
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -23913,8 +24114,19 @@ theorem exists_abelianQuotient_of_range_ne_univ
         ∃ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
           RelPoint.postComp π hπ y = c) ∧
       (∃ c : GeomFibrePt h (𝟙 (Spec (CommRingCat.of k))),
-        c ≠ abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))) :=
-  sorry
+        c ≠ abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))) := by
+  obtain ⟨C, h, inst, hp, hgi, π, hπ, γ, hγ, hπadd, h1, hmul, haddγ, haddPtγ,
+    hequiv, hker, hsurj, hnz⟩ :=
+    exists_abelianQuotientGrpObj_of_range_ne_univ ab' m' ι abB mB hιcl hadd hact hne
+  refine ⟨C, h, abelianOfGrpObj h inst hp hgi,
+    Mult.ofPostComp (abelianOfGrpObj h inst hp hgi) γ hγ h1 hmul haddγ haddPtγ,
+    π, hπ, hπadd, ?_, hker, hsurj, hnz⟩
+  -- `𝒪_D`-equivariance of `π` on relative points, from the single morphism
+  -- equation `[a] ≫ π = π ≫ γ a` read through the Yoneda lemma `Mult.act_val`
+  intro T g a y
+  refine Subtype.ext ?_
+  show (m'.act a y).1 ≫ π = (y.1 ≫ π) ≫ γ a
+  rw [m'.act_val a y, Category.assoc, Category.assoc, hequiv a]
 
 open _root_.NumberField in
 /-- **A NONZERO ABELIAN VARIETY WITH AN `𝒪_D`-ACTION HAS NONZERO
