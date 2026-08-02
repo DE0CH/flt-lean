@@ -13668,45 +13668,8 @@ used.  Properness holds for the projective model of an arbitrary Weierstrass equ
 over any field, singular or not.  The hypothesis is retained only because
 `ProjGroupLaw.toAbelianSchemeStructField` consumes this signature. -/
 theorem isProper_projToSpec_field (E : WeierstrassCurve F) [E.IsElliptic] :
-    IsProper (projToSpec E) := by
-  -- The projective Weierstrass polynomial has vanishing constant term: it is
-  -- homogeneous of degree `3`, and `3 ≠ 0`.
-  have hc : MvPolynomial.constantCoeff (polynomial E) = 0 :=
-    (isHomogeneous_polynomial E).coeff_eq_zero (d := 0) (by simp)
-  -- Hence `F → F[X, Y, Z] ⧸ (W)` is injective: a constant in `(W)` is `b * W`, and
-  -- `constantCoeff` sends that to `0`.
-  have hinj : Function.Injective (algebraMap F
-      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal)) := by
-    intro c c' h
-    have h' : (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
-          (MvPolynomial.C c)) = Ideal.Quotient.mk _ (MvPolynomial.C c') := h
-    rw [Ideal.Quotient.mk_eq_mk_iff_sub_mem, ← MvPolynomial.C_sub] at h'
-    obtain ⟨b, hb⟩ := Ideal.mem_span_singleton'.mp h'
-    have hcc := congrArg MvPolynomial.constantCoeff hb
-    rw [map_mul, hc, mul_zero, MvPolynomial.constantCoeff_C] at hcc
-    exact sub_eq_zero.mp hcc.symm
-  -- The degree-zero part of the homogeneous coordinate ring is exactly `F`.
-  have hbij : Function.Bijective (algebraMap F (projGrading E 0)) := by
-    refine ⟨fun c c' h => hinj (congrArg Subtype.val h), ?_⟩
-    rintro ⟨x, hx⟩
-    obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hx
-    rw [MvPolynomial.homogeneousSubmodule_zero] at hp
-    obtain ⟨c, rfl⟩ := Submodule.mem_one.mp hp
-    exact ⟨c, rfl⟩
-  -- `R`/`S`/`A` pinned by name: see the implementation note on `isProper_projToSpec`.
-  haveI := IsScalarTower.of_algebraMap_eq (R := F) (S := (projGrading E 0))
-    (A := MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) fun _ => rfl
-  haveI : Algebra.FiniteType F
-      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
-    Algebra.FiniteType.of_surjective (Ideal.Quotient.mkₐ F _) Ideal.Quotient.mk_surjective
-  haveI : Algebra.FiniteType (projGrading E 0)
-      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
-    Algebra.FiniteType.of_restrictScalars_finiteType F _ _
-  haveI : IsIso (CommRingCat.ofHom (algebraMap F (projGrading E 0))) :=
-    (ConcreteCategory.isIso_iff_bijective _).mpr hbij
-  show IsProper (Proj.toSpecZero (projGrading E) ≫
-    Spec.map (CommRingCat.ofHom (algebraMap F (projGrading E 0))))
-  infer_instance
+    IsProper (projToSpec E) :=
+  _root_.WeierstrassCurve.Projective.OverField.isProper_projToSpec E
 
 /-- **The projective Weierstrass model is smooth of relative dimension one over an
 ARBITRARY field** (PROVEN 2026-07-31, `flt-lean-387`, by DELEGATION) — the
