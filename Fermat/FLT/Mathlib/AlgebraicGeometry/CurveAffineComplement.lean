@@ -20,6 +20,7 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.RingTheory.PrincipalIdealDomain
 public import Mathlib.RingTheory.IntegralClosure.IsIntegralClosure.Basic
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveGenus
 
 /-!
 # The complement of a closed point of a smooth proper curve is affine
@@ -39,8 +40,11 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
 * `isClosed_singleton_of_section` — the two combined: the image of a section of a
   separated morphism from the spectrum of a field is a closed point.  PROVEN.
 * `affineLineOver` — the structure morphism `𝔸¹_K ⟶ Spec K`, used only to say "over `K`".
-* `exists_locallyQuasiFinite_toAffineLine_compl_singleton` — **sorry leaf**: RIEMANN–ROCH,
-  a nonconstant regular function on `X ∖ {z}`.
+* `exists_locallyQuasiFinite_toAffineLine_compl_singleton` — RIEMANN–ROCH, a nonconstant
+  regular function on `X ∖ {z}`.  **NO LONGER A LEAF — PROVEN 2026-07-31**, over
+  `AlgebraicGeometry.exists_isCurveGenus` (`CurveGenus.lean`) and nothing else new; see
+  `exists_forall_isInteger_notIsIntegralElem_functionField` for how, and for the correction of
+  the absence table that had been keeping it open.
 * `locallyOfFiniteType_affineLineOver` — `𝔸¹_K ⟶ Spec K` is locally of finite type.
   **PROVEN 2026-07-30**; the side condition of the right-cancellation used just below.
 * `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` — the compactification step,
@@ -87,9 +91,16 @@ proven here over exactly two named sub-leaves, along the Zariski's-main-theorem 
   step**: any such morphism is proper.  Itself decomposed on 2026-07-30, so the file's second
   leaf is now
   `valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton` rather
-  than this — and on 2026-07-30 that one was proven too, so this whole branch is CLOSED.
-  **`exists_locallyQuasiFinite_toAffineLine_compl_singleton` (RIEMANN–ROCH) is now the file's
-  only remaining `sorry`**, and it was always independent of this branch.
+  than this — and on 2026-07-30 that one was proven too, over
+  `existence_valuativeCriterion_toAffineLine_compl_singleton` at the very end of the file.
+
+**THE FILE'S SORRY SET, regenerated 2026-07-31 from the build's warnings rather than quoted.**
+It is `{existence_valuativeCriterion_toAffineLine_compl_singleton}`, one declaration.  The
+sentence that stood here — "`exists_locallyQuasiFinite_toAffineLine_compl_singleton`
+(RIEMANN–ROCH) is now the file's only remaining `sorry`" — was wrong in both halves by the time
+it was read: the file had TWO, and RIEMANN–ROCH is now the one that is closed.  The survivor is
+the EXISTENCE half of the valuative criterion for `X ∖ {z} ⟶ 𝔸¹_K`, which is pure scheme theory
+and shares nothing with the Riemann–Roch branch.
 
 and the glue between them, which is what this file newly PROVES:
 `IsFinite.of_isProper_of_locallyQuasiFinite` (Zariski's main theorem, stacks `02LS`) turns
@@ -457,8 +468,291 @@ theorem notIsIntegralElem_of_germToFunctionField {K : Type u} [Field K] {X : Sch
     congrArg CommRingCat.Hom.hom (structHom_comp_germToFunctionField strX U)
   rw [← hc, ← Polynomial.hom_eval₂, hp0, map_zero]
 
+/-! ### Orders of vanishing on a smooth proper curve
+
+The five lemmas below are the dictionary between `AlgebraicGeometry.Scheme.ord` — `Mathlib`'s
+order of vanishing at a codimension-one point — and membership in the local ring, which is the
+form the leaf's first clause is stated in.  All are PROVEN, none mentions Riemann–Roch, and all
+of them are mathlib-shaped.
+
+`Fermat/FLT/ModularCurve/PoleOrderValuation.lean` carries `Fermat.PoleOrder`-namespaced copies
+of the first three, specialised to `Scheme.{0}` and to a fixed structure morphism, and *imports
+this file*.  They are duplicates of these and should be deleted in favour of these; the names
+here are deliberately different so that the two can coexist until somebody does that. -/
+
+/-- **On an integral scheme the stalk at a point other than the generic point is not a field**
+(PROVEN 2026-07-31, no sorry).
+
+`ringKrullDim_stalk_eq_coheight` turns the stalk's Krull dimension into `Order.coheight`, a field
+has dimension zero, and `Order.coheight_eq_zero` then says the point is maximal in the
+specialization order.  The generic point specializes to every point, so a maximal point IS the
+generic point.  `Mathlib` has only the converse,
+`isField_stalk_of_closure_mem_irreducibleComponents`. -/
+theorem stalk_not_isField_of_ne_genericPoint {X : Scheme.{u}} [IsIntegral X] {x : X}
+    (hx : x ≠ genericPoint X) : ¬ IsField (X.presheaf.stalk x) := by
+  intro h
+  have hco : Order.coheight x = 0 := by
+    have h1 := ringKrullDim_stalk_eq_coheight (X := X) x
+    rw [ringKrullDim_eq_zero_of_isField h] at h1
+    exact_mod_cast h1.symm
+  have hmax : IsMax x := Order.coheight_eq_zero.mp hco
+  have h1 : x ≤ genericPoint X := (genericPoint_spec X).specializes trivial
+  have h2 : genericPoint X ≤ x := hmax h1
+  exact hx (Specializes.antisymm h2 h1).eq
+
+/-- **Every local ring of a smooth curve at a non-generic point is a discrete valuation ring**
+(PROVEN, no sorry) — `isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` with its
+`¬ IsField` hypothesis discharged by the lemma above. -/
+theorem isDiscreteValuationRing_stalk_of_ne_genericPoint_curve {K : Type u} [Field K]
+    {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K)) [IsIntegral X]
+    [SmoothOfRelativeDimension 1 strX] {x : X} (hx : x ≠ genericPoint X) :
+    IsDiscreteValuationRing (X.presheaf.stalk x) :=
+  isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one strX
+    (stalk_not_isField_of_ne_genericPoint hx)
+
+/-- **A non-generic point of a smooth curve has coheight one** (PROVEN, no sorry) — the
+hypothesis every `Scheme.ord` lemma carries, and the reason `ord` is not junk-valued away from
+the generic point. -/
+theorem coheight_stalk_eq_one_of_ne_genericPoint {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [IsIntegral X] [SmoothOfRelativeDimension 1 strX]
+    {x : X} (hx : x ≠ genericPoint X) : Order.coheight x = 1 := by
+  haveI := isDiscreteValuationRing_stalk_of_ne_genericPoint_curve strX hx
+  have h1 := ringKrullDim_stalk_eq_coheight (X := X) x
+  rw [IsDiscreteValuationRing.ringKrullDim_eq_one] at h1
+  exact_mod_cast h1.symm
+
+/-- **The converse, on any integral scheme** (PROVEN, no sorry): the generic point has coheight
+`0`, its stalk being the function field. -/
+theorem ne_genericPoint_of_coheight_eq_one {X : Scheme.{u}} [IsIntegral X] {x : X}
+    (hx : Order.coheight x = 1) : x ≠ genericPoint X := by
+  intro h
+  subst h
+  have hf : IsField (X.presheaf.stalk (genericPoint X)) := Field.toIsField X.functionField
+  have h1 := ringKrullDim_stalk_eq_coheight (X := X) (genericPoint X)
+  rw [ringKrullDim_eq_zero_of_isField hf, hx] at h1
+  exact absurd h1 (by decide)
+
+/-- **In a discrete valuation ring, `ordFrac ≥ 1` means the element is an integer** (PROVEN, no
+sorry) — the ring-theoretic half of `exists_stalk_eq_of_zero_le_ord` below, and the only place
+where `Mathlib`'s `Ring.ordFrac` is unfolded at all.
+
+`ValuationRing.isInteger_or_isInteger` splits on whether `f` or `f⁻¹` lies in `R`.  In the second
+case `1 ≤ ordFrac f` and `1 ≤ ordFrac f⁻¹` multiply to `ordFrac f = 1`, so the denominator is a
+unit by `Ring.isUnit_iff_ordFrac_one_of_isDiscreteValuationRing` and `f` lies in `R` after all. -/
+theorem mem_range_algebraMap_of_one_le_ordFrac {R : Type u} [CommRing R] [IsDomain R]
+    [IsDiscreteValuationRing R] {L : Type u} [Field L] [Algebra R L] [IsFractionRing R L]
+    {f : L} (hf : (1 : WithZero (Multiplicative ℤ)) ≤ Ring.ordFrac R f) :
+    ∃ a : R, algebraMap R L a = f := by
+  have hf0 : f ≠ 0 := by
+    rintro rfl
+    rw [map_zero] at hf
+    exact absurd hf (by simp)
+  rcases ValuationRing.isInteger_or_isInteger R f with h | h
+  · exact h
+  · obtain ⟨a, ha⟩ := h
+    have ha0 : a ≠ 0 := by
+      rintro rfl
+      rw [map_zero] at ha
+      exact (inv_ne_zero hf0) ha.symm
+    have h2 : (1 : WithZero (Multiplicative ℤ)) ≤ Ring.ordFrac R (algebraMap R L a) :=
+      Ring.ordFrac_ge_one_of_ne_zero ha0
+    rw [ha] at h2
+    have hmul : Ring.ordFrac R f * Ring.ordFrac R f⁻¹ = 1 := by
+      rw [← map_mul, mul_inv_cancel₀ hf0, map_one]
+    have hle : Ring.ordFrac R f ≤ 1 := by
+      calc Ring.ordFrac R f = Ring.ordFrac R f * 1 := (mul_one _).symm
+        _ ≤ Ring.ordFrac R f * Ring.ordFrac R f⁻¹ := by gcongr
+        _ = 1 := hmul
+    have heq : Ring.ordFrac R f = 1 := le_antisymm hle hf
+    have hau : IsUnit a := by
+      rw [Ring.isUnit_iff_ordFrac_one_of_isDiscreteValuationRing (K := L), ha, map_inv₀, heq,
+        inv_one]
+    obtain ⟨u, hu⟩ := hau
+    refine ⟨((u⁻¹ : Rˣ) : R), ?_⟩
+    have hua : algebraMap R L ((u : Rˣ) : R) = f⁻¹ := by rw [hu]; exact ha
+    have hprod : algebraMap R L ((u⁻¹ : Rˣ) : R) * algebraMap R L ((u : Rˣ) : R) = 1 := by
+      rw [← map_mul]; simp
+    rw [hua] at hprod
+    field_simp at hprod
+    exact hprod
+
+/-- **A rational function of non-negative order at a codimension-one point lies in the local ring
+there** (PROVEN, no sorry).
+
+This is the promised equivalence between the leaf's first clause and `0 ≤ Scheme.ord f x`: the
+stalks of a smooth curve are discrete valuation rings with fraction field `K(X)`, so
+"`ord ≥ 0`" and "regular" say the same thing. -/
+theorem exists_stalk_eq_of_zero_le_ord {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [IsIntegral X] [IsLocallyNoetherian X]
+    [SmoothOfRelativeDimension 1 strX] {x : X} (hx : Order.coheight x = 1)
+    {f : X.functionField} (hf : 0 ≤ Scheme.ord f x) :
+    ∃ a : X.presheaf.stalk x, algebraMap (X.presheaf.stalk x) X.functionField a = f := by
+  rcases eq_or_ne f 0 with rfl | hf0
+  · exact ⟨0, map_zero _⟩
+  haveI : IsDiscreteValuationRing (X.presheaf.stalk x) :=
+    isDiscreteValuationRing_stalk_of_ne_genericPoint_curve strX
+      (ne_genericPoint_of_coheight_eq_one hx)
+  have h1 : (1 : WithZero (Multiplicative ℤ)) ≤ X.ordHom x hx f := by
+    have h := (Scheme.le_ord_iff (X := X) hx hf0 (n := 0)).mp hf
+    simpa using h
+  exact mem_range_algebraMap_of_one_le_ordFrac (R := X.presheaf.stalk x) h1
+
+/-- **The converse** (PROVEN, no sorry): a rational function that lies in the local ring at a
+codimension-one point has non-negative order there. -/
+theorem zero_le_ord_of_exists_stalk_eq {X : Scheme.{u}} [IsIntegral X] [IsLocallyNoetherian X]
+    {x : X} (hx : Order.coheight x = 1) [IsDiscreteValuationRing (X.presheaf.stalk x)]
+    {f : X.functionField}
+    (hf : ∃ a : X.presheaf.stalk x, algebraMap (X.presheaf.stalk x) X.functionField a = f) :
+    0 ≤ Scheme.ord f x := by
+  rcases eq_or_ne f 0 with rfl | hf0
+  · simp
+  obtain ⟨a, ha⟩ := hf
+  have ha0 : a ≠ 0 := by
+    rintro rfl; rw [map_zero] at ha; exact hf0 ha.symm
+  have h2 : (1 : WithZero (Multiplicative ℤ)) ≤
+      Ring.ordFrac (X.presheaf.stalk x) (algebraMap (X.presheaf.stalk x) X.functionField a) :=
+    Ring.ordFrac_ge_one_of_ne_zero ha0
+  rw [ha] at h2
+  exact (Scheme.le_ord_iff (X := X) hx hf0 (n := 0)).mpr h2
+
+/-- **A CONSTANT IS REGULAR EVERYWHERE** (PROVEN, no sorry): an element of `K(X)` integral over
+`K` lies in the local ring at every non-generic point.
+
+`functionFieldHom` factors through the germ at `x` — `structHom` at `⊤` followed by
+`Scheme.algebraMap_germ_eq_germToFunctionField` — so `f` is integral over the stalk, which is a
+discrete valuation ring, hence integrally closed in its fraction field `K(X)`. -/
+theorem exists_stalk_eq_of_isIntegralElem {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [IsIntegral X] [Nonempty (⊤ : X.Opens)]
+    [SmoothOfRelativeDimension 1 strX] {x : X} (hx : x ≠ genericPoint X)
+    {f : X.functionField} (hf : (functionFieldHom strX).hom.IsIntegralElem f) :
+    ∃ a : X.presheaf.stalk x, algebraMap (X.presheaf.stalk x) X.functionField a = f := by
+  haveI : IsDiscreteValuationRing (X.presheaf.stalk x) :=
+    isDiscreteValuationRing_stalk_of_ne_genericPoint_curve strX hx
+  have hst := structHom_comp_germToFunctionField strX (⊤ : X.Opens)
+  set φ : CommRingCat.of K ⟶ X.presheaf.stalk x :=
+    structHom strX ⊤ ≫ X.presheaf.germ ⊤ x trivial with hφ
+  have key : (algebraMap (X.presheaf.stalk x) X.functionField).comp φ.hom =
+      (functionFieldHom strX).hom := by
+    ext c
+    simp only [hφ, CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply]
+    rw [Scheme.algebraMap_germ_eq_germToFunctionField (X := X) (U := ⊤) (x := x) trivial]
+    exact congrFun
+      (congrArg (fun g : CommRingCat.of K ⟶ X.functionField => (g.hom : K → _)) hst) c
+  obtain ⟨p, hpm, hp0⟩ := hf
+  have hint : _root_.IsIntegral (X.presheaf.stalk x) f := by
+    refine ⟨p.map φ.hom, hpm.map _, ?_⟩
+    rw [Polynomial.eval₂_map, key]
+    exact hp0
+  exact IsIntegrallyClosed.isIntegral_iff.mp hint
+
+/-! ### Riemann's theorem, consumed -/
+
+/-- **`ell` only sees the Riemann–Roch SET** (PROVEN, no sorry): two divisors with the same
+`rrSet` have the same `ℓ`.  Stated with two inclusions rather than an equality because that is
+how the consumer holds it. -/
+theorem ell_congr {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [IsIntegral X] [IsLocallyNoetherian X]
+    {D D' : X → ℤ} (h : rrSet (X := X) D ⊆ rrSet (X := X) D')
+    (h' : rrSet (X := X) D' ⊆ rrSet (X := X) D) : ell strX D = ell strX D' := by
+  letI := functionFieldAlgebra strX
+  show Module.finrank K (Submodule.span K (rrSet (X := X) D))
+     = Module.finrank K (Submodule.span K (rrSet (X := X) D'))
+  rw [le_antisymm (Submodule.span_mono h) (Submodule.span_mono h')]
+
+/-- **A strictly larger `ℓ` produces a new function** (PROVEN, no sorry).
+
+This is the whole of the extraction step, and note that it never mentions the SPAN: if every
+element of `L(D')` already lay in `L(D)` then the two spans would coincide and `ℓ` with them.
+So a jump in `ℓ` hands back an honest element of `L(D')` outside `L(D)`. -/
+theorem exists_mem_rrSet_notMem_rrSet_of_ell_ne {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [IsIntegral X] [IsLocallyNoetherian X] {D D' : X → ℤ}
+    (hsub : rrSet (X := X) D ⊆ rrSet (X := X) D') (hne : ell strX D ≠ ell strX D') :
+    ∃ f ∈ rrSet (X := X) D', f ∉ rrSet (X := X) D := by
+  by_contra hcon
+  simp only [not_exists, not_and, not_not] at hcon
+  exact hne (ell_congr strX hsub fun f hf => hcon f hf)
+
+/-- **A CLOSED POINT OF A SCHEME LOCALLY OF FINITE TYPE OVER A FIELD HAS POSITIVE RESIDUE
+DEGREE** (PROVEN 2026-07-31, no sorry) — i.e. `κ(z)` is a FINITE extension of `K`, so
+`Module.finrank`'s junk value `0` for an infinite extension never occurs at a closed point.
+
+This is what stops `divisorDegree strX (n · [z]) = n · [κ(z) : K]` from being identically zero,
+and it is therefore the hypothesis that makes Riemann's theorem say anything about divisors
+supported at `z`.
+
+Zariski's lemma in scheme form: `LocallyOfFiniteType.jacobsonSpace` makes `X` a Jacobson space,
+`isClosed_singleton_iff_locallyOfFiniteType` says `Spec κ(z) ⟶ X` is then locally of finite type,
+and `isFinite_iff_locallyOfFiniteType_of_jacobsonSpace` upgrades that to FINITE over the base.
+The last step is the tower `K → κ(strX z) → κ(z)`: `Module.Finite.of_restrictScalars_finite`
+turns finiteness over `K` into finiteness over `κ(strX z)`, which is the algebra `residueDegree`
+is computed against. -/
+theorem zero_lt_residueDegree_of_isClosed {K : Type u} [Field K] {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [LocallyOfFiniteType strX] {z : X}
+    (hz : IsClosed ({z} : Set X)) : 0 < strX.residueDegree z := by
+  haveI : JacobsonSpace X := LocallyOfFiniteType.jacobsonSpace strX
+  haveI : LocallyOfFiniteType (X.fromSpecResidueField z) :=
+    isClosed_singleton_iff_locallyOfFiniteType.mp hz
+  haveI : IsFinite (X.fromSpecResidueField z ≫ strX) :=
+    isFinite_iff_locallyOfFiniteType_of_jacobsonSpace.mpr inferInstance
+  have hfin : (Spec.preimage (X.fromSpecResidueField z ≫ strX)).hom.Finite := by
+    rw [← IsFinite.SpecMap_iff, Spec.map_preimage]; infer_instance
+  have hpre : Spec.preimage (X.fromSpecResidueField z ≫ strX) =
+      Spec.preimage ((Spec (CommRingCat.of K)).fromSpecResidueField (strX.base z)) ≫
+        strX.residueFieldMap z := by
+    refine Spec.map_injective ?_
+    rw [Spec.map_preimage, Spec.map_comp, Spec.map_preimage]
+    exact (Scheme.Hom.SpecMap_residueFieldMap_fromSpecResidueField strX z).symm
+  letI algX : Algebra K (X.residueField z) :=
+    (Spec.preimage (X.fromSpecResidueField z ≫ strX)).hom.toAlgebra
+  letI algKY : Algebra K ((Spec (CommRingCat.of K)).residueField (strX.base z)) :=
+    (Spec.preimage ((Spec (CommRingCat.of K)).fromSpecResidueField (strX.base z))).hom.toAlgebra
+  letI algY : Algebra ((Spec (CommRingCat.of K)).residueField (strX.base z))
+      (X.residueField z) := (strX.residueFieldMap z).hom.toAlgebra
+  haveI : Module.Finite K (X.residueField z) := hfin
+  haveI : IsScalarTower K ((Spec (CommRingCat.of K)).residueField (strX.base z))
+      (X.residueField z) := by
+    refine IsScalarTower.of_algebraMap_eq' ?_
+    show (Spec.preimage (X.fromSpecResidueField z ≫ strX)).hom = _
+    rw [hpre]
+    rfl
+  haveI : Module.Finite ((Spec (CommRingCat.of K)).residueField (strX.base z))
+      (X.residueField z) :=
+    Module.Finite.of_restrictScalars_finite K _ _
+  show 0 < Module.finrank ((Spec (CommRingCat.of K)).residueField (strX.base z))
+    (X.residueField z)
+  exact Module.finrank_pos
+
 /-- **RIEMANN–ROCH, AND AFTER TWO CUTS THIS IS THE WHOLE OF WHAT IS ASKED OF IT: a NONCONSTANT
-RATIONAL FUNCTION WITH POLES ONLY AT `z`** (sorry leaf, and the ONLY one left in this file).
+RATIONAL FUNCTION WITH POLES ONLY AT `z`** — **PROVEN 2026-07-31, no sorry of its own**, over
+`AlgebraicGeometry.exists_isCurveGenus` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean`.
+
+## HOW IT IS PROVEN, and why no divisor theory had to be built
+
+The genus layer already existed — `CurveGenus.lean` defines `rrSet` (`L(D)` as a subset of
+`K(X)`, written with `Scheme.ord`), `ell` (`ℓ(D)`), `divisorDegree`, `pointDivisor` and
+`IsCurveGenus`, and states Riemann's theorem `ℓ(D) = deg D + 1 − g` for `deg D ≫ 0` as the
+single leaf `exists_isCurveGenus`.  **Nothing below Riemann's theorem was missing**, and in
+particular none of `deg (div f) = 0`, the finiteness of `supp (div f)`, or a divisor class
+group is used here.  The argument is four steps:
+
+1. `z` is a closed point of an INFINITE curve, so `z ≠ genericPoint X`, so `coheight z = 1`
+   (`coheight_stalk_eq_one_of_ne_genericPoint`) and `n · [z]` is a divisor;
+2. `[κ(z) : K]` is FINITE AND POSITIVE (`zero_lt_residueDegree_of_isClosed`, Zariski's lemma in
+   scheme form), so `deg (n · [z]) = n · [κ(z) : K]` grows with `n`.  This is the one step that
+   would silently fail if `residueDegree` returned its junk value `0`, and it is what makes
+   Riemann's theorem say anything at all about divisors supported at `z`;
+3. so for `n := max B 0` the two divisors `n · [z]` and `(n+1) · [z]` both clear the genus
+   bound `B` and have `ℓ` differing by exactly `[κ(z) : K] ≥ 1`.  `L(n[z]) ⊆ L((n+1)[z])`, so
+   by `exists_mem_rrSet_notMem_rrSet_of_ell_ne` some `f ∈ L((n+1)[z])` is NOT in `L(n[z])`;
+4. that `f` is the answer.  Away from `z` its order is `≥ 0`, hence it lies in every local ring
+   there (`exists_stalk_eq_of_zero_le_ord`); and it is not integral over `K`, because a
+   constant lies in EVERY local ring (`exists_stalk_eq_of_isIntegralElem`, via the stalks of a
+   smooth curve being integrally closed) and so would lie in `L(n[z])`, which `f` does not.
+
+Step 4 is the whole of why the cut is worth making at `ℓ` rather than at a dimension count:
+"nonconstant" never has to be compared with "algebraically closed in `K(X)`" — being outside
+one Riemann–Roch space is already enough.
 
 No morphism, no `𝔸¹`, no quasi-finiteness, and since 2026-07-31 no SHEAF SECTION either: one
 element `f` of the FUNCTION FIELD `K(X)`, lying in the local ring at every point other than `z`,
@@ -535,17 +829,20 @@ ABSENT, verified by reading and not only by name-grep — every `Divisor` hit un
 * no coherent-sheaf cohomology, and `grep -ri riemann` over all of `Mathlib` returns nothing in
   algebraic geometry.  `~/cs/FLT` has none of it either.
 
-So the VALUATION-THEORETIC half of divisor theory is done and the GLOBAL half — `deg`, finiteness
-of `L(D)`, and the Riemann inequality — is what has to be built.  A prover should start by
-defining `L(n·[z])` directly as `{f : X.functionField | 0 ≤ ord f y for y ≠ z}` using `ord`, not
-by building an order of vanishing from scratch.
+**CORRECTED 2026-07-31, and the correction is the reason this closed.**  The paragraph that
+stood here said "the GLOBAL half — `deg`, finiteness of `L(D)`, and the Riemann inequality — is
+what has to be built", and listed `L(n·[z])` as something a prover should define.  All of that
+had ALREADY been built, the same day, in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean` — `rrSet`, `ell`, `divisorDegree` and
+`IsCurveGenus` — with Riemann's theorem itself as the one leaf there.  The absence table above
+is a table about `Mathlib`, and it was read as a table about the tree.  What genuinely is
+absent and genuinely was NOT needed: `deg (div f) = 0`, local finiteness of `supp (div f)`, the
+divisor class group, `Ω¹` and coherent cohomology.
 
-ONE BRIDGE THIS LEAF WILL NEED, and it is not in the pin either: a rational function whose `ord`
-is `≥ 0` at every point of an open `U` is the germ of an actual SECTION in `Γ(X, U)` — i.e.
-`Γ(X, U) = ⋂_{x ∈ U} 𝒪_{X,x}` inside `K(X)`.  `exists_res_eq_of_germ_eq` below is the
-two-open case of the gluing that argument needs; the general case is the same
-`TopCat.Sheaf.existsUnique_gluing'` over an affine cover, plus the commutative-algebra fact that
-a noetherian domain is the intersection of its localisations at primes. -/
+The other bridge this leaf was expected to need — a rational function of non-negative order on
+an open `U` is the germ of a SECTION of `Γ(X, U)` — is
+`exists_germToFunctionField_eq_of_forall_isInteger` above, PROVEN 2026-07-31, which is why this
+statement is about `K(X)` and not about a sheaf. -/
 theorem exists_forall_isInteger_notIsIntegralElem_functionField
     {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [IsProper strX] [SmoothOfRelativeDimension 1 strX] [IsIntegral X]
@@ -555,8 +852,80 @@ theorem exists_forall_isInteger_notIsIntegralElem_functionField
     ∃ f : X.functionField,
       (∀ x ∈ (⟨({z}ᶜ : Set X), hz.isOpen_compl⟩ : X.Opens),
         ∃ a : X.presheaf.stalk x, algebraMap (X.presheaf.stalk x) X.functionField a = f) ∧
-      ¬ (functionFieldHom strX).hom.IsIntegralElem f :=
-  sorry
+      ¬ (functionFieldHom strX).hom.IsIntegralElem f := by
+  haveI : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian strX
+  haveI : Infinite X := infinite_of_smoothOfRelativeDimension_one strX
+  have hzg : z ≠ genericPoint X := by
+    intro h
+    subst h
+    have h1 : closure ({genericPoint X} : Set X) = Set.univ := genericPoint_spec X
+    rw [hz.closure_eq] at h1
+    obtain ⟨a, b, hab⟩ := exists_pair_ne X
+    refine hab ?_
+    have ha : a ∈ ({genericPoint X} : Set X) := h1 ▸ Set.mem_univ a
+    have hb : b ∈ ({genericPoint X} : Set X) := h1 ▸ Set.mem_univ b
+    rw [Set.mem_singleton_iff] at ha hb
+    rw [ha, hb]
+  have hcz : Order.coheight z = 1 := coheight_stalk_eq_one_of_ne_genericPoint strX hzg
+  have hdpos : 0 < strX.residueDegree z := zero_lt_residueDegree_of_isClosed strX hz
+  have hd1 : (1 : ℤ) ≤ (strX.residueDegree z : ℤ) := by exact_mod_cast hdpos
+  obtain ⟨g, B, hB⟩ := exists_isCurveGenus strX inferInstance inferInstance hconn
+  set n : ℤ := max B 0 with hn
+  have hn0 : (0 : ℤ) ≤ n := le_max_right _ _
+  have hnB : B ≤ n := le_max_left _ _
+  have e1 := hB _ (isDivisorOn_pointDivisor hcz n)
+    (by rw [divisorDegree_pointDivisor]; nlinarith)
+  have e2 := hB _ (isDivisorOn_pointDivisor hcz (n + 1))
+    (by rw [divisorDegree_pointDivisor]; nlinarith)
+  rw [divisorDegree_pointDivisor] at e1 e2
+  have hne : ell strX (pointDivisor z n) ≠ ell strX (pointDivisor z (n + 1)) := by
+    intro h
+    rw [h, e2] at e1
+    nlinarith
+  have hmono : ∀ w : X, pointDivisor z n w ≤ pointDivisor z (n + 1) w := by
+    intro w
+    by_cases hw : w = z
+    · subst hw
+      simp only [pointDivisor, Set.indicator_of_mem (Set.mem_singleton w)]
+      omega
+    · simp only [pointDivisor,
+        Set.indicator_of_notMem (by simpa using hw : w ∉ ({z} : Set X))]
+      exact le_refl _
+  have hsub : rrSet (X := X) (pointDivisor z n) ⊆ rrSet (X := X) (pointDivisor z (n + 1)) := by
+    rintro f (rfl | hf)
+    · exact Or.inl rfl
+    · exact Or.inr fun w hw => le_trans (hf w hw) (by linarith [hmono w])
+  obtain ⟨f, hfmem, hfnot⟩ := exists_mem_rrSet_notMem_rrSet_of_ell_ne strX hsub hne
+  refine ⟨f, ?_, ?_⟩
+  · intro x hxmem
+    have hx' : x ≠ z := by simpa using hxmem
+    by_cases hxg : x = genericPoint X
+    · subst hxg
+      refine ⟨f, ?_⟩
+      show (X.presheaf.stalkSpecializes ((genericPoint_spec X).specializes trivial)).hom f = f
+      exact congrArg (fun m : X.presheaf.stalk (genericPoint X) ⟶ X.functionField =>
+        CommRingCat.Hom.hom m f) (TopCat.Presheaf.stalkSpecializes_refl X.presheaf _)
+    · have hcx : Order.coheight x = 1 := coheight_stalk_eq_one_of_ne_genericPoint strX hxg
+      refine exists_stalk_eq_of_zero_le_ord strX hcx ?_
+      rcases hfmem with rfl | hfm
+      · simp
+      · have h := hfm x hcx
+        rwa [pointDivisor,
+          Set.indicator_of_notMem (by simpa using hx' : x ∉ ({z} : Set X)), add_zero] at h
+  · intro hintg
+    refine hfnot (Or.inr fun w hw => ?_)
+    haveI : IsDiscreteValuationRing (X.presheaf.stalk w) :=
+      isDiscreteValuationRing_stalk_of_ne_genericPoint_curve strX
+        (ne_genericPoint_of_coheight_eq_one hw)
+    have h0 : 0 ≤ Scheme.ord f w :=
+      zero_le_ord_of_exists_stalk_eq hw
+        (exists_stalk_eq_of_isIntegralElem strX (ne_genericPoint_of_coheight_eq_one hw) hintg)
+    have hpd : 0 ≤ pointDivisor z n w := by
+      by_cases hw' : w = z
+      · subst hw'
+        simpa [pointDivisor, Set.indicator_of_mem (Set.mem_singleton w)] using hn0
+      · simp [pointDivisor, Set.indicator_of_notMem (by simpa using hw' : w ∉ ({z} : Set X))]
+    linarith
 
 /-- **The same thing as a SECTION of `Γ(X, X ∖ {z})`** (PROVEN 2026-07-31 over the leaf above and
 `exists_germToFunctionField_eq_of_forall_isInteger`).
