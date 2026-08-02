@@ -51881,12 +51881,196 @@ theorem isOpen_ker_galRepUnits {V : Type u} [Field V] [Finite V] [TopologicalSpa
       fun hgk => Units.ext hgk⟩
   rw [hset]; exact h
 
-/-- **LEAF DET — a standard level module has determinant `χ̄_n`** (sorry node,
-cut 2026-07-31): the CONVERSE of `exists_standardLevelModule_of_det`, and the
-identity that `HasSplitHilbertBlumenthalModuli`'s 2026-07-28 strengthening was
-made in order to export.
+/-- **In a FINITE field of characteristic two every element is a square**
+(PROVEN 2026-08-02). `Mathlib` has `isSquare_of_charTwo'`, which wants a
+`CharP kI 2` instance; getting one from the bare hypothesis `(2 : kI) = 0` costs
+more than the six lines below, which use only that `x ↦ x * x` is injective in
+characteristic two (`(a-b)² = a² - 2ab + b² = a² + b²`) and that an injective
+self-map of a finite type is surjective. -/
+theorem exists_mul_self_of_two_eq_zero {kI : Type u} [Field kI] [Finite kI]
+    (h2 : (2 : kI) = 0) (c : kI) : ∃ a : kI, a * a = c := by
+  have hinj : Function.Injective (fun a : kI => a * a) := by
+    intro a b hab
+    simp only at hab
+    have hz : (a - b) * (a - b) = 0 := by linear_combination hab + (b * b - a * b) * h2
+    exact sub_eq_zero.mp (mul_self_eq_zero.mp hz)
+  obtain ⟨a, ha⟩ := Finite.injective_iff_surjective.mp hinj c
+  exact ⟨a, ha⟩
 
-THE INTENDED PROOF, in three steps and no geometry:
+/-- **`Field.absoluteGaloisGroup.map` of a BIJECTIVE ring map is SURJECTIVE**
+(PROVEN 2026-08-02).
+
+`Field.absoluteGaloisGroup.map f : Γ L → Γ K` is built from an arbitrarily
+chosen embedding `ι := AlgebraicClosure.map f`, so it carries no functoriality
+(the file's own `exists_conj_absoluteGaloisGroup_map_comp` is the up-to-conjugacy
+substitute). What IS true, and what every "quantify over `Γ F` and conclude about
+`Γ ℚ`" argument needs, is that the map is onto as soon as `f` itself is a
+bijection — the case `K = ℚ`, `L = ULift.{u} ℚ`, which is how a `Type u`-indexed
+family of level forms says anything about `Γ ℚ` at all.
+
+PROOF. `ι' := AlgebraicClosure.map (f⁻¹)` runs the other way, and
+`AlgebraicClosure.map_algebraMap` makes both composites `ι' ∘ ι` and `ι ∘ ι'`
+algebra endomorphisms of an algebraic closure over its own base; those are
+bijective (`Algebra.IsAlgebraic.algHom_bijective`), so `ι` is bijective. Then
+`σ := ι ∘ τ ∘ ι⁻¹` is an `L`-automorphism of `Lᵃˡᵍ` — it fixes
+`algebraMap L Lᵃˡᵍ y = ι (algebraMap K Kᵃˡᵍ (f⁻¹ y))` because `τ` fixes `K` — and
+`Field.absoluteGaloisGroup.lift_map` plus injectivity of `ι` identify
+`map f σ` with `τ`.
+
+This is `normal_range_absoluteGaloisGroup_map`'s `⊇` half with `Z = ⊥`, stated
+so that no `Normal K L` instance and no `IntermediateField.fixingSubgroup` are
+needed. -/
+theorem surjective_absoluteGaloisGroup_map_of_bijective
+    {K L : Type*} [Field K] [Field L] (f : K →+* L) (hf : Function.Bijective f) :
+    Function.Surjective (Field.absoluteGaloisGroup.map f) := by
+  classical
+  haveI : Algebra.IsAlgebraic K (AlgebraicClosure K) := AlgebraicClosure.isAlgebraic K
+  haveI : Algebra.IsAlgebraic L (AlgebraicClosure L) := AlgebraicClosure.isAlgebraic L
+  set fe : K ≃+* L := RingEquiv.ofBijective f hf with hfe
+  have hfeapp : ∀ x, fe x = f x := fun _ => rfl
+  set ι : AlgebraicClosure K →+* AlgebraicClosure L := AlgebraicClosure.map f with hι
+  set ι' : AlgebraicClosure L →+* AlgebraicClosure K :=
+    AlgebraicClosure.map (fe.symm : L →+* K) with hι'
+  have hAcomm : ∀ x : K, (ι'.comp ι) (algebraMap K (AlgebraicClosure K) x)
+      = algebraMap K (AlgebraicClosure K) x := by
+    intro x
+    show ι' (ι (algebraMap K (AlgebraicClosure K) x)) = _
+    rw [hι, AlgebraicClosure.map_algebraMap, hι', AlgebraicClosure.map_algebraMap]
+    congr 1
+    show fe.symm (f x) = x
+    rw [← hfeapp, fe.symm_apply_apply]
+  have hBcomm : ∀ y : L, (ι.comp ι') (algebraMap L (AlgebraicClosure L) y)
+      = algebraMap L (AlgebraicClosure L) y := by
+    intro y
+    show ι (ι' (algebraMap L (AlgebraicClosure L) y)) = _
+    rw [hι', AlgebraicClosure.map_algebraMap, hι, AlgebraicClosure.map_algebraMap]
+    congr 1
+    show f (fe.symm y) = y
+    rw [← hfeapp, fe.apply_symm_apply]
+  have hBbij : Function.Bijective (ι.comp ι') :=
+    Algebra.IsAlgebraic.algHom_bijective
+      ({ toRingHom := ι.comp ι', commutes' := hBcomm } :
+        AlgebraicClosure L →ₐ[L] AlgebraicClosure L)
+  have hιbij : Function.Bijective ι := by
+    refine ⟨ι.injective, fun w => ?_⟩
+    obtain ⟨z, hz⟩ := hBbij.surjective w
+    exact ⟨ι' z, hz⟩
+  intro τ
+  set εe : AlgebraicClosure K ≃+* AlgebraicClosure L := RingEquiv.ofBijective ι hιbij with hεe
+  have hεapp : ∀ x, εe x = ι x := fun _ => rfl
+  set σ0 : AlgebraicClosure L ≃+* AlgebraicClosure L :=
+    (εe.symm.trans τ.toRingEquiv).trans εe with hσ0
+  have hσ0app : ∀ w, σ0 w = εe (τ (εe.symm w)) := fun _ => rfl
+  have hcomm2 : ∀ y : L, σ0 (algebraMap L (AlgebraicClosure L) y)
+      = algebraMap L (AlgebraicClosure L) y := by
+    intro y
+    have hy : algebraMap L (AlgebraicClosure L) y
+        = ι (algebraMap K (AlgebraicClosure K) (fe.symm y)) := by
+      rw [hι, AlgebraicClosure.map_algebraMap]
+      congr 1
+      show y = f (fe.symm y)
+      rw [← hfeapp, fe.apply_symm_apply]
+    rw [hσ0app, hy, ← hεapp, εe.symm_apply_apply, τ.commutes]
+  refine ⟨AlgEquiv.ofRingEquiv (f := σ0) hcomm2, ?_⟩
+  apply AlgEquiv.ext
+  intro x
+  apply ι.injective
+  rw [Field.absoluteGaloisGroup.lift_map f _ x]
+  show σ0 (ι x) = ι (τ x)
+  rw [hσ0app, ← hεapp, εe.symm_apply_apply, hεapp]
+
+/-- **A BALANCED, biadditive, alternating form on `kI²` factors through `det2`**
+(PROVEN 2026-08-02): step 1 of `det_eq_cycCharModN_of_isStandardLevelModule`
+below, isolated because it is pure algebra and mentions no Galois group, no
+roots of unity and no representation — only a form valued in an arbitrary
+commutative group.
+
+The content is that `L` kills `v ⊗ v` and is `kI`-balanced, so it factors through
+`Λ²_{kI}(kI²) ≅ kI`; concretely `L v w = φ (det2 v w)` for the additive character
+`φ x := L ![1,0] (x • ![0,1])`. Expanding `v = v₀•e₀ + v₁•e₁` biadditively, the
+four terms are: the two DIAGONAL ones, killed by `L u (c • u) = 1`; the `e₀ e₁`
+term, which is `φ (v₀w₁)`; and the `e₁ e₀` term, which is `φ (v₁w₀)⁻¹` by
+antisymmetry (`L u z * L z u = 1`, from expanding `L (u+z) (u+z) = 1`).
+
+`[Finite kI]` IS used, and only once: `L u (c • u) = 1` needs every `c` to be
+either twice something (characteristic `≠ 2`, where `L u (x • u)² = 1` from
+balancedness plus antisymmetry finishes) or a SQUARE (characteristic `2`, where
+`L u (a² • u) = L (a•u) (a•u) = 1` is the alternating law), and in characteristic
+two it is finiteness that makes squaring surjective
+(`exists_mul_self_of_two_eq_zero`). Over an infinite field of characteristic two
+the conclusion can fail: the additive subgroup generated by the squares need not
+be everything, and `L` may be nontrivial on a diagonal `kI`-line. -/
+theorem levelForm_eq_of_det2 {kI : Type u} [Field kI] [Finite kI]
+    {G : Type v} [CommGroup G]
+    (L : (Fin 2 → kI) → (Fin 2 → kI) → G)
+    (hL : ∀ u v w, L (u + v) w = L u w * L v w)
+    (hR : ∀ u v w, L u (v + w) = L u v * L u w)
+    (halt : ∀ v, L v v = 1)
+    (hbal : ∀ (a : kI) (v w), L (a • v) w = L v (a • w))
+    (v w : Fin 2 → kI) :
+    L v w = L ![1, 0] (det2 v w • ![0, 1]) := by
+  set e0 : Fin 2 → kI := ![1, 0] with he0
+  set e1 : Fin 2 → kI := ![0, 1] with he1
+  -- antisymmetry
+  have hanti : ∀ u z, L u z * L z u = 1 := by
+    intro u z
+    have h := halt (u + z)
+    rw [hL, hR, hR, halt u, halt z, one_mul, mul_one] at h
+    exact h
+  -- `L u (c • u) = 1`
+  have hself : ∀ (u : Fin 2 → kI) (c : kI), L u (c • u) = 1 := by
+    intro u c
+    have hsq : ∀ a : kI, L u ((a * a) • u) = 1 := by
+      intro a
+      rw [← smul_smul, ← hbal, halt]
+    have hsqrt : ∀ x : kI, L u (x • u) * L u (x • u) = 1 := by
+      intro x
+      have h := hanti u (x • u)
+      rwa [hbal x u u] at h
+    by_cases h2 : (2 : kI) = 0
+    · obtain ⟨a, ha⟩ := exists_mul_self_of_two_eq_zero h2 c
+      rw [← ha]; exact hsq a
+    · have hc : c = c / 2 + c / 2 := by field_simp; ring
+      rw [hc, add_smul, hR]
+      exact hsqrt (c / 2)
+  -- the main expansion
+  have main : ∀ a b c d : kI,
+      L (a • e0 + b • e1) (c • e0 + d • e1) = L e0 ((a * d - b * c) • e1) := by
+    intro a b c d
+    have h1 : L (a • e0) (c • e0) = 1 := by
+      rw [hbal, smul_smul]; exact hself e0 (a * c)
+    have h2 : L (b • e1) (d • e1) = 1 := by
+      rw [hbal, smul_smul]; exact hself e1 (b * d)
+    have h3 : L (a • e0) (d • e1) = L e0 ((a * d) • e1) := by
+      rw [hbal, smul_smul]
+    have h4 : L (b • e1) (c • e0) = (L e0 ((b * c) • e1))⁻¹ := by
+      have hx : L (b • e1) (c • e0) = L e1 ((b * c) • e0) := by rw [hbal, smul_smul]
+      have hy : L ((b * c) • e0) e1 = L e0 ((b * c) • e1) := hbal _ _ _
+      have hz := hanti e1 ((b * c) • e0)
+      rw [hy] at hz
+      rw [hx]
+      exact eq_inv_of_mul_eq_one_left hz
+    have hsplit : L e0 ((a * d - b * c) • e1) * L e0 ((b * c) • e1)
+        = L e0 ((a * d) • e1) := by
+      rw [← hR, ← add_smul]
+      ring_nf
+    rw [hL, hR, hR, h1, h2, h3, h4, one_mul, mul_one]
+    rw [← hsplit, mul_inv_cancel_right]
+  have hv : v = v 0 • e0 + v 1 • e1 := by
+    funext i; fin_cases i <;> simp [he0, he1]
+  have hw : w = w 0 • e0 + w 1 • e1 := by
+    funext i; fin_cases i <;> simp [he0, he1]
+  calc L v w = L (v 0 • e0 + v 1 • e1) (w 0 • e0 + w 1 • e1) := by rw [← hv, ← hw]
+    _ = L e0 ((v 0 * w 1 - v 1 * w 0) • e1) := main _ _ _ _
+    _ = L ![1, 0] (det2 v w • ![0, 1]) := by rw [he0, he1]; rfl
+
+/-- **LEAF DET — a standard level module has determinant `χ̄_n`** (PROVEN
+2026-08-02; cut 2026-07-31): the CONVERSE of `exists_standardLevelModule_of_det`,
+and the identity that `HasSplitHilbertBlumenthalModuli`'s 2026-07-28
+strengthening was made in order to export.
+
+THE PROOF, in three steps and no geometry — the route this docstring recorded
+when the leaf was cut, and the one that was taken:
 
 1. `hbal` plus biadditivity and the alternating law make `Λ F` factor through the
    `kI`-exterior square `Λ²_{kI}(kI²) ≅ kI`: there is an additive
@@ -51901,14 +52085,34 @@ THE INTENDED PROOF, in three steps and no geometry:
    `(det ρ σ − χ̄_n σ) · kI = kI` and `φ_F ≡ 1` — contradicting the nondegeneracy
    clause. Hence `det ρ σ = χ̄_n(σ)` in `kI`, which is the statement.
 
+STEP 0, WHICH THE CUT DID NOT RECORD AND WHICH IS THE ONLY NON-ELEMENTARY INPUT.
+The `galRoot`-equivariance clause quantifies over `σ : Γ F` and constrains `ρ` at
+`Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ`, whereas the conclusion is
+about an ARBITRARY `τ : Γ ℚ`. So the whole leaf rests on that map being
+SURJECTIVE for some admissible `F`, and `F` is forced to be `ULift.{u} ℚ` rather
+than `ℚ`, because `Λ` is indexed by `Type u` and `ℚ : Type 0`. That is
+`surjective_absoluteGaloisGroup_map_of_bijective` above, applied to the ring
+isomorphism `algebraMap ℚ (ULift.{u} ℚ)` (unique, hence equal to
+`ULift.ringEquiv.symm`, by `Subsingleton (ℚ →+* ULift ℚ)`). Anyone re-cutting
+this leaf should keep that step in view: it is the reason `Λ`'s base field may
+not be specialised away, and it is where the arbitrariness of the embedding
+inside `Field.absoluteGaloisGroup.map` is paid for.
+
 `hchar` is what makes `zmodCastOf` available and is not optional; see the
 `𝔽₅`/`n = 3` counterexample in the MODULE/GEOMETRY cut docstring.
+
+`[Finite kI]` is load-bearing, in step 1 and nowhere else: see
+`levelForm_eq_of_det2` above for what it buys and for the characteristic-two
+branch that needs it.
 
 FAITHFULNESS: `hbal` is NOT removable. Without it the statement is FALSE, with
 the hermitian-form witness written out in `IsLevelFormBalanced`'s docstring — a
 norm-one scalar twist satisfies every other clause and moves the determinant by a
 square. That witness is the reason `IsLevelFormBalanced` was added to
-`IsStandardLevelModule` rather than assumed here. -/
+`IsStandardLevelModule` rather than assumed here. Confirmed by the proof below:
+`hbal` is spent exactly once, as the `hbal` argument of `levelForm_eq_of_det2`,
+and without it that factorisation — hence step 2's reading of the equivariance
+clause as a statement about `det ρ` — does not exist. -/
 theorem det_eq_cycCharModN_of_isStandardLevelModule (n : ℕ) [NeZero n]
     {kI : Type u} [Field kI] [Finite kI] [TopologicalSpace kI] [DiscreteTopology kI]
     (hchar : (n : kI) = 0) (ρ : GaloisRep ℚ kI (Fin 2 → kI))
@@ -51916,8 +52120,83 @@ theorem det_eq_cycCharModN_of_isStandardLevelModule (n : ℕ) [NeZero n]
       rootsOfUnity n (AlgebraicClosure F))
     (h : IsStandardLevelModule n ρ Λ) (hbal : IsLevelFormBalanced Λ)
     (τ : Field.absoluteGaloisGroup ℚ) :
-    ρ.det τ = zmodCastOf hchar ((cycCharModN n τ : (ZMod n)ˣ) : ZMod n) :=
-  sorry
+    ρ.det τ = zmodCastOf hchar ((cycCharModN n τ : (ZMod n)ˣ) : ZMod n) := by
+  classical
+  obtain ⟨hadd, hadd', halt, hnondeg, hequiv, -⟩ := h
+  -- STEP 0: `Γ ℚ` is exhausted by the image of `Γ (ULift.{u} ℚ)`
+  have hQbij : Function.Bijective (algebraMap ℚ (ULift.{u} ℚ)) := by
+    have hq : algebraMap ℚ (ULift.{u} ℚ) =
+        ((ULift.ringEquiv.symm : ℚ ≃+* ULift.{u} ℚ) : ℚ →+* ULift.{u} ℚ) :=
+      Subsingleton.elim _ _
+    rw [hq]
+    exact (ULift.ringEquiv.symm : ℚ ≃+* ULift.{u} ℚ).bijective
+  obtain ⟨σ, hσ⟩ := surjective_absoluteGaloisGroup_map_of_bijective
+    (algebraMap ℚ (ULift.{u} ℚ)) hQbij τ
+  set e0 : Fin 2 → kI := ![1, 0] with he0
+  set e1 : Fin 2 → kI := ![0, 1] with he1
+  set φ : kI → rootsOfUnity n (AlgebraicClosure (ULift.{u} ℚ)) :=
+    fun x => Λ (ULift.{u} ℚ) e0 (x • e1) with hφ
+  -- STEP 1: the form factors through `det2`
+  have hfac : ∀ v w, Λ (ULift.{u} ℚ) v w = φ (det2 v w) := fun v w =>
+    levelForm_eq_of_det2 (fun v w => Λ (ULift.{u} ℚ) v w)
+      (fun u v w => hadd _ _ _ u v w) (fun u v w => hadd' _ _ _ u v w)
+      (fun v => halt _ _ _ v) (fun a v w => hbal _ _ _ a v w) v w
+  -- `φ` is an additive character
+  have hphi_add : ∀ x y : kI, φ (x + y) = φ x * φ y := by
+    intro x y
+    show Λ (ULift.{u} ℚ) e0 ((x + y) • e1)
+      = Λ (ULift.{u} ℚ) e0 (x • e1) * Λ (ULift.{u} ℚ) e0 (y • e1)
+    rw [add_smul]
+    exact hadd' _ _ _ e0 (x • e1) (y • e1)
+  have hphi_zero : φ 0 = 1 := by
+    have hz := hphi_add 0 0
+    rw [add_zero] at hz
+    refine mul_left_cancel (a := φ 0) ?_
+    rw [mul_one]; exact hz.symm
+  have hphi_nsmul : ∀ (k : ℕ) (x : kI), φ (k • x) = φ x ^ k := by
+    intro k
+    induction k with
+    | zero => intro x; simp [hphi_zero]
+    | succ m ih => intro x; rw [succ_nsmul, hphi_add, ih, pow_succ]
+  -- the equivariance clause, transported to the arbitrary `τ`
+  have hequiv' : ∀ v w, Λ (ULift.{u} ℚ) ((ρ τ) v) ((ρ τ) w)
+      = (Λ (ULift.{u} ℚ) v w) ^ ((cycCharModN n τ : (ZMod n)ˣ) : ZMod n).val := by
+    intro v w
+    have hE := hequiv (ULift.{u} ℚ) inferInstance inferInstance σ v w
+    rw [galRoot_eq_pow_cycCharModN n σ (Λ (ULift.{u} ℚ) v w), hσ] at hE
+    exact hE
+  set d : kI := LinearMap.det (ρ τ) with hd
+  set c : kI := ((((cycCharModN n τ : (ZMod n)ˣ) : ZMod n)).val : kI) with hc
+  -- STEP 2: read the equivariance clause through `det2_end`
+  have hkey : ∀ y : kI, φ (d * y) = φ (c * y) := by
+    intro y
+    have h1 := hequiv' e0 (y • e1)
+    rw [hfac, hfac, det2_end] at h1
+    have h2 : det2 e0 (y • e1) = y := by simp [det2, he0, he1]
+    rw [h2] at h1
+    rw [h1, hc, ← nsmul_eq_mul, hphi_nsmul]
+  -- STEP 3: a difference that is a unit would trivialise `φ`
+  have hdc : d = c := by
+    by_contra hne
+    have hu : d - c ≠ 0 := sub_ne_zero.mpr hne
+    have he0ne : e0 ≠ 0 := by
+      intro hcon
+      have h1 : (1 : kI) = 0 := by simpa [he0] using congrFun hcon 0
+      exact one_ne_zero h1
+    obtain ⟨w₀, hw₀⟩ := hnondeg (ULift.{u} ℚ) inferInstance inferInstance e0 he0ne
+    apply hw₀
+    rw [hfac]
+    have hkey2 := hkey ((d - c)⁻¹ * det2 e0 w₀)
+    have hsplit : d * ((d - c)⁻¹ * det2 e0 w₀)
+        = (d - c) * ((d - c)⁻¹ * det2 e0 w₀) + c * ((d - c)⁻¹ * det2 e0 w₀) := by ring
+    rw [hsplit, hphi_add] at hkey2
+    have hone : φ ((d - c) * ((d - c)⁻¹ * det2 e0 w₀)) = 1 := by
+      refine mul_right_cancel (b := φ (c * ((d - c)⁻¹ * det2 e0 w₀))) ?_
+      rw [one_mul]; exact hkey2
+    have hval : (d - c) * ((d - c)⁻¹ * det2 e0 w₀) = det2 e0 w₀ := by
+      rw [← mul_assoc, mul_inv_cancel₀ hu, one_mul]
+    rwa [hval] at hone
+  rw [GaloisRep.det_apply, ← hd, hdc, hc, zmodCastOf_apply]
 
 /-! ### Reduction mod `ℓ` of a `ℤ_[ℓ]`-algebra structure in characteristic `ℓ`
 
