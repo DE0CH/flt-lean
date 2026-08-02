@@ -70,13 +70,18 @@ many bad Euler factors costs only a constant, so `ζ_F(s) ≥ c · ζ_k(s)²` fo
 endgame is `exists_mul_sq_dedekindZeta_re_le` + `finrank_eq_one_of_forall_inertiaDeg_eq_one`,
 both PROVEN below.
 
-The cut therefore leaves exactly three open statements, and each is a standard fact about
-Dirichlet series over ideals, stated with mathlib vocabulary only:
+The cut left exactly three open statements, each a standard fact about Dirichlet series
+over ideals stated with mathlib vocabulary only. **The second was PROVEN on 2026-08-02**,
+so two remain:
 
 * `NumberField.dedekindZeta_re_eq_zetaAvoiding_empty` — the REGROUPING. `ζ_K(s)` really is
   the sum of `(N I)^{-s}` over the nonzero ideals. This is `LSeries` unfolded and the
   fibres of `absNorm` collected; it is where `Nat.card {I // absNorm I = n}` is paid for.
-* `NumberField.sq_zetaAvoiding_le_zetaAvoiding_empty` — the INJECTION above.
+* `NumberField.sq_zetaAvoiding_le_zetaAvoiding_empty` — the INJECTION above. **PROVEN
+  2026-08-02**, over the multiset of normalized factors rather than the `∏ᶠ`/`count`
+  calculus the cut prescribed; see its docstring. The convergence it needs on the `F` side
+  is `NumberField.summable_absNorm_rpow`, also proven 2026-08-02 and stated over an
+  ARBITRARY predicate on ideals, so it serves the other two leaves unchanged.
 * `NumberField.exists_zetaAvoiding_empty_le` — the finitely many removed Euler factors cost
   at most `∏_{𝔭 ∈ T} (1 - N𝔭^{-s})^{-1} ≤ 2^{#T}`.
 
@@ -294,6 +299,83 @@ theorem lseriesSummable_dedekindZeta (K : Type*) [Field K] [NumberField K] {s : 
   have hlim := tendsto_sum_card_absNorm_eq_div K
   exact isBigO_atTop_natCast_rpow_of_tendsto_div_rpow (r := 1) (by simpa using hlim)
 
+/-- **THE IDEAL-INDEXED DIRICHLET SERIES CONVERGES AT EVERY REAL `s > 1`** (PROVEN
+2026-08-02).
+
+`∑_{I} (N I)^{-s}` over ANY set of ideals of `𝓞 K` — no hypothesis on the predicate `P`
+whatever, the zero ideal included, since `(0 : ℝ) ^ (-s) = 0`. This is the convergence all
+three Dirichlet-series leaves of this file need, and it is stated over an arbitrary `P` so
+that it serves `zetaAvoiding K T` for every `T` at once.
+
+**Proof.** Group the ideals by their absolute norm along `Equiv.sigmaFiberEquiv`. Each
+fibre is finite (`Ideal.finite_setOf_absNorm_eq`), so it is summable and its sum is
+`#fibre · n^{-s}`; and `#fibre ≤ #{I : N I = n}`, so the outer series is dominated by the
+`ℕ`-indexed series of `lseriesSummable_dedekindZeta`. -/
+theorem summable_absNorm_rpow (K : Type*) [Field K] [NumberField K]
+    (P : Ideal (𝓞 K) → Prop) {s : ℝ} (hs : 1 < s) :
+    Summable (fun I : {I : Ideal (𝓞 K) // P I} =>
+      (Ideal.absNorm (I : Ideal (𝓞 K)) : ℝ) ^ (-s)) := by
+  classical
+  set ν : {I : Ideal (𝓞 K) // P I} → ℕ := fun I => Ideal.absNorm (I : Ideal (𝓞 K)) with hν
+  rw [← (Equiv.sigmaFiberEquiv ν).summable_iff]
+  refine (summable_sigma_of_nonneg (fun x => Real.rpow_nonneg (Nat.cast_nonneg _) _)).2 ⟨?_, ?_⟩
+  · intro n
+    have : Finite {I : {I : Ideal (𝓞 K) // P I} // ν I = n} := by
+      haveI := (Ideal.finite_setOf_absNorm_eq (S := 𝓞 K) n).to_subtype
+      exact Finite.of_injective (fun y => (⟨(y.1 : Ideal (𝓞 K)), y.2⟩ :
+        ↥{I : Ideal (𝓞 K) | Ideal.absNorm I = n}))
+        (by rintro ⟨⟨a, ha⟩, ha'⟩ ⟨⟨b, hb⟩, hb'⟩ h; simpa using h)
+    exact Summable.of_finite
+  · have hfin : ∀ n : ℕ, Finite {I : Ideal (𝓞 K) // Ideal.absNorm I = n} :=
+      fun n => (Ideal.finite_setOf_absNorm_eq (S := 𝓞 K) n).to_subtype
+    have hcard : ∀ n : ℕ, Nat.card {I : {I : Ideal (𝓞 K) // P I} // ν I = n} ≤
+        Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} := by
+      intro n
+      haveI := hfin n
+      refine Nat.card_le_card_of_injective
+        (fun y => (⟨(y.1 : Ideal (𝓞 K)), y.2⟩ : {I : Ideal (𝓞 K) // Ideal.absNorm I = n})) ?_
+      rintro ⟨⟨a, ha⟩, ha'⟩ ⟨⟨b, hb⟩, hb'⟩ h
+      simpa using h
+    have key : ∀ n : ℕ,
+        (∑' (y : {I : {I : Ideal (𝓞 K) // P I} // ν I = n}),
+          (Ideal.absNorm ((Equiv.sigmaFiberEquiv ν) ⟨n, y⟩ : Ideal (𝓞 K)) : ℝ) ^ (-s))
+        = (Nat.card {I : {I : Ideal (𝓞 K) // P I} // ν I = n} : ℝ) * (n : ℝ) ^ (-s) := by
+      intro n
+      rw [tsum_congr (fun y => by rw [show (Ideal.absNorm ((Equiv.sigmaFiberEquiv ν) ⟨n, y⟩ :
+        Ideal (𝓞 K))) = n from y.2] : ∀ _, _), tsum_const, nsmul_eq_mul]
+    refine Summable.of_nonneg_of_le (f := fun n : ℕ =>
+      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s))
+      (fun n => ?_) (fun n => ?_) ?_
+    · rw [key n]; positivity
+    · rw [key n]
+      exact mul_le_mul_of_nonneg_right (by exact_mod_cast hcard n)
+        (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+    · have h1 : Summable (fun n : ℕ =>
+          (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) / (n : ℝ) ^ s) := by
+        have h := lseriesSummable_dedekindZeta K hs
+        unfold LSeriesSummable at h
+        rw [← Complex.summable_ofReal]
+        refine h.congr fun n => ?_
+        rcases eq_or_ne n 0 with rfl | hn
+        · have h0 : (0:ℝ) ^ s = 0 := Real.zero_rpow (by linarith)
+          simp [LSeries.term, h0]
+        · rw [LSeries.term_of_ne_zero hn, Complex.ofReal_div,
+            Complex.ofReal_cpow (Nat.cast_nonneg n) s]
+          norm_cast
+      refine h1.congr fun n => ?_
+      rw [Real.rpow_neg (Nat.cast_nonneg n), div_eq_mul_inv]
+
+open UniqueFactorizationMonoid in
+/-- **A NORMALIZED FACTOR OF AN IDEAL OF A DEDEKIND DOMAIN IS MAXIMAL** (PROVEN
+2026-08-02). A factor is prime, hence nonzero and prime as an ideal, hence maximal by
+`Ideal.IsPrime.isMaximal` (dimension `≤ 1`). Mathlib has each of the three steps and not
+the composite. -/
+theorem isMaximal_of_mem_normalizedFactors {R : Type*} [CommRing R] [IsDedekindDomain R]
+    {a p : Ideal R} (hp : p ∈ normalizedFactors a) : p.IsMaximal := by
+  have hpr : Prime p := prime_of_normalized_factor p hp
+  have hb : p ≠ ⊥ := by simpa [Ideal.zero_eq_bot] using hpr.ne_zero
+  exact Ideal.IsPrime.isMaximal (Ideal.isPrime_of_prime hpr) hb
+
 /-- **LEAF 1 — THE REGROUPING: `ζ_K(s)` is the sum of `(N I)^{-s}` over the nonzero ideals**
 (OPEN, cut 2026-07-31).
 
@@ -320,8 +402,9 @@ theorem dedekindZeta_re_eq_zetaAvoiding_empty (K : Type*) [Field K] [NumberField
     (dedekindZeta K s).re = zetaAvoiding K ∅ s :=
   sorry
 
-/-- **LEAF 2 — THE INJECTION: two primes above almost every `𝔭` square the zeta function**
-(OPEN, cut 2026-07-31).
+open UniqueFactorizationMonoid in
+/-- **THE INJECTION: two primes above almost every `𝔭` square the zeta function**
+(PROVEN 2026-08-02; cut as LEAF 2 on 2026-07-31).
 
 Given, for every maximal `𝔭` of `𝓞 k` outside `T`, two DISTINCT primes `q₁ 𝔭 ≠ q₂ 𝔭` of
 `𝓞 F` above `𝔭` of absolute norm `N 𝔭`, the assignment
@@ -332,20 +415,41 @@ is an injection from PAIRS of nonzero `T`-avoiding ideals of `𝓞 k` into the n
 of `𝓞 F`, and it multiplies absolute norms. Summing `(N ·)^{-s}` over the image is therefore
 at most the full sum over `𝓞 F`, while the sum over the source factors as a square.
 
-**What it needs.** A choice function `𝔭 ↦ (q₁ 𝔭, q₂ 𝔭)` on the maximal ideals outside `T`
-(`Classical.choice` on the hypothesis); the multiplicative extension of it to ideals, which
-is `∏ᶠ` over `IsDedekindDomain.HeightOneSpectrum` with exponents
-`IsDedekindDomain.HeightOneSpectrum.count`/`Ideal.factorization` — mathlib's
-`FractionalIdeal.finprod_heightOneSpectrum_factorization'` is the statement that the ideal
-monoid really is free on the height-one primes, and it is what makes both the
-well-definedness and the injectivity mechanical; `Ideal.absNorm` is a `MonoidHom`, which
-gives the norm identity from `absNorm (qᵢ 𝔭) = absNorm 𝔭`; and
-`Summable.mul_of_nonneg`/`tsum_mul_tsum_of_summable_norm` to turn the sum over pairs into a
-square.
+**THE `∏ᶠ`/`HeightOneSpectrum.count` ROUTE THE CUT PRESCRIBED IS NOT THE CHEAP ONE.** The
+docstring this leaf was cut with priced the multiplicative extension of `𝔭 ↦ qᵢ 𝔭` at
+`FractionalIdeal.finprod_heightOneSpectrum_factorization'` — a `∏ᶠ` over
+`IsDedekindDomain.HeightOneSpectrum` with `ℤ`-valued exponents, which needs a fraction
+field, a `count` calculus and a well-definedness argument. None of that is used here. Work
+with the MULTISET of normalized factors instead:
+
+  `Ψ 𝔞 𝔟 := (normalizedFactors 𝔞).map q₁ + (normalizedFactors 𝔟).map q₂` , then take `.prod`.
+
+Every step is then a `Multiset` identity:
+
+* the norm identity is `map_multiset_prod` for the `MonoidHom` `Ideal.absNorm`, plus
+  `Multiset.map_congr` to replace `absNorm ∘ qᵢ` by `absNorm` on the factors, plus
+  `Ideal.prod_normalizedFactors_eq_self`;
+* `normalizedFactors (Ψ 𝔞 𝔟) = (normalizedFactors 𝔞).map q₁ + (normalizedFactors 𝔟).map q₂`
+  is `UniqueFactorizationMonoid.normalizedFactors_prod_of_prime` (`Ideal.uniqueUnits` gives
+  the `Subsingleton` instance it wants), since each `qᵢ 𝔭` is maximal hence prime;
+* and INJECTIVITY needs no injectivity lemma at all, because the inverse is EXPLICIT:
+  `Multiset.filter (· ∈ range q₁)` splits the factorisation back into its two halves — the
+  two ranges are disjoint, since `q₂ 𝔮 = q₁ 𝔭` forces `𝔮 = 𝔭` by contracting and then
+  contradicts `q₁ 𝔭 ≠ q₂ 𝔭` — and then `Multiset.map (Ideal.under (𝓞 k))` undoes `qᵢ`
+  pointwise, `under (qᵢ 𝔭) = 𝔭` being a hypothesis. So `normalizedFactors 𝔞` is recovered
+  from `Ψ 𝔞 𝔟`, and `𝔞` from it.
 
 **Why the primes must be distinct.** If `q₁ 𝔭 = q₂ 𝔭` the map is not injective — this is
 exactly the point where "`𝔭` splits into at least two" is used, and it is why the
-consumer must rule out ramification and not merely control residue degrees. -/
+consumer must rule out ramification and not merely control residue degrees. Formally it is
+the disjointness of the two ranges, i.e. the `Multiset.filter_eq_nil` step above.
+
+**The analytic half.** `Summable.tsum_le_tsum_of_inj` along that injection, after
+`tsum_mul_tsum_of_summable_norm` turns the square into a sum over pairs. It needs
+summability on BOTH sides; the target side is `summable_absNorm_rpow` above, and the source
+side is NOT needed — if the source series diverges its `tsum` is `0` by convention and the
+inequality is `0 ≤ ζ_F(s)`, so the proof opens with `by_cases` on `Summable` and the
+divergent branch is two lines. -/
 theorem sq_zetaAvoiding_le_zetaAvoiding_empty
     (T : Set (Ideal (𝓞 k)))
     (h : ∀ 𝔭 : Ideal (𝓞 k), 𝔭.IsMaximal → 𝔭 ∉ T →
@@ -353,8 +457,203 @@ theorem sq_zetaAvoiding_le_zetaAvoiding_empty
         q₁.under (𝓞 k) = 𝔭 ∧ q₂.under (𝓞 k) = 𝔭 ∧
         Ideal.absNorm q₁ = Ideal.absNorm 𝔭 ∧ Ideal.absNorm q₂ = Ideal.absNorm 𝔭)
     (s : ℝ) (hs : 1 < s) :
-    (zetaAvoiding k T s) ^ 2 ≤ zetaAvoiding F ∅ s :=
-  sorry
+    (zetaAvoiding k T s) ^ 2 ≤ zetaAvoiding F ∅ s := by
+  classical
+  -- totalise the choice
+  have h' : ∀ 𝔭 : Ideal (𝓞 k), ∃ p : Ideal (𝓞 F) × Ideal (𝓞 F),
+      𝔭.IsMaximal → 𝔭 ∉ T → (p.1 ≠ p.2 ∧ p.1.IsMaximal ∧ p.2.IsMaximal ∧
+        p.1.under (𝓞 k) = 𝔭 ∧ p.2.under (𝓞 k) = 𝔭 ∧
+        Ideal.absNorm p.1 = Ideal.absNorm 𝔭 ∧ Ideal.absNorm p.2 = Ideal.absNorm 𝔭) := by
+    intro 𝔭
+    by_cases hm : 𝔭.IsMaximal
+    · by_cases hT : 𝔭 ∈ T
+      · exact ⟨(⊥, ⊥), fun _ hc => absurd hT hc⟩
+      · obtain ⟨a, b, hab⟩ := h 𝔭 hm hT
+        exact ⟨(a, b), fun _ _ => hab⟩
+    · exact ⟨(⊥, ⊥), fun hc => absurd hc hm⟩
+  choose Q hQ using h'
+  set G : Ideal (𝓞 k) → Prop := fun 𝔭 => 𝔭.IsMaximal ∧ 𝔭 ≠ ⊥ ∧ 𝔭 ∉ T with hG
+  set q₁ : Ideal (𝓞 k) → Ideal (𝓞 F) := fun 𝔭 => (Q 𝔭).1 with hq₁
+  set q₂ : Ideal (𝓞 k) → Ideal (𝓞 F) := fun 𝔭 => (Q 𝔭).2 with hq₂
+  -- every normalized factor of a `T`-avoiding nonzero ideal is good
+  have hgood : ∀ a : Ideal (𝓞 k), a ≠ ⊥ → (∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ a) →
+      ∀ p ∈ normalizedFactors a, G p := by
+    intro a _ hav p hp
+    have hm : p.IsMaximal := isMaximal_of_mem_normalizedFactors hp
+    have hb : p ≠ ⊥ := by
+      simpa [Ideal.zero_eq_bot] using (prime_of_normalized_factor p hp).ne_zero
+    exact ⟨hm, hb, fun hT => hav p hT hm (dvd_of_mem_normalizedFactors hp)⟩
+  -- the transported multiset
+  set Ψ : Ideal (𝓞 k) → Ideal (𝓞 k) → Ideal (𝓞 F) := fun a b =>
+    (Multiset.map q₁ (normalizedFactors a) + Multiset.map q₂ (normalizedFactors b)).prod with hΨ
+  have hqspec : ∀ 𝔭 : Ideal (𝓞 k), G 𝔭 →
+      q₁ 𝔭 ≠ q₂ 𝔭 ∧ (q₁ 𝔭).IsMaximal ∧ (q₂ 𝔭).IsMaximal ∧
+      (q₁ 𝔭).under (𝓞 k) = 𝔭 ∧ (q₂ 𝔭).under (𝓞 k) = 𝔭 ∧
+      Ideal.absNorm (q₁ 𝔭) = Ideal.absNorm 𝔭 ∧ Ideal.absNorm (q₂ 𝔭) = Ideal.absNorm 𝔭 :=
+    fun 𝔭 hg => hQ 𝔭 hg.1 hg.2.2
+  -- the three facts about a single transported factorisation
+  have hmain : ∀ (q : Ideal (𝓞 k) → Ideal (𝓞 F)),
+      (∀ 𝔭, G 𝔭 → (q 𝔭).IsMaximal) →
+      (∀ 𝔭, G 𝔭 → (q 𝔭).under (𝓞 k) = 𝔭) →
+      (∀ 𝔭, G 𝔭 → Ideal.absNorm (q 𝔭) = Ideal.absNorm 𝔭) →
+      ∀ a : Ideal (𝓞 k), a ≠ ⊥ → (∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ a) →
+        (∀ J ∈ Multiset.map q (normalizedFactors a), ∃ 𝔭, G 𝔭 ∧ J = q 𝔭) ∧
+        Ideal.absNorm (Multiset.map q (normalizedFactors a)).prod = Ideal.absNorm a ∧
+        Multiset.map (Ideal.under (𝓞 k)) (Multiset.map q (normalizedFactors a))
+          = normalizedFactors a := by
+    intro q hqm hqu hqn a ha hav
+    refine ⟨?_, ?_, ?_⟩
+    · intro J hJ
+      obtain ⟨p, hp, rfl⟩ := Multiset.mem_map.mp hJ
+      exact ⟨p, hgood a ha hav p hp, rfl⟩
+    · rw [map_multiset_prod, Multiset.map_map]
+      simp only [Function.comp_def]
+      rw [Multiset.map_congr rfl (g := (⇑Ideal.absNorm : Ideal (𝓞 k) → ℕ))
+          (fun p hp => hqn p (hgood a ha hav p hp)),
+        ← map_multiset_prod, Ideal.prod_normalizedFactors_eq_self ha]
+    · rw [Multiset.map_map]
+      simp only [Function.comp_def]
+      rw [Multiset.map_congr rfl (g := (fun p => p : Ideal (𝓞 k) → Ideal (𝓞 k)))
+          (fun p hp => hqu p (hgood a ha hav p hp)),
+        Multiset.map_id']
+  have hm1 : ∀ 𝔭, G 𝔭 → (q₁ 𝔭).IsMaximal := fun 𝔭 hg => (hqspec 𝔭 hg).2.1
+  have hm2 : ∀ 𝔭, G 𝔭 → (q₂ 𝔭).IsMaximal := fun 𝔭 hg => (hqspec 𝔭 hg).2.2.1
+  have hu1 : ∀ 𝔭, G 𝔭 → (q₁ 𝔭).under (𝓞 k) = 𝔭 := fun 𝔭 hg => (hqspec 𝔭 hg).2.2.2.1
+  have hu2 : ∀ 𝔭, G 𝔭 → (q₂ 𝔭).under (𝓞 k) = 𝔭 := fun 𝔭 hg => (hqspec 𝔭 hg).2.2.2.2.1
+  have hn1 : ∀ 𝔭, G 𝔭 → Ideal.absNorm (q₁ 𝔭) = Ideal.absNorm 𝔭 :=
+    fun 𝔭 hg => (hqspec 𝔭 hg).2.2.2.2.2.1
+  have hn2 : ∀ 𝔭, G 𝔭 → Ideal.absNorm (q₂ 𝔭) = Ideal.absNorm 𝔭 :=
+    fun 𝔭 hg => (hqspec 𝔭 hg).2.2.2.2.2.2
+  have hbot1 : ∀ 𝔭, G 𝔭 → q₁ 𝔭 ≠ ⊥ := by
+    intro 𝔭 hg hbot
+    exact hg.2.1 (Ideal.absNorm_eq_zero_iff.mp (by rw [← hn1 𝔭 hg, hbot]; simp))
+  have hbot2 : ∀ 𝔭, G 𝔭 → q₂ 𝔭 ≠ ⊥ := by
+    intro 𝔭 hg hbot
+    exact hg.2.1 (Ideal.absNorm_eq_zero_iff.mp (by rw [← hn2 𝔭 hg, hbot]; simp))
+  have hcross : ∀ 𝔭 𝔮, G 𝔭 → G 𝔮 → q₂ 𝔮 ≠ q₁ 𝔭 := by
+    intro 𝔭 𝔮 hp hq hEq
+    have h𝔮 : 𝔮 = 𝔭 := by rw [← hu2 𝔮 hq, hEq, hu1 𝔭 hp]
+    subst h𝔮
+    exact (hqspec 𝔮 hq).1 hEq.symm
+  -- the normalized factorisation of the transported ideal
+  have hnf : ∀ a b : Ideal (𝓞 k), a ≠ ⊥ → (∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ a) →
+      b ≠ ⊥ → (∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ b) →
+      normalizedFactors (Ψ a b) =
+        Multiset.map q₁ (normalizedFactors a) + Multiset.map q₂ (normalizedFactors b) := by
+    intro a b ha hav hb hbv
+    simp only [hΨ]
+    refine normalizedFactors_prod_of_prime ?_
+    intro J hJ
+    rcases Multiset.mem_add.mp hJ with hJ | hJ
+    · obtain ⟨𝔭, hg, rfl⟩ := (hmain q₁ hm1 hu1 hn1 a ha hav).1 J hJ
+      exact (Ideal.prime_iff_isPrime (hbot1 𝔭 hg)).mpr (hm1 𝔭 hg).isPrime
+    · obtain ⟨𝔭, hg, rfl⟩ := (hmain q₂ hm2 hu2 hn2 b hb hbv).1 J hJ
+      exact (Ideal.prime_iff_isPrime (hbot2 𝔭 hg)).mpr (hm2 𝔭 hg).isPrime
+  -- the norm identity
+  have hnormΨ : ∀ a b : Ideal (𝓞 k), a ≠ ⊥ → (∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ a) →
+      b ≠ ⊥ → (∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ b) →
+      Ideal.absNorm (Ψ a b) = Ideal.absNorm a * Ideal.absNorm b := by
+    intro a b ha hav hb hbv
+    simp only [hΨ, Multiset.prod_add, map_mul]
+    rw [(hmain q₁ hm1 hu1 hn1 a ha hav).2.1, (hmain q₂ hm2 hu2 hn2 b hb hbv).2.1]
+  -- recovery of the two factors from the transported ideal
+  set P : Ideal (𝓞 F) → Prop := fun J => ∃ 𝔭, G 𝔭 ∧ J = q₁ 𝔭 with hPdef
+  have hrec : ∀ a b : Ideal (𝓞 k), a ≠ ⊥ → (∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ a) →
+      b ≠ ⊥ → (∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ b) →
+      Multiset.map (Ideal.under (𝓞 k)) (Multiset.filter P (normalizedFactors (Ψ a b)))
+          = normalizedFactors a ∧
+        Multiset.map (Ideal.under (𝓞 k))
+          (Multiset.filter (fun J => ¬ P J) (normalizedFactors (Ψ a b)))
+          = normalizedFactors b := by
+    intro a b ha hav hb hbv
+    have hself : ∀ J ∈ Multiset.map q₁ (normalizedFactors a), P J :=
+      fun J hJ => (hmain q₁ hm1 hu1 hn1 a ha hav).1 J hJ
+    have hnone : ∀ J ∈ Multiset.map q₂ (normalizedFactors b), ¬ P J := by
+      intro J hJ
+      obtain ⟨𝔮, hgq, rfl⟩ := (hmain q₂ hm2 hu2 hn2 b hb hbv).1 J hJ
+      rintro ⟨𝔭, hgp, hEq⟩
+      exact hcross 𝔭 𝔮 hgp hgq hEq
+    constructor
+    · rw [hnf a b ha hav hb hbv, Multiset.filter_add, Multiset.filter_eq_self.mpr hself,
+        Multiset.filter_eq_nil.mpr hnone, add_zero]
+      exact (hmain q₁ hm1 hu1 hn1 a ha hav).2.2
+    · rw [hnf a b ha hav hb hbv, Multiset.filter_add,
+        Multiset.filter_eq_nil.mpr (fun J hJ hc => hc (hself J hJ)),
+        Multiset.filter_eq_self.mpr hnone, zero_add]
+      exact (hmain q₂ hm2 hu2 hn2 b hb hbv).2.2
+  -- the analytic endgame
+  have hz : zetaAvoiding k T s =
+      ∑' I : {I : Ideal (𝓞 k) // I ≠ ⊥ ∧ ∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ I},
+        (Ideal.absNorm (I : Ideal (𝓞 k)) : ℝ) ^ (-s) := rfl
+  have hzF : zetaAvoiding F ∅ s =
+      ∑' J : {J : Ideal (𝓞 F) // J ≠ ⊥ ∧
+          ∀ 𝔭 ∈ (∅ : Set (Ideal (𝓞 F))), 𝔭.IsMaximal → ¬ 𝔭 ∣ J},
+        (Ideal.absNorm (J : Ideal (𝓞 F)) : ℝ) ^ (-s) := rfl
+  rw [hz, hzF]
+  have hgsum : Summable (fun J : {J : Ideal (𝓞 F) // J ≠ ⊥ ∧
+      ∀ 𝔭 ∈ (∅ : Set (Ideal (𝓞 F))), 𝔭.IsMaximal → ¬ 𝔭 ∣ J} =>
+      (Ideal.absNorm (J : Ideal (𝓞 F)) : ℝ) ^ (-s)) := summable_absNorm_rpow F _ hs
+  by_cases hfsum : Summable (fun I : {I : Ideal (𝓞 k) // I ≠ ⊥ ∧
+      ∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ I} => (Ideal.absNorm (I : Ideal (𝓞 k)) : ℝ) ^ (-s))
+  · -- the injection
+    have hΨne : ∀ a b : {I : Ideal (𝓞 k) // I ≠ ⊥ ∧ ∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ I},
+        Ψ a.1 b.1 ≠ ⊥ := by
+      intro a b hbot
+      have h0 : Ideal.absNorm a.1 * Ideal.absNorm b.1 = 0 := by
+        rw [← hnormΨ a.1 b.1 a.2.1 a.2.2 b.2.1 b.2.2, hbot]; simp
+      rcases Nat.mul_eq_zero.mp h0 with h1 | h1
+      · exact a.2.1 (Ideal.absNorm_eq_zero_iff.mp h1)
+      · exact b.2.1 (Ideal.absNorm_eq_zero_iff.mp h1)
+    obtain ⟨e, he⟩ : ∃ e : ({I : Ideal (𝓞 k) // I ≠ ⊥ ∧ ∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ I} ×
+        {I : Ideal (𝓞 k) // I ≠ ⊥ ∧ ∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ I}) →
+        {J : Ideal (𝓞 F) // J ≠ ⊥ ∧
+          ∀ 𝔭 ∈ (∅ : Set (Ideal (𝓞 F))), 𝔭.IsMaximal → ¬ 𝔭 ∣ J},
+        ∀ p, (e p : Ideal (𝓞 F)) = Ψ p.1.1 p.2.1 :=
+      ⟨fun p => ⟨Ψ p.1.1 p.2.1, hΨne p.1 p.2, by simp⟩, fun _ => rfl⟩
+    have hinj : Function.Injective e := by
+      rintro ⟨a, b⟩ ⟨a', b'⟩ hEq
+      have hEq' : Ψ a.1 b.1 = Ψ a'.1 b'.1 := by
+        rw [← he (a, b), ← he (a', b'), hEq]
+      obtain ⟨h1, h2⟩ := hrec a.1 b.1 a.2.1 a.2.2 b.2.1 b.2.2
+      obtain ⟨h1', h2'⟩ := hrec a'.1 b'.1 a'.2.1 a'.2.2 b'.2.1 b'.2.2
+      rw [hEq'] at h1 h2
+      have hA : a.1 = a'.1 := by
+        rw [← Ideal.prod_normalizedFactors_eq_self a.2.1, ← Ideal.prod_normalizedFactors_eq_self a'.2.1,
+          ← h1, ← h1']
+      have hB : b.1 = b'.1 := by
+        rw [← Ideal.prod_normalizedFactors_eq_self b.2.1, ← Ideal.prod_normalizedFactors_eq_self b'.2.1,
+          ← h2, ← h2']
+      exact Prod.ext (Subtype.ext hA) (Subtype.ext hB)
+    have hnormsum : Summable (fun I : {I : Ideal (𝓞 k) // I ≠ ⊥ ∧
+        ∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ I} =>
+        ‖(Ideal.absNorm (I : Ideal (𝓞 k)) : ℝ) ^ (-s)‖) := by
+      refine hfsum.congr fun I => ?_
+      exact (Real.norm_of_nonneg (Real.rpow_nonneg (Nat.cast_nonneg _) _)).symm
+    have hsq : (∑' I : {I : Ideal (𝓞 k) // I ≠ ⊥ ∧ ∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ I},
+        (Ideal.absNorm (I : Ideal (𝓞 k)) : ℝ) ^ (-s)) ^ 2 =
+        ∑' p : ({I : Ideal (𝓞 k) // I ≠ ⊥ ∧ ∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ I} ×
+          {I : Ideal (𝓞 k) // I ≠ ⊥ ∧ ∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ I}),
+          (Ideal.absNorm (p.1 : Ideal (𝓞 k)) : ℝ) ^ (-s) *
+            (Ideal.absNorm (p.2 : Ideal (𝓞 k)) : ℝ) ^ (-s) := by
+      rw [sq]
+      exact tsum_mul_tsum_of_summable_norm hnormsum hnormsum
+    rw [hsq]
+    refine Summable.tsum_le_tsum_of_inj e hinj ?_ ?_ ?_ hgsum
+    · exact fun c _ => Real.rpow_nonneg (Nat.cast_nonneg _) _
+    · intro p
+      have hval : (Ideal.absNorm ((e p : Ideal (𝓞 F))) : ℝ)
+          = (Ideal.absNorm (p.1 : Ideal (𝓞 k)) : ℝ) * (Ideal.absNorm (p.2 : Ideal (𝓞 k)) : ℝ) := by
+        rw [he p, hnormΨ p.1.1 p.2.1 p.1.2.1 p.1.2.2 p.2.2.1 p.2.2.2]
+        push_cast
+        ring
+      exact le_of_eq (by rw [hval, Real.mul_rpow (Nat.cast_nonneg _) (Nat.cast_nonneg _)])
+    · exact hfsum.mul_of_nonneg hfsum (fun _ => Real.rpow_nonneg (Nat.cast_nonneg _) _)
+        (fun _ => Real.rpow_nonneg (Nat.cast_nonneg _) _)
+  · rw [tsum_eq_zero_of_not_summable hfsum]
+    simpa using tsum_nonneg (fun J : {J : Ideal (𝓞 F) // J ≠ ⊥ ∧
+      ∀ 𝔭 ∈ (∅ : Set (Ideal (𝓞 F))), 𝔭.IsMaximal → ¬ 𝔭 ∣ J} =>
+      Real.rpow_nonneg (Nat.cast_nonneg (Ideal.absNorm (J : Ideal (𝓞 F)))) (-s))
+
 
 /-- **LEAF 3 — REMOVING FINITELY MANY EULER FACTORS COSTS A CONSTANT** (OPEN, cut
 2026-07-31).
