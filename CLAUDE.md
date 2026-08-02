@@ -26164,3 +26164,75 @@ lie in the PRIME FIELD, so the leaf may be weakened to "some `M` in the image wi
 final computation uses no basis at all. **When you strengthen a leaf, compute the exact
 failure regime and write the weaker sufficient form into the docstring; a strengthening
 whose escape hatch is recorded is a decision, one that is not is a trap.**
+## A LEAF PRICED AT A COUNTING THEOREM (`Σ e f ≤ n`) USUALLY NEEDS ONLY ONE OF THE TWO FACTORS — AND NORMALISATION ALREADY PINS `e`
+(2026-08-02, `flt-lean-86`, closing `pt_infinite_of_ord_xx_neg` in
+`ModularCurve/HyperellipticJacobian.lean`.)  That leaf — *the only poles of the abscissa are
+the two points at infinity* — carried a confident and entirely correct route note pricing it
+at the **fundamental inequality** `Σ_{v | ∞} e(v)·f(v) ≤ [F : K(x)] = 2` (Stichtenoth
+III.1.11), and adding that it *"should be DELETED rather than proven separately"* once the
+Riemann–Roch leaf `degOf_poleDivisor_eq_finrank_of_transcendental` lands.  Neither the
+inequality nor the Riemann–Roch layer is used in the proof, and the deletion advice is wrong.
+**A `Σ e f ≤ n` bound is TWO independent facts, and a leaf almost never needs both.**  Split
+it before pricing anything:
+* the **RAMIFICATION** half (`e = 1`, i.e. the pole is simple) is a statement about ONE place
+  and is usually available from normalisation alone.  In this development `PlaceData` has
+  `ord_surjective` as an AXIOM — the value group is exactly `ℤ` — so `e = 1` is EQUIVALENT to
+  *"every element's order is a multiple of `e`"*, which is an elementwise divisibility
+  statement and needs no degree theory at all;
+* the **INERTIA / counting** half (there is no SECOND place on the same branch) is a
+  UNIQUENESS statement, and uniqueness of a place is usually already proven somewhere in a
+  file that has local rings — see the next section.
+**The value-group computation, which is the reusable half and needs no Hensel and no power
+series.**  For a degree-`2` extension `F = K(u)(w)` with `w² = h(u)` and a place with
+`ord u = n > 0`, `ord w = 0`: take `g = P(u) + Q(u)w` and its CONJUGATE `ḡ = P(u) − Q(u)w`.
+Then
+    g·ḡ = (P² − Q²h)(u)     g + ḡ = 2·P(u)     g − ḡ = 2·Q(u)·w
+are all in the base up to a unit, so all three have order in `nℤ`.  Recurse on `X ∣ P ∧ X ∣ Q`
+so that one of `P`, `Q` has nonzero constant term, hence is a UNIT at the place.  Then:
+* `ḡ = 0` ⟹ `g = 2P(u)` and `ord g = ord P(u) = ord Q(u) = 0`;
+* `ord g ≠ ord ḡ` ⟹ the smaller is `ord(2P(u)) ∈ nℤ`, and the larger is `ord(gḡ)` minus it;
+* `ord g = ord ḡ` ⟹ `ord g ≤ ord(g+ḡ) = ord P(u)` and `ord g ≤ ord(g−ḡ) = ord Q(u)`, one of
+  which is `0`; and `ord g ≥ min(ord P(u), ord(Q(u)w)) ≥ 0`.  So `ord g = 0`.
+**The degenerate case handles itself**, which is what makes this cheap: `h` being a square in
+`K(u)` is exactly `ḡ = 0` for some `(P, Q)`, and that branch gives `ord g = 0` outright — so no
+separate "the sextic is not a square" argument is needed, and neither is a square root of `h`
+in `K[[u]]` (the file's `exists_powerSeries_sqrt` was NOT used).  Total: ~200 lines.
+**Then `ord_surjective` finishes it**: pick `t` with `ord t = 1`, and `n ∣ 1`.
+## `exists_localDenom_chart`-STYLE THEOREMS ARE UNIQUENESS THEOREMS — the right-hand side does not mention the place
+(Same task.)  `PlaceData.exists_localDenom_chart` says *"every `z` with `ord_v z ≥ 0` is a
+chart fraction whose denominator does not vanish AT THE POINT"*.  It was written, and is
+documented, for the residue-field computation (`finrank_residue_pt_eq_one`).  Its conclusion
+mentions the place `v` **nowhere**, so it is also, for free, the statement that `O_v` is
+determined by the chart data — and therefore that **two places with the same chart data are
+EQUAL**:
+    z ∈ O_v  ⟹  z = num/den with den not vanishing at the point
+             ⟹  at v', num ∈ O_{v'} (chart_mem_valRing) and ord_{v'} den = 0
+                 (ord_chart_eq_zero_iff)  ⟹  z ∈ O_{v'}
+and then `PlaceClassify.isPlaceFun_eq_of_le` (a normalised place is determined by its
+valuation ring) plus `ord_injective`.  Twelve lines over machinery that had been sitting there
+since 2026-07-30.
+**Generalisable, and it is the standing rule in a new suit** ([[flt-consumerless-theorem-may-discharge-a-live-leaf]],
+"THAT THEOREM HANDS BACK X is a claim about its CONCLUSION"): *when a leaf asks for UNIQUENESS
+of an object, look for a theorem whose CONCLUSION characterises that object by data the object
+does not appear in.*  A "the local ring is such-and-such a localisation" theorem is always of
+that shape, and it is always filed under something else.
+Two riders from the same run:
+* **The existing theorem was stated at `v = pt (Sum.inr s)` and its proof never used that.**
+  Re-stating it with the two PROPERTIES of `v` that the proof consumes (`ord x = −1` and the
+  branch congruence) is a copy-paste, and it is what turns it from a computation at a named
+  place into a uniqueness statement.  Before generalising a proof, check whether the special
+  hypothesis is spent at all — here it was spent only to obtain those two properties, in the
+  first three lines.
+* **THE SCRATCH CANNOT SEE DECLARATION ORDER, AND THIS IS WHERE IT BITES.**  The block was
+  developed in a scratch that `public import`s the whole module, so `PlaceData.toFunctionFieldData`
+  resolved fine; in the file it is declared 140 lines BELOW the insertion point, and four uses
+  of `PlaceClassify.yy_ne_zero D.toFunctionFieldData` were hard errors on the first real
+  elaboration.  The repair was to repeat the two-line proof as `PlaceData.yy_ne_zero` rather
+  than hoist anything — **in a file with concurrent editors, a duplicated two-line proof is
+  cheaper than a relocation**, and the docstring says which it is and why.
+**And the differential receipt for a leaf closure, which costs one extra elaboration of a file
+you were going to elaborate anyway**: elaborate `git show HEAD:<path>` at a real module path
+too, map each `declaration uses 'sorry'` warning to its enclosing declaration NAME in each
+file, and diff the two NAME sets.  Here that printed `CLOSED: ['pt_infinite_of_ord_xx_neg']`,
+`NEW: []` — which is a statement no line-number comparison can make, because every later line
+shifts.
