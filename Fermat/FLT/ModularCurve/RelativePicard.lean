@@ -6289,37 +6289,280 @@ theorem isInvertibleSheaf_sectionIdeal_baseChange {Y T Y' T' : Scheme.{u}}
     (MorphismProperty.of_isPullback hsq hproper)
     (MorphismProperty.of_isPullback hsq hsmooth) hσ'
 
-/-- **AN EPIMORPHISM BETWEEN INVERTIBLE SHEAVES IS AN ISOMORPHISM** (sorry leaf,
-cut 2026-07-31 out of `isIso_modPullbackSectionIdealMap`) — classical, and pure
-sheaf theory: there is no scheme morphism, no base change and no flatness in it.
+/-! #### `End (𝒪_Y)` is the ring of global sections, and an epi endomorphism is an iso
 
-**THE ROUTE, in full, because every step is available in this file or in the
-pin.**  Use `isIso_of_locally_isIso` above.  Fix `z : Z`, take trivializing
+**Built 2026-07-31 to close `isIso_of_epi_of_isInvertibleSheaf` below.**  The
+route its docstring prescribed ran through *`Epi ⟹ locally surjective`*, applied
+to the section `1` to produce a `V ∋ z` on which the multiplier is a unit.  That
+implication is the one genuinely missing piece — `Sheaf.isLocallySurjective_iff_epi`
+is stated for `Sheaf J (Type w)` / `Sheaf J A`, and `Z.Modules` reaches neither
+without an exactness statement for `SheafOfModules.toSheaf` that the pin does not
+have.
+
+**It is not needed.**  `Z.Modules` is ABELIAN, hence BALANCED, so `Epi f` plus
+`Mono f` gives `IsIso f` — and `Mono` is what invertibility supplies cheaply:
+
+* `SheafOfModules.unitHomEquiv` identifies `Hom(𝒪_Y, M)` with `M.sections`, so an
+  endomorphism of `𝒪_Y` is multiplication by `gsec g X := g.app X 1`
+  (`modUnitEnd_app_eq_mul`), and `End (𝒪_Y)` is COMMUTATIVE
+  (`modUnit_end_comm`) — two lines each, no sheaf theory;
+* therefore `Epi g` may be cancelled against the *multiplication* maps
+  `modUnitMul a`, which gives INJECTIVITY of `g.app ⊤` (`injective_app_top_of_epi_modUnit`).
+  This is the whole of the argument: no covering sieve, no local surjectivity,
+  no sheafification.  The compatibility that the local route would have had to
+  arrange by hand is carried for free by `PresheafOfModules.sections`, whose
+  elements are compatible families and are therefore determined by their value
+  at `⊤` (`sections_eq_of_top_modUnit`, three lines from `s.property`);
+* `restrictFunctor` is a LEFT adjoint (`Scheme.Modules.restrictAdjunction`), so
+  `Epi` restricts, and running the previous item on each open `W` gives
+  injectivity of `g.app W` for EVERY `W` — hence `Mono g`, hence `IsIso g`.
+
+So the direction of the classical argument is reversed: instead of extracting a
+local inverse from surjectivity, one extracts a global non-zerodivisor from
+cancellability and lets `Balanced` supply the inverse.  It is shorter, and it is
+why this leaf did not need the flat-base-change development either.
+
+**Two Lean notes, both instances of the standing "printed pattern equals printed
+target ⟹ switch to a defeq-checking tactic" rule.**  `Γ(modUnit Y, X)` is an
+`Ab` and `Γ(Y, X)` is a `CommRingCat`; their carriers are defeq and Lean will not
+unify them when elaborating a `*`, so `gsec` is a `def` whose *declared* type is
+`Γ(Y, X)` — that one ascription is what makes every later ring computation
+elaborate.  And `rw` fails on `Scheme.Modules.Hom.app` goals mentioning
+`(modUnit W).presheaf`, which presents as a `TopCat.Presheaf` rather than as a
+functor out of `(Opens W)ᵒᵖ`; every such step below is `exact`, `show`,
+`congrArg` or `ConcreteCategory.congr_hom` instead. -/
+
+/-- **THE SECTION AN ENDOMORPHISM OF `𝒪_Y` IS MULTIPLICATION BY.**
+
+The declared type is `Γ(Y, X)` — the `CommRingCat` section — although the body
+lands in `Γ(modUnit Y, X)`, which is the same carrier viewed in `Ab`.  Writing
+the ascription here once is what lets `modUnitEnd_app_eq_mul` and everything
+below be stated with `*` rather than with `•`. -/
+noncomputable def gsec {Y : Scheme.{u}} (g : modUnit Y ⟶ modUnit Y) (X : Y.Opens) :
+    Γ(Y, X) :=
+  Scheme.Modules.Hom.app g X (1 : Γ(Y, X))
+
+/-- **AN ENDOMORPHISM OF `𝒪_Y` IS MULTIPLICATION BY `gsec`** (PROVEN) —
+`Scheme.Modules.Hom.app_smul` at the section `1`. -/
+theorem modUnitEnd_app_eq_mul {Y : Scheme.{u}} (g : modUnit Y ⟶ modUnit Y) (X : Y.Opens)
+    (y : Γ(Y, X)) : Scheme.Modules.Hom.app g X y = y * gsec g X := by
+  conv_lhs => rw [show y = y • (1 : Γ(Y, X)) from (mul_one y).symm]
+  exact Scheme.Modules.Hom.app_smul g y (1 : Γ(Y, X))
+
+/-- **TWO MORPHISMS OUT OF `𝒪_Y` AGREE IFF THEY AGREE ON `1`** (PROVEN) — this is
+`SheafOfModules.unitHomEquiv` plus `PresheafOfModules.sections_ext`. -/
+theorem hom_ext_modUnit {Y : Scheme.{u}} {M : Y.Modules} {p q : modUnit Y ⟶ M}
+    (h : ∀ X : Y.Opens, Scheme.Modules.Hom.app p X (1 : Γ(Y, X))
+      = Scheme.Modules.Hom.app q X (1 : Γ(Y, X))) : p = q := by
+  refine M.unitHomEquiv.injective (PresheafOfModules.sections_ext _ _ (fun X => ?_))
+  exact h X.unop
+
+/-- **`End (𝒪_Y)` IS COMMUTATIVE** (PROVEN) — both composites are multiplication
+by the product of the two multipliers. -/
+theorem modUnit_end_comm {Y : Scheme.{u}} (g h : modUnit Y ⟶ modUnit Y) :
+    g ≫ h = h ≫ g := by
+  refine hom_ext_modUnit (fun X => ?_)
+  rw [Scheme.Modules.Hom.comp_app, Scheme.Modules.Hom.comp_app,
+    CategoryTheory.comp_apply, CategoryTheory.comp_apply]
+  show Scheme.Modules.Hom.app h X (gsec g X) = Scheme.Modules.Hom.app g X (gsec h X)
+  rw [modUnitEnd_app_eq_mul, modUnitEnd_app_eq_mul, mul_comm]
+
+/-- **A GLOBAL SECTION OF `𝒪_Z`, READ AS A COMPATIBLE FAMILY** — restrict `a`
+from `⊤` to every open.  Compatibility is functoriality of the presheaf plus
+the fact that `Opens Z` has at most one arrow between any two objects.
+
+**HOISTED 2026-07-31** from ~1850 lines below (where it sat beside `constSmul`,
+its only other consumer) so that `injective_app_top_of_epi_modUnit` can use it.
+Pure move; nothing between the two positions mentions it. -/
+noncomputable def modUnitSections {Z : Scheme.{u}} (a : Γ(Z, ⊤)) : (modUnit Z).sections :=
+  PresheafOfModules.sectionsMk (fun _ => Z.presheaf.map (homOfLE le_top).op a)
+    (by
+      intro U V f
+      show Z.presheaf.map f (Z.presheaf.map (homOfLE le_top).op a) = _
+      rw [← CategoryTheory.comp_apply, ← Z.presheaf.map_comp]
+      congr 1)
+
+/-- **MULTIPLICATION BY A GLOBAL SECTION**, as an endomorphism of `𝒪_Z`.
+
+`SheafOfModules.unitHomEquiv` is the bijection `(𝒪 ⟶ M) ≃ M.sections`; taken
+at `M = 𝒪` it turns a global section into the endomorphism "multiply by it".
+
+**HOISTED 2026-07-31**, with `modUnitSections`; see there. -/
+noncomputable def modUnitMul {Z : Scheme.{u}} (a : Γ(Z, ⊤)) : modUnit Z ⟶ modUnit Z :=
+  (modUnit Z).unitHomEquiv.symm (modUnitSections a)
+
+/-- **A SECTION OF `𝒪_Y` IS DETERMINED BY ITS VALUE AT `⊤`** (PROVEN) — `op ⊤`
+is initial in `Y.Opensᵒᵖ`, so `s.property` recovers every other value from it.
+
+This is what replaces the covering-sieve bookkeeping of the local route. -/
+theorem sections_eq_of_top_modUnit {Y : Scheme.{u}} {s t : (modUnit Y).sections}
+    (h : s.val (op ⊤) = t.val (op ⊤)) : s = t := by
+  ext X
+  have hs := s.property (homOfLE (le_top (a := X.unop))).op
+  have ht := t.property (homOfLE (le_top (a := X.unop))).op
+  rw [← hs, ← ht, h]
+
+/-- **`modUnitSections a` HAS VALUE `a` AT `⊤`** (PROVEN). -/
+theorem modUnitSections_top {Y : Scheme.{u}} (a : Γ(Y, ⊤)) :
+    (modUnitSections a).val (op ⊤) = a := by
+  show Y.presheaf.map (homOfLE le_top).op a = a
+  simp
+
+/-- **AN EPIMORPHISM `𝒪_Y ⟶ 𝒪_Y` IS INJECTIVE ON GLOBAL SECTIONS** (PROVEN) —
+the whole mathematical content of the leaf below, and it is three moves.
+
+Given `g.app ⊤ a₁ = g.app ⊤ a₂`, the two composites `modUnitMul aᵢ ≫ g` agree:
+by `SheafOfModules.unitHomEquiv_symm_comp` each is `unitHomEquiv.symm` of
+`sectionsMap g (modUnitSections aᵢ)`, and two sections agree as soon as they
+agree at `⊤`, which is the hypothesis.  Commutativity of `End (𝒪_Y)` turns that
+into `g ≫ modUnitMul a₁ = g ≫ modUnitMul a₂`, `Epi g` cancels, and
+`unitHomEquiv` is injective, so `a₁ = a₂` after reading off the value at `⊤`.
+
+Note what is NOT used: no covering sieve, no local surjectivity, no
+sheafification, and no naturality of `g` — the last because the compatibility is
+carried by `PresheafOfModules.sections` rather than arranged by hand. -/
+theorem injective_app_top_of_epi_modUnit {Y : Scheme.{u}} (g : modUnit Y ⟶ modUnit Y)
+    (hg : Epi g) {a₁ a₂ : Γ(Y, ⊤)}
+    (h : Scheme.Modules.Hom.app g ⊤ a₁ = Scheme.Modules.Hom.app g ⊤ a₂) : a₁ = a₂ := by
+  have e : ∀ a : Γ(Y, ⊤), modUnitMul a ≫ g
+      = (modUnit Y).unitHomEquiv.symm (SheafOfModules.sectionsMap g (modUnitSections a)) :=
+    fun a => SheafOfModules.unitHomEquiv_symm_comp _ _
+  have hmul : modUnitMul a₁ ≫ g = modUnitMul a₂ ≫ g := by
+    rw [e a₁, e a₂]
+    refine congrArg _ (sections_eq_of_top_modUnit ?_)
+    show Scheme.Modules.Hom.app g ⊤ ((modUnitSections a₁).val (op ⊤))
+      = Scheme.Modules.Hom.app g ⊤ ((modUnitSections a₂).val (op ⊤))
+    rw [modUnitSections_top, modUnitSections_top]
+    exact h
+  have heq : modUnitMul a₁ = modUnitMul a₂ := by
+    haveI := hg
+    exact (cancel_epi g).mp (by rw [modUnit_end_comm g, modUnit_end_comm g]; exact hmul)
+  have hs := (modUnit Y).unitHomEquiv.symm.injective heq
+  have h3 : (modUnitSections a₁).val (op ⊤) = (modUnitSections a₂).val (op ⊤) := by rw [hs]
+  rw [modUnitSections_top, modUnitSections_top] at h3
+  exact h3
+
+/-- **`Mono` IS DETECTED ON SECTIONS** (PROVEN) — `Scheme.Modules.hom_ext`. -/
+theorem mono_of_injective_app {Y : Scheme.{u}} {M N : Y.Modules} (f : M ⟶ N)
+    (hinj : ∀ W : Y.Opens, Function.Injective (Scheme.Modules.Hom.app f W)) : Mono f := by
+  constructor
+  intro K p q hpq
+  refine Scheme.Modules.hom_ext _ _ (fun W => ?_)
+  ext x
+  refine hinj W ?_
+  have h1 : Scheme.Modules.Hom.app (p ≫ f) W = Scheme.Modules.Hom.app (q ≫ f) W := by rw [hpq]
+  simpa using ConcreteCategory.congr_hom h1 x
+
+set_option synthInstance.maxHeartbeats 400000 in
+/-- **THE PREVIOUS LEMMA, TRANSPORTED ALONG AN ISOMORPHISM** (PROVEN) — stated
+this way so that the caller never has to compute the sections of
+`Scheme.Modules.restrictUnitIso`, which is exactly the computation `rw` cannot
+perform (see the section header). -/
+theorem injective_app_top_of_epi_of_iso_modUnit {Y : Scheme.{u}} {M : Y.Modules}
+    (e : M ≅ modUnit Y) (g : M ⟶ M) (hg : Epi g) {x y : Γ(M, ⊤)}
+    (h : Scheme.Modules.Hom.app g ⊤ x = Scheme.Modules.Hom.app g ⊤ y) : x = y := by
+  haveI := hg
+  haveI : Epi (e.inv ≫ g ≫ e.hom) := by
+    haveI : Epi (g ≫ e.hom) := epi_comp _ _
+    exact epi_comp _ _
+  have hinv : ∀ z : Γ(M, ⊤), Scheme.Modules.Hom.app e.inv ⊤
+      (Scheme.Modules.Hom.app e.hom ⊤ z) = z := by
+    intro z
+    have h0 := ConcreteCategory.congr_hom
+      (congrArg (fun m => Scheme.Modules.Hom.app m (⊤ : Y.Opens)) e.hom_inv_id) z
+    simp only [Scheme.Modules.Hom.comp_app, Scheme.Modules.Hom.id_app,
+      CategoryTheory.comp_apply, CategoryTheory.id_apply] at h0
+    exact h0
+  have e1 : ∀ z : Γ(M, ⊤), Scheme.Modules.Hom.app (e.inv ≫ g ≫ e.hom) ⊤
+      (Scheme.Modules.Hom.app e.hom ⊤ z)
+      = Scheme.Modules.Hom.app e.hom ⊤ (Scheme.Modules.Hom.app g ⊤ z) := by
+    intro z
+    show Scheme.Modules.Hom.app e.hom ⊤ (Scheme.Modules.Hom.app g ⊤
+      (Scheme.Modules.Hom.app e.inv ⊤ (Scheme.Modules.Hom.app e.hom ⊤ z))) = _
+    rw [hinv]
+  have key := injective_app_top_of_epi_modUnit (e.inv ≫ g ≫ e.hom) inferInstance
+    (show Scheme.Modules.Hom.app (e.inv ≫ g ≫ e.hom) ⊤ (Scheme.Modules.Hom.app e.hom ⊤ x)
+      = Scheme.Modules.Hom.app (e.inv ≫ g ≫ e.hom) ⊤ (Scheme.Modules.Hom.app e.hom ⊤ y) by
+      rw [e1, e1, h])
+  calc x = Scheme.Modules.Hom.app e.inv ⊤ (Scheme.Modules.Hom.app e.hom ⊤ x) := (hinv x).symm
+    _ = Scheme.Modules.Hom.app e.inv ⊤ (Scheme.Modules.Hom.app e.hom ⊤ y) := by rw [key]
+    _ = y := hinv y
+
+/-- **AN EPIMORPHISM `𝒪_Y ⟶ 𝒪_Y` IS INJECTIVE ON EVERY OPEN** (PROVEN) —
+`restrictFunctor` is a left adjoint, so `Epi` restricts to `W`, and
+`(restrictFunctor W.ι).map g` has app at `⊤` equal to `g.app (W.ι ''ᵁ ⊤)` BY
+`rfl`; `W.ι ''ᵁ ⊤ = W` finishes. -/
+theorem injective_app_of_epi_modUnit {Y : Scheme.{u}} (g : modUnit Y ⟶ modUnit Y)
+    (hg : Epi g) (W : Y.Opens) : Function.Injective (Scheme.Modules.Hom.app g W) := by
+  haveI := hg
+  have hres : Epi ((Scheme.Modules.restrictFunctor W.ι).map g) := inferInstance
+  have hW : W.ι ''ᵁ (⊤ : (W : Scheme.{u}).Opens) = W := by simp
+  have key : Function.Injective
+      (Scheme.Modules.Hom.app g (W.ι ''ᵁ (⊤ : (W : Scheme.{u}).Opens))) := by
+    intro x y hxy
+    exact injective_app_top_of_epi_of_iso_modUnit (Scheme.Modules.restrictUnitIso W.ι)
+      ((Scheme.Modules.restrictFunctor W.ι).map g) hres hxy
+  rw [hW] at key
+  exact key
+
+/-- **AN EPIMORPHISM `𝒪_Y ⟶ 𝒪_Y` IS AN ISOMORPHISM** (PROVEN) — injective on
+every open, hence `Mono`; `Z.Modules` is abelian hence balanced. -/
+theorem isIso_of_epi_modUnit {Y : Scheme.{u}} (g : modUnit Y ⟶ modUnit Y) (hg : Epi g) :
+    IsIso g := by
+  haveI := hg
+  haveI : Mono g := mono_of_injective_app g (injective_app_of_epi_modUnit g hg)
+  exact isIso_of_mono_of_epi g
+
+set_option synthInstance.maxHeartbeats 400000 in
+/-- **AN EPIMORPHISM BETWEEN INVERTIBLE SHEAVES IS AN ISOMORPHISM** (PROVEN
+2026-07-31; cut 2026-07-31 out of `isIso_modPullbackSectionIdealMap`) —
+classical, and pure sheaf theory: there is no scheme morphism, no base change
+and no flatness in it.
+
+**THE ROUTE TAKEN**, which is the first half of the route below and NOT its
+second half.  `isIso_of_locally_isIso` above; fix `z : Z`, take trivializing
 opens `U₁ ∋ z` for `A` and `U₂ ∋ z` for `B` from `hA` and `hB`, and restrict both
-trivializations to `U := U₁ ⊓ U₂` with `modRestrictLEIso` and the
-`restrictUnitIso` composite recorded beside it.  `Scheme.Modules.restrictFunctor`
-is a LEFT adjoint (`Scheme.Modules.restrictAdjunction`), so it preserves
-epimorphisms and `f` restricted to `U` is again an epi.  Conjugating by the two
-trivializations turns the goal into
+trivializations to `U := U₁ ⊓ U₂` with `trivializationOfLE`.
+`Scheme.Modules.restrictFunctor` is a LEFT adjoint
+(`Scheme.Modules.restrictAdjunction`), so it preserves epimorphisms and `f`
+restricted to `U` is again an epi.  Conjugating by the two trivializations turns
+the goal into
 
     an epimorphism `g : modUnit U ⟶ modUnit U` is an isomorphism,
 
-and that is the whole content.  For it: `SheafOfModules.unitHomEquiv` in the pin
-identifies `Hom(modUnit U, M)` with the sections of `M`, so `g` corresponds to
-`r ∈ Γ(𝒪_U)` and acts on each open by multiplication by the restriction of `r`.
-`Sheaf.isLocallySurjective_iff_epi` turns the epi hypothesis into local
-surjectivity, and applying it to the section `1` produces a `V ∋ z` and a
-`t ∈ Γ(𝒪_V)` with `r|_V · t = 1`.  So `r|_V` is a unit and `g` restricted to `V`
-is multiplication by a unit, hence an isomorphism; shrink the trivializing open
-from `U` to `V` and appeal to `isIso_of_locally_isIso`.
+which is `isIso_of_epi_modUnit` in the section immediately above.
 
-**A cheaper-looking route that does NOT work, recorded so it is not retried.**
+**AND THE SECOND HALF OF THE OLD ROUTE WAS THE EXPENSIVE ONE — it is recorded
+here, struck, because it is the obvious thing to try and it costs a theory.**  It
+read: *"`Sheaf.isLocallySurjective_iff_epi` turns the epi hypothesis into local
+surjectivity, and applying it to the section `1` produces a `V ∋ z` and a
+`t ∈ Γ(𝒪_V)` with `r|_V · t = 1`."*  That implication is not available:
+`Sheaf.isLocallySurjective_iff_epi` and `Sheaf.isLocallySurjective_iff_epi'` are
+about `Sheaf J (Type w)` and `Sheaf J A`, and reaching either from `Z.Modules`
+needs `SheafOfModules.toSheaf` to preserve epimorphisms — i.e. its exactness,
+which this pin does not state.  Nor does the shrink from `U` to `V` come free:
+`V` is an open of `U`, so transporting `IsIso` back to an open of `Z` costs the
+composition-of-restrictions bookkeeping.
+
+**What replaces it: `Mono` is CHEAPER THAN LOCAL SURJECTIVITY here, and the
+paragraph below claiming otherwise was wrong.**  See the section header above for
+the argument; in one line, `Epi g` may be cancelled against the multiplication
+maps `modUnitMul a`, which yields injectivity of `g.app ⊤` directly, with no
+covering sieve anywhere.  So the correction to the next paragraph is that `Mono`
+is not formal but it IS elementary, and it is `Epi` — not invertibility — that
+supplies it.
+
+**The paragraph that was wrong, kept because its FIRST clause is right.**
 It is tempting to argue abelian-categorically: `Z.Modules` is abelian
 (`Mathlib/Algebra/Category/ModuleCat/Sheaf/Abelian.lean`), so `Epi` plus `Mono`
-gives `IsIso`, and one hopes `Mono` is formal.  It is not — `Mono` is exactly the
-injectivity that the flat-base-change route was for, and nothing about
-invertibility is visible to a purely categorical argument.  The local structure
-has to be used, which is what the route above does.
+gives `IsIso` — TRUE, and it is what the proof does.  What is false is the rest.
+The old text ran *"`Mono` is exactly the injectivity that the flat-base-change
+route was for, and nothing about invertibility is visible to a purely categorical
+argument"*, and concluded that the local structure has to be used.  The local
+structure IS used — but only through the trivializations, to reduce to
+`modUnit`; the `Mono` half then comes from `Epi` by cancellation and needs no
+local structure at all.  Invertibility of `A` and `B` is spent exactly once
+each, on producing the trivializing opens.
 
 **FAITHFULNESS.**  Both invertibility hypotheses are load-bearing.  Drop `hB`
 and take `A = 𝒪`, `B = 𝒪 ⧸ I` for a nonzero ideal sheaf `I` with the quotient
@@ -6328,8 +6571,28 @@ the first projection.  **NOT VACUOUS**: `f = 𝟙` on `modUnit Z` satisfies ever
 hypothesis, and the conclusion is not automatic, by the two witnesses just
 given. -/
 theorem isIso_of_epi_of_isInvertibleSheaf {Z : Scheme.{u}} {A B : Z.Modules}
-    (_hA : IsInvertibleSheaf A) (_hB : IsInvertibleSheaf B) (f : A ⟶ B)
-    (_hf : Epi f) : IsIso f := sorry
+    (hA : IsInvertibleSheaf A) (hB : IsInvertibleSheaf B) (f : A ⟶ B)
+    (hf : Epi f) : IsIso f := by
+  haveI := hf
+  refine isIso_of_locally_isIso f (fun z => ?_)
+  obtain ⟨U₁, hz₁, ⟨α⟩⟩ := hA z
+  obtain ⟨U₂, hz₂, ⟨β⟩⟩ := hB z
+  refine ⟨U₁ ⊓ U₂, ⟨hz₁, hz₂⟩, ?_⟩
+  have α' : A.restrict (U₁ ⊓ U₂).ι ≅ modUnit ((U₁ ⊓ U₂ : Z.Opens) : Scheme.{u}) :=
+    trivializationOfLE inf_le_left α
+  have β' : B.restrict (U₁ ⊓ U₂).ι ≅ modUnit ((U₁ ⊓ U₂ : Z.Opens) : Scheme.{u}) :=
+    trivializationOfLE inf_le_right β
+  haveI : Epi ((Scheme.Modules.restrictFunctor (U₁ ⊓ U₂).ι).map f) := inferInstance
+  have hepi : Epi (α'.inv ≫ (Scheme.Modules.restrictFunctor (U₁ ⊓ U₂).ι).map f ≫ β'.hom) := by
+    haveI : Epi ((Scheme.Modules.restrictFunctor (U₁ ⊓ U₂).ι).map f ≫ β'.hom) := epi_comp _ _
+    exact epi_comp _ _
+  haveI := isIso_of_epi_modUnit
+    (α'.inv ≫ (Scheme.Modules.restrictFunctor (U₁ ⊓ U₂).ι).map f ≫ β'.hom) hepi
+  have hfe : (Scheme.Modules.restrictFunctor (U₁ ⊓ U₂).ι).map f
+      = α'.hom ≫ (α'.inv ≫ (Scheme.Modules.restrictFunctor (U₁ ⊓ U₂).ι).map f ≫ β'.hom)
+        ≫ β'.inv := by simp
+  rw [hfe]
+  infer_instance
 
 /-- **THE COMPARISON MAP IS AN EPIMORPHISM** (sorry leaf, cut 2026-07-31 out of
 `isIso_modPullbackSectionIdealMap`, which is now PROVEN over it and over
@@ -8169,23 +8432,12 @@ noncomputable def toConstSheaf (X : Scheme.{u}) [IrreducibleSpace X] :
   (Scheme.Modules.pullbackPushforwardAdjunction (genericPointHom X)).unit.app (modUnit X) ≫
     (Scheme.Modules.pushforward (genericPointHom X)).map (modPullbackUnitIso _).hom
 
-/-- **A GLOBAL SECTION OF `𝒪_Z`, READ AS A COMPATIBLE FAMILY** — restrict `a`
-from `⊤` to every open.  Compatibility is functoriality of the presheaf plus
-the fact that `Opens Z` has at most one arrow between any two objects. -/
-noncomputable def modUnitSections {Z : Scheme.{u}} (a : Γ(Z, ⊤)) : (modUnit Z).sections :=
-  PresheafOfModules.sectionsMk (fun _ => Z.presheaf.map (homOfLE le_top).op a)
-    (by
-      intro U V f
-      show Z.presheaf.map f (Z.presheaf.map (homOfLE le_top).op a) = _
-      rw [← CategoryTheory.comp_apply, ← Z.presheaf.map_comp]
-      congr 1)
-
-/-- **MULTIPLICATION BY A GLOBAL SECTION**, as an endomorphism of `𝒪_Z`.
-
-`SheafOfModules.unitHomEquiv` is the bijection `(𝒪 ⟶ M) ≃ M.sections`; taken
-at `M = 𝒪` it turns a global section into the endomorphism "multiply by it". -/
-noncomputable def modUnitMul {Z : Scheme.{u}} (a : Γ(Z, ⊤)) : modUnit Z ⟶ modUnit Z :=
-  (modUnit Z).unitHomEquiv.symm (modUnitSections a)
+/-! `modUnitSections` and `modUnitMul` USED TO BE DECLARED HERE.  They were
+HOISTED on 2026-07-31 to the `End (𝒪_Y)` section far above (just before
+`isIso_of_epi_of_isInvertibleSheaf`), whose core lemma
+`injective_app_top_of_epi_modUnit` needs them and which Lean's declaration order
+put out of reach.  Pure move, byte-identical apart from a note added to each
+docstring; `constSmul` below is their only other consumer and is unaffected. -/
 
 /-- **`modTensor` IS FUNCTORIAL ON ARBITRARY MORPHISMS** — `modTensorMapIso`
 without the inverse.
