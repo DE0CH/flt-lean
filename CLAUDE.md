@@ -16151,3 +16151,78 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A DECLARATION-ORDER LEAF DOES NOT ANNOUNCE ITSELF — AND ITS TWIN MAY BE IN THE FILE'S *OTHER SPELLING*
+
+(2026-08-02, `flt-lean-40`, `finite_setOf_intermediateField_hilbertInertiaOutside`
+in `HardlyRamified/HilbertModularity.lean`.  Closed in four lines; the docstring
+had priced it at a base-generalisation of three `MinkowskiUnramified.lean` nodes
+and called that "the single largest item here".)
+
+This file already carries two sections on the declaration-order leaf class, and
+both tell you to find it the same way: **read the docstring for a sentence saying
+the input is declared further down.**  That works when the cutter knew.  It fails
+exactly when the cut is worth the most, because a cutter who knew the statement
+was already proven below would not have cut it.  This one's docstring instead
+gave a careful, numbered, entirely arithmetic cost estimate, and every item of it
+was wrong.
+
+**So run the declaration-order check unconditionally, and run it on the
+STATEMENT.**  It is one command and it does not care what the docstring says:
+
+    grep -n '^theorem \|^def ' <the file> | awk -F: '$1 > <your line>'   # what is BELOW you
+    # then read the conclusions, not the names
+
+What made this one invisible to a name-keyed search is the sharper half:
+**a mature module accumulates two interchangeable SPELLINGS of one clause, and a
+leaf written in one is invisible to a grep in the other.**  Here the inertia
+condition is written both as a predicate,
+
+    HilbertInertiaTrivialAt w N   -- ∀ σ ∈ localInertiaGroup w, decompHom σ ∈ N
+
+and as a bounded quantifier over the subtype,
+
+    ∀ σ : ↥(localInertiaGroup w), hilbertInertiaToGlobalHom F w σ ∈ N
+
+which are DEFINITIONALLY equal (`hilbertInertiaToGlobalHom` is `hilbertDecompHom`
+composed with `Subgroup.subtype`), share no identifier, and are used by different
+halves of the same block.  The leaf was in the second spelling; its proof, 194
+lines below, in the first.  `dupstmt.py` cannot pair them either — they are not
+alpha-variants, they are different terms.
+
+**The tell that the file has such a pair, and it is free: the SAME translation
+one level up is already written down.**  `finite_hilbertInertiaOutsideSubgroups`
+is proven from `finite_setOf_subgroup_hilbertInertiaAt_le_outside` by exactly
+this one-liner at the SUBGROUP level, and its docstring spells out that the two
+differ only in "whether the inertia clause is spelled with
+`hilbertInertiaToGlobalHom` applied to a SUBTYPE element".  Nobody had asked
+whether the same identification closes the FIELD-level leaf.  So: **when a
+docstring explains why two spellings of a clause are the same, grep for every
+other leaf written in the losing spelling** — that paragraph is a general fact
+about the module, not a remark about one proof.
+
+Two riders, both cheap and both paid here:
+
+* **A parent whose docstring names a different declaration from its `by` block is
+  a live signal even when nothing is wrong.**  `finite_hilbertInertiaOutsideSubgroups`
+  says it is proven over `finite_setOf_subgroup_hilbertInertiaAt_le_outside` and
+  its body calls the FIELD-level leaf instead.  Both are true statements and
+  nothing was broken — but that mismatch is exactly what told me the subgroup-level
+  route existed, was proven, and would have made my target CONSUMERLESS had I
+  re-pointed the parent at it.  I did not re-point it, for that reason; say in the
+  docstring which route the body takes and why the other was left alone, or the
+  next reader will "tidy" a live leaf into a dead one.
+* **Moving DOWN is the safe direction and the receipt is a line multiset.**  The
+  block moved 194 lines past four declarations, none of which cites it.  Do the
+  move programmatically in ORIGINAL coordinates, assert the boundary lines first,
+  and require `Counter(before) == Counter(after)` with an unchanged line count —
+  `git diff --stat` reads `100 insertions / 72 deletions` for a move plus a
+  docstring rewrite and proves nothing.  Then re-run `parsecheck.py`: a block that
+  starts one line late strands the previous docstring, and the delimiters stay
+  balanced while the file stops parsing.
+
+Accounting: `−1` on the frontier, and the sorry-TOKEN count fell 14 → 13 in step
+with the warning count, which is what rules out an anonymous inner `sorry` having
+been swapped in for the named one.  No mathematics was done; this was a leaf that
+had been proven for two days in the same file and could not be reached from where
+it stood.
