@@ -40443,6 +40443,141 @@ the zero section — `fixPt_injective` is `cancel_mono (equalizer.ι …)` where
 kernel version spends `pullback.hom_ext`.
 -/
 
+/-- **YONEDA FOR `RelPoint`: a NATURAL family of endomorphisms of the functor of
+points IS precomposition with a single morphism of schemes** (PROVEN 2026-07-30,
+flt-lean-33; no leaf, no hypothesis beyond naturality).
+
+`RelPoint.self f = ⟨𝟙, _⟩` is the tautological point and `RelPoint.pre_self` says
+every relative point is that one pulled back along itself — both are already in
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, so the whole proof is a single
+instance of `hu` plus that rewrite.  Writing `û := (u E f (RelPoint.self f)).1`,
+the conclusion is `u U g x = ⟨x.1 ≫ û, _⟩` for EVERY test object.
+
+**NO additivity, no geometry, no base.**  This is the "Yoneda computation spelled
+out" that both `exists_end_of_relPointEndo` and `relPointEndo_ext` describe in
+prose; it is stated once here so neither has to redo it, and so that a successor
+attacking the remaining half of the bridge gets the scheme morphism `û` for free.
+
+NOT VACUOUS and not a tautology in the wrong direction: naturality is genuinely
+consumed — a non-natural family (say, one that is the identity at `g = 𝟙` and
+zero elsewhere) satisfies nothing here. -/
+theorem relPointEndo_apply_eq_comp {S E : Scheme.{0}} {f : E ⟶ S}
+    (u : ∀ (U : Scheme.{0}) (g : U ⟶ S), RelPoint f g → RelPoint f g)
+    (hu : ∀ (U' U : Scheme.{0}) (h : U' ⟶ U) (g : U ⟶ S) (g' : U' ⟶ S) (hg : h ≫ g = g')
+        (x : RelPoint f g),
+      u U' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (u U g x))
+    {U : Scheme.{0}} (g : U ⟶ S) (x : RelPoint f g) :
+    (u U g x).1 = x.1 ≫ (u E f (RelPoint.self f)).1 := by
+  have h := hu U E x.1 f g x.2 (RelPoint.self f)
+  rw [RelPoint.pre_self] at h
+  exact congrArg Subtype.val h
+
+/-- **A NATURAL FAMILY OF ENDOMORPHISMS IS DETERMINED BY ITS `ℚ̄`-POINTS**
+(introduced 2026-07-29, flt-lean-33, as the second half of the cut of the
+anonymous inner sorry of `phi_or_conj_of_isEllipticIsoOf`; **PROVEN 2026-07-30,
+flt-lean-33 — it is no longer a leaf, and it added none**).
+
+**WHERE THE TWO HALVES CAME FROM.**  The Yoneda half is
+`relPointEndo_apply_eq_comp` directly above.  The density half — which the
+paragraph below describes as "density of closed points and nothing else", and
+which the cut expected to need building — is **already in mathlib**, as
+`AlgebraicGeometry.ext_of_apply_eq`
+(`Mathlib/AlgebraicGeometry/AlgClosed/Basic.lean`, publicly imported here through
+`ModularCurve/X0.lean`): over an algebraically closed field, two morphisms out of
+a REDUCED scheme into a scheme SEPARATED and LOCALLY OF FINITE TYPE over the base
+agree as soon as they agree on the closed points of a dense locally closed
+subset.  Take that subset to be everything.  The same file's
+`pointOfClosedPoint` is what turns a closed point of `d.E` back into a
+`ℚ̄`-point, i.e. into an element of `RelPoint d.f (𝟙 …)` on which `hpt` may be
+used; that direction is the Nullstellensatz and is the only place algebraic
+closedness enters.
+
+The three instances mathlib asks for are exactly the three fields of
+`AbelianSchemeStruct` this leaf's prose already named: `IsReduced d.E` from
+`d.ab.smooth` through `AlgebraicGeometry.isReduced_of_smooth_over_field`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`, sorry-free),
+and `IsSeparated d.f` / `LocallyOfFiniteType d.f` from `d.ab.proper`, since
+`IsProper` extends both.  **Nothing about `ℚ̄` beyond `IsAlgClosed` is used**, so
+the argument would transport verbatim to any algebraically closed base.
+
+TRUE, and it is density of closed points and nothing else.  Naturality alone
+makes each family a morphism of schemes, by the Yoneda computation spelled out on
+`exists_end_of_relPointEndo`: `û := (u d.E d.f ⟨𝟙, Category.id_comp _⟩).1` and
+`u U g x = ⟨x.1 ≫ û, _⟩` for every `x`, so `u = v` iff `û = v̂`.  Now `d.E` is
+smooth (`d.ab.smooth`), proper (`d.ab.proper`) and geometrically connected
+(`d.ab.connected`) over `Spec ℚ̄`, hence an integral — in particular REDUCED —
+scheme of finite type over an algebraically closed field, and `d.E` is separated
+over the base because it is proper.  The equaliser of `û` and `v̂` is therefore a
+closed subscheme containing every closed point; the closed points of a finite-type
+scheme over an algebraically closed field are exactly its `ℚ̄`-points (Nullstellensatz)
+and are dense (Jacobson), so on a reduced scheme the equaliser is everything.
+
+**ADDITIVITY IS NOT ASSUMED AND IS NOT NEEDED.**  The statement is about bare
+natural families; both consumers below supply families that happen to be
+additive, and neither uses that here.  Keeping it out is what lets the second
+branch of `phi_eq_or_add_phi_eq` instantiate `v` at the IDENTITY family, whose
+naturality is `rfl`.
+
+**The level `N` is irrelevant** and is not constrained.
+
+NOT VACUOUS, and not trivial in either direction: `u = v` satisfies it, and the
+hypothesis `hpt` is a genuine restriction — two DIFFERENT natural families (say
+`h.phi` and the identity, at a `d` carrying complex multiplication) differ
+already at `ℚ̄`-points, which is what makes the conclusion informative rather
+than an equality of two names. -/
+theorem relPointEndo_ext {N : ℕ}
+    {d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (u v : ∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))),
+      RelPoint d.f g → RelPoint d.f g)
+    (hu : ∀ (U' U : Scheme.{0}) (h : U' ⟶ U)
+        (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+        (g' : U' ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))) (hg : h ≫ g = g')
+        (x : RelPoint d.f g),
+      u U' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (u U g x))
+    (hv : ∀ (U' U : Scheme.{0}) (h : U' ⟶ U)
+        (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+        (g' : U' ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))) (hg : h ≫ g = g')
+        (x : RelPoint d.f g),
+      v U' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (v U g x))
+    (hpt : ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      u _ (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) x
+        = v _ (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) x) :
+    ∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+      (x : RelPoint d.f g), u U g x = v U g x := by
+  classical
+  haveI := d.ab.smooth
+  haveI := d.ab.proper
+  haveI : IsReduced d.E := AlgebraicGeometry.isReduced_of_smooth_over_field d.f
+  haveI : LocallyOfFiniteType ((u d.E d.f (RelPoint.self d.f)).1 ≫ d.f) := by
+    rw [(u d.E d.f (RelPoint.self d.f)).2]; infer_instance
+  -- **THE YONEDA HALF.**  Both families are precomposition with a single morphism
+  -- of schemes, namely their value at the tautological point.
+  have hkey : (u d.E d.f (RelPoint.self d.f)).1 = (v d.E d.f (RelPoint.self d.f)).1 := by
+    -- **THE DENSITY HALF**, which is `AlgebraicGeometry.ext_of_apply_eq` verbatim:
+    -- `d.E` is reduced (smooth over `ℚ̄`), locally of finite type and separated over
+    -- `ℚ̄` (proper), so two `ℚ̄`-morphisms agreeing on the closed points agree.
+    refine AlgebraicGeometry.ext_of_apply_eq d.f Set.univ
+      ⟨Set.univ, Set.univ, isOpen_univ, isClosed_univ, by simp⟩ dense_univ ?_
+      ((u d.E d.f (RelPoint.self d.f)).2.trans (v d.E d.f (RelPoint.self d.f)).2.symm)
+    -- a closed point of `d.E` IS a `ℚ̄`-point, by `pointEquivClosedPoint`
+    rintro x - hx
+    have hy := AlgebraicGeometry.pointOfClosedPoint_comp d.f x hx
+    have h3 : AlgebraicGeometry.pointOfClosedPoint d.f x hx
+          ≫ (u d.E d.f (RelPoint.self d.f)).1
+        = AlgebraicGeometry.pointOfClosedPoint d.f x hx
+          ≫ (v d.E d.f (RelPoint.self d.f)).1 := by
+      rw [← relPointEndo_apply_eq_comp u hu (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+          ⟨AlgebraicGeometry.pointOfClosedPoint d.f x hx, hy⟩,
+        ← relPointEndo_apply_eq_comp v hv (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+          ⟨AlgebraicGeometry.pointOfClosedPoint d.f x hx, hy⟩,
+        hpt ⟨AlgebraicGeometry.pointOfClosedPoint d.f x hx, hy⟩]
+    simpa using congrArg
+      (fun m : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ d.E =>
+        m.base (IsLocalRing.closedPoint (AlgebraicClosure ℚ))) h3
+  intro U g x
+  refine Subtype.ext ?_
+  rw [relPointEndo_apply_eq_comp u hu g x, relPointEndo_apply_eq_comp v hv g x, hkey]
+
 section FixedLocusHopf
 
 open _root_.CategoryTheory _root_.CategoryTheory.Limits _root_.AlgebraicGeometry
@@ -43886,140 +44021,6 @@ theorem exists_end_of_relPointEndo {N : ℕ}
             (ψ : AddMonoid.End W.toAffine.Point) (e x) = e (u _ _ x) :=
   sorry
 
-/-- **YONEDA FOR `RelPoint`: a NATURAL family of endomorphisms of the functor of
-points IS precomposition with a single morphism of schemes** (PROVEN 2026-07-30,
-flt-lean-33; no leaf, no hypothesis beyond naturality).
-
-`RelPoint.self f = ⟨𝟙, _⟩` is the tautological point and `RelPoint.pre_self` says
-every relative point is that one pulled back along itself — both are already in
-`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, so the whole proof is a single
-instance of `hu` plus that rewrite.  Writing `û := (u E f (RelPoint.self f)).1`,
-the conclusion is `u U g x = ⟨x.1 ≫ û, _⟩` for EVERY test object.
-
-**NO additivity, no geometry, no base.**  This is the "Yoneda computation spelled
-out" that both `exists_end_of_relPointEndo` and `relPointEndo_ext` describe in
-prose; it is stated once here so neither has to redo it, and so that a successor
-attacking the remaining half of the bridge gets the scheme morphism `û` for free.
-
-NOT VACUOUS and not a tautology in the wrong direction: naturality is genuinely
-consumed — a non-natural family (say, one that is the identity at `g = 𝟙` and
-zero elsewhere) satisfies nothing here. -/
-theorem relPointEndo_apply_eq_comp {S E : Scheme.{0}} {f : E ⟶ S}
-    (u : ∀ (U : Scheme.{0}) (g : U ⟶ S), RelPoint f g → RelPoint f g)
-    (hu : ∀ (U' U : Scheme.{0}) (h : U' ⟶ U) (g : U ⟶ S) (g' : U' ⟶ S) (hg : h ≫ g = g')
-        (x : RelPoint f g),
-      u U' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (u U g x))
-    {U : Scheme.{0}} (g : U ⟶ S) (x : RelPoint f g) :
-    (u U g x).1 = x.1 ≫ (u E f (RelPoint.self f)).1 := by
-  have h := hu U E x.1 f g x.2 (RelPoint.self f)
-  rw [RelPoint.pre_self] at h
-  exact congrArg Subtype.val h
-
-/-- **A NATURAL FAMILY OF ENDOMORPHISMS IS DETERMINED BY ITS `ℚ̄`-POINTS**
-(introduced 2026-07-29, flt-lean-33, as the second half of the cut of the
-anonymous inner sorry of `phi_or_conj_of_isEllipticIsoOf`; **PROVEN 2026-07-30,
-flt-lean-33 — it is no longer a leaf, and it added none**).
-
-**WHERE THE TWO HALVES CAME FROM.**  The Yoneda half is
-`relPointEndo_apply_eq_comp` directly above.  The density half — which the
-paragraph below describes as "density of closed points and nothing else", and
-which the cut expected to need building — is **already in mathlib**, as
-`AlgebraicGeometry.ext_of_apply_eq`
-(`Mathlib/AlgebraicGeometry/AlgClosed/Basic.lean`, publicly imported here through
-`ModularCurve/X0.lean`): over an algebraically closed field, two morphisms out of
-a REDUCED scheme into a scheme SEPARATED and LOCALLY OF FINITE TYPE over the base
-agree as soon as they agree on the closed points of a dense locally closed
-subset.  Take that subset to be everything.  The same file's
-`pointOfClosedPoint` is what turns a closed point of `d.E` back into a
-`ℚ̄`-point, i.e. into an element of `RelPoint d.f (𝟙 …)` on which `hpt` may be
-used; that direction is the Nullstellensatz and is the only place algebraic
-closedness enters.
-
-The three instances mathlib asks for are exactly the three fields of
-`AbelianSchemeStruct` this leaf's prose already named: `IsReduced d.E` from
-`d.ab.smooth` through `AlgebraicGeometry.isReduced_of_smooth_over_field`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`, sorry-free),
-and `IsSeparated d.f` / `LocallyOfFiniteType d.f` from `d.ab.proper`, since
-`IsProper` extends both.  **Nothing about `ℚ̄` beyond `IsAlgClosed` is used**, so
-the argument would transport verbatim to any algebraically closed base.
-
-TRUE, and it is density of closed points and nothing else.  Naturality alone
-makes each family a morphism of schemes, by the Yoneda computation spelled out on
-`exists_end_of_relPointEndo`: `û := (u d.E d.f ⟨𝟙, Category.id_comp _⟩).1` and
-`u U g x = ⟨x.1 ≫ û, _⟩` for every `x`, so `u = v` iff `û = v̂`.  Now `d.E` is
-smooth (`d.ab.smooth`), proper (`d.ab.proper`) and geometrically connected
-(`d.ab.connected`) over `Spec ℚ̄`, hence an integral — in particular REDUCED —
-scheme of finite type over an algebraically closed field, and `d.E` is separated
-over the base because it is proper.  The equaliser of `û` and `v̂` is therefore a
-closed subscheme containing every closed point; the closed points of a finite-type
-scheme over an algebraically closed field are exactly its `ℚ̄`-points (Nullstellensatz)
-and are dense (Jacobson), so on a reduced scheme the equaliser is everything.
-
-**ADDITIVITY IS NOT ASSUMED AND IS NOT NEEDED.**  The statement is about bare
-natural families; both consumers below supply families that happen to be
-additive, and neither uses that here.  Keeping it out is what lets the second
-branch of `phi_eq_or_add_phi_eq` instantiate `v` at the IDENTITY family, whose
-naturality is `rfl`.
-
-**The level `N` is irrelevant** and is not constrained.
-
-NOT VACUOUS, and not trivial in either direction: `u = v` satisfies it, and the
-hypothesis `hpt` is a genuine restriction — two DIFFERENT natural families (say
-`h.phi` and the identity, at a `d` carrying complex multiplication) differ
-already at `ℚ̄`-points, which is what makes the conclusion informative rather
-than an equality of two names. -/
-theorem relPointEndo_ext {N : ℕ}
-    {d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
-    (u v : ∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))),
-      RelPoint d.f g → RelPoint d.f g)
-    (hu : ∀ (U' U : Scheme.{0}) (h : U' ⟶ U)
-        (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
-        (g' : U' ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))) (hg : h ≫ g = g')
-        (x : RelPoint d.f g),
-      u U' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (u U g x))
-    (hv : ∀ (U' U : Scheme.{0}) (h : U' ⟶ U)
-        (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
-        (g' : U' ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))) (hg : h ≫ g = g')
-        (x : RelPoint d.f g),
-      v U' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (v U g x))
-    (hpt : ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
-      u _ (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) x
-        = v _ (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) x) :
-    ∀ (U : Scheme.{0}) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
-      (x : RelPoint d.f g), u U g x = v U g x := by
-  classical
-  haveI := d.ab.smooth
-  haveI := d.ab.proper
-  haveI : IsReduced d.E := AlgebraicGeometry.isReduced_of_smooth_over_field d.f
-  haveI : LocallyOfFiniteType ((u d.E d.f (RelPoint.self d.f)).1 ≫ d.f) := by
-    rw [(u d.E d.f (RelPoint.self d.f)).2]; infer_instance
-  -- **THE YONEDA HALF.**  Both families are precomposition with a single morphism
-  -- of schemes, namely their value at the tautological point.
-  have hkey : (u d.E d.f (RelPoint.self d.f)).1 = (v d.E d.f (RelPoint.self d.f)).1 := by
-    -- **THE DENSITY HALF**, which is `AlgebraicGeometry.ext_of_apply_eq` verbatim:
-    -- `d.E` is reduced (smooth over `ℚ̄`), locally of finite type and separated over
-    -- `ℚ̄` (proper), so two `ℚ̄`-morphisms agreeing on the closed points agree.
-    refine AlgebraicGeometry.ext_of_apply_eq d.f Set.univ
-      ⟨Set.univ, Set.univ, isOpen_univ, isClosed_univ, by simp⟩ dense_univ ?_
-      ((u d.E d.f (RelPoint.self d.f)).2.trans (v d.E d.f (RelPoint.self d.f)).2.symm)
-    -- a closed point of `d.E` IS a `ℚ̄`-point, by `pointEquivClosedPoint`
-    rintro x - hx
-    have hy := AlgebraicGeometry.pointOfClosedPoint_comp d.f x hx
-    have h3 : AlgebraicGeometry.pointOfClosedPoint d.f x hx
-          ≫ (u d.E d.f (RelPoint.self d.f)).1
-        = AlgebraicGeometry.pointOfClosedPoint d.f x hx
-          ≫ (v d.E d.f (RelPoint.self d.f)).1 := by
-      rw [← relPointEndo_apply_eq_comp u hu (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-          ⟨AlgebraicGeometry.pointOfClosedPoint d.f x hx, hy⟩,
-        ← relPointEndo_apply_eq_comp v hv (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-          ⟨AlgebraicGeometry.pointOfClosedPoint d.f x hx, hy⟩,
-        hpt ⟨AlgebraicGeometry.pointOfClosedPoint d.f x hx, hy⟩]
-    simpa using congrArg
-      (fun m : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ d.E =>
-        m.base (IsLocalRing.closedPoint (AlgebraicClosure ℚ))) h3
-  intro U g x
-  refine Subtype.ext ?_
-  rw [relPointEndo_apply_eq_comp u hu g x, relPointEndo_apply_eq_comp v hv g x, hkey]
 
 /-- **TRANSPORT: the datum's CM endomorphism, read in `WeierstrassCurve.End` of a
 Weierstrass model** (introduced 2026-07-28 by the cut of
