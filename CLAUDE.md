@@ -16151,3 +16151,56 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## TWO CLAUSES OPPOSITELY MONOTONE IN THE PRODUCED OBJECT ⟹ THE LEAF IS ATOMIC IN IT — AND THE INTRINSIC PIN MOVES THE HARD HALF RATHER THAN REMOVING IT
+
+(2026-08-02, `flt-lean-273`, `exists_eisensteinQuotientCert_of_heckeDecomposition` in
+`FreyCurve/MazurTorsion.lean`.)  This file already records the rule for a DIMENSION
+COUNT whose two halves squeeze from opposite sides.  The same test applies, and is
+much cheaper to run, on any leaf of the shape
+
+    ∃ A (a quotient / subobject / extension), P A ∧ Q A
+
+**Ask which way each of `P` and `Q` moves when `A` is replaced by a further quotient.**
+For Mazur's Eisenstein quotient, `A` is a quotient of `J₀(N)` and
+
+* the formal-immersion certificate is MONOTONE UP — `cert (u ≫ π) ⟹ cert u`, because
+  both sides are injectivity on tangent vectors and the two maps factor through each
+  other, so a quotient CLOSER to `J` satisfies it as soon as a further one does;
+* the rank-`0` clause is MONOTONE DOWN — a quotient of a rank-`0` abelian variety has
+  rank `0` (Poincaré), so a quotient FURTHER from `J` satisfies it as soon as a nearer
+  one does.
+
+Opposite monotonicity means **no relaxation of `A` separates the clauses**, so every
+split along the `A`-axis is refuted at once, in both directions, without hunting for a
+witness per direction.  It also hands you the witnesses for free: the extreme
+`A := J`, `u := 𝟙` satisfies the monotone-up clause **as a consequence of the leaf
+itself** (write the leaf's witness as `𝟙 ≫ u_e`), and fails the monotone-down one at
+any level where `J(ℚ)` has positive rank.  That is a cheaper refutation than any
+witness needing arithmetic input — here it replaced one that had to know when
+`q` divides a Manin constant.
+
+**AND THE REPAIR THE MONOTONICITY SUGGESTS IS THE TRAP.**  Once you see the squeeze,
+the object is pinned intrinsically: `A` may be taken MAXIMAL for the monotone-down
+clause (here, the maximal torsion quotient), the leaf becomes *equivalent* to "the
+monotone-up clause holds for that maximal object", and the pin needs none of the
+theory the file was blaming (no Eisenstein ideal, no `⋂_k I^k`).  **Check what proving
+the monotone-up clause for the maximal object costs before taking the cut.**  Here the
+only route to it is "the maximal object dominates `J_e`", which IS the hard half — so
+the cut moves the hard half into the other leaf and additionally pays for the
+maximality theory.  Net worse.  A pin that makes a split EXPRESSIBLE is not a pin that
+makes it CHEAPER, and the two are easy to conflate because the expressibility
+obstruction is the one that is visible first.
+
+**Corollary, and it is a standing check on any route note that names a helper lemma:
+read the DIRECTION of the helper's maps.**  That leaf's recorded route proposed to get
+`A(ℚ)` torsion from `isTorsion_of_finite_jointKer`, whose signature is
+`(φ : ∀ i, G →+ H i) → … → IsTorsion G` — maps OUT of the group whose torsion is
+wanted.  The Hecke decomposition supplies `u i : J ⟶ A i` and a joint kernel inside
+`J(ℚ)`, i.e. maps out of `J` and not out of `A`; instantiated as written it would
+prove `J₀(N)(ℚ)` torsion, false at the file's own non-vacuity witness `N = 37`.  The
+factorisations `A ⟶ A i` the route needs exist only BECAUSE `A` is the Eisenstein
+quotient, so they are extra OUTPUT of the leaf, and the route is a change to the
+leaf's conclusion rather than a reduction of it.  **A route that feeds a lemma the
+wrong way round reads exactly like one that feeds it the right way; the signature is
+the only thing that tells them apart, and it is one `grep`.**
