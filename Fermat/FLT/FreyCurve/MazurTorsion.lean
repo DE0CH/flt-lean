@@ -21638,7 +21638,61 @@ the sibling leaf `exists_isogenyIsom_of_gamma0Model_isBaseChangeOf` reuse it.
 modelled curves that is not induced by any morphism of the elliptic schemes —
 impossible, an isogeny of elliptic curves over `ℚ̄` descending to `ℚ` IS a
 morphism of the `ℚ`-models, and the model clause is precisely the statement
-that those models sit inside `d.E`, `d'.E`. -/
+that those models sit inside `d.E`, `d'.E`.
+
+## MEASURED 2026-08-02 (`flt-lean-78`): THE FIRST HALF IS ALREADY PROVEN, AND
+## THE SPLIT IS BLOCKED BY AN UNEXPORTED CLAUSE, NOT BY MATHEMATICS
+
+**`ε`, `ε'` AND BOTH EQUIVARIANCE CLAUSES ARE FREE.**  `Fermat.exists_`
+`geomFibreAddEquiv_of_weierstrassModel` (`ModularCurve/EllipticScheme.lean`,
+PROVEN) takes exactly `IsWeierstrassModel d.ab E` — the two forms are
+definitionally equal, `weierstrassAffine` and `weierstrassAffineStr` unfold to
+its spelled-out hypothesis — and returns the Galois-equivariant `≃+`.  Verified
+in a scratch module: with a NON-public `import Fermat.FLT.ModularCurve.`
+`EllipticScheme` added to this file, the whole first half is
+
+    exists_geomFibreAddEquiv_of_weierstrassModel E d.ab hmod
+
+and it elaborates green (`EXIT=0`).  No cycle is created: that module's import
+cone is 58 modules and contains neither this file nor `X0.lean`.  So the route's
+first bullet (`ε` from the chart, additivity by rigidity, equivariance free) is
+NOT open work — it was done on 2026-07-27 and this leaf predates knowing it.
+
+**WHAT IS LEFT is the second bullet only**: realise a Galois-equivariant isogeny
+as a morphism of the elliptic schemes.
+
+**WHY THE OBVIOUS SPLIT IS NOT AVAILABLE, and this is the finding.**  Cutting
+"produce `ε`" from "realise `χ` against `ε`" requires the residual to receive
+`ε`, `ε'` PINNED.  Quantifying them universally is NOT a safe restatement: at
+`E' = E`, `d' = d`, `χ = id` the `∀ ε ε'` form asserts that every
+Galois-equivariant additive automorphism `α = ε' ∘ ε⁻¹` of `E(ℚ̄)` is induced by
+a scheme endomorphism, i.e. lies in `End_ℚ(E) = ℤ`; but Tate/Faltings only makes
+`α` a `ℤ̂ˣ`-scalar on torsion, and `ℤ̂ˣ ⊄ ℤ`.  So that form is Faltings-hard at
+best and may be FALSE — do not state it.  This is the same `α`-gap as
+`liesIn_congr_of_geomFibreAddEquiv`, met one level up.
+
+**AND THE PIN CANNOT BE STATED IN THIS FILE.**  `exists_geomFibreAddEquiv_of_`
+`weierstrassModel` establishes chart-compatibility INTERNALLY — its proof takes
+`ι` from the model clause, gets `u` with `ι₀ ≫ u = ι` from
+`exists_isIso_of_affineChart`, and sets `e := e₀.trans (relPointPostEquiv u)` —
+and its CONCLUSION exports only the equivariance.  ("That theorem hands back X"
+is a claim about a conclusion, never about a proof.)  The clause that would pin
+`ε` has to be phrased through `ι` and the functor of points
+(`OnAffineWeierstrass`, `EllipticScheme.lean` — it exists, but is local to the
+Jacobian-criterion section and used nowhere else), and NONE of those names is
+utterable here: `EllipticScheme` is imported non-publicly on purpose, so a
+statement in this file cannot mention them, and making the import public is
+known-bad (it propagates the reserved token `over`).
+
+**SO THE REPAIR IS ONE CLAUSE IN ANOTHER MODULE, and it is the thing to
+dispatch first**: strengthen `exists_geomFibreAddEquiv_of_weierstrassModel`'s
+conclusion to also export the chart-compatibility of `e` that its proof already
+has, phrased through `ι` alone (not through `proj`, which must not escape), and
+re-export that strengthened form from `X0.lean` beside
+`exists_weierstrassModel_geomFibreAddEquiv_of_gamma0Datum`.  Once it lands, this
+leaf splits cleanly into the free half and a residual that mentions no `≃+` at
+all.  Until then the two halves must stay in one statement, exactly as the
+paragraph above says for the two DIRECTIONS. -/
 theorem Fermat.exists_geomFibreAddEquiv_hom_of_isWeierstrassModel {N M : ℕ}
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (E' : WeierstrassCurve ℚ) [E'.IsElliptic]
     (d : Gamma0Datum N SpecQ) (d' : Gamma0Datum M SpecQ)
