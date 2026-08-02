@@ -31251,3 +31251,95 @@ through them (build the group data, then add the properness the subfunctor
 supplies as a separate conjunct) keeps both consumed, is the honest shape of the
 argument, and shrinks the diff in a hot file by not deleting a structure.  Check
 for that before extending a deletion to everything the loser touched.
+## A REPAIR TASK'S FIRST ACT IS TO REPRODUCE THE DEFECT — the release that fixed it may already have PUBLISHED
+(2026-08-02, `flt-lean-74`.)  Every rule in this file about a stale target is
+written for a PROVER: your leaf may already be proven, so check `merger`.  A
+REPAIR task — "make module M compile", "the build is red at X" — has the same
+failure and it is worse, because a repair prompt does not name a declaration to
+grep, it names a SYMPTOM, and a symptom cannot be checked with `git show`.
+The prompt here opened: *"make `X0.lean` COMPILE.  This is THE release blocker
+and has been since release 25 — releases 27, 29 and 30 were all HELD for it, and
+it is why 102 of the project's 380 open leaves cannot be worked on by anybody"*,
+and it went on to classify 39 remaining errors into two groups with line numbers.
+Every word was true of release 30.  **Release 33 had since PUBLISHED with X0's
+whole cone green**, so the entire task — nine declaration-order breaks, twelve
+genuine errors, three predicted downstream build rounds — did not exist.
+**Reproducing it cost four minutes and two commands**, because the release
+snapshot's sha happened to equal `merger`'s tip:
+    cat ~/.flt-release-lake/sha            # == git rev-parse merger  ⟹ its artifacts ARE this tree's
+    rsync -a --delete ~/.flt-release-lake/build/ /scratch/chend-flt/flt-lean-N/.lake/build/   # 2 min
+    lake build Fermat.FLT.ModularCurve.X0  # `Build completed successfully (5276 jobs)`, EXIT=0, 0 errors
+    lake build                             # 5702/5703, EXIT=1 from the SORRY GATE ALONE, 377 sorries
+So, before any repair:
+* **`git merge --ff-only merger`, then reproduce.**  A repair prompt's error
+  count is a measurement, and measurements have a commit attached; this one was
+  three releases old.
+* **Read `tools/merge/RELEASE-<n>-HANDOVER.md` for the LATEST `n`, not the one
+  your prompt cites.**  The handover is where a fixed blocker is recorded, and
+  it says so in its title.  Mine said `PUBLISHED — X0's cone green for the first
+  time since release 25` in the subject line of the commit itself.
+* **Judge the whole-tree build by the NEGATIVE test**, per release 33's own
+  lesson: `EXIT=1` with `SORRY GATE FAILED` as the only error, zero other
+  `error` lines, and a job high-water mark within one of the target count.  A
+  build that died early also has no errors in the modules it never reached.
+And then do not stop.  A repair task that finds nothing to repair still holds a
+fully warm, green, current tree — which is the most expensive prerequisite for
+any leaf in that module — so spend the cycle on leaves in the file you were sent
+to.  Report the obsolescence in `to_merger` so the queue entry dies.
+## AN ABSENCE CLAIM AND ITS REFUTATION CAN BE THE SAME DAY — the DATE is not the evidence, the TREE GREPPED is
+(Same run, and it closed the reducedness half of a leaf whose docstring called
+it "a mathlib-scale contribution".)
+`isIntegral_of_smoothProperCurve` in `X0.lean` carried this, with a date and
+three file-and-line references:
+> The pin carries no `Smooth ⟹ IsRegularLocalRing` and no
+> `Smooth ⟹ GeometricallyReduced`; **re-verified 2026-07-31**, every cross-file
+> mention of `GeometricallyReduced` is … and the missing middle is "étale over a
+> reduced ring is reduced" beyond the field case, which is a **mathlib-scale
+> contribution**.
+Every mathlib reference in it is correct.  And
+`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean` — a
+`public import` of `X0.lean`, at line 965 of its own header — carries
+`GeometricallyReduced.of_smooth`, `isReduced_of_smooth_over_field` and
+`isReduced_of_smooth_over_domain`, all PROVEN.  The domain-base form was written
+**on 2026-07-31**, the same day the absence was re-verified, for a different
+consumer (`MazurTorsion.lean`'s `eq_of_comp_open_x0JNeronModel`).
+This is the standing "check your own tree, not just the pin" rule, and the new
+part is the timing: **a re-verification date is not evidence, because the fleet
+writes `Fermat/FLT/Mathlib/` faster than a day.**  Two agents can be adding the
+lemma and declaring it absent within hours of each other, and the one declaring
+it absent leaves a dated paragraph that reads like a settled fact for weeks.  The
+discriminator is never the date — it is **which tree the grep ran over**, and an
+absence paragraph that does not say so is worth exactly one `grep -rn` of
+`Fermat/FLT/Mathlib/`.
+Two riders from the same repair, both worth copying:
+* **When you find one, correct it IN PLACE and say what the grep actually was.**
+  The correction is what stops the next three agents re-deriving it; deleting the
+  paragraph loses the record that the mathlib half was checked and is true.
+* **A closed gap does not close the leaf, and saying so is half the value.**  A
+  sibling leaf's docstring said its "ONLY gap" was the same missing step.  With
+  the step supplied it is still a real leaf — it also owes a generic point and a
+  stalk computation — so the correction there had to *enumerate what remains*,
+  or the next reader inherits a second false expectation in place of the first.
+## A DOCSTRING THAT SKETCHES A CLASSICAL ARGUMENT IN NUMBERED STEPS IS A GREP QUERY
+(Same run.  `isIntegral_curveBaseChange_specQ` was open for two days and closed
+in four lines.)
+That leaf's docstring said, correctly, *"TRUE and standard, in three steps, none
+of which needs anything not at this pin"*, and listed them: smooth over a field
+⟹ regular ⟹ reduced; connected + domain stalks ⟹ irreducible; both ⟹
+`IsIntegral`.  Those three steps are, line for line, the proof of
+`AlgebraicGeometry.isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`
+— PROVEN 2026-07-27 in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`,
+which `X0.lean` `public import`s.  The two base-change stability lemmas the
+statement needed on top of it (`smoothOfRelativeDimension_curveBaseChangeProj`,
+`geometricallyConnected_curveBaseChangeProj`) are PROVEN in `RelativePicard.lean`
+and already used side by side in `X1.lean`.
+**So a step-by-step sketch is not a plan, it is a description of a theorem, and
+the theorem may exist.**  Grep the CONCLUSION of the sketch — not the leaf's own
+vocabulary, and not the theory's name — over `Fermat/FLT/Mathlib/` first, since
+that subtree is where exactly this class of statement is kept.  Cost of the check:
+one `grep`.  Cost of skipping it here: two days of a leaf that four lines close.
+Corollary, and it is the reason the check is cheap enough to run every time: the
+sketch also tells you the SHAPE of the name to grep for.  "Smooth over a field is
+regular hence reduced, connected plus domain stalks is irreducible" is
+`isIntegral_of_smooth…_of_…connected`, and this project names such lemmas after
+their hypotheses in exactly that order.
