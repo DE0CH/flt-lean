@@ -25859,6 +25859,12 @@ half of the search; grep the project too.
   surjectivity half is not needed. `jInvariant_smul` in the same development is
   the *other* half of that bijection and is already proven, so this leaf is
   mathlib-shaped and reusable (the Heegner cluster next door wants it too).
+  **PROVEN 2026-08-01**, over the strictly smaller **LEAF B′**,
+  `exists_smul_eq_of_weightTwelve_eq_zero`: *a nonzero level-one modular form of
+  weight `12` has at most one zero orbit in `ℍ`*. The `j` is gone from the open
+  statement — `E₄³ − cΔ` is a weight-`12` form whose zeros are exactly `{j = c}`,
+  since `Δ` is nowhere zero — so what remains is the valence formula alone, stated
+  in mathlib's vocabulary. The two are EQUIVALENT (`dim M₁₂ = 2`); see that leaf.
 * **LEAF A, `exists_isCMJInvariant_complexEmbedding_eq`**: the analytic
   construction — `ℂ/(ℤ + ℤτ_f)` is an elliptic curve whose endomorphism ring is
   exactly `ℤ[√−n]`, and its `j` is the algebraic number `j(τ_f)`. This is where
@@ -26141,7 +26147,130 @@ lemma formPoint_act (f : Fermat.BinaryQuadraticForm) (hf : f.IsPosDef) (γ : SL(
   rw [UpperHalfPlane.coe_specialLinearGroup_apply]
   simp only [algebraMap_int_eq, eq_intCast, Complex.ofReal_intCast]
 
-/-- **LEAF B (cut 2026-07-31) — `j` SEPARATES `SL₂(ℤ)`-ORBITS ON `ℍ`.** This is
+/-- **LEAF B′ (recut 2026-08-01) — A NONZERO LEVEL-ONE MODULAR FORM OF WEIGHT `12`
+HAS AT MOST ONE ZERO ORBIT IN `ℍ`.**
+
+This is what is left of LEAF B (`exists_smul_eq_of_jInvariant_eq`, below) once the
+`j`-invariant is peeled off it: the statement below mentions no `j`, no binary
+quadratic form and nothing else from this project — only mathlib's
+`ModularForm 𝒮ℒ 12`. It is the ONLY consequence of the valence formula that the
+Heegner cluster needs.
+
+**WHY IT IS TRUE, AND WHAT A PROVER OWES.** The valence formula in weight `k = 12`
+reads
+`ord_∞(F) + ½·ord_i(F) + ⅓·ord_ρ(F) + Σ_{P ≠ i, ρ} ord_P(F) = k/12 = 1`,
+the sum being over `ℍ/SL₂(ℤ)` and every term non-negative. Suppose `v` and `w` were
+zeros in DIFFERENT orbits. There are only two elliptic orbits, `[i]` and `[ρ]`, so
+the possibilities for the pair of orbits are
+* two non-elliptic orbits: the left side is `≥ 1 + 1 = 2`;
+* non-elliptic and `[i]`: `≥ 1 + ½`, and the residue `1 − 3/2 < 0`;
+* non-elliptic and `[ρ]`: `≥ 1 + ⅓`, likewise negative;
+* `[i]` and `[ρ]`: `≥ ½ + ⅓ = ⅚`, so the remaining terms — `ord_∞` and the
+  non-elliptic `ord_P`, which are NON-NEGATIVE INTEGERS — would have to sum to `⅙`.
+
+Every case is impossible, so any two zeros lie in one orbit. Note the argument uses
+the *denominators* `2` and `3`, not just positivity: that is why `F ≠ 0` alone (rather
+than a hypothesis on `ord_∞`) suffices, and it is what a prover has to reproduce.
+
+**WHAT MATHLIB HAS AND WHAT IT DOES NOT.** It HAS the reduction theory of `SL₂(ℤ)`
+on `ℍ` in `Mathlib/NumberTheory/Modular.lean` (`ModularGroup.fd`, `fdo`,
+`exists_smul_mem_fd`, `eq_one_or_neg_one_of_mem_fdo_mem_fd`, `stabilizer_I`,
+`stabilizer_ρ`, `isCompact_truncatedFundamentalDomain`) and the level-one dimension
+formula (`Mathlib/NumberTheory/ModularForms/LevelOne/DimensionFormula.lean`). It does
+NOT have the valence formula, and — checked 2026-08-01 — it does not have the
+argument principle either: there is no `argumentPrinciple`, no residue theorem and
+nothing counting zeros of a holomorphic function along a contour anywhere under
+`Mathlib/Analysis/`. `Mathlib/Analysis/Meromorphic/Divisor.lean` has the divisor of a
+meromorphic function but no index formula for it. So the contour-integral proof has to
+be built, and THAT is the whole cost of this leaf.
+
+**FAITHFULNESS: THIS LEAF IS EQUIVALENT TO LEAF B, NOT STRONGER.** `dim M₁₂ = 2` with
+basis `E₄³, Δ` (mathlib: `ModularForm.rank_eq_one_add_rank_cuspForm`,
+`CuspForm.exists_smul_discriminant_of_weight_eq_twelve`), so a nonzero
+`F : ModularForm 𝒮ℒ 12` is either `β • Δ` with `β ≠ 0` — nowhere zero on `ℍ` by
+`ModularForm.discriminant_ne_zero`, hence vacuous here — or `α • (E₄³ − cΔ) = α • jForm c`
+with `α ≠ 0`, whose zeros are exactly `{z : j z = c}` by `jForm_eq_zero_iff` below.
+So LEAF B implies this leaf as well as conversely, and the target's own faithfulness
+audit (recorded on `exists_smul_eq_of_jInvariant_eq` below and in this section's
+header) transfers verbatim. That converse is deliberately NOT formalised: nothing in
+the tree would consume it, and this project forbids free-floating declarations.
+
+**WHERE IT BELONGS.** In a mathlib-facing module — it is a statement about
+`ModularForm 𝒮ℒ 12` and nothing else, and the Heegner cluster in
+`Fermat/FLT/Mathlib/NumberTheory/BinaryQuadraticForm.lean` wants it too. It is stated
+HERE only because that file is `public import`ed by `X0.lean`, so touching it rebuilds
+the largest cone in the tree for a declaration with one consumer. Hoist it when a
+second consumer appears.
+
+**THE CHECK THAT WOULD REFUTE IT**: a nonzero `F : ModularForm 𝒮ℒ 12` with zeros in
+two different `SL₂(ℤ)`-orbits. None exists, by the case analysis above. -/
+theorem exists_smul_eq_of_weightTwelve_eq_zero {F : ModularForm 𝒮ℒ 12} (hF : F ≠ 0)
+    {v w : UpperHalfPlane} (hv : F v = 0) (hw : F w = 0) :
+    ∃ γ : SL(2, ℤ), γ • v = w :=
+  sorry
+
+/-- **The weight-12 level-one modular form `E₄³ − c·Δ`**, whose zero locus in `ℍ` is
+exactly `{z : j z = c}` (`jForm_eq_zero_iff`).
+
+Bundled rather than written as a function so that `exists_smul_eq_of_weightTwelve_eq_zero`
+can be applied to it. The weight bookkeeping is mathlib's: `ModularForm.pow` gives
+`E₄.pow 3 : ModularForm 𝒮ℒ (3 * 4)` and `ModularForm.mcast (by decide)` moves it to
+weight `12`; `Δ` enters through the `CuspFormClass → ModularFormClass` coercion. -/
+noncomputable def jForm (c : ℂ) : ModularForm 𝒮ℒ 12 :=
+  ModularForm.mcast (by decide) (ModularForm.E₄.pow 3)
+    - c • (CuspForm.discriminant : ModularForm 𝒮ℒ 12)
+
+@[simp]
+theorem jForm_apply (c : ℂ) (z : UpperHalfPlane) :
+    jForm c z = ModularForm.E₄ z ^ 3 - c * ModularForm.discriminant z := by
+  simp only [jForm, ModularForm.sub_apply, ModularForm.coe_mcast, ModularForm.coe_pow,
+    Pi.pow_apply]
+  rfl
+
+/-- **The zeros of `E₄³ − c·Δ` are exactly the points where `j = c`.** This is where
+`Δ ≠ 0` on `ℍ` (`ModularForm.discriminant_ne_zero`) is spent: it is what makes the
+division defining `j` legal and the equivalence an `iff` rather than one implication. -/
+theorem jForm_eq_zero_iff (c : ℂ) (z : UpperHalfPlane) :
+    jForm c z = 0 ↔ jInvariant z = c := by
+  rw [jForm_apply, sub_eq_zero, jInvariant, div_eq_iff (ModularForm.discriminant_ne_zero z)]
+
+/-- The constant `q`-coefficient of `E₄³ − c·Δ` is `1`: `E₄` is normalised with constant
+term `1` and `Δ` is a cusp form, so the `c` drops out whatever it is. -/
+theorem jForm_qExpansion_coeff_zero (c : ℂ) :
+    (UpperHalfPlane.qExpansion 1 (jForm c)).coeff 0 = 1 := by
+  have hE : (UpperHalfPlane.qExpansion 1 ModularForm.E₄).coeff 0 = 1 :=
+    EisensteinSeries.E_qExpansion_coeff_zero (by norm_num) ⟨2, rfl⟩
+  have hD : (UpperHalfPlane.qExpansion 1 ModularForm.discriminant).coeff 0 = 0 :=
+    (ModularForm.isCuspForm_iff_coeffZero_eq_zero
+      (CuspForm.discriminant : ModularForm 𝒮ℒ 12)).mp ⟨CuspForm.discriminant, rfl⟩
+  have hana : AnalyticAt ℂ (UpperHalfPlane.cuspFunction 1 ModularForm.discriminant) 0 :=
+    ModularFormClass.analyticAt_cuspFunction_zero CuspForm.discriminant one_pos
+      one_mem_strictPeriods_SL
+  -- `⇑(c • Δ)` and the `c • ⇑Δ` of `UpperHalfPlane.qExpansion_smul` print identically and
+  -- are not syntactically equal, so the equation is stated here and crossed by `exact`;
+  -- `rw` cannot match it (see CLAUDE.md, "printed pattern equals printed target").
+  have hsmul : UpperHalfPlane.qExpansion 1 (c • ModularForm.discriminant) =
+      c • UpperHalfPlane.qExpansion 1 ModularForm.discriminant :=
+    UpperHalfPlane.qExpansion_smul hana c
+  simp only [PowerSeries.coeff_zero_eq_constantCoeff] at hE hD
+  simp only [jForm, ModularForm.coe_sub, ModularForm.coe_mcast,
+    ModularForm.qExpansion_sub one_pos one_mem_strictPeriods_SL,
+    ModularForm.qExpansion_pow one_pos one_mem_strictPeriods_SL]
+  rw [PowerSeries.coeff_zero_eq_constantCoeff, map_sub, map_pow, hE, one_pow, sub_eq_self]
+  show PowerSeries.constantCoeff
+    (UpperHalfPlane.qExpansion 1 (c • ModularForm.discriminant)) = 0
+  rw [hsmul]
+  simp [hD]
+
+/-- `E₄³ − c·Δ` is not the zero form, for any `c` — its constant `q`-coefficient is `1`. -/
+theorem jForm_ne_zero (c : ℂ) : jForm c ≠ 0 := by
+  intro hzero
+  have h := jForm_qExpansion_coeff_zero c
+  rw [hzero] at h
+  simp [UpperHalfPlane.qExpansion_zero] at h
+
+/-- **LEAF B (cut 2026-07-31) — `j` SEPARATES `SL₂(ℤ)`-ORBITS ON `ℍ`.
+PROVEN 2026-08-01 over `exists_smul_eq_of_weightTwelve_eq_zero` above.** This is
 the injectivity half of the classical uniformisation `j : ℍ/SL₂(ℤ) ≃ ℂ`; the
 `SL₂(ℤ)`-invariance half is `Fermat.BinaryQuadraticForm.Heegner.jInvariant_smul`,
 already PROVEN, and surjectivity is not needed anywhere here.
@@ -26151,11 +26280,22 @@ already PROVEN, and surjectivity is not needed anywhere here.
 a simple pole at `∞`, so by the valence formula
 `∑_{P ∈ ℍ/SL₂(ℤ)} (1/e_P)·ord_P(j − c) = 1` for every `c ∈ ℂ`, whence `j − c`
 has exactly one zero in the fundamental domain. Two points with the same `j` are
-therefore in the same orbit. The route through the fundamental domain
-`|Re z| ≤ 1/2`, `|z| ≥ 1` needs the standard reduction theory of `SL₂(ℤ)` acting
-on `ℍ`, which mathlib HAS
-(`UpperHalfPlane.exists_smul_mem_fd`, `ModularGroup.fd`); what it does not have
-is the valence formula for `j`, and that is the whole cost of this leaf.
+therefore in the same orbit.
+
+**HOW IT IS NOW PROVEN, AND WHAT IS LEFT.** `j − c` is not a modular form, but
+`E₄³ − cΔ` is: it is `jForm c` above, of weight `12`, and by `jForm_eq_zero_iff` its
+zeros in `ℍ` are exactly the points where `j = c` — because `Δ` is nowhere zero on `ℍ`,
+which is the only thing the division defining `j` needs. Its constant `q`-coefficient
+is `1` (`jForm_qExpansion_coeff_zero`), so it is nonzero (`jForm_ne_zero`), and the
+whole leaf is the single application of `exists_smul_eq_of_weightTwelve_eq_zero` to it
+at `c = j v`. So NOTHING modular-function-theoretic is left here; what is left is the
+valence formula, and it now sits on that leaf, stated with no mention of `j`.
+
+The recut is `1 → 1` on the direct-sorry count: this declaration stopped being a leaf
+and `exists_smul_eq_of_weightTwelve_eq_zero` became one. What changed is that the open
+statement no longer mentions `jInvariant`, so it is dispatchable at someone who knows
+mathlib's modular forms and nothing about this project. See that leaf's docstring for
+why the trade is an EQUIVALENCE and not a strengthening.
 
 **NO PRIMITIVITY, NO POSITIVE DEFINITENESS, NO CM** — the statement is about
 `ℍ` and `j` alone, which is exactly why it is worth cutting out separately.
@@ -26167,7 +26307,8 @@ are consistent with it, those being five points in five distinct orbits with
 five distinct `j`. -/
 theorem exists_smul_eq_of_jInvariant_eq {v w : UpperHalfPlane}
     (h : jInvariant v = jInvariant w) : ∃ γ : SL(2, ℤ), γ • v = w :=
-  sorry
+  exists_smul_eq_of_weightTwelve_eq_zero (F := jForm (jInvariant v)) (jForm_ne_zero _)
+    ((jForm_eq_zero_iff _ v).2 rfl) ((jForm_eq_zero_iff _ w).2 h.symm)
 
 /-- **PROVEN from LEAF B**: two positive definite forms of one discriminant that
 are not properly equivalent have distinct `j`-invariants.
@@ -26686,9 +26827,13 @@ behind this statement.
    `SL₂(ℤ)`-invariance and integrality at quadratic points both PROVEN. The
    2026-07-27 survey searched mathlib only.
 3′. The VALENCE FORMULA for `j`, i.e. that `j` is injective on `ℍ/SL₂(ℤ)`.
-   → this, and only this, is `exists_smul_eq_of_jInvariant_eq` (LEAF B of the
-   2026-07-31 cut). Mathlib has the `SL₂(ℤ)` reduction theory
-   (`UpperHalfPlane.exists_smul_mem_fd`) but not the valence formula.
+   → this, and only this, is `exists_smul_eq_of_weightTwelve_eq_zero` (LEAF B′ of
+   the 2026-08-01 recut; LEAF B, `exists_smul_eq_of_jInvariant_eq`, is PROVEN over
+   it). Mathlib has the `SL₂(ℤ)` reduction theory
+   (`UpperHalfPlane.exists_smul_mem_fd`) but neither the valence formula nor — the
+   reason the valence formula is expensive — the argument principle: as of
+   2026-08-01 nothing under `Mathlib/Analysis/` counts the zeros of a holomorphic
+   function along a contour.
 4. The main theorem itself: `Gal(ℚ̄/K)` acts transitively on the `h(D)`
    `j`-invariants through the Artin map of the ring class field (Cox §11,
    *ATAEC* II.4.3 / II.6.1).
