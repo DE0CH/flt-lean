@@ -4489,47 +4489,6 @@ def PlaceData.toPlaceSystem {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c
   ord_complete := D.ord_complete
   ord_finite := D.ord_finite
 
-/-- **LEAF: the only poles of the abscissa are the two points at infinity.**
-
-`ord_v x < 0` forces `v ∈ {∞₊, ∞₋}`.  This is the fundamental inequality
-`Σ_{v | ∞} e(v) f(v) ≤ [F : K(x)] = 2` ([Stichtenoth, *Algebraic Function Fields and Codes*,
-III.1.11]) read at the infinite place of `K(x)`, and nothing more: the two rational points at
-infinity are already exhibited by `PlaceData` (`ord_pt_infinite` gives `ord x = -1`, so
-`e = 1`, and `finrank_residue_pt_eq_one` gives `f = 1`), they are distinct by `pt_injective`,
-so they saturate the bound and there is no room for a third pole of `x`.
-
-**Strictly weaker than the fundamental identity**
-`degOf_poleDivisor_eq_finrank_of_transcendental`: it is one inequality, at one place, for the
-one function `x` — no weak approximation and no dimension count.  Anyone proving that leaf
-gets this one for free (`deg (div_∞ x) = [F : K(x)] = 2` with two degree-`1` poles already
-present leaves no third), so it should be DELETED rather than proven separately if the
-fundamental identity lands first.
-
-**What would refute it**: a place with `ord_v x = -2` (`x = ∞` inert with `e = 2`) or one with
-`f = 2`, in addition to `∞±`.  Neither can occur, because `∞±` alone already contribute
-`1·1 + 1·1 = 2 = [F : K(x)]`; the *existence* of both is where the monic sextic and `2 ≠ 0`
-are used, and both are `PlaceData` fields rather than things to prove. -/
-theorem pt_infinite_of_ord_xx_neg {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (v : D.Places) (hv : D.ord v D.xx < 0) : ∃ s : Bool, v = D.pt (Sum.inr s) := sorry
-
-/-- **PROVEN from `pt_infinite_of_ord_xx_neg`: a place with a simple pole of `x` lying on the
-`s` branch at infinity IS `∞_s`.**  The branch separation is `isPlaceOfPt_injective`, whose
-`2 ≠ 0` comes from `PlaceData.two_ne_zero`. -/
-theorem pt_inr_eq_of_ord_xx {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (s : Bool) (v : D.Places) (h1 : D.ord v D.xx = -1)
-    (h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3)) :
-    v = D.pt (Sum.inr s) := by
-  obtain ⟨s', rfl⟩ := pt_infinite_of_ord_xx_neg D v (by omega)
-  have hbr : ∀ (t : Bool) (w : D.Places), D.ord w D.xx = -1 →
-      -3 < D.ord w (D.yy - (if t then (1 : D.F) else -1) * D.xx ^ 3) →
-      IsPlaceOfPt D.toFunctionFieldData D.toPlaceSystem (Sum.inr t) w :=
-    fun _ _ ha hb => ⟨ha, hb⟩
-  have hkey := isPlaceOfPt_injective D.toFunctionFieldData D.toPlaceSystem D.two_ne_zero
-    (hbr s _ h1 h2)
-    (hbr s' _ (D.ord_pt_infinite s').1 (D.ord_pt_infinite s').2)
-  rw [Sum.inr.injEq] at hkey
-  rw [hkey]
-
 end Presentation
 
 section Genus
@@ -4553,6 +4512,52 @@ Two things come out of it, and they are used in completely different places:
   the leaf's own docstring already asserted in prose;
 * `ord_aeval_of_ord_eq_neg_one`, the `ord_v t = −1` case, is what pins a place in
   characteristic `2` and eliminates that characteristic altogether. -/
+
+/-- **PROVEN 2026-08-01 (was a LEAF): the only poles of the abscissa are the two points at
+infinity.**  `ord_v x < 0` forces `v ∈ {∞₊, ∞₋}`.
+
+The leaf's own account of itself was the fundamental inequality
+`Σ_{v | ∞} e(v) f(v) ≤ [F : K(x)] = 2` ([Stichtenoth, *Algebraic Function Fields and Codes*,
+III.1.11]) read at the infinite place of `K(x)` — and it added that anyone proving the
+fundamental identity `degOf_poleDivisor_eq_finrank_of_transcendental` "gets this one for
+free, so it should be DELETED rather than proven separately".  Neither was needed: the two
+theorems immediately above give it directly, and no degree theory appears.
+
+**MOVED here from ~1500 lines above on 2026-08-01**, because both of its inputs
+(`exists_chartValue_infinite_of_ord_xx_neg` and `PlaceData.eq_pt_infinite_of_chartValue`)
+live at the end of the `SinglePlaceBound` section.  The move is safe by inspection: neither
+this theorem nor `pt_inr_eq_of_ord_xx` below it is consumed anywhere between the old and the
+new position — their only call sites are in `ConstFieldExtension`, some 4000 lines further
+down — and both are still declared at the `Fermat.Hyperelliptic` level, so no name changed.
+
+**What would have refuted it**: a place with `ord_v x = -2` (`x = ∞` inert with `e = 2`) or
+one with `f = 2`, in addition to `∞±`.  Neither can occur, and the proof now says why
+without any counting: at such a place `y·x⁻³` is congruent to `±1` (the sextic being MONIC),
+which pins the chart value, and a place is determined by its chart value. -/
+theorem pt_infinite_of_ord_xx_neg {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (v : D.Places) (hv : D.ord v D.xx < 0) : ∃ s : Bool, v = D.pt (Sum.inr s) := by
+  obtain ⟨s, hu, hw⟩ := PlaceData.exists_chartValue_infinite_of_ord_xx_neg D v hv
+  refine ⟨s, PlaceData.eq_pt_infinite_of_chartValue D s v ?_ hw⟩
+  rw [map_zero, sub_zero]
+  exact Or.inr hu
+
+/-- **PROVEN from `pt_infinite_of_ord_xx_neg`: a place with a simple pole of `x` lying on the
+`s` branch at infinity IS `∞_s`.**  The branch separation is `isPlaceOfPt_injective`, whose
+`2 ≠ 0` comes from `PlaceData.two_ne_zero`. -/
+theorem pt_inr_eq_of_ord_xx {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (s : Bool) (v : D.Places) (h1 : D.ord v D.xx = -1)
+    (h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3)) :
+    v = D.pt (Sum.inr s) := by
+  obtain ⟨s', rfl⟩ := pt_infinite_of_ord_xx_neg D v (by omega)
+  have hbr : ∀ (t : Bool) (w : D.Places), D.ord w D.xx = -1 →
+      -3 < D.ord w (D.yy - (if t then (1 : D.F) else -1) * D.xx ^ 3) →
+      IsPlaceOfPt D.toFunctionFieldData D.toPlaceSystem (Sum.inr t) w :=
+    fun _ _ ha hb => ⟨ha, hb⟩
+  have hkey := isPlaceOfPt_injective D.toFunctionFieldData D.toPlaceSystem D.two_ne_zero
+    (hbr s _ h1 h2)
+    (hbr s' _ (D.ord_pt_infinite s').1 (D.ord_pt_infinite s').2)
+  rw [Sum.inr.injEq] at hkey
+  rw [hkey]
 
 private theorem ord_aeval_aux (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
     {t : D.F} {m : ℤ} (hm : m < 0) (ht : D.ord v t = m) :
@@ -4957,8 +4962,7 @@ coefficient `1` being a square, which is the whole reason `Pt` has a `Bool` summ
 The hypothesis is carried because every consumer has it and a weaker leaf is an easier one;
 a proof that does not use it should underscore it. -/
 theorem exists_localDenom_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
-    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (_hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (sgn : Bool)
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (sgn : Bool)
     {z : D.F} (hz : 0 ≤ D.ord (D.pt (Sum.inr sgn)) z) :
     ∃ a b e₁ e₂ : K[X],
       Polynomial.eval 0 e₁ + Polynomial.eval 0 e₂ * (if sgn then (1 : K) else -1) ≠ 0 ∧
@@ -5087,10 +5091,10 @@ The chart congruences are computed here rather than read off an axiom: `ord u = 
 `VanishesAt`, not an omission. -/
 theorem exists_const_sub_vanishesAt_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (s : Bool)
+    (_hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (s : Bool)
     {z : D.F} (hz : 0 ≤ D.ord (D.pt (Sum.inr s)) z) :
     ∃ c : K, D.VanishesAt (D.pt (Sum.inr s)) (z - algebraMap K D.F c) := by
-  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_infinite D hsep s hz
+  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_infinite D s hz
   obtain ⟨hx1, hx2⟩ := D.ord_pt_infinite s
   set v := D.pt (Sum.inr s) with hv
   have hxne : D.xx ≠ 0 := by
@@ -5800,6 +5804,298 @@ open Polynomial
 variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
 
 namespace PlaceData
+
+/-- **The maximal ideal at a place is PRIME** (PROVEN), so `κ(v)` is a domain.
+
+`ord_v` is a valuation, so `ord_v (xy) > 0` with both factors in `O_v` forces one of the two
+orders to be positive; the `x·y = 0` branch is the junk convention `ord_v 0 = 0` showing
+through and is settled by `D.F` being a field.  `ne_top` is `residue_nontrivial`. -/
+lemma valMax_isPrime (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) :
+    (D.valMax v).IsPrime := by
+  constructor
+  · exact Ideal.Quotient.nontrivial_iff.mp (residue_nontrivial D v)
+  · intro x y hxy
+    have h : D.VanishesAt v ((x : D.F) * (y : D.F)) := hxy
+    rcases h with h0 | hpos
+    · rcases mul_eq_zero.mp h0 with h | h
+      · exact Or.inl (Or.inl h)
+      · exact Or.inr (Or.inl h)
+    · rcases eq_or_ne (x : D.F) 0 with hx0 | hx0
+      · exact Or.inl (Or.inl hx0)
+      rcases eq_or_ne (y : D.F) 0 with hy0 | hy0
+      · exact Or.inr (Or.inl hy0)
+      rw [D.ord_mul v _ _ hx0 hy0] at hpos
+      rcases lt_or_ge 0 (D.ord v (x : D.F)) with h | h
+      · exact Or.inl (Or.inr h)
+      · exact Or.inr (Or.inr (by have hx := x.2; omega))
+
+/-- **PROVEN: over an algebraically closed constant field every function regular at a place is
+congruent there to a CONSTANT** — i.e. every place has residue field `K` and degree `1`.
+
+The four steps, none of which mentions the sextic:
+
+1. a uniformiser exists (`ord_surjective`), so `g := t⁻¹` has `ord_v g = −1 < 0`;
+2. `g` is TRANSCENDENTAL over `K`, because an algebraic element is a unit at every place
+   (`ord_eq_zero_of_isAlgebraic`) and `−1 ≠ 0`;
+3. hence `κ(v)` is a finite-dimensional `K`-algebra (`finite_residue_of_ord_neg`, i.e. the
+   single-place bound `e_v·f_v ≤ [F : K⟮g⟯]` above), and it is a domain (`valMax_isPrime`);
+4. a finite — hence integral — domain extension of an algebraically closed field is that
+   field, `IsAlgClosed.algebraMap_bijective_of_isIntegral`.
+
+`hz` is load-bearing: at `ord_v z < 0` no constant is congruent to `z`, since
+`ord_v (z − a) = ord_v z < 0` for every `a`.  The junk convention `ord_v 0 = 0` puts `z = 0`
+inside the hypothesis, where `a = 0` works. -/
+theorem exists_const_sub_vanishesAt_of_isAlgClosed [IsAlgClosed K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) {z : D.F} (hz : 0 ≤ D.ord v z) :
+    ∃ a : K, D.VanishesAt v (z - algebraMap K D.F a) := by
+  obtain ⟨t, ht⟩ := D.ord_surjective v
+  have ht0 : t ≠ 0 := by intro h; rw [h, D.ord_zero] at ht; omega
+  have hginv : D.ord v t⁻¹ = -1 := by rw [D.ord_inv v t ht0, ht]
+  have hgtr : Transcendental K t⁻¹ := by
+    intro halg
+    rw [ord_eq_zero_of_isAlgebraic D v halg] at hginv
+    omega
+  haveI : Module.Finite K (D.residue v) :=
+    finite_residue_of_ord_neg D hgtr v (by omega)
+  haveI : (D.valMax v).IsPrime := valMax_isPrime D v
+  haveI : IsDomain (D.residue v) := inferInstance
+  obtain ⟨a, ha⟩ :=
+    (IsAlgClosed.algebraMap_bijective_of_isIntegral (k := K) (K := D.residue v)).2
+      (Ideal.Quotient.mk (D.valMax v) ⟨z, hz⟩)
+  refine ⟨a, ?_⟩
+  have ha' : Ideal.Quotient.mk (D.valMax v) (algebraMap K (D.valRing v) a)
+      = Ideal.Quotient.mk (D.valMax v) ⟨z, hz⟩ := ha
+  have hvan : D.VanishesAt v ((algebraMap K (D.valRing v) a : D.F) - z) :=
+    Ideal.Quotient.eq.mp ha'
+  have hneg := vanishesAt_neg hvan
+  rwa [neg_sub] at hneg
+
+/-- **Every place has degree `1` over an algebraically closed constant field** (PROVEN). -/
+lemma degOf_eq_one_of_isAlgClosed [IsAlgClosed K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (v : D.Places) : D.degOf v = 1 := by
+  rw [degOf, finrank_residue_eq_one_of_forall_exists_const D v
+    (fun z hz => exists_const_sub_vanishesAt_of_isAlgClosed D v hz), Nat.cast_one]
+
+/-! ### Every place has a CHART VALUE over an algebraically closed constant field (PROVEN)
+
+The residue theorem above, read at `xx` and at `yy`, is exactly the EXISTENCE half of
+`pt_surjective_of_isAlgClosed` (its recorded plan's steps 4 and 5, a triviality-of-`ord`
+argument on `K(xx)` followed by an induction on `natDegree`): applied to `z := xx` it hands
+over the abscissa's chart value directly, so nothing about `K(xx)` has to be said.
+
+The two branches are separated by the SIGN of `ord_v xx`, and no place is missed because
+those two cases are exhaustive.  What each branch then owes is only the ORDINATE's value:
+
+* `ord_v xx ≥ 0`: `yy² = f(xx)` puts `yy` in `O_v` too, so the residue theorem applies to it
+  as well, and `β² = f(α)` follows because `β² − f(α)` is a CONSTANT that vanishes at `v`
+  (`eq_zero_of_vanishesAt_algebraMap`).  So `(α, β)` is an honest `AffPt` — no square root
+  has to be extracted, and `IsAlgClosed` is not used a third time;
+* `ord_v xx < 0`: `w := yy·xx⁻³` satisfies `w² = revSext (xx⁻¹)`, whose value at `xx⁻¹ ≡ 0`
+  is `1` because the sextic is MONIC.  So `(w − 1)(w + 1)` vanishes at `v` and one factor
+  does — which is `valMax_isPrime` again, in the form `vanishesAt_or_of_mul`. -/
+
+/-- **A product of two elements of `O_v` that vanishes at `v` has a VANISHING FACTOR**
+(PROVEN) — `valMax_isPrime` in the form the chart computations use. -/
+lemma vanishesAt_or_of_mul (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) {a b : D.F}
+    (ha : 0 ≤ D.ord v a) (hb : 0 ≤ D.ord v b) (h : D.VanishesAt v (a * b)) :
+    D.VanishesAt v a ∨ D.VanishesAt v b :=
+  (valMax_isPrime D v).mem_or_mem (show (⟨a, ha⟩ * ⟨b, hb⟩ : D.valRing v) ∈ D.valMax v from h)
+
+/-- **PROVEN: at a POLE of the abscissa the chart at infinity has a value `±1`.**
+
+The half of `exists_chartValue_of_isAlgClosed` below that needs NEITHER algebraic closure
+NOR separability: `w := y·x⁻³` satisfies `w² = revSext (x⁻¹)`, whose value at `x⁻¹ ≡ 0` is
+`1` because the sextic is MONIC, so `(w − 1)(w + 1)` vanishes at `v` and one factor does.
+Split out because `pt_infinite_of_ord_xx_neg` is stated over an arbitrary `K`. -/
+theorem exists_chartValue_infinite_of_ord_xx_neg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (v : D.Places) (hxx : D.ord v D.xx < 0) :
+    ∃ s : Bool, 0 < D.ord v D.xx⁻¹ ∧
+      D.VanishesAt v
+        (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if s then (1 : K) else -1)) := by
+  have hxne : D.xx ≠ 0 := D.xx_ne_zero
+  have hine : D.xx⁻¹ ≠ 0 := inv_ne_zero hxne
+  have hu : 0 < D.ord v D.xx⁻¹ := by rw [D.ord_inv v _ hxne]; omega
+  have humem : D.xx⁻¹ ∈ D.valRing v := le_of_lt hu
+  have hcurve : (D.yy * D.xx⁻¹ ^ 3) ^ 2
+      = PlaceAtInfinity.revSext c₀ c₁ c₂ c₃ c₄ c₅ D.xx⁻¹ := by
+    rw [PlaceAtInfinity.revSext_inv_eq _ _ _ _ _ _ hxne, ← D.eqn]
+    field_simp
+  have hw : 0 ≤ D.ord v (D.yy * D.xx⁻¹ ^ 3) := by
+    rcases eq_or_ne (D.yy * D.xx⁻¹ ^ 3) 0 with h | h
+    · rw [h, D.ord_zero]
+    · have h2 : D.ord v ((D.yy * D.xx⁻¹ ^ 3) ^ 2) = 2 * D.ord v (D.yy * D.xx⁻¹ ^ 3) := by
+        rw [ord_pow D v _ h]; norm_num
+      have hrevord : 0 ≤ D.ord v (PlaceAtInfinity.revSext c₀ c₁ c₂ c₃ c₄ c₅ D.xx⁻¹) := by
+        have h' := aeval_mem_valRing D v humem
+          (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+        rwa [PlaceAtInfinity.aeval_revSextPoly] at h'
+      rw [hcurve] at h2
+      omega
+  have hu0 : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F 0) := by
+    rw [map_zero, sub_zero]; exact Or.inr hu
+  have hvan : D.VanishesAt v
+      ((D.yy * D.xx⁻¹ ^ 3 + 1) * (D.yy * D.xx⁻¹ ^ 3 - 1)) := by
+    have hid : (D.yy * D.xx⁻¹ ^ 3 + 1) * (D.yy * D.xx⁻¹ ^ 3 - 1)
+        = PlaceAtInfinity.revSext c₀ c₁ c₂ c₃ c₄ c₅ D.xx⁻¹ - 1 := by
+      linear_combination hcurve
+    have h := vanishesAt_aeval_sub_eval D v humem hu0
+      (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+    rw [PlaceAtInfinity.aeval_revSextPoly] at h
+    have heval : (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).eval 0 = 1 := by
+      simp [PlaceAtInfinity.revSextPoly]
+    rw [heval, map_one] at h
+    rw [hid]
+    exact h
+  have hone : (0 : ℤ) ≤ D.ord v (D.yy * D.xx⁻¹ ^ 3 + 1) :=
+    (D.valRing v).add_mem hw ((D.valRing v).one_mem)
+  have hone' : (0 : ℤ) ≤ D.ord v (D.yy * D.xx⁻¹ ^ 3 - 1) :=
+    (D.valRing v).sub_mem hw ((D.valRing v).one_mem)
+  rcases vanishesAt_or_of_mul D v hone hone' hvan with h | h
+  · exact ⟨false, hu, by simpa using h⟩
+  · exact ⟨true, hu, by simpa using h⟩
+
+/-- **PROVEN: over an algebraically closed constant field EVERY place has a chart value** —
+either an affine one `(α, β)` on the curve, or the value `±1` of `y/x³` at infinity.
+
+This is the existence half of `pt_surjective_of_isAlgClosed`; see the section note above. -/
+theorem exists_chartValue_of_isAlgClosed [IsAlgClosed K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (v : D.Places) :
+    (∃ q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K,
+        D.VanishesAt v (D.xx - algebraMap K D.F q.1.1) ∧
+        D.VanishesAt v (D.yy - algebraMap K D.F q.1.2)) ∨
+      (∃ s : Bool, 0 < D.ord v D.xx⁻¹ ∧
+        D.VanishesAt v
+          (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if s then (1 : K) else -1))) := by
+  have hxne : D.xx ≠ 0 := D.xx_ne_zero
+  rcases le_or_gt 0 (D.ord v D.xx) with hxx | hxx
+  · -- the AFFINE chart: `xx` is regular at `v`, so both coordinates have residues
+    left
+    have hxmem : D.xx ∈ D.valRing v := hxx
+    have hsextord : 0 ≤ D.ord v (sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx) := by
+      have h := aeval_mem_valRing D v hxmem (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+      rwa [aeval_sextPoly] at h
+    have hyy : 0 ≤ D.ord v D.yy := by
+      rcases eq_or_ne D.yy 0 with h | h
+      · rw [h, D.ord_zero]
+      · have h2 : D.ord v (D.yy ^ 2) = 2 * D.ord v D.yy := by
+          rw [ord_pow D v _ h]; norm_num
+        rw [D.eqn] at h2
+        omega
+    obtain ⟨α, hα⟩ := exists_const_sub_vanishesAt_of_isAlgClosed D v hxx
+    obtain ⟨β, hβ⟩ := exists_const_sub_vanishesAt_of_isAlgClosed D v hyy
+    have hsq : β ^ 2 - sext c₀ c₁ c₂ c₃ c₄ c₅ α = 0 := by
+      refine eq_zero_of_vanishesAt_algebraMap D v (c := β ^ 2 - sext c₀ c₁ c₂ c₃ c₄ c₅ α) ?_
+      have hsplit : algebraMap K D.F (β ^ 2 - sext c₀ c₁ c₂ c₃ c₄ c₅ α)
+          = (algebraMap K D.F β + D.yy) * (algebraMap K D.F β - D.yy)
+            + (sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx
+                - algebraMap K D.F (sext c₀ c₁ c₂ c₃ c₄ c₅ α)) := by
+        rw [map_sub, map_pow]
+        have := D.eqn
+        linear_combination this
+      rw [hsplit]
+      refine vanishesAt_add ?_ ?_
+      · refine vanishesAt_mul_left ?_ ?_
+        · have h1 : 0 ≤ D.ord v (algebraMap K D.F β) := ord_algebraMap_nonneg D v β
+          exact (D.valRing v).add_mem h1 hyy
+        · have := vanishesAt_neg hβ
+          rwa [neg_sub] at this
+      · have h := vanishesAt_aeval_sub_eval D v hxmem hα (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+        rwa [aeval_sextPoly, eval_sextPoly] at h
+    exact ⟨⟨(α, β), by linear_combination hsq⟩, hα, hβ⟩
+  · -- the chart at INFINITY: no algebraic closure is used, see the lemma above
+    exact Or.inr (exists_chartValue_infinite_of_ord_xx_neg D v hxx)
+
+/-! ### A place is DETERMINED by its chart value (PROVEN)
+
+The uniqueness half.  `PlaceClassify.isPlaceFun_eq_of_le` — already in this file — says two
+NORMALISED places with `O_w ⊆ O_v` are equal, so only ONE inclusion has to be produced, and
+`exists_localDenom_affine` / `exists_localDenom_infinite` produce it in three lines: a `z`
+regular at `pt P` is a chart fraction whose denominator has nonzero VALUE at the chart point,
+and at any other place with that same chart value the denominator is a unit
+(`ord_chart_eq_zero_iff`) while the numerator is integral (`chart_mem_valRing`).
+
+Note what is NOT needed: the generalisation of `exists_localDenom_affine` to an arbitrary
+place, which the recorded plan asks for as its step 2.  The localDenom theorems are used AT
+`pt P`, where their own congruences come from `ord_pt_affine` / `ord_pt_infinite`; the other
+place `v` only ever has to READ the resulting identity. -/
+
+/-- The five `PlaceData` order axioms are exactly `IsPlaceFun` (PROVEN, definitional). -/
+theorem isPlaceFun_ord (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) :
+    IsPlaceFun K D.F (D.ord v) where
+  map_zero := D.ord_zero v
+  map_mul := D.ord_mul v
+  ultra := D.ord_add v
+  map_algebraMap := D.ord_algebraMap v
+  normalised := D.ord_surjective v
+
+/-- **PROVEN: a place with the chart values of an affine point IS that point's place.**
+
+`hsep` is load-bearing and this is the only place it enters: at a SINGULAR point of the
+affine model two distinct places share the chart value `(α, 0)`, and it is smoothness that
+`exists_localDenom_affine` spends to exclude that. -/
+theorem eq_pt_affine_of_chartValue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (v : D.Places) (hx : D.VanishesAt v (D.xx - algebraMap K D.F q.1.1))
+    (hy : D.VanishesAt v (D.yy - algebraMap K D.F q.1.2)) :
+    v = D.pt (Sum.inl q) := by
+  refine D.ord_injective ?_
+  obtain ⟨π, hπ⟩ := D.ord_surjective (D.pt (Sum.inl q))
+  have hπ0 : π ≠ 0 := by intro h; rw [h, D.ord_zero] at hπ; omega
+  refine PlaceClassify.isPlaceFun_eq_of_le (isPlaceFun_ord D v)
+    (isPlaceFun_ord D (D.pt (Sum.inl q))) ?_ hπ0 hπ
+  intro z hzP
+  rcases eq_or_ne z 0 with rfl | hz0
+  · rw [D.ord_zero]
+  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_affine D hsep q hzP
+  have hden0 : aeval D.xx e₁ + aeval D.xx e₂ * D.yy ≠ 0 := by
+    intro h0
+    have hV := vanishesAt_chart_sub D v hx hy e₁ e₂
+    rw [h0, zero_sub] at hV
+    exact hd (eq_zero_of_vanishesAt_algebraMap D v (by simpa using vanishesAt_neg hV))
+  have hordden : D.ord v (aeval D.xx e₁ + aeval D.xx e₂ * D.yy) = 0 :=
+    (ord_chart_eq_zero_iff D v hx hy hden0).mpr hd
+  have hnum : 0 ≤ D.ord v (aeval D.xx a + aeval D.xx b * D.yy) :=
+    chart_mem_valRing D v hx hy a b
+  have hmul := D.ord_mul v z _ hz0 hden0
+  rw [heq] at hmul
+  omega
+
+/-- **PROVEN: a place at which `x` has a pole and `y/x³ ≡ ε` IS the point at infinity of
+sign `ε`.**  NO separability: `exists_localDenom_infinite` had carried an underscored
+`_hsep` since 2026-07-30 — the chart at infinity is smooth for every monic sextic — and that
+unused binder has been deleted, which is what makes this statement, and
+`pt_infinite_of_ord_xx_neg` below it, `hsep`-free. -/
+theorem eq_pt_infinite_of_chartValue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (sgn : Bool) (v : D.Places)
+    (hu : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F 0))
+    (hw : D.VanishesAt v
+      (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if sgn then (1 : K) else -1))) :
+    v = D.pt (Sum.inr sgn) := by
+  refine D.ord_injective ?_
+  obtain ⟨π, hπ⟩ := D.ord_surjective (D.pt (Sum.inr sgn))
+  have hπ0 : π ≠ 0 := by intro h; rw [h, D.ord_zero] at hπ; omega
+  refine PlaceClassify.isPlaceFun_eq_of_le (isPlaceFun_ord D v)
+    (isPlaceFun_ord D (D.pt (Sum.inr sgn))) ?_ hπ0 hπ
+  intro z hzP
+  rcases eq_or_ne z 0 with rfl | hz0
+  · rw [D.ord_zero]
+  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_infinite D sgn hzP
+  have hden0 : aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0 := by
+    intro h0
+    have hV := vanishesAt_chart_sub D v hu hw e₁ e₂
+    rw [h0, zero_sub] at hV
+    exact hd (eq_zero_of_vanishesAt_algebraMap D v (by simpa using vanishesAt_neg hV))
+  have hordden : D.ord v (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3)) = 0 :=
+    (ord_chart_eq_zero_iff D v hu hw hden0).mpr hd
+  have hnum : 0 ≤ D.ord v (aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3)) :=
+    chart_mem_valRing D v hu hw a b
+  have hmul := D.ord_mul v z _ hz0 hden0
+  rw [heq] at hmul
+  omega
+
+end PlaceData
+
+end SinglePlaceBound
 
 /-- `ord v (a ^ n) = n · ord v a` for an INTEGER exponent. -/
 lemma ord_zpow (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) (a : D.F) (ha : a ≠ 0) :
@@ -11419,9 +11715,9 @@ lemma vanishesAt_yy_pt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K
     D.VanishesAt (D.pt (Sum.inl q)) (D.yy - algebraMap K D.F q.1.2) :=
   Or.inr (D.ord_pt_affine q).2
 
-/-- **LEAF (Galois descent, 1 of 2 — the geometric half): over an ALGEBRAICALLY CLOSED
-field every place is a rational point**, i.e. `pt` is surjective (it is injective by the
-structure field `pt_injective`, so this makes it a bijection).
+/-- **PROVEN 2026-08-01 (was leaf 1 of 2 of the Galois-descent geometric half): over an
+ALGEBRAICALLY CLOSED field every place is a rational point**, i.e. `pt` is surjective (it is
+injective by the structure field `pt_injective`, so this makes it a bijection).
 
 TRUE and standard: `Places` is by `ord_complete` the full set of normalised `K`-trivial
 valuations of `F`, i.e. the closed points of the smooth projective model, and over an
@@ -11449,68 +11745,49 @@ separability of the sextic forbids.
 not a definition in disguise; the leaf asserts that `ord_complete` produces nothing beyond
 the points already named.
 
-## PROOF PLAN (worked out 2026-07-31, not yet written; every input named below is IN THIS
-## FILE and PROVEN)
+## PROVEN 2026-08-01, along the plan recorded here on 2026-07-31 — with steps 1, 2 and 4
+## deleted rather than done
 
-The plan splits into UNIQUENESS (a place with given chart values IS the named point) and
-EXISTENCE (every place has chart values in one of the two charts).  Uniqueness is the half
-that looks hard and is not, because of one observation about an existing theorem.
+The plan split into UNIQUENESS (a place with given chart values IS the named point) and
+EXISTENCE (every place has chart values in one of the two charts).  Both halves are now
+theorems in the `SinglePlaceBound` section — `exists_chartValue_of_isAlgClosed`,
+`eq_pt_affine_of_chartValue`, `eq_pt_infinite_of_chartValue` — and this is a six-line
+assembly over them.  What is worth recording is which of the plan's six steps survived,
+because three of them were not needed and each was priced at real work:
 
-**The observation: `PlaceData.exists_localDenom_chart` is stated for an ARBITRARY place `v`
-carrying the two chart congruences** — it is not special to `v = pt P`.  Its two consumers
-(`exists_localDenom_affine`, `exists_localDenom_infinite`) instantiate it at `pt P` and get
-their congruences from `ord_pt_affine` / `ord_pt_infinite`, but the theorem itself only ever
-uses the congruences.  So `O_v` is described in terms of `(α, β)` alone: every `z` with
-`ord_v z ≥ 0` is a chart fraction whose denominator has NONZERO value at `(α, β)`.
+* **step 1** ("a place is determined by its valuation ring", ~45 lines, "needs a `zpow`
+  version of `ord_pow`") was ALREADY IN THIS FILE, as
+  `PlaceClassify.isPlaceFun_eq_of_le` — and in the sharper form that only ONE inclusion
+  `O_w ⊆ O_v` is needed, not both.  `isPlaceFun_ord` is the five-field bridge to it;
+* **step 2** (generalise `exists_localDenom_affine` / `_infinite` to an arbitrary place
+  carrying the congruences) is not needed at all.  Those theorems are applied AT `pt P`,
+  where their own congruences come from `ord_pt_affine` / `ord_pt_infinite`; the other place
+  `v` only has to READ the resulting identity `z·den = num`, through
+  `ord_chart_eq_zero_iff` and `chart_mem_valRing`, both of which take the congruences at
+  whatever place they are handed;
+* **step 4** (`ord v` is not trivial on `K(xx)`, via a three-term order count on the
+  quadratic satisfied by a uniformiser) and the induction on `natDegree` in **step 5** are
+  replaced by ONE application of `exists_const_sub_vanishesAt_of_isAlgClosed` to `z := xx`.
+  That theorem — every function regular at a place is congruent there to a constant — is
+  what the residue-field leaf `geomPic_exists_const_of_ord_nonneg` closed over, and it
+  hands over the abscissa's chart value directly.
 
-1. **A place is determined by its valuation ring.**  If `∀ z, 0 ≤ ord v z ↔ 0 ≤ ord v' z`
-   then `v = v'`.  Purely formal from the interface: for `u ≠ 0`, `ord v u = 0` iff `u` and
-   `u⁻¹` both have order `≥ 0` (`ord_inv`), so the hypothesis transports `ord = 0` and hence
-   `ord > 0`; picking `t` with `ord v t = 1` (`ord_surjective`) and testing `z · t^(−ord v z)`
-   gives `ord v' z = ord v z · ord v' t` for every `z ≠ 0`, and `ord v'`'s own surjectivity
-   plus `ord v' t > 0` forces `ord v' t = 1`.  Then `ord_injective`.  (~45 lines; needs a
-   `zpow` version of `ord_pow`.)
-2. **Generalise `exists_localDenom_affine` / `exists_localDenom_infinite` to an arbitrary
-   place with the chart congruences.**  Mechanical: their proofs use `ord_pt_affine` /
-   `ord_pt_infinite` ONLY to produce the two `VanishesAt`s that `exists_localDenom_chart`
-   wants, so take those as hypotheses and keep the present statements as one-line corollaries.
-3. **Uniqueness.**  If `v` and `pt P` have the same chart values then `O_v = O_{pt P}`: for
-   `z ∈ O_v`, step 2 at `v` writes `z · den = num` with `den` of nonzero VALUE at the chart
-   point; at `pt P` that same `den` has `ord = 0` (`vanishesAt_chart_sub` +
-   `ord_eq_zero_of_vanishesAt_sub`) and `num ∈ O_{pt P}` (`chart_mem_valRing`), so
-   `ord_{pt P} z ≥ 0`.  Symmetric in the other direction, then step 1.
-4. **EXISTENCE — `ord v` is not trivial on `K(xx)`.**  Suppose `ord v (aeval xx h) = 0` for
-   every `h` with `aeval xx h ≠ 0`.  Take `t` with `ord v t = 1` and write it by `gen` as
-   `t · d = a + b·yy` (`d = aeval xx D`, etc.).  Then `(t·d − a)² = b²·f(xx)` expands to
-   `t²d² − 2adt + (a² − b²f) = 0`, whose three terms have orders `2`, `1`, `0` — distinct,
-   so `ord_add_of_lt` gives `ord (t²d² − 2adt) = 0` against `ord (a² − b²f) = 0`.  The
-   degenerate branches are honest: `a = 0` gives `ord (t²d²) = 2 = ord (b²f) = 0`, and
-   `a² − b²f = 0` gives `yy = a/b ∈ K(xx)`, whence `ord (t·d) = 0 ≠ 1`.  (`2 ≠ 0` is
-   `PlaceData.two_ne_zero`; characteristic `0` here anyway.)
-5. **EXISTENCE — from a nonzero order to a chart value.**  `K` is algebraically closed, so
-   induct on `natDegree h`: if `ord v (xx − α) = 0` for EVERY `α ∈ K` then
-   `ord v (aeval xx h) = 0` for every `h ≠ 0` (split off a root, `ord_mul`), contradicting
-   step 4.  So some `α` has `ord v (xx − α) ≠ 0`.
-   * `ord v (xx − α) > 0`: then `ord v xx ≥ 0`, and `yy² − f(α) = f(xx) − f(α)` vanishes at
-     `v` because `xx − α` divides it; taking `β` with `β² = f(α)` (`IsAlgClosed.exists_pow_nat_eq`
-     or `exists_root` on `X² − C (f α)`), `(yy − β)(yy + β)` vanishes at `v`, so one factor
-     does — that is the chart value, and `(α, ±β)` is an honest `AffPt`.
-   * `ord v (xx − α) < 0`: then `ord v xx < 0`, so `u := xx⁻¹` has `ord v u > 0`, i.e. `u ≡ 0`;
-     and `w := yy·u³` satisfies `w² = u⁶·f(xx) = g(u)` with `g` the reversed sextic, `g(0) = 1`
-     (the sextic is MONIC — this is the same computation `exists_localDenom_infinite` does).
-     So `ord v w = 0` and `(w − 1)(w + 1) = w² − 1 ≡ 0`, giving `w ≡ ±1`, i.e. the chart value
-     of the infinite chart, and the `Bool` is that sign.
-6. **Assembly.**  Steps 5 and 3 give `v = pt P` for the `P` named in step 5.  Note step 5
-   never needs `ord v u = 1` at infinity: `exists_localDenom_infinite`'s congruences are
-   `u ≡ 0` and `w ≡ ε`, and `ord_pt_infinite`'s `ord xx = −1` is only used to SEPARATE the
-   charts, which step 5 already did by the sign of `ord v xx`.
-
-Nothing in the plan needs the degree theory (`degOf_poleDivisor_eq_finrank`, itself still a
-leaf), the residue field, or Riemann–Roch — which is the point of doing this over `ℚ̄`. -/
+Steps 3, 5's ordinate computation and 6 are what remained, and they are the three theorems
+named above.  Nothing here needs the degree theory
+(`degOf_poleDivisor_eq_finrank`, itself still a leaf) or Riemann–Roch, exactly as the plan
+predicted — and, as it also predicted, `hsep` enters at exactly one point, the affine
+uniqueness, where a singular point of the plane model would carry two places with one chart
+value. -/
 theorem pt_surjective_of_isAlgClosed {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     [IsAlgClosed K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
-    Function.Surjective D.pt := sorry
+    Function.Surjective D.pt := by
+  intro v
+  rcases exists_chartValue_of_isAlgClosed D v with ⟨q, hx, hy⟩ | ⟨s, hu, hw⟩
+  · exact ⟨Sum.inl q, (eq_pt_affine_of_chartValue D hsep q v hx hy).symm⟩
+  · refine ⟨Sum.inr s, (eq_pt_infinite_of_chartValue D s v ?_ hw).symm⟩
+    rw [map_zero, sub_zero]
+    exact Or.inr hu
 
 end PlaceData
 
@@ -11805,7 +12082,7 @@ theorem placeAct_transitive {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData
 
 end GaloisTransitivity
 
-/-- **LEAF (weak Mordell–Weil, 3a of 4): the residue field at a geometric place is `ℚ̄`**,
+/-- **PROVEN 2026-08-01 (was leaf 3a of 4): the residue field at a geometric place is `ℚ̄`**,
 i.e. every function regular at a geometric place has a VALUE there.
 
 Standard: `κ(w)` is a finite extension of the constant field for any place of a function
@@ -11813,7 +12090,7 @@ field of one variable [Stichtenoth I.1.14], and `ℚ̄` is algebraically closed,
 `κ(w) = ℚ̄`.  The statement is the surjectivity of `ℚ̄ → κ(w)` written out with `VanishesAt`
 in place of a quotient, which is the form both consumers want.
 
-Two things come out of it, and it is why the cut is worth making as ONE leaf rather than
+Two things come out of it, and it is why the cut was worth making as ONE leaf rather than
 two:
 
 * `geomPic_degOf_eq_one` — every geometric place has degree `1`, which with the PROVEN degree
@@ -11822,17 +12099,35 @@ two:
   base point and the cocycle below is not a cocycle;
 * the residue map itself, used as the `Γ`-equivariant normalisation `g ↦ g/g(∞̄₊)`.
 
+## It is a one-line instance of the SINGLE-PLACE BOUND, which was already in this file
+
+`PlaceData.exists_const_sub_vanishesAt_of_isAlgClosed` — proven in the `SinglePlaceBound`
+section, over an arbitrary algebraically closed constant field — is the whole of it.  The
+route the citation suggests (localise at the point, trivialise the residue in the chart)
+was NOT taken, and the four-line one that was is worth recording because two earlier
+docstrings in this file price this leaf off the chart machinery:
+
+`finite_residue_of_ord_neg` already says `[κ(v) : K] < ∞` at every place, from
+`mul_card_le_finrank_adjoin_of_ord_neg` applied to `g := t⁻¹` for a uniformiser `t`; `κ(v)`
+is a domain because `ord_v` is a valuation; and a finite domain extension of an
+algebraically closed field is that field.  **So the chart machinery is not on the path at
+all** — in particular this needs no `hsep`, which is what makes it statable over `GeomPic`,
+a structure carrying no separability hypothesis, and what makes it true at a place over a
+SINGULAR point of the affine model, where `exists_localDenom_chart` does not apply.
+
 **FAITHFULNESS.**  `hz` is load-bearing: with `ord w z < 0` the conclusion is FALSE — a
 function with a pole at `w` is congruent to no constant there, since `ord w (z − a) < 0` for
 every `a`.  The junk convention `ord w 0 = 0` puts `z = 0` inside the hypothesis, where the
 conclusion holds with `a = 0`.  Note the statement is about `Dbar` alone and says nothing
 about `D`: over `ℚ` it is FALSE, the places of degree `> 1` being exactly the ones it fails
-at, and that asymmetry is the whole content of the constant field extension. -/
+at, and that asymmetry is the whole content of the constant field extension — formally, it
+is `[IsAlgClosed K]` that the general theorem consumes, and `ℚ` does not satisfy it. -/
 theorem geomPic_exists_const_of_ord_nonneg {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
     (w : gp.Dbar.Places) {z : gp.Dbar.F} (hz : 0 ≤ gp.Dbar.ord w z) :
     ∃ a : AlgebraicClosure ℚ,
-      gp.Dbar.VanishesAt w (z - algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a) := sorry
+      gp.Dbar.VanishesAt w (z - algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a) :=
+  PlaceData.exists_const_sub_vanishesAt_of_isAlgClosed gp.Dbar w hz
 
 /-- **LEAF (weak Mordell–Weil, 3b of 4): a Galois-invariant geometric divisor is a base
 change.**
@@ -11943,13 +12238,12 @@ theorem geomPic_hilbert90 {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     (hinfl : ∀ σ τ, (∀ x ∈ L, σ x = τ x) → A σ = A τ) :
     ∃ γ : gp.Dbar.F, γ ≠ 0 ∧ ∀ σ, gp.fieldAct σ γ = A σ * γ := sorry
 
-/-- **Every geometric place has degree `1`** (PROVEN from `geomPic_exists_const_of_ord_nonneg`
-and `finrank_residue_eq_one_of_forall_exists_const`). -/
+/-- **Every geometric place has degree `1`** (PROVEN): the `ℚ̄` instance of
+`PlaceData.degOf_eq_one_of_isAlgClosed`, which is itself
+`geomPic_exists_const_of_ord_nonneg` fed to `finrank_residue_eq_one_of_forall_exists_const`. -/
 lemma geomPic_degOf_eq_one {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
-    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (w : gp.Dbar.Places) : gp.Dbar.degOf w = 1 := by
-  rw [PlaceData.degOf,
-    PlaceData.finrank_residue_eq_one_of_forall_exists_const gp.Dbar w
-      (fun z hz => geomPic_exists_const_of_ord_nonneg gp w hz), Nat.cast_one]
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (w : gp.Dbar.Places) : gp.Dbar.degOf w = 1 :=
+  PlaceData.degOf_eq_one_of_isAlgClosed gp.Dbar w
 
 /-- **Degree is Galois-invariant** (PROVEN): `divAct σ` permutes the places, and every
 geometric place has the same degree `1`. -/
