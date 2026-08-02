@@ -352,12 +352,20 @@ those are no longer `IsRelPicZeroOf.exists_albaneseFactorisation` and
 `IsRelPicZeroOf.eq_of_aj_eq` — both of THOSE are now PROVEN.**  They are
 `IsRelPicZeroOf.exists_flatSurj_ajListSum` (`Sym^d C ↠ Pic^d`, i.e.
 Riemann–Roch) and
-`IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq_of_compactSpace`
-(Abel's theorem: `Σ c(yᵢ)` depends only on the class `Σ aj(yᵢ)`).  Those
-two are the whole of what autoduality still owes, and since 2026-07-30 they
-carry the SAME `[CompactSpace T]` hypothesis: the general-base form of the
-second is PROVEN over it by Zariski-locality, so one subtree closes both
-under one hypothesis.
+`listSum_map_post_eq_of_relPicEquiv_divisor` (Abel's theorem, in morphism
+form and at equal degree).  Those two are the whole of what autoduality
+still owes, and ONE subtree — relative Riemann–Roch for a smooth proper
+relative curve — closes both; see the note under either leaf.
+
+**Amended 2026-08-02**: the second used to be
+`IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq_of_compactSpace`, and the
+paragraph here used to say that the two leaves carry the SAME
+`[CompactSpace T]` hypothesis.  That is no longer true and the name no
+longer exists.  Three successive re-cuts of the Abel node had all landed,
+two of them consumerless; they were fused on 2026-08-02 into the single
+leaf named above, which carries no compactness hypothesis at all (nothing
+in its route is local on `T`).  `exists_flatSurj_ajListSum` still carries
+`[CompactSpace T]`, and there it IS load-bearing.
 
 Note that the phrase "autoduality and biduality" this paragraph used to
 carry was ALSO wrong about the mathematics, not merely about which names
