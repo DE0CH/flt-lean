@@ -163,6 +163,11 @@ public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 -- (`AlgebraicIntegersRat.exists_smul_eq_of_valuationSubring`), which closes
 -- `GaloisRepresentation.exists_smul_eq_globalValuationSubring` below.
 public import Fermat.FLT.Mathlib.RingTheory.Valuation.AlgebraicIntegerConjugacy
+-- descent of a factorisation from the `ℚ̄`-points of a finite `ℚ`-scheme with reduced
+-- geometric fibre (`AlgebraicGeometry.exists_factor_of_geomPoints_of_isFinite`), used in
+-- PROOF position only, by `Fermat.Gamma0Datum.ker_of_geomFibrePt` below; the module
+-- imports nothing but mathlib, so this edge adds no build order beyond itself
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.GeomPointDescent
 -- the reduction-of-POINTS theory (`WeierstrassCurve.IsReductionAlong`, `redHom`),
 -- used in SIGNATURE position by the local reduction leaves below, hence `public`
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
@@ -22871,8 +22876,190 @@ theorem Fermat.Gamma0Datum.hom_ext_of_geomFibrePt {N M : ℕ}
     u = v :=
   sorry
 
-open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
-/-- **THE SCHEME-THEORETIC KERNEL IS DETECTED ON GEOMETRIC POINTS** (LEAF, cut
+/-! #### The scheme-theoretic kernel, and its two residual clauses (2026-08-02)
+
+`Fermat.Gamma0Datum.ker_of_geomFibrePt` below is PROVEN over the two leaves in this
+block.  The cut is along the two clauses of Cartier's theorem — FINITENESS of the kernel
+and REDUCEDNESS of its geometric fibre — and it is the same cut the `ℚ̄`-side sibling
+`liesIn_iff_of_geomFibre_of_fixedLocus` was given on 2026-07-30, where both clauses are
+now PROVEN (`isFinite_fixedLocus_of_geomFixed`,
+`isReduced_fixedLocus_of_isAdditiveOn`, ~19 000 lines below).  A prover of either leaf
+here should read those two first: the objects differ only in that the equaliser is taken
+against the zero section rather than against the identity.
+
+**What the assembly supplies that the statement does not show.**  Everything between the
+`ℚ̄`-points and the arbitrary — possibly NON-REDUCED — test base is done:
+
+* the kernel is a CLOSED SUBSCHEME with no construction, as `equalizer u (d.f ≫ ζ)`,
+  because `d'.E` is a separated scheme (`Gamma0Datum.isSeparated_total`) and mathlib
+  registers `IsClosedImmersion (equalizer.ι f g)` for that;
+* `RelPoint.post u hu x = 0` is exactly "`x.1` factors through that equaliser"
+  (`Gamma0Datum.post_eq_zero_iff_factor`), at every test base at once;
+* the descent from `ℚ̄`-points to `Spec ℚ` is
+  `AlgebraicGeometry.exists_factor_of_geomPoints_of_isFinite`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/GeomPointDescent.lean`, PROVEN), which is the
+  base-change `Z ×_ℚ ℚ̄ ⟶ Z` being scheme-theoretically dominant plus the
+  algebraically-closed-base decomposition;
+* RIGIDITY — that `u` is a homomorphism — is DERIVED here from `hgeom` and
+  `zero_liesIn` rather than assumed, so the reducedness leaf may have it for free.
+
+**The half that needs no leaf at all is `C ⊆ ker u`**: `d.cyc.C` is finite over `Spec ℚ`
+(`d.cyc.isFinite`) and its geometric fibre is reduced
+(`CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase`, PROVEN), so the descent applies
+to it directly.  Only the reverse containment needs the two clauses below, and that
+asymmetry is the honest shape of the mathematics: nothing in the hypotheses says a priori
+that the kernel is finite except `huv`, and nothing says it is reduced except Cartier. -/
+
+open _root_.CategoryTheory _root_.CategoryTheory.Limits _root_.AlgebraicGeometry
+  _root_.Fermat in
+/-- **The total space of an elliptic scheme over `Spec ℚ` is a SEPARATED SCHEME**
+(PROVEN 2026-08-02).
+
+`d.f` is separated because it is proper (`AbelianSchemeStruct.proper`, and `IsProper`
+extends `IsSeparated`), `Spec ℚ` is affine hence separated over the terminal scheme, and
+separatedness composes; `terminal.hom_ext` identifies `terminal.from d.E` with the
+composite.
+
+What it buys is mathlib's instance `IsClosedImmersion (Limits.equalizer.ι f g)` for
+`[Y.IsSeparated]`, i.e. that the scheme-theoretic kernel of a morphism INTO `d.E` is a
+closed subscheme — with no ideal sheaf constructed and no properness used again. -/
+theorem Fermat.Gamma0Datum.isSeparated_total {N : ℕ} (d : Gamma0Datum N SpecQ) :
+    d.E.IsSeparated := by
+  haveI : IsProper d.f := d.ab.proper
+  haveI : IsAffine SpecQ := inferInstanceAs (IsAffine (Spec (CommRingCat.of ℚ)))
+  constructor
+  have h : terminal.from d.E = d.f ≫ terminal.from SpecQ := by
+    apply terminal.hom_ext
+  rw [h]
+  infer_instance
+
+open _root_.CategoryTheory _root_.CategoryTheory.Limits _root_.AlgebraicGeometry
+  _root_.Fermat in
+/-- **Two subschemes that factor through each other cut out the same subfunctor**
+(PROVEN 2026-08-02) — pure category theory, and it is what turns the two containments of
+closed subschemes into the `↔` that `ker_of_geomFibrePt` asserts.
+
+No hypothesis on `κ`: it need not be a closed immersion, a monomorphism, or anything
+else.  The two factorisations are the whole input. -/
+theorem Fermat.Gamma0Datum.liesIn_iff_of_factor {N : ℕ} (d : Gamma0Datum N SpecQ)
+    {Kr : Scheme.{0}} (κ : Kr ⟶ d.E)
+    (hCK : ∃ c : d.cyc.C ⟶ Kr, c ≫ κ = d.cyc.ι)
+    (hKC : ∃ c : Kr ⟶ d.cyc.C, c ≫ d.cyc.ι = κ)
+    {T' : Scheme.{0}} (a : T' ⟶ d.E) :
+    (∃ b : T' ⟶ Kr, b ≫ κ = a) ↔ (∃ y : T' ⟶ d.cyc.C, y ≫ d.cyc.ι = a) := by
+  obtain ⟨c, hc⟩ := hCK
+  obtain ⟨c', hc'⟩ := hKC
+  constructor
+  · rintro ⟨b, hb⟩
+    exact ⟨b ≫ c', by rw [Category.assoc, hc', hb]⟩
+  · rintro ⟨y, hy⟩
+    exact ⟨y ≫ c, by rw [Category.assoc, hc, hy]⟩
+
+open _root_.CategoryTheory _root_.CategoryTheory.Limits _root_.AlgebraicGeometry
+  _root_.Fermat in
+/-- **"`u` kills the relative point `x`" IS "`x` factors through the equaliser of `u` and
+the zero morphism"** (PROVEN 2026-08-02), at EVERY test base, non-reduced ones included.
+
+`RelPoint` is a subtype, so `RelPoint.post u hu x = d'.ab.zero g` is the single equation
+`x.1 ≫ u = g ≫ ζ` with `ζ := d'.ab.zeroSection` (`AbelianSchemeStruct.zero_val`); and
+`x.2 : x.1 ≫ d.f = g` rewrites the right-hand side as `x.1 ≫ (d.f ≫ ζ)`.  So the
+condition is literally that `x.1` equalises `u` and `d.f ≫ ζ`, which by the universal
+property of the equaliser is factorisation through `equalizer.ι`.
+
+**This is what removes the test base from the problem.**  After it, `ker_of_geomFibrePt`
+is a statement about TWO CLOSED SUBSCHEMES of `d.E` and no longer about a family of
+points; the arbitrary `T'` never appears again. -/
+theorem Fermat.Gamma0Datum.post_eq_zero_iff_factor {N M : ℕ} (d : Gamma0Datum N SpecQ)
+    (d' : Gamma0Datum M SpecQ) (u : d.E ⟶ d'.E) (hu : u ≫ d'.f = d.f)
+    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} (x : RelPoint d.f g) :
+    RelPoint.post u hu x = d'.ab.zero g ↔
+      ∃ b : T' ⟶ equalizer u (d.f ≫ d'.ab.zeroSection),
+        b ≫ equalizer.ι u (d.f ≫ d'.ab.zeroSection) = x.1 := by
+  constructor
+  · intro h
+    have h1 : x.1 ≫ u = x.1 ≫ (d.f ≫ d'.ab.zeroSection) := by
+      have h2 : x.1 ≫ u = (d'.ab.zero g).1 := congrArg Subtype.val h
+      rw [AbelianSchemeStruct.zero_val d'.ab g] at h2
+      rw [h2, ← Category.assoc, x.2]
+    exact ⟨equalizer.lift x.1 h1, equalizer.lift_ι _ _⟩
+  · rintro ⟨b, hb⟩
+    apply Subtype.ext
+    show x.1 ≫ u = (d'.ab.zero g).1
+    have hxg : x.1 ≫ (d.f ≫ d'.ab.zeroSection) = g ≫ d'.ab.zeroSection := by
+      rw [← Category.assoc, x.2]
+    rw [AbelianSchemeStruct.zero_val d'.ab g, ← hb, Category.assoc,
+      equalizer.condition u (d.f ≫ d'.ab.zeroSection), ← Category.assoc, hb, hxg]
+
+open _root_.CategoryTheory _root_.CategoryTheory.Limits _root_.AlgebraicGeometry
+  _root_.Fermat in
+/-- **LEAF 1 (cut 2026-08-02 off `ker_of_geomFibrePt` below): THE KERNEL OF `u` IS FINITE
+OVER `Spec ℚ`** — the clause `huv` exists to supply, and the only place `hN` is spent.
+
+TRUE.  `ker u ⊆ ker [N]`: if `a` equalises `u` and `d.f ≫ ζ'` then `a ≫ (u ≫ v)` is
+`a ≫ d.f ≫ ζ' ≫ v`, i.e. `a` is killed by `[N] = u ≫ v` (`huv`), and `[N]` for `N ≠ 0`
+is an isogeny of elliptic schemes, whose kernel `E[N]` is FINITE over the base
+(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` carries `[N]` flat and locally of
+finite presentation; the finiteness of its kernel over a field is the classical
+`#E[N] = N²`).  A closed immersion is finite and finite morphisms compose, so the
+containment transfers the finiteness.
+
+**`hN` IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT**: at `N = 0`, `huv` says
+`u ≫ v = [0] = ζ' ∘ f`, which is satisfied by `u` the zero morphism, whose kernel is all
+of `d.E` — positive-dimensional, hence not finite over `Spec ℚ`.
+
+**THE PROVEN MODEL TO TRANSCRIBE** is `isFinite_fixedLocus_of_geomFixed` (~19 000 lines
+below, PROVEN 2026-07-31), which is the same statement for `equalizer v (𝟙 d.E)` over a
+`ℚ̄` base; the two differ only in which pair of morphisms is equalised, and the argument
+there — bound the equaliser inside a finite subscheme, then descend the finiteness along
+the closed immersion — transcribes.  Note this leaf is over `Spec ℚ`, NOT over `Spec ℚ̄`;
+nothing in the argument cares, since finiteness is not a geometric hypothesis. -/
+theorem Fermat.Gamma0Datum.isFinite_kernel_of_isogeny {N M : ℕ} (_hN : N ≠ 0)
+    (d : Gamma0Datum N SpecQ) (d' : Gamma0Datum M SpecQ)
+    (u : d.E ⟶ d'.E) (_hu : u ≫ d'.f = d.f)
+    (v : d'.E ⟶ d.E) (_hv : v ≫ d.f = d'.f)
+    (_huv : u ≫ v = d.ab.mulByNat N) :
+    IsFinite (equalizer.ι u (d.f ≫ d'.ab.zeroSection) ≫ d.f) :=
+  sorry
+
+open _root_.CategoryTheory _root_.CategoryTheory.Limits _root_.AlgebraicGeometry
+  _root_.Fermat in
+/-- **LEAF 2 (cut 2026-08-02 off `ker_of_geomFibrePt` below): THE GEOMETRIC FIBRE OF THE
+KERNEL IS REDUCED** — this is CARTIER'S THEOREM, and it is the one nontrivial input of the
+whole node.
+
+TRUE in characteristic `0` and FALSE in characteristic `p`: `ker u ×_ℚ ℚ̄` is a finite
+commutative GROUP SCHEME over a field of characteristic zero — a group scheme because `u`
+is a HOMOMORPHISM, which is what `hadd` says — hence étale, hence reduced.  Over `𝔽_ℓ` the
+kernel of Frobenius is finite, flat and NOT reduced, which is exactly the degeneracy the
+parent's falsity audit names.
+
+**`hadd` IS SUPPLIED FOR FREE BY THE CONSUMER** and must not be dropped: it is derived in
+`ker_of_geomFibrePt` from `hgeom` and `d.cyc.zero_liesIn` through
+`Fermat.isAdditiveOn_of_post_zero` (rigidity, PROVEN in `X0.lean`), so a prover of this
+leaf has `u` additive in hand and does not have to earn it.
+
+**THE PROVEN MODEL TO TRANSCRIBE** is `isReduced_fixedLocus_of_isAdditiveOn` (~19 000
+lines below, PROVEN 2026-07-31 for `equalizer v (𝟙 d.E)` over a `ℚ̄` base), which reaches
+`CartierTheorem.isReduced_of_charZero` (`Fermat/FLT/GroupScheme/Cartier.lean`, sorry-free)
+through the Hopf-algebra structure that a subgroup functor of the geometric fibre carries
+by Yoneda — the same route `isReduced_cyc_of_algClosBase` takes for `d.cyc.C`.  Two
+differences to expect, neither of them deep: the equaliser here is against the zero
+section rather than the identity, and the base is `Spec ℚ` so the object to feed Cartier is
+the PULLBACK along `specAlgClos ℚ` rather than the equaliser itself — which is why the
+statement is about that pullback and is the form
+`AlgebraicGeometry.exists_factor_of_geomPoints_of_isFinite` consumes. -/
+theorem Fermat.Gamma0Datum.isReduced_geomFibre_kernel_of_isAdditiveOn {N M : ℕ}
+    (d : Gamma0Datum N SpecQ) (d' : Gamma0Datum M SpecQ)
+    (u : d.E ⟶ d'.E) (hu : u ≫ d'.f = d.f)
+    (_hadd : IsAdditiveOn d.ab d'.ab u hu) :
+    AlgebraicGeometry.IsReduced
+      (pullback (equalizer.ι u (d.f ≫ d'.ab.zeroSection) ≫ d.f) (specAlgClos ℚ)) :=
+  sorry
+
+open _root_.CategoryTheory _root_.CategoryTheory.Limits _root_.AlgebraicGeometry
+  _root_.Fermat in
+/-- **THE SCHEME-THEORETIC KERNEL IS DETECTED ON GEOMETRIC POINTS** (PROVEN 2026-08-02
+over the two leaves above; cut
 2026-07-31 off `nonempty_isNIsogenyPair_of_gamma0Model` below) —
 **LEVEL-GENERIC**, and the one place where the NON-REDUCED test bases of
 `IsNIsogenyPair` have to be faced.
@@ -22910,7 +23097,42 @@ DIMENSION, which `hgeom` does not give).  The consumer has them in hand.
 **The check that refutes this leaf**: a morphism whose scheme-theoretic kernel
 strictly contains `d.cyc` while having the same geometric points — that is a
 kernel with nilpotents, i.e. an inseparable isogeny, which exists only in
-positive characteristic.  Over `ℚ` there is none. -/
+positive characteristic.  Over `ℚ` there is none.
+
+**PROVEN 2026-08-02 (`flt-lean-297`) over the two leaves in the block above**, and the
+route below is the one this docstring prescribes with two substitutions, both of which
+removed a construction rather than adding one.
+
+* **The kernel is the EQUALISER of `u` and `d.f ≫ ζ'`, not a fibre product with the zero
+  section.**  Nothing then has to be proven about the zero section — in particular not
+  that it is a closed immersion — because `d'.E` is a separated scheme
+  (`Gamma0Datum.isSeparated_total` above) and mathlib registers
+  `IsClosedImmersion (equalizer.ι f g)` for that.  `Gamma0Datum.post_eq_zero_iff_factor`
+  then says the hypothesis of this theorem at a test point IS factorisation through the
+  equaliser, so the arbitrary test base disappears at the first step and both directions
+  become containments of closed subschemes of `d.E`.
+* **The `ℚ̄`-points are spent through a DOMINANT BASE CHANGE, not through a
+  decomposition of `C` over `ℚ`.**  `AlgebraicGeometry.exists_factor_of_geomPoints_of_isFinite`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/GeomPointDescent.lean`, PROVEN) does both halves
+  at once: over `ℚ̄` a finite reduced scheme is a finite disjoint union of copies of the
+  base, so a factorisation may be assembled from the `ℚ̄`-points; and `Z ×_ℚ ℚ̄ ⟶ Z` is
+  scheme-theoretically dominant, so a factorisation through a CLOSED IMMERSION descends
+  from it — which is `IsClosedImmersion.lift` over `(q ≫ a).ker = a.ker`.
+
+**The two containments are NOT symmetric, and that is the whole shape of the residue.**
+`C ⊆ ker u` needs nothing new: `d.cyc.C` is finite over `Spec ℚ` and its geometric fibre
+is reduced, both by fields of `CyclicSubgroupOfOrder`.  `ker u ⊆ C` needs the same two
+facts about the kernel, and neither is available — they are LEAF 1
+(`isFinite_kernel_of_isogeny`, which is where `huv` and `hN` are spent) and LEAF 2
+(`isReduced_geomFibre_kernel_of_isAdditiveOn`, which is Cartier's theorem).  RIGIDITY —
+that `u` is a homomorphism, which LEAF 2 needs — is derived here rather than assumed,
+from `hgeom` and `d.cyc.zero_liesIn` through `isAdditiveOn_of_post_zero`.
+
+**Accounting: 1 leaf → 2 leaves.**  What left the frontier is every step between the
+`ℚ̄`-points and the non-reduced test bases — the part the docstring above calls "the one
+place where the NON-REDUCED test bases of `IsNIsogenyPair` have to be faced" — and what
+remains is two instance-shaped facts about one explicit scheme, each with a PROVEN
+model ~19 000 lines below to transcribe. -/
 theorem Fermat.Gamma0Datum.ker_of_geomFibrePt {N M : ℕ} (hN : N ≠ 0)
     (d : Gamma0Datum N SpecQ) (d' : Gamma0Datum M SpecQ)
     (u : d.E ⟶ d'.E) (hu : u ≫ d'.f = d.f)
@@ -22920,8 +23142,53 @@ theorem Fermat.Gamma0Datum.ker_of_geomFibrePt {N M : ℕ} (hN : N ≠ 0)
       RelPoint.post u hu x = d'.ab.zero (specAlgClos ℚ ≫ 𝟙 SpecQ) ↔
         RelPoint.LiesIn d.cyc.ι x) :
     ∀ {T' : Scheme.{0}} {g : T' ⟶ SpecQ} (x : RelPoint d.f g),
-      RelPoint.post u hu x = d'.ab.zero g ↔ RelPoint.LiesIn d.cyc.ι x :=
-  sorry
+      RelPoint.post u hu x = d'.ab.zero g ↔ RelPoint.LiesIn d.cyc.ι x := by
+  haveI := Gamma0Datum.isSeparated_total d'
+  haveI : IsSchemeTheoreticallyDominant (specAlgClos ℚ) := by
+    rw [specAlgClos]; exact IsSchemeTheoreticallyDominant.of_isDominant _
+  haveI : QuasiCompact (specAlgClos ℚ) := by rw [specAlgClos]; infer_instance
+  haveI : IsFinite (d.cyc.ι ≫ d.f) := d.cyc.isFinite
+  haveI : IsClosedImmersion d.cyc.ι := d.cyc.isClosedImmersion
+  -- `C ⊆ ker u`, from the `ℚ̄`-points of `C` and its reduced geometric fibre
+  have hCK : ∃ c : d.cyc.C ⟶ equalizer u (d.f ≫ d'.ab.zeroSection),
+      c ≫ equalizer.ι u (d.f ≫ d'.ab.zeroSection) = d.cyc.ι := by
+    refine AlgebraicGeometry.exists_factor_of_geomPoints_of_isFinite (d.cyc.ι ≫ d.f)
+      (specAlgClos ℚ)
+      (d.cyc.isReduced_geomFibre_of_specQBase (𝟙 SpecQ) (AlgebraicClosure ℚ) (specAlgClos ℚ))
+      _ _ ?_
+    intro w hw
+    have hx : (w ≫ d.cyc.ι) ≫ d.f = specAlgClos ℚ ≫ 𝟙 SpecQ := by
+      rw [Category.comp_id, Category.assoc]; exact hw
+    exact (Gamma0Datum.post_eq_zero_iff_factor d d' u hu ⟨w ≫ d.cyc.ι, hx⟩).mp
+      ((hgeom ⟨w ≫ d.cyc.ι, hx⟩).mpr ⟨w, rfl⟩)
+  -- RIGIDITY: `u` carries the zero section to the zero section, hence is a homomorphism
+  have hadd : IsAdditiveOn d.ab d'.ab u hu := by
+    refine isAdditiveOn_of_post_zero d.ab d'.ab hu ?_
+    obtain ⟨y, hy⟩ := d.cyc.zero_liesIn (𝟙 SpecQ)
+    obtain ⟨c, hc⟩ := hCK
+    apply Subtype.ext
+    show (d.ab.zero (𝟙 SpecQ)).1 ≫ u = d'.ab.zeroSection
+    have hzf : (d.ab.zero (𝟙 SpecQ)).1 ≫ d.f = 𝟙 SpecQ := (d.ab.zero (𝟙 SpecQ)).2
+    have hyc : (y ≫ c) ≫ equalizer.ι u (d.f ≫ d'.ab.zeroSection)
+        = (d.ab.zero (𝟙 SpecQ)).1 := by rw [Category.assoc, hc, hy]
+    rw [← hyc, Category.assoc, equalizer.condition u (d.f ≫ d'.ab.zeroSection),
+      ← Category.assoc, hyc, ← Category.assoc, hzf, Category.id_comp]
+  -- `ker u ⊆ C`, from the two leaves above
+  haveI := Gamma0Datum.isFinite_kernel_of_isogeny hN d d' u hu v hv huv
+  have hKC : ∃ c : equalizer u (d.f ≫ d'.ab.zeroSection) ⟶ d.cyc.C,
+      c ≫ d.cyc.ι = equalizer.ι u (d.f ≫ d'.ab.zeroSection) := by
+    refine AlgebraicGeometry.exists_factor_of_geomPoints_of_isFinite
+      (equalizer.ι u (d.f ≫ d'.ab.zeroSection) ≫ d.f) (specAlgClos ℚ)
+      (Gamma0Datum.isReduced_geomFibre_kernel_of_isAdditiveOn d d' u hu hadd) _ _ ?_
+    intro w hw
+    have hx : (w ≫ equalizer.ι u (d.f ≫ d'.ab.zeroSection)) ≫ d.f
+        = specAlgClos ℚ ≫ 𝟙 SpecQ := by
+      rw [Category.comp_id, Category.assoc]; exact hw
+    exact (hgeom ⟨_, hx⟩).mp
+      ((Gamma0Datum.post_eq_zero_iff_factor d d' u hu ⟨_, hx⟩).mpr ⟨w, rfl⟩)
+  intro T' g x
+  rw [Gamma0Datum.post_eq_zero_iff_factor d d' u hu x]
+  exact Gamma0Datum.liesIn_iff_of_factor d _ hCK hKC x.1
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **STEP 2, *across*: the two modelled `Γ₀(N)`-data are related by a cyclic
