@@ -18702,6 +18702,158 @@ theorem isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 
     exact (isIntegral_coeff_prime_pow_of_isIntegral_gamma1 hf hp
       (isIntegral_coeff_prime_of_isWeightTwoEigenformOn_gamma1 N hN χ f a hf p hp) k).mul ih
 
+/-- **A MAXIMAL ISOTYPIC QUOTIENT IS AN ISOTYPIC HOMOMORPHISM** (PROVEN
+2026-08-01) — the shape-free bridge from `X0.lean`'s
+`IsUniversalIsotypicQuotient` to `X0.lean`'s `IsIsotypicHom`.
+
+There is no modular form, no compactification, no Jacobian and no
+`IsModularHeckeActionGamma1` in this statement: it is level-shape agnostic, and
+it is stated here only because it consumes `flat_of_surjective_of_isAdditiveOn`,
+which `X0.lean` declares some 30 000 lines BELOW its own `IsIsotypicHom` cluster.
+**Moving it into `X0.lean` — where the `Γ₀` leaf could then use it too — is a
+relocation and not a proof**; see the note on the leaf below, and `to_merger`.
+
+The eleven easy fields are `IsUniversalIsotypicQuotient`'s own, verbatim:
+`equivariant` is already quantified over EVERY arity there (that is exactly what
+maximality buys), and `isotypic` is stronger there — it annihilates all of `A`,
+where `IsIsotypicHom` asks only for the image of `v` — so it is instantiated at
+the point `RelPoint.post u u_comp x` and nothing else is needed.
+
+The one field with content is `v_ne_zero`, and it is where surjectivity of `u`
+is spent: `nontriv` says the TAUTOLOGICAL point of `A` is nonzero, while
+`v_ne_zero` says the `J`-point `u` is.  The two are related by the observation
+that `u`, read as a `J`-point of `A`, is the pullback of the tautological point
+along `u` itself, so it suffices that `RelPoint.pre u u_comp` be injective — i.e.
+that `u` be an EPIMORPHISM.  It is: a surjective homomorphism of abelian schemes
+over `ℚ` is flat (`flat_of_surjective_of_isAdditiveOn`, PROVEN in `X0.lean`) and
+a flat surjection is an epimorphism (`Flat.epi_of_flat_of_surjective`).  The
+zero point transports along `pre` by `AbelianSchemeStruct.pre_zero`.
+
+This is the exact CONVERSE of step (1) of `X0.lean`'s
+`exists_isotypicQuotient_of_isIsotypicHom`, which recovers `nontriv` from
+`v_ne_zero`; a prover of that leaf may want to read this proof first. -/
+theorem isotypicHom_of_universalIsotypicQuotient {N : ℕ} {J : Scheme.{0}}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {T : ℕ → (J ⟶ J)}
+    {a : ℕ → ℂ} (Q : IsUniversalIsotypicQuotient ab T N a) :
+    Nonempty (IsIsotypicHom ab T N a) := by
+  haveI := Q.u_surj
+  haveI : AlgebraicGeometry.Flat Q.u :=
+    flat_of_surjective_of_isAdditiveOn ab Q.abA Q.u_comp Q.u_add Q.u_surj
+  haveI : Epi Q.u := Flat.epi_of_flat_of_surjective Q.u
+  refine ⟨{ B := Q.A, bstr := Q.astr, abB := Q.abA, v := Q.u, v_comp := Q.u_comp
+            v_add := Q.u_add, S := Q.S, S_comp := Q.S_comp, S_add := Q.S_add
+            equivariant := Q.equivariant, v_ne_zero := ?_, isotypic := ?_ }⟩
+  · intro hzero
+    apply Q.nontriv
+    have hinj : Function.Injective
+        (RelPoint.pre Q.u Q.u_comp : RelPoint Q.astr Q.astr → RelPoint Q.astr jstr) := by
+      intro x y hxy
+      exact Subtype.ext ((cancel_epi Q.u).1 (congrArg Subtype.val hxy))
+    apply hinj
+    rw [Q.abA.pre_zero Q.u Q.u_comp]
+    refine Eq.trans ?_ hzero
+    exact Subtype.ext (Category.comp_id Q.u)
+  · intro n hn T' g x
+    exact Q.isotypic n hn g (RelPoint.post Q.u Q.u_comp x)
+
+/-- **SHIMURA'S `A_f` FOR `Γ₁(N)`, IN ITS MAXIMAL FORM** (sorry leaf, NEW
+2026-08-01) — the `Γ₁` twin of `X0.lean`'s `exists_universalIsotypicQuotient`,
+and the single modular obligation the `Γ₁` Eichler–Shimura cluster now rests on.
+
+**THIS IS THE FOLLOW-UP THE FILE ITSELF ASKED FOR.**  The docstring of
+`exists_isotypicQuotientFamily_finiteKer_gamma1` below records, in as many words,
+that the `Γ₀` side was cut on 2026-07-31 through the level-shape agnostic
+structure `IsUniversalIsotypicQuotient`, that re-declaring that structure here
+would be a duplicate, and that "the tidy follow-up, once that branch is on
+`main`, is to split `exists_isotypicQuotientFamily_finiteKer_gamma1` along the
+same seam (`exists_universalIsotypicQuotient_gamma1` plus a shared joint-kernel
+statement) and reuse the structure."  That branch IS on `main` (checked
+2026-08-01: `IsUniversalIsotypicQuotient` and `exists_universalIsotypicQuotient`
+are both in `X0.lean`), so the name is taken here, with the spelling the file
+predicted, and the leaf immediately below is proven over it.
+
+**WHY THE MAXIMAL FORM IS NOT A HARDER OBLIGATION, which is the one thing a
+reader should check before accepting this recut.**  `IsIsotypicHom.equivariant`
+is quantified over EVERY arity, junk arities included, while
+`IsModularHeckeActionGamma1` pins `T n` only for `n` coprime to `N`.  `X0.lean`'s
+own analysis of that field says the isotypic image "must be chosen MAXIMAL" for
+exactly this reason — a single copy `A_g` inside an `A_g^m` need not be preserved
+by an endomorphism permuting the degeneracy copies.  So ANY producer of
+`IsIsotypicHom` has to build the maximal object anyway; asking for it by name
+costs nothing and buys the `universal` clause for free.  This is the same trade
+`X0.lean` made, and its docstring on `exists_universalIsotypicQuotient` argues at
+length that the maximal form is CHEAPER than an arbitrary factor, not dearer:
+with `A := J / K_a` both `isotypic` and `universal` are automatic, and the only
+two fields with content are `equivariant` at the junk arities and `nontriv`.
+
+**WHAT IS `Γ₁`-SPECIFIC, AND IT IS ONLY THE NEBENTYPUS.**  This leaf receives `χ`
+rather than having to produce the decomposition of `S₂(Γ₁(N))` under `(ℤ/N)ˣ`, so
+what it owns beyond the `Γ₀` statement is that `f` occurs in the `χ`-eigenspace
+of `H₁(X_1(N), ℚ)`.  The coefficients generate `ℚ(χ)` rather than a subfield of
+`ℝ`, which is why the algebraicity leaf
+`isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1` above is not an instance of
+the `Γ₀` one; the non-vanishing here is `Γ₁`-specific for the same reason.
+Shimura, *Introduction to the arithmetic theory of automorphic functions* §7.5,
+states it at `Γ₁(N)` with nebentypus, which is the case actually written there.
+
+## ⚠ FALSITY AUDIT, RUN AGAINST THIS STATEMENT ON 2026-08-01 AND NOT INHERITED
+
+The statement differs from the leaf below in TWO ways — the conclusion is
+strengthened from `IsIsotypicHom` to `IsUniversalIsotypicQuotient`, and `hint` is
+dropped — so neither that leaf's audit nor `X0.lean`'s transfers automatically.
+Both `X0.lean`'s witnesses do transfer, because neither mentions the level
+structure and the `Γ₁` hypotheses are stronger at every point they are used.
+
+**`hmod` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE.**  Take `T n := 𝟙 J`.
+Then `K_a` is the abelian subvariety generated by the images of
+`(minpoly ℤ (a n))(𝟙) = P_n(1) · 𝟙`, and `P_n(1) ≠ 0` unless `a n = 1`, so
+multiplication by that nonzero integer is an isogeny, `K_a = J` and `A` is
+trivial — killing `nontriv` for every system with some `a n ≠ 1` at an `n`
+coprime to `N`.  Already false at `N = 11`, `n = 2`, `a 2 = −2`.
+
+**`hf` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE.**  For a system `a` that
+is not an eigen-system the `a`-isotypic part of `J_1(N)` is genuinely `0`, so the
+trivial abelian scheme satisfies every field except `nontriv`, and `nontriv`
+fails.  The statement is therefore FALSE if `hf` is weakened to
+`∀ n, IsIntegral ℤ (a n)` or dropped.  The cheap witness `a n := 0` for every `n`
+of the leaf below also applies here.
+
+**`hN : N ≠ 0` IS LOAD-BEARING, and here it is NOT free** — unlike the `Γ₀` side,
+where `pos_of_isX0Compactification_of_fieldPoint` derives it from the
+compactification.  At level `0` the `hecke` recursion of
+`IsWeightTwoEigenformOn (Gamma1GL 0) 0 χ f a` is vacuous (every prime divides
+`0`) and the nebentypus is unconstrained, so the transcendental system
+`a (2 ^ k) = π ^ k`, `a n = 0` otherwise, is admissible; the `a`-isotypic part of
+`J_1(0)` is then not defined by any finite condition.  It is kept for that reason
+and because every sibling in this cluster carries it.
+
+**`hint` IS DELIBERATELY ABSENT**, exactly as on the `Γ₀` twin, and this leaf does
+NOT rest on `isIntegral_coeff_of_isWeightTwoEigenformOn_gamma1`.  That is the
+point of `integral` having been dropped from `IsUniversalIsotypicQuotient`: the
+algebraicity theorem and the geometry are independent inputs, and the `hint`
+hypothesis of the consumers exists precisely so that the geometry half owes
+nothing to the arithmetic half.  A transcendental `a n` makes `isotypic` vacuous
+but makes `universal` STRONGER, so nothing is smuggled in through the back door.
+
+**WHAT REMAINS GENUINELY MISSING** (re-checked 2026-08-01, and unchanged from the
+`Γ₀` twin): there is no quotient of an abelian scheme by an abelian subscheme in
+this project, none in mathlib at this pin, and none in `~/cs/FLT`; no Hecke
+algebra acting on a Jacobian; no Eichler–Shimura isomorphism.
+`Modularity/AbelianSchemeIsogeny.lean` supplies `[n] : A ⟶ A` and its flatness
+and nothing more.  What this leaf does NOT need is the finiteness of the set of
+eigen-systems or the Poincaré complete-reducibility step. -/
+theorem exists_universalIsotypicQuotient_gamma1 (N : ℕ) (_hN : N ≠ 0)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (_T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (_hmod : IsModularHeckeActionGamma1 N H jac T T_comp)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (_hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) :
+    Nonempty (IsUniversalIsotypicQuotient ab T N a) :=
+  sorry
+
 /-- **EICHLER–SHIMURA NON-VANISHING FOR `Γ₁(N)`: A WEIGHT-TWO EIGENFORM OF LEVEL
 `N` AND NEBENTYPUS `χ` CUTS OUT A NONZERO ISOTYPIC HOMOMORPHISM OUT OF `J_1(N)`**
 (sorry leaf, NEW 2026-07-31) — the MODULAR half of
@@ -18790,18 +18942,19 @@ carried because the caller holds it for nothing; it IS load-bearing on
 to be inhabited at the scheme level).  Were it formally vacuous this leaf would
 be exactly as hard as the undecomposed node and no harder, so the cut cannot
 make anything worse. -/
-theorem exists_isotypicHom_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (_hN : N ≠ 0)
+theorem exists_isotypicHom_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
-    (T_comp : ∀ n, T n ≫ jstr = jstr) (_T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
-    (_hmod : IsModularHeckeActionGamma1 N H jac T T_comp)
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (hmod : IsModularHeckeActionGamma1 N H jac T T_comp)
     (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
-    (_hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a)
     (_hint : ∀ n, IsIntegral ℤ (a n)) :
     Nonempty (IsIsotypicHom ab T N a) :=
-  sorry
+  (exists_universalIsotypicQuotient_gamma1 N hN H jac T T_comp T_add hmod χ f a hf).elim
+    fun Q => isotypicHom_of_universalIsotypicQuotient Q
 
 /-- **SHIMURA'S `A_f` FOR `Γ₁(N)`, GIVEN ALGEBRAICITY OF THE EIGENVALUES**
 (**PROVEN 2026-07-31** over the leaf immediately above together with `X0.lean`'s
