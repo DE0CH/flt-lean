@@ -27629,13 +27629,161 @@ theorem exists_abelianQuotient_of_range_ne_univ
   show (m'.act a y).1 ≫ π = (y.1 ≫ π) ≫ γ a
   rw [m'.act_val a y, Category.assoc, Category.assoc, hequiv a]
 
+/-- **THE GEOMETRIC FIBRE OF AN ABELIAN SCHEME OF RELATIVE DIMENSION `0`
+IS FINITE** (PROVEN 2026-08-02).
+
+`f'` is proper and smooth of relative dimension `0`, hence ÉTALE
+(`Etale.iff_smoothOfRelativeDimension_zero`), hence LOCALLY QUASI-FINITE
+(`locallyQuasiFinite_of_formallyUnramified`, proven in
+`Modularity/AbelianSchemeIsogeny.lean`), hence FINITE by Zariski's main
+theorem.  A finite flat morphism has `finrank` many geometric points in
+each fibre (`card_fibrePt_eq_of_finrank_eq`), and that rank is at least
+`1` because the zero section supplies a point of `A'`
+(`Scheme.Hom.one_le_finrank_map`) — which is what turns the `Nat.card`
+equality into FINITENESS rather than into the vacuous `Nat.card = 0` of
+an infinite type.
+
+`hdeg` is free: `Spec k` is a single point for a field `k`, so the rank
+function is constant for trivial reasons and no connectedness of `A'` is
+used anywhere. -/
+theorem finite_geomFibrePt_of_relativeDimension_zero
+    {k : Type u} [Field k] {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f') (hdim : SmoothOfRelativeDimension 0 f') :
+    Finite (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) := by
+  haveI := ab'.smooth
+  haveI := ab'.proper
+  haveI := hdim
+  haveI : Etale f' := (Etale.iff_smoothOfRelativeDimension_zero f').mpr hdim
+  haveI : LocallyQuasiFinite f' := locallyQuasiFinite_of_formallyUnramified f'
+  haveI : IsFinite f' := IsFinite.of_isProper_of_locallyQuasiFinite f'
+  set x₀ : A' := (ab'.zeroSection).base (Nonempty.some inferInstance) with hx₀
+  set n : ℕ := f'.finrank (f'.base x₀) with hn
+  have hdeg : ∀ y : Spec (CommRingCat.of k), f'.finrank y = n := by
+    intro y
+    rw [hn]
+    congr 1
+    exact Subsingleton.elim _ _
+  have hcard := card_fibrePt_eq_of_finrank_eq f' n hdeg
+    (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  have h1 : 1 ≤ n := hn ▸ Scheme.Hom.one_le_finrank_map f' x₀
+  exact Nat.finite_of_card_ne_zero (by rw [hcard]; omega)
+
+/-- **AN ABELIAN SCHEME OF RELATIVE DIMENSION `0` OVER A FIELD HAS ONLY
+THE ZERO GEOMETRIC POINT** (PROVEN 2026-08-02).
+
+This is the formal content of "a `0`-dimensional abelian variety is
+trivial", and it is what makes `hnz` usable as a substitute for
+`0 < g` in `exists_ne_zero_mem_torsion_isMaximal_finiteBase` below.
+
+The proof needs NO connectedness argument and no computation of the
+degree of `f'`.  `A'(k̄)` is FINITE by the lemma above, and it is
+DIVISIBLE by every nonzero natural number
+(`exists_nsmul_eq_geomFibrePt`, which holds in every characteristic).  A
+finite divisible abelian group is trivial: `M := #A'(k̄)` kills every
+element, and every element is `M` times another one.
+
+(The classical route — `f'` finite étale with a section and connected
+source, hence of degree `1` — needs "a connected finite étale algebra
+over a field with a rational point is the field", i.e. the structure
+theory of étale algebras.  It is not taken here: the divisibility
+argument is three lines and uses only what the file already has.) -/
+theorem eq_zero_geomFibrePt_of_relativeDimension_zero
+    {k : Type u} [Field k] {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f') (hdim : SmoothOfRelativeDimension 0 f')
+    (y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :
+    y = ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) := by
+  letI := ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  haveI : Finite (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    finite_geomFibrePt_of_relativeDimension_zero ab' hdim
+  set M := Nat.card (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) with hM
+  have hM0 : M ≠ 0 := Nat.card_ne_zero.mpr ⟨⟨y⟩, inferInstance⟩
+  obtain ⟨w, hw⟩ := exists_nsmul_eq_geomFibrePt ab' (𝟙 (Spec (CommRingCat.of k))) M hM0 y
+  have hMw : M • w = 0 := card_nsmul_eq_zero' (G := GeomFibrePt f' _) (x := w)
+  rw [hMw] at hw
+  exact hw.symm
+
+open _root_.NumberField in
+/-- **`#A'[(a)]^{[D:ℚ]} = N_{D/ℚ}(a)^{2g}` AT A PRINCIPAL LEVEL PRIME TO
+THE CHARACTERISTIC, WITH THE RELATIVE DIMENSION `g` FREE** (PROVEN
+2026-08-02).
+
+This is `card_torsion_span_singleton_of_field` with the hypothesis
+`g = [D : ℚ]` DROPPED, and it subsumes it: the étale count
+`card_torsion_span_singleton_of_finrank_mulByElt` is already stated with
+the degree as a PARAMETER, and the degree is evaluated by the free-`g`
+theorem of the cube `finrank_mulByElt_of_relativeDimension` rather than by
+its `g = [D:ℚ]` specialisation.  So no `hdim'` and no `IsTotallyReal D`
+appear, which is exactly what
+`exists_ne_zero_mem_torsion_isMaximal_finiteBase` below needs — its `C` is
+a QUOTIENT of the ambient abelian scheme and inherits no rank hypothesis.
+
+The `[D:ℚ]`-th power is on the left for the reason
+`finrank_mulByElt_of_relativeDimension` states: `deg [a] = |N(a)|^{2g/e}`
+is an identity in which `e ∣ 2g` is part of the content, and raising to
+the `e`-th power removes the division without weakening anything.
+
+`hdeg` is obtained from the degree identity itself: `x ↦ x^{[D:ℚ]}` is
+injective on `ℕ`, so the rank of `[a]` has the same value at every point
+of `A'`, and `A'` is nonempty because the zero section is a point of
+it. -/
+theorem card_torsion_span_singleton_of_relativeDimension
+    {k : Type u} [Field k]
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    {ab' : AbelianSchemeStruct f'}
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (𝓞 D))
+    (g : ℕ) (hdim : SmoothOfRelativeDimension g f')
+    (a : 𝓞 D) (ha : a ≠ 0)
+    (hchar : ((Ideal.absNorm (Ideal.span {a} : Ideal (𝓞 D)) : ℕ) : k) ≠ 0) :
+    Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k)))
+        (Ideal.span {a} : Ideal (𝓞 D))).1 ^ Module.finrank ℚ D
+      = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ (2 * g) := by
+  classical
+  obtain ⟨x₀⟩ : Nonempty A' := ⟨(ab'.zeroSection).base (Nonempty.some inferInstance)⟩
+  set dg := (m'.mulByElt a).finrank x₀ with hdgdef
+  have hdeg : ∀ y : A', (m'.mulByElt a).finrank y = dg := by
+    intro y
+    have h1 := finrank_mulByElt_of_relativeDimension m' g hdim a ha y
+    have h2 := finrank_mulByElt_of_relativeDimension m' g hdim a ha x₀
+    exact Nat.pow_left_injective (Module.finrank_pos (R := ℚ) (M := D)).ne' (h1.trans h2.symm)
+  rw [card_torsion_span_singleton_of_finrank_mulByElt m' a ha hchar dg hdeg, hdgdef]
+  exact finrank_mulByElt_of_relativeDimension m' g hdim a ha x₀
+
+open _root_.NumberField nonZeroDivisors in
+/-- **SOME POSITIVE POWER OF A NONZERO IDEAL OF `𝒪_D` IS PRINCIPAL**
+(PROVEN 2026-08-02) — the class group of a number field is FINITE, so the
+class of `I` has finite order, and the exponent may be taken to be the
+class number itself.
+
+The exponent is returned with `n ≠ 0`, which is the only thing consumers
+need: at `n = 0` the statement is the trivial `span {1} = ⊤` and carries
+no information about `I`. -/
+theorem exists_pow_span_singleton_eq_of_ne_bot {D : Type u} [Field D] [NumberField D]
+    (I : Ideal (𝓞 D)) (hI0 : I ≠ ⊥) :
+    ∃ n : ℕ, n ≠ 0 ∧ ∃ a : 𝓞 D, Ideal.span {a} = I ^ n := by
+  classical
+  haveI : Fintype (ClassGroup (𝓞 D)) := inferInstance
+  set n := Fintype.card (ClassGroup (𝓞 D)) with hn
+  have hn0 : n ≠ 0 := Fintype.card_ne_zero
+  have hImem : I ∈ (Ideal (𝓞 D))⁰ := mem_nonZeroDivisors_iff_ne_zero.mpr hI0
+  have hpowmem : I ^ n ∈ (Ideal (𝓞 D))⁰ :=
+    mem_nonZeroDivisors_iff_ne_zero.mpr (pow_ne_zero _ hI0)
+  have hone : ClassGroup.mk0 (⟨I, hImem⟩ : (Ideal (𝓞 D))⁰) ^ n = 1 := pow_card_eq_one
+  have heq : ClassGroup.mk0 (⟨I ^ n, hpowmem⟩ : (Ideal (𝓞 D))⁰) = 1 := by
+    rw [← hone, ← map_pow]
+    congr 1
+  obtain ⟨a, ha⟩ := (ClassGroup.mk0_eq_one_iff hpowmem).mp heq
+  exact ⟨n, hn0, a, ha.symm⟩
+
 open _root_.NumberField in
 /-- **A NONZERO ABELIAN VARIETY WITH AN `𝒪_D`-ACTION HAS NONZERO
-`I`-TORSION, AT EVERY `I` OF RESIDUE CHARACTERISTIC PRIME TO `#k`** (sorry
-leaf — cut 2026-07-31 out of
-`range_eq_univ_of_abelianSubscheme_torsion_finiteBase`; Mumford *Abelian
-Varieties* §19 Thm 3 (`Hom(A, B) ⊗ ℤ_ℓ ↪ Hom(T_ℓ A, T_ℓ B)`), Milne
-*Abelian Varieties* §I.10, Tate 1966).
+`I`-TORSION, AT EVERY `I` OF RESIDUE CHARACTERISTIC PRIME TO `#k`**
+(**PROVEN 2026-08-02** over the SINGLE existing leaf
+`finrank_mulByElt_of_relativeDimension` — the free-`g` theorem of the
+cube, declared ~20 000 lines above — and no new leaf; cut 2026-07-31 out
+of `range_eq_univ_of_abelianSubscheme_torsion_finiteBase`; Mumford
+*Abelian Varieties* §19 Thm 3 (`Hom(A, B) ⊗ ℤ_ℓ ↪ Hom(T_ℓ A, T_ℓ B)`),
+Milne *Abelian Varieties* §I.10, Tate 1966).
 
 Classically.  `𝒪_D → End(C)` is INJECTIVE: its kernel is an ideal, and a
 nonzero `a` in it would make `[N_{D/ℚ}(a)] = [a] ∘ [b]` the zero
@@ -27646,14 +27794,51 @@ So `D ↪ End⁰(C)`; by Tate's injectivity `End⁰(C) ⊗ ℚ_q ↪ End(V_q C)`
 and every idempotent `e_J` acts nonzero.  In particular `V_I C ≠ 0`, so
 `T_I C ≠ 0`, so `C[I] = T_I C / I·T_I C ≠ 0` by Nakayama.
 
-**WHAT IS ACTUALLY MISSING, AND WHAT IS NOT.**  The FAITHFULNESS of
-`𝒪_D` on the point group is cheap and is spelled out above — it needs only
-divisibility, which this file already has.  It is NOT enough: faithfulness
-on `C(k̄) = ⊕_ℓ C[ℓ^∞]` is compatible with `C[I^∞] = 0`, because a nonzero
-`a ∈ 𝒪_D` prime to `ℓ` still acts injectively on the `ℓ`-primary part for
-every `ℓ ≠ q`.  What rules that out is the `ℓ`-INDEPENDENCE of the local
-ranks, i.e. genuine Tate-module theory, and that is the whole content of
-this leaf.  A prover who has proved faithfulness has not started.
+**WHAT IS ACTUALLY MISSING, AND WHAT IS NOT** (the 2026-07-31 analysis,
+kept because its NEGATIVE half is right and is worth not re-deriving).
+The FAITHFULNESS of `𝒪_D` on the point group is cheap and is spelled out
+above — it needs only divisibility, which this file already has.  It is
+NOT enough: faithfulness on `C(k̄) = ⊕_ℓ C[ℓ^∞]` is compatible with
+`C[I^∞] = 0`, because a nonzero `a ∈ 𝒪_D` prime to `ℓ` still acts
+injectively on the `ℓ`-primary part for every `ℓ ≠ q`.  What rules that
+out is the `ℓ`-INDEPENDENCE of the local ranks.  A prover who has proved
+faithfulness has not started.
+
+**AND THAT `ℓ`-INDEPENDENCE WAS ALREADY A LEAF OF THIS FILE, 20 000 LINES
+ABOVE — THIS DECLARATION WAS CARRYING IT A SECOND TIME.**  The paragraph
+above concludes "and that is the whole content of this leaf"; the content
+is real and it is `finrank_mulByElt_of_relativeDimension`, whose own
+docstring names exactly the same obstruction in the same words ("a module
+over a product of fields need not be free — the exponents `dᵢ` are the
+local ranks, and their equality is precisely what the Galois argument
+supplies and what a count at one `λ` cannot see") and prescribes the same
+route (the polynomiality of `deg` and the monomial rigidity).  Two leaves,
+one theorem, no identifier in common.  This one is now PROVEN over that
+one, so the obligation is stated ONCE.
+
+**THE ROUTE, and it is entirely elementary given that leaf.**  Suppose
+`C[I] = 0`.
+
+1. `C[Iⁿ] = 0` for every `n`, by induction: `a·y ∈ C[Iⁿ]` for `a ∈ I` and
+   `y ∈ C[Iⁿ⁺¹]`, so `a·y = 0` by the inductive hypothesis, so `y ∈ C[I]`.
+2. Some power `Iⁿ` with `n ≥ 1` is PRINCIPAL, `= (α)`
+   (`exists_pow_span_singleton_eq_of_ne_bot`, i.e. finiteness of the class
+   group).  So `C[(α)] = 0`, i.e. `#C[(α)] = 1`.
+3. `N(α) = N(I)ⁿ` divides a power of `q`, hence is invertible in `k`
+   (`natCast_ne_zero_of_coprime_natCard`), so `[α]` is finite flat ÉTALE
+   and `#C[(α)]` is its degree
+   (`card_torsion_span_singleton_of_relativeDimension`, which is the
+   étale count `card_torsion_span_singleton_of_finrank_mulByElt` fed by
+   the free-`g` theorem of the cube).
+4. Therefore `1 = N(I)^{n·2g}` with `N(I) ≥ 2` and `n ≥ 1`, which forces
+   the relative dimension `g` to be `0`.
+5. A relative-dimension-`0` abelian scheme has only the zero geometric
+   point (`eq_zero_geomFibrePt_of_relativeDimension_zero`), contradicting
+   `hnz`.
+
+So the Tate module is never constructed, no primary decomposition of the
+torsion is needed, and the faithfulness of `𝒪_D → End(C)` — which the
+sketch above spends a paragraph on — is not used at all.
 
 **`hqN` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**  At the
 residue characteristic of `k` a SUPERSINGULAR `C` has `C[pⁿ](k̄) = 0` for
@@ -27667,7 +27852,17 @@ the shape the consumer has, and generalising it later costs nothing.)
 single point and the conclusion is false, so the leaf is not discharged by
 the zero abelian variety.  No rank hypothesis (`hdim'`) and no
 `IsTotallyReal D` are needed — the argument never looks at the signature of
-`D` and never uses that `C[Iⁿ]` is free of rank two. -/
+`D` and never uses that `C[Iⁿ]` is free of rank two.
+
+**BOTH AUDITS ABOVE ARE CONFIRMED BY THE PROOF, AND EACH HYPOTHESIS IS
+SPENT EXACTLY WHERE THEY SAY.**  `hfin`, `hN`, `hq`, `hqN` and `hqI` are
+consumed ONCE, in step 3, to say that `N(α)` is invertible in `k`
+(`natCast_ne_zero_of_coprime_natCard`), which is what makes `[α]` étale
+rather than merely finite flat; `hqI` additionally gives `I ≠ ⊥`.  `hnz`
+is consumed ONCE, in step 5, and is the ONLY thing excluding relative
+dimension `0`.  `hI` is used for `I ≠ ⊤` in step 4 and for `I ≠ ⊥`.
+Nothing else is used, and in particular the proof never mentions
+`IsTotallyReal D`, a Tate module, or a primary decomposition. -/
 theorem exists_ne_zero_mem_torsion_isMaximal_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {C : Scheme.{u}} {h : C ⟶ Spec (CommRingCat.of k)}
@@ -27680,8 +27875,97 @@ theorem exists_ne_zero_mem_torsion_isMaximal_finiteBase
     (hnz : ∃ c : GeomFibrePt h (𝟙 (Spec (CommRingCat.of k))),
       c ≠ abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))) :
     ∃ c ∈ (mC.torsion (𝟙 (Spec (CommRingCat.of k))) I).1,
-      c ≠ abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) :=
-  sorry
+      c ≠ abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) := by
+  classical
+  haveI := hfin
+  haveI : I.IsMaximal := hI
+  by_contra hcontra
+  have hcon : ∀ c ∈ (mC.torsion (𝟙 (Spec (CommRingCat.of k))) I).1,
+      c = abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) := by
+    intro c hc
+    by_contra hne
+    exact hcontra ⟨c, hc, hne⟩
+  -- `I ≠ ⊥`, because it contains the nonzero rational integer `q`
+  have hq0 : ((q : ℕ) : 𝓞 D) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hI0 : I ≠ ⊥ := by
+    intro hbot
+    rw [hbot] at hqI
+    exact hq0 (Ideal.mem_bot.mp hqI)
+  -- ### 1. `C[I] = 0` propagates to every `C[Iⁿ]`
+  have htor : ∀ n : ℕ, ∀ y : GeomFibrePt h (𝟙 (Spec (CommRingCat.of k))),
+      y ∈ (mC.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1 →
+      y = abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) := by
+    intro n
+    induction n with
+    | zero =>
+      intro y hy
+      have h1 := (mem_torsion_iff mC (𝟙 (Spec (CommRingCat.of k))) (I ^ 0) y).mp hy 1
+        (by simp)
+      rwa [mC.act_one] at h1
+    | succ n ih =>
+      intro y hy
+      refine hcon y ((mem_torsion_iff mC (𝟙 (Spec (CommRingCat.of k))) I y).mpr fun a ha => ?_)
+      refine ih (mC.act a y)
+        ((mem_torsion_iff mC (𝟙 (Spec (CommRingCat.of k))) (I ^ n) _).mpr fun b hb => ?_)
+      rw [← mC.act_mul]
+      refine (mem_torsion_iff mC (𝟙 (Spec (CommRingCat.of k))) (I ^ (n + 1)) y).mp hy _ ?_
+      rw [pow_succ]
+      exact Ideal.mul_mem_mul hb ha
+  -- ### 2. a PRINCIPAL power of `I`, so that the étale count applies
+  obtain ⟨n, hn0, α, hα⟩ := exists_pow_span_singleton_eq_of_ne_bot I hI0
+  have hα0 : α ≠ 0 := by
+    intro hz
+    refine pow_ne_zero n hI0 ?_
+    rw [← hα, hz]
+    simp
+  -- ### 3. the `(α)`-torsion is the zero group, so it has ONE element
+  have hall : ∀ y ∈ (mC.torsion (𝟙 (Spec (CommRingCat.of k)))
+      (Ideal.span {α} : Ideal (𝓞 D))).1,
+      y = abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) := by
+    rw [hα]; exact htor n
+  have hzeromem : abC.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+      ∈ (mC.torsion (𝟙 (Spec (CommRingCat.of k)))
+        (Ideal.span {α} : Ideal (𝓞 D))).1 := by
+    refine (mem_torsion_iff mC (𝟙 (Spec (CommRingCat.of k))) _ _).mpr fun a _ => ?_
+    letI := abC.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    letI := mC.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    exact smul_zero a
+  have hcard1 : Nat.card (mC.torsion (𝟙 (Spec (CommRingCat.of k)))
+      (Ideal.span {α} : Ideal (𝓞 D))).1 = 1 := by
+    refine Nat.card_eq_one_iff_unique.mpr ⟨⟨fun a b => Subtype.ext ?_⟩, ⟨⟨_, hzeromem⟩⟩⟩
+    exact (hall a.1 a.2).trans (hall b.1 b.2).symm
+  -- ### 4. `N(α) = N(I)ⁿ` is a power of `q`, hence invertible in `k`
+  have hIdvd : I ∣ Ideal.span {((q : ℕ) : 𝓞 D)} :=
+    Ideal.dvd_iff_le.mpr (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hqI))
+  have hnormI : Ideal.absNorm I ∣ q ^ Module.finrank ℚ D := by
+    have hd := map_dvd (Ideal.absNorm (S := 𝓞 D)) hIdvd
+    rwa [Ideal.absNorm_span_natCast, NumberField.RingOfIntegers.rank] at hd
+  have hcopq : Nat.Coprime q N := (Nat.Prime.coprime_iff_not_dvd hq).mpr hqN
+  have hchar : ((Ideal.absNorm (Ideal.span {α} : Ideal (𝓞 D)) : ℕ) : k) ≠ 0 := by
+    refine natCast_ne_zero_of_coprime_natCard (M := Ideal.absNorm (Ideal.span {α})) ?_
+    rw [hN, hα, map_pow]
+    exact Nat.Coprime.pow_left _
+      (Nat.Coprime.coprime_dvd_left hnormI (Nat.Coprime.pow_left _ hcopq))
+  -- ### 5. the theorem of the cube then forces the relative dimension to VANISH
+  obtain ⟨g, hgdim⟩ := exists_smoothOfRelativeDimension_of_abelianSchemeStruct abC
+  have hcount := card_torsion_span_singleton_of_relativeDimension mC g hgdim α hα0 hchar
+  rw [hcard1, one_pow] at hcount
+  have hXne : Nat.card (𝓞 D ⧸ (Ideal.span {α} : Ideal (𝓞 D))) ≠ 1 := by
+    intro hX
+    have hsub : Subsingleton (𝓞 D ⧸ (Ideal.span {α} : Ideal (𝓞 D))) :=
+      (Nat.card_eq_one_iff_unique.mp hX).1
+    have htop : (Ideal.span {α} : Ideal (𝓞 D)) = ⊤ :=
+      Ideal.Quotient.subsingleton_iff.mp hsub
+    rw [hα] at htop
+    exact hI.ne_top (top_le_iff.mp (htop.ge.trans (Ideal.pow_le_self hn0)))
+  have hg0 : g = 0 := by
+    rcases Nat.pow_eq_one.mp hcount.symm with hb | he
+    · exact absurd hb hXne
+    · omega
+  subst hg0
+  -- ### 6. relative dimension `0` contradicts `hnz`
+  obtain ⟨c, hc⟩ := hnz
+  exact hc (eq_zero_geomFibrePt_of_relativeDimension_zero abC hgdim c)
 
 open _root_.NumberField in
 /-- **AN `𝒪_D`-STABLE ABELIAN SUBSCHEME CARRYING THE WHOLE `I`-ADIC TATE
