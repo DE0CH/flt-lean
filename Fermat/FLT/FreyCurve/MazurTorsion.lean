@@ -27179,7 +27179,7 @@ than `ℤ[√−n]`. -/
 theorem exists_isCMJInvariant_complexEmbedding_eq (n : ℤ) (g : Fermat.BinaryQuadraticForm)
     (hg : g.IsPosDef) (hdisc : g.discr = -(4 * n)) (hprim : IsPrimitive g) :
     ∃ x : AlgebraicClosure ℚ, IsCMJInvariant n x ∧
-      complexEmbedding x = jInvariant (formPoint g hg) :=
+      complexEmbedding x = jInvariant (Fermat.BinaryQuadraticForm.formPoint g hg) :=
   sorry
 
 /-- **PROVEN 2026-07-31 (was a leaf, cut 2026-07-28) — THE CLASS GROUP ACTS
@@ -27258,10 +27258,11 @@ theorem exists_isCMJInvariant_ne_of_not_equivalent
   obtain ⟨y, hy, hyj⟩ :=
     exists_isCMJInvariant_complexEmbedding_eq n ⟨1, 0, n⟩ hppd hpdiscr hpprim
   refine ⟨x, y, hx, hy, fun hxy => ?_⟩
-  exact jInvariant_formPoint_ne_of_not_equivalent hpd hppd (by rw [hdisc, hpdiscr]) hne
+  exact Fermat.BinaryQuadraticForm.jInvariant_formPoint_ne_of_not_equivalent hpd hppd
+    (by rw [hdisc, hpdiscr]) hne
     (by rw [← hxj, ← hyj, hxy])
 
-end FormPointDictionary
+end CMJInvariantFromDictionary
 
 /-- **`ℚ̄/ℚ` IS NORMAL** (PROVEN 2026-07-31, and it has to be proven BY HAND).
 
