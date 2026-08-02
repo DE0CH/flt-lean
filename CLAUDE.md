@@ -16151,3 +16151,76 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A LEAF'S OWN "CHEAPER ESCAPE" NAMES ONE HYPOTHESIS AND ONE PRICE — RE-DERIVE BOTH
+
+(2026-08-02, `flt-lean-151`, closing `projective_of_projective_tensorProduct_of_faithfullyFlat`
+in `Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothLocusDescent.lean` — priced as
+Raynaud–Gruson, Stacks `058B`, and closed in three lines.)
+
+A mature leaf that reads as a named hard theorem often carries a paragraph of the form
+*"a successor who prefers not to prove `<hard theorem>` can add hypothesis `H`, which
+discharges it cheaply — at the price of threading `H` through `A`, `B` and `C`."*  That
+paragraph is the most useful thing in the docstring and **both of its halves are
+estimates made before anyone tried**.  Here they were wrong in the same direction, and
+each is refuted by one `grep`:
+
+* **THE HYPOTHESIS IS USUALLY TOO STRONG, because the author priced it against the
+  general lemma and not against what the objects at the point of use ALREADY ARE.**  The
+  note named `[Module.FinitePresentation S M]`, which is what
+  `Module.Flat.projective_of_finitePresentation` wants over an arbitrary ring.  But every
+  `S` reaching this leaf is a STALK, hence a LOCAL RING, and over a local ring
+  `Module.free_of_flat_of_isLocalRing` (Stacks `00NZ`) turns finite + flat into FREE with
+  no finite-presentation hypothesis at all.  `Module.Finite` sufficed.
+* **THE PRICE IS USUALLY ZERO, because the consumer's own binder list already carries
+  it.**  The note costed an INTERFACE change through three declarations, one of them in
+  the 100 000-line `X0.lean`.  The consumer at the bottom of the chain,
+  `mem_smoothLocus_of_comp_of_smooth`, already required `[LocallyOfFinitePresentation f]`
+  — which gives `LocallyOfFiniteType f`, hence
+  `AlgebraicGeometry.LocallyOfFiniteType.stalkMap : (f.stalkMap x).hom.EssFiniteType`,
+  hence `Module.Finite S Ω[S⁄R]` by the INSTANCE `KaehlerDifferential.finite`.  **No
+  signature outside the file moved.**
+
+**So the standing check, and it is two commands before any Lean:**
+
+    grep -n 'theorem <the consumer>' -A8 <the file>   # its binder list, in full
+    # then, for each hypothesis the escape wants: is it IMPLIED by one of those binders,
+    # or by what the objects are (local? noetherian? a field? a stalk?)
+
+The failure mode is specific and it is not carelessness: a leaf's author is reasoning
+about the STATEMENT, in the generality the statement is written in, and the consumer's
+binder list is in another declaration — often another file.  Nothing prompts the join.
+Same family as [[flt-leaf-hypotheses-are-a-superset]] and
+[[flt-consumer-supplies-the-missing-stability]], with the twist that here the docstring
+had already done the mathematics and merely over-priced it.
+
+**The reusable pin facts, so nobody re-derives them.**  All four are at `a3364fa`:
+
+* `Module.Flat.of_projective` — an INSTANCE, so `Projective ⟹ Flat` is free;
+* `Module.Flat.of_flat_tensorProduct (R M S)` (`Mathlib/RingTheory/Flat/FaithfullyFlat/Basic.lean`)
+  — flatness DESCENDS along a faithfully flat ring map.  Argument order is
+  `(base) (module) (extension)`;
+* `Module.free_of_flat_of_isLocalRing` (`Mathlib/RingTheory/LocalRing/Module.lean`,
+  `@[stacks 00NZ]`) — `[IsLocalRing R] [Module.Finite R P] [Flat R P] → Free R P`.  Note
+  it wants `Module.Finite`, NOT `Module.FinitePresentation`; that difference is the whole
+  of this section;
+* `KaehlerDifferential.finite` (`Mathlib/RingTheory/Kaehler/Basic.lean`) — an INSTANCE
+  giving `Module.Finite S Ω[S⁄R]` from `[Algebra.EssFiniteType R S]`.
+
+And the scheme-to-ring bridge, which is the one an absence audit will miss because it is
+filed under finite TYPE rather than under Kähler differentials:
+`AlgebraicGeometry.LocallyOfFiniteType.stalkMap`, plus the idiom for crossing into
+instance-land after `algebraize`, copied verbatim from
+`Mathlib/AlgebraicGeometry/Morphisms/FormallyUnramified.lean`:
+
+    rw [← RingHom.essFiniteType_algebraMap, RingHom.algebraMap_toAlgebra]
+
+**Corollary about what to do with the general statement.**  The leaf's general form
+really was Raynaud–Gruson, and it really is a mathlib target — mathlib names it as the
+obstruction to its own `proof_wanted`
+`Algebra.FormallySmooth.of_formallySmooth_tensorProduct_of_faithfullyFlat`.  It is
+nevertheless right to CLOSE the leaf under the stronger hypotheses rather than keep the
+general form open, because **nothing in this project consumes the general form** and an
+open leaf priced at a multi-month formalisation will draw dispatches for ever.  Say in
+the docstring what would put it back on the frontier — here, a consumer with a non-local
+`S` or a non-finite module — so the decision is reversible by whoever needs it.
