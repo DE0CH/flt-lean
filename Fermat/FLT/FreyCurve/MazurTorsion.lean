@@ -7431,192 +7431,24 @@ theorem WeierstrassCurve.exists_localInertia_subgroup_relIndex_dvd_twelve_of_pad
             AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P :=
   sorry
 
-/-- **`A₀-3b-i-a` — the level-one fundamental character of `L = (ℚ̄_N)^J`,
-PINNED by its defining compatibility with `χ`** (sorry leaf, cut 2026-07-31 out
-of `A₀-3b-i` below; Serre, Invent. Math. 15 (1972), §1.7; Serre, *Corps
-Locaux* IV §2; Neukirch II.7): let `J ≤ I_N` have relative index
-`e ∈ {1,2,3,4,6}`.  Then there is a SURJECTIVE character `ψ : J → 𝔽_N^×` with
+/-! **RELOCATED 2026-07-31 to `Fermat/FLT/FreyCurve/IsogenySignature.lean`**:
+`section TameFundamentalCharacter` (five general local-Galois lemmas about the tame
+quotient `T = I_v / P_v`, all PROVEN), `A₀-3b-i-a`
+`exists_fundamentalCharacter_of_relIndex_localInertiaGroup` (PROVEN 2026-07-31) and
+`A₀-3b-i-b` `WeierstrassCurve.exists_raynaudExponent_of_fundamentalCharacter` (open).
 
-* (PINNING) for every `σ ∈ J` some `τ ∈ I_N` has `τ^e σ⁻¹` WILD, and
-  `ψ σ = χ τ` for it;
-* `χ|_J = ψ^e`.
+They had to move UPSTREAM.  The 2026-07-31 cut of `A₀-3b-i` put both halves HERE while
+their only intended consumer — `WeierstrassCurve.exists_fundamentalCharacter_of_semistabilityDefect`
+— is in `IsogenySignature.lean`, which THIS module `public import`s.  Import order
+therefore forbade the consumer from citing either half, so all three sat open and both
+halves had ZERO consumers anywhere in the tree (comment-stripped grep, 2026-07-31): the
+orphan shape this file's own relocation note above records for
+`nonempty_fullTranslationDatum_of_jIntegral`.  Their docstrings said `A₀-3b-i` was
+`below`, which is the tell — it is neither below nor in this file.
 
-**NO CURVE DATA ENTERS.**  This is pure local-field theory about the inertia
-group at `N` and one of its finite-index subgroups: `J = I_L` for
-`L = (ℚ̄_N)^J`, a totally tamely ramified extension of `ℚ_N^{nr}` of degree
-`e`, and `ψ` is the level-one fundamental character `ψ_L` of `L`.
-
-**WHY IT IS TRUE.**
-
-1. *`P_N ≤ J`, so `L ⊇ ℚ_N^{nr}` and `L/ℚ_N^{nr}` is TAME.*  This is automatic
-   and needs no hypothesis beyond the index: `g^{e!} ∈ J` for every `g` in any
-   group with a subgroup of index `e` (act on the `e` cosets — `G/core`
-   embeds in `S_e`), and every `w ∈ P_N` IS an `e!`-th power inside `P_N` by
-   `exists_pow_eq_of_mem_wildInertiaGroup` at `n = e!`, which is prime to `N`
-   because every prime factor of `e! ∣ 720` is `≤ 5 < 19 < N`.  Note this
-   argument is ABSTRACT — `J` is not assumed closed, and does not have to be:
-   a subgroup of index `e` in `I_N` containing `P_N` corresponds to a subgroup
-   of index `e` in the procyclic `T = I_N/P_N`, which contains `e!·T` and is
-   therefore open anyway.
-2. *The tame quotient.*  `T = I_N/P_N ≅ ∏_{ℓ ≠ N} ℤ_ℓ` is procyclic and
-   TORSION-FREE; `J/P_N` is its unique subgroup of index `e`, namely `e·T`,
-   and multiplication by `e` is an isomorphism `T ≃ e·T`.  `χ` restricted to
-   `I_N` is the composite `T ↠ T/(N−1)T ≅ 𝔽_N^×` (total tame ramification of
-   `ℚ_N(ζ_N)/ℚ_N`), and `ψ_L` is `e·x ↦ χ(x)` — which is EXACTLY the pinning
-   clause.  Surjectivity is `T ↠ T/(N−1)T` again; equivalently the residue
-   field of `L` is `𝔽̄_N`, so the tame quotient of `I_L` surjects onto
-   `μ_{N−1}(𝔽̄_N) = 𝔽_N^×`.
-
-**WHY THE PINNING CLAUSE PINS — this is the whole reason the cut of `A₀-3b-i`
-into this leaf and `A₀-3b-i-b` is legitimate.**  Suppose `ψ` and `ψ'` both
-satisfy it and fix `σ ∈ J` with witnesses `τ`, `τ'`.  In `T`, written
-additively, `e·τ̄ = σ̄ = e·τ̄'`; `T` is TORSION-FREE and `e ≠ 0`, so `τ̄ = τ̄'`,
-i.e. `τ τ'⁻¹ ∈ P_N`, whence `χ τ = χ τ'` (`χ` kills `P_N`) and `ψ σ = ψ' σ`.
-So the clause has AT MOST ONE solution, and `ψ_L` is one: it determines `ψ`
-outright.
-
-The two clauses `Surjective ψ` and `χ|_J = ψ^e` do NOT pin `ψ`, and that is
-precisely the counterexample recorded in `A₀-3b-i`'s docstring below
-(`N = 29`, `e = 4`, `ψ' = ψ_L^15`).  The pinning clause refutes it at once:
-it would force `ψ_L^15 = ψ_L` on `J`, i.e. `ψ_L^14 = 1`, against surjectivity
-onto a group of order `28`.
-
-The second clause is a CONSEQUENCE of the first — `χ σ = χ (τ^e w) = χ(τ)^e =
-(ψ σ)^e`, since `χ` kills wild inertia — and is kept separately only because
-every consumer wants it in that form.
-
-**WHAT IS AVAILABLE, AND WHAT IS THE ONE MISSING INGREDIENT.**  Three proven
-inputs, none of which needs continuity:
-
-* `exists_pow_eq_of_mem_wildInertiaGroup` — every element of `P_N` is an
-  `n`-th power inside `P_N` for `n` prime to `N`; this gives step 1 above and
-  `χ(P_N) = 1`;
-* `exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker` — every FINITE
-  quotient of `I_N` killing `P_N` is cyclic, with a non-negative-exponent
-  generator;
-* `exists_localInertia_tameCharacter_orbit` — for `n` prime to `N` and `ϖ` an
-  `n`-th root of `N` in `ℚ̄_N`, some `σ ∈ I_N` has `σ^k ϖ = ϖ` only when
-  `n ∣ k`; this is the SURJECTIVITY of the level-`n` Kummer tame character
-  `θ_n`, which is what forces the finite quotients to be large enough.
-
-The route: take `n = e(N−1)` (prime to `N`), let `θ` be the level-`n` tame
-character, and apply the procyclicity lemma to the triple character
-`(χ, θ, I_N ⧸ J)` — `J` is normal because `I_N/core(J)` is cyclic by the same
-lemma.  Its generator `g₀` gives, for each `σ`, an exponent `k` with
-`χ σ = χ(g₀)^k`, `θ σ = k·θ(g₀)` and `[σ] = [g₀]^k`; for `σ ∈ J` the last
-forces `e ∣ k`, and `k` is well defined modulo `e(N−1)` because `θ(g₀)` has
-exact order `e(N−1)`.  So `ψ σ := χ(g₀)^{k/e}` is well defined, is a
-homomorphism, satisfies `ψ^e = χ|_J`, and is surjective because
-`g₀^{e·m} ∈ J` realises every `m`.  **`θ` is not decoration**: with the
-quotient `(χ, I_N ⧸ J)` alone `k` is well defined only modulo
-`lcm(N−1, e)`, and `k/e` is then ambiguous exactly by the `gcd(e, N−1)` that
-produces the `ψ_L^15` counterexample.
-
-What that route does NOT deliver as it stands is the PINNING clause, which
-asks for `τ^e σ⁻¹ ∈ P_N` itself rather than in the kernel of one finite
-quotient.  The extra ingredient is exactly torsion-freeness of `T` in the
-form *`x^e y^{-e} ∈ P_N` implies `x y⁻¹ ∈ P_N` for `x, y ∈ I_N` and
-`0 < e < N`* — a statement about `I_N` alone, worth cutting out as its own
-lemma when this leaf is attacked. -/
-theorem exists_fundamentalCharacter_of_relIndex_localInertiaGroup
-    {N : ℕ} (hN : N.Prime) (hN19 : 19 < N) {e : ℕ}
-    (he : e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 6)
-    {J : Subgroup (Field.absoluteGaloisGroup
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          hN.toHeightOneSpectrumRingOfIntegersRat))}
-    (hJle : J ≤ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat)
-    (hindex : J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) = e) :
-    ∃ ψ : J →* (ZMod N)ˣ, Function.Surjective ψ ∧
-      (∀ σ : J, ∃ τ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
-        τ ^ e * (σ : Field.absoluteGaloisGroup
-            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-              hN.toHeightOneSpectrumRingOfIntegersRat))⁻¹ ∈
-          wildInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat ∧
-        ψ σ = @GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
-          (Field.absoluteGaloisGroup.map (algebraMap ℚ
-            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-              hN.toHeightOneSpectrumRingOfIntegersRat)) τ)) ∧
-      (∀ σ : J, (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
-          (Field.absoluteGaloisGroup.map (algebraMap ℚ
-            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-              hN.toHeightOneSpectrumRingOfIntegersRat)) (σ : _))) = ψ σ ^ e) :=
-  sorry
-
-/-- **`A₀-3b-i-b` — Raynaud's exponent, against a PINNED fundamental
-character** (sorry leaf, cut 2026-07-31 out of `A₀-3b-i` below; Raynaud, Bull.
-SMF 102 (1974), Cor. 3.4.4 and §1.2; Serre, Invent. Math. 15 (1972), §1.7 and
-Prop. 9): with the semistability-defect datum `(e, J)` of `A₀-3a` and a
-character `ψ : J → 𝔽_N^×` satisfying the PINNING clause of `A₀-3b-i-a`, there
-is `r ≤ e` with `λ|_J = ψ^r`.
-
-**THIS IS THE WHOLE OF RAYNAUD'S INPUT** and it is the only half of `A₀-3b-i`
-that touches the curve.  Write `L = (ℚ̄_N)^J`, so `L ⊇ ℚ_N^{nr}`, `I_L = J`
-and `e(L/ℚ_N) = e(L/ℚ_N^{nr}) = [I_N : J] = e`.  Then:
-
-1. `E` has good reduction over `L`: `J` acts trivially on `E[5]` (`hJmem`),
-   `5 ≥ 3` is prime to `N`, and `0 ≤ v_N(j)` makes `E` potentially good.  All
-   three are needed — see the falsity note in `A₀-3a` for why `hj` cannot be
-   dropped.
-2. The Galois-stable order-`N` subgroup `⟨g⟩ ⊆ E[N]` — which is what `hg` and
-   `hlam` say — has a schematic closure in the `N`-torsion of the Néron model
-   of `E` over `𝒪_L`: a finite flat group scheme `G/𝒪_L` of order `N`.
-3. `e ≤ 6 < N − 1` (from `he` and `hN19`) puts `G` in the range of Raynaud's
-   classification, whose conclusion is that the character of its generic
-   fibre is `ψ_L^r` with `0 ≤ r ≤ e`.
-
-**WHY `hpin` RATHER THAN `Surjective ψ ∧ χ|_J = ψ^e` IS THE HYPOTHESIS.**
-Raynaud produces `ψ_L`, not "some surjective `e`-th root of `χ|_J`", and those
-are genuinely different things: `N = 29`, `e = 4`, `ψ' = ψ_L^15` is surjective
-and satisfies `ψ'^4 = χ|_J` while `λ|_J = ψ_L` is not any `ψ'^r` with `r ≤ 4`
-(the counterexample in `A₀-3b-i`'s docstring below, which is why THAT cut was
-recorded as impossible).  `hpin` closes the gap because it has AT MOST ONE
-solution — see `A₀-3b-i-a` for the two-line uniqueness argument, whose only
-input is torsion-freeness of `I_N/P_N` — so the `ψ` handed in here IS `ψ_L`
-and the classification applies to it verbatim.
-
-`hsurj` is REDUNDANT given `hpin` (it follows from surjectivity of `χ` on
-`I_N`), and is passed anyway because `A₀-3b-i-a` produces it for free and the
-exact-order bookkeeping inside the classification wants it. -/
-theorem WeierstrassCurve.exists_raynaudExponent_of_fundamentalCharacter
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
-    (hN : N.Prime) (hN19 : 19 < N)
-    (hg : addOrderOf g = N)
-    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
-    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
-        ((lam σ : ZMod N).val) • g)
-    (hj : 0 ≤ padicValRat N E.j)
-    {e : ℕ}
-    {J : Subgroup (Field.absoluteGaloisGroup
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          hN.toHeightOneSpectrumRingOfIntegersRat))}
-    (he : e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 6)
-    (hJle : J ≤ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat)
-    (hJmem : ∀ σ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
-        (σ ∈ J ↔ ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, (5 : ℕ) • P = 0 →
-          Affine.Point.map
-            ((Field.absoluteGaloisGroup.map (algebraMap ℚ
-              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-                hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
-              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P))
-    (hindex : J.relIndex (localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat) = e)
-    (ψ : J →* (ZMod N)ˣ) (hsurj : Function.Surjective ψ)
-    (hpin : ∀ σ : J, ∃ τ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
-      τ ^ e * (σ : Field.absoluteGaloisGroup
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-            hN.toHeightOneSpectrumRingOfIntegersRat))⁻¹ ∈
-        wildInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat ∧
-      ψ σ = @GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
-        (Field.absoluteGaloisGroup.map (algebraMap ℚ
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-            hN.toHeightOneSpectrumRingOfIntegersRat)) τ)) :
-    ∃ r : ℕ, r ≤ e ∧
-      (∀ σ : J, lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-            hN.toHeightOneSpectrumRingOfIntegersRat)) (σ : _)) = ψ σ ^ r) :=
-  sorry
+In their new home `A₀-3b-i-a` is PROVEN, `A₀-3b-i` is PROVEN over the two halves in
+three lines, and what remains open is `A₀-3b-i-b`, Raynaud's classification.  Nothing in
+this module used any of them; they are re-exported through the `public import` above. -/
 
 open Polynomial in
 open Polynomial in
