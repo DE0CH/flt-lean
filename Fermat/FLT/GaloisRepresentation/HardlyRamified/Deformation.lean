@@ -17380,16 +17380,29 @@ ENTRYWISE (`ψ (τ g w i) = ρv g (ψ ∘ w) i`), which needs no local analogue 
 the local readings of the corresponding global conditions; each comes with an
 `Iff.rfl` bridge, so they are the SAME conditions and not weakenings.
 
-**What this section does NOT discharge, and it is one named obligation.**
-`exists_lift_det_eq_of_squareZero_ker` takes the target determinant as a
-CONTINUOUS character `d : Γ ℚ →ₜ* S`. Instantiating it at the hardly ramified
-`det` clause means taking `d g = algebraMap ℤ_[ℓ] S (cyclotomicCharacter ℓ g)`,
-and that this is continuous is a separate (true, and unstated here) fact:
-continuity of the `ℓ`-adic cyclotomic character together with continuity of the
-structure map of an `𝔪`-adically complete Noetherian local `ℤ_ℓ`-algebra. It is
-kept out of the statement deliberately — the correction argument does not need
-it, and folding it in would make the algebra leaf depend on the arithmetic of
-`ℚ`. -/
+**The one named obligation this section used to leave open — DISCHARGED
+2026-08-02, in subsection (5b) below.** `exists_lift_det_eq_of_squareZero_ker`
+takes the target determinant as a CONTINUOUS character `d : Γ ℚ →ₜ* S` and its
+odd-residue-characteristic input as `IsUnit (2 : S)`, and both were kept out of
+the statement deliberately, so that the correction argument stays pure algebra
+and the algebra leaf does not depend on the arithmetic of `ℚ`. That is still the
+right shape for the leaf; what was missing was anything to instantiate it with.
+Subsection (5b) supplies all four pieces — `cycChar` (the character, with
+continuity from mathlib's `cyclotomicCharacter.continuous`),
+`isUnit_two_of_surjective` (from `charP_residue_field` and `ℓ` odd),
+`algebraMap_ell_mem_maximalIdeal_of_surjective`, and
+`continuous_algebraMap_of_isAdic` (hoisted out of the body of
+`isModuleTopology_of_isAdic_maximalIdeal` far below, where it was unciteable).
+So (5a) is now applicable and not merely stated.
+
+**And the ASSEMBLY of the four clauses into conjunct (a) is subsection (5e)
+below** (`mem_sha2_cocycleClass_of_forall_locally_bdry`, PROVEN 2026-08-02):
+membership in `Ш²_S` is the vanishing of each localisation one place at a time,
+and for the class of a cocycle that is exactly the restricted cocycle being a
+coboundary over the decomposition group at `v`. Only the two LOCAL clauses feed
+it — which is the three-kinds split above, made formal. It does not close
+conjunct (a): the obstruction COCYCLE itself (brick (iii) of the leaf's audit)
+still does not exist, and until it does there is nothing to feed (5e). -/
 
 /-- **Inertia at a place outside `S` lies in `N_S`** (PROVEN): immediate from
 the definition of `ramificationKernel S` as the topological closure of the
@@ -17718,6 +17731,142 @@ theorem exists_lift_det_eq_of_isSmallExtension {S : Type u} [CommRing S]
   exists_lift_det_eq_of_squareZero_ker ψ hψ hsm.surjective
     (fun _ hx _ hy => hsm.mul_eq_zero_of_mem_ker hx hy) h2 ρ d hd
 
+/-! #### (5b) The NAMED OBLIGATION of (5a), discharged: instantiating `d` and `h2`
+
+`exists_lift_det_eq_of_squareZero_ker` above takes its target determinant as a
+CONTINUOUS character `d : Γ ℚ →ₜ* S` and its odd-residue-characteristic input as
+`IsUnit (2 : S)`, and the section header records both as deliberately left
+unproven so that the correction argument stays pure algebra. This subsection
+supplies them, so that (5a) is applicable at the hardly ramified `det` clause
+and not merely stated. PROVEN 2026-08-02; nothing here is new mathematics.
+
+**Only the CONTINUITY of `cycChar` is new.** Multiplicativity is `map_mul` of
+`cyclotomicCharacter` composed with `algebraMap`, and the continuity is
+mathlib's `cyclotomicCharacter.continuous` (against the Krull topology on
+`G_ℚ`) composed with the structure map.
+
+**This is a DELIBERATE COPY.** `Family.lean` already carries the identical
+construction as `cycUnitChar` / `cycUnitChar_one` / `cycUnitChar_mul` /
+`continuous_cycUnitChar` (`Family.lean:~10531`). It cannot be cited here: this
+module's import audit carries an explicit CIRCULARITY GUARD forbidding any
+import from `Family.lean` (see the header, point 1), and `Family.lean` imports
+`Modularity/Interface.lean`. If that guard is ever lifted, THIS copy should be
+the one deleted and `cycUnitChar` retained, since it is the older and has more
+consumers. -/
+
+/-- **The `ℓ`-adic cyclotomic character as a CONTINUOUS character valued in an
+arbitrary topological `ℤ_ℓ`-algebra** (PROVEN 2026-08-02).
+
+This is the `d` that `exists_lift_det_eq_of_squareZero_ker` above asks for, at
+the hardly ramified `det` clause. The continuity hypothesis on the structure map
+is taken as an ARGUMENT rather than derived, because the theorem is applied at
+several coefficient rings and each call site knows its own reason;
+`continuous_algebraMap_of_isAdic` below supplies it in the adic case, which is
+the one the obstruction leaf uses. -/
+noncomputable def cycChar (S : Type*) [CommRing S] [TopologicalSpace S]
+    [Algebra ℤ_[ℓ] S] (hcont : Continuous (algebraMap ℤ_[ℓ] S)) :
+    Field.absoluteGaloisGroup ℚ →ₜ* S where
+  toFun g := algebraMap ℤ_[ℓ] S
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv : ℤ_[ℓ]ˣ) : ℤ_[ℓ])
+  map_one' := by
+    have h1 : (1 : Field.absoluteGaloisGroup ℚ).toRingEquiv = 1 := rfl
+    simp [h1]
+  map_mul' g h := by
+    have h1 : (g * h).toRingEquiv = g.toRingEquiv * h.toRingEquiv := rfl
+    simp [h1]
+  continuous_toFun := by
+    have h1 := cyclotomicCharacter.continuous ℓ ℚ (AlgebraicClosure ℚ)
+    exact (hcont.comp (Units.continuous_val.comp h1)).congr fun _ => rfl
+
+lemma cycChar_apply (S : Type*) [CommRing S] [TopologicalSpace S]
+    [Algebra ℤ_[ℓ] S] (hcont : Continuous (algebraMap ℤ_[ℓ] S))
+    (g : Field.absoluteGaloisGroup ℚ) :
+    cycChar S hcont g = algebraMap ℤ_[ℓ] S
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv : ℤ_[ℓ]ˣ) : ℤ_[ℓ]) :=
+  rfl
+
+include hℓOdd in
+/-- **`2` is a unit in any local ring with residue field `k`** (PROVEN
+2026-08-02) — the `h2 : IsUnit (2 : S)` that (5a) asks for.
+
+`ker π` is the maximal ideal (`IsLocalRing.ker_eq_maximalIdeal`), and `2` does
+not lie in it because `k` has characteristic `ℓ` (`charP_residue_field`) and
+`ℓ` is an ODD prime, so `ℓ ∤ 2`. This is the *only* place the hardly ramified
+problem's standing hypothesis `hℓOdd` is spent in the `det` correction, exactly
+as (5a)'s docstring records; at `ℓ = 2` the statement is false and the whole
+correction is unavailable.
+
+The `IsLocalHom (algebraMap ℤ_[ℓ] R)` field is commented out of
+`IsHardlyRamified` (`HardlyRamified/Defs.lean`), so the residue characteristic
+is taken here from a surjection onto `k` — which every deformation datum in this
+file carries as its `π` field — rather than from the algebra structure. -/
+lemma isUnit_two_of_surjective {S : Type*} [CommRing S] [IsLocalRing S]
+    (π : S →+* k) (hπ : Function.Surjective π) : IsUnit (2 : S) := by
+  haveI := charP_residue_field (ℓ := ℓ) (k := k)
+  refine IsLocalRing.notMem_maximalIdeal.mp ?_
+  rw [← IsLocalRing.ker_eq_maximalIdeal π hπ, RingHom.mem_ker]
+  intro h
+  have h2 : ((2 : ℕ) : k) = 0 := by
+    have hc : (2 : S) = ((2 : ℕ) : S) := by norm_num
+    rw [hc, map_natCast] at h
+    exact h
+  have hdvd : ℓ ∣ 2 := (CharP.cast_eq_zero_iff k ℓ 2).mp h2
+  have hle : ℓ = 2 :=
+    (Nat.prime_dvd_prime_iff_eq (Fact.out : ℓ.Prime) Nat.prime_two).mp hdvd
+  rw [hle] at hℓOdd
+  exact (Nat.not_odd_iff_even.mpr even_two) hℓOdd
+
+/-- **`ℓ` lands in the maximal ideal** (PROVEN 2026-08-02), which is the side
+condition of `continuous_algebraMap_of_isAdic` below.
+
+Cheap here because a surjection onto `k` is available: `ℓ` dies in `k`
+(`natCast_self_eq_zero`), so it lies in `ker π = 𝔪`. The corresponding step
+inside `isModuleTopology_of_isAdic_maximalIdeal` far below is much longer
+because it has no residue map to use and must rule out `ℚ_ℓ` embedding as a
+finitely generated `ℤ_ℓ`-submodule instead. -/
+lemma algebraMap_ell_mem_maximalIdeal_of_surjective {R : Type*} [CommRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] (π : R →+* k)
+    (hπ : Function.Surjective π)
+    (hcompat : π.comp (algebraMap ℤ_[ℓ] R) = algebraMap ℤ_[ℓ] k) :
+    algebraMap ℤ_[ℓ] R (ℓ : ℤ_[ℓ]) ∈ IsLocalRing.maximalIdeal R := by
+  haveI := charP_residue_field (ℓ := ℓ) (k := k)
+  rw [← IsLocalRing.ker_eq_maximalIdeal π hπ, RingHom.mem_ker]
+  have h1 : π (algebraMap ℤ_[ℓ] R (ℓ : ℤ_[ℓ])) = algebraMap ℤ_[ℓ] k (ℓ : ℤ_[ℓ]) :=
+    congrArg (fun f => f (ℓ : ℤ_[ℓ])) hcompat
+  rw [h1]
+  exact natCast_self_eq_zero (ℓ := ℓ) (k := k) ▸ (map_natCast (algebraMap ℤ_[ℓ] k) ℓ)
+
+open IsLocalRing Topology in
+/-- **The structure map of an `𝔪`-adic `ℤ_ℓ`-algebra is continuous** (PROVEN
+2026-08-02) — the second half of (5a)'s named obligation, and what makes
+`cycChar` applicable at the coefficient rings the obstruction leaf hands out.
+
+HOISTED from the body of `isModuleTopology_of_isAdic_maximalIdeal` far below,
+where it was step 2 of a much longer argument and could not be cited; the proof
+is that step verbatim, with `ℓ ∈ 𝔪` taken as a hypothesis instead of being
+re-derived. A `ℤ_ℓ`-ball of radius `ℓ^{-n}` is `(ℓ^n)`, which lands in `𝔪^n`. -/
+lemma continuous_algebraMap_of_isAdic {R : Type*} [CommRing R]
+    [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R] [Algebra ℤ_[ℓ] R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hℓm : algebraMap ℤ_[ℓ] R (ℓ : ℤ_[ℓ]) ∈ IsLocalRing.maximalIdeal R) :
+    Continuous (algebraMap ℤ_[ℓ] R) := by
+  apply continuous_of_continuousAt_zero (algebraMap ℤ_[ℓ] R)
+  unfold ContinuousAt
+  rw [map_zero, hadic.hasBasis_nhds_zero.tendsto_right_iff]
+  intro n _
+  have hball : Metric.closedBall (0 : ℤ_[ℓ]) ((ℓ : ℝ) ^ (-(n : ℤ))) ∈
+      𝓝 (0 : ℤ_[ℓ]) := by
+    refine Metric.closedBall_mem_nhds 0 ?_
+    exact zpow_pos (Nat.cast_pos.mpr (Fact.out : ℓ.Prime).pos) _
+  filter_upwards [hball] with x hx
+  have hx' : x ∈ Ideal.span {((ℓ : ℤ_[ℓ])) ^ n} := by
+    rw [← PadicInt.norm_le_pow_iff_mem_span_pow]
+    simpa [Metric.mem_closedBall, dist_zero_right] using hx
+  obtain ⟨d, hd⟩ := Ideal.mem_span_singleton'.mp hx'
+  show algebraMap ℤ_[ℓ] R x ∈ ((maximalIdeal R ^ n : Ideal R) : Set R)
+  rw [← hd, map_mul, map_pow]
+  exact Ideal.mul_mem_left _ _ (Ideal.pow_mem_pow hℓm n)
+
 /-! #### (5c), (5d) The two LOCAL clauses: smoothness of the local conditions -/
 
 open scoped TensorProduct in
@@ -17911,6 +18060,59 @@ theorem exists_tameLocalLift_of_isSmallExtension
       (∀ g w i, ψ (τ g w i) = ρ2 g (fun j => ψ (w j)) i) ∧
       IsTameAtTwoLocal τ :=
   sorry
+
+/-! #### (5e) The ASSEMBLY: item (5) lands conjunct (a) in `Ш²`
+
+This is the step conjunct (a) of
+`exists_obstructionCocycle_smallExtension_deformation` below rests on, and the
+reason that conjunct says `Ш²` and not merely `H²`. PROVEN 2026-08-02.
+
+`Sha2 ρbar S` is by definition `⨅ v ∈ S, ker (locRes ρbar S v)`, so membership
+is exactly the vanishing of each localisation, ONE PLACE AT A TIME; and by
+`ContinuousCohomology.map_cocycleClass_cocyclesMapKer` the localisation of the
+class of a cocycle is the class of the RESTRICTED cocycle, so its vanishing is
+— by `cocycleClass_eq_zero_iff` — precisely that the restricted cocycle is a
+coboundary over the decomposition group at `v`. That is what local smoothness of
+the two local conditions delivers: two lifts differ by a coboundary, and (5c)
+/ (5d) say a local homomorphism lift satisfying the condition exists.
+
+**The asymmetry recorded in the section header is visible in the statement**:
+the hypothesis is indexed by `v ∈ S` and by nothing else, so only the two LOCAL
+clauses feed it. `det` is global and correctable ((5a)), and `isUnramified` is
+automatic over `G_{ℚ,S}` ((5b), `isUnramified_of_ramificationKernel_le_ker`);
+neither appears here, which is why item (5) splits into three kinds and not
+four.
+
+**WHAT THIS DOES AND DOES NOT CLOSE.** It reduces conjunct (a) from a statement
+about `Ш²` to a per-place statement about coboundaries, over an ARBITRARY
+cocycle `c`, with no hypothesis on `ρbar` and none of the leaf's data — so it is
+usable by whatever eventually constructs the obstruction cocycle. It does NOT
+close conjunct (a), because the cocycle itself does not exist yet: item 2 of the
+audit on the leaf below records that "what is still missing is the cocycle
+`c(σ,τ)` itself", i.e. brick (iii), and brick (ii) (the continuous set-theoretic
+lift) was closed separately on 2026-07-31. Until brick (iii) lands there is no
+`c` to feed this lemma, and the remaining link — *a local homomorphism lift
+satisfying the local condition makes the restricted cocycle a coboundary* —
+cannot even be stated, because it is a statement about that `c`. -/
+theorem mem_sha2_cocycleClass_of_forall_locally_bdry
+    (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (c : ↥(TopModuleCat.ker
+      ((TopRep.homogeneousCochains (adZeroRestricted ρbar S)).d 2 3)))
+    (hloc : ∀ v ∈ S,
+      ContinuousCohomology.cocyclesMapKer (decompHomRestricted S v)
+          (CategoryTheory.CategoryStruct.id (adZeroLocal ρbar S v)) 2 c ∈
+        (ContinuousCohomology.bdryKer (adZeroLocal ρbar S v) 2).hom.range) :
+    ContinuousCohomology.cocycleClass (adZeroRestricted ρbar S) 2 c ∈ Sha2 ρbar S := by
+  rw [Sha2, Submodule.mem_iInf]
+  intro v
+  rw [Submodule.mem_iInf]
+  intro hv
+  rw [LinearMap.mem_ker]
+  exact (ContinuousCohomology.map_cocycleClass_cocyclesMapKer
+      (decompHomRestricted S v)
+      (CategoryTheory.CategoryStruct.id (adZeroLocal ρbar S v)) 2 c).trans
+    ((ContinuousCohomology.cocycleClass_eq_zero_iff _ 2 _).mpr (hloc v hv))
 
 /-! ### Rank transfer for the obstruction bound
 
