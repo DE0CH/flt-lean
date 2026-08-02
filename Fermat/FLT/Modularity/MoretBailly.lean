@@ -55390,7 +55390,33 @@ field), so `c.base = d.base` has to be threaded as a hypothesis at 11 `base_eq` 
 `ProjCoords.ext` call sites; and `ℚ ↦ F` plus `Scheme.{0} ↦ Scheme.{u}` is 611
 comment-stripped `ℚ` occurrences and 100 `Scheme.{0}` occurrences across 6 677 lines of
 code.  The `[Algebra ℚ S]` instance binders are the part that is NOT a substitution and
-should be costed separately. -/
+should be costed separately.
+
+**PROVEN 2026-08-02 (`flt-lean-9`) OVER THE ONE SHARED LEAF — and it was the same leaf as
+`Fermat.exists_projGroupLaw_relPointAddEquiv_field` all along.**  Everything above is kept
+as the record of how this leaf was measured; what changed is only WHERE the obligation
+lives.  `ModularCurve/EllipticScheme.lean` was carrying an independent `sorry` asserting
+the existence of the SAME `m` with the SAME four axioms in the SAME `ofMul` shape,
+differing only in the dictionary hung off it — that one the `F`-RATIONAL points, this one
+the GEOMETRIC fibre with its Galois equivariance.  Since the two modules are
+import-INCOMPARABLE, neither could ever consume the other's copy, and dispatching them
+separately would have paid the `ℚ ↝ F` port twice.
+
+Both now rest on
+`WeierstrassCurve.Projective.OverField.exists_projMul_geomFibre_relPoint_addEquiv`, in the
+already-imported `.../EllipticCurve/ProjectiveModelOverField.lean` — the common ancestor of
+the two consumers — which produces `m` together with BOTH dictionaries as a conjunction.
+Read that leaf's docstring for the port's remeasurement: **73 declarations / 2518 lines**,
+not the 6677 quoted above, because eighteen of the closure's declarations (986 lines) have
+since landed in that module, and `Fermat.ProjCoords` is already stated over an arbitrary
+field.
+
+The bridge is definitional: `ProjGroupLawOverField.ofMul (…).toAbelianSchemeStruct` and
+`OverField.abelianSchemeStructOfMul` are both `Fermat.AbelianSchemeStruct.ofMorphisms`
+applied to the same data — same `m`, and `e`/`i` pinned to `projInfty E`/`projNeg E` on
+both sides — differing only in the three geometric arguments, which are `Prop`s.  So the
+two `AddCommGroup` instances are the same instance and `exact` crosses the gap with no
+transport. -/
 theorem exists_projMulOverField_geomFibreAddEquiv (F : Type u) [Field F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
@@ -55419,8 +55445,11 @@ theorem exists_projMulOverField_geomFibreAddEquiv (F : Type u) [Field F]
                (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom x)
              = (ProjGroupLawOverField.ofMul m hm hassoc hcomm hunit
                  hinv).toAbelianSchemeStruct.galSMul
-                 (𝟙 (Spec (CommRingCat.of F))) σ (e x)) :=
-  sorry
+                 (𝟙 (Spec (CommRingCat.of F))) σ (e x)) := by
+  letI : DecidableEq F := Classical.typeDecidableEq _
+  obtain ⟨m, hm, hassoc, hcomm, hunit, hinv, hgeom, -⟩ :=
+    WeierstrassCurve.Projective.OverField.exists_projMul_geomFibre_relPoint_addEquiv F E
+  exact ⟨m, hm, hassoc, hcomm, hunit, hinv, hgeom⟩
 
 /-- **The chord–tangent group law together with the equivariant identification of the
 geometric fibre** (**PROVEN 2026-07-31** over

@@ -13964,13 +13964,40 @@ smooth curve over a field with a rational point is nonempty (the zero section), 
 `≃+` is a real claim.  The check that would refute it is a `ProjGroupLaw E` whose `m`
 is NOT the chord–tangent law but whose `RelPoint` group is still `(E⁄F).Point` — that
 does not refute this statement, which is existential over `gl`, and it is precisely
-why the existential is the right shape. -/
+why the existential is the right shape.
+
+**PROVEN 2026-08-02 (`flt-lean-9`) over the ONE SHARED LEAF, and the port did not have to
+be done twice.**  Everything above is preserved because it is the record of how the leaf
+came to be cut; what changed is only WHERE the remaining obligation lives.
+`WeierstrassCurve.Projective.OverField.exists_projMul_geomFibre_relPoint_addEquiv`, in the
+already-imported `.../EllipticCurve/ProjectiveModelOverField.lean`, produces the
+multiplication `m` together with BOTH point dictionaries — the geometric one that
+`Modularity/MoretBailly.lean` consumes and the rational one this leaf consumes — so this
+theorem is now the assembly of a `ProjGroupLaw` out of that `m`, with the unit and the
+inversion pinned to `projInfty E` and `projNeg E` and their two compatibilities supplied by
+`WeierstrassCurve.Projective.projInfty_comp_projToSpec` / `projNeg_comp_projToSpec`.
+
+The bridge is definitional: `ProjGroupLaw.toAbelianSchemeStructField` and
+`OverField.abelianSchemeStructOfMul` are both `Fermat.AbelianSchemeStruct.ofMorphisms`
+applied to the same data, differing only in the three GEOMETRIC arguments, which are `Prop`s
+— so the two `AddCommGroup` instances are the same instance and `exact` crosses the gap. -/
 theorem exists_projGroupLaw_relPointAddEquiv_field [DecidableEq F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     ∃ gl : ProjGroupLaw E,
       letI := gl.toAbelianSchemeStructField.addCommGroup (𝟙 (Spec (CommRingCat.of F)))
-      Nonempty (RelPoint (projToSpec E) (𝟙 (Spec (CommRingCat.of F))) ≃+ (E⁄F).Point) :=
-  sorry
+      Nonempty (RelPoint (projToSpec E) (𝟙 (Spec (CommRingCat.of F))) ≃+ (E⁄F).Point) := by
+  obtain ⟨m, hm, hassoc, hcomm, hunit, hinv, -, hrat⟩ :=
+    WeierstrassCurve.Projective.OverField.exists_projMul_geomFibre_relPoint_addEquiv F E
+  exact ⟨{ m := m
+           e := _root_.WeierstrassCurve.Projective.projInfty E
+           i := _root_.WeierstrassCurve.Projective.projNeg E
+           hm := hm
+           he := _root_.WeierstrassCurve.Projective.projInfty_comp_projToSpec E
+           hi := _root_.WeierstrassCurve.Projective.projNeg_comp_projToSpec E
+           hassoc := hassoc
+           hcomm := hcomm
+           hunit := hunit
+           hinv := hinv }, hrat⟩
 
 /-- **The affine Weierstrass chart is the complement of the zero section, over an
 ARBITRARY field** (sorry leaf, cut 2026-07-31) — the general-base form of
