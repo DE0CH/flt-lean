@@ -5108,6 +5108,157 @@ such `w` is INFINITE, and only finitely many places divide `𝔣`
 the same theorem the assembly below consumes, so the non-vacuity is mechanical
 rather than a promise. -/
 
+/-- **EVERY RESIDUE CLASS MODULO A NONZERO IDEAL CONTAINS A TOTALLY POSITIVE
+ELEMENT** (PROVEN 2026-08-02).
+
+The witness is `x + N * m` with `N := Ideal.absNorm 𝔣` — a nonzero RATIONAL integer
+lying in `𝔣` (`Ideal.absNorm_mem`, `Ideal.absNorm_eq_zero_iff`) — and `m : ℕ` large.
+A rational integer shifts EVERY real embedding by the SAME amount, so one `m` serves
+all of them at once, and only the finiteness of the set of infinite places is used
+(`Finite.exists_le`); no lattice-point argument and no nonemptiness of the set of real
+places is needed, so a totally imaginary `F` costs nothing.
+
+DUPLICATE, DELIBERATELY. `GaloisRepresentation.exists_totallyPositive_sub_mem_ray_class`
+(`GaloisRepresentation/HardlyRamified/ModThree.lean:65073`) is the same theorem, PROVEN,
+in the `∀ φ : F →+* ℝ` spelling and with the extra conclusion `y ≠ 0`. That module is NOT
+in this one's import cone and cannot cheaply be (it records the same problem in the other
+direction at its own line 60787, re-proving a `KhareWintenberger` theorem for exactly this
+reason). Whoever unifies the two should hoist ONE copy into a shared upstream module — the
+natural home is `Fermat/FLT/NumberField/`, which both cones already reach — and state it in
+the `∀ φ : F →+* ℝ` spelling, which is the one `Chebotarev.IsNarrowRayEquiv` uses. -/
+theorem exists_totallyPositive_sub_mem_narrowRayArtin (F : Type*) [Field F] [NumberField F]
+    (𝔣 : Ideal (NumberField.RingOfIntegers F)) (h𝔣 : 𝔣 ≠ ⊥)
+    (x : NumberField.RingOfIntegers F) :
+    ∃ γ : NumberField.RingOfIntegers F, γ - x ∈ 𝔣 ∧
+      ∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+        0 < NumberField.InfinitePlace.embedding_of_isReal hv
+              (algebraMap (NumberField.RingOfIntegers F) F γ) := by
+  classical
+  set N : ℕ := Ideal.absNorm 𝔣 with hN
+  have hNne : N ≠ 0 := by
+    rw [hN, Ne, Ideal.absNorm_eq_zero_iff]; exact h𝔣
+  have hNmem : (N : NumberField.RingOfIntegers F) ∈ 𝔣 := Ideal.absNorm_mem 𝔣
+  -- a single bound valid at every infinite place at once
+  obtain ⟨Cb, hCb⟩ := Finite.exists_le
+    (fun v : NumberField.InfinitePlace F =>
+      v (algebraMap (NumberField.RingOfIntegers F) F x))
+  obtain ⟨m, hm⟩ := exists_nat_gt Cb
+  refine ⟨x + (N : NumberField.RingOfIntegers F) * (m : NumberField.RingOfIntegers F), ?_, ?_⟩
+  · simpa using Ideal.mul_mem_right _ _ hNmem
+  · intro v hv
+    have habs : |NumberField.InfinitePlace.embedding_of_isReal hv
+        (algebraMap (NumberField.RingOfIntegers F) F x)| =
+        v (algebraMap (NumberField.RingOfIntegers F) F x) := by
+      simpa [Real.norm_eq_abs] using
+        NumberField.InfinitePlace.norm_embedding_of_isReal hv
+          (algebraMap (NumberField.RingOfIntegers F) F x)
+    have hge : -Cb ≤ NumberField.InfinitePlace.embedding_of_isReal hv
+        (algebraMap (NumberField.RingOfIntegers F) F x) := by
+      have h1 := hCb v
+      have h2 : -(v (algebraMap (NumberField.RingOfIntegers F) F x)) ≤
+          NumberField.InfinitePlace.embedding_of_isReal hv
+            (algebraMap (NumberField.RingOfIntegers F) F x) := by
+        rw [← habs]; exact neg_abs_le _
+      linarith
+    have hpush : NumberField.InfinitePlace.embedding_of_isReal hv
+        (algebraMap (NumberField.RingOfIntegers F) F
+          (x + (N : NumberField.RingOfIntegers F) * (m : NumberField.RingOfIntegers F))) =
+        NumberField.InfinitePlace.embedding_of_isReal hv
+          (algebraMap (NumberField.RingOfIntegers F) F x) + (N : ℝ) * (m : ℝ) := by
+      push_cast
+      rw [map_add, map_mul, map_natCast, map_natCast]
+    rw [hpush]
+    have hN1 : (1 : ℝ) ≤ (N : ℝ) := by
+      exact_mod_cast Nat.one_le_iff_ne_zero.mpr hNne
+    have hmC : Cb < (m : ℝ) := hm
+    have hm0 : (0 : ℝ) ≤ (m : ℝ) := Nat.cast_nonneg m
+    nlinarith [hge, hN1, hmC, hm0]
+
+/-- **NORMALISATION OF A NARROW RAY RELATION** (PROVEN 2026-08-02): the two FREE
+normalisations the EQUIVALENCE AUDIT below records, performed once.
+
+Given the ray relation in its raw form — `w · (β) = (a) · (α)` with `α ≡ β (mod 𝔣)`,
+`β` coprime to `𝔣`, and `α`, `β` both totally positive — this produces the NORMALISED
+form in which BOTH multipliers are `≡ 1 (mod 𝔣)`: multiply numerator and denominator by
+a totally positive inverse `γ` of `β` modulo `𝔣`
+(`exists_totallyPositive_sub_mem_narrowRayArtin` above), and read
+`γα − 1 = γ(α − β) + (γβ − 1)`.
+
+Two things the statement must be careful about, and both are load-bearing.
+
+* `β` COPRIME to `𝔣` is what makes the rescaling possible at all, and it is not
+  implied by the rest: `α = β = π` with `π ∈ 𝔣` prime satisfies `α − β = 0 ∈ 𝔣` and
+  every positivity clause, and then no rescaling can make `γβ ≡ 1`. Classically it is
+  free — a multiplicative congruence `γ ≡ 1 (mod^× 𝔣)` is BY DEFINITION `γ = α/β` with
+  `α ≡ β (mod 𝔣)` and both coprime to `𝔣` — which is why it costs the citation nothing.
+  Only `β`'s coprimality is asked for: `α`'s follows from it and `α ≡ β`.
+* the `𝔣 = ⊤` branch is separated because there `γ` may be `0` (the positivity clauses
+  are vacuous when `F` is totally imaginary, so nothing forces `γ ≠ 0`). At `𝔣 = ⊤` every
+  congruence clause is vacuous and the given `α`, `β` already serve, so the branch is
+  three lines rather than a hypothesis on the leaf. -/
+theorem exists_narrowRayNormalized_of_sub_mem (F : Type*) [Field F] [NumberField F]
+    (𝔣 : Ideal (NumberField.RingOfIntegers F)) (h𝔣 : 𝔣 ≠ ⊥)
+    (a : NumberField.RingOfIntegers F)
+    (w : Ideal (NumberField.RingOfIntegers F))
+    (α β : NumberField.RingOfIntegers F) (hβ0 : β ≠ 0)
+    (hβcop : Ideal.span {β} ⊔ 𝔣 = ⊤)
+    (hαβ : α - β ∈ 𝔣)
+    (hαpos : ∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+      0 < NumberField.InfinitePlace.embedding_of_isReal hv
+            (algebraMap (NumberField.RingOfIntegers F) F α))
+    (hβpos : ∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+      0 < NumberField.InfinitePlace.embedding_of_isReal hv
+            (algebraMap (NumberField.RingOfIntegers F) F β))
+    (heq : w * Ideal.span {β} = Ideal.span {a} * Ideal.span {α}) :
+    ∃ α' β' : NumberField.RingOfIntegers F,
+      β' ≠ 0 ∧ α' - 1 ∈ 𝔣 ∧ β' - 1 ∈ 𝔣 ∧
+      (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+        0 < NumberField.InfinitePlace.embedding_of_isReal hv
+              (algebraMap (NumberField.RingOfIntegers F) F α')) ∧
+      (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+        0 < NumberField.InfinitePlace.embedding_of_isReal hv
+              (algebraMap (NumberField.RingOfIntegers F) F β')) ∧
+      w * Ideal.span {β'} = Ideal.span {a * α'} := by
+  classical
+  by_cases htop : (1 : NumberField.RingOfIntegers F) ∈ 𝔣
+  · -- `𝔣 = ⊤`: every congruence is vacuous, so the given witnesses already serve.
+    have h𝔣top : 𝔣 = ⊤ := (Ideal.eq_top_iff_one 𝔣).mpr htop
+    refine ⟨α, β, hβ0, by simp [h𝔣top], by simp [h𝔣top], hαpos, hβpos, ?_⟩
+    rw [heq, Ideal.span_singleton_mul_span_singleton]
+  · -- an inverse of `β` modulo `𝔣`, re-scaled to be totally positive
+    have hone : (1 : NumberField.RingOfIntegers F) ∈ Ideal.span {β} ⊔ 𝔣 := by
+      rw [hβcop]; trivial
+    rw [Submodule.mem_sup] at hone
+    obtain ⟨b, hb, f, hf, hbf⟩ := hone
+    obtain ⟨γ₀, rfl⟩ := Ideal.mem_span_singleton'.mp hb
+    obtain ⟨γ, hγ, hγpos⟩ := exists_totallyPositive_sub_mem_narrowRayArtin F 𝔣 h𝔣 γ₀
+    have hγβ : γ * β - 1 ∈ 𝔣 := by
+      have hrw : γ * β - 1 = (γ - γ₀) * β + (-f) := by
+        rw [← hbf]; ring
+      rw [hrw]
+      exact Ideal.add_mem _ (Ideal.mul_mem_right _ _ hγ) (neg_mem hf)
+    have hγ0 : γ ≠ 0 := by
+      rintro rfl
+      exact htop (by simpa using neg_mem hγβ)
+    refine ⟨γ * α, γ * β, mul_ne_zero hγ0 hβ0, ?_, hγβ, ?_, ?_, ?_⟩
+    · have hrw : γ * α - 1 = γ * (α - β) + (γ * β - 1) := by ring
+      rw [hrw]
+      exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hαβ) hγβ
+    · intro v hv
+      rw [map_mul, map_mul]
+      exact mul_pos (hγpos v hv) (hαpos v hv)
+    · intro v hv
+      rw [map_mul, map_mul]
+      exact mul_pos (hγpos v hv) (hβpos v hv)
+    · calc w * Ideal.span {γ * β}
+          = (w * Ideal.span {β}) * Ideal.span {γ} := by
+            rw [← Ideal.span_singleton_mul_span_singleton]; ring
+        _ = (Ideal.span {a} * Ideal.span {α}) * Ideal.span {γ} := by rw [heq]
+        _ = Ideal.span {a * (γ * α)} := by
+            rw [Ideal.span_singleton_mul_span_singleton,
+              Ideal.span_singleton_mul_span_singleton,
+              show a * α * γ = a * (γ * α) from by ring]
+
 /-- **STEP 1a-i′-c-1-α′ — THE EXISTENCE THEOREM OF CLASS FIELD THEORY, IN
 FROBENIUS-PINNED FORM** (sorry leaf; CUT 2026-07-31 out of
 `exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top` below, which is now a
@@ -5170,7 +5321,94 @@ CHECK AT `F = ℚ`, `𝔣 = (4)`, `a = -7`, where the ray class field is
 `ℚ(ζ₄) = ℚ(i)` and the narrow ray class of `(-7)` mod `4∞` is the set of primes
 `(p)` with a generator `≡ -7 ≡ 1 (mod 4)` and negative — i.e. `p ≡ 3 (mod 4)`:
 `w = (7)` works with `α = β = 1`, and `w = (3)` does not, which is what makes
-the `τ`-pin do work. -/
+the `τ`-pin do work.
+
+--------------------------------------------------------------------------
+
+RECUT 2026-08-02 (flt-lean-207) — THE TWO NORMALISATIONS ARE NOW PROVEN, AND THE
+RESIDUE IS STATED IN THE `IsNarrowRayEquiv` VOCABULARY THIS TREE ALREADY OWNS.
+**The direct-sorry count did not move: 1 leaf in, 1 leaf out.** What changed is
+what is LEFT in the leaf, which is the thing to judge this by.
+
+The conclusion used to be the NORMALISED ray relation — `α ≡ 1` and `β ≡ 1`
+`(mod 𝔣)` — so a prover owed, on top of the citation, the two normalisations the
+EQUIVALENCE AUDIT below calls free (invert the denominator modulo `𝔣`, then clear
+signs). It is now the RAW relation
+
+    β ≠ 0,  (β) ⊔ 𝔣 = ⊤,  α − β ∈ 𝔣,  α ≻ 0,  β ≻ 0,  w · (β) = (a) · (α),
+
+which is exactly what the classical multiplicative congruence `γ ≡ 1 (mod^× 𝔣)`
+unpacks to (`γ = α/β` with `α ≡ β (mod 𝔣)` and both coprime to `𝔣`). The passage
+back to the normalised form is `exists_narrowRayNormalized_of_sub_mem` above,
+PROVEN, over `exists_totallyPositive_sub_mem_narrowRayArtin`, also PROVEN; the
+assembly `exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top` below now runs
+Chebotarev exactly as before and then normalises.
+
+THE OLD AUDITS TRANSFER, AND HERE IS WHY — an audit labelled "inherited" with no
+argument is a failure mode this project records. The two forms are EQUIVALENT, not
+merely comparable: raw ⟹ normalised is the proven lemma above, and normalised ⟹ raw
+is `α ≡ 1 ∧ β ≡ 1 ⟹ α ≡ β`, with `(β) ⊔ 𝔣 = ⊤` free from `β − 1 ∈ 𝔣`. So every
+counterexample to one is a counterexample to the other, and the FAITHFULNESS,
+NON-VACUITY and `hwcop`/`h𝔣`/`ha0` load-bearing arguments above stand verbatim.
+(Only the coprimality clause is new, and it is a CONCLUSION, so it cannot make the
+leaf false — it can only make it harder, and classically it is free.)
+
+WHAT THE RAW FORM BUYS: IT IS AN IN-TREE RELATION. At `𝔣 = Ideal.span {(ℓ : 𝓞 F)}`
+the raw conclusion is literally
+`GaloisRepresentation.IsNarrowRayEquiv ℓ w.asIdeal (Ideal.span {a})`
+(`GaloisRepresentation/Chebotarev.lean:3033`), modulo two cosmetic differences: that
+definition spells total positivity as `∀ φ : F →+* ℝ, 0 < φ …` rather than through
+`InfinitePlace.embedding_of_isReal`, and it puts the multiplier on the other side —
+which is free, since `IsNarrowRayEquiv.symm` is PROVEN. **A rational-integer modulus
+is not a special case here: it is the ONLY case this chain is ever instantiated at.**
+`exists_totallyNegative_sub_one_mem_span_eq_asIdeal` below — the sole consumer of the
+whole cluster — runs it at `𝔣 = Ideal.span {(2 : 𝓞 F) ^ n}` and `a = (1 − 2 ^ (n+1) : ℤ)`,
+both rational integers.
+
+TWO ROUTES, PRICED AGAINST THE TREE AS IT STANDS (2026-08-02). The ROUTE paragraph
+above describes the first; the second is the one the assets favour.
+
+* **ALGEBRAIC (`L := H_𝔪`, `τ := Artin_𝔪((a))`).** Needs the EXISTENCE THEOREM of
+  class field theory for the modulus `𝔪 = 𝔣 · ∏_{v real} v`. Nothing in this tree
+  approaches it, and its UNRAMIFIED special case is itself OPEN, with its own owner,
+  in `Fermat/FLT/NumberField/UnramifiedClassFieldExistence.lean`
+  (`exists_hilbertClassField_artinIso`, `sorry`) and
+  `Fermat/FLT/NumberField/ArtinSymbol.lean` (`artinMap_toPrincipalIdeal`, `sorry`).
+  So this leaf's citation is strictly harder than a leaf somebody else already owns.
+  **Two reductions are nevertheless free and worth having in advance**, because they
+  cut the citation down to one half of one theorem:
+  - the Artin map itself costs NOTHING. `GaloisRepresentation.exists_idealSymbolMonoidHom`
+    (`NumberField/CyclotomicIdealSymbol.lean:102`, PROVEN, pure Dedekind-domain theory)
+    extends ANY function on height-one primes to a monoid hom on `(Ideal R)⁰`, so
+    `Art : I_𝔣 → Gal(L/F)`, `w ↦ Frob_w`, exists for any finite abelian `L/F`
+    unramified outside `𝔣` with no reciprocity input at all;
+  - only ONE HALF of Artin reciprocity is then needed. Writing the leaf's conclusion
+    as `Art(w) = Art((a)) ⟹ w ∼_𝔪 (a)` shows the obligation is `ker Art ⊆ P_𝔪`
+    (equivalently: the Frobenius SEPARATES distinct narrow ray classes). The other
+    inclusion `P_𝔪 ⊆ ker Art` — Artin reciprocity proper, and the half every textbook
+    proof spends its effort on — is NOT used, because the leaf's conclusion is an
+    implication and not an equivalence.
+* **ANALYTIC (Dirichlet for narrow ray classes).** This one discharges the CONSUMER
+  directly and makes the Frobenius pin unnecessary, so it is a rival cut rather than a
+  proof of this leaf; it is recorded because the tree's assets point at it. Its deepest
+  input — the Weber count `#{I : N(I) ≤ n, I ∼ I₀} = κ·n + O(n^r)` with `r < 1` and `κ`
+  INDEPENDENT of the class, for exactly these narrow ray classes — is PROVEN in-tree as
+  `exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` (`Chebotarev.lean:5981`),
+  as are the class finiteness (`exists_finset_forall_isNarrowRayEquiv`,
+  `finite_quotient_narrowRaySetoid`) and the equivalence-relation lemmas. What is missing
+  is the `L`-function half for RAY-CLASS characters: the same file carries it in full for
+  the NORM-RESIDUE character group (`tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum`
+  the ideal Euler product, `exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow`
+  the counting-to-cancellation step, `exists_forall_norm_LSeries_le_and_norm_deriv_le` the
+  Abel-summation bounds, `exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le` the
+  minimal `L(1, χ) ≠ 0`), and a successor re-runs that chain with characters of the finite
+  narrow ray class group in place of `DirichletCharacter ℂ ℓ ∘ absNorm`. That is a
+  worked template at the SAME generality, not a build from nothing.
+  **One measurement a successor must make first, because it decides the shape:**
+  `exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` and everything under it
+  carry `hℓ : ℓ.Prime`, while this chain needs `ℓ = 2 ^ n`. Either the primality is
+  decoration in those proofs (check with the `unusedVariables` linter and by following
+  `hℓ` through them) or the counting core has to be re-run at a prime power. -/
 theorem exists_narrowRayArtin_of_sup_eq_top
     (F : Type u) [Field F] [NumberField F]
     (𝔣 : Ideal (NumberField.RingOfIntegers F)) (h𝔣 : 𝔣 ≠ ⊥)
@@ -5185,14 +5423,14 @@ theorem exists_narrowRayArtin_of_sup_eq_top
             Q.inertia (L ≃ₐ[F] L) = ⊥ ∧
             IsArithFrobAt (NumberField.RingOfIntegers F) τ Q) →
         ∃ α β : NumberField.RingOfIntegers F,
-          β ≠ 0 ∧ α - 1 ∈ 𝔣 ∧ β - 1 ∈ 𝔣 ∧
+          β ≠ 0 ∧ Ideal.span {β} ⊔ 𝔣 = ⊤ ∧ α - β ∈ 𝔣 ∧
           (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
             0 < NumberField.InfinitePlace.embedding_of_isReal hv
                   (algebraMap (NumberField.RingOfIntegers F) F α)) ∧
           (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
             0 < NumberField.InfinitePlace.embedding_of_isReal hv
                   (algebraMap (NumberField.RingOfIntegers F) F β)) ∧
-          w.asIdeal * Ideal.span {β} = Ideal.span {a * α} :=
+          w.asIdeal * Ideal.span {β} = Ideal.span {a} * Ideal.span {α} :=
   sorry
 
 /-- **STEP 1a-i′-c-1-α — CLASS FIELD THEORY: A NARROW RAY CLASS CONTAINS A
@@ -5393,8 +5631,12 @@ theorem exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top
     have hmax : w.asIdeal.IsMaximal := w.isMaximal
     have hle : w.asIdeal ⊔ 𝔣 = w.asIdeal := (hmax.eq_of_le hne le_sup_left).symm
     exact hwdvd (Ideal.dvd_iff_le.mpr (le_sup_right.trans hle.le))
-  obtain ⟨α, β, h1, h2, h3, h4, h5, h6⟩ := hτ w hwcop hwmem
-  exact ⟨w, α, β, h1, h2, h3, h4, h5, h6⟩
+  obtain ⟨α, β, hβ0, hβcop, hαβ, hαpos, hβpos, heq⟩ := hτ w hwcop hwmem
+  -- NORMALISATION (proven above): rescale by a totally positive inverse of `β`
+  -- modulo `𝔣` so that BOTH multipliers become `≡ 1 (mod 𝔣)`.
+  obtain ⟨α', β', h1, h2, h3, h4, h5, h6⟩ :=
+    exists_narrowRayNormalized_of_sub_mem F 𝔣 h𝔣 a w.asIdeal α β hβ0 hβcop hαβ hαpos hβpos heq
+  exact ⟨w, α', β', h1, h2, h3, h4, h5, h6⟩
 
 /-- **STEP 1a-i′-c-1-β — GENERATOR EXTRACTION: A NARROW RAY CLASS CONTAINING A
 PRIME CONTAINS A PRIME *GENERATOR* WITH THE PRESCRIBED CONGRUENCE AND SIGNS**
