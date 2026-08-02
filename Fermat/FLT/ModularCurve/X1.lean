@@ -18492,6 +18492,117 @@ section
 variable {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
   {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
 
+/-- **THE `Γ₁` HECKE CORRESPONDENCES COMMUTE ON POINTS** (sorry leaf, new
+2026-08-01) — the shared cut of `exists_commutingHeckeAlbaneseFamilyGamma1`
+immediately below, which is PROVEN over it and over nothing else.
+
+This is that leaf with every equality of MORPHISMS replaced by an equality of
+RELATIVE POINTS, restricted to the pinned primes, plus two clauses on the VALUES
+of the family.  The whole scheme-theoretic bookkeeping — the passage from points
+to morphisms, and the junk arities — is discharged below, so a prover of this
+leaf never writes it.
+
+**WHY THIS SHAPE AND NOT THE `Γ₀` ONE, which is a decision and is reversible.**
+The `Γ₀` side carries TWO cuts of the same node, both authored 2026-07-31 and both
+merged at release 29: `exists_commutingHeckeAlbaneseFamily_values` (morphism-level,
+plus the value clause) and `exists_pointwiseCommutingHeckeAlbaneseFamily`
+(points-level, no value clause, ~19 700 lines BELOW its parent).  `_values` won
+there and the points-level one is a PROVEN orphan; but that file's own docstring
+records the reason, and it is not a mathematical one — the better repair is
+*"HOIST this statement … STRENGTHEN it with the value clause and with
+`∀ n, ¬(n.Prime ∧ ¬ n ∣ N) → w n = 𝟙 J` … and prove `_values` over it"*, declined
+because it costs ~150 lines of movement in the file with the most concurrent
+editors in the repository.
+
+Here there is no movement to pay for: this leaf is being written for the first
+time, so it is written in the shape that file names as the right one.  The two
+value clauses are exactly the two it prescribes, and they are what make the
+morphism-level statement follow — see the proof below.
+
+**WHAT THE TWO VALUE CLAUSES COST A PROVER: two lines, and they are forced by the
+construction anyone would write anyway.**  The intended witness is
+`w n := if n.Prime ∧ ¬ n ∣ N then v n else 𝟙 J`, and both clauses fall out of a
+`by_cases` on that same condition.  Neither is a demand for new mathematics.
+
+* the JUNK clause `∀ n, ¬(n.Prime ∧ ¬ n ∣ N) → w n = 𝟙 J` is LOAD-BEARING for the
+  proof below and cannot be dropped: the consumer's commutation is quantified over
+  every pair of arities, while this leaf's is quantified over pinned primes only,
+  and at a mixed pair the only thing that closes the gap is knowing the unpinned
+  member is `𝟙 J`.  The value clause alone does NOT suffice — it permits an
+  unpinned `w n = v n`, which commutes with nothing.
+* the VALUE clause `∀ n, w n = v n ∨ w n = 𝟙 J` has NO consumer in this file today,
+  and is kept deliberately.  On the `Γ₀` side it is what makes
+  `exists_commutingHeckeAlbaneseFamily_atkinLehner` free — every commutation
+  property of the INPUT family transports across the replacement, the left
+  disjunct by hypothesis and the right by `Category.id_comp`/`comp_id`.  There is
+  no `Γ₁` counterpart of that leaf, and the reason is recorded on
+  `IsModularHeckeActionGamma1` above: the DIAMOND operators, which are the
+  genuinely `Γ₁`-specific extra structure, *"are not part of the data this pin
+  exists to constrain"*, because `IsHeckeIsotypicDecompositionGamma1` records the
+  nebentypus in its `neben` field rather than through an action.  So the clause is
+  carried for a different reason — with it, this statement is character for
+  character the shape `X0.lean` prescribes for BOTH sides, so if that refactor is
+  ever taken one proof serves both levels.
+
+  **WHAT WOULD CHANGE THIS.**  If the `Γ₀` refactor is declined for good and no
+  `Γ₁` diamond or Atkin–Lehner commutation leaf is ever cut, the clause may simply
+  be deleted from the conclusion: nothing projects it, so no consumer moves and
+  the proof below is unaffected.  It is one line, in the safe direction.
+
+**DO NOT REPLACE THE VALUE CLAUSE BY THE EQUALITY `w n = v n` AT THE PINNED
+ARITIES.**  That reads as the honest construction written down and it is a
+different, possibly FALSE, statement: it forces the conclusion to be about the
+GIVEN `v`, i.e. it is the `∀ v` phrasing that the audit below refutes with
+`End(J) ⊇ M₂(ℤ)`.  The disjunction is what keeps the leaf true in both regimes.
+The same trap is recorded on `exists_commutingHeckeAlbaneseFamily_values` in
+`X0.lean`, with the reason spelled out at greater length: `d₀` makes
+`Gamma1Datum N ℚ̄` inhabited, but the recipe quantifies over DECOMPOSITION DATA
+`(m, dq, iso)`, and at a datum where the cyclic `ℓ`-subgroups exist but no
+`IsGamma1Isogeny` realises them, no valid data exists and the recipe constrains
+`w ℓ` at that datum not at all.
+
+**`d₀` IS THE NON-VACUITY WITNESS, and it costs the consumer nothing.**  The
+proof below `by_cases` on `Nonempty (Gamma1Datum N ℚ̄)` and discharges the empty
+branch itself with `w := fun _ => 𝟙 J`, whose pin is then vacuously true because
+`IsHeckeAlbaneseRecipeGamma1` opens with `∀ d : Gamma1Datum N ℚ̄`.  So the VACUOUS
+REGIME — the `IsGamma1Isogeny`-inhabitation question this cluster tracks, whose
+settling check was run on 2026-07-28 and did not settle — is no longer part of
+this leaf's obligation; it is PROVEN.  That is the whole of what this cut banks
+today, and it is worth saying plainly that the frontier COUNT does not move:
+one leaf replaces one leaf.  What changed is what is left inside it.
+
+**WHAT REMAINS GENUINELY MISSING is unchanged**, and the full route survey — the
+three witnesses that fail, the two corrections to it, and the reason the further
+three-way decomposition is deliberately not written — is on
+`exists_commutingHeckeAlbaneseFamilyGamma1` immediately below.  All of it remains
+valid, verbatim, as the audit of THIS leaf: the cut changes only the FORM of the
+commutation clause and the quantifier on the arities, and leaves the mathematics
+exactly where it was.  In particular the blocking object is the same one the whole
+cluster waits on — the correspondence scheme `X_1(N, ℓ)` with its two degeneracy
+maps, together with a morphism-level `IsGamma1Isogeny`. -/
+theorem exists_pointwiseCommutingHeckeAlbaneseFamilyGamma1 (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (_d₀ : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (v : ℕ → (J ⟶ J)) (v_comp : ∀ n, v n ≫ jstr = jstr)
+    (_v_add : ∀ n, IsAdditiveOn ab ab (v n) (v_comp n))
+    (_v_pin : ∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
+      ∃ e, IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (v ℓ) (v_comp ℓ) e) :
+    ∃ (w : ℕ → (J ⟶ J)) (w_comp : ∀ n, w n ≫ jstr = jstr),
+      (∀ n, IsAdditiveOn ab ab (w n) (w_comp n)) ∧
+        (∀ n : ℕ, w n = v n ∨ w n = 𝟙 J) ∧
+        (∀ n : ℕ, ¬(n.Prime ∧ ¬ n ∣ N) → w n = 𝟙 J) ∧
+        (∀ ℓ ℓ' : ℕ, ℓ.Prime → ¬ ℓ ∣ N → ℓ'.Prime → ¬ ℓ' ∣ N →
+          ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+            RelPoint.post (w ℓ') (w_comp ℓ') (RelPoint.post (w ℓ) (w_comp ℓ) (jac.aj g x))
+              = RelPoint.post (w ℓ) (w_comp ℓ)
+                  (RelPoint.post (w ℓ') (w_comp ℓ') (jac.aj g x))) ∧
+        (∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
+          ∃ e, IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (w ℓ) (w_comp ℓ) e) :=
+  sorry
+
 def IsGamma1IsogenyEnumeration (N l : ℕ) (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) {m : ℕ}
     (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) : Prop :=
   ∃ iso : ∀ k, IsGamma1Isogeny N l d (dq k),
@@ -18828,8 +18939,8 @@ theorem exists_commutingHeckeAlbaneseFamilyGamma1 (N : ℕ)
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o)
     (v : ℕ → (J ⟶ J)) (v_comp : ∀ n, v n ≫ jstr = jstr)
-    (_v_add : ∀ n, IsAdditiveOn ab ab (v n) (v_comp n))
-    (_v_pin : ∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
+    (v_add : ∀ n, IsAdditiveOn ab ab (v n) (v_comp n))
+    (v_pin : ∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
       ∃ e, IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (v ℓ) (v_comp ℓ) e) :
     ∃ (u : ℕ → (J ⟶ J)) (u_comp : ∀ n, u n ≫ jstr = jstr),
       (∀ n, IsAdditiveOn ab ab (u n) (u_comp n)) ∧
@@ -18837,42 +18948,39 @@ theorem exists_commutingHeckeAlbaneseFamilyGamma1 (N : ℕ)
         (∀ ℓ : ℕ, ℓ.Prime → ¬ ℓ ∣ N →
           ∃ e, IsHeckeAlbaneseRecipeGamma1 N H jac ℓ (u ℓ) (u_comp ℓ) e) := by
   classical
-  by_cases hnon : Nonempty (Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-  · -- the genuine regime
-    obtain ⟨d₀⟩ := hnon
-    have key := HeckeCommute.comm_of_pinned1 N H jac
-      (H.coarse.classify (specAlgClos ℚ) d₀) v v_comp _v_add _v_pin
-    have ucomp : ∀ n : ℕ,
-        ((if n.Prime ∧ ¬ n ∣ N then v n else 𝟙 J) : J ⟶ J) ≫ jstr = jstr := by
-      intro n; split_ifs with hn
-      · exact v_comp n
-      · exact Category.id_comp jstr
-    refine ⟨fun n => if n.Prime ∧ ¬ n ∣ N then v n else 𝟙 J, ucomp, ?_, ?_, ?_⟩
-    · intro n
-      by_cases hn : n.Prime ∧ ¬ n ∣ N
-      · simp only [if_pos hn]; exact _v_add n
-      · simp only [if_neg hn]
-        exact fun x y => by simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta]
-    · intro m n
-      by_cases hm : m.Prime ∧ ¬ m ∣ N <;> by_cases hn : n.Prime ∧ ¬ n ∣ N
-      · by_cases hmn : m = n
-        · subst hmn; rfl
-        · simp only [if_pos hm, if_pos hn]
-          exact key m n hm.1 hm.2 hn.1 hn.2 hmn
-      · simp only [if_pos hm, if_neg hn, Category.comp_id, Category.id_comp]
-      · simp only [if_neg hm, if_pos hn, Category.comp_id, Category.id_comp]
-      · simp only [if_neg hm, if_neg hn]
-    · intro ℓ hℓ hℓN
-      obtain ⟨e, he⟩ := _v_pin ℓ hℓ hℓN
-      exact ⟨e, by simp only [if_pos (And.intro hℓ hℓN)]; exact he⟩
-  · -- the VACUOUS regime: `IsHeckeAlbaneseRecipeGamma1` opens with
-    -- `∀ d : Gamma1Datum N ℚ̄`, so with that type empty every clause is satisfied
-    -- by the constant family `𝟙 J`
+  by_cases hne : Nonempty (Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+  · -- the genuine regime: the points-level leaf above, read as an equality of
+    -- morphisms through the uniqueness half of the Albanese property
+    obtain ⟨d₀⟩ := hne
+    obtain ⟨w, w_comp, w_add, -, w_junk, w_ptcomm, w_pin⟩ :=
+      exists_pointwiseCommutingHeckeAlbaneseFamilyGamma1 N H jac d₀ v v_comp v_add v_pin
+    refine ⟨w, w_comp, w_add, ?_, w_pin⟩
+    intro m n
+    by_cases hm : m.Prime ∧ ¬ m ∣ N
+    · by_cases hn : n.Prime ∧ ¬ n ∣ N
+      · -- both arities pinned: `eq_of_post_aj_eq` turns the pointwise clause into
+        -- an equality of endomorphisms of `J`
+        have hcomp₁ : (w m ≫ w n) ≫ jstr = jstr := by
+          rw [Category.assoc, w_comp n, w_comp m]
+        have hcomp₂ : (w n ≫ w m) ≫ jstr = jstr := by
+          rw [Category.assoc, w_comp m, w_comp n]
+        refine RelPoint.IsJacobianOf.eq_of_post_aj_eq jac ab hcomp₁ hcomp₂
+          (IsAdditiveOn.comp (w_add m) (w_add n)) ?_
+        intro T g x
+        rw [RelPoint.post_comp (w m) (w_comp m) (w n) (w_comp n),
+          RelPoint.post_comp (w n) (w_comp n) (w m) (w_comp m)]
+        exact w_ptcomm m n hm.1 hm.2 hn.1 hn.2 g x
+      · -- a junk arity is `𝟙 J`, which commutes with everything
+        rw [w_junk n hn, Category.comp_id, Category.id_comp]
+    · rw [w_junk m hm, Category.comp_id, Category.id_comp]
+  · -- the VACUOUS regime, which the old leaf carried and this proof discharges:
+    -- `IsHeckeAlbaneseRecipeGamma1` opens with `∀ d : Gamma1Datum N ℚ̄`, so with
+    -- that type empty every clause is satisfied by the constant family `𝟙 J`.
     refine ⟨fun _ => 𝟙 J, fun _ => Category.id_comp jstr, fun n => ?_, fun m n => rfl,
       fun ℓ _ _ => ⟨ab.zero (𝟙 SpecQ), ?_⟩⟩
     · exact fun x y => by simp only [RelPoint.post, Category.comp_id, Subtype.coe_eta]
     · intro d
-      exact absurd ⟨d⟩ hnon
+      exact absurd ⟨d⟩ hne
 
 /-- **THE HECKE CORRESPONDENCE ACTS ON `J_1(N)`** (**PROVEN 2026-07-28**,
 over the single leaf `exists_heckeCorrespondenceFamilyGamma1` above) — the
