@@ -101,12 +101,20 @@ written and the frontier moves.
   `det` and `isUnramified` clauses PROVEN there and the two LOCAL clauses open
   (next two entries)
 - `exists_flatLocalLift_of_isSmallExtension` — **OPEN.** (item (5)(c),
-  stated 2026-07-31) Ramakrishna's smoothness of the flat local deformation
-  condition at `ℓ`: along a small extension every finite-flat local
-  representation at `ℓ` admits a finite-flat local lift. Stated on LOCAL
-  representations because no global form is true — see the section header for
-  the two global readings and why each fails. Carries a REQUIRED falsity audit
-  (whether the residual datum must be named) on the declaration
+  stated 2026-07-31, **RESTATED 2026-08-02 after its falsity audit refuted the
+  first form**) Ramakrishna's smoothness of the flat local deformation
+  condition at `ℓ`: along a small extension of coefficient rings carrying their
+  maximal-adic topologies, every finite-flat local representation at `ℓ` admits
+  a finite-flat local lift. Stated on LOCAL representations because no global
+  form is true — see the section header for the two global readings and why each
+  fails. Its falsity audit is PERFORMED and the 2026-07-31 form is FALSE:
+  `flatLocalLift_refutation` beside it is the proof, and the five proven
+  finiteness lemmas above it (`finite_of_hasFlatProlongationAtLocal`,
+  `finite_quotient_of_isFlatAtLocal`, `not_isFlatAtLocal_of_infinite_quotient`,
+  `hasFlatProlongationAtLocal_of_subsingleton`,
+  `isFlatAtLocal_of_forall_isOpen_eq_top`) are its mechanical content. The
+  residual datum turned out NOT to be the missing hypothesis; the two topologies
+  were
 - `exists_tameLocalLift_of_isSmallExtension` — **OPEN.** (item (5)(d),
   stated 2026-07-31) Smoothness of the ordinary/tame local condition at `2`.
   Two of its three data — the unramified quadratic character and the free
@@ -17807,15 +17815,276 @@ lemma isTameAtTwoLocal_iff {R : Type*} [CommRing R] [TopologicalSpace R]
             (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
           (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := Iff.rfl
 
+/-! ##### The finiteness that `IsFlatAtLocal` silently forces
+
+`GaloisRep.HasFlatProlongationAt`'s own docstring records the fact — *"in
+particular this requires `M` (and by extension `A`) to have finite
+cardinality"* — and nothing in the tree had turned that remark into a theorem.
+It is what the FALSITY AUDIT on `exists_flatLocalLift_of_isSmallExtension`
+below rests on, so it is proven here first, in the LOCAL vocabulary the two
+liftability leaves use.
+
+All five declarations in this sub-subsection are PROVEN (2026-08-02) and none
+of them is about the arithmetic: they are the mechanical content of the
+predicate. -/
+
+open scoped TensorProduct in
+open IsDedekindDomain.HeightOneSpectrum in
+/-- **A flat prolongation forces the space to be FINITE** (PROVEN 2026-08-02).
+
+The witness packaged by `HasFlatProlongationAtLocal` is an additive
+`Γ ℚ_v`-equivariant BIJECTION from the geometric points of the generic fibre of
+a finite flat `𝒪ᵥ`-Hopf algebra `G` onto the space. Those points are the
+`ℚ_v`-algebra maps `ℚ_v ⊗ G → ℚ_vᵃˡᵍ` out of a FINITE `ℚ_v`-algebra into a
+domain, and mathlib's `Finite.algHom` makes that set finite with no separability
+or étaleness input at all (`Module.Finite 𝒪ᵥ G` base-changes, and over the field
+`ℚ_v` every module is free). So the space of a locally flat representation is
+finite, always.
+
+This is the mechanical half of the falsity audit below: it says that
+`IsFlatAtLocal` is not only a condition on the Galois action, it is a
+FINITENESS condition on the coefficient ring, and a statement that concludes
+`IsFlatAtLocal` therefore concludes that finiteness whether or not it means
+to. -/
+theorem finite_of_hasFlatProlongationAtLocal
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    {ρv : GaloisRep (adicCompletion ℚ v) A M}
+    (h : HasFlatProlongationAtLocal v ρv) : Finite M := by
+  obtain ⟨G, iCR, iH, iFl, iFin, iEt, f, hbij⟩ := h
+  letI := iCR
+  letI := iH
+  letI := iFl
+  letI := iFin
+  letI := iEt
+  haveI : Module.Finite (adicCompletion ℚ v)
+      (adicCompletion ℚ v ⊗[adicCompletionIntegers ℚ v] G) := inferInstance
+  haveI : Finite (adicCompletion ℚ v ⊗[adicCompletionIntegers ℚ v] G →ₐ[adicCompletion ℚ v]
+      AlgebraicClosure (adicCompletion ℚ v)) := inferInstance
+  exact Finite.of_surjective _ hbij.2
+
+open scoped TensorProduct in
+open IsDedekindDomain.HeightOneSpectrum in
+/-- **Every open ideal of the coefficient ring of a locally flat representation
+has FINITE quotient** (PROVEN 2026-08-02): the previous theorem read at each
+member of `IsFlatAtLocal`'s open-ideal quantifier, then pushed from
+`(A ⧸ I) ⊗[A] (Fin 2 → A)` down to `A ⧸ I` through
+`TensorProduct.piScalarRight` and the diagonal.
+
+So a rank-`2` representation over `A` can be locally flat only if `A` is
+PRO-FINITE for its own topology. In Mazur's category that is automatic
+(`ProfiniteLocalNoetherian.finite_quotient_of_isOpen` applied to a compact
+coefficient ring); for an arbitrary local topological ring it is a real
+restriction, and it is what the audit below turns on. -/
+theorem finite_quotient_of_isFlatAtLocal
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {ρv : GaloisRep (adicCompletion ℚ v) A (Fin 2 → A)}
+    (h : IsFlatAtLocal v ρv)
+    (I : Ideal A) (hI : IsOpen (I : Set A)) : Finite (A ⧸ I) := by
+  haveI : Finite ((A ⧸ I) ⊗[A] (Fin 2 → A)) :=
+    finite_of_hasFlatProlongationAtLocal v (h I hI)
+  haveI : Finite (Fin 2 → (A ⧸ I)) :=
+    Finite.of_equiv _ (TensorProduct.piScalarRight A A (A ⧸ I) (Fin 2)).toEquiv
+  exact Finite.of_injective (fun x : A ⧸ I => (fun _ => x : Fin 2 → A ⧸ I))
+    (fun _ _ hxy => congrFun hxy 0)
+
+open IsDedekindDomain.HeightOneSpectrum in
+/-- **No representation over a ring with an open ideal of INFINITE quotient is
+locally flat** (PROVEN 2026-08-02) — the contrapositive of the previous
+theorem, in the form the audit consumes. Note it quantifies over `τ`: the
+obstruction is to the COEFFICIENT RING, so no choice of representation can
+repair it. -/
+theorem not_isFlatAtLocal_of_infinite_quotient
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S]
+    (J : Ideal S) (hJ : IsOpen (J : Set S)) (hinf : Infinite (S ⧸ J))
+    (τ : GaloisRep (adicCompletion ℚ v) S (Fin 2 → S)) :
+    ¬ IsFlatAtLocal v τ := by
+  intro h
+  haveI := finite_quotient_of_isFlatAtLocal v h J hJ
+  exact not_finite (S ⧸ J)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+open scoped TensorProduct in
+open IsDedekindDomain.HeightOneSpectrum in
+/-- **A representation on a SUBSINGLETON space has a flat prolongation**
+(PROVEN 2026-08-02), the LOCAL form of
+`GaloisRep.hasFlatProlongationAt_of_subsingleton`
+(`Deformations/RepresentationTheory/FlatProlongation.lean`), whose proof is
+transcribed verbatim: the trivial Hopf algebra `𝒪ᵥ` works, its generic fibre
+`ℚ_v ⊗ 𝒪ᵥ ≅ ℚ_v` has exactly one point, and the target is a single point too.
+
+The global theorem cannot be reused as it stands, because
+`HasFlatProlongationAt` and `HasFlatProlongationAtLocal` state the same `∃`
+about `(ρ.toLocal v).Space` and `ρv.Space` respectively, and those two carry
+DIFFERENT `Γ ℚ_v`-actions unless `ρv` is a restriction — which is exactly the
+situation the local predicates exist to avoid. -/
+theorem hasFlatProlongationAtLocal_of_subsingleton
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M] [Subsingleton M]
+    (ρv : GaloisRep (adicCompletion ℚ v) A M) :
+    HasFlatProlongationAtLocal v ρv := by
+  classical
+  haveI hsub : Subsingleton ((adicCompletion ℚ v ⊗[adicCompletionIntegers ℚ v]
+      adicCompletionIntegers ℚ v) →ₐ[adicCompletion ℚ v]
+      AlgebraicClosure (adicCompletion ℚ v)) := by
+    constructor
+    intro φ χ
+    have h1 : ∀ (ξ : (adicCompletion ℚ v ⊗[adicCompletionIntegers ℚ v]
+        adicCompletionIntegers ℚ v) →ₐ[adicCompletion ℚ v]
+        AlgebraicClosure (adicCompletion ℚ v)),
+        ξ = (ξ.comp (Algebra.TensorProduct.rid (adicCompletionIntegers ℚ v)
+              (adicCompletion ℚ v) (adicCompletion ℚ v)).symm.toAlgHom).comp
+          (Algebra.TensorProduct.rid (adicCompletionIntegers ℚ v)
+            (adicCompletion ℚ v) (adicCompletion ℚ v)).toAlgHom := by
+      intro ξ
+      refine AlgHom.ext fun x => ?_
+      simp
+    rw [h1 φ, h1 χ, Subsingleton.elim
+      (φ.comp (Algebra.TensorProduct.rid (adicCompletionIntegers ℚ v)
+        (adicCompletion ℚ v) (adicCompletion ℚ v)).symm.toAlgHom)
+      (χ.comp (Algebra.TensorProduct.rid (adicCompletionIntegers ℚ v)
+        (adicCompletion ℚ v) (adicCompletion ℚ v)).symm.toAlgHom)]
+  haveI hne : Nonempty ((adicCompletion ℚ v ⊗[adicCompletionIntegers ℚ v]
+      adicCompletionIntegers ℚ v) →ₐ[adicCompletion ℚ v]
+      AlgebraicClosure (adicCompletion ℚ v)) :=
+    ⟨(IsScalarTower.toAlgHom (adicCompletion ℚ v) (adicCompletion ℚ v)
+        (AlgebraicClosure (adicCompletion ℚ v))).comp
+      (Algebra.TensorProduct.rid (adicCompletionIntegers ℚ v)
+        (adicCompletion ℚ v) (adicCompletion ℚ v)).toAlgHom⟩
+  haveI hsubM : Subsingleton ρv.Space := inferInstanceAs (Subsingleton M)
+  refine ⟨adicCompletionIntegers ℚ v, inferInstance, inferInstance, inferInstance,
+    inferInstance, ?_,
+    { toFun := fun _ => 0
+      map_smul' := fun _ _ => (smul_zero _).symm
+      map_zero' := rfl
+      map_add' := fun _ _ => (add_zero (0 : ρv.Space)).symm }, ?_, ?_⟩
+  · exact Algebra.Etale.of_equiv (Algebra.TensorProduct.rid (adicCompletionIntegers ℚ v)
+      (adicCompletion ℚ v) (adicCompletion ℚ v)).symm
+  · intro a b _
+    exact Subsingleton.elim a b
+  · intro y
+    exact ⟨Additive.ofMul hne.some, Subsingleton.elim _ _⟩
+
+open scoped TensorProduct in
+open IsDedekindDomain.HeightOneSpectrum in
+/-- **If `⊤` is the ONLY open ideal of `R`, then `IsFlatAtLocal` is VACUOUS**
+(PROVEN 2026-08-02): it then holds for every representation whatsoever, because
+the single instance of its open-ideal quantifier is the zero ring, where
+`hasFlatProlongationAtLocal_of_subsingleton` applies.
+
+That hypothesis is not exotic. It holds for the INDISCRETE topology on any ring,
+and it holds for the ORDINARY topology on any nondiscrete topological FIELD
+(`ℚ_p`, `ℝ`, `ℚ`): the only ideals are `⊥` and `⊤`, and `⊥` is open exactly when
+the topology is discrete. So `IsFlatAtLocal` carries arithmetic only when the
+coefficient ring's topology has enough open ideals — in Mazur's category, when it
+is the `𝔪`-adic one. This is the second half of the falsity audit below. -/
+theorem isFlatAtLocal_of_forall_isOpen_eq_top
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    (hR : ∀ I : Ideal R, IsOpen (I : Set R) → I = ⊤)
+    (ρv : GaloisRep (adicCompletion ℚ v) R (Fin 2 → R)) :
+    IsFlatAtLocal v ρv := by
+  intro I hI
+  obtain rfl := hR I hI
+  haveI : Subsingleton (R ⧸ (⊤ : Ideal R)) :=
+    (Ideal.Quotient.subsingleton_iff).2 rfl
+  haveI : Subsingleton ((R ⧸ (⊤ : Ideal R)) ⊗[R] (Fin 2 → R)) := by
+    constructor
+    intro x y
+    have hz : ∀ z : (R ⧸ (⊤ : Ideal R)) ⊗[R] (Fin 2 → R), z = 0 := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => rfl
+      | tmul a m => rw [Subsingleton.elim a 0, TensorProduct.zero_tmul]
+      | add a b ha hb => rw [ha, hb, add_zero]
+    rw [hz x, hz y]
+  exact hasFlatProlongationAtLocal_of_subsingleton v _
+
+open IsDedekindDomain.HeightOneSpectrum in
+/-- **THE REFUTATION of the 2026-07-31 form of
+`exists_flatLocalLift_of_isSmallExtension`** (PROVEN 2026-08-02).
+
+The statement as first written quantified over an arbitrary local topological
+`S` and `R` with no condition tying their TOPOLOGIES to anything. Under exactly
+that hypothesis list — `ψ` a continuous small extension, `ρv` a rank-`2` local
+representation over `R`, `IsFlatAtLocal v ρv` — this theorem produces both
+halves of a counterexample at once:
+
+* the hypothesis `IsFlatAtLocal v ρv` HOLDS, for every `ρv`, as soon as `⊤` is
+  the only open ideal of `R` (`isFlatAtLocal_of_forall_isOpen_eq_top`);
+* the conclusion FAILS, for every `τ`, as soon as `S` has one open ideal with
+  infinite quotient (`not_isFlatAtLocal_of_infinite_quotient`).
+
+Both conditions are satisfiable simultaneously, and the two rings are otherwise
+completely ordinary. The cleanest witness pair, for any prime `p`:
+
+* `R := ℚ_p` with its usual topology — a field, hence local; its only ideals are
+  `⊥` and `⊤`, and `⊥` is not open because `ℚ_p` is not discrete, so `hR` holds;
+* `S := ℚ_p` with the DISCRETE topology, `ψ := RingHom.id`. Then `ψ` is
+  continuous (the source is discrete), it is surjective, and
+  `IsSmallExtension ψ` is immediate because the maximal ideal of a field is `⊥`,
+  so the annihilation condition reads `⊥ * ⊥ = ⊥`. Take `J := ⊥`, which is open
+  because `S` is discrete, and `S ⧸ ⊥` is infinite.
+
+So the leaf was FALSE AS STATED, and the defect is NOT in its arithmetic — it is
+that `IsFlatAtLocal` is simultaneously a Galois-theoretic condition and a
+finiteness condition on the coefficient ring, so a smoothness statement must say
+which rings it is about. Ramakrishna's theorem is about ARTINIAN (or pro-Artinian)
+coefficient rings in Mazur's category `C_Λ`; the repaired statement below carries
+exactly the hypotheses that pin the two topologies down, and each is discharged
+at the intended call site.
+
+A second, mathematically less degenerate witness of the same defect, recorded
+because it shows the problem is not an artifact of a coarse topology on `R`:
+take `R := 𝔽_ℓ` DISCRETE with the trivial representation (flat, prolonged by the
+constant group scheme `(ℤ/ℓ)²` over `ℤ_ℓ`), and `S := 𝔽_ℓ ⊕ W` DISCRETE, with
+`W` an infinite-dimensional square-zero `𝔽_ℓ`-vector space and `ψ` the
+projection; `𝔪_S = W` and `𝔪_S · W = 0`, so `ψ` is a small extension, and `⊥` is
+again open with infinite quotient. That witness is not formalized here only
+because the tree has no construction of a constant finite flat group scheme, so
+its `hflat` cannot be discharged in Lean; the `ℚ_p` witness above needs no such
+construction, which is why it is the one this theorem is stated for.
+
+**THIS THEOREM IS DELIBERATELY CONSUMED BY NOTHING, and it must not be deleted as
+free-floating.** It is the falsity audit of the leaf below, in Lean rather than in
+prose: a refutation cannot be in the root cone by construction, and the only
+alternative — recording the counterexample as a paragraph — is exactly the shape
+this repository has repeatedly found to rot. The five finiteness lemmas above it
+DO have consumers (each other, and this), and two of them
+(`finite_of_hasFlatProlongationAtLocal`, `hasFlatProlongationAtLocal_of_subsingleton`)
+are reusable well beyond the audit. -/
+theorem flatLocalLift_refutation
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S] [IsLocalRing S]
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
+    (ψ : S →+* R) (_hψ : Continuous ψ) (_hsm : IsSmallExtension ψ)
+    (ρv : GaloisRep (adicCompletion ℚ v) R (Fin 2 → R))
+    (hR : ∀ I : Ideal R, IsOpen (I : Set R) → I = ⊤)
+    (J : Ideal S) (hJ : IsOpen (J : Set S)) (hinf : Infinite (S ⧸ J)) :
+    IsFlatAtLocal v ρv ∧
+      ¬ ∃ τ : GaloisRep (adicCompletion ℚ v) S (Fin 2 → S),
+          (∀ g w i, ψ (τ g w i) = ρv g (fun j => ψ (w j)) i) ∧
+          IsFlatAtLocal v τ :=
+  ⟨isFlatAtLocal_of_forall_isOpen_eq_top v hR ρv,
+   fun h => not_isFlatAtLocal_of_infinite_quotient v J hJ hinf h.choose h.choose_spec.2⟩
+
 /-- **(5c) THE FLAT LOCAL DEFORMATION CONDITION IS SMOOTH** (sorry node, stated
 2026-07-31 as the third clause of item (5) of the audit on
-`exists_obstructionCocycle_smallExtension_deformation` below):
+`exists_obstructionCocycle_smallExtension_deformation` below; **RESTATED
+2026-08-02 after its FALSITY AUDIT refuted the first form** — see below):
 
-along a small extension `ψ : S ↠ R`, every finite-flat local representation over
-`R` at the place `ℓ` admits a finite-flat local lift over `S`. This is
-Ramakrishna's theorem — the flat deformation functor at `ℓ` is smooth — and it is
-what makes the `ℓ`-component of the obstruction class vanish, hence half of why
-conjunct (a) of the leaf below says `Ш²` and not `H²`.
+along a small extension `ψ : S ↠ R` of coefficient rings whose topologies are the
+maximal-adic ones, every finite-flat local representation over `R` at the place
+`ℓ` admits a finite-flat local lift over `S`. This is Ramakrishna's theorem — the
+flat deformation functor at `ℓ` is smooth — and it is what makes the
+`ℓ`-component of the obstruction class vanish, hence half of why conjunct (a) of
+the leaf below says `Ш²` and not `H²`.
 
 **The statement is LOCAL and must be.** See the section header: no global form of
 this is true. A global lift correcting to a locally flat one needs surjectivity
@@ -17826,20 +18095,98 @@ exist. So the subject here is a `GaloisRep ℚ_v`, the flatness condition is
 see `isFlatAt_iff_local`), and the reduction condition is entrywise, which needs
 no local analogue of `pushforwardFrame`.
 
-**FALSITY AUDIT — REQUIRED BEFORE PROVING, and here is what it must check.**
-Ramakrishna's smoothness is stated for the flat deformation functor of a fixed
-residual representation over `W(k)`, at `ℓ` ODD and with absolute ramification
-index `e = 1` (which holds here: the base is `ℚ_ℓ`). `hℓ5` is carried for
-exactly that reason — with `[Fact ℓ.Prime]` it forces `ℓ` odd — and must not be
-dropped. What the audit must
-settle is whether the statement as written — quantifying over an arbitrary flat
-`ρv` over an arbitrary local `R`, with no residual representation named and no
-`W(k)`-algebra structure imposed — is the smoothness statement or is strictly
-stronger. If it is stronger, the repair is to carry the residual datum: add a
-`ρbar` over `k`, require `ρv` to reduce to it, and require `S`, `R` to be
-objects of Mazur's category over `Λ`. That is the shape every other statement in
-this module uses, and the reason it is not used here is only that the local
-lift has no `HardlyRamifiedDeformation` to live in.
+**FALSITY AUDIT (2026-08-02) — PERFORMED; VERDICT: THE 2026-07-31 FORM IS FALSE.**
+
+The 2026-07-31 docstring asked whether the functor-free form — arbitrary local
+`R`, no residual representation, no `W(k)`-algebra structure — is smoothness or
+is STRICTLY STRONGER, and recorded a judgement that it is equivalent because
+smoothness quantifies over all `A`-points anyway. **That judgement was wrong, and
+the axis it was checked along was the wrong one.** The residual datum is not the
+problem: any `ρv` satisfying `IsFlatAtLocal` reduces to a residual
+representation over `R ⧸ 𝔪_R`, and that reduction is itself flat, because `𝔪_R`
+is one member of `IsFlatAtLocal`'s own open-ideal quantifier when the topology is
+adic. So NO `ρbar` has to be carried, and the corresponding repair the old
+docstring prescribed is not needed.
+
+What was missing is the pair of conditions on the TOPOLOGIES, and dropping them
+made the statement false rather than merely more general. `flatLocalLift_refutation`
+above is the proof, and the witness is `S = R = ℚ_p` carrying the discrete and
+the usual topology respectively, with `ψ = id`. Two independent defects:
+
+* **`IsFlatAtLocal` is a FINITENESS condition on the coefficient ring**, not only
+  a condition on the Galois action — `finite_quotient_of_isFlatAtLocal` above.
+  So the CONCLUSION of the old statement asserts that every open ideal of `S` has
+  finite quotient, and its hypotheses said nothing that could imply this. With an
+  infinite discrete `S` the conclusion is unsatisfiable for EVERY `τ`.
+* **`IsFlatAtLocal` is VACUOUS when `R`'s topology has no proper open ideal** —
+  `isFlatAtLocal_of_forall_isOpen_eq_top` above. So the HYPOTHESIS carried no
+  arithmetic at all for such an `R`, and the leaf asserted flat liftability from
+  nothing.
+
+**THE REPAIR, and why it is exactly these three binders.** `hSadic` and `hRadic`
+say the two topologies are the maximal-adic ones and `[CompactSpace S]` says the
+source is profinite; together they force both rings to be pro-Artinian with a
+finite residue field, which is Mazur's category, which is Ramakrishna's setting.
+Concretely:
+
+* `hRadic` kills the second defect: `𝔪_R ^ n` is then open for every `n`, so
+  `hflat` is a genuine hypothesis at a cofinal system of ideals — and by
+  `finite_quotient_of_isFlatAtLocal` it also delivers, for free, that every
+  `R ⧸ 𝔪_R ^ n` is FINITE, hence that the residue field is finite and `R` is
+  pro-Artinian. Nothing further about `R` need be assumed;
+* `[CompactSpace S]` kills the first defect, through
+  `ProfiniteLocalNoetherian.finite_quotient_of_isOpen`: every open ideal of a
+  compact ring has finite quotient;
+* `hSadic` is the one that is not forced by either counterexample and is carried
+  anyway, because without it `S` may have so few open ideals that `IsFlatAtLocal v τ`
+  is implied by `hflat` and the statement degenerates into UNCONSTRAINED
+  liftability of a homomorphism along `ψ`, which is obstructed in general
+  (the obstruction lives in `H²(G_{ℚ_ℓ}, ad ⊗ ker ψ)`, which does not vanish).
+  Explicitly: `S = R ⊕ W` with `W` square-zero and topologized so coarsely that
+  every open ideal of `S` contains `W`. With `hSadic` and `[CompactSpace S]`
+  together, `S ⧸ 𝔪_S ^ n` is finite for every `n` and no such `W` survives.
+
+**ALL THREE ARE DISCHARGED AT THE CALL SITE, so this is a weakening and not a
+narrowing of the leaf.** `HardlyRamifiedDeformation` carries `isAdic` and
+`isAdicComplete` as structure fields and `[IsNoetherianRing]` as an instance
+field, and `compactSpace_of_isAdic_of_pi` (PROVEN, ~7000 lines above in this
+file) turns `isAdic` plus the surjection onto the finite residue field into
+`CompactSpace`. The obstruction leaf's small extension is `S ⧸ K ↠ D.R`, and
+those properties pass to a quotient.
+
+**What the audit does NOT claim.** It does not claim the repaired statement is
+provable here — it is Ramakrishna's theorem plus a dévissage, and neither is in
+reach at this pin (see the decomposition note below). It claims only that the
+repaired form is the smoothness statement and the old form was not. The `ℓ`
+hypothesis `hℓ5` is kept for the reason it was always carried: with
+`[Fact ℓ.Prime]` it forces `ℓ` odd, and Ramakrishna's theorem needs `ℓ` odd and
+absolute ramification `e = 1 < ℓ - 1`, both of which hold at `ℚ_ℓ`.
+
+**WHAT A PROVER OWES, AND WHERE IT SPLITS.**
+
+The repaired statement decomposes along the residue characteristic of the common
+residue field `k` of `S` and `R` (finite, by the audit above). Neither half is
+formalizable at this pin, and the two are completely different pieces of
+mathematics — so a successor should expect to cut them apart rather than attack
+the leaf whole:
+
+1. **residue characteristic `= ℓ`** — Ramakrishna's theorem proper. Over `ℤ_ℓ`
+   with `e = 1 < ℓ - 1`, finite flat group schemes are described by
+   Fontaine–Laffaille modules, that category is abelian of cohomological
+   dimension `1`, and the flat deformation problem is therefore unobstructed.
+   The deep inputs are Raynaud's classification and Fontaine–Laffaille theory;
+   the tree has neither, and has no construction of a finite flat group scheme
+   at all beyond the trivial one.
+2. **residue characteristic `≠ ℓ`** — ELEMENTARY, and worth separating for that
+   reason. A finite flat group scheme over `𝒪ᵥ` whose order is prime to the
+   residue characteristic of `𝒪ᵥ` is étale, so `IsFlatAtLocal` there is exactly
+   `unramified`, and the unramified quotient of `Γ ℚ_v` is procyclic, so
+   `H² = 0` and the lift is unobstructed: lift the image of Frobenius through
+   the surjection `GL₂(S) ↠ GL₂(R)` (available since `ker ψ` is square-zero,
+   hence nilpotent) and extend.
+3. **the dévissage from finite to pro-Artinian coefficients** — given (1) and (2)
+   at each finite level `S ⧸ 𝔪_S ^ n`, assemble a single `τ` over `S`. This is a
+   limit over a system of nonempty finite sets and needs the completeness of `S`.
 
 **BANNED INPUTS** (inherited from the circularity guard on the leaf below, which
 this is an ingredient of): neither
@@ -17852,8 +18199,11 @@ Compositio 87 (1993); Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §2.4;
 Wiles, *Modular elliptic curves and Fermat's Last Theorem*, Ch. 2. -/
 theorem exists_flatLocalLift_of_isSmallExtension (hℓ5 : 5 ≤ ℓ)
     {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S] [IsLocalRing S]
+    [CompactSpace S]
     {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
     (ψ : S →+* R) (hψ : Continuous ψ) (hsm : IsSmallExtension ψ)
+    (hSadic : IsAdic (IsLocalRing.maximalIdeal S))
+    (hRadic : IsAdic (IsLocalRing.maximalIdeal R))
     {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     (hv : v = (Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat)
     (ρv : GaloisRep (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) R (Fin 2 → R))
@@ -18926,6 +19276,16 @@ explicitly.)
      correct about preservation and not about what is needed.
    * `isFlat` at `ℓ` — **OPEN**, `exists_flatLocalLift_of_isSmallExtension`
      (Ramakrishna: the flat local deformation condition is smooth).
+     **ITS FALSITY AUDIT WAS PERFORMED ON 2026-08-02 AND THE 2026-07-31 FORM WAS
+     REFUTED**, so the statement now carries `[CompactSpace S]` and the two
+     `IsAdic` hypotheses that pin the coefficient topologies. All three are
+     discharged at this call site — `HardlyRamifiedDeformation` has `isAdic` as
+     a structure field and `compactSpace_of_isAdic_of_pi` above turns it into
+     `CompactSpace` — so nothing this leaf serves has become harder. The
+     refutation itself is `flatLocalLift_refutation` there, and the five
+     finiteness lemmas beside it record what `IsFlatAtLocal` silently demands of
+     a coefficient ring; a successor bounding `Ш²` should read them before
+     assuming the local conditions are conditions on the Galois action alone.
    * `isTameAtTwo` at `2` — **OPEN**, `exists_tameLocalLift_of_isSmallExtension`
      (smoothness of the ordinary/tame local condition at `2`).
 
