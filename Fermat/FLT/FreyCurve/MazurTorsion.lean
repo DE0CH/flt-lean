@@ -41069,9 +41069,212 @@ def IsCMJInvariantOfRel (m : ℤ) (x : AlgebraicClosure ℚ) : Prop :=
       φ * φ + ((m : ℤ) : _root_.WeierstrassCurve.End W.toAffine) = φ ∧
       Subring.closure ({φ} : Set (_root_.WeierstrassCurve.End W.toAffine)) = ⊤
 
-/-- **LEAF (cut 2026-07-31, flt-lean-393) — THE CLASS POLYNOMIAL OF THE ORDER
-`ℤ[X]/(X² − X + m)` IS IRREDUCIBLE OVER `ℚ`**, stated as: any two CM `j`-invariants
-of that order have the SAME minimal polynomial over `ℚ`.
+/-! #### The first main theorem of complex multiplication, cut into three
+
+(2026-08-01, flt-lean-179.)  `minpoly_eq_of_isCMJInvariantOfRel` below is now
+PROVEN over the two OPEN leaves in this block, plus one that was cut and then
+closed in the same run.  The cut separates what is provable with today's machinery
+from the class-field-theoretic core, and it makes the assembly — the
+ORBIT-COUNTING half of the classical argument — real Lean rather than prose:
+
+* `isCMJInvariantOfRel_algEquiv` — the predicate is `Gal(ℚ̄/ℚ)`-STABLE.  **PROVEN**:
+  conjugate the curve, over `Isogeny.lean`'s `GaloisTransport` section, which
+  already had every piece.  No class field theory, and no new machinery.
+* `finite_setOf_isCMJInvariantOfRel` — there are only FINITELY many CM
+  `j`-invariants of a fixed order (classically `h(D)` of them).  OPEN.
+* `ncard_setOf_isCMJInvariantOfRel_le` — `h(D) ≤ [ℚ(j) : ℚ]`.  THE CORE, and the
+  only one of the three that needs the ring class field.  OPEN.
+
+So the net on this file's direct-sorry set is `1 → 2`, a genuine reduction, and the
+two survivors are different theorems with no machinery in common.
+
+**THE `MazurCMForm` TWIN TAKES THE OTHER SHAPE, AND THE TWO MUST NOT BOTH BE
+PROVEN.**  `minpoly_eq_of_isCMJInvariant` (~line 26324, the `ψ² = [−n]` predicate of
+discriminant `−4n`) is PROVEN over the SINGLE leaf
+`exists_monic_irreducible_vanishing_isCMJInvariant` — "some monic irreducible
+`p ∈ ℚ[X]` vanishes at every CM `j`-invariant of the order", i.e. the class
+polynomial, bundled.  That is the one-leaf cut this note declines above, and it is a
+legitimate rival: it is one open leaf against two.
+
+Anyone proving the `X² − X + m` analogue of that class-polynomial statement closes
+`minpoly_eq_of_isCMJInvariantOfRel` in three lines and makes BOTH leaves in this
+block consumerless — so do not dispatch that and these leaves at the same time.  The
+reason the finer cut is kept here anyway: `ncard_setOf_isCMJInvariantOfRel_le` is the
+same mathematics stated as an inequality between natural numbers with no polynomial
+in it, and `finite_setOf_isCMJInvariantOfRel` is a genuinely separate theorem
+(finiteness of the class number) that a different owner can take.  Whichever route
+lands first, the other's leaves must be DELETED rather than left floating.
+
+The two shapes share one prerequisite and it is worth naming, because a dispatcher
+costing them as disjoint will pay for it twice: both need the correspondence between
+elliptic curves with `End = O` and proper fractional `O`-ideals (Silverman *ATAEC*
+II.1.2, Cox §10).  An owner who finds themselves building it should take both leaves
+of this block, and should say so.
+
+**WHAT THE ASSEMBLY PROVES, so that the third leaf's owner knows what is already
+theirs.**  The REVERSE inequality `[ℚ(j) : ℚ] ≤ h(D)` is not a leaf: it falls out
+of the first two.  The Galois orbit of `x` is exactly the root set of
+`minpoly ℚ x` (`minpoly.exists_algEquiv_of_root'`, over `Normal ℚ ℚ̄`), it has
+exactly `deg (minpoly ℚ x)` elements (`Polynomial.card_rootSet_eq_natDegree`,
+using that `minpoly` is separable in characteristic zero), and by leaf 1 it is
+CONTAINED in the set of CM `j`-invariants of the order.  Leaf 3 then squeezes:
+containment plus `ncard`-domination plus finiteness (leaf 2) forces the orbit to
+BE the whole set (`Set.eq_of_subset_of_ncard_le`), so `y` is a root of the monic
+irreducible `minpoly ℚ x` and the two minimal polynomials agree.
+
+So the residue on the arithmetic side is exactly ONE inequality between natural
+numbers, and it is the direction the ring class field supplies.
+
+**WHY NOT THE ONE-LEAF CUT.**  `minpoly ℚ y = minpoly ℚ x` is, by
+`Normal.minpoly_eq_iff_mem_orbit`, literally `y ∈ MulAction.orbit Gal(ℚ̄/ℚ) x`, so
+"cutting" the target as a transitivity statement is a three-line RENAME that moves
+no work.  Likewise a single leaf producing the class polynomial
+(`∃ H : ℚ[X], H.Monic ∧ Irreducible H ∧ {z | IsCMJInvariantOfRel m z} = H.rootSet ℚ̄`)
+is one hard leaf replacing one hard leaf.  The three-way cut is taken instead
+because leaf 1 is attackable today and leaf 2 is a different theorem from leaf 3;
+the price is that the leaf count goes `1 → 3`, which is DISCLOSURE and not
+regression — see the accounting rule in `CLAUDE.md`. -/
+
+/-- **`IsCMJInvariantOfRel` IS STABLE UNDER `Gal(ℚ̄/ℚ)`** (cut and PROVEN 2026-08-01,
+flt-lean-179, out of `minpoly_eq_of_isCMJInvariantOfRel`).
+
+Uniform in `m`, and it carries NO negativity hypothesis: it is true for every `m`,
+including the degenerate ones where the predicate collapses to "`End(W) = ℤ`" —
+that class is Galois-stable too.
+
+**THE ARGUMENT** is four lines of bookkeeping over machinery that was already in the
+tree.  Let `W^σ := W.map σ` be the conjugate curve.  `WeierstrassCurve.map_j` gives
+`j(W^σ) = σ (j W) = σ x`, and `(W.map f).IsElliptic` is a mathlib instance, so `W^σ`
+is again elliptic.  For the endomorphism ring,
+`WeierstrassCurve.End.mapRingEquiv W.toAffine σ` is a RING ISOMORPHISM
+`End W ≃+* End W^σ`; being a ring isomorphism it preserves the integer cast, so
+`φ * φ + m = φ` transports verbatim, and `Subring.closure {φ} = ⊤` transports by
+`RingHom.map_closure` plus surjectivity.
+
+**THIS LEAF WAS CUT AGAINST A "WHAT IS MISSING" PARAGRAPH THAT WAS FALSE, and the
+correction is the reusable part.**  The paragraph said the coordinatewise map
+`W(ℚ̄) → W^σ(ℚ̄)` "has to be built", on the correct observation that mathlib's
+`WeierstrassCurve.Affine.Point.map` moves points between BASE CHANGES of one curve
+and so does not apply to two genuinely different curves over `ℚ̄`.  That observation
+is true and the conclusion drawn from it was not: the whole transport already
+existed, in `Fermat/FLT/EllipticCurve/Isogeny.lean`'s `GaloisTransport` section —
+`Affine.Point.mapRingHom`, `Affine.Point.mapRingEquiv`, `conjHom`,
+`IsRationalMap.transport`, `IsIsogeny.transport`, `isRationalMap_conjHom_iff`,
+`isIsogeny_conjHom_iff`, `AddEquiv.conjAddMonoidEnd` and `End.mapRingEquiv`, all
+PROVEN, in a module this file already `public import`s.  That section's own
+docstring even names its intended consumer as "`MazurCMForm.IsCMJInvariant.map`:
+the CM `j`-invariants of a fixed order are stable under `Gal(ℚ̄/ℚ)`" — i.e. exactly
+this statement, one predicate over.  About 250 lines were re-derived from scratch
+in a scratch module before the grep that found it; see the note in `CLAUDE.md`.
+
+**NOT VACUOUS**: `σ = 1` gives the hypothesis back, and the conclusion at a
+nontrivial `σ` is exactly what makes the orbit-counting in
+`minpoly_eq_of_isCMJInvariantOfRel` nonempty of content. -/
+theorem isCMJInvariantOfRel_algEquiv (m : ℤ)
+    (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) {x : AlgebraicClosure ℚ}
+    (hx : IsCMJInvariantOfRel m x) : IsCMJInvariantOfRel m (σ x) := by
+  classical
+  obtain ⟨W, hW, hj, φ, hrel, htop⟩ := hx
+  letI := hW
+  refine ⟨W.map (σ.toRingEquiv : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ), inferInstance,
+    ?_, ?_⟩
+  · rw [WeierstrassCurve.map_j]
+    exact congrArg _ hj
+  · set Ψ := WeierstrassCurve.End.mapRingEquiv W.toAffine σ.toRingEquiv
+    refine ⟨Ψ φ, ?_, ?_⟩
+    · have h := congrArg Ψ hrel
+      rw [map_add, map_mul, map_intCast] at h
+      exact h
+    · rw [Subring.eq_top_iff']
+      intro y
+      have hmemtop : Ψ.symm y ∈ Subring.closure ({φ} : Set (WeierstrassCurve.End W.toAffine)) := by
+        rw [htop]; exact Subring.mem_top _
+      have hmem : y
+          ∈ Subring.map (Ψ : WeierstrassCurve.End W.toAffine →+*
+              WeierstrassCurve.End (W.toAffine.map (σ.toRingEquiv : AlgebraicClosure ℚ →+*
+                AlgebraicClosure ℚ)))
+            (Subring.closure ({φ} : Set (WeierstrassCurve.End W.toAffine))) :=
+        Subring.mem_map.2 ⟨Ψ.symm y, hmemtop, Ψ.apply_symm_apply y⟩
+      rw [RingHom.map_closure, Set.image_singleton] at hmem
+      exact hmem
+
+/-- **LEAF — THERE ARE ONLY FINITELY MANY CM `j`-INVARIANTS OF A FIXED ORDER**
+(cut 2026-08-01, flt-lean-179, out of `minpoly_eq_of_isCMJInvariantOfRel`).
+
+Classically the count is the class number `h(1 − 4m)`; only finiteness is asked
+for here, because that is all the assembly consumes.
+
+**THE ARGUMENT** (Silverman *ATAEC* II.1.2 and II.1.4; Cox §10, §11).  An elliptic
+curve over `ℚ̄ ⊆ ℂ` with `End(W) = O` is analytically `ℂ/𝔞` for a proper fractional
+`O`-ideal `𝔞`, and two such are isomorphic exactly when the ideals are in the same
+class, so the CM `j`-invariants of `O` are the `h(O)` values `j(𝔞)`, `[𝔞] ∈ Cl(O)`;
+`Cl(O)` is finite.  `j` separates isomorphism classes over an algebraically closed
+field (`WeierstrassCurve.IsElliptic` and mathlib's `IsomOfJ`), so the SET of
+`j`-invariants is finite even before the count is pinned.
+
+**FALSITY AUDIT — `hm : 0 < 4 * m - 1` IS LOAD-BEARING, with the counterexample the
+target's own docstring records.**  At `m = 0` the relation `φ * φ + 0 = φ` is
+satisfied by `φ = 1`, and `Subring.closure {(1 : End W)} = ⊤` says exactly
+`End(W) = ℤ`, i.e. `W` is NOT CM.  Over `ℚ̄` all but countably many `j`-invariants
+are of that kind — in particular infinitely many — so the set is INFINITE and the
+statement is false without the negativity.  Same collapse at `m = -2` (`φ = [2]`).
+
+**NOT VACUOUS**: at `m = 1, 6, 11, 17, 41` the set is nonempty (discriminants
+`-3, -23, -43, -67, -163`), so the content is finiteness and not emptiness. -/
+theorem finite_setOf_isCMJInvariantOfRel (m : ℤ) (hm : 0 < 4 * m - 1) :
+    {z : AlgebraicClosure ℚ | IsCMJInvariantOfRel m z}.Finite :=
+  sorry
+
+/-- **LEAF — THE CLASS-FIELD-THEORETIC CORE: `h(D) ≤ [ℚ(j) : ℚ]`** (cut 2026-08-01,
+flt-lean-179, out of `minpoly_eq_of_isCMJInvariantOfRel`), stated as: the number of
+CM `j`-invariants of the order is at most the degree of any one of them over `ℚ`.
+
+This is the ONLY one of the three leaves that needs the ring class field, and it is
+the only inequality the assembly does not already prove — see the subsection note.
+
+**THE ARGUMENT** (Cox, *Primes of the Form x² + ny²*, §11.1, Theorem 11.1;
+Silverman *ATAEC* II.4.3 and II.6.1).  With `D = 1 − 4m < 0`, `K = ℚ(√D)` and `O`
+the order of discriminant `D`, the field `K(j(𝔞))` is the RING CLASS FIELD of `O`,
+and the Artin map gives `Cl(O) ≅ Gal(K(j(𝔞))/K)`.  Hence
+`[K(j) : K] = h(O) = #{CM j-invariants}`, and `[ℚ(j) : ℚ] ≥ [K(j) : K]` because
+`K(j) = K · ℚ(j)` is generated over `K` by `ℚ(j)`.  Equality in fact holds, and the
+class polynomial `H_D` is the minimal polynomial; only the `≥` is asked for here.
+
+**A SUCCESSOR MAY PROVE THE LITERAL INSTEAD**, and it is the stronger and more
+reusable statement:
+`∃ H : ℚ[X], H.Monic ∧ Irreducible H ∧ {z | IsCMJInvariantOfRel m z} = H.rootSet ℚ̄`
+— the class polynomial with its irreducibility — from which this leaf and the
+target are both immediate.  It is not asked for here only because it drags the
+Hilbert/ring class polynomial in as a definition.
+
+**FAITHFULNESS.**  `hm` is retained because the call site has it for free and
+because every route to the statement uses it; it is NOT claimed to be load-bearing
+for TRUTH.  At the degenerate `m` the set is infinite, so `Set.ncard` returns `0`
+and the inequality holds vacuously — that is a defect of `ncard` on infinite sets
+and not evidence about the mathematics, and it is exactly why
+`finite_setOf_isCMJInvariantOfRel` is a SEPARATE leaf rather than folded in here:
+without finiteness this statement carries nothing.
+
+**NOT VACUOUS**: at `m = 6` (`D = -23`) the set has three elements and
+`polclass(-23) = x³ + 3491750x² − 5151296875x + 12771880859375` is irreducible over
+`ℚ` (PARI/GP, 2026-07-31), so the inequality `3 ≤ 3` is sharp and a wrong proof can
+fail on it. -/
+theorem ncard_setOf_isCMJInvariantOfRel_le (m : ℤ) (hm : 0 < 4 * m - 1)
+    {x : AlgebraicClosure ℚ} (hx : IsCMJInvariantOfRel m x) :
+    {z : AlgebraicClosure ℚ | IsCMJInvariantOfRel m z}.ncard
+      ≤ (minpoly ℚ x).natDegree :=
+  sorry
+
+/-- **THE CLASS POLYNOMIAL OF THE ORDER `ℤ[X]/(X² − X + m)` IS IRREDUCIBLE OVER
+`ℚ`**, stated as: any two CM `j`-invariants of that order have the SAME minimal
+polynomial over `ℚ`.
+
+**PROVEN 2026-08-01 (flt-lean-179)** over the block above.  Of the three statements
+cut out of it, `isCMJInvariantOfRel_algEquiv` (Galois stability) was closed in the
+same run; the two that remain OPEN are `finite_setOf_isCMJInvariantOfRel`
+(finiteness of the class number) and `ncard_setOf_isCMJInvariantOfRel_le` (the ring
+class field).  The orbit-counting half of the classical argument is the proof
+below.  Read the subsection note above before attacking either leaf.
 
 This is the first main theorem of complex multiplication and NOTHING ELSE: it is
 uniform in `m`, mentions no prime, no level and no class number, and it is the only
@@ -41111,8 +41314,43 @@ endomorphism ring generated by a root of `X² − X + m` for the same `m` with
 theorem minpoly_eq_of_isCMJInvariantOfRel (m : ℤ) (hm : 0 < 4 * m - 1)
     (x y : AlgebraicClosure ℚ)
     (hx : IsCMJInvariantOfRel m x) (hy : IsCMJInvariantOfRel m y) :
-    minpoly ℚ y = minpoly ℚ x :=
-  sorry
+    minpoly ℚ y = minpoly ℚ x := by
+  classical
+  -- `Algebra ℚ ℚ̄` is a live instance diamond in this tree: instance search finds
+  -- `DivisionRing.toRatAlgebra` while mathlib's algebraicity instances are stated
+  -- for `AlgebraicClosure.instAlgebra`, so both of these must be supplied by hand.
+  haveI halg : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  haveI hac : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halg⟩
+  haveI hnorm : Normal ℚ (AlgebraicClosure ℚ) := IsAlgClosure.normal ℚ _
+  have hxint : IsIntegral ℚ x := (Algebra.IsAlgebraic.isAlgebraic x).isIntegral
+  have hmonic : (minpoly ℚ x).Monic := minpoly.monic hxint
+  have hirr : Irreducible (minpoly ℚ x) := minpoly.irreducible hxint
+  -- STEP 1.  Every Galois conjugate of `x` is again a CM `j`-invariant of the order:
+  -- a root of `minpoly ℚ x` is `σ x` for some `σ`, and the predicate is stable.
+  have hRS : (minpoly ℚ x).rootSet (AlgebraicClosure ℚ)
+      ⊆ {z : AlgebraicClosure ℚ | IsCMJInvariantOfRel m z} := by
+    intro z hz
+    obtain ⟨σ, hσ⟩ :=
+      minpoly.exists_algEquiv_of_root' (K := ℚ) (L := AlgebraicClosure ℚ)
+        (x := z) (y := x) (Algebra.IsAlgebraic.isAlgebraic x)
+        (Polynomial.mem_rootSet.1 hz).2
+    exact hσ ▸ isCMJInvariantOfRel_algEquiv m σ hx
+  -- STEP 2.  That orbit has exactly `deg (minpoly ℚ x)` elements: in characteristic
+  -- zero the minimal polynomial is separable, and `ℚ̄` splits it.
+  have hcard : ((minpoly ℚ x).rootSet (AlgebraicClosure ℚ)).ncard
+      = (minpoly ℚ x).natDegree := by
+    rw [← Nat.card_coe_set_eq, Nat.card_eq_fintype_card]
+    exact Polynomial.card_rootSet_eq_natDegree hirr.separable (IsAlgClosed.splits _)
+  -- STEP 3.  The orbit is CONTAINED in a finite set it dominates in cardinality, so
+  -- it exhausts it: every CM `j`-invariant of the order is a conjugate of `x`.
+  have hRSeq : (minpoly ℚ x).rootSet (AlgebraicClosure ℚ)
+      = {z : AlgebraicClosure ℚ | IsCMJInvariantOfRel m z} :=
+    Set.eq_of_subset_of_ncard_le hRS
+      (by rw [hcard]; exact ncard_setOf_isCMJInvariantOfRel_le m hm hx)
+      (finite_setOf_isCMJInvariantOfRel m hm)
+  -- STEP 4.  In particular `y` is a root of the monic irreducible `minpoly ℚ x`.
+  have hyR : y ∈ (minpoly ℚ x).rootSet (AlgebraicClosure ℚ) := by rw [hRSeq]; exact hy
+  exact (minpoly.eq_of_irreducible_of_monic hirr (Polynomial.mem_rootSet.1 hyR).2 hmonic).symm
 
 /-- **LEAF (cut 2026-07-31, flt-lean-393) — CLASS NUMBER ONE AT `43, 67, 163`, in
 the form `[ℚ(j) : ℚ] = 1`**: a CM `j`-invariant for the maximal order of
