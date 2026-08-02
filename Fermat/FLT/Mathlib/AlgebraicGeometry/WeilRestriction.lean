@@ -115,10 +115,17 @@ degenerate case is not worth making a prover handle, and the consumer has
 
 ## Relocation
 
-Nothing here is `Γ₁`- or even modular-specific.  `X0.lean`'s open
-`exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` needs the same
-descent verbatim, which is why this lives under `Fermat/FLT/Mathlib/`
-rather than in a curve file.
+Nothing here is `Γ₁`- or even modular-specific, which is why this lives
+under `Fermat/FLT/Mathlib/` rather than in a curve file.
+
+**CORRECTED 2026-08-02.**  This paragraph, and the two `RELOCATION NOTE`
+paragraphs in `X1.lean` that it was copied from, justified the placement by
+*"`X0.lean`'s OPEN `exists_nonconstant_toAbelianScheme_of_one_le_x0Genus`
+needs the same descent verbatim"*.  That declaration is **PROVEN** — it is a
+two-line assembly over `exists_nonconstant_toAbelianScheme_of_nontrivial_cuspForm`
+at `X0.lean:64325` — and it does not consume anything here.  The placement is
+still right (the material genuinely mentions no level and no modular curve),
+but do not queue anyone at the `Γ₀` side on the strength of that sentence.
 -/
 module
 
