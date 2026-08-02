@@ -16151,3 +16151,56 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A SIBLING AT ANOTHER LEVEL MAY ALREADY BE CUT ALONG THE SEAM YOU NEED — DIFF THE CLUSTER SHAPES, NOT THE STATEMENTS
+
+(2026-08-02, `flt-lean-112`, on `false_of_isNIsogenyPair_self_ratPoint_chabautySemiprimeLevel`
+in `X0.lean`.)  This development is full of LEVEL-INDEXED clusters — the same theorem at
+`N = 169` and at `N ∈ {65, 91}`, at `p = 11` and `p = 17`, over `ℚ` and over `F`.  When two
+such clusters exist, they are routinely at DIFFERENT DEPTHS of decomposition, and the deeper
+one is a free template for the shallower one.
+
+Here the `65, 91` leaf bundled the FIELD-OF-MODULI DESCENT with the CM COUNT and was
+documented as needing complex multiplication.  The `169` sibling had been cut the day before
+into exactly those two halves, and its descent half is three PROVEN theorems
+(`IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq`,
+`exists_rationalJ_of_galoisInvariant`, `exists_jSection_algClosModel` +
+`exists_weierstrassAlgClos_of_abelianSchemeStruct`) **every one of which takes the level only
+as `N ≠ 0`**.  So the identical cut was available at `65, 91` for the cost of transcribing a
+twenty-line proof, and the residue became the pure CM statement.  `1 → 1` on the count, and
+the arithmetic owner now sees a statement about `j`-invariants with no scheme in it.
+
+**The check is two greps and it should be run before pricing any level-specific leaf:**
+
+    grep -n '<the sibling cluster's names>' <the file>     # find the twin
+    # then, for each declaration the SIBLING'S PROOF cites, read its binder list:
+    grep -n 'theorem <that name>' <the file>               # is the level a `{N : ℕ}` + `N ≠ 0`?
+
+If every step of the sibling's proof is level-generic, the cut transfers verbatim.  That is
+not a coincidence — a cut is made along the seam where the *arithmetic* starts, and the
+machinery above that seam is by construction about moduli spaces rather than about the level.
+
+**Two traps that hid it here, both worth knowing:**
+
+* **The leaf's own docstring named the sibling and still missed the template.**  It said the
+  `169` twin "has the identical shape and can be re-cut … that is left to its owner", i.e. it
+  described the cut as work NOT YET DONE on the other side.  It had been done, hours later
+  than the docstring was written.  A cross-reference to a sibling is a claim about the
+  sibling's state, and it decays at the SIBLING's edit rate, not at yours — so re-read the
+  sibling's current docstring rather than the sentence your leaf quotes about it.
+* **The docstring's CORRECT absence claim was doing the misleading.**  It said, truthfully,
+  that the nearest CM statements (`classNumberOne_of_end_closure_eq_top` and its leaf) are in
+  `MazurTorsion.lean`, which imports `X0.lean`, so they cannot be cited — and proposed a
+  `Fermat/FLT/Mathlib/`-side hoist.  All true, and all about the ARITHMETIC half.  It is
+  silent about the half that was never arithmetic, which is the half that was closable.  When
+  a leaf is a conjunction and its docstring prices only the hard conjunct, the cheap conjunct
+  is usually still sitting in it.
+
+**And when you decline the fusion, write the fused statement out.**  The two CM leaves here
+are character-for-character twins apart from the level hypothesis, so they SHOULD be one leaf;
+fusing was declined because it edits a proven declaration 15 000 lines up in the most-edited
+file in the repository, and because the widened statement needs a widened faithfulness audit
+(the `169` audit turns on `169 ≡ 1 (mod 4)`, and `91 ≡ 3 (mod 4)` carries a second
+discriminant family whose maximal order is NOT excluded by the level structure the way the
+`169` one is).  Both the fused statement and that audit are now written on the new leaf, so
+the fusion is a decision recorded rather than a question nobody will answer.
