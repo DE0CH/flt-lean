@@ -1231,6 +1231,84 @@ task prompt, and for the ones in this file: the NUMBER is a snapshot of the comm
 prompt was written at (mine said 23; `main` had 22 by dispatch time, one leaf having closed
 in between), and the STRING is wrong. Re-measure the baseline yourself, before editing, and
 assert *unchanged* rather than *equal to the quoted constant*.
+## `flt-hoistcheck.py` ANSWERS THE WRONG QUESTION FOR A **DOWN** MOVE — and reports `HITS: 0`
+(2026-08-01, `flt-lean-235`, closing `exists_qExpansion_gamma0AtlasOver_zmod`.) The tool's
+own docstring says *"does the block use any name declared in the region it would jump
+over?"* and then *"Both directions are handled"*. The first sentence is the truth and the
+second is misleading: that question is the right one for **hoisting UP** (where the moved
+code can lose its own inputs) and the **wrong one for moving DOWN**, where the moved code
+keeps every input it had and the only hazard is that *the jumped region consumed the
+block*.
+Measured: `--block 42904 43125 --to 43670` on `X0.lean` reported **`HITS: 0`**, and line
+43468 — squarely inside the jumped region — calls
+`isAlgebraic_globalSections_of_gamma0AtlasOver_zmod`, which is declared inside the moved
+block. The move as reported would have broken the build. It was safe only because a second
+block containing 43468 was moved along with it, which the tool never asked about.
+**So for a DOWN move, run the reverse scan yourself.** It is ten lines and it is the whole
+safety argument:
+    names_moved = {declarations inside the moved blocks}
+    for each line in (span from block start to destination) not itself moved:
+        if any token of that line (comment-stripped) is in names_moved:  UNSAFE
+Tokenise with `isalnum() or c in "_'."` — never a `\w` regex and never a `À-￿` class, for
+the reasons already recorded — and also check the reverse-direction extras the tool does
+flag and that stay relevant: anonymous `instance :` declarations in the region, and
+`namespace`/`section`/`variable`/`open`/`attribute`/`set_option` lines inside the moved
+blocks.
+**And compute block boundaries DOCSTRING-TO-DOCSTRING, not from the `theorem` line.** A
+declaration's block starts at the first line of its doc comment (walking up over
+`attribute … in`, `set_option … in`, `@[…]`). Taking the `theorem` line instead attributes
+each docstring to the PREVIOUS declaration, which silently shifts every block by its
+neighbour's docstring — here that was 67 lines on one block and 170 on another, enough to
+turn a correct plan into a stranded docstring plus a stray terminator. Both off-by-one ends
+are already recorded in this file; the boundary computation is what prevents them.
+Two riders from the same move, both cheap and both worth doing every time:
+* **The receipt for a pure relocation is `Counter(before) == Counter(after)` on the LINE
+  MULTISET, plus an unchanged line count.** `git diff --numstat` is NOT a receipt: git
+  realigned this 256-line move as `395 insertions / 279 deletions` because its LCS chose a
+  different alignment, so the stat looks like a rewrite. Do the move programmatically in
+  ORIGINAL coordinates (so several blocks cannot invalidate each other's line numbers) and
+  assert the multiset.
+* **Measure both directions before choosing.** Down was 256 lines in 2 blocks, up was 443
+  in 2 blocks. Down is also the intrinsically safer direction. But the sizes only compare
+  once the boundaries are docstring-aware — with `theorem`-line boundaries the two came out
+  the other way round.
+## REPLACING A DOCSTRING'S HEADER ORPHANS ITS BODY — the wound is self-inflicted and silent
+(Same task.) Editing a leaf into a theorem usually means rewriting its docstring. The
+natural `Edit` replaces the opening paragraph — the part that says "sorry leaf, opened
+…" — with a new opening plus, if you are also inserting a new leaf above, a whole new
+declaration. **The old docstring's REMAINING BODY then sits below your closing `-/`, in
+code position, ending in a `-/` that has become stray.** Sixty-two lines of prose, a stray
+terminator, and a parse error whose location says nothing about the cause — i.e. exactly
+the merge-damage shape `tools/merge/parsecheck.py` exists to find, manufactured by hand.
+The tell is immediate if you look: after such an edit, the text between your new `-/` and
+the `theorem` line should be EMPTY. Check it, or run `parsecheck.py` on the one file — it
+is seconds and it named this instantly (`delimiters OK` once repaired).
+**Prefer replacing the WHOLE docstring** (opener through its `-/`) in one `Edit` when you
+are rewriting a leaf's header, rather than its first paragraph. If you must do it in
+pieces, delete the orphan in the same turn and assert the seam:
+    assert L[a-1] == '' and L[b-1].rstrip().endswith('-/') and L[b].startswith('theorem ')
+## A HELPER WRITTEN FOR THE `ℚ` SIDE WILL BE STATED AT `ℚ`, AND THE `𝔽_p` TWIN CANNOT USE IT
+(Same task, and it is the half the task prompt got wrong.) The prompt asserted that the
+q-expansion principle's two commutative-algebra lemmas — `isAlgebraic_of_quotient_isMaximal`
+and `injective_of_not_isAlgebraic_apply` — were "PROVEN and stated over an ARBITRARY base
+field `k`, precisely so this leaf would not have to write them again". They were stated
+over **`ℚ`**, in the same file, and no instantiation of a `ℚ`-only statement reaches
+`ZMod p`.
+The generalisation was free, and the reason is the thing to check: **the only property of
+`ℚ` either proof used was that it is JACOBSON**, which mathlib gives every field through
+`IsArtinianRing R → IsJacobsonRing R`. So `ℚ` → `{k : Type} [Field k]` is a letter change,
+the `ℚ` call site is undisturbed (it instantiates `k := ℚ`), and one declaration now serves
+both sides instead of two being kept in step.
+So, before transcribing a `ℚ`-side helper for an `𝔽_p` leaf: **grep the proof for where the
+base is actually spent.** If every use extracts one named property (Jacobson, perfect,
+characteristic zero used only via `(n : k) ≠ 0`, infinite), generalise in place. This is
+the same discipline as *FOLLOW THE HYPOTHESIS* below, applied to a base rather than to a
+morphism, and it is worth running on any lemma whose docstring says "for an arbitrary field
+target" while its binders say otherwise — that mismatch between prose and signature is the
+tell, and it was present here.
+**And do not believe a task prompt's account of a declaration's SIGNATURE.** A prompt is
+written from an intention or from another branch; the signature is two seconds away
+(`grep -n "^theorem <name>" -A6`). Same rule as the line-number checksum, one level down.
 ## A HYPOTHESIS AN AUDIT CALLS UNUSED IS FREE STRENGTH — SPEND IT, AND THE MISSING THEORY MAY GO AWAY
 
 (2026-07-31, `flt-lean-254`, `ModularCurve/RelativePicard.lean`.) A mature leaf's
