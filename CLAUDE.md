@@ -16151,3 +16151,94 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A "KERNEL OF A MORPHISM" LEAF IS AN EQUALISER, AND OVER A SEPARATED TARGET THAT IS A CLOSED SUBSCHEME FOR FREE
+
+(2026-08-02, `flt-lean-297`, proving `Fermat.Gamma0Datum.ker_of_geomFibrePt` in
+`MazurTorsion.lean`.)  That leaf's docstring prescribed building `ker u` as *"the fibre
+product of `u` with the zero section of `d'`"*, which makes the zero section's being a
+CLOSED IMMERSION an obligation — a section of a separated morphism, so true, and a real
+piece of work at this pin.  It is not needed.  The condition `u(x) = 0` on a relative
+point is `x.1 ≫ u = x.1 ≫ (f ≫ ζ)`, i.e. **`x.1` EQUALISES `u` and `f ≫ ζ`**, and
+
+    Mathlib/AlgebraicGeometry/Morphisms/Separated.lean:356
+      instance (f g : X ⟶ Y) [Y.IsSeparated] : IsClosedImmersion (Limits.equalizer.ι f g)
+
+hands over the closed immersion with no zero-section theory at all.  `Y.IsSeparated` for
+the total space of an abelian scheme over `Spec ℚ` is four lines: `IsProper` extends
+`IsSeparated`, `Spec ℚ` is affine hence separated, separatedness composes, and
+`terminal.hom_ext` identifies `terminal.from E` with the composite.
+
+**Then BOTH halves of a "these two closed subschemes agree" statement become
+FACTORISATIONS THROUGH CLOSED IMMERSIONS**, which is the one shape that descends.  That is
+what makes the next section usable, and it is why the equaliser presentation is worth
+reaching for even when a fibre product is available: `∃ b, b ≫ κ = a` is a hypothesis of
+`IsClosedImmersion.lift`, whereas an EQUALITY of morphisms out of the subscheme is not.
+
+## DESCENT FROM `ℚ̄`-POINTS TO A `ℚ`-BASE IS `IsSchemeTheoreticallyDominant` + `IsClosedImmersion.lift` — AND FLATNESS OVER A FIELD IS FREE
+
+(Same task.  The whole descent is 15 lines and it is the thing every "same geometric
+points ⟹ same closed subscheme" leaf over `Spec ℚ` in this tree needs.)
+
+`Scheme.Hom.ker_comp : (f ≫ g).ker = f.ker.map g` plus
+`IdealSheafData.map_bot : (⊥).map g = g.ker` give, for `q.ker = ⊥`,
+
+    (q ≫ a).ker = a.ker
+
+so `j.ker ≤ (z ≫ j).ker = (q ≫ a).ker = a.ker` and `IsClosedImmersion.lift` produces the
+factorisation on the base.  **A factorisation through a closed immersion descends along a
+scheme-theoretically dominant morphism**, with no finiteness, no reducedness and no
+hypothesis on any of the four schemes.
+
+The dominant morphism to use is the BASE CHANGE `Z ×_k k̄ ⟶ Z`, and mathlib's
+`IsSchemeTheoreticallyDominant.pullbackFst (f) (g)` needs `[dominant g] [QuasiCompact g]
+[Flat f]` — where `f` is the structure map `Z ⟶ Spec k`.  **That flatness is free**:
+`Mathlib/AlgebraicGeometry/Morphisms/Flat.lean:110` registers
+`instance [Subsingleton Y] [IsIntegral Y] : Flat f`, and `Spec` of a field satisfies both.
+So the only inputs are that `Spec k̄ ⟶ Spec k` is dominant (`.of_isDominant`, the target
+being reduced; `IsDominant (Spec.map φ)` for a field map is already an instance) and
+quasi-compact (affine).
+
+Over `k̄` the remaining half is the decomposition of a finite reduced scheme into a finite
+disjoint union of copies of the base, which this tree already proves.  Assembled:
+`AlgebraicGeometry.exists_factor_of_geomPoints_of_isFinite`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/GeomPointDescent.lean`, new, sorry-free) — `Z`
+finite over `Spec k` with REDUCED GEOMETRIC FIBRE, `a : Z ⟶ X` whose every `k̄`-point
+factors through a closed immersion `j`, factors through `j`.  **State the reducedness on
+the GEOMETRIC FIBRE, not on `Z`**: that is the form the producers have
+(`CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase`), and it is the honest
+hypothesis — over `k = 𝔽_p(t)` the reduced `Spec k[x]/(xᵖ−t)` has one `k̄`-point and a
+non-reduced geometric fibre, and the conclusion fails for it.
+
+**And the generic half belongs in a NEW UPSTREAM MODULE, not in a hoist.**  The three
+algebraically-closed-base lemmas this needs are PROVEN in `MazurTorsion.lean` — ~18 000
+lines BELOW the consumer, so unusable from it.  Hoisting them inside a 70 000-line file
+with a dozen concurrent editors is the worst shape for a merge; copying them into a
+mathlib-only module under a DIFFERENT NAMESPACE (`AlgebraicGeometry.foo'` against
+`MazurIsogenyPrimeJ.foo`) costs one import line, cannot collide, and puts them where they
+belong.  Say in the module docstring which copy should survive and put the deletion in
+`to_merger` — `semmerge.py` propagates additions and never deletions, so a deletion done
+now would silently come back.
+
+## A STALE OLEAN SET MAKES EVERY NAME AN "UNKNOWN CONSTANT" — the phantom-target symptom with a third cause
+
+(Same task.)  A fresh `#check @Fermat.Gamma0Datum.ker_of_geomFibrePt` in a scratch that
+`public import`s the target's module came back **`Unknown constant`**, together with three
+other names that are visibly in the source.  Every diagnosis this file offers for that
+symptom — a stale worktree, a declined merge, a rename, a runaway comment — was wrong.
+The SOURCES were current (`git rev-list --count HEAD..main` = 0 after one fast-forward);
+the `.lake` was not, because the worktree had just been fast-forwarded **1518 commits** and
+its oleans were from before the leaf was cut.
+
+So add to the triage: **an `unknown constant` for a name whose declaration you can see in
+the source of an IMPORTED module is a stale olean**, and the fix is the release-snapshot
+rsync (`git diff --stat $(cat ~/.flt-release-lake/sha) HEAD -- Fermat/` empty ⟹
+`rsync -a --delete ~/.flt-release-lake/build/ /scratch/chend-flt/flt-lean-N/.lake/build/`,
+15 seconds).  The tell that separates it from the source-level causes is that the name is
+absent from the OLEAN while present in the FILE — one `grep -n` and one `#check`.
+
+**And check for orphaned `lean` processes in your worktree before rsyncing.**  This one had
+a `lean` elaborating `MazurTorsion.lean` with `ppid 1`, **42 hours** old, holding 11.7 GB,
+and burning **0 CPU ticks in 10 seconds** — the documented dead-but-not-exited orphan,
+which would have written a stale olean over the seeded one had it ever woken up.  The CPU
+delta is the discriminator; `etimes` and RSS look identical for a healthy elaboration.
