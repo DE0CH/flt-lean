@@ -421,16 +421,46 @@ uses the WIDE one at modulus `1` and buys admissibility with
 BOTH a finite and an infinite part; specialising the infinite part to "all real places" gives
 this leaf and specialising it to "none, under `IsUnramifiedAtInfinitePlaces`" gives that one.
 Taking the recut here alone would trade a closed leaf for an open harder one, which is why
-this file still ends in `sorry`. -/
-theorem exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class
+this file still ends in `sorry`.
+
+**FAITHFULNESS AUDIT RE-RUN 2026-08-01, because the STATEMENT changed.** Two things
+moved: the value field is now a variable `KK` rather than `Dickson.K 3`, and
+`hℓ3 : ℓ ≠ 3` is now `hℓchar : ((ℓ : ℕ) : KK) ≠ 0`. Both make the leaf strictly MORE
+GENERAL, so the earlier audits do not transfer of their own accord; here is why the
+statement is nevertheless true, and what would still refute it.
+
+*The mathematics does not see the value field.* This is the first inequality of class
+field theory, Neukirch VI (4.1)/(4.6): for a CYCLIC extension `L/F` of `ℓ`-power degree
+one has `[I_𝔪 : P_𝔪 · N_{L/F} I_L] ≥ [L : F]`, proved from the Herbrand quotient
+`h(C_L) = [L : F]`. Every object in that argument — the ideal groups `Im`, `P`, `N`,
+the divisor map `d`, the modulus `mm₀` — lives over `F`, and `χ` and `φ` occur only as
+NAMES for the cyclic quotient `Im.map φ` whose order is bounded by `hcard`. Replacing
+the field in which those names take their values changes no instance of the inequality
+and no admissible `(Im, P, N)`.
+
+*What `hℓchar` is, and why it is the honest form.* `hℓ3` was never a statement about
+`ℓ`. Over `𝔽̄₃`, `((ℓ : ℕ) : 𝔽̄₃) ≠ 0` is exactly `ℓ ≠ 3`, and it is exactly the
+condition under which `μ_{ℓ ^ k}` is nontrivial there — i.e. under which `hord` permits
+a character of order `ℓ ^ k` at all. Written this way the hypothesis is available at
+`ℓ = 3` over a value field of characteristic zero, which is the point of the change.
+Note it is kept rather than deleted: it costs a prover nothing (it cannot make the leaf
+false, and every consumer supplies it), and dropping it would make the leaf cover the
+degenerate case `char KK = ℓ`, where `hord` forces `χ ≡ 1` and the statement, while
+still true, is vacuous.
+
+*What would refute it, unchanged in substance.* A cyclic `L/F` of `ℓ`-power degree, a
+modulus `mm₀` carrying the ramified primes, and data `(φ, d, Im, P, N)` satisfying every
+hypothesis with `Nat.card (Im.map φ) > (P ⊔ N).relIndex Im`. Nothing in that description
+mentions `KK`, which is the audit. -/
+theorem exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class {KK : Type*} [Field KK]
     (F : Type u) [Field F] [NumberField F]
-    (χ : Γ F → Dickson.K 3)
+    (χ : Γ F → KK)
     (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
     (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
     (hVker : ∀ a ∈ V, χ a = 1)
-    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓchar : ((ℓ : ℕ) : KK) ≠ 0) (k : ℕ)
     (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
-    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (c : Ideal (NumberField.RingOfIntegers F) → KK)
     (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
       c (I * J) = c I * c J)
     (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
@@ -444,7 +474,7 @@ theorem exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class
       w.asIdeal ∣ mm₀) :
     ∃ t : ℕ,
       ∀ (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
-          (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (NumberField.RingOfIntegers F) →₀ ℤ) →* KKˣ)
         (d : NumberField.RingOfIntegers F → Multiplicative
           (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
         (Im P N : Subgroup (Multiplicative
@@ -453,10 +483,10 @@ theorem exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class
           ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
             (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v)) →
         (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
-          ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
+          ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : KK)
             = χ (globalFrob v)) →
         (∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
-          ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ})) →
+          ((φ (d δ) : KK)) = c (Ideal.span {δ})) →
         (∀ x, x ∈ Im ↔ ∀ v : IsDedekindDomain.HeightOneSpectrum
           (NumberField.RingOfIntegers F), v.asIdeal ∣ mm₀ →
             Multiplicative.toAdd x v = 0) →
@@ -521,15 +551,15 @@ The proof is bookkeeping in two steps.
   out by the CONGRUENCE `δ - 1 ∈ mm`, is untouched and is where the enlargement acts.
 * *The trivial case.* If `Nat.card (Im.map φ) ≤ 1` the conclusion needs only
   `(P ⊔ N).relIndex Im ≠ 0`, which follows from `P.relIndex Im ≠ 0` and `P ≤ P ⊔ N`. -/
-theorem exists_natCard_charDivisorImage_le_normIndex_ray_class
+theorem exists_natCard_charDivisorImage_le_normIndex_ray_class {KK : Type*} [Field KK]
     (F : Type u) [Field F] [NumberField F]
-    (χ : Γ F → Dickson.K 3)
+    (χ : Γ F → KK)
     (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
     (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
     (hVker : ∀ a ∈ V, χ a = 1)
-    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓchar : ((ℓ : ℕ) : KK) ≠ 0) (k : ℕ)
     (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
-    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (c : Ideal (NumberField.RingOfIntegers F) → KK)
     (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
       c (I * J) = c I * c J)
     (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
@@ -545,7 +575,7 @@ theorem exists_natCard_charDivisorImage_le_normIndex_ray_class
       (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
         w.asIdeal ∣ mm → w.asIdeal ∣ mm₀) ∧
       ∀ (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
-          (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (NumberField.RingOfIntegers F) →₀ ℤ) →* KKˣ)
         (d : NumberField.RingOfIntegers F → Multiplicative
           (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
         (Im P N : Subgroup (Multiplicative
@@ -554,10 +584,10 @@ theorem exists_natCard_charDivisorImage_le_normIndex_ray_class
           ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
             (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v)) →
         (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
-          ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
+          ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : KK)
             = χ (globalFrob v)) →
         (∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
-          ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ})) →
+          ((φ (d δ) : KK)) = c (Ideal.span {δ})) →
         (∀ x, x ∈ Im ↔ ∀ v : IsDedekindDomain.HeightOneSpectrum
           (NumberField.RingOfIntegers F), v.asIdeal ∣ mm →
             Multiplicative.toAdd x v = 0) →
@@ -571,7 +601,7 @@ theorem exists_natCard_charDivisorImage_le_normIndex_ray_class
         P ≤ Im → N ≤ Im → P.relIndex Im ≠ 0 →
         Nat.card (Im.map φ) ≤ (P ⊔ N).relIndex Im := by
   obtain ⟨t, ht⟩ := exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class
-    F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c hcmul hcfrob mm₀ hmm₀ hmm₀ram
+    F χ hmul V hVopen hVker ℓ hℓ hℓchar k hord c hcmul hcfrob mm₀ hmm₀ hmm₀ram
   -- `mm₀` and `mm₀ ^ (t+1)` have the SAME prime support: `→` because a height-one prime is
   -- a prime element of the ideal monoid, `←` because `mm₀ ∣ mm₀ ^ (t+1)`.
   have hdvd : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
