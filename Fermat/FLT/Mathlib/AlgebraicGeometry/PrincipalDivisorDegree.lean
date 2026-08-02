@@ -79,7 +79,16 @@ on `divDegree_eq_zero_of_ne_zero`.
 * PROVEN, and unconditional on any curve hypothesis: `ord_one`, `ord_inv`, `divCoeff_one`,
   `divDegree_one`, `divCoeff_mul`, `divDegree_mul`, `divDegree_inv`,
   `divDegree_eq_zeroDegree_sub_poleDegree`, `zeroDegree_eq_poleDegree_inv`,
-  `zeroDegree_nonneg`, `poleDegree_nonneg`, `card_le_poleDegree`, `card_le_zeroDegree`.
+  `zeroDegree_nonneg`, `poleDegree_nonneg`, `card_le_poleDegree`, `card_le_zeroDegree`,
+  `poleDegree_eq_zero_of_forall_ord_eq_zero`.
+* PROVEN, and the `ord` primitives `Mathlib` does not state (2026-08-02):
+  `Scheme.zero_le_ord_of_exists_stalk` (regular at `x` ⟹ `0 ≤ ord_x`),
+  `Scheme.ord_eq_zero_of_exists_stalk_of_exists_stalk_inv`, and
+  `Scheme.ord_eq_zero_of_isIntegral` (integral over an integrally closed stalk, with
+  integral inverse, ⟹ `ord_x = 0`).  `Mathlib` has only `ord_of_isUnit`, which asks for a
+  unit of `Γ(X, U)` for an honest open `U`; every route to the main theorem needs the weaker
+  stalk-level statement, and the constant-function case is exactly `ord_eq_zero_of_isIntegral`
+  applied at every point.
 * PROVEN, and what makes "`K`-rational" usable: `residueDegree_eq_one_of_retraction` and
   `residueDegree_eq_one_of_section` — a section `Spec K ⟶ X` of `strX` has residue degree
   `1` at its image, which is what discharges the `1 ≤ residueDegree` hypothesis of the two
@@ -94,12 +103,18 @@ on `divDegree_eq_zero_of_ne_zero`.
 
 `Fermat/FLT/ModularCurve/HyperellipticJacobian.lean` carries an abstract-places version of
 `Σ_v ord_v(g)·[κ(v) : K] = 0` (`PlaceData.degOf_divisor_eq_zero`) which is **PROVEN**, over
-the single leaf `degOf_poleDivisor_eq_finrank_of_transcendental` (Stichtenoth I.4.11).  So
-there is exactly one open mathematical node behind both this module and that one, and the
-cheapest way to close `poleDegree_inv_eq_poleDegree` here is a BRIDGE to that
-formulation — not a second proof.  The full argument, including why
-`HyperellipticJacobian.lean`'s `PlaceSystem` is already general enough to be the meeting
-point, is in `poleDegree_inv_eq_poleDegree`'s own docstring.  Read it before starting.
+`degOf_poleDivisor_eq_finrank_of_transcendental` (Stichtenoth I.4.11).  So there is exactly
+one open mathematical node behind both this module and that one.
+
+**But that node is OPEN THERE TOO, and in two pieces** (re-measured 2026-08-02):
+`degOf_poleDivisor_eq_finrank_of_transcendental` is `le_antisymm` of
+`degOf_poleDivisor_le_finrank_of_transcendental` and
+`finrank_le_degOf_poleDivisor_of_transcendental`, both `sorry`.  So a bridge from here to
+there trades ONE open leaf for TWO plus the bridge — it may still be the right architecture,
+but the 2026-07-31 claim that it "closes this leaf with no new mathematics" is false.  The
+corrected analysis, with the import-graph measurement that makes the bridge legal and the
+`PlaceData` → `PlaceSystem` hoist that is its real precondition, is in
+`poleDegree_inv_eq_poleDegree`'s own docstring.  Read it before starting.
 
 ## THE RIVAL MODULE `CurveDivisorDegree.lean`, AND WHY IT WAS DELETED (2026-07-31)
 
@@ -228,6 +243,69 @@ lemma Scheme.ord_inv {g : X.functionField} (hg : g ≠ 0) (x : X) :
   rw [mul_inv_cancel₀ hg, Scheme.ord_one] at h
   omega
 
+/-- **A FUNCTION REGULAR AT `x` HAS `ord_x ≥ 0`** (PROVEN 2026-08-02) — the one primitive of
+`Scheme.ord` that `Mathlib` does not state and that every route to
+`poleDegree_inv_eq_poleDegree` consumes: `Mathlib` gives `ord_of_isUnit` (a UNIT has
+`ord = 0`) and `ord_le_smul`, but nothing saying that a mere INTEGER of the stalk has
+nonnegative order.
+
+Unconditional: no curve hypothesis, no properness, no DVR.  Off codimension one both sides
+are `0` by `Mathlib`'s junk convention, and at a codimension-one point this is
+`Ring.ordFrac_ge_one_of_ne_zero` read through `Scheme.le_ord_iff` — note the `1` there is
+`ℤᵐ⁰`'s multiplicative unit, i.e. the additive `0`, which is why the statement looks like an
+inequality in the wrong direction upstream. -/
+theorem Scheme.zero_le_ord_of_exists_stalk {x : X} {f : X.functionField}
+    (h : ∃ a : X.presheaf.stalk x, algebraMap (X.presheaf.stalk x) X.functionField a = f) :
+    0 ≤ Scheme.ord f x := by
+  by_cases hx : coheight x = 1
+  · obtain ⟨a, rfl⟩ := h
+    by_cases ha : a = 0
+    · subst ha; simp
+    · have hinj := FaithfulSMul.algebraMap_injective (X.presheaf.stalk x) X.functionField
+      have hf : algebraMap (X.presheaf.stalk x) X.functionField a ≠ 0 := by
+        intro hc; exact ha (hinj (by simpa using hc))
+      rw [Scheme.le_ord_iff hx hf]
+      haveI : Ring.KrullDimLE 1 (X.presheaf.stalk x) := krullDimLE_of_coheight_le hx.le
+      have := Ring.ordFrac_ge_one_of_ne_zero (R := X.presheaf.stalk x)
+        (K := X.functionField) ha
+      simpa [Scheme.ordHom] using this
+  · simp [hx]
+
+/-- **A FUNCTION REGULAR AT `x` WITH REGULAR INVERSE HAS `ord_x = 0`** (PROVEN 2026-08-02
+over `zero_le_ord_of_exists_stalk` and `ord_inv`).
+
+This is strictly weaker than `Mathlib`'s `Scheme.ord_of_isUnit`, which asks for a unit of
+`Γ(X, U)` for an actual open `U`; here only membership of the STALK is asked, which is what
+an integral-closure argument produces. -/
+theorem Scheme.ord_eq_zero_of_exists_stalk_of_exists_stalk_inv {x : X} {f : X.functionField}
+    (hf : f ≠ 0)
+    (h : ∃ a : X.presheaf.stalk x, algebraMap (X.presheaf.stalk x) X.functionField a = f)
+    (h' : ∃ a : X.presheaf.stalk x, algebraMap (X.presheaf.stalk x) X.functionField a = f⁻¹) :
+    Scheme.ord f x = 0 := by
+  have h1 := Scheme.zero_le_ord_of_exists_stalk h
+  have h2 := Scheme.zero_le_ord_of_exists_stalk h'
+  rw [Scheme.ord_inv hf] at h2
+  omega
+
+/-- **A FUNCTION INTEGRAL OVER AN INTEGRALLY CLOSED STALK, WITH INTEGRAL INVERSE, HAS
+`ord_x = 0`** (PROVEN 2026-08-02).
+
+This is the form in which the CONSTANT functions are recognised: `g` algebraic over the
+constant field `K` makes both `g` and `g⁻¹` integral over every stalk that contains `K`, and
+the stalk of a smooth curve at a codimension-one point is a DVR, hence integrally closed
+(`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`, PROVEN in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`).  It is stated over
+`IsIntegrallyClosed` rather than over that lemma so that this module keeps its `Mathlib`-only
+import list; a consumer supplies the instance. -/
+theorem Scheme.ord_eq_zero_of_isIntegral {x : X}
+    [IsIntegrallyClosed ↥(X.presheaf.stalk x)]
+    {f : X.functionField} (hf : f ≠ 0)
+    (h : _root_.IsIntegral ↥(X.presheaf.stalk x) f)
+    (h' : _root_.IsIntegral ↥(X.presheaf.stalk x) f⁻¹) :
+    Scheme.ord f x = 0 :=
+  Scheme.ord_eq_zero_of_exists_stalk_of_exists_stalk_inv hf
+    (IsIntegrallyClosed.isIntegral_iff.mp h) (IsIntegrallyClosed.isIntegral_iff.mp h')
+
 lemma Scheme.divSupport_inv {g : X.functionField} (hg : g ≠ 0) :
     Scheme.divSupport g⁻¹ = Scheme.divSupport g := by
   ext x
@@ -317,6 +395,17 @@ lemma Scheme.Hom.poleDegree_nonneg {g : X.functionField} (hfin : (Scheme.divSupp
     0 ≤ strX.poleDegree g := by
   rw [strX.poleDegree_eq_sum hfin]
   exact Finset.sum_nonneg fun x _ => strX.poleCoeff_nonneg g x
+
+/-- **A FUNCTION WITH NO ZEROS AND NO POLES HAS POLE DEGREE `0`** (PROVEN 2026-08-02) —
+unconditional on finiteness, because every summand of the `finsum` vanishes rather than the
+support merely being finite.  This is what discharges the CONSTANT branch of
+`divDegree_eq_zero_of_ne_zero` below, and it is why `poleDegree_inv_eq_poleDegree` may carry
+the non-constancy hypothesis `hnc`. -/
+lemma Scheme.Hom.poleDegree_eq_zero_of_forall_ord_eq_zero {f : X.functionField}
+    (h : ∀ x : X, Scheme.ord f x = 0) : strX.poleDegree f = 0 := by
+  have hz : ∀ x : X, strX.poleCoeff f x = 0 := by
+    intro x; simp [Scheme.Hom.poleCoeff, h x]
+  simp [Scheme.Hom.poleDegree, hz]
 
 lemma Scheme.Hom.divDegree_eq_zeroDegree_sub_poleDegree {g : X.functionField}
     (hfin : (Scheme.divSupport g).Finite) :
@@ -560,6 +649,33 @@ theorem finite_divSupport {strX : X ⟶ Spec (CommRingCat.of K)} (_hproper : IsP
     (Scheme.divSupport g).Finite :=
   sorry
 
+/-- **THE CONSTANT CASE, PROVEN 2026-08-02** — the branch of
+`poleDegree_inv_eq_poleDegree` that its `hnc` now excludes, in the form a consumer can
+actually recognise.
+
+If `g` and `g⁻¹` are both integral over every stalk, and the stalks are integrally closed,
+then `g` has neither zeros nor poles and both degrees are `0`.  That is the case of a
+function ALGEBRAIC OVER THE CONSTANT FIELD: `K` maps into every stalk through `strX`, so a
+`g` algebraic over `K` is integral over every stalk together with its inverse, and on a
+smooth curve every codimension-one stalk is a DVR, hence integrally closed.
+
+Stated with the integral-closedness as an instance argument rather than derived from
+`hcurve` so that this module keeps its `Mathlib`-only import list; see
+`Scheme.ord_eq_zero_of_isIntegral`. -/
+theorem poleDegree_inv_eq_poleDegree_of_forall_isIntegral
+    {strX : X ⟶ Spec (CommRingCat.of K)}
+    [∀ x : X, IsIntegrallyClosed ↥(X.presheaf.stalk x)]
+    {g : X.functionField} (hg : g ≠ 0)
+    (h : ∀ x : X, _root_.IsIntegral ↥(X.presheaf.stalk x) g)
+    (h' : ∀ x : X, _root_.IsIntegral ↥(X.presheaf.stalk x) g⁻¹) :
+    strX.poleDegree g⁻¹ = strX.poleDegree g := by
+  have hz : ∀ x : X, Scheme.ord g x = 0 := fun x =>
+    Scheme.ord_eq_zero_of_isIntegral hg (h x) (h' x)
+  have hz' : ∀ x : X, Scheme.ord g⁻¹ x = 0 := fun x => by
+    rw [Scheme.ord_inv hg, hz x]; ring
+  rw [strX.poleDegree_eq_zero_of_forall_ord_eq_zero hz,
+    strX.poleDegree_eq_zero_of_forall_ord_eq_zero hz']
+
 /-- **A NONZERO RATIONAL FUNCTION ON A SMOOTH PROPER CURVE HAS AS MANY POLES AS `g⁻¹`
 DOES** (sorry leaf, 2026-07-31) — equivalently `deg (g)_0 = deg (g)_∞`, and the heart of
 this module: the single statement to which the two blocked `X0.lean` leaves named in the
@@ -589,6 +705,38 @@ this whole theorem, and it is already decomposed:
   `div_0 g = div_∞ g⁻¹`, `K(g) = K(g⁻¹)`, and the algebraic/constant case — is likewise
   already Lean there (`divisor_eq_zeroDivisor_sub_poleDivisor`, `poleDivisor_inv`,
   `adjoin_inv_eq`, `poleDivisor_eq_zero_of_isAlgebraic`).
+
+### CORRECTION, 2026-08-02: THE BRIDGE DOES NOT CLOSE THIS LEAF.  IT RELOCATES IT.
+
+The paragraph above says the bridge "closes this leaf with no new mathematics", and the
+paragraph below repeats it.  Both were written on 2026-07-31 and both are FALSE, in a way
+the paragraph itself told the reader to check ("that name is a moving target … check the
+tree before quoting a count") and nobody did.  Re-run on 2026-08-02, against `main` at
+`280981f1` and against `merger`:
+
+    grep -n 'degOf_poleDivisor_le_finrank_of_transcendental' -A4 \
+      Fermat/FLT/ModularCurve/HyperellipticJacobian.lean      -- :5704, body is `sorry`
+    grep -n 'finrank_le_degOf_poleDivisor_of_transcendental' -A4 \
+      Fermat/FLT/ModularCurve/HyperellipticJacobian.lean      -- :5740, body is `sorry`
+
+`degOf_poleDivisor_eq_finrank_of_transcendental` (:5797) is `le_antisymm` of those two, so
+the abstract-places degree formula rests on TWO STILL-OPEN LEAVES — weak approximation on
+one side, Riemann spaces `L(C)` on the other.  A bridge from here to there therefore trades
+one open leaf for two, PLUS the bridge itself.  It may still be the right architecture (one
+proof of one theorem instead of two), but it is not free and must not be dispatched as if it
+were.
+
+Two further facts, measured rather than assumed, that the route analysis never established:
+
+* **The bridge is import-legal.**  `HyperellipticJacobian.lean`'s transitive `Fermat`-import
+  cone is 21 modules and contains neither `ModularCurve/X0.lean` nor this module, while
+  `X0.lean` imports this one — so importing `HyperellipticJacobian.lean` here creates no
+  cycle.  (The release-28 cycle `X0 → IsogenySignature → HyperellipticJacobian → X0` has
+  since been cut; do not quote it as a blocker without re-measuring.)
+* **But it is not usable as it stands**, because the degree formula there is stated over
+  `PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K` — the SEXTIC-specific structure — and not over
+  `PlaceSystem`.  So the hoist named below is a genuine precondition, not a tidy-up, and it
+  is a refactor inside an 11 000-line concurrently-edited file.
 
 So there is exactly ONE open mathematical node behind both formulations, and it is
 Stichtenoth I.4.11.  Two consequences, both operational:
@@ -685,6 +833,25 @@ be true for the wrong reason if `divSupport g` were infinite.  It is not — tha
 `finite_divSupport` above — but the two leaves are genuinely independent and a prover of
 this one may assume the other.
 
+**`hnc` (ADDED 2026-08-02) IS A WEAKENING, AND THE EXCLUDED CASE IS PROVEN ABOVE.**  The
+hypothesis `∃ x, ord_x g ≠ 0` says `g` is NON-CONSTANT — it has a zero or a pole somewhere.
+Its negation is discharged outright by
+`Scheme.Hom.poleDegree_eq_zero_of_forall_ord_eq_zero` (both sides are then `0`), and
+`divDegree_eq_zero_of_ne_zero` below does exactly that `by_cases`, so no consumer's
+statement changed and no call site outside this module moved.  Since a hypothesis can only
+shrink the class of counterexamples, **the falsity audit above transfers verbatim** and does
+not need re-running: every witness refuting the `hnc`-form refutes the old form.
+
+The recognisable form of the excluded case is
+`poleDegree_inv_eq_poleDegree_of_forall_isIntegral` immediately above: `g` algebraic over
+the constant field `K` is integral over every stalk together with its inverse, so it has
+neither zeros nor poles.  That is the branch every classical proof disposes of first
+(Stichtenoth's step 1, `ord_algebraMap`), and it is now disposed of here rather than inside
+the leaf — so a prover may assume `g` transcendental in spirit without this module having to
+name an `Algebra K X.functionField` instance, which it deliberately does not (see
+`functionFieldAlgebra` in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean` for why the
+project declines to make one an instance).
+
 ## ROUTE 1 — THE FUNDAMENTAL IDENTITY.  This is the one to try first, because its
 arithmetic core ALREADY EXISTS IN THE PIN.
 
@@ -735,7 +902,7 @@ that would refute the *formalisation* rather than the mathematics, is whether
 something with an unexpected junk value. -/
 theorem poleDegree_inv_eq_poleDegree {strX : X ⟶ Spec (CommRingCat.of K)}
     (_hproper : IsProper strX) (_hcurve : SmoothOfRelativeDimension 1 strX)
-    {g : X.functionField} (_hg : g ≠ 0) :
+    {g : X.functionField} (_hg : g ≠ 0) (_hnc : ∃ x : X, Scheme.ord g x ≠ 0) :
     strX.poleDegree g⁻¹ = strX.poleDegree g :=
   sorry
 
@@ -749,10 +916,18 @@ theorem divDegree_eq_zero_of_ne_zero {strX : X ⟶ Spec (CommRingCat.of K)}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     {g : X.functionField} (hg : g ≠ 0) :
     strX.divDegree g = 0 := by
+  classical
   have hfin := finite_divSupport hproper hcurve hg
   rw [strX.divDegree_eq_zeroDegree_sub_poleDegree hfin,
-    strX.zeroDegree_eq_poleDegree_inv hg,
-    poleDegree_inv_eq_poleDegree hproper hcurve hg, sub_self]
+    strX.zeroDegree_eq_poleDegree_inv hg]
+  by_cases hnc : ∃ x : X, Scheme.ord g x ≠ 0
+  · rw [poleDegree_inv_eq_poleDegree hproper hcurve hg hnc, sub_self]
+  · -- `g` has neither zeros nor poles: both degrees are `0` and the leaf is not needed.
+    push Not at hnc
+    have hz' : ∀ x : X, Scheme.ord g⁻¹ x = 0 := fun x => by
+      rw [Scheme.ord_inv hg, hnc x]; ring
+    rw [strX.poleDegree_eq_zero_of_forall_ord_eq_zero hnc,
+      strX.poleDegree_eq_zero_of_forall_ord_eq_zero hz', sub_self]
 
 /-- **THE DEGREE OF A PRINCIPAL DIVISOR ON A SMOOTH PROPER CURVE IS ZERO**, with the
 degenerate `g = 0` branch absorbed (PROVEN 2026-07-31 over
