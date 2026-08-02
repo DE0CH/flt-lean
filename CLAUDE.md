@@ -27068,3 +27068,80 @@ that is DISCLOSURE. The old leaf bundled two independent theorems in two charact
 behind one `GeometricallyConnected` over a two-point base; what is left is two statements
 over a FIELD base, where the whole `ℚ`-side toolkit provably applies and provably did not
 before. Judge it by what is LEFT in each leaf.
+## A BLOCK MOVE WHOSE END IS OFF BY ONE SWALLOWS THE NEXT DOCSTRING'S OPENER — AND EVERY RECEIPT STILL PASSES
+(2026-08-02, `flt-lean-334`, caught by accident three edits later.) The
+pure-move receipt this file already prescribes — sorted line multiset unchanged
+— is exact for *"did any line change"* and says NOTHING about *"did the block
+end where the declaration ends"*. Take one line too many and the block carries
+away the `/--` OPENER of the next declaration's docstring. Then:
+* the line multiset is unchanged, so `blockmove.py` writes and `sort`+`diff`
+  agrees;
+* the comment depth still returns to zero, because the orphaned opener at the
+  DESTINATION runs away into the terminator of whatever docstring follows it
+  there, and the orphaned BODY at the source is absorbed by the docstring above
+  it. So `tools/merge/commentscan.py` is silent and
+  `tools/merge/parsecheck.py` says `delimiters OK`;
+* `git diff --stat` reads `N insertions(+), N deletions(-)`, the pure-move
+  signature;
+* and the file still PARSES, so a build does not necessarily fail either — it
+  silently loses every declaration the runaway comment now covers.
+That is the runaway-doc-comment defect this project already knows from merges,
+manufactured by a *relocation* instead, with all four of its usual detectors
+answering "fine". Here it swallowed `IsAdditiveOn`'s docstring opener and would
+have commented out the whole `IsNIsogenyPair` structure.
+**The check that does work costs four `sed`s and must be run BEFORE the move:
+print the first and last line of every block, and the two lines straddling the
+destination.** A block ends at the last line of the declaration BODY (plus at
+most the blank after it) — not at "the line before the next `/--`", which is what
+an off-by-one from a `sed -n 'A,Bp'` window looks like. And after the move, grep
+the file for a `-/` line whose next non-blank line opens another doc comment, and
+for a `/--` line whose next line is another `/--`:
+    awk 'prev ~ /^\/--/ && /^\/--/ {print NR": doc opener directly after doc opener"} {prev=$0}' F.lean
+The second form is the tell that fires here, and it is one command.
+## A DOCSTRING THAT PRESCRIBES THE REPAIR CAN BE RIGHT ABOUT THE MATHEMATICS AND WRONG ABOUT WHERE IT GOES
+(Same task, and it is why the leaf sat open.) `exists_cuspLocus_atkinLehnerSwap`
+carried an unusually good docstring: it named the repair ("carry the
+Atkin–Lehner action as a further conjunct of `exists_cuspResidueIndexing` …
+closed that way this leaf disappears instead of being paid for twice"), named
+what would go wrong otherwise (the file would owe Deligne–Rapoport twice), and
+was RIGHT. Two things it did not check, each of which alone blocks the repair:
+* **Declaration order.** The conjunct mentions `IsAtkinLehner`, declared 41 000
+  lines BELOW the cusp indexing it was to be attached to. Not statable. The
+  repair is a hoist, and the hoist has to be measured before the mathematics
+  matters at all — `flt-hoistcheck.py` on the three declarations involved
+  (`RelPoint.post`, `IsNIsogenyPair`, `IsAtkinLehner`) reported HITS 0/1/2 with
+  every hit inside the moving set, i.e. dependency-closed, in seconds.
+* **Which declaration is the LEAF.** `exists_cuspResidueIndexing` — the one the
+  docstring names — is PROVEN, over `exists_cuspAboveDivisor` and a counting
+  leaf; and `exists_cuspAboveDivisor` is proven over `_root`, which is proven
+  over `_neron`, which is the `sorry`. Adding a conjunct to the named theorem
+  would have meant adding a `sorry` to a proven theorem. The conjunct belongs
+  three levels down, on `exists_cuspAboveDivisor_neron`, and is then threaded UP
+  through the three proven wrappers, each of which forwards it unread.
+**So the standing check on any prescribed repair is two `grep -n`s: the line
+number of every name the new statement mentions, against the line number of the
+declaration it is to be attached to; and the body of that declaration, to see
+whether it is the leaf or a wrapper over one.** Both are cheaper than reading the
+mathematics, and either one can turn a "one conjunct" repair into a different
+task.
+Corollary, and it is what makes the trade worth taking: closing the leaf this
+way is a genuine **−1**, because the conjunct rides on a leaf the file was
+already paying for. Closing it as a free-standing construction would have been
+`1 → 1` with Deligne–Rapoport owed twice — which is what the docstring was
+warning against, and it was right.
+## ADDING A CONJUNCT MID-CHAIN BREAKS EVERY `obtain` ON IT, INCLUDING ONE IN ANOTHER FILE
+(Same task.) Threading a new conjunct through a chain of `∃ x, A ∧ B` wrappers
+changes the ARITY of every anonymous-constructor pattern that destructures them.
+`obtain ⟨c, hinj, hc⟩` against `∃ c, Inj c ∧ (∀ d, …) ∧ (new)` still elaborates —
+it binds `hc` to the CONJUNCTION — and then fails much later, at the first use,
+as **`Function expected at hc`**. That error names the binder, not the theorem
+whose statement moved, so it reads like a broken proof.
+Two things follow:
+* **Find the call sites by grepping the THEOREM NAME applied, not the binder**,
+  and do it across the whole tree before building: here one of the four was in
+  `FreyCurve/MazurTorsion.lean`, i.e. the class-7 interface split with the two
+  halves in two files. Cost of missing it: one full build of a 119 000-line
+  module.
+* **Append the new conjunct LAST at top level**, never in the middle: then every
+  existing pattern needs exactly one extra `-` and no reordering, and the diff at
+  each call site is one character plus a comment saying which release added it.
