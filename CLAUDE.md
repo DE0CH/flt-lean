@@ -28433,3 +28433,67 @@ leaf, and the mathematics is four lines (`congrArg (fieldAct σ)` on `gen`'s equ
 a route note is short and concrete, price the INSTANCE PLUMBING, not the mathematics; and
 when you close such a leaf, say in the docstring which instances had to be supplied by
 hand, because that is the entire cost a successor at the sibling leaf will pay again.
+## A DELIBERATE NON-WIRING MANUFACTURES AN ORPHAN WITH NO MERGE INVOLVED — and the docstring will still call it the bottom of the chain
+(2026-08-01, `flt-lean-379`, `MoretBailly.det_nTorsion_eq_cyclotomicExponent`.)
+Every orphan class recorded above needs a MERGE: delete × refactor, two rival
+cuts both landing, a hoist whose source was never deleted. This one needs none.
+One author, one file, one afternoon, and the orphan is created *on purpose*:
+1. cut a leaf `L` out of a parent `P`;
+2. then prove `P` by a **different** route;
+3. and write, in `P`'s docstring, that `P` "has deliberately NOT been rewritten"
+   over `L`, with a reason — here, that the other route is what keeps a
+   reusable sibling inside the root cone rather than free-floating.
+Step 3 is a real engineering judgement and it was defensible when written. It is
+also the exact moment `L` becomes **free-floating by construction**: it has zero
+consumers from birth, and the only thing connecting it to the project is prose.
+This project forbids free-floating code, so a leaf in that state is not "work
+waiting for a consumer" — it is a defect that every frontier instrument reports
+as ordinary open work, and it drew a dispatch.
+**The detection is one command, and it is the same one the consumerless-leaf
+sections already prescribe — the point is that you must run it on a leaf whose
+docstring gives you every reason not to.** `L`'s own header called it *"the ONE
+genuinely missing piece of mathematics in the whole archimedean cluster"*, and
+its sibling's docstring said the cluster *"bottoms out"* there. Both false, both
+written in good faith, both stale within a day:
+    # comment-stripped; hits that are only the declaration's own line ⇒ ORPHAN
+    grep -c '<leafName>' <its file>          # then subtract docstring mentions
+**So: a "this is where the chain bottoms out" claim is a claim about the
+PARENT'S PROOF BODY. Read the `by` block.** Here `det_nTorsion_eq_neg_one_of_conj_inv`
+routes through `exists_weilPairing_mu_charZero`, which routes through
+`exists_weilPairing_mu_nondeg_of_natCast_ne_zero`, which delegates to another
+module entirely — and never touches `L`. That is the already-recorded
+[[flt-both-docstrings-name-the-loser]] tell, arriving without a merge to blame.
+### Prove it or delete it? The free-floating rule decides, and it is not a matter of taste
+Two agents found this orphan on the same day and split: one PROVED it from the
+surviving upstream leaf (~25 lines, no new mathematics — the general-base leaf
+gives `σ ζ = ζ ^ det.val` at a primitive root, the hypothesis gives `τ ζ = ζ ^ c`
+at the same root, and a primitive `ζ` has order exactly `n`), the other DELETED
+it. Both take the direct-sorry count down by one, so the standing tie-breaker
+("fewer OPEN leaves after") does not separate them.
+**The rule that does: a PROVEN declaration with no consumer is still
+free-floating, and free-floating code is forbidden. Deletion wins unless you
+also supply the consumer.** Proving an orphan converts a forbidden `sorry` into
+a forbidden theorem; it removes the phantom dispatch target, which is real value,
+and it does not make the declaration legal. So the honest options are exactly
+two — delete it, or prove it *and* wire it — and "prove it and leave it" is a
+half-measure that should be labelled as one in the commit message.
+Corollary for whoever writes step 3 above: **if you decline to route your parent
+through a leaf you just cut, delete the leaf in the same commit.** Keeping it
+"in case someone wants it" is what creates this class. If the statement is worth
+preserving, the place for it is the parent's docstring, where it costs nothing
+and misleads nobody.
+### And a cost estimate one module upstream can be stale in the direction that matters
+Same run, and it is why the surviving leaf had been mispriced for two days. The
+upstream module's docstring priced the divisor-theoretic route as *"a port must
+FIRST replace that genericity device … and THEN re-run the 94 assembly steps"*.
+The device had already been replaced — in the Stage-B core, one module further
+up, by an agent working on a different leaf — and not in the shape the sentence
+guessed (explicit avoidance inequations, not finitely generated subfields). The
+hard half was done and the docstring still charged for it.
+**Before costing a route off a docstring's estimate, `grep` the section
+`variable` line of the module that estimate is ABOUT.** Here one line settled
+it: `variable {F : Type*} [Field F] [DecidableEq F] [IsAlgClosed F]` — an
+arbitrary algebraically closed field, no finiteness — against a docstring
+asserting the whole development was finite-field-bound. A `variable` line is the
+cheapest possible check on a base-genericity claim and it cannot go stale
+without the file changing.
