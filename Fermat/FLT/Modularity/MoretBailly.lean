@@ -46254,7 +46254,9 @@ def IsEffectiveQGaloisTwist {K : Type u} [Field K] [Algebra ℚ K]
       (∀ n : ℕ, AlgebraicGeometry.SmoothOfRelativeDimension n fX₀ →
         AlgebraicGeometry.SmoothOfRelativeDimension n fX) ∧
       (AlgebraicGeometry.GeometricallyConnected fX₀ →
-        AlgebraicGeometry.GeometricallyConnected fX)
+        AlgebraicGeometry.GeometricallyConnected fX) ∧
+      (∀ s : Set X, s.Finite →
+        ∃ U : X.Opens, AlgebraicGeometry.IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U)
 
 /-! ##### THE COCYCLE-TO-ACTION NORMALISATION AND SERRE'S CRITERION (2026-07-30)
 
@@ -46485,7 +46487,39 @@ reason recorded below: without them `K = ℚ` with the trivial action forces
 `c ≡ 𝟙` while `Spec ℚ ⊔ Spec ℚ` carries a surjective continuous
 `Γ_ℚ ↠ ℤ/2` admitting no twist. `hsm`, `hlft`, `hqc` are carried but not known
 to be needed; `hsep` is now known to be needed, by
-`exists_isAffineOpen_stableUnder_semilinearAction`. -/
+`exists_isAffineOpen_stableUnder_semilinearAction`.
+
+**THE THIRD CONCLUSION CLAUSE — SERRE'S CRITERION FOR THE TWIST — ADDED
+2026-08-02, AND IT IS FREE FROM THE CONSTRUCTION THIS LEAF ALREADY OWES.**
+It replaces the separate sorry node `affineOpen_of_finite_of_isFormOver`,
+which used to sit ~250 lines below and asked for the SAME fact over a bare
+`IsFormOver` — i.e. with the semilinear action, the open kernel and `hstab`
+all thrown away, so that a prover there had to rebuild them from nothing
+(spreading-out to a finite level, transitivity of `Γ_ℚ` on the fibres of
+`X ⊗ K ⟶ X`, and only then the descent). That is one leaf deleted and none
+opened; the frontier goes DOWN by one and nothing new is cited. Derivation
+from what this leaf builds, so the strengthening is auditable:
+
+* the construction covers `Z := X₀ ⊗ K` by the `a`-stable affine opens `hstab`
+  supplies, puts the semilinear `G = Γ_ℚ/N`-action on each `V = Spec B` over
+  `L = K^N`, and GLUES `Spec (B^G)`; so for every `a`-stable affine open
+  `V ⊆ Z` the glued chart `U_V ⊆ X` is affine with
+  `(pullback.fst fX (specRatMap K)) ⁻¹ᵁ U_V = e.hom ⁻¹ᵁ V`. That correspondence
+  IS the "base change recovers `V`" half named two paragraphs up; nothing
+  beyond it is used.
+* `pullback.fst fX (specRatMap K)` is SURJECTIVE, being the base change of
+  `specRatMap K` (`surjectiveFlatQuasiCompact_specRatMap`). So given a finite
+  `s ⊆ X`, choose one preimage `t_x` of each `x ∈ s` and put
+  `T := e.hom '' {t_x | x ∈ s}`, a finite subset of `Z`.
+* `hstab T` gives an `a`-stable affine open `V ⊇ T`, and `U := U_V` is affine
+  open with `t_x ∈ e.hom ⁻¹ᵁ V = π ⁻¹ᵁ U`, hence `x = π t_x ∈ U`. ∎
+
+Note the choice of ONE preimage per point rather than the whole fibre: that is
+what keeps the clause free of any finiteness statement about the fibres of
+`X ⊗ K ⟶ X` (which is true — the algebraic closure of `ℚ` inside a finitely
+generated field extension is finite over `ℚ` — and is a theorem this pin does
+not have). Stability of `V` under `a` is what makes the single chosen preimage
+enough. -/
 theorem exists_isGaloisTwistForm_of_semilinearAction {K : Type u} [Field K] [Algebra ℚ K]
     (hac : IsAlgClosed K) (halg : Algebra.IsAlgebraic ℚ K)
     (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
@@ -46509,7 +46543,8 @@ theorem exists_isGaloisTwistForm_of_semilinearAction {K : Type u} [Field K] [Alg
       (e : Limits.pullback fX (specRatMap K) ≅ Limits.pullback fX₀ (specRatMap K)),
       e.hom ≫ Limits.pullback.snd fX₀ (specRatMap K) =
           Limits.pullback.snd fX (specRatMap K) ∧
-        ∀ σ, b.baseAct fX σ ≫ e.hom = e.hom ≫ a σ :=
+        (∀ σ, b.baseAct fX σ ≫ e.hom = e.hom ≫ a σ) ∧
+        (∀ s : Set X, s.Finite → ∃ U : X.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U) :=
   sorry
 
 open CategoryTheory AlgebraicGeometry in
@@ -46664,12 +46699,13 @@ theorem exists_isGaloisTwistForm_of_isOpenKernel {K : Type u} [Field K] [Algebra
     (hopen : ∃ N : Subgroup (Field.absoluteGaloisGroup ℚ), N.Normal ∧
       IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)) ∧ ∀ σ ∈ N, c σ = 𝟙 _) :
     ∃ (X : Scheme.{u}) (fX : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))),
-      IsGaloisTwistForm b fX fX₀ c := by
+      IsGaloisTwistForm b fX fX₀ c ∧
+        (∀ s : Set X, s.Finite → ∃ U : X.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U) := by
   obtain ⟨N, hNnorm, hNopen, hNtriv⟩ := hopen
   have hNa : ∀ σ ∈ N, (fun σ => c σ ≫ b.baseAct fX₀ σ) σ = b.baseAct fX₀ σ := by
     intro σ hσ
     simp only [hNtriv σ hσ, Category.id_comp]
-  obtain ⟨X, fX, e, he_snd, he⟩ :=
+  obtain ⟨X, fX, e, he_snd, he, horbX⟩ :=
     exists_isGaloisTwistForm_of_semilinearAction hac halg b fX₀ hsm hsep hlft hqc
       (fun σ => c σ ≫ b.baseAct fX₀ σ)
       (twistedAct_one b hc) (twistedAct_mul b hc) (twistedAct_snd b hc)
@@ -46677,7 +46713,7 @@ theorem exists_isGaloisTwistForm_of_isOpenKernel {K : Type u} [Field K] [Algebra
       (fun T hT => exists_isAffineOpen_stableUnder_semilinearAction b fX₀ hsep horb
         (fun σ => c σ ≫ b.baseAct fX₀ σ)
         (twistedAct_one b hc) (twistedAct_mul b hc) N hNnorm hNopen hNa T hT)
-  exact ⟨X, fX, e, he_snd, he⟩
+  exact ⟨X, fX, ⟨e, he_snd, he⟩, horbX⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **EFFECTIVITY OF GALOIS DESCENT** (PROVEN 2026-07-29 as an ASSEMBLY; it was
@@ -46699,8 +46735,16 @@ Two inputs, and nothing else:
 
 WHAT THIS MEANS FOR THE TWO CONSUMERS
 (`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` and
-`exists_twistedHilbertBlumenthalDescent_of_split`): nothing. The statement is
-unchanged and both keep calling it exactly as before. -/
+`exists_twistedHilbertBlumenthalDescent_of_split`): nothing, as of 2026-07-29.
+
+**AMENDED 2026-08-02: `IsEffectiveQGaloisTwist` GAINED A SEVENTH CLAUSE**,
+Serre's criterion for the twist (`∀ finite s ⊆ X, ∃ affine open ⊇ s`), so both
+`obtain` patterns gain one component. The clause is threaded, not proven here:
+it comes out of `exists_isGaloisTwistForm_of_isOpenKernel`, hence out of the
+quotient construction in `exists_isGaloisTwistForm_of_semilinearAction`, whose
+docstring carries the three-line derivation and the reason it costs that leaf
+nothing. It replaces the deleted sorry node `affineOpen_of_finite_of_isFormOver`
+— see the note where that declaration used to be, immediately below. -/
 theorem isEffectiveQGaloisTwist_of_isOpenKernel {K : Type u} [Field K] [Algebra ℚ K]
     (hac : IsAlgClosed K) (halg : Algebra.IsAlgebraic ℚ K)
     (b : QGaloisBaseAction K) {X₀ : Scheme.{u}}
@@ -46715,10 +46759,10 @@ theorem isEffectiveQGaloisTwist_of_isOpenKernel {K : Type u} [Field K] [Algebra 
     (hopen : ∃ N : Subgroup (Field.absoluteGaloisGroup ℚ), N.Normal ∧
       IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)) ∧ ∀ σ ∈ N, c σ = 𝟙 _) :
     IsEffectiveQGaloisTwist b fX₀ c := by
-  obtain ⟨X, fX, htw⟩ :=
+  obtain ⟨X, fX, htw, horbX⟩ :=
     exists_isGaloisTwistForm_of_isOpenKernel hac halg b fX₀ hsm hsep hlft hqc horb c hc hopen
   have hform : IsFormOver K fX fX₀ := isFormOver_of_isGaloisTwistForm htw
-  refine ⟨X, fX, htw, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨X, fX, htw, ?_, ?_, ?_, ?_, ?_, ?_, horbX⟩
   · exact of_isFormOver_of_descendsAlong (K := K) _ hform hsm
   · exact of_isFormOver_of_descendsAlong (K := K) _ hform hsep
   · exact of_isFormOver_of_descendsAlong (K := K) _ hform hlft
@@ -46730,71 +46774,56 @@ theorem isEffectiveQGaloisTwist_of_isOpenKernel {K : Type u} [Field K] [Algebra 
   · intro h0
     exact geometricallyConnected_of_isFormOver fX fX₀ hform h0
 
-open CategoryTheory AlgebraicGeometry in
-/-- **SERRE'S CRITERION DESCENDS ALONG A FORM** (sorry node, cut 2026-07-31):
-if `fX` is a `K`-form of `fX₀` for `K` an algebraic closure of `ℚ`, and every
-finite subset of `X₀` lies in an affine open, then the same holds of `X`.
+/-! ##### `affineOpen_of_finite_of_isFormOver` WAS DECLARED HERE AND WAS DELETED
+ON 2026-08-02 (frontier −1, and no leaf opened)
 
-WHY THIS LEAF EXISTS. `horb` is the one clause of the split moduli package that
-the descent step `exists_splitHilbertBlumenthalFamily_of_standardLevelModule`
-was DROPPING: its input leaf
-`exists_splitHilbertBlumenthalCocycle_of_standardLevelModule` produces `horb`
-for its `ℚ`-model `X₁`, and the twist `X₀` inherited every other shape clause by
-fpqc descent while this one had no carrier. The consequence was recorded as the
-QUASI-PROJECTIVITY NOTE on `exists_twistedHilbertBlumenthalCocycle_of_split`: a
-consumer of `HasSplitHilbertBlumenthalModuli` could not discharge Serre's
-criterion for the space it was handed, even though the space is quasi-projective
-and the criterion was proven one step upstream. This leaf is that carrier, and
-with it `HasSplitHilbertBlumenthalModuli` now RECORDS `horb` (2026-07-31), so
-the obligation is discharged once at the producer instead of re-derived at every
-consumer.
+It was the sorry node cut 2026-07-31, and it asked: if `fX` is a `K`-form of
+`fX₀` for `K` an algebraic closure of `ℚ`, and every finite subset of `X₀` lies
+in an affine open, then the same holds of `X`. Its ONE call site was
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule`, which needs
+Serre's criterion for the TWIST and was being handed it for the MODEL only.
 
-THE INTENDED PROOF, in four steps, all of them standard and none of them in the
-pin:
+WHY IT WENT, AND WHY THAT IS NOT A HOLE. The obligation now sits on the leaf
+that BUILDS the twist, `exists_isGaloisTwistForm_of_semilinearAction`, whose
+conclusion gained the clause and whose docstring carries the derivation; it is
+threaded down through `exists_isGaloisTwistForm_of_isOpenKernel` and the
+seventh clause of `IsEffectiveQGaloisTwist`. That leaf constructs `X` by gluing
+`Spec (B^G)` over the `a`-stable affine opens `hstab` hands it, so the
+correspondence from an `a`-stable affine open of `X₀ ⊗ K` to an affine open of
+`X` is already part of what it owes, and Serre's criterion for `X` is three
+lines over it: choose ONE preimage of each point of the finite set (the
+projection is surjective, being a base change of `specRatMap K`), apply
+`hstab` to that finite set, and descend the resulting stable affine. Nothing
+new is cited.
 
-1. *The preimage of a finite set is finite.* `X` is of finite type over `ℚ` and
-   `K` is algebraic over `ℚ`, so for `x ∈ X` the algebraic closure of `ℚ` inside
-   the finitely generated field `κ(x)` is a FINITE extension; hence
-   `κ(x) ⊗_ℚ K` is a finite product of domains and the fibre of
-   `X ⊗ K ⟶ X` over `x` is finite.
-2. *Move the problem upstairs.* `X ⊗ K ≅ X₀ ⊗ K` by the form, and affine opens
-   of `X₀` pull back to affine opens of `X₀ ⊗ K` along the affine morphism
-   `X₀ ⊗ K ⟶ X₀`; a finite subset of `X₀ ⊗ K` has finite image in `X₀`, so
-   `horb₀` gives an affine open of `X₀ ⊗ K` containing the transported finite
-   set.
-3. *Make it Galois-stable.* The cocycle data is trivial on an open subgroup, so
-   only finitely many `Γ`-translates of that affine open occur; their
-   INTERSECTION is affine because `fX` is SEPARATED, and it is Galois-stable and
-   still contains the (Galois-stable) preimage.
-4. *Descend.* A Galois-stable affine open of `X ⊗ K` is the preimage of an
-   affine open of `X`, by faithfully flat descent of open subschemes plus
-   descent of affineness along `Spec K ⟶ Spec ℚ`.
+WHY THE OLD SHAPE WAS THE EXPENSIVE ONE, since the same mathematics is involved
+either way. Stated over a bare `IsFormOver` the leaf had thrown away the
+semilinear action, the open kernel and `hstab`, so a prover there had to
+rebuild all three from nothing: spreading-out of the form to a FINITE level
+`L/ℚ` (EGA IV 8.8 — without it there is no bound at all on the number of Galois
+translates of an affine open, since a bare form isomorphism need not be
+equivariant), transitivity of `Γ_ℚ` on the fibres of `X ⊗ K ⟶ X`, and descent
+of affineness along `Spec K ⟶ Spec ℚ`. The last of those is literally the open
+TODO in `Mathlib.AlgebraicGeometry.Morphisms.Descent` ("Show that affine
+morphisms descend along faithfully-flat morphisms"). The deleted docstring's
+own four-step route named the second and the third and MISSED the first, and
+that omission is the tell that its hypothesis list was the wrong one: it
+asserted that `hqc` "bounds step 3's translate count together with `halg`",
+which is false — quasi-compactness of `fX` says nothing about how many
+translates of a given affine open occur, and the bound comes only from the
+form being defined at a finite level.
 
-WHERE THE HYPOTHESES GO: `hlft` is step 1, `hsep` is step 3 (the intersection of
-two affine opens of a separated scheme is affine), `hqc` bounds step 3's
-translate count together with `halg`, and `hac`/`halg` are what make `K` an
-algebraic closure so that step 1's fibres are finite at all. Note the statement
-is FALSE without algebraicity of `K` over `ℚ`: for `K` of infinite transcendence
-degree the fibres of step 1 are positive-dimensional and no finiteness is left.
+A THIRD ROUTE WAS CHECKED AND REJECTED, so that it is not re-derived: keep the
+leaf and prove it over `IsGaloisTwistForm` plus the open kernel instead of over
+`IsFormOver`. That does kill the spreading-out step (the cocycle is trivial on
+an open subgroup, so the translate count is at most the index), and it leaves
+exactly the fpqc descent of a stable affine open — a clean mathlib-shaped
+residue. It was rejected only because it is a 1-for-1 trade where the present
+one is 1-for-0: the descent it leaves open is a strict sub-part of what the
+quotient construction already has to build.
 
-WHAT IS MISSING FROM THE PIN (checked 2026-07-31, and it is the same list the
-effectivity leaf records): descent of open subschemes, descent of affineness
-along a faithfully flat cover, and the quotient of a scheme by a finite group.
-`Mathlib/AlgebraicGeometry/Morphisms/Descent.lean` carries the open TODO "Show
-that affine morphisms descend along faithfully-flat morphisms", which is
-literally step 4. -/
-theorem affineOpen_of_finite_of_isFormOver {K : Type u} [Field K] [Algebra ℚ K]
-    (hac : IsAlgClosed K) (halg : Algebra.IsAlgebraic ℚ K)
-    {X X₀ : Scheme.{u}}
-    (fX : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (hsep : AlgebraicGeometry.IsSeparated fX)
-    (hlft : AlgebraicGeometry.LocallyOfFiniteType fX)
-    (hqc : AlgebraicGeometry.QuasiCompact fX)
-    (hform : IsFormOver K fX fX₀)
-    (horb₀ : ∀ s : Set X₀, s.Finite → ∃ U : X₀.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U) :
-    ∀ s : Set X, s.Finite → ∃ U : X.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U :=
-  sorry
+Recover the deleted text and its route notes from the parent of the commit that
+removed it, with `git show <that commit>^` on this file. -/
 
 /-! ##### The CANONICAL BASE for descent (2026-07-29, PROVEN)
 
@@ -48538,18 +48567,17 @@ theorem exists_splitHilbertBlumenthalFamily_of_standardLevelModule
   haveI : AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₁ := hsrd₁
   have hsm₁ : AlgebraicGeometry.Smooth fX₁ :=
     AlgebraicGeometry.SmoothOfRelativeDimension.smooth (n := Module.finrank ℚ D) (f := fX₁)
-  obtain ⟨X₀, fX₀, htw, hsm, hsep, hlft, hqc, hsrd, hgc⟩ :=
+  obtain ⟨X₀, fX₀, htw, hsm, hsep, hlft, hqc, hsrd, hgc, horb₀⟩ :=
     isEffectiveQGaloisTwist_of_isOpenKernel (K := AlgebraicClosure (ULift.{u} ℚ))
       inferInstance isAlgebraic_ratAlgClosure ratGaloisBaseAction fX₁ hsm₁ hsep₁ hlft₁ hqc₁
       horb₁ c hcoc hopen
   have hsrd₀ : AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₀ :=
     hsrd _ hsrd₁
   have hgc₀ : AlgebraicGeometry.GeometricallyConnected fX₀ := hgc hgc₁
-  have horb₀ : ∀ s : Set X₀, s.Finite →
-      ∃ U : X₀.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U :=
-    affineOpen_of_finite_of_isFormOver (K := AlgebraicClosure (ULift.{u} ℚ))
-      inferInstance isAlgebraic_ratAlgClosure fX₀ fX₁ hsep hlft hqc
-      (isFormOver_of_isGaloisTwistForm htw) horb₁
+  -- `horb₀` — Serre's criterion for the TWIST — used to be a separate call to the
+  -- sorry node `affineOpen_of_finite_of_isFormOver`; since 2026-08-02 it is the
+  -- seventh clause of `IsEffectiveQGaloisTwist`, produced by the quotient
+  -- construction rather than re-derived by descent along a bare form.
   obtain ⟨A₀, fA₀, ab₀, m₀, d₀, pol₀, hrel, hlev, hfine⟩ :=
     hmain X₀ fX₀ htw hsrd₀ hsep hlft hqc hgc₀
   exact ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, hsrd₀, hsep, hlft, hqc, hgc₀, horb₀,
@@ -50052,7 +50080,7 @@ theorem exists_twistedHilbertBlumenthalDescent_of_split
       lam frp hlam hfrp hlamℓ hfrpp hne hres ρbarp hresp hstdp hdih hsplit
   letI := hKfield
   letI := hKalg
-  obtain ⟨X, fX, htw, hsm, hsep, hlft, hqc, -, -⟩ :=
+  obtain ⟨X, fX, htw, hsm, hsep, hlft, hqc, -, -, -⟩ :=
     isEffectiveQGaloisTwist_of_isOpenKernel hKac hKalgebraic b fX₀ hsm₀ hsep₀ hlft₀ hqc₀
       horb c hcoc hopen
   obtain ⟨A, fA, ab, m, hrel, hlev, hreal⟩ := hmain X fX htw hsm hsep hlft hqc
