@@ -16822,9 +16822,14 @@ What follows was the docstring of a bare leaf
 `nonempty_isCoarseModuliY1_pullbackSpecial`, cut earlier on 2026-07-30 and
 decomposed the same day.  It is kept as a section comment rather than deleted
 because its three-step plan is now CARRIED OUT: steps 1 and 3 are PROVEN below
-and step 2 is the leaf `exists_gamma1AtlasData_pullbackSpecial`.  Read "the
+and step 2 is the leaf `universal_classifyPullbackY1_special`.  Read "the
 `Γ₁` versions … have not been written here yet" in step 1 as a historical
-remark; they are the next three declarations.
+remark; they are the next three declarations.  Read step 3's
+`isCoarseModuliY0_of_atlasData` as historical too: the RECUT of 2026-08-02,
+recorded in its own section note below, moved the leaf from the CONSTRUCTION
+(Katz–Mazur's atlas data over `𝔽_ℓ`) to the INITIALITY clause it was only ever
+used to produce, so step 3 collapsed into the structure literal
+`isCoarseModuliY1_specialFibre` and no atlas is asked for at all.
 
 The statement at issue is the `Γ₁` transcription of `X0.lean`'s
 `nonempty_isCoarseModuliY0_pullbackSpecial`.
@@ -16880,15 +16885,19 @@ it needs less than the full pinning.
 #### DECOMPOSED 2026-07-30 — the three-step plan above, carried out
 
 Steps 1 and 3 are the formal halves and are now written, so what remains open
-is exactly step 2 — Katz–Mazur's construction over `𝔽_ℓ` — under the name
-`exists_gamma1AtlasData_pullbackSpecial`.
-`nonempty_isCoarseModuliY1_pullbackSpecial` itself is PROVEN, as the same
-three-line assembly `X0.lean` uses.
+is exactly step 2 — the good-reduction statement over `𝔽_ℓ`.  It was cut as
+`exists_gamma1AtlasData_pullbackSpecial` (Katz–Mazur's CONSTRUCTION data) and
+RECUT on 2026-08-02 as `universal_classifyPullbackY1_special` (the INITIALITY
+clause alone), which is strictly weaker; the section note above that leaf gives
+the machine-checked implication and the accounting.
+`nonempty_isCoarseModuliY1_pullbackSpecial` itself is PROVEN either way.
 
-The frontier is FLAT: one leaf closes and one opens at the modular step.  What
-is bought is that no prover sent at this node has to rediscover the
-classifying-map bookkeeping or the cocone argument — both are `X0.lean`'s, both
-were missing on the `Γ₁` side, and neither has any arithmetic in it.
+The frontier is FLAT across both cuts: one leaf closes and one opens at the
+modular step.  What is bought is that no prover sent at this node has to
+rediscover the classifying-map bookkeeping or the cocone argument — both are
+`X0.lean`'s, both were missing on the `Γ₁` side, and neither has any arithmetic
+in it — and, after the recut, that the residue asks for no moduli scheme over
+`𝔽_ℓ` and so carries no lower bound on `N`.
 -/
 
 open CategoryTheory.Limits in
@@ -16949,226 +16958,204 @@ theorem IsCoarseModuliY1.classifyPullback_natural {N : ℕ} {Y S S' : Scheme.{u}
         = (p ≫ (h.classifyPullback f g d).1) ≫ pullback.snd str f
     rw [Category.assoc, (h.classifyPullback f g' d').2, (h.classifyPullback f g d).2, hg]
 
-/-- **Katz–Mazur atlas data for a GIVEN classifying map over a general
-base** — the `Γ₁` transcription of `X0.lean`'s `Gamma0AtlasData`.
+/-! #### RECUT 2026-08-02 — the leaf is INITIALITY, not the construction
 
-This is `Gamma1Atlas` with `Y`, `str` and `classify` taken as PARAMETERS
-rather than fields, because the consumer here already has them: the coarse
-space is the given base change `Y ×_{ℤ_(ℓ)} 𝔽_ℓ` and the classifying map is
-`IsCoarseModuliY1.classifyPullback`, both fixed before the atlas is sought.
+**What changed, and the count did not move: one leaf out, one leaf in.**  The
+leaf here was `exists_gamma1AtlasData_pullbackSpecial`, which asked for
+Katz–Mazur's *construction data* over `𝔽_ℓ`: a rigidified moduli scheme `M`
+over `𝔽_ℓ` carrying a universal family, an fpqc rigidifying cover, and the
+categorical-quotient property of its classifying map.  It is replaced by
+`universal_classifyPullbackY1_special` below, which is the INITIALITY clause
+alone.
 
-**The three "over `S`" clauses that `Gamma1Atlas` carries are DROPPED here,
-and that is a weakening of what the leaf must produce, not a strengthening.**
-`Gamma1Atlas` is stated over an arbitrary base and so must say explicitly
-that the rigidifying cover and the categorical quotient live in the
-category of `S`-schemes — the three places `Gamma0Atlas` gets for free from
-`subsingleton_hom_specQ`.  The consumer below is at `S = SpecF ℓ`, where
-`subsingleton_hom_specF` makes all three automatic, so they are replaced by
-the single hypothesis `hsub` on `isCoarseModuliY1_of_atlasData` and a
-producer of this structure need not exhibit them.
+**The new leaf is strictly WEAKER, and that is machine-checked rather than
+argued.**  The old leaf implies the new one in three lines, through the
+`Gamma1AtlasData` structure and `isCoarseModuliY1_of_atlasData` that used to
+stand here:
 
-The two fields are Katz–Mazur (8.1.1)/(8.1.3) verbatim, and their
-docstrings on `Gamma1Atlas` — including the FALSITY AUDIT explaining why
-the binder `_g` on `cover` is load-bearing — apply here word for word.
+    (isCoarseModuliY1_of_atlasData (subsingleton_hom_specF ℓ)
+      (fun {T} g d => hcoarse.classifyPullback (SpecLoc.special toF) (T := T) g d)
+      (fun {_T' _T} p {_g _g'} hg {_d' _d} hb =>
+        hcoarse.classifyPullback_natural (SpecLoc.special toF) p hg hb)
+      A).universal str' c hc
 
-Like `Gamma0AtlasData`, this structure is only ever PRODUCED (by
-`exists_gamma1AtlasData_pullbackSpecial`) and immediately CONSUMED (by
-`isCoarseModuliY1_of_atlasData`); it is never taken as a universally
-quantified hypothesis, so the junk-witness trap does not arise. -/
-structure Gamma1AtlasData (N : ℕ) {Y S : Scheme.{0}} (str : Y ⟶ S)
-    (classify : ∀ {T : Scheme.{0}} (g : T ⟶ S), Gamma1Datum N T → RelPoint str g) where
-  /-- the rigidified moduli scheme `𝔐([Γ₁(N)], [Γ(n)])` over `S` -/
-  M : Scheme.{0}
-  /-- its structure morphism -/
-  strM : M ⟶ S
-  /-- the universal family it carries -/
-  dM : Gamma1Datum N M
-  /-- **rigidification**: every datum over an `S`-scheme is, after a
-  faithfully flat quasi-compact base change, a base change of `dM` -/
-  cover : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma1Datum N T),
-    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T') (m : T' ⟶ M),
-      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
-      Nonempty (IsBaseChangeOfGamma1 p d' d) ∧ Nonempty (IsBaseChangeOfGamma1 m d' dM)
-  /-- **categorical quotient**: a morphism out of `M` that does not separate
-  two rigidifications of one datum factors uniquely through the classifying
-  map of `dM` -/
-  quotient : ∀ {Y' : Scheme.{0}} (φ : M ⟶ Y'),
-    (∀ {Z : Scheme.{0}} (a b : Z ⟶ M) (d₁ : Gamma1Datum N Z),
-      IsBaseChangeOfGamma1 a d₁ dM → IsBaseChangeOfGamma1 b d₁ dM → a ≫ φ = b ≫ φ) →
-    ∃! ψ : Y ⟶ Y', (classify strM dM).1 ≫ ψ = φ
+That derivation was compiled against this file's own olean before the recut was
+made; it is `X0.lean`'s `exists_unique_specialFibre_universal` verbatim with
+`Gamma0Datum` read as `Gamma1Datum`, and it needs nothing of `ℓ` beyond
+`subsingleton_hom_specF`.  The converse does NOT hold formally: an initial
+object is not a presentation, and recovering `M` needs representability of the
+rigidified problem over `𝔽_ℓ` on top of it.
 
-/-- **Atlas data over a base with unique structure morphisms IS a coarse
-moduli space** (PROVEN 2026-07-30) — step 3 of the route, and
-`Gamma1Atlas.toIsCoarseModuliY1` with `Y`, `str` and `classify` given.
+**Three things the recut buys.**
 
-The proof is that one, with the three "over `S`" clauses of
-`Gamma1Atlas.cover`/`quotient` replaced by `Subsingleton.elim` on morphisms
-into `S`, which is what `hsub` supplies.  The base enters in exactly those
-three places:
+* *The `4 ≤ N` obstruction disappears.*  The old docstring flagged it as "a real
+  obstruction and not a formality" and left "deciding which is part of this
+  leaf".  `exists_gamma1AffineModel` and `exists_gamma1GITPresentation` are the
+  only producers of a `Γ₁` atlas over a field in this file and both carry
+  `4 ≤ N` (it is threaded from `exists_gamma1Rigidification` through
+  `smoothOfRelativeDimension_of_gamma1RigidifiedModuli` and
+  `transitiveOnGeometricComponents_of_gamma1RigidifiedModuli`), while the leaf's
+  consumers reach it from `exists_x1CurveReductionModel`, which has no lower
+  bound on `N`.  So a producer of the OLD leaf owed, at `N ≤ 3`, a rigidified
+  moduli scheme nobody in this tree has stated.  A producer of the NEW leaf owes
+  no moduli scheme at all, at any `N`.
+* *It is the shape `X0.lean` PROVED.*  There
+  `universal_classifyPullback_special` is UPSTREAM of
+  `exists_gamma0AtlasData_pullbackSpecial` — the atlas data is derived from
+  initiality plus the `𝔽_ℓ`-side GIT presentation, not the other way round — and
+  initiality itself is proven over
+  `exists_gamma0AtlasOver_bcQuotient_specLocSpecial`, i.e. over an atlas over
+  `ℤ_(ℓ)` and NOT over `𝔽_ℓ`.  So the atlas-data form was never on the route to
+  the content, on either side of the correspondence.
+* *The residue is one sentence of Deligne–Rapoport.*  What is left mentions no
+  rigidified moduli scheme, no fpqc cover and no deck group: the special fibre of
+  the integral coarse space, with the classifying map it already carries, is
+  initial among `𝔽_ℓ`-schemes receiving the `Γ₁(N)`-moduli problem.
 
-* identifying the two base points `p ≫ g` and `m ≫ strM` that the
-  rigidifying cover produces, so that the cover computation is a statement
-  about ONE datum;
-* discharging `u ≫ str' = str`;
-* equating `a ≫ strM` with `b ≫ strM` in the separation argument.
+**What was DELETED, and how to get it back.**  `Gamma1AtlasData` and
+`isCoarseModuliY1_of_atlasData` (both introduced 2026-07-30) stood here and had
+exactly one consumer between them — the old leaf's assembly — so the recut left
+them free-floating, which this project forbids.  They are removed;
+`git show <the recut commit>^:Fermat/FLT/ModularCurve/X1.lean` restores the
+text.  Nothing unique is lost: the cocone argument they carried is the body of
+`Gamma1Atlas.toIsCoarseModuliY1` far above, which is live and is the
+general-base form of the same lemma.  A successor who proves the new leaf
+THROUGH an `𝔽_ℓ`-side atlas should restore them and close it with the
+three-line derivation quoted above.
 
-`SpecQ`, `SpecLoc R` and `SpecF ℓ` all satisfy `hsub`, each because a ring
-map out of the corresponding ring is determined by the unique ring map out
-of `ℤ`.
-
-The argument itself: a cocone cannot separate two rigidifications of one
-datum, because its own naturality equates both composites with its value at
-that datum; so it factors through the quotient, uniquely; and the
-factorisation computes the cocone at an arbitrary datum after pulling back
-along the fpqc rigidifying cover, which is an epimorphism and may be
-cancelled. -/
-def isCoarseModuliY1_of_atlasData {N : ℕ} {Y S : Scheme.{0}} {str : Y ⟶ S}
-    (hsub : ∀ Z : Scheme.{0}, Subsingleton (Z ⟶ S))
-    (classify : ∀ {T : Scheme.{0}} (g : T ⟶ S), Gamma1Datum N T → RelPoint str g)
-    (classify_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
-      (hg : h ≫ g = g') {d' : Gamma1Datum N T'} {d : Gamma1Datum N T},
-      IsBaseChangeOfGamma1 h d' d → classify g' d' = RelPoint.pre h hg (classify g d))
-    (A : Gamma1AtlasData N str classify) :
-    IsCoarseModuliY1 N str where
-  classify := classify
-  classify_natural := classify_natural
-  universal := by
-    intro Y' str' c hc
-    haveI : ∀ Z : Scheme.{0}, Subsingleton (Z ⟶ S) := hsub
-    -- A cocone cannot separate two rigidifications of one datum: its own
-    -- naturality equates both composites with its value at that datum.
-    have hconst : ∀ {Z : Scheme.{0}} (a b : Z ⟶ A.M) (d₁ : Gamma1Datum N Z),
-        IsBaseChangeOfGamma1 a d₁ A.dM → IsBaseChangeOfGamma1 b d₁ A.dM →
-        a ≫ (c A.strM A.dM).1 = b ≫ (c A.strM A.dM).1 := by
-      intro Z a b d₁ ha hb
-      have h1 : (c (a ≫ A.strM) d₁).1 = a ≫ (c A.strM A.dM).1 :=
-        congrArg Subtype.val (hc a rfl ha)
-      have h2 : (c (b ≫ A.strM) d₁).1 = b ≫ (c A.strM A.dM).1 :=
-        congrArg Subtype.val (hc b rfl hb)
-      rw [← h1, ← h2, Subsingleton.elim (a ≫ A.strM) (b ≫ A.strM)]
-    -- so it factors through the quotient, uniquely.
-    obtain ⟨u, hu, huniq⟩ := A.quotient (c A.strM A.dM).1 hconst
-    refine ⟨u, ⟨Subsingleton.elim _ _, ?_⟩, ?_⟩
-    · -- `u` computes `c` at an arbitrary datum: pull back to the rigidifying
-      -- cover, where both sides are statements about `dM`, and cancel it.
-      intro T g d
-      obtain ⟨T', p, d', m, hflat, hsurj, hqc, ⟨hbp⟩, ⟨hbm⟩⟩ := A.cover g d
-      haveI := hflat
-      haveI := hsurj
-      haveI := hqc
-      have hcp : (c (p ≫ g) d').1 = p ≫ (c g d).1 :=
-        congrArg Subtype.val (hc p rfl hbp)
-      have hcm : (c (m ≫ A.strM) d').1 = m ≫ (c A.strM A.dM).1 :=
-        congrArg Subtype.val (hc m rfl hbm)
-      have hAp : (classify (p ≫ g) d').1 = p ≫ (classify g d).1 :=
-        congrArg Subtype.val (classify_natural p rfl hbp)
-      have hAm : (classify (m ≫ A.strM) d').1 = m ≫ (classify A.strM A.dM).1 :=
-        congrArg Subtype.val (classify_natural m rfl hbm)
-      have hst : (p ≫ g) = (m ≫ A.strM) := Subsingleton.elim _ _
-      rw [hst] at hcp hAp
-      have key : p ≫ (c g d).1 = p ≫ ((classify g d).1 ≫ u) := by
-        rw [← hcp, hcm, ← hu, ← Category.assoc, ← hAm, hAp, Category.assoc]
-      exact (cancel_epi p).mp key
-    · -- uniqueness: a rival `u₁` factors `c dM` through the quotient too.
-      rintro u₁ ⟨-, h₁⟩
-      exact huniq u₁ (h₁ A.strM A.dM).symm
+**Do NOT read this as "initiality is now attackable from `hcoarse.universal`".**
+It is not, and the negative result recorded in the section comment above stands
+verbatim: `hcoarse.universal` quantifies over cocones on ALL `ℤ_(ℓ)`-schemes,
+while the `c` below lives only on `𝔽_ℓ`-schemes and assigns nothing to a datum
+on the generic fibre.  `X0.lean` proves the same statement through an atlas over
+`ℤ_(ℓ)` and a base-change leaf at its closed point, and that is the template a
+successor should read first. -/
 
 open CategoryTheory.Limits in
-/-- **Katz–Mazur's construction data for the `Γ₁(N)`-problem over the
-SPECIAL FIBRE** (**sorry leaf, NEW 2026-07-30**) — step 2 of the route
-above, the `Γ₁` transcription of `X0.lean`'s
-`exists_gamma0AtlasData_pullbackSpecial`, and the ONE genuinely modular
-step of the three.
+/-- **GOOD REDUCTION: THE FORMATION OF THE COARSE MODULI SPACE OF `Γ₁(N)`
+COMMUTES WITH `ℤ_(ℓ) → 𝔽_ℓ`** (**sorry leaf, RECUT 2026-08-02** out of
+`exists_gamma1AtlasData_pullbackSpecial`; see the section note above for the
+accounting and for the machine-checked implication that makes this the weaker
+of the two) — the `Γ₁` transcription of `X0.lean`'s
+`universal_classifyPullback_special`, statement for statement.
 
-This is where `nonempty_isCoarseModuliY1_pullbackSpecial`'s content now
-lives, and where its three hypotheses are consumed.  The statement to
-produce is: the base change `𝒴 ×_{ℤ_(ℓ)} 𝔽_ℓ`, TOGETHER WITH the
-classifying map it inherits from the integral coarse space, is presented by
-a rigidified moduli scheme over `𝔽_ℓ` in Katz–Mazur's sense — an
-fpqc-rigidifying cover plus a categorical-quotient property.
+## What it says
 
-TRUE for `ℓ ∤ N` (Deligne–Rapoport III.1 and VI.6.7; Katz–Mazur 8.6.8 —
-"the moduli problem is relatively representable and étale over `ℤ[1/N]`",
-which is what makes the presentation base-change).
+`𝒴 ×_{ℤ_(ℓ)} 𝔽_ℓ`, with `IsCoarseModuliY1.classifyPullback` as its classifying
+map, is INITIAL among `𝔽_ℓ`-schemes receiving a natural transformation from the
+`Γ₁(N)`-moduli problem — i.e. it is itself a coarse moduli space for
+`Γ₁(N)/𝔽_ℓ`.  The other two fields of `IsCoarseModuliY1` are FREE here
+(`classifyPullback` and `classifyPullback_natural`, both PROVEN above with no
+hypothesis on the base change whatever), which is why this leaf is the
+`universal` clause alone and why `isCoarseModuliY1_specialFibre` below is a
+three-line assembly.
 
-**THE `Γ₁` SIDE IS THE EASIER ONE, and this is where that pays.**
-`X0.lean` proves its counterpart by `Gamma0GITPresentationData.toGamma0AtlasData`
-over the further leaf `exists_gamma0GITPresentationData_pullbackSpecial`,
-because `[Γ₀(N)]` is NEVER a fine moduli problem and the whole GIT quotient
-of a rigidified problem has to be run.  `[Γ₁(N)]` is FINE for `N ≥ 4`
-(Katz–Mazur Cor. 4.7.1), so a producer may instead take `M := 𝒴 ×_{ℤ_(ℓ)} 𝔽_ℓ`
-itself with the rigidifying cover `p := 𝟙` and the quotient map an
-isomorphism — the shape `Gamma1Atlas.ofFineModuli` already realises here
-over `exists_isFineGamma1Moduli`.
+TRUE for `ℓ ∤ N`: Deligne–Rapoport III.1 and VI.6.7; Katz–Mazur 8.6.8, "the
+moduli problem is relatively representable and étale over `ℤ[1/N]`", which is
+what makes the coarse space commute with this base change.
 
-**But note the ARITY MISMATCH before taking that route**, because it is a
-real obstruction and not a formality: `exists_isFineGamma1Moduli` carries
-`4 ≤ N` and THIS LEAF DOES NOT, and it must not — its consumers reach it
-from `exists_x1CurveReductionModel`, which has no lower bound on `N`.  At
-`N ≤ 3` the problem is not rigid (`[-1]` fixes `P` when `2P = 0`; at
-`N = 3` the curve `j = 0` carries `ζ₃` fixing a chosen `3`-torsion point),
-so the fine-moduli shortcut is unavailable exactly there and a producer
-must either case-split on `4 ≤ N` and run the `Γ₀`-style GIT quotient in
-the small range, or thread `4 ≤ N` up through
-`nonempty_isCoarseModuliY1_pullbackSpecial` and its consumers.  Deciding
-which is part of this leaf.
+## Why it is not reachable from `hcoarse` alone
 
-**Do NOT attack initiality directly from `hcoarse.universal`** — the
-negative result `X0.lean` records transfers verbatim, and it is why the
-leaf sits at the CONSTRUCTION rather than at the universal property. That
-clause quantifies over cocones defined on ALL `ℤ_(ℓ)`-schemes, while a
-cocone on the special fibre lives only on `𝔽_ℓ`-schemes and assigns
-nothing to a datum on the generic fibre.  Initiality has to come from the
-PRESENTATION axis, which is what this structure is.
+`hcoarse.universal` is initiality quantified over `ℤ_(ℓ)`-schemes, and a cocone
+defined on `𝔽_ℓ`-schemes cannot be fed to it — it assigns nothing to a datum on
+the generic fibre.  Nor does a flatness argument reach it: `ℤ_(ℓ) → 𝔽_ℓ` is not
+flat, and `ℓ` need not be invertible in the order of the deck group of the
+auxiliary level (`#GL₂(ℤ/3) = 48`, so `ℓ = 2` divides it), so "invariants commute
+with base change" fails for formal reasons.  Katz–Mazur Remark 8.1.7's
+counterexamples at `p = 2, 3` are about precisely this base change.
 
-**Each hypothesis is load-bearing** (the underscores record only that a
-`sorry` consumes nothing).  `_hℓN` is good reduction: at `ℓ ∣ N` the naive
-`[Γ₁(N)]`-problem is not étale over the base, the special fibre of `𝒴` is
-not its coarse space, and the statement is FALSE rather than merely open.
-`_hℓ` makes `ZMod ℓ` a field.  `_hbase` pins `(R, toF)`; note the `Γ₀`
-proof consumes it only through `hbase.surjective`, so a successor may find
-it needs less than the full pinning.  `hcoarse` is NOT underscored — it is
-consumed in the STATEMENT, as the classifying map the atlas data must
-present. -/
-theorem exists_gamma1AtlasData_pullbackSpecial {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+## The template for proving it
+
+`X0.lean`'s proof of the same statement, three steps and no arithmetic in any of
+them:
+
+1. an ATLAS over `ℤ_(ℓ)` for the problem (there `nonempty_gamma0AtlasOver_specLoc`);
+2. Katz–Mazur 8.1.6(2) for that atlas at the closed point (there the leaf
+   `exists_gamma0AtlasOver_bcQuotient_specLocSpecial`, in the shape
+   `Gamma0AtlasOver.BcUniversal`);
+3. identifying the atlas's own coarse space with the given `YZ` over `ℤ_(ℓ)`
+   compatibly with `classify` — initiality alone, `X0.lean`'s
+   `exists_isIso_classify_of_isCoarseModuliY0_base` — and moving the `∃!` along
+   that identification with `exists_unique_pullbackClassify_transport`.
+
+Step 3 is base-free and `Gamma0Datum`-free in `X0.lean`'s formulation of it, so
+the `Γ₁` side needs the transcriptions of steps 1 and 2 and can hope to reuse the
+argument of step 3.  The `Γ₁` analogue of `Gamma0AtlasOver` does not exist in
+this file yet; building it is the bulk of a successor's work, and it is the
+honest statement of what this leaf costs.
+
+## Faithfulness
+
+`_hℓN` is load-bearing for TRUTH: at `ℓ ∣ N` the special fibre of the integral
+model is not the coarse space of `Γ₁(N)/𝔽_ℓ` at all — the naive `[Γ₁(N)]`-problem
+is not étale over the base there — so initiality fails and the statement is
+FALSE rather than merely open.  It also rules out the degenerate level, since
+`ℓ ∣ 0` for every `ℓ`.  `_hbase` is what makes `SpecLoc.special toF` the honest
+closed point.  `_hℓ` makes `ZMod ℓ` a field.  `hcoarse` is not underscored: it is
+consumed in the STATEMENT, as the classifying map the conclusion compares
+against.
+
+NOT VACUOUS in either direction: the hypotheses are satisfiable, and the
+conclusion is an `∃!` about an EXHIBITED classifying map rather than an
+existentially chosen one, so an adversary has no datum to choose — `c` and `str'`
+are universally quantified and the comparison is pinned to `classifyPullback`. -/
+theorem universal_classifyPullbackY1_special {N ℓ : ℕ} (_hℓ : ℓ.Prime)
     (_hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} {toF : R →+* ZMod ℓ}
     (_hbase : IsReductionBase ℓ R toF) {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R}
-    (hcoarse : IsCoarseModuliY1 N ystr) :
-    Nonempty (Gamma1AtlasData N (pullback.snd ystr (SpecLoc.special toF))
-      (fun {T} g d => hcoarse.classifyPullback (SpecLoc.special toF) (T := T) g d)) :=
+    (hcoarse : IsCoarseModuliY1 N ystr)
+    {Y' : Scheme.{0}} (str' : Y' ⟶ SpecF ℓ)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ), Gamma1Datum N T → RelPoint str' g)
+    (_hc : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecF ℓ} {g' : T' ⟶ SpecF ℓ}
+      (hg : h ≫ g = g') {d' : Gamma1Datum N T'} {d : Gamma1Datum N T},
+      IsBaseChangeOfGamma1 h d' d → c g' d' = RelPoint.pre h hg (c g d)) :
+    ∃! u : pullback ystr (SpecLoc.special toF) ⟶ Y',
+      u ≫ str' = pullback.snd ystr (SpecLoc.special toF) ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (d : Gamma1Datum N T),
+        (c g d).1 = (hcoarse.classifyPullback (SpecLoc.special toF) g d).1 ≫ u :=
   sorry
 
 open CategoryTheory.Limits in
+/-- **The special fibre IS a coarse moduli space for `Γ₁(N)` over `𝔽_ℓ`**
+(PROVEN 2026-08-02 over the single leaf above) — the `Γ₁` transcription of
+`X0.lean`'s `isCoarseModuliY0_specialFibre`.
+
+Its two formal fields are `IsCoarseModuliY1.classifyPullback` and
+`IsCoarseModuliY1.classifyPullback_natural`, neither of which uses any property
+of the base change; its `universal` field is the leaf. -/
+noncomputable def isCoarseModuliY1_specialFibre {N ℓ : ℕ} (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (hbase : IsReductionBase ℓ R toF) {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R}
+    (hcoarse : IsCoarseModuliY1 N ystr) :
+    IsCoarseModuliY1 N (pullback.snd ystr (SpecLoc.special toF)) where
+  classify := fun {T} g d => hcoarse.classifyPullback (SpecLoc.special toF) (T := T) g d
+  classify_natural := fun {_T' _T} p {_g _g'} hg {_d' _d} hb =>
+    hcoarse.classifyPullback_natural (SpecLoc.special toF) p hg hb
+  universal := fun str' c hc =>
+    universal_classifyPullbackY1_special hℓ hℓN hbase hcoarse str' c hc
+
+open CategoryTheory.Limits in
 /-- **The coarse moduli space of `Γ₁(N)` base-changes to the special fibre**
-(**PROVEN 2026-07-30** over `exists_gamma1AtlasData_pullbackSpecial`; a bare
-sorry leaf for a few hours earlier the same day) — the `Γ₁` counterpart of
-`X0.lean`'s `nonempty_isCoarseModuliY0_pullbackSpecial`, now proven the same
-way as well as stated the same way.
+(**PROVEN 2026-07-30**, re-proven 2026-08-02 over the recut leaf
+`universal_classifyPullbackY1_special`) — the `Γ₁` counterpart of `X0.lean`'s
+`nonempty_isCoarseModuliY0_pullbackSpecial`.
 
-The whole proof is the assembly the block above was written for:
+The statement is unchanged; only the route below it is.  It is now the one-line
+`Nonempty` wrapper of `isCoarseModuliY1_specialFibre` above, whose two formal
+fields are `IsCoarseModuliY1.classifyPullback` and `classifyPullback_natural` —
+supplied along an arbitrary `f : S' ⟶ S` with no arithmetic hypothesis whatever
+— and whose `universal` field is the leaf.  `hℓ`, `hℓN` and `hbase` are consumed
+THERE, which is where good reduction lives.
 
-1. `IsCoarseModuliY1.classifyPullback` and `classifyPullback_natural` supply
-   the first two clauses of `IsCoarseModuliY1` for the base change, along an
-   arbitrary `f : S' ⟶ S` and with no arithmetic hypothesis whatever;
-2. `exists_gamma1AtlasData_pullbackSpecial` supplies Katz–Mazur's
-   construction data over `𝔽_ℓ`, and it is THERE that `hℓ`, `hℓN` and
-   `hbase` are consumed;
-3. `isCoarseModuliY1_of_atlasData`, applied with `subsingleton_hom_specF`,
-   turns that data into the initiality clause.
-
-See the leaf's docstring for why initiality is the only clause with content,
-why the leaf is placed at the construction rather than at the universal
-property, and for the `4 ≤ N` arity mismatch a producer has to resolve. -/
+The 2026-07-30 route ran instead through `exists_gamma1AtlasData_pullbackSpecial`
+and `isCoarseModuliY1_of_atlasData`; the section note above the leaf records why
+that was the stronger obligation, and the machine-checked derivation that turns
+the old leaf into the new one if a successor restores the atlas route. -/
 theorem nonempty_isCoarseModuliY1_pullbackSpecial {N ℓ : ℕ} (hℓ : ℓ.Prime)
     (hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} {toF : R →+* ZMod ℓ}
     (hbase : IsReductionBase ℓ R toF) {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R}
     (hcoarse : IsCoarseModuliY1 N ystr) :
     Nonempty (IsCoarseModuliY1 N (pullback.snd ystr (SpecLoc.special toF))) :=
-  (exists_gamma1AtlasData_pullbackSpecial hℓ hℓN hbase hcoarse).map
-    (isCoarseModuliY1_of_atlasData (subsingleton_hom_specF ℓ)
-      (fun {T} g d => hcoarse.classifyPullback (SpecLoc.special toF) (T := T) g d)
-      (fun {_T' _T} p {_g _g'} hg {_d' _d} hb =>
-        hcoarse.classifyPullback_natural (SpecLoc.special toF) p hg hb))
+  ⟨isCoarseModuliY1_specialFibre hℓ hℓN hbase hcoarse⟩
 
 open CategoryTheory.Limits in
 /-- **The base change of the smooth model to `𝔽_ℓ` is `X_1(N)` over `𝔽_ℓ`**
