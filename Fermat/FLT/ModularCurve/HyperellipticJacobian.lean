@@ -5901,6 +5901,97 @@ lemma vanishesAt_or_of_mul (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : 
     D.VanishesAt v a ∨ D.VanishesAt v b :=
   (valMax_isPrime D v).mem_or_mem (show (⟨a, ha⟩ * ⟨b, hb⟩ : D.valRing v) ∈ D.valMax v from h)
 
+/-- **EXISTENCE, affine case** (PROVEN): a place at which some `xx − α` has POSITIVE order is
+the place of an affine rational point.
+
+`yy² − f(α) = f(xx) − f(α)` vanishes at `v` because `xx − α` divides it; `K` is algebraically
+closed, so `f(α) = β²`, and `(yy − β)(yy + β)` vanishes, hence one factor does.  That factor
+is the second chart coordinate, and `eq_pt_affine_of_chart` identifies the place. -/
+theorem exists_pt_of_ord_pos {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) [IsAlgClosed K]
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (v : D.Places) {α : K}
+    (hpos : 0 < D.ord v (D.xx - algebraMap K D.F α)) :
+    ∃ P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K, D.pt P = v := by
+  have hxv : D.VanishesAt v (D.xx - algebraMap K D.F α) := Or.inr hpos
+  have hxmem : D.xx ∈ D.valRing v := mem_valRing_of_vanishesAt_sub D v hxv
+  -- a square root of `f(α)`
+  obtain ⟨β, hβ⟩ : ∃ β : K, β ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ α :=
+    IsAlgClosed.exists_pow_nat_eq _ (by norm_num)
+  -- `yy² − β²` vanishes at `v`
+  have hV : D.VanishesAt v (aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+      - algebraMap K D.F ((sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).eval α)) :=
+    vanishesAt_aeval_sub_eval D v hxmem hxv _
+  rw [aeval_sextPoly, eval_sextPoly, ← D.eqn, ← hβ] at hV
+  have hfac : D.yy ^ 2 - algebraMap K D.F (β ^ 2)
+      = (D.yy - algebraMap K D.F β) * (D.yy + algebraMap K D.F β) := by
+    rw [map_pow]; ring
+  rw [hfac] at hV
+  -- one of the two factors vanishes; that is the ordinate's chart value
+  rcases vanishesAt_or_of_mul D v hV with hy | hy
+  · refine ⟨Sum.inl ⟨(α, β), hβ⟩, ?_⟩
+    exact (eq_pt_affine_of_chart D hsep v ⟨(α, β), hβ⟩ hxv hy).symm
+  · refine ⟨Sum.inl ⟨(α, -β), by rw [neg_pow]; simpa using hβ⟩, ?_⟩
+    refine (eq_pt_affine_of_chart D hsep v ⟨(α, -β), by rw [neg_pow]; simpa using hβ⟩
+      hxv ?_).symm
+    simpa [sub_neg_eq_add] using hy
+
+/-- **EXISTENCE, case at infinity** (PROVEN): a place at which some `xx − α` has NEGATIVE
+order is one of the two points at infinity.
+
+Then `ord v xx < 0`, so `u := 1/xx` vanishes at `v`; and `w := yy·u³` satisfies
+`w² = revSext u` (`revSext_inv_eq`), whose constant term is `1`, so `w² − 1 = u · (…)`
+vanishes and one of `w ∓ 1` does.  `eq_pt_infinite_of_chart` then identifies the place, the
+sign being the `Bool`. -/
+theorem exists_pt_of_ord_neg {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) [IsAlgClosed K]
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (v : D.Places) {α : K}
+    (hneg : D.ord v (D.xx - algebraMap K D.F α) < 0) :
+    ∃ P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K, D.pt P = v := by
+  -- the abscissa has a pole
+  have hw0 : D.xx - algebraMap K D.F α ≠ 0 := by
+    intro h0; rw [h0, D.ord_zero] at hneg; omega
+  have hordxx : D.ord v D.xx < 0 := by
+    rcases eq_or_ne α 0 with rfl | hα0
+    · simpa using hneg
+    · have hα : algebraMap K D.F α ≠ 0 :=
+        (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr hα0
+      have hlt := ord_add_of_lt D v (a := D.xx - algebraMap K D.F α)
+        (b := algebraMap K D.F α) hw0 hα (by rw [D.ord_algebraMap v α hα0]; omega)
+      rw [sub_add_cancel] at hlt
+      omega
+  have hxx0 : D.xx ≠ 0 := by intro h0; rw [h0, D.ord_zero] at hordxx; omega
+  -- the chart coordinate `u = 1/xx` vanishes
+  have hordu : 0 < D.ord v D.xx⁻¹ := by rw [ord_inv D v _ hxx0]; omega
+  have huv : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F 0) := by
+    rw [map_zero, sub_zero]; exact Or.inr hordu
+  have humem : D.xx⁻¹ ∈ D.valRing v := le_of_lt hordu
+  -- `w² = revSext u`
+  have hwsq : (D.yy * D.xx⁻¹ ^ 3) ^ 2
+      = PlaceAtInfinity.revSext c₀ c₁ c₂ c₃ c₄ c₅ D.xx⁻¹ := by
+    rw [PlaceAtInfinity.revSext_inv_eq _ _ _ _ _ _ hxx0, ← D.eqn]; ring
+  -- `revSext u − 1` is `u` times a chart element, hence vanishes
+  obtain ⟨Q, hQ⟩ : (Polynomial.X : K[X]) ∣
+      (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K - 1) := by
+    rw [Polynomial.X_dvd_iff]
+    simp [PlaceAtInfinity.revSextPoly]
+  have hVu : D.VanishesAt v ((D.yy * D.xx⁻¹ ^ 3) ^ 2 - 1) := by
+    have hstep : (D.yy * D.xx⁻¹ ^ 3) ^ 2 - 1 = aeval D.xx⁻¹ Q * D.xx⁻¹ := by
+      have := congrArg (fun p : K[X] => aeval D.xx⁻¹ p) hQ
+      simp only [map_sub, map_one, map_mul, aeval_X,
+        PlaceAtInfinity.aeval_revSextPoly] at this
+      rw [hwsq, this]; ring
+    rw [hstep]
+    exact vanishesAt_mul_left (aeval_mem_valRing D v humem Q) (Or.inr hordu)
+  -- so one of `w ∓ 1` vanishes
+  have hfac : (D.yy * D.xx⁻¹ ^ 3) ^ 2 - 1
+      = (D.yy * D.xx⁻¹ ^ 3 - 1) * (D.yy * D.xx⁻¹ ^ 3 + 1) := by ring
+  rw [hfac] at hVu
+  rcases vanishesAt_or_of_mul D v hVu with hW | hW
+  · refine ⟨Sum.inr true, (eq_pt_infinite_of_chart D hsep v true huv ?_).symm⟩
+    simpa using hW
+  · refine ⟨Sum.inr false, (eq_pt_infinite_of_chart D hsep v false huv ?_).symm⟩
+    simpa [sub_neg_eq_add] using hW
+
 /-- **PROVEN: at a POLE of the abscissa the chart at infinity has a value `±1`.**
 
 The half of `exists_chartValue_of_isAlgClosed` below that needs NEITHER algebraic closure
@@ -12091,6 +12182,281 @@ lemma vanishesAt_yy_pt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K
     D.VanishesAt (D.pt (Sum.inl q)) (D.yy - algebraMap K D.F q.1.2) :=
   Or.inr (D.ord_pt_affine q).2
 
+/-- `ord v (aⁿ) = n · ord v a` for an INTEGER exponent (PROVEN). -/
+lemma ord_zpow {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) (a : D.F) (ha : a ≠ 0)
+    (n : ℤ) : D.ord v (a ^ n) = n * D.ord v a := by
+  obtain ⟨m, rfl | rfl⟩ := n.eq_nat_or_neg
+  · rw [zpow_natCast, ord_pow D v a ha]
+  · rw [zpow_neg, zpow_natCast, ord_inv D v _ (pow_ne_zero _ ha), ord_pow D v a ha]
+    ring
+
+/-- **A place is determined by its valuation ring** (PROVEN). -/
+theorem eq_of_forall_ord_nonneg_iff {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v w : D.Places)
+    (h : ∀ z : D.F, 0 ≤ D.ord v z ↔ 0 ≤ D.ord w z) : v = w := by
+  -- `ord v z = 0 ↔ ord w z = 0`, for `z ≠ 0`
+  have hzero : ∀ z : D.F, z ≠ 0 → (D.ord v z = 0 ↔ D.ord w z = 0) := by
+    intro z hz
+    have hinvv := ord_inv D v z hz
+    have hinvw := ord_inv D w z hz
+    constructor
+    · intro h0
+      have h1 := (h z).1 (by omega)
+      have h2 := (h z⁻¹).1 (by omega)
+      omega
+    · intro h0
+      have h1 := (h z).2 (by omega)
+      have h2 := (h z⁻¹).2 (by omega)
+      omega
+  -- a uniformiser at `v`
+  obtain ⟨t, ht⟩ := D.ord_surjective v
+  have ht0 : t ≠ 0 := by rintro rfl; rw [D.ord_zero] at ht; omega
+  have htw : 0 < D.ord w t := by
+    have h1 := (h t).1 (by omega)
+    have h2 : D.ord w t ≠ 0 := fun hc => by
+      have := (hzero t ht0).2 hc; omega
+    omega
+  -- the multiplicative comparison
+  have key : ∀ z : D.F, z ≠ 0 → D.ord w z = D.ord v z * D.ord w t := by
+    intro z hz
+    set n := D.ord v z with hn
+    have hp0 : (t ^ (-n) : D.F) ≠ 0 := zpow_ne_zero _ ht0
+    have hy0 : z * t ^ (-n) ≠ 0 := mul_ne_zero hz hp0
+    have hordv : D.ord v (z * t ^ (-n)) = 0 := by
+      rw [D.ord_mul v _ _ hz hp0, ord_zpow D v t ht0, ht]; omega
+    have hordw : D.ord w (z * t ^ (-n)) = 0 := (hzero _ hy0).1 hordv
+    rw [D.ord_mul w _ _ hz hp0, ord_zpow D w t ht0] at hordw
+    linear_combination hordw
+  -- normalisation at `w` forces `ord w t = 1`
+  obtain ⟨s, hs⟩ := D.ord_surjective w
+  have hs0 : s ≠ 0 := by rintro rfl; rw [D.ord_zero] at hs; omega
+  have hst := key s hs0
+  rw [hs] at hst
+  have hdvd : D.ord w t ∣ 1 := ⟨D.ord v s, by rw [mul_comm]; exact hst⟩
+  have htw1 : D.ord w t = 1 := Int.eq_one_of_dvd_one (le_of_lt htw) hdvd
+  -- conclude
+  apply D.ord_injective
+  funext z
+  rcases eq_or_ne z 0 with rfl | hz
+  · rw [D.ord_zero, D.ord_zero]
+  · rw [key z hz, htw1, mul_one]
+
+/-- **Distinct normalised places have INCOMPARABLE valuation rings** (PROVEN): one inclusion
+`O_w ⊆ O_v` already forces `v = w`.
+
+This is what removes the need to generalise `exists_localDenom_affine` to an arbitrary place:
+only the inclusion that the EXISTING lemma gives has to be proved.
+
+Proof.  `O_w ⊆ O_v` first gives `m_v ⊆ m_w` (if `ord w x ≤ 0` then `x⁻¹ ∈ O_w ⊆ O_v`, so
+`ord v x ≤ 0`).  Now if some `z` had `0 ≤ ord v z` and `ord w z < 0`, take a uniformiser `t`
+at `v` and `k := (ord w t).toNat`; then `z ^ k * t` has positive order at `v`, hence at `w`,
+while `k · ord w z + ord w t ≤ -k + ord w t = 0`. -/
+theorem eq_of_ord_nonneg_imp {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v w : D.Places)
+    (h : ∀ z : D.F, 0 ≤ D.ord w z → 0 ≤ D.ord v z) : v = w := by
+  -- `m_v ⊆ m_w`
+  have hm : ∀ x : D.F, x ≠ 0 → 0 < D.ord v x → 0 < D.ord w x := by
+    intro x hx hvx
+    by_contra hc
+    rw [not_lt] at hc
+    have h1 : 0 ≤ D.ord w x⁻¹ := by rw [ord_inv D w x hx]; omega
+    have h2 := h _ h1
+    rw [ord_inv D v x hx] at h2
+    omega
+  refine eq_of_forall_ord_nonneg_iff D v w (fun z => ⟨?_, h z⟩)
+  intro hz
+  rcases eq_or_ne z 0 with rfl | hz0
+  · rw [D.ord_zero]
+  by_contra hc
+  rw [not_le] at hc
+  obtain ⟨t, ht⟩ := D.ord_surjective v
+  have ht0 : t ≠ 0 := by rintro rfl; rw [D.ord_zero] at ht; omega
+  have htw : 0 < D.ord w t := hm t ht0 (by omega)
+  set k : ℕ := (D.ord w t).toNat with hk
+  have hkz : (k : ℤ) = D.ord w t := Int.toNat_of_nonneg (le_of_lt htw)
+  have hu0 : z ^ k * t ≠ 0 := mul_ne_zero (pow_ne_zero _ hz0) ht0
+  have hvu : 0 < D.ord v (z ^ k * t) := by
+    rw [D.ord_mul v _ _ (pow_ne_zero _ hz0) ht0, ord_pow D v z hz0, ht]
+    have : 0 ≤ (k : ℤ) * D.ord v z := mul_nonneg (Int.natCast_nonneg k) hz
+    omega
+  have hwu := hm _ hu0 hvu
+  rw [D.ord_mul w _ _ (pow_ne_zero _ hz0) ht0, ord_pow D w z hz0] at hwu
+  -- `k * ord w z ≤ -k`, so the total is `≤ 0`
+  have hle : (k : ℤ) * D.ord w z ≤ (k : ℤ) * (-1) :=
+    mul_le_mul_of_nonneg_left (by omega) (Int.natCast_nonneg k)
+  omega
+
+/-- **Reading a chart representation at ANOTHER place** (PROVEN).
+
+If `z · den = num` in the chart `(t, s)` with the denominator's VALUE at `(α, β)` nonzero,
+then `z` is regular at every place at which `t ≡ α` and `s ≡ β`: there the denominator is a
+unit (`ord_chart_eq_zero_iff`) and the numerator lies in the valuation ring
+(`chart_mem_valRing`).
+
+This is the workhorse of uniqueness, and it is stated for an arbitrary place, which is what
+lets the EXISTING `exists_localDenom_affine` at `pt P` be read at `v`. -/
+lemma ord_nonneg_of_localDenom {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (w : D.Places)
+    {t s : D.F} {α β : K}
+    (ht : D.VanishesAt w (t - algebraMap K D.F α))
+    (hs : D.VanishesAt w (s - algebraMap K D.F β))
+    {z : D.F} (a b e₁ e₂ : K[X])
+    (hne : e₁.eval α + e₂.eval α * β ≠ 0)
+    (heq : z * (aeval t e₁ + aeval t e₂ * s) = aeval t a + aeval t b * s) :
+    0 ≤ D.ord w z := by
+  set den := aeval t e₁ + aeval t e₂ * s with hden
+  set num := aeval t a + aeval t b * s with hnum
+  -- the denominator is nonzero, because its value at the point is
+  have hden0 : den ≠ 0 := by
+    intro h0
+    have hV := vanishesAt_chart_sub D w ht hs e₁ e₂
+    rw [← hden, h0, zero_sub] at hV
+    refine hne (eq_zero_of_vanishesAt_algebraMap D w ?_)
+    simpa using vanishesAt_neg hV
+  have hordden : D.ord w den = 0 := (ord_chart_eq_zero_iff D w ht hs hden0).2 hne
+  have hordnum : 0 ≤ D.ord w num := chart_mem_valRing D w ht hs a b
+  rcases eq_or_ne z 0 with rfl | hz0
+  · rw [D.ord_zero]
+  · have := D.ord_mul w z den hz0 hden0
+    rw [heq, hordden] at this
+    omega
+
+/-- **UNIQUENESS, affine chart** (PROVEN): a place at which `xx ≡ α` and `yy ≡ β` IS the
+place of the rational point `(α, β)`. -/
+theorem eq_pt_affine_of_chart {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (v : D.Places)
+    (q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hxv : D.VanishesAt v (D.xx - algebraMap K D.F q.1.1))
+    (hyv : D.VanishesAt v (D.yy - algebraMap K D.F q.1.2)) :
+    v = D.pt (Sum.inl q) := by
+  refine eq_of_ord_nonneg_imp D v (D.pt (Sum.inl q)) (fun z hz => ?_)
+  obtain ⟨a, b, e₁, e₂, hne, heq⟩ := exists_localDenom_affine D hsep q hz
+  exact ord_nonneg_of_localDenom D v hxv hyv a b e₁ e₂ hne heq
+
+/-- **UNIQUENESS, chart at infinity** (PROVEN): a place at which `1/xx ≡ 0` and
+`yy/xx³ ≡ ε` IS the place of the point at infinity with that sign. -/
+theorem eq_pt_infinite_of_chart {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (v : D.Places) (sgn : Bool)
+    (huv : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F 0))
+    (hwv : D.VanishesAt v
+      (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if sgn then (1 : K) else -1))) :
+    v = D.pt (Sum.inr sgn) := by
+  refine eq_of_ord_nonneg_imp D v (D.pt (Sum.inr sgn)) (fun z hz => ?_)
+  obtain ⟨a, b, e₁, e₂, hne, heq⟩ := exists_localDenom_infinite D hsep sgn hz
+  exact ord_nonneg_of_localDenom D v huv hwv a b e₁ e₂ hne heq
+
+/-- `(2 : K[X]) ≠ 0`, since `2 ≠ 0` in `K` (PROVEN). -/
+lemma two_ne_zero_poly {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : (2 : K[X]) ≠ 0 := by
+  intro h0
+  have := congrArg (Polynomial.eval (0 : K)) h0
+  simp only [Polynomial.eval_ofNat, Polynomial.eval_zero] at this
+  exact D.two_ne_zero this
+
+/-- **`ord v` is NOT trivial on `K(xx)`** (PROVEN).
+
+If it were, a uniformiser `t` would have `t · d(xx) = A + B·yy =: T` of order `1`, while its
+CONJUGATE `T' = A − B·yy` satisfies `T·T' = A² − B²·f(xx) ∈ K(xx)`.  Triviality then forces
+`ord T' = −1`, and `T + T' = 2·A` lies in `K(xx)` again, so it has order `0` — against
+`ord_add_of_lt`, which computes it as `min(1, −1) = −1`.  The degenerate branches (`T' = 0`,
+`A = 0`) are handled directly and are where `2 ≠ 0` is spent. -/
+lemma false_of_ord_trivial {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
+    (htriv : ∀ h : K[X], h ≠ 0 → D.ord v (aeval D.xx h) = 0) : False := by
+  obtain ⟨t, ht⟩ := D.ord_surjective v
+  have ht0 : t ≠ 0 := by rintro rfl; rw [D.ord_zero] at ht; omega
+  obtain ⟨a, b, d, hd, hz⟩ := D.gen t
+  have hd0 : d ≠ 0 := by rintro rfl; simp at hd
+  set T := aeval D.xx a + aeval D.xx b * D.yy with hT
+  set T' := aeval D.xx a - aeval D.xx b * D.yy with hT'
+  have hT0 : T ≠ 0 := by rw [← hz]; exact mul_ne_zero ht0 hd
+  have hordT : D.ord v T = 1 := by
+    rw [← hz, D.ord_mul v _ _ ht0 hd, ht, htriv d hd0]
+    omega
+  -- the SUM lies in `K(xx)`
+  have hsum : T' + T = aeval D.xx (2 * a) := by
+    rw [hT, hT', map_mul]
+    simp only [map_ofNat]
+    ring
+  -- the PRODUCT lies in `K(xx)`
+  have hprod : T * T' = aeval D.xx (a ^ 2 - b ^ 2 * sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    rw [map_sub, map_mul, map_pow, map_pow, aeval_sextPoly, ← D.eqn, hT, hT']
+    ring
+  rcases eq_or_ne T' 0 with hT'z | hT'0
+  · -- `T' = 0`: then `T` itself lies in `K(xx)`, so it cannot have order `1`
+    rw [hT'z, zero_add] at hsum
+    have ha0 : a ≠ 0 := by
+      rintro rfl
+      rw [mul_zero, map_zero] at hsum
+      exact hT0 hsum
+    have := htriv _ (mul_ne_zero (two_ne_zero_poly D) ha0)
+    rw [← hsum, hordT] at this
+    omega
+  · -- the conjugate is nonzero, so the product pins `ord T' = -1`
+    have hPne : (a ^ 2 - b ^ 2 * sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) ≠ 0 := by
+      intro h0
+      rw [h0, map_zero] at hprod
+      exact (mul_ne_zero hT0 hT'0) hprod
+    have hordP := htriv _ hPne
+    rw [← hprod, D.ord_mul v _ _ hT0 hT'0, hordT] at hordP
+    rcases eq_or_ne a 0 with rfl | ha0
+    · -- `T' = -T`, so both have order `1`
+      rw [mul_zero, map_zero] at hsum
+      have hT'eq : T' = -T := by linear_combination hsum
+      rw [hT'eq, ord_neg D v T hT0, hordT] at hordP
+      omega
+    · -- `ord (T' + T) = min (-1) 1 = -1`, but the sum lies in `K(xx)`
+      have hlt := ord_add_of_lt D v (a := T') (b := T) hT'0 hT0 (by omega)
+      rw [hsum, htriv _ (mul_ne_zero (two_ne_zero_poly D) ha0)] at hlt
+      omega
+
+/-- **Some `xx − α` has nonzero order at `v`** (PROVEN, `K` algebraically closed).
+
+If every `xx − α` had order `0` then, `K` being algebraically closed so that every polynomial
+splits into linear factors, `ord v` would be trivial on all of `K(xx)` — which
+`false_of_ord_trivial` forbids.  The induction is on `natDegree`. -/
+theorem exists_ord_sub_const_ne_zero {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) [IsAlgClosed K]
+    (v : D.Places) : ∃ α : K, D.ord v (D.xx - algebraMap K D.F α) ≠ 0 := by
+  by_contra hc
+  simp only [not_exists, ne_eq, not_not] at hc
+  refine false_of_ord_trivial D v ?_
+  -- every nonzero polynomial in the abscissa is a unit at `v`
+  have key : ∀ n : ℕ, ∀ h : K[X], h ≠ 0 → h.natDegree ≤ n →
+      D.ord v (aeval D.xx h) = 0 := by
+    intro n
+    induction n with
+    | zero =>
+      intro h hh hdeg
+      obtain ⟨c, rfl⟩ := Polynomial.natDegree_eq_zero.mp (Nat.le_zero.mp hdeg)
+      rw [Polynomial.aeval_C]
+      exact D.ord_algebraMap v c (Polynomial.C_ne_zero.mp hh)
+    | succ m ih =>
+      intro h hh hdeg
+      rcases Nat.lt_or_ge h.natDegree (m + 1) with hlt | hge
+      · exact ih h hh (by omega)
+      · -- degree exactly `m + 1 > 0`, so `h` has a root
+        have hdeg0 : h.degree ≠ 0 := by
+          rw [Polynomial.degree_eq_natDegree hh]
+          exact_mod_cast Nat.cast_injective.ne (by omega : h.natDegree ≠ 0)
+        obtain ⟨α, hα⟩ := IsAlgClosed.exists_root h hdeg0
+        obtain ⟨h', hh'⟩ : (Polynomial.X - Polynomial.C α) ∣ h := dvd_iff_isRoot.mpr hα
+        have hXα : (Polynomial.X - Polynomial.C α) ≠ 0 := Polynomial.X_sub_C_ne_zero α
+        have hh'0 : h' ≠ 0 := by rintro rfl; rw [mul_zero] at hh'; exact hh hh'
+        have hdeg' : h'.natDegree ≤ m := by
+          have := congrArg Polynomial.natDegree hh'
+          rw [Polynomial.natDegree_mul hXα hh'0, Polynomial.natDegree_X_sub_C] at this
+          omega
+        have hxa : aeval D.xx (Polynomial.X - Polynomial.C α)
+            = D.xx - algebraMap K D.F α := by simp
+        have hxa0 : D.xx - algebraMap K D.F α ≠ 0 := by
+          rw [← hxa]; exact D.aeval_xx_ne_zero hXα
+        rw [hh', map_mul, hxa, D.ord_mul v _ _ hxa0 (D.aeval_xx_ne_zero hh'0), hc α,
+          ih h' hh'0 hdeg']
+        omega
+  exact fun h hh => key h.natDegree h hh le_rfl
+
 /-- **PROVEN 2026-08-01 (was leaf 1 of 2 of the Galois-descent geometric half): over an
 ALGEBRAICALLY CLOSED field every place is a rational point**, i.e. `pt` is surjective (it is
 injective by the structure field `pt_injective`, so this makes it a bijection).
@@ -12159,11 +12525,10 @@ theorem pt_surjective_of_isAlgClosed {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : 
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
     Function.Surjective D.pt := by
   intro v
-  rcases exists_chartValue_of_isAlgClosed D v with ⟨q, hx, hy⟩ | ⟨s, hu, hw⟩
-  · exact ⟨Sum.inl q, (eq_pt_affine_of_chartValue D hsep q v hx hy).symm⟩
-  · refine ⟨Sum.inr s, (eq_pt_infinite_of_chartValue D s v ?_ hw).symm⟩
-    rw [map_zero, sub_zero]
-    exact Or.inr hu
+  obtain ⟨α, hα⟩ := exists_ord_sub_const_ne_zero D v
+  rcases lt_or_gt_of_ne hα with hlt | hgt
+  · exact exists_pt_of_ord_neg D hsep v hlt
+  · exact exists_pt_of_ord_pos D hsep v hgt
 
 end PlaceData
 
