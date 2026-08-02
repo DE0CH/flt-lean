@@ -34566,7 +34566,20 @@ theorem isHilbertAuxTameAtTwo_of_baseChange_hilbertAuxTraceSubring_of_isWeaklyUn
         p (ρ'.toLocal w g x) = δ g (p x)) ∧
       localInertiaGroup w ≤ δ.ker ∧
       ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 :=
-  sorry
+  -- (release 34) DUPLICATE CUT, closed by delegation rather than by mathematics.
+  -- This statement is CHARACTER-FOR-CHARACTER
+  -- `isHilbertTameAtTwo_of_baseChange_hilbertAuxTraceSubring_of_isWeaklyUniversal`
+  -- 156 lines above -- same binders, same conclusion, only the name differs -- so the
+  -- file owed one theorem twice and every frontier scan counted two.  That copy is the
+  -- one with a consumer (at the assembly below); this one had NONE, which is the tell.
+  -- Nothing is lost: the two are one statement, and a successor closing either closes
+  -- both.  The docstring 100 lines below still names THIS copy; that reference is now
+  -- to a proven wrapper, which is correct either way.  Deleting this declaration is the
+  -- tidier end state and is deliberately NOT done here -- it would edit a live cluster's
+  -- call sites for a passer-by's convenience, where the delegation is one hunk that
+  -- conflicts with nobody.  Queued as a merge follow-up.
+  isHilbertTameAtTwo_of_baseChange_hilbertAuxTraceSubring_of_isWeaklyUniversal
+    ℓ hℓ5 F hirrF Q 𝒟 h𝒟 hloc ρ' e he w hw
 
 open scoped TensorProduct in
 /-- **THE SPLIT-TORUS CLAUSE AT `w ∈ Q` DESCENDS TO THE TRACE SUBRING** (LEAF —
