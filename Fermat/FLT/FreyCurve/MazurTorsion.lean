@@ -26158,12 +26158,50 @@ which `ℂ/(ℤ + ℤτ)` has endomorphism ring strictly larger than `ℤ[ν]` �
 failure of "every holomorphic endomorphism of a complex torus is multiplication
 by a scalar", which is Liouville.
 
-**MACHINERY SURVEY (2026-07-31).** This pin has no lattices in `ℂ`, no
-Weierstrass `℘`, and no uniformisation: a prover takes on the analytic theory.
-The ALGEBRAIC alternative (*ATAEC* II, `E ↦ E/E[𝔞]`) is gated on two things this
-tree does not have — a `CommRing` instance on `WeierstrassCurve.End`, which needs
-the OPEN leaf `WeierstrassCurve.End.mul_comm_charZero` in `Isogeny.lean`, and
-quotients of an elliptic curve by a finite subgroup — so it is not cheaper. -/
+**MACHINERY SURVEY (2026-07-31), AND THE HALF OF IT THAT IS ALREADY DONE.** The
+obvious verdict — "this pin has no lattices in `ℂ`, no `℘`, no uniformisation,
+so a prover takes on the analytic theory" — was written here first and is FALSE
+on two of its three counts. `Mathlib/Analysis/SpecialFunctions/Elliptic/`
+`Weierstrass.lean` (1080 lines) carries `PeriodPair`, `PeriodPair.lattice`
+(`= Submodule.span ℤ {ω₁, ω₂}`), `latticeBasis`, `℘[L]`, `℘'[L]`, their
+periodicity, meromorphy and pole orders, the lattice Eisenstein series `G n`,
+`g₂ := 60 G₄`, `g₃ := 140 G₆`, and — as its LAST lemma — the differential
+equation `PeriodPair.derivWeierstrassP_sq`. That is the whole
+lattice-`→`-cubic direction. **VERIFIED IN SCOPE HERE WITH NO NEW IMPORT**:
+`MazurTorsion.lean` already reaches that module through
+`KnownIn1980s/EllipticCurves/TateCurveConstruction.lean`, and
+`#check @PeriodPair.derivWeierstrassP_sq` from a scratch importing this file
+returns the statement. (The same correction was reached independently on
+2026-07-30 and is recorded in `X0.lean`'s cluster docstring; this leaf did not
+know it.)
+
+Note also that this leaf does NOT need the uniformisation CONVERSE — that every
+curve over `ℂ` is a torus, equivalently surjectivity of `j` on lattices — which
+is the part `X0.lean`'s survey correctly reports as absent. It needs only the
+FORWARD direction, at the one lattice it is handed.
+
+So what a prover actually owes is four named gaps on top of an existing `℘`:
+
+1. **NONDEGENERACY**, `g₂³ − 27g₃² ≠ 0`, so the cubic is an elliptic curve.
+   Classically this is that `℘` takes each of the three half-period values
+   exactly twice, so `4x³ − g₂x − g₃` has distinct roots.
+2. **THE NORMALISATION IDENTITY** `j(E_L) = jInvariant τ` for `L = ℤ + ℤτ`,
+   i.e. `g₂ ↔ ModularForm.E₄` and `g₂³ − 27g₃² ↔ ModularForm.discriminant` up
+   to the classical constants. Mathlib does not define the analytic `j` at all;
+   this project does, as `Heegner.jInvariant = E₄³/Δ`, so the gap is exactly the
+   comparison of two normalisations and it is arithmetic, not analysis.
+3. **`End(ℂ/L) =` THE MULTIPLIER RING**, which is where `hgen` is spent. The
+   inclusion `⊇` is that `z ↦ βz` descends; `⊆` is Liouville — a holomorphic
+   endomorphism of a compact torus lifts to an entire bounded map.
+4. **DESCENT TO `ℚ̄`**, given that `j(τ)` is algebraic: a model over `ℚ̄` exists
+   (`WeierstrassCurve.ofJ` gives one outright, and over an algebraically closed
+   field `j` determines the curve up to isomorphism), and `End` does not grow
+   from `ℚ̄` to `ℂ`.
+
+**THE ALGEBRAIC ALTERNATIVE IS NOT CHEAPER** (*ATAEC* II, `E ↦ E/E[𝔞]`): it is
+gated on a `CommRing` instance for `WeierstrassCurve.End`, which needs the OPEN
+leaf `WeierstrassCurve.End.mul_comm_charZero` in `Isogeny.lean`, and on
+quotients of an elliptic curve by a finite subgroup, which this tree lacks. -/
 theorem isCMJInvariant_of_multiplierRing (n : ℤ) (τ : UpperHalfPlane) (ν : ℂ)
     (hνsq : ν ^ 2 = -(n : ℂ))
     (hνmem : ∃ m k : ℤ, ν = (m : ℂ) + (k : ℂ) * (τ : ℂ))
