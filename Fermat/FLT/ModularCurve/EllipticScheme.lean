@@ -13972,6 +13972,96 @@ theorem exists_projGroupLaw_relPointAddEquiv_field [DecidableEq F]
       Nonempty (RelPoint (projToSpec E) (𝟙 (Spec (CommRingCat.of F))) ≃+ (E⁄F).Point) :=
   sorry
 
+/-- **The chord–tangent group law EXISTS on the projective model over an ARBITRARY
+field** (PROVEN 2026-08-02, `flt-lean-51`) — the general-base form of
+`nonempty_projGroupLaw`, and the bare existence half of the leaf above.
+
+`Classical.decEq F` discharges the `[DecidableEq F]` of that leaf: the conclusion
+here is a `Prop` mentioning no instance, so no diamond can be created by choosing
+the decidability classically.
+
+## Why this is NOT a rival cut of the leaf above, and what would change that
+
+This is a WEAKENING in the derivable direction (`∃ gl, P gl → Nonempty _`), not the
+split that leaf's docstring forbids.  The forbidden split is `∃ gl` PLUS
+`∀ gl, P gl`, whose second half is FALSE — `ProjGroupLaw` pins nothing about `m`, so
+a statement about an arbitrary law is refuted by translating the zero section.  That
+falsity is untouched here, because nothing below quantifies over an arbitrary `gl`.
+
+The cost of taking this route rather than cutting `Nonempty (ProjGroupLaw E)` as its
+own leaf is that everything below inherits a dependency on the RATIONAL-POINT
+DICTIONARY as well as on the existence, which is strictly more than any consumer of
+`exists_ellipticScheme_of_projModel_field` needs.  That was the deliberate choice:
+both halves are discharged by the SAME Bosma–Lenstra gluing (see the leaf's part 1),
+so a separate existence leaf would be a duplicate cut of one construction — the
+frontier would go UP and no obligation would get smaller.  **What would change it:**
+if a prover establishes that the dictionary half needs input the existence half does
+not, split then, and re-point this theorem at the weaker leaf; the proof below is
+unchanged by that. -/
+theorem nonempty_projGroupLaw_field (E : WeierstrassCurve F) [E.IsElliptic] :
+    Nonempty (ProjGroupLaw E) := by
+  letI := Classical.decEq F
+  obtain ⟨gl, -⟩ := exists_projGroupLaw_relPointAddEquiv_field E
+  exact ⟨gl⟩
+
+/-- **The projective Weierstrass model of an elliptic curve over an ARBITRARY field
+is an abelian scheme of relative dimension one over that field** (PROVEN 2026-08-02,
+`flt-lean-51`) — the general-base form of `exists_ellipticScheme_of_projModel`, with
+the geometric-fibre clause DELIBERATELY OMITTED.
+
+## Why the Galois clause is not here
+
+`exists_ellipticScheme_of_projModel` carries, besides this conclusion, an `≃+` from
+`E(ℚ̄)` to the geometric fibre that is EQUIVARIANT for `Field.absoluteGaloisGroup ℚ`.
+That clause typechecks over an arbitrary `F` — `MoretBailly.lean`'s
+`exists_ellipticSchemeOverField` states exactly it — but it is a strictly larger
+obligation, and no consumer of THIS theorem wants it: the intended consumer is the
+Tate curve at the cusp, over `K = FractionRing (PowerSeries ℚ)`, which needs an
+abelian-scheme structure and relative dimension one and nothing about descent.  A
+generic statement carrying an unnecessary hypothesis is worth less than two honest
+ones, so the Galois-equivariant form is left where it already is.
+
+## Why it is stated here and not consumed from `MoretBailly.lean`
+
+`Modularity/MoretBailly.lean` proves `exists_ellipticSchemeOverField`, which subsumes
+this.  It is UNREACHABLE from here and from `X0.lean`: measured 2026-08-02, the
+import closures of `EllipticScheme.lean` (58 modules) and `MoretBailly.lean` (176)
+are INCOMPARABLE, and `X0.lean`'s closure (178) does not contain `MoretBailly`.  The
+two developments are a duplicate cut of one construction across two files whose
+common ancestor is `ProjectiveModelOverField.lean`; unifying them there is queued,
+and until it happens this side needs its own assembly.
+
+## What it rests on, and what it does NOT rest on
+
+One open leaf: `nonempty_projGroupLaw_field` above, hence
+`exists_projGroupLaw_relPointAddEquiv_field`.  Everything else is PROVEN —
+`ProjGroupLaw.toAbelianSchemeStructField` (which already bundles properness,
+smoothness and geometric connectedness through `AbelianSchemeStruct.ofMorphisms`)
+and `smoothOfRelativeDimension_projToSpec_field`.
+
+In particular it does NOT rest on `exists_affineChart_projModel_field`, and that is
+the reason to prefer it to `exists_ellipticScheme_weierstrassChart_addEquiv_field`
+below, which delivers the same abelian scheme but over BOTH open leaves because it
+also publishes the chart.  A consumer that does not need the chart should cite this.
+
+## Faithfulness
+
+NOT VACUOUS: `[E.IsElliptic]` makes the cubic smooth, which is what makes the
+chord–tangent law a group law and the model an abelian scheme; the scheme produced is
+`proj E`, which is nonempty (`nonempty_proj`, the point at infinity), so the
+existential is witnessed by a genuine curve rather than by the empty scheme.  The
+check that would refute it is a `WeierstrassCurve F` with `[E.IsElliptic]` whose
+projective model is not smooth of relative dimension one over `F`; there is none, and
+`smoothOfRelativeDimension_projToSpec_field` is exactly that fact, PROVEN. -/
+theorem exists_ellipticScheme_of_projModel_field (E : WeierstrassCurve F) [E.IsElliptic] :
+    ∃ (A : Scheme.{0}) (f : A ⟶ Spec (CommRingCat.of F)) (_ab : AbelianSchemeStruct f),
+      SmoothOfRelativeDimension 1 f := by
+  obtain ⟨gl⟩ := nonempty_projGroupLaw_field E
+  exact ⟨_root_.WeierstrassCurve.Projective.proj E,
+    _root_.WeierstrassCurve.Projective.projToSpec E,
+    gl.toAbelianSchemeStructField,
+    smoothOfRelativeDimension_projToSpec_field E⟩
+
 /-- **The affine Weierstrass chart is the complement of the zero section, over an
 ARBITRARY field** (sorry leaf, cut 2026-07-31) — the general-base form of
 `exists_affineChart_projModel`.
