@@ -20856,6 +20856,9 @@ on torsion is the group of points of a formal group over `ℤ_ℓ`, torsion-free
 for `ℓ` odd — this is `neronReduction_injective`, already proven, and it is the
 ONLY place `_htors` is consumed).  So it suffices that `[P̄] = [w̄ P̄]` in
 `J_0(125)(𝔽_ℓ)`, which is a finite computation at the chosen `ℓ`.
+**THAT LAST CLAUSE IS FALSE AS WRITTEN — see the ROUTE AUDIT below, which
+refutes it and gives the corrected route.  The reduction half above is
+correct and survives; it is the "finite computation" that does not.**
 
 **PARI/GP RECONNAISSANCE FOR THIS LEAF, RUN 2026-07-28 (PARI 2.17.4), NEW —
 it was not available when the parent was cut.**  With `M = mfinit([125,2],0)`,
@@ -20886,13 +20889,143 @@ residue is: `25` classes to eliminate at one prime, not an unbounded search.
 they say where to look and what would refute the plan, and a Lean proof must
 verify the concrete witness.
 
+**ROUTE AUDIT 2026-08-01 — THE LAST STEP OF THE ROUTE ABOVE IS FALSE AS
+STATED, AND THE RECORDED REFUTING CHECK CANNOT SEE IT.  The leaf itself is
+untouched: everything below refutes the ROUTE, not the STATEMENT.**
+
+Re-running the `ℓ = 3` row (PARI/GP 2.17.4) reproduces it exactly, and in the
+same breath supplies the count the route needs and never took:
+
+    S = mfinit([125,2],1);   mfdim(S)              gives 8, the genus
+    trace(mfheckemat(S,3))                         gives 0
+    3 + 1 - 0                                      so #X_0(125)(F_3) = 4
+    matdet(4*matid(8) - mfheckemat(S,3))           gives 22475
+
+So `X_0(125)` has exactly FOUR `𝔽_3`-points, and TWO of them are cusps.
+(`X_0(125)` has `10` cusps, indexed by `d ∣ 125` with `φ(gcd(d, 125/d))` of
+them over each `d`, i.e. `1, 4, 4, 1`.  The two at `d ∈ {1, 125}` are the
+rational ones — this is `rationalCuspDivisors 125 = {1, 125}`, quoted
+elsewhere in this cluster — and the other eight are defined over `ℚ(ζ_5)`
+with its Galois group permuting each block of four transitively.  `3` has
+order `4` mod `5`, so Frobenius at `3` moves each block in a single orbit of
+size `4` and none of those eight is `𝔽_3`-rational.  `125` is prime to `3`,
+so on the smooth model over `ℤ_(3)` the two rational cusps stay distinct.)
+Hence `#Y_0(125)(𝔽_3) = 2` as well.
+
+**AT EACH OF THOSE TWO CUSPIDAL `𝔽_3`-POINTS THE CLASS IS NONZERO**, so no
+computation over `X_0(125)(𝔽_3)` can establish `[Q̄] = [w̄ Q̄]` universally,
+and a universal statement is the only kind a "finite computation at the
+chosen `ℓ`" could produce.  `w_125` SWAPS the two rational cusps, so at
+`c = 0` the class is the reduction of `[(0)] − [(∞)]`; that class is nonzero
+in `J_0(125)(ℚ)` by `injective_aj_of_one_le_x0Genus` at `1 ≤ x0Genus 125`
+(`x0Genus 125 = 8`, by `decide`), and it stays nonzero after reduction by
+exactly the injectivity-on-torsion the route invokes.  Two of the four points
+are therefore counterexamples to the step as stated, and they are the two the
+route's own machinery certifies as counterexamples.
+
+**WHAT IS MISSING IS A CASE THE ROUTE DOES NOT MENTION.**  The sieve step is
+sound only where `P̄` is NON-cuspidal, and `P̄` is cuspidal exactly when `P`
+has potentially multiplicative reduction at `3`.  So the corrected route is a
+case split on `padicValRat 3 (jm y)`, and BOTH halves have apparatus in
+`X0.lean` already:
+
+* `0 ≤ padicValRat 3 (jm y)`: then `P̄` lies in `Y_0(125)(𝔽_3)`, a set of
+  size `2`, and the sieve would close if `w_125` fixed those two points.
+  **IT DOES NOT — checked below, and that is what kills the route at `3`
+  rather than merely restricting it.**  Read the next block before pricing
+  anything off this bullet;
+* `padicValRat 3 (jm y) < 0`: then `P̄` IS a cusp, by the PROVEN
+  `isCusp_redX_of_padicValRat_neg` (`X0.lean`, Mazur's Cor. 4.4 dictionary),
+  and by the paragraph above the class reduces to something NONZERO.  Since
+  the leaf says the class is `0`, this case must be shown EMPTY rather than
+  computed: no rational point of `Y_0(125)` has potentially multiplicative
+  reduction at `3`.  That is Mazur's formal-immersion-at-the-cusp step, and
+  the tree carries its interface as `IsEisensteinFormalImmersionAt` with
+  `nonempty_isEisensteinFormalImmersionAt_iff` reducing it to the two clauses
+  `hX'.IsCusp (redX x) → redX x = redX z → x = z` and `cusp_lift`.
+
+**AND THAT SECOND HALF DOES NOT REACH `125` AS THE TREE STANDS — checked, not
+assumed.**  The producer `exists_eisensteinFormalImmersionAt` and the leaf
+under it, `exists_x0JReductionDatum_cuspInjective` (`X0.lean`, still a bare
+`sorry`), both carry `_hp : p.Prime` together with `_hmem : p ∉ mazurIsogenyPrimes`,
+and `125` is not prime.  This is not a stray hypothesis to be dropped: Mazur's
+Cor. 4.4 runs on the EISENSTEIN QUOTIENT of `J_0(p)`, which is a prime-level
+object, and at `125` the corresponding input is Kenku's rather than Mazur's.
+So the second half of the corrected route is not "apply an existing interface
+at `q = 3`"; it is a prime-power analogue of a cluster whose prime case is
+itself open.  A successor who prices this leaf off the existence of
+`IsEisensteinFormalImmersionAt` will be wrong by a whole cluster.
+
+**WHY THE RECORDED REFUTING CHECK MISSES THIS.**  Both of the checks the next
+paragraph names PASS: the `ℓ = 3` row reproduces character for character, the
+`gcd` argument is unaffected, and the Atkin–Lehner eigenvalue pattern is not
+what is at issue.  They test the TORSION BOUND, which is correct and is not
+where the route breaks; the break is in the quantifier of the final step, and
+nothing that counts `#J_0(125)(𝔽_ℓ)` can detect it.  This is the standing
+lesson that an audit's refuting check is scoped to the failure its author had
+in mind — recorded in CLAUDE.md, with this as the worked instance.
+
+**AND THE FIRST BULLET FAILS AT `ℓ = 3` TOO, SO THE ROUTE IS DEAD AT THAT
+PRIME RATHER THAN MERELY INCOMPLETE.**  Two observations, the first of which
+holds at every `ℓ` and collapses the whole "finite computation" idea:
+
+* the special fibre also has genus `8`, so by Abel–Jacobi injectivity there
+  `[Q̄] = [w̄ Q̄]` is EQUIVALENT to `Q̄ = w̄ Q̄`.  The residue the sieve asks for
+  is therefore not a class computation at all: it is *the reduction of `P` is
+  a FIXED POINT of `w̄_125`*.  Since `w_125` swaps the two rational cusps at
+  every `ℓ ∤ 125`, the universal form fails at every prime, which is the
+  `ℓ`-independent half of this audit;
+* at `ℓ = 3` the non-cuspidal points fail as well, and the fixed-point count
+  settles it with nothing left over.  `w_125` acts on `S₂(Γ₀(125))` with
+  `trace = −4`, so `dim⁺ = 2`, `dim⁻ = 6` (the recorded eigenvalue pattern,
+  confirmed), `Tr(T_3 | ⁺) = −3`, and `#X_0(125)⁺(𝔽_3) = 3 + 1 + 3 = 7`.
+  With `#X_0(125)(𝔽_3) = 4` and `#Fix(w̄ ∘ Frob_3) = 1 + 3 − Tr(w T_3) = 10`,
+  writing `r, s, i` for the ramified, split and inert points of the quotient
+  gives `r + 2s = 4`, `r + s + i = 7`, `r + 2i = 10`.  The fixed points of
+  `w_125` are the CM points of discriminant `−4 · 125 = −500`, of which there
+  are `h(−500) = 10` — matching Riemann–Hurwitz `2·8−2 = 2(2·2−2) + R` on the
+  nose — and `polclass(-500)` is irreducible of degree `10` over `ℚ` AND
+  stays a single irreducible of degree `10` mod `3`.  So no fixed point has
+  an `𝔽_3`-rational `j`-invariant, `r = 0`, hence `s = 2` and `i = 5`.
+
+**`w̄_125` therefore fixes NO point of `X_0(125)(𝔽_3)`**: the four points are
+two `w̄`-swapped pairs, the two cusps and the two non-cuspidal points.  So for
+EVERY rational point `P` of `X_0(125)`, cuspidal or not, `[P̄] ≠ [w̄ P̄]`, the
+sieve at `3` returns a NONZERO class, and completing it would prove not the
+leaf but `Y_0(125)(ℚ) = ∅` — the one route this cluster's VACUITY AUDIT
+forbids, because it strands `MazurLevel125.classPoly500_no_rat_root`.  The
+docstring's "`ℓ = 3` is the cheapest" is exactly backwards: `3` is the one
+prime at which the sieve provably cannot deliver this leaf.
+
+(Two free corroborations fell out and are worth keeping: `polclass(-500)`
+irreducible over `ℚ` re-proves `classPoly500_no_rat_root`'s content
+independently, and `h(−500) = 10` is confirmed three ways — the class number,
+the Riemann–Hurwitz ramification count, and the Lefschetz number of
+`w̄ ∘ Frob_3`.)
+
+**WHAT A SUCCESSOR SHOULD TAKE FROM THIS.**  Do not attempt the route as
+recorded; at `ℓ = 3` it cannot close, and at any other `ℓ` its final step is
+the unstated requirement that `P` reduce to a CM point of discriminant `−500`
+— i.e. it needs `polclass(-500)` to have a root mod `ℓ` before it can even
+begin.  The genuine residue is the second bullet of the case split, and it is
+NOT a computation, so a decomposition trades this one leaf for the
+formal-immersion existential (which does not reach `125`, see below) plus a
+reduction datum at `(125, ℓ)` that does not exist in the tree either.  That is
+why no cut was taken here on 2026-08-01: the count would go up and the
+arithmetic would be unchanged.  What did change is that the route is no longer
+one a successor can be sent at, and the residue has a name.
+
 **The check that refutes this leaf**: a non-cuspidal rational point of
 `X_0(125)` whose class `[(P) − (w_125 P)]` is nonzero — the same check the
 consumer and `atkinLehnerFixed_x0OneTwentyFive` carry.  **The check that
 refutes the ROUTE above** (weaker, and cheaper to run): `gcd` of
 `#J_0(125)(𝔽_ℓ)` over odd good `ℓ` failing to stabilise at `25`, or
 `mfatkineigenvalues(M, 125)` returning a pattern other than
-`[[-1,-1], [1,1], [-1,-1,-1,-1]]` (re-confirmed for this leaf on 2026-07-28). -/
+`[[-1,-1], [1,1], [-1,-1,-1,-1]]` (re-confirmed for this leaf on 2026-07-28).
+**Both of those PASSED on 2026-08-01 and the route is refuted anyway** — see
+the ROUTE AUDIT above, and prefer its check: count `X_0(125)(𝔽_ℓ)` and ask
+how many of those points are cusps, which is the quantity the final step
+silently assumes is zero. -/
 theorem Fermat.ajMinusTorsion_eq_zero_x0OneTwentyFive {X Y J : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification 125 strX strY jY) {jstr : J ⟶ SpecQ}
