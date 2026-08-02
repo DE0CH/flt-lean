@@ -7254,6 +7254,43 @@ them to both halves for free.  Before the cut, an owner of the geometry held
 only the spec and could not even say that the Abel–Jacobi image passes through
 the origin — which is the hypothesis of the SGA3 statement being invoked. -/
 
+/-- **THE ABEL–JACOBI CLAUSE IS ITS OWN INSTANCE AT THE TAUTOLOGICAL POINT**
+(PROVEN 2026-08-02) — the formal debt the section heading above describes
+("applies to ONE point and then propagates"), paid.
+
+Given naturality of `aj` and naturality of `incl`, the whole family
+`∀ T g x, ∃ p, incl p = aj T g x` follows from the SINGLE membership
+`∃ q, incl q = aj X strX (relPicSelfPoint strX)`.  Every point `x : RelPoint strX g`
+is `RelPoint.pre x.1 x.2` of the tautological point (`relPicSelfPoint_pre`), so
+`RelPoint.pre x.1 x.2 q` is the witness at `x` and the two naturalities move
+`incl` and `aj` past the `pre`.
+
+**This is what lets `exists_relPicIdentityComponent` below ask for the single
+instance instead of the family**, which is a strict WEAKENING of that leaf: a
+geometry owner exhibits one point of `Pic⁰` rather than a natural family of
+them.  No hypothesis of that leaf moved, and its faithfulness audit transfers
+verbatim — the audit's own witness against dropping the clause (`J = S`,
+`jstr = 𝟙 S`, where `incl` is forced to be the zero section by the closure
+clause) is refuted AT `T = X`, `g = strX`, i.e. at exactly the instance that
+survives. -/
+theorem img_of_img_selfPoint
+    {X P J S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S} {jstr : J ⟶ S}
+    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
+    (hajpre : ∀ (T' T : Scheme.{u}) (h : T' ⟶ T) (g : T ⟶ S) (g' : T' ⟶ S) (hg : h ≫ g = g')
+      (x : RelPoint strX g), aj T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (aj T g x))
+    (incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g)
+    (hpre : ∀ (T' T : Scheme.{u}) (h : T' ⟶ T) (g : T ⟶ S) (g' : T' ⟶ S) (hg : h ≫ g = g')
+      (p : RelPoint jstr g),
+      incl T' g' (RelPoint.pre h hg p) = RelPoint.pre h hg (incl T g p))
+    (htaut : ∃ q : RelPoint jstr strX, incl X strX q = aj X strX (relPicSelfPoint strX)) :
+    ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+      ∃ p : RelPoint jstr g, incl T g p = aj T g x := by
+  obtain ⟨q, hq⟩ := htaut
+  intro T g x
+  refine ⟨RelPoint.pre x.1 x.2 q, ?_⟩
+  rw [hpre T X x.1 strX g x.2 q, hq,
+    ← hajpre T X x.1 strX g x.2 (relPicSelfPoint strX), relPicSelfPoint_pre x]
+
 /-- **THE IDENTITY COMPONENT `Pic⁰ ⊆ Pic`** (sorry leaf, cut 2026-07-31 out of
 `exists_relPicZeroSubfunctor`) — SGA3 VI_B 3.10 / EGA IV 15.6.5, the first of
 the two classical chapters that leaf carried.
@@ -7310,7 +7347,23 @@ clause may be dropped:
 Abel–Jacobi clause is satisfiable by it, every `𝒪(x − o)` being trivial.
 
 **NOT VACUOUS**: `IsRelPicOf strX pstr` is satisfiable (`exists_relPicFull`,
-PROVEN above), so this is not a statement about an empty class of `pstr`. -/
+PROVEN above), so this is not a statement about an empty class of `pstr`.
+
+**WEAKENED 2026-08-02, and the audit above transfers verbatim.**  The
+Abel–Jacobi clause used to be the family `∀ T g x, ∃ p, incl p = aj T g x`; it
+is now the SINGLE instance at the tautological point,
+`∃ q, incl X strX q = aj X strX (relPicSelfPoint strX)`.  `img_of_img_selfPoint`
+immediately above recovers the family from it, using only the naturality of `aj`
+and of `incl` that this leaf already carries and concludes, so nothing
+downstream sees the difference (`exists_relPicZeroSubfunctor` applies it and
+hands the full family on to `isProper_relPicIdentityComponent`, whose `_himg`
+hypothesis is unchanged).  This is a strict weakening of the leaf — an owner
+exhibits ONE point of `Pic⁰` rather than a natural family — so it cannot
+introduce falsity, and the junk-witness arguments above are undisturbed because
+the one they turn on (`J = S`, `jstr = 𝟙 S`) is refuted at `T = X`, `g = strX`,
+which is exactly the surviving instance.  It is the paragraph beginning
+"`_hajpre` says the image is one FAMILY rather than an unstructured set of
+points", performed. -/
 theorem exists_relPicIdentityComponent {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
@@ -7339,8 +7392,7 @@ theorem exists_relPicIdentityComponent {X P S : Scheme.{u}} {strX : X ⟶ S} {ps
           ∃ r : RelPoint jstr g, incl T g r = hP.addPoint (incl T g p) (incl T g q)) ∧
         (∀ (T : Scheme.{u}) (g : T ⟶ S) (p : RelPoint jstr g),
           ∃ r : RelPoint jstr g, incl T g r = hP.negPoint (incl T g p)) ∧
-        (∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
-          ∃ p : RelPoint jstr g, incl T g p = aj T g x) := sorry
+        (∃ q : RelPoint jstr strX, incl X strX q = aj X strX (relPicSelfPoint strX)) := sorry
 
 /-- **`Pic⁰ ⟶ S` IS PROPER** (sorry leaf, cut 2026-07-31 out of
 `exists_relPicZeroSubfunctor`) — BLR 9.4, the second of the two classical
@@ -7654,11 +7706,15 @@ group axioms removed.
 The two classical steps it used to carry are now one leaf each, and this
 declaration is their assembly: `exists_relPicIdentityComponent` produces the
 subfunctor, `isProper_relPicIdentityComponent` takes that entire conclusion and
-returns `IsProper jstr`, and nothing is left over.  The only step that is not
-re-packaging is the discharge of the two Abel–Jacobi laws that both halves ask
-for and the caller does not supply: `aj_pre_of_spec` and `aj_base_of_spec`
-derive them from `_haj` alone.  See the section heading above for why the cut is
-legitimate and where its load-bearing check is written.
+returns `IsProper jstr`, and nothing is left over.  Two steps are not
+re-packaging.  The first is the discharge of the two Abel–Jacobi laws that both
+halves ask for and the caller does not supply: `aj_pre_of_spec` and
+`aj_base_of_spec` derive them from `_haj` alone.  The second (2026-08-02) is
+`img_of_img_selfPoint`, which turns the single Abel–Jacobi membership the leaf
+now supplies — at the tautological point — into the family over every `(T, g, x)`
+that this conclusion and `isProper_relPicIdentityComponent`'s `_himg` both want.
+See the section heading above for why the cut is legitimate and where its
+load-bearing check is written.
 
 Everything the ORIGINAL parent asked for — the `AbelianSchemeStruct` — is
 supplied by transport from `IsRelPicOf.addPoint_assoc` and its siblings in
@@ -7694,9 +7750,12 @@ theorem exists_relPicZeroSubfunctor {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr 
   -- the two laws of `aj` that both halves need and the caller does not supply
   have hajpre := aj_pre_of_spec _hproper _hsmooth o hP aj _haj
   have hajbase := aj_base_of_spec _hproper _hsmooth o hP aj _haj
-  obtain ⟨J, jstr, incl, hsm, hcn, hinj, hpre, hzero, hadd, hneg, himg⟩ :=
+  obtain ⟨J, jstr, incl, hsm, hcn, hinj, hpre, hzero, hadd, hneg, htaut⟩ :=
     exists_relPicIdentityComponent _hproper _hsmooth _hconn o hP _hpush _hPsmooth _hPsep
       _hequiv aj _haj hajpre hajbase
+  -- the leaf now supplies the Abel–Jacobi clause at the tautological point only;
+  -- `img_of_img_selfPoint` propagates it to every point, over the two naturalities
+  have himg := img_of_img_selfPoint aj hajpre incl hpre htaut
   exact ⟨J, jstr, incl,
     isProper_relPicIdentityComponent _hproper _hsmooth _hconn o hP _hpush _hPsmooth _hPsep
       _hequiv aj _haj hajpre hajbase incl hsm hcn hinj hpre hzero hadd hneg himg,
