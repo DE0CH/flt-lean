@@ -19495,10 +19495,418 @@ theorem exists_frobEquivariant_placeAbove {F : Type u} [Field F] [NumberField F]
     exact ⟨⟨_, algebraMap_mem_placeAbove w a⟩, rfl, hlift a⟩
   · intro z; rfl
 
+/-! #### The local ring of `F` at `w`, and the model over it
+
+**THE CUT OF 2026-08-01, and what it is for.**  The leaf below —
+`exists_finset_abelianReductionDatum_of_placeAbove` — is the GEOMETRIC half
+of `exists_finset_abelianReductionDatum_of_mult`, i.e. steps 1 and 2 of the
+route recorded on that theorem: *spread out* the fibre `A_x` to an abelian
+scheme over a ring of `S`-integers, and then *base change* it to the
+valuation ring `O` of `F̄` above `w`, reading off the special fibre and the
+Frobenius.  Those two steps share nothing: the first is BLR 1.2/1.4 and
+knows about no place at all, the second is formal base change plus the
+valuative criterion and knows no spreading out.  They are cut apart here,
+along the local ring `𝒪_{F,w} = Localization.AtPrime w.asIdeal`, which is
+the smallest base carrying BOTH fibres — its residue field is
+`w.asIdeal.ResidueField = κ(w)` ON THE NOSE (`Ideal.ResidueField` is by
+definition the residue field of that localization) and its fraction field
+is `F`.
+
+**WHY THE SPECIAL FIBRE FORCES A BASE BELOW `O`, and this is the whole
+reason the cut is where it is.**  A reader will ask why the model is not
+simply taken over `O` itself, with `A'` its closed fibre.  It cannot be:
+the residue field of `O` is `κ(w)ᵃˡᵍ`, not `κ(w)`, and the datum's `A'`
+must live over `κ(w)`.  Descending the closed fibre of an `O`-model from
+`κ(w)ᵃˡᵍ` to `κ(w)` needs the whole of `Γ_{κ(w)}` and the `O`-data supply
+only the single element `σ`, so no such descent is available.  `A'` has to
+come from a model over a base whose residue field is already `κ(w)`, and
+`𝒪_{F,w}` is the canonical one.
+
+**WHAT EACH HALF OWES.**  `exists_finset_localModel_of_mult` owes good
+reduction outside a finite set: an abelian scheme over `Spec 𝒪_{F,w}` with
+real multiplication and the right relative dimension, whose `F̄`-points are
+`Γ_F`-equivariantly the geometric points of `A_x`.  It mentions no place of
+`F̄`, no Frobenius and no `σ`.
+`exists_abelianReductionDatum_of_localModel` owes the transport: base
+change along `𝒪_{F,w} ⟶ O` and along `𝒪_{F,w} ⟶ κ(w)`, the valuative
+criterion `neron`, and the semilinear automorphism `Φ` that
+`isAbelianReductionDatum_of_semilinearModel` above turns into `sp_frob`.
+It mentions no spreading out.
+
+The ring map `𝒪_{F,w} ⟶ O` that the second half runs on is NOT a further
+leaf: it is `exists_ringHom_localAtPrime_of_placeAbove` below, PROVEN, and
+it is handed to that half as a hypothesis (so that proving it here is not
+free-floating code).  Note that its `hρφ` clause — the Frobenius fixes
+`𝒪_{F,w}` pointwise — is exactly the `𝒪_F`-linearity of `φ` that the
+docstring of the leaf below calls out as the reason the conclusion is
+reachable for EVERY admissible base.
+
+Accounting: `1 → 2`, and that is DISCLOSURE rather than regression — what
+was one citation naming two disjoint chapters of BLR is now two statements
+naming one each, with the base-ring bookkeeping between them proven. -/
+
+/-- Every element outside `w` is a unit in `F`; the localization
+`𝒪_{F,w} ⟶ F` below rests on this. -/
+theorem isUnit_algebraMap_primeCompl {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (s : w.asIdeal.primeCompl) :
+    IsUnit (algebraMap (𝓞 F) F s) := by
+  refine isUnit_iff_ne_zero.mpr ?_
+  intro h
+  have hs : (s : 𝓞 F) ≠ 0 := fun h0 => s.2 (h0 ▸ Ideal.zero_mem w.asIdeal)
+  exact hs (FaithfulSMul.algebraMap_injective (𝓞 F) F (by simpa using h))
+
+/-- **The canonical map `𝒪_{F,w} ⟶ F`.**  `𝒪_{F,w}` is a localization of
+`𝓞 F` at a prime, so it embeds in the fraction field `F`. -/
+noncomputable def localAtPrimeToBase {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) : Localization.AtPrime w.asIdeal →+* F :=
+  IsLocalization.lift (M := w.asIdeal.primeCompl) (isUnit_algebraMap_primeCompl w)
+
+/-- **The canonical map `𝒪_{F,w} ⟶ F̄`.**  This is the ring map whose `Spec`
+is the base point at which the model's geometric points are read. -/
+noncomputable def localAtPrimeToAlgClos {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    Localization.AtPrime w.asIdeal →+* AlgebraicClosure F :=
+  (algebraMap F (AlgebraicClosure F)).comp (localAtPrimeToBase w)
+
+theorem localAtPrimeToAlgClos_algebraMap {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (a : 𝓞 F) :
+    localAtPrimeToAlgClos w (algebraMap (𝓞 F) (Localization.AtPrime w.asIdeal) a)
+      = algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) := by
+  simp [localAtPrimeToAlgClos, localAtPrimeToBase, IsLocalization.lift_eq]
+
+/-- `Γ_F` fixes the image of `𝒪_{F,w}` in `F̄` pointwise — it lies in `F`. -/
+theorem gal_localAtPrimeToAlgClos {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (σ : Field.absoluteGaloisGroup F)
+    (z : Localization.AtPrime w.asIdeal) :
+    (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (localAtPrimeToAlgClos w z)
+      = localAtPrimeToAlgClos w z :=
+  (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).commutes _
+
+/-- **`Spec F̄ ⟶ Spec 𝒪_{F,w}`**, the base point at which a model over
+`𝒪_{F,w}` has its geometric generic fibre. -/
+noncomputable def specLocalAtPrime {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    Spec (CommRingCat.of (AlgebraicClosure F)) ⟶
+      Spec (CommRingCat.of (Localization.AtPrime w.asIdeal)) :=
+  Spec.map (CommRingCat.ofHom (localAtPrimeToAlgClos w))
+
+/-- That base point is `Γ_F`-invariant, which is what makes the Galois
+action on the model's `F̄`-points an action on ONE relative point set. -/
+theorem specGal_comp_specLocalAtPrime {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (σ : Field.absoluteGaloisGroup F) :
+    specGal σ ≫ specLocalAtPrime w = specLocalAtPrime w := by
+  rw [specGal, specLocalAtPrime, ← Spec.map_comp]
+  congr 1
+  ext z
+  exact gal_localAtPrimeToAlgClos w σ z
+
+/-- **THE BASE RING MAP `𝒪_{F,w} ⟶ O`** (PROVEN), for `O` a place of `F̄`
+above `w` as pinned by the five hypotheses of `IsAbelianReductionDatum`.
+
+This is the only thing the two halves of the cut have to agree about, and
+it is elementary commutative algebra: `hlift` and `ι_injective` give a ring
+map `𝓞 F ⟶ O` (the preimage of `algebraMap a` is unique, and uniqueness is
+what makes it additive and multiplicative), `hlift` and `ker_π` make every
+element outside `w` a unit in `O`, and `IsLocalization.lift` extends it.
+
+The three conclusions are what the transport half consumes:
+
+* `hρι` — the composite `𝒪_{F,w} ⟶ O ⟶ F̄` is the canonical one, so the
+  model's geometric generic fibre is read at the right point;
+* `hρφ` — **the Frobenius `φ` fixes `𝒪_{F,w}` pointwise**, which is the
+  `𝒪_F`-linearity that lets `φ` act on a base change of a model defined
+  over `𝒪_{F,w}`.  It is proven from `hgalι` alone: the specific element
+  of `Γ_F` that `hgalι` names fixes `F`, hence fixes `localAtPrimeToBase`;
+* `hρπ` — `ρ` is a LOCAL homomorphism, so it induces a map of residue
+  fields and the special fibre of a model over `𝒪_{F,w}` base-changes to
+  the special fibre over `O`.
+
+`hπsurj` and `hval` are not needed here and are not taken. -/
+theorem exists_ringHom_localAtPrime_of_placeAbove {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F))
+    (O : CommRingCat.{u}) (ι : O ⟶ CommRingCat.of (AlgebraicClosure F))
+    (π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField)) (φ : O ≅ O)
+    (hιinj : Function.Injective ι.hom)
+    (hker : ∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z)
+    (hlift : ∀ a : 𝓞 F, ∃ z : O,
+      ι.hom z = algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∧
+        (π.hom z = 0 ↔ a ∈ w.asIdeal))
+    (hgalι : ∀ z : O, ι.hom (φ.hom.hom z)
+      = (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+            (Field.AbsoluteGaloisGroup.adicArithFrob w) :
+          AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (ι.hom z)) :
+    ∃ ρ : CommRingCat.of (Localization.AtPrime w.asIdeal) ⟶ O,
+      (∀ z, ι.hom (ρ.hom z) = localAtPrimeToAlgClos w z) ∧
+      (∀ z, φ.hom.hom (ρ.hom z) = ρ.hom z) ∧
+      (∀ z, π.hom (ρ.hom z) = 0 ↔ ¬ IsUnit z) := by
+  classical
+  choose g hg1 hg2 using hlift
+  have hone : g 1 = 1 := by apply hιinj; rw [hg1]; simp
+  have hzero : g 0 = 0 := by apply hιinj; rw [hg1]; simp
+  have hadd : ∀ a b, g (a + b) = g a + g b := fun a b => hιinj (by simp [hg1])
+  have hmul : ∀ a b, g (a * b) = g a * g b := fun a b => hιinj (by simp [hg1])
+  let G : 𝓞 F →+* O :=
+    { toFun := g, map_one' := hone, map_zero' := hzero,
+      map_add' := hadd, map_mul' := hmul }
+  have hGι : ∀ a : 𝓞 F, ι.hom (G a)
+      = algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) := hg1
+  letI : Algebra (𝓞 F) O := G.toAlgebra
+  have halg : (algebraMap (𝓞 F) O) = G := rfl
+  have hunits : ∀ s : w.asIdeal.primeCompl, IsUnit (algebraMap (𝓞 F) O s) := by
+    intro s
+    rw [halg]
+    have hne : ¬ (π.hom (G s) = 0) := fun h => s.2 ((hg2 s).mp h)
+    exact not_not.mp fun hu => hne ((hker (G s)).mpr hu)
+  set ρ₀ : Localization.AtPrime w.asIdeal →+* O :=
+    IsLocalization.lift (M := w.asIdeal.primeCompl) hunits with hρ₀
+  have h1 : ∀ z, ι.hom (ρ₀ z) = localAtPrimeToAlgClos w z := by
+    intro z
+    show (ι.hom.comp ρ₀) z = localAtPrimeToAlgClos w z
+    congr 1
+    refine IsLocalization.ringHom_ext w.asIdeal.primeCompl ?_
+    ext a
+    simp only [RingHom.comp_apply, hρ₀, IsLocalization.lift_eq, halg]
+    rw [hGι a, localAtPrimeToAlgClos_algebraMap w a]
+  have h2 : ∀ z, φ.hom.hom (ρ₀ z) = ρ₀ z := by
+    intro z
+    apply hιinj
+    rw [hgalι, h1, localAtPrimeToAlgClos]
+    exact (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+      (Field.AbsoluteGaloisGroup.adicArithFrob w) :
+        AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).commutes _
+  have hlift_alg : ∀ y : 𝓞 F,
+      ρ₀ (algebraMap (𝓞 F) (Localization.AtPrime w.asIdeal) y) = algebraMap (𝓞 F) O y := by
+    intro y; rw [hρ₀]; exact IsLocalization.lift_eq _ _
+  have hg2' : ∀ a : 𝓞 F, π.hom (algebraMap (𝓞 F) O a) = 0 ↔ a ∈ w.asIdeal := hg2
+  have h3 : ∀ z, π.hom (ρ₀ z) = 0 ↔ ¬ IsUnit z := by
+    intro z
+    obtain ⟨⟨a, s⟩, rfl⟩ := IsLocalization.mk'_surjective w.asIdeal.primeCompl z
+    have key : ρ₀ (IsLocalization.mk' (Localization.AtPrime w.asIdeal) a s)
+        * algebraMap (𝓞 F) O (s : 𝓞 F) = algebraMap (𝓞 F) O a := by
+      calc ρ₀ (IsLocalization.mk' (Localization.AtPrime w.asIdeal) a s)
+              * algebraMap (𝓞 F) O (s : 𝓞 F)
+          = ρ₀ (IsLocalization.mk' (Localization.AtPrime w.asIdeal) a s)
+              * ρ₀ (algebraMap (𝓞 F) (Localization.AtPrime w.asIdeal) (s : 𝓞 F)) := by
+            rw [hlift_alg]
+        _ = ρ₀ (IsLocalization.mk' (Localization.AtPrime w.asIdeal) a s
+              * algebraMap (𝓞 F) (Localization.AtPrime w.asIdeal) (s : 𝓞 F)) :=
+            (map_mul ρ₀ _ _).symm
+        _ = ρ₀ (algebraMap (𝓞 F) (Localization.AtPrime w.asIdeal) a) := by
+            rw [IsLocalization.mk'_spec]
+        _ = algebraMap (𝓞 F) O a := hlift_alg a
+    have hs0 : π.hom (algebraMap (𝓞 F) O (s : 𝓞 F)) ≠ 0 := fun h => s.2 ((hg2' _).mp h)
+    have hmulπ : π.hom (ρ₀ (IsLocalization.mk' (Localization.AtPrime w.asIdeal) a s))
+        * π.hom (algebraMap (𝓞 F) O (s : 𝓞 F)) = π.hom (algebraMap (𝓞 F) O a) := by
+      rw [← map_mul, key]
+    have hmem : ((a : 𝓞 F) ∈ w.asIdeal.primeCompl) ↔ a ∉ w.asIdeal := Iff.rfl
+    rw [IsLocalization.AtPrime.isUnit_mk'_iff, hmem, not_not, ← hg2' a]
+    constructor
+    · intro h; rw [← hmulπ, h, zero_mul]
+    · intro h; exact (mul_eq_zero.mp (hmulπ.trans h)).resolve_right hs0
+  exact ⟨CommRingCat.ofHom ρ₀, h1, h2, h3⟩
+
+/-- **A MODEL OF THE FIBRE `A_x` OVER THE LOCAL RING OF `F` AT `w`** — the
+object the two halves of the cut hand between them, i.e. the assertion that
+`A_x` HAS GOOD REDUCTION AT `w`, with its real multiplication.
+
+The identification `gen` is at the level of `F̄`-POINTS, not of schemes,
+and that is deliberate: everything in this development is
+functor-of-points, `GeomFibrePt f x` is a relative point set and no fibre
+product of `f` is ever formed.  What makes the point-level identification
+as strong as an isomorphism of generic fibres is `gen_gal`, which says it
+intertwines the two `Γ_F`-actions — both of which are precomposition with
+`specGal σ`, legitimately, since the base point `specLocalAtPrime w` is
+`Γ_F`-invariant (`specGal_comp_specLocalAtPrime`).
+
+`dim` is carried because the datum the transport half must produce carries
+`SmoothOfRelativeDimension (Module.finrank ℚ D) f'` for the SPECIAL fibre,
+and relative dimension is stable under base change; there is nowhere else
+for it to come from, since `hdim` bounds the relative dimension of `f` and
+`A'` is not a fibre of `f`. -/
+structure IsLocalModelOf
+    {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
+    {D : Type u} [Field D] [NumberField D] (m : Mult ab (𝓞 D))
+    {F : Type u} [Field F] [NumberField F] (x : Spec (CommRingCat.of F) ⟶ S)
+    (w : HeightOneSpectrum (𝓞 F))
+    {𝒳 : Scheme.{u}}
+    {fw : 𝒳 ⟶ Spec (CommRingCat.of (Localization.AtPrime w.asIdeal))}
+    (abW : AbelianSchemeStruct fw) (mW : Mult abW (𝓞 D)) where
+  /-- the model has the relative dimension `[D : ℚ]` -/
+  dim : SmoothOfRelativeDimension (Module.finrank ℚ D) fw
+  /-- the `F̄`-points of the model are the geometric points of the fibre -/
+  gen : GeomFibrePt f x ≃ RelPoint fw (specLocalAtPrime w)
+  /-- the identification is additive -/
+  gen_add : ∀ y y' : GeomFibrePt f x, gen (ab.add y y') = abW.add (gen y) (gen y')
+  /-- the identification respects the real multiplication -/
+  gen_act : ∀ (c : 𝓞 D) (y : GeomFibrePt f x), gen (m.act c y) = mW.act c (gen y)
+  /-- the identification is `Γ_F`-equivariant: on both sides the action is
+  precomposition with `specGal σ` -/
+  gen_gal : ∀ (σ : Field.absoluteGaloisGroup F) (y : GeomFibrePt f x),
+    (gen (ab.galSMul x σ y)).1 = specGal σ ≫ (gen y).1
+
+/-- **STEP 1: GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES** (sorry leaf,
+cut 2026-08-01 out of `exists_finset_abelianReductionDatum_of_placeAbove`
+below — SPREADING OUT; BLR *Néron Models* 1.2/1.4, Mumford *AV* §6).
+
+`A_x` is an abelian variety over the number field `F` with `𝒪_D` acting and
+`dim A_x = [D : ℚ]`; outside a finite set of places it extends to an
+abelian scheme over the local ring `𝒪_{F,w}`, compatibly with the group
+law, the `𝒪_D`-action and the `Γ_F`-action on `F̄`-points.
+
+This is the whole of step 1 of the route recorded on
+`exists_finset_abelianReductionDatum_of_mult` below, and NOTHING else: no
+place of `F̄`, no valuation ring `O`, no Frobenius, no `σ`, no special
+fibre.  The classical argument is the standard one — `A_x` is of finite
+type over `F`, so it, its group law and its `𝒪_D`-action descend to a
+finitely generated `𝓞 F`-subalgebra, i.e. spread out to a group scheme over
+`Spec 𝓞_F[1/N]`; `bad` is the set of places dividing `N` together with the
+finitely many places of bad reduction, and at every other `w` the model is
+proper and smooth with geometrically connected fibres.
+
+**FAITHFULNESS.**  The statement is an EXISTENCE claim (the model is
+quantified existentially and `bad` is produced, not received), so it cannot
+be weakened by junk data and the only way it could fail is if no such model
+existed at all — which is the theorem being cited.  Note `bad` is chosen
+before any place is looked at, exactly as the parent needs: the
+spreading-out happens once, over `𝓞_F[1/N]`, and knows about no place.
+
+**WHAT A PROVER MAY NOT DO.**  The `gen_gal` clause is not decoration and
+may not be dropped: without it the identification is a bijection of point
+sets carrying no information about the Galois action, and the transport
+half cannot produce `sp_frob` — which is the ONE field of
+`IsAbelianReductionDatum` that a wrong choice of data fails (see the
+CORRECTION paragraph on `exists_finset_abelianReductionDatum_of_mult`
+below). -/
+theorem exists_finset_localModel_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (𝓞 D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f) :
+    ∃ bad : Finset (HeightOneSpectrum (𝓞 F)),
+      ∀ w ∉ bad,
+        ∃ (𝒳 : Scheme.{u})
+          (fw : 𝒳 ⟶ Spec (CommRingCat.of (Localization.AtPrime w.asIdeal)))
+          (abW : AbelianSchemeStruct fw) (mW : Mult abW (𝓞 D)),
+          Nonempty (IsLocalModelOf ab m x w abW mW) :=
+  sorry
+
+/-- **STEP 2: FROM THE MODEL OVER `𝒪_{F,w}` TO THE REDUCTION DATUM** (sorry
+leaf, cut 2026-08-01 out of
+`exists_finset_abelianReductionDatum_of_placeAbove` below — BASE CHANGE,
+the valuative criterion, and the Frobenius; BLR *Néron Models* 7.4).
+
+Given a model of `A_x` over `𝒪_{F,w}` and a place `O` of `F̄` above `w`
+(pinned by the five clauses that are verbatim the first five fields of
+`IsAbelianReductionDatum`, plus the two that make `φ` the arithmetic
+Frobenius), produce the reduction datum.  Nothing here is about spreading
+out; everything is transport.
+
+**WHAT A PROVER SHOULD BUILD, and it is all base change.**  `ρ` — supplied,
+PROVEN, by `exists_ringHom_localAtPrime_of_placeAbove` above — makes `O`
+and `κ(w)` both `𝒪_{F,w}`-algebras.  Then
+
+* `A'` is the base change of `𝒳` along `𝒪_{F,w} ⟶ κ(w)` and `𝒜` its base
+  change along `ρ`, with `abO`, `mO`, `ab'`, `m'` produced by
+  `AbelianSchemeStruct.baseChangeOfIsPullback` and
+  `Mult.baseChangeOfIsPullback`, and `RelPoint.baseChangeEquiv` giving
+  `gen` and `sp` out of `M.gen`;
+* `neron` is the valuative criterion of properness for `abO.proper` over
+  the valuation ring `O` — `hval` and `hιinj` say exactly that `ι(O)` is a
+  valuation subring of `F̄` with fraction field `F̄`;
+* `Φ` is the automorphism of the base change induced by `φ`, which is
+  legitimate precisely because `hρφ` says `φ` fixes `𝒪_{F,w}`; feed it and
+  the equivariance of `gen`/`sp` to
+  `isAbelianReductionDatum_of_semilinearModel` above, which then constructs
+  `frobPt` and `sp_frob` and asks nothing further about the Frobenius.
+
+**ONE TRAP, and it is invisible from the statement.**  `hρπ` makes `ρ`
+local, so `π ∘ ρ` kills the maximal ideal and induces an embedding
+`κ(w) ↪ κ(w)ᵃˡᵍ`; but NOTHING in the hypotheses makes that embedding the
+canonical `algebraMap`.  What is forced is only that its image is the
+subfield `𝔽_{N w}` — combine `hρφ` with `hgalπ` and `hσ` to get
+`π(ρ a)^{N w} = π(ρ a)` for every `a` — so it is the canonical embedding
+composed with an automorphism of `κ(w)`.  Since `A'` may be chosen, this
+costs only a twist: either compose `sp` with `RelPoint.pre (Spec.map γ)`
+for an automorphism `γ` of `κ(w)ᵃˡᵍ` extending it, or take `A'` to be the
+base change along the twisted map.  The leaf is TRUE either way; a prover
+who assumes the embedding is canonical will simply be unable to close `sp`.
+
+**FAITHFULNESS.**  This half quantifies UNIVERSALLY over the base data
+`(O, ι, π, φ)` exactly as the leaf below did, with the same seven clauses,
+so the FAITHFULNESS AUDIT recorded there transfers VERBATIM — the clauses
+pin `ι(O)` to be a place of `F̄` above `w` and `φ` to be the arithmetic
+Frobenius on it, and junk data is excluded.  It quantifies universally over
+`M` as well, which is new: a junk `IsLocalModelOf` is excluded because its
+five fields already say that `abW` is an abelian scheme over `𝒪_{F,w}` of
+relative dimension `[D : ℚ]` whose `F̄`-points are the geometric points of
+`A_x` with their group law, `𝒪_D`-action and `Γ_F`-action — which is all
+the transport consumes.  The four `ρ`-clauses are discharged at the call
+site and so constrain nothing. -/
+theorem exists_abelianReductionDatum_of_localModel
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    {m : Mult ab (𝓞 D)}
+    {F : Type u} [Field F] [NumberField F]
+    {x : Spec (CommRingCat.of F) ⟶ S}
+    {w : HeightOneSpectrum (𝓞 F)}
+    {𝒳 : Scheme.{u}}
+    {fw : 𝒳 ⟶ Spec (CommRingCat.of (Localization.AtPrime w.asIdeal))}
+    {abW : AbelianSchemeStruct fw} {mW : Mult abW (𝓞 D)}
+    (M : IsLocalModelOf ab m x w abW mW)
+    (σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField)
+    (hσ : ∀ z : AlgebraicClosure w.asIdeal.ResidueField,
+      (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+          AlgebraicClosure w.asIdeal.ResidueField) z = z ^ Ideal.absNorm w.asIdeal)
+    (O : CommRingCat.{u}) (ι : O ⟶ CommRingCat.of (AlgebraicClosure F))
+    (π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField)) (φ : O ≅ O)
+    (hιinj : Function.Injective ι.hom)
+    (hπsurj : Function.Surjective π.hom)
+    (hker : ∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z)
+    (hval : ∀ z : AlgebraicClosure F, z ≠ 0 →
+      (∃ u : O, ι.hom u = z) ∨ (∃ u : O, ι.hom u = z⁻¹))
+    (hlift : ∀ a : 𝓞 F, ∃ z : O,
+      ι.hom z = algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∧
+        (π.hom z = 0 ↔ a ∈ w.asIdeal))
+    (hgalι : ∀ z : O, ι.hom (φ.hom.hom z)
+      = (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+            (Field.AbsoluteGaloisGroup.adicArithFrob w) :
+          AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (ι.hom z))
+    (hgalπ : ∀ z : O, π.hom (φ.hom.hom z)
+      = (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+            AlgebraicClosure w.asIdeal.ResidueField) (π.hom z))
+    (ρ : CommRingCat.of (Localization.AtPrime w.asIdeal) ⟶ O)
+    (hρι : ∀ z, ι.hom (ρ.hom z) = localAtPrimeToAlgClos w z)
+    (hρφ : ∀ z, φ.hom.hom (ρ.hom z) = ρ.hom z)
+    (hρπ : ∀ z, π.hom (ρ.hom z) = 0 ↔ ¬ IsUnit z) :
+    ∃ (A' : Scheme.{u}) (f' : A' ⟶ Spec (CommRingCat.of w.asIdeal.ResidueField))
+      (ab' : AbelianSchemeStruct f') (m' : Mult ab' (𝓞 D))
+      (𝒜 : Scheme.{u}) (fO : 𝒜 ⟶ Spec O) (abO : AbelianSchemeStruct fO)
+      (mO : Mult abO (𝓞 D))
+      (_ : IsAbelianReductionDatum ab m x w ab' m' σ O ι π abO mO),
+      SmoothOfRelativeDimension (Module.finrank ℚ D) f' :=
+  sorry
+
 /-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES, OVER A GIVEN PLACE OF
-`F̄`** (sorry leaf, cut 2026-07-30 as the GEOMETRIC half of
-`exists_finset_abelianReductionDatum_of_mult` below — SPREADING OUT; BLR
-*Néron Models* 1.2/1.4 and 7.4, Mumford *AV* §6).
+`F̄`** (**PROVEN 2026-08-01** by assembly over the two disjoint leaves
+immediately above — `exists_finset_localModel_of_mult` (step 1: spreading
+out, BLR 1.2/1.4) and `exists_abelianReductionDatum_of_localModel` (step 2:
+base change, the valuative criterion and the Frobenius, BLR 7.4) — together
+with the PROVEN base ring map `exists_ringHom_localAtPrime_of_placeAbove`.
+It was a single sorry leaf from 2026-07-30 until then.  See the subsection
+header above for why the cut is where it is; the docstring below is the one
+it carried and everything it says about the mathematics is unchanged, read
+now as a description of the two halves jointly.
+
+Accounting: `1 → 2`, and the base-ring bookkeeping between the halves is
+proven rather than owed.  The FAITHFULNESS AUDIT below transfers verbatim
+to `exists_abelianReductionDatum_of_localModel`, which quantifies over the
+base data `(O, ι, π, φ)` with exactly the same seven clauses.
+
+The historical text follows.
+
+This is the leaf below with the base HANDED IN rather than constructed: the
 
 This is the leaf below with the base HANDED IN rather than constructed: the
 valuation ring `O` of `F̄` above `w`, its embedding `ι`, its residue map
@@ -19573,8 +19981,14 @@ theorem exists_finset_abelianReductionDatum_of_placeAbove
           (𝒜 : Scheme.{u}) (fO : 𝒜 ⟶ Spec O) (abO : AbelianSchemeStruct fO)
           (mO : Mult abO (𝓞 D))
           (_ : IsAbelianReductionDatum ab m x w ab' m' σ O ι π abO mO),
-          SmoothOfRelativeDimension (Module.finrank ℚ D) f' :=
-  sorry
+          SmoothOfRelativeDimension (Module.finrank ℚ D) f' := by
+  obtain ⟨bad, hbad⟩ := exists_finset_localModel_of_mult m x hdim
+  refine ⟨bad, fun w hw σ hσ O ι π φ hιinj hπsurj hker hval hlift hgalι hgalπ => ?_⟩
+  obtain ⟨𝒳, fw, abW, mW, ⟨M⟩⟩ := hbad w hw
+  obtain ⟨ρ, hρι, hρφ, hρπ⟩ :=
+    exists_ringHom_localAtPrime_of_placeAbove w O ι π φ hιinj hker hlift hgalι
+  exact exists_abelianReductionDatum_of_localModel M σ hσ O ι π φ
+    hιinj hπsurj hker hval hlift hgalι hgalπ ρ hρι hρφ hρπ
 
 /-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES** (**PROVEN 2026-07-30**
 over the two disjoint leaves immediately above —
@@ -19585,6 +19999,16 @@ out and the Néron property, BLR *Néron Models* 1.2/1.4 and 7.4, Mumford *AV*
 §6).  It was a single sorry leaf from 2026-07-27 until then.  Everything the
 docstring below says about the mathematics is unchanged; it now describes
 the two halves jointly.
+
+**UPDATE 2026-08-01**: the second of those two, the model half, is itself
+PROVEN now, over the further pair `exists_finset_localModel_of_mult` (step
+1, spreading out) and `exists_abelianReductionDatum_of_localModel` (step 2,
+base change and the Frobenius) — see the subsection header introducing the
+local ring `𝒪_{F,w}` above.  So the enumeration of three steps below is now
+literally an enumeration of statements: step 1 and step 2 are those two
+leaves, and step 3 is proven
+(`isAbelianReductionDatum_of_semilinearModel` together with
+`exists_frobEquivariant_placeAbove`).
 
 Outside a finite set of places `w` of `F` the fibre `A_x` has a
 Néron-pinned reduction datum at `w`: an abelian scheme over the local
