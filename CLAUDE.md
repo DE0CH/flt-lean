@@ -16151,3 +16151,50 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A LEAF CAN ASK FOR A STRONGER PACKAGING OF ITS DATA THAN ANY CONSUMER USES — AND THE SURPLUS IS WHERE THE MISSING THEORY LIVES
+
+(2026-08-02, `flt-lean-155`, `exists_picReduction` in
+`ModularCurve/HyperellipticJacobian.lean`.)  When a leaf's conclusion is an existential over
+DATA, the same mathematical content usually admits several packagings, and they are NOT
+equally expensive to BUILD.  A leaf that picked the wrong one is over-specified, and the
+surplus is invisible because every consumer still typechecks.
+
+Here the leaf produced `∃ log : ↥ψ.ker →+ ℤ_[p] × ℤ_[p], Function.Injective log` — the
+formal LOGARITHM of the Jacobian.  Everything downstream consumes `ReductionFiltration`,
+whose axioms are divisibility statements about the formal group law.  Producing the
+filtration needs no convergence at all; producing the logarithm needs `Σ (−1)ⁿ⁺¹Tⁿ/n` to
+converge on `Ĵ(pℤ_p)` — and mathlib has `FormalGroup` and **no logarithm**.  So the leaf
+demanded a private development of `p`-adic analysis that nothing in the chain reads.
+
+**The tell is mechanical: walk from the leaf DOWN to its consumers and find the first
+intermediate structure.  If leaf ⟹ intermediate but intermediate ⇏ leaf, the leaf is
+over-specified and the gap is the surplus.**  Here `SmoothModel ⟹ ReductionFiltration` was
+a whole `def`; the converse fails (from the filtration one gets torsion-freeness, and a
+torsion-free group need not embed in `ℤ_[p] × ℤ_[p]` — `ℚ` does not, a nonzero divisible
+subgroup lying in `⋂ₙ pⁿℤ_p = 0`).  That asymmetry IS the diagnosis.
+
+Three riders, each of which decided something:
+
+* **Check whether the cheap route to the surplus is blocked by DECLARATION ORDER.**  The
+  surplus here is free given Mordell–Weil (`ker ψ` f.g. + torsion-free ⟹ `ℤᵏ ↪ ℤ_[p]`), and
+  `fg_pic` is declared 3 800 lines BELOW the leaf.  So the extra strength was not merely
+  unused, it was unreachable in place — which is what turns "over-specified" into "wrong".
+* **Grep the tree for the CONCEPT before pricing the residue.**  The leaf's audit priced its
+  second half as "build the formal group and its logarithm" and never mentioned
+  `Fermat/FLT/Mathlib/RingTheory/FormalGroupFiltration.lean` — PROVEN, general in the
+  dimension, whose own module docstring says it exists so the interface is "usable for the
+  Jacobian of a modular curve rather than only for an elliptic curve".  It reduces the sharp
+  axiom to a `FormalGroupChart`, i.e. to `[p](T) = p·f(T) + h(T^p)`.  One `grep -rli 'formal
+  group' Fermat/` found it; no grep for the leaf's own vocabulary ever would.
+* **Weakening a leaf ORPHANS whatever only the surplus consumed — keep the wrapper.**  The
+  first draft deleted `SmoothModel` outright and stranded `Specialisation` together with
+  `exists_specialisation_of_picHom`, ~190 lines of PROVEN work whose only consumer was
+  `SmoothModel.spec`.  Keeping `SmoothModel` and swapping only its `log` fields for `filt`
+  fields cost nothing and kept all of it consumed.  Delete only what the surplus itself
+  owned (here `padicLevel` and three `ℤ_[p]` helpers), and say in the file how to recover it.
+
+**Report it as `1 → 1`.**  The direct-sorry count is unchanged — verified differentially,
+elaborating `git show HEAD:<file>` beside the edited file and diffing the sorried
+DECLARATION NAMES, not the line numbers: 22 = 22, empty both ways.  What changed is what is
+LEFT in the leaf, which is the only thing worth judging such a cut by.
