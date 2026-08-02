@@ -24242,3 +24242,47 @@ gap closed here, and a successor needing the deleted block's one non-duplicated 
 (here: the `VariableChange`-level presentation of the CM automorphism, `autMap_diag_mul`
 and the `smul_diag_self` route, where upstream uses only a bare additive endomorphism)
 will rebuild it instead of recovering it.
+## "THE ACTION FACTORS THROUGH `R ⧸ I`" IS STRICTLY WEAKER THAN "IS KILLED BY `Ann I`" — and an audit that closes an axis on the first has not closed it
+(2026-08-01, `flt-lean-274`, on `exactShift_inKerRed_nsmul` in `ModularCurve/X0.lean`.)
+`exists_smul_kerPre_of_squareZero` gives the kernel of `𝒥(R) ⟶ 𝒥(R ⧸ I)` (for `I² = 0`) an
+`R`-module structure, and every docstring around it says — correctly — that "the `R`-action
+factors through `R ⧸ I` because `I² = 0`".  The audit of `exists_formalGroupChart` then closed
+the square-zero axis with:
+> the square-zero deformation cluster applies to each STEP of this tower … but the module
+> structure it produces factors through `R ⧸ 𝔪 ^ k` and is NOT visibly killed by `ℓ` once
+> `k ≥ 2`.
+Every clause is true.  The conclusion does not follow, and the gap is one substitution:
+**what kills the graded piece is not `ℓ ∈ ker φ` but `ℓ · ker φ = 0`.**  For the tower step
+`R ⧸ 𝔪^(k+1) ↠ R ⧸ 𝔪^k` the kernel is `𝔪^k ⧸ 𝔪^(k+1)`, so `ℓ` lies in it only for `k ≤ 1`
+while it ANNIHILATES it for every `k` (`ℓ𝔪^k ⊆ 𝔪^(k+1)`).  The two conditions coincide only
+when `ker φ` is the maximal ideal — which is exactly the case the interface was first written
+for, which is why nobody noticed.
+**And the annihilator clause is NOT derivable from the module axioms** — an `R`-module `M`
+with `r · I = 0` need not have `r M = 0` (`R = ℤ⧸ℓ²`, `I = (ℓ)`, `r = ℓ`, `M = R`) — so it has
+to come from the CONSTRUCTION.  There it is one line: `μ_r (a₁, a₂) = (a₁, a₁ + r(a₂ − a₁))`
+and `a₂ − a₁ ∈ ker φ`, so `μ_r = μ_0` (`sqzScal_ann`).  Adding it as a fifth conjunct of a
+PROVEN theorem cost six lines of its proof, one `_` in the single consumer's `obtain`, and it
+closed the whole upper half of the leaf at every `k ≥ 1` — with no formal group, no `hbase`,
+no `hℓ`, no `hℓ2`.
+**The generalisable check, and it costs one line of algebra:** whenever an interface hands you
+"`M` is a module over `A`, and the action factors through `A ⧸ I`", the useful invariant is
+`Ann_A(I)`, not `I`.  Ask which of the two your application needs; if it is the annihilator,
+the interface is under-exported and the repair is in the construction, not in your proof.  The
+tell is an audit sentence of the form "*X is not visibly killed by r once …*" — "not visibly"
+is the author reporting what the EXPORTED clauses give, and that is a claim about the
+interface, never about the object.
+* **A leaf that is a CONJUNCTION of two bounds is two leaves with two prices, and the cheap
+  one is usually the upper bound.**  `exactShift_inKerRed_nsmul` asserted `ℓ • x ∈ K_(k+1)`
+  AND `ℓ • x ∉ K_(k+2)`.  Its own docstring insisted "BOTH HALVES ARE NEEDED, and the upper
+  one is not decoration" — true, and it is not the same as "both halves cost the same".  The
+  upper half is deformation theory (proven here); the lower half is the `[ℓ]`-series.  Split a
+  two-sided leaf before pricing it.
+* **When you cannot close either half of the residue, do NOT split it — write the REGIMES
+  down instead.**  Here the surviving leaf has two regimes with DISJOINT shopping lists:
+  `k ≥ 2` needs only that the deformation module is FREE (because `𝔪^k ⧸ 𝔪^(k+2)` is
+  square-zero exactly when `2k ≥ k+2`, so the module machinery reaches the two-step extension
+  and the statement becomes `Ann_Z(ℓ) = ℓZ`), and `k = 1` genuinely needs the mod-`ℓ`
+  Frobenius factorisation `ℓ ∣ [ℓ]_n` for `1 ≤ n < ℓ` — which is also the only place `hℓ2` is
+  spent, since the inequality behind it is `1 < (ℓ−1)k`.  Splitting would have raised the count
+  by one and closed nothing; recording the regimes lets the node be dispatched at whichever
+  theory an owner already has, and the split is one `rcases` away.
