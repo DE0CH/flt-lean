@@ -26646,16 +26646,19 @@ half of the search; grep the project too.
   surjectivity half is not needed. `jInvariant_smul` in the same development is
   the *other* half of that bijection and is already proven, so this leaf is
   mathlib-shaped and reusable (the Heegner cluster next door wants it too).
-  **PROVEN 2026-08-01**, over the strictly smaller **LEAF B′**,
-  `exists_smul_eq_of_weightTwelve_eq_zero`: *a nonzero level-one modular form of
-  weight `12` has at most one zero orbit in `ℍ`*. The `j` is gone from the open
-  statement — `E₄³ − cΔ` is a weight-`12` form whose zeros are exactly `{j = c}`,
-  since `Δ` is nowhere zero — so what remains is the valence formula alone, stated
-  in mathlib's vocabulary. The two are EQUIVALENT (`dim M₁₂ = 2`); see that leaf.
 * **LEAF A, `exists_isCMJInvariant_complexEmbedding_eq`**: the analytic
   construction — `ℂ/(ℤ + ℤτ_f)` is an elliptic curve whose endomorphism ring is
   exactly `ℤ[√−n]`, and its `j` is the algebraic number `j(τ_f)`. This is where
   ALL the CM content now sits, and it is the only place `hprim` is consumed.
+  **RECUT 2026-07-31, count unchanged `1 → 1`: LEAF A is now PROVEN over
+  `isCMJInvariant_of_multiplierRing` (LEAF A1)**, which is the uniformisation
+  theorem alone — `ℂ/(ℤ + ℤτ)` is an elliptic curve whose endomorphism ring is
+  the MULTIPLIER RING `{β : βL ⊆ L}` — with no form, no discriminant and no
+  primitivity in its statement. Everything else was discharged: algebraicity of
+  `j(τ_f)` (`exists_complexEmbedding_eq`, over
+  `isIntegral_jInvariant_of_quadratic`), and the identification of the
+  multiplier ring of `ℤ + ℤτ_f` with `ℤ[√−n]`, which is Cox Lemma 7.5 and is
+  `exists_eq_add_mul_of_mul_lattice_mem` — **the sole consumer of `hprim`**.
 
 Everything else is proved here: the dictionary `f ↦ τ_f` is well defined
 (`formPoint`), satisfies the defining quadratic (`formPoint_quadratic`), is the
@@ -27137,6 +27140,199 @@ noncomputable def complexEmbedding : AlgebraicClosure ℚ →ₐ[ℚ] ℂ :=
   haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
   IsAlgClosed.lift
 
+open Polynomial in
+/-- **PROVEN 2026-07-31 — `complexEmbedding` HITS EVERY ALGEBRAIC NUMBER**, so
+the `∃ x : ℚ̄` half of LEAF A below is elementary and is not part of the CM
+theory.
+
+Any `ℚ`-embedding of `ℚ̄` in `ℂ` has as its image *the* field of algebraic
+numbers, because the image is an algebraically closed subfield containing `ℚ`.
+The proof does not go through that description, which would need the image as a
+field: it is the one-line root argument. Let `p ∈ ℚ[X]` be a nonzero polynomial
+killing `z`. Then `p` SPLITS over `ℚ̄`, so
+`Polynomial.Splits.mem_range_of_isRoot` says every root of `p` in any extension
+of `ℚ̄` — in particular `z ∈ ℂ` — is in the range of the map. -/
+theorem exists_complexEmbedding_eq {z : ℂ} (hz : IsAlgebraic ℚ z) :
+    ∃ x : AlgebraicClosure ℚ, complexEmbedding x = z := by
+  obtain ⟨p, hp0, hpz⟩ := hz
+  set q : Polynomial (AlgebraicClosure ℚ) :=
+    p.map (algebraMap ℚ (AlgebraicClosure ℚ)) with hq
+  have hq0 : q ≠ 0 := by
+    simpa [hq] using (Polynomial.map_ne_zero_iff
+      (algebraMap ℚ (AlgebraicClosure ℚ)).injective).2 hp0
+  have hsp : q.Splits := IsAlgClosed.splits q
+  have hmap : q.map (complexEmbedding : AlgebraicClosure ℚ →+* ℂ)
+      = p.map (algebraMap ℚ ℂ) := by
+    rw [hq, Polynomial.map_map]
+    congr 1
+    ext r
+    simp [complexEmbedding]
+  have hzroot : (q.map (complexEmbedding : AlgebraicClosure ℚ →+* ℂ)).IsRoot z := by
+    rw [hmap]
+    simpa [Polynomial.IsRoot, Polynomial.eval_map, ← Polynomial.aeval_def] using hpz
+  obtain ⟨r, hr⟩ := hsp.mem_range_of_isRoot hq0 hzroot
+  exact ⟨r, hr⟩
+
+/-- `1` and a NON-REAL `τ` are linearly independent over `ℤ`: comparing
+imaginary parts kills `B`, and then real parts kill `A`. This is the only place
+`τ ∉ ℝ` is used in `exists_eq_add_mul_of_mul_lattice_mem` below, and it is what
+makes `ℤ + ℤτ` a lattice rather than a subgroup of `ℝ`. -/
+theorem int_eq_zero_of_add_mul_eq_zero {A B : ℤ} {τ : ℂ} (hτ : τ.im ≠ 0)
+    (h : (A : ℂ) + (B : ℂ) * τ = 0) : A = 0 ∧ B = 0 := by
+  have him : (B : ℝ) * τ.im = 0 := by
+    have := congrArg Complex.im h
+    simpa using this
+  have hB : (B : ℝ) = 0 := by
+    rcases mul_eq_zero.1 him with h1 | h1
+    · exact h1
+    · exact absurd h1 hτ
+  have hB' : B = 0 := by exact_mod_cast hB
+  refine ⟨?_, hB'⟩
+  have hre : (A : ℝ) = 0 := by
+    have := congrArg Complex.re h
+    simp [hB'] at this
+    exact_mod_cast this
+  exact_mod_cast hre
+
+/-- **COX, *Primes of the Form x² + ny²*, LEMMA 7.5 — THE MULTIPLIER RING OF
+`ℤ + ℤτ`, PROVEN 2026-07-31.** If `τ` is a non-real root of the PRIMITIVE
+integral quadratic `a X² + b X + c`, then every `β` with
+`β·(ℤ + ℤτ) ⊆ ℤ + ℤτ` lies in `ℤ + ℤ·(aτ)`.
+
+**THE PROOF, and it is three lines of arithmetic.** `1 ∈ L`, so `β ∈ L` already:
+write `β = m + kτ`. Then `βτ = mτ + kτ²`, and `aτ² = −bτ − c`, so
+`a·(βτ) = −kc + (am − kb)τ`. Comparing with `βτ = m' + k'τ` and using that
+`1, τ` are `ℤ`-independent gives `am' = −kc` and `ak' = am − kb`, i.e.
+`a ∣ kb` and `a ∣ kc`; and `a ∣ ka` trivially. Bézout for
+`gcd(b, c)` turns the first two into `a ∣ k·gcd(b, c)`, and primitivity —
+`gcd(a, gcd(b, c)) = 1` — then gives `a ∣ k`. So `β = m + (k/a)·(aτ)`.
+
+**THIS IS WHERE `hprim` IS SPENT, AND IT IS THE WHOLE OF ITS ROLE.** Without it
+the conclusion is false in exactly the way the target's old docstring recorded:
+for `⟨2, 0, 2⟩` (`τ = i`, `gcd = 2`) the multiplier ring is `ℤ[i]`, strictly
+bigger than `ℤ + ℤ(2i)`. Here `k = 1`, `a = 2`, `b = 0`, `c = 2`, and indeed
+`a ∣ kb` and `a ∣ kc` hold while `a ∤ k`; it is the Bézout step that fails.
+
+Note the conclusion RETAINS the `m` it was given rather than existentially
+requantifying it — the `ℤ`-independence of `1, τ` makes `m` unique, and keeping
+it lets the caller read off the coefficient of `1` without a second appeal. -/
+theorem exists_eq_add_mul_of_mul_lattice_mem {a b c : ℤ}
+    (hprim : Int.gcd a (Int.gcd b c) = 1) {τ : ℂ} (hτ : τ.im ≠ 0)
+    (hquad : (a : ℂ) * τ ^ 2 + (b : ℂ) * τ + (c : ℂ) = 0)
+    {β : ℂ} {m k : ℤ} (hβ : β = (m : ℂ) + (k : ℂ) * τ)
+    (hβτ : ∃ m' k' : ℤ, β * τ = (m' : ℂ) + (k' : ℂ) * τ) :
+    ∃ t : ℤ, β = (m : ℂ) + (t : ℂ) * ((a : ℂ) * τ) := by
+  obtain ⟨m', k', hmk'⟩ := hβτ
+  have hkey : ((a * m' + k * c : ℤ) : ℂ) + ((a * k' - a * m + k * b : ℤ) : ℂ) * τ = 0 := by
+    push_cast
+    linear_combination (-(a : ℂ)) * hmk' + (k : ℂ) * hquad + (a : ℂ) * τ * hβ
+  obtain ⟨h1, h2⟩ := int_eq_zero_of_add_mul_eq_zero hτ hkey
+  have hdvdc : a ∣ k * c := ⟨-m', by linear_combination h1⟩
+  have hdvdb : a ∣ k * b := ⟨m - k', by linear_combination h2⟩
+  have hgcd : a ∣ k * (Int.gcd b c : ℤ) := by
+    rw [Int.gcd_eq_gcd_ab b c]
+    have hexp : k * (b * Int.gcdA b c + c * Int.gcdB b c)
+        = (k * b) * Int.gcdA b c + (k * c) * Int.gcdB b c := by ring
+    rw [hexp]
+    exact dvd_add (hdvdb.mul_right _) (hdvdc.mul_right _)
+  have hcop : IsCoprime a ((Int.gcd b c : ℕ) : ℤ) :=
+    Int.isCoprime_iff_gcd_eq_one.2 (by simpa using hprim)
+  obtain ⟨t, ht⟩ := hcop.dvd_of_dvd_mul_right hgcd
+  exact ⟨t, by rw [hβ, ht]; push_cast; ring⟩
+
+/-- **LEAF A1 (cut 2026-07-31, the residue of LEAF A) — THE ANALYTIC
+UNIFORMISATION, AND NOTHING ELSE.** If the lattice `L = ℤ + ℤτ ⊂ ℂ` has
+multiplier ring exactly `ℤ[ν]` for some `ν` with `ν² = −n`, then `j(τ)` — read
+back into `ℚ̄` along any `ℚ`-embedding — is a CM `j`-invariant for the order
+`ℤ[√−n]`.
+
+**THE ARGUMENT** (Silverman *ATAEC* VI.3 and VI.5.1.1; Cox §10, Theorem 10.14).
+`τ ∉ ℝ`, so `L` is a lattice and the complex torus `ℂ/L` is, via `(℘, ℘')`, an
+elliptic curve `E_L` over `ℂ` with `j(E_L) = j(τ)`.  Every holomorphic
+endomorphism of `ℂ/L` is `z ↦ βz` for a `β` with `βL ⊆ L`, and this identifies
+`End(E_L)` with the MULTIPLIER RING `{β : βL ⊆ L}` as a ring; by `hgen` together
+with `hνmem`/`hνmul` that ring is `ℤ[ν]`.  Finally `j(τ)` is algebraic (that is
+what `hx` presupposes, and the caller supplies it), so `E_L` has a model over
+`ℚ̄` and its endomorphism ring does not shrink: endomorphisms of an elliptic
+curve over `ℚ̄` are already defined over `ℚ̄`, so `End_{ℚ̄} = End_ℂ`.  Transport
+`ν` to `ψ ∈ End W`; `ν² = −n` gives `ψ² = [−n]`, and `ℤ[ν] = ` the whole
+multiplier ring gives `Subring.closure {ψ} = ⊤`.
+
+**WHAT IS DELIBERATELY NOT HERE.** No binary quadratic form, no discriminant, no
+primitivity and no `hprim`: all of that is consumed by
+`exists_eq_add_mul_of_mul_lattice_mem` (Cox 7.5) in the caller, which is what
+produces `hgen`.  This statement is uniform in `n` — it needs no positivity,
+because the hypotheses do all the work.  At `n ≤ 0` it is still true and still
+says something: `ν` is then real, `hgen` forces the multiplier ring to be `ℤ[ν]`
+anyway, and the conclusion holds with the corresponding `ψ`.
+
+**FAITHFULNESS.** `hgen` is load-bearing and the statement is FALSE without it,
+by the same witness that refutes the parent without `hprim`: take `n = 4`,
+`τ = i`, `ν = 2i`.  Then `ν² = −4`, `ν = 0 + 2·τ ∈ L` and `ν·τ = −2 + 0·τ ∈ L`,
+so `hνsq`, `hνmem` and `hνmul` all hold — but the multiplier ring of `ℤ + ℤi` is
+`ℤ[i]`, NOT `ℤ[2i]`, so no `ψ` with `ψ² = [−4]` generates `End`, and the
+conclusion fails.  `hgen` is exactly the clause that excludes it.
+
+**THE CHECK THAT WOULD REFUTE IT**: a `τ`, `ν` satisfying all four hypotheses for
+which `ℂ/(ℤ + ℤτ)` has endomorphism ring strictly larger than `ℤ[ν]` — i.e. a
+failure of "every holomorphic endomorphism of a complex torus is multiplication
+by a scalar", which is Liouville.
+
+**MACHINERY SURVEY (2026-07-31), AND THE HALF OF IT THAT IS ALREADY DONE.** The
+obvious verdict — "this pin has no lattices in `ℂ`, no `℘`, no uniformisation,
+so a prover takes on the analytic theory" — was written here first and is FALSE
+on two of its three counts. `Mathlib/Analysis/SpecialFunctions/Elliptic/`
+`Weierstrass.lean` (1080 lines) carries `PeriodPair`, `PeriodPair.lattice`
+(`= Submodule.span ℤ {ω₁, ω₂}`), `latticeBasis`, `℘[L]`, `℘'[L]`, their
+periodicity, meromorphy and pole orders, the lattice Eisenstein series `G n`,
+`g₂ := 60 G₄`, `g₃ := 140 G₆`, and — as its LAST lemma — the differential
+equation `PeriodPair.derivWeierstrassP_sq`. That is the whole
+lattice-`→`-cubic direction. **VERIFIED IN SCOPE HERE WITH NO NEW IMPORT**:
+`MazurTorsion.lean` already reaches that module through
+`KnownIn1980s/EllipticCurves/TateCurveConstruction.lean`, and
+`#check @PeriodPair.derivWeierstrassP_sq` from a scratch importing this file
+returns the statement. (The same correction was reached independently on
+2026-07-30 and is recorded in `X0.lean`'s cluster docstring; this leaf did not
+know it.)
+
+Note also that this leaf does NOT need the uniformisation CONVERSE — that every
+curve over `ℂ` is a torus, equivalently surjectivity of `j` on lattices — which
+is the part `X0.lean`'s survey correctly reports as absent. It needs only the
+FORWARD direction, at the one lattice it is handed.
+
+So what a prover actually owes is four named gaps on top of an existing `℘`:
+
+1. **NONDEGENERACY**, `g₂³ − 27g₃² ≠ 0`, so the cubic is an elliptic curve.
+   Classically this is that `℘` takes each of the three half-period values
+   exactly twice, so `4x³ − g₂x − g₃` has distinct roots.
+2. **THE NORMALISATION IDENTITY** `j(E_L) = jInvariant τ` for `L = ℤ + ℤτ`,
+   i.e. `g₂ ↔ ModularForm.E₄` and `g₂³ − 27g₃² ↔ ModularForm.discriminant` up
+   to the classical constants. Mathlib does not define the analytic `j` at all;
+   this project does, as `Heegner.jInvariant = E₄³/Δ`, so the gap is exactly the
+   comparison of two normalisations and it is arithmetic, not analysis.
+3. **`End(ℂ/L) =` THE MULTIPLIER RING**, which is where `hgen` is spent. The
+   inclusion `⊇` is that `z ↦ βz` descends; `⊆` is Liouville — a holomorphic
+   endomorphism of a compact torus lifts to an entire bounded map.
+4. **DESCENT TO `ℚ̄`**, given that `j(τ)` is algebraic: a model over `ℚ̄` exists
+   (`WeierstrassCurve.ofJ` gives one outright, and over an algebraically closed
+   field `j` determines the curve up to isomorphism), and `End` does not grow
+   from `ℚ̄` to `ℂ`.
+
+**THE ALGEBRAIC ALTERNATIVE IS NOT CHEAPER** (*ATAEC* II, `E ↦ E/E[𝔞]`): it is
+gated on a `CommRing` instance for `WeierstrassCurve.End`, which needs the OPEN
+leaf `WeierstrassCurve.End.mul_comm_charZero` in `Isogeny.lean`, and on
+quotients of an elliptic curve by a finite subgroup, which this tree lacks. -/
+theorem isCMJInvariant_of_multiplierRing (n : ℤ) (τ : UpperHalfPlane) (ν : ℂ)
+    (hνsq : ν ^ 2 = -(n : ℂ))
+    (hνmem : ∃ m k : ℤ, ν = (m : ℂ) + (k : ℂ) * (τ : ℂ))
+    (hνmul : ∃ m k : ℤ, ν * (τ : ℂ) = (m : ℂ) + (k : ℂ) * (τ : ℂ))
+    (hgen : ∀ β : ℂ, (∃ m k : ℤ, β = (m : ℂ) + (k : ℂ) * (τ : ℂ)) →
+              (∃ m k : ℤ, β * (τ : ℂ) = (m : ℂ) + (k : ℂ) * (τ : ℂ)) →
+              ∃ m k : ℤ, β = (m : ℂ) + (k : ℂ) * ν)
+    (x : AlgebraicClosure ℚ) (hx : complexEmbedding x = jInvariant τ) :
+    IsCMJInvariant n x :=
+  sorry
+
 /-- **LEAF A (cut 2026-07-31) — THE ANALYTIC CONSTRUCTION OF THE CM CURVE.**
 For a PRIMITIVE positive definite form `g` of discriminant `−4n`, the complex
 number `j(τ_g)` is algebraic and is the `j`-invariant of an elliptic curve over
@@ -27179,8 +27375,56 @@ than `ℤ[√−n]`. -/
 theorem exists_isCMJInvariant_complexEmbedding_eq (n : ℤ) (g : Fermat.BinaryQuadraticForm)
     (hg : g.IsPosDef) (hdisc : g.discr = -(4 * n)) (hprim : IsPrimitive g) :
     ∃ x : AlgebraicClosure ℚ, IsCMJInvariant n x ∧
-      complexEmbedding x = jInvariant (Fermat.BinaryQuadraticForm.formPoint g hg) :=
-  sorry
+      complexEmbedding x = jInvariant (formPoint g hg) := by
+  set τ : UpperHalfPlane := formPoint g hg with hτdef
+  have ha : g.a ≠ 0 := ne_of_gt hg.a_pos
+  have hquad : (g.a : ℂ) * (τ : ℂ) ^ 2 + (g.b : ℂ) * (τ : ℂ) + (g.c : ℂ) = 0 :=
+    formPoint_quadratic g hg
+  have hτim : (τ : ℂ).im ≠ 0 := ne_of_gt τ.im_pos
+  -- `b` is EVEN, because `b² = 4(ac − n)`
+  have hbsq : g.b ^ 2 = 4 * (g.a * g.c - n) := by
+    have h := hdisc
+    simp only [Fermat.BinaryQuadraticForm.discr] at h
+    linarith
+  have hbeven : Even g.b := by
+    have h2 : Even (g.b ^ 2) := ⟨2 * (g.a * g.c - n), by linarith⟩
+    exact (Int.even_pow.mp h2).1
+  obtain ⟨b', hb'⟩ := hbeven
+  have hb : g.b = 2 * b' := by omega
+  have hbC : (g.b : ℂ) = 2 * (b' : ℂ) := by exact_mod_cast congrArg (Int.cast : ℤ → ℂ) hb
+  have hdC : (g.b : ℂ) ^ 2 - 4 * (g.a : ℂ) * (g.c : ℂ) = -(4 * (n : ℂ)) := by
+    have h := hdisc
+    simp only [Fermat.BinaryQuadraticForm.discr] at h
+    have h' := congrArg (Int.cast : ℤ → ℂ) h
+    push_cast at h'
+    linear_combination h'
+  -- the multiplier `ν = aτ + b/2`, which is `√(−n)`
+  set ν : ℂ := (g.a : ℂ) * (τ : ℂ) + (b' : ℂ) with hνdef
+  have hνsq : ν ^ 2 = -(n : ℂ) := by
+    rw [hνdef]
+    linear_combination (g.a : ℂ) * hquad - ((g.a : ℂ) * (τ : ℂ)) * hbC
+      + (1 / 4 : ℂ) * hdC - (((g.b : ℂ) + 2 * (b' : ℂ)) / 4) * hbC
+  have hνmem : ∃ m k : ℤ, ν = (m : ℂ) + (k : ℂ) * (τ : ℂ) :=
+    ⟨b', g.a, by rw [hνdef]; ring⟩
+  have hνmul : ∃ m k : ℤ, ν * (τ : ℂ) = (m : ℂ) + (k : ℂ) * (τ : ℂ) :=
+    ⟨-g.c, -b', by
+      rw [hνdef]
+      push_cast
+      linear_combination hquad - (τ : ℂ) * hbC⟩
+  -- Cox 7.5: the multiplier ring is `ℤ + ℤ(aτ) = ℤ[ν]`
+  have hgen : ∀ β : ℂ, (∃ m k : ℤ, β = (m : ℂ) + (k : ℂ) * (τ : ℂ)) →
+      (∃ m k : ℤ, β * (τ : ℂ) = (m : ℂ) + (k : ℂ) * (τ : ℂ)) →
+      ∃ m k : ℤ, β = (m : ℂ) + (k : ℂ) * ν := by
+    intro β hmem hmul
+    obtain ⟨m, k, hmk⟩ := hmem
+    obtain ⟨t, ht⟩ := exists_eq_add_mul_of_mul_lattice_mem hprim hτim hquad hmk hmul
+    exact ⟨m - t * b', t, by rw [ht, hνdef]; push_cast; ring⟩
+  -- `j(τ)` is an algebraic integer, hence in the image of `complexEmbedding`
+  have halg : IsAlgebraic ℚ (jInvariant τ) :=
+    isAlgebraic_iff_isIntegral.2
+      (IsIntegral.tower_top (A := ℚ) (isIntegral_jInvariant_of_quadratic τ ha hquad))
+  obtain ⟨x, hx⟩ := exists_complexEmbedding_eq halg
+  exact ⟨x, isCMJInvariant_of_multiplierRing n τ ν hνsq hνmem hνmul hgen x hx, hx⟩
 
 /-- **PROVEN 2026-07-31 (was a leaf, cut 2026-07-28) — THE CLASS GROUP ACTS
 FAITHFULLY ON CM `j`-INVARIANTS.** If the order `ℤ[√−n]` has more than one class
