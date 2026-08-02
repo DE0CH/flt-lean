@@ -16151,3 +16151,69 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+## TWO LEAVES CITING ONE CLASSICAL THEOREM NEED NOT BE MERGEABLE — DIFF THE BINDER LISTS
+(2026-08-02, `flt-lean-120`, `Modularity/MoretBailly.lean`.) The standing rule *"AN
+'IRREDUCIBLE' VERDICT SEARCHES FOR A PROOF. CHECK FIRST WHETHER A SIBLING LEAF ALREADY IS
+ONE"* prescribes the right search — grep the file's DOCSTRINGS for the name of the classical
+theorem, not for identifiers — and then states a conclusion that is too strong: *"either one
+implies the other or the two should be merged; either way the second `sorry` is not a second
+obligation."* There is a third outcome and it is common.
+`MoretBailly.lean` carries **two** Bertini-irreducibility leaves, 19 000 lines apart, both
+citing *Jouanolou, Théorèmes de Bertini et applications, Thm 6.3*:
+`exists_bertiniIrreducibleLocus_isAlgClosed` (scheme-theoretic, a good LOCUS of hyperplanes
+for an integral affine algebra) and `exists_plane_irreducible_planeSection` (polynomial, ONE
+good `2`-plane for an irreducible hypersurface). They share no identifier, no type and no
+statement shape, so no duplicate scan can pair them and neither docstring mentions the other.
+Only the bibliography matches — which is exactly what the standing rule predicts.
+**And neither implies the other.** The check is one read of the two binder lists:
+* the scheme leaf carries `[CharZero K]` and `[Algebra.Smooth K A]`; the polynomial leaf has
+  neither, its only call site is in characteristic `p`, and `V(h)` for an arbitrary
+  irreducible `h` is singular. So it cannot discharge the polynomial leaf;
+* the polynomial leaf produces ONE plane for a HYPERSURFACE; the scheme leaf needs a good
+  LOCUS for an ARBITRARY integral affine algebra. So it cannot discharge that one either.
+So the duplication is in the WORK, not in the statements, and the finding is still worth as
+much as a merge would have been: whoever is dispatched at either must be told about the
+other, and what should actually be proven is the common statement (an integral affine variety
+of dimension `≥ 2` over `K = K̄` has an irreducible general hyperplane section, in every
+characteristic), once. **Record the relationship in BOTH docstrings; do not force a merge and
+do not delete either leaf.**
+Corollary, and it is what makes the finding cheap: **the CITATION is the join key.** Grep
+`Fermat/` for the author and theorem number — `Jouanolou`, `Schmidt Chapter V`, `EGA IV
+9.7.7`, `Stacks 0`… — rather than for vocabulary. Two independently-cut leaves share their
+bibliography and nothing else, and a bibliography grep costs one command.
+Second corollary, from the same pair: **one leaf's docstring can name an obstruction the
+OTHER leaf does not have.** The scheme leaf lists two missing inputs — geometric
+irreducibility of the generic fibre, and the generic-to-special passage (EGA IV 9.7.7,
+absent from the pin). The polynomial leaf owes only the FIRST, because it asks for one plane
+rather than a locus and this module's own PROVEN Noether forms carry generic to special. So
+reading the sibling's obstruction list told the smaller leaf which half of it applied, which
+is the sort of thing neither docstring could say while they were invisible to each other.
+## A CLAUSE A DOCSTRING CALLS FREE IS OFTEN AN UNPROVEN PREMISE OF THREE OTHER DOCSTRINGS
+(Same run.) `exists_plane_irreducible_planeSection` carried `LinearIndependent K ![u₁, u₂]`
+as a third conclusion, with the note that it *"follows from the other two clauses … but no
+construction of a genuine `2`-plane has to work for it, so it is asked for rather than
+re-derived. A prover who has a plane has it."* That reasoning is correct, and it is a reason
+not to bother — which is why nobody did, for two days.
+Bothering was worth it, and NOT because the leaf got weaker (it did, and that alone is
+marginal). The underlying fact — a section along a parametrisation with DEPENDENT directions
+is a univariate polynomial in a linear form, hence reducible once its degree is `≥ 2` — is
+asserted as prose in **three** other docstrings in the same file: `planeSection`'s, where it
+is the reason the averaging identity may quantify over ALL triples, and the "DEGENERATE
+TRIPLES ARE NOT EXCLUDED" paragraph of `exists_bertiniNoetherWitness` **and** of
+`exists_bertiniNoetherWitness_of_three_le`, where it is the reason the Noether forms need not
+dodge them. Three load-bearing prose claims, one proof, ~150 lines
+(`not_irreducible_planeSection_of_not_linearIndependent`).
+**So the test is not "does the leaf need it" but "how many docstrings ASSUME it".** One
+`grep` for a distinctive phrase of the claim (`univariate polynomial in a linear form` here)
+answers it. A fact repeated in three docstrings is load-bearing three times over and is
+exactly the kind of thing a later audit will take on trust.
+The technique, since it recurs for anything about `planeSection`: a dependent pair is
+`(l₁ • w, l₂ • w)`; complete `(l₁, l₂)` to an invertible `2 × 2` frame, and `planeSection_comp`
+exhibits the section as an INVERTIBLE substitution applied to `planeSection h v w 0`, which is
+`MvPolynomial.rename` of a one-variable polynomial. Factor there
+(`exists_eq_linear_of_irreducible_of_unique`) and push the factorisation forward: `rename`
+preserves total degree when the map has a retraction, and `planeSection` at a nonzero
+determinant does too, so both factors stay non-units. Mathlib has
+`totalDegree_rename_le` and `totalDegree_renameEquiv` but **no injective-`rename` degree
+lemma**; `Fin 1 ↪ Fin 2` is not an `Equiv`, and the retraction is what supplies the missing
+inequality (`totalDegree_rename_eq_of_leftInverse`, added here).
