@@ -4026,86 +4026,26 @@ them — the moduli action with its naturality and its involutivity, the
 involutivity of `w_𝒴`, and the identification of the generic fibre of `w_𝒴`
 with `w_{Y,ℚ}` — is formal and is carried out below.
 
-**Why a SECOND Atkin–Lehner structure.**  `AtkinLehnerMorphism.dual` takes
-the `ℚ`-structure of its test scheme, and there is no `SpecLoc R ⟶ SpecQ`,
-which is precisely why the pre-2026-07-30 form of the extension leaf (an
-integral `hpin`) was unsatisfiable and had to be withdrawn.
-`AtkinLehnerMorphismOver N S` is the same four fields over an arbitrary
-base scheme `S`, and at `S = SpecLoc R` it is satisfiable — its existence
-theorem is `nonempty_atkinLehnerMorphismOver`, whose proof is
-`nonempty_atkinLehnerMorphism`'s verbatim, because every input of that
-proof (`exists_gamma0Datum_baseChange`,
+**Why a SECOND Atkin–Lehner structure, and where it now lives.**
+`AtkinLehnerMorphism.dual` takes the `ℚ`-structure of its test scheme, and
+there is no `SpecLoc R ⟶ SpecQ`, which is precisely why the pre-2026-07-30
+form of the extension leaf (an integral `hpin`) was unsatisfiable and had
+to be withdrawn.  `AtkinLehnerMorphismOver N S` is the same four fields
+over an arbitrary base scheme `S`, and at `S = SpecLoc R` it is
+satisfiable — its existence theorem is `nonempty_atkinLehnerMorphismOver`,
+whose proof is `nonempty_atkinLehnerMorphism`'s verbatim, because every
+input of that proof (`exists_gamma0Datum_baseChange`,
 `nonempty_isBaseChangeOf_of_isNIsogenyPair`, `IsNIsogenyPair.baseChange`,
-`IsBaseChangeOf.compId`) is stated over an ARBITRARY base already.  The
-follow-up, deliberately not taken here because `X0.lean` is hot, is to
-replace `AtkinLehnerMorphism N` by
-`abbrev AtkinLehnerMorphism N := AtkinLehnerMorphismOver N SpecQ` — every
-call site is unchanged, the field names being identical — and to derive
-`nonempty_atkinLehnerMorphism` from the theorem below. -/
+`IsBaseChangeOf.compId`) is stated over an ARBITRARY base already.
 
-/-- **The Atkin–Lehner action on the `Γ₀(N)`-moduli problem over an
-ARBITRARY base scheme `S`**, as DATA — `AtkinLehnerMorphism N` with `SpecQ`
-replaced by `S`, field for field and docstring for docstring.
-
-The base is a parameter because the descent of `w_N` to the INTEGRAL coarse
-space runs over `Spec ℤ_(q)`, and `AtkinLehnerMorphism`'s `dual` cannot be
-evaluated there: it takes a `ℚ`-structure `T ⟶ SpecQ` on its test scheme,
-which a `ℤ_(q)`-scheme does not have.  That is not a defect of
-`AtkinLehnerMorphism` — the `ℚ`-structure is a FALSITY repair, since over
-`T = Spec 𝔽̄_p` with `p ∣ N` the isogeny quotient carries no
-`Γ₀(N)`-structure and the base-free form of the structure is EMPTY — it is
-the reason the base has to become a parameter rather than be dropped.
-
-See the subsection docstring for the (unqueued, deliberate) follow-up that
-collapses the two. -/
-structure AtkinLehnerMorphismOver (N : ℕ) (S : Scheme.{0}) where
-  /-- the moduli action `(E, C) ↦ (E/C, E[N]/C)`, over an `S`-scheme -/
-  dual : ∀ {T : Scheme.{0}}, (T ⟶ S) → Gamma0Datum N T → Gamma0Datum N T
-  /-- `dd` and `dual dd` are exchanged by a cyclic `N`-isogeny -/
-  pair : ∀ {T : Scheme.{0}} (g : T ⟶ S) (dd : Gamma0Datum N T),
-    IsNIsogenyPair N dd (dual g dd)
-  /-- the action commutes with base change -/
-  dual_baseChange : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S}
-    {g' : T' ⟶ S} (_hg : h ≫ g = g') {dd' : Gamma0Datum N T'}
-    {dd : Gamma0Datum N T}, IsBaseChangeOf h dd' dd →
-    IsBaseChangeOf h (dual g' dd') (dual g dd)
-  /-- the action is an involution up to isomorphism of data -/
-  dual_dual : ∀ {T : Scheme.{0}} (g : T ⟶ S) (dd : Gamma0Datum N T),
-    IsBaseChangeOf (𝟙 T) (dual g (dual g dd)) dd
-
-/-- **The moduli action exists over any base where the isogeny quotient
-does** (PROVEN) — `nonempty_atkinLehnerMorphism`'s proof, with `SpecQ`
-replaced by `S` and `exists_isNIsogenyPair` replaced by the hypothesis.
-
-Not one line of that proof sees `Spec ℚ`: `IsNIsogenyPair.baseChange`,
-`exists_gamma0Datum_baseChange`, `nonempty_isBaseChangeOf_of_isNIsogenyPair`
-and `IsBaseChangeOf.compId` are all stated over an arbitrary base, and the
-`ℚ`-structure enters `exists_isNIsogenyPair` alone — where it is moreover
-UNDERSCORED, i.e. the leaf's statement does not consume it either; it is a
-guard recording that the leaf is FALSE without a restriction on the residue
-characteristics of the base.
-
-So `dual_baseChange` and `dual_dual` are free over every base: choose the
-quotient with `Classical.choice`, and uniqueness of the target of a cyclic
-`N`-isogeny upgrades the choice function to a natural involution. -/
-theorem nonempty_atkinLehnerMorphismOver {N : ℕ} {S : Scheme.{0}}
-    (hex : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (dd : Gamma0Datum N T),
-      ∃ dd' : Gamma0Datum N T, Nonempty (IsNIsogenyPair N dd dd')) :
-    Nonempty (AtkinLehnerMorphismOver N S) := by
-  classical
-  refine ⟨{ dual := fun {T} g dd => (hex g dd).choose
-            pair := fun {T} g dd => (hex g dd).choose_spec.some
-            dual_baseChange := ?_
-            dual_dual := ?_ }⟩
-  · intro T'' T p g g' _hg dd' dd bcd
-    have bcR := (exists_gamma0Datum_baseChange p (hex g dd).choose).choose_spec.some
-    exact IsBaseChangeOf.compId
-      (nonempty_isBaseChangeOf_of_isNIsogenyPair (hex g' dd').choose_spec.some
-        (((hex g dd).choose_spec.some).baseChange bcd bcR)).some bcR
-  · intro T g dd
-    exact (nonempty_isBaseChangeOf_of_isNIsogenyPair
-      (hex g (hex g dd).choose).choose_spec.some
-      ((hex g dd).choose_spec.some).symm).some
+**BOTH WERE CUT HERE ON 2026-07-31 AND MOVED TO `X0.lean` ON 2026-08-01**,
+where the four-field `structure AtkinLehnerMorphism` has become
+`abbrev AtkinLehnerMorphism N := AtkinLehnerMorphismOver N SpecQ` and
+`nonempty_atkinLehnerMorphism` is one line over the base-general theorem.
+They were cut here only to keep the blast radius off `X0.lean`; carrying
+two structures of one shape is a debt, and this pays it off.  No call site
+in this file changed — the field names are identical and `abbrev` is
+reducible, so dot notation unfolds it. -/
 
 /-! #### THE FIFTH CUT (2026-07-31): the cuspidal subscheme, as a STRUCTURE
 
