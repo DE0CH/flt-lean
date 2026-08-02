@@ -3465,6 +3465,98 @@ not applied to the other** — nothing propagates it — so when you touch a lea
 docstring names a twin, read the twin's CURRENT docstring, not the sentence your leaf
 quotes from it.
 
+## THE SORRY WARNING IS SPELLED WITH BACKTICKS — every literal grep in this file returns ZERO
+
+(2026-08-02, measured on a green build at toolchain `v4.32.0-rc1`.)  Lean emits
+
+    warning: Fermat/FLT/EllipticCurve/WeilPairing.lean:4295:8: declaration uses `sorry`
+
+with BACKTICKS around `sorry`.  This file quotes it as `declaration uses 'sorry'`, with
+straight quotes, in roughly twenty places — including in the recipes that tell you to
+validate a frontier scan against the compiler's warning set.  So
+
+    grep -c "declaration uses 'sorry'" build.log        # -> 0, on a build with sorries
+
+returns ZERO on a build that has them, which is indistinguishable from a clean build and
+is the same "an empty grep reads as success" failure the truncated-log and
+`lake: command not found` notes already describe.  Grep for the stem only:
+
+    grep -c 'declaration uses' build.log
+    grep 'declaration uses' build.log | sed 's/:.*//' | sort | uniq -c   # per file
+
+Whenever you compare a scan against "the compiler's warning set", print the count you got
+from the log and sanity-check it against a source token count of the same file; two
+numbers that are both zero are not agreement.
+
+## A DEAD HYPOTHESIS CAN BE THE ONLY THING BLOCKING A ROUTE — grep the binder through the WRAPPER CHAIN
+
+(2026-08-02, `flt-lean-267`, on `weilValue_self_config_eq_one` in
+`EllipticCurve/WeilPairing.lean`.)  This file already says a hypothesis an audit calls
+unused is free strength, and that an unused binder costs a prover nothing.  Both are
+about hypotheses that are HARMLESS.  There is a third case, and it is the expensive one:
+**a dead hypothesis on a PROVEN theorem can make that theorem inapplicable at exactly the
+value its consumer needs**, and then it is not decoration — it is a wall, and nothing
+reports it.
+
+`translationChar_setup_value` proves the value law `B = c^e·A`, `e ∈ {1, p−1}`, where
+`A`, `B` are character-for-character the two products of the open leaf's own `hA`/`heq`
+— i.e. it proves `z = c^e` and the leaf is exactly `c = 1`.  It carried
+`(hc1 : c ≠ 1)`, so it could not be used at `c = 1`, which is the only value the
+alternation branch cares about.  `hc1` was DEAD: it occurred once, in the binder list of
+`exists_millerRatio_eval_translationChar_of_avoid`, and was forwarded unused through two
+wrappers.  Deleting it is a pure weakening; the chain rebuilt green, and a leaf that two
+route analyses had priced at a chapter of Silverman became one equation.
+
+**The check is one grep per binder and it is not the linter's.**  Lean's
+`unusedVariables` fires on the declaration that OWNS the binder, so it flags
+`_of_avoid` — and says nothing about the two wrappers that forward it, which are where a
+consumer meets it.  Follow the binder by NAME down the chain instead:
+
+    grep -n '\bhc1\b' <each file in the chain>      # binder + every forwarding call site
+
+A binder that appears only in signatures and in forwarding argument lists, never in a
+proof body, is dead in ALL of them.  Then ask the question the linter never asks: **is
+there a value of that variable which a consumer needs and the hypothesis excludes?**  If
+yes, removing it is the whole task.
+
+Two riders:
+
+* **Removing a dead hypothesis changes ARITY, so it is an interface edit** — the class-7
+  hazard.  Do it in its own commit, list the call sites (here six: three binders and three
+  forwarding argument lists), and check that the sites which genuinely USE the hypothesis
+  keep it (here `weilValueProp_translationChar_witness`, whose nondegeneracy branch really
+  does need `c ≠ 1`).  `grep` for the name afterwards and read every survivor.
+* **The dead binder is usually a fossil of the FIRST consumer.**  This chain was built for
+  the nondegeneracy branch, where `c ≠ 1` is genuinely in hand, so it was passed along out
+  of habit; the alternation branch is the second consumer and is the one it locks out.
+  When a proven theorem is "almost" what a leaf needs, diff its binder list against what
+  the leaf can supply before concluding the theorem is the wrong tool.
+
+## AN ABSENCE CLAIM ABOUT A BRIDGE MUST BE RE-GREPPED AGAINST THE FILE THAT OWNS THE BRIDGE LAYER
+
+(Same task.)  The same leaf's Route 2 ended: "Every ingredient exists in
+`WeilPairingDescent.lean` (...); what is missing is the bridge from the generic-point
+evaluations that file works with to the honest point evaluations `AdjoinRoot.evalEval`."
+The first clause was true and checkable, and it is what made the second one convincing —
+the author had clearly opened the file they named.  The bridge is
+`exists_pointEval_specialization`, PROVEN 2026-07-25, in `WeilPairingStageB.lean`, a
+DIFFERENT module, already `public import`ed, stated uniformly in `(Q, m)` precisely so
+that it serves both translation and `[p]`-pullback — with a 500-line `EvalsTo`/`SpecPoint`
+calculus under it.
+
+**The generalisable point: a development's "bridge layer" is usually its own module, and
+it is never the module whose vocabulary the audit is written in.**  An audit written in
+the generic-point vocabulary greps the generic-point file; the honest-point layer is
+somewhere else by construction, because that is what a layer is.  So before writing (or
+believing) "the bridge is missing", grep for the TARGET vocabulary — here
+`AdjoinRoot.evalEval` — across the whole import cone and read the file with the most hits:
+
+    grep -rc '<the target vocabulary>' --include=*.lean Fermat/ | grep -v ':0' | sort -t: -k2 -n
+
+`WeilPairingStageB.lean` had 375 hits and was named nowhere in the audit.  Same family as
+[[flt-inventory-audits-understate-what-exists]], with the scope error being a MODULE
+rather than a repository.
+
 ## A "MISSING MACHINERY" AUDIT NAMES THEOREMS. GO READ THE THEOREMS.
 
 (2026-07-31, `flt-lean-246`.) A mature leaf in this tree carries an inventory

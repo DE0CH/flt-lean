@@ -3767,7 +3767,7 @@ theorem exists_millerRatio_eval_translationChar_of_avoid {ι : Type*} [Fintype �
     {xκ yκ : W.FunctionField} {hκ : (curveK W).Nonsingular xκ yκ}
     (hpt : constPoint W (val i₀) + tautPoint W hΔ =
       WeierstrassCurve.Affine.Point.some xκ yκ hκ)
-    {c : F} (hc1 : c ≠ 1) (hcp : c ^ p = 1)
+    {c : F} (hcp : c ^ p = 1)
     (hτa : pointEval (constHom W) hκ.left a ≠ 0)
     (hτv : pointEval (constHom W) hκ.left (enumVertical W val) ≠ 0)
     (heq : pointEval (constHom W) hκ.left a *
@@ -4518,7 +4518,7 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
     {xκ yκ : W.FunctionField} {hκ : (curveK W).Nonsingular xκ yκ}
     (hpt : constPoint W (val i₀) + tautPoint W hΔ =
       WeierstrassCurve.Affine.Point.some xκ yκ hκ)
-    {c : F} (hc1 : c ≠ 1) (hcp : c ^ p = 1)
+    {c : F} (hcp : c ^ p = 1)
     (hτa : pointEval (constHom W) hκ.left a ≠ 0)
     (hτv : pointEval (constHom W) hκ.left (enumVertical W val) ≠ 0)
     (heq : pointEval (constHom W) hκ.left a *
@@ -4574,7 +4574,7 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
             (AdjoinRoot.evalEval hV.left a *
               AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ p) :=
   exists_millerRatio_eval_translationChar_of_avoid hΔ hp hval_inj hval_tor
-    hval_surj hcard ha hspan hP hQ hT hPval hpt hc1 hcp hτa hτv heq hS hR hPS
+    hval_surj hcard ha hspan hP hQ hT hPval hpt hcp hτa hτv heq hS hR hPS
     hPSc hQR hQRc haP hnzR hnzQR
     (fun h => hxRF₂ (by rw [← h]; exact hxSF₂))
     (fun h => hxQRF₂ (by rw [h]; exact hxSF₂))
