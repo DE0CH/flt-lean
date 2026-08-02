@@ -19027,6 +19027,63 @@ detectable from the prose rather than from a build.
   discussion, neither of which is in the survivor. It was PROVEN by one application of the
   survivor, marked slated for deletion, and the fold-in named as the deleter's first job.
   That keeps the frontier drop (`−1`) without losing prose that nothing else records.
+
+### `#print axioms` ON THE PARENT SPLITS THE TWO REPAIRS — and the orphan is a BLOCK, not a leaf
+
+(2026-08-01, `flt-lean-349`, `Modularity/MoretBailly.lean`,
+`exists_hypEvalData_of_birationalNormalForm`.) The section above says to check the parent's
+proof body against its docstring. Two refinements, both measured, and each decides something
+the grep alone does not.
+
+**1. The mismatch has TWO causes with OPPOSITE repairs, and one command tells them apart.**
+The parent may be proven over a *different open leaf* (a rival cut; the repair is to RE-ROUTE,
+since one leaf usually implies the other), or proven *outright over nothing* (the repair is to
+DELETE, since there is nothing to route to). Reading the body does not settle it — the call
+you are looking for may be several lemmas deep. `#print axioms <parent>` settles it in one
+line: `sorryAx` present ⇒ some leaf is still carrying it, go find which; absent ⇒ the parent
+owes nothing and every leaf its docstring names is dead. Here it came back
+`[propext, Classical.choice, Quot.sound]`, which is the whole of the argument for deletion.
+
+**It runs from an IMPORTER in ~5 s** — a scratch that `public import`s the module — so it does
+not need the declaring file and does not need a build. **Put a KNOWN-SORRIED declaration from
+the same module in the same run as a CONTROL**: a clean answer and a check that is silently
+looking at nothing are otherwise the same output. Mine printed `sorryAx` for the control on
+the line below the three clean ones.
+
+**2. The orphan is the leaf PLUS everything cut to serve it — compute the FIXPOINT.** Deleting
+the named leaf alone is the obvious move and it leaves the worse half behind. A leaf cut out of
+a parent normally arrives with a support block, and when the leaf dies the block dies with it —
+silently, because the block is PROVEN and no frontier instrument looks at proven code. Here the
+fixpoint over the in-file use graph, rooted at the leaf, returned **thirteen declarations and
+294 lines, twelve of them proven**: the leaf, `hypEval` and its three projection lemmas, the
+two span lemmas, the membership criterion `mem_span_pair_of_hypEval_eq_zero`, `coeffProj` /
+`coeff_coeffProj` / `dvd_of_map_dvd_map`, and `hypQuotAway` / `hypQuotAway_apply`. Deleting only
+the leaf would have left ~260 lines that read as live machinery to every future reader and that
+nothing can reach.
+
+The fixpoint is ten lines: mask comments, take each declaration's line range as up to the next
+declaration, and iterate *"a declaration is dead when every occurrence of its name outside its
+own range lies inside the dead set"*. Two cautions that decide correctness:
+
+* **an `@[simp]` lemma is used without its name appearing**, so name-counting cannot prove it
+  dead in general. It is safe here only because the simp lemmas being deleted are ABOUT a
+  definition that is also being deleted, so no surviving goal can contain their pattern. Check
+  that specifically; do not let the fixpoint decide it for you.
+* **the dead range can straddle a `section`/`namespace` `end`.** Mine spanned
+  `end LocalisedHypersurfaceMembership`, and deleting the range wholesale would have unbalanced
+  the file — a scope wound, which reports thousands of lines away. Assert every boundary line by
+  content before writing, and re-run a scope scan and a comment-depth scan afterwards.
+
+**3. Say what did NOT happen.** The module's `sorry` count drops by one and no mathematics was
+proven; a bare `−1` reads as progress on the citation the leaf named (here Schmidt Ch. VI §7).
+Put that in the commit subject. And quote the recovery command with the *parent commit's* sha in
+a note left where the block stood — the deleted docstring here carried a correct seven-step
+worked route that is worth restoring if a future certificate leaf wants the criterion.
+
+**4. A DELETION-ONLY branch is invisible to `semmerge.py`**, which propagates additions and never
+deletions, so it can be silently reverted to a no-op with the merge reporting success. Say in
+`to_merger` that the branch is a deletion and needs a plain `git merge`.
+
 ## `_o` IS NOT WHAT A ZARISKI-DESCENT LEAF RUNS ON — THERE IS NO CANONICAL MAP IN THE RIGIDIFIED DIRECTION
 (Same task, and it corrects a route note two docstrings had carried in this file.) The standard
 sketch for "`T ↦ Pic(X_T)/Pic(T)` is a Zariski sheaf" rigidifies along the section: put
