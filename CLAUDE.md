@@ -27228,3 +27228,87 @@ whatever oleans are on disk.  For an edit that only touches one module, the seco
 the check you want, and it is cheap enough to run before every commit.  Confirm the
 seed is valid first (`git diff --stat $(cat ~/.flt-release-lake/sha) HEAD -- Fermat/`
 empty), and require the `EXIT=` line you appended yourself.
+## A DUPLICATE CUT CAN ORPHAN A WHOLE PROVEN BLOCK, AND THE RIVAL'S DOCSTRING USUALLY CONFESSES
+(2026-08-01, `flt-lean-359`, the `RingClassArtinData` anticyclotomic cluster in
+`Modularity/MoretBailly.lean`.) CLAUDE.md already gives the detector — *a proven
+parent whose docstring names a different leaf from its proof body* — and it fired
+here exactly as advertised. Three things this instance adds, each of which changes
+what you do after the detector fires.
+**1. THE CASUALTY IS NOT ONE LEAF, IT IS A BLOCK.** The 2026-07-30 arrangement was
+a leaf (`nonempty_ringClassArtinData_anticyclotomic_primePow`) plus FOUR proven
+declarations that exist only to serve it (`RingClassArtinData.ofDvd`,
+`.imageSubgroup`, `.lcm`, `nonempty_ringClassArtinData_of_primePow`). A 2026-07-31
+rival (`exists_anticyclotomicCyclicChar`) re-pointed the parent, and all five went
+dead at once. Every instrument reported business as usual: the leaf emitted its
+`declaration uses 'sorry'` warning, the four proven declarations emitted nothing at
+all, and the file carried the same class field theory as a live sorry twice over.
+**So after the detector fires, grep for consumers of the losing leaf AND of every
+declaration the losing leaf's docstring names as its machinery** — the proven half
+is the larger part of the loss and it is invisible to every sorry-based scan.
+**2. THE RIVAL'S DOCSTRING USUALLY NAMES THE REDUCTION IT IS DUPLICATING, AND
+DECLINES IT.** This one said, in terms, that a prover "may reduce it to prime
+powers first, by that same coprimality" and that the reduction "is NOT performed
+here because it does not make the analytic content any smaller". That reduction was
+already **PROVEN, twenty lines above it**, as `nonempty_ringClassArtinData_of_primePow`.
+The author was reasoning about the mathematics (true: the `ℤ_ℓ`-tower has to be
+built either way) and not about the file (false: the bookkeeping was done). **A
+docstring sentence of the form "one could reduce this to X; not done here" is a
+grep instruction — run it before believing the cut is new.** It is the cheapest
+duplicate-cut tell there is, and unlike the docstring/body mismatch it is visible
+from the rival alone.
+**3. THE SURVIVING LEAF IS THE WEAKER ROOT, SO "NEWER" AND "SHARPER" ARE BOTH THE
+WRONG TIE-BREAK.** Keep the arrangement whose root is IMPLIED by the rival's root.
+The redundant leaf here was later AND strictly stronger in three independent ways
+(all `K` rather than prime powers; a fixed cyclic `Multiplicative (ZMod K)` rather
+than an arbitrary finite abelian `Cl`; exact order rather than `K ∣ orderOf a`).
+Strength that no consumer reads is a harder obligation bought for nothing — and
+nothing read it, because the downstream consumer re-extracts a `ZMod`-valued
+character from the abstract `Cl` through `exists_zmodChar_of_dvd_exponent` anyway.
+**Check what the consumer projects out before preferring the sharper statement.**
+**4. AND THE REPAIR IS TO *PROVE* THE REDUNDANT LEAF FROM THE SURVIVOR, NOT TO
+DELETE IT.** Both moves reach the same frontier — the weaker leaf ends up the sole
+sorry either way — so the count cannot choose between them, and the count is what
+one instinctively reaches for. Proving it wins on everything else: a stronger
+statement costs nothing to carry once it is a theorem, it keeps every existing
+consumer and docstring reference valid, and it needs no deletion for a reviewer to
+second-guess. The only thing it costs is a relocation, because the redundant leaf
+is normally declared ABOVE the machinery that now proves it. **When two leaves say
+the same mathematics, ask whether the machinery to derive one from the other is
+already in the file before reaching for a delete** — here it was
+(`exists_zmodChar_of_dvd_exponent` plus the compositum), so the derivation was
+~20 lines.
+**5. BEFORE REPAIRING A DUPLICATE CUT, CHECK WHETHER SOMEBODY IS ALREADY REPAIRING
+IT — AND GREP THE QUEUE, NOT JUST THE BRANCHES.** This is the expensive lesson of
+the run. `flt-lean-163` had performed exactly this repair, in the better shape, the
+previous day, on an unmerged branch; I diagnosed the defect independently, fixed it
+by deleting, built it green, and only then found the prior art — in `queue2`, which
+named that branch's two commit shas explicitly as the model for the same defect
+class elsewhere in the same file. **A queued task about your file is prior art about
+your file**, and it is the one place a repair-in-flight is recorded, since
+`~/.flt-inflight.jsonl` is pruned and an unmerged branch is invisible to `merger`.
+The checks that would have caught it, in ascending cost:
+    grep -n '<the defect, in words>' ~/.flt-loop/queue1 ~/.flt-loop/queue2
+    for b in $(git branch --format='%(refname:short)'); do
+      git log --oneline HEAD..$b -- <your file> | head -3; done
+Declining your own green payload is then the correct outcome and should be
+committed as such, with the rival's shas named and your own sha quoted so the work
+is recoverable if the rival is ever dropped.
+Accounting, in the shape this file asks for: **19 sorries where there were 20, and
+no mathematics was done by either branch.** The surviving obligation is strictly
+weaker than either of the two it replaces, and four proven declarations stopped
+being dead code. Say that plainly — a `−1` from a merge repair reads exactly like a
+closed leaf otherwise, and the class field theory (the anticyclotomic
+`ℤ_ℓ`-extension of an imaginary quadratic field) is untouched and still owed.
+**The absence survey on that leaf was re-run and STANDS for mathlib**: no ray class
+group, no Artin map, no idele class group, no Iwasawa theory at this pin (the
+`Iwasawa` hits are the group-theoretic decomposition). It needs one correction for
+the PROJECT half, which has grown a real CFT development since it was written —
+`Fermat/FLT/NumberField/{ArtinSymbol,UnramifiedClassFieldExistence,HilbertClassFieldNormal}.lean`
+and ~10 `exists_artinMap_*` theorems in `Modularity/Interface.lean`. Neither helps
+here, for two independent reasons worth recording so the next agent does not chase
+them: `Interface.lean` **imports** `MoretBailly.lean`, so it is downstream and
+unreachable; and all of it is the UNRAMIFIED (Hilbert class field) theory, whereas
+the anticyclotomic tower is ramified at `ℓ` and needs ray class groups of conductor
+`ℓ^n`. **An absence claim needs re-running per tree, and a presence claim needs
+checking for import direction AND for whether the theory found is the one the leaf
+needs.**
