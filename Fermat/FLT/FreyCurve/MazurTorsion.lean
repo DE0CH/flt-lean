@@ -23391,6 +23391,27 @@ theorem Fermat.liesIn_congr_of_geomFibreAddEquiv {N : ℕ} (hN : N ≠ 0)
     · intro h
       exact absurd (hZtor x h) hx
 
+/-- **A FINITE field extension embeds in the algebraic closure of its base**
+(PROVEN 2026-08-02) — the shape `hom_ext_of_geomFibrePt` below needs at a
+closed point, whose residue field is a finite `ℚ`-algebra.
+
+STATED OVER A VARIABLE BASE FIELD `F`, and that is not decoration: at the
+literal `ℚ` the `Rat`-algebra diamond (`DivisionRing.toRatAlgebra` against
+`ψ.toAlgebra`) beats the instance one wants, and `Module.Finite ℚ L` then
+refers to the wrong algebra structure.  Over a variable `F` the `letI` is the
+only `Algebra F L` in scope, so no diamond can form — the same device, and for
+the same reason, as `Fermat.exists_ringHom_algebraicClosure` in `X0.lean`,
+which is the OTHER direction (`AlgebraicClosure F →+* K`) and does not apply
+here.  Note the STATEMENT mentions no `Algebra` instance at all, only bare
+`RingHom`s, so instantiating at `F = ℚ` is safe. -/
+theorem Fermat.exists_ringHom_algebraicClosure_of_finite {F : Type} [Field F]
+    {L : Type} [Field L] (ψ : F →+* L) (hfin : ψ.Finite) :
+    Nonempty (L →+* AlgebraicClosure F) := by
+  letI : Algebra F L := ψ.toAlgebra
+  haveI : Module.Finite F L := hfin
+  haveI : Algebra.IsAlgebraic F L := Algebra.IsAlgebraic.of_finite F L
+  exact ⟨(IsAlgClosed.lift (R := F) (S := L) (M := AlgebraicClosure F)).toRingHom⟩
+
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **RIGIDITY: two morphisms of elliptic schemes over `ℚ` that agree on
 GEOMETRIC POINTS are equal** (LEAF, cut 2026-07-31 off
@@ -23399,18 +23420,44 @@ machinery: it is what turns every point-level identity in this cluster into an
 identity of morphisms, which is what the `[N]` conditions of `IsNIsogenyPair`
 are stated as.
 
-TRUE, and it is the standard "reduced source, dense closed points" argument.
+**PROVEN 2026-08-02**, and it is the standard "reduced source, dense closed
+points" argument — but run DIRECTLY OVER `ℚ`, with no base change and no
+descent.  The route this docstring used to prescribe (base-change everything to
+`ℚ̄`, run the argument there, come back by faithful flatness of `ℚ → ℚ̄`) is
+correct mathematics and is the expensive way to formalise it: it needs the
+pullback `d.E ×_ℚ ℚ̄` constructed, its reducedness (i.e. GEOMETRIC reducedness
+of `d.E`, not just reducedness), and an epimorphism to descend along.  None of
+that is used below.
 
-`d.E` is smooth and proper over `Spec ℚ` of relative dimension one
-(`d.relativeDimensionOne`, `d.ab.proper`, `d.ab.smooth`), so it is a reduced
-scheme of finite type over `ℚ`; `d'.E` is proper, hence separated.  Base-change
-to `ℚ̄`: `d.E_ℚ̄` is again reduced and of finite type over an algebraically
-closed field, so its closed points are exactly its `ℚ̄`-points — which is what
-`GeomFibrePt d.f (𝟙 SpecQ)` enumerates — and they are DENSE (Jacobson).  The
-equaliser of `u_ℚ̄` and `v_ℚ̄` is a locally closed subscheme (separatedness of
-the target makes it closed) containing every closed point, hence all of
-`d.E_ℚ̄` because the source is reduced.  So `u_ℚ̄ = v_ℚ̄`, and `u = v` by
-faithful flatness of `ℚ → ℚ̄`.
+What the pin supplies is `AlgebraicGeometry.ext_of_fromSpecResidueField_eq`
+(`Mathlib/AlgebraicGeometry/Morphisms/Separated.lean`): for `X` REDUCED and
+`i : Y ⟶ Z` SEPARATED, two morphisms `X ⟶ Y` agreeing over `i` are equal as
+soon as they agree after `X.fromSpecResidueField x` for `x` in a DENSE set.
+Instantiated at `X = d.E`, `Y = d'.E`, `i = d'.f` and the dense set
+`closedPoints d.E`, the four side conditions are:
+
+* `IsReduced d.E` — `isReduced_of_smooth_over_field d.f`, from `d.ab.smooth`;
+* `IsSeparated d'.f` — `inferInstance` from `d'.ab.proper`;
+* `Dense (closedPoints d.E)` — `closure_closedPoints`, from
+  `JacobsonSpace d.E`, which is `LocallyOfFiniteType.jacobsonSpace d.f` over
+  the Jacobson base `SpecQ`;
+* agreement over `d'.f` — `hu.trans hv.symm`, free.
+
+The one step with content is turning a CLOSED POINT into a `GeomFibrePt`.  At a
+closed point `x`, `d.E.fromSpecResidueField x ≫ d.f` is FINITE
+(`isFinite_iff_locallyOfFiniteType_of_jacobsonSpace`, over
+`isClosed_singleton_iff_isClosedImmersion`), so `κ(x)` is a finite `ℚ`-algebra
+and embeds in `ℚ̄` (`Fermat.exists_ringHom_algebraicClosure_of_finite`, proven
+just above and stated over a VARIABLE base field to dodge the `Rat`-algebra
+diamond).  That embedding `φ` gives the geometric point
+`Spec.map φ ≫ d.E.fromSpecResidueField x`, whose base compatibility is FREE by
+`subsingleton_hom_specQ`; `h` applied to it, and `epi_specMap_of_fieldHom φ`
+(`Spec` of a map of FIELDS is an epimorphism, `X0.lean`) to cancel `Spec.map φ`
+back off, is the whole of the last step.
+
+Every name above is upstream of this file and none of it is new theory: the
+leaf was a `sorry` because nobody had looked for
+`ext_of_fromSpecResidueField_eq`, not because anything was missing.
 
 **Why `GeomFibrePt` is enough and no `T`-points are needed**: reducedness of the
 source is exactly what makes the `ℚ̄`-points a separating family.  This is the
@@ -23429,8 +23476,37 @@ theorem Fermat.Gamma0Datum.hom_ext_of_geomFibrePt {N M : ℕ}
     (u v : d.E ⟶ d'.E) (hu : u ≫ d'.f = d.f) (hv : v ≫ d'.f = d.f)
     (h : ∀ x : GeomFibrePt d.f (𝟙 SpecQ),
       RelPoint.post u hu x = RelPoint.post v hv x) :
-    u = v :=
-  sorry
+    u = v := by
+  haveI : Smooth d.f := d.ab.smooth
+  haveI : IsProper d'.f := d'.ab.proper
+  haveI : IsSeparated d'.f := inferInstance
+  haveI : AlgebraicGeometry.IsReduced d.E := isReduced_of_smooth_over_field d.f
+  haveI : LocallyOfFiniteType d.f := inferInstance
+  haveI : JacobsonSpace (SpecQ : Scheme.{0}) := inferInstance
+  haveI : JacobsonSpace (d.E : Scheme.{0}) := LocallyOfFiniteType.jacobsonSpace d.f
+  refine ext_of_fromSpecResidueField_eq u v d'.f (closedPoints d.E) ?_ ?_ (hu.trans hv.symm)
+  · rw [dense_iff_closure_eq]; exact closure_closedPoints
+  · intro x hx
+    have hx' : IsClosed ({x} : Set d.E) := hx
+    -- the residue field at a closed point is a FINITE `ℚ`-algebra
+    have hfin : IsFinite (d.E.fromSpecResidueField x ≫ d.f) := by
+      rw [isClosed_singleton_iff_isClosedImmersion] at hx'
+      rw [isFinite_iff_locallyOfFiniteType_of_jacobsonSpace]
+      infer_instance
+    -- hence it embeds in `ℚ̄`, giving an honest geometric point above `x`
+    obtain ⟨φ⟩ : Nonempty (↥(d.E.residueField x) →+* AlgebraicClosure ℚ) := by
+      refine Fermat.exists_ringHom_algebraicClosure_of_finite
+        (Spec.preimage (d.E.fromSpecResidueField x ≫ d.f)).hom ?_
+      rw [← IsFinite.SpecMap_iff, Spec.map_preimage]
+      exact hfin
+    haveI : Epi (Spec.map (CommRingCat.ofHom φ)) := epi_specMap_of_fieldHom φ
+    haveI := subsingleton_hom_specQ (Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+    have hpf : (Spec.map (CommRingCat.ofHom φ) ≫ d.E.fromSpecResidueField x) ≫ d.f
+        = specAlgClos ℚ ≫ 𝟙 SpecQ := Subsingleton.elim _ _
+    have key := congrArg Subtype.val
+      (h ⟨Spec.map (CommRingCat.ofHom φ) ≫ d.E.fromSpecResidueField x, hpf⟩)
+    simp only [RelPoint.post, Category.assoc] at key
+    exact (cancel_epi (Spec.map (CommRingCat.ofHom φ))).mp key
 
 /-! #### The scheme-theoretic kernel, and its two residual clauses (2026-08-02)
 
