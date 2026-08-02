@@ -20689,6 +20689,261 @@ theorem not_lFunctionHypothesis_gamma1GL_zero
     rw [hLof.eq_lseries z hz.1, hzero z (le_of_lt hz.2)]
   exact key (Set.mem_univ 1)
 
+section Gamma1EigenFiniteness
+
+open _root_.Matrix
+open scoped MatrixGroups
+open ModularForm UpperHalfPlane
+open scoped Manifold
+
+/-! ### Γ₁-side instances -/
+
+theorem one_mem_strictPeriods_Gamma1GL (N : ℕ) :
+    (1 : ℝ) ∈ (Gamma1GL N).strictPeriods := by
+  show (1 : ℝ) ∈
+    (↑(CongruenceSubgroup.Gamma1 N) : Subgroup (GL (Fin 2) ℝ)).strictPeriods
+  rw [CongruenceSubgroup.strictPeriods_Gamma1]
+  exact AddSubgroup.mem_zmultiples 1
+
+theorem Gamma1GL_le_SL (N : ℕ) : Gamma1GL N ≤ 𝒮ℒ := by
+  rintro g hg
+  rcases Subgroup.mem_map.mp hg with ⟨s, -, rfl⟩
+  exact ⟨s, rfl⟩
+
+/-! ### Fourier uniqueness on an arbitrary `G` -/
+
+theorem hasSum_qExpansion_of_isWeightTwoEigenformOn
+    {G : Subgroup (GL (Fin 2) ℝ)} {M : ℕ} {χ : DirichletCharacter ℂ M}
+    {f : CuspForm G 2} {a : ℕ → ℂ} (hf : IsWeightTwoEigenformOn G M χ f a) (τ : ℍ) :
+    HasSum (fun m : ℕ => a m • Function.Periodic.qParam 1 (τ : ℂ) ^ m) (f τ) := by
+  have hfun : ∀ n : ℕ,
+      a (n + 1) • Function.Periodic.qParam 1 (τ : ℂ) ^ (n + 1)
+        = a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)) := by
+    intro n
+    rw [smul_eq_mul, qParam_one_pow]
+    push_cast
+    ring_nf
+  have h1 : HasSum
+      (fun n : ℕ => a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)))
+      (f τ) := by
+    rw [hf.qExpansion τ]
+    exact (hf.qExpansionSummable τ).hasSum
+  have h2 : HasSum
+      (fun n : ℕ => a (n + 1) • Function.Periodic.qParam 1 (τ : ℂ) ^ (n + 1)) (f τ) := by
+    simpa only [funext hfun] using h1
+  have h3 := (hasSum_nat_add_iff (f := fun m : ℕ =>
+    a m • Function.Periodic.qParam 1 (τ : ℂ) ^ m) 1).mp h2
+  simpa [hf.zero] using h3
+
+theorem qExpansion_coeff_eq_of_isWeightTwoEigenformOn
+    {G : Subgroup (GL (Fin 2) ℝ)} {M : ℕ} {χ : DirichletCharacter ℂ M}
+    {f : CuspForm G 2} {a : ℕ → ℂ} (hper : (1 : ℝ) ∈ G.strictPeriods)
+    (hf : IsWeightTwoEigenformOn G M χ f a) (m : ℕ) :
+    (UpperHalfPlane.qExpansion 1 f).coeff m = a m :=
+  (ModularFormClass.qExpansion_coeff_unique one_pos hper
+    (hasSum_qExpansion_of_isWeightTwoEigenformOn hf) m).symm
+
+/-! ### An eigen-system is determined by its values at the primes -/
+
+/-- With the nebentypus FIXED, prime-power coefficients are determined by
+the coefficient at the prime.  The `χ(p)·p` in the `hecke` recursion is the
+only change from the `Γ₀` argument, and it is inert because `χ` is shared. -/
+theorem coeff_prime_pow_eq_of_coeff_prime_eq_on {G : Subgroup (GL (Fin 2) ℝ)} {M : ℕ}
+    {χ : DirichletCharacter ℂ M} {f g : CuspForm G 2} {a b : ℕ → ℂ}
+    (ha : IsWeightTwoEigenformOn G M χ f a) (hb : IsWeightTwoEigenformOn G M χ g b)
+    {p : ℕ} (hp : p.Prime) (hpq : a p = b p) (k : ℕ) : a (p ^ k) = b (p ^ k) := by
+  by_cases hpM : p ∣ M
+  · have key : ∀ (c : ℕ → ℂ), (∀ n : ℕ, 0 < n → c (n * p) = c p * c n) → c 1 = 1 →
+        ∀ j : ℕ, c (p ^ j) = c p ^ j := by
+      intro c hc hc1 j
+      induction j with
+      | zero => simpa using hc1
+      | succ j ih =>
+        have h := hc (p ^ j) (pow_pos hp.pos j)
+        rw [← pow_succ] at h
+        rw [h, ih]
+        ring
+    rw [key a (fun n hn => ha.atkin p hp hpM n hn) ha.one k,
+      key b (fun n hn => hb.atkin p hp hpM n hn) hb.one k, hpq]
+  · have hrec : ∀ (c : ℕ → ℂ), (∀ n : ℕ, 0 < n →
+          c (n * p) + χ (p : ZMod M) * (p : ℂ) * (if p ∣ n then c (n / p) else 0)
+            = c p * c n) →
+        ∀ j : ℕ, c (p ^ (j + 2))
+          = c p * c (p ^ (j + 1)) - χ (p : ZMod M) * p * c (p ^ j) := by
+      intro c hc j
+      have h1 := hc (p ^ (j + 1)) (pow_pos hp.pos _)
+      rw [if_pos (dvd_pow_self p (Nat.succ_ne_zero j))] at h1
+      rw [show p ^ (j + 1) / p = p ^ j from by
+        rw [pow_succ, Nat.mul_div_cancel _ hp.pos], ← pow_succ] at h1
+      linear_combination h1
+    have ra := hrec a (fun n hn => ha.hecke p hp hpM n hn)
+    have rb := hrec b (fun n hn => hb.hecke p hp hpM n hn)
+    have main : ∀ j : ℕ, a (p ^ j) = b (p ^ j) ∧ a (p ^ (j + 1)) = b (p ^ (j + 1)) := by
+      intro j
+      induction j with
+      | zero => exact ⟨by simpa using ha.one.trans hb.one.symm, by simpa using hpq⟩
+      | succ j ih => exact ⟨ih.2, by rw [ra j, rb j, ih.1, ih.2, hpq]⟩
+    exact (main k).1
+
+theorem eq_of_coeff_prime_eq_on {G : Subgroup (GL (Fin 2) ℝ)} {M : ℕ}
+    {χ : DirichletCharacter ℂ M} {f g : CuspForm G 2} {a b : ℕ → ℂ}
+    (ha : IsWeightTwoEigenformOn G M χ f a) (hb : IsWeightTwoEigenformOn G M χ g b)
+    (h : ∀ p : ℕ, p.Prime → a p = b p) : a = b := by
+  funext n
+  induction n using Nat.recOnPrimePow with
+  | zero => rw [ha.zero, hb.zero]
+  | one => rw [ha.one, hb.one]
+  | prime_pow_mul q p k hp hpq hk ih =>
+    have hq0 : 0 < q := Nat.pos_of_ne_zero (by rintro rfl; exact hpq (dvd_zero p))
+    rw [ha.coeff_prime_pow_mul hp k q hq0 hpq, hb.coeff_prime_pow_mul hp k q hq0 hpq,
+      coeff_prime_pow_eq_of_coeff_prime_eq_on ha hb hp (h p hp) k, ih]
+
+theorem exists_prime_coeff_ne_on {G : Subgroup (GL (Fin 2) ℝ)} {M : ℕ}
+    {χ : DirichletCharacter ℂ M} {f g : CuspForm G 2} {a b : ℕ → ℂ}
+    (ha : IsWeightTwoEigenformOn G M χ f a) (hb : IsWeightTwoEigenformOn G M χ g b)
+    (hab : a ≠ b) : ∃ p : ℕ, p.Prime ∧ a p ≠ b p := by
+  by_contra hcon
+  refine hab (eq_of_coeff_prime_eq_on ha hb fun p hp => ?_)
+  by_contra hne
+  exact hcon ⟨p, hp, hne⟩
+
+/-! ### Linear independence, at a FIXED nebentypus -/
+
+theorem coeff_prime_mul_of_dvd_on {G : Subgroup (GL (Fin 2) ℝ)} {M : ℕ}
+    {χ : DirichletCharacter ℂ M} {f : CuspForm G 2} {a : ℕ → ℂ}
+    (ha : IsWeightTwoEigenformOn G M χ f a) {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (n : ℕ) :
+    a q * a n = a (n * q) := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp [ha.zero]
+  · exact (ha.atkin q hq hqM n hn).symm
+
+theorem coeff_prime_mul_of_not_dvd_on {G : Subgroup (GL (Fin 2) ℝ)} {M : ℕ}
+    {χ : DirichletCharacter ℂ M} {f : CuspForm G 2} {a : ℕ → ℂ}
+    (ha : IsWeightTwoEigenformOn G M χ f a) {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (n : ℕ) :
+    a q * a n
+      = a (n * q) + χ (q : ZMod M) * (q : ℂ) * (if q ∣ n then a (n / q) else 0) := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp [ha.zero]
+  · exact (ha.hecke q hq hqM n hn).symm
+
+/-- **DISTINCT EIGEN-SYSTEMS OF THE SAME NEBENTYPUS ARE LINEARLY
+INDEPENDENT.**  Verbatim the `Γ₀` argument: the only thing it needs is that
+`v x q * v x n` rewrites into values of `v x` at indices NOT depending on
+`x`, with a coefficient not depending on `x` — which is exactly what fixing
+`χ` buys, and is why the set below is split by nebentypus first. -/
+theorem coeff_linearIndependent_aux_on (G : Subgroup (GL (Fin 2) ℝ)) (M : ℕ)
+    (χ : DirichletCharacter ℂ M) : ∀ (m : ℕ) {ι : Type} [DecidableEq ι]
+    (t : Finset ι) (v : ι → (ℕ → ℂ)), Function.Injective v → t.card ≤ m →
+    (∀ i ∈ t, ∃ f : CuspForm G 2, IsWeightTwoEigenformOn G M χ f (v i)) →
+    ∀ g : ι → ℂ, (∀ n : ℕ, ∑ i ∈ t, g i * v i n = 0) → ∀ i ∈ t, g i = 0 := by
+  intro m
+  induction m with
+  | zero =>
+    intro ι _ t v _ hcard _ g _ i hi
+    exact absurd (Finset.card_pos.mpr ⟨i, hi⟩) (by omega)
+  | succ m ih =>
+    intro ι _ t v hinj hcard hsys g hrel i hi
+    obtain ⟨b, hbt⟩ : ∃ b, b ∈ t := ⟨i, hi⟩
+    have key : ∀ q : ℕ, q.Prime → ∀ n : ℕ,
+        ∑ x ∈ t, (g x * (v x q - v b q)) * v x n = 0 := by
+      intro q hq n
+      have expand : ∑ x ∈ t, (g x * (v x q - v b q)) * v x n
+          = (∑ x ∈ t, g x * (v x q * v x n)) - v b q * ∑ x ∈ t, g x * v x n := by
+        rw [Finset.mul_sum, ← Finset.sum_sub_distrib]
+        exact Finset.sum_congr rfl fun x _ => by ring
+      rw [expand, hrel n, mul_zero, sub_zero]
+      by_cases hqM : q ∣ M
+      · have hcongr : ∀ x ∈ t, g x * (v x q * v x n) = g x * v x (n * q) := by
+          intro x hx
+          obtain ⟨fx, hfx⟩ := hsys x hx
+          rw [coeff_prime_mul_of_dvd_on hfx hq hqM n]
+        rw [Finset.sum_congr rfl hcongr, hrel (n * q)]
+      · by_cases hqn : q ∣ n
+        · have hcongr : ∀ x ∈ t, g x * (v x q * v x n)
+              = g x * v x (n * q)
+                + (χ (q : ZMod M) * (q : ℂ)) * (g x * v x (n / q)) := by
+            intro x hx
+            obtain ⟨fx, hfx⟩ := hsys x hx
+            rw [coeff_prime_mul_of_not_dvd_on hfx hq hqM n, if_pos hqn]
+            ring
+          rw [Finset.sum_congr rfl hcongr, Finset.sum_add_distrib, ← Finset.mul_sum,
+            hrel (n * q), hrel (n / q), mul_zero, add_zero]
+        · have hcongr : ∀ x ∈ t, g x * (v x q * v x n) = g x * v x (n * q) := by
+            intro x hx
+            obtain ⟨fx, hfx⟩ := hsys x hx
+            rw [coeff_prime_mul_of_not_dvd_on hfx hq hqM n, if_neg hqn]
+            ring
+          rw [Finset.sum_congr rfl hcongr, hrel (n * q)]
+    have kerase : ∀ q : ℕ, q.Prime → ∀ n : ℕ,
+        ∑ x ∈ t.erase b, (g x * (v x q - v b q)) * v x n = 0 := by
+      intro q hq n
+      rw [Finset.sum_erase _ (by simp), key q hq n]
+    have hcarderase : (t.erase b).card ≤ m := by
+      have h1 := Finset.card_erase_of_mem hbt
+      have h2 := Finset.card_pos.mpr (⟨b, hbt⟩ : t.Nonempty)
+      omega
+    have hgz : ∀ x ∈ t.erase b, g x = 0 := by
+      intro x hx
+      have hxne : x ≠ b := (Finset.mem_erase.mp hx).1
+      obtain ⟨fx, hfx⟩ := hsys x (Finset.mem_of_mem_erase hx)
+      obtain ⟨fb, hfb⟩ := hsys b hbt
+      obtain ⟨q, hq, hqne⟩ := exists_prime_coeff_ne_on hfx hfb (fun h => hxne (hinj h))
+      have hzero := ih (t.erase b) v hinj hcarderase
+        (fun y hy => hsys y (Finset.mem_of_mem_erase hy))
+        (fun y => g y * (v y q - v b q)) (kerase q hq) x hx
+      rcases mul_eq_zero.mp hzero with h | h
+      · exact h
+      · exact absurd (sub_eq_zero.mp h) hqne
+    by_cases hib : i = b
+    · subst hib
+      have h1 := hrel 1
+      rw [← Finset.add_sum_erase t (fun x => g x * v x 1) hi] at h1
+      rw [Finset.sum_eq_zero (fun x hx => by rw [hgz x hx, zero_mul]), add_zero] at h1
+      obtain ⟨fi, hfi⟩ := hsys i hi
+      rwa [hfi.one, mul_one] at h1
+    · exact hgz i (Finset.mem_erase.mpr ⟨hib, hi⟩)
+
+/-! ### Finiteness -/
+
+/-- Finiteness at a FIXED nebentypus. -/
+theorem finite_setOf_isWeightTwoEigenformOn_gamma1_fixed (N : ℕ) (hN : N ≠ 0)
+    (χ : DirichletCharacter ℂ N) :
+    {a : ℕ → ℂ | ∃ f : CuspForm (Gamma1GL N) 2,
+      IsWeightTwoEigenformOn (Gamma1GL N) N χ f a}.Finite := by
+  classical
+  haveI : NeZero N := ⟨hN⟩
+  haveI := cuspForm_finiteDimensional_of_le (Gamma1GL N) (Gamma1GL_le_SL N)
+    (one_mem_strictPeriods_Gamma1GL N)
+  set 𝒜 : Set (ℕ → ℂ) :=
+    {a : ℕ → ℂ | ∃ f : CuspForm (Gamma1GL N) 2,
+      IsWeightTwoEigenformOn (Gamma1GL N) N χ f a} with h𝒜
+  choose F hF using fun x : 𝒜 => x.2
+  have hcoeff : ∀ (x : 𝒜) (m : ℕ),
+      (UpperHalfPlane.qExpansion 1 ⇑(F x)).coeff m = (x : ℕ → ℂ) m :=
+    fun x m => qExpansion_coeff_eq_of_isWeightTwoEigenformOn
+      (one_mem_strictPeriods_Gamma1GL N) (hF x) m
+  have hli : LinearIndependent ℂ F := by
+    rw [linearIndependent_iff']
+    intro t c hsum i hi
+    have hseq : ∀ n : ℕ, ∑ x ∈ t, c x * (x : ℕ → ℂ) n = 0 := by
+      intro n
+      have hmap := congrArg
+        (qExpansionCoeffLOf (Gamma1GL N) (one_mem_strictPeriods_Gamma1GL N) n) hsum
+      rw [map_sum, map_zero] at hmap
+      rw [← hmap]
+      refine Finset.sum_congr rfl fun x _ => ?_
+      rw [map_smul, smul_eq_mul]
+      show _ = c x * _
+      rw [show (qExpansionCoeffLOf (Gamma1GL N)
+        (one_mem_strictPeriods_Gamma1GL N) n) (F x)
+          = (UpperHalfPlane.qExpansion 1 ⇑(F x)).coeff n from rfl, hcoeff x n]
+    exact coeff_linearIndependent_aux_on (Gamma1GL N) N χ t.card t
+      (fun x => (x : ℕ → ℂ)) Subtype.val_injective le_rfl (fun x _ => ⟨F x, hF x⟩) c hseq i hi
+  haveI : Finite 𝒜 := hli.finite_of_isNoetherian
+  exact Set.toFinite _
+
+end Gamma1EigenFiniteness
+
 /-- **THE SET OF WEIGHT-TWO EIGEN-SYSTEMS OF LEVEL `N` ON `Γ₁(N)` IS
 FINITE** (sorry leaf, new 2026-07-31) — the "finiteness of the index set"
 bullet of `exists_heckeIsotypicDecomposition_of_isotypicQuotients_gamma1`
@@ -20709,25 +20964,56 @@ THIS FILE.**  At `N = 0` the set is INFINITE:
 `isEmpty_isHeckeIsotypicDecompositionGamma1_zero` runs, which is why the
 two `hN`s are the same `hN`.
 
-**WHERE THE PROOF IS.**  The `Γ₀` twin `finite_setOf_isWeightTwoEigenform`
-was PROVEN on 2026-07-31 on the merge worker's branch, and its docstring
-records the audit error that had made it look expensive: this project has
-had `FiniteDimensional ℂ (CuspForm (Gamma0GL N) 2)` since 2026-07-24 as
-`cuspForm_finiteDimensional`, invisible from here only because
-`Modularity/Interface.lean` carries `public import
-Fermat.FLT.ModularCurve.X0` and is therefore DOWNSTREAM.  That branch
-HOISTS the Sturm bound and the finite-dimensionality into a new upstream
-module `ModularCurve/WeightTwoEigenform.lean`.  So a prover of this `Γ₁`
-statement should first check whether that hoist has landed, and if it has,
-the work here is the `Γ₁` instance of the same three steps — a
-finite-dimensionality for `CuspForm (Gamma1GL N) 2` (the Sturm-bound route
-is level-shape agnostic), Fourier uniqueness, and linear independence.
-Note the nebentypus costs nothing: `χ` is quantified inside the set, and
-two systems with different nebentypus are still two systems. -/
+**PROVEN 2026-08-01.**  The hoist the previous docstring was waiting on had
+landed: `ModularCurve/WeightTwoEigenform.lean` carries the Sturm bound and
+`cuspForm_finiteDimensional`.  Its statements were `Γ₀`-only, so — per the
+standing rule that one GENERALISES rather than writing a second copy — the
+Sturm bound and the finite-dimensionality there are now stated for an
+ARBITRARY finite-index `G ≤ SL(2, ℤ)` with `1` a strict period
+(`exists_cuspForm_sturm_bound_of_le`, `cuspForm_finiteDimensional_of_le`),
+and the `Γ₀` forms are one-line wrappers.  Nothing in that argument was
+`Γ₀`-specific: the level shape is spent only through `hle`, the
+`IsFiniteRelIndex` instance and `hper`, all three of which `Γ₁(N)` supplies
+for `N ≠ 0` (`Gamma1GL_le_SL`, `one_mem_strictPeriods_Gamma1GL`, and
+mathlib's `CongruenceSubgroup.strictPeriods_Gamma1`).
+
+**THE ONE PLACE THE NEBENTYPUS IS NOT FREE, and it is why the proof splits
+the set by `χ` FIRST.**  The previous docstring said "the nebentypus costs
+nothing: `χ` is quantified inside the set, and two systems with different
+nebentypus are still two systems".  That is right about the STATEMENT and
+wrong about the linear-independence ARGUMENT.  That argument (the `Γ₀`
+`coeff_linearIndependent_aux`, transcribed here as
+`coeff_linearIndependent_aux_on`) works by rewriting `v x q * v x n` into
+values of `v x` at indices — `n * q` and `n / q` — that do NOT depend on
+`x`, WITH A COEFFICIENT THAT ALSO DOES NOT DEPEND ON `x`; that is what lets
+the shifted relation be closed by the hypothesis at those two indices.  On
+`Γ₀` the coefficient is `q`.  On `Γ₁` it is `χ_x(q) · q`, which varies with
+`x` — so the sum `∑ₓ gₓ χ_x(q) v x (n/q)` is NOT killed by the relation and
+the induction breaks.  (It is not repairable by noting that `χ` is
+determined by `a`: `χ(q)·q = a(q)² − a(q²)` is a function of `a`, but it is
+still a function of `x`.)
+
+The fix is to prove finiteness at a FIXED `χ`
+(`finite_setOf_isWeightTwoEigenformOn_gamma1_fixed`), where the coefficient
+is shared and the `Γ₀` argument transcribes verbatim, and then take the
+union — legitimate because `DirichletCharacter ℂ N = MulChar (ZMod N) ℂ` is
+FINITE, by mathlib's `MulChar.finite` (`(ZMod N)ˣ` finite, `ℂ` a domain).
+This is the formal shadow of the classical decomposition
+`S₂(Γ₁(N)) = ⨁_χ S₂(N, χ)`, obtained without any diamond operator. -/
 theorem finite_setOf_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0) :
     {a : ℕ → ℂ | ∃ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2),
-      IsWeightTwoEigenformOn (Gamma1GL N) N χ f a}.Finite :=
-  sorry
+      IsWeightTwoEigenformOn (Gamma1GL N) N χ f a}.Finite := by
+  haveI : NeZero N := ⟨hN⟩
+  have hun : {a : ℕ → ℂ | ∃ (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2),
+      IsWeightTwoEigenformOn (Gamma1GL N) N χ f a}
+      = ⋃ χ : DirichletCharacter ℂ N,
+          {a : ℕ → ℂ | ∃ f : CuspForm (Gamma1GL N) 2,
+            IsWeightTwoEigenformOn (Gamma1GL N) N χ f a} := by
+    ext a
+    simp only [Set.mem_setOf_eq, Set.mem_iUnion]
+  rw [hun]
+  exact Set.finite_iUnion fun χ =>
+    finite_setOf_isWeightTwoEigenformOn_gamma1_fixed N hN χ
 
 /-- **THE ISOTYPIC QUOTIENTS CAN BE CHOSEN JOINTLY SEPARATING** (sorry
 leaf, new 2026-07-31) — the geometric bullet of

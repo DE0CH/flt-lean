@@ -20879,3 +20879,77 @@ recorded, arriving through a paragraph replacement rather than through a quoted 
 **Re-run `tools/merge/parsecheck.py <file>` and `flt-comment-balance.py` after every
 docstring edit**; both are seconds and both catch it, and the compiler's version of the
 same message arrives thousands of lines away.
+## "THE EXTRA PARAMETER COSTS NOTHING" IS A CLAIM ABOUT THE STATEMENT, NOT ABOUT THE ARGUMENT
+(2026-08-01, `flt-lean-211`, closing `finite_setOf_isWeightTwoEigenformOn_gamma1`
+in `ModularCurve/X1.lean`.)
+A `Γ₁` statement is routinely the `Γ₀` statement with a nebentypus `χ` added, and
+its docstring routinely says so and adds a reassurance. This one said:
+> Note the nebentypus costs nothing: `χ` is quantified inside the set, and two
+> systems with different nebentypus are still two systems.
+That is TRUE of the statement — the set really is just bigger — and it is FALSE of
+the proof, in a way that kills the transcription outright. The `Γ₀` linear
+independence argument (`coeff_linearIndependent_aux`) works by rewriting
+`v x q * v x n` into values of `v x` at indices `n*q` and `n/q` that do not depend
+on `x`, **with a coefficient that also does not depend on `x`** — that is what lets
+the shifted relation be closed by the ambient relation at those two indices. On
+`Γ₀` the coefficient is `q`. On `Γ₁` it is `χ_x(q)·q`, which varies with `x`, so
+`∑ₓ gₓ χ_x(q) v x (n/q)` survives and the induction breaks. Nor is it repairable by
+observing that `χ` is determined by `a` (`χ(q)·q = a(q)² − a(q²)`): determined by
+`a` still means varying with `x`.
+**The check is one line and it is not "is the statement still true": take the step
+of the proof that is INDEXED BY THE FAMILY, and ask whether the new parameter
+enters that step's COEFFICIENTS.** If it does, the transcription is not a
+transcription. A parameter that is inert in the conclusion can be fatal in an
+induction that ranges over a finite set of instances, precisely because the
+induction sees several values of it at once.
+**The fix is usually to make the parameter CONSTANT and take a union, and the cost
+is a finiteness fact you should look for before designing anything else.** Here:
+prove finiteness at a FIXED `χ`, where the coefficient is shared and the `Γ₀`
+argument transcribes verbatim, then take `⋃ χ` — legitimate because
+`DirichletCharacter ℂ N = MulChar (ZMod N) ℂ` is finite, by mathlib's
+`MulChar.finite` (`instance [Finite Mˣ] [IsDomain R] : Finite (MulChar M R)`, in
+`Mathlib/NumberTheory/MulChar/Duality.lean`). That is the formal shadow of
+`S₂(Γ₁(N)) = ⨁_χ S₂(N, χ)` and it needs no diamond operator, no Hecke algebra and
+no second development. **Grep for the finiteness of the parameter type FIRST** — if
+it is finite the whole difficulty evaporates, and if it is not you have learned
+that the union route is closed before you have written any Lean.
+### GENERALISE AN UPSTREAM THEOREM BY MOVING ITS PROOF AND LEAVING A WRAPPER — the consumer churn is then ZERO
+Same task, and it is the cheap half. `WeightTwoEigenform.lean`'s Sturm bound and
+`cuspForm_finiteDimensional` were stated only for `Gamma0GL N`. The rule is to
+generalise rather than copy; the way to do it without touching a single consumer is
+to **move the proof to the general statement and re-derive the special one as a
+two-line wrapper with its signature unchanged**:
+    theorem exists_cuspForm_sturm_bound_of_le (G) [G.IsFiniteRelIndex 𝒮ℒ]
+        (hle : G ≤ 𝒮ℒ) (hper : (1:ℝ) ∈ G.strictPeriods) : … := <the old proof>
+    theorem exists_cuspForm_sturm_bound (N) (hN : N ≠ 0) : … := by
+      haveI : NeZero N := ⟨hN⟩
+      exact exists_cuspForm_sturm_bound_of_le (Gamma0GL N) (Gamma0GL_le_SL N) …
+**The hypotheses of the general version are found mechanically, by reading what the
+special proof SPENDS the special object on, not by guessing.** Here `Gamma0GL N` was
+spent in exactly three places — one `γ ∈ G ⟹ γ ∈ 𝒮ℒ` step (becomes `hle`), the
+`Nat.card` finiteness and the cusp condition (become the `IsFiniteRelIndex`
+instance), and analyticity of the cusp function (becomes `hper`) — and `NeZero N`
+turned out to be needed only to produce that instance, so it disappears from the
+general statement entirely. The whole generalisation was a textual substitution and
+it compiled first try.
+**Two mechanical notes.** A `def` being generalised keeps its `rfl` API if the
+wrapper is a delegation rather than a re-definition — `qExpansionCoeffL N m :=
+qExpansionCoeffLOf (Gamma0GL N) _ m` leaves `qExpansionCoeffL_apply … := rfl` true,
+which matters because `X0.lean` rewrites with it. And the instance the general form
+needs that the special form got silently is `[G.HasDetOne]`, which is what supplies
+`Module ℂ (CuspForm G k)`; its absence shows up as `failed to synthesize Module ℂ
+(CuspForm G 2)` on the DEF, thousands of lines from anything about determinants.
+### THE 8-SECOND LOOP THAT MADE THIS AFFORDABLE, AND WHY THE FIRST BUILD MUST STILL HAPPEN
+The target module is 23 000 lines with `X0.lean` (108 000) upstream, so one real
+build is ~40 minutes. Every line above was developed at **8–12 seconds per
+iteration** in a scratch that `public import`s the target module and is elaborated
+against the RELEASE OLEAN FARM (`cp -rs ~/.flt-release-lake/build/lib
+/tmp/relean-N/`, then bare `lean` under a harvested `LEAN_PATH`). Two things made it
+sound here and both are worth checking rather than assuming:
+`git diff --stat $(cat ~/.flt-release-lake/sha) HEAD -- Fermat/` was EMPTY, so the
+farm is bit-for-bit the tree; and the first thing written into the scratch was a
+six-line PROBE — does `(Gamma1GL N).IsFiniteRelIndex 𝒮ℒ` synthesize, is
+`Gamma1GL N ≤ 𝒮ℒ`, is `1` a strict period, is the character group finite — which
+answered in one 8-second run every question the design depended on. **Write the
+probe before the proof**; each of those six answers would otherwise have been
+discovered one 40-minute build at a time.

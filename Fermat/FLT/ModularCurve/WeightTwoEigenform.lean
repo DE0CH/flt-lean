@@ -367,71 +367,134 @@ the file, verbatim and with this section's two `open` lines, so that
 `fg_coeffSpanZ_qExpansion` below can push a `ℂ`-linear combination of cusp
 forms through coefficient extraction.  Its other consumer,
 `cuspForm_finiteDimensional`, is far below and is unaffected. -/
-noncomputable def qExpansionCoeffL (N m : ℕ) : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] ℂ where
-  toFun f := (qExpansion 1 ⇑f).coeff m
-  map_add' f g := by
-    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos
-      (one_mem_strictPeriods_Gamma0GL N)
-    have hga := ModularFormClass.analyticAt_cuspFunction_zero g one_pos
-      (one_mem_strictPeriods_Gamma0GL N)
-    show (qExpansion 1 ⇑(f + g)).coeff m = _
-    rw [CuspForm.coe_add, qExpansion_add hfa hga]
-    simp
-  map_smul' c f := by
-    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos
-      (one_mem_strictPeriods_Gamma0GL N)
-    show (qExpansion 1 ⇑(c • f)).coeff m = _
-    rw [CuspForm.IsGLPos.coe_smul, qExpansion_smul hfa]
-    simp
+noncomputable def qExpansionCoeffL (N m : ℕ) : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] ℂ :=
+  qExpansionCoeffLOf (Gamma0GL N) (one_mem_strictPeriods_Gamma0GL N) m
 
 @[simp] theorem qExpansionCoeffL_apply (N m : ℕ) (f : CuspForm (Gamma0GL N) 2) :
     qExpansionCoeffL N m f = (qExpansion 1 ⇑f).coeff m := rfl
 
-end ShimuraAlgebraicity
+/-- **STURM BOUND FOR `S₂(G)`, FOR AN ARBITRARY FINITE-INDEX `G ≤ SL(2, ℤ)`**
+(generalised 2026-08-01 from the `Γ₀`-only form, which is now the wrapper
+`exists_cuspForm_sturm_bound` below).
 
-/-! ### Shimura algebraicity, reduced to the `q`-expansion principle
+There is a finite bound `B` — here `2·[SL(2,ℤ):G]/12 + 1` — such that a
+weight-2 cusp form for `G` whose `q`-expansion coefficients `a_m` vanish for
+all `m < B` is zero.  General-level analogue of the classical Sturm bound,
+proven by the norm-to-level-1 route made quantitative through the
+factorization `norm f = f · (complementary product)`.
 
-Added 2026-08-01.  `isIntegral_qExpansionCoeff_prime` far below was a bare
-`sorry` leaf carrying the whole of Shimura's algebraicity theorem, with a
-docstring directing a prover at the integral homology `H₁(X₀(N), ℤ)` as a
-Hecke module or at the Eichler–Selberg trace formula.  **Neither is
-needed, and no Hecke operator is needed either.**  The theorem is now
-PROVEN over the single leaf `exists_integralSpanningFamily_cuspForm`
-below — the `q`-expansion principle, i.e. that `S₂(Γ₀(N))` is spanned
-over `ℂ` by cusp forms whose Fourier coefficients are rational integers.
+**THE LEVEL SHAPE IS SPENT IN EXACTLY THREE PLACES, and all three are
+hypotheses here**: `hle` (to read an element of `G` as an element of
+`SL(2,ℤ)`), the `IsFiniteRelIndex` instance (for `ModularForm.norm` and for
+the cusp condition at the translated cusps), and `hper` (for analyticity of
+the cusp function at the width-`1` `q`-parameter).  Nothing else in the
+argument mentions `Γ₀`, which is why the `Γ₁` finiteness theorem in
+`ModularCurve/X1.lean` is an instance of this rather than a second copy. -/
+theorem exists_cuspForm_sturm_bound_of_le (G : Subgroup (GL (Fin 2) ℝ))
+    [G.IsFiniteRelIndex 𝒮ℒ] (hle : G ≤ 𝒮ℒ) (hper : (1 : ℝ) ∈ G.strictPeriods) :
+    ∃ B : ℕ, ∀ f : CuspForm G 2,
+      (∀ m < B, (qExpansion 1 ⇑f).coeff m = 0) → f = 0 := by
+  classical
+  refine ⟨2 * Nat.card (𝒮ℒ ⧸ G.subgroupOf 𝒮ℒ) / 12 + 1, fun f hcoeff => ?_⟩
+  suffices hf0 : ⇑f = 0 from DFunLike.coe_injective (by rw [hf0, CuspForm.coe_zero])
+  by_contra hf
+  refine ModularForm.norm_ne_zero 𝒮ℒ hf ?_
+  apply ModularForm.sturm_bound_levelOne
+  letI := Fintype.ofFinite (𝒮ℒ ⧸ G.subgroupOf 𝒮ℒ)
+  set q₀ : 𝒮ℒ ⧸ G.subgroupOf 𝒮ℒ := ⟦1⟧ with hq₀
+  set g : ℍ → ℂ :=
+    ∏ q ∈ Finset.univ.erase q₀, SlashInvariantForm.quotientFunc f q with hgdef
+  -- every element of `G` stabilizes the identity coset
+  have hfix : ∀ (γ : GL (Fin 2) ℝ) (hγSL : γ ∈ 𝒮ℒ), γ ∈ G →
+      (⟨γ, hγSL⟩ : 𝒮ℒ)⁻¹ • q₀ = q₀ := by
+    intro γ hγSL hγ
+    rw [hq₀]
+    exact Quotient.sound (QuotientGroup.leftRel_apply.mpr (by
+      simpa [Subgroup.mem_subgroupOf] using hγ))
+  have hfix' : ∀ (γ : GL (Fin 2) ℝ) (hγSL : γ ∈ 𝒮ℒ), γ ∈ G →
+      (⟨γ, hγSL⟩ : 𝒮ℒ) • q₀ = q₀ := by
+    intro γ hγSL hγ
+    conv_lhs => rw [← hfix γ hγSL hγ]
+    rw [smul_inv_smul]
+  -- hence permutes the complementary cosets: `g` is `G`-slash-invariant
+  have hslash : ∀ γ ∈ G,
+      g ∣[(2 * ((Finset.univ.erase q₀).card : ℤ))] γ = g := by
+    intro γ hγ
+    have hγSL : γ ∈ 𝒮ℒ := hle hγ
+    have habs : |γ.det.val| = 1 := Subgroup.HasDetPlusMinusOne.abs_det hγSL
+    rw [hgdef, ModularForm.prod_slash, habs, _root_.one_zpow, one_smul]
+    refine Finset.prod_equiv (MulAction.toPerm ((⟨γ, hγSL⟩ : 𝒮ℒ)⁻¹))
+      (fun q => ?_) (fun q _ => ?_)
+    · simp only [Finset.mem_erase, Finset.mem_univ, and_true, MulAction.toPerm_apply]
+      rw [not_iff_not, inv_smul_eq_iff, hfix' γ hγSL hγ]
+    · simpa [MulAction.toPerm_apply] using
+        SlashInvariantForm.quotientFunc_smul f hγSL q
+  let G' : SlashInvariantForm G (2 * ((Finset.univ.erase q₀).card : ℤ)) :=
+    ⟨g, hslash⟩
+  have hper' : Function.Periodic (g ∘ UpperHalfPlane.ofComplex) 1 :=
+    SlashInvariantFormClass.periodic_comp_ofComplex G' hper
+  have hhol : MDiff g := by
+    rw [hgdef]
+    exact MDifferentiable.prod (Quotient.forall.mpr fun ⟨r, _⟩ _ =>
+      (ModularForm.translate f r⁻¹).holo')
+  have hqzero : ∀ q : 𝒮ℒ ⧸ G.subgroupOf 𝒮ℒ,
+      IsZeroAtImInfty (SlashInvariantForm.quotientFunc f q) := by
+    intro q
+    induction q using Quotient.inductionOn with
+    | h r =>
+      rw [SlashInvariantForm.quotientFunc_mk]
+      have hinf : IsCusp OnePoint.infty 𝒮ℒ := isCusp_SL2Z_iff'.mpr ⟨1, by simp⟩
+      have hcusp : IsCusp ((r.val)⁻¹ • OnePoint.infty) G :=
+        (hinf.smul_of_mem (inv_mem r.2)).of_isFiniteRelIndex
+      exact CuspFormClass.zero_at_cusps f hcusp _ rfl
+  have hbdd : IsBoundedAtImInfty g := by
+    rw [hgdef]
+    exact Filter.BoundedAtFilter.prod _ fun q _ =>
+      Filter.ZeroAtFilter.boundedAtFilter (hqzero q)
+  have hganal : AnalyticAt ℂ (cuspFunction 1 g) 0 :=
+    analyticAt_cuspFunction_zero one_pos hper' hhol hbdd
+  have hfanal : AnalyticAt ℂ (cuspFunction 1 ⇑f) 0 :=
+    ModularFormClass.analyticAt_cuspFunction_zero f one_pos hper
+  have hfac : ⇑(ModularForm.norm 𝒮ℒ f) = ⇑f * g := by
+    rw [ModularForm.coe_norm,
+      ← Finset.mul_prod_erase Finset.univ _ (Finset.mem_univ q₀), ← hgdef]
+    congr 1
+    rw [hq₀, SlashInvariantForm.quotientFunc_mk]
+    simp
+  rw [hfac, qExpansion_mul hfanal hganal]
+  have horderf : ((2 * Nat.card (𝒮ℒ ⧸ G.subgroupOf 𝒮ℒ) / 12 + 1 : ℕ) : ℕ∞)
+      ≤ (qExpansion 1 ⇑f).order :=
+    PowerSeries.nat_le_order _ _ fun i hi => hcoeff i hi
+  have hcast : ((2 : ℤ) * (Nat.card (𝒮ℒ ⧸ G.subgroupOf 𝒮ℒ) : ℤ)).toNat
+      = 2 * Nat.card (𝒮ℒ ⧸ G.subgroupOf 𝒮ℒ) := by omega
+  calc ((((2 : ℤ) * (Nat.card (𝒮ℒ ⧸ G.subgroupOf 𝒮ℒ) : ℤ)).toNat / 12 : ℕ) : ℕ∞)
+      < ((2 * Nat.card (𝒮ℒ ⧸ G.subgroupOf 𝒮ℒ) / 12 + 1 : ℕ) : ℕ∞) := by
+        rw [hcast]
+        exact_mod_cast Nat.lt_succ_self _
+    _ ≤ (qExpansion 1 ⇑f).order := horderf
+    _ ≤ (qExpansion 1 ⇑f).order + (qExpansion 1 g).order := self_le_add_right _ _
+    _ ≤ ((qExpansion 1 ⇑f) * qExpansion 1 g).order := PowerSeries.le_order_mul _ _
 
-The three steps, all proven here:
+/-- **FINITE DIMENSIONALITY OF `S₂(G)`** for a finite-index `G ≤ SL(2, ℤ)`
+with `1` a strict period (generalised 2026-08-01): the Sturm bound makes the
+finitely many coefficient functionals `qExpansionCoeffLOf G hper 0, …,
+qExpansionCoeffLOf G hper (B−1)` jointly injective, so the weight-2 cusp
+space embeds `ℂ`-linearly into `Fin B → ℂ`. -/
+theorem cuspForm_finiteDimensional_of_le (G : Subgroup (GL (Fin 2) ℝ)) [G.HasDetOne]
+    [G.IsFiniteRelIndex 𝒮ℒ] (hle : G ≤ 𝒮ℒ) (hper : (1 : ℝ) ∈ G.strictPeriods) :
+    FiniteDimensional ℂ (CuspForm G 2) := by
+  obtain ⟨B, hB⟩ := exists_cuspForm_sturm_bound_of_le G hle hper
+  refine FiniteDimensional.of_injective
+    (LinearMap.pi (fun i : Fin B => qExpansionCoeffLOf G hper (i : ℕ)))
+    ((injective_iff_map_eq_zero _).mpr fun f hf => ?_)
+  refine hB f fun m hm => ?_
+  simpa [LinearMap.pi_apply, qExpansionCoeffLOf] using congrFun hf ⟨m, hm⟩
 
-1. `coeff_mul_mem_coeffSpanZ` — **the general-`n` Hecke relation is a
-   consequence of the prime-power recursions.**  This is the "second,
-   elementary item in the RIVAL CARRIERS survey", recorded there as
-   *still unwritten*; it is written now.  Splitting `n = p^r · m` with
-   `p ∤ m` and running `hmul` twice turns `hgood`/`hbad` into
-   `a_p · a_n = a_{np} + p · a_{n/p}` (good `p`) resp. `a_p · a_n = a_{np}`
-   (bad `p`), which is exactly `IsWeightTwoEigenform`'s `hecke`/`atkin`.
-   In particular the `ℤ`-span `coeffSpanZ` of the `a_n` (`n ≥ 1`) is
-   **stable under multiplication by `a_p`**, with no arithmetic input.
-2. `fg_coeffSpanZ_qExpansion` — writing `f = ∑ c i • g i` over an integral
-   spanning family makes every `a_n(f) = ∑ c i · (integer)` lie in the
-   `ℤ`-span of the finitely many coordinates `c i`.  So `coeffSpanZ` is a
-   submodule of a finitely generated `ℤ`-module, hence itself finitely
-   generated (`Submodule.FG.of_le`, `ℤ` being Noetherian).
-3. `isIntegral_of_coeffSpanZ_fg` — a nonzero finitely generated
-   `ℤ`-submodule of `ℂ` stable under multiplication by `x` makes `x`
-   integral (`isIntegral_of_smul_mem_submodule`).  `1 = a_1` is in
-   `coeffSpanZ` by `hone`, so it is nonzero.
-
-**WHY THIS IS NOT THE HECKE-STABLE-LATTICE ROUTE THE OLD DOCSTRING WARNED
-OFF.**  That route needs the Hecke algebra to act FAITHFULLY on a
-finitely generated `ℤ`-module, and faithfulness is what forces the
-integral lattice to be FULL — which is where `Modularity/Interface.lean`'s
-chain becomes circular against its own copy of this theorem (see the
-CUT-OBSTRUCTION AUDIT on `exists_trace_heckeOpN_int` there).  Nothing
-here mentions an operator: the module is a `ℤ`-submodule of `ℂ`, its
-stability under `a_p` is the elementary Hecke relation of step 1, and its
-finite generation comes from *any* integral spanning family, full rank or
-not.  So the leaf below is **not** the faithfulness statement and the
-cycle is not re-entered. -/
+/-- `Γ₀(N) ≤ SL(2, ℤ)` inside `GL(2, ℝ)`. -/
+theorem Gamma0GL_le_SL (N : ℕ) : Gamma0GL N ≤ 𝒮ℒ := by
+  rintro g hg
+  rcases Subgroup.mem_map.mp hg with ⟨s, -, rfl⟩
+  exact ⟨s, rfl⟩
 
 /-- The `ℤ`-span of the positive-index values of a coefficient sequence.
 This is the module the integrality argument runs on: it contains `1` when
@@ -1497,115 +1560,58 @@ carries, and the block's only in-file input is `one_mem_strictPeriods_Gamma0GL`
 immediately below and the new assembly above, so nothing between the two positions
 was disturbed. -/
 
+/-- The `m`-th `q`-expansion coefficient of a weight-`2` cusp form for an
+ARBITRARY subgroup `G` having `1` as a strict period, as a `ℂ`-linear
+functional — additivity and scalar equivariance through the pin's
+`qExpansion_add`/`qExpansion_smul`, which need analyticity of the cusp
+function and hence `1` being a strict period.
+
+**Nothing here is `Γ₀`-specific**, which is the whole point: the level
+shape enters only through `hper`, so the `Γ₁` development in
+`ModularCurve/X1.lean` uses this at `G = Gamma1GL N` with no second copy.
+`qExpansionCoeffL` below is the `Γ₀` instance and is `rfl`-equal to it. -/
+noncomputable def qExpansionCoeffLOf (G : Subgroup (GL (Fin 2) ℝ)) [G.HasDetOne]
+    (hper : (1 : ℝ) ∈ G.strictPeriods) (m : ℕ) : CuspForm G 2 →ₗ[ℂ] ℂ where
+  toFun f := (qExpansion 1 ⇑f).coeff m
+  map_add' f g := by
+    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos hper
+    have hga := ModularFormClass.analyticAt_cuspFunction_zero g one_pos hper
+    show (qExpansion 1 ⇑(f + g)).coeff m = _
+    rw [CuspForm.coe_add, qExpansion_add hfa hga]
+    simp
+  map_smul' c f := by
+    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos hper
+    show (qExpansion 1 ⇑(c • f)).coeff m = _
+    rw [CuspForm.IsGLPos.coe_smul, qExpansion_smul hfa]
+    simp
+
+@[simp] theorem qExpansionCoeffLOf_apply (G : Subgroup (GL (Fin 2) ℝ)) [G.HasDetOne]
+    (hper : (1 : ℝ) ∈ G.strictPeriods) (m : ℕ) (f : CuspForm G 2) :
+    qExpansionCoeffLOf G hper m f = (qExpansion 1 ⇑f).coeff m := rfl
+
 /-- **Sturm bound for `S₂(Γ₀(N))`**: there is a finite bound `B` — here
 `2·[SL(2,ℤ):Γ₀(N)]/12 + 1` — such that a weight-2 level-`N` cusp form whose
 `q`-expansion coefficients `a_m` vanish for all `m < B` is zero.
-General-level analogue of the classical Sturm bound, proven by the
-norm-to-level-1 route made quantitative through the factorization
-`norm f = f · (complementary product)`. -/
+The `Γ₀` instance of `exists_cuspForm_sturm_bound_of_le` above. -/
 theorem exists_cuspForm_sturm_bound (N : ℕ) (hN : N ≠ 0) :
     ∃ B : ℕ, ∀ f : CuspForm (Gamma0GL N) 2,
       (∀ m < B, (qExpansion 1 ⇑f).coeff m = 0) → f = 0 := by
-  classical
   haveI : NeZero N := ⟨hN⟩
-  refine ⟨2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) / 12 + 1, fun f hcoeff => ?_⟩
-  suffices hf0 : ⇑f = 0 from DFunLike.coe_injective (by rw [hf0, CuspForm.coe_zero])
-  by_contra hf
-  refine ModularForm.norm_ne_zero 𝒮ℒ hf ?_
-  apply ModularForm.sturm_bound_levelOne
-  letI := Fintype.ofFinite (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ)
-  set q₀ : 𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ := ⟦1⟧ with hq₀
-  set g : ℍ → ℂ :=
-    ∏ q ∈ Finset.univ.erase q₀, SlashInvariantForm.quotientFunc f q with hgdef
-  -- every element of `Γ₀(N)` stabilizes the identity coset
-  have hfix : ∀ (γ : GL (Fin 2) ℝ) (hγSL : γ ∈ 𝒮ℒ), γ ∈ Gamma0GL N →
-      (⟨γ, hγSL⟩ : 𝒮ℒ)⁻¹ • q₀ = q₀ := by
-    intro γ hγSL hγ
-    rw [hq₀]
-    exact Quotient.sound (QuotientGroup.leftRel_apply.mpr (by
-      simpa [Subgroup.mem_subgroupOf] using hγ))
-  have hfix' : ∀ (γ : GL (Fin 2) ℝ) (hγSL : γ ∈ 𝒮ℒ), γ ∈ Gamma0GL N →
-      (⟨γ, hγSL⟩ : 𝒮ℒ) • q₀ = q₀ := by
-    intro γ hγSL hγ
-    conv_lhs => rw [← hfix γ hγSL hγ]
-    rw [smul_inv_smul]
-  -- hence permutes the complementary cosets: `g` is `Γ₀(N)`-slash-invariant
-  have hslash : ∀ γ ∈ Gamma0GL N,
-      g ∣[(2 * ((Finset.univ.erase q₀).card : ℤ))] γ = g := by
-    intro γ hγ
-    have hγSL : γ ∈ 𝒮ℒ := by
-      rcases Subgroup.mem_map.mp hγ with ⟨s, -, rfl⟩
-      exact ⟨s, rfl⟩
-    have habs : |γ.det.val| = 1 := Subgroup.HasDetPlusMinusOne.abs_det hγSL
-    rw [hgdef, ModularForm.prod_slash, habs, _root_.one_zpow, one_smul]
-    refine Finset.prod_equiv (MulAction.toPerm ((⟨γ, hγSL⟩ : 𝒮ℒ)⁻¹))
-      (fun q => ?_) (fun q _ => ?_)
-    · simp only [Finset.mem_erase, Finset.mem_univ, and_true, MulAction.toPerm_apply]
-      rw [not_iff_not, inv_smul_eq_iff, hfix' γ hγSL hγ]
-    · simpa [MulAction.toPerm_apply] using
-        SlashInvariantForm.quotientFunc_smul f hγSL q
-  let G : SlashInvariantForm (Gamma0GL N) (2 * ((Finset.univ.erase q₀).card : ℤ)) :=
-    ⟨g, hslash⟩
-  have hper : Function.Periodic (g ∘ UpperHalfPlane.ofComplex) 1 :=
-    SlashInvariantFormClass.periodic_comp_ofComplex G (one_mem_strictPeriods_Gamma0GL N)
-  have hhol : MDiff g := by
-    rw [hgdef]
-    exact MDifferentiable.prod (Quotient.forall.mpr fun ⟨r, _⟩ _ =>
-      (ModularForm.translate f r⁻¹).holo')
-  have hqzero : ∀ q : 𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ,
-      IsZeroAtImInfty (SlashInvariantForm.quotientFunc f q) := by
-    intro q
-    induction q using Quotient.inductionOn with
-    | h r =>
-      rw [SlashInvariantForm.quotientFunc_mk]
-      have hinf : IsCusp OnePoint.infty 𝒮ℒ := isCusp_SL2Z_iff'.mpr ⟨1, by simp⟩
-      have hcusp : IsCusp ((r.val)⁻¹ • OnePoint.infty) (Gamma0GL N) :=
-        (hinf.smul_of_mem (inv_mem r.2)).of_isFiniteRelIndex
-      exact CuspFormClass.zero_at_cusps f hcusp _ rfl
-  have hbdd : IsBoundedAtImInfty g := by
-    rw [hgdef]
-    exact Filter.BoundedAtFilter.prod _ fun q _ =>
-      Filter.ZeroAtFilter.boundedAtFilter (hqzero q)
-  have hganal : AnalyticAt ℂ (cuspFunction 1 g) 0 :=
-    analyticAt_cuspFunction_zero one_pos hper hhol hbdd
-  have hfanal : AnalyticAt ℂ (cuspFunction 1 ⇑f) 0 :=
-    ModularFormClass.analyticAt_cuspFunction_zero f one_pos
-      (one_mem_strictPeriods_Gamma0GL N)
-  have hfac : ⇑(ModularForm.norm 𝒮ℒ f) = ⇑f * g := by
-    rw [ModularForm.coe_norm,
-      ← Finset.mul_prod_erase Finset.univ _ (Finset.mem_univ q₀), ← hgdef]
-    congr 1
-    rw [hq₀, SlashInvariantForm.quotientFunc_mk]
-    simp
-  rw [hfac, qExpansion_mul hfanal hganal]
-  have horderf : ((2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) / 12 + 1 : ℕ) : ℕ∞)
-      ≤ (qExpansion 1 ⇑f).order :=
-    PowerSeries.nat_le_order _ _ fun i hi => hcoeff i hi
-  have hcast : ((2 : ℤ) * (Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) : ℤ)).toNat
-      = 2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) := by omega
-  calc ((((2 : ℤ) * (Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) : ℤ)).toNat / 12 : ℕ) : ℕ∞)
-      < ((2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) / 12 + 1 : ℕ) : ℕ∞) := by
-        rw [hcast]
-        exact_mod_cast Nat.lt_succ_self _
-    _ ≤ (qExpansion 1 ⇑f).order := horderf
-    _ ≤ (qExpansion 1 ⇑f).order + (qExpansion 1 g).order := self_le_add_right _ _
-    _ ≤ ((qExpansion 1 ⇑f) * qExpansion 1 g).order := PowerSeries.le_order_mul _ _
-
+  exact exists_cuspForm_sturm_bound_of_le (Gamma0GL N) (Gamma0GL_le_SL N)
+    (one_mem_strictPeriods_Gamma0GL N)
 
 /-- **Finite dimensionality of `S₂(Γ₀(N))`**: the Sturm bound makes the
 finitely many coefficient functionals `qExpansionCoeffL N 0, …,
 qExpansionCoeffL N (B−1)` jointly injective, so the weight-2 cusp space
 embeds `ℂ`-linearly into `Fin B → ℂ`.  This is the content of the
 Diamond–Shurman ch. 3 dimension theory actually needed downstream, obtained
-with no modular-curve geometry. -/
+with no modular-curve geometry.  The `Γ₀` instance of
+`cuspForm_finiteDimensional_of_le` above. -/
 theorem cuspForm_finiteDimensional (N : ℕ) (hN : N ≠ 0) :
     FiniteDimensional ℂ (CuspForm (Gamma0GL N) 2) := by
-  obtain ⟨B, hB⟩ := exists_cuspForm_sturm_bound N hN
-  refine FiniteDimensional.of_injective
-    (LinearMap.pi (fun i : Fin B => qExpansionCoeffL N (i : ℕ)))
-    ((injective_iff_map_eq_zero _).mpr fun f hf => ?_)
-  refine hB f fun m hm => ?_
-  simpa [LinearMap.pi_apply] using congrFun hf ⟨m, hm⟩
+  haveI : NeZero N := ⟨hN⟩
+  exact cuspForm_finiteDimensional_of_le (Gamma0GL N) (Gamma0GL_le_SL N)
+    (one_mem_strictPeriods_Gamma0GL N)
 
 end SturmFiniteness
 
