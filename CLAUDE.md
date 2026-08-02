@@ -1293,6 +1293,89 @@ vendored subtree is the usual way modules land here — vendoring a directory
 does not wire it to anything, and the tree looks green precisely because the
 new code is not being compiled.
 
+**THE SECOND WAY A MODULE GOES DARK, and it is the commoner one now: BREAKING A
+DUPLICATE-DECLARATION COLLISION BY DROPPING AN IMPORT.**  (2026-08-02,
+`flt-lean-394`.)  When two branches land rival developments of one layer, the
+symptom is `environment already contains …` at the single module that imports
+both, and the cheapest repair is to drop one import.  That removes the collision
+**from the build and not from the tree**: the dropped module becomes unreachable,
+hence never compiled, hence free to hold `sorry`s that no build can see — and it
+keeps the collision loaded for anyone who ever imports both again, including the
+census, whose import block is regenerated from a scan of the whole tree.
+`CurveDivisorDegree.lean` sat that way from release 31 to release 33, carrying
+three invisible `sorry`s, and it is exactly the 380-vs-377 gap between
+`tools/merge/frontier.py` and the compiler's warning set that release 33 recorded.
+
+**So the fourth check has a companion reading: an unreachable module is not merely
+un-wired, it may be a HALF-PERFORMED de-duplication, and the other half is a
+decision somebody already made and did not carry out.**  Look for the note that
+records it — here `X0.lean`'s own import block said in as many words which module
+was kept and why, and ended "Reconciling the two modules is queued."  A queued
+reconciliation that has been queued repeatedly is a decision nobody will ever be
+dispatched to perform; per the FALSITY-AUDIT rule above, perform it.
+
+**AND THE OBVIOUS REPAIR — DELETE THE DARK MODULE — IS THE ONE TO CHECK HARDEST,
+BECAUSE ITS PREMISE IS A TREE SCAN AND THE TREE IS NOT WHERE THE ANSWER IS.**  All
+three checks pass easily and all three are about THIS commit: nothing imports it
+(so its declarations are unreferenceable by construction); every name unique to it
+has zero code uses in a comment-stripped scan; and `lake env lean` on the file says
+whether the content is even real (an unreachable module has never been compiled, so
+"it has proofs in it" is a hypothesis — here it was true, 3 sorries and 0 errors).
+I ran all three, they all said DELETE, and deleting would have been wrong: the
+reconciliation had already been done **the other way** and was sitting committed and
+unmerged on two branches, which strip the duplicated names, make the dark module
+import the keeper, restore the dropped import, and — decisively — CONSUME the one
+piece of content the keeper lacks, to close a leaf.
+
+So the fourth check needs a fifth step, and it is the same command the section above
+gives for a rival cut, pointed at branches instead of worktrees:
+
+    for b in $(git branch --format='%(refname:short)'); do
+      git show "$b:<the dark module>" 2>/dev/null | grep -q '<the marker of the repair>' && echo "$b"
+    done
+
+**"Zero consumers" is a claim about the tree you can see, and a dark module is
+precisely the kind of thing somebody is repairing on a branch** — because it is
+listed in the queue, and it has been listed there for several releases.  Grep the
+QUEUE too: a queue entry describing the module's reconciliation *as already landed*
+(mine said "X0 now imports it … this is the +3 that release 34's frontier will
+show") is written from a branch, and is the loudest possible signal that the work
+exists somewhere you have not looked.
+
+When the answer really is delete, record in the note the sha to `git show` it back
+from and the one piece of content the keeper lacks, with the condition that would
+justify resurrecting it.  A deletion that collides with such a branch is a
+modify/delete conflict against work that proves a theorem, and `semmerge.py`
+propagates additions and never deletions — so the outcome is not decidable from
+the diff, which is the worst thing to hand a merge worker.
+
+**AND WHEN IT IS NOT, DO NOT WRITE THE WARNING WHERE THE REPAIR WILL LAND.**  The
+obvious place to record "this module is dark, do not delete it" is the import block
+that dropped the import — which is EXACTLY the region the repairing branch rewrites,
+so the note is a guaranteed textual conflict with the work it endorses, and is stale
+the moment that work merges.  I wrote one there and had to take it out; `merge-tree`
+found it in seconds:
+
+    git merge-tree --write-tree --name-only HEAD <the repairing branch>   # exit 1 = conflict
+
+**Run that against every branch your edit's subject matter names, not just against
+`merger`.**  Mine was clean against `merger` and conflicted with both repair
+branches, which is the combination that looks safest and is worst.  A warning about
+a transient state belongs in `to_merger` (read exactly when the decision is made)
+and in CLAUDE.md (durable, and it merges cleanly because nobody else edits your
+paragraph); a docstring is for what stays true.  What survived from that edit was
+the one clause that is true either way — an inventory bullet elsewhere had listed
+`finite_divSupport` as PROVEN when it is a `sorry`, and no branch touched it.
+
+Two things worth measuring rather than assuming while you are there.  **An import
+scan must not anchor at end-of-line** — `import Fermat.X -- why` is a real line in
+this tree and an `$`-anchored regex silently drops the edge, which manufactures a
+phantom unreachable module.  And **the inventory bullets that name such a module
+go stale in both directions**: the one in `Interface.lean` listed
+`finite_divSupport` as PROVEN when it is a `sorry`, so a prover would have built on
+it.  Re-measure a proof-status claim by attributing `sorry` tokens to enclosing
+declarations, never by reading the bullet.
+
 **The MIRROR IMAGE of the fourth class, and it wastes agents rather than hiding
 sorries: a module GREEN AND COUNTED, but unreachable from the file that needs it**
 (2026-07-31, `flt-lean-387`). `exists_ellipticScheme_weierstrassChart_addEquiv_field`
@@ -2253,6 +2336,66 @@ Corollary, and it is what makes this cheap to get right: **a file-and-line refer
 prompt is a checksum on your base.** If the declaration is not at the named line, do not start
 hunting for a rename — check `HEAD..main` first. It costs one command and it is right more often
 than any of the interesting explanations.
+
+## THE `merger` CHECK GIVES A FALSE GREEN LIGHT — THE RIVAL CUT IS UNCOMMITTED IN ANOTHER WORKTREE
+
+(2026-08-02, `flt-lean-394` and `flt-lean-384`, on
+`exists_toAffineLine_of_iso_sectionIdeal`.  Two agents produced the same recut,
+independently, on the same day, down to the new NAME and the proof body.)
+
+Everything the release-window sections prescribe was run and every answer was
+GREEN: `git rev-list --count HEAD..main` reached `0`; `git show merger:<file>`
+showed the target still `sorry`; `X0.lean` was byte-identical between `main` and
+`merger`; a comment-stripped tree scan showed the target had zero consumers, so
+it really was a dead leaf worth re-pointing.  All correct, and all irrelevant —
+**the rival cut was uncommitted in a sibling worktree, so no branch, no `merger`
+copy and no scan of the object store could contain it.**
+
+What the two runs produced, independently: the same rename
+(`exists_toAffineLine_of_iso_sectionIdeal` →
+`exists_toAffineLine_of_constSmul_sectionIdeal`), the same restated hypotheses
+(`f`, `e`, `_hf` in place of the bare `Nonempty` iso, plus the `IsIntegral`
+instance), and the same eight-line assembly closing the sibling leaf over
+`isFinite_toAffineLine_of_isValuativelyFull` — matching to the `haveI` lines and
+the final `exact ⟨U, ι, φ, hopen, hdom, …⟩`.
+
+**So run the WORKTREE scan beside the `merger` scan, as a first action.**  The
+fifth-invisibility-class section already gives the command; it is written as
+advice to a dispatcher, and it is the PROVER who needs it, because the prover is
+the one about to write the duplicate.  Restrict it to the paths you will touch
+or it takes minutes:
+
+    cd ~; for d in flt-lean-*; do
+      u=$(git -C "$d" status --porcelain -- <the files you will edit> 2>/dev/null)
+      [ -n "$u" ] && echo "WIP $d"; done
+    # then, per hit: git -C "$d" diff | grep -n '<your target name>'
+
+**And the risk is HIGHEST exactly where the task looks cleanest.**  The intuition
+is backwards: a vaguely-specified leaf gets attacked twelve different ways, while
+a leaf whose docstring names the seam, the machinery and the residue admits
+essentially ONE repair — so two competent agents dispatched near it converge on
+the same characters.  Convergence is reassuring about the mathematics and is
+still one worker-cycle thrown away.  Here the leaf's own docstring named the
+sibling, the sorry-free finiteness theorem and the exact three obligations; there
+was nothing else to do.
+
+**When you find you are second, decline your OWN payload — even when yours is
+verified and theirs is not yet committed.**  The tie-break is not who compiled
+first: two proofs of one theorem cannot both be carried, the names collide, and a
+merge worker resolving that has no author to ask.  Landing mine would have traded
+a clean single-region diff for a conflict in the most-edited file in the repo over
+identical content.  Say in `to_merger` which worktree holds the incumbent, that
+you verified the incumbent's own assembly compiles, and what your independent
+derivation confirms — a second, independent arrival at the same cut is real
+evidence and is worth recording even though the code is not.
+
+Corollary, and it is what made the run pay for itself anyway: **a declined cut
+frees you to take the neighbouring work the incumbent explicitly is NOT doing.**
+The incumbent's own docstring listed the residue ("what is left is TWO items");
+one of them was the divisor-degree layer, in two different modules, one of which
+turned out to be unreachable from `Fermat.lean` and deletable.  Read the
+incumbent's diff for the residue it names and take that, rather than looking for
+a fresh target.
 
 ## THE RELEASE-WINDOW CHECK IS THE PROVER'S FIRST ACT, NOT THE ORCHESTRATOR'S
 
