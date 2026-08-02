@@ -39890,9 +39890,19 @@ theorem exists_skolemBallDatum_of_projectiveCompactification
   haveI : AlgebraicGeometry.GeometricallyIrreducible fX := hXgi
   haveI : AlgebraicGeometry.IsOpenImmersion j := hjimm
   obtain ⟨q, hq, hqS⟩ := exists_prime_notMem S
+  -- `C` is nonempty because it has an `ℝ`-point; this is `hCne` for the boundary leaf,
+  -- whose statement is FALSE without it (see its FALSITY AUDIT).
+  -- (release 34) This `have` and the `hCne` argument below were LOST by the merge: the
+  -- SIGNATURE half of flt-lean-79's falsity repair landed and the CALL-SITE half did not,
+  -- so `hZ` was being passed in the `hCne` slot.  Recovered from
+  -- `git show 1f8879be:<this file>` line 38180, written in this proof's own idiom
+  -- (cf. the second derivation of `hCne` further down, which shadows this one).
+  have hCne : Nonempty ↥C := by
+    obtain ⟨xr₀, -⟩ := hreal
+    exact ⟨xr₀.base (Nonempty.some inferInstance)⟩
   obtain ⟨Zb, ι, hιimm, hιrange, hZfin, hZflat, hZsurj⟩ :=
     exists_boundarySubscheme_of_projectiveCompactification fX j hjimm hXsmooth hXproper hXgi
-      hZ hXdim
+      hCne hZ hXdim
   obtain ⟨P, pstr, ⟨hPG⟩⟩ :=
     Fermat.exists_genRelPic fX ι hXproper inferInstance hXgi hZfin hZflat hZsurj
   -- The two instances `IsCurveGenus` needs in order to be STATED.  Both are

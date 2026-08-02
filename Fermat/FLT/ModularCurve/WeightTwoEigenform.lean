@@ -405,8 +405,6 @@ noncomputable def qExpansionCoeffL (N m : ℕ) : CuspForm (Gamma0GL N) 2 →ₗ[
 @[simp] theorem qExpansionCoeffL_apply (N m : ℕ) (f : CuspForm (Gamma0GL N) 2) :
     qExpansionCoeffL N m f = (qExpansion 1 ⇑f).coeff m := rfl
 
-end ShimuraAlgebraicity
-
 /-- **STURM BOUND FOR `S₂(G)`, FOR AN ARBITRARY FINITE-INDEX `G ≤ SL(2, ℤ)`**
 (generalised 2026-08-01 from the `Γ₀`-only form, which is now the wrapper
 `exists_cuspForm_sturm_bound` below).
@@ -529,6 +527,15 @@ theorem Gamma0GL_le_SL (N : ℕ) : Gamma0GL N ≤ 𝒮ℒ := by
   rintro g hg
   rcases Subgroup.mem_map.mp hg with ⟨s, -, rfl⟩
   exact ⟨s, rfl⟩
+
+/- (release 34) `end ShimuraAlgebraicity` sits HERE, not after
+`qExpansionCoeffL_apply` above.  The merge fused two sections that carried the
+IDENTICAL pair of opens -- `ShimuraAlgebraicity` (branch 5821a6ad, lines 355-390)
+and `SturmFiniteness` (branch 8eb94e36, lines 1192-1381) -- and kept only the first
+header, so the Sturm-bound declarations lost `open ModularForm
+Matrix.SpecialLinearGroup` and `open scoped Manifold`.  The last code use of that
+notation is `Gamma0GL_le_SL` just above; `coeffSpanZ` below needs neither. -/
+end ShimuraAlgebraicity
 
 /-- The `ℤ`-span of the positive-index values of a coefficient sequence.
 This is the module the integrality argument runs on: it contains `1` when

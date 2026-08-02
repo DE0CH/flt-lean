@@ -129,7 +129,6 @@ re-elaborates the whole 81k-line cone of this module; hoist it next time that fi
 touched for another reason. -/
 
 /-- **`Spec ℚ`**, the base of every modular curve considered here. -/
-/-- **`Spec ℚ`**, the base of every modular curve considered here. -/
 noncomputable abbrev SpecQ : Scheme.{0} := Spec (CommRingCat.of ℚ)
 /-! ### Evaluating global sections at rational points
 

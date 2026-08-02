@@ -4772,6 +4772,160 @@ lemma ord_neg_one_F : D.ord v (-1 : D.F) = 0 := by
 
 /-! ### Uniqueness of the place at infinity on a given branch -/
 
+/-- The five `PlaceData` order axioms are exactly `IsPlaceFun` (PROVEN, definitional). -/
+theorem isPlaceFun_ord (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) :
+    IsPlaceFun K D.F (D.ord v) where
+  map_zero := D.ord_zero v
+  map_mul := D.ord_mul v
+  ultra := D.ord_add v
+  map_algebraMap := D.ord_algebraMap v
+  normalised := D.ord_surjective v
+
+/-- A chart expression whose value at the point is nonzero is itself nonzero (PROVEN). -/
+lemma chart_ne_zero_of_eval_ne_zero {t s : D.F} {α β : K}
+    (ht : D.VanishesAt v (t - algebraMap K D.F α))
+    (hs : D.VanishesAt v (s - algebraMap K D.F β)) {e₁ e₂ : K[X]}
+    (hden : e₁.eval α + e₂.eval α * β ≠ 0) : aeval t e₁ + aeval t e₂ * s ≠ 0 := by
+  intro h0
+  have hV := vanishesAt_chart_sub D v ht hs e₁ e₂
+  rw [h0, zero_sub] at hV
+  have h2 := vanishesAt_neg hV
+  rw [neg_neg] at h2
+  exact hden (D.eq_zero_of_vanishesAt_algebraMap v h2)
+
+/-- The two chart congruences at a place lying at infinity on the branch `s` (PROVEN). -/
+lemma vanishesAt_chart_infinite (s : Bool) (h1 : D.ord v D.xx = -1)
+    (h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3)) :
+    D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F (0 : K)) ∧
+      D.VanishesAt v (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if s then (1 : K) else -1)) := by
+  have hxne := D.xx_ne_zero
+  have hine := D.xx_inv_ne_zero
+  have hiord : D.ord v D.xx⁻¹ = 1 := by rw [D.ord_inv v _ hxne, h1]; norm_num
+  refine ⟨?_, ?_⟩
+  · rw [map_zero, sub_zero]
+    exact Or.inr (by rw [hiord]; norm_num)
+  · have hεF : (if s then (1 : D.F) else -1)
+        = algebraMap K D.F (if s then (1 : K) else -1) := by cases s <;> simp
+    have hchart : D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if s then (1 : K) else -1)
+        = (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3) * D.xx⁻¹ ^ 3 := by
+      rw [← hεF]; field_simp
+    rw [hchart]
+    rcases eq_or_ne (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3) 0 with hA | hA
+    · exact Or.inl (by rw [hA, zero_mul])
+    · refine Or.inr ?_
+      rw [D.ord_mul v _ _ hA (pow_ne_zero _ hine), D.ord_pow v _ hine 3, hiord]
+      push_cast
+      omega
+
+/-- **`O_v` is the local ring of the chart at infinity, at ANY place lying at infinity on the
+branch `s`** (PROVEN).
+
+This is `exists_localDenom_infinite` with the hypothesis `v = pt (Sum.inr s)` replaced by the
+two properties of `v` that its proof uses — which is what makes it a UNIQUENESS statement:
+the right-hand side mentions `v` only through those two properties. -/
+theorem exists_localDenom_at_infinity (s : Bool) (h1 : D.ord v D.xx = -1)
+    (h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3))
+    {z : D.F} (hz : 0 ≤ D.ord v z) :
+    ∃ a b e₁ e₂ : K[X],
+      Polynomial.eval 0 e₁ + Polynomial.eval 0 e₂ * (if s then (1 : K) else -1) ≠ 0 ∧
+      z * (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
+        = aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3) := by
+  have hxne := D.xx_ne_zero
+  have hine := D.xx_inv_ne_zero
+  have hyne : D.yy ≠ 0 := D.yy_ne_zero
+  obtain ⟨ht, hs⟩ := D.vanishesAt_chart_infinite v s h1 h2
+  have hcurve : (D.yy * D.xx⁻¹ ^ 3) ^ 2
+      = aeval D.xx⁻¹ (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
+    rw [PlaceAtInfinity.aeval_revSextPoly, PlaceAtInfinity.revSext_inv_eq _ _ _ _ _ _ hxne,
+      ← D.eqn]
+    field_simp
+  have hε2 : (if s then (1 : K) else -1) ^ 2 = 1 := by cases s <;> norm_num
+  have hg : PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
+      = Polynomial.C ((if s then (1 : K) else -1) ^ 2)
+        + (Polynomial.X - Polynomial.C (0 : K))
+          * ((c₅ : K[X]) + (c₄ : K[X]) * X + (c₃ : K[X]) * X ^ 2
+              + (c₂ : K[X]) * X ^ 3 + (c₁ : K[X]) * X ^ 4 + (c₀ : K[X]) * X ^ 5) := by
+    rw [hε2]
+    simp only [PlaceAtInfinity.revSextPoly, map_one, map_zero, sub_zero]
+    ring
+  have ht0 : D.xx⁻¹ - algebraMap K D.F (0 : K) ≠ 0 := by
+    rw [map_zero, sub_zero]; exact hine
+  have hs0 : D.yy * D.xx⁻¹ ^ 3 ≠ 0 := mul_ne_zero hyne (pow_ne_zero _ hine)
+  have hsm : (2 : K) * (if s then (1 : K) else -1) ≠ 0 := by
+    have h2' := D.two_ne_zero
+    cases s <;> simpa using h2'
+  have hkey : ∀ (p : K[X]) (m : ℕ), p.natDegree ≤ m →
+      aeval D.xx⁻¹ (Polynomial.reflect m p) = aeval D.xx p * D.xx⁻¹ ^ m :=
+    fun p m hp => PlaceClassify.aeval_inv_reflect hxne p m hp
+  have hgen : ∀ y : D.F, ∃ A B e₁ e₂ : K[X],
+      (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0) ∧
+      y * (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
+        = aeval D.xx⁻¹ A + aeval D.xx⁻¹ B * (D.yy * D.xx⁻¹ ^ 3) := by
+    intro y
+    obtain ⟨a, b, d, hd, hy⟩ := D.gen y
+    set m : ℕ := max d.natDegree (max a.natDegree b.natDegree) with hm
+    have hdm : d.natDegree ≤ m + 3 := by rw [hm]; omega
+    have ham : a.natDegree ≤ m + 3 := by
+      rw [hm]
+      have : a.natDegree ≤ max d.natDegree (max a.natDegree b.natDegree) :=
+        le_trans (le_max_left _ b.natDegree) (le_max_right _ _)
+      omega
+    have hbm : b.natDegree ≤ m := by
+      rw [hm]
+      exact le_trans (le_max_right a.natDegree _) (le_max_right _ _)
+    refine ⟨Polynomial.reflect (m + 3) a, Polynomial.reflect m b,
+      Polynomial.reflect (m + 3) d, 0, ?_, ?_⟩
+    · rw [hkey d (m + 3) hdm]
+      simp only [map_zero, zero_mul, add_zero]
+      exact mul_ne_zero hd (pow_ne_zero _ hine)
+    · rw [hkey d (m + 3) hdm, hkey a (m + 3) ham, hkey b m hbm]
+      simp only [map_zero, zero_mul, add_zero]
+      calc y * (aeval D.xx d * D.xx⁻¹ ^ (m + 3))
+          = (y * aeval D.xx d) * D.xx⁻¹ ^ (m + 3) := by ring
+        _ = (aeval D.xx a + aeval D.xx b * D.yy) * D.xx⁻¹ ^ (m + 3) := by rw [hy]
+        _ = aeval D.xx a * D.xx⁻¹ ^ (m + 3)
+              + aeval D.xx b * D.xx⁻¹ ^ m * (D.yy * D.xx⁻¹ ^ 3) := by
+          rw [pow_add]; ring
+  exact D.exists_localDenom_chart v hcurve hg ht ht0 hs hs0 (Or.inl hsm) hgen hz
+
+/-- **THE UNIQUENESS OF THE PLACE AT INFINITY ON A BRANCH** (PROVEN).
+
+Both valuation rings are the local ring of the chart at `(0, ε)`, a description that does not
+mention the place; `isPlaceFun_eq_of_le` turns the resulting inclusion into equality of the
+valuations, and `ord_injective` into equality of the places. -/
+theorem eq_of_ord_xx_eq_neg_one_of_branch (s : Bool) {v w : D.Places}
+    (hv1 : D.ord v D.xx = -1)
+    (hv2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3))
+    (hw1 : D.ord w D.xx = -1)
+    (hw2 : -3 < D.ord w (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3)) :
+    v = w := by
+  obtain ⟨htv, hsv⟩ := D.vanishesAt_chart_infinite v s hv1 hv2
+  refine D.ord_injective (PlaceClassify.isPlaceFun_eq_of_le (D.isPlaceFun_ord v)
+    (D.isPlaceFun_ord w) ?_ D.xx_inv_ne_zero ?_)
+  · intro z hz
+    rcases eq_or_ne z 0 with rfl | hz0
+    · rw [D.ord_zero]
+    obtain ⟨a, b, e₁, e₂, hden, heq⟩ := D.exists_localDenom_at_infinity w s hw1 hw2 hz
+    have hdenne : aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0 :=
+      D.chart_ne_zero_of_eval_ne_zero v htv hsv hden
+    have hden0 : D.ord v (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3)) = 0 :=
+      (D.ord_chart_eq_zero_iff v htv hsv hdenne).2 hden
+    have hnum : 0 ≤ D.ord v (aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3)) :=
+      D.chart_mem_valRing v htv hsv a b
+    have hmul : D.ord v z + D.ord v (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
+        = D.ord v (aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3)) := by
+      rw [← D.ord_mul v _ _ hz0 hdenne, heq]
+    omega
+  · rw [D.ord_inv w D.xx D.xx_ne_zero, hw1]; norm_num
+
+end OrdAtInfinity
+
+end PlaceData
+
+section Presentation
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
 /-- `sextPoly` evaluated through a ring hom on the coefficients: the coefficients are
 integers, so they are preserved. -/
 lemma eval₂_sextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {K A : Type*} [CommRing K] [CommRing A]
@@ -6416,60 +6570,6 @@ theorem mul_degOf_le_finrank_adjoin_of_ord_neg (D : PlaceData c₀ c₁ c₂ c�
   push_cast at this ⊢
   exact this
 
-end PlaceData
-
-end SinglePlaceBound
-
-section RiemannRochSpaces
-
--- Instance search in this file's environment is expensive around `D.residue v`, which is a
--- quotient of a subalgebra; the two theorems in `SinglePlaceBound` above carry the same bump
--- individually.  Section-scoped here because every declaration below touches that quotient.
-set_option synthInstance.maxHeartbeats 1000000
-set_option maxHeartbeats 1000000
-
-/-! ### RIEMANN–ROCH SPACES AND STICHTENOTH I.4.11(b), PROVEN 2026-08-01
-
-`finrank_le_degOf_poleDivisor_of_transcendental` below used to be a leaf asking for the
-whole of the dimension-count half of the fundamental identity.  It is now PROVEN, over the
-single much smaller leaf `isAlgebraic_of_forall_ord_nonneg` — a function with no poles is a
-constant.  The count is 1 leaf in, 1 leaf out; what changed is what is LEFT in the leaf.
-
-The pieces, in the order they appear:
-
-* `finite_residue` — **every** place has finite residue degree.  A free corollary of
-  `finite_residue_of_ord_neg` above: a uniformiser `t` at `v` is transcendental (an
-  algebraic element is a unit at every place, and `ord v t = 1`), so `t⁻¹` is a
-  transcendental element with a pole at `v`.  This is what removes all the bookkeeping that
-  would otherwise be needed to know `degOf` is not taking `Module.finrank`'s junk value at
-  the places in the support of the divisors below.
-* `riemannSpace` — `L(C) = {z | div z + C ≥ 0}` as a `K`-submodule of `F`.  The `z = 0`
-  disjunct in the carrier is the junk convention `ord v 0 = 0` showing through, exactly as
-  in `VanishesAt`; `ord_add` is what proves `add_mem`.
-* `resMap` and `resMap_eq_zero_iff` — the map `L(C + v) ⟶ κ(v)`, `z ↦ [z·t^{C_v+1}]` for a
-  uniformiser `t`, whose kernel is exactly `L(C)`.  This is the one structural fact the
-  whole induction runs on.
-* `finite_and_finrank_riemannSpace_add_single` — `ℓ(C + v) ≤ ℓ(C) + deg v`, with
-  finiteness, by rank–nullity over that map.
-* `finite_and_finrank_riemannSpace_le` — `ℓ(C) ≤ deg C + ℓ(0)` for effective `C`, by
-  induction on the total degree, removing one point of the support at a time.
-* `linearIndependent_pow_mul_basis` — the `n(m+1)` elements `g^k·u_j` are `K`-independent.
-  This is the ONLY place `Transcendental K g` is used in the count.
-* `finite_riemannSpace_zero` — `ℓ(0) < ∞`, over the leaf.
-* `finrank_le_degOf_poleDivisor_of_transcendental_aux` — the count itself.
-
-**`ℓ(0) = 1` is NOT needed and must not be bought by adding `hsep`.**  The bound
-`ℓ(C) ≤ deg C + ℓ(0)` with `ℓ(0)` merely FINITE already gives
-`n(m+1) ≤ m·deg A + deg B + ℓ(0)` for every `m`, and letting `m` grow forces `n ≤ deg A`.
-`finrank_residue_pt_eq_one` is the only route to `ℓ(0) = 1` for a `PlaceData` and it needs
-`hsep`, which this development's leaf deliberately lacks. -/
-
-open Polynomial
-
-variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
-
-namespace PlaceData
-
 /-- **The maximal ideal at a place is PRIME** (PROVEN), so `κ(v)` is a domain.
 
 `ord_v` is a valuation, so `ord_v (xy) > 0` with both factors in `O_v` forces one of the two
@@ -6775,160 +6875,6 @@ place, which the recorded plan asks for as its step 2.  The localDenom theorems 
 `pt P`, where their own congruences come from `ord_pt_affine` / `ord_pt_infinite`; the other
 place `v` only ever has to READ the resulting identity. -/
 
-/-- The five `PlaceData` order axioms are exactly `IsPlaceFun` (PROVEN, definitional). -/
-theorem isPlaceFun_ord (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) :
-    IsPlaceFun K D.F (D.ord v) where
-  map_zero := D.ord_zero v
-  map_mul := D.ord_mul v
-  ultra := D.ord_add v
-  map_algebraMap := D.ord_algebraMap v
-  normalised := D.ord_surjective v
-
-/-- A chart expression whose value at the point is nonzero is itself nonzero (PROVEN). -/
-lemma chart_ne_zero_of_eval_ne_zero {t s : D.F} {α β : K}
-    (ht : D.VanishesAt v (t - algebraMap K D.F α))
-    (hs : D.VanishesAt v (s - algebraMap K D.F β)) {e₁ e₂ : K[X]}
-    (hden : e₁.eval α + e₂.eval α * β ≠ 0) : aeval t e₁ + aeval t e₂ * s ≠ 0 := by
-  intro h0
-  have hV := vanishesAt_chart_sub D v ht hs e₁ e₂
-  rw [h0, zero_sub] at hV
-  have h2 := vanishesAt_neg hV
-  rw [neg_neg] at h2
-  exact hden (D.eq_zero_of_vanishesAt_algebraMap v h2)
-
-/-- The two chart congruences at a place lying at infinity on the branch `s` (PROVEN). -/
-lemma vanishesAt_chart_infinite (s : Bool) (h1 : D.ord v D.xx = -1)
-    (h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3)) :
-    D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F (0 : K)) ∧
-      D.VanishesAt v (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if s then (1 : K) else -1)) := by
-  have hxne := D.xx_ne_zero
-  have hine := D.xx_inv_ne_zero
-  have hiord : D.ord v D.xx⁻¹ = 1 := by rw [D.ord_inv v _ hxne, h1]; norm_num
-  refine ⟨?_, ?_⟩
-  · rw [map_zero, sub_zero]
-    exact Or.inr (by rw [hiord]; norm_num)
-  · have hεF : (if s then (1 : D.F) else -1)
-        = algebraMap K D.F (if s then (1 : K) else -1) := by cases s <;> simp
-    have hchart : D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if s then (1 : K) else -1)
-        = (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3) * D.xx⁻¹ ^ 3 := by
-      rw [← hεF]; field_simp
-    rw [hchart]
-    rcases eq_or_ne (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3) 0 with hA | hA
-    · exact Or.inl (by rw [hA, zero_mul])
-    · refine Or.inr ?_
-      rw [D.ord_mul v _ _ hA (pow_ne_zero _ hine), D.ord_pow v _ hine 3, hiord]
-      push_cast
-      omega
-
-/-- **`O_v` is the local ring of the chart at infinity, at ANY place lying at infinity on the
-branch `s`** (PROVEN).
-
-This is `exists_localDenom_infinite` with the hypothesis `v = pt (Sum.inr s)` replaced by the
-two properties of `v` that its proof uses — which is what makes it a UNIQUENESS statement:
-the right-hand side mentions `v` only through those two properties. -/
-theorem exists_localDenom_at_infinity (s : Bool) (h1 : D.ord v D.xx = -1)
-    (h2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3))
-    {z : D.F} (hz : 0 ≤ D.ord v z) :
-    ∃ a b e₁ e₂ : K[X],
-      Polynomial.eval 0 e₁ + Polynomial.eval 0 e₂ * (if s then (1 : K) else -1) ≠ 0 ∧
-      z * (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
-        = aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3) := by
-  have hxne := D.xx_ne_zero
-  have hine := D.xx_inv_ne_zero
-  have hyne : D.yy ≠ 0 := D.yy_ne_zero
-  obtain ⟨ht, hs⟩ := D.vanishesAt_chart_infinite v s h1 h2
-  have hcurve : (D.yy * D.xx⁻¹ ^ 3) ^ 2
-      = aeval D.xx⁻¹ (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) := by
-    rw [PlaceAtInfinity.aeval_revSextPoly, PlaceAtInfinity.revSext_inv_eq _ _ _ _ _ _ hxne,
-      ← D.eqn]
-    field_simp
-  have hε2 : (if s then (1 : K) else -1) ^ 2 = 1 := by cases s <;> norm_num
-  have hg : PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K
-      = Polynomial.C ((if s then (1 : K) else -1) ^ 2)
-        + (Polynomial.X - Polynomial.C (0 : K))
-          * ((c₅ : K[X]) + (c₄ : K[X]) * X + (c₃ : K[X]) * X ^ 2
-              + (c₂ : K[X]) * X ^ 3 + (c₁ : K[X]) * X ^ 4 + (c₀ : K[X]) * X ^ 5) := by
-    rw [hε2]
-    simp only [PlaceAtInfinity.revSextPoly, map_one, map_zero, sub_zero]
-    ring
-  have ht0 : D.xx⁻¹ - algebraMap K D.F (0 : K) ≠ 0 := by
-    rw [map_zero, sub_zero]; exact hine
-  have hs0 : D.yy * D.xx⁻¹ ^ 3 ≠ 0 := mul_ne_zero hyne (pow_ne_zero _ hine)
-  have hsm : (2 : K) * (if s then (1 : K) else -1) ≠ 0 := by
-    have h2' := D.two_ne_zero
-    cases s <;> simpa using h2'
-  have hkey : ∀ (p : K[X]) (m : ℕ), p.natDegree ≤ m →
-      aeval D.xx⁻¹ (Polynomial.reflect m p) = aeval D.xx p * D.xx⁻¹ ^ m :=
-    fun p m hp => PlaceClassify.aeval_inv_reflect hxne p m hp
-  have hgen : ∀ y : D.F, ∃ A B e₁ e₂ : K[X],
-      (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0) ∧
-      y * (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
-        = aeval D.xx⁻¹ A + aeval D.xx⁻¹ B * (D.yy * D.xx⁻¹ ^ 3) := by
-    intro y
-    obtain ⟨a, b, d, hd, hy⟩ := D.gen y
-    set m : ℕ := max d.natDegree (max a.natDegree b.natDegree) with hm
-    have hdm : d.natDegree ≤ m + 3 := by rw [hm]; omega
-    have ham : a.natDegree ≤ m + 3 := by
-      rw [hm]
-      have : a.natDegree ≤ max d.natDegree (max a.natDegree b.natDegree) :=
-        le_trans (le_max_left _ b.natDegree) (le_max_right _ _)
-      omega
-    have hbm : b.natDegree ≤ m := by
-      rw [hm]
-      exact le_trans (le_max_right a.natDegree _) (le_max_right _ _)
-    refine ⟨Polynomial.reflect (m + 3) a, Polynomial.reflect m b,
-      Polynomial.reflect (m + 3) d, 0, ?_, ?_⟩
-    · rw [hkey d (m + 3) hdm]
-      simp only [map_zero, zero_mul, add_zero]
-      exact mul_ne_zero hd (pow_ne_zero _ hine)
-    · rw [hkey d (m + 3) hdm, hkey a (m + 3) ham, hkey b m hbm]
-      simp only [map_zero, zero_mul, add_zero]
-      calc y * (aeval D.xx d * D.xx⁻¹ ^ (m + 3))
-          = (y * aeval D.xx d) * D.xx⁻¹ ^ (m + 3) := by ring
-        _ = (aeval D.xx a + aeval D.xx b * D.yy) * D.xx⁻¹ ^ (m + 3) := by rw [hy]
-        _ = aeval D.xx a * D.xx⁻¹ ^ (m + 3)
-              + aeval D.xx b * D.xx⁻¹ ^ m * (D.yy * D.xx⁻¹ ^ 3) := by
-          rw [pow_add]; ring
-  exact D.exists_localDenom_chart v hcurve hg ht ht0 hs hs0 (Or.inl hsm) hgen hz
-
-/-- **THE UNIQUENESS OF THE PLACE AT INFINITY ON A BRANCH** (PROVEN).
-
-Both valuation rings are the local ring of the chart at `(0, ε)`, a description that does not
-mention the place; `isPlaceFun_eq_of_le` turns the resulting inclusion into equality of the
-valuations, and `ord_injective` into equality of the places. -/
-theorem eq_of_ord_xx_eq_neg_one_of_branch (s : Bool) {v w : D.Places}
-    (hv1 : D.ord v D.xx = -1)
-    (hv2 : -3 < D.ord v (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3))
-    (hw1 : D.ord w D.xx = -1)
-    (hw2 : -3 < D.ord w (D.yy - (if s then (1 : D.F) else -1) * D.xx ^ 3)) :
-    v = w := by
-  obtain ⟨htv, hsv⟩ := D.vanishesAt_chart_infinite v s hv1 hv2
-  refine D.ord_injective (PlaceClassify.isPlaceFun_eq_of_le (D.isPlaceFun_ord v)
-    (D.isPlaceFun_ord w) ?_ D.xx_inv_ne_zero ?_)
-  · intro z hz
-    rcases eq_or_ne z 0 with rfl | hz0
-    · rw [D.ord_zero]
-    obtain ⟨a, b, e₁, e₂, hden, heq⟩ := D.exists_localDenom_at_infinity w s hw1 hw2 hz
-    have hdenne : aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0 :=
-      D.chart_ne_zero_of_eval_ne_zero v htv hsv hden
-    have hden0 : D.ord v (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3)) = 0 :=
-      (D.ord_chart_eq_zero_iff v htv hsv hdenne).2 hden
-    have hnum : 0 ≤ D.ord v (aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3)) :=
-      D.chart_mem_valRing v htv hsv a b
-    have hmul : D.ord v z + D.ord v (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3))
-        = D.ord v (aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3)) := by
-      rw [← D.ord_mul v _ _ hz0 hdenne, heq]
-    omega
-  · rw [D.ord_inv w D.xx D.xx_ne_zero, hw1]; norm_num
-
-end OrdAtInfinity
-
-end PlaceData
-
-section Presentation
-
-variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
-
 /-- **PROVEN: a place with the chart values of an affine point IS that point's place.**
 
 `hsep` is load-bearing and this is the only place it enters: at a SINGULAR point of the
@@ -6997,6 +6943,56 @@ theorem eq_pt_infinite_of_chartValue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c�
 end PlaceData
 
 end SinglePlaceBound
+
+section RiemannRochSpaces
+
+-- Instance search in this file's environment is expensive around `D.residue v`, which is a
+-- quotient of a subalgebra; the two theorems in `SinglePlaceBound` above carry the same bump
+-- individually.  Section-scoped here because every declaration below touches that quotient.
+set_option synthInstance.maxHeartbeats 1000000
+set_option maxHeartbeats 1000000
+
+/-! ### RIEMANN–ROCH SPACES AND STICHTENOTH I.4.11(b), PROVEN 2026-08-01
+
+`finrank_le_degOf_poleDivisor_of_transcendental` below used to be a leaf asking for the
+whole of the dimension-count half of the fundamental identity.  It is now PROVEN, over the
+single much smaller leaf `isAlgebraic_of_forall_ord_nonneg` — a function with no poles is a
+constant.  The count is 1 leaf in, 1 leaf out; what changed is what is LEFT in the leaf.
+
+The pieces, in the order they appear:
+
+* `finite_residue` — **every** place has finite residue degree.  A free corollary of
+  `finite_residue_of_ord_neg` above: a uniformiser `t` at `v` is transcendental (an
+  algebraic element is a unit at every place, and `ord v t = 1`), so `t⁻¹` is a
+  transcendental element with a pole at `v`.  This is what removes all the bookkeeping that
+  would otherwise be needed to know `degOf` is not taking `Module.finrank`'s junk value at
+  the places in the support of the divisors below.
+* `riemannSpace` — `L(C) = {z | div z + C ≥ 0}` as a `K`-submodule of `F`.  The `z = 0`
+  disjunct in the carrier is the junk convention `ord v 0 = 0` showing through, exactly as
+  in `VanishesAt`; `ord_add` is what proves `add_mem`.
+* `resMap` and `resMap_eq_zero_iff` — the map `L(C + v) ⟶ κ(v)`, `z ↦ [z·t^{C_v+1}]` for a
+  uniformiser `t`, whose kernel is exactly `L(C)`.  This is the one structural fact the
+  whole induction runs on.
+* `finite_and_finrank_riemannSpace_add_single` — `ℓ(C + v) ≤ ℓ(C) + deg v`, with
+  finiteness, by rank–nullity over that map.
+* `finite_and_finrank_riemannSpace_le` — `ℓ(C) ≤ deg C + ℓ(0)` for effective `C`, by
+  induction on the total degree, removing one point of the support at a time.
+* `linearIndependent_pow_mul_basis` — the `n(m+1)` elements `g^k·u_j` are `K`-independent.
+  This is the ONLY place `Transcendental K g` is used in the count.
+* `finite_riemannSpace_zero` — `ℓ(0) < ∞`, over the leaf.
+* `finrank_le_degOf_poleDivisor_of_transcendental_aux` — the count itself.
+
+**`ℓ(0) = 1` is NOT needed and must not be bought by adding `hsep`.**  The bound
+`ℓ(C) ≤ deg C + ℓ(0)` with `ℓ(0)` merely FINITE already gives
+`n(m+1) ≤ m·deg A + deg B + ℓ(0)` for every `m`, and letting `m` grow forces `n ≤ deg A`.
+`finrank_residue_pt_eq_one` is the only route to `ℓ(0) = 1` for a `PlaceData` and it needs
+`hsep`, which this development's leaf deliberately lacks. -/
+
+open Polynomial
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+namespace PlaceData
 
 /-- `ord v (a ^ n) = n · ord v a` for an INTEGER exponent. -/
 lemma ord_zpow (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) (a : D.F) (ha : a ≠ 0) :
@@ -7497,6 +7493,41 @@ theorem finrank_le_degOf_poleDivisor_of_transcendental_aux
 end PlaceData
 
 end RiemannRochSpaces
+
+/- (release 34) The `MultiPlaceBound` section header was LOST by the merge: its
+declarations survived but `section MultiPlaceBound`, `open Polynomial`, the `variable`
+line and `namespace PlaceData` did not, so the surviving `end PlaceData` / `end
+MultiPlaceBound` closed the wrong scopes.  The run below is verbatim from
+`git show 8c82c734:<this file>` lines 5666-5693. -/
+
+/-! ### From ONE place to the SUM over all poles, PROVEN 2026-08-01 over weak approximation
+
+The section above proves the single-place bound `e_v·f_v ≤ n` and records, correctly, that what
+it cannot do is run at several places at once: it wants a uniformiser and residue lifts that are
+controlled at the OTHER poles.  That is the approximation theorem and nothing else, so it is cut
+here as the single leaf `exists_approx`; everything between it and
+`degOf_poleDivisor_le_finrank_of_transcendental` below is now Lean.
+
+Two things about the shape of the argument, because neither is visible from the single-place
+case and both were needed to make it go through:
+
+* **the index attaining the GLOBAL maximum degree decides which pole to work at.**  Having
+  cleared denominators to `λ_q = P_q(g)`, put `d := max_q deg P_q` and let `v₀` be the pole of
+  an index attaining `d`.  Then the `v₀`-part of the relation has a term of order `−e·d + k`
+  with `k < e`, while EVERY other contribution — the terms from other poles and all the
+  approximation errors — has order `≥ −e·d + e`.  Choosing `v₀` any other way loses this;
+* **no normalisation by `g^{−d}` appears in the assembly.**  It is used only inside the
+  single-place residue computation `vanishesAt_aeval_mul_inv_pow`, and there with the
+  per-`k` degree.  Stating the comparison with the un-normalised orders is what keeps the
+  remainder bound linear in `d`. -/
+
+section MultiPlaceBound
+
+open Polynomial
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+namespace PlaceData
 
 /-- **LEAF (weak approximation for the places of `F`)** —
 [Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.3.1], the independence-of-valuations
