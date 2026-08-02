@@ -636,6 +636,14 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModel
 -- reorder instance search and flip a borderline synthesis.  Verified both ways
 -- by elaborating this file: head ⟹ that one error, tail ⟹ EXIT=0.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds
+-- `CurveGenus` supplies `AlgebraicGeometry.IsCurveGenus`, `divisorDegree`, `ell`,
+-- `rrSet`, `IsDivisorOn` and the leaf `exists_isCurveGenus` (Riemann's theorem).
+-- Added 2026-08-02 so that Moret-Bailly's §3.6 can be HANDED to
+-- `exists_skolemBallDatum_of_genRelPic` rather than left inside it; see that
+-- declaration's docstring.  The module imports nothing but `Mathlib`, so it adds
+-- no project edge and cannot create a cycle; it is placed at the TAIL for the
+-- import-order reason recorded immediately above.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveGenus
 
 @[expose] public section
 
@@ -37493,48 +37501,188 @@ theorem exists_boundarySubscheme_of_projectiveCompactification
   sorry
 
 open CategoryTheory AlgebraicGeometry in
-/-- **Moret–Bailly §3.2 and §3.5–§3.10, GIVEN the generalised Picard scheme**
-(SORRY — leaf; the geometric residue of
+/-- **A smooth integral scheme of topological dimension `≤ 1` over `ℚ` that is not a
+point is smooth OF RELATIVE DIMENSION ONE** (SORRY — leaf, cut 2026-08-02).
+
+Pure dimension bookkeeping, and the ONLY thing standing between this file's
+`Smooth fX` + `topologicalKrullDim ↥Xbar ≤ 1` and mathlib-facing curve theory:
+`AlgebraicGeometry.SmoothOfRelativeDimension 1` is what
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean`,
+`CurveDivisorDegree.lean`, `CurveExtension.lean` and `CurveDimension.lean` all ask
+for, and NOTHING in the tree converts into it (checked 2026-08-02:
+`grep -rn 'SmoothOfRelativeDimension' Fermat/` returns producers that already have
+it as a hypothesis or as a structure field, and no theorem whose CONCLUSION is
+`SmoothOfRelativeDimension n f` from a bare `Smooth f`).  It is cut here because
+`exists_skolemBallDatum_of_genRelPic` below needs it, once, to reach
+`AlgebraicGeometry.exists_isCurveGenus`; it is stated in the mathlib-facing
+generality (no `C`, no `j`, no `Z`) so that it can be hoisted into
+`Fermat/FLT/Mathlib/AlgebraicGeometry/` and reused the moment a second consumer
+appears.
+
+**THE ROUTE, and it needs no new theory.**  `Smooth fX` gives, at each `x`, an
+affine open `V ∋ x` with `Γ(X, V)` standard smooth over `ℚ` of SOME relative
+dimension `n` (`Smooth.exists_isStandardSmooth`).  Two facts pin `n = 1`:
+
+* `n ≤ 1`.  `ringKrullDim Γ(X, V) ≤ n` is
+  `ringKrullDim_le_of_isStandardSmoothOfRelativeDimension` in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, and the reverse
+  inequality `n ≤ ringKrullDim Γ(X, V)` comes from the étale presentation
+  `ℚ[x₁ … x_n] → Γ(X, V)` of `IsStandardSmoothOfRelativeDimension.exists_etale_mvPolynomial`
+  together with `MvPolynomial.card_le_height_of_isMaximal` (same file), which
+  exhibits a maximal ideal of height `n`.  `V` is a nonempty open of the
+  irreducible `Xbar`, so `ringKrullDim Γ(X, V) ≤ topologicalKrullDim ↥Xbar ≤ 1`.
+* `n ≠ 0`.  At `n = 0` the chart is étale over `ℚ`, hence a finite discrete set of
+  closed points; `Xbar` is irreducible, so a single such chart is already the whole
+  space and `Xbar` is a one-point space — which `hXne` forbids.  (Relative
+  dimension is constant on an irreducible scheme, so one chart decides all.)
+
+**FAITHFULNESS — every hypothesis is load-bearing, with a witness for each.**
+
+* `IsIntegral Xbar`.  Drop it and take `Xbar = Spec ℚ ⊔ 𝔸¹_ℚ`: smooth, of
+  topological dimension `1`, not a subsingleton, and NOT of relative dimension `1`
+  — the `Spec ℚ` component is of relative dimension `0`, and
+  `SmoothOfRelativeDimension` is a condition at EVERY point.
+* `hXdim`.  Drop it and take `Xbar = 𝔸²_ℚ`: smooth, integral, not a subsingleton,
+  relative dimension `2`.
+* `hXne`.  Drop it and take `Xbar = Spec ℚ`: smooth, integral, `topologicalKrullDim
+  = 0 ≤ 1`, and of relative dimension `0 ≠ 1`.  This is the SHARP form of the
+  non-degeneracy: an integral scheme of dimension `≤ 1` that is not a one-point
+  space has dimension exactly `1`, so no stronger hypothesis is available and no
+  weaker one suffices.
+* `hXsmooth`.  Without it there is no chart at all and the conclusion is not even
+  approximately true (a nodal cubic).
+
+**IT IS NOT VACUOUS**: `Xbar = ℙ¹_ℚ` satisfies all four hypotheses, and it is the
+instance the sole consumer supplies. -/
+theorem smoothOfRelativeDimension_one_of_smooth_of_not_subsingleton
+    {Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsIntegral Xbar]
+    (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hXsmooth : AlgebraicGeometry.Smooth fX)
+    (hXdim : topologicalKrullDim ↥Xbar ≤ 1)
+    (hXne : ¬ Subsingleton ↥Xbar) :
+    AlgebraicGeometry.SmoothOfRelativeDimension 1 fX :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.2 and §3.5–§3.10, GIVEN the generalised Picard scheme AND
+THE GENUS** (SORRY — leaf; the geometric residue of
 `exists_skolemBallDatum_of_projectiveCompactification` below).
 
-This is the target leaf with THREE burdens removed and handed to their own
+This is the target leaf with FOUR burdens removed and handed to their own
 owners: the auxiliary prime `q` (now a hypothesis, supplied by the PROVEN
 `exists_prime_notMem`), the boundary scheme `Z` (now hypotheses `ι`, `hιimm`,
 `hιrange`, supplied by `exists_boundarySubscheme_of_projectiveCompactification`),
-and §3.4's generalised relative Picard scheme `PG(X̄, Z)` (now the hypothesis
+§3.4's generalised relative Picard scheme `PG(X̄, Z)` (now the hypothesis
 `hPG`, supplied by `Fermat.exists_genRelPic` in
-`Fermat/FLT/Modularity/GeneralisedPicard.lean`).
+`Fermat/FLT/Modularity/GeneralisedPicard.lean`), and — since 2026-08-02 — **§3.6's
+Riemann–Roch input**, which is now the hypothesis `hg : IsCurveGenus fX g`,
+supplied at the call site by `AlgebraicGeometry.exists_isCurveGenus` over the
+dimension-normalisation leaf
+`smoothOfRelativeDimension_one_of_smooth_of_not_subsingleton` above.
 
-WHAT IS LEFT UNDER THIS LEAF, in Moret–Bailly's numbering — the four items the
-target's docstring lists, minus §3.4:
+WHAT IS LEFT UNDER THIS LEAF, in Moret–Bailly's numbering — RE-PRICED 2026-08-02,
+because three of the four "absent chapter" verdicts below were stale.  The
+correction is recorded in place, with the greps, rather than over the top of the
+old text: the old verdicts were true of `Mathlib/` on 2026-07-29 and are not true
+of `Fermat/` today, and that is exactly the failure mode CLAUDE.md records under
+*a "NOT IN THE PIN" verdict is a search result*.
 
 * **§3.2** the symmetric power `X̄^(d)` and its identification with effective
   Cartier divisors finite flat of degree `d`, and `U_d` the étale ones. Absent
-  from all three trees (re-verified 2026-07-29); `SymmetricPower` in mathlib is
-  the symmetric tensor power of a MODULE and is a near-miss, not a start.
-* **§3.5** `φ_d : X̄^(d) → PG_d`, `D ↦ (𝒪(D), s_D|_Z)`. Now expressible: `PG_d`
-  is the degree-`d` part of the `hPG` this leaf receives.
-* **§3.6** Riemann–Roch and `R¹(X̄, 𝒩_d) = 0`. `Hⁿ(X̄, ℒ)` IS a writable type at
-  this pin (`Mathlib/CategoryTheory/Sites/SheafCohomology/`, verified by
-  compiling — see the target's CORRECTION (B)); `𝒪(D)`, `deg` and `genus` are
-  not, and `genus` matches zero lines in all of `Mathlib/`.
+  from all three trees (re-verified 2026-08-02: `SymmetricPower` in mathlib is
+  still the symmetric tensor power of a MODULE, and `grep -rn 'symmetricPower\|
+  SymmetricPower' Fermat/` is empty).
+  **BUT IT IS NOT NEEDED BY THIS LEAF, and that is the re-pricing.**  Nothing in
+  the CONCLUSION mentions a scheme of divisors: the parametrisation handed to
+  §3.8 is by `Fin d → ℚ`, a bare affine space.  Moret–Bailly needs `X̄^{(d)}` as a
+  SCHEME only to say that `φ_d` is a morphism and that `W_v^d` is an open of
+  `P_d(K_v)`; a prover working in DIVISOR/function-field language instead needs
+  only, for a fixed effective `D` of degree `d` supported in `C`,
+      `{f ∈ rrSet D : ∀ z ∈ Z, Scheme.ord f z = 0, and f|_Z = α}`,
+  a coset of `rrSet (D − Z)` inside `X̄.functionField`, together with the map
+  `f ↦ div f + D` onto the effective divisors linearly equivalent to `D` and
+  supported in `C`.  Every symbol in that display exists today —
+  `AlgebraicGeometry.rrSet` and `AlgebraicGeometry.Scheme.ord` — and none of it is
+  a scheme.  So §3.2 is a chapter of MB's PROOF, not of this leaf's STATEMENT.
+* **§3.5** `φ_d : X̄^(d) → PG_d`, `D ↦ (𝒪(D), s_D|_Z)`. Expressible: `PG_d`
+  is the degree-`d` part of the `hPG` this leaf receives, and `𝒪(D)` — which the
+  2026-07-29 verdict below called unwritable — is CONSTRUCTIBLE at this pin as a
+  `PresheafOfModules.Submodule` of `j_*𝒪_U` (`Mathlib/Algebra/Category/ModuleCat/
+  Presheaf/Submodule.lean` plus `Scheme.Modules.pushforward`, the latter already
+  used in `Fermat/FLT/Modularity/AmpleSheaf.lean`); surveyed 2026-08-01.  There is
+  still no `𝒪(D)` and no Cartier-divisor theory IN mathlib — that half of the old
+  verdict stands — but "absent" and "unbuildable without a gluing theory" are
+  different claims and only the first is true.
+* **§3.6** Riemann–Roch and `R¹(X̄, 𝒩_d) = 0`.  **RETIRED FROM THIS LEAF
+  2026-08-02.**  The old verdict — "`𝒪(D)`, `deg` and `genus` are not [writable],
+  and `genus` matches zero lines in all of `Mathlib/`" — was scoped to `Mathlib/`
+  and was true there.  It was false of THIS TREE from 2026-07-31, when
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean` landed with
+  `AlgebraicGeometry.divisorDegree` (`deg D = ∑_z D z · [κ(z) : k]`),
+  `IsDivisorOn`, `pointDivisor`, `rrSet` (`L(D)`), `ell` (`ℓ(D)`),
+  `IsCurveGenus` (Riemann's theorem AS the characterisation of `g`),
+  `IsCurveGenus.unique` (PROVEN — so `g` is a genuine invariant, not a
+  convention) and the leaf `exists_isCurveGenus`; and
+  `CurveDivisorDegree.lean` / `PrincipalDivisorDegree.lean` landed the same day
+  with `divDegree`, `divDegree_eq_zero` (PROVEN) and `finite_divSupport`.
+  So the genus is now a HYPOTHESIS of this leaf and §3.6 is two lines of
+  arithmetic on top of it: for `deg D` large, Riemann applied to `D` and to
+  `D − Z` gives `ℓ(D) − ℓ(D − Z) = deg Z`, which is exactly the surjectivity of
+  `Γ(X̄, ℒ) ↠ Γ(Z, ℒ|_Z)` that MB calls `R¹(X̄, 𝒩_d) = 0`.  A prover of this leaf
+  should NOT prove Riemann–Roch; they should use `hg`.
 * **§3.7–§3.9** the open sets `W_v^d`, their multiplicativity, and the choice of
-  `(ℒ, α)` — ordinary work once §3.2 and §3.6 exist, EXCEPT for §3.9's engine,
-  which is quasi-compactness of `P₀(K_Σ)/im Γ(Z, 𝒪_Z^×)` and rests on:
+  `(ℒ, α)` — ordinary work once the §3.2 dictionary above is written, EXCEPT for
+  §3.9's engine, which is quasi-compactness of `P₀(K_Σ)/im Γ(Z, 𝒪_Z^×)` and rests
+  on:
 * **§3.10.2** (Raynaud) compactness of `J(K_v)` for `J` the Jacobian of a proper
   regular geometrically integral curve over a local field.
 
+**SO THE HONEST REMAINING COST IS TWO CHAPTERS, NOT FIVE**: the §3.7–§3.10
+compactness half, and the §3.2/§3.5 divisor-to-`PG` dictionary — which is long
+but is now made of parts that exist.
+
+The compactness half is the one that really is a missing chapter, and its
+blocker is narrower than "Raynaud's theorem": there is no topology on the
+`K_v`-POINTS of a scheme anywhere in reach.  Checked 2026-08-02,
+`grep -rn 'TopologicalSpace ↥\|TopologicalSpace (.*Scheme' Fermat/` returns only
+`[TopologicalSpace ↥(integralClosure ℤ_[p] L)]` in
+`Modularity/KhareWintenberger.lean`, i.e. a topology on a RING, and nothing that
+topologises `Hom(Spec K_v, X)`.  So a prover who reaches §3.9 must first decide
+how `P₀(K_Σ)` is to carry a topology at all; that decision is upstream of
+Raynaud and is the thing to cut next.
+
 STRENGTH. This leaf is strictly WEAKER than the target: it has the target's
-hypotheses plus three more, and a conclusion with `q` no longer existentially
+hypotheses plus five more, and a conclusion with `q` no longer existentially
 quantified. So a proof of the target does not follow from it alone — the target
-is the assembly of this leaf with the two suppliers above, and that assembly is
+is the assembly of this leaf with the three suppliers above, and that assembly is
 WRITTEN, not asserted. The `d = 0` collapse recorded on the target's docstring
 applies here verbatim and for the same reason: any decomposition of an
 existential statement into a single leaf is logically equivalent to it, and what
 the cut buys is placement of the discharged parts in the root cone plus a
-checkable record of what §3.4 has to deliver. -/
+checkable record of what §3.4 and §3.6 have to deliver.
+
+**ACCOUNTING FOR THE 2026-08-02 CUT, because the count moves the wrong way.**
+The direct-sorry count at this node goes from `1` to `2`: this leaf plus the new
+`smoothOfRelativeDimension_one_of_smooth_of_not_subsingleton`.  The genus itself
+costs the tree NOTHING — `AlgebraicGeometry.exists_isCurveGenus` was already an
+open leaf with consumers in `ModularCurve/X0.lean`, so citing it adds no
+`sorryAx` edge that was not there.  What is bought is that Riemann's theorem
+leaves THIS leaf, and that the new leaf is pure dimension bookkeeping stated in
+mathlib-facing generality rather than a chapter of Moret–Bailly.  Judge the cut
+by what is left in the leaf, not by the delta.
+
+**THE INSTANCE ARGUMENTS `[IsIntegral Xbar]` AND `[IsLocallyNoetherian Xbar]`
+ARE NOT NEW HYPOTHESES**, in the sense that both are DERIVABLE from the ones this
+leaf already had, and are derived at the sole call site: `IsLocallyNoetherian` is
+`LocallyOfFiniteType.isLocallyNoetherian fX` (smooth ⟹ locally of finite type),
+and `IsIntegral` is `isIntegral_of_irreducibleSpace_of_isReduced` over
+`isReduced_of_smooth_over_field fX` (smooth over a field ⟹ reduced) and
+`GeometricallyIrreducible.irreducibleSpace_of_subsingleton fX` (`Spec ℚ` is a
+one-point space).  They appear in the signature only because `IsCurveGenus` takes
+them as instance arguments, so `hg` cannot be STATED without them. -/
 theorem exists_skolemBallDatum_of_genRelPic
     {C Xbar Zb Pg : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    [AlgebraicGeometry.IsIntegral Xbar] [AlgebraicGeometry.IsLocallyNoetherian Xbar]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (j : C ⟶ Xbar) (hjimm : AlgebraicGeometry.IsOpenImmersion j)
@@ -37553,7 +37701,8 @@ theorem exists_skolemBallDatum_of_genRelPic
     (ι : Zb ⟶ Xbar) (hιimm : AlgebraicGeometry.IsClosedImmersion ι)
     (hιrange : Set.range ι.base = (Set.range j.base)ᶜ)
     (pstr : Pg ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (hPG : Fermat.IsGenRelPicOf fX ι pstr) :
+    (hPG : Fermat.IsGenRelPicOf fX ι pstr)
+    (g : ℕ) (hg : AlgebraicGeometry.IsCurveGenus fX g) :
     ∃ (d : ℕ) (t : Fin d → ℝ) (w : ℕ → Fin d → ℚ) (ε : ℚ), 0 < ε ∧
       ∀ a : Fin d → ℚ,
         (∀ i, |(a i : ℝ) - t i| < (ε : ℝ)) →
@@ -38084,15 +38233,43 @@ theorem exists_skolemBallDatum_of_projectiveCompactification
           ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt ↥(C.residueField x) p := by
   classical
   haveI : AlgebraicGeometry.Smooth fX := hXsmooth
+  haveI : AlgebraicGeometry.GeometricallyIrreducible fX := hXgi
+  haveI : AlgebraicGeometry.IsOpenImmersion j := hjimm
   obtain ⟨q, hq, hqS⟩ := exists_prime_notMem S
   obtain ⟨Zb, ι, hιimm, hιrange, hZfin, hZflat, hZsurj⟩ :=
     exists_boundarySubscheme_of_projectiveCompactification fX j hjimm hXsmooth hXproper hXgi
       hZ hXdim
   obtain ⟨P, pstr, ⟨hPG⟩⟩ :=
     Fermat.exists_genRelPic fX ι hXproper inferInstance hXgi hZfin hZflat hZsurj
+  -- The two instances `IsCurveGenus` needs in order to be STATED.  Both are
+  -- consequences of the hypotheses already present: smooth over a field is
+  -- reduced, geometrically irreducible over a one-point base is irreducible, and
+  -- smooth is locally of finite type hence locally Noetherian.
+  haveI hln : AlgebraicGeometry.IsLocallyNoetherian Xbar :=
+    AlgebraicGeometry.LocallyOfFiniteType.isLocallyNoetherian fX
+  haveI hred : AlgebraicGeometry.IsReduced Xbar :=
+    AlgebraicGeometry.isReduced_of_smooth_over_field fX
+  haveI hirr : IrreducibleSpace ↥Xbar :=
+    AlgebraicGeometry.GeometricallyIrreducible.irreducibleSpace_of_subsingleton fX
+  haveI hint : AlgebraicGeometry.IsIntegral Xbar :=
+    AlgebraicGeometry.isIntegral_of_irreducibleSpace_of_isReduced Xbar
+  -- `X̄` is not a one-point space: `C` is nonempty (it has a real point) and its
+  -- complement is nonempty (`hZ`), so `X̄` carries two distinct points.
+  obtain ⟨xr, hxr⟩ := hreal
+  have hCne : Nonempty ↥C := ⟨xr.base (Nonempty.some inferInstance)⟩
+  have hXne : ¬ Subsingleton ↥Xbar := by
+    intro hsub
+    obtain ⟨z, hz⟩ := hZ
+    exact hz ⟨hCne.some, hsub.elim _ _⟩
+  -- §3.6: Riemann's theorem, over the dimension normalisation.
+  haveI hsm1 : AlgebraicGeometry.SmoothOfRelativeDimension 1 fX :=
+    smoothOfRelativeDimension_one_of_smooth_of_not_subsingleton fX hXsmooth hXdim hXne
+  haveI hgc : AlgebraicGeometry.GeometricallyConnected fX :=
+    AlgebraicGeometry.geometricallyConnected_of_geometricallyIrreducible fX
+  obtain ⟨g, hg⟩ := AlgebraicGeometry.exists_isCurveGenus fX hsm1 hXproper hgc
   obtain ⟨d, t, w, ε, hε, hmain⟩ :=
     exists_skolemBallDatum_of_genRelPic fC fX j hjimm hjcomm hXsmooth hXproper hXgi hZ hdim
-      hXdim hreal S hSprime hSpt q hq hqS ι hιimm hιrange pstr hPG
+      hXdim ⟨xr, hxr⟩ S hSprime hSpt q hq hqS ι hιimm hιrange pstr hPG g hg
   exact ⟨q, hq, hqS, d, t, w, ε, hε, hmain⟩
 
 open CategoryTheory AlgebraicGeometry in
