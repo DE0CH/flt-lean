@@ -26841,3 +26841,76 @@ dead end.
 changed is that the residue lost `IsX1Compactification`, the compactification `xstr`/`jZ`,
 `genericFibreClassifyGamma1` and the `∃!` — and gained a proven twin 700 lines below that
 a prover can copy. Judge it by what is LEFT in the leaf.
+## A PREDICATE OF THE FORM `∃ ι : Spec B ⟶ A, <conditions on ι's IMAGE>` PINS `B` ONLY UP TO `Aut(B)` — and over a non-reduced base that group is bigger than you think
+(2026-08-01, `flt-lean-348`, on `IsWeierstrassModel` in `ModularCurve/X0.lean`
+and the five-declaration chain proven over it.)
+This development states a lot of geometry in the shape
+    ∃ ι : Spec B ⟶ A, IsOpenImmersion ι ∧ ι ≫ f = <structure map> ∧
+      Set.range ι.base = <some set>
+because `Proj`, divisors and Riemann–Roch are unavailable and this is what is
+expressible.  **Every such predicate is an invariant of the isomorphism class of
+`B` over the base and of nothing else**, for a reason that is one line: `ι` may
+be replaced by `ι ∘ Spec e` for any `R`-algebra automorphism `e` of `B`, and all
+three clauses survive — an isomorphism composed with an open immersion is an
+open immersion, `Spec e` is a morphism over the base because `e` is an
+`R`-algebra map, and the base map of an isomorphism is surjective so the range
+is unchanged.  **No strengthening of the range clause repairs this**, not even a
+scheme-theoretic one: `ι` and `ι ∘ Spec e` have the SAME image as open
+subschemes, so any condition on the image is blind to `e`.
+So before building anything on such a predicate, compute `Aut_R(B)` and ask
+whether your intended conclusion is invariant under it.  For `B = R[W]` the
+answer splits exactly along reducedness:
+* over a REDUCED base every `R`-algebra automorphism of `R[W]` is a
+  `VariableChange` (this file's own `linearShape_of_surjective_of_isReduced`,
+  PROVEN), so `j` and the Weierstrass coordinates are pinned;
+* over a base with NILPOTENTS they are not.  `id + ε∂` for the invariant
+  derivation `∂` (`x ↦ x + 2εy`, `y ↦ y + ε(3x²+a₄)`) is an automorphism of
+  `R[W]` over `R = ℚ[ε]/(ε²)` — the Weierstrass relation is preserved on the
+  nose because `ε² = 0`, and `id − ε∂` inverts it — and it is not linear.
+  Geometrically it is the translation by an infinitesimal point: it moves the
+  zero SECTION while fixing the topological point under it, which is precisely
+  what a `Set.range` clause cannot see.
+**The tell, and it was sitting in the docstring: the justification paragraph
+began "Over a field …".**  `IsWeierstrassModel`'s own "why this determines `j`"
+argument opens *"Over a field the smooth projective completion of an integral
+affine curve is unique"*, and the predicate is then used over an arbitrary
+`CommRing` — the `j`-line construction localises, so non-reduced bases genuinely
+occur.  **When a definition's justification names a hypothesis the definition
+does not carry, that gap is the definition's, not the reader's.**
+### AND THE AUDIT THAT MISSED IT MISSED IT BY NOT ASKING WHETHER THE MISSING OBJECT TRANSPORTS
+The same file already carried the `ℚ[ε]/(ε²)` witness that refutes the chain —
+`W : y² = x³+x+1` and `W' : y² = x³+x+1+ε`, with `R`-algebra isomorphic
+coordinate rings and different `j` — under an audit reading *"The `ℚ[ε]/(ε²)`
+witness above is NOT such a pair — it refutes the old statement precisely by
+having no `A` at all."*  True as far as it goes: the witness was built with no
+ambient in hand.  **Nobody asked whether an ambient for ONE of the two curves
+transports to the other, and it does, in fifteen lines**, because the predicate
+is iso-class-invariant.  So the check the audit set itself ("produce two models
+of ONE `ab` with different `j`") was met by the very witness it declared safe.
+**Generalisable: when an audit dismisses a witness because it lacks an object
+`X`, the refuting check is not "construct `X` for it" but "does `X` TRANSPORT to
+it from something that has one".**  For a predicate quantified existentially
+over a morphism, transport is usually free, and it is a much cheaper question
+than construction.  Same family as `A COUNTEREXAMPLE IS ONLY AS STRONG AS THE
+HYPOTHESIS LIST IT WAS TESTED AGAINST`, one step earlier: there the witness was
+real and over-attributed, here the witness was real and under-attributed.
+### WHAT TO DO WHEN THE FALSITY IS IN A DEFINITION WITH TEN CONSUMERS
+CLAUDE.md's standing rule is to walk UP to the lowest declaration whose own
+statement is TRUE, `sorry` that, and delete the false cone.  **Do not apply it
+mechanically when the defect is a missing clause in a DEFINITION.**  Here the
+lowest true statements are `exists_jSectionOnAffine` and `nonempty_isJLineZ`,
+~1000 lines and five declarations above the false leaf, and every one of the
+intermediate statements becomes TRUE the moment the predicate is strengthened.
+Deleting would throw away correct mathematics to repair a two-line omission.
+The discriminator: **ask whether the intermediate statements are false because
+the mathematics is wrong, or false only because a hypothesis is missing from a
+shared definition.**  In the second case leave the `sorry` in place, write the
+audit on the DEFINITION (that is where the next reader must look), and queue the
+strengthening as a single cut-level task — and say in the audit what the
+candidate repairs cost, since that is the decision the owner has to make.
+Rider on the machine-checked half: a refutation whose engine is a transport
+lemma with no consumer is FREE-FLOATING CODE, so follow this file's own
+precedent for the `ℚ[ε]/(ε²)` witness — verify it in a scratch that `public
+import`s the target, quote the statement AND the proof in the audit so it can be
+replayed, and do not commit the scratch.  Ten lines of quoted Lean is what makes
+an audit re-checkable by the next reader instead of re-derivable.
