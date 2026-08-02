@@ -16151,3 +16151,112 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## AN UNDER-COMMITTED STRUCTURE IS REFUTED AT ITS *QUASI-COMPACTNESS* CONSUMER, NOT AT ITS REPRESENTABILITY ONE
+
+(2026-08-02, `flt-lean-213`, settling the `CyclicSubgroupOfOrder` question left open
+by `flt-lean-397` on `exists_relativeGamma0ModuliOverFullLevel` in `X0.lean`.)
+
+A structure that pins an object only through its GEOMETRIC POINTS admits junk
+inhabitants wherever geometric points do not determine the object — here
+`CyclicSubgroupOfOrder ab N` asks that the geometric fibres of `C` be cyclic of
+order `N` and never asks that its RANK be `N`, so over any `𝔽_ℓ`-scheme with
+`ℓ ∤ N` the family `C_N ⊕ ker F^k` (relative Frobenius, rank `ℓ^k`, trivial
+geometric points) satisfies every field for every `k ≥ 0`.  The recorded question
+was then the obvious one — *is the enlarged functor still representable?* — and it
+was correctly recorded as unsettled, because the extra objects are separated from
+the honest ones by the LOCALLY CONSTANT rank, so a representing object could be a
+disjoint union indexed by that rank.
+
+**That reasoning is right, and it is the refutation, read one step further.** A
+locally constant separator with infinitely many nonempty values does not obstruct
+representability — and for exactly that reason it makes the representing object
+NON-QUASI-COMPACT, hence NOT AFFINE.  So the leaf to refute is not the
+representability one at all; it is the AFFINENESS one two hundred lines below,
+which nobody had connected to the question.  The conclusion is a refutation of the
+CONJUNCTION: over `𝔽_ℓ`, `exists_relativeGamma0ModuliOverFullLevel` and
+`isAffine_rigidifiedModuliSchemeData_of_isUnit` cannot both hold, and
+`exists_isAffine_rigidifiedModuliScheme_specF`, proven over both, falls with them.
+
+**The generalisable check, and it is cheap: when an under-committed structure
+admits an infinite family of junk inhabitants separated by a LOCALLY CONSTANT
+invariant (a rank, a degree, a discriminant, a number of components), do not ask
+whether the enlarged functor is representable — grep the file for a consumer that
+asserts QUASI-COMPACTNESS, AFFINENESS, PROPERNESS, FINITENESS or CONNECTEDNESS of
+the representing object, and refute that one.** Those are the properties an
+infinite disjoint union fails, and they are usually asserted by a separate leaf
+whose own audit has no idea the structure is under-committed.
+
+Three riders, each of which decided something here:
+
+* **A jointly-inconsistent PAIR is a refutation even when neither half is
+  individually refuted.** Say so in that form rather than guessing which half is
+  false: "at least one of A and B is FALSE, and both are wrong about the same
+  thing" is checkable, whereas picking one requires settling representability,
+  which is exactly the expensive question you just avoided. Record it on BOTH
+  declarations — the co-defendant's owner will otherwise never see it.
+* **The audit's proposed refutation ROUTE can be dead while its diagnosis is
+  right.** This one prescribed "an argument at the supersingular points, where the
+  subgroups of `E[p^k]` of a given rank with trivial geometric points move in a
+  positive-dimensional family". At `k = 1` that is FALSE: a supersingular elliptic
+  curve over `𝔽̄_p` has a UNIQUE order-`p` subgroup, because `E[p]` is local-local
+  (so every order-`p` subgroup is `α_p`, by Oort–Tate) and the `a`-number of an
+  elliptic curve is `1`, so `dim_k Hom(α_p, E) = 1` and there is one such subgroup
+  modulo `Aut(α_p) = k^×`. The rank-`Np` stratum is therefore naturally isomorphic
+  to the honest functor (`C ↦ C[N]`, inverse `C_N ↦ C_N ⊕ ker F`; Deligne kills
+  `C` by its order and `gcd(N,p) = 1` splits it) and is representable by the SAME
+  scheme. **Before spending a day on a docstring's prescribed route, instantiate
+  it at the smallest parameter it claims to cover.**
+* **Prefer the CANONICAL witness to the one the audit wrote down.** The recorded
+  witness was `(ℤ/N) × μ_{p^k}`, which needs `E` ORDINARY and so lives only on
+  part of the moduli. `ker F^k` exists over any `𝔽_ℓ`-scheme, at ordinary and
+  supersingular points alike, and is functorial — so the junk is available in
+  FAMILIES over the whole base, which is what makes the rank argument go through
+  at the level of the universal object instead of at one closed point. A witness
+  that needs a case split is usually the special case of one that does not.
+
+**And a `liesIn_iff`-style clause DOES pin the subobject, which is what makes the
+rank argument work.** `IsBaseChangeOf` here requires only "`x` lies in `C'` iff
+`map x` lies in `C`", quantified over all test schemes — no clause says `C'` is
+the pullback of `C`. It follows anyway: instantiate at `T'' := C'` with `x := ι'`
+to get `map(C') ⊆ C`, and at `T'' := C ×_E E'` to get the reverse; both `ι` are
+closed immersions, hence monos, so the two inclusions are an equality of
+subobjects. **A pointwise-stated base-change clause is usually equivalent to the
+scheme-level one — check it by instantiating at the two obvious test objects
+before either trusting or distrusting it.**
+
+## A HAND-OFF NOTE'S ACCOUNT OF WHAT A DECLARATION CARRIES IS A HYPOTHESIS
+
+(Same task, closing `isTorsion_minusFactor_x0OneSixtyNine`.) The note that left it
+in place said: *"It is deliberately NOT deleted here — it carries a 60-line record
+of the `169` PARI/GP numerics plus four cross-references from other docstrings.
+Either give it a consumer or delete it with those references."* The instruction was
+right and the inventory was wrong: the numerics are on its two NEIGHBOURS
+(`lFunction_apply_one_ne_zero_atkinLehnerMinus_oneSixtyNine` above and
+`finite_antiInvariant_jacobian_x0OneSixtyNine` below, the latter cited by name in
+its own docstring as where the reconnaissance lives), and the only thing recorded
+nowhere else was a four-line `_hal`/`_hchar` faithfulness witness. So the deletion
+cost one paragraph to preserve, not sixty.
+
+**Read the docstring you are about to delete and diff it against its neighbours'
+before believing any estimate of what it holds** — including your predecessor's,
+who wrote the estimate while deciding NOT to do the work and therefore never
+checked it. The check is one `grep` for the distinctive content (here the PARI
+invocation `mfatkineigenvalues`), and it turns "this is a day's careful salvage"
+into "keep one paragraph".
+
+Two mechanical notes that made the deletion safe, both worth copying:
+
+* **Over-approximate the consumers deliberately.** A comment-stripped, SHORT-NAME
+  token scan over the whole tree counts every textual match as a use. For a
+  DEADNESS claim that is the safe direction — it can only make you say "alive"
+  when it is dead, never the reverse — so a scan that returns zero uses is a
+  strong result rather than a fragile one. Validate the stripper on the target
+  file before trusting it (here: 1937 of 1972 raw `^theorem ` lines survived
+  stripping, and the 35 lost are docstring prose beginning with the word
+  `theorem`, exactly as expected).
+* **Compute the dead FIXPOINT, not just the target's user list.** "Nothing uses
+  `X`" licenses deleting `X`; it says nothing about what `X` was the last consumer
+  of. Here the fixpoint was the singleton — all three of its inputs keep live
+  consumers — so the deletion orphaned nothing and the sorry count did not move.
+  Had it not been, the extra members would have been the real result.
