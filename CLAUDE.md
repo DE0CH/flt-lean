@@ -29288,3 +29288,73 @@ Two mechanical notes that made the deletion safe, both worth copying:
   of. Here the fixpoint was the singleton — all three of its inputs keep live
   consumers — so the deletion orphaned nothing and the sorry count did not move.
   Had it not been, the extra members would have been the real result.
+## `declaration uses 'sorry'` MATCHES NOTHING — THE TOOLCHAIN EMITS BACKTICKS, AND THE `warning:` PREFIX SWAPS SIDES BETWEEN THE TWO TOOLS
+(2026-08-02, `flt-lean-225`, measured on Lean **4.32.0-rc1** — `lean --version`
+reports commit `b4812ae5`.)  The single most-quoted recipe in this file is the
+cross-check *"a green `lake build`'s `declaration uses 'sorry'` warning set says
+what is actually open"*.  Run literally today it returns **`0`**, on a log that
+contains 164 of them:
+    grep -c "declaration uses 'sorry'"  x0.log   ->    0      <- the recipe in this file
+    grep -c 'declaration uses `sorry`'  x0.log   ->  164      <- what Lean actually writes
+Lean now writes the token in **BACKTICKS**.  Nothing about the failure announces
+itself: an empty count from a build that says `Build completed successfully` is
+exactly the shape of a sorry-free tree, so the recipe does not report a tooling
+problem — it reports *the answer you were hoping for*.  Same family as the
+`EXIT=127` trap and the truncated-log trap, arriving through the counting tool.
+**And there is a second, independent axis: the two tools put the `warning:` /
+`error:` prefix on OPPOSITE sides of the source location.**  Measured on the
+same day, same toolchain, both formats side by side:
+| | `lake build` | `lake env lean` |
+|---|---|---|
+| shape | `warning: <path>:<line>:<col>: declaration uses \`sorry\`` | `<path>:<line>:<col>: warning: declaration uses \`sorry\`` |
+| `grep -cE '^warning: .*declaration uses'` | 164 | **0** |
+| `grep -cE ': warning: .*declaration uses'` | **0** | 2 |
+| `grep -c "declaration uses 'sorry'"` | **0** | **0** |
+| `grep -cE 'declaration uses .sorry.'` | 164 | 2 |
+So a recipe anchored on either prefix is silently zero on the other tool, and a
+recipe anchored on the quoting is silently zero on both.  **Use no prefix anchor
+and a quote-agnostic dot:**
+    grep -cE 'declaration uses .sorry.' <log>                    # count
+    grep -E  'declaration uses .sorry.' <log> | grep 'X0.lean'   # per module
+**VALIDATED, in both directions, before being written down.**  Against
+`flt-frontier.py`'s source scan on the same tree: `X0.lean` **101 = 101**, and
+across every one of the **23 modules** the build reached, **164 warnings, ZERO
+mismatches, and no module in either set that is missing from the other.**  That
+is the two-directional check the section above prescribes, and it now passes —
+whereas run with the old pattern it would have compared `380` rows against `0`
+and condemned the scanner.
+**The scripts are safe and that is exactly why this survived.**
+`flt-buildfrontier.py` already parses with `declaration uses .sorry.` (a dot, by
+luck or by foresight), and `.claude/check-sorries.py` goes through `sorryAx` in
+the environment rather than through the message text.  So no automated check
+broke, no release failed, and the only casualty is the agent who types the
+recipe by hand — which this file tells them to do, in fifteen places.
+**The generalisable rule, and it is the third instance now recorded here: a
+counting recipe whose failure mode is `0` must be validated against a case whose
+answer is KNOWN NONZERO, every time you inherit it.**  Never against a tree you
+believe is clean; that direction cannot distinguish a working grep from a broken
+one.  The other two instances are the `EXIT=127` missing-`lake` trap and the
+error-count recipe in the section below.
+## AND THE ERROR-COUNT RECIPE HAS THE SAME DEFECT, ON THE SAME AXIS
+(Re-derived and re-validated 2026-08-02.  The original measurement is
+`flt-lean-282`'s commit `f1801b15`, which is **not an ancestor of `main`** — it
+sits on the unmerged `flt-lean-282-x0-repair` branch, so `main`'s copy of this
+file has carried no error-counting recipe at all.  Landed here so it is not lost
+with that branch.)
+Errors swap sides exactly as warnings do, and `lake build` additionally emits
+summary lines that are not diagnostics:
+    lake env lean   ->   <path>:<line>:<col>: error(lean.unknownIdentifier): …
+    lake build      ->   error: <path>:<line>:<col>: …
+                    +    error: Lean exited with code 1
+                    +    error: build failed
+so `': error(\(|:)'` is right for `lake env lean` and returns **0** on a
+`lake build` log for a module with 33 errors, while that same log ends in
+`error: build failed`.  Count with BOTH spellings and filter to lines that name
+a source location, or the two summary lines inflate a raw count by exactly two:
+    grep -E ': error(\(|:)|^error: ' <log> | grep -c '\.lean:'
+Verified at `f1801b15` on one `X0.lean` commit: `33` under `lake env lean`, `0`
+under the old pattern on `lake build`, `33` under this one on both.  Re-verified
+here on `lake env lean`'s current output, which is the `error(lean.…)`
+parenthesised form above and matches the `: error(` alternative.
+**And whichever recipe you use, the `EXIT=` line you appended yourself outranks
+it.**  A count is a summary of a log; `EXIT=` is a statement about the process.
