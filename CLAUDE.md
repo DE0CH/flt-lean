@@ -31449,3 +31449,69 @@ file in the repository, and because the widened statement needs a widened faithf
 discriminant family whose maximal order is NOT excluded by the level structure the way the
 `169` one is).  Both the fused statement and that audit are now written on the new leaf, so
 the fusion is a decision recorded rather than a question nobody will answer.
+## AN UNDERSCORED HYPOTHESIS THE CONCLUSION NEVER READS IS WHERE A ROUTE DIES — and the refuting fact is usually one table row away
+(2026-08-02, `flt-lean-114`, `exists_isAffineHom_fullLevelModuli` in
+`ModularCurve/X1.lean`.)  A leaf of the shape
+    ∃ M …, ∀ T (g : T ⟶ Y) (d …) (_bcd : <d is a base change of dY along g>) (L …),
+      ∃! m : T ⟶ M, m ≫ p = g ∧ ∃ bc : <d is a base change of dM along m>, Φ(bc, L, m)
+carried a docstring saying in bold that it is **a LEAN JOB, NOT A CITATION**,
+that the representing object is already built in the same file (a clopen
+locus, PROVEN a day earlier), and that "what is genuinely missing is only the
+universal property … estimated at a few hundred lines".  Every clause about
+the geometry was true.  **The universal property is FALSE for that object**,
+and the reason is visible in the binder list without opening a single proof.
+**`_bcd` is underscored, and the conclusion never mentions it.**  So `Φ` cannot
+distinguish `bc` from `θ ≫ bc` for any automorphism `θ` of the datum `d` over
+`T` — twisting `bc` by `θ` and `L` by `θ` leaves `Φ` satisfied — and therefore
+the `∃!` can only pin `m` **up to `Aut(d/T)`**.  The named object represents
+the RIGIDIFIED functor (level structures on a *chosen* pullback); the `∃!`
+asks for that functor MODULO `Aut`.  They agree exactly when `Aut` is trivial.
+Concretely at `N = 1`, `n = 3`: negation `θ = (ab.neg ⟨𝟙 E, _⟩).1` is an
+automorphism fixing the zero section, the locus contains both `(P, Q)` and
+`(−P, −Q)`, and `2 • P ≠ 0` for `P` of exact order `3`, so two distinct `m`
+satisfy the predicate.
+**Three things generalise, and the third is the cheapest.**
+* **A leaf whose object is EXISTENTIALLY quantified can have a false ROUTE and
+  a true STATEMENT, and the two are different results.**  Here the statement
+  survives — `M₀/Aut(dY)` satisfies the `∃!` whenever that quotient exists,
+  the action being free for `n ≥ 3` — so the honest verdict is "route
+  refuted, statement not", and the cost of the surviving route is a theory of
+  quotients by finite group schemes that the pin does not have.  **Say which
+  you refuted.**  A prover told "this leaf is false" and a prover told "this
+  leaf is true but the object your docstring names does not work" do
+  completely different things.
+* **The diagnostic is one read of the binder list: list the hypotheses the
+  CONCLUSION does not mention, and ask what symmetry that buys.**  An
+  underscored binder is the marker this development already puts on exactly
+  those.  A conclusion blind to `_bcd` is blind to `Aut`; a conclusion blind
+  to a chosen basis is blind to `GL`; a conclusion blind to a chosen
+  uniformizer is blind to units.  In every case the represented functor is a
+  QUOTIENT and the natural object is not.
+* **The refuting fact was already in the same file, one row up in the same
+  table, written by the same author on the same day.**  The row for the
+  sibling bottom leaf reads: *"`4 ≤ N` is load-bearing for TRUTH here (at
+  `N = 3`, `j = 0`, the order-3 automorphism fixes a point of exact order 3,
+  so `[Γ₁(3)]` is not rigid)"*.  That IS the failure of the top row's route.
+  **When a leaf's route turns on an object having no automorphisms, grep the
+  file for the word `rigid`** — in a tower, non-rigidity is normally already
+  recorded against whichever step was cut first, and never propagated up.
+**The repair is the hypothesis the sole call site already holds** (`4 ≤ N`,
+plus `¬ ringChar K ∣ N` for the citation's own proviso) — the standing
+"missing hypothesis is usually in the caller's hand" rule, here found by the
+symmetry check rather than by a proof attempt.  Adding a hypothesis can only
+weaken a statement, so the pre-existing faithfulness audit transfers verbatim
+and does not have to be re-run; say that explicitly, because a reader who sees
+a restatement will assume the audit is void.
+**Then SPLIT, and expect the count to go up.**  With the symmetry named, the
+seam is obvious: the citation (rigidity, KM 2.7.4) and the formalisation (the
+same statement with the base change PINNED, `bc.map ≫ bcM.map = bcd.map`,
+which is exactly the clause that reads `_bcd` and kills the twist).  The
+pinned half needs no rigidity at any `N` and is genuinely citation-free; the
+assembly over the two is nine lines, of which the load-bearing one is `subst`
+on `m' ≫ p = g` so that the two base-change structures are indexed by the
+SAME morphism and the rigidity leaf applies without a transport.  `1 -> 2`
+open leaves is the right trade when the leaf being replaced was BOTH a
+citation and a several-hundred-line formalisation with the citation
+INVISIBLE — which is what a docstring claiming "not a citation" means in
+practice.  Report the delta and the reason together; a `+1` with no
+explanation reads as a regression.
