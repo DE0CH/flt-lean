@@ -21981,6 +21981,7 @@ theorem WeierstrassCurve.exists_gamma0Model_of_stable (E : WeierstrassCurve ℚ)
                      isClosedImmersion := inferInstance
                      isFinite := isFinite_spanSchemeι ab (zmulPts ab N y) (zmulPts_comp ab N y)
                      flat := inferInstance
+                     etale := etale_spanSchemeι ab (zmulPts ab N y) (zmulPts_comp ab N y)
                      zero_liesIn := fun g => zero_liesIn_of_ratPoint ab _ w₀ hw₀ g
                      add_liesIn := fun hx hz => add_liesIn_of_factor ab _ μ hμ hx hz
                      neg_liesIn := fun hx => neg_liesIn_of_factor ab _ ν hν hx
