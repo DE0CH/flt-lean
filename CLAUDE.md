@@ -28380,3 +28380,56 @@ This is the mirror of the standing "grep the file you are editing" rule: I did
 grep it, and the pipe threw the answer away. The general form is that any
 `| head` on a check whose ANSWER IS AN ABSENCE converts "I found no hits in the
 first N" into "there are no hits", and those are different claims.
+## AN `instance` WITH EXPLICIT TYPE ARGUMENTS IS INVISIBLE TO INSTANCE SEARCH
+(2026-08-01, `flt-lean-375`, closing `geomPic_exists_finiteLevel`.  Two of the three
+rounds this leaf cost went here, and the symptom names nothing.)
+`Mathlib/FieldTheory/Normal/Closure.lean` declares, under `variable (F K L)` — i.e. with
+its three type arguments EXPLICIT —
+    instance normalClosure.normal [h : Normal F L] : Normal F (normalClosure F K L)
+    instance normalClosure.is_finiteDimensional [FiniteDimensional F K] :
+        FiniteDimensional F (normalClosure F K L)
+and `infer_instance` **does not find either of them**, on a goal they match on the nose,
+with every side condition in context as a local instance.  What you get is a bare
+    failed to synthesize instance of type class
+      Normal ℚ ↥(IntermediateField.normalClosure ℚ (↥(IntermediateField.adjoin ℚ s)) ℚ̄)
+which reads as "this instance does not exist" or "some hypothesis is missing", and sends
+you hunting for a stronger hypothesis or a different construction.  Writing the three
+arguments out —
+    haveI : Normal ℚ (IntermediateField.normalClosure ℚ (IntermediateField.adjoin ℚ s)
+        (AlgebraicClosure ℚ)) :=
+      normalClosure.normal ℚ (IntermediateField.adjoin ℚ s) (AlgebraicClosure ℚ)
+— typechecks instantly.  So the instance is applicable and only the SEARCH fails.
+**The diagnostic that separates this from every other synthesis failure, and it is two
+cheap runs rather than a trace:** elaborate the same goal (a) in a MINIMAL file importing
+only mathlib, with the side conditions as `[...]` binders, and (b) in your real file.
+* fails in BOTH ⟹ the instance really is missing or a side condition really is absent;
+* succeeds in (a), fails in (b) ⟹ an ambient-instance problem — in this development
+  usually the `Algebra ℚ ℚ̄` diamond;
+* **succeeds when APPLIED EXPLICITLY and fails under `infer_instance` in both ⟹ this.**
+`#check @theInstance` settles it in one line: if the signature opens
+`∀ (F : Type _) (K : Type _) (L : Type _)` rather than `∀ {F} {K} {L}`, stop trying to
+make search work and supply the arguments.  Grep for `variable (F K L)`-style lines above
+an `instance` before budgeting anything for a synthesis failure in that file.
+**Two smaller things from the same leaf, both reusable:**
+* **`Finset.image` drags in `DecidableEq`; `Set.range` over a `Fin` does not.**  The
+  coefficients of `p : ℚ̄[X]` as a `Finset` need `DecidableEq (AlgebraicClosure ℚ)`, which
+  is not available, and `open scoped Classical` would put a decidability instance into the
+  STATEMENT.  `Set.range fun i : Fin (p.natDegree + 1) => p.coeff i` is finite by
+  `Set.finite_range`, carries no instance, and `Set.Finite.to_subtype` supplies the
+  `[Finite S]` that `IntermediateField.finiteDimensional_adjoin` asks for.  State the
+  helper as `(s : Set _) (hs : s.Finite)` rather than `(s : Finset _)` for the same reason.
+* **`AlgHom.fieldRange_of_normal` is the cheap form of "a normal intermediate field is
+  stable".**  For `L : IntermediateField F Ω` with `[Normal F L]` and `σ : Ω ≃ₐ[F] Ω`,
+  `(σ.toAlgHom.comp L.val).fieldRange = L` and `σ x = (σ.toAlgHom.comp L.val) ⟨x, hx⟩`, so
+  `σ x ∈ L` in three lines.  The `AlgEquiv.restrictNormal`/`restrictNormalHom_apply` route
+  this leaf's cut note prescribed is the same fact one step later and costs the
+  `restrictNormal` bookkeeping.
+**And the counterweight to every "a recorded route is a cost hypothesis" entry above: this
+one was exactly right, and the whole difficulty was plumbing.**  The cut note's route —
+adjoin the finitely many coefficients `gen` produces, take the Galois closure, observe that
+a `σ` fixing it fixes `a`, `b`, `d` coefficientwise, cancel `d(xx)` — is what closed the
+leaf, and the mathematics is four lines (`congrArg (fieldAct σ)` on `gen`'s equation, three
+`fieldAct_aeval` rewrites, `mul_right_cancel₀`).  Every minute went on instances.  So when
+a route note is short and concrete, price the INSTANCE PLUMBING, not the mathematics; and
+when you close such a leaf, say in the docstring which instances had to be supplied by
+hand, because that is the entire cost a successor at the sibling leaf will pay again.

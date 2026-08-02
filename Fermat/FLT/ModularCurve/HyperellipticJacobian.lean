@@ -11147,18 +11147,129 @@ satisfied by every `u ∈ emb (D.F)` and by every constant, and violated by, e.g
 end GeomPic
 
 section ConstFieldExtension
-/-- **LEAF (weak Mordell–Weil, 2c of 4): every geometric function is defined over a finite
-Galois level.**
+
+/-!
+#### The finite Galois level
+
+`exists_finiteGaloisLevel` below is the whole of the field theory this subsection needs, and
+it is stated about a bare finite subset of `ℚ̄` — no curve, no `PlaceData`, no `GeomPic`.  Its
+divisor-side sibling `geomPic_exists_finiteLevel_divisor` can consume it verbatim once the
+finite set of constants attached to a divisor has been produced.
+-/
+
+/-- **An intermediate field that is NORMAL over the base is stable under every automorphism of
+the ambient field** (PROVEN, in any characteristic and for any base).
+
+This is the formal content of "`L` is stable under all of `Γ_ℚ`": `σ ∘ L.val : L →ₐ[F] Ω` has
+field range `L` by `AlgHom.fieldRange_of_normal`, and `σ x` is visibly in that range. -/
+lemma mem_intermediateField_of_normal {F Ω : Type*} [Field F] [Field Ω] [Algebra F Ω]
+    {L : IntermediateField F Ω} [Normal F L] (σ : Ω ≃ₐ[F] Ω) {x : Ω} (hx : x ∈ L) :
+    σ x ∈ L := by
+  have hfr : (σ.toAlgHom.comp L.val).fieldRange = L := AlgHom.fieldRange_of_normal _
+  have hmem : σ x ∈ (σ.toAlgHom.comp L.val).fieldRange := ⟨⟨x, hx⟩, rfl⟩
+  rwa [hfr] at hmem
+
+open Polynomial in
+/-- The set of coefficients of a polynomial over `ℚ̄`, indexed so that it is visibly FINITE
+(`finite_coeffSet`) — which is what `IntermediateField.finiteDimensional_adjoin` asks for.
+
+A `Set` rather than a `Finset` on purpose: `Finset.image` would demand
+`DecidableEq (AlgebraicClosure ℚ)`, which is not available and which `open scoped Classical`
+would supply only at the cost of a decidability instance appearing in the STATEMENT. -/
+def coeffSet (p : (AlgebraicClosure ℚ)[X]) : Set (AlgebraicClosure ℚ) :=
+  Set.range fun i : Fin (p.natDegree + 1) => p.coeff (i : ℕ)
+
+open Polynomial in
+/-- `coeffSet` is finite (PROVEN): it is the range of a function out of a `Fin`. -/
+lemma finite_coeffSet (p : (AlgebraicClosure ℚ)[X]) : (coeffSet p).Finite :=
+  Set.finite_range _
+
+open Polynomial in
+/-- **A field automorphism fixing every coefficient of `p` fixes `p`** (PROVEN).  The
+coefficients beyond `natDegree` are not in `coeffSet p` and do not have to be: they are `0`,
+which every ring map fixes. -/
+lemma map_eq_self_of_forall_coeff_fixed {p : (AlgebraicClosure ℚ)[X]} (σ : QbarGal)
+    (h : ∀ c ∈ coeffSet p, σ c = c) :
+    p.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) = p := by
+  ext n
+  rw [coeff_map]
+  by_cases hn : n ≤ p.natDegree
+  · exact h _ ⟨⟨n, Nat.lt_succ_of_le hn⟩, rfl⟩
+  · rw [p.coeff_eq_zero_of_natDegree_lt (not_le.mp hn)]
+    exact map_zero _
+
+/-- **Every finite subset of `ℚ̄` lies inside a finite Galois, `Γ_ℚ`-stable level** (PROVEN).
+
+`L` is the normal closure of `ℚ(s)` inside `ℚ̄`.  Finite-dimensionality of `ℚ(s)` is
+`IntermediateField.finiteDimensional_adjoin` over the integrality of `ℚ̄/ℚ`; the normal
+closure of a finite extension is again finite, is normal, and is separable because `ℚ` is
+perfect — so it is Galois.  Stability is `mem_intermediateField_of_normal`.
+
+**TWO INSTANCE TRAPS, both of which cost a round trip and neither of which is visible in the
+statement.**
+
+* `Algebra ℚ (AlgebraicClosure ℚ)` resolves to `DivisionRing.toRatAlgebra` in this file,
+  whereas mathlib's `AlgebraicClosure.isAlgebraic` is stated for `AlgebraicClosure.instAlgebra`;
+  the two are equal by `Subsingleton (Algebra ℚ _)` and instance search does not know it.  So
+  `Algebra.IsAlgebraic ℚ ℚ̄` and everything below it (`IsIntegral`, `Normal`, `IsGalois`) has to
+  be introduced by hand.  This is the same workaround as `geomPic_bc_injective`'s STEP 6 and
+  `isAlgebraic_algebraicClosure_rat` further down the file — the latter is BELOW this point and
+  therefore unusable here.
+* `normalClosure.normal` and `normalClosure.is_finiteDimensional` take `F`, `K` and `L` as
+  EXPLICIT arguments (`variable (F K L)` in `Mathlib/FieldTheory/Normal/Closure.lean`), so
+  instance search does not apply them; they too are supplied positionally.  The symptom is a
+  bare `failed to synthesize Normal ℚ ↥(normalClosure ℚ ↥(adjoin ℚ s) ℚ̄)` for an instance that
+  applies on the nose the moment its three type arguments are written out. -/
+theorem exists_finiteGaloisLevel (s : Set (AlgebraicClosure ℚ)) (hs : s.Finite) :
+    ∃ L : IntermediateField ℚ (AlgebraicClosure ℚ),
+      FiniteDimensional ℚ L ∧ IsGalois ℚ L ∧
+      (∀ (σ : QbarGal) (x : AlgebraicClosure ℚ), x ∈ L → σ x ∈ L) ∧
+      (∀ c ∈ s, c ∈ L) := by
+  classical
+  haveI hfin : Finite s := hs.to_subtype
+  haveI halg : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  haveI hint : Algebra.IsIntegral ℚ (AlgebraicClosure ℚ) := halg.isIntegral
+  haveI hGal : IsGalois ℚ (AlgebraicClosure ℚ) :=
+    Field.isGalois_of_isAlgClosed (AlgebraicClosure.isAlgebraic ℚ)
+  haveI hNorm : Normal ℚ (AlgebraicClosure ℚ) := inferInstance
+  haveI hK₀fin : FiniteDimensional ℚ (IntermediateField.adjoin ℚ s) :=
+    IntermediateField.finiteDimensional_adjoin fun x _ => Algebra.IsIntegral.isIntegral x
+  haveI hNCnormal : Normal ℚ (IntermediateField.normalClosure ℚ
+      (IntermediateField.adjoin ℚ s) (AlgebraicClosure ℚ)) :=
+    normalClosure.normal ℚ (IntermediateField.adjoin ℚ s) (AlgebraicClosure ℚ)
+  haveI hNCfin : FiniteDimensional ℚ (IntermediateField.normalClosure ℚ
+      (IntermediateField.adjoin ℚ s) (AlgebraicClosure ℚ)) :=
+    normalClosure.is_finiteDimensional ℚ (IntermediateField.adjoin ℚ s) (AlgebraicClosure ℚ)
+  haveI hNCalg : Algebra.IsAlgebraic ℚ (IntermediateField.normalClosure ℚ
+      (IntermediateField.adjoin ℚ s) (AlgebraicClosure ℚ)) :=
+    Algebra.IsAlgebraic.of_finite ℚ _
+  haveI hNCsep : Algebra.IsSeparable ℚ (IntermediateField.normalClosure ℚ
+      (IntermediateField.adjoin ℚ s) (AlgebraicClosure ℚ)) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  refine ⟨IntermediateField.normalClosure ℚ (IntermediateField.adjoin ℚ s) (AlgebraicClosure ℚ),
+    hNCfin, ⟨⟩, fun σ x hx => mem_intermediateField_of_normal σ hx, ?_⟩
+  intro c hc
+  have hle : IntermediateField.adjoin ℚ s
+      ≤ IntermediateField.normalClosure ℚ (IntermediateField.adjoin ℚ s) (AlgebraicClosure ℚ) :=
+    IntermediateField.le_normalClosure _
+  exact hle (IntermediateField.subset_adjoin ℚ s hc)
+
+/-- **Every geometric function is defined over a finite Galois level** (PROVEN 2026-08-01; a
+LEAF from 2026-07-30, closed exactly along the route its cut recorded).
 
 `PlaceData.gen` writes `z · d(xx) = a(xx) + b(xx)·yy` with `a, b, d ∈ ℚ̄[X]`; let `L` be the
 Galois closure over `ℚ` of the field generated by their finitely many coefficients, a finite
-Galois extension of `ℚ` inside `ℚ̄`.  A `σ` fixing `L` pointwise fixes `a`, `b`, `d`
-coefficientwise, so `fieldAct_aeval` (PROVEN above) gives
-`fieldAct σ z · d(xx) = a(xx) + b(xx)·yy = z · d(xx)`, and `aeval_xx_ne_zero` cancels.
+Galois extension of `ℚ` inside `ℚ̄` (`exists_finiteGaloisLevel`, applied to the union of the
+three `coeffSet`s).  A `σ` fixing `L` pointwise fixes `a`, `b`, `d` coefficientwise
+(`map_eq_self_of_forall_coeff_fixed`), so `fieldAct_aeval` (PROVEN above) gives
+`fieldAct σ z · d(xx) = a(xx) + b(xx)·yy = z · d(xx)`, and the nonvanishing of `d(xx)` — which
+`gen` supplies as its own side condition, so `aeval_xx_ne_zero` is not needed here — cancels.
 
 The third conclusion — `L` is stable under every `σ ∈ Γ_ℚ` — is what
 `geomPic_bc_injective` uses to know that `τσ` and `σ` agree on `L` when `τ` fixes `L`; it is
-`Normal ℚ L` read through `AlgEquiv.restrictNormalHom_apply`.
+`Normal ℚ L`, and is `mem_intermediateField_of_normal` above.  (The cut note suggested reading
+it through `AlgEquiv.restrictNormalHom_apply`; `AlgHom.fieldRange_of_normal` is the same fact
+one step earlier and needs no `restrictNormal` bookkeeping.)
 
 **Not vacuous.**  Without `IsGalois ℚ L` the conclusion would still be true but useless:
 Hilbert 90 needs a Galois level to inflate from. -/
@@ -11167,7 +11278,27 @@ theorem geomPic_exists_finiteLevel {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     ∃ L : IntermediateField ℚ (AlgebraicClosure ℚ),
       FiniteDimensional ℚ L ∧ IsGalois ℚ L ∧
       (∀ (σ : QbarGal) (x : AlgebraicClosure ℚ), x ∈ L → σ x ∈ L) ∧
-      (∀ σ : QbarGal, (∀ x ∈ L, σ x = x) → gp.fieldAct σ z = z) := sorry
+      (∀ σ : QbarGal, (∀ x ∈ L, σ x = x) → gp.fieldAct σ z = z) := by
+  classical
+  obtain ⟨a, b, d, hd, hz⟩ := gp.Dbar.gen z
+  obtain ⟨L, hLfin, hLgal, hLstab, hLmem⟩ :=
+    exists_finiteGaloisLevel (coeffSet a ∪ coeffSet b ∪ coeffSet d)
+      (((finite_coeffSet a).union (finite_coeffSet b)).union (finite_coeffSet d))
+  refine ⟨L, hLfin, hLgal, hLstab, ?_⟩
+  intro σ hσ
+  have ha : a.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) = a :=
+    map_eq_self_of_forall_coeff_fixed σ fun c hc =>
+      hσ c (hLmem c (Or.inl (Or.inl hc)))
+  have hb : b.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) = b :=
+    map_eq_self_of_forall_coeff_fixed σ fun c hc =>
+      hσ c (hLmem c (Or.inl (Or.inr hc)))
+  have hdm : d.map (σ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) = d :=
+    map_eq_self_of_forall_coeff_fixed σ fun c hc =>
+      hσ c (hLmem c (Or.inr hc))
+  have key := congrArg (gp.fieldAct σ) hz
+  rw [map_mul, map_add, map_mul, gp.fieldAct_aeval σ, gp.fieldAct_aeval σ,
+    gp.fieldAct_aeval σ, gp.fieldAct_yy σ, ha, hb, hdm] at key
+  exact mul_right_cancel₀ hd (key.trans hz.symm)
 
 /-- **LEAF (weak Mordell–Weil, 2d of 4): `F̄^{Gal} = F`.**
 
