@@ -19541,8 +19541,134 @@ theorem exists_residueField_ringHom_of_valuationSubring {F : Type u} [Field F] [
     (hw : ∀ a : 𝓞 F,
       (⟨_, hcentre a⟩ : V) ∈ IsLocalRing.maximalIdeal V ↔ a ∈ w.asIdeal) :
     ∃ p : V →+* AlgebraicClosure w.asIdeal.ResidueField,
-      Function.Surjective p ∧ ∀ z : V, p z = 0 ↔ z ∈ IsLocalRing.maximalIdeal V :=
-  sorry
+      Function.Surjective p ∧ ∀ z : V, p z = 0 ↔ z ∈ IsLocalRing.maximalIdeal V := by
+  classical
+  haveI : w.asIdeal.IsMaximal := w.isPrime.isMaximal w.ne_bot
+  haveI hfinκ : Finite w.asIdeal.ResidueField := inferInstance
+  -- the residue characteristic
+  set p : ℕ := ringChar w.asIdeal.ResidueField with hpdef
+  haveI hcharκ : CharP w.asIdeal.ResidueField p := ringChar.charP _
+  have hp : p.Prime := CharP.char_is_prime w.asIdeal.ResidueField p
+  haveI : Fact p.Prime := ⟨hp⟩
+  -- `p` lies in `w`, hence in the maximal ideal of `V`, so `κ(V)` has characteristic `p`
+  have hpw : ((p : ℕ) : 𝓞 F) ∈ w.asIdeal := by
+    rw [← Ideal.algebraMap_residueField_eq_zero, map_natCast]
+    exact CharP.cast_eq_zero _ p
+  have hcast : (⟨_, hcentre ((p : ℕ) : 𝓞 F)⟩ : V) = ((p : ℕ) : V) := by
+    apply Subtype.ext
+    push_cast
+    simp
+  have hpV : ((p : ℕ) : V) ∈ IsLocalRing.maximalIdeal V := by
+    rw [← hcast]; exact (hw _).mpr hpw
+  have hp0 : ((p : ℕ) : IsLocalRing.ResidueField V) = 0 := by
+    have h1 : IsLocalRing.residue V ((p : ℕ) : V) = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.mpr hpV
+    simpa using h1
+  haveI hcharV : CharP (IsLocalRing.ResidueField V) p := by
+    have hdvd : ringChar (IsLocalRing.ResidueField V) ∣ p := ringChar.dvd hp0
+    haveI := ringChar.charP (IsLocalRing.ResidueField V)
+    exact charP_of_injective_ringHom
+      (f := ZMod.castHom hdvd (IsLocalRing.ResidueField V)) (RingHom.injective _) p
+  -- `κ(V)` is ALGEBRAICALLY CLOSED: a monic lift splits over `F̄`, and a root of a monic
+  -- polynomial over `V` is integral over `V`, hence in `V` since `V` is integrally closed
+  haveI hAC : IsAlgClosed (IsLocalRing.ResidueField V) := by
+    apply IsAlgClosed.of_exists_root
+    intro P0 hmonic hirr
+    have hsurj : Function.Surjective (IsLocalRing.residue V) := Ideal.Quotient.mk_surjective
+    obtain ⟨P, hPmap, hPdeg, hPmonic⟩ :=
+      Polynomial.lifts_and_degree_eq_and_monic
+        (Polynomial.mem_lifts_of_surjective hsurj P0) hmonic
+    have hdegne : (P.map (algebraMap V (AlgebraicClosure F))).degree ≠ 0 := by
+      rw [hPmonic.degree_map, hPdeg]
+      exact (Polynomial.degree_pos_of_irreducible hirr).ne'
+    obtain ⟨x, hx⟩ :=
+      IsAlgClosed.exists_root (P.map (algebraMap V (AlgebraicClosure F))) hdegne
+    have hint : IsIntegral V x := ⟨P, hPmonic, by rwa [Polynomial.eval₂_eq_eval_map]⟩
+    obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.1 hint
+    have hPy : P.eval y = 0 := by
+      have h1 : algebraMap V (AlgebraicClosure F) (P.eval y) = 0 := by
+        rw [← Polynomial.eval₂_at_apply (algebraMap V (AlgebraicClosure F)) y, hy,
+          ← Polynomial.eval_map]
+        exact hx
+      have h2 : Function.Injective (algebraMap V (AlgebraicClosure F)) :=
+        IsFractionRing.injective V (AlgebraicClosure F)
+      exact h2 (by simpa using h1)
+    exact ⟨IsLocalRing.residue V y, by
+      rw [← hPmap, Polynomial.eval_map, Polynomial.eval₂_at_apply, hPy, map_zero]⟩
+  -- `κ(V)` is ALGEBRAIC over its prime field: use the PRIMITIVE PART of an integral
+  -- equation, which survives reduction mod `p` precisely because it is primitive
+  letI : Algebra (ZMod p) (IsLocalRing.ResidueField V) :=
+    (ZMod.castHom (dvd_refl p) (IsLocalRing.ResidueField V)).toAlgebra
+  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure F) := by
+    haveI : Algebra.IsAlgebraic ℚ F := Algebra.IsAlgebraic.of_finite ℚ F
+    exact Algebra.IsAlgebraic.trans ℚ F (AlgebraicClosure F)
+  haveI hAA : Algebra.IsAlgebraic (ZMod p) (IsLocalRing.ResidueField V) := by
+    constructor
+    intro z
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective z
+    have halgQ : IsAlgebraic ℚ ((a : AlgebraicClosure F)) :=
+      Algebra.IsAlgebraic.isAlgebraic _
+    have halgZ : IsAlgebraic ℤ ((a : AlgebraicClosure F)) :=
+      (IsFractionRing.isAlgebraic_iff ℤ ℚ (AlgebraicClosure F)).2 halgQ
+    obtain ⟨f, hf0, hfa⟩ := halgZ
+    set g := f.primPart with hgdef
+    have hgprim : g.IsPrimitive := f.isPrimitive_primPart
+    have hcont : (f.content : ℤ) ≠ 0 := by
+      simpa [Polynomial.content_eq_zero_iff] using hf0
+    have hga : (Polynomial.aeval ((a : AlgebraicClosure F))) g = 0 := by
+      have hfeq := f.eq_C_content_mul_primPart
+      rw [hfeq, map_mul, Polynomial.aeval_C] at hfa
+      have hne : (algebraMap ℤ (AlgebraicClosure F)) f.content ≠ 0 := by simpa using hcont
+      exact (mul_eq_zero.1 hfa).resolve_left hne
+    have hgA : (Polynomial.aeval a) g = 0 := by
+      have h2 : Function.Injective (algebraMap V (AlgebraicClosure F)) :=
+        IsFractionRing.injective V (AlgebraicClosure F)
+      apply h2
+      rw [map_zero, ← Polynomial.aeval_algebraMap_apply]
+      exact hga
+    have hgres : (Polynomial.aeval (IsLocalRing.residue V a)) g = 0 := by
+      show (Polynomial.aeval (algebraMap V (IsLocalRing.ResidueField V) a)) g = 0
+      rw [Polynomial.aeval_algebraMap_apply, hgA, map_zero]
+    refine ⟨g.map (Int.castRingHom (ZMod p)), ?_, ?_⟩
+    · intro hzero
+      have hdvd : (Polynomial.C (p : ℤ)) ∣ g := by
+        rw [Polynomial.C_dvd_iff_dvd_coeff]
+        intro n
+        have hc : ((g.coeff n : ℤ) : ZMod p) = 0 := by
+          have := congrArg (fun r => Polynomial.coeff r n) hzero
+          simpa using this
+        exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).1 hc
+      have hu := hgprim _ hdvd
+      rw [Int.isUnit_iff] at hu
+      have hp2 := hp.two_le
+      omega
+    · have hcomp : (algebraMap (ZMod p) (IsLocalRing.ResidueField V)).comp
+          (Int.castRingHom (ZMod p)) = algebraMap ℤ (IsLocalRing.ResidueField V) :=
+        RingHom.ext_int _ _
+      rw [Polynomial.aeval_def, Polynomial.eval₂_map, hcomp]
+      exact hgres
+  haveI : IsAlgClosure (ZMod p) (IsLocalRing.ResidueField V) := ⟨inferInstance, inferInstance⟩
+  -- the target is also an algebraic closure of the prime field: `κ(w)` is FINITE, and the
+  -- `ZMod p`-algebra structure on `κ(w)ᵃˡᵍ` is the one `AlgebraicClosure.instAlgebra` derives
+  letI : Algebra (ZMod p) w.asIdeal.ResidueField :=
+    (ZMod.castHom (dvd_refl p) w.asIdeal.ResidueField).toAlgebra
+  haveI : Module.Finite (ZMod p) w.asIdeal.ResidueField := Module.Finite.of_finite
+  haveI : Algebra.IsAlgebraic (ZMod p) w.asIdeal.ResidueField :=
+    Algebra.IsAlgebraic.of_finite (ZMod p) w.asIdeal.ResidueField
+  haveI : Algebra.IsAlgebraic (ZMod p) (AlgebraicClosure w.asIdeal.ResidueField) :=
+    Algebra.IsAlgebraic.trans (ZMod p) w.asIdeal.ResidueField
+      (AlgebraicClosure w.asIdeal.ResidueField)
+  haveI : IsAlgClosure (ZMod p) (AlgebraicClosure w.asIdeal.ResidueField) :=
+    ⟨inferInstance, inferInstance⟩
+  -- any two algebraic closures of `ZMod p` are isomorphic
+  let e := IsAlgClosure.equiv (ZMod p) (IsLocalRing.ResidueField V)
+    (AlgebraicClosure w.asIdeal.ResidueField)
+  refine ⟨(e : IsLocalRing.ResidueField V →+* _).comp (IsLocalRing.residue V), ?_, ?_⟩
+  · exact e.surjective.comp Ideal.Quotient.mk_surjective
+  · intro z
+    show e (IsLocalRing.residue V z) = 0 ↔ _
+    rw [map_eq_zero_iff _ e.injective]
+    exact Ideal.Quotient.eq_zero_iff_mem
 
 /-- **THE ARITHMETIC FROBENIUS AT `w` STABILISES A VALUATION RING OF `F̄` AND
 REDUCES TO THE `N w`-POWER MAP** (**PROVEN 2026-08-02**, over
