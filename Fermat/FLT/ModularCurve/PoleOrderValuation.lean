@@ -26,7 +26,7 @@ abelian scheme `A` of relative dimension one over a field `K`.  Its leaf
 together with nine clauses.
 
 **This module builds the function as an actual `def` and proves the clauses that are pure
-valuation theory, leaving three named leaves.**  Doing it as a `def` is what makes the split
+valuation theory, leaving two named leaves.**  Doing it as a `def` is what makes the split
 legal at all, and that is worth stating because it is the trap the previous owner recorded:
 the valuation clauses do NOT pin the function — `deg' = 2 · deg` satisfies `hzero`, `hmul`,
 `hconst`, `hdesc`, `htop` and `hone` — so a standalone leaf of the form "for ANY such `deg`,
@@ -45,38 +45,40 @@ stated about *that* function and are true.
   a point other than the generic point is not a field), `isDiscreteValuationRing_stalk_of_`
   `ne_genericPoint` and `coheight_eq_one_of_ne_genericPoint`;
 * `exists_poleOrderValuation_of_affineComplement'`, the full nine-clause conclusion of the
-  original leaf, over the three residual leaves below.
+  original leaf, over the two residual leaves below;
+* **the residue-field leaf, PROVEN 2026-08-02** — see `exists_sub_smul_poleOrd_lt` — together
+  with the dictionary between `AlgebraicGeometry.Scheme.ord` and `Ring.ord` that it needed and
+  that mathlib does not state (`schemeOrd_algebraMap`, over `ringOrd_unit_mul_pow`,
+  `exists_unit_mul_of_ringOrd_eq` and `one_le_ringOrd_of_mem_maximalIdeal`).
 
-## The three residual leaves
+## The two residual leaves
 
 1. `nonneg_poleOrd_and_eq_zero_iff` — **`Γ(A, 𝒪_A) = K`.**  A chart function with no pole at
    `O` extends to a global section of a proper geometrically connected geometrically reduced
    `K`-scheme, hence is constant.  This is the clause that makes `deg` land in `ℕ` at all and
    is simultaneously `hconst`.
-2. `exists_sub_smul_poleOrd_lt` — **the residue field of `𝒪_{A,O}` is `K`.**  `r / s` is a
-   unit of the DVR `𝒪_{A,O}`; `c` is its residue.  This is where `O` being a *section* rather
-   than an arbitrary closed point is spent.
-3. `poleOrd_ne_one_and_exists_two_three` — **the genus is one.**  No function has a simple
+2. `poleOrd_ne_one_and_exists_two_three` — **the genus is one.**  No function has a simple
    pole at `O` (genus `≥ 1`), and some function has a double pole and some a triple pole
    (genus `≤ 1`, i.e. Riemann's inequality at `n = 2, 3`).
 
-Leaf 1 is a properness/descent statement, leaf 2 a residue-field statement, leaf 3 the only
-genuinely missing mathematics.  There is still no Riemann–Roch, genus or divisor theory in
-`Fermat/`, in the mathlib pin or in `~/cs/FLT` (re-checked 2026-07-31), which is why leaf 3
-stands; leaves 1 and 2 are each reachable with tooling this tree already owns
-(`AlgebraicGeometry.isIso_appTop_of_isProper_over_field` in `ProperPushforward.lean` for the
-first, `Scheme.Hom.stalkClosedPointTo` and the section lemmas of `CurveAffineComplement.lean`
-for the second) and are left open here only for want of time, not for want of a route.
+Leaf 1 is a properness/descent statement, leaf 2 the only genuinely missing mathematics.
+There is still no Riemann–Roch, genus or divisor theory in `Fermat/`, in the mathlib pin or in
+`~/cs/FLT` (re-checked 2026-07-31), which is why leaf 2 stands; leaf 1 is reachable with
+tooling this tree already owns (`AlgebraicGeometry.isIso_appTop_of_isProper_over_field` in
+`ProperPushforward.lean`) and is left open here only for want of time, not for want of a
+route.  The route recorded for the residue-field leaf was correct and is the one that closed
+it: `Scheme.stalkClosedPointTo (zeroSection ab)` is the residue map, and the section
+`zeroSection ab ≫ f = 𝟙` is exactly what splits it.
 
 ## Accounting
 
-**The direct-sorry count goes 1 → 3, and that is disclosure rather than regression.**  What
-changed is that the ~300 lines of valuation-theoretic plumbing between `Scheme.ord` and the
-nine clauses — the embedding of the chart in the function field, the DVR at `O`, the
-ultrametric inequality, the submodule, the `ℤ`-to-`ℕ` normalisation — can never have to be
-written again, and each of the three survivors is a statement with a name in a textbook.
-Judged by CLAUDE.md's own tie-breaker ("what is LEFT in the leaf, not how many leaves"), this
-is the cut: the old leaf mixed properness, residue fields and the genus into one existential
+**The direct-sorry count went 1 → 3 at the cut on 2026-07-31 and is 2 as of 2026-08-02.**
+What the cut changed is that the ~300 lines of valuation-theoretic plumbing between
+`Scheme.ord` and the nine clauses — the embedding of the chart in the function field, the DVR
+at `O`, the ultrametric inequality, the submodule, the `ℤ`-to-`ℕ` normalisation — can never
+have to be written again, and each of the survivors is a statement with a name in a textbook.
+Judged by CLAUDE.md's own tie-breaker ("what is LEFT in the leaf, not how many leaves"), that
+was the cut: the old leaf mixed properness, residue fields and the genus into one existential
 that no single citation could discharge.
 -/
 
@@ -279,6 +281,81 @@ lemma poleOrd_add_le [SmoothOfRelativeDimension 1 f] (hO : O ≠ genericPoint A)
 
 end PoleOrd
 
+/-! ### `Scheme.ord` against `Ring.ord`: the discrete-valuation dictionary
+
+`AlgebraicGeometry.Scheme.ord` is defined through `Ring.ordFrac (X.presheaf.stalk z)`, and
+`Ring.ordFrac` in turn through `Ring.ord` — the LENGTH of `R ⧸ (x)` — so at a point whose
+stalk is a discrete valuation ring the scheme-level order of vanishing and the ring-level one
+agree.  Mathlib does not state that comparison, and it is what lets a statement about
+`poleOrd` be attacked with `IsDiscreteValuationRing.eq_unit_mul_pow_irreducible`.
+
+The three ring-level lemmas below are pure commutative algebra about a DVR; the fourth is the
+bridge.  Together they say: on a smooth curve, the elements of `𝒪_{A,O}` of `Scheme.ord` zero
+are exactly the units, and those of positive `Scheme.ord` are exactly the maximal ideal. -/
+
+section DvrOrd
+
+variable {S : Type*} [CommRing S] [IsDomain S] [IsDiscreteValuationRing S]
+
+/-- **`Ring.ord` of `u * ϖ ^ n` in a discrete valuation ring is `n`.**  This is what makes
+`Ring.ord` computable against `IsDiscreteValuationRing.eq_unit_mul_pow_irreducible`. -/
+lemma ringOrd_unit_mul_pow {ϖ : S} (hϖ : Irreducible ϖ) (u : Sˣ) (n : ℕ) :
+    Ring.ord S ((u : S) * ϖ ^ n) = n := by
+  rw [Ring.ord_mul_of_isUnit_left u.isUnit,
+    Ring.ord_pow (mem_nonZeroDivisors_of_ne_zero hϖ.ne_zero) n,
+    Ring.ord_of_irreducible hϖ]
+  simp
+
+/-- **Two nonzero elements of a DVR with the same `Ring.ord` differ by a unit.** -/
+lemma exists_unit_mul_of_ringOrd_eq {a b : S} (ha : a ≠ 0) (hb : b ≠ 0)
+    (h : Ring.ord S a = Ring.ord S b) : ∃ u : Sˣ, a = (u : S) * b := by
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible S
+  obtain ⟨m, u₁, rfl⟩ := IsDiscreteValuationRing.eq_unit_mul_pow_irreducible ha hϖ
+  obtain ⟨n, u₂, rfl⟩ := IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hb hϖ
+  rw [ringOrd_unit_mul_pow hϖ, ringOrd_unit_mul_pow hϖ] at h
+  have hmn : m = n := by exact_mod_cast h
+  subst hmn
+  refine ⟨u₁ * u₂⁻¹, ?_⟩
+  rw [Units.val_mul, mul_assoc, Units.inv_mul_cancel_left]
+
+/-- **An element of the maximal ideal of a DVR has `Ring.ord` at least one.** -/
+lemma one_le_ringOrd_of_mem_maximalIdeal {z : S} (hz : z ∈ IsLocalRing.maximalIdeal S) :
+    1 ≤ Ring.ord S z := by
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible S
+  have hdvd : ϖ ∣ z := by
+    have hspan : IsLocalRing.maximalIdeal S = Ideal.span {ϖ} :=
+      (IsDiscreteValuationRing.irreducible_iff_uniformizer ϖ).mp hϖ
+    rw [hspan, Ideal.mem_span_singleton] at hz
+    exact hz
+  calc (1 : ℕ∞) = Ring.ord S ϖ := (Ring.ord_of_irreducible hϖ).symm
+    _ ≤ Ring.ord S z := Ring.ord_le_ord_of_dvd hdvd
+
+end DvrOrd
+
+section OrdBridge
+
+variable [IsIntegral A] [IsLocallyNoetherian A] {O : A}
+
+/-- **`Scheme.ord` of the image of a stalk element in the function field is its `Ring.ord`.**
+
+`Scheme.ordHom O hO` is `Ring.ordFrac (A.presheaf.stalk O)` on the nose — the `haveI` inside
+mathlib's definition supplies a `Prop`, so proof irrelevance makes the two `rfl`-equal and one
+`show` crosses the gap.  After that it is `Ring.ordFrac_eq_ord` and
+`Ring.ordMonoidWithZeroHom_eq_coe`.  Note that no discrete-valuation hypothesis is needed: only
+`coheight O = 1`, which is what makes `ord` non-junk at `O`. -/
+lemma schemeOrd_algebraMap (hO : Order.coheight O = 1) {x : A.presheaf.stalk O} (hx : x ≠ 0)
+    {n : ℕ} (hn : Ring.ord (A.presheaf.stalk O) x = n) :
+    Scheme.ord (algebraMap (A.presheaf.stalk O) A.functionField x) O = n := by
+  haveI : Ring.KrullDimLE 1 (A.presheaf.stalk O) := krullDimLE_of_coheight_le hO.le
+  have hne : algebraMap (A.presheaf.stalk O) A.functionField x ≠ 0 := fun h =>
+    hx (IsFractionRing.injective (A.presheaf.stalk O) A.functionField (by simpa using h))
+  rw [Scheme.ord_eq_iff hO hne]
+  show Ring.ordFrac (A.presheaf.stalk O) _ = _
+  rw [Ring.ordFrac_eq_ord _ hx]
+  exact Ring.ordMonoidWithZeroHom_eq_coe _ (mem_nonZeroDivisors_of_ne_zero hx) hn
+
+end OrdBridge
+
 /-! ### Locating the generic point inside the chart -/
 
 section Assembly
@@ -372,9 +449,92 @@ theorem nonneg_poleOrd_and_eq_zero_iff (r : R) (hr : r ≠ 0) :
       (poleOrd ι hgen (zeroPoint ab) r = 0 ↔ r ∈ Set.range (algebraMap K R)) :=
   sorry
 
+omit [SmoothOfRelativeDimension 1 f] [IsProper f] [GeometricallyConnected f]
+  [IsIntegral A] [IsLocallyNoetherian A] [Algebra K R] in
+/-- **Restricting a global section to the chart, then transporting along `appIso`, is
+`ι.appTop`** — the `ι ''ᵁ ⊤ ≤ ⊤` bookkeeping that `chartToFunctionField` hides. -/
+theorem res_comp_appIso_hom :
+    A.presheaf.map (homOfLE (le_top : ι ''ᵁ (⊤ : (Spec (CommRingCat.of R)).Opens) ≤ ⊤)).op ≫
+        (ι.appIso ⊤).hom = ι.appTop := by
+  rw [Scheme.Hom.appIso_hom', Scheme.Hom.map_appLE, appLE_top_top_eq_appTop]
+
+omit [SmoothOfRelativeDimension 1 f] [IsProper f] [GeometricallyConnected f]
+  [IsIntegral A] [IsLocallyNoetherian A] in
+include hstr in
+/-- **`hstr`, read on global sections.**  A constant of `K`, viewed as a global section of `A`
+through the structure morphism and then restricted to the chart, is its image under
+`algebraMap K R`.  This is the ONLY place `hstr` is consumed, and it is what makes the two
+`K`-algebra structures on the function field — through `Γ(A, ⊤)` and through `R` — agree. -/
+@[reassoc]
+theorem constSec_res_eq :
+    (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ f.appTop ≫
+        A.presheaf.map (homOfLE (le_top : ι ''ᵁ (⊤ : (Spec (CommRingCat.of R)).Opens) ≤ ⊤)).op
+      = CommRingCat.ofHom (algebraMap K R) ≫ (Scheme.ΓSpecIso (CommRingCat.of R)).inv ≫
+          (ι.appIso ⊤).inv := by
+  rw [← cancel_mono (ι.appIso ⊤).hom]
+  rw [Category.assoc, Category.assoc, res_comp_appIso_hom ι, Category.assoc, Category.assoc,
+    Iso.inv_hom_id, Category.comp_id, ← Scheme.Hom.comp_appTop, hstr, appTop_Spec_map,
+    Category.assoc, Iso.inv_hom_id_assoc]
+
+omit [SmoothOfRelativeDimension 1 f] [IsProper f] [GeometricallyConnected f]
+  [IsLocallyNoetherian A] in
+include f hstr in
+/-- **THE RESIDUE FIELD AT THE ZERO SECTION IS `K`** (PROVEN 2026-08-02).
+
+`O = zeroPoint ab` is the image of a SECTION of `f`, so `f` and `zeroSection ab` induce a
+retraction `K → 𝒪_{A,O} → K`; the second map is
+`AlgebraicGeometry.Scheme.stalkClosedPointTo (zeroSection ab)` and the first is a constant
+global section germinated at `O`.  That the first map is COMPATIBLE with the `K`-algebra
+structure of the chart — i.e. that `algebraMap S F ∘ ιK` is `φ ∘ algebraMap K R` — is `hstr`,
+and the comparison runs through `Γ(A, ⊤)`: both the stalk at `O` and the function field
+receive the global sections, and `Scheme.algebraMap_germ_eq_germToFunctionField` identifies
+the two routes.  There is no direct map between the two stalks to argue with.
+
+`ιK` is only a ring hom, not an `Algebra` instance, because nothing downstream needs one and
+installing one would create a second `Algebra K (A.presheaf.stalk O)` in scope. -/
+theorem exists_residueSection_zeroPoint :
+    ∃ (ιK : K →+* A.presheaf.stalk (zeroPoint ab))
+      (ρ : A.presheaf.stalk (zeroPoint ab) →+* K),
+      (∀ c : K, ρ (ιK c) = c) ∧
+      (∀ c : K, algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField (ιK c)
+        = (chartToFunctionField ι hgen).hom (algebraMap K R c)) := by
+  have key1 : ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ f.appTop ≫
+      A.presheaf.germ ⊤ (zeroPoint ab) trivial) ≫
+      Scheme.stalkClosedPointTo (zeroSection ab) = 𝟙 (CommRingCat.of K) := by
+    simp only [zeroPoint]
+    rw [Category.assoc, Category.assoc,
+      Scheme.germ_stalkClosedPointTo (zeroSection ab) ⊤ trivial]
+    have h2 : f.appTop ≫ (zeroSection ab).appTop ≫
+        (Scheme.ΓSpecIso (CommRingCat.of K)).hom =
+        (Scheme.ΓSpecIso (CommRingCat.of K)).hom := by
+      rw [← Category.assoc, ← Scheme.Hom.comp_appTop, zeroSection_comp]
+      simp
+    simp only [Iso.trans_hom, Functor.mapIso_hom, Iso.op_hom, eqToIso.hom, eqToHom_op]
+    rw [Scheme.Hom.app_eq_appLE (zeroSection ab), Scheme.Hom.appLE_map_assoc,
+      appLE_top_top_eq_appTop, h2, Iso.inv_hom_id]
+  have key2 : (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ f.appTop ≫
+      A.presheaf.germ ⊤ (genericPoint A) trivial =
+      CommRingCat.ofHom (algebraMap K R) ≫ chartToFunctionField ι hgen := by
+    rw [chartToFunctionField, ← TopCat.Presheaf.germ_res A.presheaf
+      (homOfLE (le_top : ι ''ᵁ (⊤ : (Spec (CommRingCat.of R)).Opens) ≤ ⊤)) (genericPoint A) hgen,
+      constSec_res_eq_assoc ι hstr]
+  refine ⟨((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ f.appTop ≫
+      A.presheaf.germ ⊤ (zeroPoint ab) trivial).hom,
+    (Scheme.stalkClosedPointTo (zeroSection ab)).hom, fun c => ?_, fun c => ?_⟩
+  · exact congrArg (fun m : CommRingCat.of K ⟶ CommRingCat.of K => m.hom c) key1
+  · have h := congrArg (fun m : CommRingCat.of K ⟶ A.functionField => m.hom c) key2
+    simpa using h
+
+-- `hrange` is not consumed by the proof below (`hgen`, which is what the argument needs, is a
+-- hypothesis of this section), and neither is `GeometricallyConnected f`.  Both are kept in the
+-- signature because the sorried version carried them and the call site in
+-- `exists_poleOrderValuation_of_affineComplement'` passes `hrange` positionally; dropping it
+-- would be a signature change for no gain.
+set_option linter.unusedSectionVars false in
 include f hstr hrange in
 /-- **LEAF 2 — the residue field of `𝒪_{A,O}` is `K`, in the form the pole order needs**
-(sorry leaf, cut 2026-07-31 out of `exists_poleOrderValuation_of_affineComplement`).
+(cut 2026-07-31 out of `exists_poleOrderValuation_of_affineComplement`;
+**PROVEN 2026-08-02, no sorry**).
 
 Two chart functions with the SAME pole order at `O` differ, after scaling the second by a
 constant of `K`, by a function of strictly smaller pole order.  This is not a dimension count
@@ -384,22 +544,140 @@ can be taken IN `K` — i.e. that the residue field at `O` is `K` and not a prop
 and that is true because `O = zeroPoint ab` is the image of a SECTION of `f`, hence a
 `K`-rational point.
 
-**THE ROUTE.**  `zeroSection ab ≫ f = 𝟙 _` makes `K → 𝒪_{A,O} → κ(O) → K` the identity, so
-`κ(O) = K`; `Scheme.Hom.stalkClosedPointTo` and `AlgebraicGeometry.base_closedPoint_eq_of_`
-`mem_range` in `CurveAffineComplement.lean` are the two pieces of plumbing that say so.  Then
-`ord_O (φ r - c • φ s) > ord_O (φ s)` because subtracting the residue moves a unit of the DVR
-into the maximal ideal.
+**THE ROUTE AS TAKEN**, which is the one the cut predicted, in four steps:
+
+1. `exists_residueSection_zeroPoint` above: the section `zeroSection ab` gives a retraction
+   `ιK : K → 𝒪_{A,O}`, `ρ : 𝒪_{A,O} → K` with `ρ ∘ ιK = id`, compatible with `φ`.  Since `ρ`
+   is then surjective onto a field, `ker ρ` is maximal, hence IS `𝔪_O`
+   (`IsLocalRing.ker_eq_maximalIdeal`) — so no `IsLocalHom` bookkeeping is needed;
+2. `Scheme.ord (φ r / φ s) = 0`, so writing `φ r / φ s = a / b` with `a, b ∈ 𝒪_{A,O}` and
+   passing to `Ring.ord` through `schemeOrd_algebraMap` gives `Ring.ord a = Ring.ord b`,
+   whence `a = u · b` for a UNIT `u` (`exists_unit_mul_of_ringOrd_eq`).  So `φ r = u · φ s`;
+3. `c := ρ u`, and `z := u - ιK c` lies in `𝔪_O`, so `1 ≤ Ring.ord z`
+   (`one_le_ringOrd_of_mem_maximalIdeal`) and hence `1 ≤ Scheme.ord z`;
+4. `φ (r - c • s) = z · φ s`, so its `Scheme.ord` exceeds that of `φ s = φ r` by at least one.
+   The degenerate case `z = 0` is not an exception: then `r - c • s = 0`, `poleOrd` of it is
+   `0`, and `h1` says `0 < poleOrd r`.
+
+Note `h1` is used ONLY for that degenerate case, and `hrange` is not used at all (`hgen`,
+which is what the argument needs, is a hypothesis of the section); both are kept because the
+call site holds them and dropping either would be a signature change.
 
 **FAITHFULNESS.**  Without `hstr` — i.e. with the `K`-algebra structure on `R` restricted
 along a proper subfield `K₀ ⊂ K` — the statement is FALSE: each graded piece
 `L n / L (n-1)` becomes `[K : K₀]`-dimensional and no single `c ∈ K₀` can cancel the leading
 term.  That is the parent audit's `hdesc` witness, and it transfers verbatim because the
-conclusion here is the parent's `hdesc` clause with `deg` replaced by `poleOrd`. -/
+conclusion here is the parent's `hdesc` clause with `deg` replaced by `poleOrd`.  In the proof
+`hstr` enters exactly once, at `constSec_res_eq`. -/
 theorem exists_sub_smul_poleOrd_lt (r s : R) (hr : r ≠ 0) (hs : s ≠ 0)
     (hrs : poleOrd ι hgen (zeroPoint ab) r = poleOrd ι hgen (zeroPoint ab) s)
     (h1 : 1 ≤ poleOrd ι hgen (zeroPoint ab) r) :
-    ∃ c : K, poleOrd ι hgen (zeroPoint ab) (r - c • s) < poleOrd ι hgen (zeroPoint ab) r :=
-  sorry
+    ∃ c : K, poleOrd ι hgen (zeroPoint ab) (r - c • s) <
+      poleOrd ι hgen (zeroPoint ab) r := by
+  obtain ⟨ιK, ρ, hsec, hcompat⟩ := exists_residueSection_zeroPoint ab ι hstr hgen
+  have hOne : zeroPoint ab ≠ genericPoint A := (genericPoint_ne_zeroPoint (f := f) ab).symm
+  have hcoh : Order.coheight (zeroPoint ab) = 1 :=
+    coheight_eq_one_of_ne_genericPoint (f := f) hOne
+  haveI hdvr : IsDiscreteValuationRing (A.presheaf.stalk (zeroPoint ab)) :=
+    isDiscreteValuationRing_stalk_of_ne_genericPoint (f := f) hOne
+  haveI hkd : Ring.KrullDimLE 1 (A.presheaf.stalk (zeroPoint ab)) :=
+    krullDimLE_of_coheight_le hcoh.le
+  have hx : (chartToFunctionField ι hgen).hom r ≠ 0 := chart_ne_zero ι hgen hr
+  have hy : (chartToFunctionField ι hgen).hom s ≠ 0 := chart_ne_zero ι hgen hs
+  have hordxy : Scheme.ord ((chartToFunctionField ι hgen).hom r) (zeroPoint ab) =
+      Scheme.ord ((chartToFunctionField ι hgen).hom s) (zeroPoint ab) := by
+    simp only [poleOrd] at hrs; omega
+  -- STEP 2: the ratio has order zero, hence is a unit of the stalk
+  have hvne : (chartToFunctionField ι hgen).hom r / (chartToFunctionField ι hgen).hom s ≠ 0 :=
+    div_ne_zero hx hy
+  have hvy : ((chartToFunctionField ι hgen).hom r / (chartToFunctionField ι hgen).hom s) *
+      (chartToFunctionField ι hgen).hom s = (chartToFunctionField ι hgen).hom r :=
+    div_mul_cancel₀ _ hy
+  have hordv : Scheme.ord ((chartToFunctionField ι hgen).hom r /
+      (chartToFunctionField ι hgen).hom s) (zeroPoint ab) = 0 := by
+    have h := Scheme.ord_mul (x := zeroPoint ab) hvne hy
+    rw [hvy] at h
+    omega
+  obtain ⟨a, b, hb, hab⟩ := IsFractionRing.div_surjective
+    (A := (A.presheaf.stalk (zeroPoint ab) : Type))
+    ((chartToFunctionField ι hgen).hom r / (chartToFunctionField ι hgen).hom s)
+  have hbne : b ≠ 0 := fun h => by simp [h] at hb
+  have hAb : algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField b ≠ 0 := fun h =>
+    hbne (IsFractionRing.injective (A.presheaf.stalk (zeroPoint ab)) A.functionField
+      (by simpa using h))
+  have hane : a ≠ 0 := by
+    rintro rfl
+    rw [map_zero, zero_div] at hab
+    exact hvne hab.symm
+  have hmulab : ((chartToFunctionField ι hgen).hom r / (chartToFunctionField ι hgen).hom s) *
+      algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField b =
+      algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField a := by
+    rw [← hab]; field_simp
+  have hordab : Scheme.ord (algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField a)
+      (zeroPoint ab) =
+      Scheme.ord (algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField b)
+        (zeroPoint ab) := by
+    rw [← hmulab, Scheme.ord_mul hvne hAb, hordv]; ring
+  obtain ⟨m, hm⟩ : ∃ m : ℕ, Ring.ord (A.presheaf.stalk (zeroPoint ab)) a = m :=
+    ⟨_, (ENat.ne_top_iff_exists.mp
+      (Ring.ord_ne_top (mem_nonZeroDivisors_of_ne_zero hane))).choose_spec.symm⟩
+  obtain ⟨n, hn⟩ : ∃ n : ℕ, Ring.ord (A.presheaf.stalk (zeroPoint ab)) b = n :=
+    ⟨_, (ENat.ne_top_iff_exists.mp
+      (Ring.ord_ne_top (mem_nonZeroDivisors_of_ne_zero hbne))).choose_spec.symm⟩
+  have hmn : m = n := by
+    have h1' := schemeOrd_algebraMap hcoh hane hm
+    have h2' := schemeOrd_algebraMap hcoh hbne hn
+    rw [h1', h2'] at hordab
+    exact_mod_cast hordab
+  subst hmn
+  obtain ⟨u, hu⟩ := exists_unit_mul_of_ringOrd_eq hane hbne (by rw [hm, hn])
+  have hvu : (chartToFunctionField ι hgen).hom r / (chartToFunctionField ι hgen).hom s =
+      algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField (u : _) := by
+    have hmap : algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField a =
+        algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField (u : _) *
+          algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField b := by
+      rw [← map_mul, ← hu]
+    rw [← hmulab] at hmap
+    exact mul_right_cancel₀ hAb hmap
+  -- STEP 3: the residue, and the resulting element of the maximal ideal
+  refine ⟨ρ (u : _), ?_⟩
+  have hzker : ρ ((u : A.presheaf.stalk (zeroPoint ab)) - ιK (ρ (u : _))) = 0 := by
+    rw [map_sub, hsec]; ring
+  have hzmem : (u : A.presheaf.stalk (zeroPoint ab)) - ιK (ρ (u : _)) ∈
+      IsLocalRing.maximalIdeal (A.presheaf.stalk (zeroPoint ab)) := by
+    rw [← IsLocalRing.ker_eq_maximalIdeal ρ (fun k => ⟨ιK k, hsec k⟩)]
+    exact hzker
+  -- STEP 4
+  have hkey : (chartToFunctionField ι hgen).hom (r - ρ (u : _) • s) =
+      algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField
+        ((u : A.presheaf.stalk (zeroPoint ab)) - ιK (ρ (u : _))) *
+        (chartToFunctionField ι hgen).hom s := by
+    rw [map_sub, map_sub, sub_mul, Algebra.smul_def, map_mul, hcompat, ← hvu, hvy]
+  rcases eq_or_ne ((u : A.presheaf.stalk (zeroPoint ab)) - ιK (ρ (u : _))) 0 with hz | hz
+  · have hzero : (chartToFunctionField ι hgen).hom (r - ρ (u : _) • s) = 0 := by
+      rw [hkey, hz, map_zero, zero_mul]
+    simp only [poleOrd, hzero, Scheme.ord_zero, Pi.zero_apply]
+    simp only [poleOrd] at h1
+    omega
+  · have hAz : algebraMap (A.presheaf.stalk (zeroPoint ab)) A.functionField
+        ((u : A.presheaf.stalk (zeroPoint ab)) - ιK (ρ (u : _))) ≠ 0 := fun h =>
+      hz (IsFractionRing.injective (A.presheaf.stalk (zeroPoint ab)) A.functionField
+        (by simpa using h))
+    obtain ⟨k, hk⟩ : ∃ k : ℕ, Ring.ord (A.presheaf.stalk (zeroPoint ab))
+        ((u : A.presheaf.stalk (zeroPoint ab)) - ιK (ρ (u : _))) = k :=
+      ⟨_, (ENat.ne_top_iff_exists.mp
+        (Ring.ord_ne_top (mem_nonZeroDivisors_of_ne_zero hz))).choose_spec.symm⟩
+    have hk1 : 1 ≤ k := by
+      have hge := one_le_ringOrd_of_mem_maximalIdeal hzmem
+      rw [hk] at hge
+      exact_mod_cast hge
+    have hordz := schemeOrd_algebraMap hcoh hz hk
+    have hfin : Scheme.ord ((chartToFunctionField ι hgen).hom (r - ρ (u : _) • s))
+        (zeroPoint ab) =
+        (k : ℤ) + Scheme.ord ((chartToFunctionField ι hgen).hom s) (zeroPoint ab) := by
+      rw [hkey, Scheme.ord_mul hAz hy, hordz]
+    simp only [poleOrd] at hrs h1 ⊢
+    omega
 
 include f hstr hrange in
 /-- **LEAF 3 — the genus is one** (sorry leaf, cut 2026-07-31 out of
