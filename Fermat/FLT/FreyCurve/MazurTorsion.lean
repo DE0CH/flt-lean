@@ -4009,12 +4009,18 @@ With that field in hand the cut is three pieces:
 
 | piece | what it asks for |
 |---|---|
-| `exists_isNIsogenyPair_of_x0JNeronDatum` | `E/C` exists over a `ℤ_(q)`-scheme |
+| `exists_isNIsogenyPair_of_x0JNeronDatum` | PROVEN — `E/C` over a `ℤ_(q)`-scheme, from `X0.lean`'s base-generic leaf |
 | `exists_atkinLehnerModelOpen_of_jNeronDatum` | PROVEN — `w_𝒴` from `d.model.coarse.universal` |
 | `exists_extend_atkinLehnerCusps_of_jNeronDatum` | the extension across the cusps |
 
-and the assembly.  The first is the quotient of an elliptic scheme by a
-finite flat subgroup scheme over `ℤ[1/N]`; the third is the degeneration
+and the assembly.  **The first row stopped being a leaf on 2026-08-01**: it
+was FUSED with its `ℚ`-side twin `exists_isNIsogenyPair` into the single
+base-generic `exists_isNIsogenyPair_of_isUnitBase` in `X0.lean`, and is now
+a one-line delegation.  The same edit repaired this section's `hqN` from
+`q ≠ N` to `¬ q ∣ N` — the row's `q ≠ N` form was FALSE, refuted at
+`q = 2`, `N = 4`; the audit is on the row's own docstring.  So the cut has
+ONE open piece left, the third.  The first was the quotient of an elliptic
+scheme by a finite flat subgroup scheme over `ℤ[1/N]`; the third is the degeneration
 data at the cusps, on which `w_N` acts by `e ↦ N/e`.  Everything between
 them — the moduli action with its naturality and its involutivity, the
 involutivity of `w_𝒴`, and the identification of the generic fibre of `w_𝒴`
@@ -4604,27 +4610,63 @@ TRUE — Katz–Mazur ch. 1 / Deligne–Rapoport II: `E/C` exists as an elliptic
 scheme over any base, and `E[N]/C` is again cyclic of order `N` as soon as
 `N` is invertible on the base, which over `Spec ℤ_(q)` it is.
 
-**⚠ WHERE `q ∤ N` ENTERS, AND WHY IT IS CARRIED AS `q.Prime` + `q ≠ N`
-RATHER THAN DIRECTLY.**  The base-free form of this statement is FALSE, and
-the witness is written out in the falsity audit on `exists_isNIsogenyPair`:
-over `T = Spec 𝔽̄_p` with `p ∣ N` the quotient carries no `Γ₀(N)`-structure
-at all.  A `ℤ_(q)`-scheme has residue characteristics `0` and `q` only, so
-the witness is excluded exactly when `q ∤ N`.  This leaf inherits the
-hypotheses of the cut it serves — `q.Prime` and `q ≠ N` — which give `q ∤ N`
-when `N` is prime, i.e. in the Mazur setting every consumer of this file is
-in.  **If a prover finds the gap at composite `N` real, the correct repair
-is to strengthen `q ≠ N` to `¬ q ∣ N` throughout the whole
-`AtkinLehnerModelCut` section and in `exists_atkinLehnerModelAut_of_jNeronDatum`
-— every consumer can supply it — and NOT to weaken this statement.**
-`hbase` pins `R` as `ℤ_(q)`, which is what makes `N` invertible on the base.
+**⚠ FALSITY AUDIT, 2026-08-01 — THE `q ≠ N` FORM OF THIS LEAF WAS FALSE,
+AND HAS BEEN REPAIRED TO `¬ q ∣ N`.**  The paragraph that stood here said
+that `q.Prime` and `q ≠ N` "give `q ∤ N` when `N` is prime, i.e. in the
+Mazur setting every consumer of this file is in", and prescribed the repair
+below if the gap at composite `N` turned out to be real.  It is real, and
+the witness is the falsity audit on `exists_isNIsogenyPair` instantiated at
+the smallest composite level where the guard fails:
+
+> `q = 2`, `N = 4`, `R = ℤ_(2)`.  `q.Prime` holds and `q ≠ N` holds, while
+> `q ∣ N`.  Take `K = 𝔽̄_2`, which is a `ℤ_(2)`-scheme through
+> `ℤ_(2) ↠ 𝔽_2 ↪ K`, and an ORDINARY `E/K`, for which
+> `E(K)[2^n] ≅ ℤ/2^n`; put `C := E(K)[4] ≅ ℤ/4`, a reduced closed subscheme,
+> finite flat of rank `4`, cyclic of order exactly `4` at every geometric
+> point.  So `(E, C)` is a `Gamma0Datum 4 (Spec K)`.  Now suppose
+> `h : IsNIsogenyPair 4 (E,C) d'`.  `ker_map` makes `h.map` non-constant,
+> hence surjective on `K`-points; so any `y` with `h.dual y = 0` is `h.map x`
+> for some `x`, and `dual_map` gives `4 • x = 0`, i.e. `x ∈ E(K)[4] = C(K)`,
+> whence `y = 0` by `ker_map`.  So `ker h.dual` has ONE `K`-point, while
+> `ker_dual` and `d'.cyc.geom_cyclic` demand an element of order `4`.
+> Contradiction.
+
+The repair prescribed by the old paragraph is the one taken: `q ≠ N` is
+strengthened to `¬ q ∣ N` here and at the three declarations of this
+section that forward it (`exists_atkinLehnerModelOpen_of_jNeronDatum`,
+`exists_extend_atkinLehnerCusps_of_jNeronDatum`,
+`exists_extend_atkinLehnerModel_of_jNeronDatum`), and discharged at the sole
+terminal consumer `exists_atkinLehnerModelAut_of_jNeronDatum`, which carries
+`N.Prime` and supplies it by `Nat.prime_dvd_prime_iff_eq` in one step — the
+same one-liner it was already using at STEP 4 for
+`exists_isCusp_ne_neronSpAut_of_atkinLehnerPin`.  No statement outside this
+section moved.  This is the THIRD time the identical wrong gloss on this
+section's hypotheses has produced a real defect; the other two
+(`formalImmersion_of_cuspFormalImmersionCert` and
+`exists_isCusp_ne_neronSpAut_of_atkinLehnerPin`) were repaired on
+2026-07-30, and the ⚠ note on
+`exists_extend_atkinLehnerModel_of_jNeronDatum` below predicted this one in
+as many words.
+
+**⚠ AND THIS DECLARATION IS NO LONGER A LEAF (2026-08-01).**  With `¬ q ∣ N`
+in hand it is a ONE-LINE consequence of `X0.lean`'s
+`exists_isNIsogenyPair_of_isUnitBase`, the fusion of this citation with its
+`ℚ`-side twin `exists_isNIsogenyPair`: `hbase` plus `¬ q ∣ N` gives
+`IsUnit ((N : ℕ) : ↥R)` by `isUnit_natCast_of_isReductionBase_of_not_dvd`,
+and `SpecLoc R` is `Spec (CommRingCat.of ↥R)`.  That is exactly the sense in
+which `hbase` "pins `R` as `ℤ_(q)`, which is what makes `N` invertible on
+the base" — the sentence this docstring already carried, now a proof step.
+The Deligne–Rapoport quotient is therefore owed ONCE by the whole project
+rather than once per base.
 
 **The check that refutes it**: a `ℤ_(q)`-scheme `T` with `q ∤ N` and a
 `Γ₀(N)`-datum over it admitting no cyclic `N`-isogeny. -/
-theorem exists_isNIsogenyPair_of_x0JNeronDatum (_hq : q.Prime) (_hqN : q ≠ N)
-    (_hbase : IsReductionBase q R toF) {T : Scheme.{0}} (_g₀ : T ⟶ SpecLoc R)
+theorem exists_isNIsogenyPair_of_x0JNeronDatum (_hq : q.Prime) (hqN : ¬ q ∣ N)
+    (hbase : IsReductionBase q R toF) {T : Scheme.{0}} (g₀ : T ⟶ SpecLoc R)
     (dd : Gamma0Datum N T) :
     ∃ dd' : Gamma0Datum N T, Nonempty (IsNIsogenyPair N dd dd') :=
-  sorry
+  exists_isNIsogenyPair_of_isUnitBase N
+    (isUnit_natCast_of_isReductionBase_of_not_dvd hbase hqN) g₀ dd
 
 /-- **The OPEN part of the integral model carries the Atkin–Lehner
 involution** (PROVEN 2026-07-31, over `exists_isNIsogenyPair_of_x0JNeronDatum`
@@ -4643,7 +4685,7 @@ over the integral base.
 Nothing here is geometry: the cusps are untouched, and `𝒳` does not appear.
 What is left for `exists_extend_atkinLehnerCusps_of_jNeronDatum` is exactly
 the extension across the cuspidal locus. -/
-theorem exists_atkinLehnerModelOpen_of_jNeronDatum (hq : q.Prime) (hqN : q ≠ N) :
+theorem exists_atkinLehnerModelOpen_of_jNeronDatum (hq : q.Prime) (hqN : ¬ q ∣ N) :
     ∃ (alZ : AtkinLehnerMorphismOver N (SpecLoc R)) (wY : YZ ⟶ YZ)
       (hwY : wY ≫ ystr = ystr),
       wY ≫ wY = 𝟙 YZ ∧
@@ -4720,7 +4762,7 @@ consumer of that density theorem.
 moduli-pinned `w_N` of the open integral model does not extend to the smooth
 proper model — equivalently, at which `w_N` is not defined on the smooth
 model. -/
-theorem exists_extend_atkinLehnerCusps_of_jNeronDatum (_hq : q.Prime) (_hqN : q ≠ N)
+theorem exists_extend_atkinLehnerCusps_of_jNeronDatum (_hq : q.Prime) (_hqN : ¬ q ∣ N)
     (alZ : AtkinLehnerMorphismOver N (SpecLoc R)) (wY : YZ ⟶ YZ)
     (hwY : wY ≫ ystr = ystr)
     (_hpinZ : ∀ {T : Scheme.{0}} (g₀ : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
@@ -5030,19 +5072,31 @@ even though `d.model`'s smoothness already encodes it, so that every leaf
 of this cut is indexed by the same hypotheses; a prover may find it
 underscored-away, and it is underscored here.
 
-**⚠ THAT GLOSS IS FALSE AS STATED, and the note is left rather than the
-hypothesis strengthened** (2026-07-30).  This leaf carries no `N.Prime` — `N`
-is a section variable — so `q ≠ N` with `q` prime does NOT give `¬ q ∣ N`
-(`q = 3`, `N = 9`).  The identical wrong gloss on two SIBLING leaves of this
-cut caused two real signature defects the same day, because both of them went
-on to consume a lemma asking for `¬ q ∣ N` literally:
+**⚠ THAT GLOSS WAS FALSE AS STATED, AND THE HYPOTHESIS IS NOW STRENGTHENED
+TO `¬ q ∣ N`** (predicted 2026-07-30, carried out 2026-08-01).  This
+declaration carries no `N.Prime` — `N` is a section variable — so `q ≠ N`
+with `q` prime does NOT give `¬ q ∣ N` (`q = 3`, `N = 9`).  The identical
+wrong gloss on two SIBLING leaves of this cut caused two real signature
+defects on 2026-07-30, because both of them went on to consume a lemma
+asking for `¬ q ∣ N` literally:
 `formalImmersion_of_cuspFormalImmersionCert` and
-`exists_isCusp_ne_neronSpAut_of_atkinLehnerPin`, both now repaired to `¬ q ∣ N`
-with their call sites.  Here the hypothesis is genuinely UNUSED, so the
-statement is unaffected and strengthening it would be churn — but a prover who
-starts consuming `_hqN` must strengthen it FIRST.  The sole call site,
-`exists_atkinLehnerModelAut_of_jNeronDatum`, carries `N.Prime` and can
-discharge `¬ q ∣ N` in one step.
+`exists_isCusp_ne_neronSpAut_of_atkinLehnerPin`, both repaired that day with
+their call sites.  The note left here then said the hypothesis was
+"genuinely UNUSED, so the statement is unaffected and strengthening it would
+be churn — but a prover who starts consuming `_hqN` must strengthen it
+FIRST."  That prediction fired: `exists_isNIsogenyPair_of_x0JNeronDatum`,
+which this declaration forwards `hqN` to, is FALSE at `q ∣ N` (refuted at
+`q = 2`, `N = 4` — see its docstring), so the whole forwarding chain of this
+section now carries `¬ q ∣ N`.  The sole call site,
+`exists_atkinLehnerModelAut_of_jNeronDatum`, carries `N.Prime` and discharges
+it in one step, exactly as the note said it could — so nothing above this
+section moved.
+
+**The lesson, and it is now three-for-three:** in this file a hypothesis
+whose docstring GLOSS is `q ∤ N` while its TYPE is `q ≠ N` has been a real
+defect every single time somebody started consuming it.  A forwarding
+hypothesis is not "unused" — it is used by whatever it is forwarded to, and
+that is a different declaration with its own truth conditions.
 
 `N` needs no positivity: at `N = 0`,
 `isEmpty_of_gamma0Datum_zero` makes the moduli problem empty and any `w`
@@ -5061,7 +5115,7 @@ not defined on the smooth model.
 **REFERENCES.**  Deligne–Rapoport, *Les schémas de modules de courbes
 elliptiques* (Antwerp II, 1973), IV–VI; Atkin–Lehner, *Hecke operators on
 `Γ₀(m)`*, Math. Ann. 185 (1970), §2. -/
-theorem exists_extend_atkinLehnerModel_of_jNeronDatum (hq : q.Prime) (hqN : q ≠ N)
+theorem exists_extend_atkinLehnerModel_of_jNeronDatum (hq : q.Prime) (hqN : ¬ q ∣ N)
     (al : AtkinLehnerMorphism N) (wYQ : Y ⟶ Y) (hwYQ : wYQ ≫ strY = strY)
     (hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (dd : Gamma0Datum N T),
       RelPoint.post wYQ hwYQ (hc.classify g dd) = hc.classify g (al.dual g dd))
@@ -5842,9 +5896,13 @@ theorem exists_atkinLehnerModelAut_of_jNeronDatum (N q : ℕ)
       (y₁ := wYQ ≫ wYQ) (y₂ := 𝟙 Y) ⟨by rw [Category.assoc, hwYQ, hwYQ], fun {_} g dd => ?_⟩
       ⟨Category.id_comp strY, fun {_} g dd => (Category.comp_id _).symm⟩
     rw [← Category.assoc, ← hfac, ← hfac, hdd]
-  -- STEP 3: Deligne–Rapoport carry `w_{Y,ℚ}` onto the model
+  -- STEP 3: Deligne–Rapoport carry `w_{Y,ℚ}` onto the model.  `hqN` is
+  -- strengthened here from `q ≠ N` to `¬ q ∣ N` (2026-08-01): that cut carries no
+  -- `N.Prime`, and its first leaf — the isogeny quotient over `Spec ℤ_(q)` — is
+  -- FALSE at `q ∣ N`, refuted at `q = 2`, `N = 4`.  Same one-liner as STEP 4.
   obtain ⟨w, wY, hw, hwY, hcomm, hinvY, hgen⟩ :=
-    exists_extend_atkinLehnerModel_of_jNeronDatum d hq hqN al wYQ hwYQ hpin hinvQ
+    exists_extend_atkinLehnerModel_of_jNeronDatum d hq
+      (fun h => hqN ((Nat.prime_dvd_prime_iff_eq hq hN).mp h)) al wYQ hwYQ hpin hinvQ
   -- and the density theorem promotes involutivity from `𝒴` to `𝒳`
   have hinv : w ≫ w = 𝟙 XZ := by
     refine eq_of_comp_open_x0JNeronModel d.model ?_
