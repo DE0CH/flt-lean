@@ -28735,3 +28735,63 @@ silently destroy the clause its integral consumer exists to use.  If no — whic
 is what `AtkinLehnerMorphism` turned out to be, all four of its fields being
 statements about `Gamma0Datum` and `IsBaseChangeOf` with the base appearing only
 as the type of a binder that is passed on — the collapse is free.
+## A REPAIR TASK GOES STALE *ATOMICALLY* AT A PUBLISH — AND THE QUEUE AUDIT STRUCTURALLY CANNOT DELETE IT
+(2026-08-01, `flt-lean-65`.  Dispatched at "seven repairs merger's X0 still needs, all
+verified absent there on 2026-07-31".  **All seven were already in the tree**, and the
+task was redundant end to end.)
+The release-window sections above are all about LEAVES: a leaf goes stale when some agent
+proves it, cuts it, or restates it, one at a time, with probability rising slowly over a
+release window.  **A REPAIR task is not like that.**  It names WOUNDS — a dropped `open`,
+a lost `section`/`variable`, a stale rename, a declaration used above where it is
+declared, a missing `maxHeartbeats` — and repairing those wounds is *what publishing a
+release consists of*.  Release 33's own handover says so in as many words: *"Eight
+consecutive repair rounds across the dark cone, and not one was mathematics.  Every repair
+was a call site, a scope line, a stray modifier or a pure permutation of lines."*
+So a repair task does not decay.  **It dies all at once, the instant the release
+publishes**, together with every other repair task queued during the hold.  Release 33 was
+the first publish in six releases, so *every* repair task accumulated across those five
+holds went obsolete simultaneously.
+**AND THE AUDIT CANNOT SEE IT, for a reason that is structural rather than an oversight.**
+The release audit's keep-test is *"does this task name a leaf that is still open?"*  A
+repair task names **no leaf at all** — it names wounds — so it can only be kept or dropped
+by accident, according to whether its prose happens to quote the name of some still-open
+leaf.  Measured here: `queue1`'s round-6 X0 repair task survived release 33's audit
+because its diagnosis quotes
+`exists_ringHom_gamma0GITPresentationOver_of_atlas_charDvd`, which is still a leaf — while
+every one of the six wounds it describes had been repaired.  It is therefore immortal:
+no future audit can ever remove it, and it will keep drawing agents forever.
+**The check for a repair task is a different command from the check for a leaf task, and
+it is cheaper:**
+    cat ~/.flt-release-lake/sha                 # the last PUBLISHED release
+    ls tools/merge/RELEASE-*-HANDOVER.md | tail -1   # did it publish, or was it HELD?
+If the module your task is about is inside the published release's green cone, **every
+wound-shaped item in that task is gone**, and you should not check them one by one — check
+one, confirm it, and decline.  Grepping for the symptoms is still worth doing once, and
+note the trap: a symptom stated as "declaration used above where it is declared" must be
+checked COMMENT-STRIPPED, because in this tree most occurrences of a name are backticked
+prose.  Two of the five order clusters in that task "reproduce" against a naive `grep -n`
+and both first hits are docstring sentences.
+Two consequences worth acting on:
+* **For whoever writes a repair task: stamp it with the release number it diagnoses**, in
+  the first line — `repair round 6 of X0, diagnosed at release 31 (HELD)`.  Then a reader
+  can kill it with one comparison instead of six greps, and an audit could be taught to.
+* **For the merge worker: after a publish, sweep the queue for repair-shaped tasks by
+  hand.**  They are recognisable by naming a FILE and an ERROR COUNT rather than a
+  declaration, and no leaf-based filter will ever find them.  This is a queue DELETION, so
+  re-verify coverage afterwards.
+**Corollary, and it is the reusable half.**  This is the mirror of *A FROZEN `main` ROTS
+THE QUEUE SILENTLY* above.  There, a held release makes leaf tasks rot because the fleet
+keeps proving things.  Here, a *published* release makes repair tasks rot because the merge
+worker keeps fixing things.  **Both directions of the release cycle rot the queue, in
+opposite halves of it, and each is invisible to the check written for the other.**
+### The useful thing to do when your whole task turns out to be redundant
+Follow the standing rule — *an agent whose targets are already proven should still build* —
+and then spend the run on what only an idle worker can: **the modules nothing has
+compiled.**  Release 33's handover flags one, `Mathlib/AlgebraicGeometry/CurveDivisorDegree.lean`,
+as the single module under `Fermat/` outside `Fermat.lean`'s import closure (401 of 402),
+and says of it that it "is never compiled and **can contain anything**".  Nobody had
+looked.  One `lake env lean` settles it — here `EXIT=0` with exactly its three documented
+`sorry`s, so the divisor-degree reconciliation task at queue position 0 will not also be
+walking into a broken module.  That is a fact the release cannot obtain for itself, it
+costs one command, and the fourth invisibility class guarantees there is at least one such
+module at any time.
