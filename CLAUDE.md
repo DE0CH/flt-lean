@@ -19356,9 +19356,12 @@ Three things about doing it:
   name containing `ι`, `Ψ`, `₁`; splitting on "not `isalnum()` and not `_ '`"
   does not.  Do NOT use an `À-￿` character class — it swallows `⟨⟩←▸`
   ([[lean-identifier-regex-swallows-brackets]]).
-* **Match on the SHORT name** (last dotted component) and strip a trailing dot:
-  frontier rows for declarations with explicit universe parameters end in `.`,
-  and `split('.')[-1]` is then the empty string, which matches everything.
+* **Match on the SHORT name** (last dotted component).  Rows used to need a
+  trailing dot stripped as well — declarations with explicit universe parameters
+  came out as `foo.`, so `split('.')[-1]` was the empty string and matched
+  everything.  **`frontier.py` now normalises that at source (2026-08-02), so
+  the workaround is no longer needed**; see the section below for why fixing it
+  in the scanner beat fixing it in each consumer.
 * **The stamp must stay equal to `main`.**  `flt_loop_rows.py`'s `r15_guard`
   refuses to dispatch at all when `queue1` is not `AUDITED` at main, so under a
   hold you keep the old sha verbatim.  The stamp says which MAIN the queue was
@@ -30978,3 +30981,74 @@ a live consumer, for nothing.
 your hypotheses ALSO supply, and ask whether the two copies have to agree.**  If they
 do not, and the field is data, substitute yours; if a field's copy is genuinely pinned,
 say so in the docstring, because the next reader will assume it is not.
+## A SCANNER'S NAME REGEX IS A RELEASE-CRITICAL SURFACE — `theorem foo.{u}` CAPTURES `foo.`
+(2026-08-02, `flt-lean-69`.  Found while confirming an already-closed duplicate
+task; measured, fixed at source, and given a positive control.)
+Every duplicate/frontier scan in `tools/merge/` shares one name regex, whose
+character class contains `.` because Lean names are namespace-qualified.  On a
+declaration with an **explicit universe list** —
+    theorem foo.{u} ...        structure PatchedModule.{v, w, s, uR} ...
+— the match stops at `{` and captures **`foo.`, with a trailing dot**.  A Lean
+identifier can never end in `.`, so the capture is simply wrong, and it was
+wrong in three scanners at once (`xdup.py`, `blocks.py`, `frontier.py`).  196
+declarations in the tree carry explicit universes.  What that cost, measured:
+* **`xdup.py`'s review pass: 6008 of 7538 pairs — 80% — were this one bug.**
+  Its last-component key `q.split('.')[-1]` is the EMPTY STRING for every such
+  name, so the 196 formed a single complete graph of false positives.  Fixed,
+  the list is **1544**, which is small enough that somebody will actually read
+  it.  A review list nobody reads is not a check.
+* **`blocks.py`/`dedup_cross.py`: a latent FALSE NEGATIVE.**  A rival copy
+  written `foo.{u}` in one file and `foo` in the other keys as `foo.` against
+  `foo` and is **never paired** — verified by planting exactly that pair, which
+  the pre-fix scan does not see.  No live instance in the tree that day, and the
+  shape is not hypothetical: the `relPicEquiv_tensor_left` duplicate release 29
+  removed differed in precisely this way (`Scheme.{0}` against `Scheme.{u}`).
+* **`frontier.py`: rows ending in `.`**, which CLAUDE.md's own queue audit had
+  to work around, because it keys on the last component.
+**The general rule, and it is why this is worth a section rather than a
+one-line fix: normalise at the SOURCE, not in each consumer.**  The workaround
+was correctly documented above for the queue audit — and a documented workaround
+is a permanent tax on every future consumer, each of whom has to know it, and
+silently wrong for the one who does not.  One `rstrip('.')` in three scanners
+retires it.  Check the fix is rename-only where that matters: `frontier.py`'s
+row COUNT was 382 before and 382 after, which is what proves the release
+coverage invariant was not perturbed.
+**And the check that makes any of this trustworthy is a POSITIVE CONTROL, now
+committed as `tools/merge/test_dupscan.py`.**  These scanners are believed when
+they print `0 pair(s)` — that is literally what licenses a release — so the
+standing rule *a scan that reports nothing is indistinguishable from a scan that
+is broken* has real teeth here, and release 27 shipped an unbuildable tree on
+exactly that reading.  The test plants two known duplicates (one plain, one
+universe-differing) in a throwaway tree and asserts both are found:
+    python3 tools/merge/test_dupscan.py     # PASS; exit 1 on regression
+It **fails on the pre-fix scanners with all three symptoms**, which is the only
+evidence that it is testing anything.  When you touch a scanner, run it — and
+when you write a new scanner, write its positive control in the same commit.
+A calibration that has never been seen to fail has not been calibrated.
+**AND THE SAME RUN TURNED UP A SECOND, WORSE ONE IN THE SAME FILES: the import
+regexes were anchored at end-of-line.**  `xdup.py`, `cyclecheck.py` and
+`semmerge.py` all matched `^…import\s+(Fermat[\w.]*)\s*$` — so an import line
+carrying a justification, which this tree writes,
+    public import Fermat.FLT.Mathlib.RingTheory.Localization.BaseChange -- removing this breaks a simp proof
+is **not seen as an import at all**.  Two such edges live on 2026-08-02.  This is
+[[flt-import-scan-must-not-anchor-eol]] recurring in three more scanners, and the
+consequence differs by tool, worst first:
+* **`cyclecheck.py`** — a cycle THROUGH such an edge is invisible, and an import
+  cycle is a total build outage (release 28), not a module-level failure;
+* **`semmerge.py`** — it unions the two sides' import lines, so a branch adding
+  `public import X -- why` had that import **silently dropped**: the merge tool
+  manufacturing exactly the class-7 interface split it exists to prevent;
+* **`xdup.py`** — a missing edge SHRINKS the visibility cone, so the qualified
+  pass UNDER-reports.  That is the one failure mode a scan whose `0 pair(s)`
+  licenses a release must not have.
+**The module-path shape is what excludes prose, not the anchor** — loosening to
+`\s*(?:--.*)?$` newly matched exactly 3 lines tree-wide, all genuine imports, no
+prose, which is the measurement to run before touching `semmerge.py`.  The
+regression test now puts a trailing comment on its own import, and against the
+pre-fix scanners that alone hides BOTH planted duplicates — 4 failures, not 3.
+Generalising past the regex: **a scanner's input grammar is a release-critical
+surface, and its two failure directions are not symmetric.**  Over-reporting
+produces a noisy list somebody eventually reads; under-reporting produces a clean
+verdict nobody questions.  When you find one bug in a scanner's parsing, check
+the other regexes in the same file before you stop — every one of these five
+fixes came from looking at the file next to the one that was already wrong.

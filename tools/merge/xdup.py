@@ -43,7 +43,13 @@ DECL = re.compile(
     r"([A-Za-z_À-ɏͰ-Ͽᴀ-ᶿ℀-⅏][A-Za-z0-9_À-ɏͰ-Ͽᴀ-ᶿ₀-ₜ⁰-ⁿ℀-⅏.'!?]*)")
 NS = re.compile(r'^\s*namespace\s+(\S+)')
 ENDNS = re.compile(r'^\s*end\s*(\S*)\s*$')
-IMP = re.compile(r'^\s*(?:public\s+)?import\s+(Fermat[A-Za-z0-9_.]*)\s*$')
+# The trailing `(--.*)?` is load-bearing: this tree writes justifications on
+# import lines (`public import … -- removing this breaks a simp proof`), and an
+# EOL-anchored regex drops those edges silently.  Two live edges on 2026-08-02.
+# A missing edge SHRINKS the visibility cone, so the qualified pass UNDER-reports
+# — the one failure mode these scans must not have.
+# [[flt-import-scan-must-not-anchor-eol]]
+IMP = re.compile(r'^\s*(?:public\s+)?import\s+(Fermat[A-Za-z0-9_.]*)\s*(?:--.*)?$')
 
 
 def strip_comments(lines):
@@ -74,7 +80,14 @@ def decls(path):
             if stack and (not m.group(1) or m.group(1) == stack[-1]): stack.pop()
             continue
         m = DECL.match(ln)
-        if m: res.setdefault('.'.join(stack + [m.group(1)]), i)
+        # `theorem foo.{u}` -- an EXPLICIT UNIVERSE list.  The name character class
+        # contains `.` (names are namespace-qualified), so the match stops at `{`
+        # and captures `foo.` with a trailing dot.  A Lean identifier can never end
+        # in `.`, so stripping one is always safe -- and NOT stripping it made every
+        # such declaration's last component the EMPTY STRING, which matches every
+        # other one: 196 declarations here, 6008 of the 7538 XDUP-LAST pairs, i.e.
+        # 80% of the review list was one complete graph of false positives.
+        if m: res.setdefault('.'.join(stack + [m.group(1).rstrip('.')]), i)
     return res
 
 

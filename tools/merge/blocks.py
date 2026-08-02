@@ -118,7 +118,15 @@ def blocks(path):
             continue
         if k == 'decl':
             m = DECL.match(lines[s])
-            name = m.group(1) if m else None
+            # `.rstrip('.')`: `theorem foo.{u}` captures `foo.` -- the name class
+            # contains `.`, so the match stops at the `{` of an explicit universe
+            # list.  Left as-is this is a false-NEGATIVE generator for the duplicate
+            # scans: a name written `foo.{u}` in one file and `foo` in the other
+            # keys as `foo.` vs `foo` and `dedup_cross.py` never pairs them.  Not
+            # currently triggered anywhere in the tree (checked 2026-08-02, 0 pairs
+            # become visible), but universe-differing rival copies are exactly the
+            # shape this scan exists to catch.
+            name = m.group(1).rstrip('.') if m else None
             # A comment ABUTS the declaration (no blank line between) exactly
             # when it is that declaration's doc comment; one separated by a
             # blank run is a section header belonging to the file, not to this
