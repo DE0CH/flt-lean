@@ -20953,3 +20953,61 @@ six-line PROBE — does `(Gamma1GL N).IsFiniteRelIndex 𝒮ℒ` synthesize, is
 answered in one 8-second run every question the design depended on. **Write the
 probe before the proof**; each of those six answers would otherwise have been
 discovered one 40-minute build at a time.
+## A "NEEDS COMPLETENESS/VALUATION THEORY" BLOCKER DISSOLVES WHEN THE COEFFICIENTS ARE ALREADY FORMAL
+(2026-08-01, `flt-lean-214`, `exists_nonConstantClassify_gamma0Datum_fractionRingPowerSeries`.)
+The Tate curve is the standing example of an object this tree can only reach through
+analysis: `WeierstrassCurve.tateCurve` in
+`KnownIn1980s/EllipticCurves/TateCurve.lean` is defined over a field COMPLETE for a rank-one
+nonarchimedean valuation, via `TateCurve.evalInt` — and `ℚ((q))` carries no `ValuativeRel`
+instance at this pin (a gap CLAUDE.md already records). Every route note on the q-expansion
+cluster therefore priced the Tate curve over `ℚ((q))` as blocked.
+**It is not, and the reason generalises: the coefficients of the object were formal power
+series to begin with.** `TateParameter.lean` builds `a₄Formal, a₆Formal, ΔFormal, c₄Formal`
+in `ℤ⟦q⟧`, sorry-free. Over `ℚ((q))` one does not have to *evaluate* them at anything —
+push them along the ring homomorphism `ℤ⟦q⟧ → ℚ⟦q⟧ → ℚ((q))` and the Weierstrass curve is
+written down. Twenty lines, no valuation, no completeness, no convergence.
+**So when a construction is blocked on an analytic structure, ask whether the base you need
+it over IS the formal object the series live in.** Evaluation theory exists to specialise a
+formal object at a point of some other field; at the "generic point" it is the identity and
+the whole apparatus is unnecessary.
+**And the transcendence of `j` needs no pole argument.** The classical witness is
+`j = 1/q + 744 + 196884q + ⋯`, which invites inverting a power series. What actually works
+is one line of coefficient bookkeeping on the UNINVERTED data:
+> `j·Δ = c₄³` (that is `WeierstrassCurve.j = ↑Δ'⁻¹ * c₄^3` with the unit cleared). If `j`
+> were algebraic over `ℚ` it would BE rational, since `ℚ` is algebraically closed in `ℚ((q))`
+> (`mem_range_algebraMap_of_isAlgebraic_fractionRing_powerSeries`). Both sides then come
+> from `ℚ⟦q⟧`, where `algebraMap` is injective, so the identity holds there; comparing
+> constant coefficients gives `r·0 = 1`.
+`constantCoeff Δ = 0` is the formal content of "the curve degenerates at `q = 0`", and it is
+already proven upstream. Generalisable: **a statement about a POLE is usually a statement
+about a ZERO of the reciprocal, and the reciprocal is the thing that is in the ring.**
+### Two riders, both of which decided the shape of the cut
+* **Make the object a `def`, not an `∃`, when you are about to split a leaf around it.**
+  The residue split into an arithmetic half (the canonical `μ_N ⊆ Tate(q)[N]`) and a
+  geometric half (build the `Gamma0Datum`, read non-constancy off `j`). That split is only
+  legitimate because the curve is a DEFINITION: the arithmetic leaf says "there is a point
+  of order `N` on *this* curve", which no junk witness can satisfy by choosing another
+  curve. Had the curve been existentially bound, the arithmetic half would have been
+  satisfiable by any curve with an `N`-torsion point and the cut would have been false —
+  the same failure the cluster's standing warning describes for "every datum over `ℚ((q))`
+  classifies non-constantly".
+* **Phrase the bridge clause in MATHLIB's vocabulary when the file's own is declared below
+  you.** The geometric half needs "`E` has transcendental `j`". This file's `jt` /
+  `IsWeierstrassModel` sit ~2000 lines BELOW the leaf, so a clause about them is not
+  expressible there; mathlib's `WeierstrassCurve.j` is. That single choice is what let the
+  cut be made at all, and it is worth checking BEFORE designing a decomposition — see the
+  standing declaration-order rules.
+### `DecidableEq (AlgebraicClosure K)` exists in this tree for `K = ℚ` ONLY
+`AddGroup (E⁄(AlgebraicClosure K)).Point` fails to synthesize for any `K` other than `ℚ`,
+because the group law wants a `DecidableEq` and the only instance in the tree is
+`instDecidableEqAlgebraicClosureRat_fermat` (`HardlyRamified/Frey.lean:41`,
+`Classical.typeDecidableEq _`). The symptom is a bare "failed to synthesize
+`AddGroup …Point`" in a STATEMENT that is a verbatim transcription of a working one over
+`ℚ`, which reads as a problem with the transcription. Declare the analogue once, next to the
+curve, so every consumer picks up the same instance; a `letI` inside each proof does not
+help, because the failure is in the statement.
+Two smaller notes from the same run. `PowerSeries.C` and `PowerSeries.constantCoeff` take
+NO explicit ring argument at this pin (`C r`, not `C ℚ r`) — the error is an
+`Application type mismatch` naming `Unit →₀ ℕ`, which reads as a `MvPowerSeries` confusion
+and is merely an arity. And `PowerSeries.constantCoeff_map` does not exist; go through
+`← PowerSeries.coeff_zero_eq_constantCoeff, PowerSeries.coeff_map`.
