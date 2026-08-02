@@ -35146,13 +35146,20 @@ explicit model of `X_0(p)`, and jointly motivating a hyperelliptic-model
 layer — are refuted in their own docstrings.
 
 **UPDATE (2026-07-30, flt-lean-63): `exists_isogenyCurve_classNumberOne` is
-now PROVEN too, and the third leaf is `exists_cmEndomorphism_classNumberOne`.**
-The count is unchanged at THREE — `card_le_of_isogenyPrimeHigherGenus`,
-`exists_isogenyCurve_thirtySeven`, and the new leaf — but the third one is
-strictly smaller: it asks only for a square root of `[−p]` in `End(E_ℚ̄)` at
-the tabulated `j`, with no subgroup and no torsion in the statement.  The
-subgroup was a degree computation, not a piece of the theory of orders; see
-the sub-block above `exists_zmultiples_eq_of_natCard_prime`.
+now PROVEN too.**  The count is unchanged at THREE —
+`card_le_of_isogenyPrimeHigherGenus`, `exists_isogenyCurve_thirtySeven`, and
+its residue.
+
+**UPDATE (2026-08-02, flt-lean-83): that residue is
+`exists_kernelPolynomial_classNumberOne`, not the CM endomorphism.**  Two
+rival cuts of `exists_isogenyCurve_classNumberOne` were made on 2026-07-30
+and both merged; the consumer kept flt-lean-63's CM proof, leaving
+flt-lean-152's kernel-polynomial leaf open with no consumer at all.  The
+consumer is now re-pointed at the kernel-polynomial leaf and the CM block is
+deleted, so this cluster owes THREE leaves rather than four and every one of
+them is a statement somebody can attack: the two above plus three explicit
+`IsKernelPolynomial` certificates in the style of
+`ThirtySevenKernelPolynomials.lean`.
 
 **`forall_jm_mem_of_pointBound` also subsumes the counting step of
 `exists_jMap_genusOne`.**  That proof is left byte-identical here — it is
@@ -46099,6 +46106,15 @@ leaf, introduced 2026-07-30 by flt-lean-152's refutation of the
 "needs complex multiplication" verdict on the theorem below; it is the whole of
 that theorem's residue, and it mentions no scheme, no moduli space and no CM).
 
+**LIVE SINCE 2026-08-02 (flt-lean-83).**  From its introduction until then this
+leaf had ZERO consumers — flt-lean-152 cut it and flt-lean-63 cut a rival CM
+route on the same day, both merged cleanly, and the consumer kept the CM proof.
+`exists_isogenyCurve_classNumberOne` is now proven over THIS leaf and the CM
+block is deleted; see that theorem's docstring for the reasoning and for how to
+recover the deleted text.  So the "a successor should read one of those two
+files and copy it" instruction below is now the project's only route to the
+class-number-one half, and discharging it closes the node.
+
 The exact analogue at these three levels of
 `exists_kernelPolynomial_of_genusOneJTable` (PROVEN above at `p ∈ {11, 17, 19}`
 over `GenusOneKernelPolynomials.lean`), and of what
@@ -46148,251 +46164,13 @@ theorem exists_kernelPolynomial_classNumberOne (p : ℕ)
         E.j = j ∧ E.IsKernelPolynomial p f m :=
   sorry
 
-/-! #### The class-number-one residue, re-cut at the CM ENDOMORPHISM
-(2026-07-30, flt-lean-63)
-
-`exists_isogenyCurve_classNumberOne` asked for a curve **and** a Galois-stable
-cyclic subgroup of order `p`.  The subgroup half is not where the difficulty
-lives.  For `p = 43, 67, 163` the curve has complex multiplication by the
-maximal order of `K = ℚ(√−p)`; `p` RAMIFIES, `(p) = 𝔭²`, and `𝔭 = (√−p)` is
-principal because `h(−p) = 1`, so the subgroup is exactly `E[𝔭] = ker √−p`.
-The only transcendental input is therefore the endomorphism `ψ = √−p` itself,
-and everything between `ψ` and the subgroup is formal:
-
-* `#ker ψ = deg ψ = p`, because `deg` is multiplicative and `deg [−p] = p²`
-  (`WeierstrassCurve.End.degree_mul`, `WeierstrassCurve.End.degree_intCast`);
-* a group of prime order is the `ℤ`-span of any nonzero element, so `ker ψ`
-  is cyclic of order `p`;
-* `ker ψ` is Galois-stable as soon as `ψ ∘ σ = ± σ ∘ ψ`, because both signs
-  kill exactly the same points.
-
-The three lemmas below are that formal part, and the leaf that survives —
-`exists_cmEndomorphism_classNumberOne` — mentions no subgroup, no scheme and
-no modular curve: only a square root of `[−p]` in `End(E_ℚ̄)`.
-
-**Why the `±` is a HYPOTHESIS of the leaf and not a consequence.**  Deriving
-it from `ψ² = [−p]` alone needs `End(E_ℚ̄)` to be COMMUTATIVE (then
-`(σψσ⁻¹ − ψ)(σψσ⁻¹ + ψ) = 0` in a domain).  Commutativity in characteristic
-zero is an archimedean fact — `End ⊗ ℝ` acts faithfully on a `2`-dimensional
-`H₁`, so the definite quaternion case cannot occur — and it is **not**
-available from `WeierstrassCurve.End.torsionRep`, since a quaternion order
-does embed in `M₂(ℤ_ℓ)`.  Trace theory gets partway (`ψ * ψ̂ = deg ψ = p` and
-`ψ² = −p` force `ψ̂ = −ψ`, i.e. `tr ψ = 0`, hence
-`ψ σψσ⁻¹ + σψσ⁻¹ ψ ∈ ℤ`) and then stops.  Carrying the `±` as a hypothesis
-costs the consumer nothing: any construction of the CM curve hands back an
-order in `K` on which `σ` acts by a ring automorphism fixing `ℤ`, so the `±`
-comes with the endomorphism.
-
-RECONNAISSANCE (PARI/GP, re-derived 2026-07-30): `qfbclassno(−p) = 1` and
-`quaddisc(−p) = −p` at all three primes; `polclass(−43) = x + 884736000`,
-`polclass(−67) = x + 147197952000`,
-`polclass(−163) = x + 262537412640768000`; and `ellisomat(ellfromj(j))`
-returns the degree matrix `[1, p; p, 1]` at each tabulated `j` — so every
-entry is realised by a curve with a rational `p`-isogeny, and with exactly
-one. -/
-
-/-- **A subgroup of prime order is the `ℤ`-span of any of its nonzero
-elements** (PROVEN 2026-07-30, flt-lean-63).
-
-Pure group theory, stated for an arbitrary `AddCommGroup` because the only
-thing used is `Nat.card K = p`: a nonzero `g₀ : K` has additive order
-dividing `p` and different from `1`, hence equal to `p`, so `zmultiples g₀`
-already exhausts `K` by cardinality.
-
-This is what turns "`ker ψ` has `p` elements" into "`ker ψ = ℤg` for a point
-`g` of order `p`", which is the shape
-`exists_isogenyCurve_classNumberOne` needs. -/
-theorem exists_zmultiples_eq_of_natCard_prime {A : Type*} [AddCommGroup A]
-    {p : ℕ} (hp : p.Prime) {K : AddSubgroup A} (hcard : Nat.card K = p) :
-    ∃ g : A, g ∈ K ∧ addOrderOf g = p ∧ AddSubgroup.zmultiples g = K := by
-  haveI : Finite K := Nat.finite_of_card_ne_zero (by rw [hcard]; exact hp.ne_zero)
-  haveI : Nontrivial K :=
-    Finite.one_lt_card_iff_nontrivial.mp (by rw [hcard]; exact hp.one_lt)
-  obtain ⟨g₀, hg₀⟩ := exists_ne (0 : K)
-  have hord₀ : addOrderOf g₀ = p := by
-    have hdvd : addOrderOf g₀ ∣ p := hcard ▸ addOrderOf_dvd_natCard g₀
-    rcases (Nat.Prime.eq_one_or_self_of_dvd hp _ hdvd) with h | h
-    · exact absurd (AddMonoid.addOrderOf_eq_one_iff.mp h) hg₀
-    · exact h
-  have htop : AddSubgroup.zmultiples g₀ = ⊤ :=
-    AddSubgroup.eq_top_of_card_eq _ (by rw [Nat.card_zmultiples, hord₀, hcard])
-  have hspan : AddSubgroup.zmultiples (g₀ : A) = K := by
-    refine le_antisymm (AddSubgroup.zmultiples_le.mpr g₀.2) fun x hx => ?_
-    have hmem : (⟨x, hx⟩ : K) ∈ AddSubgroup.zmultiples g₀ := htop ▸ AddSubgroup.mem_top _
-    obtain ⟨k, hk⟩ := hmem
-    exact ⟨k, by simpa using congrArg Subtype.val hk⟩
-  refine ⟨(g₀ : A), g₀.2, ?_, hspan⟩
-  rw [← Nat.card_zmultiples (g₀ : A), hspan, hcard]
-
-/-- **`ψ² = [−n]` forces `#ker ψ = n`** (PROVEN 2026-07-30, flt-lean-63).
-
-Multiplicativity of the degree (`WeierstrassCurve.End.degree_mul`) against
-`deg [c] = c²` (`WeierstrassCurve.End.degree_intCast`) gives
-`(deg ψ)² = n²`, hence `deg ψ = n` by injectivity of squaring on `ℕ`; and
-the degree of a NONZERO isogeny is by definition the cardinality of its
-kernel (`WeierstrassCurve.Isogeny.degree_of_ne_zero`).  Nonvanishing of `ψ`
-is forced by `n ≠ 0`: `ψ = 0` would give `[0] = [−n]` in `End W`, and
-`WeierstrassCurve.End.intCast_injective` rules that out.
-
-`CharZero F` is genuinely needed — it is a hypothesis of
-`WeierstrassCurve.End.degree_intCast`, and in characteristic `q` the
-inseparable multiplication maps break the identity `deg [c] = c²`. -/
-theorem natCard_ker_of_endSq_eq_neg_natCast {F : Type*} [Field F] [DecidableEq F]
-    [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
-    {ψ : WeierstrassCurve.End W} {n : ℕ} (hn : n ≠ 0)
-    (hsq : ψ * ψ = -(n : WeierstrassCurve.End W)) :
-    Nat.card (AddMonoidHom.ker ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point)) = n := by
-  have hcast : (-(n : WeierstrassCurve.End W)) = ((-(n : ℤ) : ℤ) : WeierstrassCurve.End W) := by
-    rw [Int.cast_neg, Int.cast_natCast]
-  have hne0 : (WeierstrassCurve.End.toIsogeny ψ).toHom ≠ 0 := by
-    intro hzero
-    have hψ0 : ψ = 0 := Subtype.ext (by
-      ext P
-      exact congrFun (congrArg (fun f : W.Point →+ W.Point => (f : W.Point → W.Point)) hzero) P)
-    rw [hψ0, mul_zero, hcast] at hsq
-    have h0 : ((0 : ℤ) : WeierstrassCurve.End W) = ((-(n : ℤ) : ℤ) : WeierstrassCurve.End W) := by
-      rw [Int.cast_zero]; exact hsq
-    have := WeierstrassCurve.End.intCast_injective (W := W) h0
-    omega
-  have hmul := WeierstrassCurve.End.degree_mul (W := W) ψ ψ
-  rw [hsq, hcast, WeierstrassCurve.End.degree_intCast] at hmul
-  have hsq' : ((WeierstrassCurve.Isogeny.degree (WeierstrassCurve.End.toIsogeny ψ) : ℤ)) ^ 2
-      = (n : ℤ) ^ 2 := by
-    rw [sq, ← hmul]; ring
-  have hdeg : WeierstrassCurve.Isogeny.degree (WeierstrassCurve.End.toIsogeny ψ) = n := by
-    have h2 : (WeierstrassCurve.Isogeny.degree (WeierstrassCurve.End.toIsogeny ψ)) ^ 2 = n ^ 2 := by
-      exact_mod_cast hsq'
-    exact Nat.pow_left_injective (by norm_num) h2
-  rw [← hdeg, WeierstrassCurve.Isogeny.degree_of_ne_zero hne0]
-  rfl
-
-/-- **A square root of `[−p]` in `End(E_ℚ̄)` cuts out a Galois-stable cyclic
-subgroup of order `p`** (PROVEN 2026-07-30, flt-lean-63).
-
-The whole formal content of the class-number-one construction, with the
-complex multiplication itself factored out into the hypotheses: `ψ` is an
-isogeny of `E` over `ℚ̄` with `ψ(ψ P) = −p • P`, and for each `σ` in the
-absolute Galois group `ψ ∘ σ = σ ∘ ψ` or `ψ ∘ σ = −(σ ∘ ψ)`.
-
-`ker ψ` then has exactly `p` elements
-(`natCard_ker_of_endSq_eq_neg_natCast`), so it is `ℤg` for a point `g` of
-order `p` (`exists_zmultiples_eq_of_natCard_prime`), and it is Galois-stable
-because BOTH branches of the `±` send a point killed by `ψ` to a point
-killed by `ψ`: `ψ (σ x) = ±σ (ψ x) = ±σ 0 = 0`.
-
-The `±` is exactly the right hypothesis strength — see the sub-block note
-above for why it cannot be derived here, and why any CM construction
-supplies it. -/
-theorem exists_stableCyclic_of_end_sq_eq_neg
-    (p : ℕ) (hp : p.Prime) (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
-    (hisog : WeierstrassCurve.IsIsogeny (W := (E⁄(AlgebraicClosure ℚ)).toAffine) ψ)
-    (hsq : ∀ P, ψ (ψ P) = -(p : ℤ) • P)
-    (hgal : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      (∀ P, ψ (WeierstrassCurve.Affine.Point.map
-            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
-          = WeierstrassCurve.Affine.Point.map
-            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (ψ P)) ∨
-      (∀ P, ψ (WeierstrassCurve.Affine.Point.map
-            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
-          = -WeierstrassCurve.Affine.Point.map
-            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (ψ P))) :
-    ∃ g : (E⁄(AlgebraicClosure ℚ)).Point,
-      addOrderOf g = p ∧
-      (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
-        WeierstrassCurve.Affine.Point.map
-          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g) := by
-  haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
-    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
-  classical
-  set Ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine :=
-    ⟨(ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).Point), hisog⟩
-  have hΨsq : Ψ * Ψ = -(p : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
-    have hcast : (-(p : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine))
-        = ((-(p : ℤ) : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
-      rw [Int.cast_neg, Int.cast_natCast]
-    rw [hcast, WeierstrassCurve.End.sq_eq_intCast_iff]
-    intro P
-    exact hsq P
-  obtain ⟨g, -, hord, hspan⟩ :=
-    exists_zmultiples_eq_of_natCard_prime hp
-      (natCard_ker_of_endSq_eq_neg_natCast hp.ne_zero hΨsq)
-  refine ⟨g, hord, fun σ x hx => ?_⟩
-  rw [hspan] at hx ⊢
-  rw [AddMonoidHom.mem_ker] at hx ⊢
-  have hx' : ψ x = 0 := hx
-  rcases hgal σ with h | h
-  · show ψ (WeierstrassCurve.Affine.Point.map _ x) = 0
-    rw [h x, hx', map_zero]
-  · show ψ (WeierstrassCurve.Affine.Point.map _ x) = 0
-    rw [h x, hx', map_zero, neg_zero]
-
-/-- **The CM endomorphism `√−p` at `p ∈ {43, 67, 163}`** (sorry leaf,
-introduced 2026-07-30, flt-lean-63 as the residue of
-`exists_isogenyCurve_classNumberOne`; ALL the complex multiplication of the
-constructive half at those three levels, and nothing else).
-
-The level's tabulated `j`-invariant is realised by an elliptic curve `E/ℚ`
-whose base change to `ℚ̄` carries an isogeny `ψ` with `ψ² = [−p]`, and for
-each `σ ∈ Gal(ℚ̄/ℚ)` either `ψ ∘ σ = σ ∘ ψ` or `ψ ∘ σ = −(σ ∘ ψ)`.
-
-FALSITY AUDIT (2026-07-30, flt-lean-63; this is the leaf's FIRST statement,
-so nothing is inherited).  **TRUE.**  `h(−p) = 1` for `p = 43, 67, 163`
-(`qfbclassno`, re-derived), so the Hilbert class polynomial is LINEAR —
-`polclass(−43) = x + 884736000`, `polclass(−67) = x + 147197952000`,
-`polclass(−163) = x + 262537412640768000` — and Deuring's lifting theorem
-puts the CM curve over `ℚ` at that single `j`-value, with
-`End(E_ℚ̄) = 𝒪_K`, `K = ℚ(√−p)`.  Since `−p ≡ 1 mod 4` the discriminant is
-`−p` itself (`quaddisc(−p) = −p`), `√−p ∈ 𝒪_K` has norm `p`, and `ψ := √−p`
-is the required endomorphism: `ψ² = [−p]` in `𝒪_K ⊆ End(E_ℚ̄)`.  The `±`
-clause holds because `σ ↦ (P ↦ σ(ψ(σ⁻¹P)))` is a ring automorphism of
-`𝒪_K` fixing `ℤ`, and `Aut(𝒪_K) = {1, conjugation}` sends `√−p` to `±√−p`.
-
-**NOT vacuous, and not circular.**  The conclusion pins `j` to the level's
-table entry rather than leaving it free, so it cannot be discharged by some
-curve with some CM.  And it is the FORWARD direction only (the CM curve
-exists) — never the converse (a rational `p`-isogeny forces this `j`), which
-is what the `classPoly` circularity objection recorded at
-`jInvariant_mem_of_isogenyPrime_classNumberOne` is about and which lives
-entirely in `card_le_of_isogenyPrimeHigherGenus`.
-
-**What remains, concretely**: complex multiplication, and now ONLY that.
-Nothing in `Mathlib`, in this project, or in `~/cs/FLT` constructs a CM
-elliptic curve; `Fermat.classPoly` is the closest object and produces a
-POLYNOMIAL, not a curve.  The CHECK that would refute this residue is
-unchanged from the parent leaf: any CM theory yielding a curve together with
-its endomorphism ring rather than a polynomial.
-
-AXIS SEARCHED: the moduli side (discharged at the parent), the
-class-polynomial side (`Fermat.classPoly`, which does not reach a curve),
-and — new here — the endomorphism-ring side, where the degree/trace theory
-of `Fermat.FLT.EllipticCurve.IsogenyTrace` supplies everything about `ψ`
-EXCEPT its existence.  See the sub-block note above for exactly how far that
-theory gets. -/
-theorem exists_cmEndomorphism_classNumberOne (p : ℕ) (_hp : p ∈ ({43, 67, 163} : Finset ℕ)) :
-    ∃ j : ℚ, (p, j) ∈ classNumberOneJTable ∧
-      ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic)
-        (ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point),
-        WeierstrassCurve.IsIsogeny (W := (E⁄(AlgebraicClosure ℚ)).toAffine) ψ ∧
-        (∀ P, ψ (ψ P) = -(p : ℤ) • P) ∧
-        (∀ σ : Field.absoluteGaloisGroup ℚ,
-          (∀ P, ψ (WeierstrassCurve.Affine.Point.map
-                (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
-              = WeierstrassCurve.Affine.Point.map
-                (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (ψ P)) ∨
-          (∀ P, ψ (WeierstrassCurve.Affine.Point.map
-                (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
-              = -WeierstrassCurve.Affine.Point.map
-                (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (ψ P))) ∧
-        E.j = j :=
-  sorry
-
 /-- **The class-number-one CM curves at `p ∈ {43, 67, 163}`** (PROVEN
-2026-07-30, flt-lean-63, over `exists_cmEndomorphism_classNumberOne` through
-`exists_stableCyclic_of_end_sq_eq_neg`; introduced 2026-07-27, flt-lean-26
-as a sorry leaf, ALL the arithmetic of the constructive half at those three
-levels).
+2026-08-02, flt-lean-83, over `exists_kernelPolynomial_classNumberOne`
+through `WeierstrassCurve.exists_point_of_isKernelPolynomial` — the same
+two-line assembly as `exists_isogenyCurve_thirtySeven` above; first proven
+2026-07-30, flt-lean-63, over the CM cut now deleted, see below; introduced
+2026-07-27, flt-lean-26 as a sorry leaf, ALL the arithmetic of the
+constructive half at those three levels).
 
 The level's tabulated `j`-invariant is realised by an elliptic curve over
 `ℚ` carrying a Galois-stable cyclic subgroup of order `p`.
@@ -46411,20 +46189,44 @@ uniqueness.
 sibling: the conclusion pins `j` to the level's table entry rather than
 leaving it free, and this is the forward direction only.
 
-**THE SUBGROUP HALF IS NOW DISCHARGED** (2026-07-30, flt-lean-63), and the
-old "what remains" paragraph — which lumped the CM curve together with "the
-`p`-torsion subgroup cut out by a ramified prime of the order" — was
-overstating the residue on its second clause.  The subgroup needs no theory
-of orders at all: it is `ker √−p`, its cardinality is the degree, and the
-degree comes from multiplicativity.  What is left is the ENDOMORPHISM alone,
-isolated in `exists_cmEndomorphism_classNumberOne`, whose statement mentions
-no subgroup and no scheme.  See the sub-block note above for the reduction
-and for why the `±` Galois clause stays a hypothesis there.
+**RE-POINTED AT THE KERNEL-POLYNOMIAL LEAF, AND THE CM CUT DELETED**
+(2026-08-02, flt-lean-83).  Until today this file carried TWO RIVAL CUTS of
+this theorem, both open, both introduced on 2026-07-30 and merged the same
+day, with nothing linking them:
+
+* `exists_kernelPolynomial_classNumberOne` (flt-lean-152, immediately above)
+  — three explicit `IsKernelPolynomial` certificates, the exact analogue of
+  what `GenusOneKernelPolynomials.lean` supplies at `p ∈ {11, 17, 19}` and
+  `ThirtySevenKernelPolynomials.lean` at `p = 37`;
+* `exists_cmEndomorphism_classNumberOne` (flt-lean-63) — a square root of
+  `[−p]` in `End(E_ℚ̄)`, together with a formal block
+  (`exists_zmultiples_eq_of_natCard_prime`, `natCard_ker_of_endSq_eq_neg_natCast`,
+  `exists_stableCyclic_of_end_sq_eq_neg`) turning it into the subgroup.
+
+The proof kept flt-lean-63's, so flt-lean-152's leaf had **zero consumers**
+— open and DEAD, invisible to every frontier instrument, which counted two
+honest leaves where there is one obligation.  The two are incomparable as
+statements, so the tie-break is discharge cost, and it is not close: the CM
+leaf needs a construction of a CM elliptic curve *together with its
+endomorphism ring*, which exists nowhere in `Mathlib`, in this project or in
+`~/cs/FLT`; the kernel-polynomial leaf needs an explicit polynomial and has
+TWO working precedents in this very tree.  So the CM block is deleted and
+this theorem is proven over the certificates.  Recover the deleted 240 lines
+with `git show <this commit>^:Fermat/FLT/FreyCurve/MazurTorsion.lean` — they
+are correct and axiom-clean, and three of the four declarations in them
+(the two above plus the group-theory lemma) are reusable if a CM development
+is ever built.
+
+Frontier effect: this cluster goes from TWO open leaves to ONE, and the
+survivor is the tractable one.  No mathematics was done; this is merge
+repair.
 
 AXIS SEARCHED: the moduli side (discharged at `exists_x0ClassNumberOnePoints`),
 the class-polynomial side (`Fermat.classPoly`, which does not reach a curve),
-and the endomorphism-ring side (`Fermat.FLT.EllipticCurve.IsogenyTrace`,
-which supplies everything about `ψ` except its existence). -/
+the endomorphism-ring side (`Fermat.FLT.EllipticCurve.IsogenyTrace`, which
+supplies everything about a CM `ψ` except its existence — and which this
+theorem no longer needs), and the division-polynomial side, which is where
+the surviving leaf lives. -/
 theorem exists_isogenyCurve_classNumberOne (p : ℕ) (hp : p ∈ ({43, 67, 163} : Finset ℕ)) :
     ∃ j : ℚ, (p, j) ∈ classNumberOneJTable ∧
       ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
@@ -46435,10 +46237,14 @@ theorem exists_isogenyCurve_classNumberOne (p : ℕ) (hp : p ∈ ({43, 67, 163} 
             AddSubgroup.zmultiples g) ∧
         E.j = j := by
   have hprime : p.Prime := by fin_cases hp <;> norm_num
-  obtain ⟨j, hjmem, E, hE, ψ, hisog, hsq, hgal, hj⟩ := exists_cmEndomorphism_classNumberOne p hp
-  obtain ⟨g, hord, hstable⟩ :=
-    exists_stableCyclic_of_end_sq_eq_neg p hprime E ψ hisog hsq hgal
-  exact ⟨j, hjmem, E, hE, g, hord, hstable, hj⟩
+  have hp2 : p ≠ 2 := by fin_cases hp <;> norm_num
+  obtain ⟨j, hjmem, E, hE, f, m, hjE, hker⟩ := exists_kernelPolynomial_classNumberOne p hp
+  haveI := hE
+  obtain ⟨g, hord, hstab⟩ :=
+    WeierstrassCurve.exists_point_of_isKernelPolynomial
+      (L := AlgebraicClosure ℚ) hprime hp2 hker
+  exact ⟨j, hjmem, E, hE, g, hord,
+    fun σ x hx => hstab (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) x hx, hjE⟩
 
 /-- **The rational points of `X_0(37)` with their `j`-invariants** (PROVEN
 2026-07-27, flt-lean-26, over `exists_isogenyCurve_thirtySeven` through
