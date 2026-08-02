@@ -19353,19 +19353,120 @@ theorem HardlyRamifiedDeformation.hasUniformSections {ρbar : GaloisRep ℚ k V}
   intro Λ _ _ _ g φ K hK hse
   exact exists_uniformSection_quotient_of_presentation g φ K hK hse
 
-/-- **Böckle's obstruction COCYCLE along a small extension, GIVEN the continuous
-set-theoretic lift** (sorry node, cut 2026-07-31 out of
-`exists_obstructionCocycle_smallExtension_deformation` below, which is PROVEN
-over it together with `exists_uniformSection_quotient_of_presentation` above).
+/-- **`T` carries a hardly ramified framed lift of `D.ρ` along `q`** (definition,
+2026-08-02) — the OUTPUT of Böckle's obstruction calculus, stripped of the
+Mazur-category record.
 
-This is the leaf below with ONE hypothesis added, `D.HasUniformSections`: a
-uniformly continuous set-theoretic section of every small extension
-`S ⧸ K ↠ D.R` cut out of a power series presentation. That hypothesis is brick
-(ii) of the audit below, and it is DISCHARGED —
-`HardlyRamifiedDeformation.hasUniformSections` above proves it for EVERY object
-of Mazur's category — so the node below really is proven over this leaf alone and
-no hypothesis has been smuggled in. Whoever takes this leaf may use `hsec` freely
-and does not have to build a lift by hand.
+`T` is topologized by its own `𝔪`-adic topology (`Ideal.adicTopology`, for which
+`IsAdic` is `rfl` and `IsTopologicalRing` is `Ideal.nonarchimedean`), so the
+predicate needs no topology handed to it and none has to be chosen by whoever
+discharges it.
+
+**Why a `def` and not an inline conjunct**, and this is the same discipline as
+`IsWeaklyUniversal`, `IsTraceGenerated`, `IsDeformationStructureOn` and
+`HasUniformSections` above: written inline underneath the `∃ oc …` binder of the
+obstruction leaf below, a clause mentioning `FramedGaloisRep ℚ (S ⧸ K) (Fin 2)`
+has to elaborate a `TopologicalSpace` and an `IsLocalRing` instance inside that
+binder's instance context, which is exactly the configuration that fails with the
+internal error `unknown free variable`. Bundled here as a constant with `T`'s
+three instances as ORDINARY arguments, it is opaque at the use site. **Do not
+inline it back.**
+
+`q` is a bare FUNCTION `T → D.R` and the ring-hom-ness is existentially bundled
+as `p` together with `∀ x, p x = q x`, for the same reason
+`IsDeformationStructureOn` above does it: the predicate's own signature then needs
+no instance from `D`, all of which live under the `letI` block in the body. -/
+def HardlyRamifiedDeformation.HasFramedLiftOn {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (T : Type u) (instT : CommRing T) (instL : IsLocalRing T)
+    (instA : Algebra ℤ_[ℓ] T) (q : T → D.R) : Prop :=
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  letI := instT; letI := instL; letI := instA
+  letI : TopologicalSpace T := (IsLocalRing.maximalIdeal T).adicTopology
+  letI : IsTopologicalRing T := (Ideal.nonarchimedean _).toIsTopologicalRing
+  ∃ (ρ' : FramedGaloisRep ℚ T (Fin 2)) (p : T →+* D.R),
+    (∀ x, p x = q x) ∧
+    IsHardlyRamified hℓOdd (rank_finTwoFun T) ρ' ∧
+    ∀ r (hr : r.Prime), r ≠ 2 → r ≠ ℓ →
+      (ρ'.charFrob hr.toHeightOneSpectrumRingOfIntegersRat).map p =
+        D.ρ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat
+
+set_option linter.unusedSectionVars false in
+/-- **THE MAZUR-CATEGORY PACKAGING IS DISCHARGED** (PROVEN 2026-08-02): a ring `T`
+which is local, Noetherian, `𝔪`-adically complete and a `ℤ_ℓ`-algebra, and which
+carries a hardly ramified framed lift of `D.ρ` along a surjection `q : T ↠ D.R`,
+IS a hardly ramified deformation structure on `T` lying over `D`.
+
+This is item (4) of the obstruction audit below — "the final packaging of `S ⧸ K`
+as an object of Mazur's category" — and it is pure commutative algebra plus a
+field-by-field record construction, with no Galois input and no obstruction theory
+whatever. It is proven here so that the leaf below asks only for the framed
+representation, which is what the calculus actually produces.
+
+Three things make it cheap, and they are worth knowing before re-deriving them:
+
+* the TOPOLOGY is not a choice — take `(IsLocalRing.maximalIdeal T).adicTopology`
+  and `IsAdic` is `rfl` (mathlib defines `IsAdic J := inst = J.adicTopology`),
+  while `IsTopologicalRing` is `(Ideal.nonarchimedean _).toIsTopologicalRing`.
+  The quotient topology `S ⧸ K` inherits from `MvPowerSeries` is NOT the adic one
+  and must not be used;
+* `IsDeformationStructureOn` asks for a `≃+*`, and here it is `RingEquiv.refl T`:
+  the deformation built is carried by `T` itself, so `e` is the identity, `p` is
+  `q`, and the pointwise clause `∀ x, p x = q (e x)` is `rfl`;
+* `charFrob_compat` for the new record is `Polynomial.map_map` applied to the
+  hypothesis: `(ρ'.charFrob).map (D.π.comp q) = ((ρ'.charFrob).map q).map D.π =
+  (D.ρ.charFrob).map D.π = ρbar.charFrob`, the last step being `D`'s own field.
+
+The `IsAdicComplete` instance is the only nontrivial input, and for the quotients
+the leaf below produces it is `isPrecomplete_of_isSmallExtension` above (which
+needs NO completeness input about `S`) together with the free Hausdorff half. -/
+theorem exists_deformationStructureOn_of_hasFramedLiftOn {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (T : Type u) [instT : CommRing T] [instL : IsLocalRing T] [IsNoetherianRing T]
+    [instA : Algebra ℤ_[ℓ] T] [IsAdicComplete (IsLocalRing.maximalIdeal T) T] :
+    letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+    letI := D.isLocalRing; letI := D.algebra
+    ∀ q : T →+* D.R, Function.Surjective q →
+      q.comp (algebraMap ℤ_[ℓ] T) = algebraMap ℤ_[ℓ] D.R →
+      D.HasFramedLiftOn hℓOdd T instT instL instA (q : T → D.R) →
+      ∃ D' : HardlyRamifiedDeformation hℓOdd ρbar,
+        HardlyRamifiedDeformation.IsDeformationStructureOn hℓOdd D D' T instT
+          (q : T → D.R) := by
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  intro q hqsurj hqalg hlift
+  obtain ⟨ρ', p, hpq, hHR, hchar⟩ := hlift
+  have hpe : p = q := RingHom.ext hpq
+  subst hpe
+  refine ⟨{ R := T, commRing := instT,
+            topologicalSpace := (IsLocalRing.maximalIdeal T).adicTopology,
+            isTopologicalRing := (Ideal.nonarchimedean _).toIsTopologicalRing,
+            isLocalRing := instL, algebra := instA, isNoetherianRing := inferInstance,
+            isAdic := rfl, isAdicComplete := inferInstance,
+            ρ := ρ', isHardlyRamified := hHR,
+            π := D.π.comp p,
+            π_surjective := ?_, charFrob_compat := ?_ },
+          RingEquiv.refl T, p, hpq, ?_, rfl, hchar⟩
+  · exact D.π_surjective.comp hqsurj
+  · intro r hr h2 hl
+    rw [← Polynomial.map_map p D.π, hchar r hr h2 hl]
+    exact D.charFrob_compat r hr h2 hl
+  · exact hqalg
+
+
+/-- **Böckle's obstruction COCYCLE along a small extension, GIVEN the continuous
+set-theoretic lift, in its FRAMED form** (sorry leaf; cut 2026-08-02 out of
+`exists_obstructionCocycle_smallExtension_deformation_of_section` below, which is
+PROVEN over it together with `exists_deformationStructureOn_of_hasFramedLiftOn`
+above.  RECUT, count unchanged 1 → 1: what left this leaf is the whole
+Mazur-category PACKAGING of `S ⧸ K` — item (4) of the audit below — so the
+residue asks for a FRAMED REPRESENTATION over `S ⧸ K` and nothing else.)
+
+The earlier cut this one sits on top of (2026-07-31) added the hypothesis
+`D.HasUniformSections`, which is brick (ii) of the audit and is DISCHARGED by
+`HardlyRamifiedDeformation.hasUniformSections` above.  Whoever takes this leaf may
+use `hsec` freely and does not have to build a lift by hand.
 
 **What is left here, and what is not.** What remains is exactly the obstruction
 calculus of items (2) and (3) of the audit below:
@@ -19381,13 +19482,17 @@ calculus of items (2) and (3) of the audit below:
    audit below, the liftability of the four hardly ramified local conditions,
    which is a SEPARATE task and must be taken as a named sorried `have` hoisted
    to its own top-level leaf rather than as an anonymous inner `sorry`;
-4. the final packaging of `S ⧸ K` as an object of Mazur's category. Note that
-   `isPrecomplete_of_isSmallExtension` above already supplies the one hard
-   ingredient of that packaging (`IsAdicComplete` for `S ⧸ K`, whose Hausdorff
-   half is free from Noetherianity), so what is left there is the adic TOPOLOGY
-   (`Ideal.adicTopology` on `𝔪_{S ⧸ K}`, which is `IsAdic` by construction) and
-   the field-by-field checklist for which the `Dq` construction inside
-   `exists_ringHom_matrix_quotient_of_finite` above is a worked template.
+4. ~~the final packaging of `S ⧸ K` as an object of Mazur's category~~ —
+   **DISCHARGED 2026-08-02, and it is why this leaf exists.**
+   `exists_deformationStructureOn_of_hasFramedLiftOn` above does the whole of it:
+   the adic TOPOLOGY (`Ideal.adicTopology` on `𝔪_{S ⧸ K}`, for which `IsAdic` is
+   `rfl` and `IsTopologicalRing` is `Ideal.nonarchimedean`), Noetherianity,
+   `IsAdicComplete` (`isPrecomplete_of_isSmallExtension` plus the free Hausdorff
+   half), the `HardlyRamifiedDeformation` record and the `≃+*` of
+   `IsDeformationStructureOn`.  So this leaf must produce a framed representation
+   over `S ⧸ K` and NOT a deformation record; the conclusion below is
+   `D.HasFramedLiftOn`, whose three clauses are exactly `ρ'`, its hardly ramified
+   flag, and the Frobenius characteristic polynomials.
 
 **BUILD ONE COCYCLE FOR THE UNIVERSAL EXTENSION, NOT ONE PER `K`.** This is the
 one non-negotiable point of the audit below and it is why this leaf, like the
@@ -19695,6 +19800,89 @@ is carried for the same reason: it keeps
 prime `3`) inapplicable, so that route stays closed mathematically rather than
 merely by import scope.
 -/
+theorem exists_obstructionCocycle_smallExtension_deformation_of_section_framed
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated)
+    (hsec : D.HasUniformSections) :
+    letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+    letI := D.isLocalRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
+        (hsurj : Function.Surjective φ),
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        letI : Module k (↥(RingHom.ker φ) ⧸
+            (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+              (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
+          Module.compHom _
+            (residueRingEquivOfSurjective (D.π.comp φ)
+              (D.π_surjective.comp hsurj)).symm.toRingHom
+        ∃ oc : Module.Dual k (↥(RingHom.ker φ) ⧸
+              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
+            ↥(TopModuleCat.ker
+              ((TopRep.homogeneousCochains
+                (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))).d 2 3)),
+          (∀ ψ, ContinuousCohomology.cocycleClass
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2 (oc ψ) ∈
+            Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ∧
+          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2).hom.range →
+            ∀ (K : Ideal (MvPowerSeries (Fin g) Λ))
+              (hK : K ≤ RingHom.ker φ),
+              letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+                Ideal.Quotient.nontrivial_of_le_ker hK
+              IsSmallExtension (Ideal.Quotient.lift K φ fun _ ha => hK ha) →
+              (∀ j : ↥(RingHom.ker φ),
+                (j : MvPowerSeries (Fin g) Λ) ∈ K ↔
+                  ψ (Submodule.Quotient.mk j) = 0) →
+              D.HasFramedLiftOn hℓOdd (MvPowerSeries (Fin g) Λ ⧸ K) inferInstance
+                inferInstance inferInstance
+                (Ideal.Quotient.lift K φ fun _ ha => hK ha) :=
+  sorry
+
+/-- **Böckle's obstruction COCYCLE along a small extension, GIVEN the continuous
+set-theoretic lift** (PROVEN 2026-08-02 over
+`exists_obstructionCocycle_smallExtension_deformation_of_section_framed` above
+together with `exists_deformationStructureOn_of_hasFramedLiftOn` above; it was a
+`sorry` leaf from 2026-07-31 until then).
+
+**RECUT, COUNT UNCHANGED 1 → 1 — say so, because the warning-set delta `−1 +1` is
+indistinguishable from one closure plus one unrelated disclosure.** No mathematics
+was proven here. What changed is that the whole Mazur-category PACKAGING of
+`S ⧸ K` — item (4) of the audit on the framed leaf above — left the frontier: the
+open statement now asks for a hardly ramified FRAMED REPRESENTATION over `S ⧸ K`
+and no longer for a `HardlyRamifiedDeformation` record, an adic topology, an
+`IsAdicComplete` instance or the `≃+*` of `IsDeformationStructureOn`.
+
+The assembly is the four instances of that packaging plus one application:
+
+* `IsNoetherianRing (S ⧸ K)` — `isNoetherianRing_mvPowerSeries` pushed along
+  `Ideal.Quotient.mk_surjective`;
+* `IsAdicComplete (𝔪_{S ⧸ K}) (S ⧸ K)` — `isPrecomplete_of_isSmallExtension`
+  above, whose whole point is that it needs no completeness input about `S`,
+  together with the Hausdorff half that is free from Noetherian + local;
+* `Algebra ℤ_[ℓ] (S ⧸ K)` — `Ideal.Quotient.algebra`, and
+  `algebraMap ℤ_[ℓ] (S ⧸ K) = (Ideal.Quotient.mk K).comp (algebraMap ℤ_[ℓ] S)` is
+  `rfl`, so the `ℤ_ℓ`-compatibility of `S ⧸ K ↠ D.R` is `hcompat` after one
+  `Ideal.Quotient.lift_comp_mk`;
+* surjectivity of `S ⧸ K ↠ D.R` — `IsSmallExtension.surjective`.
+
+**The RENAME must be carried forward.** The open leaf of this cluster is now
+`…_of_section_framed`; this name survives as a PROVEN theorem, so a queue entry or
+a frontier scan keyed on THIS name will pass every existence check and find
+nothing to prove. That is the recut-phantom shape CLAUDE.md records; the live
+name is the one above. -/
+
 theorem exists_obstructionCocycle_smallExtension_deformation_of_section
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
@@ -19744,7 +19932,32 @@ theorem exists_obstructionCocycle_smallExtension_deformation_of_section
                 HardlyRamifiedDeformation.IsDeformationStructureOn hℓOdd D D'
                   (MvPowerSeries (Fin g) Λ ⧸ K) inferInstance
                   (Ideal.Quotient.lift K φ fun _ ha => hK ha) :=
-  sorry
+  by
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  haveI := D.isNoetherianRing; haveI := D.isAdicComplete
+  intro Λ _ _ _ _ _ _ hΛmax g φ hsurj hcompat hmin
+  obtain ⟨oc, hsha, hlift⟩ :=
+    exists_obstructionCocycle_smallExtension_deformation_of_section_framed hℓOdd hdim hℓ5 h
+      hirr D hw ht hsec Λ ‹_› ‹_› ‹_› ‹_› ‹_› ‹_› hΛmax g φ hsurj hcompat hmin
+  refine ⟨oc, hsha, fun ψ hψ K hK hsmall hpin => ?_⟩
+  letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+    Ideal.Quotient.nontrivial_of_le_ker hK
+  haveI : IsNoetherianRing (MvPowerSeries (Fin g) Λ) := isNoetherianRing_mvPowerSeries g
+  haveI : IsNoetherianRing (MvPowerSeries (Fin g) Λ ⧸ K) :=
+    isNoetherianRing_of_surjective _ _ (Ideal.Quotient.mk K) Ideal.Quotient.mk_surjective
+  haveI : IsPrecomplete (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K))
+      (MvPowerSeries (Fin g) Λ ⧸ K) := isPrecomplete_of_isSmallExtension hsmall
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ ⧸ K))
+      (MvPowerSeries (Fin g) Λ ⧸ K) := ⟨⟩
+  refine exists_deformationStructureOn_of_hasFramedLiftOn hℓOdd D
+    (MvPowerSeries (Fin g) Λ ⧸ K) (Ideal.Quotient.lift K φ fun _ ha => hK ha)
+    hsmall.surjective ?_ (hlift ψ hψ K hK hsmall hpin)
+  rw [show (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ ⧸ K)) =
+      (Ideal.Quotient.mk K).comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) from rfl,
+    ← RingHom.comp_assoc, Ideal.Quotient.lift_comp_mk]
+  exact hcompat
+
 
 /-- **Böckle's obstruction COCYCLE, in its DEFORMATION-THEORETIC form, on the
 NON-DEGENERATE branch** (sorry leaf; cut out of
