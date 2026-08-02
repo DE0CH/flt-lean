@@ -70,15 +70,24 @@ many bad Euler factors costs only a constant, so `ζ_F(s) ≥ c · ζ_k(s)²` fo
 endgame is `exists_mul_sq_dedekindZeta_re_le` + `finrank_eq_one_of_forall_inertiaDeg_eq_one`,
 both PROVEN below.
 
-The cut therefore leaves exactly three open statements, and each is a standard fact about
-Dirichlet series over ideals, stated with mathlib vocabulary only:
+The cut therefore leaves exactly three statements, and each is a standard fact about
+Dirichlet series over ideals, stated with mathlib vocabulary only. **The first is now
+PROVEN (2026-08-02); two remain open:**
 
 * `NumberField.dedekindZeta_re_eq_zetaAvoiding_empty` — the REGROUPING. `ζ_K(s)` really is
   the sum of `(N I)^{-s}` over the nonzero ideals. This is `LSeries` unfolded and the
   fibres of `absNorm` collected; it is where `Nat.card {I // absNorm I = n}` is paid for.
-* `NumberField.sq_zetaAvoiding_le_zetaAvoiding_empty` — the INJECTION above.
+  **PROVEN**, over `hasSum_absNorm_rpow` and `zetaAvoiding_empty_eq_tsum_absNorm_rpow`.
+* `NumberField.sq_zetaAvoiding_le_zetaAvoiding_empty` — the INJECTION above. OPEN.
 * `NumberField.exists_zetaAvoiding_empty_le` — the finitely many removed Euler factors cost
-  at most `∏_{𝔭 ∈ T} (1 - N𝔭^{-s})^{-1} ≤ 2^{#T}`.
+  at most `∏_{𝔭 ∈ T} (1 - N𝔭^{-s})^{-1} ≤ 2^{#T}`. OPEN.
+
+**Both remaining leaves need the CONVERGENCE of the ideal-indexed series, and it is already
+proven: `(hasSum_absNorm_rpow K hs).summable` is
+`Summable (fun I : Ideal (𝓞 K) ↦ (N I : ℝ) ^ (-s))` for every real `s > 1`.** Together with
+`zetaAvoiding_empty_eq_tsum_absNorm_rpow` (which drops the `I ≠ ⊥` clause, since
+`(0 : ℝ) ^ (-s) = 0`) that is the whole analytic input either of them requires; neither
+should re-derive it, and neither should touch `LSeries` at all.
 
 ## Falsity audit
 
@@ -294,31 +303,136 @@ theorem lseriesSummable_dedekindZeta (K : Type*) [Field K] [NumberField K] {s : 
   have hlim := tendsto_sum_card_absNorm_eq_div K
   exact isBigO_atTop_natCast_rpow_of_tendsto_div_rpow (r := 1) (by simpa using hlim)
 
+/-- **THE `n`-TH TERM OF `ζ_K` AT A REAL POINT IS REAL, AND EQUALS `#{N I = n} · n^{-s}`**
+(PROVEN 2026-07-31).
+
+No case split on `n = 0` is needed: `LSeries.term_of_ne_zero'` removes the `if` as soon as
+`s ≠ 0` (because `(0 : ℂ) ^ s = 0` and division by `0` is `0`), and the identity
+`(n : ℝ) ^ (-s) = ((n : ℝ) ^ s)⁻¹` holds at `n = 0` as well. Only `s ≠ 0` is required, so
+this is available below the convergence threshold too. -/
+theorem re_term_dedekindZeta (K : Type*) [Field K] [NumberField K] {s : ℝ} (hs : s ≠ 0)
+    (n : ℕ) :
+    (LSeries.term (fun n => ((Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℕ) : ℂ))
+      (s : ℂ) n).re
+      = (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s) := by
+  have hs0 : (s : ℂ) ≠ 0 := by simpa using hs
+  rw [LSeries.term_of_ne_zero' hs0,
+    show ((n : ℂ) ^ (s : ℂ)) = (((n : ℝ) ^ s : ℝ) : ℂ) by
+      rw [Complex.ofReal_cpow (Nat.cast_nonneg n) s, Complex.ofReal_natCast],
+    show (((Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℕ) : ℂ))
+      = (((Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℕ) : ℝ) : ℂ) by push_cast; ring,
+    ← Complex.ofReal_div, Complex.ofReal_re, Real.rpow_neg (Nat.cast_nonneg n), div_eq_mul_inv]
+
+/-- **THE IDEAL-INDEXED DIRICHLET SERIES CONVERGES, TO THE `ℕ`-INDEXED ONE** (PROVEN
+2026-07-31 — this is what LEAF 1 was cut for, and it also supplies the two leaves below).
+
+`HasSum` carries both halves at once, which is why it is stated this way: a consumer that
+needs only convergence takes `(hasSum_absNorm_rpow K hs).summable`, and one that needs only
+the value takes `(hasSum_absNorm_rpow K hs).tsum_eq`. **`sq_zetaAvoiding_le_zetaAvoiding_empty`
+and `exists_zetaAvoiding_empty_le` below both need the `.summable` half**; do not re-derive
+it.
+
+The proof is the fibrewise regrouping along `Equiv.sigmaFiberEquiv Ideal.absNorm`. Each
+fibre `{I // absNorm I = n}` is finite (`Ideal.finite_setOf_absNorm_eq`) and the summand is
+CONSTANT on it, so `tsum_const` turns the inner sum into `Nat.card · n ^ (-s)`; the outer
+sum is then `lseriesSummable_dedekindZeta` read through `re_term_dedekindZeta`, and
+`summable_sigma_of_nonneg` (all terms are `≥ 0`) transports the summability back across the
+equivalence. Note the `n = 0` fibre is `{⊥}` on the `ℕ` side and the summand there is
+`(0 : ℝ) ^ (-s) = 0`, so nothing has to be excluded by hand. -/
+theorem hasSum_absNorm_rpow (K : Type*) [Field K] [NumberField K] {s : ℝ} (hs : 1 < s) :
+    HasSum (fun I : Ideal (𝓞 K) => ((Ideal.absNorm I : ℕ) : ℝ) ^ (-s))
+      (∑' n : ℕ,
+        (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s)) := by
+  have hs0 : s ≠ 0 := ne_of_gt (lt_trans zero_lt_one hs)
+  have hfin : ∀ n : ℕ, Finite {I : Ideal (𝓞 K) // Ideal.absNorm I = n} :=
+    fun n => (Ideal.finite_setOf_absNorm_eq n).to_subtype
+  -- the summand is constant on each fibre of `absNorm`
+  have hsval : ∀ p : (n : ℕ) × {I : Ideal (𝓞 K) // Ideal.absNorm I = n},
+      ((Ideal.absNorm p.2.1 : ℕ) : ℝ) ^ (-s) = ((p.1 : ℕ) : ℝ) ^ (-s) := by
+    rintro ⟨n, I, rfl⟩; rfl
+  have hfibsum : ∀ n : ℕ,
+      Summable (fun _y : {I : Ideal (𝓞 K) // Ideal.absNorm I = n} => ((n : ℕ) : ℝ) ^ (-s)) := by
+    intro n; haveI := hfin n; exact Summable.of_finite
+  have hfibtsum : ∀ n : ℕ,
+      ∑' _y : {I : Ideal (𝓞 K) // Ideal.absNorm I = n}, ((n : ℕ) : ℝ) ^ (-s)
+        = (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s) := by
+    intro n; haveI := hfin n; rw [tsum_const, nsmul_eq_mul]
+  have hcf : Summable (fun n : ℕ =>
+      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s)) :=
+    ((Complex.hasSum_re (lseriesSummable_dedekindZeta K hs).hasSum).summable).congr
+      (fun n => re_term_dedekindZeta K hs0 n)
+  have hsigma : Summable (fun p : (n : ℕ) × {I : Ideal (𝓞 K) // Ideal.absNorm I = n} =>
+      ((p.1 : ℕ) : ℝ) ^ (-s)) := by
+    rw [summable_sigma_of_nonneg (fun p => Real.rpow_nonneg (Nat.cast_nonneg _) _)]
+    exact ⟨hfibsum, hcf.congr fun n => (hfibtsum n).symm⟩
+  have hsummable : Summable (fun I : Ideal (𝓞 K) => ((Ideal.absNorm I : ℕ) : ℝ) ^ (-s)) :=
+    (Equiv.summable_iff (Equiv.sigmaFiberEquiv (fun I : Ideal (𝓞 K) => Ideal.absNorm I))).mp
+      (hsigma.congr fun p => (hsval p).symm)
+  have hval : ∑' I : Ideal (𝓞 K), ((Ideal.absNorm I : ℕ) : ℝ) ^ (-s)
+      = ∑' n : ℕ,
+          (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s) := by
+    calc ∑' I : Ideal (𝓞 K), ((Ideal.absNorm I : ℕ) : ℝ) ^ (-s)
+        = ∑' p : (n : ℕ) × {I : Ideal (𝓞 K) // Ideal.absNorm I = n},
+            ((p.1 : ℕ) : ℝ) ^ (-s) := by
+          rw [← Equiv.tsum_eq (Equiv.sigmaFiberEquiv (fun I : Ideal (𝓞 K) => Ideal.absNorm I))
+            (fun I => ((Ideal.absNorm I : ℕ) : ℝ) ^ (-s))]
+          exact tsum_congr fun p => hsval p
+      _ = ∑' (n : ℕ) (_y : {I : Ideal (𝓞 K) // Ideal.absNorm I = n}), ((n : ℕ) : ℝ) ^ (-s) :=
+          hsigma.tsum_sigma' hfibsum
+      _ = _ := tsum_congr fun n => hfibtsum n
+  exact hval ▸ hsummable.hasSum
+
+/-- **`zetaAvoiding K ∅` IS THE SUM OVER *ALL* IDEALS** (PROVEN 2026-07-31).
+
+The `I ≠ ⊥` clause of `zetaAvoiding` may simply be dropped: `absNorm ⊥ = 0` and
+`(0 : ℝ) ^ (-s) = 0` for `s ≠ 0`, so `⊥` is outside the support of the summand and
+`tsum_subtype_eq_of_support_subset` applies. The `∀ 𝔭 ∈ ∅` clause is vacuous.
+
+Stated with `s ≠ 0` rather than `1 < s` because no convergence is used — both sides are
+`tsum`s and the identity holds whether or not they converge. -/
+theorem zetaAvoiding_empty_eq_tsum_absNorm_rpow (K : Type*) [Field K] [NumberField K]
+    {s : ℝ} (hs : s ≠ 0) :
+    zetaAvoiding K ∅ s = ∑' I : Ideal (𝓞 K), ((Ideal.absNorm I : ℕ) : ℝ) ^ (-s) := by
+  have hsne : (-s) ≠ 0 := neg_ne_zero.mpr hs
+  have hsupp : Function.support (fun I : Ideal (𝓞 K) => ((Ideal.absNorm I : ℕ) : ℝ) ^ (-s))
+      ⊆ {I : Ideal (𝓞 K) | I ≠ ⊥ ∧ ∀ 𝔭 ∈ (∅ : Set (Ideal (𝓞 K))), 𝔭.IsMaximal → ¬ 𝔭 ∣ I} := by
+    intro I hI
+    simp only [Function.mem_support, ne_eq] at hI
+    refine ⟨?_, by simp⟩
+    rintro rfl
+    exact hI (by rw [Ideal.absNorm_bot, Nat.cast_zero, Real.zero_rpow hsne])
+  exact tsum_subtype_eq_of_support_subset hsupp
+
 /-- **LEAF 1 — THE REGROUPING: `ζ_K(s)` is the sum of `(N I)^{-s}` over the nonzero ideals**
-(OPEN, cut 2026-07-31).
+(cut 2026-07-31, **PROVEN 2026-08-02**).
 
 `dedekindZeta K` is `LSeries (fun n ↦ Nat.card {I : Ideal (𝓞 K) // absNorm I = n})`, i.e.
 the coefficients are already the fibres of `Ideal.absNorm`. So this is the statement that
 summing over `ℕ` with multiplicities is the same as summing over the ideals themselves.
 
-**What it needs.** `LSeries.term` vanishes at `n = 0` and `Ideal.absNorm I = 0 ↔ I = ⊥`
-(`Ideal.absNorm_eq_zero_iff`), so both sides are indexed by the nonzero ideals; the fibres
-of `absNorm` are finite (`NumberField.Ideal.finite_setOf_absNorm_eq`, used by
-`tendsto_sub_one_mul_dedekindZeta_nhdsGT` in mathlib) and the regrouping is
-`tsum_sigma`/`Summable.tsum_fiberwise` for the map `I ↦ absNorm I`. The value is real
-because every coefficient is a natural number, which is why `.re` loses nothing.
-
-**Convergence is already available**: `lseriesSummable_dedekindZeta` above, PROVEN, is
-`LSeriesSummable` of these coefficients at every real `s > 1`. Combined with
-`summable_norm_iff` it gives absolute convergence of the `ℕ`-indexed side; the ideal-indexed
-side then follows from `summable_sigma_of_nonneg` along
-`Equiv.sigmaFiberEquiv (fun I ↦ Ideal.absNorm I)`, whose fibres are finite by
-`Ideal.finite_setOf_absNorm_eq`. Do not re-derive the counting estimate — it is
-`tendsto_sum_card_absNorm_eq_div`, also PROVEN above. -/
+The cut's own route note was right about every ingredient and is recorded here because the
+two remaining leaves reuse them: `LSeries.term` at a real `s ≠ 0` is a real number
+(`re_term_dedekindZeta`), the fibres of `absNorm` are finite
+(`Ideal.finite_setOf_absNorm_eq`), the regrouping is `Summable.tsum_sigma'` along
+`Equiv.sigmaFiberEquiv Ideal.absNorm`, the convergence is `lseriesSummable_dedekindZeta`
+transported by `summable_sigma_of_nonneg`, and the `⊥` term is killed by
+`(0 : ℝ) ^ (-s) = 0` rather than by a case split. All of that is packaged as
+`hasSum_absNorm_rpow` and `zetaAvoiding_empty_eq_tsum_absNorm_rpow` above; this theorem is
+their three-line assembly. -/
 theorem dedekindZeta_re_eq_zetaAvoiding_empty (K : Type*) [Field K] [NumberField K]
     (s : ℝ) (hs : 1 < s) :
-    (dedekindZeta K s).re = zetaAvoiding K ∅ s :=
-  sorry
+    (dedekindZeta K s).re = zetaAvoiding K ∅ s := by
+  have hs0 : s ≠ 0 := ne_of_gt (lt_trans zero_lt_one hs)
+  calc (dedekindZeta K s).re
+      = ∑' n : ℕ, (LSeries.term (fun n =>
+          ((Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℕ) : ℂ)) (s : ℂ) n).re :=
+        Complex.re_tsum (lseriesSummable_dedekindZeta K hs)
+    _ = ∑' n : ℕ,
+          (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s) :=
+        tsum_congr fun n => re_term_dedekindZeta K hs0 n
+    _ = ∑' I : Ideal (𝓞 K), ((Ideal.absNorm I : ℕ) : ℝ) ^ (-s) :=
+        (hasSum_absNorm_rpow K hs).tsum_eq.symm
+    _ = zetaAvoiding K ∅ s := (zetaAvoiding_empty_eq_tsum_absNorm_rpow K hs0).symm
 
 /-- **LEAF 2 — THE INJECTION: two primes above almost every `𝔭` square the zeta function**
 (OPEN, cut 2026-07-31).
