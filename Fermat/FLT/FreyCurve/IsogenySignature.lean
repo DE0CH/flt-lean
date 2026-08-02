@@ -10327,6 +10327,66 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.frobenius_of_isTorsionR
       rw [hval2, hfr]
       exact WeierstrassCurve.Affine.Point.some_eq_some _ (hres X hX hX2) (hres Y hY hY2)
 
+/-- **`u` IS A UNIT**, from `Δ' = u⁻¹² Δ` and both discriminants being units.
+
+Extracted from `variableChange_valuation_of_valuation_Δ_eq_one` below on
+2026-08-01 so that the `q = 2` companion
+`variableChange_valuation_of_valuation_Δ_eq_one_three` can share it; it is the
+one step of that theorem which is free of any hypothesis on the residue
+characteristic, so it belongs to neither branch. -/
+theorem WeierstrassCurve.valuation_u_eq_one_of_valuation_Δ_eq_one
+    {F : Type*} [Field F] (𝒪 : ValuationSubring F)
+    (W : WeierstrassCurve F) (C : WeierstrassCurve.VariableChange F)
+    (hΔ : 𝒪.valuation W.Δ = 1) (hΔ' : 𝒪.valuation (C • W).Δ = 1) :
+    𝒪.valuation (C.u : F) = 1 := by
+  set v := 𝒪.valuation with hv
+  have hu12 : v (C.u : F) ^ 12 = 1 := by
+    have h := congrArg v (W.variableChange_Δ C)
+    rw [Units.val_inv_eq_inv_val, map_mul, map_pow, map_inv₀, hΔ, hΔ', mul_one] at h
+    have h' : ((v (C.u : F))⁻¹) ^ 12 = 1 := h.symm
+    rw [inv_pow] at h'
+    exact inv_eq_one.mp h'
+  rcases lt_trichotomy (v (C.u : F)) 1 with h | h | h
+  · exfalso
+    have hle : v (C.u : F) ^ 12 ≤ v (C.u : F) := by
+      calc v (C.u : F) ^ 12 = v (C.u : F) ^ 11 * v (C.u : F) := pow_succ _ 11
+        _ ≤ 1 * v (C.u : F) := mul_le_mul_right' (pow_le_one' h.le 11) _
+        _ = v (C.u : F) := one_mul _
+    rw [hu12] at hle
+    exact absurd (hle.trans_lt h) (lt_irrefl 1)
+  · exact h
+  · exfalso
+    have hle : v (C.u : F) ≤ v (C.u : F) ^ 12 := by
+      calc v (C.u : F) = 1 * v (C.u : F) := (one_mul _).symm
+        _ ≤ v (C.u : F) ^ 11 * v (C.u : F) :=
+            mul_le_mul_right' (one_le_pow_of_one_le' h.le 11) _
+        _ = v (C.u : F) ^ 12 := (pow_succ _ 11).symm
+    rw [hu12] at hle
+    exact absurd (h.trans_le hle) (lt_irrefl 1)
+
+/-- **THE RESIDUE CHARACTERISTIC IS ONE PRIME: `2` OR `3` IS A UNIT OF `𝒪`.**
+
+`3 - 2 = 1`, so `1 = v 1 ≤ max (v 3) (v 2)`, while both are `≤ 1` because `𝒪` is
+a subring. This three-line fact is what lets
+`variableChange_valuation_of_valuation_Δ_eq_one_uniform` below drop the
+hypothesis on the residue characteristic altogether: the `2`-inverting proof and
+the `3`-inverting proof between them cover every valuation subring of every
+field. -/
+theorem WeierstrassCurve.valuation_two_or_three_eq_one
+    {F : Type*} [Field F] (𝒪 : ValuationSubring F) :
+    𝒪.valuation (2 : F) = 1 ∨ 𝒪.valuation (3 : F) = 1 := by
+  set v := 𝒪.valuation with hv
+  have le_of : ∀ {x : F}, x ∈ 𝒪 → v x ≤ 1 :=
+    fun {x} h => (ValuationSubring.valuation_le_one_iff 𝒪 x).mpr h
+  have h2le : v (2 : F) ≤ 1 := le_of (ofNat_mem 𝒪 2)
+  have h3le : v (3 : F) ≤ 1 := le_of (ofNat_mem 𝒪 3)
+  have key : v ((3 : F) - 2) ≤ max (v (3 : F)) (v (2 : F)) :=
+    Valuation.map_sub_le v (le_max_left _ _) (le_max_right _ _)
+  rw [show ((3 : F) - 2) = 1 by norm_num, map_one] at key
+  rcases max_cases (v (3 : F)) (v (2 : F)) with ⟨h, -⟩ | ⟨h, -⟩
+  · exact Or.inr (le_antisymm h3le (h ▸ key))
+  · exact Or.inl (le_antisymm h2le (h ▸ key))
+
 /-- **A CHANGE OF VARIABLES BETWEEN TWO INTEGRAL WEIERSTRASS MODELS WITH UNIT
 DISCRIMINANT HAS INTEGRAL ENTRIES** (PROVEN 2026-07-28, while proving
 `exists_aut_of_isTorsionReduction` below; this is the one genuinely
@@ -10370,6 +10430,137 @@ closedness is therefore used in its bare valuation-theoretic form and no
 theorem WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one
     {F : Type*} [Field F] (𝒪 : ValuationSubring F)
     (W : WeierstrassCurve F) (C : WeierstrassCurve.VariableChange F)
+    (h2 : 𝒪.valuation (2 : F) = 1)
+    (ha₁ : 𝒪.valuation W.a₁ ≤ 1) (ha₂ : 𝒪.valuation W.a₂ ≤ 1)
+    (ha₃ : 𝒪.valuation W.a₃ ≤ 1) (ha₄ : 𝒪.valuation W.a₄ ≤ 1)
+    (ha₆ : 𝒪.valuation W.a₆ ≤ 1)
+    (hc₁ : 𝒪.valuation (C • W).a₁ ≤ 1)
+    (hc₃ : 𝒪.valuation (C • W).a₃ ≤ 1)
+    (hc₆ : 𝒪.valuation (C • W).a₆ ≤ 1)
+    (hΔ : 𝒪.valuation W.Δ = 1) (hΔ' : 𝒪.valuation (C • W).Δ = 1) :
+    𝒪.valuation (C.u : F) = 1 ∧ 𝒪.valuation C.r ≤ 1 ∧ 𝒪.valuation C.s ≤ 1 ∧
+      𝒪.valuation C.t ≤ 1 := by
+  have cancel : ∀ {a b c : 𝒪.ValueGroup}, a ≠ 0 → a * b ≤ a * c → b ≤ c := by
+    intro a b c ha h
+    calc b = a⁻¹ * (a * b) := by rw [inv_mul_cancel_left₀ ha]
+      _ ≤ a⁻¹ * (a * c) := mul_le_mul_left' h _
+      _ = c := by rw [inv_mul_cancel_left₀ ha]
+  set v := 𝒪.valuation with hv
+  -- Step 1 : `v u = 1`, because `u¹²` is the ratio of two unit discriminants.
+  -- (Hoisted out on 2026-08-01; it is the one characteristic-free step, and the
+  -- `q = 2` companion below shares it.)
+  have huval : v (C.u : F) = 1 :=
+    WeierstrassCurve.valuation_u_eq_one_of_valuation_Δ_eq_one 𝒪 W C hΔ hΔ'
+  -- Step 2 : `v s ≤ 1`, from the `a₁`-relation and `2 ∈ 𝒪ˣ`.
+  have hs : v C.s ≤ 1 := by
+    have h := W.variableChange_a₁ C
+    rw [Units.val_inv_eq_inv_val] at h
+    have key : (2 : F) * C.s = (C.u : F) * (C • W).a₁ - W.a₁ := by
+      rw [h]; field_simp; ring
+    have hb : v ((2 : F) * C.s) ≤ 1 := by
+      rw [key]
+      refine Valuation.map_sub_le v ?_ ha₁
+      rw [map_mul, huval, one_mul]; exact hc₁
+    rw [map_mul, h2, one_mul] at hb
+    exact hb
+  -- Step 3 : `v t ≤ max 1 (v r)`, from the `a₃`-relation.
+  have key3 : (2 : F) * C.t = (C.u : F) ^ 3 * (C • W).a₃ - W.a₃ - C.r * W.a₁ := by
+    have h := W.variableChange_a₃ C
+    rw [Units.val_inv_eq_inv_val] at h
+    rw [h]; field_simp; ring
+  have ht_le : v C.t ≤ max 1 (v C.r) := by
+    have hb : v ((2 : F) * C.t) ≤ max 1 (v C.r) := by
+      rw [key3]
+      refine Valuation.map_sub_le v (Valuation.map_sub_le v ?_ ?_) ?_
+      · rw [map_mul, map_pow, huval, one_pow, one_mul]
+        exact hc₃.trans (le_max_left _ _)
+      · exact ha₃.trans (le_max_left _ _)
+      · rw [map_mul]
+        calc v C.r * v W.a₁ ≤ v C.r * 1 := mul_le_mul_left' ha₁ _
+          _ = v C.r := mul_one _
+          _ ≤ max 1 (v C.r) := le_max_right _ _
+    rw [map_mul, h2, one_mul] at hb
+    exact hb
+  -- Step 4 : `v r ≤ 1`, because `r³` would dominate the `a₆`-relation.
+  have hr : v C.r ≤ 1 := by
+    by_contra hcon
+    push_neg at hcon
+    have hr0 : v C.r ≠ 0 := ne_of_gt (lt_trans zero_lt_one hcon)
+    have htr : v C.t ≤ v C.r := ht_le.trans (max_le hcon.le le_rfl)
+    have h1r2 : (1 : 𝒪.ValueGroup) ≤ v C.r ^ 2 := one_le_pow_of_one_le' hcon.le 2
+    have hrr2 : v C.r ≤ v C.r ^ 2 := by
+      calc v C.r = 1 * v C.r := (one_mul _).symm
+        _ ≤ v C.r * v C.r := mul_le_mul_right' hcon.le _
+        _ = v C.r ^ 2 := (pow_two _).symm
+    have key6 : C.r ^ 3 = (C.u : F) ^ 6 * (C • W).a₆ - W.a₆ - C.r * W.a₄ - C.r ^ 2 * W.a₂
+        + C.t * W.a₃ + C.t ^ 2 + C.r * C.t * W.a₁ := by
+      have h := W.variableChange_a₆ C
+      rw [Units.val_inv_eq_inv_val] at h
+      rw [h]; field_simp; ring
+    have hb : v (C.r ^ 3) ≤ v C.r ^ 2 := by
+      rw [key6]
+      refine Valuation.map_add_le v (Valuation.map_add_le v (Valuation.map_add_le v
+        (Valuation.map_sub_le v (Valuation.map_sub_le v (Valuation.map_sub_le v ?_ ?_) ?_) ?_)
+        ?_) ?_) ?_
+      · rw [map_mul, map_pow, huval, one_pow, one_mul]; exact hc₆.trans h1r2
+      · exact ha₆.trans h1r2
+      · rw [map_mul]
+        exact ((mul_le_mul_left' ha₄ _).trans_eq (mul_one _)).trans hrr2
+      · rw [map_mul, map_pow]
+        exact (mul_le_mul_left' ha₂ _).trans_eq (mul_one _)
+      · rw [map_mul]
+        exact ((mul_le_mul_left' ha₃ _).trans_eq (mul_one _)).trans (htr.trans hrr2)
+      · rw [map_pow]
+        exact pow_le_pow_left' htr 2
+      · rw [map_mul, map_mul]
+        calc v C.r * v C.t * v W.a₁ ≤ v C.r * v C.t * 1 := mul_le_mul_left' ha₁ _
+          _ = v C.r * v C.t := mul_one _
+          _ ≤ v C.r * v C.r := mul_le_mul_left' htr _
+          _ = v C.r ^ 2 := (pow_two _).symm
+    rw [map_pow] at hb
+    have hlast : v C.r ^ 2 * v C.r ≤ v C.r ^ 2 * 1 := by
+      rw [mul_one]
+      calc v C.r ^ 2 * v C.r = v C.r ^ 3 := (pow_succ _ 2).symm
+        _ ≤ v C.r ^ 2 := hb
+    exact absurd (hcon.trans_le (cancel (pow_ne_zero 2 hr0) hlast)) (lt_irrefl 1)
+  exact ⟨huval, hr, hs, ht_le.trans (max_le le_rfl hr)⟩
+
+/-- **THE SAME, AT RESIDUE CHARACTERISTIC `2`: INVERT `3` INSTEAD**
+(PROVEN 2026-08-01, closing the `q = 2` leaf of the `B₀` cluster — the former
+`exists_aut_of_isTorsionReduction_two`, now deleted because its statement is a
+special case of the uniform `exists_aut_of_isTorsionReduction` below).
+
+The theorem above inverts `2` twice — to read `s` off `2s = u a₁' - a₁` and `t`
+off `2t = u³a₃' - a₃ - r a₁` — and at `q = 2` that division is unavailable.
+This version inverts `3` instead, which is a unit exactly when `2` is not
+(`valuation_two_or_three_eq_one` above), and it reaches all three of `r`, `s`,
+`t` WITHOUT dividing by anything.
+
+THE THREE STEPS, and none of them is the case analysis on `v r`, `v s`, `v t`
+against the `aᵢ`-relations that this leaf's docstring used to prescribe:
+
+* `v r ≤ 1` **from the `b₈`-relation** `u⁸b₈' = b₈ + 3r b₆ + 3r² b₄ + r³ b₂ + 3r⁴`
+  (mathlib's `variableChange_b₈`).  `r` is the ONLY change-of-variables entry
+  occurring in it, so no interleaving with `s` and `t` arises; and `3r⁴` is the
+  unique term of strictly largest valuation once `v r > 1`, since every other
+  term has valuation at most `(v r)³`.  This is the exact `3`-adic mirror of the
+  `a₆`-relation argument above, and it is cheaper because `b₈` has no `s` or `t`
+  in it at all.
+* `v s ≤ 1` from the `a₂`-relation `u²a₂' = a₂ - s a₁ + 3r - s²`, once `v r ≤ 1`:
+  the relation exhibits `s` as a root of a MONIC quadratic with integral
+  coefficients, so `(v s)² ≤ max (v s) 1`, which forces `v s ≤ 1`.
+* `v t ≤ 1` from the `a₆`-relation `u⁶a₆' = a₆ + r a₄ + r² a₂ + r³ - t a₃ - t²
+  - r t a₁`, once `v r ≤ 1`: same shape, `t` a root of a monic quadratic.
+
+WHY ALL FIVE `aᵢ'` ARE NEEDED HERE while the theorem above needs only
+`a₁'`, `a₃'`, `a₆'`: `b₈' = a₁'²a₆' + 4a₂'a₆' - a₁'a₃'a₄' + a₂'a₃'² - a₄'²`
+mentions every one of them.  At the call site
+(`exists_inertiaVariableChange` below) that costs nothing — the second model is
+the `τ`-conjugate of the first, so all five are integral for the same reason. -/
+theorem WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one_three
+    {F : Type*} [Field F] (𝒪 : ValuationSubring F)
+    (W : WeierstrassCurve F) (C : WeierstrassCurve.VariableChange F)
+    (h3 : 𝒪.valuation (3 : F) = 1)
     (ha₁ : 𝒪.valuation W.a₁ ≤ 1) (ha₂ : 𝒪.valuation W.a₂ ≤ 1)
     (ha₃ : 𝒪.valuation W.a₃ ≤ 1) (ha₄ : 𝒪.valuation W.a₄ ≤ 1)
     (ha₆ : 𝒪.valuation W.a₆ ≤ 1)
@@ -10385,175 +10576,164 @@ theorem WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one
       _ ≤ a⁻¹ * (a * c) := mul_le_mul_left' h _
       _ = c := by rw [inv_mul_cancel_left₀ ha]
   set v := 𝒪.valuation with hv
-  have hune : (C.u : F) ≠ 0 := C.u.ne_zero
-  have hu0 : v (C.u : F) ≠ 0 := by
-    simpa [hv] using (Valuation.ne_zero_iff v).mpr hune
-  -- Step 1 : `v u = 1`, because `u¹²` is the ratio of two unit discriminants.
-  have hu12 : v (C.u : F) ^ 12 = 1 := by
-    have h := congrArg v (W.variableChange_Δ C)
-    rw [Units.val_inv_eq_inv_val, map_mul, map_pow, map_inv₀, hΔ, hΔ', mul_one] at h
-    have h' : ((v (C.u : F))⁻¹) ^ 12 = 1 := h.symm
-    rw [inv_pow] at h'
-    exact inv_eq_one.mp h'
-  have huval : v (C.u : F) = 1 := by
-    rcases lt_trichotomy (v (C.u : F)) 1 with h | h | h
-    · exfalso
-      have hle : v (C.u : F) ^ 12 ≤ v (C.u : F) := by
-        calc v (C.u : F) ^ 12 = v (C.u : F) ^ 11 * v (C.u : F) := pow_succ _ 11
-          _ ≤ 1 * v (C.u : F) := mul_le_mul_right' (pow_le_one' h.le 11) _
-          _ = v (C.u : F) := one_mul _
-      rw [hu12] at hle
-      exact absurd (hle.trans_lt h) (lt_irrefl 1)
-    · exact h
-    · exfalso
-      have hle : v (C.u : F) ≤ v (C.u : F) ^ 12 := by
-        calc v (C.u : F) = 1 * v (C.u : F) := (one_mul _).symm
-          _ ≤ v (C.u : F) ^ 11 * v (C.u : F) :=
-              mul_le_mul_right' (one_le_pow_of_one_le' h.le 11) _
-          _ = v (C.u : F) ^ 12 := (pow_succ _ 11).symm
-      rw [hu12] at hle
-      exact absurd (h.trans_le hle) (lt_irrefl 1)
-  -- the integers are integral, and hence so are the `b`-invariants of both models
-  have hnat : ∀ n : ℕ, v ((n : ℕ) : F) ≤ 1 := fun n =>
-    (ValuationSubring.valuation_le_one_iff 𝒪 _).mpr (natCast_mem 𝒪 n)
-  have h2 : v (2 : F) ≤ 1 := by simpa using hnat 2
-  have h3 : v (3 : F) ≤ 1 := by simpa using hnat 3
-  have h4 : v (4 : F) ≤ 1 := by simpa using hnat 4
-  have hbint : ∀ V : WeierstrassCurve F, v V.a₁ ≤ 1 → v V.a₂ ≤ 1 → v V.a₃ ≤ 1 →
-      v V.a₄ ≤ 1 → v V.a₆ ≤ 1 → v V.b₄ ≤ 1 ∧ v V.b₆ ≤ 1 ∧ v V.b₈ ≤ 1 := by
-    intro V k₁ k₂ k₃ k₄ k₆
-    have mul_le : ∀ x y : F, v x ≤ 1 → v y ≤ 1 → v (x * y) ≤ 1 := by
-      intro x y hx hy
-      rw [map_mul]
-      exact (mul_le_mul' hx hy).trans_eq (one_mul 1)
-    refine ⟨?_, ?_, ?_⟩
-    · rw [WeierstrassCurve.b₄]
-      exact Valuation.map_add_le v (mul_le _ _ h2 k₄) (mul_le _ _ k₁ k₃)
-    · rw [WeierstrassCurve.b₆]
-      refine Valuation.map_add_le v ?_ (mul_le _ _ h4 k₆)
-      rw [map_pow]
-      exact pow_le_one' k₃ 2
-    · rw [WeierstrassCurve.b₈]
-      refine Valuation.map_sub_le v (Valuation.map_add_le v (Valuation.map_sub_le v
-        (Valuation.map_add_le v ?_ ?_) ?_) ?_) ?_
-      · exact mul_le _ _ (by rw [map_pow]; exact pow_le_one' k₁ 2) k₆
-      · exact mul_le _ _ (mul_le _ _ h4 k₂) k₆
-      · exact mul_le _ _ (mul_le _ _ k₁ k₃) k₄
-      · exact mul_le _ _ k₂ (by rw [map_pow]; exact pow_le_one' k₃ 2)
-      · rw [map_pow]; exact pow_le_one' k₄ 2
-  obtain ⟨hb₄, hb₆, hb₈⟩ := hbint W ha₁ ha₂ ha₃ ha₄ ha₆
-  obtain ⟨-, hb₆', hb₈'⟩ := hbint (C • W) hc₁ hc₂ hc₃ hc₄ hc₆
-  -- Step 2 : `v r ≤ 1`, from a MONIC quartic satisfied by `r`.
-  have hq6 : ((C.u : F)) ^ 6 * (C • W).b₆
-      = W.b₆ + 2 * C.r * W.b₄ + C.r ^ 2 * W.b₂ + 4 * C.r ^ 3 := by
-    have h := W.variableChange_b₆ C
-    rw [Units.val_inv_eq_inv_val] at h
-    rw [h]; field_simp
-  have hq8 : ((C.u : F)) ^ 8 * (C • W).b₈
-      = W.b₈ + 3 * C.r * W.b₆ + 3 * C.r ^ 2 * W.b₄ + C.r ^ 3 * W.b₂ + 3 * C.r ^ 4 := by
-    have h := W.variableChange_b₈ C
-    rw [Units.val_inv_eq_inv_val] at h
-    rw [h]; field_simp
-  have hquartic : C.r ^ 4
-      = C.r * ((C.u : F) ^ 6 * (C • W).b₆) - ((C.u : F) ^ 8 * (C • W).b₈)
-        + C.r ^ 2 * W.b₄ + 2 * C.r * W.b₆ + W.b₈ := by
-    linear_combination hq8 - C.r * hq6
+  have mem_of : ∀ {x : F}, v x ≤ 1 → x ∈ 𝒪 :=
+    fun {x} h => (ValuationSubring.valuation_le_one_iff 𝒪 x).mp h
+  have le_of : ∀ {x : F}, x ∈ 𝒪 → v x ≤ 1 :=
+    fun {x} h => (ValuationSubring.valuation_le_one_iff 𝒪 x).mpr h
+  -- Step 1 : `v u = 1`, shared with the odd-residue-characteristic proof above.
+  have huval : v (C.u : F) = 1 :=
+    WeierstrassCurve.valuation_u_eq_one_of_valuation_Δ_eq_one 𝒪 W C hΔ hΔ'
+  -- the `b`-invariants of an integral model are integral: they are polynomials
+  -- in the `aᵢ` with integer coefficients, and `𝒪` is a subring
+  have mb : ∀ V : WeierstrassCurve F, V.a₁ ∈ 𝒪 → V.a₂ ∈ 𝒪 → V.a₃ ∈ 𝒪 → V.a₄ ∈ 𝒪 →
+      V.a₆ ∈ 𝒪 → V.b₂ ∈ 𝒪 ∧ V.b₄ ∈ 𝒪 ∧ V.b₆ ∈ 𝒪 ∧ V.b₈ ∈ 𝒪 := by
+    intro V h1 h2 h3 h4 h6
+    refine ⟨?_, ?_, ?_, ?_⟩ <;>
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+        WeierstrassCurve.b₈] <;>
+      · repeat' first
+          | assumption
+          | exact one_mem _
+          | apply add_mem
+          | apply sub_mem
+          | apply mul_mem
+          | apply pow_mem
+          | exact ofNat_mem _ _
+  obtain ⟨hb₂, hb₄, hb₆, hb₈⟩ :=
+    mb W (mem_of ha₁) (mem_of ha₂) (mem_of ha₃) (mem_of ha₄) (mem_of ha₆)
+  obtain ⟨-, -, -, hb₈'⟩ :=
+    mb (C • W) (mem_of hc₁) (mem_of hc₂) (mem_of hc₃) (mem_of hc₄) (mem_of hc₆)
+  -- Step 2 : `v r ≤ 1`, from the `b₈`-relation.  No division by `2` occurs.
   have hr : v C.r ≤ 1 := by
+    have key8 : (3 : F) * C.r ^ 4 = (C.u : F) ^ 8 * (C • W).b₈ - W.b₈
+        - 3 * C.r * W.b₆ - 3 * C.r ^ 2 * W.b₄ - C.r ^ 3 * W.b₂ := by
+      have h := W.variableChange_b₈ C
+      rw [Units.val_inv_eq_inv_val] at h
+      rw [h]; field_simp; ring
     by_contra hcon
     push_neg at hcon
     have hr0 : v C.r ≠ 0 := ne_of_gt (lt_trans zero_lt_one hcon)
-    have h1r2 : (1 : 𝒪.ValueGroup) ≤ v C.r ^ 2 := one_le_pow_of_one_le' hcon.le 2
-    have hrr2 : v C.r ≤ v C.r ^ 2 := by
+    have h1R3 : (1 : 𝒪.ValueGroup) ≤ v C.r ^ 3 := one_le_pow_of_one_le' hcon.le 3
+    have hR1 : v C.r ≤ v C.r ^ 3 := by
       calc v C.r = 1 * v C.r := (one_mul _).symm
-        _ ≤ v C.r * v C.r := mul_le_mul_right' hcon.le _
-        _ = v C.r ^ 2 := (pow_two _).symm
-    have hb : v (C.r ^ 4) ≤ v C.r ^ 2 := by
-      rw [hquartic]
-      refine Valuation.map_add_le v (Valuation.map_add_le v (Valuation.map_add_le v
+        _ ≤ v C.r ^ 2 * v C.r := mul_le_mul_right' (one_le_pow_of_one_le' hcon.le 2) _
+        _ = v C.r ^ 3 := (pow_succ _ 2).symm
+    have hR2 : v C.r ^ 2 ≤ v C.r ^ 3 := by
+      calc v C.r ^ 2 = 1 * v C.r ^ 2 := (one_mul _).symm
+        _ ≤ v C.r * v C.r ^ 2 := mul_le_mul_right' hcon.le _
+        _ = v C.r ^ 2 * v C.r := mul_comm _ _
+        _ = v C.r ^ 3 := (pow_succ _ 2).symm
+    have hb : v ((3 : F) * C.r ^ 4) ≤ v C.r ^ 3 := by
+      rw [key8]
+      refine Valuation.map_sub_le v (Valuation.map_sub_le v (Valuation.map_sub_le v
         (Valuation.map_sub_le v ?_ ?_) ?_) ?_) ?_
-      · rw [map_mul, map_mul, map_pow, huval, one_pow, one_mul]
-        exact ((mul_le_mul_left' hb₆' _).trans_eq (mul_one _)).trans hrr2
       · rw [map_mul, map_pow, huval, one_pow, one_mul]
-        exact hb₈'.trans h1r2
+        exact (le_of hb₈').trans h1R3
+      · exact (le_of hb₈).trans h1R3
+      · rw [map_mul, map_mul, h3, one_mul]
+        exact ((mul_le_mul_left' (le_of hb₆) _).trans_eq (mul_one _)).trans hR1
+      · rw [map_mul, map_mul, map_pow, h3, one_mul]
+        exact ((mul_le_mul_left' (le_of hb₄) _).trans_eq (mul_one _)).trans hR2
       · rw [map_mul, map_pow]
-        exact (mul_le_mul_left' hb₄ _).trans_eq (mul_one _)
-      · rw [map_mul, map_mul]
-        calc v (2 : F) * v C.r * v W.b₆ ≤ 1 * v C.r * 1 :=
-              mul_le_mul' (mul_le_mul_right' h2 _) hb₆
-          _ = v C.r := by rw [one_mul, mul_one]
-          _ ≤ v C.r ^ 2 := hrr2
-      · exact hb₈.trans h1r2
-    rw [map_pow] at hb
-    have hle : v C.r ^ 2 * v C.r ^ 2 ≤ v C.r ^ 2 * 1 := by
+        exact (mul_le_mul_left' (le_of hb₂) _).trans_eq (mul_one _)
+    rw [map_mul, h3, one_mul, map_pow] at hb
+    have hlast : v C.r ^ 3 * v C.r ≤ v C.r ^ 3 * 1 := by
       rw [mul_one]
-      calc v C.r ^ 2 * v C.r ^ 2 = v C.r ^ 4 := by rw [← pow_add]
-        _ ≤ v C.r ^ 2 := hb
-    exact absurd (hcon.trans_le (hrr2.trans (cancel (pow_ne_zero 2 hr0) hle)))
-      (lt_irrefl 1)
-  -- Step 3 : `v s ≤ 1`, from the MONIC quadratic the `a₂`-relation gives.
-  have hquads : C.s ^ 2
-      = W.a₂ - C.s * W.a₁ + 3 * C.r - (C.u : F) ^ 2 * (C • W).a₂ := by
-    have h := W.variableChange_a₂ C
-    rw [Units.val_inv_eq_inv_val] at h
-    rw [h]; field_simp; ring
+      calc v C.r ^ 3 * v C.r = v C.r ^ 4 := (pow_succ _ 3).symm
+        _ ≤ v C.r ^ 3 := hb
+    exact absurd (hcon.trans_le (cancel (pow_ne_zero 3 hr0) hlast)) (lt_irrefl 1)
+  -- Step 3 : `v s ≤ 1`; `s` is a root of a monic quadratic over `𝒪`.
   have hs : v C.s ≤ 1 := by
+    have key2 : C.s ^ 2 = W.a₂ - C.s * W.a₁ + 3 * C.r - (C.u : F) ^ 2 * (C • W).a₂ := by
+      have h := W.variableChange_a₂ C
+      rw [Units.val_inv_eq_inv_val] at h
+      rw [h]; field_simp; ring
     by_contra hcon
     push_neg at hcon
     have hs0 : v C.s ≠ 0 := ne_of_gt (lt_trans zero_lt_one hcon)
     have hb : v (C.s ^ 2) ≤ v C.s := by
-      rw [hquads]
+      rw [key2]
       refine Valuation.map_sub_le v (Valuation.map_add_le v (Valuation.map_sub_le v ?_ ?_) ?_) ?_
       · exact ha₂.trans hcon.le
       · rw [map_mul]
         exact (mul_le_mul_left' ha₁ _).trans_eq (mul_one _)
-      · rw [map_mul]
-        exact ((mul_le_mul' h3 hr).trans_eq (one_mul 1)).trans hcon.le
+      · rw [map_mul, h3, one_mul]
+        exact hr.trans hcon.le
       · rw [map_mul, map_pow, huval, one_pow, one_mul]
         exact hc₂.trans hcon.le
     rw [map_pow] at hb
-    have hle : v C.s * v C.s ≤ v C.s * 1 := by
+    have hlast : v C.s * v C.s ≤ v C.s * 1 := by
       rw [mul_one]
       calc v C.s * v C.s = v C.s ^ 2 := (pow_two _).symm
         _ ≤ v C.s := hb
-    exact absurd (hcon.trans_le (cancel hs0 hle)) (lt_irrefl 1)
-  -- Step 4 : `v t ≤ 1`, from the MONIC quadratic the `a₆`-relation gives.
-  have hquadt : C.t ^ 2
-      = W.a₆ + C.r * W.a₄ + C.r ^ 2 * W.a₂ + C.r ^ 3 - C.t * W.a₃ - C.r * C.t * W.a₁
-        - (C.u : F) ^ 6 * (C • W).a₆ := by
-    have h := W.variableChange_a₆ C
-    rw [Units.val_inv_eq_inv_val] at h
-    rw [h]; field_simp; ring
+    exact absurd (hcon.trans_le (cancel hs0 hlast)) (lt_irrefl 1)
+  -- Step 4 : `v t ≤ 1`; `t` is a root of a monic quadratic over `𝒪`.
   have ht : v C.t ≤ 1 := by
+    have key6 : C.t ^ 2 = W.a₆ + C.r * W.a₄ + C.r ^ 2 * W.a₂ + C.r ^ 3 - C.t * W.a₃
+        - C.r * C.t * W.a₁ - (C.u : F) ^ 6 * (C • W).a₆ := by
+      have h := W.variableChange_a₆ C
+      rw [Units.val_inv_eq_inv_val] at h
+      rw [h]; field_simp; ring
     by_contra hcon
     push_neg at hcon
     have ht0 : v C.t ≠ 0 := ne_of_gt (lt_trans zero_lt_one hcon)
     have hb : v (C.t ^ 2) ≤ v C.t := by
-      rw [hquadt]
+      rw [key6]
       refine Valuation.map_sub_le v (Valuation.map_sub_le v (Valuation.map_sub_le v
         (Valuation.map_add_le v (Valuation.map_add_le v (Valuation.map_add_le v ?_ ?_) ?_) ?_)
         ?_) ?_) ?_
       · exact ha₆.trans hcon.le
       · rw [map_mul]
-        exact ((mul_le_mul' hr ha₄).trans_eq (one_mul 1)).trans hcon.le
+        exact ((mul_le_mul_left' ha₄ _).trans_eq (mul_one _)).trans (hr.trans hcon.le)
       · rw [map_mul, map_pow]
-        exact ((mul_le_mul' (pow_le_one' hr 2) ha₂).trans_eq (one_mul 1)).trans hcon.le
+        exact ((mul_le_mul_left' ha₂ _).trans_eq (mul_one _)).trans
+          ((pow_le_one' hr 2).trans hcon.le)
       · rw [map_pow]
         exact (pow_le_one' hr 3).trans hcon.le
       · rw [map_mul]
         exact (mul_le_mul_left' ha₃ _).trans_eq (mul_one _)
       · rw [map_mul, map_mul]
-        calc v C.r * v C.t * v W.a₁ ≤ 1 * v C.t * 1 :=
-              mul_le_mul' (mul_le_mul_right' hr _) ha₁
-          _ = v C.t := by rw [one_mul, mul_one]
+        calc v C.r * v C.t * v W.a₁ ≤ v C.r * v C.t * 1 := mul_le_mul_left' ha₁ _
+          _ = v C.r * v C.t := mul_one _
+          _ ≤ 1 * v C.t := mul_le_mul_right' hr _
+          _ = v C.t := one_mul _
       · rw [map_mul, map_pow, huval, one_pow, one_mul]
         exact hc₆.trans hcon.le
     rw [map_pow] at hb
-    have hle : v C.t * v C.t ≤ v C.t * 1 := by
+    have hlast : v C.t * v C.t ≤ v C.t * 1 := by
       rw [mul_one]
       calc v C.t * v C.t = v C.t ^ 2 := (pow_two _).symm
         _ ≤ v C.t := hb
-    exact absurd (hcon.trans_le (cancel ht0 hle)) (lt_irrefl 1)
+    exact absurd (hcon.trans_le (cancel ht0 hlast)) (lt_irrefl 1)
   exact ⟨huval, hr, hs, ht⟩
+
+/-- **THE UNIFORM FORM: NO HYPOTHESIS ON THE RESIDUE CHARACTERISTIC AT ALL**
+(PROVEN 2026-08-01).  Silverman *AEC* VII.1.3(b) as stated in the book — two
+integral models with unit discriminant related by a change of variables over the
+fraction field are related by an INTEGRAL one, in every residue characteristic.
+
+The proof is the case split `valuation_two_or_three_eq_one`: at `v 2 = 1` the
+2026-07-28 theorem applies, and at `v 3 = 1` its `b₈`-based companion does.  The
+price of uniformity is the two extra integrality hypotheses `hc₂`, `hc₄`, which
+the `3`-inverting branch needs and the `2`-inverting one does not; every call
+site in this development has them for free. -/
+theorem WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one_uniform
+    {F : Type*} [Field F] (𝒪 : ValuationSubring F)
+    (W : WeierstrassCurve F) (C : WeierstrassCurve.VariableChange F)
+    (ha₁ : 𝒪.valuation W.a₁ ≤ 1) (ha₂ : 𝒪.valuation W.a₂ ≤ 1)
+    (ha₃ : 𝒪.valuation W.a₃ ≤ 1) (ha₄ : 𝒪.valuation W.a₄ ≤ 1)
+    (ha₆ : 𝒪.valuation W.a₆ ≤ 1)
+    (hc₁ : 𝒪.valuation (C • W).a₁ ≤ 1) (hc₂ : 𝒪.valuation (C • W).a₂ ≤ 1)
+    (hc₃ : 𝒪.valuation (C • W).a₃ ≤ 1) (hc₄ : 𝒪.valuation (C • W).a₄ ≤ 1)
+    (hc₆ : 𝒪.valuation (C • W).a₆ ≤ 1)
+    (hΔ : 𝒪.valuation W.Δ = 1) (hΔ' : 𝒪.valuation (C • W).Δ = 1) :
+    𝒪.valuation (C.u : F) = 1 ∧ 𝒪.valuation C.r ≤ 1 ∧ 𝒪.valuation C.s ≤ 1 ∧
+      𝒪.valuation C.t ≤ 1 := by
+  rcases WeierstrassCurve.valuation_two_or_three_eq_one 𝒪 (F := F) with h2 | h3
+  · exact WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one 𝒪 W C h2
+      ha₁ ha₂ ha₃ ha₄ ha₆ hc₁ hc₃ hc₆ hΔ hΔ'
+  · exact WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one_three 𝒪 W C h3
+      ha₁ ha₂ ha₃ ha₄ ha₆ hc₁ hc₂ hc₃ hc₄ hc₆ hΔ hΔ'
 
 /-- **The good model of `D`, placed inside `ℚ̄` by an ARBITRARY `ℚ`-embedding**
 (PROVEN 2026-07-28, while proving `exists_aut_of_isTorsionReduction` below).
@@ -10773,7 +10953,8 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_inertiaVariableC
     rw [Fr.model_eq, hm2, ← mul_smul, hpin]
   -- the change of variables between the two integral models has integral entries
   obtain ⟨huval, hrval, hsval, htval⟩ :=
-    WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one Ob (D.V.map Fr.emb) Dτ
+    WeierstrassCurve.variableChange_valuation_of_valuation_Δ_eq_one_uniform Ob
+      (D.V.map Fr.emb) Dτ
       (hval_le _ ha₁) (hval_le _ ha₂) (hval_le _ ha₃) (hval_le _ ha₄) (hval_le _ ha₆)
       (by rw [hsmul]; exact hval_le _ (hτmem _ ha₁))
       (by rw [hsmul]; exact hval_le _ (hτmem _ ha₂))
@@ -11114,6 +11295,32 @@ theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_aut_of_isTorsion
     exact WeierstrassCurve.autTorsionEnd_val_some _ C hC N (ψ₀ P) hns' hψP
   rw [hRHS]
   exact WeierstrassCurve.Affine.Point.some_eq_some _ hresX hresY
+
+/-! **`exists_aut_of_isTorsionReduction_two` USED TO STAND HERE, AND WAS
+DELETED ON 2026-08-01 BECAUSE ITS STATEMENT IS NOW THE THEOREM ABOVE.**
+
+It was the `q = 2` restatement of `exists_aut_of_isTorsionReduction`, opened as
+a `sorry` leaf on 2026-07-29 with `hq2 : q ≠ 2` replaced by `hq2 : q = 2`, and
+carrying the whole residue-characteristic-`2` cost of the `B₀` cluster.  Its own
+docstring named the end state that has now been reached — *"whoever closes this
+should check whether the two can be merged back into one uniform statement, that
+is the ideal end state"* — and named the route that got there as its route 2, a
+valuation argument that does not divide by `2`.
+
+What closed it is one step further back than that leaf: `hq2` entered the odd
+proof at exactly ONE line, the appeal to `exists_inertiaVariableChange`, and
+through it to `variableChange_valuation_of_valuation_Δ_eq_one`, which inverts
+`2` to read `s` off `2s = u a₁' - a₁` and `t` off `2t = u³a₃' - a₃ - r a₁`.  The
+companion `variableChange_valuation_of_valuation_Δ_eq_one_three` inverts `3`
+instead — legitimate exactly when `2` is not a unit, by
+`valuation_two_or_three_eq_one` — and gets `r` from the `b₈`-relation and then
+`s` and `t` as roots of MONIC quadratics, dividing by nothing.  So the
+`aᵢ`-relation case analysis route 2 prescribed was never needed either.
+
+Everything above this line is therefore uniform in `q`, `2` included, and the
+`by_cases q = 2` that used to sit at the Serre–Tate step of
+`exists_frobeniusAut_of_potentiallyGoodReduction_two` below is gone with it.
+Recover the deleted text with `git show 280981f1:<this file>`. -/
 
 /-- **SERRE–TATE AT THE WILD PRIME `2`** (sorry leaf, opened 2026-07-29;
 **PROVEN 2026-07-30**, and the way it was proven deleted the pair: the leaf above
@@ -11803,12 +12010,20 @@ leaf, and it is theirs to do in the same commit. -/
 
 `WeierstrassCurve.exists_inertiaAut_of_padicValRat_j_nonneg_two` — "the statement
 of `B₀²ᵃ`, restricted to `q = 2`" — stood here for one day.  It is GONE, and NOT
-because it was closed: it was **the wrong cut**, and the obligation it named has
-been moved to where the residue characteristic `2` actually costs something,
-`WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_aut_of_isTorsionReduction_two`
-(next to its odd sibling, ~500 lines above).  `B₀²ᵃ` below now case-splits onto
-the pair in three lines and is UNIFORM IN `q`.  A grep for the old name finds
-only this paragraph.
+because it was closed: it was **the wrong cut**, and the obligation it named was
+moved to where the residue characteristic `2` actually costs something,
+`exists_aut_of_isTorsionReduction_two` (next to its odd sibling, ~500 lines
+above).  `B₀²ᵃ` below then case-split onto the pair in three lines and was
+UNIFORM IN `q`.  A grep for the old name finds only this paragraph.
+
+**UPDATE 2026-08-01: THE `q = 2` OBLIGATION IS NOW CLOSED, AND THE CASE SPLIT IS
+GONE TOO.**  `exists_aut_of_isTorsionReduction_two` has itself been deleted:
+`hq2` turned out to be spent, two levels up, only by the division by `2` inside
+`variableChange_valuation_of_valuation_Δ_eq_one`, and inverting `3` there
+instead (`..._three`, legitimate whenever `2` is not a unit) makes
+`exists_aut_of_isTorsionReduction` uniform in `q`.  So the relocation recorded
+in this paragraph was the right move twice over: it put the obligation next to
+its odd sibling, where the ONE line that actually consumed `hq2` was visible.
 
 WHY IT WAS THE WRONG CUT.  It restated the whole of `B₀²ᵃ` at `q = 2` — a good
 model, a local frame, a torsion reduction, and an eighty-line descent from
