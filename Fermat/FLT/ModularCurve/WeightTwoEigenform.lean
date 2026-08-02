@@ -357,11 +357,13 @@ section ShimuraAlgebraicity
 open ModularForm Matrix.SpecialLinearGroup
 open scoped Manifold
 
-/-- (release 34) `qExpansionCoeffLOf` is spliced in here from flt-lean-211, which
+/- (release 34) `qExpansionCoeffLOf` is spliced in here from flt-lean-211, which
 DEFINED it while a second branch moved its consumer `qExpansionCoeffL` up to this
 point; the merge kept the consumer and lost the definition.  Verbatim from that
 branch, only relocated -- it is level-generic and `X1.lean` uses it at
-`G = Gamma1GL N`. -/
+`G = Gamma1GL N`.  NOTE this note is a PLAIN block comment, not a doc comment:
+two adjacent `doc` comments are a parse error, and that is what release 34's
+first repair of this file introduced. -/
 /-- The `m`-th `q`-expansion coefficient of a weight-`2` cusp form for an
 ARBITRARY subgroup `G` having `1` as a strict period, as a `ℂ`-linear
 functional — additivity and scalar equivariance through the pin's
@@ -402,6 +404,8 @@ noncomputable def qExpansionCoeffL (N m : ℕ) : CuspForm (Gamma0GL N) 2 →ₗ[
 
 @[simp] theorem qExpansionCoeffL_apply (N m : ℕ) (f : CuspForm (Gamma0GL N) 2) :
     qExpansionCoeffL N m f = (qExpansion 1 ⇑f).coeff m := rfl
+
+end ShimuraAlgebraicity
 
 /-- **STURM BOUND FOR `S₂(G)`, FOR AN ARBITRARY FINITE-INDEX `G ≤ SL(2, ℤ)`**
 (generalised 2026-08-01 from the `Γ₀`-only form, which is now the wrapper

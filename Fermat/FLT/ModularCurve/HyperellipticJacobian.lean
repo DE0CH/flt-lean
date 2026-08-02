@@ -4927,30 +4927,6 @@ def PlaceData.toPlaceSystem {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c
   ord_complete := D.ord_complete
   ord_finite := D.ord_finite
 
-end Presentation
-
-section Genus
-
-variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
-
-/-! ### Orders of polynomials at a pole, and the two consequences (PROVEN)
-
-The one valuation-theoretic input the genus and the fundamental identity both need:
-**at a place where `ord_v t < 0` the order of `p(t)` is `ord_v t · deg p`**
-(`ord_aeval_of_ord_neg`).  It is an induction on the degree over `divX`, the inductive step
-being the strict ultrametric equality `ord_add_of_lt` — the leading term `p.divX(t)·t` has
-strictly smaller order than the constant term, which has order `0`.
-
-Two things come out of it, and they are used in completely different places:
-
-* `ord_eq_zero_of_isAlgebraic`: every element algebraic over `K` is a unit at every place
-  (apply the above to `g` and to `g⁻¹`; a nonzero order of either sign produces a nonzero
-  `aeval g p` from the minimal polynomial).  Hence `poleDivisor` and `K⟮g⟯`-codimension both
-  vanish there, which is the **algebraic half of `degOf_poleDivisor_eq_finrank`** — the half
-  the leaf's own docstring already asserted in prose;
-* `ord_aeval_of_ord_eq_neg_one`, the `ord_v t = −1` case, is what pins a place in
-  characteristic `2` and eliminates that characteristic altogether. -/
-
 /-- **PROVEN 2026-08-01 (was a LEAF): the only poles of the abscissa are the two points at
 infinity.**  `ord_v x < 0` forces `v ∈ {∞₊, ∞₋}`.
 
@@ -5055,6 +5031,30 @@ theorem pt_inr_eq_of_ord_xx {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c
     (hbr s' _ (D.ord_pt_infinite s').1 (D.ord_pt_infinite s').2)
   rw [Sum.inr.injEq] at hkey
   rw [hkey]
+end Presentation
+
+section Genus
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+/-! ### Orders of polynomials at a pole, and the two consequences (PROVEN)
+
+The one valuation-theoretic input the genus and the fundamental identity both need:
+**at a place where `ord_v t < 0` the order of `p(t)` is `ord_v t · deg p`**
+(`ord_aeval_of_ord_neg`).  It is an induction on the degree over `divX`, the inductive step
+being the strict ultrametric equality `ord_add_of_lt` — the leading term `p.divX(t)·t` has
+strictly smaller order than the constant term, which has order `0`.
+
+Two things come out of it, and they are used in completely different places:
+
+* `ord_eq_zero_of_isAlgebraic`: every element algebraic over `K` is a unit at every place
+  (apply the above to `g` and to `g⁻¹`; a nonzero order of either sign produces a nonzero
+  `aeval g p` from the minimal polynomial).  Hence `poleDivisor` and `K⟮g⟯`-codimension both
+  vanish there, which is the **algebraic half of `degOf_poleDivisor_eq_finrank`** — the half
+  the leaf's own docstring already asserted in prose;
+* `ord_aeval_of_ord_eq_neg_one`, the `ord_v t = −1` case, is what pins a place in
+  characteristic `2` and eliminates that characteristic altogether. -/
+
 
 private theorem ord_aeval_aux (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places)
     {t : D.F} {m : ℤ} (hm : m < 0) (ht : D.ord v t = m) :

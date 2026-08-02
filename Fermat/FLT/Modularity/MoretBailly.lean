@@ -18052,6 +18052,15 @@ Nothing was lost: both cuts were open leaves, and after the repair the cluster o
 ONE leaf where it owed two. Recover the deleted text from the parent of the commit
 that removed it. -/
 
+/- (release 34) `section StepanovDifferenceQuotient` and its
+`variable {R S : Type*} [CommRing R] [CommRing S]` were LOST BY THE MERGE that
+landed `c0aa5d8a`; `end StepanovDifferenceQuotient` at the foot of the block
+survived, so every later `end` in this file closed the wrong scope.  Restored
+verbatim from `c0aa5d8a:Fermat/FLT/Modularity/MoretBailly.lean:17152-17154`. -/
+section StepanovDifferenceQuotient
+
+variable {R S : Type*} [CommRing R] [CommRing S]
+
 /-- `F(X, Y')` — the polynomial `F ∈ R[X][Y]` with its `Y` renamed to the fresh
 OUTERMOST variable of `R[X][Y][Y']`. Concretely `Polynomial.map` along
 `C : R[X] →+* R[X][Y]`, so the coefficient of `Y'^n` is `c_n(X)` viewed as a

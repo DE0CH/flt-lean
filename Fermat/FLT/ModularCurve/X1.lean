@@ -1236,6 +1236,18 @@ the free-over-`ℚ` clause was dropped rather than restored.
 factorisation paragraph — or show that `(Spec σ)^* d₁ ≇ d₁` for a datum
 defined over the prime field, which is false by base-change transitivity. -/
 
+/- (release 34) `namespace IsBaseChangeOfGamma1` and its `variable {N : ℕ}` were
+LOST BY THE MERGE.  The 2026-07-31 hoist moved `refl`, `comp`, `cancelMap`,
+`cancelMap_fst`, `cancelMap_snd`, `cancel` and `along_injective` into
+`X0.lean` — and with them, from this file, the namespace HEADER those
+declarations happened to sit under; but `congrHom` … `cancelLeft` below came
+from a different branch (`1bc04d5b`), did NOT move, and were left with a bare
+`end IsBaseChangeOfGamma1` and no opener.  Restored from
+`1bc04d5b:Fermat/FLT/ModularCurve/X1.lean:1176-1178`. -/
+namespace IsBaseChangeOfGamma1
+
+variable {N : ℕ}
+
 /-- **Transport a base-change square along an equality of its base
 morphism** (PROVEN 2026-08-01). -/
 def congrHom {T' T : Scheme.{u}} {h h' : T' ⟶ T} {d' : Gamma1Datum N T'}
