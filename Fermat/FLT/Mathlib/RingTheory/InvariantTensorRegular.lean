@@ -9,6 +9,7 @@ public import Fermat.FLT.Mathlib.RingTheory.InvariantBaseChange
 public import Fermat.FLT.Mathlib.RingTheory.InvariantCoarseRing
 public import Fermat.FLT.Mathlib.RingTheory.RegularLocalNormal
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.SmoothConnectedCriteria
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 public import Mathlib.RingTheory.DedekindDomain.Basic
 public import Mathlib.RingTheory.IntegralClosure.Algebra.Basic
 public import Mathlib.RingTheory.RegularLocalRing.Defs
@@ -49,22 +50,33 @@ Everything about the BASE CHANGE is proven:
 ## What is left (2026-08-02)
 
 `isRegularRing_of_isInvariant_of_smooth` — the theorem the base change consumes, and which
-used to be the leaf — is now **PROVEN**.  What is left is ONE leaf,
-`isIntegrallyClosed_localizationAtPrime_of_isInvariant_of_smooth`, which contains no tensor
-product, no base change and no regularity: *every localization of `S^G` at a prime is
-integrally closed in its total quotient ring.*  See its docstring for the route and for what
-was stale in the previous audit.
+used to be the leaf — is now **PROVEN**, and so is
+`isIntegrallyClosed_localizationAtPrime_of_isInvariant_of_smooth`.  **What is left is ONE
+leaf, `isIntegrallyClosed_of_forall_localizationAtPrime`, and it is pure commutative
+algebra**: no group, no smoothness, no invariants, no tensor product, no dimension —
 
-The two halves the old leaf bundled have separated:
+  *a noetherian ring all of whose localizations at primes are integrally closed DOMAINS is
+  integrally closed in its total quotient ring.*
 
-* **`IsDomain`** — which that leaf's docstring called *"the whole difficulty"* and proposed
-  to settle by a `G`-equivariant product decomposition of `S` — is PROVEN here as
+It is the non-domain case of `Mathlib/RingTheory/LocalProperties/IntegrallyClosed.lean`, every
+result of which carries `[IsDomain R]`, and its docstring carries the conductor proof, the
+faithfulness audit for both hypotheses, and where in the tree it belongs.
+
+The old leaf bundled three things, and they have separated:
+
+* **`IsDomain`** — which the old docstring called *"the whole difficulty"* and proposed to
+  settle by a `G`-equivariant product decomposition of `S` — is PROVEN here as
   `isDomain_localizationAtPrime_of_isInvariant`, with no decomposition: `IsRegularRing` is a
   LOCAL condition, and `ker (R → R_p) = ker (S → S_P) ∩ R` for any prime `P` of `S` over `p`,
   by prime avoidance over one `G`-orbit plus a norm.  Every localization of `S` at a prime is
   a domain because it is regular local
   (`Algebra.Smooth.isRegularLocalRing_of_isLocalizationAtPrime`, `RegularLocalNormal.lean`).
-* **NORMALITY** is the residue.
+* **The localization of the invariant setup**, which the classical route needs and which
+  costs NOTHING: `InvariantBaseChange.isInvariant_tensor` at `k = B = R`, `K = R_p` gives
+  `Algebra.IsInvariant (R ⊗[R] R_p) (S ⊗[R] R_p) G`, and `S ⊗[R] R_p` is recognised by
+  `inferInstance` as the localization of `S` at the image of `R ∖ p`.
+* **NORMALITY**, which is the residue, and which is now a statement about a ring and nothing
+  else.
 -/
 
 @[expose] public section
@@ -285,96 +297,175 @@ theorem isDomain_localizationAtPrime_of_isInvariant [Algebra.IsInvariant R S G]
 
 end IsDomain
 
-/-! ### The residual leaf -/
+/-! ### The residual leaf: normality is a local property for a ring with local domains
 
-/-- **THE LOCALIZATIONS OF THE INVARIANT RING AT PRIMES ARE INTEGRALLY CLOSED** (sorry leaf)
-— Deligne–Rapoport III.1, Katz–Mazur 8.2.1, in the ring-theoretic form: *the quotient of a
-smooth affine curve by a finite group is normal.*
+This is the whole of what is left, and it is general commutative algebra — no group, no
+smoothness, no invariants, no tensor product. -/
 
-This is ALL that is left of `isRegularRing_of_isInvariant_of_smooth`, which is now PROVEN
-over it (see below), and it is a NORMALITY statement — the `IsDomain` obstruction that
-theorem's docstring called "the whole difficulty" is discharged by
-`isDomain_localizationAtPrime_of_isInvariant` above.
+/-- **A NOETHERIAN RING ALL OF WHOSE LOCALIZATIONS AT PRIMES ARE INTEGRALLY CLOSED DOMAINS
+IS INTEGRALLY CLOSED IN ITS TOTAL QUOTIENT RING** (sorry leaf).
 
-## WHAT WAS STALE IN THE OLD AUDIT, AND WHY THE PRICE HAS MOVED
+`IsIntegrallyClosed A` is mathlib's `IsIntegralClosure A A (FractionRing A)` with
+`FractionRing A = Localization (nonZeroDivisors A)`, i.e. the TOTAL quotient ring, so the
+statement is meaningful for a ring that is not a domain — and that is the point.  `A` here is
+a product of Dedekind domains in disguise; `hdom` is exactly the hypothesis that says its
+`Spec` is a disjoint union rather than a gluing.
 
-The 2026-07-31 "WHAT IS MISSING FROM THE PIN" list on the parent had three bullets.  Its
-FIRST bullet — *"smooth over a field ⇒ regular, or ⇒ integrally closed … is EMPTY"* — was
-measured against `Mathlib/RingTheory/Smooth/` and `Mathlib/RingTheory/Etale/` only, and it is
-false about THIS TREE.  `Fermat/FLT/Mathlib/RingTheory/RegularLocalNormal.lean` carries, all
-PROVEN as of 2026-07-31:
+## WHY IT IS A LEAF: every local–global lemma for `IsIntegrallyClosed` at this pin carries `[IsDomain]`
 
-* `Algebra.Smooth.isRegularLocalRing_of_isLocalizationAtPrime` — a localization at a prime of
-  a smooth algebra over a field is regular local;
-* `Algebra.Smooth.isIntegrallyClosed_of_isLocalizationAtPrime` — and is integrally closed;
-* `GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing` (in `RegularStalks.lean`)
-  — a regular local ring is a domain.
+Checked 2026-08-02 against `Mathlib/RingTheory/LocalProperties/IntegrallyClosed.lean`: of its
+five results, `IsIntegrallyClosed.of_localization_submonoid`, `.of_localization`,
+`.of_localization_maximal`, `.of_isLocalization_maximal` and
+`isIntegrallyClosed_ofLocalizationMaximal`, **every one is stated under `[IsDomain R]`** — the
+last one literally as `OfLocalizationMaximal fun R _ => ([IsDomain R] → IsIntegrallyClosed R)`.
+There is no `IsNormalRing` in mathlib at this pin (`grep`: zero hits), and no structure theory
+of reduced normal noetherian rings, so the "finite product of normal domains" route is not
+available either.
 
-So `S` is regular, and every `S_P` is a normal DOMAIN.  That is what makes the domain half
-above go through, and it is why the residue is normality and nothing else.
+## THE PROOF, WHICH IS THE CONDUCTOR ARGUMENT AND NEEDS NO PRODUCT DECOMPOSITION
 
-The THIRD bullet — no structure theory of reduced normal noetherian rings — stands, and it is
-what this leaf still owes.  The SECOND bullet — normality does not localise without a domain
-— stands as a statement about mathlib and is now only needed in the ASCENT direction (see the
-route).
+Let `z ∈ Q(A)` be integral over `A` and let `I = {a : A | a • z ∈ range (algebraMap A (Q A))}`
+be its conductor — an ideal, containing the denominator of `z`, and `z ∈ A` exactly when
+`1 ∈ I`.  Suppose `I ≤ m` for a maximal `m`.  Then:
 
-## THE ROUTE, AND THE TWO NAMED PIECES IT NEEDS
+* **`nonZeroDivisors A` maps into `nonZeroDivisors A_m`.**  `A_m` is a domain by `hdom`, so
+  `ker (A → A_m)` is prime (the comap of `⊥`), and it is contained in every prime `≤ m`
+  — if `t ∉ m` and `t a = 0` then `a` lies in every prime below `m`, `t` lying in none.  A
+  non-zero-divisor `u` avoids every minimal prime, hence avoids `ker (A → A_m)`, hence is
+  nonzero in the domain `A_m`.
+* So there is a ring map `Q(A) → Frac(A_m)` over `A`, and the image of `z` is integral over
+  `A_m`, hence lies in `A_m` by `hic`.
+* Writing `z = x / u` with `u ∈ nonZeroDivisors A`, that says `s * x - a * u ↦ 0` in `A_m` for
+  some `a` and `s ∉ m`, i.e. `t * (s * x - a * u) = 0` in `A` for some `t ∉ m`; and then
+  `t * s ∈ I` with `t * s ∉ m`.  Contradiction, so `I = ⊤` and `z ∈ A`.
 
-Both are stated over `S_p := (R ∖ p)⁻¹ S`, the localization of `S` at the image of `R ∖ p` —
-a `G`-STABLE submonoid, because `G` fixes the image of `R` pointwise
-(`smul_algebraMap_of_smulCommClass`).
-
-1. **LOCALIZATION OF THE INVARIANT SETUP** (formal, not a citation).  `G` acts on `S_p` by
-   `g • (s/w) = (g • s)/w` — well defined because `w ∈ R` is `G`-fixed — and
-   `Algebra.IsInvariant R_p S_p G` holds: given `s/w` fixed by `G`, each `g` supplies
-   `w_g ∈ R ∖ p` with `w_g • (g • s − s) = 0`; the product `w'` of the `w_g` is again in
-   `R ∖ p`, is `G`-fixed, and `w' * s` is then `G`-fixed, hence lies in the image of `R` by
-   `Algebra.IsInvariant R S G`; and `s/w = (w' s)/(w' w)`.  `R_p → S_p` is injective by the
-   same computation as `hinj`.
-2. **`IsIntegrallyClosed S_p`** — i.e. *a noetherian ring all of whose localizations at primes
-   are integrally closed domains is integrally closed in its total quotient ring.*  Its
-   localizations at primes are the `S_Q` for `Q ⊆ some prime over p`, and those ARE normal
-   domains by `Algebra.Smooth.isIntegrallyClosed_of_isLocalizationAtPrime`.  This is the one
-   genuinely missing piece of general commutative algebra; mathlib's
-   `IsIntegrallyClosed.of_localization_maximal` and every neighbour in
-   `Mathlib/RingTheory/LocalProperties/IntegrallyClosed.lean` carries `[IsDomain R]`.
-
-   Its proof is the conductor argument and does NOT need the product decomposition: for
-   `z ∈ Q(A)` integral over `A`, the ideal `I = {a | a z ∈ A}` is not contained in any maximal
-   `m`, because `nonZeroDivisors A` maps into `nonZeroDivisors A_m` (`A_m` being a domain
-   whose zero ideal pulls back into every prime below `m`), so `z` maps into `Frac(A_m) = A_m`
-   and clears a denominator outside `m`.
-
-   With those two, the leaf is `isIntegrallyClosed_of_isInvariant` (`InvariantCoarseRing.lean`)
-   applied to `(R_p, S_p, G)`: its `[IsDomain R]` hypothesis is `isDomain_localizationAtPrime_of_isInvariant`
-   above, and its `hnzd` is `nonZeroDivisors_le_comap_of_isInvariant` (`S_p` is reduced).
+`[IsNoetherianRing A]` is used only to know a non-zero-divisor avoids every minimal prime; a
+prover may find it removable, and if so should say so rather than keep it.
 
 ## FAITHFULNESS
 
-`hdim` is retained although the descent above never reads it: regularity of invariants is
-FALSE in dimension `≥ 2` (`k[x,y]^{±1}`, the quadric cone `k[u,v,w]/(uv − w²)`, is normal and
-not regular), so the PARENT needs it, and normality at the primes of a two-dimensional
-invariant ring is still true — this leaf alone would survive without it.  It is kept because
-the caller has it for free and because a hypothesis cannot make the leaf false.
+`hdom` may NOT be dropped, and is not implied by `hic`: over `A = k[x,y]/(xy)` — reduced,
+noetherian, one-dimensional — the localization at the origin is not a domain, and `A` is not
+integrally closed in its total quotient ring (`(1,0)`, the idempotent of the normalization
+`k[x] × k[y]`, is integral over `A` and not in it).  So a version with `hic` alone is FALSE.
 
-`hinj` is genuinely load-bearing for the ROUTE (`isIntegrallyClosed_of_isInvariant` takes it)
-and for the parent.
+`hic` may not be dropped either, for the ordinary reason: `A = k[x²,x³]` is a noetherian
+domain, every localization is a domain, and `A` is not integrally closed.
 
-`[Finite G]` is consumed by `Algebra.IsInvariant.isIntegral` and by the norm.
+**WHERE THIS BELONGS.**  `Fermat/FLT/Mathlib/RingTheory/LocalProperties/`, beside mathlib's
+`IntegrallyClosed.lean` which it is the missing non-domain case of.  It is stated here because
+this module is its only consumer and because moving it would rebuild a cone for one theorem;
+a second consumer is the reason to hoist it. -/
+theorem isIntegrallyClosed_of_forall_localizationAtPrime (A : Type) [CommRing A]
+    [IsNoetherianRing A]
+    (_hdom : ∀ (P : Ideal A) [P.IsPrime], IsDomain (Localization.AtPrime P))
+    (_hic : ∀ (P : Ideal A) [P.IsPrime], IsIntegrallyClosed (Localization.AtPrime P)) :
+    IsIntegrallyClosed A :=
+  sorry
 
-The statement is NOT vacuous and NOT automatic: `Localization.AtPrime p` is a genuine
-normality assertion — `k[x²,x³]` localized at `(x², x³)` is a noetherian local domain of
-dimension one that is NOT integrally closed — so the content is that no such ring occurs as a
-localization of `S^G`. -/
+/-! ### The localizations of the invariant ring are integrally closed -/
+
+set_option maxHeartbeats 1000000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- **THE LOCALIZATIONS OF THE INVARIANT RING AT PRIMES ARE INTEGRALLY CLOSED**
+(PROVEN 2026-08-02 over `isIntegrallyClosed_of_forall_localizationAtPrime` alone) —
+Deligne–Rapoport III.1, Katz–Mazur 8.2.1, in the ring-theoretic form: *the quotient of a
+smooth affine curve by a finite group is normal.*
+
+The route runs over `S ⊗[R] R_p`, which mathlib recognises OUTRIGHT (by `inferInstance`) as
+the localization of `S` at the image of `R ∖ p`, so its localizations at primes are
+localizations of `S` at primes and are therefore regular local — normal domains — by
+`RegularLocalNormal.lean`.
+
+**The localization of the invariant setup costs NOTHING**, and that is the finding that made
+this cheap: `Fermat.InvariantBaseChange.isInvariant_tensor` is stated for a base `k`, a
+sub-`k`-algebra `B ⊆ A` and any FLAT `k`-algebra `K`, so instantiating it at `k = B = R` and
+`K = R_p` — a flat `R`-algebra — gives `Algebra.IsInvariant (R ⊗[R] R_p) (S ⊗[R] R_p) G`
+together with the action and the `SMulCommClass`, and `injective_bcInclusion` gives the
+injectivity.  No group action on a localization has to be constructed by hand.  The
+identification `R ⊗[R] R_p ≅ R_p` is `Algebra.TensorProduct.lid`, and `IsIntegrallyClosed`
+transports along it by `IsIntegrallyClosed.of_equiv`.
+
+`IsDomain (R ⊗[R] R_p)` — the hypothesis of `isIntegrallyClosed_of_isInvariant` that used to
+be the obstruction — is `isDomain_localizationAtPrime_of_isInvariant` above, transported.
+
+**`hdim` IS NOT NEEDED HERE and has been dropped**: normality of invariants holds in every
+dimension.  It is REGULARITY that fails in dimension `≥ 2` (`k[x,y]^{±1}`, the quadric cone),
+and that is why the parent below still takes it.
+
+`set_option backward.isDefEq.respectTransparency false` is required: without it the `IsDomain`
+produced for `Localization.AtPrime P` sits at `OreLocalization.instSemiring` while the goal
+sits at `CommRing.toCommSemiring.toSemiring`, and the two cannot be identified because
+`OreLocalization.instAdd` is not `@[expose]`d by the module system. -/
 theorem isIntegrallyClosed_localizationAtPrime_of_isInvariant_of_smooth (K R S : Type)
     [Field K] [CommRing R] [CommRing S] [Algebra K R] [Algebra R S] [Algebra K S]
     [IsScalarTower K R S] (G : Type) [Group G] [Finite G] [MulSemiringAction G S]
     [SMulCommClass G R S] [Algebra.IsInvariant R S G] [Algebra.Smooth K S]
-    (_hinj : Function.Injective (algebraMap R S))
-    (_hdim : ringKrullDim S = (1 : ℕ))
+    (hinj : Function.Injective (algebraMap R S))
     (p : Ideal R) [p.IsPrime] :
-    IsIntegrallyClosed (Localization.AtPrime p) :=
-  sorry
+    IsIntegrallyClosed (Localization.AtPrime p) := by
+  classical
+  haveI : Algebra.IsIntegral R S := Algebra.IsInvariant.isIntegral R S G
+  haveI : IsNoetherianRing S := Algebra.FiniteType.isNoetherianRing K S
+  haveI hSred : IsReduced S := Algebra.Smooth.isReduced_of_isField (Field.toIsField K)
+  -- localizations of `S` at primes are normal domains
+  have hSdom : ∀ (Q : Ideal S) [Q.IsPrime], IsDomain (Localization.AtPrime Q) := by
+    intro Q _
+    haveI : IsRegularLocalRing (Localization.AtPrime Q) :=
+      Algebra.Smooth.isRegularLocalRing_of_isLocalizationAtPrime K Q _
+    exact GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing _
+  -- `R_p` is a domain
+  haveI hRpdom : IsDomain (Localization.AtPrime p) :=
+    isDomain_localizationAtPrime_of_isInvariant G hinj hSdom p
+  -- the base-changed invariant setup, along the FLAT extension `R → R_p`
+  letI := Fermat.InvariantBaseChange.bcAction (k := R) (A := S) (Localization.AtPrime p) G
+  letI := Fermat.InvariantBaseChange.bcAlgebra (k := R) (B := R) (A := S) (Localization.AtPrime p)
+  haveI := Fermat.InvariantBaseChange.isInvariant_tensor (B := R) (A := S) R
+    (Localization.AtPrime p) G
+  haveI := Fermat.InvariantBaseChange.smulCommClass_tensor (B := R) (A := S) R
+    (Localization.AtPrime p) G
+  have hinj' : Function.Injective (algebraMap (R ⊗[R] Localization.AtPrime p)
+      (S ⊗[R] Localization.AtPrime p)) :=
+    Fermat.InvariantBaseChange.injective_bcInclusion R (Localization.AtPrime p) hinj
+  -- `S ⊗[R] R_p` is the localization of `S` at the image of `R ∖ p`
+  haveI hloc : IsLocalization (Algebra.algebraMapSubmonoid S p.primeCompl)
+      (S ⊗[R] Localization.AtPrime p) := inferInstance
+  haveI : IsNoetherianRing (S ⊗[R] Localization.AtPrime p) :=
+    IsLocalization.isNoetherianRing (Algebra.algebraMapSubmonoid S p.primeCompl) _ inferInstance
+  haveI : IsReduced (S ⊗[R] Localization.AtPrime p) :=
+    isReduced_localizationPreserves (Algebra.algebraMapSubmonoid S p.primeCompl) _ inferInstance
+  -- its localizations at primes are localizations of `S` at primes, hence normal domains
+  have hBdom : ∀ (P : Ideal (S ⊗[R] Localization.AtPrime p)) [P.IsPrime],
+      IsDomain (Localization.AtPrime P) := by
+    intro P hP
+    haveI : (P.comap (algebraMap S (S ⊗[R] Localization.AtPrime p))).IsPrime := hP.comap _
+    haveI := IsLocalization.isLocalization_isLocalization_atPrime_isLocalization
+      (Algebra.algebraMapSubmonoid S p.primeCompl) (Localization.AtPrime P) P
+    haveI : IsRegularLocalRing (Localization.AtPrime P) :=
+      Algebra.Smooth.isRegularLocalRing_of_isLocalizationAtPrime K
+        (P.comap (algebraMap S (S ⊗[R] Localization.AtPrime p))) _
+    exact GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing
+      (Localization.AtPrime P)
+  have hBic : ∀ (P : Ideal (S ⊗[R] Localization.AtPrime p)) [P.IsPrime],
+      IsIntegrallyClosed (Localization.AtPrime P) := by
+    intro P hP
+    haveI : (P.comap (algebraMap S (S ⊗[R] Localization.AtPrime p))).IsPrime := hP.comap _
+    haveI := IsLocalization.isLocalization_isLocalization_atPrime_isLocalization
+      (Algebra.algebraMapSubmonoid S p.primeCompl) (Localization.AtPrime P) P
+    exact Algebra.Smooth.isIntegrallyClosed_of_isLocalizationAtPrime K
+      (P.comap (algebraMap S (S ⊗[R] Localization.AtPrime p))) _
+  haveI : IsIntegrallyClosed (S ⊗[R] Localization.AtPrime p) :=
+    isIntegrallyClosed_of_forall_localizationAtPrime _ hBdom hBic
+  -- `R ⊗[R] R_p ≅ R_p`, so it is a domain, and normality transports back
+  have hlid : Function.Injective
+      (Algebra.TensorProduct.lid R (Localization.AtPrime p)).toRingEquiv.toRingHom :=
+    (Algebra.TensorProduct.lid R (Localization.AtPrime p)).toRingEquiv.injective
+  haveI : IsDomain (R ⊗[R] Localization.AtPrime p) := Function.Injective.isDomain _ hlid
+  haveI := Algebra.IsInvariant.isIntegrallyClosed_of_isInvariant
+    (R ⊗[R] Localization.AtPrime p) (S ⊗[R] Localization.AtPrime p) G hinj'
+    (Algebra.IsInvariant.nonZeroDivisors_le_comap_of_isInvariant _ _ G hinj')
+  exact IsIntegrallyClosed.of_equiv
+    (Algebra.TensorProduct.lid R (Localization.AtPrime p)).toRingEquiv
 
 /-! ### The theorem the base change consumes -/
 
@@ -453,7 +544,7 @@ theorem isRegularRing_of_isInvariant_of_smooth (K R S : Type)
   haveI hnoethp : IsNoetherianRing (Localization.AtPrime p) :=
     IsLocalization.isNoetherianRing p.primeCompl _ inferInstance
   haveI hicp : IsIntegrallyClosed (Localization.AtPrime p) :=
-    isIntegrallyClosed_localizationAtPrime_of_isInvariant_of_smooth K R S G hinj hdim p
+    isIntegrallyClosed_localizationAtPrime_of_isInvariant_of_smooth K R S G hinj p
   haveI : Ring.KrullDimLE 1 (Localization.AtPrime p) := by
     refine Ring.krullDimLE_iff.mpr ?_
     rw [IsLocalization.AtPrime.ringKrullDim_eq_height p (Localization.AtPrime p)]
