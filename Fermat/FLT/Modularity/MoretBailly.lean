@@ -49092,8 +49092,45 @@ theorem det_eq_cycCharModN_of_isStandardLevelModule (n : ℕ) [NeZero n]
     ρ.det τ = zmodCastOf hchar ((cycCharModN n τ : (ZMod n)ˣ) : ZMod n) :=
   sorry
 
-/-- **LEAF MODℓ — the mod-`ℓ` reduction of `IsHardlyRamified.det`** (sorry node,
-cut 2026-07-31).
+/-! ### Reduction mod `ℓ` of a `ℤ_[ℓ]`-algebra structure in characteristic `ℓ`
+
+The two lemmas below are the arithmetic half of `det_eq_cycCharModN_of_isHardlyRamified`
+immediately underneath, and are about `ℤ_[ℓ]` and nothing else. -/
+
+/-- `x ∈ ℤ_[ℓ]` differs from a natural-number representative of its residue mod `ℓ`
+by a multiple of `ℓ`. This is `PadicInt.ker_toZModPow` at `n = 1`, with the `ℓ ^ 1`
+that `toZModPow` carries in its target turned back into `ℓ`. -/
+theorem sub_natCast_toZModPow_one_mem_span {ℓ : ℕ} [Fact ℓ.Prime] (x : ℤ_[ℓ]) :
+    x - ((((PadicInt.toZModPow (p := ℓ) 1) x).val : ℕ) : ℤ_[ℓ]) ∈
+      Ideal.span {(ℓ : ℤ_[ℓ])} := by
+  haveI : NeZero (ℓ ^ 1) := ⟨by simpa using (Fact.out : ℓ.Prime).ne_zero⟩
+  have h0 : (PadicInt.toZModPow (p := ℓ) 1)
+      (x - ((((PadicInt.toZModPow (p := ℓ) 1) x).val : ℕ) : ℤ_[ℓ])) = 0 := by
+    rw [map_sub, map_natCast, ZMod.natCast_rightInverse _, sub_self]
+  have hmem : x - ((((PadicInt.toZModPow (p := ℓ) 1) x).val : ℕ) : ℤ_[ℓ]) ∈
+      RingHom.ker (PadicInt.toZModPow (p := ℓ) 1) := h0
+  rw [PadicInt.ker_toZModPow 1, pow_one] at hmem
+  exact hmem
+
+/-- **A `ℤ_[ℓ]`-algebra structure on a field of characteristic `ℓ` factors through the
+residue map**: `algebraMap ℤ_[ℓ] k` sends `x` to the image of `x mod ℓ`.
+
+This is where `hchar` is spent, and it is the only thing `hchar` is for: the maximal
+ideal of `ℤ_[ℓ]` is `(ℓ)` (`PadicInt.ker_toZModPow` at `n = 1`), and `(ℓ : k) = 0` kills
+it, so the structure map is determined by the residue. No topology and no continuity
+of `algebraMap` is used. -/
+theorem algebraMap_padicInt_eq_natCast_toZModPow_one {ℓ : ℕ} [Fact ℓ.Prime]
+    {k : Type u} [Field k] [Algebra ℤ_[ℓ] k] (hchar : (ℓ : k) = 0) (x : ℤ_[ℓ]) :
+    algebraMap ℤ_[ℓ] k x = ((((PadicInt.toZModPow (p := ℓ) 1) x).val : ℕ) : k) := by
+  obtain ⟨y, hy⟩ :=
+    Ideal.mem_span_singleton.mp (sub_natCast_toZModPow_one_mem_span (ℓ := ℓ) x)
+  have hxe : x = ((((PadicInt.toZModPow (p := ℓ) 1) x).val : ℕ) : ℤ_[ℓ])
+      + (ℓ : ℤ_[ℓ]) * y := by linear_combination hy
+  conv_lhs => rw [hxe]
+  rw [map_add, map_mul, map_natCast, map_natCast, hchar, zero_mul, add_zero]
+
+/-- **The mod-`ℓ` reduction of `IsHardlyRamified.det`** (PROVEN 2026-08-02, cut
+2026-07-31).
 
 `IsHardlyRamified.det` says `det ρbar = algebraMap ℤ_[ℓ] k ∘ χ_ℓ` for the
 `ℓ`-ADIC cyclotomic character `cyclotomicCharacter (ℚᵃˡᵍ) ℓ`. This module's
@@ -49101,17 +49138,51 @@ vocabulary for the same character is `cycCharModN ℓ`, valued in `(ℤ/ℓ)ˣ` 
 transported to `k` by `zmodCastOf`. The statement is the assertion that the two
 agree, i.e. that reduction `ℤ_[ℓ]ˣ ↠ (ℤ/ℓ)ˣ` carries one to the other.
 
-THE INTENDED PROOF: both characters are pinned by their action on roots of
-unity — `cyclotomicCharacter.spec` for the `ℓ`-adic one on `μ_{ℓ^n}`, and
-`modularCyclotomicCharacter.unique` (used already in `cycCharModN_eq_one` and
-`fixes_sqrtNegThree_iff_cycCharModN`) for the mod-`ℓ` one on `μ_ℓ`. Restricting
-the `ℓ`-adic spec to `μ_ℓ` and applying uniqueness identifies the reductions; the
-remaining step is that `algebraMap ℤ_[ℓ] k` factors through `ℤ/ℓ` because
-`(ℓ : k) = 0`, which is `zmodCastOf`.
+THE PROOF, and it is the route the cut predicted: both characters are pinned by
+their action on roots of unity — `cyclotomicCharacter.spec` for the `ℓ`-adic one
+on `μ_{ℓ^n}`, and `modularCyclotomicCharacter.unique` (used already in
+`cycCharModN_eq_one` and `fixes_sqrtNegThree_iff_cycCharModN`) for the mod-`ℓ`
+one on `μ_ℓ`.
+
+Everything is routed through ONE natural number,
+
+  `m := (PadicInt.toZModPow 1 (χ_ℓ τ)).val`,
+
+which is what makes the two sides comparable without ever writing down a map
+`ℤ_[ℓ]ˣ ↠ (ℤ/ℓ)ˣ`:
+
+* `algebraMap ℤ_[ℓ] k (χ_ℓ τ) = (m : k)` is
+  `algebraMap_padicInt_eq_natCast_toZModPow_one` above, i.e. the whole of what
+  `hchar` buys;
+* `(m : ZMod ℓ) = χ̄_ℓ τ` is `modularCyclotomicCharacter.unique`, whose hypothesis
+  is `cyclotomicCharacter.spec` at `n = 1` — `τ ζ = ζ ^ m` for `ζ ∈ μ_ℓ` — together
+  with `ζ ^ ℓ = 1`, which turns the exponent `m` into `m % ℓ = (m : ZMod ℓ).val`;
+* the two meet at `zmodCastOf hchar (m : ZMod ℓ) = (m : k)`, which is `map_natCast`
+  for the ring hom `zmodCastOf hchar` — `zmodCastOf_apply` is not needed.
+
+WHY `toZModPow 1` AND NOT `PadicInt.toZMod`: mathlib's `cyclotomicCharacter.spec`
+is stated with `toZModPow n` over `ZMod (p ^ n)`, and this pin has no lemma
+identifying `toZMod` with `toZModPow 1` — the two are separate `toZModHom`s and
+`ℓ ^ 1` is not definitionally `ℓ`. Passing through the natural number `m` sidesteps
+that comparison entirely; the single `pow_one` needed is inside
+`sub_natCast_toZModPow_one_mem_span`.
+
+`MulSemiringAction.toRingAut (Γ ℚ) ℚᵃˡᵍ τ = τ.toRingEquiv` is `rfl`, which is what
+lets `cycCharModN ℓ τ` and the `ℓ`-adic character be fed the same ring automorphism.
 
 This is arithmetic only: no scheme, no moduli space, no descent. It is stated
 separately from `det_eq_cycCharModN_of_isStandardLevelModule` because the two
-have nothing in common but their conclusion's shape. -/
+have nothing in common but their conclusion's shape — and, as it turns out, the
+two have entirely different proofs as well: that one is still open and needs the
+level form, this one is a page of `ℤ_[ℓ]`-arithmetic over `hρbar.det`.
+
+HYPOTHESES ACTUALLY SPENT: `hρbar` (through its `det` field alone) and `hchar`.
+`hℓodd` and `hW` are not used by the proof but are not decoration either — they
+are what makes `IsHardlyRamified hℓodd hW ρbar` a well-formed type. `[Finite k]`,
+`[TopologicalSpace k]`, `[DiscreteTopology k]`, `[Module.Finite k W]` and
+`[Module.Free k W]` are genuinely unused here; they are kept because the call site
+in `exists_twistedHilbertBlumenthalCocycle_of_split` holds all of them and a
+narrower signature would be an interface change for no gain. -/
 theorem det_eq_cycCharModN_of_isHardlyRamified {ℓ : ℕ} [Fact ℓ.Prime] [NeZero ℓ]
     (hℓodd : Odd ℓ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -49120,8 +49191,30 @@ theorem det_eq_cycCharModN_of_isHardlyRamified {ℓ : ℕ} [Fact ℓ.Prime] [NeZ
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hℓodd hW ρbar) (hchar : (ℓ : k) = 0)
     (τ : Field.absoluteGaloisGroup ℚ) :
-    ρbar.det τ = zmodCastOf hchar ((cycCharModN ℓ τ : (ZMod ℓ)ˣ) : ZMod ℓ) :=
-  sorry
+    ρbar.det τ = zmodCastOf hchar ((cycCharModN ℓ τ : (ZMod ℓ)ˣ) : ZMod ℓ) := by
+  set g : AlgebraicClosure ℚ ≃+* AlgebraicClosure ℚ := τ.toRingEquiv with hg
+  set x : ℤ_[ℓ] := ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g : ℤ_[ℓ]) : ℤ_[ℓ]) with hx
+  set m : ℕ := ((PadicInt.toZModPow (p := ℓ) 1) x).val with hm
+  have h2 : ((m : ZMod ℓ)) = ((cycCharModN ℓ τ : (ZMod ℓ)ˣ) : ZMod ℓ) := by
+    have hcc : ((cycCharModN ℓ τ : (ZMod ℓ)ˣ) : ZMod ℓ) =
+        ((modularCyclotomicCharacter (AlgebraicClosure ℚ)
+          (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) ℓ) g :
+            (ZMod ℓ)ˣ) : ZMod ℓ) := rfl
+    rw [hcc]
+    refine modularCyclotomicCharacter.unique (AlgebraicClosure ℚ) _ g ?_
+    intro t ht
+    have htℓ : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ ℓ = 1 := by
+      have h := (mem_rootsOfUnity ℓ t).mp ht
+      simpa using congrArg Units.val h
+    have htp : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ ℓ ^ 1 = 1 := by
+      rw [pow_one]; exact htℓ
+    have hs := cyclotomicCharacter.spec (L := AlgebraicClosure ℚ) ℓ g
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) htp
+    rw [hs, ← hx, ← hm, ZMod.val_natCast]
+    conv_lhs => rw [← Nat.div_add_mod m ℓ]
+    rw [pow_add, pow_mul, htℓ, one_pow, one_mul]
+  rw [hρbar.det τ, ← hg, ← hx,
+    algebraMap_padicInt_eq_natCast_toZModPow_one hchar x, ← hm, ← h2, map_natCast]
 
 /-- **Two representations with the same determinant differ by an `SL₂`-cocycle**
 (PROVEN): this is the whole of "the cocycle lands in the pairing-preserving
