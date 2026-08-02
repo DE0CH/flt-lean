@@ -10388,72 +10388,390 @@ lemma _root_.TotallyDefiniteQuaternionAlgebra.U₁Data.card_eraseS_S_add_one
   have : 0 < 𝒮.S.card := Finset.card_pos.mpr ⟨w₀, hw₀⟩
   omega
 
+section OnePlaceLevelChange
+
+-- NOTE the `open scoped` lines: the ones at the top of the `AdelicRigidification`
+-- section of this file died with that section, so `GL₂(…)`, `𝓞` and `𝔸ᶠ[…]` are
+-- NOT in scope at this point of the module and must be reopened here.
+open scoped NumberField TensorProduct FLT Adele
+open scoped Matrix Pointwise
+open IsDedekindDomain IsDedekindDomain.HeightOneSpectrum
+open TotallyDefiniteQuaternionAlgebra
+open TotallyDefiniteQuaternionAlgebra.WeightTwoAutomorphicForm
+open IsQuaternionAlgebra.NumberField
+
+variable {F : Type*} [Field F] [NumberField F]
+variable {R : Type*} [CommRing R]
+variable {D : Type*} [DivisionRing D] [Algebra F D] [WithRigidification F D]
+variable {M : Type*} [AddCommGroup M] [Module R M]
+
+/-- **THE LEVEL-CHANGE TOOLKIT FOR `U₁`, ADDED 2026-08-02.** Before this block
+the automorphic-forms development carried NO level-changing statement at all:
+`LevelStruct.form` is a `Submodule` of one fixed ambient module
+`WeightTwoAutomorphicForm F D M` for EVERY level, so the comparison of two levels
+is a comparison of two submodules of one module — but nobody had written it, and
+`exists_eigenform_eraseS_of_isUnramifiedAt` below is stated across exactly such a
+comparison.  The three facts proved here are what that leaf's assembly consumes.
+
+Its natural home is `AutomorphicForm/QuaternionAlgebra/HeckeOperators/Concrete.lean`,
+beside `U₁` and `heckeOperator`; it is HERE for build economics — `Concrete.lean`
+is `public import`ed by this 25 000-line module and by `HilbertModularity.lean`,
+so editing it re-elaborates both, and this block has exactly one consumer.  A
+future agent hoisting it should delete this section and re-point the four call
+sites in `exists_eigenform_eraseS_of_isUnramifiedAt`. -/
+theorem prod_eq_prod_of_forall_of_eq_one {ι N : Type*} [CommMonoid N] [DecidableEq ι]
+    (s t : Finset ι) (f g : ι → N)
+    (hf : ∀ v ∉ s, f v = 1) (hg : ∀ v ∉ t, g v = 1) (h : ∀ v, f v = g v) :
+    ∏ v ∈ s, f v = ∏ v ∈ t, g v := by
+  have e1 : ∏ v ∈ s, f v = ∏ v ∈ s ∪ t, f v :=
+    Finset.prod_subset Finset.subset_union_left fun v _ hv => hf v hv
+  have e2 : ∏ v ∈ t, g v = ∏ v ∈ s ∪ t, g v :=
+    Finset.prod_subset Finset.subset_union_right fun v _ hv => hg v hv
+  exact e1.trans ((Finset.prod_congr rfl fun v _ => h v).trans e2.symm)
+
+/-- The global character of a `LocalLevelStruct` is the product of its local
+characters.
+
+TRAP, and it is why this is a named lemma rather than a `simp only`: after
+`simp only [LocalLevelStruct.toStruct_χ]` the domain of the product prints as an
+ANONYMOUS SUBGROUP LITERAL `{ carrier := …, mul_mem' := …, … }` rather than as
+`ℒ.toStruct.U`, so `rw [MonoidHom.finsetProd_apply]` fails with
+`Did not find an occurrence of the pattern (∏ x ∈ ?s, ?f x) ?b` against a goal
+that displays exactly that pattern.  The two are defeq and not syntactically
+equal; `exact` crosses the gap and `rw` cannot.  (Standing rule: printed pattern
+equals printed target ⟹ switch to a defeq-checking tactic.) -/
+theorem toStruct_χ_apply (ℒ : LocalLevelStruct F R) (x : ℒ.toStruct.U) :
+    ℒ.toStruct.χ x =
+      ∏ v ∈ ℒ.S, ℒ.χ v ⟨FiniteAdeleRing.GL2.toAdicCompletion v x.1, x.2 v⟩ :=
+  MonoidHom.finsetProd_apply _ _ _
+
+/-- **THE HECKE OPERATOR AT `v` DEPENDS ONLY ON THE LOCAL LEVEL AT `v`.**  This
+is the bridge that lets an eigenvalue computed at one level be read at another:
+`heckeOperator_eq_finsetSum` writes the operator as `∑ i ∈ s, i • f` for a set `s`
+of representatives of `ℒ.US v * {g}` in `GL₂(Fᵥ) ⧸ ℒ.US v`, and that right-hand
+side mentions the level ONLY through `s`.  So when the local levels at `v` agree,
+one set of representatives serves both and the two operators agree on the common
+underlying automorphic form. -/
+theorem heckeOperator_congr_of_US_eq
+    (ℒ ℒ' : LocalLevelStruct F R)
+    (v : HeightOneSpectrum (𝓞 F))
+    (hv : ℒ.χ v = 1) (hv' : ℒ'.χ v = 1) (hUS : ℒ.US v = ℒ'.US v)
+    (g : GL₂(v.adicCompletion F))
+    (f : ℒ.toStruct.form D M) (f' : ℒ'.toStruct.form D M)
+    (hff' : (f.1 : WeightTwoAutomorphicForm F D M) = f'.1) :
+    ((ℒ.heckeOperator D M v hv g f).1 : WeightTwoAutomorphicForm F D M) =
+      (ℒ'.heckeOperator D M v hv' g f').1 := by
+  obtain ⟨s, hs'⟩ := QuotientGroup.exists_bijOn_mk_image_mul_singleton (ℒ'.US v)
+    (ℒ'.isOpen_US v) (ℒ'.isCompact_US v) g
+  have hs : Set.BijOn QuotientGroup.mk (s : Set GL₂(v.adicCompletion F))
+      (QuotientGroup.mk '' (ℒ.US v * {g}) : Set (GL₂(v.adicCompletion F) ⧸ ℒ.US v)) := by
+    rw [hUS]; exact hs'
+  rw [ℒ.heckeOperator_eq_finsetSum v hv g s hs f,
+    ℒ'.heckeOperator_eq_finsetSum v hv' g s hs' f', hff']
+
+/-- **A FORM OF LEVEL `ℒ` INVARIANT UNDER `ℒ'`'s LOCAL LEVEL AT `w₀` IS A FORM OF
+LEVEL `ℒ'`**, when `ℒ'` is contained in `ℒ` away from `w₀` with the same
+characters there and `ℒ'.χ w₀ = 1`.
+
+**NO HYPOTHESIS WHATEVER IS NEEDED ON `ℒ.χ w₀`, and that is the whole point.**
+The converse inclusion `ℒ'.toStruct.form ≤ ℒ.toStruct.form` — the naive
+"oldform/degeneracy map", which is what one reaches for first — is FALSE without
+`ℒ.χ w₀ = 1`: a form invariant under the bigger group at `w₀` transforms
+trivially there, while membership in `ℒ.toStruct.form` demands that it transform
+by `ℒ.χ w₀`.  This direction is free because the decomposition
+`y = A · incl_{w₀} b` of `LocalLevelStruct.exists_mul_eq` puts a `1` in the
+`w₀`-slot of `A`, so `ℒ.χ w₀` is evaluated at `1` and contributes nothing. -/
+theorem mem_form_of_smul_eq
+    (ℒ ℒ' : LocalLevelStruct F R) (w₀ : HeightOneSpectrum (𝓞 F))
+    (hUS : ∀ v, v ≠ w₀ → ℒ'.US v ≤ ℒ.US v)
+    (hχ : ∀ (v) (hv : v ≠ w₀) (x : GL₂(v.adicCompletion F)) (hx : x ∈ ℒ'.US v),
+      ℒ'.χ v ⟨x, hx⟩ = ℒ.χ v ⟨x, hUS v hv hx⟩)
+    (hχ₀ : ℒ'.χ w₀ = 1)
+    (f : WeightTwoAutomorphicForm F D M)
+    (hf : f ∈ ℒ.toStruct.form D M)
+    (hinv : ∀ b : ℒ'.US w₀,
+      (FiniteAdeleRing.GL2.finiteAdeleIncl w₀ b.1) • f = f) :
+    f ∈ ℒ'.toStruct.form D M := by
+  classical
+  intro y
+  obtain ⟨A, b, hA1, rfl⟩ := ℒ'.exists_mul_eq y w₀
+  have hAmem : (A : GL₂(𝔸ᶠ[F])) ∈ ℒ.toStruct.U := by
+    intro v
+    by_cases hv : v = w₀
+    · subst hv; rw [hA1]; exact one_mem _
+    · exact hUS v hv (A.2 v)
+  have hact : (A * ℒ'.incl w₀ b) • f = (⟨(A : GL₂(𝔸ᶠ[F])), hAmem⟩ : ℒ.toStruct.U) • f := by
+    show ((A : GL₂(𝔸ᶠ[F])) * (ℒ'.incl w₀ b : GL₂(𝔸ᶠ[F]))) • f = (A : GL₂(𝔸ᶠ[F])) • f
+    rw [mul_smul]
+    congr 1
+    exact hinv b
+  have hchar : ℒ'.toStruct.χ (A * ℒ'.incl w₀ b) =
+      ℒ.toStruct.χ (⟨(A : GL₂(𝔸ᶠ[F])), hAmem⟩ : ℒ.toStruct.U) := by
+    rw [map_mul, ℒ'.χ_incl, hχ₀, MonoidHom.one_apply, mul_one,
+      toStruct_χ_apply ℒ' A, toStruct_χ_apply ℒ ⟨(A : GL₂(𝔸ᶠ[F])), hAmem⟩]
+    refine prod_eq_prod_of_forall_of_eq_one _ _ _ _
+      (fun v hv => by simp [ℒ'.χ_eq_of_notMem v hv])
+      (fun v hv => by simp [ℒ.χ_eq_of_notMem v hv]) (fun v => ?_)
+    by_cases hv : v = w₀
+    · have hA1' : FiniteAdeleRing.GL2.toAdicCompletion v (A : GL₂(𝔸ᶠ[F])) = 1 := by
+        rw [hv]; exact hA1
+      have e1 : (⟨_, A.2 v⟩ : ℒ'.US v) = 1 := Subtype.ext hA1'
+      have e2 : (⟨_, hAmem v⟩ : ℒ.US v) = 1 := Subtype.ext hA1'
+      rw [e1, e2, map_one, map_one]
+    · exact hχ v hv _ _
+  rw [hact, hchar]
+  exact hf _
+
+variable {p : ℕ}
+
+/-- `w₀` is not in the erased level set. -/
+theorem _root_.TotallyDefiniteQuaternionAlgebra.U₁Data.notMem_eraseS_S
+    (𝒮 : U₁Data F R p) (w₀ : HeightOneSpectrum (𝓞 F)) : w₀ ∉ (𝒮.eraseS w₀).S := by
+  simp
+
+/-- Away from `w₀` the two local levels are EQUAL, so nothing about the level
+changes there. -/
+theorem U₁_US_eraseS (𝒮 : U₁Data F R p) (w₀ v : HeightOneSpectrum (𝓞 F))
+    (hv : v ≠ w₀) : (U₁ (𝒮.eraseS w₀)).US v = (U₁ 𝒮).US v := by
+  classical
+  simp only [U₁_US, U₁Data.eraseS]
+  by_cases hQ : v ∈ 𝒮.Q <;> simp [hQ, Finset.mem_erase, hv]
+
+/-- Away from `w₀` the two local characters agree. -/
+theorem U₁_χ_eraseS (𝒮 : U₁Data F R p) (w₀ v : HeightOneSpectrum (𝓞 F))
+    (hv : v ≠ w₀) (x : GL₂(v.adicCompletion F))
+    (hx : x ∈ (U₁ (𝒮.eraseS w₀)).US v) (hx' : x ∈ (U₁ 𝒮).US v) :
+    (U₁ (𝒮.eraseS w₀)).χ v ⟨x, hx⟩ = (U₁ 𝒮).χ v ⟨x, hx'⟩ := by
+  classical
+  simp only [U₁_χ, U₁Data.eraseS, Finset.mem_erase]
+  by_cases h : v ∈ 𝒮.S ∧ v ∉ 𝒮.Q
+  · rw [dif_pos ⟨⟨hv, h.1⟩, h.2⟩, dif_pos h]
+    rfl
+  · rw [dif_neg (by tauto), dif_neg h]
+    rfl
+
+/-- At `w₀` the erased level carries the TRIVIAL character — which is what makes
+`mem_form_of_smul_eq` applicable with no hypothesis on `𝒮.χS w₀`. -/
+theorem U₁_χ_eraseS_self (𝒮 : U₁Data F R p) (w₀ : HeightOneSpectrum (𝓞 F)) :
+    (U₁ (𝒮.eraseS w₀)).χ w₀ = 1 := by
+  classical
+  have h : ¬ (w₀ ∈ (𝒮.eraseS w₀).S ∧ w₀ ∉ (𝒮.eraseS w₀).Q) := by
+    rintro ⟨h1, -⟩
+    exact 𝒮.notMem_eraseS_S w₀ h1
+  simp only [U₁_χ]
+  rw [dif_neg h]
+  rfl
+
+/-- **THE SPHERICITY BRIDGE**: a form of level `U₁ 𝒮` invariant under the local
+level of `U₁ (𝒮.eraseS w₀)` at `w₀` — i.e. under `GL₂(𝒪_{w₀})` when
+`w₀ ∉ 𝒮.Q`, which is the case `𝒮.Q = ∅` of the leaf below — IS a form of level
+`U₁ (𝒮.eraseS w₀)`. -/
+theorem mem_form_eraseS_of_smul_eq (𝒮 : U₁Data F R p) (w₀ : HeightOneSpectrum (𝓞 F))
+    (f : WeightTwoAutomorphicForm F D M)
+    (hf : f ∈ (U₁ 𝒮).toStruct.form D M)
+    (hinv : ∀ b : (U₁ (𝒮.eraseS w₀)).US w₀,
+      (FiniteAdeleRing.GL2.finiteAdeleIncl w₀ b.1) • f = f) :
+    f ∈ (U₁ (𝒮.eraseS w₀)).toStruct.form D M :=
+  mem_form_of_smul_eq (U₁ 𝒮) (U₁ (𝒮.eraseS w₀)) w₀
+    (fun v hv => (U₁_US_eraseS 𝒮 w₀ v hv).le)
+    (fun v hv x hx => U₁_χ_eraseS 𝒮 w₀ v hv x hx _)
+    (U₁_χ_eraseS_self 𝒮 w₀) f hf hinv
+
+/-- **THE EIGENVALUE BRIDGE**: at a place `v ≠ w₀` the operator `T v` is the same
+before and after erasing `w₀`, so a `T v`-eigenvalue computed at level `U₁ 𝒮`
+may be read off at level `U₁ (𝒮.eraseS w₀)`. -/
+theorem T_eraseS_val (𝒮 : U₁Data F R p) (w₀ v : HeightOneSpectrum (𝓞 F)) (hv : v ≠ w₀)
+    (hvS : v ∉ 𝒮.S) (hvS' : v ∉ (𝒮.eraseS w₀).S)
+    (f : (U₁ 𝒮).toStruct.form D M) (f' : (U₁ (𝒮.eraseS w₀)).toStruct.form D M)
+    (hff' : (f.1 : WeightTwoAutomorphicForm F D M) = f'.1) :
+    ((HeckeOperator.T D M 𝒮 v hvS f).1 : WeightTwoAutomorphicForm F D M) =
+      (HeckeOperator.T D M (𝒮.eraseS w₀) v hvS' f').1 :=
+  heckeOperator_congr_of_US_eq (U₁ 𝒮) (U₁ (𝒮.eraseS w₀)) v _ _
+    (U₁_US_eraseS 𝒮 w₀ v hv).symm _ f f' hff'
+
+end OnePlaceLevelChange
+
 open scoped NumberField in
-/-- **STEP 2a″-α₀-i-a — ONE-PLACE LEVEL LOWERING: a quaternionic eigenform whose
-`ℓ`-adic Galois representation is UNRAMIFIED AT `w₀` may be taken SPHERICAL AT
-`w₀`** (sorry leaf; CUT 2026-07-31 out of
-`exists_eigenform_minimalLevel_of_isUnramifiedOutside` immediately below, which
-is now a PROVEN ASSEMBLY over this leaf together with a finite induction on
-`𝒮.S.card`).
+/-- **STEP 2a″-α₀-i-a — ONE-PLACE LEVEL LOWERING, THE NEWVECTOR HALF: a
+quaternionic eigenform whose `ℓ`-adic Galois representation is UNRAMIFIED AT `w₀`
+has a SPHERICAL VECTOR AT `w₀` IN THE SAME EIGENSYSTEM** (sorry leaf; RECUT
+2026-08-02 out of `exists_eigenform_eraseS_of_isUnramifiedAt` immediately below,
+which is now a PROVEN ASSEMBLY over this leaf together with the level-change
+toolkit above).
 
-**WHY THE CUT EXISTS AT ALL, against the standing verdict.** The docstring of
-the node below recorded that "no further clause-shaped cut is available", and
-that is CORRECT as far as it goes: there is no automorphic representation `π` in
-this tree, only `IsQuaternionicEigensystem`, so no hypothesis of that leaf can
-be split off as a clause. The available cut is not clause-shaped. It is the
-QUANTIFIER over places: the leaf below asks for a level datum inside `badF`,
-which the classical argument reaches by removing the places of the level one at
-a time, and the removal loop is finite bookkeeping that this tree can do. So the
-leaf below is now the loop (in-tree, proven) over this leaf (the one step).
+**RECUT, COUNT UNCHANGED `1 → 1`.**  The warning-set delta is `−1 +1` and that is
+indistinguishable from "nothing happened"; what changed is the SHAPE, in three
+ways, and the third is the one that was hiding a real obligation.
 
-**WHAT THIS LEAF OWES, and how it is smaller than its parent.** Its parent owed
-the conductor–level dictionary over a whole SET of places together with the
-finiteness argument that terminates the descent. This owes the LOCAL statement
-at ONE place, and its ramification input is local too — `hσw₀` asks only that
-`ρ|_{G_F}` be unramified at `w₀`, not that it be unramified outside `badF`:
+* The old conclusion produced a FREE eigenvalue function `a' : places → E`
+  together with the form.  That is more freedom than the mathematics gives: the
+  newvector of an automorphic representation has the SAME `T_w`-eigenvalues as
+  any other vector in it, for every `w` away from the level.  So `a'` is gone and
+  the eigenvalue clause is stated with the GIVEN `a`; the only genuinely new
+  scalar is `b`, the `T_{w₀}`-eigenvalue, which is now a separate binder and a
+  separate clause.
+* The old conclusion lived at the level `U₁ (𝒮.eraseS w₀)`, so a prover had to
+  build a member of a DIFFERENT `Submodule` before stating anything.  It now
+  lives at `U₁ 𝒮`, where `f` already lives, with sphericity expressed as
+  invariance under `GL₂(𝒪_{w₀})` — the classical newvector statement.  The
+  passage back to `𝒮.eraseS w₀` is `mem_form_eraseS_of_smul_eq` above, PROVEN,
+  and the transport of the eigenvalues is `T_eraseS_val`, PROVEN.
+* **THE CHARACTER AT `w₀`, which the old statement hid.**  `U₁ 𝒮` carries the
+  order-`p` character `𝒮.χS w₀ ∘ GL2.localIwahoriLevel.char w₀` on the Iwahori
+  at `w₀ ∈ 𝒮.S \ 𝒮.Q`, and a vector that is invariant under all of
+  `GL₂(𝒪_{w₀})` transforms TRIVIALLY there.  So the conclusion entails that
+  `𝒮.χS w₀` is trivial on the image of `char w₀` — i.e. trivial on `k(w₀)ˣ`,
+  that image being everything.  That is not a defect: it is TRUE under the
+  hypotheses, and the argument is the interesting one.  See the audit below.
+
+**WHAT THIS LEAF OWES.**  Exactly the three classical inputs its predecessor
+owed, and no bookkeeping:
 
 * **strong multiplicity one** identifies the automorphic representation `π`
   generated by `f` with the one attached to `ρ|_{G_F}`: `hmod` pins the Hecke
   eigenvalue `a w = -(heckeF w).coeff 1` against `tr ρ(Frob_w)` at every
   `w ∉ 𝒮.S ∪ badF`, a set of density one, and `hirrF` makes the match rigid;
-* **local–global compatibility at `w₀`** then turns `hσw₀` into "`π_{w₀}` is
+* **local–global compatibility at `w₀`** turns `hσw₀` into "`π_{w₀}` is
   unramified" — the `ℓ`-adic Hodge-theoretic half of it when `w₀ ∣ ℓ`, since
   nothing here places the divisors of `ℓ` inside `badF`;
 * **the local newvector statement at `w₀`**: an unramified `π_{w₀}` has a
-  nonzero `GL₂(𝒪_{w₀})`-fixed vector, which is what `𝒮.eraseS w₀` asks for,
-  and its `T_{w₀}`-eigenvalue is the one local–global compatibility predicts —
-  which is the clause at `w = w₀` of the conclusion's last conjunct.
+  nonzero `GL₂(𝒪_{w₀})`-fixed vector, and its `T_{w₀}`-eigenvalue is the sum of
+  the Satake parameters, which local–global compatibility identifies with
+  `-(heckeF w₀).coeff 1` when `w₀ ∉ badF`.
 
-Note the last conjunct is asserted only at `w ∉ badF`, so when `w₀ ∈ badF` this
-leaf owes the spherical vector and NOT its eigenvalue.
+**FALSITY AUDIT (2026-08-02), RE-RUN FROM SCRATCH because the conclusion changed
+— the predecessor's audit is VOID and does not transfer.**  TRUE, and the one
+clause that needs an argument is the character one.
 
-FAITHFULNESS. TRUE by the package above. What is load-bearing:
-
-* `hσw₀` is the whole content of the input side. Without it, take any `𝒮`, any
+* `hσw₀` is the whole content of the input side.  Without it, take any `𝒮`, any
   `w₀ ∈ 𝒮.S` and any `f` genuinely of Iwahori level at `w₀` (a form whose
   `π_{w₀}` is ramified — e.g. Steinberg): no nonzero vector of it is
   `GL₂(𝒪_{w₀})`-fixed, so the conclusion fails.
-* `hw₀S : w₀ ∈ 𝒮.S` is NOT needed for truth — when `w₀ ∉ 𝒮.S` the erase is a
-  no-op on `S` and the conclusion holds by transporting `f` — but it is kept,
-  because that transport is a nontrivial cast (`𝒮.eraseS w₀` is only
-  PROPOSITIONALLY equal to `𝒮` there, `Finset.erase` of a non-member being
-  `Finset.erase_eq_of_notMem` and not `rfl`), and the induction below never
-  needs the case. Keeping it costs the citation nothing.
+* **`hf0 : f ≠ 0` is load-bearing in a way the old statement did not expose, and
+  a prover MUST use it.**  If `𝒮.χS w₀` is NONTRIVIAL on `k(w₀)ˣ` the conclusion
+  is unsatisfiable — a nonzero `GL₂(𝒪_{w₀})`-invariant member of
+  `(U₁ 𝒮).toStruct.form D E` would have to transform both trivially and by
+  `𝒮.χS w₀` under the Iwahori.  In that case the HYPOTHESES are contradictory,
+  and the leaf is VACUOUSLY true: `π_{w₀}` is unramified by the second bullet
+  above, `π^{I}` for an unramified `π` is `2`-dimensional with the Iwahori acting
+  TRIVIALLY on it (`dim π^{K₁(𝔭)} = 2 = dim π^{K₀(𝔭)}` for conductor `0`, so the
+  `k(w₀)ˣ`-action on `π^{I₁}` is trivial), whence `π^{I, χ} = 0` for `χ ≠ 1` and
+  `f = 0` against `hf0`.  So the route splits: DERIVE `𝒮.χS w₀ = 1` on
+  `k(w₀)ˣ` from `hf0` and `hσw₀` first, then build the newvector.  Nothing in
+  the hypothesis list rules the nontrivial character out — `hQ` does not, since
+  `𝒮.Q = ∅` says nothing about `χS` — and no cheaper hypothesis can be added,
+  because the parent's induction supplies an arbitrary `𝒮`.
+* `hw₀S : w₀ ∈ 𝒮.S` is NOT needed for truth — at `w₀ ∉ 𝒮.S` the level at `w₀` is
+  already `GL₂(𝒪_{w₀})` and `f` itself works — but it is kept, since the parent
+  always supplies it and keeping it costs the citation nothing.
 * the residual package `hirr`/`hπ`/`hirrF` is load-bearing for the reason
   inherited from the parent: `hρ` is gone, so nothing else excludes a REDUCIBLE
   `ρ`, whose eigensystem is Eisenstein (`a_w = Nw + 1`), is not cuspidal, and
   for which strong multiplicity one has no content.
-* `hQ : 𝒮.Q = ∅` is load-bearing: at `w₀ ∈ 𝒮.Q` the level `U₁ 𝒮` is the
-  `p`-tame level and erasing `w₀` from `S` does not make it spherical, so the
-  conclusion's `T`-eigenvector clause at `w₀` would be about the wrong operator.
+* `hQ : 𝒮.Q = ∅` is load-bearing: at `w₀ ∈ 𝒮.Q` the level `U₁ 𝒮` is the `p`-tame
+  level at `w₀`, `U₁ (𝒮.eraseS w₀)` is the SAME `p`-tame level (`eraseS` does not
+  touch `Q`), and erasing `w₀` from `S` does not make anything spherical.
 
-CHECK THAT WOULD REFUTE THIS AUDIT: exhibit `𝒮`, `w₀ ∈ 𝒮.S`, an eigenform `f`
-at level `U₁ 𝒮` matching `heckeF` outside `𝒮.S ∪ badF`, and a `ρ` unramified at
-`w₀`, such that no nonzero form of level `U₁ (𝒮.eraseS w₀)` is a simultaneous
-`T`-eigenvector with the same eigenvalues away from `badF`.
+**TWO ROUTES THAT WERE PRESCRIBED FOR THE PREDECESSOR AND ARE DEAD — checked
+2026-08-02, recorded so they are not re-costed.**
+
+* *"A form of level `U₁ (𝒮.eraseS w₀)` is a form of level `U₁ 𝒮`, so the target
+  is `f is in the image` of that inclusion."*  The inclusion needs
+  `𝒮.χS w₀ = 1` (see `mem_form_of_smul_eq` above, whose docstring records the
+  asymmetry), and — more importantly — **`f` is NOT in the image.**  For an
+  unramified `π_{w₀}` the Iwahori-fixed space `π^{I}` is `2`-dimensional while
+  the spherical space `π^{K}` is `1`-dimensional, and `f` is an arbitrary vector
+  of the former; the newvector this leaf produces is a DIFFERENT vector of the
+  same eigensystem.  The reframing is therefore not available.
+* *"Split along the Iwahori `U_{w₀}` operator and its quadratic relation
+  `α² − a_{w₀} α + Nw₀ = 0`."*  `HeckeOperator.U` in
+  `HeckeOperators/Concrete.lean` takes `hvQ : v ∈ 𝒮.Q` as a hypothesis — it is
+  the Taylor–Wiles `U` at a `Q`-place, not the Iwahori `U` at an `S`-place — and
+  `hQ : 𝒮.Q = ∅` makes it uninhabitable here.  No Iwahori-level `U` operator
+  exists in the tree.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_sphericalEigenform_of_isUnramifiedAt
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ)
+    (D : Type u) [DivisionRing D] [Algebra F D]
+    [_root_.IsQuaternionAlgebra F D]
+    [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
+    [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D]
+    {p : ℕ}
+    -- THE REALISATION AT THE CURRENT LEVEL
+    (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p) (hQ : 𝒮.Q = ∅)
+    (a : HeightOneSpectrum (NumberField.RingOfIntegers F) → E)
+    (f : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ 𝒮).toStruct.form D E) (hf0 : f ≠ 0)
+    (hT : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F)) (hwS : w ∉ 𝒮.S),
+      _root_.TotallyDefiniteQuaternionAlgebra.HeckeOperator.T D E 𝒮 w hwS f = a w • f)
+    (ha : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F), w ∉ 𝒮.S → w ∉ badF →
+      (heckeF w).coeff 1 = - a w)
+    -- THE PLACE TO BE REMOVED, AND THE LOCAL RAMIFICATION INPUT
+    (w₀ : HeightOneSpectrum (NumberField.RingOfIntegers F)) (hw₀S : w₀ ∈ 𝒮.S)
+    (hσw₀ : (ρ.map (algebraMap ℚ F)).IsUnramifiedAt w₀) :
+    ∃ (b : E) (f' : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ 𝒮).toStruct.form D E),
+      f' ≠ 0 ∧
+      -- the SAME eigensystem `a`, away from the level
+      (∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F)) (hwS : w ∉ 𝒮.S),
+        _root_.TotallyDefiniteQuaternionAlgebra.HeckeOperator.T D E 𝒮 w hwS f' = a w • f') ∧
+      -- SPHERICAL AT `w₀`: invariant under the local level of the erased datum
+      (∀ x : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ (𝒮.eraseS w₀)).US w₀,
+        (FiniteAdeleRing.GL2.finiteAdeleIncl w₀ x.1) • f'.1 = f'.1) ∧
+      -- and its spherical `T_{w₀}`-eigenvalue is the one `heckeF` predicts
+      (∀ g : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ (𝒮.eraseS w₀)).toStruct.form D E,
+        g.1 = f'.1 →
+        _root_.TotallyDefiniteQuaternionAlgebra.HeckeOperator.T D E (𝒮.eraseS w₀) w₀
+          (𝒮.notMem_eraseS_S w₀) g = b • g) ∧
+      (w₀ ∉ badF → (heckeF w₀).coeff 1 = - b) := by
+  sorry
+
+open scoped NumberField in
+/-- **STEP 2a″-α₀-i-a — ONE-PLACE LEVEL LOWERING: a quaternionic eigenform whose
+`ℓ`-adic Galois representation is UNRAMIFIED AT `w₀` may be taken SPHERICAL AT
+`w₀`** (PROVEN ASSEMBLY since 2026-08-02, over the newvector leaf
+`exists_sphericalEigenform_of_isUnramifiedAt` immediately above together with the
+level-change toolkit `mem_form_eraseS_of_smul_eq` and `T_eraseS_val`; the
+statement is UNCHANGED from the 2026-07-31 cut, so
+`exists_eigenform_minimalLevel_of_isUnramifiedOutside` below and its induction on
+`𝒮.S.card` are untouched).
+
+The assembly is the bookkeeping the newvector leaf no longer carries: the
+spherical vector is moved from `U₁ 𝒮` to `U₁ (𝒮.eraseS w₀)` (which is where the
+parent's induction needs it), its `T_w`-eigenvalues for `w ∉ 𝒮.S` are read across
+that level change, and the eigenvalue function of the conclusion is assembled as
+`Function.update a w₀ b` — the given `a` away from `w₀`, and the newvector's own
+spherical eigenvalue `b` at `w₀`.  Note `w ∉ (𝒮.eraseS w₀).S` splits as exactly
+`w = w₀` or `w ∉ 𝒮.S`, which is what makes the update the right shape. -/
 theorem exists_eigenform_eraseS_of_isUnramifiedAt
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -10510,7 +10828,35 @@ theorem exists_eigenform_eraseS_of_isUnramifiedAt
           = a' w • f') ∧
       (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
         w ∉ (𝒮.eraseS w₀).S → w ∉ badF → (heckeF w).coeff 1 = - a' w) := by
-  sorry
+  classical
+  obtain ⟨b, f', hf0', hT', hsph, hTw₀, hb⟩ :=
+    exists_sphericalEigenform_of_isUnramifiedAt hℓodd hℓ5 hZinj hrank hW hρbar hirr
+      π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod D 𝒮 hQ a f hf0 hT ha
+      w₀ hw₀S hσw₀
+  refine ⟨Function.update a w₀ b,
+    ⟨f'.1, mem_form_eraseS_of_smul_eq 𝒮 w₀ f'.1 f'.2 hsph⟩, ?_, ?_, ?_⟩
+  · refine fun h => hf0' (Subtype.ext ?_)
+    exact congrArg
+      (fun z : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ (𝒮.eraseS w₀)).toStruct.form D E =>
+        (z : _root_.TotallyDefiniteQuaternionAlgebra.WeightTwoAutomorphicForm F D E)) h
+  · intro w hwS
+    by_cases hw : w = w₀
+    · subst hw
+      rw [Function.update_self]
+      exact hTw₀ _ rfl
+    · have hwS' : w ∉ 𝒮.S := fun h => hwS ((𝒮.mem_eraseS_S w₀ w).mpr ⟨hw, h⟩)
+      rw [Function.update_of_ne hw]
+      apply Subtype.ext
+      rw [← T_eraseS_val 𝒮 w₀ w hw hwS' hwS f' _ rfl, hT' w hwS']
+      rfl
+  · intro w hwS hwbad
+    by_cases hw : w = w₀
+    · subst hw
+      rw [Function.update_self]
+      exact hb hwbad
+    · have hwS' : w ∉ 𝒮.S := fun h => hwS ((𝒮.mem_eraseS_S w₀ w).mpr ⟨hw, h⟩)
+      rw [Function.update_of_ne hw]
+      exact ha w hwS' hwbad
 
 /-- **STEP 2a″-α₀-i — LEVEL–CONDUCTOR: an eigensystem whose `ℓ`-adic Galois
 representation is UNRAMIFIED OUTSIDE `badF` is quaternionic-automorphic AT A
