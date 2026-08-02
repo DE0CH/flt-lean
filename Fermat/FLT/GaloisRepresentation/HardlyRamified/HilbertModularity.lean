@@ -13720,6 +13720,49 @@ hypotheses are consumed here and none of them in (C):
   and the conclusion is modularity at minimal level, i.e. Serre's conjecture
   over totally real fields together with a modularity lifting theorem over `F`.
 
+**VACUITY AUDIT, 2026-08-02 (flt-lean-317) — THAT REFUTING CHECK FIRES AT ODD
+`[F : ℚ]`, AND `hFeven` BELOW IS THE REPAIR.**  The check above is written
+against a CODE EDIT ("if `automorphic` is deleted").  It also fires at a
+PARAMETER VALUE, and it had not been run that way.
+
+`automorphic` is `∀ E θ, IsQuaternionicEigensystem F E H.bad …`, and
+`IsQuaternionicEigensystem` quantifies over every `D` carrying
+`[IsQuaternionAlgebra F D]`, `[IsTotallyDefinite F D]` and
+`[WithRigidification F D]`.  A quaternion algebra ramifies at an EVEN number of
+places; `WithRigidification` asserts `D ⊗_F 𝔸_F^∞ ≃ M₂(𝔸_F^∞)`, i.e. `D` splits
+at every finite place; `IsTotallyDefinite` ramifies it at all `[F : ℚ]` real
+places.  So the ramification set has size exactly `[F : ℚ]`, and **at ODD
+`[F : ℚ]` no such `D` exists, `automorphic` is VACUOUSLY TRUE, and this leaf's
+hypotheses are purely Galois-theoretic** — precisely what the REFUTING CHECK
+forbids.  The hypotheses ARE satisfiable there, so this is not an unreachable
+corner: the cyclic cubic field of conductor `31` is totally real, Galois over
+`ℚ`, of degree `3`, and `2` is a cubic residue mod `31` (`2 ^ 10 ≡ 1`), so `2`
+splits completely and `hres2` holds.
+
+WHY THE PARENT WAS SAFE AND THIS LEAF IS NOT — the (C)/(LL) cut is what
+separated them.  `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed` also holds
+`seed : MoretBaillySeed`, an actual Hilbert newform, which keeps it honest at
+EVERY degree; the cut sent `seed` to (C) and left (LL) with `H.automorphic` as
+its ONLY automorphic content.  So the parent's AUTOMORPHY AUDIT — "for
+odd-degree `F` the clause is VACUOUS rather than false … this leaf does not bind
+`Even (Module.finrank ℚ F)` and does not need to, since the parity arrives with
+`F` from `PotentialHeckeDatum`" — is correct FOR THE PARENT, does not transfer
+here, and its stated reason is independently false: `PotentialHeckeDatum` has
+fields `F`, `totallyReal`, `galoisF`, `irreducibleF`, `residueCardTwo`, `hecke`
+and carries NO parity.
+
+THE REPAIR IS `hFeven`, A HYPOTHESIS RATHER THAN A RESTATEMENT, so it only
+WEAKENS the leaf: every audit above transfers unchanged and no counterexample
+can be created by it.  It is discharged for free at both termini, each of which
+already held the parity and threw it away — `nonempty_potentialHeckeDatum_of_five_le`
+below obtained it from `exists_moretBaillySeed_residueCardTwo_of_five_le` as
+`_hev`, UNDERSCORED, and `Modularity/KhareWintenberger.lean`'s
+`exists_potentialModularityWitness_of_five_le` obtained it as `hev` under a
+comment saying it "is still in hand".  Between those points every intermediate
+had exactly one call site, so threading it cost five signatures and no fan-out.
+This is the same "make it vacuous from above" move that `KhareWintenberger.lean`
+prescribes for the sibling condition `hres2`, carried out there and not here.
+
 CIRCULARITY GUARD, inherited: as for (C) above. -/
 theorem nonempty_hilbertHeckeAlgebra_of_atLevel
     (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
@@ -13731,6 +13774,9 @@ theorem nonempty_hilbertHeckeAlgebra_of_atLevel
     (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    -- `Even [F : ℚ]` (2026-08-02): without it `H.automorphic` is vacuous and
+    -- this leaf is Serre's conjecture over `F`.  See the VACUITY AUDIT above.
+    (hFeven : Even (Module.finrank ℚ F))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (hres2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
       Nat.card (𝓞 F ⧸ w.asIdeal) = 2)
@@ -13873,6 +13919,9 @@ theorem nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
     (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    -- forwarded to (LL) only (2026-08-02); (C) keeps it honest through `seed`
+    -- and does not need it.  See the VACUITY AUDIT on (LL) above.
+    (hFeven : Even (Module.finrank ℚ F))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (hres2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
       Nat.card (𝓞 F ⧸ w.asIdeal) = 2)
@@ -13881,7 +13930,8 @@ theorem nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
   obtain ⟨H⟩ := nonempty_hilbertHeckeAlgebraAtLevel_of_moretBaillySeed
     (hℓOdd := hℓOdd) (hdim := hdim) ℓ hℓ5 hbar hirr F hFtr hFgal hirrF seed
   exact nonempty_hilbertHeckeAlgebra_of_atLevel
-    (hℓOdd := hℓOdd) (hdim := hdim) ℓ hℓ5 hbar hirr F hFtr hFgal hirrF hres2 H
+    (hℓOdd := hℓOdd) (hdim := hdim) ℓ hℓ5 hbar hirr F hFtr hFgal hFeven hirrF
+    hres2 H
 
 /-- **Potential modularity together with finiteness of the Hilbert Hecke
 algebra** (LEAF — items 5 and 3 of the audit's missing-machinery list,
@@ -14703,7 +14753,9 @@ theorem nonempty_potentialHeckeDatum_of_five_le
     Nonempty (PotentialHeckeDatum ℓ ρbar) := by
   -- (T): Moret–Bailly/Taylor produce the totally real Galois base `F`, with
   -- `2` split completely and with an automorphic witness over it.
-  obtain ⟨F, hF, hNF, hFtr, hFgal, _hev, hirrF, hres2, ⟨seed⟩⟩ :=
+  -- `hev : Even [F : ℚ]` is no longer discarded (2026-08-02): (LL) consumes it,
+  -- since `HilbertHeckeAlgebraAtLevel.automorphic` is vacuous at odd degree.
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF, hres2, ⟨seed⟩⟩ :=
     exists_moretBaillySeed_residueCardTwo_of_five_le (hℓOdd := hℓOdd)
       (hdim := hdim) ℓ hℓ5 hbar hirr
   letI := hF
@@ -14711,7 +14763,8 @@ theorem nonempty_potentialHeckeDatum_of_five_le
   -- (C) + (LL): Carayol's representation and level lowering turn that witness
   -- into the Hecke algebra of the MINIMAL level over `F`.
   obtain ⟨H⟩ := nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
-    (hℓOdd := hℓOdd) (hdim := hdim) ℓ hℓ5 hbar hirr F hFtr hFgal hirrF hres2 seed
+    (hℓOdd := hℓOdd) (hdim := hdim) ℓ hℓ5 hbar hirr F hFtr hFgal hev hirrF
+    hres2 seed
   exact ⟨{ F := F, fieldF := hF, numberFieldF := hNF, totallyReal := hFtr,
            galoisF := hFgal, irreducibleF := hirrF, residueCardTwo := hres2,
            hecke := H }⟩

@@ -2801,6 +2801,11 @@ theorem exists_heckeTraceAlgebra_of_congruentSeed
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    -- `Even [F : ℚ]` (2026-08-02), forwarded to the (LL) leaf, whose automorphic
+    -- hypothesis is VACUOUS at odd degree; see the VACUITY AUDIT on
+    -- `nonempty_hilbertHeckeAlgebra_of_atLevel`.  Discharged at the terminus
+    -- `exists_potentialModularityWitness_of_five_le`, which already held it.
+    (hFeven : Even (Module.finrank ℚ F))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     -- the condition at the places over `2` (2026-07-29); see the binder note on
     -- `exists_classifyingHom_hilbertHeckeAlgebra` above.  BOTH halves of this
@@ -2843,7 +2848,8 @@ theorem exists_heckeTraceAlgebra_of_congruentSeed
   -- the shadowing cannot silently return.
   obtain ⟨H⟩ :=
     _root_.GaloisRepresentation.nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
-      (hℓOdd := hℓodd) (hdim := hW) ℓ hℓ5 hρbar hirr F hFtr hFgal hirrF hres2 seed
+      (hℓOdd := hℓodd) (hdim := hW) ℓ hℓ5 hρbar hirr F hFtr hFgal hFeven hirrF
+      hres2 seed
   -- `R_F = T_F`: the lift `ρ|_{G_F}` is a point of that Hecke algebra
   obtain ⟨φ, hφ⟩ := exists_classifyingHom_hilbertHeckeAlgebra hℓodd hℓ5 hZinj
     hrank hρ hW hρbar hirr π hπsurj F hFtr hFgal hirrF hres2 badρ hcong H
@@ -3121,6 +3127,9 @@ theorem exists_heckeEigensystem_of_congruentSeed
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    -- `Even [F : ℚ]` (2026-08-02), forwarded unchanged to the (LL) leaf; see
+    -- `nonempty_hilbertHeckeAlgebra_of_atLevel`'s VACUITY AUDIT.
+    (hFeven : Even (Module.finrank ℚ F))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     -- the condition at the places over `2` (2026-07-29), forwarded unchanged;
     -- see the binder note on `exists_classifyingHom_hilbertHeckeAlgebra` above.
@@ -3152,7 +3161,7 @@ theorem exists_heckeEigensystem_of_congruentSeed
   -- the automorphic half: the Hecke algebra, module-finite over `ℤ`
   obtain ⟨T, iT, hTfin, ιT, badF, t, hbadℓ, htr, hauto⟩ :=
     exists_heckeTraceAlgebra_of_congruentSeed hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr π hπsurj hπ F hFtr hFgal hirrF hres2 seed badρ hcong ιO hιO
+      hirr π hπsurj hπ F hFtr hFgal hFeven hirrF hres2 seed badρ hcong ιO hιO
   letI : CommRing T := iT
   haveI : Module.Finite ℤ T := hTfin
   -- the commutative-algebra half: its image lies in a number field
@@ -3671,6 +3680,9 @@ theorem exists_heckePackage_of_seed
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    -- `Even [F : ℚ]` (2026-08-02), forwarded unchanged to the (LL) leaf; see
+    -- `nonempty_hilbertHeckeAlgebra_of_atLevel`'s VACUITY AUDIT.
+    (hFeven : Even (Module.finrank ℚ F))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     -- the condition at the places over `2` (2026-07-29), forwarded unchanged;
     -- see the binder note on `exists_classifyingHom_hilbertHeckeAlgebra` above.
@@ -3713,7 +3725,8 @@ theorem exists_heckePackage_of_seed
   -- eigenvalue function `a`
   obtain ⟨E, hE, hNE, ψℓ, badF, a, hbadℓ, htr, hauto⟩ :=
     exists_heckeEigensystem_of_congruentSeed hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr π hπsurj hπ F hFtr hFgal hirrF hres2 seed badρ hcong ιO hιO
+      hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF hres2 seed badρ hcong
+      ιO hιO
   letI : Field E := hE
   -- the trace of the assembled Hecke polynomial is the eigenvalue back again
   have hcoeff : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
@@ -17934,7 +17947,7 @@ theorem exists_potentialModularityWitness_of_five_le
   -- (ii) modularity lifting over `F`: the ℓ-adic Hecke block
   obtain ⟨E, hE, hNE, badF, heckeF, ψℓ, ιO, hιO, hmod, hauto⟩ :=
     exists_heckePackage_of_seed hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr
-      π hπsurj hπ F hFtr hFgal hirrF hres2 seed
+      π hπsurj hπ F hFtr hFgal hev hirrF hres2 seed
   -- (ii') ENLARGE the exceptional set by the places of `F` over `2`, `3`
   -- and `ℓ` (2026-07-26; the `3` step was step (ii') of the round-2 cut,
   -- the `2` and `ℓ` steps complete it). The `ℓ`-adic clause `hmod` only

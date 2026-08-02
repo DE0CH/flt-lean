@@ -16151,3 +16151,70 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A REFUTING CHECK WRITTEN AGAINST A CODE EDIT ALSO FIRES AT A PARAMETER VALUE
+
+(2026-08-02, `flt-lean-317`, `nonempty_hilbertHeckeAlgebra_of_atLevel` in
+`HardlyRamified/HilbertModularity.lean`.)  This development attaches a REFUTING
+CHECK to most mature leaves, and the commonest shape is *"this leaf is honest
+only while structure `S` retains field `f`; without `f` the hypotheses are
+purely X-theoretic and the conclusion is <open conjecture>."*  That sentence is
+written against an EDIT — somebody deleting `f` — and it is read that way, so it
+gets discharged by grepping for `f` and finding it still in the structure.
+
+**It fires just as hard at a PARAMETER VALUE that makes `f` VACUOUS, and the
+field's presence detects nothing.**  Here `f` was `automorphic`,
+`∀ E θ, IsQuaternionicEigensystem F E bad …`, whose own body quantifies over
+every totally definite quaternion algebra `D/F` split at all finite places.  A
+quaternion algebra ramifies at an EVEN number of places, so that class is EMPTY
+when `[F : ℚ]` is odd; `automorphic` is vacuously true there; and what is left
+is exactly the "purely Galois-theoretic" hypothesis set its own check forbids.
+The hypotheses are satisfiable at odd degree — the cyclic cubic field of
+conductor `31` is totally real, Galois, and has `2` split completely, since
+`2 ^ 10 ≡ 1 (mod 31)` makes `2` a cubic residue — so it is a reachable corner,
+not a technicality.
+
+**The check is mechanical: for each hypothesis that is a `∀` over a CLASS, ask at
+which parameter values that class is EMPTY, and re-read the leaf there.**
+Nested quantifiers are what hide it: the vacuity was two levels down, in the body
+of the predicate the field's type names, not in the field's type.
+
+Two riders, and together they are how this survived a careful audit:
+
+* **A DECOMPOSITION CAN MOVE THE HYPOTHESIS THAT KEEPS A LEAF HONEST ONTO THE
+  OTHER HALF.**  The parent also held `seed : MoretBaillySeed` — an actual
+  newform — which keeps it honest at every degree, so the parent's AUTOMORPHY
+  AUDIT correctly noticed the odd-degree vacuity and correctly dismissed it.  The
+  later (C)/(LL) cut sent `seed` to (C) and left (LL) with the vacuous field as
+  its only content of that kind; the audit was inherited verbatim and its
+  dismissal silently stopped being true.  Same family as "a decomposition drops a
+  hypothesis", with the drop invisible because nothing was dropped — the SIBLING
+  took it.  When a cut separates two hypotheses that were jointly load-bearing,
+  re-read each half's inherited audit against the half's OWN binder list.
+* **The dismissal's stated REASON was checkable and false.**  It read "the parity
+  arrives with `F` from `PotentialHeckeDatum`".  That structure has fields `F`,
+  `totallyReal`, `galoisF`, `irreducibleF`, `residueCardTwo`, `hecke` — no parity
+  at all.  **When a docstring dismisses a gap by naming a structure that supplies
+  the missing fact, print that structure's field list.**  One command, whole check.
+
+**AND THE REPAIR CAN BE FREE EVEN WHEN IT LOOKS LIKE A CUT-LEVEL CHANGE.**  The
+standing advice above for a threaded hypothesis is to write the audit and QUEUE
+the repair, because the terminus usually "stops being provable".  MEASURE that
+before believing it: here BOTH termini already held `Even (Module.finrank ℚ F)`
+and threw it away — `nonempty_potentialHeckeDatum_of_five_le` literally as
+`_hev`, underscored — so threading exported no obligation whatever.  Two greps
+decide it:
+
+    grep -n '<the missing fact>' <the file producing the parameter>   # is it in hand?
+    # then: does every intermediate on the chain have exactly ONE call site?
+
+Five signatures, five call sites, zero fan-out, and a pure weakening — so every
+inherited audit transfers and no counterexample can be created.  **A threading
+whose terminus already discharges it, with no fan-out, is an ordinary edit; only
+one whose terminus stops being provable is the cut-level change to queue.**
+
+**THE CHEAP STANDING TELL: an underscored binder in an `obtain` that destructures
+a producer is a fact that was PRODUCED AND DISCARDED**, i.e. a hypothesis
+available for free to anything below it.  `grep -n 'obtain ⟨.*_h' <file>` costs
+nothing and finds exactly the facts a leaf downstream may ask for without anyone
+having to prove them.
