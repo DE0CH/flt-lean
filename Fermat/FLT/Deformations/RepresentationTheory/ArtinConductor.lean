@@ -6777,6 +6777,46 @@ named: the axioms did not determine `F` there, so the axioms were the thing
 that had to change. -/
 
 
+/-! ### The tame-eigenvector cut, DELETED 2026-08-01 as superseded dead code
+
+This is where `exists_level_smul_unif_eq_mul_of_prime` and its three companions
+(`exists_prime_ge_notMem_asIdeal`, `exists_level_smul_unif_eq_mul`,
+`le_relIndex_gp_one_of_smul_unif_eq_mul`) stood until 2026-08-01.  All four were
+UNREACHABLE: `exists_level_smul_unif_eq_mul` and
+`le_relIndex_gp_one_of_smul_unif_eq_mul` had zero consumers anywhere under
+`Fermat/`, and the other two were consumed only by them.  Recover the whole block
+with `git show 280981f1^:Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`.
+
+WHY THEY WERE DEAD, so that nobody cuts this leaf a third time.  They were cut on
+2026-07-30 out of `exists_lowerRamificationData_phi_one_le`, on the route "produce
+a level whose DISTINGUISHED uniformizer is an inertia eigenvector, then bound
+`[G₀ : G₁]` below by the powers of that eigenvector".  That route needs
+`σ • D.unif = ζ · D.unif` on `D.unif` itself, i.e. on an element of valuation
+exactly `1`, which is the whole content of the arithmetic leaf.  Concurrently
+`exists_lowerRamificationData_phi_one_le` was PROVEN OUTRIGHT below by a different
+and strictly better route: it takes `Z` an `n`-th root of a BASE uniformizer, picks
+the level to FIX `Z` rather than to make `Z` a uniformizer, and injects
+`μ_n` into `G₀ ⧸ G₁` through
+`LowerRamificationData.eq_one_of_smul_eq_mul_of_mem_gp_one`.  That argument never
+mentions the valuation of `Z`, so it needs no arithmetic leaf at all.
+
+The two routes are therefore rivals, not complements, and the live one leaves ZERO
+open leaves where the deleted one left ONE.  Both merged cleanly, because the
+deleted block and the live proof are 300 lines apart and neither touches the
+other's text; the leaf was left behind emitting an ordinary `declaration uses
+'sorry'` warning that every frontier scan counted as real work, and it drew at
+least one dispatch.  `le_relIndex_gp_one_of_smul_unif_eq_mul` is not reusable in
+the live proof for exactly the reason above: it is stated about `D.unif`, and the
+live route deliberately does not put its test element there.
+
+The deleted docstring also carried a correct refutation, worth keeping in one
+sentence: taking the `n`-th root `X` of a uniformizer as the test element and
+arguing "`ρ ∈ G₁` would force `unif² ∣ X`" is WRONG whenever the fixed field of the
+chosen level is ramified — over `ℚ₃`, with the level cutting out `ℚ₃(√3)` and
+`n = 5`, one has `e = 10` and `v_L(X) = 2`, so the contradiction evaporates.  The
+live proof is immune because it never asserts anything about `v_L(Z)`.
+-/
+
 /-- **A TAMELY RAMIFIED LEVEL WHOSE UNIFORMIZER IS AN INERTIA EIGENVECTOR**
 (SORRY LEAF, cut 2026-07-30 out of `exists_lowerRamificationData_phi_one_le`
 below — the recut replaces the leaf that used to stand here, which asserted
@@ -7647,8 +7687,10 @@ those values are dense in the whole of `(0, ∞)`, not merely above `1`. Note
 so there is no Herbrand value in `(w, u]` when `u ≤ 0`.
 
 **RECUT 2026-07-30 — this leaf is now PROVEN over a single, much smaller one,
-`exists_lowerRamificationData_phi_one_le` above (itself since recut onto the
-arithmetic leaf `exists_level_smul_unif_eq_mul_of_prime`).** Two of the three
+`exists_lowerRamificationData_phi_one_le` above (which is itself PROVEN OUTRIGHT,
+sorry-free; the 2026-07-30 recut of it onto an arithmetic tame-eigenvector leaf
+was superseded by that proof and the dead cluster was deleted 2026-08-01 — see the
+note where it stood).** Two of the three
 things this docstring said had to be built are done and are no longer part of
 it:
 
