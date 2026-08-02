@@ -24775,3 +24775,82 @@ Note what this does to a degenerate-case audit: the parent's `hUne` was *decorat
 `U = ⊥` take `L = 𝒪_X`, `s = 0`), and in the geometric half it becomes LOAD-BEARING FOR
 TRUTH, because a cover of a nonempty `X` by opens all meeting `U = ⊥` cannot exist.  **A
 hypothesis's audit does not survive the cut that moves it** — re-run it on each side.
+## A LEAF'S MACHINERY CAN BE BUILT *DOWNSTREAM*, WHERE IT IS CONSUMERLESS BY CONSTRUCTION — HOIST IT, DO NOT PRICE IT
+(2026-08-01, `flt-lean-291`, closing `exists_x0Compactification_relPoint_inj_x0Model`
+in `ModularCurve/X0.lean`.)  That leaf carried a "WHAT A SUCCESSOR MUST BUILD"
+paragraph naming three items — a genus for the curve; Riemann–Roch far enough to give
+a pointed genus-`1` curve a Weierstrass model as a SCHEME; the identification of that
+model's rational points with `RelPoint strX (𝟙 SpecQ)` — and closing *"none of the
+three exists in `Mathlib`, in `~/cs/FLT` or in this project"*.
+Item one had been discharged on 2026-07-27 (`exists_abelianSchemeStruct_of_x0Genus_eq_one`,
+PROVEN, in the same file 400 lines above).  **Items two and three had been PROVEN
+together the previous day**, as `exists_weierstrassPointEquiv_of_abelianSchemeStruct`
+in `FreyCurve/MazurTorsion.lean` — which is DOWNSTREAM of `X0.lean`, so nothing in the
+leaf's own module could cite them and no grep of its import cone could see them.  Beside
+them sat `exists_point_map_eq_of_galoisFixed` (PROVEN), a strictly finer open leaf
+(`exists_inj_point_x0Model_of_relPointEquiv`, the modular identification alone) and an
+assembly: **a complete rival cut of the upstream leaf, four declarations, built where it
+could never serve it.**
+**A DOWNSTREAM RIVAL CUT IS DEAD BY CONSTRUCTION, AND NOTHING REPORTS IT.**  The parent
+lives upstream, so no proof term reaches the cluster — a comment-stripped grep found
+`exists_relPoint_inj_x0Model_of_abelianSchemeStruct` at its own declaration and in
+docstrings, nowhere else.  Meanwhile the cluster's open leaf compiles, emits
+`declaration uses 'sorry'`, is counted by `frontier.py`, and passes the three-part
+ownership test, so it reads as ordinary work; and the LIVE leaf upstream still carries
+the whole geometry.  This is the seventh invisibility class reached by a new road: not a
+deletion, not a refactor, just a cut made on the wrong side of an import edge.
+**THE DETECTION IS A CONCLUSION-GREP, NOT A NAME-GREP.**  The two files share no
+identifier for the bridge — one says `AbelianSchemeStruct`/`GeomFibrePt`, the other says
+`x0Model`/`IsX0Compactification`.  What found it in one command was the SHAPE of the
+conclusion:
+    grep -rn 'RelPoint' --include=*.lean Fermat/ | grep 'toAffine.Point'
+So: **before believing any "none of this exists" list, grep the whole tree for the
+conclusion's shape, and do it before pricing anything.**  A downstream module is
+precisely where a general-purpose bridge gets built, because that is where its first
+consumer appears; the upstream author cannot see it and the downstream author has no
+reason to look up.
+**THE REPAIR IS A VERBATIM HOIST PLUS A DELETION, AND IT IS FOUR CHECKS.**
+1. *Dependencies resolve from the target's cone.*  Paste the block into a scratch that
+   imports ONLY the upstream module, with the declarations renamed by a suffix; it
+   compiled in 5 s and reported exactly the one intended `sorry`.  That is a complete
+   check of the import direction and needs no build of either real file.
+2. *Declaration ORDER inside the destination.*  Tokenise the comment-stripped block,
+   resolve every name against the destination's declaration table, and require each
+   line number to be BELOW the insertion point.  Here the deepest dependency was
+   `Fermat.exists_ratPoint_of_galoisInvariant` at 47250 against an insertion at 113311,
+   and the check returned zero violations.  A scratch cannot see this, because it
+   imports the whole module.
+3. *Delete from the source in the SAME commit.*  Both files put the block in namespace
+   `X0GenusOne`, so leaving a copy is a hard `has already been declared` the moment the
+   downstream file is built.  Deleting costs nothing: the downstream file `public
+   import`s the upstream one and the namespace is unchanged, so every name still
+   resolves there unqualified and no call site moves.
+4. *Receipt.*  The COMBINED sorted line multiset of the two files must be unchanged
+   (here: one blank line added, nothing removed).  Then run `parsecheck.py` on both —
+   a hoist plus docstring surgery is exactly the shape that leaves an orphaned
+   delimiter.
+**AND THE ACCOUNTING MUST BE SAID OUT LOUD, because it looks like nothing happened.**
+`X0.lean` went 101 → 101 sorried declarations (the target closed, the finer leaf
+arrived) and `MazurTorsion.lean` 37 → 36 (the dead leaf went).  Net −1 for the tree, and
+the number that matters is not in either column: **the LIVE obligation stopped being
+"produce a Weierstrass model of an abstract coarse space and identify its points" and
+became "the elliptic curve whose `ℚ`-points biject with `X_0(N)(ℚ)` has at most
+`5, 4, 3, 4` of them" — one classical citation, with no scheme in the conclusion.**
+* **A docstring's direction words must be re-audited after a hoist, and its cross-file
+  references invert.**  Sentences reading "PROVEN in `X0.lean`" became "PROVEN above in
+  this file"; a quoted `MazurTorsion.lean:33693` line number was made stale by the
+  deletion and was replaced by the declaration NAMES; and one ingredient the note called
+  AVAILABLE (`card_relPoint_of_modelTable`) became unavailable, because it stayed
+  downstream.  That last one is the important one — a hoist can take a route's other
+  ingredients out of reach, and saying so is what stops the next owner following a dead
+  route.
+* **The upstream assembly needed an EMPTY-POINTS branch, and it is honest rather than a
+  dodge.**  `rcases isEmpty_or_nonempty (RelPoint strX (𝟙 SpecQ))`: with no rational
+  point the injection is the empty map, and with one the Jacobian chain produces the
+  group law.  It cannot be an escape from the mathematics, because
+  `nonempty_relPointEquiv_of_isX0Compactification_rat` (PROVEN) makes all
+  compactifications equinumerous — so an empty point set is a fact about `X_0(N)`, not
+  about the choice of model.  When a leaf is EXISTENTIAL over the object, check whether
+  the transport theorem that makes the existential equivalent to the universal form
+  already exists; if it does, degenerate branches are legitimate and the cut is a strict
+  reduction rather than a reshuffle.
