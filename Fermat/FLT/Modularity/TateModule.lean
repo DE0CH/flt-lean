@@ -18285,6 +18285,26 @@ ALGEBRAIC CLOSURE OF `κ(w)`** (sorry leaf — valuation theory; Bourbaki
 *Commutative Algebra* VI, Engler–Prestel *Valued Fields* §3.2, Neukirch II
 §§4, 8).
 
+**DEAD LEAF — DO NOT DISPATCH A PROVER HERE; IT IS SLATED FOR DELETION.**
+(Established 2026-08-02; see the duplicate-cut paragraph on
+`exists_valuationSubring_arithFrob_of_heightOneSpectrum` below for the full
+account and the evidence.)  Its only consumer is
+`exists_localRing_arithFrob_of_heightOneSpectrum`, and **that theorem has no
+consumer anywhere in the tree** — the component is unreachable from the root.
+The live cut of the same node is `exists_residueHom_placeAbove` ~200 lines
+above, which is consumed through `exists_frobEquivariant_placeAbove` by
+`exists_finset_abelianReductionDatum_of_mult`.
+
+It is also the HARDER of the two statements and nothing needs the extra
+strength: this one quantifies over an ARBITRARY valuation subring `V` of `F̄`
+centred on `w`, whereas `exists_residueHom_placeAbove` asks the same question
+about the single explicit ring `placeAbove w`.  A prover sent here would be
+proving a general theorem to serve a dead consumer.
+
+`flt-lean-332` was dispatched at this leaf on 2026-08-01 and landed nothing.
+Whoever deletes this must delete `exists_localRing_arithFrob_of_heightOneSpectrum`
+in the same commit, since that is what consumes it.
+
 `V` is a valuation subring of the ALGEBRAICALLY CLOSED field `F̄` whose
 centre on `𝓞_F` is `w` (that is what `hcentre` and `hw` say: every algebraic
 integer is in `V`, and it is a non-unit exactly when it lies in `w`).  The
@@ -18332,8 +18352,59 @@ theorem exists_residueField_ringHom_of_valuationSubring {F : Type u} [Field F] [
   sorry
 
 /-- **THE ARITHMETIC FROBENIUS AT `w` STABILISES A VALUATION RING OF `F̄` AND
-REDUCES TO THE `N w`-POWER MAP** (sorry leaf — local class field theory;
-Neukirch II §9 and *Class Field Theory*, Serre *Local Fields* I §7).
+REDUCES TO THE `N w`-POWER MAP** (**PROVEN 2026-08-02**, over
+`exists_residueHom_placeAbove` ~300 lines above — it was a sorry leaf from
+2026-07-30 until then.  Original citation: local class field theory; Neukirch
+II §9 and *Class Field Theory*, Serre *Local Fields* I §7.)
+
+**THIS DECLARATION IS THE DEAD HALF OF A DUPLICATE CUT, AND IT IS SLATED FOR
+DELETION.**  Read this paragraph before spending any time on the cluster.
+
+The node "a Frobenius-equivariant place of `F̄` above `w`" was cut TWICE, a day
+apart, and a merge kept both:
+
+* **Cut A (2026-07-30, DEAD)** — this declaration, plus
+  `exists_residueField_ringHom_of_valuationSubring` immediately above, assembled
+  by `exists_localRing_arithFrob_of_heightOneSpectrum` immediately below.
+  **`exists_localRing_arithFrob_of_heightOneSpectrum` has NO CONSUMER anywhere
+  in the tree**, so the whole component is unreachable from the root.
+* **Cut B (2026-07-31, LIVE)** — `placeAbove` / `frobAbove` / `frobRestrict` and
+  the single residual leaf `exists_residueHom_placeAbove`, assembled by
+  `exists_frobEquivariant_placeAbove`, which IS consumed, by
+  `exists_finset_abelianReductionDatum_of_mult`.
+
+Cut B is strictly better and is the one to keep: it owes ONE leaf where Cut A
+owes two, and its leaf is about the single explicit ring `placeAbove w` where
+Cut A's `exists_residueField_ringHom_of_valuationSubring` quantifies over an
+ARBITRARY valuation subring — a strictly stronger, strictly harder statement
+that nothing needs.
+
+**THE PROOF BELOW IS THE RECEIPT FOR THAT VERDICT.**  It derives this
+declaration from Cut B's leaf in eight lines, which is the machine-checked form
+of "Cut A is subsumed by Cut B".  It adds no `sorryAx` edge, because
+`exists_residueHom_placeAbove` is already in the cone through
+`exists_frobEquivariant_placeAbove`.
+
+**WHY THIS WAS INVISIBLE, and it is the transferable part.**  The two cuts share
+no identifier: Cut A says `ValuationSubring`, `gV`, `hcentre`; Cut B says
+`placeAbove`, `frobRestrict`, `algebraMap_mem_placeAbove`.  So `check-dup`,
+`xdup.py` and `dupstmt.py` are all silent, every frontier scan counts two honest
+leaves, and `own.py`/`leafstat.py` correctly report both unowned and open.  What
+identifies it is that **the docstring below PRESCRIBES Cut B's construction by
+name** — "put `V := L ⁻¹' (localValuationSubring w)`", which is verbatim
+`placeAbove`'s definition, and its "VERIFIED STARTING POINT" fragment is
+verbatim `placeAbove`'s body.  The author of that paragraph went and built it
+450 lines earlier as a rival cut and never came back to close this leaf.  So:
+**when a leaf's docstring prescribes a construction, grep the file for that
+construction before writing it** — one `grep -n 'comap'` or
+`grep -n 'localValuationSubring'` in this file finds `placeAbove` instantly.
+
+Measured cost of not doing so: this cluster drew THREE dispatches — `flt-lean-33`
+at Cut B's live leaf, and `flt-lean-332` and `flt-lean-34` at Cut A's two dead
+ones.  Two of the three were at leaves nothing reaches.
+
+The historical text follows; everything it says about the mathematics is
+correct, and it is exactly the construction Cut B carries out.
 
 The element in question is the one
 `IsAbelianReductionDatum.gen_frob` names,
@@ -18429,10 +18500,44 @@ theorem exists_valuationSubring_arithFrob_of_heightOneSpectrum {F : Type u} [Fie
             (Field.AbsoluteGaloisGroup.adicArithFrob w) :
           Field.absoluteGaloisGroup F) :
             AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (z : AlgebraicClosure F)) ∧
-      (∀ z : V, gV z - z ^ Ideal.absNorm w.asIdeal ∈ IsLocalRing.maximalIdeal V) :=
-  sorry
+      (∀ z : V, gV z - z ^ Ideal.absNorm w.asIdeal ∈ IsLocalRing.maximalIdeal V) := by
+  -- `V := placeAbove w`, `gV := frobRestrict w`, `hcentre := algebraMap_mem_placeAbove w`:
+  -- all three are already PROVEN above, as Cut B.  Only the two residue-side
+  -- clauses are left, and both come from `exists_residueHom_placeAbove`'s `π`
+  -- through `π z = 0 ↔ ¬ IsUnit z`, which is `z ∈ 𝔪` in a local ring.
+  obtain ⟨σ, hσ⟩ := exists_absoluteGaloisGroup_pow_absNorm w
+  obtain ⟨π, _hsurj, hker, hlift, hfrob⟩ := exists_residueHom_placeAbove w σ hσ
+  refine ⟨placeAbove w, frobRestrict w, algebraMap_mem_placeAbove w, ?_, ?_, ?_⟩
+  · -- `hw`: chain `a ∈ 𝔪 ↔ ¬ IsUnit a` with `hker` and `hlift`.
+    intro a
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    exact (hker _).symm.trans (hlift a)
+  · -- the Galois clause is `frobRestrict_val`, i.e. `rfl`.
+    intro z
+    rfl
+  · -- the congruence: `π (gV z) = σ (π z) = (π z) ^ N w = π (z ^ N w)`.
+    intro z
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff, ← hker]
+    rw [map_sub, hfrob, map_pow, hσ, sub_self]
 
 /-- **THE ARITHMETIC HALF OF STEP 3** (PROVEN over the two leaves above).
+
+**CONSUMERLESS AND SLATED FOR DELETION** (established 2026-08-02 by a
+comment-stripped consumer scan over `Fermat/`: the only occurrence of this name
+in the tree is its own declaration line).  It is the assembly of the DEAD
+Cut A; the LIVE assembly of the same node is `exists_frobEquivariant_placeAbove`
+below, which states the same seven clauses — modulo taking `σ` as a hypothesis
+instead of hard-coding the `N w`-power map — and IS consumed, by
+`exists_finset_abelianReductionDatum_of_mult`.  See the duplicate-cut paragraph
+on `exists_valuationSubring_arithFrob_of_heightOneSpectrum` above.
+
+Re-pointing this at `exists_frobEquivariant_placeAbove` (which would orphan
+`exists_residueField_ringHom_of_valuationSubring` and make the deletion
+mechanical) is NOT possible where it stands: that theorem is declared ~200 lines
+BELOW this one, so the appeal is forbidden by declaration order.  Deleting this
+whole component is therefore cheaper than relocating it, and loses nothing —
+`exists_frobEquivariant_placeAbove` already carries the content.
+
 The local ring `O` of `F̄` at a place above `w`, with the five conditions that
 pin it — which are LITERALLY the five fields `ι_injective`, `π_surjective`,
 `ker_π`, `valuationRing`, `lift_int` of `IsAbelianReductionDatum` — together
