@@ -22749,3 +22749,72 @@ converts "represents the functor on `Sch`" into "represents it on `Sch/S`".**
 Whenever a leaf quantifies over morphisms `T ⟶ M` in `Sch` while meaning
 `S`-morphisms, that is the gap, and `Spec` of a localisation or quotient of `ℤ`
 closes it for free.
+## A HOIST THAT CARRIES **STALE** TEXT UPSTREAM REVERTS A COMMIT, AND THE ONLY SYMPTOM IS ONE EXTRA `sorry`
+(2026-08-01, `flt-lean-146`, recovering the proofs release 29 deleted as duplicates.)
+The already-recorded failure is *a hoist that does not delete its source leaves a
+duplicate*. This is its sibling and it is strictly worse, because the dedup that repairs
+the duplicate is what completes the damage:
+1. a branch IMPROVES a declaration in the downstream module — here `c9efe1ba` removed
+   `hq2 : q ≠ 2` from `variableChange_valuation_of_valuation_Δ_eq_one`,
+   `exists_inertiaVariableChange` and `exists_aut_of_isTorsionReduction`, proving the
+   uniform statement and making the `q = 2` case a one-line specialisation;
+2. a CONCURRENT branch HOISTS the same declarations upstream — from a base that predates
+   (1), so the copy that lands upstream is the STALE text;
+3. `semmerge.py` propagates additions and not deletions, so both copies survive;
+4. the release's duplicate sweep deletes the DOWNSTREAM copy, which is the improved one.
+**Net effect: commit (1) is reverted in full, silently, by a clean merge.** No conflict,
+no error, no scan. `xdup.py` is happy afterwards, the build is green, and the entire
+visible residue is that ONE leaf — `exists_aut_of_isTorsionReduction_two` — is a `sorry`
+again. Its deleted "proof" then *does not typecheck*, because the delegate it called has
+regained a hypothesis, which reads exactly like "the delegate was narrowed on purpose, so
+recovering this proof would be unsound". The truth is the reverse.
+**THE CHECK THAT DECIDES IT, and it is two commands.** When a deleted proof fails to
+typecheck against the current tree, do not reason about whether the narrowing was
+intentional — find the commit that introduced the hypothesis and compare the current
+upstream text against ITS PARENT:
+    git log --oneline -S '<the hypothesis text>' -- <the two files>
+    git show <that commit>^:<downstream module> > /tmp/pre.lean
+    # then diff the current UPSTREAM span against the pre-commit DOWNSTREAM span
+Here the two spans were **byte-identical, all 1013 lines**. That is conclusive: nothing
+had improved the upstream copy since the hoist, so the repair is a wholesale span swap
+for the deleted text, and it is safe precisely because the commit being restored
+**added and removed no declarations** (`git show <sha> | grep -E '^[+-](theorem|def|…)'`
+empty ⟹ no new dependency, no ordering change).
+Two riders, both of which cost a build round here:
+* **The stale call sites come with it.** Restoring the signatures re-breaks whatever the
+  hoist left passing the removed argument. Fix them the way the ORIGINAL commit did —
+  its diff is the specification. Here one `by_cases hq2 : q = 2` had to KEEP its case
+  split, because collapsing it would leave the recovered `…_two` with no consumer at all.
+* **A docstring is part of the payload.** `c9efe1ba` recorded, in the docstring it
+  restored, *why* no division by `2` is needed (`r`, `s`, `t` each satisfy a MONIC
+  relation over `𝒪`, the quartic being `r·(b₆-relation) − (b₈-relation)`, whose `4r³` and
+  `3r⁴` cancel) — a refutation of a recorded audit, lost with the code and recoverable
+  only by taking the old text verbatim rather than re-deriving the signature.
+**And run the whole task list against the CURRENT tree before starting.** Of eleven names
+this task named as recoverable, THREE had been proven upstream in the meantime and one
+was this. A task list assembled at release *N* is a description of release *N*.
+### The dot-notation blind spot, again, and what it costs a blocker scan
+The standing rule is that a hoist's reference scan must be dot-notation aware. The same
+bug in a *blocker* scan is quieter and more expensive: a proof calling
+`E.exists_localInertia_subgroup_…` tokenises as one atom, which matches neither the short
+name nor the qualified one, so the scan reports **no blockers** and the leaf looks
+mechanical until the build says otherwise. Match on the LAST dotted component, and expect
+`f`, `g`, `map`, `comp`, `zero`, `succ` back as noise.
+Second, cheaper trap in the same family: `decl.block_start`-style helpers that recompute
+the comment mask per call are **quadratic**, and on a 70 000-line file a closure scan
+simply never returns. Compute the mask once.
+### Two more merge-damage tells found by doing this
+* **Stacked duplicate scope lines.** The hoisted block carried SIX consecutive
+  `open scoped Pointwise in` with a `set_option maxHeartbeats` wedged among them, and what
+  remained in the source carried `open Polynomial in` and a `set_option` TWICE each.
+  Stacked `… in` modifiers are idempotent, so this is invisible to the build — which is
+  why it survives — and it is a reliable fingerprint of two hoists landing on one
+  declaration. Same shape as release 32's `Interface.lean` round 7a.
+* **An empty `namespace X` / `end X` on consecutive lines** (`SeventeenDescent` in
+  `MazurTorsion.lean`) is a namespace whose contents a merge moved away. Harmless,
+  and worth grepping for when auditing a file two hoists have crossed.
+**A block extractor will over-reach into a `/-!` module comment or a scope terminator that
+happens to sit next to the declaration** — mine put a block's start inside a `RELOCATED`
+note and another's end on an `end SeventeenDescent`. Print the first and last line of any
+block before moving it; the two seconds that costs is the difference between a clean hoist
+and one that carries a scope line into another file.

@@ -7457,8 +7457,6 @@ three lines, and what remains open is `A₀-3b-i-b`, Raynaud's classification.  
 this module used any of them; they are re-exported through the `public import` above. -/
 
 open Polynomial in
-open Polynomial in
-set_option backward.isDefEq.respectTransparency false in
 set_option backward.isDefEq.respectTransparency false in
 /-- **Mazur's rational isogenies of prime degree** (PROVEN 2026-07-26 as
 an assembly over the four leaves above — the
@@ -17767,6 +17765,8 @@ already discharged inside `isIso_ajHom_of_x0Genus_eq_one`, which is base-general
 and already in the environment; this theorem adds no new `N = 0` obligation and
 weakens no hypothesis. -/
 
+namespace SeventeenDescent
+end SeventeenDescent
 open scoped WeierstrassCurve.Affine in
 /-- **GALOIS DESCENT FOR THE AFFINE POINTS OF A WEIERSTRASS CURVE OVER `ℚ`**
 (PROVEN 2026-07-31, flt-lean-49; no leaf): a `ℚ̄`-point of `E` fixed by the
