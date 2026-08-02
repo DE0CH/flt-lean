@@ -5,6 +5,64 @@ This repository was split out of Deyao's dissertation repo on
 history of the formalization is preserved. The project root IS the
 Lean package (formerly the `fermat/` subfolder).
 
+## A LEAF'S PRESCRIBED ROUTE CAN BE UNSTATABLE AT THE LEAF'S OWN LINE — check the VOCABULARY's declaration order, not the theorems'
+
+(2026-08-02, `flt-lean-50`, `exists_nonConstantClassify_gamma0Datum_fractionRingPowerSeries`
+in `ModularCurve/X0.lean`.) The declaration-order sections above are about a THEOREM
+declared below its consumer. There is a cheaper and much better-hidden variant: the
+**noun** the route needs is below you. That leaf's docstring prescribed, correctly, *"if
+the classifying point factored through `SpecQ` the datum's `j`-invariant would be a
+rational constant"* — and `IsWeierstrassModel`, the file's only vocabulary for *"`W` is
+the Weierstrass model of this elliptic scheme"*, was declared **2000 lines below it**. So
+the route could not be written down at all, and every attempt to cut the leaf along it
+ends in inlining a copy of that definition, which is a duplicate cut in all but name.
+
+**The check is one `grep -n` per NOUN in the route, not per theorem**, and it belongs
+before any mathematics: list the objects the docstring's argument mentions (`j`-invariant,
+Weierstrass model, coarse ring, `IsJElt`, …), find each one's declaration line, and
+compare with your own. Here two of the four were below.
+
+**The repair is to hoist the DEFINITION, which is small, not the theory, which is not.**
+`weierstrassAffine` / `weierstrassAffineStr` / `IsWeierstrassModel` are 51 lines with three
+dependencies, all imported; the `IsJElt` layer that sits with them is thousands of lines and
+did not have to move. Moving UP was chosen over moving the leaf DOWN because the leaf's
+consumer chain was ~500 lines and would have travelled with it. Receipt for the move:
+`Counter(lines before) == Counter(lines after)`, plus the three checks the hoist note above
+prescribes — and note the third one fires falsely here, because five lines in the jumped
+range begin with the word `section` **inside docstring prose** (`section comment above …`).
+
+## AN ALGEBRAIC HALF PRICED AT A DEVELOPMENT IS OFTEN AN IDENTITY OF COEFFICIENTS
+
+(Same task, and it is what made the cut worth making.) The leaf's algebraic content was
+*"`j(Tate(q)) = 1/q + 744 + …` is transcendental over `ℚ`"*, and the obvious route is the
+Tate-curve evaluation machinery — `TateCurve.evalInt`, summability, a complete
+nonarchimedean field. `ℚ((q)) = FractionRing (PowerSeries ℚ)` needs **none of it**: over
+that field the series ARE the coefficients, so `a₄`, `a₆`, `Δ` and `c₄` are the images of
+`TateCurve.{a₄Formal,a₆Formal,ΔFormal,c₄Formal}` under `ℤ⟦q⟧ → ℚ⟦q⟧ ↪ K`, and every
+statement is an identity in `ℚ⟦q⟧` pushed along an INJECTION. Ninety lines, first try.
+
+Two levers, both general:
+
+* **`ΔFormal` is DEFINED as the discriminant polynomial of `⟨1,0,0,a₄,a₆⟩`**, so
+  "mathlib's `Δ` of the Tate quintuple is the image of `ΔFormal`" is
+  `simp only [WeierstrassCurve.Δ, b₂, b₄, b₆, b₈, map_*]; ring`. Likewise `c₄ = 1 - 48a₄`.
+  Before transporting a named constant, check whether the project's version was defined by
+  the same polynomial — here it was, and the docstring said so.
+* **ASK THE CONSUMER WHICH STRENGTH IT NEEDS.** The consumer wants `¬ IsAlgebraic ℚ (f x)`,
+  but `mem_range_algebraMap_of_isAlgebraic_fractionRing_powerSeries` (PROVEN, in
+  `Mathlib/RingTheory/InvariantCoarseRing.lean`) already upgrades *"not in the image of
+  `ℚ`"* to *"not algebraic over `ℚ`"*. So the leaf only owes **`j` is not a CONSTANT**,
+  which is `Δ·j = c₄³` plus one reading of constant coefficients (`0·c = 0` against
+  `1³ = 1`). Transcendence and non-constancy are a whole theory apart, and the file already
+  contained the bridge.
+
+**And name the object, or the algebra you just proved goes free-floating.** Stating the
+modular residue as *"`∃ d, ∃ W, IsWeierstrassModel d.ab W ∧ W.j ∉ range ℚ`"* is the natural
+shape and it is wrong: the assembly then never consumes the proven non-constancy, which
+this project forbids. Stating it as *"`∃ d, IsWeierstrassModel d.ab tateCurveFractionRing`"*
+— the curve NAMED — keeps the algebra in the cone and makes the residue a citation about a
+specific object. Same rule as the discharged-hypothesis note; it applies to `def`s too.
+
 ## A HYPOTHESIS AN AUDIT CALLS UNUSED IS FREE STRENGTH — SPEND IT, AND THE MISSING THEORY MAY GO AWAY
 
 (2026-07-31, `flt-lean-254`, `ModularCurve/RelativePicard.lean`.) A mature leaf's
