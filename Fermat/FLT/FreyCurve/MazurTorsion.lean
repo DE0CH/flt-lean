@@ -38736,43 +38736,63 @@ theorem nonempty_isBaseChangeOf_of_classify_eq {p : ℕ} (hp : 0 < p)
   rw [huc (specAlgClos ℚ ≫ 𝟙 SpecQ) d₁, huc (specAlgClos ℚ ≫ 𝟙 SpecQ) d₂,
     congrArg Subtype.val h]
 
-/-! ### The `j ∈ {0, 1728}` core, decomposed along the CM automorphism (2026-07-30)
+/-! ### The `j ∈ {0, 1728}` core — DELEGATED UPSTREAM (2026-08-01, flt-lean-271)
 
-`eq_two_or_three_of_stableCyclic_j_special` below is PROVEN over the single new leaf
-`StableCyclicSpecialJ.eq_two_or_three_of_stableCyclic_autMove`.  The dichotomy the old
-docstring prescribed — "`C` is `𝒪_K`-stable" versus "`C` is not" — is carried out here
-verbatim, and **case 1 turns out to be elementary**: no `End`, no `E[p]`-module structure,
-no class number.  Only case 2 is left open, and its route is recorded on the leaf.
+`eq_two_or_three_of_stableCyclic_j_special` below is now PROVEN by citing
+`ModularCurve/X0.lean`'s `Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_zero` and
+`Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_1728`, which are
+hypothesis-for-hypothesis the same statement, carry the same SHARP conclusion
+`p = 2 ∨ p = 3`, and were PROVEN upstream on 2026-07-31 over
+`eq_two_or_eq_three_of_stableCyclic_of_autPoint_not_stable` and the arithmetic leaf
+`exists_galoisFixing_cyclotomic_not_isSquare` — both also proven that day.
 
-The two case-1 computations, with `Ω = ℚ̄` and `[u]` the automorphism `(x, y) ↦ (u²x, u³y)`:
+That is exactly what the consumer's own docstring below has prescribed since
+2026-07-30: *"a prover who closes either should transplant to the other and delete the
+loser; the natural end state is this statement in `X0.lean` with the membership form
+derived from it"*.  The end state HAS been reached upstream —
+`Fermat.mem_mazurIsogenyPrimes_of_stableCyclic_j_special` is four lines over the sharp
+pair — so the transplant reduces to a citation and the loser is this block.
 
-* `j = 1728`, `u² = −1`.  If `[u]⟨g⟩ = ⟨g⟩` write `[u]g = c·g`.  Pick `σ ∈ Γ_ℚ` with
-  `σu ≠ u`; then `σu = −u`, so `σ ∘ [u] = [−u] ∘ σ = −[u] ∘ σ`.  Evaluating at `g` and
-  using `σg = l·g` gives `(cl)·g = −(cl)·g`, i.e. `p ∣ 2cl`.  Neither `c` nor `l` is
-  divisible by `p` (`[u]² = [−1]` and `Point.map σ` is injective), so `p = 2`.
-* `j = 0`, `u² + u + 1 = 0`.  If `[u]⟨g⟩ = ⟨g⟩` write `[u]g = c·g`.  Pick `σ` with
-  `σu ≠ u`; then `σu = u²`, so `σ ∘ [u] = [u]² ∘ σ`, giving `cl ≡ lc²`, hence `c ≡ 1`:
-  `[u]` FIXES `g`.  But `[u](x, y) = (u²x, y)` and `u² ≠ 1`, so `g = (0, y)`; on
-  `y² = x³ + a₆` the tangent at `(0, y)` is horizontal, so `2g = −g` and `p = 3`.
+## WHAT WAS DELETED, AND HOW TO GET IT BACK
 
-The reduction to the normal forms `y² = x³ + a₄x` / `y² = x³ + a₆` is over `ℚ`
-(`exists_smul_eq_quarticModel`, `exists_smul_eq_sexticModel`) and the level structure
-travels along it by `Affine.Point.equivVariableChangeBaseChange`, which is
-`Γ_ℚ`-equivariant because `C₀` has rational coefficients.
+A `namespace StableCyclicSpecialJ` of twelve declarations occupied this position, ~490
+lines, cut 2026-07-30 by flt-lean-292/322: the two case-1 computations
+(`eq_two_of_stableCyclic_autMap_stable_quartic`,
+`eq_three_of_stableCyclic_autMap_stable_sextic`) with their five helper lemmas
+(`autMap_diag_mul`, `exists_absoluteGaloisGroup_ne`, `notMem_range_of_sq_eq_neg_one`,
+`notMem_range_of_cube_root`, `three_nsmul_eq_zero_of_abscissa_zero`,
+`abscissa_eq_zero_of_autMap_fix`, `ordinate_ne_zero_of_abscissa_zero`), the normal-form
+transport `transport_stableCyclic`, the assembly
+`eq_two_or_three_of_stableCyclic_j_special_aux`, and the SORRY LEAF
+`eq_two_or_three_of_stableCyclic_autMove` (case 2, the CM automorphism MOVES the line).
+Recover with `git show <the commit that deleted this>^:Fermat/FLT/FreyCurve/MazurTorsion.lean`
+and read lines 38195 to 38717.
 
-**A NOTE FOR ANYONE EDITING THIS BLOCK.**  `WeierstrassCurve.map_autMap_diag` is stated in
-`QuarticTwist.lean`, where `(E⁄Ω).IsElliptic` and `Algebra ℚ ℚ̄` resolve along a different
-path than they do here (`AlgebraicClosure.instAlgebra` versus `DivisionRing.toRatAlgebra`;
-this is the hazard `X0.mem_range_algebraMap_of_galoisFixed`'s docstring records).  The two
-are defeq but the kernel takes **five minutes** to see it.  So a closed-term
-`Eq.trans` against that lemma's right-hand side is not affordable: absorb it with a
-metavariable instead (`key.trans (autMap_diag_mul … _).symm`, as below), which lets
-unification assign rather than compare.  The same edit measured 5 min versus 12 s. -/
+A comment-stripped scan of the whole tree found exactly ONE use of any of the twelve
+outside the namespace — the assembly's call in the consumer below — so redirecting that
+citation upstream leaves the entire block free-floating, which this project forbids.
 
-namespace StableCyclicSpecialJ
+## WHY DELETE RATHER THAN KEEP THE PROVEN HALF
 
-open WeierstrassCurve WeierstrassCurve.Affine WeierstrassCurve.Affine.Point
-open scoped WeierstrassCurve.Affine
+Both case-1 theorems are genuinely proven and genuinely duplicate the upstream route:
+`X0.lean`'s pair runs the SAME dichotomy over `exists_autPoint_of_j_eq_zero` /
+`exists_autPoint_of_j_eq_1728` and closes case 1 inline.  Keeping the local copies would
+leave proven theorems with no consumer.
+
+The ONE thing the deleted block had that upstream does not is the `VariableChange`-level
+presentation of the CM automorphism — `autMap_diag_mul` composing `[u] ∘ [v] = [uv]`, and
+the `smul_diag_self` / `smul_diag_self_sextic` route from a rational normal form to an
+automorphism of the base-changed curve.  Upstream works with a bare additive endomorphism
+`ψ` instead, which is weaker and sufficient there.  A successor who needs `Aut(E⁄ℚ̄)` in
+the `VariableChange` form should read the deleted block rather than rebuild it.
+
+## ACCOUNTING
+
+Frontier −1 for this module, and NO MATHEMATICS WAS DONE: the theorem was already proven
+upstream, the local leaf was DEAD by the seventh-invisibility-class test (open, counted,
+unowned, and reaching nothing), and this is merge repair of a duplication whose own
+docstring predicted it.
+-/
 
 /-- **Composition of diagonal automorphisms**: `[u] ∘ [v] = [uv]` on points.  The missing
 companion of `autMap_diag_sq`/`autMap_diag_neg`/`autMap_diag_one` in `QuarticTwist.lean`,
@@ -39274,35 +39294,56 @@ end StableCyclicSpecialJ
 
 /-- **THE CM/RAMIFICATION CORE, IN THE SHARP FORM: an elliptic curve over `ℚ`
 with `j ∈ {0, 1728}` carrying a Galois-stable cyclic subgroup of PRIME order `p`
-forces `p ∈ {2, 3}`** (**PROVEN 2026-07-30** by flt-lean-292 over the single new leaf
-`StableCyclicSpecialJ.eq_two_or_three_of_stableCyclic_autMove`; a bare sorry leaf, cut
-2026-07-30 by flt-lean-322 as the sole residue
-of `eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ` above, which is
-PROVEN over it).
+forces `p ∈ {2, 3}`** (opened 2026-07-30 by flt-lean-322 as the sole residue of
+`eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ` above; **PROVEN
+2026-08-01 by flt-lean-271 as a two-line citation of `ModularCurve/X0.lean`'s
+`Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_zero` and
+`Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_1728`**, which had been proven
+upstream on 2026-07-31 and which this statement duplicates
+hypothesis-for-hypothesis.)
 
 Elementary in vocabulary: no scheme, no moduli space, no datum, no base change.
 An elliptic curve over `ℚ`, a `ℚ̄`-point of order `p`, and Galois-stability of
 the subgroup it generates.
 
-## THIS IS `Fermat.mem_mazurIsogenyPrimes_of_stableCyclic_j_special` WITH THE CONCLUSION IT ACTUALLY PROVES, AND THE DUPLICATION IS DELIBERATE
+## THE DUPLICATION, AND HOW IT WAS RESOLVED
 
-`X0.lean`'s leaf has hypothesis-for-hypothesis the same statement and concludes
-the WEAKER `p ∈ mazurIsogenyPrimes`.  Read its docstring's route to the end: both
-of its cases land on `p ∈ {2, 3}` and only the last line weakens that to
-membership, via `{2, 3} ⊆ mazurIsogenyPrimes`.  So:
+This statement was cut on 2026-07-30 in deliberate duplication of `X0.lean`, and
+the paragraph that recorded the duplication also prescribed its repair.  Kept
+verbatim, because its analysis is what made the repair mechanical:
 
-* **this leaf implies that one** in one line (`{2,3} ⊆ mazurIsogenyPrimes`);
-* **that one does NOT imply this one** — `mazurIsogenyPrimes` contains
-  `43, 67, 163`, which is exactly why the consumer above could not cite it;
-* and **either proof closes both**, because the argument is the same.
+> `X0.lean`'s leaf has hypothesis-for-hypothesis the same statement and concludes
+> the WEAKER `p ∈ mazurIsogenyPrimes`.  Read its docstring's route to the end: both
+> of its cases land on `p ∈ {2, 3}` and only the last line weakens that to
+> membership, via `{2, 3} ⊆ mazurIsogenyPrimes`.  So:
+>
+> * **this leaf implies that one** in one line (`{2,3} ⊆ mazurIsogenyPrimes`);
+> * **that one does NOT imply this one** — `mazurIsogenyPrimes` contains
+>   `43, 67, 163`, which is exactly why the consumer above could not cite it;
+> * and **either proof closes both**, because the argument is the same.
+>
+> It is stated twice rather than hoisted because `X0.lean` is upstream of this
+> module (`public import Fermat.FLT.ModularCurve.X0`) *and* its copy was a live
+> `TARGET:` of another worker when this cut was made, so neither editing it in
+> place nor citing this one from there was available.  **A prover who closes
+> either should transplant to the other and delete the loser**; the natural end
+> state is this statement in `X0.lean` with the membership form derived from it,
+> which is what the consumer's docstring above has prescribed since 2026-07-28.
 
-It is stated twice rather than hoisted because `X0.lean` is upstream of this
-module (`public import Fermat.FLT.ModularCurve.X0`) *and* its copy was a live
-`TARGET:` of another worker when this cut was made, so neither editing it in
-place nor citing this one from there was available.  **A prover who closes
-either should transplant to the other and delete the loser**; the natural end
-state is this statement in `X0.lean` with the membership form derived from it,
-which is what the consumer's docstring above has prescribed since 2026-07-28.
+That prediction came true on 2026-07-31, one level higher than it anticipated: the
+other worker SPLIT `X0.lean`'s membership leaf into the two sharp `j`-halves
+`eq_two_or_eq_three_of_stableCyclic_j_eq_zero` / `_j_eq_1728`, proved BOTH, and
+derived the membership form from them by `decide`.  So the sharp statement now
+exists upstream after all, the "either proof closes both" clause fired, and the
+loser is the local development — deleted, with its inventory recorded in the
+section note above.
+
+**What the resolution did NOT need**: the first main theorem of complex
+multiplication, `classNumberOne_of_end_closure_eq_top`, or any `ψ² = [−n] + b·ψ`
+generalisation of the encoding.  The upstream proof runs the Weil-pairing route
+(`det ρ̄ = χ̄_cyc`, plus "a square character cannot be surjective on `𝔽_p^×`"),
+which is what the deleted leaf's own docstring had correctly identified as the
+cheap one.
 
 ## THE ARGUMENT (copied from the `X0.lean` twin so this leaf stands alone)
 
@@ -39334,9 +39375,9 @@ each priced a route, and both prices were wrong.**
 1. "`classNumberOne_of_end_closure_eq_top` is exactly case 2's CM engine … a
    generalisation of the encoding (`ψ² = [−n] + b·ψ`) is owed for `j = 0`."  That
    generalisation is NOT owed, because case 2 does not need the class number at all: see
-   the Weil-pairing route on
-   `StableCyclicSpecialJ.eq_two_or_three_of_stableCyclic_autMove`, which kills every odd
-   `p` from `det ρ = χ_p` plus "a square character cannot be surjective".  (The CM route
+   the Weil-pairing route in `X0.lean`'s
+   `Fermat.eq_two_or_eq_three_of_stableCyclic_of_autPoint_not_stable`, which kills every
+   odd `p` from `det ρ = χ_p` plus "a square character cannot be surjective".  (The CM route
    does work; it is simply the expensive one.  For the record, `disc = −4p²` needs no
    search: `(2, 2, (p²+1)/2)` is reduced, primitive and has `a = 2` for every odd `p`.)
 2. "**Genuinely missing everywhere**: `End(E⁄ℚ̄) = ℤ[i]` / `ℤ[ζ₃]`."  Still true, and
@@ -39374,8 +39415,10 @@ theorem eq_two_or_three_of_stableCyclic_j_special {p : ℕ} (hp : p.Prime)
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
-    p = 2 ∨ p = 3 :=
-  StableCyclicSpecialJ.eq_two_or_three_of_stableCyclic_j_special_aux hp E hj g hg hstab
+    p = 2 ∨ p = 3 := by
+  rcases hj with hj0 | hj1728
+  · exact Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_zero hp E hj0 g hg hstab
+  · exact Fermat.eq_two_or_eq_three_of_stableCyclic_j_eq_1728 hp E hj1728 g hg hstab
 
 /-- **A `Γ₀(p)`-datum over `ℚ̄` with field of moduli `ℚ` and `j ∈ {0, 1728}`
 forces `p ∈ {2, 3}`** (a sorry leaf from 2026-07-28, opened by the cut of

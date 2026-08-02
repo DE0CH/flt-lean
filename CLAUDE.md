@@ -24188,3 +24188,57 @@ after the recut.  **A docstring asserting that something was deleted is the
 cheapest possible thing to check and among the least often checked**; one `grep -n
 '^theorem <name>'` settles it, and a false one is exactly what makes an orphan
 invisible.
+## A DELIBERATE DUPLICATION'S DOCSTRING PREDICTS ITS OWN REPAIR — AND THE PREDICTION FIRES ONE LEVEL HIGHER THAN IT EXPECTED
+(2026-08-01, `flt-lean-271`, on `eq_two_or_three_of_stableCyclic_autMove` in
+`FreyCurve/MazurTorsion.lean`.)
+This project sometimes duplicates a statement ON PURPOSE — the twin is upstream, the
+upstream copy is somebody else's live `TARGET:`, and editing it or citing it is not
+available at the moment of the cut.  Such a cut always ships with a sentence of the form
+> **A prover who closes either should transplant to the other and delete the loser**;
+> the natural end state is this statement in `X0.lean` with the membership form derived
+> from it.
+**That sentence is a standing task with no owner.**  Nobody is ever dispatched at "go and
+check whether the twin got closed", so the duplication survives until an agent sent at the
+LOSER's leaf happens to look upstream.  Here that was three days, and the leaf drew a
+dispatch in the meantime.
+**AND THE OBVIOUS CHECK GIVES THE WRONG ANSWER, because the twin's docstring also records,
+correctly, WHY the twin cannot help.**  This one said: `X0.lean`'s copy concludes the
+WEAKER `p ∈ mazurIsogenyPrimes`, so *"that one does NOT imply this one — `mazurIsogenyPrimes`
+contains `43, 67, 163`, which is exactly why the consumer could not cite it"*.  True when
+written, and it is precisely the sentence that stops a reader looking further.  What
+happened next is not covered by it: the upstream owner **SPLIT** the membership leaf into
+the two sharp `j`-halves (`eq_two_or_eq_three_of_stableCyclic_j_eq_zero` / `_j_eq_1728`,
+conclusion `p = 2 ∨ p = 3`), proved BOTH, and re-derived membership from them by `decide`.
+So the sharp statement appeared upstream after all, under names the duplication's docstring
+had never heard of, and the implication direction reversed.
+**So the check is not "is the twin proven?" — it is "does the twin's FILE now contain my
+CONCLUSION, under any name?"**  Grep the upstream file for the conclusion, not for the
+twin's identifier:
+    grep -n 'p = 2 ∨ p = 3' Fermat/FLT/ModularCurve/X0.lean
+Same discipline as the standing rule that two leaves can name one theorem in two
+vocabularies — with the extra twist that here the two names were separated by a SPLIT
+somebody performed after the duplication's docstring was written, so no amount of care at
+cut time could have named them.
+**The task then is a DELETION, not a proof, and it should be reported that way.**  The
+local leaf was DEAD in the seventh-invisibility-class sense — open, in the warning set,
+correctly reported unowned, and reaching nothing that is not reachable upstream.  Closing
+it by proof would have re-derived a theorem the tree already had.
+### Two mechanical notes that made the deletion cheap and auditable
+* **Establish deadness by a comment-stripped scan of EVERY name in the block, not just the
+  leaf's.**  Twelve declarations, one external use in the whole tree (the assembly's call
+  in the consumer), so redirecting that one citation upstream frees the entire ~490-line
+  namespace.  A grep for the leaf alone would have shown it consumed and stopped there.
+* **A deletion has an exact receipt: every REMOVED line must lie inside the block you
+  meant to delete.**  `Counter(before) - Counter(after)` against the block's line set —
+  empty residue means nothing outside the range was touched, which a 500-line diff cannot
+  be read for by eye.  (The `sort`-and-diff receipt in the hoist section is the same idea
+  for a pure MOVE; for a deletion the one-sided version is what you want, since the line
+  counts are deliberately unequal.)
+### And say in the commit that NO MATHEMATICS WAS DONE
+Frontier `−1` from a repair like this is indistinguishable from `−1` earned by a proof.
+Both the commit message and the surviving docstring have to say which it was, and where
+the deleted text can be recovered from — otherwise the next reader infers that a theory
+gap closed here, and a successor needing the deleted block's one non-duplicated asset
+(here: the `VariableChange`-level presentation of the CM automorphism, `autMap_diag_mul`
+and the `smul_diag_self` route, where upstream uses only a bare additive endomorphism)
+will rebuild it instead of recovering it.
