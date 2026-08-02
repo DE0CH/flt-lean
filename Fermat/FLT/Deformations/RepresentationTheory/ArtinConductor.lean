@@ -5392,7 +5392,12 @@ instead of one opaque one:
 * `gp_le_gp_psiNat_phi_sup_lvl` — Herbrand for a tower (Serre IV §3 Prop. 14
   plus transitivity of `φ`), stated directly between two arbitrary levels so
   that NO relative `LowerRamificationData` has to be built. This is where the
-  arithmetic is.
+  arithmetic is. **SPLIT 2026-08-02** into its two inclusions,
+  `gp_le_gp_psiNat_phi_sup_lvl_of_finer` (lifting, `L_{D'} ⊇ L_D`) and
+  `gp_le_gp_psiNat_phi_of_coarser` (descent, `L_{D'} ⊆ L_D`); the two-level
+  statement is now PROVEN over them by a common refinement, and it is those two
+  that carry the arithmetic. The split is an equivalence — see the note above
+  them — and each consumer of the two-level form uses exactly one of the halves.
 * `iInf_gp_one_le_wildInertiaGroup` — `⋂_D G_1(L_D/Kᵥ) ≤ P_v`, the inverse
   limit of the wild parts. Independent of the above; see its docstring.
 
@@ -5511,16 +5516,174 @@ theorem LowerRamificationData.iInf_gp_zero_eq_localInertiaGroup
   exact (IsLocalRing.mem_maximalIdeal _).mpr fun hu =>
     D.unif_not_isUnit (isUnit_of_dvd_unit hdvd hu)
 
+/-- **`G_0` IS MONOTONE UNDER REFINEMENT**, `G_0(L_D/Kᵥ) ≤ G_0(L_{D'}/Kᵥ)` as
+subgroups of `Γ Kᵥ` whenever `L_D ⊇ L_{D'}` — i.e. the inertia of a level maps
+into the inertia of any coarser one.
+
+This is the `m = 0` case of `gp_le_gp_psiNat_phi_of_coarser` below, and unlike
+every other case of it it is FREE, which is why that leaf carries `1 ≤ m`. The
+whole proof is `unif_spec` at the coarse level: for `y` fixed by `D'.lvl` (hence
+by the smaller `D.lvl`), `σ • y − y` is divisible by `D.unif`, hence is a
+NON-UNIT, and it is `D'.lvl`-fixed by `smul_sub_self_fixed`; `D'.unif_spec` then
+hands back `D'.unif ∣ σ • y − y`, which is membership in `D'.gp 0`.
+
+Note what makes this work and does NOT survive to `m ≥ 1`: at `m = 0` the
+conclusion asks only that the difference be a non-unit, and "non-unit" is a
+property of the element that does not remember which uniformizer certified it.
+At `m ≥ 1` the same argument gives only `v_{D'}(σ • y − y) ≥ ⌈(m+1)/e⌉` with
+`e = e(L_D/L_{D'})`, and that is far weaker than what is needed — see the
+counterexample recorded on `gp_le_gp_psiNat_phi_of_coarser`. -/
+theorem LowerRamificationData.gp_zero_le_gp_zero_of_lvl_le
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D D' : LowerRamificationData v)
+    (hlvl : D.lvl ≤ D'.lvl) :
+    D.gp 0 ≤ D'.gp 0 := by
+  intro σ hσ
+  rw [D'.mem_gp]
+  intro y hy
+  have hyD : ∀ τ ∈ D.lvl, τ • y = y := fun τ hτ => hy τ (hlvl hτ)
+  have hdvd : D.unif ^ (0 + 1) ∣ σ • y - y := (D.mem_gp 0 σ).mp hσ y hyD
+  rw [zero_add, pow_one] at hdvd
+  have hnu : ¬ IsUnit (σ • y - y) := fun hu => D.unif_not_isUnit (isUnit_of_dvd_unit hdvd hu)
+  have hfix : ∀ τ ∈ D'.lvl, τ • (σ • y - y) = σ • y - y := D'.smul_sub_self_fixed σ hy
+  simpa using D'.unif_spec _ hfix hnu
+
+/-! #### Herbrand for a tower, split into its two inclusions
+
+`gp_le_gp_psiNat_phi_sup_lvl` below is stated between two ARBITRARY levels, and
+that is the form its two consumers were written against. It is not the form the
+literature proves: Serre, *Corps Locaux* IV §3, Prop. 14 is about a TOWER
+`Kᵥ ⊆ L ⊆ L''`, and it is an EQUALITY of subgroups whose two inclusions have
+different proofs and different consumers here. The two leaves below are those
+two inclusions, and the general statement is PROVEN over them.
+
+**The split is an EQUIVALENCE, so the faithfulness audit transfers verbatim.**
+Each leaf is an instance of the general statement (add a hypothesis, which can
+only weaken a statement), and conversely the general statement follows from the
+two by taking a common refinement — that derivation is the body of
+`gp_le_gp_psiNat_phi_sup_lvl` and uses nothing but
+`exists_lowerRamificationData_lvl_eq`, `psiNat_mono`, `le_phi_psiNat` and
+`gp_antitone`. So no counterexample to either half is a counterexample to
+anything the old single leaf did not already assert, and none to the pair is
+one the old leaf survived.
+
+**Neither consumer needs the general form.** `gp_psiNat_le_of_lvl_le` below
+instantiates it at `D''.lvl ≤ D'.lvl`, which is exactly
+`gp_le_gp_psiNat_phi_of_coarser`; `exists_mem_lvl_forall_mem_gp_psiNat`
+instantiates it at levels REFINING `D`, which is exactly
+`gp_le_gp_psiNat_phi_sup_lvl_of_finer`. The general form is retained only so
+that those two proofs do not have to move.
+
+**What is owed, and it is the same input for both.** Serre's proof of Prop. 14
+runs on the function `i_{L/Kᵥ}(σ) = min_x v_L(σx − x)` — here, the largest `i`
+with `σ ∈ G_{i-1}` — and on the two identities
+`i_{L/Kᵥ}(σ) − 1 = ∑_{σ'' ↦ σ} (i_{L''/Kᵥ}(σ'') − 1) / e_{L''/L}` (IV §1
+Lemma 5, which needs `𝒪_{L''} = 𝒪_L[y]` — monogenicity — for a generator `y`)
+and `i_{L/Kᵥ}(σ) − 1 = φ_{L''/L}(i_{L''/Kᵥ}(σ'') − 1)` for a lift `σ''`
+MAXIMIZING `i_{L''/Kᵥ}`. Neither is in this file and neither is in mathlib:
+`Mathlib/RingTheory/Valuation/RamificationGroup.lean` is 54 lines and contains
+`decompositionSubgroup` and `inertiaSubgroup` and nothing else (re-checked
+2026-08-02 by reading the file, not by grep), there is no `Herbrand` and no
+`lowerIndex` anywhere under `Mathlib/`, and the `Herbrand` hits elsewhere in
+`Fermat/` are all Herbrand QUOTIENTS in the class-field-theory files, which are
+a different object. Monogenicity is the one prerequisite plausibly reachable
+here, the levels being `IntegralClosure 𝒪ᵥ L` with `𝒪ᵥ` a complete DVR.
+
+**Do not look for a cheaper route through `⋂`-style arguments.** Given the
+maximal-lift identity the two inclusions really are the two halves of one
+equality and each implies the other only in the presence of the index identity
+`|image(G_n(L''/Kᵥ))| = |G_{φ_{L''/L}(n)}(L/Kᵥ)|`, which is itself equivalent to
+transitivity of `φ` (IV §3 Prop. 15) and hence to Prop. 14. Concretely: a
+proof of one half plus a cardinality count gives the other, and the cardinality
+count IS the theorem. This was checked on 2026-08-02 and is recorded so the next
+owner does not re-derive it.
+
+**Why transitivity of `φ` cannot be stated separately here**: `phi` in this file
+is `ℕ → ℚ`, so `φ_D ∘ φ_{L''/L}` is not expressible without first extending
+`phi` to `ℚ → ℚ`. Writing the index as `ψ_{D'}(φ_D m)` is precisely what avoids
+that, and it is why both leaves below are stated with that index rather than
+with a relative `ψ_{L''/L}(m)`.
+-/
+
+/-- **HERBRAND FOR A TOWER, THE LIFTING INCLUSION**: if `L_{D'} ⊇ L_D` then
+every `σ ∈ G_m(L_D/Kᵥ)` is, MODULO `Gal(Kᵥᵃˡᵍ/L_D)`, in
+`G_{⌈ψ_{D'}(φ_D m)⌉}(L_{D'}/Kᵥ)`. Equivalently: the image of
+`G_{ψ_{L''/L}(m)}(L''/Kᵥ)` in `Gal(L/Kᵥ)` CONTAINS `G_m(L/Kᵥ)`. Serre,
+*Corps Locaux* IV §3, Prop. 14 (the `⊆` half of the equality there), together
+with transitivity of `φ` (IV §3 Prop. 15), which the choice of index absorbs.
+
+**SORRY LEAF**, cut 2026-08-02 out of `gp_le_gp_psiNat_phi_sup_lvl` below.
+See the section note above for what is owed, for why the split is an
+equivalence, and for the routes that were checked and do not work.
+
+THIS IS THE HALF WITH THE MAXIMAL LIFT IN IT, and that is the whole of its
+difficulty: `σ` is given only up to `D.lvl`, and the classical argument produces
+the required `λ ∈ D.lvl` as the one making `i_{L''/Kᵥ}(σλ)` maximal among the
+lifts. The `⊔ D.lvl` in the conclusion is exactly that choice, and it cannot be
+removed — for `D'` strictly finer than `D` a particular `σ ∈ G_m(L_D/Kᵥ)` need
+not itself lie in `G_n(L_{D'}/Kᵥ)`, only some `D.lvl`-translate of it does.
+
+The `D' = D` case is trivial (`psiNat_phi` returns the index `m`), and the case
+`m ≥ T` with `D.gp T = D.lvl` (`exists_gp_eq_lvl`) is trivial too, so the
+content is confined to `m < T`. -/
+theorem LowerRamificationData.gp_le_gp_psiNat_phi_sup_lvl_of_finer
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D D' : LowerRamificationData v)
+    (hlvl : D'.lvl ≤ D.lvl) (m : ℕ) :
+    D.gp m ≤ D'.gp (D'.psiNat (D.phi m)) ⊔ D.lvl := sorry
+
+/-- **HERBRAND FOR A TOWER, THE DESCENT INCLUSION**: if `L_D ⊇ L_{D'}` then
+`G_m(L_D/Kᵥ) ≤ G_{⌈ψ_{D'}(φ_D m)⌉}(L_{D'}/Kᵥ)` — the image of a lower
+ramification group of the FINE level lands in the indicated one of the COARSE
+level. Serre, *Corps Locaux* IV §3, Prop. 14 (the `⊇` half). No `⊔ D.lvl` is
+needed: `D.lvl ≤ D'.lvl ≤ D'.gp _` by `lvl_le_gp`, so it would be absorbed.
+
+**SORRY LEAF**, cut 2026-08-02 out of `gp_le_gp_psiNat_phi_sup_lvl` below.
+See the section note above.
+
+`1 ≤ m` IS NOT A RESTRICTION: the `m = 0` case is `psiNat 0 = 0` together with
+`gp_zero_le_gp_zero_of_lvl_le` above, which is PROVEN, and the derivation of
+the general statement below uses it at exactly that case.
+
+**THE NAIVE ELEMENTWISE ROUTE IS TOO WEAK, AND HERE IS THE WITNESS.** It is
+tempting to argue directly: a `D'.lvl`-fixed `y` is `D.lvl`-fixed, `σ • y − y`
+is then divisible by `D.unif ^ (m+1)` and is `D'.lvl`-fixed, so peel factors of
+`D'.unif` off it with `unif_spec`. Writing `e` for `e(L_D/L_{D'})`, i.e. for the
+exponent in `D'.unif = D.unif ^ e · (unit)`, that argument yields exactly
+`v_{D'}(σ • y − y) ≥ ⌈(m+1)/e⌉`, i.e. `σ ∈ D'.gp (⌈(m+1)/e⌉ − 1)`, and no more.
+That is strictly weaker than the conclusion. Take `Kᵥ = ℚ_3`,
+`L_D = ℚ_3(ζ_9)`, `L_{D'} = ℚ_3(ζ_3)`, so `e = 3`; the lower groups of `L_D/ℚ_3`
+are `G_0` of order `6`, `G_1 = G_2 = Gal(L_D/L_{D'})` of order `3`, `G_3 = 1`,
+whence `φ_D(1) = 1/2`, `φ_D(2) = 1`, `φ_D(3) = 7/6`, while `φ_{D'}(k) = k/2`.
+At `m = 2` the conclusion asks for `σ ∈ D'.gp (ψ_{D'}(1)) = D'.gp 2` and the
+elementwise bound gives only `⌈3/3⌉ − 1 = 0`, i.e. `σ ∈ D'.gp 0`. So no amount
+of care with `unif_spec` closes this leaf; the maximal-lift identity is
+genuinely required. Checked 2026-08-02. -/
+theorem LowerRamificationData.gp_le_gp_psiNat_phi_of_coarser
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D D' : LowerRamificationData v)
+    (hlvl : D.lvl ≤ D'.lvl) (m : ℕ) (hm : 1 ≤ m) :
+    D.gp m ≤ D'.gp (D'.psiNat (D.phi m)) := sorry
+
 /-- **HERBRAND'S THEOREM FOR A TOWER**, in the form the upper numbering
 consumes: the image of `G_m(L_D/Kᵥ)` in `Gal(L_{D'}/Kᵥ)` lands inside
 `G^{φ_D(m)}(L_{D'}/Kᵥ) = G_{⌈ψ_{D'}(φ_D m)⌉}(L_{D'}/Kᵥ)`, for ANY two levels
 `D`, `D'`. Serre, *Corps Locaux* IV §3, Prop. 14 together with the
 transitivity of `φ` (IV §3 Prop. 15).
 
-**SORRY LEAF**, cut 2026-07-31 out of
-`gp_le_upperRamificationFiltration_sup_lvl` below, which is now PROVEN over it
-and over `iInf_gp_one_le_wildInertiaGroup`. Its own `D' := D` case is trivial
+**PROVEN 2026-08-02** over the two single-tower inclusions above,
+`gp_le_gp_psiNat_phi_sup_lvl_of_finer` and `gp_le_gp_psiNat_phi_of_coarser`,
+plus the free `gp_zero_le_gp_zero_of_lvl_le` for the degenerate index. It was a
+SORRY LEAF from 2026-07-31, cut out of
+`gp_le_upperRamificationFiltration_sup_lvl` below, which is PROVEN over it and
+over `iInf_gp_one_le_wildInertiaGroup`. Its own `D' := D` case is trivial
 (`psiNat_phi` makes the index `m` again), so nothing is being assumed twice.
+
+**THE COUNT DID NOT MOVE DOWN: this is `1 → 2`, and it is a RECUT, not a
+closure.** What changed is that each open statement is now one inclusion of a
+theorem the literature states — Serre IV §3 Prop. 14 for a tower — instead of a
+statement about two unrelated levels that no book proves; that the
+common-refinement bookkeeping below is banked once and for all; that the
+`m = 0` case is discharged outright; and that each of the two consumers now has
+a residual matching exactly the instance it uses. Judge it by what is left in
+each leaf, not by the delta.
 
 WHAT IT IS AND WHY IT IS STATED BETWEEN TWO ARBITRARY LEVELS. Classically one
 proves it for a TOWER `Kᵥ ⊆ L ⊆ L''`, where it reads: `G_m(L/Kᵥ)` is the image
@@ -5534,23 +5697,51 @@ COROLLARY rather than a second leaf.
 WHY NO RELATIVE `LowerRamificationData` IS NEEDED — see the section docstring
 above: the relative groups are `D''.gp i ⊓ D.lvl` on the nose, and writing the
 index as `ψ_{D'}(φ_D m)` rather than `ψ_{L''/L}(m)` is what absorbs the
-transitivity of `φ`. So a prover of this leaf needs Serre's Prop. 14 and
-Prop. 15 as ARITHMETIC, but no new structure and no new definitions.
+transitivity of `φ`. So a prover of the two leaves above needs Serre's Prop. 14
+as ARITHMETIC, but no new structure and no new definitions.
 
-THE ARITHMETIC THAT IS STILL OWED. Serre's proof of Prop. 14 runs on the
-function `i_{L/Kᵥ}(σ) = min_x v_L(σx − x)` (here: the largest `i` with
-`σ ∈ G_{i-1}`) and on the two identities
-`i_{L/Kᵥ}(σ) − 1 = ∑_{σ'' ↦ σ} (i_{L''/Kᵥ}(σ'') − 1) / e_{L''/L}` (IV §1
-Lemma 5, which needs `𝒪_{L''} = 𝒪_L[y]` — monogenicity — for a generator `y`)
-and `φ_{L''/L}(i_{L''/L}(σ'') − 1) = i_{L/Kᵥ}(σ) − 1`. Neither is in this file
-and neither is in mathlib; `Mathlib/RingTheory/Valuation/RamificationGroup.lean`
-stops at `inertiaSubgroup`. Monogenicity of the integral closure at a finite
-level is the one prerequisite that is plausibly already reachable here, since
-the levels are `IntegralClosure 𝒪ᵥ L` with `𝒪ᵥ` a complete DVR. -/
+THE ARITHMETIC THAT IS STILL OWED has moved onto the two leaves above; the
+section note there records it, records that the split is an EQUIVALENCE (so the
+faithfulness audit of this statement transfers verbatim to the pair), and
+records the two routes that were checked on 2026-08-02 and do not work.
+
+THE DERIVATION BELOW is the "common refinement" argument the paragraph above
+describes, and it is the only thing this theorem now contains. `E` is a level at
+`D.lvl ⊓ D'.lvl`; the lifting half moves `σ` into `E.gp (ψ_E(φ_D m))` up to
+`D.lvl`, and the descent half pushes that into `D'`. The index bookkeeping is
+`φ_D m ≤ φ_E (ψ_E (φ_D m))` (`le_phi_psiNat`) followed by `psiNat_mono` and
+`gp_antitone`. The degenerate branch `ψ_E (φ_D m) = 0` forces `φ_D m = 0` (as
+`φ_D` is nonnegative and `φ_E 0 = 0`), hence `ψ_{D'} (φ_D m) = 0`, and there the
+free `gp_zero_le_gp_zero_of_lvl_le` finishes — which is exactly why
+`gp_le_gp_psiNat_phi_of_coarser` may carry `1 ≤ m`. -/
 theorem LowerRamificationData.gp_le_gp_psiNat_phi_sup_lvl
     {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)} (D D' : LowerRamificationData v)
     (m : ℕ) :
-    D.gp m ≤ D'.gp (D'.psiNat (D.phi m)) ⊔ D.lvl := sorry
+    D.gp m ≤ D'.gp (D'.psiNat (D.phi m)) ⊔ D.lvl := by
+  classical
+  haveI := D.lvl_normal
+  haveI := D'.lvl_normal
+  obtain ⟨E, hE⟩ := exists_lowerRamificationData_lvl_eq v (D.lvl ⊓ D'.lvl) inferInstance
+    (by rw [Subgroup.coe_inf]; exact D.lvl_isOpen.inter D'.lvl_isOpen)
+  have hED : E.lvl ≤ D.lvl := by rw [hE]; exact inf_le_left
+  have hED' : E.lvl ≤ D'.lvl := by rw [hE]; exact inf_le_right
+  have h1 : D.gp m ≤ E.gp (E.psiNat (D.phi m)) ⊔ D.lvl :=
+    D.gp_le_gp_psiNat_phi_sup_lvl_of_finer E hED m
+  have h2 : E.gp (E.psiNat (D.phi m)) ≤ D'.gp (D'.psiNat (D.phi m)) := by
+    rcases Nat.eq_zero_or_pos (E.psiNat (D.phi m)) with h0 | hpos
+    · have hle : D.phi m ≤ E.phi 0 := by
+        simpa [h0] using E.le_phi_psiNat (D.phi m)
+      rw [E.phi_zero] at hle
+      have hge : (0 : ℚ) ≤ D.phi m := by
+        simpa [D.phi_zero] using D.phi_strictMono.monotone (Nat.zero_le m)
+      have hz : D.phi m = 0 := le_antisymm hle hge
+      have hpz : D'.psiNat (D.phi m) = 0 :=
+        Nat.le_zero.mp (D'.psiNat_le (by simp [hz, D'.phi_zero]))
+      rw [h0, hpz]
+      exact E.gp_zero_le_gp_zero_of_lvl_le D' hED'
+    · refine le_trans (E.gp_le_gp_psiNat_phi_of_coarser D' hED' _ hpos) ?_
+      exact D'.gp_antitone (D'.psiNat_mono (E.le_phi_psiNat (D.phi m)))
+  exact le_trans h1 (sup_le_sup_right h2 _)
 
 /-- **THE UPPER-NUMBERING GROUPS ARE COMPATIBLE UNDER REFINEMENT**: if
 `L_{D''} ⊇ L_{D'}` then `G^u(L_{D''}/Kᵥ) ≤ G^u(L_{D'}/Kᵥ)` as subgroups of

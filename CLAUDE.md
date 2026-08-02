@@ -16151,3 +16151,78 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A LEAF STATED BETWEEN TWO *ARBITRARY* OBJECTS IS OFTEN TWO ORDERED CASES — AND EACH CONSUMER USES ONLY ONE
+
+(2026-08-02, `flt-lean-255`, `gp_le_gp_psiNat_phi_sup_lvl` in `ArtinConductor.lean`.)
+A leaf quantified over two unrelated instances of a structure — two levels, two
+models, two presentations — is worth one check before it is treated as atomic:
+**instantiate it at each consumer and see which side of the natural ORDER each one
+lands on.** If every consumer lands on one side or the other and none needs the
+general form, the general form is PACKAGING: the residuals are the two ordered
+cases, and the packaging is a common-refinement argument you can prove today.
+
+Here the leaf was Herbrand's theorem written between two ARBITRARY levels `D`, `D'`,
+and its own docstring said so ("stated directly between two arbitrary levels so that
+NO relative `LowerRamificationData` has to be built"). Its two consumers instantiate
+it at `D''.lvl ≤ D'.lvl` and at levels REFINING `D` respectively — i.e. at the two
+ordered cases, never at the general one. Those two cases are the two INCLUSIONS of
+Serre IV §3 Prop. 14 for a TOWER, which is the statement the literature actually
+proves; the two-level form is in no book. So the recut hands each consumer a residual
+matching exactly the instance it uses, and hands a successor a statement they can open
+Serre at.
+
+**Say out loud that this is `1 → 2` and that the count went UP.** It did: `4 → 5`
+sorry-warnings in that module. The gain is what is LEFT in each leaf, plus the glue
+banked forever (common refinement, `psiNat_mono`, `gp_antitone`, `le_phi_psiNat` —
+about 25 lines, first try). A reader counting warnings will otherwise read the commit
+as a regression, and a reader counting leaves will read it as one.
+
+**The split is an EQUIVALENCE, so the faithfulness audit transfers — say why.** Each
+half is the general statement plus a hypothesis (which can only weaken), and the
+general statement follows from the two by common refinement. So no counterexample to
+either half is new. That argument is three lines and it is what makes a `1 → 2` recut
+safe; an audit labelled "inherited" without it is the failure this file already
+records.
+
+### Bank the DEGENERATE INDEX of a filtration statement — it is usually free
+
+The `m = 0` case of the descent half is `G_0(L_D) ≤ G_0(L_{D'})` for `L_D ⊇ L_{D'}`,
+and it is three lines: `σ • y − y` is divisible by the fine uniformizer, hence a
+NON-UNIT, hence divisible by the coarse one via that level's `unif_spec` (plus
+`smul_sub_self_fixed` for the normality step). **What makes it work is that
+"non-unit" does not remember which uniformizer certified it** — a property with no
+index in it. At `m ≥ 1` the identical argument gives only
+`v_{D'}(σ • y − y) ≥ ⌈(m+1)/e⌉`, which is far too weak. So prove the degenerate case,
+put `1 ≤ m` on the leaf, and discharge `m = 0` in the glue.
+
+### WHEN YOU RULE OUT THE NAIVE ROUTE, WRITE THE WITNESS INTO THE LEAF
+
+The `unif_spec`-peeling route above is the first thing any prover will try, and it
+takes an hour to convince yourself it dies. One worked instance kills it forever:
+`Kᵥ = ℚ_3`, `L_D = ℚ_3(ζ_9)`, `L_{D'} = ℚ_3(ζ_3)`, `e = 3`; at `m = 2` the conclusion
+needs `D'.gp 2` and the elementwise bound gives `⌈3/3⌉ − 1 = 0`. Costs four lines of
+docstring, and it is the difference between a leaf a successor can price and one they
+must re-explore. Same discipline as a falsity audit's witness, applied to a ROUTE.
+
+### The mechanical receipt for a recut's count, and a `git stash` trap
+
+    lake build <Module>                          # after: read the warning lines
+    git stash && lake env lean <the file> | grep -c 'declaration uses' && git stash pop
+
+Two runs, ~90 s each with the release snapshot seeded, and the two numbers are the
+honest delta to put in the commit message. **`git stash` is SHARED ACROSS WORKTREES**
+— it lives in the main repo's ref store, so `git stash list` here showed two other
+agents' entries. Yours becomes `stash@{0}`, so a bare `git stash pop` is correct, but
+run `git stash list` before and after and check the "Dropped" line names your own.
+
+### Riders
+
+* `tools/merge/parsecheck.py` takes a PATH argument, so it can be run on the one file
+  you edited in a second — do it after any large docstring insertion, before the build.
+* Mathlib at this pin has NO ramification-group theory beyond `decompositionSubgroup`
+  and `inertiaSubgroup`: `Mathlib/RingTheory/Valuation/RamificationGroup.lean` is
+  **54 lines**, and there is no `Herbrand`, no `lowerIndex` and no `phi`/`psi` anywhere
+  under `Mathlib/`. Re-checked 2026-08-02 by reading the file. The `Herbrand` hits in
+  `Fermat/` are all Herbrand QUOTIENTS in the class-field-theory modules — a different
+  object, and a trap for a grep that stops at the word.
