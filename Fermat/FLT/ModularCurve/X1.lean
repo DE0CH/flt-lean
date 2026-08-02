@@ -4132,7 +4132,43 @@ resolution is that the representing bijection — not the functor — depends on
 `g`, since a `Spec K`-morphism `T ⟶ Y` over `g` is a pair (a `Z[1/N]`-morphism
 `T ⟶ Y₁(N)`, and `g` itself).  That argument is about the base field and the
 moduli scheme over `Z[1/N]`, and is untouched by which level structures the
-functor carries. -/
+functor carries.
+
+## THIS LEAF IS THE FILE'S SOLE ROOT FOR KATZ–MAZUR 4.7.1 (2026-08-02)
+
+It was not, until this date.  `exists_isFineGamma1Moduli` (~line 10466) is
+the same theorem stated at `SpecF ℓ` in the `IsFineGamma1Moduli` shape, and
+on 2026-07-31 it was cut into an ATLAS route resting on a SECOND leaf,
+`exists_gamma1UniversalFamily_of_atlas`.  That route's only atlas comes
+from `exists_gamma1AffineModel`, whose call graph runs
+
+    exists_gamma1AffineModel -> exists_gamma1GITPresentation
+      -> exists_gamma1Rigidification -> exists_gamma1RigidifiedModuli
+      -> isAffine_of_gamma1RigidifiedModuliScheme
+      -> exists_isAffine_gamma1RigidifiedModuliScheme -> HERE
+
+so the second leaf was re-deriving, from this leaf's own consequences, a
+statement this leaf gives in eleven lines.  Both atlas declarations are now
+deleted and `exists_isFineGamma1Moduli` is proven here instead.
+
+**Two consequences a prover of this node should know.**
+
+1. **Closing this leaf now closes strictly more than it used to.**  Every
+   `Γ₁` consumer in this file — the rigidified moduli scheme, the GIT
+   presentation, the atlas, the affine model, the coarse space, and
+   `exists_fineGamma1Atlas` — descends from this node and from
+   `exists_isAffineHom_fullLevelModuli` (~line 3985) alone.
+2. **Do NOT re-cut it against an atlas.**  Any such cut is the same cycle
+   again: an atlas over `Spec K` is not available upstream of this line and
+   cannot be made so without reversing the tower, because `Gamma1Atlas`
+   carries the RIGIDIFIED moduli scheme `𝔐([Γ₁(N)], [Γ(n)])` as a field
+   (`M`), i.e. an atlas is strictly MORE than what is asked for here.  The
+   two cuts that are not circular are recorded in the section comment above
+   this declaration: reverse the tower so that `[Γ(n)]` sits at the bottom,
+   or decompose 4.7.1 along its own proof (relative representability of
+   `[Γ₁(N)]`, affine and etale over `(Ell)` — the twin of
+   `exists_isAffineHom_fullLevelModuli`; rigidity at `N ≥ 4`; and the
+   descent machine that combines them). -/
 theorem exists_isAffine_gamma1ModuliScheme (N : ℕ) (_hN : 4 ≤ N) (K : Type) [Field K]
     (_hcharN : ¬ ringChar K ∣ N) :
     ∃ R : Gamma1ModuliScheme N (Spec (CommRingCat.of K)), IsAffine R.Y :=
@@ -12121,19 +12157,34 @@ theorem exists_isFineGamma1Moduli_of_atlas {N : ℕ} (hN : 4 ≤ N)
     exact e₁.symm.trans e₂
 
 /-- **`[Γ₁(N)]` is REPRESENTABLE over `𝔽_ℓ` for `N ≥ 4`, `ℓ ∤ N`**
-(**PROVEN 2026-07-31 by the ATLAS cut** — over the single leaf
-`exists_gamma1UniversalFamily_of_atlas` and the proven
-`exists_gamma1AffineModel`; formerly a sorry leaf carrying the whole of
-Katz–Mazur 4.7.1, NEW 2026-07-28) — the whole mathematical content of
+(**PROVEN 2026-08-02, directly from `exists_isAffine_gamma1ModuliScheme`**
+— formerly a sorry leaf carrying the whole of Katz–Mazur 4.7.1, NEW
+2026-07-28; then PROVEN 2026-07-31 by the ATLAS cut, whose two
+declarations were WITHDRAWN as a cycle, for which see the section comment
+immediately above) — the whole mathematical content of
 `exists_fineGamma1Atlas` below, with the atlas bookkeeping removed.
 
-The assembly is three lines and no geometry: `ℓ` prime makes `ZMod ℓ` a
+The assembly is eleven lines and no geometry: `ℓ` prime makes `ZMod ℓ` a
 field (`Fact.mk`), `ZMod.ringChar_zmod_n` turns `¬ ℓ ∣ N` into
-`¬ ringChar (ZMod ℓ) ∣ N`, `exists_gamma1AffineModel` produces the atlas,
-and `subsingleton_hom_specF` discharges the base hypothesis.  **All three
-arithmetic hypotheses are consumed HERE**, in the atlas construction and in
-the subsingleton — none of them survives into the leaf, which is the point
-of the cut and the evidence that the seam is in the right place.
+`¬ ringChar (ZMod ℓ) ∣ N`, `exists_isAffine_gamma1ModuliScheme` produces
+the fine moduli scheme over `Spec (ZMod ℓ)` — which is `SpecF ℓ`, an
+`abbrev`, so no transport is needed — and the two fields of
+`IsFineGamma1Moduli` are read off its `∃!`:
+
+* `exists_classify` is the existence half, verbatim;
+* `eq_of_isBaseChange` is the uniqueness half, and the ONE thing it needs
+  beyond it is that two rival classifying maps lie over the same base
+  point, which `subsingleton_hom_specF` supplies.  That step is the
+  entire difference between `Gamma1ModuliScheme` and `IsFineGamma1Moduli`
+  — see the CORRECTION on the latter above, whose `𝔽_{ℓ²}` witness is
+  exactly what it rules out.
+
+**All three arithmetic hypotheses are consumed HERE or upstream**: `hN`
+and `hℓN` in `exists_isAffine_gamma1ModuliScheme`, and `hℓ` twice — once
+to make `ZMod ℓ` a field, once in the subsingleton.  The affineness that
+`exists_isAffine_gamma1ModuliScheme` also supplies is discarded; this
+theorem is the bare universal property, and `exists_gamma1AffineModel` is
+where the geometric fields are wanted.
 
 TRUE, and classical: Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*,
 Cor. 4.7.1 (the moduli problem `[Γ₁(N)]` is RIGID for `N ≥ 4`, and a rigid
@@ -12183,10 +12234,18 @@ theorem exists_isFineGamma1Moduli (N ℓ : ℕ) (hN : 4 ≤ N) (hℓ : ℓ.Prime
       IsFineGamma1Moduli N strM dM := by
   haveI := Fact.mk hℓ
   have hchar : ¬ ringChar (ZMod ℓ) ∣ N := by rwa [ZMod.ringChar_zmod_n]
-  obtain ⟨A⟩ := exists_gamma1AffineModel N hN (ZMod ℓ) hchar
-  obtain ⟨dY, h⟩ := exists_isFineGamma1Moduli_of_atlas hN hchar
-    (fun Z => subsingleton_hom_specF ℓ Z) A.toGamma1Atlas
-  exact ⟨A.toGamma1Atlas.Y, A.toGamma1Atlas.str, dY, h⟩
+  obtain ⟨R, -⟩ := exists_isAffine_gamma1ModuliScheme N hN (ZMod ℓ) hchar
+  refine ⟨R.Y, R.strY, R.dY, ⟨?_, ?_⟩⟩
+  · intro T g d
+    obtain ⟨m, hm, -⟩ := R.universal g d
+    exact ⟨m, hm.1, hm.2⟩
+  · -- the ONE step beyond `Gamma1ModuliScheme.universal`: two rival
+    -- classifying maps lie over the same base point, because `SpecF ℓ` is
+    -- the spectrum of a quotient of the initial ring
+    intro T d m₁ m₂ h₁ h₂
+    obtain ⟨m₀, -, huniq⟩ := R.universal (m₁ ≫ R.strY) d
+    have e₂ : m₂ ≫ R.strY = m₁ ≫ R.strY := (subsingleton_hom_specF ℓ T).elim _ _
+    exact (huniq m₁ ⟨rfl, h₁⟩).trans (huniq m₂ ⟨e₂, h₂⟩).symm
 
 /-- **A fine moduli scheme IS an atlas, with `M = Y` and `π = 𝟙`**
 (PROVEN 2026-07-28) — the packaging half of the atlas cut, and it is
