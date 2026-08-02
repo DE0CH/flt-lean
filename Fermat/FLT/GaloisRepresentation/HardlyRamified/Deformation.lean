@@ -187,8 +187,13 @@ written and the frontier moves.
   which is now the fifth because the leaf above discharges it)
 - ~~`card_sha1Twist_le_card_dualNumberPoints`~~ — **PROVEN 2026-07-31**, peeled
   along the tangent space into
-  `card_sha1Twist_le_card_dualNumberDeformationClasses` (the arithmetic, OPEN,
-  still behind the GATE) and
+  `card_sha1Twist_le_card_dualNumberDeformationClasses` (the arithmetic — itself
+  **PROVEN 2026-08-02** once the local Tate pairing made `H¹_{L^⊥}` stateable, over
+  the three leaves `card_sha1Twist_le_card_dualSelmerU` (the `ULift` transport),
+  `card_dualSelmerU_le_card_selmerU` (Greenberg–Wiles proper) and
+  `exists_localConditions_card_selmerU_le_card_dualNumberDeformationClasses` (the
+  tangent space); frontier `1 → 3`, and the GATE that blocked this node is now open
+  — see the subsection *`H¹_L` and `H¹_{L^⊥}`* below) and
   `card_dualNumberDeformationClasses_le_card_dualNumberPoints` (the
   pro-representability bookkeeping, PROVEN, gate-free).  Frontier unchanged, one
   leaf in and one out; the surviving leaf's right-hand side is the deformation
@@ -23136,6 +23141,213 @@ theorem poitouTateExactness_of_localTateDuality
 
 end LocalTatePairing
 
+/-! ### `H¹_L` and `H¹_{L^⊥}`: the Selmer group and its DUAL, as real definitions
+
+Written 2026-08-02.  Until the local Tate pairing was built (`localTatePairingU` above,
+2026-07-31) the dual Selmer group could not be STATED here, and every leaf that needed it
+said so — see the GATE paragraph on `card_sha1Twist_le_card_dualNumberDeformationClasses`
+below, which is what this subsection removes.  Nothing here is a leaf: the orthogonal
+complement, the two localisation maps, and both Selmer groups are ordinary definitions.
+
+**THE ORTHOGONAL COMPLEMENT NEEDS NO INVARIANT MAP, and that is worth saying because the
+obvious reading of `IsLocalTateDual` says it does.**  One might define `L^⊥` as the set of
+`y` with `inv (pairing x y) = 0` for all `x` in `L`, with `inv` the invariant map produced
+by `IsLocalTateDual`.  That would make the definition depend on a choice extracted from an
+existential, hence junk-valued exactly where `isLocalTateDual` is unproven.  It is also
+unnecessary: `inv` is a LINEAR EQUIVALENCE, so `inv z = 0` if and only if `z = 0`, and the
+annihilator of `L` under the raw `H²(ℚ_v, k(1))`-valued pairing is the same submodule for
+every admissible `inv`.  So `orthComplU` below is defined with no `inv` at all, is
+canonical, and does not consume `isLocalTateDual`.
+
+**WHY EVERYTHING HERE IS IN THE `ULift`ed WORLD, AND WHAT THAT COSTS.**  The pairing lives
+on `adZeroLocalU`/`adZeroTwistLocalU`, whose carriers are in `Type (max u v)`; `Sha1Twist`
+above lives on `adZeroTwistRestricted`, whose carrier is in `Type v`.  A morphism in
+`TopRep k G` relates objects of ONE module universe, and `ContinuousCohomology.map` takes
+`X : TopRep k G` and `Y : TopRep k H` in the same universe, so there is no map between the
+two worlds and none can be written.  The Selmer groups are therefore built over
+`adZeroRestrictedU` and `adZeroTwistRestrictedU` below — the `N_S`-invariants of the
+`ULift`ed representations — where the localisation maps ARE constructible, by the same
+`ContinuousCohomology.map` recipe as `locRes` and `locResTwist1` above.
+
+The price is one comparison, and it is the SAME obligation the section header of *The
+LOCAL TATE PAIRING at `v`, and local duality* above already records as owed by
+`poitouTateExactness_of_localTateDuality`: the `ULift` transport, together with
+`ad⁰^{N_S} = ad⁰`.  It is now a NAMED leaf,
+`card_sha1Twist_le_card_dualSelmerU` below, rather than an unnamed obligation hidden
+inside two different leaves' proofs.  Whoever discharges it discharges half of that
+sibling's bookkeeping too. -/
+
+/-- `ad⁰` on the `ULift`ed carrier, as a `G_{ℚ,S}`-representation — the exact analogue of
+`adZeroRestricted` above, with `adZeroTopRepU` in place of `adZeroTopRep`. -/
+noncomputable def adZeroRestrictedU (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    TopRep k (restrictedGaloisGroup S) :=
+  unramTopRep (adZeroTopRepU ρbar) S
+
+variable (ℓ) in
+/-- `ad⁰(1)` on the `ULift`ed carrier, as a `G_{ℚ,S}`-representation — the exact analogue
+of `adZeroTwistRestricted` above. -/
+noncomputable def adZeroTwistRestrictedU (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    TopRep k (restrictedGaloisGroup S) :=
+  unramTopRep (adZeroTwistTopRepU ℓ ρbar) S
+
+/-- The inclusion of the `N_S`-invariants, as a morphism of `Γ ℚ_v`-representations. It is
+what `ContinuousCohomology.map` needs in order to localise a class of
+`H^n(G_{ℚ,S}, (ad⁰)^{N_S})` at `v`, and the equivariance is `rfl`: the `G_{ℚ,S}`-action on
+the invariants is the ambient `Γ ℚ`-action by construction (`unramRep` is a
+`QuotientGroup.lift` of `unramRepAux`, which is a `LinearMap.restrict`). -/
+noncomputable def adZeroRestrictedUToLocal (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    TopRep.res (decompHomRestricted S v).toMonoidHom (adZeroRestrictedU ρbar S) ⟶
+      adZeroLocalU ρbar v :=
+  TopRep.ofHom
+    { toContinuousLinearMap :=
+        { __ := (unramInvariants (adZeroTopRepU ρbar) S).subtype
+          cont := continuous_subtype_val }
+      isIntertwining' := fun _ => ContinuousLinearMap.ext fun _ => rfl }
+
+variable (ℓ) in
+/-- The twisted analogue of `adZeroRestrictedUToLocal` above. -/
+noncomputable def adZeroTwistRestrictedUToLocal (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    TopRep.res (decompHomRestricted S v).toMonoidHom (adZeroTwistRestrictedU ℓ ρbar S) ⟶
+      adZeroTwistLocalU ℓ ρbar v :=
+  TopRep.ofHom
+    { toContinuousLinearMap :=
+        { __ := (unramInvariants (adZeroTwistTopRepU ℓ ρbar) S).subtype
+          cont := continuous_subtype_val }
+      isIntertwining' := fun _ => ContinuousLinearMap.ext fun _ => rfl }
+
+/-- The localisation `H¹(G_{ℚ,S}, ad⁰) → H¹(ℚ_v, ad⁰)`, in the world where the local Tate
+pairing lives — the analogue of `locRes` above in degree `1` and on the `ULift`ed
+carrier. -/
+noncomputable def locResU (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    continuousCohomology 1 (adZeroRestrictedU ρbar S) ⟶
+      continuousCohomology 1 (adZeroLocalU ρbar v) :=
+  ContinuousCohomology.map (decompHomRestricted S v) (adZeroRestrictedUToLocal ρbar S v) 1
+
+variable (ℓ) in
+/-- The localisation `H¹(G_{ℚ,S}, ad⁰(1)) → H¹(ℚ_v, ad⁰(1))` on the `ULift`ed carrier — the
+analogue of `locResTwist1` above. -/
+noncomputable def locResTwistU (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    continuousCohomology 1 (adZeroTwistRestrictedU ℓ ρbar S) ⟶
+      continuousCohomology 1 (adZeroTwistLocalU ℓ ρbar v) :=
+  ContinuousCohomology.map (decompHomRestricted S v)
+    (adZeroTwistRestrictedUToLocal ℓ ρbar S v) 1
+
+variable (ℓ) in
+/-- **THE ORTHOGONAL COMPLEMENT `L^⊥`** of a subspace `L` of `H¹(ℚ_v, ad⁰)` inside
+`H¹(ℚ_v, ad⁰(1))`, under the local Tate pairing `localTatePairingU` above.
+
+This is the object whose absence made every Greenberg-Wiles route unstateable in this
+file. No invariant map appears, deliberately: see the subsection header for why the
+annihilator of the raw `H²(ℚ_v, k(1))`-valued pairing is the same submodule as the
+annihilator of its composite with any linear equivalence onto `k`, and is canonical where
+the composite would depend on a choice from `IsLocalTateDual`'s existential.
+
+Being a submodule is formal — `localTatePairingU ... x` is a continuous LINEAR map, so
+the three closure conditions are `map_zero`, `map_add` and `map_smul`. -/
+noncomputable def orthComplU (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (L : Submodule k ↥(continuousCohomology 1 (adZeroLocalU ρbar v))) :
+    Submodule k ↥(continuousCohomology 1 (adZeroTwistLocalU ℓ ρbar v)) where
+  carrier := {y | ∀ x ∈ L, localTatePairingU ℓ ρbar v 1 1 rfl x y = 0}
+  zero_mem' := fun _ _ => map_zero _
+  add_mem' := fun ha hb x hx => by rw [map_add, ha x hx, hb x hx, add_zero]
+  smul_mem' := fun c _ ha x hx => by rw [map_smul, ha x hx, smul_zero]
+
+/-- **THE SELMER GROUP `H¹_L(ℚ, ad⁰)`** attached to a family `L` of local conditions: the
+classes in `H¹(G_{ℚ,S}, ad⁰)` whose localisation at every `v` in `S` lies in `L v`.
+
+Written as an INTERSECTION of pullbacks rather than as the kernel of a map into a product,
+verbatim as `Sha2` and `Sha1Twist` above and for the same reason: same submodule, no
+product object to build. Taking `L v = ⊥` for every `v` recovers `Ш¹_S(ad⁰)`. -/
+noncomputable def SelmerH1U (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (L : ∀ v, Submodule k ↥(continuousCohomology 1 (adZeroLocalU ρbar v))) :
+    Submodule k ↥(continuousCohomology 1 (adZeroRestrictedU ρbar S)) :=
+  ⨅ v ∈ S, Submodule.comap (locResU ρbar S v).hom.toLinearMap (L v)
+
+variable (ℓ) in
+/-- **THE DUAL SELMER GROUP `H¹_{L^⊥}(ℚ, ad⁰(1))`**: the classes in `H¹(G_{ℚ,S}, ad⁰(1))`
+whose localisation at every `v` in `S` is orthogonal to `L v` under the local Tate
+pairing.
+
+Note that `Ш¹_S(ad⁰(1))` sits inside this for EVERY family `L`, since a class that
+localises to `0` is orthogonal to everything; that inclusion is half of
+`card_sha1Twist_le_card_dualSelmerU` below, the other half being the `ULift` transport
+that moves `Sha1Twist` into this world at all. -/
+noncomputable def DualSelmerH1U (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (L : ∀ v, Submodule k ↥(continuousCohomology 1 (adZeroLocalU ρbar v))) :
+    Submodule k ↥(continuousCohomology 1 (adZeroTwistRestrictedU ℓ ρbar S)) :=
+  ⨅ v ∈ S, Submodule.comap (locResTwistU ℓ ρbar S v).hom.toLinearMap
+    (orthComplU ℓ ρbar v (L v))
+
+/-- `S = hardlyRamifiedPlaces ℓ` really is finite — it has at most two elements, one above
+`2` and one above `ℓ`, because a height-one prime is determined by its ideal. The file
+asserts "two elements" in several places; this is that assertion, proved, and it is what
+lets the Greenberg-Wiles correction terms below be summed over `S`. -/
+lemma finite_hardlyRamifiedPlaces (ℓ : ℕ) : (hardlyRamifiedPlaces ℓ).Finite := by
+  have hEq : hardlyRamifiedPlaces ℓ =
+      {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ) |
+        v.asIdeal = Ideal.span {(2 : NumberField.RingOfIntegers ℚ)}} ∪
+      {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ) |
+        v.asIdeal = Ideal.span {(ℓ : NumberField.RingOfIntegers ℚ)}} := rfl
+  rw [hEq]
+  refine Set.Finite.union ?_ ?_ <;>
+    exact Set.Subsingleton.finite (fun a ha b hb =>
+      IsDedekindDomain.HeightOneSpectrum.ext (ha.trans hb.symm))
+
+/-- **The numerical side condition that turns the Greenberg-Wiles FORMULA into the
+INEQUALITY `#H¹_{L^⊥} ≤ #H¹_L`.**
+
+Wiles' formula (Darmon-Diamond-Taylor 2.19) reads, for a finite `G_S`-module `M` with
+Cartier dual `M*` and a Selmer system `L`,
+
+  `#H¹_L / #H¹_{L^⊥} = (#H⁰(ℚ, M) / #H⁰(ℚ, M*)) * ∏_v (#L_v / #H⁰(ℚ_v, M))`
+
+over ALL places. Three reductions turn that into the condition below, and each is
+recorded here rather than left to the prover to rediscover.
+
+* *The two global terms drop out.* `ρbar` absolutely irreducible kills both
+  `H⁰(ℚ, ad⁰)` and `H⁰(ℚ, ad⁰(1))` — this is the first of the two roles the
+  faithfulness audit on `card_sha1Twist_le_card_dualNumberDeformationClasses` below
+  records for `hirr`.
+* *The finite places outside `S` drop out.* There `L_v` is the unramified condition and
+  `#H¹_ur(ℚ_v, ad⁰) = #H⁰(ℚ_v, ad⁰)`, so the factor is `1`. This is legitimate exactly
+  because the Selmer groups here are taken over `G_{ℚ,S}`, which imposes unramifiedness
+  outside `S` already, and because `ℓ` is IN `S`, so no place outside `S` divides the
+  order of the module.
+* *The archimedean place contributes the `1`, and this is the term it is easiest to
+  lose.* `#ad⁰` is a power of the odd prime `ℓ` and `Gal(ℂ/ℝ)` has order `2`, so
+  `H¹(ℝ, ad⁰) = 0` and `#L_∞ = 1` whatever convention is taken for `L_∞`; but
+  `H⁰(ℝ, ad⁰)` is NOT trivial. `IsHardlyRamified.det` forces `det ρbar` to be the
+  cyclotomic character, so `det ρbar(c) = -1` and `ρbar` is ODD; with `ℓ` odd, `ρbar(c)`
+  is then conjugate to `diag(1, -1)`, whose adjoint action fixes exactly the diagonal
+  trace-zero line. So `dim_k H⁰(ℝ, ad⁰) = 1` and the archimedean factor is `1 / #k`.
+
+Hence `dim H¹_L - dim H¹_{L^⊥} = Σ_{v ∈ S} (dim L_v - dim H⁰(ℚ_v, ad⁰)) - 1`, and the
+inequality holds precisely under the condition below. Note the direction of the risk: a
+condition STRONGER than necessary leaves `card_dualSelmerU_le_card_selmerU` below true and
+merely makes its consumer work harder, while a WEAKER one would make that leaf FALSE. The
+`1` is therefore deliberately on the demanding side, and it is there because `ρbar` is
+odd — not as a safety margin. -/
+def IsGreenbergWilesAdmissible (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (hS : S.Finite)
+    (L : ∀ v, Submodule k ↥(continuousCohomology 1 (adZeroLocalU ρbar v))) : Prop :=
+  1 + ∑ v ∈ hS.toFinset,
+        Module.finrank k ↥(continuousCohomology 0 (adZeroLocalU ρbar v)) ≤
+    ∑ v ∈ hS.toFinset, Module.finrank k ↥(L v)
+
 
 /-- **THE Poitou–Tate input, stated in the nine-term sequence's OWN vocabulary:
 the arrow `H¹(G_{ℚ,S}, ad⁰(1))^∨ → H²(G_{ℚ,S}, ad⁰)`, with its kernel and its
@@ -25324,26 +25536,226 @@ theorem card_dualNumberDeformationClasses_le_card_dualNumberPoints
       (X.D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map X.pt.1
     rw [← Polynomial.map_map, hg3 q hq h2 hl]
 
+variable (ℓ) in
+/-- **`Ш¹_S(ad⁰(1))` SITS INSIDE THE DUAL SELMER GROUP** (sorry leaf, cut out 2026-08-02 as
+the BOOKKEEPING half of `card_sha1Twist_le_card_dualNumberDeformationClasses` below).
+
+**WHAT IT OWES, AND IT IS NOT ARITHMETIC.** Two things, both named in the section header of
+*The LOCAL TATE PAIRING at `v`, and local duality* above as obligations of
+`poitouTateExactness_of_localTateDuality`, so this leaf DISCHARGES HALF OF THAT SIBLING'S
+BOOKKEEPING as well as its own:
+
+* *The `ULift` transport.* `Sha1Twist` is a submodule of `H¹(G_{ℚ,S}, ad⁰(1))` on the
+  carrier `AdZero k V`, in `Type v`; `DualSelmerH1U` is a submodule of the same group on
+  the carrier `ULift.{u} (AdZero k V)`, in `Type (max u v)`. `ULift` is an isomorphism of
+  representations, so the two cohomology groups have the same cardinality — but it cannot
+  be written as a morphism, because `TopRep k G` has morphisms only between objects of one
+  module universe and `ContinuousCohomology.map` inherits that. What a prover must do is
+  compare the two at the level of continuous cochains, where the bijection is
+  `ULift.up`-composition and is visible.
+* *From `ad⁰^{N_S}` to `ad⁰`.* Both sides here are already `N_S`-invariants
+  (`adZeroTwistRestricted` and `adZeroTwistRestrictedU` are both `unramTopRep`), so, unlike
+  in the sibling, no such step is needed: the transport is between the invariants of `M`
+  and the invariants of `ULift M`, and those correspond under the same bijection. This is
+  the reason the leaf is stated with `DualSelmerH1U` rather than with a bare
+  `H¹(ℚ_v, ad⁰(1))` on the right.
+
+Given the transport, the INCLUSION is free and is the whole of the mathematics: a class
+that localises to `0` at `v` lies in every submodule of `H¹(ℚ_v, ad⁰(1))`, in particular in
+`orthComplU ℓ ρbar v (L v)`. That is why no hypothesis on `L` appears — the statement holds
+for EVERY family of local conditions, admissible or not, and a prover should not go looking
+for one.
+
+**FAITHFULNESS AUDIT, 2026-08-02. VERDICT: FAITHFUL.**
+
+* *Junk `Nat.card` on the LEFT cannot falsify.* `Sha1Twist` is a submodule of
+  `H¹(G_{ℚ,S}, ad⁰(1))`, finite-dimensional over the finite field `k` by
+  `finiteDimensional_h1_adZeroTwistRestricted` above, so the count is genuine and is at
+  least `1`; and a junk `0` would only weaken the statement.
+* *Junk `Nat.card` on the RIGHT WOULD falsify, and does not occur.* `DualSelmerH1U` is a
+  submodule of `H¹(G_{ℚ,S}, (ad⁰(1))^U)`, which is the `ULift`ed twin of that same finite
+  group; finiteness of it is part of what the transport establishes, so a prover gets it on
+  the way rather than having to assume it. This is the one place the leaf's truth depends
+  on the transport and not merely its usefulness, and it is why the leaf is stated as a
+  cardinality inequality rather than as a submodule inclusion — an inclusion would be
+  unstateable, the two submodules living in different ambient groups.
+* *No hypothesis is load-bearing because there are none beyond the data.* In particular
+  `hℓOdd`, `hdim`, `hirr` and `hℓ5` are all absent, deliberately: the statement is true for
+  every `ρbar`, every `S` and every `L`, and adding them would only obscure that the
+  content is a change of universe.
+
+**CIRCULARITY GUARD — INHERITED** from
+`card_sha1Twist_le_card_dualNumberDeformationClasses` below: neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le` nor
+`not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them, may be used.
+
+References: Neukirch–Schmidt–Wingberg VIII.6 (the Selmer and dual Selmer groups). -/
+theorem card_sha1Twist_le_card_dualSelmerU (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (L : ∀ v, Submodule k ↥(continuousCohomology 1 (adZeroLocalU ρbar v))) :
+    Nat.card ↥(Sha1Twist ℓ ρbar S) ≤ Nat.card ↥(DualSelmerH1U ℓ ρbar S L) :=
+  sorry
+
+/-- **GREENBERG–WILES** (sorry leaf, cut out 2026-08-02 as the GALOIS-COHOMOLOGY half of
+`card_sha1Twist_le_card_dualNumberDeformationClasses` below): for an admissible family of
+local conditions, the dual Selmer group is no bigger than the Selmer group.
+
+This is Wiles' formula, in the one direction this development consumes. The formula
+itself, the three reductions that turn it into the inequality, and in particular where the
+`1` in `IsGreenbergWilesAdmissible` comes from, are written out on that definition above —
+read it before attacking this, because the `1` is the archimedean term and it is the part
+of the classical statement that is easiest to lose.
+
+**WHAT IT OWES.** The Greenberg–Wiles formula for the finite `G_{ℚ,S}`-module `ad⁰` with
+Cartier dual `ad⁰(1)`, plus the two vanishing statements `H⁰(ℚ, ad⁰) = 0` and
+`H⁰(ℚ, ad⁰(1)) = 0` that `hirr` supplies. The local Tate pairing that defines the
+orthogonal complement is `localTatePairingU` above and EXISTS; its nondegeneracy is
+`isLocalTateDual` above and is a separate leaf, which this one will need — that is the
+honest statement of what still gates this node, and it is now one named leaf rather than a
+phrase.
+
+**FAITHFULNESS AUDIT, 2026-08-02. VERDICT: FAITHFUL.**
+
+* *Junk `Nat.card` on the RIGHT would falsify.* `SelmerH1U` is a submodule of
+  `H¹(G_{ℚ,S}, (ad⁰)^U)`, the `ULift`ed twin of a group finite by the same Hermite–Minkowski
+  argument as `finiteDimensional_h1_adZeroTwistRestricted` above; a prover establishes that
+  on the way to the formula, which counts both sides. On the LEFT a junk `0` would only
+  weaken the statement.
+* *`hadm` is load-bearing for TRUTH, not merely for the proof.* Drop it and the statement is
+  FALSE: take `L v = ⊥` at every `v`, so that `orthComplU ℓ ρbar v ⊥` is everything and
+  `DualSelmerH1U` is all of `H¹(G_{ℚ,S}, ad⁰(1))` while `SelmerH1U` is `Ш¹_S(ad⁰)`, and the
+  formula then reads `dim Ш¹_S(ad⁰) - dim H¹(G_{ℚ,S}, ad⁰(1)) = -1 - Σ_v dim H⁰(ℚ_v, ad⁰)`,
+  which is negative whenever the right-hand side is, i.e. always.
+* *`hirr` is load-bearing.* It is what makes the two global `H⁰` terms of the formula
+  vanish. Without it they are the correction `#H⁰(ℚ, ad⁰) / #H⁰(ℚ, ad⁰(1))`, which is not
+  `1` in general, and `hadm` as stated does not compensate for it.
+* *`hℓOdd`, `hdim` and `h` are kept because the CARTIER DUALITY needs them*, and it is worth
+  saying which clause: the identification of the dual of `ad⁰` with `ad⁰(1)` is via the trace
+  form, which is a perfect pairing exactly when `ℓ` is odd and `V` has rank `2`
+  (`adZeroTraceForm_nondegenerate` below). At `ℓ = 2` the scalars lie in the radical, the
+  dual module is not `ad⁰(1)`, and the statement is about the wrong object. `h` additionally
+  supplies the oddness of `ρbar` that the archimedean term of `hadm` was computed from.
+* *`hS` carries no content*: `Set.Finite` is a `Prop`, so `hS.toFinset` is independent of the
+  proof and no junk enters through it.
+
+**CIRCULARITY GUARD — INHERITED VERBATIM** from
+`card_sha1Twist_le_card_dualNumberDeformationClasses` below; see there.
+
+References: Darmon–Diamond–Taylor §2.6–2.7, Theorem 2.19 (the formula); Washington's article
+in Cornell–Silverman–Stevens (the formula, and the local computations at `2`, `ℓ` and `∞`);
+Neukirch–Schmidt–Wingberg VIII.7. -/
+theorem card_dualSelmerU_le_card_selmerU (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (hS : S.Finite)
+    (L : ∀ v, Submodule k ↥(continuousCohomology 1 (adZeroLocalU ρbar v))) :
+    IsGreenbergWilesAdmissible ρbar S hS L →
+      Nat.card ↥(DualSelmerH1U ℓ ρbar S L) ≤ Nat.card ↥(SelmerH1U ρbar S L) :=
+  sorry
+
+/-- **THE TANGENT SPACE OF THE HARDLY RAMIFIED PROBLEM IS `H¹_L(ℚ, ad⁰)`** (sorry leaf, cut
+out 2026-08-02 as the DEFORMATION-THEORY half of
+`card_sha1Twist_le_card_dualNumberDeformationClasses` below): the hardly ramified local
+conditions form an admissible family, and the Selmer group they cut out is no bigger than
+the functor's `k[ε]`-points modulo Frobenius characteristic polynomials.
+
+**WHY THE FAMILY IS PRODUCED EXISTENTIALLY RATHER THAN DEFINED.** The classical `L` is
+`H¹_f(ℚ_ℓ, ad⁰)` at `ℓ` — the flat, or finite, classes — and at `2` the classes preserving
+the tame condition of `IsHardlyRamified.isTameAtTwo`. Writing either down as a `def` here
+requires the crystalline/flat local condition, which this tree does not have; asking for it
+existentially costs nothing, because every consumer of this leaf uses the family only
+through the two clauses below and never inspects it. What the existential does NOT do is
+weaken the statement into vacuity: see the audit.
+
+**WHAT IT OWES.** Mazur's identification of the tangent space of a deformation functor with
+`H¹` of the adjoint representation (`Deforming Galois representations`, §1.6), with the
+local conditions matching the four clauses of `IsHardlyRamified` place by place, plus the
+computation that the resulting family is admissible — the latter being the classical local
+computations `dim H¹_f(ℚ_ℓ, ad⁰) = dim H⁰(ℚ_ℓ, ad⁰) + 2` (Wiles) and, at `2` and `∞`, the
+tame and oddness computations that make the total exceed the `1` demanded by
+`IsGreenbergWilesAdmissible`.
+
+**FAITHFULNESS AUDIT, 2026-08-02. VERDICT: FAITHFUL.**
+
+* *The existential cannot be discharged by a junk family in a way that makes the assembly
+  prove nothing.* Both clauses must hold of the SAME `L`, and the assembly below feeds that
+  `L` to `card_dualSelmerU_le_card_selmerU` above, which is asserted for EVERY admissible
+  family. So a cheaper admissible `L` than the classical one would give a genuine, shorter
+  proof of the same conclusion rather than a vacuous one. The conclusion of the assembly
+  mentions no `L` at all.
+* *The existential is not trivially satisfiable.* `L v = ⊥` fails `IsGreenbergWilesAdmissible`
+  as soon as some `dim H⁰(ℚ_v, ad⁰)` is positive, which it is at `ℓ` for a `ρbar` that is
+  locally reducible; and taking `L v` maximal makes the second clause the HARDEST it can be,
+  since `SelmerH1U` is monotone in `L`. So neither extreme is a free witness.
+* *Junk `Nat.card` on the RIGHT cannot falsify.* `DualNumberDeformationClasses` is finite and
+  nonempty: `card_dualNumberDeformationClasses_le_card_dualNumberPoints` above exhibits a
+  surjection onto it from `dualNumberPoints D.R D.π`, whose cardinality is
+  `#k ^ cotangentFinrankModL D.R ℓ` and hence nonzero. That is the ONLY role of `D` and `hu`
+  here, exactly as in the audit on the declaration below.
+* *`hirr` is load-bearing twice*, verbatim as recorded below: it is what makes the charpoly
+  quotient the strict-equivalence quotient (Carayol), so that the right-hand side is the
+  tangent space and not a proper quotient of it; and it is what kills the global `H⁰` terms
+  that would otherwise appear in the admissibility bookkeeping.
+
+**CIRCULARITY GUARD — INHERITED VERBATIM** from the declaration below; see there.
+
+References: Mazur, *Deforming Galois representations*, §1.6; Darmon–Diamond–Taylor §2.6–2.7;
+Washington's article in Cornell–Silverman–Stevens (the local computations). -/
+theorem exists_localConditions_card_selmerU_le_card_dualNumberDeformationClasses
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) (hu : D.IsUniversal) :
+    ∃ L : ∀ v, Submodule k ↥(continuousCohomology 1 (adZeroLocalU ρbar v)),
+      IsGreenbergWilesAdmissible ρbar (hardlyRamifiedPlaces ℓ)
+          (finite_hardlyRamifiedPlaces ℓ) L ∧
+        Nat.card ↥(SelmerH1U ρbar (hardlyRamifiedPlaces ℓ) L) ≤
+          Nat.card (DualNumberDeformationClasses hℓOdd ρbar) :=
+  sorry
+
 /-- **Greenberg–Wiles: `#Ш¹_S(ad⁰(1)) ≤ #{hardly ramified deformations to `k[ε]`}`**
-(sorry leaf, cut out 2026-07-31 as the ARITHMETIC half of
-`card_sha1Twist_le_card_dualNumberPoints` below; the other half is
+(**PROVEN 2026-08-02 — no longer a sorry node**, over the three leaves immediately
+above; it was cut out 2026-07-31 as the ARITHMETIC half of
+`card_sha1Twist_le_card_dualNumberPoints` below, the other half being
 `card_dualNumberDeformationClasses_le_card_dualNumberPoints` above, which is
 PROVEN and gate-free).
 
-**WHAT THIS LEAF STILL OWES, AND IT IS EXACTLY THE CLASSICAL STATEMENT.** Two
-things: the identification of `DualNumberDeformationClasses` with the tangent
-space `H¹_L(ℚ, ad⁰ ρbar)` of the hardly ramified problem, and the Greenberg–Wiles
-inequality `dim Ш¹_{L^⊥}(ad⁰(1)) ≤ dim H¹_L(ad⁰)` itself. What it no longer owes
-is the pro-representability bookkeeping — that the functor's `k[ε]`-points are
-counted by the universal ring's — which left through the theorem above.
+**THE GATE IS OPEN, AND THIS IS WHAT WENT THROUGH IT.** Every previous audit of
+this node recorded that the DUAL Selmer group `H¹_{L^⊥}` "cannot be STATED without
+the local Tate pairing", and that was true until `localTatePairingU` above was built
+on 2026-07-31. It can now: `orthComplU`, `SelmerH1U` and `DualSelmerH1U` in the
+subsection *`H¹_L` and `H¹_{L^⊥}`* above are ordinary definitions over that pairing,
+they consume no leaf, and — see that subsection's header — they need no invariant
+map either, because the annihilator of the raw pairing is the same submodule as the
+annihilator of its composite with any linear equivalence onto `k`.
 
-**IT IS STILL BEHIND THE GATE**, unchanged: every Greenberg–Wiles route runs
-through the DUAL Selmer group `H¹_{L^⊥}`, which cannot be STATED without the
-local Tate pairing. See the GATE paragraph on
-`card_sha1Twist_le_card_dualNumberPoints` below, which is unchanged by this cut
-and is where the build order and the three-tree greps live. This peel is a peel,
-not a dodge; what it buys is that the residual leaf's right-hand side is the
-object Greenberg–Wiles actually computes.
+**FRONTIER: `1 → 3`, AND THAT IS DISCLOSURE RATHER THAN REGRESSION.** What was one
+leaf gated on an unstateable object is now three, each a named classical statement
+over real definitions, and the chain between them is
+`#Ш¹_S(ad⁰(1)) ≤ #H¹_{L^⊥} ≤ #H¹_L ≤ #{k[ε]-points}`:
+
+* `card_sha1Twist_le_card_dualSelmerU` — the `ULift` transport plus the free
+  inclusion of a locally-trivial class into every orthogonal complement. Pure
+  bookkeeping, no arithmetic, and it discharges half of what the section header on
+  the local Tate pairing already records as owed by
+  `poitouTateExactness_of_localTateDuality`.
+* `card_dualSelmerU_le_card_selmerU` — Greenberg–Wiles, DDT Theorem 2.19, over the
+  numerical side condition `IsGreenbergWilesAdmissible` whose derivation from the
+  formula (including where the archimedean `1` comes from, and why `ρbar` being odd
+  is what puts it there) is written out on that definition.
+* `exists_localConditions_card_selmerU_le_card_dualNumberDeformationClasses` — the
+  tangent space identification, Mazur §1.6, which also produces the hardly ramified
+  family and its admissibility.
+
+The three want different owners: the first is universe bookkeeping, the second is
+Galois cohomology and still rests on `isLocalTateDual` above, the third is
+deformation theory and rests on no duality at all.
+
+**THE AUDIT BELOW IS UNCHANGED AND STILL APPLIES.** This statement was not restated
+— only its proof was supplied — so FAITHFULNESS AUDIT No. 3 is not void and has not
+been re-run. It was re-read on 2026-08-02 against the statement as it stands and
+every clause still holds verbatim.
 
 **FAITHFULNESS AUDIT No. 3, 2026-07-31 — VERDICT: FAITHFUL.** Run because this is
 a NEW statement: the RE-AUDIT No. 2 on the declaration below certifies a
@@ -25411,8 +25823,13 @@ theorem card_sha1Twist_le_card_dualNumberDeformationClasses
     (D : HardlyRamifiedDeformation hℓOdd ρbar)
     (hu : D.IsUniversal) :
     Nat.card ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤
-      Nat.card (DualNumberDeformationClasses hℓOdd ρbar) :=
-  sorry
+      Nat.card (DualNumberDeformationClasses hℓOdd ρbar) := by
+  obtain ⟨L, hadm, hL⟩ :=
+    exists_localConditions_card_selmerU_le_card_dualNumberDeformationClasses
+      hℓOdd hdim hℓ5 h hirr D hu
+  exact (card_sha1Twist_le_card_dualSelmerU ℓ ρbar (hardlyRamifiedPlaces ℓ) L).trans
+    ((card_dualSelmerU_le_card_selmerU hℓOdd hdim hℓ5 h hirr (hardlyRamifiedPlaces ℓ)
+      (finite_hardlyRamifiedPlaces ℓ) L hadm).trans hL)
 
 /-- **Greenberg–Wiles: `#Ш¹_S(ad⁰(1)) ≤ #{k[ε]-points of D.R}`**
 (**PEELED AND PROVEN 2026-07-31 — no longer a sorry node**: it is
