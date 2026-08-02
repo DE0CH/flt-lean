@@ -16151,3 +16151,91 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## "A STATEMENT STRENGTHENING, NOT A PROOF STRENGTHENING" IS FREE ONLY IF THE STATEMENT IS A **PROVEN** THEOREM'S
+
+(2026-08-02, `flt-lean-287`, the `α`-gap of `FreyCurve/MazurTorsion.lean`.)  A mature
+leaf's docstring routinely proposes a repair and prices it with the sentence *"this is a
+strengthening of a STATEMENT, not of a proof"* — meaning the producer's proof already
+establishes the extra clause internally and only its CONCLUSION has to be widened, so
+whoever owns the upstream module can do it for nothing.  That pricing is correct exactly
+when the producer is **PROVEN**, and this development is full of producers that are
+`exact ⟨…⟩` over other existentials, two or three re-exports deep.
+
+Here the docstring said the pin's `e` could be made chart-compatible for free by
+strengthening `exists_ellipticScheme_isWeierstrassModel_of_weierstrass`.  Following the
+chain:
+
+    X0.lean            exists_ellipticScheme_isWeierstrassModel_of_weierstrass  -- `exact`, a re-export
+    EllipticScheme.lean  exists_ellipticScheme_isWeierstrassModel_of_projModel  -- `exact ⟨…, exists_affineChart_projModel …, exists_projGeomFibreAddEquiv …⟩`
+    EllipticScheme.lean  exists_projGeomFibreAddEquiv
+                           = (exists_projGroupLaw_geomFibreAddEquiv E _).choose_spec
+    EllipticScheme.lean  exists_projGroupLaw_geomFibreAddEquiv                  -- **AN OPEN LEAF**
+
+So the `e` is not built from the chart at all — it is whatever an existential returned —
+and the "free" strengthening is a strengthening of an **open obligation**, propagated
+through two re-exports across three modules, one of them the 119 000-line `X0.lean`.
+That is a class-7 interface change with a full rebuild of the largest cone in the tree,
+not a local edit.
+
+**The check is three `grep`s and it decides the whole plan**: follow the re-export chain
+down until you reach a declaration whose proof is neither `exact ⟨…⟩` nor `.choose_spec`,
+and see whether THAT one is proven or sorried.
+
+**`.choose_spec` in a producer's proof is the tell.**  It means the object is whatever
+some existential handed back, so nothing about it beyond that existential's own
+conclusion is available anywhere downstream, and any new clause about it has to be added
+to that existential — wherever it lives, and whatever its `sorry` status.
+
+## WHEN A LEAF'S ONLY KNOWN PROOF IS A NAMED CLASSICAL THEOREM, MAKE THE CLASSICAL THEOREM THE LEAF
+
+(Same task, and it is what shipped.)  `liesIn_congr_of_geomFibreAddEquiv` said: two
+Galois-equivariant identifications of a `Γ₀(N)`-datum's geometric fibre see the same
+subset of `E(ℚ̄)` inside the level structure.  Its own docstring said, correctly, that
+the only known proof is Tate/Faltings.  A prover dispatched at it therefore had to
+orient in `Gamma0Datum`, `GeomFibrePt`, `RelPoint.LiesIn` and `galSMul` *before* reaching
+a citation they could look up.
+
+The recut states the citation itself and proves the leaf over it:
+
+    ∃ c : ℤ, ∀ x, (N : ℕ) • x = 0 → α x = c • x
+      for α : E(ℚ̄) →+ E(ℚ̄) commuting with Γ_ℚ, and N ≠ 0
+
+— `End_{Γ_ℚ}(E) = ℤ` in its Tate-module form, with **no scheme, no datum, no level
+structure and no relative point in it**.  Count unchanged, `1 → 1`; what changed is that
+the residue is a statement about one elliptic curve over `ℚ` that somebody who has never
+opened this repository can attack.  Report such a pass as a RECUT with the receipt —
+comment-stripped `sorry` tokens in the file before and after, here `37 → 37` — because a
+`−1 +1` warning-set delta is otherwise indistinguishable from one closure plus one
+unrelated disclosure.
+
+**The technique that keeps the residue that small: apply the leaf to the map AND to its
+inverse.**  The consumer needs `α` to preserve a cyclic subgroup of order `N`, which
+morally needs `c` to be a UNIT mod `N`.  Asking the leaf for that — `IsUnit (c : ZMod N)`,
+or bijectivity of `α` — makes it uglier and drags in the structure of `E[N]`.  Instead
+apply the leaf twice, at `α` and at `α.symm`, getting `c` and `c'`; then for every
+`N`-torsion `z`,
+
+    z = α.symm (α z) = c' • (c • z) = (c' * c) • z
+
+which is invertibility of `c` on the `N`-torsion, established without naming `ZMod N`,
+without `E[N] ≅ (ℤ/N)²`, and without assuming `α` bijective — so the leaf can be stated
+for a bare `→+`, which is both more general and closer to the classical citation.
+
+**And record the route that does NOT work.**  The other obvious way to close such a gap
+— restate the SIBLING leaf to accept the pin's identifications instead of building its
+own — asks for `α' ∘ χ ∘ α⁻¹` to be algebraic, and Faltings controls `α` on TORSION
+only; on the free part of `E(ℚ̄)` nothing pins it.  So that restatement is not known to
+be true and is probably false.  A leaf you might manufacture FALSE is worth a paragraph
+in the docstring of the leaf you kept.
+
+### Two small Lean facts from the same proof
+
+* **`smul_zero` does not fire on `k • (0 : A)` for `k : ℤ` and `A` a bare
+  `AddCommGroup`**, and neither does `simp` — the ℤ-action is `SubNegMonoid.toZSMul`,
+  not a `SMulZeroClass`.  The lemma that works is `zsmul_zero`.  The symptom is
+  `` `simp` made no progress `` on a goal that reads `k • 0 = 0`.
+* `AddEquiv.addOrderOf_eq`, `AddSubgroup.mem_zmultiples_iff`,
+  `addOrderOf_nsmul_eq_zero` and `AddSubgroup.zsmul_mem` are the four lemmas that turn a
+  `CyclicSubgroupOfOrder`'s `geom_cyclic` field into ordinary subgroup arithmetic; no
+  other torsion theory is needed to work with a level structure on geometric points.
