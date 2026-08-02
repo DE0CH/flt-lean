@@ -24928,61 +24928,373 @@ theorem isOpen_hilbertSurvivingLocus
       ((isOpen_discrete {(ρbar.map (algebraMap ℚ F)) x₀}).preimage hcont)).inter
       ((isOpen_discrete {(ρbar.map (algebraMap ℚ F)) x₀⁻¹}).preimage hconti)
 
-/-- **THE SEPARATION STEP OF DDT §2, WITH THE LOCUS BOOKKEEPING REMOVED**
-(SORRY LEAF, cut 2026-07-30 (late) out of
-`exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus` below, which is
-PROVEN over it and carries the full history and the falsity audit).
+/-! #### The trivializing subgroup, and the DDT §2 separation step
 
-Given `σ` in the Taylor–Wiles locus, there is `τ : Γ F` which
+Rewritten 2026-07-31 (flt-lean-17), replacing the single leaf
+`exists_hilbertAdZeroTrivializing_notMem_range_sub` — which was FALSE AS STATED;
+the audit is on that declaration below, which is now PROVEN over the two leaves
+`exists_mem_hilbertAdZeroTrivializingSubgroup_eval₁_ne_zero` and
+`exists_mem_hilbertTaylorWilesLocus_exists_mem_notMem_range_sub`.
+
+The subgroup `N` below is the formal stand-in for `Γ L`, `L = F(ad⁰ρbar, μ_{ℓⁿ})`,
+of the classical route: no field is built, because everything the route asks of
+`L` is asked of the SUBGROUP, and the two conditions that cut it out
+(`ρbar|_{G_F}` trivial; the `ℓⁿ`-th roots of unity fixed) are exactly what makes
+the three clauses of the conclusion checkable. Note it is defined by triviality
+of `ρbar|_{G_F}` itself and not of the twisted adjoint action: that is STRICTLY
+stronger, it is what the classical `Γ L` satisfies, and it is what makes the
+charpoly clause of the Taylor–Wiles locus survive multiplication
+(`mul_mem_hilbertTaylorWilesLocus_of_mem_trivializingSubgroup`). -/
+
+/-- **The trivializing subgroup at level `n`** (ADDED 2026-07-31): the `x : Γ F`
+with `ρbar|_{G_F} x = 1` which fix every `ℓⁿ`-th root of unity.
+
+Under the infinite Galois correspondence this is `Γ L` for
+`L = F(ρbar, μ_{ℓⁿ})` — a finite Galois extension of `F`, so `N` is open and
+normal — but nothing below needs `L`, and building it would cost the whole
+fixed-field dictionary for nothing. Normality is
+`hilbertAdZeroTrivializingSubgroup_normal` below and is what makes the values of
+a cocycle on `N` span a `Γ F`-SUBMODULE of `ad⁰ρbar(1)`; that is the one
+property of `L` the DDT argument actually consumes. -/
+def hilbertAdZeroTrivializingSubgroup (ℓ : ℕ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) (n : ℕ) : Subgroup (Γ F) where
+  carrier := {x | (ρbar.map (algebraMap ℚ F)) x = 1 ∧
+    ∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 →
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F) x) ζ = ζ}
+  mul_mem' := by
+    rintro a b ⟨ha1, ha2⟩ ⟨hb1, hb2⟩
+    refine ⟨by rw [map_mul, ha1, hb1, mul_one], fun ζ hζ => ?_⟩
+    rw [map_mul, AlgEquiv.mul_apply, hb2 ζ hζ, ha2 ζ hζ]
+  one_mem' := ⟨map_one _, fun ζ _ => by rw [map_one]; rfl⟩
+  inv_mem' := by
+    rintro a ⟨ha1, ha2⟩
+    refine ⟨?_, fun ζ hζ => ?_⟩
+    · have h : (ρbar.map (algebraMap ℚ F)) a⁻¹ * (ρbar.map (algebraMap ℚ F)) a = 1 := by
+        rw [← map_mul, inv_mul_cancel, map_one]
+      rw [ha1, mul_one] at h
+      exact h
+    · rw [map_inv, AlgEquiv.aut_inv]
+      exact (AlgEquiv.symm_apply_eq _).mpr (ha2 ζ hζ).symm
+
+/-- Membership in the trivializing subgroup, unfolded. -/
+lemma mem_hilbertAdZeroTrivializingSubgroup_iff (ℓ : ℕ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) (n : ℕ) (x : Γ F) :
+    x ∈ hilbertAdZeroTrivializingSubgroup ℓ F ρbar n ↔
+      (ρbar.map (algebraMap ℚ F)) x = 1 ∧
+      ∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 →
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) x) ζ = ζ := Iff.rfl
+
+/-- **The trivializing subgroup is NORMAL** (PROVEN 2026-07-31). Both clauses
+are conjugation-invariant, for the same two reasons as in
+`hilbertTaylorWilesLocus_conj` above: `ker` of a homomorphism is normal, and the
+`ℓⁿ`-th roots of unity form a Galois-STABLE set. -/
+instance hilbertAdZeroTrivializingSubgroup_normal (ℓ : ℕ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) (n : ℕ) :
+    (hilbertAdZeroTrivializingSubgroup ℓ F ρbar n).Normal := by
+  constructor
+  rintro a ⟨ha1, ha2⟩ g
+  refine ⟨?_, fun ζ hζ => ?_⟩
+  · rw [map_mul, map_mul, ha1, mul_one, ← map_mul, mul_inv_cancel, map_one]
+  · have hζ' : ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).symm ζ) ^ ℓ ^ n = 1 := by
+      rw [← map_pow, hζ, map_one]
+    have h1 := ha2 _ hζ'
+    have h2 : (Field.absoluteGaloisGroup.map (algebraMap ℚ F) (g * a * g⁻¹)) ζ =
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g)
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) a)
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).symm ζ)) := by
+      rw [map_mul, map_mul, map_inv, AlgEquiv.mul_apply, AlgEquiv.mul_apply,
+        AlgEquiv.aut_inv]
+    rw [h2, h1]
+    exact AlgEquiv.apply_symm_apply _ _
+
+/-- **The twisted adjoint action is trivial on the trivializing subgroup**
+(PROVEN 2026-07-31), which is the second clause of the separation step's
+conclusion. Immediate from `hilbertAdZeroTwist_rho_eq_of_apply_eq` above: the
+action at `x` depends only on `ρbar|_{G_F} x` and `ρbar|_{G_F} x⁻¹`, and both are
+`1` here. Note the DETERMINANT twist costs nothing at this point precisely
+because `ρbar|_{G_F} x = 1` forces `det ρbar|_{G_F} x = 1`; asking only that the
+TWISTED action be trivial would not have done. -/
+lemma hilbertAdZeroTwist_rho_eq_one_of_mem_trivializingSubgroup (ℓ : ℕ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) (n : ℕ) {x : Γ F}
+    (hx : x ∈ hilbertAdZeroTrivializingSubgroup ℓ F ρbar n) :
+    (hilbertAdZeroTwist F ρbar).ρ x = (hilbertAdZeroTwist F ρbar).ρ 1 := by
+  have hx1 : (ρbar.map (algebraMap ℚ F)) x = 1 := hx.1
+  have hxinv : x⁻¹ ∈ hilbertAdZeroTrivializingSubgroup ℓ F ρbar n :=
+    Subgroup.inv_mem _ hx
+  refine hilbertAdZeroTwist_rho_eq_of_apply_eq F ρbar ?_ ?_
+  · rw [hx1, map_one]
+  · rw [hxinv.1, inv_one, map_one]
+
+/-- **The Taylor–Wiles locus absorbs the trivializing subgroup on the right**
+(PROVEN 2026-07-31), which is the first clause of the separation step's
+conclusion: `σ τ` fixes the `ℓⁿ`-th roots of unity because both factors do, and
+its residual charpoly is that of `σ` because `ρbar|_{G_F} τ = 1` ON THE NOSE. -/
+lemma mul_mem_hilbertTaylorWilesLocus_of_mem_trivializingSubgroup
+    (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) (n : ℕ) {σ τ : Γ F}
+    (hσ : σ ∈ hilbertTaylorWilesLocus ℓ F ρbar n)
+    (hτ : τ ∈ hilbertAdZeroTrivializingSubgroup ℓ F ρbar n) :
+    σ * τ ∈ hilbertTaylorWilesLocus ℓ F ρbar n := by
+  obtain ⟨hfix, α, β, hαβ, hpoly⟩ := hσ
+  refine ⟨fun ζ hζ => ?_, α, β, hαβ, ?_⟩
+  · rw [map_mul, AlgEquiv.mul_apply, hτ.2 ζ hζ, hfix ζ hζ]
+  · rw [map_mul, hτ.1, mul_one]
+    exact hpoly
+
+/-- **A cocycle is `Γ F`-EQUIVARIANT on the trivializing subgroup** (PROVEN
+2026-07-31): `z (g τ g⁻¹) = ρ g (z τ)` for `τ` in the subgroup.
+
+This is the one place the normality of the subgroup is spent, and it is what
+makes the set of values `z '' N` — hence its `k`-span — a `Γ F`-SUBMODULE of
+`ad⁰ρbar(1)`. The general identity `ContinuousCohomology.eval₁_conj` carries a
+correction term `z g − ρ (g τ g⁻¹) (z g)`, and it vanishes here for exactly one
+reason: `g τ g⁻¹` is again in the subgroup, so `ρ (g τ g⁻¹) = 1`. -/
+lemma eval₁_conj_of_mem_hilbertAdZeroTrivializingSubgroup (ℓ : ℕ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) (n : ℕ)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
+    (g : Γ F) {τ : Γ F} (hτ : τ ∈ hilbertAdZeroTrivializingSubgroup ℓ F ρbar n) :
+    ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 (g * τ * g⁻¹) =
+      (hilbertAdZeroTwist F ρbar).ρ g
+        (ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 τ) := by
+  have hgτ : g * τ * g⁻¹ ∈ hilbertAdZeroTrivializingSubgroup ℓ F ρbar n :=
+    (hilbertAdZeroTrivializingSubgroup_normal ℓ F ρbar n).conj_mem τ hτ g
+  have hρ := hilbertAdZeroTwist_rho_eq_one_of_mem_trivializingSubgroup ℓ F ρbar n hgτ
+  rw [ContinuousCohomology.eval₁_conj (ContinuousCohomology.cocycles₁_d_eq_zero z) g τ, hρ]
+  have h1 : (hilbertAdZeroTwist F ρbar).ρ (1 : Γ F)
+      (ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 g) =
+      ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 g := by simp
+  rw [h1]
+  abel
+
+/-- **THE COHOMOLOGICAL HALF OF DDT §2: a nonzero class does not die on the
+trivializing subgroup** (SORRY LEAF, cut 2026-07-31 by flt-lean-17 out of
+`exists_hilbertAdZeroTrivializing_notMem_range_sub` below, which is PROVEN over
+it and over `exists_mem_hilbertTaylorWilesLocus_exists_mem_notMem_range_sub`;
+that declaration's docstring carries the audit that forced the re-cut).
+
+`z` does not vanish identically on `hilbertAdZeroTrivializingSubgroup ℓ F ρbar n`.
+
+# ROUTE, AND WHAT IT COSTS
+
+`N := hilbertAdZeroTrivializingSubgroup ℓ F ρbar n` is `Γ L` for the finite
+Galois extension `L = F(ρbar, μ_{ℓⁿ})`, so `N` is OPEN and NORMAL
+(`hilbertAdZeroTrivializingSubgroup_normal` above proves the normality; openness
+is not needed by the consumer and is not asserted here). `ρ` is trivial on `N`,
+so `z|_N` is a genuine HOMOMORPHISM `N → ad⁰ρbar(1)`, and the statement is that
+it is nonzero.
+
+Inflation–restriction identifies the kernel of
+`H¹(Γ F, M) → H¹(N, M) = Hom(N, M)` with `H¹(Γ F ⧸ N, M^N) = H¹(Gal(L/F), M)`,
+so the content is the VANISHING of that group. Classically that is where `ℓ ≥ 5`
+and absolute irreducibility of `ρbar|_{G_{F(ζ_ℓ)}}` enter; `hcunr` is what makes
+the restriction well defined on classes unramified outside
+`hilbertHardlyRamifiedPlaces ℓ F`, and `hc0` is what makes the conclusion
+nonvacuous.
+
+The restriction machinery this needs is already in this module and does not have
+to be rebuilt: `hilbertAdZeroTwistSubgroup`, `hilbertResSubgroupTwist1` and
+`finiteDimensional_ker_hilbertResSubgroupTwist1` above are exactly the
+subgroup-restriction apparatus, and
+`ContinuousCohomology.eval₁_mem_range_sub_of_map_cocycleClass_eq_zero` is the
+bridge from "the restricted class vanishes" back to the values of `z`. What is
+NOT here is the vanishing of `H¹(Gal(L/F), M)` itself.
+
+**NO TOTAL REALNESS.** This half is about `ad⁰ρbar(1)` and the cocycle only; the
+Taylor–Wiles locus does not appear in the statement, so
+`[NumberField.IsTotallyReal F]` — which the sibling leaf and the consumer both
+carry, and which is what makes the locus nonempty at all — is deliberately NOT
+taken here. A proof that finds it needs it should say so rather than add it
+silently.
+
+CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean`; in particular a proof ending in `exfalso`
+on `hirrF` through `not_isIrreducible_of_isHardlyRamified_of_five_le` is
+FORBIDDEN. -/
+theorem exists_mem_hilbertAdZeroTrivializingSubgroup_eval₁_ne_zero
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
+    {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
+    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
+    ∃ τ ∈ hilbertAdZeroTrivializingSubgroup ℓ F ρbar n,
+      ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 τ ≠ 0 :=
+  sorry
+
+/-- **THE ADAPTED CHOICE OF `σ`: a Taylor–Wiles element separating a given
+nonzero stable subspace** (SORRY LEAF, cut 2026-07-31 by flt-lean-17 — the
+second half of `exists_hilbertAdZeroTrivializing_notMem_range_sub` below, whose
+docstring carries the audit that forced the re-cut).
+
+Given a NONZERO `Γ F`-stable subspace `W ≤ ad⁰ρbar(1)`, there is `σ` in the
+Taylor–Wiles locus at level `n` with `W ⊄ (ρ σ − 1)·ad⁰ρbar(1)`.
+
+# WHY `σ` MUST BE CHOSEN AFTER `W`, WHICH IS THE WHOLE POINT OF THIS CUT
+
+Write `A = ρbar|_{G_F} σ`, and suppose `charpoly A = (X − α)(X − β)` with
+`α ≠ β`, which is the locus's own charpoly clause. Then `A` is diagonalisable,
+`det A = αβ`, and `ρ σ` — which is `m ↦ det(A) · A m A⁻¹` by
+`hilbertAdZeroTwist_toEnd_rho_apply` above — acts on the three-dimensional
+`ad⁰ρbar(1)` with eigenvalues
+
+    αβ  (the trace-zero diagonal),   α²  and  β²  (the two off-diagonal lines).
+
+So `ρ σ − 1` is BIJECTIVE, and `(ρ σ − 1)·ad⁰ρbar(1)` is EVERYTHING, as soon as
+`αβ ≠ 1`, `α² ≠ 1` and `β² ≠ 1`. Membership in `hilbertTaylorWilesLocus` does not
+exclude that; classically what excludes it is `det ρbar|_{G_F} σ = 1`, and the
+locus delivers that only through its roots-of-unity clause, hence only when
+`1 ≤ n` AND `det ρbar|_{G_F}` is the mod-`ℓ` cyclotomic character. At `n = 0` the
+roots-of-unity clause reads `∀ ζ, ζ ^ 1 = 1 → σ ζ = ζ` and is VACUOUS.
+
+Even when `ρ σ − 1` is not bijective the choice is constrained: the classical
+argument needs `W ⊄ (ρ σ − 1)·M`, and when `ad⁰ρbar(1)` is a REDUCIBLE
+`Γ F`-representation — which happens for exactly the `ρbar` this development must
+allow, a DIHEDRAL `ρbar` being absolutely irreducible with `ad⁰ρbar` splitting off
+the quadratic character of the inducing extension — a `W` chosen by the cocycle
+can be a proper submodule and a `σ` chosen before it need not separate.
+
+Both facts are why the predecessor's `∀ σ` form was false and why this leaf
+quantifies `σ` existentially.
+
+# WHAT IS HANDED IN, AND WHY
+
+`σ₀`, an element of the locus, is a HYPOTHESIS rather than something this leaf
+re-derives: nonemptiness of the locus is already
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` above (this is where total
+realness is spent, and the consumer spends it), and the classical construction
+perturbs a given element rather than building one from nothing. So this leaf owes
+the SEPARATION and not the existence.
+
+Both-ways audit: the hypotheses are satisfiable — `W = ⊤` is nonzero and stable,
+and the locus is nonempty by the supplier just named — and the conclusion is not
+vacuous. Adding `hW0` is what makes it true at all: at `W = ⊥` every `w ∈ W` is
+`0 = ρ σ 0 − 0`, so no `σ` separates.
+
+CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean`; in particular a proof ending in `exfalso`
+on `hirrF` through `not_isIrreducible_of_isHardlyRamified_of_five_le` is
+FORBIDDEN. -/
+theorem exists_mem_hilbertTaylorWilesLocus_exists_mem_notMem_range_sub
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ)
+    (σ₀ : Γ F) (hσ₀ : σ₀ ∈ hilbertTaylorWilesLocus ℓ F ρbar n)
+    (W : Submodule k ↥(hilbertAdZeroTwist F ρbar)) (hW0 : W ≠ ⊥)
+    (hWstable : ∀ (g : Γ F) (w : ↥(hilbertAdZeroTwist F ρbar)), w ∈ W →
+      (hilbertAdZeroTwist F ρbar).ρ g w ∈ W) :
+    ∃ σ ∈ hilbertTaylorWilesLocus ℓ F ρbar n, ∃ w ∈ W,
+      w ∉ Set.range fun m : ↥(hilbertAdZeroTwist F ρbar) =>
+        (hilbertAdZeroTwist F ρbar).ρ σ m - m :=
+  sorry
+
+/-- **THE SEPARATION STEP OF DDT §2** (RESTATED AND PROVEN 2026-07-31 by
+flt-lean-17 over the two leaves immediately above; it was a SORRY LEAF, cut
+2026-07-30 (late) out of
+`exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus` below, and in
+that form it was FALSE — see the audit).
+
+There is `σ` in the Taylor–Wiles locus and `τ : Γ F` which
 
 * acts TRIVIALLY on `ad⁰ρbar(1)` (so `σ τ` has the same twisted action as `σ`,
   and in particular the same `(ρ σ − 1)`-image);
 * keeps `σ τ` inside the Taylor–Wiles locus; and
 * has `z τ` OUTSIDE the proper subspace `(ρ σ − 1) · ad⁰ρbar(1)`.
 
-# WHAT THE CUT REMOVES, AND WHY THAT IS WORTH A LEAF
+# FALSITY AUDIT 2026-07-31 — THE PREDECESSOR QUANTIFIED `σ` UNIVERSALLY, AND
+THAT IS FALSE. THE REPAIR IS TO QUANTIFY IT EXISTENTIALLY, WHICH COSTS THE
+CONSUMER NOTHING.
 
-Everything else in the consumer's ROUTE is now glue and is proven there:
+The statement replaced here took `(σ : Γ F) (hσ : σ ∈ hilbertTaylorWilesLocus …)`
+as HYPOTHESES and produced `τ` for that `σ`. Its own STRENGTH AUDIT defended the
+`∀ σ` as "deliberate and classically free: the argument is uniform in `σ`, using
+only that `σ` is regular semisimple". It is not uniform in `σ`, for two
+independent reasons, and each is enough on its own.
 
-* the Taylor–Wiles locus is nonempty, by
-  `exists_hilbertFixing_rootsOfUnity_charpoly_split` above — this is the input
-  that total realness buys, and the consumer spends it directly;
-* if the `σ` that supplies survives already, there is nothing to do;
-* otherwise `z σ = ρ σ m₀ − m₀`, and the crossed-homomorphism identity
-  `ContinuousCohomology.cocycles₁_eval₁_mul` gives
-  `z (σ τ) = z σ + ρ σ (z τ)`, so `z (σ τ) = ρ σ m − m` would force
-  `ρ σ (z τ) = ρ σ (m − m₀) − (m − m₀)`, i.e. `z τ = ρ σ w − w` for
-  `w = ρ σ⁻¹ (m − m₀)` — which is exactly what this leaf forbids. The
-  subspace `(ρ σ − 1) M` is `ρ σ`-stable, and `ρ σ` is injective
-  (`ContinuousCohomology.rho_injective`), which is what makes that step an
-  equivalence rather than an implication.
+**(1) THE TWIST CAN MAKE `ρ σ − 1` BIJECTIVE, and then the third clause is
+UNSATISFIABLE whatever `τ` is.** With `A = ρbar|_{G_F} σ` and
+`charpoly A = (X − α)(X − β)`, `α ≠ β`, the element `A` is diagonalisable with
+`det A = αβ`, and `ρ σ : m ↦ det(A) · A m A⁻¹` (this is
+`hilbertAdZeroTwist_toEnd_rho_apply` above, and it is the DETERMINANT twist, per
+deviation (1) of the section note, not `χ̄_ℓ` spelled cyclotomically) acts on the
+three-dimensional `ad⁰ρbar(1)` with eigenvalues `αβ`, `α²`, `β²`. So `ρ σ − 1` is
+bijective whenever `αβ ≠ 1`, `α² ≠ 1` and `β² ≠ 1`, and then
+`Set.range fun m => ρ σ m − m` is ALL of `ad⁰ρbar(1)`. Nothing in
+`hilbertTaylorWilesLocus ℓ F ρbar n` forbids that: the clause that classically
+would is `det ρbar|_{G_F} σ = 1`, which the roots-of-unity clause gives only when
+`1 ≤ n` and `det ρbar|_{G_F}` is the mod-`ℓ` cyclotomic character. **At `n = 0`
+the roots-of-unity clause is vacuous (`ℓ ^ 0 = 1`) and nothing at all constrains
+`det ρbar|_{G_F} σ`.**
 
-So the remaining content is the DDT §2 separation itself and nothing else:
-**`z` restricted to the subgroup acting trivially on `ad⁰ρbar(1)` and on
-`μ_{ℓⁿ}` is not merely nonzero — it escapes the proper subspace cut out by any
-regular semisimple `σ` of the locus.** Classically that is two facts:
-`H¹(Gal(L/F), ad⁰ρbar(1)) = 0` for `L = F(ad⁰ρbar, μ_{ℓⁿ})`, which is where
-absolute irreducibility of `ρbar|_{G_{F(ζ_ℓ)}}` and `ℓ ≥ 5` enter and which makes
-`z|_{Γ L} ≠ 0` (this consumes `hc0`, and `hcunr` is what makes the restriction
-well defined on classes unramified outside `hilbertHardlyRamifiedPlaces ℓ F`);
-and properness of `(ρ σ − 1) M`, which holds because `ρbar|_{G_F} σ` has two
-DISTINCT `k`-rational eigenvalues, so `ad⁰` of it fixes the corresponding
-diagonal line.
+**(2) THE CLASSICAL PROOF CHOOSES `σ` AFTER `z`.** Wiles Ch. 3 / DDT §2 do not
+produce `τ` for an arbitrary `σ`: they form the `Γ F`-submodule `W` spanned by
+the values of `z` on the trivializing subgroup and then choose `σ` so that
+`W ⊄ (ρ σ − 1)·ad⁰ρbar(1)`. When `ad⁰ρbar(1)` is a reducible `Γ F`-module — and it
+is for a DIHEDRAL `ρbar`, which is absolutely irreducible while `ad⁰ρbar` splits
+off the quadratic character of the inducing extension — `W` can be a proper
+submodule and a `σ` fixed in advance need not separate it.
 
-# STRENGTH AUDIT
+What is NOT claimed here is an arithmetic counterexample: exhibiting one needs a
+NONZERO class in `hilbertH1TwistUnramified`, which nothing in this tree
+constructs. Both defects above are defects of the QUANTIFIER, and the repair is
+therefore the one that cannot be wrong: `∃ σ` is IMPLIED by the old `∀ σ`
+together with nonemptiness of the locus, so this restatement is a strict
+WEAKENING and every earlier audit of the old statement transfers.
 
-The leaf quantifies over EVERY `σ` in the Taylor–Wiles locus, where the consumer
-needs only the one `σ` it happens to produce. That is deliberate and classically
-free: the argument above is uniform in `σ`, using only that `σ` is regular
-semisimple — which is precisely membership in the locus — and the field `L` from
-which `τ` is drawn does not depend on `σ` at all. Stating it for one unnamed `σ`
-would have forced the leaf to re-assert the nonemptiness of the locus, which is
-already PROVEN, and that would have been a strictly worse cut.
+**THE CONSUMER DID NOT CHANGE.**
+`exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus` below keeps its
+statement; its proof now does its `by_cases` on the `σ` this theorem hands back
+instead of on the one it drew itself, and it still spends
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` — that call moved INTO this
+proof, where it supplies the `σ₀` the second leaf takes as input, so no edge to
+that supplier was orphaned.
 
-`𝒟₀` is carried because the consumer spends it on
-`exists_hilbertFixing_rootsOfUnity_charpoly_split`; a prover of this leaf does
-not obviously need it, and if a proof goes through without it the binder should
-be dropped here rather than kept for symmetry.
+# WHAT IS LEFT, AND WHERE
+
+Everything above is glue and is PROVEN here; the frontier went from ONE leaf to
+TWO, and the two have nothing in common:
+
+* `exists_mem_hilbertAdZeroTrivializingSubgroup_eval₁_ne_zero` — the cohomological
+  half, `H¹(Gal(L/F), ad⁰ρbar(1)) = 0` by inflation–restriction, which is where
+  `hc0`, `hcunr`, `hirrF` and `ℓ ≥ 5` are spent and where total realness is NOT;
+* `exists_mem_hilbertTaylorWilesLocus_exists_mem_notMem_range_sub` — the adapted
+  choice of `σ`, which is the half defect (1) and defect (2) above both live in.
+
+The glue in between is the observation that makes the cut work at all, and it is
+now Lean rather than prose: `z` is `Γ F`-EQUIVARIANT on the trivializing subgroup
+(`eval₁_conj_of_mem_hilbertAdZeroTrivializingSubgroup` above, whose correction
+term vanishes because the subgroup is NORMAL), so the `k`-span `W` of its values
+there is a `Γ F`-stable subspace; it is nonzero by the first leaf; the second
+leaf separates it from `(ρ σ − 1)·M`; and a spanning set cannot lie inside a
+submodule that misses a member of the span, which is what returns an honest `τ`.
 
 CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
 `Modularity/*` or `Deformation.lean`; in particular a proof ending in `exfalso`
@@ -25000,90 +25312,110 @@ theorem exists_hilbertAdZeroTrivializing_notMem_range_sub
     (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
     {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
     (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
-    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0)
-    (σ : Γ F) (hσ : σ ∈ hilbertTaylorWilesLocus ℓ F ρbar n) :
-    ∃ τ : Γ F, σ * τ ∈ hilbertTaylorWilesLocus ℓ F ρbar n ∧
+    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
+    ∃ σ ∈ hilbertTaylorWilesLocus ℓ F ρbar n, ∃ τ : Γ F,
+      σ * τ ∈ hilbertTaylorWilesLocus ℓ F ρbar n ∧
       (hilbertAdZeroTwist F ρbar).ρ τ = (hilbertAdZeroTwist F ρbar).ρ 1 ∧
       ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 τ ∉
         Set.range fun m : ↥(hilbertAdZeroTwist F ρbar) =>
-          (hilbertAdZeroTwist F ρbar).ρ σ m - m :=
-  sorry
+          (hilbertAdZeroTwist F ρbar).ρ σ m - m := by
+  classical
+  -- the values of `z` on the trivializing subgroup, and the subspace they span
+  set S : Set ↥(hilbertAdZeroTwist F ρbar) :=
+    (fun τ : Γ F => ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 τ) ''
+      (hilbertAdZeroTrivializingSubgroup ℓ F ρbar n : Set (Γ F)) with hS
+  set W : Submodule k ↥(hilbertAdZeroTwist F ρbar) := Submodule.span k S with hWdef
+  -- (i) `W ≠ ⊥`, by the cohomological leaf
+  obtain ⟨τ₀, hτ₀N, hτ₀ne⟩ :=
+    exists_mem_hilbertAdZeroTrivializingSubgroup_eval₁_ne_zero ℓ hℓ5 F hirrF 𝒟₀ n z hzc
+      hcunr hc0
+  have hτ₀S : ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 τ₀ ∈ W :=
+    Submodule.subset_span ⟨τ₀, hτ₀N, rfl⟩
+  have hW0 : W ≠ ⊥ := fun h => hτ₀ne (by rwa [h, Submodule.mem_bot] at hτ₀S)
+  -- (ii) `W` is stable under the whole of `Γ F`, by equivariance on a NORMAL subgroup
+  have hWstable : ∀ (g : Γ F) (w : ↥(hilbertAdZeroTwist F ρbar)), w ∈ W →
+      (hilbertAdZeroTwist F ρbar).ρ g w ∈ W := by
+    intro g
+    have hle : W ≤ Submodule.comap
+        ((hilbertAdZeroTwist F ρbar).ρ g : ↥(hilbertAdZeroTwist F ρbar) →L[k]
+          ↥(hilbertAdZeroTwist F ρbar)).toLinearMap W := by
+      rw [hWdef, Submodule.span_le]
+      rintro _ ⟨τ, hτ, rfl⟩
+      have hconj := eval₁_conj_of_mem_hilbertAdZeroTrivializingSubgroup ℓ F ρbar n z g hτ
+      refine Submodule.subset_span ?_
+      exact ⟨g * τ * g⁻¹,
+        (hilbertAdZeroTrivializingSubgroup_normal ℓ F ρbar n).conj_mem τ hτ g, hconj⟩
+    intro w hw
+    exact hle hw
+  -- (iii) the adapted `σ`, over an element of the locus supplied as before
+  obtain ⟨σ₀, hσ₀fix, α, β, hαβ, hσ₀poly⟩ :=
+    exists_hilbertFixing_rootsOfUnity_charpoly_split ℓ hℓ5 F hirrF 𝒟₀ n
+  obtain ⟨σ, hσTW, w, hwW, hwnot⟩ :=
+    exists_mem_hilbertTaylorWilesLocus_exists_mem_notMem_range_sub ℓ hℓ5 F hirrF 𝒟₀ n
+      σ₀ ⟨hσ₀fix, α, β, hαβ, hσ₀poly⟩ W hW0 hWstable
+  -- (iv) a spanning set cannot sit inside a submodule missing a member of the span
+  have hex : ∃ τ ∈ hilbertAdZeroTrivializingSubgroup ℓ F ρbar n,
+      ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 τ ∉
+        Set.range fun m : ↥(hilbertAdZeroTwist F ρbar) =>
+          (hilbertAdZeroTwist F ρbar).ρ σ m - m := by
+    by_contra hcon
+    have hcon' : ∀ τ ∈ hilbertAdZeroTrivializingSubgroup ℓ F ρbar n,
+        ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 τ ∈
+          Set.range fun m : ↥(hilbertAdZeroTwist F ρbar) =>
+            (hilbertAdZeroTwist F ρbar).ρ σ m - m := by
+      intro τ hτ
+      by_contra hmem
+      exact hcon ⟨τ, hτ, hmem⟩
+    refine hwnot ?_
+    have hsub : S ⊆ ↑(LinearMap.range
+        (((hilbertAdZeroTwist F ρbar).ρ σ : ↥(hilbertAdZeroTwist F ρbar) →L[k]
+          ↥(hilbertAdZeroTwist F ρbar)).toLinearMap - LinearMap.id)) := by
+      rintro _ ⟨τ, hτ, rfl⟩
+      obtain ⟨m, hm⟩ := hcon' τ hτ
+      exact ⟨m, by simpa using hm⟩
+    have hleR := Submodule.span_le.mpr hsub
+    rw [← hWdef] at hleR
+    obtain ⟨m, hm⟩ := hleR hwW
+    exact ⟨m, by simpa using hm⟩
+  obtain ⟨τ, hτN, hτnot⟩ := hex
+  exact ⟨σ, hσTW, τ,
+    mul_mem_hilbertTaylorWilesLocus_of_mem_trivializingSubgroup ℓ F ρbar n hσTW hτN,
+    hilbertAdZeroTwist_rho_eq_one_of_mem_trivializingSubgroup ℓ F ρbar n hτN, hτnot⟩
 
-/-- **The NONEMPTINESS half of DDT Lemma 2.48 over `F`** (SORRY LEAF, cut out
-2026-07-30 from `isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus`
-below, whose openness half is `isOpen_hilbertSurvivingLocus` immediately above
-and is now PROVEN).
+/-! #### `nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus` was DELETED here
 
-This is the deep half — the "nonemptiness step" of DDT §2 — and it is where
-absolute irreducibility of `ρbar|_{G_F}` is used classically. Everything the old
-combined leaf's docstring said about the OPENNESS half is discharged; what
-remains is exactly the paragraph below.
+Deleted 2026-07-31 (flt-lean-17). It stood between the two declarations above and
+below and was a SORRY LEAF asserting exactly
+`exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus`'s conclusion —
+**but WITHOUT `[NumberField.IsTotallyReal F]`**, i.e. it was the PRE-REPAIR form
+that that declaration's own FALSITY AUDIT (2026-07-30) refutes: the `54b1`,
+`ℓ = 7`, `k = 𝔽₇` witness makes `hilbertTaylorWilesLocus` EMPTY at every `n`
+while `hilbertH1TwistUnramified` is large, so the intersection is empty and every
+hypothesis holds. It was left behind when the repair was made, and it had ZERO
+consumers anywhere in `Fermat/` (comment-stripped scan, 2026-07-31): a FALSE leaf
+that no proof term reached, which is strictly worse than an open one and which
+would have gone on drawing dispatches for ever.
 
-# ROUTE
+The tell was in the file rather than in any scan: the docstring of
+`exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus` below said its
+nonemptiness clause was "left over the single named leaf … immediately above",
+while its BODY has rested on `exists_hilbertAdZeroTrivializing_notMem_range_sub`
+since 2026-07-30. A parent whose docstring names a different leaf from its proof
+body is the signature of a superseded cut; that sentence is corrected below.
 
-Let `M = ad⁰ρbar(1)` and `L = F(M, μ_{ℓⁿ})`, a finite Galois extension of `F`.
-`Γ L` acts trivially on `M`, so `z|_{Γ L}` is a HOMOMORPHISM `Γ L → M`, and
-`Γ L` is normal, so `hilbertTaylorWilesLocus` contains the whole coset `σ · Γ L`
-of any `σ` in it — and `exists_hilbertFixing_rootsOfUnity_charpoly_split` above
-supplies one. Restriction `H¹(Γ F, M) → Hom(Γ L, M)` is injective on classes
-unramified outside `hilbertHardlyRamifiedPlaces ℓ F` because
-`H¹(Gal(L/F), M) = 0` — this is the step needing absolute irreducibility of
-`ρbar|_{G_{F(ζ_ℓ)}}`, which at `ℓ ≥ 5` follows from `hirrF` — so `z|_{Γ L} ≠ 0`.
-Now `ρ σ` has two DISTINCT eigenvalues, so `(ρ σ − 1) · M` is a PROPER subspace
-of `M`; if `z σ ∈ (ρ σ − 1) · M`, pick `τ ∈ Γ L` with `z τ` outside it and use
-`z (σ τ) = z σ + ρ σ (z τ)`
-(`ContinuousCohomology.cocycles₁_eval₁_mul`) to move out. Either `σ` or `σ τ`
-then lies in the intersection.
-
-**THE DATUM `𝒟₀` IS LOAD-BEARING AND MAY NOT BE DROPPED.** It is what supplies
-the Galois element, through
-`exists_hilbertFixing_rootsOfUnity_charpoly_split`; and deviation (1) of
-`exists_hilbertTaylorWilesPrime`'s docstring records why no `k`-side hypothesis
-can replace it in this module.
-
-**WARNING, inherited from that supplier and not to be discovered twice**:
-`exists_hilbertFixing_rootsOfUnity_charpoly_split` rests on
-`exists_hilbertFixing_rootsOfUnity_discrim_isSquare`, which carries a FALSITY
-AUDIT (2026-07-27) giving an explicit counterexample — curve `54b1`, `ℓ = 7`,
-`k = 𝔽₇`, residual image the order-`16` group `N(T_ns) ∩ SL₂(𝔽₇)`. So the
-Galois element this route asks for is NOT available at the stated generality,
-and a prover of this leaf will hit that wall. The honest repair recorded there
-is a quadratic ENLARGEMENT of `k`, threaded through `IsHilbertTaylorWilesPrimeSet`;
-it is a cut-level change to the cluster, not a proof obligation of this leaf.
-
-Both-ways audit: at the intended instantiation this is the cited Taylor–Wiles
-separation step. It is not vacuous — `hc0` is satisfiable as soon as
-`hilbertH1TwistUnramified ≠ ⊥`, and when that submodule IS `⊥` the leaf is
-vacuously true, which is harmless because `exists_hilbertTaylorWilesPrimeSet_core`
-then never calls it.
-
-CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
-`Modularity/*` or `Deformation.lean`; in particular a proof ending in `exfalso`
-on `hirrF` through `not_isIrreducible_of_isHardlyRamified_of_five_le` is
-FORBIDDEN, that dichotomy being proven over pillar α, which is proven over this
-cluster. -/
-theorem nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus
-    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
-    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
-    [Module.Free k V]
-    {ρbar : GaloisRep ℚ k V}
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ)
-    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
-    {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
-    (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
-    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
-    (hilbertSurvivingLocus F ρbar z ∩
-      hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty :=
-  sorry
+Recover the deleted text with `git show <this commit>^ -- <this file>`. -/
 
 /-- **The GLOBAL half of DDT Lemma 2.48 over `F`** (cut out
 2026-07-28; **its OPENNESS clause PROVEN 2026-07-30** by
-`isOpen_hilbertSurvivingLocus` above, its nonemptiness clause left over the
-single named leaf `nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus`
-immediately above — this declaration carries no direct `sorry` of its own).
+`isOpen_hilbertSurvivingLocus` above, its nonemptiness clause left over
+`exists_hilbertAdZeroTrivializing_notMem_range_sub` above — this declaration
+carries no direct `sorry` of its own).
+
+(CORRECTED 2026-07-31, flt-lean-17. This paragraph used to name
+`nonempty_inter_hilbertSurvivingLocus_hilbertTaylorWilesLocus` as the leaf the
+nonemptiness clause rests on. That was never what the BODY below called, and
+that declaration — the pre-repair form of this one, refuted by the `54b1` witness
+of the audit further down — has been deleted; see the note above it.)
 
 For a cocycle `z` representing a nonzero class `c` unramified
 outside `hilbertHardlyRamifiedPlaces ℓ F`, the surviving locus of `z` is OPEN and
@@ -25199,16 +25531,17 @@ theorem exists_mem_hilbertSurvivingLocus_inter_hilbertTaylorWilesLocus
     (hilbertSurvivingLocus F ρbar z ∩
       hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty := by
   classical
-  -- The Taylor–Wiles locus is nonempty: this is what total realness buys.
-  obtain ⟨σ, hσfix, α, β, hαβ, hσpoly⟩ :=
-    exists_hilbertFixing_rootsOfUnity_charpoly_split ℓ hℓ5 F hirrF 𝒟₀ n
-  have hσTW : σ ∈ hilbertTaylorWilesLocus ℓ F ρbar n := ⟨hσfix, α, β, hαβ, hσpoly⟩
+  -- The separation step supplies BOTH the element `σ` of the Taylor–Wiles locus
+  -- and the trivializing `τ`. (`σ` is chosen there rather than drawn here: see
+  -- that declaration's FALSITY AUDIT, which is why it is no longer stated for an
+  -- arbitrary `σ` of the locus. Nonemptiness of the locus, i.e. total realness
+  -- through `exists_hilbertFixing_rootsOfUnity_charpoly_split`, is still what
+  -- makes it produce anything, and is now spent inside it.)
+  obtain ⟨σ, hσTW, τ, hστTW, hρτ, hτnot⟩ :=
+    exists_hilbertAdZeroTrivializing_notMem_range_sub ℓ hℓ5 F hirrF 𝒟₀ n z hzc hcunr hc0
   by_cases hin : σ ∈ hilbertSurvivingLocus F ρbar z
   · exact ⟨σ, hin, hσTW⟩
-  · -- `z σ` is a coboundary at `σ`; move out along a trivializing `τ`
-    obtain ⟨τ, hστTW, hρτ, hτnot⟩ :=
-      exists_hilbertAdZeroTrivializing_notMem_range_sub ℓ hℓ5 F hirrF 𝒟₀ n z hzc
-        hcunr hc0 σ hσTW
+  · -- `z σ` is a coboundary at `σ`; move out along the trivializing `τ`
     have hρτa : ∀ a : ↥(hilbertAdZeroTwist F ρbar),
         (hilbertAdZeroTwist F ρbar).ρ τ a = a := by
       intro a
