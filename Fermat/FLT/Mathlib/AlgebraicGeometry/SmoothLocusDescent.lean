@@ -26,11 +26,7 @@ composition `p ≫ f`, both of which `mathlib` states only in the GLOBAL form
   morphism*: if `p ≫ f` is smooth at `x` and `p` is smooth, then `f` is smooth at
   `p x`.  This is the pointwise form of Stacks `036M` ("smooth is fppf local on the
   source").  `Fermat.formallySmooth_of_comp_of_faithfullyFlat`, the ring-level
-  statement under it, was PROVEN on 2026-07-31 over the two sorry leaves of this file,
-  `Fermat.injective_liftBaseChange_h1Cotangent_of_formallySmooth` (the left end of the
-  Jacobi–Zariski sequence for a formally smooth upper map) and
-  `Fermat.projective_of_projective_tensorProduct_of_faithfullyFlat` (Raynaud–Gruson,
-  Stacks `058B`).
+  statement under it, was PROVEN on 2026-07-31 over two sorry leaves.
 
 Both are extracted from `Fermat/FLT/ModularCurve/X0.lean`, where the second is the
 whole content of the `⊆` half of `smoothLocus_pairSquareMap` — the last obstruction
@@ -38,6 +34,21 @@ between `AbelianSchemeStruct` and "a surjective homomorphism of abelian schemes 
 `ℚ` is smooth".  Extracting them puts the residual leaf in a 100-line module that
 elaborates in seconds instead of inside an 80 000-line file, and states it in the
 generality in which it is a `mathlib` statement rather than an `X0` one.
+
+## The frontier of this file: ONE leaf, down from two on 2026-08-02
+
+`Fermat.projective_of_projective_tensorProduct_of_faithfullyFlat` — the `Ω` half, and
+the one that read as Raynaud–Gruson (Stacks `058B`) — was **CLOSED on 2026-08-02**, by
+adding `[IsLocalRing S]` and `[Module.Finite S M]`, both of which the consumer chain
+supplies for free.  `Fermat.projective_kaehlerDifferential_of_faithfullyFlat` is
+therefore axiom-clean.  See that theorem's docstring for why neither hypothesis costs
+anything and why no signature outside this file moved.
+
+The single remaining leaf is
+`Fermat.injective_liftBaseChange_h1Cotangent_of_formallySmooth`, the left end of the
+Jacobi–Zariski sequence for a formally smooth upper map — i.e. `H₂(L_{T/S}) = 0`, which
+the NAIVE cotangent complex mathlib carries at this pin cannot express.  Everything
+else in this file is proven.
 -/
 
 @[expose] public section
@@ -104,30 +115,58 @@ theorem injective_liftBaseChange_h1Cotangent_of_formallySmooth
     Function.Injective ((Algebra.H1Cotangent.map R R S T).liftBaseChange T) :=
   sorry
 
-/-- **PROJECTIVITY DESCENDS ALONG A FAITHFULLY FLAT RING MAP** (sorry leaf, cut
-2026-07-31 out of `formallySmooth_of_comp_of_faithfullyFlat` below) — Raynaud–Gruson,
-Stacks `058B`.
+/-- **PROJECTIVITY DESCENDS ALONG A FAITHFULLY FLAT RING MAP, OVER A LOCAL BASE**
+(**PROVEN 2026-08-02**; was a sorry leaf from 2026-07-31 to 2026-08-02, cut out of
+`formallySmooth_of_comp_of_faithfullyFlat` below).
 
-This is the SAME statement mathlib names as the obstruction to its own `proof_wanted`
+Over a LOCAL `S` and for a FINITE `M` this is three lines and Raynaud–Gruson is not
+needed:
+
+* `T ⊗[S] M` projective over `T` is in particular FLAT over `T`
+  (`Module.Flat.of_projective`);
+* flatness DESCENDS along a faithfully flat ring map
+  (`Module.Flat.of_flat_tensorProduct`), so `M` is flat over `S`;
+* over a local ring a FINITE FLAT module is FREE — Stacks `00NZ`,
+  `Module.free_of_flat_of_isLocalRing` — hence projective.
+
+**WHY THE TWO ADDED HYPOTHESES COST NOTHING, and this is the whole point of the
+2026-08-02 recut.**  The docstring that stood here priced the escape at
+`[Module.FinitePresentation S M]` and recorded, correctly for that hypothesis, that
+threading it would be an INTERFACE change through `mem_smoothLocus_of_comp_of_smooth`,
+`mem_smoothLocus_of_commSq` and `smoothLocus_pairSquareMap_le` in
+`Fermat/FLT/ModularCurve/X0.lean`.  Both halves of that estimate are avoidable:
+
+* **`Module.Finite` suffices, not `Module.FinitePresentation`**, precisely *because*
+  `S` is local — `Module.Flat.projective_of_finitePresentation` wants finite
+  presentation over an arbitrary ring, but `Module.free_of_flat_of_isLocalRing` wants
+  only `Module.Finite` over a local one;
+* **and both hypotheses are discharged INSIDE THIS FILE**, at
+  `mem_smoothLocus_of_comp_of_smooth`, whose `[LocallyOfFinitePresentation f]` was
+  already there.  A stalk of a scheme is a local ring, and
+  `AlgebraicGeometry.LocallyOfFiniteType.stalkMap` makes the stalk map essentially of
+  finite type, whence `Module.Finite S Ω[S⁄R]` by the INSTANCE
+  `KaehlerDifferential.finite`.  **So no signature outside this file moved**, and
+  `X0.lean` was not touched.
+
+**WHAT THIS DEVELOPMENT NO LONGER OWES.**  The general form — no hypothesis on `S`, no
+finiteness on `M` — is Raynaud–Gruson, Stacks `058B`, and is the same statement mathlib
+names as the obstruction to its own `proof_wanted`
 `Algebra.FormallySmooth.of_formallySmooth_tensorProduct_of_faithfullyFlat`
-(`Mathlib/RingTheory/Etale/Descent.lean`), so it is a mathlib-facing target and not a
-project-specific one.
-
-**A cheaper escape, if a successor prefers it to Raynaud–Gruson.**  For a FINITELY
-PRESENTED `M` the statement is elementary — projective ⟺ flat and finitely presented,
-and flatness descends along a faithfully flat map — so adding
-`[Module.FinitePresentation S M]` here discharges it without any of the hard theory.  The
-consumer needs it at `M := Ω[S⁄R]`, and every `S` reaching it in this development is a
-stalk of a scheme locally of finite presentation, hence essentially of finite
-presentation over `R`.  Threading that hypothesis is an INTERFACE change through
-`mem_smoothLocus_of_comp_of_smooth`, `mem_smoothLocus_of_commSq` and
-`smoothLocus_pairSquareMap_le` in `Fermat/FLT/ModularCurve/X0.lean`, which is why it was
-not done here; it is a legitimate and much smaller alternative to proving this leaf. -/
+(`Mathlib/RingTheory/Etale/Descent.lean`).  It is a fine mathlib target and **nothing in
+this project needs it**: the sole consumer chain here is
+`projective_kaehlerDifferential_of_faithfullyFlat` →
+`formallySmooth_of_comp_of_faithfullyFlat` → `mem_smoothLocus_of_comp_of_smooth`, and
+that chain's own hypotheses supply both of the additions.  What would put the general
+form back on the frontier is a consumer with a NON-LOCAL `S`, or one applying it to a
+module that is not finite over `S`; there is none today, and a successor who introduces
+one should re-cut the leaf rather than weaken this statement. -/
 theorem projective_of_projective_tensorProduct_of_faithfullyFlat
-    [Module.FaithfullyFlat S T] (M : Type*) [AddCommGroup M] [Module S M]
-    [Module.Projective T (T ⊗[S] M)] :
-    Module.Projective S M :=
-  sorry
+    [IsLocalRing S] [Module.FaithfullyFlat S T] (M : Type*) [AddCommGroup M] [Module S M]
+    [Module.Finite S M] [Module.Projective T (T ⊗[S] M)] :
+    Module.Projective S M := by
+  have : Module.Flat S M := Module.Flat.of_flat_tensorProduct S M T
+  have : Module.Free S M := Module.free_of_flat_of_isLocalRing
+  infer_instance
 
 /-- **`H¹(L_{S/R}) = 0` DESCENDS** (PROVEN 2026-07-31 over
 `injective_liftBaseChange_h1Cotangent_of_formallySmooth`) — half of
@@ -145,8 +184,14 @@ theorem subsingleton_h1Cotangent_of_faithfullyFlat
   exact Module.FaithfullyFlat.lTensor_reflects_triviality S T (Algebra.H1Cotangent R S)
 
 /-- **PROJECTIVITY OF `Ω[S⁄R]` DESCENDS** (PROVEN 2026-07-31 over
-`projective_of_projective_tensorProduct_of_faithfullyFlat`) — the other half of
+`projective_of_projective_tensorProduct_of_faithfullyFlat`, which is itself PROVEN
+since 2026-08-02, so this theorem is now **axiom-clean**) — the other half of
 `formallySmooth_of_comp_of_faithfullyFlat`.
+
+`[IsLocalRing S]` and `[Algebra.EssFiniteType R S]` were added on 2026-08-02.  They are
+what `projective_of_projective_tensorProduct_of_faithfullyFlat` consumes: the second
+gives `Module.Finite S Ω[S⁄R]` by the instance `KaehlerDifferential.finite`.  Both are
+free at the point of use — see that theorem's docstring — so no consumer moved.
 
 The Jacobi–Zariski sequence
 
@@ -158,6 +203,7 @@ has a section and the short exact sequence SPLITS.  Hence `T ⊗[S] Ω[S⁄R]` i
 summand of `Ω[T⁄R]`, which is projective because `T` is formally smooth over `R`.  The
 descent along `S → T` is the only step that is not mathlib. -/
 theorem projective_kaehlerDifferential_of_faithfullyFlat
+    [IsLocalRing S] [Algebra.EssFiniteType R S]
     [Module.FaithfullyFlat S T] [Algebra.FormallySmooth S T] [Algebra.FormallySmooth R T] :
     Module.Projective S (Ω[S⁄R]) := by
   -- `H¹(L_{T/S}) = 0` makes the base-change map injective
@@ -293,14 +339,41 @@ saying a `[Module.FinitePresentation S M]` hypothesis discharges it cheaply, at 
 price of threading essential finite presentation of the stalk maps through
 `mem_smoothLocus_of_comp_of_smooth` and its consumers in `X0.lean`.
 
+**SECOND CORRECTION (2026-08-02), and it CLOSED the `Ω` residue.**  The finiteness route
+above was taken, and both halves of its stated price turned out to be avoidable, so
+Raynaud–Gruson does NOT appear anywhere in this file:
+
+* the right hypothesis is `[IsLocalRing S]` plus `Module.Finite S M`, not
+  `Module.FinitePresentation S M`.  `S` here is always a STALK, so it is local, and over
+  a local ring `Module.free_of_flat_of_isLocalRing` (Stacks `00NZ`) turns finite + flat
+  into FREE with no finite-presentation hypothesis at all;
+* and nothing had to be threaded into `X0.lean`, because
+  `mem_smoothLocus_of_comp_of_smooth` **already carried
+  `[LocallyOfFinitePresentation f]`**, which gives `LocallyOfFiniteType f`, hence
+  `AlgebraicGeometry.LocallyOfFiniteType.stalkMap`, hence `Algebra.EssFiniteType R S`,
+  hence `Module.Finite S Ω[S⁄R]` by the instance `KaehlerDifferential.finite`.  The two
+  new binders are discharged inside this file and every signature below is unchanged.
+
+The generalisable reading: *the docstring above priced the escape against the hypothesis
+it happened to name (`FinitePresentation`) and against the interface change that
+hypothesis would have needed.  Neither was a property of the statement — the first was
+an artefact of not noticing `S` is local, the second of not reading the consumer's own
+binder list.*  Both checks cost one `grep` each.
+
+`φ` essentially of finite type is therefore a genuine hypothesis of this theorem now.
+It is not decoration: without some finiteness on `Ω[S⁄R]` the `Ω` half is exactly Stacks
+`058B` again.
+
 Build the residues in `Fermat/FLT/Mathlib/RingTheory/` rather than inline. -/
 theorem formallySmooth_of_comp_of_faithfullyFlat {R S T : Type*}
-    [CommRing R] [CommRing S] [CommRing T] (φ : R →+* S) (ψ : S →+* T)
-    (hff : ψ.FaithfullyFlat) (hψ : ψ.FormallySmooth)
+    [CommRing R] [CommRing S] [CommRing T] [IsLocalRing S] (φ : R →+* S) (ψ : S →+* T)
+    (hff : ψ.FaithfullyFlat) (hψ : ψ.FormallySmooth) (hef : φ.EssFiniteType)
     (h : (ψ.comp φ).FormallySmooth) :
     φ.FormallySmooth := by
   algebraize [φ, ψ, ψ.comp φ]
   haveI : IsScalarTower R S T := IsScalarTower.of_algebraMap_eq' rfl
+  haveI : Algebra.EssFiniteType R S := by
+    rw [← RingHom.essFiniteType_algebraMap, RingHom.algebraMap_toAlgebra]; exact hef
   exact ⟨projective_kaehlerDifferential_of_faithfullyFlat R S T,
     subsingleton_h1Cotangent_of_faithfullyFlat R S T⟩
 
@@ -330,7 +403,13 @@ at `p x`.
 Surjectivity of `p` is NOT needed: the point `x` lying over `p x` is all the
 faithfulness the stalk-level statement consumes, because a flat LOCAL homomorphism
 of local rings is automatically faithfully flat
-(`Module.FaithfullyFlat.of_flat_of_isLocalHom`). -/
+(`Module.FaithfullyFlat.of_flat_of_isLocalHom`).
+
+**THE SIGNATURE IS UNCHANGED BY THE 2026-08-02 RECUT**, and that is why that recut cost
+nothing downstream: `formallySmooth_of_comp_of_faithfullyFlat` gained `[IsLocalRing S]`
+and `φ.EssFiniteType`, and both are discharged HERE — a stalk of a scheme is a local
+ring, and `[LocallyOfFinitePresentation f]`, which this theorem already required, gives
+`LocallyOfFiniteType f` and hence `AlgebraicGeometry.LocallyOfFiniteType.stalkMap`. -/
 theorem mem_smoothLocus_of_comp_of_smooth {X Y Z : Scheme.{u}} (p : X ⟶ Y) (f : Y ⟶ Z)
     [Smooth p] [LocallyOfFinitePresentation f] {x : X}
     (hx : x ∈ (p ≫ f).smoothLocus) :
@@ -346,9 +425,13 @@ theorem mem_smoothLocus_of_comp_of_smooth {X Y Z : Scheme.{u}} (p : X ⟶ Y) (f 
   have hps : (p.stalkMap x).hom.FormallySmooth := by
     have : x ∈ p.smoothLocus := by rw [p.smoothLocus_eq_top]; trivial
     exact this
+  -- and `f` is locally of finite presentation, so its stalk map is essentially of
+  -- finite type — which is what makes `Ω[S⁄R]` a FINITE module over the local ring `S`
+  have hef : (f.stalkMap (p x)).hom.EssFiniteType :=
+    LocallyOfFiniteType.stalkMap f (p x)
   rw [Scheme.Hom.mem_smoothLocus] at hx ⊢
   rw [Scheme.Hom.stalkMap_comp] at hx
-  exact formallySmooth_of_comp_of_faithfullyFlat _ _ hff hps hx
+  exact formallySmooth_of_comp_of_faithfullyFlat _ _ hff hps hef hx
 
 /-- Transport of the smooth locus along an equality of morphisms — the
 universe-polymorphic twin of `smoothLocus_congr` in `Fermat/FLT/ModularCurve/X0.lean`,
