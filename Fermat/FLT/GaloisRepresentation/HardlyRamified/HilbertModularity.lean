@@ -37516,7 +37516,230 @@ theorem one_le_of_surjective_of_nontrivial
     exact absurd (hsurj.subsingleton) (not_subsingleton M0)
   · exact hd
 
-/-- **The auxiliary Hecke module at raised level, WITH its diamonds** (LEAF —
+/-- **The auxiliary Hecke module at raised level, at a GIVEN control map**
+(LEAF — new 2026-08-01; the arithmetic content of
+`exists_hilbertAuxHeckeDiamondModuleData` below, which since the same day is
+PROVEN GLUE over it, which in turn is what `exists_hilbertAuxHeckeModuleData`
+is glue over).
+
+# WHAT THE GLUE BELOW TAKES AWAY
+
+Item 0 of that declaration's "WHAT THIS LEAF OWES" — the construction of
+`toRuniv`. Its own docstring already said that half "is not arithmetic and is
+three copyable lines", and quoted them; they are now RUN, once, below, and
+`toRuniv` arrives here FIXED, with its full classifying specification
+`halg`/`hπ`/`hρ`. Nothing else moved: the remaining clauses are unchanged,
+clause for clause.
+
+# WHY RECEIVING `toRuniv` IS SAFE HERE, AND WHY THAT IS NOT A REVERSAL OF THE
+# 2026-07-30 CONTROL-MAP AUDIT
+
+That audit withdrew a version of the declaration below in which `toRuniv` was
+RECEIVED and `ker toRuniv = 𝔫.map diamond` was ASSERTED, on the ground that
+`HilbertAuxDeformationDatum.IsWeaklyUniversal` is a bare existential, so the
+specification `(halg, hπ, hρ)` admits a FAMILY of surjections and the assertion
+quantified over all of them. Every word of that is correct and is re-affirmed
+here — including the observation, re-checked at the definition (line 27278),
+that `HilbertAuxDeformationDatum.IsTraceGenerated` would NOT repair it either:
+it is a `topologicalClosure = ⊤` statement, and two BARE ring homomorphisms
+agreeing on a topologically dense subring need not agree, there being no
+continuity hypothesis anywhere on `𝒟Q.R →+* 𝒟.R`. So `h𝒟Qt`, which this
+declaration does carry, is NOT here as a pinning device.
+
+What makes the received shape cost nothing is a different and checkable fact:
+**the two clauses that quantifying over `toRuniv` would strengthen are already
+theorems in exactly that generality.**
+`exists_hilbertAuxDiamondQuotient_of_exponents` above is PROVEN, is stated for
+an ARBITRARY `toRuniv` carrying `(halg, hπ, hρ)`, and concludes
+
+    ∃ diamond, RingHom.ker toRuniv = (taylorWilesAug ℓ q).map diamond ∧
+               taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond
+
+which is the first two clauses of this leaf's conclusion, verbatim, at the
+`toRuniv` this leaf is handed. That was machine-checked before this cut was
+made: the application
+
+    exists_hilbertAuxDiamondQuotient_of_exponents ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
+      h𝒟t h𝒟e q n Q hQcard hQ 𝒟Q h𝒟Q h𝒟Qt toRuniv halg hπ hρ ex hex hexpin
+
+elaborates against this leaf's hypothesis list with nothing left over, which is
+why `h𝒟w`, `h𝒟e`, `h𝒟Qt`, `hQcard`, `hℓ5`, `htr`, `hgal` and `hirrF` are
+hypotheses HERE. So a prover of this leaf obtains `diamond`, `hker` and `hbex`
+in ONE LINE and owes none of it; the strengthening the audit objected to is
+discharged rather than incurred, and the residual obligation is items 2 and 3
+alone — Fujiwara's freeness lemma and the Ihara comparison.
+
+`diamond` is nevertheless still PRODUCED here and NOT received, and that is
+deliberate: §5 of `exists_hilbertAuxHeckeModuleData` below refutes the shape in
+which the module half receives `diamond`, since a `diamond` killing every `X i`
+satisfies both `hbex` and (when `ker toRuniv = 0`) `hker`, while the coordinate
+clause forces `ker diamond ≤ 𝔟_ex`. Producing it keeps the choice of `diamond`
+coupled to the module that is built over it, which is what that refutation asks
+for.
+
+# AUDITS, RE-RUN AGAINST THIS STATEMENT
+
+The statement below differs from `exists_hilbertAuxHeckeDiamondModuleData`'s in
+exactly two ways: `toRuniv` moves from the conclusion to the hypotheses (with
+`halg`/`hπ`/`hρ` added), and the clause `Function.Surjective toRuniv` is
+dropped, being glue. So it is `∀ toRuniv, spec → ∃ …` where that one is
+`∃ toRuniv, …`, i.e. formally STRONGER, and the four audits it re-ran on
+2026-07-30 must be re-read here rather than inherited.
+
+* **§1 (the `M := H.M × H.M` refutation) — INAPPLICABLE.** It refutes a
+  statement asserting freeness OF the received `H.M`; `M` is existentially
+  quantified here as it was there.
+* **§3 (freeness and Ihara cannot be separated) — STILL BINDING**, and the two
+  halves are still coupled through the ring action and through `toRuniv`, which
+  now enters `hprojsmul` as a fixed datum. This leaf therefore keeps them
+  together and no further cut along that seam is proposed.
+* **THE FALSITY AUDIT (the inflated `ex`) — REPAIR INTACT.** `ex` is still a
+  hypothesis carrying `hexpin`, which with `hQcard` determines it up to a
+  permutation of `Fin q`; the `toRuniv` move touches no clause mentioning `ex`.
+* **§5 (the degenerate `diamond`) — INAPPLICABLE**, `diamond` being the first
+  existential here; see the paragraph above for why it stays that way.
+* **§5a (the leaf DECIDES `R_Q ≇ R_∅`) — STILL THE THING THIS LEAF OWES.** By
+  (★) the coordinate clause plus `hdsmul` force `ker diamond = 𝔟_ex`, hence
+  `𝔫.map diamond ≠ ⊥` for `q, n ≥ 1`, hence `ker toRuniv ≠ ⊥`. That is genuine
+  automorphic input. It is VOUCHED here for the same reason it was there: the
+  module and the diamonds are produced from the classical construction, and the
+  ONE object that is now received, `toRuniv`, is received together with the
+  proven theorem that identifies its kernel.
+
+**NON-VACUITY, re-checked because the statement moved.** `M := 0` is blocked by
+`Function.Surjective projM` onto `M0` with `hM0 : Nontrivial M0`
+(`one_le_of_surjective_of_nontrivial` above, which forces `d ≥ 1`); a degenerate
+`diamond` is blocked by the leaf's own conclusion through
+`ker_le_of_free_of_smul_eq` above together with `hex`; and `toRuniv` can no
+longer be chosen at all, which strictly reduces the room to cheat.
+
+# WHAT THIS LEAF OWES
+
+Items 2 and 3 of `exists_hilbertAuxHeckeDiamondModuleData`'s list below, and
+nothing else. Item 0 is run by the glue; item 1 is the one-line application
+quoted above.
+
+* **Fujiwara's form of the Taylor–Wiles freeness lemma** — the module `M`, its
+  `R_Q`-action, its `Λ`-action through `diamond`, and the coordinate
+  equivalence `M ≃ₗ[Λ] (Λ ⧸ 𝔟_ex)^d`. Classically `M = M_Q` is the
+  `𝔪`-localised cohomology of the Shimura variety attached to a quaternion
+  algebra over `F` at level raised by `Q`, finite free of the
+  DEPTH-INDEPENDENT rank `d` over `ℤ_ℓ[Δ_Q] = Λ ⧸ 𝔟_ex`.
+* **The Ihara/level-raising comparison with the bottom level** — `projM` onto
+  the depth-`0` module `M₀` handed in by `hbot`, surjective, killed exactly on
+  `𝔫 · M`, and intertwining the `R_Q`-action with the `𝒟T.R`-action through
+  `ψ ∘ toRuniv`. `hbad : T.bad ⊆ H.bad` records that `H` is the SAME Hecke
+  algebra with the level RAISED, never lowered.
+
+References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Diamond, Invent. Math.
+128 (1997), Thm. 2.1; Fujiwara, *Deformation rings and Hecke algebras in the
+totally real case*, §3; Skinner–Wiles, Duke 107 (2001). -/
+theorem exists_hilbertAuxHeckeDiamondModule_of_control
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hlk : ((ℓ : ℕ) : k) = 0)
+    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 𝒟T : HilbertDeformationDatum ℓ F ρbar)
+    (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
+    (h𝒟e : 𝒟.toAuxEmpty.IsWeaklyUniversal)
+    (T : HilbertHeckeAlgebra ℓ F ρbar) (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T)
+    (ψ : 𝒟.R →+* 𝒟T.R)
+    (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
+    (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
+    (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
+    (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
+    [AddCommGroup M0] [Module 𝒟T.R M0] (hM0 : Nontrivial M0)
+    (hbot : Nonempty
+      (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0))
+    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar) (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (h𝒟Qt : 𝒟Q.IsTraceGenerated)
+    (H : HilbertAuxHeckeAlgebra ℓ F Q ρbar) (hbad : T.bad ⊆ H.bad)
+    (ex : Fin q → ℕ) (hex : ∀ i, n ≤ ex i)
+    (hexpin : IsHilbertTaylorWilesExponents ℓ F Q ex)
+    (f : 𝒟Q.R →+* H.T)
+    (hfalg : f.comp (algebraMap ℤ_[ℓ] 𝒟Q.R) = algebraMap ℤ_[ℓ] H.T)
+    (hfπ : H.πT.comp f = 𝒟Q.π)
+    (hfρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map f = (H.ρT g).charpoly)
+    [instRM : Module 𝒟Q.R H.M]
+    (hfsmul : ∀ (x : 𝒟Q.R) (m : H.M), x • m = f x • m)
+    (toRuniv : 𝒟Q.R →+* 𝒟.R)
+    (halg : toRuniv.comp (algebraMap ℤ_[ℓ] 𝒟Q.R) = algebraMap ℤ_[ℓ] 𝒟.R)
+    (hπ : 𝒟.π.comp toRuniv = 𝒟Q.π)
+    (hρ : ∀ g : Γ F, ((𝒟Q.ρ g).charpoly).map toRuniv = (𝒟.ρ g).charpoly) :
+    ∃ (diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* 𝒟Q.R)
+      (M : Type u) (_ : AddCommGroup M) (_ : Module 𝒟Q.R M)
+      (_ : Module (MvPowerSeries (Fin q) ℤ_[ℓ]) M) (projM : M →+ M0),
+      RingHom.ker toRuniv = (Modularity.taylorWilesAug ℓ q).map diamond ∧
+      Modularity.taylorWilesLevelIdeal ℓ ex ≤ RingHom.ker diamond ∧
+      (∀ (x : MvPowerSeries (Fin q) ℤ_[ℓ]) (m : M), x • m = diamond x • m) ∧
+      Nonempty (M ≃ₗ[MvPowerSeries (Fin q) ℤ_[ℓ]]
+        (Fin d → MvPowerSeries (Fin q) ℤ_[ℓ] ⧸
+          Modularity.taylorWilesLevelIdeal ℓ ex)) ∧
+      Function.Surjective projM ∧
+      (∀ (x : 𝒟Q.R) (m : M), projM (x • m) = ψ (toRuniv x) • projM m) ∧
+      (∀ m : M, projM m = 0 →
+        m ∈ (Modularity.taylorWilesAug ℓ q • ⊤ :
+          Submodule (MvPowerSeries (Fin q) ℤ_[ℓ]) M)) :=
+  sorry
+
+/-- **The auxiliary Hecke module at raised level, WITH its diamonds** (PROVEN
+GLUE since 2026-08-01 over `exists_hilbertAuxHeckeDiamondModule_of_control`
+immediately above; a LEAF from 2026-07-30 until then, and everything below this
+paragraph is the audit history of that leaf, which now lives on the sub-leaf).
+
+# 2026-08-01 — THIS IS NOW GLUE. WHAT IT DOES, AND WHAT MOVED
+
+The body runs ITEM 0 of the "WHAT THIS LEAF OWES" list below — the three
+copyable lines that build `toRuniv` — and hands the resulting FIXED control map
+down to the sub-leaf. That is the only thing it does, and it is exactly what
+this docstring already said was free.
+
+Two consequences, both of them the point of the cut:
+
+* the sub-leaf never quantifies over a family of control maps, because
+  `toRuniv` is chosen HERE and passed as a hypothesis. So the 2026-07-30
+  CONTROL-MAP AUDIT's requirement is met by CONSTRUCTION rather than by the
+  existential packaging it settled on, and its analysis is re-affirmed verbatim
+  on the sub-leaf;
+* with `toRuniv` fixed and `h𝒟Qt` in hand, the sub-leaf gets `hker` and `hbex`
+  from the PROVEN `exists_hilbertAuxDiamondQuotient_of_exponents` in one line
+  (machine-checked before the cut was made — the application is quoted in the
+  sub-leaf's docstring). So ITEM 1 is discharged there for free and the
+  residual mathematics is items 2 and 3 alone: Fujiwara's freeness lemma and
+  the Ihara comparison.
+
+**`h𝒟Qt : 𝒟Q.IsTraceGenerated` IS NEW ON THIS DECLARATION (2026-08-01), and it
+is free at every call site.** It is added to `exists_hilbertAuxHeckeModuleData`
+below as well, and the top of the chain
+(`exists_hilbertTaylorWilesAuxLevelData`) already OBTAINS it from
+`exists_isTraceGenerated_hilbertAuxDeformationDatum` and already passes it to
+the RING half; the HECKE half simply now receives it too. So no producer
+anywhere pays for it, and being an added hypothesis it cannot make any consumer
+harder. It is used only to reach
+`exists_hilbertAuxDiamondQuotient_of_exponents`; it is NOT a pinning device for
+`toRuniv`, and the sub-leaf's docstring records why it could not be one.
+
+**THE LEAF COUNT DID NOT MOVE: 1 → 1.** What changed is what is LEFT in the
+leaf. Read the sub-leaf, not this count.
+
+# THE HISTORY BELOW IS ABOUT THE SUB-LEAF
+
+Everything from here on was written while this declaration was itself the leaf.
+It is kept because its arguments and its witnesses are not duplicated on the
+sub-leaf, which cites them; but what is currently CERTIFIED is the audit block
+in the sub-leaf's own docstring, re-run there against the statement that is now
+open.
+
+## ORIGINAL LEAF DOCSTRING, 2026-07-30
+
+**The auxiliary Hecke module at raised level, WITH its diamonds** (LEAF —
 new 2026-07-30; this is the entire arithmetic content of
 `exists_hilbertAuxHeckeModuleData` below, which since the same day is PROVEN
 GLUE over it).
@@ -37754,6 +37977,7 @@ theorem exists_hilbertAuxHeckeDiamondModuleData
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
     (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar) (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (h𝒟Qt : 𝒟Q.IsTraceGenerated)
     (H : HilbertAuxHeckeAlgebra ℓ F Q ρbar) (hbad : T.bad ⊆ H.bad)
     (ex : Fin q → ℕ) (hex : ∀ i, n ≤ ex i)
     (hexpin : IsHilbertTaylorWilesExponents ℓ F Q ex)
@@ -37778,8 +38002,26 @@ theorem exists_hilbertAuxHeckeDiamondModuleData
       (∀ (x : 𝒟Q.R) (m : M), projM (x • m) = ψ (toRuniv x) • projM m) ∧
       (∀ m : M, projM m = 0 →
         m ∈ (Modularity.taylorWilesAug ℓ q • ⊤ :
-          Submodule (MvPowerSeries (Fin q) ℤ_[ℓ]) M)) :=
-  sorry
+          Submodule (MvPowerSeries (Fin q) ℤ_[ℓ]) M)) := by
+  -- ITEM 0, verbatim from `exists_hilbertAuxDiamondControl` above.  `toRuniv`
+  -- is CHOSEN here and passed DOWN fixed, so the sub-leaf never quantifies over
+  -- a family of control maps; that is the 2026-07-30 CONTROL-MAP AUDIT's
+  -- requirement, met by construction rather than by an added hypothesis.
+  have hr := isHilbertRaisedLevelHardlyRamified_of_isHilbertTaylorWilesPrimeSet
+    ℓ F n Q hQ 𝒟
+  obtain ⟨toRuniv, halg, hπ, hρ⟩ := h𝒟Q (𝒟.toAux hr)
+  have hsurj : Function.Surjective toRuniv :=
+    surjective_of_hilbertAux_classifying ℓ F hlk 𝒟 h𝒟t 𝒟Q toRuniv halg hπ hρ
+  -- ITEMS 1–3.  `hker` and `hbex` are FREE there — see the sub-leaf's docstring
+  -- for the one-line derivation — so what is genuinely owed is Fujiwara plus
+  -- Ihara.
+  obtain ⟨diamond, M, instMadd, instMR, instLM, projM, hker, hbex, hdsmul,
+      hcoord, hprojsurj, hprojsmul, hprojker⟩ :=
+    exists_hilbertAuxHeckeDiamondModule_of_control ℓ hℓ5 F hlk htr hgal hirrF
+      𝒟 𝒟T h𝒟w h𝒟t h𝒟e T e ψ hψalg hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ
+      𝒟Q h𝒟Q h𝒟Qt H hbad ex hex hexpin f hfalg hfπ hfρ hfsmul toRuniv halg hπ hρ
+  exact ⟨diamond, toRuniv, M, instMadd, instMR, instLM, projM, hsurj, hker,
+    hbex, hdsmul, hcoord, hprojsurj, hprojsmul, hprojker⟩
 
 /-- **The auxiliary Hecke module at raised level, with its diamonds, its control
 map and its bottom control** (PROVEN GLUE since 2026-07-30 over
@@ -38330,6 +38572,7 @@ theorem exists_hilbertAuxHeckeModuleData
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
     (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar) (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
+    (h𝒟Qt : 𝒟Q.IsTraceGenerated)
     (H : HilbertAuxHeckeAlgebra ℓ F Q ρbar) (hbad : T.bad ⊆ H.bad)
     (ex : Fin q → ℕ) (hex : ∀ i, n ≤ ex i)
     (hexpin : IsHilbertTaylorWilesExponents ℓ F Q ex)
@@ -38363,7 +38606,7 @@ theorem exists_hilbertAuxHeckeModuleData
       hbex, hdsmul, ⟨ecoord⟩, hprojsurj, hprojsmul, hprojker⟩ :=
     exists_hilbertAuxHeckeDiamondModuleData ℓ hℓ5 F hlk htr hgal hirrF 𝒟 𝒟T
       h𝒟w h𝒟t h𝒟e T e ψ hψalg hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q
-      h𝒟Q H hbad ex hex hexpin f hfalg hfπ hfρ hfsmul
+      h𝒟Q h𝒟Qt H hbad ex hex hexpin f hfalg hfπ hfρ hfsmul
   -- (★).  The coordinate clause forces `ker diamond ≤ 𝔟_ex`, so the sub-leaf's
   -- `hbex` — which is all local class field theory at `Q` proves — upgrades to
   -- the equality this statement exports, with no further arithmetic input.
@@ -38604,8 +38847,8 @@ theorem exists_hilbertTaylorWilesAuxLevelData
     exists_hilbertAuxHeckeModuleData ℓ hℓ5 F
       (natCast_eq_zero_of_finite_algebra ℓ k) htr hgal hirrF 𝒟 𝒟T h𝒟w h𝒟t
       (𝒟.isWeaklyUniversal_toAuxEmpty h𝒟w) T e ψ hψalg
-      hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q h𝒟Q H hbad ex hex hexpin
-      f hfalg hfπ hfρ hfsmul
+      hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q h𝒟Q h𝒟Qt H hbad ex hex
+      hexpin f hfalg hfπ hfρ hfsmul
   exact ⟨ex, hex, 𝒟Q.R, inferInstance, pres, diamond, toRuniv, M,
     instMadd, instMR, instLM, projM, hpres, htoRuniv, hker, hdsmul, hcoord,
     hprojsurj, hprojsmul, hprojzero⟩
