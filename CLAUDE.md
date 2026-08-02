@@ -16263,3 +16263,30 @@ Three traps, each one round:
 * **`mono_of_mono_fac` is the wrong tool for "iso ≫ f is mono ⟹ f is mono".**
   `mono_comp _ _` on `i.hom ≫ (i.inv ≫ β)` followed by `simpa` is two lines and
   works.
+
+### A CONSUMER SCAN THAT EXCLUDES A PRECEDING `.` REPORTS A LIVE CHAIN AS DEAD
+
+(Same task, and it nearly turned a correct result into a false "this leaf is
+dead" report.)  The standard token guard for attributing a name in
+comment-stripped source is
+
+    (?<![A-Za-z0-9_.'])NAME(?![A-Za-z0-9_'])
+
+and the `.` in the LOOKBEHIND is there for a good reason — it stops
+`Foo.bar` matching `bar`.  It also stops `Fermat.myTheorem` matching
+`myTheorem`, and **this tree qualifies names across module boundaries as a
+matter of course**: `MazurTorsion.lean` reaches into `X1.lean` as
+`Fermat.exists_cuspidalCountingDatum_twentyFive`, never unqualified, because
+it is not inside `namespace Fermat`.
+
+Chasing consumers upward from `exists_nonconstant_toAbelianScheme_of_finiteEtale_descent`
+with that guard produced a nine-link chain ending in `NO CONSUMER (top)` —
+i.e. the whole `Γ₁` genus chain reported as free-floating.  One `grep -rn` for
+the bare name, with no guard at all, found the two qualified uses one module
+away and the chain was live all along.
+
+**So run the reachability check in two passes**: the guarded one to ATTRIBUTE a
+hit to its enclosing declaration, and an UNGUARDED `grep -rn` on any name the
+guarded pass calls consumerless, before writing the word "dead" anywhere.  A
+consumerless verdict is the one output of that scan that changes what a worker
+does, so it is the one that has to survive the cheaper, noisier check.
