@@ -38611,9 +38611,21 @@ encoding for `disc = −3p²`, which nothing in the tree has.
   `𝔽_p^×` (`ℚ(√−3) ∩ ℚ(ζ_p) = ℚ`) while `α²` lands in the squares.  So `p ≤ 3`.
 
 So the missing input is `det ρ_{E,p} = χ_p` for `E/ℚ`, i.e. Galois equivariance of the
-Weil pairing on `E[p]` over a number field — NOT the main theorem of CM.  `WeilPairing.lean`
-in this tree is about Frobenius in characteristic `p` and does not supply it; that is the
-gap a successor should price.
+Weil pairing on `E[p]` over a number field — NOT the main theorem of CM.
+
+**THAT INPUT IS NOT MISSING.  Corrected 2026-07-31 (flt-lean-106): the paragraph that
+stood here said "`WeilPairing.lean` in this tree is about Frobenius in characteristic `p`
+and does not supply it; that is the gap a successor should price", and it is FALSE.**
+`WeilPairing.det_galoisRep_eq_cyclotomic` (`Fermat/FLT/EllipticCurve/WeilPairing.lean`,
+PROVEN 2026-07-17) is exactly `det (E.galoisRep p hppos g) = χ_cyc mod p` for `E/ℚ` at
+every odd prime, and **this module already `public import`s it** (line ~119).  The worked
+call-site pattern — including the `WeilPairing.cyclotomicCharacterModL_eq_toZMod` rewrite
+that puts it in `cyclotomicCharacterModL` form — is `X0.lean`'s
+`eq_two_or_eq_three_of_stableCyclic_of_autPoint_not_stable`, which closes the SIBLING
+statement at `j = 0` and `j = 1728` by precisely the route sketched above; see also
+`exists_galoisFixing_cyclotomic_not_isSquare` there, which supplies the
+"`χ_p·ε` is onto, `λ²` is not" step as a theorem rather than as a remark.  A successor
+should price this leaf as an application of those two, not as a gap.
 
 **THE CHECK THAT WOULD REFUTE THIS**: an odd prime `p` and `E/ℚ` with `j ∈ {0, 1728}`
 carrying a `Γ_ℚ`-stable cyclic subgroup of order `p` NOT preserved by the CM automorphism.
@@ -40413,12 +40425,21 @@ this tree."*  That is what this block does, and it does it **from the finiteness
 rather than alongside it**: reducedness is a THEOREM here, with `IsFinite` an
 instance hypothesis, so the leaf below splits into
 
-* `isFinite_fixedLocus_of_geomFixed` — the finiteness alone, still open, and
+* `isFinite_fixedLocus_of_geomFixed` — the finiteness alone, and
 * `isReduced_fixedLocus_of_isAdditiveOn` — PROVEN, over Cartier,
 
-and the original conjunction is their assembly.  The leaf COUNT is unchanged, one
-in and one out, but the open statement is now a single instance-shaped fact about
-one explicit scheme with the characteristic-zero content removed from it.
+and the original conjunction is their assembly.  The leaf COUNT was unchanged by
+that split, one in and one out, but the open statement became a single
+instance-shaped fact about one explicit scheme with the characteristic-zero
+content removed from it.
+
+**BOTH HALVES ARE NOW PROVEN — the finiteness half on 2026-07-31 (flt-lean-106),
+by Zariski's main theorem over `d.cyc.isFinite` and mathlib's
+`pointEquivClosedPoint`; see its own docstring.  This whole cluster is
+sorry-free.**  The split earned its keep in the way its author predicted and in
+one way they did not: the two hypotheses partition exactly across the two halves,
+`hadd` being consumed only by the reducedness and `hgeom` only by the finiteness,
+so neither half carries the other's input.
 
 **How the group structure is produced, and why it is not `ker (v − 1)` on the
 nose.**  `v − 1` is not available as a MORPHISM: the group law of an
@@ -41022,48 +41043,128 @@ immediately above).  Read the docstring of
 `hgeom` and `hv` are both load-bearing, and for the `τ_Q ∘ ψ` description; all of
 it applies verbatim, and everything in it that concerns REDUCEDNESS is now spent.
 
-## WHAT A PROVER OF THIS SHOULD DO — reconnaissance done 2026-07-31, not proved
+## PROVEN 2026-07-31 (flt-lean-106) — Zariski's main theorem, in four steps
 
-The route is Zariski's main theorem, and **both of its inputs are already
-available in this module's import cone**; what is missing is the topological
-step in the middle.
+The 2026-07-31 reconnaissance that stood here was right about the route and is
+kept below, corrected where the formalisation disagreed with it.  Nothing new was
+needed: every input is mathlib's or `X0.lean`'s, the proof is ~40 lines, and the
+whole of it elaborated first try.
 
-1. **Properness.**  `IsFinite.of_isProper_of_locallyQuasiFinite` (mathlib) is what
-   `X0.lean`'s `isFinite_of_isFinite_kerHom` (line ~75317) uses, and
-   `isProper_of_abelianSchemeStruct` in the same file supplies properness of a
-   homomorphism of abelian schemes.  Here the morphism is
-   `equalizer.ι v (𝟙 d.E) ≫ d.f`, so what is wanted is properness of `d.f`
-   together with `equalizer.ι` being a closed immersion — and **the second is
-   already an INSTANCE in the pin**, checked 2026-07-31:
+1. **Properness.**  `equalizer.ι v (𝟙 d.E)` is a CLOSED IMMERSION as soon as `d.E`
+   is absolutely separated (mathlib's
+   `instance (f g : X ⟶ Y) [Y.IsSeparated] : IsClosedImmersion (equalizer.ι f g)`),
+   and `d.E.IsSeparated` is `Scheme.isSeparated_of_isSeparated_over d.f` off
+   `d.ab.proper` and affineness of the base.  A closed immersion is finite, hence
+   proper and locally of finite type, so `equalizer.ι v (𝟙 d.E) ≫ d.f` is proper
+   and locally of finite type by composition.  Every step is `inferInstance`.
+2. **The `ℚ̄`-points of `Fix(v)` are finite, and this is where `hgeom` is spent.**
+   A point `p` with `p ≫ (equalizer.ι v (𝟙 d.E) ≫ d.f) = 𝟙` gives the relative
+   point `x := p ≫ equalizer.ι v (𝟙 d.E)`, which satisfies `x ≫ v = x` by
+   `equalizer.condition` — so `hgeom` puts it in `C`, i.e. it factors as
+   `w ≫ d.cyc.ι`.  `p ↦ w` is injective because `equalizer.ι` is a MONO, and its
+   target is finite by `X0.lean`'s `finite_sections_of_isFinite` applied to
+   `d.cyc.isFinite`.
 
-       Mathlib/AlgebraicGeometry/Morphisms/Separated.lean:356
-       instance (f g : X ⟶ Y) [Y.IsSeparated] : IsClosedImmersion (equalizer.ι f g)
+   **This is where the old note was wrong in the direction that mattered.**  It
+   routed the finiteness of `C(ℚ̄)` through `d.cyc.geom_cyclic` and a cyclic group
+   of order `N`, and therefore had to exclude `N = 0` by hand.  `d.cyc.isFinite`
+   gives it directly, at every `N`, through a theorem written for exactly this
+   purpose 30 000 lines up; **no `N = 0` case arises and no group theory is used.**
+   (`isEmpty_of_gamma0Datum_zero`'s own proof is the model for this step; it needs
+   the `geom_cyclic` route only because it is proving `N = 0` impossible.)
+3. **From `ℚ̄`-points to points.**  This is the "Nullstellensatz step" the old note
+   named, and it is one mathlib declaration rather than an argument:
+   `AlgebraicGeometry.pointEquivClosedPoint` (`AlgClosed/Basic.lean`) is a
+   BIJECTION between the sections of a locally-of-finite-type morphism to
+   `Spec ℚ̄` and the CLOSED POINTS of its source.  So step 2 says exactly that
+   `closedPoints Fix(v)` is finite.  `LocallyOfFiniteType.jacobsonSpace` then makes
+   `Fix(v)` a Jacobson space, in which the closed points are DENSE
+   (`closure_closedPoints`); a finite set of closed points is closed, so its
+   closure is itself, so it is everything and `Fix(v)` is a finite space.
+4. **Zariski.**  Finitely many points makes every fibre finite, hence
+   `LocallyQuasiFinite.of_finite_preimage_singleton`, and
+   `IsFinite.of_isProper_of_locallyQuasiFinite` closes it.
 
-   (it is `MorphismProperty.of_isPullback` against `isPullback_equalizer_prod`,
-   i.e. exactly the "pullback of the diagonal" argument, done).  So the only
-   obligation on that side is `(d.E).IsSeparated` — absolute separatedness — which
-   follows from `d.ab.proper : IsProper d.f` and separatedness of the affine base
-   `Spec ℚ̄`.  Nothing here has to be written from scratch.
-2. **Quasi-finiteness** is where `hgeom` is spent, and it is the real work.
-   `LocallyQuasiFinite.of_finite_preimage_singleton` reduces it to: the underlying
-   SPACE of `Fix(v)` is finite.  `hgeom` puts the `ℚ̄`-points of `Fix(v)` inside
-   those of `C`, which `d.cyc.geom_cyclic` pins to a cyclic group of order `N`;
-   passing from "finitely many `ℚ̄`-points" to "finitely many points" needs
-   `Fix(v)` to be Jacobson and of finite type over `ℚ̄`, i.e. a Nullstellensatz
-   step.  Note `N = 0` must be handled — see `isEmpty_of_gamma0Datum_zero`.
+**`hv` AND `_hadd` ARE NOT CONSUMED, and that is not a defect — do not delete
+them.**  `hv` occurs in the TYPE of `_hadd`, so it cannot be dropped without
+dropping that too, and both are free at the only call site
+(`isFinite_isReduced_fixedLocus_of_geomFixed` below, which holds `hadd` for the
+reducedness half anyway).  What the proof above shows is the sharper statement
+that FINITENESS needs neither: it needs `hgeom` and the geometry of `d.E`, and
+nothing else.  The docstring below argues that `hv` is load-bearing; re-read it
+with this in mind — its witness (a `v` acting on `ℚ̄` by a nontrivial field
+automorphism) makes the conclusion of `hgeom` VACUOUS rather than false, since
+such a `v` has no fixed `ℚ̄`-point at all, and step 3 then concludes that `Fix(v)`
+is empty, which is finite.  So `hv` is load-bearing for the REDUCEDNESS half and
+for the `τ_Q ∘ ψ` description, not for this one.  The mirror observation is
+already on `isReduced_fixedLocus_of_isAdditiveOn` above, which records that
+`hgeom` is not needed for reducedness: between them the two hypotheses partition
+across the two halves exactly, which is the best evidence available that the
+2026-07-31 split of leaf 2b′ was made along the right seam.
 
 The `τ_Q ∘ ψ` classification of endomorphisms that the docstring below describes
-is an ALTERNATIVE to step 2 and is a substantial missing theory; the `hgeom`
-route above needs no new mathematics, only scheme-theoretic plumbing that is
-mostly in mathlib already.  A prover should price both before choosing. -/
+was an ALTERNATIVE to steps 2–3 and is a substantial missing theory.  It is not
+needed and should not be built for this. -/
 theorem isFinite_fixedLocus_of_geomFixed {N : ℕ}
     (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
     (v : d.E ⟶ d.E) (hv : v ≫ d.f = d.f)
     (_hadd : IsAdditiveOn d.ab d.ab v hv)
-    (_hgeom : ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+    (hgeom : ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
       x.1 ≫ v = x.1 → RelPoint.LiesIn d.cyc.ι x) :
-    IsFinite (equalizer.ι v (𝟙 d.E) ≫ d.f) :=
-  sorry
+    IsFinite (equalizer.ι v (𝟙 d.E) ≫ d.f) := by
+  classical
+  -- STEP 1: `Fix(v) ⟶ Spec ℚ̄` is proper and locally of finite type.
+  haveI : AlgebraicGeometry.IsProper d.f := d.ab.proper
+  haveI : d.E.IsSeparated := Scheme.isSeparated_of_isSeparated_over d.f
+  haveI hci : IsClosedImmersion (equalizer.ι v (𝟙 d.E)) := inferInstance
+  haveI hpr : AlgebraicGeometry.IsProper (equalizer.ι v (𝟙 d.E) ≫ d.f) := inferInstance
+  haveI hlft : LocallyOfFiniteType (equalizer.ι v (𝟙 d.E) ≫ d.f) := inferInstance
+  -- STEP 2: the `ℚ̄`-points of `Fix(v)` are finite, because `hgeom` lands them in `C`.
+  haveI := d.cyc.isFinite
+  haveI hfC : Finite {w : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ d.cyc.C //
+      w ≫ (d.cyc.ι ≫ d.f) = 𝟙 _} :=
+    finite_sections_of_isFinite _ _
+  have hex : ∀ p : {p : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ equalizer v (𝟙 d.E) //
+        p ≫ (equalizer.ι v (𝟙 d.E) ≫ d.f) = 𝟙 _},
+      ∃ w : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ d.cyc.C,
+        w ≫ d.cyc.ι = p.1 ≫ equalizer.ι v (𝟙 d.E) := by
+    intro p
+    have hx : (p.1 ≫ equalizer.ι v (𝟙 d.E)) ≫ d.f = 𝟙 _ := by
+      rw [Category.assoc]; exact p.2
+    refine hgeom ⟨_, hx⟩ ?_
+    have hcond := equalizer.condition v (𝟙 d.E)
+    rw [Category.comp_id] at hcond
+    rw [Category.assoc, hcond]
+  choose w hw using hex
+  haveI hfin : Finite {p : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ equalizer v (𝟙 d.E) //
+      p ≫ (equalizer.ι v (𝟙 d.E) ≫ d.f) = 𝟙 _} := by
+    refine Finite.of_injective
+      (fun p => (⟨w p, ?_⟩ : {w : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ d.cyc.C //
+        w ≫ (d.cyc.ι ≫ d.f) = 𝟙 _})) ?_
+    · rw [← Category.assoc, hw p, Category.assoc]
+      exact p.2
+    · intro p₁ p₂ hp
+      have h1 : w p₁ = w p₂ := congrArg Subtype.val hp
+      have h2 : p₁.1 ≫ equalizer.ι v (𝟙 d.E) = p₂.1 ≫ equalizer.ι v (𝟙 d.E) := by
+        rw [← hw p₁, ← hw p₂, h1]
+      exact Subtype.ext ((cancel_mono (equalizer.ι v (𝟙 d.E))).mp h2)
+  -- STEP 3: hence the CLOSED POINTS of `Fix(v)` are finite; `Fix(v)` is Jacobson, so
+  -- they are dense, and a finite set of closed points is closed, hence everything.
+  have hcp : (closedPoints ↥(equalizer v (𝟙 d.E))).Finite := by
+    have : Finite (closedPoints ↥(equalizer v (𝟙 d.E))) :=
+      Finite.of_equiv _ (pointEquivClosedPoint (equalizer.ι v (𝟙 d.E) ≫ d.f))
+    exact Set.toFinite _
+  haveI : JacobsonSpace ↥(equalizer v (𝟙 d.E)) :=
+    LocallyOfFiniteType.jacobsonSpace (equalizer.ι v (𝟙 d.E) ≫ d.f)
+  have huniv : closedPoints ↥(equalizer v (𝟙 d.E)) = Set.univ := by
+    rw [← Set.univ_subset_iff, ← closure_closedPoints, closure_subset_iff_isClosed,
+      ← (closedPoints ↥(equalizer v (𝟙 d.E))).biUnion_of_singleton]
+    exact hcp.isClosed_biUnion fun _ ↦ id
+  haveI : Finite ↥(equalizer v (𝟙 d.E)) := Set.finite_univ_iff.mp (huniv ▸ hcp)
+  -- STEP 4: Zariski's main theorem.
+  haveI : LocallyQuasiFinite (equalizer.ι v (𝟙 d.E) ≫ d.f) :=
+    LocallyQuasiFinite.of_finite_preimage_singleton _ fun _ => Set.toFinite _
+  exact IsFinite.of_isProper_of_locallyQuasiFinite _
 
 open _root_.CategoryTheory _root_.CategoryTheory.Limits _root_.AlgebraicGeometry
   _root_.Fermat in
