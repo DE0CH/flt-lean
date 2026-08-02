@@ -1222,6 +1222,444 @@ the free-over-`ℚ` clause was dropped rather than restored.
 factorisation paragraph — or show that `(Spec σ)^* d₁ ≇ d₁` for a datum
 defined over the prime field, which is false by base-change transitivity. -/
 
+/-- **Transport a base-change square along an equality of its base
+morphism** (PROVEN 2026-08-01). -/
+def congrHom {T' T : Scheme.{u}} {h h' : T' ⟶ T} {d' : Gamma1Datum N T'}
+    {d : Gamma1Datum N T} (hh : h = h') (bc : IsBaseChangeOfGamma1 h d' d) :
+    IsBaseChangeOfGamma1 h' d' d := hh ▸ bc
+
+/-- The comparison morphism does not move under `congrHom`: the `map` field
+of `IsBaseChangeOfGamma1 h d' d` has type `d'.E ⟶ d.E`, in which `h` does
+not occur. -/
+@[simp] lemma congrHom_map {T' T : Scheme.{u}} {h h' : T' ⟶ T} {d' : Gamma1Datum N T'}
+    {d : Gamma1Datum N T} (hh : h = h') (bc : IsBaseChangeOfGamma1 h d' d) :
+    (congrHom hh bc).map = bc.map := by subst hh; rfl
+
+/-- The comparison morphism of a cancelled square is `cancelMap`, so that
+`cancelMap_fst` and `cancelMap_snd` apply to it. -/
+lemma cancel_map {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma1Datum N T''}
+    {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
+    (hb : IsBaseChangeOfGamma1 (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOfGamma1 h₂ d' d) :
+    (hb.cancel hb₂).map = hb.cancelMap hb₂ := rfl
+
+/-- The comparison morphism of a composite square is the composite. -/
+lemma comp_map {T₁ T₂ T₃ : Scheme.{u}} {a : T₁ ⟶ T₂} {b : T₂ ⟶ T₃}
+    {d₁ : Gamma1Datum N T₁} {d₂ : Gamma1Datum N T₂} {d₃ : Gamma1Datum N T₃}
+    (bc₁ : IsBaseChangeOfGamma1 a d₁ d₂) (bc₂ : IsBaseChangeOfGamma1 b d₂ d₃) :
+    (bc₁.comp bc₂).map = bc₁.map ≫ bc₂.map := rfl
+
+/-! #### RIGIDITY, and the fpqc descent it buys
+
+**Cut 2026-08-01**, out of `exists_gamma1UniversalFamily_of_atlas` — see
+that leaf's own docstring for the two-step route and for what each step
+costs.  What lands here is step 2 in full: the LEFT cancellation of an
+fpqc cover in a base-change square, which the leaf's route correctly
+records as "descent, and NOT formal", proven over the single elementary
+leaf `map_unique` below.
+
+`IsBaseChangeOfGamma1.cancel` cancels on the RIGHT and is pullback
+pasting.  `cancelLeft` cancels on the LEFT and is genuine descent; the
+only non-formal input is rigidity, and it enters exactly once, as the
+cocycle condition of `coeq_map`. -/
+
+/-- **LEAF: the comparison morphism of a base-change square is UNIQUE for
+`4 ≤ N`** — Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*, 2.7.2
+(the moduli problem `[Γ₁(N)]` is RIGID for `N ≥ 4`), NEW 2026-08-01.
+
+## What it says, in the form the literature states it
+
+Two cartesian squares over the SAME `h` between the SAME data differ by an
+automorphism of `d'`: put `θ := bc₂.isPullback.lift d'.f bc₁.map`, which is
+an automorphism of `d'.E` over `T'` with `θ ≫ bc₂.map = bc₁.map`, its
+inverse being the symmetric lift.  And `θ` is automatically an
+automorphism of the `Γ₁(N)`-DATUM: `θ` commutes with the zero section, the
+group law and the level section, because `bc₁` and `bc₂` both do and
+`bc₂.isPullback.hom_ext` reads a morphism into `d'.E` off its two
+composites.  So this statement is precisely
+
+> the automorphism group of a `Γ₁(N)`-datum is trivial for `N ≥ 4`,
+
+and conversely that follows from this at `bc₁ := bc₂.comp (the automorphism)`.
+The `map`-equality form is stated because it is what the descent below
+consumes, and because it needs no `Aut` object.
+
+## Why it is TRUE over an ARBITRARY base, with no hypothesis on `N` beyond `4 ≤ N`
+
+Fibrewise: for `u ≠ 1` in `Aut(E_{k̄}, 0)` one has `u² - tr(u)·u + 1 = 0`
+with `|tr u| ≤ 2`, so `deg(u - 1) = 2 - tr(u) ≤ 4`, with equality only at
+`u = -1` where `ker(u-1) = E[2]`.  A point of exact order `N ≥ 4` therefore
+cannot lie in `ker(u - 1)`: at `u = -1` because every point of `E[2]` has
+order dividing `2`, and otherwise because `#ker(u-1) ≤ 3 < N`.  This uses
+nothing about the characteristic — the supersingular curves of char `2, 3`
+have larger automorphism groups, but every element of those still satisfies
+the same quadratic — which is why NO invertibility hypothesis on `N` is
+carried here.  Globally: `θ` is then trivial on every geometric fibre, and
+the locus where a section of an unramified separated group scheme equals
+the unit is open and closed, so it is everything.
+
+## `4 ≤ N` is LOAD-BEARING FOR TRUTH, and the witness is the standard one
+
+At `N ≤ 2` a point of exact order `N` lies in `E[2]`, so `[-1]` fixes it
+and `θ := [-1]` gives two distinct squares over one `h`; at `N = 3` the
+curve `j = 0` in characteristic `≠ 3` carries `ζ₃` fixing a chosen point of
+order `3`.  This is the same rigidity boundary the file already records on
+`exists_isAffine_gamma1ModuliScheme` and on `IsCoarseModuliY1`, and the
+reason `Y_1(N)` is a FINE moduli space exactly for `N ≥ 4`.
+
+**NOT VACUOUS**: at `bc₁ = bc₂` the statement is trivial, but a base-change
+square is not unique a priori — `Gamma1BaseChange.isBaseChangeBC` and any
+`cancel` of it along an isomorphism are two visibly different terms — so
+the content is real.  It is also stated over an arbitrary base scheme at
+universe `u`, i.e. it mentions no field, no atlas and no modular curve. -/
+theorem map_unique (_hN : 4 ≤ N) {T' T : Scheme.{u}}
+    {h : T' ⟶ T} {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
+    (bc₁ bc₂ : IsBaseChangeOfGamma1 h d' d) : bc₁.map = bc₂.map :=
+  sorry
+
+/-- **The cocycle condition, from rigidity** (PROVEN 2026-08-01): two
+base-change squares over one `h` coequalise the same pairs.
+
+This is the whole of what `EffectiveEpi.desc` needs in `cancelLeft` below,
+and mathlib's `EffectiveEpiStruct` quantifies over EVERY pair `g₁, g₂` with
+`g₁ ≫ bp.map = g₂ ≫ bp.map`, so the kernel pair is never named and no
+fibre product appears — the same idiom `exists_descendClassifyGamma1` runs
+on, one level down (there the descent is of the classifying map, here of
+the comparison morphism itself).
+
+The argument: `g₁` and `g₂` induce the same base point `z` on `Z`, so the
+pullback of `d` along `z` (`exists_gamma1Datum_baseChange`) is a single
+datum `fz` which is a base change of `d'` along BOTH `gᵢ ≫ d'.f`
+(`cancel`), and `g₁, g₂` both factor through it via one section `L`.
+Composing the two cancelled squares with `bq` gives two base-change squares
+over the same morphism, so `map_unique` equates their comparison
+morphisms. -/
+theorem coeq_map (hN : 4 ≤ N) {T' T : Scheme.{0}} {p : T' ⟶ T}
+    {d' : Gamma1Datum N T'} {d e : Gamma1Datum N T}
+    (bp : IsBaseChangeOfGamma1 p d' d) (bq : IsBaseChangeOfGamma1 p d' e)
+    {Z : Scheme.{0}} (g₁ g₂ : Z ⟶ d'.E) (hg : g₁ ≫ bp.map = g₂ ≫ bp.map) :
+    g₁ ≫ bq.map = g₂ ≫ bq.map := by
+  have hw : ∀ i : Z ⟶ d'.E, (i ≫ d'.f) ≫ p = (i ≫ bp.map) ≫ d.f := by
+    intro i
+    rw [Category.assoc, Category.assoc, bp.isPullback.w]
+  have hz : (g₁ ≫ d'.f) ≫ p = (g₂ ≫ d'.f) ≫ p := by
+    rw [hw g₁, hw g₂, hg]
+  obtain ⟨fz, ⟨β⟩⟩ := exists_gamma1Datum_baseChange ((g₁ ≫ d'.f) ≫ p) d
+  have hβ₂map : (congrHom hz β).map = β.map := congrHom_map _ _
+  have hlift : 𝟙 Z ≫ ((g₁ ≫ d'.f) ≫ p) = (g₁ ≫ bp.map) ≫ d.f := by
+    rw [Category.id_comp]; exact hw g₁
+  -- both `g₁` and `g₂` factor through the tautological section of `fz`
+  have hfac : ∀ (i : Z ⟶ d'.E) (bb : IsBaseChangeOfGamma1 ((i ≫ d'.f) ≫ p) fz d),
+      bb.map = β.map → i ≫ bp.map = g₁ ≫ bp.map →
+      β.isPullback.lift (𝟙 Z) (g₁ ≫ bp.map) hlift ≫ (bb.cancel bp).map = i := by
+    intro i bb hbb hib
+    refine bp.isPullback.hom_ext ?_ ?_
+    · rw [Category.assoc, cancel_map, cancelMap_fst, ← Category.assoc,
+        β.isPullback.lift_fst, Category.id_comp]
+    · rw [Category.assoc, cancel_map, cancelMap_snd, hbb, β.isPullback.lift_snd, hib]
+  obtain ⟨L, hL₁, hL₂⟩ : ∃ L : Z ⟶ fz.E, L ≫ (β.cancel bp).map = g₁ ∧
+      L ≫ ((congrHom hz β).cancel bp).map = g₂ :=
+    ⟨β.isPullback.lift (𝟙 Z) (g₁ ≫ bp.map) hlift, hfac g₁ β rfl rfl,
+      hfac g₂ (congrHom hz β) hβ₂map hg.symm⟩
+  -- rigidity: the two composites with `bq` agree
+  have key : ((β.cancel bp).comp bq).map
+      = (congrHom hz.symm (((congrHom hz β).cancel bp).comp bq)).map :=
+    map_unique hN _ _
+  rw [congrHom_map, comp_map, comp_map] at key
+  calc g₁ ≫ bq.map = (L ≫ (β.cancel bp).map) ≫ bq.map := by rw [hL₁]
+    _ = L ≫ ((β.cancel bp).map ≫ bq.map) := Category.assoc _ _ _
+    _ = L ≫ (((congrHom hz β).cancel bp).map ≫ bq.map) := congrArg (fun t => L ≫ t) key
+    _ = (L ≫ ((congrHom hz β).cancel bp).map) ≫ bq.map := (Category.assoc _ _ _).symm
+    _ = g₂ ≫ bq.map := by rw [hL₂]
+
+/-- **CANCEL AN fpqc COVER ON THE LEFT** (PROVEN 2026-08-01 over
+`map_unique`) — the mirror of `IsBaseChangeOfGamma1.cancel`, and the
+formal half of `exists_gamma1UniversalFamily_of_atlas`.
+
+Given a flat surjective quasi-compact `p : T' ⟶ T`, a datum `d'` over `T'`
+which is a base change of `d` along `p` AND a base change of `dY` along
+`p ≫ m`, the datum `d` is a base change of `dY` along `m`.
+
+## Why this is descent and not pasting
+
+`cancel` is formal: both `e` and `d'` are pullbacks of `d`, so `e.E ⟶ d'.E`
+comes from the universal property and `IsPullback.of_bot` does the rest.
+Here nothing maps to anything a priori — the comparison `d.E ⟶ dY.E` has to
+be BUILT — and that is fpqc descent of a morphism.  What makes it available
+is that `AlgebraicGeometry.fpqcTopology` is `Subcanonical`, so a flat
+surjective quasi-compact morphism is an `EffectiveEpi`; `bp.map` and
+`bq.map` are base changes of `p`, hence again fpqc, hence effective epis.
+
+## Only MORPHISMS descend, never OBJECTS
+
+Both `d` and `m^* dY` already exist over `T` — the second by
+`exists_gamma1Datum_baseChange` — so effective descent of SCHEMES is never
+needed, which is just as well since it is not in the pin.  What is proved
+is that the two are ISOMORPHIC, and the isomorphism is obtained without any
+descent theorem for `IsIso`: descend `bq.map` along `bp.map` to get `φ`,
+descend `bp.map` along `bq.map` to get `ψ`, and then `φ ≫ ψ = 𝟙` and
+`ψ ≫ φ = 𝟙` are each checked after an EPIMORPHISM.  That is the one trick
+in the proof; everything else is the four structure fields.
+
+The three group-law clauses cannot be checked after `p` directly, because
+they quantify over an arbitrary test object `U`.  They are checked after
+the base change `U ×_T T' ⟶ U` of `p`, which is again fpqc hence epi, and
+the two naturality FIELDS of `AbelianSchemeStruct` (`pre_zero`, `pre_add`)
+are exactly what moves the points across.
+
+**`4 ≤ N` is consumed once**, in `coeq_map`, i.e. as the cocycle condition;
+this is the statement's only non-formal input, and dropping it makes the
+descent fail rather than merely the proof (the comparison would descend
+only as a gerbe).
+
+This is stated for an arbitrary `dY` over an arbitrary `Y` and mentions no
+atlas and no base field, so the `Γ₀` development can transcribe it once
+`X0.lean` has a rigidity leaf of its own — noting that `[Γ₀(N)]` is NEVER
+rigid, so there the hypothesis has to come from somewhere else. -/
+theorem cancelLeft (hN : 4 ≤ N) {T' T Y : Scheme.{0}}
+    {p : T' ⟶ T} [AlgebraicGeometry.Flat p] [AlgebraicGeometry.Surjective p] [QuasiCompact p]
+    {m : T ⟶ Y} {d' : Gamma1Datum N T'} {d : Gamma1Datum N T} {dY : Gamma1Datum N Y}
+    (bp : IsBaseChangeOfGamma1 p d' d) (b : IsBaseChangeOfGamma1 (p ≫ m) d' dY) :
+    Nonempty (IsBaseChangeOfGamma1 m d dY) := by
+  classical
+  -- the base-changed datum `m^* dY`, and `d'` as a base change of it along `p`
+  obtain ⟨e, ⟨δ⟩⟩ := exists_gamma1Datum_baseChange m dY
+  have bq : IsBaseChangeOfGamma1 p d' e := b.cancel δ
+  -- both comparison maps are fpqc, being base changes of `p`
+  haveI : AlgebraicGeometry.Flat bp.map :=
+    MorphismProperty.of_isPullback (P := @AlgebraicGeometry.Flat) bp.isPullback ‹_›
+  haveI : AlgebraicGeometry.Surjective bp.map :=
+    MorphismProperty.of_isPullback (P := @AlgebraicGeometry.Surjective) bp.isPullback ‹_›
+  haveI : QuasiCompact bp.map :=
+    MorphismProperty.of_isPullback (P := @QuasiCompact) bp.isPullback ‹_›
+  haveI : AlgebraicGeometry.Flat bq.map :=
+    MorphismProperty.of_isPullback (P := @AlgebraicGeometry.Flat) bq.isPullback ‹_›
+  haveI : AlgebraicGeometry.Surjective bq.map :=
+    MorphismProperty.of_isPullback (P := @AlgebraicGeometry.Surjective) bq.isPullback ‹_›
+  haveI : QuasiCompact bq.map :=
+    MorphismProperty.of_isPullback (P := @QuasiCompact) bq.isPullback ‹_›
+  -- descend each comparison map along the other
+  obtain ⟨φ, hφ⟩ : ∃ φ : d.E ⟶ e.E, bp.map ≫ φ = bq.map :=
+    ⟨EffectiveEpi.desc bp.map bq.map (fun g₁ g₂ h => coeq_map hN bp bq g₁ g₂ h),
+      EffectiveEpi.fac _ _ _⟩
+  obtain ⟨ψ, hψ⟩ : ∃ ψ : e.E ⟶ d.E, bq.map ≫ ψ = bp.map :=
+    ⟨EffectiveEpi.desc bq.map bp.map (fun g₁ g₂ h => coeq_map hN bq bp g₁ g₂ h),
+      EffectiveEpi.fac _ _ _⟩
+  -- so `φ` is an isomorphism: both composites are checked after an epimorphism
+  haveI : IsIso φ := by
+    refine ⟨ψ, ?_, ?_⟩
+    · refine (cancel_epi bp.map).mp ?_
+      rw [← Category.assoc, hφ, hψ, Category.comp_id]
+    · refine (cancel_epi bq.map).mp ?_
+      rw [← Category.assoc, hψ, hφ, Category.comp_id]
+  have hsq : d.f ≫ 𝟙 T = φ ≫ e.f := by
+    refine (cancel_epi bp.map).mp ?_
+    rw [Category.comp_id, ← bp.isPullback.w, ← Category.assoc, hφ]
+    exact bq.isPullback.w
+  -- an fpqc cover of an arbitrary test object, to check the group law on
+  have hq : ∀ {U : Scheme.{0}} (g : U ⟶ T), ∃ (W : Scheme.{0}) (q : W ⟶ U) (r : W ⟶ T'),
+      Epi q ∧ q ≫ g = r ≫ p := by
+    intro U g
+    refine ⟨Limits.pullback g p, Limits.pullback.fst g p, Limits.pullback.snd g p, ?_,
+      Limits.pullback.condition⟩
+    haveI : AlgebraicGeometry.Flat (Limits.pullback.fst g p) :=
+      MorphismProperty.of_isPullback (P := @AlgebraicGeometry.Flat)
+        (IsPullback.of_hasPullback g p).flip ‹_›
+    haveI : AlgebraicGeometry.Surjective (Limits.pullback.fst g p) :=
+      MorphismProperty.of_isPullback (P := @AlgebraicGeometry.Surjective)
+        (IsPullback.of_hasPullback g p).flip ‹_›
+    haveI : QuasiCompact (Limits.pullback.fst g p) :=
+      MorphismProperty.of_isPullback (P := @QuasiCompact)
+        (IsPullback.of_hasPullback g p).flip ‹_›
+    infer_instance
+  refine ⟨congrHom (Category.id_comp m) ((?_ : IsBaseChangeOfGamma1 (𝟙 T) d e).comp δ)⟩
+  refine ⟨φ, IsPullback.of_vert_isIso ⟨hsq⟩, ?_, ?_, ?_⟩
+  · -- the zero section
+    intro U g
+    refine Subtype.ext ?_
+    show (d.ab.zero g).1 ≫ φ = (e.ab.zero (g ≫ 𝟙 T)).1
+    rw [e.ab.zero_val_congr (Category.comp_id g)]
+    obtain ⟨W, q, r, hepi, hqr⟩ := hq g
+    haveI := hepi
+    refine (cancel_epi q).mp ?_
+    have e1 : q ≫ (d.ab.zero g).1 = (d.ab.zero (r ≫ p)).1 :=
+      congrArg Subtype.val (d.ab.pre_zero q hqr)
+    have e2 : q ≫ (e.ab.zero g).1 = (e.ab.zero (r ≫ p)).1 :=
+      congrArg Subtype.val (e.ab.pre_zero q hqr)
+    have e3 : (d'.ab.zero r).1 ≫ bp.map = (d.ab.zero (r ≫ p)).1 :=
+      congrArg Subtype.val (bp.map_zero r)
+    have e4 : (d'.ab.zero r).1 ≫ bq.map = (e.ab.zero (r ≫ p)).1 :=
+      congrArg Subtype.val (bq.map_zero r)
+    rw [← Category.assoc, e1, e2, ← e3, ← e4, Category.assoc, hφ]
+  · -- the group law
+    intro U g x y
+    refine Subtype.ext ?_
+    show (d.ab.add x y).1 ≫ φ
+      = (e.ab.add (RelPoint.along φ hsq x) (RelPoint.along φ hsq y)).1
+    obtain ⟨W, q, r, hepi, hqr⟩ := hq g
+    haveI := hepi
+    refine (cancel_epi q).mp ?_
+    obtain ⟨X', hXf, hXb⟩ : ∃ X' : W ⟶ d'.E, X' ≫ d'.f = r ∧ X' ≫ bp.map = q ≫ x.1 :=
+      ⟨bp.isPullback.lift r (q ≫ x.1) (by rw [Category.assoc, x.2, hqr]),
+        bp.isPullback.lift_fst _ _ _, bp.isPullback.lift_snd _ _ _⟩
+    obtain ⟨Y', hYf, hYb⟩ : ∃ Y' : W ⟶ d'.E, Y' ≫ d'.f = r ∧ Y' ≫ bp.map = q ≫ y.1 :=
+      ⟨bp.isPullback.lift r (q ≫ y.1) (by rw [Category.assoc, y.2, hqr]),
+        bp.isPullback.lift_fst _ _ _, bp.isPullback.lift_snd _ _ _⟩
+    have hXY : (d'.ab.add ⟨X', hXf⟩ ⟨Y', hYf⟩).1 ≫ bp.map
+        = (d.ab.add (RelPoint.pre q rfl x) (RelPoint.pre q rfl y)).1 :=
+      (congrArg Subtype.val (bp.map_add (⟨X', hXf⟩ : RelPoint d'.f r) ⟨Y', hYf⟩)).trans
+        (d.ab.add_val_congr hqr.symm
+          (RelPoint.along bp.map bp.isPullback.w (⟨X', hXf⟩ : RelPoint d'.f r))
+          (RelPoint.along bp.map bp.isPullback.w (⟨Y', hYf⟩ : RelPoint d'.f r))
+          (RelPoint.pre q rfl x) (RelPoint.pre q rfl y) hXb hYb)
+    have hbx : X' ≫ bq.map = q ≫ (x.1 ≫ φ) := by
+      rw [← hφ, ← Category.assoc, hXb, Category.assoc]
+    have hby : Y' ≫ bq.map = q ≫ (y.1 ≫ φ) := by
+      rw [← hφ, ← Category.assoc, hYb, Category.assoc]
+    have hXY' : (d'.ab.add ⟨X', hXf⟩ ⟨Y', hYf⟩).1 ≫ bq.map
+        = (e.ab.add (RelPoint.pre q rfl (RelPoint.along φ hsq x))
+            (RelPoint.pre q rfl (RelPoint.along φ hsq y))).1 :=
+      (congrArg Subtype.val (bq.map_add (⟨X', hXf⟩ : RelPoint d'.f r) ⟨Y', hYf⟩)).trans
+        (e.ab.add_val_congr (by rw [Category.comp_id, ← hqr])
+          (RelPoint.along bq.map bq.isPullback.w (⟨X', hXf⟩ : RelPoint d'.f r))
+          (RelPoint.along bq.map bq.isPullback.w (⟨Y', hYf⟩ : RelPoint d'.f r))
+          (RelPoint.pre q rfl (RelPoint.along φ hsq x))
+          (RelPoint.pre q rfl (RelPoint.along φ hsq y)) hbx hby)
+    have hpa : q ≫ (d.ab.add x y).1
+        = (d.ab.add (RelPoint.pre q rfl x) (RelPoint.pre q rfl y)).1 :=
+      congrArg Subtype.val (d.ab.pre_add q rfl x y)
+    have hpe : q ≫ (e.ab.add (RelPoint.along φ hsq x) (RelPoint.along φ hsq y)).1
+        = (e.ab.add (RelPoint.pre q rfl (RelPoint.along φ hsq x))
+            (RelPoint.pre q rfl (RelPoint.along φ hsq y))).1 :=
+      congrArg Subtype.val
+        (e.ab.pre_add q rfl (RelPoint.along φ hsq x) (RelPoint.along φ hsq y))
+    rw [← Category.assoc, hpa, ← hXY, Category.assoc _ bp.map φ, hφ, hXY', ← hpe]
+  · -- the level structure
+    show d.pt.sec ≫ φ = 𝟙 T ≫ e.pt.sec
+    rw [Category.id_comp]
+    refine (cancel_epi p).mp ?_
+    rw [← Category.assoc, ← bp.map_sec, Category.assoc, hφ]
+    exact bq.map_sec
+
+end IsBaseChangeOfGamma1
+
+/-! #### The rigidified moduli scheme, and the two halves of (8.1.1)/(8.1.3)
+
+**The cut of `exists_gamma1GITPresentation`, 2026-07-27.**  What was one
+sorry leaf is now ONE leaf plus proven glue, along the same line
+Katz–Mazur themselves draw and the same line `X0.lean` draws between
+`exists_rigidifiedModuli` and `exists_gamma0GITPresentation_of_rigidified`:
+
+| what | where | status |
+|---|---|---|
+| the rigidified moduli scheme, its deck group, its cover and its torsor property | `Gamma1Rigidification` / `exists_gamma1Rigidification` | **PROVEN** (2026-07-28), over the three leaves of the cut below — see the section comment "The cut of `exists_gamma1Rigidification`" |
+| the invariants `B = A^G`, the structure morphism of the coarse space, and the DESCENT of the classifying map | `exists_descendClassifyGamma1` / `nonempty_gamma1GITPresentation_of_rigidification` | **PROVEN** (8.1.3) |
+
+**`coequalises` is REQUIRED and its absence makes the descent half FALSE
+— here is the counterexample that found it.**  The tempting
+`Gamma1Rigidification` is `Gamma1GITPresentation` minus the `classify`
+block, i.e. `cover` + `strM_invariant` + `dM_equivariant`.  That is not
+enough.  Take `A = A₀ × A₀` with `G` acting diagonally on a genuine
+rigidified `A₀`, `dM` the disjoint union of two copies of the universal
+family, and `strM` the same on both factors.  Then `cover` holds (map
+into the first copy), `strM_invariant` and `dM_equivariant` hold, and
+`B = A^G = B₀ × B₀`.  But the two inclusions `ι₁, ι₂ : Spec A₀ ⟶ Spec A`
+pull `dM` back to ISOMORPHIC data, so naturality of any `classify` at
+`h = 𝟙` forces `ι₁ ≫ π = ι₂ ≫ π`, which is false because the two land in
+different factors of `Spec (B₀ × B₀)`.  So `classify` with
+`classify_dM` cannot exist over that rigidification, and a descent leaf
+stated without `coequalises` would be FALSE, not merely hard.
+
+`coequalises` is exactly what excludes it, it is exactly clause (b) of
+`X0.lean`'s `exists_deckAction`, and it is TRUE of the Katz–Mazur
+construction: two level-`n` structures on one curve differ by a
+*locally constant* `GL₂(ℤ/n)`-valued comparison, which equalises the two
+composites with `π` piecewise and hence globally.  The section comment
+above `Gamma0Atlas` in `X0.lean` records the same fact as the reason the
+descent route needs "a strictly stronger field — the torsor property";
+that field is this one.
+
+Note `dM_equivariant` is NOT derivable from `coequalises` and vice versa:
+the first says `σ^*dM ≅ dM`, the second is the converse direction, and
+`Gamma1GITPresentation.toGamma1Atlas` consumes only the first while
+`exists_descendClassifyGamma1` consumes only the second.
+
+## FALSITY AUDIT (2026-07-29): `coequalises` was UNSATISFIABLE over a general base, and is now repaired
+
+**The defect.**  `coequalises` was transcribed from `X0.lean`'s
+`exists_deckAction` clause (b) with no change.  Over `X0.lean`'s base
+`SpecQ` that is harmless, because `Subsingleton (Z ⟶ SpecQ)` holds for
+every scheme `Z` (a morphism to `Spec ℚ` is a ring map `ℚ →+* Γ(Z, ⊤)`,
+and there is at most one).  Over a general `S` — and `Spec K` for a
+number field `K` is general — the missing clause is REAL CONTENT, and
+without it the field is not merely too strong: **no inhabitant of
+`Gamma1Rigidification N (Spec K)` can satisfy it** for suitable `K`, so
+`exists_gamma1Rigidification` was FALSE as stated, and with it
+`exists_gamma1DeckAction`, which is what fills the field.
+
+**Why `coequalises` forces `a ≫ strM = b ≫ strM`.**  `S = Spec K` is
+affine and so is `Spec A`, and `Spec` is fully faithful on affines, so
+`strM = Spec φ` for a unique `φ : K →+* A`.  `strM_invariant` says
+`Spec (σ •) ≫ Spec φ = Spec φ`, i.e. `σ • ∘ φ = φ` for every `σ : G`,
+i.e. `φ` lands in `A^G`.  Hence `strM = specInvariantsQuotient G A ≫ str'`
+with `str' = Spec (φ : K →+* A^G)`, and therefore
+`a ≫ π = b ≫ π` IMPLIES `a ≫ strM = b ≫ strM`.  So any pair `a, b`
+rigidifying one datum with DIFFERENT structure morphisms to `S` refutes
+the old field.
+
+**The witness, and it needs nothing but `cover`.**  Take `N = 5` and an
+elliptic curve `E/ℚ` with a rational point `P` of exact order `5` (e.g.
+`11a3 = X₁(11)`), let `K = ℚ(E[3])` — a nontrivial Galois extension of
+`ℚ`, since it contains `ζ₃` — and let `σ ∈ Gal(K/ℚ)`, `σ ≠ 1`.  Put
+`d₁ := (E_K, P_K)`, a `Gamma1Datum 5 (Spec K)`.  Because `E` and `P` are
+defined over `ℚ`, the `σ`-conjugate datum is canonically `d₁` again:
+`(Spec σ)^* d₁ ≅ d₁`.  Now let `R : Gamma1Rigidification 5 (Spec K)` be
+ANY inhabitant and apply `R.cover` twice to the same datum `d₁` with two
+different structure morphisms:
+
+* at `g := 𝟙`, giving `p₁ : T₁ ⟶ Spec K` fppf, `d'₁` on `T₁` and
+  `m₁ : T₁ ⟶ Spec A` with `m₁ ≫ strM = p₁`;
+* at `g := Spec σ`, giving `p₂ : T₂ ⟶ Spec K` fppf, `d'₂` on `T₂` and
+  `m₂ : T₂ ⟶ Spec A` with `m₂ ≫ strM = p₂ ≫ Spec σ`.
+
+Set `Z := T₁ ×_{Spec K} T₂` with projections `q₁, q₂`, so
+`q₁ ≫ p₁ = q₂ ≫ p₂ =: w`, and set `a := q₁ ≫ m₁`, `b := q₂ ≫ m₂`.  Both
+`a` and `b` exhibit the SAME datum `d_Z := w^* d₁` as a base change of
+`dM` — for `b` this uses `(Spec σ)^* d₁ ≅ d₁` — so the old `coequalises`
+applies and gives `a ≫ π = b ≫ π`, hence `a ≫ strM = b ≫ strM`, i.e.
+`w = w ≫ Spec σ`.  But `w` is a composite of two fppf morphisms, hence an
+epimorphism, so `Spec σ = 𝟙` and `σ = 1`.  Contradiction.
+
+**The repair, and why it costs nothing.**  The Katz–Mazur torsor
+statement is about two level structures on one datum *of `S`-schemes*:
+`𝔐([Γ₁(N)], [Γ(n)]) → 𝔐([Γ₁(N)])` is a `GL₂(ℤ/n)`-torsor over `S`, and
+"the same point of `𝔐([Γ₁(N)])`" includes the `S`-structure.  So the
+field gains the hypothesis `a ≫ strM = b ≫ strM`, which is exactly what
+was silently free over `SpecQ`.  Every consumer already holds it:
+`exists_descendClassifyGamma1` uses `hcoeq` twice and both times the
+equation is available from `hcov`'s `p ≫ g = m ≫ strM` clause (the first
+was being discarded as `-`), at the price of the same hypothesis on that
+theorem's own second conclusion clause — where all three call sites in
+`nonempty_gamma1GITPresentation_of_rigidification` supply it, again from
+`R.cover`.  **`Gamma1GITPresentation` is unchanged**, so nothing below
+this cluster moves.
+
+**Corroboration from this file itself.**  `Gamma1Atlas.quotient` — the
+same "does not separate two rigidifications of one datum" condition, one
+layer up — ALREADY carries `a ≫ strM = b ≫ strM`, and so does
+`Gamma1Rigidification.cover` carry its own over-`S` clause
+`p ≫ g = m ≫ strM` with a docstring saying that clause "is what
+`Gamma0Atlas.cover` gets for free from `subsingleton_hom_specQ`".  So the
+`Γ₀ → Γ₁` over-`S` audit was performed on every neighbouring field and
+missed exactly one; `coequalises` is the only place in the cluster where
+the free-over-`ℚ` clause was dropped rather than restored.
+
+*The check that would refute this audit*: exhibit
+`R : Gamma1Rigidification N (Spec K)` and `a, b, d₁` as above with
+`a ≫ strM ≠ b ≫ strM` and `a ≫ π = b ≫ π` — impossible by the
+factorisation paragraph — or show that `(Spec σ)^* d₁ ≇ d₁` for a datum
+defined over the prime field, which is false by base-change transitivity. -/
+
 /-- **The Katz–Mazur rigidified moduli scheme for `[Γ₁(N)]`, over an
 arbitrary base scheme `S`** — the output of (8.1.1), with the descended
 classifying map of (8.1.3) deliberately NOT included.
@@ -10600,7 +11038,10 @@ arithmetic and asks for strictly less:
 | what | where | status |
 |---|---|---|
 | an atlas over `𝔽_ℓ` exists — this is 4.7.0 + 2.7.4 + 8.1.1, i.e. all of the arithmetic, and where `ℓ` prime and `ℓ ∤ N` are consumed | `exists_gamma1AffineModel` | **PROVEN** 2026-07-27 |
-| the atlas's coarse space carries a UNIVERSAL family: every datum is the base change of `dY` along its own classifying map | `exists_gamma1UniversalFamily_of_atlas` | **LEAF** |
+| the atlas's coarse space carries a UNIVERSAL family: every datum is the base change of `dY` along its own classifying map | `exists_gamma1UniversalFamily_of_atlas` | **PROVEN** 2026-08-01, by the cut below |
+| — step 1, the CONSTRUCTION: the universal family descends along the quotient map `π := (A.classify A.strM A.dM).1` | `exists_gamma1UniversalFamily_quotient` | **LEAF** |
+| — step 2, the DESCENT: an fpqc cover cancels on the LEFT in a base-change square | `IsBaseChangeOfGamma1.cancelLeft` | **PROVEN** 2026-08-01 |
+| — the one non-formal input to step 2: `Aut` of a `Γ₁(N)`-datum is trivial for `N ≥ 4` (Katz–Mazur 2.7.2) | `IsBaseChangeOfGamma1.map_unique` | **LEAF** |
 | the classifying morphism is UNIQUE (`eq_of_isBaseChange`) | `exists_isFineGamma1Moduli_of_atlas` | **PROVEN** here, from `Gamma1Atlas.quotient` |
 | the assembly at `K := ZMod ℓ` | `exists_isFineGamma1Moduli` | **PROVEN** |
 
@@ -10639,8 +11080,18 @@ exactly the hypothesis under which this tree *builds* atlases
 (`exists_gamma1AffineModel`), so nothing is lost.
 -/
 
-/-- **The coarse space of a Katz–Mazur `Γ₁(N)`-atlas carries a UNIVERSAL
-family** (sorry leaf, NEW 2026-07-31) — Katz–Mazur 4.7.1 with the arithmetic
+/-! #### The citation, and the two residues it was CUT INTO on 2026-08-01
+
+**The prose below was the docstring of `exists_gamma1UniversalFamily_of_atlas`
+while that was a sorry leaf (NEW 2026-07-31).  It is kept verbatim, as a
+section note, because it is the citation and the faithfulness analysis that
+BOTH residues inherit** — `exists_gamma1UniversalFamily_quotient` (step 1,
+the construction) and `IsBaseChangeOfGamma1.map_unique` (rigidity, the
+input to step 2).  The theorem it used to document is PROVEN over exactly
+those two; see its own docstring for the cut.
+
+**The coarse space of a Katz–Mazur `Γ₁(N)`-atlas carries a UNIVERSAL
+family** — Katz–Mazur 4.7.1 with the arithmetic
 discharged into `exists_gamma1AffineModel` and the uniqueness half removed;
 see the section comment for both.
 
@@ -10733,12 +11184,112 @@ theorem for rigid moduli problems, exists in this tree or in the pin.
 and a scan of `Mathlib/AlgebraicGeometry/Morphisms/Descent.lean` are what
 would refute the claim that neither exists today; both were run on
 2026-07-31 and neither does. -/
-theorem exists_gamma1UniversalFamily_of_atlas {N : ℕ} (_hN : 4 ≤ N)
+/-- **LEAF: the universal family DESCENDS ALONG THE QUOTIENT MAP** (NEW
+2026-08-01) — step 1 of the route recorded on
+`exists_gamma1UniversalFamily_of_atlas` below, and the only place in that
+route where a scheme has to be produced.
+
+Write `π := (A.classify A.strM A.dM).1 : A.M ⟶ A.Y`, the classifying map
+of the universal family on the rigidified moduli scheme.  The claim is
+that `A.dM` is the pullback along `π` of a datum on the coarse space.
+
+Katz–Mazur 4.7.1, in the half that is a CONSTRUCTION: every atlas this
+tree builds comes from a `Gamma1GITPresentation`, whose `dM_equivariant`
+field says `σ^* dM ≃ dM` for every deck-group element and whose
+`strM_invariant` says the action is over the base; at `N ≥ 4` rigidity
+makes those isomorphisms UNIQUE, hence a genuine descent datum, so the
+action is free, `π` is a torsor, and `A.M = Spec A` is finite locally free
+over `A.Y = Spec A^G`.  The uniqueness of the identifications — which is
+what turns "invariant" into "descent datum" — is the same rigidity that
+`IsBaseChangeOfGamma1.map_unique` isolates, so a prover who has that leaf
+in hand owes only the construction.
+
+**Both hypotheses are load-bearing, for the reasons written out on the
+theorem below**: `_hN` is rigidity (at `N ≤ 3` the deck action is not free
+and `π` is not a torsor, so no such `dY` exists), `_hchar` is invertibility
+of `N` on the base (at `char K ∣ N` the representable problem is the
+DRINFELD `[Γ₁(N)]` and the section form of `PointOfExactOrder` is not it).
+
+**NOT VACUOUS**: the conclusion is a cartesian square over the NAMED
+morphism `π`, so a `dY` unrelated to `A.dM` does not discharge it; and
+atlases over `Spec K` genuinely exist whenever `4 ≤ N` and `char K ∤ N`
+(`exists_gamma1AffineModel`).
+
+**A `∀ A` is not being asserted here** — the atlas is a hypothesis and the
+datum is produced from it, so this is an honest existence statement about
+the atlas in hand.
+
+## What this leaf does NOT owe
+
+Everything that used to be bundled with it and is now proven:
+`IsBaseChangeOfGamma1.cancelLeft` (the fpqc descent that spreads `dY` from
+`A.dM` to an arbitrary datum), the naturality computation relating the
+rigidifying cover to `π`, and the uniqueness clause `eq_of_isBaseChange`
+of `IsFineGamma1Moduli`.  A successor here builds ONE scheme and one
+cartesian square. -/
+theorem exists_gamma1UniversalFamily_quotient {N : ℕ} (_hN : 4 ≤ N)
     {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
     (A : Gamma1Atlas N (Spec (CommRingCat.of K))) :
-    ∃ dY : Gamma1Datum N A.Y, ∀ {T : Scheme.{0}} (g : T ⟶ Spec (CommRingCat.of K))
-      (d : Gamma1Datum N T), Nonempty (IsBaseChangeOfGamma1 (A.classify g d).1 d dY) :=
+    ∃ dY : Gamma1Datum N A.Y,
+      Nonempty (IsBaseChangeOfGamma1 (A.classify A.strM A.dM).1 A.dM dY) :=
   sorry
+
+/-- **The coarse space of a `Γ₁(N)`-atlas carries a UNIVERSAL family**
+(**PROVEN 2026-08-01**, over `exists_gamma1UniversalFamily_quotient` and
+`IsBaseChangeOfGamma1.map_unique`; formerly the sorry leaf whose docstring
+is kept above, since it is the citation the two residues inherit).
+
+## The cut, and what it costs
+
+The route in the section comment above is two steps.  Step 2 — spreading
+the descended family from `A.dM` to an ARBITRARY datum by cancelling the
+rigidifying fpqc cover on the left — is now `IsBaseChangeOfGamma1.cancelLeft`,
+PROVEN, over the elementary rigidity leaf `IsBaseChangeOfGamma1.map_unique`.
+Step 1 — descending the family along the quotient map at all — is
+`exists_gamma1UniversalFamily_quotient` above.
+
+**The frontier count goes `1 → 2`, and that is disclosure rather than
+regression.**  What was one leaf carrying the whole of Katz–Mazur 4.7.1 is
+now: a CONSTRUCTION (build one scheme and one cartesian square, at one
+named morphism) and a CITATION (2.7.2, the automorphism group of a
+`Γ₁(N)`-datum is trivial for `N ≥ 4`) which mentions no atlas, no coarse
+space, no base field and no modular curve, and which `X0.lean` and every
+later `Γ₁` consumer can reuse.  What left the leaf for good is ~250 lines
+of fpqc descent — the part the old docstring correctly flagged as "descent,
+and NOT formal" — plus the naturality bookkeeping below.
+
+## The proof
+
+`A.cover` rigidifies `d` after an fpqc `p : T' ⟶ T`, giving `d'` over `T'`
+and `m' : T' ⟶ A.M` with `p ≫ g = m' ≫ A.strM`.  Naturality of `classify`
+at the two base-change squares — the computation already written out in
+`Gamma1Atlas.toIsCoarseModuliY1` and again in
+`exists_isFineGamma1Moduli_of_atlas` — reads
+
+    m' ≫ π = (A.classify (m' ≫ A.strM) d').1 = (A.classify (p ≫ g) d').1 = p ≫ m
+
+for `m := (A.classify g d).1`.  So composing the rigidification with the
+descended square of step 1 exhibits `d'` as a base change of `dY` along
+`p ≫ m`, and `cancelLeft` removes the `p`. -/
+theorem exists_gamma1UniversalFamily_of_atlas {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
+    (A : Gamma1Atlas N (Spec (CommRingCat.of K))) :
+    ∃ dY : Gamma1Datum N A.Y, ∀ {T : Scheme.{0}} (g : T ⟶ Spec (CommRingCat.of K))
+      (d : Gamma1Datum N T), Nonempty (IsBaseChangeOfGamma1 (A.classify g d).1 d dY) := by
+  obtain ⟨dY, ⟨bY⟩⟩ := exists_gamma1UniversalFamily_quotient hN hchar A
+  refine ⟨dY, ?_⟩
+  intro T g d
+  obtain ⟨T', p, d', m', hf, hs, hqc, hst, ⟨bp⟩, ⟨bm⟩⟩ := A.cover g d
+  haveI := hf; haveI := hs; haveI := hqc
+  have hAp : (A.classify (p ≫ g) d').1 = p ≫ (A.classify g d).1 :=
+    congrArg Subtype.val (A.classify_natural p rfl bp)
+  have hAm : (A.classify (m' ≫ A.strM) d').1 = m' ≫ (A.classify A.strM A.dM).1 :=
+    congrArg Subtype.val (A.classify_natural m' rfl bm)
+  rw [hst] at hAp
+  have hkey : m' ≫ (A.classify A.strM A.dM).1 = p ≫ (A.classify g d).1 := by
+    rw [← hAm, hAp]
+  exact IsBaseChangeOfGamma1.cancelLeft hN bp
+    (IsBaseChangeOfGamma1.congrHom hkey (bm.comp bY))
 
 /-- **The coarse space of an atlas IS a fine moduli scheme, over a base with
 subsingleton hom-sets** (PROVEN 2026-07-31 over the leaf above).
