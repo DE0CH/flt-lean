@@ -30335,3 +30335,67 @@ the class shrinks** — here `X1.lean`'s Hecke leaves, which are all over `Spec 
 where the old and new classes coincide (Cartier applies unconditionally in
 characteristic zero), so their truth value is unchanged.  Say so explicitly; a
 reader who sees a hypothesis weaken will otherwise assume the leaf got easier.
+## A "SCOPE, STATED HONESTLY" CAVEAT NAMES THE CHEAPEST REFUTATION IN THE FILE — RUN IT FIRST
+(2026-08-02, `flt-lean-398`, on the Fontaine field route recorded on
+`pow_dvd_log_valuation_of_exists_fixed_rootOfUnity_of_not_forall_commutator_fixed`
+This file already says an audit's *refuting check* is the most valuable line in a
+docstring and the one nobody runs. There is a second shape with the same
+property and a louder signal, because its author has already told you the work is
+outstanding: a paragraph headed **SCOPE, STATED HONESTLY** — or any wording of
+the form *"the computation above is `n = 1`; the general case is an EXPECTATION
+here, not a checked number; a next owner must run it before relying on it."*
+That paragraph is a task order. It is usually an hour of CAS work, it needs no
+Lean, it needs no build, and it decides whether a whole recorded route has a
+future. Run it before reading the rest of the leaf.
+Here the seventeenth owner had checked `n = 1` numerically (two PARI runs,
+quoted), derived the break `p/(p−1)` against Fontaine's `1/(p−1)`, and written
+that the general-`n` value "is expected to be `n − 1 + p/(p − 1)` — one more than
+the bound, the same margin". **The expectation is FALSE.** At `p = 3`, `n = 2`,
+`q = 27` — so `v_3(q) = 3` and `p ^ n = 9 ∤ 3`, i.e. the leaf's conclusion fails —
+the field `ℚ_3(ζ_9, 27^{1/9}) = ℚ_3(ζ_9, 3^{1/3})` has upper break exactly `3/2`,
+which is Fontaine's bound and not above it. Thirteen rows later the separation is
+exact and is not on `n` at all: **the bound is violated in all and only the cases
+with `p ∤ v_p(q)`**, so the field route proves `p ∣ v_p(q)` and can never prove
+`p ^ n ∣ v_p(q)` for `n ≥ 2`.
+**THE STRUCTURAL TELL, AND IT IS THE TRANSFERABLE PART: A COMPUTATION CHECKED
+ONLY AT THE SMALLEST VALUE OF A PARAMETER CANNOT SEE TWO HYPOTHESES THAT
+COINCIDE THERE.** At `n = 1`, "`p ^ n ∤ v_p(q)`" and "`p ∤ v_p(q)`" are the SAME
+condition, so the `n = 1` run could not distinguish the condition the leaf is
+about from the condition the route detects. They separate at `n = 2`, and the gap
+between them is exactly where the counterexample lives. So when you inherit a
+result checked at one value of a parameter, do not merely re-run it at the next
+value — **list the hypotheses that are equivalent at the checked value and vary
+the parameter until they come apart.** That is a five-minute read of the
+statement and it is what tells you which case to compute.
+**VALIDATE THE PIPELINE AGAINST THE DOCSTRING'S OWN PUBLISHED NUMBERS BEFORE
+BELIEVING A NEGATIVE.** A CAS disagreeing with a docstring is, on its own,
+evidence about the CAS. Reproducing the author's figures first converts it into
+evidence about the mathematics. Three controls were re-derived exactly here
+(`v_3(disc) = 11` and break `3/2`; the peu-ramifiée `7` and `1/2`;
+`v_5(disc) = 39` and `5/4`), two of them quoted in the docstring as the original
+author's PARI checks — and only then was the new row believed. Build the controls
+into the same script as the new case, so they cannot drift apart.
+The recipe, for ramification specifically, since it is short and this tree needs
+it repeatedly: build the GLOBAL Galois model, `nfinit`, `galoisinit`,
+`idealprimedec` at `p`, `idealramgroups` for the LOWER filtration, then Herbrand
+`φ(u) = (1/|G_0|) Σ_{i=1}^{u} |G_i|` for the upper break. Two traps: PARI returns
+`G_{-1}` (the decomposition group) FIRST, so drop one entry before applying `φ`;
+and a subgroup's order is `prod(i=1,#s[2], s[2][i])`, since `s[2]` is a
+`t_VECSMALL` that `vecprod` refuses. Free cross-check on every row: the
+conductor–discriminant sum `Σ (|G_i| − 1)` must equal `v_p(disc)`, which
+`nfdisc` gives you anyway.
+**AND A NEGATIVE SCOPE CHECK IS A FULL RESULT, NOT A DEAD END — IT PICKS THE
+SURVIVING ROUTE.** Two owners had left rival recommendations on this leaf: the
+seventeenth said *"do NOT spend the seven-declaration surgery on the equivariant
+module injection, because the proof does not need it"*, the twenty-third
+corrected the factual absence claim under it without touching the strategy. The
+computation decides between them, and it decides for the module route — because
+what it shows is not merely that one estimate is too weak, but that **the FIELD
+does not determine the answer at `n ≥ 2`**, so Serre's argument consumes the
+module datum for a mathematical reason rather than an expository one. Write that
+consequence into the docstring next to the numbers; a table of breaks with no
+verdict attached will be re-derived by the next owner.
+Last, on cost: the whole check was thirteen PARI runs, the largest a degree-54
+`nfinit`, none over a minute except one that overflowed the stack at degree 100
+and was simply dropped. **When a route's scope caveat is unresolved, the price of
+resolving it is almost always far below the price of the route.**
