@@ -13584,12 +13584,15 @@ needed for TRUTH, but it is what makes the intended proof available (`J[p]` is a
 `𝔽_p`-vector space, and the sibling reduction `Fermat.finite_quotient_nsmul_of_prime`
 supplies every other `n`), so it is kept rather than weakened to `p ≠ 0`.
 
-## DECOMPOSED 2026-07-30 — now PROVEN over two named sub-leaves
+## RECUT 2026-07-31 — PROVEN over `exists_finiteIndex_divisible_pic` and
+`finite_torsion_pic_geom`
 
-The two routes that used to be recorded here are now recorded on
-`geomPic_exists_finiteCover_kummer`, which is where the arithmetic went; see the section
-docstring above for why the cut runs between geometry and arithmetic rather than along the
-two routes.  What the assembly does:
+The two routes that used to be recorded here are recorded on
+`exists_finiteIndex_divisible_pic` above, which is where the arithmetic went.  (Until
+2026-08-01 this paragraph named `geomPic_exists_finiteCover_kummer` instead — the
+corresponding leaf of the SUPERSEDED 2026-07-30 cut, which the recut deleted and a merge
+restored; it was deleted again on 2026-08-01 and the note above this theorem records why.)
+What the assembly does:
 
 1. **The values are `p`-torsion.**  `p·(act σ Q − Q) = act σ (p·Q) − p·Q = act σ (bc P) − bc P`,
    which is `0` by `act_bc` (PROVEN) — so every cochain maps into the finite set
