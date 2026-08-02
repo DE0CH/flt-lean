@@ -18065,8 +18065,333 @@ noncomputable def frobRestrict {F : Type u} [Field F] [NumberField F]
       = (frobAbove w : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F)
           (z : AlgebraicClosure F) := rfl
 
+/-! ##### The residue field of the place — the four ingredients
+
+`exists_residueHom_placeAbove` below is **PROVEN 2026-08-02** over the
+declarations in this block.  The route is the one its docstring recorded, with
+one substitution that made the whole thing affordable and is worth stating,
+because the docstring's route is the expensive one:
+
+**THE DOCSTRING'S STEP 2 — "the residue field of `placeAbove w` is ALGEBRAIC
+over `κ(w)`" — IS NOT PROVED, AND DOES NOT HAVE TO BE.**  It is the step that
+needs the finite subextensions of `F̄`, i.e. the only genuinely hard input on
+its list.  What replaces it is that the residue field upstairs is integral over
+`ℤ`, which is free: `κ(𝒪ᵥ)` is FINITE, so it is a finitely generated
+`ℤ`-module, and `E := IntegralClosure 𝒪ᵥ (F_w)ᵃˡᵍ` is integral over `𝒪ᵥ` by
+construction.  A ring homomorphism sends `n` to `n`, so **every** subfield of
+`κ(E)` receives the whole ℤ-integral structure — in particular the image of
+`κ(placeAbove w)`, which by step 1 is ALGEBRAICALLY CLOSED, so
+`IsAlgClosed.ringHom_bijective_of_isIntegral` makes it everything.  That is
+`surjective_residueFieldMap_placeAboveToIntegralClosure`, and it is the leaf's
+first clause with no algebraicity-over-`κ(w)` argument anywhere.
+
+The two general lemmas that open the block are mathlib-shaped and belong in
+`Fermat/FLT/Mathlib/RingTheory/Valuation/`; they are kept here because they have
+exactly one consumer and moving them would add an import edge to a module whose
+rebuild cone is the largest in the tree.  Hoist them if a second consumer
+appears. -/
+
+/-- **THE RESIDUE FIELD OF A VALUATION SUBRING OF AN ALGEBRAICALLY CLOSED FIELD
+IS ALGEBRAICALLY CLOSED** (PROVEN; mathlib-shaped, see the section note).
+
+Step 1 of `exists_residueHom_placeAbove`'s recorded route, in the generality it
+is actually true in.  A monic `p` over the residue field lifts to a monic `q`
+over `A` (the residue map is surjective, so `Polynomial.lifts_and_degree_eq_and_monic`
+applies); `q` has a root in `K` because `K` is algebraically closed and `q` has
+positive degree; that root is integral over `A` because `q` is monic, hence lies
+in `A` because a valuation subring is integrally closed with fraction field `K`;
+and its residue is a root of `p`. -/
+theorem isAlgClosed_residueField_valuationSubring {K : Type*} [Field K] [IsAlgClosed K]
+    (A : ValuationSubring K) : IsAlgClosed (IsLocalRing.ResidueField A) := by
+  refine IsAlgClosed.of_exists_root _ fun p hmonic hirr => ?_
+  have hlift : p ∈ Polynomial.lifts (IsLocalRing.residue A) :=
+    (Polynomial.lifts_iff_coeff_lifts p).mpr fun n => IsLocalRing.residue_surjective _
+  obtain ⟨q, hq, hdeg, hqm⟩ := Polynomial.lifts_and_degree_eq_and_monic hlift hmonic
+  have hdegq : (q.map (algebraMap A K)).degree ≠ 0 := by
+    rw [Polynomial.degree_map_eq_of_injective (IsFractionRing.injective A K), hdeg]
+    exact fun h => hirr.not_isUnit (Polynomial.isUnit_iff_degree_eq_zero.mpr h)
+  obtain ⟨x, hx⟩ := IsAlgClosed.exists_root (k := K) (q.map (algebraMap A K)) hdegq
+  have hint : IsIntegral A x := by
+    refine ⟨q, hqm, ?_⟩; rw [← Polynomial.eval_map]; exact hx
+  obtain ⟨a, ha⟩ := IsIntegrallyClosed.isIntegral_iff.mp hint
+  refine ⟨IsLocalRing.residue A a, ?_⟩
+  have hqa : q.eval a = 0 := by
+    apply (IsFractionRing.injective A K)
+    rw [map_zero, ← Polynomial.eval₂_at_apply, ← Polynomial.eval_map, ha]; exact hx
+  rw [← hq, Polynomial.eval_map, Polynomial.eval₂_at_apply, hqa, map_zero]
+
+/-- **PULLING A VALUATION SUBRING BACK ALONG AN EMBEDDING OF FIELDS GIVES A
+LOCAL HOMOMORPHISM** (PROVEN; mathlib-shaped, see the section note).
+
+An element of `B.comap f` is a unit exactly when its image in `B` is: if
+`f z · v = 1` with `v ∈ B` then `z ≠ 0` and `v = f (z⁻¹)`, so `z⁻¹` lies in the
+pullback.  This is what makes the residue field of `placeAbove w` embed in the
+residue field of the integral closure upstairs, and it is the second clause of
+`exists_residueHom_placeAbove` read backwards. -/
+theorem isUnit_comap_valuationSubring_iff {K L : Type*} [Field K] [Field L] (f : K →+* L)
+    (B : ValuationSubring L) (z : (B.comap f)) :
+    IsUnit ((⟨f z.1, z.2⟩ : B)) ↔ IsUnit z := by
+  rw [isUnit_iff_exists_inv, isUnit_iff_exists_inv]
+  constructor
+  · rintro ⟨v, hv⟩
+    have hv' : f (z : K) * (v : L) = 1 := congrArg Subtype.val hv
+    have hz1 : (z : K) ≠ 0 := by
+      rintro h; rw [h, map_zero, zero_mul] at hv'; exact zero_ne_one hv'
+    have hinv : ((z : K))⁻¹ ∈ B.comap f := by
+      show f ((z : K))⁻¹ ∈ B
+      have : f ((z : K))⁻¹ = (v : L) := by
+        rw [map_inv₀]; exact inv_eq_of_mul_eq_one_right hv'
+      rw [this]; exact v.2
+    refine ⟨⟨((z : K))⁻¹, hinv⟩, Subtype.ext ?_⟩
+    show (z : K) * ((z : K))⁻¹ = 1
+    field_simp
+  · rintro ⟨v, hv⟩
+    have hv' : (z : K) * (v : K) = 1 := congrArg Subtype.val hv
+    refine ⟨⟨f (v : K), v.2⟩, Subtype.ext ?_⟩
+    show f (z : K) * f (v : K) = 1
+    rw [← map_mul, hv', map_one]
+
+/-- The place of `F̄` above `w`, included into the integral closure of `𝒪ᵥ` in
+`(F_w)ᵃˡᵍ` along `algClosEmb`.  This is the map the whole block runs on: the
+TARGET type is the one `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`
+is stated about, and it is DEFEQ to `↥(localValuationSubring w)`, which is the
+one the valuation-subring lemmas above are stated about — so a single ring hom
+serves both, and no transport is needed anywhere below. -/
+noncomputable def placeAboveToIntegralClosure {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    placeAbove w →+* IntegralClosure (w.adicCompletionIntegers F)
+      (AlgebraicClosure (w.adicCompletion F)) where
+  toFun z := ⟨algClosEmb w z.1, z.2⟩
+  map_one' := Subtype.ext (map_one _)
+  map_mul' _ _ := Subtype.ext (map_mul _ _ _)
+  map_zero' := Subtype.ext (map_zero _)
+  map_add' _ _ := Subtype.ext (map_add _ _ _)
+
+instance isLocalHom_placeAboveToIntegralClosure {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) : IsLocalHom (placeAboveToIntegralClosure w) :=
+  ⟨fun a h => (isUnit_comap_valuationSubring_iff (algClosEmb w) (localValuationSubring w) a).mp h⟩
+
+/-- **THE MAXIMAL IDEAL UPSTAIRS LIES OVER THE MAXIMAL IDEAL OF `𝒪ᵥ`** (PROVEN).
+`E` is integral over `𝒪ᵥ` by construction, so the contraction of a maximal ideal
+is maximal; `𝒪ᵥ` is local, so that contraction is its maximal ideal.  No locality
+of `𝒪ᵥ ⟶ E` has to be proved by hand. -/
+theorem under_maximalIdeal_integralClosure {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    (IsLocalRing.maximalIdeal (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))).under (w.adicCompletionIntegers F)
+      = IsLocalRing.maximalIdeal (w.adicCompletionIntegers F) :=
+  IsLocalRing.eq_maximalIdeal (Ideal.isMaximal_comap_of_isIntegral_of_isMaximal _)
+
+/-- **THE EXPONENT IN `IsArithFrobAt` IS `N w`** (PROVEN).  `IsArithFrobAt` reads
+`σ • x ≡ x ^ Nat.card (𝒪ᵥ ⧸ 𝔪_E ∩ 𝒪ᵥ)`; the contraction is `𝔪_{𝒪ᵥ}` by
+`under_maximalIdeal_integralClosure`, and `κ(𝒪ᵥ) ≃ 𝒪_F/w ≃ κ(w)` has `N w`
+elements by `HeightOneSpectrum.ResidueFieldEquivCompletionResidueField` and
+`natCard_residueField_heightOneSpectrum`. -/
+theorem natCard_quotient_under_maximalIdeal_integralClosure {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    Nat.card ((w.adicCompletionIntegers F) ⧸
+        (IsLocalRing.maximalIdeal (IntegralClosure (w.adicCompletionIntegers F)
+          (AlgebraicClosure (w.adicCompletion F)))).under (w.adicCompletionIntegers F))
+      = Ideal.absNorm w.asIdeal := by
+  haveI : w.asIdeal.IsMaximal := w.isPrime.isMaximal w.ne_bot
+  rw [under_maximalIdeal_integralClosure w, ← natCard_residueField_heightOneSpectrum w]
+  have e1 : ((w.adicCompletionIntegers F) ⧸
+      IsLocalRing.maximalIdeal (w.adicCompletionIntegers F)) ≃+* ((𝓞 F) ⧸ w.asIdeal) :=
+    (HeightOneSpectrum.ResidueFieldEquivCompletionResidueField F w).symm
+  have e2 : ((𝓞 F) ⧸ w.asIdeal) ≃+* w.asIdeal.ResidueField :=
+    RingEquiv.ofBijective _ (Ideal.bijective_algebraMap_quotient_residueField w.asIdeal)
+  exact Nat.card_congr (e1.trans e2).toEquiv
+
+/-- The inclusion intertwines `frobRestrict` with the local arithmetic Frobenius.
+This is `Field.absoluteGaloisGroup.lift_map` — the commutation
+`algClosEmb ∘ map f σ = σ ∘ algClosEmb` — read on the subring. -/
+theorem placeAboveToIntegralClosure_frobRestrict {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (z : placeAbove w) :
+    placeAboveToIntegralClosure w (frobRestrict w z)
+      = (Field.AbsoluteGaloisGroup.adicArithFrob w) • (placeAboveToIntegralClosure w z) := by
+  refine Subtype.ext ?_
+  rw [IntegralClosure.coe_smul]
+  exact Field.absoluteGaloisGroup.lift_map (algebraMap F (w.adicCompletion F))
+    (Field.AbsoluteGaloisGroup.adicArithFrob w) z.1
+
+/-- **THE FOURTH CLAUSE, UPSTAIRS** (PROVEN): on residues the transported
+Frobenius is the `N w`-power map.  This is
+`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob` with its exponent
+identified by `natCard_quotient_under_maximalIdeal_integralClosure`. -/
+theorem residue_placeAboveToIntegralClosure_frobRestrict {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (z : placeAbove w) :
+    IsLocalRing.residue (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F))) (placeAboveToIntegralClosure w (frobRestrict w z))
+      = (IsLocalRing.residue (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))
+          (placeAboveToIntegralClosure w z)) ^ Ideal.absNorm w.asIdeal := by
+  have H := Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob w
+    (placeAboveToIntegralClosure w z)
+  rw [natCard_quotient_under_maximalIdeal_integralClosure w] at H
+  rw [placeAboveToIntegralClosure_frobRestrict w z, ← map_pow]
+  exact Ideal.Quotient.eq.mpr H
+
+/-- **THE THIRD CLAUSE, UPSTAIRS** (PROVEN): the residue of `a ∈ 𝒪_F` vanishes
+exactly on `w`.  The image of `a` in `(F_w)ᵃˡᵍ` comes from `𝒪ᵥ`
+(`AlgebraicClosure.map_algebraMap`), so membership in `𝔪_E` is membership in
+`𝔪_E ∩ 𝒪ᵥ = 𝔪_{𝒪ᵥ}`, and `𝔪_{𝒪ᵥ}` lies over `w` by the `LiesOver` instance
+of `HeightOneSpectrum.completionIdeal`. -/
+theorem residue_placeAboveToIntegralClosure_algebraMap_eq_zero_iff {F : Type u} [Field F]
+    [NumberField F] (w : HeightOneSpectrum (𝓞 F)) (a : 𝓞 F) :
+    IsLocalRing.residue (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))
+      (placeAboveToIntegralClosure w ⟨_, algebraMap_mem_placeAbove w a⟩) = 0
+        ↔ a ∈ w.asIdeal := by
+  have key : placeAboveToIntegralClosure w ⟨_, algebraMap_mem_placeAbove w a⟩
+      = algebraMap (w.adicCompletionIntegers F) (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))
+          (algebraMap (𝓞 F) (w.adicCompletionIntegers F) a) := by
+    refine Subtype.ext ?_
+    show algClosEmb w (algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a)) = _
+    rw [AlgebraicClosure.map_algebraMap]
+    rfl
+  rw [key, IsLocalRing.residue_eq_zero_iff]
+  constructor
+  · intro h
+    have h2 : (algebraMap (𝓞 F) (w.adicCompletionIntegers F) a)
+        ∈ (IsLocalRing.maximalIdeal (IntegralClosure (w.adicCompletionIntegers F)
+          (AlgebraicClosure (w.adicCompletion F)))).under (w.adicCompletionIntegers F) := h
+    rw [under_maximalIdeal_integralClosure w] at h2
+    rw [Ideal.LiesOver.over (p := w.asIdeal) (P := HeightOneSpectrum.completionIdeal F w)]
+    exact h2
+  · intro h
+    rw [Ideal.LiesOver.over (p := w.asIdeal) (P := HeightOneSpectrum.completionIdeal F w)] at h
+    have h2 : (algebraMap (𝓞 F) (w.adicCompletionIntegers F) a)
+        ∈ IsLocalRing.maximalIdeal (w.adicCompletionIntegers F) := h
+    rw [← under_maximalIdeal_integralClosure w] at h2
+    exact h2
+
+/-- **THE RESIDUE FIELD UPSTAIRS IS INTEGRAL OVER `ℤ`** (PROVEN), stated as a RAW
+ring-hom fact because the `Algebra ℤ` instance on a quotient is a genuine diamond
+(`algebraInt` against `Ideal.Quotient.algebra`), and `Algebra.IsIntegral.trans`
+then fails to see the scalar tower.
+
+`E` is integral over `𝒪ᵥ` by construction and the residue map is surjective, so
+`κ(E)` is integral over `𝒪ᵥ`, hence over `κ(𝒪ᵥ)`; and `κ(𝒪ᵥ)` is FINITE, hence a
+finite `ℤ`-module.  `RingHom.IsIntegral.trans` composes the two, and
+`Subsingleton (ℤ →+* ·)` identifies the composite with `Int.castRingHom`. -/
+theorem isIntegral_intCast_residueField_integralClosure {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    (Int.castRingHom (IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+      (AlgebraicClosure (w.adicCompletion F))))).IsIntegral := by
+  haveI hint : Algebra.IsIntegral (w.adicCompletionIntegers F)
+      (IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))) :=
+    Algebra.IsIntegral.of_surjective
+      (Ideal.Quotient.mkₐ (w.adicCompletionIntegers F)
+        (IsLocalRing.maximalIdeal (IntegralClosure (w.adicCompletionIntegers F)
+          (AlgebraicClosure (w.adicCompletion F)))))
+      Ideal.Quotient.mk_surjective
+  letI halg : Algebra (IsLocalRing.ResidueField (w.adicCompletionIntegers F))
+      (IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))) :=
+    IsLocalRing.ResidueField.algebraOfIsIntegral
+  haveI hst : IsScalarTower (w.adicCompletionIntegers F)
+      (IsLocalRing.ResidueField (w.adicCompletionIntegers F))
+      (IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))) :=
+    IsLocalRing.ResidueField.isScalarTowerOfIsIntegral
+  haveI hint2 := Algebra.IsIntegral.tower_top (R := w.adicCompletionIntegers F)
+    (S := IsLocalRing.ResidueField (w.adicCompletionIntegers F))
+    (T := IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+      (AlgebraicClosure (w.adicCompletion F))))
+  haveI hZ : Algebra.IsIntegral ℤ (IsLocalRing.ResidueField (w.adicCompletionIntegers F)) :=
+    Algebra.IsIntegral.of_finite ℤ _
+  have hbeta : (Int.castRingHom (IsLocalRing.ResidueField
+      (w.adicCompletionIntegers F))).IsIntegral := by
+    intro x
+    rw [show (Int.castRingHom (IsLocalRing.ResidueField (w.adicCompletionIntegers F)))
+      = algebraMap ℤ _ from Subsingleton.elim _ _]
+    exact hZ.isIntegral x
+  have halpha : (algebraMap (IsLocalRing.ResidueField (w.adicCompletionIntegers F))
+      (IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F))))).IsIntegral := fun x => hint2.isIntegral x
+  have := RingHom.IsIntegral.trans
+    (Int.castRingHom (IsLocalRing.ResidueField (w.adicCompletionIntegers F)))
+    (algebraMap (IsLocalRing.ResidueField (w.adicCompletionIntegers F))
+      (IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F))))) hbeta halpha
+  rwa [show ((algebraMap (IsLocalRing.ResidueField (w.adicCompletionIntegers F))
+      (IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F))))).comp
+      (Int.castRingHom (IsLocalRing.ResidueField (w.adicCompletionIntegers F))))
+    = Int.castRingHom _ from Subsingleton.elim _ _] at this
+
+/-- **THE FIRST CLAUSE** (PROVEN): the residue field of the place downstairs maps
+ONTO the residue field upstairs.
+
+This is the step that replaces the recorded route's algebraicity-over-`κ(w)`
+argument.  `κ(placeAbove w)` is algebraically closed
+(`isAlgClosed_residueField_valuationSubring`, since `F̄` is), the induced map is
+a ring homomorphism so its image contains every integer, and `κ(E)` is integral
+over `ℤ` — so `IsAlgClosed.ringHom_bijective_of_isIntegral` applies directly. -/
+theorem surjective_residueFieldMap_placeAboveToIntegralClosure {F : Type u} [Field F]
+    [NumberField F] (w : HeightOneSpectrum (𝓞 F)) :
+    Function.Surjective (IsLocalRing.ResidueField.map (placeAboveToIntegralClosure w)) := by
+  haveI hacO : IsAlgClosed (IsLocalRing.ResidueField (placeAbove w)) :=
+    isAlgClosed_residueField_valuationSubring (placeAbove w)
+  refine (IsAlgClosed.ringHom_bijective_of_isIntegral _ ?_).2
+  intro x
+  obtain ⟨f, hfm, hfe⟩ := isIntegral_intCast_residueField_integralClosure w x
+  refine ⟨f.map (Int.castRingHom (IsLocalRing.ResidueField (placeAbove w))), hfm.map _, ?_⟩
+  rw [Polynomial.eval₂_map,
+    show ((IsLocalRing.ResidueField.map (placeAboveToIntegralClosure w)).comp
+      (Int.castRingHom (IsLocalRing.ResidueField (placeAbove w)))) = Int.castRingHom _
+    from Subsingleton.elim _ _]
+  exact hfe
+
+/-- **THE IDENTIFICATION** (PROVEN): the residue field upstairs IS an algebraic
+closure of `κ(w)`.  `IsAlgClosed` is
+`isAlgClosed_residueField_valuationSubring` at `localValuationSubring w` (whose
+carrier type is DEFEQ to the integral closure), algebraicity over `κ(𝒪ᵥ)` is the
+integrality of `E` over `𝒪ᵥ` pushed to residue fields, and
+`IsAlgClosure.equivOfEquiv` then transports along `κ(𝒪ᵥ) ≃ 𝒪_F/w ≃ κ(w)`. -/
+theorem nonempty_residueField_integralClosure_ringEquiv {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) :
+    Nonempty (IsLocalRing.ResidueField (IntegralClosure
+        (w.adicCompletionIntegers F) (AlgebraicClosure (w.adicCompletion F)))
+      ≃+* AlgebraicClosure w.asIdeal.ResidueField) := by
+  haveI hint : Algebra.IsIntegral (w.adicCompletionIntegers F)
+      (IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))) :=
+    Algebra.IsIntegral.of_surjective
+      (Ideal.Quotient.mkₐ (w.adicCompletionIntegers F)
+        (IsLocalRing.maximalIdeal (IntegralClosure (w.adicCompletionIntegers F)
+          (AlgebraicClosure (w.adicCompletion F)))))
+      Ideal.Quotient.mk_surjective
+  letI halg : Algebra (IsLocalRing.ResidueField (w.adicCompletionIntegers F))
+      (IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))) :=
+    IsLocalRing.ResidueField.algebraOfIsIntegral
+  haveI hst : IsScalarTower (w.adicCompletionIntegers F)
+      (IsLocalRing.ResidueField (w.adicCompletionIntegers F))
+      (IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))) :=
+    IsLocalRing.ResidueField.isScalarTowerOfIsIntegral
+  haveI hint2 := Algebra.IsIntegral.tower_top (R := w.adicCompletionIntegers F)
+    (S := IsLocalRing.ResidueField (w.adicCompletionIntegers F))
+    (T := IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+      (AlgebraicClosure (w.adicCompletion F))))
+  haveI hac : IsAlgClosed (IsLocalRing.ResidueField (IntegralClosure
+      (w.adicCompletionIntegers F) (AlgebraicClosure (w.adicCompletion F)))) :=
+    isAlgClosed_residueField_valuationSubring (localValuationSubring w)
+  haveI : IsAlgClosure (IsLocalRing.ResidueField (w.adicCompletionIntegers F))
+      (IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))) :=
+    ⟨hac, hint2.isAlgebraic⟩
+  haveI : w.asIdeal.IsMaximal := w.isPrime.isMaximal w.ne_bot
+  exact ⟨IsAlgClosure.equivOfEquiv _ _
+    ((HeightOneSpectrum.ResidueFieldEquivCompletionResidueField F w).symm.trans
+      (RingEquiv.ofBijective _ (Ideal.bijective_algebraMap_quotient_residueField w.asIdeal)))⟩
+
 /-- **THE RESIDUE FIELD OF THE PLACE IS AN ALGEBRAIC CLOSURE OF `κ(w)`, AND THE
-TRANSPORTED FROBENIUS ACTS ON IT AS THE `N w`-POWER MAP** (sorry leaf, cut
+TRANSPORTED FROBENIUS ACTS ON IT AS THE `N w`-POWER MAP** (**PROVEN 2026-08-02**;
+was a sorry leaf, cut
 2026-07-31 as the residue-side half of `exists_frobEquivariant_placeAbove`
 below, which is now PROVEN over it — Bourbaki *Commutative Algebra* VI §8,
 Neukirch *ANT* II.8/II.9, Serre *Local Fields* I–II).
@@ -18075,7 +18400,29 @@ This is the piece the parent's docstring identified as genuinely absent from
 the pin, and it is now stated with nothing else attached: no absolute Galois
 group, no functoriality of `Γ`, no adic completion, no `IsAlgClosed.lift`.
 
-**THE CLASSICAL PROOF, in four steps.**
+**HOW IT WAS PROVED, AND WHERE THE ROUTE BELOW IS OFF.**  Steps 1, 3 and 4 are
+what the proof does, essentially verbatim; the block of lemmas immediately above
+carries them.  **STEP 2 IS NOT PROVED, AND IS NOT NEEDED** — it is the only
+genuinely expensive item on the list (it is the step that has to see the finite
+subextensions of `F̄`), and the proof replaces it as follows.
+
+Surjectivity of `κ(placeAbove w) ⟶ κ(E)`, `E := integralClosure 𝒪ᵥ (F_w)ᵃˡᵍ`, does
+not need `κ(E)` to be algebraic over `κ(w)`; it needs `κ(E)` to be algebraic over
+the IMAGE, and the image is a subfield, so it already contains every integer.
+`κ(E)` IS integral over `ℤ`, for free: `κ(𝒪ᵥ)` is FINITE, hence a finite
+`ℤ`-module, and `E` is integral over `𝒪ᵥ` by construction.  Since
+`κ(placeAbove w)` is algebraically closed (step 1, applied to `placeAbove w`
+rather than to `E`), `IsAlgClosed.ringHom_bijective_of_isIntegral` finishes.
+Step 2's conclusion is then obtained for free at the END, as
+`nonempty_residueField_integralClosure_ringEquiv`, from the integrality of `E`
+over `𝒪ᵥ` alone — never from a statement about `placeAbove w`.
+
+The generalisable form: **an algebraicity hypothesis that exists only to make a
+subfield large enough is discharged by ℤ-integrality, because a ring
+homomorphism's image contains ℤ automatically.**
+
+The originally recorded route follows; it is correct mathematics and is kept
+because steps 1, 3 and 4 are what the lemmas above prove.
 
 * `placeAbove w` is a valuation subring of the ALGEBRAICALLY CLOSED field `F̄`,
   so its residue field is algebraically closed: a monic polynomial over the
@@ -18124,8 +18471,34 @@ theorem exists_residueHom_placeAbove {F : Type u} [Field F] [NumberField F]
       (∀ a : 𝓞 F, π ⟨_, algebraMap_mem_placeAbove w a⟩ = 0 ↔ a ∈ w.asIdeal) ∧
       (∀ z : placeAbove w, π (frobRestrict w z)
         = (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
-            AlgebraicClosure w.asIdeal.ResidueField) (π z)) :=
-  sorry
+            AlgebraicClosure w.asIdeal.ResidueField) (π z)) := by
+  obtain ⟨e⟩ := nonempty_residueField_integralClosure_ringEquiv w
+  refine ⟨(e : IsLocalRing.ResidueField (IntegralClosure (w.adicCompletionIntegers F)
+      (AlgebraicClosure (w.adicCompletion F))) →+* _).comp
+    ((IsLocalRing.residue _).comp (placeAboveToIntegralClosure w)), ?_, ?_, ?_, ?_⟩
+  · intro y
+    obtain ⟨x, hx⟩ := e.surjective y
+    obtain ⟨t, ht⟩ := surjective_residueFieldMap_placeAboveToIntegralClosure w x
+    obtain ⟨z, hz⟩ := IsLocalRing.residue_surjective (R := placeAbove w) t
+    refine ⟨z, ?_⟩
+    show e (IsLocalRing.residue _ (placeAboveToIntegralClosure w z)) = y
+    rw [← IsLocalRing.ResidueField.map_residue (placeAboveToIntegralClosure w) z, hz, ht, hx]
+  · intro z
+    show e (IsLocalRing.residue _ (placeAboveToIntegralClosure w z)) = 0 ↔ _
+    rw [show ((0 : AlgebraicClosure w.asIdeal.ResidueField)) = e 0 from (map_zero e).symm,
+      e.injective.eq_iff, IsLocalRing.residue_eq_zero_iff, IsLocalRing.mem_maximalIdeal,
+      mem_nonunits_iff]
+    exact not_congr (isUnit_comap_valuationSubring_iff (algClosEmb w) (localValuationSubring w) z)
+  · intro a
+    show e (IsLocalRing.residue _
+      (placeAboveToIntegralClosure w ⟨_, algebraMap_mem_placeAbove w a⟩)) = 0 ↔ _
+    rw [show ((0 : AlgebraicClosure w.asIdeal.ResidueField)) = e 0 from (map_zero e).symm,
+      e.injective.eq_iff]
+    exact residue_placeAboveToIntegralClosure_algebraMap_eq_zero_iff w a
+  · intro z
+    show e (IsLocalRing.residue _ (placeAboveToIntegralClosure w (frobRestrict w z))) = _
+    rw [residue_placeAboveToIntegralClosure_frobRestrict w z, map_pow, hσ]
+    rfl
 
 /-- **THE FROBENIUS OF `κ(w)`, PINNED BY THE `N w`-POWER MAP** (PROVEN).
 The specialisation of `exists_absoluteGaloisGroup_pow_natCard_of_finite` to
