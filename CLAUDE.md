@@ -21884,3 +21884,49 @@ fact in prose, grep the BODIES of the theorems that would have had to know it.**
 is an `∃`-theorem whose proof opens with `obtain ⟨x, hx⟩ := <some existence lemma>` and
 then never mentions where `x` came from — everything after that `obtain` is a theorem
 about an arbitrary `x`.
+## A SCANNER'S IDENTIFIER CLASS IS PART OF THE FRONTIER — GREEK WAS MISSING FROM `frontier.py` FOR FIVE RELEASES
+(2026-08-01, `flt-lean-268`.  Found while checking why an assigned target did not
+exist; measured, not inferred.)
+`tools/merge/frontier.py` is the tool the release COVERAGE INVARIANT is computed
+from, and `tools/merge/gentask.py` turns its rows straight into dispatched task
+prompts (`n.split('.')[-1]` is the `TARGET:` line).  Its identifier class was
+    [A-Za-z_À-ɏᴀ-ᶿ℀-⅏][A-Za-z0-9_À-ɏᴀ-ᶿ₀-ₜ⁰-ⁿ℀-⅏.'!?]*
+— Latin-extended, phonetic extensions, letterlike symbols, sub/superscripts, and
+**no Greek at all** (`Ͱ-Ͽ`, U+0370–U+03FF).  This tree names declarations with
+Greek constantly: `preΨ`, `ΨSq`, `χA`, `Δ`, `isOfFinOrder_χ`.  **413 declarations
+tree-wide were affected**, and the two failure modes are different and both
+silent:
+* **a name that CONTAINS Greek is TRUNCATED at it.**  `natDegree_ΨSq_ne_zero_of_not_dvd`
+  was reported as `natDegree_`, and `not_monic_dvd_preΨ_mod_nonCMModelThirtySevenA`
+  as `not_monic_dvd_pre`.  No queue entry naming the true declaration can match
+  such a row, so the leaf reads as permanently UNCOVERED — and `gentask.py` then
+  emits a task whose `TARGET:` names a declaration that does not exist, i.e. a
+  guaranteed phantom dispatch.  One leaf
+  (`HasseBound.natDegree_ΨSq_ne_zero_of_not_dvd`, Deuring's congruence) was
+  genuinely uncovered this way: zero queue entries, zero live agents.
+* **a name that BEGINS with Greek makes the whole line fail to match**, so every
+  `sorry` under it is attributed to the PREVIOUS declaration — a proven theorem
+  is reported as the leaf, at the wrong line, and the real leaf is invisible.
+  No open leaf was Greek-INITIAL on 2026-08-01, so this half is latent; the way
+  to check is that the (file, line) multiset is unchanged by the fix, which it
+  was.
+**The validation that makes such a fix safe is a THREE-WAY comparison, and the
+row count alone is not one of them.**  Before/after: same 382 rows, same
+(file, line) set, exactly three names changed, and each changed name verified to
+occur in its own file by `grep`.  A fix that changed the row COUNT would mean the
+attribution moved, which is a different and much more serious claim.
+**Two general rules.**
+* **A scan that under-reports CERTIFIES**, so before quoting any clean run, read
+  the tool's own notion of what it is matching — `grep -n 'A-Za-z' <the script>`
+  — not just its `ROOT`.  This file already says to check `ROOT` for these
+  scripts ([[flt-frontier-tools-hardcode-staging-root]]); the identifier class is
+  the second hardcoded assumption in the same scripts and it is checked even less
+  often.  Keep `frontier.py`, `dupstmt.py` and `gentask.py` in sync, and do NOT
+  widen the class to `À-￿`, which swallows `⟨⟩←▸`
+  ([[lean-identifier-regex-swallows-brackets]]).
+* **A `--root` flag parsed AFTER the default is computed is not a flag.**
+  `frontier.py` evaluated `ROOT = Path(__file__).resolve().parents[2]`
+  unconditionally, so a copy of the script placed anywhere shallower than
+  `<repo>/tools/merge/` died with a bare `IndexError: 2` before `--root` was ever
+  read — which, with `2>&1` into the output file, looks exactly like a scan that
+  returned seven rows.  Parse the override first.
