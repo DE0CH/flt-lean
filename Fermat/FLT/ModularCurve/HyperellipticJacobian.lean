@@ -13378,7 +13378,34 @@ infinite Galois extension is a statement about CONTINUOUS cocycles, i.e. exactly
 inflated from a finite level.  `hLgal` is load-bearing in step 2 and `hLfin` in step 4; both
 are passed explicitly rather than as instances because at the literal base field `ℚ` the two
 `Algebra ℚ ↥L` instances form a diamond (see `AbsoluteHilbert90`'s implementation notes and
-`geomPic_bc_injective`'s STEP 6). -/
+`geomPic_bc_injective`'s STEP 6).
+
+## DEAD AS OF 2026-08-01 — DO NOT PROVE THIS IN ISOLATION
+
+A comment-stripped scan of the whole tree finds exactly **one** code occurrence of this name,
+its own declaration line; the two other hits are prose, at the module docstring and at this
+one.  The rival cut recorded in this block's section header took `geomPic_descent` through
+`geomPic_descent_divisor`, which bundles Hilbert 90 with the four other classical inputs, and
+nothing has reached this statement since.  It is open, unowned, correctly counted by every
+frontier instrument, and worth nothing to close on its own: a PROVEN declaration with no
+consumer is free-floating code, which this project forbids, so a successor who closes it has
+to delete it again.
+
+**What revives it** — together with 3a and 3c — is proving `geomPic_descent_divisor` over the
+seven steps recorded on that declaration; this leaf is its step 6, and it is the only step
+that is a named classical theorem rather than bookkeeping.  That task is queued.
+
+**Step 3 is where the cost is, and it is not in the route above.**  The route says every
+`A σ` lies in `F̄^{N} = F·L`.  `F̄^{N} = F·L` is not available: `GeomPic` gives the ABSOLUTE
+fixed-field statement as its own separate leaf (`geomPic_exists_emb_of_fieldAct_fixed`, "an
+element fixed by `fieldAct` comes from `F`", still open at line ~9240), and what step 3 needs
+is the RELATIVE version at the open subgroup `N`.  So this leaf is not the transcription of
+`Field.exists_ne_zero_forall_absoluteGalois_apply_eq_mul` that its first paragraph suggests —
+transcribing that gives steps 1, 2 and 4, and step 3 is a fifth statement about the fixed
+field of an open subgroup that nothing in the file currently provides.  A successor should
+expect to cut it, and should cut it as a strengthening of
+`geomPic_exists_emb_of_fieldAct_fixed` (which is LIVE, so the strengthening is consumed) and
+not as a new sibling here, or the dead-leaf problem is simply reproduced one level down. -/
 theorem geomPic_hilbert90 {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
     (L : IntermediateField ℚ (AlgebraicClosure ℚ))
