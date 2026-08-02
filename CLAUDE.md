@@ -31343,3 +31343,65 @@ sketch also tells you the SHAPE of the name to grep for.  "Smooth over a field i
 regular hence reduced, connected plus domain stalks is irreducible" is
 `isIntegral_of_smooth…_of_…connected`, and this project names such lemmas after
 their hypotheses in exactly that order.
+### AND WHEN THE TWO CUTS PEEL DIFFERENT *LAYERS*, THEY STACK — compose them instead of choosing
+(2026-08-02, `flt-lean-111`, `card_relPoint_not_liesIn_le_of_forall_card_fibre_le`
+in `ModularCurve/X0.lean`.)  The section above tells you to diff the two residual
+statements and look for DISJOINT HYPOTHESES.  That test does not fire when the
+two residues have different SHAPES, and that is a common and easy case to
+mishandle.
+The setup, and it is the ordinary two-day rhythm of this fleet rather than
+anybody's mistake.  `card_relPoint_not_liesIn_le_of_finite_toAffineLine` was cut
+on 2026-07-30 by peeling the GEOMETRY — leaving
+`exists_chartAtInfinity_of_finite_toAffineLine`, "produce the coordinate at
+infinity", an `∃ (V, jV, ψ)`.  On 2026-07-31 it was cut AGAIN, by
+re-parametrising the ARITHMETIC — leaving
+`card_relPoint_not_liesIn_le_of_forall_card_fibre_le`, the same bound with the
+constant `2` replaced by an `m` bounding every field fibre.  Both landed, the
+parent was re-proven over the second, and **the first was left with no consumer
+anywhere in the tree** (the seventh invisibility class; two separate queue2
+entries had already flagged it in a consumerless-leaf sweep).
+The standing repair for a consumerless leaf is *prove it in one line from the
+winner, else delete it*.  **Neither applies here**, and the reason generalises:
+the loser's conclusion is a CONSTRUCTION and the winner's is a COUNT, so no
+implication runs in either direction.  The leaf reads as garbage and is not.
+**They are not rivals, they are two floors of one staircase, and the repair is
+to STACK them**: restate the geometry leaf at the winner's generality, and prove
+the winner over it.  Frontier `2 → 1`, nothing deleted, and the single surviving
+leaf is the purely geometric one — which is the shape both authors were reaching
+for.  The whole of the winner's proof is then the counting argument the 2026-07-30
+cut had already written down, ~12 lines.
+**The test, and it costs one look at the two conclusions.**  Diff the binder
+lists first, as the section above says; if that comes back empty because the two
+conclusions are not even the same KIND of statement, ask instead *what did each
+cut peel?*  If one peeled a construction and the other peeled a constant, a
+finiteness, a base, or a normalisation, they are on different floors and they
+compose.  Only cuts that peel the SAME half are genuinely rival.
+* **CHECK DECLARATION ORDER BEFORE PRICING THE COMPOSITION.**  The loser was cut
+  for a theorem BELOW the winner, so it sits below the winner too, and stacking
+  needs the loser MOVED ABOVE it.  That is a block move in the most contended
+  file in the tree.  Run the usual hoist check (does the moved block name
+  anything declared in the region it jumps?  here: nothing) and do the move in
+  the same commit, with a line-multiset receipt.
+* **A restatement is faithful, and its old audit transfers VERBATIM, exactly
+  when the old clauses are an INSTANCE of the new ones.**  Here the old leaf's
+  three-point clauses are the case `m = 2` of the new pigeonhole clauses in both
+  the hypothesis and the conclusion, so the 2026-07-30 falsity audit — including
+  its two lazy-witness refutations — survives with `2` replaced by `m`.  Say
+  which instance it is; an audit labelled "inherited" with no argument is a
+  failure mode this file already records.
+* **`Nat.card X ≤ m` IS THE WRONG SHAPE FOR AN OUTPUT.**  `Nat.card` of an
+  INFINITE type is `0`, so that bound is satisfied vacuously by an infinite `X`
+  and carries no information about it.  As an INPUT it is fine — the producer
+  knows its fibres are finite and the consumer never has to exclude the infinite
+  case.  As an OUTPUT that a consumer will use to bound a cardinality it is
+  useless, and the consumer discovers this as a missing `[Finite _]` on
+  `Nat.card_le_card_of_injective`.  State such a clause in PIGEONHOLE form —
+  *every family of `m + 1` elements repeats* — which is equivalent to
+  `Nonempty (X ↪ Fin m)`, implies finiteness by itself, and is what the file's
+  existing three-point clauses already were.  The bridge back is one reusable
+  lemma (`card_le_of_forall_succ_exists_eq`: contrapose, `Nat.card X ≠ 0` gives
+  `Finite X`, then `Finite.equivFin` names `m + 1` distinct elements).
+**And report the `−1` honestly.**  No mathematics was discharged: every geometric
+obligation is still open on the leaf below.  What the cycle removed is a
+duplicated cut and a leaf that would have kept drawing dispatches forever.  Say
+that in the commit, or the count reads as a theory gap closing.
