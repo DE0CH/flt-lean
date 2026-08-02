@@ -17127,39 +17127,465 @@ theorem stepanov_totalFilt_jet_stepanovAnsatzBlock (d : ℕ) (hd : 2 ≤ d) (p :
   stepanov_totalFilt_stepanovJet d hd hdegY hcoeff M _ ν _
     (stepanov_totalFilt_stepanovAnsatzBlock d p A hAdeg j k)
 
-/-- **THE REDUCTION TO A LINEAR SYSTEM, STEPS 3 AND 4** (SORRY LEAF, cut
-2026-07-31 out of `exists_stepanovJetLinearForms`) — Schmidt Chapter III §4,
+/-! #### Schmidt's difference quotient `e₂`, and the counting arithmetic (2026-08-01)
+
+Everything in this subsection is what STEP 3 of Schmidt III §4 (pp. 110–112) needs
+before any elimination can be written down, and none of it existed: `e₂` occurred
+only in PROSE, in three docstrings, and had no definition anywhere in `Fermat/`.
+
+`e₂(X, Y, Y')` is the difference quotient `(F(X,Y) − F(X,Y'))/(Y − Y')`. It is
+built here as an honest DIVISION rather than as Schmidt's coefficientwise
+geometric sum: in `R[X][Y][Y']` the polynomial `F(X, Y')` is monic of degree `d`
+in `Y'` and `Y' − Y` is monic of degree `1`, so `Polynomial.divByMonic` produces
+the quotient, `Polynomial.modByMonic_X_sub_C_eq_C_eval` identifies the remainder
+as `F(X, Y)`, and `natDegree_divByMonic` together with
+`leadingCoeff_divByMonic_of_monic` give MONICITY IN `Y'` OF DEGREE `d − 1` in two
+lines each.
+
+**NOTE ON THE SIGN, because the prose in this file had it wrong.** Matching the
+`−Y'^d` of `−F(X, Y')` against `(Y − Y')·(c·Y'^{d−1})` forces `c = 1`, so `e₂` is
+MONIC, not "leading coefficient `−1`". Only unit-ness is used downstream (it is
+what lets `Polynomial.modByMonic` reduce in the `Y'` direction, exactly as
+`stepanov_exists_wd_rem` reduces in the `Y` direction), so either reading would
+have supported the argument; the statements below are the monic one. -/
+
+section StepanovDifferenceQuotient
+
+variable {R S : Type*} [CommRing R] [CommRing S]
+
+/-- `F(X, Y')` — the polynomial `F ∈ R[X][Y]` with its `Y` renamed to the fresh
+OUTERMOST variable of `R[X][Y][Y']`. Concretely `Polynomial.map` along
+`C : R[X] →+* R[X][Y]`, so the coefficient of `Y'^n` is `c_n(X)` viewed as a
+constant in `Y`. -/
+noncomputable def stepanovFY' (F : Polynomial (Polynomial R)) :
+    Polynomial (Polynomial (Polynomial R)) :=
+  F.map (Polynomial.C : Polynomial R →+* Polynomial (Polynomial R))
+
+/-- Substituting `Y` back for `Y'` recovers `F`. -/
+theorem stepanovFY'_eval (F : Polynomial (Polynomial R)) :
+    Polynomial.eval (Polynomial.X : Polynomial (Polynomial R)) (stepanovFY' F) = F := by
+  rw [stepanovFY', Polynomial.eval_map, Polynomial.eval₂_C_X]
+
+/-- **SCHMIDT'S `e₂`** (Chapter III §4, p. 111): the difference quotient
+`(F(X,Y) − F(X,Y'))/(Y − Y')`, as an element of `R[X][Y][Y']`. -/
+noncomputable def stepanovE2 (F : Polynomial (Polynomial R)) :
+    Polynomial (Polynomial (Polynomial R)) :=
+  stepanovFY' F /ₘ (Polynomial.X - Polynomial.C (Polynomial.X : Polynomial (Polynomial R)))
+
+/-- **THE DEFINING IDENTITY** `F(X, Y) − F(X, Y') = (Y − Y')·e₂(X, Y, Y')`.
+
+`Polynomial.C F` is `F(X, Y)` and `Polynomial.C Polynomial.X` is `Y`, both read in
+`R[X][Y][Y']`; the bare `Polynomial.X` is `Y'`. -/
+theorem stepanovE2_spec (F : Polynomial (Polynomial R)) :
+    Polynomial.C F - stepanovFY' F
+      = (Polynomial.C (Polynomial.X : Polynomial (Polynomial R)) - Polynomial.X)
+          * stepanovE2 F := by
+  have h := Polynomial.modByMonic_add_div (stepanovFY' F)
+    (Polynomial.X - Polynomial.C (Polynomial.X : Polynomial (Polynomial R)))
+  rw [Polynomial.modByMonic_X_sub_C_eq_C_eval, stepanovFY'_eval] at h
+  have h2 : Polynomial.C F = stepanovFY' F
+      - (Polynomial.X - Polynomial.C (Polynomial.X : Polynomial (Polynomial R)))
+          * stepanovE2 F :=
+    eq_sub_of_add_eq h
+  rw [h2]; ring
+
+theorem stepanovFY'_monic [Nontrivial R] {F : Polynomial (Polynomial R)} (hmon : F.Monic) :
+    (stepanovFY' F).Monic := hmon.map _
+
+theorem stepanovFY'_natDegree [Nontrivial R] {F : Polynomial (Polynomial R)} (hmon : F.Monic) :
+    (stepanovFY' F).natDegree = F.natDegree := hmon.natDegree_map _
+
+/-- `deg_{Y'} e₂ = d − 1`. -/
+theorem stepanovE2_natDegree [Nontrivial R] {F : Polynomial (Polynomial R)} (hmon : F.Monic)
+    {d : ℕ} (hdeg : F.natDegree = d) : (stepanovE2 F).natDegree = d - 1 := by
+  rw [stepanovE2, Polynomial.natDegree_divByMonic _ (Polynomial.monic_X_sub_C _),
+    Polynomial.natDegree_X_sub_C, stepanovFY'_natDegree hmon, hdeg]
+
+/-- **`e₂` IS MONIC IN `Y'`** — this is what lets `Polynomial.modByMonic` reduce in
+the `Y'` direction in step 3. -/
+theorem stepanovE2_monic [Nontrivial R] {F : Polynomial (Polynomial R)} (hmon : F.Monic)
+    {d : ℕ} (hd : 1 ≤ d) (hdeg : F.natDegree = d) : (stepanovE2 F).Monic := by
+  have hL := stepanovFY'_monic hmon
+  have hdegL : (stepanovFY' F).degree = (d : WithBot ℕ) := by
+    rw [Polynomial.degree_eq_natDegree hL.ne_zero, stepanovFY'_natDegree hmon, hdeg]
+  have hle : (Polynomial.X - Polynomial.C (Polynomial.X : Polynomial (Polynomial R))).degree
+      ≤ (stepanovFY' F).degree := by
+    rw [Polynomial.degree_X_sub_C, hdegL]
+    exact_mod_cast Nat.one_le_cast.mpr hd
+  rw [Polynomial.Monic, stepanovE2,
+    Polynomial.leadingCoeff_divByMonic_of_monic (Polynomial.monic_X_sub_C _) hle]
+  exact hL
+
+/-! ##### Evaluation at a point of `R[X][Y][Y']` -/
+
+/-- `stepanovEvalPoint φ · x y` packaged as a ring hom, so that it can be `map`ped
+one level up. -/
+noncomputable def stepanovEvalHom (φ : R →+* S) (x : R) (y : S) :
+    Polynomial (Polynomial R) →+* S :=
+  (Polynomial.evalRingHom y).comp (Polynomial.mapRingHom (φ.comp (Polynomial.evalRingHom x)))
+
+theorem stepanovEvalHom_apply (φ : R →+* S) (x : R) (y : S) (g : Polynomial (Polynomial R)) :
+    stepanovEvalHom φ x y g = stepanovEvalPoint φ g x y := rfl
+
+/-- Evaluation of `g ∈ R[X][Y][Y']` at `(x, y, y')`, as a ring hom. -/
+noncomputable def stepanovEvalHom3 (φ : R →+* S) (x : R) (y y' : S) :
+    Polynomial (Polynomial (Polynomial R)) →+* S :=
+  (Polynomial.evalRingHom y').comp (Polynomial.mapRingHom (stepanovEvalHom φ x y))
+
+theorem stepanovEvalHom_comp_C (φ : R →+* S) (x : R) (y : S) :
+    (stepanovEvalHom φ x y).comp (Polynomial.C : Polynomial R →+* Polynomial (Polynomial R))
+      = φ.comp (Polynomial.evalRingHom x) := by
+  refine RingHom.ext fun c => ?_
+  simp [stepanovEvalHom]
+
+@[simp] theorem stepanovEvalHom3_C (φ : R →+* S) (x : R) (y y' : S)
+    (u : Polynomial (Polynomial R)) :
+    stepanovEvalHom3 φ x y y' (Polynomial.C u) = stepanovEvalPoint φ u x y := by
+  simp [stepanovEvalHom3, stepanovEvalHom_apply]
+
+@[simp] theorem stepanovEvalHom3_stepanovFY' (φ : R →+* S) (x : R) (y y' : S)
+    (F : Polynomial (Polynomial R)) :
+    stepanovEvalHom3 φ x y y' (stepanovFY' F) = stepanovEvalPoint φ F x y' := by
+  rw [stepanovEvalHom3, stepanovFY', RingHom.comp_apply, Polynomial.coe_mapRingHom,
+    Polynomial.map_map, stepanovEvalHom_comp_C]
+  rfl
+
+@[simp] theorem stepanovEvalHom3_X (φ : R →+* S) (x : R) (y y' : S) :
+    stepanovEvalHom3 φ x y y' Polynomial.X = y' := by simp [stepanovEvalHom3]
+
+@[simp] theorem stepanovEvalHom3_C_X (φ : R →+* S) (x : R) (y y' : S) :
+    stepanovEvalHom3 φ x y y' (Polynomial.C (Polynomial.X : Polynomial (Polynomial R))) = y := by
+  simp [stepanovEvalHom3, stepanovEvalHom]
+
+theorem stepanovEvalHom_C (φ : R →+* S) (x : R) (y : S) (c : Polynomial R) :
+    stepanovEvalHom φ x y (Polynomial.C c) = φ (c.eval x) := by simp [stepanovEvalHom]
+
+theorem stepanovEvalHom_monomial (φ : R →+* S) (x : R) (y : S) (n : ℕ) (c : Polynomial R) :
+    stepanovEvalHom φ x y (Polynomial.monomial n c) = φ (c.eval x) * y ^ n := by
+  simp [stepanovEvalHom, Polynomial.eval_monomial]
+
+theorem stepanovEvalHom3_monomial (φ : R →+* S) (x : R) (y y' : S) (k : ℕ)
+    (u : Polynomial (Polynomial R)) :
+    stepanovEvalHom3 φ x y y' (Polynomial.monomial k u)
+      = stepanovEvalPoint φ u x y * y' ^ k := by
+  simp [stepanovEvalHom3, Polynomial.eval_monomial, stepanovEvalHom_apply]
+
+@[simp] theorem stepanovEvalHom3_C_X_sub_X (φ : R →+* S) (x : R) (y y' : S) :
+    stepanovEvalHom3 φ x y y'
+        (Polynomial.C (Polynomial.X : Polynomial (Polynomial R)) - Polynomial.X) = y - y' := by
+  simp [stepanovEvalHom3, stepanovEvalHom]
+
+/-- **THE POINTWISE VANISHING OF `e₂`** — the whole reason `e₂` is introduced: at
+two DISTINCT points `y ≠ y'` of the fibre over `x`, `e₂(x, y, y') = 0`, so
+reducing modulo `e₂` in the `Y'` direction changes no value of `D^{(ν)}` at such a
+point.
+
+The hypotheses are exactly what step 3 supplies at `y' = y^p`: `F(x, y) = 0`,
+`F(x, y') = F(x, y)^p = 0` and `y ≠ y'` because `y ∉ 𝔽_p`. -/
+theorem stepanovE2_eval_eq_zero [IsDomain S] (φ : R →+* S) (F : Polynomial (Polynomial R))
+    (x : R) (y y' : S) (hy : stepanovEvalPoint φ F x y = 0)
+    (hy' : stepanovEvalPoint φ F x y' = 0) (hne : y ≠ y') :
+    stepanovEvalHom3 φ x y y' (stepanovE2 F) = 0 := by
+  have h : stepanovEvalPoint φ F x y - stepanovEvalPoint φ F x y'
+      = (y - y') * stepanovEvalHom3 φ x y y' (stepanovE2 F) := by
+    rw [← stepanovEvalHom3_C φ x y y' F, ← stepanovEvalHom3_stepanovFY' φ x y y' F,
+      ← map_sub, stepanovE2_spec, map_mul, stepanovEvalHom3_C_X_sub_X]
+  rw [hy, hy', sub_zero] at h
+  rcases mul_eq_zero.mp h.symm with h1 | h1
+  · exact absurd (sub_eq_zero.mp h1) hne
+  · exact h1
+
+end StepanovDifferenceQuotient
+
+/-! ##### The Frobenius point `y' = y^p` -/
+
+section StepanovFrobeniusPoint
+
+/-- `F(x, y^p) = F(x, y)^p` for `F` with `𝔽_p` coefficients and `x ∈ 𝔽_p`: the
+Frobenius is a ring hom and fixes every coefficient, because `a^p = a` on
+`ZMod p`. -/
+theorem stepanovEvalPoint_pow_card (p : ℕ) [Fact p.Prime] {K : Type*} [CommRing K] [CharP K p]
+    (φ : ZMod p →+* K) (F : Polynomial (Polynomial (ZMod p))) (x : ZMod p) (y : K) :
+    stepanovEvalPoint φ F x (y ^ p) = (stepanovEvalPoint φ F x y) ^ p := by
+  haveI : ExpChar K p := .prime Fact.out
+  have hcomp : (frobenius K p).comp (φ.comp (Polynomial.evalRingHom x))
+      = φ.comp (Polynomial.evalRingHom x) := by
+    refine RingHom.ext fun c => ?_
+    show frobenius K p (φ ((Polynomial.evalRingHom x) c)) = φ ((Polynomial.evalRingHom x) c)
+    rw [frobenius_def, ← map_pow, ZMod.pow_card]
+  have key : frobenius K p (Polynomial.eval₂ (φ.comp (Polynomial.evalRingHom x)) y F)
+      = Polynomial.eval₂ ((frobenius K p).comp (φ.comp (Polynomial.evalRingHom x)))
+          (frobenius K p y) F := Polynomial.hom_eval₂ F _ _ y
+  rw [hcomp] at key
+  rw [stepanovEvalPoint, stepanovEvalPoint, Polynomial.eval_map, Polynomial.eval_map,
+    show y ^ p = frobenius K p y from (frobenius_def p y).symm, ← key, frobenius_def]
+
+/-- **`y ≠ y^p` FOR AN IRRATIONAL `y`** — the second half of what step 3 needs to
+apply `stepanovE2_eval_eq_zero` at `y' = y^p`. The fixed field of the Frobenius is
+the prime field (`Subfield.mem_bot_iff_pow_eq_self`), whose elements are exactly
+the image of `ZMod p` (`ZMod.fieldRange_castHom_eq_bot`); and a ring hom out of
+`ZMod p` is unique (`RingHom.ext_zmod`), so that image is the range of
+`algebraMap`. -/
+theorem ne_pow_card_of_forall_ne_algebraMap (p : ℕ) [Fact p.Prime] {K : Type*} [Field K]
+    [CharP K p] [Algebra (ZMod p) K] {y : K}
+    (hy : ∀ z : ZMod p, y ≠ algebraMap (ZMod p) K z) : y ≠ y ^ p := by
+  intro h
+  have hmem : y ∈ (⊥ : Subfield K) := (Subfield.mem_bot_iff_pow_eq_self K p).mpr h.symm
+  rw [← ZMod.fieldRange_castHom_eq_bot p] at hmem
+  obtain ⟨z, hz⟩ := hmem
+  refine hy z ?_
+  rw [← hz]
+  congr 1
+  exact (RingHom.ext_zmod (algebraMap (ZMod p) K) (ZMod.castHom dvd_rfl K)).symm
+
+end StepanovFrobeniusPoint
+
+/-! ##### Padding a linear system out to the declared number of equations -/
+
+section StepanovPadForms
+
+variable {k V : Type*} [CommRing k] [AddCommGroup V] [Module k V]
+
+/-- **PADDING IS FREE.** A system of `N ≤ B` linear forms extends to one of `B`
+forms with the same kernel condition, by filling with zeros. This is what lets
+step 4 produce FEWER than `stepanovEquationCount d p M` equations and still land
+in `Fin (stepanovEquationCount d p M) → ZMod p`. -/
+noncomputable def stepanovPadForms {N B : ℕ} (Ψ : V →ₗ[k] (Fin N → k)) :
+    V →ₗ[k] (Fin B → k) where
+  toFun v i := if h : (i : ℕ) < N then Ψ v ⟨i, h⟩ else 0
+  map_add' u v := by funext i; by_cases h : (i : ℕ) < N <;> simp [h]
+  map_smul' c v := by funext i; by_cases h : (i : ℕ) < N <;> simp [h]
+
+theorem stepanovPadForms_eq_zero {N B : ℕ} (hNB : N ≤ B) (Ψ : V →ₗ[k] (Fin N → k)) {v : V}
+    (h : stepanovPadForms (B := B) Ψ v = 0) : Ψ v = 0 := by
+  funext j
+  have hj : (j : ℕ) < B := lt_of_lt_of_le j.isLt hNB
+  have := congrFun h ⟨(j : ℕ), hj⟩
+  simpa [stepanovPadForms, j.isLt] using this
+
+end StepanovPadForms
+
+/-! ##### The equation count -/
+
+theorem stepanov_two_dvd_mul_pred (d : ℕ) : 2 ∣ d * (d - 1) := by
+  rcases Nat.eq_zero_or_pos d with h | h
+  · simp [h]
+  · have h2 := Nat.even_mul_succ_self (d - 1)
+    rw [Nat.sub_add_cancel h] at h2
+    rw [Nat.mul_comm]
+    exact even_iff_two_dvd.mp h2
+
+/-- **THE COUNT** of Schmidt III §4, p. 112: the reduced `D^{(ν)}` has
+`deg_X ≤ p/d − d + (2d−3)ν`, `deg_Y ≤ d − 1` and `deg_{Y'} ≤ d − 2`, so it has at
+most `d(d−1)(p/d + (2d−3)ν)` coefficients, and summing over `ν < M` stays below
+`stepanovEquationCount d p M`.
+
+Two steps: `d·(p/d) ≤ p` (`Nat.div_mul_le_self`) for the linear term, and — after
+doubling, since `2 ∣ d(d−1)` — `M(M−1) ≤ M²` for the quadratic one. -/
+theorem stepanov_sum_jetCoeffCount_le_equationCount (d p M : ℕ) :
+    ∑ ν ∈ Finset.range M, d * (d - 1) * (p / d + (2 * d - 3) * ν)
+      ≤ stepanovEquationCount d p M := by
+  have key : ∀ ν : ℕ, d * (d - 1) * (p / d + (2 * d - 3) * ν)
+      = d * (d - 1) * (p / d) + (d * (d - 1) * (2 * d - 3)) * ν := by
+    intro ν; ring
+  simp_rw [key]
+  rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_range, smul_eq_mul,
+    ← Finset.mul_sum]
+  have hdvd : 2 ∣ d * (d - 1) := stepanov_two_dvd_mul_pred d
+  have hS : (∑ i ∈ Finset.range M, i) * 2 = M * (M - 1) := Finset.sum_range_id_mul_two M
+  have h1 : M * (d * (d - 1) * (p / d)) ≤ (d - 1) * p * M := by
+    have hpd : p / d * d ≤ p := Nat.div_mul_le_self p d
+    calc M * (d * (d - 1) * (p / d)) = M * ((d - 1) * (p / d * d)) := by ring
+      _ ≤ M * ((d - 1) * p) := Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hpd)
+      _ = (d - 1) * p * M := by ring
+  have h2 : d * (d - 1) * (2 * d - 3) * (∑ i ∈ Finset.range M, i)
+      ≤ d * (d - 1) / 2 * (2 * d - 3) * M ^ 2 := by
+    refine Nat.le_of_mul_le_mul_left ?_ (show 0 < 2 by norm_num)
+    have hL : 2 * (d * (d - 1) * (2 * d - 3) * (∑ i ∈ Finset.range M, i))
+        = d * (d - 1) * (2 * d - 3) * ((∑ i ∈ Finset.range M, i) * 2) := by ring
+    have hR : 2 * (d * (d - 1) / 2 * (2 * d - 3) * M ^ 2)
+        = (2 * (d * (d - 1) / 2)) * ((2 * d - 3) * M ^ 2) := by ring
+    rw [hL, hR, hS, Nat.mul_div_cancel' hdvd]
+    calc d * (d - 1) * (2 * d - 3) * (M * (M - 1))
+        ≤ d * (d - 1) * (2 * d - 3) * (M * M) :=
+          Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.sub_le M 1))
+      _ = d * (d - 1) * ((2 * d - 3) * M ^ 2) := by ring
+  rw [stepanovEquationCount]
+  omega
+
+/-! ##### `D^{(ν)}` and the elimination (step 3a) -/
+
+section StepanovElimination
+
+variable {R : Type*} [CommRing R]
+
+/-- **SCHMIDT'S `D^{(ν)}(X, Y, Y')`** (Chapter III §4, p. 111), the three-variable
+polynomial that the Frobenius splitting produces:
+
+  `D^{(ν)} = ∑_{k<d, j≤K} b_{jk}^{(ν)}(X, Y) · X^j · Y'^k`.
+
+The exponents `pj` and `pk` of `stepanovAnsatz` have COLLAPSED to `j` and `k`: at a
+point `x ∈ 𝔽_p` one has `x^{pj} = x^j` by Fermat, and `y^{pk} = (y^p)^k`, so putting
+`y' := y^p` turns the `p`-th powers into ordinary ones. That collapse is the whole
+of the elimination step, and it is what makes the coefficient count of step 4
+`O(p/d)` in `X` rather than `O(p)`. -/
+noncomputable def stepanovJetTriple (d K : ℕ) (F : Polynomial (Polynomial R)) (M : ℕ)
+    (A : ℕ → ℕ → ℕ → Polynomial R) (ν : ℕ) : Polynomial (Polynomial (Polynomial R)) :=
+  ∑ k ∈ Finset.range d, Polynomial.monomial k
+    (∑ j ∈ Finset.range (K + 1),
+      stepanovJet F M ν (stepanovAnsatzBlock d A j k) * Polynomial.C (Polynomial.X ^ j))
+
+end StepanovElimination
+
+/-- **STEP 3a OF SCHMIDT'S REDUCTION: THE ELIMINATION** (III §4, p. 111).
+`a^{(ν)}(x, y) = D^{(ν)}(x, y, y^p)` at every `x ∈ 𝔽_p` and every `y`.
+
+Both sides are read off `hsplit` term by term; the two facts consumed are
+`x^{pj} = x^j` on `ZMod p` (`ZMod.pow_card`, applied after `pow_mul`) and
+`y^{pk} = (y^p)^k` (`pow_mul`). NOTHING about the curve or about `y` is used, so
+this holds for an arbitrary `y` in an arbitrary `ZMod p`-algebra. -/
+theorem stepanovEvalHom3_stepanovJetTriple (p : ℕ) [Fact p.Prime] {K' : Type*} [CommRing K']
+    (φ : ZMod p →+* K') (d K M ν : ℕ) (F : Polynomial (Polynomial (ZMod p)))
+    (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) (x : ZMod p) (y : K')
+    (hsplit : stepanovJet F M ν (stepanovAnsatz d p K A)
+      = ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+          stepanovJet F M ν (stepanovAnsatzBlock d A j k) *
+            Polynomial.monomial (p * k) (Polynomial.X ^ (p * j))) :
+    stepanovEvalHom3 φ x y (y ^ p) (stepanovJetTriple d K F M A ν)
+      = stepanovEvalPoint φ (stepanovJet F M ν (stepanovAnsatz d p K A)) x y := by
+  have hL : stepanovEvalHom3 φ x y (y ^ p) (stepanovJetTriple d K F M A ν)
+      = ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+          stepanovEvalPoint φ (stepanovJet F M ν (stepanovAnsatzBlock d A j k)) x y
+            * (φ (x ^ j) * (y ^ p) ^ k) := by
+    rw [stepanovJetTriple, map_sum]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [stepanovEvalHom3_monomial, ← stepanovEvalHom_apply, map_sum, Finset.sum_mul]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [map_mul, stepanovEvalHom_C, stepanovEvalHom_apply, Polynomial.eval_pow,
+      Polynomial.eval_X]
+    ring
+  have hR : stepanovEvalPoint φ (stepanovJet F M ν (stepanovAnsatz d p K A)) x y
+      = ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+          stepanovEvalPoint φ (stepanovJet F M ν (stepanovAnsatzBlock d A j k)) x y
+            * (φ (x ^ (p * j)) * y ^ (p * k)) := by
+    rw [← stepanovEvalHom_apply, hsplit, map_sum]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [map_sum]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [map_mul, stepanovEvalHom_monomial, stepanovEvalHom_apply, Polynomial.eval_pow,
+      Polynomial.eval_X]
+  rw [hL, hR]
+  refine Finset.sum_congr rfl fun k _ => Finset.sum_congr rfl fun j _ => ?_
+  rw [pow_mul x p j, ZMod.pow_card, pow_mul y p k]
+
+/-- **THE REDUCTION TO A LINEAR SYSTEM, STEPS 3b AND 4** (SORRY LEAF, RECUT
+2026-08-01 out of `exists_stepanovJetLinearForms_of_frobeniusSplit`, which is now
+PROVEN over it immediately below) — Schmidt Chapter III §4, pp. 111–112.
+
+Step 3a, THE ELIMINATION, is proven above (`stepanovEvalHom3_stepanovJetTriple`):
+`a^{(ν)}(x, y) = D^{(ν)}(x, y, y^p)`, so the jets of the ansatz are the values of
+the three-variable `stepanovJetTriple`. Steps 3b and 4 are what is left:
+
+3b. **THE REDUCTION.** `D^{(ν)}` is reduced modulo `stepanovE2 F` in the `Y'`
+    direction (legal: `stepanovE2_monic`) and then modulo `F` in the `Y` direction,
+    coefficient of `Y'^t` by coefficient (legal: `hmon`; and
+    `stepanov_exists_wd_rem` BELOW in this file is the form that also carries the
+    `stepanovTotalFilt` bound through the division — see the NOTE below). Both
+    reductions change `D^{(ν)}` by an element of the ideal `(Polynomial.C F,
+    stepanovE2 F)`, hence change no value at a point where both vanish, which is
+    exactly the pair of hypotheses this leaf receives.
+4.  **THE FORMS.** `Φ A` is the tuple of coefficients of the reduced `D^{(ν)}` for
+    `ν < M`. Every operation is `𝔽_p`-LINEAR in `A` — use
+    `Polynomial.modByMonicHom` for the two reductions, NOT `Classical.choose` on
+    `stepanov_exists_wd_rem`, which is not linear in `A`. By `hjetblock` the
+    reduced `D^{(ν)}` has `deg_X ≤ p/d − d + (2d−3)ν`, `deg_Y ≤ d − 1` and
+    `deg_{Y'} ≤ d − 2`, so it has at most `d(d−1)(p/d + (2d−3)ν)` coefficients, and
+    `stepanov_sum_jetCoeffCount_le_equationCount` above says the sum of those over
+    `ν < M` is at most `stepanovEquationCount d p M`. PADDING IS FREE
+    (`stepanovPadForms`, `stepanovPadForms_eq_zero` above), so producing FEWER
+    equations than that is fine; produce the honest number and pad.
+
+**WHAT IS AVAILABLE THAT WAS NOT, all proven above 2026-08-01.** `stepanovE2` and
+its defining identity, monicity and `Y'`-degree; the evaluation ring homs
+`stepanovEvalHom`/`stepanovEvalHom3` with their dictionary on `C`, `X`, `C X` and
+`monomial`; the pointwise vanishing `stepanovE2_eval_eq_zero`; the Frobenius pair
+`stepanovEvalPoint_pow_card` and `ne_pow_card_of_forall_ne_algebraMap`;
+`stepanovJetTriple` and the elimination; `stepanovPadForms`; and the counting
+inequality. NONE of these existed when the previous cut was made — `e₂` occurred
+only in prose.
+
+**NOTE ON DECLARATION ORDER, and it is the one real obstacle left.**
+`stepanov_exists_wd_rem` (division by the monic `F` PRESERVING `stepanovTotalFilt`,
+i.e. Schmidt's (2.3)) is declared ~2 000 lines BELOW this leaf, so it is NOT usable
+here as things stand — a previous task prompt asserted it had been hoisted above,
+and it has not been. Whoever takes this leaf should HOIST it (together with
+`stepanovTotalFilt_mem_iff`, which it does not need but which belongs with it)
+rather than restate it: a restatement is a duplicate cut. `flt-hoistcheck.py`
+reports the move; the block is self-contained and the destination is immediately
+below `stepanov_totalFilt_jet_stepanovAnsatzBlock`.
+
+**THE MARGIN IS THIN IN RATIO.** `A/B → 1` at the minimal admissible `p`, and
+replacing `2d − 3` by `2d − 2` makes `stepanov_equationCount_lt_unknownCount`
+FALSE (first failure `d = 2`, `M = 124`, `p = 34849`). So if the reduced
+`D^{(ν)}` turns out to need even one more coefficient slot per `ν` than
+`d(d−1)(p/d + (2d−3)ν)`, the STATEMENT is what is wrong, not the proof; say so
+with the arithmetic rather than padding.
+
+FAITHFULNESS: this leaf is IMPLIED BY the old one is FALSE — it is the other way
+round, which is why the old statement is a theorem below. The `∀ y'` here is
+genuinely what step 4 delivers (`Φ A = 0` forces the reduced `D^{(ν)}` to be the
+ZERO polynomial, hence `D^{(ν)}` lies in the ideal `(C F, e₂)`, hence vanishes at
+EVERY common zero), and the parent instantiates it only at `y' = y^p`. `hsplit` is
+NOT taken here: it is spent in the parent.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_stepanovJetTripleForms (d : ℕ) (hd : 2 ≤ d) (p : ℕ)
+    [Fact p.Prime] (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (M K : ℕ) (hK : K = (d - 1) * M / d + d - 2)
+    (hjetblock : ∀ (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)),
+      (∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d) →
+      ∀ j k ν, (stepanovTotalFilt (ZMod p)).mem (p / d - d - j - k + (2 * d - 3) * ν)
+        (stepanovJet F M ν (stepanovAnsatzBlock d A j k))) :
+    ∃ Φ : (ℕ → ℕ → ℕ → Polynomial (ZMod p)) →ₗ[ZMod p]
+        (Fin (stepanovEquationCount d p M) → ZMod p),
+      ∀ A : ℕ → ℕ → ℕ → Polynomial (ZMod p),
+        (∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d) →
+        (∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0) →
+        Φ A = 0 →
+        ∀ (x : ZMod p) (y y' : AlgebraicClosure (ZMod p)),
+          stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
+          stepanovEvalHom3 (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) x y y'
+            (stepanovE2 F) = 0 →
+          ∀ ν < M, stepanovEvalHom3 (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) x y y'
+            (stepanovJetTriple d K F M A ν) = 0 :=
+  sorry
+
+/-- **THE REDUCTION TO A LINEAR SYSTEM** (PROVEN 2026-08-01, over
+`exists_stepanovJetTripleForms` immediately above) — Schmidt Chapter III §4,
 pp. 110–112.
 
 The parent's four-step argument is listed on its own docstring below. Steps 1
-(FROBENIUS SPLITTING) and 2 (LEMMA 3A) are **PROVEN** immediately above and are
-handed in here as `hsplit` and `hjetblock`; what is left is steps 3 and 4:
+(FROBENIUS SPLITTING) and 2 (LEMMA 3A) are proven further up and are handed in
+here as `hsplit` and `hjetblock`; step 3a (THE ELIMINATION) is
+`stepanovEvalHom3_stepanovJetTriple`, and steps 3b and 4 are the recut leaf above.
 
-3. **ELIMINATION.** At `x ∈ 𝔽_p` with `F(x, y) = 0` and `y ∉ 𝔽_p`, put
-   `y' := y^p`. Then `x^{pj} = x^j` (Fermat), `y^{pk} = y'^k`,
-   `F(x, y') = F(x, y)^p = 0` and `y ≠ y'`, so `e₂(x, y, y') = 0` for the `e₂`
-   defined by `F(X, Y) − F(X, Y') = (Y − Y')·e₂(X, Y, Y')`. Feeding `hsplit`
-   through `stepanovEvalPoint` therefore gives `a^{(ν)}(x, y) = D^{(ν)}(x, y, y')`
-   for the three-variable
-   `D^{(ν)} := ∑_{k<d, j≤K} (stepanovJet F M ν (stepanovAnsatzBlock d A j k))·X^j·Y'^k`,
-   and reducing `D^{(ν)}` modulo `F` in `Y` and modulo `e₂` in `Y'` changes none
-   of its values at such points.
-4. **THE FORMS.** `Φ A` is the tuple of coefficients of the reduced `D^{(ν)}`
-   for `ν < M`. Every operation is `𝔽_p`-LINEAR in `A`
-   (`Polynomial.modByMonicHom` for the two reductions), and by `hjetblock` the
-   reduced `D^{(ν)}` has `deg_X ≤ p/d − d + (2d−3)ν`, `deg_Y ≤ d − 1`,
-   `deg_{Y'} ≤ d − 2`, so the surviving coefficients number at most
-   `∑_{ν<M} d(d−1)(p/d + (2d−3)ν) ≤ stepanovEquationCount d p M`. Padding with
-   zero forms is free, so producing FEWER equations is fine.
+WHAT THIS PROOF DOES, which is all that was ever specific to the point `y`: put
+`y' := y^p`. Then
 
-**WHAT IS STILL MISSING AT THIS PIN** (grepped 2026-07-31 across `Fermat/`):
-`e₂` occurs only in PROSE — at the section note above `stepanovEquationCount`,
-in `stepanov_irreducible_stepanovFZ`'s docstring and in
-`stepanov_pow_X_sub_C_dvd_of_jet_vanishing`'s — and has NO definition anywhere.
-It has to be written here, together with: it is monic in `Y'` of degree `d − 1`
-(so `Polynomial.modByMonic` applies in the `Y'` direction, exactly as
-`stepanov_exists_wd_rem` above already handles the `Y` direction), and the
-defining identity, which is `geom_sum₂_mul` applied coefficientwise to `F`.
+* `F(x, y') = F(x, y)^p = 0` — `stepanovEvalPoint_pow_card`, because the Frobenius
+  is a ring hom and fixes the coefficients (`ZMod.pow_card`);
+* `y ≠ y'` — `ne_pow_card_of_forall_ne_algebraMap`, because the fixed field of the
+  Frobenius is the prime field and `y` is assumed irrational;
+* hence `e₂(x, y, y') = 0` — `stepanovE2_eval_eq_zero`, from
+  `F(X,Y) − F(X,Y') = (Y − Y')·e₂` and `y − y' ≠ 0` in a domain;
+* and `a^{(ν)}(x, y) = D^{(ν)}(x, y, y')` — `stepanovEvalHom3_stepanovJetTriple`,
+  the elimination, which is where `x^{pj} = x^j` is spent.
+
+So the leaf above receives exactly the two vanishing hypotheses it needs and
+returns the conclusion. NOTE that `hK` is not used by this assembly and is
+forwarded unchanged; it is the leaf's, where the coefficient count needs it.
 
 NOTE the hypothesis `hAdeg` is the SHARP constraint `deg + d + i + j + k ≤ p/d`,
 not the weak `deg + d ≤ p/d` the grandparent exports. `hp : 250 d⁵ < p` is NOT
@@ -17190,8 +17616,20 @@ theorem exists_stepanovJetLinearForms_of_frobeniusSplit (d : ℕ) (hd : 2 ≤ d)
           stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
           (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
           ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
-            (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 :=
-  sorry
+            (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 := by
+  obtain ⟨Φ, hΦ⟩ :=
+    exists_stepanovJetTripleForms d hd p F hmon hdegY hcoeff M K hK hjetblock
+  refine ⟨Φ, fun A hAdeg hAsupp hΦA x y hFxy hyirr ℓ hℓ => ?_⟩
+  have hpne : p ≠ 0 := (Fact.out (p := p.Prime)).ne_zero
+  have hne : y ≠ y ^ p := ne_pow_card_of_forall_ne_algebraMap p hyirr
+  have hFxy' : stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x (y ^ p)
+      = 0 := by
+    rw [stepanovEvalPoint_pow_card, hFxy, zero_pow hpne]
+  have he2 : stepanovEvalHom3 (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) x y (y ^ p)
+      (stepanovE2 F) = 0 :=
+    stepanovE2_eval_eq_zero _ F x y (y ^ p) hFxy hFxy' hne
+  rw [← stepanovEvalHom3_stepanovJetTriple p _ d K M ℓ F A x y (hsplit A ℓ)]
+  exact hΦ A hAdeg hAsupp hΦA x y (y ^ p) hFxy he2 ℓ hℓ
 
 /-- **THE FACTOR THAT PASSES THROUGH THE WHOLE RECURSION.** A factor `c` killed by
 BOTH derivations — `∂_X c = 0` and `∂_Y c = 0` — is a constant for every step of
