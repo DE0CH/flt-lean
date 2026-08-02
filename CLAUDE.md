@@ -20028,3 +20028,32 @@ losing everything). The shape that survives both is the one this file already
 records: `setsid nohup bash -c '… ; echo EXIT=$? >> LOG; touch DONE' &` for the
 WORK, and a separate harness-backgrounded `until [ -f DONE ]; do sleep 30; done`
 for the WAITER.
+## "GENERALISE X" MAY BE FREE — X IS OFTEN A COROLLARY OF AN ALREADY-GENERAL Y
+(2026-08-01, `HasseBound.lean`.) `exists_sq_frobeniusPointEnd_prime_to_char` had carried, for
+four days, a docstring saying "a successor's first task is the prime-power/composite
+generalisation" of two prime-level inputs: `WeierstrassCurve.p_torsion_rank` (`Wbar[p] ≅ (ℤ/p)²`)
+and `WeilPairing.det_frobeniusTorsionEnd` (`det F = q`). That is a cost estimate, and **half of
+it was wrong — the half that looked expensive.**
+`p_torsion_rank` needs no generalisation at all. It is proven in `Torsion.lean` **from**
+`WeierstrassCurve.n_torsion_dimension`, which holds at EVERY level invertible in the base with no
+primality hypothesis anywhere. The primality is in the corollary only because that corollary's
+consumer wanted a `Module.rank`, and `Module.rank` wants a field of scalars — `ZMod p` is one,
+`ZMod n` is not. **A `Fin 2` BASIS does not want a field**, so the composite level was free, and
+the six-line `nonempty_basis_nTorsion_of_not_dvd` is the whole of it.
+The check is cheap and should be run before costing any generalisation: **read the PROOF of the
+special-case lemma and see what it cites.** If it cites something already general, the hypothesis
+you are trying to remove may belong to the corollary's *shape* rather than to its mathematics. Same
+family as "grep the proof for where `Field` is spent before costing a generalisation"; the new part
+is that the special-case lemma's own name is what misleads — `p_torsion_rank` reads like the
+primitive and is not one.
+Corollary for docstrings: when a route note lists N inputs as "needs generalising", it is asserting
+N independent cost estimates, and each is a hypothesis to check separately. Here the second one was
+right (the determinant genuinely is prime-level upstream) and the first was not, and nothing in the
+note distinguished them.
+**Second, smaller, and it costs a cycle every time: a `rfl` that is not SYNTACTIC breaks `simpa`
+and not `exact`.** `(W⁄K)` and `((W.map (algebraMap _ K))⁄K)` are definitionally equal Weierstrass
+curves, and `WeilPairing.frobeniusTorsionEnd` is definitionally the restriction of
+`frobeniusPointEnd` — both `rfl`. But `simpa` normalises the GOAL and then matches at REDUCIBLE
+transparency, so it fails with `Type mismatch: After simplification` whose two printed sides differ
+only in which spelling of the base change appears. `simp only [...] at h; exact h` closes it
+immediately. Reach for `exact` whenever a defeq crosses a `def` that `simp` will not unfold.
