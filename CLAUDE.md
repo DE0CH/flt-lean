@@ -31639,3 +31639,47 @@ citation and a several-hundred-line formalisation with the citation
 INVISIBLE — which is what a docstring claiming "not a citation" means in
 practice.  Report the delta and the reason together; a `+1` with no
 explanation reads as a regression.
+## "THIS MODULE DOES NOT IMPORT X" IS THE LEAST RELIABLE LINE IN AN AVAILABILITY AUDIT — TRANSITIVE `public import` MAKES IT FALSE, AND THE CHECK IS THE COMPILER
+(2026-08-02, `flt-lean-118`, on `MoretBailly.lean`'s Bertini cluster.) This file already
+records, at length, that a NON-public import HIDES names and that an absence audit must grep
+`Fermat/` and not only mathlib. The mirror failure is commoner and nothing above covers it:
+**a module routinely reaches a file it never names, through a chain of `public import`s, and
+an audit that read the module's own import block concludes the opposite.**
+Two docstrings in `MoretBailly.lean` (2026-07-29, re-quoted 2026-07-31) told a prover:
+> `CurveCompactification.lean` carries the projective-closure interface … **This module still
+> does not import that file**; the import would be acyclic but **its cone cost should be
+> measured first**.
+Measured: it is already there, publicly, and has been all along —
+    MoretBailly ──public──▶ TateModule ──public──▶ AbelianSchemeIsogeny ──public──▶ CurveCompactification
+so `ProjChart` and `exists_isOpenImmersion_isProper_of_{proj,isAffine}` are in scope with no
+edit, and the cone cost the paragraph asks to measure is **zero modules**. That unmeasured
+"measure it first" had been sitting in front of the route the leaf is SHAPED for, deterring
+it, for four days.
+**The check is three minutes and has two halves, and the second is not optional.**
+1. Walk the closure in the right sense — the module's DIRECT imports (public or not), then
+   the `public`-only closure of each. Assert every visited file exists; a swallowed
+   `FileNotFoundError` truncates the walk and manufactures the "not reachable" answer you
+   were about to write down.
+2. **Ask the compiler.** Build a scratch whose preamble is the target module's own import
+   lines — `awk '/^[[:space:]]*(public[[:space:]]+)?import[[:space:]]/'` — and name the
+   declarations. No `Unknown identifier` is the answer; nothing else is. Note the positive
+   result LOOKS like a failure: `have _ := @f` on a universe-polymorphic constant reports
+   `failed to infer universe levels` and prints the whole type, which means the name
+   RESOLVED. Read the error class, not the exit code.
+Two riders, both of which cost time here.
+* **A quoted declaration name in a docstring is a hypothesis too, and the suffix is where it
+  rots.** Those same paragraphs cite `exists_isOpenImmersion_isProper`; there is no such
+  declaration — the real ones are `..._of_proj` and `..._of_isAffine`. A prover greps the
+  quoted name, gets nothing, and concludes it was deleted. The docstring itself records that
+  this had already happened to somebody ("contrary to a report that it had been deleted as
+  free-floating") without anyone noticing the name was simply wrong.
+* **Grep `Fermat/` BEFORE publishing a REFUTATION, not just before believing one.** The same
+  cluster claims the connected⟹irreducible upgrade "costs one multiplication of good loci,
+  not a new theorem". A mathlib-only survey refutes that flatly — at this pin `IsRegularRing`
+  occurs in exactly two mathlib files, and there is no smooth⟹regular, no regular⟹normal and
+  no `IsNormalRing` for non-domains. Every one of those absences is real, and the claim is
+  still essentially right, because the project proves the normality half itself
+  (`Fermat/FLT/Mathlib/RingTheory/RegularLocalNormal.lean`, `RegularStalks.lean`). I was one
+  edit away from committing the refutation. **A refutation carries more authority than an
+  ordinary absence claim and propagates further, so it earns the wider grep, not the
+  narrower one.**

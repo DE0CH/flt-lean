@@ -4548,6 +4548,40 @@ the same `MvPolynomial (Fin (n+1)) k` good-locus shape) hands out an `F ≠ 0` o
 discharges this leaf by taking `G := F * G₀` and running that upgrade — the strengthening
 costs one multiplication of good loci, not a new theorem.  That is why it was taken.
 
+**PRICED, 2026-08-02 — the sentence above is very nearly right and is short by exactly ONE
+NAMED LEMMA; here is the upgrade's parts list, each item checked by grep or by the
+compiler.**  Note that the mathlib-only survey gives the OPPOSITE verdict: at this pin
+`IsRegularRing` occurs in exactly two mathlib files (`RegularLocalRing/{Defs,Polynomial}`),
+there is no smooth-⟹-regular, no regular-⟹-integrally-closed, and no `IsNormalRing` for
+non-domains, so a search confined to `Mathlib/` concludes the claim above is FALSE.  It is
+not; all but one piece is in THIS PROJECT, which is why the parts list is recorded here
+rather than the (wrong) refutation.
+
+* *regularity, and domainhood of the local rings* — `isRegularLocalRing_stalk_of_smooth_over_field`
+  and `isDomain_of_isRegularLocalRing`, both PROVEN in `Fermat/FLT/Modularity/RegularStalks.lean`,
+  which this module ALREADY `public import`s (line 436).  Nothing to do.
+* *normality* — `Algebra.Smooth.isIntegrallyClosed_of_isLocalizationAtPrime` and
+  `isIntegrallyClosed_stalk_of_smooth_over_field`, both PROVEN in
+  `Fermat/FLT/Mathlib/RingTheory/RegularLocalNormal.lean`.  That module is NOT in this
+  module's cone, and importing it is **free: measured 2026-08-02, it adds exactly ONE
+  module and creates no cycle** (its own three cone members are already here).
+* *the one genuinely missing step, and it is elementary* — for a NOETHERIAN ring `R` all of
+  whose localizations at primes are domains, `ConnectedSpace (PrimeSpectrum R)` implies
+  `IrreducibleSpace (PrimeSpectrum R)`.  Proof, ~40 lines and no dimension theory: two
+  distinct minimal primes of `R` cannot both be contained in one prime `r`, or `R_r` would
+  have two minimal primes and not be a domain; so the irreducible components are PAIRWISE
+  DISJOINT closed sets, finitely many by noetherianity, hence each is clopen, hence
+  connectedness leaves exactly one.  This is mathlib-facing and belongs beside its
+  neighbours in `RegularLocalNormal.lean`.
+
+**DO NOT, however, restate this leaf as CONNECTEDNESS on the strength of that.**  Once the
+lemma above exists the two forms are INTERCHANGEABLE here, so the restatement buys nothing
+and costs the layer its reason to exist: the conclusion would then be literally that of
+`exists_bertiniConnectedLocus_isAlgClosed` below, and the middle layer would be deleted as
+redundant — taking the glue that hands this leaf `IsDomain A`, `2 ≤ n` and `hsurj` with it.
+The irreducible form is the one the projective route delivers, so it is the one to keep;
+the connectedness route is not penalised, because the parts list above is what it pays.
+
 `Algebra.Smooth K A` is RETAINED even though the classical theorem does not need it
 (Bertini irreducibility holds for any integral `X` of dimension `≥ 2`; smoothness is a
 Bertini-SMOOTHNESS hypothesis, not a Bertini-IRREDUCIBILITY one, and the audit below found
@@ -4562,7 +4596,32 @@ so it is `Spec A × 𝔸ⁿ` and irreducible for free.  None of the content is i
 irreducible object.  All of it is in (i) GEOMETRIC irreducibility of the generic fibre over
 `K(t₀,…,t_n)`, which is Bertini proper, and (ii) the passage from the generic fibre to a
 dense open set of special fibres (EGA IV 9.7.7, constructibility of the
-geometrically-irreducible locus), which is absent from `Mathlib` at this pin. -/
+geometrically-irreducible locus), which is absent from `Mathlib` at this pin.
+
+AXES SEARCHED AND CLOSED, 2026-08-02.  Recorded so they are not re-derived; each is a route
+that looks available from the statement and is not.  The mathlib absence claims above were
+re-run today and all STAND (`grep -rlni bertini` over `Mathlib/` empty; no `IsAlgClosedIn`;
+`Mathlib/AlgebraicGeometry/Geometrically/` is still `Basic/Connected/Integral/Irreducible/Reduced`
+with no constructibility theorem).
+
+* **Reduce to a HYPERSURFACE by a generic linear projection.**  In characteristic zero a
+  general linear `X → 𝔸^{d+1}` is birational onto a hypersurface, and Bertini for a
+  hypersurface is the far more elementary "a general linear restriction of an irreducible
+  polynomial in `≥ 3` variables stays irreducible".  It does not close this leaf: hyperplanes
+  of `𝔸ⁿ` are not pullbacks of hyperplanes of `𝔸^{d+1}`, so the projection only reaches the
+  `(d+2)`-dimensional SUBFAMILY of `w` that factor through it, and getting from a dense open
+  of a subfamily to a dense open of the full `𝔸ⁿ⁺¹` is exactly obstruction (ii) again.  The
+  reduction is circular, not cheap.
+* **Prove CONNECTEDNESS of the PROJECTIVE section `X̄ ∩ H` and upgrade it there.**  This is
+  the natural reading of the upgrade paragraph above and it FAILS, for a reason that does not
+  apply on the affine side: the projective closure of a smooth affine variety is in general
+  SINGULAR along `H_∞`, so Bertini smoothness gives smoothness of `X̄ ∩ H` only away from
+  `Sing X̄`, and a normality argument cannot be run at the points that matter.  The upgrade
+  priced above works precisely because `exists_bertiniSmoothLocus_algebra` is a statement
+  about the AFFINE `A`, where no closure is taken.
+* **State the leaf over the incidence variety instead.**  No: the incidence variety is
+  `Spec A × 𝔸ⁿ` and irreducible for free, as recorded above, so a leaf about it is either
+  trivial or is (i) and (ii) again under another name. -/
 theorem exists_bertiniIrreducibleLocus_isAlgClosed {K : Type u} [Field K] [IsAlgClosed K]
     [CharZero K] {A : Type u} [CommRing A] [Algebra K A] [Algebra.Smooth K A] [IsDomain A]
     (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of A)))
@@ -4638,6 +4697,32 @@ as free-floating).  **This module still does not import that file**; the import 
 acyclic (its own imports are `Mathlib`-only) but its cone cost should be measured first.
 Bertini itself is absent from `Mathlib` and from `~/cs/FLT` (`grep -rlni bertini`
 returns nothing in either), so item 4 remains genuinely open.
+
+**MEASURED 2026-08-02 — the two sentences above about the IMPORT are both wrong, and the
+deterrent they carry should be ignored.  The last clause, that Bertini is absent, re-checked
+and STANDS.**
+
+* *"This module still does not import that file"* — it does, transitively and PUBLICLY:
+
+      MoretBailly ──public──▶ TateModule ──public──▶ AbelianSchemeIsogeny
+                  ──public──▶ Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification
+
+  (lines 428, 142, 295 of the three files respectively).  So `ProjChart`,
+  `exists_isOpenImmersion_isProper_of_proj` and `exists_isOpenImmersion_isProper_of_isAffine`
+  are ALREADY in scope here and need no edit at all.  Checked by the compiler, not by grep:
+  a scratch module reproducing this module's own 137 import lines and naming all three
+  elaborates with no `Unknown identifier`.  The cone cost the paragraph asks to measure is
+  therefore **zero modules**, and a prover taking the projective route may start immediately.
+* *the name `exists_isOpenImmersion_isProper`* — no such declaration.  The two real names
+  carry suffixes: `exists_isOpenImmersion_isProper_of_proj` and
+  `exists_isOpenImmersion_isProper_of_isAffine`.  A prover grepping the name as quoted gets
+  nothing and concludes the theorem was deleted — which, per the parenthesis above, has
+  already happened to somebody once.
+
+For contrast, and because it is the other import a prover may want (see the parts list in
+`exists_bertiniIrreducibleLocus_isAlgClosed`'s docstring above):
+`Fermat/FLT/Mathlib/RingTheory/RegularLocalNormal.lean` is genuinely NOT in this module's
+cone, and adding it costs exactly one module with no cycle.
 
 SECOND FALSITY AUDIT, RUN 2026-07-30 AGAINST THE COMPOSITE STATEMENT — VERDICT: TRUE.
 Required because this leaf was CUT out of a different statement on 2026-07-29 and the
@@ -4951,6 +5036,21 @@ change what a prover here should do:
    here; it is upstream of everything in this file (its own imports are
    `Mathlib`-only) so the import is acyclic, and its cone cost should be
    measured before adopting the route.
+
+   **CORRECTED 2026-08-02, and this is the SECOND copy of the same wrong claim —
+   see the fuller correction in `exists_bertiniIrreducibleLocus_isAlgClosed`'s
+   docstring above.** This module DOES reach that file, transitively and publicly:
+   `MoretBailly` → `TateModule` → `AbelianSchemeIsogeny` → `CurveCompactification`,
+   all three edges `public import` (lines 428, 142, 295). No import has to be
+   added, the cone cost is ZERO modules, and `ProjChart` together with
+   `exists_isOpenImmersion_isProper_of_proj` and `exists_isOpenImmersion_isProper_of_isAffine`
+   already resolve inside this module's own import surface — checked with the
+   compiler, not by reading the import block. Two riders: `exists_isOpenImmersion_isProper`
+   as spelled here is NOT a declaration (the real names carry the `_of_proj` /
+   `_of_isAffine` suffixes, and `CurveCompactification.lean:129` records the
+   unsuffixed one as deleted), so grepping the quoted name returns nothing and
+   invites the wrong conclusion; and the "its own imports are `Mathlib`-only"
+   clause is also false, but harmlessly so, since everything it imports is here.
 
 **PROVEN 2026-07-29 OVER TWO NAMED LEAVES — this is now GLUE ONLY.** The body below
 consumes exactly `exists_bertiniConnectedLocus_isAlgClosed` (ledger item 4, the Bertini
