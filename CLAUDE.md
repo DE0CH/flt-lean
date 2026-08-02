@@ -25022,3 +25022,55 @@ a projection, which the pin does not have.  **Correcting the REASON is worth as 
 removing the blocker**: a blocker with the wrong reason attracts repairs that cannot work, and
 here it had been telling successors to look at formal smoothness when the whole question is
 about a tensor-kernel computation in commutative algebra.
+## A FALSITY AUDIT THAT FORBIDS A CUT IS SCOPED TO THE STATEMENT IT WAS WRITTEN ON — STRENGTHEN A HYPOTHESIS AND THE SAME CUT MAY BE LEGAL
+(2026-08-01, `flt-lean-299`, on `isAmpleSheaf_of_nonvanishingLocus_eq_of_field` in
+`Modularity/AbelianSchemeIsogeny.lean`.)
+The standing rule is that a counterexample licenses exactly one claim — that the statement
+with that hypothesis removed is false — and this file records two ways of getting it wrong
+(over-attributing the failure to a hypothesis the witness also violates, and re-using a
+witness against a leaf it does not instantiate). Here is a third, and it costs a leaf
+rather than a proof:
+> **a FALSITY AUDIT attached to a leaf forbids a cut of THAT leaf. It says nothing about
+> the cut of the same leaf with an extra hypothesis — and the extra hypothesis is often
+> exactly what the witness violates.**
+That leaf carried a correct, four-line, checkable refutation of the obvious translation cut
+(`E : y² + y = x³ + x + 1` over `𝔽₂`, `E(𝔽₂) = {O}`, so every `K`-automorphism fixes `O`
+and no tensor of pullbacks along automorphisms covers `z = O`). Three docstrings quote it,
+and the task prompt quotes it, as the reason the leaf is atomic. **The witness spends
+`𝔽₂` being small, i.e. exactly `¬ IsAlgClosed`.** Add `[IsAlgClosed K]` and it is not an
+instance of the leaf at all: over `K = K̄` the rational points ARE the closed points and
+are Zariski dense, so the cut the audit forbids is available.
+So the leaf split into the algebraically closed case plus **EGA IV 2.7.2, that ampleness
+may be checked after a field extension** — which is the CLAUDE.md ROUTE-9 move ("WLOG the
+base field is algebraically closed") that the same file already makes for `ker[p]`, and
+which the parent's own docstring had recommended in one sentence and nobody had performed.
+**The check is one line and it belongs beside every inherited audit: instantiate the
+witness against the hypothesis you are about to ADD.** If it fails there, the audit does
+not transfer, and the cut it forbids is the cut to take. Say so where the audit is
+restated, or the next reader inherits the prohibition without the scope.
+* **Report the count honestly and say what it buys.** `1 → 2` is a DISCLOSURE: no
+  mathematics was removed, and the trade is that one half is now stated in mathlib's
+  vocabulary (no group law, no divisors, takeable by someone who has never read an
+  abelian-variety argument) and the other half is FURTHER CUTTABLE where the original was
+  not. Judge it by that, never by the delta.
+* **A hypothesis-strengthening cut needs the DESCENT half stated too, and that half is
+  where the honesty lives.** "Prove the easy case and descend" is only a cut if the descent
+  is written down as a leaf with a citation; otherwise it is a weakening wearing a cut's
+  clothes.
+### THE DIFFERENTIAL RECEIPT IS WORTH RUNNING ON A **GREEN** FILE TOO
+This file already prescribes a differential elaboration when the target module has an
+inherited RED baseline. It is just as useful when the baseline is green, it costs ONE extra
+elaboration, and it converts "I believe I added exactly two leaves" into a checkable claim:
+    cp <file> /tmp/mine.lean && git show HEAD:<file> > <file>
+    lake env lean <file> > /tmp/base.log 2>&1          # the baseline
+    cp /tmp/mine.lean <file>                           # RESTORE, then `git add` the path
+    # compare the two `declaration uses 'sorry'` line lists
+Measured here: baseline `4` warnings at `4513 / 16389 / 16475 / 16834`; after the edit `5`
+at `4519 / 16415 / 16471 / 16547 / 17056`. Every survivor is displaced by a constant that
+matches the inserted line count in its region, the target's warning is GONE, and the two
+new ones are mine. Pair it with the one-line source receipt
+    git diff HEAD -- <file> | grep -E '^[+-] *sorry *$'      # here: `+ + -`
+which is the CUT stated as three characters, and which a reviewer can re-run without a
+build. **Beware the trap in the recipe**: the `git show` swap STAGES the old version, so
+`git status` reads `MM` and a plain `git diff --stat` afterwards under-reports the change
+— check with `git diff HEAD --stat`, not `git diff --stat`.
