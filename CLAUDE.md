@@ -16151,3 +16151,56 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A CLASSICAL SKETCH NAMES OPERATORS; THE PROOF NEEDS ONLY THE FEW CONSEQUENCES ITS INDUCTION CONSUMES
+
+(2026-08-02, `flt-lean-154`, closing `span_insert_setOf_forall_pderiv_mem_eq` — the key
+lemma of Fontaine's step 3 — in `Fermat/FLT/Mathlib/RingTheory/MvPowerSeries/AdicEval.lean`.
+~300 lines and one afternoon, against a docstring that reads like a module.)
+
+That leaf's docstring gave a CORRECT three-step proof and named two objects on the way: the
+free decomposition `f = ∑_{a ∈ box} s_a X^a` of a power series over its subring of
+`p`-supported series, and the iterated operator `T^{(b)} := ∏_j (∂/∂Xⱼ)^{b_j}` together with
+the constant `∏_j a_j!` that it produces. Formalising either is a real development —
+`Finset`-indexed sums over `σ →₀ ℕ`, a freeness statement, an operator indexed by a
+multi-index. **Neither was built.** Two substitutions, both worth trying BEFORE pricing any
+leaf whose sketch is written in operator language:
+
+* **A UNIQUE DECOMPOSITION IS CONSUMED ONLY THROUGH ITS PROJECTIONS.** Define the coordinate
+  alone (here `pPart p a f`, one `if` on the exponent) and then read the induction to see
+  what it asks of the decomposition. Here it was exactly two SINGLE-COEFFICIENT facts —
+  *every coordinate divisible by `p` ⟹ `f` divisible by `p`* (read off at one exponent `m`,
+  taking `a := m mod p`) and *`pPart b (g · X^a) = δ_{ab} · g`* — and neither mentions a sum.
+  Existence of the decomposition, its uniqueness, and freeness are all unused; the index set
+  survived only to make the support of `f` a `Finset` for the outer induction. **The sum in
+  a sketch is there to convince a human, not to be applied.**
+* **AN ITERATED OPERATOR APPLIED ONCE IS AN INDUCTION ON ITS EXPONENT.** Instead of defining
+  `∏_j ∂_j^{b_j}`, induct on `∑_j b_j` and peel ONE derivative per step. What makes it work
+  is that the side condition travels: maximality of `a₀` in the support of `f` is inherited
+  by `a₀ − eⱼ` in the support of `∂ⱼ f`. And it DELETES THE SKETCH'S CONSTANT for free — the
+  factorial is accumulated one factor at a time, each factor a nonzero natural `< p` hence
+  prime to `p`, divided out on the spot. **A sketch ending "now multiply by the inverse of
+  this explicit constant" is telling you it applied an operator in one go; ask what ONE step
+  costs.**
+
+Corollary, and it is the cheap check to run afterwards: **re-read which hypotheses survive,
+and where each is spent.** Here `[Finite σ]` is used only for `Fintype.ofFinite σ`, `𝒪` stayed
+an arbitrary commutative ring (no field, no perfectness, no `p`-th roots — the docstring
+predicted this and it is worth CONFIRMING rather than assuming), and primality of `p` is used
+in exactly ONE lemma, a Bézout identity. A leaf whose hypotheses each land in one identifiable
+place is a leaf that was cut correctly, and saying so in the docstring is what stops the next
+reader re-deriving the audit.
+
+### `linear_combination` IS NOT AVAILABLE IN A `Fermat/FLT/Mathlib/…` MODULE — and the error reads as a SYNTAX error
+
+Those modules import four or five mathlib files by design, so most of `Mathlib.Tactic` is
+absent. A missing TACTIC does not report a missing import. It reports
+
+    error: unknown tactic
+
+at the tactic's own line, plus `unsolved goals` at the enclosing `have` — which reads as
+though you mistyped something. `linear_combination`, `polyrith` and `positivity` are all in
+this class; `ring`, `omega`, `push_cast`, `simp`, `field_simp` and `nlinarith` were present.
+The fix is almost always one `rw` plus `ring`, and that is far cheaper than widening the
+import surface of a mathlib-facing module — which is exactly the surface that makes these
+modules a 9-second edit/verify loop instead of a 25-minute one.
