@@ -16151,3 +16151,80 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A SECTION WHOSE IMAGE LIES IN A CLOSED SUBSCHEME FACTORS THROUGH IT IFF THE SOURCE IS REDUCED — and the cheap route is a BASE CHANGE, never `IsClosedImmersion.lift`
+
+(2026-08-01, `flt-lean-391`, deriving `IsX0JNeronCuspModel.section_of_isCusp` from
+`cover` in `FreyCurve/MazurTorsion.lean`, and deleting the field.)
+
+A recurring obligation in this development: a section `s : Spec R ⟶ X` of a model, a
+subscheme `ι : Z ⟶ X`, a TOPOLOGICAL hypothesis `Set.range s.base ⊆ Set.range ι.base`,
+and a wanted CONCLUSION that `s` factors through `ι` — as an algebra map, since both
+are affine over the base.  Three things about it, and the second is the one that
+decides whether the leaf is cheap or a chapter.
+
+**1. `Mono ι` PROVABLY DOES NOT SUFFICE, and the witness is two lines.**
+`Spec k ↪ Spec k[ε]` is a surjective closed immersion, hence a mono; the tautological
+`k[ε]`-point of the ambient is not in the image of anything.  So a docstring that
+carries `mono : Mono ι` "because only cancellation is used" has, without saying so,
+also decided that the factorisation cannot be derived.  Strengthening to
+`IsClosedImmersion` is free whenever the citation supplies a closed SUBSCHEME — which
+Deligne–Rapoport, Katz–Mazur and every "the cuspidal/torsion/singular locus is closed"
+reference do — so check what the citation gives before pricing the derivation.
+
+**2. DO NOT reach for `AlgebraicGeometry.IsClosedImmersion.lift`.**  It is the
+universal property and it asks for `ι.ker ≤ s.ker`, an inequality of IDEAL SHEAVES.
+What you hold is topological, and turning "the image is contained" into "the kernel
+ideal is contained" is exactly the reduced-ness argument, done by hand, through
+`ofIdeals`/`Hom.ker_apply`/`support_ker`.  **Base-change instead**, and the same
+content becomes three instance lookups:
+
+    haveI : Surjective (Limits.pullback.snd ι s) := by
+      constructor
+      rw [← Set.range_eq_univ, Scheme.Pullback.range_snd]   -- range = s ⁻¹' range ι
+      exact Set.eq_univ_of_forall fun z => hsub ⟨z, rfl⟩
+    haveI : IsIso (Limits.pullback.snd ι s) :=
+      isIso_of_isClosedImmersion_of_surjective _            -- needs `IsReduced (Spec R)`
+    -- the factorisation is `inv (pullback.snd ι s) ≫ pullback.fst ι s`
+
+`IsClosedImmersion` is stable under base change (instance), `Scheme.Pullback.range_snd`
+is the whole of the topology, and `isIso_of_isClosedImmersion_of_surjective`
+(`Morphisms/ClosedImmersion.lean`) carries the reducedness — which is where `R` being a
+subring of `ℚ` is spent, and the ONLY place.  Over a non-reduced base the statement is
+false, by the same `k[ε]` witness.
+
+**3. That the factorisation is an ALGEBRA map is FORCED, not an extra obligation.**
+`Spec` is fully faithful, so the factorisation is `Spec.map φ` for a unique
+`φ = Spec.preimage _`; then `ι ≫ xstr = Spec.map (algebraMap R A)` together with `s`
+being a SECTION gives `Spec.map (algebraMap ≫ φ) = Spec.map (𝟙)`, and `Spec.map_injective`
+finishes.  This is `algHom_of_relPoint_factor`'s argument at a different base and it is
+five lines; do not state it as a hypothesis.
+
+Accounting, in the shape the RECUT rule asks for: **the leaf count did not move and no
+leaf was closed.**  What changed is that the single Deligne–Rapoport citation lost a
+conjunct (`section_of_isCusp`, four lines of `∃ f, Spec.map … ≫ ι = …`) and gained
+nothing, since `Mono ι → IsClosedImmersion ι` is what the citation was always going to
+supply.  Judge it by what is LEFT in the leaf.
+
+### The `rw [← d.field.comm]` motive trap, which fires on every structure in this tree
+
+Rewriting BACKWARDS along an equation whose right-hand side is one of the ARGUMENTS of
+a datum in context is motive-incorrect, and the error names the datum rather than the
+rewrite:
+
+    rw [← d.model.comm]   -- d.model.comm : jZ ≫ xstr = ystr,  d : IsX0JNeronDatum … ystr …
+    -- motive is not type correct: … but is expected to have type
+    --   @IsX0JNeronDatum … _a xstr jZ
+
+`ystr` occurs in `d`'s TYPE, so abstracting it breaks `d`.  Every `comm`/`over`/`w`
+field of every structure here is of that shape, and the same rewrite works fine in a
+sibling lemma that takes `model` as a standalone variable — which is how it gets copied
+into a context where it fails.  **The fix is a ∀-quantified auxiliary equation, rewritten
+FORWARDS:**
+
+    have hmc : ∀ u : T ⟶ YZ, u ≫ ystr = (u ≫ jZ) ≫ xstr := fun u => by
+      rw [Category.assoc, d.model.comm]
+    rw [hmc, IsOpenImmersion.lift_fac]
+
+`conv_lhs => rw [← d.model.comm]` also works; the auxiliary equation is better, because
+it says which occurrence you meant and survives later edits to the goal.

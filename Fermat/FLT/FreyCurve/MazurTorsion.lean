@@ -4350,6 +4350,160 @@ theorem relPoint_eq_of_base_eq {k : Type} [Field k] {X : Scheme.{0}}
     rw [f₁.commutes, f₂.commutes]
   exact Subtype.ext (hf₁.symm.trans (by rw [hfeq]; exact hf₂))
 
+section X0JNeronCuspSection
+
+variable {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+
+/-- **THE GENERIC POINT OF A CUSP'S INTEGRAL SECTION MISSES THE OPEN PART**
+(PROVEN 2026-08-01).
+
+The `ℚ`-side companion of `mem_compl_range_of_isCusp` above, transported to the
+integral model along `genX`: the image point of the generic fibre of `d.intX x`
+lies off `𝒴` whenever `x` is a cusp.
+
+The proof is the same three moves as `mem_compl_range_of_isCusp`, with `genX`
+and `genX_j` in place of the identity: `Spec ℚ` is a ONE-POINT space, so if the
+image point were in `Set.range jZ.base` the WHOLE range would be, and
+`IsOpenImmersion.lift` factors `genX x` through `𝒴` — the compatibility
+`l ≫ ystr = SpecLoc.generic R` being forced by `model.comm` rather than
+assumed.  Pulling that factorisation back along the equivalence `genY` and
+comparing with `genX_j` exhibits `x` as `relSectionAlong hX.j hX.«over»` of a
+rational point of `Y`, which is exactly what `hX.IsCusp x` forbids.
+
+It is the GENERIC-fibre mirror of `isCusp_redX_of_isCusp_of_jNeronDatum`, whose
+second half runs the same argument on the SPECIAL fibre with `spX`/`spY`; the
+`Subsingleton` step is where the base being a FIELD is used, and it is the only
+place. -/
+theorem mem_compl_range_genX_of_isCusp
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+    {x : RelPoint strX (𝟙 SpecQ)} (hx : hX.IsCusp x) (P : (SpecQ : Scheme.{0})) :
+    (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x).1.base P
+      ∈ (Set.range jZ.base)ᶜ := by
+  haveI := d.model.isOpen
+  intro hmem
+  have hsub : Set.range (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x).1.base
+      ⊆ Set.range jZ.base := by
+    rintro p ⟨P', rfl⟩
+    have hPP : P' = P := Subsingleton.elim _ _
+    rw [hPP]; exact hmem
+  have hmc : ∀ u : (SpecQ : Scheme.{0}) ⟶ YZ, u ≫ ystr = (u ≫ jZ) ≫ xstr := fun u => by
+    rw [Category.assoc, d.model.comm]
+  have hlift : IsOpenImmersion.lift jZ
+      (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x).1 hsub ≫ ystr
+      = SpecLoc.generic R := by
+    rw [hmc, IsOpenImmersion.lift_fac]
+    exact (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x).2
+  refine hx ⟨((d.genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm
+      ⟨_, hlift⟩).1, ?_⟩
+  have key : relSectionAlong hX.j hX.«over»
+      ((d.genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm ⟨_, hlift⟩) = x := by
+    apply (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective
+    rw [d.genX_j, Equiv.apply_symm_apply]
+    exact Subtype.ext (IsOpenImmersion.lift_fac _ _ _)
+  exact congrArg Subtype.val key
+
+/-- **THE WHOLE INTEGRAL SECTION OF A CUSP MISSES THE OPEN PART** (PROVEN
+2026-08-01) — pure topology over the previous lemma, and no modular input.
+
+`𝒴` is OPEN in the model (`model.isOpen`), so its complement is CLOSED and its
+preimage under `(d.intX x).1` is a closed subset of `Spec ℤ_(q)`.  That closed
+set contains the image of `SpecLoc.generic R` — that is the previous lemma, read
+through `pre_intX`, which identifies the restriction of the integral section
+along the generic point with `genX x` — and `SpecLoc.denseRange_generic` says
+that image is DENSE.  A closed set containing a dense set is everything.
+
+Note the shape: this is the exact mirror of `exists_relSectionAlong_of_special`,
+which propagates the OPPOSITE conclusion (the section lies INSIDE `𝒴`) from the
+CLOSED point using that the base is LOCAL.  Here the propagation is from the
+GENERIC point and uses only that the base is a DOMAIN, so no `IsReductionBase`
+is needed — `SpecLoc.denseRange_generic` takes none. -/
+theorem range_intX_subset_compl_range_of_isCusp
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+    {x : RelPoint strX (𝟙 SpecQ)} (hx : hX.IsCusp x) :
+    Set.range (d.intX x).1.base ⊆ (Set.range jZ.base)ᶜ := by
+  haveI := d.model.isOpen
+  have hclosed : IsClosed ((d.intX x).1.base ⁻¹' (Set.range jZ.base)ᶜ) :=
+    (jZ.opensRange.2.isClosed_compl).preimage (by fun_prop)
+  have hgen : Set.range (SpecLoc.generic R).base
+      ⊆ (d.intX x).1.base ⁻¹' (Set.range jZ.base)ᶜ := by
+    rintro _ ⟨P, rfl⟩
+    have hcomp : (d.intX x).1.base ((SpecLoc.generic R).base P)
+        = (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x).1.base P :=
+      congrArg (fun (f : (SpecQ : Scheme.{0}) ⟶ XZ) => f.base P)
+        (congrArg Subtype.val (d.pre_intX x))
+    rw [Set.mem_preimage, hcomp]
+    exact mem_compl_range_genX_of_isCusp d hx P
+  have hdense : Dense (Set.range (SpecLoc.generic R).base) := SpecLoc.denseRange_generic R
+  have huniv : (Set.univ : Set (SpecLoc R))
+      ⊆ (d.intX x).1.base ⁻¹' (Set.range jZ.base)ᶜ := by
+    rw [← hdense.closure_eq]
+    exact closure_minimal hgen hclosed
+  rintro _ ⟨z, rfl⟩
+  exact huniv (Set.mem_univ z)
+
+/-- **A SECTION LANDING SET-THEORETICALLY IN A CLOSED SUBSCHEME AFFINE OVER THE
+BASE FACTORS THROUGH IT, BY AN ALGEBRA MAP** (PROVEN 2026-08-01).
+
+The one place where a MONOMORPHISM is not enough and a CLOSED IMMERSION is, and
+the reason `IsX0JNeronCuspModel` asks for the latter.  Set-theoretic containment
+of the image never suffices on its own — `Spec k ↪ Spec k[ε]` is a surjective
+closed immersion and a `k[ε]`-point of the ambient does not factor through it —
+and what rescues it here is that the SOURCE `Spec R` is REDUCED, `R` being a
+subring of `ℚ`.
+
+Formally: base-change `ι` along the section.  `Limits.pullback.snd ι s` is a
+closed immersion (closed immersions are stable under base change) and is
+SURJECTIVE (`Scheme.Pullback.range_snd` turns the range hypothesis into exactly
+that), so `isIso_of_isClosedImmersion_of_surjective` — whose hypothesis
+`IsReduced (Spec R)` is where reducedness enters — makes it an ISOMORPHISM.
+Inverting it and composing with the other projection is the factorisation.
+
+That the factorisation is a map of `R`-ALGEBRAS is then forced rather than
+assumed, exactly as in `algHom_of_relPoint_factor` above: `Spec` is fully
+faithful, so the factorisation is `Spec.map φ` for a unique ring map, and
+`hcomm` together with `s` being a SECTION gives
+`Spec.map (algebraMap ≫ φ) = 𝟙`, whence `algebraMap ≫ φ = 𝟙` by faithfulness.
+
+Stated for an arbitrary `ι` rather than for `C.ι` so that the geometry is
+separated from the datum; the cuspidal instance is the only consumer today. -/
+theorem exists_algHom_of_section_range_subset
+    {A : Type} [CommRing A] [Algebra (R : Type) A]
+    (ι : Spec (CommRingCat.of A) ⟶ XZ) [IsClosedImmersion ι]
+    (hcomm : ι ≫ xstr = Spec.map (CommRingCat.ofHom (algebraMap (R : Type) A)))
+    (s : RelPoint xstr (𝟙 (SpecLoc R)))
+    (hsub : Set.range s.1.base ⊆ Set.range ι.base) :
+    ∃ f : A →ₐ[(R : Type)] (R : Type),
+      Spec.map (CommRingCat.ofHom f.toRingHom) ≫ ι = s.1 := by
+  haveI : Surjective (Limits.pullback.snd ι s.1) := by
+    constructor
+    rw [← Set.range_eq_univ, Scheme.Pullback.range_snd]
+    exact Set.eq_univ_of_forall fun z => hsub ⟨z, rfl⟩
+  haveI : IsIso (Limits.pullback.snd ι s.1) :=
+    isIso_of_isClosedImmersion_of_surjective _
+  have hu : (inv (Limits.pullback.snd ι s.1) ≫ Limits.pullback.fst ι s.1) ≫ ι = s.1 := by
+    rw [Category.assoc, Limits.pullback.condition, ← Category.assoc, IsIso.inv_hom_id,
+      Category.id_comp]
+  obtain ⟨φ, hφ⟩ : ∃ φ : CommRingCat.of A ⟶ CommRingCat.of (R : Type),
+      Spec.map φ ≫ ι = s.1 := ⟨Spec.preimage _, by rw [Spec.map_preimage]; exact hu⟩
+  have halg : CommRingCat.ofHom (algebraMap (R : Type) A) ≫ φ
+      = 𝟙 (CommRingCat.of (R : Type)) := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, Spec.map_id, ← hcomm, ← Category.assoc, hφ]
+    exact s.2
+  have hcom : ∀ r : (R : Type), φ.hom (algebraMap (R : Type) A r) = algebraMap _ _ r :=
+    fun r => congrArg
+      (fun (t : CommRingCat.of (R : Type) ⟶ CommRingCat.of (R : Type)) => t.hom r) halg
+  exact ⟨{ toRingHom := φ.hom, commutes' := hcom }, hφ⟩
+
+end X0JNeronCuspSection
+
 /-- **THE CUSPIDAL SUBSCHEME OF THE SMOOTH MODEL, AS A FINITE ÉTALE
 `ℤ_(q)`-SCHEME** (structure, new 2026-07-31).
 
@@ -4369,27 +4523,40 @@ sections, sections of an affine scheme over an affine base ARE algebra maps, and
 `Algebra.Etale` / `Module.Finite` are where mathlib's unramifiedness API lives.
 Nothing is lost — `𝒞` is affine over an affine base, being finite over it.
 
-**`section_of_isCusp` IS STATED FOR CUSPS RATHER THAN DERIVED FROM `cover`, AND
-THAT IS A DELIBERATE CHOICE.**  For a rational cusp `x`, the integral section
-`d.intX x` meets `𝒴` nowhere: its GENERIC point lies off `𝒴` (else
-`IsOpenImmersion.lift` and `genX_j` would exhibit `x` as
+**`section_of_isCusp` USED TO BE A FIELD HERE AND IS NOW A THEOREM**
+(`IsX0JNeronCuspModel.section_of_isCusp`, immediately below; tightened
+2026-08-01, which is what the field's own docstring had asked a successor to
+do).  For a rational cusp `x` the integral section `d.intX x` meets `𝒴`
+nowhere: its GENERIC point lies off `𝒴` (`mem_compl_range_genX_of_isCusp`,
+else `IsOpenImmersion.lift` and `genX_j` would exhibit `x` as
 `sectionAlong hX.j hX.over y`, contradicting `hX.IsCusp x`), and the complement
 of `𝒴` is CLOSED while `SpecLoc.denseRange_generic` makes the generic point
-dense, so the whole section lies in `𝒞`.  Given `cover` that is pure topology
-plus the factorisation of a section through a closed subscheme; carrying the
-conclusion directly costs the leaf nothing in strength — it remains a statement
-Deligne–Rapoport prove, namely that the cusps are sections of the cuspidal
-subscheme — and saves the derivation a page of plumbing that proves nothing new.
-A successor tightening this should DERIVE `section_of_isCusp` from `cover` and
-delete the field, not weaken it.
+dense (`range_intX_subset_compl_range_of_isCusp`).  So by `cover` the whole
+section lands in `𝒞` set-theoretically and — `Spec ℤ_(q)` being REDUCED —
+factors through the closed subscheme
+(`exists_algHom_of_section_range_subset`).  The theorem's statement is
+character for character the old field's, so no consumer moved.
 
-**WHY `mono` AND NOT `IsClosedImmersion`.**  Only cancellation is used, and a
-closed immersion is a monomorphism; asking for the weaker property keeps the
-leaf's obligation smaller with no loss.  `comm` and `cover` are not consumed by
-the derivation below and are carried anyway, so that the datum PINS `𝒞` as the
-cuspidal locus over the base rather than being satisfiable by an arbitrary
-unramified algebra — the same role `cover` plays in
-`IsX0Compactification.CuspLocus`, and for the same reason recorded there.
+**WHY `isClosedImmersion` AND NOT `mono`, WHICH IS WHAT THIS FIELD USED TO
+SAY.**  The SEPARATION proof below consumes only cancellation, for which a
+monomorphism is enough, and while `section_of_isCusp` was a FIELD that was all
+this structure ever needed.  DERIVING `section_of_isCusp` needs strictly more,
+and a monomorphism provably does not suffice: `Spec k ↪ Spec k[ε]` is a
+surjective closed immersion (hence a mono) through which the tautological
+`k[ε]`-point does not factor, so set-theoretic containment of a section's image
+in `Set.range ι.base` is not by itself a factorisation.  With `ι` a CLOSED
+immersion it is one, because the base is REDUCED — that is
+`exists_algHom_of_section_range_subset` above, and reducedness is the whole of
+what makes the derivation go.  This does not make the citation harder:
+Deligne–Rapoport give the cuspidal subscheme as a CLOSED subscheme of the
+model, so `IsClosedImmersion` is what is on offer, and the leaf now asks for one
+conjunct less.  `Mono ι` is recovered by instance search wherever it is wanted.
+
+`comm` and `cover` PIN `𝒞` as the cuspidal locus over the base rather than
+letting it be an arbitrary unramified algebra — the same role `cover` plays in
+`IsX0Compactification.CuspLocus`, and for the same reason recorded there.  Both
+are now load-bearing twice over, being also what the derived `section_of_isCusp`
+runs on.
 
 **REFERENCES.**  Deligne–Rapoport, *Les schémas de modules de courbes
 elliptiques* (Antwerp II, 1973), IV.3 and VI.6; Katz–Mazur, *Arithmetic Moduli
@@ -4413,19 +4580,51 @@ structure IsX0JNeronCuspModel {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod 
   [finite : Module.Finite (R : Type) A]
   /-- the immersion of the cuspidal subscheme into the model -/
   ι : Spec (CommRingCat.of A) ⟶ XZ
-  /-- it is a monomorphism -/
-  mono : Mono ι
+  /-- it is a CLOSED immersion -/
+  isClosedImmersion : IsClosedImmersion ι
   /-- it lies over the base -/
   comm : ι ≫ xstr = Spec.map (CommRingCat.ofHom (algebraMap (R : Type) A))
   /-- its image is exactly the cusp locus of the model -/
   cover : Set.range ι.base = (Set.range jZ.base)ᶜ
-  /-- the integral section attached to a rational CUSP is a section of `𝒞` -/
-  section_of_isCusp : ∀ x : RelPoint strX (𝟙 SpecQ), hX.IsCusp x →
-    ∃ f : A →ₐ[(R : Type)] (R : Type),
-      Spec.map (CommRingCat.ofHom f.toRingHom) ≫ ι = (d.intX x).1
 
 attribute [instance] IsX0JNeronCuspModel.commRing IsX0JNeronCuspModel.algebra
   IsX0JNeronCuspModel.etale IsX0JNeronCuspModel.finite
+
+/-- **THE INTEGRAL SECTION ATTACHED TO A RATIONAL CUSP IS A SECTION OF `𝒞`**
+(PROVEN 2026-08-01) — a FIELD of `IsX0JNeronCuspModel` until this commit, now
+derived from `cover` and `isClosedImmersion`, with its statement unchanged.
+
+Three steps, each a lemma above and none of them modular:
+
+* the GENERIC point of `d.intX x` lies off `𝒴`, because a factorisation there
+  would exhibit `x` as coming from a rational point of `Y_0(N)`
+  (`mem_compl_range_genX_of_isCusp`);
+* hence so does every point of it, `𝒴` being open and the generic point dense
+  (`range_intX_subset_compl_range_of_isCusp`);
+* so by `cover` the section's image lies in `Set.range ι.base`, and over a
+  REDUCED base a section landing set-theoretically in a closed subscheme
+  factors through it, by an algebra map since everything in sight is affine
+  over the base (`exists_algHom_of_section_range_subset`).
+
+The leaf `nonempty_isX0JNeronCuspModel` therefore no longer carries this
+conjunct.  Nothing downstream changed: `redX_base_ne_of_isX0JNeronCuspModel`
+below still writes `C.section_of_isCusp x hx`, which now resolves to this
+theorem. -/
+theorem IsX0JNeronCuspModel.section_of_isCusp {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ}
+    (C : IsX0JNeronCuspModel d) (x : RelPoint strX (𝟙 SpecQ)) (hx : hX.IsCusp x) :
+    ∃ f : C.A →ₐ[(R : Type)] (R : Type),
+      Spec.map (CommRingCat.ofHom f.toRingHom) ≫ C.ι = (d.intX x).1 := by
+  haveI := C.isClosedImmersion
+  exact exists_algHom_of_section_range_subset C.ι C.comm (d.intX x)
+    (by rw [C.cover]; exact range_intX_subset_compl_range_of_isCusp d hx)
 
 /-- **DELIGNE–RAPOPORT: the smooth model at `q ∤ N` HAS a finite étale cuspidal
 subscheme** (sorry leaf, new 2026-07-31) — the ONE classical citation of this
@@ -4434,13 +4633,18 @@ cut, replacing the point-level assertion `redX_base_ne_of_isCusp` used to be.
 TRUE, and it is what Deligne–Rapoport actually prove: over `ℤ[1/N]` the smooth
 model of `X_0(N)` carries a cuspidal subscheme finite étale over the base.  For
 `q ∤ N` the ring `ℤ_(q)` is a `ℤ[1/N]`-algebra, so the base change of that
-subscheme is finite étale over `ℤ_(q)`, is a closed subscheme of the model —
-hence its immersion is a monomorphism and lies over the base — and its
-underlying set is the complement of the open part, which is `cover`.  The
-sections `section_of_isCusp` are the cusps themselves: a rational cusp extends
-to an integral section by properness (`properX`, through `intX`), that section
-misses `𝒴` (see the field's note on the structure), and a section of the model
-landing in a closed subscheme with reduced base factors through it.
+subscheme is finite étale over `ℤ_(q)`, is a CLOSED SUBSCHEME of the model —
+which is `isClosedImmersion`, and it lies over the base — and its underlying set
+is the complement of the open part, which is `cover`.  That is the whole of what
+this leaf asks for.
+
+**TIGHTENED 2026-08-01: the fourth conjunct is gone.**  The structure used to
+carry a field `section_of_isCusp` saying that the integral section of a rational
+cusp is a section of `𝒞`.  It is now a THEOREM over `cover` and
+`isClosedImmersion` (`IsX0JNeronCuspModel.section_of_isCusp` above), so a
+discharger of this leaf no longer owes it.  The price, and it is not one that
+Deligne–Rapoport charge, is that the third conjunct went from `Mono ι` to
+`IsClosedImmersion ι` — see the WHY paragraph on the structure.
 
 **`hqN : ¬ q ∣ N` IS LOAD-BEARING AND NOT DECORATIVE.**  At `q ∣ N` the model is
 not smooth at `q`, the cuspidal subscheme is genuinely NOT étale there, cusps
@@ -4455,8 +4659,8 @@ squarefreeness there.  Adding `N ≠ 0` here would make the leaf undischargeable
 at `redX_base_ne_of_isCusp`, which does not have it.
 
 **NON-VACUITY.**  `N = 37`, `q = 3`: `𝒞` is `Spec (ℤ_(3) × ℤ_(3))`, the two
-cusps `0` and `∞`, finite étale of rank `2` over `ℤ_(3)`, and `section_of_isCusp`
-returns the two coordinate projections.
+cusps `0` and `∞`, finite étale of rank `2` over `ℤ_(3)`, closed in the model;
+the derived `section_of_isCusp` returns the two coordinate projections.
 
 **REFERENCES.**  Deligne–Rapoport (Antwerp II, 1973), IV.3, V.5, VI.6;
 Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*, 13.11. -/
@@ -4508,7 +4712,7 @@ theorem redX_base_ne_of_isX0JNeronCuspModel {N q : ℕ} {R : Subring ℚ} {toF :
     (d.redX x₁).1.base P ≠ (d.redX x₂).1.base P := by
   haveI : Fact q.Prime := ⟨prime_of_isReductionBase d.base⟩
   haveI := d.base.isLocalRing
-  haveI := C.mono
+  haveI := C.isClosedImmersion
   haveI := C.etale.formallyEtale
   intro hPeq
   -- equal supporting points force equal `𝔽_q`-points
