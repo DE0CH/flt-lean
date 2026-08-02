@@ -25074,3 +25074,57 @@ which is the CUT stated as three characters, and which a reviewer can re-run wit
 build. **Beware the trap in the recipe**: the `git show` swap STAGES the old version, so
 `git status` reads `MM` and a plain `git diff --stat` afterwards under-reports the change
 — check with `git diff HEAD --stat`, not `git diff --stat`.
+## A NON-DIVISIBILITY HYPOTHESIS GIVES NON-ZERO FOR FREE — read the OTHER binders before citing a positivity theorem
+(2026-08-01, `flt-lean-3`, closing `exists_isX1Compactification_of_isCoarseModuliY1_loc`
+A leaf that needs a numeric non-degeneracy — `0 < N`, `n ≠ 0`, "the level is one at
+which the moduli problem has objects" — routinely acquires a whole hypothesis, and
+sometimes a whole PROVEN theorem, to supply it. Before building or citing either,
+read every OTHER binder the statement already carries. In this development the
+commonest free supplier is a NON-DIVISIBILITY hypothesis, because **everything
+divides `0`**:
+    have hN : 0 < N := by
+      rcases Nat.eq_zero_or_pos N with rfl | h
+      exacts [absurd (dvd_zero ℓ) hℓN, h]
+`X0.lean`'s `exists_x0IntegralCompactifiedModel` carries BOTH `_hℓN : ¬ ℓ ∣ N` and a
+rational compactification `_hX`, and spends the PROVEN
+`pos_of_isX0Compactification` on `_hX` to get `0 < N` — while `_hℓN`, two binders
+away, gives it in the three lines above. Every docstring in that cluster says `_hX`
+"is load-bearing and is what rules out the degenerate level", and it is repeated
+verbatim on the `Γ₁` twin, where it is equally unnecessary. On the `Γ₁` side taking
+the free route made `_hX` **unused in the target and absent from all three residual
+leaves**, so none of them mentions a rational model at all — which is exactly what the
+`Γ₀` docstring says it wants and pays a theorem for.
+**The check is one read of the binder list, and it beats every route note**, because a
+route note is written by whoever cut the leaf, from the argument they had in hand, and
+"which hypothesis supplies `0 < N`" is not a question a cut has to answer. Watch for
+`¬ p ∣ n` (gives `n ≠ 0`), `p.Prime` on a modulus, `IsUnit (n : R)` in a nonzero ring,
+and a `Fintype`/`Nonempty` clause on something indexed by the quantity.
+**Corollary, and it is the expensive half: a PROVEN theorem whose only purpose is to
+supply such a fact may have no call site that needs it.** Do not delete it on that
+evidence alone — it may have other consumers, and it is a different file's — but say
+so in `to_merger`, because a hypothesis threaded through a cluster for one dead reason
+is exactly the sort of thing the next re-cut can drop for free.
+### And the decline reason on a "follow-up available, NOT taken here" paragraph is a COST ESTIMATE
+Same task. The subsection that cut this cluster on 2026-07-31 ended with a paragraph
+naming the next split, naming both declarations it needs, observing that the input it
+runs on (`IsCoarseModuliY1.exists_inverse`) was already proven — and declining it
+because it *"trades one leaf for one leaf and this subsection is already the cut that
+pays"*. That is not a coordination decline (which expires, per the section above); it
+is a **measurement**, and it was wrong. Taken, the follow-up went `1 → 3`, the residual
+citation got strictly weaker (produce ONE Deligne–Rapoport model, instead of compactify
+an ARBITRARY abstract coarse space presented only by a universal property), and it
+exposed the `_hX` finding above. Cost: one scratch round of 9 seconds, because both new
+proofs are transcriptions of the `Γ₀` twin that never look at the level structure.
+**So re-price a declined follow-up rather than inheriting its arithmetic** — especially
+when the paragraph has already done the hard part by naming the declarations. A decline
+that lists its own ingredients is a task description, and the ingredients are the reason
+it is cheap.
+### `case "$c" in /home/chend/flt-lean-3*)` MATCHES `flt-lean-311`
+The doctrine's "kill by PID after checking `/proc/<pid>/cwd`" recipe is right and the
+obvious glob for it is not: `flt-lean-3*` matches `flt-lean-3`, `flt-lean-30`…`39` and
+every `flt-lean-3NN`. Mine reported two live `lean` processes in my worktree after my
+own build had finished with `EXIT=0`; they were `flt-lean-311`'s, and a `pkill` on that
+pattern would have killed another agent's 9-minute-old elaboration. Anchor both ends:
+    case "$c" in /home/chend/flt-lean-3|/home/chend/flt-lean-3/*) ... ;; esac
+Same family as the standing `pkill -f "lake build"` warning — the pattern is the whole
+of the safety argument, so write it so it cannot match a sibling.

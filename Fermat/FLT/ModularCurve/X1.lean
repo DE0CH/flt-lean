@@ -14791,11 +14791,14 @@ still PROVEN over TWO leaves, and they are now
 the first of the two got strictly weaker.
 -/
 
-/-! #### The `Γ₁` moduli axis over `ℤ_(ℓ)`, CUT INTO THREE (2026-07-31)
+/-! #### The `Γ₁` moduli axis over `ℤ_(ℓ)`, CUT INTO THREE (2026-07-31) AND THEN
+INTO FIVE (2026-08-01)
 
-`exists_x1IntegralSmoothProperModel` below is now a PROVEN assembly over the three
-leaves in this subsection, which are the `Γ₁` twins of the trio `X0.lean` arrived at
-on the `Γ₀` side.  Its own docstring used to decline the cut — *"deliberately NOT cut
+`exists_x1IntegralSmoothProperModel` below is now a PROVEN assembly over the leaves
+in this subsection, which are the `Γ₁` twins of the ones `X0.lean` arrived at on the
+`Γ₀` side.  The paragraph headed "THE FOLLOW-UP IS NOW TAKEN" at the end of this
+comment records the second cut; the count below (`1 → 3`) is the first one, and the
+subsection now stands at five.  Its own docstring used to decline the cut — *"deliberately NOT cut
 here: three leaves in place of one buys nothing until somebody is actually working
 the moduli axis"* — and that reason has expired, which is what this subsection is.
 
@@ -14833,14 +14836,43 @@ under base change.  `exists_unique_genericFibre_universal_gamma1` therefore carr
 `exists_x1IntegralSmoothProperModel`, whose `hℓN : ¬ ℓ ∣ N` already forces `N ≠ 0`
 (every `ℓ` divides `0`).
 
-**A follow-up that is available and is NOT taken here.**  On the `Γ₀` side the
-compactification leaf has since been split again, into `exists_x0IntegralCompactifiedModel`
-plus the moduli-free `isX0Compactification_transport`.  The same split is available
-here as soon as somebody writes `isX1Compactification_transport` — which needs an
-isomorphism of coarse spaces OVER THE BASE compatible with nothing, i.e. the bare
-`exists_iso_of_isCoarseModuliY1` rather than the classify-compatible refinement, and
-`IsCoarseModuliY1.exists_inverse` is already here.  It is left undone because it
-trades one leaf for one leaf and this subsection is already the cut that pays. -/
+**THE FOLLOW-UP IS NOW TAKEN (2026-08-01), and it went further than the paragraph
+that stood here predicted.**  That paragraph read *"the same split is available here
+as soon as somebody writes `isX1Compactification_transport` … it is left undone
+because it trades one leaf for one leaf"*.  Both halves are now done and the trade is
+not one for one:
+
+* `exists_iso_of_isCoarseModuliY1` and `isX1Compactification_transport` are PROVEN
+  (the first is three lines over the already-proven `IsCoarseModuliY1.exists_inverse`,
+  the second is `isX0Compactification_transport` transcribed with `Y0 ↦ Y1` and
+  nothing else — neither looks at the level structure);
+* `exists_isX1Compactification_of_isCoarseModuliY1_loc` is therefore PROVEN over
+  `exists_x1IntegralCompactifiedModel`, which asks for the Deligne–Rapoport model
+  ITSELF instead of for a compactification of an ARBITRARY abstract coarse space —
+  an object presented only by a universal property, from which no geometry can be
+  read off.  That is the same strict weakening `X0.lean` recorded on 2026-07-28;
+* and `exists_x1IntegralCompactifiedModel` is in turn PROVEN over the `Γ₁` twins of
+  `X0.lean`'s trio: `exists_isX1NormalProperModel_specLoc` (the construction),
+  `smoothOfRelativeDimension_of_isX1NormalProperModel` and
+  `geometricallyConnected_of_isX1NormalProperModel` (the two halves of Igusa).
+
+**So the subsection's count goes 3 → 5, and this is again disclosure.**  What leaves
+the frontier is one citation that bundled a construction with two good-reduction
+theorems; what arrives is three statements naming one theorem each, of which the
+construction half is the one that is close to already-written code (see its
+docstring).  Judge it by what is LEFT in each leaf, not by the delta.
+
+**ONE PLACE WHERE THE `Γ₁` SIDE IS CHEAPER THAN THE `Γ₀` SIDE.**  `X0.lean` spends
+`pos_of_isX0Compactification` to get `0 < N` out of the rational compactification
+`_hX`, and carries `_hX` through the cluster for that purpose alone.  Here it is not
+needed at all: `_hℓN : ¬ ℓ ∣ N` already forces `N ≠ 0`, since every `ℓ` divides `0`,
+and that is one line.  So `_hX` is now UNUSED in
+`exists_isX1Compactification_of_isCoarseModuliY1_loc` and appears in none of the
+three leaves — none of them mentions a rational model.  It is kept in the signature
+only so that no consumer moves.  (The same one-line derivation is available on the
+`Γ₀` side, where `exists_x0IntegralCompactifiedModel` also carries `_hℓN`; that would
+make `pos_of_isX0Compactification` unnecessary at that call site too.  Not changed
+here — `X0.lean` is another file and its declaration may have other consumers.) -/
 
 /-- **KATZ–MAZUR ch. 8: the `Γ₁(N)`-ATLAS EXISTS OVER `ℤ_(ℓ)`** (sorry leaf, NEW
 2026-07-31) — the twin of `X0.lean`'s `nonempty_gamma0AtlasOver_specLoc`, and the
@@ -14883,14 +14915,299 @@ theorem exists_isCoarseModuliY1_loc (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬
   obtain ⟨A⟩ := nonempty_gamma1Atlas_specLoc N ℓ hℓ hℓN R toF hbase
   exact ⟨A.Y, A.str, ⟨A.toIsCoarseModuliY1⟩⟩
 
-/-- **DELIGNE–RAPOPORT IV.3 / KATZ–MAZUR 13.11: the integral coarse space has a
-SMOOTH PROPER COMPACTIFICATION over `ℤ_(ℓ)`, with finite cusp locus** (sorry leaf,
-NEW 2026-07-31) — the twin of `X0.lean`'s
-`exists_isX0Compactification_of_isCoarseModuliY0_loc`.
+/-- **Any two coarse moduli spaces of the `Γ₁(N)`-problem over a common base are
+ISOMORPHIC over it** (PROVEN 2026-08-01 — three lines over the already-proven
+`IsCoarseModuliY1.exists_inverse`, which is pure initiality and sees no geometry).
 
-TRUE and classical.  `_hℓN` is what makes it true: at `ℓ ∤ N` the level structure is
-étale over the base, so the model is SMOOTH rather than merely semistable; at `ℓ ∣ N`
-no smooth model exists at all.
+The `Γ₀` twin is `X0.lean`'s `exists_iso_of_isCoarseModuliY0`.  `exists_inverse`
+returns a raw inverse PAIR because its only previous consumer,
+`relPointEquivOfInverse`, wants one; the compactification transport below wants an
+`Iso`, and packaging one from the pair is `⟨⟨u, v, huv, hvu⟩, hu⟩`.
+
+The base `S` is arbitrary — nothing in the argument sees `Spec ℚ` — which is exactly
+what makes it applicable at `SpecLoc R`. -/
+theorem exists_iso_of_isCoarseModuliY1 {N : ℕ} {Y Y₀ S : Scheme.{0}}
+    {strY : Y ⟶ S} {strY₀ : Y₀ ⟶ S}
+    (h : IsCoarseModuliY1 N strY) (h₀ : IsCoarseModuliY1 N strY₀) :
+    ∃ e : Y ≅ Y₀, e.hom ≫ strY₀ = strY := by
+  obtain ⟨u, v, hu, hv, huv, hvu⟩ := h.exists_inverse h₀
+  exact ⟨⟨u, v, huv, hvu⟩, hu⟩
+
+/-- **A `Γ₁(N)`-compactification transports along an isomorphism of coarse spaces**
+(PROVEN 2026-08-01 — no geometry, no level structure, and the base is arbitrary);
+`X0.lean`'s `isX0Compactification_transport` transcribed with `Γ₀` replaced by `Γ₁`
+and nothing else changed, because that proof never looks at the moduli problem.
+
+Given a compactification `(XZ, xstr, jZ₀)` of `ystr₀` and an isomorphism
+`e : YZ₀ ≅ YZ` over the base, `e.inv ≫ jZ₀` compactifies `ystr` — with the SAME `XZ`
+and the same `xstr`, so the three geometric fields are literally reused and only
+`comm` and `finite_compl` need an argument.  `finite_compl` is the observation that
+`e.inv` is an isomorphism, hence surjective on points, so
+`Set.range (e.inv ≫ jZ₀).base = Set.range jZ₀.base`.
+
+`hc` is a hypothesis rather than being transported from `h₀.coarse`: at the use site
+the caller already holds the coarse structure of the TARGET, and asking for it keeps
+this lemma free of any comparison between the two `classify` maps — which is exactly
+what makes the bare `exists_iso_of_isCoarseModuliY1` above, whose iso carries no such
+comparison, sufficient here. -/
+noncomputable def isX1Compactification_transport {N : ℕ} {S XZ YZ YZ₀ : Scheme.{0}}
+    {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {ystr₀ : YZ₀ ⟶ S} {jZ₀ : YZ₀ ⟶ XZ}
+    (h₀ : IsX1Compactification N xstr ystr₀ jZ₀)
+    (hc : IsCoarseModuliY1 N ystr) (e : YZ₀ ≅ YZ) (he : e.hom ≫ ystr = ystr₀) :
+    IsX1Compactification N xstr ystr (e.inv ≫ jZ₀) := by
+  haveI := h₀.isOpen
+  haveI := h₀.isProper
+  haveI := h₀.smooth
+  haveI := h₀.connected
+  haveI : IsIso e.inv := inferInstance
+  refine
+    { comm := ?_
+      coarse := hc
+      isOpen := inferInstance
+      isProper := h₀.isProper
+      smooth := h₀.smooth
+      connected := h₀.connected
+      finite_compl := ?_ }
+  · rw [Category.assoc, h₀.comm, ← he, ← Category.assoc, e.inv_hom_id, Category.id_comp]
+  · have hsurj : Function.Surjective ⇑e.inv.base := (Scheme.homeoOfIso e.symm).surjective
+    have hr : Set.range (e.inv ≫ jZ₀).base = Set.range jZ₀.base := by
+      refine Set.Subset.antisymm ?_ ?_
+      · rintro _ ⟨x, rfl⟩
+        exact ⟨e.inv.base x, rfl⟩
+      · rintro _ ⟨y, rfl⟩
+        obtain ⟨x, hx⟩ := hsurj y
+        exact ⟨x, by rw [show (e.inv ≫ jZ₀).base x = jZ₀.base (e.inv.base x) from rfl, hx]⟩
+    rw [hr]
+    exact h₀.finite_compl
+
+/-- **A NORMAL PROPER INTEGRAL model of the `Γ₁(N)`-coarse space** — everything
+`IsX1Compactification` asks for except the two geometric properties that carry the
+arithmetic (`smooth` and `connected`), with normality and integrality added in their
+place.  `X0.lean`'s `IsX0NormalProperModel` with the level structure swapped.
+
+This is the object Igusa's construction produces before any good-reduction input is
+used: compactify the affine coarse space as a scheme, then normalise.
+
+`normal` is spelled "every stalk is integrally closed" because there is no `IsNormal`
+for schemes at this pin; it is the spelling `CurveCompactification.lean` uses
+(`isIntegrallyClosed_sections_of_forall_stalk`,
+`isDiscreteValuationRing_stalk_normalization`), and it is what the relative
+normalisation supplies.  `IsIntegrallyClosed R` needs only `[CommRing R]`, so no
+domain instance has to be threaded through the field list. -/
+structure IsX1NormalProperModel (N : ℕ) {XZ YZ S : Scheme.{0}}
+    (xstr : XZ ⟶ S) (ystr : YZ ⟶ S) (jZ : YZ ⟶ XZ) where
+  /-- `jZ` is a morphism over the base -/
+  comm : jZ ≫ xstr = ystr
+  /-- `YZ` is a coarse moduli space for the `Γ₁(N)`-problem over the base -/
+  coarse : IsCoarseModuliY1 N ystr
+  /-- `YZ` is an open subscheme of `XZ` -/
+  isOpen : IsOpenImmersion jZ
+  /-- `XZ` is proper over the base -/
+  isProper : IsProper xstr
+  /-- `XZ` is integral — irreducible and reduced -/
+  isIntegral : IsIntegral XZ
+  /-- `XZ` is normal: every stalk is integrally closed in its fraction field -/
+  normal : ∀ x : XZ, IsIntegrallyClosed (XZ.presheaf.stalk x)
+  /-- the complement of `YZ` in `XZ` — the cusp locus — is finite -/
+  finite_compl : (Set.range jZ.base)ᶜ.Finite
+
+/-- **The normal proper integral model of `X_1(N)` exists over `ℤ_(ℓ)`** (sorry leaf,
+NEW 2026-08-01 — the SOFT half of Deligne–Rapoport IV.3 / Igusa, plus one modular
+fact); the twin of `X0.lean`'s `exists_isX0NormalProperModel_specLoc`.
+
+This is `exists_x1IntegralCompactifiedModel` below with `smooth` and `connected` — the
+two fields that carry the good-reduction content — REMOVED, and normality and
+integrality put in their place.  Everything arithmetic has been pushed into the two
+leaves below; what is left is the construction.
+
+**The intended route, and what of it already exists**, transcribed from the `Γ₀`
+twin because none of the three steps looks at the level structure.  `Y_1(N)` over the
+local base is affine (`Gamma1Atlas` produces `Spec (A^G)` over any base; the FIELD
+form is the `IsAffine Y` conjunct of `exists_isCoarseModuliY1_isSmoothCurve` above,
+and the `Γ₀` side exports the transported version as `X0.lean`'s
+`isAffine_of_isCoarseModuliY0`).  Then:
+
+1. *Nagata for an affine scheme over an affine noetherian base.*  Over a FIELD this is
+   `exists_isOpenImmersion_isProper_of_isAffine`, PROVEN in
+   `CurveCompactification.lean` via `Proj` of a graded chart and with no gluing
+   induction anywhere.  Its supporting lemma `nonempty_projChart_of_surjective` is
+   already stated for arbitrary `B B' : CommRingCat`; only `nonempty_projChart` and
+   the wrapper mention the field.  So this step is a GENERALISATION of proven code,
+   not new mathematics.
+2. *Normalise.*  `X := i.normalization`, `jZ := i.toNormalization`, an open immersion
+   by Zariski's Main Theorem (mathlib, free) and dominant by construction;
+   `i.fromNormalization` is integral, and FINITE because `ℤ_(ℓ)` is a Nagata ring —
+   the generalisation of `isFinite_fromNormalization`, whose own docstring already
+   flags that it is stated over a field only for convenience.  Finite over proper is
+   proper, which gives `isProper`.  Normality of a relative normalisation is
+   `isIntegrallyClosed_stalk_normalization`.
+3. *The cusp locus is finite.*  This is the one genuinely MODULAR step, and it is why
+   this leaf is not pure algebraic geometry.  Over a field
+   `finite_compl_range_toNormalization` gets it from `topologicalKrullDim ≤ 1` on the
+   total space; over a DVR the total space has dimension `2` and that argument is
+   unavailable.  What is true, and modular, is that the cusps are FINITE OVER THE
+   BASE — a finite scheme over `Spec ℤ_(ℓ)` is a semilocal noetherian ring of
+   dimension `≤ 1`, so it has finitely many points — and that `Y_1(N)_{𝔽_ℓ}` meets
+   every component of the special fibre, i.e. no whole component of `X_1(N)_{𝔽_ℓ}` is
+   cuspidal.  Without the second clause the boundary can be a whole component and
+   `finite_compl` is FALSE; that is the precise place where a "general relative curve
+   over a Dedekind base" statement would break, and it is why the leaf is stated for
+   the modular curve rather than for an arbitrary affine relative curve.
+
+**FAITHFULNESS, and the ONE PLACE THE `Γ₀` AUDIT DOES NOT TRANSFER.**  On the `Γ₀`
+side `0 < N` is load-bearing for TRUTH, and the witness is explicit: at `N = 0` the
+coarse space is EMPTY (`isEmpty_of_isCoarseModuliY0_zero_base`, because a cyclic
+subgroup scheme of order `0` cannot exist), so `XZ` would be a finite integral proper
+scheme and the consumer `IsX0Compactification` would be unsatisfiable.  **That witness
+does not exist here.**  `Gamma1Datum` carries a `PointOfExactOrder`, whose `geom_order`
+field reads `addOrderOf … = N`, and `addOrderOf x = 0` is the ordinary statement that
+`x` has INFINITE order — satisfiable on an elliptic curve over an algebraically closed
+field.  So `Gamma1Datum 0 T` is INHABITED, there is no `isEmpty_of_isCoarseModuliY1_zero`,
+and nothing in this tree says what the coarse space of `[Γ₁(0)]` does.  At `N = 0` this
+statement is therefore neither provable nor refutable here — the third outcome — and
+`_hN` is carried DEFENSIVELY: it can only weaken the leaf, and it costs the caller
+nothing, since `exists_x1IntegralCompactifiedModel` derives it in one line from
+`¬ ℓ ∣ N`.  A prover who finds `[Γ₁(0)]` well behaved may drop it; a prover who finds
+it pathological should record the witness here, since it would also settle the same
+question for `exists_unique_genericFibre_universal_gamma1` above.
+
+`ℓ ∤ N` is NOT needed for the construction — the model exists over `ℤ[1/N]` and one
+may base change — and is carried only because both consumers hold it and because
+dropping it would strand `_hbase`; a prover may ignore it. -/
+theorem exists_isX1NormalProperModel_specLoc (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (_toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R _toF) (_hN : 0 < N) :
+    ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
+      Nonempty (IsX1NormalProperModel N xstr ystr jZ) :=
+  sorry
+
+/-- **GOOD REDUCTION: the normal proper model of `X_1(N)` is SMOOTH over `ℤ_(ℓ)` when
+`ℓ ∤ N`** (sorry leaf, NEW 2026-08-01 — Igusa; Deligne–Rapoport IV.3.3, Katz–Mazur
+13.11); the twin of `X0.lean`'s `smoothOfRelativeDimension_of_isX0NormalProperModel`.
+
+This is the arithmetic core of the integral-model cluster, isolated from every
+construction step.  Over a FIELD the corresponding statement is a THEOREM of general
+curve theory and is PROVEN in this development —
+`smoothOfRelativeDimension_one_fromNormalization`, "normal of dimension one over a
+perfect field ⟹ smooth".  **Over a discrete valuation base the same implication is
+FALSE**: the normalisation of a nodal degeneration is normal and is not smooth over
+the base.  So no amount of general algebraic geometry gives this, and `ℓ ∤ N` is not
+decoration — it is the whole hypothesis.  That asymmetry is the sharpest way to see
+why the integral model is a citation and the rational one is not.
+
+**The `_M` hypothesis pins `XZ`**: without it the statement quantifies over an
+arbitrary morphism to the base and is plainly false.  What makes the leaf TRUE as
+stated — rather than only for the Deligne–Rapoport model itself — is that a normal
+proper model containing the coarse space as a dense open with finite complement is
+unique up to isomorphism over the base, so smoothness transports from that model to
+every model the structure admits.  That uniqueness argument is not formalised here,
+exactly as on the `Γ₀` side; the check that would refute it is an integral normal
+proper model of `Y_1(N)_{ℤ_(ℓ)}` with finite complement that is NOT isomorphic to the
+Deligne–Rapoport one. -/
+theorem smoothOfRelativeDimension_of_isX1NormalProperModel (N ℓ : ℕ) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} (_toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R _toF) (_hN : 0 < N)
+    {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (_M : IsX1NormalProperModel N xstr ystr jZ) :
+    SmoothOfRelativeDimension 1 xstr :=
+  sorry
+
+/-- **GOOD REDUCTION: the normal proper model of `X_1(N)` is GEOMETRICALLY CONNECTED
+over `ℤ_(ℓ)` when `ℓ ∤ N`** (sorry leaf, NEW 2026-08-01 — Igusa's irreducibility
+theorem); the twin of `X0.lean`'s `geometricallyConnected_of_isX0NormalProperModel`.
+
+`GeometricallyConnected xstr` is a statement about EVERY geometric fibre, including
+the one over `𝔽_ℓ`, and the special fibre of the open curve is exactly what Igusa's
+theorem is about.  A successor who tries to derive this from the generic fibre is
+repeating the mistake the `Γ₀` audit records for `_hX`: good reduction is the content,
+not a corollary.
+
+The `_M` hypothesis pins `XZ` for the same reason as in the smoothness leaf, and rests
+on the same unrecorded uniqueness argument. -/
+theorem geometricallyConnected_of_isX1NormalProperModel (N ℓ : ℕ) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} (_toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R _toF) (_hN : 0 < N)
+    {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (_M : IsX1NormalProperModel N xstr ystr jZ) :
+    GeometricallyConnected xstr :=
+  sorry
+
+/-- **ONE smooth proper integral model of `X_1(N)` over `ℤ_(ℓ)` exists**
+(PROVEN 2026-08-01 over the three leaves above); the twin of `X0.lean`'s
+`exists_x0IntegralCompactifiedModel`.
+
+This is `exists_isX1Compactification_of_isCoarseModuliY1_loc` below with the coarse
+space EXISTENTIALLY quantified instead of GIVEN, and it is strictly weaker: it asks
+for the Deligne–Rapoport model and nothing else, where the leaf below used to ask for
+a compactification of an ARBITRARY abstract coarse space — an object presented only by
+a universal property, from which no geometry can be read off.  The two are reconciled
+by `isX1Compactification_transport` over `exists_iso_of_isCoarseModuliY1`, which is
+the step the old docstring of that leaf described in prose and left undone.
+
+**Why no rational compactification appears here, unlike on the `Γ₀` side.**
+`X0.lean`'s twin carries `_hX : IsX0Compactification N strX strY j` and spends
+`pos_of_isX0Compactification` on it to obtain `0 < N`.  That is unnecessary at either
+level: `_hℓN` gives `N ≠ 0` in one line, since every `ℓ` divides `0`.  So this
+statement mentions no rational model at all, and neither do the three leaves it runs
+on.
+
+**Do NOT generalize by dropping the modular hypotheses.**  The general form — "a
+smooth relative curve over a Dedekind base admits a smooth proper relative
+compactification with finite complement" — is much stronger and this development does
+not know it to be true; the number of points at infinity is not obviously constant in
+such a family.  The truth of the statement rests on Deligne–Rapoport constructing the
+COMPACTIFIED moduli problem (generalised elliptic curves with `Γ₁(N)`-structure)
+directly over `ℤ[1/N]`, where the cusps form a finite étale scheme over the base.
+That is a modular fact, not a curve-theoretic one, which is why — unlike the field
+case, where `AlgebraicGeometry.exists_isSmoothCompactification` does the work — the
+base cannot be handed to general curve theory. -/
+theorem exists_x1IntegralCompactifiedModel (N ℓ : ℕ) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (_toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R _toF) :
+    ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
+      (jZ : YZ ⟶ XZ), Nonempty (IsX1Compactification N xstr ystr jZ) := by
+  have hN : 0 < N := by
+    rcases Nat.eq_zero_or_pos N with rfl | h
+    exacts [absurd (dvd_zero ℓ) _hℓN, h]
+  obtain ⟨XZ, YZ, xstr, ystr, jZ, ⟨M⟩⟩ :=
+    exists_isX1NormalProperModel_specLoc N ℓ _hℓ _hℓN R _toF _hbase hN
+  exact ⟨XZ, YZ, xstr, ystr, jZ,
+    ⟨{ comm := M.comm
+       coarse := M.coarse
+       isOpen := M.isOpen
+       isProper := M.isProper
+       smooth :=
+         smoothOfRelativeDimension_of_isX1NormalProperModel N ℓ _hℓ _hℓN _toF _hbase hN M
+       connected :=
+         geometricallyConnected_of_isX1NormalProperModel N ℓ _hℓ _hℓN _toF _hbase hN M
+       finite_compl := M.finite_compl }⟩⟩
+
+/-- **DELIGNE–RAPOPORT IV.3 / KATZ–MAZUR 13.11: the integral coarse space has a
+SMOOTH PROPER COMPACTIFICATION over `ℤ_(ℓ)`, with finite cusp locus**
+(**PROVEN 2026-08-01** over `exists_x1IntegralCompactifiedModel` above; a sorry leaf
+when it was cut on 2026-07-31) — the twin of `X0.lean`'s
+`exists_isX0Compactification_of_isCoarseModuliY0_loc`, and proven the same way.
+
+**The statement is UNCHANGED, so every consumer is untouched.**  What changed is that
+the citation is no longer asked to compactify the ARBITRARY coarse space `_hc` that
+the caller hands in — an object presented only by a universal property, from which
+nothing geometric can be extracted.  It is asked instead for ONE integral model
+(`exists_x1IntegralCompactifiedModel`), and the passage from that model to `_hc` is
+`isX1Compactification_transport` over `exists_iso_of_isCoarseModuliY1`, both PROVEN
+above.  That transport is what makes no geometric hypothesis on `ystr` necessary:
+initiality says every coarse space of the `Γ₁(N)`-problem over the base is isomorphic
+*over the base* to the Deligne–Rapoport one, so the geometric properties come along
+with the isomorphism rather than being assumed.
+
+**`_hX` IS NOW UNUSED, and the paragraph that used to stand here was wrong about it.**
+It read *"`_hX` is load-bearing and is what rules out the degenerate level … it is the
+only hypothesis that says the level `N` is one at which the moduli problem has objects
+at all"*, transcribed from the `Γ₀` side.  It is not the only such hypothesis:
+`_hℓN : ¬ ℓ ∣ N` forces `N ≠ 0` outright, since every `ℓ` divides `0`, and that is the
+one line `exists_x1IntegralCompactifiedModel` uses.  So `_hX` is consumed by nothing in
+this proof and by nothing below it.  It is KEPT in the signature only because the
+consumer `exists_x1IntegralModel` already holds it and removing it would move a
+signature for no gain; a successor who is editing this cluster anyway should drop it,
+and no call site changes except by deleting an argument.
 
 **Why the compactification half keeps a MODULAR hypothesis where the field-base
 version does not**, inherited verbatim from the `Γ₀` side: over a FIELD the
@@ -14898,13 +15215,7 @@ compactification of a smooth affine curve can be handed to general curve theory
 (`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine`), but over a discrete
 valuation base there is no such theorem — the compactification is constructed with the
 moduli problem, as the coarse space of the `Γ₁(N)`-structures on generalised elliptic
-curves.  So this leaf cites Deligne–Rapoport rather than curve theory.
-
-**`_hX` is load-bearing and is what rules out the degenerate level**, exactly as on the
-`Γ₀` side: it is the only hypothesis that says the level `N` is one at which the moduli
-problem has objects at all.  `_hc` is the coarse space to be compactified, and is
-handed in rather than produced so that this leaf and the one above are independently
-ownable. -/
+curves.  So the residue cites Deligne–Rapoport rather than curve theory. -/
 theorem exists_isX1Compactification_of_isCoarseModuliY1_loc (N ℓ : ℕ) (_hℓ : ℓ.Prime)
     (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
     (_hbase : IsReductionBase ℓ R toF)
@@ -14912,8 +15223,11 @@ theorem exists_isX1Compactification_of_isCoarseModuliY1_loc (N ℓ : ℕ) (_hℓ
     (_hX : IsX1Compactification N strX strY jY)
     {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (_hc : IsCoarseModuliY1 N ystr) :
     ∃ (XZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
-      Nonempty (IsX1Compactification N xstr ystr jZ) :=
-  sorry
+      Nonempty (IsX1Compactification N xstr ystr jZ) := by
+  obtain ⟨XZ, YZ₀, xstr, ystr₀, jZ₀, ⟨h₀⟩⟩ :=
+    exists_x1IntegralCompactifiedModel N ℓ _hℓ _hℓN R toF _hbase
+  obtain ⟨e, he⟩ := exists_iso_of_isCoarseModuliY1 h₀.coarse _hc
+  exact ⟨XZ, xstr, e.inv ≫ jZ₀, ⟨isX1Compactification_transport h₀ _hc e he⟩⟩
 
 /-- **The smooth proper integral model of `X_1(N)` over `ℤ_(ℓ)` exists** (PROVEN over
 the two leaves above) — the twin of `X0.lean`'s `exists_x0IntegralModel`.
