@@ -30399,3 +30399,79 @@ Last, on cost: the whole check was thirteen PARI runs, the largest a degree-54
 `nfinit`, none over a minute except one that overflowed the stack at degree 100
 and was simply dropped. **When a route's scope caveat is unresolved, the price of
 resolving it is almost always far below the price of the route.**
+## A "THAT LEMMA IS NOT REUSABLE" VERDICT SAYS NOTHING ABOUT ITS GENERALISATIONS — and this tree manufactures them systematically
+(2026-08-02, `flt-lean-399`, closing `det_toLocal_eq_one_of_det_cyclotomicCharacter`
+in `Modularity/Patching.lean`.)
+That leaf's ROUTE paragraph prescribed re-running `Threeadic.lean`'s `𝔪`-adic
+argument by hand — "`localInertiaGroup v` acts trivially modulo `𝔪`; a primitive
+`pⁿ`-th root of unity `ζ` maps to one; …" — and closed with a correct, carefully
+scoped disclaimer:
+> The mod-`3` lemma is NOT reusable — fixed prime, mod-`p` character, and its
+> module is outside this one's cone.
+Every clause of that is TRUE about `cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup`.
+It is also the reason nobody looked further, and the leaf sat for three days: a
+**general-modulus restatement of exactly that argument** —
+`IsHardlyRamified.localInertiaGroup_le_muFixer_of_not_dvd_ray_class`, for every `m`
+with `¬ q ∣ m` — had been PROVEN in `HardlyRamified/ModThree.lean` a month earlier,
+and `Patching.lean` **`public import`s that file**.  With it the leaf is ~40 lines
+and the arithmetic is zero.
+**The generalisable point: a disclaimer about a NAMED lemma is scoped to that name.**
+This development's standing practice is to restate an upstream lemma at greater
+generality, under a suffixed name, in a file closer to the consumers — the
+`_ray_class`, `_of_ne`, `_general`, `_field`, `_finiteBase` families are all this.
+So the useful grep is never for the model lemma's name; it is for the CONCEPT and
+for the suffix family:
+    grep -rn 'localInertiaGroup.*muFixer\|muFixerRayClass' --include=*.lean Fermat/
+    grep -rn '<the model lemma name minus its suffix>' --include=*.lean Fermat/
+Two riders from the same run, both cheap and both worth copying:
+* **The upstream lemma's own docstring told the whole story and was two files away.**
+  `Patching.lean:5925` already says, in bold, "Inertia-triviality at `q ≠ p` ALREADY
+  EXISTS UPSTREAM, PROVEN … the `ModThree` copy is the one to cite from this file",
+  and names the downstream `Interface.lean` duplicate as unusable.  That paragraph is
+  7 000 lines above the leaf, in the same file, and the leaf's own route contradicts
+  it.  **When a leaf's route names a missing input, grep the leaf's OWN FILE for that
+  input before believing the route** — a big module has usually met the same
+  obstruction before, and recorded the answer where its own consumer needed it.
+* **The sibling the docstring called "also open" was PROVEN.**
+  `HilbertModularity.lean`'s `cyclotomicCharacter_map_map_eq_one_of_mem_localInertiaGroup`
+  had a full `by` proof.  A leaf docstring's claim about ANOTHER leaf's status is a
+  hypothesis with no maintainer; re-`grep` it, exactly as for an absence claim.
+## AN INSTANCE DIAMOND THAT `rw` CANNOT BRIDGE: QUANTIFY OVER THE ARGUMENT, DO NOT CHASE THE INSTANCE
+(Same task, and it is a better tool than the `Subsingleton.elim` + `▸` idiom this
+file already records for the `Rat`-algebra diamonds.)
+The leaf's conclusion is about `ρ.toLocal v ι`, and `GaloisRep.toLocal_apply` rewrites
+it to `ρ ((Field.absoluteGaloisGroup.map (algebraMap ℚ (v.adicCompletion ℚ))) ι)` — with
+`algebraMap` as elaborated **in `GaloisRep.lean`**.  Writing `algebraMap ℚ
+(v.adicCompletion ℚ)` by hand in `Patching.lean` produces a DIFFERENT term that PRINTS
+IDENTICALLY, so every `rw` fails with the pattern and the target displayed character for
+character, and `rfl` fails too — `Field.absoluteGaloisGroup.mapAux` is built from
+`IsAlgClosed.lift`, whose body the module system does not expose, so nothing can unfold
+across the difference.
+**The fix that works, in one line of design: state the auxiliary lemma for EVERY
+`F : ℚ →+* v.adicCompletion ℚ`.**
+    have hcyc : ∀ F : ℚ →+* (v.adicCompletion ℚ),
+        cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map F) ι).toRingEquiv = 1 := by
+      intro F
+      rw [RingHom.ext_rat F (algebraMap ℚ (v.adicCompletion ℚ))]   -- move to YOUR copy
+      …                                                             -- upstream lemma here
+    …
+    exact key _ (hcyc _)      -- unification supplies the GOAL's copy of the map
+Unification then picks up whichever copy the goal happens to carry, and the single
+`RingHom.ext_rat` inside moves it to the hand-written one where the upstream lemma
+lives.  `RingHom.ext_rat f g : f = g` needs only that the target is a `DivisionRing`,
+so it is available for any `ℚ →+* K` with `K` a field — which is every completion in
+this development.
+**And the leaf's own diagnosis of WHICH diamond it was, was wrong.**  Its docstring
+blamed two `Algebra ℚ (v.adicCompletion ℚ)` instances (`instAlgebraAdicCompletion` vs
+`DivisionRing.toRatAlgebra`).  `set_option pp.explicit true` on the two terms shows the
+culprit is the **`Field` instance on `v.adicCompletion ℚ`**: mathlib's
+`HeightOneSpectrum.adicCompletion.instField`, which `GaloisRep.lean` sees, against this
+project's `Fermat/FLT/DedekindDomain/AdicValuation.lean:288`
+`instFieldAdicCompletion_fermat` (a bare `inferInstance`), which wins in any file that
+imports it.  Different `Field` ⟹ different `Semiring` ⟹ different `RingHom` type, so
+even *stating* the equation of the two maps is awkward — which is exactly why
+quantifying over the map beats naming either one.
+**The diagnostic, and it costs one 6-second scratch: `pp.explicit` BOTH terms and diff
+the instance paths.**  A docstring that says "two instances that are equal but not
+syntactically so" has usually not done that, and the organ it names is a guess.

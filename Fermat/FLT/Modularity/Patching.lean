@@ -13274,28 +13274,161 @@ theorem raisedLevelHardlyRamified_pushforwardFrame_of_baseChange.{a}
   exact isRaisedLevelHardlyRamified_conj Q (rank_finTwoFun A) h2
     (TensorProduct.piScalarRight B A A (Fin 2))
 
+/-- **THE `p`-ADIC CYCLOTOMIC CHARACTER IS TRIVIAL ON THE IMAGE OF LOCAL INERTIA
+AT EVERY `q ≠ p`** (PROVEN 2026-08-02, `flt-lean-399`).  `ℚ(μ_{pⁿ})/ℚ` is
+unramified outside `p`, in the shape every consumer in this module wants.
+
+**IT IS QUANTIFIED OVER THE RING MAP `F` ON PURPOSE, AND THAT IS THE WHOLE POINT
+OF THE STATEMENT.**  `v.adicCompletion ℚ` carries TWO `Field` instances in this
+file's scope — mathlib's `HeightOneSpectrum.adicCompletion.instField`, which is
+what `GaloisRep.lean` elaborated `GaloisRep.toLocal`'s copy of `algebraMap ℚ
+(v.adicCompletion ℚ)` through, and this project's
+`Fermat/FLT/DedekindDomain/AdicValuation.lean:288` `instFieldAdicCompletion_fermat`
+(a bare `inferInstance`), which any `algebraMap ℚ (v.adicCompletion ℚ)` written by
+hand HERE picks up.  Different `Field` ⟹ different `Semiring` ⟹ different
+`ℚ →+* v.adicCompletion ℚ`, so the two `Field.absoluteGaloisGroup.map` terms PRINT
+IDENTICALLY and no `rw` bridges them; `rfl` does not either, because
+`Field.absoluteGaloisGroup.mapAux` runs through `IsAlgClosed.lift`, whose body the
+module system does not expose.  Taking `F` as a BINDER makes unification pick up
+whichever copy the call site's goal carries, and the single `RingHom.ext_rat`
+below moves it to the hand-written one, where `ModThree`'s lemma lives.  **Do not
+"simplify" this by fixing `F := algebraMap ℚ _`** — the result is unusable
+against `GaloisRep.toLocal_apply`, which is the only reason it exists.
+
+The arithmetic is entirely
+`IsHardlyRamified.localInertiaGroup_le_muFixer_of_not_dvd_ray_class`
+(`HardlyRamified/ModThree.lean`, PROVEN 2026-07-26, `public import`ed at line
+259), applied at `m = pⁿ`: `IsHardlyRamified.muFixerRayClass ℚ m` membership
+unfolds DEFINITIONALLY to `∀ ζ, ζ ^ m = 1 → σ ζ = ζ`, which is exactly what
+`modularCyclotomicCharacter.unique` consumes, and `PadicInt.ext_of_toZModPow`
+glues the levels.
+
+**DUPLICATION, ALREADY RECORDED UPSTREAM.**  `Modularity/Interface.lean`'s
+`cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup` is the same statement
+with `F` fixed, proven from `map_fixes_of_pow_eq_one_of_mem_localInertiaGroup`
+rather than from the `muFixer` form; it is DOWNSTREAM of this module and so
+uncitable here.  `ModThree.lean`'s own docstring asks for that block to be
+hoisted into `Deformations/RepresentationTheory/ArtinConductor.lean`; doing so
+would let this theorem and the `Interface` one share a brick, and it remains the
+right repair.
+
+`hqp : q ≠ p` is LOAD-BEARING: at `q = p` the restriction of `χ_cyc` to inertia
+is the local cyclotomic character, which is onto `1 + pℤ_[p]` when
+`ℚ_p(μ_{pⁿ})/ℚ_p` is totally ramified. -/
+theorem cyclotomicCharacter_absGalMap_eq_one_of_mem_localInertiaGroup
+    {p : ℕ} [Fact p.Prime] {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (ι : Field.absoluteGaloisGroup
+      (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))
+    (hι : ι ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : ℚ →+* (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ)) :
+    cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map F) ι).toRingEquiv = 1 := by
+  have hp : p.Prime := Fact.out
+  rw [RingHom.ext_rat F (algebraMap ℚ
+    (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))]
+  have hσ : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))) ι ∈
+      Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    Subgroup.mem_map_of_mem _ hι
+  set σ : Field.absoluteGaloisGroup ℚ :=
+    (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))) ι with hσdef
+  refine Units.ext ?_
+  rw [Units.val_one]
+  refine PadicInt.ext_of_toZModPow.mp fun n => ?_
+  rcases Nat.eq_zero_or_pos n with rfl | hnpos
+  · haveI : Subsingleton (ZMod (p ^ 0)) := by rw [pow_zero]; infer_instance
+    exact Subsingleton.elim _ _
+  haveI : NeZero (p ^ n) := ⟨pow_ne_zero n hp.ne_zero⟩
+  have hqpn : ¬ q ∣ p ^ n := fun hdvd =>
+    hqp ((Nat.prime_dvd_prime_iff_eq hq hp).mp (hq.dvd_of_dvd_pow hdvd))
+  have hmem : σ ∈ IsHardlyRamified.muFixerRayClass ℚ (p ^ n) :=
+    IsHardlyRamified.localInertiaGroup_le_muFixer_of_not_dvd_ray_class (p ^ n) hq hqpn hσ
+  rw [map_one, cyclotomicCharacter.toZModPow]
+  refine (modularCyclotomicCharacter.unique (AlgebraicClosure ℚ)
+    (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) (p ^ n))
+    _ ?_).symm
+  intro t ht
+  have hval1 : ((1 : ZMod (p ^ n))).val = 1 := by
+    rw [ZMod.val_one_eq_one_mod,
+      Nat.mod_eq_of_lt (Nat.one_lt_pow hnpos.ne' hp.one_lt)]
+  rw [hval1, pow_one]
+  have ht1 : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (p ^ n) = 1 := by
+    rw [← Units.val_pow_eq_pow_val, (mem_rootsOfUnity _ t).mp ht, Units.val_one]
+  show σ ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) = _
+  exact hmem _ ht1
+
 set_option linter.checkUnivs false in
 /-- **THE DETERMINANT OF A CYCLOTOMICALLY PINNED REPRESENTATION IS TRIVIAL ON
-INERTIA AT `q ≠ p`** (sorry node, new 2026-07-30 — the ONE arithmetic input of
-`raisedLevelIsSplitTorusAt_of_fibreProduct` below, and the only thing that leaf
-does not prove outright).
+INERTIA AT `q ≠ p`** (**PROVEN 2026-08-02**; cut 2026-07-30 as the ONE arithmetic
+input of `raisedLevelIsSplitTorusAt_of_fibreProduct` below, and the only thing
+that leaf did not prove outright).
+
+**HOW IT CLOSED, AND THE LESSON: the arithmetic was already PROVEN UPSTREAM and
+the leaf's own route paragraph did not know it.**  The route below prescribes
+re-running `Threeadic.lean`'s `𝔪`-adic argument (reduction is injective on
+`μ_{pⁿ}` because `pⁿ` is a `q`-adic unit).  That argument does not have to be
+re-run: `IsHardlyRamified.localInertiaGroup_le_muFixer_of_not_dvd_ray_class`
+(`HardlyRamified/ModThree.lean`, PROVEN 2026-07-26, and `public import`ed by this
+module at line 259) is exactly it, for an arbitrary modulus `m` with `¬ q ∣ m`,
+and `IsHardlyRamified.muFixerRayClass ℚ m`'s membership unfolds DEFINITIONALLY to
+`∀ ζ, ζ ^ m = 1 → σ ζ = ζ`, which is precisely what
+`modularCyclotomicCharacter.unique` consumes.  Feeding it at `m = pⁿ` for every
+`n` and gluing with `PadicInt.ext_of_toZModPow` is the whole proof, ~40 lines.
+The verbatim `p`-adic model is `Modularity/Interface.lean`'s
+`cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup` (PROVEN), which is
+DOWNSTREAM of this module and therefore uncitable here — that duplication is
+already recorded on the `ModThree` lemma, which asks for the block to be hoisted
+into `Deformations/RepresentationTheory/ArtinConductor.lean`; that is still the
+right repair and would make this proof and the `Interface` one share a brick.
+
+**THE INSTANCE TRAP, AND THE SHAPE THAT DEFEATS IT — the paragraph below is
+correct about the disease and names the wrong organ.**  The obstruction is NOT
+two `Algebra ℚ (v.adicCompletion ℚ)` instances: it is two `Field` instances on
+`v.adicCompletion ℚ` — mathlib's `HeightOneSpectrum.adicCompletion.instField`,
+which `GaloisRep.toLocal_apply`'s copy of `algebraMap` elaborates through, and
+this project's `Fermat/FLT/DedekindDomain/AdicValuation.lean:288`
+`instFieldAdicCompletion_fermat` (a bare `inferInstance`), which any `algebraMap
+ℚ (v.adicCompletion ℚ)` written by hand IN THIS FILE picks up.  They give
+syntactically different `Semiring` arguments, hence syntactically different
+`ℚ →+* v.adicCompletion ℚ`, hence two `Field.absoluteGaloisGroup.map` terms that
+PRINT IDENTICALLY and that `rw` cannot bridge — and `rfl` cannot either, because
+`Field.absoluteGaloisGroup.mapAux` is built from `IsAlgClosed.lift`, whose body
+the module system does not expose.  **The fix is to QUANTIFY OVER THE RING MAP**:
+`cyclotomicCharacter_absGalMap_eq_one_of_mem_localInertiaGroup` immediately above
+is stated for every `F : ℚ →+* v.adicCompletion ℚ`, so unification picks up
+whichever copy the goal happens to carry, and the single
+`RingHom.ext_rat F (algebraMap ℚ _)` inside it moves to the hand-written one
+where `ModThree`'s lemma lives.  That is strictly better than chasing the
+instances with `Subsingleton.elim`, and it is the pattern to copy at the sibling
+Hilbert leaf.
+
+The arithmetic now lives in that theorem, which is stated with no representation
+in it and is therefore reusable: `isUnramifiedAtTwo_of_forall_unipotent_eq_one`
+(above, open) names exactly it as its STEP 2 — "`hρbar.det` and `p ≠ 2`:
+`ℚ₂(μ_{pⁿ})/ℚ₂` is UNRAMIFIED, so `χ_cyc` is trivial on inertia at `2`" — and
+should call it rather than re-derive it.
 
 This is the `ℚ`-side, `p`-adic twin of the Hilbert leaf
 `cyclotomicCharacter_map_map_eq_one_of_mem_localInertiaGroup`
 (`HardlyRamified/HilbertModularity.lean`, also open), packaged in the shape its
 consumer actually uses — `LinearMap.det (ρ.toLocal v ι) = 1` rather than a bare
 statement about `cyclotomicCharacter`.  **That packaging is deliberate and not
-cosmetic**: `GaloisRep.toLocal` is `ρ.map (algebraMap _ _)` with the
-`HeightOneSpectrum.instAlgebraAdicCompletion` structure, while writing
-`algebraMap ℚ (v.adicCompletion ℚ)` by hand elaborates through
-`DivisionRing.toRatAlgebra` — two `Algebra ℚ (v.adicCompletion ℚ)` instances
-that are equal but not syntactically so, and `rw` cannot bridge them.  Stating
-the leaf through `toLocal` makes the instances agree by construction.  A prover
-who wants the bare cyclotomic statement should prove it and then bridge with
-`RingHom.ext_rat` (`v.adicCompletion ℚ` is a field, so a `ℚ`-algebra structure
-on it is unique).
+cosmetic**: `GaloisRep.toLocal` is `ρ.map (algebraMap _ _)` with a copy of
+`algebraMap` elaborated in `GaloisRep.lean`, while writing
+`algebraMap ℚ (v.adicCompletion ℚ)` by hand in THIS file elaborates through a
+different instance path (see the paragraph above for which), and `rw` cannot
+bridge them.  Stating the leaf through `toLocal` makes the instances agree by
+construction.  A prover who wants the bare cyclotomic statement should prove it
+and then bridge with `RingHom.ext_rat` (`v.adicCompletion ℚ` is a field, so
+`ℚ →+* v.adicCompletion ℚ` is a subsingleton) — which is exactly what the proof
+below does.
 
-# THE ROUTE
+# THE ROUTE AS ORIGINALLY CUT (superseded by the account above, and kept because
+its `q = p` analysis is the falsity audit)
 
 `hdet` reduces this to `cyclotomicCharacter (ℚᵃˡᵍ) p σ = 1` for `σ` the image in
 `Γ ℚ` of `ι ∈ localInertiaGroup v`; that is exactly "`ℚ(μ_{pⁿ})/ℚ` is unramified
@@ -13340,8 +13473,17 @@ theorem det_toLocal_eq_one_of_det_cyclotomicCharacter {p : ℕ} [Fact p.Prime]
     (ι : Field.absoluteGaloisGroup
       (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))
     (hι : ι ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :
-    LinearMap.det (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat ι) = 1 :=
-  sorry
+    LinearMap.det (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat ι) = 1 := by
+  -- `det` and `toLocal` are both `rfl`-lemmas, so `hdet` applies at the image of
+  -- `ι` in `Γ ℚ` once the goal has been put in that shape; the ring map is left
+  -- for unification to supply, which is what
+  -- `cyclotomicCharacter_absGalMap_eq_one_of_mem_localInertiaGroup`'s `F` binder
+  -- is for (see its docstring for the instance diamond this dodges).
+  have key : ∀ u : ℤ_[p]ˣ, u = 1 → algebraMap ℤ_[p] B (u : ℤ_[p]) = 1 := by
+    rintro u rfl; simp
+  rw [GaloisRep.toLocal_apply, ← GaloisRep.det_apply, hdet]
+  exact key _ (cyclotomicCharacter_absGalMap_eq_one_of_mem_localInertiaGroup
+    hq hqp ι hι _)
 
 set_option linter.checkUnivs false in
 /-- **BOTH diagonal characters are trivial on inertia at each LEVEL** (PROVEN
@@ -13474,8 +13616,10 @@ theorem forall_map_eq_one_of_isSplitTorusAt_of_mul_eq_one
 set_option linter.checkUnivs false in
 /-- **THE SPLIT TORUS AT `q ∈ Q` GLUES ALONG A FIBRE PRODUCT** (**PROVEN
 2026-07-30, `flt-lean-38`**, over the single arithmetic leaf
-`det_toLocal_eq_one_of_det_cyclotomicCharacter` above; cut 2026-07-30 as the ONE
-genuinely new field of `isAuxFibreProductClause` below; LEAF A2′-2a-v).
+`det_toLocal_eq_one_of_det_cyclotomicCharacter` above — which is itself **PROVEN
+since 2026-08-02**, so this declaration is now sorry-free outright; cut
+2026-07-30 as the ONE genuinely new field of `isAuxFibreProductClause` below;
+LEAF A2′-2a-v).
 
 Everything else in that clause is now assembly: `det` and `isUnramified` are
 formal (an element of `B` is its pair of projections), `isFlat` is
@@ -13512,8 +13656,8 @@ is that proof at `F = ℚ`.  Its shape:
 3. Commuting with a Frobenius whose eigenvalue gap is a unit forces every
    `ρ.toLocal q g` to be diagonal in `e`
    (`toLocal_diagonal_of_frobDiagonal_of_commute`), giving `c`, `d : Γ ℚ_q → B`.
-4. `c ι · d ι = det = 1` on inertia — this is the leaf
-   `det_toLocal_eq_one_of_det_cyclotomicCharacter` above, plus
+4. `c ι · d ι = det = 1` on inertia — this is
+   `det_toLocal_eq_one_of_det_cyclotomicCharacter` above (PROVEN 2026-08-02), plus
    `det_eq_mul_of_toLocal_diagonal` — and then
    `forall_map_eq_one_of_isSplitTorusAt_of_mul_eq_one` (above) makes BOTH
    characters trivial on inertia at each level, so `d ι = 1` over `B` by `hinj`.
