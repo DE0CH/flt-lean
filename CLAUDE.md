@@ -16229,3 +16229,43 @@ survivor is now the same SHAPE as a sibling leaf blocked on the same missing pri
 (the trace of a finite locally free morphism on the functor of points), which turns a
 standing "build it once, not twice" recommendation from aspiration into something an
 owner can act on.  That, not the delta, is the argument for the work.
+
+### THE DETECTOR IS NOW A SCRIPT: `tools/merge/orphanleaf.py`, 39 s, and 37 of 378 leaves are candidates
+
+A check worth re-running every release is a script, not a paragraph — so the sweep
+above is one.  `python3 tools/merge/orphanleaf.py` scans every sorried declaration
+under `Fermat/` and reports the ones with **no code occurrence anywhere outside their
+own declaration**.  Measured on `8695a922`: **378 sorried declarations, 37 orphan
+candidates** — about one open leaf in ten may be dead.  It needs no build and no
+oleans, and `--root` defaults to the repo the script lives in rather than to a
+hardcoded staging path.
+
+**Every hit is a CANDIDATE, and the list is a REVIEW list, not a gate.**  It is a
+token scan, so it cannot see a name reached only through `simp`/`aesop`/instance
+search.  Confirm with one `grep -n`, and read the parent's PROOF BODY rather than its
+docstring — the docstring is what is wrong in these cases.  Two hits were confirmed by
+hand here (`exists_veryAmpleSystem_of_isAmpleSheaf`, `geomPic_hilbert90`), and the
+sweep independently rediscovered the four `HyperellipticJacobian` orphans an earlier
+agent had recorded in this file, which is the corroboration that the method works.
+
+**It had THREE bugs before it was right, all silent, and all worth knowing because the
+same three are latent in any name-matching scan over this tree:**
+
+* **dot notation** — `X.foo` is reached as `h.foo`, so matching must be on the LAST
+  COMPONENT and the regex must not exclude a preceding `.`.  With `.` in the negative
+  lookbehind, every dot-notation call site is invisible and the scan reports roughly
+  double;
+* **explicit universe parameters** — `theorem foo.{u, v}` makes a naive name regex
+  capture `foo.{u,`, whose last component matches nothing.  Ten `Patching.lean`
+  declarations were reported as orphans for exactly this.  (`tools/merge/frontier.py`
+  has the same trap, already recorded above.);
+* **the token PRE-FILTER used to make it fast** — tokenising on `alnum _ ' .` makes
+  `foo.{u, v}` yield the token `foo.`, with a TRAILING DOT, which equals neither `foo`
+  nor anything ending in `.foo`; so the filter rejected the consumer's own file and the
+  declaration was reported as an orphan anyway.  `exists_traceGenerated_auxDeformationDatum`
+  IS consumed and was reported dead by two successive versions because of it.
+
+**So calibrate after every change: run with the pre-filter removed and require the two
+lists to be IDENTICAL.**  Here that is 37 = 37, against 39 s with the filter and ~25
+minutes without — which is the whole reason the filter is there, and the whole reason
+it has to be checked.
