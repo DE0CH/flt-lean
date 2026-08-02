@@ -12,7 +12,38 @@ Run them from the staging worktree, on the working tree, mid-merge.
 | `scopecheck.py <files…>` | is any `namespace`/`section` unbalanced? |
 | `checks.py check-dup / check-comment / check-branch / check-binder` | duplicates, comment nesting, payload presence, underscored binders |
 | `verify_added.py <branches…>` | did every branch-ADDED declaration land somewhere in the tree? |
+| `deadleaf.py` | which OPEN LEAVES does nothing consume? (the class no other scan sees) |
 | `domerge.sh <branches…>` | driver: merge, resolve, check, commit, one branch at a time |
+
+## `deadleaf.py` — open leaves nothing reaches
+
+Added at release 34 (`flt-lean-234`) after a dispatch landed on a leaf that had been
+unconsumable for two days.  A leaf can be open, compile, emit
+`declaration uses 'sorry'`, pass the three-part ownership test, and be worth nothing
+to close, because no proof term in the project reaches it.  `frontier.py` counts it;
+`xdup.py`/`dupstmt.py` are silent (no duplicated name, no duplicated statement); the
+build is green.  It draws dispatches for ever.
+
+Two ways a merge makes one, with OPPOSITE repairs — so the question when this fires is
+not *is it dead* but **where did its consumer go**:
+
+* **DELETE × REFACTOR** — the consumer was deleted.  The leaf is garbage: delete it and
+  say in the docstring where to recover the text.
+* **CUT × HOIST** — the consumer was HOISTED into an upstream module (taking its
+  pre-cut body, which is what a hoist copies), leaving the halves of the cut
+  *downstream of their own consumer*.  The leaf is MISPLACED: move it UP and prove the
+  parent over it.  Do not move the parent back if its position is what breaks an import
+  cycle.  The `upstream name in its docstring` lines are the mechanical tell.
+
+Calibrated both directions on the release-33 tree: it reports
+`exists_veryAmpleSystem_of_isAmpleSheaf` and `exists_cubeForms_of_veryAmpleSystem`
+before their repair and neither after, and six of the surviving 51 were hand-checked
+with no false positive.  It resolves by LAST COMPONENT (dot notation never contains the
+qualified name) and excludes `instance`s and attribute-tagged declarations, which are
+consumed by SEARCH rather than by name — both choices UNDER-report, which is the safe
+direction for a scan a human acts on.  **Do not hand-roll the identifier regex**: the
+one the other scanners use has no Greek block, so it truncates
+`not_monic_dvd_preΨ_…` and manufactures two false positives plus a phantom duplicate.
 
 ## Why declaration granularity
 
