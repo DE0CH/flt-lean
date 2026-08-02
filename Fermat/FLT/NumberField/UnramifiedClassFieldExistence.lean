@@ -97,16 +97,19 @@ in `Fermat/FLT/Modularity/Interface.lean`, which is now proven over
 
 ## The open leaves of THIS file, regenerated 2026-07-31 against the compiler
 
-Three, and they are the whole of what this file owes. Regenerate rather than quote — the
-list below is the build's `declaration uses 'sorry'` warning set, not a source scan:
+Regenerate rather than quote — the list below is the build's `declaration uses 'sorry'`
+warning set, not a source scan, and it is stamped to a `main` base of 2026-07-31:
 
 * `exists_unramifiedAbelian_relNormClassSubgroup_le_of_isCyclic_quotient` — KUMMER THEORY,
   the classical content of the existence theorem (Takagi);
-* `isUnramifiedAtInfinitePlaces_sup` — the ARCHIMEDEAN third of the compositum. Its two
-  siblings `isAbelianGalois_sup` and `isUnramifiedAt_ringOfIntegers_sup` were both closed on
-  2026-07-31 over the shared engine `forall_mem_sup_of_fixed`;
 * `index_relNormClassSubgroup_le_finrank_of_isUnramifiedAtInfinitePlaces` — the SECOND
-  FUNDAMENTAL INEQUALITY, the only thing in the cluster that bounds a degree from below.
+  FUNDAMENTAL INEQUALITY, the only thing in the cluster that bounds a degree from below;
+* `isUnramifiedAtInfinitePlaces_sup` — the ARCHIMEDEAN third of the compositum, open on
+  this base and **PROVEN on `merger`** (release 34, by an embedding argument over
+  `NumberField.eqOn_sup_of_eqOn`, with NO Galois hypotheses), so after that release lands
+  the list above is the whole of it. Its two siblings `isAbelianGalois_sup` and
+  `isUnramifiedAt_ringOfIntegers_sup` were closed on 2026-07-31 over the shared engine
+  `forall_mem_sup_of_fixed`. **Do not re-prove it** — check its own docstring first.
 
 ## Where the rest of the cluster's mathematics now lives (2026-07-30)
 
@@ -897,9 +900,11 @@ theorem isUnramifiedAt_ringOfIntegers_sup (L₁ L₂ : IntermediateField K (Alge
 finite abelian extensions of `K` inside `AlgebraicClosure K`, each unramified at every
 finite prime and at every infinite place, some such extension contains them both** (cut
 2026-07-31 out of `exists_unramifiedAbelian_relNormClassSubgroup_eq_bot` below, and
-DECOMPOSED AND PROVEN the same day from `isAbelianGalois_sup` above — the Galois third,
-CLOSED — together with `isUnramifiedAt_ringOfIntegers_sup`, **also CLOSED 2026-07-31**, and
-the one remaining leaf `isUnramifiedAtInfinitePlaces_sup`, and from nothing else).
+DECOMPOSED AND PROVEN the same day from `isAbelianGalois_sup`,
+`isUnramifiedAt_ringOfIntegers_sup` and `isUnramifiedAtInfinitePlaces_sup` above, and from
+nothing else. The first two are CLOSED as of 2026-07-31; for the third read its own
+docstring rather than this sentence — it is closed on `merger` and this file's copy of the
+status will be whichever of the two branches you are standing on).
 
 **THERE IS NO CLASS FIELD THEORY IN THIS STATEMENT.** It is pure Galois and ramification
 theory, it is the kind of thing that belongs in mathlib, and it is separately ownable from
@@ -914,7 +919,7 @@ prover should take `M = L₁ ⊔ L₂` and will find `FiniteDimensional K M`
 does exactly this at `exists_surjective_aut_classGroupQuotient_intermediateField` below,
 where `E := HCF ⊔ M` needs no hand-built instance beyond the tower algebras.
 
-**The three real obligations were ALL THE SAME ARGUMENT, and that is why two of them are
+**The three real obligations were CLOSE TO THE SAME ARGUMENT, and that is why two of them are
 now closed.** An element of `Gal(M/K)` trivial on `L₁` and on `L₂` is trivial, because
 the set it fixes is an intermediate field containing both, hence containing `L₁ ⊔ L₂`. That
 step is `forall_mem_sup_of_fixed` above, PROVEN, and it serves all three:
@@ -925,10 +930,14 @@ step is `forall_mem_sup_of_fixed` above, PROVEN, and it serves all three:
   **PROVEN 2026-07-31**: the same, with the inertia group at a prime `Q` of `𝓞 M` in place
   of the commutator, and `Ideal.card_inertia_eq_ramificationIdxIn` to convert a trivial
   inertia group into `e(Q | 𝓞 K) = 1`;
-* *unramified at the infinite places* — `isUnramifiedAtInfinitePlaces_sup` above, OPEN: the
-  same, with complex conjugation at an archimedean place.
+* *unramified at the infinite places* — `isUnramifiedAtInfinitePlaces_sup` above, open on
+  this base and PROVEN on `merger`, where the argument turned out NOT to be the same one:
+  the embedding route over `NumberField.eqOn_sup_of_eqOn` needs no Galois hypothesis at all,
+  where the stabiliser route (the archimedean twin of the finite-prime one, via
+  `InfinitePlace.isUnramified_iff_stabilizer_eq_bot`) does. Both work; the embedding one is
+  strictly stronger and is the one to keep.
 
-The remaining one is separately ownable and uses disjoint mathlib API
+The archimedean clause is separately ownable and uses disjoint mathlib API
 (`InfinitePlace.IsUnramified` and `InfinitePlace.comap`, against the `Algebra.IsUnramifiedAt`
 and inertia material the finite-prime one used); its docstring carries its own argument and
 its own refutation check.

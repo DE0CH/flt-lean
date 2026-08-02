@@ -16154,8 +16154,7 @@ hypothesis is discharged.  Diff the binder lists before deciding anything.
 
 ## A RAMIFICATION LEAF OVER A GALOIS EXTENSION IS A SUBGROUP-IS-TRIVIAL LEAF — the pin has the dictionary on BOTH sides
 
-(2026-07-31, `flt-lean-38`, `NumberField/UnramifiedClassFieldExistence.lean`: the whole
-COMPOSITUM node closed, 4 open leaves → 2, in one run.)
+(2026-07-31, `flt-lean-38`, `NumberField/UnramifiedClassFieldExistence.lean`.)
 
 Two sibling leaves — *the compositum of two everywhere-unramified extensions is
 unramified*, once at the FINITE primes and once at the INFINITE places — were cut with a
@@ -16179,6 +16178,17 @@ development are found by SEARCH at this pin** — `IsGaloisGroup Gal(L/K) (𝓞 
 — which is the single fact that decides the cost. Probe them with a two-line
 `example … := by infer_instance` in a scratch before writing anything; it takes five
 seconds and it is the whole feasibility study.
+
+**THE DICTIONARY IS CHEAP, NOT OPTIMAL, AND ON THE ARCHIMEDEAN SIDE IT IS NOT THE BEST
+ROUTE.** The stabiliser proof of the archimedean clause needs `[IsGalois K Lᵢ]`; `merger`
+had meanwhile proven the same leaf by an EMBEDDING argument — extend `w.embedding` to
+`AlgebraicClosure K`, show `conj ∘ Φ = Φ` on each `Lᵢ`, conclude on the sup with
+`NumberField.eqOn_sup_of_eqOn` — which needs no Galois hypothesis at all and is therefore
+strictly stronger. So the dictionary is the right thing to reach for FIRST, and once the
+leaf is closed it is worth asking whether the hypotheses it forced are really necessary:
+here the finite-prime clause's `[IsGalois]` is an artefact of the route (the general
+statement is true, `K_𝔭^{ur}` being a field) and the archimedean one's was avoidable
+outright.
 
 **The docstrings' own "route not to try" was right and its reason was wrong.** They
 forbade `Algebra.FormallyUnramified.baseChange` on `𝓞 L₁ ⊗ 𝓞 L₂` because the conductor of
@@ -16218,17 +16228,53 @@ were already in hand — the only new input was one mathlib `iff`. A cut whose d
 two leaves are the same argument is telling you to budget them together, and the saving is
 lost if the second is dispatched a release later.
 
+### … AND RUN THE `merger` CHECK ON THE SIBLING TOO — the rule is per DECLARATION, not per TASK
+
+The sibling above had to be **thrown away**: `merger` already proved it, better. I ran
+`git show merger:<file> | grep -n <name>` for my assigned TARGET — correctly, and it was
+still `sorry` there, so that proof stands — and did not re-run it for the leaf I decided to
+close forty minutes later. One command, skipped once, and a complete verified proof went in
+the bin.
+
+**So: the release-window check is keyed on the DECLARATION you are about to write, not on
+the task you were given.** Any leaf you decide to attack mid-run — a sibling, a helper you
+notice is open, a residue of your own cut — needs its own `git show merger:` before the
+first line of it is written. And the cheapest second net is the QUEUE: `~/.flt-loop/queue2`
+is a 2.4 MB text file, and one `grep` of it for your leaf's name would have caught this in
+seconds, because a task had already been queued to *generalise* the leaf, which only makes
+sense if it is proven. Grep the queue for every declaration you intend to touch:
+
+    grep -c '<declName>' ~/.flt-loop/queue2      # a task about it ⇒ read that task
+
+**When it fires, DECLINE your own payload — and revert it to make the merge a NO-OP, not a
+conflict.** Restore the region byte-identically to your base (here: `git checkout <my first
+commit> -- <file>`, then re-apply only the parts that are still wanted), delete anything
+that becomes consumerless in the process, and name your own commit sha in the message so
+the discarded proof stays recoverable. `git merge-tree --write-tree --name-only HEAD merger`
+then reports the file as *Auto-merging* with no conflict, which is the receipt that the
+decline is complete — run it before and after; before, it named the file as CONFLICT.
+
 ### Three mechanical notes from the same run
 
-* **State the restriction-compatibility lemma at the FIELD level and derive the rest.**
-  `ArtinSymbol.lean`'s `algebraMap_restrictNormalHom_smul` is for an intermediate field of a
-  fixed ambient NUMBER field; a compositum `L₁ ⊔ L₂` is an intermediate field of
-  `AlgebraicClosure K`, so it does not apply. The general form
+* **`ArtinSymbol.lean`'s `algebraMap_restrictNormalHom_smul` does NOT cover a compositum.**
+  It is stated for an intermediate field of a fixed ambient NUMBER field; `L₁ ⊔ L₂` is an
+  intermediate field of `AlgebraicClosure K`, and the tower `Lᵢ ⊆ L₁ ⊔ L₂` has to be built
+  by hand from `IntermediateField.inclusion`. The replacement
   (`algebraMap ↥E ↥F (restrictNormalHom E ρ x) = restrictNormalHom F ρ (algebraMap ↥E ↥F x)`)
-  is `AlgEquiv.restrictNormal_commutes` twice, and its RING-OF-INTEGERS and INFINITE-PLACE
-  corollaries are three lines each. Pass the coercion compatibility
-  `∀ x, (algebraMap ↥E ↥F x : K̄) = (x : K̄)` as an EXPLICIT argument — it is `rfl` at every
-  call site, whereas the `IsScalarTower` route builds an instance only to unfold it again.
+  is `AlgEquiv.restrictNormal_commutes` twice, compared inside `AlgebraicClosure K`, and its
+  RING-OF-INTEGERS and INFINITE-PLACE corollaries are three lines each. Pass the coercion
+  compatibility `∀ x, (algebraMap ↥E ↥F x : K̄) = (x : K̄)` as an EXPLICIT argument — it is
+  `rfl` at every call site, whereas the `IsScalarTower` route builds an instance only to
+  unfold it again.
+* **A near-duplicate one module DOWNSTREAM can force your NAME.**
+  `HilbertClassFieldNormal.lean` (which transitively imports the file being edited) already
+  carried both halves of the inertia dictionary, at the `AlgebraicClosure ℚ` specialisation,
+  as `eq_one_of_mem_inertia_of_unramifiedAt` and `isUnramifiedAt_of_inertia_trivial`. The
+  upstream general versions cannot take the second of those names — one namespace, two
+  declarations, and the module that imports both stops compiling. Grep the whole tree for
+  the name you are about to use, not just your own file; and when the downstream copy is an
+  INSTANCE of what you just proved, say so in its docstring and queue the deletion rather
+  than doing a cross-file edit you were not sent at.
 * **To move such a relation onto `InfinitePlace`, apply it at `ρ⁻¹`, not at `x` transported
   by `.symm`.** `InfinitePlace.smul_eq_comap` is `σ • w = w.comap σ.symm`, so the two sides
   differ by the INVERSE automorphism; `map_inv` for the monoid hom
