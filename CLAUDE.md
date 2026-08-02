@@ -28007,3 +28007,110 @@ whole computation again in `natDegree`. Two things about doing it:
   rewrites inside `Cx ^ 2` as well**, and the error mentions `npowRec 1 Cx`, which reads as
   an instance problem and is not one. The idiom already in this file is right and should be
   copied: `have : (X − C b)^(2*k) = ((X − C b)^k)^2 := by ring` then `pow_dvd_pow_of_dvd`.
+## GREP `queue2` FOR YOUR TARGET BEFORE YOU START — the diagnosis is often already written
+(2026-08-01, `flt-lean-26`, on `geomPic_finite_torsion` in
+`ModularCurve/HyperellipticJacobian.lean`.)  Every freshness check in this file
+looks at the TREE — your worktree, `main`, `merger`, the other worktrees' diffs.
+None of them looks at the QUEUE.  But `~/.flt-loop/queue2` is written by prover
+agents who have just been inside your file, and it routinely contains a task
+whose text *is* the answer to yours.
+Mine did.  Dispatched at `geomPic_finite_torsion`, I re-derived — from the git
+history and a consumer scan — that it was a dead orphan of a superseded recut and
+a verbatim duplicate of `finite_torsion_pic_geom` two hundred lines above it.  A
+`queue2` entry written the same morning said exactly that, named all four
+orphans, gave their line numbers, and prescribed the deletion.  One
+`grep -n '<target>' ~/.flt-loop/queue1 ~/.flt-loop/queue2` would have started me
+twenty minutes further along, and it is the same command that tells you whether
+your leaf is queued twice.
+**And read the queue for your target's NEIGHBOURS too, because that is where the
+race lives.**  The `TARGET:` line of another entry is a claim about work in
+flight that no branch shows yet.
+## A DEAD ORPHAN CAN BE REVIVED BY AN UNMERGED BRANCH — "dead on main AND on merger" is not enough
+(Same task, and it is what stopped this from being a four-declaration deletion.)
+The standing rule for an open leaf with no consumer is to delete it.  The scan
+that establishes "no consumer" is comment-stripped and tree-wide, and it is
+correct — about the tree you can see.  A branch that has not merged can have
+RE-POINTED a live consumer onto the orphan, which puts it back in the root cone
+and makes the deletion a rival cut against landed work.
+Here four declarations were resurrected by a merge after the 2026-07-31 recut
+deleted them (`semmerge.py` propagates ADDITIONS and never DELETIONS, so any
+branch forked before a deletion restores it).  Three were dead on `main`, dead on
+`merger`, and dead in the tree.  **Two of them were also dead on every branch and
+were deleted; the other two — `geomPic_divisible_place` and `geomPic_divisible` —
+had been revived that morning by an unmerged branch that re-points
+`exists_finiteIndex_divisible_pic` onto them, and deleting those would have
+re-opened a closed chain.**
+The evidence for the revival was not in any diff: it was in a `queue2` task
+written by the reviving agent, which says in its STATUS NOTE that the leaf "was
+DEAD … It was REVIVED on 2026-08-01".  So the two checks compose, and neither
+alone is sufficient:
+    # is it dead in the tree?
+    grep -rn '<name>' --include=*.lean Fermat/    # comment-stripped; own decl only ⇒ dead
+    # is somebody about to make it live again?
+    grep -n '<name>' ~/.flt-loop/queue1 ~/.flt-loop/queue2 ~/.flt-loop/jobs/*.prompt
+**When the two disagree, keep the declaration and say so in the deletion note.**
+A kept orphan costs one dispatch; a deleted revival costs somebody's whole run
+and a conflict the merge worker cannot adjudicate.  Write into the note what
+would make it deletable again ("if that branch is declined, these go the same
+way"), so the decision is recorded rather than re-derived.
+Corollary about the prose: the recut's own docstring said the declarations had
+been "DELETED", in three places, and had said so — falsely — since the first merge
+after the recut.  **A docstring asserting that something was deleted is the
+cheapest possible thing to check and among the least often checked**; one `grep -n
+'^theorem <name>'` settles it, and a false one is exactly what makes an orphan
+invisible.
+## DERIVE ONE RIVAL CUT FROM THE OTHER BEFORE DELETING — the derivation is the receipt that the deletion is LOSSLESS
+(2026-08-02, `flt-lean-92`, on `geomPic_exists_finiteCover_kummer` in
+`ModularCurve/HyperellipticJacobian.lean` — the same orphan cluster the two
+sections above are about, met a third time.)
+When two rival cuts of one node both land, the sections above tell you how to
+DETECT it (a parent whose docstring names a different leaf from its proof body; a
+declaration whose only comment-stripped occurrence is its own) and how to avoid
+deleting a REVIVED one.  Neither tells you what the loser's leaves are worth, and
+`[[flt-both-rival-cuts-landed]]` says outright that the standing tie-breakers "do
+not separate them".  **One thing does separate them, decisively and cheaply: try
+to PROVE the loser's leaf from the winner's.**
+Here the 2026-07-30 cut asked for a finite COVER of `Γ` on whose blocks every
+Kummer cochain is constant; the 2026-07-31 recut asked instead for a finite-index
+`H ≤ Γ` fixing a choice of `p`-division points, plus finiteness of `J[p]`.  The
+cover statement is a **consequence** of the other two, in ~35 lines that compiled
+first try in a **4.7 s** scratch:
+* label `σ` by the pair `(σ H, the permutation it induces on J[p])` — both
+  components live in a FINITE type, so the fibres of that labelling are a finite
+  cover;
+* `act σ` preserves `J[p]` because it is additive (`← map_nsmul`), and `J[p]` is
+  finite by the winner's second leaf, so the label type really is finite;
+* on a fibre, split `Q = Y P + (Q − Y P)`: the first summand is fixed the same way
+  by `σ` and `τ` because they share a coset of `H` (`act_mul` plus `hYfix`), the
+  second is `p`-torsion and they induce the same permutation of it.  Hence
+  `act σ Q = act τ Q`, which is stronger than the cover clause asked for.
+**What that buys is not a proof anybody wants — it is the receipt.**  "No
+consumer" says the leaf is unreachable *today*; "it is a theorem of the survivors"
+says it can never be needed *at all*, because everything it could ever supply
+already follows from leaves that are in the cone.  So the deletion is lossless as
+a matter of mathematics rather than of bookkeeping, and — the part that outlives
+this cluster — **any future proposal to re-cut along the loser's axis is refuted
+in advance**, which is what stops a resurrection loop from costing a dispatch
+every time `semmerge.py` restores the block.
+**Do it before you delete, not after**, and keep the derivation somewhere the tree
+survives: a scratch that `public import`s the module and restates the loser under
+a primed name costs seconds, and it must NOT be committed (a proven statement
+nothing consumes is free-floating, which is exactly the defect you are removing).
+Record the argument in the deletion note or here, in prose, so it can be
+re-derived rather than re-discovered.
+**When the derivation FAILS, you have learned the more valuable thing**: the two
+cuts are genuinely incomparable, the loser carries content the winner does not,
+and the deletion would lose it.  That is the case where the orphan should be kept
+and re-pointed instead — and it is indistinguishable from the lossless case by
+every name-keyed, consumer-keyed and count-keyed check in this file.
+Corollary on what to COMMIT when a pending branch already did the deletion: be
+CONCORDANT, not clever.  `flt-lean-26` had deleted these two the previous day on a
+branch that is an ancestor of neither `main` nor `merger`, and the file had not
+drifted between that branch's base and `main` — so `git cherry-pick -x <sha>`
+reproduced it byte-exactly and the two branches now merge delete-against-delete,
+which is trivial.  **Proving the leaf instead would have created a
+modify-against-delete conflict reversing a decision two agents had already taken**
+(the recut author in `50c80802`, then `flt-lean-26`), and that is the one shape a
+merge worker cannot adjudicate without an author.  Check
+`git merge-base --is-ancestor <sha> main` and `git diff --stat <base> main -- <the
+files>` first; an empty drift is the licence to cherry-pick rather than re-do.
