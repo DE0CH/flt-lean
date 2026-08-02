@@ -25425,3 +25425,77 @@ sorry tokens and the build's `declaration uses 'sorry'` set agreeing at 14, with
 target's line absent and the sibling leaf still present — and `#print axioms` from an
 importer, run with that sibling as a live `sorryAx` control, returns
 `[propext, Classical.choice, Quot.sound]`.
+## A `∀`-OVER-ALL-TEST-OBJECTS LEAF REDUCES TO ONE UNIVERSAL INSTANCE — pay the transport once, and say the count did not move
+(2026-08-01, `flt-lean-309`, `nonempty_cubeIdentity` in `Modularity/AbelianSchemeIsogeny.lean`.)
+This development states its geometry through functors of points, so its hard leaves
+routinely have the shape
+    ∀ {T' : Scheme} {g : T' ⟶ T} (x y z : RelPoint q g), <identity in Pic T'>
+and that shape is **unattackable by the mathematics the leaf actually needs**.  The theorem
+of the cube is proven by the seesaw principle, and seesaw acts on ONE invertible sheaf on
+ONE scheme — not on a family of Picard-group identities indexed by test objects.  So a
+prover dispatched at the `∀` shape cannot begin, and every previous owner of that leaf
+correctly recorded it as a theory build without noticing that a REQUIRED first step was
+missing and was pure bookkeeping.
+**The reduction is mechanical and it is the same three moves every time:**
+1. **the representing object** — for a triple of points, `X ×_T X ×_T X`; for a pair,
+   `X ×_T X`.  Build the classifying morphism with `pullback.lift` and prove the three or
+   four equations `c ≫ pᵢ = xᵢ` and `c ≫ (structure map) = g`;
+2. **the naturality fields of the structure** — in `AbelianSchemeStruct` these are
+   `pre_add` and `pre_zero`, and they are exactly `c ≫ (x + y) = (c ≫ x) + (c ≫ y)` and
+   `c ≫ 0 = 0`.  Every occurrence of a compound point in the identity needs one;
+3. **pseudo-functoriality and monoidality of the pullback** — `modPullbackCompIso` and
+   `nonempty_modPullback_modTensorPic`.  These turn `c^*` applied to the universal
+   identity into the identity at the pulled-back points.
+Here that was ~120 lines and it is now `CubeIdentity.pre`, `relTripleStr`,
+`relTriplePt₁/₂/₃`, `relTripleLift` and its four equations.
+**REPORT IT AS `1 → 1`, IN THE COMMIT AND IN BOTH DOCSTRINGS.**  A restatement of this kind
+moves no counter, and a `−1 +1` delta is indistinguishable from one closure plus one
+unrelated disclosure.  What to say instead is what is LEFT in the leaf: here a statement
+about one sheaf on one scheme, with every mention of a test object gone.
+**AND SAY WHY THE FAITHFULNESS AUDIT TRANSFERS, because a restatement voids it.**  The
+universal and general forms are EQUIVALENT — instantiation one way, transport the other,
+and BOTH directions are in the file — so nothing was strengthened or weakened and the
+audit's clauses (which are about the shape of the identity, not about the test object)
+apply verbatim.  An audit labelled "inherited" with no argument is the failure mode this
+file already records; one sentence of argument is the whole price.
+### Two Lean traps met on the way, each one round trip
+* **Do not give the OBJECT of a `pullback` a name.**  A `def cubeSpace q := pullback f g`
+  makes `pullback.lift … : T' ⟶ pullback f g` fail to be seen as a morphism into
+  `cubeSpace q`, so `rw [pullback.lift_fst]` reports *"Did not find an occurrence of the
+  pattern"* — and the useful half of the message is buried below it as
+  *"Application type mismatch: … has type `Hom T' (pullback f g)` but is expected to have
+  type `Hom T' (cubeSpace q)`"*, together with the standing note about `instances`
+  transparency.  Name the MORPHISMS and the POINTS; write the object inline.  (An
+  `abbrev` also works and costs a reducible unfolding in every downstream statement,
+  which is worse in a leaf that a prover has to read.)
+* **`congrArg Subtype.val (by rw [...])` does not elaborate.**  The `by` block is checked
+  against a metavariable, so the rewrite has no target and fails with
+  *"Did not find an occurrence of the pattern … in the target expression `?m = ?m`"*.
+  State the point-level equation as its OWN `have` with an explicit type, then apply
+  `congrArg Subtype.val` to it.  The resulting `c ≫ x.1 = …` typechecks against the
+  `(RelPoint.pre c hc x).1 = …` that `congrArg` produces, because `RelPoint.pre` is a
+  structure literal and the projection reduces — that defeq check is cheap and is the
+  thing that makes the whole transport short.
+### CORRECTION, measured 2026-08-01: `#print axioms` DOES work from a scratch IMPORTER
+The section "AND THE PER-DECLARATION ANSWER IS `#print axioms`, RUN IN-FILE" above says it
+"**must be appended to the END OF THE FILE THAT DECLARES THE NAME**", because the module
+system elides imported proof bodies and "from a scratch importer the traversal has nothing
+to walk". That was true when written and is not true at this toolchain. Measured on
+`Modularity/AbelianSchemeIsogeny.lean` (18 600 lines): a two-line scratch
+    public import Fermat.FLT.Modularity.AbelianSchemeIsogeny
+    #print axioms Fermat.AbelianSchemeStruct.CubeIdentity.pre
+    end
+returned in **3.5 s** and gave the right answers — including `sorryAx` for a control
+declaration known to be sorried, which is what proves the traversal really ran. Appending
+to the real file instead costs a full elaboration of it, here ~7 minutes.
+**Always include a KNOWN-SORRIED control in the same scratch.** That is the whole
+difference between "clean" and "the traversal found nothing", and it costs one line.
+**And read a `sorryAx` on a body you just wrote as a question about its INPUTS, not about
+your proof.** `CubeIdentity.pre` has no `sorry` and emits no warning, and it reports
+`sorryAx`, because `nonempty_modPullback_modTensorPic` is transitively sorried over
+`isIso_presheafModPullback_delta_freeYoneda` in `ModularCurve/RelativePicard.lean`. The
+useful follow-up is one more `#print axioms`, on whatever the CONSUMER already used
+(`nonempty_modPullback_modTensorPow` here) — if that is tainted by the same leaf, your
+proof adds no `sorryAx` path the cone did not already have, and that is the fact to put in
+the docstring. Reporting "proven" without it overstates; reporting "tainted" without it
+understates.
