@@ -98,6 +98,8 @@ this file.
   cyclic layer
 * `Fermat.bijective_restrict_of_isComplement'_ker` and `Fermat.isComplement'_facts`
   — what a complement gives back
+* `Fermat.zpow_mem_imp_eq_one_of_orderOf_dvd` — the order-theoretic entry point
+* `Fermat.kerFiberProductSndEquiv` — the enlargement does not change inertia
 -/
 
 @[expose] public section
@@ -174,6 +176,18 @@ theorem isComplement'_zpowers_of_quotient_cyclic (I : Subgroup A) [I.Normal] {σ
     exact (QuotientGroup.eq_one_iff _).mp hq
   have h := isComplement'_ker_zpowers (q := QuotientGroup.mk' I) hgen rfl key
   rwa [QuotientGroup.ker_mk'] at h
+
+/-- The hypothesis of `Fermat.isComplement'_zpowers_of_quotient_cyclic`, supplied
+from an inequality of orders: a Frobenius lift whose order is no bigger than the
+order of Frobenius. (The reverse divisibility is automatic, so this says the two
+orders are equal.) -/
+theorem zpow_mem_imp_eq_one_of_orderOf_dvd (I : Subgroup A) [I.Normal] {σ : A}
+    (h : orderOf σ ∣ orderOf (QuotientGroup.mk' I σ)) :
+    ∀ k : ℤ, σ ^ k ∈ I → σ ^ k = 1 := by
+  intro k hk
+  refine zpow_eq_one_of_orderOf_dvd h ?_
+  rw [← map_zpow, QuotientGroup.mk'_apply, QuotientGroup.eq_one_iff]
+  exact hk
 
 /-- The three facts an arithmetic consumer reads off a complement to inertia:
 the two subgroups intersect trivially, they generate, and the complement has
@@ -255,6 +269,29 @@ theorem fiberProductFst_surjective {π : G →* Q} {ρ : U →* Q}
   intro g
   obtain ⟨x, hx⟩ := hρ (π g)
   exact ⟨⟨(g, x), hx.symm⟩, rfl⟩
+
+/-- **Enlarging the cyclic layer does not change inertia.** The kernel of the
+second projection of `G ×_Q U` is a copy of `ker π`.
+
+Arithmetically: passing from `M` to the compositum `M · K_d` with `K_d/K`
+unramified leaves the inertia subgroup unchanged, so the totally ramified field
+produced by `Fermat.isComplement'_fiberProduct` has degree `|Φ|` for the ORIGINAL
+`Φ`, not for some enlarged one. -/
+def kerFiberProductSndEquiv (π : G →* Q) (ρ : U →* Q) :
+    ↥(fiberProductSnd π ρ).ker ≃* ↥π.ker where
+  toFun p := ⟨((p : ↥(fiberProduct π ρ)) : G × U).1, by
+    have h2 : ((p : ↥(fiberProduct π ρ)) : G × U).2 = 1 := p.2
+    have h1 : π ((p : ↥(fiberProduct π ρ)) : G × U).1
+        = ρ ((p : ↥(fiberProduct π ρ)) : G × U).2 := (p : ↥(fiberProduct π ρ)).2
+    rw [MonoidHom.mem_ker, h1, h2, map_one]⟩
+  invFun g := ⟨⟨((g : G), 1), by
+      show π (g : G) = ρ 1
+      rw [map_one, MonoidHom.mem_ker.mp g.2]⟩, rfl⟩
+  left_inv p := by
+    have h2 : ((p : ↥(fiberProduct π ρ)) : G × U).2 = 1 := p.2
+    exact Subtype.ext (Subtype.ext (Prod.ext rfl h2.symm))
+  right_inv _ := rfl
+  map_mul' _ _ := rfl
 
 /-- **The complement exists after enlarging the cyclic layer.**
 
