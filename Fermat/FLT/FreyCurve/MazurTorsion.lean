@@ -25589,50 +25589,29 @@ def IsCMJInvariant (n : ℤ) (x : AlgebraicClosure ℚ) : Prop :=
       ψ * ψ = ((-n : ℤ) : WeierstrassCurve.End W.toAffine) ∧
       Subring.closure ({ψ} : Set (WeierstrassCurve.End W.toAffine)) = ⊤
 
-/-- **PROVEN 2026-07-31 — `IsCMJInvariant n` IS `Gal(ℚ̄/ℚ)`-STABLE.**
+/-! **`IsCMJInvariant n` IS `Gal(ℚ̄/ℚ)`-STABLE — PROVEN 2026-07-31, DELETED
+2026-08-02 (flt-lean-249) AS FREE-FLOATING.**
 
-Conjugating the curve by `σ` gives `W^σ = W.map σ`, with `j(W^σ) = σ (j W)`
-(`WeierstrassCurve.map_j`) and a RING isomorphism
-`WeierstrassCurve.End.mapRingEquiv : End W ≃+* End W^σ` (`Isogeny.lean`, added
-2026-07-31 for exactly this). A ring isomorphism carries `ψ * ψ = [−n]` to
-`ψ^σ * ψ^σ = [−n]` (it fixes integer casts) and `Subring.closure {ψ} = ⊤` to
-`Subring.closure {ψ^σ} = ⊤` (it maps closures to closures and `⊤` to `⊤`), and
-those two are the whole of what `IsCMJInvariant` asks of `ψ`. Nothing about the
-order, about `n`, or about class field theory enters.
+`IsCMJInvariant.map` stood here: conjugating the curve by `σ` gives `W.map σ` with
+`j (W.map σ) = σ (j W)` (`WeierstrassCurve.map_j`) and a RING isomorphism
+`End W ≃+* End (W.map σ)`, which carries `ψ * ψ = [−n]` and
+`Subring.closure {ψ} = ⊤` across; nothing about the order, about `n`, or about class
+field theory enters.  Recover it with
+`git show 280981f1:Fermat/FLT/FreyCurve/MazurTorsion.lean`, lines 25592–25635, together
+with the `GaloisTransport` section of `EllipticCurve/Isogeny.lean`, whose sole
+consumer it was.
 
-**Why it is worth having.** This is the EASY half of the Galois picture. The hard
-half — that `Gal(ℚ̄/ℚ)` acts TRANSITIVELY on the CM `j`-invariants of one order
-(`exists_algEquiv_apply_eq_of_isCMJInvariant`) — is the first main theorem of
-complex multiplication and needs the ring class field. Stability needs none of it,
-and it is what lets `exists_isCMJInvariant_ne_of_not_equivalent` be cut down to a
-single-object statement.
-
-**Why mathlib's `Affine.Point.map` cannot do this**, in one line, because it is the
-trap this cost: that map moves points of ONE curve between base changes along an
-algebra map, so its `σ` must FIX the coefficients of the curve. Here `W` lives over
-`ℚ̄` with arbitrary coefficients and `σ` moves them; the curve itself is conjugated.
-See the section docstring of `Isogeny.lean`'s `GaloisTransport`. -/
-theorem IsCMJInvariant.map {n : ℤ} {x : AlgebraicClosure ℚ}
-    (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) (hx : IsCMJInvariant n x) :
-    IsCMJInvariant n (σ x) := by
-  obtain ⟨W, hW, hj, ψ, hsq, htop⟩ := hx
-  letI := hW
-  have hτx : (σ.toRingEquiv : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) x = σ x := rfl
-  refine ⟨W.map (σ.toRingEquiv : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ), inferInstance, ?_,
-    WeierstrassCurve.End.mapRingEquiv W.toAffine σ.toRingEquiv ψ, ?_, ?_⟩
-  · rw [WeierstrassCurve.map_j, hj, hτx]
-  · rw [← map_mul, hsq, map_intCast]
-  · set Φ := WeierstrassCurve.End.mapRingEquiv W.toAffine σ.toRingEquiv with hΦ
-    have h1 : (Subring.closure ({ψ} : Set (WeierstrassCurve.End W.toAffine))).map
-        (Φ : WeierstrassCurve.End W.toAffine →+*
-          WeierstrassCurve.End (W.map (σ.toRingEquiv :
-            AlgebraicClosure ℚ →+* AlgebraicClosure ℚ)).toAffine)
-        = Subring.closure {Φ ψ} := by
-      rw [RingHom.map_closure, Set.image_singleton]
-      rfl
-    refine (Subring.eq_top_iff' _).mpr fun y => ?_
-    rw [← h1, htop, Subring.mem_map]
-    exact ⟨Φ.symm y, Subring.mem_top _, Φ.apply_symm_apply y⟩
+**IT HAD NO CONSUMER, AND NO LEAF IN THIS CLUSTER CAN ACQUIRE ONE.**  It was cut to
+collapse `exists_isCMJInvariant_ne_of_not_equivalent` from "produce two distinct CM
+`j`-invariants" to "produce one irrational one"; release 31 kept the rival
+`formPoint` route, which proves that theorem outright.  Stability is the WRONG HALF
+of the Galois picture — it says the orbit of a CM `j`-invariant stays INSIDE the set,
+while every consumer needs the orbit to EXHAUST it (transitivity), and mathlib's
+`Normal.minpoly_eq_iff_mem_orbit` already crosses between orbits and minimal
+polynomials without conjugating anything.  See the ATOMICITY AUDIT on
+`exists_monic_irreducible_vanishing_isCMJInvariant` below, item 1, and the note where
+the deleted section stood in `Isogeny.lean` for the same check run over all five open
+leaves of this cluster. -/
 
 /-! ### THE FORM-TO-`ℍ` DICTIONARY, and the 2026-07-31 cut of
 `exists_isCMJInvariant_ne_of_not_equivalent`
