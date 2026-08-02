@@ -47919,6 +47919,33 @@ returns the degree matrix `[1, p; p, 1]` at each tabulated `j` — so every
 entry is realised by a curve with a rational `p`-isogeny, and with exactly
 one. -/
 
+/-- **The kernel-polynomial certificate at `p = 67`** (sorry leaf, cut by LEVEL
+out of `exists_kernelPolynomial_classNumberOne` on 2026-08-02, flt-lean-83).
+
+See that theorem's docstring for the model, the multiplier table and the two
+precedent files.  **This is the level to do FIRST**: `2` is a primitive root
+mod `67`, so `gen37.py` applies with no change beyond `p`, the model and the
+kernel polynomial, whereas `p = 43` needs the generator extended to `m = 3`. -/
+theorem exists_kernelPolynomial_sixtySeven :
+    ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (f : Polynomial ℚ) (m : ℕ),
+      E.j = (-147197952000 : ℚ) ∧ E.IsKernelPolynomial 67 f m :=
+  sorry
+
+/-- **The kernel-polynomial certificate at `p = 163`** (sorry leaf, cut by LEVEL
+out of `exists_kernelPolynomial_classNumberOne` on 2026-08-02, flt-lean-83).
+
+See that theorem's docstring.  This is the largest of the three by a wide
+margin — degree `81`, ~992-digit coefficients, remainders with 82 coefficients
+each — and it is why the leaf had to be cut by level at all.  `2` is a
+primitive root mod `163`, so the generator needs no change; the cost is
+entirely file size and elaboration time, and a successor should budget the
+whole run for this level alone and measure one remainder identity before
+generating all of them. -/
+theorem exists_kernelPolynomial_oneSixtyThree :
+    ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (f : Polynomial ℚ) (m : ℕ),
+      E.j = (-262537412640768000 : ℚ) ∧ E.IsKernelPolynomial 163 f m :=
+  sorry
+
 /-- **A subgroup of prime order is the `ℤ`-span of any of its nonzero
 elements** (PROVEN 2026-07-30, flt-lean-63).
 
