@@ -5460,12 +5460,56 @@ theorem exists_extend_atkinLehnerModel_of_jNeronDatum (hq : q.Prime) (hqN : ¬ q
   rw [hy]
   exact hgenv g g₀ h y
 
-/-- **ATKIN–LEHNER (1970) §2 ON THE CUSPS, PURELY OVER `ℚ`** (sorry leaf, new
-2026-07-31) — the RECUT residue of
-`exists_isCusp_ne_neronGenAut_of_atkinLehnerPin` below, which is now PROVEN over
-it.  **This is the whole of what the 1970 paper is asked for in this
-development**, and nothing else is left in it: no integral model, no `q`, no
-`R`, no reduction, no special fibre, no `IsX0JNeronDatum`.
+/-- **ATKIN–LEHNER (1970) §2 ON THE CUSPS, PURELY OVER `ℚ`** (was a sorry leaf
+when cut 2026-07-31; **PROVEN 2026-08-02** over `exists_cuspLocus_atkinLehnerSwap`
+and `nonempty_isX0Compactification_of_isCompactificationY0`, both pre-existing
+leaves with pre-existing consumers) — the RECUT residue of
+`exists_isCusp_ne_neronGenAut_of_atkinLehnerPin` below, which is PROVEN over it.
+No integral model, no `q`, no `R`, no reduction, no special fibre, no
+`IsX0JNeronDatum`.
+
+**⚠ THE CITATION WAS ALREADY CUT, ONE MODULE UPSTREAM, ON THE SAME DAY.**  This
+leaf was opened as *"the whole of what the 1970 paper is asked for in this
+development"*.  It was not: `X0.lean`'s `exists_cuspLocus_atkinLehnerSwap`
+(2026-07-31) is the same citation — `w_N` carries the cusp above `d` to the cusp
+above `N/d`, existentially over the cusp locus — and everything between it and
+this statement is bookkeeping, carried out below.  The two cuts share **no
+identifier**: this one speaks of `IsCompactificationY0`, `hc.classify`,
+`al.dual` and `RelPoint.post v`, that one of `IsX0Compactification`,
+`CuspLocus.κ`, `IsAtkinLehner` and `Set.range`.  What matches is the PROSE — both
+docstrings say *"`w_N` exchanges the cusps above `d` and `N/d`"* — which is why
+the file convention of naming the classical theorem in words is what found it.
+
+**HOW THE BOOKKEEPING GOES**, in the order the proof does it:
+
+* `nonempty_isX0Compactification_of_isCompactificationY0` supplies the
+  `X0.lean`-shaped curve interface, and its `coarse` field is then OVERWRITTEN
+  with the given `hc` (`{ h0 with coarse := hc }`).  That step is not cosmetic:
+  `IsCoarseModuliY0` on a fixed `strY` is a torsor under `Aut_ℚ(Y)`, so `h0`'s
+  own coarse structure need not be `hc`, and `IsAtkinLehner` is a statement about
+  `coarse.classify`.  The other five fields do not mention `coarse`, so the
+  substitution is free.
+* `IsAtkinLehner N h1 v hv` follows from `hpin` and `hvj`: the underlying
+  morphism of `post v (post j (classify g dd))` is
+  `(classify g dd).1 ≫ (j ≫ v) = (classify g dd).1 ≫ (wYQ ≫ j)`, and `hpin`
+  rewrites the left factor to `(classify g (al.dual g dd)).1`.  The gap between
+  `al.dual g dd` and an ARBITRARY `dd'` with `IsNIsogenyPair N dd dd'` is closed
+  by `nonempty_isBaseChangeOf_of_isNIsogenyPair` plus `classify_natural` at
+  `𝟙 T`, exactly as `exists_genericFibreAut_of_atkinLehnerModel` below does it.
+* `exists_cuspLocus_atkinLehnerSwap` then gives the locus `C` with
+  `v '' range (κ d) = range (κ d')` whenever `d * d' = N`; take `d = 1`,
+  `d' = N`.  The cusp above `1` is `ℚ`-rational because `C.degree` reads
+  `φ(gcd(1, N)) = 1`, so `exists_specSection_of_finrank_eq_one` produces the
+  point; `C.cover` makes it a cusp and `C.disj ⟨1⟩ ⟨N⟩` — legitimate since
+  `1 ≠ N` — makes it moved.
+
+**WHY THIS DOES NOT GO THROUGH `noFixedRationalCusp_atkinLehner_of_mul_ne`,**
+which is the same file's PROVEN corollary of the same leaf and looks like a
+drop-in.  That theorem asks for `∀ d ∈ rationalCuspDivisors N, d * d ≠ N`, which
+FAILS at `N = 4` (`d = 2`, and `w_4` really does fix the cusp `1/2`).  This
+statement needs only ONE moved cusp, and the cusp above `d = 1` is moved at every
+`N > 1` because `1 * 1 = 1 ≠ N`; so the self-paired-divisor hypothesis is not an
+obligation here and the swap leaf is used directly.
 
 **WHAT IS ASKED.**  `X` is a smooth proper compactification of a coarse moduli
 space `Y = Y_0(N)_ℚ` (`hX`), `wYQ` is the Atkin–Lehner involution of `Y` — pinned
@@ -5507,33 +5551,88 @@ is why the model can be dropped and the `q`-adic apparatus with it.
 cusp and `w_1 = 𝟙`, so the conclusion is false; at every `N > 1`, prime or not,
 `w_N` exchanges `0` and `∞`.  (`w_4` FIXES the cusp `1/2`, which is why the
 ∀-form needs `N.Prime` — the counting step's business, not this leaf's.)
-`hvinv : v ≫ v = 𝟙 X` is RETAINED DEFENSIVELY rather than needed: the classical
-argument moves a cusp whether or not `v` is an involution, but the sole call site
-already holds it (it is `hinv` transported by
-`exists_genericFibreAut_of_atkinLehnerModel`), so carrying it costs the caller
-nothing and can only weaken the leaf.  A prover who does not want it may delete
-it together with the one argument at the one call site.
+`hvinv : v ≫ v = 𝟙 X` **IS NOW LOAD-BEARING and may not be deleted.**  It was
+retained defensively when this was a leaf, on the ground that "the classical
+argument moves a cusp whether or not `v` is an involution", and the docstring
+invited a prover to drop it together with the one argument at the one call site.
+Do not: the proof spends it at `exists_cuspLocus_atkinLehnerSwap`, whose own
+statement asks for `w ≫ w = 𝟙 X` (it is what makes `w` a homeomorphism, hence
+what turns the inclusion of cusp loci into an equality of ranges).  Removing it
+here would mean removing it there first.  The call site holds it for free, as
+`hinv` transported by `exists_genericFibreAut_of_atkinLehnerModel`.
 
 **NON-VACUITY.**  `N = 37`: the genuine `w_37` on `X_0(37)_ℚ` witnesses the
 conclusion, swapping the two distinct rational cusps `0` and `∞`.
 
-**The check that refutes it**: a level `N > 1` and a `ℚ`-morphism `v` of the
-compactification restricting to the moduli-pinned `w_N` on `Y_0(N)` and fixing
-every rational cusp.
-
 **REFERENCES.**  Atkin–Lehner, *Hecke operators on `Γ₀(m)`*, Math. Ann. 185
 (1970), §2, for the action `e ↦ N/e` on the cusps; Ogg, *Rational points on
-certain elliptic modular curves* (1973).  Deligne–Rapoport is NOT cited: the
-étale cuspidal subscheme belongs to `redX_base_ne_of_isCusp`, and the extension
-of `w_N` over `ℤ[1/N]` to `exists_extend_atkinLehnerModel_of_jNeronDatum`. -/
+certain elliptic modular curves* (1973).  Both are now cited by
+`exists_cuspLocus_atkinLehnerSwap` rather than here.  Deligne–Rapoport is NOT
+cited: the étale cuspidal subscheme belongs to `redX_base_ne_of_isCusp`, and the
+extension of `w_N` over `ℤ[1/N]` to
+`exists_extend_atkinLehnerModel_of_jNeronDatum`. -/
 theorem exists_isCusp_ne_post_of_atkinLehnerPin (hN : 1 < N) (al : AtkinLehnerMorphism N)
     (wYQ : Y ⟶ Y) (hwYQ : wYQ ≫ strY = strY)
-    (_hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (dd : Gamma0Datum N T),
+    (hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (dd : Gamma0Datum N T),
       RelPoint.post wYQ hwYQ (hc.classify g dd) = hc.classify g (al.dual g dd))
-    (v : X ⟶ X) (hv : v ≫ strX = strX) (_hvj : hX.j ≫ v = wYQ ≫ hX.j)
-    (_hvinv : v ≫ v = 𝟙 X) :
-    ∃ c : RelPoint strX (𝟙 SpecQ), hX.IsCusp c ∧ RelPoint.post v hv c ≠ c :=
-  sorry
+    (v : X ⟶ X) (hv : v ≫ strX = strX) (hvj : hX.j ≫ v = wYQ ≫ hX.j)
+    (hvinv : v ≫ v = 𝟙 X) :
+    ∃ c : RelPoint strX (𝟙 SpecQ), hX.IsCusp c ∧ RelPoint.post v hv c ≠ c := by
+  classical
+  -- the `X0.lean`-shaped curve interface, carrying the GIVEN coarse structure
+  obtain ⟨h0⟩ := nonempty_isX0Compactification_of_isCompactificationY0 N (by omega) hc hX
+  let h1 : IsX0Compactification N strX strY hX.j := { h0 with coarse := hc }
+  -- `v` is the Atkin–Lehner involution in `X0.lean`'s sense
+  have hal : IsAtkinLehner N h1 v hv := by
+    intro T g dd dd' hpair
+    have hbc : Nonempty (IsBaseChangeOf (𝟙 T) dd' (al.dual g dd)) :=
+      nonempty_isBaseChangeOf_of_isNIsogenyPair hpair (al.pair g dd)
+    have hcl : hc.classify g dd' = hc.classify g (al.dual g dd) :=
+      (hc.classify_natural (𝟙 T) (Category.id_comp g) hbc.some).trans
+        (Subtype.ext (Category.id_comp _))
+    have hp1 : (hc.classify g dd).1 ≫ wYQ = (hc.classify g (al.dual g dd)).1 :=
+      congrArg Subtype.val (hpin g dd)
+    apply Subtype.ext
+    show ((hc.classify g dd).1 ≫ hX.j) ≫ v = (hc.classify g dd').1 ≫ hX.j
+    rw [Category.assoc, hvj, ← Category.assoc, hp1, hcl]
+  -- the cusp above `1` goes to the cusp above `N`, and `1 ≠ N`
+  obtain ⟨C, hswap⟩ := exists_cuspLocus_atkinLehnerSwap (by omega) h1 v hv hvinv hal
+  have hone : (1 : ℕ) ∈ N.divisors := Nat.one_mem_divisors.mpr (by omega)
+  have hNd : N ∈ N.divisors := Nat.mem_divisors_self N (by omega)
+  -- `φ(gcd(1, N)) = 1`, so the cusp above `1` is `ℚ`-rational
+  have hdeg : Module.finrank ℚ (C.K ⟨1, hone⟩) = 1 := by
+    rw [C.degree ⟨1, hone⟩]
+    show Nat.totient (Nat.gcd 1 (N / 1)) = 1
+    rw [Nat.div_one, Nat.gcd_one_left, Nat.totient_one]
+  obtain ⟨σ, hσ⟩ := exists_specSection_of_finrank_eq_one hdeg
+  obtain ⟨P⟩ : Nonempty (PrimeSpectrum ℚ) := inferInstance
+  have hne : (⟨1, hone⟩ : N.divisors) ≠ ⟨N, hNd⟩ := fun h => by
+    have := congrArg Subtype.val h; simp at this; omega
+  refine ⟨⟨σ ≫ C.κ ⟨1, hone⟩, ?_⟩, ?_, ?_⟩
+  · rw [Category.assoc, C.comm ⟨1, hone⟩, hσ]
+  · -- it is a cusp: `C.cover` puts its image outside the range of `j`
+    apply isCusp_of_isX0Cusp h1
+    rintro ⟨y, hy⟩
+    have heq : y.1 ≫ hX.j = σ ≫ C.κ ⟨1, hone⟩ := congrArg Subtype.val hy
+    have hp := congrArg (fun (f : SpecQ ⟶ X) => f.base P) heq
+    simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] at hp
+    have hout : ((C.κ ⟨1, hone⟩).base (σ.base P)) ∈ (Set.range hX.j.base)ᶜ := by
+      rw [← C.cover]
+      exact Set.mem_iUnion.mpr ⟨⟨1, hone⟩, ⟨_, rfl⟩⟩
+    exact hout ⟨y.1.base P, hp⟩
+  · -- and `v` moves it: a fixed point would lie in two disjoint cusp ranges
+    intro hfix
+    have hxw : (σ ≫ C.κ ⟨1, hone⟩) ≫ v = σ ≫ C.κ ⟨1, hone⟩ := congrArg Subtype.val hfix
+    have hbase : v.base ((σ ≫ C.κ ⟨1, hone⟩).base P) = (σ ≫ C.κ ⟨1, hone⟩).base P := by
+      have h := congrArg (fun g : SpecQ ⟶ X => g.base P) hxw
+      simpa only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] using h
+    have hmem1 : (σ ≫ C.κ ⟨1, hone⟩).base P ∈ Set.range (C.κ ⟨1, hone⟩).base := by
+      refine ⟨σ.base P, ?_⟩
+      simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply]
+    have hmemN : (σ ≫ C.κ ⟨1, hone⟩).base P ∈ Set.range (C.κ ⟨N, hNd⟩).base := by
+      rw [← hswap ⟨1, hone⟩ ⟨N, hNd⟩ (one_mul N)]
+      exact ⟨_, hmem1, hbase⟩
+    exact Set.disjoint_left.mp (C.disj ⟨1, hone⟩ ⟨N, hNd⟩ hne) hmem1 hmemN
 
 /-- **AN AUTOMORPHISM OF THE INTEGRAL MODEL IS A `ℚ`-MORPHISM OF `X` ON THE
 GENERIC FIBRE, AND `neronGenAut` IS POSTCOMPOSITION BY IT** (PROVEN 2026-07-31)

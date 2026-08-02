@@ -30921,3 +30921,60 @@ Two riders from the same run, both reusable:
 cited by the pre-existing absolute chain. Verified by the sorry-warning-set diff —
 the 11 warnings below the insertion point identical, the two above shifted by a
 single constant (the insertion length), and the target's line gone.
+## THE SAME CITATION CAN BE CUT TWICE, IN TWO MODULES, ON THE SAME DAY — AND ONLY THE PROSE MATCHES
+(2026-08-02, `flt-lean-68`, on `exists_isCusp_ne_post_of_atkinLehnerPin` in
+`FreyCurve/MazurTorsion.lean`.)  That leaf was opened 2026-07-31 as *"ATKIN–LEHNER
+(1970) §2 ON THE CUSPS ... **this is the whole of what the 1970 paper is asked for in
+this development**, and nothing else is left in it"*, with a full falsity audit, a
+non-vacuity witness and a refuting check.  Every word of it was true, and the same
+citation had been cut the SAME DAY, one module upstream, as `X0.lean`'s
+`exists_cuspLocus_atkinLehnerSwap` — *"`w_N` EXCHANGES THE CUSPS ABOVE `d` AND `N/d`
+(sorry leaf, new 2026-07-31)"*.  The leaf closed in **one scratch iteration, first
+try**, with no new leaf: it is bookkeeping over that one plus a bridge that already
+had a consumer.
+**The two statements share NO identifier.**  Mine: `IsCompactificationY0`,
+`hc.classify`, `al.dual`, `RelPoint.post v`, `hX.IsCusp`.  Its: `IsX0Compactification`,
+`CuspLocus.κ`, `IsAtkinLehner`, `Set.range`, `Nat.divisors`.  Different structures,
+different quantifiers, different conclusion shape.  A name grep finds nothing; a
+conclusion grep finds nothing; `own.py` and `leafstat.py` both correctly report two
+unowned open leaves.  **What matched is the PROSE** — both docstrings contain the
+sentence *"`w_N` exchanges the cusps above `d` and `N/d`"*.
+So the standing rule ("say in the docstring which classical theorem the pieces are, in
+words — that sentence is the only thing that will match") has a companion search, and
+it is the one to run FIRST on any leaf whose docstring names a paper:
+    grep -n "<the classical sentence, 4-6 words>" <every module you import>
+    grep -rn "AtkinLehner\|Ogg\|Deligne" <the upstream module> | grep -i cusp
+Grep the UPSTREAM module by CONCEPT, not your own file by vocabulary.  A citation leaf
+in a downstream module is exactly the shape whose twin sits upstream: the upstream file
+is where the general theory lives, so whoever needed the same citation for a different
+consumer cut it there.
+**AND DO NOT ROUTE THROUGH THE UPSTREAM FILE'S PROVEN COROLLARY WITHOUT CHECKING ITS
+EXTRA HYPOTHESIS.**  `noFixedRationalCusp_atkinLehner_of_mul_ne` is PROVEN over that
+leaf, concludes `∀ x, IsCusp x → post w x ≠ x`, and looks like a drop-in for a leaf
+asking for ONE moved cusp.  It carries `∀ d ∈ rationalCuspDivisors N, d * d ≠ N`, which
+is FALSE at `N = 4` (`w_4` fixes the cusp `1/2`).  The `∃`-shaped consumer needs only
+the cusp above `d = 1`, where `1 * 1 = 1 ≠ N` at every `N > 1`, so it goes to the LEAF
+directly and the self-paired-divisor hypothesis never arises.  **A proven corollary is
+a specialisation someone else needed; price its hypothesis against your own levels
+before preferring it to the leaf under it.**
+### `Nonempty (SomeStructure)` FROM A BRIDGE LEAF GIVES YOU THE WRONG COPY OF A FIELD — overwrite it
+Same proof, and it is the one step that is not mechanical.  The bridge
+`nonempty_isX0Compactification_of_isCompactificationY0` returns
+`Nonempty (IsX0Compactification N strX strY hX.j)`, whose `coarse` field is *some*
+`IsCoarseModuliY0 N strY`.  It need not be the `hc` your own hypotheses are stated
+over: **`IsCoarseModuliY0` on a fixed `strY` is a TORSOR under `Aut_S(Y)`**, not a
+subsingleton — `universal` pins `classify` only up to an automorphism of `Y` over the
+base, and `classify' := post α ∘ classify` is again coarse for every such `α`.  Since
+`IsAtkinLehner` is a statement about `coarse.classify`, an `h0` with the wrong `coarse`
+proves nothing about your `w`.
+The repair is one line and needs no change to the bridge: **rebuild the structure with
+your own field.**
+    let h1 : IsX0Compactification N strX strY hX.j := { h0 with coarse := hc }
+It works because none of the other five fields mentions `coarse`, and `h1.coarse = hc`
+then holds by `rfl`, so every later rewrite matches.  Strengthening the bridge leaf's
+conclusion to `∃ h0, h0.coarse = hc` would have been an interface change to a leaf with
+a live consumer, for nothing.
+**Generalisable: before consuming a `Nonempty S` bridge, list the fields of `S` that
+your hypotheses ALSO supply, and ask whether the two copies have to agree.**  If they
+do not, and the field is data, substitute yours; if a field's copy is genuinely pinned,
+say so in the docstring, because the next reader will assume it is not.
