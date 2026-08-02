@@ -17377,10 +17377,101 @@ The paragraph this subsection used to carry, that
 `IsHeckeIsotypicDecompositionGamma1` "does **not** acquire a `heckeModuli` field
 here", was true when written and is now STALE: that field exists. -/
 
+/-- **THE `Γ₁` HECKE CORRESPONDENCE, IN MORPHISM FORM** (sorry leaf, new
+2026-08-02) — the `Γ₁` transport of `X0.lean`'s
+`exists_heckeCorrespondenceMorphism`, and the single geometric input from which
+`exists_heckeCorrespondenceFamilyGamma1` immediately below is now PROVEN.
+
+**WHY THIS IS THE RESIDUE AND THE FAMILY FORM IS NOT.**  Until 2026-08-02 the
+`Γ₁` side carried the family form as its leaf, bundling four obligations: a
+morphism-like assignment on points, its NATURALITY under `RelPoint.pre`, the
+BASE-POINT normalisation `c o = 0`, and the divisor RECIPE.  Three of those four
+are formal.  Given the morphism `κ` below, write `ε := RelPoint.post κ hκ o`; then
+
+    c g x := RelPoint.post κ hκ x  −  RelPoint.pre g _ ε,        e := −ε
+
+satisfies naturality (one `Category.assoc`), the base-point clause (by
+construction, `c o = ε − ε = 0`), and the recipe (the constant cancels against
+`e`).  So the family form's three extra clauses cost forty lines of group-law
+bookkeeping and no geometry, and they are now paid once, below, rather than by
+every prover sent at the node.  This is exactly the arrangement `X0.lean` has
+carried since 2026-07-30, whose own docstring says in as many words that **"a
+prover should start from `exists_heckeCorrespondenceMorphism`"**; the `Γ₁` side
+had simply never been brought into line.
+
+**THE BASE-POINT CONSTANT DOES NOT ARISE HERE, AND THAT IS THE POINT.**  The
+falsity audit on the family form below (kept in full there) shows that statement
+is FALSE without an existentially bound `e`, because at `Γ₁` the correspondence
+does NOT fix the base point: for `N = 11`, `ℓ = 2` the rational cusps of
+`X_1(11)` are moved, so `ε := T_ℓ[o] − (ℓ+1)[o] ≠ 0`.  This statement imposes no
+normalisation on `κ` at `o` at all — it constrains `κ` only through the recipe —
+so the witness that refutes the unrepaired family form is consistent with it, and
+`ε` is simply the value `RelPoint.post κ hκ o` that the derivation below reads
+off.  A prover here owes the correspondence trace and nothing about base points.
+
+**WHAT REMAINS GENUINELY MISSING**, unchanged from the family form and from the
+`Γ₀` twin: the correspondence scheme `X_1(N, ℓ)` with its two degeneracy maps,
+and the trace of a finite flat correspondence on the functor of points, exist
+neither here, nor in mathlib at this pin, nor in `~/cs/FLT` (re-grepped
+2026-08-02).  What is `Γ₁`-specific is only the level structure, and it is free:
+once `E/D` exists as an elliptic scheme the `Γ₁`-structure on it is
+`d.pt.sec ≫ map`.  So this leaf and `X0.lean`'s `exists_heckeCorrespondenceMorphism`
+are the same missing primitive at two levels and should be taken together.
+
+**STRENGTH, stated honestly.**  This is a priori STRONGER than the family form:
+it asks for a MORPHISM of schemes `κ : X ⟶ J`, whereas the family form asks only
+for a natural family on points, and recovering a morphism from such a family is
+not formal here.  That is deliberate and it is the classical statement — the
+Hecke correspondence trace is a morphism `X_1(N) ⟶ J_1(N)` — so the strengthening
+is towards the theorem the literature proves, not towards an unknown.  It is also
+what a future `Γ₁` Atkin–Lehner commutation variant will need, exactly as
+`X0.lean`'s `exists_heckeCorrespondenceMorphism_atkinLehnerCommuting` is built on
+the `Γ₀` morphism form rather than on the family form.
+
+**AXIS NOT SEARCHED**, recorded so the next owner does not assume it was: the
+complex-analytic route, where `κ` comes from the action of `Γ₁(N)`-double cosets
+on `H₁(Γ₁(N)\ℍ*, ℤ)`.  Everything above is the algebraic-moduli axis. -/
+theorem exists_heckeCorrespondenceMorphismGamma1 (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (H : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    ∃ (κ : X ⟶ J) (hκ : κ ≫ jstr = strX),
+      ∀ (d : Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (m : ℕ)
+        (dq : Fin m → Gamma1Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+        (iso : ∀ k, IsGamma1Isogeny N ℓ d (dq k)),
+        (∀ k k' : Fin m,
+          (∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+            RelPoint.LiesIn (iso k).ker.ι x ↔ RelPoint.LiesIn (iso k').ker.ι x) → k = k') →
+        (∀ D : CyclicSubgroupOfOrder d.ab ℓ, ∃ k : Fin m,
+          ∀ x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+            RelPoint.LiesIn D.ι x ↔ RelPoint.LiesIn (iso k).ker.ι x) →
+        letI := ab.addCommGroup (specAlgClos ℚ)
+        RelPoint.post κ hκ
+            (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d))
+          = ∑ k : Fin m, jac.aj (specAlgClos ℚ)
+              (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))) :=
+  sorry
+
 /-- **THE `Γ₁` HECKE CORRESPONDENCE, AS A NATURAL FAMILY ON POINTS**
-(sorry leaf, new 2026-07-28) — the geometric half of
-`exists_modularHeckeAction_gamma1` below, and the `Γ₁` transport of
+(**PROVEN 2026-08-02** over `exists_heckeCorrespondenceMorphismGamma1`
+immediately above; a sorry leaf from 2026-07-28 until then) — the geometric half
+of `exists_modularHeckeAction_gamma1` below, and the `Γ₁` transport of
 `X0.lean`'s `exists_heckeCorrespondenceFamily`.
+
+**RECUT 2026-08-02, COUNT UNCHANGED (1 → 1).**  This is no longer a leaf: it is
+derived, in forty lines of group-law bookkeeping and no geometry, from the
+MORPHISM form above, by the translation `c := post κ − pre ε` with
+`ε := post κ o` and `e := −ε`.  The direct-sorry count did not move and must not
+be read as progress in itself; what changed is that the surviving leaf no longer
+carries the naturality clause, the base-point clause or the existential constant,
+and is the same statement as `X0.lean`'s `exists_heckeCorrespondenceMorphism`
+with `Γ₀` replaced by `Γ₁` throughout.  The proof below is that file's proof of
+`exists_heckeCorrespondenceFamily`, transported character for character.
+
+Everything below this paragraph is the record of the 2026-07-31 falsity repair
+and is KEPT: it is the evidence for the existential `e` in the statement, which
+the derivation above supplies rather than removes.
 
 TRUE, and the witness is `c := RelPoint.post (T_ℓ) _ ∘ jac.aj` for the
 genuine `T_ℓ`: that family is natural because `aj` is and `RelPoint.post`
@@ -17533,8 +17624,41 @@ theorem exists_heckeCorrespondenceFamilyGamma1 (N ℓ : ℕ) (_hℓ : ℓ.Prime)
               (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) d))
             = (∑ k : Fin m, jac.aj (specAlgClos ℚ)
                 (RelPoint.post jY H.comm (H.coarse.classify (specAlgClos ℚ) (dq k))))
-              + RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) e :=
-  sorry
+              + RelPoint.pre (specAlgClos ℚ) (Category.comp_id (specAlgClos ℚ)) e := by
+  obtain ⟨κ, hκ, hrec⟩ := exists_heckeCorrespondenceMorphismGamma1 N ℓ _hℓ _hℓN H jac
+  -- `ε` is the failure of the correspondence trace to fix the base point: the
+  -- constant whose absence made this statement FALSE before 2026-07-31.  At `Γ₁`
+  -- it is nonzero already at the cusps -- see the audit below.
+  set ε : RelPoint jstr (𝟙 SpecQ) := RelPoint.post κ hκ o with _hε
+  -- naturality of `post κ`, and of the constant term, are both one associativity
+  have hpostpre : ∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+      (hg : p ≫ g = g') (x : RelPoint strX g),
+      RelPoint.post κ hκ (RelPoint.pre p hg x) = RelPoint.pre p hg (RelPoint.post κ hκ x) := by
+    intro T' T p g g' hg x
+    exact Subtype.ext (Category.assoc _ _ _)
+  have hprepre : ∀ {T' T : Scheme.{0}} (p : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+      (hg : p ≫ g = g'),
+      RelPoint.pre p hg (RelPoint.pre g (Category.comp_id g) ε)
+        = RelPoint.pre g' (Category.comp_id g') ε := by
+    intro T' T p g g' hg
+    refine Subtype.ext ?_
+    show p ≫ g ≫ ε.1 = g' ≫ ε.1
+    rw [← Category.assoc, hg]
+  refine ⟨fun {T} g x =>
+      ab.add (RelPoint.post κ hκ x) (ab.neg (RelPoint.pre g (Category.comp_id g) ε)),
+    ab.neg ε, ?_, ?_, ?_⟩
+  · intro T' T p g g' hg x
+    beta_reduce
+    rw [hpostpre p hg x, ab.pre_add, ab.pre_neg, hprepre p hg]
+  · have hid : RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ)) ε = ε :=
+      Subtype.ext (Category.id_comp _)
+    beta_reduce
+    rw [hid, ab.add_comm]
+    exact ab.neg_add _
+  · intro d m dq iso hinj hcov
+    beta_reduce
+    rw [hrec d m dq iso hinj hcov, ab.pre_neg]
+    rfl
 
 /-- **THE `Γ₁` MODULI RECIPE FOR ONE ALBANESE ENDOMORPHISM**, factored out of
 `exists_modularHeckeAction_gamma1`'s `key` so that
