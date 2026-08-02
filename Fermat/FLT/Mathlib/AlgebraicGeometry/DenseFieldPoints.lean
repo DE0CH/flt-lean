@@ -21,8 +21,8 @@ development — that shape costs a base change to `Spec ℚ̄` and a descent bac
 costs neither, but it asks for agreement after `X.fromSpecResidueField x` rather than after
 a `K`-point.  This file is the bridge: `ext_of_dense_fieldPoints` drives the arbitrary-base
 lemma from the `K`-points a development actually has, and
-`ext_of_dense_open_algClosPoints` packages the whole argument for the situation this project
-meets — a scheme with a dense open subscheme whose `K`-points are understood.
+`exists_algClosPoint_of_isClosed_singleton` supplies those `K`-points at every closed point
+of a finite-type scheme over a field — which is all a consumer over `Spec ℚ` has to know.
 
 ## Main results
 
@@ -33,13 +33,12 @@ meets — a scheme with a dense open subscheme whose `K`-points are understood.
   ARBITRARY base, are equal.
 * `exists_algClosPoint_of_isClosed_singleton` — a scheme locally of finite type over a field
   `F` has a `K`-point over every CLOSED point, for any algebraically closed `K ⊇ F`.
-* `ext_of_dense_open_algClosPoints` — the assembly: two morphisms out of a reduced
-  irreducible `X` agreeing on the `K`-points of a nonempty open subscheme are equal.
-
 The first three were verified green on 2026-07-31 by `flt-lean-296` and parked at the
 repository root as `HANDOFF-flt-lean-296-dense-field-points.lean`; they are moved here, with
-the last two added, by the commit that gives them their first consumer
-(`ModularCurve/X0.lean`'s `eq_of_forall_comp_classify_of_isX0Compactification`).
+the fourth added, by the commit that gives them their first consumer —
+`ModularCurve/X0.lean`'s `eq_of_algClosPoint_comp_eq`, whose statement is unchanged and
+whose ~30-line bespoke body this module replaces.  `X1.lean`'s `Γ₁` twin owes the same
+statement and can now reuse these rather than re-derive them.
 -/
 
 @[expose] public section
@@ -161,61 +160,29 @@ theorem exists_algClosPoint_of_isClosed_singleton
     ext a
     exact ψ.commutes a
 
-/-- **TWO MORPHISMS AGREEING ON THE `K`-POINTS OF A NONEMPTY OPEN SUBSCHEME ARE EQUAL**
-(PROVEN) — the assembly, and the form a consumer wants.
+/-!
+### The dense-open packaging is NOT here, and that is deliberate
 
-`X` is reduced and pre-irreducible over the field `F` and locally of finite type over it;
-`jY : Y ⟶ X` is an open immersion with `Y` nonempty; `jstr` is separated.  Then two
-morphisms `u, v : X ⟶ J` over `Spec F` are equal as soon as they agree after every
-`K`-point of `Y` over `Spec F`, for `K` any algebraically closed extension of `F`.
+An assembly `ext_of_dense_open_algClosPoints` — *two morphisms out of a reduced irreducible
+`X` agreeing on the `K`-points of a NONEMPTY OPEN subscheme are equal* — was written and
+verified green alongside the four lemmas above on 2026-08-02, and then removed, because
+under the arrangement `X0.lean` actually took (`eq_of_algClosPoint_comp_eq`, which quantifies
+over the `K`-points of ALL of `X`) it has no consumer, and free-floating declarations are
+forbidden here.
 
-THE ARGUMENT, and both halves are cheap once the mathlib names are known.  `Y` is locally of
-finite type over `F`, so it is a JACOBSON space and its CLOSED points are dense in it
-(`Topology.closure_closedPoints`); `X` is irreducible and `Set.range jY.base` is a nonempty
-OPEN, hence dense (`IsOpen.dense`); and continuity carries a dense subset of `Y` onto a set
-whose closure contains `Set.range jY.base`, hence onto a dense subset of `X`.  At each such
-point `exists_algClosPoint_of_isClosed_singleton` produces the `K`-point, and
-`ext_of_dense_fieldPoints` finishes.
+It is the right shape for the level-free density statement that
+`Fermat.HeckeCommute.eq_of_forall_algClosPoint_comp_eq` is queued to be — the one that
+quantifies over the `ℚ̄`-points of the OPEN part `Y` only, so that `X0.lean` and `X1.lean`
+can share it — and whoever takes that task should paste it back rather than re-derive it:
 
-**`Nonempty Y` IS LOAD-BEARING and the statement is FALSE without it**: with `Y = ∅` the
-hypothesis `H` is vacuous while `u` and `v` are arbitrary, and `X = 𝔸¹_F`, `J = 𝔸¹_F`,
-`u = 𝟙`, `v` the zero section refutes the conclusion.  It is what makes the image of `Y`
-a NONEMPTY open, which is what makes it dense. -/
-theorem ext_of_dense_open_algClosPoints
-    {F K : Type u} [Field F] [Field K] [Algebra F K] [IsAlgClosed K]
-    {X Y J : Scheme.{u}} {strX : X ⟶ Spec (CommRingCat.of F)}
-    {strY : Y ⟶ Spec (CommRingCat.of F)} {jY : Y ⟶ X} [IsOpenImmersion jY]
-    (hcomm : jY ≫ strX = strY) [LocallyOfFiniteType strX]
-    [IsReduced X] [PreirreducibleSpace X] [Nonempty Y]
-    {jstr : J ⟶ Spec (CommRingCat.of F)} [IsSeparated jstr]
-    {u v : X ⟶ J} (huv : u ≫ jstr = v ≫ jstr)
-    (H : ∀ q : Spec (CommRingCat.of K) ⟶ Y,
-      q ≫ strY = Spec.map (CommRingCat.ofHom (algebraMap F K)) →
-        q ≫ jY ≫ u = q ≫ jY ≫ v) :
-    u = v := by
-  haveI : LocallyOfFiniteType strY := by rw [← hcomm]; infer_instance
-  haveI : JacobsonSpace Y := LocallyOfFiniteType.jacobsonSpace strY
-  -- the image of `Y` is a NONEMPTY OPEN of the irreducible `X`, hence dense
-  have hopen : IsOpen (Set.range jY.base) := jY.isOpenEmbedding.isOpen_range
-  have hne : (Set.range jY.base).Nonempty := Set.range_nonempty _
-  have hdY : Dense (Set.range jY.base) := hopen.dense hne
-  -- the closed points of `Y` are dense in `Y`, so their image is dense in `X`
-  have hcl : Dense (closedPoints Y) := dense_iff_closure_eq.mpr closure_closedPoints
-  have hdense : Dense (jY.base '' closedPoints Y) := by
-    have hsub : Set.range jY.base ⊆ closure (jY.base '' closedPoints Y) := by
-      rintro _ ⟨y, rfl⟩
-      exact image_closure_subset_closure_image jY.base.hom.continuous
-        (Set.mem_image_of_mem _ (hcl y))
-    refine dense_iff_closure_eq.mpr (Set.eq_univ_of_univ_subset ?_)
-    rw [← hdY.closure_eq]
-    exact closure_minimal hsub isClosed_closure
-  refine ext_of_dense_fieldPoints (K := K) jstr _ hdense ?_ huv
-  rintro _ ⟨y, hy, rfl⟩
-  obtain ⟨q, hq1, hq2⟩ := exists_algClosPoint_of_isClosed_singleton (K := K) strY hy
-  refine ⟨q ≫ jY, ?_, ?_⟩
-  · simp only [Scheme.SpecToEquivOfField_apply_fst, Scheme.Hom.comp_base, TopCat.comp_app]
-    rw [show (TopCat.Hom.hom q.base) (IsLocalRing.closedPoint K)
-        = (Scheme.SpecToEquivOfField K Y q).1 from rfl, hq1]
-  · rw [Category.assoc, Category.assoc]; exact H q hq2
+    git show 69db1300:Fermat/FLT/Mathlib/AlgebraicGeometry/DenseFieldPoints.lean
+
+Its proof is `IsOpen.dense` for the image of `Y` in the irreducible `X`,
+`Topology.closure_closedPoints` for the closed points of the Jacobson space `Y`,
+`image_closure_subset_closure_image` to move the second inside the first, and then
+`exists_algClosPoint_of_isClosed_singleton` and `ext_of_dense_fieldPoints` above.
+`Nonempty Y` is load-bearing there: with `Y = ∅` the hypothesis is vacuous and the
+conclusion false.
+-/
 
 end AlgebraicGeometry
