@@ -27,10 +27,23 @@ composition `p ≫ f`, both of which `mathlib` states only in the GLOBAL form
   `p x`.  This is the pointwise form of Stacks `036M` ("smooth is fppf local on the
   source").  `Fermat.formallySmooth_of_comp_of_faithfullyFlat`, the ring-level
   statement under it, was PROVEN on 2026-07-31 over the two sorry leaves of this file,
-  `Fermat.injective_liftBaseChange_h1Cotangent_of_formallySmooth` (the left end of the
-  Jacobi–Zariski sequence for a formally smooth upper map) and
+  `Fermat.injective_liftBaseChange_cotangent_toComp_of_formallySmooth` (the left end of
+  the Jacobi–Zariski sequence for a formally smooth upper map) and
   `Fermat.projective_of_projective_tensorProduct_of_faithfullyFlat` (Raynaud–Gruson,
   Stacks `058B`).
+
+**RECUT 2026-08-02, count unchanged (`1 → 1`).**  The first of those two leaves used to be
+the `H¹`-level statement `Fermat.injective_liftBaseChange_h1Cotangent_of_formallySmooth`,
+which is now PROVEN over the naive-complex statement `T ⊗[S] I/I² → J/J²` — the "cheaper
+target" its own docstring already named.  The two are EQUIVALENT under `[Module.Flat S T]`
+and both directions are theorems here
+(`Fermat.injective_liftBaseChange_cotangent_toComp_of_injective_h1Cotangent` is the
+converse), so the earlier leaf's faithfulness audit transfers with nothing re-derived.
+What left the leaf is the presentation-independence bookkeeping (`H1Cotangent.map_eq`, the
+comparison with `Generators.self R T`, naturality of `h1Cotangentι` across a flat base
+change); what is LEFT in it is exactly `H₂(L_{T/S}) = 0`, i.e. quasi-regularity of the
+kernel of a presentation of a formally smooth algebra.  See that leaf's docstring for the
+three routes that were checked and refuted.
 
 Both are extracted from `Fermat/FLT/ModularCurve/X0.lean`, where the second is the
 whole content of the `⊆` half of `smoothLocus_pairSquareMap` — the last obstruction
@@ -55,10 +68,120 @@ section Descent
 variable (R S T : Type*) [CommRing R] [CommRing S] [CommRing T]
 variable [Algebra R S] [Algebra S T] [Algebra R T] [IsScalarTower R S T]
 
+/-- `Algebra.H1Cotangent.map R R S T` computed against the COMPOSITE presentation
+`(self S T).comp (self R S)` of `T` over `R`: it is the map induced by
+`Generators.toComp`, followed by the comparison with `self R T`.
+
+Both halves are `Algebra.Extension.H1Cotangent.map` of a `Hom` of extensions, and
+`Extension.H1Cotangent.map_eq` says any two `Hom`s between the same two extensions induce
+the same map — which is the whole proof, and the reason `H¹` may be computed against
+whichever presentation is convenient. -/
+theorem h1Cotangent_map_eq_comp :
+    Algebra.H1Cotangent.map R R S T
+      = (Algebra.Extension.H1Cotangent.map
+          (Algebra.Generators.defaultHom
+            ((Algebra.Generators.self S T).comp (Algebra.Generators.self R S))
+            (Algebra.Generators.self R T)).toExtensionHom).restrictScalars S ∘ₗ
+        Algebra.Extension.H1Cotangent.map
+          ((Algebra.Generators.self S T).toComp
+            (Algebra.Generators.self R S)).toExtensionHom := by
+  rw [← Algebra.Extension.H1Cotangent.map_comp]
+  exact Algebra.Extension.H1Cotangent.map_eq _ _
+
+/-- Naturality of `Extension.h1Cotangentι` (`Extension.Cotangent.map_comp_h1Cotangentι`,
+which is `rfl`) carried across the base change `- ⊗[S] T`: the `H¹` map into the composite
+presentation is the restriction of the `Cotangent` map. -/
+theorem key_h1Cotangentι_liftBaseChange
+    (z : T ⊗[S] (Algebra.Generators.self R S).toExtension.H1Cotangent) :
+    ((Algebra.Extension.Cotangent.map
+        ((Algebra.Generators.self S T).toComp
+          (Algebra.Generators.self R S)).toExtensionHom).liftBaseChange T)
+        (LinearMap.lTensor T
+          (Algebra.Extension.h1Cotangentι
+            (P := (Algebra.Generators.self R S).toExtension)) z)
+      = (((Algebra.Extension.H1Cotangent.map
+          ((Algebra.Generators.self S T).toComp
+            (Algebra.Generators.self R S)).toExtensionHom).liftBaseChange T) z).1 := by
+  induction z with
+  | zero => simp
+  | tmul t x => simp [LinearMap.liftBaseChange_tmul]
+  | add x y hx hy => simp [hx, hy]
+
+/-- **`T ⊗[S] I/I² → J/J²` IS INJECTIVE WHEN `T` IS FORMALLY SMOOTH OVER `S`**
+(sorry leaf; **RECUT 2026-08-02** out of
+`injective_liftBaseChange_h1Cotangent_of_formallySmooth` below, which is now PROVEN over
+it — count unchanged, `1 → 1`).
+
+Concretely, with `I = ker(R[X_S] ↠ S)` and `J = ker(R[Y_T, X_S] ↠ T)` the kernels of the
+tautological presentations, this says
+
+    IB ∩ J² = I²B + IB·J,        B = R[Y_T, X_S],
+
+i.e. that the naive-complex row `T ⊗[S] P.Cotangent → (Q.comp P).Cotangent → Q.Cotangent → 0`
+of `Algebra.Generators.Cotangent.exact` is exact **at the left** as well.
+
+**IT IS EQUIVALENT TO THE STATEMENT IT REPLACES, and both directions are in this file**, so
+the earlier leaf's faithfulness audit transfers with nothing to re-derive:
+
+* `injective_liftBaseChange_h1Cotangent_of_formallySmooth` is proven over this one, and
+* `injective_liftBaseChange_cotangent_toComp_of_injective_h1Cotangent` below proves the
+  converse from the `H¹` statement as an explicit hypothesis (no circularity).
+
+The mechanism of the converse is worth knowing, because it is what makes this a recut and
+not a weakening: `Extension.CotangentSpace.map_toComp` is injective and
+`map_comp_cotangentComplex_baseChange` commutes, so `ker u` already lies inside
+`ker (T ⊗ P.cotangentComplex)`, which flatness identifies with `T ⊗ H¹(L_{S/R})`.  In other
+words `ker u` IS the kernel of the `H¹` map — nothing else can be in it.
+
+**WHAT WOULD CLOSE IT, and it is `H₂` however it is dressed.**  In the derived world
+`ker u` is the image of `H₂(L_{T/S}) → H₁(L_{S/R} ⊗^L_S T)`, and `T` formally smooth over
+`S` gives `L_{T/S} ≃ Ω_{T/S}[0]`, hence `H₂(L_{T/S}) = 0`.  At this pin there is no `H₂`:
+mathlib has only the NAIVE cotangent complex (`Mathlib/RingTheory/Kaehler/JacobiZariski.lean`
+says so in its own header, and its `Algebra.H1Cotangent.exact_liftBaseChange_map_of_flat`
+stops at exactness in the MIDDLE, `[stacks 00S2]`).  The naive-complex avatar of the missing
+input is **quasi-regularity of `K = ker(S[Y] ↠ T)`** — `Sym_T(K/K²) ≅ gr_K(S[Y])` — which is
+what a formally smooth `S → T` supplies (the sections `T → S[Y]/K^n`, built inductively from
+`Algebra.FormallySmooth.iff_split_surjection`, each `S[Y]/K^{n+1} ↠ S[Y]/K^n` being a
+square-zero extension of `S`-algebras).  That is a real development and it is the whole of
+what is left here.
+
+**THREE THINGS THAT WERE CHECKED AND DO NOT WORK** (2026-08-02), recorded so they are not
+re-tried:
+
+* *"`Q.Cotangent` is projective, so the row splits on the right"* — true (`FormallySmooth S T`
+  makes `Q.cotangentComplex` split injective into the free `Q.CotangentSpace`, by
+  `Algebra.Extension.formallySmooth_iff_split_injection`), and it gives
+  `(Q.comp P).Cotangent ≅ im u ⊕ Q.Cotangent`, which says nothing about `ker u`.
+* *"descend split injectivity of the cotangent complex along the faithfully flat `S → T`"* —
+  the 2026-07-30 route, still the right shape for the `Ω` half.  For the `H¹` half it is
+  CIRCULAR: a retraction of `T ⊗ P.cotangentComplex` would have to be assembled out of a
+  retraction of `u`, and `u` is what is being proven injective.
+* *"add `[Algebra.FormallySmooth R T]`, which the only consumer has anyway"* — that makes
+  the leaf **equivalent to the consumer's own conclusion** and so buys nothing: with
+  `H¹(L_{T/R}) = 0` one gets `ker u = T ⊗ H¹(L_{S/R})` on the nose, and `u` injective then
+  says exactly `T ⊗ H¹(L_{S/R}) = 0`.  Do not add it.
+
+**`Algebra.FormallySmooth S T` IS LOAD-BEARING.**  Without it the statement is the flat
+case of Stacks `02VL`, whose only known proof runs through *"`A → B` flat local of
+Noetherian local rings, `B` regular ⟹ `A` regular"* (Stacks `00OJ`), i.e. through Serre's
+criterion — which is at this pin in NEITHER direction.  See the deleted-block note in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothLocusPerfect.lean`.
+
+`[Module.Flat S T]` is kept because the consumer has it and because it is what makes the
+converse above go through; it is not known to be needed for truth. -/
+theorem injective_liftBaseChange_cotangent_toComp_of_formallySmooth
+    [Module.Flat S T] [Algebra.FormallySmooth S T] :
+    Function.Injective
+      ((Algebra.Extension.Cotangent.map
+          ((Algebra.Generators.self S T).toComp
+            (Algebra.Generators.self R S)).toExtensionHom).liftBaseChange T) :=
+  sorry
+
 /-- **THE JACOBI–ZARISKI SEQUENCE EXTENDS TO THE LEFT WITH A ZERO WHEN THE UPPER MAP
-IS FORMALLY SMOOTH** (sorry leaf, cut 2026-07-31 out of
-`formallySmooth_of_comp_of_faithfullyFlat` below).  For `R → S → T` with `T` FLAT and
-FORMALLY SMOOTH over `S`,
+IS FORMALLY SMOOTH** (**PROVEN 2026-08-02** over
+`injective_liftBaseChange_cotangent_toComp_of_formallySmooth` above; the leaf it used to be
+was cut 2026-07-31 out of `formallySmooth_of_comp_of_faithfullyFlat` below).  For
+`R → S → T` with `T` FLAT and FORMALLY SMOOTH over `S`,
 
     T ⊗[S] H¹(L_{S/R}) → H¹(L_{T/R})
 
@@ -75,34 +198,94 @@ is INJECTIVE.
 makes `L_{T/S}` a projective module in degree `0`, so `H₂(L_{T/S}) = 0` and the map is
 injective.
 
-**WHAT IS MISSING, checked against the pin on 2026-07-31.**  Mathlib's Jacobi–Zariski
-file (`Mathlib/RingTheory/Kaehler/JacobiZariski.lean`) proves exactness of
-
-    T ⊗[S] H¹(L_{S/R}) →ˡᵇᶜ H¹(L_{T/R}) → H¹(L_{T/S})
-
-at the MIDDLE term (`Algebra.H1Cotangent.exact_liftBaseChange_map_of_flat`, `[stacks
-00S2]`) and stops there, because the NAIVE cotangent complex has no `H₂` to continue
-with — the file's own header says as much.  So the missing input is either `H₂` of the
-full cotangent complex (absent at this pin), or, in the snake-lemma presentation
-mathlib actually uses, injectivity of
-
-    T ⊗[S] P.Cotangent → (Q.comp P).Cotangent
-
-for `P` a presentation of `S` over `R` and `Q` one of `T` over `S`.  That second form is
-the cheaper target: with `T` formally smooth over `S` the presentation `Q` may be chosen
-so that `Q.Cotangent → Q.CotangentSpace` is split injective, and the snake lemma then
-delivers the whole left end.  Everything else in `formallySmooth_of_comp_of_faithfullyFlat`
-is now proven over this one statement and over `Module.Projective`-descent below.
-
-**`Algebra.FormallySmooth S T` IS LOAD-BEARING.**  Without it the statement is the flat
-case of Stacks `02VL`, whose only known proof runs through *"`A → B` flat local of
-Noetherian local rings, `B` regular ⟹ `A` regular"* (Stacks `00OJ`), i.e. through Serre's
-criterion — which is at this pin in NEITHER direction.  See the deleted-block note in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothLocusPerfect.lean`. -/
+**THE PROOF, and why it moves the obligation into the naive complex.**  `H1Cotangent` is
+independent of the presentation, so the map may be computed against the composite
+presentation `Q.comp P` of `T` over `R`, where `Q = Generators.self S T` and
+`P = Generators.self R S`; `Algebra.Extension.H1Cotangent.map_eq` (any two homs between two
+extensions induce the same map) is what licenses the substitution, and the comparison with
+`Generators.self R T` is the isomorphism `Algebra.Generators.H1Cotangent.equiv`.  There,
+`h1Cotangentι` is natural (`Extension.Cotangent.map_comp_h1Cotangentι`, which is `rfl`), so
+the `H¹` map sits inside the `Cotangent` map after tensoring with the injective
+`T ⊗ h1Cotangentι` — injective because `T` is flat over `S`.  Everything about the
+geometry has moved into the leaf above. -/
 theorem injective_liftBaseChange_h1Cotangent_of_formallySmooth
     [Module.Flat S T] [Algebra.FormallySmooth S T] :
-    Function.Injective ((Algebra.H1Cotangent.map R R S T).liftBaseChange T) :=
-  sorry
+    Function.Injective ((Algebra.H1Cotangent.map R R S T).liftBaseChange T) := by
+  classical
+  -- the naive-complex map is injective: that is the leaf
+  have hu := injective_liftBaseChange_cotangent_toComp_of_formallySmooth R S T
+  -- `T ⊗ h1Cotangentι` is injective, by flatness
+  have hflat : Function.Injective
+      (LinearMap.lTensor T (Algebra.Extension.h1Cotangentι
+        (P := (Algebra.Generators.self R S).toExtension))) :=
+    Module.Flat.lTensor_preserves_injective_linearMap _
+      Algebra.Extension.h1Cotangentι_injective
+  -- hence the `H¹` map into the composite presentation is injective
+  have hι : Function.Injective
+      ((Algebra.Extension.H1Cotangent.map
+        ((Algebra.Generators.self S T).toComp
+          (Algebra.Generators.self R S)).toExtensionHom).liftBaseChange T) := by
+    intro a b hab
+    refine hflat (hu ?_)
+    rw [key_h1Cotangentι_liftBaseChange R S T a,
+      key_h1Cotangentι_liftBaseChange R S T b, hab]
+  -- and `Algebra.H1Cotangent.map R R S T` is that map followed by an isomorphism
+  rw [h1Cotangent_map_eq_comp R S T, ← LinearMap.liftBaseChange_comp]
+  exact (Algebra.Generators.H1Cotangent.equiv
+    ((Algebra.Generators.self S T).comp (Algebra.Generators.self R S))
+    (Algebra.Generators.self R T)).injective.comp hι
+
+/-- **THE CONVERSE, i.e. the receipt that the recut above is faithful.**  Injectivity of
+`T ⊗[S] H¹(L_{S/R}) → H¹(L_{T/R})` implies injectivity of `T ⊗[S] I/I² → J/J²`, so the two
+statements are EQUIVALENT under `[Module.Flat S T]` and nothing was strengthened when the
+leaf moved from one to the other.
+
+The hypothesis is taken explicitly rather than as an instance, so there is no circularity
+with `injective_liftBaseChange_h1Cotangent_of_formallySmooth` above: this is a genuine
+implication between two propositions, and `Algebra.FormallySmooth S T` does not appear.
+
+`ker u` cannot be bigger than the kernel of the `H¹` map, because
+`Algebra.Generators.CotangentSpace.map_toComp_injective` and
+`Algebra.Generators.H1Cotangent.map_comp_cotangentComplex_baseChange` force every element
+of `ker u` into `ker (T ⊗ P.cotangentComplex)`, which flatness identifies with
+`T ⊗[S] H¹(L_{S/R})` via `Module.Flat.lTensor_exact`. -/
+theorem injective_liftBaseChange_cotangent_toComp_of_injective_h1Cotangent
+    [Module.Flat S T]
+    (h : Function.Injective ((Algebra.H1Cotangent.map R R S T).liftBaseChange T)) :
+    Function.Injective
+      ((Algebra.Extension.Cotangent.map
+          ((Algebra.Generators.self S T).toComp
+            (Algebra.Generators.self R S)).toExtensionHom).liftBaseChange T) := by
+  classical
+  rw [h1Cotangent_map_eq_comp R S T, ← LinearMap.liftBaseChange_comp,
+    LinearMap.coe_comp] at h
+  have hι : Function.Injective
+      ((Algebra.Extension.H1Cotangent.map
+        ((Algebra.Generators.self S T).toComp
+          (Algebra.Generators.self R S)).toExtensionHom).liftBaseChange T) :=
+    h.of_comp
+  rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+  intro z hz
+  rw [LinearMap.mem_ker] at hz
+  -- `z` dies in the cotangent SPACE, hence comes from `T ⊗ H¹`
+  have hzCS : (Algebra.Generators.self R S).toExtension.cotangentComplex.baseChange T z = 0 := by
+    apply Algebra.Generators.CotangentSpace.map_toComp_injective
+      (Algebra.Generators.self S T) (Algebra.Generators.self R S)
+    rw [map_zero, ← LinearMap.comp_apply,
+      Algebra.Generators.H1Cotangent.map_comp_cotangentComplex_baseChange,
+      LinearMap.comp_apply, hz, map_zero]
+  rw [LinearMap.baseChange_eq_ltensor, ← LinearMap.mem_ker,
+    (Module.Flat.lTensor_exact T
+      (Algebra.Generators.self R S).toExtension.exact_hCotangentι_cotangentComplex
+        ).linearMap_ker_eq] at hzCS
+  obtain ⟨w, rfl⟩ := hzCS
+  rw [key_h1Cotangentι_liftBaseChange R S T w] at hz
+  have hw0 : ((Algebra.Extension.H1Cotangent.map
+      ((Algebra.Generators.self S T).toComp
+        (Algebra.Generators.self R S)).toExtensionHom).liftBaseChange T) w = 0 :=
+    Subtype.ext hz
+  have hw : w = 0 := hι (by rw [hw0, map_zero])
+  rw [hw, map_zero]
 
 /-- **PROJECTIVITY DESCENDS ALONG A FAITHFULLY FLAT RING MAP** (sorry leaf, cut
 2026-07-31 out of `formallySmooth_of_comp_of_faithfullyFlat` below) — Raynaud–Gruson,
