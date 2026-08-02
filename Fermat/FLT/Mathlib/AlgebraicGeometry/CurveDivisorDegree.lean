@@ -7,6 +7,8 @@ module
 
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.PrincipalDivisorDegree
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.BirationalFunctionField
+public import Mathlib.AlgebraicGeometry.OrderOfVanishing
+public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 
 /-!
 # From `div f = [x] − [y]` to birationality with the affine line
@@ -112,6 +114,12 @@ namespace Scheme
 
 variable {X : Scheme.{u}} [IsIntegral X] [IsLocallyNoetherian X]
 
+-- `ord_one` and `ord_inv` USED TO BE DECLARED HERE, character-for-character as in
+-- `PrincipalDivisorDegree` (which is now imported above), `@[simp]` and all.  Two branches
+-- built this layer independently and both landed; the duplicate pair is what made the two
+-- modules un-co-importable, and `X0.lean` dropped ITS import of this file at release 31
+-- rather than resolve it.  Deleted 2026-08-01; recover with
+-- `git show 280981f1:Fermat/FLT/Mathlib/AlgebraicGeometry/CurveDivisorDegree.lean`.
 lemma ord_div {f g : X.functionField} (hf : f ≠ 0) (hg : g ≠ 0) (z : X) :
     ord (f / g) z = ord f z - ord g z := by
   rw [div_eq_mul_inv, ord_mul hf (inv_ne_zero hg), ord_inv hg]
