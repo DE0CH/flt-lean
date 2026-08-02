@@ -3249,11 +3249,90 @@ an affine base.  That is the honest reason this is the file's one
 research-scale node, and it is worth knowing before starting rather than
 after.
 
+**EXPRESSIBILITY CORRECTION, 2026-08-01 — the paragraph above is right
+about MORPHISM PROPERTIES and wrong about EXPRESSIBILITY, and the
+difference matters precisely because this leaf's base is AFFINE.**  The
+re-grep confirms every clause of it: there is no `IsProjective` morphism
+property, no relative ampleness, no very-ample sheaf for a morphism, and
+`AmpleSheaf.lean` is about a sheaf on one scheme.  But "projective over an
+affine base" does not need any of those.  The pin has
+
+* `AlgebraicGeometry.Proj 𝒜` for a graded algebra `𝒜`
+  (`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/`), together with its
+  structure morphism `AlgebraicGeometry.Proj.toSpecZero : Proj 𝒜 ⟶ Spec (𝒜 0)`
+  (`ProjectiveSpectrum/Basic.lean`), and properness of `Proj`
+  (`ProjectiveSpectrum/Proper.lean`);
+* `MvPolynomial.gradedAlgebra : GradedAlgebra (homogeneousSubmodule σ R)`
+  (`Mathlib/RingTheory/MvPolynomial/Homogeneous.lean`, a local instance).
+
+So `ℙⁿ_A` IS namable as `Proj (MvPolynomial.homogeneousSubmodule (Fin (n+1)) A)`,
+its structure map to `Spec` of the degree-zero part is `toSpecZero`, and
+"there is a closed immersion `Y ⟶ ℙⁿ_V` over `V`" is a statement this pin
+can make with no relative-ampleness API at all.  Whoever repeats the
+absence check must search for the OBJECT (`Proj`, a graded algebra, a
+closed immersion) and not for the THEORY (`IsProjective`, relative
+ampleness); searching for the theory returns nothing and reads as
+conclusive.
+
+**AND THE CUT IS STILL NOT WORTH TAKING — a separate finding with its own
+reason, so that the correction above is not read as a licence.**  Cutting
+along (ii)/(iii) trades one leaf for two, and BOTH stay research-scale:
+step (ii) — a smooth proper geometrically connected relative curve with a
+section over an affine base is projective — is the finite constant-genus
+decomposition PLUS the very-ampleness of `𝒪((2g+1)·o)`, and very-ampleness
+is read off RIEMANN–ROCH.  Checked 2026-08-01: there is no `VeryAmple` or
+`IsVeryAmple` predicate anywhere in the pin, and
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean` gives only Riemann's
+ASYMPTOTIC form — `IsCurveGenus strX g` unfolds to
+`∃ B, ∀ D, IsDivisorOn X D → B ≤ deg D → ℓ(D) = deg D + 1 − g` — over a
+FIELD base, with no `ℓ(K − D)` correction term and no very-ampleness
+criterion, so it does not apply to a relative curve over an affine base at
+all.  The honest price of the split is therefore 1 leaf becomes 2, one of
+them gated on a theory that is itself absent.  Take it only together with a
+Riemann–Roch development, and say so in the same commit.
+
+**THE CONJUNCTION DOES NOT SPLIT EITHER (audited 2026-08-01).**  The
+obvious three-way cut — (A) representability, (B) `∀ P, IsRelPicOf → Smooth`,
+(C) `∀ P, IsRelPicOf → IsSeparated` — looks free because the transport
+bridges `smooth_of_isRelPicOf_of_smooth` and
+`isSeparated_of_isRelPicOf_of_isSeparated` are already PROVEN above.  It is
+not free, and it is worse than the bundle, by either route a prover has:
+
+* *via BLR*: BLR reads smoothness and separatedness OFF ITS CONSTRUCTION,
+  so proving (B) or (C) from the literature needs a constructed
+  representing object to transport from — i.e. each of (B) and (C)
+  CONTAINS (A).  Three leaves, none smaller than the original;
+* *functorially on the given `pstr`*: smoothness by the infinitesimal
+  lifting criterion and separatedness by the valuative criterion are both
+  statements about `P(T) = Pic(Y_T)/Pic(T)` and so can be run on an
+  arbitrary representing object — but both criteria additionally need
+  `LocallyOfFinitePresentation pstr` (resp. quasi-separatedness), which is
+  NOT in the conclusion and is not derivable from `IsRelPicOf` without the
+  limit-preservation theorem for the Picard functor.  So this route needs a
+  strictly larger conclusion before it can start.
+
+Either way the count goes 1 → 3 with no half smaller than the whole.  The
+bundled form is the right one; do not "simplify" it.
+
 **FAITHFULNESS AUDIT (fresh — this is a NEW statement, so nothing is
 inherited).**  TRUE: it is BLR 8.2/1 + 8.4/2 verbatim, which construct
 `Pic_{Y/V}` as a smooth separated `V`-scheme locally of finite type for a
 projective flat family of integral curves, and over an affine `V` the
 hypotheses give exactly such a family.
+
+**THE ONE WAY THIS STATEMENT COULD HAVE BEEN FALSE IN LEAN, CHECKED
+2026-08-01.**  `Pic_{Y/V}` is locally of finite type and is NOT
+quasi-compact — its degree components are indexed by `ℤ` — so a `Smooth`
+predicate carrying a finite-type or quasi-compact clause would make the
+`Smooth pstr` conjunct FALSE as stated, at every curve, with nothing about
+the mathematics wrong.  It does not: mathlib's `AlgebraicGeometry.Smooth`
+is `affineLocally RingHom.Smooth` (`Morphisms/Smooth.lean`, the
+`HasRingHomProperty` instance), a purely affine-local condition with no
+global finiteness in it, so an infinite disjoint union of smooth pieces is
+smooth.  `IsSeparated` is likewise the diagonal being a closed immersion
+and is unaffected.  The conjunct is therefore faithful; this is recorded
+because it is the obvious way "Pic is smooth" goes wrong in a formal
+statement and nobody had checked it.
 
 *Every hypothesis is load-bearing.*  Drop `IsAffine V` and (ii) fails —
 over a general base the constant-genus decomposition can be infinite and
@@ -3272,7 +3351,33 @@ development cannot state.
 *The strengthened conclusion admits no junk witness*: `P = V`,
 `pstr = 𝟙 V` IS smooth and separated but fails `surj` at any curve of
 positive genus, by the `𝒪(Δ) ⊗ 𝒪(−o)` computation in the `IsRelPicOf`
-docstring. -/
+docstring.
+
+**REACHABILITY (2026-08-01) — this leaf is LIVE, and all three conjuncts
+are consumed.**  Checked on comment-stripped source, so docstring mentions
+do not count.  The chain is
+`exists_relPicOf_of_isAffineBase` → `exists_relPicOf_isAffineOpen` →
+`exists_relPicOf_of_forall_isAffineOpen` →
+`exists_relPicOf_of_hasUniversallyTrivialPushforward` → `exists_relPicFull`,
+and `exists_relPicFull` is projected three ways: `Smooth` by
+`smooth_of_isRelPicOf`, `IsSeparated` by `isSeparated_of_isRelPicOf`, and
+the representability alone by `exists_relPicZero`, which is what the
+Jacobian development downstream consumes.  So none of the three conjuncts
+is decoration and the leaf is not the dead-leaf case.
+
+**TWO PIN POINTERS FOR A SUCCESSOR, so they are not re-searched.**
+`Mathlib/AlgebraicGeometry/Sites/Representability.lean` proves
+`AlgebraicGeometry.Scheme.LocalRepresentability.isRepresentable` — a Zariski
+sheaf on `Sch` with a jointly-surjective family of relatively representable
+open immersions from schemes is representable (Stacks 01JJ).  That is the
+GLUING half, which this file has already proven by hand as
+`exists_relPicOf_of_forall_isAffineOpen`; it is worth knowing that mathlib
+has it, and it confirms that gluing is not where the difficulty of FGA 232
+lives.  And `Mathlib/AlgebraicGeometry/Sites/Fpqc.lean` does give an FPQC
+topology (with `CategoryTheory.MorphismProperty.Representable` beside it),
+so the standing claim elsewhere in this file that the development "cannot
+state" a sheafification is exactly right about FPPF and not about
+descent-topology machinery in general. -/
 theorem exists_relPicOf_of_isAffineBase {Y V : Scheme.{u}} (strY : Y ⟶ V) [IsAffine V]
     (_hproper : IsProper strY) (_hsmooth : SmoothOfRelativeDimension 1 strY)
     (_hconn : GeometricallyConnected strY) (_o : RelPoint strY (𝟙 V))
@@ -5487,7 +5592,18 @@ name the wrong gate.**
   over ONE scheme and carries no projective embedding.  That is why
   `exists_relPicOf_of_isAffineBase` above has to say "affine base" instead
   of "projective", and why step (ii) of FGA 232 cannot be cut out as a leaf
-  of its own — there is nothing to state it in terms of. -/
+  of its own — there is nothing to state it in terms of.
+  **CORRECTED 2026-08-01, and the correction lives on
+  `exists_relPicOf_of_isAffineBase` itself, which is where a prover reads
+  it**: the first two sentences are right and the last one is wrong.  There
+  is indeed no `IsProjective` and no ampleness for MORPHISMS — but at an
+  AFFINE base, which is the base that leaf has, projectivity is expressible
+  without any of that, as a closed immersion into
+  `Proj (MvPolynomial.homogeneousSubmodule (Fin (n+1)) A)` over
+  `Spec (𝒜 0)` via `AlgebraicGeometry.Proj.toSpecZero`.  Step (ii) IS
+  cuttable; it is declined for a different reason (it needs Riemann–Roch,
+  which the tree does not have).  Read the audit on that leaf before acting
+  on this paragraph. -/
 theorem exists_relPicOf_of_hasUniversallyTrivialPushforward {X S : Scheme.{u}} (strX : X ⟶ S)
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))

@@ -26343,3 +26343,67 @@ the synonym by defeq. Do it with an `obtain` so the map is opaque and cannot be 
 `(ρ.baseChange Q).toLocal v σ : Module.End Q _`. Use the same `obtain ⟨f, hf⟩ : ∃ f, ∀ x,
 f x = …` idiom for the conjugated endomorphism itself — `set` leaves a let-bound local
 that later `rw`s zeta-unfold, and `fun _ => rfl` discharges the characterising equation.
+## AN "ABSENT FROM THE PIN" VERDICT ABOUT A *MORPHISM PROPERTY* CAN BE CORRECT AND IRRELEVANT — SEARCH FOR THE OBJECT, AT YOUR LEAF'S OWN GENERALITY
+(2026-08-01, `flt-lean-333`, on `exists_relPicOf_of_isAffineBase` in
+`ModularCurve/RelativePicard.lean`.)  That leaf carried a bolded, dated,
+re-checked verdict:
+> **THERE IS NO PROJECTIVITY API AT THIS PIN, so step (ii) cannot be cut out as
+> a leaf of its own.**  `Mathlib/AlgebraicGeometry/` contains no `IsProjective`,
+> no relative ampleness and no very-ample sheaf for MORPHISMS … So the
+> reduction (ii) has nothing to reduce TO.
+Every factual clause re-greps identically today.  The inference is still wrong,
+and the reason is one this file has not recorded before: **the verdict searched
+for the notion as a MORPHISM PROPERTY, while the leaf's base is AFFINE, where
+the same notion is an OBJECT.**  The pin has `AlgebraicGeometry.Proj 𝒜`, its
+structure map `Proj.toSpecZero : Proj 𝒜 ⟶ Spec (𝒜 0)`
+(`ProjectiveSpectrum/Basic.lean`), properness of `Proj`
+(`ProjectiveSpectrum/Proper.lean`) and `MvPolynomial.gradedAlgebra`.  So
+`ℙⁿ_A` is namable and "there is a closed immersion `Y ⟶ ℙⁿ_V` over `V`" is
+perfectly statable — with no relative-ampleness API anywhere.
+**The generalisable check, and it costs one `ls`: before believing that a
+notion cannot be STATED, re-ask the question at the generality your leaf
+actually has.** A leaf that has already been reduced to a special base has, by
+construction, more vocabulary available than the general statement does — and
+the absence audit is almost always written in the general statement's
+vocabulary, because that is the vocabulary of the citation. `IsProjective f`
+needs relative ampleness; `Y ⟶ Proj 𝒜 over Spec (𝒜 0)` needs nothing. Same
+mathematics, and only one of the two is a property.
+**TWO RIDERS, and the first is what keeps this from being a licence.**
+* **Correcting an absence claim does not make the cut worth taking — price the
+  residue separately.** Here the (ii)/(iii) split is still bad: step (ii) is the
+  finite constant-genus decomposition PLUS very-ampleness of `𝒪((2g+1)·o)`, and
+  very-ampleness is read off RIEMANN–ROCH, which the tree does not have. So the
+  honest trade is 1 leaf → 2, one of them gated on an absent theory. Say both
+  things — the claim was wrong AND the cut is still declined — or the next agent
+  reads the correction as an instruction.
+* **Before splitting a CONJUNCTIVE conclusion, check whether each conjunct's
+  proof CONTAINS the others.** The three-way cut of
+  `∃ P, Nonempty (IsRelPicOf …) ∧ Smooth ∧ IsSeparated` looks free, because the
+  transport bridges (`smooth_of_isRelPicOf_of_smooth` and its sibling) are
+  already PROVEN — so the `∀ representing object` shape is legitimate. It is not
+  free: the literature reads smoothness and separatedness OFF ITS CONSTRUCTION,
+  so proving either from the citation needs a constructed representing object to
+  transport from, i.e. each half contains the representability half. **A proven
+  transport bridge makes a `∀`-shaped statement TRUE and CITEABLE; it does not
+  make its proof independent of the existence half.** The count would go 1 → 3
+  with no half smaller than the whole.
+## A `Prop` DEFINED AFFINE-LOCALLY PROTECTS A NON-QUASI-COMPACT OBJECT — CHECK THE PIN'S DEFINITION BEFORE ASSERTING *OR* REFUTING A GLOBAL FINITENESS CLAUSE
+(Same leaf, and it is the check that could have refuted it.)  `Pic_{Y/V}` is
+locally of finite type and is **not quasi-compact** — its degree components are
+indexed by `ℤ`.  So a Lean statement asserting `Smooth pstr` is FALSE at every
+curve, with nothing mathematically wrong, if the pin's `Smooth` carries a
+finite-type or quasi-compact clause.  That is the obvious way "Pic is smooth"
+goes wrong in a formal statement, it is invisible from the mathematics, and
+nobody had checked it.
+It is fine here: `AlgebraicGeometry.Smooth` is `affineLocally RingHom.Smooth`
+(`Morphisms/Smooth.lean`, via its `HasRingHomProperty` instance) — a purely
+affine-local condition with no global finiteness in it, so an infinite disjoint
+union of smooth pieces is smooth. `IsSeparated` is the diagonal being a closed
+immersion and is likewise unaffected.
+**The standing check: whenever a leaf asserts a MORPHISM PROPERTY of an object
+you know to be non-quasi-compact, non-Noetherian, or infinite-dimensional, open
+the pin's definition of that property and look for the global clause.** Mathlib
+states most `MorphismProperty`s affine-locally and most of them are therefore
+safe — but "most" is not "all" (`IsProper`, `IsFinite`, `QuasiCompact` all carry
+global clauses), and the failure mode is a leaf that is false as stated while
+every reviewer checks the mathematics and passes it.
