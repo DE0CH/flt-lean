@@ -35803,6 +35803,206 @@ theorem pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal
     simpa using this
   exact eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal_of_isUnit hunit hy1 hysub
 
+/-! ### THE RESIDUE CHARACTERISTIC IS `ℓ`, AND THE WILD-INERTIA CLAUSE IS FREE
+
+(New 2026-07-31, four PROVEN declarations. They discharge the step that
+`exists_hilbertAuxDiamondGeneratorsPinned` below flagged, in bold, as **THE STEP
+TO CHECK** — and the answer is that it checks out, over a hypothesis its own
+caller was already holding.)
+
+That leaf's docstring recorded the worry precisely: the wild-kernel clause is
+derivable from "`1 + 𝔪_{R_Q}` is pro-`ℓ`" plus
+`exists_pow_eq_of_mem_wildInertiaGroup`, but pro-`ℓ`-ness needs
+`(ℓ : R_Q) ∈ 𝔪`, i.e. residue characteristic `ℓ`, and
+`HilbertAuxDeformationDatum` posits only `Algebra ℤ_[ℓ] R` and a surjection onto
+`k`. The docstring went on: *"If `char k = ℓ` turns out not to be derivable from
+the structure … then the honest repair is a field or a hypothesis, NOT a weaker
+clause here."*
+
+**It IS derivable, and the repair is neither a field nor a new hypothesis.**
+`natCast_eq_zero_of_hilbertAuxDeformationDatum` (PROVEN, ~1700 lines above)
+already says `((ℓ : ℕ) : k) = 0` — over `[Finite k]`, which is exactly what a
+finite field receiving `ℤ_ℓ` needs. And `[Finite k]` is carried by
+`exists_hilbertTaylorWilesAuxLevelData`, the top of the six-declaration diamond
+chain, and by nothing between it and the leaf: the chain
+`…GeneratorsPinned → …Generators → …Quotient_of_exponents → …Quotient →
+…Control → …RingPresentation` had simply dropped it. Adding it back changes no
+call site — it is an instance binder and instance search finds it — which is
+this file's own standing observation that *the missing hypothesis is usually
+already in the caller's hand*.
+
+The four declarations are:
+
+* `natCast_mem_maximalIdeal_of_hilbertAuxDeformationDatum` — `ℓ ∈ 𝔪_{R_Q}`,
+  three lines over `natCast_eq_zero_of_hilbertAuxDeformationDatum` and
+  `IsLocalRing.ker_eq_maximalIdeal`;
+* `sub_one_mem_pow_succ_of_natCast_mem_maximalIdeal` — one step of the
+  filtration: `y ≡ 1 mod 𝔪^{n+1}` forces `y^ℓ ≡ 1 mod 𝔪^{n+2}`. The identity is
+  `y^ℓ − 1 = ℓ·(y−1) + (y−1)²·c`, obtained from
+  `∑_{i<ℓ} y^i = ℓ + c·(y−1)`, which is `geom_sum_mul` plus the observation that
+  `y − 1` divides every `y^i − 1` — the same two moves
+  `eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal_of_isUnit` above makes;
+* `eq_one_of_forall_exists_pow_pow_eq_of_natCast_mem_maximalIdeal` — the
+  pro-`ℓ` statement: an element of `1 + 𝔪` that is, for EVERY `e`, an `ℓ^e`-th
+  power OF AN ELEMENT OF `1 + 𝔪`, is `1`. Separatedness is `IsHausdorff.haus`,
+  which `𝒟Q.isAdicComplete` supplies;
+* `forall_wildInertiaGroup_eq_one_of_sub_one_mem_maximalIdeal` — the payoff: a
+  character of the decomposition group at a place of residue characteristic
+  `≠ ℓ` that is merely RESIDUALLY trivial on wild inertia is trivial on it.
+
+**WHAT THIS DOES TO THE LEAF.** The wild-kernel clause of
+`exists_hilbertAuxDiamondGeneratorsPinned` is correspondingly WEAKENED to
+residual triviality — which is what a prover gets for free from `ρbar` being
+unramified at `Q`, rather than a statement about the pro-`ℓ` structure of `1+𝔪`
+that they would have had to rebuild — and the strong clause is recovered in
+`exists_hilbertAuxDiamondGenerators` immediately below, which holds every
+ingredient: `hQ` gives `(ℓ : 𝓞 F) ∉ (w i).asIdeal`, and `𝒟Q` gives the rest. The
+frontier count does not move; what left the leaf is the whole of this section.
+-/
+
+/-- **THE RESIDUE CHARACTERISTIC OF A RAISED-LEVEL COEFFICIENT RING IS `ℓ`, in
+the form the filtration argument wants** (PROVEN 2026-07-31): `ℓ` lies in the
+maximal ideal of `R_Q`.
+
+`natCast_eq_zero_of_hilbertAuxDeformationDatum` above gives `((ℓ : ℕ) : k) = 0`;
+`𝒟.π` is a surjection from a local ring onto the field `k`, so its kernel IS the
+maximal ideal (`IsLocalRing.ker_eq_maximalIdeal`). `[Finite k]` is the only
+hypothesis beyond the datum, and it is what the residue-characteristic lemma
+needs: a finite field receiving `ℤ_ℓ` has characteristic `ℓ`. -/
+lemma natCast_mem_maximalIdeal_of_hilbertAuxDeformationDatum (ℓ : ℕ) [Fact ℓ.Prime]
+    {F : Type u} [Field F] [NumberField F]
+    {Q : Finset (HeightOneSpectrum (𝓞 F))}
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V} (𝒟 : HilbertAuxDeformationDatum ℓ F Q ρbar) :
+    ((ℓ : ℕ) : 𝒟.R) ∈ IsLocalRing.maximalIdeal 𝒟.R := by
+  have hk : ((ℓ : ℕ) : k) = 0 := natCast_eq_zero_of_hilbertAuxDeformationDatum ℓ 𝒟
+  have hker : ((ℓ : ℕ) : 𝒟.R) ∈ RingHom.ker 𝒟.π := by
+    rw [RingHom.mem_ker, map_natCast, hk]
+  rwa [IsLocalRing.ker_eq_maximalIdeal 𝒟.π 𝒟.π_surjective] at hker
+
+/-- **ONE STEP OF THE `ℓ`-POWER FILTRATION ON `1 + 𝔪`** (PROVEN 2026-07-31): in
+a local ring in which `ℓ` lies in the maximal ideal, raising to the `ℓ`-th power
+moves an element of `1 + 𝔪^{n+1}` into `1 + 𝔪^{n+2}`.
+
+The identity is exact and needs no binomial coefficients:
+`∑_{i<ℓ} y^i − ℓ = ∑_{i<ℓ} (y^i − 1)` is divisible by `y − 1`, say
+`= c·(y − 1)`, and `geom_sum_mul` then gives
+
+    y^ℓ − 1 = (y − 1)·∑_{i<ℓ} y^i = ℓ·(y − 1) + (y − 1)²·c .
+
+The first summand is in `𝔪 · 𝔪^{n+1}` because `ℓ ∈ 𝔪`; the second is in
+`𝔪^{2(n+1)} ⊆ 𝔪^{n+2}`. **This is where the residue characteristic is spent,
+and it is the only place**: without `ℓ ∈ 𝔪` the first summand gains nothing and
+the filtration does not advance. -/
+lemma sub_one_mem_pow_succ_of_natCast_mem_maximalIdeal
+    {ℓ : ℕ} {R : Type*} [CommRing R] [IsLocalRing R]
+    (hℓ : ((ℓ : ℕ) : R) ∈ IsLocalRing.maximalIdeal R)
+    {n : ℕ} {y : R} (hy : y - 1 ∈ (IsLocalRing.maximalIdeal R) ^ (n + 1)) :
+    y ^ ℓ - 1 ∈ (IsLocalRing.maximalIdeal R) ^ (n + 2) := by
+  set 𝔪 := IsLocalRing.maximalIdeal R with h𝔪
+  have hgeom : (∑ i ∈ Finset.range ℓ, y ^ i) - (ℓ : R) ∈ Ideal.span {y - 1} := by
+    have hsum : ∑ i ∈ Finset.range ℓ, (y ^ i - 1) = (∑ i ∈ Finset.range ℓ, y ^ i) - (ℓ : R) := by
+      rw [Finset.sum_sub_distrib]; simp
+    rw [← hsum]
+    refine Ideal.sum_mem _ fun i _ => ?_
+    obtain ⟨c, hc⟩ : (y - 1) ∣ y ^ i - 1 := by simpa using sub_dvd_pow_sub_pow y 1 i
+    exact hc ▸ Ideal.mul_mem_right _ _ (Ideal.subset_span rfl)
+  obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.mp hgeom
+  have key : y ^ ℓ - 1 = (ℓ : R) * (y - 1) + (y - 1) ^ 2 * c := by
+    have h1 : (∑ i ∈ Finset.range ℓ, y ^ i) = (ℓ : R) + c * (y - 1) := by
+      linear_combination -hc
+    have h2 : (y - 1) * (∑ i ∈ Finset.range ℓ, y ^ i) = y ^ ℓ - 1 := by
+      rw [mul_comm]; exact geom_sum_mul y ℓ
+    rw [← h2, h1]; ring
+  rw [key]
+  refine Ideal.add_mem _ ?_ ?_
+  · have h1 : (ℓ : R) * (y - 1) ∈ 𝔪 ^ 1 * 𝔪 ^ (n + 1) :=
+      Ideal.mul_mem_mul (by simpa using hℓ) hy
+    rw [← pow_add, show 1 + (n + 1) = n + 2 from by omega] at h1
+    exact h1
+  · have h2 : (y - 1) ^ 2 ∈ (𝔪 ^ (n + 1)) ^ 2 := Ideal.pow_mem_pow hy 2
+    rw [← pow_mul] at h2
+    exact Ideal.mul_mem_right _ _ (Ideal.pow_le_pow_right (by omega) h2)
+
+/-- **THE `ℓ`-POWER FILTRATION, ITERATED** (PROVEN 2026-07-31): `y ≡ 1 mod 𝔪`
+forces `y^{ℓ^e} ≡ 1 mod 𝔪^{e+1}`. Induction on `e` over the previous lemma. -/
+lemma sub_one_mem_pow_of_natCast_mem_maximalIdeal
+    {ℓ : ℕ} {R : Type*} [CommRing R] [IsLocalRing R]
+    (hℓ : ((ℓ : ℕ) : R) ∈ IsLocalRing.maximalIdeal R)
+    {y : R} (hy : y - 1 ∈ IsLocalRing.maximalIdeal R) (e : ℕ) :
+    y ^ ℓ ^ e - 1 ∈ (IsLocalRing.maximalIdeal R) ^ (e + 1) := by
+  induction e with
+  | zero => simpa using hy
+  | succ e ih =>
+      have := sub_one_mem_pow_succ_of_natCast_mem_maximalIdeal hℓ ih
+      rwa [← pow_mul, ← pow_succ] at this
+
+/-- **`1 + 𝔪` IS PRO-`ℓ`: an infinitely `ℓ`-divisible element of it is `1`**
+(PROVEN 2026-07-31) — the statement this file has carried in PROSE since
+2026-07-30 (see the TAME-CHARACTER note on
+`exists_hilbertAuxDiamondQuotient_of_exponents` below, "`1 + 𝔪`, a pro-`ℓ`
+group"), now with its hypothesis made explicit.
+
+Note the divisibility must be BY ELEMENTS OF `1 + 𝔪`: an arbitrary unit `ℓ^e`-th
+root would not advance the filtration, and in the application the roots are
+values of the same character at wild-inertia elements, so they are in `1 + 𝔪`
+for the same reason `u` is. -/
+lemma eq_one_of_forall_exists_pow_pow_eq_of_natCast_mem_maximalIdeal
+    {ℓ : ℕ} {R : Type*} [CommRing R] [IsLocalRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    (hℓ : ((ℓ : ℕ) : R) ∈ IsLocalRing.maximalIdeal R)
+    {u : R}
+    (hu : ∀ e : ℕ, ∃ y : R, y - 1 ∈ IsLocalRing.maximalIdeal R ∧ y ^ ℓ ^ e = u) :
+    u = 1 := by
+  have hall : ∀ n : ℕ, u - 1 ∈ (IsLocalRing.maximalIdeal R) ^ n := by
+    intro n
+    obtain ⟨y, hy1, hy2⟩ := hu n
+    have := sub_one_mem_pow_of_natCast_mem_maximalIdeal hℓ hy1 n
+    rw [hy2] at this
+    exact Ideal.pow_le_pow_right (by omega) this
+  have hz := IsHausdorff.haus (I := IsLocalRing.maximalIdeal R) (M := R) inferInstance (u - 1) ?_
+  · exact sub_eq_zero.mp hz
+  · intro n
+    rw [SModEq.sub_mem, sub_zero, smul_eq_mul, Ideal.mul_top]
+    exact hall n
+
+/-- **A CHARACTER THAT IS RESIDUALLY TRIVIAL ON WILD INERTIA KILLS IT** (PROVEN
+2026-07-31) — the wild-kernel clause of
+`exists_hilbertAuxDiamondGeneratorsPinned` below, derived rather than demanded.
+
+At a place `v` of residue characteristic `≠ ℓ` the wild inertia `P_v` is pro-`p`
+for `p ≠ ℓ`, so `exists_pow_eq_of_mem_wildInertiaGroup` (`ArtinConductor.lean`)
+makes every element of `P_v` an `ℓ^e`-th power IN `P_v`, for EVERY `e`. Pushing
+that through `χ` exhibits `χ x` as infinitely `ℓ`-divisible inside `1 + 𝔪`, and
+the previous lemma finishes.
+
+The `ℓ^e`-th powers stay inside `P_v`, which is what makes their `χ`-values
+residually trivial too — the hypothesis is used at `θ`, not only at `x`. -/
+lemma forall_wildInertiaGroup_eq_one_of_sub_one_mem_maximalIdeal
+    {ℓ : ℕ} {K : Type u} [Field K] [NumberField K]
+    (v : HeightOneSpectrum (𝓞 K)) (hv : ((ℓ : ℕ) : 𝓞 K) ∉ v.asIdeal)
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    (hℓ : ((ℓ : ℕ) : R) ∈ IsLocalRing.maximalIdeal R)
+    (χ : Γ (v.adicCompletion K) →* Rˣ)
+    (hres : ∀ x ∈ wildInertiaGroup v, ((χ x : Rˣ) : R) - 1 ∈ IsLocalRing.maximalIdeal R)
+    {x : Γ (v.adicCompletion K)} (hx : x ∈ wildInertiaGroup v) :
+    χ x = 1 := by
+  have hprime := v.isPrime
+  have hpow : ∀ e : ℕ, ((ℓ ^ e : ℕ) : 𝓞 K) ∉ v.asIdeal := by
+    intro e he
+    rw [Nat.cast_pow] at he
+    exact hv (hprime.mem_of_pow_mem e he)
+  have hkey : ((χ x : Rˣ) : R) = 1 := by
+    refine eq_one_of_forall_exists_pow_pow_eq_of_natCast_mem_maximalIdeal (ℓ := ℓ) hℓ
+      (fun e => ?_)
+    obtain ⟨θ, hθ, hθx⟩ := exists_pow_eq_of_mem_wildInertiaGroup v (hpow e) hx
+    refine ⟨((χ θ : Rˣ) : R), hres θ hθ, ?_⟩
+    rw [← Units.val_pow_eq_pow_val, ← map_pow, hθx]
+  exact Units.ext hkey
+
 /-- **The diamond OPERATORS, PINNED TO THEIR CONSTRUCTION** (LEAF — new
 2026-07-31, the residue of `exists_hilbertAuxDiamondGenerators` immediately below
 once the exponent arithmetic is discharged; that declaration is now PROVEN GLUE
@@ -35815,9 +36015,9 @@ clause supplies, and the inertia element `σ i` whose value it is —
 
     1 + t i  =  χ_i (σ_i) ,
 
-together with the fact that `χ i` kills WILD inertia. That last clause is what
-makes `t` an honest diamond rather than an arbitrary element of `ker toRuniv`,
-and it is exactly the strengthening the docstring of
+together with the fact that `χ i` is RESIDUALLY TRIVIAL on WILD inertia. That
+last clause is what makes `t` an honest diamond rather than an arbitrary element
+of `ker toRuniv`, and it is exactly the strengthening the docstring of
 `exists_hilbertAuxDiamondQuotient_of_exponents` below asks for ("require
 `diamond` to factor through the tame characters ... exactly as `ex` is now pinned
 by construction rather than by a clause"), taken here at the level of `t` rather
@@ -35873,30 +36073,69 @@ keeps the consumer free of `Module.End` bookkeeping. The consumer needs exactly
 two things of `χ i` — that it is multiplicative on a COMMUTATIVE target and that
 it kills `P_{w i}` — and both are visible in this shape.
 
-**The wild-kernel clause is derivable, not an extra burden — with ONE step that
-should be checked before it is believed.** `w ∈ Q` has
+# THE WILD-KERNEL CLAUSE HAS BEEN DISCHARGED, AND THE STEP IT TURNED ON CHECKS OUT
+
+**RESOLVED 2026-07-31, and the leaf is correspondingly WEAKER.** The version of
+this docstring written on 2026-07-31 argued that the wild-KERNEL clause
+(`χ i x = 1` for `x` wild) is derivable — `w ∈ Q` has
 `((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal` (first conjunct of `hQ`), so `P_w` is pro-`p` for
 `p ≠ ℓ` and `exists_pow_eq_of_mem_wildInertiaGroup` in `ArtinConductor.lean`
 makes every element of `P_w` an `ℓ^e`-th power in `P_w`, for EVERY `e`; `ρbar` is
 unramified at `Q`, so `χ_w|_{I_w}` is residually trivial and takes values in
-`1 + 𝔪`. The clause is then "an element of `1 + 𝔪_{R_Q}` that is an `ℓ^e`-th
-power for every `e` is `1`", which is this file's own reading of the
-TAME-CHARACTER section on `exists_hilbertAuxDiamondQuotient_of_exponents` below
-("`1 + 𝔪`, a pro-`ℓ` group").
+`1 + 𝔪`; and an element of `1 + 𝔪_{R_Q}` that is an `ℓ^e`-th power for every `e`
+is `1`. It then flagged, in bold, **THE STEP TO CHECK**: that `1 + 𝔪_{R_Q}` is
+really pro-`ℓ`, which needs `(ℓ : R_Q) ∈ 𝔪`, i.e. residue characteristic `ℓ` —
+and observed that `HilbertAuxDeformationDatum` posits only `Algebra ℤ_[ℓ] R` and
+a surjection onto `k`, never `CharP k ℓ`. It went on: *"If `char k = ℓ` turns out
+not to be derivable … then the honest repair is a field or a hypothesis, NOT a
+weaker clause here."*
 
-**THE STEP TO CHECK** is that `1 + 𝔪_{R_Q}` really is pro-`ℓ`, which needs
-`(ℓ : R_Q) ∈ 𝔪` — i.e. the RESIDUE CHARACTERISTIC of `𝒟Q.R` is `ℓ`. Separatedness
-is free (`𝒟Q.isAdicComplete`), and with `ℓ ∈ 𝔪` one gets
-`(1 + m)^{ℓ^e} − 1 ∈ 𝔪^{e+1}`, so the intersection is trivial. But
-`HilbertAuxDeformationDatum` posits only `Algebra ℤ_[ℓ] R` and `π : R →+* k`
-surjective; it does NOT state `CharP k ℓ`, and this file's `1 + 𝔪` sentence has
-been carried in prose since 2026-07-30 without that being checked. If `char k = ℓ`
-turns out not to be derivable from the structure and from `ρbar` being an
-`ℓ`-adic residual representation, then the honest repair is a field or a
-hypothesis, NOT a weaker clause here — and it should be recorded as its own
-FALSITY AUDIT on the structure. Note the sibling
-`pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal` above deliberately does
-NOT need this: it kills the `ℓ'`-part using only that `m'` is a unit of `ℤ_ℓ`.
+**It IS derivable**, from `[Finite k]` alone, via
+`natCast_eq_zero_of_hilbertAuxDeformationDatum` — which has been PROVEN in this
+file since 2026-07-30 and which the flagged paragraph did not consult — and
+`[Finite k]` is carried by `exists_hilbertTaylorWilesAuxLevelData`, the top of
+this six-declaration chain. It had simply been dropped on the way down. It is
+now threaded through all six; being an instance binder, **not one call site
+changed**.
+
+So the whole derivation is PROVEN, in the section immediately above this one, and
+what is asked of a prover here is the RESIDUAL clause
+
+    ((χ i x : (𝒟Q.R)ˣ) : 𝒟Q.R) - 1 ∈ 𝔪    for `x` wild,
+
+which is what `ρbar` being unramified at `Q` gives directly, rather than a
+statement about the pro-`ℓ` structure of `1 + 𝔪` that a prover would have had to
+rebuild. `exists_hilbertAuxDiamondGenerators` immediately below recovers the
+strong clause from it in four lines. **The frontier count does not move (1 → 1);
+what left this leaf is ~150 lines of local-ring and wild-inertia argument, and
+the leaf's remaining content is the CONSTRUCTION of the characters out of
+`isSplitTorusAt` together with the CONTROL identification
+`ker toRuniv = span (range t)`.**
+
+Note the sibling `pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal` above
+deliberately does NOT need the residue characteristic: it kills the `ℓ'`-part
+using only that `m'` is a unit of `ℤ_ℓ`. The two are complementary, and only the
+wild half ever needed `char k = ℓ`.
+
+# WHAT THE LEAF DOES *NOT* ASK, WHICH MAKES IT EASIER THAN IT READS
+
+**`χ i` is EXISTENTIALLY quantified and is tied to NOTHING but its own two
+clauses.** No clause relates it to `𝒟Q.ρ`, to `isSplitTorusAt`, or to the
+representation at all; it is a bare `MonoidHom` (not required continuous) that
+need only be residually trivial on wild inertia and take the value `1 + t i`
+somewhere on inertia. So a prover is FREE not to use the split torus: any
+character with those two properties will do, and the split-torus clause is a
+suggestion about where to find one, not a constraint the statement imposes.
+
+That is not a vacuity — the clause is load-bearing, and the consumer shows
+exactly how: through
+`pow_natCard_residue_sub_one_eq_one_of_forall_mem_wildInertiaGroup` it forces
+`(1 + t i)^{N (w i) − 1} = 1`, which is the whole reason the diamond generators
+are `ℓ`-power torsion. But it does mean the "PINNED" of the title should be read
+as *pinned enough to carry the torsion bound*, not as *pinned to the
+construction*. A successor who wants the stronger reading — `χ i` IS the
+split-torus character — must add that as a clause; it is not there now, and the
+consumer does not need it.
 
 # FAITHFULNESS
 
@@ -35911,7 +36150,7 @@ Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
 theorem exists_hilbertAuxDiamondGeneratorsPinned
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
@@ -35936,7 +36175,8 @@ theorem exists_hilbertAuxDiamondGeneratorsPinned
       (σ : ∀ i, localInertiaGroup (w i)),
       (∀ i, w i ∈ Q) ∧
       (∀ i, ex i = padicValNat ℓ (Nat.card (𝓞 F ⧸ (w i).asIdeal) - 1)) ∧
-      (∀ i, ∀ x ∈ wildInertiaGroup (w i), χ i x = 1) ∧
+      (∀ i, ∀ x ∈ wildInertiaGroup (w i),
+        ((χ i x : (𝒟Q.R)ˣ) : 𝒟Q.R) - 1 ∈ IsLocalRing.maximalIdeal 𝒟Q.R) ∧
       (∀ i, ((χ i (σ i) : (𝒟Q.R)ˣ) : 𝒟Q.R) = 1 + t i) ∧
       RingHom.ker toRuniv = Ideal.span (Set.range t) :=
   sorry
@@ -36046,7 +36286,7 @@ Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
 theorem exists_hilbertAuxDiamondGenerators
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
@@ -36069,9 +36309,21 @@ theorem exists_hilbertAuxDiamondGenerators
     ∃ t : Fin q → 𝒟Q.R,
       (∀ i, (1 + t i) ^ ℓ ^ ex i = 1) ∧
       RingHom.ker toRuniv = Ideal.span (Set.range t) := by
-  obtain ⟨t, w, χ, σ, hwQ, hexeq, hwild, hval, hker⟩ :=
+  obtain ⟨t, w, χ, σ, hwQ, hexeq, hres, hval, hker⟩ :=
     exists_hilbertAuxDiamondGeneratorsPinned ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w h𝒟t h𝒟e
       q n Q hQcard hQ 𝒟Q h𝒟Q h𝒟Qt toRuniv halg hπ hρ ex hex hexpin
+  -- The leaf hands back RESIDUAL triviality of `χ i` on wild inertia; the
+  -- honest wild-KERNEL clause is derived here, where every ingredient is in
+  -- hand: `hQ` says `w i` has residue characteristic `≠ ℓ`, and `𝒟Q` supplies
+  -- both `ℓ ∈ 𝔪` (over `[Finite k]`) and the adic completeness that makes
+  -- `1 + 𝔪` pro-`ℓ`.  See the section note above the leaf.
+  haveI := 𝒟Q.isAdicComplete
+  have hℓ𝔪 : ((ℓ : ℕ) : 𝒟Q.R) ∈ IsLocalRing.maximalIdeal 𝒟Q.R :=
+    natCast_mem_maximalIdeal_of_hilbertAuxDeformationDatum ℓ 𝒟Q
+  have hwild : ∀ i, ∀ x ∈ wildInertiaGroup (w i), χ i x = 1 := by
+    intro i x hx
+    exact forall_wildInertiaGroup_eq_one_of_sub_one_mem_maximalIdeal (ℓ := ℓ) (w i)
+      (hQ.1 (w i) (hwQ i)).1 hℓ𝔪 (χ i) (hres i) hx
   refine ⟨t, ?_, hker⟩
   intro i
   -- `ker toRuniv` is a PROPER ideal of the local ring `R_Q` (proper because
@@ -36244,7 +36496,7 @@ Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
 theorem exists_hilbertAuxDiamondQuotient_of_exponents
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
@@ -36472,7 +36724,7 @@ Fujiwara §3; Darmon–Diamond–Taylor §5.3. -/
 theorem exists_hilbertAuxDiamondQuotient
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
@@ -36585,7 +36837,7 @@ added hypothesis it cannot break any producer. -/
 theorem exists_hilbertAuxDiamondControl
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
@@ -38285,7 +38537,7 @@ discharged one level up in `exists_hilbertTaylorWilesAuxLevelData` from
 theorem exists_hilbertAuxDeformationRingPresentation
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
