@@ -8269,6 +8269,42 @@ exactly the line the previous cut declined to take, and
 * `isProper_relPicIdentityComponent` — `IsProper jstr`, taking the whole
   conclusion of the first as its hypotheses.
 
+**CUT AGAIN, 2026-08-02: the second of those is now PROVEN**, over
+`universallyClosed_relPicIdentityComponent`, and the count did not move (1 → 1).
+`IsProper` is a conjunction of three, and two of the three were FORMAL: finite
+type is `_hJsmooth`, and separatedness is `_hPsep` together with the monicity
+that `_hinj` becomes once the classifying morphism `ι : J ⟶ P` is written down.
+Writing it down is two lines, not a construction, because `RelPoint f g` is
+`{x : T ⟶ A // x ≫ f = g}` — a SUBTYPE of morphisms — so the Yoneda step is
+"evaluate `incl` at `⟨𝟙 J, _⟩`" and `ι ≫ pstr = jstr` is the subtype property
+of the point that comes back.  Only `UniversallyClosed jstr` is left, which is
+BLR 9.4/4 and nothing else; the two-thirds that went are recorded on the proven
+declaration and the residue's own docstring names the further split
+(`QuasiCompact` ⊓ `ValuativeCriterion.Existence`) and why it was not taken here.
+
+**THIS WHOLE CLUSTER IS CURRENTLY DEAD — read this before working in it**
+(measured 2026-08-02 by a comment-stripped consumer scan of `Fermat/`).  Two
+RIVAL cuts of `exists_relPicZeroSubgroup` are both in this file, and only one is
+reachable:
+
+* the 2026-07-30 cut — `exists_relPicZeroGroupScheme` +
+  `isProper_of_relPicZeroGroupScheme` — is what `exists_relPicZeroSubgroup`'s
+  PROOF BODY actually calls, so it is LIVE;
+* the 2026-07-31 cut in this subsection — `exists_relPicIdentityComponent` +
+  `isProper_relPicIdentityComponent`, assembled by `exists_relPicZeroSubfunctor`
+  — is not called by anything: `exists_relPicZeroSubfunctor` has **exactly one**
+  code occurrence in the whole tree, its own declaration.
+
+So the file carries the SAME two obligations twice, and closing anything in this
+subsection moves the count and not the project.  Nothing here is deleted,
+because choosing between two rival cuts is an author's decision and both were
+correct when written; the recommendation on the evidence is to keep the LIVE
+pair and delete this one, since `exists_relPicZeroSubgroup` would have to be
+re-proven to go the other way.  Whoever takes that decision should also check
+`exists_relPicIdentityComponent` for a live owner first.  Both properness leaves
+received the same 2026-08-02 cut, so the two clusters remain interchangeable and
+the choice costs nothing either way.
+
 **How the boundary the previous cut worried about is resolved.**  That cut
 recorded "a further cut along THAT line is possible — state `J` open in `P` with
 connected fibres, then properness separately — but it needs an
@@ -8387,6 +8423,102 @@ theorem exists_relPicIdentityComponent {X P S : Scheme.{u}} {strX : X ⟶ S} {ps
           ∃ r : RelPoint jstr g, incl T g r = hP.negPoint (incl T g p)) ∧
         (∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
           ∃ p : RelPoint jstr g, incl T g p = aj T g x) := sorry
+
+/-- **`Pic⁰ ⟶ S` IS UNIVERSALLY CLOSED** (sorry leaf, cut 2026-08-02 out of
+`isProper_relPicIdentityComponent`) — BLR 9.4/4, and the ONLY part of properness
+that is not formal.
+
+**Why this is the whole residue, and the other two thirds of `IsProper` are
+gone.**  `IsProper = IsSeparated ⊓ UniversallyClosed ⊓ LocallyOfFiniteType`
+(`AlgebraicGeometry.isProper_eq`).  Of the three:
+
+* `LocallyOfFiniteType jstr` is `_hJsmooth`, through mathlib's
+  `Smooth → LocallyOfFinitePresentation → LocallyOfFiniteType` instances;
+* `IsSeparated jstr` is `_hPsep` plus `_hinj`.  `RelPoint` is *literally* a
+  subtype of morphisms, so the Yoneda step of the parent's FAITHFULNESS clause 1
+  is two lines rather than a construction: evaluate `incl` at the tautological
+  point `⟨𝟙 J, _⟩ : RelPoint jstr jstr` to get `ι : J ⟶ P`, whose defining
+  property `ι ≫ pstr = jstr` is *the subtype property of the point it came
+  from*.  `_hinclpre` then makes `incl T g p = ⟨p.1 ≫ ι, _⟩` on the nose,
+  `_hinj` becomes `Mono ι`, and `IsSeparated (ι ≫ pstr)` follows from
+  `isSeparated_of_mono` and the composition instance.
+
+So no valuative-criterion input is needed for separatedness, and the classical
+uniqueness half of BLR's argument is NOT part of this leaf: only EXISTENCE of
+the extension is, and only through closedness.
+
+**The intended argument** (BLR 9.4/4, and 8.4 for the finiteness inputs).  For a
+valuation ring `R` with fraction field `K` and a degree-zero class on `X_K`, the
+closure of the corresponding divisor in `X_R` is a divisor whose degree on the
+special fibre can be corrected to `0` by a multiple of the special fibre itself
+— `X_R ⟶ Spec R` being proper, smooth and with geometrically connected fibres,
+so its fibres are irreducible and the degree map is defined.
+
+**THE NEXT CUT, and it is one line of Lean plus one import.**  Mathlib factors
+this leaf for you:
+
+    UniversallyClosed.of_valuativeCriterion (f) [QuasiCompact f]
+      (hf : ValuativeCriterion.Existence f) : UniversallyClosed f
+
+so a successor may replace this leaf by TWO — `QuasiCompact jstr` (BLR 8.4/3
+plus SGA3 VI_A 2.4: `Pic` is locally of finite type and `Pic⁰` is quasi-compact,
+being a CONNECTED group scheme locally of finite type over a field on each
+fibre) and `ValuativeCriterion.Existence jstr` (the paragraph above) — which is
+the honest split, since the two are different chapters with no shared machinery.
+It was NOT taken here because `ValuativeCriterion` is not in this module's
+import cone, and adding `public import Mathlib.AlgebraicGeometry.ValuativeCriterion`
+to a module that `ModularCurve/X0.lean` sits downstream of costs a full rebuild
+of the largest cone in the tree for a statement nobody can discharge yet.  Take
+it when you take the leaf.
+
+**FAITHFULNESS.**  This is `isProper_relPicIdentityComponent`'s conclusion with
+two of its three conjuncts deleted, under exactly the same hypotheses, so it is
+IMPLIED by that statement and cannot be false unless that one was.  The parent's
+own FAITHFULNESS section — reproduced below it, and unchanged by this cut — is
+what establishes that the hypotheses pin `J = Pic⁰`; it applies verbatim, and in
+particular `_hJconn` is still the clause that excludes the junk witness `J = P`,
+`incl = id`, for which `Pic` is not universally closed over `S`.
+
+**Every hypothesis of the parent is kept, deliberately, including the four
+(`_hequiv`, `_haj`, `_hajpre`, `_hajbase`) that the assembly above does not
+touch.**  They are what make `aj` the ABEL–JACOBI map rather than an arbitrary
+function, and without them clause 4 of the parent's FAITHFULNESS argument — the
+step that upgrades "`J` is *some* abelian subvariety of `Pic⁰`" to "`J` IS
+`Pic⁰`" — says nothing, because `_himg` would then be satisfied by `aj :=` the
+constant zero point.  Dropping a hypothesis strengthens a leaf; this development
+has a standing record of restatements that composed into a false statement, so
+they stay until somebody deletes them with a proof in hand. -/
+theorem universallyClosed_relPicIdentityComponent {X P J S : Scheme.{u}} {strX : X ⟶ S}
+    {pstr : P ⟶ S} {jstr : J ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hPsmooth : Smooth pstr) (_hPsep : IsSeparated pstr)
+    (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g))
+    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
+    (_haj : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+      RelPicEquiv strX g (modTensor (hP.sheaf (aj T g x)) (sectionIdeal (relSection x)))
+        (sectionIdeal (relSection (relBasePoint o g))))
+    (_hajpre : ∀ (T' T : Scheme.{u}) (h : T' ⟶ T) (g : T ⟶ S) (g' : T' ⟶ S) (hg : h ≫ g = g')
+      (x : RelPoint strX g), aj T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (aj T g x))
+    (_hajbase : aj S (𝟙 S) o = hP.zeroPoint (𝟙 S))
+    (incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g)
+    (_hJsmooth : Smooth jstr) (_hJconn : GeometricallyConnected jstr)
+    (_hinj : ∀ (T : Scheme.{u}) (g : T ⟶ S) (p q : RelPoint jstr g),
+      incl T g p = incl T g q → p = q)
+    (_hinclpre : ∀ (T' T : Scheme.{u}) (h : T' ⟶ T) (g : T ⟶ S) (g' : T' ⟶ S) (hg : h ≫ g = g')
+      (p : RelPoint jstr g),
+      incl T' g' (RelPoint.pre h hg p) = RelPoint.pre h hg (incl T g p))
+    (_hzero : ∀ (T : Scheme.{u}) (g : T ⟶ S),
+      ∃ z : RelPoint jstr g, incl T g z = hP.zeroPoint g)
+    (_hadd : ∀ (T : Scheme.{u}) (g : T ⟶ S) (p q : RelPoint jstr g),
+      ∃ r : RelPoint jstr g, incl T g r = hP.addPoint (incl T g p) (incl T g q))
+    (_hneg : ∀ (T : Scheme.{u}) (g : T ⟶ S) (p : RelPoint jstr g),
+      ∃ r : RelPoint jstr g, incl T g r = hP.negPoint (incl T g p))
+    (_himg : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+      ∃ p : RelPoint jstr g, incl T g p = aj T g x) :
+    UniversallyClosed jstr := sorry
 
 /-- **`Pic⁰ ⟶ S` IS PROPER** (sorry leaf, cut 2026-07-31 out of
 `exists_relPicZeroSubfunctor`) — BLR 9.4, the second of the two classical
@@ -8510,115 +8642,120 @@ theorem isProper_relPicIdentityComponent {X P J S : Scheme.{u}} {strX : X ⟶ S}
       ∃ r : RelPoint jstr g, incl T g r = hP.negPoint (incl T g p))
     (_himg : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
       ∃ p : RelPoint jstr g, incl T g p = aj T g x) :
-    IsProper jstr := sorry
+    IsProper jstr := by
+  -- **The classifying morphism `ι : J ⟶ P`.**  `RelPoint` is a subtype of morphisms, so the
+  -- Yoneda step is literal: evaluate `incl` at the TAUTOLOGICAL point `𝟙 J` of `J`.
+  set taut : RelPoint jstr jstr := ⟨𝟙 J, Category.id_comp jstr⟩ with htaut
+  set ι : J ⟶ P := (incl J jstr taut).1 with hιdef
+  -- `ι` lies over `S` for free: it is the subtype property of the point it came from.
+  have hι : ι ≫ pstr = jstr := (incl J jstr taut).2
+  -- `_hinclpre` then says `incl` IS precomposition with `ι`, on the nose.
+  have key : ∀ (T : Scheme.{u}) (g : T ⟶ S) (p : RelPoint jstr g),
+      (incl T g p).1 = p.1 ≫ ι := by
+    intro T g p
+    have hpre : RelPoint.pre p.1 p.2 taut = p := by
+      apply Subtype.ext
+      simp [RelPoint.pre, htaut]
+    have h := _hinclpre T J p.1 jstr g p.2 taut
+    rw [hpre] at h
+    rw [h]
+    rfl
+  -- `_hinj` is exactly monicity of `ι`: two morphisms equalised by `ι` are equalised by
+  -- `jstr = ι ≫ pstr` too, so they are relative points over a COMMON base point.
+  have hmono : Mono ι := by
+    constructor
+    intro Z u v huv
+    have hvg : v ≫ jstr = u ≫ jstr := by
+      rw [← hι, ← Category.assoc, ← Category.assoc, huv]
+    have := _hinj Z (u ≫ jstr) ⟨u, rfl⟩ ⟨v, hvg⟩ (by
+      apply Subtype.ext
+      rw [key, key]
+      exact huv)
+    exact congrArg Subtype.val this
+  -- finite type is smoothness, separatedness is monicity, and only closedness is left
+  haveI : Smooth jstr := _hJsmooth
+  haveI : LocallyOfFiniteType jstr := inferInstance
+  haveI : IsSeparated pstr := _hPsep
+  haveI : Mono ι := hmono
+  haveI : IsSeparated jstr := hι ▸ (inferInstance : IsSeparated (ι ≫ pstr))
+  haveI : UniversallyClosed jstr :=
+    universallyClosed_relPicIdentityComponent _hproper _hsmooth _hconn o hP _hpush _hPsmooth
+      _hPsep _hequiv aj _haj _hajpre _hajbase incl _hJsmooth _hJconn _hinj _hinclpre _hzero
+      _hadd _hneg _himg
+  constructor
 
+/-- **THE IDENTITY COMPONENT IS UNIVERSALLY CLOSED** (sorry leaf, cut 2026-08-02
+out of `isProper_of_relPicZeroGroupScheme`) — BLR 9.4/4 step three, and the ONLY
+part of properness that is not formal.
 
-/-! **`Pic⁰` IS AN ABELIAN SCHEME INSIDE `Pic`** (PROVEN 2026-07-31 over
-`exists_relPicZeroSubfunctor`; the audit above this subsection is the one
-written while it was one node, and still says what a reader needs).
+**Why this is the whole residue.**  `IsProper = IsSeparated ⊓ UniversallyClosed ⊓
+LocallyOfFiniteType` (`AlgebraicGeometry.isProper_eq`), and two of the three fall
+straight out of hypotheses the leaf below already had:
 
-**MERGE REPAIR, 2026-08-01 — this node had been cut TWICE and the tree carried
-both cuts.**  A 2026-07-30 branch cut it into `exists_relPicZeroGroupScheme`
-(a `RelGroupSchemeStruct` on `Pic⁰`) plus `isProper_of_relPicZeroGroupScheme`,
-glued by `RelGroupSchemeStruct.toAbelianSchemeStruct`; a 2026-07-31 branch cut
-it into `exists_relPicIdentityComponent` plus `isProper_relPicIdentityComponent`,
-assembled by `exists_relPicZeroSubfunctor`, with the group axioms transported
-here rather than demanded of the geometry.  The two landed in regions far enough
-apart not to conflict, so the merge kept BOTH — and resolved the one line they
-share, this theorem's body, to the 07-30 side.  The result was invisible to
-every instrument: four open leaves where two suffice, `exists_relPicZeroSubfunctor`
-PROVEN with no consumer anywhere in the tree (free-floating), and this
-declaration's docstring naming a leaf its own proof body did not call.
+* `LocallyOfFiniteType jstr` is `_G.smooth`, through mathlib's
+  `Smooth → LocallyOfFinitePresentation → LocallyOfFiniteType` instances;
+* `IsSeparated jstr` is `_hPsep` together with the FIRST and FOURTH clauses of
+  `_hincl` (injectivity and naturality of `incl`).  `RelPoint f g` is *literally*
+  `{x : T ⟶ A // x ≫ f = g}`, so the Yoneda step is two lines and not a
+  construction: `ι := (incl J jstr ⟨𝟙 J, _⟩).1`, and `ι ≫ pstr = jstr` is *the
+  subtype property of the point that comes back*.  Naturality then makes
+  `incl T g p = ⟨p.1 ≫ ι, _⟩` on the nose, injectivity becomes `Mono ι`, and
+  `isSeparated_of_mono` plus the composition instance finish it.
 
-The 07-31 cut is kept, for three reasons: its leaves do not ask the geometry
-owner for the nine group axioms (they are transported below, and none of them
-is geometry); `isProper_relPicIdentityComponent` receives its sibling's FULL
-conclusion, including `GeometricallyConnected jstr`, so the `J = P` junk witness
-is killed on the leaf rather than by an appeal to how `J` was built; and its
-audit carries a five-step proof plan the 07-30 pair did not have.  The 07-30
-block — `RelGroupSchemeStruct`, its `toAbelianSchemeStruct`, `IsRelPicZeroIncl`
-and the two leaves — is DELETED, since after this repair nothing reaches it;
-recover it with `git show <this commit>^:Fermat/FLT/ModularCurve/RelativePicard.lean`.
-Frontier: 4 open leaves → 2, with no mathematics done and none owed that was not
-owed before.
+So the classical UNIQUENESS half of the valuative criterion — the paragraph
+below that says the extension is "unique up to a twist from `R`" — is NOT part of
+this leaf.  Only EXISTENCE is, and only through closedness.
 
-One correction to the deleted prose, recorded because it would otherwise be
-re-derived: `isProper_of_relPicZeroGroupScheme`'s docstring claimed to be
-non-vacuous because "`J = P`, `incl = id`, `G` the group data of `Pic` itself
-satisfies `IsRelPicZeroIncl` in full".  That witness does NOT satisfy its
-hypotheses — `G : RelGroupSchemeStruct pstr` carries `connected`, and `Pic` is
-not geometrically connected over `S` (one component per degree).  The leaf was
-therefore not self-refuting, as a literal reading of that paragraph suggests;
-it was merely superseded.
+**The intended argument.**  Given a valuation ring `R` with fraction field `K`
+over `S` and a degree-`0` line bundle on `X_K`, extend it to `X_R`.  On a REGULAR
+total space this is the classical "take the closure of the divisor" argument —
+`X_R` is regular because `X ⟶ S` is smooth and `R` is regular — and the degree on
+the special fibre is corrected to `0` by a multiple of the special fibre itself,
+which is where geometric connectedness of the curve's fibres is spent.
 
-The assembly below is the transport of a group structure along an injection
-whose image is a subgroup: `ab.add p q` is the unique preimage of
-`hP.addPoint (incl p) (incl q)`, existing by the closure clause and unique by
-`hinj`, and each of the nine remaining fields is `hinj` applied to a rewrite
-chain ending in the corresponding law on `Pic` (`addPoint_assoc`,
-`addPoint_comm`, `zeroPoint_addPoint`, `negPoint_addPoint`, `pre_addPoint`,
-`pre_zeroPoint`, all PROVEN above).  Not one of them touches the geometry, which
-is the point of the cut.
+**THE NEXT CUT, one line of Lean plus one import.**  Mathlib factors this leaf:
 
-(RELEASE 26: the two paragraphs below and above were TWO docstrings with the
-declaration between them deleted at an earlier release, so the second one was
-parsed as Lean. They are joined here into one section comment, which needs no
-declaration; no prose is lost. The declaration they described is now
-`exists_relPicZeroSubfunctor` below.)
+    UniversallyClosed.of_valuativeCriterion (f) [QuasiCompact f]
+      (hf : ValuativeCriterion.Existence f) : UniversallyClosed f
 
-`Pic(X_T)/Pic(T)` is a quotient set.
+so a successor may replace it by `QuasiCompact jstr` (BLR 8.4/3 with SGA3 VI_A
+2.4: a connected group scheme locally of finite type over a field is
+quasi-compact) plus `ValuativeCriterion.Existence jstr` (the paragraph above).
+That is the honest split — two chapters, no shared machinery — and it was not
+taken here only because `ValuativeCriterion` is not in this module's import cone
+and `ModularCurve/X0.lean` is downstream, so
+`public import Mathlib.AlgebraicGeometry.ValuativeCriterion` costs a rebuild of
+the largest cone in the tree for a statement nobody can discharge yet.
 
-**CUT AGAIN, 2026-07-31, and this declaration is now the assembly.**  What is
-below is `exists_relPicZeroSubfunctor` plus the transport of the group law
-along `incl`; the audit above is left intact because it is still what a reader
-needs, and every one of its junk-witness arguments applies verbatim to the new
-leaf (which carries the same properness, Abel–Jacobi and injectivity clauses).
-See the section heading immediately below for what moved and why. -/
-
-/-! ### BLR 9.4/4's geometric half: the subfunctor, and the group law on it
-
-**CUT 2026-07-31.**  `exists_relPicZeroSubgroup` used to be asked for an
-`AbelianSchemeStruct` on `Pic⁰` — twelve fields, of which nine are group
-axioms and two are naturality.  None of those nine has anything to do with the
-identity component: they are the group axioms of `Pic` itself, restricted to a
-subgroup, and a prover of the geometry had to reprove them from scratch.
-
-So the leaf below asks instead for the subfunctor: a scheme `J`, proper, smooth
-and with geometrically connected fibres, injecting naturally into the points of
-`Pic`, whose image is CLOSED UNDER the group law of `Pic` (contains
-`zeroPoint`, closed under `addPoint` and under `negPoint`) and contains the
-Abel–Jacobi image.  The group structure is then transported by
-`exists_relPicZeroSubgroup` below, over the group axioms for `IsRelPicOf`
-proven earlier in this file.
-
-**Why this is a cut and not a relocation.**  The three closure clauses are the
-ONLY group-theoretic content left in the leaf, and each is a single existential
-with no equations to verify — an owner discharges them by exhibiting a point of
-`Pic⁰`, which is what an identity-component construction produces anyway.  What
-leaves the leaf is: `add`, `zero`, `neg` as operations; `add_assoc`,
-`add_comm`, `zero_add`, `neg_add`; `pre_add`, `pre_zero`; and the three
-conclusion clauses of the parent that name `ab.zero` and `ab.add`.  All nine of
-those are now discharged by `hinj` applied to a rewrite chain, in the assembly
-below, and none of them was ever geometry.
-
-**What the cut does NOT do**, and this is the reason it is small rather than
-decisive: the two genuinely missing pieces are unchanged and both still sit in
-the leaf — the identity component of a group scheme (absent from the pin in any
-form) and properness of `Pic⁰` by the valuative criterion (BLR 9.4).  Whoever
-takes the leaf takes both.  A further cut along THAT line is possible — state
-`J` open in `P` with connected fibres, then properness separately — but it
-needs an `IsOpenImmersion`-flavoured statement, and the parent's own audit
-records why the conclusion is on points rather than on subschemes ("stating it
-as an open immersion would force the caller to convert").  I left that boundary
-where the parent put it.
-
-**Faithfulness of the closure clauses.**  `negPoint` is a `Classical.choose`,
-so "closed under `negPoint`" reads, on its face, as a condition on an arbitrary
-choice.  It is not: `hP.inj` makes the point classifying the inverse sheaf
-unique, so `negPoint p` is THE inverse and the clause is the honest statement
-that the subfunctor is closed under inversion.  The same remark applies to
-`zeroPoint` and `addPoint`, and is why the group axioms above could be proven
-about them at all. -/
+**FAITHFULNESS, and a CORRECTION to the audit reproduced below.**  This is the
+conclusion of `isProper_of_relPicZeroGroupScheme` with two of three conjuncts
+deleted under the same hypotheses, so it is implied by that statement and cannot
+be false unless that one was.  That leaf's own audit offers the junk witness
+`J = P`, `incl = id`, `G` the group data of `Pic` itself, and says it "satisfies
+`IsRelPicZeroIncl` in full" — which is TRUE, and is not the clause that excludes
+it.  `RelGroupSchemeStruct` carries a `connected : GeometricallyConnected f`
+field, and `Pic ⟶ S` is not geometrically connected (its geometric fibres have
+one component per degree), so `RelGroupSchemeStruct pstr` is UNINHABITED and the
+witness never gets as far as `_hincl`.  The audit's conclusion stands — the leaf
+is not provable from `_hincl` alone — but the discriminating hypothesis is
+`_G.connected`, exactly as on the sibling `universallyClosed_relPicIdentityComponent`,
+where it is spelled `_hJconn`.  A prover must spend it. -/
+theorem universallyClosed_of_relPicZeroGroupScheme {X P S J : Scheme.{u}} {strX : X ⟶ S}
+    {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (hP : IsRelPicOf strX pstr)
+    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
+    (_hPsmooth : Smooth pstr) (_hPsep : IsSeparated pstr)
+    (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g))
+    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
+    (_haj : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
+      RelPicEquiv strX g (modTensor (hP.sheaf (aj T g x)) (sectionIdeal (relSection x)))
+        (sectionIdeal (relSection (relBasePoint o g))))
+    {jstr : J ⟶ S} (_G : RelGroupSchemeStruct jstr)
+    (_incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g)
+    (_hincl : IsRelPicZeroIncl hP _G aj _incl) :
+    UniversallyClosed jstr := sorry
 
 /-- **`Pic⁰` IS A PROPER SMOOTH SUBFUNCTOR OF `Pic` WITH CONNECTED FIBRES**
 (PROVEN 2026-07-31 over `exists_relPicIdentityComponent` and
