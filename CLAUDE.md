@@ -24286,3 +24286,61 @@ interface, never about the object.
   spent, since the inequality behind it is `1 < (ℓ−1)k`.  Splitting would have raised the count
   by one and closed nothing; recording the regimes lets the node be dispatched at whichever
   theory an owner already has, and the split is one `rcases` away.
+## A CUT'S CLAIM THAT A LEAF "CARRIES NO X" IS A HYPOTHESIS — AND THE SIBLING FILE USUALLY REFUTES IT
+(2026-08-01, `flt-lean-275`, on `exists_affineComplement_zeroSection_of_isLocalRing`.)
+This file has many rules for checking what a leaf DOES need.  There is a dual claim,
+made by every cut and checked by nobody: **what the leaf does NOT need.**  A cut
+announces "leaf 1 carries NO Riemann–Roch and no Weierstrass equation … it was cut
+precisely so that it could be owned by someone who knows nothing about elliptic
+curves", and that sentence is what decides who gets dispatched and with what budget.
+It was false here, and the refutation was one file away and already written.  The leaf
+is "the complement of the zero section of a relative elliptic curve is affine".  Its
+FIELD twin, `isAffineOpen_compl_singleton_of_isSmoothProperCurve`, is four lines over
+`exists_locallyQuasiFinite_toAffineLine_compl_singleton`, whose own docstring says in as
+many words that *"the content is Riemann's inequality `dim_K L(n·z) ≥ n + 1 − g`, and
+nothing less"* and enumerates the cheaper dodges that fail.  Affineness of the complement
+of a point on a proper curve IS a weak form of Riemann–Roch.  So leaves 1 and 2 of that
+cut want the SAME missing input, and the cut's premise — that they are disjoint and
+leaf 1 needs no curve theory — was wrong in the one direction that costs a whole
+dispatch.
+**The check is one grep and it is the same grep the doctrine already prescribes for
+absence claims, pointed at the TWIN instead of at the pin:** find the leaf's twin over
+the other base, open the theorem it rests on, and read its docstring's account of its
+own content.  A cut's "carries no X" is reliable about the SYNTAX of the statement (this
+one really does not mention a Weierstrass equation) and unreliable about its CONTENT.
+**And the absence audit the cut asked for, done properly, since it is worth banking:
+`grep -rn 'Ample' .lake/packages/mathlib/Mathlib/AlgebraicGeometry/` returns NOTHING.**
+There is no ampleness of any kind in mathlib's algebraic geometry at this pin — no ample
+line bundle, no relative ampleness, no `𝒪(1)`, no very ample — hence no form of
+EGA II 4.5.10 (`L` ample, `s ∈ Γ(L)` ⟹ `X_s` affine), which is the only statement that
+converts ampleness into affineness of a NAMED open.  `Fermat/FLT/Modularity/AmpleSheaf.lean`
+does define `Fermat.IsAmpleSheaf` and an abelian scheme is even shown to carry one, and it
+does NOT help: that predicate says each point has SOME affine non-vanishing locus of SOME
+power, never that the locus of the PARTICULAR section you care about is affine.  What does
+conclude affineness at this pin is a short list, all in `Morphisms/Affine.lean`:
+`isAffine_of_isAffineHom` (affine over affine — this is the one the field twin uses,
+through `IsFinite`), `isAffine_of_isAffineOpen_basicOpen` (Stacks `01QF`),
+`IsAffine.of_isPullback`, and Zariski's main theorem.
+### THE CONCLUSION MAY GENERALISE OFF A BASE WHILE THE RESIDUAL DOES NOT — check them separately
+The same task, and it is the transferable half.  A task prompt said `IsLocalRing R`
+"IS NOT USED by the statement and it is true over ANY affine base … PROVE THE GENERAL
+FORM and specialise — that is a strictly better outcome".  The first clause is right:
+affineness of a morphism is Zariski-local on the target and every localisation of `R` is
+local, so the local case gives the general one.  Acting on the second clause would have
+manufactured a FALSE leaf.
+The natural residue of the cut is *"there is a FINITE morphism from the complement to
+`𝔸¹_R`"* — the Weierstrass `x`.  That is a global function nonconstant on every fibre,
+i.e. a global generator of the line bundle `f_*𝒪(2σ)/𝒪`.  Over a local ring that bundle
+is free and the residue is true; **over a Dedekind base with nontrivial class group it can
+be non-trivial, no such `x` exists, and the complement is still affine.**  So the
+conclusion is base-generic and the residue is not, and they had to be stated at different
+generalities: `[IsLocalRing R]` stays on the leaf and comes off all three glue lemmas.
+**So when a prompt or a docstring says "hypothesis `H` is unused, prove the general
+form": that is a claim about the CONCLUSION.  Re-ask it of whatever you are about to
+leave open.** A residue is normally STRICTLY STRONGER than the statement it proves — it
+is chosen to be provable by one classical construction, and constructions need more than
+conclusions do — so the generalities routinely differ, and the failure is silent: a leaf
+stated one notch too general is false, compiles, and can never be closed.  Say in the
+leaf's docstring which of the two generalities it has and why, and name the alternative
+cut (here: cut along `IsAffineOpen` of the complement, which IS base-generic, at the cost
+of a residue that no longer matches the field twin).
