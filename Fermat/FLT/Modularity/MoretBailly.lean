@@ -5037,6 +5037,21 @@ change what a prover here should do:
    `Mathlib`-only) so the import is acyclic, and its cone cost should be
    measured before adopting the route.
 
+   **CORRECTED 2026-08-02, and this is the SECOND copy of the same wrong claim —
+   see the fuller correction in `exists_bertiniIrreducibleLocus_isAlgClosed`'s
+   docstring above.** This module DOES reach that file, transitively and publicly:
+   `MoretBailly` → `TateModule` → `AbelianSchemeIsogeny` → `CurveCompactification`,
+   all three edges `public import` (lines 428, 142, 295). No import has to be
+   added, the cone cost is ZERO modules, and `ProjChart` together with
+   `exists_isOpenImmersion_isProper_of_proj` and `exists_isOpenImmersion_isProper_of_isAffine`
+   already resolve inside this module's own import surface — checked with the
+   compiler, not by reading the import block. Two riders: `exists_isOpenImmersion_isProper`
+   as spelled here is NOT a declaration (the real names carry the `_of_proj` /
+   `_of_isAffine` suffixes, and `CurveCompactification.lean:129` records the
+   unsuffixed one as deleted), so grepping the quoted name returns nothing and
+   invites the wrong conclusion; and the "its own imports are `Mathlib`-only"
+   clause is also false, but harmlessly so, since everything it imports is here.
+
 **PROVEN 2026-07-29 OVER TWO NAMED LEAVES — this is now GLUE ONLY.** The body below
 consumes exactly `exists_bertiniConnectedLocus_isAlgClosed` (ledger item 4, the Bertini
 frontier, stated over an algebraically closed base) and `topologicalKrullDim_le_baseChange`
