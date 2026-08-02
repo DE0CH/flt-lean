@@ -28366,3 +28366,78 @@ free. Those are the fields to weaken.
   `rsync -a --delete ~/.flt-release-lake/build/ /scratch/chend-flt/flt-lean-N/.lake/build/`
   made every olean current and no build was needed before the final one. Run that diff first;
   when it is empty the whole scratch loop is free.
+## A DESIGNED CYCLE IS BROKEN BY SWAPPING WHICH END CARRIES THE `sorry` — and every docstring in it will describe it correctly without acting
+(2026-08-02, `flt-lean-82`, the `R_F = 𝕋_F` trace-descent cluster in
+`HardlyRamified/HilbertModularity.lean`.)  CLAUDE.md already records the cycle a
+MERGE manufactures out of two rival cuts.  This is the other kind, and it is
+harder to see because nobody made a mistake: a cluster can be *designed* into a
+cycle, one honest cut at a time, and then every docstring in it names the cycle
+accurately and none of them can act.
+The instance.  `isHilbertTameAtTwo_..._of_isWeaklyUniversal` (the leaf) is the
+PROVEN `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` with the
+retraction `f`/`hf` replaced by `h𝒟`.  `exists_ringHom_retraction_hilbertTraceSubring`
+produces exactly that `f`/`hf` from exactly that `h𝒟` — and was PROVEN ~1400
+lines BELOW, over a theorem proven over a theorem proven over the leaf.  So the
+cluster owed ONE theorem and carried it TWICE: once as an open leaf about a tame
+quotient at `w ∣ 2`, once as a proof that could only run after the leaf it was
+needed for.  Three docstrings each said, from their own end, *"the cycle is real
+and it is the reason this node exists"*.
+**The repair needs no mathematics.**  Hoist the proven consumers above the leaf,
+relocate the OTHER end's STATEMENT above them, replace its proof with `sorry`,
+and prove the original in three lines.  Count-neutral, `1 → 1`, and the cycle is
+gone.  Here it also deleted seven binders and the entire tame conclusion from
+what the frontier owes: the residue is now "the trace subring is a ring retract"
+(Mazur §1.8), with no `w`, no `ρ'`, no `e`, no local condition in it.
+**The tell, and it is one sentence in a docstring:** *"X below produces exactly
+what this needs, but that is circular."*  Whenever you read that, the cluster is
+carrying one theorem twice and the leaf you were sent at is the wrong end of it.
+Check the OTHER end's declaration order — it is usually below its own consumer,
+which is the whole of why nobody moved it.
+**Which end should carry the `sorry`:** the one whose statement mentions LESS.
+Prefer the end that is a named citation (here Carayol Thm 1 / Mazur §1.8) over
+the end that is a technical clause of a bundled local condition.  A leaf a prover
+can look up beats a leaf that only makes sense inside the cluster, even at
+identical count.
+**Three checks make the move safe, and all three are seconds:**
+`flt-hoistcheck.py <file> --block A B --to L` for the dependency scan; a **sorted
+line-multiset diff** of the file before and after, which is the exact receipt for
+a pure permutation (`git diff --stat` is useless — it realigned this 394-line
+move as 1643 insertions and 1638 deletions); and a forward-reference scan on
+every name involved, comparing each USE line against its DECL line on
+comment-stripped source.  **Start the block at the `open … in` / `set_option … in`
+line, not at the `/--`** — those modifiers bind to the next declaration and
+leaving one behind is a parse error thousands of lines away.
+**And the frontier delta must be reported as `1 → 1`.**  Here the module stayed
+at 14 sorries and the tree at 301.  A `−1 +1` is indistinguishable from "nothing
+happened" to every scan, so the commit has to say what got SMALLER instead.
+### The inflation family does NOT refute a statement about the TRACE SUBRING
+Worth its own note, because `IsWeaklyUniversal` in this development is
+EXISTENCE-ONLY and this module's siblings have been refuted for exactly that
+reason, so an agent will reach for the standard witness first.  The standard
+refutation is `R ↝ R[[y]]`: the inflated datum is again weakly universal
+(classify through `constantCoeff`), so **no conclusion BOUNDING `𝒟.R` from above
+can hold**.  It does not touch a conclusion about `hilbertTraceSubring ℓ 𝒟.ρ`:
+inflation does not move the trace subring — the charpoly coefficients of the
+inflated `ρ` are the images of those of `ρ` under the injection `R ↪ R[[y]]`,
+and the Teichmüller lifts are the images of `R`'s by uniqueness — so it carries
+`R' ⊆ R` to `R' ⊆ R[[y]]`, and a retraction `R → R'` composes with
+`constantCoeff` to give one for `R[[y]]`.  **The property is stable under the
+family that kills its siblings.**  So before quoting the inflation witness at a
+leaf, ask whether the leaf's conclusion is about the RING or about a SUBRING
+defined by generators that the inflation fixes; the two behave oppositely.
+The descent substitute is also worth recording as checked-and-dead: the maximal
+`δ`-isotypic quotient `M = R'²/⟨ρ'(g)x − δ(g)x⟩` has `R ⊗_{R'} M ≅ R²/K` and is
+generated by two elements, and Nakayama over the local `R'` pins it to rank one
+only when `ρbar|_{Γ F_w}` is not the scalar `δ̄` — which nothing in
+`HilbertDeformationDatum` excludes.  Where that stops is exactly where the
+retraction is needed, which is the evidence that the retraction is the honest
+residue rather than a convenient hypothesis.
+### A stale `(LEAF` label sweep must correct for edits made SINCE the build
+The compiler-validated sweep CLAUDE.md prescribes — take the build's
+`declaration uses 'sorry'` line numbers, attribute them, and flag every
+declaration NOT in that set whose first three docstring lines say `(LEAF` —
+reported 29 candidates here, of which **9 were false positives because the
+warning set predated a docstring edit of mine** that lengthened the file by 4
+lines above them.  Every flagged declaration below the edit was off by exactly
+that shift.  Either re-run the build before the sweep, or apply the shift; and
+note the constant offset is itself the check that nothing else moved.

@@ -15610,9 +15610,9 @@ already carries at the `ℚ` level, declaration for declaration:
 | `exists_framedGaloisRep_baseChange_traceSubring` | `exists_framedGaloisRep_baseChange_hilbertTraceSubring` | PROVEN |
 | `isFlatAt_of_baseChange_traceSubring` | `isFlatAt_of_subring_baseChange_of_numberField` | PROVEN over a Raynaud LEAF |
 | `isTameAtTwo_of_baseChange_traceSubring` | `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` | PROVEN |
-| — (no `ℚ`-level counterpart) | `exists_ringHom_retraction_hilbertTraceSubring` | PROVEN |
+| — (no `ℚ`-level counterpart) | `exists_ringHom_retraction_hilbertTraceSubring` | **LEAF — the cluster's only open node** (2026-08-02) |
 | — (no `ℚ`-level counterpart) | `exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal` | PROVEN |
-| — (no `ℚ`-level counterpart) | `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring_of_isWeaklyUniversal` | **LEAF — the cluster's only open node** |
+| — (no `ℚ`-level counterpart) | `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring_of_isWeaklyUniversal` | PROVEN (2026-08-02) |
 | `traceSubring_eq_top_of_charFrob_map` | `hilbertTraceSubring_eq_top_of_charpoly_map` | PROVEN |
 | `exists_isTraceGenerated_ringHom_of_forall_trace_mem` | `exists_hilbertTraceDescent` | PROVEN |
 | `exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal` | the target below | PROVEN |
@@ -17678,66 +17678,576 @@ theorem exists_framedGaloisRep_baseChange_hilbertTraceSubring
   exists_framedGaloisRep_baseChange_hilbertTraceSubring_coeff ℓ hℓ5 F hirrF
       𝒟.toCoeff hloc
 open scoped TensorProduct in
+/-- **Frame coordinates of a base-changed framed representation** (PROVEN;
+the local copy, over a VARIABLE base number field and at a place `w`, of
+`Deformation.lean`'s `exists_frameCoords_of_baseChange_conj`, which is
+hard-coded to `ℚ` and to the single place `ℚ_2`): if a surjective
+`S`-functional `πR` transforms by a scalar `ε` under the local action of
+`ρS = (ρ' ⊗ S)ᵉ`, then reading it through the standard frame
+`x ↦ πR (e (1 ⊗ x))` presents it as a ROW `(a, b) ∈ S²` which is
+unimodular and satisfies the same scalar transformation law on `C²`.
+
+Unimodularity is the only non-formal step: were both `a` and `b` in `𝔪_S`,
+then `πR ∘ e` would land in `𝔪_S` on every pure tensor, hence everywhere by
+`TensorProduct.induction_on`, contradicting surjectivity of `πR`.
+
+Stated with `ε` valued in the AMBIENT `S`, not in the subring `C`: the
+`ℚ`-level original takes `ε : Γ ℚ_2 → C`, which forces its caller to prove
+first that the tame character is already defined over `C` (the sign lemma
+`exists_tameSign_of_deformation` there). The consumer below does not need
+that, because it pushes the character into `C` along the retraction
+instead, so the weaker binder is the useful one here. -/
+theorem exists_frameCoords_of_baseChange_conj_hilbert
+    {F : Type u} [Field F] [NumberField F] (w : HeightOneSpectrum (𝓞 F))
+    {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S]
+    [IsLocalRing S] {C : Subring S}
+    {ρS : GaloisRep F S (Fin 2 → S)} {ρ' : FramedGaloisRep F C (Fin 2)}
+    (e : (S ⊗[C] (Fin 2 → C)) ≃ₗ[S] (Fin 2 → S))
+    (he : (ρ'.baseChange S).conj e = ρS)
+    {πR : (Fin 2 → S) →ₗ[S] S} (hπRsurj : Function.Surjective πR)
+    {ε : Γ (w.adicCompletion F) → S}
+    (hπRequi : ∀ (g : Γ (w.adicCompletion F)) (x : Fin 2 → S),
+      πR (ρS.toLocal w g x) = ε g * πR x) :
+    ∃ a b : S, (IsUnit a ∨ IsUnit b) ∧
+      ∀ (g : Γ (w.adicCompletion F)) (x : Fin 2 → C),
+        (((ρ'.toLocal w g x) 0 : C) : S) * a +
+          (((ρ'.toLocal w g x) 1 : C) : S) * b =
+          ε g * (((x 0 : C) : S) * a + ((x 1 : C) : S) * b) := by
+  classical
+  have hcast : ∀ c : C, (c : S) = algebraMap C S c := fun _ => rfl
+  set φ : (Fin 2 → C) → S := fun x => πR (e ((1 : S) ⊗ₜ[C] x)) with hφdef
+  have hφadd : ∀ x y, φ (x + y) = φ x + φ y := by
+    intro x y
+    show πR (e ((1 : S) ⊗ₜ[C] (x + y))) = _
+    rw [TensorProduct.tmul_add, map_add, map_add]
+  have hφsmul : ∀ (c : C) (x : Fin 2 → C), φ (c • x) = (c : S) * φ x := by
+    intro c x
+    have h1 : (1 : S) ⊗ₜ[C] (c • x) = (c : S) • ((1 : S) ⊗ₜ[C] x) := by
+      rw [TensorProduct.tmul_smul, hcast, algebraMap_smul]
+    show πR (e ((1 : S) ⊗ₜ[C] (c • x))) = _
+    rw [h1, map_smul, map_smul, smul_eq_mul]
+  have hdecomp : ∀ x : Fin 2 → C,
+      x = x 0 • Pi.single (0 : Fin 2) (1 : C) + x 1 • Pi.single 1 1 := by
+    intro x
+    funext i
+    fin_cases i <;> simp
+  have hφw : ∀ x : Fin 2 → C,
+      φ x = (x 0 : S) * φ (Pi.single 0 1) + (x 1 : S) * φ (Pi.single 1 1) := by
+    intro x
+    conv_lhs => rw [hdecomp x]
+    rw [hφadd, hφsmul, hφsmul]
+  have hhe : ∀ (G : Γ F) (y : S ⊗[C] (Fin 2 → C)),
+      e ((ρ'.baseChange S) G y) = ρS G (e y) := by
+    intro G y
+    have h1 : ((ρ'.baseChange S).conj e) G = ρS G := by rw [he]
+    rw [GaloisRep.conj_apply] at h1
+    have h2 := congrArg (fun f : Module.End S (Fin 2 → S) => f (e y)) h1
+    simpa [LinearEquiv.conj_apply] using h2
+  have hφequi : ∀ (g : Γ (w.adicCompletion F)) (x : Fin 2 → C),
+      φ (ρ'.toLocal w g x) = ε g * φ x := by
+    intro g x
+    have h1 : (1 : S) ⊗ₜ[C] (ρ'.toLocal w g x) =
+        (ρ'.baseChange S)
+          (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) g)
+          ((1 : S) ⊗ₜ[C] x) := by
+      rw [GaloisRep.baseChange_tmul, GaloisRep.toLocal_apply]
+    show πR (e ((1 : S) ⊗ₜ[C] (ρ'.toLocal w g x))) = _
+    rw [h1, hhe]
+    have h2 := hπRequi g (e ((1 : S) ⊗ₜ[C] x))
+    rw [GaloisRep.toLocal_apply] at h2
+    rw [h2]
+  have hab : IsUnit (φ (Pi.single 0 1)) ∨ IsUnit (φ (Pi.single 1 1)) := by
+    by_contra hc
+    rw [not_or] at hc
+    have hA : φ (Pi.single 0 1) ∈ IsLocalRing.maximalIdeal S :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hc.1
+    have hB : φ (Pi.single 1 1) ∈ IsLocalRing.maximalIdeal S :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hc.2
+    have hmem : ∀ y : S ⊗[C] (Fin 2 → C),
+        πR (e y) ∈ IsLocalRing.maximalIdeal S := by
+      intro y
+      induction y using TensorProduct.induction_on with
+      | zero => rw [map_zero, map_zero]; exact Ideal.zero_mem _
+      | add x y hx hy => rw [map_add, map_add]; exact Ideal.add_mem _ hx hy
+      | tmul c x =>
+        have h1 : (c ⊗ₜ[C] x) = c • ((1 : S) ⊗ₜ[C] x) := by
+          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        rw [h1, map_smul, map_smul, smul_eq_mul]
+        refine Ideal.mul_mem_left _ _ ?_
+        show φ x ∈ _
+        rw [hφw]
+        exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hA)
+          (Ideal.mul_mem_left _ _ hB)
+    obtain ⟨z, hz⟩ := hπRsurj 1
+    have h1 : (1 : S) ∈ IsLocalRing.maximalIdeal S := by
+      rw [← hz, ← e.apply_symm_apply z]
+      exact hmem _
+    exact (IsLocalRing.mem_maximalIdeal _).mp h1 isUnit_one
+  refine ⟨φ (Pi.single 0 1), φ (Pi.single 1 1), hab, ?_⟩
+  intro g x
+  have h1 := hφequi g x
+  rw [hφw (ρ'.toLocal w g x), hφw x] at h1
+  exact h1
+
+open scoped TensorProduct in
 /-- **The tame quadratic quotient at a place over `2` descends to the trace
-subring of a WEAKLY UNIVERSAL datum, WITHOUT a retraction** (LEAF — new
-2026-07-31, and it is the whole residue of
-`exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal`
-below, which is PROVEN over it).
+subring** (a LEAF when cut on 2026-07-26; **PROVEN** since, and the label was
+STALE until 2026-08-02 — it is `:= by` with a full tactic proof below. The
+`F`-level twin of `Deformation.lean`'s PROVEN
+`isTameAtTwo_of_baseChange_traceSubring`. Relocated 2026-08-02, flt-lean-82,
+from ~1400 lines below, so that
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring_of_isWeaklyUniversal`
+can cite it; the move was a pure line-permutation.): if
+the framed representation `ρ'` over `R' = hilbertTraceSubring ℓ 𝒟.ρ`
+base-changes, up to framing, to `𝒟.ρ`, then `ρ'` carries the tame-at-`2`
+datum of `IsHilbertHardlyRamified` at every place `w ∣ 2` — a surjective
+`R'`-linear functional whose quotient character is unramified with trivial
+square.
+
+WHAT IS FORMAL AND WHAT IS NOT. The CHARACTER descends for free: `δ` takes
+values in `𝒟.R` with `δ(g)² = 1`, and in a local ring in which `2` is
+invertible — `𝒟.R` has residue characteristic `ℓ ≥ 5`, odd — the only
+square roots of `1` are `±1`, since `(δ(g) − 1)(δ(g) + 1) = 0` and at most
+one factor lies in the maximal ideal. So `δ(g) ∈ {±1} ⊆ R'` and the
+character is already defined over `R'`, unramified and quadratic there.
+
+The content is the `Γ F_w`-stable LINE `ker p ⊆ 𝒟.R²`: its intersection
+with the frame `e(1 ⊗ R'²)` must be a rank-one direct summand. That is a
+statement about the `R'`-LATTICE, not a formal consequence of the
+base-change identity, and a general subring descent of it would be FALSE:
+for `R' = ℤ_ℓ[[Y², Y³]]` inside `ℤ_ℓ[[Y]]` the matrices
+`[[1, −Y³], [0, 1 + Y²]]` and `[[1, −Y⁴], [0, 1 + Y³]]` have entries in
+`R'`, generate `R'` by their traces, and their common eigenrow `(1, Y)`
+meets `R'²` only inside `𝔪'R'²`.
+
+THE `ℚ`-LEVEL ROUTE, which is the one to port, and where the arithmetic
+enters. Pick `g₀ ∈ Γ F_w` with `χ_ℓ(g₀) ≢ 1 (mod ℓ)` — over `ℚ_2` this is
+`Deformation.lean`'s `exists_cyclotomicCharacter_padicTwo_sub_one_isUnit`,
+concretely a Frobenius, where `χ_ℓ = 2` and `1 − 2 = −1` is a unit.
+Cayley–Hamilton against the unimodular eigenrow then forces
+`det ρ'(g₀) = δ(g₀)·tr ρ'(g₀) − 1`, so the two eigenvalues of `ρ'(g₀)` are
+`δ(g₀)` and `κ(g₀)` with
+`(δ(g₀) − κ(g₀))·δ(g₀) = 1 − det ρ'(g₀) = 1 − χ_ℓ(g₀)`, a UNIT. The
+eigen-projector `ρ'(g₀) − κ(g₀)` is then defined over `R'` with unit trace,
+so one of its two rows is unimodular over the local ring `R'`, and each of
+its rows is proportional to the frame row by one of the two
+eigen-equations — which transfers the equivariance for ALL of `Γ F_w`, not
+just for `g₀`. In the counterexample above the two characters coincide,
+which is exactly what `χ_ℓ(g₀) ≠ 1` excludes.
+
+**THE ARITHMETIC INPUT DOES *NOT* TRANSPORT VERBATIM** (flagged 2026-07-26
+at the cut, by the author of the consumer). The step "pick `g₀` with
+`χ_ℓ(g₀) ≢ 1`" is available over `ℚ_2` and is **NOT** available over an
+arbitrary `F_w ∣ 2`. `χ_ℓ mod ℓ` is trivial on `Γ F_w` exactly when
+`μ_ℓ ⊆ F_w`, and `ℚ_2(μ_ℓ)` is the UNRAMIFIED extension of `ℚ_2` of degree
+`ord_ℓ(2)`, which is finite — so any `F` whose completion at `w` contains
+it kills the argument. Nothing in `HilbertDeformationDatum` excludes such an
+`F`: the totally real field here is whatever potential modularity produced.
+
+**FALSITY AUDIT — THE HYPOTHESIS-FREE STATEMENT IS FALSE, AND THIS IS WHY
+THE RETRACTION `f` IS NOW A HYPOTHESIS** (2026-07-26; the leaf as originally
+cut carried no `f`, and in that form it is refuted by the witness below).
+
+A *concrete* `(F, ℓ, w)` realising the obstruction exists: take `ℓ = 7` and
+`F = ℚ(ζ₇)⁺`, the real cyclotomic cubic field. `2` has order `3` in
+`(ℤ/7)ˣ`, so `2` is INERT in `F` with residue degree `3`, and the unique
+`w ∣ 2` has `F_w = ℚ_2(μ_7)`, the unramified cubic extension. `F` is
+totally real and `ℓ = 7 ≥ 5`, so every side condition of this module holds,
+and `χ_7(Γ F_w) = 1 + 7ℤ_7` — every `g` has `χ_ℓ(g) ≡ 1 (mod ℓ)`, so NO
+`g₀` separates the two residual eigenvalues.
+
+Against that arithmetic backdrop the LATTICE descent genuinely fails. Put
+`R = ℤ_7[[Y]]` and let `R' = ℤ_7[[Z]] ↪ R` by `Z ↦ 7Y` (injective, local,
+closed). For `c ∈ 1 + 7ℤ_7` set
+
+    M_c = [[1, ((1 − c)/7)·Z], [0, c]] ∈ GL₂(R'),
+
+which is a genuine homomorphism `1 + 7ℤ_7 → GL₂(R')`, since
+`u(c') + u(c)c' = u(cc')` for `u(c) = (1 − c)/7`. Take
+`ρ'|_{Γ F_w} : g ↦ M_{χ_7(g)}`; it is continuous, UNRAMIFIED (it factors
+through `χ_7`, which is unramified at `w ∣ 2` because `ℓ ≠ 2`), and has
+`det = χ_7`, exactly as `IsHilbertHardlyRamified.det` demands. Its traces
+are `1 + c ∈ ℤ_7`, so nothing here obstructs `R'` being the trace subring.
+
+* Over `R` the tame datum EXISTS: the row `(1, Y)` satisfies
+  `(1, Y)·M_c = (1, Y)`, it is unimodular (`1` is a unit), and its character
+  is `δ = 1` — unramified with `δ² = 1`. So `𝒟` is a legitimate datum.
+* Over `R'` it does NOT. The `δ = 1` eigenrows in `R'²` are
+  `{(x, Yx) : x, Yx ∈ R'} = 7·R'·(1, Y) = R'·(7, Z)`, and BOTH entries of
+  `(7, Z)` lie in `𝔪' = (7, Z)`: no unimodular eigenrow exists. The only
+  other eigenrow is `(0, 1)`, with character `χ_7`, and `χ_7² ≠ 1` — so it
+  is barred by the `δ² = 1` clause. Hence there is no admissible `p`.
+
+The counterexample dies exactly when `f` is present: a ring retraction
+`f : R ↠ R'` of the inclusion would give `7·f(Y) = Z`, and `Z ∉ 7·ℤ_7[[Z]]`.
+So the retraction hypothesis is not a convenience — it is *precisely* the
+missing content, and with it the proof below is three steps and needs no
+arithmetic at `w` at all (in particular it is insensitive to whether
+`μ_ℓ ⊆ F_w`, which is what makes it a correct `F`-level statement rather
+than a transplanted `ℚ`-level one).
+
+WHY THE RETRACTION IS AVAILABLE UPSTREAM, and why it is a well-posed leaf
+rather than a smuggled hypothesis: see
+`exists_ringHom_retraction_hilbertTraceSubring` below, which supplies it
+from `𝒟.IsWeaklyUniversal`. Briefly — a weakly universal `𝒟` and the
+genuinely universal trace-generated datum `𝒟ᵘⁿⁱᵛ` map to each other, the
+round trip `Rᵘⁿⁱᵛ → 𝒟.R → Rᵘⁿⁱᵛ` fixes every charpoly coefficient and hence
+is the identity on the trace-generated `Rᵘⁿⁱᵛ` (Mazur §1.8), so `𝒟.R`
+retracts onto the image of `Rᵘⁿⁱᵛ`, which is `R'`.
+
+WHAT THIS COSTS THE CUT. Only `exists_framedGaloisRep_hilbertTraceSubring`
+and `exists_hilbertTraceDescent` change, by carrying `f` as a parameter;
+`exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum`
+discharges it from the `IsWeaklyUniversal` hypothesis it already has, so
+NOTHING outside this section sees the repair.
+
+FAITHFULNESS: the conclusion quantifies over `localInertiaGroup w` and MUST
+NOT be widened to `Γ F` or even to `Γ F_w` — the quotient character is
+unramified, i.e. trivial on inertia, but emphatically NOT trivial on
+Frobenius. Widening the inertia quantifier is the single commonest way a
+leaf in this development has been made false.
+
+WELL-POSEDNESS — why quantifying over the output of the Rouquier–Nyssen
+leaf is harmless. The tame clause is invariant under an `R'`-change of
+frame (if `p` witnesses it for `Fρ'F⁻¹` with `F ∈ GL₂(R')` then `p ∘ F`
+witnesses it for `ρ'`), and any two descents are `R'`-conjugate by Nyssen's
+uniqueness, their framings differing by an element of the centraliser of
+`𝒟.ρ(G_F)`, which is `𝒟.R^×` by Schur plus absolute irreducibility. So the
+leaf holds for every output of the Rouquier–Nyssen leaf or for none: a
+prover may fix whichever descent is convenient, and a prover who finds it
+FALSE has found Carayol's descent incompatible with the tame filtration and
+should REPORT that rather than weaken this statement. -/
+theorem isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    (hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ))
+    (f : 𝒟.R →+* hilbertTraceSubring ℓ 𝒟.ρ)
+    (hf : ∀ x : hilbertTraceSubring ℓ 𝒟.ρ, f (x : 𝒟.R) = x)
+    (ρ' : FramedGaloisRep F (hilbertTraceSubring ℓ 𝒟.ρ) (Fin 2))
+    (e : (𝒟.R ⊗[hilbertTraceSubring ℓ 𝒟.ρ]
+        (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)) ≃ₗ[𝒟.R] (Fin 2 → 𝒟.R))
+    (he : (ρ'.baseChange 𝒟.R).conj e = 𝒟.ρ)
+    (w : HeightOneSpectrum (𝓞 F)) (hw : ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal) :
+    ∃ (p : (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)
+        →ₗ[hilbertTraceSubring ℓ 𝒟.ρ] (hilbertTraceSubring ℓ 𝒟.ρ))
+      (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) (hilbertTraceSubring ℓ 𝒟.ρ)
+        (hilbertTraceSubring ℓ 𝒟.ρ)),
+      (∀ g : Γ (w.adicCompletion F),
+        ∀ x : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ,
+        p (ρ'.toLocal w g x) = δ g (p x)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 := by
+  classical
+  letI := hloc
+  -- the tame datum of `𝒟` itself, at the place `w`
+  obtain ⟨pR, hpRsurj, δR, hRequi, hRinert, hRsq⟩ :=
+    𝒟.isHilbertHardlyRamified.isTameAtTwo w hw
+  -- `δR` is multiplication by the scalar `ε g`
+  set ε : Γ (w.adicCompletion F) → 𝒟.R := fun g => δR g 1 with hεdef
+  have hεapp : ∀ g : Γ (w.adicCompletion F), ε g = δR g 1 := fun _ => rfl
+  have hδRapp : ∀ (g : Γ (w.adicCompletion F)) (y : 𝒟.R), δR g y = ε g * y := by
+    intro g y
+    calc δR g y = δR g (y • (1 : 𝒟.R)) := by rw [smul_eq_mul, mul_one]
+      _ = y • δR g 1 := by rw [map_smul]
+      _ = ε g * y := by rw [hεapp, smul_eq_mul]; exact mul_comm _ _
+  have hεsq : ∀ g, ε g * ε g = 1 := by
+    intro g
+    have h := congrArg (fun t : Module.End 𝒟.R 𝒟.R => t (1 : 𝒟.R)) (hRsq g)
+    simp only [Module.End.mul_apply, Module.End.one_apply] at h
+    rwa [hδRapp, ← hεapp] at h
+  have hεone : ε 1 = 1 := by
+    rw [hεapp, show δR 1 = 1 from map_one δR]
+    rfl
+  have hεmul : ∀ g h', ε (g * h') = ε g * ε h' := by
+    intro g h'
+    rw [hεapp, hεapp, hεapp, show δR (g * h') = δR g * δR h' from map_mul δR g h',
+      Module.End.mul_apply, hδRapp, ← hεapp]
+  have hεinert : ∀ g ∈ localInertiaGroup w, ε g = 1 := by
+    intro g hg
+    rw [hεapp, show δR g = 1 from hRinert hg]
+    rfl
+  -- frame coordinates of the descent, over `𝒟.R`
+  obtain ⟨a, b, hab, hcoord⟩ :=
+    exists_frameCoords_of_baseChange_conj_hilbert (ρ' := ρ') w e he hpRsurj
+      (ε := ε) (fun g x => by rw [hRequi g x, hδRapp])
+  -- push the frame row into `R'` along the retraction
+  set π : (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)
+      →ₗ[hilbertTraceSubring ℓ 𝒟.ρ] (hilbertTraceSubring ℓ 𝒟.ρ) :=
+    (f a) • LinearMap.proj 0 + (f b) • LinearMap.proj 1 with hπdef
+  have hπapp : ∀ x : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ,
+      π x = f a * x 0 + f b * x 1 := by
+    intro x; simp [hπdef]
+  have hπsurj : Function.Surjective π := by
+    have hab' : IsUnit (f a) ∨ IsUnit (f b) := by
+      rcases hab with h | h
+      · exact Or.inl (h.map f)
+      · exact Or.inr (h.map f)
+    rcases hab' with h | h
+    · obtain ⟨u, hu⟩ := h.exists_right_inv
+      intro c
+      refine ⟨Pi.single 0 (u * c), ?_⟩
+      rw [hπapp]
+      have h0 : (Pi.single (0 : Fin 2) (u * c) :
+        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 0 = u * c := by simp
+      have h1 : (Pi.single (0 : Fin 2) (u * c) :
+        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 1 = 0 := by simp
+      rw [h0, h1, mul_zero, add_zero, ← mul_assoc, hu, one_mul]
+    · obtain ⟨u, hu⟩ := h.exists_right_inv
+      intro c
+      refine ⟨Pi.single 1 (u * c), ?_⟩
+      rw [hπapp]
+      have h0 : (Pi.single (1 : Fin 2) (u * c) :
+        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 0 = 0 := by simp
+      have h1 : (Pi.single (1 : Fin 2) (u * c) :
+        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 1 = u * c := by simp
+      rw [h0, h1, mul_zero, zero_add, ← mul_assoc, hu, one_mul]
+  -- the descended character: the retraction of the ambient one
+  have hπequi : ∀ (g : Γ (w.adicCompletion F))
+      (x : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ),
+      π (ρ'.toLocal w g x) = f (ε g) * π x := by
+    intro g x
+    have h := congrArg f (hcoord g x)
+    rw [map_add, map_mul, map_mul, hf, hf, map_mul, map_add, map_mul, map_mul,
+      hf, hf] at h
+    rw [hπapp, hπapp]
+    calc f a * (ρ'.toLocal w g x) 0 + f b * (ρ'.toLocal w g x) 1
+        = (ρ'.toLocal w g x) 0 * f a + (ρ'.toLocal w g x) 1 * f b := by
+          rw [mul_comm (f a), mul_comm (f b)]
+      _ = f (ε g) * (x 0 * f a + x 1 * f b) := h
+      _ = f (ε g) * (f a * x 0 + f b * x 1) := by ring
+  have hεCsq : ∀ g, f (ε g) * f (ε g) = 1 := by
+    intro g; rw [← map_mul, hεsq, map_one]
+  -- continuity of the descended character, read off `π` at a section point
+  obtain ⟨x₀, hx₀⟩ := hπsurj 1
+  letI := moduleTopology (hilbertTraceSubring ℓ 𝒟.ρ)
+    (Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
+      (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ))
+  letI := moduleTopology (hilbertTraceSubring ℓ 𝒟.ρ)
+    (Module.End (hilbertTraceSubring ℓ 𝒟.ρ) (hilbertTraceSubring ℓ 𝒟.ρ))
+  haveI : ContinuousAdd
+      (Module.End (hilbertTraceSubring ℓ 𝒟.ρ) (hilbertTraceSubring ℓ 𝒟.ρ)) :=
+    ModuleTopology.continuousAdd _ _
+  haveI : ContinuousSMul (hilbertTraceSubring ℓ 𝒟.ρ)
+      (Module.End (hilbertTraceSubring ℓ 𝒟.ρ) (hilbertTraceSubring ℓ 𝒟.ρ)) :=
+    ModuleTopology.continuousSMul _ _
+  have hεCcont : Continuous (fun g => f (ε g)) := by
+    have h1 : (fun g => f (ε g)) = fun g =>
+        (π ∘ₗ (LinearMap.applyₗ x₀ :
+          Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
+              (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)
+            →ₗ[hilbertTraceSubring ℓ 𝒟.ρ]
+              (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)))
+          ((ρ'.toLocal w) g) := by
+      funext g
+      have h2 := hπequi g x₀
+      rw [hx₀, mul_one] at h2
+      exact h2.symm
+    rw [h1]
+    exact (IsModuleTopology.continuous_of_linearMap _).comp
+      (ρ'.toLocal w).continuous_toFun
+  set δ : GaloisRep (w.adicCompletion F) (hilbertTraceSubring ℓ 𝒟.ρ)
+      (hilbertTraceSubring ℓ 𝒟.ρ) :=
+    { toFun := fun g => f (ε g) • (1 : Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
+        (hilbertTraceSubring ℓ 𝒟.ρ))
+      map_one' := by rw [hεone, map_one, one_smul]
+      map_mul' := fun g h' => by
+        refine LinearMap.ext fun c => ?_
+        simp only [hεmul, map_mul, LinearMap.smul_apply, Module.End.one_apply,
+          Module.End.mul_apply, smul_eq_mul]
+        ring
+      continuous_toFun := hεCcont.smul continuous_const } with hδdef
+  have hδapp : ∀ (g : Γ (w.adicCompletion F))
+      (c : hilbertTraceSubring ℓ 𝒟.ρ), δ g c = f (ε g) * c := by
+    intro g c
+    show (f (ε g) • (1 : Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
+      (hilbertTraceSubring ℓ 𝒟.ρ))) c = f (ε g) * c
+    rw [LinearMap.smul_apply, Module.End.one_apply, smul_eq_mul]
+  refine ⟨π, hπsurj, δ, fun g x => ?_, fun σ hσ => ?_, fun g => ?_⟩
+  · rw [hπequi, hδapp]
+  · show f (ε σ) • (1 : Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
+      (hilbertTraceSubring ℓ 𝒟.ρ)) = 1
+    rw [hεinert σ hσ, map_one, one_smul]
+  · refine LinearMap.ext fun c => ?_
+    show (δ g) ((δ g) c) = c
+    rw [hδapp, hδapp, ← mul_assoc, hεCsq, one_mul]
+
+/-- **The trace-subring inclusion of a WEAKLY UNIVERSAL datum admits a ring
+retraction** (LEAF — RELOCATED HERE AND RE-CUT 2026-08-02, flt-lean-82).
+
+**WHAT MOVED, AND WHY.** This declaration sat ~1400 lines BELOW, where it was
+PROVEN over `exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal`.
+That proof is correct and it is CIRCULAR at the level of the cluster: its
+input is proven over
+`exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal`,
+which is proven over
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring_of_isWeaklyUniversal`
+immediately below — and THAT was a leaf whose only content was this
+statement. The cluster owed one theorem and carried it twice: once as an
+open leaf about a tame quotient at `w ∣ 2`, once as a proof that could only
+be run after the leaf it was needed for. Both docstrings said so, at length,
+and neither could act on it, because Lean's declaration order put the
+retraction below its own consumer.
+
+The repair is the one this declaration's own former docstring prescribed —
+*"make that classical statement the leaf and place it ABOVE both
+consumers"* — carried out one level further up than it was carried out in
+2026-07-27. Concretely: `exists_frameCoords_of_baseChange_conj_hilbert` and
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` were hoisted above
+this point (a pure line-permutation; the sorted line multiset of the file is
+unchanged by the move), this statement was relocated here with its proof
+replaced by `sorry`, and the tame-descent leaf below is now PROVEN in three
+lines over the two of them. **The count is unchanged, 1 leaf → 1 leaf**, and
+the cycle is gone: nothing above this point depends on anything below it.
+
+The old proof is recoverable with `git show <this commit>^` at the old
+position; it is ~55 lines and it becomes runnable again the moment an
+independent source of a trace-generated universal datum exists (see below).
+
+**WHY IT IS TRUE — Mazur §1.8 plus one round trip.** Let `𝒟ᵘⁿⁱᵛ` be the
+genuinely universal datum; for absolutely irreducible `ρbar` its ring
+`Rᵘⁿⁱᵛ` is topologically generated by the traces of the universal
+deformation. Weak universality of `𝒟` gives `𝒟.R → Rᵘⁿⁱᵛ`, and `𝒟` being a
+datum gives `h : Rᵘⁿⁱᵛ → 𝒟.R`; both are compatible with the `ℤ_ℓ`-structure
+maps, the reduction maps and — the load-bearing clause — the characteristic
+polynomials at every `g : Γ F`. So the round trip `Rᵘⁿⁱᵛ → 𝒟.R → Rᵘⁿⁱᵛ`
+fixes every charpoly coefficient, hence fixes a topologically generating set
+of `Rᵘⁿⁱᵛ`, hence (being continuous) is the identity. Therefore `h` is split
+injective, its image is closed and is exactly the closed subring generated
+by the charpoly coefficients of `𝒟.ρ` together with `ℤ_ℓ` and the
+Teichmüller roots — that is, `R' = hilbertTraceSubring ℓ 𝒟.ρ` — and
+`f := h ∘ (the retraction)` corestricted to `R'` is the required map.
+
+**THE ONE INPUT THAT IS MISSING, and it is the honest residue of the whole
+cluster: an `F`-level trace-generated universal datum.** Everything in the
+paragraph above is formalized already —
+`exists_ringHom_map_top_eq_hilbertTraceSubring` is the image computation and
+`HilbertDeformationDatum.isUniversal_of_isWeaklyUniversal_isTraceGenerated`
+is the upgrade from weak universality to universality. What no declaration
+in this module produces without going through this leaf is `𝒟ᵘⁿⁱᵛ` itself.
+So a prover has exactly one job, and it is a citation (Carayol, Contemp.
+Math. 165, Théorème 1): **produce a weakly universal `HilbertDeformationDatum`
+that is trace-generated.** Cutting THAT as the leaf instead of this one is a
+legitimate and arguably better re-cut; it was not done here only because its
+statement would have to be relocated above this point as well, and this
+form is the one both consumers already take.
+
+**WHY `IsWeaklyUniversal` MAY NOT BE DROPPED.** Without it the statement is
+FALSE, by the `ℤ_7[[Z]] ↪ ℤ_7[[Y]]` witness recorded in full in the
+docstring of `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` above
+(`Z ↦ 7Y` over `F = ℚ(ζ₇)⁺`, `ℓ = 7`): nothing constrains a bare datum's
+ring to retract onto its trace subring, and `7·f(Y) = Z` is unsolvable in
+`ℤ_7[[Z]]`. That witness is what makes this a genuine hypothesis rather
+than a convenience.
+
+**A NOTE ON THE INFLATION FAMILY, since `IsWeaklyUniversal` is
+EXISTENCE-ONLY and this module's siblings have been refuted for exactly
+that reason.** The standard refutation of an existence-only universality
+clause is `R ↝ R[[y]]`: the inflated datum is again weakly universal
+(classify through `constantCoeff`), so no conclusion BOUNDING `𝒟.R` from
+above can hold. It does **not** refute this statement. Inflation does not
+move the trace subring — the charpoly coefficients of the inflated `ρ` are
+the images of those of `ρ` under the injection `R ↪ R[[y]]`, and the
+Teichmüller lifts are the images of those of `R` by uniqueness — so it
+carries `R' ⊆ R` to `R' ⊆ R[[y]]`, and a retraction `R → R'` composes with
+`constantCoeff` to give one for `R[[y]]`. The property asserted here is
+stable under the family that kills its siblings. A refutation therefore
+needs a weakly universal datum whose trace subring is genuinely not a
+retract, and by the paragraph above that would refute Carayol's Théorème 1;
+**that is the report to make, rather than a weakening of this statement.**
+
+FAITHFULNESS: `f` is asked to be a bare `RingHom`, not a continuous
+`ℤ_ℓ`-algebra map. That is deliberate and is all either consumer uses — a
+unit of `𝒟.R` lying in `R'` maps to a unit of `R'`, and `f` is
+automatically `R'`-linear because it fixes `R'`. Asking for less makes the
+leaf easier without making the consumers weaker. `hℓ5`, `hirrF` and
+`[NumberField.IsTotallyReal F]` are the three hypotheses the round trip
+spends, and both call sites carry all three.
+
+References: Mazur, *Deforming Galois representations*, §1.8; Carayol, op.
+cit., Théorème 1. -/
+theorem exists_ringHom_retraction_hilbertTraceSubring
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) (h𝒟 : 𝒟.IsWeaklyUniversal) :
+    ∃ f : 𝒟.R →+* hilbertTraceSubring ℓ 𝒟.ρ,
+      ∀ x : hilbertTraceSubring ℓ 𝒟.ρ, f (x : 𝒟.R) = x :=
+  sorry
+
+open scoped TensorProduct in
+/-- **The tame quadratic quotient at a place over `2` descends to the trace
+subring of a WEAKLY UNIVERSAL datum, WITHOUT a retraction**
+(**PROVEN 2026-08-02**, flt-lean-82 — a LEAF from 2026-07-31 until then; the
+proof is three lines and the whole of the work was BREAKING A CYCLE, not
+mathematics. Read the docstring of
+`exists_ringHom_retraction_hilbertTraceSubring` immediately above for what
+moved and why. **THE FRONTIER DID NOT MOVE: 1 leaf → 1 leaf.**)
 
 **IT IS `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` ABOVE WITH
 `f`/`hf` REPLACED BY `h𝒟`** — verbatim the refuting check that both that
-declaration's docstring and the leaf below have prescribed since
+declaration's docstring and the consumer below have prescribed since
 2026-07-26. Everything else in the two statements agrees character for
-character, including the inertia quantifier in the conclusion.
+character, including the inertia quantifier in the conclusion. So the proof
+is exactly: obtain `f`/`hf` from the retraction leaf, apply that theorem.
 
-WHY IT IS TRUE, and why the missing retraction is not missing content.
-`exists_ringHom_retraction_hilbertTraceSubring` below produces exactly the
-`f`/`hf` that the version above wants, from exactly this `h𝒟` — so
-mathematically this statement is a corollary of that one and carries no
-new obligation. It cannot be PROVEN that way in Lean, because that
-retraction is derived through
+**WHAT THE CYCLE WAS, since three docstrings described it correctly and none
+could act on it.** `exists_ringHom_retraction_hilbertTraceSubring` produces
+exactly the `f`/`hf` the version above wants, from exactly this `h𝒟`. Until
+2026-08-02 it was PROVEN — ~1400 lines BELOW here — over
 `exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal`,
-whose first step is the leaf below, whose only residue is this. The cycle
-is real and it is the reason this node exists; naming it is what turns a
-circular appeal into an ordinary open leaf.
+which is proven over
+`exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal`,
+which is proven over THIS declaration. So the cluster owed one theorem and
+carried it twice: once here as an open leaf about a tame quotient, once
+below as a proof that could only run after the leaf it was needed for.
+Each of the three docstrings, written from its own end, concluded "the cycle
+is real and it is the reason this node exists". The repair needed no
+mathematics at all — hoist the two proven declarations above this point,
+relocate the retraction's STATEMENT above them, and swap which end carries
+the `sorry`.
 
 **IT IS NOT REFUTED BY THE `ℤ_7[[Z]] ↪ ℤ_7[[Y]]` WITNESS.** That witness
 (FALSITY AUDIT of the retraction-taking version above, `Z ↦ 7Y` over
 `F = ℚ(ζ₇)⁺`, `ℓ = 7`) kills the statement for an ARBITRARY datum, and it
 is killed in turn by any retraction, since `7·f(Y) = Z` is unsolvable in
-`ℤ_7[[Z]]`. `h𝒟` supplies a retraction mathematically, so the witness is
-not a witness against THIS form. A prover who believes otherwise must
-exhibit a WEAKLY UNIVERSAL datum realising it — which would simultaneously
-refute `exists_ringHom_retraction_hilbertTraceSubring`, and that is the
-report to make rather than a weakening of this statement.
+`ℤ_7[[Z]]`. `h𝒟` supplies a retraction, so the witness is not a witness
+against THIS form. That is now a theorem of this file rather than a promise:
+the retraction is the leaf above and this declaration is its corollary.
 
-TWO ROUTES, and neither has been walked.
+The quotient CHARACTER was never what was open: `δ(g)² = 1` in a local ring
+where `2` is a unit (which holds because `char k = ℓ ≥ 5`) forces
+`δ(g) = ±1`, already in the image of `ℤ_ℓ ⊆ R'`. Only the unimodular
+eigenROW was at issue, and it is what the retraction transports.
 
-1. *Break the retraction cycle at the other end.* Prove
-   `exists_ringHom_retraction_hilbertTraceSubring`'s conclusion directly
-   from `h𝒟` without routing through
-   `exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal`
-   — Mazur §1.8's round trip needs a trace-generated UNIVERSAL datum, and
-   the whole cluster exists because the only `F`-level source of one is
-   that consumer. Any independent source closes this leaf outright.
-2. *Do the eigenrow descent directly.* The `ℚ`-level argument (recorded in
-   full in the docstring above) picks `g₀ ∈ Γ F_w` with `χ_ℓ(g₀) ≢ 1 mod ℓ`
-   and is NOT available over an arbitrary `F_w ∣ 2` — `ℚ(ζ₇)⁺` above is a
-   concrete `F` where it fails. So route 2 needs weak universality to
-   replace that arithmetic input, not merely to supplement it.
-
-The quotient CHARACTER is free either way and is not what is open:
-`δ(g)² = 1` in a local ring where `2` is a unit (which holds because
-`char k = ℓ ≥ 5`) forces `δ(g) = ±1`, already in the image of `ℤ_ℓ ⊆ R'`.
-Only the unimodular eigenROW is at issue.
+**THE ROUTE THAT IS NOW DEAD, recorded so it is not re-attempted.** *Do the
+eigenrow descent directly*: the `ℚ`-level argument (recorded in full in the
+docstring of the `f`/`hf` version above) picks `g₀ ∈ Γ F_w` with
+`χ_ℓ(g₀) ≢ 1 mod ℓ`, and it is NOT available over an arbitrary `F_w ∣ 2` —
+`ℚ(ζ₇)⁺` is a concrete `F` where it fails. A descent-flavoured substitute
+was also checked and does not close: the maximal `δ`-isotypic quotient
+`M = R'²/⟨ρ'(g)x − δ(g)x⟩` satisfies `R ⊗_{R'} M ≅ R²/K` and is generated
+by two elements, and Nakayama over the local `R'` pins `M` to rank one only
+when `ρbar|_{Γ F_w}` is not the scalar `δ̄` — which nothing in
+`HilbertDeformationDatum` excludes. Where that argument stops is exactly
+where a retraction is needed, which is the evidence that the retraction is
+the honest residue.
 
 FAITHFULNESS: the conclusion quantifies over `localInertiaGroup w` and MUST
 NOT be widened to `Γ F` or `Γ F_w`; the character is unramified, i.e.
 trivial on inertia, and emphatically not on Frobenius.
 
-`hℓ5`, `hirrF` and `[NumberField.IsTotallyReal F]` are carried because the
-sole call site has them and they are free there; they are what route 1
-needs, since the retraction chain spends all three.
+`hℓ5`, `hirrF` and `[NumberField.IsTotallyReal F]` are forwarded verbatim to
+the retraction leaf, which is what spends all three; `hloc`, `ρ'`, `e`, `he`,
+`w` and `hw` are forwarded verbatim to the `f`/`hf` version above.
 
 References: Carayol, Contemp. Math. 165, Théorème 1; Mazur, *Deforming
 Galois representations*, §1.8. -/
@@ -17765,17 +18275,22 @@ theorem isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring_of_isWeaklyUniversa
         ∀ x : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ,
         p (ρ'.toLocal w g x) = δ g (p x)) ∧
       localInertiaGroup w ≤ δ.ker ∧
-      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 :=
-  sorry
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 := by
+  obtain ⟨f, hf⟩ :=
+    exists_ringHom_retraction_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟 h𝒟
+  exact isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring ℓ hℓ5 F 𝒟 hloc f hf
+    ρ' e he w hw
 
 /-- **CARAYOL'S THÉORÈME 1 PROPER, FOR A WEAKLY UNIVERSAL DATUM: the framed
 deformation DESCENDS to the trace subring, local conditions and all**
-(SORRY LEAF — hoisted 2026-07-27 (flt-lean-65) out of the `hThm1` step of
-`exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal`
-immediately below, which is now PROVEN over it and carries no direct
-`sorry` of its own. It is the SOLE remaining atom of the whole
-`R_F = 𝕋_F` trace-descent cluster; hoisting it makes it greppable BY NAME
-rather than buried as an anonymous `have` in a 15k-line module.)
+(a SORRY LEAF from its hoist on 2026-07-27 (flt-lean-65) out of the `hThm1`
+step of `exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal`
+immediately below; **PROVEN 2026-07-31**, and the label was STALE until
+2026-08-02. It is NO LONGER the SOLE remaining atom of the
+`R_F = 𝕋_F` trace-descent cluster — since 2026-08-02 that is
+`exists_ringHom_retraction_hilbertTraceSubring` above, which is where the
+cluster's one genuine citation now sits. Hoisting this made it greppable BY
+NAME rather than buried as an anonymous `have` in a 15k-line module.)
 
 The hypotheses are exactly those of the consumer, and the two Carayol
 inputs it spends (`hℓ5`, `hirrF`) are ordinary binders here rather than
@@ -18057,10 +18572,18 @@ theorem exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal
     exact (charpoly_baseChange_conj_hilbert ρ' e g).symm
 
 /-- **Carayol's Théorème 1 over `F`: a weakly universal datum may be taken
-TRACE-GENERATED** (LEAF — new 2026-07-27; it is the SOLE arithmetic input of
-BOTH `exists_noetherianLocal_surjective_quotient_hilbertTraceSubring` and
-`exists_ringHom_retraction_hilbertTraceSubring` below, each of which was a
-leaf until then and is now PROVEN over this one).
+TRACE-GENERATED** (a LEAF when cut on 2026-07-27; **PROVEN 2026-07-31** over
+`exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal`
+above, and the label was STALE until 2026-08-02.
+
+**IT IS NO LONGER THE SOLE ARITHMETIC INPUT OF
+`exists_ringHom_retraction_hilbertTraceSubring`.** On 2026-08-02
+(flt-lean-82) that declaration was relocated ABOVE this one and made the
+cluster's leaf, precisely to break the cycle this docstring describes below:
+its old proof ran through THIS node, which is proven through the tame
+descent, which was a leaf whose only content was that retraction. It still
+is the sole arithmetic input of
+`exists_noetherianLocal_surjective_quotient_hilbertTraceSubring` below.)
 
 THIS NODE REPLACES A CIRCULAR PAIR, and that is why it exists. Until
 2026-07-27 the two leaves below were the cluster's arithmetic, and
@@ -18941,400 +19464,6 @@ theorem exists_isLocalRing_hilbertTraceSubring
   exact ⟨hloc, _root_.CompleteLocalNoetherian.isNoetherianRing_of_isAdicComplete_of_fg
     hcompl' hfg, hadic', hcompl'⟩
 
-open scoped TensorProduct in
-/-- **Frame coordinates of a base-changed framed representation** (PROVEN;
-the local copy, over a VARIABLE base number field and at a place `w`, of
-`Deformation.lean`'s `exists_frameCoords_of_baseChange_conj`, which is
-hard-coded to `ℚ` and to the single place `ℚ_2`): if a surjective
-`S`-functional `πR` transforms by a scalar `ε` under the local action of
-`ρS = (ρ' ⊗ S)ᵉ`, then reading it through the standard frame
-`x ↦ πR (e (1 ⊗ x))` presents it as a ROW `(a, b) ∈ S²` which is
-unimodular and satisfies the same scalar transformation law on `C²`.
-
-Unimodularity is the only non-formal step: were both `a` and `b` in `𝔪_S`,
-then `πR ∘ e` would land in `𝔪_S` on every pure tensor, hence everywhere by
-`TensorProduct.induction_on`, contradicting surjectivity of `πR`.
-
-Stated with `ε` valued in the AMBIENT `S`, not in the subring `C`: the
-`ℚ`-level original takes `ε : Γ ℚ_2 → C`, which forces its caller to prove
-first that the tame character is already defined over `C` (the sign lemma
-`exists_tameSign_of_deformation` there). The consumer below does not need
-that, because it pushes the character into `C` along the retraction
-instead, so the weaker binder is the useful one here. -/
-theorem exists_frameCoords_of_baseChange_conj_hilbert
-    {F : Type u} [Field F] [NumberField F] (w : HeightOneSpectrum (𝓞 F))
-    {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S]
-    [IsLocalRing S] {C : Subring S}
-    {ρS : GaloisRep F S (Fin 2 → S)} {ρ' : FramedGaloisRep F C (Fin 2)}
-    (e : (S ⊗[C] (Fin 2 → C)) ≃ₗ[S] (Fin 2 → S))
-    (he : (ρ'.baseChange S).conj e = ρS)
-    {πR : (Fin 2 → S) →ₗ[S] S} (hπRsurj : Function.Surjective πR)
-    {ε : Γ (w.adicCompletion F) → S}
-    (hπRequi : ∀ (g : Γ (w.adicCompletion F)) (x : Fin 2 → S),
-      πR (ρS.toLocal w g x) = ε g * πR x) :
-    ∃ a b : S, (IsUnit a ∨ IsUnit b) ∧
-      ∀ (g : Γ (w.adicCompletion F)) (x : Fin 2 → C),
-        (((ρ'.toLocal w g x) 0 : C) : S) * a +
-          (((ρ'.toLocal w g x) 1 : C) : S) * b =
-          ε g * (((x 0 : C) : S) * a + ((x 1 : C) : S) * b) := by
-  classical
-  have hcast : ∀ c : C, (c : S) = algebraMap C S c := fun _ => rfl
-  set φ : (Fin 2 → C) → S := fun x => πR (e ((1 : S) ⊗ₜ[C] x)) with hφdef
-  have hφadd : ∀ x y, φ (x + y) = φ x + φ y := by
-    intro x y
-    show πR (e ((1 : S) ⊗ₜ[C] (x + y))) = _
-    rw [TensorProduct.tmul_add, map_add, map_add]
-  have hφsmul : ∀ (c : C) (x : Fin 2 → C), φ (c • x) = (c : S) * φ x := by
-    intro c x
-    have h1 : (1 : S) ⊗ₜ[C] (c • x) = (c : S) • ((1 : S) ⊗ₜ[C] x) := by
-      rw [TensorProduct.tmul_smul, hcast, algebraMap_smul]
-    show πR (e ((1 : S) ⊗ₜ[C] (c • x))) = _
-    rw [h1, map_smul, map_smul, smul_eq_mul]
-  have hdecomp : ∀ x : Fin 2 → C,
-      x = x 0 • Pi.single (0 : Fin 2) (1 : C) + x 1 • Pi.single 1 1 := by
-    intro x
-    funext i
-    fin_cases i <;> simp
-  have hφw : ∀ x : Fin 2 → C,
-      φ x = (x 0 : S) * φ (Pi.single 0 1) + (x 1 : S) * φ (Pi.single 1 1) := by
-    intro x
-    conv_lhs => rw [hdecomp x]
-    rw [hφadd, hφsmul, hφsmul]
-  have hhe : ∀ (G : Γ F) (y : S ⊗[C] (Fin 2 → C)),
-      e ((ρ'.baseChange S) G y) = ρS G (e y) := by
-    intro G y
-    have h1 : ((ρ'.baseChange S).conj e) G = ρS G := by rw [he]
-    rw [GaloisRep.conj_apply] at h1
-    have h2 := congrArg (fun f : Module.End S (Fin 2 → S) => f (e y)) h1
-    simpa [LinearEquiv.conj_apply] using h2
-  have hφequi : ∀ (g : Γ (w.adicCompletion F)) (x : Fin 2 → C),
-      φ (ρ'.toLocal w g x) = ε g * φ x := by
-    intro g x
-    have h1 : (1 : S) ⊗ₜ[C] (ρ'.toLocal w g x) =
-        (ρ'.baseChange S)
-          (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) g)
-          ((1 : S) ⊗ₜ[C] x) := by
-      rw [GaloisRep.baseChange_tmul, GaloisRep.toLocal_apply]
-    show πR (e ((1 : S) ⊗ₜ[C] (ρ'.toLocal w g x))) = _
-    rw [h1, hhe]
-    have h2 := hπRequi g (e ((1 : S) ⊗ₜ[C] x))
-    rw [GaloisRep.toLocal_apply] at h2
-    rw [h2]
-  have hab : IsUnit (φ (Pi.single 0 1)) ∨ IsUnit (φ (Pi.single 1 1)) := by
-    by_contra hc
-    rw [not_or] at hc
-    have hA : φ (Pi.single 0 1) ∈ IsLocalRing.maximalIdeal S :=
-      (IsLocalRing.mem_maximalIdeal _).mpr hc.1
-    have hB : φ (Pi.single 1 1) ∈ IsLocalRing.maximalIdeal S :=
-      (IsLocalRing.mem_maximalIdeal _).mpr hc.2
-    have hmem : ∀ y : S ⊗[C] (Fin 2 → C),
-        πR (e y) ∈ IsLocalRing.maximalIdeal S := by
-      intro y
-      induction y using TensorProduct.induction_on with
-      | zero => rw [map_zero, map_zero]; exact Ideal.zero_mem _
-      | add x y hx hy => rw [map_add, map_add]; exact Ideal.add_mem _ hx hy
-      | tmul c x =>
-        have h1 : (c ⊗ₜ[C] x) = c • ((1 : S) ⊗ₜ[C] x) := by
-          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
-        rw [h1, map_smul, map_smul, smul_eq_mul]
-        refine Ideal.mul_mem_left _ _ ?_
-        show φ x ∈ _
-        rw [hφw]
-        exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hA)
-          (Ideal.mul_mem_left _ _ hB)
-    obtain ⟨z, hz⟩ := hπRsurj 1
-    have h1 : (1 : S) ∈ IsLocalRing.maximalIdeal S := by
-      rw [← hz, ← e.apply_symm_apply z]
-      exact hmem _
-    exact (IsLocalRing.mem_maximalIdeal _).mp h1 isUnit_one
-  refine ⟨φ (Pi.single 0 1), φ (Pi.single 1 1), hab, ?_⟩
-  intro g x
-  have h1 := hφequi g x
-  rw [hφw (ρ'.toLocal w g x), hφw x] at h1
-  exact h1
-
-open scoped TensorProduct in
-/-- **The tame quadratic quotient at a place over `2` descends to the trace
-subring** (LEAF — new 2026-07-26; the `F`-level twin of
-`Deformation.lean`'s PROVEN `isTameAtTwo_of_baseChange_traceSubring`): if
-the framed representation `ρ'` over `R' = hilbertTraceSubring ℓ 𝒟.ρ`
-base-changes, up to framing, to `𝒟.ρ`, then `ρ'` carries the tame-at-`2`
-datum of `IsHilbertHardlyRamified` at every place `w ∣ 2` — a surjective
-`R'`-linear functional whose quotient character is unramified with trivial
-square.
-
-WHAT IS FORMAL AND WHAT IS NOT. The CHARACTER descends for free: `δ` takes
-values in `𝒟.R` with `δ(g)² = 1`, and in a local ring in which `2` is
-invertible — `𝒟.R` has residue characteristic `ℓ ≥ 5`, odd — the only
-square roots of `1` are `±1`, since `(δ(g) − 1)(δ(g) + 1) = 0` and at most
-one factor lies in the maximal ideal. So `δ(g) ∈ {±1} ⊆ R'` and the
-character is already defined over `R'`, unramified and quadratic there.
-
-The content is the `Γ F_w`-stable LINE `ker p ⊆ 𝒟.R²`: its intersection
-with the frame `e(1 ⊗ R'²)` must be a rank-one direct summand. That is a
-statement about the `R'`-LATTICE, not a formal consequence of the
-base-change identity, and a general subring descent of it would be FALSE:
-for `R' = ℤ_ℓ[[Y², Y³]]` inside `ℤ_ℓ[[Y]]` the matrices
-`[[1, −Y³], [0, 1 + Y²]]` and `[[1, −Y⁴], [0, 1 + Y³]]` have entries in
-`R'`, generate `R'` by their traces, and their common eigenrow `(1, Y)`
-meets `R'²` only inside `𝔪'R'²`.
-
-THE `ℚ`-LEVEL ROUTE, which is the one to port, and where the arithmetic
-enters. Pick `g₀ ∈ Γ F_w` with `χ_ℓ(g₀) ≢ 1 (mod ℓ)` — over `ℚ_2` this is
-`Deformation.lean`'s `exists_cyclotomicCharacter_padicTwo_sub_one_isUnit`,
-concretely a Frobenius, where `χ_ℓ = 2` and `1 − 2 = −1` is a unit.
-Cayley–Hamilton against the unimodular eigenrow then forces
-`det ρ'(g₀) = δ(g₀)·tr ρ'(g₀) − 1`, so the two eigenvalues of `ρ'(g₀)` are
-`δ(g₀)` and `κ(g₀)` with
-`(δ(g₀) − κ(g₀))·δ(g₀) = 1 − det ρ'(g₀) = 1 − χ_ℓ(g₀)`, a UNIT. The
-eigen-projector `ρ'(g₀) − κ(g₀)` is then defined over `R'` with unit trace,
-so one of its two rows is unimodular over the local ring `R'`, and each of
-its rows is proportional to the frame row by one of the two
-eigen-equations — which transfers the equivariance for ALL of `Γ F_w`, not
-just for `g₀`. In the counterexample above the two characters coincide,
-which is exactly what `χ_ℓ(g₀) ≠ 1` excludes.
-
-**THE ARITHMETIC INPUT DOES *NOT* TRANSPORT VERBATIM** (flagged 2026-07-26
-at the cut, by the author of the consumer). The step "pick `g₀` with
-`χ_ℓ(g₀) ≢ 1`" is available over `ℚ_2` and is **NOT** available over an
-arbitrary `F_w ∣ 2`. `χ_ℓ mod ℓ` is trivial on `Γ F_w` exactly when
-`μ_ℓ ⊆ F_w`, and `ℚ_2(μ_ℓ)` is the UNRAMIFIED extension of `ℚ_2` of degree
-`ord_ℓ(2)`, which is finite — so any `F` whose completion at `w` contains
-it kills the argument. Nothing in `HilbertDeformationDatum` excludes such an
-`F`: the totally real field here is whatever potential modularity produced.
-
-**FALSITY AUDIT — THE HYPOTHESIS-FREE STATEMENT IS FALSE, AND THIS IS WHY
-THE RETRACTION `f` IS NOW A HYPOTHESIS** (2026-07-26; the leaf as originally
-cut carried no `f`, and in that form it is refuted by the witness below).
-
-A *concrete* `(F, ℓ, w)` realising the obstruction exists: take `ℓ = 7` and
-`F = ℚ(ζ₇)⁺`, the real cyclotomic cubic field. `2` has order `3` in
-`(ℤ/7)ˣ`, so `2` is INERT in `F` with residue degree `3`, and the unique
-`w ∣ 2` has `F_w = ℚ_2(μ_7)`, the unramified cubic extension. `F` is
-totally real and `ℓ = 7 ≥ 5`, so every side condition of this module holds,
-and `χ_7(Γ F_w) = 1 + 7ℤ_7` — every `g` has `χ_ℓ(g) ≡ 1 (mod ℓ)`, so NO
-`g₀` separates the two residual eigenvalues.
-
-Against that arithmetic backdrop the LATTICE descent genuinely fails. Put
-`R = ℤ_7[[Y]]` and let `R' = ℤ_7[[Z]] ↪ R` by `Z ↦ 7Y` (injective, local,
-closed). For `c ∈ 1 + 7ℤ_7` set
-
-    M_c = [[1, ((1 − c)/7)·Z], [0, c]] ∈ GL₂(R'),
-
-which is a genuine homomorphism `1 + 7ℤ_7 → GL₂(R')`, since
-`u(c') + u(c)c' = u(cc')` for `u(c) = (1 − c)/7`. Take
-`ρ'|_{Γ F_w} : g ↦ M_{χ_7(g)}`; it is continuous, UNRAMIFIED (it factors
-through `χ_7`, which is unramified at `w ∣ 2` because `ℓ ≠ 2`), and has
-`det = χ_7`, exactly as `IsHilbertHardlyRamified.det` demands. Its traces
-are `1 + c ∈ ℤ_7`, so nothing here obstructs `R'` being the trace subring.
-
-* Over `R` the tame datum EXISTS: the row `(1, Y)` satisfies
-  `(1, Y)·M_c = (1, Y)`, it is unimodular (`1` is a unit), and its character
-  is `δ = 1` — unramified with `δ² = 1`. So `𝒟` is a legitimate datum.
-* Over `R'` it does NOT. The `δ = 1` eigenrows in `R'²` are
-  `{(x, Yx) : x, Yx ∈ R'} = 7·R'·(1, Y) = R'·(7, Z)`, and BOTH entries of
-  `(7, Z)` lie in `𝔪' = (7, Z)`: no unimodular eigenrow exists. The only
-  other eigenrow is `(0, 1)`, with character `χ_7`, and `χ_7² ≠ 1` — so it
-  is barred by the `δ² = 1` clause. Hence there is no admissible `p`.
-
-The counterexample dies exactly when `f` is present: a ring retraction
-`f : R ↠ R'` of the inclusion would give `7·f(Y) = Z`, and `Z ∉ 7·ℤ_7[[Z]]`.
-So the retraction hypothesis is not a convenience — it is *precisely* the
-missing content, and with it the proof below is three steps and needs no
-arithmetic at `w` at all (in particular it is insensitive to whether
-`μ_ℓ ⊆ F_w`, which is what makes it a correct `F`-level statement rather
-than a transplanted `ℚ`-level one).
-
-WHY THE RETRACTION IS AVAILABLE UPSTREAM, and why it is a well-posed leaf
-rather than a smuggled hypothesis: see
-`exists_ringHom_retraction_hilbertTraceSubring` below, which supplies it
-from `𝒟.IsWeaklyUniversal`. Briefly — a weakly universal `𝒟` and the
-genuinely universal trace-generated datum `𝒟ᵘⁿⁱᵛ` map to each other, the
-round trip `Rᵘⁿⁱᵛ → 𝒟.R → Rᵘⁿⁱᵛ` fixes every charpoly coefficient and hence
-is the identity on the trace-generated `Rᵘⁿⁱᵛ` (Mazur §1.8), so `𝒟.R`
-retracts onto the image of `Rᵘⁿⁱᵛ`, which is `R'`.
-
-WHAT THIS COSTS THE CUT. Only `exists_framedGaloisRep_hilbertTraceSubring`
-and `exists_hilbertTraceDescent` change, by carrying `f` as a parameter;
-`exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum`
-discharges it from the `IsWeaklyUniversal` hypothesis it already has, so
-NOTHING outside this section sees the repair.
-
-FAITHFULNESS: the conclusion quantifies over `localInertiaGroup w` and MUST
-NOT be widened to `Γ F` or even to `Γ F_w` — the quotient character is
-unramified, i.e. trivial on inertia, but emphatically NOT trivial on
-Frobenius. Widening the inertia quantifier is the single commonest way a
-leaf in this development has been made false.
-
-WELL-POSEDNESS — why quantifying over the output of the Rouquier–Nyssen
-leaf is harmless. The tame clause is invariant under an `R'`-change of
-frame (if `p` witnesses it for `Fρ'F⁻¹` with `F ∈ GL₂(R')` then `p ∘ F`
-witnesses it for `ρ'`), and any two descents are `R'`-conjugate by Nyssen's
-uniqueness, their framings differing by an element of the centraliser of
-`𝒟.ρ(G_F)`, which is `𝒟.R^×` by Schur plus absolute irreducibility. So the
-leaf holds for every output of the Rouquier–Nyssen leaf or for none: a
-prover may fix whichever descent is convenient, and a prover who finds it
-FALSE has found Carayol's descent incompatible with the tame filtration and
-should REPORT that rather than weaken this statement. -/
-theorem isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring
-    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
-    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
-    [Module.Free k V]
-    {ρbar : GaloisRep ℚ k V}
-    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
-    (hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ))
-    (f : 𝒟.R →+* hilbertTraceSubring ℓ 𝒟.ρ)
-    (hf : ∀ x : hilbertTraceSubring ℓ 𝒟.ρ, f (x : 𝒟.R) = x)
-    (ρ' : FramedGaloisRep F (hilbertTraceSubring ℓ 𝒟.ρ) (Fin 2))
-    (e : (𝒟.R ⊗[hilbertTraceSubring ℓ 𝒟.ρ]
-        (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)) ≃ₗ[𝒟.R] (Fin 2 → 𝒟.R))
-    (he : (ρ'.baseChange 𝒟.R).conj e = 𝒟.ρ)
-    (w : HeightOneSpectrum (𝓞 F)) (hw : ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal) :
-    ∃ (p : (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)
-        →ₗ[hilbertTraceSubring ℓ 𝒟.ρ] (hilbertTraceSubring ℓ 𝒟.ρ))
-      (_ : Function.Surjective p)
-      (δ : GaloisRep (w.adicCompletion F) (hilbertTraceSubring ℓ 𝒟.ρ)
-        (hilbertTraceSubring ℓ 𝒟.ρ)),
-      (∀ g : Γ (w.adicCompletion F),
-        ∀ x : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ,
-        p (ρ'.toLocal w g x) = δ g (p x)) ∧
-      localInertiaGroup w ≤ δ.ker ∧
-      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 := by
-  classical
-  letI := hloc
-  -- the tame datum of `𝒟` itself, at the place `w`
-  obtain ⟨pR, hpRsurj, δR, hRequi, hRinert, hRsq⟩ :=
-    𝒟.isHilbertHardlyRamified.isTameAtTwo w hw
-  -- `δR` is multiplication by the scalar `ε g`
-  set ε : Γ (w.adicCompletion F) → 𝒟.R := fun g => δR g 1 with hεdef
-  have hεapp : ∀ g : Γ (w.adicCompletion F), ε g = δR g 1 := fun _ => rfl
-  have hδRapp : ∀ (g : Γ (w.adicCompletion F)) (y : 𝒟.R), δR g y = ε g * y := by
-    intro g y
-    calc δR g y = δR g (y • (1 : 𝒟.R)) := by rw [smul_eq_mul, mul_one]
-      _ = y • δR g 1 := by rw [map_smul]
-      _ = ε g * y := by rw [hεapp, smul_eq_mul]; exact mul_comm _ _
-  have hεsq : ∀ g, ε g * ε g = 1 := by
-    intro g
-    have h := congrArg (fun t : Module.End 𝒟.R 𝒟.R => t (1 : 𝒟.R)) (hRsq g)
-    simp only [Module.End.mul_apply, Module.End.one_apply] at h
-    rwa [hδRapp, ← hεapp] at h
-  have hεone : ε 1 = 1 := by
-    rw [hεapp, show δR 1 = 1 from map_one δR]
-    rfl
-  have hεmul : ∀ g h', ε (g * h') = ε g * ε h' := by
-    intro g h'
-    rw [hεapp, hεapp, hεapp, show δR (g * h') = δR g * δR h' from map_mul δR g h',
-      Module.End.mul_apply, hδRapp, ← hεapp]
-  have hεinert : ∀ g ∈ localInertiaGroup w, ε g = 1 := by
-    intro g hg
-    rw [hεapp, show δR g = 1 from hRinert hg]
-    rfl
-  -- frame coordinates of the descent, over `𝒟.R`
-  obtain ⟨a, b, hab, hcoord⟩ :=
-    exists_frameCoords_of_baseChange_conj_hilbert (ρ' := ρ') w e he hpRsurj
-      (ε := ε) (fun g x => by rw [hRequi g x, hδRapp])
-  -- push the frame row into `R'` along the retraction
-  set π : (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)
-      →ₗ[hilbertTraceSubring ℓ 𝒟.ρ] (hilbertTraceSubring ℓ 𝒟.ρ) :=
-    (f a) • LinearMap.proj 0 + (f b) • LinearMap.proj 1 with hπdef
-  have hπapp : ∀ x : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ,
-      π x = f a * x 0 + f b * x 1 := by
-    intro x; simp [hπdef]
-  have hπsurj : Function.Surjective π := by
-    have hab' : IsUnit (f a) ∨ IsUnit (f b) := by
-      rcases hab with h | h
-      · exact Or.inl (h.map f)
-      · exact Or.inr (h.map f)
-    rcases hab' with h | h
-    · obtain ⟨u, hu⟩ := h.exists_right_inv
-      intro c
-      refine ⟨Pi.single 0 (u * c), ?_⟩
-      rw [hπapp]
-      have h0 : (Pi.single (0 : Fin 2) (u * c) :
-        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 0 = u * c := by simp
-      have h1 : (Pi.single (0 : Fin 2) (u * c) :
-        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 1 = 0 := by simp
-      rw [h0, h1, mul_zero, add_zero, ← mul_assoc, hu, one_mul]
-    · obtain ⟨u, hu⟩ := h.exists_right_inv
-      intro c
-      refine ⟨Pi.single 1 (u * c), ?_⟩
-      rw [hπapp]
-      have h0 : (Pi.single (1 : Fin 2) (u * c) :
-        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 0 = 0 := by simp
-      have h1 : (Pi.single (1 : Fin 2) (u * c) :
-        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 1 = u * c := by simp
-      rw [h0, h1, mul_zero, zero_add, ← mul_assoc, hu, one_mul]
-  -- the descended character: the retraction of the ambient one
-  have hπequi : ∀ (g : Γ (w.adicCompletion F))
-      (x : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ),
-      π (ρ'.toLocal w g x) = f (ε g) * π x := by
-    intro g x
-    have h := congrArg f (hcoord g x)
-    rw [map_add, map_mul, map_mul, hf, hf, map_mul, map_add, map_mul, map_mul,
-      hf, hf] at h
-    rw [hπapp, hπapp]
-    calc f a * (ρ'.toLocal w g x) 0 + f b * (ρ'.toLocal w g x) 1
-        = (ρ'.toLocal w g x) 0 * f a + (ρ'.toLocal w g x) 1 * f b := by
-          rw [mul_comm (f a), mul_comm (f b)]
-      _ = f (ε g) * (x 0 * f a + x 1 * f b) := h
-      _ = f (ε g) * (f a * x 0 + f b * x 1) := by ring
-  have hεCsq : ∀ g, f (ε g) * f (ε g) = 1 := by
-    intro g; rw [← map_mul, hεsq, map_one]
-  -- continuity of the descended character, read off `π` at a section point
-  obtain ⟨x₀, hx₀⟩ := hπsurj 1
-  letI := moduleTopology (hilbertTraceSubring ℓ 𝒟.ρ)
-    (Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
-      (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ))
-  letI := moduleTopology (hilbertTraceSubring ℓ 𝒟.ρ)
-    (Module.End (hilbertTraceSubring ℓ 𝒟.ρ) (hilbertTraceSubring ℓ 𝒟.ρ))
-  haveI : ContinuousAdd
-      (Module.End (hilbertTraceSubring ℓ 𝒟.ρ) (hilbertTraceSubring ℓ 𝒟.ρ)) :=
-    ModuleTopology.continuousAdd _ _
-  haveI : ContinuousSMul (hilbertTraceSubring ℓ 𝒟.ρ)
-      (Module.End (hilbertTraceSubring ℓ 𝒟.ρ) (hilbertTraceSubring ℓ 𝒟.ρ)) :=
-    ModuleTopology.continuousSMul _ _
-  have hεCcont : Continuous (fun g => f (ε g)) := by
-    have h1 : (fun g => f (ε g)) = fun g =>
-        (π ∘ₗ (LinearMap.applyₗ x₀ :
-          Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
-              (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)
-            →ₗ[hilbertTraceSubring ℓ 𝒟.ρ]
-              (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)))
-          ((ρ'.toLocal w) g) := by
-      funext g
-      have h2 := hπequi g x₀
-      rw [hx₀, mul_one] at h2
-      exact h2.symm
-    rw [h1]
-    exact (IsModuleTopology.continuous_of_linearMap _).comp
-      (ρ'.toLocal w).continuous_toFun
-  set δ : GaloisRep (w.adicCompletion F) (hilbertTraceSubring ℓ 𝒟.ρ)
-      (hilbertTraceSubring ℓ 𝒟.ρ) :=
-    { toFun := fun g => f (ε g) • (1 : Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
-        (hilbertTraceSubring ℓ 𝒟.ρ))
-      map_one' := by rw [hεone, map_one, one_smul]
-      map_mul' := fun g h' => by
-        refine LinearMap.ext fun c => ?_
-        simp only [hεmul, map_mul, LinearMap.smul_apply, Module.End.one_apply,
-          Module.End.mul_apply, smul_eq_mul]
-        ring
-      continuous_toFun := hεCcont.smul continuous_const } with hδdef
-  have hδapp : ∀ (g : Γ (w.adicCompletion F))
-      (c : hilbertTraceSubring ℓ 𝒟.ρ), δ g c = f (ε g) * c := by
-    intro g c
-    show (f (ε g) • (1 : Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
-      (hilbertTraceSubring ℓ 𝒟.ρ))) c = f (ε g) * c
-    rw [LinearMap.smul_apply, Module.End.one_apply, smul_eq_mul]
-  refine ⟨π, hπsurj, δ, fun g x => ?_, fun σ hσ => ?_, fun g => ?_⟩
-  · rw [hπequi, hδapp]
-  · show f (ε σ) • (1 : Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
-      (hilbertTraceSubring ℓ 𝒟.ρ)) = 1
-    rw [hεinert σ hσ, map_one, one_smul]
-  · refine LinearMap.ext fun c => ?_
-    show (δ g) ((δ g) c) = c
-    rw [hδapp, hδapp, ← mul_assoc, hεCsq, one_mul]
-
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
 /-- **Carayol's Théorème 1 at the `F` level** (PROVEN 2026-07-26 as an
@@ -19462,124 +19591,19 @@ theorem exists_framedGaloisRep_hilbertTraceSubring
     conv_rhs => rw [← he]
     exact (charpoly_baseChange_conj_hilbert ρ' e g).symm
 
-/-- **The trace-subring inclusion of a WEAKLY UNIVERSAL datum admits a ring
-retraction** (**PROVEN 2026-07-27** over the single leaf
-`exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal` above; a
-LEAF from 2026-07-26 until then, and the repaired form of an obstruction
-that was previously hidden inside
-`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring`): for a weakly
-universal `𝒟` there is a ring homomorphism `f : 𝒟.R → R'` onto the trace
-subring which is the identity on `R'`.
+/-! #### `exists_ringHom_retraction_hilbertTraceSubring` USED TO BE STATED HERE
 
-**THE STATEMENT IS UNCHANGED**; in particular no `hlk` hypothesis was added,
-because `((ℓ : ℕ) : k) = 0` is free from the datum itself
-(`natCast_eq_zero_of_hilbertDeformationDatum`).
+It was PROVEN at this point on 2026-07-27, over
+`exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal`
+above.  On 2026-08-02 (flt-lean-82) it was MOVED ~1400 lines UP, to just
+above `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring_of_isWeaklyUniversal`,
+and became the cluster's single leaf; that declaration's docstring records
+the whole re-cut and why the proof deleted from here cannot be run at the
+new position.  Recover the deleted proof with `git show <commit>^` on this
+file; it is ~55 lines and it is the Mazur §1.8 round trip.
 
-**WHAT WAS WRONG BEFORE, and it was a CIRCULARITY of routes rather than an
-error.** The argument recorded below is correct and is the one now
-formalized — but its first step needs a trace-generated universal datum,
-and until 2026-07-27 the only `F`-level source of one was
-`exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum`, which
-is proven THROUGH the trace descent and hence through THIS leaf. Neither end
-of the cluster could be closed. The repair is to make that classical
-statement the leaf and place it ABOVE both consumers; the round trip below
-then goes through verbatim. `r ∘ h = id` is uniqueness at `𝒟u` (which trace
-generation supplies, via
-`isUniversal_of_isWeaklyUniversal_isTraceGenerated`), and `image h = R'` is
-`exists_ringHom_map_top_eq_hilbertTraceSubring`.
-
-WHY THIS LEAF EXISTS AT ALL, and why it is not a smuggled hypothesis. The
-FALSITY AUDIT in the docstring of
-`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` exhibits an explicit
-`R' = ℤ_7[[Z]] ↪ ℤ_7[[Y]] = R` (by `Z ↦ 7Y`), together with a legitimate
-unramified local representation at a place `w ∣ 2` of the totally real field
-`F = ℚ(ζ₇)⁺`, for which the tame datum exists over `R` and does NOT exist
-over `R'`. That refutes the tame descent as a statement about an arbitrary
-datum. What kills the witness is exactly the retraction: `7·f(Y) = Z` is
-unsolvable in `ℤ_7[[Z]]`. So the content that the descent needs is precisely
-this, and it belongs in a named leaf rather than inside a proof.
-
-THE ARGUMENT, which is Mazur §1.8 plus one round trip and is why the
-statement is TRUE (only its formalization is open). Let `𝒟ᵘⁿⁱᵛ` be the
-genuinely universal datum; for absolutely irreducible `ρbar` its ring
-`Rᵘⁿⁱᵛ` is topologically generated by the traces of the universal
-deformation. Weak universality of `𝒟` gives `𝒟.R → Rᵘⁿⁱᵛ`, and `𝒟` being a
-datum gives `h : Rᵘⁿⁱᵛ → 𝒟.R`; both are compatible with the `ℤ_ℓ`-structure
-maps, the reduction maps and — the load-bearing clause — the characteristic
-polynomials at every `g : Γ F`. So the round trip `Rᵘⁿⁱᵛ → 𝒟.R → Rᵘⁿⁱᵛ`
-fixes every charpoly coefficient, hence fixes a topologically generating set
-of `Rᵘⁿⁱᵛ`, hence (being continuous) is the identity. Therefore `h` is split
-injective, its image is closed and is exactly the closed subring generated
-by the charpoly coefficients of `𝒟.ρ` together with `ℤ_ℓ` and the
-Teichmüller roots — that is, `R' = hilbertTraceSubring ℓ 𝒟.ρ` — and
-`f := h ∘ (the retraction)` corestricted to `R'` is the required map.
-
-WHY `IsWeaklyUniversal` MAY NOT BE DROPPED. Without it the statement is
-false, by the same `ℤ_7[[Z]] ↪ ℤ_7[[Y]]` witness: nothing constrains a bare
-datum's ring to retract onto its trace subring.
-
-FAITHFULNESS: `f` is asked to be a bare `RingHom`, not a continuous
-`ℤ_ℓ`-algebra map. That is deliberate and is all the consumer uses — a unit
-of `𝒟.R` lying in `R'` maps to a unit of `R'`, and `f` is automatically
-`R'`-linear because it fixes `R'`. Asking for less makes the leaf easier
-without making the consumer weaker.
-
-References: Mazur, *Deforming Galois representations*, §1.8; Carayol, op.
-cit., Théorème 1. -/
-theorem exists_ringHom_retraction_hilbertTraceSubring
-    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
-    [NumberField.IsTotallyReal F]
-    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
-    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
-    [Module.Free k V]
-    {ρbar : GaloisRep ℚ k V}
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 : HilbertDeformationDatum ℓ F ρbar) (h𝒟 : 𝒟.IsWeaklyUniversal) :
-    ∃ f : 𝒟.R →+* hilbertTraceSubring ℓ 𝒟.ρ,
-      ∀ x : hilbertTraceSubring ℓ 𝒟.ρ, f (x : 𝒟.R) = x := by
-  classical
-  have hlk : ((ℓ : ℕ) : k) = 0 := natCast_eq_zero_of_hilbertDeformationDatum ℓ 𝒟
-  obtain ⟨𝒟u, hwu, htg⟩ :=
-    exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal ℓ hℓ5 F hirrF
-      𝒟 h𝒟
-  obtain ⟨h, hrange, hh1, hh2, hh3⟩ :=
-    exists_ringHom_map_top_eq_hilbertTraceSubring ℓ F 𝒟 𝒟u hwu htg
-  -- trace generation upgrades weak universality to universality, which is what
-  -- makes the round trip `𝒟u.R → 𝒟.R → 𝒟u.R` the identity
-  have huniv : 𝒟u.IsUniversal :=
-    HilbertDeformationDatum.isUniversal_of_isWeaklyUniversal_isTraceGenerated
-      hlk 𝒟u hwu htg
-  obtain ⟨r, hr1, hr2, hr3⟩ := h𝒟 𝒟u
-  have hrh : r.comp h = RingHom.id 𝒟u.R := by
-    obtain ⟨i, -, hiu⟩ := huniv 𝒟u
-    have e1 : r.comp h = i := by
-      refine hiu (r.comp h) ⟨?_, ?_, ?_⟩
-      · rw [RingHom.comp_assoc, hh1, hr1]
-      · rw [← RingHom.comp_assoc, hr2, hh2]
-      · intro g
-        rw [← Polynomial.map_map, hh3 g, hr3 g]
-    have e2 : RingHom.id 𝒟u.R = i := by
-      refine hiu (RingHom.id 𝒟u.R) ⟨?_, ?_, ?_⟩
-      · rw [RingHom.id_comp]
-      · rw [RingHom.comp_id]
-      · intro _
-        exact Polynomial.map_id
-    rw [e1, e2]
-  -- `h ∘ r` is a projection of `𝒟.R` onto the image of `h`, which is `R'`
-  have hmem : ∀ x : 𝒟.R, h (r x) ∈ hilbertTraceSubring ℓ 𝒟.ρ := by
-    intro x
-    rw [← hrange]
-    exact ⟨r x, Subring.mem_top _, rfl⟩
-  refine ⟨(h.comp r).codRestrict (hilbertTraceSubring ℓ 𝒟.ρ) hmem, ?_⟩
-  intro x
-  refine Subtype.ext ?_
-  show h (r (x : 𝒟.R)) = (x : 𝒟.R)
-  have hx : (x : 𝒟.R) ∈ Subring.map h (⊤ : Subring 𝒟u.R) := by
-    rw [hrange]; exact x.2
-  obtain ⟨y, -, hy⟩ := hx
-  rw [← hy]
-  calc h (r (h y)) = h ((r.comp h) y) := rfl
-    _ = h y := by rw [hrh]; rfl
+Nothing else changed: the statement is character-for-character the one that
+used to be here, so every consumer below still elaborates unchanged. -/
 
 /-- **Carayol subring-descent stratum at the `F` level** (PROVEN 2026-07-26
 as glue over the two Carayol strata above —
