@@ -72,17 +72,27 @@ coarser than it needed to be.
 * `NumberField.artinMap` — PROVEN CONSTRUCTION. The Artin map on the group of
   INVERTIBLE FRACTIONAL IDEALS of `𝓞 K`, `I ↦ ∏_v Frob_v ^ v(I)`, together with its
   multiplicativity and its value `Frob_v` at a prime.
-* `NumberField.artinMap_toPrincipalIdeal` — **OPEN LEAF: ARTIN RECIPROCITY.** The
-  Artin map kills the principal ideals.
+* `NumberField.artinMap_toPrincipalIdeal` — PROVEN 2026-07-31 over
+  `artinMap_toPrincipalIdeal_of_isCyclic`, by the character/cyclic-quotient
+  reduction. The Artin map kills the principal ideals.
+* `NumberField.artinMap_toPrincipalIdeal_of_isCyclic` — **THE ONLY OPEN LEAF IN
+  THIS FILE: ARTIN RECIPROCITY, cyclic case at modulus `1`.** (The bullet above
+  said `artinMap_toPrincipalIdeal` was the open leaf; that was true when written
+  and stopped being so when the cyclic cut landed on 2026-07-31. Corrected
+  2026-08-02 — a stale `OPEN LEAF` label in this list is a phantom-dispatch
+  source, since frontier task lists get harvested from it.)
 * `NumberField.exists_classGroupHom_eq_frobAt` — PROVEN 2026-07-30 over the leaf
   above: the descent of the Artin map to `Cl(𝓞 K)`.
 * `NumberField.inertiaDeg_eq_one_of_forall_pow_natCard` — PROVEN. If every element of
   the residue field `𝓞 F ⧸ q` is a root of `X ^ (N 𝔭) - X` then `f(q | 𝔭) = 1`.
 * `NumberField.finite_ramifiedBelow` — PROVEN. Only finitely many primes of `𝓞 K`
   ramify in `L` (via the different ideal).
-* `NumberField.finrank_eq_one_of_forall_inertiaDeg_eq_one` — **OPEN LEAF: THE DENSITY
-  INPUT OF CHEBOTAREV.** A finite extension of number fields in which all but finitely
-  many primes of the base have residue degree `1` is trivial.
+* `NumberField.finrank_eq_one_of_forall_inertiaDeg_eq_one` — NOT IN THIS FILE, and
+  **PROVEN**: it lives in `Fermat/FLT/NumberField/Density.lean:458`, over the
+  Dedekind-zeta endgame. It was a duplicated `sorry` here until the copy was
+  deleted; this bullet went on calling it an OPEN LEAF. Corrected 2026-08-02
+  (verified: one `sorry` token in this file, at
+  `artinMap_toPrincipalIdeal_of_isCyclic`, and `Density.lean` carries the proof).
 * `NumberField.closure_frobAt_eq_top` — PROVEN 2026-07-31 over the leaf above, by the
   fixed-field reduction.
 
@@ -819,7 +829,64 @@ class numbers). The abelian statement really does go through the Artin map.
 
 **The check that would refute this leaf**: a finite cyclic `L/K` unramified at every
 finite prime and every infinite place, an `x : Kˣ`, and a factorisation of `(x)`
-into primes whose Frobenius elements do not multiply to `1`. -/
+into primes whose Frobenius elements do not multiply to `1`.
+
+**RE-AUDIT 2026-08-02 (`flt-lean-352`). Every absence claim above re-checked by grep
+rather than recalled, and all of them stand. One NEW absence, which re-prices the
+route this docstring recommends.**
+
+Re-verified at this pin: no class field theory in mathlib (no `ClassField`, no ray
+class group, no modulus, no idele class group); no Herbrand quotient and no Tate
+cohomology of the idele class group — the pin's only Tate cohomology is
+`Mathlib/RepresentationTheory/Homological/TateCohomology/Basic.lean`, which is group
+cohomology of a finite group and not `C_K`. `~/cs/FLT` is not a source either: a grep
+of `~/cs/FLT/FLT` for `artinMap`, `reciprocity`, `ClassField` and `RayClass` returns
+ZERO files, as does a case-insensitive grep for `herbrand`.
+
+**THE NEW ONE. Artin's route is described above as descending from the cyclotomic
+case, "where the Artin symbol is computable". THAT COMPUTATION IS NOT IN THE PIN.**
+The law `Frob_𝔭(ζ) = ζ ^ (N 𝔭)` for `K(ζ_m)/K` appears nowhere:
+`Mathlib/NumberTheory/Cyclotomic/` is `Basic`, `CyclotomicCharacter`, `Discriminant`,
+`Gal`, `PrimitiveRoots`, and grepping all five for `Frob`, `frobenius` and
+`IsArithFrobAt` returns nothing at all. `Gal.lean` supplies only the ABSTRACT
+isomorphism `Gal(K(ζ_n)/K) ≃* (ZMod n)ˣ` (`autEquivPow`), with no arithmetic
+identification of the Frobenius at a prime. So the "elementary" first step of the
+recommended route is an unwritten leaf in its own right, on top of the moduli and the
+descent. Anyone costing this node off the sentence "reciprocity for `ℚ(ζ_m)/ℚ` is the
+elementary congruence" must add that lemma to the bill.
+
+**THIS LEAF IS ONE OF THREE IN THE TREE THAT SHARE ONE CITATION**, which is invisible
+from here because the other two share no identifier with it — they are stated over an
+AXIOMATISED multiplicative ideal symbol rather than over `artinMap`:
+
+* `exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class`
+  (`Fermat/FLT/GaloisRepresentation/HardlyRamified/NormIndex.lean`), over the NARROW
+  ray group `P⁺`;
+* `exists_artinDivisorNormIndex_le_ray_class`
+  (`Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean`), which needs
+  reciprocity at a RAMIFIED modulus `mm`.
+
+Both of those docstrings independently reached the same conclusion — one ray class
+Artin reciprocity theorem discharges all three, with this leaf as its `mm = 1` case —
+and both explicitly DEFER the recut to an agent owning all the modules at once.
+`NormIndex.lean` records the design constraint that makes the three look
+incompatible: this leaf uses the WIDE group at modulus `1` and buys admissibility
+with `IsUnramifiedAtInfinitePlaces`, the other two use narrow and ramified
+conditions, so a shared statement needs a modulus with BOTH a finite and an infinite
+part, each of the three being a specialisation of the infinite part.
+
+**DECISION (2026-08-02), recorded so it is not re-litigated: the recut was NOT taken
+here, and taking it from this file alone would be a REGRESSION.** Proving this leaf
+over a ray class citation is about thirty lines, but it trades one well-understood
+leaf for one STRICTLY HARDER leaf; that pays only if the other two are rewired in the
+same commit, and they sit in modules this agent does not own. Worse, the shared
+statement cannot be stated at all without first DEFINING moduli and ray groups,
+neither of which exists in the pin or in this tree — so it is a definitional design
+task whose failure mode is a FALSE leaf (an inadmissible modulus, or the wrong
+congruence subgroup), not merely an open one. What would change this: an agent
+dispatched at all three modules together, stating ray class reciprocity upstream of
+both `ArtinSymbol.lean` and `HardlyRamified/`, with the specialisation of the
+infinite part checked against all three consumers before any of them is rewired. -/
 theorem artinMap_toPrincipalIdeal_of_isCyclic [IsUnramifiedAtInfinitePlaces K L]
     (habel : ∀ a b : L ≃ₐ[K] L, a * b = b * a)
     (hunr : ∀ (Q : Ideal (𝓞 L)) (_ : Q.IsPrime), Q ≠ ⊥ →
