@@ -179,13 +179,17 @@ builds the pole order `-ord_O` as an actual `def` (`Fermat.PoleOrder.poleOrd`) o
 between `Scheme.ord` and the nine clauses — the embedding of the chart in
 `A.functionField`, the DVR at `O`, multiplicativity, the ultrametric inequality that
 makes `{r | deg r ≤ n}` a submodule, and the `ℤ`-to-`ℕ` normalisation — and leaves
-**three** named leaves:
+**two** named leaves (three as cut on 2026-07-31; the residue-field one was PROVEN on
+2026-08-02):
 
 * `Fermat.PoleOrder.nonneg_poleOrd_and_eq_zero_iff` — `Γ(A, 𝒪_A) = K` (properness);
-* `Fermat.PoleOrder.exists_sub_smul_poleOrd_lt` — the residue field at `O` is `K`;
-* `Fermat.PoleOrder.poleOrd_ne_one_and_exists_two_three` — the genus is one.
+* `Fermat.PoleOrder.poleOrd_ne_one_and_exists_two_three` — the genus is one;
+* `Fermat.PoleOrder.exists_sub_smul_poleOrd_lt` — the residue field at `O` is `K`.  **PROVEN
+  2026-08-02**, out of the section `zeroSection ab ≫ f = 𝟙` through
+  `AlgebraicGeometry.Scheme.stalkClosedPointTo`, over a new `Scheme.ord`-to-`Ring.ord`
+  dictionary in the same module.  Do NOT dispatch a prover here.
 
-Only the third needs mathematics this tree does not have.  **Making the pole order a
+Only the genus one needs mathematics this tree does not have.  **Making the pole order a
 `def` is what made the split legal**: the valuation clauses do NOT pin `deg` (`2 · deg`
 satisfies all of them, and `hone`), so a genus leaf quantified over an arbitrary `deg`
 would be FALSE.  Note the direct-sorry count for this module drops to ONE
@@ -10831,10 +10835,11 @@ It is a one-line delegation to
 `Fermat/FLT/ModularCurve/PoleOrderValuation.lean`, where the pole order is BUILT — as the
 `def` `Fermat.PoleOrder.poleOrd r = -ord_O (φ r)` over mathlib's
 `AlgebraicGeometry.Scheme.ord` — and every clause that is pure valuation theory is proven.
-Three named leaves survive there: `nonneg_poleOrd_and_eq_zero_iff` (`Γ(A, 𝒪_A) = K`),
-`exists_sub_smul_poleOrd_lt` (the residue field at `O` is `K`) and
-`poleOrd_ne_one_and_exists_two_three` (the genus is one).  **The audit below is about a
-statement that is no longer a leaf; the live audits are the three there.**  What the audit
+TWO named leaves survive there: `nonneg_poleOrd_and_eq_zero_iff` (`Γ(A, 𝒪_A) = K`) and
+`poleOrd_ne_one_and_exists_two_three` (the genus is one); the third,
+`exists_sub_smul_poleOrd_lt` (the residue field at `O` is `K`), was **PROVEN 2026-08-02**.
+**The audit below is about a statement that is no longer a leaf; the live audits are the two
+there.**  What the audit
 below still says correctly is why each hypothesis is load-bearing, and those paragraphs are
 quoted, per hypothesis, on the two leaves that consume them.
 
