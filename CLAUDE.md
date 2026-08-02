@@ -27379,3 +27379,56 @@ cut and must be reported as such — a reader seeing only "the count went up" wo
 read it as a regression, and a reader seeing only the proof would read it as a
 closure. **Delete the staged baseline before committing**: an unimported module
 under `Fermat/` is the fourth invisibility class.
+## A DOCSTRING'S PRESCRIBED REFINEMENT CAN BE WORSE THAN THE ONE ITS TWIN ALREADY TOOK — AND THE TWIN MAY BE UPSTREAM, HENCE CITABLE
+(2026-08-01, `flt-lean-363`, closing `not_birationalOver_affineLine_of_one_le_x1Genus_field`
+in `ModularCurve/X1.lean`.)  That leaf carried two things a successor reads as binding, and
+both were wrong in the cheap direction:
+* an ABSENCE CLAIM — *"A genus of a scheme, `h¹(𝒪_X)`, Riemann–Hurwitz — none of those
+  exists at this pin, and the cut deliberately did not pretend otherwise"* — true when
+  written on 2026-07-30 and **false one day later**, because
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean` landed 2026-07-31;
+* a PRESCRIBED REFINEMENT — a `Pic⁰` split, written out in full with the two halves named
+  and a paragraph explaining why it had not been bundled with the previous cut.
+Following the prescription would have meant building a `K`-rational-point lemma and a
+`Pic⁰ ≠ 0` spelling.  **None of it was needed, because the `Γ₀` TWIN had already made the
+right cut and `X1.lean` `public import`s `X0.lean`.**
+`not_birationalOver_affineLine_of_one_le_x0Genus` is PROVEN over exactly two level-free
+pieces — `exists_nonconstant_toAbelianScheme_of_one_le_isCurveGenus` (leaf) and
+`eq_comp_of_birationalOver_affineLine_toAbelianScheme` (proven) — and both were citable
+from the `Γ₁` line all along.  The proof is nine lines of instance plumbing plus three
+applications, and it compiled first try in a scratch.
+**So the standing "transport the twin's recut" rule has a stronger form worth checking
+FIRST, because it costs nothing when it applies: ask whether the twin's file is UPSTREAM.**
+If it is, you are not transcribing a template — you are citing finished declarations, and
+the transcription cost is zero.  One `grep -n 'public import' <your file>` settles it.
+The two-command version of the whole check:
+    grep -n 'public import' <your module>            # is the twin's file upstream?
+    grep -n '<the twin declaration>' -A 30 <twin file>   # read its PROOF, not its docstring
+**And the two failure modes compose, which is why this survived two days.**  The absence
+claim made the leaf look blocked on a theory; the prescribed refinement gave a successor
+somewhere else to go; and neither paragraph mentions the twin, because the twin's cut was
+made *after* this docstring was written.  A docstring is a snapshot of one author's search
+at one moment, and its ROUTE section decays exactly as fast as its ABSENCE section — but
+only the absence section is conventionally re-checked.  **Re-grep both.**
+Three riders, all measured on this run:
+* **The count did not move, `24 → 24`, and that must be said.**  One leaf closed
+  (`not_birationalOver_affineLine_of_one_le_x1Genus_field`) and one opened
+  (`one_le_isCurveGenus_of_isX1Compactification`).  What changed is that the residue is a
+  claim about a NUMBER — no `BirationalOver`, no `𝔸¹`, no abelian scheme, no `Pic⁰` — and
+  that it is the exact `Γ₁` transcription of `X0.lean`'s
+  `one_le_isCurveGenus_curveBaseChange_of_nontrivial_cuspForm`, so the two can go to one
+  owner.  Judge a recut by what is LEFT in the leaf.
+* **Check that the leaves you newly cite are ALREADY IN THE CONE**, or the recut is not
+  count-neutral at all.  Both cited here (`exists_isCurveGenus`,
+  `exists_nonconstant_toAbelianScheme_of_one_le_isCurveGenus`) already had consumers in
+  `X0.lean`, so no `sorryAx` edge was added beyond the new leaf itself.  One `grep` each.
+* **Keep the closed leaf's SIGNATURE byte-identical** when you close it by decomposition.
+  Its consumer (`..._algClosed`, one line) then does not move, and the merge cannot split
+  a signature change from its call sites — the class-7 hazard that a recut in a contended
+  file otherwise invites.
+**The falsity audit does NOT transfer for free, and here it happened to.**  The target kept
+its exact statement, so its own audit was untouched; the NEW leaf is a new statement and was
+given a fresh audit with every witness re-instantiated against it.  The Igusa curve `Ig(11)`
+in characteristic `11` — which refutes the unguarded target — refutes the new leaf directly
+and more sharply, since `Ig(11)` has genus `0` while `x1Genus 11 = 1`, so `hchar` is
+load-bearing on the new leaf too.  Re-instantiate; do not inherit.
