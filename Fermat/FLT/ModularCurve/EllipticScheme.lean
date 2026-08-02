@@ -206,6 +206,19 @@ count is unchanged at ONE; what changed is that the remaining leaf mentions no
 the Weierstrass generators — the choice of `x` and `y`, the relation, the normalisation,
 the generation of `R` — is proven, sorry-free, in `PoleOrderFiltration` below.
 
+**UPDATED 2026-08-01 (`flt-lean-143`) — the count is still ONE, and the NAME has
+moved twice since the paragraphs above were written.  The single warning now sits on
+`exists_projGroupLaw_relPointAddEquiv_field`** (the chord–tangent group law over a
+general field, plus the rational-point dictionary; ONE leaf with `MoretBailly.lean`'s
+`exists_projMulOverField_geomFibreAddEquiv`).  `exists_ellipticScheme_weierstrassChart_`
+`addEquiv_field` was closed as an assembly on 2026-07-31, and its last open input,
+`exists_affineChart_projModel_field`, on 2026-08-01 — the latter by generalising the
+whole `ℚ` chart chain in place (`projChartTwoBivarEquiv`,
+`sub_monomial_Y_mem_span_X_Z`, `exists_coordinateRingEquiv_projChartRing`,
+`eq_pointAtInfinity_of_projCoord_two_mem`, `compl_basicOpen_projCoord_two`,
+`exists_affineChart_projInfty`) rather than by adding `_field` twins, so no `ℚ` call
+site moved and the chain has one copy and not two.
+
 That is the module's whole DIRECT frontier.  A token scan agrees: with block
 comments (nested) and line comments stripped, the source contains exactly one
 `sorry` token, so there are no anonymous inner `have … := sorry` hiding behind the
@@ -9490,13 +9503,19 @@ theorem projInfty_projToSpec (E : WeierstrassCurve ℚ) :
   subsingleton_hom_specRat _ _
 
 /-- Each homogeneous coordinate has degree `1` in the homogeneous
-coordinate ring (PROVEN; the same one-liner as in
-`smoothOfRelativeDimension_projToSpec`, named here because three
-declarations below need it). -/
-theorem mem_projGrading_projCoord (E : WeierstrassCurve ℚ) (i : Fin 3) :
+coordinate ring (PROVEN; named here because three declarations below need
+it).
+
+DUPLICATE, deliberately kept as a one-line delegation: this is
+`projCoord_mem_grading` (line ~8009) verbatim, which was already stated over
+an arbitrary commutative ring.  The two were cut independently; on
+2026-08-01 (`flt-lean-143`) the proof was deleted here in favour of the
+earlier one and the base generalised, so that the three call sites below
+port from `ℚ` to an arbitrary field without moving.  Whoever wants one name
+rather than two should delete this and repoint those call sites. -/
+theorem mem_projGrading_projCoord {R : Type} [CommRing R] (E : WeierstrassCurve R) (i : Fin 3) :
     projCoord E i ∈ _root_.WeierstrassCurve.Projective.projGrading E 1 :=
-  HomogeneousIdeal.mk_mem_quotientGrading
-    (MvPolynomial.mem_homogeneousSubmodule _ _ |>.mpr (MvPolynomial.isHomogeneous_X _ _))
+  projCoord_mem_grading E i
 
 /-! #### Bookkeeping for the chart at `Z ≠ 0`, and the point at infinity
 
@@ -9519,20 +9538,20 @@ def projChartTwoU : ProjChartVar 2 := ⟨0, by decide⟩
 /-- The chart coordinate `v = Y/Z` of the chart `Z ≠ 0`. -/
 def projChartTwoV : ProjChartVar 2 := ⟨1, by decide⟩
 
-/-- `ℚ[u, v] → ℚ[X][Y]`, `u ↦ C X`, `v ↦ Y`. -/
-noncomputable def projChartTwoToBivar :
-    MvPolynomial (ProjChartVar 2) ℚ →ₐ[ℚ] ℚ[X][Y] :=
+/-- `R[u, v] → R[X][Y]`, `u ↦ C X`, `v ↦ Y`. -/
+noncomputable def projChartTwoToBivar {R : Type} [CommRing R] :
+    MvPolynomial (ProjChartVar 2) R →ₐ[R] R[X][Y] :=
   MvPolynomial.aeval fun j =>
     if (j : Fin 3) = 0 then Polynomial.C Polynomial.X else Polynomial.X
 
-/-- `ℚ[X][Y] → ℚ[u, v]`, `X ↦ u`, `Y ↦ v`. -/
-noncomputable def bivarToProjChartTwo :
-    ℚ[X][Y] →ₐ[ℚ] MvPolynomial (ProjChartVar 2) ℚ :=
+/-- `R[X][Y] → R[u, v]`, `X ↦ u`, `Y ↦ v`. -/
+noncomputable def bivarToProjChartTwo {R : Type} [CommRing R] :
+    R[X][Y] →ₐ[R] MvPolynomial (ProjChartVar 2) R :=
   Polynomial.aevalTower (Polynomial.aeval (MvPolynomial.X projChartTwoU))
     (MvPolynomial.X projChartTwoV)
 
-theorem bivarToProjChartTwo_comp_projChartTwoToBivar :
-    bivarToProjChartTwo.comp projChartTwoToBivar = AlgHom.id ℚ _ := by
+theorem bivarToProjChartTwo_comp_projChartTwoToBivar {R : Type} [CommRing R] :
+    (bivarToProjChartTwo (R := R)).comp projChartTwoToBivar = AlgHom.id R _ := by
   apply MvPolynomial.algHom_ext
   rintro ⟨j, hj⟩
   fin_cases j
@@ -9540,35 +9559,40 @@ theorem bivarToProjChartTwo_comp_projChartTwoToBivar :
   · simp [projChartTwoToBivar, bivarToProjChartTwo, projChartTwoV]
   · exact absurd rfl hj
 
-theorem projChartTwoToBivar_comp_bivarToProjChartTwo :
-    projChartTwoToBivar.comp bivarToProjChartTwo = AlgHom.id ℚ _ := by
+theorem projChartTwoToBivar_comp_bivarToProjChartTwo {R : Type} [CommRing R] :
+    (projChartTwoToBivar (R := R)).comp bivarToProjChartTwo = AlgHom.id R _ := by
   apply Polynomial.algHom_ext'
   · apply Polynomial.algHom_ext
     simp [projChartTwoToBivar, bivarToProjChartTwo, projChartTwoU]
   · simp [projChartTwoToBivar, bivarToProjChartTwo, projChartTwoV]
 
-/-- **The bookkeeping isomorphism `ℚ[u, v] ≃ₐ[ℚ] ℚ[X][Y]`** identifying the
+/-- **The bookkeeping isomorphism `R[u, v] ≃ₐ[R] R[X][Y]`** identifying the
 two chart coordinates of the chart `Z ≠ 0` with the two variables of
-mathlib's bivariate polynomial ring. -/
-noncomputable def projChartTwoBivarEquiv :
-    MvPolynomial (ProjChartVar 2) ℚ ≃ₐ[ℚ] ℚ[X][Y] :=
+mathlib's bivariate polynomial ring.
+
+Stated over an arbitrary commutative ring (generalised from `ℚ` on
+2026-08-01, `flt-lean-143`, for `exists_affineChart_projModel_field`); the
+base was never used, and every call site infers it. -/
+noncomputable def projChartTwoBivarEquiv {R : Type} [CommRing R] :
+    MvPolynomial (ProjChartVar 2) R ≃ₐ[R] R[X][Y] :=
   AlgEquiv.ofAlgHom projChartTwoToBivar bivarToProjChartTwo
     projChartTwoToBivar_comp_bivarToProjChartTwo
     bivarToProjChartTwo_comp_projChartTwoToBivar
 
 /-- **The chart polynomial at `Z ≠ 0` IS the affine Weierstrass
 polynomial**, once the two chart coordinates are renamed to `X` and `Y`. -/
-theorem projChartTwoBivarEquiv_projChartPolynomial (E : WeierstrassCurve ℚ) :
+theorem projChartTwoBivarEquiv_projChartPolynomial {R : Type} [CommRing R]
+    (E : WeierstrassCurve R) :
     projChartTwoBivarEquiv (projChartPolynomial E 2) = E.toAffine.polynomial := by
-  have hcomp : projChartTwoToBivar.comp (dehomogenizeAt ℚ 2) =
-      MvPolynomial.aeval (![Polynomial.C Polynomial.X, (Polynomial.X : ℚ[X][Y]), 1]) := by
+  have hcomp : (projChartTwoToBivar (R := R)).comp (dehomogenizeAt R 2) =
+      MvPolynomial.aeval (![Polynomial.C Polynomial.X, (Polynomial.X : R[X][Y]), 1]) := by
     apply MvPolynomial.algHom_ext
     intro j
-    fin_cases j <;> simp [projChartTwoToBivar, dehomogenizeAt, projChartTwoU, projChartTwoV]
+    fin_cases j <;> simp [projChartTwoToBivar, dehomogenizeAt]
   show projChartTwoToBivar (projChartPolynomial E 2) = _
   rw [projChartPolynomial,
-    show projChartTwoToBivar (dehomogenizeAt ℚ 2 (polynomial E))
-      = (projChartTwoToBivar.comp (dehomogenizeAt ℚ 2)) (polynomial E) from rfl,
+    show projChartTwoToBivar (dehomogenizeAt R 2 (polynomial E))
+      = ((projChartTwoToBivar (R := R)).comp (dehomogenizeAt R 2)) (polynomial E) from rfl,
     hcomp, _root_.WeierstrassCurve.Projective.polynomial,
     WeierstrassCurve.Affine.polynomial]
   simp only [map_add, map_sub, map_mul, map_pow, MvPolynomial.aeval_C, MvPolynomial.aeval_X,
@@ -9578,15 +9602,15 @@ theorem projChartTwoBivarEquiv_projChartPolynomial (E : WeierstrassCurve ℚ) :
 
 /-- **A homogeneous polynomial is its `Yⁿ`-term modulo `(X, Z)`**: the only
 monomial of degree `n` in `X, Y, Z` involving neither `X` nor `Z` is `Yⁿ`. -/
-theorem sub_monomial_Y_mem_span_X_Z {n : ℕ} {q : MvPolynomial (Fin 3) ℚ}
-    (hq : q.IsHomogeneous n) :
+theorem sub_monomial_Y_mem_span_X_Z {R : Type} [CommRing R] {n : ℕ}
+    {q : MvPolynomial (Fin 3) R} (hq : q.IsHomogeneous n) :
     q - MvPolynomial.monomial (Finsupp.single (1 : Fin 3) n)
         (MvPolynomial.coeff (Finsupp.single (1 : Fin 3) n) q)
       ∈ (Ideal.span {MvPolynomial.X (0 : Fin 3), MvPolynomial.X 2} :
-          Ideal (MvPolynomial (Fin 3) ℚ)) := by
+          Ideal (MvPolynomial (Fin 3) R)) := by
   classical
   have himg : ({MvPolynomial.X (0 : Fin 3), MvPolynomial.X 2} :
-      Set (MvPolynomial (Fin 3) ℚ))
+      Set (MvPolynomial (Fin 3) R))
       = MvPolynomial.X '' ({0, 2} : Set (Fin 3)) := (Set.image_pair _ _ _).symm
   rw [himg, MvPolynomial.mem_ideal_span_X_image]
   intro m hm
@@ -9633,7 +9657,7 @@ it to a homogeneous `q` and split off the `Yⁿ`-term with
 `Ȳⁿ ∈ p`, hence (`n = 0`) `p = ⊤` or (`n > 0`) `X̄, Ȳ, Z̄ ∈ p`, and the
 latter forces the irrelevant ideal into `p` by
 `irrelevant_le_span_projCoord`, contradicting relevance. -/
-theorem eq_pointAtInfinity_of_projCoord_two_mem (E : WeierstrassCurve ℚ)
+theorem eq_pointAtInfinity_of_projCoord_two_mem {F : Type} [Field F] (E : WeierstrassCurve F)
     (p : ProjectiveSpectrum (projGrading E))
     (hZ : projCoord E 2 ∈ p.asHomogeneousIdeal.toIdeal) : p = pointAtInfinity E := by
   classical
@@ -9660,7 +9684,7 @@ theorem eq_pointAtInfinity_of_projCoord_two_mem (E : WeierstrassCurve ℚ)
     · exact hX
     · exact hZ
   have hkey : ∀ (n : ℕ)
-      (b : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal),
+      (b : MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal),
       b ∈ p.asHomogeneousIdeal.toIdeal → b ∈ projGrading E n → b ∈ infIdeal E := by
     intro n b hbp hbn
     obtain ⟨q, hq, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hbn
@@ -9754,20 +9778,22 @@ the chart would not be a chart *over the base*.
 `ProjChartRing E i`; composing the two is exactly what
 `exists_affineChart_projInfty` does below, so anybody proving that leaf is
 one composition away from this one at `i = 2`. -/
-theorem exists_coordinateRingEquiv_projChartRing (E : WeierstrassCurve ℚ) :
+theorem exists_coordinateRingEquiv_projChartRing {R : Type} [CommRing R]
+    (E : WeierstrassCurve R) :
     ∃ e : ProjChartRing E 2 ≃+* E.toAffine.CoordinateRing,
       (e : ProjChartRing E 2 →+* E.toAffine.CoordinateRing).comp
-          (algebraMap ℚ (ProjChartRing E 2)) = algebraMap ℚ E.toAffine.CoordinateRing := by
+          (algebraMap R (ProjChartRing E 2)) = algebraMap R E.toAffine.CoordinateRing := by
   have hJ : (Ideal.span {E.toAffine.polynomial} :
-        Ideal (Polynomial (Polynomial ℚ)))
-      = (Ideal.span {projChartPolynomial E 2}).map (projChartTwoBivarEquiv : _ →+* _) := by
+        Ideal (Polynomial (Polynomial R)))
+      = (Ideal.span {projChartPolynomial E 2}).map
+          (projChartTwoBivarEquiv (R := R) : _ →+* _) := by
     rw [Ideal.map_span, Set.image_singleton]
     exact congrArg (fun x => Ideal.span {x})
       (projChartTwoBivarEquiv_projChartPolynomial E).symm
-  refine ⟨(Ideal.quotientEquivAlg (R₁ := ℚ) (Ideal.span {projChartPolynomial E 2})
+  refine ⟨(Ideal.quotientEquivAlg (R₁ := R) (Ideal.span {projChartPolynomial E 2})
     (Ideal.span {E.toAffine.polynomial}) projChartTwoBivarEquiv hJ).toRingEquiv, ?_⟩
   ext r
-  exact (Ideal.quotientEquivAlg (R₁ := ℚ) (Ideal.span {projChartPolynomial E 2})
+  exact (Ideal.quotientEquivAlg (R₁ := R) (Ideal.span {projChartPolynomial E 2})
     (Ideal.span {E.toAffine.polynomial}) projChartTwoBivarEquiv hJ).commutes r
 
 /-- **The complement of the standard chart `D₊(Z)` is the point at
@@ -9815,19 +9841,19 @@ together, which avoids naming `{pointAtInfinity E}` in either ambient type.
 
 NOT VACUOUS: a wrong answer here is not a weaker statement but a false
 one — the equation pins a specific point of an irreducible curve. -/
-theorem compl_basicOpen_projCoord_two (E : WeierstrassCurve ℚ) :
+theorem compl_basicOpen_projCoord_two {F : Type} [Field F] (E : WeierstrassCurve F) :
     (↑(Proj.basicOpen (_root_.WeierstrassCurve.Projective.projGrading E)
         (projCoord E 2)) : Set ↥(Proj (_root_.WeierstrassCurve.Projective.projGrading E)))ᶜ
       = Set.range (_root_.WeierstrassCurve.Projective.projInfty E).base := by
   classical
   have hpre : (_root_.WeierstrassCurve.Projective.projInfty E) ⁻¹ᵁ
       (Proj.basicOpen (_root_.WeierstrassCurve.Projective.projGrading E) (projCoord E 2))
-      = (Spec (CommRingCat.of ℚ)).basicOpen
-          ((((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom.comp
+      = (Spec (CommRingCat.of F)).basicOpen
+          ((((Scheme.ΓSpecIso (CommRingCat.of F)).inv).hom.comp
             (_root_.WeierstrassCurve.Projective.evalInftyQuot E)) (projCoord E 2)) :=
     Proj.fromOfGlobalSections_preimage_basicOpen _ _ _ Nat.one_pos
       (projCoord_mem_grading E 2)
-  have hz : (((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom.comp
+  have hz : (((Scheme.ΓSpecIso (CommRingCat.of F)).inv).hom.comp
       (_root_.WeierstrassCurve.Projective.evalInftyQuot E)) (projCoord E 2) = 0 := by
     simp [_root_.WeierstrassCurve.Projective.evalInfty]
   rw [hz, Scheme.basicOpen_zero] at hpre
@@ -9849,7 +9875,7 @@ theorem compl_basicOpen_projCoord_two (E : WeierstrassCurve ℚ) :
     refine eq_pointAtInfinity_of_projCoord_two_mem E y ?_
     by_contra h
     exact hy ((Proj.mem_basicOpen _ _ _).mpr h)
-  obtain ⟨x⟩ : Nonempty ↥(Spec (CommRingCat.of ℚ)) := ⟨⟨⊥, Ideal.isPrime_bot⟩⟩
+  obtain ⟨x⟩ : Nonempty ↥(Spec (CommRingCat.of F)) := ⟨⟨⊥, Ideal.isPrime_bot⟩⟩
   have hbase : (_root_.WeierstrassCurve.Projective.projInfty E).base x =
       pointAtInfinity E := hpt _ (hsub ⟨x, rfl⟩)
   refine Set.Subset.antisymm (fun y hy => ?_) hsub
@@ -9872,17 +9898,30 @@ The internal `aux` restates the goal with `Proj (projGrading E)` in place
 of `proj E`: the two are equal by `rfl`, but `proj` is a semireducible
 `def`, so instance search does not see through it and neither
 `IsOpenImmersion (Proj.awayι …)` nor the `rw` of
-`awayι_projToSpec_eq_specMap` fires at the unfolded spelling. -/
-theorem exists_affineChart_projInfty (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+`awayι_projToSpec_eq_specMap` fires at the unfolded spelling.
+
+GENERALISED FROM `ℚ` TO AN ARBITRARY FIELD on 2026-08-01 (`flt-lean-143`),
+which is what `exists_affineChart_projModel_field` needed.  Two things
+changed and nothing else: the chart identification is now taken from
+`WeierstrassCurve.Projective.OverField.exists_projChartRingEquiv` (the
+general-base twin of this file's `exists_projChartRingEquiv`, which stays
+where it is because `locally_isStandardSmooth_awayCoord` consumes it), and
+the structure-map clause goes through `awayι_projToSpec_eq_specMap'` — the
+base-free twin — with the composite named `awayBaseHom` rather than spelled
+out.  The `ℚ` call sites below and at `smoothOfRelativeDimension_projToSpec`
+are unchanged, since the base is inferred from `E`. -/
+theorem exists_affineChart_projInfty {F : Type} [Field F] (E : WeierstrassCurve F)
+    [E.IsElliptic] :
     ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶
         _root_.WeierstrassCurve.Projective.proj E,
       IsOpenImmersion ι ∧
         ι ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
-          Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
+          Spec.map (CommRingCat.ofHom (algebraMap F E.toAffine.CoordinateRing)) ∧
         Set.range ι.base =
           (Set.range (_root_.WeierstrassCurve.Projective.projInfty E).base)ᶜ := by
   classical
-  obtain ⟨e₀, he₀⟩ := exists_projChartRingEquiv E 2 (mem_projGrading_projCoord E 2)
+  obtain ⟨e₀, he₀⟩ := _root_.WeierstrassCurve.Projective.OverField.exists_projChartRingEquiv
+    E 2 (mem_projGrading_projCoord E 2)
   obtain ⟨e₁, he₁⟩ := exists_coordinateRingEquiv_projChartRing E
   set e : HomogeneousLocalization.Away (_root_.WeierstrassCurve.Projective.projGrading E)
       (projCoord E 2) ≃+* E.toAffine.CoordinateRing := e₀.trans e₁ with he
@@ -9890,19 +9929,30 @@ theorem exists_affineChart_projInfty (E : WeierstrassCurve ℚ) [E.IsElliptic] :
       Proj (_root_.WeierstrassCurve.Projective.projGrading E),
       IsOpenImmersion ι ∧
         ι ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
-          Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
+          Spec.map (CommRingCat.ofHom (algebraMap F E.toAffine.CoordinateRing)) ∧
         Set.range ι.base =
           (Set.range (_root_.WeierstrassCurve.Projective.projInfty E).base)ᶜ := by
     refine ⟨Spec.map e.toCommRingCatIso.hom ≫
       Proj.awayι (_root_.WeierstrassCurve.Projective.projGrading E) (projCoord E 2)
         (mem_projGrading_projCoord E 2) Nat.one_pos, inferInstance, ?_, ?_⟩
-    · rw [Category.assoc, awayι_projToSpec_eq_specMap E _ (mem_projGrading_projCoord E 2),
-        ← Spec.map_comp]
+    · rw [Category.assoc, awayι_projToSpec_eq_specMap' E _ (mem_projGrading_projCoord E 2)
+        Nat.one_pos, ← Spec.map_comp]
       congr 1
-      refine CommRingCat.hom_ext (RingHom.ext fun x => ?_)
-      have h0 := congrArg (fun g : ℚ →+* ProjChartRing E 2 => e₁ (g x)) he₀
-      have h1 := congrArg (fun g : ℚ →+* E.toAffine.CoordinateRing => g x) he₁
-      simpa [he] using h0.trans h1
+      -- The remaining equality of ring maps is `he₀` followed by `he₁`, and it is stated
+      -- rather than `simp`ed into place: `he₀`'s left-hand side is a `RingHom.comp` that
+      -- `simp` will not take apart under the `RingEquiv` coercion, while `awayBaseHom` is
+      -- DEFEQ to that composite, so `RingHom.congr_fun` crosses the gap by `exact`.
+      have key : (e : HomogeneousLocalization.Away
+            (_root_.WeierstrassCurve.Projective.projGrading E) (projCoord E 2) →+*
+            E.toAffine.CoordinateRing).comp (awayBaseHom E (projCoord E 2))
+          = algebraMap F E.toAffine.CoordinateRing := by
+        refine RingHom.ext fun x => ?_
+        have h0 : e₀ (awayBaseHom E (projCoord E 2) x)
+            = algebraMap F (ProjChartRing E 2) x := RingHom.congr_fun he₀ x
+        show e₁ (e₀ (awayBaseHom E (projCoord E 2) x)) = _
+        rw [h0]
+        exact RingHom.congr_fun he₁ x
+      exact CommRingCat.hom_ext key
     · rw [← Scheme.Hom.coe_opensRange, Scheme.Hom.opensRange_comp_of_isIso,
         Proj.opensRange_awayι, ← compl_basicOpen_projCoord_two E]
       exact (compl_compl _).symm
@@ -13973,10 +14023,32 @@ theorem exists_projGroupLaw_relPointAddEquiv_field [DecidableEq F]
   sorry
 
 /-- **The affine Weierstrass chart is the complement of the zero section, over an
-ARBITRARY field** (sorry leaf, cut 2026-07-31) — the general-base form of
-`exists_affineChart_projModel`.
+ARBITRARY field** (PROVEN 2026-08-01, `flt-lean-143`; cut 2026-07-31) — the
+general-base form of `exists_affineChart_projModel`.
 
-## What the prover of this node owes, and the two-step route
+## HOW IT WAS CLOSED (2026-08-01), and what it cost
+
+Exactly what the route below predicted, and nothing more.  The two `ℚ`-only
+ingredients — `exists_coordinateRingEquiv_projChartRing` and
+`compl_basicOpen_projCoord_two` — were GENERALISED IN PLACE rather than copied,
+together with the four declarations they rest on
+(`projChartTwoBivarEquiv` and its two round-trip lemmas over an arbitrary
+COMMUTATIVE RING, `sub_monomial_Y_mem_span_X_Z` likewise, and
+`eq_pointAtInfinity_of_projCoord_two_mem` over an arbitrary FIELD).  Every one
+of those proofs is the `ℚ` proof with the base replaced; not a step was
+arithmetic, exactly as advertised.  `exists_affineChart_projInfty` was then
+generalised too, and this node is its composite with `exists_translation_toZero`
+— fifteen lines, the `ℚ` proof of `exists_affineChart_projModel` verbatim with
+`toAbelianSchemeStruct` replaced by `toAbelianSchemeStructField` and
+`projInfty_projToSpec` (which over `ℚ` is pure terminality) replaced by
+`WeierstrassCurve.Projective.projInfty_comp_projToSpec`.
+
+**Generalising in place rather than adding `_field` twins is what keeps this
+from being a duplicate cut**: every `ℚ` call site infers its base from `E` and
+none of them moved, so the chain has one copy and not two.  The frontier moves
+`1 → 0` here.
+
+## The route as it was written when the node was cut (kept: it was right)
 
 The `ℚ` proof (line ~9951) is fifteen lines and has exactly two ingredients:
 
@@ -14033,8 +14105,21 @@ theorem exists_affineChart_projModel_field (E : WeierstrassCurve F) [E.IsEllipti
           Spec.map (CommRingCat.ofHom (algebraMap F E.toAffine.CoordinateRing)) ∧
         Set.range ι.base =
           (Set.range (gl.toAbelianSchemeStructField.zero
-            (𝟙 (Spec (CommRingCat.of F)))).1.base)ᶜ :=
-  sorry
+            (𝟙 (Spec (CommRingCat.of F)))).1.base)ᶜ := by
+  classical
+  obtain ⟨ι₀, hopen₀, hstr₀, hrange₀⟩ := exists_affineChart_projInfty E
+  obtain ⟨τ, hτiso, hτf, hτp⟩ := exists_translation_toZero gl.toAbelianSchemeStructField
+    (_root_.WeierstrassCurve.Projective.projInfty E)
+    (_root_.WeierstrassCurve.Projective.projInfty_comp_projToSpec E)
+  refine ⟨ι₀ ≫ τ, inferInstance, ?_, ?_⟩
+  · rw [Category.assoc, hτf]; exact hstr₀
+  · have hbij : Function.Bijective (τ.base : _root_.WeierstrassCurve.Projective.proj E →
+        _root_.WeierstrassCurve.Projective.proj E) := (Scheme.homeoOfIso (asIso τ)).bijective
+    rw [← hτp]
+    show Set.range ((ι₀ ≫ τ).base) = (Set.range
+      ((_root_.WeierstrassCurve.Projective.projInfty E ≫ τ).base))ᶜ
+    simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp]
+    rw [hrange₀, Set.image_compl_eq hbij]
 
 end FieldProjModel
 
@@ -14051,19 +14136,25 @@ the subsection above.  Of those five, three are DONE — `isProper_projToSpec_fi
 (proven here), `smoothOfRelativeDimension_projToSpec_field` and
 `geometricallyConnected_projToSpec_field` (both delegated to the sorry-free
 `WeierstrassCurve.Projective.OverField` development, which this file began importing
-today) — and two remain open:
+today) — and, as of 2026-08-01, FOUR are done: `exists_affineChart_projModel_field`
+was closed by `flt-lean-143`, which generalised the whole `ℚ` chart chain in place
+(`projChartTwoBivarEquiv`, `sub_monomial_Y_mem_span_X_Z`,
+`exists_coordinateRingEquiv_projChartRing`,
+`eq_pointAtInfinity_of_projCoord_two_mem`, `compl_basicOpen_projCoord_two`,
+`exists_affineChart_projInfty`) rather than adding `_field` twins.
+
+**ONE input remains open**, and it is the only thing left between this assembly and
+an axiom-clean `k`-rational Weierstrass model:
 
 * `exists_projGroupLaw_relPointAddEquiv_field` — the chord–tangent group law over a
   general field, plus the rational-point dictionary.  **This is ONE leaf with
   `MoretBailly.lean`'s `exists_projMulOverField_geomFibreAddEquiv`; read that leaf's
   docstring before dispatching, and put the shared work in
   `ProjectiveModelOverField.lean`.**
-* `exists_affineChart_projModel_field` — down to two ℚ-only ports,
-  `exists_coordinateRingEquiv_projChartRing` and `compl_basicOpen_projCoord_two`.
 
 **So do not dispatch anyone at THIS name.**  Nothing here is left to prove, and a
-successor sent at it would find a five-line `exact` over two leaves that live
-elsewhere.  Dispatch at the two named above instead.
+successor sent at it would find a five-line `exact` over the one leaf named above.
+Dispatch at that one instead.
 
 ## What the original cut got wrong, recorded because it cost most of a cycle
 
