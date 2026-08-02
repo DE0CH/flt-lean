@@ -27977,3 +27977,67 @@ with the `∃` and the `∨` commuted, i.e. three lines away.  The module docstr
 says the opposite, that "the `X7`-named pair should be DELETED".  **When a
 docstring names which of two duplicates to keep, check which one the CONSUMER
 calls; the docstring records an intention and the call site records the tree.**
+## A MIDDLE OBJECT'S NON-VACUITY WITNESS IS THE SHARPEST FALSITY VECTOR AGAINST THE *OTHER* HALF — CLOSE IT WITH A TERM
+(2026-08-01, `flt-lean-381`, auditing leaf (2') of the `p`-divisible-group cut in
+`Modularity/Interface.lean`.)  A cut through a middle object `M` produces two halves,
+(1) `hyp → Nonempty M` and (2) `extra → ¬ Nonempty M`.  This project's standing
+discipline supplies a compiler-checked NON-VACUITY WITNESS for `M`, so that half (1)
+is not true-but-empty; that witness is almost always DEGENERATE (a subsingleton or
+trivial instance).
+**The same witness is the sharpest available refutation of half (2), and nothing in
+the discipline says to check it.**  If half (2)'s hypotheses admit the degenerate
+configuration, half (2) is FALSE — refuted by a term the file already contains, sitting
+two hundred lines above it.  The two audits are duals and both must be run:
+* half (1) needs `M` INHABITED somewhere — that is the witness;
+* half (2) needs `M` UNINHABITABLE under its own hypotheses — so in particular the
+  witness must NOT apply there.
+**The second is checkable by a term, and should be**: state the NEGATION of the
+witness's hypothesis over half (2)'s own binders and prove it.  Here the witness was
+`nonempty_pDivisibleTowerAt_of_subsingleton [Subsingleton V]`, and half (2) carries a
+lattice datum `e : (Fin 2 → ℚ̄_p) ≃ₗ ℚ̄_p ⊗[R] V`, so the check is
+`not_subsingleton_of_tensorEquiv_finTwo : ¬ Subsingleton V` — a subsingleton `V` makes
+the tensor subsingleton, `e` transports that to `Fin 2 → ℚ̄_p`, and `0 ≠ 1`.  Fifteen
+lines, and it converts the sentence "junk middles cannot make (2) false" from a
+structural argument into a fact.
+**So the mechanical step: grep for EVERY inhabitant construction of the middle object,
+and prove each one unavailable under the negative half's hypotheses.**  In a cut whose
+middle is explicit DATA there are usually exactly one or two, and they are exactly the
+ones written to protect the positive half.  A middle that is AXIOMATISED instead has
+unboundedly many, which is the real reason this repository prefers explicit data — the
+dual audit is finite.
+## A NUMERICAL HYPOTHESIS ABOUT ONE OBJECT IS A STATEMENT ABOUT ANOTHER ONLY IF SOME FIELD SAYS SO — FIND THAT FIELD
+(Same task, and it is the finding that mattered.)  Leaf (2') carries
+`hord₂ : 2 ≤ M₀.factorization p` and reads it as *the conductor of `π_p` is at least 2*.
+That reading is not in the arithmetic: `ord_p M₀` is a fact about a natural number, and
+`M₀` is a statement about `π_p` only because `hg₀ : IsWeightTwoNewform M₀ g₀` carries
+`eigensystem_minimal` — the field saying the away-from-`M₀` eigensystem occurs at no
+proper divisor level.  Weaken `hg₀` to `IsWeightTwoEigenform` and the leaf is FALSE,
+with an explicit counterexample: at `p = 5`, `M₀ = 275 = 5²·11`, the 5-STABILIZATION of
+the level-11 newform of `X₀(11)` inhabits `IsWeightTwoEigenform 275` (normalized,
+coprime-multiplicative, the good-prime recursion off `275`, and the bad-prime `U_q`
+recursion at both `5` and `11`), satisfies `hord₂` — and its representation is that of
+`X₀(11)`, which has GOOD reduction at `5`, hence IS Barsotti–Tate, hence DOES admit the
+middle object.  Every other hypothesis still typechecks.
+**The check, and it is one question: for each numerical hypothesis, name the hypothesis
+that licenses reading it as an invariant of the object the conclusion is about.**  If
+you cannot name one, the leaf is probably false.  The licensing hypothesis is typically
+a MINIMALITY or NEWNESS clause buried in a structure field, invisible in the binder
+list, and it will look like packaging to anyone tidying the statement toward its
+neighbours.  Record it as load-bearing FOR TRUTH in the docstring — that phrase is what
+stops the next owner "simplifying" it away.
+Corollary about where such counterexamples come from: **the sharp witness is usually the
+SAME object twice, differing only in the hypothesis under test.**  Here it is `X₀(11)`
+untwisted (good at `5`, refutes the weakened leaf) and twisted by `χ₅` (conductor
+`5²·11`, additive at `5`, the recorded soundness witness for the leaf as stated).  Both
+satisfy `hord₂`; only newness separates them, which is exactly what makes the pair
+prove that newness is the load-bearing clause.
+### And a grep that returns a FALSE CLEAN: this toolchain prints backticks
+Measured the same day.  Lean 4.32 emits ``declaration uses `sorry` `` with BACKTICKS.
+Every rule in this file quotes it as `declaration uses 'sorry'` with straight quotes, and
+    grep -c "declaration uses 'sorry'" build.log     # -> 0
+    grep -c 'declaration uses `sorry`' build.log     # -> 372
+on the SAME log.  The straight-quote form returns `0` on a build full of open leaves,
+which reads as "no sorries in this module" — a confident wrong answer of exactly the
+shape the positive-terminator rule exists to prevent, arriving through the check rather
+than through the build.  **Grep for the substring `declaration uses` and nothing more**;
+it is quote-agnostic and cannot drift with the toolchain.
