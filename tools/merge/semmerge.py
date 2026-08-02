@@ -249,7 +249,12 @@ def main():
     res = '\n'.join(out)
 
     # 3. union new import lines (real header imports only: module path, no prose)
-    IMP = re.compile(r'^(public\s+)?import\s+[A-Za-z_][A-Za-z0-9_.]*\s*$')
+    # `(--.*)?`: the module-path shape is what excludes prose, not the EOL anchor.
+    # With the anchor, a branch adding `public import X -- why` had that import
+    # SILENTLY DROPPED by the union below — the merge tool manufacturing exactly the
+    # interface split it exists to prevent.  Checked over the tree on 2026-08-02:
+    # loosening newly matches 3 lines, all genuine imports, no prose.
+    IMP = re.compile(r'^(public\s+)?import\s+[A-Za-z_][A-Za-z0-9_.]*\s*(?:--.*)?$')
     oimp = [l for l in to.split('\n') if IMP.match(l)]
     timp = [l for l in tt.split('\n') if IMP.match(l)]
     newimp = [l for l in timp if l not in oimp and l.strip().split()[-1]

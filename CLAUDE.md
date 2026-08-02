@@ -16208,3 +16208,36 @@ It **fails on the pre-fix scanners with all three symptoms**, which is the only
 evidence that it is testing anything.  When you touch a scanner, run it — and
 when you write a new scanner, write its positive control in the same commit.
 A calibration that has never been seen to fail has not been calibrated.
+
+**AND THE SAME RUN TURNED UP A SECOND, WORSE ONE IN THE SAME FILES: the import
+regexes were anchored at end-of-line.**  `xdup.py`, `cyclecheck.py` and
+`semmerge.py` all matched `^…import\s+(Fermat[\w.]*)\s*$` — so an import line
+carrying a justification, which this tree writes,
+
+    public import Fermat.FLT.Mathlib.RingTheory.Localization.BaseChange -- removing this breaks a simp proof
+
+is **not seen as an import at all**.  Two such edges live on 2026-08-02.  This is
+[[flt-import-scan-must-not-anchor-eol]] recurring in three more scanners, and the
+consequence differs by tool, worst first:
+
+* **`cyclecheck.py`** — a cycle THROUGH such an edge is invisible, and an import
+  cycle is a total build outage (release 28), not a module-level failure;
+* **`semmerge.py`** — it unions the two sides' import lines, so a branch adding
+  `public import X -- why` had that import **silently dropped**: the merge tool
+  manufacturing exactly the class-7 interface split it exists to prevent;
+* **`xdup.py`** — a missing edge SHRINKS the visibility cone, so the qualified
+  pass UNDER-reports.  That is the one failure mode a scan whose `0 pair(s)`
+  licenses a release must not have.
+
+**The module-path shape is what excludes prose, not the anchor** — loosening to
+`\s*(?:--.*)?$` newly matched exactly 3 lines tree-wide, all genuine imports, no
+prose, which is the measurement to run before touching `semmerge.py`.  The
+regression test now puts a trailing comment on its own import, and against the
+pre-fix scanners that alone hides BOTH planted duplicates — 4 failures, not 3.
+
+Generalising past the regex: **a scanner's input grammar is a release-critical
+surface, and its two failure directions are not symmetric.**  Over-reporting
+produces a noisy list somebody eventually reads; under-reporting produces a clean
+verdict nobody questions.  When you find one bug in a scanner's parsing, check
+the other regexes in the same file before you stop — every one of these five
+fixes came from looking at the file next to the one that was already wrong.

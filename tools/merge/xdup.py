@@ -43,7 +43,13 @@ DECL = re.compile(
     r"([A-Za-z_À-ɏͰ-Ͽᴀ-ᶿ℀-⅏][A-Za-z0-9_À-ɏͰ-Ͽᴀ-ᶿ₀-ₜ⁰-ⁿ℀-⅏.'!?]*)")
 NS = re.compile(r'^\s*namespace\s+(\S+)')
 ENDNS = re.compile(r'^\s*end\s*(\S*)\s*$')
-IMP = re.compile(r'^\s*(?:public\s+)?import\s+(Fermat[A-Za-z0-9_.]*)\s*$')
+# The trailing `(--.*)?` is load-bearing: this tree writes justifications on
+# import lines (`public import … -- removing this breaks a simp proof`), and an
+# EOL-anchored regex drops those edges silently.  Two live edges on 2026-08-02.
+# A missing edge SHRINKS the visibility cone, so the qualified pass UNDER-reports
+# — the one failure mode these scans must not have.
+# [[flt-import-scan-must-not-anchor-eol]]
+IMP = re.compile(r'^\s*(?:public\s+)?import\s+(Fermat[A-Za-z0-9_.]*)\s*(?:--.*)?$')
 
 
 def strip_comments(lines):

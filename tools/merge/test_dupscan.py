@@ -52,8 +52,13 @@ theorem cal_unique_up (n : Nat) : n = n := rfl
 end Fermat
 """
 
+# The trailing comment on the import is deliberate: an EOL-anchored import regex
+# drops the edge, the visibility cone shrinks, and the duplicates below become
+# INVISIBLE.  This tree really does write justifications on import lines (2 of
+# them on 2026-08-02), and `cyclecheck.py` shared the same anchor -- where a
+# missed edge hides an import CYCLE, i.e. a total build outage.
 DOWN = """module
-public import Fermat.FLT.Cal.Up
+public import Fermat.FLT.Cal.Up -- why this edge exists
 namespace Fermat
 theorem cal_dup_plain (n : Nat) : n = n := rfl
 theorem cal_dup_univ (a : Type u) : a = a := rfl

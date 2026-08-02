@@ -38,3 +38,13 @@ trusted precisely when they print `0 pair(s)`, so [[flt-rerun-a-checker-you-just
 and the standing "a scan that reports nothing is indistinguishable from a scan that
 is broken" apply with full force; release 27 shipped an unbuildable tree on that
 reading. When you write a new scanner, write its positive control in the same commit.
+
+**Second bug, same files, found by the same pass and worse:** the IMPORT regexes in
+`xdup.py`, `cyclecheck.py` and `semmerge.py` were anchored `\s*$`, so an import line
+with a trailing justification comment (2 live in the tree) was not seen as an import.
+`cyclecheck` can then miss an import CYCLE (total build outage); `semmerge` silently
+DROPS a branch's new `import X -- why`; `xdup`'s cone shrinks so it UNDER-reports.
+The module-path shape excludes prose, not the anchor — loosening to `(?:--.*)?$`
+newly matched 3 lines tree-wide, all genuine. See
+[[flt-import-scan-must-not-anchor-eol]]. **When you find one parsing bug in a
+scanner, check the other regexes in the same file before stopping.**

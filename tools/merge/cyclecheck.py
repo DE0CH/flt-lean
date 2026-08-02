@@ -25,7 +25,11 @@ import os
 import re
 import sys
 
-IMPORT = re.compile(r'^(?:public\s+)?import\s+(Fermat[\w.]*)\s*$', re.M)
+# `(--.*)?`: import lines here carry trailing justifications, and an EOL-anchored
+# regex drops those edges — which for a CYCLE check means a cycle through such an
+# edge is invisible.  An import cycle is a total build outage (release 28), so this
+# is the worst place in the tree to miss an edge.  [[flt-import-scan-must-not-anchor-eol]]
+IMPORT = re.compile(r'^(?:public\s+)?import\s+(Fermat[\w.]*)\s*(?:--.*)?$', re.M)
 
 
 def module_path(mod):
