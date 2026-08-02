@@ -105,13 +105,24 @@ written and the frontier moves.
   condition at `ℓ`: along a small extension every finite-flat local
   representation at `ℓ` admits a finite-flat local lift. Stated on LOCAL
   representations because no global form is true — see the section header for
-  the two global readings and why each fails. Carries a REQUIRED falsity audit
-  (whether the residual datum must be named) on the declaration
+  the two global readings and why each fails. **RESTATED 2026-08-02**: the
+  2026-07-31 form was FALSE (its conclusion is unsatisfiable when `S` has an
+  infinite open-ideal quotient), and it now carries `hres` and `hfin`. The
+  falsity audit is PERFORMED, with the witness, on the declaration
 - `exists_tameLocalLift_of_isSmallExtension` — **OPEN.** (item (5)(d),
   stated 2026-07-31) Smoothness of the ordinary/tame local condition at `2`.
   Two of its three data — the unramified quadratic character and the free
   rank-`1` quotient — lift with no obstruction; the equivariance is the content.
-  Carries a REQUIRED falsity audit on the declaration
+  **RESTATED 2026-08-02**: the 2026-07-31 form was FALSE, refuted by
+  `ℤ/16 ↠ ℤ/8` and the scalar representation `δ ⊗ id` with `δ(Frob) = 3` —
+  the character step needs `2` invertible. The refutation is machine-checked as
+  `not_exists_tameLocalLift_zmodSixteen`, and the leaf now carries
+  `h2 : IsUnit (2 : S)`. The falsity audit is PERFORMED on the declaration
+- `sq_eq_one_of_isTameAtTwoLocal_lift_of_scalar`,
+  `sq_eq_one_of_scalarInvolution_lift`, `isSmallExtension_castHom_zmodSixteen`,
+  `not_exists_tameLocalLift_zmodSixteen` — PROVEN 2026-08-02, the machinery of
+  those two audits. The first is the reusable fact that a tame-at-`2` lift of a
+  SCALAR representation forces the tame character to reduce to the scalar
 - ~~`finiteDimensional_h1_adZeroTwistRestricted`~~ — PROVEN (verified 2026-07-30;
   this one had already caused a phantom dispatch in the 2026-07-28 release
   window, per CLAUDE.md's list of leaves agents were sent at after they closed)
@@ -17363,6 +17374,24 @@ kinds, which is why they are four separate declarations here:
   of the obstruction class vanish, i.e. what puts the class in `Ш²` and not
   merely in `H²`.
 
+  **BOTH WERE FALSE AS FIRST STATED ON 2026-07-31, and both were repaired on
+  2026-08-02 by performing the falsity audits their own docstrings demanded.**
+  The two failures are of different kinds and neither is about Ramakrishna or
+  about the ordinary condition:
+  - (5c) quantified over an `S` with no finiteness on its open-ideal quotients,
+    and `IsFlatAtLocal` is UNSATISFIABLE for such an `S` — the points of a
+    finite flat group scheme are a finite set. Witness: `S = TrivSqZeroExt k M`
+    with `M` an infinite `k`-vector space, `R = k`, `ρv` trivial. Repaired by
+    `hfin` (and `hres`, the residue characteristic).
+  - (5d) imposed nothing on the residue characteristic, and the FIRST step of
+    its own intended proof — "the unramified quadratic character `δ` lifts" —
+    needs `2` invertible. Witness: `ℤ/16 ↠ ℤ/8` and the scalar representation
+    `δ ⊗ id` with `δ(Frob) = 3`; machine-checked below as
+    `not_exists_tameLocalLift_zmodSixteen`. Repaired by `h2 : IsUnit (2 : S)`.
+
+  Neither repair is claimed to be sufficient; each leaf's audit names the one
+  thing still unsettled and the check that settles it.
+
 **Why the last two are stated on LOCAL representations and not on global ones.**
 There is no true global statement to make. "Given a global homomorphism lift
 `ρ̃₀`, some global lift is flat at `ℓ`" is FALSE in general: the global lifts
@@ -17807,6 +17836,250 @@ lemma isTameAtTwoLocal_iff {R : Type*} [CommRing R] [TopologicalSpace R]
             (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
           (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := Iff.rfl
 
+/-! ##### The two REFUTATION ENGINES, and the arithmetic they run on
+
+Written 2026-08-02 while performing the FALSITY AUDITS that (5c) and (5d) below
+each demanded before being proven. Both audits came back POSITIVE — the two
+clauses as first stated on 2026-07-31 were strictly stronger than the smoothness
+statements they were meant to be, and (5d) was outright FALSE. The witnesses are
+recorded on the two leaves; what follows is the machine-checked part of them.
+
+The three lemmas are of independent use: the first is the general fact that a
+linear functional on a free module of finite rank is the sum of its coordinates,
+and the other two are the two ways a lift of a SCALAR representation along a
+square-zero extension is pinned. Neither mentions `ℓ`, hard ramification, or the
+obstruction calculus. -/
+
+/-- A linear functional on `Fin n → S` evaluates as the sum of its values on the
+standard basis vectors, weighted by the coordinates. -/
+theorem pi_linearMap_apply_eq_sum {S : Type*} [CommRing S] {n : ℕ}
+    (p : (Fin n → S) →ₗ[S] S) (x : Fin n → S) :
+    p x = ∑ i, x i * p (Pi.single i 1) := by
+  conv_lhs => rw [← Finset.univ_sum_single x]
+  rw [map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  have hsing : (Pi.single i (x i) : Fin n → S) = x i • Pi.single i (1 : S) := by
+    ext j
+    by_cases h : j = i <;> simp [h]
+  rw [hsing, map_smul, smul_eq_mul]
+
+/-- **THE ENGINE OF THE (5d) REFUTATION** (PROVEN 2026-08-02).
+
+If `ρ₂` is a SCALAR representation — `ρ₂ g` is multiplication by `u g` on every
+coordinate — and `τ` is any lift of it along `ψ` carrying a tame-at-`2`
+structure, then the tame structure's character `δ` is forced to reduce to `u`,
+and it satisfies `δ² = 1`. So **`u g` must lift to a square root of `1` in `S`**.
+
+That is the whole of the obstruction: it uses no arithmetic of `ℚ₂`, no
+topology, and no hypothesis on `ψ` beyond its being a ring map. The contrapositive
+refutes (5d) as first stated — see the FALSITY AUDIT there.
+
+Note the proof does not need `ker ψ` to be small, or even nonzero; the tame
+structure alone pins `δ` on the nose, because a scalar representation acts by the
+same scalar on EVERY rank-one quotient. -/
+theorem sq_eq_one_of_isTameAtTwoLocal_lift_of_scalar
+    {S : Type*} [CommRing S] [TopologicalSpace S]
+    {R : Type*} [CommRing R] [TopologicalSpace R]
+    (ψ : S →+* R)
+    {ρ2 : GaloisRep ℚ_[2] R (Fin 2 → R)}
+    {u : Field.absoluteGaloisGroup ℚ_[2] → R}
+    (hscal : ∀ g w i, ρ2 g w i = u g * w i)
+    {τ : GaloisRep ℚ_[2] S (Fin 2 → S)}
+    (hlift : ∀ g w i, ψ (τ g w i) = ρ2 g (fun j => ψ (w j)) i)
+    (htame : IsTameAtTwoLocal τ) (g : Field.absoluteGaloisGroup ℚ_[2]) :
+    ∃ y : S, ψ y = u g ∧ y * y = 1 := by
+  obtain ⟨p, hp, δ, hδ⟩ := htame
+  obtain ⟨w₀, hw₀⟩ := hp 1
+  refine ⟨δ g 1, ?_, ?_⟩
+  · have h1 : p (τ g w₀) = δ g (p w₀) := (hδ g w₀).1
+    rw [hw₀] at h1
+    have hsum : ∀ x : Fin 2 → S, ψ (p x) = ∑ i, ψ (x i) * ψ (p (Pi.single i 1)) := by
+      intro x
+      rw [pi_linearMap_apply_eq_sum, map_sum]
+      exact Finset.sum_congr rfl fun i _ => by rw [map_mul]
+    have h2 := hsum (τ g w₀)
+    rw [h1] at h2
+    rw [h2]
+    have h3 : ∀ i, ψ (τ g w₀ i) = u g * ψ (w₀ i) := by
+      intro i; rw [hlift g w₀ i, hscal]
+    simp only [h3, mul_assoc]
+    rw [← Finset.mul_sum, ← hsum w₀, hw₀, map_one, mul_one]
+  · have h := (hδ g w₀).2.2 g
+    have := congrArg (fun (e : Module.End S S) => e (1 : S)) h
+    simpa [mul_comm] using this
+
+/-- **THE ENGINE OF THE `2`-ADIC HALF OF A SCALAR LIFT** (PROVEN 2026-08-02),
+pure algebra, no Galois theory in it.
+
+Along a square-zero extension whose kernel is killed by `2`, an INVOLUTION `T`
+reducing to the scalar `u` is itself scalar up to the kernel, and squaring kills
+the kernel term: `T² = ũ² · id` for any lift `ũ` of `u`. So `T² = id` forces
+`u` to lift to a square root of `1`.
+
+This is the engine the FALSITY AUDIT on (5c) below considered and DISCARDED —
+recorded here because it is what makes the difference between the two clauses
+visible. It refutes nothing about flatness: the `(5c)` witness supplies an
+honest lift, and what (5c) fails on is a different degeneracy (finiteness), so
+this lemma is stated for the record and for reuse rather than as an input to
+(5c)'s audit. -/
+theorem sq_eq_one_of_scalarInvolution_lift
+    {S : Type*} [CommRing S] {R : Type*} [CommRing R] (ψ : S →+* R)
+    (hsq : ∀ x ∈ RingHom.ker ψ, ∀ y ∈ RingHom.ker ψ, x * y = 0)
+    (h2 : ∀ y ∈ RingHom.ker ψ, (2 : S) * y = 0)
+    {u : R} (T : Module.End S (Fin 2 → S)) (hinv : T * T = 1)
+    (hred : ∀ w i, ψ (T w i) = u * ψ (w i)) :
+    ∃ y : S, ψ y = u ∧ y * y = 1 := by
+  classical
+  set e : Fin 2 → S := Pi.single 0 1 with he
+  set c : Fin 2 → S := T e with hc
+  set ub : S := c 0 with hub
+  have hψc : ∀ i, ψ (c i) = u * (if i = 0 then 1 else 0) := by
+    intro i
+    rw [hc, hred e i, he]
+    congr 1
+    by_cases h : i = 0 <;> simp [h]
+  have hψub : ψ ub = u := by rw [hub, hψc 0]; simp
+  set n : Fin 2 → S := c - ub • e with hn
+  have hnker : ∀ i, n i ∈ RingHom.ker ψ := by
+    intro i
+    rw [RingHom.mem_ker, hn]
+    simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul, map_sub, map_mul, hψub, hψc i, he]
+    by_cases h : i = 0 <;> simp [h]
+  have hcn : c = ub • e + n := by rw [hn]; abel
+  have hTn : T n = ub • n := by
+    have hTsingle : ∀ i m, ψ ((T (Pi.single i (1 : S))) m) = u * (if i = m then 1 else 0) := by
+      intro i m
+      rw [hred]
+      congr 1
+      by_cases h : i = m <;> simp [h, eq_comm]
+    have hker : ∀ i m, (T (Pi.single i (1 : S))) m - (if i = m then ub else 0) ∈
+        RingHom.ker ψ := by
+      intro i m
+      rw [RingHom.mem_ker, map_sub, hTsingle i m]
+      by_cases h : i = m <;> simp [h, hψub]
+    ext m
+    have hexp : n = ∑ i, n i • (Pi.single i (1 : S) : Fin 2 → S) := by
+      ext j
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.single_apply, mul_ite,
+        mul_one, mul_zero, Finset.sum_ite_eq, Finset.mem_univ, if_true]
+    conv_lhs => rw [hexp]
+    rw [map_sum]
+    simp only [map_smul, Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+    have hterm : ∀ i, n i * (T (Pi.single i (1 : S))) m = n i * (if i = m then ub else 0) := by
+      intro i
+      have := hsq (n i) (hnker i)
+        ((T (Pi.single i (1 : S))) m - (if i = m then ub else 0)) (hker i m)
+      have h' : n i * ((T (Pi.single i (1 : S))) m) -
+          n i * (if i = m then ub else 0) = 0 := by rw [← mul_sub]; exact this
+      exact sub_eq_zero.mp h'
+    simp only [hterm]
+    simp [mul_comm]
+  refine ⟨ub, hψub, ?_⟩
+  have hTc : T c = ub • c + ub • n := by
+    conv_lhs => rw [hcn]
+    rw [map_add, map_smul, ← hc, hTn]
+  have hTTe : T c = e := by
+    have : (T * T) e = e := by rw [hinv]; simp
+    rw [Module.End.mul_apply] at this
+    rw [hc]; exact this
+  have h2n : (2 : S) • n = 0 := by
+    ext i; simpa using h2 (n i) (hnker i)
+  have hkill : (2 : S) • (ub • n) = 0 := by
+    rw [smul_smul, mul_comm, ← smul_smul, h2n, smul_zero]
+  have key : e = (ub * ub) • e :=
+    calc e = T c := hTTe.symm
+    _ = ub • c + ub • n := hTc
+    _ = (ub * ub) • e + (2 : S) • (ub • n) := by
+        rw [hcn, smul_add, smul_smul, two_smul]; abel
+    _ = (ub * ub) • e := by rw [hkill, add_zero]
+  have hval := congrFun key 0
+  simp only [he, Pi.smul_apply, Pi.single_eq_same, smul_eq_mul, mul_one] at hval
+  exact hval.symm
+
+/-! ##### The arithmetic of the (5d) witness: `ℤ/16 ↠ ℤ/8`
+
+`3` is a square root of `1` in `ℤ/8`; its two lifts to `ℤ/16` are `3` and `11`,
+and `3² = 11² = 9 ≠ 1` there. That single sentence is the whole counterexample,
+and every step of it below is settled by `decide`. -/
+
+instance instFactOneLtSixteen : Fact (1 < 16) := ⟨by norm_num⟩
+
+instance instIsLocalRingZModSixteen : IsLocalRing (ZMod 16) := by
+  have h : ∀ a : ZMod 16, (∃ b, a * b = 1) ∨ (∃ b, (1 - a) * b = 1) := by decide
+  refine IsLocalRing.of_isUnit_or_isUnit_one_sub_self fun a => ?_
+  rcases h a with ⟨b, hb⟩ | ⟨b, hb⟩
+  · exact Or.inl (isUnit_iff_exists_inv.2 ⟨b, hb⟩)
+  · exact Or.inr (isUnit_iff_exists_inv.2 ⟨b, hb⟩)
+
+theorem maximalIdeal_zmodSixteen_le_span_two :
+    IsLocalRing.maximalIdeal (ZMod 16) ≤ Ideal.span {(2 : ZMod 16)} := by
+  intro x hx
+  have h : ∀ y : ZMod 16, (∃ b, y * b = 1) ∨ (∃ a, y = a * 2) := by decide
+  rcases h x with ⟨b, hb⟩ | ⟨a, ha⟩
+  · exact absurd (isUnit_iff_exists_inv.2 ⟨b, hb⟩)
+      (mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal x).mp hx))
+  · exact Ideal.mem_span_singleton'.2 ⟨a, ha.symm⟩
+
+theorem ker_castHom_zmodSixteen_le_span_eight :
+    RingHom.ker (ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8)) ≤
+      Ideal.span {(8 : ZMod 16)} := by
+  intro x hx
+  rw [RingHom.mem_ker] at hx
+  have h : ∀ y : ZMod 16,
+      ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8) y = 0 → ∃ a, y = a * 8 := by decide
+  exact Ideal.mem_span_singleton'.2 (by obtain ⟨a, ha⟩ := h x hx; exact ⟨a, ha.symm⟩)
+
+/-- **`ℤ/16 ↠ ℤ/8` is a small extension** (PROVEN): the maximal ideal is `(2)`,
+the kernel is `(8)`, and `2 · 8 = 16 = 0`. This is the witness of the FALSITY
+AUDIT on (5d) below, so it is checked rather than asserted. -/
+theorem isSmallExtension_castHom_zmodSixteen :
+    IsSmallExtension (ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8)) := by
+  refine ⟨ZMod.ringHom_surjective _, le_antisymm (Ideal.mul_le.2 fun x hx j hj => ?_) bot_le⟩
+  obtain ⟨a, rfl⟩ := Ideal.mem_span_singleton'.mp (maximalIdeal_zmodSixteen_le_span_two hx)
+  obtain ⟨b, rfl⟩ := Ideal.mem_span_singleton'.mp (ker_castHom_zmodSixteen_le_span_eight hj)
+  rw [Ideal.mem_bot]
+  have heq : (a * 2) * (b * 8) = (a * b) * 16 := by ring
+  have h16 : (16 : ZMod 16) = 0 := by decide
+  rw [heq, h16, mul_zero]
+
+/-- `3` squares to `1` in `ℤ/8`. -/
+theorem three_mul_three_zmodEight : (3 : ZMod 8) * 3 = 1 := by decide
+
+/-- **Neither lift of `3 ∈ (ℤ/8)ˣ` to `ℤ/16` squares to `1`.** The two lifts are
+`3` and `11`, and `3² = 11² = 9`. -/
+theorem no_sqrtOne_lift_of_three_zmodSixteen :
+    ∀ x : ZMod 16, ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8) x = 3 →
+      x * x ≠ 1 := by decide
+
+/-- **THE (5d) COUNTEREXAMPLE, ASSEMBLED** (PROVEN 2026-08-02): a SCALAR
+representation over `ℤ/8` taking the value `3` somewhere admits NO tame-at-`2`
+lift along `ℤ/16 ↠ ℤ/8`.
+
+Everything here is machine-checked. What is left classical, and is the ONLY
+unformalised step of the audit on (5d) below, is that such a `ρ₂` exists — take
+`ρ₂ = δ ⊗ id` for `δ` the unramified quadratic character of `Γ_{ℚ₂}` sending
+Frobenius to `3 ∈ (ℤ/8)ˣ`, which is `IsTameAtTwoLocal` by inspection (any
+coordinate projection, with that same `δ`).
+
+The topologies are left as instance arguments deliberately: the argument uses
+none, so the refutation holds for EVERY pair of topologies making the statement
+of (5d) applicable, including the discrete ones. -/
+theorem not_exists_tameLocalLift_zmodSixteen
+    [TopologicalSpace (ZMod 8)] [TopologicalSpace (ZMod 16)]
+    (ρ2 : GaloisRep ℚ_[2] (ZMod 8) (Fin 2 → ZMod 8))
+    (u : Field.absoluteGaloisGroup ℚ_[2] → ZMod 8)
+    (hscal : ∀ g w i, ρ2 g w i = u g * w i)
+    (g₀ : Field.absoluteGaloisGroup ℚ_[2]) (hu : u g₀ = 3) :
+    ¬ ∃ τ : GaloisRep ℚ_[2] (ZMod 16) (Fin 2 → ZMod 16),
+        (∀ g w i, ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8) (τ g w i)
+            = ρ2 g (fun j => ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8) (w j)) i) ∧
+        IsTameAtTwoLocal τ := by
+  rintro ⟨τ, hlift, htame⟩
+  obtain ⟨y, hy, hy2⟩ :=
+    sq_eq_one_of_isTameAtTwoLocal_lift_of_scalar
+      (ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8)) hscal hlift htame g₀
+  exact no_sqrtOne_lift_of_three_zmodSixteen y (hy.trans hu) hy2
+
 /-- **(5c) THE FLAT LOCAL DEFORMATION CONDITION IS SMOOTH** (sorry node, stated
 2026-07-31 as the third clause of item (5) of the audit on
 `exists_obstructionCocycle_smallExtension_deformation` below):
@@ -17826,20 +18099,60 @@ exist. So the subject here is a `GaloisRep ℚ_v`, the flatness condition is
 see `isFlatAt_iff_local`), and the reduction condition is entrywise, which needs
 no local analogue of `pushforwardFrame`.
 
-**FALSITY AUDIT — REQUIRED BEFORE PROVING, and here is what it must check.**
-Ramakrishna's smoothness is stated for the flat deformation functor of a fixed
-residual representation over `W(k)`, at `ℓ` ODD and with absolute ramification
-index `e = 1` (which holds here: the base is `ℚ_ℓ`). `hℓ5` is carried for
-exactly that reason — with `[Fact ℓ.Prime]` it forces `ℓ` odd — and must not be
-dropped. What the audit must
-settle is whether the statement as written — quantifying over an arbitrary flat
-`ρv` over an arbitrary local `R`, with no residual representation named and no
-`W(k)`-algebra structure imposed — is the smoothness statement or is strictly
-stronger. If it is stronger, the repair is to carry the residual datum: add a
-`ρbar` over `k`, require `ρv` to reduce to it, and require `S`, `R` to be
-objects of Mazur's category over `Λ`. That is the shape every other statement in
-this module uses, and the reason it is not used here is only that the local
-lift has no `HardlyRamifiedDeformation` to live in.
+**FALSITY AUDIT — PERFORMED 2026-08-02, AND IT CAME BACK POSITIVE: THE FORM
+FIRST STATED ON 2026-07-31 WAS FALSE. The statement below is the repair, and the
+two hypotheses `hres` and `hfin` are what the witness violates.**
+
+The 2026-07-31 statement quantified over an arbitrary local topological `S` and
+`R`, with no residual representation, no `W(k)`-algebra structure and — the
+operative omission — nothing forcing `S` to have finite quotients. It is refuted
+by a degeneracy that has nothing to do with Ramakrishna's theorem:
+
+> **WITNESS.** `R := k` (any finite field of characteristic `ℓ`),
+> `S := TrivSqZeroExt k M` for `M` an INFINITE `k`-vector space, `ψ` the
+> projection, both DISCRETE. Then `𝔪_S = M` is square-zero, so
+> `𝔪_S · ker ψ = M · M = 0` and `ψ` is a small extension of local rings;
+> `ψ` is continuous and surjective. Take `ρv` the TRIVIAL representation on
+> `k²`, which is `IsFlatAtLocal` — the constant group scheme `(ℤ/ℓ)²` over
+> `ℤ_ℓ` is finite flat with those points and trivial action, and the only other
+> open ideal of the discrete `k` is `⊤`, where the module is `0`.
+> **No `τ` whatever satisfies the conclusion.** `IsFlatAtLocal v τ` applied at
+> the open ideal `I = 0` demands a BIJECTION between `Fin 2 → S` and
+> `Additive (Hom_{ℚ_ℓ-alg}(ℚ_ℓ ⊗ G, ℚ̄_ℓ))` for a `G` that is `Module.Finite`
+> over `ℤ_ℓ` — a FINITE set, since `ℚ_ℓ ⊗ G` is a finite-dimensional
+> `ℚ_ℓ`-algebra. `Fin 2 → S` is infinite. Contradiction.
+
+So the conclusion of the old statement was UNSATISFIABLE for a legitimate `S`,
+and the leaf was false for a reason no amount of Ramakrishna would have repaired.
+`hfin` — every open ideal has finite quotient — is exactly the profiniteness that
+makes `IsFlatAtLocal` a satisfiable condition on `S`, and it holds in the
+intended application: there `S` is `MvPowerSeries (Fin g) Λ ⧸ K`, Noetherian,
+local, with finite residue field, carrying its `𝔪`-adic topology, for which the
+open ideals contain a power of `𝔪` and the quotients are finite.
+
+**WHAT THE SCALAR ENGINE DOES *NOT* REFUTE, recorded so it is not re-run.** The
+`ℤ/16 ↠ ℤ/8` witness that kills (5d) below does NOT kill this clause, and the
+reason is worth having: over `ℤ/16` the scalar representation `δ ⊗ id` DOES lift,
+by `δ̃ ⊗ id` where `δ̃` is the unramified character sending Frobenius to
+`3 ∈ (ℤ/16)ˣ` — an element of order `4`. The lift exists and is again unramified,
+hence again flat; what it fails is only `δ̃² = 1`, which this clause does not ask
+for. That is why `sq_eq_one_of_scalarInvolution_lift` above is recorded as an
+engine and not used here.
+
+**WHAT REMAINS UNSETTLED, and the check that would settle it.** `hres` — the
+residue characteristic is `ℓ` — is imposed because Ramakrishna's smoothness is a
+theorem about the flat deformation functor over `W(k)` with `k` of characteristic
+`ℓ` and absolute ramification index `e = 1` (which holds: the base is `ℚ_ℓ`), and
+because without it the clause is a statement about local conditions at `ℓ` for
+coefficient rings in which `ℓ` is invertible, where "finite flat" degenerates to
+"finite étale" and the content evaporates. It is NOT claimed that `hres` and
+`hfin` together suffice. The check that would settle that: decide whether the
+statement still needs the residual datum (a `ρbar` over `k` with `ρv` reducing to
+it, and `S`, `R` as objects of Mazur's category over `Λ`), by testing whether the
+smoothness proof ever uses the residual representation other than through
+`ρv mod 𝔪_R`. If it does, carry the datum — that is the shape every other
+statement in this module uses, and the reason it is not used here is only that
+the local lift has no `HardlyRamifiedDeformation` to live in.
 
 **BANNED INPUTS** (inherited from the circularity guard on the leaf below, which
 this is an ingredient of): neither
@@ -17854,6 +18167,8 @@ theorem exists_flatLocalLift_of_isSmallExtension (hℓ5 : 5 ≤ ℓ)
     {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S] [IsLocalRing S]
     {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
     (ψ : S →+* R) (hψ : Continuous ψ) (hsm : IsSmallExtension ψ)
+    (hres : (ℓ : S) ∈ IsLocalRing.maximalIdeal S)
+    (hfin : ∀ I : Ideal S, IsOpen (I : Set S) → Finite (S ⧸ I))
     {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     (hv : v = (Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat)
     (ρv : GaloisRep (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) R (Fin 2 → R))
@@ -17886,16 +18201,68 @@ one at a time and none of them is obstructed:
 * the EQUIVARIANCE: this is the only place any correction is needed, and it is
   the statement that the associated local deformation condition is smooth.
 
-**FALSITY AUDIT — REQUIRED BEFORE PROVING.** The clause quantifies over an
-arbitrary local `R`, with no residual representation named. The audit must check
-whether the equivariance step needs the residual datum (a `ρbar` over `k` to
-which `ρ2` reduces), as the corresponding statement in the literature is phrased
-for a deformation functor. If it does, carry the residual datum exactly as
-described in the audit on `exists_flatLocalLift_of_isSmallExtension` above.
-Unlike (5c), NO hypothesis on `ℓ` is expected to be needed here: the place is
-`2` and the condition is about `Γ ℚ_2`, so `ℓ` does not enter — if a proof turns
-out to need it, that is a signal the statement is wrong rather than that a
-hypothesis is missing.
+**FALSITY AUDIT — PERFORMED 2026-08-02, AND IT CAME BACK POSITIVE: THE FORM
+FIRST STATED ON 2026-07-31 WAS FALSE, WITH AN EXPLICIT COUNTEREXAMPLE. The
+hypothesis `h2` below is the repair, and it is precisely what the witness
+violates.**
+
+The 2026-07-31 statement quantified over arbitrary local topological `S` and `R`
+and — following its own (correct) observation that the place is `2` and so `ℓ`
+should not enter — imposed nothing on the residue characteristic. But the
+residue characteristic is exactly what the FIRST step of the intended proof
+turns on. That step, "the character `δ` lifts", is the one the docstring above
+calls free and unobstructed, and its proof is: `δ` is determined by
+`δ(Frob) = u` with `u² = 1`; a lift `w` of `u` has `w² = 1 + i` with
+`i ∈ ker ψ`; the other lifts are `w(1 + j)` with `j ∈ ker ψ`, and
+`(w(1+j))² = w²(1 + 2j) = 1 + i + 2j`. **One can solve `i + 2j = 0` exactly when
+`2` is invertible.** If instead `2 ∈ 𝔪_S` then `2j ∈ 𝔪_S · ker ψ = 0`, every
+lift has the same square, and if that square is not `1` there is no lift at all.
+
+> **WITNESS, and it is fully machine-checked above except for one classical
+> input.** `S := ℤ/16`, `R := ℤ/8`, `ψ` the reduction, both discrete. This is a
+> small extension of local rings — `𝔪_S = (2)`, `ker ψ = (8)`, `2 · 8 = 0` —
+> proven as `isSmallExtension_castHom_zmodSixteen` above. Let `δ` be the
+> unramified quadratic character of `Γ_{ℚ₂}` with `δ(Frob) = 3 ∈ (ℤ/8)ˣ` (this
+> is the one classical input: `ℚ₂` has an unramified quadratic extension), and
+> take `ρ₂ := δ ⊗ id`, the SCALAR representation `ρ₂ g = δ g · id` on `(ℤ/8)²`.
+> Then `IsTameAtTwoLocal ρ₂` holds — any coordinate projection, with that same
+> `δ`, which is unramified and satisfies `δ² = 1` because `3² = 9 = 1` in `ℤ/8`
+> (`three_mul_three_zmodEight`). **And there is no tame lift**: by
+> `sq_eq_one_of_isTameAtTwoLocal_lift_of_scalar` above, a tame lift would force
+> `3` to lift to a square root of `1` in `ℤ/16`; the two lifts are `3` and `11`
+> and `3² = 11² = 9 ≠ 1` (`no_sqrtOne_lift_of_three_zmodSixteen`). The whole
+> assembly is `not_exists_tameLocalLift_zmodSixteen` above.
+
+Note what the witness does NOT need: it is scalar, so it is tame for *every*
+choice of line, and the refutation therefore assumes nothing about which
+rank-one quotient a putative lift might choose. It also uses no topology, so it
+survives every topology on `ℤ/8` and `ℤ/16` for which the statement typechecks.
+
+`h2 : IsUnit (2 : S)` kills it (`2` is not a unit in `ℤ/16`) and is the same
+hypothesis `exists_lift_det_eq_of_isSmallExtension` above carries, for the same
+reason: squaring is bijective on `1 + ker ψ` exactly when `2` is invertible. It
+is FREE in the intended application, where the residue characteristic is the odd
+prime `ℓ`. Keeping it as `IsUnit (2 : S)` rather than as a condition on `ℓ`
+preserves the docstring's own correct point that `ℓ` does not belong in this
+clause.
+
+**WHAT REMAINS UNSETTLED, and the check that would settle it.** It is NOT
+claimed that `h2` suffices. With `2` invertible the three steps of the intended
+proof go: `δ̃` exists and is unique (`x² = 1` in a local ring with `2` invertible
+forces `x = ±1`); the diagonal character `α` lifts freely, because the
+obstruction lies in `H²(Γ_{ℚ₂}, I)` with trivial action, which vanishes since
+`μ_ℓ ⊄ ℚ₂` for `ℓ` odd; and the remaining extension class lives in
+`H¹(Γ_{ℚ₂}, I(γ))` with `γ = α δ⁻¹`, whose obstruction sits in
+`H²(Γ_{ℚ₂}, I(γ̄))` — and that group is NONZERO exactly when `γ̄` is the mod-`ℓ`
+cyclotomic character `ω` of `Γ_{ℚ₂}`. In the hardly ramified setting
+`det ρ = χ` and `δ² = 1` force `γ = χ δ⁻² = χ`, i.e. `γ̄ = ω` **on the nose**, so
+this clause sits exactly at the one place where the local `H²` does not vanish.
+The check: compute whether the obstruction class is actually hit there, i.e.
+whether the ordinary/tame local deformation functor at `2` is smooth in the
+Steinberg case `ρ̄|_{Γ₂} ∼ (ω ∗; 0 1)`, or whether a further hypothesis (a fixed
+determinant, or the residual datum as in (5c) above) is needed. If it is not
+smooth, this clause is still false and the repair is to weaken the conclusion to
+the local condition that IS smooth.
 
 **BANNED INPUTS**: as for (5c) above.
 
@@ -17906,6 +18273,7 @@ theorem exists_tameLocalLift_of_isSmallExtension
     {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S] [IsLocalRing S]
     {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
     (ψ : S →+* R) (hψ : Continuous ψ) (hsm : IsSmallExtension ψ)
+    (h2 : IsUnit (2 : S))
     (ρ2 : GaloisRep ℚ_[2] R (Fin 2 → R)) (htame : IsTameAtTwoLocal ρ2) :
     ∃ τ : GaloisRep ℚ_[2] S (Fin 2 → S),
       (∀ g w i, ψ (τ g w i) = ρ2 g (fun j => ψ (w j)) i) ∧
@@ -18928,6 +19296,17 @@ explicitly.)
      (Ramakrishna: the flat local deformation condition is smooth).
    * `isTameAtTwo` at `2` — **OPEN**, `exists_tameLocalLift_of_isSmallExtension`
      (smoothness of the ordinary/tame local condition at `2`).
+
+   **BOTH OF THE TWO OPEN ONES WERE FALSE AS FIRST STATED, and were RESTATED on
+   2026-08-02** after the falsity audits their docstrings demanded were actually
+   performed. (5c) gained `hres` (residue characteristic `ℓ`) and `hfin` (open
+   ideals have finite quotients — without which its conclusion is
+   unsatisfiable); (5d) gained `h2 : IsUnit (2 : S)`, refuted otherwise by an
+   explicit, machine-checked `ℤ/16 ↠ ℤ/8` witness. Read the audits on the two
+   declarations before consuming either: each names exactly one thing still
+   unsettled, so neither repair is claimed to be sufficient, and a consumer that
+   needs more than the stated hypotheses give should expect to strengthen them
+   again rather than to find the leaf provable as it stands.
 
    The two open ones are stated on LOCAL representations (`GaloisRep ℚ_v`),
    with `IsFlatAtLocal` / `IsTameAtTwoLocal`, each `Iff.rfl`-equal to the global
