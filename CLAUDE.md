@@ -25557,3 +25557,69 @@ CONSTRUCTION of the trace-duality constants and nothing else — no limit, no re
 no division, and no `IsAdicComplete` in its proof — and that the finite-base chain is
 now the same four declarations as the characteristic-zero one, so whoever proves either
 residual leaf can transcribe to the other.
+## A CITATION LEAF CAN BUNDLE TWO DIFFERENT PUBLISHED THEOREMS, AND THE CASE SPLIT THAT SEPARATES THEM IS ONE EVERY CONSUMER ALREADY MAKES
+(2026-08-01, `flt-lean-311`, on `exists_galoisRep_charFrob_conductorExponent_of_isWeightTwoNewform`
+in `Modularity/Interface.lean` — Carayol's conductor theorem.)
+A terminal citation leaf is usually read as indivisible: it names a published theorem,
+the theorem is not in the pin, there is nothing to do but wait. That reading skips the
+one cheap question that pays here — **does the CONCLUSION range over a case where the
+citation is a DIFFERENT published theorem?**
+That leaf concluded `a_q(τ) = ord_q M` at **every** prime `q ≠ p`. At `q ∣ M` that is
+Carayol. At `q ∤ M` both sides are `0`, so it asserts *`τ` is unramified at `q`* — which
+is **good reduction of `J₀(M)` outside the level plus Néron–Ogg–Shafarevich**, a different
+theorem with a different proof. The leaf's own FAITHFULNESS paragraph SAID SO, in
+parentheses, and nobody read it as a seam:
+> …at every `q ≠ p` — including the primes `q ∤ M`, where both sides are `0` because
+> `ρ_{g,λ}` is unramified there (Eichler–Shimura plus Néron–Ogg–Shafarevich).
+**And the second citation had NO CONSUMER.** The leaf feeds exactly one theorem, which
+feeds exactly four call sites, and all four supply `1 ≤ ord_q M₀` (`= 1`, `2 ≤`, `= 2`,
+`3 ≤`). Nothing in the tree has ever read the `q ∤ M` case. Adding
+`M.factorization q ≠ 0` to the conjunct deleted a whole literature citation from the
+frontier; each call site discharges the new hypothesis by `omega` from the bound it
+already carries, and no signature above the leaf moved.
+**The check, and it is two greps:**
+1. read the leaf's conclusion and ask at which values of its quantified parameter the
+   asserted value DEGENERATES (to `0`, to `⊥`, to `⊤`, to the trivial object). A
+   degenerate value is very often a different theorem — "unramified", "good reduction",
+   "trivial" are cited to different authors than the generic case;
+2. then grep the call sites of the leaf's consumer and read the RANGE each supplies. A
+   leaf quantified over everything whose consumers all supply a bound is stated wider
+   than anything needs, and the excess is free to delete.
+**Narrowing a conclusion is the safe direction and the audit transfers by one sentence.**
+Adding a hypothesis inside the conclusion WEAKENS the leaf, so it cannot turn a true
+statement false — the standing rule that a restatement voids an earlier audit is about
+restatements that can *strengthen*. Say that explicitly, and say where the deleted clause
+would go if a consumer ever appears (its own leaf, citing its own theorem), or the next
+owner will re-bundle it.
+**The count does not move — one leaf in, one leaf out.** What changed is that the survivor
+names ONE theorem instead of two. Report it that way.
+### AND A "CONDITIONAL IN ITS TRUTH" NAMING AN OPEN LEAF IS A DATED CLAIM — GREP THE LEAF
+Same declaration, same day, and it is the standing "blocked until X — grep for X" rule
+applied to a **falsity risk** rather than to a route, which is where nobody applies it.
+The leaf carried a paragraph headed **THE ONE CONDITIONAL IN ITS TRUTH**: at `ord_q M ≥ 3`
+the identity forces `swanExponent > 0`, which forces `swanExponentAux` to be the genuine
+Swan conductor rather than the junk `sInf ∅ = 0`; "that is exactly
+`GaloisRep.exists_isSwanExponentAt`, **an open leaf**", so the leaf "would be FALSE at
+`ord_q M ≥ 3` if that leaf were refuted".
+The ANALYSIS is correct. The VERDICT was stale **on the day it was written**:
+* `exists_isSwanExponentAt` is a PROVEN theorem — its own note says "promoted to a named
+  theorem 2026-07-29", the same week — carrying one hypothesis,
+  `HasFiniteWildMonodromyAt`;
+* and `hasFiniteWildMonodromyAt_of_residueChar_ne`, **in the same file**, supplies that
+  hypothesis for a `2`-dimensional `τ` from `q ≠ p` and NOTHING ELSE — no hypothesis on
+  `τ` at all — and `q ≠ p` is a binder of the very conjunct at issue.
+So the junk branch is unreachable over the leaf's whole range, and the two-line term
+proving it (`isSwanExponentAt_swanExponentAux _ _ (hasFiniteWildMonodromyAt_of_residueChar_ne …)`)
+compiles in a 13-second scratch. A recorded conditional falsity was discharged by two
+greps and one `example`.
+**Two things generalise.** A falsity-risk paragraph is read as a permanent property of the
+statement, so it is re-quoted rather than re-checked — this one had already been copied
+onto a sibling declaration. And **when such a paragraph names the leaf its risk depends
+on, the useful move is to check that leaf's HYPOTHESIS, not just its status**: a leaf that
+is proven but gated is discharged only if something supplies the gate, and here the
+supplier was 2700 lines below in the same file.
+**Correct such a paragraph in place rather than deleting it, and be precise about what
+survives.** The analysis was the valuable part and is still right; only the verdict moved.
+And say what is NOT discharged — here, whether the Serre-formula specification is faithful
+at all, which is a different question owned by `RamificationFiltration`'s own audit and
+shared equally by every declaration in the tree that mentions `swanExponent`.
