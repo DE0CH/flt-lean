@@ -9,6 +9,9 @@ public import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 public import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 public import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 public import Mathlib.LinearAlgebra.Matrix.ToLin
+public import Mathlib.LinearAlgebra.Matrix.Basis
+public import Mathlib.LinearAlgebra.Basis.Defs
+public import Mathlib.LinearAlgebra.Basis.Basic
 public import Mathlib.LinearAlgebra.FreeModule.Finite.Basic
 public import Mathlib.LinearAlgebra.Dimension.Free
 public import Mathlib.RingTheory.IntegralClosure.IsIntegral.Basic
@@ -54,6 +57,15 @@ it is now Lean code rather than prose.
   that is a simultaneous eigenvector with eigenvalue `a n`.
 * `IntegralHeckeEigensystem.isIntegral_coeff` (PROVEN): from that packaging,
   `IsIntegral ℤ (a n)` for EVERY `n` at once.
+* `IsIntegralHeckeStructure` — the SPACE-side packaging of the same input: a
+  `ℂ`-module `V`, a family of `ℂ`-linear operators `T n` on it, and a finite
+  `ℂ`-basis of `V` in which every `T n` has INTEGER matrix.  Nothing about
+  eigenvectors, nothing about `a`.
+* `IntegralHeckeEigensystem.ofIsIntegralHeckeStructure` (PROVEN): an
+  `IsIntegralHeckeStructure` plus a NONZERO simultaneous eigenvector with
+  eigenvalues `a n` is an `IntegralHeckeEigensystem a`.  This is the bridge the
+  two modular-curve leaves consume, and it is why the residue on each side is a
+  statement about `S₂(Γ)` rather than about matrices.
 
 ## Why the ROW (`ᵥ*`) convention, and not the column one
 
@@ -108,11 +120,22 @@ noncomputable def IntegralHeckeEigensystem.ofPeriodMap {L : Type*} [AddCommGroup
 ```
 
 It is NOT committed as a declaration only because it would be **free-floating**:
-its sole consumer would be a proof of one of the two lattice leaves, both of
-which are still `sorry`, and a sorried body contributes no dependency edge.
-Paste it back in the moment either leaf acquires a real proof.  (The same idiom,
-for the same reason, is used in `X1.lean` for the mechanized level-`0` falsity
-witness.)
+its sole consumer would be a HOMOLOGY-route proof of one of the two lattice
+leaves, and the route both leaves now take is the `q`-expansion one, which
+consumes `ofIsIntegralHeckeStructure` below instead.  Paste it back the moment
+the homology route is started.  (The same idiom, for the same reason, is used in
+`X1.lean` for the mechanized level-`0` falsity witness.)
+
+**WHICH BRIDGE GOES WITH WHICH ROUTE, since there are now two.**  A period map
+`φ : H₁(X, ℤ) → ℂ` is a functional on a lattice that is not sitting inside the
+space the operators act on, so it produces the ROW eigenvector directly — that is
+`ofPeriodMap`.  The `q`-expansion lattice `S₂(Γ, ℤ)` instead sits INSIDE
+`S₂(Γ)`, with `f` itself the eigenvector, so what one holds is a `ℂ`-basis in
+which the Hecke matrices are integral together with `f`'s coordinate vector —
+that is `ofIsIntegralHeckeStructure`, and the transpose in its proof is exactly
+the passage from the column convention (an eigenvector of the operator) to the
+row convention the structure stores.  Neither bridge subsumes the other cheaply;
+each is a few lines, and committing the one with a consumer is the rule.
 
 Note also what the bridge shows about the strength of the packaging: `Fin r → ℤ`
 is itself a finite free `ℤ`-module, so `IntegralHeckeEigensystem` is *equivalent*
@@ -239,5 +262,106 @@ and it is the geometry, not the arithmetic, that is missing. -/
 theorem IntegralHeckeEigensystem.isIntegral_coeff {a : ℕ → ℂ}
     (H : IntegralHeckeEigensystem a) (n : ℕ) : IsIntegral ℤ (a n) :=
   isIntegral_of_intMatrix_vecMul (H.T n) H.period_ne (H.period_hecke n)
+
+/-- **A `ℂ`-SPACE WITH A HECKE-STABLE INTEGRAL LATTICE** (NEW 2026-07-31) — the
+space-side packaging of the classical input, and the thing the two modular-curve
+leaves now produce.
+
+`V` is meant to be `S₂(Γ)` for `Γ = Γ₀(N)` or `Γ₁(N)`, `T n` the Hecke operators
+on it, `basis` a `ℤ`-basis of the lattice `S₂(Γ, ℤ)` of forms with integral
+`q`-expansion, and `mat n` the matrix of `T n` in it.  The three facts being
+asked for are exactly the three the classical proof supplies:
+
+* `indep` + `spanning` — `S₂(Γ)` is FINITE-DIMENSIONAL and the integral forms
+  span it (the `q`-expansion principle: `S₂(Γ, ℤ) ⊗ ℂ = S₂(Γ)`);
+* `hecke_mat` — `T n` PRESERVES the lattice, because the `q`-expansion formula
+  `a_m(T_n g) = ∑_{d ∣ (m,n)} d · a_{mn/d²}(⟨d⟩ g)` has integer coefficients.
+
+**Deliberately free of `a` and of `f`.**  An eigenvector is not part of the
+datum; it is supplied separately by `ofIsIntegralHeckeStructure`.  That split is
+what lets the SAME structure serve the `Γ₀` and the `Γ₁` sides, whose eigenforms
+and whose coefficient conventions differ (a nebentypus on one side, none on the
+other) while their lattices do not.
+
+**Not junk-satisfiable in the way that matters.**  `rank := 0` is a legal
+inhabitant when `V = 0` — and it is then USELESS, because
+`ofIsIntegralHeckeStructure` also demands a nonzero eigenvector, which `V = 0`
+cannot supply.  So the degenerate instance is harmless: it can never be fed to
+the only consumer.  Conversely `T n := a n • id` forces `a n ∈ ℤ` by `indep`, so
+a structure does not exist for a system with a non-integral coefficient — which
+is `isIntegral_coeff` seen from the other side. -/
+structure IsIntegralHeckeStructure {V : Type*} [AddCommGroup V] [Module ℂ V]
+    (T : ℕ → V →ₗ[ℂ] V) where
+  /-- the rank of the lattice, classically `dim_ℂ S₂(Γ) = g` -/
+  rank : ℕ
+  /-- a `ℤ`-basis of the lattice -/
+  basis : Fin rank → V
+  /-- it is `ℂ`-linearly independent -/
+  indep : LinearIndependent ℂ basis
+  /-- and it spans `V` over `ℂ` — together with `indep`, it is a `ℂ`-basis -/
+  spanning : Submodule.span ℂ (Set.range basis) = ⊤
+  /-- the matrix of `T n` in that basis, with INTEGER entries -/
+  mat : ℕ → Matrix (Fin rank) (Fin rank) ℤ
+  /-- and it really is the matrix of `T n`: the lattice is Hecke-stable -/
+  hecke_mat : ∀ n j, T n (basis j) = ∑ i, ((mat n i j : ℤ) : ℂ) • basis i
+
+/-- **THE `q`-EXPANSION-LATTICE BRIDGE** (PROVEN 2026-07-31): a Hecke-stable
+integral lattice in a `ℂ`-space, together with a NONZERO simultaneous
+eigenvector with eigenvalues `a n`, is an `IntegralHeckeEigensystem a`.
+
+This is the whole of the linear algebra between *"the Hecke operators preserve a
+lattice and `f` is an eigenform"* and *"the `a n` are algebraic integers"*, and
+it is the reason the two modular-curve leaves can be stated about `S₂(Γ)` and
+about nothing else.  Read together with `isIntegral_coeff` it says: the
+geometric input is a lattice, and everything after it is done.
+
+The proof is three steps and no mathematics: `Module.Basis.mk` turns
+`indep`/`spanning` into a genuine `ℂ`-basis `B`; `LinearMap.toMatrix B B (T n)`
+is then `mat n` pushed along `ℤ → ℂ` (`hecke_mat` read through
+`Module.Basis.repr_self`); and `LinearMap.toMatrix_mulVec_repr` turns
+`T n f = a n • f` into `mat n *ᵥ B.repr f = a n • B.repr f`.  The transpose in
+the `T` field is the passage from that COLUMN equation to the ROW convention the
+structure stores (`Matrix.vecMul_transpose`); see the module docstring for why
+the row convention is the right one to store.
+
+`hf0 : f ≠ 0` is load-bearing and is what `period_ne` becomes: with `f = 0` the
+eigenvector equation holds for every `a` whatever, so the conclusion would
+assert that every complex sequence consists of algebraic integers, refuted at
+`a = fun _ => 1/2`. -/
+noncomputable def IntegralHeckeEigensystem.ofIsIntegralHeckeStructure {V : Type*}
+    [AddCommGroup V] [Module ℂ V] {a : ℕ → ℂ} {T : ℕ → V →ₗ[ℂ] V}
+    (H : IsIntegralHeckeStructure T) {f : V} (hf0 : f ≠ 0)
+    (hT : ∀ n, T n f = a n • f) : IntegralHeckeEigensystem a := by
+  classical
+  set B : Module.Basis (Fin H.rank) ℂ V := Module.Basis.mk H.indep H.spanning.ge with hBdef
+  have hBcoe : ⇑B = H.basis := Module.Basis.coe_mk _ _
+  have hrepr : ∀ x i : Fin H.rank, (B.repr (H.basis x)) i = if x = i then (1 : ℂ) else 0 := by
+    intro x i
+    have hx : H.basis x = B x := (congrFun hBcoe x).symm
+    rw [hx, Module.Basis.repr_self, Finsupp.single_apply]
+  have hmat : ∀ n, LinearMap.toMatrix B B (T n) = (H.mat n).map (algebraMap ℤ ℂ) := by
+    intro n
+    ext i j
+    rw [LinearMap.toMatrix_apply, hBcoe, H.hecke_mat n j, map_sum]
+    simp [hrepr]
+  refine { rank := H.rank
+           T := fun n => (H.mat n)ᵀ
+           period := fun i => B.repr f i
+           period_ne := ?_
+           period_hecke := ?_ }
+  · intro hzero
+    refine hf0 ?_
+    have hr : B.repr f = 0 := by
+      ext i
+      exact congrFun hzero i
+    have := congrArg B.repr.symm hr
+    simpa using this
+  · intro n
+    have htr : ((H.mat n)ᵀ).map (algebraMap ℤ ℂ) = ((H.mat n).map (algebraMap ℤ ℂ))ᵀ := rfl
+    rw [htr, Matrix.vecMul_transpose, ← hmat n]
+    have h2 := LinearMap.toMatrix_mulVec_repr B B (T n) f
+    rw [h2, hT n]
+    funext i
+    simp
 
 end Fermat
