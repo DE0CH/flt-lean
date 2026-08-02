@@ -24437,3 +24437,45 @@ agent re-runs the three searches.
 Corollary for whoever WRITES a refutation: record the WITNESS, not only the
 verdict.  Three verdicts with three witnesses are comparable; three verdicts
 without them are three dead ends.
+## "TWO LEAVES ARE ONE THEOREM" CAN BE BLOCKED BY IMPORT ORDER — THE SHAPE-GENERIC VOCABULARY IS USUALLY DOWNSTREAM OF ONE OF THEM
+(2026-08-01, `flt-lean-280`, on `isTorsion_factor_of_heckeIsotypic_gamma1_of_ne_zero`.)
+This file already records two ways the "these two leaves are one theorem written
+twice" check goes wrong: the two statements can share no identifier
+(the Riemann–Roch pair), and one can be a duplicate cut a merge kept twice. Here
+is a third, and it is the one that wastes a whole run, because the merge looks
+not merely possible but overdue right up until you check the import graph.
+`X0.lean`'s `isTorsion_factor_of_heckeIsotypic` and `X1.lean`'s `…_gamma1`
+variant are the same citation (Kolyvagin–Logachev) over two structures differing
+in ONE field. This development even has the abstraction built for exactly this:
+`ModularLevelShape`, with `group`, `IsCompactification` and `IsNebentypus`
+already dispatching on it, and a shape-free consumer
+(`isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape`) already in place one
+level up. Everything says "state it once, net −1 leaf."
+**It cannot be done, and no amount of mathematics changes that.**
+`ModularLevelShape` is declared in `X1.lean`, because its `IsCompactification`
+must mention BOTH `IsX0Compactification` and `IsX1Compactification`; and
+`X1.lean` `public import`s `X0.lean`. So the shape-free statement can only be
+declared downstream of `X0.lean`, and `X0.lean`'s leaf cannot be proven over
+something it cannot see.
+**The asymmetry to internalise: a shape-free WRAPPER over two PROVEN theorems
+and a shape-free LEAF under two OPEN ones are not the same operation.** The
+wrapper only dispatches, so living downstream of both is exactly right — which
+is why `…_of_levelShape` works and reads as a precedent. A leaf has to be
+CONSUMED by both, so it must live UPSTREAM of both, and the shape-generic
+vocabulary it is stated in almost never does: that vocabulary was created by
+whoever wrote the second file, in the second file. Seeing the wrapper and
+inferring the leaf is the trap.
+**So the check, before costing any leaf merge, is two `grep -n`s and a
+comparison, and it comes BEFORE the mathematics:**
+    grep -rn 'inductive <TheShapeType>\|structure <TheShapeType>' Fermat/   # where does the vocabulary live
+    grep -n '^public import\|^import' <the file that has it> | grep <the other file>
+If the vocabulary's home imports the other leaf's file, the merge is
+structurally blocked. The only unblocking move is hoisting the vocabulary and
+everything its definition mentions above both files — for a frontier gain of
+one, which in a pair of hot 100k-line modules is never worth it. Record the
+measurement on the leaf so it is not repeated; the temptation recurs every time
+somebody applies the sibling-leaf rule.
+**And the same shape appears wherever this project has an `S : SomeShape`
+dispatcher** (`ModularLevelShape`, and any successor of it): the dispatcher can
+unify CONSUMERS freely and can unify LEAVES only when it was declared upstream
+of every leaf it would unify. Check which of the two you are doing.
