@@ -16151,3 +16151,97 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A ROUTE STEP THAT SAYS "ESTABLISH IT OR FIND IT" IS OFTEN AN IMPORT PROBLEM — and a PLAIN import reaches the proof body
+
+(2026-08-02, `one_le_isCurveGenus_curveBaseChange_of_nontrivial_cuspForm` in
+`ModularCurve/X0.lean`.)  That leaf's route opened with a step its own docstring
+flagged in bold as the one that "surprises people halfway through":
+
+> `_hS` gives `finrank_ℂ S₂(Γ₀(N)) ≥ 1`.  Note this needs
+> `FiniteDimensional ℂ (CuspForm (Gamma0GL N) 2)`: `Module.finrank` of an
+> infinite-dimensional space is `0`, so `Nontrivial` alone does NOT give
+> `1 ≤ finrank`.  Establishing (or citing) finite-dimensionality is a real step.
+
+The mathematics of that step is real and the warning is correct.  **The step was
+not a mathematical obligation at all**: `cuspForm_finiteDimensional` had been
+PROVEN since 2026-07-24 (over the Sturm bound, no modular-curve geometry), in
+`Modularity/HeckeAtkinLehner.lean` — a module `X0.lean` **did not import**.  The
+whole of the step was one import line, and with it the leaf's first two route
+items became a six-line theorem.
+
+This is the standing "missing machinery may be one import away" failure with a
+sharper tell than usual: **the docstring said "establishing OR CITING", i.e. its
+author already suspected the thing existed, and did not run the grep.**  So:
+
+* **A route step phrased as a disjunction between doing the work and finding the
+  work is an unrun search.**  Run it first — it is one `grep -rn` over `Fermat/`
+  — before budgeting anything for the step.
+* **Then check the import DIRECTION and price the edge**, because that is what
+  decides whether the find is usable.  Ten lines of Python: compute the
+  candidate's transitive `Fermat`-import closure, assert every visited file
+  EXISTS (a swallowed `FileNotFoundError` truncates the walk and manufactures the
+  "no cycle" answer you wanted), and intersect with your own.  Here
+  `HeckeAtkinLehner`'s whole closure is `{HeckeOperator, HeckeQExpansion}`, both
+  already imported by `X0.lean`, and it does not import `X0.lean` — so the edge
+  costs **exactly one module** and creates no cycle.
+* **Prefer a PLAIN import to a `public` one, and check where the name occurs.**
+  Proof bodies are elided by the module system, so a non-public import reaches
+  them.  `cuspForm_finiteDimensional` occurs only inside one `by` block, so the
+  plain edge suffices and none of that module's ~196 declarations is re-exported
+  through `X0.lean`'s very large downstream cone.  This was verified in a scratch
+  before the real edit — `public import` the target, plain `import` the
+  candidate, and elaborate the intended proof.
+
+**And check the candidate declares no notation before adding the edge**, since a
+plain import still brings notations into the importing module even though it does
+not re-export them.  `grep -n '^\s*\(scoped \)\?\(notation\|infix\|prefix\|postfix\|syntax\|macro\|reserve\)'` — here, none.
+
+## AN EXPLICIT BINDER OF CLASS TYPE IS A LOCAL INSTANCE — load-bearing while invisible, and the only check is DELETION
+
+(Same leaf.)  `(hS : Nontrivial (CuspForm (Gamma0GL N) 2))` is an ORDINARY
+explicit binder, not `[...]`.  Lean 4 nevertheless collects every local
+hypothesis of class type as a local instance, so `hS` is consumed by
+`Module.finrank_pos` and **never appears by name anywhere in the proof.**
+
+That combination is nasty in both directions and neither is caught by a linter:
+
+* reading the proof body suggests the hypothesis is dead, so it invites deletion
+  — and here deleting it yields `0 < N → 1 ≤ x0Genus N`, which is FALSE
+  (`x0Genus 1 = 0`);
+* `unusedVariables` does NOT flag it, because it genuinely is used.  So the
+  linter's silence is not evidence of load-bearing either way.
+
+**The check is to delete the binder and re-run the identical proof.**  It must
+fail, and the failure is informative: here `failed to synthesize Nontrivial
+(CuspForm (Gamma0GL N) 2)`.  That is a two-minute control in a scratch and it is
+what converts "the hypothesis is presumably needed" into a fact.  Record the
+control in the docstring — it is the non-vacuity argument, and the next reader
+cannot re-derive it from the proof text.
+
+Rider, and it is cheap: **when a faithfulness paragraph asserts numeric witnesses,
+`decide` them.**  Both of this cluster's — `x0Genus 1 = 0` (so `hS` is
+load-bearing) and `x0Genus 0 = 1` (so `hN` is not excluded by `hS`) — are
+`decide`-computable in seconds, and confirming them is what makes the audit a
+measurement rather than a restatement.
+
+## A PROMPT'S "THIS MODULE IS RED" IS DATED — ASK THE OLEAN, NOT THE PROMPT
+
+(Same run.)  The task prompt warned, in detail and with eight line numbers, that
+`X0.lean` was RED and that a full build would produce no olean, so the work
+should be judged by "absence of errors in your line range".  That was true on
+`merger` on 2026-07-31.  It was false two days later: release 33 published with
+X0's cone green, and the task's own advice would have thrown away the fast loop.
+
+**The check is one `ls`, and it beats any amount of reasoning about the prompt:**
+
+    ls -la $(git rev-parse --show-toplevel)/.lake/build/lib/lean/<Module path>.olean
+
+An olean that exists and is newer than the last release means the module built.
+Here `X0.olean` was 17.5 MB and dated after the release, so a scratch that
+`public import`s it verified the whole cluster in **7 seconds** per round against
+a ~9-minute full build — and the full build then went green first try, `Build
+completed successfully (5308 jobs)`, zero errors.
+
+Same family as every other dated-evidence rule in this file, with the cheapest
+possible instrument: the artifact, not the prose.
