@@ -40593,10 +40593,210 @@ variable {N : ℕ} (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure �
 section CMPhiYoneda
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **`IsBaseChangeOf.toRelPoint` IS SURJECTIVE at the identity base point**
+(PROVEN 2026-07-31, flt-lean-7): every geometric point of `d₀` is the image of a
+`ℚ̄`-point of the base change.
+
+`toRelPoint` is `x ↦ x ≫ bc.map`, and `X0.lean` already carries its injectivity,
+additivity and compatibility with the zero section (`toRelPoint_injective`,
+`toRelPoint_add`, `toRelPoint_zero`).  Surjectivity is the LIFT half of the same
+cartesian square and had not been stated: a geometric point `y` of `d₀`, i.e. a
+`y : Spec ℚ̄ ⟶ d₀.E` with `y ≫ d₀.f = specAlgClos ℚ`, lifts to
+`bc.isPullback.lift (𝟙 _) y.1`, which lies over `𝟙` by `lift_fst` and maps back
+to `y` by `lift_snd`.
+
+**The two base points are DEFEQ here and that is what keeps the statement
+readable**: `𝟙 (Spec ℚ̄) ≫ specAlgClos ℚ` — the base point `toRelPoint` produces
+at `u = 𝟙` — and `specAlgClos ℚ ≫ 𝟙 SpecQ` — the one `GeomFibrePt d₀.f (𝟙 SpecQ)`
+is indexed by — are definitionally equal in `Scheme`, so no `RelPoint.pre`
+transport is needed anywhere below. -/
+theorem toRelPoint_surjective_specAlgClos {N : ℕ} {d₀ : Gamma0Datum N SpecQ}
+    {d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (bc : IsBaseChangeOf (specAlgClos ℚ) d d₀) :
+    Function.Surjective
+      (bc.toRelPoint (U := Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+        (u := 𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))) := fun y =>
+  ⟨⟨bc.isPullback.lift (𝟙 _) y.1 y.2.symm, bc.isPullback.lift_fst _ _ _⟩,
+    Subtype.ext (bc.isPullback.lift_snd _ _ _)⟩
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **THE `ℚ̄`-POINTS OF A BASE CHANGE ARE THE GEOMETRIC POINTS OF THE DATUM**
+(PROVEN 2026-07-31, flt-lean-7), as an isomorphism of abelian groups.
+
+This is what lets a leaf below conclude about `RelPoint d.f (𝟙 (Spec ℚ̄))` alone
+and hand the `GeomFibrePt d₀.f (𝟙 SpecQ)` half — where the absolute Galois group
+acts — to the assembly for free.  Bijectivity is the cartesian square
+(`toRelPoint_injective` and `toRelPoint_surjective_specAlgClos`); additivity is
+`bc.map_add`, read through `toRelPoint_add`. -/
+def geomEquivOfBaseChange {N : ℕ} {d₀ : Gamma0Datum N SpecQ}
+    {d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (bc : IsBaseChangeOf (specAlgClos ℚ) d d₀) :
+    letI := d.ab.addCommGroup (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    letI := d₀.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) ≃+
+      GeomFibrePt d₀.f (𝟙 SpecQ) :=
+  letI := d.ab.addCommGroup (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+  letI := d₀.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  { toFun := bc.toRelPoint
+    invFun := Function.surjInv (toRelPoint_surjective_specAlgClos bc)
+    left_inv := fun x =>
+      bc.toRelPoint_injective
+        (Function.surjInv_eq (toRelPoint_surjective_specAlgClos bc) (bc.toRelPoint x))
+    right_inv := Function.surjInv_eq (toRelPoint_surjective_specAlgClos bc)
+    map_add' := fun x y => bc.toRelPoint_add x y }
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- The equivalence is postcomposition with `bc.map`, by construction. -/
+theorem geomEquivOfBaseChange_val {N : ℕ} {d₀ : Gamma0Datum N SpecQ}
+    {d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (bc : IsBaseChangeOf (specAlgClos ℚ) d d₀)
+    (x : RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))) :
+    (geomEquivOfBaseChange bc x).1 = x.1 ≫ bc.map := rfl
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+/-- **LEAF 1a′ (RECUT 2026-07-31, flt-lean-7, out of
+`exists_relSchemeEnd_geomEquiv_of_weierstrassModel` immediately below, which is
+now PROVEN over this and over nothing else; count unchanged, `1 → 1`): the
+ALGEBRAISATION, stripped of everything the rigidity lemmas already give.**
+
+Given a Weierstrass model of the `ℚ`-datum and an endomorphism `φ` of
+`End(E⁄ℚ̄)`, produce a scheme endomorphism `Ψ` of the base-changed datum realising
+`φ` on `ℚ̄`-points through an additive identification `ε` whose descent to
+geometric points of the `ℚ`-datum is Galois-equivariant.
+
+**WHAT THE RECUT REMOVED, and why each piece is a theorem rather than a
+conjunct.**  The old statement asked for four further things; all four are
+discharged in the assembly below, from `hint` — plus, for the last of them,
+`hsq`, which is the only thing `hsq` is still used for.
+
+* `IsAdditiveOn d.ab d.ab Ψ hΨ` — `isAdditiveOn_of_post_zero` (rigidity, in
+  `X0.lean`) needs ONLY that `Ψ` fixes the zero section AT THE BASE POINT `𝟙`,
+  and that is `hint` at `x = 0` together with `ε` and `φ` being additive.
+* `ε₀`, the identification with `GeomFibrePt d₀.f (𝟙 SpecQ)` — this is
+  `geomEquivOfBaseChange bc ∘ ε`, by the cartesian square.
+* `hlink`, `(ε₀ x).1 = (ε x).1 ≫ bc.map` — `rfl` once `ε₀` is defined that way.
+  This is why the Galois clause below is phrased at the level of MORPHISMS
+  (`(ε _).1 ≫ bc.map = specGal σ ≫ (ε x).1 ≫ bc.map`) rather than through `ε₀`:
+  stated that way the leaf never has to mention `GeomFibrePt`, and the assembly
+  recovers the `ε₀` form by one `Subtype.ext`.
+* **the minimal polynomial at the TAUTOLOGICAL point** — the old docstring said
+  this could not be recovered from `hint`, because doing so "would need *a
+  morphism out of `d.E` is determined by its `ℚ̄`-points*, which is a further
+  reducedness/density argument".  **That argument is `relPointEndo_ext`, PROVEN
+  in this file since 2026-07-30**, and the only thing that had ever stood between
+  the two was Lean's declaration order: it sat ~3 400 lines BELOW this leaf, and
+  is hoisted above `section FixedLocusHopf` in the same commit as this recut.
+  So `hmin` is now derived, over the two natural families
+  `x ↦ Ψ²x + n·x` and `x ↦ Ψx`, which agree on `ℚ̄`-points by `hsq` and hence
+  agree at the tautological point.
+
+**WHAT COULD NOT BE REMOVED, and it is worth recording so that nobody tries.**
+`ε` and `Ψ` must be produced TOGETHER, and the Galois clause must be produced
+with them.  A leaf of the form *"for ANY additive `ε`, some `Ψ` intertwines `φ`"*
+is FALSE: composing `ε` with an automorphism `α` of the abstract group `E(ℚ̄)`
+replaces `φ` by `α φ α⁻¹`, which need not be algebraic, and `E(ℚ̄)` — divisible,
+of infinite rank — has many such `α`.  Requiring `α` to commute with the Galois
+action does not obviously kill them either, since `E(ℚ̄)/tors` is a `ℚ[Γ_ℚ]`-module
+of continuum dimension.  So `ε` is pinned only by being produced from the CHART,
+and that is exactly what this leaf's proof has to supply.
+
+**LEVEL-GENERIC.**  `N` is unconstrained, there is no `hp`, and the level
+structure does not appear in the statement at all — only `d₀.ab`, `d.ab`, `bc`
+and the Weierstrass model are consumed.
+
+**THE ROUTE is unchanged from the old statement** and the first three steps rest
+on theorems that are PROVEN:
+
+1. `hmodel` gives an open immersion `ι : weierstrassAffine E ⟶ d₀.E` over
+   `Spec ℚ` whose range is the complement of the zero section, and
+   `exists_affineChart_projModel` gives the matching chart of
+   `WeierstrassCurve.Projective.proj E`; `Fermat.exists_isIso_of_affineChart`
+   (`ModularCurve/EllipticScheme.lean`) turns the pair into an ISOMORPHISM
+   `proj E ≅ d₀.E` over `Spec ℚ`, pinned by `ι₀ ≫ u = ι`.  **NAMEABILITY IS AN
+   OBSTACLE HERE AND IT IS NOT A THEOREM**: `X0.lean` reaches
+   `ModularCurve/EllipticScheme` through a NON-public import, so that name cannot
+   be cited from this file.  Either add a re-export to `X0.lean` in
+   `Gamma0Datum`/`IsWeierstrassModel` vocabulary — exactly like the existing
+   `exists_weierstrassModel_geomFibreAddEquiv_of_gamma0Datum`, which is there for
+   this reason — or add `public import Fermat.FLT.ModularCurve.EllipticScheme`
+   here, the module already being in this file's build cone through `X0`.
+2. `φ` carries `IsIsogeny`, hence `IsRationalMap`: polynomials `A B C D E` over
+   `ℚ̄` computing the coordinates of `φ P` away from `Z(B) ∪ Z(E)`.  That is a
+   morphism out of a dense open of the affine chart, and
+   `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve` (PROVEN,
+   sorry-free) extends it across that finite bad locus into the PROPER target.
+   **Turning the `IsRationalMap` certificate into a morphism of schemes out of
+   that dense open is the natural first sub-leaf** if this one is cut further; it
+   is arithmetic-free and should be stated over an arbitrary algebraically closed
+   field of characteristic zero.
+3. `bc` transports from `Spec ℚ` to `Spec ℚ̄`.  Do NOT reach for "`proj` commutes
+   with base change" — `grep` came back empty on 2026-07-31 and again today — the
+   conclusion never mentions `proj`, so transporting along `bc.isPullback`
+   directly is the cheaper route.
+4. the Galois clause is where the model being defined over `ℚ` is spent: the
+   isomorphism of step 1 is a morphism over `Spec ℚ`, so its base change commutes
+   with `specGal σ` on the nose.
+
+**ALGEBRAICITY IS IN THE STATEMENT AND MUST STAY THERE**, and `hmodel` is
+LOAD-BEARING, for the reasons recorded on the theorem below; nothing about that
+analysis changed under the recut, since neither hypothesis moved.
+
+**FAITHFULNESS: THE RECUT MOVES IN BOTH DIRECTIONS, AND ONLY ONE OF THEM OWES A
+NEW AUDIT.**  Against the old statement this leaf is
+
+* WEAKER IN ITS CONCLUSION — four conjuncts became theorems, listed above — so
+  every counterexample to it is a counterexample to the old leaf, and the old
+  falsity analysis (algebraicity of `φ`; `hmodel` load-bearing) transfers
+  verbatim, with no re-derivation;
+* STRONGER IN ITS HYPOTHESES — `n` and `hsq` are GONE, so the leaf now
+  quantifies over every element of `End(E⁄ℚ̄)` rather than over the roots of one
+  quadratic.  That is the direction that owes an audit, and it is one line:
+  `hsq` was consumed ONLY by the tautological-point conjunct, which is now
+  derived in the assembly below (where `hsq` is still a hypothesis and is still
+  spent), and the route realises every element of `End` uniformly, since it
+  transports along an ISOMORPHISM and the transport is a RING MAP.  Putting the
+  quadratic back would buy a prover nothing and would make the leaf unusable for
+  any other CM descent in this tree.
+
+So the two statements are EQUIVALENT in the presence of `hsq`, and the count is
+`1 → 1`; what changed is the size of what is left open.
+
+**NOT VACUOUS**: `hmodel` is satisfiable for every `d₀` — that is
+`Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_gamma0Datum`, PROVEN — and
+`φ = 0` realises the rest at every level. -/
+theorem exists_relSchemeEnd_intertwine_of_weierstrassModel {N : ℕ}
+    {d₀ : Gamma0Datum N SpecQ}
+    {d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (bc : IsBaseChangeOf (specAlgClos ℚ) d d₀)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (hmodel : IsWeierstrassModel d₀.ab E)
+    (φ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) :
+    letI := d.ab.addCommGroup (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    ∃ (Ψ : d.E ⟶ d.E) (hΨ : Ψ ≫ d.f = d.f)
+      (ε : (E⁄(AlgebraicClosure ℚ)).Point ≃+
+        RelPoint d.f (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))),
+      (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+         (ε (WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)).1 ≫ bc.map
+           = specGal σ ≫ (ε x).1 ≫ bc.map) ∧
+      (∀ x : (E⁄(AlgebraicClosure ℚ)).Point,
+         RelPoint.post Ψ hΨ (ε x)
+           = ε ((φ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) x)) :=
+  sorry
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **LEAF 1a (cut 2026-07-31): the ALGEBRAISATION — a Weierstrass model turns an
 endomorphism of `E(ℚ̄)` carrying `IsIsogeny` into a scheme endomorphism of the
 datum.**  This is all the geometry of LEAF 1, and it is now all that is left of
 it: the arithmetic half is PROVEN below (see the `hp` paragraph).
+
+**RECUT 2026-07-31 (flt-lean-7): this is no longer a leaf.**  It is PROVEN over
+`exists_relSchemeEnd_intertwine_of_weierstrassModel` immediately above, whose
+docstring records which conjuncts became theorems and why.  Count unchanged,
+`1 → 1`; what left the leaf is `IsAdditiveOn`, the `ε₀`/`hlink` packaging and the
+tautological-point equation.  The paragraphs below describe the STATEMENT and are
+kept because they are still the faithfulness record for it; the paragraph about
+the tautological point is corrected in place.
 
 **LEVEL-GENERIC.**  `N` is unconstrained, there is no `hp`, and — this is the
 point of the seam — **the level structure does not appear in the statement at
@@ -40624,13 +40824,20 @@ prover should not specialise it back to `p ∈ {43, 67, 163}`.
   identifications come from the SAME isomorphism of schemes, `ε₀` being `ε`
   followed by the base-change map.
 
-* the minimal polynomial at the TAUTOLOGICAL point.  It is asked for here rather
-  than derived downstream because it is an equation between two morphisms
-  `d.E ⟶ d.E`, not a statement about `ℚ̄`-points: recovering it from `hint`
-  alone would need "a morphism out of `d.E` is determined by its `ℚ̄`-points",
-  which is a further reducedness/density argument.  For whoever proves this leaf
-  it is free, since `Ψ` is transported from `End(E⁄ℚ̄)` along an ISOMORPHISM and
-  the transport is a ring map, so `hsq` transports verbatim.
+* the minimal polynomial at the TAUTOLOGICAL point.  **CORRECTED 2026-07-31
+  (flt-lean-7).**  This bullet used to say the clause "is asked for here rather
+  than derived downstream because … recovering it from `hint` alone would need
+  *a morphism out of `d.E` is determined by its `ℚ̄`-points*, which is a further
+  reducedness/density argument".  The first half is right and the second is
+  stale: that argument is `relPointEndo_ext`, PROVEN in this file since
+  2026-07-30 over `AlgebraicGeometry.ext_of_apply_eq`, and the only thing
+  separating it from this leaf was Lean's declaration order — it was declared
+  ~3 400 lines below and is now hoisted above `section FixedLocusHopf`.  So the
+  clause is DERIVED, in the proof below, from `hint` and `hsq`, and the leaf no
+  longer carries it.  (It remains free for a prover of the leaf too, since `Ψ`
+  is transported from `End(E⁄ℚ̄)` along an ISOMORPHISM and the transport is a
+  ring map, so `hsq` transports verbatim; the derivation just means nobody has
+  to.)
 
 **THE ROUTE, and the first three steps are already PROVEN.**
 
@@ -40707,8 +40914,72 @@ theorem exists_relSchemeEnd_geomEquiv_of_weierstrassModel {N : ℕ} (n : ℕ)
               = ε ((φ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) x))) ∧
       (letI := d.ab.addCommGroup d.f;
         d.ab.add (RelPoint.post Ψ hΨ (RelPoint.post Ψ hΨ (RelPoint.self d.f)))
-            (n • RelPoint.self d.f) = RelPoint.post Ψ hΨ (RelPoint.self d.f)) :=
-  sorry
+            (n • RelPoint.self d.f) = RelPoint.post Ψ hΨ (RelPoint.self d.f)) := by
+  classical
+  letI := d.ab.addCommGroup (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+  letI := d₀.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  obtain ⟨Ψ, hΨ, ε, hgal, hint⟩ :=
+    exists_relSchemeEnd_intertwine_of_weierstrassModel bc E hmodel φ
+  -- **ADDITIVITY IS FREE.**  Rigidity (`isAdditiveOn_of_post_zero`) asks only that
+  -- `Ψ` fix the zero section AT THE BASE POINT `𝟙`, and that is `hint` at `x = 0`.
+  have hzero : RelPoint.post Ψ hΨ
+      (d.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))))
+      = d.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) := by
+    have h := hint 0
+    simp only [map_zero] at h
+    exact h
+  have hadd : IsAdditiveOn d.ab d.ab Ψ hΨ :=
+    isAdditiveOn_of_post_zero d.ab d.ab hΨ hzero
+  -- **`ε₀` AND `hlink` ARE FREE.**  The cartesian square identifies the `ℚ̄`-points
+  -- of `d` with the geometric points of `d₀`, additively; `hlink` is then `rfl`.
+  refine ⟨Ψ, hΨ, hadd, ⟨ε, ε.trans (geomEquivOfBaseChange bc), fun x => rfl, ?_, hint⟩, ?_⟩
+  · intro σ x
+    exact Subtype.ext (hgal σ x)
+  -- **THE TAUTOLOGICAL-POINT EQUATION IS FREE**, by `relPointEndo_ext`: the two
+  -- natural families `x ↦ Ψ²x + n·x` and `x ↦ Ψx` agree on `ℚ̄`-points (that is
+  -- `hint` twice plus `hsq`), hence agree at every test object, in particular at
+  -- `RelPoint.self d.f`.
+  · letI := d.ab.addCommGroup d.f
+    have hnmf : d.ab.mulByNat n ≫ d.f = d.f := (n • RelPoint.self d.f).2
+    have hnsmul : ∀ {T : Scheme.{0}}
+        {g : T ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))} (y : RelPoint d.f g),
+        (letI := d.ab.addCommGroup g; n • y) = RelPoint.post (d.ab.mulByNat n) hnmf y :=
+      fun y => Subtype.ext (d.ab.nsmul_val n y)
+    have hpostpre : ∀ (Θ : d.E ⟶ d.E) (hΘ : Θ ≫ d.f = d.f) (U' U : Scheme.{0})
+        (h : U' ⟶ U) (g : U ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+        (g' : U' ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))) (hg : h ≫ g = g')
+        (x : RelPoint d.f g),
+        RelPoint.post Θ hΘ (RelPoint.pre h hg x)
+          = RelPoint.pre h hg (RelPoint.post Θ hΘ x) :=
+      fun Θ hΘ _ _ h _ _ hg x => Subtype.ext (Category.assoc h x.1 Θ)
+    have key := relPointEndo_ext (d := d)
+      (fun _ _ x => d.ab.add (RelPoint.post Ψ hΨ (RelPoint.post Ψ hΨ x))
+        (RelPoint.post (d.ab.mulByNat n) hnmf x))
+      (fun _ _ x => RelPoint.post Ψ hΨ x)
+      (fun U' U h g g' hg x => by
+        show d.ab.add _ _ = _
+        rw [hpostpre, hpostpre, hpostpre, d.ab.pre_add h hg])
+      (fun U' U h g g' hg x => hpostpre Ψ hΨ U' U h g g' hg x)
+      (fun x => by
+        obtain ⟨P, rfl⟩ := ε.surjective x
+        show d.ab.add _ _ = _
+        rw [← hnsmul, hint, hint]
+        show ε _ + n • ε P = ε _
+        rw [← map_nsmul ε, ← map_add]
+        refine congrArg ε ?_
+        have h := congrArg
+          (fun ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine =>
+            (ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P) hsq
+        simp only [Subring.coe_add, Subring.coe_mul, Subring.coe_natCast] at h
+        -- `(f * g) P = f (g P)` and `(f + g) P = f P + g P` hold by `rfl` in
+        -- `AddMonoid.End`, so the retyping below is just `h`.
+        have h2 : (φ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point)
+              ((φ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P)
+            + ((n : ℕ) : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P
+            = (φ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P := h
+        simpa using h2)
+    rw [hnsmul]
+    exact key d.E d.f (RelPoint.self d.f)
 
 /-- **THE CM ENDOMORPHISM IS POSTCOMPOSITION WITH A MORPHISM OF SCHEMES**
 (PROVEN 2026-07-31, flt-lean-393 — Yoneda, and nothing else).
