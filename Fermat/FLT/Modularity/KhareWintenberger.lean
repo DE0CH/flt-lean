@@ -23696,8 +23696,86 @@ AXES SEARCHED, and why each is closed:
    tree as mathematics. Refuting checks: `grep -n
    not_isIrreducible_of_isHardlyRamified_of_five_le` on this file and
    confirm its line number EXCEEDS this one; and `grep -rn Abrashkin
-   Fermat/ --include=*.lean`, which returns only two prose mentions,
-   one of them this docstring's own.
+   Fermat/ --include=*.lean`.
+   **RE-RUN 2026-08-02, both halves, and the SECOND check has DRIFTED
+   without its substance changing — read it in the corrected form
+   below or it will look refuted.** The headline is declared once, and
+   the declaration-shaped grep is the only usable form of the first
+   check (every other hit on that name in this file is prose): it sits
+   at `theorem not_isIrreducible_of_isHardlyRamified_of_five_le`, which
+   is far BELOW this node, so the circularity holds. The Abrashkin
+   grep no longer returns "two prose mentions": it returns FIVE, and
+   the new one is in `GaloisRepresentation/HardlyRamified/ModThree.lean`
+   on `forall_point_apply_eq_of_lt_two_mul_sum_card_inertia`. That hit
+   is NOT the theorem this axis needs. It cites Abrashkin alongside
+   Fontaine for the `p = 3` RAMIFICATION ESTIMATE of
+   *Il n'y a pas de variété abélienne sur ℤ* §§1–2 (a substitution deep
+   in the lower-numbering filtration acts trivially on the points of a
+   finite flat algebra) — a statement about one local algebra, with no
+   bearing on the GLOBAL emptiness ("no irreducible flat `ρbar`
+   unramified outside `ℓ`") that a discharge of clause (5') would need.
+   So axis 6 stands, and the check to run in future is the global one:
+   `grep -rnE "^(theorem|lemma) .*(noAbelianVariety|not_isIrreducible.*flat)"`,
+   which is empty.
+7. *Quantifier axis* (NEW 2026-08-02; this is the axis the six above do
+   not cover, and CLAUDE.md flags it as the standard blind spot of an
+   atomicity audit — axes 1 and 2 audit the CLAUSE LIST and the
+   HYPOTHESIS LIST, and neither asks whether a clause's own internal
+   quantifier admits a descent). Clause (2) is the only clause with
+   one: it is `∀ m : ℕ, 1 ≤ m → …` over the `3`-power levels. Two
+   directions, both closed, and they close for OPPOSITE reasons.
+   * *Downward* — level `m + 1` really does imply level `m`, since
+     `A ⧸ (3 ^ m)` is a quotient of `A ⧸ (3 ^ (m + 1))` and over `ℤ_3`
+     one has `e = 1 < 2 = p − 1`, so Raynaud applies. This is TRUE and
+     BUYS NOTHING: no finite set of levels implies the universally
+     quantified clause, which is what the conclusion asserts.
+   * *Upward* — assembling the tower into a single object IS the cut
+     one would want, and it is exactly the `p`-divisible group of
+     Tate §2.4/§4. That is missing machinery (1) of the
+     MISSING-MACHINERY AUDIT, so the cut relocates the citation into a
+     theory the tree does not have rather than reducing it. It is also
+     the SAME cut, in the converse direction, that
+     `Modularity/Interface.lean` audited and declined for its own
+     leaf — see the FOURTH AUDIT there, which records that the
+     `p`-divisible-group cut is EQUIVALENT rather than a reduction and
+     that (1) alone buys no reduction in either place, hence may not be
+     landed on its own without being free-floating.
+   Refuting check: exhibit any `m₀` such that clause (2) at levels
+   `≤ m₀` implies it at all levels, or produce a `p`-divisible group
+   over a complete DVR in-tree
+   (`grep -rniE "(structure|def) .*(pDivisible|BarsottiTate)" --include=*.lean Fermat/`,
+   verified EMPTY on 2026-08-02, and empty in `~/cs/FLT/FLT` and in the
+   mathlib pin as well).
+
+WHAT THE CONCLUSION IS, SAID ONCE IN THE TREE'S OWN VOCABULARY (added
+2026-08-02; this is not an axis, it is the orientation that the five
+numbered clauses do not give a reader, and it is what makes the
+atomicity verdict legible rather than merely asserted). Clauses (2),
+(3') and (4') are precisely THREE OF THE FOUR FIELDS of
+`IsHardlyRamified` (`HardlyRamified/Defs.lean`) instantiated at the
+prime `3` — `isFlat`, `isTameAtTwo` and `isUnramified` in that order —
+so what this citation produces is, up to one field, a hardly ramified
+`3`-adic representation matching the descended Hecke system. The two
+mismatches are worth knowing before anyone re-scopes the node:
+* the FOURTH field, `det`, is NOT asserted here, and must not be
+  added. It is derived downstream, and PROVEN, by
+  `threeadicRealization_det_cyclotomic_of_witness` — from clause (1)
+  alone, because a determinant IS visible to semisimplification, which
+  is exactly the property obstruction (a) shows the other three fields
+  lack. Moving `det` into the citation would enlarge it for nothing;
+* `isFlat` is `GaloisRep.IsFlatAt`, which quantifies over ALL open
+  ideals of `A`, whereas clause (2) quantifies only over the cofinal
+  family `(3 ^ m)`. The bridge is proven downstream, in
+  `threeadicRealization_hasFlatProlongationAt_threePow` and
+  `threeadicRealization_hasFlatProlongationAt_of_finite_quotient`,
+  assembled by `threeadicRealization_isFlat_of_witness`. So the weaker
+  cofinal form is deliberate and is the correct thing for a citation to
+  assert.
+Consequence for a successor, and it is the practical point: the four
+`threeadicRealization_*` condition transfers downstream are exactly the
+gap between "what BLGGT hands over" and "`IsHardlyRamified` at `3`",
+they are all PROVEN, and therefore none of them is a place to look for
+a cut of THIS node.
 
 FAITHFULNESS RE-CHECK (same pass, since a leaf that resists is a leaf
 to suspect). The statement is TRUE as stated. The only clause worth
