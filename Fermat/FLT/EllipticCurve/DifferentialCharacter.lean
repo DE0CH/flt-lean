@@ -1924,8 +1924,511 @@ theorem charTwo_even_pow_dvd_derivative {p q : F[X]} {k : ℕ} (h2 : (2 : F) = 0
     charTwo_derivative_sq h2 (q ^ m), zero_mul, zero_add]
   exact dvd_mul_right _ _
 
-/-- **THE ONE OPEN LEAF OF THIS FILE (2026-07-31, RECUT): the characteristic-`2` count at
-a SUPERSINGULAR TARGET, `W'.a₁ = 0`.**
+/-! #### The supersingular characteristic-`2` count, proved (2026-08-02)
+
+The four lemmas below close `exists_wronskianPoly_scalar_charTwo_supersingular`, and with
+it the last leaf of this file.  They are the two valuation counts — one at the finite
+places, one at `∞` — together with the two identities they run on: the DERIVATIVE of
+`hcurve`, and the Artin–Schreier step in the form that tolerates an additive coefficient
+which is not a unit at `b`.  See the target's docstring for the mathematics. -/
+
+omit [DecidableEq F] in
+/-- **THE DERIVATIVE OF `hcurve`, in characteristic `2`.**
+
+Writing `N = Cx²f + D² + Cx·D·S` for the bracket of `hcurve` and `P = A′B − AB′`, this is
+
+    `B⁴ · N′  =  E² · (A² + a₄′B²) · P`.
+
+Derivation: differentiate `hcurve`; eliminate `G′` (`G` the cubic in `A`, `B` on the right)
+with the ring identity `B·G′ = (A² + a₄′B²)·P + B′·G`, true over any commutative ring; and
+fold `E²G` back to `B³N` by `hcurve` itself.  The `B³B′N` terms cancel.  In characteristic
+`2` every SQUARE differentiates to `0`, which is what kills `(E²)′`, `(D²)′` and the
+`4X³ + b₂X² + 2b₄X + b₆` half of `f′`, leaving `f′ = X² + a₄`.
+
+`map_ofNat` in the `simp only` is load-bearing: without it `derivative_pow` leaves `C 2`
+and `C 3` behind, `ring` treats those as ATOMS unrelated to the numerals `2`, `3`, and the
+`linear_combination` fails with a residual full of `C 3 * … − … * 3`. -/
+theorem charTwo_derivative_curveEq (h2 : (2 : F) = 0) {A B Cx D E : F[X]}
+    (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
+        + Cx * D * (C W.a₁ * X + C W.a₃))
+      = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3)) :
+    B ^ 4 * (Cx ^ 2 * (X ^ 2 + C W.a₄) + derivative Cx * D * (C W.a₁ * X + C W.a₃)
+        + Cx * derivative D * (C W.a₁ * X + C W.a₃) + Cx * D * C W.a₁)
+      = E ^ 2 * (A ^ 2 + C W'.a₄ * B ^ 2) * (derivative A * B - A * derivative B) := by
+  have h2p : (2 : F[X]) = 0 := by
+    have h : (C (2 : F) : F[X]) = 0 := by rw [h2, map_zero]
+    rwa [map_ofNat] at h
+  have hd := congrArg derivative hcurve
+  simp only [derivative_add, derivative_mul, derivative_pow, derivative_C,
+    derivative_X, zero_mul, zero_add, add_zero, Nat.cast_ofNat,
+    Nat.add_one_sub_one, mul_one, map_ofNat, pow_one] at hd
+  linear_combination B * hd - derivative B * hcurve
+    + (-(B ^ 4 * (Cx * derivative Cx * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆)
+          + Cx ^ 2 * (X ^ 2 + C W.a₂ * X) + D * derivative D))
+      - B ^ 3 * derivative B * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆)
+          + D ^ 2 + Cx * D * (C W.a₁ * X + C W.a₃))
+      + B * E * derivative E * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2
+          + C W'.a₆ * B ^ 3)
+      + B * E ^ 2 * (A ^ 2 * derivative A + C W'.a₂ * A * derivative A * B
+          + C W'.a₄ * A * B * derivative B + C W'.a₆ * B ^ 2 * derivative B)) * h2p
+
+omit [DecidableEq F] in
+/-- **THE ARTIN–SCHREIER VALUATION STEP WITH AN ARBITRARY ADDITIVE COEFFICIENT.**
+
+If `N = Q + (D² + c·D)` vanishes at `b` to order strictly less than both `ord_b Q` and
+`2·ord_b c`, then that order is `2·ord_b D` — in particular EVEN.
+
+This is `charTwo_AS_rootMultiplicity` with its two hypotheses replaced by exactly what the
+argument consumes.  That lemma takes `Q = Cx²·f` and `c = Cx·S` and asks for `S(b) ≠ 0`,
+which buys `ord_b c = ord_b Cx` and hence both inequalities at once; the price is that the
+root of `S` — the branch point of `W → ℙ¹_X` — has to be excluded.  In the SUPERSINGULAR
+case the additive coefficient is `a₃′·E` by `hone`, whose order does not involve `S` at
+all, so the step runs at every place and no parity has to be imported.  Neither version is
+characteristic-`2` specific: `D² + c·D = D·(D + c)` holds in any commutative ring, and the
+argument is the usual "in `z² + σz` the square wins unless the orders tie" case split. -/
+theorem AS_rootMultiplicity_gen {N Q D c : F[X]} {b : F}
+    (hN : N = Q + (D ^ 2 + c * D)) (hN0 : N ≠ 0)
+    (hltQ : N.rootMultiplicity b < Q.rootMultiplicity b)
+    (hltc : N.rootMultiplicity b < 2 * c.rootMultiplicity b) :
+    N.rootMultiplicity b = 2 * D.rootMultiplicity b := by
+  classical
+  have hQ : Q ≠ 0 := by
+    intro h; rw [h] at hltQ; simp at hltQ
+  have hR : D ^ 2 + c * D ≠ 0 := by
+    intro h
+    rw [h, add_zero] at hN
+    rw [hN] at hltQ
+    omega
+  have hD : D ≠ 0 := by
+    intro h; apply hR; rw [h]; ring
+  have hfac : D ^ 2 + c * D = D * (D + c) := by ring
+  have hDc : D + c ≠ 0 := by
+    intro h; apply hR; rw [hfac, h, mul_zero]
+  have hRn : (D ^ 2 + c * D).rootMultiplicity b = N.rootMultiplicity b := by
+    have h1 : D ^ 2 + c * D = N + -Q := by rw [hN]; ring
+    rw [h1]
+    exact rootMultiplicity_add_of_lt hN0 (by rw [rootMultiplicity_neg']; exact hltQ)
+  have hsum : D.rootMultiplicity b + (D + c).rootMultiplicity b = N.rootMultiplicity b := by
+    rw [← hRn, hfac, rootMultiplicity_mul (by rw [← hfac]; exact hR)]
+  have hlt : D.rootMultiplicity b < c.rootMultiplicity b := by
+    by_contra hcon
+    replace hcon := not_lt.mp hcon
+    have h1 : min (D.rootMultiplicity b) (c.rootMultiplicity b)
+        ≤ (D + c).rootMultiplicity b := rootMultiplicity_add b hDc
+    omega
+  have hfin := rootMultiplicity_add_of_lt hD hlt
+  omega
+
+omit [DecidableEq F] in
+/-- **THE FINITE-PLACE HALF OF THE SUPERSINGULAR COUNT: `2·ord_b B ≤ ord_b P` at EVERY
+`b`**, where `P = A′B − AB′`.  Note there is no `hparB` and no exclusion of the root of
+`S`: both are consequences of the count rather than inputs to it.
+
+`hone'` is `hone` with `a₁′ = 0` and the common factor `B` cancelled, i.e. `a₃′E = Cx·S`.
+Fix `b` with `m := ord_b B > 0`; then `A(b) ≠ 0` by coprimality, so `ord_b G = 0` where `G`
+is the cubic on the right of `hcurve`, and with `ε := ord_b E`, `ν := ord_b N`,
+`x := ord_b Cx`, `σ := ord_b S ≤ 1`, `d := ord_b D`:
+
+* `hcurve` gives `3m + ν = 2ε`, and `hone'` gives `ε = x + σ`;
+* so `ν = 2x + 2σ − 3m ≤ 2x − 1 < ord_b(Cx²f)` and `ν = 2ε − 3m < 2ε = 2·ord_b(a₃′E)`,
+  which is exactly what `AS_rootMultiplicity_gen` asks of `N = Cx²f + (D² + (a₃′E)·D)`.
+  Hence `ν = 2d`, so `3m = 2(ε − d)` is EVEN, so `m` is even and `m ≥ 2`;
+* `charTwo_derivative_curveEq` gives `4m + ord_b N′ = 2ε + ord_b P`, since
+  `ord_b(A² + a₄′B²) = 0` (`A(b) ≠ 0` while `B(b) = 0`);
+* each of the four terms of `N′` is divisible by `(X − b)^{ε+d−1}` — the two derivatives by
+  `pow_sub_one_dvd_derivative_of_pow_dvd`, and `Cx²(X²+a₄)` because `2x ≥ 2ε − 2 ≥ ε+d−1`
+  once `d ≤ ε − 3` — so `ord_b P ≥ 4m + (ε + d − 1) − 2ε = 4m − 3m/2 − 1 = 5m/2 − 1 ≥ 2m`,
+  the last step because `m ≥ 2`.
+
+The corresponding statement in the ORDINARY case is `charTwo_rootMultiplicity_B_even`, and
+it is weaker for a structural reason: there the additive coefficient of the Artin–Schreier
+equation is `Cx·S`, whose order jumps at the root of `S`, so the parity has to be imported
+as a hypothesis and only `m ≤ ord_b P` is available. -/
+theorem charTwo_ss_two_mul_rootMultiplicity_le [IsAlgClosed F] [W.IsElliptic]
+    (h2 : (2 : F) = 0) {A B Cx D E : F[X]} {b : F}
+    (hB : B ≠ 0) (hE : E ≠ 0) (hCx : Cx ≠ 0) (hcop : IsCoprime A B)
+    (hone' : C W'.a₃ * E = Cx * (C W.a₁ * X + C W.a₃))
+    (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
+        + Cx * D * (C W.a₁ * X + C W.a₃))
+      = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3))
+    (hP : derivative A * B - A * derivative B ≠ 0) :
+    2 * B.rootMultiplicity b
+      ≤ (derivative A * B - A * derivative B).rootMultiplicity b := by
+  classical
+  have hderiv := charTwo_derivative_curveEq (W := W) (W' := W') h2 hcurve
+  set S : F[X] := C W.a₁ * X + C W.a₃ with hSdef
+  set f : F[X] := X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆ with hfdef
+  set G : F[X] := A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3 with hGdef
+  set N : F[X] := Cx ^ 2 * f + D ^ 2 + Cx * D * S with hNdef
+  set P : F[X] := derivative A * B - A * derivative B with hPdef
+  set N₁ : F[X] := Cx ^ 2 * (X ^ 2 + C W.a₄) + derivative Cx * D * S
+      + Cx * derivative D * S + Cx * D * C W.a₁ with hN₁def
+  by_cases hm0 : B.rootMultiplicity b = 0
+  · omega
+  -- `B(b) = 0`, so `A(b) ≠ 0` by coprimality.
+  have hBb : B.eval b = 0 := by
+    by_contra hc
+    exact hm0 (rootMultiplicity_eq_zero (by simpa [IsRoot.def] using hc))
+  have hAb : A.eval b ≠ 0 := by
+    obtain ⟨p, q, hpq⟩ := hcop
+    intro h
+    have hev := congrArg (Polynomial.eval b) hpq
+    simp only [eval_add, eval_mul, eval_one] at hev
+    rw [h, hBb, mul_zero, mul_zero, add_zero] at hev
+    exact zero_ne_one hev
+  have hS : S ≠ 0 := by rw [hSdef]; exact lineOfDiff_ne_zero_of_charTwo h2
+  have hSdeg : S.natDegree ≤ 1 := by
+    rw [hSdef]
+    refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+    · exact natDegree_mul_le.trans (by simp)
+    · simp
+  have hσ : S.rootMultiplicity b ≤ 1 := by
+    have hd : (X - C b) ^ (S.rootMultiplicity b) ∣ S := pow_rootMultiplicity_dvd S b
+    have hle := Polynomial.natDegree_le_of_dvd hd hS
+    rw [natDegree_pow, natDegree_X_sub_C, mul_one] at hle
+    omega
+  have hα : W'.a₃ ≠ 0 := by
+    intro h
+    rw [h, map_zero, zero_mul] at hone'
+    exact (mul_ne_zero hCx hS) hone'.symm
+  have hf0 : f ≠ 0 := by
+    intro h
+    have := congrArg (fun p : F[X] => p.coeff 3) h
+    simp [hfdef] at this
+  have hGb : G.eval b ≠ 0 := by
+    rw [hGdef]
+    simp only [eval_add, eval_mul, eval_pow, eval_C, hBb]
+    simpa using pow_ne_zero 3 hAb
+  have hG : G ≠ 0 := fun h => hGb (by rw [h]; simp)
+  have hGm : G.rootMultiplicity b = 0 :=
+    rootMultiplicity_eq_zero (by simpa [IsRoot.def] using hGb)
+  have hRHS : E ^ 2 * G ≠ 0 := mul_ne_zero (pow_ne_zero _ hE) hG
+  have hN : N ≠ 0 := fun h => hRHS (by rw [← hcurve, h, mul_zero])
+  have eq1 : 3 * B.rootMultiplicity b + N.rootMultiplicity b = 2 * E.rootMultiplicity b := by
+    have hL : (B ^ 3 * N).rootMultiplicity b
+        = 3 * B.rootMultiplicity b + N.rootMultiplicity b := by
+      rw [rootMultiplicity_mul (mul_ne_zero (pow_ne_zero _ hB) hN), rootMultiplicity_pow' hB]
+    have hR : (E ^ 2 * G).rootMultiplicity b = 2 * E.rootMultiplicity b := by
+      rw [rootMultiplicity_mul hRHS, rootMultiplicity_pow' hE, hGm, add_zero]
+    rw [← hL, ← hR, hcurve]
+  have hCα : (C W'.a₃ : F[X]) ≠ 0 := by simpa using hα
+  have hcEm : (C W'.a₃ * E).rootMultiplicity b = E.rootMultiplicity b := by
+    rw [rootMultiplicity_mul (mul_ne_zero hCα hE), rootMultiplicity_C, zero_add]
+  have eq2 : E.rootMultiplicity b = Cx.rootMultiplicity b + S.rootMultiplicity b := by
+    have hR : (Cx * S).rootMultiplicity b
+        = Cx.rootMultiplicity b + S.rootMultiplicity b := rootMultiplicity_mul (mul_ne_zero hCx hS)
+    rw [← hcEm, ← hR, hone']
+  -- the Artin–Schreier step, with the CONSTANT-times-`E` additive coefficient
+  have hQm : (Cx ^ 2 * f).rootMultiplicity b
+      = 2 * Cx.rootMultiplicity b + f.rootMultiplicity b := by
+    rw [rootMultiplicity_mul (mul_ne_zero (pow_ne_zero _ hCx) hf0), rootMultiplicity_pow' hCx]
+  have hNform : N = Cx ^ 2 * f + (D ^ 2 + (C W'.a₃ * E) * D) := by
+    rw [hNdef, hone']; ring
+  have hAS : N.rootMultiplicity b = 2 * D.rootMultiplicity b :=
+    AS_rootMultiplicity_gen hNform hN (by omega) (by omega)
+  -- the derivative identity
+  have h2p : (2 : F[X]) = 0 := by
+    have hh : (C (2 : F) : F[X]) = 0 := by rw [h2, map_zero]
+    rwa [map_ofNat] at hh
+  have hAB2 : A ^ 2 + C W'.a₄ * B ^ 2 ≠ 0 := by
+    intro h
+    obtain ⟨c, hc⟩ := IsAlgClosed.exists_pow_nat_eq W'.a₄ (n := 2) (by norm_num)
+    apply hP
+    have hcc : (C W'.a₄ : F[X]) = C c ^ 2 := by rw [← hc]; simp
+    rw [hcc] at h
+    have hsq : (A + C c * B) ^ 2 = 0 := by
+      linear_combination h + (A * C c * B) * h2p
+    have hz : A + C c * B = 0 := pow_eq_zero_iff (two_ne_zero) |>.mp hsq
+    have hA : A = C c * B := by linear_combination hz - (C c * B) * h2p
+    rw [hPdef, hA, derivative_C_mul]
+    ring
+  have hAB2m : (A ^ 2 + C W'.a₄ * B ^ 2).rootMultiplicity b = 0 := by
+    apply rootMultiplicity_eq_zero
+    simp only [IsRoot.def, eval_add, eval_mul, eval_pow, eval_C, hBb]
+    simpa using pow_ne_zero 2 hAb
+  have hN₁0 : N₁ ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at hderiv
+    exact (mul_ne_zero (mul_ne_zero (pow_ne_zero 2 hE) hAB2) hP) hderiv.symm
+  have eq3 : 4 * B.rootMultiplicity b + N₁.rootMultiplicity b
+      = 2 * E.rootMultiplicity b + P.rootMultiplicity b := by
+    have hL : (B ^ 4 * N₁).rootMultiplicity b
+        = 4 * B.rootMultiplicity b + N₁.rootMultiplicity b := by
+      rw [rootMultiplicity_mul (mul_ne_zero (pow_ne_zero _ hB) hN₁0), rootMultiplicity_pow' hB]
+    have hR : (E ^ 2 * (A ^ 2 + C W'.a₄ * B ^ 2) * P).rootMultiplicity b
+        = 2 * E.rootMultiplicity b + P.rootMultiplicity b := by
+      rw [rootMultiplicity_mul (mul_ne_zero (mul_ne_zero (pow_ne_zero _ hE) hAB2) hP),
+        rootMultiplicity_mul (mul_ne_zero (pow_ne_zero _ hE) hAB2),
+        rootMultiplicity_pow' hE, hAB2m, add_zero]
+    rw [← hL, ← hR, hderiv]
+  -- the lower bound on `ord_b N₁`
+  have hlow : E.rootMultiplicity b + D.rootMultiplicity b ≤ N₁.rootMultiplicity b + 1 := by
+    have hdCx : (X - C b) ^ (Cx.rootMultiplicity b) ∣ Cx := pow_rootMultiplicity_dvd Cx b
+    have hdD : (X - C b) ^ (D.rootMultiplicity b) ∣ D := pow_rootMultiplicity_dvd D b
+    have hdS : (X - C b) ^ (S.rootMultiplicity b) ∣ S := pow_rootMultiplicity_dvd S b
+    have hdCx' : (X - C b) ^ (Cx.rootMultiplicity b - 1) ∣ derivative Cx :=
+      pow_sub_one_dvd_derivative_of_pow_dvd hdCx
+    have hdD' : (X - C b) ^ (D.rootMultiplicity b - 1) ∣ derivative D :=
+      pow_sub_one_dvd_derivative_of_pow_dvd hdD
+    set j := E.rootMultiplicity b + D.rootMultiplicity b - 1 with hjdef
+    have hdvd : (X - C b) ^ j ∣ N₁ := by
+      rw [hN₁def]
+      refine dvd_add (dvd_add (dvd_add ?_ ?_) ?_) ?_
+      · refine Dvd.dvd.mul_right ?_ _
+        refine dvd_trans (pow_dvd_pow _ (show j ≤ 2 * Cx.rootMultiplicity b by omega)) ?_
+        have hsq : (X - C b) ^ (2 * Cx.rootMultiplicity b)
+            = ((X - C b) ^ (Cx.rootMultiplicity b)) ^ 2 := by ring
+        rw [hsq]
+        exact pow_dvd_pow_of_dvd hdCx 2
+      · refine dvd_trans (pow_dvd_pow _ (show j ≤ (Cx.rootMultiplicity b - 1)
+          + D.rootMultiplicity b + S.rootMultiplicity b by omega)) ?_
+        rw [pow_add, pow_add]
+        exact mul_dvd_mul (mul_dvd_mul hdCx' hdD) hdS
+      · refine dvd_trans (pow_dvd_pow _ (show j ≤ Cx.rootMultiplicity b
+          + (D.rootMultiplicity b - 1) + S.rootMultiplicity b by omega)) ?_
+        rw [pow_add, pow_add]
+        exact mul_dvd_mul (mul_dvd_mul hdCx hdD') hdS
+      · refine Dvd.dvd.mul_right ?_ _
+        refine dvd_trans (pow_dvd_pow _ (show j ≤ Cx.rootMultiplicity b
+          + D.rootMultiplicity b by omega)) ?_
+        rw [pow_add]
+        exact mul_dvd_mul hdCx hdD
+    have := (le_rootMultiplicity_iff hN₁0).2 hdvd
+    omega
+  omega
+
+omit [DecidableEq F] in
+/-- **THE PLACE `∞` OF THE SUPERSINGULAR COUNT: `deg P + deg S ≤ 2·deg B`.**
+
+The same computation as `charTwo_ss_two_mul_rootMultiplicity_le` read at `∞`, with
+`M := deg A − deg B` in place of `ord_b B`.  Two cases close on the crude Wronskian bound
+`deg P + 1 ≤ deg A + deg B` alone — `deg A ≤ deg B`, and `M = 1` with `deg S = 0` — and
+they must be taken FIRST, because they are exactly the cases where the leading term of
+`g(u)` need not dominate that of `(a₃′/S)²f` and the Artin–Schreier step is unavailable.
+
+Off them, `3M + 2·deg S > 3`, so `deg N = 2·deg E + 3M` exceeds `deg (Cx²f) = 2·deg Cx + 3`
+and `AS` gives `2·deg D = deg N`, whence `M` is EVEN and `M ≥ 2`; then
+`charTwo_derivative_curveEq` plus `deg N′ + 1 ≤ deg E + deg D` gives
+`deg P ≤ 2·deg B − M/2 − 1`, and `deg S ≤ 1 ≤ M/2 + 1` finishes.  The `M = 1 ∧ deg S = 1`
+case is not excluded by hand: it reaches the parity conclusion and dies there. -/
+theorem charTwo_ss_natDegree_le [IsAlgClosed F] [W.IsElliptic]
+    (h2 : (2 : F) = 0) {A B Cx D E : F[X]}
+    (hB : B ≠ 0) (hE : E ≠ 0) (hCx : Cx ≠ 0)
+    (hone' : C W'.a₃ * E = Cx * (C W.a₁ * X + C W.a₃))
+    (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
+        + Cx * D * (C W.a₁ * X + C W.a₃))
+      = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3))
+    (hP : derivative A * B - A * derivative B ≠ 0) :
+    (derivative A * B - A * derivative B).natDegree + (C W.a₁ * X + C W.a₃).natDegree
+      ≤ 2 * B.natDegree := by
+  classical
+  have hderiv := charTwo_derivative_curveEq (W := W) (W' := W') h2 hcurve
+  set S : F[X] := C W.a₁ * X + C W.a₃ with hSdef
+  set f : F[X] := X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆ with hfdef
+  set G : F[X] := A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3 with hGdef
+  set N : F[X] := Cx ^ 2 * f + D ^ 2 + Cx * D * S with hNdef
+  set P : F[X] := derivative A * B - A * derivative B with hPdef
+  set N₁ : F[X] := Cx ^ 2 * (X ^ 2 + C W.a₄) + derivative Cx * D * S
+      + Cx * derivative D * S + Cx * D * C W.a₁ with hN₁def
+  have hS : S ≠ 0 := by rw [hSdef]; exact lineOfDiff_ne_zero_of_charTwo h2
+  have hSdeg : S.natDegree ≤ 1 := by
+    rw [hSdef]
+    refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+    · exact natDegree_mul_le.trans (by simp)
+    · simp
+  have hα : W'.a₃ ≠ 0 := by
+    intro h
+    rw [h, map_zero, zero_mul] at hone'
+    exact (mul_ne_zero hCx hS) hone'.symm
+  have hCα : (C W'.a₃ : F[X]) ≠ 0 := by simpa using hα
+  have hs0 : S.natDegree = 0 → W.a₁ = 0 := by
+    intro hs
+    by_contra ha
+    have h1 : (C W.a₁ * X : F[X]).natDegree = 1 := by
+      rw [natDegree_mul (by simpa using ha) X_ne_zero, natDegree_C, natDegree_X]
+    have h2' := natDegree_add_eq_left_of_natDegree_lt (p := C W.a₁ * X) (q := C W.a₃)
+      (by rw [h1, natDegree_C]; omega)
+    rw [← hSdef, h1] at h2'
+    omega
+  have edeg : E.natDegree = Cx.natDegree + S.natDegree := by
+    have hL : (C W'.a₃ * E).natDegree = E.natDegree := by
+      rw [natDegree_mul hCα hE, natDegree_C, zero_add]
+    have hR : (Cx * S).natDegree = Cx.natDegree + S.natDegree := natDegree_mul hCx hS
+    rw [← hL, ← hR, hone']
+  have hcrude : P.natDegree + 1 ≤ A.natDegree + B.natDegree :=
+    natDegree_wronskianPoly_succ_le hP
+  by_cases hnk : A.natDegree ≤ B.natDegree
+  · omega
+  replace hnk := not_le.mp hnk
+  by_cases hM1 : A.natDegree = B.natDegree + 1 ∧ S.natDegree = 0
+  · omega
+  -- from here `M := deg A − deg B ≥ 1`, and NOT (`M = 1` and `deg S = 0`)
+  have hA0 : A ≠ 0 := by
+    intro h
+    rw [h, natDegree_zero] at hnk
+    omega
+  have hf0 : f ≠ 0 := by
+    intro h
+    have := congrArg (fun p : F[X] => p.coeff 3) h
+    simp [hfdef] at this
+  have hfdeg : f.natDegree = 3 := by rw [hfdef]; compute_degree!
+  -- `deg G = 3 deg A`, because `A³` dominates
+  have hGdeg : G.natDegree = 3 * A.natDegree := by
+    have hsplit : G = A ^ 3 + (C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3) := by
+      rw [hGdef]; ring
+    have hb1 : (C W'.a₂ * A ^ 2 * B).natDegree ≤ 2 * A.natDegree + B.natDegree := by
+      refine natDegree_mul_le.trans ?_
+      have h1 := natDegree_C_mul_le W'.a₂ (A ^ 2)
+      have h2 : (A ^ 2).natDegree = 2 * A.natDegree := by rw [natDegree_pow]
+      omega
+    have hb2 : (C W'.a₄ * A * B ^ 2).natDegree ≤ A.natDegree + 2 * B.natDegree := by
+      refine natDegree_mul_le.trans ?_
+      have h1 := natDegree_C_mul_le W'.a₄ A
+      have h2 : (B ^ 2).natDegree = 2 * B.natDegree := by rw [natDegree_pow]
+      omega
+    have hb3 : (C W'.a₆ * B ^ 3).natDegree ≤ 3 * B.natDegree := by
+      refine (natDegree_C_mul_le _ _).trans ?_
+      rw [natDegree_pow]
+    have hrest : (C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3).natDegree
+        < (A ^ 3).natDegree := by
+      rw [natDegree_pow]
+      refine lt_of_le_of_lt (natDegree_add_le _ _) ?_
+      refine max_lt (lt_of_le_of_lt (natDegree_add_le _ _) (max_lt ?_ ?_)) ?_ <;> omega
+    rw [hsplit, natDegree_add_eq_left_of_natDegree_lt hrest, natDegree_pow]
+  have hG0 : G ≠ 0 := by
+    intro h
+    rw [h, natDegree_zero] at hGdeg
+    omega
+  have hN0 : N ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at hcurve
+    exact (mul_ne_zero (pow_ne_zero _ hE) hG0) hcurve.symm
+  have hNdeg : 3 * B.natDegree + N.natDegree = 2 * E.natDegree + 3 * A.natDegree := by
+    have hL : (B ^ 3 * N).natDegree = 3 * B.natDegree + N.natDegree := by
+      rw [natDegree_mul (pow_ne_zero _ hB) hN0, natDegree_pow]
+    have hR : (E ^ 2 * G).natDegree = 2 * E.natDegree + 3 * A.natDegree := by
+      rw [natDegree_mul (pow_ne_zero _ hE) hG0, natDegree_pow, hGdeg]
+    rw [← hL, ← hR, hcurve]
+  have hQdeg : (Cx ^ 2 * f).natDegree = 2 * Cx.natDegree + 3 := by
+    rw [natDegree_mul (pow_ne_zero _ hCx) hf0, natDegree_pow, hfdeg]
+  have hNgtQ : (Cx ^ 2 * f).natDegree < N.natDegree := by omega
+  -- the Artin–Schreier step at `∞`
+  have hN₂eq : N - Cx ^ 2 * f = D ^ 2 + (C W'.a₃ * E) * D := by
+    rw [hNdef]; linear_combination (-D) * hone'
+  have hN₂deg : (D ^ 2 + (C W'.a₃ * E) * D).natDegree = N.natDegree := by
+    rw [← hN₂eq]
+    exact natDegree_sub_eq_left_of_natDegree_lt hNgtQ
+  have hN₂0 : D ^ 2 + (C W'.a₃ * E) * D ≠ 0 := by
+    intro h
+    rw [h, natDegree_zero] at hN₂deg
+    omega
+  have hfac : D ^ 2 + (C W'.a₃ * E) * D = D * (D + C W'.a₃ * E) := by ring
+  have hD0 : D ≠ 0 := by intro h; apply hN₂0; rw [hfac, h, zero_mul]
+  have hDc0 : D + C W'.a₃ * E ≠ 0 := by intro h; apply hN₂0; rw [hfac, h, mul_zero]
+  have hCαE : (C W'.a₃ * E).natDegree = E.natDegree := by
+    rw [natDegree_mul hCα hE, natDegree_C, zero_add]
+  have hprod : (D * (D + C W'.a₃ * E)).natDegree
+      = D.natDegree + (D + C W'.a₃ * E).natDegree := natDegree_mul hD0 hDc0
+  have hde : E.natDegree < D.natDegree := by
+    by_contra hcon
+    replace hcon := not_lt.mp hcon
+    have h1 : (D + C W'.a₃ * E).natDegree ≤ E.natDegree := by
+      refine (natDegree_add_le _ _).trans ?_
+      rw [hCαE]
+      exact max_le hcon le_rfl
+    rw [← hfac, hN₂deg] at hprod
+    omega
+  have hDeq : (D + C W'.a₃ * E).natDegree = D.natDegree :=
+    natDegree_add_eq_left_of_natDegree_lt (by rw [hCαE]; exact hde)
+  have h2d : 2 * D.natDegree = N.natDegree := by
+    rw [← hfac, hN₂deg, hDeq] at hprod
+    omega
+  -- the derivative identity at `∞`
+  have h2p : (2 : F[X]) = 0 := by
+    have hh : (C (2 : F) : F[X]) = 0 := by rw [h2, map_zero]
+    rwa [map_ofNat] at hh
+  have hAB2 : A ^ 2 + C W'.a₄ * B ^ 2 ≠ 0 := by
+    intro h
+    obtain ⟨c, hc⟩ := IsAlgClosed.exists_pow_nat_eq W'.a₄ (n := 2) (by norm_num)
+    apply hP
+    have hcc : (C W'.a₄ : F[X]) = C c ^ 2 := by rw [← hc]; simp
+    rw [hcc] at h
+    have hsq : (A + C c * B) ^ 2 = 0 := by
+      linear_combination h + (A * C c * B) * h2p
+    have hz : A + C c * B = 0 := pow_eq_zero_iff (two_ne_zero) |>.mp hsq
+    have hA : A = C c * B := by linear_combination hz - (C c * B) * h2p
+    rw [hPdef, hA, derivative_C_mul]
+    ring
+  have hB2le : (C W'.a₄ * B ^ 2).natDegree ≤ 2 * B.natDegree := by
+    refine (natDegree_C_mul_le _ _).trans ?_
+    rw [natDegree_pow]
+  have hAB2deg : (A ^ 2 + C W'.a₄ * B ^ 2).natDegree = 2 * A.natDegree := by
+    have hlt : (C W'.a₄ * B ^ 2).natDegree < (A ^ 2).natDegree := by
+      rw [natDegree_pow]; omega
+    rw [natDegree_add_eq_left_of_natDegree_lt hlt, natDegree_pow]
+  have hN₁0 : N₁ ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at hderiv
+    exact (mul_ne_zero (mul_ne_zero (pow_ne_zero 2 hE) hAB2) hP) hderiv.symm
+  have hdegid : 4 * B.natDegree + N₁.natDegree
+      = 2 * E.natDegree + 2 * A.natDegree + P.natDegree := by
+    have hL : (B ^ 4 * N₁).natDegree = 4 * B.natDegree + N₁.natDegree := by
+      rw [natDegree_mul (pow_ne_zero _ hB) hN₁0, natDegree_pow]
+    have hR : (E ^ 2 * (A ^ 2 + C W'.a₄ * B ^ 2) * P).natDegree
+        = 2 * E.natDegree + 2 * A.natDegree + P.natDegree := by
+      rw [natDegree_mul (mul_ne_zero (pow_ne_zero _ hE) hAB2) hP,
+        natDegree_mul (pow_ne_zero _ hE) hAB2, natDegree_pow, hAB2deg]
+    rw [← hL, ← hR, hderiv]
+  -- the upper bound on `deg N₁`
+  have hN₁deg : N₁.natDegree + 1 ≤ E.natDegree + D.natDegree := by
+    have ht1 : (Cx ^ 2 * (X ^ 2 + C W.a₄)).natDegree
+        ≤ E.natDegree + D.natDegree - 1 := by
+      have h1 : ((X : F[X]) ^ 2 + C W.a₄).natDegree ≤ 2 := by
+        refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+        · rw [natDegree_pow, natDegree_X]
+        · simp
+      have h2 : (Cx ^ 2 * (X ^ 2 + C W.a₄)).natDegree ≤ 2 * Cx.natDegree + 2 := by
+        refine natDegree_mul_le.trans ?_
+        rw [natDegree_pow]; omega
+      omega
+    have ht2 : (derivative Cx * D * S).natDegree ≤ E.natDegree + D.natDegree - 1 := by
+      by_cases hx0 : Cx.natDegree = 0
+      · have hz : derivative Cx = 0 := by
+          rw [eq_C_of_natDegree_eq_zero hx0]; simp
+        rw [hz, zero_mul, zero_mul, natDegree_zero]
+        omega
+      · have h1 := Polynomial.natDegree_derivative_le Cx
+        have h2 : (derivative Cx * D * S).natDegree
+            ≤ (derivative Cx * D).natDegree + S.natDegree := natDegree_mul_le
+        have h3 : (derivative Cx * D).natDegree
+            ≤ (derivative Cx).natDegree + D.natDegree := natDegree_mul_le
+        omega
+    have ht3 : (Cx * derivative D * S).natDegree ≤ E.natDegree + D.natDegree - 1 := by
+      have h1 := Polynomial.natDegree_derivative_le D
+      have h2 : (Cx * derivative D * S).natDegree
+          ≤ (Cx * derivative D).natDegree + S.natDegree := natDegree_mul_le
+      have h3 : (Cx * derivative D).natDegree
+          ≤ Cx.natDegree + (derivative D).natDegree := natDegree_mul_le
+      omega
+    have ht4 : (Cx * D * C W.a₁).natDegree ≤ E.natDegree + D.natDegree - 1 := by
+      by_cases hs : S.natDegree = 0
+      · rw [hs0 hs, map_zero, mul_zero, natDegree_zero]
+        omega
+      · have h2 : (Cx * D * C W.a₁).natDegree
+            ≤ (Cx * D).natDegree + (C W.a₁ : F[X]).natDegree := natDegree_mul_le
+        have h3 : (Cx * D).natDegree ≤ Cx.natDegree + D.natDegree := natDegree_mul_le
+        have h4 : (C W.a₁ : F[X]).natDegree = 0 := natDegree_C _
+        omega
+    have hsum : N₁.natDegree ≤ E.natDegree + D.natDegree - 1 := by
+      rw [hN₁def]
+      exact (natDegree_add_le _ _).trans (max_le
+        ((natDegree_add_le _ _).trans (max_le
+          ((natDegree_add_le _ _).trans (max_le ht1 ht2)) ht3)) ht4)
+    omega
+  omega
+
+/-- **PROVEN 2026-08-02: the characteristic-`2` count at a SUPERSINGULAR TARGET,
+`W'.a₁ = 0`** — the last leaf of this file.
 
 `exists_wronskianPoly_scalar_charTwo_coprime` below is now PROVEN over this, and this is
 all that is left of it.  In characteristic `2` an elliptic curve has `a₁ = 0` exactly when
@@ -1947,44 +2450,16 @@ When `a₁′ = 0` the companion collapses: `T = a₃′B`, so the requirement a
 the parity lever reaches it — they give `m ≤ ord_b P` and stop.  The same doubling happens
 at `∞` when `deg A > deg B`.
 
-**THE DERIVATIVE IDENTITY THE ROUTE NEEDS IS COMPILER-VERIFIED (2026-07-31) — PASTE IT.**
-It is not specific to `a₁′ = 0` and it costs nothing but this text; it is not committed as a
-declaration only because nothing in the cone would consume it until this leaf is proven.
+**THE DERIVATIVE IDENTITY THE ROUTE NEEDS** — written down here on 2026-07-31, and since
+2026-08-02 a declaration, `charTwo_derivative_curveEq` above, which is what this proof runs
+on.  It is not specific to `a₁′ = 0`.
 Differentiate `hcurve`, eliminate `G′` with the ring identity
 `B·G′ = (A² + a₄′B²)·P + B′·G` (`P = A′B − AB′`, true over any commutative ring), and fold
 `E²G` back to `B³N` by `hcurve` itself; the `B³B′N` terms cancel and what is left is
 
     B⁴ · N′  =  E² · (A² + a₄′B²) · P ,
 
-with `N = Cx²f + D² + Cx·D·S` the bracket of `hcurve`.  In Lean, verbatim and green:
-
-    theorem charTwo_derivative_curveEq (h2 : (2 : F) = 0) {A B Cx D E : F[X]}
-        (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
-            + Cx * D * (C W.a₁ * X + C W.a₃))
-          = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3)) :
-        B ^ 4 * (Cx ^ 2 * (X ^ 2 + C W.a₄) + derivative Cx * D * (C W.a₁ * X + C W.a₃)
-            + Cx * derivative D * (C W.a₁ * X + C W.a₃) + Cx * D * C W.a₁)
-          = E ^ 2 * (A ^ 2 + C W'.a₄ * B ^ 2) * (derivative A * B - A * derivative B) := by
-      have h2p : (2 : F[X]) = 0 := by
-        have h : (C (2 : F) : F[X]) = 0 := by rw [h2, map_zero]
-        rwa [map_ofNat] at h
-      have hd := congrArg derivative hcurve
-      simp only [derivative_add, derivative_mul, derivative_pow, derivative_C,
-        derivative_X, zero_mul, zero_add, add_zero, Nat.cast_ofNat,
-        Nat.add_one_sub_one, mul_one, map_ofNat, pow_one] at hd
-      linear_combination B * hd - derivative B * hcurve
-        + (-(B ^ 4 * (Cx * derivative Cx * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆)
-              + Cx ^ 2 * (X ^ 2 + C W.a₂ * X) + D * derivative D))
-          - B ^ 3 * derivative B * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆)
-              + D ^ 2 + Cx * D * (C W.a₁ * X + C W.a₃))
-          + B * E * derivative E * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2
-              + C W'.a₆ * B ^ 3)
-          + B * E ^ 2 * (A ^ 2 * derivative A + C W'.a₂ * A * derivative A * B
-              + C W'.a₄ * A * B * derivative B + C W'.a₆ * B ^ 2 * derivative B)) * h2p
-
-`map_ofNat` in that `simp only` is load-bearing: without it `derivative_pow` leaves `C 2`
-and `C 3` in `hd`, `ring` treats them as ATOMS unrelated to the numerals `2`, `3`, and the
-`linear_combination` fails with a residual full of `C 3 * … - … * 3`.
+with `N = Cx²f + D² + Cx·D·S` the bracket of `hcurve`.
 
 **WITH THAT IDENTITY THE COUNT CLOSES AT EVERY FINITE `b` WITH `S(b) ≠ 0`** — checked by
 hand 2026-07-31, and it is the bulk of the leaf.  Fix such a `b` with `m := ord_b B > 0`
@@ -2006,22 +2481,30 @@ hand 2026-07-31, and it is the bulk of the leaf.  Fix such a `b` with `m := ord_
 over an algebraically closed field of characteristic `2` it is `(A + √a₄′·B)²`, and `A = cB`
 with `A`, `B` coprime makes `B` a unit and `P = 0`), and `P = 0` is the trivial branch.
 
-**SO EXACTLY TWO PLACES ARE LEFT, and a prover should be sent at those and nothing else:**
+**THE TWO PLACES THE 2026-07-31 ANALYSIS LEFT, and how they went (2026-08-02).**
 
-1. **the root `b₀` of `S`** (only when `a₁ ≠ 0`) **at which `B` also vanishes.**  There
-   `hparB` says nothing, `charTwo_AS_rootMultiplicity` does not apply (`S(b₀) = 0` is
-   exactly its excluded hypothesis, and it is excluded because the case split
-   `ord(z² + σz) = 2 ord z` needs `σ = Cx·S` to keep its order), and `hone` reads
-   `ord_{b₀} E = ord_{b₀} Cx + 1`.  The requirement is the weaker `2m ≤ ord_{b₀} P + 1`,
-   and the identity above reduces it to `ord_{b₀} N′ ≥ 2·ord_{b₀} Cx + 1 − 2m`, for which
-   the missing input is a lower bound on `ord_{b₀} D` — the analogue of the
-   Artin–Schreier step at a ramified place.  Geometrically `b₀` is the `2`-torsion point of
-   `W`, and `B(b₀) = 0` says it lies in the kernel, so this is a real configuration
-   (multiplication by `2` is an instance) and not a case to be excluded.
-2. **`∞`**, i.e. the degree bound `deg P + deg S ≤ 2·deg B`, and only when
-   `deg A > deg B`: otherwise `natDegree_wronskianPoly_succ_le` plus `deg S ≤ 1` closes it
-   as in the parent.  This is the same argument read at `∞`, with `deg A − deg B` in place
-   of `m`.
+1. **The root `b₀` of `S`** (only when `a₁ ≠ 0`) **at which `B` also vanishes** was thought
+   to need a separate Artin–Schreier step at a ramified place.  IT DOES NOT, and the
+   diagnosis above is where the correction belongs: `charTwo_AS_rootMultiplicity` excludes
+   `S(b₀) = 0` because ITS additive coefficient is `Cx·S`, whose order jumps there.  In the
+   SUPERSINGULAR case the coefficient is not `Cx·S`: cancelling `B` from `hone` gives
+   `Cx·S = a₃′·E`, so `N = Cx²f + D² + (a₃′E)·D` and the coefficient is `a₃′E`, whose order
+   is `ord_b E` at every place, root of `S` or not.  With the step stated over an ARBITRARY
+   additive coefficient — `AS_rootMultiplicity_gen` above — the count runs uniformly, and
+   `σ := ord_b S ≤ 1` enters only through `ν = 2x + 2σ − 3m ≤ 2x − 1 < ord_b(Cx²f)`.
+   **A consequence worth recording: `hparB` is then not needed at all** (it is retained in
+   the signature, underscored, only so that the call site in
+   `exists_wronskianPoly_scalar_charTwo_coprime` does not move).  The parity of `m` is a
+   CONCLUSION of the Artin–Schreier step here — `3m = 2(ε − d)` — not an input to it.  In
+   the ordinary case it has to be imported, which is what `charTwo_rootMultiplicity_B_even`
+   is for.
+2. **`∞`**, i.e. the degree bound `deg P + deg S ≤ 2·deg B`, was real, and it is
+   `charTwo_ss_natDegree_le` above.  Two cases close on `natDegree_wronskianPoly_succ_le`
+   alone and MUST be taken first — `deg A ≤ deg B`, and `deg A = deg B + 1` with
+   `deg S = 0` — since they are exactly where the leading term of `g(u)` need not dominate
+   that of `(a₃′/S)²f`, so the Artin–Schreier step is unavailable.  (That second case is
+   not a defect of the route: `deg A = deg B + 1` is the shape of a separable isogeny, and
+   there the crude bound `deg P ≤ deg A + deg B − 1 = 2·deg B` is already what is wanted.)
 
 **THE ROUTE, IN VALUATIONS (worked out 2026-07-31).**  Put `γ = Cx/E`,
 `δ = D/E`, `u = A/B`, `g(t) = t³ + a₂′t² + a₄′t + a₆′`, `f = X³ + a₂X² + a₄X + a₆`.  With
@@ -2062,11 +2545,18 @@ cancelled `hone`, and their derivatives.  The three valuation steps are then
 `rootMultiplicity` arithmetic of exactly the kind `charTwo_rootMultiplicity_B_even` above
 performs, with `rootMultiplicity_add_of_lt` for the ultrametric case splits.
 
-**THE REMAINING PLACE `S(b) = 0`** (only possible when `a₁ ≠ 0`) needs `B(b) ≠ 0`: there
-`hparB` gives nothing, and the crude bound `m ≤ ord_b P + 1` is short of `2m ≤ ord_b P + 1`
-for every `m ≥ 1`.  It is the point where `W → ℙ¹` is ramified, and `γ = a₃′/S` has a pole
-there, so `hone` forces `ord_b Cx < ord_b E`; the same (♦)/(♣) analysis applies with
-`ord_b S = 1` carried through.  A prover should do the two together.
+**THE PLACE `S(b) = 0`** (only possible when `a₁ ≠ 0`) was expected to need `B(b) ≠ 0` and
+its own argument.  It needs neither, for the reason in item 1 above: `γ = a₃′/S` does have
+a pole there, and `hone` does force `ord_b Cx < ord_b E`, but the Artin–Schreier
+coefficient is `a₃′E` and not `Cx·S`, so nothing about the step degrades.  The proof below
+makes no case split on `S(b)` at all.
+
+**WHAT THE PROOF ACTUALLY YIELDS, and it is stronger than the conclusion.**  Step 1 gives
+`B² ∣ P` — not merely `B² ∣ P·S` — at every place.  Together with step 2 that makes the
+case `a₁ ≠ 0` (i.e. `deg S = 1`) with `P ≠ 0` CONTRADICTORY: `B² ∣ P` forces
+`deg P ≥ 2·deg B` while step 2 gives `deg P ≤ 2·deg B − 1`.  That is the formal shadow of
+"an ordinary curve is not isogenous to a supersingular one", and it costs nothing here —
+the assembly never has to notice it.
 
 **THE CHECK THAT WOULD REFUTE IT** is unchanged from the parent: a morphism of elliptic
 curves over `F̄₂` with `a₁′ = 0` whose pullback of `ω′` is not a constant multiple of `ω`.
@@ -2081,10 +2571,64 @@ theorem exists_wronskianPoly_scalar_charTwo_supersingular [IsAlgClosed F]
     (hcurve : B ^ 3 * (Cx ^ 2 * (X ^ 3 + C W.a₂ * X ^ 2 + C W.a₄ * X + C W.a₆) + D ^ 2
         + Cx * D * (C W.a₁ * X + C W.a₃))
       = E ^ 2 * (A ^ 3 + C W'.a₂ * A ^ 2 * B + C W'.a₄ * A * B ^ 2 + C W'.a₆ * B ^ 3))
-    (hparB : ∀ b : F, (C W.a₁ * X + C W.a₃).eval b ≠ 0 → Even (B.rootMultiplicity b)) :
+    (_hparB : ∀ b : F, (C W.a₁ * X + C W.a₃).eval b ≠ 0 → Even (B.rootMultiplicity b)) :
     ∃ c : F, (derivative A * B - A * derivative B) * (C W.a₁ * X + C W.a₃)
-      = C c * (C W'.a₁ * A + C W'.a₃ * B) * B :=
-  sorry
+      = C c * (C W'.a₁ * A + C W'.a₃ * B) * B := by
+  classical
+  set S : F[X] := C W.a₁ * X + C W.a₃ with hSdef
+  set P : F[X] := derivative A * B - A * derivative B with hPdef
+  by_cases hP : P = 0
+  · exact ⟨0, by rw [hP, zero_mul, map_zero, zero_mul, zero_mul]⟩
+  have hS : S ≠ 0 := by rw [hSdef]; exact lineOfDiff_ne_zero_of_charTwo h2
+  -- `hone` with `a₁′ = 0` and the common factor `B` cancelled
+  have hone' : C W'.a₃ * E = Cx * S := by
+    apply mul_right_cancel₀ hB
+    rw [ha₁', map_zero, zero_mul, zero_add] at hone
+    linear_combination hone
+  have hα : W'.a₃ ≠ 0 := by
+    intro h
+    rw [h, map_zero, zero_mul] at hone'
+    exact (mul_ne_zero hCx hS) hone'.symm
+  ---------------------------------------------------------------------------
+  -- STEP 1 : divisibility — `B²` divides `P` at every place
+  ---------------------------------------------------------------------------
+  have hdvd : B * B ∣ P * S := by
+    have hsp : (B * B).Splits := IsAlgClosed.splits _
+    refine (hsp.dvd_iff_roots_le_roots (mul_ne_zero hB hB) (mul_ne_zero hP hS)).mpr ?_
+    rw [Multiset.le_iff_count]
+    intro b
+    rw [count_roots, count_roots, rootMultiplicity_mul (mul_ne_zero hB hB),
+      rootMultiplicity_mul (mul_ne_zero hP hS)]
+    have hb := charTwo_ss_two_mul_rootMultiplicity_le (W := W) (W' := W') (b := b)
+      h2 hB hE hCx hcop hone' hcurve hP
+    rw [← hPdef] at hb
+    omega
+  ---------------------------------------------------------------------------
+  -- STEP 2 : the degree bound at `∞`
+  ---------------------------------------------------------------------------
+  have hdeg : (P * S).natDegree ≤ (B * B).natDegree := by
+    rw [natDegree_mul hP hS, natDegree_mul hB hB]
+    have hd := charTwo_ss_natDegree_le (W := W) (W' := W') h2 hB hE hCx hone' hcurve hP
+    rw [← hPdef, ← hSdef] at hd
+    omega
+  ---------------------------------------------------------------------------
+  -- ASSEMBLY : a divisor of no larger degree is a constant multiple
+  ---------------------------------------------------------------------------
+  obtain ⟨u, hu⟩ := hdvd
+  have hu0 : u ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at hu
+    exact (mul_ne_zero hP hS) hu
+  have hdu : u.natDegree = 0 := by
+    have hnd := natDegree_mul (mul_ne_zero hB hB) hu0
+    rw [← hu] at hnd
+    omega
+  obtain ⟨c, hc⟩ : ∃ c : F, u = C c := ⟨u.coeff 0, eq_C_of_natDegree_eq_zero hdu⟩
+  refine ⟨c / W'.a₃, ?_⟩
+  have hcc2 : (C (c / W'.a₃) : F[X]) * C W'.a₃ = C c := by
+    rw [← C_mul, div_mul_cancel₀ _ hα]
+  rw [hu, hc, ha₁', map_zero, ← hcc2]
+  ring
 
 /-- **PROVEN 2026-07-31 over `exists_wronskianPoly_scalar_charTwo_supersingular`: THE
 CHARACTERISTIC-`2` HALF of `exists_diffCharScalar_polyData`**, with `E` and `Cx` already
