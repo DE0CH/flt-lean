@@ -21553,3 +21553,60 @@ no moduli in it, whose two hard halves (`WeierstrassCurve.n_torsion_dimension`,
   — which reads as a universe or instance problem and is a missing coercion.
 * **`exact?` on a goal mentioning `IsPullback` of schemes blows the heartbeat budget.**  It
   is not evidence the lemma is absent; construct the pasting by hand.
+## A "RESIDUAL RISK" PARAGRAPH PROBED AT THE WRONG COEFFICIENT RING — for a local invariant, the first probe is `ringChar A = p`
+(2026-08-01, `flt-lean-232`, refuting `exists_nat_eq_sum_lowerSwan` and the
+three declarations above it in `ArtinConductor.lean`.)
+A mature leaf here often closes with a paragraph naming its own weakest point
+— *"`A` is an arbitrary `CommRing` and `M` an arbitrary `A`-module, so
+`Module.finrank` carries no guarantee … a refuter should look for an `A`, `M`
+where `finrank` is not the dimension of a genuine representation"* — followed
+by the spot checks its author ran. **Those paragraphs are the most valuable
+thing in the docstring and their spot checks are routinely run at values where
+the named risk cannot materialise.** Here both probes were at `A = ℤ`, a ring
+where `finrank` IS honest, so they were guaranteed to find nothing; the author
+correctly reported that they found nothing, and the leaf read as audited.
+The refutation is at `ringChar A = p`, the RESIDUE characteristic at `v`, and
+it is not about `finrank` misbehaving at all — `finrank` is perfectly honest
+over `𝔽_p`. It is about the MATHEMATICS: the Swan conductor is a theorem about
+representations in which the order of the wild inertia image is invertible, and
+a Lean statement quantified over `[CommRing A] [TopologicalSpace A]` silently
+drops that hypothesis. Witness: `K = ℚ`, `v = (3)`, `A = ZMod 3`, `M` the
+standard two-dimensional `𝔽₃`-representation of
+`S₃ = Gal(ℚ₃(ζ₃, 3^(1/3)) / ℚ₃)`; the sum the leaf asserts to be a natural
+number is `3/2`.
+**So the standing check, for ANY leaf about a local/`p`-adic invariant stated
+over a general coefficient ring: instantiate at `ringChar A = p` FIRST.** It
+costs one example and it is where every classical theorem in the area carries a
+hypothesis. The general form is worth stating, because the `finrank` framing is
+a decoy: *ask which hypothesis the CITATION has that the Lean statement does
+not, before asking whether the Lean primitives misbehave.* An audit that hunts
+for a junk-`finrank` witness will search forever in a direction where nothing
+is wrong.
+Two riders, each of which decided something here:
+* **The same witness usually refutes the obvious CUT as well as the leaf, and
+  it is worth checking both before writing either down.** The first cut a
+  prover reaches for is Abel summation, whose residue is the pure
+  group-theoretic *the jumps of the lower filtration occur at integer values of
+  `φ`* — no `A`, no `M`, no `ρ`, so it reads as a strict improvement and as the
+  named classical theorem. It is FALSE: that is Hasse–Arf, which needs `L/Kᵥ`
+  ABELIAN, and `S₃` is not; the jump here sits at `φ(3) = 3/2`. Had the cut
+  been taken without instantiating the witness on it, a false leaf would have
+  replaced a false leaf and looked like progress.
+* **`d = ∑_{i≥0} (|G_i| − 1)` is a one-line numerical cross-check on a
+  hand-computed ramification filtration**, and it is worth running every time.
+  PARI gives the different exponent directly
+  (`idealval(K, K.diff, p)`), and here `11 = (6−1) + 3·(3−1)` pinned
+  `G_0 = S₃`, `G_1 = G_2 = G_3 = A₃`, `G_4 = 1` against a uniformizer
+  computation done by hand. Two independent derivations agreeing is what makes
+  a refutation reportable.
+**AND WHEN THE FALSITY IS INHERITED UP A CHAIN, SAY SO ON EVERY LINK.** The
+same witness refutes `exists_nat_eq_sum_breaks`,
+`exists_nat_forall_sum_breaks_eq` and `exists_isSwanExponentAt`, each of which
+is PROVEN — from a false premise, hence worth nothing, while emitting no
+warning and appearing in no frontier scan. A `sorry`-count-driven reading of
+the file sees one open leaf and three theorems. Mark each link, name the
+TERMINUS (the declaration whose signature change leaves the file — here
+`exists_isSwanExponentAt`, reaching one call site in `Modularity/Interface.lean`),
+and say whether the terminus can DISCHARGE the repair's hypothesis. That last
+sentence is what separates a repair from an exported obligation, and it is the
+only part of the diagnosis the next owner cannot cheaply re-derive.
