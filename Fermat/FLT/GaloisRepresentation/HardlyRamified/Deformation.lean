@@ -123,11 +123,30 @@ written and the frontier moves.
   the same day from `~/cs/FLT` — rather than over a phrase in a docstring, which
   is the whole point of the cut. UNCONDITIONALLY TRUE and audited; the deepest
   single item in this subtree)
-- `poitouTateExactness_of_localTateDuality` — **OPEN** (cut out 2026-07-31 as the
-  GLOBAL half: NSW VIII.6.7's nine-term arrow, with local duality now an explicit
-  hypothesis `hloc` instead of an unbuilt prerequisite. Its own docstring lists the
-  three things a prover owes beyond the reference — the `ad⁰^{N_S} = ad⁰` step, the
-  `ULift` transport, and the product objects `P^i_S`)
+- ~~`poitouTateExactness_of_localTateDuality`~~ — **PROVEN 2026-08-02** over the two
+  leaves below; a two-step `Submodule.dualRestrict` assembly. (Cut out 2026-07-31 as the
+  GLOBAL half: NSW VIII.6.7's nine-term arrow, with local duality an explicit hypothesis
+  `hloc`. Of the three things its docstring listed as owed beyond the reference, the
+  `ad⁰^{N_S} = ad⁰` step is now discharged; the `ULift` transport and the product objects
+  `P^i_S` moved onto the duality leaf below)
+- `nonempty_shaDuality_of_localTateDuality` — **OPEN** (cut out 2026-08-02: Poitou–Tate
+  duality `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`, which is NSW **VIII.6.8** — the duality theorem
+  the literature states and proves — rather than two exactness statements of the
+  nine-term sequence. EQUIVALENT to the `γ` form it replaces, with the equivalence
+  proven in one direction and recorded in the other, so this is a decomposition and not a
+  strengthening. Frontier `1 → 1` for the Poitou–Tate obligation; what it buys is that the
+  residue mentions no `γ`, no `Module.Dual` of a big space and no annihilator, and that
+  it now RECEIVES the `ad⁰^{N_S} = ad⁰` identification as hypotheses instead of owing it)
+- `globalInertia_fixes_rootsOfUnity` — **OPEN** (cut out 2026-08-02: `ℚ(μ_ℓ)/ℚ` is
+  unramified outside `ℓ`, i.e. inertia at a place outside `\{2, ℓ\}` fixes the `ℓ`-th
+  roots of unity. This is the genuine `+1` of that day's work and it is DISCLOSURE: the
+  Poitou–Tate leaf used to carry it silently, inside the sentence "`N_S` acts trivially
+  on `ad⁰(1)`; that identification is not proven in this file". It is the classical
+  discriminant computation for a cyclotomic field — Neukirch I.10.4 — and nothing in this
+  tree has it; the standing note above `isOpen_setOf_fixes_rootsOfUnity` records that even
+  CONTINUITY of `χ̄_ℓ` is unavailable here and is worked around. Everything else in the
+  `N_S`-acts-trivially block is PROVEN, including the whole `ρbar` half
+  (`ramificationKernel_le_ker_of_isHardlyRamified`))
 - ~~`exists_poitouTateExactness_sha2_sha1Twist`~~ — **PROVEN 2026-07-31** over the
   two leaves above; it is a one-line assembly. Frontier `1 → 2`, and read that as
   disclosure rather than regression: the two halves are the two classical inputs
@@ -22175,10 +22194,403 @@ theorem isLocalTateDual (ρbar : GaloisRep ℚ k V)
     IsLocalTateDual ℓ ρbar v :=
   sorry
 
+/-! #### `N_S` acts trivially on `ad⁰` and on `ad⁰(1)`
+
+Added 2026-08-02.  The docstring of `poitouTateExactness_of_localTateDuality` below used
+to list *"from the full `ad⁰` to `ad⁰^{N_S}`"* as the first of three things a prover owed
+BEYOND NSW VIII.6.7, with the note that the identification "is not proven in this file".
+This block pays that debt.  It is genuinely separate mathematics — the ramification of
+`ρbar` and of `ℚ(μ_ℓ)`, with no cohomology in it — which is why it is cut out here rather
+than left inside the Poitou–Tate leaf.
+
+Of the two halves, the `ρbar` half is now **PROVEN OUTRIGHT** and only the cyclotomic half
+is a leaf:
+
+* `ρbar` kills `N_S` (`ramificationKernel_le_ker_of_isHardlyRamified`).  `N_S` is the
+  topological closure of the normal closure of the inertia at the places outside `S`;
+  `IsHardlyRamified.isUnramified` kills each of those inertia subgroups, `ρbar.ker` is
+  normal, and it is CLOSED because the module topology on `Module.End k V` is discrete
+  (`discreteTopology_moduleTopology`, in `GaloisRepresentation/Chebotarev.lean`, which
+  this module's import closure contains).  So `Subgroup.normalClosure_le_normal` and
+  `Subgroup.topologicalClosure_minimal` finish it.
+* `χ̄_ℓ` kills `N_S`, i.e. `ℚ(μ_ℓ) ⊆ ℚ_S`.  Reduced here to the LOCAL statement
+  `globalInertia_fixes_rootsOfUnity` — *`ℚ(μ_ℓ)/ℚ` is unramified outside `ℓ`* — which is
+  the only thing left open.  The reduction is `ramificationKernel_fixes_rootsOfUnity`,
+  PROVEN: the elements fixing `μ_m` pointwise form a subgroup `fixRoots m` which is
+  NORMAL (Galois permutes `μ_m`) and CLOSED (it is OPEN, by the already-proven
+  `isOpen_setOf_fixes_rootsOfUnity` above, and an open subgroup is closed), so the same
+  two closure lemmas apply.
+
+**WHY THE `ρbar` HALF NEEDED A LOCAL COPY OF THE PLACE CLASSIFICATION.**
+`IsHardlyRamified.isUnramified` is indexed by RATIONAL PRIMES `p ≠ 2, ℓ`, while `N_S`
+unions over all height-one primes outside `S`, so the two are bridged by "every finite
+place of `ℚ` comes from a rational prime".  That fact is already proven, as
+`exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat` in
+`HardlyRamified/Threeadic.lean` — but `Threeadic.lean` and this module are
+INCOMPARABLE in the import order (neither is in the other's closure, checked
+2026-08-02), so it cannot be cited here.  It is therefore transcribed as
+`exists_rationalPrime_eq_place` below, under a DIFFERENT NAME on purpose: ten modules
+(`Modularity/{Interface, Patching, KhareWintenberger}`, `HardlyRamified/{Lift, Family,
+Frey, Reducible}`, `FreyCurve/Mazur`, `Fermat.Basic`, `Fermat.PrimeFive`) import BOTH
+files, so reusing the name would be a hard `environment already contains` error in every
+one of them.  **The right long-run repair is to hoist ONE copy into a shared upstream
+module** — it is a statement about `𝓞 ℚ` with no representation theory in it, so
+`Fermat/FLT/Mathlib/NumberField/` is its home — and delete the other; that is a
+two-file edit which does not belong in this commit. -/
+
+open NumberField in
+/-- **Every finite place of `ℚ` comes from a rational prime** (PROVEN): transport along
+`Rat.ringOfIntegersEquiv` to `ℤ`, take the positive generator of the corresponding prime.
+
+**This is a deliberate DUPLICATE of `exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat`
+in `HardlyRamified/Threeadic.lean`**, whose proof this is verbatim. The two modules are
+incomparable in the import order, so the name cannot be shared and the statement cannot be
+cited; see the section header for the ten modules that import both (which is why the name
+had to change) and for where a single copy should eventually live. If you are hoisting,
+THIS is the copy to delete. -/
+theorem exists_rationalPrime_eq_place
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)) :
+    ∃ (p : ℕ) (hp : p.Prime), v = hp.toHeightOneSpectrumRingOfIntegersRat := by
+  classical
+  set w : IsDedekindDomain.HeightOneSpectrum ℤ :=
+    (Rat.ringOfIntegersEquiv.symm.heightOneSpectrum).symm v
+  obtain ⟨q, hq⟩ := (IsPrincipalIdealRing.principal w.asIdeal).principal
+  have hqne : q ≠ 0 := by
+    intro h0
+    refine w.ne_bot ?_
+    rw [hq, h0]
+    exact Ideal.span_singleton_eq_bot.mpr rfl
+  have hqprime : Prime q := by
+    have hp := w.isPrime
+    rw [hq] at hp
+    exact (Ideal.span_singleton_prime hqne).mp hp
+  refine ⟨q.natAbs, Int.prime_iff_natAbs_prime.mp hqprime, ?_⟩
+  have hw : w = (Int.prime_iff_natAbs_prime.mp hqprime).toHeightOneSpectrumInt := by
+    ext1
+    rw [hq]
+    show Ideal.span {q} = Ideal.span {(q.natAbs : ℤ)}
+    rw [Ideal.span_singleton_eq_span_singleton]
+    exact Int.associated_natAbs q
+  calc v = (Rat.ringOfIntegersEquiv.symm.heightOneSpectrum) w :=
+      (Equiv.apply_symm_apply _ v).symm
+    _ = _ := by rw [hw]; rfl
+
+omit [Finite k] [DiscreteTopology k] [Module.Finite k V] [Module.Free k V] in
+/-- **Unramified at `v` means the GLOBAL inertia at `v` is killed** (PROVEN): the same
+`toLocal`-versus-`decompHom` identification that
+`isUnramifiedAt_of_ramificationKernel_le_ker` above performs, run in the other direction.
+
+The `congr 3` / `RingHom.ext_rat` step is the `ℚ`-algebra diamond and is not incidental;
+see that theorem's docstring for why the two spellings of the decomposition map are
+propositionally but not syntactically equal. -/
+theorem globalInertia_le_ker_of_isUnramifiedAt (ρ : GaloisRep ℚ k V)
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (hv : ρ.IsUnramifiedAt v) : globalInertia v ≤ ρ.ker := by
+  rintro σ ⟨τ, hτ, rfl⟩
+  have h1 : ρ.toLocal v τ = 1 := hv.localInertiaGroup_le hτ
+  have hkey : ρ.toLocal v τ = ρ (decompHom v τ) := by
+    rw [GaloisRep.toLocal_apply]
+    congr 3
+    exact RingHom.ext_rat _ _
+  show ρ (decompHom v τ) = 1
+  rw [← hkey]
+  exact h1
+
+omit [Finite k] in
+/-- **The kernel of a Galois representation on a finite module is CLOSED** (PROVEN) — the
+one topological input of `ramificationKernel_le_ker_of_isUnramifiedOutside` below.
+
+`GaloisRep` lands in `Module.End k V` carrying the MODULE topology, and that topology is
+DISCRETE here because `V` is module-finite over the discrete `k`
+(`discreteTopology_moduleTopology`). So the kernel is the preimage of the closed singleton
+`{1}` under a continuous map. -/
+theorem isClosed_coe_ker (ρ : GaloisRep ℚ k V) :
+    IsClosed ((ρ.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := by
+  letI := moduleTopology k (Module.End k V)
+  haveI : DiscreteTopology (Module.End k V) :=
+    discreteTopology_moduleTopology k (Module.End k V)
+  have hc : Continuous (fun σ : Field.absoluteGaloisGroup ℚ => ρ σ) := ρ.continuous_toFun
+  have hset : ((ρ.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ))
+      = (fun σ : Field.absoluteGaloisGroup ℚ => ρ σ) ⁻¹' {1} := by
+    ext σ
+    simp only [Set.mem_preimage, Set.mem_singleton_iff, SetLike.mem_coe]
+    exact Iff.rfl
+  rw [hset]
+  exact (isClosed_singleton (x := (1 : Module.End k V))).preimage hc
+
+omit [Finite k] in
+/-- **A representation unramified outside `S` kills `N_S`** (PROVEN) — the exact CONVERSE
+of `isUnramifiedAt_of_ramificationKernel_le_ker` above, and the generic engine of this
+block.
+
+`N_S` is `closure (normalClosure (⋃_{v ∉ S} I_v))`; the union lands in `ρ.ker` by
+`globalInertia_le_ker_of_isUnramifiedAt`, the kernel is normal so it swallows the normal
+closure, and it is closed (`isClosed_coe_ker`) so it swallows the topological closure.
+Stated for an arbitrary `S` and an arbitrary `ρ`, so nothing about the hardly ramified
+problem enters. -/
+theorem ramificationKernel_le_ker_of_isUnramifiedOutside (ρ : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (hunram : ∀ v ∉ S, ρ.IsUnramifiedAt v) :
+    ramificationKernel S ≤ ρ.ker := by
+  refine Subgroup.topologicalClosure_minimal _
+    (Subgroup.normalClosure_le_normal ?_) (isClosed_coe_ker ρ)
+  intro σ hσ
+  obtain ⟨v, hv, hσv⟩ := Set.mem_iUnion₂.mp hσ
+  exact globalInertia_le_ker_of_isUnramifiedAt ρ (hunram v hv) hσv
+
+omit [Finite k] in
+include hℓOdd hdim in
+/-- **A hardly ramified `ρbar` kills `N_{\{2, ℓ\}}`** (PROVEN): the previous theorem fed
+`IsHardlyRamified.isUnramified`, through the place classification.
+
+The only work beyond the two inputs is matching the INDEXING: the structure field is stated
+for rational primes `p ≠ 2, ℓ` and `ramificationKernel` unions over height-one primes, so
+`exists_rationalPrime_eq_place` writes `v` as `p`'s place and
+`asIdeal_toHeightOneSpectrumRingOfIntegersRat` turns `p = 2` or `p = ℓ` into membership of
+`hardlyRamifiedPlaces ℓ`, contradicting `v ∉ hardlyRamifiedPlaces ℓ`. -/
+theorem ramificationKernel_le_ker_of_isHardlyRamified
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
+    ramificationKernel (hardlyRamifiedPlaces ℓ) ≤ ρbar.ker := by
+  refine ramificationKernel_le_ker_of_isUnramifiedOutside ρbar _ fun v hv => ?_
+  obtain ⟨p, hp, rfl⟩ := exists_rationalPrime_eq_place v
+  refine h.isUnramified p hp ⟨?_, ?_⟩
+  · rintro rfl
+    exact hv (Or.inl (asIdeal_toHeightOneSpectrumRingOfIntegersRat hp))
+  · rintro rfl
+    exact hv (Or.inr (asIdeal_toHeightOneSpectrumRingOfIntegersRat hp))
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+/-- **The elements of `Γ ℚ` fixing every `m`-th root of unity, as a SUBGROUP.**
+
+`isOpen_setOf_fixes_rootsOfUnity` above proves this set is OPEN; packaging it as a subgroup
+is what lets `Subgroup.topologicalClosure_minimal` be applied to it in
+`ramificationKernel_fixes_rootsOfUnity` below. Deliberately NOT phrased as
+`(IntermediateField.adjoin ℚ {ζ | ζ ^ m = 1}).fixingSubgroup`, which is the same subgroup:
+that spelling would require `Normal ℚ (ℚ(μ_m))` to get normality, whereas here normality is
+five lines (`fixRoots_normal`) because Galois permutes the `m`-th roots of unity. -/
+def fixRoots (m : ℕ) : Subgroup (Field.absoluteGaloisGroup ℚ) where
+  carrier := {x | ∀ ζ : AlgebraicClosure ℚ, ζ ^ m = 1 → x ζ = ζ}
+  one_mem' := by intro ζ _; rfl
+  mul_mem' := by
+    intro a b ha hb ζ hζ
+    show a (b ζ) = ζ
+    rw [hb ζ hζ, ha ζ hζ]
+  inv_mem' := by
+    intro a ha ζ hζ
+    have hz : a ζ = ζ := ha ζ hζ
+    calc a⁻¹ ζ = a⁻¹ (a ζ) := by rw [hz]
+      _ = ζ := by
+          show (a⁻¹ * a) ζ = ζ
+          rw [inv_mul_cancel]; rfl
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+/-- **`fixRoots m` is normal** (PROVEN): `σ a σ⁻¹` fixes `ζ` because `σ⁻¹ ζ` is again an
+`m`-th root of unity, so `a` fixes it. No Galois theory of `ℚ(μ_m)` is needed. -/
+theorem fixRoots_normal (m : ℕ) : (fixRoots m).Normal := by
+  constructor
+  intro a ha σ ζ hζ
+  show σ (a (σ⁻¹ ζ)) = ζ
+  have hroot : (σ⁻¹ ζ) ^ m = 1 := by
+    have hc := congrArg (fun x : AlgebraicClosure ℚ => σ⁻¹ x) hζ
+    simpa [map_pow] using hc
+  rw [ha _ hroot]
+  show (σ * σ⁻¹) ζ = ζ
+  rw [mul_inv_cancel]; rfl
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+/-- **`fixRoots m` is closed** (PROVEN): it is OPEN by
+`isOpen_setOf_fixes_rootsOfUnity`, and an open subgroup of a topological group is
+closed. -/
+theorem isClosed_coe_fixRoots (m : ℕ) (hm : 0 < m) :
+    IsClosed ((fixRoots m : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) :=
+  (fixRoots m).isClosed_of_isOpen (isOpen_setOf_fixes_rootsOfUnity m hm)
+
+/-- **`ℚ(μ_ℓ)/ℚ IS UNRAMIFIED OUTSIDE `ℓ`** (sorry leaf, cut out 2026-08-02): the inertia
+at a place outside `hardlyRamifiedPlaces ℓ` fixes every `ℓ`-th root of unity.
+
+This is the ONLY thing still owed by the `ad⁰^{N_S} = ad⁰` identification that the
+Poitou–Tate leaf below used to carry silently; everything else in this block is proven.
+`ramificationKernel_fixes_rootsOfUnity` immediately below upgrades it from inertia to all
+of `N_S`, and `unramInvariants_adZeroTwist_eq_top` then feeds it, through
+`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity` above, to the twisted invariants.
+
+**WHAT IT COSTS.** It is the classical computation of the discriminant of `ℚ(μ_ℓ)` — or,
+equivalently, that `X^ℓ − 1` is separable mod `p` for `p ≠ ℓ` and Hensel applies. Neither
+form is in this tree: the standing note above `isOpen_setOf_fixes_rootsOfUnity` records
+that even CONTINUITY of `χ̄_ℓ` is not available here and is worked around, and the
+ramification of a cyclotomic field is a strictly stronger input than that.
+
+**FAITHFULNESS.** Stated at a place `v ∉ hardlyRamifiedPlaces ℓ`, so `v` lies over a prime
+`p ∉ {2, ℓ}`; over such a `p` the extension `ℚ(μ_ℓ)/ℚ` is unramified, which is the
+statement. It is not vacuous — places outside `S` exist in abundance (every `p ≠ 2, ℓ`,
+by `toHeightOneSpectrum_notMem_hardlyRamifiedPlaces` above) — and it is not trivially
+true, since `globalInertia v` is nontrivial for `v` ramified in some other extension. The
+hypothesis `v ∉ hardlyRamifiedPlaces ℓ` is load-bearing: at the place above `ℓ` the
+statement is FALSE, inertia acting on `μ_ℓ` through the full `(ℤ/ℓ)ˣ` there. Note only
+`p ≠ ℓ` is really needed; `p ≠ 2` comes along free from the hypothesis and is not used by
+any route.
+
+Reference: Neukirch, *Algebraic Number Theory*, I.10.4 (the discriminant of `ℚ(μ_n)`); or
+Washington, *Cyclotomic Fields*, Prop. 2.1. -/
+theorem globalInertia_fixes_rootsOfUnity
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (hv : v ∉ hardlyRamifiedPlaces ℓ) {σ : Field.absoluteGaloisGroup ℚ}
+    (hσ : σ ∈ globalInertia v) (ζ : AlgebraicClosure ℚ) (hζ : ζ ^ ℓ = 1) :
+    σ ζ = ζ :=
+  sorry
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+/-- **`N_S` fixes the `m`-th roots of unity as soon as the inertia outside `S` does**
+(PROVEN) — the same three-step closure argument as
+`ramificationKernel_le_ker_of_isUnramifiedOutside` above, with `ρ.ker` replaced by
+`fixRoots m`: normal by `fixRoots_normal`, closed by `isClosed_coe_fixRoots`. -/
+theorem ramificationKernel_fixes_rootsOfUnity
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (m : ℕ) (hm : 0 < m)
+    (hinert : ∀ v ∉ S, ∀ σ ∈ globalInertia v,
+      ∀ ζ : AlgebraicClosure ℚ, ζ ^ m = 1 → σ ζ = ζ)
+    {n : Field.absoluteGaloisGroup ℚ} (hn : n ∈ ramificationKernel S)
+    (ζ : AlgebraicClosure ℚ) (hζ : ζ ^ m = 1) :
+    n ζ = ζ := by
+  haveI := fixRoots_normal m
+  refine Subgroup.topologicalClosure_minimal _
+    (Subgroup.normalClosure_le_normal ?_) (isClosed_coe_fixRoots m hm) hn ζ hζ
+  intro σ hσ
+  obtain ⟨v, hv, hσv⟩ := Set.mem_iUnion₂.mp hσ
+  exact hinert v hv σ hσv
+
+/-- **An element of `ker ρbar` acts trivially on `ad⁰`** (PROVEN): conjugation by `1`.
+The untwisted counterpart of `adZeroTwist_rho_apply_eq_self` above, and proven the same
+way. -/
+theorem adZeroRep_apply_eq_self_of_mem_ker (ρbar : GaloisRep ℚ k V)
+    {n : Field.absoluteGaloisGroup ℚ} (hn : ρbar n = 1) (m : AdZero k V) :
+    AdZero.rep ρbar n m = m := by
+  have hninv : ρbar n⁻¹ = 1 := by
+    have hmul : ρbar n⁻¹ * ρbar n = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+    rwa [hn, mul_one] at hmul
+  refine AdZero.ext ?_
+  have hrep : (AdZero.rep ρbar) n m = AdZero.conjL (ρbar n) (ρbar n⁻¹)
+      (by rw [← map_mul, inv_mul_cancel, map_one]) m := rfl
+  rw [hrep, AdZero.toEnd_conjL, hn, hninv, one_mul, mul_one]
+
+omit [Fact ℓ.Prime] [Algebra ℤ_[ℓ] k] in
+/-- **`ad⁰^{N_S} = ad⁰`** (PROVEN over `ramificationKernel_le_ker_of_isHardlyRamified`):
+the first half of the identification the Poitou–Tate leaf below needs in order to feed it
+`hloc`, which is stated for the FULL `ad⁰`. -/
+theorem unramInvariants_adZeroTopRep_eq_top (ρbar : GaloisRep ℚ k V)
+    (hS : ramificationKernel (hardlyRamifiedPlaces ℓ) ≤ ρbar.ker) :
+    unramInvariants (adZeroTopRep ρbar) (hardlyRamifiedPlaces ℓ) = ⊤ := by
+  refine eq_top_iff.mpr fun x _ => ?_
+  rw [mem_unramInvariants]
+  intro n hn
+  exact adZeroRep_apply_eq_self_of_mem_ker ρbar (hS hn) x
+
+/-- **`ad⁰(1)^{N_S} = ad⁰(1)`** (PROVEN over the two inputs): the twisted half. Both
+factors of the twisted action have to be trivial, and
+`adZeroTwist_rho_apply_eq_self` above is exactly that statement — `ρbar n = 1` from
+`hS`, and `χ̄_ℓ(n) = 1` from `hζ` through
+`adZeroCycloChar_eq_one_of_fixes_rootsOfUnity` above. -/
+theorem unramInvariants_adZeroTwist_eq_top (ρbar : GaloisRep ℚ k V)
+    (hS : ramificationKernel (hardlyRamifiedPlaces ℓ) ≤ ρbar.ker)
+    (hζ : ∀ n ∈ ramificationKernel (hardlyRamifiedPlaces ℓ),
+      ∀ ζ : AlgebraicClosure ℚ, ζ ^ ℓ = 1 → n ζ = ζ) :
+    unramInvariants (adZeroTwist ℓ ρbar) (hardlyRamifiedPlaces ℓ) = ⊤ := by
+  refine eq_top_iff.mpr fun x _ => ?_
+  rw [mem_unramInvariants]
+  intro n hn
+  exact adZeroTwist_rho_apply_eq_self ℓ ρbar (hS hn)
+    (adZeroCycloChar_eq_one_of_fixes_rootsOfUnity ℓ (hζ n hn)) x
+
+include hℓOdd hdim in
+/-- **POITOU–TATE DUALITY: `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`** (sorry leaf, cut out
+2026-08-02; `poitouTateExactness_of_localTateDuality` below is PROVEN over it).
+
+This is NSW **VIII.6.8** — the duality theorem itself — rather than two exactness
+statements of the nine-term sequence VIII.6.7, which is what the leaf below asks for. The
+two are EQUIVALENT (see below), and this is the shape the literature states and proves:
+NSW obtains `Ш¹(G_S, M) × Ш²(G_S, M^*) → ℚ/ℤ` as a perfect pairing, which at
+`M = ad⁰(1)`, `M^* ≅ ad⁰` is this statement.
+
+**WHY THIS IS A BETTER RESIDUE THAN THE `γ` FORM, stated plainly because the count does
+not move** (`1 → 2` here, and the second leaf is the cyclotomic one above; the
+Poitou–Tate obligation itself is `1 → 1`). The leaf below asks a prover to CONSTRUCT a
+map out of `Module.Dual k (H¹(G_S, ad⁰(1)))` and to verify two submodule equalities in
+that big space and in `H²(G_S, ad⁰)`. This leaf asks for an isomorphism between the two
+`Ш` groups and mentions neither ambient space, no `Module.Dual` of anything large, no
+annihilator and no `γ`. The passage between them is the `Submodule.dualRestrict`
+bookkeeping in the proof below — compiler-checked once, here, instead of being part of
+what every successor owes.
+
+**THE CUT IS EXACT — this leaf is EQUIVALENT to the leaf below.** `⟹` is the proof
+below. `⟸`: given `γ` with those kernel and range, the chain
+`Ш² ≅ range γ ≅ Dual X ⧸ ker γ = Dual X ⧸ ann Ш¹ ≅ Dual Ш¹` is an isomorphism, which is
+literally the `let e` of `exists_nondegenerate_of_ker_eq_dualAnnihilator` above. No
+finiteness is used in either direction, so nothing is lost. The converse is deliberately
+NOT written as Lean code: it would be a declaration with no consumer, i.e. free-floating.
+
+**WHAT THIS LEAF NO LONGER OWES.** The leaf below used to list three things a prover owed
+beyond the reference. Two are now discharged and passed in as hypotheses:
+
+* *`ad⁰^{N_S} = ad⁰` and `ad⁰(1)^{N_S} = ad⁰(1)`* — the `hinv`/`hinvTwist` arguments,
+  proven above (modulo the one cyclotomic leaf). `hloc` is local duality for the FULL
+  `ad⁰` (`adZeroLocalU`) while `Sha2`/`Sha1Twist` are built from the `N_S`-invariants
+  (`adZeroRestricted`); these two equalities are exactly what identifies the two, so the
+  prover may now use `hloc` directly.
+* The `ULift` transport and the product objects `P^i_S(−) = ∏_{v ∈ S} H^i(ℚ_v, −)` are
+  unchanged and are still owed; `S = hardlyRamifiedPlaces ℓ` has two elements, so the
+  latter are finite products and need no restricted-product machinery. Use
+  `ULift.moduleEquiv`; see the section header for why the `ULift` is forced.
+
+**FAITHFULNESS AUDIT, 2026-08-02. VERDICT: FAITHFUL.**
+
+* *No junk witness.* The conclusion is a `Nonempty` of a `≃ₗ[k]`, so a degenerate witness
+  would have to be an actual isomorphism; there is no `Nat.card`, no default value and no
+  numeric quantity that could silently be `0`. The `γ = 0` escape available to the leaf
+  below (which it audits, correctly, as the honest content when both `Ш` vanish) appears
+  here as the case `Ш² = Ш¹ = 0`, where the zero map IS an isomorphism — again the honest
+  content, not a cheat.
+* *Both new hypotheses are TRUE*, so adding them cannot have made the statement vacuous:
+  `hinv` is `unramInvariants_adZeroTopRep_eq_top` above, and `hinvTwist` is
+  `unramInvariants_adZeroTwist_eq_top` above modulo the single cyclotomic leaf. They
+  weaken the leaf, which is the point.
+* *`hloc` is satisfiable* — `isLocalTateDual` above discharges it — and is quantified over
+  `v ∈ S`, which is the set the sequence uses.
+* *The archimedean place is absent* from `hardlyRamifiedPlaces` and harmlessly so, for the
+  reason the leaf below records in full: `ad⁰` and `ad⁰(1)` are `ℓ`-groups with `ℓ` odd
+  and `Gal(ℂ/ℝ)` has order `2`, so `Hⁱ(ℝ, −) = 0` for `i ≥ 1` and neither `Ш` group
+  changes.
+* *`hℓOdd` and `hdim` remain load-bearing*, unchanged: they are what makes the trace form
+  on `ad⁰` perfect (`adZeroTraceForm_nondegenerate` below), hence what gives
+  `ad⁰(1) ≅ Hom(ad⁰, k(1))` and lets Tate duality apply. `hirr` is NOT taken: Poitou–Tate
+  holds for any finite `G_S`-module.
+
+**CIRCULARITY GUARD.** Inherited unchanged: neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le` nor
+`not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them, may be
+used, because their intended proofs run through modularity lifting, which is proven over
+the bound this leaf ultimately feeds.
+
+References: Neukirch–Schmidt–Wingberg VIII.6.8 (this statement) and VIII.6.7 (the
+nine-term sequence it is a corollary of); Darmon–Diamond–Taylor §2.6–2.7. -/
+theorem nonempty_shaDuality_of_localTateDuality
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hloc : ∀ v ∈ hardlyRamifiedPlaces ℓ, IsLocalTateDual ℓ ρbar v)
+    (hinv : unramInvariants (adZeroTopRep ρbar) (hardlyRamifiedPlaces ℓ) = ⊤)
+    (hinvTwist : unramInvariants (adZeroTwist ℓ ρbar) (hardlyRamifiedPlaces ℓ) = ⊤) :
+    Nonempty (↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≃ₗ[k]
+      Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+  sorry
+
 include hℓOdd hdim in
 /-- **THE GLOBAL HALF of Poitou–Tate: the nine-term arrow, GIVEN local duality**
-(sorry leaf, cut out 2026-07-31; `exists_poitouTateExactness_sha2_sha1Twist` below is
-PROVEN over it and over `isLocalTateDual` above).
+(**PROVEN 2026-08-02** over `nonempty_shaDuality_of_localTateDuality` immediately above
+and the arithmetic block above that — NOT a sorry node any more; cut out 2026-07-31, and
+`exists_poitouTateExactness_sha2_sha1Twist` below is PROVEN over it and over
+`isLocalTateDual` above).
 
 Statement, hypotheses and conclusion are those of
 `exists_poitouTateExactness_sha2_sha1Twist` below — see its docstring for the
@@ -22199,25 +22611,38 @@ order becoming reachable; the file's own note says the two leaves it gates "shou
 one owner, in the order (a) vendor the cup product, (b) build the local invariant map,
 (c) then both leaves at once".
 
-**WHAT THE PROVER STILL OWES BEYOND NSW VIII.6.7**, and it is worth naming because it is
-invisible in the statement:
+**WHAT THIS DECLARATION IS NOW: A TWO-STEP ASSEMBLY, and where its old obligations went.**
+The three things this docstring used to list as owed beyond NSW VIII.6.7 have been split
+off. The proof below is `obtain` the isomorphism `Ш² ≅ (Ш¹)^∨` from
+`nonempty_shaDuality_of_localTateDuality` above, then transport it along
+`Submodule.dualRestrict`:
 
-* *From the full `ad⁰` to `ad⁰^{N_S}`.* `hloc` is local duality for `adZeroLocalU`, the
-  restriction of the FULL `ad⁰` to `Γ ℚ_v`, while `Sha2`/`Sha1Twist` are built from
-  `adZeroRestricted`, the `N_S`-invariants. The two agree because `ρbar` is unramified
-  outside `S = hardlyRamifiedPlaces ℓ` and the mod-`ℓ` cyclotomic character is unramified
-  outside `ℓ ∈ S`, so `N_S` acts trivially on `ad⁰` and on `ad⁰(1)`; that identification
-  is not proven in this file. `isOpen_setOf_fixes_rootsOfUnity` above is the input for
-  the character half.
-* *The `ULift` transport.* `adZeroLocalU` carries `ULift.{u} (AdZero k V)`; see the
-  section header for why, and use `ULift.moduleEquiv` to get rid of it.
-* *`P^i_S` and the localisation maps.* The nine-term sequence needs the product objects
-  `P^i_S = ∏_{v ∈ S} H^i(ℚ_v, −)`; `S = hardlyRamifiedPlaces ℓ` is finite (two elements),
-  so these are finite products and no restricted-product machinery is required.
+* `γ := Ш².subtype ∘ e.symm ∘ (Ш¹).dualRestrict`;
+* `ker γ = ker dualRestrict = (Ш¹)ᵃⁿⁿ`, because `Ш².subtype` and `e.symm` are injective
+  (`Submodule.dualRestrict_ker_eq_dualAnnihilator`);
+* `range γ = range Ш².subtype = Ш²`, because `dualRestrict` and `e.symm` are surjective
+  (`Subspace.dualRestrict_surjective`, which over a field needs no finiteness).
 
-**FAITHFULNESS.** `hloc` is satisfiable — `isLocalTateDual` above discharges it — so
-adding it cannot have made this statement vacuous, and it is quantified over `v ∈ S`
-rather than over all `v`, which is exactly the set the sequence uses.
+The former three obligations now sit where they belong: the `ad⁰^{N_S} = ad⁰` step is
+PROVEN in the arithmetic block above (over the single cyclotomic leaf
+`globalInertia_fixes_rootsOfUnity`), and the `ULift` transport and the product objects
+`P^i_S` are named on `nonempty_shaDuality_of_localTateDuality`, which still owes them.
+
+**ACCOUNTING, said plainly so the count is not misread.** Direct sorries in this
+subsection go `2 → 3` (`isLocalTateDual`, plus the two new leaves
+`globalInertia_fixes_rootsOfUnity` and `nonempty_shaDuality_of_localTateDuality`), i.e.
+`+1`, and that is DISCLOSURE, not regression. The Poitou–Tate obligation itself is
+`1 → 1` and strictly better shaped (see the leaf above); what is genuinely new on the
+frontier is the cyclotomic ramification statement, which this leaf previously carried
+silently inside the sentence "`N_S` acts trivially on `ad⁰(1)`; that identification is
+not proven in this file". Against that `+1`, eleven declarations of ramification and
+dual-annihilator bookkeeping became theorems.
+
+**FAITHFULNESS.** Unchanged, and now inherited rather than owed: `hloc` is satisfiable
+(`isLocalTateDual` above), it is quantified over `v ∈ S` — exactly the set the sequence
+uses — and the conclusion is verbatim what it was before this proof was written, so every
+consumer is untouched and the audit on
+`exists_poitouTateExactness_sha2_sha1Twist` below transfers with no change.
 
 References: Neukirch–Schmidt–Wingberg VIII.6.7 (the nine-term sequence) and VII.2 (local
 duality); Darmon–Diamond–Taylor §2.6–2.7. -/
@@ -22229,8 +22654,25 @@ theorem poitouTateExactness_of_localTateDuality
           (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) →ₗ[k]
         continuousCohomology 2 (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)),
       LinearMap.ker γ = (Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)).dualAnnihilator ∧
-      LinearMap.range γ = Sha2 ρbar (hardlyRamifiedPlaces ℓ) :=
-  sorry
+      LinearMap.range γ = Sha2 ρbar (hardlyRamifiedPlaces ℓ) := by
+  have hS := ramificationKernel_le_ker_of_isHardlyRamified hℓOdd hdim h
+  obtain ⟨e⟩ := nonempty_shaDuality_of_localTateDuality hℓOdd hdim hℓ5 h hloc
+    (unramInvariants_adZeroTopRep_eq_top ρbar hS)
+    (unramInvariants_adZeroTwist_eq_top ρbar hS
+      fun n hn => ramificationKernel_fixes_rootsOfUnity _ ℓ (Fact.out : ℓ.Prime).pos
+        (fun v hv σ hσ => globalInertia_fixes_rootsOfUnity hv hσ) hn)
+  set W := Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)
+  set Z := Sha2 ρbar (hardlyRamifiedPlaces ℓ)
+  refine ⟨(Z.subtype ∘ₗ e.symm.toLinearMap) ∘ₗ W.dualRestrict, ?_, ?_⟩
+  · have hinj : Function.Injective (Z.subtype ∘ₗ e.symm.toLinearMap) :=
+      Z.injective_subtype.comp e.symm.injective
+    rw [LinearMap.ker_comp, LinearMap.ker_eq_bot.mpr hinj, Submodule.comap_bot,
+      Submodule.dualRestrict_ker_eq_dualAnnihilator]
+  · rw [LinearMap.range_comp,
+      LinearMap.range_eq_top.mpr (Subspace.dualRestrict_surjective (W := W)),
+      Submodule.map_top, LinearMap.range_comp,
+      LinearMap.range_eq_top.mpr e.symm.surjective, Submodule.map_top,
+      Submodule.range_subtype]
 
 end LocalTatePairing
 
