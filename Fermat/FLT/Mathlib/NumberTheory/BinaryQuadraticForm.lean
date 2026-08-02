@@ -113,17 +113,21 @@ class-field leaves, which have in turn been replaced by the two `j`-statements b
   consumes `hcl`. It REPLACES the former `K = ℚ(√−p)`-valued leaf
   `Heegner.exists_quadratic_jInvariant_heegnerPoint`, which is PROVEN from it: `j(τ₀)` is
   real, so the `K` was dressing;
-* `Heegner.exists_rat_gammaTwo_of_multiplier` — **Weber's theorem `γ₂(τ₀) ∈ ℚ`**, the CM half
-  of Weber's level-`3` descent, with the level-`3` half supplied as a hypothesis. RECUT TWICE:
-  2026-07-31 (`flt-lean-360`) from `Heegner.exists_ratCube_jInvariant_heegnerPoint` to
-  `Heegner.exists_intCube_jInvariant_heegnerPoint`, then again the same day
-  (`flt-lean-384`) to this, once the level-`3` half was PROVEN as
+* `Heegner.exists_sqrtNegThree_coeffs_gammaTwo_heegnerPoint` — **`K(γ₂(τ₀))/K` is NORMAL**,
+  i.e. `√−3 ∈ K(γ₂(τ₀))` when `γ₂(τ₀) ∉ ℚ`: the CM half of Weber's level-`3` descent, and
+  nothing else. RECUT THREE TIMES: 2026-07-31 (`flt-lean-360`) from
+  `Heegner.exists_ratCube_jInvariant_heegnerPoint` to
+  `Heegner.exists_intCube_jInvariant_heegnerPoint`; the same day (`flt-lean-384`) to
+  `Heegner.exists_rat_gammaTwo_of_multiplier`, once the level-`3` half was PROVEN as
   `Heegner.exists_cubeRootOne_gammaTwo_smul` (`γ₂ ∘ γ = c(γ)·γ₂` with `c(γ)³ = 1`, from the
-  `S`- and `T`-transformations of `η` and `E₄` plus `SL2Z_generators`). BOTH earlier names
-  survive as PROVEN theorems, so a queue entry naming either will pass an existence check and
-  land an agent on nothing — read the `declaration uses 'sorry'` warning set, not `grep`. The
-  load-bearing input is still `3 ∤ p`, and the witness for that is still `p = 27`, where
-  `j(τ₀) = −12288000 = −2¹⁵·3·5³` is rational and not a cube;
+  `S`- and `T`-transformations of `η` and `E₄` plus `SL2Z_generators`); and 2026-08-02
+  (`flt-lean-152`) to this, once the "no cubic subextension" half was proved elementarily as
+  `Heegner.not_rat_sq_eq_three_div_prime`. ALL THREE earlier names survive as PROVEN theorems,
+  so a queue entry naming any of them will pass an existence check and land an agent on
+  nothing — read the `declaration uses 'sorry'` warning set, not `grep`. `3 ∤ p` is no longer
+  used in the leaf at all: it is spent in the CONSUMER, as `ζ₃ ∉ K`, and the witness that it
+  cannot be dropped is still `p = 27`, where `j(τ₀) = −12288000 = −2¹⁵·3·5³` is rational and
+  not a cube;
 
 `Heegner.gammaTwo_pow_three_eq_jInvariant` (Weber's `γ₂³ = j`) and
 `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` (the bound `exp(π√p) ≤ 745 − j(τ₀)`) are now both
@@ -147,16 +151,33 @@ PROVEN, over three new analytic leaves:
   `Heegner.cexp_heegnerPoint` (`q = −Q` at `τ₀`), `Heegner.E_second_order` (the shared
   `q`-expansion split) and `Heegner.abs_tsum_shift_le` (a geometric-majorant tail bound).
 
-So this file has FOUR open leaves. The list below was REGENERATED from the merged source at
-this merge (release 25, 2026-07-30) by a direct-sorry scan, not inherited from any of the seven
-sides that have disagreed about it — and each of them was RIGHT about its own base, which is
-exactly why none of their lists survives:
+**THIS FILE HAS SIX OPEN LEAVES, AND THE FOUR NAMED IN EVERY EARLIER VERSION OF THIS
+PARAGRAPH ARE NOT AMONG THEM.** The list below was read off the `declaration uses 'sorry'`
+warning set of a clean `lake env lean` of this module on 2026-08-02 (`flt-lean-152`), which is
+the only instrument that can say what is open here; the paragraph it replaces named
 `Heegner.natDegree_minpoly_weberAlpha_le`, `Heegner.exists_modularPolynomial_prod`,
-`Heegner.exists_rat_jInvariant_heegnerPoint` and `Heegner.exists_rat_gammaTwo_of_multiplier`
-(the last recut TWICE on 2026-07-31, `exists_ratCube_… → exists_intCube_… →
-exists_rat_gammaTwo_of_multiplier`, both predecessors now PROVEN — the COUNT is unchanged at
-four through both recuts, and was re-confirmed against the `declaration uses 'sorry'` warning
-set of a green `lake build` of this module, not inherited).
+`Heegner.exists_rat_jInvariant_heegnerPoint` and `Heegner.exists_rat_gammaTwo_of_multiplier`,
+and **all four are now PROVEN**, over the leaves below and over each other. Those names all
+still exist, so a queue entry naming any of them passes an existence check and lands an agent
+on nothing — which is exactly the phantom this list exists to prevent, and it had been live for
+two releases. In declaration order:
+
+* `Heegner.exists_ratPoly_weberAlpha_pow_four` (≈1825) — the Weber `α⁴` cubic over `ℚ`;
+* `Heegner.exists_isBoundedAtImInfty_coeff_prod` (≈4854) — boundedness at the cusp of the
+  coefficients of `∏ (X − j(A z))` over the triangular representatives;
+* `Heegner.exists_intPolynomial_map_of_eq_prod` (≈5024) — those coefficients are integral
+  polynomials in `j` (the analytic core of the integrality of the class equation);
+* `Heegner.isUnit_leadingCoeff_diag_of_eq_prod` (≈5166) — Kronecker's `±1` leading
+  coefficient of the diagonal `Φ_N(X, X)` for non-square `N`;
+* `Heegner.exists_posDefForm_root_of_aeval_minpoly_jInvariant` (≈6009) — **the main theorem of
+  complex multiplication**, in the form that is what
+  `Heegner.exists_rat_jInvariant_heegnerPoint` is now PROVEN over;
+* `Heegner.exists_sqrtNegThree_coeffs_gammaTwo_heegnerPoint` (≈6707) — **Shimura reciprocity
+  for `γ₂`**, in the form "`K(γ₂(τ₀))/K` is normal"; see the `LEAF 4c‴ RECUT` note below it.
+
+Regenerate this list rather than quoting it; it has been wrong at every release but one, and
+the reason is structural — a leaf that is PROVEN over a fresh sub-leaf keeps its name, so
+nothing here changes when the frontier moves.
 
 **THE `η`-CLUSTER IS CLOSED** (release 24). It is worth saying plainly, because the leaf that
 went is the one this file had been calling its hard analytic input for three releases:
@@ -6475,45 +6496,302 @@ theorem exists_monoidHom_gammaTwo_multiplier : ∃ χ : SL(2, ℤ) →* ℂ, (�
               rw [mul_smul, (hspec γ).2, (hspec δ).2, mul_assoc]) },
     fun γ => (hspec γ).1, fun γ z => (hspec γ).2 z⟩
 
-/-- **LEAF 4c‴ — WEBER'S THEOREM AT THE HEEGNER POINT: `γ₂(τ₀) ∈ ℚ`.** The CM half, and the
-only thing left of `LEAF 4c`.
+/-! #### `LEAF 4c‴ RECUT` (2026-08-02, `flt-lean-152`) — the ray-class arithmetic is replaced by
+`ζ₃ ∉ K`, and the elementary half is now Lean
 
-This is the open residue of the 2026-07-31 recut described in the section note above: the
-level-`3` modular half is supplied as the binders `χ`, `hχ3`, `hχ` (PROVEN, immediately above,
-as `exists_cubeRootOne_gammaTwo_smul` sharpened to `exists_monoidHom_gammaTwo_multiplier`), and
-everything downstream of the conclusion is discharged in
-`exists_intCube_jInvariant_heegnerPoint` below.
+The 2026-07-31 note above left `LEAF 4c‴` as "Shimura reciprocity, and nothing else", and
+recorded the shape of the classical argument as: `γ₂(τ₀)` lies in the ray class field of
+`K = ℚ(√−p)` of conductor `3`; when `3 ∤ D` that ray class group has order
+`|(𝒪_K/3)^×|/2 ∈ {2, 4}`, coprime to `3`; so there is no cubic subextension.
 
-WHAT IS LEFT IS SHIMURA RECIPROCITY, and nothing else: `hχ` says `γ₂` is a modular function
-for a subgroup of index dividing `3`, so at the CM point `τ₀` the value `γ₂(τ₀)` is determined
-by `j(τ₀)` only up to `μ₃`; the theorem is that this ambiguity is TRIVIAL when `3 ∤ D`. Cox,
-*Primes of the form x² + ny²*, §12.B Theorem 12.2; Booher Theorem 36. The class-field shape of
-the argument is spelled out in the section note above (the ray class group of `K` mod `3` has
-order `2` or `4` when `3 ∤ D`, hence no cubic subextension).
+**THE SECOND HALF OF THAT ROUTE IS NOT NEEDED, AND IS REPLACED HERE BY ONE LINE OF FIELD
+THEORY.** What the class-field input has to supply is only that `K(γ₂(τ₀))/K` is ABELIAN — in
+particular NORMAL. Nothing about the order of the ray class group is used:
 
-FACTS ALREADY IN THIS FILE that the proof will want, so they are not rediscovered:
-`gammaTwo_pow_three_eq_jInvariant` (`γ₂³ = j`), `exists_real_gammaTwo_heegnerPoint` (`γ₂(τ₀)`
-is REAL), `isIntegral_gammaTwo_heegnerPoint` (it is an algebraic INTEGER), and `hn` itself,
-which with `hp8`/`h3` gives `11 ≤ p` and hence `n < −32000` through
-`exp_pi_sqrt_le_of_jInvariant_eq`. Note `hn` is what makes the statement non-vacuous and
-simultaneously restricts `p` to `h(−p) = 1`, i.e. to `p ∈ {11, 19, 43, 67, 163}` — the sweep
-recorded in the section note above.
+* if `γ₂(τ₀) ∉ ℚ` then, `γ₂(τ₀)` being real and `γ₂(τ₀)³ = j(τ₀) = n ∈ ℤ`, the polynomial
+  `X³ − n` has no rational root, so `[ℚ(γ₂(τ₀)) : ℚ] = 3` and `[K(γ₂(τ₀)) : K] = 3`;
+* normality then puts the other two roots `ζ₃γ₂(τ₀)`, `ζ₃²γ₂(τ₀)` in `K(γ₂(τ₀))`, hence
+  `ζ₃ ∈ K(γ₂(τ₀))`, hence `√−3 ∈ K(γ₂(τ₀))`;
+* but `[K(ζ₃) : K] = 2` — because `ℚ(√−p) = ℚ(√−3)` forces `p = 3` — and `2 ∤ 3`.
 
-`3 ∤ p` (from `hp` with `h3`) IS LOAD-BEARING; `hp8` is retained for continuity with the
-consumer chain but is not. Both halves are checked in the section note. -/
+So `3 ∤ D` is spent EXACTLY ONCE, as `ζ₃ ∉ K`, i.e. as `p ≠ 3`; no ramification of `3` in `K`,
+no unit index, no ray class group. That is strictly less arithmetic than the route recorded
+above, and it is the whole of what the `3` is for.
+
+WHAT IS PROVEN HERE, and it is the elementary half in full. Rather than build the relative
+tower `ℚ ⊆ K ⊆ K(γ₂(τ₀))` in `IntermediateField`, the argument is run on COORDINATES, which
+makes it pure algebra over `ℚ` and `ℝ`:
+
+* `pow_three_injective_real` — `x ↦ x³` is injective on `ℝ`;
+* `not_isRatSq_three_mul_prime` — `3p` is not the square of a rational, for `p` prime `≠ 3`
+  (integrality of `√(3p)` over `ℤ`, then `3 ∣ m` and `3 ∣ p`);
+* `rat_indep_of_irrational_cubeRoot` — `1, x, x²` are `ℚ`-independent when `x` is an
+  IRRATIONAL real cube root of an integer. This is `[ℚ(x) : ℚ] = 3` without any field theory:
+  from `a + bx + cx² = 0` one gets `(b² − ac)x = c²n − ab`, so either `x ∈ ℚ` outright, or
+  `b² = ac` and `c²n = ab`, whence `n = (b/c)³` and again `x ∈ ℚ`;
+* `not_rat_sq_eq_three_div_prime` — **the obstruction**: `(A + Bx + Cx²)² ≠ 3/p` for all
+  rational `A, B, C`. This is "a cubic field has no quadratic subfield", in coordinates:
+  expanding and using independence gives `A² + 2BCn = 3/p`, `2AB + C²n = 0`, `B² + 2AC = 0`;
+  if `C = 0` then `B = 0` and `(pA)² = 3p`, refuted by the second lemma; if `C ≠ 0` then
+  `C³n = B³`, so `n` is a rational cube and `x = B/C ∈ ℚ`;
+* `im_of_sqrtNegThree_mem` — the imaginary part of the membership equation, which turns
+  `√−3 = (a + a's) + (b + b's)x + (c + c's)y` (with `s = i√p`, `x`, `y` real) into
+  `√3 = √p (a' + b'x + c'y)`; at `y = x²`, squaring gives `(a' + b'x + c'x²)² = 3/p`.
+
+THE OPEN RESIDUE is `exists_sqrtNegThree_coeffs_gammaTwo_heegnerPoint` below: it says exactly
+`√−3 ∈ K(γ₂(τ₀))` under the hypothesis `γ₂(τ₀) ∉ ℚ`, i.e. **`K(γ₂(τ₀))/K` is normal**, which is
+the main theorem of complex multiplication for the level-`3` modular function `γ₂` (Cox, §12.B
+Thm 12.2; Booher Thm 36). The COUNT is unchanged, `1 → 1`; what left the leaf is every mention
+of a cube, of `ℤ`, of `ℚ` and of the prime `3`.
+
+**THE RESIDUE IS VACUOUSLY TRUE, AND THAT IS INHERENT TO THE SHAPE — say so rather than
+discover it.** `hn` forces `h(−p) = 1`, hence `p ∈ {11, 19, 43, 67, 163}`, and at all five
+`γ₂(τ₀)` IS a rational integer (`−32, −96, −960, −5280, −640320`; the sweep is recorded in the
+section notes above). So the hypothesis `hirr` is unsatisfiable. This is not an artefact of
+this cut: normality of `K(x)/K` is a statement about the MINIMAL POLYNOMIAL of `x` over `K`,
+and when `x ∈ K` that polynomial is linear and normality says nothing — so ANY statement of
+the CM input strong enough to produce `ζ₃ ∈ K(x)` must carry the degree information, i.e. must
+assume `x ∉ ℚ` or be phrased with `Normal` and `IntermediateField`. The unconditional
+alternative, for whoever prefers it, is `Normal ↥K ↥(K⟮γ₂(τ₀)⟯)` with
+`K = ℚ⟮(Complex.I * (Real.sqrt p : ℂ))⟯`; it is a cleaner statement, and consuming it costs the
+relative-tower bookkeeping this cut was written to avoid (`minpoly K x = X³ − n`, the
+`{1, x, x²}` basis, and `[K(ζ₃) : K] = 2`). Either form is discharged by the same citation, and
+neither can be discharged without it.
+
+The multiplier binders `χ`, `hχ3`, `hχ` are passed straight down to the residue: they are what
+makes `γ₂` a modular function of level `3`, which is what the CM argument for the residue
+consumes, and threading them keeps `exists_monoidHom_gammaTwo_multiplier` consumed (it has no
+other call site, so dropping them would make it FREE-FLOATING — see the note above). They are
+NOT used by the assembly below, which is pure field theory in coordinates. -/
+
+/-- `x ↦ x ^ 3` is injective on `ℝ`. -/
+lemma pow_three_injective_real {x y : ℝ} (h : x ^ 3 = y ^ 3) : x = y :=
+  (Odd.strictMono_pow (R := ℝ) (by decide)).injective h
+
+/-- `3p` is not the square of a rational number, for `p` a prime other than `3`. Equivalently
+`√−3 ∉ ℚ(√−p)`, which is where `3 ∤ D` is spent in `LEAF 4c‴`. -/
+lemma not_isRatSq_three_mul_prime {p : ℕ} (hp : p.Prime) (hp3 : p ≠ 3) (r : ℚ) :
+    r ^ 2 ≠ 3 * (p : ℚ) := by
+  intro h
+  have hcast : (3 : ℚ) * (p : ℚ) = ((3 * (p : ℤ) : ℤ) : ℚ) := by push_cast; ring
+  have hint : IsIntegral ℤ r := by
+    refine IsIntegral.of_pow (n := 2) (by norm_num) ?_
+    rw [h, hcast, show (((3 * (p : ℤ) : ℤ)) : ℚ) = algebraMap ℤ ℚ (3 * (p : ℤ)) by simp]
+    exact isIntegral_algebraMap
+  obtain ⟨m, hm⟩ := IsIntegrallyClosed.isIntegral_iff.mp hint
+  have hmq : ((m : ℚ)) = r := by simpa using hm
+  have hm2 : (m : ℚ) ^ 2 = 3 * (p : ℚ) := by rw [hmq]; exact h
+  have hm2' : m ^ 2 = 3 * (p : ℤ) := by exact_mod_cast hm2
+  have h3p : Prime (3 : ℤ) := Int.prime_three
+  obtain ⟨k, hk⟩ := h3p.dvd_of_dvd_pow (show (3 : ℤ) ∣ m ^ 2 from ⟨(p : ℤ), hm2'⟩)
+  have hpk : (3 : ℤ) * k ^ 2 = (p : ℤ) := by
+    have h9 : (3 : ℤ) * (3 * k ^ 2) = 3 * (p : ℤ) := by rw [← hm2', hk]; ring
+    omega
+  have hdz : ((3 : ℕ) : ℤ) ∣ ((p : ℕ) : ℤ) := ⟨k ^ 2, by push_cast; linarith [hpk]⟩
+  have hdp : (3 : ℕ) ∣ p := Int.ofNat_dvd.mp hdz
+  exact hp3 ((Nat.prime_dvd_prime_iff_eq (by norm_num) hp).mp hdp).symm
+
+/-- `[ℚ(x) : ℚ] = 3` IN COORDINATES: if `x` is an IRRATIONAL real cube root of an integer then
+`1, x, x²` are `ℚ`-linearly independent.
+
+From `a + bx + cx² = 0` one gets `ax + bx² + cn = 0` by multiplying by `x`, hence
+`(b² − ac)x = c²n − ab`. If `b² ≠ ac` this exhibits `x` as a rational number; otherwise
+`c²n = ab`, and then either `c = 0` (forcing `b = 0` and `a = 0`) or `n = (b/c)³`, in which
+case `x = b/c` by uniqueness of real cube roots. -/
+lemma rat_indep_of_irrational_cubeRoot {x : ℝ} {n : ℤ} (hx3 : x ^ 3 = (n : ℝ))
+    (hirr : ∀ r : ℚ, (r : ℝ) ≠ x) {a b c : ℚ}
+    (h : (a : ℝ) + (b : ℝ) * x + (c : ℝ) * x ^ 2 = 0) :
+    a = 0 ∧ b = 0 ∧ c = 0 := by
+  have h2 : (a : ℝ) * x + (b : ℝ) * x ^ 2 + (c : ℝ) * (n : ℝ) = 0 := by
+    linear_combination x * h - (c : ℝ) * hx3
+  have key : ((b : ℝ) ^ 2 - (a : ℝ) * (c : ℝ)) * x
+      = (c : ℝ) ^ 2 * (n : ℝ) - (a : ℝ) * (b : ℝ) := by
+    linear_combination (b : ℝ) * h - (c : ℝ) * h2
+  by_cases hbac : b ^ 2 - a * c = 0
+  · -- `b² = ac`, so `c²n = ab`.
+    have hbac' : ((b : ℝ) ^ 2 - (a : ℝ) * (c : ℝ)) = 0 := by exact_mod_cast hbac
+    rw [hbac', zero_mul] at key
+    have hcn : (c : ℚ) ^ 2 * (n : ℚ) = (a : ℚ) * (b : ℚ) := by
+      have hR : ((c ^ 2 * (n : ℚ) - a * b : ℚ) : ℝ) = 0 := by push_cast; linarith [key]
+      have hQ : (c ^ 2 * (n : ℚ) - a * b : ℚ) = 0 := by exact_mod_cast hR
+      linarith [hQ]
+    by_cases hc : c = 0
+    · subst hc
+      have hb : b = 0 := by
+        have hb2 : b ^ 2 = 0 := by simpa using hbac
+        exact pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hb2
+      subst hb
+      refine ⟨?_, rfl, rfl⟩
+      have ha : (a : ℝ) = 0 := by simpa using h
+      exact_mod_cast ha
+    · -- `c ≠ 0`: then `n = (b/c)³`, so `x = b/c ∈ ℚ`.
+      exfalso
+      have hcube : (c : ℚ) ^ 3 * (n : ℚ) = (b : ℚ) ^ 3 := by
+        linear_combination (c : ℚ) * hcn - (b : ℚ) * hbac
+      have hbc : ((b : ℚ) / c) ^ 3 = (n : ℚ) := by
+        rw [div_pow, ← hcube, mul_comm, mul_div_assoc, div_self (pow_ne_zero 3 hc), mul_one]
+      have hr : ((b / c : ℚ) : ℝ) ^ 3 = (n : ℝ) := by exact_mod_cast hbc
+      exact hirr (b / c) (pow_three_injective_real (hr.trans hx3.symm))
+  · -- `b² ≠ ac`: then `x` is rational outright.
+    exfalso
+    have hbac' : ((b : ℝ) ^ 2 - (a : ℝ) * (c : ℝ)) ≠ 0 := by
+      have hQ : ((b ^ 2 - a * c : ℚ) : ℝ) ≠ 0 := by exact_mod_cast hbac
+      push_cast at hQ; exact hQ
+    have hx : x
+        = ((c : ℝ) ^ 2 * (n : ℝ) - (a : ℝ) * (b : ℝ)) / ((b : ℝ) ^ 2 - (a : ℝ) * (c : ℝ)) :=
+      eq_div_of_mul_eq hbac' (by linear_combination key)
+    exact hirr ((c ^ 2 * (n : ℚ) - a * b) / (b ^ 2 - a * c)) (by rw [hx]; push_cast; ring)
+
+/-- **THE ELEMENTARY OBSTRUCTION OF `LEAF 4c‴`** — a cubic field has no quadratic subfield, in
+coordinates: `√(3/p)` does not lie in `ℚ(x)` when `x` is an irrational real cube root of an
+integer and `p` is a prime other than `3`.
+
+This is what refutes `√−3 ∈ K(γ₂(τ₀))`, and it is the only place `3 ∤ p` is used. -/
+lemma not_rat_sq_eq_three_div_prime {x : ℝ} {n : ℤ} {p : ℕ} (hp : p.Prime) (hp3 : p ≠ 3)
+    (hx3 : x ^ 3 = (n : ℝ)) (hirr : ∀ r : ℚ, (r : ℝ) ≠ x) (A B C : ℚ) :
+    ((A : ℝ) + (B : ℝ) * x + (C : ℝ) * x ^ 2) ^ 2 ≠ 3 / (p : ℝ) := by
+  intro h
+  have hp0 : (0 : ℝ) < (p : ℝ) := by exact_mod_cast hp.pos
+  have hpq : (0 : ℚ) < (p : ℚ) := by exact_mod_cast hp.pos
+  set q : ℚ := 3 / (p : ℚ) with hq
+  have hqr : ((q : ℚ) : ℝ) = 3 / (p : ℝ) := by rw [hq]; push_cast; ring
+  have hzero : ((A ^ 2 + 2 * B * C * (n : ℚ) - q : ℚ) : ℝ)
+      + ((2 * A * B + C ^ 2 * (n : ℚ) : ℚ) : ℝ) * x
+      + ((B ^ 2 + 2 * A * C : ℚ) : ℝ) * x ^ 2 = 0 := by
+    push_cast
+    rw [hqr]
+    linear_combination h - (2 * (B : ℝ) * (C : ℝ) + (C : ℝ) ^ 2 * x) * hx3
+  obtain ⟨e1, e2, e3⟩ := rat_indep_of_irrational_cubeRoot hx3 hirr hzero
+  by_cases hC : C = 0
+  · subst hC
+    have hB : B = 0 := by
+      have hB2 : B ^ 2 = 0 := by simpa using e3
+      exact pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hB2
+    subst hB
+    have hA : A ^ 2 = q := by linarith [e1]
+    refine not_isRatSq_three_mul_prime hp hp3 ((p : ℚ) * A) ?_
+    have hexp : ((p : ℚ) * A) ^ 2 = (p : ℚ) ^ 2 * A ^ 2 := by ring
+    rw [hexp, hA, hq]
+    field_simp
+  · exfalso
+    have hcube : (C : ℚ) ^ 3 * (n : ℚ) = (B : ℚ) ^ 3 := by
+      linear_combination (C : ℚ) * e2 - (B : ℚ) * e3
+    have hbc : ((B : ℚ) / C) ^ 3 = (n : ℚ) := by
+      rw [div_pow, ← hcube, mul_comm, mul_div_assoc, div_self (pow_ne_zero 3 hC), mul_one]
+    have hr : ((B / C : ℚ) : ℝ) ^ 3 = (n : ℝ) := by exact_mod_cast hbc
+    exact hirr (B / C) (pow_three_injective_real (hr.trans hx3.symm))
+
+/-- The imaginary part of a `K(x)`-membership equation for `√−3`, with `x`, `y` real and
+`s = i√p` purely imaginary: the rational parts drop out and what survives is
+`√3 = √p (a' + b'x + c'y)`. -/
+lemma im_of_sqrtNegThree_mem {X Y sp s3 : ℝ} {a a' b b' c c' : ℚ}
+    (h : Complex.I * (s3 : ℂ)
+        = ((a : ℂ) + (a' : ℂ) * (Complex.I * (sp : ℂ)))
+          + ((b : ℂ) + (b' : ℂ) * (Complex.I * (sp : ℂ))) * (X : ℂ)
+          + ((c : ℂ) + (c' : ℂ) * (Complex.I * (sp : ℂ))) * (Y : ℂ)) :
+    s3 = sp * ((a' : ℝ) + (b' : ℝ) * X + (c' : ℝ) * Y) := by
+  have him := congrArg Complex.im h
+  simp at him
+  linarith [him]
+
+/-- **LEAF 4c‴ (RECUT 2026-08-02) — `K(γ₂(τ₀))/K` IS NORMAL, i.e. `√−3 ∈ K(γ₂(τ₀))`.** The CM
+half of Weber's theorem, and the only thing left of `LEAF 4c`.
+
+This is the main theorem of complex multiplication for the level-`3` modular function `γ₂`:
+`γ₂(τ₀)` generates an ABELIAN extension of `K = ℚ(√−p)` — it lies in the ray class field of `K`
+of conductor `3` — so in particular `K(γ₂(τ₀))/K` is normal. Cox, *Primes of the form x² + ny²*,
+§12.B Theorem 12.2; Booher Theorem 36; Gee, *Class invariants by Shimura's reciprocity law*.
+
+STATED IN COORDINATES, because that is what makes the consumer elementary. Under `hirr` the
+extension `K(γ₂(τ₀))/K` has degree `3` with `K`-basis `1, γ₂(τ₀), γ₂(τ₀)²` and minimal
+polynomial `X³ − n`; normality then puts the two other roots `ζ₃γ₂(τ₀)`, `ζ₃²γ₂(τ₀)` in the
+field, hence `ζ₃`, hence `√−3 = 2ζ₃ + 1`. Writing that membership out against the `ℚ`-basis
+`1, s, x, sx, x², sx²` (`s = i√p`, `x = γ₂(τ₀)`) is exactly the conclusion below. Nothing about
+the ORDER of the ray class group is asked for — see the section note above, where the recorded
+`|(𝒪_K/3)^×|/2 ∈ {2, 4}` computation is shown to be unnecessary.
+
+WHY `hirr` IS THERE, and why it makes the statement vacuously true. Normality is a statement
+about the minimal polynomial of `γ₂(τ₀)` over `K`; when `γ₂(τ₀) ∈ K` that polynomial is linear
+and normality gives nothing, so the conclusion below is FALSE without `hirr` (at the five
+admissible `p` one has `K(γ₂(τ₀)) = K = ℚ(√−p)`, which does not contain `√−3`). Since `hn`
+forces `h(−p) = 1` and hence `p ∈ {11, 19, 43, 67, 163}`, where `γ₂(τ₀) ∈ ℤ`, `hirr` is in fact
+unsatisfiable and this leaf is vacuously true. That is inherent to any coordinate statement of
+normality and is not a defect of the cut; the unconditional alternative is `Normal` over the
+`IntermediateField` tower, which needs bookkeeping the coordinate form avoids. Both are
+discharged by the same citation, and neither can be discharged without it.
+
+`3 ∤ p` IS NOT USED HERE — it is spent entirely in the consumer, as `ζ₃ ∉ K`. `hp8` is retained
+for continuity with the consumer chain. The multiplier binders `χ`, `hχ3`, `hχ` are the
+level-`3` modularity of `γ₂` (PROVEN above, `exists_monoidHom_gammaTwo_multiplier`); they are
+what a Shimura-reciprocity proof of this statement consumes, and they are threaded here rather
+than left unconsumed. -/
+theorem exists_sqrtNegThree_coeffs_gammaTwo_heegnerPoint
+    (χ : SL(2, ℤ) →* ℂ) (hχ3 : ∀ γ, χ γ ^ 3 = 1)
+    (hχ : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane), gammaTwo (γ • z) = χ γ * gammaTwo z)
+    {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p) {n : ℤ}
+    (hn : (n : ℂ) = jInvariant (heegnerPoint p hp.pos))
+    (hirr : ∀ r : ℚ, (r : ℂ) ≠ gammaTwo (heegnerPoint p hp.pos)) :
+    ∃ a a' b b' c c' : ℚ,
+      Complex.I * (Real.sqrt 3 : ℂ)
+        = ((a : ℂ) + (a' : ℂ) * (Complex.I * (Real.sqrt p : ℂ)))
+          + ((b : ℂ) + (b' : ℂ) * (Complex.I * (Real.sqrt p : ℂ)))
+              * gammaTwo (heegnerPoint p hp.pos)
+          + ((c : ℂ) + (c' : ℂ) * (Complex.I * (Real.sqrt p : ℂ)))
+              * gammaTwo (heegnerPoint p hp.pos) ^ 2 :=
+  sorry
+
+/-- **LEAF 4c‴ — WEBER'S THEOREM AT THE HEEGNER POINT: `γ₂(τ₀) ∈ ℚ`. NOW PROVEN**
+(2026-08-02, `flt-lean-152`) over `exists_sqrtNegThree_coeffs_gammaTwo_heegnerPoint`, the
+normality of `K(γ₂(τ₀))/K` — see the section note above for the recut.
+
+The proof is the elementary half in full, and it uses none of `χ`, `hχ3`, `hχ`, which are
+passed straight to the residue. Suppose `γ₂(τ₀) ∉ ℚ`. It is REAL
+(`exists_real_gammaTwo_heegnerPoint`), call it `x`, and `x³ = j(τ₀) = n`
+(`gammaTwo_pow_three_eq_jInvariant` with `hn`). The residue supplies rationals with
+`√−3 = (a + a's) + (b + b's)x + (c + c's)x²`, `s = i√p`; taking imaginary parts
+(`im_of_sqrtNegThree_mem`) gives `√3 = √p (a' + b'x + c'x²)`, and squaring gives
+`(a' + b'x + c'x²)² = 3/p`, which `not_rat_sq_eq_three_div_prime` refutes.
+
+The previous statement of this leaf and its audits are preserved in the section notes above;
+the two statements are equivalent given the residue, so those audits transfer. -/
 theorem exists_rat_gammaTwo_of_multiplier
     (χ : SL(2, ℤ) →* ℂ) (hχ3 : ∀ γ, χ γ ^ 3 = 1)
     (hχ : ∀ (γ : SL(2, ℤ)) (z : UpperHalfPlane), gammaTwo (γ • z) = χ γ * gammaTwo z)
     {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3) (h3 : 3 < p) {n : ℤ}
     (hn : (n : ℂ) = jInvariant (heegnerPoint p hp.pos)) :
-    ∃ r : ℚ, (r : ℂ) = gammaTwo (heegnerPoint p hp.pos) :=
-  sorry
+    ∃ r : ℚ, (r : ℂ) = gammaTwo (heegnerPoint p hp.pos) := by
+  by_contra hcon0
+  have hcon : ∀ r : ℚ, (r : ℂ) ≠ gammaTwo (heegnerPoint p hp.pos) := fun r hr => hcon0 ⟨r, hr⟩
+  obtain ⟨X, hX⟩ := exists_real_gammaTwo_heegnerPoint p hp.pos
+  have hirrR : ∀ r : ℚ, (r : ℝ) ≠ X := by
+    intro r hr
+    exact hcon r (by rw [← hX, ← hr]; push_cast; ring)
+  have hX3 : X ^ 3 = (n : ℝ) := by
+    have hc : ((X : ℂ)) ^ 3 = (n : ℂ) := by
+      rw [hX, gammaTwo_pow_three_eq_jInvariant, ← hn]
+    exact_mod_cast hc
+  obtain ⟨a, a', b, b', c, c', heq⟩ :=
+    exists_sqrtNegThree_coeffs_gammaTwo_heegnerPoint χ hχ3 hχ hp hp8 h3 hn hcon
+  rw [← hX, show ((X : ℂ)) ^ 2 = (((X ^ 2 : ℝ)) : ℂ) by push_cast; ring] at heq
+  have him := im_of_sqrtNegThree_mem heq
+  have hp0 : (0 : ℝ) < (p : ℝ) := by exact_mod_cast hp.pos
+  have h3sq : Real.sqrt 3 ^ 2 = 3 := Real.sq_sqrt (by norm_num)
+  have hpsq : Real.sqrt (p : ℝ) ^ 2 = (p : ℝ) := Real.sq_sqrt hp0.le
+  have hsq : ((a' : ℝ) + (b' : ℝ) * X + (c' : ℝ) * X ^ 2) ^ 2 = 3 / (p : ℝ) := by
+    have h2 := congrArg (fun t : ℝ => t ^ 2) him
+    simp only [mul_pow] at h2
+    rw [h3sq, hpsq] at h2
+    field_simp
+    linarith [h2]
+  exact not_rat_sq_eq_three_div_prime hp (by omega) hX3 hirrR a' b' c' hsq
 
 end GammaTwoMultiplier
 
 /-- **LEAF 4c″ — THE SINGULAR MODULUS `n = j(τ₀)` IS A PERFECT CUBE IN `ℤ`. NOW PROVEN**
 (2026-07-31, `flt-lean-384`) over `exists_cubeRootOne_gammaTwo_smul` (the level-`3` half, proven
-just above) and `exists_rat_gammaTwo_of_multiplier` (`LEAF 4c‴`, the CM half, open).
+just above) and `exists_rat_gammaTwo_of_multiplier` (`LEAF 4c‴`, the CM half) — which is itself
+PROVEN as of 2026-08-02 (`flt-lean-152`) over
+`exists_sqrtNegThree_coeffs_gammaTwo_heegnerPoint`, the OPEN leaf of this cluster.
 
 The arithmetic is the whole of what this theorem adds and it is three lines of field theory:
 `γ₂(τ₀) = r ∈ ℚ` and `γ₂³ = j = n` make `r` a root of the monic `X³ − n`, hence integral over
@@ -7167,14 +7445,17 @@ DEFINED there over mathlib's `ModularForm.eta`, `ModularForm.discriminant` and
   and translation of `b` mod `d`); what remains is the analytic core alone — that the
   elementary symmetric functions of `j` over the `ψ(N)` triangular points `(az+b)/d` are
   integral polynomials in `j`;
-* `Heegner.exists_rat_jInvariant_heegnerPoint` — `j(τ₀) ∈ ℚ` (**the main theorem of CM**). It
-  REPLACES `Heegner.exists_quadratic_jInvariant_heegnerPoint`, which is PROVEN from it;
-* `Heegner.exists_intCube_jInvariant_heegnerPoint` — `j(τ₀) = n ∈ ℤ` is a CUBE in `ℤ` (Weber's
-  level-`3` descent). RECUT 2026-07-31 from `Heegner.exists_ratCube_jInvariant_heegnerPoint`,
-  which is now PROVEN from it and from `Heegner.exists_int_jInvariant_heegnerPoint`; that one
-  in turn REPLACES `Heegner.exists_quadratic_gammaTwo_of_jInvariant`, which is PROVEN from it.
-  The `K = ℚ(√−p)` in that pair was dressing, because `j(τ₀)` is REAL, and the `ℚ` was dressing
-  too, because `j(τ₀)` is an algebraic INTEGER;
+* `Heegner.exists_posDefForm_root_of_aeval_minpoly_jInvariant` (**the main theorem of CM**).
+  It is what `Heegner.exists_rat_jInvariant_heegnerPoint` (`j(τ₀) ∈ ℚ`) is PROVEN over, and
+  that one REPLACES `Heegner.exists_quadratic_jInvariant_heegnerPoint`, PROVEN from it;
+* `Heegner.exists_sqrtNegThree_coeffs_gammaTwo_heegnerPoint` — **Shimura reciprocity for `γ₂`**,
+  in the form "`K(γ₂(τ₀))/K` is normal". RECUT THREE TIMES from
+  `Heegner.exists_ratCube_jInvariant_heegnerPoint` through
+  `Heegner.exists_intCube_jInvariant_heegnerPoint` and
+  `Heegner.exists_rat_gammaTwo_of_multiplier`, ALL THREE of which are now PROVEN theorems; the
+  elementary "no cubic subextension" half was proved on 2026-08-02 (`flt-lean-152`). The
+  `K = ℚ(√−p)` and the `ℚ` in the older pair were dressing, because `j(τ₀)` is REAL and an
+  algebraic INTEGER; what is left mentions no cube, no `ℤ` and no `3`;
 and that is the whole list — **the `η`-cluster is no longer on it.**
 `Heegner.eta_two_torsion_key` is PROVEN (release 24), over `Heegner.eta_weber_prod` (Weber's
 `f·f₁·f₂ = √2`, free: it is the odd/even splitting of `∏(1−xⁿ)`) and `Heegner.eta_weber_sum`
@@ -7194,10 +7475,10 @@ the two `j`-statements listed above, once reality was used to remove the `K` (se
 first over `Heegner.eta_pow_24_add_eta_two_pow_24` — which is itself PROVEN, over
 `Heegner.eta_two_torsion_key`, which is itself PROVEN.
 
-Of these only `exists_rat_jInvariant_heegnerPoint` needs class field theory;
-`exists_intCube_jInvariant_heegnerPoint` needs Weber's level-`3` modular theory but no class
-field theory, and `exists_modularPolynomial_prod` is the analytic core of the integrality of
-the class equation — that last is the cheap target now that the analytic cluster is closed.
+Of these only `exists_posDefForm_root_of_aeval_minpoly_jInvariant` and
+`exists_sqrtNegThree_coeffs_gammaTwo_heegnerPoint` need class field theory (the main theorem of
+CM and Shimura reciprocity respectively); `exists_modularPolynomial_prod` is the analytic core
+of the integrality of the class equation — that last is the cheap target now that the analytic cluster is closed.
 (This list is referred to BY NAME rather than by position — its ordinals went stale
 twice, and at one point "the seventh" had no referent at all.) -/
 theorem exists_heegnerRelation_of_classNumberOne {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
