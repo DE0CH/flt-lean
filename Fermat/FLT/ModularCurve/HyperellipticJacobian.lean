@@ -13144,34 +13144,214 @@ It is the ordinary third outcome for a cut whose sibling turned out to be cheape
 planned — the plan named 3b for step 7 before `placeAct_transitive` existed. -/
 theorem geomPic_exists_bcDiv_of_divAct_fixed {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable)
     {δ : gp.Dbar.Divisors} (hδ : ∀ σ : QbarGal, gp.divAct σ δ = δ) :
-    ∃ ε : D.Divisors, gp.bcDiv ε = δ := sorry
+    ∃ ε : D.Divisors, gp.bcDiv ε = δ := by
+  classical
+  -- an invariant divisor is constant on the fibres of `below`, by transitivity
+  have hconst : ∀ w w' : gp.Dbar.Places, gp.below w = gp.below w' → δ w = δ w' := by
+    intro w w' hww'
+    obtain ⟨σ, hσ⟩ := placeAct_transitive gp hsep w w' hww'
+    have h1 : gp.divAct σ δ (gp.placeAct σ w) = δ w := by
+      rw [GeomPic.divAct_apply, Equiv.symm_apply_apply]
+    rw [hδ σ, hσ] at h1
+    exact h1.symm
+  -- so it is the base change of the rational divisor reading off any fibre
+  set f : D.Places → ℤ := fun v =>
+    if h : ∃ w : gp.Dbar.Places, gp.below w = v then δ h.choose else 0 with hf
+  have hfval : ∀ w : gp.Dbar.Places, f (gp.below w) = δ w := by
+    intro w
+    have hex : ∃ w' : gp.Dbar.Places, gp.below w' = gp.below w := ⟨w, rfl⟩
+    rw [hf]
+    simp only [dif_pos hex]
+    exact hconst _ _ hex.choose_spec
+  refine ⟨Finsupp.onFinset (δ.support.image gp.below) f (by
+    intro v hv
+    rw [hf] at hv
+    by_cases hex : ∃ w : gp.Dbar.Places, gp.below w = v
+    · simp only [dif_pos hex] at hv
+      exact Finset.mem_image.mpr ⟨hex.choose, Finsupp.mem_support_iff.mpr hv, hex.choose_spec⟩
+    · simp only [dif_neg hex] at hv
+      exact absurd rfl hv), ?_⟩
+  ext w
+  rw [GeomPic.bcDiv_apply]
+  show f (gp.below w) = δ w
+  exact hfval w
 
-/-- **LEAF (weak Mordell–Weil, 3c of 4): every geometric divisor is defined over a finite
-Galois level.**
+/-- **The two places at infinity are fixed by the whole of `Γ_ℚ`** (PROVEN over
+`PlaceData.pt_surjective_of_isAlgClosed`).
+
+`GeomPic.placeAct_infPlus` is the `s = true` half and is proven without `hsep`, from
+`below_infPlus` alone.  The other branch needs to know that `placeAct σ` cannot carry an
+infinite place to an affine one, and the cheapest way to say that is `ord xx = −1` versus
+`0 ≤ ord xx` — which needs the target place to be a NAMED point, i.e. `pt` surjective.
+Once both places are known infinite, `below_infPlus` separates them exactly as it does in
+`placeAct_transitive`. -/
+theorem placeAct_pt_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ)).Separable)
+    (σ : QbarGal) (s : Bool) :
+    gp.placeAct σ (gp.Dbar.pt (Sum.inr s)) = gp.Dbar.pt (Sum.inr s) := by
+  set w : gp.Dbar.Places := gp.Dbar.pt (Sum.inr s) with hw
+  have hxx : gp.Dbar.ord (gp.placeAct σ w) gp.Dbar.xx = -1 := by
+    have h := gp.ord_placeAct σ w gp.Dbar.xx
+    rw [gp.fieldAct_xx] at h
+    rw [h, hw]
+    exact (gp.Dbar.ord_pt_infinite s).1
+  obtain ⟨Q, hQ⟩ := PlaceData.pt_surjective_of_isAlgClosed gp.Dbar hsep (gp.placeAct σ w)
+  rcases Q with q | s'
+  · -- an affine place has `xx` regular, so it cannot be the image of an infinite one
+    exfalso
+    rw [← hQ] at hxx
+    have h1 : 0 ≤ gp.Dbar.ord (gp.Dbar.pt (Sum.inl q)) gp.Dbar.xx :=
+      PlaceData.mem_valRing_of_vanishesAt_sub gp.Dbar _ (gp.Dbar.vanishesAt_xx_pt q)
+    omega
+  · -- both places are at infinity; `below_infPlus` separates the two branches
+    have key : gp.placeAct σ w = gp.Dbar.pt PlaceData.infPlus
+        ↔ w = gp.Dbar.pt PlaceData.infPlus := by
+      rw [← gp.below_infPlus, ← gp.below_infPlus, gp.below_placeAct]
+    rcases s with _ | _ <;> rcases s' with _ | _
+    · exact hQ.symm.trans hw.symm
+    · exfalso
+      have h1 : gp.placeAct σ w = gp.Dbar.pt PlaceData.infPlus := by
+        rw [← hQ]; rfl
+      have h2 := key.mp h1
+      rw [hw] at h2
+      exact absurd (gp.Dbar.pt_injective h2) (by simp [PlaceData.infPlus])
+    · exfalso
+      have h2 : w = gp.Dbar.pt PlaceData.infPlus := by rw [hw]; rfl
+      have h1 := key.mpr h2
+      rw [← hQ] at h1
+      exact absurd (gp.Dbar.pt_injective h1) (by simp [PlaceData.infPlus])
+    · exact hQ.symm.trans hw.symm
+
+/-- **Every geometric place is defined over a finite extension of `ℚ`** (PROVEN), in the
+only form the level argument needs: a FINITE SET of elements of `ℚ̄` whose pointwise fixing
+already forces `placeAct σ w = w`.
+
+Over `ℚ̄` a place IS a named point (`PlaceData.pt_surjective_of_isAlgClosed`), so the finite
+set is simply its two coordinates — empty at the two places at infinity, which are fixed by
+everything.  This is the whole of the arithmetic input to
+`geomPic_exists_finiteLevel_divisor`; everything else there is bookkeeping about `Finsupp`
+supports. -/
+theorem exists_finset_fixes_place {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ)).Separable)
+    (w : gp.Dbar.Places) :
+    ∃ T : Finset (AlgebraicClosure ℚ),
+      ∀ σ : QbarGal, (∀ a ∈ T, σ a = a) → gp.placeAct σ w = w := by
+  classical
+  obtain ⟨P, hP⟩ := PlaceData.pt_surjective_of_isAlgClosed gp.Dbar hsep w
+  rcases P with q | s
+  · refine ⟨{(q : (AlgebraicClosure ℚ) × (AlgebraicClosure ℚ)).1,
+      (q : (AlgebraicClosure ℚ) × (AlgebraicClosure ℚ)).2}, fun σ hσ => ?_⟩
+    have h1 : σ (q : (AlgebraicClosure ℚ) × (AlgebraicClosure ℚ)).1
+        = (q : (AlgebraicClosure ℚ) × (AlgebraicClosure ℚ)).1 := hσ _ (by simp)
+    have h2 : σ (q : (AlgebraicClosure ℚ) × (AlgebraicClosure ℚ)).2
+        = (q : (AlgebraicClosure ℚ) × (AlgebraicClosure ℚ)).2 := hσ _ (by simp)
+    rw [← hP]
+    exact gp.placeAct_pt_affine hsep σ q q h1 h2
+  · exact ⟨∅, fun σ _ => by rw [← hP]; exact placeAct_pt_infinite gp hsep σ s⟩
+
+/-- **Every geometric divisor is defined over a finite Galois level** (PROVEN 2026-08-01;
+was LEAF weak Mordell–Weil 3c of 4).
 
 The divisor analogue of `geomPic_exists_finiteLevel`, and the reason the cocycle below is
 INFLATED, which is what makes Hilbert 90 applicable to an infinite Galois group at all.
 
-`supp δ` is finite and each of its places lies in a finite fibre of `below`
-(`below_finite`), so the action of `Γ` on `supp δ` factors through the finite group of
-permutations of those fibres; the kernel is an open subgroup, and `L` is the finite Galois
-level it fixes.  Equivalently and closer to the source: a place of `F̄` is defined over a
-finite extension of `ℚ`, because `F̄ = ⋃_L F·L` over the finite subextensions.
-
 The conclusion asks only `divAct ρ δ = δ`, which is weaker than `placeAct ρ` fixing `supp δ`
-pointwise — that is all the assembly needs.
+pointwise — that is all the assembly needs.  (The proof below in fact establishes the
+stronger pointwise form and then reads the weaker one off it; the extra strength is not
+exported because nothing wants it.)
+
+## THE ROUTE THIS DOCSTRING USED TO PRESCRIBE HAS A GAP — do not go back to it
+
+Until today the first paragraph here read: *"`supp δ` is finite and each of its places lies
+in a finite fibre of `below` (`below_finite`), so the action of `Γ` on `supp δ` factors
+through the finite group of permutations of those fibres; the kernel is an OPEN subgroup, and
+`L` is the finite Galois level it fixes."*  Every clause is true except the one in capitals,
+and it is the one the conclusion needs.  That argument produces a subgroup of FINITE INDEX,
+and a finite-index subgroup of `Γ_ℚ` need NOT be open: `QbarGal` is a bare type here with no
+topology and no continuity condition anywhere in `GeomPic` (deliberately — see
+`geomPic_hilbert90`'s `hinfl`), and even with the Krull topology `Γ_ℚ` is not topologically
+finitely generated, so Nikolov–Segal does not apply and non-open finite-index subgroups are
+expected.  Nothing in the interface can bridge that gap, because `below_finite` says only
+that the fibres are finite and nothing whatever about which `σ` move them.
+
+**The route that works is the docstring's own SECOND sentence** — *"a place of `F̄` is defined
+over a finite extension of `ℚ`"* — made literal.  Over `ℚ̄` a place IS a named point
+(`PlaceData.pt_surjective_of_isAlgClosed`), so it carries two honest coordinates in `ℚ̄`, and
+`GeomPic.placeAct_pt_affine` (PROVEN) says `placeAct σ` moves the place exactly as `σ` moves
+those coordinates.  Collect the coordinates of the finitely many places of `supp δ`, take the
+finite Galois level they generate, and every `σ` fixing it pointwise fixes each of those
+places — hence permutes `supp δ` trivially, hence fixes `δ`.  `FiniteGaloisIntermediateField.adjoin`
+(mathlib, already in this cone through `Fermat.FLT.Mathlib.FieldTheory.AbsoluteHilbert90`)
+is the normal closure of `ℚ(coordinates)` and carries both `FiniteDimensional` and `IsGalois`
+as structure fields, so neither has to be built by hand.
+
+**`hsep` is new and is the only change to the statement.**  It is what
+`PlaceData.pt_surjective_of_isAlgClosed` and `GeomPic.placeAct_pt_affine` consume, exactly as
+in `placeAct_transitive`, and it is threaded from `finite_quotient_psmul_pic` through
+`geomPic_descent` to the intended consumer `geomPic_descent_divisor`.  Adding a hypothesis
+can only weaken the statement, so the audit below transfers verbatim.  The proof rests on the
+still-open `pt_surjective_of_isAlgClosed`, which adds no `sorryAx` edge anywhere:
+`geomPic_descent` already reaches it through `placeAct_transitive`.
 
 **Not vacuous.**  `IsGalois ℚ L` is what the consumer needs and not merely `FiniteDimensional`:
 `Hilbert 90` inflates from `Gal(L/ℚ)`, and the stability of `L` under all of `Γ` that the
 argument uses is `Normal ℚ L` read through `AlgEquiv.restrictNormalHom_apply` (the same
-step `geomPic_exists_finiteLevel` records). -/
+step `geomPic_exists_finiteLevel` records).
+
+**DO NOT DELETE THIS AS FREE-FLOATING.**  It has no consumer today, and it had none while it
+was a leaf either: its intended consumer is step 5 of `geomPic_descent_divisor`'s recorded
+assembly, which is still open, and the same is true of its sibling `geomPic_hilbert90`.  The
+decomposition of that node into 3a–3d was designed on 2026-07-30 and has never been carried
+out; 3a is the only one of the four with a consumer today, and 3b acquired one on 2026-08-01
+only because `geomPic_descent` was rewired onto it. -/
 theorem geomPic_exists_finiteLevel_divisor {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable)
     (δ : gp.Dbar.Divisors) :
     ∃ L : IntermediateField ℚ (AlgebraicClosure ℚ),
       FiniteDimensional ℚ L ∧ IsGalois ℚ L ∧
-      (∀ σ : QbarGal, (∀ x ∈ L, σ x = x) → gp.divAct σ δ = δ) := sorry
+      (∀ σ : QbarGal, (∀ x ∈ L, σ x = x) → gp.divAct σ δ = δ) := by
+  classical
+  have hsepbar : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ)).Separable := by
+    rw [← sextPoly_map (algebraMap ℚ (AlgebraicClosure ℚ))]
+    exact hsep.map
+  -- `IsGalois ℚ ℚ̄` is NOT an instance (the `Algebra ℚ ℚ̄` diamond at the literal base
+  -- field), so it is introduced by hand, exactly as in `geomPic_bc_injective`.
+  haveI : IsGalois ℚ (AlgebraicClosure ℚ) :=
+    Field.isGalois_of_isAlgClosed (AlgebraicClosure.isAlgebraic ℚ)
+  choose T hT using exists_finset_fixes_place gp hsepbar
+  set S : Finset (AlgebraicClosure ℚ) := δ.support.biUnion T with hS
+  set LG : FiniteGaloisIntermediateField ℚ (AlgebraicClosure ℚ) :=
+    FiniteGaloisIntermediateField.adjoin ℚ (S : Set (AlgebraicClosure ℚ)) with hLG
+  refine ⟨LG.toIntermediateField, LG.finiteDimensional, LG.isGalois, fun σ hσ => ?_⟩
+  have hmem : ∀ a ∈ S, a ∈ LG.toIntermediateField := fun a ha =>
+    FiniteGaloisIntermediateField.subset_adjoin ℚ (S : Set (AlgebraicClosure ℚ)) ha
+  -- every place of the support is fixed on the nose
+  have hfix : ∀ w ∈ δ.support, gp.placeAct σ w = w := by
+    intro w hw
+    refine hT w σ (fun a ha => hσ a (hmem a ?_))
+    rw [hS]
+    exact Finset.mem_biUnion.mpr ⟨w, hw, ha⟩
+  ext w
+  rw [GeomPic.divAct_apply]
+  by_cases hw : w ∈ δ.support
+  · have h : (gp.placeAct σ).symm w = w := by
+      rw [Equiv.symm_apply_eq]
+      exact (hfix w hw).symm
+    rw [h]
+  · -- off the support both sides vanish: a preimage in the support would be its own image
+    have hu : (gp.placeAct σ).symm w ∉ δ.support := by
+      intro hmem'
+      apply hw
+      have h1 := hfix _ hmem'
+      rw [Equiv.apply_symm_apply] at h1
+      rw [h1]
+      exact hmem'
+    rw [Finsupp.notMem_support_iff.mp hu, Finsupp.notMem_support_iff.mp hw]
 
 /-- **LEAF (weak Mordell–Weil, 3d of 4): Hilbert 90 for the constant field extension**,
 `H¹(Γ_ℚ, F̄ˣ) = 1` for a cocycle inflated from a finite Galois level.

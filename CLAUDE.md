@@ -26461,3 +26461,64 @@ Accounting, in the shape the RECUT rule asks for: **the count did not move,
 warning LINE moved from the target to the new leaf.**  Quote that, because a
 `−1 +1` delta is otherwise indistinguishable from one closure plus one
 unrelated disclosure.
+## A LEAF'S PROOF CAN BE SITTING INLINE INSIDE ITS OWN CONSUMER — grep the consumer's `by` block for the leaf's STATEMENT
+(2026-08-01, `flt-lean-338`, `ModularCurve/HyperellipticJacobian.lean`, and it closed a
+second leaf for free.)  The standing checks ask *is this leaf open*, *is it owned*, and
+*does anything consume it*.  There is a fourth state none of them names:
+> the leaf is open, it has NO consumer, and its proof is written out **verbatim** inside a
+> PROVEN theorem three hundred lines below it.
+`geomPic_exists_bcDiv_of_divAct_fixed` ("a Galois-invariant geometric divisor is a base
+change") was a `sorry` at line 10602.  `geomPic_descent` at line 10739 opens with a block —
+`hconst` through `hbc` — that is character for character a proof of it, and never mentions
+the leaf.  Lifting the block out and rewiring the parent onto it took ten minutes and cost
+nothing.
+**The mechanism is a two-step, and both steps are individually correct**, which is why it
+survives review: (1) a node is decomposed into named sub-leaves, on paper, in a docstring;
+(2) some LATER branch proves an input the decomposition needed — here `placeAct_transitive`,
+which stopped being a leaf on 2026-07-31 — and, having it in hand, closes the PARENT by
+running the sub-leaf's argument inline rather than by calling a `sorry`.  Nobody re-reads the
+decomposition afterwards, so the sub-leaf keeps its `sorry` and keeps drawing dispatches.
+**So when you are sent at a leaf with no consumer, do not stop at "consumerless".**  Ask
+which theorem the docstring says will consume it, and if that theorem is PROVEN, read its
+`by` block for your leaf's conclusion — not for your leaf's NAME, which by construction does
+not occur there.  One `grep` on a distinctive fragment of the conclusion (`bcDiv ε = δ`
+here) settles it.  The same reading also tells you what the honest report is: closing such a
+leaf is **merge/decomposition repair, not mathematics**, and the commit should say so.
+**And check the WHOLE sibling group while you are in it.**  Of the four sub-leaves of
+`geomPic_descent_divisor`, 3a had a consumer, 3b's proof was inline in `geomPic_descent`,
+3c was provable from machinery that had landed since it was cut, and only 3d is genuinely
+open.  A decomposition that was never carried out ages this way as a *group*: every input
+that later becomes available closes one member silently.
+### The corollary that is worth as much: a docstring's prescribed route can be INVALID, not merely expensive
+The rules above say a recorded route is a COST HYPOTHESIS.  `geomPic_exists_finiteLevel_divisor`
+is the sharper case — its route does not work at any price, and the docstring itself contained
+the route that does, one sentence later:
+> *"`supp δ` is finite and each of its places lies in a finite fibre of `below`, so the action
+> of `Γ` on `supp δ` factors through the finite group of permutations of those fibres; **the
+> kernel is an OPEN subgroup**, and `L` is the finite Galois level it fixes.  Equivalently and
+> closer to the source: **a place of `F̄` is defined over a finite extension of `ℚ`**."*
+Every clause is true except the one asserting openness, which is the one the conclusion needs.
+A finite set of finite fibres gives a subgroup of FINITE INDEX, and a finite-index subgroup of
+`Γ_ℚ` need not be open — `QbarGal` carries no topology at all here (deliberately), and even
+with the Krull topology `Γ_ℚ` is not topologically finitely generated, so Nikolov–Segal does
+not apply.  The second sentence, made literal, is a complete proof: over `ℚ̄` every place IS a
+named point, so it has two honest coordinates, and `FiniteGaloisIntermediateField.adjoin`
+(mathlib) turns a finite set of them into a finite Galois level with `FiniteDimensional` and
+`IsGalois` as structure fields.
+**The generalisable tell: a route that produces a subgroup of finite index and then calls it
+open.**  In a profinite group that step is a theorem, not a definition, and in an absolute
+Galois group of a number field it is false in general.  Whenever a route's last step is
+"…so the stabiliser is open", ask what actually produced it — a finite quotient (finite index,
+NOT enough) or a finite extension of the base field (open, enough).
+Two smaller things from the same run, both reusable:
+* **`FiniteGaloisIntermediateField.adjoin k s`** (`Mathlib/FieldTheory/Galois/GaloisClosure.lean`)
+  is the normal closure of `k(s)` packaged with `finiteDimensional` and `isGalois` as FIELDS,
+  so "produce a finite Galois `L` containing this finite set" is one term and no instance
+  hunting.  It needs `[IsGalois k K]`, which at `k = ℚ`, `K = AlgebraicClosure ℚ` does **not**
+  synthesize (the `Algebra ℚ ℚ̄` diamond); `haveI : IsGalois ℚ (AlgebraicClosure ℚ) :=
+  Field.isGalois_of_isAlgClosed (AlgebraicClosure.isAlgebraic ℚ)` is the standing workaround
+  and is already used twice in this file.
+* **"σ fixes every place of `supp δ`" ⟹ "`divAct σ δ = δ`" needs the OFF-support case too**,
+  and it is not automatic: `δ ((placeAct σ).symm w) = 0` for `w ∉ supp δ` holds because a
+  preimage lying in the support would be its own image, hence equal to `w`.  Three lines, and
+  the proof does not go through without them.
