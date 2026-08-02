@@ -27817,3 +27817,86 @@ PROVEN `exists_isAmpleSheaf_of_field`; BLR 9.4 for the identity component).
 **Correcting the REASON of a blocker is worth as much as removing it** — a
 blocker with the wrong reason attracts repairs that cannot work, and hides the
 ones that can.
+## A HOIST THAT BREAKS AN IMPORT CYCLE MUST CARRY THE **CUT**, NOT JUST THE LEAF
+(2026-08-01, `flt-lean-378`, `nonempty_cubeModel_of_isAmpleSheaf_cube`.  Frontier
+100 → 99 with no mathematics done at all.)
+The hoist rules above are all about what the MOVED code references — walk its
+dependencies, check nothing it cites is left behind.  That is the right check for a
+relocation and it is blind to the dependency that runs the other way.  **A CUT is a
+downward edge: the leaf is proven over halves declared ABOVE it.  So moving the LEAF
+UP, out of its file, strands the halves BELOW it** — and if the destination module is
+one the old file imports, the halves land downstream of the very declaration they were
+cut out of, where Lean's declaration order makes them uncitable for ever.
+Exactly that happened here, twice in one day, both edits correct:
+* 2026-07-31 morning: `nonempty_cubeModel_of_isAmpleSheaf_cube` was CUT, in
+  `ModularCurve/X0.lean`, into `exists_veryAmpleSystem_of_isAmpleSheaf` (embedding) +
+  `exists_cubeForms_of_veryAmpleSystem` (forms), over a new section-evaluation
+  apparatus (`ptSectionValue` and friends) built the same day for the purpose;
+* 2026-07-31 later: the LEAF and its parent were hoisted into a new
+  `Modularity/AbelianCubeModel.lean` to break a genuine three-hop import cycle.  The
+  hoist took the leaf and left the cut.  `X0.lean` `public import`s the new module, so
+  both halves — and `ptSectionValue_ne_zero_iff`, the bridge written to make
+  `coords_ne_zero` a theorem — became unreachable from the only thing that wanted them.
+**The frontier then carried THREE open leaves for TWO leaves' worth of mathematics,
+and the leaf the cut was built to close stayed open.**  The repair was to move the
+block up too and write the assembly: nine `obtain`s and a structure literal, green on
+the first compile, ~5 s in a scratch.
+**IT IS INVISIBLE TO EVERY INSTRUMENT, and that is the point.**  Nothing is
+duplicated, nothing is renamed, no name is missing, no comment is unbalanced, every
+module builds, and all three `declaration uses 'sorry'` warnings are honest.  A
+frontier scan counts three leaves because there are three `sorry` bodies.  `own.py`
+and `leafstat.py` both correctly report all three unowned and open.  **The only trace
+is that the halves have no consumer** — and CLAUDE.md's own consumerless-leaf check is
+the one thing that finds it:
+    grep -rn '<eachHalfName>' --include=*.lean Fermat/ | grep -v '`'
+Each of the three came back with EXACTLY ONE hit: its own declaration line.
+**So add one line to the hoist checklist, and it is the cheapest item on it: after
+moving a declaration between modules, grep the declarations it was CUT OUT OF and the
+declarations CUT OUT OF IT for consumers.**  A leaf and its halves are a unit; a
+relocation that splits them across an import edge destroys the cut silently and cannot
+be undone from the downstream side.  The general form: **a hoist must preserve the
+import-order interval that contains BOTH ends of every dependency it participates in**,
+and dependencies into a leaf are exactly the ones a "what does the moved block
+reference" scan cannot see, because a sorried body references nothing.
+Two riders from the same run, both cheap:
+* **The docstring-boundary off-by-one fired and the compiler caught it instantly.**
+  `L[:59]` where the target's docstring OPENS at index 58 inserts the block *inside*
+  that docstring; the block's own `-/` then closes it early and the errors appear
+  hundreds of lines later as `Unknown identifier` for the half you just moved.  Assert
+  on BOTH the docstring's opening line and the blank line before it (`L[57].strip() ==
+  ''` and `L[58].startswith('/-- ')`), not just the one you are inserting before.
+* **A `SpecQ`-style substitution must be word-boundary-aware.**  `SpecQ` is an `abbrev`
+  in `X0.lean`, so a block moved upstream of it has to spell it out — and a plain
+  `str.replace('SpecQ', ...)` also rewrites `ratOfSpecQ`, `ratOfSpecQ_eq_zero_iff` and
+  `nonvanishingAt_iff_ratOfSpecQ` into garbage.  Use
+  `re.sub(r"(?<![A-Za-z0-9_'])SpecQ(?![A-Za-z0-9_'])", …)` and assert afterwards that
+  the compound names SURVIVED.  Here that was 35 real occurrences against 51 raw hits.
+### The check is now a script: `tools/merge/deadleaf.py`
+Because a consumerless leaf is the ONLY trace this failure leaves, and because
+"grep each open leaf for a consumer" is a paragraph nobody runs, it is now a
+scanner.  It takes `frontier.py`'s open-leaf list and reports every leaf whose
+short name does not occur anywhere in comment-stripped `Fermat/` outside its own
+declaration:
+    python3 tools/merge/deadleaf.py          # --root defaults to the repo it lives in
+Measured on the 2026-08-01 tree: **37 consumerless open leaves out of 379**, i.e.
+roughly one frontier slot in ten is work that would move the count and not the
+project.  Calibrated against the two cases CLAUDE.md already records by name —
+`geomPic_hilbert90` (dead, correctly flagged) and my own two halves (live after
+the repair, correctly NOT flagged).
+Three things about reading it:
+* **a hit is one grep, not a verdict.** The scan is sound in the useful direction —
+  a leaf it does NOT flag certainly has an occurrence — but a flagged leaf could
+  still be reached through an `open`ed abbreviation the scan does not model;
+* **the repair is usually not deletion.** Ask first whether the leaf is the loser
+  of a duplicated cut (derive it from the winner, one line) or whether a
+  RELOCATION merely put it on the wrong side of an import edge (move it back —
+  that is a strict frontier win with no mathematics done, which is this whole
+  section). Only when neither applies is it garbage;
+* **never delete a flagged leaf that has a live owner** in `~/.flt-loop/jobs`.
+  Tidiness is not worth destroying an in-flight target.
+Two artifacts it has to defend against, both of which produced false positives in
+the first draft and both of which CLAUDE.md already records elsewhere: a frontier
+row for a declaration with explicit universe parameters ends in `.`, so a naive
+`split('.')[-1]` is the empty string and reports every such leaf as dead; and
+`Fermat/SorryGate.lean` carries the token `sorry` inside a STRING LITERAL, so any
+scan must exclude that file or be off by two.
