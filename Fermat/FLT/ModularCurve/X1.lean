@@ -22597,7 +22597,28 @@ removes the only reason `Res_{L/K} A` is smooth, so it is not decoration.
 **RELOCATION NOTE**, as for the two theorems above: nothing here is `Γ₁`- or
 even modular-specific, and `X0.lean`'s open
 `exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` would consume it
-verbatim. -/
+verbatim.
+
+**THE RELOCATION HAPPENED ON 2026-07-30 AND THIS COPY WAS NEVER RETIRED.**
+Everything above describes a leaf; it is now a one-line delegation to
+`Fermat.WeilRestriction.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint`,
+which is this statement character for character and is PROVEN there.  Two
+claims above are stale and are corrected rather than deleted, because the
+reasoning around them is still what a reader needs:
+
+* *"that is the whole residue, and it does not exist at this pin"* — the
+  residue is now the single leaf
+  `Fermat.WeilRestriction.exists_weilRestriction_of_finiteEtale` (the
+  CONSTRUCTION only; the group law transports through its universal property
+  and is proven), plus
+  `Fermat.WeilRestriction.exists_finiteEtale_point_of_smooth`;
+* *"Separability of `L/K` is what makes `Res_{L/K} A` SMOOTH"* — **it is
+  PROPERNESS that separability buys, not smoothness.**  Weil restriction
+  along a finite locally free morphism preserves smoothness; along a purely
+  inseparable `L/K` in characteristic `p` the geometric fibre of
+  `Res_{L/K} A` is an extension of `A_{K̄}` by a unipotent group (because
+  `L ⊗_K K̄` is non-reduced), which contains `𝔾_a` and so is not proper.
+  The verdict `hsmooth` is load-bearing is unaffected. -/
 theorem exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
     {C : Scheme.{0}} {K : Type} [Field K] {cstr : C ⟶ Spec (CommRingCat.of K)}
     (hproper : IsProper cstr) (hsmooth : SmoothOfRelativeDimension 1 cstr)
@@ -22611,7 +22632,17 @@ theorem exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
     ∃ (A : Scheme.{0}) (astr : A ⟶ Spec (CommRingCat.of K)) (_ : AbelianSchemeStruct astr)
       (c : C ⟶ A), c ≫ astr = cstr ∧
         ∀ s : Spec (CommRingCat.of K) ⟶ A, c ≠ cstr ≫ s :=
-  sorry
+  -- DUPLICATE CUT, REPAIRED 2026-08-02.  This declaration is
+  -- `Fermat.WeilRestriction.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint`
+  -- character for character (statement lines diffed, identical), and that copy has been
+  -- PROVEN over two named atoms since 2026-07-30 in a module this file already
+  -- `public import`s.  It stayed a `sorry` here only because the delegation the import
+  -- comment at the top of this file promises was never written — and because this file
+  -- does not `open Fermat.WeilRestriction`, the consumer 190 lines below resolved the
+  -- unqualified name to THIS copy, leaving the proven copy and both of its atoms with no
+  -- consumer anywhere in the tree.  Slated for deletion; see `to_merger`.
+  Fermat.WeilRestriction.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
+    hproper hsmooth hconn hsec
 
 /-- **`Pic⁰` AND THE DEGREE-`n` ABEL–JACOBI MAP: a GEOMETRICALLY
 non-rational fibre receives a nonconstant map to an abelian variety**
