@@ -20924,9 +20924,202 @@ theorem summable_axisCoeffSeriesOn {N : ℕ} (hN : N ≠ 0)
   exact (summable_mul_left_iff hne).mp
     (hasSum_integral_Ioi_one_axisRestrictOn' hN f b hb).summable
 
-/-- **THE LEVEL-`25` ARITHMETIC, AS A REAL INEQUALITY** (sorry leaf, opened
-2026-07-31 as a statement about two INTEGRALS and RESTATED TWICE the same
-day — first as a statement about one complex SERIES, then as this
+/-- **GEOMETRIC DOMINATION OF A SHIFTED TAIL, WITH A GENERAL CONSTANT AND A
+GENERAL SHIFT** (PROVEN 2026-08-01): `∑_{n ≥ 0} cₙ x^{n+K} ≤ C·x^K/(1−x)`
+whenever `0 < x < 1` and `0 ≤ cₙ ≤ C`.
+
+This is `X0.lean`'s `tsum_two_mul_tail_lt` with its two hard-wired
+constants freed.  That lemma fixes `C = 2` and `K = 2` and concludes
+`< x`, which is exactly what the `Γ₀` head — a single term with `b₁ = 1` —
+needs; the `Γ₁` head here is a TWO-term head of a DIFFERENCE, so the
+constant is `4` (two coefficients, each `‖aₙ‖ ≤ 2n`) and the shift is `3`,
+and neither value is available from that lemma.  Stated with `≤` and a
+named right-hand side rather than with `<` against the head, so that the
+arithmetic leaf below is a comparison of two explicit reals and contains
+no series at all. -/
+theorem tsum_le_const_mul_geometric_shift {x C : ℝ} (hx0 : 0 < x) (hx1 : x < 1)
+    {c : ℕ → ℝ} (hc0 : ∀ n, 0 ≤ c n) (hcC : ∀ n, c n ≤ C) (K : ℕ) :
+    ∑' n : ℕ, c n * x ^ (n + K) ≤ C * x ^ K / (1 - x) := by
+  have hgeo : Summable fun n : ℕ => x ^ n := summable_geometric_of_lt_one hx0.le hx1
+  have hmaj : Summable fun n : ℕ => C * x ^ K * x ^ n := hgeo.mul_left _
+  have hterm : ∀ n : ℕ, c n * x ^ (n + K) ≤ C * x ^ K * x ^ n := by
+    intro n
+    rw [pow_add]
+    have h1 : c n * (x ^ n * x ^ K) = c n * x ^ K * x ^ n := by ring
+    rw [h1]
+    exact mul_le_mul_of_nonneg_right
+      (mul_le_mul_of_nonneg_right (hcC n) (by positivity)) (by positivity)
+  have hsummable : Summable fun n : ℕ => c n * x ^ (n + K) :=
+    hmaj.of_nonneg_of_le (fun n => mul_nonneg (hc0 n) (by positivity)) hterm
+  have hpos : (0 : ℝ) < 1 - x := by linarith
+  calc ∑' n : ℕ, c n * x ^ (n + K) ≤ ∑' n : ℕ, C * x ^ K * x ^ n :=
+        hsummable.tsum_le_tsum hterm hmaj
+    _ = C * x ^ K * (1 - x)⁻¹ := by
+        rw [tsum_mul_left, tsum_geometric_of_lt_one hx0.le hx1]
+    _ = C * x ^ K / (1 - x) := by ring
+
+/-- **ATKIN–LEHNER–LI: THE FRICKE PARTNER'S COEFFICIENTS ARE `λ·conj(aₙ)`
+WITH `‖λ‖ = 1`** (sorry leaf, cut 2026-08-01 out of
+`tail_lt_head_coeff_sub_frickePartner_x1TwentyFive` below) — the first of
+the two items that leaf's own "WHAT A PROVER OWES" list named, and the
+whole of the modular input left in the cluster.
+
+TRUE and classical: `W_N` carries `S₂(N, χ)` to `S₂(N, χ̄)` and a
+NEWFORM to `λ_N(f)·f_ρ`, where `f_ρ = ∑ conj(aₙ) qⁿ` and the
+pseudo-eigenvalue satisfies `‖λ_N(f)‖ = 1` (Atkin–Lehner 1970 Thm 2;
+Atkin–Li 1978 Thm 2.1; Diamond–Shurman §5.5).  Every normalized
+eigenform of `S₂(Γ₁(25))` IS a newform, because the whole space is new:
+`S₂(Γ₁(1)) = S₂(Γ₁(5)) = 0` (both curves have genus `0`), so there are
+no oldforms at level `25` at all, and `dim S₂(Γ₁(25)) = 12 = g(X₁(25))`.
+
+**THE NORMALISATION IS mathlib's AND IT IS THE CLASSICAL ONE, which is
+what makes `‖λ‖ = 1` the right clause rather than `‖λ‖ = c` for some
+level-dependent `c`.**  `frickeSlashOn` is `f ∣[(2 : ℤ)] frickeMatrix N`,
+and mathlib's slash carries the factor `(det γ)^{k−1}·denom(γ, z)^{−k}`;
+at `k = 2` and `γ = W_N = ![![0, −1], ![N, 0]]` that is
+`N·(Nz)^{−2} = N^{−1} z^{−2}`, i.e. `(f ∣ W_N)(z) = N^{−1} z^{−2} f(−1/(Nz))`,
+which is the standard `N^{−k/2} z^{−k} f(−1/(Nz))` at `k = 2` on the nose.
+Independently confirmed numerically: PARI/GP's `mfatkineigenvalues` at
+`Q = N = 25` returns `‖λ‖ = 1` to 30 digits at all twelve embeddings.
+
+**`1 ≤ n` IS NOT DECORATION AND MAY NOT BE DROPPED.**  `hb` constrains
+only `b (n + 1)`, so `b 0` is a free complex number, while `hf.zero`
+pins `a 0 = 0`; the conclusion at `n = 0` would assert `b 0 = 0` and is
+unprovable.  Every consumer below reads `b` at `1`, `2` and `n + 3` only.
+
+**`hb` IS LOAD-BEARING**: it is what makes `b` the expansion of the
+Fricke partner rather than of an arbitrary cusp form.  Drop it and `b`
+is a free sequence and the conclusion is refuted by `b := 0` (against
+`hf.one`, which forces `a 1 = 1`, so `b 1 = λ` cannot be `0` for a unit
+`λ`). -/
+theorem exists_frickePseudoEigenvalue_x1TwentyFive
+    (χ : DirichletCharacter ℂ 25) (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a) (b : ℕ → ℂ)
+    (hb : ∀ y : ℝ, 0 < y →
+      HasSum (fun n : ℕ => b (n + 1) *
+          ((Real.exp (-(2 * Real.pi / Real.sqrt (25 : ℕ) * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+        (axisRestrictOn (Gamma1GL 25) 25
+          (frickeSlashOn 25 (by norm_num) le_rfl (gamma1GL_le_gamma0GL 25) f) y)) :
+    ∃ lam : ℂ, ‖lam‖ = 1 ∧
+      ∀ n : ℕ, 1 ≤ n → b n = lam * (starRingEnd ℂ) (a n) :=
+  sorry
+
+/-- **DELIGNE IN WEIGHT TWO, WITH A NEBENTYPUS: `‖aₙ‖ ≤ 2n`** (sorry
+leaf, cut 2026-08-01) — the second item of the list on
+`tail_lt_head_coeff_sub_frickePartner_x1TwentyFive` below, and the
+`Γ₁`-shaped TWIN of `X0.lean`'s `norm_coeff_le_two_mul_self`.
+
+**IT IS A NEW LEAF, AND THE CLAIM THAT IT WAS CITABLE WAS WRONG.**  That
+leaf's docstring, and the task prompt generated from it, both said this
+item is "SHARED with the `Γ₀` layer (`X0.lean`'s
+`norm_coeff_le_two_mul_self` …).  Cite it, do not restate it."  It cannot
+be cited: `norm_coeff_le_two_mul_self` is stated over
+`IsWeightTwoEigenform M g a` with `g : CuspForm (Gamma0GL M) 2`, and so is
+the leaf under it, `realCoeff_norm_le_of_isWeightTwoEigenform`.  What is
+in hand here is `IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a`, a
+DIFFERENT predicate, and `isWeightTwoEigenformOn_gamma0_iff` bridges the
+two only at `G = Gamma0GL N` and `χ = 1` — which is exactly the case this
+cluster does not have.  So "closing it there closes it here" is false as
+stated; what is true is that the two are the same theorem at two
+generalities and that whoever proves either should prove this one and
+derive the other.
+
+The route is `X0.lean`'s verbatim, and every step survives the nebentypus:
+`realCoeff_norm_le_of_isWeightTwoEigenform` becomes `‖a_p‖ ≤ 2√p` for
+`p ∤ N` (the `Γ₀` version additionally says `a_p` is REAL, which is FALSE
+with a nontrivial `χ` and is not needed — only the bound is used
+downstream), `‖a_p‖ ≤ √p` for `p ∣ N` is unchanged, and the multiplicative
+assembly over `Nat.recOnPosPrimePosCoprime` goes through because the
+recursion `a_{p^{k+1}} = a_p a_{p^k} − χ(p)·p·a_{p^{k−1}}` differs from the
+`Γ₀` one only by the factor `χ(p)`, which has `‖χ(p)‖ = 1` for `p ∤ N`
+(a Dirichlet character takes root-of-unity values on units, and `p ∤ N`
+makes `p` a unit mod `N`).
+
+**`h1` AND `h0` ARE LOAD-BEARING AND ARE NOT PRESENT FOR SYMMETRY.**  `G`
+is an arbitrary `Subgroup (GL (Fin 2) ℝ)`, so without them "cusp form on
+`G`" carries no growth information whatsoever — the Hecke recursions
+constrain the SIZE of `a p` not at all (this file's own SOUNDNESS REPAIR
+note on `IsWeightTwoEigenformOn` makes exactly that point), and the bound
+would have to come from `f` alone.  Pinning `G` between `Γ₁(N)` and
+`Γ₀(N)` is what makes `f` a form on a congruence subgroup of level `N`
+and the statement Deligne's.  Both are free at every call site in this
+file (`le_rfl` and `gamma1GL_le_gamma0GL N`).
+
+`hN` is carried for the same reason `X0.lean`'s `hM` is — an artefact of
+the route through the divisor-counting bound, not of the conclusion. -/
+theorem norm_coeff_le_two_mul_self_of_isWeightTwoEigenformOn {N : ℕ} (hN : N ≠ 0)
+    {G : Subgroup (GL (Fin 2) ℝ)} (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N)
+    {χ : DirichletCharacter ℂ N} {f : CuspForm G 2} {a : ℕ → ℂ}
+    (hf : IsWeightTwoEigenformOn G N χ f a) (n : ℕ) :
+    ‖a n‖ ≤ 2 * n :=
+  sorry
+
+/-- **THE TWELVE LEVEL-`25` VALUES: THE HEAD BEATS THE CRUDE TAIL BOUND**
+(sorry leaf, cut 2026-08-01) — the irreducible level-`25` input, and the
+only declaration in the cluster that still mentions `25` in an essential
+way.  Both sides are explicit reals and no series occurs.
+
+**IT IS TRUE WITH A THREEFOLD MARGIN, RE-COMPUTED FROM SCRATCH
+2026-08-01** (PARI/GP, 40 digits, independently of the table on
+`cuspPeriod_ne_zero_x1TwentyFive` below, which it reproduces exactly).
+`S₂(Γ₁(25))` is `12`-dimensional and entirely new, splitting as two
+Galois orbits: the four characters of order `5` mod `25` carry one
+eigenform each, and the four of order `10` carry two each.  With
+`x = e^{−2π/5} = 0.28460954…` the right-hand side is
+`x·‖(1 − λ) + (a₂ − λ·conj(a₂))·x/2‖` (using `a₁ = 1`, so `b₁ = λ`) and
+the left-hand side is `4x³/(1 − x) = 0.12890365…`.  The twelve ratios are
+
+    4.5145, 3.0256, 4.1230, 4.8571, 3.4943, 4.1079,
+    3.4943, 4.8571, 4.1079, 3.0256, 4.5145, 4.1230
+
+so the minimum is `3.02560678`, attained at the two embeddings with
+`a₂ = −1.98322400 ∓ 0.64438854·i`.
+
+**FALSITY AUDIT — `hb` IS LOAD-BEARING, AND WITHOUT IT THIS LEAF IS
+FALSE.**  `hlam` says only that `λ` is a UNIT, and `hrel` then determines
+`b` from `λ` and `a`; nothing in `hlam`/`hrel` alone pins `λ` to the
+Atkin–Lehner pseudo-eigenvalue.  Take `λ := 1`: the head collapses to
+`‖(a₂ − conj a₂)/2‖·x² = |Im a₂|·x²`, and at FIVE of the six orbit
+representatives that is below `4x³/(1 − x)` —
+
+    |Im a₂| = 0.05660  ⟹  head = 0.004585
+    |Im a₂| = 0.64439  ⟹  head = 0.052197
+    |Im a₂| = 1.53884  ⟹  head = 0.124650
+    |Im a₂| = 0.91719  ⟹  head = 0.074294
+    |Im a₂| = 0.36327  ⟹  head = 0.029426
+
+all against a tail bound of `0.128904`.  `hb` is what excludes this: with
+it, `b` is the expansion of `frickeSlashOn 25 _ _ _ f`, so `b 1` is
+determined, and `hrel` at `n = 1` with `hf.one` reads `b 1 = λ`, pinning
+`λ`.  A prover may therefore NOT drop `hb` on the grounds that `b` is
+already determined by `hrel`; it is `hb` that determines `λ`.
+
+**`hlam` AND `hrel` ARE REDUNDANT GIVEN `hb`** — they are exactly the
+conclusion of `exists_frickePseudoEigenvalue_x1TwentyFive` above, which
+the caller has already applied — and are handed over anyway, because a
+prover of this leaf needs them and re-deriving them is the other leaf's
+whole content.  They cannot make this statement false, only easier. -/
+theorem tailBound_lt_head_coeff_sub_frickePartner_x1TwentyFive
+    (χ : DirichletCharacter ℂ 25) (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a) (b : ℕ → ℂ)
+    (hb : ∀ y : ℝ, 0 < y →
+      HasSum (fun n : ℕ => b (n + 1) *
+          ((Real.exp (-(2 * Real.pi / Real.sqrt (25 : ℕ) * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+        (axisRestrictOn (Gamma1GL 25) 25
+          (frickeSlashOn 25 (by norm_num) le_rfl (gamma1GL_le_gamma0GL 25) f) y))
+    (lam : ℂ) (hlam : ‖lam‖ = 1)
+    (hrel : ∀ n : ℕ, 1 ≤ n → b n = lam * (starRingEnd ℂ) (a n)) :
+    4 * Real.exp (-(2 * Real.pi * 3 / Real.sqrt (25 : ℕ))) /
+        (1 - Real.exp (-(2 * Real.pi / Real.sqrt (25 : ℕ))))
+      < ‖(a 1 - b 1) * ((Real.exp (-(2 * Real.pi * 1 / Real.sqrt (25 : ℕ))) : ℝ) : ℂ)
+          + (a 2 - b 2) / 2 *
+            ((Real.exp (-(2 * Real.pi * 2 / Real.sqrt (25 : ℕ))) : ℝ) : ℂ)‖ :=
+  sorry
+
+/-- **THE LEVEL-`25` ARITHMETIC, AS A REAL INEQUALITY** (**PROVEN
+2026-08-01** over the three leaves immediately above; a sorry leaf
+between 2026-07-31 and then.  Opened 2026-07-31 as a statement about two
+INTEGRALS and RESTATED TWICE the same day — first as a statement about one complex SERIES, then as this
 head-versus-tail inequality between REALS) — this is what is left of
 `cuspPeriod_ne_zero_x1TwentyFive` below once the Fricke fold, the termwise
 integration and the truncation criterion above are applied, and it is the
@@ -20972,7 +21165,24 @@ the difference is `(√25/2π)·∑ₙ (aₙ − bₙ)·e^{−2πn/5}/n`, whose 
 `n = 2` exceeds the crude tail bound `4·e^{−3·2π/5}/(1 − e^{−2π/5})` at all
 twelve embeddings, the minimum ratio being `3.0256`.
 
-**WHAT A PROVER OWES**, after the second cut, is TWO items and no analysis:
+**THE STATEMENT IS UNCHANGED BY THE 2026-08-01 CLOSURE, so both audits
+below stand and nothing has to be re-run.**  What happened is that the
+`sorry` was replaced by a proof over three named leaves; no binder, no
+clause and no constant moved, and in particular `K = 2` is still baked in
+and was NOT found too tight — the margin is threefold, re-measured from
+scratch (see `tailBound_lt_head_coeff_sub_frickePartner_x1TwentyFive`).
+The frontier went `1 → 3`, and that is disclosure rather than regression:
+what left this leaf for good is the whole of the analysis (the geometric
+domination, the identification of every exponential as a power of
+`x = e^{−2π/5}`, the summability, and the triangle inequality that turns
+`‖aₙ‖ ≤ 2n` into `‖aₙ − bₙ‖/n ≤ 4`), and each of the three residues is one
+named classical theorem stated in its own vocabulary.
+
+**WHAT A PROVER OWED**, after the second cut, was TWO items and no
+analysis, and the list was right about the mathematics and WRONG about
+the second item's availability — it is a new leaf, not a citation, for
+the reason recorded on
+`norm_coeff_le_two_mul_self_of_isWeightTwoEigenformOn` above:
 
 * **Atkin–Lehner: `bₙ = λ·conj(aₙ)` with `‖λ‖ = 1`.**  `hb` gives `b` as the
   `q`-expansion of the NAMED partner and says nothing about how it relates to
@@ -21063,8 +21273,56 @@ theorem tail_lt_head_coeff_sub_frickePartner_x1TwentyFive
         Real.exp (-(2 * Real.pi * ((n : ℝ) + 3) / Real.sqrt (25 : ℕ)))
       < ‖(a 1 - b 1) * ((Real.exp (-(2 * Real.pi * 1 / Real.sqrt (25 : ℕ))) : ℝ) : ℂ)
           + (a 2 - b 2) / 2 *
-            ((Real.exp (-(2 * Real.pi * 2 / Real.sqrt (25 : ℕ))) : ℝ) : ℂ)‖ :=
-  sorry
+            ((Real.exp (-(2 * Real.pi * 2 / Real.sqrt (25 : ℕ))) : ℝ) : ℂ)‖ := by
+  obtain ⟨lam, hlam, hrel⟩ := exists_frickePseudoEigenvalue_x1TwentyFive χ f a hf b hb
+  refine lt_of_le_of_lt ?_
+    (tailBound_lt_head_coeff_sub_frickePartner_x1TwentyFive χ f a hf b hb lam hlam hrel)
+  have hs : (0 : ℝ) < Real.sqrt ((25 : ℕ) : ℝ) := Real.sqrt_pos.mpr (by norm_num)
+  set x : ℝ := Real.exp (-(2 * Real.pi / Real.sqrt ((25 : ℕ) : ℝ))) with hxdef
+  have hx0 : 0 < x := Real.exp_pos _
+  have hx1 : x < 1 := by
+    rw [hxdef, Real.exp_lt_one_iff]
+    have : 0 < 2 * Real.pi / Real.sqrt ((25 : ℕ) : ℝ) := by positivity
+    linarith
+  -- every exponential occurring is a power of `x`
+  have hpow : ∀ m : ℕ, Real.exp (-(2 * Real.pi * (m : ℝ) / Real.sqrt ((25 : ℕ) : ℝ)))
+      = x ^ m := by
+    intro m
+    rw [hxdef, ← Real.exp_nat_mul]
+    congr 1
+    field_simp
+  have hrw : ∀ n : ℕ, ‖a (n + 3) - b (n + 3)‖ / ((n : ℝ) + 3) *
+      Real.exp (-(2 * Real.pi * ((n : ℝ) + 3) / Real.sqrt ((25 : ℕ) : ℝ)))
+      = (‖a (n + 3) - b (n + 3)‖ / ((n : ℝ) + 3)) * x ^ (n + 3) := by
+    intro n
+    congr 1
+    rw [← hpow (n + 3)]
+    congr 2
+    push_cast
+    ring
+  rw [tsum_congr hrw]
+  have h3 : Real.exp (-(2 * Real.pi * 3 / Real.sqrt ((25 : ℕ) : ℝ))) = x ^ 3 := by
+    have h := hpow 3
+    rw [show ((3 : ℕ) : ℝ) = (3 : ℝ) by norm_num] at h
+    exact h
+  rw [h3]
+  refine tsum_le_const_mul_geometric_shift hx0 hx1 (fun n => by positivity) (fun n => ?_) 3
+  rw [div_le_iff₀ (by positivity : (0 : ℝ) < (n : ℝ) + 3)]
+  -- `‖aₘ − bₘ‖ = ‖aₘ − λ·conj aₘ‖ ≤ 2‖aₘ‖ ≤ 4m`, which is the constant `4`
+  have hb3 : b (n + 3) = lam * (starRingEnd ℂ) (a (n + 3)) := hrel (n + 3) (by omega)
+  have hnorm : ‖a (n + 3) - b (n + 3)‖ ≤ 2 * ‖a (n + 3)‖ := by
+    rw [hb3]
+    calc ‖a (n + 3) - lam * (starRingEnd ℂ) (a (n + 3))‖
+        ≤ ‖a (n + 3)‖ + ‖lam * (starRingEnd ℂ) (a (n + 3))‖ := norm_sub_le _ _
+      _ = 2 * ‖a (n + 3)‖ := by
+          rw [norm_mul, hlam, one_mul, RCLike.norm_conj]
+          ring
+  have hdel : ‖a (n + 3)‖ ≤ 2 * ((n : ℝ) + 3) := by
+    have := norm_coeff_le_two_mul_self_of_isWeightTwoEigenformOn
+      (N := 25) (by norm_num) le_rfl (gamma1GL_le_gamma0GL 25) hf (n + 3)
+    push_cast at this
+    linarith
+  linarith
 
 /-- **THE COEFFICIENT SERIES DOES NOT VANISH** (**PROVEN 2026-07-31**, from
 the inequality above and `X0.lean`'s `tsum_ne_zero_of_tail_lt_norm_sum` at
