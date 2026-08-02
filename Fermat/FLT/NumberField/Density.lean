@@ -71,12 +71,13 @@ endgame is `exists_mul_sq_dedekindZeta_re_le` + `finrank_eq_one_of_forall_inerti
 both PROVEN below.
 
 The cut left exactly three open statements, each a standard fact about Dirichlet series
-over ideals stated with mathlib vocabulary only. **The second was PROVEN on 2026-08-02**,
-so two remain:
+over ideals stated with mathlib vocabulary only. **The first two were PROVEN on
+2026-08-02**, so one remains:
 
 * `NumberField.dedekindZeta_re_eq_zetaAvoiding_empty` — the REGROUPING. `ζ_K(s)` really is
   the sum of `(N I)^{-s}` over the nonzero ideals. This is `LSeries` unfolded and the
   fibres of `absNorm` collected; it is where `Nat.card {I // absNorm I = n}` is paid for.
+  **PROVEN 2026-08-02.**
 * `NumberField.sq_zetaAvoiding_le_zetaAvoiding_empty` — the INJECTION above. **PROVEN
   2026-08-02**, over the multiset of normalized factors rather than the `∏ᶠ`/`count`
   calculus the cut prescribed; see its docstring. The convergence it needs on the `F` side
@@ -299,6 +300,31 @@ theorem lseriesSummable_dedekindZeta (K : Type*) [Field K] [NumberField K] {s : 
   have hlim := tendsto_sum_card_absNorm_eq_div K
   exact isBigO_atTop_natCast_rpow_of_tendsto_div_rpow (r := 1) (by simpa using hlim)
 
+/-- **THE `ℕ`-INDEXED DIRICHLET SERIES OF THE IDEAL-COUNTING FUNCTION CONVERGES AT EVERY
+REAL `s > 1`** (PROVEN 2026-08-02).
+
+`lseriesSummable_dedekindZeta` with the `ℂ`-valued `LSeries.term` traded for its real
+value: at `n ≠ 0` the term is `↑(#{I : N I = n} / n ^ s)` by `Complex.ofReal_cpow`, and at
+`n = 0` both sides vanish (`(0:ℝ) ^ (-s) = 0` because `s > 0`). -/
+theorem summable_natCard_absNorm_rpow (K : Type*) [Field K] [NumberField K] {s : ℝ}
+    (hs : 1 < s) :
+    Summable (fun n : ℕ =>
+      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s)) := by
+  have h1 : Summable (fun n : ℕ =>
+      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) / (n : ℝ) ^ s) := by
+    have h := lseriesSummable_dedekindZeta K hs
+    unfold LSeriesSummable at h
+    rw [← Complex.summable_ofReal]
+    refine h.congr fun n => ?_
+    rcases eq_or_ne n 0 with rfl | hn
+    · have h0 : (0:ℝ) ^ s = 0 := Real.zero_rpow (by linarith)
+      simp [LSeries.term, h0]
+    · rw [LSeries.term_of_ne_zero hn, Complex.ofReal_div,
+        Complex.ofReal_cpow (Nat.cast_nonneg n) s]
+      norm_cast
+  refine h1.congr fun n => ?_
+  rw [Real.rpow_neg (Nat.cast_nonneg n), div_eq_mul_inv]
+
 /-- **THE IDEAL-INDEXED DIRICHLET SERIES CONVERGES AT EVERY REAL `s > 1`** (PROVEN
 2026-08-02).
 
@@ -350,20 +376,7 @@ theorem summable_absNorm_rpow (K : Type*) [Field K] [NumberField K]
     · rw [key n]
       exact mul_le_mul_of_nonneg_right (by exact_mod_cast hcard n)
         (Real.rpow_nonneg (Nat.cast_nonneg _) _)
-    · have h1 : Summable (fun n : ℕ =>
-          (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) / (n : ℝ) ^ s) := by
-        have h := lseriesSummable_dedekindZeta K hs
-        unfold LSeriesSummable at h
-        rw [← Complex.summable_ofReal]
-        refine h.congr fun n => ?_
-        rcases eq_or_ne n 0 with rfl | hn
-        · have h0 : (0:ℝ) ^ s = 0 := Real.zero_rpow (by linarith)
-          simp [LSeries.term, h0]
-        · rw [LSeries.term_of_ne_zero hn, Complex.ofReal_div,
-            Complex.ofReal_cpow (Nat.cast_nonneg n) s]
-          norm_cast
-      refine h1.congr fun n => ?_
-      rw [Real.rpow_neg (Nat.cast_nonneg n), div_eq_mul_inv]
+    · exact summable_natCard_absNorm_rpow K hs
 
 open UniqueFactorizationMonoid in
 /-- **A NORMALIZED FACTOR OF AN IDEAL OF A DEDEKIND DOMAIN IS MAXIMAL** (PROVEN
@@ -376,8 +389,8 @@ theorem isMaximal_of_mem_normalizedFactors {R : Type*} [CommRing R] [IsDedekindD
   have hb : p ≠ ⊥ := by simpa [Ideal.zero_eq_bot] using hpr.ne_zero
   exact Ideal.IsPrime.isMaximal (Ideal.isPrime_of_prime hpr) hb
 
-/-- **LEAF 1 — THE REGROUPING: `ζ_K(s)` is the sum of `(N I)^{-s}` over the nonzero ideals**
-(OPEN, cut 2026-07-31).
+/-- **THE REGROUPING: `ζ_K(s)` is the sum of `(N I)^{-s}` over the nonzero ideals**
+(PROVEN 2026-08-02; cut as LEAF 1 on 2026-07-31).
 
 `dedekindZeta K` is `LSeries (fun n ↦ Nat.card {I : Ideal (𝓞 K) // absNorm I = n})`, i.e.
 the coefficients are already the fibres of `Ideal.absNorm`. So this is the statement that
@@ -390,17 +403,87 @@ of `absNorm` are finite (`NumberField.Ideal.finite_setOf_absNorm_eq`, used by
 `tsum_sigma`/`Summable.tsum_fiberwise` for the map `I ↦ absNorm I`. The value is real
 because every coefficient is a natural number, which is why `.re` loses nothing.
 
-**Convergence is already available**: `lseriesSummable_dedekindZeta` above, PROVEN, is
-`LSeriesSummable` of these coefficients at every real `s > 1`. Combined with
-`summable_norm_iff` it gives absolute convergence of the `ℕ`-indexed side; the ideal-indexed
-side then follows from `summable_sigma_of_nonneg` along
-`Equiv.sigmaFiberEquiv (fun I ↦ Ideal.absNorm I)`, whose fibres are finite by
-`Ideal.finite_setOf_absNorm_eq`. Do not re-derive the counting estimate — it is
-`tendsto_sum_card_absNorm_eq_div`, also PROVEN above. -/
+**How it is proven.** Both sides are shown equal to the `ℕ`-indexed real series
+`c n = #{I : N I = n} · n^{-s}` of `summable_natCard_absNorm_rpow`:
+
+* on the LEFT, `LSeries.term` at `n ≠ 0` is `↑(c n)` by `Complex.ofReal_cpow`, and at
+  `n = 0` both sides vanish; the `tsum` of a series of REALS viewed in `ℂ` is the `ofReal`
+  of the real `tsum` (`HasSum.map` along `Complex.ofRealHom`), so taking `.re` loses
+  nothing — which is the precise sense in which "the coefficients are natural numbers";
+* on the RIGHT, group the ideals by norm along `Equiv.sigmaFiberEquiv` and sum each fibre
+  with `tsum_const`. The `n = 0` fibre is EMPTY on the ideal side (the sum is over
+  `I ≠ ⊥`) while `{I : N I = 0} = {⊥}` has one element — the two `c 0` disagree, and it
+  does not matter, because `(0:ℝ)^{-s} = 0` kills both. At `n ≠ 0` the two fibres are
+  equivalent, `N I = n ≠ 0` forcing `I ≠ ⊥`.
+
+Summability on the ideal side is `summable_absNorm_rpow`; on the `ℕ` side it is
+`summable_natCard_absNorm_rpow`. Both are proven above and neither re-derives the counting
+estimate `tendsto_sum_card_absNorm_eq_div`. -/
 theorem dedekindZeta_re_eq_zetaAvoiding_empty (K : Type*) [Field K] [NumberField K]
     (s : ℝ) (hs : 1 < s) :
-    (dedekindZeta K s).re = zetaAvoiding K ∅ s :=
-  sorry
+    (dedekindZeta K s).re = zetaAvoiding K ∅ s := by
+  classical
+  set c : ℕ → ℝ := fun n =>
+    (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s) with hc
+  have hcsum : Summable c := summable_natCard_absNorm_rpow K hs
+  -- the left-hand side
+  have hterm : ∀ n : ℕ,
+      LSeries.term (fun n ↦ (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ)) (s : ℂ) n
+        = ((c n : ℝ) : ℂ) := by
+    intro n
+    rcases eq_or_ne n 0 with rfl | hn
+    · have h0 : (0:ℝ) ^ (-s) = 0 := Real.zero_rpow (by linarith)
+      simp [LSeries.term, hc, h0]
+    · rw [LSeries.term_of_ne_zero hn, hc]
+      simp only
+      rw [Complex.ofReal_mul, Complex.ofReal_natCast,
+        show ((n:ℝ) ^ (-s)) = ((n:ℝ) ^ s)⁻¹ from Real.rpow_neg (Nat.cast_nonneg n) s,
+        Complex.ofReal_inv, Complex.ofReal_cpow (Nat.cast_nonneg n) s, div_eq_mul_inv]
+      norm_cast
+  have hL : (dedekindZeta K s).re = ∑' n : ℕ, c n := by
+    have h2 : HasSum (fun n : ℕ => ((c n : ℝ) : ℂ)) (((∑' n : ℕ, c n : ℝ)) : ℂ) :=
+      hcsum.hasSum.map (Complex.ofRealHom : ℝ →+* ℂ) Complex.continuous_ofReal
+    rw [dedekindZeta, LSeries, tsum_congr hterm, h2.tsum_eq, Complex.ofReal_re]
+  -- the right-hand side
+  have hR : zetaAvoiding K ∅ s = ∑' n : ℕ, c n := by
+    have hB : Summable (fun J : {J : Ideal (𝓞 K) // J ≠ ⊥ ∧
+        ∀ 𝔭 ∈ (∅ : Set (Ideal (𝓞 K))), 𝔭.IsMaximal → ¬ 𝔭 ∣ J} =>
+        (Ideal.absNorm (J : Ideal (𝓞 K)) : ℝ) ^ (-s)) := summable_absNorm_rpow K _ hs
+    set ν : {J : Ideal (𝓞 K) // J ≠ ⊥ ∧
+        ∀ 𝔭 ∈ (∅ : Set (Ideal (𝓞 K))), 𝔭.IsMaximal → ¬ 𝔭 ∣ J} → ℕ :=
+      fun J => Ideal.absNorm (J : Ideal (𝓞 K)) with hν
+    have hfib : ∀ n : ℕ, Finite {J : {J : Ideal (𝓞 K) // J ≠ ⊥ ∧
+        ∀ 𝔭 ∈ (∅ : Set (Ideal (𝓞 K))), 𝔭.IsMaximal → ¬ 𝔭 ∣ J} // ν J = n} := by
+      intro n
+      haveI := (Ideal.finite_setOf_absNorm_eq (S := 𝓞 K) n).to_subtype
+      exact Finite.of_injective (fun y => (⟨(y.1 : Ideal (𝓞 K)), y.2⟩ :
+        ↥{I : Ideal (𝓞 K) | Ideal.absNorm I = n}))
+        (by rintro ⟨⟨a, ha⟩, ha'⟩ ⟨⟨b, hb⟩, hb'⟩ h; simpa using h)
+    have hcomp : Summable (fun x : (n : ℕ) × {J : {J : Ideal (𝓞 K) // J ≠ ⊥ ∧
+        ∀ 𝔭 ∈ (∅ : Set (Ideal (𝓞 K))), 𝔭.IsMaximal → ¬ 𝔭 ∣ J} // ν J = n} =>
+        (Ideal.absNorm ((Equiv.sigmaFiberEquiv ν) x : Ideal (𝓞 K)) : ℝ) ^ (-s)) :=
+      (Equiv.summable_iff _).mpr hB
+    rw [show zetaAvoiding K ∅ s = ∑' J : {J : Ideal (𝓞 K) // J ≠ ⊥ ∧
+        ∀ 𝔭 ∈ (∅ : Set (Ideal (𝓞 K))), 𝔭.IsMaximal → ¬ 𝔭 ∣ J},
+        (Ideal.absNorm (J : Ideal (𝓞 K)) : ℝ) ^ (-s) from rfl,
+      ← (Equiv.sigmaFiberEquiv ν).tsum_eq (fun J => (Ideal.absNorm (J : Ideal (𝓞 K)) : ℝ) ^ (-s)),
+      Summable.tsum_sigma' (fun n => Summable.of_finite) hcomp]
+    refine tsum_congr fun n => ?_
+    haveI := hfib n
+    rw [tsum_congr (fun y => by
+      rw [show (Ideal.absNorm ((Equiv.sigmaFiberEquiv ν) ⟨n, y⟩ : Ideal (𝓞 K))) = n from y.2] :
+      ∀ _, _), tsum_const, nsmul_eq_mul, hc]
+    rcases eq_or_ne n 0 with rfl | hn
+    · simp [Real.zero_rpow (show (-s) ≠ 0 by intro hcon; simp at hcon; linarith)]
+    · congr 2
+      refine Nat.card_congr ?_
+      exact
+        { toFun := fun y => (⟨(y.1 : Ideal (𝓞 K)), y.2⟩ :
+            {I : Ideal (𝓞 K) // Ideal.absNorm I = n})
+          invFun := fun I => ⟨⟨I.1, fun hbot => hn (by rw [← I.2, hbot]; simp), by simp⟩, I.2⟩
+          left_inv := fun _ => rfl
+          right_inv := fun _ => rfl }
+  rw [hL, hR]
 
 open UniqueFactorizationMonoid in
 /-- **THE INJECTION: two primes above almost every `𝔭` square the zeta function**
