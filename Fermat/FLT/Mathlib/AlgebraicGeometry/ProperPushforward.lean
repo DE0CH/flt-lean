@@ -1420,6 +1420,264 @@ theorem ker_eq_span_of_projective_range_of_forall_isMaximal
     simpa using this
   simpa [hLdef, Submodule.Quotient.mk_eq_zero] using hz
 
+/-- **A FINITE AFFINE COVER WITH AFFINE PAIRWISE INTERSECTIONS** — **PROVEN** (2026-08-01).
+For `f : X ⟶ S` quasi-compact and separated with `S` affine, `X` has a finite cover by affine
+opens whose pairwise intersections are again affine.
+
+Both halves are forced by the two hypotheses and neither needs properness in full:
+quasi-compactness over the (quasi-compact) affine `S` makes `X` a compact space, so the basis
+of affine opens has a finite subcover; and separatedness of `f` composed with the separatedness
+of the affine `S` makes `X` separated over the terminal scheme, which is exactly the hypothesis
+`IsAffineOpen.inf` asks for.  This is the input to the Čech complex below; it is stated
+separately because it is the only place the topology enters. -/
+theorem exists_finite_affine_cover (f : X ⟶ S) [IsAffine S] [QuasiCompact f] [IsSeparated f] :
+    ∃ (n : ℕ) (U : Fin n → X.Opens),
+      (∀ i, IsAffineOpen (U i)) ∧ (∀ i j, IsAffineOpen (U i ⊓ U j)) ∧ iSup U = ⊤ := by
+  haveI : CompactSpace S := ⟨by simpa using (isAffineOpen_top S).isCompact⟩
+  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace f
+  haveI : X.IsSeparated := by
+    constructor
+    have h1 : terminal.from X = f ≫ terminal.from S := terminal.hom_ext _ _
+    rw [h1]; infer_instance
+  obtain ⟨s, hs, e⟩ := isCompact_iff_finite_and_eq_biUnion_affineOpens (U := (⊤ : X.Opens))
+    |>.mp (by simpa using CompactSpace.isCompact_univ (X := X))
+  haveI := hs.to_subtype
+  obtain ⟨n, ⟨eq⟩⟩ := Finite.exists_equiv_fin ↥s
+  refine ⟨n, fun i => ((eq.symm i : ↥s) : X.affineOpens), fun i => (eq.symm i).1.2,
+    fun i j => ((eq.symm i).1.2).inf ((eq.symm j).1.2), ?_⟩
+  rw [Equiv.iSup_comp (e := eq.symm) (g := fun (i : ↥s) => ((i : X.affineOpens) : X.Opens))]
+  rw [e, iSup_subtype]
+
+/-- **THE FLAT ČECH COMPLEX IN DEGREE `0`** — **PROVEN** (2026-08-01), and it is the first half
+of the leaf `exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber`
+below, whose docstring prescribed exactly this construction under the heading *"THE ROUTE, AND
+ONE NEW REDUCTION THAT NEEDS NO COHERENCE AT ALL"*.
+
+**What it says.**  For `f : X ⟶ S` proper and flat over an affine `S`, with `R = Γ(S, ⊤)` and
+`A = Γ(X, ⊤)`, there are `R`-modules `C₀`, `C₁` and an `R`-linear `d : C₀ ⟶ C₁` with
+
+* `Module.Flat R C₀` and `Module.Flat R C₁`;
+* `A ≃ₗ[R] ker d`.
+
+**What it costs, and why there is no cohomology in it.**  Take the finite affine cover
+`{U_i}` of `exists_finite_affine_cover` above and put
+
+  `C₀ := ∏_i Γ(X, U_i)`,  `C₁ := ∏_{(i,j)} Γ(X, U_i ⊓ U_j)`,
+  `d(s)_{(i,j)} := s_i|_{U_i ⊓ U_j} − s_j|_{U_i ⊓ U_j}`.
+
+Then `A = ker d` is the **sheaf axiom and nothing else** — injectivity of the restriction
+`A ⟶ C₀` is `TopCat.Sheaf.eq_of_locally_eq'` and surjectivity onto `ker d` is
+`TopCat.Sheaf.existsUnique_gluing'`, the compatibility hypothesis of the latter being literally
+`d s = 0`.  Flatness of the terms is `AlgebraicGeometry.Flat.flat_appLE` — `Flat f` says exactly
+that `Γ(X, V)` is a flat `Γ(S, U)`-module for `U`, `V` affine, and here `U = ⊤` because `S` is
+affine — together with the fact that a FINITE product of flat modules is flat
+(`DirectSum.linearEquivFunOnFintype` plus `Module.Flat.directSum`).  Finiteness of the cover is
+therefore load-bearing for the flatness clause and for nothing else; the sheaf-axiom clause
+holds for any cover at all.
+
+**PROPERNESS IS USED ONLY THROUGH `QuasiCompact` AND `IsSeparated`** — the two components of
+`IsProper` that `exists_finite_affine_cover` consumes.  `LocallyOfFiniteType`,
+`UniversallyClosed` and the fibrewise hypothesis `h` are **not** used, and that is the point:
+this half of the leaf is available with no input from the classical coherence theorem.
+
+**WHAT THIS IS NOT.**  The terms are flat but NOT finitely generated, so this is not the leaf:
+Grothendieck's theorem replaces them by finite free ones, and that replacement — together with
+the projectivity of `range d` and the fibre clause, both of which need base change in degree
+zero — is what remains, as
+`exists_finiteFree_projectiveRange_of_flatCech_of_isIso_appTop_fiber` below.  In particular
+nothing here computes `H⁰` of a fibre; the identification `Γ(X_{R'}, 𝒪) = ker(d ⊗_R R')`, which
+needs the base-changed cover and `isIso_pushoutSection_of_isAffineOpen`, is **not** proven here
+and is named in that leaf's docstring as the first thing a successor owes.
+
+**FAITHFULNESS** is not at issue — the statement is proven, and its existential is not
+satisfiable by a degenerate witness in a way that would matter, since it is CONSUMED as a
+hypothesis rather than as a conclusion.  (The cheap witness `C₀ := A`, `C₁ := 0`, `d := 0`
+would satisfy the sheaf clause but not the flatness clause, `A` not being known flat; and even
+if it did, a weaker producer only weakens the leaf below, which is the safe direction.) -/
+theorem exists_flatCech_ker_linearEquiv_appTop_of_isProper (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] :
+    letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+    ∃ (C₀ C₁ : ModuleCat.{u} ↥Γ(S, ⊤)) (d : C₀ ⟶ C₁),
+      Module.Flat ↥Γ(S, ⊤) C₀ ∧ Module.Flat ↥Γ(S, ⊤) C₁ ∧
+      Nonempty (↥Γ(X, ⊤) ≃ₗ[↥Γ(S, ⊤)] LinearMap.ker d.hom) := by
+  letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+  obtain ⟨n, U, hUaff, hUinf, hUcov⟩ := exists_finite_affine_cover f
+  letI alg0 : ∀ i : Fin n, Algebra ↥Γ(S, ⊤) ↥Γ(X, U i) :=
+    fun i => (f.appLE ⊤ (U i) (by simp)).hom.toAlgebra
+  letI alg1 : ∀ p : Fin n × Fin n, Algebra ↥Γ(S, ⊤) ↥Γ(X, U p.1 ⊓ U p.2) :=
+    fun p => (f.appLE ⊤ (U p.1 ⊓ U p.2) (by simp)).hom.toAlgebra
+  haveI flat0 : ∀ i, Module.Flat ↥Γ(S, ⊤) ↥Γ(X, U i) :=
+    fun i => Flat.flat_appLE f (isAffineOpen_top S) (hUaff i) (by simp)
+  haveI flat1 : ∀ p : Fin n × Fin n, Module.Flat ↥Γ(S, ⊤) ↥Γ(X, U p.1 ⊓ U p.2) :=
+    fun p => Flat.flat_appLE f (isAffineOpen_top S) (hUinf p.1 p.2) (by simp)
+  -- restriction from `U i` to a pairwise intersection is `Γ(S, ⊤)`-linear
+  have keyres : ∀ (i : Fin n) (p : Fin n × Fin n) (h : U p.1 ⊓ U p.2 ≤ U i) (r : ↥Γ(S, ⊤))
+      (x : ↥Γ(X, U i)),
+      (X.presheaf.map (homOfLE h).op).hom (r • x)
+        = r • (X.presheaf.map (homOfLE h).op).hom x := by
+    intro i p h r x
+    show (X.presheaf.map (homOfLE h).op).hom ((f.appLE ⊤ (U i) (by simp)).hom r * x)
+      = (f.appLE ⊤ (U p.1 ⊓ U p.2) (by simp)).hom r
+        * (X.presheaf.map (homOfLE h).op).hom x
+    rw [map_mul, ← CommRingCat.comp_apply, Scheme.Hom.appLE_map]
+  -- restriction from `⊤` to `U i` is `Γ(S, ⊤)`-linear
+  have keytop : ∀ (i : Fin n) (r : ↥Γ(S, ⊤)) (a : ↥Γ(X, ⊤)),
+      (X.presheaf.map (homOfLE (le_top : U i ≤ ⊤)).op).hom (r • a)
+        = r • (X.presheaf.map (homOfLE (le_top : U i ≤ ⊤)).op).hom a := by
+    intro i r a
+    show (X.presheaf.map (homOfLE (le_top : U i ≤ ⊤)).op).hom (f.appTop.hom r * a)
+      = (f.appLE ⊤ (U i) (by simp)).hom r
+        * (X.presheaf.map (homOfLE (le_top : U i ≤ ⊤)).op).hom a
+    rw [map_mul, ← CommRingCat.comp_apply]
+    rfl
+  -- the Čech differential in degree zero
+  let dl : (∀ i, ↥Γ(X, U i)) →ₗ[↥Γ(S, ⊤)] (∀ p : Fin n × Fin n, ↥Γ(X, U p.1 ⊓ U p.2)) :=
+    { toFun := fun s p =>
+        (X.presheaf.map (homOfLE (inf_le_left : U p.1 ⊓ U p.2 ≤ U p.1)).op).hom (s p.1)
+          - (X.presheaf.map (homOfLE (inf_le_right : U p.1 ⊓ U p.2 ≤ U p.2)).op).hom (s p.2)
+      map_add' := by intro s t; funext p; simp only [Pi.add_apply, map_add]; abel
+      map_smul' := by
+        intro r s; funext p
+        simp only [Pi.smul_apply, RingHom.id_apply]
+        rw [keyres p.1 p inf_le_left, keyres p.2 p inf_le_right, smul_sub] }
+  -- restriction of a global section to the cover
+  let rho : ↥Γ(X, ⊤) →ₗ[↥Γ(S, ⊤)] (∀ i, ↥Γ(X, U i)) :=
+    { toFun := fun a i => (X.presheaf.map (homOfLE (le_top : U i ≤ ⊤)).op).hom a
+      map_add' := by intro a b; funext i; simp only [map_add]; rfl
+      map_smul' := by intro r a; funext i; simp only [RingHom.id_apply, Pi.smul_apply, keytop] }
+  -- `rho` is injective: the separatedness half of the sheaf axiom
+  have hrho_inj : Function.Injective rho := by
+    intro a b hab
+    exact X.sheaf.eq_of_locally_eq' U ⊤ (fun i => homOfLE le_top) (by rw [hUcov]) a b
+      (fun i => congrFun hab i)
+  -- its image is exactly the kernel: the gluing half
+  have hrange : LinearMap.range rho = LinearMap.ker dl := by
+    apply le_antisymm
+    · rintro _ ⟨a, rfl⟩
+      refine LinearMap.mem_ker.mpr ?_
+      funext p
+      show (X.presheaf.map _).hom ((X.presheaf.map _).hom a)
+          - (X.presheaf.map _).hom ((X.presheaf.map _).hom a) = 0
+      rw [← CommRingCat.comp_apply, ← CommRingCat.comp_apply, ← Functor.map_comp,
+        ← Functor.map_comp, sub_eq_zero]
+      congr 3
+    · intro s hs
+      have hcomp : TopCat.Presheaf.IsCompatible X.presheaf U s := by
+        intro i j
+        have h1 := congrFun (LinearMap.mem_ker.mp hs) (i, j)
+        simp only [dl, Pi.zero_apply, LinearMap.coe_mk, AddHom.coe_mk] at h1
+        exact sub_eq_zero.mp h1
+      obtain ⟨a, ha, -⟩ := X.sheaf.existsUnique_gluing' U ⊤ (fun i => homOfLE le_top)
+        (by rw [hUcov]) s hcomp
+      exact ⟨a, funext ha⟩
+  refine ⟨ModuleCat.of _ (∀ i, ↥Γ(X, U i)),
+    ModuleCat.of _ (∀ p : Fin n × Fin n, ↥Γ(X, U p.1 ⊓ U p.2)), ModuleCat.ofHom dl, ?_, ?_, ⟨?_⟩⟩
+  · exact Module.Flat.of_linearEquiv (DirectSum.linearEquivFunOnFintype _ _ _).symm
+  · exact Module.Flat.of_linearEquiv (DirectSum.linearEquivFunOnFintype _ _ _).symm
+  · exact (LinearEquiv.ofInjective rho hrho_inj).trans (LinearEquiv.ofEq _ _ hrange)
+
+/-- **LEAF 1a⁗ᵇ — GROTHENDIECK'S COHERENCE THEOREM, GIVEN THE FLAT ČECH COMPLEX** (LEAF,
+CUT 2026-08-01 out of
+`exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` below, which
+is now PROVEN over it together with `exists_flatCech_ker_linearEquiv_appTop_of_isProper`
+immediately above).
+
+**THIS IS THE ONLY GEOMETRIC OBLIGATION LEFT IN THIS FILE.**  It is the same named classical
+theorem the statement below was — EGA III 6.10.5 / Mumford *Abelian Varieties* §5 / Hartshorne
+III.12.2, i.e. Stacks 0B91 plus the base-change clause `h` supplies — with the CONSTRUCTION of
+a flat two-term complex computing `A` removed from it and handed over as a hypothesis.
+
+**ACCOUNTING, STATED PLAINLY: THE COUNT DOES NOT MOVE, `1 → 1`.**  The hypothesis is PROVEN
+immediately above, so this leaf is logically *equivalent* to the statement below and no
+mathematics has been discharged.  What changed is what a prover has to build before starting:
+the finite affine cover, the affineness of its pairwise intersections, the sheaf axiom in both
+directions and the flatness of the terms — about 120 lines of scheme theory that every route to
+this leaf must do first — are done, once, and cannot be got wrong again.  Judge the cut by
+that, not by the delta.
+
+**WHAT REMAINS, IN ORDER, AND ONLY THE LAST ITEM IS THE THEORY BUILD.**
+
+1. **BASE CHANGE OF THE ČECH COMPLEX**: `Γ(X ×_S Spec R', 𝒪) ≃ ker(d ⊗_R R')` for an
+   `R`-algebra `R'`.  **The one input this needs is IN THE PIN and needs no flatness and no
+   coherence**: `AlgebraicGeometry.isIso_pushoutSection_of_isAffineOpen` says exactly that
+   `Γ(X, U) ⊗_{Γ(S, ⊤)} Γ(T, ⊤) ⟶ Γ(X ×_S T, pr₁⁻¹U)` is an isomorphism when `U` and both
+   bases are AFFINE.  So the base-changed cover `{U_i ×_S Spec R'}` — affine, and covering
+   because `pr₁` is surjective onto each `U_i` — has `Γ = Γ(U_i) ⊗_R R'` term by term, and the
+   sheaf axiom on `X ×_S Spec R'` (the same two lemmas used above) closes it.  What this costs
+   is naturality bookkeeping: the isomorphisms must commute with the two restrictions making up
+   `d`.  **Do NOT look for a base-change statement about `Γ(X, ⊤)` itself** — mathlib's
+   `isIso_pushoutSection_of_isQuasiSeparated_of_flat_left` needs `U_X` AFFINE, and a version
+   with `U_X` merely qcqs is exactly the degree-`0` base change that fails without `h`; that is
+   the whole content of semicontinuity and it is item 3.
+2. **THE FIBRE CLAUSE**, i.e. `h` read through item 1 at `R' = R/𝔪`: at a maximal `𝔪` coming
+   from `exists_point_ker_Γevaluation_eq_of_isMaximal` above one has `κ(s) = R/𝔪`, and `h s`
+   then says `ker(d ⊗ R/𝔪) = Γ(X_s, 𝒪) = κ(s)`, spanned by the image of `1`.  In the notation
+   of the conclusion this is `comap d (𝔪·C₁) = span {e 1} ⊔ 𝔪·C₀`.
+3. **FINITE FREENESS WITH PROJECTIVE IMAGE** — the coherence theorem proper.  Audit blocks
+   (B) and (H) on `finiteType_appTop_of_isProper` below record what `Mathlib` has for the
+   classical reduction (`AffineTransitionLimit.lean`) and what it lacks (object descent,
+   EGA IV 8.8.2 / Stacks 01ZM), and (H)'s pin re-audit still holds: there is no coherent sheaf
+   and no cohomology of `𝒪_X` under `Mathlib/AlgebraicGeometry/` at all.
+
+**ONE FREE IDENTIFICATION, SO THAT IT IS NOT RE-DERIVED.**  Flatness of `C₀` and `C₁` — both
+supplied by the hypothesis — already identifies `ker(d ⊗_R J)` with the honest submodule
+`ker d ⊓ J • C₀` for EVERY ideal `J`, with no geometry whatsoever, because `J ⊗_R C ⟶ C` is
+then injective with image `J • C` and the two identifications commute with `d`.  So the
+artinian dévissage recorded on the statement below (filter `R` by ideals with residue-field
+quotients; `H⁰` is left exact because the terms are flat; each graded piece embeds in
+`H⁰(k) = k` by `h`, so `length_R A ≤ length R`, while `injective_appTop_of_flat_of_surjective`
+gives `≥`) can be written entirely with `Submodule.inf` and `Submodule.smul`, and needs a
+scheme ONLY for items 1 and 2 above.  That dévissage closes the ARTINIAN case outright and is
+the cheapest genuine consumer of this hypothesis.
+
+**FAITHFULNESS — THE AUDIT OF THE STATEMENT BELOW TRANSFERS, AND HERE IS THE ARGUMENT.**
+`CLAUDE.md`'s rule is that a restated leaf voids its earlier audit, because the truth value may
+have moved.  Here it provably has not, in the safe direction: this leaf is the statement below
+with a hypothesis ADDED, so it is IMPLIED by it, and every counterexample to this leaf is a
+counterexample to that one.  That statement is true (Stacks 0E0S, quoted in audit block (A)
+below), hence so is this one.  Adding a hypothesis can only shrink the class of witnesses; it
+cannot create one.
+
+**AND THE ATTEMPT AT A COUNTEREXAMPLE, run rather than asserted.**  To refute this leaf one
+must refute its conclusion under `h`, so the four witnesses recorded below were each tested
+against the hypothesis list and each fails to be one:
+
+* audit (A)'s char-`2` wild-fibre family refutes the conclusion **without** `h` — it is the
+  standard `h⁰`-jumping witness and `h` is exactly what excludes it;
+* (D1)'s `R = ℤ_p`, `A = ℤ_p ⋉ ℚ_p` refutes the abstract `𝔪A ∩ R[a] ⊆ 𝔪·R[a]`, a strictly
+  weaker algebraic statement with no complex in it;
+* (E)'s cusp `R = k[t², t³] ⊆ B = k[t]` refutes the package that (D2)'s steps 1–2 produce —
+  and it does not satisfy the hypothesis added here either, since `k[t]` is **not flat** over
+  `k[t², t³]` (generic rank `1`, rank `2` at the cusp), so it is not a witness against this
+  statement even as an algebraic caricature;
+* (F)'s diagonal `δ = p₁^*a − p₂^*a` is a circularity, not a witness: it manufactures a fresh
+  instance of the obligation rather than a counterexample to it.
+
+**NON-VACUITY.**  The added hypothesis is PROVEN, so it cannot make the leaf vacuously true and
+the leaf is exactly as strong as what it replaces.  The conclusion's own non-vacuity paragraph
+is unchanged and still applies: the cheapest witness `R^1 ⟶ R^0` requires `A = R·1`, which is
+what the leaf exists to prove, so no degenerate choice escapes the work.
+
+**HOW TO USE IT.**  The hypothesis is an implication argument, so a prover begins
+`rintro ⟨C₀, C₁, d, hC₀, hC₁, ⟨e⟩⟩` and then owes items 1–3.  It is stated as an implication
+rather than with the complex in the binder list purely so that the `Algebra` instance on
+`Γ(X, ⊤)` — which the equivalence `e` mentions — is in scope for it. -/
+theorem exists_finiteFree_projectiveRange_of_flatCech_of_isIso_appTop_fiber (f : X ⟶ S)
+    [IsAffine S] [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
+    letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+    (∃ (C₀ C₁ : ModuleCat.{u} ↥Γ(S, ⊤)) (dC : C₀ ⟶ C₁),
+        Module.Flat ↥Γ(S, ⊤) C₀ ∧ Module.Flat ↥Γ(S, ⊤) C₁ ∧
+        Nonempty (↥Γ(X, ⊤) ≃ₗ[↥Γ(S, ⊤)] LinearMap.ker dC.hom)) →
+      ∃ (n₀ n₁ : ℕ) (d : (Fin n₀ → ↥Γ(S, ⊤)) →ₗ[↥Γ(S, ⊤)] (Fin n₁ → ↥Γ(S, ⊤)))
+        (e : ↥Γ(X, ⊤) ≃ₗ[↥Γ(S, ⊤)] LinearMap.ker d),
+        Module.Projective ↥Γ(S, ⊤) ↥(LinearMap.range d) ∧
+        ∀ m : Ideal ↥Γ(S, ⊤), m.IsMaximal →
+          Submodule.comap d (m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₁ → ↥Γ(S, ⊤)))) =
+            Submodule.span ↥Γ(S, ⊤) {((e 1 : LinearMap.ker d) : Fin n₀ → ↥Γ(S, ⊤))} ⊔
+              m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₀ → ↥Γ(S, ⊤))) :=
+  sorry
+
 /-- **`Γ(Z, ⊤) = K` ASCENDS ALONG ANY FIELD EXTENSION** (PROVEN, 2026-08-01) — the converse
 direction of `isIso_appTop_of_isIso_appTop_baseChange` above, in `IsPullback` form so that it
 applies to a square produced by somebody else rather than only to `Limits.pullback`.
@@ -1674,8 +1932,8 @@ theorem exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop
         Submodule.comap d (m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₁ → ↥Γ(S, ⊤)))) =
           Submodule.span ↥Γ(S, ⊤) {((e 1 : LinearMap.ker d) : Fin n₀ → ↥Γ(S, ⊤))} ⊔
             m • (⊤ : Submodule ↥Γ(S, ⊤) (Fin n₀ → ↥Γ(S, ⊤))) :=
-  exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber_baseChange f
-    fun _ g s' => isIso_appTop_fiberToSpecResidueField_baseChange f h g s'
+  exists_finiteFree_projectiveRange_of_flatCech_of_isIso_appTop_fiber f h
+    (exists_flatCech_ker_linearEquiv_appTop_of_isProper f)
 
 /-- **1a‴ — `a|_{X_s} = 0 ⟹ a ∈ 𝔪 · R[a]`, FOR ITS OWN `a`** — **PROVEN** (2026-07-31) over
 `exists_finiteFree_projectiveRange_ker_linearEquiv_appTop_of_isIso_appTop_fiber` and

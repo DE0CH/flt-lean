@@ -26570,3 +26570,93 @@ Accounting note, in the shape the RECUT rule asks for: the cluster went from **t
 open leaves to **one**, `20 → 19` on the module's `declaration uses 'sorry'` set,
 with zero errors introduced — and no mathematics was done. It is merge repair plus
 the linear-algebra and counting layer of one leaf; report it that way.
+## MATHLIB HAS AFFINE BASE CHANGE OF SECTIONS — `pushoutSection`, and it is invisible to a grep for "cohomology"
+(2026-08-01, `flt-lean-340`, proving the flat Čech complex in
+`Mathlib/AlgebraicGeometry/ProperPushforward.lean`.)  That file carries four separate,
+carefully dated PIN RE-AUDITS whose conclusion is correct and whose reading is not:
+> There is no `directImage`, no higher direct image, no coherent sheaf and no cohomology of
+> `𝒪_X` anywhere under `Mathlib/AlgebraicGeometry/`.
+All true.  What it hides is that `Mathlib/AlgebraicGeometry/Morphisms/Flat.lean` contains a
+250-line section `## Sections of fibered products` building the canonical comparison
+    pushoutSection : Γ(X, Uₓ) ⊗_{Γ(S, Uₛ)} Γ(T, Uₜ) ⟶ Γ(X ×_S T, pr₁⁻¹Uₓ ⊓ pr₂⁻¹Uₜ)
+and proving it is an isomorphism under **five** different hypothesis packages —
+`isIso_pushoutSection_of_isAffineOpen` (all three opens affine: FREE, no flatness, no
+finiteness), `…_of_isQuasiSeparated_of_flat_right`, `…_of_isQuasiSeparated_of_flat_left`,
+and two `_of_ringHomFlat` variants.  It is exactly the degree-`0` base change a Čech argument
+needs, term by term, and no search for a cohomology theory can find it: it lives in the file
+about FLATNESS, under a section header about FIBRED PRODUCTS, and its name contains neither
+"base change" nor "sections of the structure sheaf".
+**The general rule is the one this file already states for the Dedekind zeta function, in a
+new instance: an absence audit reliably reports on the THEORY it searched for and says nothing
+about the OBJECT the proof consumes.**  Before pricing a base-change step, list the concrete
+comparison map the argument needs — here `Γ(U) ⊗_R R' ⟶ Γ(U_{R'})` for ONE affine `U` — and
+grep for its shape (`⊗`, `pushout`, `IsIso`) in the files about the hypotheses you have, not
+in the files about the theorem you are quoting.
+**And read the five variants before believing any of them is what you want.**  The one that
+looks strongest, `isIso_pushoutSection_of_isQuasiSeparated_of_flat_left [Flat iX]`, still
+requires `U_X` AFFINE; a version with `U_X` merely qcqs would be degree-`0` cohomology and base
+change, which is FALSE without a fibrewise hypothesis and is the whole content of
+semicontinuity.  The pin's hypothesis lists are exactly right and are the fastest way to see
+which half of a classical theorem is free.
+### The flat Čech complex is ~120 lines and 5 seconds — the coherence theorem is what is missing
+Measured while cutting it out of that file's only leaf.  For `f : X ⟶ S` proper and flat over
+an affine `S`, `Γ(X, ⊤) ≃ₗ[Γ(S,⊤)] ker d` with `d : ∏ᵢ Γ(X, Uᵢ) ⟶ ∏_{(i,j)} Γ(X, Uᵢ ⊓ Uⱼ)`
+and both terms FLAT needs, in full:
+* `QuasiCompact.compactSpace_of_compactSpace` plus `(isAffineOpen_top S).isCompact` for
+  `CompactSpace X`, then `isCompact_iff_finite_and_eq_biUnion_affineOpens` at `⊤` for a finite
+  affine cover;
+* `IsAffineOpen.inf`, whose hypothesis is `IsAffineHom (pullback.diagonal (terminal.from X))`
+  — obtained from `IsSeparated f` and `S` affine by `terminal.from X = f ≫ terminal.from S`
+  (`terminal.hom_ext`), which is the ONLY place separatedness is used;
+* `TopCat.Sheaf.eq_of_locally_eq'` and `TopCat.Sheaf.existsUnique_gluing'` — the primed
+  variants take the ambient open `V` and the inclusions explicitly, so `V := ⊤` needs no
+  transport along `iSup U = ⊤`.  `TopCat.Presheaf.IsCompatible` is *literally* `d s = 0`;
+* `Flat.flat_appLE` for flatness of each `Γ(X, Uᵢ)` over `Γ(S, ⊤)`, and
+  `Module.Flat.of_linearEquiv (DirectSum.linearEquivFunOnFintype ..).symm` for the product.
+  **Finiteness of the cover is load-bearing for the flatness clause and for nothing else.**
+No cohomology, no coherence, no `IdealSheafData`.  What is NOT available this way is finite
+generation of the terms — that is Grothendieck's theorem — and the base change of the complex,
+which is where `pushoutSection` above comes in.
+**The Lean obstacle is entirely the `Algebra` instances, and one `letI` of PI TYPE solves it:**
+    letI alg0 : ∀ i : Fin n, Algebra ↥Γ(S, ⊤) ↥Γ(X, U i) :=
+      fun i => (f.appLE ⊤ (U i) (by simp)).hom.toAlgebra
+A single instance term of `∀ i, C i` shape serves the whole family, and — the part that makes
+it safe — it does **not** shadow the statement's own `Algebra ↥Γ(S,⊤) ↥Γ(X, ⊤)`, because
+instance search must solve `U ?i =?= ⊤` with `U` a local hypothesis and fails.  Do NOT write
+the general `∀ W : X.Opens, Algebra ↥Γ(S,⊤) ↥Γ(X, W)`: that one DOES match `⊤` and produces a
+diamond against `f.appTop.hom.toAlgebra`.
+Two rewriting facts the linearity proofs turn on, both worth knowing before deriving them:
+`f.appTop ≫ X.presheaf.map (homOfLE h).op = f.appLE ⊤ W e` is **`rfl`** (`appTop` is an
+`abbrev` for `f.app ⊤`, `f ⁻¹ᵁ ⊤` is `⊤`, and `Opens` is a poset so the two `homOfLE`s are
+proof-irrelevantly equal); and `Scheme.Hom.appLE_map` is the composite in the other direction.
+Prove linearity by `show`-ing the `algebraMap _ r * x` form rather than by `rw [Algebra.smul_def]`
+— for a `letI`-bound `RingHom.toAlgebra` the `algebraMap` does not present as
+`ConcreteCategory.hom _ r` and `CommRingCat.comp_apply` will not fire.
+### VERIFY A NEW BLOCK BY EXTRACTING IT UNDER THE TARGET FILE'S OWN HEADER
+The standing scratch-module rule says to import only what you need.  For a block being INSERTED
+into a large file there is a strictly better scratch, and it costs one `python3` line: take the
+target file's IMPORT BLOCK VERBATIM, follow it with the file's own `open` / `namespace` /
+`variable` lines, and append only the new declarations.
+That catches exactly what a minimal-import scratch cannot — name resolution under the file's
+actual `open`s, and instances contributed by imports you would not have thought to add — while
+still costing seconds.  Measured here: **4.7 s** for the extraction against **~4 min** for
+`lake build` of the 5 600-line module, and the block compiled in the real file first try.
+It also answers the import question up front: a `#check` of every non-local name you plan to
+use, under that same header, tells you whether the file needs new imports at all (here it did
+not, though the block uses `TopCat.Sheaf.existsUnique_gluing'` and
+`DirectSum.linearEquivFunOnFintype`, neither of which the file names anywhere).
+### A `P → C` LEAF WHOSE `P` YOU JUST PROVED IS COUNT-NEUTRAL AND AUDIT-SAFE — say both
+Cutting a leaf `C` as `P` (proven) plus `P → C` (the residual) is the shape to reach for when
+what you can prove is a CONSTRUCTION the leaf's every route must perform first.  Two things
+must be said out loud, because they pull in opposite directions:
+* it is **audit-safe without re-deriving anything**: `P → C` is `C` with a hypothesis ADDED,
+  so it is implied by `C`, and every counterexample to it refutes `C`.  This is the one
+  restatement for which CLAUDE.md's "a second restatement VOIDS the earlier audit" rule does
+  not bite, and the reason should be written into the docstring rather than assumed;
+* it is **count-neutral and content-neutral**: with `P` proven, `P → C` is logically
+  equivalent to `C`.  No mathematics has been discharged.  Report it as such — the value is
+  that the construction is done once and cannot be got wrong again, and a reader who sees
+  `−1 +1` will otherwise assume a theory gap closed.
+State the hypothesis as an IMPLICATION inside the conclusion rather than as a binder when the
+hypothesis mentions an `Algebra` instance the statement itself introduces with `letI`; binders
+cannot see a `letI` that lives in the conclusion, and an implication can.
