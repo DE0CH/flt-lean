@@ -16151,3 +16151,99 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A DOCSTRING THAT CITES A MODULE BY PATH HAS CHECKED THAT IT EXISTS, NOT WHAT IS PROVEN IN IT
+
+(2026-08-02, `flt-lean-224`, closing
+`exists_nonconstant_toAbelianScheme_of_one_le_isCurveGenus` in `X0.lean`.)
+
+That leaf's docstring called the missing `K`-rational point *"the only delicate
+part of the statement"*, listed the two standard repairs, and for the second one
+wrote — in parentheses, as a helpful aside —
+
+> *Weil restriction*: pass to `L := κ(z)` … and push `A_L` down to `K` by
+> `Res_{L/K}` (**which this tree carries,
+> `Fermat/FLT/Mathlib/AlgebraicGeometry/WeilRestriction.lean`**).
+
+**That module does not merely "carry Weil restriction". It carries the finished
+theorem, PROVEN, in exactly the applied form this leaf needs**
+(`exists_nonconstant_toAbelianScheme_of_baseChange_relPoint`: a curve which
+acquires a nonconstant map to an abelian variety over every extension at which it
+acquires a rational point already has one over `K`) — and its own docstring names
+this file's Abel–Jacobi node as the consumer it was written for. The leaf sat open
+for two days with its whole "delicate part" already discharged one `import` away.
+
+**The failure is specific and it is not the ordinary absence-claim failure.** A
+docstring saying *"X is not in the pin"* announces itself as a claim to re-check;
+this file already has five sections about that. A docstring that names a module
+**by path** announces the opposite — it reads as a check that was RUN, and the
+path is evidence the author opened a file. What the author verified was that the
+module EXISTS. Nothing in the sentence is false; the inference a reader draws from
+it is.
+
+**So: any time a docstring cites a project module by path, `grep -n '^theorem'`
+that module before pricing anything it is cited for.** These modules are small
+(this one is 300 lines and has three declarations), the grep is seconds, and the
+question it answers — *which of these are PROVEN, and is one of them my
+statement?* — is not the question the citation answered.
+
+Two riders, both of which decided this task.
+
+* **The check that finds it is a grep for the CONCLUSION'S SHAPE over the whole
+  tree, not for your leaf's vocabulary.** `grep -rn 'nonconstant' Fermat/
+  --include=*.lean` returned the proven theorem in the first screen. A search for
+  the leaf's own words (`Albanese`, `IsCurveGenus`, `Pic⁰`) returns nothing from
+  that module, which is named after neither the leaf nor the mathematics it
+  supplies.
+* **`Fermat/FLT/Mathlib/**` is where an earlier agent's general-purpose work
+  lands, filed under the name of the TECHNIQUE rather than the consumer.** Its
+  import closure is usually tiny — this one's whole `Fermat`-closure was already
+  inside `X0`'s, so the import cost ONE module and could not cycle. **Compute
+  that before assuming an import is expensive**; ten lines of Python over the
+  `^public import Fermat` lines settles it, and it turned "add a dependency to the
+  largest module in the tree" into a decision with no downside.
+
+## A PROVEN ASSEMBLY IN A DOWNSTREAM SIBLING TRANSCRIBES WHEN ITS INPUTS ARE UPSTREAM OF YOUR LINE
+
+(Same task, and it is the other half of what closed the leaf.)
+
+The standing rule is that a theorem in a file which IMPORTS yours cannot be
+cited. True, and it stops most readers there. **What can still be true is that
+every declaration the downstream proof CONSUMES is upstream of your own line** —
+and then the proof transcribes verbatim, as text, at your site.
+
+`X1.lean`'s `exists_nonconstant_toAbelianScheme_of_hasNoFibreAffineLine` is
+PROVEN and is exactly the nonconstancy assembly this leaf needed. `X1` imports
+`X0`, so it is uncitable. Its eight inputs — `exists_relPicZero`,
+`IsRelPicZeroOf.isAlbaneseOf`, `IsAlbaneseOf.isJacobianOf`,
+`mono_ajHom_of_hasNoFibreAffineLine`, `IsJacobianOf.{ajHom, aj_val,
+injective_aj_of_mono}`, `not_isIso_of_smoothOfRelativeDimension_one` — are at
+`RelativePicard`, 55401, 54171, 63207, 37309, 37325, 37349 and
+`CurveCompactification`. Every one is above 63945. So the twelve-line proof
+pasted in and compiled first try.
+
+**The check is one `grep -n` per input, comparing LINE NUMBERS with your own** —
+the same declaration-order arithmetic this file already prescribes for a hoist,
+run in the other direction and for a different purpose: not *may I move this*,
+but *may I re-derive it where I stand*.
+
+**Prefer INLINING the proof to hoisting the theorem.** A hoist has to delete the
+downstream copy, which is a signature change with call sites you did not audit,
+in a file with concurrent editors — the highest-conflict edit there is. Inlining
+touches only your own region and creates no duplicate. Hoist only what you cannot
+inline: here that was one genuinely reusable lemma
+(`X1.hasNoFibreAffineLine_baseChange`), copied under a DIFFERENT name with a
+docstring saying which copy should survive and the deletion recipe on it, per the
+standing "copy it, deliberately" rule.
+
+**And when you are already in the neighbourhood, check the downstream sibling for
+a DUPLICATE OF THE THING YOU JUST USED.** `X1` also carried a `sorry` whose
+statement is byte-identical to the proven `WeilRestriction` theorem, in a module
+`X1` itself imports and whose import comment in that very file says "Stated and
+PROVEN there". It closed by a one-line delegation, `−1` leaf for two lines. No
+scan could see it: the two names differ by a namespace, so `xdup.py`'s qualified
+pass and `check-dup` are silent; both copies emitted honest `sorry` warnings; and
+`dupstmt.py`'s default scope is sorried declarations, which the proven copy is
+not. **A duplicate whose two copies are one PROVEN and one `sorry` is invisible to
+every instrument in this repository**, and the only thing that finds it is having
+just read both.
