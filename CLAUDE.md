@@ -16151,3 +16151,76 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A LEAF'S OWN ROUTE CAN NAME THE CLASSICAL PATH AND MISS THE ONE THIS PIN HAS — ask which INPUT the project already proves
+
+(2026-08-02, `flt-lean-157`, closing `irreducible_map_algebraicClosure_functionField` in
+`ModularCurve/PlaneModelFunctionField.lean`.)
+
+That leaf's docstring gave a two-step route and step 1 was:
+
+> `X` proper smooth geometrically connected over a field is GEOMETRICALLY INTEGRAL
+> (`X_{𝔽̄_q}` is connected by hypothesis and regular by smoothness, hence irreducible and
+> reduced), so `𝔽̄_q ⊗_{𝔽_q} K(X)` is a DOMAIN
+
+which is the textbook argument and is TRUE.  It is also the expensive one at this pin, in
+two places nobody had priced: **"connected + regular ⟹ irreducible" is not available for
+`X_{𝔽̄_q}`** (mathlib has no Auslander–Buchsbaum, and `IsRegularLocalRing → IsIntegrallyClosed`
+only comes for free in dimension ≤ 1), and identifying `K(X_{𝔽̄_q})` with `K(X) ⊗ 𝔽̄_q` is a
+further step.  Every attempt through it lands on normality of `Γ(X, U)` plus a gluing argument
+("a rational function regular at every point is global"), i.e. two developments.
+
+**The route that closes it uses only theorems this project has already proven, and needs
+neither normality nor gluing.**  What "geometrically integral" is being used FOR is one
+sentence — *`𝔽_q` is algebraically closed in `K(X)`* — and that has a direct proof:
+
+1. `Γ(X, ⊤) = 𝔽_q` — `isIso_appTop_of_isProper_over_field` (`ProperPushforward.lean`), whose
+   `GeometricallyReduced` hypothesis is `GeometricallyReduced.of_smooth`.  This is where
+   `GeometricallyConnected` is spent, and it is the ONLY place;
+2. an element `z ∈ K(X)` integral over `𝔽_q` is a UNIT ON SOME AFFINE OPEN —
+   `AlgebraicGeometry.exists_isUnit_germ_eq`, mathlib, and the step that removes the need to
+   know `z` lies in *every* stalk;
+3. `L := AdjoinRoot (minpoly 𝔽_q z)` is a finite field extension and `AdjoinRoot.lift` turns the
+   section into a ring map `L → Γ(X, U)`, i.e. a morphism `U ⟶ Spec L`.  Its side condition is
+   `minpoly.aeval` pushed back through the INJECTIVE germ map;
+4. `Spec L ⟶ Spec 𝔽_q` is FINITE hence PROPER, so the valuative criterion for a smooth proper
+   curve (`exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion`,
+   `CurveExtension.lean`) extends it to `Φ : X ⟶ Spec L`;
+5. `Φ.appTop` composed with `Γ(X, ⊤) ≅ 𝔽_q` is a ring map `L →+* 𝔽_q`, so `[L : 𝔽_q] = 1`.
+
+**The generalisable move: when a route's step 1 is a NAMED CLASSICAL PROPERTY (geometrically
+integral, normal, Cohen–Macaulay), read what the rest of the proof extracts from it and grep
+for THAT.**  Here the extract is a single sentence about the function field, and the two
+theorems that give it were already in the tree — one of them (`isIso_appTop_of_isProper_over_field`)
+written for the Jacobian half of this development and never connected to this leaf.  Same
+family as [[flt-inventory-audits-understate-what-exists]], with the twist that the audit was
+not wrong about the mathematics at all; it was wrong about which input is cheap HERE.
+
+**Corollary technique, and it is the reusable half: to show a finite extension `L ⊆ K(X)` is
+trivial, EXTEND A MORPHISM rather than glue sections.**  "`z` lies in every local ring, so it
+is a global section" needs normality of the stalks *and* the sheaf axiom; "`z` is regular
+somewhere, and a smooth proper curve extends morphisms to a proper target" needs neither, and
+both halves are off the shelf.  Reach for `Spec` of the finite extension as the proper target;
+`IsFinite (Spec.map φ)` is `(IsFinite.SpecMap_iff _).mpr (RingHom.finite_algebraMap.mpr ‹_›)`
+and `IsProper` follows by instance.
+
+### `ZMod q` IS A PRIME FIELD, AND `RingHom.ext_zmod` DELETES EVERY COMPATIBILITY OBLIGATION
+
+Three obligations in that proof looked real and are not, all for the same reason — `ZMod q →+* R`
+is a SUBSINGLETON — and it is worth listing them, because the pattern recurs wherever `𝔽_p`
+is the base:
+
+* **the extended morphism need not be over `Spec 𝔽_q`.**  The final step wants a ring map
+  `L →+* 𝔽_q` and then `finrank ≤ 1`; that `θ` is `𝔽_q`-LINEAR is `RingHom.ext_zmod`, so no
+  commuting square from the extension theorem is ever used.  `hΦ1` was destructured away;
+* **the bare `RingEquiv e : K(X) ≃+* Frac (𝔽_q[X,Y]/(F))` in the leaf's statement is an
+  `AlgEquiv` for free**, so "algebraically closed in" transports along it with a one-line
+  `commutes'`;
+* **the `𝔽_q`-algebra structure on `K(X)` may be an EXPLICIT ARGUMENT of the geometric half**
+  rather than constructed from `strX` through `ΓSpecIso`/`appTop`/`germToFunctionField`.  It is
+  unique, the proof never assumes the supplied one is the geometric one, and the caller can
+  therefore hand over whatever structure is convenient (here: the one transported along `e`).
+
+The same observation is what makes `exists_algebra_essFiniteType_trdeg_one_functionField` in the
+same file existentially quantify its algebra structure without being the junk-witness trap; the
+file's own docstring says so and it generalises to every step of the argument.
