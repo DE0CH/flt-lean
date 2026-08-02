@@ -38088,8 +38088,16 @@ theorem exists_skolemBallDatum_of_projectiveCompactification
   obtain ⟨Zb, ι, hιimm, hιrange, hZfin, hZflat, hZsurj⟩ :=
     exists_boundarySubscheme_of_projectiveCompactification fX j hjimm hXsmooth hXproper hXgi
       hZ hXdim
+  -- `exists_genRelPic` gained `hpush` on 2026-08-02, when its old hypothesis list was
+  -- refuted (`GeometricallyIrreducible` does not give `f_*𝒪_X = 𝒪_S`; see the falsity
+  -- audit on that leaf).  Both instances below are free here: `fX` is proper and smooth.
+  haveI : AlgebraicGeometry.IsProper fX := hXproper
+  haveI : AlgebraicGeometry.GeometricallyConnected fX :=
+    Fermat.geometricallyConnected_of_geometricallyIrreducible fX hXgi
   obtain ⟨P, pstr, ⟨hPG⟩⟩ :=
-    Fermat.exists_genRelPic fX ι hXproper inferInstance hXgi hZfin hZflat hZsurj
+    Fermat.exists_genRelPic fX ι hXproper inferInstance hXgi
+      (AlgebraicGeometry.hasUniversallyTrivialPushforward_of_isProper_of_smooth fX)
+      hZfin hZflat hZsurj
   obtain ⟨d, t, w, ε, hε, hmain⟩ :=
     exists_skolemBallDatum_of_genRelPic fC fX j hjimm hjcomm hXsmooth hXproper hXgi hZ hdim
       hXdim hreal S hSprime hSpt q hq hqS ι hιimm hιrange pstr hPG
