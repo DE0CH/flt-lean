@@ -16151,3 +16151,91 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A RAMIFICATION LEAF OVER A GALOIS EXTENSION IS A SUBGROUP-IS-TRIVIAL LEAF — the pin has the dictionary on BOTH sides
+
+(2026-07-31, `flt-lean-38`, `NumberField/UnramifiedClassFieldExistence.lean`: the whole
+COMPOSITUM node closed, 4 open leaves → 2, in one run.)
+
+Two sibling leaves — *the compositum of two everywhere-unramified extensions is
+unramified*, once at the FINITE primes and once at the INFINITE places — were cut with a
+docstring saying all three clauses of their parent "were ALL THE SAME ARGUMENT" over the
+shared engine `forall_mem_sup_of_fixed`. That claim was right and it is only half of why
+they are cheap. **The other half is that mathlib turns each ramification statement into a
+statement that a SUBGROUP OF `Gal(M/K)` IS TRIVIAL, and it has that dictionary on both
+sides of the archimedean/nonarchimedean divide:**
+
+* archimedean — `NumberField.InfinitePlace.isUnramified_iff_stabilizer_eq_bot [IsGalois k K] :
+  IsUnramified k w ↔ MulAction.stabilizer Gal(K/k) w = ⊥`;
+* nonarchimedean — `Ideal.card_inertia_eq_ramificationIdxIn` (`#(Q.inertia G) = e_in`) plus
+  `Ideal.ramificationIdxIn_eq_ramificationIdx` plus `Ideal.ramificationIdx_eq_one_iff`
+  (`e = 1 ↔ Algebra.IsUnramifiedAt`).
+
+So a leaf whose conclusion is *"this prime/place is unramified"* over a Galois extension
+should be re-read as *"this subgroup is trivial"* BEFORE it is priced. Each of these two
+was ~40 lines. **And the two instance obligations that look like they will cost a
+development are found by SEARCH at this pin** — `IsGaloisGroup Gal(L/K) (𝓞 K) (𝓞 L)`
+(through `IsGaloisGroup.of_isFractionRing`) and `PerfectField (Q.under (𝓞 K)).ResidueField`
+— which is the single fact that decides the cost. Probe them with a two-line
+`example … := by infer_instance` in a scratch before writing anything; it takes five
+seconds and it is the whole feasibility study.
+
+**The docstrings' own "route not to try" was right and its reason was wrong.** They
+forbade `Algebra.FormallyUnramified.baseChange` on `𝓞 L₁ ⊗ 𝓞 L₂` because the conductor of
+`𝓞 L₁ · 𝓞 L₂` in `𝓞 (L₁L₂)` need not be the unit ideal. True globally; LOCALLY at an
+unramified prime it *is* the unit ideal, and the route dies for a different reason — it
+needs "étale over a normal domain is normal", which this pin does not have. Correct the
+reason as well as keeping the verdict: a wrong reason attracts repairs that cannot work.
+
+### A LEAF'S RECORDED ROUTE CAN PRESUPPOSE A HYPOTHESIS THE STATEMENT DOES NOT CARRY
+
+Both leaves were stated over ARBITRARY finite subextensions, and both of their recorded
+routes restrict an element of `Gal(K̄/K)` to `Lᵢ` — which needs `Normal K Lᵢ`. So the
+statements were strictly more general than the arguments written on them, and nobody had
+noticed because the two are separated by a screen of prose.
+
+**When that happens and the CONSUMER already supplies the missing hypothesis, add it.**
+Adding a hypothesis is a weakening, so the leaf's faithfulness audit transfers verbatim and
+the refutation check it names is unaffected. Two things make it cost nothing here and both
+must be CHECKED rather than assumed:
+
+* **the added hypotheses were INSTANCE-IMPLICIT**, and the consumer's `IsAbelianGalois K Lᵢ`
+  extends `IsGalois K Lᵢ`, so instance search supplies them and **not one character of the
+  call site moved**. That is the difference between a signature change that is a class-7
+  merge hazard and one that is invisible; verify it with the build, not by reading;
+* **the general statement's status must be settled and written down.** For the finite-prime
+  clause the non-Galois statement is TRUE (classically because `K_𝔭^{ur}` is a FIELD) and a
+  completion-free route exists — normal closure, `Ideal.ramificationIdx_tower`,
+  `card_inertia_eq_ramificationIdxIn` over the two bases `𝓞 K` and `𝓞 Lᵢ`, transported onto
+  `Lᵢ.fixingSubgroup` by `IntermediateField.fixingSubgroupEquiv` and `Ideal.inertiaEquiv` —
+  so the docstring says so and says to STRENGTHEN in place rather than add a rival
+  declaration. For the archimedean clause the hypothesis is closer to essential. Those are
+  different answers and a reader must not have to guess which.
+
+**Corollary about ordering: close the SIBLING in the same run.** The second leaf cost about
+a quarter of the first, because the engine, the instance setup and the restriction lemma
+were already in hand — the only new input was one mathlib `iff`. A cut whose docstring says
+two leaves are the same argument is telling you to budget them together, and the saving is
+lost if the second is dispatched a release later.
+
+### Three mechanical notes from the same run
+
+* **State the restriction-compatibility lemma at the FIELD level and derive the rest.**
+  `ArtinSymbol.lean`'s `algebraMap_restrictNormalHom_smul` is for an intermediate field of a
+  fixed ambient NUMBER field; a compositum `L₁ ⊔ L₂` is an intermediate field of
+  `AlgebraicClosure K`, so it does not apply. The general form
+  (`algebraMap ↥E ↥F (restrictNormalHom E ρ x) = restrictNormalHom F ρ (algebraMap ↥E ↥F x)`)
+  is `AlgEquiv.restrictNormal_commutes` twice, and its RING-OF-INTEGERS and INFINITE-PLACE
+  corollaries are three lines each. Pass the coercion compatibility
+  `∀ x, (algebraMap ↥E ↥F x : K̄) = (x : K̄)` as an EXPLICIT argument — it is `rfl` at every
+  call site, whereas the `IsScalarTower` route builds an instance only to unfold it again.
+* **To move such a relation onto `InfinitePlace`, apply it at `ρ⁻¹`, not at `x` transported
+  by `.symm`.** `InfinitePlace.smul_eq_comap` is `σ • w = w.comap σ.symm`, so the two sides
+  differ by the INVERSE automorphism; `map_inv` for the monoid hom
+  `AlgEquiv.restrictNormalHom` supplies it, and feeding the lemma `ρ⁻¹` at the ORIGINAL
+  point is what makes `simpa [map_inv]` close it. Feeding it `τ.symm x` produces a double
+  `.symm` and a type mismatch that looks like a real error.
+* **`NumberField.InfinitePlace.isUnramified` takes the BASE field explicitly** —
+  `InfinitePlace.isUnramified K w`, not `InfinitePlace.isUnramified w`. The error is an
+  "Application type mismatch" showing `∀ (w : InfinitePlace ?m), IsUnramified ?m w`, which
+  reads as a unification failure and is a missing argument.
