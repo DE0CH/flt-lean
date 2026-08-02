@@ -17379,6 +17379,24 @@ kinds, which is why they are four separate declarations here:
   of the obstruction class vanish, i.e. what puts the class in `Ш²` and not
   merely in `H²`.
 
+  **BOTH WERE FALSE AS FIRST STATED ON 2026-07-31, and both were repaired on
+  2026-08-02 by performing the falsity audits their own docstrings demanded.**
+  The two failures are of different kinds and neither is about Ramakrishna or
+  about the ordinary condition:
+  - (5c) quantified over an `S` with no finiteness on its open-ideal quotients,
+    and `IsFlatAtLocal` is UNSATISFIABLE for such an `S` — the points of a
+    finite flat group scheme are a finite set. Witness: `S = TrivSqZeroExt k M`
+    with `M` an infinite `k`-vector space, `R = k`, `ρv` trivial. Repaired by
+    `hfin` (and `hres`, the residue characteristic).
+  - (5d) imposed nothing on the residue characteristic, and the FIRST step of
+    its own intended proof — "the unramified quadratic character `δ` lifts" —
+    needs `2` invertible. Witness: `ℤ/16 ↠ ℤ/8` and the scalar representation
+    `δ ⊗ id` with `δ(Frob) = 3`; machine-checked below as
+    `not_exists_tameLocalLift_zmodSixteen`. Repaired by `h2 : IsUnit (2 : S)`.
+
+  Neither repair is claimed to be sufficient; each leaf's audit names the one
+  thing still unsettled and the check that settles it.
+
 **Why the last two are stated on LOCAL representations and not on global ones.**
 There is no true global statement to make. "Given a global homomorphism lift
 `ρ̃₀`, some global lift is flat at `ℓ`" is FALSE in general: the global lifts
@@ -17396,29 +17414,16 @@ ENTRYWISE (`ψ (τ g w i) = ρv g (ψ ∘ w) i`), which needs no local analogue 
 the local readings of the corresponding global conditions; each comes with an
 `Iff.rfl` bridge, so they are the SAME conditions and not weakenings.
 
-**The one named obligation this section used to leave open — DISCHARGED
-2026-08-02, in subsection (5b) below.** `exists_lift_det_eq_of_squareZero_ker`
-takes the target determinant as a CONTINUOUS character `d : Γ ℚ →ₜ* S` and its
-odd-residue-characteristic input as `IsUnit (2 : S)`, and both were kept out of
-the statement deliberately, so that the correction argument stays pure algebra
-and the algebra leaf does not depend on the arithmetic of `ℚ`. That is still the
-right shape for the leaf; what was missing was anything to instantiate it with.
-Subsection (5b) supplies all four pieces — `cycChar` (the character, with
-continuity from mathlib's `cyclotomicCharacter.continuous`),
-`isUnit_two_of_surjective` (from `charP_residue_field` and `ℓ` odd),
-`algebraMap_ell_mem_maximalIdeal_of_surjective`, and
-`continuous_algebraMap_of_isAdic` (hoisted out of the body of
-`isModuleTopology_of_isAdic_maximalIdeal` far below, where it was unciteable).
-So (5a) is now applicable and not merely stated.
-
-**And the ASSEMBLY of the four clauses into conjunct (a) is subsection (5e)
-below** (`mem_sha2_cocycleClass_of_forall_locally_bdry`, PROVEN 2026-08-02):
-membership in `Ш²_S` is the vanishing of each localisation one place at a time,
-and for the class of a cocycle that is exactly the restricted cocycle being a
-coboundary over the decomposition group at `v`. Only the two LOCAL clauses feed
-it — which is the three-kinds split above, made formal. It does not close
-conjunct (a): the obstruction COCYCLE itself (brick (iii) of the leaf's audit)
-still does not exist, and until it does there is nothing to feed (5e). -/
+**What this section does NOT discharge, and it is one named obligation.**
+`exists_lift_det_eq_of_squareZero_ker` takes the target determinant as a
+CONTINUOUS character `d : Γ ℚ →ₜ* S`. Instantiating it at the hardly ramified
+`det` clause means taking `d g = algebraMap ℤ_[ℓ] S (cyclotomicCharacter ℓ g)`,
+and that this is continuous is a separate (true, and unstated here) fact:
+continuity of the `ℓ`-adic cyclotomic character together with continuity of the
+structure map of an `𝔪`-adically complete Noetherian local `ℤ_ℓ`-algebra. It is
+kept out of the statement deliberately — the correction argument does not need
+it, and folding it in would make the algebra leaf depend on the arithmetic of
+`ℚ`. -/
 
 /-- **Inertia at a place outside `S` lies in `N_S`** (PROVEN): immediate from
 the definition of `ramificationKernel S` as the topological closure of the
@@ -17985,6 +17990,236 @@ All five declarations in this sub-subsection are PROVEN (2026-08-02) and none
 of them is about the arithmetic: they are the mechanical content of the
 predicate. -/
 
+/-- A linear functional on `Fin n → S` evaluates as the sum of its values on the
+standard basis vectors, weighted by the coordinates. -/
+theorem pi_linearMap_apply_eq_sum {S : Type*} [CommRing S] {n : ℕ}
+    (p : (Fin n → S) →ₗ[S] S) (x : Fin n → S) :
+    p x = ∑ i, x i * p (Pi.single i 1) := by
+  conv_lhs => rw [← Finset.univ_sum_single x]
+  rw [map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  have hsing : (Pi.single i (x i) : Fin n → S) = x i • Pi.single i (1 : S) := by
+    ext j
+    by_cases h : j = i <;> simp [h]
+  rw [hsing, map_smul, smul_eq_mul]
+
+/-- **THE ENGINE OF THE (5d) REFUTATION** (PROVEN 2026-08-02).
+
+If `ρ₂` is a SCALAR representation — `ρ₂ g` is multiplication by `u g` on every
+coordinate — and `τ` is any lift of it along `ψ` carrying a tame-at-`2`
+structure, then the tame structure's character `δ` is forced to reduce to `u`,
+and it satisfies `δ² = 1`. So **`u g` must lift to a square root of `1` in `S`**.
+
+That is the whole of the obstruction: it uses no arithmetic of `ℚ₂`, no
+topology, and no hypothesis on `ψ` beyond its being a ring map. The contrapositive
+refutes (5d) as first stated — see the FALSITY AUDIT there.
+
+Note the proof does not need `ker ψ` to be small, or even nonzero; the tame
+structure alone pins `δ` on the nose, because a scalar representation acts by the
+same scalar on EVERY rank-one quotient. -/
+theorem sq_eq_one_of_isTameAtTwoLocal_lift_of_scalar
+    {S : Type*} [CommRing S] [TopologicalSpace S]
+    {R : Type*} [CommRing R] [TopologicalSpace R]
+    (ψ : S →+* R)
+    {ρ2 : GaloisRep ℚ_[2] R (Fin 2 → R)}
+    {u : Field.absoluteGaloisGroup ℚ_[2] → R}
+    (hscal : ∀ g w i, ρ2 g w i = u g * w i)
+    {τ : GaloisRep ℚ_[2] S (Fin 2 → S)}
+    (hlift : ∀ g w i, ψ (τ g w i) = ρ2 g (fun j => ψ (w j)) i)
+    (htame : IsTameAtTwoLocal τ) (g : Field.absoluteGaloisGroup ℚ_[2]) :
+    ∃ y : S, ψ y = u g ∧ y * y = 1 := by
+  obtain ⟨p, hp, δ, hδ⟩ := htame
+  obtain ⟨w₀, hw₀⟩ := hp 1
+  refine ⟨δ g 1, ?_, ?_⟩
+  · have h1 : p (τ g w₀) = δ g (p w₀) := (hδ g w₀).1
+    rw [hw₀] at h1
+    have hsum : ∀ x : Fin 2 → S, ψ (p x) = ∑ i, ψ (x i) * ψ (p (Pi.single i 1)) := by
+      intro x
+      rw [pi_linearMap_apply_eq_sum, map_sum]
+      exact Finset.sum_congr rfl fun i _ => by rw [map_mul]
+    have h2 := hsum (τ g w₀)
+    rw [h1] at h2
+    rw [h2]
+    have h3 : ∀ i, ψ (τ g w₀ i) = u g * ψ (w₀ i) := by
+      intro i; rw [hlift g w₀ i, hscal]
+    simp only [h3, mul_assoc]
+    rw [← Finset.mul_sum, ← hsum w₀, hw₀, map_one, mul_one]
+  · have h := (hδ g w₀).2.2 g
+    have := congrArg (fun (e : Module.End S S) => e (1 : S)) h
+    simpa [mul_comm] using this
+
+/-- **THE ENGINE OF THE `2`-ADIC HALF OF A SCALAR LIFT** (PROVEN 2026-08-02),
+pure algebra, no Galois theory in it.
+
+Along a square-zero extension whose kernel is killed by `2`, an INVOLUTION `T`
+reducing to the scalar `u` is itself scalar up to the kernel, and squaring kills
+the kernel term: `T² = ũ² · id` for any lift `ũ` of `u`. So `T² = id` forces
+`u` to lift to a square root of `1`.
+
+This is the engine the FALSITY AUDIT on (5c) below considered and DISCARDED —
+recorded here because it is what makes the difference between the two clauses
+visible. It refutes nothing about flatness: the `(5c)` witness supplies an
+honest lift, and what (5c) fails on is a different degeneracy (finiteness), so
+this lemma is stated for the record and for reuse rather than as an input to
+(5c)'s audit. -/
+theorem sq_eq_one_of_scalarInvolution_lift
+    {S : Type*} [CommRing S] {R : Type*} [CommRing R] (ψ : S →+* R)
+    (hsq : ∀ x ∈ RingHom.ker ψ, ∀ y ∈ RingHom.ker ψ, x * y = 0)
+    (h2 : ∀ y ∈ RingHom.ker ψ, (2 : S) * y = 0)
+    {u : R} (T : Module.End S (Fin 2 → S)) (hinv : T * T = 1)
+    (hred : ∀ w i, ψ (T w i) = u * ψ (w i)) :
+    ∃ y : S, ψ y = u ∧ y * y = 1 := by
+  classical
+  set e : Fin 2 → S := Pi.single 0 1 with he
+  set c : Fin 2 → S := T e with hc
+  set ub : S := c 0 with hub
+  have hψc : ∀ i, ψ (c i) = u * (if i = 0 then 1 else 0) := by
+    intro i
+    rw [hc, hred e i, he]
+    congr 1
+    by_cases h : i = 0 <;> simp [h]
+  have hψub : ψ ub = u := by rw [hub, hψc 0]; simp
+  set n : Fin 2 → S := c - ub • e with hn
+  have hnker : ∀ i, n i ∈ RingHom.ker ψ := by
+    intro i
+    rw [RingHom.mem_ker, hn]
+    simp only [Pi.sub_apply, Pi.smul_apply, smul_eq_mul, map_sub, map_mul, hψub, hψc i, he]
+    by_cases h : i = 0 <;> simp [h]
+  have hcn : c = ub • e + n := by rw [hn]; abel
+  have hTn : T n = ub • n := by
+    have hTsingle : ∀ i m, ψ ((T (Pi.single i (1 : S))) m) = u * (if i = m then 1 else 0) := by
+      intro i m
+      rw [hred]
+      congr 1
+      by_cases h : i = m <;> simp [h, eq_comm]
+    have hker : ∀ i m, (T (Pi.single i (1 : S))) m - (if i = m then ub else 0) ∈
+        RingHom.ker ψ := by
+      intro i m
+      rw [RingHom.mem_ker, map_sub, hTsingle i m]
+      by_cases h : i = m <;> simp [h, hψub]
+    ext m
+    have hexp : n = ∑ i, n i • (Pi.single i (1 : S) : Fin 2 → S) := by
+      ext j
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.single_apply, mul_ite,
+        mul_one, mul_zero, Finset.sum_ite_eq, Finset.mem_univ, if_true]
+    conv_lhs => rw [hexp]
+    rw [map_sum]
+    simp only [map_smul, Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+    have hterm : ∀ i, n i * (T (Pi.single i (1 : S))) m = n i * (if i = m then ub else 0) := by
+      intro i
+      have := hsq (n i) (hnker i)
+        ((T (Pi.single i (1 : S))) m - (if i = m then ub else 0)) (hker i m)
+      have h' : n i * ((T (Pi.single i (1 : S))) m) -
+          n i * (if i = m then ub else 0) = 0 := by rw [← mul_sub]; exact this
+      exact sub_eq_zero.mp h'
+    simp only [hterm]
+    simp [mul_comm]
+  refine ⟨ub, hψub, ?_⟩
+  have hTc : T c = ub • c + ub • n := by
+    conv_lhs => rw [hcn]
+    rw [map_add, map_smul, ← hc, hTn]
+  have hTTe : T c = e := by
+    have : (T * T) e = e := by rw [hinv]; simp
+    rw [Module.End.mul_apply] at this
+    rw [hc]; exact this
+  have h2n : (2 : S) • n = 0 := by
+    ext i; simpa using h2 (n i) (hnker i)
+  have hkill : (2 : S) • (ub • n) = 0 := by
+    rw [smul_smul, mul_comm, ← smul_smul, h2n, smul_zero]
+  have key : e = (ub * ub) • e :=
+    calc e = T c := hTTe.symm
+    _ = ub • c + ub • n := hTc
+    _ = (ub * ub) • e + (2 : S) • (ub • n) := by
+        rw [hcn, smul_add, smul_smul, two_smul]; abel
+    _ = (ub * ub) • e := by rw [hkill, add_zero]
+  have hval := congrFun key 0
+  simp only [he, Pi.smul_apply, Pi.single_eq_same, smul_eq_mul, mul_one] at hval
+  exact hval.symm
+
+/-! ##### The arithmetic of the (5d) witness: `ℤ/16 ↠ ℤ/8`
+
+`3` is a square root of `1` in `ℤ/8`; its two lifts to `ℤ/16` are `3` and `11`,
+and `3² = 11² = 9 ≠ 1` there. That single sentence is the whole counterexample,
+and every step of it below is settled by `decide`. -/
+
+instance instFactOneLtSixteen : Fact (1 < 16) := ⟨by norm_num⟩
+
+instance instIsLocalRingZModSixteen : IsLocalRing (ZMod 16) := by
+  have h : ∀ a : ZMod 16, (∃ b, a * b = 1) ∨ (∃ b, (1 - a) * b = 1) := by decide
+  refine IsLocalRing.of_isUnit_or_isUnit_one_sub_self fun a => ?_
+  rcases h a with ⟨b, hb⟩ | ⟨b, hb⟩
+  · exact Or.inl (isUnit_iff_exists_inv.2 ⟨b, hb⟩)
+  · exact Or.inr (isUnit_iff_exists_inv.2 ⟨b, hb⟩)
+
+theorem maximalIdeal_zmodSixteen_le_span_two :
+    IsLocalRing.maximalIdeal (ZMod 16) ≤ Ideal.span {(2 : ZMod 16)} := by
+  intro x hx
+  have h : ∀ y : ZMod 16, (∃ b, y * b = 1) ∨ (∃ a, y = a * 2) := by decide
+  rcases h x with ⟨b, hb⟩ | ⟨a, ha⟩
+  · exact absurd (isUnit_iff_exists_inv.2 ⟨b, hb⟩)
+      (mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal x).mp hx))
+  · exact Ideal.mem_span_singleton'.2 ⟨a, ha.symm⟩
+
+theorem ker_castHom_zmodSixteen_le_span_eight :
+    RingHom.ker (ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8)) ≤
+      Ideal.span {(8 : ZMod 16)} := by
+  intro x hx
+  rw [RingHom.mem_ker] at hx
+  have h : ∀ y : ZMod 16,
+      ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8) y = 0 → ∃ a, y = a * 8 := by decide
+  exact Ideal.mem_span_singleton'.2 (by obtain ⟨a, ha⟩ := h x hx; exact ⟨a, ha.symm⟩)
+
+/-- **`ℤ/16 ↠ ℤ/8` is a small extension** (PROVEN): the maximal ideal is `(2)`,
+the kernel is `(8)`, and `2 · 8 = 16 = 0`. This is the witness of the FALSITY
+AUDIT on (5d) below, so it is checked rather than asserted. -/
+theorem isSmallExtension_castHom_zmodSixteen :
+    IsSmallExtension (ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8)) := by
+  refine ⟨ZMod.ringHom_surjective _, le_antisymm (Ideal.mul_le.2 fun x hx j hj => ?_) bot_le⟩
+  obtain ⟨a, rfl⟩ := Ideal.mem_span_singleton'.mp (maximalIdeal_zmodSixteen_le_span_two hx)
+  obtain ⟨b, rfl⟩ := Ideal.mem_span_singleton'.mp (ker_castHom_zmodSixteen_le_span_eight hj)
+  rw [Ideal.mem_bot]
+  have heq : (a * 2) * (b * 8) = (a * b) * 16 := by ring
+  have h16 : (16 : ZMod 16) = 0 := by decide
+  rw [heq, h16, mul_zero]
+
+/-- `3` squares to `1` in `ℤ/8`. -/
+theorem three_mul_three_zmodEight : (3 : ZMod 8) * 3 = 1 := by decide
+
+/-- **Neither lift of `3 ∈ (ℤ/8)ˣ` to `ℤ/16` squares to `1`.** The two lifts are
+`3` and `11`, and `3² = 11² = 9`. -/
+theorem no_sqrtOne_lift_of_three_zmodSixteen :
+    ∀ x : ZMod 16, ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8) x = 3 →
+      x * x ≠ 1 := by decide
+
+/-- **THE (5d) COUNTEREXAMPLE, ASSEMBLED** (PROVEN 2026-08-02): a SCALAR
+representation over `ℤ/8` taking the value `3` somewhere admits NO tame-at-`2`
+lift along `ℤ/16 ↠ ℤ/8`.
+
+Everything here is machine-checked. What is left classical, and is the ONLY
+unformalised step of the audit on (5d) below, is that such a `ρ₂` exists — take
+`ρ₂ = δ ⊗ id` for `δ` the unramified quadratic character of `Γ_{ℚ₂}` sending
+Frobenius to `3 ∈ (ℤ/8)ˣ`, which is `IsTameAtTwoLocal` by inspection (any
+coordinate projection, with that same `δ`).
+
+The topologies are left as instance arguments deliberately: the argument uses
+none, so the refutation holds for EVERY pair of topologies making the statement
+of (5d) applicable, including the discrete ones. -/
+theorem not_exists_tameLocalLift_zmodSixteen
+    [TopologicalSpace (ZMod 8)] [TopologicalSpace (ZMod 16)]
+    (ρ2 : GaloisRep ℚ_[2] (ZMod 8) (Fin 2 → ZMod 8))
+    (u : Field.absoluteGaloisGroup ℚ_[2] → ZMod 8)
+    (hscal : ∀ g w i, ρ2 g w i = u g * w i)
+    (g₀ : Field.absoluteGaloisGroup ℚ_[2]) (hu : u g₀ = 3) :
+    ¬ ∃ τ : GaloisRep ℚ_[2] (ZMod 16) (Fin 2 → ZMod 16),
+        (∀ g w i, ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8) (τ g w i)
+            = ρ2 g (fun j => ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8) (w j)) i) ∧
+        IsTameAtTwoLocal τ := by
+  rintro ⟨τ, hlift, htame⟩
+  obtain ⟨y, hy, hy2⟩ :=
+    sq_eq_one_of_isTameAtTwoLocal_lift_of_scalar
+      (ZMod.castHom (show (8 : ℕ) ∣ 16 by norm_num) (ZMod 8)) hscal hlift htame g₀
+  exact no_sqrtOne_lift_of_three_zmodSixteen y (hy.trans hu) hy2
+
 open scoped TensorProduct in
 open IsDedekindDomain.HeightOneSpectrum in
 /-- **A flat prolongation forces the space to be FINITE** (PROVEN 2026-08-02).
@@ -18356,11 +18591,10 @@ Compositio 87 (1993); Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §2.4;
 Wiles, *Modular elliptic curves and Fermat's Last Theorem*, Ch. 2. -/
 theorem exists_flatLocalLift_of_isSmallExtension (hℓ5 : 5 ≤ ℓ)
     {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S] [IsLocalRing S]
-    [CompactSpace S]
     {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
     (ψ : S →+* R) (hψ : Continuous ψ) (hsm : IsSmallExtension ψ)
-    (hSadic : IsAdic (IsLocalRing.maximalIdeal S))
-    (hRadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hres : (ℓ : S) ∈ IsLocalRing.maximalIdeal S)
+    (hfin : ∀ I : Ideal S, IsOpen (I : Set S) → Finite (S ⧸ I))
     {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     (hv : v = (Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat)
     (ρv : GaloisRep (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) R (Fin 2 → R))
