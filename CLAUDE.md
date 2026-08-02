@@ -18323,6 +18323,119 @@ Two mechanical notes from the same task, both worth knowing in advance:
   and take the upstream `∃`-theorem as a hypothesis in exactly its published form, so
   that the transplant is `obtain ⟨…⟩ := <the real theorem>` and nothing else.
 
+## WIRE A CONSUMERLESS `Fermat/FLT/Mathlib/...` MODULE INTO `Fermat.lean`, NOT INTO A CONSUMER
+
+(2026-08-01, `flt-lean-64`, creating `Mathlib/AlgebraicGeometry/SpreadOutOverZ.lean`.)
+CLAUDE.md's FOURTH invisibility class says a module unreachable from `Fermat.lean` is never
+compiled, so its `sorry`s are invisible and it can rot silently. It does not say WHERE to
+wire one in, and the natural instinct — import it from the module that will eventually
+consume it — is the expensive and conflict-prone answer when, as is usual for a
+mathlib-facing module cut ahead of its consumer, that consumer is `X0.lean` or another
+contended giant you were explicitly told not to edit.
+
+**`Fermat.lean` IS AN IMPORT INDEX — 24 lines, nothing but `import` — and several
+`Fermat.FLT.Mathlib.*` modules are already wired in there and nowhere else**
+(`RingTheory.GradedAlgebra.Quotient`, `RingTheory.RegularLocalNormal`,
+`AlgebraicGeometry.EllipticCurve.ProjectiveModel`). It is the root, so **nothing imports
+it**: adding a line costs re-elaborating one 33-line file and rebuilds nothing downstream,
+where adding the same line to `NeronModel.lean` would have invalidated its 17-module
+downstream cone. And it cannot collide with an owner, because the root has none.
+
+Three checks before you add the line, all cheap:
+
+* **name collisions tree-wide**, since a mathlib-facing module usually lands in the
+  `AlgebraicGeometry` (or `RingTheory`) namespace beside thousands of existing names —
+  `grep -rl "\bYourName\b"` over `Fermat/` and over `.lake/packages/mathlib/Mathlib/`, one
+  pass per declaration. Cross-file duplicates are only an error once some module sees both,
+  which is exactly what wiring in arranges;
+* **the module-system header**: a non-`module` file may import a `module` one (the root
+  already does), so the `module` / `public import` / `@[expose] public section` header is
+  right and is not what blocks the edge;
+* **say in the comment WHY it is wired at the root** and who the intended consumer is, or
+  the next reader will "tidy" the import away.
+
+**And then run the release build's own green test, which is NOT the usual one.**
+`Fermat.lean` ends with `#assert_no_sorry fermat_last_theorem`, so a whole-project build
+ALWAYS ends `EXIT=1` and NEVER prints `Build completed successfully`. The doctrine's
+positive-terminator rule is right for a MODULE build and gives a false red here. The green
+test for the root build is negative and has four parts:
+
+    grep -q '^EXIT=1' $LOG                        # expected: the gate fires
+    grep -q 'SORRY GATE FAILED' $LOG              # and it IS the gate
+    grep -E 'error' $LOG | grep -v 'declaration uses' \
+      | grep -vE 'SORRY GATE FAILED|Lean exited with code 1|^error: build failed' | wc -l   # == 0
+    grep -oE '\[[0-9]+/[0-9]+\]' $LOG | tail -1   # must reach the FULL job count
+
+The last line is not decoration: the first three are all satisfied by a build that died
+early, because a build that never reached module 5000 has no errors in modules 5000–5704
+either. **"No errors" and "no errors yet" are the same string.**
+
+## PIN THE OBJECT WITH A PULLBACK SQUARE, THEN *PROVE* THE FAITHFULNESS AUDIT — three short theorems
+
+(2026-08-01, same module.) A leaf of the shape *"∃ a model `fZ` of `f` with properties `P`"*
+is the commonest shape in this development, and its faithfulness audit is almost always
+PROSE: "not vacuous because …", "hypothesis `hp` is load-bearing because …". Those two
+claims are each ONE SHORT THEOREM when the leaf pins the model by an explicit `IsPullback`
+square, and writing them turns an assertion a reviewer must re-derive into something the
+kernel has checked.
+
+The three, in the order they pay off:
+
+1. **The degenerate witness is REFUTED.** The junk model is always `XZ := <the base>`,
+   `fZ := 𝟙`, which satisfies every non-cartesian clause for every `X`. With the square,
+   `IsPullback.isIso_snd_of_isIso` says in ONE LINE that a cartesian square over `fZ = 𝟙`
+   forces `f` to be an isomorphism — so the junk witness only works for the junk `X`, and
+   the leaf is not vacuous.
+2. **The hypotheses are EXACTLY NECESSARY.** Every property this development asks a model
+   to have (`IsProper`, `Smooth`, `Flat`, `LocallyOfFinitePresentation`, `Etale`) is
+   `MorphismProperty.IsStableUnderBaseChange`, so
+   `IsStableUnderBaseChange.of_isPullback sq hP` carries it back down the square to `f`.
+   That is the CONVERSE of the leaf, it is two lines, and it proves — rather than asserts —
+   that no hypothesis can be dropped.
+3. **The conclusion is INHABITED.** Exhibit the whole chain at the trivial object
+   (`X = <the base>`, `f = 𝟙`); `IsPullback.of_id_snd : IsPullback f (𝟙 _) (𝟙 _) f` is the
+   square, and `IsProper (𝟙 _)` / `Smooth (𝟙 _)` are instances. This is what rules out the
+   opposite failure — a leaf so over-constrained that it is a disguised contradiction, which
+   no amount of "is it vacuous" checking can see.
+
+Together (1) and (3) bracket the leaf from both sides, and (2) settles the binder list.
+Total cost here: 3 theorems, 12 lines, all first-try.
+
+**The corollary about how to STATE such a leaf: make the base change CANONICAL wherever you
+can.** Where a second model has to appear — "the properties hold after enlarging the base" —
+do not quantify over a new scheme and a new square. Say
+`IsProper (pullback.snd fZ (specSubringMap hNM))`: the base change is the mathlib pullback,
+so there is nothing to satisfy junk-wise, the compatibility with `fZ` is definitional, and
+combining two such stages is one reusable PROVEN lemma (`XZ ×_R T ⟶ XZ ×_R S` is cartesian
+over `Spec T ⟶ Spec S`) rather than a pile of transports. Proof irrelevance then does the
+last piece of work for free: two different derivations of `zinvSubring N ≤ zinvSubring M`
+are definitionally equal, so the two stages' models are literally the same term.
+
+## `AffineTransitionLimit.lean` IS IN THE PIN — what is missing is OBJECT DESCENT, and ONLY that
+
+(2026-08-01, re-verified.) `Mathlib/AlgebraicGeometry/AffineTransitionLimit.lean` is a
+**1371-line development of EGA IV 8 / Stacks 01YT**: inverse limits of schemes with affine
+transition maps, `Scheme.nonempty_of_isLimit`, `Scheme.compactSpace_of_isLimit`,
+`Scheme.exists_isAffine_of_isLimit`, `Scheme.exists_isOpenCover_and_isAffine`,
+`nonempty_isColimit_Γ_mapCocone`, `Scheme.exists_hom_comp_eq_comp_of_locallyOfFiniteType`
+and `Scheme.preservesColimit_yoneda` (EGA IV 8.14.2). So **"limits / approximation of schemes
+are absent from the pin" is FALSE**, and so is the commoner form of the same error,
+*"`SpreadingOut.lean` spreads out stalk morphisms only, therefore scheme-level approximation
+is unavailable"* — the premise is true of `SpreadingOut.lean` and the conclusion does not
+follow.
+
+What is genuinely absent is narrow and should be named precisely, because naming it wrongly
+has already cost this project two mis-priced nodes: **object descent** — given `X` locally of
+finite presentation over `S = lim Sᵢ`, produce an index `i` and `Xᵢ ⟶ Sᵢ` with
+`X ≅ Xᵢ ×_{Sᵢ} S` (EGA IV 8.8.2) — together with **descent of `IsProper` (8.10.5) and of
+`Smooth` (11.2.6 / 17.7.8) to a finite stage**. Mathlib has the MORPHISM half of
+approximation and not the OBJECT half.
+
+This correction was first made in `ProperPushforward.lean` on 2026-07-29 and sat inside a
+leaf docstring in a 2 000-line file, where nobody not already reading that leaf could find
+it. **A correction to an absence claim belongs in CLAUDE.md, not only next to the claim it
+corrects** — the whole point is that the next agent will look somewhere else.
+
 ## A DECLINED BRANCH'S REPAIRS ARE STILL IN THE OBJECT STORE — CHERRY-PICK THEM BY COMMIT, NOT BY HAND
 
 (2026-07-31, release 30.  `X0.lean` went from ~136 errors to 39 in about twenty

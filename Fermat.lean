@@ -21,6 +21,11 @@ import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
 import Fermat.FLT.Mathlib.RingTheory.RegularLocalNormal
+-- Wired in here, rather than at a consumer, because it has none yet: its intended consumer
+-- is `Fermat/FLT/ModularCurve/X0.lean`'s `exists_inertiaSet_geomPt`, which is owned
+-- elsewhere.  Without this line the module would never be compiled and its three leaves
+-- would be invisible to every frontier scan (CLAUDE.md's fourth invisibility class).
+import Fermat.FLT.Mathlib.AlgebraicGeometry.SpreadOutOverZ
 import Fermat.SorryGate
 
 /-!
