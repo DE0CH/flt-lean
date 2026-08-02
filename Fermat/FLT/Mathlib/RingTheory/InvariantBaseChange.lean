@@ -309,14 +309,31 @@ variable (k : Type) {B A : Type} (K : Type) [CommRing k] [CommRing B] [CommRing 
   (G : Type) [Group G] [Finite G] [MulSemiringAction G A] [SMulCommClass G k A]
   [SMulCommClass G B A]
 
-/-- **GIT COMMUTES WITH A FLAT BASE CHANGE**, stated with no tensor product in sight.
+/-- **GIT COMMUTES WITH A BASE CHANGE ALONG WHICH THE INVARIANTS COMMUTE**, stated with no
+tensor product in the geometry (2026-08-02).
 
-`XA` and `XB` are the base changes of `Spec A` and `Spec B` along `Spec K ⟶ Spec k`, described
-only by the universal property of the fibre product; `π` is the base change of the quotient map
-`Spec (B → A)` and `act σ` the base change of `Spec σ`, each pinned by its two projections.  The
-conclusion is that `π` is still a categorical quotient by `G`, for an ARBITRARY target `Y'`. -/
-theorem exists_unique_of_isPullback [Algebra.IsInvariant B A G] [Module.Flat k K]
-    (hinj : Function.Injective (algebraMap B A))
+This is `exists_unique_of_isPullback` below with `[Module.Flat k K]` — and with the two
+hypotheses that were only ever used to derive its consequences, `[Algebra.IsInvariant B A G]`
+and `hinj` — replaced by exactly those consequences:
+
+* `hbcinv` : `B ⊗[k] K` is the ring of `G`-invariants of `A ⊗[k] K`;
+* `hbcinj` : the base-changed inclusion is still injective.
+
+**Why the generalisation is the useful statement.**  Flatness enters the flat version at
+exactly two lines, `isInvariant_tensor` and `injective_bcInclusion`, and at a NON-flat base
+change those two are precisely what Katz–Mazur (8.1.6) is about — Remark (8.1.7) gives
+counterexamples at `p = 2, 3`, and they are counterexamples to `hbcinv`, not to anything
+geometric.  So a consumer at a non-flat base change (the special fibre of an integral model of
+a modular curve, `ℤ_(ℓ) → 𝔽_ℓ`) can still use everything in this file, and owes exactly the
+commutative algebra.  See `Fermat.Gamma0GITPresentationOver.bcQuotUniversal_of_isInvariant`.
+
+Nothing else in the proof consumes flatness, which is why this is a pure weakening: the flat
+version below is three lines over it. -/
+theorem exists_unique_of_isPullback_of_isInvariant
+    (hbcinv : letI := bcAction (A := A) k K G
+      letI := bcAlgebra (B := B) (A := A) k K
+      Algebra.IsInvariant (B ⊗[k] K) (A ⊗[k] K) G)
+    (hbcinj : Function.Injective (bcInclusion (B := B) (A := A) k K))
     {XA XB Y' : Scheme.{0}}
     {fA : XA ⟶ Spec (CommRingCat.of A)} {gA : XA ⟶ Spec (CommRingCat.of K)}
     (hA : IsPullback fA gA (Spec.map (CommRingCat.ofHom (algebraMap k A)))
@@ -336,7 +353,7 @@ theorem exists_unique_of_isPullback [Algebra.IsInvariant B A G] [Module.Flat k K
   classical
   letI := bcAction (A := A) k K G
   letI := bcAlgebra (B := B) (A := A) k K
-  haveI := isInvariant_tensor (B := B) (A := A) k K G
+  haveI := hbcinv
   haveI := smulCommClass_tensor (B := B) (A := A) k K G
   -- identify both fibre products with `Spec` of a tensor product
   obtain ⟨iA, hiAf, hiAg⟩ : ∃ i : Spec (CommRingCat.of (A ⊗[k] K)) ≅ XA,
@@ -379,9 +396,8 @@ theorem exists_unique_of_isPullback [Algebra.IsInvariant B A G] [Module.Flat k K
       ext κ
       show (1 : A) ⊗ₜ[k] κ = σ • ((1 : A) ⊗ₜ[k] κ)
       rw [bcAction_smul, bcAut_tmul, smul_one]
-  -- the algebra, at the base-changed triple
-  have hinj' : Function.Injective (algebraMap (B ⊗[k] K) (A ⊗[k] K)) :=
-    injective_bcInclusion k K hinj
+  -- the algebra, at the base-changed triple; `bcAlgebra_algebraMap` is `rfl`
+  have hinj' : Function.Injective (algebraMap (B ⊗[k] K) (A ⊗[k] K)) := hbcinj
   obtain ⟨ψ₀, hψ₀, huniq⟩ := InvariantQuotient.exists_unique_of_isInvariant
     (B := B ⊗[k] K) (A := A ⊗[k] K) G hinj' (iA.hom ≫ φ) (fun σ => by
       rw [← Category.assoc, ← hactσ σ, Category.assoc, hφ σ])
@@ -395,6 +411,39 @@ theorem exists_unique_of_isPullback [Algebra.IsInvariant B A G] [Module.Flat k K
       rw [← Category.assoc, ← hquot, Category.assoc, hψ']
     have hE := huniq (iB.hom ≫ ψ') hstep
     rw [← hE, Iso.inv_hom_id_assoc]
+
+/-- **GIT COMMUTES WITH A FLAT BASE CHANGE**, stated with no tensor product in sight.
+
+`XA` and `XB` are the base changes of `Spec A` and `Spec B` along `Spec K ⟶ Spec k`, described
+only by the universal property of the fibre product; `π` is the base change of the quotient map
+`Spec (B → A)` and `act σ` the base change of `Spec σ`, each pinned by its two projections.  The
+conclusion is that `π` is still a categorical quotient by `G`, for an ARBITRARY target `Y'`.
+
+**REPROVED 2026-08-02 as the flat instance of `exists_unique_of_isPullback_of_isInvariant`
+above**, which is the same theorem with flatness replaced by the two facts it was used to
+derive.  The proof that used to live here is now that theorem, verbatim; what is left is the
+derivation `isInvariant_tensor` / `injective_bcInclusion`, i.e. exactly the flat input. -/
+theorem exists_unique_of_isPullback [Algebra.IsInvariant B A G] [Module.Flat k K]
+    (hinj : Function.Injective (algebraMap B A))
+    {XA XB Y' : Scheme.{0}}
+    {fA : XA ⟶ Spec (CommRingCat.of A)} {gA : XA ⟶ Spec (CommRingCat.of K)}
+    (hA : IsPullback fA gA (Spec.map (CommRingCat.ofHom (algebraMap k A)))
+      (Spec.map (CommRingCat.ofHom (algebraMap k K))))
+    {fB : XB ⟶ Spec (CommRingCat.of B)} {gB : XB ⟶ Spec (CommRingCat.of K)}
+    (hB : IsPullback fB gB (Spec.map (CommRingCat.ofHom (algebraMap k B)))
+      (Spec.map (CommRingCat.ofHom (algebraMap k K))))
+    (π : XA ⟶ XB)
+    (hπf : π ≫ fB = fA ≫ Spec.map (CommRingCat.ofHom (algebraMap B A)))
+    (hπg : π ≫ gB = gA)
+    (act : G → (XA ⟶ XA))
+    (hactf : ∀ σ : G, act σ ≫ fA
+      = fA ≫ Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ)))
+    (hactg : ∀ σ : G, act σ ≫ gA = gA)
+    (φ : XA ⟶ Y') (hφ : ∀ σ : G, act σ ≫ φ = φ) :
+    ∃! ψ : XB ⟶ Y', π ≫ ψ = φ :=
+    exists_unique_of_isPullback_of_isInvariant k K G
+      (isInvariant_tensor (B := B) (A := A) k K G) (injective_bcInclusion k K hinj)
+      hA hB π hπf hπg act hactf hactg φ hφ
 
 end Geometry
 
