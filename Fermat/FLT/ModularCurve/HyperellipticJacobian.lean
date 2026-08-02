@@ -10660,7 +10660,9 @@ change, and `geomPic_bc_injective` would be false at that divisor's class.
 The sketch this leaf carried asked for a valuation FUNCTION on `F̄` restricting to `ord_v` ON
 THE NOSE — i.e. for the constant field extension to be unramified at `v`, which is
 [Stichtenoth III.6.3(b)] and is exactly what the sibling leaf
-`constFieldExt_exists_uniformizer` still asks for.  **That is not needed here, because
+`constFieldExt_exists_uniformizer` asked for (PROVEN 2026-08-01, elementarily and without
+any of the ramification theory that sketch called for; see its docstring).  **That is still
+not needed here, because
 `ord_emb` is an AXIOM OF THIS STRUCTURE and it supplies the unramifiedness for free.**  It is
 enough to produce ANY place `w` of `F̄` whose restriction along `emb` is a POSITIVE MULTIPLE
 `e · ord_v`: then `ord_emb` reads that restriction as `ord_{below w}`, and `D.ord_surjective`
@@ -10688,9 +10690,11 @@ mentions no curve, and `PlaceExtend.exists_isPlaceFun_comp_emb_of_chart` is its 
 form, which installs the two towers from the raw data `finite_isPlaceFun_aux` asks for.
 
 **This does NOT close `constFieldExt_exists_uniformizer`, and nobody should read it as doing
-so.**  That leaf is what BUILDS `below` and `ord_emb` for a `ConstFieldExt`, which carries no
-`ord_emb`; the observation here is only that a consumer which already HAS `ord_emb` gets the
-unramifiedness for free and must not be sent to reprove it.
+so.**  That statement is what BUILDS `below` and `ord_emb` for a `ConstFieldExt`, which
+carries no `ord_emb`; the observation here is only that a consumer which already HAS
+`ord_emb` gets the unramifiedness for free and must not be sent to reprove it.  (It was
+proven separately on 2026-08-01, by a valuation-theoretic argument that shares nothing with
+the lying-over construction above.)
 
 **Not vacuous.**  `below` is not free data: `ord_emb` together with `D.ord_injective` pins it as
 *the* place whose valuation is `ord_w ∘ emb` (see the section docstring), so this is a statement
@@ -11216,7 +11220,308 @@ lemma fieldAct_algebraMap_inv (σ : QbarGal) (a : AlgebraicClosure ℚ) :
 
 end ConstFieldExt
 
-/-- **LEAF (weak Mordell–Weil, 1a of 4): the constant field extension is UNRAMIFIED.**
+open Polynomial in
+/-- `emb` commutes with evaluating a RATIONAL polynomial at the abscissa. -/
+lemma constFieldExt_emb_aeval {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (cf : ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D) (g : ℚ[X]) :
+    cf.emb (aeval D.xx g)
+      = aeval cf.Dbar.xx (g.map (algebraMap ℚ (AlgebraicClosure ℚ))) := by
+  have hcomp : cf.emb.comp (algebraMap ℚ D.F)
+      = (algebraMap (AlgebraicClosure ℚ) cf.Dbar.F).comp
+          (algebraMap ℚ (AlgebraicClosure ℚ)) := by
+    refine RingHom.ext fun a => ?_
+    simp only [RingHom.coe_comp, Function.comp_apply]
+    exact cf.emb_algebraMap a
+  rw [aeval_def, Polynomial.hom_eval₂, hcomp, cf.emb_xx, aeval_def, eval₂_map]
+
+open Polynomial in
+/-- The orders `ord_w (emb t)` for `t ∈ F^×` form a subgroup of `ℤ`. -/
+def constFieldExtOrdSubgroup {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (cf : ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D) (w : cf.Dbar.Places) : AddSubgroup ℤ where
+  carrier := {n : ℤ | ∃ t : D.F, t ≠ 0 ∧ cf.Dbar.ord w (cf.emb t) = n}
+  zero_mem' := ⟨1, one_ne_zero, by rw [map_one]; exact PlaceData.ord_one cf.Dbar w⟩
+  add_mem' := by
+    rintro _ _ ⟨s, hs0, rfl⟩ ⟨t, ht0, rfl⟩
+    refine ⟨s * t, mul_ne_zero hs0 ht0, ?_⟩
+    rw [map_mul]
+    exact cf.Dbar.ord_mul w _ _
+      (cf.emb_ne_zero hs0)
+      (cf.emb_ne_zero ht0)
+  neg_mem' := by
+    rintro _ ⟨t, ht0, rfl⟩
+    refine ⟨t⁻¹, inv_ne_zero ht0, ?_⟩
+    rw [map_inv₀]
+    exact PlaceData.ord_inv cf.Dbar w _ (cf.emb_ne_zero ht0)
+
+open Polynomial in
+/-- **The `x − β` step.**  For `β` in `ℚ̄` and a place regular at the abscissa,
+`ord_w (x̄ − β)` is the order of `emb (g(x))` for `g` the minimal polynomial of `β`:
+the cofactor `g/(X−β)` does not vanish at `β` (char `0`), hence is a unit at `w`. -/
+lemma constFieldExt_dvd_ord_sub_const {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (cf : ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D) (w : cf.Dbar.Places) {d : ℤ}
+    (hd : ∀ t : D.F, t ≠ 0 → d ∣ cf.Dbar.ord w (cf.emb t))
+    (hxx : 0 ≤ cf.Dbar.ord w cf.Dbar.xx) (β : AlgebraicClosure ℚ) :
+    d ∣ cf.Dbar.ord w
+      (cf.Dbar.xx - algebraMap (AlgebraicClosure ℚ) cf.Dbar.F β) := by
+  classical
+  -- the element is nonzero: the abscissa is transcendental
+  have hlin : cf.Dbar.xx - algebraMap (AlgebraicClosure ℚ) cf.Dbar.F β
+      = aeval cf.Dbar.xx (X - C β : (AlgebraicClosure ℚ)[X]) := by simp
+  have hne : cf.Dbar.xx - algebraMap (AlgebraicClosure ℚ) cf.Dbar.F β ≠ 0 := by
+    rw [hlin]
+    exact cf.Dbar.aeval_xx_ne_zero (X_sub_C_ne_zero β)
+  -- and its order is nonnegative
+  have hmem : cf.Dbar.xx ∈ cf.Dbar.valRing w := hxx
+  have hnn : 0 ≤ cf.Dbar.ord w (cf.Dbar.xx - algebraMap (AlgebraicClosure ℚ) cf.Dbar.F β) := by
+    rw [hlin]
+    exact PlaceData.aeval_mem_valRing cf.Dbar w hmem _
+  rcases eq_or_lt_of_le hnn with h0 | hpos
+  · rw [← h0]
+    exact dvd_zero d
+  -- positive case: use the minimal polynomial of `β` over `ℚ`
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  have hint : IsIntegral ℚ β := (halgQ.isAlgebraic β).isIntegral
+  set g : ℚ[X] := minpoly ℚ β with hgdef
+  have hg0 : g ≠ 0 := minpoly.ne_zero hint
+  have hgdeg : 0 < g.natDegree := minpoly.natDegree_pos hint
+  have hder0 : derivative g ≠ 0 := by
+    intro h
+    have := Polynomial.derivative_eq_zero.mp h
+    omega
+  have hderβ : aeval β (derivative g) ≠ 0 := by
+    intro h
+    have h1 := minpoly.degree_le_of_ne_zero ℚ β hder0 h
+    have h2 := Polynomial.degree_derivative_lt hg0
+    rw [← hgdef] at h1
+    exact absurd (lt_of_le_of_lt h1 h2) (lt_irrefl _)
+  -- push `g` into `K[X]` and split off the linear factor
+  set G : (AlgebraicClosure ℚ)[X] := g.map (algebraMap ℚ (AlgebraicClosure ℚ)) with hGdef
+  have hGroot : G.IsRoot β := by
+    have : eval β G = aeval β g := by rw [hGdef, aeval_def, eval₂_eq_eval_map]
+    rw [IsRoot, this, minpoly.aeval]
+  obtain ⟨h, hh⟩ := dvd_iff_isRoot.mpr hGroot
+  have hderG : derivative G = (derivative g).map (algebraMap ℚ (AlgebraicClosure ℚ)) := by
+    rw [hGdef, derivative_map]
+  have hhβ : h.eval β ≠ 0 := by
+    have e1 : derivative G = h + (X - C β) * derivative h := by
+      rw [hh, derivative_mul, derivative_sub, derivative_X, derivative_C, sub_zero, one_mul]
+    have e2 : eval β (derivative G) = h.eval β := by rw [e1]; simp
+    rw [hderG] at e2
+    have e3 : eval β ((derivative g).map (algebraMap ℚ (AlgebraicClosure ℚ))) = aeval β (derivative g) := by
+      rw [aeval_def, eval₂_eq_eval_map]
+    rw [e3] at e2
+    rw [← e2]
+    exact hderβ
+  -- the cofactor is a unit at `w`
+  have hvan : cf.Dbar.VanishesAt w (cf.Dbar.xx - algebraMap (AlgebraicClosure ℚ) cf.Dbar.F β) := Or.inr hpos
+  have hunit := PlaceData.ord_eq_zero_of_vanishesAt_sub cf.Dbar w hhβ
+    (PlaceData.vanishesAt_aeval_sub_eval cf.Dbar w hmem hvan h)
+  -- assemble
+  have hsplit : aeval cf.Dbar.xx G
+      = (cf.Dbar.xx - algebraMap (AlgebraicClosure ℚ) cf.Dbar.F β) * aeval cf.Dbar.xx h := by
+    rw [hh]; simp
+  have hordG : cf.Dbar.ord w (aeval cf.Dbar.xx G)
+      = cf.Dbar.ord w (cf.Dbar.xx - algebraMap (AlgebraicClosure ℚ) cf.Dbar.F β) := by
+    rw [hsplit, cf.Dbar.ord_mul w _ _ hne hunit.1, hunit.2, add_zero]
+  have hgx : aeval D.xx g ≠ 0 := D.aeval_xx_ne_zero hg0
+  have := hd _ hgx
+  rw [constFieldExt_emb_aeval, ← hGdef, hordG] at this
+  exact this
+
+open Polynomial in
+/-- **`d` divides the order of every polynomial in the abscissa.**  Two charts: at a place
+regular at the abscissa this is the linear-factor induction over the previous lemma; at a
+pole of the abscissa the order is `deg p` times `ord_w x̄`, and `x̄ = emb x`. -/
+lemma constFieldExt_dvd_ord_aeval {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (cf : ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D) (w : cf.Dbar.Places) {d : ℤ}
+    (hd : ∀ t : D.F, t ≠ 0 → d ∣ cf.Dbar.ord w (cf.emb t))
+    {p : (AlgebraicClosure ℚ)[X]} (hp : p ≠ 0) :
+    d ∣ cf.Dbar.ord w (aeval cf.Dbar.xx p) := by
+  classical
+  have hxxemb : cf.emb D.xx = cf.Dbar.xx := cf.emb_xx
+  rcases lt_or_ge (cf.Dbar.ord w cf.Dbar.xx) 0 with hneg | hpos
+  · -- pole chart
+    obtain ⟨-, hval⟩ := ord_aeval_of_ord_neg cf.Dbar w hneg rfl hp
+    rw [hval]
+    exact Dvd.dvd.mul_right (by rw [← hxxemb]; exact hd _ D.xx_ne_zero) _
+  · -- regular chart: induct on the degree, splitting off linear factors
+    have main : ∀ n : ℕ, ∀ q : (AlgebraicClosure ℚ)[X], q.natDegree ≤ n → q ≠ 0 →
+        d ∣ cf.Dbar.ord w (aeval cf.Dbar.xx q) := by
+      intro n
+      induction n with
+      | zero =>
+        intro q hq hq0
+        obtain ⟨a, rfl⟩ := Polynomial.natDegree_eq_zero.mp (Nat.le_zero.mp hq)
+        have ha0 : a ≠ 0 := by rintro rfl; simp at hq0
+        rw [aeval_C, cf.Dbar.ord_algebraMap w a ha0]
+        exact dvd_zero d
+      | succ m ih =>
+        intro q hq hq0
+        rcases le_or_gt q.natDegree m with hle | hgt
+        · exact ih q hle hq0
+        have hdegne : q.degree ≠ 0 := by
+          intro h
+          have hz : q.natDegree = 0 :=
+            Polynomial.natDegree_eq_zero_iff_degree_le_zero.mpr (le_of_eq h)
+          omega
+        obtain ⟨β, hβ⟩ := IsAlgClosed.exists_root q hdegne
+        obtain ⟨r, hr⟩ := dvd_iff_isRoot.mpr hβ
+        have hr0 : r ≠ 0 := by rintro rfl; rw [mul_zero] at hr; exact hq0 hr
+        have hdegr : r.natDegree ≤ m := by
+          have := Polynomial.natDegree_mul (X_sub_C_ne_zero β) hr0
+          rw [← hr, Polynomial.natDegree_X_sub_C] at this
+          omega
+        have hne1 : cf.Dbar.xx - algebraMap (AlgebraicClosure ℚ) cf.Dbar.F β ≠ 0 := by
+          have : cf.Dbar.xx - algebraMap (AlgebraicClosure ℚ) cf.Dbar.F β
+              = aeval cf.Dbar.xx (X - C β : (AlgebraicClosure ℚ)[X]) := by simp
+          rw [this]
+          exact cf.Dbar.aeval_xx_ne_zero (X_sub_C_ne_zero β)
+        have hne2 : aeval cf.Dbar.xx r ≠ 0 := cf.Dbar.aeval_xx_ne_zero hr0
+        have hsplit : aeval cf.Dbar.xx q
+            = (cf.Dbar.xx - algebraMap (AlgebraicClosure ℚ) cf.Dbar.F β) * aeval cf.Dbar.xx r := by
+          rw [hr]; simp
+        rw [hsplit, cf.Dbar.ord_mul w _ _ hne1 hne2]
+        exact dvd_add (constFieldExt_dvd_ord_sub_const cf w hd hpos β) (ih r hdegr hr0)
+    exact main p.natDegree p le_rfl hp
+
+open Polynomial in
+/-- **The core dévissage.**  If `d` divides the order of every polynomial in the abscissa
+and the order of the ordinate, it divides the order of everything: `z·d(x) = a(x) + b(x)·y`,
+and `(A + BY)(A − BY) = a² − b²f` lies back in the abscissa layer. -/
+lemma constFieldExt_dvd_ord_all {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
+    (cf : ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D) (w : cf.Dbar.Places) {d : ℤ}
+    (hP : ∀ p : (AlgebraicClosure ℚ)[X], p ≠ 0 →
+      d ∣ cf.Dbar.ord w (aeval cf.Dbar.xx p))
+    (hy : d ∣ cf.Dbar.ord w cf.Dbar.yy)
+    {z : cf.Dbar.F} (hz : z ≠ 0) : d ∣ cf.Dbar.ord w z := by
+  classical
+  set Y := cf.Dbar.yy with hYdef
+  have hY0 : Y ≠ 0 := by
+    intro h
+    have := cf.Dbar.eqn
+    rw [hYdef] at h
+    rw [h] at this
+    have h2 : aeval cf.Dbar.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ)) = 0 := by
+      rw [aeval_sextPoly, ← this]; ring
+    exact cf.Dbar.aeval_xx_ne_zero (Polynomial.Monic.ne_zero (monic_sextPoly (AlgebraicClosure ℚ))) h2
+  have hcurve : Y ^ 2 = aeval cf.Dbar.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ)) := by
+    rw [aeval_sextPoly]; exact cf.Dbar.eqn
+  obtain ⟨a, b, dd, hdd, hgen⟩ := cf.Dbar.gen z
+  rw [← hYdef] at hgen
+  have hdd0 : dd ≠ 0 := by rintro rfl; simp at hdd
+  -- the numerator
+  have hnum : aeval cf.Dbar.xx a + aeval cf.Dbar.xx b * Y ≠ 0 := by
+    rw [← hgen]; exact mul_ne_zero hz hdd
+  have key : d ∣ cf.Dbar.ord w (aeval cf.Dbar.xx a + aeval cf.Dbar.xx b * Y) := by
+    rcases eq_or_ne b 0 with rfl | hb0
+    · have ha0 : a ≠ 0 := by
+        rintro rfl; simp at hnum
+      simpa using hP a ha0
+    have hB : aeval cf.Dbar.xx b ≠ 0 := cf.Dbar.aeval_xx_ne_zero hb0
+    have hBY : aeval cf.Dbar.xx b * Y ≠ 0 := mul_ne_zero hB hY0
+    rcases eq_or_ne a 0 with rfl | ha0
+    · rw [map_zero, zero_add, cf.Dbar.ord_mul w _ _ hB hY0]
+      exact dvd_add (hP b hb0) hy
+    have hA : aeval cf.Dbar.xx a ≠ 0 := cf.Dbar.aeval_xx_ne_zero ha0
+    set A := aeval cf.Dbar.xx a with hAdef
+    set B := aeval cf.Dbar.xx b with hBdef
+    set e : (AlgebraicClosure ℚ)[X] := a ^ 2 - b ^ 2 * sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (AlgebraicClosure ℚ) with hedef
+    have hprod : (A + B * Y) * (A - B * Y) = aeval cf.Dbar.xx e := by
+      rw [hedef]
+      simp only [map_sub, map_mul, map_pow]
+      rw [← hcurve, hAdef, hBdef]
+      ring
+    rcases eq_or_ne e 0 with he0 | he0
+    · -- degenerate: `A = B·Y`, so the numerator is `2A`
+      rw [he0, map_zero] at hprod
+      have hAmB : A - B * Y = 0 := by
+        rcases mul_eq_zero.mp hprod with h | h
+        · exact absurd h hnum
+        · exact h
+      have hrw : A + B * Y = algebraMap (AlgebraicClosure ℚ) cf.Dbar.F 2 * A := by
+        have : B * Y = A := by linear_combination -hAmB
+        rw [this]
+        have h2 : algebraMap (AlgebraicClosure ℚ) cf.Dbar.F 2 = (2 : cf.Dbar.F) :=
+          map_ofNat _ 2
+        rw [h2]; ring
+      rw [hrw, cf.Dbar.ord_mul w _ _
+        ((map_ne_zero_iff _ (algebraMap (AlgebraicClosure ℚ) cf.Dbar.F).injective).mpr two_ne_zero) hA,
+        cf.Dbar.ord_algebraMap w 2 two_ne_zero, zero_add]
+      exact hP a ha0
+    · -- generic: the two conjugates split the order of `a² − b²f`
+      have hAmB : A - B * Y ≠ 0 := by
+        intro h
+        rw [h, mul_zero] at hprod
+        exact cf.Dbar.aeval_xx_ne_zero he0 hprod.symm
+      have hde : d ∣ cf.Dbar.ord w (aeval cf.Dbar.xx e) := hP e he0
+      have hsum : cf.Dbar.ord w (A + B * Y) + cf.Dbar.ord w (A - B * Y)
+          = cf.Dbar.ord w (aeval cf.Dbar.xx e) := by
+        rw [← cf.Dbar.ord_mul w _ _ hnum hAmB, hprod]
+      have hds : d ∣ min (cf.Dbar.ord w A) (cf.Dbar.ord w (B * Y)) := by
+        rcases min_choice (cf.Dbar.ord w A) (cf.Dbar.ord w (B * Y)) with h | h <;> rw [h]
+        · exact hP a ha0
+        · rw [cf.Dbar.ord_mul w _ _ hB hY0]; exact dvd_add (hP b hb0) hy
+      -- four inequalities pinning `min` of the two conjugate orders
+      have h1 := cf.Dbar.ord_add w A (B * Y) hA hBY hnum
+      have h2' := cf.Dbar.ord_add w A (-(B * Y)) hA (neg_ne_zero.mpr hBY)
+        (by rw [← sub_eq_add_neg]; exact hAmB)
+      rw [PlaceData.ord_neg cf.Dbar w _ hBY, ← sub_eq_add_neg] at h2'
+      have h2A : (2 : cf.Dbar.F) * A ≠ 0 :=
+        mul_ne_zero (by
+          have : (2 : cf.Dbar.F) = algebraMap (AlgebraicClosure ℚ) cf.Dbar.F 2 :=
+            (map_ofNat _ 2).symm
+          rw [this]
+          exact (map_ne_zero_iff _ (algebraMap (AlgebraicClosure ℚ) cf.Dbar.F).injective).mpr two_ne_zero) hA
+      have h2BY : (2 : cf.Dbar.F) * (B * Y) ≠ 0 :=
+        mul_ne_zero (by
+          have : (2 : cf.Dbar.F) = algebraMap (AlgebraicClosure ℚ) cf.Dbar.F 2 :=
+            (map_ofNat _ 2).symm
+          rw [this]
+          exact (map_ne_zero_iff _ (algebraMap (AlgebraicClosure ℚ) cf.Dbar.F).injective).mpr two_ne_zero) hBY
+      have hord2 : ∀ v : cf.Dbar.F, v ≠ 0 →
+          cf.Dbar.ord w ((2 : cf.Dbar.F) * v) = cf.Dbar.ord w v := by
+        intro v hv
+        have h2 : (2 : cf.Dbar.F) = algebraMap (AlgebraicClosure ℚ) cf.Dbar.F 2 :=
+          (map_ofNat _ 2).symm
+        rw [h2, cf.Dbar.ord_mul w _ _
+          ((map_ne_zero_iff _ (algebraMap (AlgebraicClosure ℚ) cf.Dbar.F).injective).mpr two_ne_zero) hv,
+          cf.Dbar.ord_algebraMap w 2 two_ne_zero, zero_add]
+      have h3 : min (cf.Dbar.ord w (A + B * Y)) (cf.Dbar.ord w (A - B * Y))
+          ≤ cf.Dbar.ord w A := by
+        have hadd := cf.Dbar.ord_add w (A + B * Y) (A - B * Y) hnum hAmB
+          (by rw [show (A + B * Y) + (A - B * Y) = (2 : cf.Dbar.F) * A by ring]; exact h2A)
+        rw [show (A + B * Y) + (A - B * Y) = (2 : cf.Dbar.F) * A by ring, hord2 A hA] at hadd
+        exact hadd
+      have h4 : min (cf.Dbar.ord w (A + B * Y)) (cf.Dbar.ord w (A - B * Y))
+          ≤ cf.Dbar.ord w (B * Y) := by
+        have hadd := cf.Dbar.ord_add w (A + B * Y) (-(A - B * Y)) hnum
+          (neg_ne_zero.mpr hAmB)
+          (by rw [show (A + B * Y) + -(A - B * Y) = (2 : cf.Dbar.F) * (B * Y) by ring]
+              exact h2BY)
+        rw [PlaceData.ord_neg cf.Dbar w _ hAmB,
+          show (A + B * Y) + -(A - B * Y) = (2 : cf.Dbar.F) * (B * Y) by ring,
+          hord2 _ hBY] at hadd
+        exact hadd
+      have hcase : cf.Dbar.ord w (A + B * Y)
+            = min (cf.Dbar.ord w A) (cf.Dbar.ord w (B * Y)) ∨
+          cf.Dbar.ord w (A + B * Y)
+            = cf.Dbar.ord w (aeval cf.Dbar.xx e)
+              - min (cf.Dbar.ord w A) (cf.Dbar.ord w (B * Y)) := by omega
+      rcases hcase with h | h
+      · rw [h]; exact hds
+      · rw [h]; exact dvd_sub hde hds
+  -- divide out the denominator
+  have hordmul := cf.Dbar.ord_mul w z (aeval cf.Dbar.xx dd) hz hdd
+  rw [hgen] at hordmul
+  have hdvd_dd : d ∣ cf.Dbar.ord w (aeval cf.Dbar.xx dd) := hP dd hdd0
+  have hsplit : cf.Dbar.ord w z
+      = cf.Dbar.ord w (aeval cf.Dbar.xx a + aeval cf.Dbar.xx b * Y)
+        - cf.Dbar.ord w (aeval cf.Dbar.xx dd) := by omega
+  rw [hsplit]
+  exact dvd_sub key hdvd_dd
+
+open Polynomial in
+/-- **PROVEN (weak Mordell–Weil, 1a of 4): the constant field extension is UNRAMIFIED.**
 
 `ord_w ∘ emb` is again a NORMALISED valuation of `F`: its value group is all of `ℤ`, i.e.
 `e(w | w ∩ F) = 1`.  This is [Stichtenoth, *Algebraic Function Fields and Codes*, III.6.3(b)]
@@ -11225,24 +11530,91 @@ standing between `ConstFieldExt` (PROVEN to exist above) and `below` together wi
 given it, `D.ord_complete` produces the place below and its defining property, and both are
 Lean definitions rather than fields (see `ConstFieldExt.below` and `ConstFieldExt.ord_below`).
 
-Route.  Reduce to a finite subextension: `emb t` for `t ∈ F` involves only finitely many
-algebraic numbers, so `w` restricted to `F·K'` for a finite `K'/ℚ` suffices, and
-`[F·K' : F] = [K' : ℚ]` because `ℚ` is algebraically closed in `F` (the curve is
-geometrically irreducible: `Y² − f` stays irreducible over `ℚ̄(x)`, which is
-`not_isSquare_sextPoly` over `ℚ̄`).  Then `Σ_{w' | v} e(w') f(w') ≤ [F·K' : F] = [K' : ℚ]`
-while `f(w') ≥ [K'·κ(v) : κ(v)]`, and equality in the constant-field case forces `e = 1`.
+## THE ROUTE THIS DOCSTRING USED TO PROPOSE WAS NOT TAKEN, and it is much the more expensive
+
+The retired sketch read: *reduce to a finite subextension `F·K'`, use
+`[F·K' : F] = [K' : ℚ]` (because `ℚ` is algebraically closed in `F`), then
+`Σ_{w' | v} e(w') f(w') ≤ [F·K' : F]` while `f(w') ≥ [K'·κ(v) : κ(v)]`, and equality in the
+constant-field case forces `e = 1`.*  That is the classical proof and every step of it is a
+piece of infrastructure this pin does not have: the compositum `F ⊗_ℚ K'` as an object, the
+fundamental identity `Σ e f = [L : F]` (mathlib's `Ideal.sum_ramification_inertia`, needing
+`A'` module-finite and Dedekind over `A`), geometric irreducibility of the curve, and
+reducedness of `κ(v) ⊗_ℚ K'`.  **None of it is needed.**
+
+**The proof below is elementary and uses only the `PlaceData` axioms.**  Write
+`Γ = {ord_w (emb t) : t ∈ F^×}` — a SUBGROUP of `ℤ` (`constFieldExtOrdSubgroup`), so
+`Γ = d·ℤ`; the claim is `d = ±1`, and then `1 ∈ Γ` IS the required `t`.  Three steps:
+
+* **`d ∣ ord_w (x̄ − β)` for every `β ∈ ℚ̄`** (`constFieldExt_dvd_ord_sub_const`).  Where `x̄`
+  has a pole this is `ord_w (x̄ − β) = ord_w x̄ = ord_w (emb x)` and there is nothing to do.
+  Where `x̄` is regular and `ord_w (x̄ − β) > 0`, take `g = minpoly ℚ β` and split
+  `g = (X − β)·h` over `ℚ̄`; then `h(β) = g′(β) ≠ 0` — **this is the ONLY place separability
+  of `ℚ̄/ℚ` enters, and it is where the CONSTANT-field hypothesis is spent** — so `h(x̄)` is
+  congruent to a nonzero constant and is a unit at `w` (`ord_eq_zero_of_vanishesAt_sub`).
+  Hence `ord_w (x̄ − β) = ord_w (aeval x̄ g) = ord_w (emb (aeval x g)) ∈ Γ`.
+  `g′(β) ≠ 0` is `minpoly.degree_le_of_ne_zero` against `degree_derivative_lt`: no
+  separability API is invoked at all.
+* **`d ∣ ord_w (aeval x̄ p)` for every `0 ≠ p ∈ ℚ̄[X]`** (`constFieldExt_dvd_ord_aeval`): at a
+  pole of `x̄` this is `ord_aeval_of_ord_neg`; elsewhere, induct on `deg p`, splitting off one
+  linear factor at a time (`IsAlgClosed.exists_root`) over the previous step.
+* **`d ∣ ord_w z` for EVERY `z ≠ 0`** (`constFieldExt_dvd_ord_all`).  By `Dbar.gen`,
+  `z·d(x̄) = A + B·ȳ` with `A, B` in the abscissa layer, so it is enough to divide
+  `ord_w (A + Bȳ)`.  The conjugate `A − Bȳ` has `(A + Bȳ)(A − Bȳ) = aeval x̄ (a² − b²f)`,
+  back in the abscissa layer; and `(A+Bȳ) ± (A−Bȳ)` are `2A` and `2Bȳ`, so
+  `min (ord (A+Bȳ)) (ord (A−Bȳ)) = min (ord A) (ord Bȳ)`.  One of the two conjugates
+  therefore has order `min (ord A) (ord Bȳ)` and the other has the complement — both
+  divisible by `d`.  **This is the step that would fail for a non-constant extension**: it
+  uses that `ȳ² ∈ ℚ̄[x̄]` and that `A, B` are polynomials in `x̄` over the CONSTANTS.
+
+Then `Dbar.ord_surjective w` gives a `u` with `ord_w u = 1`, so `d ∣ 1`.
 
 **Not vacuous, and `hsep` is not needed**: the data of `ConstFieldExt` already pins `Dbar.F`
 as `ℚ̄(xx, yy)` and `emb (D.F)` as `ℚ(xx, yy)` inside it, by `ringHom_ext_of_gen`, so this is
 a statement about the honest constant field extension and about nothing else.
 
-**What would refute it**: a `w` for which `ord_w (emb t)` is even for every `t ∈ F` — i.e. a
-ramified geometric place.  That cannot happen for a CONSTANT field extension, but it does
-happen for the geometric extension `ℚ̄(x) ⊆ ℚ̄(x)(√x)`, which is why the proof must use that
-`Dbar.F` is generated over `emb (D.F)` by CONSTANTS. -/
+**What would have refuted it**: a `w` for which `ord_w (emb t)` is even for every `t ∈ F` —
+i.e. a ramified geometric place.  That cannot happen for a CONSTANT field extension, but it
+does happen for the geometric extension `ℚ̄(x) ⊆ ℚ̄(x)(√x)`, which is why the proof must use
+that `Dbar.F` is generated over `emb (D.F)` by CONSTANTS.  Both places named above where it
+is used are exactly that: the separable minimal polynomial of a CONSTANT `β`, and the
+`ℚ̄[x̄]`-quadratic normal form `A + Bȳ`.  Run the witness against them: over
+`ℚ̄(x) ⊆ ℚ̄(x)(√x)` the element `√x` is not of the form `A + B·ȳ` with `ȳ² ∈ ℚ̄[x̄]` and
+`A, B ∈ ℚ̄(x̄)` for the ORIGINAL `ȳ`, so the third step does not apply — as it must not. -/
 theorem constFieldExt_exists_uniformizer {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (cf : ConstFieldExt c₀ c₁ c₂ c₃ c₄ c₅ D) (w : cf.Dbar.Places) :
-    ∃ t : D.F, cf.Dbar.ord w (cf.emb t) = 1 := sorry
+    ∃ t : D.F, cf.Dbar.ord w (cf.emb t) = 1 := by
+  classical
+  obtain ⟨a, ha⟩ := Int.subgroup_cyclic (constFieldExtOrdSubgroup cf w)
+  have hmem : ∀ n : ℤ, n ∈ constFieldExtOrdSubgroup cf w → a ∣ n := by
+    intro n hn
+    rw [ha, AddSubgroup.mem_closure_singleton] at hn
+    obtain ⟨k, hk⟩ := hn
+    exact ⟨k, by rw [← hk]; simp [mul_comm]⟩
+  have hd : ∀ t : D.F, t ≠ 0 → a ∣ cf.Dbar.ord w (cf.emb t) :=
+    fun t ht => hmem _ ⟨t, ht, rfl⟩
+  have hy : a ∣ cf.Dbar.ord w cf.Dbar.yy := by
+    have := hd D.yy (by
+      intro h
+      have he := D.eqn
+      rw [h] at he
+      have h2 : aeval D.xx (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ) = 0 := by
+        rw [aeval_sextPoly, ← he]; ring
+      exact D.aeval_xx_ne_zero (Polynomial.Monic.ne_zero (monic_sextPoly ℚ)) h2)
+    rwa [cf.emb_yy] at this
+  obtain ⟨u, hu⟩ := cf.Dbar.ord_surjective w
+  have hu0 : u ≠ 0 := by
+    rintro rfl
+    rw [cf.Dbar.ord_zero] at hu
+    omega
+  have ha1 : a ∣ 1 := by
+    have := constFieldExt_dvd_ord_all cf w
+      (fun p hp => constFieldExt_dvd_ord_aeval cf w hd hp) hy hu0
+    rwa [hu] at this
+  have h1mem : (1 : ℤ) ∈ constFieldExtOrdSubgroup cf w := by
+    rw [ha, AddSubgroup.mem_closure_singleton]
+    exact ⟨a, by rcases Int.isUnit_iff.mp (isUnit_of_dvd_one ha1) with rfl | rfl <;> decide⟩
+  obtain ⟨t, -, ht⟩ := h1mem
+  exact ⟨t, ht⟩
 
 namespace ConstFieldExt
 
@@ -11405,12 +11777,15 @@ action".  It is now assembled from `exists_constFieldExt` — which supplies eve
 `ConstFieldExt.ord_below`, `constFieldExt_below_finite`, `constFieldExt_below_infPlus`,
 `ConstFieldExt.placeAct` and `ConstFieldExt.ord_placeAct`, all proven above.
 
-**What is left, and the honest accounting.**  Two leaves replace this one:
+**What is left, and the honest accounting.**  Two leaves replaced this one, and ONE of them
+is now closed:
 
 * `constFieldExt_exists_uniformizer` — the constant field extension is UNRAMIFIED
   (Stichtenoth III.6.3(b)).  It is what makes `below` and `ord_emb` definable at all.
+  **PROVEN 2026-08-01**, from the `PlaceData` axioms alone.
 * `pt_infinite_of_ord_xx_neg` — the only poles of `x` are the two points at infinity, i.e.
   the fundamental inequality `Σ_{v | ∞} e f ≤ [F : K(x)] = 2` at one place for one function.
+  Still open, and now the sole residue of this node.
 
 So the count went `1 → 2`, and what was bought is that the 14 fields of `GeomPic` are no
 longer an existence claim: `emb` and `fieldAct` are CONSTRUCTED (not chosen), `below` is a
@@ -11482,7 +11857,8 @@ The old route paragraph is retired: it asked for a valuation function restrictin
 ON THE NOSE, i.e. for the constant field extension to be unramified — and that is NOT what the
 statement needs, because `ord_emb` is an axiom of `GeomPic` and supplies the unramifiedness for
 free.  See `GeomPic.below_surjective` for the argument and for why
-`constFieldExt_exists_uniformizer` is still owed where it stands. -/
+`constFieldExt_exists_uniformizer` was owed where it stands (it is PROVEN there since
+2026-08-01, by an argument unrelated to this one). -/
 theorem geomPic_below_surjective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) : Function.Surjective gp.below :=
   gp.below_surjective

@@ -23692,3 +23692,90 @@ NEXT leaf cheap — here `pt_surjective_of_isAlgClosed`, whose recorded six-step
 steps 4 and 5 (a triviality-of-`ord` argument on `K(xx)` plus an induction on `natDegree`)
 proving exactly "some `α` has `ord_v (xx − α) ≠ 0`", which is now one application of the
 general theorem to `z := xx`.
+## A RAMIFICATION-INDEX LEAF IS DIVISIBILITY BOOKKEEPING — work with the VALUE GROUP, not with `Σ e f = n`
+(2026-08-01, `flt-lean-253`, closing `constFieldExt_exists_uniformizer` in
+`ModularCurve/HyperellipticJacobian.lean` — Stichtenoth III.6.3(b), *a constant field
+extension is unramified*, which three docstrings had priced as a theory build.)
+The leaf's own docstring, and the task prompt built from it, prescribed the textbook route:
+reduce to a finite subextension `F·K'`, use `[F·K' : F] = [K' : ℚ]` (geometric
+irreducibility), then `Σ_{w|v} e f = [F·K' : F]` against `f ≥ [K'κ(v) : κ(v)]`, with
+reducedness of `κ(v) ⊗_ℚ K'` supplying `e = 1`. The prompt asked which of those absences is
+the real cost. **The answer is none of them: the leaf is ~300 lines of elementary valuation
+theory over the file's own axioms.**
+**And the absences were only half-real, which is the standing lesson about pricing a route
+off a grep — so here they are, measured on 2026-08-01 rather than assumed.**
+* the fundamental identity IS in the pin, as
+  `Ideal.sum_ramification_inertia_eq_finrank` (`Mathlib/RingTheory/RamificationInertia/Basic.lean`,
+  three variants). What it needs and this development does not have is the integral closure
+  `A = integralClosure ℚ[x] F` presented as module-finite and Dedekind over `ℚ[x]`;
+* reducedness of a separable tensor is HALF in the pin.
+  `Mathlib/RingTheory/Nilpotent/GeometricallyReduced.lean` has the class
+  `IsGeometricallyReduced` and the CONSUMER instance
+  `[Field K] [Algebra.IsAlgebraic k K] [IsGeometricallyReduced k A] → IsReduced (K ⊗[k] A)`.
+  What is missing is any PRODUCER: `grep`ping the whole pin for instances of that class
+  returns only the class's own field, so "a separable (or char-`0`) field extension is
+  geometrically reduced" is not derivable and would itself be a leaf;
+* "`ℚ` is algebraically closed in `F`" is NOT a theorem in this file. `not_isSquare_sextPoly`
+  is about `Y² − f` staying irreducible and is a different statement; the algebraic-closedness
+  appears in this file only in PROSE, at three places, all of them route sketches.
+So the classical route is not merely unbuilt, it bottoms out in two further leaves. That is
+worth knowing before pricing any sibling ramification statement — and it is exactly why the
+value-group route below is the one to take.
+**THE MOVE: state the conclusion as a statement about a SUBGROUP OF `ℤ` and prove divisibility
+downward.** `e(w|v) = 1` is *"the value group of `ord_w` restricted to the subfield is all of
+`ℤ`"*. So put
+    Γ := {ord_w (emb t) : t ∈ F^×}    -- an `AddSubgroup ℤ`, so `Γ = d·ℤ`
+and prove `d ∣ ord_w z` for EVERY `z` in the big field, by dévissage down the presentation of
+the big field over the small one. Then `ord_surjective` gives `d ∣ 1`, and `1 ∈ Γ` *is* the
+uniformizer the leaf asks for — no Bezout, because the generating set is already a subgroup,
+so state the carrier explicitly (`{n | ∃ t, t ≠ 0 ∧ ord_w (emb t) = n}`) rather than as a
+`closure`, and `Int.subgroup_cyclic` plus `AddSubgroup.mem_closure_singleton` closes it.
+**Why this is not merely a reformulation: it replaces a COUNT (`Σ e f = n`, which needs
+finiteness of everything in sight) by a DIVISIBILITY, which needs nothing.** Reach for it
+whenever a leaf's conclusion is a ramification index, a degree, or an index of value groups.
+Three steps, and the middle one is where the mathematics actually is:
+* **the linear layer.** `d ∣ ord_w (x̄ − β)` for every constant `β`. At a pole of `x̄` this is
+  `ord_w (x̄ − β) = ord_w x̄ = ord_w (emb x)` — free. Where `x̄` is regular and the order is
+  positive, take `g = minpoly ℚ β`, split `g = (X − β)·h` over `ℚ̄`, and note `h(β) = g′(β)`:
+  then `h(x̄)` is congruent to a NONZERO CONSTANT at `w`, hence a unit, so
+  `ord_w (x̄ − β) = ord_w (aeval x̄ g) = ord_w (emb (aeval x g)) ∈ Γ`.
+* **the polynomial layer**, by splitting off one linear factor at a time
+  (`IsAlgClosed.exists_root` + `dvd_iff_isRoot`) — an induction on `natDegree`, no multisets,
+  no `Polynomial.roots`, no `Splits`.
+* **the quadratic layer.** `z·d(x̄) = A + B·ȳ`, so it is enough to divide `ord_w (A + Bȳ)`.
+**THE ULTRAMETRIC GAP AND HOW TO CLOSE IT WITHOUT A NORM MAP.** `ord(A + Bȳ) = min` only when
+`ord A ≠ ord(Bȳ)`; when they are equal the ultrametric gives an inequality and nothing more,
+and that gap is exactly where a naive attempt dies. The classical fix is the norm to the
+subfield, which needs the nontrivial automorphism as an object. **Use the CONJUGATE
+EXPRESSION instead — it needs no automorphism, only the equation.** `A − Bȳ` satisfies
+    (A + Bȳ)(A − Bȳ) = A² − B²·f(x̄) = aeval x̄ (a² − b²·sextPoly)   -- back in the lower layer
+    (A + Bȳ) + (A − Bȳ) = 2A,      (A + Bȳ) − (A − Bȳ) = 2Bȳ
+so `min (ord (A+Bȳ)) (ord (A−Bȳ)) ≤ min (ord A) (ord Bȳ)` from the last two, and `≥` from the
+first ultrametric bound. Hence **one of the two conjugates has order exactly
+`min (ord A) (ord Bȳ)` and the other has the complement in `ord (aeval x̄ (a² − b²f))`** —
+both divisible by `d`, whichever way it falls. `omega` does the case analysis (it handles
+`min` on `ℤ`), and the degenerate `a² − b²f = 0` branch is `A = Bȳ`, i.e. the sum is `2A`.
+**SEPARABILITY ENTERS AT EXACTLY ONE POINT, AND NEEDS NO SEPARABILITY API.** The only thing
+that distinguishes a CONSTANT field extension from `ℚ̄(x) ⊆ ℚ̄(x)(√x)` is that `β` is a SIMPLE
+root of its minimal polynomial. Do not go looking for `PerfectField.separable_of_irreducible`
+or an `Algebra.IsSeparable` instance: `g′(β) ≠ 0` is two lines from
+`minpoly.degree_le_of_ne_zero` against `Polynomial.degree_derivative_lt` (if `g′(β) = 0` then
+`deg (minpoly) ≤ deg g′ < deg g`), with `g′ ≠ 0` from `Polynomial.derivative_eq_zero` in
+char `0`. **Whenever you need "the minimal polynomial has a simple root", derive it from
+MINIMALITY rather than from separability** — it is shorter and it drags in no instances.
+Riders worth having in advance:
+* **The file's own `ord_aeval_of_ord_neg` gave the entire infinite-place chart for free**
+  (`ord_w (aeval t p) = ord_w t · deg p` when `ord_w t < 0`), which is half the case analysis.
+  Grep the file for `ord_aeval` before writing any chart argument.
+* **`PlaceData.vanishesAt_aeval_sub_eval` + `ord_eq_zero_of_vanishesAt_sub` is the "congruent
+  to a nonzero constant ⟹ unit" engine**, and it is exactly the shape the cofactor step wants.
+* **`set K := AlgebraicClosure ℚ` DUPLICATES a binder of that type**: a `β : AlgebraicClosure ℚ`
+  in the statement becomes `β✝` in the goal and `β : K` in the context, and every later `rw`
+  fails against a goal that prints correctly. Write the type out; the abbreviation is not worth
+  it. Same family as the standing "printed pattern equals printed target" rule.
+* **`set Y := …` does not touch a hypothesis `obtain`ed AFTERWARDS**, so `omega` sees the
+  `set` variable and the original term as different atoms and reports "no usable constraints".
+  `rw [← hYdef] at hgen` immediately after the `obtain`.
+**Accounting.** One leaf closed, none opened; the module's direct-sorry count went `43 → 42`
+tree-wide and the file's `10 → 9`. The sole residue of the `GeomPic` node is now
+`pt_infinite_of_ord_xx_neg`.
