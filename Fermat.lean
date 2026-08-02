@@ -21,6 +21,12 @@ import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
 import Fermat.FLT.Mathlib.RingTheory.RegularLocalNormal
+-- Wired in here (2026-08-02, `flt-lean-53`) so that the module is COMPILED: it is
+-- the group-theoretic core of the unramified-descent step that
+-- `WeierstrassCurve.nonempty_fullTranslationDatum_wild` needs, and it has no
+-- consumer yet because that leaf is still open. Move this import next to the real
+-- consumer once the Galois half lands.
+import Fermat.FLT.Mathlib.GroupTheory.CyclicComplement
 import Fermat.SorryGate
 
 /-!
