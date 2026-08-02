@@ -26780,3 +26780,64 @@ must be said out loud, because they pull in opposite directions:
 State the hypothesis as an IMPLICATION inside the conclusion rather than as a binder when the
 hypothesis mentions an `Algebra` instance the statement itself introduces with `letI`; binders
 cannot see a `letI` that lives in the conclusion, and an implication can.
+## "THE TWIN OF `X0.lean`'s `foo`" IS A CLAIM ABOUT `foo` — AND `foo` IS OFTEN A PROVEN THEOREM
+(2026-07-31, `flt-lean-345`, on `exists_unique_genericFibre_universal_gamma1` in
+`X1.lean`.) This tree is built out of `Γ₀`/`Γ₁` twin layers, and a freshly cut `Γ₁`
+leaf almost always opens *"the twin of `X0.lean`'s `foo`"*. That phrase is read — by
+the next agent, and by the task prompt generated from the docstring — as **"`foo` is
+also a leaf, so this is a citation"**. It is not what it says, and here it was false:
+`X0.lean`'s `exists_unique_genericFibre_universal` is a **270-line PROVEN theorem**.
+So the leaf's docstring asserted *"TRUE, and NOT formal … the one clause that is
+genuinely Katz–Mazur"* about a statement whose `Γ₀` counterpart nobody had to cite at
+all. **The check is one command and it is not a `grep` for the name — it is a read of
+the body:**
+    L=$(grep -n '^theorem <twin>' <the twin's file> | cut -d: -f1)
+    sed -n "${L},$((L+40))p" <the twin's file>     # `:= sorry`, or a real proof?
+**And when the twin IS proven, read its ROUTE, because the route is the answer even
+when it does not transcribe.** The `Γ₀` proof never touches the integral universal
+property: it gets an ATLAS over `ℤ_(ℓ)`, base-changes it along `Spec ℚ ⟶ Spec ℤ_(ℓ)`,
+and transports along a classify-compatible isomorphism of coarse spaces. Transcribing
+*that* to `Γ₁` needs a ~600-line atlas base-change calculus that `X1.lean` does not
+have — so the route did not port. What ported is the *knowledge that the statement is
+not irreducible*, and that sent me looking for the missing machinery, which was in the
+SAME FILE 700 lines below (`IsCoarseModuliY1.classifyPullback`, `Gamma1AtlasData`,
+`isCoarseModuliY1_of_atlasData`, all PROVEN, written for the SPECIAL fibre). The leaf
+then closed over a recut residue in two lines of tactic.
+**The corollary that generalises past twins: a docstring's own "why no rearrangement of
+`H` proves it" paragraph can be CORRECT and IRRELEVANT.** This one argued, rightly, that
+`hmodel.coarse.universal` cannot be rearranged into the conclusion (it quantifies over
+cocones on all `ℤ_(ℓ)`-schemes; the given cocone lives only on `ℚ`-schemes). That is an
+argument about ONE named input. It says nothing about the *other* objects in scope — and
+the object the proof actually runs on, the coarse space of the generic fibre, is not
+mentioned in it. **When a leaf rules out a route, check WHICH input the argument is
+about, then list the inputs it does not mention.**
+### THE DECLARATION-ORDER WALL, AND WHY A HOIST WAS THE WRONG REPAIR HERE
+The machinery that closes the leaf sits ~700 lines BELOW it, so a leaf at that position
+may not cite it. `flt-hoistcheck.py --block 14299 14480 --to 13571` reported **HITS: 0**
+— a clean, dependency-free, same-scope 182-line move. I did not take it, and the reason
+is worth having in advance:
+**`tools/merge/semmerge.py` propagates ADDITIONS and never DELETIONS, so a hoist merges
+as pure DUPLICATION** — the block lands at the new site and survives at the old one,
+giving `has already been declared`. That is only a real risk when the file is being
+merged semantically rather than fast-forwarded, i.e. **when somebody else is editing it**.
+`flt-lean-3` was, 20 lines from my destination (checked with
+`git -C <worktree> diff -U0 -- <file> | grep '^@@'`, which shows the hunk ranges without
+reading the diff).
+**So: state the leaf so that no hoist is needed.** Here that meant stating the residue
+over `IsCoarseModuliY1` + `RelPoint.baseChangeUp` — both declared far above — instead of
+over `Gamma1AtlasData`, and recording in its docstring (a) that the atlas form is the
+better shape, (b) the exact measured hoist that would enable it, and (c) that the atlas
+route was machine-checked to close the statement before the leaf was written. A leaf
+whose docstring carries a *verified* route plus the measurement that would improve its
+shape is strictly better than a hoist that may not survive its own merge.
+**And when the residue is a structure that BUNDLES a field the consumer names, PIN THAT
+FIELD.** `IsCoarseModuliY1` carries `classify` as a field, so a bare
+`Nonempty (IsCoarseModuliY1 N …)` is satisfied by a coarse space whose classifying map is
+unrelated to the one the consumer's conclusion mentions — the junk-witness trap, and it
+would have made the leaf unusable. Pinning it costs the producer nothing (their
+construction produces exactly that, `rfl`) and is the difference between a residue and a
+dead end.
+**Accounting: the count is unchanged, 1 → 1, and that must be said in the commit.** What
+changed is that the residue lost `IsX1Compactification`, the compactification `xstr`/`jZ`,
+`genericFibreClassifyGamma1` and the `∃!` — and gained a proven twin 700 lines below that
+a prover can copy. Judge it by what is LEFT in the leaf.
