@@ -4173,16 +4173,32 @@ auxiliary translates differ by a NONZERO `2`-torsion point, `R = S ⊕ t`,
     div (τ_t^* aP) = p(P⊕S⊖t) + p(⊖S⊖t) = p(P⊕R) + p(⊖R) = div aQ,
     div (τ_t^* v_S) = (S⊖t) + (⊖S⊖t) = (R) + (⊖R)         = div v_R,
 
-whence `aQ = c·τ_t^*(aP)` and `v_R = c'·τ_t^*(v_S)` for constants `c, c'`
-(units of the coordinate ring are constants — `hCunits`).  Since
-`(τ_t^* b)(X) = b(X ⊕ t)`, the four evaluations on the two sides of `heq` pair
-up exactly — `aQ(S) = c·aP(R)`, `aQ(P⊕S) = c·aP(P⊕R)`,
-`v_R^p(S) = c'^p·v_S^p(R)`, `v_R^p(P⊕S) = c'^p·v_S^p(P⊕R)` — and `c`, `c'`
-cancel between numerator and denominator.  So `z = 1` on the nose, at EVERY
-level and with no `p`-division point anywhere.  The divisor transport is not
-hand-waving: it is `WeilPairing.spanSingleton_pointEval_translate`
+**CORRECTED 2026-08-02 — the two displayed divisor identities above are the
+AFFINE parts only, and the conclusion drawn from them (`aQ = c·τ_t^*(aP)`) is
+FALSE.**  `τ_t^* aP` is not an element of the coordinate ring at all: its pole
+sits where `X ⊖ t = O`, i.e. at the AFFINE point `t`, not at infinity.  Full
+divisors, with `w := X − x_t` (so `div w = (t) + (⊖t) − 2(O) = 2(t) − 2(O)`,
+using `⊖t = t`):
+
+    div (τ_t^* aP) = p(P⊕R) + p(⊖R) − 2p(t),     div aQ  = p(P⊕R) + p(⊖R) − 2p(O),
+    div (τ_t^* v_S) = (R) + (⊖R) −  2(t),        div v_R = (R) + (⊖R) −  2(O),
+
+so the honest identities carry one vertical factor each,
+
+    aQ = c₂ · (τ_t^* aP) · w^p,        v_R = c₁ · (τ_t^* v_S) · w,
+
+with `c₁, c₂` constants (`hCunits`), both checked on divisors.  THE CONCLUSION
+SURVIVES: `g_R := aQ/v_R^p = (c₂/c₁^p)·(g_S ∘ τ_t)` — the `w^p` cancels between
+numerator and denominator — so `g_R(D_S) = g_S(D_S ⊖ t) = g_S(D_R)` (again
+`⊖t = t`), i.e. `z = g_S(D_R)/g_R(D_S) = 1`.  Written out on the four honest
+evaluations, both sides of `heq` become
+`c₁^p c₂ · v_S(P⊕R)^p aP(R) v_S(R)^p aP(P⊕R) w(S)^p w(P⊕S)^p` and are equal
+term by term.  So `z = 1` on the nose, at EVERY level and with no `p`-division
+point anywhere — but a prover must carry the `w` factors, and the divisor
+transport is `WeilPairing.spanSingleton_pointEval_translate`
 (`WeilPairingDescent.lean`, PROVEN),
-`span(τ_Q^* b) · I_{⊖Q}^{|D|} = ∏_{X ∈ D} I_{X ⊖ Q}`.
+`span(τ_Q^* b) · I_{⊖Q}^{|D|} = ∏_{X ∈ D} I_{X ⊖ Q}` — whose `I_{⊖Q}^{|D|}`
+factor is exactly the `w` the sentence above had dropped.
 
 WHAT BLOCKS IT, EXACTLY: `weilValueProp` demands `x_S ∈ F'` and `x_R ∉ F'`.
 With `R = S ⊕ t` that forces `t ∉ E(F')`, and `F'` contains `F`, which is
@@ -4205,9 +4221,65 @@ that product is a constant `c`.  Pick `P'` with `[p]P' = P`
 cancelling the `p − 1` common factors leaves `g ∘ τ_P = g`, i.e. `e(P,P) = 1`.
 Every ingredient exists in `WeilPairingDescent.lean`
 (`exists_smul_tautPoint_eq`, `exists_span_eq_prod_pointIdeal`,
-`exists_translationChar`, `spanSingleton_pointEval_translate`); what is missing
-is the bridge from the generic-point evaluations that file works with to the
-honest point evaluations `AdjoinRoot.evalEval` that `weilValueProp` uses.
+`exists_translationChar`, `spanSingleton_pointEval_translate`).
+
+**THE STATED BLOCKER OF ROUTE 2 DOES NOT EXIST (corrected 2026-08-02).**  This
+paragraph used to end "what is missing is the bridge from the generic-point
+evaluations that file works with to the honest point evaluations
+`AdjoinRoot.evalEval` that `weilValueProp` uses".  That bridge is
+`WeilPairing.exists_pointEval_specialization` (`WeilPairingStageB.lean:865`,
+PROVEN 2026-07-25) — "specialize `pointEval` at an honest point", stated once
+and uniformly in `(Q, m)` precisely so that it covers both `z ↦ z ∘ τ_{Q₀}`
+(`m = 1`) and `z ↦ z ∘ [p]`, with `EvalsTo`/`SpecPoint` (same file, lines
+256–760) as its calculus and `specPoint_zsmul` (Silverman *AEC* VII.2.1 for the
+local ring at a point) underneath.  `WeilPairing.lean` already `public import`s
+that module.  The absence claim was scoped to `WeilPairingDescent.lean` and
+never re-run against `WeilPairingStageB.lean`, which is where the honest-point
+layer of this development lives.
+
+**ROUTE 3 — WHAT ACTUALLY CLOSES THIS, and it is neither of the two above
+(2026-08-02).**  `translationChar_setup_value` (this file, ~line 5403) ALREADY
+proves the value law: for every admissible configuration whose `F` contains the
+finite `G₀` it returns,
+
+    B = c^e · A     with   e ∈ {1, p−1},
+
+where `A`, `B` are character-for-character the two four-fold products of `hA`
+and `heq` here — i.e. `z = c^e` — and `c` is the translation character of the
+level-`p²` Miller function `a` of `T'` (`p•T' = x`) at `i₀`.  For the SELF-pair
+`i₀ = x` the residue is therefore the single equation
+
+    c = 1,
+
+which is Silverman III.8.1(b) itself, in the vocabulary of
+`exists_millerValue_translationChar`.  Its proof is the `Θ`-telescope that
+`millerValue_crossRatio_pow_mul_translationChar` already runs internally
+(StageB, step 2 of its docstring): at `T' = P'` the function
+`Θ(Y) := ∏_{j<p} g(Y ⊖ jP')` has divisor
+`Σ_{j<p} [S((j+1)P') − S(jP')] = S(p•P') − S(0) = S(P) − S(0) = 0`
+(`map_add_torsion_eq`, since `P = p•P'` is `p`-torsion and permutes the
+enumeration), so `Θ` is constant; then `Θ(Y ⊖ P') = Θ(Y)` telescopes to
+`g(Y ⊖ P)/g(Y) = 1`, i.e. `c = 1`.
+
+`translationChar_setup_value` carried a hypothesis `hc1 : c ≠ 1` that made it
+unusable for exactly this purpose.  **It was DEAD and was removed on
+2026-08-02**: `hc1` occurred only in the binder list of
+`exists_millerRatio_eval_translationChar_of_avoid` (StageB) and was forwarded,
+unused, through `exists_millerRatio_eval_translationChar` and
+`translationChar_setup_value`.  Removing it is a pure weakening; the whole
+chain rebuilds green, and the value law now applies at `c = 1`.
+
+**CONSEQUENCE — THIS LEAF IS PROBABLY THE WRONG CUT.**  Route 3 cannot be run
+HERE: this statement is over an arbitrary algebraically closed `F` with eight
+bare abscissa-avoidance clauses, whereas the value law needs the `𝔽̄_q` setting,
+the `F ≤ F'` hierarchy, and `G₀ ≤ F` — none of which a configuration handed to
+this leaf need satisfy.  It must be run one level up, at
+`weilValueProp_self_of_even_of_ne_two` below, which (i) may CONSTRUCT its own
+configuration with `G₀ ≤ F`, exactly as `weilValueProp_translationChar_witness`
+does, and (ii) already holds `_huniq` — currently unused, and precisely the
+hypothesis that transfers the value from the constructed configuration to the
+given `z`.  When that rewiring lands, this leaf becomes CONSUMERLESS and should
+be DELETED, not proven.
 
 **FAITHFULNESS AUDIT (2026-07-31).**  TRUE: `e_m` is alternating at every level
 `m ≥ 1` (Silverman *AEC* III.8.1(b), stated there for arbitrary `m` with
@@ -4426,7 +4498,23 @@ not change — only its proof did.
 
 `_hp2`, `_hne` and `_huniq` are now unused: the cut is level-uniform, and the
 value is pinned by the setup destructured from `hz` rather than by uniqueness.
-They are kept so that the call site in `exists_weilPairing_mu` is unchanged. -/
+They are kept so that the call site in `exists_weilPairing_mu` is unchanged.
+
+**BUT `_huniq` IS THE HYPOTHESIS THE CHEAP ROUTE NEEDS (2026-08-02), AND THE
+CUT BELOW THIS NODE SHOULD BE REDONE HERE.**  See ROUTE 3 in
+`weilValue_self_config_eq_one`'s docstring above.  In brief:
+`translationChar_setup_value` (this file) proves `z = c^e`, `e ∈ {1, p−1}`, for
+any admissible configuration whose `F` contains the finite `G₀` it returns —
+its blocking hypothesis `hc1 : c ≠ 1` was dead and was removed on 2026-08-02,
+so it now applies at `c = 1` as well.  For the SELF-pair the residue is the one
+equation `c = 1` (Silverman III.8.1(b), the `Θ`-telescope).  The reduction
+CANNOT be performed inside `weilValue_self_config_eq_one`, whose configuration
+carries no subfield hierarchy; it has to be performed HERE, by CONSTRUCTING a
+configuration with `G₀ ≤ F` (the pattern is `weilValueProp_translationChar_witness`
+below, which does exactly this for the nondegeneracy branch) and then moving
+its value onto the given `z` with `_huniq`.  Doing that makes
+`weilValue_self_config_eq_one` consumerless — it should then be deleted, not
+proven. -/
 theorem weilValueProp_self_of_even_of_ne_two (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
     (p : ℕ) [Fact (1 < p)] (hqp : ¬ q ∣ p) (_hp2 : 2 ∣ p) (_hne : p ≠ 2)
@@ -5432,7 +5520,7 @@ theorem translationChar_setup_value (q : ℕ) [Fact q.Prime]
         tautPoint ((Wbar.map (algebraMap (ZMod q)
           (AlgebraicClosure (ZMod q)))).toAffine) hΔ =
       WeierstrassCurve.Affine.Point.some xκ yκ hκ)
-    (c : AlgebraicClosure (ZMod q)) (hc1 : c ≠ 1) (hcp : c ^ p = 1)
+    (c : AlgebraicClosure (ZMod q)) (hcp : c ^ p = 1)
     (hτa : pointEval (constHom ((Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).toAffine)) hκ.left a ≠ 0)
     (hτv : pointEval (constHom ((Wbar.map (algebraMap (ZMod q)
@@ -5749,7 +5837,7 @@ theorem translationChar_setup_value (q : ℕ) [Fact q.Prime]
         (κ.val : (Wbar.map (algebraMap (ZMod q)
           (AlgebraicClosure (ZMod q)))).toAffine.Point))
       hΔ hp0 hval_inj hval_tor hval_surj hcard ha hspan hP hQ hTQ hrepP hpt
-      hc1 hcp hτa hτv heq hS hR hPS hPSc hQR hQRc haP hnzR hnzQR
+      hcp hτa hτv heq hS hR hPS hPSc hQR hQRc haP hnzR hnzQR
       hF₁fin hF₂fin hF₁₂ hbadF hxSF₂ hySF₂ hxSF₁ hxRF₂ hxPSF₂ hyPSF₂ hxPSF₁
       hxQRF₂ hS'p hR'p hP'p hU hV hUeq hVeq hUa hUv hVa hVv
   -- ── dividing the two stages cancels the common `p`-th power
@@ -5903,7 +5991,7 @@ theorem weilValueProp_translationChar_witness (q : ℕ) [Fact q.Prime]
       exact hc1 (orderOf_eq_one_iff.mp (Nat.dvd_one.mp hsub))
   -- Stage B: the character-data bad subfield and the value law
   obtain ⟨G₀, hG₀fin, hval⟩ := translationChar_setup_value q Wbar p hqp
-    x T' hT hΔ a ha hspan i₀ xκ yκ hκ hpt c hc1 hcp hτa hτv heq hp0 hcard
+    x T' hT hΔ a ha hspan i₀ xκ yκ hκ hpt c hcp hτa hτv heq hp0 hcard
     hi₀ hx0 xP yP hP hcκ xQ yQ hQ hcx
   -- close the bad subfield and the pair data into a finite subfield
   obtain ⟨G, hGfin, hGmem⟩ := exists_finite_subfield_containing q
