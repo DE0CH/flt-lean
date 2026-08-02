@@ -20513,8 +20513,279 @@ theorem apply_eq_self_of_cyclotomicCharacter_eq_one (ℓ : ℕ) [Fact ℓ.Prime]
     rw [ZMod.val_one] at hspec
     simpa using hspec
 
+/-- **A NONZERO NATURAL NUMBER BELOW `ℓ` IS INVERTIBLE IN THE RESIDUE FIELD**
+(PROVEN): the generalisation of `two_ne_zero_of_padicIntRingHom` above from `2`
+to any `n` with `0 < n < ℓ`, by the same three lines. -/
+theorem natCast_ne_zero_of_padicIntRingHom {ℓ : ℕ} [Fact ℓ.Prime] {n : ℕ}
+    (hn0 : n ≠ 0) (hnl : n < ℓ) {k : Type*} [Field k] (φ : ℤ_[ℓ] →+* k) :
+    (n : k) ≠ 0 := by
+  have hp := (Fact.out : ℓ.Prime)
+  have hu : IsUnit ((n : ℕ) : ℤ_[ℓ]) := by
+    rw [PadicInt.isUnit_iff, PadicInt.norm_natCast_eq_one_iff]
+    refine hp.coprime_iff_not_dvd.mpr fun h => ?_
+    have := Nat.le_of_dvd (Nat.pos_of_ne_zero hn0) h
+    omega
+  have hu2 : IsUnit ((n : ℕ) : k) := by
+    have := hu.map φ
+    rwa [map_natCast] at this
+  simpa using hu2.ne_zero
+
+/-- **The residual coefficient field has characteristic `≠ 3`** (PROVEN), the
+`3` companion of `two_ne_zero_of_hilbertDeformationDatum`. It is what makes
+`(-3 : k)` invertible, which is the one further arithmetic fact the explicit
+witness of `exists_end_det_one_trace_discrim_isSquare` below needs. -/
+theorem three_ne_zero_of_hilbertDeformationDatum {ℓ : ℕ} [Fact ℓ.Prime]
+    (hℓ5 : 5 ≤ ℓ) {F : Type u} [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] {ρbar : GaloisRep ℚ k V}
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) : (3 : k) ≠ 0 := by
+  have := natCast_ne_zero_of_padicIntRingHom (ℓ := ℓ) (n := 3) (by omega) (by omega)
+    (𝒟.π.comp (algebraMap ℤ_[ℓ] 𝒟.R))
+  simpa using this
+
+open scoped Matrix in
+/-- **THE WHOLE GROUP-THEORETIC CONTENT OF `(★)`, PROVEN** (2026-08-02): for an
+involution `J` of determinant `−1` on a plane, there is a DETERMINANT-ONE
+endomorphism `M` for which
+
+    (tr M ² − tr (J M) ²) · (tr M ² − tr (J M) ² − 4 det M)
+
+is a nonzero square — namely, in a basis diagonalising `J = diag(1, −1)`, the
+matrix
+
+    M = !![1, 2; 2z, z],   z = (−3)⁻¹,
+
+whose determinant is `z − 4z = −3z = 1` and whose invariants are
+`tr M = 1 + z`, `tr (J M) = 1 − z`, so that the displayed product is
+`4z · (4z − 4) = 64 z² = (8z)²`.
+
+**Why this is the right shape, and why the numbers are what they are.** In the
+`J`-eigenbasis, writing `M = !![a, b; c, d]`, one has `tr M ² − tr (J M) ² =
+4ad` and `tr M ² − tr (J M) ² − 4 det M = 4bc`, so the product is `16 abcd` —
+this is the identity the docstring of `(★)` below records. Over `ℤ` the system
+`ad − bc = 1`, `abcd` a square is UNSOLVABLE off `abcd = 0`: with `P = ad`,
+`Q = bc` it reads `P − Q = 1` and `PQ = Q² + Q` a square, which forces
+`Q ∈ {0, −1}`. So no integer matrix works and a genuine division by `3` is
+unavoidable; `Q = 4z = −4/3` gives `Q² + Q = 16/9 − 12/9 = (2/3)²`. That is the
+whole reason `three_ne_zero_of_hilbertDeformationDatum` is needed.
+
+The witness has all four entries in the PRIME FIELD, which is what makes the
+consumer below survive a coefficient field `k` bigger than the field of
+definition of `ρbar` — see the caveat on
+`le_range_specialLinear_of_hilbertDeformationDatum`. -/
+theorem exists_end_det_one_trace_discrim_isSquare
+    {k : Type u} [Field k] {V : Type v} [AddCommGroup V] [Module k V]
+    [Module.Finite k V] [Module.Free k V]
+    (hfr : Module.finrank k V = 2)
+    (J : Module.End k V) (hJ : J * J = 1) (hdetJ : LinearMap.det J = -1)
+    (h2 : (2 : k) ≠ 0) (h3 : (3 : k) ≠ 0) :
+    ∃ M : Module.End k V, LinearMap.det M = 1 ∧ ∃ t : k, t ≠ 0 ∧
+      t ^ 2 = (LinearMap.trace k V M ^ 2 - LinearMap.trace k V (J * M) ^ 2) *
+        (LinearMap.trace k V M ^ 2 - LinearMap.trace k V (J * M) ^ 2
+          - 4 * LinearMap.det M) := by
+  classical
+  have hone : (1 : k) ≠ -1 := fun h => h2 (by linear_combination h)
+  -- `J ≠ 1` and `J ≠ -1`, since both of those have determinant `1`.
+  have hdet1 : LinearMap.det (1 : Module.End k V) = 1 := by
+    rw [show (1 : Module.End k V) = LinearMap.id from rfl, LinearMap.det_id]
+  have hJ1 : J ≠ 1 := by
+    intro h
+    rw [h, hdet1] at hdetJ
+    exact hone hdetJ
+  have hJm1 : J ≠ -1 := by
+    intro h
+    have hdm1 : LinearMap.det (-1 : Module.End k V) = 1 := by
+      rw [show (-1 : Module.End k V) = (-1 : k) • (1 : Module.End k V) by
+        rw [neg_one_smul]]
+      rw [LinearMap.det_smul, hfr]
+      simp
+    rw [h, hdm1] at hdetJ
+    exact hone hdetJ
+  have hJJ : ∀ x : V, J (J x) = x := by
+    intro x
+    have : (J * J) x = (1 : Module.End k V) x := by rw [hJ]
+    simpa using this
+  -- an eigenvector for `+1`, from `J ≠ -1`
+  obtain ⟨w, hw⟩ := not_forall.mp (fun hall : ∀ v : V, J v = -v =>
+    hJm1 (LinearMap.ext fun v => by simpa using hall v))
+  -- an eigenvector for `-1`, from `J ≠ 1`
+  obtain ⟨w', hw'⟩ := not_forall.mp (fun hall : ∀ v : V, J v = v =>
+    hJ1 (LinearMap.ext fun v => by simpa using hall v))
+  set p : V := J w + w with hpdef
+  set q : V := J w' - w' with hqdef
+  have hpne : p ≠ 0 := fun h => hw (by rw [hpdef] at h; linear_combination (norm := module) h)
+  have hqne : q ≠ 0 := fun h => hw' (by rw [hqdef] at h; linear_combination (norm := module) h)
+  have hJp : J p = p := by
+    rw [hpdef, map_add, hJJ]; abel
+  have hJq : J q = -q := by
+    rw [hqdef, map_sub, hJJ]; abel
+  -- the two eigenvectors form a basis
+  have hli : LinearIndependent k ![p, q] := by
+    rw [linearIndependent_fin2]
+    refine ⟨by simpa using hqne, fun a ha => hpne ?_⟩
+    simp only [Matrix.cons_val_one, Matrix.cons_val_zero] at ha
+    have h1 : J (a • q) = J p := by rw [ha]
+    rw [map_smul, hJq, hJp, smul_neg, ha] at h1
+    have h2p : (2 : k) • p = 0 := by
+      rw [two_smul]
+      nth_rewrite 1 [← h1]
+      abel
+    exact (smul_eq_zero.mp h2p).resolve_left h2
+  set bas := basisOfLinearIndependentOfCardEqFinrank hli
+    (by simp [hfr] : Fintype.card (Fin 2) = Module.finrank k V) with hbasdef
+  have hb : ⇑bas = ![p, q] := coe_basisOfLinearIndependentOfCardEqFinrank _ _
+  have hb0 : bas 0 = p := by rw [hb]; rfl
+  have hb1 : bas 1 = q := by rw [hb]; rfl
+  have hJb0 : J (bas 0) = bas 0 := by rw [hb0]; exact hJp
+  have hJb1 : J (bas 1) = -(bas 1) := by rw [hb1]; exact hJq
+  have hJmat : LinearMap.toMatrix bas bas J = !![1, 0; 0, -1] := by
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [LinearMap.toMatrix_apply, hJb0, hJb1]
+  -- the explicit determinant-one endomorphism
+  have h3' : (-3 : k) ≠ 0 := fun h => h3 (by linear_combination -h)
+  set z : k := (-3 : k)⁻¹ with hzdef
+  have hz : (-3 : k) * z = 1 := mul_inv_cancel₀ h3'
+  have hzne : z ≠ 0 := by
+    intro h; rw [h, mul_zero] at hz; exact one_ne_zero hz.symm
+  set A : Matrix (Fin 2) (Fin 2) k := !![1, 2; 2 * z, z] with hAdef
+  set M : Module.End k V := Matrix.toLin bas bas A with hMdef
+  have hMmat : LinearMap.toMatrix bas bas M = A := by
+    rw [hMdef, LinearMap.toMatrix_toLin]
+  have hdetM : LinearMap.det M = 1 := by
+    rw [hMdef, LinearMap.det_toLin, hAdef, Matrix.det_fin_two_of]
+    linear_combination hz
+  have htrM : LinearMap.trace k V M = 1 + z := by
+    rw [LinearMap.trace_eq_matrix_trace k bas M, hMmat, hAdef, Matrix.trace_fin_two_of]
+  have htrJM : LinearMap.trace k V (J * M) = 1 - z := by
+    rw [LinearMap.trace_eq_matrix_trace k bas (J * M), LinearMap.toMatrix_mul, hJmat, hMmat,
+      hAdef, Matrix.mul_fin_two, Matrix.trace_fin_two_of]
+    ring
+  have h8ne : (8 : k) ≠ 0 := by
+    intro h
+    refine h2 ?_
+    have h222 : (2 : k) * ((2 : k) * (2 : k)) = 0 := by linear_combination h
+    rcases mul_eq_zero.mp h222 with h' | h'
+    · exact h'
+    · exact (mul_eq_zero.mp h').elim id id
+  refine ⟨M, hdetM, 8 * z, mul_ne_zero h8ne hzne, ?_⟩
+  · rw [htrM, htrJM, hdetM]
+    linear_combination (-16 * z) * hz
+
+/-- **THE RESIDUAL IMAGE OVER `F` IS BIG** (SORRY LEAF, cut 2026-08-02 out of
+`exists_trace_discrim_isSquare_of_hilbertDeformationDatum` below, which is now
+PROVEN over it and over `exists_end_det_one_trace_discrim_isSquare` above):
+every determinant-one endomorphism of `V` is `ρbar|_{G_F}(g)` for some
+`g : Γ F`.
+
+This is the Mazur–Serre BIG RESIDUAL IMAGE statement, restricted along
+`Γ F ≤ Γ ℚ`. It is the standard input of every Taylor–Wiles argument, and it is
+what `(★)` below was really asking for: the FALSITY analysis recorded on `(★)`
+shows that no statement whose only hypotheses are `F`-level can be proven, and
+this is the statement in which the missing `ℚ`-level input visibly attaches.
+
+# WHAT REPLACING `(★)` BY THIS BUYS, AND WHAT IT COSTS
+
+**Buys.** `(★)` mentions traces, determinants and squares; this mentions only
+the image of a group homomorphism. The ~150 lines of plane linear algebra that
+carried `(★)` — diagonalising `J`, building the eigenbasis, the explicit
+determinant-one witness, the `−3` division that the integer obstruction above
+shows to be unavoidable — are now PROVEN and will not be rebuilt. Frontier
+count is unchanged, `1 → 1`; judge the cut by what is LEFT in the leaf.
+
+**Costs, and this must be read before attacking the leaf.** The `∀`-form here
+is STRICTLY STRONGER than `(★)`, in one specific and foreseeable way: it is
+FALSE as soon as `k` is strictly larger than the field of definition of `ρbar`
+(if the image lands in `SL₂(k₀)` for a proper subfield `k₀ ⊂ k`, it cannot
+contain all of `SL(V)`, while `(★)` only gets EASIER, every element of `k₀ˣ`
+being a square in a quadratic extension). Nothing in this cluster forces `k`
+to be minimal: the chain carries `[Finite k]` from
+`injective_classifyingMap_hilbertHeckeDatum` upward, and nothing more.
+
+**The escape hatch, and it is one line.** The consumer's proof uses only
+`exists_end_det_one_trace_discrim_isSquare`, whose witness has all four entries
+in the PRIME FIELD. So a prover blocked by the paragraph above should weaken
+this leaf to
+
+    ∃ M : Module.End k V, LinearMap.det M = 1 ∧
+      LinearMap.trace k V M = 1 + (-3 : k)⁻¹ ∧
+      LinearMap.trace k V (ρbar complexConj * M) = 1 - (-3 : k)⁻¹ ∧
+      ∃ g : Γ F, (ρbar.map (algebraMap ℚ F)) g = M
+
+— which is implied by `SL₂(k₀) ⊆ image` in a `J`-adapted basis for the field of
+definition `k₀`, hence is TRUE whenever Mazur–Serre is, and which still gives
+`(★)` because the final computation consumes only `det M = 1` together with
+`tr M ² − tr (J M) ² = 4 (−3)⁻¹`, with no basis at all. Do NOT weaken it to
+`(★)` itself; that is a rename.
+
+# THE OBSTRUCTION, AND WHERE THE MISSING HYPOTHESIS IS
+
+The analysis on `(★)` below is correct that `(★)` fails when the image lies in
+the normalizer of a Cartan subgroup, and correct that no purely group-theoretic
+proof exists. What it leaves unfinished, and what is settled here, is WHAT
+`isTameAtTwo` buys and whether it is enough.
+
+**What `isTameAtTwo` buys, precisely.** At `w ∣ 2` the datum gives a rank-one
+quotient on which `Γ_{F_w}` acts by an unramified character `δ` with `δ² = 1`.
+The complementary character is `det/δ = χ_cyc · δ`, and `χ_cyc` is unramified
+at `w ∤ ℓ`, so BOTH characters are trivial on `I_w`: the image of inertia at
+every place over `2` is UNIPOTENT. Now a unipotent element of the normalizer of
+a Cartan is trivial — inside the Cartan it is semisimple, and outside it has
+trace `0 ≠ 2` in characteristic `≠ 2`. So
+
+    image inside a Cartan normalizer  ⟹  ρbar|_{Γ F} is UNRAMIFIED above 2,
+
+hence unramified outside `ℓ`, flat at `ℓ`, with cyclotomic determinant.
+
+**Why that is enough over `ℚ` and NOT enough over a general totally real `F`.**
+Over `ℚ` such a representation is reducible (level one, weight two: there are no
+cusp forms, equivalently Fontaine's "no abelian scheme over `ℤ`"), which
+contradicts irreducibility — so over `ℚ` the image is not in a Cartan
+normalizer and the big-image statement holds. Over a general totally real `F`
+the analogous vanishing is FALSE (Hilbert cusp forms of level one and weight two
+exist), and `F` here ranges over ALL totally real number fields. So the leaf
+CANNOT be proven from `F`-level hypotheses alone, and its `hirrF`/`𝒟₀` are not
+sufficient however they are recombined.
+
+**The missing hypothesis is in the caller's hand, twelve links up.** The chain
+    (★) → exists_hilbertFixing_rootsOfUnity_discrim_isSquare
+        → exists_hilbertFixing_rootsOfUnity_charpoly_split
+        → exists_hilbertTaylorWilesPrime, …
+        → exists_hilbertTaylorWilesPrimeSet
+        → injective_classifyingMap_hilbertHeckeDatum
+        → exists_heckeDatum_isWeaklyUniversal_isTraceGenerated
+        → exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal
+        → moduleFinite_hilbertDeformation_of_isWeaklyUniversal
+        → exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified
+terminates at a theorem that carries `hbar : IsHardlyRamified hℓOdd hdim ρbar`
+and `hirr : ρbar.IsIrreducible` — the `ℚ`-LEVEL conditions — and DISCARDS both
+at its first call. Threading them back down is the repair; it is twelve
+signatures and twelve call sites, all inside this module, and it is discharged
+at the top from hypotheses that are already there, so no consumer outside this
+file changes. That is an interface change and belongs to one owner doing
+nothing else; it is queued.
+
+CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean`; in particular the `ℚ`-level `exfalso`
+through `not_isIrreducible_of_isHardlyRamified_of_five_le` is FORBIDDEN. -/
+theorem le_range_specialLinear_of_hilbertDeformationDatum
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
+    ∀ M : Module.End k V, LinearMap.det M = 1 →
+      ∃ g : Γ F, (ρbar.map (algebraMap ℚ F)) g = M :=
+  sorry
+
 /-- **(★) — WHAT IS LEFT OF THE TAYLOR–WILES GALOIS ELEMENT OVER `F`, ONCE `F`
-IS TOTALLY REAL** (SORRY LEAF, cut 2026-07-30 (late) out of
+IS TOTALLY REAL** (**PROVEN 2026-08-02** over the single leaf
+`le_range_specialLinear_of_hilbertDeformationDatum` above, whose docstring
+carries the falsity analysis and the repair; cut 2026-07-30 (late) out of
 `exists_hilbertFixing_rootsOfUnity_discrim_isSquare` below, which is PROVEN over
 it and carries the full history).
 
@@ -20560,11 +20831,25 @@ the nonsplit one appears in the audits below:
   below), and every commutator `[J, Y]` lands in `G ∩ SL₂`.
 
 So a proof MUST use an arithmetic hypothesis that excludes residually dihedral
-image, and the only candidate left in the package is `isTameAtTwo` — see
-"SO WHERE MUST THE PROOF COME FROM? `isTameAtTwo`" on the consumer, which the
-2026-07-30 repair paragraph explicitly reinstates. **This leaf is therefore an
-ARITHMETIC leaf wearing group-theoretic clothes; a purely group-theoretic proof
-is impossible and anyone who finds one has made an error.**
+image. **This is therefore an ARITHMETIC obligation wearing group-theoretic
+clothes; a purely group-theoretic proof is impossible and anyone who finds one
+has made an error** — and that is why the arithmetic has been moved OUT of this
+declaration, into `le_range_specialLinear_of_hilbertDeformationDatum` above,
+leaving here only the plane geometry, which is now proven.
+
+**CORRECTION, 2026-08-02, to the sentence that stood here.** It read "the only
+candidate left in the package is `isTameAtTwo`". That names the right clause and
+overstates what it delivers, and the difference decides whether the obligation
+is provable at all. `isTameAtTwo` gives exactly that `ρbar(I_w) = 1` for every
+`w ∣ 2` when the image lies in a Cartan normalizer (both characters of the
+tame-at-two filtration are trivial on inertia, `χ_cyc` being unramified away
+from `ℓ`, and a unipotent element of a Cartan normalizer is trivial in
+characteristic `≠ 2`) — so the representation is unramified outside `ℓ` and flat
+at `ℓ`. Over `ℚ` that contradicts irreducibility (level one, weight two) and the
+obligation follows; over a GENERAL totally real `F` it does not, Hilbert cusp
+forms of level one and weight two being plentiful. The full derivation, and the
+identification of the `ℚ`-level hypotheses that ARE available twelve links up
+the call chain, are on the new leaf.
 
 # STRENGTH AUDIT — THIS LEAF IS FORMALLY STRONGER THAN ITS CONSUMER, AND THE
 DIFFERENCE IS RECORDED HERE RATHER THAN HIDDEN
@@ -20612,8 +20897,45 @@ theorem exists_trace_discrim_isSquare_of_hilbertDeformationDatum
             - LinearMap.trace k V (ρbar complexConj * (ρbar.map (algebraMap ℚ F)) g) ^ 2) *
           (LinearMap.trace k V ((ρbar.map (algebraMap ℚ F)) g) ^ 2
             - LinearMap.trace k V (ρbar complexConj * (ρbar.map (algebraMap ℚ F)) g) ^ 2
-            - 4 * LinearMap.det ((ρbar.map (algebraMap ℚ F)) g)) :=
-  sorry
+            - 4 * LinearMap.det ((ρbar.map (algebraMap ℚ F)) g)) := by
+  have hℓOdd : Odd ℓ := (Fact.out : ℓ.Prime).odd_of_ne_two (by omega)
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast rank_eq_two_of_hilbertDeformationDatum 𝒟₀)
+  -- **A complex conjugation inside `Γ F`** — the one place total realness enters.
+  obtain ⟨c, hc⟩ := exists_map_eq_complexConj F
+  set J : Module.End k V := ρbar complexConj with hJdef
+  have hJc : (ρbar.map (algebraMap ℚ F)) c = J := by rw [GaloisRep.map_apply, hc]
+  have hJJ : J * J = 1 := by
+    rw [hJdef, ← map_mul ρbar]
+    convert map_one ρbar using 2
+    exact complexConj_mul_self
+  -- **Oddness**, through `𝒟₀`: the determinant clause gives `det (𝒟₀.ρ c) = −1`,
+  -- and `𝒟₀.resid` carries it to `J` through the constant charpoly coefficient.
+  have hdet𝒟 : LinearMap.det (𝒟₀.ρ c) = -1 := by
+    have hd := 𝒟₀.isHilbertHardlyRamified.det c
+    rw [GaloisRep.det_apply, hc, cyclotomicCharacter_complexConj ℓ hℓOdd] at hd
+    rw [hd]
+    simp
+  have hdetJ : LinearMap.det J = -1 := by
+    have h1 : LinearMap.det J = J.charpoly.coeff 0 := by
+      rw [LinearMap.det_eq_sign_charpoly_coeff, hfr]
+      ring
+    have h2 : LinearMap.det (𝒟₀.ρ c) = (𝒟₀.ρ c).charpoly.coeff 0 := by
+      rw [LinearMap.det_eq_sign_charpoly_coeff,
+        show Module.finrank 𝒟₀.R (Fin 2 → 𝒟₀.R) = 2 by simp]
+      ring
+    have h3 : J.charpoly = ((𝒟₀.ρ c).charpoly).map 𝒟₀.π := by
+      rw [← hJc]; exact (𝒟₀.resid c).symm
+    rw [h1, h3, Polynomial.coeff_map, ← h2, hdet𝒟, map_neg, map_one]
+  -- **The plane geometry**, PROVEN: an explicit determinant-one witness.
+  obtain ⟨M, hdetM, t, ht0, hteq⟩ :=
+    exists_end_det_one_trace_discrim_isSquare hfr J hJJ hdetJ
+      (two_ne_zero_of_hilbertDeformationDatum hℓ5 𝒟₀)
+      (three_ne_zero_of_hilbertDeformationDatum hℓ5 𝒟₀)
+  -- **The arithmetic**, the one remaining leaf: the witness is in the image.
+  obtain ⟨g, hg⟩ :=
+    le_range_specialLinear_of_hilbertDeformationDatum ℓ hℓ5 F hirrF 𝒟₀ M hdetM
+  exact ⟨g, t, ht0, by rw [hg]; exact hteq⟩
 
 /-- ### THIS DECLARATION IS **PROVEN** (2026-07-30, late), over the single new
 leaf `exists_trace_discrim_isSquare_of_hilbertDeformationDatum` above. DO NOT
