@@ -75,16 +75,21 @@ integral domain, and in which `addZ ≠ 0` (witnessed by `y² = x³ + 1` with
 transports.  That reduces the whole leaf to the single standard fact
 `Universal.idl_isPrime`, which is in turn PROVEN below from two shallower
 statements — `Pz` is a non-zerodivisor modulo the ideal, and the ideal is prime
-once `Pz` is inverted.  The FIRST of those is PROVEN
-(`Universal.mem_idl_of_Pz_mul_mem`, over `Universal.prime_gen₂`); the second is
-the sole remaining leaf of this module.
+once `Pz` is inverted.  BOTH are PROVEN — the first as
+`Universal.mem_idl_of_Pz_mul_mem` (over `Universal.prime_gen₂`), the second as
+`Universal.exists_pow_Pz_mul_mem_idl` (over the `Universal.SatPrime` machinery),
+so this module has no open leaf.
 
-Both statements currently appear TWICE, under two names each —
+Both statements once appeared TWICE, under two names each —
 `mem_idl_of_Pz_mul_mem` / `mem_idl_of_X7_mul_mem` and
 `exists_pow_Pz_mul_mem_idl` / `exists_pow_X7_mul_mem_idl` — because two branches
 decomposed `idl_isPrime` identically under different names and the union
-resolution kept both.  The `X7`-named pair should be DELETED once the saturation
-leaf is closed; see the note at `mem_idl_of_X7_mul_mem`.
+resolution kept both.  **Resolved on 2026-08-01**: the `X7` names are gone.  The
+proof that survived is the one that had been written under the name
+`exists_pow_X7_mul_mem_idl`; it now carries the canonical name
+`exists_pow_Pz_mul_mem_idl` and the leaf's own statement shape, and the alias
+`mem_idl_of_X7_mul_mem` (which only delegated to `mem_idl_of_Pz_mul_mem`) is
+deleted.  Nothing in this module is open any more.
 
 See the section docstring at `Universal.idl_ne_top` for a complete route in which
 BOTH halves are elementary: monic division for the first, degree-one primitivity
@@ -478,14 +483,17 @@ theorem idl_ne_top : idl ≠ ⊤ := by
   rw [map_one] at h2
   exact one_ne_zero h2
 
-/-- **THE `Pz`-SATURATION OF `idl`** (sorry leaf, cut out of `idl_isPrime` on 2026-07-30) —
-the second and only remaining half of the primality of the universal ideal:
+/-! ### THE `Pz`-SATURATION OF `idl` — the route
+
+The second half of the primality of the universal ideal:
 
     x * y ∈ idl  →  ∃ k, Pz ^ k * x ∈ idl  ∨  Pz ^ k * y ∈ idl.
 
 Together with `mem_idl_of_Pz_mul_mem` (PROVEN above, `Pz` is a non-zerodivisor modulo
 `idl`) this gives `idl_isPrime` at once, and it is *exactly* the statement that
-`Poly[1/Pz] ⧸ idl` is a domain.
+`Poly[1/Pz] ⧸ idl` is a domain.  It is PROVEN, as `exists_pow_Pz_mul_mem_idl` at the
+end of this file; the exposition is kept here, where the cut was made, and the
+theorem is stated after the `SatPrime` machinery it needs.
 
 ## Why this is the right cut, and why the route this file used to record is NOT needed
 
@@ -549,9 +557,7 @@ in that presentation `gen₁ = C A₁ − C (Pz³) · a₆` and `gen₂ = C gen�
    `HH mod Pz = Qz³Px³ ≠ 0` — this is what makes the `Pz^m` harmless).
 
 Neither step needs a field, a valuation, or a fraction field. -/
-theorem exists_pow_Pz_mul_mem_idl {x y : Poly} (h : x * y ∈ idl) :
-    ∃ k : ℕ, X 7 ^ k * x ∈ idl ∨ X 7 ^ k * y ∈ idl :=
-  sorry
+
 /-! ### A concrete specialisation
 
 `y² = x³ + 1` over `ℤ` with the two points `[0 : 1 : 1]` and `[2 : 3 : 1]`.  It is
@@ -591,7 +597,7 @@ a localisation of a polynomial ring — a UFD.  So both halves of the tower are 
 same easy kind of argument, and the leaf splits into a *localised primality*
 statement and a *saturation* statement, which is the decomposition below.
 
-### Half one: primality after inverting `Pz` (`exists_pow_X7_mul_mem_idl`)
+### Half one: primality after inverting `Pz` (`exists_pow_Pz_mul_mem_idl`)
 
 Inverting `Pz` and eliminating `a₆` by `gen₁` turns the second generator into
 
@@ -625,7 +631,7 @@ A primitive polynomial of degree `1` over a UFD is irreducible, hence prime; and
 `h` stays prime after `Pz` is inverted because `Pz ∤ h` (indeed
 `h ≡ Px ^ 3 * Qz ^ 3 (mod Pz)`).
 
-### Half two: `Pz` is a non-zerodivisor modulo `idl` (`mem_idl_of_X7_mul_mem`)
+### Half two: `Pz` is a non-zerodivisor modulo `idl` (`mem_idl_of_Pz_mul_mem`)
 
 This is what lets the localised statement be contracted back.  **It needs no
 primality and no UFD at all** — only that division by a MONIC polynomial has a
@@ -748,30 +754,25 @@ Note that only a WEAKER statement than `idl.IsPrime` is actually consumed below,
 and a proof of it would close the node just as well: that `addZ ucurve upt₁ upt₂`
 is a non-zerodivisor in `Univ`. -/
 
-/-- **`Pz = X 7` is a non-zerodivisor modulo the universal ideal** (PROVEN, by
-delegation).
+/-! ### Half two is already proven, and by a cheaper route than the one above
 
-**This declaration is a DUPLICATE and should be deleted at the next integration.**
-It is verbatim the statement of `mem_idl_of_Pz_mul_mem` above, which is proven —
-the two arose from two branches decomposing `idl_isPrime` the same way under
-different names, and the union resolution kept both.  Nothing is gained by giving
-it a second, independent proof, so it delegates.
-
-For the record, the route the section docstring above prescribes for it (normal
+`mem_idl_of_Pz_mul_mem`, near the top of this namespace, IS half two, and it does
+not follow the route the section docstring above prescribes.  That route (normal
 form by division by the monic cubics `-gen₁` in `Px` and `-gen₂` in `Qx`, then
-uniqueness) is correct but strictly more expensive than the one
-`mem_idl_of_Pz_mul_mem` actually takes: reduce a relation `Pz·h = c·gen₁ + d·gen₂`
-modulo `Pz`, where `gen₁ ≡ -Px³` and `gen₂` is `Pz`-free, and use `prime_gen₂`.
-That needs no presentation of `Poly` as `B[Px][Qx]` at all, which is where all of
-the prescribed route's cost sits. -/
-theorem mem_idl_of_X7_mul_mem {a : Poly} (ha : X 7 * a ∈ idl) : a ∈ idl :=
-  mem_idl_of_Pz_mul_mem ha
+uniqueness) is correct but strictly more expensive: `mem_idl_of_Pz_mul_mem`
+instead reduces a relation `Pz·h = c·gen₁ + d·gen₂` modulo `Pz`, where
+`gen₁ ≡ -Px³` and `gen₂` is `Pz`-free, and uses `prime_gen₂`.  That needs no
+presentation of `Poly` as `B[Px][Qx]` at all, which is where all of the prescribed
+route's cost sits.
 
-/-! ### Machinery for `exists_pow_X7_mul_mem_idl`
+A duplicate `mem_idl_of_X7_mul_mem`, delegating to it, stood here until 2026-08-01
+and has been deleted; see the note in the module docstring. -/
+
+/-! ### Machinery for `exists_pow_Pz_mul_mem_idl`
 
 Everything in `SatPrime` exists to prove that one leaf; it is namespaced so that
-the sibling leaf `mem_idl_of_X7_mul_mem`, which is owned elsewhere and needs a
-normal-form development of its own, cannot collide with these names. -/
+the sibling statement `mem_idl_of_Pz_mul_mem`, whose proof is independent of all
+of this, cannot collide with these names. -/
 
 namespace SatPrime
 
@@ -1084,14 +1085,20 @@ theorem exists_pow_mul_mem_span_hpoly {x : Poly} (hx : x ∈ Xfree 4) (hmem : x 
 end SatPrime
 
 open SatPrime in
-/-- **The universal ideal is prime once `Pz = X 7` is inverted** (PROVEN) —
-stated as a `Pz`-saturated primality, which is exactly the contraction to `Poly`
-of `IsPrime (idl ⬝ Poly[1/Pz])`.  Inverting `Pz` solves `gen₁` for `a₆` and leaves
-the single relation `SatPrime.hpoly = Pz ^ 3 * gen₂ - Qz ^ 3 * gen₁`, which is a
-PRIMITIVE polynomial of degree `1` in `a₄` over a polynomial ring over `ℤ`, hence
-irreducible, hence prime.  See `SatPrime` above for the whole route. -/
-theorem exists_pow_X7_mul_mem_idl {a b : Poly} (hab : a * b ∈ idl) :
-    (∃ n : ℕ, X 7 ^ n * a ∈ idl) ∨ (∃ n : ℕ, X 7 ^ n * b ∈ idl) := by
+/-- **THE `Pz`-SATURATION OF `idl`** (PROVEN) — the universal ideal is prime once
+`Pz = X 7` is inverted, stated as a `Pz`-saturated primality, which is exactly the
+contraction to `Poly` of `IsPrime (idl ⬝ Poly[1/Pz])`.  Inverting `Pz` solves
+`gen₁` for `a₆` and leaves the single relation
+`SatPrime.hpoly = Pz ^ 3 * gen₂ - Qz ^ 3 * gen₁`, which is a PRIMITIVE polynomial
+of degree `1` in `a₄` over a polynomial ring over `ℤ`, hence irreducible, hence
+prime.  See `SatPrime` above for the whole route, and the section note above
+`equation_test₁` for why the cut was made here.
+
+This is the leaf that was cut out of `idl_isPrime` on 2026-07-30.  It is declared
+HERE rather than at the point of the cut only because all of `SatPrime` must come
+first; together with `mem_idl_of_pow_Pz_mul_mem` it gives `idl_isPrime` at once. -/
+theorem exists_pow_Pz_mul_mem_idl {a b : Poly} (hab : a * b ∈ idl) :
+    ∃ k : ℕ, X 7 ^ k * a ∈ idl ∨ X 7 ^ k * b ∈ idl := by
 
   obtain ⟨na, ra, hra, hrna⟩ := exists_reduction a
   obtain ⟨nb, rb, hrb, hrnb⟩ := exists_reduction b
@@ -1115,28 +1122,18 @@ theorem exists_pow_X7_mul_mem_idl {a b : Poly} (hab : a * b ∈ idl) :
   rcases prime_hpoly.2.2 _ _ hdvd with h1 | h1
   · exact absurd (prime_hpoly.dvd_of_dvd_pow h1) not_hpoly_dvd_X7
   rcases prime_hpoly.2.2 _ _ h1 with h2 | h2
-  · exact Or.inl ⟨na, final na a ra h2 hrna⟩
-  · exact Or.inr ⟨nb, final nb b rb h2 hrnb⟩
+  · exact ⟨na, Or.inl (final na a ra h2 hrna)⟩
+  · exact ⟨nb, Or.inr (final nb b rb h2 hrnb)⟩
 
 /-- **The universal ideal is prime** (PROVEN from the two leaves above): a
 `Pz`-saturated primality plus the fact that `Pz` is a non-zerodivisor modulo
 `idl` is primality. -/
 theorem idl_isPrime : idl.IsPrime := by
   refine ⟨idl_ne_top, ?_⟩
-  have key : ∀ (n : ℕ) (c : Poly), X 7 ^ n * c ∈ idl → c ∈ idl := by
-    intro n
-    induction n with
-    | zero => intro c hc; simpa using hc
-    | succ k ih =>
-      intro c hc
-      refine mem_idl_of_X7_mul_mem (ih (X 7 * c) ?_)
-      have hrw : X 7 ^ k * (X 7 * c) = X 7 ^ (k + 1) * c := by ring
-      rw [hrw]
-      exact hc
   intro a b hab
-  rcases exists_pow_X7_mul_mem_idl hab with ⟨n, hn⟩ | ⟨n, hn⟩
-  · exact Or.inl (key n a hn)
-  · exact Or.inr (key n b hn)
+  obtain ⟨k, hk | hk⟩ := exists_pow_Pz_mul_mem_idl hab
+  · exact Or.inl (mem_idl_of_pow_Pz_mul_mem k hk)
+  · exact Or.inr (mem_idl_of_pow_Pz_mul_mem k hk)
 
 noncomputable instance : IsDomain Univ := (Ideal.Quotient.isDomain_iff_prime idl).mpr idl_isPrime
 

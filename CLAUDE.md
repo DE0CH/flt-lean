@@ -23510,3 +23510,52 @@ Three cheap riders from the same run, each of which cost or nearly cost a cycle:
   verification — `EXIT=0`, zero errors — instead of the materially weaker
   scratch claim.  Run that one `git diff --stat` before accepting any prompt's
   account of what you can and cannot build.
+## A DUPLICATED CUT IS CLOSED BY RENAMING THE WINNER, NOT BY PROVING THE LOSER
+(2026-08-01, `flt-lean-24`, `exists_pow_Pz_mul_mem_idl` in
+`Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveEquationAdd2.lean`.  The whole
+task was ten minutes of reading and no mathematics at all.)
+The duplicate-cut sections above tell you how to DETECT one — grep your target for
+consumers, read the parent's `by` block rather than its docstring — and this file
+already records the general resolution ("delegate, do not re-prove").  What none of
+them says is what to do when the loser and the winner are **separated by 500 lines
+of machinery**, which is the normal case and which rules out the one-line
+delegation those sections prescribe.
+Here `idl_isPrime` was proven over `exists_pow_X7_mul_mem_idl` (line 1093), while
+the task's target `exists_pow_Pz_mul_mem_idl` (line 552) was the same statement,
+`sorry`, with **zero consumers**.  Delegating is impossible in that direction —
+Lean has no forward reference — and the two obvious moves are both wrong:
+* **proving the loser** duplicates ~500 lines of `SatPrime` machinery above line
+  552, for a declaration nothing reaches;
+* **deleting the loser** closes the sorry and throws away the name, so any other
+  branch or queue entry citing it breaks, and the file is left with a canonical
+  statement under a name its own module docstring calls provisional.
+**The move that costs nothing: RENAME THE WINNER to the loser's name, restate it in
+the loser's statement shape, and delete the stub.**  The proof is untouched; the
+canonical name and statement survive; the count drops by one; and the file stops
+carrying two names for one theorem.  Here the shapes differed only by where the
+existential sat (`(∃ n, P n) ∨ (∃ n, Q n)` against `∃ k, P k ∨ Q k`), so the
+adaptation was two lines of the proof's tail.
+Three riders, each of which was load-bearing:
+* **The file usually tells you which name is canonical — read the module docstring
+  before choosing.**  This one said, in as many words, that the `X7`-named pair
+  "should be DELETED once the saturation leaf is closed", i.e. the `Pz` names win.
+  Following the file's recorded decision is better than picking the name attached
+  to the surviving proof, and it is not the choice you would make by instinct.
+* **Check the interface change is contained BEFORE making it.**  Renaming a theorem
+  and deleting an alias is exactly the class-7 split.  Two greps settle it: the
+  removed names tree-wide (all hits were inside the one file), and
+  `git diff --stat main merger -- <the file>` (empty, so no rival edit is pending).
+  Without both, this edit is a merge hazard rather than a cleanup.
+* **A duplicated cut usually duplicates more than the leaf.**  `idl_isPrime`'s body
+  re-derived, inline, the `Pz`-power induction that the already-proven
+  `mem_idl_of_pow_Pz_mul_mem` states 600 lines above it — so that proven
+  declaration was FREE-FLOATING.  Folding the inline induction back into it took
+  `idl_isPrime` from twelve lines to five and made the orphan live.  When you find
+  one duplicated declaration, look for the duplicated PROOF STEP beside it.
+**And report the arithmetic honestly, because it flatters.**  This is `−1` on the
+direct-sorry count and **zero** change to the transitive state: nothing reached the
+leaf, so no theorem became provable that was not provable before.  What did change
+is that `equation_add2XYZ` — the module's headline theorem — is now visibly
+axiom-clean (`#print axioms` gives `[propext, Classical.choice, Quot.sound]`), the
+module has no open leaf, and no future agent will be dispatched at a dead
+declaration.  Say all four of those; "closed the leaf" alone reads as mathematics.
