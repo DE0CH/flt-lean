@@ -5644,50 +5644,244 @@ theorem LowerRamificationData.exists_mem_lvl_forall_mem_gp_psiNat
   obtain ⟨G, hG1, hG2⟩ := hrefine D' D
   exact G.gp_psiNat_le_of_lvl_le D' hG1 (D.phi m) (hlam ⟨G, hG2⟩).2
 
+/-!
+### The normal form at a finite level, and the elementwise injectivity of `G₀/G₁`
+
+MOVED HERE 2026-08-02, VERBATIM, out of `section PhiOneSmall` below, where they
+were written 2026-07-31 for `exists_lowerRamificationData_phi_one_le`.  The move
+is the whole of what `LowerRamificationData.iInf_gp_one_le_wildInertiaGroup`
+needed: that leaf was open for two days for DECLARATION ORDER alone, its
+mathematics being `eq_one_of_smul_eq_mul_of_mem_gp_one` applied at an arbitrary
+level.  Both theorems keep their other consumer, which is below.
+
+THE MOVE IS SAFE, and the three checks are the ones CLAUDE.md prescribes for a
+hoist.  Every input of the two theorems is declared far above this point:
+`eq_zero_of_forall_pow_dvd_integralClosure` (`section KrullSeparation`),
+`smul_pow_integralClosure` and `smul_algebraMap_integralClosure_eq`,
+`eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal`, and the
+`LowerRamificationData` fields themselves.  Nothing between here and their old
+position consumed them — their only uses were, and are, in
+`exists_lowerRamificationData_phi_one_le`.  And the `variable` and the five
+`local notation` lines below are copied character for character from
+`section PhiOneSmall`, so the statements elaborate to the same terms.
+-/
+
+section NormalFormAtLevel
+
+variable (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
+local notation "Kᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+local notation "Oᵥ" => IntegralClosure
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+  (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+local notation "Γᵥ" => Field.absoluteGaloisGroup
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+
+/-- **THE NORMAL FORM AT A FINITE LEVEL** (PROVEN 2026-07-31): a NONZERO
+level-fixed integer is `unif ^ e` times a level-fixed UNIT of `Oᵥ`.
+
+This is the only thing the `LowerRamificationData` axioms have to say about
+valuations, and it is exactly enough. `unif_spec` ("every level-fixed non-unit
+is divisible by `unif`") lets one strip factors of `unif`;
+`eq_zero_of_forall_pow_dvd_integralClosure` (the rank-one separation, over
+`unif_not_isUnit` alone) says the stripping TERMINATES, so there is a largest
+`e` with `unif ^ e ∣ x`; the cofactor is level-fixed because `unif` is and `Oᵥ`
+is a domain, and it is a unit by maximality of `e`.
+
+Note the unit is a unit of the BIG integral closure `Oᵥ`, not of the level's
+own ring of integers — which is what `unif_spec` is phrased against and what
+`IsLocalRing.mem_maximalIdeal` consumes downstream. -/
+theorem _root_.LowerRamificationData.exists_unif_pow_mul_isUnit
+    (D : LowerRamificationData v) {x : Oᵥ} (hx0 : x ≠ 0)
+    (hxfix : ∀ τ ∈ D.lvl, τ • x = x) :
+    ∃ (e : ℕ) (u : Oᵥ), IsUnit u ∧ (∀ τ ∈ D.lvl, τ • u = u) ∧ x = D.unif ^ e * u := by
+  classical
+  have hex : ∃ m : ℕ, ¬ D.unif ^ m ∣ x := by
+    by_contra h
+    exact hx0 (eq_zero_of_forall_pow_dvd_integralClosure v D.unif_not_isUnit
+      fun m => not_not.mp fun hm => h ⟨m, hm⟩)
+  have hfspec : ¬ D.unif ^ (Nat.find hex) ∣ x := Nat.find_spec hex
+  have hf0 : Nat.find hex ≠ 0 := by
+    intro h
+    exact hfspec (by rw [h, pow_zero]; exact one_dvd _)
+  obtain ⟨e, he⟩ : ∃ e, Nat.find hex = e + 1 := ⟨Nat.find hex - 1, by omega⟩
+  have hdvd : D.unif ^ e ∣ x := by
+    by_contra hcon
+    have := Nat.find_min' hex hcon
+    omega
+  obtain ⟨u, hu⟩ := hdvd
+  have hpowne : D.unif ^ e ≠ 0 := pow_ne_zero _ D.unif_ne_zero
+  have hufix : ∀ τ ∈ D.lvl, τ • u = u := by
+    intro τ hτ
+    have h1 : τ • x = x := hxfix τ hτ
+    rw [hu, smul_mul', smul_pow_integralClosure, D.unif_fixed τ hτ] at h1
+    exact mul_left_cancel₀ hpowne h1
+  refine ⟨e, u, ?_, hufix, hu⟩
+  by_contra hnu
+  obtain ⟨w, hw⟩ := D.unif_spec u hufix hnu
+  exact hfspec ⟨w, by rw [he, hu, hw]; ring⟩
+
+/-- **`G₁` CANNOT SCALE A LEVEL-FIXED INTEGER BY A NONTRIVIAL TAME ROOT OF
+UNITY** (PROVEN 2026-07-31) — the elementwise injectivity that replaces the
+classical `G₀/G₁ ↪ k_L^×`, and the engine of
+`exists_lowerRamificationData_phi_one_le` below.
+
+Given `x ≠ 0` level-fixed, write `x = unif ^ e * u` with `u` a level-fixed unit
+(`exists_unif_pow_mul_isUnit`). For `σ ∈ G₁` the axiom `mem_gp` at `i = 1`
+gives `σ • unif = unif * (1 + unif * a)` and `σ • u ≡ u mod unif²`, so
+
+  `σ • x = unif ^ e * (1 + unif * a) ^ e * (u + unif ^ 2 * b)`,
+
+and `(1 + unif * a) ^ e ≡ 1 mod unif` (`sub_dvd_pow_sub_pow`). Cancelling
+`unif ^ e` against `σ • x = ζ * x = unif ^ e * (ζ * u)` leaves
+`unif ∣ (ζ − 1) * u`, hence `unif ∣ ζ − 1` since `u` is a unit, hence
+`ζ − 1 ∈ 𝔪` since `unif` is not a unit — and
+`eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal` (separability of `Xⁿ − 1` in
+the residue characteristic) forces `ζ = 1`.
+
+**WHY `e` NEED NOT BE `1`.** The docstring of the leaf below used to say the
+argument "needs `X` to have `L`-valuation exactly `1`, which is where the
+totally-ramified half of the construction is consumed". That is FALSE as a
+requirement and unachievable as a plan: the level `L` must contain a prescribed
+open normal `N`'s fixed field, whose own ramification index may be divisible by
+the residue characteristic, so no choice of a TAME `M` can make `v_L(π^{1/M})`
+equal `1`. The normal form above is what removes the need: only `e ≥ 0` and the
+UNIT cofactor matter, because the correction `(1 + unif * a) ^ e` is congruent
+to `1` mod `unif` whatever `e` is. Equivalently: this is the classical proof
+that `σ ↦ σ(unif)/unif mod 𝔪` is injective on `G₀/G₁`, evaluated at `x` rather
+than at a uniformizer, and the `unit` half of the normal form is exactly the
+step "`σ ∈ G₀` acts trivially on the residue field". -/
+theorem _root_.LowerRamificationData.eq_one_of_smul_eq_mul_of_mem_gp_one
+    (D : LowerRamificationData v)
+    {x : Oᵥ} (hx0 : x ≠ 0) (hxfix : ∀ τ ∈ D.lvl, τ • x = x)
+    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal) {ζ : Oᵥ} (hζ : ζ ^ n = 1)
+    {σ : Γᵥ} (hσ : σ ∈ D.gp 1) (hsmul : σ • x = ζ * x) :
+    ζ = 1 := by
+  obtain ⟨e, u, huu, hufix, hxe⟩ := LowerRamificationData.exists_unif_pow_mul_isUnit v D hx0 hxfix
+  have hg := (D.mem_gp 1 σ).mp hσ
+  have hgu : D.unif ^ 2 ∣ σ • D.unif - D.unif := by simpa using hg D.unif D.unif_fixed
+  have hgU : D.unif ^ 2 ∣ σ • u - u := by simpa using hg u hufix
+  obtain ⟨a, ha⟩ := hgu
+  obtain ⟨b, hb⟩ := hgU
+  have hAu : σ • D.unif = D.unif * (1 + D.unif * a) := by linear_combination ha
+  have hBu : σ • u = u + D.unif ^ 2 * b := by linear_combination hb
+  have hkey : σ • x = D.unif ^ e * ((1 + D.unif * a) ^ e * (u + D.unif ^ 2 * b)) := by
+    rw [hxe, smul_mul', smul_pow_integralClosure, hAu, hBu, mul_pow]
+    ring
+  have hcan : D.unif ^ e * ((1 + D.unif * a) ^ e * (u + D.unif ^ 2 * b))
+      = D.unif ^ e * (ζ * u) := by
+    rw [← hkey, hsmul, hxe]; ring
+  have hcancel : (1 + D.unif * a) ^ e * (u + D.unif ^ 2 * b) = ζ * u :=
+    mul_left_cancel₀ (pow_ne_zero e D.unif_ne_zero) hcan
+  have hsd : (D.unif * a) ∣ (1 + D.unif * a) ^ e - 1 := by
+    have h := sub_dvd_pow_sub_pow (1 + D.unif * a) 1 e
+    simpa using h
+  obtain ⟨d, hd⟩ := (dvd_mul_right D.unif a).trans hsd
+  have hdvd2 : D.unif ∣ (ζ - 1) * u :=
+    ⟨D.unif * b + d * u + D.unif ^ 2 * (d * b), by
+      linear_combination (u + D.unif ^ 2 * b) * hd - hcancel⟩
+  have hdvd3 : D.unif ∣ ζ - 1 := (huu.dvd_mul_right).mp hdvd2
+  obtain ⟨t, ht⟩ := hdvd3
+  have hmem : ζ - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
+    rw [ht]
+    exact Ideal.mul_mem_right t _ ((IsLocalRing.mem_maximalIdeal _).mpr D.unif_not_isUnit)
+  exact eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal v hn hζ hmem
+
 /-- **THE WILD INERTIA IS THE INVERSE LIMIT OF THE `G_1`**, `⋂_D G_1(L_D/Kᵥ) ≤ P_v`.
 Together with `wildInertiaGroup_le_gp_one`, which is the reverse containment at
 every level and is PROVEN, this says `⋂_D G_1(L_D/Kᵥ) = P_v`.
 
-**SORRY LEAF**, cut 2026-07-31 out of
-`gp_le_upperRamificationFiltration_sup_lvl`. It is the exact mirror of
-`iInf_gp_zero_eq_localInertiaGroup`, which IS proven — the inertia is the
-inverse limit of the `G_0` — and it is genuinely harder for the reason that
-makes `G_1` the wild part: `G_0` is cut out by a divisibility, `G_1` by the
-vanishing of the tame character.
+**PROVEN 2026-08-02** (cut 2026-07-31 out of
+`gp_le_upperRamificationFiltration_sup_lvl`; it was a `sorry` leaf for two
+days). The proof is eleven lines over
+`LowerRamificationData.eq_one_of_smul_eq_mul_of_mem_gp_one` immediately above,
+which was written 2026-07-31 for `exists_lowerRamificationData_phi_one_le` and
+was declared 1600 lines BELOW this statement until it was hoisted here. **No new
+mathematics was needed**: the leaf was open only for declaration order.
 
-WHAT IT REPLACES. The natural-looking form is `D.gp 1 ≤ P_v ⊔ D.lvl` at a
-single level, i.e. "`P_v` surjects onto `G_1(L/Kᵥ)`". That is equivalent to
-this one modulo the compactness step above, and this form is better: it has no
-`⊔`, it composes directly with `exists_mem_lvl_forall_mem_gp_psiNat` (which
-already delivers membership in every `D'.gp (ψ_{D'} u)`, and `ψ_{D'}(u) ≥ 1`
-for `u > 0` by `psiNat_pos`), and it removes the need to decompose an element
-of `P_v ⊔ D''.lvl` as a product level by level.
+THE PROOF, in two conjuncts.
 
-THE ROUTE, for whoever proves it. The `I_v` conjunct of
-`wildInertiaGroup = I_v ⊓ tameFixingSubgroup` is FREE: `gp_antitone` gives
-`⋂_D G_1 ≤ ⋂_D G_0 = I_v` by `iInf_gp_zero_eq_localInertiaGroup`. So the
-content is `⋂_D G_1 ≤ tameFixingSubgroup v`, i.e. that such a `σ` fixes every
-`x` with `x ^ n ∈ 𝒪ᵥ` for `n` prime to the residue characteristic. The
-cheapest argument found is to CHOOSE THE LEVEL rather than to work at an
-arbitrary one: take a level `L ⊇ Kᵥ(ζ_n, x)`, which is TAMELY ramified
-(`e(L/Kᵥ)` divides `n · [unramified part]`, prime to `p`), so `G_1(L/Kᵥ)` is
-the trivial group — `G_1` is the `p`-Sylow of `G_0` and `|G_0| = e` is prime
-to `p` — whence `σ ∈ D.gp 1 = D.lvl` fixes `L` pointwise, in particular fixes
-`x`. In this file's language the statement to prove at such a level is
-`D.gp 1 = D.lvl`, and `coprime_card_quotient_wildInertiaGroup` is the
-order-coprimality input already available.
+* The `I_v` half is free: `gp_antitone` gives `⋂_D G_1 ≤ ⋂_D G_0`, and that is
+  `I_v` by `iInf_gp_zero_eq_localInertiaGroup`.
+* For `tameFixingSubgroup v`, take `n` prime to the residue characteristic and
+  `x` integral with `x ^ n = a ∈ 𝒪ᵥ`. Both `σ • x` and `x` have `n`-th power
+  `a` (`smul_algebraMap_integralClosure_eq` — a `Kᵥ`-automorphism fixes `𝒪ᵥ`),
+  so `ζ := (σ • x)/x` computed in `Kᵥᵃˡᵍ` satisfies `ζ ^ n = 1`, hence is
+  integral (`mem_integralClosure_of_pow_eq_algebraMap` at `a = 1`) and
+  `σ • x = ζ * x`. Choose ANY level fixing `x` — `exists_openNormal_smul_eq_self`
+  then `exists_lowerRamificationData_lvl_eq`, exactly as in
+  `iInf_gp_zero_eq_localInertiaGroup` — and
+  `eq_one_of_smul_eq_mul_of_mem_gp_one` at that level gives `ζ = 1`.
 
-The naive route — `(σ • x) ^ n = x ^ n` forces `σ • x = ζ x` with `ζ ^ n = 1`,
-and `unif ^ 2 ∣ σ • x − x` forces `ζ ≡ 1 mod 𝔪`, hence `ζ = 1` because
-`ζ = 1 + t` gives `0 = t · (n + t · (…))` with `n` a unit
-(`isUnit_natCast_integralClosure_of_notMem_asIdeal`) — does NOT close as
-stated: `σ • x − x = (ζ − 1) x` only bounds `v_L(ζ − 1) + v_L(x) ≥ 2`, which
-is weaker than `v_L(ζ − 1) ≥ 1` as soon as `v_L(x) ≥ 2`. That is why the level
-has to be chosen so that `x` is close to a uniformizer, and choosing it tame
-is the same choice made once and for all. -/
-theorem LowerRamificationData.iInf_gp_one_le_wildInertiaGroup
-    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
-    (⨅ D : LowerRamificationData v, D.gp 1) ≤ wildInertiaGroup v := sorry
+WHY THE RECORDED ROUTE WAS NOT TAKEN, and both of its claims were wrong.
+
+The docstring this replaces prescribed CHOOSING A TAME LEVEL `L ⊇ Kᵥ(ζ_n, x)`,
+where `G_1(L/Kᵥ)` is trivial because `G_1` is the `p`-Sylow of `G_0` and
+`|G_0| = e` is prime to `p`, so that `σ ∈ D.gp 1 = D.lvl` fixes `L` pointwise.
+That route needs `G_1` to be a `p`-group (`G_i/G_{i+1} ↪ k^+`, a development
+this file does not have) AND the construction of a tame level containing a
+prescribed `x`, which is not possible in general — see the
+`exists_lowerRamificationData_phi_one_le` docstring below, where the same plan
+was tried and abandoned for the same reason: the level must contain the fixed
+field of a prescribed open subgroup, whose ramification index may be divisible
+by the residue characteristic. **The level here is not chosen at all beyond
+fixing `x`; any level will do.**
+
+It also recorded the naive route as failing: `σ • x − x = (ζ − 1) x` bounds only
+`v_L(ζ − 1) + v_L(x) ≥ 2`, "which is weaker than `v_L(ζ − 1) ≥ 1` as soon as
+`v_L(x) ≥ 2`". That observation is correct about the ADDITIVE reading and is
+exactly what `eq_one_of_smul_eq_mul_of_mem_gp_one` repairs: writing
+`x = unif ^ e * u` with `u` a UNIT (`exists_unif_pow_mul_isUnit`) makes the
+argument multiplicative, and the correction `(1 + unif * a) ^ e` is congruent to
+`1` mod `unif` whatever `e` is. So no control on `v_L(x)` is needed, and the
+conclusion that the level "has to be chosen so that `x` is close to a
+uniformizer" was false. -/
+theorem LowerRamificationData.iInf_gp_one_le_wildInertiaGroup :
+    (⨅ D : LowerRamificationData v, D.gp 1) ≤ wildInertiaGroup v := by
+  intro σ hσ
+  rw [Subgroup.mem_iInf] at hσ
+  refine Subgroup.mem_inf.mpr ⟨?_, ?_⟩
+  · -- The inertia conjunct is free: `G_1 ≤ G_0` at every level, and `⋂_D G_0 = I_v`.
+    rw [← LowerRamificationData.iInf_gp_zero_eq_localInertiaGroup v, Subgroup.mem_iInf]
+    exact fun D => D.gp_antitone (Nat.zero_le 1) (hσ D)
+  · intro n hn x hx
+    obtain ⟨a, ha⟩ := hx
+    by_cases hx0 : x = 0
+    · rw [hx0, smul_zero]
+    have hn0 : n ≠ 0 := by
+      rintro rfl
+      exact hn (by simp)
+    -- ANY finite level whose group fixes `x` will do.
+    obtain ⟨U, hUn, hUo, hUfix⟩ := exists_openNormal_smul_eq_self v x
+    obtain ⟨D, hD⟩ := exists_lowerRamificationData_lvl_eq v U hUn hUo
+    have hxfix : ∀ τ ∈ D.lvl, τ • x = x := by rw [hD]; exact hUfix
+    -- `σ • x` has the same `n`-th power as `x`, that power lying in `𝒪ᵥ`.
+    have hpow : (σ • x) ^ n = x ^ n := by
+      rw [← smul_pow_integralClosure, ha, smul_algebraMap_integralClosure_eq]
+    -- Hence `σ • x = ζ * x` for an `n`-th root of unity `ζ` of `Oᵥ`.
+    have hx0' : (x.1 : Kᵥᵃˡᵍ) ≠ 0 := fun h => hx0 (Subtype.ext h)
+    set ζ₀ : Kᵥᵃˡᵍ := (σ • x).1 / x.1 with hζ₀def
+    have hζ₀n : ζ₀ ^ n = 1 := by
+      rw [hζ₀def, div_pow, ← coe_pow_integralClosure, ← coe_pow_integralClosure, hpow,
+        coe_pow_integralClosure, div_self (pow_ne_zero n hx0')]
+    have hζint : ζ₀ ∈ integralClosure 𝒪ᵥ Kᵥᵃˡᵍ :=
+      mem_integralClosure_of_pow_eq_algebraMap v hn0 (a := 1) (by simp [hζ₀n])
+    set ζ : Oᵥ := ⟨ζ₀, hζint⟩ with hζdef
+    have hζn : ζ ^ n = 1 := Subtype.ext (by
+      show ζ₀ ^ n = (1 : Kᵥᵃˡᵍ)
+      exact hζ₀n)
+    have hsmul : σ • x = ζ * x := by
+      refine Subtype.ext ?_
+      rw [IntegralClosure.coe_smul, coe_mul_integralClosure]
+      show (σ • x).1 = ζ₀ * x.1
+      rw [hζ₀def, div_mul_cancel₀ _ hx0']
+    have hone : ζ = 1 :=
+      LowerRamificationData.eq_one_of_smul_eq_mul_of_mem_gp_one v D hx0 hxfix hn hζn (hσ D) hsmul
+    rw [hsmul, hone, one_mul]
+
+end NormalFormAtLevel
 
 /-- **HERBRAND'S THEOREM**, the crux: `Γ^{φ(m)}` SURJECTS onto `G_m` at every
 finite level. The reverse containment is proved in
@@ -7191,116 +7385,6 @@ local notation "Oᵥ" => IntegralClosure
   (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
 local notation "Γᵥ" => Field.absoluteGaloisGroup
   (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
-
-/-- **THE NORMAL FORM AT A FINITE LEVEL** (PROVEN 2026-07-31): a NONZERO
-level-fixed integer is `unif ^ e` times a level-fixed UNIT of `Oᵥ`.
-
-This is the only thing the `LowerRamificationData` axioms have to say about
-valuations, and it is exactly enough. `unif_spec` ("every level-fixed non-unit
-is divisible by `unif`") lets one strip factors of `unif`;
-`eq_zero_of_forall_pow_dvd_integralClosure` (the rank-one separation, over
-`unif_not_isUnit` alone) says the stripping TERMINATES, so there is a largest
-`e` with `unif ^ e ∣ x`; the cofactor is level-fixed because `unif` is and `Oᵥ`
-is a domain, and it is a unit by maximality of `e`.
-
-Note the unit is a unit of the BIG integral closure `Oᵥ`, not of the level's
-own ring of integers — which is what `unif_spec` is phrased against and what
-`IsLocalRing.mem_maximalIdeal` consumes downstream. -/
-theorem _root_.LowerRamificationData.exists_unif_pow_mul_isUnit
-    (D : LowerRamificationData v) {x : Oᵥ} (hx0 : x ≠ 0)
-    (hxfix : ∀ τ ∈ D.lvl, τ • x = x) :
-    ∃ (e : ℕ) (u : Oᵥ), IsUnit u ∧ (∀ τ ∈ D.lvl, τ • u = u) ∧ x = D.unif ^ e * u := by
-  classical
-  have hex : ∃ m : ℕ, ¬ D.unif ^ m ∣ x := by
-    by_contra h
-    exact hx0 (eq_zero_of_forall_pow_dvd_integralClosure v D.unif_not_isUnit
-      fun m => not_not.mp fun hm => h ⟨m, hm⟩)
-  have hfspec : ¬ D.unif ^ (Nat.find hex) ∣ x := Nat.find_spec hex
-  have hf0 : Nat.find hex ≠ 0 := by
-    intro h
-    exact hfspec (by rw [h, pow_zero]; exact one_dvd _)
-  obtain ⟨e, he⟩ : ∃ e, Nat.find hex = e + 1 := ⟨Nat.find hex - 1, by omega⟩
-  have hdvd : D.unif ^ e ∣ x := by
-    by_contra hcon
-    have := Nat.find_min' hex hcon
-    omega
-  obtain ⟨u, hu⟩ := hdvd
-  have hpowne : D.unif ^ e ≠ 0 := pow_ne_zero _ D.unif_ne_zero
-  have hufix : ∀ τ ∈ D.lvl, τ • u = u := by
-    intro τ hτ
-    have h1 : τ • x = x := hxfix τ hτ
-    rw [hu, smul_mul', smul_pow_integralClosure, D.unif_fixed τ hτ] at h1
-    exact mul_left_cancel₀ hpowne h1
-  refine ⟨e, u, ?_, hufix, hu⟩
-  by_contra hnu
-  obtain ⟨w, hw⟩ := D.unif_spec u hufix hnu
-  exact hfspec ⟨w, by rw [he, hu, hw]; ring⟩
-
-/-- **`G₁` CANNOT SCALE A LEVEL-FIXED INTEGER BY A NONTRIVIAL TAME ROOT OF
-UNITY** (PROVEN 2026-07-31) — the elementwise injectivity that replaces the
-classical `G₀/G₁ ↪ k_L^×`, and the engine of
-`exists_lowerRamificationData_phi_one_le` below.
-
-Given `x ≠ 0` level-fixed, write `x = unif ^ e * u` with `u` a level-fixed unit
-(`exists_unif_pow_mul_isUnit`). For `σ ∈ G₁` the axiom `mem_gp` at `i = 1`
-gives `σ • unif = unif * (1 + unif * a)` and `σ • u ≡ u mod unif²`, so
-
-  `σ • x = unif ^ e * (1 + unif * a) ^ e * (u + unif ^ 2 * b)`,
-
-and `(1 + unif * a) ^ e ≡ 1 mod unif` (`sub_dvd_pow_sub_pow`). Cancelling
-`unif ^ e` against `σ • x = ζ * x = unif ^ e * (ζ * u)` leaves
-`unif ∣ (ζ − 1) * u`, hence `unif ∣ ζ − 1` since `u` is a unit, hence
-`ζ − 1 ∈ 𝔪` since `unif` is not a unit — and
-`eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal` (separability of `Xⁿ − 1` in
-the residue characteristic) forces `ζ = 1`.
-
-**WHY `e` NEED NOT BE `1`.** The docstring of the leaf below used to say the
-argument "needs `X` to have `L`-valuation exactly `1`, which is where the
-totally-ramified half of the construction is consumed". That is FALSE as a
-requirement and unachievable as a plan: the level `L` must contain a prescribed
-open normal `N`'s fixed field, whose own ramification index may be divisible by
-the residue characteristic, so no choice of a TAME `M` can make `v_L(π^{1/M})`
-equal `1`. The normal form above is what removes the need: only `e ≥ 0` and the
-UNIT cofactor matter, because the correction `(1 + unif * a) ^ e` is congruent
-to `1` mod `unif` whatever `e` is. Equivalently: this is the classical proof
-that `σ ↦ σ(unif)/unif mod 𝔪` is injective on `G₀/G₁`, evaluated at `x` rather
-than at a uniformizer, and the `unit` half of the normal form is exactly the
-step "`σ ∈ G₀` acts trivially on the residue field". -/
-theorem _root_.LowerRamificationData.eq_one_of_smul_eq_mul_of_mem_gp_one
-    (D : LowerRamificationData v)
-    {x : Oᵥ} (hx0 : x ≠ 0) (hxfix : ∀ τ ∈ D.lvl, τ • x = x)
-    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal) {ζ : Oᵥ} (hζ : ζ ^ n = 1)
-    {σ : Γᵥ} (hσ : σ ∈ D.gp 1) (hsmul : σ • x = ζ * x) :
-    ζ = 1 := by
-  obtain ⟨e, u, huu, hufix, hxe⟩ := LowerRamificationData.exists_unif_pow_mul_isUnit v D hx0 hxfix
-  have hg := (D.mem_gp 1 σ).mp hσ
-  have hgu : D.unif ^ 2 ∣ σ • D.unif - D.unif := by simpa using hg D.unif D.unif_fixed
-  have hgU : D.unif ^ 2 ∣ σ • u - u := by simpa using hg u hufix
-  obtain ⟨a, ha⟩ := hgu
-  obtain ⟨b, hb⟩ := hgU
-  have hAu : σ • D.unif = D.unif * (1 + D.unif * a) := by linear_combination ha
-  have hBu : σ • u = u + D.unif ^ 2 * b := by linear_combination hb
-  have hkey : σ • x = D.unif ^ e * ((1 + D.unif * a) ^ e * (u + D.unif ^ 2 * b)) := by
-    rw [hxe, smul_mul', smul_pow_integralClosure, hAu, hBu, mul_pow]
-    ring
-  have hcan : D.unif ^ e * ((1 + D.unif * a) ^ e * (u + D.unif ^ 2 * b))
-      = D.unif ^ e * (ζ * u) := by
-    rw [← hkey, hsmul, hxe]; ring
-  have hcancel : (1 + D.unif * a) ^ e * (u + D.unif ^ 2 * b) = ζ * u :=
-    mul_left_cancel₀ (pow_ne_zero e D.unif_ne_zero) hcan
-  have hsd : (D.unif * a) ∣ (1 + D.unif * a) ^ e - 1 := by
-    have h := sub_dvd_pow_sub_pow (1 + D.unif * a) 1 e
-    simpa using h
-  obtain ⟨d, hd⟩ := (dvd_mul_right D.unif a).trans hsd
-  have hdvd2 : D.unif ∣ (ζ - 1) * u :=
-    ⟨D.unif * b + d * u + D.unif ^ 2 * (d * b), by
-      linear_combination (u + D.unif ^ 2 * b) * hd - hcancel⟩
-  have hdvd3 : D.unif ∣ ζ - 1 := (huu.dvd_mul_right).mp hdvd2
-  obtain ⟨t, ht⟩ := hdvd3
-  have hmem : ζ - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
-    rw [ht]
-    exact Ideal.mul_mem_right t _ ((IsLocalRing.mem_maximalIdeal _).mpr D.unif_not_isUnit)
-  exact eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal v hn hζ hmem
 
 /-- **LEVELS OF UNBOUNDED TAME RAMIFICATION EXIST INSIDE ANY OPEN SUBGROUP**
 (PROVEN 2026-07-31; cut 2026-07-30 out of
