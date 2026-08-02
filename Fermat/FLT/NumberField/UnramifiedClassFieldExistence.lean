@@ -532,7 +532,87 @@ hypothesis is what bounds the difficulty, and `Cl(𝓞 K) ⧸ ⊥` is cyclic pre
 
 **The check that would refute it**: a number field `K` and `N ≤ Cl(𝓞 K)` with cyclic
 quotient such that every finite abelian extension of `K` unramified at every finite prime
-and at every infinite place has some ideal class outside `N` in its norm class group. -/
+and at every infinite place has some ideal class outside `N` in its norm class group.
+
+## VOCABULARY AUDIT, 2026-07-31: NO DECOMPOSITION OF THIS LEAF IS STATABLE IN THIS FILE
+
+This was run because the sketch above ("adjoin `ζ_n`; Kummer; descend by the
+Verschiebungssatz") reads like a three-way cut, and it is not one. **Every intermediate
+object of that argument is an extension that is RAMIFIED**, and this file's entire
+vocabulary is modulus `1`:
+
+* the Kummer extension is built over `K' = K(ζ_n)` from `n`-virtual units, and is ramified
+  at the primes above `n` and at the auxiliary finite set `S` whose `S`-units are used;
+* what is cut down to an UNRAMIFIED extension of `K` at the end is not that field but the
+  class field of a congruence subgroup, and the descent (Verschiebungssatz / the norm
+  limitation theorem) is a statement about ideal groups MOD `𝔪`;
+* even the `μ_n ⊆ K` case, where no descent is needed, runs on the `n`-th power residue
+  symbol and its reciprocity, whose local factors at the primes above `n` and at the
+  archimedean places are again modulus data.
+
+So a prover cannot NAME the halves: there is no ray class group and no ideal-theoretic
+congruence subgroup anywhere. Measured 2026-07-31, and quote the commands rather than the
+verdict:
+
+    grep -rln 'RayClassGroup\|rayClassGroup' .lake/packages/mathlib/Mathlib/   # nothing
+    grep -rln 'RayClassGroup\|rayClassGroup' --include=*.lean Fermat/          # PROSE only
+
+Every `Fermat/` hit is a docstring in which some other agent records the same absence
+(`ModThree.lean:57064` and `:59703`, `MordellWeil.lean:2051`,
+`IsogenySignature.lean:14686`, `MoretBailly.lean:43118` and `:43497`), so the absence has
+been independently checked at least four times on three trees. Mathlib's
+`IsCongruenceSubgroup` is the SL₂ notion of
+`Mathlib/NumberTheory/ModularForms/CongruenceSubgroups.lean` and is unrelated.
+
+**What has to be built first is ray class groups at a modulus and the two fundamental
+inequalities there — a development, not a lemma** — and that is the task to dispatch before
+this one.
+
+**The cut that IS statable, and why it was declined.** Split into (i) this statement for a
+base field containing a primitive `n`-th root of unity, and (ii) "the general case follows
+from case (i) at every base", the hypothesis of (ii) being (i) quantified over the
+intermediate fields of `AlgebraicClosure K`. Both halves are CONSEQUENCES of this leaf, so
+neither can be false unless it is, and their conjunction gives it back; the assembly is a
+few lines and needs no norm map on class groups, because (ii) internalises the choice of
+subgroup on the cyclotomic side. It was declined because (ii) is the translation theorem —
+whose proof needs the moduli above — and (i) needs Hilbert reciprocity for the power
+residue symbol, which needs them too. The cut would take the frontier from 1 to 2 and hand
+a successor a half they still could not finish. Take it only together with the ray class
+group development, at which point it is the right shape.
+
+## AN EQUIVALENT FORM, AND IT SKIPS THE CYCLIC REDUCTION ENTIRELY
+
+`UnramifiedClassFieldBound.lean`'s `finrank_le_index_relNormClassSubgroup` is **PROVEN**,
+with exactly the hypotheses this leaf's conclusion carries, and says
+`[L : K] ≤ (relNormClassSubgroup K L).index`. Since
+`index * card = card (Cl 𝓞 K) = h_K` (Lagrange), an everywhere-unramified abelian `L` with
+`h_K ≤ [L : K]` has `h_K ≤ index ≤ h_K`, hence `relNormClassSubgroup K L = ⊥`. So
+
+> **`exists_unramifiedAbelian_card_classGroup_le_finrank` below implies
+> `exists_unramifiedAbelian_relNormClassSubgroup_eq_bot` below UNCONDITIONALLY** — with no
+> cyclic reduction, no `exists_isCyclic_quotient_notMem`, no compositum and no use of this
+> leaf.
+
+The file currently runs the implication the other way (the degree form is proven from
+`eq_bot` and `index_relNormClassSubgroup_le_finrank_of_isUnramifiedAtInfinitePlaces`), so
+the two existence statements are equivalent modulo that one open inequality, and the
+direction stated above is free. A prover may therefore attack EITHER shape: this leaf, or
+"some everywhere-unramified abelian extension of `K` has degree at least `h_K`". They are
+the same theorem and neither is cheaper; what differs is that the degree form needs none of
+the apparatus between here and `eq_bot`.
+
+**Do not act on that by re-cutting.** If the degree form is ever proven directly, `eq_bot`
+should be re-proven over it and THEN this leaf, `exists_isCyclic_quotient_notMem`,
+`relNormClassSubgroup_le_of_le`, `exists_unramifiedAbelian_sup` and the three `_sup`
+theorems all become consumerless and must be deleted in the same commit — a deletion that
+would strand whatever else is in flight against them. As of 2026-07-31
+`isUnramifiedAt_ringOfIntegers_sup` has a live owner.
+
+**The `N = ⊤` call site does not need this leaf.** `exists_unramifiedAbelian_relNormClass`
+`Subgroup_eq_bot` invokes it at `⊤` only to see that the set it minimises over is nonempty,
+and the conclusion there (`relNormClassSubgroup K L ≤ ⊤`) is vacuous; `L = K` witnesses it,
+modulo the `⊥ : IntermediateField K (AlgebraicClosure K)` instances, which nobody has
+written down here. So the mathematical content of this leaf is entirely at `N ≠ ⊤`. -/
 theorem exists_unramifiedAbelian_relNormClassSubgroup_le_of_isCyclic_quotient
     (N : Subgroup (ClassGroup (𝓞 K))) (hN : IsCyclic (ClassGroup (𝓞 K) ⧸ N)) :
     ∃ (L : IntermediateField K (AlgebraicClosure K)) (_ : FiniteDimensional K L)
@@ -640,6 +720,34 @@ theorem isAbelianGalois_sup (L₁ L₂ : IntermediateField K (AlgebraicClosure K
   rw [← map_mul, ← map_mul, ← mul_inv_eq_one]
   exact hone
 
+omit [NumberField K] in
+/-- **TWO `K`-ALGEBRA MAPS OUT OF AN ALGEBRAIC EXTENSION THAT AGREE ON `L₁` AND ON `L₂`
+AGREE ON `L₁ ⬝ L₂`** (PROVEN 2026-07-31).
+
+The RING-HOM companion of `forall_mem_sup_of_fixed` above, and what the archimedean
+compositum below runs on. `AlgHom.equalizer f g` is a `Subalgebra K Ω`; over an ALGEBRAIC
+extension every `K`-subalgebra is a field (`Algebra.IsAlgebraic.toIntermediateField`), so
+it is an intermediate field, and `sup_le` finishes. Algebraicity is the only hypothesis:
+no finiteness, no normality, no Galois.
+
+Stated for an arbitrary target field `C` rather than for `ℂ` on purpose — the consumer
+below supplies `Algebra K ℂ` as a LOCAL instance built from the embedding it is analysing
+(there is no canonical one), and a lemma stated at `ℂ` would then have to be applied
+against that local instance. With `C` a variable the instance is an argument and the
+application is unambiguous. -/
+theorem eqOn_sup_of_eqOn {Ω C : Type*} [Field Ω] [Field C] [Algebra K Ω] [Algebra K C]
+    [Algebra.IsAlgebraic K Ω]
+    (L₁ L₂ : IntermediateField K Ω) (f g : Ω →ₐ[K] C)
+    (h₁ : ∀ x ∈ L₁, f x = g x) (h₂ : ∀ x ∈ L₂, f x = g x) :
+    ∀ x ∈ L₁ ⊔ L₂, f x = g x := by
+  haveI : Algebra.IsAlgebraic K (AlgHom.equalizer f g) :=
+    Algebra.IsAlgebraic.of_injective (AlgHom.equalizer f g).val Subtype.val_injective
+  have hE : L₁ ⊔ L₂ ≤ Algebra.IsAlgebraic.toIntermediateField (AlgHom.equalizer f g) :=
+    sup_le (fun x hx => h₁ x hx) (fun x hx => h₂ x hx)
+  intro x hx
+  exact hE hx
+
+omit [NumberField K] in
 set_option linter.unusedSectionVars false in
 /-- **THE COMPOSITUM OF TWO EXTENSIONS UNRAMIFIED AT THE INFINITE PLACES IS UNRAMIFIED AT
 THE INFINITE PLACES** (PROVEN 2026-08-01, `flt-lean-318`).
@@ -692,79 +800,72 @@ theorem isUnramifiedAtInfinitePlaces_sup (L₁ L₂ : IntermediateField K (Algeb
     [FiniteDimensional K L₁] [FiniteDimensional K L₂]
     [IsUnramifiedAtInfinitePlaces K L₁] [IsUnramifiedAtInfinitePlaces K L₂] :
     IsUnramifiedAtInfinitePlaces K ↥(L₁ ⊔ L₂) := by
+  haveI : Algebra.IsAlgebraic K (AlgebraicClosure K) := AlgebraicClosure.isAlgebraic K
   refine ⟨fun w => ?_⟩
   rw [InfinitePlace.isUnramified_iff]
-  by_cases hv : (w.comap (algebraMap K ↥(L₁ ⊔ L₂))).IsComplex
-  · exact Or.inr hv
-  left
-  rw [InfinitePlace.not_isComplex_iff_isReal] at hv
-  rw [← w.mk_embedding, InfinitePlace.comap_mk, InfinitePlace.isReal_mk_iff] at hv
-  rw [← w.mk_embedding, InfinitePlace.isReal_mk_iff]
+  by_cases hc : (w.comap (algebraMap K ↥(L₁ ⊔ L₂))).IsComplex
+  · exact Or.inr hc
+  refine Or.inl ?_
+  rw [InfinitePlace.isReal_iff, ComplexEmbedding.isReal_iff]
+  -- the place of `K` below `w` is real
+  have hbase : ComplexEmbedding.conjugate (w.embedding.comp (algebraMap K ↥(L₁ ⊔ L₂)))
+      = w.embedding.comp (algebraMap K ↥(L₁ ⊔ L₂)) := by
+    rw [← ComplexEmbedding.isReal_iff, ← InfinitePlace.isReal_mk_iff, ← InfinitePlace.comap_mk,
+      InfinitePlace.mk_embedding]
+    exact InfinitePlace.not_isComplex_iff_isReal.mp hc
+  -- so each factor's place is real, since the factor is unramified at the infinite places
+  have hfac : ∀ (L : IntermediateField K (AlgebraicClosure K))
+      [IsUnramifiedAtInfinitePlaces K L] (hL : L ≤ L₁ ⊔ L₂) (y : ↥L),
+      (starRingEnd ℂ) (w.embedding (IntermediateField.inclusion hL y))
+        = w.embedding (IntermediateField.inclusion hL y) := by
+    intro L _ hL
+    have key : ComplexEmbedding.conjugate
+        (w.embedding.comp (IntermediateField.inclusion hL).toRingHom)
+        = w.embedding.comp (IntermediateField.inclusion hL).toRingHom := by
+      rw [← ComplexEmbedding.isReal_iff, ← InfinitePlace.isReal_mk_iff]
+      have hu : InfinitePlace.IsUnramified K
+          (InfinitePlace.mk (w.embedding.comp (IntermediateField.inclusion hL).toRingHom)) :=
+        InfinitePlace.isUnramified K _
+      rw [InfinitePlace.isUnramified_iff] at hu
+      refine hu.resolve_right ?_
+      have hcomp : (IntermediateField.inclusion hL).toRingHom.comp (algebraMap K ↥L)
+          = algebraMap K ↥(L₁ ⊔ L₂) := (IntermediateField.inclusion hL).comp_algebraMap
+      rw [InfinitePlace.comap_mk, RingHom.comp_assoc, hcomp, ← InfinitePlace.comap_mk,
+        InfinitePlace.mk_embedding]
+      exact hc
+    exact fun y => RingHom.congr_fun key y
+  -- extend `w.embedding` to the ambient algebraic closure
+  letI : Algebra K ℂ := (w.embedding.comp (algebraMap K ↥(L₁ ⊔ L₂))).toAlgebra
   letI : Algebra ↥(L₁ ⊔ L₂) ℂ := w.embedding.toAlgebra
-  letI : Algebra K ℂ :=
-    ((algebraMap ↥(L₁ ⊔ L₂) ℂ).comp (algebraMap K ↥(L₁ ⊔ L₂))).toAlgebra
   haveI : IsScalarTower K ↥(L₁ ⊔ L₂) ℂ := IsScalarTower.of_algebraMap_eq' rfl
   haveI : Algebra.IsAlgebraic ↥(L₁ ⊔ L₂) (AlgebraicClosure K) :=
-    Algebra.IsAlgebraic.tower_top (K := K) _
-  let Φ : AlgebraicClosure K →ₐ[↥(L₁ ⊔ L₂)] ℂ := IsAlgClosed.lift
-  have hvpt : ∀ r : K, (starRingEnd ℂ) (w.embedding (algebraMap K ↥(L₁ ⊔ L₂) r))
-      = w.embedding (algebraMap K ↥(L₁ ⊔ L₂) r) := fun r => RingHom.congr_fun hv r
-  have hΦK : ∀ r : K, (starRingEnd ℂ) (Φ (algebraMap K (AlgebraicClosure K) r))
-      = Φ (algebraMap K (AlgebraicClosure K) r) := by
-    intro r
-    rw [IsScalarTower.algebraMap_apply K ↥(L₁ ⊔ L₂) (AlgebraicClosure K) r, Φ.commutes]
-    exact hvpt r
-  -- `conj ∘ Φ` is again a `K`-algebra map, because the place below `w` is real
-  let conjΦ : AlgebraicClosure K →ₐ[K] ℂ :=
-    { (starRingEnd ℂ).comp (Φ : AlgebraicClosure K →+* ℂ) with
+    Algebra.IsAlgebraic.tower_top (K := K) (A := AlgebraicClosure K) ↥(L₁ ⊔ L₂)
+  let Φ : AlgebraicClosure K →ₐ[K] ℂ :=
+    (IsAlgClosed.lift (R := ↥(L₁ ⊔ L₂)) (S := AlgebraicClosure K) (M := ℂ)).restrictScalars K
+  have hΦ : ∀ y : ↥(L₁ ⊔ L₂), Φ (y : AlgebraicClosure K) = w.embedding y := fun y =>
+    (IsAlgClosed.lift (R := ↥(L₁ ⊔ L₂)) (S := AlgebraicClosure K) (M := ℂ)).commutes y
+  let Φ' : AlgebraicClosure K →ₐ[K] ℂ :=
+    { ((starRingEnd ℂ).comp (Φ : AlgebraicClosure K →+* ℂ)) with
       commutes' := fun r => by
         show (starRingEnd ℂ) (Φ (algebraMap K (AlgebraicClosure K) r)) = algebraMap K ℂ r
-        rw [hΦK r, IsScalarTower.algebraMap_apply K ↥(L₁ ⊔ L₂) (AlgebraicClosure K) r,
-          Φ.commutes]
-        rfl }
-  -- the locus where `Φ` is real is an intermediate field
-  let E : IntermediateField K (AlgebraicClosure K) :=
-    (AlgHom.equalizer (Φ.restrictScalars K) conjΦ).toIntermediateField (by
-      intro x hx
-      rw [AlgHom.mem_equalizer] at hx ⊢
-      have hx' : Φ x = (starRingEnd ℂ) (Φ x) := hx
-      show Φ x⁻¹ = (starRingEnd ℂ) (Φ x⁻¹)
-      rw [map_inv₀, map_inv₀, ← hx'])
-  have hmemE : ∀ x : AlgebraicClosure K, x ∈ E ↔ Φ x = (starRingEnd ℂ) (Φ x) := by
-    intro x; exact AlgHom.mem_equalizer _ _ _
-  -- an intermediate field unramified at the infinite places lands in `E`
-  have hsub : ∀ (L : IntermediateField K (AlgebraicClosure K)),
-      IsUnramifiedAtInfinitePlaces K ↥L → L ≤ E := by
-    intro L hL x hx
-    haveI := hL
-    have hu := InfinitePlace.isUnramified (k := K)
-      (InfinitePlace.mk ((Φ : AlgebraicClosure K →+* ℂ).comp
-        (algebraMap ↥L (AlgebraicClosure K))))
-    rw [InfinitePlace.isUnramified_iff] at hu
-    have hbelow : ComplexEmbedding.IsReal
-        (((Φ : AlgebraicClosure K →+* ℂ).comp
-          (algebraMap ↥L (AlgebraicClosure K))).comp (algebraMap K ↥L)) := by
-      refine RingHom.ext fun r => ?_
-      show (starRingEnd ℂ) (Φ (algebraMap ↥L (AlgebraicClosure K) (algebraMap K ↥L r))) = _
-      rw [← IsScalarTower.algebraMap_apply K ↥L (AlgebraicClosure K) r]
-      exact hΦK r
-    have hreal : (InfinitePlace.mk ((Φ : AlgebraicClosure K →+* ℂ).comp
-        (algebraMap ↥L (AlgebraicClosure K)))).IsReal := by
-      refine hu.resolve_right ?_
-      rw [InfinitePlace.comap_mk, ← InfinitePlace.not_isReal_iff_isComplex,
-        InfinitePlace.isReal_mk_iff]
-      exact fun h => h hbelow
-    rw [InfinitePlace.isReal_mk_iff] at hreal
-    rw [hmemE]
-    exact (RingHom.congr_fun hreal (⟨x, hx⟩ : ↥L)).symm
-  have hle : L₁ ⊔ L₂ ≤ E := sup_le (hsub L₁ ‹_›) (hsub L₂ ‹_›)
-  -- conclude: `w.embedding` is real
+        rw [Φ.commutes]
+        exact RingHom.congr_fun hbase r }
+  have hΦ' : ∀ x : AlgebraicClosure K, Φ' x = (starRingEnd ℂ) (Φ x) := fun _ => rfl
+  have hagree : ∀ x ∈ L₁ ⊔ L₂, Φ' x = Φ x := by
+    refine eqOn_sup_of_eqOn K L₁ L₂ Φ' Φ (fun x hx => ?_) (fun x hx => ?_)
+    · have hxE : x ∈ L₁ ⊔ L₂ := (le_sup_left : L₁ ≤ L₁ ⊔ L₂) hx
+      have h1 : Φ x = w.embedding ⟨x, hxE⟩ := hΦ ⟨x, hxE⟩
+      rw [hΦ', h1]
+      exact hfac L₁ le_sup_left ⟨x, hx⟩
+    · have hxE : x ∈ L₁ ⊔ L₂ := (le_sup_right : L₂ ≤ L₁ ⊔ L₂) hx
+      have h1 : Φ x = w.embedding ⟨x, hxE⟩ := hΦ ⟨x, hxE⟩
+      rw [hΦ', h1]
+      exact hfac L₂ le_sup_right ⟨x, hx⟩
   refine RingHom.ext fun y => ?_
+  have := hagree (y : AlgebraicClosure K) y.2
   show (starRingEnd ℂ) (w.embedding y) = w.embedding y
-  have h1 : Φ (algebraMap ↥(L₁ ⊔ L₂) (AlgebraicClosure K) y) = w.embedding y := Φ.commutes y
-  have h2 := (hmemE _).1 (hle y.2)
-  rw [← h1]
-  exact h2.symm
+  rw [← hΦ y]
+  exact this
 
 /-- **THE COMPOSITUM OF TWO EXTENSIONS UNRAMIFIED AT EVERY FINITE PRIME IS UNRAMIFIED AT
 EVERY FINITE PRIME** (SORRY LEAF, cut 2026-07-31 out of `exists_unramifiedAbelian_sup`
@@ -806,8 +907,8 @@ theorem isUnramifiedAt_ringOfIntegers_sup (L₁ L₂ : IntermediateField K (Alge
 finite abelian extensions of `K` inside `AlgebraicClosure K`, each unramified at every
 finite prime and at every infinite place, some such extension contains them both** (cut
 2026-07-31 out of `exists_unramifiedAbelian_relNormClassSubgroup_eq_bot` below, and
-DECOMPOSED AND PROVEN the same day from `isAbelianGalois_sup` above — the Galois third,
-CLOSED — together with the two remaining leaves `isUnramifiedAtInfinitePlaces_sup` and
+DECOMPOSED AND PROVEN the same day from `isAbelianGalois_sup` and — since 2026-07-31 —
+`isUnramifiedAtInfinitePlaces_sup` above, both CLOSED, together with the ONE remaining leaf
 `isUnramifiedAt_ringOfIntegers_sup`, and from nothing else).
 
 **THERE IS NO CLASS FIELD THEORY IN THIS STATEMENT.** It is pure Galois and ramification
@@ -823,22 +924,29 @@ prover should take `M = L₁ ⊔ L₂` and will find `FiniteDimensional K M`
 does exactly this at `exists_surjective_aut_classGroupQuotient_intermediateField` below,
 where `E := HCF ⊔ M` needs no hand-built instance beyond the tower algebras.
 
-**The three real obligations were ALL THE SAME ARGUMENT, and that is why one of them is
-already closed.** An element of `Gal(M/K)` trivial on `L₁` and on `L₂` is trivial, because
-the set it fixes is an intermediate field containing both, hence containing `L₁ ⊔ L₂`. That
-step is `forall_mem_sup_of_fixed` above, PROVEN, and it serves all three:
+**The three real obligations are ONE PRINCIPLE — "an object trivial on `L₁` and on `L₂` is
+trivial on `L₁ ⊔ L₂`" — and two of the three are now closed.** The principle appears twice
+in this file, once for automorphisms (`forall_mem_sup_of_fixed`, PROVEN) and once for
+`K`-algebra maps into another field (`eqOn_sup_of_eqOn`, PROVEN); both are the observation
+that the locus in question is an intermediate field containing `L₁` and `L₂`.
 
 * *abelian* — `isAbelianGalois_sup` above, **PROVEN 2026-07-31**: the commutator of two
   lifts to `Gal(K̄/K)` restricts to `1` on each `Lᵢ` because `Gal(Lᵢ/K)` is commutative;
+* *unramified at the infinite places* — `isUnramifiedAtInfinitePlaces_sup` above,
+  **PROVEN 2026-07-31**, by the EMBEDDING form of the principle rather than by the
+  automorphism form: `conj ∘ φ` and `φ` agree on each `Lᵢ`, hence on the compositum. The
+  automorphism form is NOT available here, because the statement carries no
+  `IsGalois K Lᵢ`; see that docstring;
 * *unramified at the finite primes* — `isUnramifiedAt_ringOfIntegers_sup` above, OPEN: the
-  same, with the inertia group at a prime `Q` of `𝓞 M` in place of the commutator;
-* *unramified at the infinite places* — `isUnramifiedAtInfinitePlaces_sup` above, OPEN: the
-  same, with complex conjugation at an archimedean place.
+  automorphism form, with the inertia group at a prime `Q` of `𝓞 M` in place of the
+  commutator.
 
-The two open ones are separately ownable and use disjoint mathlib API
-(`Algebra.IsUnramifiedAt` and localisation, against `InfinitePlace.IsUnramified` and
-`InfinitePlace.comap`); each docstring carries its own argument and its own refutation
-check, including the `FormallyUnramified.baseChange` route that does NOT work.
+The remaining one carries its own argument and its own refutation check, including the
+`FormallyUnramified.baseChange` route that does NOT work. **It also has a PROVEN twin one
+module downstream** — `HilbertClassFieldNormal.isUnramifiedAt_sup`, for the ambient
+`AlgebraicClosure ℚ` and with `[IsGalois K Lᵢ]` — whose proof transcribes here once the
+Galois hypotheses are added or `Normal K Lᵢ` is obtained some other way; see that
+docstring.
 
 **Both unramifiedness hypotheses on both fields are load-bearing.** Dropping unramifiedness
 at the infinite places makes the conclusion false for the same reason it makes the
@@ -1040,12 +1148,20 @@ theorem exists_unramifiedAbelian_relNormClassSubgroup_eq_bot :
 /-- **THE EXISTENCE THEOREM OF UNRAMIFIED CLASS FIELD THEORY, IN THE ONLY FORM THE ARTIN
 ISOMORPHISM NEEDS: `K` has a finite ABELIAN extension inside `AlgebraicClosure K`,
 unramified at every finite prime and at every infinite place, of degree AT LEAST `h_K`**
-(SORRY LEAF, cut 2026-07-30 out of `exists_hilbertClassField_artinIso` below, which is
-now PROVEN from it, from `exists_classGroupHom_eq_frobAt` (RECIPROCITY) and
+(was a SORRY LEAF, cut 2026-07-30 out of `exists_hilbertClassField_artinIso` below, which
+is PROVEN from it, from `exists_classGroupHom_eq_frobAt` (RECIPROCITY) and
 `closure_frobAt_eq_top` (CHEBOTAREV) of `Fermat/FLT/NumberField/ArtinSymbol.lean`, and
-from nothing else).
+from nothing else; **itself DECOMPOSED AND PROVEN 2026-07-31** over
+`exists_unramifiedAbelian_relNormClassSubgroup_eq_bot` and
+`index_relNormClassSubgroup_le_finrank_of_isUnramifiedAtInfinitePlaces`, both above).
 
-**THIS IS NOW THE WHOLE REMAINING GAP in the Hilbert-class-field half of this cluster**,
+**THE `SORRY LEAF` LABEL THAT USED TO OPEN THIS DOCSTRING WAS STALE from 2026-07-31 and
+was corrected on 2026-07-31**; the paragraph below calling this "the whole remaining gap"
+is likewise history, and is kept because its account of what the statement is for is still
+the best one in the file. The gap moved DOWN, to the two leaves just named. Regenerate the
+open-leaf list from the build's warnings; do not read it off these headers.
+
+**THIS WAS THE WHOLE REMAINING GAP in the Hilbert-class-field half of this cluster**,
 and it is the classical EXISTENCE theorem and nothing else: no Artin map, no dictionary,
 no intermediate fields. Everything the old leaf also demanded — that the Artin map is an
 isomorphism, and that the norm class group of an intermediate field is the subgroup
