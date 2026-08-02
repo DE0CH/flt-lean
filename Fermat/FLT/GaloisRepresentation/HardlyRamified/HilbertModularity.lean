@@ -13958,6 +13958,67 @@ split has become available since, and (C) can be cut again along it.  That is a
 second, independent decomposition and is deliberately NOT taken here: one cut
 per commit in a file with concurrent owners.  It is queued instead. -/
 
+/-- **THE `F`-LEVEL FRAMED BRAUER–NESBITT / CHEBOTAREV UPGRADE** (PROVEN
+2026-08-02): agreement of Frobenius characteristic polynomials AWAY FROM A
+FINITE SET upgrades to agreement at EVERY element of `Γ F`, for a framed
+representation over an arbitrary topological coefficient ring `T` reduced along
+a continuous `πT : T →+* k`.
+
+This is the `F`-level, framed, native-over-`F` twin of
+`Modularity/KhareWintenberger.lean`'s `forall_charpoly_map_eq_of_charFrob_map_eq_over_base`,
+which is DOWNSTREAM of this module (it imports it) and is stated for a
+representation of `Γ ℚ` base-changed to `F`, so neither is usable here.  Every
+ingredient it needs is already in this module's import cone:
+
+* `framePushforward` / `charpoly_framePushforward` (above) reduce `ρT` along
+  `πT` to a genuine `FramedGaloisRep F k (Fin 2)` whose characteristic
+  polynomials are the `πT`-images of `ρT`'s;
+* `GaloisRep.charFrob_eq_charpoly_globalFrob` (`Chebotarev.lean`, a `public
+  import`) turns the good-place hypothesis into an equality of `charFrob`s;
+* `exists_conj_of_charFrob_eq_away_of_two_ne_zero` (`BrauerNesbittConjugacy.lean`,
+  imported NON-publicly at the head of this file — which reaches a theorem's
+  PROOF BODY, and this is a theorem) is the Chebotarev-plus-Brauer–Nesbitt core.
+
+`5 ≤ ℓ` is spent only on `(2 : k) ≠ 0`, which is what the rank-two
+Brauer–Nesbitt core needs; `hirrF` is what makes the conjugating `e` exist. -/
+theorem forall_charpoly_map_eq_of_charFrob_map_eq_hilbert
+    {ℓ : ℕ} [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {F : Type u} [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    [CharP k ℓ]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2)
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    (ρT : FramedGaloisRep F T (Fin 2)) (πT : T →+* k) (hcont : Continuous πT)
+    (bad : Finset (HeightOneSpectrum (𝓞 F)))
+    (hcong : ∀ w ∉ bad, (ρT.charFrob w).map πT =
+      (ρbar.map (algebraMap ℚ F)).charFrob w) :
+    ∀ g : Γ F, ((ρT g).charpoly).map πT =
+      ((ρbar.map (algebraMap ℚ F)) g).charpoly := by
+  classical
+  have h2 : (2 : k) ≠ 0 := by
+    intro h
+    have hd : (ℓ : ℕ) ∣ 2 := (CharP.cast_eq_zero_iff k ℓ 2).mp (by exact_mod_cast h)
+    have := Nat.le_of_dvd (by norm_num) hd
+    omega
+  set σ : FramedGaloisRep F k (Fin 2) := framePushforward πT hcont ρT with hσ
+  have hcp : ∀ g : Γ F, (σ g).charpoly = ((ρT g).charpoly).map πT :=
+    fun g => charpoly_framePushforward πT hcont ρT g
+  have hcf : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ bad →
+      σ.charFrob w = (ρbar.map (algebraMap ℚ F)).charFrob w := by
+    intro w hw
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob, hcp,
+      ← GaloisRep.charFrob_eq_charpoly_globalFrob]
+    exact hcong w hw
+  obtain ⟨e, he⟩ :=
+    exists_conj_of_charFrob_eq_away_of_two_ne_zero h2 hV hirrF
+      (rank_finTwoPi k) σ bad hcf
+  intro g
+  rw [← hcp g, ← he, GaloisRep.conj_apply, LinearEquiv.charpoly_conj]
+
 /-- **The Hecke algebra of a Hilbert newform of SOME level** — this is
 `HilbertHeckeAlgebra` with the single field `isHilbertHardlyRamified` removed,
 and it is the intermediate object of the (C)/(LL) cut described in the section
@@ -13965,14 +14026,17 @@ docstring above.
 
 Every other field is reproduced verbatim, including `automorphic`, which is
 what makes this an automorphic object rather than an abstract algebra with a
-Galois representation, and is what keeps the (LL) leaf below honest.  The
-per-field commentary is NOT duplicated: read it on `HilbertHeckeAlgebra`,
-which is the authoritative copy and the one every consumer uses.
+Galois representation, and is what keeps the (LL) leaf below honest — EXCEPT
+`residT`, which was WEAKENED on 2026-08-02 to its good-place form
+`residTgood` and is re-derived in full immediately below.  The per-field
+commentary is NOT duplicated: read it on `HilbertHeckeAlgebra`, which is the
+authoritative copy and the one every consumer uses.
 
-Nothing consumes this structure except the two leaves below; it is deliberately
-not given derived instances (`isLocalRing`, `moduleFinite`, `moduleFree`,
-`isAdicComplete`), since a consumer that wants them wants `HilbertHeckeAlgebra`
-and should apply (LL) first. -/
+Nothing consumes this structure except the two leaves below.  It is given only
+the derived instance `isLocalRing` (which `isAdic` and the derived `residT`
+both need) and not `moduleFinite`, `moduleFree` or `isAdicComplete`, since a
+consumer that wants those wants `HilbertHeckeAlgebra` and should apply (LL)
+first. -/
 structure HilbertHeckeAlgebraAtLevel (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k]
@@ -14028,9 +14092,19 @@ structure HilbertHeckeAlgebraAtLevel (ℓ : ℕ) [Fact ℓ.Prime]
   ρT : FramedGaloisRep F T (Fin 2)
   /-- **Hecke = Frobenius trace** at every good place. -/
   charFrobT : ∀ w ∉ bad, (ρT.charFrob w).coeff 1 = -heckeT w
-  /-- **Residual modularity of `ρbar|_{G_F}`.** -/
-  residT : ∀ g : Γ F, ((ρT g).charpoly).map πT =
-    ((ρbar.map (algebraMap ℚ F)) g).charpoly
+  /-- **Residual modularity of `ρbar|_{G_F}`, AT THE GOOD PLACES ONLY**
+  (WEAKENED 2026-08-02 from the all-`g` form that `HilbertHeckeAlgebra.residT`
+  still carries).
+
+  This is the ONE field of this structure that differs from its counterpart on
+  `HilbertHeckeAlgebra` in strength rather than in presence, and the weakening
+  is free: `HilbertHeckeAlgebraAtLevel.residT` below DERIVES the all-`g` form
+  from this one by Chebotarev plus Brauer–Nesbitt, so no consumer loses
+  anything and the (C) leaf that must PRODUCE this structure is left owing only
+  Carayol's local–global compatibility at the unramified places, which is the
+  form the literature states it in. -/
+  residTgood : ∀ w ∉ bad, (ρT.charFrob w).map πT =
+    (ρbar.map (algebraMap ℚ F)).charFrob w
   /-- **`T` ACTS ON AUTOMORPHIC FORMS** — the automorphic pin, reproduced from
   `HilbertHeckeAlgebra.automorphic` unchanged.  This is the field that makes
   the (LL) leaf below level lowering rather than Serre's conjecture; see the
@@ -14045,6 +14119,54 @@ attribute [instance] HilbertHeckeAlgebraAtLevel.commRing
   HilbertHeckeAlgebraAtLevel.commRingT₀
   HilbertHeckeAlgebraAtLevel.moduleFiniteT₀
   HilbertHeckeAlgebraAtLevel.moduleFreeT₀
+
+section AtLevelDerived
+
+variable {ℓ : ℕ} [Fact ℓ.Prime] {F : Type u} [Field F] [NumberField F]
+  {k : Type u} [Field k] [TopologicalSpace k]
+  {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+  {ρbar : GaloisRep ℚ k V} (H : HilbertHeckeAlgebraAtLevel ℓ F ρbar)
+
+/-- **`T` is LOCAL** — the `AtLevel` copy of `HilbertHeckeAlgebra.isLocalRing`,
+same proof: `T` is the local factor of `W(k) ⊗_{ℤ_[ℓ]} 𝕋` at a maximal ideal.
+Needed here because `isAdic` and the derived `residT` below both mention
+`IsLocalRing.maximalIdeal T`. -/
+instance HilbertHeckeAlgebraAtLevel.isLocalRing : IsLocalRing H.T :=
+  haveI := H.finiteK; haveI := H.charPK
+  isLocalRing_of_algEquiv_heckeLocalFactor ℓ k H.T₀ H.𝔪 H.𝔪_isMaximal H.TEquiv
+
+/-- **The reduction map is CONTINUOUS** (PROVEN): `πT` is a surjection onto a
+field from a local ring, so its kernel is `𝔪_T`, which `isAdic` makes open; a
+ring map with open kernel into a discrete ring is continuous. -/
+theorem HilbertHeckeAlgebraAtLevel.continuous_πT [DiscreteTopology k] :
+    Continuous H.πT := by
+  haveI := H.finiteK; haveI := H.charPK
+  have hkeropen : IsOpen ((RingHom.ker H.πT : Ideal H.T) : Set H.T) := by
+    rw [IsLocalRing.ker_eq_maximalIdeal H.πT H.πT_surjective]
+    have hop := (isAdic_iff.mp H.isAdic).1 1
+    rwa [pow_one] at hop
+  exact continuous_of_isOpen_ker_of_discreteTopology H.πT hkeropen
+
+/-- **Residual modularity at EVERY `g : Γ F`** (PROVEN 2026-08-02 — this used
+to be the FIELD `residT`, and is now derived from the good-place field
+`residTgood`).
+
+The name and the statement are unchanged from the old field except that it now
+takes `hℓ5`, `hdim` and `hirrF` explicitly; the sole consumer that will need it
+— the (LL) leaf `nonempty_hilbertHeckeAlgebra_of_atLevel`, which must produce a
+`HilbertHeckeAlgebra` whose `residT` IS the all-`g` form — already carries all
+three in its own binder list, so the weakening of the field costs it nothing.
+-/
+theorem HilbertHeckeAlgebraAtLevel.residT [DiscreteTopology k] (hℓ5 : 5 ≤ ℓ)
+    (hdim : Module.rank k V = 2)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible) :
+    ∀ g : Γ F, ((H.ρT g).charpoly).map H.πT =
+      ((ρbar.map (algebraMap ℚ F)) g).charpoly :=
+  haveI := H.finiteK; haveI := H.charPK
+  forall_charpoly_map_eq_of_charFrob_map_eq_hilbert hℓ5 hdim hirrF H.ρT H.πT
+    (HilbertHeckeAlgebraAtLevel.continuous_πT H) H.bad H.residTgood
+
+end AtLevelDerived
 
 /-- **(C) — CARAYOL/TAYLOR ATTACHMENT PLUS JACQUET–LANGLANDS, AT THE SEED'S
 OWN LEVEL** (LEAF, cut 2026-07-31 out of
@@ -14063,7 +14185,8 @@ WHAT THIS ASKS FOR, clause by clause:
   `2`): `T₀`, `𝔪`, `TEquiv`, `bad`, `heckeT₀`, `heckeT`, `heckeT_eq`,
   `adjoin_heckeT`, `πT`, `πT_surjective`, `isAdic`;
 * Carayol/Taylor: `ρT` with `charFrobT` (local–global compatibility at the
-  good places) and `residT` (reduction to `ρbar|_{G_F}`).  The 1994 upgrade
+  good places) and `residTgood` (reduction to `ρbar|_{G_F}`, AT THE GOOD PLACES
+  ONLY since the 2026-08-02 recut — see below).  The 1994 upgrade
   from a pseudo-representation to a genuine `GL₂(𝕋_𝔪)`-valued `ρT` needs
   `ρbar|_{G_F}` ABSOLUTELY irreducible, which `hbar` and `hirr` already supply
   at no extra cost — the argument is written out under "`hbar` + `hirr`
@@ -14077,6 +14200,29 @@ WHAT THIS ASKS FOR, clause by clause:
 WHAT IT DOES **NOT** ASK FOR, and this is the point of the cut: nothing about
 minimality of the level, hence nothing about the places over `2`.  `hres2` is
 absent from the binder list on purpose — see the section docstring.
+
+**RECUT 2026-08-02 — COUNT UNCHANGED, `1 → 1`.  What left this leaf is the
+GLOBAL Galois clause.**  `HilbertHeckeAlgebraAtLevel.residT` used to be a FIELD
+asserting `((ρT g).charpoly).map πT = ((ρbar|_{G_F}) g).charpoly` at EVERY
+`g : Γ F`.  It is now the derived theorem of that name, proven above the leaf
+from the weakened field `residTgood` — the same identity at the GOOD PLACES
+only — by Chebotarev plus Brauer–Nesbitt
+(`forall_charpoly_map_eq_of_charFrob_map_eq_hilbert`, PROVEN, in this module,
+over machinery this module already imports).
+
+So this leaf no longer owes anything about `Γ F` as a whole.  Everything it now
+owes about the Galois side is Carayol's local–global compatibility at the
+unramified places, which is exactly the form the literature states it in
+(Carayol 1986 §0.9 / Taylor 1989), and which the seed's own `residual₀`
+supplies AT THE SEED'S bad set.  In particular a prover who takes this leaf may
+choose `bad ⊇ seed.bad₀` and read `residTgood` straight off `seed.residual₀`
+composed with whatever identification of `T` with the seed's `O₀` the
+presentation clauses commit them to; no density argument is left in the leaf.
+
+Nothing downstream is made harder by the weakening: the ONLY consumer of the
+structure is (LL) below, which must produce a `HilbertHeckeAlgebra` whose own
+`residT` is still the all-`g` form, and which already carries `hℓ5`, `hdim` and
+`hirrF` — the three arguments the derived `residT` takes — in its binder list.
 
   REFUTING CHECK (inherited, unweakened): any proof that does not use `seed`
   is proving mod-`ℓ` modularity of `ρbar|_{G_F}` over every totally real
@@ -14136,7 +14282,12 @@ hypotheses are consumed here and none of them in (C):
 * `hirrF` is the irreducibility hypothesis of every level-lowering theorem in
   the list above, and is what lets Brauer–Nesbitt plus Chebotarev upgrade an
   agreement of Frobenius characteristic polynomials to `residT` at every
-  `g : Γ F`.
+  `g : Γ F`.  **Since the 2026-08-02 recut that upgrade is DONE and does not
+  have to be redone here**: `H.residT hℓ5 hdim hirrF` is a proven theorem
+  delivering exactly the all-`g` clause that `HilbertHeckeAlgebra.residT`
+  demands, and all three of its arguments are in this binder list already.
+  What `hirrF` is still needed for beyond that is the level-lowering citation
+  itself.
 
   REFUTING CHECK: this leaf is honest only while `HilbertHeckeAlgebraAtLevel`
   retains `automorphic`.  Without it the hypotheses are purely Galois-theoretic
