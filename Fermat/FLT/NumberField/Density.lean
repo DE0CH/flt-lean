@@ -356,28 +356,257 @@ theorem sq_zetaAvoiding_le_zetaAvoiding_empty
     (zetaAvoiding k T s) ^ 2 ≤ zetaAvoiding F ∅ s :=
   sorry
 
-/-- **LEAF 3 — REMOVING FINITELY MANY EULER FACTORS COSTS A CONSTANT** (OPEN, cut
-2026-07-31).
+/-! ### Leaf 3: removing finitely many Euler factors costs a constant
 
-Every nonzero ideal `𝔞` of `𝓞 K` factors uniquely as `𝔟 · 𝔠` with `𝔟` supported on the
-maximal ideals of `T` and `𝔠` avoiding them, so
+**PROVEN 2026-07-31.** The route the leaf was cut with — factor every ideal as a
+`T`-supported part times a `T`-free part, in one step, over
+`IsDedekindDomain.HeightOneSpectrum` — is not the cheap one. **Remove ONE prime at a
+time and induct on the finite set**: for a single maximal `𝔮` the decomposition is
+`I = 𝔮 ^ n · J` with `𝔮 ∤ J`, which is `FiniteMultiplicity.exists_eq_pow_mul_and_not_dvd`
+plus cancellation, and no `Finsupp` support splitting, no `Ideal.factorization` and no
+`HeightOneSpectrum` appears anywhere. Each step costs the geometric factor
+`(1 - N𝔮^{-s})⁻¹ ≤ 2`, so the constant is `2 ^ #{𝔭 ∈ T | 𝔭.IsMaximal}` — bounded
+uniformly in `s`, which is what the endgame needs, since it takes `s → 1⁺`.
 
-  `ζ_K(s) = (∑_{𝔟 T-supported} (N 𝔟)^{-s}) · zetaAvoiding K T s`,
+Only the maximal members of `T` are removed, by the definition of `zetaAvoiding`; a
+composite member imposes a non-Euler condition and this bound would fail for it. That is
+why the induction case-splits on `a.IsMaximal` and does nothing at all in the negative
+branch. -/
 
-and the first factor is `∏_{𝔭 ∈ T maximal} (1 - (N 𝔭)^{-s})⁻¹ ≤ 2 ^ #T` for `s > 1`,
-because `2 ≤ N 𝔭` for a maximal `𝔭`. The constant is uniform in `s`, which is what the
-endgame needs — it takes `s → 1⁺`.
+/-- **THE GEOMETRIC ESTIMATE, WITH THE ARITHMETIC ABSTRACTED AWAY.**
 
-**What it needs.** The `T`-part/`T`-free factorisation of an ideal (again
-`Ideal.factorization` over `HeightOneSpectrum`, or `UniqueFactorizationMonoid`
-`Finsupp` support splitting), and the geometric series for each of the finitely many
-removed factors. Nothing analytic beyond `Summable.mul_of_nonneg`.
+If the index set of `f` is `ℕ × β` up to an equivalence carrying `(n, b)` to a term
+`r ^ n * g b`, with `0 ≤ r ≤ 1/2` and `g` nonnegative, then `∑' f ≤ 2 * ∑' g`.
+
+Stated abstractly on purpose: it is the whole analytic content of leaf 3, it mentions no
+ideal, and — crucially — it needs NO summability hypothesis. If `f` is not summable then
+`∑' f = 0` by mathlib's convention and the bound is trivial; if it is, summability of `g`
+is recovered by restricting the product index to `{0} × β`. That is what lets the caller
+avoid carrying a convergence side condition through the induction. -/
+theorem tsum_le_two_mul_geom {α β : Type*} (f : α → ℝ) (g : β → ℝ) (r : ℝ)
+    (hr0 : 0 ≤ r) (hr1 : r ≤ 1 / 2) (hg0 : ∀ b, 0 ≤ g b)
+    (e : ℕ × β ≃ α) (he : ∀ p : ℕ × β, f (e p) = r ^ p.1 * g p.2) :
+    ∑' a, f a ≤ 2 * ∑' b, g b := by
+  have hrlt : r < 1 := by linarith
+  by_cases hfs : Summable f
+  case neg =>
+    rw [tsum_eq_zero_of_not_summable hfs]
+    exact mul_nonneg (by norm_num) (tsum_nonneg hg0)
+  have hcomp : Summable (fun p : ℕ × β => r ^ p.1 * g p.2) :=
+    (e.summable_iff.mpr hfs).congr he
+  have hgs : Summable g := by
+    have hinj : Function.Injective (fun b : β => ((0 : ℕ), b)) := by
+      intro a b hab
+      simpa using hab
+    have hres := hcomp.comp_injective hinj
+    simp only [Function.comp_def, pow_zero, one_mul] at hres
+    exact hres
+  have hnormgeo : Summable fun n : ℕ => ‖r ^ n‖ := by
+    simpa [Real.norm_of_nonneg, pow_nonneg hr0] using summable_geometric_of_lt_one hr0 hrlt
+  have hnormg : Summable fun b => ‖g b‖ := by
+    simpa [Real.norm_of_nonneg (hg0 _)] using hgs
+  calc ∑' a, f a = ∑' p : ℕ × β, f (e p) := (e.tsum_eq f).symm
+    _ = ∑' p : ℕ × β, r ^ p.1 * g p.2 := tsum_congr he
+    _ = (∑' n : ℕ, r ^ n) * ∑' b, g b := (tsum_mul_tsum_of_summable_norm hnormgeo hnormg).symm
+    _ = (1 - r)⁻¹ * ∑' b, g b := by rw [tsum_geometric_of_lt_one hr0 hrlt]
+    _ ≤ 2 * ∑' b, g b := by
+        refine mul_le_mul_of_nonneg_right ?_ (tsum_nonneg hg0)
+        rw [inv_le_comm₀ (by linarith) (by norm_num)]
+        linarith
+
+/-- A maximal ideal of `𝓞 K` has absolute norm at least `2`: it is neither `⊥` (so the
+norm is not `0`) nor `⊤` (so the norm is not `1`). This is the only arithmetic input to
+the Euler-factor bound. -/
+theorem two_le_absNorm_of_isMaximal (K : Type*) [Field K] [NumberField K]
+    {𝔮 : Ideal (𝓞 K)} (h𝔮 : 𝔮.IsMaximal) : 2 ≤ Ideal.absNorm 𝔮 := by
+  haveI := h𝔮
+  have h0 : Ideal.absNorm 𝔮 ≠ 0 := by
+    simpa [Ideal.absNorm_eq_zero_iff] using (NeZero.ne 𝔮)
+  have h1 : Ideal.absNorm 𝔮 ≠ 1 := by
+    simpa [Ideal.absNorm_eq_one_iff] using h𝔮.ne_top
+  omega
+
+/-- `zetaAvoiding` only sees the divisibility condition its index subtype imposes, so two
+sets of ideals imposing the same condition give the same sum. This is what makes inserting
+a NON-maximal ideal into `T` inert. -/
+theorem zetaAvoiding_congr (K : Type*) [Field K] [NumberField K]
+    (T T' : Set (Ideal (𝓞 K))) (s : ℝ)
+    (h : ∀ I : Ideal (𝓞 K),
+      (∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ I) ↔ (∀ 𝔭 ∈ T', 𝔭.IsMaximal → ¬ 𝔭 ∣ I)) :
+    zetaAvoiding K T s = zetaAvoiding K T' s := by
+  unfold zetaAvoiding
+  exact (Equiv.subtypeEquivRight fun I => and_congr_right fun _ => h I).tsum_eq
+    (fun I => (Ideal.absNorm (I : Ideal (𝓞 K)) : ℝ) ^ (-s))
+
+/-- The exponent in `I = 𝔮 ^ n · J` with `𝔮 ∤ J` is `multiplicity 𝔮 I`. This is what makes
+the map `(n, J) ↦ 𝔮 ^ n · J` injective in its first coordinate; the second coordinate then
+follows by cancelling `𝔮 ^ n`, which is legitimate because the ideals of a Dedekind domain
+form a cancellative monoid with zero. -/
+theorem multiplicity_pow_mul_of_not_dvd (K : Type*) [Field K] [NumberField K]
+    {𝔮 : Ideal (𝓞 K)} (h𝔮 : 𝔮.IsMaximal)
+    (n : ℕ) (J : Ideal (𝓞 K)) (hJ : J ≠ ⊥) (hnd : ¬ 𝔮 ∣ J) :
+    multiplicity 𝔮 (𝔮 ^ n * J) = n := by
+  haveI := h𝔮
+  have h𝔮bot : 𝔮 ≠ ⊥ := NeZero.ne 𝔮
+  have hnu : ¬ IsUnit 𝔮 := by simpa [Ideal.isUnit_iff] using h𝔮.ne_top
+  have hfin : FiniteMultiplicity 𝔮 (𝔮 ^ n * J) :=
+    FiniteMultiplicity.of_not_isUnit hnu (mul_ne_zero (pow_ne_zero n h𝔮bot) hJ)
+  rw [hfin.multiplicity_eq_iff]
+  refine ⟨⟨J, rfl⟩, ?_⟩
+  intro hdvd
+  rw [pow_succ] at hdvd
+  exact hnd ((mul_dvd_mul_iff_left (pow_ne_zero n h𝔮bot)).mp hdvd)
+
+/-- **ONE EULER FACTOR COSTS A FACTOR OF `2`.**
+
+Removing one further maximal prime `𝔮 ∉ U` from the index set of `zetaAvoiding` multiplies
+the sum by `(1 - N𝔮^{-s})⁻¹`, which is at most `2` because `2 ≤ N𝔮` and `s > 1`.
+
+The bijection `ℕ × {𝔮, U}-free ≃ U-free`, `(n, J) ↦ 𝔮 ^ n · J`, is where `𝔮 ∉ U` is
+load-bearing: without it the target of the map is not `U`-free at `n ≥ 1`. Surjectivity is
+`FiniteMultiplicity.exists_eq_pow_mul_and_not_dvd` (the multiplicity is finite because `𝔮`
+is not a unit and `I ≠ ⊥`), and injectivity is `multiplicity_pow_mul_of_not_dvd` plus
+cancellation. -/
+theorem zetaAvoiding_le_two_mul_insert (K : Type*) [Field K] [NumberField K]
+    (U : Set (Ideal (𝓞 K)))
+    {𝔮 : Ideal (𝓞 K)} (h𝔮 : 𝔮.IsMaximal) (h𝔮U : 𝔮 ∉ U) {s : ℝ} (hs : 1 < s) :
+    zetaAvoiding K U s ≤ 2 * zetaAvoiding K (insert 𝔮 U) s := by
+  classical
+  haveI := h𝔮
+  have h𝔮bot : 𝔮 ≠ ⊥ := NeZero.ne 𝔮
+  have hq2 : (2 : ℝ) ≤ (Ideal.absNorm 𝔮 : ℝ) := by
+    exact_mod_cast two_le_absNorm_of_isMaximal K h𝔮
+  have hq0 : (0 : ℝ) < (Ideal.absNorm 𝔮 : ℝ) := by linarith
+  have hr0 : (0 : ℝ) ≤ (Ideal.absNorm 𝔮 : ℝ) ^ (-s) := Real.rpow_nonneg hq0.le _
+  have hrhalf : (Ideal.absNorm 𝔮 : ℝ) ^ (-s) ≤ 1 / 2 := by
+    have h1 : (Ideal.absNorm 𝔮 : ℝ) ^ (-s) ≤ (Ideal.absNorm 𝔮 : ℝ) ^ (-1 : ℝ) :=
+      Real.rpow_le_rpow_of_exponent_le (by linarith) (by linarith)
+    rw [Real.rpow_neg_one] at h1
+    have h2 : (Ideal.absNorm 𝔮 : ℝ)⁻¹ ≤ (2 : ℝ)⁻¹ := by
+      rw [inv_le_inv₀ hq0 (by norm_num)]; exact hq2
+    rw [one_div]; linarith
+  -- multiplying a `{𝔮} ∪ U`-free ideal by a power of `𝔮` lands in the `U`-free ideals
+  have hgood : ∀ (n : ℕ) (J : Ideal (𝓞 K)), J ≠ ⊥ →
+      (∀ 𝔭 ∈ insert 𝔮 U, 𝔭.IsMaximal → ¬ 𝔭 ∣ J) →
+      (𝔮 ^ n * J) ≠ ⊥ ∧ ∀ 𝔭 ∈ U, 𝔭.IsMaximal → ¬ 𝔭 ∣ (𝔮 ^ n * J) := by
+    intro n J hJ0 hJU
+    refine ⟨mul_ne_zero (pow_ne_zero n h𝔮bot) hJ0, ?_⟩
+    intro 𝔭 h𝔭U h𝔭max hdvd
+    haveI := h𝔭max
+    have hprime𝔭 : Prime 𝔭 := Ideal.prime_of_isPrime (NeZero.ne 𝔭) h𝔭max.isPrime
+    rcases hprime𝔭.dvd_mul.mp hdvd with h | h
+    · have hle : 𝔮 ≤ 𝔭 := Ideal.le_of_dvd (hprime𝔭.dvd_of_dvd_pow h)
+      exact h𝔮U (h𝔮.eq_of_le h𝔭max.ne_top hle ▸ h𝔭U)
+    · exact hJU 𝔭 (Set.mem_insert_of_mem _ h𝔭U) h𝔭max h
+  unfold zetaAvoiding
+  refine tsum_le_two_mul_geom _ _ ((Ideal.absNorm 𝔮 : ℝ) ^ (-s)) hr0 hrhalf
+    (fun _ => Real.rpow_nonneg (Nat.cast_nonneg _) _)
+    (Equiv.ofBijective
+      (fun p : ℕ × {I : Ideal (𝓞 K) // I ≠ ⊥ ∧ ∀ 𝔭 ∈ insert 𝔮 U, 𝔭.IsMaximal → ¬ 𝔭 ∣ I} =>
+        (⟨𝔮 ^ p.1 * (p.2 : Ideal (𝓞 K)), hgood p.1 (p.2 : Ideal (𝓞 K)) p.2.2.1 p.2.2.2⟩ :
+          {I : Ideal (𝓞 K) // I ≠ ⊥ ∧ ∀ 𝔭 ∈ U, 𝔭.IsMaximal → ¬ 𝔭 ∣ I}))
+      ⟨?_, ?_⟩) ?_
+  · -- injective
+    rintro ⟨n, J⟩ ⟨m, J'⟩ hab
+    have heq : 𝔮 ^ n * (J : Ideal (𝓞 K)) = 𝔮 ^ m * (J' : Ideal (𝓞 K)) :=
+      congrArg Subtype.val hab
+    have hn : ¬ 𝔮 ∣ (J : Ideal (𝓞 K)) := J.2.2 𝔮 (Set.mem_insert _ _) h𝔮
+    have hm : ¬ 𝔮 ∣ (J' : Ideal (𝓞 K)) := J'.2.2 𝔮 (Set.mem_insert _ _) h𝔮
+    have hnm : n = m := by
+      have h1 := multiplicity_pow_mul_of_not_dvd K h𝔮 n (J : Ideal (𝓞 K)) J.2.1 hn
+      have h2 := multiplicity_pow_mul_of_not_dvd K h𝔮 m (J' : Ideal (𝓞 K)) J'.2.1 hm
+      rw [heq, h2] at h1
+      exact h1.symm
+    subst hnm
+    have hJJ : (J : Ideal (𝓞 K)) = (J' : Ideal (𝓞 K)) :=
+      mul_left_cancel₀ (pow_ne_zero n h𝔮bot) heq
+    simp only [Prod.mk.injEq, true_and]
+    exact Subtype.ext hJJ
+  · -- surjective
+    rintro ⟨I, hI0, hIU⟩
+    have hnu : ¬ IsUnit 𝔮 := by simpa [Ideal.isUnit_iff] using h𝔮.ne_top
+    have hfin : FiniteMultiplicity 𝔮 I := FiniteMultiplicity.of_not_isUnit hnu hI0
+    obtain ⟨c, hc, hcnd⟩ := hfin.exists_eq_pow_mul_and_not_dvd
+    have hcdvd : c ∣ I := by
+      refine ⟨𝔮 ^ multiplicity 𝔮 I, ?_⟩
+      rw [mul_comm]
+      exact hc
+    have hc0 : c ≠ ⊥ := by
+      rintro rfl
+      exact hI0 (by simpa using hc)
+    refine ⟨(multiplicity 𝔮 I, ⟨c, hc0, ?_⟩), ?_⟩
+    · intro 𝔭 h𝔭 h𝔭max hdvd
+      rcases Set.mem_insert_iff.mp h𝔭 with rfl | h𝔭U
+      · exact hcnd hdvd
+      · exact hIU 𝔭 h𝔭U h𝔭max (hdvd.trans hcdvd)
+    · exact Subtype.ext hc.symm
+  · -- the terms really are `N𝔮 ^ (-s n) · (N J) ^ (-s)`
+    rintro ⟨n, J⟩
+    show (Ideal.absNorm (𝔮 ^ n * (J : Ideal (𝓞 K))) : ℝ) ^ (-s) = _
+    rw [map_mul, map_pow]
+    push_cast
+    rw [Real.mul_rpow (by positivity) (by positivity)]
+    congr 1
+    rw [← Real.rpow_natCast (Ideal.absNorm 𝔮 : ℝ) n, ← Real.rpow_mul hq0.le,
+      mul_comm ((n : ℕ) : ℝ) (-s), Real.rpow_mul hq0.le, Real.rpow_natCast]
+
+/-- The induction over the finite set, one prime at a time: the constant is `2 ^ m` where
+`m` is the number of MAXIMAL members of `M`. Non-maximal members are inert, by
+`zetaAvoiding_congr`. -/
+theorem exists_zetaAvoiding_empty_le_finset (K : Type*) [Field K] [NumberField K]
+    (M : Finset (Ideal (𝓞 K))) :
+    ∃ C : ℝ, 0 < C ∧ ∀ s : ℝ, 1 < s →
+      zetaAvoiding K ∅ s ≤ C * zetaAvoiding K (↑M : Set (Ideal (𝓞 K))) s := by
+  classical
+  induction M using Finset.induction_on with
+  | empty => exact ⟨1, one_pos, fun s _ => by simp⟩
+  | insert a M ha ih =>
+    obtain ⟨C, hC, hle⟩ := ih
+    by_cases hmax : a.IsMaximal
+    · refine ⟨2 * C, by positivity, fun s hs => ?_⟩
+      have h1 : zetaAvoiding K (↑M : Set (Ideal (𝓞 K))) s
+          ≤ 2 * zetaAvoiding K (insert a (↑M : Set (Ideal (𝓞 K)))) s :=
+        zetaAvoiding_le_two_mul_insert K _ hmax (by simpa using ha) hs
+      rw [Finset.coe_insert]
+      calc zetaAvoiding K ∅ s ≤ C * zetaAvoiding K (↑M : Set (Ideal (𝓞 K))) s := hle s hs
+        _ ≤ C * (2 * zetaAvoiding K (insert a (↑M : Set (Ideal (𝓞 K)))) s) :=
+            mul_le_mul_of_nonneg_left h1 hC.le
+        _ = 2 * C * zetaAvoiding K (insert a (↑M : Set (Ideal (𝓞 K)))) s := by ring
+    · refine ⟨C, hC, fun s hs => ?_⟩
+      rw [Finset.coe_insert]
+      have hcongr : zetaAvoiding K (insert a (↑M : Set (Ideal (𝓞 K)))) s
+          = zetaAvoiding K (↑M : Set (Ideal (𝓞 K))) s := by
+        refine zetaAvoiding_congr K _ _ _
+          (fun I => ⟨fun h 𝔭 h𝔭 => h 𝔭 (Set.mem_insert_of_mem _ h𝔭),
+            fun h 𝔭 h𝔭 h𝔭max => ?_⟩)
+        rcases Set.mem_insert_iff.mp h𝔭 with rfl | h𝔭M
+        · exact absurd h𝔭max hmax
+        · exact h 𝔭 h𝔭M h𝔭max
+      rw [hcongr]
+      exact hle s hs
+
+/-- **LEAF 3 — REMOVING FINITELY MANY EULER FACTORS COSTS A CONSTANT** (cut 2026-07-31,
+PROVEN 2026-08-02 over `exists_zetaAvoiding_empty_le_finset`).
+
+`ζ_K(s) ≤ C · zetaAvoiding K T s` with `C = 2 ^ #{𝔭 ∈ T | 𝔭.IsMaximal}`, uniformly in
+`s > 1` — which is what the endgame needs, since it takes `s → 1⁺`.
+
+The cut's own route (a one-step `T`-part/`T`-free factorisation over
+`IsDedekindDomain.HeightOneSpectrum`, with `Ideal.factorization` and `Finsupp` support
+splitting) was NOT taken; see the section note above. Removing one prime at a time needs
+only `FiniteMultiplicity.exists_eq_pow_mul_and_not_dvd` and cancellation, and no summability
+hypothesis is threaded through the induction at all — `tsum_le_two_mul_geom` handles the
+non-summable case by mathlib's `∑' = 0` convention.
 
 Only the maximal members of `T` are removed, by the definition of `zetaAvoiding`; a
 composite member imposes a non-Euler condition and this bound would fail for it. -/
 theorem exists_zetaAvoiding_empty_le (T : Set (Ideal (𝓞 k))) (hT : T.Finite) :
-    ∃ C : ℝ, 0 < C ∧ ∀ s : ℝ, 1 < s → zetaAvoiding k ∅ s ≤ C * zetaAvoiding k T s :=
-  sorry
+    ∃ C : ℝ, 0 < C ∧ ∀ s : ℝ, 1 < s → zetaAvoiding k ∅ s ≤ C * zetaAvoiding k T s := by
+  classical
+  obtain ⟨C, hC, hle⟩ := exists_zetaAvoiding_empty_le_finset k hT.toFinset
+  refine ⟨C, hC, fun s hs => ?_⟩
+  rw [← hT.coe_toFinset]
+  exact hle s hs
 
 /-! ### The endgame -/
 
