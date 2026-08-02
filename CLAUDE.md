@@ -21724,3 +21724,67 @@ already describes — the maximality that `finite_ker` needs, and that an arbitr
 `IsIsotypicQuotient` cannot supply, had been hidden inside one leaf with no name. Both new
 leaves are now the exact twins of two `Γ₀` leaves on `main`, so the pair should be proven in
 one pass and the marginal cost of the split is negative.
+## A REPAIR MADE ON A **NEW** DECLARATION LEAVES THE OLD ONE FALSE — AND THE AUDIT SITS ON THE REPAIRED COPY, READING AS DISCHARGED
+(2026-08-01, `flt-lean-250`, `HardlyRamified/HilbertModularity.lean`.  The
+section above says to diff the residual statements of two rival cuts.  This is
+what that diff finds when one cut was a FALSITY REPAIR, and it is the worst
+shape the rival-cut class takes, because the loser is not merely dead — it is
+FALSE, and the file contains a signed audit saying it was fixed.)
+Two branches cut the nonemptiness half of DDT 2.48 out of one parent on the same
+day.  One had discovered the leaf was FALSE AS STATED, added the repairing
+hypothesis `[NumberField.IsTotallyReal F]`, and PROVED the result — as a
+**NEW DECLARATION**, `exists_mem_…`, rather than by editing the old one.  The
+other did not.  Both landed, far enough apart to merge cleanly, so the tree
+carried both: the repaired twin PROVEN and consumed, and the original
+`nonempty_inter_…` still `sorry`, still missing the hypothesis, with **zero code
+occurrences outside its own declaration line**.
+**The audit is on the WINNER, and that is what makes it invisible.**  The
+repaired twin's docstring opens `THIS LEAF WAS FALSE AS STATED … AND IS REPAIRED
+THE SAME WAY: [NumberField.IsTotallyReal F], ADDED THIS DAY`, with the
+counterexample in full.  Every word is true *of that declaration*.  Read from
+the file it says the defect is fixed; the refuted statement is seventy lines
+above, under its own confident docstring, and nothing links them.  A dispatch
+was generated against the refuted one.
+**So the check, when a leaf's docstring cites a FALSITY AUDIT that lives
+somewhere else: grep the file for other declarations with the SAME CONCLUSION
+and diff their binder lists.**  A pair whose conclusions are identical and whose
+hypothesis lists differ by exactly one instance binder — one `sorry`, one
+proven — is this, every time.  The repaired one is the one with more binders.
+**Before certifying falsity, check whether a BUNDLED DATUM in the binder list
+supplies the missing hypothesis.**  This is the step that can reverse the
+verdict and it is one `grep` at the structure.  Here `𝒟₀ : HilbertDeformationDatum`
+plausibly could have — a sibling structure in the same file,
+`PotentialHeckeDatum`, *does* carry a `totallyReal` field, and had
+`HilbertDeformationDatum` carried one too the leaf would have been TRUE and the
+right move a three-line proof rather than a deletion.  It does not (its fields
+are `R`, `isAdic`, `isAdicComplete`, `isHilbertHardlyRamified`, `resid`), so the
+hypothesis is genuinely absent and the witness applies.
+**Delete, do not repair-and-prove.**  Adding the binder makes the leaf a
+one-line corollary of the proven twin — and a proven theorem with no consumer is
+free-floating code, which this project forbids.  Deleting is a clean `−1` with
+no new obligation.  Leave a note at the site saying what was deleted, why, and
+the sha to recover it from; a duplicate removed without explanation is a
+duplicate somebody cuts again.  Check the queues for the dead name first
+(`queue1`/`queue2` had zero references here, so nothing was stranded).
+**And re-run the dead-leaf sweep on the whole file afterwards, because these
+cluster.**  One comment-stripped pass counting code occurrences of every open
+leaf in the file took the remaining twelve from "unknown" to "all consumed" in
+seconds, which is the evidence that the cluster is now clean rather than a hope.
+### VERIFYING A NONSPLIT-CARTAN COUNTEREXAMPLE: BUILD THE COSET BY NORM, NOT BY MULTIPLYING THE WHOLE TORUS
+The witness above is `H = N(T_ns) ∩ SL₂(𝔽₇)`, order `16`, containing no element
+with two distinct `𝔽₇`-rational eigenvalues — which is what empties the
+Taylor–Wiles locus.  Verifying it took two attempts and the first was wrong in a
+way that reports the OPPOSITE answer, so it is worth stating:
+`N(T_ns)` is `T_ns` together with `T_ns · σ` for `σ` the Frobenius
+`a + bt ↦ a − bt`, whose matrix has **determinant `−1`**.  So the nontrivial
+coset of `N(T_ns) ∩ SL₂` is NOT `(T_ns ∩ SL₂) · σ` — it is `M_α · σ` for the `α`
+of norm **`−1`**.  Taking all of `T_ns ∩ SL₂` times `σ` gives sixteen matrices of
+which eight have determinant `−1`, and those eight report as regular semisimple,
+so the scan comes back "8 elements with distinct rational eigenvalues" and the
+counterexample looks refuted.  **Assert `det = 1` on every element, and assert
+closure under multiplication, before believing any count taken over a hand-built
+matrix group.**  With the coset built correctly: the norm-one part has
+eigenvalues `α, α⁻¹` for `α ∈ μ₈ ⊂ 𝔽₄₉`, `𝔽₇`-rational only at `α = ±1` where
+they coincide; the other coset has trace `0` and determinant `1`, hence
+characteristic polynomial `X² + 1`, irreducible over `𝔽₇` since `−1` is not a
+square there.  Zero regular semisimple elements, as claimed.
