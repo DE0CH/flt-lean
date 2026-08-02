@@ -60,12 +60,37 @@ Over `ℤ` the condition `1 < 4m` is just `1 ≤ m`.
 
 ## What is NOT here, and is the remaining input of the CM leaf
 
-`W[q]` being **free of rank one** over `O_K/q` is not proven here.  That needs the
-count `#W[q] = q² = #(O_K/q)` *together with* faithfulness of the action, and it is
-the geometric input of `not_forall_galoisScalar_of_cmEndomorphism`.  What is here
+`W[q]` being **free of rank one** over `O_K/q` is not proven here.  What is here
 is the module structure that freeness would be a statement ABOUT, which did not
 previously exist in the tree — so the leaf can now at least be *stated* in its
 natural vocabulary rather than through a hand-rolled pair of scalars.
+
+**BUT IT IS CHEAPER THAN THE SENTENCE THIS PARAGRAPH USED TO CARRY** (checked
+2026-08-01, flt-lean-6).  That sentence said freeness needs the count
+`#W[q] = q² = #(O_K/q)` *together with faithfulness of the action*, and named the
+pair as the geometric input of `not_forall_galoisScalar_of_cmEndomorphism`.  No
+faithfulness statement is needed, and at the one `q` the CM leaves care about —
+`q = p`, where `p` RAMIFIES in `K = ℚ(√−p)` — the whole thing is a two-line
+classification over a ring with three ideals:
+
+* `O_K/pO_K` is `𝔽_p[ε]` with `ε² = 0`, `ε` the image of `√−p`, because
+  `pO_K = 𝔭²` with `𝔭 = (√−p)`;
+* a finitely generated module over that ring is a direct sum of copies of
+  `𝔽_p[ε]` and of `𝔽_p = 𝔽_p[ε]/(ε)`, so one of cardinality `p²` is EITHER free
+  of rank one OR `𝔽_p ⊕ 𝔽_p`;
+* in the second case `ε` acts as `0`, i.e. `√−p` kills `W[p]`, i.e.
+  `W[p] ⊆ ker √−p`.  That is refuted by CARDINALITY alone.
+
+Both inputs are already PROVEN in `ModularCurve/X0.lean`: `card_ker_cmSqrt` gives
+`#ker √−p = p`, and `#W[n] = n²` is established inside its own proof (the `htor`
+step).  So the residue of that leaf is NOT freeness — freeness is free — it is
+the strictly separate inequality recorded on the leaf itself, that the image of
+`Γ_K` in `(O_K/p)ˣ` is not contained in the scalars `𝔽_pˣ`.  Whoever closes the
+leaf should spend their budget there and not here.
+
+The classification step is the only part not already in this file; it is a
+statement about `𝔽_p[ε]`-modules with no elliptic curve in it, and it is stated
+that way on purpose so that it can be proven against mathlib alone.
 
 ## `[IsAlgClosed F]` and `[W.IsElliptic]` are not decoration
 

@@ -28556,3 +28556,39 @@ two terms that print almost identically. Binding it INLINE inside the `obtain` �
 name at all — fixes it. Worth knowing that this bites even when the structure is
 only ever PROJECTED, if one of the projections has to be defeq to something the
 caller supplied.
+## A COLLAPSED REGIME-SPLIT LEAVES QUEUE ENTRIES WHOSE NAMES ARE *PREFIX-RELATED*, AND NO NAME-KEYED CHECK PAIRS THEM
+(2026-08-01, `flt-lean-6`.  Two agents dispatched ~50 minutes apart at the same
+mathematics, under two different names, one of which exists nowhere.)
+The queue-hygiene sections above cover a task naming a leaf that is already
+PROVEN, and a task naming a leaf that was RENAMED by a recut.  This is the third
+member of the family and the checks written for the other two are blind to it.
+A **regime split** cuts one leaf `X` into `X_two`, `X_ramified`,
+`X_unramifiedOdd` and proves `X` by a trichotomy.  When a later agent COLLAPSES
+the split — narrowing `X` to one regime and deleting the three regime lemmas as
+consumerless — the deletion is correct and the queue is not told.  What survives
+is a task naming `X_ramified`, a declaration that then exists **nowhere**: not at
+HEAD, not on `merger`, not at the task's own base.
+Measured here: `not_forall_galoisScalar_of_cmEndomorphism` (live, `sorry`) drew
+one dispatch, and `not_forall_galoisScalar_of_cmEndomorphism_ramified` (deleted
+by `flt-lean-58`'s collapse, zero hits anywhere) drew another.  Same leaf, same
+`q = p` mathematics, two agents, no instrument complaining.
+**Why every existing check passes.**  The release audit's filter is *does this
+name still exist as a Lean declaration* — it deletes the phantom task, but only
+at the next release, and the collapse and the dispatches all happened inside one
+release window.  The duplicate-task check clusters on the `TARGET:` name, and
+`X` and `X_ramified` are different strings, so it sees two unrelated tasks.  And
+the phantom-named one is the MORE convincing of the two, because a
+regime-qualified name reads as a precise, well-scoped target.
+**The check, and it is one line: cluster queue entries by PREFIX, not by exact
+name.**  Any two `TARGET:` names where one is a prefix of the other, modulo a
+trailing `_<regime>` suffix, are the same node until proven otherwise —
+`_two`, `_ramified`, `_unramifiedOdd`, `_aux`, `_of_<hypothesis>` are all
+produced by cutting, and cutting is what makes two tasks collide.
+**And for the agent on the receiving end**: a target name with a regime suffix
+that greps to ZERO hits at HEAD *and* at your own base is not a stale worktree
+and not a rename — it is a collapsed split.  Do not re-create the declaration;
+find the surviving un-suffixed name, and then check whether somebody else is
+already on it, because the collapse is exactly what put two of you there.
+Corollary for whoever COLLAPSES a split: the deletion is a queue edit as well as
+a source edit.  Name the deleted declarations in `to_merger` so the entries that
+target them die with them, rather than surviving to be dispatched.
