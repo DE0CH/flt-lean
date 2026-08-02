@@ -542,6 +542,10 @@ theorem exists_algebra_essFiniteType_trdeg_one_functionField
     (ZMod q) ↥Γ(X, V) ↥X.functionField 1
   exact ⟨algK, hef, by simpa using htr⟩
 
+section AlgebraicallyClosedIn
+
+open CategoryTheory
+
 /-- **A RING MAP TO THE PRIME FIELD FORCES DEGREE ONE** (PROVEN).
 
 A ring hom `θ : L →+* ZMod q` out of a field `L` that is finite over `ZMod q` forces
@@ -863,90 +867,6 @@ theorem irreducible_map_algebraicClosure_functionField
         (FractionRing (MvPolynomial (Fin 2) (ZMod q) ⧸ Ideal.span {F})))).toAlgebra
   exact irreducible_map_algebraicClosure_of_ringEquiv ↥X.functionField algK F hF e
     (eq_bot_algebraicClosure_functionField strX algK)
-
-/-- **A PLANE MODEL OF THE FUNCTION FIELD, AS A BARE `RingEquiv`** (**PROVEN**
-2026-07-31 over the three declarations above).
-
-This is `Fermat.exists_planeModel_ringEquiv_functionField_of_isProperSmoothCurve`
-(`Fermat/FLT/Modularity/Interface.lean`) with `Fermat.SpecF q` unfolded to its
-definition `Spec (CommRingCat.of (ZMod q))`, so that this module needs no project
-import at all.  The two are definitionally equal (`SpecF` is an `abbrev`) and the
-declaration in `Interface.lean` is a one-line `exact` over this one.
-
-The assembly is three steps: `ZMod q` is a finite field hence perfect; the
-geometry leaf supplies the `𝔽_q`-structure on `K(X)` together with
-`EssFiniteType` and `trdeg = 1`; the field-theory theorem then produces `F` and
-the ring isomorphism, and the second geometry leaf upgrades `Irreducible F` to
-absolute irreducibility. -/
-theorem exists_planeModel_ringEquiv_functionField_specZMod
-    {q : ℕ} [Fact q.Prime] {X : Scheme.{0}} (strX : X ⟶ Spec (CommRingCat.of (ZMod q)))
-    [IsProper strX] [SmoothOfRelativeDimension 1 strX] [GeometricallyConnected strX]
-    [AlgebraicGeometry.IsIntegral X] :
-    ∃ F : MvPolynomial (Fin 2) (ZMod q),
-      Irreducible (MvPolynomial.map
-        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) F) ∧
-      Nonempty (↥X.functionField ≃+*
-        FractionRing (MvPolynomial (Fin 2) (ZMod q) ⧸ Ideal.span {F})) := by
-  obtain ⟨alg, hess, htr⟩ := exists_algebra_essFiniteType_trdeg_one_functionField strX
-  letI := alg
-  haveI := hess
-  obtain ⟨F, hFirr, ⟨e⟩⟩ :=
-    exists_mvPolynomial_ringEquiv_fractionRing_of_trdeg_eq_one (ZMod q) ↥X.functionField htr
-  exact ⟨F, irreducible_map_algebraicClosure_functionField strX F hFirr e, ⟨e⟩⟩
-
-end Fermat
-
-end
-
-/-- **`𝔽_q` IS ALGEBRAICALLY CLOSED IN THE FUNCTION FIELD OF A SMOOTH PROPER
-GEOMETRICALLY CONNECTED CURVE — EQUIVALENTLY, EVERY PLANE MODEL IS ABSOLUTELY
-IRREDUCIBLE** (sorry leaf, 2026-07-31, cut out of
-`exists_planeModel_ringEquiv_functionField_of_isProperSmoothCurve`).
-
-STATEMENT.  If `F ∈ 𝔽_q[X,Y]` is irreducible and `Frac (𝔽_q[X,Y]/(F)) ≅ K(X)` as
-bare rings, then `F ⊗ 𝔽̄_q` is irreducible in `𝔽̄_q[X,Y]`.
-
-WHY IT IS STATED THIS WAY.  The mathematical content is "`𝔽_q` is algebraically
-closed in `K(X)`", i.e. `K(X)` is a GEOMETRICALLY INTEGRAL `𝔽_q`-algebra, and
-this is where `GeometricallyConnected` is spent for the second time.  Phrasing it
-as a statement about `F` bundles that geometry together with the (routine but
-real) commutative algebra that transports it to the plane model, so that the
-consumer needs nothing else.  The two-step route is:
-
-1. `X` proper smooth geometrically connected over a field is GEOMETRICALLY
-   INTEGRAL (`X_{𝔽̄_q}` is connected by hypothesis and regular by smoothness,
-   hence irreducible and reduced), so `𝔽̄_q ⊗_{𝔽_q} K(X)` is a DOMAIN;
-2. writing `A = 𝔽_q[X,Y]/(F)`, the map `𝔽̄_q ⊗ A → 𝔽̄_q ⊗ K(X)` is injective
-   (`𝔽̄_q` is free over `𝔽_q`, hence flat), so `𝔽̄_q ⊗ A ≅ 𝔽̄_q[X,Y]/(F ⊗ 𝔽̄_q)`
-   is a domain, so `(F ⊗ 𝔽̄_q)` is prime, so `F ⊗ 𝔽̄_q` is irreducible
-   (`Ideal.span_singleton_prime`, using `F ≠ 0` and injectivity of
-   `MvPolynomial.map`).
-
-WHAT IS NOT NEEDED.  The CONVERSE direction — absolute irreducibility descending
-to irreducibility over `𝔽_q` — is already PROVEN in `Interface.lean` as
-`irreducible_of_irreducible_map_algebraicClosure`, and is not what this leaf is
-about; do not confuse the two.  `Irreducible F` is passed in rather than derived
-so that step 2 can use `F ≠ 0`.
-
-FAITHFULNESS.  TRUE.  `GeometricallyConnected` is load-bearing and the leaf is
-FALSE without it: for `X = Spec 𝔽_{q²}` (proper, smooth of relative dimension `0`
-— take a product with a curve to fix the dimension) the function field contains
-`𝔽_{q²}`, and a plane model of `𝔽_{q²}(t)` over `𝔽_q` is `Y² − c` for a
-non-square `c`, which SPLITS over `𝔽̄_q`.  The hypothesis `Irreducible F` is not
-load-bearing for truth but is available at the call site for free and makes step
-2 shorter.  NOT vacuous — an inhabitant of the hypotheses exists (`X = ℙ¹`,
-`F = Y`, `Frac (𝔽_q[X,Y]/(Y)) = 𝔽_q(X) = K(ℙ¹)`), and there `F ⊗ 𝔽̄_q = Y` is
-indeed irreducible. -/
-theorem irreducible_map_algebraicClosure_functionField
-    {q : ℕ} [Fact q.Prime] {X : Scheme.{0}} (strX : X ⟶ Spec (CommRingCat.of (ZMod q)))
-    [IsProper strX] [SmoothOfRelativeDimension 1 strX] [GeometricallyConnected strX]
-    [AlgebraicGeometry.IsIntegral X]
-    (F : MvPolynomial (Fin 2) (ZMod q)) (hF : Irreducible F)
-    (e : ↥X.functionField ≃+*
-      FractionRing (MvPolynomial (Fin 2) (ZMod q) ⧸ Ideal.span {F})) :
-    Irreducible (MvPolynomial.map
-      (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) F) :=
-  sorry
 
 /-- **A PLANE MODEL OF THE FUNCTION FIELD, AS A BARE `RingEquiv`** (**PROVEN**
 2026-07-31 over the three declarations above).

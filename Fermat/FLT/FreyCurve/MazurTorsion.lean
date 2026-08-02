@@ -18503,7 +18503,6 @@ and already in the environment; this theorem adds no new `N = 0` obligation and
 weakens no hypothesis. -/
 
 namespace SeventeenDescent
-namespace SeventeenDescent
 end SeventeenDescent
 /-- **Every `modelTable` row has a banked charpoly row, whose trace column is
 `ℓ + 1 − m`** (PROVEN 2026-07-30, one `decide` and one `norm_num` per row) — the
@@ -27914,7 +27913,7 @@ theorem exists_isCMJInvariant_ne_of_not_equivalent
     (by rw [hdisc, hpdiscr]) hne
     (by rw [← hxj, ← hyj, hxy])
 
-end CMJInvariantFromDictionary
+end FormPointDictionary
 
 /-- **`ℚ̄/ℚ` IS NORMAL** (PROVEN 2026-07-31, and it has to be proven BY HAND).
 
@@ -37950,6 +37949,11 @@ upstream, the local leaf was DEAD by the seventh-invisibility-class test (open, 
 unowned, and reaching nothing), and this is merge repair of a duplication whose own
 docstring predicted it.
 -/
+
+namespace StableCyclicSpecialJ
+
+open WeierstrassCurve WeierstrassCurve.Affine WeierstrassCurve.Affine.Point
+open scoped WeierstrassCurve.Affine
 
 /-- **Composition of diagonal automorphisms**: `[u] ∘ [v] = [uv]` on points.  The missing
 companion of `autMap_diag_sq`/`autMap_diag_neg`/`autMap_diag_one` in `QuarticTwist.lean`,

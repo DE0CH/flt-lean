@@ -357,6 +357,36 @@ section ShimuraAlgebraicity
 open ModularForm Matrix.SpecialLinearGroup
 open scoped Manifold
 
+/-- (release 34) `qExpansionCoeffLOf` is spliced in here from flt-lean-211, which
+DEFINED it while a second branch moved its consumer `qExpansionCoeffL` up to this
+point; the merge kept the consumer and lost the definition.  Verbatim from that
+branch, only relocated -- it is level-generic and `X1.lean` uses it at
+`G = Gamma1GL N`. -/
+/-- The `m`-th `q`-expansion coefficient of a weight-`2` cusp form for an
+ARBITRARY subgroup `G` having `1` as a strict period, as a `ℂ`-linear
+functional — additivity and scalar equivariance through the pin's
+`qExpansion_add`/`qExpansion_smul`, which need analyticity of the cusp
+function and hence `1` being a strict period.
+
+**Nothing here is `Γ₀`-specific**, which is the whole point: the level
+shape enters only through `hper`, so the `Γ₁` development in
+`ModularCurve/X1.lean` uses this at `G = Gamma1GL N` with no second copy.
+`qExpansionCoeffL` below is the `Γ₀` instance and is `rfl`-equal to it. -/
+noncomputable def qExpansionCoeffLOf (G : Subgroup (GL (Fin 2) ℝ)) [G.HasDetOne]
+    (hper : (1 : ℝ) ∈ G.strictPeriods) (m : ℕ) : CuspForm G 2 →ₗ[ℂ] ℂ where
+  toFun f := (qExpansion 1 ⇑f).coeff m
+  map_add' f g := by
+    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos hper
+    have hga := ModularFormClass.analyticAt_cuspFunction_zero g one_pos hper
+    show (qExpansion 1 ⇑(f + g)).coeff m = _
+    rw [CuspForm.coe_add, qExpansion_add hfa hga]
+    simp
+  map_smul' c f := by
+    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos hper
+    show (qExpansion 1 ⇑(c • f)).coeff m = _
+    rw [CuspForm.IsGLPos.coe_smul, qExpansion_smul hfa]
+    simp
+
 /-- The `m`-th `q`-expansion coefficient of a weight-`2` level-`N` cusp form,
 as a `ℂ`-linear functional — additivity and scalar equivariance through the
 pin's `qExpansion_add`/`qExpansion_smul`, which need analyticity of the cusp
@@ -1560,30 +1590,6 @@ carries, and the block's only in-file input is `one_mem_strictPeriods_Gamma0GL`
 immediately below and the new assembly above, so nothing between the two positions
 was disturbed. -/
 
-/-- The `m`-th `q`-expansion coefficient of a weight-`2` cusp form for an
-ARBITRARY subgroup `G` having `1` as a strict period, as a `ℂ`-linear
-functional — additivity and scalar equivariance through the pin's
-`qExpansion_add`/`qExpansion_smul`, which need analyticity of the cusp
-function and hence `1` being a strict period.
-
-**Nothing here is `Γ₀`-specific**, which is the whole point: the level
-shape enters only through `hper`, so the `Γ₁` development in
-`ModularCurve/X1.lean` uses this at `G = Gamma1GL N` with no second copy.
-`qExpansionCoeffL` below is the `Γ₀` instance and is `rfl`-equal to it. -/
-noncomputable def qExpansionCoeffLOf (G : Subgroup (GL (Fin 2) ℝ)) [G.HasDetOne]
-    (hper : (1 : ℝ) ∈ G.strictPeriods) (m : ℕ) : CuspForm G 2 →ₗ[ℂ] ℂ where
-  toFun f := (qExpansion 1 ⇑f).coeff m
-  map_add' f g := by
-    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos hper
-    have hga := ModularFormClass.analyticAt_cuspFunction_zero g one_pos hper
-    show (qExpansion 1 ⇑(f + g)).coeff m = _
-    rw [CuspForm.coe_add, qExpansion_add hfa hga]
-    simp
-  map_smul' c f := by
-    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos hper
-    show (qExpansion 1 ⇑(c • f)).coeff m = _
-    rw [CuspForm.IsGLPos.coe_smul, qExpansion_smul hfa]
-    simp
 
 @[simp] theorem qExpansionCoeffLOf_apply (G : Subgroup (GL (Fin 2) ℝ)) [G.HasDetOne]
     (hper : (1 : ℝ) ∈ G.strictPeriods) (m : ℕ) (f : CuspForm G 2) :

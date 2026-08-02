@@ -594,13 +594,9 @@ theorem exists_residueSection_zeroPoint :
   · have h := congrArg (fun m : CommRingCat.of K ⟶ A.functionField => m.hom c) key2
     simpa using h
 
--- `hrange` is not consumed by the proof below (`hgen`, which is what the argument needs, is a
--- hypothesis of this section), and neither is `GeometricallyConnected f`.  Both are kept in the
--- signature because the sorried version carried them and the call site in
--- `exists_poleOrderValuation_of_affineComplement'` passes `hrange` positionally; dropping it
--- would be a signature change for no gain.
-set_option linter.unusedSectionVars false in
-include f hstr hrange in
+omit [SmoothOfRelativeDimension 1 f] [IsProper f] [GeometricallyConnected f]
+  [IsIntegral A] [IsLocallyNoetherian A] in
+include f hstr in
 /-- **`hstr` at the level of global sections**: `algebraMap K R`, read through the chart's
 identification of `Γ(Spec R, ⊤)` with `Γ(A, ι ''ᵁ ⊤)`, is `f.appTop` followed by
 restriction. -/
@@ -809,6 +805,12 @@ theorem nonneg_poleOrd_and_eq_zero_iff (r : R) (hr : r ≠ 0) :
   · rintro ⟨c, hcr⟩
     exact hback c hcr
 
+-- `hrange` is not consumed by the proof below (`hgen`, which is what the argument needs, is a
+-- hypothesis of this section), and neither is `GeometricallyConnected f`.  Both are kept in the
+-- signature because the sorried version carried them and the call site in
+-- `exists_poleOrderValuation_of_affineComplement'` passes `hrange` positionally; dropping it
+-- would be a signature change for no gain.
+set_option linter.unusedSectionVars false in
 include f hstr hrange in
 /-- **LEAF 2 — the residue field of `𝒪_{A,O}` is `K`, in the form the pole order needs**
 (cut 2026-07-31 out of `exists_poleOrderValuation_of_affineComplement`;

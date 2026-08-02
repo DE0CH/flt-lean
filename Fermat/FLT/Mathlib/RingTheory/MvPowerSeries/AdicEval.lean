@@ -653,6 +653,17 @@ section KeyLemma
 
 variable {p : ℕ}
 
+/-! ### The `p`-adic slice decomposition of a coefficient family
+
+The machinery the KEY LEMMA below runs on.  A multidegree `n` splits as
+`n = p • (expDiv p n) + expMod p n` with every digit of `expMod p n` less than `p`;
+`part p b f` collects the coefficients of `f` in the multidegrees congruent to `b`,
+and `pExpand p` puts them back.  Everything here is over an arbitrary `CommRing`. -/
+
+section Slices
+
+variable {σ : Type*} {R : Type*} [CommRing R]
+
 /-- `(expDiv p n) j = n j / p`. -/
 noncomputable def expDiv (p : ℕ) (n : σ →₀ ℕ) : σ →₀ ℕ := n.mapRange (· / p) (Nat.zero_div p)
 

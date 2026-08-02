@@ -5740,7 +5740,11 @@ theorem norm_qParam_one (z : ℍ) :
   simp [Periodic.qParam, Complex.norm_exp]
 
 /-- The `im` of a triangular point scales by `a/d`. -/
-theorem im_triPoint {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) (z : ℍ) :
+-- (release 34) renamed from `im_triPoint`: two branches added this fact, with
+-- DIFFERENT argument orders and different (equal) right-hand sides -- `a * z.im / d`
+-- at 5150 and `a / d * z.im` here -- and each has consumers that `rw` with its own
+-- shape.  Kept both rather than picking; a successor may unify them.
+theorem im_triPoint' {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) (z : ℍ) :
     (triPoint z (a, b, d)).im = (a : ℝ) / (d : ℝ) * z.im := by
   have h1 : ((d : ℤ) : ℂ) = ((d : ℝ) : ℂ) := by push_cast; ring
   have hc := coe_triPoint (b := b) z ha hd
@@ -5762,7 +5766,7 @@ theorem tendsto_triPoint_atImInfty {a b d : ℤ} (ha : 0 < a) (hd : 0 < d) :
   rw [atImInfty, tendsto_comap_iff]
   have : (UpperHalfPlane.im ∘ fun z : ℍ => triPoint z (a, b, d))
       = fun z : ℍ => (a : ℝ) / (d : ℝ) * z.im := by
-    funext z; exact im_triPoint ha hd z
+    funext z; exact im_triPoint' ha hd z
   rw [this]
   exact Filter.Tendsto.const_mul_atTop ha' tendsto_comap
 
@@ -5800,7 +5804,7 @@ theorem tendsto_norm_jInvariant_triPoint {a b d : ℤ} (ha : 0 < a) (hd : 0 < d)
   have h := tendsto_norm_jInvariant_atImInfty.comp (tendsto_triPoint_atImInfty (b := b) ha hd)
   refine h.congr fun z => ?_
   simp only [comp_apply]
-  rw [im_triPoint ha hd z]
+  rw [im_triPoint' ha hd z]
   congr 2
   ring
 

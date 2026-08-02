@@ -7133,7 +7133,17 @@ theorem sections_eq_of_top_modUnit {Y : Scheme.{u}} {s t : (modUnit Y).sections}
   have ht := t.property (homOfLE (le_top (a := X.unop))).op
   rw [← hs, ← ht, h]
 
-/-- **`modUnitSections a` HAS VALUE `a` AT `⊤`** (PROVEN). -/
+/-- **`modUnitSections a` HAS VALUE `a` AT `⊤`** (PROVEN) — the restriction
+`⊤ ⟶ ⊤` is the identity, so the compatible family recovers its own global
+section.  This is what makes `modUnitMul` injective.
+
+(Release 34: a second, character-for-character equal statement was declared
+~2870 lines below by a rival branch, proven instead by
+`Subsingleton.elim (homOfLE le_top : (⊤ : Z.Opens) ⟶ ⊤) (𝟙 _)` followed by
+`simp`.  Two copies of one statement in ONE file is a hard
+`has already been declared`, so the later one was deleted and its consumer
+resolves upward to this one; the alternative proof is recorded here because
+it is the one that says WHY the lemma is true.) -/
 theorem modUnitSections_top {Y : Scheme.{u}} (a : Γ(Y, ⊤)) :
     (modUnitSections a).val (op ⊤) = a := by
   show Y.presheaf.map (homOfLE le_top).op a = a
@@ -9008,79 +9018,6 @@ theorem isProper_relPicIdentityComponent {X P J S : Scheme.{u}} {strX : X ⟶ S}
       _hadd _hneg _himg
   constructor
 
-/-- **THE IDENTITY COMPONENT IS UNIVERSALLY CLOSED** (sorry leaf, cut 2026-08-02
-out of `isProper_of_relPicZeroGroupScheme`) — BLR 9.4/4 step three, and the ONLY
-part of properness that is not formal.
-
-**Why this is the whole residue.**  `IsProper = IsSeparated ⊓ UniversallyClosed ⊓
-LocallyOfFiniteType` (`AlgebraicGeometry.isProper_eq`), and two of the three fall
-straight out of hypotheses the leaf below already had:
-
-* `LocallyOfFiniteType jstr` is `_G.smooth`, through mathlib's
-  `Smooth → LocallyOfFinitePresentation → LocallyOfFiniteType` instances;
-* `IsSeparated jstr` is `_hPsep` together with the FIRST and FOURTH clauses of
-  `_hincl` (injectivity and naturality of `incl`).  `RelPoint f g` is *literally*
-  `{x : T ⟶ A // x ≫ f = g}`, so the Yoneda step is two lines and not a
-  construction: `ι := (incl J jstr ⟨𝟙 J, _⟩).1`, and `ι ≫ pstr = jstr` is *the
-  subtype property of the point that comes back*.  Naturality then makes
-  `incl T g p = ⟨p.1 ≫ ι, _⟩` on the nose, injectivity becomes `Mono ι`, and
-  `isSeparated_of_mono` plus the composition instance finish it.
-
-So the classical UNIQUENESS half of the valuative criterion — the paragraph
-below that says the extension is "unique up to a twist from `R`" — is NOT part of
-this leaf.  Only EXISTENCE is, and only through closedness.
-
-**The intended argument.**  Given a valuation ring `R` with fraction field `K`
-over `S` and a degree-`0` line bundle on `X_K`, extend it to `X_R`.  On a REGULAR
-total space this is the classical "take the closure of the divisor" argument —
-`X_R` is regular because `X ⟶ S` is smooth and `R` is regular — and the degree on
-the special fibre is corrected to `0` by a multiple of the special fibre itself,
-which is where geometric connectedness of the curve's fibres is spent.
-
-**THE NEXT CUT, one line of Lean plus one import.**  Mathlib factors this leaf:
-
-    UniversallyClosed.of_valuativeCriterion (f) [QuasiCompact f]
-      (hf : ValuativeCriterion.Existence f) : UniversallyClosed f
-
-so a successor may replace it by `QuasiCompact jstr` (BLR 8.4/3 with SGA3 VI_A
-2.4: a connected group scheme locally of finite type over a field is
-quasi-compact) plus `ValuativeCriterion.Existence jstr` (the paragraph above).
-That is the honest split — two chapters, no shared machinery — and it was not
-taken here only because `ValuativeCriterion` is not in this module's import cone
-and `ModularCurve/X0.lean` is downstream, so
-`public import Mathlib.AlgebraicGeometry.ValuativeCriterion` costs a rebuild of
-the largest cone in the tree for a statement nobody can discharge yet.
-
-**FAITHFULNESS, and a CORRECTION to the audit reproduced below.**  This is the
-conclusion of `isProper_of_relPicZeroGroupScheme` with two of three conjuncts
-deleted under the same hypotheses, so it is implied by that statement and cannot
-be false unless that one was.  That leaf's own audit offers the junk witness
-`J = P`, `incl = id`, `G` the group data of `Pic` itself, and says it "satisfies
-`IsRelPicZeroIncl` in full" — which is TRUE, and is not the clause that excludes
-it.  `RelGroupSchemeStruct` carries a `connected : GeometricallyConnected f`
-field, and `Pic ⟶ S` is not geometrically connected (its geometric fibres have
-one component per degree), so `RelGroupSchemeStruct pstr` is UNINHABITED and the
-witness never gets as far as `_hincl`.  The audit's conclusion stands — the leaf
-is not provable from `_hincl` alone — but the discriminating hypothesis is
-`_G.connected`, exactly as on the sibling `universallyClosed_relPicIdentityComponent`,
-where it is spelled `_hJconn`.  A prover must spend it. -/
-theorem universallyClosed_of_relPicZeroGroupScheme {X P S J : Scheme.{u}} {strX : X ⟶ S}
-    {pstr : P ⟶ S}
-    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
-    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
-    (hP : IsRelPicOf strX pstr)
-    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
-    (_hPsmooth : Smooth pstr) (_hPsep : IsSeparated pstr)
-    (_hequiv : ∀ {T : Scheme.{u}} (g : T ⟶ S), Equivalence (RelPicEquiv strX g))
-    (aj : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint strX g → RelPoint pstr g)
-    (_haj : ∀ (T : Scheme.{u}) (g : T ⟶ S) (x : RelPoint strX g),
-      RelPicEquiv strX g (modTensor (hP.sheaf (aj T g x)) (sectionIdeal (relSection x)))
-        (sectionIdeal (relSection (relBasePoint o g))))
-    {jstr : J ⟶ S} (_G : RelGroupSchemeStruct jstr)
-    (_incl : ∀ (T : Scheme.{u}) (g : T ⟶ S), RelPoint jstr g → RelPoint pstr g)
-    (_hincl : IsRelPicZeroIncl hP _G aj _incl) :
-    UniversallyClosed jstr := sorry
-
 /-- **`Pic⁰` IS A PROPER SMOOTH SUBFUNCTOR OF `Pic` WITH CONNECTED FIBRES**
 (PROVEN 2026-07-31 over `exists_relPicIdentityComponent` and
 `isProper_relPicIdentityComponent`; a sorry leaf for a few hours the same day,
@@ -10078,15 +10015,6 @@ theorem modUnitMul_zero {Z : Scheme.{u}} : modUnitMul (0 : Γ(Z, ⊤)) = 0 := by
   show Z.presheaf.map _ 0 = _
   rw [map_zero]
   rfl
-
-/-- **A global section is recovered from its own compatible family at `⊤`**
-(PROVEN) — the restriction `⊤ ⟶ ⊤` is the identity, by `Subsingleton.elim` in
-`Opens Z`.  This is what makes `modUnitMul` injective. -/
-theorem modUnitSections_top {Z : Scheme.{u}} (a : Γ(Z, ⊤)) :
-    (modUnitSections a).val (op ⊤) = a := by
-  show Z.presheaf.map _ a = a
-  rw [Subsingleton.elim (homOfLE le_top : (⊤ : Z.Opens) ⟶ ⊤) (𝟙 _)]
-  simp
 
 /-- **`unitHomEquiv` undoes `modUnitMul`** (PROVEN). -/
 theorem unitHomEquiv_modUnitMul {Z : Scheme.{u}} (a : Γ(Z, ⊤)) :

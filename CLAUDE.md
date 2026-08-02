@@ -28587,3 +28587,84 @@ must still report zero) — and key the exemption as tightly as the legality
 condition, here on the previous code line ending in `:=`/`=>`, so that a `by`
 NOT preceded by one is still reported.  Adding `by` to the whitelist would have
 silenced a real wound for ever.
+
+## A LOST SCOPE LINE REPORTS AS A TYPE ERROR — BALANCE THE FILE BEFORE READING ANY DIAGNOSTIC
+(2026-08-02, release 34, four red modules, one root cause between them.)  This file already
+records that a merge can drop a `namespace`/`section`/`variable`/`open` line, and that
+`scopecheck.py` sees it.  What it does not say is the thing that decides whether you run that
+check at all: **the compiler NEVER mentions scopes.**  Every one of these was a lost opener,
+and every one of them reported as something else entirely:
+| what was lost | what Lean said |
+|---|---|
+| `section Slices` + `variable {σ} {R} [CommRing R]` (`AdicEval.lean`) | **64 ×** `failed to synthesize instance of type class Semiring R` |
+| `section AlgebraicallyClosedIn` + `open CategoryTheory` (`PlaneModelFunctionField.lean`) | `expected token` at the column of a `≫`, and `Unknown identifier IsIso` |
+| an attachment run MOVED between two declarations (`PoleOrderValuation.lean`) | `Application type mismatch: the argument ι … expected to have type AbelianSchemeStruct ?m` |
+| two types deleted by a rival cut's repair (`RelativePicard.lean`) | `Function expected at RelGroupSchemeStruct … applied to jstr` |
+Not one of those four messages contains the words `section`, `namespace`, `variable` or
+`open`, and three of the four name a TYPE — so the natural reading is "somebody changed a
+signature" and the natural response is to go hunting through branch diffs for a signature
+change that does not exist.  **So: when a module is red, run the scope-balance check FIRST,
+before reading the errors.**  It is twenty lines, it needs no build, and it either names the
+defect outright or costs you nothing.
+Two refinements that made it decisive here rather than merely suggestive:
+* **Mask block comments CHARACTER BY CHARACTER, and compare the ORPHAN LIST against the same
+  file on green main and on each contributing branch.**  A bare `end` closing
+  `@[expose] public noncomputable section` is a legitimate orphan in every file in this tree,
+  so the raw count is meaningless; what is diagnostic is that a branch has ONE orphan and the
+  merge result has FOUR.  `python3 /tmp/r34/bal.py <path>` and `… <branch>:<path>` print the
+  open/close PAIRING, so a wrongly-paired `end` (`end Slices` closing `section KeyLemma`) is
+  visible even when the totals happen to balance.
+* **`section`, `end`, `namespace` are not the whole vocabulary.**  `@[expose] public
+  noncomputable section` does not start with `section`, so a `startswith('section ')` scan
+  reports every file in this tree as having one orphan close and you will dismiss the real
+  ones as noise.  Match on the TOKEN, anywhere in the line's leading modifier run.
+### THE REPAIR IS FOUND BY DIFFING THE BRANCH'S ATTACHMENT RUN, NOT ITS DECLARATION
+Three of the four were repaired the same way and it is worth stating as a procedure, because
+the "which branch is right" question has a mechanical answer here:
+1. list the branches whose copy of the file differs in LINE COUNT from main's — in a batch of
+   341 that is typically two or three, and they are the only candidates;
+2. for each, print the scope pairing.  The branch that BALANCES is the one whose structure the
+   merge should have preserved;
+3. print that branch's ATTACHMENT RUN — the contiguous block of `--` comments, `@[...]`,
+   `set_option … in`, `omit … in`, `include … in` and the docstring immediately above the
+   declaration — and compare it with the merged file's.  `semmerge.py` merges docstrings
+   separately from code, so an attachment run is exactly what it can move to the wrong
+   declaration, and the symptom is an ARITY change (`include f hstr hrange in` on a lemma
+   whose call sites were written against `include f hstr in`).
+**An attachment run that has moved has TWO victims, and fixing one leaves the other broken.**
+In `PoleOrderValuation.lean` the run had migrated from `exists_sub_smul_poleOrd_lt` (where its
+own comment says, in as many words, why `hrange` is kept) onto `chartStruct_key` — so
+`chartStruct_key` acquired two extra arguments and its call site broke, AND the original lost
+its `set_option linter.unusedSectionVars false in`, which is why the build carried two
+`automatically included section variable(s) unused` warnings 200 lines apart.  **Read the
+comment's TEXT to find its true owner** — it named `exists_poleOrderValuation_of_affineComplement'`
+and `hrange`, neither of which `chartStruct_key` mentions.  A misplaced comment is
+self-identifying in a way a misplaced `include` is not.
+### AND A RIVAL CUT CAN LEAVE A LEAF WHOSE HYPOTHESIS TYPES NO LONGER EXIST
+`RelativePicard.lean`'s `universallyClosed_of_relPicZeroGroupScheme` took
+`(_G : RelGroupSchemeStruct jstr)` and `(_hincl : IsRelPicZeroIncl …)`, and **both names occur
+nowhere else in the tree except in that leaf's own docstring** — the winning cut's repair had
+deleted them, and a branch forked before that deletion re-added the leaf (`semmerge.py`
+propagates additions and never deletions, so this is the guaranteed outcome, not an accident).
+The counts settle it without any mathematics:
+    universallyClosed_of_relPicZeroGroupScheme   occ=1   (its own declaration — DEAD)
+    isProper_of_relPicZeroGroupScheme            occ=4   declared NOWHERE (prose only)
+    universallyClosed_relPicIdentityComponent    occ=4   declared, live
+    isProper_relPicIdentityComponent             occ=13  declared, live
+**A leaf whose hypothesis TYPE is undeclared is not a leaf at all** — it cannot be stated, let
+alone proven — so this is a deletion and not a decision.  The check is one `grep` per name in
+the signature, asking whether it is DECLARED and not merely mentioned; a name with a healthy
+occurrence count that is declared nowhere (as `isProper_of_relPicZeroGroupScheme` was, four
+times, all in docstrings) is the tell that a deletion landed and its prose did not.
+### The other half of the same file: RIVAL CUTS BOTH LANDED, ONE PROVEN AND ONE SORRIED
+`PlaneModelFunctionField.lean` carried **two copies** of `irreducible_map_algebraicClosure_functionField`
+and `exists_planeModel_ringEquiv_functionField_specZMod` — flt-lean-157's PROVEN pair and
+flt-lean-156's SORRY-LEAF pair — 80 lines apart, each with its own `end Fermat`.  The file
+therefore had one `namespace Fermat` and two `end Fermat`, which is what the balance check
+reports, and the duplicate is what a `declaration uses \`sorry\`` count reports as an extra
+open leaf.  Keep the PROVEN copy, delete the sorried one, and note that neither
+`dupstmt.py` nor `xdup.py` can see this pair: the two declarations have the SAME qualified
+name, so it is not a cross-file collision, and one is proven while the other is sorried, so a
+scan scoped to sorried declarations sees only one of them.  **A duplicate whose two copies are
+one PROVEN and one `sorry`, in ONE file, is invisible to every instrument in this repository
+except the scope balance.**
