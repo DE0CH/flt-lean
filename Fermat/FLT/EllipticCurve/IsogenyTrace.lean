@@ -493,7 +493,9 @@ parallelogram law too**, so the file now stands on exactly one open leaf:
   `End.isXNormalForm_natDegree_parallelogram`, and `End.exists_trace_charPoly` is
   proven over the parallelogram law, which is proven over those two. **The ninth
   pass (2026-07-30) PROVED the first of them**, so
-  `End.isXNormalForm_natDegree_parallelogram` — pure `F[X]` — is all that is left,
+  `End.isXNormalForm_natDegree_parallelogram` — pure `F[X]` — was all that was left;
+  **the eleventh pass (2026-08-01) PROVED it too**, over the isogeny-level
+  `End.degree_unitShift_le`, which is now the file's one leaf,
   and **the tenth pass (2026-07-31) weakened it to an INEQUALITY**, which is what a
   root count produces without a separability argument.
 
@@ -1292,6 +1294,118 @@ theorem End.degree_add_add_degree_sub_of_unitShift_le [IsAlgClosed F] [CharZero 
       exact le_of_mul_le_mul_left hsum hdpos
   exact_mod_cast main
 
+/-- **THE FILE'S ONE LEAF (2026-08-01, eleventh pass) — the unit-shift inequality.**
+
+    deg (χ + 1) + deg (χ − 1)  ≤  2 deg χ + 2      for every `χ : End W`.
+
+Silverman *AEC* III.6.3 at `ψ = 1`; equivalently Washington *Elliptic Curves* §9's
+`x`-coordinate root count, which is where a prover should start (see ROUTE below).
+
+**WHY THE LEAF IS HERE AND NOT AT `End.isXNormalForm_natDegree_parallelogram`.** The
+tenth pass proved, in the four theorems above, that this single inequality implies the
+full parallelogram LAW — and then left the `sorry` on the `F[X]` pair statement, which
+is what the section header above still calls "the residue … *or* its `F[X]` face". The
+eleventh pass moves the `sorry` to the shape the reduction had already earned. The two
+are EQUIVALENT and both directions are now in the file:
+
+* this ⟹ the pair form — `End.degree_add_add_degree_sub_of_unitShift_le` above, then
+  `End.isXNormalForm_natDegree_eq_degree` below, which is how leaf (B) is now PROVEN;
+* the pair form ⟹ this — instantiate at `ψ = 1` and use `deg 1 = 1`
+  (`End.degree_intCast`); written out as `End.degree_unitShift_le_of_pair` below, so
+  that the equivalence is machine-checked rather than asserted, and the claim that this
+  restatement is **not a strengthening** is a receipt.
+
+**WHAT THE MOVE BUYS, since the leaf count is unchanged at 1 → 1** (per CLAUDE.md, a
+recut must be judged by what is LEFT in the leaf, and the delta must be stated):
+
+* the quantifier drops from a PAIR of endomorphisms to ONE — the arity drop that
+  CLAUDE.md's "`DO NOT SHUFFLE THIS SORRY AGAIN` note is about ARITY" section names as
+  the difference between a lap of the degree circle and a reduction;
+* **all four nonvanishing hypotheses disappear.** `hφ`, `hψ`, `hadd`, `hsub` were
+  needed because an `IsXNormalForm` certificate is vacuous at `0`, so an adversarial
+  pair `(X ^ 100, 1)` was admissible there. With no polynomials in the statement there
+  is nothing to choose adversarially, and the degenerate cases are TRUE rather than
+  excluded (checked below);
+* **the eight polynomials and the `IsXNormalForm` predicate leave the statement
+  entirely**, and with them the cofinite-certificate gap that the section header above
+  calls "the first obstacle on the route, and it is not discussed anywhere else in this
+  file". A prover may now attack this with any tool at all — the `x`-coordinate route
+  is one option, not a constraint imposed by the statement.
+
+### ROUTE (the `x`-coordinate one, which is why the leaf was cut in `F[X]` before)
+
+`ker (χ−1) ∪ ker (χ+1)` is the set of `P ≠ 0` with `x (χ P) = x (P)`, i.e. the fibre of
+the roots of `A − X · B` for a reduced `x`-normal form `(A, B)` of `χ`. That polynomial
+has degree at most `max (deg A) (deg B) + 1 = deg χ + 1`, and each root carries at most
+two points, so the union has at most `2 deg χ + 2` elements. Since in characteristic `0`
+every isogeny is separable, `deg (χ ± 1) = # ker (χ ± 1)`, and the two kernels meet only
+in `ker (χ−1) ∩ ker (χ+1) ⊆ W[2]`, inclusion–exclusion gives the stated bound. **The
+count is an inequality by nature** (`#roots ≤ natDegree`), which is exactly why the
+tenth pass's weakening to `≤` deleted the separability/squarefreeness argument: no step
+above needs the root count to be sharp.
+
+The `F[X]` face of THIS statement — `max (deg A₁) (deg B₁) + max (deg A₂) (deg B₂) ≤
+2 max (deg A) (deg B) + 2` for normal forms of `χ`, `χ+1`, `χ−1` — is available for free
+through `End.isXNormalForm_natDegree_eq_degree` below, and is strictly smaller than the
+pair form leaf (B) used to be: three normal forms instead of four, and no second
+endomorphism.
+
+### FALSITY AUDIT (2026-08-01, eleventh pass)
+
+*This is a RESTATEMENT, so the tenth pass's audit is VOID for it and this replaces it*
+(CLAUDE.md). The audit is short in one direction and must not be skipped in the other.
+
+*True, because it is IMPLIED by the statement the tenth pass audited.* The pair form was
+audited true; `End.degree_unitShift_le_of_pair` below derives this from it in three
+lines. So every counterexample to this is a counterexample to that, and the earlier
+audit certifies this one. That is the one direction in which an audit transfers, and it
+is written out rather than asserted.
+
+*No hypothesis is needed, and this is the clause a reader will want checked, since the
+old statement carried four.* The degenerate cases are TRUE, not excluded:
+`χ = 0` reads `deg 1 + deg (−1) = 1 + 1 ≤ 2 · 0 + 2`; `χ = 1` reads
+`deg [2] + deg 0 = 4 + 0 ≤ 2 · 1 + 2`; `χ = −1` reads `0 + 4 ≤ 4`. All three hold with
+equality. The old leaf's four hypotheses were artefacts of the `IsXNormalForm`
+certificate being vacuous at `0` — a property of the ENCODING, not of the mathematics —
+and they vanish with it.
+
+*Numerically re-checked at the models the ninth and tenth passes used*, both of which
+hold with equality, so they do not accidentally certify something weaker: on
+`W : y² = x³ − x` with CM by `ℤ[i]`, at `χ = i` this reads `2 + 2 ≤ 2 · 1 + 2`; and
+inside `ℤ ⊆ End W`, at `χ = [n]` it reads `(n+1)² + (n−1)² = 2n² + 2 ≤ 2 n² + 2` for
+every `n`, which is the sharpest possible family and passes for all of them.
+
+*Not vacuous.* The statement quantifies over every `χ : End W` and `End W ⊇ ℤ` is
+inhabited by `End.intCast`; the `n`-family above exercises it at every degree. -/
+theorem End.degree_unitShift_le [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (χ : End W) :
+    Isogeny.degree (End.toIsogeny (χ + 1)) + Isogeny.degree (End.toIsogeny (χ - 1))
+      ≤ 2 * Isogeny.degree (End.toIsogeny χ) + 2 :=
+  sorry
+
+/-- **The converse of the leaf above, so that the eleventh pass's recut is a
+machine-checked EQUIVALENCE rather than a claim.**
+
+The pair inequality at `ψ = 1` IS the unit-shift inequality, because `deg 1 = 1`
+(`End.degree_intCast` at `c = 1`). Taking the pair form as an explicit hypothesis rather
+than citing `End.degree_add_add_degree_sub_le` keeps this receipt `sorry`-free and
+independent of which of the two is currently the leaf — if a later pass moves the
+`sorry` back, this theorem still says the same thing and still compiles. -/
+theorem End.degree_unitShift_le_of_pair [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    (hpair : ∀ φ ψ : End W,
+      Isogeny.degree (End.toIsogeny (φ + ψ)) + Isogeny.degree (End.toIsogeny (φ - ψ))
+        ≤ 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ))
+    (χ : End W) :
+    Isogeny.degree (End.toIsogeny (χ + 1)) + Isogeny.degree (End.toIsogeny (χ - 1))
+      ≤ 2 * Isogeny.degree (End.toIsogeny χ) + 2 := by
+  have hone : Isogeny.degree (End.toIsogeny (1 : End W)) = 1 := by
+    have h := End.degree_intCast (W := W) 1
+    rw [Int.cast_one] at h
+    exact_mod_cast h
+  have h := hpair χ 1
+  rw [hone] at h
+  omega
+
 /-! ### The Weil pairing on the `ℓ`-torsion — the file's one geometric input
 
 Everything from here to the end of the file is an algebraic consequence of the two
@@ -1661,8 +1775,8 @@ pairing and no function fields — only the `IsRationalMap` normal form that
 `Isogeny.lean` already carries (`homogSubst`,
 `natDegree_eq_zero_of_coprime_homogSubst`, `exists_const_of_homogSubst_eq_zero`).
 Its two sub-steps are `End.exists_isXNormalForm_degree` — PROVEN in the ninth pass
-(2026-07-30) — and `End.isXNormalForm_natDegree_parallelogram`, which is the file's
-only remaining leaf; everything else in the trace layer — including the Weil pairing
+(2026-07-30) — and `End.isXNormalForm_natDegree_parallelogram`, PROVEN in the eleventh pass over
+the file's one remaining leaf `End.degree_unitShift_le`; everything else in the trace layer — including the Weil pairing
 itself — is PROVEN over the two.
 
 **Why the count is not a lap of the circle.** The circle consists of identities
@@ -2178,14 +2292,29 @@ the equation is now machine-checked rather than assumed. The ROUTE AUDIT on
 `End.exists_trace_charPoly_degree_sub` shows the circle cannot be broken by
 kernel-cardinality arguments; `End.isXNormalForm_card_roots_sub` is the step that
 leaves that language, and it does so through `exists_point_veluPointX_eq`, which is
-where the curve stops being an abstract abelian group. -/
-theorem End.exists_isXNormalForm_degree [IsAlgClosed F] [CharZero F] [W.IsElliptic]
-    {φ : End W} (hφ : φ ≠ 0) :
-    ∃ A B : F[X], End.IsXNormalForm φ A B ∧
-      Isogeny.degree (End.toIsogeny φ) = max A.natDegree B.natDegree := by
+where the curve stops being an abstract abelian group.
+
+**WELL-POSEDNESS, and it was PROVEN INSIDE THE EXISTENTIAL BELOW FOR A YEAR** (2026-08-01,
+eleventh pass). `End.exists_isXNormalForm_degree`'s body never used that its pair came
+from `End.exists_isXNormalForm`: every step below consumes only `h : IsXNormalForm φ A B`.
+So the statement for an ARBITRARY normal form is the same proof with one `obtain`
+deleted, and it is what several docstrings in this file assert in prose — "a reduced
+pair is unique up to a unit, so `max A.natDegree B.natDegree` depends only on `φ`" — and
+none of them could cite.
+
+This is CLAUDE.md's "a fact proven inside a body that exports a comparison" pattern: the
+existential was the shape its first consumer wanted, and the general fact it establishes
+on the way was invisible to every later one. It is what makes leaf (B)
+(`End.isXNormalForm_natDegree_parallelogram`) a two-line corollary of the isogeny-level
+`End.degree_unitShift_le`, hence what let the eleventh pass move the `sorry` off the
+`F[X]` statement entirely.
+
+`hφ` is load-bearing: at `φ = 0` the certificate is vacuous, every coprime pair is an
+`x`-normal form, and `(X ^ 100, 1)` would give `0 = 100`. -/
+theorem End.isXNormalForm_natDegree_eq_degree [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    {φ : End W} (hφ : φ ≠ 0) {A B : F[X]} (h : End.IsXNormalForm φ A B) :
+    Isogeny.degree (End.toIsogeny φ) = max A.natDegree B.natDegree := by
   classical
-  obtain ⟨A, B, h⟩ := End.exists_isXNormalForm (W := W) φ
-  refine ⟨A, B, h, ?_⟩
   obtain ⟨Γ₁, h₁⟩ := exists_finset_card_roots_sub_eq_max (K := F) h.1 h.2.1
   obtain ⟨Γ₂, h₂⟩ := End.isXNormalForm_card_roots_sub hφ h
   haveI : Infinite F := CharZero.infinite F
@@ -2193,11 +2322,43 @@ theorem End.exists_isXNormalForm_degree [IsAlgClosed F] [CharZero F] [W.IsEllipt
   exact (h₂ γ (fun hm => hγ (Finset.mem_union_right _ hm))).symm.trans
     (h₁ γ (fun hm => hγ (Finset.mem_union_left _ hm)))
 
-/-- **LEAF (B) (2026-07-30, eighth pass; WEAKENED TO AN INEQUALITY 2026-07-31, tenth
-pass) — the `x`-degree is SUBadditive in the parallelogram sense**, by the `x`-only
-addition law and a coprimality count. Washington *Elliptic Curves*, §9.? (the proof of
-the parallelogram law that uses no divisors); Silverman *AEC* III.6.3 is the same
-identity by the Weil-pairing route.
+/-- **Leaf (A), PROVEN (2026-07-30, ninth pass)** — now a two-line corollary of
+`End.isXNormalForm_natDegree_eq_degree` immediately above, which is the general form its
+own body used to prove inline. -/
+theorem End.exists_isXNormalForm_degree [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    {φ : End W} (hφ : φ ≠ 0) :
+    ∃ A B : F[X], End.IsXNormalForm φ A B ∧
+      Isogeny.degree (End.toIsogeny φ) = max A.natDegree B.natDegree := by
+  obtain ⟨A, B, h⟩ := End.exists_isXNormalForm (W := W) φ
+  exact ⟨A, B, h, End.isXNormalForm_natDegree_eq_degree hφ h⟩
+
+/-- **WAS LEAF (B); PROVEN 2026-08-01, eleventh pass** — the `x`-degree is SUBadditive
+in the parallelogram sense. Cut in the eighth pass, weakened to an inequality in the
+tenth, and closed in the eleventh over `End.degree_unitShift_le`, which is now the
+file's one leaf.
+
+**The proof is four rewrites and an `exact`, and what made it available is
+`End.isXNormalForm_natDegree_eq_degree`** — well-posedness of the `max`-degree, which
+`End.exists_isXNormalForm_degree`'s body had been proving inline since the ninth pass
+while exporting only the existential. With it, each of the four `max`s here IS the
+corresponding `Isogeny.degree`, so this statement and the isogeny-level pair inequality
+are the same statement in two languages, and the pair inequality is
+`End.degree_add_add_degree_sub_of_unitShift_le` applied to the leaf.
+
+**THE `sorry` DID NOT VANISH — IT MOVED, AND THE MOVE IS THE POINT** (CLAUDE.md: a recut
+is judged by what is LEFT in the leaf, and a `−1 +1` delta must be stated). The file
+still has exactly one leaf. What changed is that it now quantifies over ONE endomorphism
+instead of two, carries no nonvanishing hypotheses instead of four, and mentions neither
+`F[X]` nor `IsXNormalForm` — so the cofinite-certificate gap that the section header
+"THE LAW IS FORCED BY ITS OWN INEQUALITY" calls "the first obstacle on the route" is no
+longer part of the obligation. Both directions of the equivalence are in the file
+(`End.degree_unitShift_le_of_pair` is the converse), so nothing was strengthened.
+
+The route history below is kept because it is the route to the SURVIVING leaf too — its
+`F[X]` face is this statement with `ψ := 1`, `(C, D) := (X, 1)`.
+
+Washington *Elliptic Curves*, §9.? (the proof of the parallelogram law that uses no
+divisors); Silverman *AEC* III.6.3 is the same identity by the Weil-pairing route.
 
     max(deg A₁, deg B₁) + max(deg A₂, deg B₂)
         ≤ 2 max(deg A, deg B) + 2 max(deg C, deg D)
@@ -2317,13 +2478,18 @@ theorem End.isXNormalForm_natDegree_parallelogram [IsAlgClosed F] [CharZero F]
     (hf : End.IsXNormalForm φ A B) (hg : End.IsXNormalForm ψ C D)
     (h₁ : End.IsXNormalForm (φ + ψ) A₁ B₁) (h₂ : End.IsXNormalForm (φ - ψ) A₂ B₂) :
     max A₁.natDegree B₁.natDegree + max A₂.natDegree B₂.natDegree
-      ≤ 2 * max A.natDegree B.natDegree + 2 * max C.natDegree D.natDegree :=
-  sorry
+      ≤ 2 * max A.natDegree B.natDegree + 2 * max C.natDegree D.natDegree := by
+  rw [← End.isXNormalForm_natDegree_eq_degree hφ hf,
+    ← End.isXNormalForm_natDegree_eq_degree hψ hg,
+    ← End.isXNormalForm_natDegree_eq_degree hadd h₁,
+    ← End.isXNormalForm_natDegree_eq_degree hsub h₂]
+  exact le_of_eq (End.degree_add_add_degree_sub_of_unitShift_le End.degree_unitShift_le φ ψ)
 
 /-- **The parallelogram INEQUALITY for the degree — PROVEN (2026-07-30, eighth pass;
 restated as `≤` in the tenth)** over the two route-2 statements above:
 `End.exists_isXNormalForm_degree`, itself PROVEN in the ninth pass, and
-`End.isXNormalForm_natDegree_parallelogram`, which remains the file's one leaf.
+`End.isXNormalForm_natDegree_parallelogram`, PROVEN in the eleventh pass over
+`End.degree_unitShift_le`, which is the file's one leaf.
 Silverman *AEC* III.6.3: the degree is a quadratic form on `End W`.
 
     deg (φ + ψ) + deg (φ − ψ) ≤ 2 deg φ + 2 deg ψ,
@@ -2575,7 +2741,7 @@ and `deg = det`. **Route (2), the elementary `x`-coordinate degree count, is the
 route the file now stands on**; its two sub-steps, which this section correctly
 identified as "not stated in this tree yet", are
 `End.exists_isXNormalForm_degree` (PROVEN in the ninth pass, 2026-07-30) and
-`End.isXNormalForm_natDegree_parallelogram`, the file's one remaining leaf (see the
+`End.degree_unitShift_le`, the file's one remaining leaf (see the
 ROUTE 2 section above). What
 still stands unchanged is the proof below that no *counting* argument can supply any
 face of the circle.
@@ -2844,7 +3010,8 @@ leaf. It is all still valid and none of it is retracted — but "this leaf" in i
 means whichever member of the degree circle was open at the time of writing; ALL of
 them are now PROVEN, over the two route-2 statements
 `End.exists_isXNormalForm_degree` (PROVEN, ninth pass) and
-`End.isXNormalForm_natDegree_parallelogram` (the one leaf; ROUTE 2 section above). In
+`End.isXNormalForm_natDegree_parallelogram` (PROVEN, eleventh pass, over the one
+leaf `End.degree_unitShift_le`; ROUTE 2 section above). In
 particular the Weil-pairing audit is the audit of route (1) recorded there — read it
 as a record of a *withdrawn* candidate — and the `x`-coordinate degree count is
 route (2), which is where the leaves now are.
@@ -3265,7 +3432,8 @@ theorem End.self_add_dualEnd [IsAlgClosed F] [CharZero F] [W.IsElliptic] (ψ : E
 **PROVEN (2026-07-27)** over the parallelogram law
 `End.degree_add_add_degree_sub` — itself PROVEN since the eighth pass of 2026-07-30
 over the two route-2 statements `End.exists_isXNormalForm_degree` (PROVEN, ninth
-pass) and `End.isXNormalForm_natDegree_parallelogram` (the one leaf) — through the
+pass) and `End.isXNormalForm_natDegree_parallelogram` (PROVEN, eleventh pass, over the
+one leaf `End.degree_unitShift_le`) — through the
 trace formula `End.self_add_dualEnd`, proven over that same parallelogram law in
 the second pass. See the CUT note above for why the first pass believed the trace
 formula was independent, and the ROUTE 2 section for why the third pass's
@@ -3356,7 +3524,8 @@ the defining property outright and `End.dualEnd_add` the additivity, itself PROV
 over the parallelogram law `End.degree_add_add_degree_sub` (itself PROVEN since the
 eighth pass of 2026-07-30, over the two route-2 statements
 `End.exists_isXNormalForm_degree` — PROVEN, ninth pass — and
-`End.isXNormalForm_natDegree_parallelogram`, the one leaf), via the trace formula
+`End.isXNormalForm_natDegree_parallelogram`, PROVEN in the eleventh pass over the one
+leaf `End.degree_unitShift_le`), via the trace formula
 `End.self_add_dualEnd`. `[CharZero F]` is REQUIRED — without
 it the statement is false, refuted over `𝔽̄₂` in `NotExistsDual` above. -/
 theorem End.exists_dual [IsAlgClosed F] [CharZero F] [W.IsElliptic] :
@@ -3382,7 +3551,8 @@ the Hasse bound for Frobenius, with Frobenius replaced by `ψ`.
 **PROVEN (2026-07-27)** over the parallelogram law
 `End.degree_add_add_degree_sub` — itself PROVEN since the eighth pass of 2026-07-30
 over the two route-2 statements `End.exists_isXNormalForm_degree` (PROVEN, ninth
-pass) and `End.isXNormalForm_natDegree_parallelogram` (the one leaf) — reached through
+pass) and `End.isXNormalForm_natDegree_parallelogram` (PROVEN, eleventh pass, over the
+one leaf `End.degree_unitShift_le`) — reached through
 `End.self_add_dualEnd`, `End.dualEnd_add` and `End.exists_dual`. Note the `hsum` step below recovers the trace formula *from*
 additivity — which is why the two are equivalent given the rest, and why the
 first pass could see no way to get either without the other. (The direct route is
