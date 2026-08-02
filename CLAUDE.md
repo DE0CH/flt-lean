@@ -23121,3 +23121,80 @@ a 7-second failure into a 68-second one.
   because `IsRelPicOf` is a structure in `Type`. The idiom that works, and that still gives
   a genuine free variable rather than a `let`, is `Nonempty` of the whole Pi type:
   `obtain ⟨HP⟩ : Nonempty (∀ U, IsRelPicOf …) := ⟨fun U => (hP U).some⟩`.
+## AN INDEX THAT READS AS A RAMIFICATION INDEX IS USUALLY AN ORBIT — and the tame character is already in the tree
+(2026-08-01, `flt-lean-191`, `A₀-3a-i-c′` in `FreyCurve/IsogenySignature.lean`.)
+The leaf asked for `I′ ≤ I_N` with `[I_N : I′] ∣ 12`, `I′` acting trivially on
+`E[5]`. Its docstring priced the index clause as *"the statement that the index of
+the inertia subgroups IS the ramification index `e(K/ℚ_N) = 12`"*, observed
+correctly that neither `TameBase` nor `TameGoodModel` EXPORTS a degree, and
+concluded **"a producer-side field or lemma has to be added for it"**. Both task
+prompts repeated that as the hard half.
+**No degree is involved.** Present `I′` as the STABILISER of a twelfth root `π`
+of `N` rather than as the inertia group of a field `K`. Then `[I_N : I′]` is the
+size of an ORBIT; the orbit sits inside `π·μ₁₂` because `π¹² = N` is
+Galois-fixed; and `σ ↦ σ(π)/π` is a HOMOMORPHISM into `μ₁₂` — not merely a
+cocycle — precisely because `N ∤ 12` makes inertia fix `μ₁₂` pointwise. So the
+index is `#(image)`, and Lagrange in `μ₁₂` gives the DIVISIBILITY that a
+`[H : H ⊓ S] ≤ [G : S]` bound cannot. No ramification theory, no completion of a
+number field, no `e(K/ℚ_N)`, no new producer-side field.
+**The generalisable question: is the quantity an INDEX or an ORBIT?** They agree
+numerically and are proved completely differently. An orbit whose stabiliser is a
+character kernel is computed by Lagrange in the character's TARGET, which is
+usually a small explicit group; an index of inertia subgroups needs local field
+theory this tree does not have. When a leaf's own docstring reaches for the
+second, check whether the first is available — the tell is that the object being
+stabilised is a ROOT of something the whole Galois group fixes.
+**AND THE RESIDUAL SHOULD BE STATED UPSTAIRS, IN `ℚ̄`, NOT DOWNSTAIRS.** The
+obvious phrasing of what is left — "`σ ∈ I_N` fixing a twelfth root `π ∈ ℚ̄_N` of
+`N` acts trivially on `E[5]`" — makes a prover complete `ℚ(N^{1/12})` before
+touching any geometry. Take `α ∈ ℚ̄` with `α¹² = N` instead, push it DOWN with
+`AlgebraicClosure.map`, and hypothesise that the image of `σ` in `Γ ℚ` fixes `α`.
+The two are equivalent by `Field.absoluteGaloisGroup.lift_map` plus injectivity
+of that map (four lines, in the consumer), and the upstairs version is the one
+whose field IS the number field the producer builds and whose `E[5]` is already
+in scope. **General form: when a leaf's hypothesis names an element of a
+COMPLETION's algebraic closure, ask whether it is algebraic over the base — if it
+is, state it upstairs and cross once in the glue.**
+**AND THE MACHINERY WAS ALREADY IN THE CONE. I nearly duplicated 150 lines of
+it.** `Deformations/RepresentationTheory/ArtinConductor.lean` carries the entire
+development — `tameCharacter` (`I_v →* rootsOfUnity n Kᵥᵃˡᵍ`, for ANY `X` with
+`Xⁿ` Galois-fixed), `tameCharacter_eq_one_iff` (its kernel IS the stabiliser),
+`natCard_rootsOfUnity_dvd` (mathlib only bounds that card by `n`; this DIVIDES),
+`smul_eq_self_of_pow_eq_one_algebraicClosure` (inertia fixes `μ_n`),
+`eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal`. All PROVEN, and
+`ArtinConductor` is in `IsogenySignature`'s import cone. With them the proof is
+~30 lines.
+I found it only by grepping a name I was about to introduce for a COLLISION
+(`eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal` — 11 hits). **So make the
+name-collision grep a routine step before writing any helper, not just before
+publishing one**: it is the cheapest instance of the standing "grep for the
+CONCEPT" rule, it costs one command, and it finds the neighbourhood rather than
+the leaf. Note the search that would NOT have found it: the leaf's vocabulary is
+`localInertiaGroup`, `relIndex`, `TameGoodModel` — and `ArtinConductor.lean` was
+written for the Artin conductor and the wild inertia filtration, so it shares
+none of those words.
+Rider on the same file: `ArtinConductor.lean`'s
+`eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal` docstring says in as many
+words that a general form exists as `eq_one_of_pow_eq_one_of_sub_one_mem` in
+`FreyCurve/MazurTorsion.lean` and is not reused *because that module is not in
+this file's import cone*. **A "not reused because of the import direction" note
+is a signpost to a THIRD copy**; grep the name it gives you before adding a
+fourth.
+### The stranding this un-did: a SECOND confirmed instance, with its detection tell
+Same task. CLAUDE.md already records "A HOIST × A LEAF-MERGE STRANDS THE MERGED
+LEAF *BELOW* THE LEAVES IT CLOSED". This is the second confirmed instance and the
+tell is sharper than the general rule suggests:
+> `A₀-3a-i-c′` was cut in `MazurTorsion.lean` as the input of `A₀-3a-i-c`, whose
+> docstring promised it was "now four lines of index arithmetic over it" — while
+> `A₀-3a-i-c` had been hoisted UPSTREAM into `IsogenySignature.lean` a day
+> earlier, which `MazurTorsion.lean` `public import`s. So the consumer could not
+> cite it, both sat open, and the new leaf had ZERO consumers anywhere.
+**The tell is a leaf whose docstring says its consumer is now trivial over it,
+while that consumer is still `sorry`.** Those two facts are inconsistent unless
+something prevents the citation, and in this tree that something is almost always
+declaration order — check with one `grep -n` of both names, then compare files
+against the import graph. Every frontier instrument reports the pair as two
+honest open leaves.
+The repair is the one that section prescribes — move the OBLIGATION up, never the
+consumer down — and it is cheap: a verbatim 92-line block move plus a six-line
+proof took the cluster from 2 open leaves to 1.

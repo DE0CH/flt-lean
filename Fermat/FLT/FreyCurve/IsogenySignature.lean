@@ -3741,6 +3741,119 @@ theorem WeierstrassCurve.det_galoisRep_five_eq_one_of_mem_localInertiaGroup
     cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne Nat.prime_five hN hNne τ hτ
   rw [hdet, hcyc, Units.val_one]
 
+/-- **`A₀-3a-i-c″` — Néron–Ogg–Shafarevich over the tame extension
+`ℚ_N(N^{1/12})`** (sorry leaf, cut 2026-08-01 out of `A₀-3a-i-c′` below, which
+is now PROVEN over it plus `ArtinConductor.lean`'s tame character): at
+`0 ≤ v_N(j)`, an inertia element at `N` that fixes a twelfth root of `N` acts
+trivially on `E[5]`.
+
+**EVERYTHING HERE LIVES IN `ℚ̄`, DELIBERATELY.**  `α` is a twelfth root of `N`
+in `AlgebraicClosure ℚ` and the hypothesis is that the IMAGE of `σ` in `Γ ℚ`
+fixes it — not that `σ` fixes a twelfth root in `ℚ̄_N`.  The two are equivalent
+(`Field.absoluteGaloisGroup.lift_map` plus injectivity of
+`AlgebraicClosure.map`, which is how the consumer below crosses), and this side
+is the usable one: `ℚ(α)` is then literally the number field `TameBase` builds,
+`E[5]` already lives in `ℚ̄`, and the `Semistable.lean` NOS template is written
+in exactly these terms.  Stating it downstairs would force a prover to complete
+`ℚ(N^{1/12})` before touching the geometry.
+
+**WHAT THIS IS.** `L := ℚ(α) = ℚ(N^{1/12})` is the field in which `N` is totally
+tamely ramified of degree `12`, and `E` acquires GOOD REDUCTION over it: that is
+`exists_tameGoodModel_of_jIntegral`
+(`EllipticCurve/TorsionReduction.lean:1842`, in a sorry-free file and
+`public import`ed here), applied to `hj` through
+`TameBaseAux.not_dvd_den_of_padicValRat_nonneg`, which turns `0 ≤ v_N(j)` into
+the `¬ N ∣ E.j.den` that theorem asks for.  A `σ ∈ I_N` whose image in `Γ ℚ`
+fixes `α` fixes `L` pointwise, so it lies in the inertia group of `L` at the
+place `A` that `TameGoodModel` carries; and
+Néron–Ogg–Shafarevich (`WeierstrassCurve.torsion_unramified_of_good_reduction`,
+`KnownIn1980s/EllipticCurves/GoodReduction.lean:995`, PROVEN and stated over an
+ARBITRARY DVR base `R` with `IsFractionRing R k`, so it applies over `L` and not
+only over `ℚ`) then fixes `E[5]`, the side conditions at `n = 5` being free
+(`Odd 5`; and `NeZero ((5 : ℕ) : ResidueField)` because `TameGoodModel.res` lands
+in `ZMod N` with `N > 19`).  `TameGoodModel` was given `instFinDim` and `instDVR`
+on 2026-07-28 for exactly this: without them `A` is only a `ValuationSubring` and
+NOS cannot even be stated over it.
+
+**WHAT LEFT THE STATEMENT WHEN THIS WAS CUT, and it is the point of the cut.**
+`A₀-3a-i-c′` asked for a SUBGROUP with a prescribed RELATIVE INDEX.  All of that
+— the tame character `θ(σ) = σ(π)/π`, its multiplicativity (which is where
+"inertia fixes `μ₁₂` because `N ∤ 12`" is spent), its kernel being the
+stabiliser of `π`, and `[I_N : ker θ] = #im θ ∣ #μ₁₂ = 12` — is now discharged
+below out of `ArtinConductor.lean`'s `tameCharacter` / `tameCharacter_eq_one_iff`
+/ `natCard_rootsOfUnity_dvd`, which were already PROVEN and in this file's cone.
+Nothing here mentions a subgroup, an index, or an existential: it is one
+implication about one `σ`.
+
+**A PROVER'S ROUTE, and the one thing it still owes.**  Follow
+`WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction`
+(`FreyCurve/Semistable.lean`, ~line 15800) — a complete worked assembly of NOS
+in this file's `localInertiaGroup` vocabulary, which instantiates the NOS node at
+`R = ℤ_(q)`, `k = ℚ`, `𝒪 = embeddedValuationSubring v`, and crosses from
+`localInertiaGroup` to `𝒪.inertiaSubgroup ℚ` by
+`map_mem_inertiaSubgroup_of_mem_localInertiaGroup`
+(`Deformations/RepresentationTheory/LocalInertiaFixedField.lean:443`).
+`Semistable.lean` is NOT in this cone, so it is a TEMPLATE to copy rather than an
+import, but every ingredient it uses IS imported here.
+
+**THE TWO THINGS THAT TEMPLATE DOES NOT SUPPLY, and they are the honest residual
+work.**  (i) It runs NOS at the BASE field `ℚ` (`R = ℤ_(q)`), whereas here it has
+to be run at `L`, so the inertia bridge
+`map_mem_inertiaSubgroup_of_mem_localInertiaGroup` has to be replayed relative to
+`L` — which is where `hσα` is spent, and where the embedding `L ↪ ℚ̄` chosen by
+`TameGoodModel` has to be matched with `α`.  (ii) `TameGoodModel` delivers
+`IsReductionAlong A res V red` plus `red.Δ ≠ 0`, NOT mathlib's
+`E.HasGoodReduction R` (which extends `IsMinimal`), and that is what NOS's
+variable block wants.  The conversion IS carried out in this development, by
+`exists_potentiallyGoodModel_of_tameBase` (`FreyCurve/MazurTorsion.lean`), but
+that is BELOW this file, so it must be redone here — best in
+`TorsionReduction.lean` itself, beside the structure it converts, since
+`PotentiallyGoodModel` has exactly NOS's variable block and the two interfaces
+were plainly built to meet.
+
+**THE FURTHER CUT, if a prover wants one**: (a) `E` has good reduction over
+`ℚ(α)` in mathlib's `HasGoodReduction` sense at the place `A`; (b) NOS over that
+datum.  (b) is then transcription of the `Semistable.lean` template with `ℚ`
+replaced by `ℚ(α)`, and (a) is the `TameGoodModel → HasGoodReduction` conversion
+of (ii) — i.e. NEITHER half is Serre–Tate, which
+`exists_tameGoodModel_of_jIntegral` has already paid for.  That cut is not taken
+here only because (a) belongs in `TorsionReduction.lean`, which this owner is not
+editing.
+
+**FAITHFULNESS.**  `hj` is load-bearing and this leaf is FALSE without it: for
+`N = 23` and `E : y² = x³ − 2x² − 7x + 6` (`j = 40000/23`, `v₂₃(q) = 1`) the
+image of `I₂₃` in `Aut(E[5])` is cyclic of order `5`, generated by the class of
+`q^{1/5}`; the degree-`12` tame extension does not kill it, so a `σ ∈ I₂₃` fixing
+`N^{1/12}` can still move a `5`-torsion point.  `hσ` is load-bearing: a Frobenius
+lift can be arranged to fix `α` and does not act trivially on `E[5]` for any
+curve whose mod-`5` representation is nontrivial at `N`'s Frobenius.  `hα` is
+load-bearing: dropping it lets `α` be arbitrary, and the fixing hypothesis then
+says nothing (take `α = 0`, which every automorphism fixes).  `hN19` is used
+through `5 ≤ N`
+(the residue-characteristic condition of the tame construction) and `N ≠ 5` (so
+that `E[5]` is prime to the residue characteristic and NOS applies at all).
+NON-VACUOUS: at good reduction at `N` every `σ ∈ I_N` satisfies the conclusion,
+and `α` exists because `ℚ̄` is algebraically closed. -/
+theorem WeierstrassCurve.torsionFive_fixed_of_smul_twelfthRoot_eq
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hj : 0 ≤ padicValRat N E.j)
+    {α : AlgebraicClosure ℚ} (hα : α ^ 12 = (N : AlgebraicClosure ℚ))
+    {σ : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hN.toHeightOneSpectrumRingOfIntegersRat)}
+    (hσ : σ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat)
+    (hσα : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
+        AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) α = α) :
+    ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, (5 : ℕ) • P = 0 →
+      Affine.Point.map
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P :=
+  sorry
 open scoped Pointwise in
 set_option maxHeartbeats 1000000 in
 /-- **`A₀-3a-i-c′` — potentially good reduction, as a statement about INERTIA
@@ -3826,8 +3939,77 @@ theorem WeierstrassCurve.exists_localInertia_subgroup_relIndex_dvd_twelve_of_pad
           ((Field.absoluteGaloisGroup.map (algebraMap ℚ
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               hN.toHeightOneSpectrumRingOfIntegersRat)) σ :
-            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P :=
-  sorry
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom P = P := by
+  set v := hN.toHeightOneSpectrumRingOfIntegersRat with hv
+  set f : ℚ →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v :=
+    algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) with hf
+  set ι : AlgebraicClosure ℚ →+* AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) :=
+    AlgebraicClosure.map f with hι
+  -- STEP 1.  `12` is prime to the residue characteristic, since `19 < N`.
+  have hn : ((12 : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal := by
+    rw [hv, Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal, map_natCast]
+    intro h
+    have hd : N ∣ 12 := by exact_mod_cast h
+    have := Nat.le_of_dvd (by norm_num) hd
+    omega
+  -- STEP 2.  A twelfth root `α` of `N` inside `ℚ̄`, and its image `π` in `ℚ̄_N`.
+  -- It is taken in `ℚ̄` and pushed DOWN, not chosen in `ℚ̄_N`, so that the leaf
+  -- below can be stated where `TameGoodModel`'s number field and `E[5]` live.
+  obtain ⟨α, hα⟩ := IsAlgClosed.exists_pow_nat_eq
+    ((N : AlgebraicClosure ℚ)) (n := 12) (by norm_num)
+  set π : AlgebraicClosure
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) := ι α with hπdef
+  have hNne : (N : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ≠ 0 :=
+    (Nat.cast_ne_zero (R := AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))).mpr hN.ne_zero
+  have hπ : π ^ 12 = (N : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) := by
+    rw [hπdef, ← map_pow, hα, map_natCast]
+  have hπ0 : π ≠ 0 := by
+    intro h; rw [h] at hπ; simp at hπ; exact hNne hπ.symm
+  -- `π¹² = N` lies in the base field, so it is fixed by the WHOLE Galois group —
+  -- which is exactly the hypothesis `tameCharacter` asks for.
+  have hXn : ∀ σ : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v),
+      σ • (π ^ 12) = π ^ 12 := by
+    intro σ
+    rw [hπ]
+    show σ ((N : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) = _
+    exact map_natCast _ _
+  -- STEP 3.  The TAME CHARACTER `θ(σ) = σ(π)/π : I_N →* μ₁₂`, already built in
+  -- `Deformations/RepresentationTheory/ArtinConductor.lean`.
+  set θ := tameCharacter v hn hπ0 hXn with hθ
+  refine ⟨θ.ker.map (localInertiaGroup v).subtype, Subgroup.map_subtype_le _, ?_, ?_⟩
+  · -- STEP 4.  `[I_N : ker θ] = #(im θ) ∣ #μ₁₂ ∣ 12`.
+    have hsub : (θ.ker.map (localInertiaGroup v).subtype).subgroupOf
+        (localInertiaGroup v) = θ.ker :=
+      Subgroup.comap_map_eq_self_of_injective (Subgroup.subtype_injective _) _
+    rw [Subgroup.relIndex, hsub, Subgroup.index_ker]
+    haveI : NeZero (12 : ℕ) := ⟨by norm_num⟩
+    exact (Subgroup.card_subgroup_dvd_card θ.range).trans
+      (natCard_rootsOfUnity_dvd (R := AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) 12)
+  · -- STEP 5.  `ker θ` is the stabiliser of `π`; transport that back up to `α`
+    -- (`lift_map` plus injectivity of `ι`), where `A₀-3a-i-c″` applies.
+    rintro σ ⟨τ, hτ, rfl⟩
+    have hfix : ((τ : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) • π) = π :=
+      (tameCharacter_eq_one_iff v hn hπ0 hXn τ).mp (MonoidHom.mem_ker.mp hτ)
+    have hα' : (Field.absoluteGaloisGroup.map f
+        (τ : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) α = α := by
+      apply ι.injective
+      have hL := Field.absoluteGaloisGroup.lift_map f
+        (τ : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) α
+      rw [← hι] at hL
+      rw [hL, ← hπdef]
+      exact hfix
+    exact E.torsionFive_fixed_of_smul_twelfthRoot_eq hN hN19 hj hα τ.2 hα'
 
 /-- **`A₀-3a-i-c` — potentially good reduction: `5` does not divide the
 semistability defect** (cut 2026-07-30, **PROVEN the same day** — sorry-free
