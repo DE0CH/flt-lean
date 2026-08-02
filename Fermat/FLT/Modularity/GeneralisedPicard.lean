@@ -42,7 +42,12 @@ the two are directly comparable:
 * `Fermat.IsGenRelPicOf strX ι pstr` — the predicate "`pstr : P ⟶ S`
   represents `PG(X, Z)`", modelled field-for-field on
   `Fermat.IsRelPicOf`;
-* `Fermat.exists_genRelPic` — the LEAF: §3.4's representability.
+* `Fermat.geometricallyConnected_of_geometricallyIrreducible` — a
+  four-line bridge the consumer needs, PROVEN;
+* `Fermat.exists_genRelPic` — the LEAF: §3.4's representability.  It
+  carried a FALSITY AUDIT on 2026-08-02: it was FALSE as stated, and is
+  repaired by the added hypothesis `hpush`.  Read that audit before
+  relying on anything in this module docstring about automorphisms.
 
 ## The one design decision, and why it differs from `IsRelPicOf`
 
@@ -58,17 +63,27 @@ right one:
   `X_T` has automorphism group `Γ(X_T, 𝒪^×) = Γ(T, 𝒪^×)` (when
   `f_*𝒪 = 𝒪` universally), which is exactly `Pic`'s failure to be a
   sheaf at the level of objects;
-* a PAIR `(ℒ, α)` has NO nontrivial automorphisms as soon as
+* a PAIR `(ℒ, α)` has NO nontrivial automorphisms as soon as BOTH
+  `Aut(ℒ) = Γ(X_T, 𝒪^×)` equals `Γ(T, 𝒪^×)` — i.e. `f_*𝒪 = 𝒪`
+  universally, the `hpush` hypothesis of `exists_genRelPic` — AND
   `Γ(T, 𝒪^×) → Γ(Z_T, 𝒪^×)` is injective, which holds when `Z → B` is
-  faithfully flat — MB's normalisation 3.1.2(iii), and a hypothesis of
-  `exists_genRelPic` below.  A presheaf of sets with no automorphisms in
-  its objects and effective descent (line bundles and their
-  trivialisations both descend fppf) is already a sheaf, so the NAIVE
-  functor written here is the right one and needs no sheafification.
+  faithfully flat, MB's normalisation 3.1.2(iii).  A presheaf of sets with
+  no automorphisms in its objects and effective descent (line bundles and
+  their trivialisations both descend fppf) is already a sheaf, so the
+  NAIVE functor written here is the right one and needs no sheafification.
 
-That argument is what makes `surj` below a true field rather than a
-false one, and it is the check that `exists_genRelPic` is not a leaf
-that will turn out to be FALSE AS STATED.  It is recorded here because
+**BOTH halves of that second bullet are load-bearing, and the first half
+was missing until 2026-08-02.**  As originally written this bullet named
+only the faithful flatness of `Z → B`, and the leaf's hypothesis list
+accordingly carried no form of `f_*𝒪 = 𝒪`; that made `exists_genRelPic`
+FALSE AS STATED, refuted by `X = Spec k[ε]` over `S = Spec k` with `Z` the
+reduced point, where the automorphisms `1 + ε𝒪` survive and the naive
+functor is not even separated over a test object with `H¹(T, 𝒪_T) ≠ 0`.
+The witness and the repair are written out in full in the falsity audit on
+`exists_genRelPic` below.  The paragraph that used to stand here claimed
+this argument "is the check that `exists_genRelPic` is not a leaf that
+will turn out to be FALSE AS STATED"; it was not, because it checked only
+one of the two injectivity steps it needs.  It is recorded here because
 the corresponding argument for `IsRelPicOf` (BLR 8.1/4, needing a
 section) is recorded there, and the two are genuinely different.
 
@@ -257,6 +272,28 @@ structure IsGenRelPicOf {X Z P S : Scheme.{u}} (strX : X ⟶ S) (ι : Z ⟶ X) (
     (hg : h ≫ g = g') (p : RelPoint pstr g),
     TrivialisedSheafEquiv (pair (RelPoint.pre h hg p)) (pullbackTrivialisedSheaf h hg (pair p))
 
+/-- **irreducible fibres are connected fibres** (PROVEN), geometrically.
+
+`IrreducibleSpace → ConnectedSpace` is a mathlib instance and `geometrically`
+is a pointwise condition on the geometric fibres, so this is the instance
+applied under the quantifier.  It is here rather than in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/` only because it has a single
+consumer — the call site of `exists_genRelPic` in `Modularity/MoretBailly.lean`,
+which holds `GeometricallyIrreducible` and owes `GeometricallyConnected`.
+Whoever needs it a second time should hoist it beside the other
+`Geometrically*` bridges; nothing in it is specific to this file.
+
+The gap it fills is real and was measured on 2026-08-02: at this pin neither
+`GeometricallyIrreducible f → GeometricallyConnected f` nor
+`GeometricallyIrreducible f → GeometricallyReduced f` is an instance, and the
+second of them is FALSE (see the falsity audit below). -/
+theorem geometricallyConnected_of_geometricallyIrreducible {X S : Scheme.{u}} (f : X ⟶ S)
+    (h : GeometricallyIrreducible f) : GeometricallyConnected f where
+  geometrically_connectedSpace := by
+    intro K _ y Z fst snd hpb
+    haveI := h.geometrically_irreducibleSpace y fst snd hpb
+    infer_instance
+
 /-- **Moret–Bailly §3.4: the generalised relative Picard functor is
 REPRESENTABLE** (SORRY — leaf).
 
@@ -283,19 +320,118 @@ over a FIELD base only the generic fibre is needed, which is Murre's
 theorem (SGA 6, XII.1.5), and that is the case the sole consumer of this
 leaf is in.
 
-So a prover here has, already in this module's import closure: the
-right-hand term (`exists_relPicFull` / `exists_relPicZero`), the
-pullback calculus for `modPullback`, and `RelPicEquiv` proven to be an
-equivalence relation and a congruence.  What is NOT here and has to be
-built is the Weil restriction `(π_Z)_*𝔾_m` and the extension argument.
+**ROUTE CORRECTION, 2026-08-02 — THE CITED RIGHT-HAND TERM IS NOT
+APPLICABLE HERE, AND THAT IS NOT AN ACCIDENT.**  The paragraph above says
+the right-hand term "is `Fermat.exists_relPicFull`".  It is in the import
+closure, and its hypotheses cannot be met under this leaf's:
+
+    exists_relPicFull (strX) (hproper : IsProper strX)
+      (hsmooth : SmoothOfRelativeDimension 1 strX)
+      (hconn : GeometricallyConnected strX)
+      (o : RelPoint strX (𝟙 S))          -- i.e. a SECTION of `X ⟶ S`
+
+`o` is a section, and this leaf has none — a rigidificator `Z` finite flat
+surjective over `S` is exactly the SUBSTITUTE for a section, and supplying
+one is the whole reason MB introduces `Z`.  Witness that the gap is real
+rather than an artefact of the formalisation: over `S = Spec ℚ` take `X`
+the conic `x² + y² + z² = 0`, which is smooth proper geometrically integral
+of genus `0` with `X(ℚ) = ∅`, and `Z` any closed point (all have degree `2`),
+so `Z → S` is finite flat surjective.  Every hypothesis below holds and `o`
+does not exist.  The consumer is in precisely this situation: it is trying
+to PRODUCE rational points, so it cannot be handed one.
+
+So the implication runs the other way from the paragraph above.  In BLR
+8.2/3 and Grothendieck FGA the RIGIDIFIED functor is the primary object —
+it is a sheaf because its objects have no automorphisms — and `Pic_{X/S}`
+is recovered from it as a quotient; taking `Z = S` and `ι = o` a section
+makes `(π_Z)_*𝔾_m = 𝔾_m`, so the sequence degenerates and this leaf
+SUBSUMES `exists_relPicFull`.  A prover should therefore expect a chapter,
+not a corollary, and should not spend time trying to apply
+`exists_relPicFull`.
+
+What a prover does have here: the pullback calculus for `modPullback`,
+`RelPicEquiv` proven to be an equivalence relation and a congruence, and
+`pullbackTrivialisedSheaf` above.  What is NOT here and has to be built is
+the Weil restriction `(π_Z)_*𝔾_m` — re-checked 2026-08-02, absent from the
+pin and from `Fermat/`, and the in-tree
+`Fermat/FLT/Mathlib/AlgebraicGeometry/WeilRestriction.lean` does NOT supply
+it (that file is about finite étale extensions of FIELDS and abelian
+varieties, and records the same absence) — together with the extension
+argument.
+
+**FALSITY AUDIT, 2026-08-02 — THIS LEAF WAS FALSE AS STATED, AND IS
+REPAIRED BY `hpush`.**  The faithfulness bullet below used to read
+"`hproper`, `hflat`, `hgi` … proper flat with geometrically INTEGRAL
+fibres, which is what gives `f_*𝒪_X = 𝒪_S` universally".  The argument is
+right and the SIGNATURE did not supply it: `GeometricallyIrreducible` is a
+condition on the geometric fibres as TOPOLOGICAL SPACES
+(`geometrically (IrreducibleSpace ·)`), and mathlib records the gap itself,
+
+    GeometricallyIntegral = GeometricallyReduced ⊓ GeometricallyIrreducible
+
+so irreducible is strictly weaker than integral by exactly reducedness.
+Measured at this pin: `GeometricallyIrreducible f → GeometricallyReduced f`
+does not synthesize, and the in-tree producer of the pushforward condition,
+`hasUniversallyTrivialPushforward_of_isProper_of_flat`, demands
+`[GeometricallyReduced f]` and `[LocallyOfFinitePresentation f]`, neither of
+which was present.
+
+THE COUNTEREXAMPLE.  Let `k` be a field, `S = Spec k`, `X = Spec k[ε]/(ε²)`
+and `Z = Spec k` with `ι` the closed immersion killing `ε`.  Then `strX` is
+finite hence proper, flat (`k[ε]` is free of rank `2`), and geometrically
+irreducible (every geometric fibre `Spec K[ε]` is a one-point space); and
+`ι ≫ strX = 𝟙` is finite, flat and surjective.  So EVERY hypothesis of the
+old statement holds.  Now take `T` a genus-`1` curve over `k`, so that
+`H¹(T, 𝒪_T) ≠ 0`.  Writing `T[ε]` for `X ×_S T`, the sequence
+`1 → 1 + ε𝒪_T → 𝒪_{T[ε]}^× → 𝒪_T^× → 1` with `1 + ε𝒪_T ≅ 𝒪_T` and
+`Γ(T[ε],𝒪^×) ↠ Γ(T,𝒪^×)` gives
+
+    0 → H¹(T, 𝒪_T) → Pic(T[ε]) → Pic(T),
+
+so there is `ℒ` on `T[ε]` with `ℒ ≇ 𝒪` and `ℒ|_T ≅ 𝒪_T`.  Pick a
+trivialisation `α`.  The pairs `(𝒪, id)` and `(ℒ, α)` are NOT
+`TrivialisedSheafEquiv` (an equivalence supplies `𝒪 ≅ ℒ`), yet on every
+affine `U ⊆ T` they ARE (there `H¹(U,𝒪) = 0`, and the two trivialisations
+are matched by rescaling with a unit, which lifts along `U[ε] → U`).  But
+`RelPoint pstr g` is `{x : T ⟶ P // x ≫ pstr = g}` — morphisms of schemes,
+a Zariski SHEAF in `T` — so `inj` applied on each `U` forces the two
+classifying points to agree on a cover, hence to be equal, hence the two
+pairs to be equivalent.  Contradiction: no `(P, pstr)` can satisfy
+`IsGenRelPicOf`.  The naive functor is not separated here because
+`Γ(X_T, 𝒪^×) → Γ(T, 𝒪^×)` fails to be injective once `X` is non-reduced,
+so pairs acquire the automorphisms `1 + ε𝒪_T` that `hZsurj` was supposed to
+have killed.
+
+THE REPAIR is the hypothesis `hpush` below, which is what the sentence
+"which is what gives `f_*𝒪_X = 𝒪_S` universally" was asserting all along,
+and which is the predicate `ModularCurve/RelativePicard.lean` already uses
+for the same purpose in `exists_relPicOf_of_hasUniversallyTrivialPushforward`.
+It kills the witness on the nose: there `strX.app ⊤` is `k → k[ε]`, not an
+isomorphism.  Since the change only ADDS a hypothesis it cannot make a true
+statement false, so the `hZsurj` bullet below is inherited verbatim rather
+than re-derived — its witness and its argument are untouched, and the class
+of `(X, Z)` it quantifies over has only shrunk.
+
+The consumer discharges `hpush` in one call and no signature above it moved;
+see `exists_skolemBallDatum_of_projectiveCompactification` in
+`Modularity/MoretBailly.lean`, which holds `Smooth` and `IsProper` and gets
+`GeometricallyConnected` from `geometricallyConnected_of_geometricallyIrreducible`
+above.
 
 **FAITHFULNESS.**  The hypotheses are MB's 3.1.2 normalisations, restated
 over an arbitrary base:
 
+* `hpush` on `strX` — `𝒪_S ⟶ (strX)_*𝒪_X` is an isomorphism and stays one
+  after every base change.  This is the LOAD-BEARING one and it is what the
+  audit above added: it makes the automorphism group of an invertible sheaf
+  on `X_T` equal to `Γ(T, 𝒪^×)`, without which the pairs have automorphisms
+  and `surj` asserts that a presheaf which is not a sheaf is representable;
 * `hproper`, `hflat`, `hgi` on `strX` — `X → S` proper flat with
-  geometrically integral fibres, which is what gives `f_*𝒪_X = 𝒪_S`
-  universally and hence makes the automorphism group of an invertible
-  sheaf on `X_T` equal to `Γ(T, 𝒪^×)`;
+  geometrically irreducible fibres.  These are MB's 3.1.2 and are RETAINED
+  because the consumer supplies them for free and MB's construction uses
+  them beyond the automorphism count; they are no longer asked to carry
+  `f_*𝒪_X = 𝒪_S` by themselves, which is what the audit above shows they
+  cannot do;
 * `hZfin`, `hZflat`, `hZsurj` on `ι ≫ strX` — `Z → S` finite flat
   surjective, i.e. 3.1.2(iii).  FAITHFULLY FLAT is the load-bearing one:
   it makes `Γ(T,𝒪^×) → Γ(Z_T,𝒪^×)` injective, hence a rigidified pair
@@ -309,6 +445,7 @@ nothing in the statement uses it, and the consumer supplies one anyway. -/
 theorem exists_genRelPic {X Z S : Scheme.{u}} (strX : X ⟶ S) (ι : Z ⟶ X)
     (hproper : IsProper strX) (hflat : Flat strX)
     (hgi : GeometricallyIrreducible strX)
+    (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
     (hZfin : IsFinite (ι ≫ strX)) (hZflat : Flat (ι ≫ strX))
     (hZsurj : Surjective (ι ≫ strX)) :
     ∃ (P : Scheme.{u}) (pstr : P ⟶ S), Nonempty (IsGenRelPicOf strX ι pstr) :=
