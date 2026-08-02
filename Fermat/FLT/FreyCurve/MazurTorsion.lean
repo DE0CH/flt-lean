@@ -4654,12 +4654,22 @@ structure IsX0JNeronCuspModel {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod 
   [finite : Module.Finite (R : Type) A]
   /-- the immersion of the cuspidal subscheme into the model -/
   ι : Spec (CommRingCat.of A) ⟶ XZ
-  /-- it is a CLOSED immersion -/
-  isClosedImmersion : IsClosedImmersion ι
+  /-- it is a monomorphism -/
+  mono : Mono ι
   /-- it lies over the base -/
   comm : ι ≫ xstr = Spec.map (CommRingCat.ofHom (algebraMap (R : Type) A))
   /-- its image is exactly the cusp locus of the model -/
   cover : Set.range ι.base = (Set.range jZ.base)ᶜ
+  /-- **its RANK is the classical cusp count of `Γ₀(N)`** (added 2026-08-01 for the
+  COUNTING half; see the note on the structure).  `ε_∞(Γ₀(N)) = ∑_{d ∣ N} φ(gcd(d, N/d))`
+  is Diamond–Shurman §3.8; guarded by `N ≠ 0` so that the field says nothing at the
+  degenerate level, where `Gamma0Datum 0 T` is empty and no cusp count is meant. -/
+  rank : N ≠ 0 → Module.finrank (R : Type) A
+    = ∑ dd ∈ N.divisors, (Nat.gcd dd (N / dd)).totient
+  /-- the integral section attached to a rational CUSP is a section of `𝒞` -/
+  section_of_isCusp : ∀ x : RelPoint strX (𝟙 SpecQ), hX.IsCusp x →
+    ∃ f : A →ₐ[(R : Type)] (R : Type),
+      Spec.map (CommRingCat.ofHom f.toRingHom) ≫ ι = (d.intX x).1
 
 attribute [instance] IsX0JNeronCuspModel.commRing IsX0JNeronCuspModel.algebra
   IsX0JNeronCuspModel.etale IsX0JNeronCuspModel.finite
@@ -5092,6 +5102,40 @@ theorem isCusp_redX_of_isCusp_of_jNeronDatum {N q : ℕ}
       Equiv.apply_symm_apply, ← pre_relSectionAlong, hyZ, d.pre_intX]
   exact congrArg Subtype.val hkey
 
+/-! #### THE MERGED FOURTH-CUT LEAF, DELETED 2026-08-01 — it had become consumerless
+
+`redX_base_ne_and_card_compl_range_le_of_jNeronDatum` stood here from 2026-07-30:
+a single sorry leaf whose two conjuncts were the SEPARATION and the COUNTING
+halves of "the cuspidal subscheme of the smooth model is finite étale over
+`ℤ_(q)`", read at the level of points.  Recover it, with its 110-line docstring —
+the DERIVABILITY AUDIT and the two junk-shape counterexamples `Spec R[t]/(t² − q)`
+and `Spec (R × 𝔽_q)` — with `git show <this commit>^`.
+
+**WHY IT WENT.**  The fifth cut (2026-07-31) replaced the point-level assertion by
+the STRUCTURE `IsX0JNeronCuspModel` and the single leaf
+`nonempty_isX0JNeronCuspModel`, and reproved the separation conjunct's consumer
+`redX_base_ne_of_isCusp` over that structure; the counting conjunct's consumer
+`card_compl_range_le_card_divisors_specialFibre` was reproved over the same
+structure on 2026-08-01, once the structure gained its `rank` field.  At that
+point NOTHING in the tree referenced the merged leaf — a comment-stripped grep
+returned only its own declaration line and prose — so it was a live sorry that no
+proof term reached, i.e. exactly the dead-leaf shape `CLAUDE.md` says to delete
+rather than leave to draw dispatches.
+
+**WHAT SURVIVES OF IT, AND WHERE.**  The derivability audit's content is on
+`IsX0JNeronCuspModel` (its two counterexamples are named there as the finite
+non-étale shapes the structure excludes); the `hsq` counterexample `N = 16`,
+`q = 5` is on `card_compl_range_le_card_divisors_specialFibre`; the `¬ q ∣ N`
+analysis is on `nonempty_isX0JNeronCuspModel`.
+
+**AND THE ONE THING THAT IS GONE ON PURPOSE.**  The merged leaf's second conjunct
+compared the SPECIAL fibre with the GENERIC one.  That comparison is not provable
+from the cuspidal model — it is FALSE without `hsq`, and `hsq` cannot live on a
+structure that `redX_base_ne_of_isCusp` consumes without it — so it is not merely
+unproven here, it is the wrong shape.  A successor wanting a fibre-comparison
+statement should state it with `hsq` in its own signature, not on the model. -/
+
+
 /-- **THE CUSPIDAL SUBSCHEME OF THE SMOOTH MODEL IS FINITE ÉTALE OVER `ℤ_(q)`**,
 read at the level of points (sorry leaf, new 2026-07-30) — the ONE
 Deligne–Rapoport input of the fourth cut.
@@ -5201,11 +5245,10 @@ theorem redX_base_ne_and_card_compl_range_le_of_jNeronDatum (N q : ℕ) (_hqN : 
   sorry
 
 /-- **DISTINCT rational cusps of `X_0(N)` have DISTINCT reductions mod `q`**
-(PROVEN 2026-07-30 over `redX_base_ne_and_card_compl_range_le_of_jNeronDatum`;
-opened as a sorry leaf 2026-07-28) — the SEPARATION half of "the cuspidal
-subscheme of the smooth model is finite étale over `ℤ_(q)`", now the first
-conjunct of that single leaf rather than a citation of its own.  Statement,
-hypothesis order and call sites are unchanged.
+(PROVEN 2026-07-31 over `nonempty_isX0JNeronCuspModel`; PROVEN 2026-07-30 over
+the now-deleted merged leaf; opened as a sorry leaf 2026-07-28) — the SEPARATION
+half of "the cuspidal subscheme of the smooth model is finite étale over
+`ℤ_(q)`".  Statement, hypothesis order and call sites are unchanged.
 
 **WHAT IS ASKED.**  Nothing about which points the cusps are, and nothing about
 residue fields: only that the map `redX` does not FUSE two cusps.  Note the
@@ -6397,26 +6440,446 @@ theorem finrank_residueField_eq_one_of_relPoint {k : Type} [Field k] {X : Scheme
     (Scheme.descResidueField_stalkClosedPointTo_fromSpecResidueField k X x.1)
   exact finrank_eq_one_of_algHom_to_base f
 
+/-! #### THE COUNTING HALF OF THE FIFTH CUT (2026-08-01)
+
+The subsection above built `IsX0JNeronCuspModel` for the SEPARATION half and
+recorded, under "WHAT IS NOT DONE HERE", both the route to the counting half and
+the one thing it needed that the structure did not carry — the RANK of `𝒞`.
+That field is now on the structure, and everything else is carried out here.
+
+**THE CHAIN.**  `d.spX` quantifies over ALL test schemes, so it is an
+`IsFibreIdent` (`x0JNeronSpIdentX`), and `IsFibreIdent.compareIso` — already in
+`X0.lean` — identifies `X'` with the honest pullback `𝒳 ×_{ℤ_(q)} 𝔽_q`.  Under
+that identification:
+
+* `range_jY_base_eq_of_jNeronDatum` says the GIVEN open immersion `jY'` has the
+  same image as the RECONSTRUCTED one `IsFibreIdent.openSection`.  This is the
+  step that the docstring above left open, and it is Yoneda: `spX_j` at the
+  tautological point of `Y'` gives `jY' ≫ u = v ≫ jZ` for the two universal
+  points, and then `jY'` and `eY.compareHom ≫ openSection` are two relative
+  points of `strX'` over `strY'` with the same image under the (injective)
+  `spX`, hence equal;
+* `Scheme.Pullback.range_map` then computes the image of the base-changed open
+  immersion as `pullback.fst ⁻¹' range jZ`, so a point off `Y'` maps to a point
+  off `𝒴` — and `pullback.fst` is a CLOSED IMMERSION, because
+  `SpecLoc.special toF` is one (`toF` is surjective) and closed immersions are
+  stable under base change, so it is INJECTIVE on points;
+* `C.cover` turns "off `𝒴`" into "in the image of `ι`", `C.mono` makes `ι`
+  injective on points (a monomorphism of schemes is universally injective), and
+  `C.comm` puts the resulting prime of `A` over the closed point of `ℤ_(q)`.
+
+So `X' ∖ Y'` INJECTS into the special fibre of `Spec A`.  The remaining bound is
+pure commutative algebra: `A` is finite and étale, hence flat, hence FREE over
+the local `ℤ_(q)`; the special fibre `A ⧸ 𝔪A` is therefore spanned over
+`κ(𝔪) = 𝔽_q` by the image of any basis, so its dimension is at most
+`finrank ℤ_(q) A`; and a finite-dimensional algebra over a field has at most
+`finrank` primes, by the Chinese remainder theorem applied to its (finitely
+many, since it is Artinian) maximal ideals.
+
+**WHAT THIS COSTS, STATED PLAINLY.**  The previous proof of
+`card_compl_range_le_card_divisors_specialFibre` went through the merged leaf
+`redX_base_ne_and_card_compl_range_le_of_jNeronDatum`, comparing the special
+fibre with the GENERIC one and then citing `σ₀(N)` on the `ℚ` side only.  That
+route cited the cusp count once; this one cites it on the structure, as `rank`.
+The trade is deliberate and is a net gain: the merged leaf is GONE (it had
+become consumerless — its separation conjunct was superseded by
+`redX_base_ne_of_isX0JNeronCuspModel` on 2026-07-31), so Deligne–Rapoport is now
+asked for by `nonempty_isX0JNeronCuspModel` and by nothing else in this cut, and
+the direct-sorry count of this file drops by one.
+
+**WHY THE MERGED LEAF COULD NOT SIMPLY BE PROVEN INSTEAD.**  Its second conjunct
+compares the two fibres of `𝒞` and is FALSE without `hsq` — `A = ℤ_(5)[t]/(t²+1)`
+is finite étale with ONE generic point and TWO special ones — while `hsq` is an
+arithmetic hypothesis that `IsX0JNeronCuspModel` deliberately does not carry and
+must not (it would have to be threaded through `redX_base_ne_of_isCusp`, which
+has no such hypothesis).  So the cusp model can prove `#special ≤ rank` and
+cannot prove `#special ≤ #generic`; the former is what the consumer needs. -/
+
+/-- **A finite-dimensional algebra over a field has at most `finrank` primes**
+(PROVEN 2026-08-01).
+
+It is Artinian, so its primes are its maximal ideals and there are finitely many
+(`IsArtinianRing.primeSpectrumEquivMaximalSpectrum`, `Finite (MaximalSpectrum ·)`);
+distinct maximal ideals are coprime, so the Chinese remainder map
+`B → ∏_{𝔪} B ⧸ 𝔪` is a SURJECTIVE `k`-linear map; and each factor is a nonzero
+`k`-vector space, so the product has dimension at least the number of factors. -/
+theorem card_primeSpectrum_le_finrank (k B : Type) [Field k] [CommRing B] [Algebra k B]
+    [Module.Finite k B] : Nat.card (PrimeSpectrum B) ≤ Module.finrank k B := by
+  haveI : IsArtinianRing B := IsArtinianRing.of_finite k B
+  haveI : Fintype (MaximalSpectrum B) := Fintype.ofFinite _
+  have hcop : Pairwise (Function.onFun IsCoprime (fun I : MaximalSpectrum B => I.asIdeal)) :=
+    fun _ _ h => MaximalSpectrum.isCoprime_of_ne h
+  have hsurj := Ideal.pi_mkQ_surjective hcop
+  have hle : Module.finrank k (∀ I : MaximalSpectrum B, B ⧸ I.asIdeal) ≤ Module.finrank k B :=
+    LinearMap.finrank_le_finrank_of_surjective
+      (f := (LinearMap.pi fun I : MaximalSpectrum B => (I.asIdeal).mkQ).restrictScalars k) hsurj
+  have hpi : Module.finrank k (∀ I : MaximalSpectrum B, B ⧸ I.asIdeal)
+      = ∑ I : MaximalSpectrum B, Module.finrank k (B ⧸ I.asIdeal) := Module.finrank_pi_fintype k
+  have hone : ∀ I : MaximalSpectrum B, 1 ≤ Module.finrank k (B ⧸ I.asIdeal) := by
+    intro I
+    haveI : I.asIdeal.IsMaximal := I.isMaximal
+    haveI : Nontrivial (B ⧸ I.asIdeal) := Ideal.Quotient.nontrivial_iff.mpr I.isMaximal.ne_top
+    exact Module.finrank_pos
+  have hcard : Nat.card (PrimeSpectrum B) = Fintype.card (MaximalSpectrum B) := by
+    rw [Nat.card_congr IsArtinianRing.primeSpectrumEquivMaximalSpectrum, Nat.card_eq_fintype_card]
+  calc Nat.card (PrimeSpectrum B) = Fintype.card (MaximalSpectrum B) := hcard
+    _ = ∑ _I : MaximalSpectrum B, 1 := by simp
+    _ ≤ ∑ I : MaximalSpectrum B, Module.finrank k (B ⧸ I.asIdeal) :=
+        Finset.sum_le_sum fun I _ => hone I
+    _ = Module.finrank k (∀ I : MaximalSpectrum B, B ⧸ I.asIdeal) := hpi.symm
+    _ ≤ Module.finrank k B := hle
+
+/-- **The primes of `A` containing `J` ARE the primes of `A ⧸ J`** (PROVEN
+2026-08-01) — injectivity is `PrimeSpectrum.comap_injective_of_surjective` and
+surjectivity is `range_comap_of_surjective` read through `Ideal.mk_ker`. -/
+theorem bijective_comap_zeroLocus {A : Type} [CommRing A] (J : Ideal A) :
+    Function.Bijective (fun b : PrimeSpectrum (A ⧸ J) =>
+      (⟨PrimeSpectrum.comap (Ideal.Quotient.mk J) b, by
+        intro x hx
+        show (Ideal.Quotient.mk J) x ∈ b.asIdeal
+        rw [Ideal.Quotient.eq_zero_iff_mem.mpr hx]
+        exact Submodule.zero_mem _⟩ :
+        ↥{a : PrimeSpectrum A | J ≤ a.asIdeal})) := by
+  constructor
+  · intro b₁ b₂ h
+    exact PrimeSpectrum.comap_injective_of_surjective _ Ideal.Quotient.mk_surjective
+      (congrArg Subtype.val h)
+  · rintro ⟨a, ha⟩
+    have hrange : a ∈ Set.range (PrimeSpectrum.comap (Ideal.Quotient.mk J)) := by
+      rw [_root_.range_comap_of_surjective _ _ Ideal.Quotient.mk_surjective]
+      simpa [Ideal.mk_ker] using ha
+    obtain ⟨b, hb⟩ := hrange
+    exact ⟨b, Subtype.ext hb⟩
+
+/-- the coordinate ring of the special fibre of `Spec A ⟶ Spec R` over a local `R`. -/
+abbrev specialFibreQuot (R A : Type) [CommRing R] [IsLocalRing R] [CommRing A] [Algebra R A] :
+    Type := A ⧸ (IsLocalRing.maximalIdeal R).map (algebraMap R A)
+
+instance instAlgebraSpecialFibreQuot {R A : Type} [CommRing R] [IsLocalRing R] [CommRing A]
+    [Algebra R A] : Algebra (IsLocalRing.ResidueField R) (specialFibreQuot R A) :=
+  Ideal.Quotient.algebraQuotientOfLEComap Ideal.le_comap_map
+
+instance instTowerSpecialFibreQuot {R A : Type} [CommRing R] [IsLocalRing R] [CommRing A]
+    [Algebra R A] : IsScalarTower R (IsLocalRing.ResidueField R) (specialFibreQuot R A) :=
+  IsScalarTower.of_algebraMap_eq (fun _ => rfl)
+
+instance instFiniteSpecialFibreQuot {R A : Type} [CommRing R] [IsLocalRing R] [CommRing A]
+    [Algebra R A] [Module.Finite R A] :
+    Module.Finite (IsLocalRing.ResidueField R) (specialFibreQuot R A) :=
+  Module.Finite.of_restrictScalars_finite R _ _
+
+/-- **The special fibre of a finite FREE algebra has dimension at most the rank**
+(PROVEN 2026-08-01).  The image of an `R`-basis spans `A ⧸ 𝔪A` over `R`, hence a
+fortiori over `κ(𝔪)`, since `R` acts through it. -/
+theorem finrank_specialFibreQuot_le (R A : Type) [CommRing R] [IsLocalRing R] [CommRing A]
+    [Algebra R A] [Module.Finite R A] [Module.Free R A] :
+    Module.finrank (IsLocalRing.ResidueField R) (specialFibreQuot R A)
+      ≤ Module.finrank R A := by
+  classical
+  set k := IsLocalRing.ResidueField R with hk
+  set J := (IsLocalRing.maximalIdeal R).map (algebraMap R A) with hJ
+  let ι := Module.Free.ChooseBasisIndex R A
+  let b : Module.Basis ι R A := Module.Free.chooseBasis R A
+  let f : A →ₗ[R] specialFibreQuot R A := (Ideal.Quotient.mkₐ R J).toLinearMap
+  have hfsurj : Function.Surjective f := Ideal.Quotient.mk_surjective
+  have hspanR : Submodule.span R (Set.range (fun i => f (b i))) = ⊤ := by
+    have h1 : Submodule.map f (Submodule.span R (Set.range b))
+        = Submodule.span R (f '' Set.range b) := Submodule.map_span f _
+    rw [b.span_eq, Submodule.map_top, LinearMap.range_eq_top.mpr hfsurj, ← Set.range_comp] at h1
+    exact h1.symm
+  have hspank : Submodule.span k (Set.range (fun i => f (b i))) = ⊤ := by
+    have hle := Submodule.span_le_restrictScalars R k (Set.range (fun i => f (b i)))
+    rw [hspanR] at hle
+    exact (Submodule.restrictScalars_eq_top_iff _ _ _).mp (top_le_iff.mp hle)
+  calc Module.finrank k (specialFibreQuot R A)
+      = Module.finrank k ↥(Submodule.span k (Set.range (fun i => f (b i)))) := by
+        rw [hspank, finrank_top]
+    _ ≤ (Set.range (fun i => f (b i))).toFinset.card := finrank_span_le_card _
+    _ ≤ Fintype.card ι := by
+        rw [Set.toFinset_range]
+        exact (Finset.card_image_le).trans_eq Finset.card_univ
+    _ = Module.finrank R A := (Module.finrank_eq_card_chooseBasisIndex R A).symm
+
+instance finiteSpecialFibreSet (R A : Type) [CommRing R] [IsLocalRing R] [CommRing A]
+    [Algebra R A] [Module.Finite R A] :
+    Finite ↥{a : PrimeSpectrum A |
+      (IsLocalRing.maximalIdeal R).map (algebraMap R A) ≤ a.asIdeal} := by
+  haveI : IsArtinianRing (specialFibreQuot R A) :=
+    IsArtinianRing.of_finite (IsLocalRing.ResidueField R) _
+  exact Finite.of_surjective _
+    (bijective_comap_zeroLocus ((IsLocalRing.maximalIdeal R).map (algebraMap R A))).2
+
+/-- **The special fibre of a finite free algebra over a local ring has at most
+`finrank` points** (PROVEN 2026-08-01) — the numerical input of the count. -/
+theorem card_specialFibreSet_le_finrank (R A : Type) [CommRing R] [IsLocalRing R] [CommRing A]
+    [Algebra R A] [Module.Finite R A] [Module.Free R A] :
+    Nat.card ↥{a : PrimeSpectrum A |
+        (IsLocalRing.maximalIdeal R).map (algebraMap R A) ≤ a.asIdeal}
+      ≤ Module.finrank R A := by
+  refine le_trans (le_of_eq ?_)
+    ((card_primeSpectrum_le_finrank (IsLocalRing.ResidueField R) (specialFibreQuot R A)).trans
+      (finrank_specialFibreQuot_le R A))
+  exact (Nat.card_congr (Equiv.ofBijective _
+    (bijective_comap_zeroLocus ((IsLocalRing.maximalIdeal R).map (algebraMap R A))))).symm
+
+/-- applying a composite morphism of schemes to a point (PROVEN, by `rfl`). -/
+theorem scheme_comp_base_apply {U V W : Scheme.{0}} (f : U ⟶ V) (g : V ⟶ W) (x : U) :
+    (f ≫ g).base x = g.base (f.base x) := rfl
+
+/-- **The maximal ideal of a reduction base is the kernel of the reduction map**
+(PROVEN 2026-08-01) — `ker_eq_nonunits` read through `mem_maximalIdeal`. -/
+theorem maximalIdeal_eq_ker_of_isReductionBase {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    (h : IsReductionBase q R toF) :
+    letI := h.isLocalRing
+    IsLocalRing.maximalIdeal (R : Type) = RingHom.ker toF := by
+  letI := h.isLocalRing
+  ext r
+  rw [IsLocalRing.mem_maximalIdeal, RingHom.mem_ker, mem_nonunits_iff]
+  exact (h.ker_eq_nonunits r).symm
+
+section CuspCount
+
+variable {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+
+/-- the special-fibre identification of the CURVE model, as an `IsFibreIdent`
+(PROVEN — pure field copying, exactly as `IsX0CurveModel.spIdent` in `X0.lean`). -/
+def x0JNeronSpIdentX
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    IsFibreIdent (SpecLoc.special toF) xstr strX' where
+  toEquiv := d.spX
+  nat := d.spX_nat
+
+/-- the special-fibre identification of the OPEN model, as an `IsFibreIdent`. -/
+def x0JNeronSpIdentY
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    IsFibreIdent (SpecLoc.special toF) ystr strY' where
+  toEquiv := d.spY
+  nat := d.spY_nat
+
+/-- **The GIVEN open immersion of the special fibre IS the reconstructed one**
+(PROVEN 2026-08-01) — the step the subsection above left open.
+
+`X'` and `Y'` are pinned only as functors of points, so neither `jY'` nor the
+reconstructed `IsFibreIdent.openSection` can be compared directly; what compares
+them is that BOTH are relative points of `strX'` over `strY'`, and `spX` is
+injective on those.  Their images under `spX` are computed by
+`IsFibreIdent.apply_eq_comp` as composition with the universal point, and
+`spX_j` at the tautological point of `Y'` says exactly that those two composites
+agree. -/
+theorem jY_eq_compareHom_openSection
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    jY' = (x0JNeronSpIdentY d).compareHom
+      ≫ IsFibreIdent.openSection (x0JNeronSpIdentX d) d.model.comm := by
+  have hsq : jY' ≫ (x0JNeronSpIdentX d).universalPoint.1
+      = (x0JNeronSpIdentY d).universalPoint.1 ≫ jZ := by
+    have h := d.spX_j strY' (strY' ≫ SpecLoc.special toF) rfl
+      (⟨𝟙 Y', Category.id_comp _⟩ : RelPoint strY' strY')
+    have hL : ((x0JNeronSpIdentX d).toEquiv strY' (strY' ≫ SpecLoc.special toF) rfl
+        (relSectionAlong jY' hX'.comm (⟨𝟙 Y', Category.id_comp _⟩ : RelPoint strY' strY'))).1
+        = (𝟙 Y' ≫ jY') ≫ (x0JNeronSpIdentX d).universalPoint.1 :=
+      (x0JNeronSpIdentX d).apply_eq_comp strY' (strY' ≫ SpecLoc.special toF) rfl _
+    have h2 : (𝟙 Y' ≫ jY') ≫ (x0JNeronSpIdentX d).universalPoint.1
+        = (x0JNeronSpIdentY d).universalPoint.1 ≫ jZ := hL.symm.trans (congrArg Subtype.val h)
+    rwa [Category.id_comp] at h2
+  have hc1 : jY' ≫ strX' = strY' := hX'.comm
+  have hc2 : ((x0JNeronSpIdentY d).compareHom
+      ≫ IsFibreIdent.openSection (x0JNeronSpIdentX d) d.model.comm) ≫ strX' = strY' := by
+    rw [Category.assoc, IsFibreIdent.openSection_comp (x0JNeronSpIdentX d) d.model.comm,
+      (x0JNeronSpIdentY d).compareHom_snd]
+  have hval : ((x0JNeronSpIdentY d).compareHom
+      ≫ IsFibreIdent.openSection (x0JNeronSpIdentX d) d.model.comm)
+      ≫ (x0JNeronSpIdentX d).universalPoint.1
+      = jY' ≫ (x0JNeronSpIdentX d).universalPoint.1 := by
+    rw [Category.assoc,
+      IsFibreIdent.openSection_universalPoint (x0JNeronSpIdentX d) d.model.comm,
+      ← Category.assoc, (x0JNeronSpIdentY d).compareHom_fst, hsq]
+  have heq : ((x0JNeronSpIdentX d).toEquiv strY' (strY' ≫ SpecLoc.special toF) rfl ⟨jY', hc1⟩)
+      = ((x0JNeronSpIdentX d).toEquiv strY' (strY' ≫ SpecLoc.special toF) rfl
+          ⟨(x0JNeronSpIdentY d).compareHom
+            ≫ IsFibreIdent.openSection (x0JNeronSpIdentX d) d.model.comm, hc2⟩) :=
+    Subtype.ext (by
+      rw [(x0JNeronSpIdentX d).apply_eq_comp strY' (strY' ≫ SpecLoc.special toF) rfl ⟨jY', hc1⟩,
+        (x0JNeronSpIdentX d).apply_eq_comp strY' (strY' ≫ SpecLoc.special toF) rfl
+          ⟨(x0JNeronSpIdentY d).compareHom
+            ≫ IsFibreIdent.openSection (x0JNeronSpIdentX d) d.model.comm, hc2⟩,
+        hval])
+  exact congrArg Subtype.val
+    (((x0JNeronSpIdentX d).toEquiv strY' (strY' ≫ SpecLoc.special toF) rfl).injective heq)
+
+/-- the two open immersions have the same image (PROVEN 2026-08-01). -/
+theorem range_jY_base_eq_of_jNeronDatum
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    Set.range jY'.base
+      = Set.range (IsFibreIdent.openSection (x0JNeronSpIdentX d) d.model.comm).base := by
+  have hjy : Set.range jY'.base
+      = Set.range (((x0JNeronSpIdentY d).compareHom
+        ≫ IsFibreIdent.openSection (x0JNeronSpIdentX d) d.model.comm)).base :=
+    congrArg (fun m : Y' ⟶ X' => Set.range m.base) (jY_eq_compareHom_openSection d)
+  rw [hjy]
+  haveI : IsIso ((x0JNeronSpIdentY d).compareHom) := (x0JNeronSpIdentY d).compareIso.isIso_hom
+  have hsurj : Function.Surjective ((x0JNeronSpIdentY d).compareHom).base :=
+    (Scheme.homeoOfIso (x0JNeronSpIdentY d).compareIso).surjective
+  rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
+    Set.range_eq_univ.mpr hsurj, Set.image_univ]
+
+/-- lying in the open part is detected on the honest base change (PROVEN
+2026-08-01), through `IsFibreIdent.openSection_eq`. -/
+theorem mem_range_openSection_iff_of_jNeronDatum
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) (z : X') :
+    z ∈ Set.range (IsFibreIdent.openSection (x0JNeronSpIdentX d) d.model.comm).base
+      ↔ (x0JNeronSpIdentX d).compareHom.base z
+          ∈ Set.range (fibreBaseChangeMap d.model.comm (SpecLoc.special toF)).base := by
+  have hos : IsFibreIdent.openSection (x0JNeronSpIdentX d) d.model.comm
+      = fibreBaseChangeMap d.model.comm (SpecLoc.special toF)
+        ≫ (x0JNeronSpIdentX d).compareInv :=
+    IsFibreIdent.openSection_eq (x0JNeronSpIdentX d) d.model.comm
+  have hfac : IsFibreIdent.openSection (x0JNeronSpIdentX d) d.model.comm
+      ≫ (x0JNeronSpIdentX d).compareHom
+      = fibreBaseChangeMap d.model.comm (SpecLoc.special toF) := by
+    rw [hos, Category.assoc, (x0JNeronSpIdentX d).compareInv_compareHom, Category.comp_id]
+  constructor
+  · rintro ⟨v, rfl⟩
+    exact ⟨v, by rw [← scheme_comp_base_apply, hfac]⟩
+  · rintro ⟨v, hv⟩
+    refine ⟨v, ?_⟩
+    have hz : (x0JNeronSpIdentX d).compareInv.base
+        ((x0JNeronSpIdentX d).compareHom.base z) = z := by
+      rw [← scheme_comp_base_apply, (x0JNeronSpIdentX d).compareHom_compareInv]; rfl
+    rw [← hz, ← hv, ← scheme_comp_base_apply, ← hos]
+
+/-- **THE COUNT: the cusp locus of the special fibre has at most `rank 𝒞` points**
+(PROVEN 2026-08-01) — the whole geometric content of the counting half.
+
+`X' ∖ Y'` injects into the special fibre of `Spec A`, by the chain described in
+the subsection docstring above: the comparison isomorphism, the closed immersion
+`pullback.fst`, `C.cover` and the monomorphism `C.ι`.  `C.comm` is what puts the
+resulting prime over the closed point of `ℤ_(q)`, which is what makes the bound a
+bound by the RANK rather than by the (infinite) number of primes of `A`.
+
+Note that no arithmetic enters: `hsq`, `N ≠ 0` and `N.Prime` are all absent, and
+the statement is about the rank of whatever algebra the datum carries. -/
+theorem card_compl_range_le_finrank_of_cuspModel
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+    (C : IsX0JNeronCuspModel d) :
+    Nat.card ((Set.range jY'.base)ᶜ : Set X') ≤ Module.finrank (R : Type) C.A := by
+  classical
+  letI := d.base.isLocalRing
+  haveI : Module.Free (R : Type) C.A := Module.free_of_flat_of_isLocalRing
+  haveI hci : IsClosedImmersion (SpecLoc.special toF) :=
+    IsClosedImmersion.spec_of_surjective (CommRingCat.ofHom toF) d.base.surjective
+  haveI : IsClosedImmersion (Limits.pullback.fst xstr (SpecLoc.special toF)) :=
+    MorphismProperty.pullback_fst (P := @IsClosedImmersion) xstr _ hci
+  have hpfinj : Function.Injective
+      (Limits.pullback.fst xstr (SpecLoc.special toF)).base :=
+    (Limits.pullback.fst xstr (SpecLoc.special toF)).isClosedEmbedding.injective
+  have hrange : Set.range (fibreBaseChangeMap d.model.comm (SpecLoc.special toF)).base
+      = (Limits.pullback.fst xstr (SpecLoc.special toF)).base ⁻¹' Set.range jZ.base := by
+    rw [fibreBaseChangeMap_eq_map, Scheme.Pullback.range_map]
+    simp
+  haveI := C.mono
+  have hover : ∀ (a : PrimeSpectrum C.A) (w : ↥(Limits.pullback xstr (SpecLoc.special toF))),
+      C.ι.base a = (Limits.pullback.fst xstr (SpecLoc.special toF)).base w →
+      (IsLocalRing.maximalIdeal (R : Type)).map (algebraMap (R : Type) C.A) ≤ a.asIdeal := by
+    intro a w haw
+    rw [Ideal.map_le_iff_le_comap]
+    intro r hr
+    have h2 : (Spec.map (CommRingCat.ofHom (algebraMap (R : Type) C.A))).base a
+        = (SpecLoc.special toF).base
+            ((Limits.pullback.snd xstr (SpecLoc.special toF)).base w) := by
+      rw [← C.comm, scheme_comp_base_apply, haw, ← scheme_comp_base_apply,
+        Limits.pullback.condition, scheme_comp_base_apply]
+    have h3 : Ideal.comap (algebraMap (R : Type) C.A) a.asIdeal
+        = Ideal.comap toF ((Limits.pullback.snd xstr (SpecLoc.special toF)).base w).asIdeal :=
+      congrArg PrimeSpectrum.asIdeal h2
+    have hk : toF r = 0 := by
+      have hmk := maximalIdeal_eq_ker_of_isReductionBase d.base
+      rw [hmk] at hr
+      exact hr
+    rw [h3, Ideal.mem_comap, hk]
+    exact Submodule.zero_mem _
+  have hex : ∀ z : X', z ∉ Set.range jY'.base →
+      ∃ a : PrimeSpectrum C.A,
+        C.ι.base a = (Limits.pullback.fst xstr (SpecLoc.special toF)).base
+          ((x0JNeronSpIdentX d).compareHom.base z) := by
+    intro z hz
+    have h1 : (x0JNeronSpIdentX d).compareHom.base z
+        ∉ Set.range (fibreBaseChangeMap d.model.comm (SpecLoc.special toF)).base := by
+      rw [← mem_range_openSection_iff_of_jNeronDatum d z, ← range_jY_base_eq_of_jNeronDatum d]
+      exact hz
+    rw [hrange] at h1
+    have h2 : (Limits.pullback.fst xstr (SpecLoc.special toF)).base
+        ((x0JNeronSpIdentX d).compareHom.base z) ∈ (Set.range jZ.base)ᶜ := h1
+    rw [← C.cover] at h2
+    exact h2
+  refine le_trans ?_ (card_specialFibreSet_le_finrank (R : Type) C.A)
+  refine Nat.card_le_card_of_injective
+    (fun z => ⟨(hex z.1 z.2).choose, hover _ _ (hex z.1 z.2).choose_spec⟩) ?_
+  rintro ⟨z₁, hz₁⟩ ⟨z₂, hz₂⟩ heq
+  have ha : (hex z₁ hz₁).choose = (hex z₂ hz₂).choose := congrArg Subtype.val heq
+  have h1 := (hex z₁ hz₁).choose_spec
+  have h2 := (hex z₂ hz₂).choose_spec
+  rw [ha, h2] at h1
+  have hw : (x0JNeronSpIdentX d).compareHom.base z₁
+      = (x0JNeronSpIdentX d).compareHom.base z₂ := hpfinj h1.symm
+  have hcinj : Function.Injective ((x0JNeronSpIdentX d).compareHom).base := by
+    haveI : IsIso ((x0JNeronSpIdentX d).compareHom) := (x0JNeronSpIdentX d).compareIso.isIso_hom
+    exact (Scheme.homeoOfIso (x0JNeronSpIdentX d).compareIso).injective
+  exact Subtype.ext (hcinj hw)
+
+end CuspCount
+
+/-- **Under `hsq` the geometric cusp count IS `σ₀(N)`** (PROVEN 2026-08-01):
+every `gcd(d, N/d)` is `1` and `φ(1) = 1`, so the sum is the number of divisors.
+
+This is the ONLY place squarefreeness enters the counting half, and it is
+exactly where the `N = 16`, `q = 5` counterexample recorded below lives: without
+it the sum is `6` while `σ₀(16) = 5`. -/
+theorem sum_totient_gcd_eq_card_divisors (N : ℕ)
+    (hsq : ∀ dd : N.divisors, Nat.gcd dd.1 (N / dd.1) = 1) :
+    ∑ dd ∈ N.divisors, (Nat.gcd dd (N / dd)).totient = N.divisors.card := by
+  have h : ∀ dd ∈ N.divisors, (Nat.gcd dd (N / dd)).totient = 1 := by
+    intro dd hdd
+    rw [hsq ⟨dd, hdd⟩]
+    simp
+  rw [Finset.sum_congr rfl h, Finset.sum_const, smul_eq_mul, mul_one]
+
+
 /-- **The special fibre has at most `σ₀(N)` cusps, when every `gcd(d, N/d)` is
-`1`** (PROVEN 2026-07-30 over `redX_base_ne_and_card_compl_range_le_of_jNeronDatum`
-and the `ℚ`-side `card_compl_range_le_card_divisors`; opened as a sorry leaf
+`1`** (PROVEN 2026-08-01 over `nonempty_isX0JNeronCuspModel` alone; PROVEN
+2026-07-30 over the now-deleted `redX_base_ne_and_card_compl_range_le_of_jNeronDatum`
+plus the `ℚ`-side `card_compl_range_le_card_divisors`; opened as a sorry leaf
 2026-07-28).  Statement, hypothesis order and call sites are unchanged; only the
 proof is new.  The opposite inequality is NOT a leaf either: it comes free from
 the injectivity that `redX_base_ne_of_isCusp` supplies, and the two together
 force the bijection, exactly as on the `ℚ` side.
 
-**HOW IT IS PROVEN, AND WHY THAT IS A REDUCTION IN CLASSICAL INPUT.**  The leaf's
-second conjunct compares the special fibre with the GENERIC one — at most as many
-cusps downstairs as upstairs, under `hsq` — and `card_compl_range_le_card_divisors`
-bounds the generic count by `σ₀(N)` on the `ℚ` side, through
-`isX0Compactification_data_of_compactificationY0` and
-`IsCompactificationY0.toX0Compactification`.  Composing the two is the whole
-proof.  What this removes is a SECOND citation of the cusp count of `Γ₀(N)`
-(Diamond–Shurman §3.8, `ε_∞(Γ₀(N)) = ∑_{d ∣ N} φ(gcd(d, N/d))`, in
-`sources/diamondshurman2005mf.txt` around line 5630) over `𝔽_q`: the arithmetic
-is now asked of the literature exactly once in the development, on the `ℚ` side,
-and the `𝔽_q` side asks only the geometric fact that the two fibres of the
-cuspidal subscheme have the same number of points.
+**HOW IT IS PROVEN (2026-08-01), AND WHAT THE RE-ROUTING COSTS.**  Over the
+cuspidal model of the subsection above, `card_compl_range_le_finrank_of_cuspModel`
+injects `X' ∖ Y'` into the special fibre of `𝒞 = Spec A` and bounds that by
+`finrank ℤ_(q) A`, which the structure's `rank` field identifies with the
+Diamond–Shurman count `∑_{d ∣ N} φ(gcd(d, N/d))` (§3.8, in
+`sources/diamondshurman2005mf.txt` around line 5630); `hsq` collapses that sum to
+`σ₀(N)` (`sum_totient_gcd_eq_card_divisors`).
+
+The PREVIOUS proof instead compared the special fibre with the GENERIC one, over
+the merged leaf, and cited `σ₀(N)` only on the `ℚ` side — so the cusp count was
+asked of the literature exactly once.  It is now asked twice, on the `ℚ` side and
+in the `rank` field.  **That is a deliberate trade and it is a net gain**: the
+merged leaf had become CONSUMERLESS (its separation conjunct was superseded by
+`redX_base_ne_of_isX0JNeronCuspModel` on 2026-07-31) and has been deleted, so the
+whole cut now rests on ONE Deligne–Rapoport leaf instead of two, and the
+direct-sorry count of this file is one lower.  The merged leaf could not simply be
+proven instead: its second conjunct is FALSE without `hsq`
+(`A = ℤ_(5)[t]/(t² + 1)` is finite étale with one generic and two special points),
+and `hsq` is an arithmetic hypothesis that `IsX0JNeronCuspModel` must not carry,
+since `redX_base_ne_of_isCusp` consumes the same leaf without it.
 
 **`hsq` IS LOAD-BEARING FOR TRUTH, NOT A CONVENIENCE.**  Over `𝔽_q` the number
 of CLOSED points above a divisor `d` is `φ(gcd(d, N/d)) / ord_{gcd(d, N/d)}(q)`
@@ -6469,9 +6932,9 @@ theorem card_compl_range_le_card_divisors_specialFibre (N q : ℕ) (hN : N ≠ 0
     {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
     (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
     Nat.card ((Set.range jY'.base)ᶜ : Set X') ≤ N.divisors.card :=
-  ((redX_base_ne_and_card_compl_range_le_of_jNeronDatum N q hqN d).2 hsq).trans
-    (card_compl_range_le_card_divisors N hN
-      (hX.toX0Compactification hc (isX0Compactification_data_of_compactificationY0 N hN hc hX)))
+  (nonempty_isX0JNeronCuspModel N q hqN d).elim fun C => by
+    refine (card_compl_range_le_finrank_of_cuspModel d C).trans ?_
+    rw [C.rank hN, sum_totient_gcd_eq_card_divisors N hsq]
 
 /-- **The cusps of `X_0(N)` mod `q` are indexed by the divisors of `N`,
 the cusp above `d` having residue field `𝔽_q(ζ_{gcd(d, N/d)})** (PROVEN
@@ -6498,10 +6961,10 @@ all on this route.  Injectivity of the resulting map `N.divisors → X' ∖ Y'`
 is `redX_base_ne_of_isCusp`; surjectivity is
 `Function.Injective.bijective_of_nat_card_le` against
 `card_compl_range_le_card_divisors_specialFibre`.  Both of those are
-THEOREMS since 2026-07-30, over the single leaf
-`redX_base_ne_and_card_compl_range_le_of_jNeronDatum` — the only classical
-input of this route, and one fact read twice: the cuspidal subscheme of the
-model is finite étale over `ℤ_(q)`.
+THEOREMS since 2026-07-30, and since 2026-08-01 both over the single leaf
+`nonempty_isX0JNeronCuspModel` — the only classical input of this route, and
+one fact read twice: the cuspidal subscheme of the model is finite étale over
+`ℤ_(q)`.
 
 **WHAT THE STATEMENT SAYS.**  `X' ∖ Y'` — a finite set of closed points
 of the curve `X'`, by `IsX0Compactification.finite_compl` — is in
@@ -6534,10 +6997,9 @@ those two are one closed point with residue field `ℚ(ζ_4)`, which is why
 the `ℚ`-side twin needs no such hypothesis.  So the hypothesis is renamed
 `hN` and is genuinely consumed below; its load-bearing form — `N`
 squarefree, in the pointwise shape `∀ d ∣ N, gcd(d, N/d) = 1` — is carried
-by `card_compl_range_le_card_divisors_specialFibre` and, since 2026-07-30,
-by the second conjunct of
-`redX_base_ne_and_card_compl_range_le_of_jNeronDatum` under it, which is
-where a composite-level generalisation must go.
+by `card_compl_range_le_card_divisors_specialFibre` and, since 2026-08-01,
+by the `rank` field of `IsX0JNeronCuspModel` under it, which is where a
+composite-level generalisation must go.
 
 **WHY NO `ratPoint` CLAUSE.**  The `ℚ`-side leaf carries one, because
 `nonempty_cuspLocus_of_residueIndexing` takes it as a hypothesis.  Here it
