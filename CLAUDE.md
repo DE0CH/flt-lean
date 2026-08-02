@@ -5,6 +5,106 @@ This repository was split out of Deyao's dissertation repo on
 history of the formalization is preserved. The project root IS the
 Lean package (formerly the `fermat/` subfolder).
 
+## A ROUTE THAT SAYS "TAKE STALKS" IS DISCHARGED BY THE ADJUNCTION THAT *DEFINES* THE OBJECT
+
+(2026-08-02, `flt-lean-72`, closing `exists_constSmul_of_iso` — the last leaf of
+`RelativePicard.lean`'s `𝒦_X` dictionary.) That leaf's docstring gave a four-bullet route,
+and the fourth bullet was the expensive-looking one: *"the identity of MORPHISMS follows
+from the identity on the generic stalk, because `Γ(𝒦_X, U) ⟶ (𝒦_X)_η` is injective for
+every `U` … this is the one step that uses what `𝒦_X` IS"*, with the file's own
+`injective_genericPointHom_app` named as the ingredient. The first three bullets were
+stalk-theoretic too — exactness of stalk-taking, `Mono` as objectwise injectivity, a
+`K`-submodule dichotomy.
+
+**None of it was needed, and the reason is one line of the object's own definition.**
+`constSheaf X` is `g_* 𝒪_{Spec K}` BY DEFINITION (`g` = the generic point as a morphism),
+so `Hom(L, 𝒦_X) ≅ Hom(g^*L, 𝒪_{Spec K})` is just the `g^* ⊣ g_*` adjunction — and being a
+**bijection** it discharges bullet four outright: two morphisms into `𝒦_X` are equal iff
+their transposes are. No stalk, no colimit, no exactness, and `injective_genericPointHom_app`
+never appears. The whole argument then lives in `(Spec K).Modules`, where the only inputs
+are local triviality at `η` and "every endomorphism of `𝒪` is multiplication by a global
+section".
+
+**The generalisable check, and it costs one `grep` of the definition:** when a route note
+says a step needs STALKS, LOCAL-TO-GLOBAL, or "determined by its germ", look at how the
+object is DEFINED. If it is a pushforward, a kernel of an adjunction unit, or anything else
+presented by an adjunction, that adjunction's `homEquiv` is a bijection and it is very often
+the step the note was pricing. This development defines objects that way constantly —
+`sectionIdeal` is a kernel of an adjunction unit, `constSheaf` is a pushforward — and the
+file's own `toConstSheaf_eq`/`mono_toConstSheaf` had already used the trick at one point
+without anybody noticing it applies to the dictionary too.
+
+Two riders from the same run, both cheap and both reusable.
+
+* **A LOCAL-TRIVIALITY definition beats an abstract-invertibility one when you need a
+  trivialization AT A POINT.** `IsInvertibleSheaf L` here is `∀ z, ∃ U ∋ z, L|_U ≅ 𝒪_U`, so
+  `g^*L ≅ 𝒪_{Spec K}` is: take `U` at `η`, factor `g` through `U` with
+  `IsOpenImmersion.lift` (its range condition IS `preimage_genericPointHom_eq_top`), then
+  four pseudo-functoriality isos the file already has. **Do NOT go the other way** — via
+  `isInvertibleSheaf_modPullback` and "the only nonempty open of `Spec K` is `⊤`" — which
+  buys the same iso and adds restriction-along-`⊤` bookkeeping this route never meets.
+* **`Adjunction.homEquiv_naturality_left_symm` / `_right_symm` are the two lemmas that turn
+  the transposed goal back into the original**, and they are exactly the right shape; the
+  only care needed is to apply them as `have`s and chain with `Eq.trans`, because the goal's
+  type is the project's `def` (`constSheaf X`) and `rw` will not cross that (next section).
+
+## A PROPERTY ASSERTED OF *BOTH ENDS* OF AN ISOMORPHISM IS ASSERTED ONCE — check iso-invariance before calling it load-bearing
+
+(Same run, and it corrects a bullet that had stood since the leaf was cut.)
+`exists_constSmul_of_iso` takes `IsInvertibleSubsheaf ιL` **and** `IsInvertibleSubsheaf ιM`
+— i.e. invertibility of `L` and of `M` — **and** an isomorphism `e : L ≅ M`. Its audit
+claimed *"Drop `IsInvertibleSheaf L` and it is FALSE"*.
+
+It is not false: **`IsInvertibleSheaf` is an isomorphism invariant, so `IsInvertibleSheaf L`
+follows from `IsInvertibleSheaf M` together with `e`** — three lines, transport the local
+trivialization along `(Scheme.Modules.restrictFunctor U.ι).mapIso e`. The two clauses are
+interchangeable and only one of them can be doing anything.
+
+**So add to every faithfulness audit: when a leaf asserts property `P` of two objects that
+some hypothesis says are ISOMORPHIC, check whether `P` is iso-invariant.** If it is, at most
+one of the two assertions is load-bearing and any counterexample offered against dropping
+either is impossible by construction. This is cheap — it is a property of `P`'s definition,
+not a search — and it is invisible to the standing "instantiate the witness" discipline,
+because there is no witness to instantiate.
+
+**The tell was in the bullet, exactly where CLAUDE.md says to look for it.** The bullet opens
+a candidate, writes *"… which is invertible, so instead take …"*, retracts that one too, and
+ends without ever exhibiting a witness. A bullet that walks through two or three candidates
+and discards each is not a refutation; it is a record of a failed search, and the honest
+verdict at the end of such a search is usually "this hypothesis is redundant".
+
+**And the right repair is prose, not signature.** Both clauses were KEPT — a weaker
+hypothesis set cannot make a statement false, the sole call site passes all four
+positionally, and a signature change is the interface-split merge hazard. What changed is
+the audit text. (Same disposition as `mono_modTensorToUnit`'s two unused hypotheses.)
+
+### THE `TopCat.Sheaf` / `Sheaf J` GAP: `rw` fails on a pattern that is character-for-character in the goal
+
+Measured repeatedly in `RelativePicard.lean`, and it cost about half the iterations.
+`Z.ringCatSheaf : TopCat.Sheaf RingCat Z` while `SheafOfModules` wants
+`Sheaf (Opens.grothendieckTopology Z) RingCat`. They are defeq and NOT syntactically equal,
+so any mathlib lemma whose statement mentions `R.obj.obj U` fails to `rw` with
+
+    Did not find an occurrence of the pattern <P> in the target expression <P>
+    … The target expression is not type-correct under the `instances` transparency level
+
+— the pattern printed and the target printed being identical. Three cures, in the order to
+try them:
+
+* **get the equation from Lean, not from `rw`**: `have h := <the mathlib lemma> <args>`
+  elaborates fine, and then `h.trans` / `Eq.trans` / `congrArg` cross the gap because they
+  check up to defeq. `refine hleft.trans (Eq.trans ?_ hright.symm)` is the workhorse;
+* **`show` the concrete presheaf form**: the whole of `modUnitMul`'s multiplicativity is
+  `show (Z.presheaf.map _ a) * (Z.presheaf.map _ b) = Z.presheaf.map _ (a * b)` followed by
+  `map_mul`, because `PresheafOfModules.unitHomEquiv`'s inverse is `x ↦ x • s` and the
+  composite is a product of restrictions BY `rfl`;
+* **when the goal prints as `A = A` and `simp` will not close it, use `rfl`.**
+
+**And never write a numeral at a module type**: `(1 : ↑((modUnit Z).val.obj U))` fails with
+`failed to synthesize OfNat`, while the same `1` arrives fine inside a lemma Lean elaborated
+itself. If you need the unit section, take it from `unitHomEquiv_apply_coe`'s statement
+rather than typing it.
+
 ## A HYPOTHESIS AN AUDIT CALLS UNUSED IS FREE STRENGTH — SPEND IT, AND THE MISSING THEORY MAY GO AWAY
 
 (2026-07-31, `flt-lean-254`, `ModularCurve/RelativePicard.lean`.) A mature leaf's
