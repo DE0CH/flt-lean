@@ -4672,7 +4672,14 @@ theorem ord_eq_zero_of_isAlgebraic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ 
     have : D.ord v g⁻¹ < 0 := by rw [D.ord_inv v g hg0]; omega
     exact absurd this (main g⁻¹ hinv)
 
-/-- `div_∞ g = 0` for `g` algebraic over `K` (PROVEN). -/
+/-- `div_∞ g = 0` for `g` algebraic over `K` (PROVEN).
+
+The CONVERSE — a transcendental `g` really does have a pole, so `div_∞ g ≠ 0` — is
+`exists_isPlaceFun_ord_neg_of_transcendental` further down (PROVEN 2026-08-01, over
+`CharZero K`).  It is a much weaker statement than either half of the fundamental identity
+`deg (div_∞ g) = [F : K⟮g⟯]`, and it does NOT help with those two leaves; it is recorded here
+because "does a transcendental function have a pole at all" is the question a reader of this
+theorem asks next, and until then the answer needed the identity. -/
 theorem poleDivisor_eq_zero_of_isAlgebraic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
     {g : D.F} (hg : IsAlgebraic K g) : D.poleDivisor g = 0 := by
   ext v
@@ -5207,29 +5214,35 @@ theorem coeff_quadCombination {K E : Type*} [CommRing K] [CommRing E] (φ : K �
       = u ^ 2 * φ (P.coeff N) - u * 2 * φ (Q.coeff N) + φ (R.coeff N) := by
   simp only [coeff_add, coeff_sub, coeff_C_mul, coeff_map]
 
-/-- **The abscissa is integral over `K⟮g⟯` for every transcendental `g`** (PROVEN); see the
-section note above for the argument. -/
-theorem isIntegral_xx_adjoin_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
-    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : Transcendental K g) :
-    IsIntegral (IntermediateField.adjoin K {g}) D.xx := by
-  set E := IntermediateField.adjoin K {g} with hEdef
+/-- **The abscissa is integral over ANY coefficient field containing a transcendental `g`**
+(PROVEN).  `L` is an arbitrary field sitting between `K` and `F` and containing `g`; the
+argument is the section note's, and none of it is special to `K⟮g⟯`.
+
+Stating it this way is what lets the same computation serve BOTH `L = K⟮g⟯` (the corollary
+immediately below, which is what it was originally proved for) and `L = RatFunc K` (the tower
+`exists_isPlaceFun_pos_of_transcendental` builds, which is where the Dedekind machinery of
+`PlaceFromDedekind` wants its coefficients).  It costs nothing: the quadratic relation `p` has
+coefficients `g²·a − 2g·b + c` with `a, b, c ∈ K`, so it is expressible over any such `L`. -/
+theorem isIntegral_xx_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : Transcendental K g)
+    {L : Type*} [Field L] [Algebra K L] [Algebra L D.F] [IsScalarTower K L D.F]
+    {gL : L} (hgL : algebraMap L D.F gL = g) :
+    IsIntegral L D.xx := by
   obtain ⟨a, b, d, hd, heq⟩ := D.gen g
   have hd0 : d ≠ 0 := by rintro rfl; simp at hd
-  set gE : E := ⟨g, IntermediateField.mem_adjoin_simple_self K g⟩ with hgE
-  have hgEF : algebraMap E D.F gE = g := rfl
   set fp : K[X] := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K with hfp
   set P : K[X] := d ^ 2 with hP
   set Q : K[X] := a * d with hQ
   set R : K[X] := a ^ 2 - b ^ 2 * fp with hR
-  set p : E[X] := C (gE ^ 2) * P.map (algebraMap K E) - C (gE * 2) * Q.map (algebraMap K E)
-    + R.map (algebraMap K E) with hp
+  set p : L[X] := C (gL ^ 2) * P.map (algebraMap K L) - C (gL * 2) * Q.map (algebraMap K L)
+    + R.map (algebraMap K L) with hp
   -- `xx` is a root of `p`
   have hroot : (aeval D.xx) p = 0 := by
     have hsx : (aeval D.xx) fp = sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx :=
       aeval_sextPoly c₀ c₁ c₂ c₃ c₄ c₅ D.xx
     have hyy : D.yy ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx := D.eqn
     rw [hp, hP, hQ, hR]
-    simp only [map_add, map_sub, map_mul, map_pow, aeval_C, hgEF, map_ofNat,
+    simp only [map_add, map_sub, map_mul, map_pow, aeval_C, hgL, map_ofNat,
       aeval_map_algebraMap, hsx]
     linear_combination
       (g * (aeval D.xx) d - (aeval D.xx) a + (aeval D.xx) b * D.yy) * heq +
@@ -5241,9 +5254,9 @@ theorem isIntegral_xx_adjoin_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : 
     have hlc : P.coeff N ≠ 0 := by
       rw [hN, ← leadingCoeff]
       exact leadingCoeff_ne_zero.mpr (by rw [hP]; exact pow_ne_zero 2 hd0)
-    have hcoeff : gE ^ 2 * (algebraMap K E) (P.coeff N) - gE * 2 * (algebraMap K E) (Q.coeff N)
-        + (algebraMap K E) (R.coeff N) = 0 := by
-      rw [← coeff_quadCombination (algebraMap K E) gE P Q R N, ← hp, hzero, coeff_zero]
+    have hcoeff : gL ^ 2 * (algebraMap K L) (P.coeff N) - gL * 2 * (algebraMap K L) (Q.coeff N)
+        + (algebraMap K L) (R.coeff N) = 0 := by
+      rw [← coeff_quadCombination (algebraMap K L) gL P Q R N, ← hp, hzero, coeff_zero]
     set q : K[X] :=
       C (P.coeff N) * X ^ 2 - C (2 * Q.coeff N) * X + C (R.coeff N) with hq
     refine hg ⟨q, ?_, ?_⟩
@@ -5251,41 +5264,55 @@ theorem isIntegral_xx_adjoin_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : 
       apply hlc
       have hc := congrArg (fun r : K[X] => r.coeff 2) hq0
       simpa [hq] using hc
-    · have hF := congrArg (algebraMap E D.F) hcoeff
-      have hAlg : ∀ k : K, algebraMap E D.F (algebraMap K E k) = algebraMap K D.F k := fun k =>
-        (IsScalarTower.algebraMap_apply K E D.F k).symm
-      simp only [map_add, map_sub, map_mul, map_pow, map_ofNat, map_zero, hgEF, hAlg] at hF
+    · have hF := congrArg (algebraMap L D.F) hcoeff
+      have hAlg : ∀ k : K, algebraMap L D.F (algebraMap K L k) = algebraMap K D.F k := fun k =>
+        (IsScalarTower.algebraMap_apply K L D.F k).symm
+      simp only [map_add, map_sub, map_mul, map_pow, map_ofNat, map_zero, hgL, hAlg] at hF
       simp only [hq, map_add, map_sub, map_mul, map_pow, aeval_C, aeval_X, map_ofNat]
       linear_combination hF
   exact IsAlgebraic.isIntegral ⟨p, hp0, hroot⟩
 
-/-- **`[F : K⟮g⟯] < ∞` for every transcendental `g`** (PROVEN): `x` is integral over `K⟮g⟯`,
-`y² = f(x)` makes `y` integral too, and `gen` says the two of them generate `F`. -/
-theorem finiteDimensional_adjoin_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+/-- **The abscissa is integral over `K⟮g⟯` for every transcendental `g`** (PROVEN); see the
+section note above for the argument.  This is the `L = K⟮g⟯` instance of
+`isIntegral_xx_of_transcendental` — the statement and the argument order are unchanged from
+when the proof was written out here (2026-07-31). -/
+theorem isIntegral_xx_adjoin_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : Transcendental K g) :
-    FiniteDimensional (IntermediateField.adjoin K {g}) D.F := by
-  set E := IntermediateField.adjoin K {g} with hEdef
-  have hx : IsIntegral E D.xx := isIntegral_xx_adjoin_of_transcendental D hg
-  have hsext : IsIntegral E (sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx) := by
-    have hmem : sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx ∈ Algebra.adjoin E ({D.xx} : Set D.F) := by
-      have h := Polynomial.aeval_mem_adjoin_singleton (↥E) D.xx
-        (p := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (↥E))
+    IsIntegral (IntermediateField.adjoin K {g}) D.xx :=
+  isIntegral_xx_of_transcendental D hg
+    (gL := (⟨g, IntermediateField.mem_adjoin_simple_self K g⟩ :
+      ↥(IntermediateField.adjoin K {g}))) rfl
+
+/-- **`[F : L] < ∞` for any coefficient field `L` containing a transcendental `g`** (PROVEN):
+`x` is integral over `L`, `y² = f(x)` makes `y` integral too, and `gen` says the two of them
+generate `F`.  The general-`L` form, for the same reason as
+`isIntegral_xx_of_transcendental` above. -/
+theorem finiteDimensional_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : Transcendental K g)
+    {L : Type*} [Field L] [Algebra K L] [Algebra L D.F] [IsScalarTower K L D.F]
+    {gL : L} (hgL : algebraMap L D.F gL = g) :
+    FiniteDimensional L D.F := by
+  have hx : IsIntegral L D.xx := isIntegral_xx_of_transcendental D hg hgL
+  have hsext : IsIntegral L (sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx) := by
+    have hmem : sext c₀ c₁ c₂ c₃ c₄ c₅ D.xx ∈ Algebra.adjoin L ({D.xx} : Set D.F) := by
+      have h := Polynomial.aeval_mem_adjoin_singleton L D.xx
+        (p := sextPoly c₀ c₁ c₂ c₃ c₄ c₅ L)
       rwa [aeval_sextPoly] at h
     exact adjoin_le_integralClosure hx hmem
-  have hy : IsIntegral E D.yy :=
+  have hy : IsIntegral L D.yy :=
     IsIntegral.of_pow (n := 2) (by norm_num) (by rw [D.eqn]; exact hsext)
   haveI : Finite ({D.xx, D.yy} : Set D.F) :=
     ((Set.finite_singleton D.yy).insert D.xx).to_subtype
-  have htop : IntermediateField.adjoin E ({D.xx, D.yy} : Set D.F) = ⊤ := by
-    set A := IntermediateField.adjoin E ({D.xx, D.yy} : Set D.F) with hA
+  have htop : IntermediateField.adjoin L ({D.xx, D.yy} : Set D.F) = ⊤ := by
+    set A := IntermediateField.adjoin L ({D.xx, D.yy} : Set D.F) with hA
     have hxA : D.xx ∈ A := IntermediateField.subset_adjoin _ _ (by simp)
     have hyA : D.yy ∈ A := IntermediateField.subset_adjoin _ _ (by simp)
     have hpoly : ∀ r : K[X], (aeval D.xx) r ∈ A := by
       intro r
-      have hle : Algebra.adjoin (↥E) ({D.xx} : Set D.F) ≤ A.toSubalgebra :=
+      have hle : Algebra.adjoin L ({D.xx} : Set D.F) ≤ A.toSubalgebra :=
         Algebra.adjoin_le (by simpa using hxA)
-      have h := hle (Polynomial.aeval_mem_adjoin_singleton (↥E) D.xx
-        (p := r.map (algebraMap K (↥E))))
+      have h := hle (Polynomial.aeval_mem_adjoin_singleton L D.xx
+        (p := r.map (algebraMap K L)))
       rwa [aeval_map_algebraMap] at h
     refine eq_top_iff.mpr fun z _ => ?_
     obtain ⟨a, b, d, hd, heq⟩ := D.gen z
@@ -5294,14 +5321,155 @@ theorem finiteDimensional_adjoin_of_transcendental {c₀ c₁ c₂ c₃ c₄ c�
       linear_combination heq
     rw [hz]
     exact div_mem (add_mem (hpoly a) (mul_mem (hpoly b) hyA)) (hpoly d)
-  have hfd : FiniteDimensional E (IntermediateField.adjoin E ({D.xx, D.yy} : Set D.F)) :=
+  have hfd : FiniteDimensional L (IntermediateField.adjoin L ({D.xx, D.yy} : Set D.F)) :=
     IntermediateField.finiteDimensional_adjoin (fun w hw => by
       rcases hw with h | h
       · exact h ▸ hx
       · simp only [Set.mem_singleton_iff] at h
         exact h ▸ hy)
   rw [htop] at hfd
-  exact (IntermediateField.topEquiv (F := ↥E) (E := D.F)).toLinearEquiv.finiteDimensional
+  exact (IntermediateField.topEquiv (F := L) (E := D.F)).toLinearEquiv.finiteDimensional
+
+/-- **`[F : K⟮g⟯] < ∞` for every transcendental `g`** (PROVEN): the `L = K⟮g⟯` instance of
+`finiteDimensional_of_transcendental`.  Statement and argument order unchanged from when the
+proof was written out here (2026-07-31). -/
+theorem finiteDimensional_adjoin_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : Transcendental K g) :
+    FiniteDimensional (IntermediateField.adjoin K {g}) D.F :=
+  finiteDimensional_of_transcendental D hg
+    (gL := (⟨g, IntermediateField.mem_adjoin_simple_self K g⟩ :
+      ↥(IntermediateField.adjoin K {g}))) rfl
+
+/-! ### A transcendental function has a POLE (PROVEN, 2026-08-01)
+
+The converse half of `poleDivisor_eq_zero_of_isAlgebraic`, and the input to
+`exists_algebraMap_eq_of_divisor_eq_zero` below — which is what
+`geomPic_exists_const_of_divisor_eq_zero` (the `2b` sub-leaf of `geomPic_bc_injective`, over
+`ℚ̄`) asks for.
+
+**It needs no new theory: it is `PlaceFromDedekind`'s lying-over, run in the tower `K[1/g]`
+rather than in the tower `K[x]`.**  That is the only observation in this block, and it is the
+one that turns the leaf into ~60 lines.  `PlaceFromDedekind.exists_heightOneSpectrum_over_maximal`
+is stated for an arbitrary `Algebra K[X] F`, so it does not care that `X` is sent to the
+abscissa; sending `X ↦ 1/g` and lying over the maximal ideal `(X)` of `K[X]` produces a place
+at which `1/g` is POSITIVE, i.e. a pole of `g`.  No valuation is extended by hand and
+`ord_complete` is used exactly once, at the end, to turn the resulting `IsPlaceFun` into a
+place of `D`.
+
+What the tower costs, and why the two theorems above were generalised in `L`: the Dedekind
+machinery wants `[FiniteDimensional (RatFunc K) F]` and `[Algebra.IsSeparable (RatFunc K) F]`
+for the *new* tower.  The first is `finiteDimensional_of_transcendental` at `L = RatFunc K`;
+the second is free in characteristic zero (`RatFunc K` is then `CharZero`, and a finite
+extension of a characteristic-zero field is separable).
+
+**`CharZero K` is load-bearing and is not decoration.**  In characteristic `p` the extension
+`F/K(g)` need not be separable for an arbitrary transcendental `g` — take `g = x^p`, where
+`K(x)/K(x^p)` is purely inseparable — and `integralClosure.isDedekindDomain` really does need
+separability.  The consumer is over `ℚ̄`, so nothing is lost; a characteristic-`p` version would
+have to replace the tower argument at the inseparable `g`, or restrict to separating `g`.
+
+Then `exists_algebraMap_eq_of_divisor_eq_zero` is the contrapositive plus one step:
+over an ALGEBRAICALLY CLOSED `K`, an element that is not transcendental is a constant, because
+`minpoly` is irreducible hence linear.  Both hypotheses of that theorem are load-bearing:
+without `IsAlgClosed` the conclusion is false (over `K = ℚ` and `F ⊇ ℚ(i)`, a constant `i` has
+trivial divisor and is not in the image of `algebraMap ℚ F`), and without `h ≠ 0` it is false
+by the junk convention `ord v 0 = 0`, which makes `divisor 0 = 0`. -/
+
+/-- **A transcendental function has a ZERO** (PROVEN): some place of `F` is strictly positive
+on it.  Lying over the maximal ideal `(X)` of `K[X]` in the tower `X ↦ u`. -/
+theorem exists_isPlaceFun_pos_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    [CharZero K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {u : D.F} (hu : Transcendental K u) :
+    ∃ o : D.F → ℤ, IsPlaceFun K D.F o ∧ 0 < o u := by
+  classical
+  have hu0 : u ≠ 0 := by
+    intro h0
+    exact hu ⟨Polynomial.X, Polynomial.X_ne_zero, by simp [h0]⟩
+  -- the tower `K[X] ⊆ RatFunc K ⊆ F` with `X ↦ u`
+  letI : Algebra K[X] D.F := (Polynomial.aeval u : K[X] →ₐ[K] D.F).toRingHom.toAlgebra
+  have halg : ∀ p : K[X], algebraMap K[X] D.F p = Polynomial.aeval u p := fun _ => rfl
+  haveI : IsScalarTower K K[X] D.F := IsScalarTower.of_algebraMap_eq fun a => by simp [halg]
+  have hinj : Function.Injective (algebraMap K[X] D.F) := by
+    rw [injective_iff_map_eq_zero]
+    intro p hp
+    by_contra hp0
+    exact hu ⟨p, hp0, by rw [← halg]; exact hp⟩
+  letI : Algebra (RatFunc K) D.F := (IsFractionRing.lift (A := K[X]) hinj).toAlgebra
+  haveI : IsScalarTower K[X] (RatFunc K) D.F :=
+    IsScalarTower.of_algebraMap_eq fun p => (IsFractionRing.lift_algebraMap hinj p).symm
+  haveI : IsScalarTower K (RatFunc K) D.F := by
+    refine IsScalarTower.of_algebraMap_eq fun a => ?_
+    rw [IsScalarTower.algebraMap_apply K K[X] D.F a,
+      IsScalarTower.algebraMap_apply K[X] (RatFunc K) D.F,
+      ← IsScalarTower.algebraMap_apply K K[X] (RatFunc K) a]
+  have hgLu : algebraMap (RatFunc K) D.F (algebraMap K[X] (RatFunc K) Polynomial.X) = u := by
+    rw [← IsScalarTower.algebraMap_apply K[X] (RatFunc K) D.F, halg, Polynomial.aeval_X]
+  -- what the Dedekind machinery asks of the new tower
+  haveI : FiniteDimensional (RatFunc K) D.F :=
+    finiteDimensional_of_transcendental D hu (L := RatFunc K) hgLu
+  haveI : Algebra.IsIntegral (RatFunc K) D.F := Algebra.IsIntegral.of_finite _ _
+  haveI : Algebra.IsSeparable (RatFunc K) D.F := inferInstance
+  -- lying over the maximal ideal `(X)` of `K[X]`
+  haveI hmax : (Ideal.span {(Polynomial.X : K[X])}).IsMaximal :=
+    PrincipalIdealRing.isMaximal_of_irreducible Polynomial.irreducible_X
+  have hm0 : (Ideal.span {(Polynomial.X : K[X])}) ≠ ⊥ := by simp
+  obtain ⟨v, hv⟩ := PlaceFromDedekind.exists_heightOneSpectrum_over_maximal (F := D.F)
+    (Ideal.span {(Polynomial.X : K[X])}) hm0
+  refine ⟨PlaceFromDedekind.ordAt (F := D.F) v, PlaceFromDedekind.isPlaceFun_ordAt v, ?_⟩
+  have hXne : algebraMap K[X] D.F Polynomial.X ≠ 0 := by
+    rw [halg, Polynomial.aeval_X]; exact hu0
+  have hpos := hv Polynomial.X (Ideal.mem_span_singleton_self _) hXne
+  rwa [halg, Polynomial.aeval_X] at hpos
+
+/-- **A transcendental function has a POLE** (PROVEN): the theorem above applied to `g⁻¹`,
+which is transcendental exactly when `g` is. -/
+theorem exists_isPlaceFun_ord_neg_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    [CharZero K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {g : D.F} (hg : Transcendental K g) :
+    ∃ o : D.F → ℤ, IsPlaceFun K D.F o ∧ o g < 0 := by
+  have hg0 : g ≠ 0 := by
+    intro h0
+    exact hg ⟨Polynomial.X, Polynomial.X_ne_zero, by simp [h0]⟩
+  have hginv : Transcendental K g⁻¹ := fun halg => hg (IsAlgebraic.inv_iff.1 halg)
+  obtain ⟨o, ho, hpos⟩ := exists_isPlaceFun_pos_of_transcendental D hginv
+  refine ⟨o, ho, ?_⟩
+  rw [PlaceClassify.isPlaceFun_inv ho hg0] at hpos
+  omega
+
+/-- **A function with neither zeros nor poles is a CONSTANT** (PROVEN), over an algebraically
+closed field of characteristic zero.
+
+`divisor h = 0` says `ord v h = 0` at every place, so `h` has no pole; a transcendental `h`
+does have one (`exists_isPlaceFun_ord_neg_of_transcendental`, whose place is turned into a
+place of `D` by `ord_complete`); so `h` is algebraic over `K`, and over an algebraically closed
+`K` that means `h ∈ K`.
+
+See the section note above for why `CharZero K`, `IsAlgClosed K` and `h ≠ 0` are all
+load-bearing. -/
+theorem exists_algebraMap_eq_of_divisor_eq_zero {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    [CharZero K] [IsAlgClosed K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {h : D.F} (h0 : h ≠ 0)
+    (hdiv : D.divisor h = 0) :
+    ∃ a : K, algebraMap K D.F a = h := by
+  by_contra hcon
+  have hcon' : ∀ a : K, algebraMap K D.F a ≠ h := fun a ha => hcon ⟨a, ha⟩
+  clear hcon
+  -- over an algebraically closed `K`, an element that is not a constant is transcendental
+  have htr : Transcendental K h := by
+    intro halg
+    have hint : IsIntegral K h := halg.isIntegral
+    have hq : (minpoly K h).leadingCoeff = 1 := minpoly.monic hint
+    have hd : (minpoly K h).degree = 1 :=
+      IsAlgClosed.degree_eq_one_of_irreducible K (minpoly.irreducible hint)
+    have hev : (aeval h) (minpoly K h) = 0 := minpoly.aeval K h
+    rw [Polynomial.eq_X_add_C_of_degree_eq_one hd, hq, map_one, one_mul, map_add,
+      aeval_X, aeval_C, add_eq_zero_iff_eq_neg] at hev
+    exact hcon' (-(minpoly K h).coeff 0) (by rw [map_neg]; exact hev.symm)
+  obtain ⟨o, ho, hneg⟩ := exists_isPlaceFun_ord_neg_of_transcendental D htr
+  obtain ⟨v, hv⟩ :=
+    D.ord_complete o ho.map_zero ho.map_mul ho.ultra ho.map_algebraMap ho.normalised
+  have hz : D.ord v h = 0 := by
+    have hh := congrArg (fun δ : D.Divisors => δ v) hdiv
+    simpa [PlaceData.divisor_apply D h0 v] using hh
+  rw [hv] at hz
+  omega
 
 /-! ### The SINGLE-PLACE half of Stichtenoth I.4.11(a), PROVEN 2026-07-31
 
@@ -11032,11 +11200,19 @@ Equivalently: `deg (div h) = 0` and `div h ≥ 0` force `div h = 0` force `h` co
 `PlaceData` deliberately carries no degree map, so the argument above is the one available.
 
 **Not vacuous.**  `h ≠ 0` is load-bearing only through the junk convention `ord v 0 = 0`,
-which would otherwise make `divisor 0 = 0` and the conclusion false for `h = 0`. -/
+which would otherwise make `divisor 0 = 0` and the conclusion false for `h = 0`.
+
+**PROVEN 2026-08-01, and it is a `PlaceData`-level statement: `GeomPic` is not used at all
+beyond naming `gp.Dbar`.**  The general theorem is `exists_algebraMap_eq_of_divisor_eq_zero`
+in the `Picard` section, over an arbitrary algebraically closed `K` of characteristic zero;
+`AlgebraicClosure ℚ` supplies both instances.  The route is the one the paragraph above
+describes, with the extension of the place of `ℚ̄(h)` at infinity supplied by LYING OVER
+rather than built by hand — see that theorem's section note. -/
 theorem geomPic_exists_const_of_divisor_eq_zero {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
     {h : gp.Dbar.F} (h0 : h ≠ 0) (hdiv : gp.Dbar.divisor h = 0) :
-    ∃ a : AlgebraicClosure ℚ, algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a = h := sorry
+    ∃ a : AlgebraicClosure ℚ, algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a = h :=
+  exists_algebraMap_eq_of_divisor_eq_zero gp.Dbar h0 hdiv
 
 /-- **HILBERT 90 for the geometric function field: a geometric function whose divisor is
 Galois-invariant is rational up to a constant** (PROVEN — a LEAF from 2026-07-30 until
