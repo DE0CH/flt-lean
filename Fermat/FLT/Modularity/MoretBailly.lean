@@ -47561,9 +47561,273 @@ def HasSplitHilbertBlumenthalCocycleModel
                   ab₀.galSMul x σ (φ y))))
 
 open CategoryTheory AlgebraicGeometry in
+/-- **The split Hilbert–Blumenthal FAMILY at a named base** — the moduli data
+alone, carrying none of the shape clauses and none of the descent vocabulary
+(2026-08-02).
+
+This is, clause for clause, the CONCLUSION of the `∀`-over-twists clause of
+`HasSplitHilbertBlumenthalCocycleModel` above: the universal object
+`(A₀, ab₀, m₀, d₀, pol₀)` over `fX₀`, its relative dimension, the `Λ`-normalized
+split level structures at every `ℚ`-algebra field point, and fineness in the
+objects-to-points direction. It is introduced so that the two halves of leaf
+A2a1-i below can be stated without either of them mentioning a cocycle.
+
+RELATION TO `IsSplitHilbertBlumenthalModuli`, which is declared ~1500 lines below
+for the `ρbar` side and is the nearest thing to a duplicate. That one is this one
+PLUS six shape clauses on `fX₀` PLUS `IsStandardLevelModule` for the two modules,
+so it is a strictly larger package and not a restatement. The right long-run
+repair is to define it as `shape ∧ IsSplitHilbertBlumenthalFamilyAt ∧ standard`;
+that needs `IsSplitHilbertBlumenthalFamilyAt` hoisted above line 49151 and is NOT
+done here, because the intervening region is under concurrent edit (see the
+CONCURRENCY note on leaf A2a1-i below). One clause differs beyond bundling:
+that package asserts `GeometricallyIrreducible fX₀` where the cocycle model
+asserts `GeometricallyConnected fX₁`, and the two are interchangeable for a
+smooth space by `geometricallyIrreducible_of_smooth_of_geometricallyConnected`. -/
+def IsSplitHilbertBlumenthalFamilyAt
+    (ℓ p : ℕ) (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
+    (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (𝔞 : Ideal (NumberField.RingOfIntegers D))
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {kp : Type u} [Field kp] [TopologicalSpace kp]
+    (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F))
+    (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F))
+    {X₀ : Scheme.{u}} (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))) : Prop :=
+  ∃ (A₀ : Scheme.{u}) (fA₀ : A₀ ⟶ X₀) (ab₀ : Fermat.AbelianSchemeStruct fA₀)
+    (m₀ : Fermat.Mult ab₀ (NumberField.RingOfIntegers D))
+    (d₀ : Fermat.DualStruct ab₀ m₀)
+    (pol₀ : Fermat.PolarizationStruct d₀ {lam, frp} 𝔞 (totallyPositiveElts D)),
+    AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fA₀ ∧
+    (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+      (x : Spec (CommRingCat.of F) ⟶ X₀), x ≫ fX₀ = specRatMap F →
+      IsSplitLevelStructure lam ℓ hlamℓ pol₀ ρ₀ Λ x ∧
+        IsSplitLevelStructure frp p hfrpp pol₀ ρ₀p Λp x) ∧
+    (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+      (B : Scheme.{u}) (fB : B ⟶ Spec (CommRingCat.of F))
+      (abB : Fermat.AbelianSchemeStruct fB)
+      (mB : Fermat.Mult abB (NumberField.RingOfIntegers D))
+      (dB : Fermat.DualStruct abB mB)
+      (polB : Fermat.PolarizationStruct dB {lam, frp} 𝔞 (totallyPositiveElts D)),
+      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB →
+      IsSplitLevelStructure lam ℓ hlamℓ polB ρ₀ Λ (𝟙 (Spec (CommRingCat.of F))) →
+      IsSplitLevelStructure frp p hfrpp polB ρ₀p Λp (𝟙 (Spec (CommRingCat.of F))) →
+      ∃ x : Spec (CommRingCat.of F) ⟶ X₀, x ≫ fX₀ = specRatMap F ∧
+        ∃ φ : Fermat.GeomFibrePt fB (𝟙 (Spec (CommRingCat.of F))) →
+            Fermat.GeomFibrePt fA₀ x,
+          Function.Bijective φ ∧
+          (∀ y z, φ (abB.add y z) = ab₀.add (φ y) (φ z)) ∧
+          (∀ (a : NumberField.RingOfIntegers D) y,
+            φ (mB.act a y) = m₀.act a (φ y)) ∧
+          (∀ (σ : Field.absoluteGaloisGroup F) y,
+            φ (abB.galSMul (𝟙 (Spec (CommRingCat.of F))) σ y) =
+              ab₀.galSMul x σ (φ y)))
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF A2a1-i-α — RAPOPORT'S SPACE OVER `ℚ`, AT ONE BASE, WITH NO DESCENT IN
+IT** (sorry node, cut 2026-08-02 out of
+`exists_splitHilbertBlumenthalRatModel_of_standardLevelModule`, which is now
+PROVEN over this together with A2a1-i-β immediately below).
+
+WHAT IT SAYS: the split Hilbert–Blumenthal moduli problem of level `λ𝔭`, with
+pairing normalization `(Λ, Λp)` and polarization module `𝔞`, is finely
+represented over `ℚ` by a separated, finite-type, quasi-compact, geometrically
+connected, `horb`-quasi-projective variety, smooth of relative dimension
+`[D:ℚ]`, whose tautological level modules `(ρ₁, ρ₁p)` are standard for `(Λ, Λp)`.
+
+Classically: Rapoport, *Compactifications de l'espace de modules de
+Hilbert–Blumenthal*, Compositio 36 (1978), §1, with Deligne–Pappas for a general
+`𝒪_D`. Smoothness and geometric connectedness come from the analytic
+uniformization of the complex points by `𝔥^{[D:ℚ]}`; fineness from the level
+being divisible by two primes of coprime residue characteristic (`hpℓ` with
+`hlamℓ`, `hfrpp`, `hne`); `horb` from the ample bundle of the Baily–Borel
+compactification.
+
+**WHAT THIS LEAF NO LONGER CONTAINS, AND THAT IS THE WHOLE POINT OF THE CUT.**
+The parent asserted, on top of the above, a Galois 1-cocycle `c` on `X₁ ⊗ ℚ̄`
+(`IsQGaloisCocycle`, three clauses), an open normal subgroup on which `c` is
+trivial, and the moduli data on EVERY twist of `X₁` by `c`. None of that is
+geometry, and none of it survives here: the assembly takes `c := 𝟙`, discharges
+the cocycle clauses by `isQGaloisCocycle_one` and the kernel clause by `N := ⊤`,
+and hands the twist transport to A2a1-i-β. A prover of this leaf never sees a
+cocycle, a twist, or an algebraic closure.
+
+WHY `ρ₁` IS EXISTENTIAL AND `Λ` IS NOT (inherited from the parent, and still
+right). `Λ` is a PARAMETER OF THE MODULI PROBLEM — "split level structure whose
+Weil pairing is `Λ`" — so the space depends on it and it cannot be quantified
+away here. `ρ₁` is the tautological Galois action on the level data of the
+universal family, which the construction produces rather than chooses, so it
+must be existential; the parent's `hstd`, `hstdp` are what guarantee the class
+of `Λ`-standard modules is nonempty at all.
+
+FAITHFULNESS AUDIT (2026-08-02) — **THIS IS NOT INHERITED, AND MUST NOT BE READ
+AS INHERITED.** The parent's audit says it is a CONSEQUENCE of the leaf it
+replaced, hence cannot be false unless that one was. That argument does NOT
+transfer: the parent quantifies `∃ c` and this leaf fixes `c = 𝟙` implicitly by
+asking for the data at `X₁` itself, so it is a STRENGTHENING. The fresh audit is
+that the strengthening is harmless because the moduli problem is defined over
+`ℚ`, so its solution — if it exists at all — exists over `ℚ` and needs no
+twisting; the parent's `∃ c` was vestigial, left over from the pre-2026-07-31
+form of leaf A2a1 in which the model had to be moved to a PRESCRIBED `ρ₀` and
+the twist was therefore genuinely nontrivial. **What would change my mind:** a
+reason why Rapoport's space over `ℚ` could fail to exist while a `ℚ̄`-form of it
+existed. There is none, `𝔞` being fixed and the problem `ℚ`-rational.
+
+The hypotheses `hres`, `hresp` are what make `A[λ]` and `A[𝔭]` free of rank two
+over `k` and `kp`, so that the level structures can have source `k²`, `kp²`;
+totally-realness of `D` makes the Rosati involution trivial on `𝒪_D`, hence the
+induced pairing `𝒪_D`-bilinear (`Fermat.DualStruct.weil_act`); `h𝔞` and the
+`{lam, frp}` level set of the polarization are the class-`𝔞` component
+normalization whose necessity is argued at length on
+`HasSplitHilbertBlumenthalModuli`. -/
+theorem exists_splitHilbertBlumenthalRatSpace_of_standardLevelModule
+    {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    (hlam : lam.IsMaximal) (hfrp : frp.IsMaximal)
+    (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
+    (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (hne : lam ≠ frp)
+    (k : Type u) [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
+    (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
+    (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (𝔞 : Ideal (NumberField.RingOfIntegers D)) (h𝔞 : 𝔞 ≠ ⊥)
+    (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F))
+    (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F))
+    (hstd : IsStandardLevelModule ℓ ρ₀ Λ) (hstdp : IsStandardLevelModule p ρ₀p Λp) :
+    ∃ (ρ₁ : GaloisRep ℚ k (Fin 2 → k)) (ρ₁p : GaloisRep ℚ kp (Fin 2 → kp)),
+      IsStandardLevelModule ℓ ρ₁ Λ ∧ IsStandardLevelModule p ρ₁p Λp ∧
+      ∃ (X₁ : Scheme.{u}) (fX₁ : X₁ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))),
+        AlgebraicGeometry.IsSeparated fX₁ ∧
+        AlgebraicGeometry.LocallyOfFiniteType fX₁ ∧
+        AlgebraicGeometry.QuasiCompact fX₁ ∧
+        AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₁ ∧
+        AlgebraicGeometry.GeometricallyConnected fX₁ ∧
+        (∀ s : Set X₁, s.Finite → ∃ U : X₁.Opens, IsAffineOpen U ∧ ∀ x ∈ s, x ∈ U) ∧
+        IsSplitHilbertBlumenthalFamilyAt ℓ p D lam frp hlamℓ hfrpp 𝔞 ρ₁ ρ₁p Λ Λp fX₁ :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF A2a1-i-β — THE UNIVERSAL FAMILY TRANSPORTS TO A TRIVIALLY-TWISTED
+FORM** (sorry node, cut 2026-08-02 out of
+`exists_splitHilbertBlumenthalRatModel_of_standardLevelModule` together with
+A2a1-i-α above).
+
+WHAT IT SAYS, and it contains no Hilbert–Blumenthal geometry at all: if `fX₀` is
+a `ℚ`-scheme whose base change to `ℚ̄` is isomorphic to that of `fX₁` OVER `ℚ̄`
+**compatibly with the semilinear Galois actions** — that is exactly
+`IsGaloisTwistForm ratGaloisBaseAction fX₀ fX₁ (fun _ => 𝟙 _)`, the twist datum
+being TRIVIAL — then `fX₀` carries the split family too.
+
+WHY THIS IS THE `∀`-OVER-TWISTS CLAUSE OF THE PARENT, AND WHY IT IS ALL OF IT.
+The parent quantified over twists by a cocycle `c` it also had to produce; the
+assembly takes `c := 𝟙`, so the class quantified over is exactly the class here.
+The shape hypotheses (`hsrd`, `hsep`, `hlft`, `hqc`, `hgc`) are the parent's,
+passed through unused-or-not at the prover's discretion; they are retained
+because the call site holds them for free and a hypothesis cannot make a leaf
+false.
+
+**THE ROUTE, AND IT MATTERS WHICH ORDER — the two steps have very different
+prices, and doing them in the wrong order walks into a known obstruction.**
+
+1. DESCEND THE ISOMORPHISM FIRST. `e : X₀ ⊗ ℚ̄ ≅ X₁ ⊗ ℚ̄` over `Spec ℚ̄` with
+   `baseAct fX₀ σ ≫ e.hom = e.hom ≫ baseAct fX₁ σ` is a descent datum for a
+   morphism along the faithfully flat quasi-compact `Spec ℚ̄ ⟶ Spec ℚ`, so it
+   descends to an isomorphism `X₀ ≅ X₁` OVER `ℚ`.
+2. THEN transport `(A₁, ab₁, m₁, d₁, pol₁)` along that `ℚ`-isomorphism of bases,
+   and the level and fineness clauses with it.
+
+**Doing it the other way round — transporting the family up to `ℚ̄` along `e` and
+back — hits the `Fermat.PolarizationStruct` base-change obstruction**, which is
+REAL and carries a Weil-restriction counterexample; see the note on
+`exists_twistedFamily_of_isGaloisTwistForm` below, whose own docstring records
+that it escapes the obstruction only because it carries no `DualStruct` and no
+polarization. This leaf carries both, so it must never leave `ℚ`. Step 2 along an
+ISOMORPHISM is unobstructed precisely because an isomorphism is not a base change
+in the relevant sense.
+
+**WHAT IS MISSING FROM THE PIN, and this is the disclosure the cut buys.**
+Step 1 is fpqc descent for MORPHISMS of schemes, and it is nowhere in this tree:
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/GaloisDescent.lean` is still
+a stub with zero declarations, this file's own descent interface descends only
+morphism PROPERTIES (`MorphismProperty.DescendsAlong`,
+`of_isFormOver_of_descendsAlong`), and `isEffectiveQGaloisTwist_of_isOpenKernel`
+produces a twist without ever comparing two of them. So this leaf's real content
+is a piece of descent theory that was previously buried inside a leaf advertised
+as "all of the geometry", where nobody would have costed it. **Checked
+2026-08-02** by grepping this file and `Fermat/` for `DescendsAlong`, `IsFormOver`
+and `GaloisDescent`; re-run that grep before believing it.
+
+FAITHFULNESS AUDIT (2026-08-02, NOT inherited — see A2a1-i-α's, which explains
+why the parent's audit does not transfer to either half). The statement is TRUE:
+step 1 is standard fpqc descent, step 2 is transport of structure along an
+isomorphism. It is NOT vacuous: `isGaloisTwistForm_one` makes `fX₁` itself an
+instance, at which the conclusion is the hypothesis, so the leaf is at worst
+trivially satisfiable at that one point and asserts real content at every other.
+**What would change my mind:** a `ℚ`-form of `X₁` that is `ℚ̄`-isomorphic to it
+equivariantly and yet not `ℚ`-isomorphic to it — which is exactly what fpqc
+descent for morphisms forbids. -/
+theorem isSplitHilbertBlumenthalFamilyAt_of_trivialTwist
+    {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    (hlam : lam.IsMaximal) (hfrp : frp.IsMaximal)
+    (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
+    (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (hne : lam ≠ frp)
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    {kp : Type u} [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
+    (𝔞 : Ideal (NumberField.RingOfIntegers D))
+    (ρ₁ : GaloisRep ℚ k (Fin 2 → k)) (ρ₁p : GaloisRep ℚ kp (Fin 2 → kp))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F))
+    (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F))
+    {X₁ : Scheme.{u}} (fX₁ : X₁ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hfam : IsSplitHilbertBlumenthalFamilyAt ℓ p D lam frp hlamℓ hfrpp 𝔞 ρ₁ ρ₁p Λ Λp fX₁)
+    (X₀ : Scheme.{u}) (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (htw : IsGaloisTwistForm ratGaloisBaseAction.{u} fX₀ fX₁ (fun _ => 𝟙 _))
+    (hsrd : AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₀)
+    (hsep : AlgebraicGeometry.IsSeparated fX₀)
+    (hlft : AlgebraicGeometry.LocallyOfFiniteType fX₀)
+    (hqc : AlgebraicGeometry.QuasiCompact fX₀)
+    (hgc : AlgebraicGeometry.GeometricallyConnected fX₀) :
+    IsSplitHilbertBlumenthalFamilyAt ℓ p D lam frp hlamℓ hfrpp 𝔞 ρ₁ ρ₁p Λ Λp fX₀ :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
 /-- **LEAF A2a1-i — the `ℚ`-model, for a level module of its own choosing**
-(sorry node, cut 2026-07-31 out of
-`exists_splitHilbertBlumenthalCocycle_of_standardLevelModule`).
+(cut 2026-07-31 out of
+`exists_splitHilbertBlumenthalCocycle_of_standardLevelModule`; **PROVEN
+2026-08-02** as an assembly over `exists_splitHilbertBlumenthalRatSpace_of_-`
+`standardLevelModule` (A2a1-i-α, the geometry) and
+`isSplitHilbertBlumenthalFamilyAt_of_trivialTwist` (A2a1-i-β, the descent),
+both declared immediately above).
+
+**ACCOUNTING FOR THAT CUT, PLAINLY: it is `1 → 2`, and the direct-sorry count
+of this module GOES UP BY ONE.** What is bought is that neither half mentions
+what the other is about. The assembly itself discharges three clauses of the
+conclusion outright — `IsQGaloisCocycle` (`isQGaloisCocycle_one`), the
+open-normal-kernel clause (`N := ⊤`), and the existence of the cocycle at all
+(`c := 𝟙`) — none of which is geometry, and all of which a prover of the
+undivided leaf had to carry alongside Rapoport §1. See A2a1-i-β's docstring for
+the disclosure this buys: its step 1 is fpqc descent for MORPHISMS of schemes,
+which is absent from this tree, and which was previously invisible inside a leaf
+advertised as "all of the geometry".
+
+CONCURRENCY, 2026-08-02: `hasSplitHilbertBlumenthalCocycleModel_of_levelTwist-`
+`Cocycle` (leaf A2a1-ii, below) had a live owner while this cut was made, so
+nothing outside this leaf's own body and the block immediately above it was
+touched — in particular `HasSplitHilbertBlumenthalCocycleModel`, A2a1-ii and
+every consumer down to `HasSplitHilbertBlumenthalModuli` are byte-identical to
+their 2026-07-31 form.
 
 WHAT IT SAYS, and how it differs from the leaf it was cut from: the SAME
 conclusion, except that the two level modules are EXISTENTIALLY quantified
@@ -47591,12 +47855,70 @@ the model clause is the conclusion of
 same argument applies to the twisting half below, and jointly the two are
 EQUIVALENT to the leaf — nothing was weakened away and nothing was invented.
 
-WHAT IS STILL OWED HERE: all of the geometry. Rapoport,
-*Compactifications de l'espace de modules de Hilbert–Blumenthal*, Compositio
-36 (1978), §1, with Deligne–Pappas for a general `𝒪_D`. Quasi-projectivity
-(`horb`) is asserted of the `X₁` this leaf CHOOSES, so it is discharged from
-the construction — Rapoport's space carries an ample line bundle from the
-Baily–Borel compactification. -/
+WHAT IS STILL OWED, and it is now owed by A2a1-i-α ALONE: the geometry.
+Rapoport, *Compactifications de l'espace de modules de Hilbert–Blumenthal*,
+Compositio 36 (1978), §1, with Deligne–Pappas for a general `𝒪_D`.
+Quasi-projectivity (`horb`) is asserted of the `X₁` that leaf CHOOSES, so it is
+discharged from the construction — Rapoport's space carries an ample line bundle
+from the Baily–Borel compactification.
+
+**STRUCTURAL FINDING, 2026-08-02, RECORDED BUT DELIBERATELY NOT ACTED ON — THE
+PRESCRIBED `(ρ₀, Λ)` STRENGTH OF THIS WHOLE SUB-CHAIN HAS NO CONSUMER.** A
+comment-stripped occurrence scan of `Fermat/` (every count below is a count of
+CODE occurrences, declaration site included) gives:
+
+    exists_splitHilbertBlumenthalCocycle_of_standardLevelModule   2
+    exists_splitHilbertBlumenthalFamily_of_standardLevelModule    2
+    exists_splitHilbertBlumenthalModuli_of_standardLevelModule    2
+    exists_splitHilbertBlumenthalModuli                          2
+
+i.e. each has EXACTLY ONE call site, and the four form a single chain whose only
+exit is `HasSplitHilbertBlumenthalModuli` — a definition that **re-existentializes
+`ρ₀`, `ρ₀p`, `Λ` and `Λp`**. Its own producer,
+`exists_splitHilbertBlumenthalModuli_of_standardLevelModule`, already takes them
+as `∃`-hypotheses, and the top of the chain,
+`exists_splitHilbertBlumenthalModuli`, manufactures them from
+`exists_standardLevelModule`. So no consumer anywhere prescribes a level module
+or a pairing.
+
+TWO CONSEQUENCES, and the second is the one worth acting on later.
+
+* The `ρ₀`-prescription is what leaf A2a1-ii (`hasSplitHilbertBlumenthalCocycle-`
+  `Model_of_levelTwistCocycle`) exists to supply, and the `Λ`-prescription is
+  the one obligation A2a1-i-α carries that Rapoport's construction does not hand
+  over for free. **Quantifying `Λ` existentially in this leaf and in the two
+  theorems below it would make A2a1-ii unnecessary and take the cluster from two
+  open leaves to one.** It would also orphan the whole PROVEN `section
+  LevelTwist` (its only consumer being A2a1-ii's call site), which must then be
+  deleted in the same commit rather than left free-floating.
+* **It was NOT done on 2026-08-02 because A2a1-ii had a live owner at that
+  moment** (`flt-lean-302`, dispatched at it). Deleting another agent's in-flight
+  target for tidiness is exactly what CLAUDE.md forbids. The collapse is queued
+  instead, to be taken once A2a1-ii has landed or been abandoned.
+
+THE DOWNSTREAM CHECK THAT MAKES THE COLLAPSE SAFE, since it is the obvious
+worry: does anything past `HasSplitHilbertBlumenthalModuli` need `Λ` to be a
+PARTICULAR pairing — the Weil pairing of `ρbar`, say? **No.**
+`exists_twistedHilbertBlumenthalCocycle_of_split` matches `ρbar` against `ρ₀`
+through DETERMINANTS only (`det_eq_cycCharModN_of_isStandardLevelModule` twice,
+then `twistUnit_mem_specialUnits`), and `SplitModuliLevelAction`'s docstring says
+in as many words that `Λ` and `Λp` do not appear in it, `specialUnits` being the
+isometry group of a balanced alternating form on a two-dimensional space whatever
+the form is. Re-run those two greps before taking the collapse.
+
+STALE-AUDIT CORRECTION, 2026-08-02, recorded here rather than at the paragraph it
+corrects because that paragraph sits inside the docstring of A2a1-ii's consumer
+and that region was under concurrent edit. The ASYMMETRY AUDIT (2026-07-30) on
+`exists_splitHilbertBlumenthalCocycle_of_standardLevelModule` ends "`horb` is the
+one clause the two do share as an unsupplied obligation … quasi-projectivity is
+recorded nowhere upstream", and cites `HasSplitHilbertBlumenthalModuli` at line
+`39220` with its clauses at `39233`–`39241`. **All of that is out of date.** That
+definition is now at line 45398, it has RECORDED `horb` since 2026-07-31 (the
+`∀ s : Set X₀, s.Finite → ∃ U, IsAffineOpen U ∧ …` clause), and it also now
+exports `IsStandardLevelModule` for both modules. What survives of the audit is
+its point (2): `hsplit` gives `Smooth fX₀` and not
+`SmoothOfRelativeDimension (finrank ℚ D) fX₀`, so the relative-dimension clause
+is still not free from it. -/
 theorem exists_splitHilbertBlumenthalRatModel_of_standardLevelModule
     {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
     (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -47618,8 +47940,19 @@ theorem exists_splitHilbertBlumenthalRatModel_of_standardLevelModule
     (hstd : IsStandardLevelModule ℓ ρ₀ Λ) (hstdp : IsStandardLevelModule p ρ₀p Λp) :
     ∃ (ρ₁ : GaloisRep ℚ k (Fin 2 → k)) (ρ₁p : GaloisRep ℚ kp (Fin 2 → kp)),
       IsStandardLevelModule ℓ ρ₁ Λ ∧ IsStandardLevelModule p ρ₁p Λp ∧
-      HasSplitHilbertBlumenthalCocycleModel ℓ p D lam frp hlamℓ hfrpp 𝔞 ρ₁ ρ₁p Λ Λp :=
-  sorry
+      HasSplitHilbertBlumenthalCocycleModel ℓ p D lam frp hlamℓ hfrpp 𝔞 ρ₁ ρ₁p Λ Λp := by
+  -- Rapoport's space over `ℚ`, at one base, with its own tautological level modules
+  obtain ⟨ρ₁, ρ₁p, hs₁, hs₁p, X₁, fX₁, hsep, hlft, hqc, hsrd, hgc, horb, hfam⟩ :=
+    exists_splitHilbertBlumenthalRatSpace_of_standardLevelModule hp hpℓ D lam frp hlam hfrp
+      hlamℓ hfrpp hne k kp hres hresp 𝔞 h𝔞 ρ₀ ρ₀p Λ Λp hstd hstdp
+  -- the descent datum is TRIVIAL: this half of leaf A2a1 chose its own level module,
+  -- so there is nothing to twist.  `N := ⊤` then discharges the open-kernel clause.
+  refine ⟨ρ₁, ρ₁p, hs₁, hs₁p, X₁, fX₁, fun _ => 𝟙 _, hsep, hlft, hqc, hsrd, hgc, horb,
+    isQGaloisCocycle_one _ _, ⟨⊤, inferInstance, by simp, fun σ _ => rfl⟩, ?_⟩
+  -- and the `∀`-over-twists clause is transport along a trivially-twisted form
+  intro X₀ fX₀ htw hsrd₀ hsep₀ hlft₀ hqc₀ hgc₀
+  exact isSplitHilbertBlumenthalFamilyAt_of_trivialTwist hp hpℓ D lam frp hlam hfrp
+    hlamℓ hfrpp hne 𝔞 ρ₁ ρ₁p Λ Λp fX₁ hfam X₀ fX₀ htw hsrd₀ hsep₀ hlft₀ hqc₀ hgc₀
 
 /-- **The kernel of a residual representation is open** (PROVEN): for a
 finite discrete coefficient field `k` and a finite `k`-module `W`, the
