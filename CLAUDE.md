@@ -16151,3 +16151,75 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A MOTIVE-CARRYING TRANSPORT BLOCKS A CUT BY ITS TYPE, NOT BY ITS CONSTRUCTION
+
+(2026-08-02, `flt-lean-216`, `exists_gamma0GITPresentationOver_transitiveMinimalPrimes_zmod`
+in `ModularCurve/X0.lean`.)
+
+This tree carries several *motive-carrying transports*: a theorem that moves a structure
+`X ⟶ Y` and additionally carries an arbitrary predicate of the pieces it preserves, so that
+a property proven upstream lands downstream without re-deriving it.  `X0.lean` has two in a
+row — `exists_gamma0Rigidification_of_rigidifiedModuli_motive` and
+`exists_gamma0GITPresentationOver_of_rigidification_motive` — both with
+
+    motive : (A : Type) → [CommRing A] → (Spec (of A) ⟶ S) → Prop
+
+so a motive can speak about the coordinate ring and the structure morphism and **nothing
+else**.  That limitation had been recorded, correctly, as the reason a leaf could not be cut
+the obvious way: *"a motive of that type CANNOT mention the deck group `G`, so adding the
+transitivity conjunct there would destroy a proof rather than extend one"*, and therefore a
+second leaf had to re-assert `IsReduced` because the two conjuncts could not be made to land
+on one witness.  Three docstrings in the file reason from that sentence.
+
+**The constructions had been preserving `G` and its action all along.**  Read the
+`refine ⟨{ … }, hmotive⟩` at the end of each: `R'.A := R.A`, `R'.action_GA := act`;
+`P.A := R.A`, `P.G := R.G`, `P.action_GA := R.action_GA`.  Widening the motive to
+
+    motive : (A : Type) → [CommRing A] → (G : Type) → [Group G] →
+      [MulSemiringAction G A] → (Spec (of A) ⟶ S) → Prop
+
+needed **no change to either proof body** — the same script, the same
+`hmotive` at the end — and it deleted the duplication outright: the modular conjunct and
+the reducedness conjunct now come from two different upstream leaves and land on ONE `P`.
+
+**So the standing check, and it is one read of the `refine` at the bottom of the transport:
+when a motive-carrying transport blocks a cut, ask whether the block is the motive's TYPE or
+the construction.**  A transport is written with the narrowest motive its first consumer
+needed, and nobody widens it afterwards, so the type is almost always the weaker of the two.
+The failure mode is that the narrow type reads as a *property of the construction* in every
+docstring that cites it — here for three days, across three declarations.
+
+Two riders from the same run.
+
+* **Widening is a NEW declaration, not an edit.**  Adding `…_deckMotive` beside the
+  un-primed theorem, with the proof body copied verbatim, is merge-safe; re-proving the
+  un-primed one as a corollary would edit a body other branches may be touching.  The
+  duplication is ~60 lines of bookkeeping and buys immunity from the class-7 interface
+  split.  Say in the new docstring where it ideally belongs, and in `to_merger` that it is a
+  copy.
+* **Once the motive is wide enough, the cut can move UP a level, and that is the real gain.**
+  The old leaf was `∃ P : Gamma0GITPresentationOver …` — an `∃` over a structure that does
+  not pin its own coordinate ring, so the old docstring had to argue at length why `∀ P`
+  would be a junk-witness trap.  With the deck-aware motive the same content is stated
+  `∀ R : RigidifiedModuliData N n (SpecF ℓ)`, whose `universal` IS a fine moduli property —
+  a fact the file already records where the structure is declared, and which is what makes
+  `exists_deckActionOver` a legitimate `∀`-statement.  **When a leaf is `∃`-shaped only
+  because the structure it quantifies over is unpinned, look one level upstream for a
+  structure with a universal property and re-state it there.**
+
+And the accounting, stated the way the RECUT rule asks: the direct-sorry count is `1 → 1`
+(`git diff -U0 | grep -E '^[+-]\s*sorry$'` shows exactly one of each), the transitive cone is
+UNCHANGED — the reducedness leaf borrowed was already in the cone through
+`exists_gamma0GITPresentationOver_normalModuli_zmod`, so no `sorryAx` edge was added — and
+what got smaller is the leaf: it lost the `IsReduced` conjunct, the whole GIT layer
+(`B`, `str`, `classify`, `cover`, `classify_dM`, `dM_equivariant`), and the `∃`.
+
+**The `∀ act` binder is the one part that needs its own justification, and it generalises.**
+When the object a leaf is about is CHOSEN INSIDE the transport (here the deck action, from
+`exists_deckActionOver`), no caller can name it, so it has to be universally quantified in
+the leaf — which looks like a junk quantifier and is not, provided you carry the clauses that
+PIN it.  Here `R.universal` at the `σ`-twist produces a `y` satisfying the antecedent of the
+pinning clause, the clause forces `y = Spec (toRingHom act σ⁻¹)`, and `Spec` is faithful — so
+exactly one `act` satisfies the hypotheses.  **Write that argument into the leaf's docstring;
+a `∀ act` with no pinning argument beside it is indistinguishable from the trap.**
