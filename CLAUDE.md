@@ -20568,3 +20568,62 @@ Three riders from the same run:
   operator — it is one classical citation per LEVEL rather than one per `(f, p)` —
   and that `Interface.lean`'s `integralCuspForms_span_eq_top` can now be re-pointed
   at an upstream, non-circular statement of the same content.
+## "THIS TREE HAS NO IDIOM FOR THAT" IS AN ENCODING CLAIM — AND ONE GREP OF MATHLIB REFUTES IT
+(2026-08-01, `flt-lean-203`, on `isMultiplicativeType_of_connected_of_inertiaLevelOneFlag`
+in `GaloisRepresentation/HardlyRamified/Family.lean` — Raynaud, the deepest citation in the
+`(R1)` cluster.)
+That leaf's docstring had, for four days and across three successive cuts, named its own
+obstruction and called it an ENCODING one rather than a mathematical one:
+> a composition series is a family of Hopf algebras indexed by `Fin (n + 1)`, i.e. a family
+> of TYPES carrying instances, **which this tree has no idiom for**. The two shapes that
+> avoid it are (a) a single dévissage STEP … assembled by strong induction on
+> `Module.finrank 𝒪ᵖᵥ`, … or (b) an inductive predicate.
+The analysis is right, route (a) is the right route, and the encoding it says is missing is
+a standard mathlib idiom:
+    ∃ (A'' : Type) (_ : CommRing A'') (_ : HopfAlgebra R A'') (_ : Module.Finite R A'') …,
+      HopfAlgebra.IsShortExact i π ∧ …
+**Anonymous class-typed binders in an `∃` DO become local instances for the binders after
+them.** `Mathlib/RingTheory/AdjoinRoot.lean:1081` is the same shape
+(`∃ (S : Type u) (_ : CommRing S) (_ : Algebra R S) (_ : Module.Finite R S) (_ : Module.Free R S)`),
+and so are `RingTheory/{TotallySplit, Smooth/NoetherianDescent, LocalProperties/Basic,
+Etale/QuasiFinite, Unramified/Basic}.lean`. One `grep -rn '∃ (_ : CommRing'` over the pin
+settles it in seconds. The whole node then cut, and the induction compiled first try.
+**The generalisable rule, and the reason this is worth a section: an ENCODING claim is the
+cheapest claim in any docstring to check, and it is the one nobody checks.** A "the pin
+lacks theorem X" claim needs a survey; a "this cannot be *written*" claim needs one grep for
+the SHAPE, and the shape is short enough to grep for. Treat "there is no idiom for", "this
+cannot be stated", "a family of types carrying instances", "this tree has no way to express"
+exactly as this file already tells you to treat "absent from the pin" — as a hypothesis, and
+a cheaper one. Same family as [[flt-a-leaf-can-contain-a-leaf]] and the
+expressibility-cut section above; the difference is that there the object had to be BUILT,
+and here it only had to be TYPED.
+Three techniques from the same run, each reusable:
+* **STRONG INDUCTION OVER TYPES-WITH-INSTANCES NEEDS NO WELL-FOUNDED MACHINERY.** Write it
+  as a `suffices` in the `≤ n` form and induct on `n`:
+      suffices H : ∀ n : ℕ, ∀ (B : Type) [CommRing B] [HopfAlgebra R B] [Module.Finite R B]
+          [Module.Free R B], Module.finrank R B ≤ n → P B → Q B → Conclusion B from
+        H (Module.finrank R A) A le_rfl hP hQ
+  The `zero` case is discharged by `omega` against the step's own `finrank A'' < finrank B`,
+  so the degenerate branch costs one tactic and no thought. Note the instances are *Prop*
+  classes (`Module.Free`, `Module.Finite`, `Module.Flat`, `IsCocomm`), so proof irrelevance
+  makes the ambient binder and the synthesised one defeq and there is NO diamond at the
+  outer application — which is what one would otherwise spend a cycle fearing.
+* **PUT THE BASE CASE IN THE STEP'S LEFT DISJUNCT, NOT IN A SECOND LEAF.** The step here is
+  `IsMultiplicativeType R A ∨ ∃ (dévissage data)`, not `1 < finrank A → ∃ …`. Stating the
+  base case as the CONCLUSION at rank one rather than as a hypothesis is the strictly weaker
+  obligation, it saves opening a second leaf for "the trivial group scheme has étale Cartier
+  dual", and the prover who would rather do it the other way round loses nothing — that
+  implication *is* the disjunction. Generally: when an induction's base case is a special
+  case of its conclusion, fold it into the step and the step stays one leaf.
+* **DERIVE WHAT THE STEP WOULD OTHERWISE HAVE TO PRODUCE, AND SAY SO ON THE LEAF.** The
+  sub-quotient's connectedness (`hconn` for `A''`) is free: `HopfAlgebra.IsShortExact` gives
+  `i` injective from its faithful-flatness field, a ring map carries idempotents to
+  idempotents, so `hconn` pulls back in four lines. Leaving it in the existential would have
+  been a redundant conjunct, i.e. an obligation somebody has to discharge for nothing. The
+  leaf's docstring now says explicitly that it is derived and must not be added back.
+**AND THE ACCOUNTING, because the count does not move: 1 → 1.** What left the frontier is
+the induction, the `(R3)` extension step (`isMultiplicativeType_of_isShortExact`, PROVEN in
+`Mathlib/RingTheory/HopfAlgebra/ShortExact.lean` and until now with NO call site), the
+`hconn` inheritance, and the base case. What is LEFT is Raynaud and only Raynaud —
+unique prolongation at `e = 1 < p − 1` plus the Oort–Tate order-`p` dichotomy — with no
+composition series and no encoding in it. Judge it by what is left in the leaf.
