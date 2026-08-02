@@ -5751,34 +5751,555 @@ end PlaceData
 
 end SinglePlaceBound
 
-/-! ### From ONE place to the SUM over all poles, PROVEN 2026-08-01 over weak approximation
+section RiemannRochSpaces
 
-The section above proves the single-place bound `e_v·f_v ≤ n` and records, correctly, that what
-it cannot do is run at several places at once: it wants a uniformiser and residue lifts that are
-controlled at the OTHER poles.  That is the approximation theorem and nothing else, so it is cut
-here as the single leaf `exists_approx`; everything between it and
-`degOf_poleDivisor_le_finrank_of_transcendental` below is now Lean.
+-- Instance search in this file's environment is expensive around `D.residue v`, which is a
+-- quotient of a subalgebra; the two theorems in `SinglePlaceBound` above carry the same bump
+-- individually.  Section-scoped here because every declaration below touches that quotient.
+set_option synthInstance.maxHeartbeats 1000000
+set_option maxHeartbeats 1000000
 
-Two things about the shape of the argument, because neither is visible from the single-place
-case and both were needed to make it go through:
+/-! ### RIEMANN–ROCH SPACES AND STICHTENOTH I.4.11(b), PROVEN 2026-08-01
 
-* **the index attaining the GLOBAL maximum degree decides which pole to work at.**  Having
-  cleared denominators to `λ_q = P_q(g)`, put `d := max_q deg P_q` and let `v₀` be the pole of
-  an index attaining `d`.  Then the `v₀`-part of the relation has a term of order `−e·d + k`
-  with `k < e`, while EVERY other contribution — the terms from other poles and all the
-  approximation errors — has order `≥ −e·d + e`.  Choosing `v₀` any other way loses this;
-* **no normalisation by `g^{−d}` appears in the assembly.**  It is used only inside the
-  single-place residue computation `vanishesAt_aeval_mul_inv_pow`, and there with the
-  per-`k` degree.  Stating the comparison with the un-normalised orders is what keeps the
-  remainder bound linear in `d`. -/
+`finrank_le_degOf_poleDivisor_of_transcendental` below used to be a leaf asking for the
+whole of the dimension-count half of the fundamental identity.  It is now PROVEN, over the
+single much smaller leaf `isAlgebraic_of_forall_ord_nonneg` — a function with no poles is a
+constant.  The count is 1 leaf in, 1 leaf out; what changed is what is LEFT in the leaf.
 
-section MultiPlaceBound
+The pieces, in the order they appear:
+
+* `finite_residue` — **every** place has finite residue degree.  A free corollary of
+  `finite_residue_of_ord_neg` above: a uniformiser `t` at `v` is transcendental (an
+  algebraic element is a unit at every place, and `ord v t = 1`), so `t⁻¹` is a
+  transcendental element with a pole at `v`.  This is what removes all the bookkeeping that
+  would otherwise be needed to know `degOf` is not taking `Module.finrank`'s junk value at
+  the places in the support of the divisors below.
+* `riemannSpace` — `L(C) = {z | div z + C ≥ 0}` as a `K`-submodule of `F`.  The `z = 0`
+  disjunct in the carrier is the junk convention `ord v 0 = 0` showing through, exactly as
+  in `VanishesAt`; `ord_add` is what proves `add_mem`.
+* `resMap` and `resMap_eq_zero_iff` — the map `L(C + v) ⟶ κ(v)`, `z ↦ [z·t^{C_v+1}]` for a
+  uniformiser `t`, whose kernel is exactly `L(C)`.  This is the one structural fact the
+  whole induction runs on.
+* `finite_and_finrank_riemannSpace_add_single` — `ℓ(C + v) ≤ ℓ(C) + deg v`, with
+  finiteness, by rank–nullity over that map.
+* `finite_and_finrank_riemannSpace_le` — `ℓ(C) ≤ deg C + ℓ(0)` for effective `C`, by
+  induction on the total degree, removing one point of the support at a time.
+* `linearIndependent_pow_mul_basis` — the `n(m+1)` elements `g^k·u_j` are `K`-independent.
+  This is the ONLY place `Transcendental K g` is used in the count.
+* `finite_riemannSpace_zero` — `ℓ(0) < ∞`, over the leaf.
+* `finrank_le_degOf_poleDivisor_of_transcendental_aux` — the count itself.
+
+**`ℓ(0) = 1` is NOT needed and must not be bought by adding `hsep`.**  The bound
+`ℓ(C) ≤ deg C + ℓ(0)` with `ℓ(0)` merely FINITE already gives
+`n(m+1) ≤ m·deg A + deg B + ℓ(0)` for every `m`, and letting `m` grow forces `n ≤ deg A`.
+`finrank_residue_pt_eq_one` is the only route to `ℓ(0) = 1` for a `PlaceData` and it needs
+`hsep`, which this development's leaf deliberately lacks. -/
 
 open Polynomial
 
 variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
 
 namespace PlaceData
+
+/-- `ord v (a ^ n) = n · ord v a` for an INTEGER exponent. -/
+lemma ord_zpow (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) (a : D.F) (ha : a ≠ 0) :
+    ∀ n : ℤ, D.ord v (a ^ n) = n * D.ord v a
+  | (k : ℕ) => by rw [zpow_natCast, D.ord_pow v a ha k]
+  | .negSucc k => by
+      rw [zpow_negSucc, D.ord_inv v _ (pow_ne_zero _ ha), D.ord_pow v a ha, Int.negSucc_eq]
+      push_cast
+      ring
+
+/-- **Every place has FINITE residue degree.** -/
+theorem finite_residue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) :
+    Module.Finite K (D.residue v) := by
+  obtain ⟨t, ht⟩ := D.ord_surjective v
+  have ht0 : t ≠ 0 := by rintro rfl; rw [D.ord_zero] at ht; omega
+  have htr : Transcendental K t := by
+    intro halg
+    rw [ord_eq_zero_of_isAlgebraic D v halg] at ht
+    omega
+  have hinv0 : t⁻¹ ≠ 0 := inv_ne_zero ht0
+  have hitr : Transcendental K t⁻¹ := by
+    intro halg
+    exact htr (by simpa using halg.inv)
+  have hord : D.ord v t⁻¹ < 0 := by rw [D.ord_inv v t ht0, ht]; omega
+  exact finite_residue_of_ord_neg D hitr v hord
+
+/-- **The Riemann–Roch space** `L(C) = {z | div z + C ≥ 0}`. -/
+def riemannSpace (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (C : D.Divisors) :
+    Submodule K D.F where
+  carrier := {z | z = 0 ∨ ∀ v, -C v ≤ D.ord v z}
+  add_mem' := by
+    rintro a b (rfl | ha) hb
+    · simpa using hb
+    rcases hb with rfl | hb
+    · exact Or.inr (by simpa using ha)
+    rcases eq_or_ne a 0 with rfl | ha0
+    · exact Or.inr (by simpa using hb)
+    rcases eq_or_ne b 0 with rfl | hb0
+    · exact Or.inr (by simpa using ha)
+    rcases eq_or_ne (a + b) 0 with h | h
+    · exact Or.inl h
+    refine Or.inr fun v => ?_
+    have := D.ord_add v a b ha0 hb0 h
+    have := ha v
+    have := hb v
+    omega
+  zero_mem' := Or.inl rfl
+  smul_mem' := by
+    rintro c z (rfl | hz)
+    · exact Or.inl (by simp)
+    rcases eq_or_ne c 0 with rfl | hc0
+    · exact Or.inl (by simp)
+    rcases eq_or_ne z 0 with rfl | hz0
+    · exact Or.inl (by simp)
+    refine Or.inr fun v => ?_
+    have hc : (algebraMap K D.F c) ≠ 0 := by
+      simpa using (map_ne_zero_iff _ (algebraMap K D.F).injective).mpr hc0
+    rw [Algebra.smul_def, D.ord_mul v _ _ hc hz0, D.ord_algebraMap v c hc0]
+    have := hz v
+    omega
+
+lemma mem_riemannSpace_iff {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K} {C : D.Divisors} {z : D.F}
+    (hz : z ≠ 0) : z ∈ D.riemannSpace C ↔ ∀ v, -C v ≤ D.ord v z := by
+  constructor
+  · rintro (rfl | h)
+    · exact absurd rfl hz
+    · exact h
+  · exact fun h => Or.inr h
+
+lemma mem_riemannSpace_of_forall {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K} {C : D.Divisors} {z : D.F}
+    (h : ∀ v, -C v ≤ D.ord v z) : z ∈ D.riemannSpace C := Or.inr h
+
+lemma riemannSpace_mono {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K} {C C' : D.Divisors}
+    (h : ∀ v, C v ≤ C' v) : D.riemannSpace C ≤ D.riemannSpace C' := by
+  rintro z (rfl | hz)
+  · exact Or.inl rfl
+  · exact Or.inr fun v => le_trans (by have := h v; omega) (hz v)
+
+lemma resMap_mem (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (C : D.Divisors) (v : D.Places)
+    {t : D.F} (ht : D.ord v t = 1)
+    (z : ↥(D.riemannSpace (C + Finsupp.single v 1))) :
+    (z : D.F) * t ^ (C v + 1) ∈ D.valRing v := by
+  have ht0 : t ≠ 0 := by rintro rfl; rw [D.ord_zero] at ht; omega
+  show 0 ≤ D.ord v _
+  rcases eq_or_ne (z : D.F) 0 with hz | hz
+  · rw [hz, zero_mul, D.ord_zero]
+  · rw [D.ord_mul v _ _ hz (zpow_ne_zero _ ht0), D.ord_zpow v t ht0, ht, mul_one]
+    have := (mem_riemannSpace_iff hz).mp z.2 v
+    simp only [Finsupp.add_apply, Finsupp.single_eq_same] at this
+    omega
+
+/-- **The residue map** `L(C + v) → κ(v)`, `z ↦ [z·t^{C_v+1}]`.  Its kernel is `L(C)`. -/
+noncomputable def resMap (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (C : D.Divisors) (v : D.Places)
+    {t : D.F} (ht : D.ord v t = 1) :
+    ↥(D.riemannSpace (C + Finsupp.single v 1)) →ₗ[K] D.residue v where
+  toFun z := Ideal.Quotient.mkₐ K (D.valMax v) ⟨(z : D.F) * t ^ (C v + 1), resMap_mem D C v ht z⟩
+  map_add' a b := by
+    rw [← map_add]
+    congr 1
+    exact Subtype.ext (by simp [add_mul])
+  map_smul' c z := by
+    rw [RingHom.id_apply, ← map_smul]
+    congr 1
+    exact Subtype.ext (by simp)
+
+lemma resMap_eq_zero_iff (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (C : D.Divisors) (v : D.Places)
+    {t : D.F} (ht : D.ord v t = 1)
+    (z : ↥(D.riemannSpace (C + Finsupp.single v 1))) :
+    resMap D C v ht z = 0 ↔ (z : D.F) ∈ D.riemannSpace C := by
+  have ht0 : t ≠ 0 := by rintro rfl; rw [D.ord_zero] at ht; omega
+  rw [resMap, LinearMap.coe_mk, AddHom.coe_mk, Ideal.Quotient.mkₐ_eq_mk,
+    Ideal.Quotient.eq_zero_iff_mem]
+  show D.VanishesAt v ((z : D.F) * t ^ (C v + 1)) ↔ _
+  rcases eq_or_ne (z : D.F) 0 with hz | hz
+  · simp only [hz, zero_mul]
+    exact ⟨fun _ => hz ▸ (D.riemannSpace C).zero_mem, fun _ => Or.inl rfl⟩
+  have hprod : (z : D.F) * t ^ (C v + 1) ≠ 0 := mul_ne_zero hz (zpow_ne_zero _ ht0)
+  have hord : D.ord v ((z : D.F) * t ^ (C v + 1)) = D.ord v (z : D.F) + (C v + 1) := by
+    rw [D.ord_mul v _ _ hz (zpow_ne_zero _ ht0), D.ord_zpow v t ht0, ht, mul_one]
+  constructor
+  · rintro (h | h)
+    · exact absurd h hprod
+    refine (mem_riemannSpace_iff hz).mpr fun w => ?_
+    rcases eq_or_ne w v with rfl | hw
+    · omega
+    · have := (mem_riemannSpace_iff hz).mp z.2 w
+      rw [Finsupp.add_apply, Finsupp.single_eq_of_ne hw, add_zero] at this
+      omega
+  · intro h
+    have := (mem_riemannSpace_iff hz).mp h v
+    exact Or.inr (by omega)
+
+/-- **The codimension bound** `ℓ(C + v) ≤ ℓ(C) + deg v`, together with finiteness. -/
+theorem finite_and_finrank_riemannSpace_add_single (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (C : D.Divisors) (v : D.Places) (hfin : Module.Finite K ↥(D.riemannSpace C)) :
+    Module.Finite K ↥(D.riemannSpace (C + Finsupp.single v 1)) ∧
+      Module.finrank K ↥(D.riemannSpace (C + Finsupp.single v 1))
+        ≤ Module.finrank K ↥(D.riemannSpace C) + Module.finrank K (D.residue v) := by
+  classical
+  obtain ⟨t, ht⟩ := D.ord_surjective v
+  have hNM : D.riemannSpace C ≤ D.riemannSpace (C + Finsupp.single v 1) :=
+    riemannSpace_mono (fun w => by
+      rcases eq_or_ne w v with rfl | hw
+      · rw [Finsupp.add_apply, Finsupp.single_eq_same]; omega
+      · rw [Finsupp.add_apply, Finsupp.single_eq_of_ne hw, add_zero])
+  set φ := resMap D C v ht with hφ
+  have hker : LinearMap.ker φ
+      = (D.riemannSpace C).comap (D.riemannSpace (C + Finsupp.single v 1)).subtype := by
+    ext z
+    rw [LinearMap.mem_ker, Submodule.mem_comap]
+    exact resMap_eq_zero_iff D C v ht z
+  haveI : Module.Finite K (D.residue v) := finite_residue D v
+  haveI : FiniteDimensional K ↥(D.riemannSpace C) := hfin
+  have hfrker : Module.finrank K ↥(LinearMap.ker φ)
+      = Module.finrank K ↥(D.riemannSpace C) := by
+    rw [hker]
+    exact (Submodule.comapSubtypeEquivOfLe hNM).finrank_eq
+  haveI : Module.Finite K ↥(LinearMap.ker φ) := by
+    rw [hker]
+    exact Module.Finite.equiv (Submodule.comapSubtypeEquivOfLe hNM).symm
+  haveI : Module.Finite K ↥(LinearMap.range φ) := inferInstance
+  haveI : Module.Finite K (↥(D.riemannSpace (C + Finsupp.single v 1)) ⧸ LinearMap.ker φ) :=
+    Module.Finite.equiv (LinearMap.quotKerEquivRange φ).symm
+  haveI hMfin : Module.Finite K ↥(D.riemannSpace (C + Finsupp.single v 1)) :=
+    Module.Finite.of_submodule_quotient (LinearMap.ker φ)
+  refine ⟨hMfin, ?_⟩
+  have hsum := LinearMap.finrank_range_add_finrank_ker φ
+  have hrange : Module.finrank K ↥(LinearMap.range φ) ≤ Module.finrank K (D.residue v) :=
+    Submodule.finrank_le _
+  omega
+
+lemma degHom_one_eq_sum (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (C : D.Divisors) :
+    degHom D (fun _ => (1 : ℤ)) C = ∑ v ∈ C.support, C v := by
+  simp [degHom, mulRightHom, Finsupp.sum]
+
+/-- The induction behind `ℓ(C) ≤ deg C + ℓ(0)`, on the total degree of `C`. -/
+theorem riemannSpace_bound_aux (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (h0 : Module.Finite K ↥(D.riemannSpace 0)) :
+    ∀ (N : ℕ) (C : D.Divisors), (∀ v, 0 ≤ C v) →
+      degHom D (fun _ => (1 : ℤ)) C ≤ (N : ℤ) →
+      Module.Finite K ↥(D.riemannSpace C) ∧
+        (Module.finrank K ↥(D.riemannSpace C) : ℤ)
+          ≤ degHom D D.degOf C + (Module.finrank K ↥(D.riemannSpace 0) : ℤ) := by
+  intro N
+  induction N with
+  | zero =>
+    intro C hC hsum
+    have hC0 : C = 0 := by
+      ext v
+      by_contra hne
+      have hv : v ∈ C.support := Finsupp.mem_support_iff.mpr (by simpa using hne)
+      have hle : C v ≤ ∑ w ∈ C.support, C w := Finset.single_le_sum (fun w _ => hC w) hv
+      rw [degHom_one_eq_sum] at hsum
+      have := hC v
+      simp only [Finsupp.coe_zero, Pi.zero_apply] at hne
+      omega
+    subst hC0
+    exact ⟨h0, by simp⟩
+  | succ N ih =>
+    intro C hC hsum
+    rcases le_or_gt (degHom D (fun _ => (1 : ℤ)) C) (N : ℤ) with h | h
+    · exact ih C hC h
+    have hne : C ≠ 0 := by
+      rintro rfl
+      rw [map_zero] at h
+      omega
+    obtain ⟨v, hv⟩ := Finsupp.support_nonempty_iff.mpr hne
+    have hv1 : 1 ≤ C v := by
+      have := hC v
+      have := Finsupp.mem_support_iff.mp hv
+      omega
+    set C' : D.Divisors := C - Finsupp.single v 1 with hC'def
+    have happ : ∀ w, C' w = C w - (Finsupp.single v (1 : ℤ)) w := by
+      intro w; simp [hC'def]
+    have heq : C' + Finsupp.single v 1 = C := by rw [hC'def]; abel
+    have hC'nonneg : ∀ w, 0 ≤ C' w := by
+      intro w
+      rw [happ w]
+      rcases eq_or_ne w v with rfl | hw
+      · rw [Finsupp.single_eq_same]; omega
+      · rw [Finsupp.single_eq_of_ne hw]; have := hC w; omega
+    have hdeg1 : degHom D (fun _ => (1 : ℤ)) C
+        = degHom D (fun _ => (1 : ℤ)) C' + 1 := by
+      rw [← heq, map_add, degHom_single]
+      simp
+    have hsum' : degHom D (fun _ => (1 : ℤ)) C' ≤ (N : ℤ) := by
+      push_cast at hsum
+      omega
+    obtain ⟨hfin', hbd'⟩ := ih C' hC'nonneg hsum'
+    obtain ⟨hfin, hbd⟩ := finite_and_finrank_riemannSpace_add_single D C' v hfin'
+    rw [heq] at hfin hbd
+    refine ⟨hfin, ?_⟩
+    have hdegOf : degHom D D.degOf C = degHom D D.degOf C' + D.degOf v := by
+      rw [← heq, map_add, degHom_single, one_mul]
+    have hcast : (Module.finrank K ↥(D.riemannSpace C) : ℤ)
+        ≤ (Module.finrank K ↥(D.riemannSpace C') : ℤ)
+          + (Module.finrank K (D.residue v) : ℤ) := by exact_mod_cast hbd
+    have : D.degOf v = (Module.finrank K (D.residue v) : ℤ) := rfl
+    omega
+
+/-- **`ℓ(C) ≤ deg C + ℓ(0)` for every effective `C`**, with finiteness. -/
+theorem finite_and_finrank_riemannSpace_le (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (h0 : Module.Finite K ↥(D.riemannSpace 0)) {C : D.Divisors} (hC : ∀ v, 0 ≤ C v) :
+    Module.Finite K ↥(D.riemannSpace C) ∧
+      (Module.finrank K ↥(D.riemannSpace C) : ℤ)
+        ≤ degHom D D.degOf C + (Module.finrank K ↥(D.riemannSpace 0) : ℤ) :=
+  riemannSpace_bound_aux D h0 (degHom D (fun _ => (1 : ℤ)) C).toNat C hC (Int.self_le_toNat _)
+
+/-- `{g^k · u_j}` is `K`-independent: this is where `Transcendental K g` is used. -/
+lemma linearIndependent_pow_mul_basis (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {g : D.F} (hg : Transcendental K g) {n : ℕ}
+    (u : Module.Basis (Fin n) ↥(IntermediateField.adjoin K ({g} : Set D.F)) D.F) (m : ℕ) :
+    LinearIndependent K (fun p : Fin (m + 1) × Fin n => g ^ (p.1 : ℕ) * u p.2) := by
+  classical
+  have hgE : g ∈ IntermediateField.adjoin K ({g} : Set D.F) :=
+    IntermediateField.subset_adjoin K {g} (Set.mem_singleton g)
+  rw [Fintype.linearIndependent_iff]
+  intro cc hcc p
+  set lam : Fin n → ↥(IntermediateField.adjoin K ({g} : Set D.F)) :=
+    fun j => ∑ k : Fin (m + 1),
+      algebraMap K ↥(IntermediateField.adjoin K ({g} : Set D.F)) (cc (k, j))
+        * (⟨g, hgE⟩ : ↥(IntermediateField.adjoin K ({g} : Set D.F))) ^ (k : ℕ) with hlam
+  have hcoe : ∀ j, ((lam j : D.F))
+      = ∑ k : Fin (m + 1), algebraMap K D.F (cc (k, j)) * g ^ (k : ℕ) := by
+    intro j
+    rw [hlam]
+    push_cast
+    rfl
+  have hclaim : ∑ j, lam j • u j = 0 := by
+    calc ∑ j, lam j • u j
+        = ∑ j, ((lam j : D.F)) * u j := by
+          refine Finset.sum_congr rfl fun j _ => ?_
+          rw [Algebra.smul_def]
+          rfl
+      _ = ∑ p : Fin (m + 1) × Fin n, cc p • (g ^ (p.1 : ℕ) * u p.2) := by
+          rw [Fintype.sum_prod_type, Finset.sum_comm]
+          refine Finset.sum_congr rfl fun j _ => ?_
+          rw [hcoe j, Finset.sum_mul]
+          refine Finset.sum_congr rfl fun k _ => ?_
+          rw [Algebra.smul_def]
+          ring
+      _ = 0 := hcc
+  have hlam0 := Fintype.linearIndependent_iff.mp u.linearIndependent lam hclaim
+  have hpoly : (∑ k : Fin (m + 1),
+      Polynomial.C (cc (k, p.2)) * Polynomial.X ^ (k : ℕ)) = 0 := by
+    refine transcendental_iff_injective.mp hg ?_
+    rw [map_zero, map_sum]
+    have h2 : ((lam p.2 : D.F)) = 0 := by rw [hlam0 p.2]; rfl
+    rw [hcoe p.2] at h2
+    simpa [Algebra.smul_def] using h2
+  have hc := congrArg (fun q : Polynomial K => q.coeff (p.1 : ℕ)) hpoly
+  simpa [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, Fin.val_inj, Finset.sum_ite_eq,
+    Finset.mem_univ] using hc
+
+/-- **LEAF (Stichtenoth I.1.15 / I.1.19): a function with NO POLES is algebraic over `K`.**
+
+This is the exact converse of `ord_eq_zero_of_isAlgebraic` in the `Genus` section above,
+which says that an element algebraic over `K` is a unit at every place.  Together the two
+say that the everywhere-regular functions are exactly the constants — the field of
+constants of the function field.
+
+**Why it is the only remaining input to the second inequality.**  Everything else in
+Stichtenoth I.4.11(b) is now Lean: the Riemann–Roch spaces `riemannSpace`, the codimension
+bound `finite_and_finrank_riemannSpace_add_single`, the induction
+`finite_and_finrank_riemannSpace_le`, and the count in
+`finrank_le_degOf_poleDivisor_of_transcendental_aux`.  The one thing that count needs and
+cannot supply is that `ℓ(0)` is FINITE, and `finite_riemannSpace_zero` below derives
+exactly that from this leaf in twenty lines: a constant is a unit at every place, so `L(0)`
+injects into the residue field at any place, and `finite_residue` above says that residue
+field is finite over `K`.
+
+**It is EQUIVALENT to `ℓ(0) < ∞`, so nothing weaker will do.**  If some `z ∈ L(0)` had
+`ord v z = d > 0` then every power `z ^ k` would lie in `L(0)` with `ord v (z ^ k) = k·d`,
+and elements of pairwise distinct orders are linearly independent by the strict ultrametric
+equality `ord_sum_eq_of_unique_min` — so `L(0)` would be infinite-dimensional over `K`.
+Hence `Module.Finite K L(0)`, this leaf, and "the everywhere-regular functions are the
+constants" are three forms of one statement, and a prover may attack whichever is
+convenient.
+
+**What it needs that this tree does not have.**  The classical proof is Chevalley's
+extension theorem: if `z` is transcendental then the degree valuation of `K(z)` extends to
+`F`, that extension is a valuation of `F` trivial on `K`, hence a place by the
+`ord_complete` axiom, and `z` has a pole there.  `ord_complete` is exactly the axiom that
+makes this true rather than merely plausible — it is what forbids a presentation that omits
+the places where the classical model has poles.  Extending a valuation along the finite
+extension `F` over `K(z)` is the missing machinery, and nothing in the pin does it.
+
+**IT ALSO CLOSES A SECOND LEAF IN THIS FILE, and both have been waiting on the same
+theorem.**  `geomPic_exists_const_of_divisor_eq_zero` further down asks that a function `h`
+of `gp.Dbar` with `divisor h = 0` be a constant, and its own docstring names exactly this
+route: "the place of `ℚ̄(h)` at infinity extends to a place of `F̄` at which `ord h < 0`".
+That is this leaf — `divisor h = 0` gives `0 ≤ ord v h` at every place, so `h` is algebraic
+over `ℚ̄`, which is algebraically closed, so `h` lies in it.  Whoever builds Chevalley
+extension should close both rather than prove it twice.  The two are stated over different
+`PlaceData` and share no identifier, so nothing but this paragraph links them.
+
+**What would refute it**: a `PlaceData` and a transcendental `z` with `0 ≤ ord v z` at
+every place.  The sextic, `hsep` and the characteristic are all irrelevant here — this is
+general function-field theory, which is why the statement carries no side condition. -/
+theorem isAlgebraic_of_forall_ord_nonneg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (z : D.F)
+    (hz : ∀ v, 0 ≤ D.ord v z) : IsAlgebraic K z := sorry
+
+/-- The evaluation `L(0) → κ(v)`. -/
+noncomputable def zeroResMap (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) :
+    ↥(D.riemannSpace 0) →ₗ[K] D.residue v where
+  toFun z := Ideal.Quotient.mkₐ K (D.valMax v) ⟨(z : D.F), by
+    have := z.2
+    rcases this with h | h
+    · show (0 : ℤ) ≤ _
+      rw [h, D.ord_zero]
+    · show (0 : ℤ) ≤ _
+      have := h v
+      simpa using this⟩
+  map_add' a b := by rw [← map_add]; congr 1
+  map_smul' c z := by rw [RingHom.id_apply, ← map_smul]; congr 1
+
+/-- **`ℓ(0) < ∞`**, over the leaf: a function with no poles is a constant, and constants
+inject into any residue field, which is finite over `K`. -/
+theorem finite_riemannSpace_zero (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    Module.Finite K ↥(D.riemannSpace 0) := by
+  classical
+  set v₀ := D.pt (infPlus : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) with hv₀
+  haveI : Module.Finite K (D.residue v₀) := finite_residue D v₀
+  haveI : FiniteDimensional K (D.residue v₀) := inferInstance
+  refine FiniteDimensional.of_injective (zeroResMap D v₀) ?_
+  intro a b hab
+  rw [← sub_eq_zero] at hab ⊢
+  rw [← map_sub] at hab
+  set w := a - b with hw
+  by_contra hne
+  have hw0 : (w : D.F) ≠ 0 := fun h => hne (Subtype.ext h)
+  have hmem : D.VanishesAt v₀ (w : D.F) := by
+    rw [zeroResMap, LinearMap.coe_mk, AddHom.coe_mk, Ideal.Quotient.mkₐ_eq_mk,
+      Ideal.Quotient.eq_zero_iff_mem] at hab
+    exact hab
+  have hnn : ∀ v, 0 ≤ D.ord v (w : D.F) := by
+    intro v
+    rcases w.2 with h | h
+    · rw [h, D.ord_zero]
+    · have := h v; simpa using this
+  have halg : IsAlgebraic K (w : D.F) := isAlgebraic_of_forall_ord_nonneg D _ hnn
+  have := ord_eq_zero_of_isAlgebraic D v₀ halg
+  rcases hmem with h | h
+  · exact hw0 h
+  · omega
+
+lemma poleDivisor_nonneg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (z : D.F) (v : D.Places) :
+    0 ≤ D.poleDivisor z v := by
+  rw [poleDivisor_apply]; exact le_max_right _ _
+
+lemma neg_poleDivisor_le_ord (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {z : D.F} (hz : z ≠ 0)
+    (v : D.Places) : -(D.poleDivisor z v) ≤ D.ord v z := by
+  rw [poleDivisor_apply, D.divisor_apply hz]
+  rcases le_total (D.ord v z) 0 with h | h
+  · rw [max_eq_left (by omega)]; omega
+  · rw [max_eq_right (by omega)]; omega
+
+lemma degHom_degOf_nonneg (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) {C : D.Divisors}
+    (hC : ∀ v, 0 ≤ C v) : 0 ≤ degHom D D.degOf C := by
+  rw [degHom]
+  simp only [Finsupp.liftAddHom_apply, Finsupp.sum, mulRightHom, AddMonoidHom.coe_mk,
+    ZeroHom.coe_mk]
+  refine Finset.sum_nonneg fun v _ => mul_nonneg (hC v) ?_
+  exact Int.natCast_nonneg _
+
+/-- **Stichtenoth I.4.11(b)**, over the one remaining input `ℓ(0) < ∞`. -/
+theorem finrank_le_degOf_poleDivisor_of_transcendental_aux
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) (hg : Transcendental K g)
+    (h0 : Module.Finite K ↥(D.riemannSpace 0)) :
+    (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ)
+      ≤ degHom D D.degOf (D.poleDivisor g) := by
+  classical
+  haveI hfd : FiniteDimensional (IntermediateField.adjoin K {g}) D.F :=
+    finiteDimensional_adjoin_of_transcendental D hg
+  have hg0 : g ≠ 0 := by rintro rfl; exact hg (isAlgebraic_zero)
+  set n := Module.finrank (IntermediateField.adjoin K {g}) D.F with hn
+  set u := Module.finBasis (IntermediateField.adjoin K ({g} : Set D.F)) D.F with hu
+  set A := D.poleDivisor g with hA
+  set B : D.Divisors := ∑ j : Fin n, D.poleDivisor (u j) with hB
+  have hBapp : ∀ v, B v = ∑ j : Fin n, D.poleDivisor (u j) v := by
+    intro v; rw [hB]; simp
+  have hAnn : ∀ v, 0 ≤ A v := fun v => poleDivisor_nonneg D g v
+  have hBnn : ∀ v, 0 ≤ B v := by
+    intro v; rw [hBapp]
+    exact Finset.sum_nonneg fun j _ => poleDivisor_nonneg D _ v
+  have hle : ∀ (j : Fin n) (v : D.Places), D.poleDivisor (u j) v ≤ B v := by
+    intro j v
+    rw [hBapp]
+    exact Finset.single_le_sum (f := fun j => D.poleDivisor (u j) v)
+      (fun j _ => poleDivisor_nonneg D _ v) (Finset.mem_univ j)
+  set l : ℤ := (Module.finrank K ↥(D.riemannSpace 0) : ℤ) with hl
+  set d : ℤ := degHom D D.degOf A with hd
+  set b : ℤ := degHom D D.degOf B with hb
+  -- the key estimate, for every `m`
+  have key : ∀ m : ℕ, ((m : ℤ) + 1) * (n : ℤ) ≤ (m : ℤ) * d + b + l := by
+    intro m
+    set C : D.Divisors := m • A + B with hC
+    have hCnn : ∀ v, 0 ≤ C v := by
+      intro v
+      rw [hC]
+      simp only [Finsupp.add_apply, Finsupp.smul_apply]
+      have := hAnn v; have := hBnn v
+      positivity
+    obtain ⟨hCfin, hCbd⟩ := finite_and_finrank_riemannSpace_le D h0 hCnn
+    haveI : FiniteDimensional K ↥(D.riemannSpace C) := hCfin
+    have hmem : ∀ p : Fin (m + 1) × Fin n,
+        g ^ (p.1 : ℕ) * u p.2 ∈ D.riemannSpace C := by
+      rintro ⟨k, j⟩
+      refine mem_riemannSpace_of_forall fun v => ?_
+      have hujne : u j ≠ 0 := u.ne_zero j
+      have hpow : g ^ (k : ℕ) ≠ 0 := pow_ne_zero _ hg0
+      rw [D.ord_mul v _ _ hpow hujne, D.ord_pow v g hg0]
+      have h1 : -(A v) ≤ D.ord v g := neg_poleDivisor_le_ord D hg0 v
+      have h2 : -(D.poleDivisor (u j) v) ≤ D.ord v (u j) := neg_poleDivisor_le_ord D hujne v
+      have h3 : D.poleDivisor (u j) v ≤ B v := hle j v
+      have h4 : (k : ℕ) ≤ m := Nat.lt_succ_iff.mp k.isLt
+      have hCv : C v = (m : ℤ) * A v + B v := by
+        rw [hC]; simp
+      have h5 : ((k : ℕ) : ℤ) ≤ (m : ℤ) := by exact_mod_cast h4
+      have h6 : ((k : ℕ) : ℤ) * D.ord v g ≥ ((k : ℕ) : ℤ) * (-(A v)) :=
+        mul_le_mul_of_nonneg_left h1 (Int.natCast_nonneg _)
+      have h7 : ((k : ℕ) : ℤ) * (A v) ≤ (m : ℤ) * (A v) :=
+        mul_le_mul_of_nonneg_right h5 (hAnn v)
+      rw [hCv]
+      nlinarith [h2, h3, h6, h7]
+    have hli : LinearIndependent K (fun p : Fin (m + 1) × Fin n =>
+        (⟨g ^ (p.1 : ℕ) * u p.2, hmem p⟩ : ↥(D.riemannSpace C))) :=
+      LinearIndependent.of_comp (D.riemannSpace C).subtype
+        (linearIndependent_pow_mul_basis D hg u m)
+    have hcard := hli.fintype_card_le_finrank
+    simp only [Fintype.card_prod, Fintype.card_fin] at hcard
+    have hcard' : ((m + 1) * n : ℤ) ≤ (Module.finrank K ↥(D.riemannSpace C) : ℤ) := by
+      exact_mod_cast hcard
+    have hdegC : degHom D D.degOf C = (m : ℤ) * d + b := by
+      rw [hC, map_add, hd, hb]
+      congr 1
+      rw [map_nsmul, nsmul_eq_mul]
+    rw [hdegC] at hCbd
+    linarith
+  -- now let `m` grow
+  by_contra hcon
+  rw [not_le] at hcon
+  have hd0 : 0 ≤ d := degHom_degOf_nonneg D hAnn
+  have hn0 : (0 : ℤ) ≤ (n : ℤ) := Int.natCast_nonneg _
+  set M : ℕ := (b + l).toNat + 1 with hM
+  have hMgt : b + l < (M : ℤ) := by
+    have := Int.self_le_toNat (b + l)
+    rw [hM]
+    push_cast
+    omega
+  have hk := key M
+  have hstep : ((M : ℤ) + 1) * (d + 1) ≤ ((M : ℤ) + 1) * (n : ℤ) := by
+    refine mul_le_mul_of_nonneg_left (by omega) (by positivity)
+  have hexp : ((M : ℤ) + 1) * (d + 1) = (M : ℤ) * d + (M : ℤ) + d + 1 := by ring
+  rw [hexp] at hstep
+  linarith
+
+end PlaceData
+
+end RiemannRochSpaces
 
 /-- **LEAF (weak approximation for the places of `F`)** —
 [Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.3.1], the independence-of-valuations
@@ -6333,11 +6854,34 @@ this leaf that has to know residue degrees are finite.  Step 3 supplies exactly 
 **What would refute it**: a `PlaceData` and a transcendental `g` whose pole divisor has
 degree strictly smaller than `[F : K⟮g⟯]`.  Since `deg` is computed with the junk-tolerant
 `degOf`, the cheapest place to look for such a thing is a place with an infinite-dimensional
-residue field — which is why step 3 above is not optional bookkeeping. -/
+residue field — which is why step 3 above is not optional bookkeeping.
+
+## PROVEN 2026-08-01, over the single leaf `isAlgebraic_of_forall_ord_nonneg`
+
+All four steps above are now Lean, in the section `RiemannRochSpaces` immediately above; see
+its header for the piece-by-piece account.  Two corrections to the plan as it was written
+here, both of which removed work rather than adding it:
+
+* **step 3 does not have to carry residue-degree finiteness.**  `finite_residue` proves that
+  EVERY place of a `PlaceData` has finite residue degree, because a uniformiser at `v` is
+  transcendental and its inverse is then a transcendental element with a pole at `v`, which
+  is what `finite_residue_of_ord_neg` above wants.  So the paragraph "Not vacuous, and the
+  direction that carries the residue-degree finiteness" is still the right reading of the
+  statement, and the fact it asks for is free rather than part of step 3;
+* **`ℓ(0) = 1` is not needed** — only `ℓ(0) < ∞`, which is where the residual leaf sits.
+  The count `n(m+1) ≤ m·deg A + deg B + ℓ(0)` forces `n ≤ deg A` in the limit for any FINITE
+  `ℓ(0)`, so no `hsep` and no computation of the constant field is required.
+
+The residue is `isAlgebraic_of_forall_ord_nonneg`: a function with no poles is algebraic
+over `K`.  That is Stichtenoth I.1.15/I.1.19 and it is the exact converse of the `Genus`
+section's `ord_eq_zero_of_isAlgebraic`; it needs Chevalley's extension theorem through the
+`ord_complete` axiom, which is a different and much smaller obligation than this leaf was. -/
 theorem finrank_le_degOf_poleDivisor_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type}
     [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) (hg : Transcendental K g) :
     (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ)
-      ≤ degHom D D.degOf (D.poleDivisor g) := sorry
+      ≤ degHom D D.degOf (D.poleDivisor g) :=
+  PlaceData.finrank_le_degOf_poleDivisor_of_transcendental_aux D g hg
+    (PlaceData.finite_riemannSpace_zero D)
 
 /-- **The fundamental identity of function-field theory,**
 `[F : K(g)] = deg (div_∞ g)`
@@ -6383,10 +6927,13 @@ because nobody had separated them.  They now sit immediately above, in the secti
   single-place case `e_v·f_v ≤ n` needs no approximation at all and is available from
   `ord_aeval_of_ord_neg` in the `Genus` section, so approximation is the only genuinely
   missing input.
-* `finrank_le_degOf_poleDivisor_of_transcendental` — Stichtenoth I.4.11(b).  The half that
-  needs the RIEMANN SPACES `L(C)` and the bound `ℓ(C) ≤ deg C + 1`; it needs no
-  approximation.  It is also the half that carries finiteness of the residue degrees, since
-  the junk value of `degOf` biases the inequality against it.
+* `finrank_le_degOf_poleDivisor_of_transcendental` — Stichtenoth I.4.11(b), **PROVEN
+  2026-08-01** over the single leaf `isAlgebraic_of_forall_ord_nonneg`.  The Riemann spaces
+  `L(C)` and the bound `ℓ(C) ≤ deg C + ℓ(0)` are now Lean, in the section
+  `RiemannRochSpaces`; `ℓ(C) ≤ deg C + 1` was more than the count needs, `ℓ(0) < ∞` being
+  enough, and the residue-degree finiteness this half was said to carry turned out to be
+  free for EVERY place (`finite_residue`).  What is left is the field of constants: a
+  function with no poles is algebraic over `K`.
 
 The two halves are therefore INDEPENDENT pieces of infrastructure — approximation on one
 side, Riemann spaces on the other — which is the reason for cutting here rather than leaving
