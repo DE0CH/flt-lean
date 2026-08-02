@@ -27045,10 +27045,299 @@ theorem exists_mem_pow_sub_of_coherent_of_bounded
   rw [hsplit]
   exact Ideal.add_mem _ h1 h2
 
+open _root_.NumberField in
+/-- **A RATIONAL, INTEGRAL `I`-ADIC LIMIT IS A GLOBAL ALGEBRAIC INTEGER**
+(**PROVEN 2026-08-01**; pure commutative algebra — no scheme, no Galois
+action, no `A'`, and **nothing archimedean**: neither `ℝ` nor `ℂ` occurs).
+
+Let `s : ℕ → 𝒪_D` be any sequence, and suppose its `I`-adic behaviour is
+pinned by TWO clauses, both about ONE fixed datum:
+
+* **RATIONALITY** — there are `c, d ∈ 𝒪_D` with `d ∉ I` and
+  `d · sₙ ≡ c (mod Iⁿ)` at every level.  `I`-adically this says the limit
+  is `c/d`, i.e. that it lies in the SUBFIELD `D ⊆ D_I` rather than merely
+  in the completion;
+* **INTEGRALITY** — there is one monic `P ∈ ℤ[X]` with `P(sₙ) ≡ 0 (mod Iⁿ)`
+  at every level, i.e. the limit is a root of `P`.
+
+Then a single `t ∈ 𝒪_D` satisfies `t ≡ sₙ (mod Iⁿ)` at every level.
+
+THE PROOF, and it is Weil's last step rather than a Krull-intersection
+argument (see the CORRECTION on `exists_rationalIntegralLevelScalar_atPrime_finiteBase`
+below for why Krull is the WRONG tool here).  Write `m := deg P` and
+`R := (P ⊗ 𝒪_D).scaleRoots d`, the honest element `dᵐ · P(X/d)` of `𝒪_D[X]`.
+Because `c ≡ d·sₙ`, `R(c) ≡ R(d·sₙ) = dᵐ · P(sₙ) ≡ 0 (mod Iⁿ)` for EVERY
+`n`, so `R(c) ∈ ⋂ₙ Iⁿ = 0` by Krull's intersection theorem **in the ring
+`𝒪_D` itself**, where it is unconditional.  Evaluating the same identity in
+`D` at `t' := c/d` gives `dᵐ · P(t') = R(c) = 0`, and `d ≠ 0`, so `P(t') = 0`:
+`t'` is an element of `D` integral over `ℤ`, hence lies in `𝒪_D` because
+`𝒪_D` is the integral closure of `ℤ` in `D`.  Finally `d·(t − sₙ) ∈ Iⁿ` and
+`d` is a UNIT modulo `Iⁿ` — from `1 = x + d·e` with `x ∈ I` one gets
+`d ∣ 1 − xⁿ`, so `z = xⁿ·z + w·(d·z)` — whence `t − sₙ ∈ Iⁿ`.
+
+**BOTH CLAUSES ARE LOAD-BEARING, AND NEITHER IMPLIES THE OTHER.**
+
+* Drop INTEGRALITY and the statement is FALSE: take `D = ℚ`, `𝒪_D = ℤ`,
+  `I = (5)`, `d = 3`, `c = 1` and `sₙ` any solution of `3·sₙ ≡ 1 (mod 5ⁿ)`.
+  Then `sₙ → 1/3` in `ℤ₅`, and `1/3 ∉ ℤ`, so no global `t` exists — the
+  limit is rational but not integral.  This is exactly the case that the
+  Krull-intersection glue proposed elsewhere in this file cannot exclude.
+* Drop RATIONALITY and the statement is FALSE: take `D = ℚ`, `I = (7)`,
+  `P = X² − 2` and `sₙ` the partial sums of a square root of `2` in `ℤ₇`
+  (which exists, `3² = 2 (mod 7)`).  Then `P(sₙ) ≡ 0 (mod 7ⁿ)` at every
+  level and the limit is integral over `ℤ` inside `ℤ₇`, but it is
+  irrational, so again no global `t`.
+* `d ∉ I` may not be weakened to `d ≠ 0`: with `D = ℚ`, `I = (5)`, `d = 5`,
+  `c = 0`, `P = X`, `sₙ = 5ⁿ⁻¹` (say) the hypotheses hold at a shifted
+  level while the conclusion needs the sharp one; the clause is what makes
+  `d` invertible modulo `Iⁿ` and it is free in the intended application,
+  where `d = 1`. -/
+theorem exists_mem_pow_sub_of_rational_of_integral
+    {D : Type u} [Field D] [NumberField D]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (s : ℕ → NumberField.RingOfIntegers D)
+    (c d : NumberField.RingOfIntegers D) (hd : d ∉ I)
+    (P : Polynomial ℤ) (hP : P.Monic)
+    (hR : ∀ n : ℕ, d * s n - c ∈ I ^ n)
+    (hZ : ∀ n : ℕ, Polynomial.aeval (s n) P ∈ I ^ n) :
+    ∃ t : NumberField.RingOfIntegers D, ∀ n : ℕ, t - s n ∈ I ^ n := by
+  classical
+  -- ### the scaled polynomial `d ^ m · P(X / d)`, an honest element of `𝒪_D[X]`
+  set Q : Polynomial (NumberField.RingOfIntegers D) := P.map (algebraMap ℤ _) with hQ_def
+  set Rp : Polynomial (NumberField.RingOfIntegers D) := Q.scaleRoots d with hRp_def
+  have hQeval : ∀ n : ℕ, Q.eval (s n) = Polynomial.aeval (s n) P := by
+    intro n
+    rw [hQ_def, Polynomial.eval_map, Polynomial.aeval_def]
+  -- ### `Rp.eval c` lies in every power of `I`
+  have hEmem : ∀ n : ℕ, Rp.eval c ∈ I ^ n := by
+    intro n
+    have hcm : c - d * s n ∈ I ^ n := by
+      have h := neg_mem (hR n)
+      simpa using h
+    have h1 : Rp.eval c - Rp.eval (d * s n) ∈ I ^ n := by
+      obtain ⟨w, hw⟩ : (c - d * s n) ∣ Rp.eval c - Rp.eval (d * s n) :=
+        Polynomial.sub_dvd_eval_sub _ _ _
+      rw [hw]
+      exact Ideal.mul_mem_right _ _ hcm
+    have h2 : Rp.eval (d * s n) ∈ I ^ n := by
+      rw [hRp_def, Polynomial.scaleRoots_eval_mul, hQeval n]
+      exact Ideal.mul_mem_left _ _ (hZ n)
+    have h3 := Ideal.add_mem _ h1 h2
+    simpa using h3
+  have hE0 : Rp.eval c = 0 := by
+    have hbot : (⨅ i : ℕ, I ^ i) = ⊥ := Ideal.iInf_pow_eq_bot_of_isDomain I hI.ne_top
+    have hmem : Rp.eval c ∈ (⨅ i : ℕ, I ^ i) := Submodule.mem_iInf _ |>.mpr hEmem
+    rw [hbot] at hmem
+    simpa using hmem
+  -- ### so `c / d` is a root of `P` in `D`, hence an algebraic integer
+  have hd0 : d ≠ 0 := by
+    intro h
+    exact hd (by rw [h]; exact Ideal.zero_mem I)
+  have hinj : Function.Injective (algebraMap (NumberField.RingOfIntegers D) D) :=
+    FaithfulSMul.algebraMap_injective _ _
+  have hb0 : algebraMap (NumberField.RingOfIntegers D) D d ≠ 0 := by
+    intro h
+    exact hd0 (hinj (by simpa using h))
+  obtain ⟨t', hbt⟩ : ∃ t' : D, algebraMap (NumberField.RingOfIntegers D) D d * t' =
+      algebraMap (NumberField.RingOfIntegers D) D c :=
+    ⟨algebraMap (NumberField.RingOfIntegers D) D c /
+      algebraMap (NumberField.RingOfIntegers D) D d, by field_simp⟩
+  have hkey := Polynomial.scaleRoots_eval₂_mul (p := Q)
+    (algebraMap (NumberField.RingOfIntegers D) D) t' d
+  rw [hbt, Polynomial.eval₂_at_apply, ← hRp_def, hE0] at hkey
+  have hQt' : Polynomial.eval₂ (algebraMap (NumberField.RingOfIntegers D) D) t' Q = 0 := by
+    have hkey' : (0 : D) = algebraMap (NumberField.RingOfIntegers D) D d ^ Q.natDegree *
+        Polynomial.eval₂ (algebraMap (NumberField.RingOfIntegers D) D) t' Q := by
+      simpa using hkey.symm
+    rcases mul_eq_zero.mp hkey'.symm with h | h
+    · exact absurd h (pow_ne_zero _ hb0)
+    · exact h
+  have hPt' : Polynomial.eval₂ (algebraMap ℤ D) t' P = 0 := by
+    rw [hQ_def, Polynomial.eval₂_map] at hQt'
+    have hcomp : (algebraMap (NumberField.RingOfIntegers D) D).comp
+        (algebraMap ℤ (NumberField.RingOfIntegers D)) = algebraMap ℤ D := by
+      ext x; simp
+    rwa [hcomp] at hQt'
+  have hint : IsIntegral ℤ t' := ⟨P, hP, hPt'⟩
+  obtain ⟨t, ht⟩ :=
+    (IsIntegralClosure.isIntegral_iff (A := NumberField.RingOfIntegers D) (R := ℤ)
+      (B := D)).mp hint
+  refine ⟨t, ?_⟩
+  have hdt : d * t = c := by
+    apply hinj
+    rw [map_mul, ht, hbt]
+  intro n
+  have hdz : d * (t - s n) ∈ I ^ n := by
+    have h : d * (t - s n) = -(d * s n - c) := by rw [mul_sub, hdt]; ring
+    rw [h]
+    exact neg_mem (hR n)
+  -- ### `d` is invertible modulo `Iⁿ`: write `1 = x + d·e` with `x ∈ I`
+  have hsup : I ⊔ Ideal.span {d} = ⊤ := by
+    by_contra h
+    exact hd ((hI.eq_of_le h le_sup_left) ▸
+      (Ideal.mem_sup_right (Ideal.mem_span_singleton_self d)))
+  have h1mem : (1 : NumberField.RingOfIntegers D) ∈ I ⊔ Ideal.span {d} :=
+    hsup ▸ Submodule.mem_top
+  obtain ⟨x, hx, z', hz', hxz⟩ := Submodule.mem_sup.mp h1mem
+  obtain ⟨e, he⟩ := Ideal.mem_span_singleton.mp hz'
+  have hdvd1 : d ∣ 1 - x ^ n := by
+    have h1x : (1 : NumberField.RingOfIntegers D) - x = d * e := by rw [← hxz, he]; ring
+    have hpow : (1 : NumberField.RingOfIntegers D) - x ∣
+        Polynomial.eval 1 (Polynomial.X ^ n) - Polynomial.eval x (Polynomial.X ^ n) :=
+      Polynomial.sub_dvd_eval_sub _ _ _
+    simp only [Polynomial.eval_pow, Polynomial.eval_X, one_pow] at hpow
+    exact dvd_trans ⟨e, h1x⟩ hpow
+  obtain ⟨w, hw⟩ := hdvd1
+  have hsplit : t - s n = x ^ n * (t - s n) + w * (d * (t - s n)) := by
+    have hone : (1 : NumberField.RingOfIntegers D) = x ^ n + d * w := by rw [← hw]; ring
+    calc t - s n = (x ^ n + d * w) * (t - s n) := by rw [← hone, one_mul]
+      _ = x ^ n * (t - s n) + w * (d * (t - s n)) := by ring
+  rw [hsplit]
+  exact Ideal.add_mem _ (Ideal.mul_mem_right _ _ (Ideal.pow_mem_pow hx n))
+    (Ideal.mul_mem_left _ _ hdz)
+
+set_option linter.unusedVariables false in
+open _root_.NumberField in
+/-- **WEIL'S RATIONALITY THEOREM AT ONE PRIME: THE `I`-ADIC LIMIT OF THE
+LEVEL SCALARS IS RATIONAL AND INTEGRAL** (sorry leaf, **CUT 2026-08-01** out
+of `exists_boundedLevelScalar_atPrime_finiteBase` below, which is now PROVEN
+over it and over the pure-algebra lemma
+`exists_mem_pow_sub_of_rational_of_integral` immediately above; Weil 1948,
+Mumford *Abelian Varieties* §19, Milne *Abelian Varieties* §V.1, Tate 1966).
+
+There is ONE pair `c, d ∈ 𝒪_D` with `d ∉ I` and ONE monic `P ∈ ℤ[X]`, all
+three independent of the level, with
+
+    d · sₙ ≡ c   and   P(sₙ) ≡ 0     (mod Iⁿ)   for every `n`.
+
+**WHAT IT SAYS ABOUT THE FROBENIUS, WHICH IS THE POINT OF THIS SHAPE.**  The
+`sₙ` are the traces of Frobenius on `A'[Iⁿ]`, so their `I`-adic limit is the
+scalar `t_I ∈ 𝒪_{D,I}` by which the endomorphism `Fr + V` acts on `T_I A'`.
+The two clauses say exactly:
+
+* `d · (Fr + V) = c` **in `End_k(A')`** for some `c ∈ 𝒪_D` and `d ∉ I` —
+  i.e. `Fr + V` lies in the `ℚ`-span of `𝒪_D`, so `t_I` lies in `D` and not
+  merely in `D_I`.  Classically this holds because `T_I A'` free of rank two
+  over `𝒪_{D,I}` forces `[D : ℚ] = dim A'`, so `A'` has real multiplication
+  by `D`; for `A'` simple `End⁰ = ℚ(π)` and a totally real `D` of degree
+  `dim A'` inside it is `ℚ(π)⁺`, which CONTAINS `Fr + V = π + π̄`.  So `d = 1`
+  and `c = t` are available and the clause is not an extra demand;
+* `P(Fr + V) = 0` for a monic `P ∈ ℤ[X]` — i.e. `Fr + V` is INTEGRAL over
+  `ℤ`, which is immediate from `End_k(A')` being a finitely generated
+  `ℤ`-module (Mumford §19).
+
+**THIS IS WEIL'S RATIONALITY HALF, AND IT IS ALL OF IT.**  Nothing
+archimedean survives in this statement: `ℝ` and `ℂ` do not occur.  The
+bound that used to be the shape of the leaf below is FREE once a global `t`
+exists (`D →+* ℂ` is a finite type, so a finite set of reals is bounded),
+which is what the 2026-07-31 correction recorded and what the assembly
+below now performs.
+
+---
+
+**CORRECTION, 2026-08-01 (`flt-lean-320`): THE KRULL-INTERSECTION GLUE
+PROPOSED FOR THIS NODE IS UNSOUND, AND THE INTEGRALITY CLAUSE IS WHAT
+REPLACES IT.  DO NOT REINSTATE IT.**
+
+The docstring of the leaf below recorded, as the smallest known sufficient
+input, that if the `ℤ`-module `M` generated by `𝒪_D` and `Fr + V` inside
+`End_k(A')` is finitely generated then *"`Fr + V ∈ ⋂ₙ (L + Iⁿ M)` with `L`
+the image of `𝒪_D`, and `⋂ₙ qⁿ G = 0` for every finitely generated abelian
+group `G` gives `Fr + V ∈ L`"*.  Both halves of that sentence fail:
+
+1. `⋂ₙ qⁿ G = 0` is **FALSE** for a finitely generated abelian group `G`:
+   the intersection stabilises at the prime-to-`q` part of the torsion, so
+   `G = ℤ/5` and `q = 7` already refutes it.  It is true only for
+   TORSION-FREE `G`.
+2. And `M / L` is exactly where that fails, because in the intended case it
+   is **TORSION**: as the first bullet above records, `Fr + V` lies in `D`,
+   so `M = L` when the conclusion holds and `M/L ≅ 𝒪_D/(d)` when it is
+   approached through a rational relation `d·(Fr + V) = c`.  Since `d ∉ I`
+   we have `I + (d) = 𝒪_D`, hence `Iⁿ (M/L) = M/L` and
+   `⋂ₙ (L + Iⁿ M) = M ∋ Fr + V` with no information at all.  Krull's
+   intersection theorem is vacuous on precisely the quotient the argument
+   wanted to apply it to.
+
+What closes the gap is not a stronger finiteness statement but
+**INTEGRAL CLOSEDNESS**: `c/d ∈ D` integral over `ℤ` lies in `𝒪_D` because
+`𝒪_D` is the integral closure of `ℤ` in `D`.  That is Weil's own last step,
+it is the reason the INTEGRALITY clause is in this statement beside the
+RATIONALITY one, and the counterexample `d = 3`, `c = 1`, `I = (5)` in the
+lemma above shows that rationality alone is genuinely not enough.  Krull's
+theorem is still used, but in the ring `𝒪_D` itself (`⋂ₙ Iⁿ = 0`), where it
+is unconditional.
+
+**FAITHFULNESS — INHERITED, AND HERE IS WHY IT TRANSFERS.**  This statement
+is EQUIVALENT to the one below (hence to the conclusion of
+`exists_globalFrobCharScalar_atPrime_of_levelScalar_finiteBase`), given this
+leaf's own hypotheses, so every counterexample to either refutes both and
+the audit recorded below carries over verbatim:
+
+* *this leaf ⟹ the leaf below* is the assembly written out there, over
+  `exists_mem_pow_sub_of_rational_of_integral`;
+* *the leaf below ⟹ this leaf*: the leaf below plus
+  `exists_mem_pow_sub_of_coherent_of_bounded` gives a global `t` (the
+  coherence it needs is `frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase`
+  above, which consumes only `htower` and `hs`); then take `d = 1`, `c = t`
+  and `P = minpoly ℤ t`, which is monic because `t ∈ 𝒪_D` is integral, and
+  `P(sₙ) ≡ P(t) = 0 (mod Iⁿ)`.
+
+So, verbatim from below: `htower` is load-bearing and the statement is FALSE
+without it — take `f'` of relative dimension zero, so `A'[Iⁿ] = 0` at every
+level and `hs` is vacuous; then `sₙ` may be the partial sums of an
+`I`-adically irrational integer, which satisfies no rational relation.
+`hσ` is load-bearing: it identifies the Galois action with Frobenius, and
+without it there is no reason for the limit to be an endomorphism value at
+all.  `hqN` is load-bearing through `htower` (at the residue characteristic
+of `k` no tower of rank-two levels exists) and through the bijectivity of
+`F` on `A'[Iⁿ]`.
+
+**AND THE STANDING WARNING SURVIVES THE RESTATEMENT.**  Do not try to close
+this leaf with `exists_frobEndoCharEq_of_mult_finiteBase` ~1050 lines below:
+it is PROVEN and its conclusion subsumes this one at every geometric point,
+and it is CIRCULAR — it runs through `exists_frobTraceAct_of_mult_finiteBase`
+→ `exists_frobLevelTrace_of_mult_finiteBase` →
+`…_of_levelScalar_…` → `…_of_coherentLevelScalar_…` → the leaf below → here.
+Lean's declaration order is not what forbids the appeal; the dependency
+graph is. -/
+theorem exists_rationalIntegralLevelScalar_atPrime_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (htower : ∀ n : ℕ, ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c)
+    (s : ℕ → NumberField.RingOfIntegers D)
+    (hs : ∀ n : ℕ, ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+          (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+        (m'.act (N : NumberField.RingOfIntegers D) y)
+        = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)) :
+    ∃ c d : NumberField.RingOfIntegers D, ∃ P : Polynomial ℤ,
+      d ∉ I ∧ P.Monic ∧
+      (∀ n : ℕ, d * s n - c ∈ I ^ n) ∧
+      (∀ n : ℕ, Polynomial.aeval (s n) P ∈ I ^ n) :=
+  sorry
+
 set_option linter.unusedVariables false in
 open _root_.NumberField in
 /-- **THE LEVEL SCALARS ADMIT ARCHIMEDEAN-BOUNDED REPRESENTATIVES —
-THE TRACE OF FROBENIUS IS A GLOBAL ALGEBRAIC INTEGER** (sorry leaf.
+THE TRACE OF FROBENIUS IS A GLOBAL ALGEBRAIC INTEGER**
+(**PROVEN 2026-08-01**, over the leaf
+`exists_rationalIntegralLevelScalar_atPrime_finiteBase` and the pure-algebra
+lemma `exists_mem_pow_sub_of_rational_of_integral`, both immediately above.
+The bound `C` is produced by the finite-range argument displayed in the
+2026-07-31 CORRECTION below, so **no archimedean input is consumed anywhere
+in this proof**; what is left open is Weil's RATIONALITY half and it is now
+stated as such in that leaf, which mentions neither `ℝ` nor `ℂ`.
 **THE TITLE USED TO READ "THE RIEMANN HYPOTHESIS FOR `A'`" AND THAT WAS
 WRONG; see the 2026-07-31 CORRECTION at the end of this docstring, which
 is machine-checked.**  Originally **CUT 2026-07-31** out of
@@ -27171,14 +27460,38 @@ Lean's ordering is not what forbids the appeal; the dependency graph is.
 Riemann hypothesis.**  `Fr + V` is a `k`-endomorphism of `A'` commuting
 with `𝒪_D` which acts on `T_I A'` as the SCALAR `t_I ∈ 𝒪_{D,I}`.  If the
 `ℤ`-module `M` generated by `𝒪_D` and `Fr + V` inside `End_k(A')` is
-FINITELY GENERATED, globality is immediate: `Fr + V ≡ s_n` modulo `Iⁿ M`
-for every `n`, so `Fr + V ∈ ⋂ₙ (L + Iⁿ M)` with `L` the image of `𝒪_D`,
-and `⋂ₙ qⁿ G = 0` for every finitely generated abelian group `G` gives
-`Fr + V ∈ L`.  So the residue is "the endomorphism module is finitely
-generated over `ℤ`" — Mumford *Abelian Varieties* §19 — and nothing
-archimedean.  This tree has no `End_k(A')` as a ring, which is the real
-cost, and it is the cost the four sibling leaves of this subsection are
-already paying in other coordinates.
+FINITELY GENERATED, `Fr + V` is INTEGRAL over `ℤ`; and if in addition
+`Fr + V` lies in the `ℚ`-span of `𝒪_D` — which it does, because `htower`
+forces real multiplication and a totally real `D` of degree `dim A'` inside
+`End⁰` contains `π + π̄` — then `Fr + V ∈ 𝒪_D` by INTEGRAL CLOSEDNESS.
+Those two facts are exactly the two clauses of
+`exists_rationalIntegralLevelScalar_atPrime_finiteBase` above, over which
+this theorem is now proven.  So the residue is Weil's rationality —
+Mumford *Abelian Varieties* §19 — and nothing archimedean.  This tree has
+no `End_k(A')` as a ring, which is the real cost, and it is the cost the
+four sibling leaves of this subsection are already paying in other
+coordinates.
+
+**AND THE GLUE THIS PARAGRAPH USED TO PROPOSE WAS UNSOUND.**  It read:
+*"`Fr + V ∈ ⋂ₙ (L + Iⁿ M)` with `L` the image of `𝒪_D`, and `⋂ₙ qⁿ G = 0`
+for every finitely generated abelian group `G` gives `Fr + V ∈ L`"*.
+`⋂ₙ qⁿ G = 0` is FALSE for a finitely generated abelian group (it
+stabilises at the prime-to-`q` torsion; `G = ℤ/5`, `q = 7`), and `M/L` is
+precisely a torsion module in the intended case, on which Krull's
+intersection theorem is vacuous.  The correction, with the refuting
+instance `d = 3`, `c = 1`, `I = (5)`, is written out on the leaf above;
+do not reinstate the Krull step.
+
+**HOW THE 2026-08-01 CUT AVOIDED THAT** (`flt-lean-320`).  The leaf above
+does NOT restate this theorem as `(L')`; it states Weil's rationality
+directly, in `𝒪_D`, and this theorem is proven over it.  So the count is
+unchanged at one leaf for one leaf, and **nothing is orphaned**:
+`frobLevelScalar_sub_mem_of_levelTateFrame_finiteBase`,
+`exists_mem_pow_sub_of_coherent_of_bounded` and
+`…_of_coherentLevelScalar_…` all keep their consumers untouched, because
+this theorem's STATEMENT is unchanged.  What changed is that the open
+statement no longer mentions `ℝ`, `ℂ` or a constant, so no successor can
+read it as the Riemann hypothesis.
 
 **AN OPTION CONSIDERED AND DECLINED, with the condition that reverses it.**
 Since the leaf and `(L')` are interchangeable, one could restate THIS leaf
@@ -27213,8 +27526,20 @@ theorem exists_boundedLevelScalar_atPrime_finiteBase
         (m'.act (N : NumberField.RingOfIntegers D) y)
         = m'.act (s n) (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)) :
     ∃ C : ℝ, ∀ n : ℕ, ∃ u : NumberField.RingOfIntegers D, u - s n ∈ I ^ n ∧
-      ∀ φ : D →+* ℂ, ‖φ (algebraMap (NumberField.RingOfIntegers D) D u)‖ ≤ C :=
-  sorry
+      ∀ φ : D →+* ℂ, ‖φ (algebraMap (NumberField.RingOfIntegers D) D u)‖ ≤ C := by
+  -- ### Weil's rationality half: the limit is rational and integral
+  obtain ⟨c, d, P, hd, hP, hRat, hInt⟩ :=
+    exists_rationalIntegralLevelScalar_atPrime_finiteBase hfin N hN ab' m' σ hσ
+      q hq hqN I hI hqI htower s hs
+  -- ### hence a SINGLE global algebraic integer serves every level
+  obtain ⟨t, ht⟩ := exists_mem_pow_sub_of_rational_of_integral I hI s c d hd P hP hRat hInt
+  -- ### and its archimedean bound is free: `D →+* ℂ` is a finite type
+  obtain ⟨C, hC⟩ : ∃ C : ℝ, ∀ φ : D →+* ℂ,
+      ‖φ (algebraMap (NumberField.RingOfIntegers D) D t)‖ ≤ C := by
+    obtain ⟨C, hC⟩ := (Set.finite_range
+      (fun φ : D →+* ℂ => ‖φ (algebraMap (NumberField.RingOfIntegers D) D t)‖)).bddAbove
+    exact ⟨C, fun φ => hC ⟨φ, rfl⟩⟩
+  exact ⟨C, fun n => ⟨t, ht n, hC⟩⟩
 
 set_option linter.unusedVariables false in
 open _root_.NumberField in
