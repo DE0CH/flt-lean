@@ -22345,14 +22345,24 @@ theorem finite_setOf_subgroup_hilbertInertiaAt_le_outside
 declarations immediately above; it was a bare `sorry` from 2026-07-28):
 `hilbertInertiaOutsideSubgroups F S n` is finite.
 
-Unfolding the definition, membership is exactly the five clauses of
-`finite_setOf_subgroup_hilbertInertiaAt_le_outside` above — the only difference
-being that `hilbertInertiaOutsideSubgroups` spells the inertia clause with
+Unfolding the definition, membership is exactly the five clauses of the field-half
+finiteness statement `finite_setOf_intermediateField_hilbertInertiaOutside`
+immediately above, read through the infinite Galois correspondence; so the proof
+is `Set.Finite.subset` applied to that theorem's image under `fixingSubgroup`.
+
+The inertia clause has two interchangeable spellings in this file, and the
+distinction is worth keeping straight because it produced a duplicated route that
+survived here for four days: `hilbertInertiaOutsideSubgroups` spells it with
 `hilbertInertiaToGlobalHom F w` applied to a SUBTYPE element, while
 `HilbertInertiaTrivialAt w N` spells it as a bounded quantifier over
-`localInertiaGroup w`; the two are the same statement (`hilbertInertiaToGlobalHom`
-is `hilbertDecompHom` composed with `Subgroup.subtype`), so the proof is
-`Set.Finite.subset` applied to that theorem.
+`localInertiaGroup w`. The two are the same statement (`hilbertInertiaToGlobalHom`
+is `hilbertDecompHom` composed with `Subgroup.subtype`), and the conversion is
+`fun w hwS σ hσ => hinert w hwS ⟨σ, hσ⟩`, which is now discharged ONCE, in the
+proof of the field half immediately above, rather than by carrying two parallel
+chains. A second copy of the Galois-correspondence proof below, over the
+`HilbertInertiaTrivialAt` spelling — `finite_setOf_subgroup_hilbertInertiaAt_le_outside`
+— was DELETED on 2026-08-01 (flt-lean-71); it had no consumers, and recovering it
+needs only `git show` of that commit's parent.
 
 # WHAT THE ROUTE ACTUALLY COST — A CORRECTION TO THIS DOCSTRING'S OWN PREDICTION
 

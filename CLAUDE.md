@@ -31052,3 +31052,80 @@ produces a noisy list somebody eventually reads; under-reporting produces a clea
 verdict nobody questions.  When you find one bug in a scanner's parsing, check
 the other regexes in the same file before you stop — every one of these five
 fixes came from looking at the file next to the one that was already wrong.
+## A CONSUMERLESS PROVEN THEOREM CAN BE THE DISCHARGE OF A LIVE LEAF — READ WHAT IT PROVES BEFORE DELETING IT
+(2026-08-01, `flt-lean-71`, `HardlyRamified/HilbertModularity.lean`.) The
+free-floating rule says a PROVEN declaration nothing consumes must go. That is
+right, and it has a failure mode that a deletion task walks straight into:
+**the consumerless theorem is the ROOT of a chain, and the chain is the complete
+proof of an OPEN LEAF elsewhere in the same file.** Delete the root and you have
+not removed the free-floating code — you have moved it down one level and thrown
+away the discharge of a live `sorry`.
+Concretely. `finite_setOf_subgroup_hilbertInertiaAt_le_outside` was PROVEN with
+zero consumers (verified: one comment-stripped code hit tree-wide, its own
+declaration line), and the task was to delete it. What the consumer scan
+*continued* says is the whole story:
+    natCast_dvd_absNorm_of_natCast_mem            -> used only inside ..._At_le_outside
+    not_dvd_discr_of_hilbertInertiaTrivialAt_outside -> used only inside ..._At_le_outside
+    finite_setOf_intermediateField_hilbertInertiaAt_le_outside -> used only inside the doomed theorem
+i.e. FOUR proven declarations, ~250 lines of Hermite–Minkowski over `F`, all
+rooted at the one consumerless theorem. And `finite_setOf_intermediateField_`
+`hilbertInertiaAt_le_outside` is, statement for statement, the OPEN LEAF
+`finite_setOf_intermediateField_hilbertInertiaOutside` sitting **114 lines
+above** it — the same set, with the inertia clause in the file's other spelling
+(`HilbertInertiaTrivialAt w N`, a bounded quantifier, versus
+`hilbertInertiaToGlobalHom F w σ ∈ N` over the subtype). The conversion is
+`fun w hwS σ hσ => hinert w hwS ⟨σ, hσ⟩` and the leaf closes in four lines.
+**So the check, and it is one fixpoint you were half-running anyway: after
+establishing that your target has no consumers, compute the ORPHAN CLOSURE — the
+set that becomes consumerless once it goes — and then ask, for the whole closure,
+whether its CONCLUSION matches an open leaf elsewhere in the file.** Match on the
+statement, never on the name: these two share no identifier, and the only textual
+link is that both docstrings describe the same classical theorem in prose.
+Three things this instance also shows:
+* **What made the duplicate invisible for four days is DECLARATION ORDER.** The
+  leaf was declared ABOVE the block that proves it, so the derivation was not
+  expressible where the leaf stood, and every reader correctly concluded there
+  was nothing to do there. The repair is the relocation, and it is the cheap
+  direction — move the LEAF (docstring plus a `:= sorry` statement, no proof
+  body) DOWN past the machinery, rather than hoisting ~174 lines of machinery up.
+  Measure both and move the smaller side, as the standing hoist rule says.
+* **The prompt's premise was false and the prompt's instruction was still half
+  right.** It asserted the field halves were already bridged by an earlier branch;
+  in this tree that leaf was a bare `:= sorry`, and was declared where the bridge
+  cannot be written. The deletion it asked for was correct and was performed —
+  it just had to be paired with closing the leaf, or it would have orphaned three
+  more proven declarations. A prompt's rationale is a hypothesis exactly like a
+  docstring's; check the two lines it rests on before acting on the instruction.
+* **Do not "fix" free-floating code by deleting the chain wholesale either.** That
+  is a pure, merge-friendly deletion and it destroys ~250 lines of proven work
+  that is precisely what a live leaf was waiting for. Between "delete the root",
+  "delete the chain" and "close the leaf over the chain", only the third leaves
+  the file owing less.
+Accounting, stated the way the RECUT rule asks: the module went **14 → 13**
+sorried declarations, and `#print axioms` on both the closed leaf and its
+consumer `finite_hilbertInertiaOutsideSubgroups` returns
+`[propext, Classical.choice, Quot.sound]` — so an `F`-level Hermite–Minkowski
+statement with two live consumers upstream is now finished rather than merely
+locally sorry-free. No mathematics was written.
+### VERIFY DIFFERENTIALLY, AND ATTRIBUTE THE DIAGNOSTICS TO DECLARATION NAMES
+A relocation shifts every later line, so a line-keyed error diff is unreadable.
+Key each diagnostic by `(severity, message, ENCLOSING DECLARATION NAME, column)`
+— computing the enclosing declaration separately in each file version — and diff
+the multisets. Here that gave, in one line of output, exactly the result the edit
+claims:
+    PRE  errors 0  warnings 31  sorried decls 14
+    POST errors 0  warnings 30  sorried decls 13
+    ONLY IN PRE:  ('warning', "declaration uses `sorry`",
+                   'finite_setOf_intermediateField_hilbertInertiaOutside', 8)
+    ONLY IN POST: (nothing)
+Nothing introduced, one thing removed, and the thing removed is the leaf. That is
+a complete verdict on a 39 000-line module, and it is much stronger than "it
+built": it rules out an error and a `sorry` having swapped places.
+**And re-measure the cost before planning around a quoted one.** The task priced
+one elaboration of this module at ~25 minutes; with a current, consistent olean
+set (`rsync -a --delete ~/.flt-release-lake/build/ .lake/build/`, valid because
+`git diff --stat $(cat ~/.flt-release-lake/sha) HEAD -- Fermat/` was empty) the
+two elaborations ran CONCURRENTLY in **under one minute** — Lean elaborates
+independent top-level declarations in parallel and this file is not one long
+chain. The scratch that verified the four-line bridge against the module's own
+olean took **6 seconds**. Neither number was guessable from the prompt's.
