@@ -22546,9 +22546,26 @@ theorem hasNoFibreAffineLine_of_notGeometricallyRational
 
 /-- **THE BASE-POINT-FREE REDUCTION: a nonconstant map to an abelian variety
 DESCENDS from an extension over which the curve acquires a rational point**
-(sorry leaf, NEW 2026-07-30) — the second residue of
+(**PROVEN 2026-08-02 by a one-line delegation**; a sorry leaf from 2026-07-30
+until then) — the second residue of
 `exists_nonconstant_toAbelianScheme_of_notGeometricallyRational` below, and
 the ONLY place where the missing section is still owed.
+
+**THIS DECLARATION IS A DUPLICATE AND SHOULD BE DELETED.**  The statement was
+reproduced verbatim into
+`Fermat/FLT/Mathlib/AlgebraicGeometry/WeilRestriction.lean` on 2026-07-31 and
+PROVEN there, over that module's two atoms; that module's own docstring says
+*"That declaration should be replaced by a one-line delegation to this one"*,
+and the `public import` of it at the head of this file (added the same day)
+already describes it as "Stated and PROVEN there".  Nobody performed the
+deletion, so this copy stayed in the frontier as an ordinary-looking open leaf
+for two days — the duplicate-cut shape, invisible to every `sorry` scan because
+the two names differ by a namespace.  It is delegated rather than deleted here
+because the deletion has to re-point the call site below and belongs with an
+owner of this file; the delegation closes the leaf at zero risk in the
+meantime.  Deleting it later is a two-line change: remove this declaration and
+write `Fermat.WeilRestriction.` in front of the use at
+`exists_nonconstant_toAbelianScheme_of_notGeometricallyRational`.
 
 It is the exact statement of the gap that leaf's audit names first: Abel–Jacobi
 `x ↦ [x] − [o]` needs a `K`-rational base point, and a smooth proper
@@ -22611,7 +22628,8 @@ theorem exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
     ∃ (A : Scheme.{0}) (astr : A ⟶ Spec (CommRingCat.of K)) (_ : AbelianSchemeStruct astr)
       (c : C ⟶ A), c ≫ astr = cstr ∧
         ∀ s : Spec (CommRingCat.of K) ⟶ A, c ≠ cstr ≫ s :=
-  sorry
+  Fermat.WeilRestriction.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint
+    hproper hsmooth hconn hsec
 
 /-- **`Pic⁰` AND THE DEGREE-`n` ABEL–JACOBI MAP: a GEOMETRICALLY
 non-rational fibre receives a nonconstant map to an abelian variety**
