@@ -29543,3 +29543,52 @@ run `git stash list` before and after and check the "Dropped" line names your ow
   under `Mathlib/`. Re-checked 2026-08-02 by reading the file. The `Herbrand` hits in
   `Fermat/` are all Herbrand QUOTIENTS in the class-field-theory modules — a different
   object, and a trap for a grep that stops at the word.
+## A LEAF'S ROUTE CAN BE REFUTED **BY NAME** IN A SIBLING DOCSTRING OF THE SAME FILE — AND THAT SIBLING NAMES THE THEOREM THAT CLOSES YOUR LEAF
+(2026-08-02, `flt-lean-261`, `iInf_gp_one_le_wildInertiaGroup` in
+`ArtinConductor.lean`.  Closed in eleven lines after two days open; the
+mathematics had been in the file the whole time.)
+That leaf's docstring prescribed one route and dismissed the obvious one, both
+in detail and both wrongly:
+* PRESCRIBED — *"take a level `L ⊇ Kᵥ(ζ_n, x)`, which is TAMELY ramified, so
+  `G_1(L/Kᵥ)` is the trivial group … whence `σ ∈ D.gp 1 = D.lvl` fixes `L`
+  pointwise"*;
+* DISMISSED — the naive argument, because `σ • x − x = (ζ − 1) x` bounds only
+  `v_L(ζ − 1) + v_L(x) ≥ 2`, *"which is why the level has to be chosen so that
+  `x` is close to a uniformizer"*.
+**Sixteen hundred lines below, `exists_lowerRamificationData_phi_one_le`'s
+docstring refutes both, under the heading "THE ROUTE ACTUALLY USED (2026-07-31),
+and one clause of the paragraph above was WRONG", and names the replacement.**
+It says the valuation-one requirement is *"not NEEDED — see
+`LowerRamificationData.eq_one_of_smul_eq_mul_of_mem_gp_one` above, which runs
+the contradiction at an arbitrary `x = unif ^ e * u` and only ever uses that the
+cofactor `u` is a UNIT"*, and *"not ACHIEVABLE"*, for exactly the reason that
+also kills the tame-level plan: the level must contain the fixed field of a
+prescribed open subgroup, whose ramification index may be divisible by the
+residue characteristic.  Both docstrings were written **on the same day**.  One
+agent hit the wall on its own leaf, climbed it, and wrote the lesson down beside
+*its* leaf; nobody carried it to the sibling that had the identical wall.
+**So the check, before attempting any prescribed route: grep the file for the
+CORRECTION MARKERS, not for your leaf's vocabulary.** This tree's authors record
+a refuted route in a fixed idiom, and it greps in one command:
+    grep -n 'was WRONG\|is not NEEDED\|not ACHIEVABLE\|dead end\|ROUTE ACTUALLY USED\|does NOT close' <the file>
+Then read every hit whose subject is an object your route also names.  It costs
+seconds and it is the only thing that connects two leaves whose statements share
+no identifier — here one is about `⋂_D G_1 ≤ P_v` and the other about
+`φ(1) ≤ ε`, and a name-based search relates them not at all.
+**AND EXPECT THE REPLACEMENT TO BE DECLARED BELOW YOU, so the leaf is a
+DECLARATION-ORDER leaf and the repair is a hoist.**  That is structural, not
+luck: the theorem that repairs the route was written *for the sibling that
+discovered the problem*, so it lives next to that sibling — and the sibling is
+downstream, because it is the one that got there second.  Here the hoist was 109
+lines with all inputs already far above the destination, and the frontier moved
+`4 → 3` with no new mathematics.
+Two riders, both cheap and both worth doing every time:
+* **Say in the commit that no mathematics was done.**  A leaf that closes by a
+  hoist looks, in the warning-set delta, exactly like a leaf that closed by a
+  proof.  The honest report is "blocked by declaration order", and it is what
+  tells the next reader that the citation in the docstring was never owed.
+* **Correct the refuted route IN PLACE and keep it, with the one-line reason.**
+  The dismissed naive argument was RIGHT about the additive reading and that
+  observation is exactly what the multiplicative normal form
+  (`exists_unif_pow_mul_isUnit`) repairs; deleting it would throw away the only
+  written account of why the repair has the shape it does.
