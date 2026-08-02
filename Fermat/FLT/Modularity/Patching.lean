@@ -13274,6 +13274,93 @@ theorem raisedLevelHardlyRamified_pushforwardFrame_of_baseChange.{a}
   exact isRaisedLevelHardlyRamified_conj Q (rank_finTwoFun A) h2
     (TensorProduct.piScalarRight B A A (Fin 2))
 
+/-- **THE `p`-ADIC CYCLOTOMIC CHARACTER IS TRIVIAL ON THE IMAGE OF LOCAL INERTIA
+AT EVERY `q ≠ p`** (PROVEN 2026-08-02, `flt-lean-399`).  `ℚ(μ_{pⁿ})/ℚ` is
+unramified outside `p`, in the shape every consumer in this module wants.
+
+**IT IS QUANTIFIED OVER THE RING MAP `F` ON PURPOSE, AND THAT IS THE WHOLE POINT
+OF THE STATEMENT.**  `v.adicCompletion ℚ` carries TWO `Field` instances in this
+file's scope — mathlib's `HeightOneSpectrum.adicCompletion.instField`, which is
+what `GaloisRep.lean` elaborated `GaloisRep.toLocal`'s copy of `algebraMap ℚ
+(v.adicCompletion ℚ)` through, and this project's
+`Fermat/FLT/DedekindDomain/AdicValuation.lean:288` `instFieldAdicCompletion_fermat`
+(a bare `inferInstance`), which any `algebraMap ℚ (v.adicCompletion ℚ)` written by
+hand HERE picks up.  Different `Field` ⟹ different `Semiring` ⟹ different
+`ℚ →+* v.adicCompletion ℚ`, so the two `Field.absoluteGaloisGroup.map` terms PRINT
+IDENTICALLY and no `rw` bridges them; `rfl` does not either, because
+`Field.absoluteGaloisGroup.mapAux` runs through `IsAlgClosed.lift`, whose body the
+module system does not expose.  Taking `F` as a BINDER makes unification pick up
+whichever copy the call site's goal carries, and the single `RingHom.ext_rat`
+below moves it to the hand-written one, where `ModThree`'s lemma lives.  **Do not
+"simplify" this by fixing `F := algebraMap ℚ _`** — the result is unusable
+against `GaloisRep.toLocal_apply`, which is the only reason it exists.
+
+The arithmetic is entirely
+`IsHardlyRamified.localInertiaGroup_le_muFixer_of_not_dvd_ray_class`
+(`HardlyRamified/ModThree.lean`, PROVEN 2026-07-26, `public import`ed at line
+259), applied at `m = pⁿ`: `IsHardlyRamified.muFixerRayClass ℚ m` membership
+unfolds DEFINITIONALLY to `∀ ζ, ζ ^ m = 1 → σ ζ = ζ`, which is exactly what
+`modularCyclotomicCharacter.unique` consumes, and `PadicInt.ext_of_toZModPow`
+glues the levels.
+
+**DUPLICATION, ALREADY RECORDED UPSTREAM.**  `Modularity/Interface.lean`'s
+`cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup` is the same statement
+with `F` fixed, proven from `map_fixes_of_pow_eq_one_of_mem_localInertiaGroup`
+rather than from the `muFixer` form; it is DOWNSTREAM of this module and so
+uncitable here.  `ModThree.lean`'s own docstring asks for that block to be
+hoisted into `Deformations/RepresentationTheory/ArtinConductor.lean`; doing so
+would let this theorem and the `Interface` one share a brick, and it remains the
+right repair.
+
+`hqp : q ≠ p` is LOAD-BEARING: at `q = p` the restriction of `χ_cyc` to inertia
+is the local cyclotomic character, which is onto `1 + pℤ_[p]` when
+`ℚ_p(μ_{pⁿ})/ℚ_p` is totally ramified. -/
+theorem cyclotomicCharacter_absGalMap_eq_one_of_mem_localInertiaGroup
+    {p : ℕ} [Fact p.Prime] {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (ι : Field.absoluteGaloisGroup
+      (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))
+    (hι : ι ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : ℚ →+* (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ)) :
+    cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map F) ι).toRingEquiv = 1 := by
+  have hp : p.Prime := Fact.out
+  rw [RingHom.ext_rat F (algebraMap ℚ
+    (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))]
+  have hσ : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))) ι ∈
+      Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    Subgroup.mem_map_of_mem _ hι
+  set σ : Field.absoluteGaloisGroup ℚ :=
+    (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))) ι with hσdef
+  refine Units.ext ?_
+  rw [Units.val_one]
+  refine PadicInt.ext_of_toZModPow.mp fun n => ?_
+  rcases Nat.eq_zero_or_pos n with rfl | hnpos
+  · haveI : Subsingleton (ZMod (p ^ 0)) := by rw [pow_zero]; infer_instance
+    exact Subsingleton.elim _ _
+  haveI : NeZero (p ^ n) := ⟨pow_ne_zero n hp.ne_zero⟩
+  have hqpn : ¬ q ∣ p ^ n := fun hdvd =>
+    hqp ((Nat.prime_dvd_prime_iff_eq hq hp).mp (hq.dvd_of_dvd_pow hdvd))
+  have hmem : σ ∈ IsHardlyRamified.muFixerRayClass ℚ (p ^ n) :=
+    IsHardlyRamified.localInertiaGroup_le_muFixer_of_not_dvd_ray_class (p ^ n) hq hqpn hσ
+  rw [map_one, cyclotomicCharacter.toZModPow]
+  refine (modularCyclotomicCharacter.unique (AlgebraicClosure ℚ)
+    (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) (p ^ n))
+    _ ?_).symm
+  intro t ht
+  have hval1 : ((1 : ZMod (p ^ n))).val = 1 := by
+    rw [ZMod.val_one_eq_one_mod,
+      Nat.mod_eq_of_lt (Nat.one_lt_pow hnpos.ne' hp.one_lt)]
+  rw [hval1, pow_one]
+  have ht1 : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (p ^ n) = 1 := by
+    rw [← Units.val_pow_eq_pow_val, (mem_rootsOfUnity _ t).mp ht, Units.val_one]
+  show σ ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) = _
+  exact hmem _ ht1
+
 set_option linter.checkUnivs false in
 /-- **THE DETERMINANT OF A CYCLOTOMICALLY PINNED REPRESENTATION IS TRIVIAL ON
 INERTIA AT `q ≠ p`** (**PROVEN 2026-08-02**; cut 2026-07-30 as the ONE arithmetic
@@ -13311,12 +13398,19 @@ syntactically different `Semiring` arguments, hence syntactically different
 PRINT IDENTICALLY and that `rw` cannot bridge — and `rfl` cannot either, because
 `Field.absoluteGaloisGroup.mapAux` is built from `IsAlgClosed.lift`, whose body
 the module system does not expose.  **The fix is to QUANTIFY OVER THE RING MAP**:
-the auxiliary `hcyc` below is stated for every `F : ℚ →+* v.adicCompletion ℚ`, so
-unification picks up whichever copy the goal happens to carry, and the single
+`cyclotomicCharacter_absGalMap_eq_one_of_mem_localInertiaGroup` immediately above
+is stated for every `F : ℚ →+* v.adicCompletion ℚ`, so unification picks up
+whichever copy the goal happens to carry, and the single
 `RingHom.ext_rat F (algebraMap ℚ _)` inside it moves to the hand-written one
 where `ModThree`'s lemma lives.  That is strictly better than chasing the
 instances with `Subsingleton.elim`, and it is the pattern to copy at the sibling
 Hilbert leaf.
+
+The arithmetic now lives in that theorem, which is stated with no representation
+in it and is therefore reusable: `isUnramifiedAtTwo_of_forall_unipotent_eq_one`
+(above, open) names exactly it as its STEP 2 — "`hρbar.det` and `p ≠ 2`:
+`ℚ₂(μ_{pⁿ})/ℚ₂` is UNRAMIFIED, so `χ_cyc` is trivial on inertia at `2`" — and
+should call it rather than re-derive it.
 
 This is the `ℚ`-side, `p`-adic twin of the Hilbert leaf
 `cyclotomicCharacter_map_map_eq_one_of_mem_localInertiaGroup`
@@ -13380,56 +13474,16 @@ theorem det_toLocal_eq_one_of_det_cyclotomicCharacter {p : ℕ} [Fact p.Prime]
       (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))
     (hι : ι ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :
     LinearMap.det (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat ι) = 1 := by
-  have hp : p.Prime := Fact.out
-  -- The cyclotomic character kills the image of `ι` in `Γ ℚ`, along ANY ring map
-  -- `ℚ → ℚ_q`.  Quantifying over the map is what lets the conclusion be matched
-  -- against `GaloisRep.toLocal_apply`'s copy of `algebraMap`, which elaborates
-  -- through a different `Field (v.adicCompletion ℚ)` instance path than a
-  -- hand-written one does; see the docstring.
-  have hcyc : ∀ F : ℚ →+* (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ),
-      cyclotomicCharacter (AlgebraicClosure ℚ) p
-        ((Field.absoluteGaloisGroup.map F) ι).toRingEquiv = 1 := by
-    intro F
-    rw [RingHom.ext_rat F (algebraMap ℚ
-      (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))]
-    have hσ : (Field.absoluteGaloisGroup.map (algebraMap ℚ
-        (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))) ι ∈
-        Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
-          (HeightOneSpectrum.adicCompletion ℚ
-            hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
-          (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :=
-      Subgroup.mem_map_of_mem _ hι
-    set σ : Field.absoluteGaloisGroup ℚ :=
-      (Field.absoluteGaloisGroup.map (algebraMap ℚ
-        (hq.toHeightOneSpectrumRingOfIntegersRat.adicCompletion ℚ))) ι with hσdef
-    refine Units.ext ?_
-    rw [Units.val_one]
-    refine PadicInt.ext_of_toZModPow.mp fun n => ?_
-    rcases Nat.eq_zero_or_pos n with rfl | hnpos
-    · haveI : Subsingleton (ZMod (p ^ 0)) := by rw [pow_zero]; infer_instance
-      exact Subsingleton.elim _ _
-    haveI : NeZero (p ^ n) := ⟨pow_ne_zero n hp.ne_zero⟩
-    have hqpn : ¬ q ∣ p ^ n := fun hdvd =>
-      hqp ((Nat.prime_dvd_prime_iff_eq hq hp).mp (hq.dvd_of_dvd_pow hdvd))
-    have hmem : σ ∈ IsHardlyRamified.muFixerRayClass ℚ (p ^ n) :=
-      IsHardlyRamified.localInertiaGroup_le_muFixer_of_not_dvd_ray_class (p ^ n) hq hqpn hσ
-    rw [map_one, cyclotomicCharacter.toZModPow]
-    refine (modularCyclotomicCharacter.unique (AlgebraicClosure ℚ)
-      (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) (p ^ n))
-      _ ?_).symm
-    intro t ht
-    have hval1 : ((1 : ZMod (p ^ n))).val = 1 := by
-      rw [ZMod.val_one_eq_one_mod,
-        Nat.mod_eq_of_lt (Nat.one_lt_pow hnpos.ne' hp.one_lt)]
-    rw [hval1, pow_one]
-    have ht1 : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (p ^ n) = 1 := by
-      rw [← Units.val_pow_eq_pow_val, (mem_rootsOfUnity _ t).mp ht, Units.val_one]
-    show σ ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) = _
-    exact hmem _ ht1
+  -- `det` and `toLocal` are both `rfl`-lemmas, so `hdet` applies at the image of
+  -- `ι` in `Γ ℚ` once the goal has been put in that shape; the ring map is left
+  -- for unification to supply, which is what
+  -- `cyclotomicCharacter_absGalMap_eq_one_of_mem_localInertiaGroup`'s `F` binder
+  -- is for (see its docstring for the instance diamond this dodges).
   have key : ∀ u : ℤ_[p]ˣ, u = 1 → algebraMap ℤ_[p] B (u : ℤ_[p]) = 1 := by
     rintro u rfl; simp
   rw [GaloisRep.toLocal_apply, ← GaloisRep.det_apply, hdet]
-  exact key _ (hcyc _)
+  exact key _ (cyclotomicCharacter_absGalMap_eq_one_of_mem_localInertiaGroup
+    hq hqp ι hι _)
 
 set_option linter.checkUnivs false in
 /-- **BOTH diagonal characters are trivial on inertia at each LEVEL** (PROVEN
