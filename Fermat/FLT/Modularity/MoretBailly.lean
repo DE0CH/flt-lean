@@ -37438,50 +37438,87 @@ theorem exists_prime_notMem (S : Finset ℕ) : ∃ q : ℕ, q.Prime ∧ q ∉ S 
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly 3.1.2(iii): the boundary `Z = X̄ ∖ C` is a closed subscheme,
-finite flat and surjective over the base** (SORRY — leaf).
+finite flat and surjective over the base** (**PROVEN 2026-08-02**, over the
+reduced induced structure, after a repair — see the FALSITY AUDIT below).
 
 `j : C ↪ X̄` is a dense open immersion with nonempty complement, so
-`(range j.base)ᶜ` is a nonempty closed subset of `X̄`. This leaf asks for it as a
-SCHEME: a closed immersion `ι : Z ⟶ X̄` with exactly that image, whose structure
-morphism `ι ≫ fX : Z → Spec ℚ` is finite, flat and surjective. That is MB's
-normalisation 3.1.2(iii) — over a general base he buys it by shrinking `B` and
-enlarging `Σ` (his 1.10); over `B = Spec ℚ` it is much cheaper, and the cheapness
-is the reason this is stated separately rather than left inside the geometry.
+`(range j.base)ᶜ` is a nonempty closed subset of `X̄`. This gives it as a SCHEME:
+a closed immersion `ι : Z ⟶ X̄` with exactly that image, whose structure morphism
+`ι ≫ fX : Z → Spec ℚ` is finite, flat and surjective. That is MB's normalisation
+3.1.2(iii) — over a general base he buys it by shrinking `B` and enlarging `Σ`
+(his 1.10); over `B = Spec ℚ` it is much cheaper, and the cheapness is the reason
+this is stated separately rather than left inside the geometry.
 
-WHY IT IS TRUE, AND WHY EVERY CONJUNCT IS TRUE (faithfulness audit).
-`X̄` is a smooth proper geometrically irreducible curve over `ℚ` and `C` is a
-nonempty open subscheme, so the complement is a FINITE set of closed points, each
-with a number-field residue field. Give it the reduced induced structure:
+**FALSITY AUDIT (2026-08-02): the statement WITHOUT `hCne` is FALSE, and the
+previous audit's "none of the four can fail" is wrong.** That audit reasoned about
+"`C` a NONEMPTY open subscheme", which is not what the binder list says: nothing
+here forces `C` nonempty, and `hZ` does not, since an empty `C` makes the
+complement all of `X̄` and hence `hZ` trivially true. Take
 
-* `IsClosedImmersion ι` and `range ι.base = (range j.base)ᶜ` — that is what "the
-  reduced induced structure on a closed subset" means, and the subset is closed
-  because `j` is an open immersion;
-* `IsFinite (ι ≫ fX)` — `Z` is a finite disjoint union of `Spec` of number
-  fields, hence affine and module-finite over `ℚ`;
-* `Flat (ι ≫ fX)` — every module over a FIELD is flat, so this conjunct is free
-  at this base and is stated only because `exists_genRelPic` consumes it;
-* `Surjective (ι ≫ fX)` — `Spec ℚ` is a one-point space and `Z` is nonempty by
-  `hZ`.
+    X̄ = ℙ¹_ℚ  (proper, smooth, geometrically irreducible, `topologicalKrullDim = 1`),
+    C = ∅,     j = `Scheme.emptyTo X̄`.
 
-None of the four can fail, so this leaf is not one that will turn out to be FALSE
-AS STATED; what it needs is the REDUCED INDUCED CLOSED SUBSCHEME, which is the
-one construction here that the mathlib pin does not obviously package (searched
-2026-07-31: `Mathlib/AlgebraicGeometry/` has `IsClosedImmersion` and
-`Scheme.restrict` for OPENS, but no `Scheme.reducedInduced`). A prover may find
-it easier to build `Z` by hand as `Spec` of the product of the residue fields of
-the finitely many missing points, together with the closed immersion that
-description gives — the statement does not care which route is taken.
+`IsOpenImmersion (Scheme.emptyTo X̄)` is an INSTANCE in the pin and
+`(range (Scheme.emptyTo X̄).base)ᶜ = univ` (both machine-checked while writing
+this), so every hypothesis of the old statement holds. Its conclusion then gives a
+closed immersion `ι` with `range ι.base = univ` and `IsFinite (ι ≫ fX)`; but a
+finite closed subscheme with full image forces `Finite ↥X̄` (also machine-checked:
+`ι ≫ fX` is locally quasi-finite, `Spec ℚ` is one point, so its single fibre `Z` is
+finite, and `ι.base` is onto). `ℙ¹_ℚ` is infinite — one closed point per monic
+irreducible in `ℚ[t]` — so the old statement is refuted.
 
-The dimension hypothesis is carried because it is what makes the complement
-FINITE; without it the complement of a dense open can be positive-dimensional and
-`IsFinite` fails. -/
+The repair is the CHEAP one: `hCne : Nonempty ↥C`, which the sole call site
+(`exists_skolemBallDatum_of_projectiveCompactification` below) **already holds** —
+it carries `hreal : HasRationalPoint fC (ULift ℝ)`, i.e. a morphism
+`Spec (ULift ℝ) ⟶ C`, and `Spec` of a nonzero ring is nonempty. So no statement
+above this one moved. Adding a hypothesis can only weaken the leaf, so the rest of
+the old audit's conjunct-by-conjunct reasoning transfers unchanged; it is now
+carried out in Lean rather than in prose:
+
+* `IsClosedImmersion ι` and `range ι.base = (range j.base)ᶜ` — the reduced induced
+  structure, i.e. `Scheme.IdealSheafData.vanishingIdeal` of the closed set, whose
+  `subschemeι` has an `IsClosedImmersion` instance and whose range is the support;
+* `IsFinite (ι ≫ fX)` — Zariski's main theorem in the form
+  `IsFinite.of_isProper_of_locallyQuasiFinite`: `ι ≫ fX` is proper (a closed
+  immersion is finite, hence proper, and `fX` is proper), and locally quasi-finite
+  because its fibres sit inside the FINITE space `Z`;
+* `Flat (ι ≫ fX)` — `inferInstance`: mathlib has
+  `[Subsingleton Y] [IsIntegral Y] → Flat f`, and `Spec ℚ` is a one-point integral
+  scheme. Free at this base, as the old audit said, and stated only because
+  `exists_genRelPic` consumes it;
+* `Surjective (ι ≫ fX)` — `Spec ℚ` is a one-point space and `Z` is nonempty by `hZ`.
+
+**CORRECTION to the old absence claim.** It said the reduced induced closed
+subscheme "the mathlib pin does not obviously package (searched 2026-07-31 …
+no `Scheme.reducedInduced`)". The NAME is indeed absent; the CONSTRUCTION is not.
+`Mathlib/AlgebraicGeometry/IdealSheaf/Basic.lean` has
+`Scheme.IdealSheafData.vanishingIdeal (Z : Closeds X)`, whose own docstring says
+"the reduced induced scheme structure on the closed set is the quotient of this
+ideal", and `IdealSheaf/Subscheme.lean` turns any `IdealSheafData` into a scheme
+with a closed immersion. That plus `range_subschemeι` and
+`coe_support_vanishingIdeal` is the whole of the first two conjuncts. The
+suggested fallback — building `Z` by hand as `Spec` of a product of residue
+fields — was never needed. Grep for the CONSTRUCTION, not for the name.
+
+The finiteness of the complement is
+`finite_of_isClosed_of_ne_univ_of_topologicalKrullDim_le_one` from
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, which this
+module already imports; `hXdim` is what feeds it, and it is exactly `hCne` that
+supplies its `≠ univ` side condition.
+
+`hXsmooth` is NOT used by the proof below (it is underscored accordingly): the
+dimension bound arrives as `hXdim` rather than being derived from smoothness, and
+irreducibility comes from `hXgi`. It is kept in the binder list because the call
+site holds it for free and because a future strengthening that DROPS `hXdim` would
+have to re-derive it from smoothness. -/
 theorem exists_boundarySubscheme_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}}
     (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (j : C ⟶ Xbar) (hjimm : AlgebraicGeometry.IsOpenImmersion j)
-    (hXsmooth : AlgebraicGeometry.Smooth fX)
+    (_hXsmooth : AlgebraicGeometry.Smooth fX)
     (hXproper : AlgebraicGeometry.IsProper fX)
     (hXgi : AlgebraicGeometry.GeometricallyIrreducible fX)
+    (hCne : Nonempty ↥C)
     (hZ : (Set.range j.base)ᶜ.Nonempty)
     (hXdim : topologicalKrullDim ↥Xbar ≤ 1) :
     ∃ (Z : AlgebraicGeometry.Scheme.{u}) (ι : Z ⟶ Xbar),
@@ -37489,8 +37526,61 @@ theorem exists_boundarySubscheme_of_projectiveCompactification
       Set.range ι.base = (Set.range j.base)ᶜ ∧
       AlgebraicGeometry.IsFinite (ι ≫ fX) ∧
       AlgebraicGeometry.Flat (ι ≫ fX) ∧
-      AlgebraicGeometry.Surjective (ι ≫ fX) :=
-  sorry
+      AlgebraicGeometry.Surjective (ι ≫ fX) := by
+  haveI := hjimm
+  haveI := hXproper
+  haveI := hXgi
+  -- `Spec ℚ` is a one-point integral scheme.
+  haveI hsub : Subsingleton ↥(Spec (CommRingCat.of (ULift.{u} ℚ))) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum (ULift.{u} ℚ)))
+  haveI hne0 : Nonempty ↥(Spec (CommRingCat.of (ULift.{u} ℚ))) :=
+    inferInstanceAs (Nonempty (PrimeSpectrum (ULift.{u} ℚ)))
+  -- `Xbar` is an irreducible noetherian space.
+  haveI : IrreducibleSpace ↥Xbar :=
+    AlgebraicGeometry.GeometricallyIrreducible.irreducibleSpace_of_subsingleton fX
+  haveI : IsNoetherianRing (CommRingCat.of (ULift.{u} ℚ)) :=
+    inferInstanceAs (IsNoetherianRing (ULift.{u} ℚ))
+  haveI : IsLocallyNoetherian Xbar := LocallyOfFiniteType.isLocallyNoetherian fX
+  haveI : CompactSpace ↥Xbar := QuasiCompact.compactSpace_of_compactSpace fX
+  haveI : AlgebraicGeometry.IsNoetherian Xbar := ⟨⟩
+  -- The boundary as a closed subset, and its finiteness.  `hCne` is spent here.
+  have hcl : IsClosed ((Set.range j.base)ᶜ) :=
+    isClosed_compl_iff.mpr j.isOpenEmbedding.isOpen_range
+  have hne' : ((Set.range j.base)ᶜ : Set ↥Xbar) ≠ Set.univ := by
+    obtain ⟨c⟩ := hCne
+    intro h
+    exact (h ▸ Set.mem_univ (j.base c) : j.base c ∈ (Set.range j.base)ᶜ) (Set.mem_range_self c)
+  have hfin : ((Set.range j.base)ᶜ : Set ↥Xbar).Finite :=
+    AlgebraicGeometry.finite_of_isClosed_of_ne_univ_of_topologicalKrullDim_le_one hXdim hcl hne'
+  -- The reduced induced closed subscheme structure on that set.
+  set Zc : TopologicalSpace.Closeds ↥Xbar := ⟨(Set.range j.base)ᶜ, hcl⟩ with hZcdef
+  set I : Xbar.IdealSheafData := Scheme.IdealSheafData.vanishingIdeal Zc with hIdef
+  have hrange : Set.range (I.subschemeι).base = (Set.range j.base)ᶜ := by
+    rw [hIdef, Scheme.IdealSheafData.range_subschemeι,
+      Scheme.IdealSheafData.coe_support_vanishingIdeal]
+    rfl
+  -- The subscheme has a finite underlying space, and is nonempty by `hZ`.
+  haveI hZfinite : Finite ↥I.subscheme := by
+    rw [← Set.finite_univ_iff]
+    refine Set.Finite.of_finite_image ?_ (Set.injOn_of_injective
+      (I.subschemeι).isClosedEmbedding.injective)
+    rw [Set.image_univ, hrange]
+    exact hfin
+  haveI hZne : Nonempty ↥I.subscheme := by
+    obtain ⟨x, hx⟩ := hZ
+    rw [← hrange] at hx
+    obtain ⟨z, -⟩ := hx
+    exact ⟨z⟩
+  refine ⟨I.subscheme, I.subschemeι, inferInstance, hrange, ?_, inferInstance, ?_⟩
+  · -- `IsFinite`: proper plus locally quasi-finite (Zariski's main theorem).
+    haveI : LocallyQuasiFinite (I.subschemeι ≫ fX) := by
+      rw [locallyQuasiFinite_iff_finite_preimage_singleton]
+      exact fun x => Set.toFinite _
+    exact AlgebraicGeometry.IsFinite.of_isProper_of_locallyQuasiFinite _
+  · -- `Surjective`: the target is a point and the source is nonempty.
+    refine ⟨fun y => ?_⟩
+    obtain ⟨z⟩ := hZne
+    exact ⟨z, Subsingleton.elim _ _⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.2 and §3.5–§3.10, GIVEN the generalised Picard scheme**
@@ -38085,9 +38175,16 @@ theorem exists_skolemBallDatum_of_projectiveCompactification
   classical
   haveI : AlgebraicGeometry.Smooth fX := hXsmooth
   obtain ⟨q, hq, hqS⟩ := exists_prime_notMem S
+  -- `C` is nonempty because it has an `ℝ`-point; this is `hCne` for the boundary leaf,
+  -- whose statement is FALSE without it (see its FALSITY AUDIT).
+  have hCne : Nonempty ↥C := by
+    obtain ⟨x, -⟩ := hreal
+    obtain ⟨p⟩ : Nonempty ↥(AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))) :=
+      inferInstanceAs (Nonempty (PrimeSpectrum (ULift.{u} ℝ)))
+    exact ⟨x.base p⟩
   obtain ⟨Zb, ι, hιimm, hιrange, hZfin, hZflat, hZsurj⟩ :=
     exists_boundarySubscheme_of_projectiveCompactification fX j hjimm hXsmooth hXproper hXgi
-      hZ hXdim
+      hCne hZ hXdim
   obtain ⟨P, pstr, ⟨hPG⟩⟩ :=
     Fermat.exists_genRelPic fX ι hXproper inferInstance hXgi hZfin hZflat hZsurj
   obtain ⟨d, t, w, ε, hε, hmain⟩ :=
