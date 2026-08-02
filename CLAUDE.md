@@ -16151,3 +16151,81 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A ROUTE'S ONE CROSS-MODULE STEP IS THE STEP TO RE-PRICE
+
+(2026-08-02, `flt-lean-279`, closing `exists_dualIsogeny_of_isIsogeny` in
+`FreyCurve/MazurTorsion.lean` — assembly, axiom-clean, no new leaf.)
+
+A recorded route is written step by step and each step is priced against whatever
+its author happened to recall. **When four of five steps cite one module and ONE
+step reaches into a different one, that odd step is the one to re-price first** —
+the module already carrying the API usually owns a cheaper primitive for it,
+because it needed the same fact for its own proofs.
+
+Here steps 2–6 cited `EllipticCurve/Isogeny.lean` (`Isogeny.dual`,
+`dualHom_comp`, `degree_of_ne_zero`) and step 1 — *`φ ≠ 0`* — reached across to
+`EllipticCurve/Torsion.lean` for `n_torsion_dimension`, proposing to contradict
+`#E(ℚ̄) = N` with `E[N+1] ≃+ (ZMod (N+1))²`. That route is true and drags in
+`nTorsion`, whose carrier is the DOUBLE base change `((E⁄K)⁄K).Point`, plus a
+`[DecidableEq k]` binder and a subgroup-cardinality argument.
+
+`Isogeny.lean` has both halves outright, at exactly the instances already in scope
+(`[IsAlgClosed F] [W.IsElliptic]`, no `CharZero`):
+
+* `nsmul_surjective` — multiplication by `n` is ONTO, so a group killed by `n` is
+  trivial;
+* `exists_point_veluPointX_eq` — a NONZERO point over every `x`-coordinate, i.e.
+  nontriviality.
+
+Five lines instead of a torsion count. **The check is one `grep` of the module you
+are already using: search it for the PROPERTY the step needs (surjectivity of
+`[n]`, existence of a point), not for the lemma name the route handed you.** A
+module that proves a dual-isogeny API necessarily already owns divisibility and
+point-existence — those are its own inputs.
+
+### `baseChange` is a plain `def`, so `(E⁄K).IsElliptic` does not synthesize
+
+Mathlib registers `instance : (W.map f).IsElliptic`, and
+`WeierstrassCurve.baseChange` is a plain `def` (`W.map <| algebraMap R A`), so
+instance search will not unfold it and
+
+    failed to synthesize instance of type class
+      WeierstrassCurve.IsElliptic E⁄(AlgebraicClosure ℚ)
+
+is the first line to break. Supply it once, at the top:
+
+```lean
+haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
+  inferInstanceAs ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic)
+```
+
+`Isogeny.lean` uses the same idiom inside `exists_point_veluPointX_eq`; copy it
+rather than re-deriving. **It bites late, which is what makes it confusing:**
+`(E⁄K).Point`, `→+` between such point groups, `AddSubgroup.zmultiples` and
+`(N : ℕ) • P` all elaborate WITHOUT `IsElliptic`, so the statement compiles and
+only the first mention of `Isogeny`/`degree`/`dual` fails. **A statement that
+elaborates is no evidence the instance is available.**
+
+Same family, same proof: writing `m • (0 : (E⁄K).Point)` with `m : ℤ` freshly can
+fail with `failed to synthesize HSMul ℤ (E⁄K).Point ?m` while the *same* term
+arriving from `AddSubgroup.mem_zmultiples_iff` is fine — the lemma's own statement
+fixes the instance. Do not fight it; go through ORDERS instead:
+`addOrderOf_dvd_of_mem_zmultiples` then `addOrderOf_dvd_iff_nsmul_eq_zero` (both
+`@[to_additive]` images) prove `Pt ∈ ⟨g⟩ → addOrderOf g = N → N • Pt = 0` with no
+`smul` juggling at all.
+
+### Two throughput notes, both measured on this run
+
+* **A scratch importing only the two upstream modules the PROOF names ran in 6 s**,
+  against a 5307-job build of the target's cone. But a scratch does not share the
+  target's `open`s — this target carries
+  `open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in`, which the
+  minimal scratch lacked. **Before the real build, re-run the finished proof in a
+  second scratch that `public import`s the TARGET's module and reproduces its
+  `open ... in` line verbatim** (11 s here, against the already-built olean). That
+  is the cheap test of exactly the thing a minimal scratch cannot check.
+* **The neighbouring declaration's `open ... in` tells you the ambient opens.** A
+  file-wide `open` scan is unreliable here (this project's docstrings contain the
+  words `open`, `section` and `end` in prose); seeing the NEXT declaration carry
+  `open X in` is direct evidence about what is and is not globally in force.

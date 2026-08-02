@@ -21463,7 +21463,7 @@ ownable.  The split is by *kind of obstruction*, not by convenience:
 | declaration | what it costs |
 |---|---|
 | `Fermat.RelPoint.post_post` | PROVEN — `Category.assoc`, one line |
-| `WeierstrassCurve.exists_dualIsogeny_of_isIsogeny` | LEAF — **field-level only**, assembly over the PROVEN `Isogeny.dual` API |
+| `WeierstrassCurve.exists_dualIsogeny_of_isIsogeny` | **PROVEN 2026-08-02** — assembly over the PROVEN `Isogeny.dual` API |
 | `Fermat.exists_geomFibreAddEquiv_hom_of_isWeierstrassModel` | LEAF — the real geometry: the Weierstrass charts realise an isogeny as a scheme morphism |
 | `Fermat.liesIn_congr_of_geomFibreAddEquiv` | LEAF — the residual **`α`-gap** in the pin; see its docstring, it may be DELETABLE |
 | `Fermat.Gamma0Datum.hom_ext_of_geomFibrePt` | LEAF — rigidity: reduced source, dense `ℚ̄`-points |
@@ -21522,21 +21522,27 @@ theorem Fermat.RelPoint.post_post {A B C S : Scheme.{0}} {af : A ⟶ S} {bf : B 
   Subtype.ext (Category.assoc _ _ _)
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
-/-- **THE DUAL ISOGENY, over `ℚ̄` and at the level of POINTS** (LEAF, cut
-2026-07-31 off `nonempty_isNIsogenyPair_of_gamma0Model` below) —
+/-- **THE DUAL ISOGENY, over `ℚ̄` and at the level of POINTS** (cut 2026-07-31 off
+`nonempty_isNIsogenyPair_of_gamma0Model` below; **PROVEN 2026-08-02**) —
 **LEVEL-GENERIC**, and the ONLY one of the five with no scheme theory in it.
 
-TRUE, and it should be ASSEMBLY rather than new mathematics: the whole dual
+PROVEN exactly as the route below predicted — ASSEMBLY, not new mathematics, and
+no new leaf.  `#print axioms` gives `[propext, Classical.choice, Quot.sound]`,
+which also certifies that the whole `Isogeny.dual` cone it rests on is
+sorry-free.  The one deviation is in step 1; see there.  The whole dual
 API already exists and is PROVEN in `Fermat/FLT/EllipticCurve/Isogeny.lean`,
 over exactly the instances available here (`[IsAlgClosed F] [CharZero F]
 [W.IsElliptic]`, all satisfied by `F = AlgebraicClosure ℚ`).  The route, with
 the name of every input:
 
 1. *`φ ≠ 0`.*  `hker` says `ker φ = ⟨g⟩`, a group of order `N` (`hg`).  If
-   `φ = 0` then `E(ℚ̄) = ⟨g⟩` is finite of order `N`, contradicting
-   `WeierstrassCurve.n_torsion_dimension`
-   (`Fermat/FLT/EllipticCurve/Torsion.lean`), which gives
-   `E[N+1] ≃+ (ZMod (N+1))²`, a subgroup of cardinality `(N+1)² > N`.
+   `φ = 0` then `E(ℚ̄) = ⟨g⟩`, so `N` kills every point.  **PROVEN, but NOT by
+   the torsion count this route proposed** (`n_torsion_dimension`, which would
+   have needed the `nTorsion` double-base-change wrapper `((E⁄K)⁄K).Point`):
+   `Isogeny.nsmul_surjective` makes `N`-multiplication ONTO, so a group killed
+   by `N` is trivial, while `Isogeny.exists_point_veluPointX_eq` produces a
+   nonzero point over any `x`-coordinate.  Both are in `Isogeny.lean`, both take
+   exactly `[IsAlgClosed F] [W.IsElliptic]`, and neither needs `CharZero`.
 2. *`deg φ = N`.*  `Isogeny.degree_of_ne_zero` is `Nat.card (ker φ)`, and
    `hker` plus `Nat.card_zmultiples` and `hg` make that `N`.
 3. *`ψ`.*  `Isogeny.dual ⟨φ, hφ⟩ h0`, whose `toHom` is `Isogeny.dualHom`;
@@ -21560,10 +21566,17 @@ the name of every input:
 **`hN : N ≠ 0` is load-bearing** through step 1 only; at `N = 0` the kernel is
 not finite and `Isogeny.degree` is not the kernel count.
 
-**The check that refutes this leaf**: an isogeny over an algebraically closed
+**The check that refuted this leaf**: an isogeny over an algebraically closed
 field of characteristic `0` with no dual.  There is none — that is Silverman
 *AEC* III.6.1, and the characteristic-`p` counterexample recorded in
-`Isogeny.NotIsRationalMapDualHom` is excluded by `CharZero (AlgebraicClosure ℚ)`. -/
+`Isogeny.NotIsRationalMapDualHom` is excluded by `CharZero (AlgebraicClosure ℚ)`.
+
+**One transplant note, for anyone porting this proof.**  `baseChange` is a plain
+`def`, so mathlib's `instance : (W.map f).IsElliptic` does NOT fire on `E⁄K`;
+the two opening `haveI`s (`inferInstanceAs ((E.map (algebraMap ℚ K)).IsElliptic)`)
+are what makes `Isogeny`, `degree` and `dual` elaborate at all, and without them
+the very first line fails with `failed to synthesize IsElliptic E⁄(AlgebraicClosure ℚ)`.
+`Isogeny.lean` uses the same idiom at `exists_point_veluPointX_eq`. -/
 theorem WeierstrassCurve.exists_dualIsogeny_of_isIsogeny {N : ℕ} (hN : N ≠ 0)
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (E' : WeierstrassCurve ℚ) [E'.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
@@ -21588,8 +21601,73 @@ theorem WeierstrassCurve.exists_dualIsogeny_of_isIsogeny {N : ℕ} (hN : N ≠ 0
       (∀ Q : (E'⁄(AlgebraicClosure ℚ)).Point, φ (ψ Q) = (N : ℕ) • Q) ∧
       (∀ Q : (E'⁄(AlgebraicClosure ℚ)).Point, ψ Q = 0 ↔
         Q ∈ (φ : (E⁄(AlgebraicClosure ℚ)).Point → (E'⁄(AlgebraicClosure ℚ)).Point) ''
-          {P : (E⁄(AlgebraicClosure ℚ)).Point | (N : ℕ) • P = 0}) :=
-  sorry
+          {P : (E⁄(AlgebraicClosure ℚ)).Point | (N : ℕ) • P = 0}) := by
+  classical
+  haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic)
+  haveI : (E'⁄(AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs ((E'.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic)
+  -- STEP 1: `φ ≠ 0`.  Were it zero, `hker` would make `⟨g⟩` all of `E(ℚ̄)`, so `N`
+  -- would kill every point — against divisibility of `E(ℚ̄)` (`nsmul_surjective`)
+  -- together with the existence of a nonzero point (`exists_point_veluPointX_eq`).
+  -- This is the only place `hN` is used.
+  have hφ0 : φ ≠ 0 := by
+    intro hz
+    have hall : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+        Pt ∈ AddSubgroup.zmultiples g := fun Pt => (hker Pt).1 (by rw [hz]; simp)
+    have hkill : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, (N : ℕ) • Pt = 0 := by
+      intro Pt
+      have hdvd : addOrderOf Pt ∣ addOrderOf g :=
+        addOrderOf_dvd_of_mem_zmultiples (hall Pt)
+      rw [hg] at hdvd
+      exact addOrderOf_dvd_iff_nsmul_eq_zero.1 hdvd
+    obtain ⟨P₀, hP₀ne, -⟩ :=
+      exists_point_veluPointX_eq (W := (E⁄(AlgebraicClosure ℚ)).toAffine) 0
+    obtain ⟨P, hP⟩ := nsmul_surjective (W := (E⁄(AlgebraicClosure ℚ)).toAffine) hN P₀
+    exact hP₀ne (by rw [← hP]; exact hkill P)
+  -- Package `φ` as an `Isogeny`, so the whole PROVEN dual API of
+  -- `Fermat/FLT/EllipticCurve/Isogeny.lean` applies verbatim.
+  set Φ : WeierstrassCurve.Isogeny (E⁄(AlgebraicClosure ℚ)) (E'⁄(AlgebraicClosure ℚ)) :=
+    ⟨φ, hφ⟩
+  have h0 : Φ.toHom ≠ 0 := hφ0
+  -- STEP 2: `deg φ = N`.  The degree IS the kernel count, and `hker` names the
+  -- kernel as `⟨g⟩`, a cyclic group of order `addOrderOf g = N`.
+  have hkerEq : AddMonoidHom.ker Φ.toHom = AddSubgroup.zmultiples g := by
+    ext Pt
+    simpa using hker Pt
+  have hdeg : Φ.degree = N := by
+    rw [WeierstrassCurve.Isogeny.degree_of_ne_zero h0, hkerEq, Nat.card_zmultiples, hg]
+  -- STEP 3: `ψ ∘ φ = [N]`, straight from `dualHom_comp`.
+  have hψφ : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Φ.dualHom h0 (φ P) = (N : ℕ) • P := by
+    intro P
+    rw [← hdeg]
+    exact WeierstrassCurve.Isogeny.dualHom_comp Φ h0 P
+  -- surjectivity of `φ`, consumed by each of the three remaining clauses
+  have hsurj : Function.Surjective (φ : (E⁄(AlgebraicClosure ℚ)).Point →
+      (E'⁄(AlgebraicClosure ℚ)).Point) := hφ.surjective hφ0
+  refine ⟨Φ.dualHom h0, (Φ.dual h0).isIsogeny, ?_, hψφ, ?_, ?_⟩
+  · -- STEP 6: Galois equivariance.  `ψ` is pinned by `ψ ∘ φ = [N]` and `φ` is onto,
+    -- so writing `Q = φ P` both sides come out as `N • σP`.
+    intro σ Q
+    obtain ⟨P, rfl⟩ := hsurj Q
+    rw [← hgal σ P, hψφ, hψφ P, map_nsmul]
+  · -- STEP 4: `φ ∘ ψ = [N]`, again after writing `Q = φ P`.
+    intro Q
+    obtain ⟨P, rfl⟩ := hsurj Q
+    rw [hψφ P, map_nsmul]
+  · -- STEP 5: `ker ψ = φ(E[N])`.  Both directions are `hψφ` plus surjectivity; no
+    -- counting is needed.
+    intro Q
+    obtain ⟨P, rfl⟩ := hsurj Q
+    rw [hψφ P]
+    constructor
+    · intro h
+      exact ⟨P, h, rfl⟩
+    · rintro ⟨P', hP', hQ⟩
+      have : Φ.dualHom h0 (φ P') = Φ.dualHom h0 (φ P) := by rw [hQ]
+      rw [hψφ P', hψφ P] at this
+      rw [← this]
+      exact hP'
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **THE WEIERSTRASS CHARTS REALISE EVERY GALOIS-EQUIVARIANT ISOGENY AS A
