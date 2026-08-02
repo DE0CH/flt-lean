@@ -35374,9 +35374,11 @@ chain: the FROBENIUS RELATION. Everything else it named
 `Deformations/RepresentationTheory/ArtinConductor.lean` and reachable here
 through the `public` chain
 `HilbertModularity → HermiteMinkowski → FreyCurve/MazurTorsion → ArtinConductor`.
-That ingredient is now `exists_frobLift_conj_pow_mem_wildInertiaGroup`, the ONE
-`sorry` of this block; the other three are proven and take it the rest of the
-way.
+That ingredient was cut 2026-07-31 as
+`exists_frobLift_conj_pow_mem_wildInertiaGroup` and **PROVEN 2026-08-02** over
+`Field.AbsoluteGaloisGroup.adicArithFrob` — a Frobenius lift that
+`AbsoluteGaloisGroup.lean` had carried all along, and which the cut's own absence
+clause had looked for under the wrong name. This whole block is now sorry-free.
 
 **WHY THE ARITHMETIC IS WORTH SEPARATING FROM THE GEOMETRY.** As recorded on the
 leaf below, inertia ALONE cannot produce the exponent: the `ℓ`-part of the full
@@ -35393,8 +35395,140 @@ form. Isolating them here is what lets the residual leaf be about the
 CONSTRUCTION of the characters and nothing else.
 -/
 
-/-- **THE FROBENIUS RELATION ON THE TAME QUOTIENT** (LEAF — new 2026-07-31; the
-ONE ingredient the 2026-07-30 tame-character audit on
+/-- **THE ARITHMETIC FROBENIUS RAISES EVERY PRIME-TO-`ℓ` ROOT OF UNITY TO THE
+`N v`-TH POWER** (PROVEN 2026-08-02).
+
+`Field.AbsoluteGaloisGroup.adicArithFrob v` — a Frobenius lift, which
+`AbsoluteGaloisGroup.lean` has carried since it was written — satisfies
+`Frobᵥ x ≡ x ^ q (mod 𝔪)` on the integral closure `Oᵥ`, where `q` is the residue
+cardinality of the CONTRACTED ideal. Mathlib's
+`AlgHom.IsArithFrobAt.apply_of_pow_eq_one` upgrades that congruence to an
+EQUALITY on roots of unity of order invertible mod `𝔪` (the reduction
+`μ_n → k̄ᵥ` being injective there), and
+`IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal` identifies the
+exponent with `Nat.card (𝓞 K ⧸ v.asIdeal)`. -/
+theorem adicArithFrob_smul_of_pow_eq_one
+    {K : Type u} [Field K] [NumberField K] (v : HeightOneSpectrum (𝓞 K))
+    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {ζ : AlgebraicClosure (v.adicCompletion K)} (hζ : ζ ^ n = 1) :
+    Field.AbsoluteGaloisGroup.adicArithFrob v • ζ
+      = ζ ^ Nat.card (𝓞 K ⧸ v.asIdeal) := by
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    exact hn (by simp)
+  have hint : IsIntegral (v.adicCompletionIntegers K) ζ :=
+    ⟨Polynomial.X ^ n - Polynomial.C 1, Polynomial.monic_X_pow_sub_C 1 hn0, by simp [hζ]⟩
+  set x : IntegralClosure (v.adicCompletionIntegers K)
+    (AlgebraicClosure (v.adicCompletion K)) := ⟨ζ, hint⟩ with hx
+  have hxn : x ^ n = 1 := by
+    apply Subtype.ext
+    show ζ ^ n = (1 : AlgebraicClosure (v.adicCompletion K))
+    exact hζ
+  have hnQ : ((n : ℕ) : IntegralClosure (v.adicCompletionIntegers K)
+      (AlgebraicClosure (v.adicCompletion K))) ∉ IsLocalRing.maximalIdeal _ :=
+    IsLocalRing.notMem_maximalIdeal.mpr
+      (isUnit_natCast_integralClosure_of_notMem_asIdeal v hn)
+  have key := (Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob v).apply_of_pow_eq_one
+    hxn hnQ
+  rw [IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal v] at key
+  simp only [MulSemiringAction.toAlgHom_apply] at key
+  have h2 := congrArg Subtype.val key
+  rw [IntegralClosure.coe_smul] at h2
+  exact h2
+
+/-- **AN INERTIAL ELEMENT SCALING `X` BY A ROOT OF UNITY SCALES IT BY THE POWERS
+OF THAT ROOT** (PROVEN 2026-08-02) — the induction that turns `σ • X = ζ · X`
+into `σ ^ k • X = ζ ^ k · X`. It needs `σ ^ k` to FIX `ζ`, which is
+`smul_eq_self_of_pow_eq_one_algebraicClosure` (`μ_n ⊆ Kᵥⁿʳ` for `n` prime to the
+residue characteristic). -/
+theorem smul_pow_eq_of_smul_eq_mul
+    {K : Type u} [Field K] [NumberField K] (v : HeightOneSpectrum (𝓞 K))
+    {σ : Γ (v.adicCompletion K)} (hσ : σ ∈ localInertiaGroup v)
+    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {ζ X : AlgebraicClosure (v.adicCompletion K)} (hζ : ζ ^ n = 1)
+    (h : σ • X = ζ * X) (k : ℕ) : (σ ^ k) • X = ζ ^ k * X := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+      have hσk : σ ^ k ∈ localInertiaGroup v := pow_mem hσ k
+      have hfix : (σ ^ k) • ζ = ζ :=
+        smul_eq_self_of_pow_eq_one_algebraicClosure v hσk hn hζ
+      rw [pow_succ, mul_smul, h, smul_mul', hfix, ih]
+      ring
+
+/-- **THE FROBENIUS RELATION, ON EVERY TAME ELEMENT** (PROVEN 2026-08-02) — the
+mathematical core of `exists_frobLift_conj_pow_mem_wildInertiaGroup` below.
+
+Let `X` be any element of `Kᵥᵃˡᵍ` with `X ^ n ∈ 𝒪ᵥ` for some `n` prime to the
+residue characteristic — i.e. any of the elements the DEFINITION of
+`tameFixingSubgroup` quantifies over. Then `Frobᵥ σ Frobᵥ⁻¹` and `σ ^ N v` act
+on `X` identically, for every inertial `σ`.
+
+THE PROOF is three applications of "two `n`-th roots of the same element differ
+by an `n`-th root of unity", and nothing else. Write `ζ := (σ • X) / X` and
+`η := (Frobᵥ⁻¹ • X) / X`; both are `n`-th roots of unity because `σ` and `Frobᵥ`
+fix `X ^ n ∈ 𝒪ᵥ`. Inertia fixes `η` and `ζ`, so with `Y := Frobᵥ⁻¹ • X = η · X`,
+
+    Frobᵥ σ Frobᵥ⁻¹ • X = Frobᵥ • (σ • Y) = Frobᵥ • (η · ζ · X)
+                        = (Frobᵥ • η) · (Frobᵥ • ζ) · (Frobᵥ • X)
+                        = (Frobᵥ • ζ) · X ,
+
+the last step because `(Frobᵥ • η) · (Frobᵥ • X) = Frobᵥ • Y = X` — the `η`
+factor CANCELS and no normalisation of `X` is needed. Finally
+`Frobᵥ • ζ = ζ ^ N v` by `adicArithFrob_smul_of_pow_eq_one` and
+`σ ^ N v • X = ζ ^ N v · X` by `smul_pow_eq_of_smul_eq_mul`.
+
+The degenerate case `X = 0` (which occurs, at `a = 0`) is separated first; there
+both sides are `0`. -/
+theorem frob_conj_smul_eq_pow_smul
+    {K : Type u} [Field K] [NumberField K] (v : HeightOneSpectrum (𝓞 K))
+    {σ : Γ (v.adicCompletion K)} (hσ : σ ∈ localInertiaGroup v)
+    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal) {a : v.adicCompletionIntegers K}
+    {X : AlgebraicClosure (v.adicCompletion K)}
+    (hX : X ^ n = algebraMap (v.adicCompletionIntegers K)
+      (AlgebraicClosure (v.adicCompletion K)) a) :
+    (Field.AbsoluteGaloisGroup.adicArithFrob v * σ *
+        (Field.AbsoluteGaloisGroup.adicArithFrob v)⁻¹) • X
+      = (σ ^ Nat.card (𝓞 K ⧸ v.asIdeal)) • X := by
+  obtain ⟨Fr, hFrdef⟩ : ∃ F : Γ (v.adicCompletion K),
+      F = Field.AbsoluteGaloisGroup.adicArithFrob v := ⟨_, rfl⟩
+  rw [← hFrdef]
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    exact hn (by simp)
+  by_cases hX0 : X = 0
+  · subst hX0; simp
+  have hσX : (σ • X) ^ n = X ^ n := by
+    rw [← smul_pow_algebraicClosure, hX, smul_algebraMap_algebraicClosure_eq]
+  obtain ⟨ζ, hζdef⟩ : ∃ z : AlgebraicClosure (v.adicCompletion K),
+      z = (σ • X) / X := ⟨_, rfl⟩
+  have hζX : σ • X = ζ * X := by
+    rw [hζdef, div_mul_cancel₀ _ hX0]
+  have hζn : ζ ^ n = 1 := by
+    rw [hζdef, div_pow, hσX, div_self (pow_ne_zero n hX0)]
+  obtain ⟨Y, hYdef⟩ : ∃ y : AlgebraicClosure (v.adicCompletion K),
+      y = Fr⁻¹ • X := ⟨_, rfl⟩
+  have hYn : Y ^ n = X ^ n := by
+    rw [hYdef, ← smul_pow_algebraicClosure, hX, smul_algebraMap_algebraicClosure_eq]
+  obtain ⟨η, hηdef⟩ : ∃ e : AlgebraicClosure (v.adicCompletion K),
+      e = Y / X := ⟨_, rfl⟩
+  have hηX : Y = η * X := by
+    rw [hηdef, div_mul_cancel₀ _ hX0]
+  have hηn : η ^ n = 1 := by
+    rw [hηdef, div_pow, hYn, div_self (pow_ne_zero n hX0)]
+  have hση : σ • η = η := smul_eq_self_of_pow_eq_one_algebraicClosure v hσ hn hηn
+  have hFrY : Fr • Y = X := by rw [hYdef, smul_inv_smul]
+  have hFrζ : Fr • ζ = ζ ^ Nat.card (𝓞 K ⧸ v.asIdeal) := by
+    rw [hFrdef]; exact adicArithFrob_smul_of_pow_eq_one v hn hζn
+  have hkey : (Fr • η) * (Fr • X) = X := by rw [← smul_mul', ← hηX, hFrY]
+  have hσY : σ • Y = η * (ζ * X) := by rw [hηX, smul_mul', hση, hζX]
+  have hlhs : (Fr * σ * Fr⁻¹) • X = (Fr • ζ) * X := by
+    rw [mul_smul, mul_smul, ← hYdef, hσY, smul_mul', smul_mul', ← mul_assoc,
+      mul_comm (Fr • η) (Fr • ζ), mul_assoc, hkey]
+  rw [hlhs, hFrζ, smul_pow_eq_of_smul_eq_mul v hσ hn hζn hζX]
+
+/-- **THE FROBENIUS RELATION ON THE TAME QUOTIENT** (**PROVEN 2026-08-02**; cut
+2026-07-31 as the ONE ingredient the 2026-07-30 tame-character audit on
 `exists_hilbertAuxDiamondQuotient_of_exponents` below identified as genuinely
 absent from `ArtinConductor.lean`).
 
@@ -35453,22 +35587,59 @@ kernel of the residue action; wild inertia is its unique Sylow pro-`p`), so
 `Fr σ Fr⁻¹` really does lie in `I_v` and the product above is an honest element of
 `I_v`.
 
-# WHAT A PROVER MUST DO
+# HOW IT WAS PROVEN, AND THE ABSENCE CLAIM THAT WAS WRONG
 
-`ArtinConductor.lean` already has the tame quotient as an explicit inverse limit
-of the finite levels `tameLevel v F` with `tameGenChar` on each, plus
-`exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker`. The content to be added
-is that a Frobenius lift acts on each `μ_n ⊆ 𝒪ᵥ` by `x ↦ x^{N v}` — equivalently,
-that reduction `μ_n → k̄_v^×` is injective for `n` prime to the residue
-characteristic (which is `eq_one_of_pow_eq_one_of_sub_one_mem_maximalIdeal`
-there, already proven) together with the fact that some element of the local
-Galois group induces the `N v`-power map on the residue field. The second half is
-the only genuinely new input, and it is the existence of a Frobenius lift for the
-unramified quotient — Serre, *Local Fields* IV §2 and Prop. 8; Neukirch, *ANT*
-II.9.9 and II.7.5.
+The cut docstring said: *"the fact that some element of the local Galois group
+induces the `N v`-power map on the residue field … is the only genuinely new
+input, and it is the existence of a Frobenius lift for the unramified quotient —
+Serre, Local Fields IV §2 and Prop. 8."* **That input was already in the tree, and
+had been since before the leaf was cut** — in
+`Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`, the very file that
+defines `localInertiaGroup`:
+
+* `Field.AbsoluteGaloisGroup.adicArithFrob v : Γ Kᵥ`, an arbitrary choice of
+  arithmetic Frobenius, obtained from `IsArithFrobAt.arithFrobAt'` — i.e. from
+  mathlib's `Ideal.Quotient.stabilizerHom_surjective_of_profinite`, which is the
+  formal content of "`Γ Kᵥ ↠ Gal(k̄ᵥ/kᵥ)`" for a profinite group acting on a ring
+  with `Algebra.IsInvariant`;
+* `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob v`, its defining
+  congruence.
+
+**The absence claim was scoped to `ArtinConductor.lean` and to a search for the
+CITATION rather than for the OBJECT** — the standing failure mode recorded in
+CLAUDE.md as "a MISSING MACHINERY audit names theorems; go read the theorems".
+The Frobenius lift is not filed under "unramified extension" anywhere; it is
+`arithFrobAt'`, in the Frobenius-element development.
+
+Everything else is elementary, and the whole proof is ~120 lines over three
+lemmas stated immediately above:
+
+1. `adicArithFrob_smul_of_pow_eq_one` — `Frobᵥ` raises a prime-to-`ℓ` root of
+   unity to the `N v`-th power. This is mathlib's
+   `AlgHom.IsArithFrobAt.apply_of_pow_eq_one` (which turns the congruence into an
+   equality on `μ_n` exactly when `n` is invertible mod `𝔪`, and is where the
+   injectivity of `μ_n → k̄ᵥ` really lives) plus
+   `IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal`, which
+   identifies the `IsArithFrobAt` exponent `Nat.card (𝒪ᵥ ⧸ Q.under 𝒪ᵥ)` with
+   `Nat.card (𝓞 K ⧸ v.asIdeal)`.
+2. `smul_pow_eq_of_smul_eq_mul` — the iteration `σ ^ k • X = ζ ^ k · X`, over
+   `smul_eq_self_of_pow_eq_one_algebraicClosure` (inertia fixes `μ_n`), PROVEN in
+   `ArtinConductor.lean` since 2026-07-27.
+3. `frob_conj_smul_eq_pow_smul` — the Frobenius relation on every element `X`
+   with `X ^ n ∈ 𝒪ᵥ`, which is literally the family `tameFixingSubgroup`
+   quantifies over. See its docstring for the four-line computation.
+
+The assembly then splits `wildInertiaGroup v = localInertiaGroup v ⊓
+tameFixingSubgroup v` (its DEFINITION): the inertia half is
+`Field.absoluteGaloisGroup.conj_mem_localInertiaGroup` (PROVEN in
+`CompletionTransport.lean`) plus closure under products and inverses, and the
+tame half is (3) applied to `z := (σ ^ N v)⁻¹ • x`.
 
 **DO NOT REBUILD `tameCharacter`.** That was the redirection the 2026-07-30 audit
-made, and it stands.
+made, and it stands — nothing above mentions `tameCharacter`, `tameLevel`,
+`tameGenChar`, or the inverse limit. The `∀ σ` in the statement is what makes the
+group-theoretic form cheap: no character has to be constructed and no two tame
+characters have to be identified.
 
 References: Serre, *Local Fields*, IV §2; Neukirch, *Algebraic Number Theory*,
 II.7.5 and II.9.9; Taylor–Wiles, Ann. of Math. 141 (1995), §2. -/
@@ -35478,8 +35649,41 @@ theorem exists_frobLift_conj_pow_mem_wildInertiaGroup
       ∀ σ : localInertiaGroup v,
         Fr * (σ : Γ (v.adicCompletion K)) * Fr⁻¹ *
             ((σ : Γ (v.adicCompletion K)) ^ Nat.card (𝓞 K ⧸ v.asIdeal))⁻¹
-          ∈ wildInertiaGroup v :=
-  sorry
+          ∈ wildInertiaGroup v := by
+  refine ⟨Field.AbsoluteGaloisGroup.adicArithFrob v, fun σ => ?_⟩
+  refine Subgroup.mem_inf.mpr ⟨?_, ?_⟩
+  · exact mul_mem
+      (Field.absoluteGaloisGroup.conj_mem_localInertiaGroup v _ _ σ.2)
+      (inv_mem (pow_mem σ.2 _))
+  · intro n hn x hx
+    obtain ⟨a, ha⟩ := hx
+    have hn0 : n ≠ 0 := by
+      rintro rfl
+      exact hn (by simp)
+    obtain ⟨z, hzdef⟩ : ∃ z : IntegralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K)),
+        z = (((σ : Γ (v.adicCompletion K)) ^ Nat.card (𝓞 K ⧸ v.asIdeal))⁻¹) • x := ⟨_, rfl⟩
+    have hzn : z ^ n = algebraMap (v.adicCompletionIntegers K) _ a := by
+      rw [hzdef, ← smul_pow_integralClosure, ha, smul_algebraMap_integralClosure_eq]
+    have hzX : ((z : IntegralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K))).1 :
+          AlgebraicClosure (v.adicCompletion K)) ^ n
+        = algebraMap (v.adicCompletionIntegers K)
+            (AlgebraicClosure (v.adicCompletion K)) a := by
+      rw [← coe_pow_integralClosure, hzn]
+      rfl
+    have hmain := frob_conj_smul_eq_pow_smul v σ.2 hn hzX
+    apply Subtype.ext
+    show (Field.AbsoluteGaloisGroup.adicArithFrob v * (σ : Γ (v.adicCompletion K)) *
+        (Field.AbsoluteGaloisGroup.adicArithFrob v)⁻¹ *
+        (((σ : Γ (v.adicCompletion K)) ^ Nat.card (𝓞 K ⧸ v.asIdeal))⁻¹)) •
+        (x.1 : AlgebraicClosure (v.adicCompletion K))
+      = (x.1 : AlgebraicClosure (v.adicCompletion K))
+    have hzval : (z.1 : AlgebraicClosure (v.adicCompletion K))
+        = (((σ : Γ (v.adicCompletion K)) ^ Nat.card (𝓞 K ⧸ v.asIdeal))⁻¹) •
+          (x.1 : AlgebraicClosure (v.adicCompletion K)) := by
+      rw [hzdef]; rfl
+    rw [mul_smul, ← hzval, hmain, hzval, smul_inv_smul]
 
 /-- **A CHARACTER OF THE DECOMPOSITION GROUP KILLING WILD INERTIA IS
 `(N v − 1)`-TORSION ON INERTIA** (PROVEN 2026-07-31 over
@@ -35627,7 +35831,7 @@ proven in the glue below. It was the clause whose whole content — recorded on
 missing from the tame-character interface — is
 
 * the Frobenius relation `Fr σ Fr⁻¹ ≡ σ^{N w}` mod wild inertia
-  (`exists_frobLift_conj_pow_mem_wildInertiaGroup` above, the new leaf), and
+  (`exists_frobLift_conj_pow_mem_wildInertiaGroup` above, PROVEN 2026-08-02), and
 * the triviality of the `ℓ'`-torsion of `1 + 𝔪`
   (`pow_pow_padicValNat_eq_one_of_sub_one_mem_maximalIdeal` above, PROVEN).
 
@@ -35792,14 +35996,15 @@ that the tame-character interface (`tameCharacter`, `wildInertiaGroup`,
 `exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker`) ALREADY EXISTS
 sorry-free in `Deformations/RepresentationTheory/ArtinConductor.lean`, reachable
 through a fully `public` chain, stands; and the ONE genuinely missing ingredient
-it identified — the Frobenius relation — is now the named leaf
-`exists_frobLift_conj_pow_mem_wildInertiaGroup` above, stated in the
-character-free group-theoretic form, with its own faithfulness audit.
+it identified — the Frobenius relation — is `exists_frobLift_conj_pow_mem_wildInertiaGroup`
+above, stated in the character-free group-theoretic form and **PROVEN
+2026-08-02**; the ingredient it named as absent turned out to be in the tree.
 
 So the obligations are now split as follows, and they no longer overlap:
 
 * `exists_frobLift_conj_pow_mem_wildInertiaGroup` — pure local Galois theory of
-  a number field; mentions no deformation datum, no `Q`, no `ℓ`;
+  a number field; mentions no deformation datum, no `Q`, no `ℓ`. **PROVEN
+  2026-08-02**, so this half of the split is discharged;
 * `exists_hilbertAuxDiamondGeneratorsPinned` — the CONSTRUCTION of the diamond
   characters out of `𝒟Q.isHilbertRaisedLevelHardlyRamified.isSplitTorusAt` (with
   `hQ`'s distinct-eigenvalue clause and `𝒟Q.resid` supplying the two weaknesses
@@ -36197,8 +36402,8 @@ successor must add. It is a bounded, self-contained piece of local theory over a
 sorry-free base, NOT the multi-module tame-ramification project the withdrawn
 note implied. **Redirect accordingly: do not rebuild `tameCharacter`.**
 
-**DONE 2026-07-31 (second pass), AND STATED CHARACTER-FREE: the relation is now
-`exists_frobLift_conj_pow_mem_wildInertiaGroup`**, ~40 lines above
+**DONE 2026-07-31 (second pass), STATED CHARACTER-FREE, AND PROVEN 2026-08-02:
+the relation is `exists_frobLift_conj_pow_mem_wildInertiaGroup`**, ~40 lines above
 `exists_hilbertAuxDiamondGenerators`, in the group-theoretic form
 `∃ Fr, ∀ σ ∈ I_v, Fr σ Fr⁻¹ (σ^{Nv})⁻¹ ∈ P_v` rather than as an identity between
 tame characters. The `θ`-form written above is the classical one and is the wrong
@@ -38597,8 +38802,8 @@ statement about which map `toRuniv` is, so it can only be proven against a
   `exists_hilbertAuxDiamondQuotient_of_exponents` above. The one ingredient that
   section named as genuinely missing, the Frobenius relation, was ADDED
   2026-07-31 as `exists_frobLift_conj_pow_mem_wildInertiaGroup` (group-theoretic
-  form, not the `θ`-identity), and the exponent bound `𝔟_ex ≤ ker diamond` is now
-  proven glue over it; what is still open in that direction is only the
+  form, not the `θ`-identity) and PROVEN 2026-08-02, and the exponent bound
+  `𝔟_ex ≤ ker diamond` is now proven glue over it; what is still open in that direction is only the
   CONSTRUCTION of the characters, in `exists_hilbertAuxDiamondGeneratorsPinned`.
   `hker` is the control theorem: killing the
   diamonds is killing the level raising, so `R_Q ⧸ 𝔫 ≅ R_∅`.
@@ -39048,10 +39253,10 @@ exponent `ℓ^{v_ℓ(Nw−1)}` comes from — inertia alone cannot bound `χ_w|_
 since the `ℓ`-part of the tame quotient is `ℤ_ℓ`), is in the TAME-CHARACTER
 section of `exists_hilbertAuxDiamondQuotient_of_exponents` above. Read it before
 concluding this seam is expensive to close. **That relation was ADDED 2026-07-31
-as `exists_frobLift_conj_pow_mem_wildInertiaGroup`** — in the group-theoretic
-form `Fr σ Fr⁻¹ ≡ σ^{Nw}` mod wild inertia rather than as the `θ`-identity, so
-that no consumer has to identify its own character with a `tameCharacter` — and
-the exponent bound is now proven glue over it.
+as `exists_frobLift_conj_pow_mem_wildInertiaGroup`, and PROVEN 2026-08-02** — in
+the group-theoretic form `Fr σ Fr⁻¹ ≡ σ^{Nw}` mod wild inertia rather than as the
+`θ`-identity, so that no consumer has to identify its own character with a
+`tameCharacter` — and the exponent bound is now proven glue over it.
 
 Until that relation is added the hazard would stay as recorded here — an open
 check, not a refutation, since nothing in `h𝒟Q` and `hQ` has been shown to
@@ -39162,8 +39367,8 @@ are all in this one leaf because they are all statements about `diamond`:
    named as genuinely missing — the Frobenius relation, which is where the
    exponent `ℓ^{v_ℓ(Nw − 1)}` comes from at all, inertia alone being unable to
    bound `χ_w|_{I_w}` — was ADDED 2026-07-31 as
-   `exists_frobLift_conj_pow_mem_wildInertiaGroup`, and the exponent bound is now
-   proven glue over it. `hker` is the control
+   `exists_frobLift_conj_pow_mem_wildInertiaGroup`, PROVEN 2026-08-02, and the
+   exponent bound is now proven glue over it. `hker` is the control
    theorem: killing the diamonds is killing the level raising, so
    `R_Q ⧸ 𝔫 ≅ R_∅`.
 1. **Fujiwara's form of the Taylor–Wiles freeness lemma** — the module `M`
