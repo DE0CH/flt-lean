@@ -350,6 +350,15 @@ theorem Equivalent.trans {f g h : BinaryQuadraticForm} (h₁ : f.Equivalent g)
   · linear_combination (p' * s' - q' * r') * hdet + hdet'
   · exact (act_act f p q r s p' q' r' s').symm
 
+theorem Equivalent.refl (f : BinaryQuadraticForm) : f.Equivalent f :=
+  ⟨1, 0, 0, 1, by ring, f.act_one⟩
+
+/-- Proper equivalence preserves the discriminant: `discr (f ∘ M) = det(M)² · discr f`. -/
+theorem Equivalent.discr_eq {f g : BinaryQuadraticForm} (h : f.Equivalent g) :
+    g.discr = f.discr := by
+  obtain ⟨p, q, r, s, hdet, rfl⟩ := h
+  rw [discr_act, hdet]; ring
+
 lemma eval_pos {f : BinaryQuadraticForm} (hf : f.IsPosDef) {x y : ℤ}
     (hxy : x ≠ 0 ∨ y ≠ 0) : 0 < f.eval x y := by
   have ha := hf.a_pos
@@ -428,6 +437,128 @@ is properly equivalent to a reduced one. -/
 theorem exists_reduced_equivalent (f : BinaryQuadraticForm) (hf : f.IsPosDef) :
     ∃ g, f.Equivalent g ∧ g.IsPosDef ∧ g.IsReduced :=
   exists_reduced_aux f.a.toNat f hf le_rfl
+
+/-! ### The class set of a negative discriminant (2026-07-31)
+
+`exists_classForms` below produces, for every `d : ℤ`, a FINITE set of positive definite
+forms of discriminant `d` that meets every proper-equivalence class exactly once. It is the
+form-theoretic half of the `LEAF 4b‴` recut in the `HeegnerConjugates` section far below,
+where the class polynomial `∏ (X − j(τ_f))` is formed over such a set.
+
+The point of doing it this way — rather than by "the reduced forms of discriminant `d`" —
+is that `IsReduced` here deliberately OMITS the normalisation `b ≥ 0` when `|b| = a` or
+`a = c` (see its docstring), so the reduced forms of a discriminant do NOT biject with the
+classes: `⟨1, 1, 6⟩` and `⟨1, −1, 6⟩` are both reduced of discriminant `−23` and are properly
+equivalent. Taking the product over reduced forms would therefore repeat the principal
+class's `j`-value and destroy rationality — numerically at `d = −23` the reduced product's
+second coefficient is `6984975.69996993…` against the class product's `3491750`. Rather than
+prove Gauss's UNIQUENESS theorem (which would pin the normalisation), `exists_transversal`
+picks one form per class out of the finite box by pure finite combinatorics; uniqueness is
+then not needed anywhere. -/
+
+open Classical in
+/-- Every positive definite form of discriminant `d` has coefficients in the box `[d, −d]`
+once it is reduced: `3ac ≤ 4ac − b² = −d` and `1 ≤ a ≤ c`. -/
+noncomputable def discrFormsBox (d : ℤ) : Finset BinaryQuadraticForm :=
+  ((Finset.Icc d (-d) ×ˢ Finset.Icc d (-d) ×ˢ Finset.Icc d (-d)).image
+      (fun t => (⟨t.1, t.2.1, t.2.2⟩ : BinaryQuadraticForm))).filter
+    (fun f => f.IsPosDef ∧ f.discr = d)
+
+lemma isPosDef_of_mem_discrFormsBox {d : ℤ} {f : BinaryQuadraticForm}
+    (hf : f ∈ discrFormsBox d) : f.IsPosDef := by
+  classical
+  rw [discrFormsBox, Finset.mem_filter] at hf
+  exact hf.2.1
+
+lemma discr_of_mem_discrFormsBox {d : ℤ} {f : BinaryQuadraticForm}
+    (hf : f ∈ discrFormsBox d) : f.discr = d := by
+  classical
+  rw [discrFormsBox, Finset.mem_filter] at hf
+  exact hf.2.2
+
+lemma mem_discrFormsBox {d : ℤ} {f : BinaryQuadraticForm} (hpd : f.IsPosDef)
+    (hred : f.IsReduced) (hdisc : f.discr = d) : f ∈ discrFormsBox d := by
+  classical
+  have ha : 0 < f.a := hpd.a_pos
+  obtain ⟨hb1, hb2⟩ := abs_le.mp hred.abs_b_le_a
+  have hac : f.a ≤ f.c := hred.a_le_c
+  have hdlt : d < 0 := hdisc ▸ hpd.discr_neg
+  have hdiscr : f.b ^ 2 - 4 * f.a * f.c = d := hdisc
+  have hsq : f.b ^ 2 ≤ f.a ^ 2 := by nlinarith
+  have ha2 : f.a ^ 2 ≤ f.a * f.c := by nlinarith
+  have h3 : 3 * (f.a * f.c) ≤ -d := by nlinarith
+  have hle : f.a * f.c ≤ -d := by nlinarith
+  have haU : f.a ≤ -d := by nlinarith
+  have hcU : f.c ≤ -d := by nlinarith
+  rw [discrFormsBox, Finset.mem_filter]
+  refine ⟨Finset.mem_image.mpr ⟨(f.a, f.b, f.c), ?_, rfl⟩, hpd, hdisc⟩
+  simp only [Finset.mem_product, Finset.mem_Icc]
+  exact ⟨⟨by linarith, haU⟩, ⟨by linarith, by linarith⟩, ⟨by linarith, hcU⟩⟩
+
+/-- **Every finite set of forms has a transversal for proper equivalence — PROVEN.**
+
+A subset meeting every class represented in `S` exactly once. Pure finite combinatorics:
+nothing about forms enters beyond reflexivity, symmetry and transitivity of `Equivalent`,
+so this is where Gauss's uniqueness theorem for reduced representatives would otherwise be
+spent. -/
+lemma exists_transversal (S : Finset BinaryQuadraticForm) :
+    ∃ F : Finset BinaryQuadraticForm, F ⊆ S ∧
+      (∀ f ∈ F, ∀ g ∈ F, f.Equivalent g → f = g) ∧
+      (∀ f ∈ S, ∃ g ∈ F, f.Equivalent g) := by
+  classical
+  induction S using Finset.strongInduction with
+  | _ S ih =>
+    rcases S.eq_empty_or_nonempty with rfl | ⟨x, hx⟩
+    · exact ⟨∅, by simp, by simp, by simp⟩
+    · have hsub : S.filter (fun f => ¬ x.Equivalent f) ⊆ S := Finset.filter_subset _ _
+      have hxS' : x ∉ S.filter (fun f => ¬ x.Equivalent f) := by
+        simp only [Finset.mem_filter, not_and, not_not]
+        exact fun _ => Equivalent.refl x
+      have hss : S.filter (fun f => ¬ x.Equivalent f) ⊂ S :=
+        (Finset.ssubset_iff_of_subset hsub).mpr ⟨x, hx, hxS'⟩
+      obtain ⟨F', hF'S, hF'indep, hF'rep⟩ := ih _ hss
+      have hnot : ∀ y ∈ F', ¬ x.Equivalent y := by
+        intro y hy
+        have hmem := hF'S hy
+        rw [Finset.mem_filter] at hmem
+        exact hmem.2
+      refine ⟨insert x F', Finset.insert_subset hx (hF'S.trans hsub), ?_, ?_⟩
+      · intro f hf g hg hfg
+        rcases Finset.mem_insert.mp hf with rfl | hf'
+        · rcases Finset.mem_insert.mp hg with rfl | hg'
+          · rfl
+          · exact absurd hfg (hnot g hg')
+        · rcases Finset.mem_insert.mp hg with rfl | hg'
+          · exact absurd hfg.symm (hnot f hf')
+          · exact hF'indep f hf' g hg' hfg
+      · intro f hfS
+        by_cases hxf : x.Equivalent f
+        · exact ⟨x, Finset.mem_insert_self _ _, hxf.symm⟩
+        · obtain ⟨g, hg, hfg⟩ := hF'rep f (Finset.mem_filter.mpr ⟨hfS, hxf⟩)
+          exact ⟨g, Finset.mem_insert_of_mem hg, hfg⟩
+
+/-- **A complete set of pairwise inequivalent positive definite forms of discriminant `d`
+— PROVEN.**
+
+Gauss reduction (`exists_reduced_equivalent`) puts every class into the finite box
+`discrFormsBox d`, and `exists_transversal` picks one form per class out of it. For `d ≥ 0`
+the set is empty, which is correct: a positive definite form has negative discriminant.
+
+The four clauses are exactly the hypotheses of `exists_ratPoly_map_eq_prod_jInvariant`
+(`LEAF 4b‴`), and all four are load-bearing there — see its falsity audit. -/
+theorem exists_classForms (d : ℤ) :
+    ∃ F : Finset BinaryQuadraticForm,
+      (∀ f ∈ F, f.IsPosDef) ∧ (∀ f ∈ F, f.discr = d) ∧
+      (∀ f ∈ F, ∀ g ∈ F, f.Equivalent g → f = g) ∧
+      (∀ f : BinaryQuadraticForm, f.IsPosDef → f.discr = d → ∃ g ∈ F, f.Equivalent g) := by
+  obtain ⟨F, hFS, hindep, hrep⟩ := exists_transversal (discrFormsBox d)
+  refine ⟨F, fun f hf => isPosDef_of_mem_discrFormsBox (hFS hf),
+    fun f hf => discr_of_mem_discrFormsBox (hFS hf), hindep, ?_⟩
+  intro f hpd hdisc
+  obtain ⟨g, hfg, hgpd, hgred⟩ := exists_reduced_equivalent f hpd
+  have hgd : g.discr = d := by rw [hfg.discr_eq, hdisc]
+  obtain ⟨h, hhF, hgh⟩ := hrep g (mem_discrFormsBox hgpd hgred hgd)
+  exact ⟨h, hhF, hfg.trans hgh⟩
 
 /-- **Rabinowitsch's criterion, the elementary half.** If `x² + x + m` is prime
 for every `x` with `x + 1 < m`, then every reduced positive definite form of
@@ -6743,6 +6874,205 @@ theorem exists_heegnerForm {p : ℕ} (hp : 0 < p) (hp4 : p % 4 = 3) :
     push_cast
     linear_combination (((Real.sqrt p : ℂ)) ^ 2 / 4) * hI - (1 / 4) * hs - (1 / 4) * hp'
 
+/-- The root with positive imaginary part of `f(X, 1) = aX² + bX + c`, as a complex number:
+`(−b + i√(−discr))/(2a)`. -/
+noncomputable def posDefPointC (f : BinaryQuadraticForm) : ℂ :=
+  ((-(f.b : ℝ) / (2 * (f.a : ℝ)) : ℝ) : ℂ)
+    + ((Real.sqrt (-(f.discr : ℝ)) / (2 * (f.a : ℝ)) : ℝ) : ℂ) * Complex.I
+
+lemma posDefPointC_im (f : BinaryQuadraticForm) :
+    (posDefPointC f).im = Real.sqrt (-(f.discr : ℝ)) / (2 * (f.a : ℝ)) := by
+  simp only [posDefPointC, Complex.add_im, Complex.mul_im, Complex.I_re, Complex.I_im,
+    Complex.ofReal_re, Complex.ofReal_im]
+  ring
+
+lemma posDefPointC_im_pos {f : BinaryQuadraticForm} (hf : f.IsPosDef) :
+    0 < (posDefPointC f).im := by
+  have ha : (0 : ℝ) < (f.a : ℝ) := by exact_mod_cast hf.a_pos
+  have hd : (0 : ℝ) < -(f.discr : ℝ) := by
+    have h := hf.discr_neg
+    have h' : ((f.discr : ℝ)) < 0 := by exact_mod_cast h
+    linarith
+  have hs : 0 < Real.sqrt (-(f.discr : ℝ)) := Real.sqrt_pos.mpr hd
+  rw [posDefPointC_im]
+  positivity
+
+open Classical in
+/-- **The point `τ_f ∈ ℍ` attached to a positive definite form** (junk value `i` otherwise).
+
+This is the `form ↦ τ_f` map that the `LEAF 4b′` recut of the same day declared unnecessary.
+It was, for THAT cut; the class equation needs it, because the equation's roots have to be
+NAMED. Note it is a total function — the positive definiteness is discharged inside — which
+is what lets the class polynomial be a plain `Finset.prod` over forms with no dependent
+bookkeeping.
+
+**THERE IS A RICHER TWIN ONE MODULE DOWNSTREAM, AND IT SHOULD EVENTUALLY ABSORB THIS ONE.**
+`MazurCMForm.formPoint` (`FreyCurve/MazurTorsion.lean`, section
+`FormPointDictionary`) is the same point with the positive definiteness as an EXPLICIT
+argument, and it carries the API this one does not: `formPoint_re`, `formPoint_im`,
+`eq_formPoint_of_quadratic` (uniqueness in `ℍ`), `eq_of_formPoint_eq` (injectivity at fixed
+discriminant), `formPoint_moebius` and `formPoint_act` (`SL₂(ℤ)`-equivariance). It cannot be
+cited here — it is downstream — which is why this exists at all, and the two are deliberately
+given DIFFERENT names so that the module that imports both does not see an ambiguity.
+
+The bodies were aligned on 2026-07-31 so that consolidating them is mechanical: for
+`hf : f.IsPosDef` the equation `MazurCMForm.formPoint f hf = posDefPoint f` is CHECKED, by
+`rw [posDefPoint, dif_pos hf, MazurCMForm.formPoint]; simp [posDefPointC]`, so the hoist is
+"move the downstream section up to here, restate it over
+`posDefPoint`, and delete the `hf` argument at its call sites". That is queued rather than
+done because `MazurTorsion.lean` is 26 000 lines and has its own live cluster. -/
+noncomputable def posDefPoint (f : BinaryQuadraticForm) : UpperHalfPlane :=
+  if h : f.IsPosDef then UpperHalfPlane.mk (posDefPointC f) (posDefPointC_im_pos h)
+  else UpperHalfPlane.mk Complex.I (by simp)
+
+lemma coe_posDefPoint {f : BinaryQuadraticForm} (hf : f.IsPosDef) :
+    ((posDefPoint f : UpperHalfPlane) : ℂ) = posDefPointC f := by
+  classical
+  rw [posDefPoint, dif_pos hf]
+
+/-- **`τ_f` really is a root of `f(X, 1)` — PROVEN.** With `s = √(−discr)` and `s² = 4ac − b²`
+the imaginary part of `a τ² + b τ + c` is `(s/2a)(2a·(−b/2a) + b) = 0` and the real part is
+`(b² − s²)/4a − b²/2a + c = 0`; both fall out of one `linear_combination` after clearing
+`4a`. -/
+lemma posDefPoint_root {f : BinaryQuadraticForm} (hf : f.IsPosDef) :
+    (f.a : ℂ) * ((posDefPoint f : UpperHalfPlane) : ℂ) ^ 2
+      + (f.b : ℂ) * ((posDefPoint f : UpperHalfPlane) : ℂ) + (f.c : ℂ) = 0 := by
+  have ha : (0 : ℝ) < (f.a : ℝ) := by exact_mod_cast hf.a_pos
+  have haC : (f.a : ℂ) ≠ 0 := by
+    simpa using (Int.cast_ne_zero (α := ℂ)).mpr hf.a_pos.ne'
+  have hd : (0 : ℝ) ≤ -(f.discr : ℝ) := by
+    have h := hf.discr_neg
+    have h' : ((f.discr : ℝ)) < 0 := by exact_mod_cast h
+    linarith
+  have hs : (Real.sqrt (-(f.discr : ℝ))) ^ 2 = -(f.discr : ℝ) := Real.sq_sqrt hd
+  set u : ℝ := -(f.b : ℝ) / (2 * (f.a : ℝ)) with hu
+  set v : ℝ := Real.sqrt (-(f.discr : ℝ)) / (2 * (f.a : ℝ)) with hv
+  have h1 : 2 * (f.a : ℝ) * u = -(f.b : ℝ) := by rw [hu]; field_simp
+  have h2 : (2 * (f.a : ℝ) * v) ^ 2 = -(f.discr : ℝ) := by
+    rw [hv]; field_simp; linear_combination hs
+  have h1C : 2 * (f.a : ℂ) * (u : ℂ) = -(f.b : ℂ) := by
+    exact_mod_cast congrArg (fun r : ℝ => (r : ℂ)) h1
+  have h2C : (2 * (f.a : ℂ) * (v : ℂ)) ^ 2 = -((f.b : ℂ) ^ 2 - 4 * (f.a : ℂ) * (f.c : ℂ)) := by
+    have h := congrArg (fun r : ℝ => (r : ℂ)) h2
+    push_cast [BinaryQuadraticForm.discr] at h ⊢
+    linear_combination h
+  have hI : (Complex.I) ^ 2 = -1 := Complex.I_sq
+  have h4a : (4 : ℂ) * (f.a : ℂ) ≠ 0 := by simp [haC]
+  rw [coe_posDefPoint hf, posDefPointC, ← hu, ← hv]
+  refine mul_left_cancel₀ h4a ?_
+  rw [mul_zero]
+  linear_combination (2 * (f.a : ℂ) * (u : ℂ) + (f.b : ℂ) + 4 * (f.a : ℂ) * Complex.I * (v : ℂ))
+      * h1C - h2C + (4 * (f.a : ℂ) ^ 2 * (v : ℂ) ^ 2) * hI
+
+/-- **`LEAF 4b‴` — THE CLASS EQUATION OF A NEGATIVE DISCRIMINANT IS RATIONAL.
+THE FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION, and the ONLY leaf of this file that needs
+complex multiplication.**
+
+Over a complete set `F` of pairwise inequivalent positive definite forms of discriminant `d`,
+the class polynomial `H_d(X) = ∏_{f ∈ F} (X − j(τ_f))` has RATIONAL coefficients. This is
+Cox, *Primes of the form x² + ny²*, Theorem 11.1 (stated there over `ℤ`, for an arbitrary
+discriminant `d < 0`, fundamental or not).
+
+**IT REPLACES `LEAF 4b″`** (`exists_posDefForm_root_of_aeval_minpoly_jInvariant`), which is
+PROVEN from it just below over `exists_classForms` and the `posDefPoint` dictionary above; the
+count is unchanged, one leaf for one leaf. What the trade buys:
+
+* the CM content is now stated as the theorem it is, with a name in a textbook, instead of
+  as a property of the roots of a minimal polynomial;
+* the ALGEBRAICITY of `j(τ₀)` — which `LEAF 4b″`'s audit correctly identified as load-bearing
+  for its TRUTH and INVISIBLE in its statement, since `minpoly ℚ x = 0` and `aeval x 0 = 0`
+  for transcendental `x` — is now part of the CONCLUSION: a rational `H` with `H(j(τ₀)) = 0`
+  and `H ≠ 0` exhibits `j(τ₀)` as algebraic. The dependence on `Φ_N` is unchanged in
+  substance and no longer hidden in a hypothesis;
+* consequently the proof below does NOT use `isIntegral_jInvariant_heegnerPoint` at all;
+* `d` is a free integer. Nothing here is about `−p`, about `p ≡ 3 mod 4`, or about the
+  Heegner point; those enter only in the glue.
+
+WHY ONLY `ℚ` IS ASKED FOR. Classically `H_d ∈ ℤ[X]`, and the integrality half is ALREADY
+available in this file — `isIntegral_jInvariant_of_quadratic` (PROVEN, over the modular
+polynomial) makes every `j(τ_f)` an algebraic integer, hence every coefficient of the product
+one. Only the RATIONALITY is complex multiplication, so only rationality is demanded here.
+
+WHAT IT WOULD TAKE. Cox §11 through the modular polynomial `Φ_N`, whose existence is
+`exists_modularPolynomial` (PROVEN above, over the two open construction leaves
+`exists_isBoundedAtImInfty_coeff_prod` and `exists_intPolynomial_map_of_eq_prod`). Ring class
+fields and the Artin map are absent from mathlib at this pin, from `~/cs/FLT` and from this
+project.
+
+THE UNCOSTED ALTERNATIVE, NOW COSTED (2026-07-31). Stark's remark that "nothing more modern
+is required" — Weber's own computations in place of class field theory — is, concretely, the
+Kronecker class-number relation: `Φ_n(X, X)` factors as `± ∏_{t² ≤ 4n} H_{t²−4n}(X)`, so
+`H_d` can be separated out of `ℚ[X]`-gcds of the `Φ_n(X, X)` for varying `n`. Its three
+inputs, in this project:
+
+* `Φ_n(X, X) ∈ ℤ[X]` is nearly free — specialise `exists_modularPolynomial` at `Y = X`;
+* each `j(τ_f)` IS a root of `Φ_n(X, X)` for the `n` of a fixing matrix: PROVEN here, that
+  is exactly the argument of `isIntegral_jInvariant_of_quadratic`, whose fixing matrix
+  `[[m−b, −c], [a, m]]` has trace `2m − b` and determinant `m² − bm + ac`, so
+  `t² − 4n = b² − 4ac = d` on the nose, independent of `m`;
+* the CONVERSE — every root of `Φ_n(X, X)` is `j` of a CM point of discriminant `t² − 4n` —
+  is the blocker. It needs `j(v) = j(w) → v = γ • w` for some `γ ∈ SL₂(ℤ)`, i.e. injectivity
+  of `j` on `ℍ/SL₂(ℤ)`, which classically comes from the valence formula. **The valence
+  formula is NOT in this pin**: `Mathlib/NumberTheory/Modular.lean` has the fundamental
+  domain `𝒟`, `exists_smul_mem_fd` and the stabiliser computations but no `j` and no
+  order-counting; `ModularForms/LevelOne/DimensionFormula.lean` gets the level-one dimensions
+  by dividing by `Δ`, not by valence. **BUT IT IS ALREADY A NAMED LEAF OF THIS PROJECT**,
+  one module downstream: `MazurCMForm.exists_smul_eq_of_jInvariant_eq`
+  (`FreyCurve/MazurTorsion.lean`, `LEAF B` of the CM-`j`-invariant cut), stated in exactly
+  that form and open. So the two clusters share it, and whoever proves it pays once.
+
+So the alternative is not free, but its missing input is now NAMED, is a single classical
+analytic theorem (valence formula ⟹ `j` injective on the quotient) rather than a theory
+(ring class fields + the Artin map), and is ALREADY OWED by a second cluster. On that
+comparison it is plausibly the cheaper of the two routes, and it reuses machinery this file
+already has. Whoever takes this leaf should price both before choosing; that judgement is
+deliberately left to them and nothing below
+depends on it.
+
+FALSITY AUDIT (2026-07-31, run fresh against this statement, machine-checked in PARI/GP).
+Every hypothesis was tested by computing `∏ (X − j(τ_f))` numerically at `d = −23`
+(`h(−23) = 3`, classes `⟨1,1,6⟩`, `⟨2,−1,3⟩`, `⟨2,1,3⟩`).
+
+* NOT VACUOUS: `exists_classForms d` produces such an `F` for every `d`, unconditionally.
+* `hindep` IS LOAD-BEARING. `IsReduced` here omits the normalisation `b ≥ 0` when `|b| = a`
+  or `a = c`, so `⟨1,1,6⟩` and `⟨1,−1,6⟩` are both reduced of discriminant `−23` and are
+  properly equivalent. Over the four reduced forms the product is
+  `X⁴ + 6984975.69996993…X³ + ⋯` — the principal `j` counted twice, and the extra factor
+  `X − j(τ₀)` is a degree-3 irrational. Over the three classes it is
+  `X³ + 3491750X² − 5151296875X + 12771880859375`, integral.
+* `hcomplete` IS LOAD-BEARING, for the same reason from the other side: over the single form
+  `⟨1,1,6⟩` the product is `X + 3493225.69996993…`.
+* `hpd`/`hdisc` are what make the roots CM points of the right discriminant at all.
+* `hd : d < 0` is NOT load-bearing — it is convenience. A positive definite form has negative
+  discriminant, so for `d ≥ 0` the hypotheses force `F = ∅` and `H = 1` works. It is kept so
+  that no prover hunts for content in the degenerate branch.
+* IMPRIMITIVE FORMS DO NOT BREAK IT, and this was the one real risk in widening `F` from the
+  primitive classes to all classes. The imprimitive classes of discriminant `d` with content
+  `m` biject with the primitive classes of discriminant `d/m²`, and their `j`-values are the
+  `j`-values of that discriminant, so the product over ALL classes is `∏_{m² | d} H_{d/m²}`,
+  each factor rational. Machine-checked integral for every discriminant `−1 ≥ d ≥ −55`,
+  to 100+ digits, including `d = −12` (`⟨2,2,2⟩`), `−16` (`⟨2,0,2⟩`), `−27` (`⟨3,3,3⟩`,
+  giving the factor `X − 0`), `−36` (`⟨3,0,3⟩`) and `−48` (`⟨4,4,4⟩`).
+
+WHAT THE CONSUMER ACTUALLY NEEDS is weaker: some nonzero `H ∈ ℚ[X]` with `H(j(τ₀)) = 0` all
+of whose complex roots are `j`-values of discriminant `−p` points. A prover who finds the
+exact product inconvenient may prove that instead; the glue below then loses only the two
+lines that read the product's roots off `Finset.prod_eq_zero_iff`. The exact product is
+stated here because it is the textbook statement and because it PINS `H`, so that a second
+theorem about `H` — integrality, degree `h(d)`, irreducibility over `ℚ(√d)` — can be added
+later without re-deriving which polynomial is meant.
+
+Refute this leaf by exhibiting a `d < 0` and a complete inequivalent `F` for which some
+coefficient of `∏_{f ∈ F} (X − j(τ_f))` is irrational. -/
+theorem exists_ratPoly_map_eq_prod_jInvariant {d : ℤ} (hd : d < 0)
+    (F : Finset BinaryQuadraticForm)
+    (hpd : ∀ f ∈ F, f.IsPosDef) (hdisc : ∀ f ∈ F, f.discr = d)
+    (hindep : ∀ f ∈ F, ∀ g ∈ F, f.Equivalent g → f = g)
+    (hcomplete : ∀ f : BinaryQuadraticForm, f.IsPosDef → f.discr = d → ∃ g ∈ F, f.Equivalent g) :
+    ∃ H : Polynomial ℚ, H.map (algebraMap ℚ ℂ)
+      = ∏ f ∈ F, (Polynomial.X - Polynomial.C (jInvariant (posDefPoint f))) :=
+  sorry
+
 /-- **LEAF 4b″ — THE CONJUGATES OF `j(τ₀)` ARE `j`-VALUES OF FORMS OF THE SAME DISCRIMINANT.
 THE FIRST MAIN THEOREM OF COMPLEX MULTIPLICATION.**
 
@@ -6817,8 +7147,35 @@ theorem exists_posDefForm_root_of_aeval_minpoly_jInvariant {p : ℕ} (hp : 0 < p
     (hx : (Polynomial.aeval x) (minpoly ℚ (jInvariant (heegnerPoint p hp))) = 0) :
     ∃ (f : BinaryQuadraticForm) (w : UpperHalfPlane), f.IsPosDef ∧ f.discr = -(p : ℤ) ∧
       (f.a : ℂ) * (w : ℂ) ^ 2 + (f.b : ℂ) * (w : ℂ) + (f.c : ℂ) = 0 ∧
-      x = jInvariant w :=
-  sorry
+      x = jInvariant w := by
+  obtain ⟨F, hpd, hdisc, hindep, hcomplete⟩ := exists_classForms (-(p : ℤ))
+  obtain ⟨H, hH⟩ :=
+    exists_ratPoly_map_eq_prod_jInvariant (d := -(p : ℤ)) (by omega) F hpd hdisc hindep hcomplete
+  obtain ⟨f₀, hf₀pd, hf₀d, hf₀root⟩ := exists_heegnerForm hp hp4
+  obtain ⟨g, hgF, hfg⟩ := hcomplete f₀ hf₀pd hf₀d
+  obtain ⟨q, r, s, t, hdet, hact⟩ := hfg
+  have hj : jInvariant (heegnerPoint p hp) = jInvariant (posDefPoint g) :=
+    jInvariant_eq_of_act hdet hact hf₀pd.a_pos.ne' hf₀root (posDefPoint_root (hpd g hgF))
+  have hprod : (∏ f ∈ F, (Polynomial.X - Polynomial.C (jInvariant (posDefPoint f)))).eval
+      (jInvariant (heegnerPoint p hp)) = 0 := by
+    rw [Polynomial.eval_prod]
+    refine Finset.prod_eq_zero hgF ?_
+    simp [hj]
+  have hHroot : Polynomial.aeval (jInvariant (heegnerPoint p hp)) H = 0 := by
+    rw [Polynomial.aeval_def, ← Polynomial.eval_map, hH]
+    exact hprod
+  obtain ⟨k, hk⟩ : minpoly ℚ (jInvariant (heegnerPoint p hp)) ∣ H := minpoly.dvd ℚ _ hHroot
+  have hxH : Polynomial.aeval x H = 0 := by
+    rw [hk, map_mul, hx, zero_mul]
+  have hxprod :
+      (∏ f ∈ F, (Polynomial.X - Polynomial.C (jInvariant (posDefPoint f)))).eval x = 0 := by
+    rw [← hH, Polynomial.eval_map, ← Polynomial.aeval_def]
+    exact hxH
+  rw [Polynomial.eval_prod, Finset.prod_eq_zero_iff] at hxprod
+  obtain ⟨f, hfF, hf0⟩ := hxprod
+  refine ⟨f, posDefPoint f, hpd f hfF, hdisc f hfF, posDefPoint_root (hpd f hfF), ?_⟩
+  simp only [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, sub_eq_zero] at hf0
+  exact hf0
 
 end HeegnerConjugates
 
