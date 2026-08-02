@@ -28592,3 +28592,67 @@ already on it, because the collapse is exactly what put two of you there.
 Corollary for whoever COLLAPSES a split: the deletion is a queue edit as well as
 a source edit.  Name the deleted declarations in `to_merger` so the entries that
 target them die with them, rather than surviving to be dispatched.
+## A `∀`/`∃` SEPARATION AUDIT IS ABOUT THE STATEMENTS — THE DUPLICATION LIVES IN THE CITATIONS
+(2026-08-01, `flt-lean-395`, closing `isAffine_rigidifiedModuliSchemeData_of_isUnit`
+in `X0.lean`. Frontier 101 → 100 in that module, one closed, none opened.)
+This file already records that a `∀ R : Structure, P R.M` leaf defended by
+"the object is unique" is usually fusable with its `∃`-shaped sibling once
+rigidity is proven. The Katz–Mazur affineness cluster is the case where that
+rule is **correctly resisted** and the leaf is still redundant, for a reason one
+level down.
+The three-leaf cluster was: representability of `[Γ(n)]` (4.7.2), relative
+representability of `[Γ₀(N)]` (5.1.1 + 6.6.1), and — deliberately kept apart —
+affineness of the rigidified moduli scheme, stated with a `∀` precisely so that
+it asserts no inhabitant and so cannot subsume the other two. That defence is
+sound: at `n ≤ 2` no inhabitant exists and the `∀` is vacuous, so the
+quantifier really does keep representability and affineness apart. Three
+docstrings said so, and they were right.
+**They were right about the STATEMENTS and silent about the CITATIONS, and the
+duplication was in the citations.** The affineness leaf's own docstring
+answered the question nobody asked it: *"what is genuinely cited here is only
+`M(𝒮)` is affine and `M(𝒮, Γ₀(N)) ⟶ M(𝒮)` is finite"* — i.e. the affineness
+clause of **(4.7.2)** and the finiteness clause of **(6.6.1)**, the same two
+theorems the other two leaves cite, read for two more of their clauses. So one
+citation pair was carried by three obligations, and closing any one of them left
+the other two owing clauses of a theorem their prover had already read.
+**The repair is NOT to fuse leaves — that is what the separation audit forbids,
+correctly. It is to put each clause on the leaf that already cites its
+theorem.** `IsAffine Y.M` onto (4.7.2); `IsAffineHom π` onto (6.6.1). Neither
+prover's reading grows by a line, because both clauses are quoted in those
+leaves' own citation paragraphs. What is then left of the third leaf is
+`isAffine_of_isAffineHom` — which its docstring already called "NOT a citation
+and available in the pin" — plus the rigidity transport, and it is two lines.
+The `∀`/`∃` separation is untouched: no surviving leaf mentions both.
+**The detection is mechanical and takes one pass: read each leaf's "what is
+genuinely cited here" sentence and compare THEOREM NUMBERS, not statements.**
+If two leaves name the same numbered result, they are one citation split across
+two obligations, however disjoint their Lean statements look. Nothing else sees
+it — the three statements here share no identifier, all three were honestly
+open and unowned, and every frontier instrument counted three.
+Three riders, each of which decided something here:
+* **Ask for the WEAKEST clause the consumer uses, not the strongest the citation
+  gives.** (6.6.1) gives `π` finite flat; only `IsAffineHom π` is consumed
+  (`isAffine_of_isAffineHom`), and `IsFinite` extends `IsAffineHom`, so a prover
+  who proves the citation discharges the clause by `inferInstance` while the
+  leaf stays as weak as possible. Flatness is asked for by nobody and was left
+  out.
+* **The twin had already done it, and the transcription was mechanical.**
+  `X1.lean`'s `exists_isAffine_gamma1RigidifiedModuliScheme` (PROVEN
+  2026-07-31) is the same assembly over a bottom leaf carrying affineness and a
+  top leaf carrying `IsAffineHom p`, finished by the same
+  `isAffine_of_isAffineHom`. Grep the twin file for the pattern before designing
+  one: `grep -n 'isAffine_of_isAffineHom' Fermat/` found it in seconds and the
+  Γ₀ version differs only in which end of the tower carries which clause.
+* **Keep the old name as a one-line corollary and no call site moves.** The
+  fused `∃ D, IsAffine D.M` becomes the primary theorem, and
+  `exists_rigidifiedModuliSchemeData_of_isUnit` is `(…).elim fun D _ => ⟨D⟩` —
+  its three consumers, which all destructure a `Nonempty`, are untouched. There
+  is no reason to pay an interface change for a fusion.
+**And the scratch that verified it did not need the strengthened leaves to
+exist.** A module that `public import`s the target's own olean, declares the two
+strengthened statements as `sorry` under primed names, and proves the assembly
+and the target over them, checks the ENTIRE glue — 10 seconds against ~25
+minutes for the real file, and the text transplanted unchanged. That is the
+general shape for any "strengthen a leaf, then close its consumer" cut: the
+strengthened leaf is a `sorry` either way, so nothing about it has to be real
+for the glue to be checkable.
