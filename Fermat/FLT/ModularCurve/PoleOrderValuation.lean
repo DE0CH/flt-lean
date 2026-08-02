@@ -56,25 +56,46 @@ stated about *that* function and are true.
 2. `exists_sub_smul_poleOrd_lt` — **the residue field of `𝒪_{A,O}` is `K`.**  `r / s` is a
    unit of the DVR `𝒪_{A,O}`; `c` is its residue.  This is where `O` being a *section* rather
    than an arbitrary closed point is spent.
-3. `poleOrd_ne_one_and_exists_two_three` — **the genus is one.**  No function has a simple
-   pole at `O` (genus `≥ 1`), and some function has a double pole and some a triple pole
-   (genus `≤ 1`, i.e. Riemann's inequality at `n = 2, 3`).
+3. `isEmpty_algEquivPolynomial_chart` — **the affine complement is not the affine line**
+   (genus `≥ 1`), cut 2026-08-02 out of leaf 3 below and containing no pole order at all.
+4. `exists_poleOrd_eq_two_and_three` — **some function has a double pole and some a triple
+   pole** (genus `≤ 1`, i.e. Riemann's inequality at `n = 2, 3`).
 
-Leaf 1 is a properness/descent statement, leaf 2 a residue-field statement, leaf 3 the only
-genuinely missing mathematics.  There is still no Riemann–Roch, genus or divisor theory in
-`Fermat/`, in the mathlib pin or in `~/cs/FLT` (re-checked 2026-07-31), which is why leaf 3
-stands; leaves 1 and 2 are each reachable with tooling this tree already owns
+`poleOrd_ne_one_and_exists_two_three` — the old leaf 3, "the genus is one" — is PROVEN over
+3 and 4 as of 2026-08-02, with its name and statement unchanged, so nothing below it moved.
+
+Leaf 1 is a properness/descent statement, leaf 2 a residue-field statement; 3 and 4 are the
+two halves of the genus and share no technique.
+
+**THE ABSENCE CLAIM THAT USED TO STAND HERE WAS STALE AND IS CORRECTED** (2026-08-02).  It
+read "there is still no Riemann–Roch, genus or divisor theory in `Fermat/`, in the mathlib
+pin or in `~/cs/FLT` (re-checked 2026-07-31)".  The mathlib and `~/cs/FLT` halves still hold.
+The `Fermat/` half is FALSE: `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean` carries
+`rrSet`, `ell`, `divisorDegree`, `IsDivisorOn`, `IsCurveGenus` (Riemann's theorem) with
+`IsCurveGenus.unique` PROVEN and `exists_isCurveGenus` as its single leaf, and
+`CurveDivisorDegree.lean` / `PrincipalDivisorDegree.lean` carry the degree of a principal
+divisor.  Neither is imported here, and both import only mathlib, so either may be imported
+at no cost in build order.  Leaf 4's docstring gives the route through them **and the trap in
+it** (`IsCurveGenus` bounds nothing, so it cannot be read off at `n = 2, 3`).  Separately,
+leaf 3's mathematics is PROVEN in this tree already, DOWNSTREAM, as
+`exists_section_of_affineLine_toAbelianScheme` in `ModularCurve/X0.lean`; leaf 3 is blocked by
+import order, and its docstring gives the hoist.
+
+Leaves 1 and 2 are each reachable with tooling this tree already owns
 (`AlgebraicGeometry.isIso_appTop_of_isProper_over_field` in `ProperPushforward.lean` for the
 first, `Scheme.Hom.stalkClosedPointTo` and the section lemmas of `CurveAffineComplement.lean`
 for the second) and are left open here only for want of time, not for want of a route.
 
 ## Accounting
 
-**The direct-sorry count goes 1 → 3, and that is disclosure rather than regression.**  What
-changed is that the ~300 lines of valuation-theoretic plumbing between `Scheme.ord` and the
-nine clauses — the embedding of the chart in the function field, the DVR at `O`, the
-ultrametric inequality, the submodule, the `ℤ`-to-`ℕ` normalisation — can never have to be
-written again, and each of the three survivors is a statement with a name in a textbook.
+**The direct-sorry count goes 1 → 3 (2026-07-31) → 4 (2026-08-02), and that is disclosure
+rather than regression.**  What changed at the first cut is that the ~300 lines of
+valuation-theoretic plumbing between `Scheme.ord` and the nine clauses — the embedding of the
+chart in the function field, the DVR at `O`, the ultrametric inequality, the submodule, the
+`ℤ`-to-`ℕ` normalisation — can never have to be written again; what changed at the second is
+that the two halves of the genus were separated and the `≥` half was reduced, over ~90 lines
+of proven algebra, to a statement about `R` alone that the tree already proves downstream.
+Each of the four survivors is a statement with a name in a textbook.
 Judged by CLAUDE.md's own tie-breaker ("what is LEFT in the leaf, not how many leaves"), this
 is the cut: the old leaf mixed properness, residue fields and the genus into one existential
 that no single citation could discharge.
@@ -402,42 +423,6 @@ theorem exists_sub_smul_poleOrd_lt (r s : R) (hr : r ≠ 0) (hs : s ≠ 0)
   sorry
 
 include f hstr hrange in
-/-- **LEAF 3 — the genus is one** (sorry leaf, cut 2026-07-31 out of
-`exists_poleOrderValuation_of_affineComplement`; this is the ONLY one of the three that needs
-mathematics the tree does not have).
-
-* `∀ r ≠ 0, poleOrd r ≠ 1` is **genus `≥ 1`**: a function with a simple pole at `O` is a
-  degree-one map `A → P¹`, hence an isomorphism, and `P¹` carries no abelian-scheme structure
-  (an abelian scheme has translation-invariant, hence trivial, canonical bundle, so
-  `2g - 2 = 0`).
-* `∃ x, poleOrd x = 2` and `∃ y, poleOrd y = 3` are **genus `≤ 1`**, i.e. Riemann's
-  inequality `dim L(n[O]) ≥ n + 1 - g` read at `n = 2` and `n = 3`.
-
-Together with the valuation clauses proven in this file these pin the value semigroup of
-`poleOrd` to `⟨2, 3⟩ = ℕ ∖ {1}`, which is what
-`Fermat.PoleOrderFiltration.exists_deg_eq` consumes.
-
-**WHY THIS IS STATED ABOUT `poleOrd` AND NOT ABOUT AN ARBITRARY `deg`.**  It has to be.  The
-valuation clauses do not pin the function: `2 · poleOrd` satisfies every one of them, and
-also `hone`, while satisfying neither existential.  So a leaf quantified over all `deg` with
-those clauses would be FALSE, and the whole point of making `poleOrd` a `def` is that this
-leaf can name it.  (A scale-invariant substitute exists — "exactly one `n : ℕ` is not a value
-of `deg`", the Weierstrass gap theorem — but it is the same mathematics and a worse
-statement.)
-
-**WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS**: a Riemann–Roch theorem, a genus, or a theory of
-divisors/linear systems on a curve, in `Fermat/`, `.lake/packages/mathlib` or `~/cs/FLT`.
-Absent from all three as of 2026-07-31.
-
-**NOT VACUOUS**: at the Weierstrass chart, `x` and `y` witness the two existentials and
-`2i + 3j = 1` has no solution in non-negative integers. -/
-theorem poleOrd_ne_one_and_exists_two_three :
-    (∀ r : R, r ≠ 0 → poleOrd ι hgen (zeroPoint ab) r ≠ 1) ∧
-      (∃ x : R, poleOrd ι hgen (zeroPoint ab) x = 2) ∧
-      (∃ y : R, poleOrd ι hgen (zeroPoint ab) y = 3) :=
-  sorry
-
-include f hstr hrange in
 /-- Every unit of the chart has pole order zero: its pole order and that of its inverse sum
 to zero and both are non-negative by leaf 1. -/
 lemma poleOrd_eq_zero_of_isUnit {u : R} (hu : IsUnit u) :
@@ -473,6 +458,265 @@ lemma poleOrd_smul_le (c : K) (r : R) :
   have hsd : c • r = algebraMap K R c * r := Algebra.smul_def c r
   rw [hsd, poleOrd_mul ι hgen (zeroPoint ab) hcu.ne_zero hr,
     poleOrd_eq_zero_of_isUnit ab ι hstr hrange hgen hcu, zero_add]
+
+/-! ### The genus, split along the classical `≥` / `≤` line
+
+What was one leaf — "the genus is one" — is here one PROVEN reduction plus two leaves that
+share no technique.  The reduction is the `genus ≥ 1` half stripped of every mention of the
+pole order: a function with a SIMPLE pole generates the chart as a `K`-algebra, and generates
+it FREELY, so a simple pole makes `Spec R` the affine line.  What is left of that half is
+`isEmpty_algEquivPolynomial_chart`, a statement about `R` alone. -/
+
+include ι hgen in
+/-- **The chart's coordinate ring is a domain**, because `chartToFunctionField` embeds it in
+the function field of `A`, which is a field since `A` is integral.  Nontriviality of `R`
+comes with it (`Function.Injective.isDomain` derives it from nontriviality of the target). -/
+lemma isDomain_chart : IsDomain R :=
+  Function.Injective.isDomain (chartToFunctionField ι hgen).hom
+    (chartToFunctionField_injective ι hgen)
+
+/-- **The pole order of a power**, `poleOrd (r ^ n) = n · poleOrd r`.  Induction on `n` over
+`poleOrd_mul`; the domain hypothesis is what makes `r ^ n ≠ 0` available at each step. -/
+lemma poleOrd_pow {r : R} (hr : r ≠ 0) (n : ℕ) (O : A) :
+    poleOrd ι hgen O (r ^ n) = n * poleOrd ι hgen O r := by
+  haveI := isDomain_chart ι hgen
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [pow_succ, poleOrd_mul ι hgen O (pow_ne_zero n hr) hr, ih]
+    push_cast
+    ring
+
+include f hstr hrange in
+/-- **A FUNCTION WITH A SIMPLE POLE GENERATES THE CHART** (PROVEN 2026-08-02): if
+`poleOrd r = 1` then every `s : R` is a polynomial in `r` with coefficients in `K`.
+
+This is the dimension count `L(n) = K · 1 ⊕ K · r ⊕ ⋯ ⊕ K · rⁿ` written without any
+`finrank`, and it is the whole of the `genus ≥ 1` half of leaf 3 that does not need new
+mathematics.  Strong induction on `(poleOrd s).toNat`, over the two sibling leaves of this
+file and nothing else:
+
+* at `0`, leaf 1 (`nonneg_poleOrd_and_eq_zero_iff`) says `s` is a constant;
+* at `n + 1`, `poleOrd (r ^ (n+1)) = n + 1 = poleOrd s` by `poleOrd_pow`, so leaf 2
+  (`exists_sub_smul_poleOrd_lt`) produces `c : K` with `poleOrd (s - c • r ^ (n+1)) < n + 1`,
+  and the inductive hypothesis applies to that difference.
+
+Both leaves are used only through their statements, so this lemma is as strong as they are
+and no stronger. -/
+lemma mem_adjoin_of_poleOrd_eq_one {r : R} (hr1 : poleOrd ι hgen (zeroPoint ab) r = 1)
+    (s : R) : s ∈ Algebra.adjoin K ({r} : Set R) := by
+  haveI := isDomain_chart ι hgen
+  have hr0 : r ≠ 0 := by
+    rintro rfl
+    rw [poleOrd_zero] at hr1
+    exact one_ne_zero hr1.symm
+  have hnn := poleOrd_nonneg ab ι hstr hrange hgen
+  have key : ∀ n : ℕ, ∀ s : R, (poleOrd ι hgen (zeroPoint ab) s).toNat ≤ n →
+      s ∈ Algebra.adjoin K ({r} : Set R) := by
+    intro n
+    induction n with
+    | zero =>
+      intro s hs
+      rcases eq_or_ne s 0 with rfl | hs0
+      · exact Subalgebra.zero_mem _
+      have h0 : poleOrd ι hgen (zeroPoint ab) s = 0 := by have := hnn s; omega
+      obtain ⟨c, hc⟩ := (nonneg_poleOrd_and_eq_zero_iff ab ι hstr hrange hgen s hs0).2.mp h0
+      exact hc ▸ Subalgebra.algebraMap_mem _ c
+    | succ n ih =>
+      intro s hs
+      rcases eq_or_ne s 0 with rfl | hs0
+      · exact Subalgebra.zero_mem _
+      by_cases hle : (poleOrd ι hgen (zeroPoint ab) s).toNat ≤ n
+      · exact ih s hle
+      have hval : poleOrd ι hgen (zeroPoint ab) s = (n : ℤ) + 1 := by
+        have := hnn s; omega
+      have hpow : poleOrd ι hgen (zeroPoint ab) (r ^ (n + 1)) = (n : ℤ) + 1 := by
+        rw [poleOrd_pow ι hgen hr0, hr1]; push_cast; ring
+      obtain ⟨c, hc⟩ := exists_sub_smul_poleOrd_lt ab ι hstr hrange hgen s (r ^ (n + 1))
+        hs0 (pow_ne_zero _ hr0) (by rw [hval, hpow]) (by omega)
+      have hmem : s - c • r ^ (n + 1) ∈ Algebra.adjoin K ({r} : Set R) := by
+        refine ih _ ?_
+        have := hnn (s - c • r ^ (n + 1))
+        omega
+      have hmem2 : c • r ^ (n + 1) ∈ Algebra.adjoin K ({r} : Set R) := by
+        rw [Algebra.smul_def]
+        exact Subalgebra.mul_mem _ (Subalgebra.algebraMap_mem _ c)
+          (Subalgebra.pow_mem _ (Algebra.self_mem_adjoin_singleton K r) (n + 1))
+      have hEq : s = (s - c • r ^ (n + 1)) + c • r ^ (n + 1) := by ring
+      rw [hEq]
+      exact Subalgebra.add_mem _ hmem hmem2
+  exact key _ s le_rfl
+
+include f hstr hrange in
+/-- **A function with a simple pole is transcendental over `K`** (PROVEN 2026-08-02).  An
+algebraic element of a domain over a field is a unit (`IsIntegral.isUnit`), and a unit has
+pole order zero (`poleOrd_eq_zero_of_isUnit`), not one. -/
+lemma transcendental_of_poleOrd_eq_one {r : R}
+    (hr1 : poleOrd ι hgen (zeroPoint ab) r = 1) : Transcendental K r := by
+  haveI := isDomain_chart ι hgen
+  intro halg
+  have hr0 : r ≠ 0 := by
+    rintro rfl
+    rw [poleOrd_zero] at hr1
+    exact one_ne_zero hr1.symm
+  have hu : IsUnit r := (IsAlgebraic.isIntegral halg).isUnit hr0
+  have h0 := poleOrd_eq_zero_of_isUnit ab ι hstr hrange hgen hu
+  omega
+
+include f hstr hrange in
+/-- **A SIMPLE POLE MAKES THE CHART A POLYNOMIAL RING** (PROVEN 2026-08-02) — the reduction
+that turns the `genus ≥ 1` half of leaf 3 into a statement with no pole order in it.
+
+`Polynomial.aeval r` is surjective by `mem_adjoin_of_poleOrd_eq_one` and injective by
+`transcendental_of_poleOrd_eq_one`, so it is an isomorphism of `K`-algebras.  Geometrically:
+a simple pole at `O` exhibits `Spec R = A ∖ {O}` as the affine line. -/
+lemma nonempty_algEquivPolynomial_of_poleOrd_eq_one {r : R}
+    (hr1 : poleOrd ι hgen (zeroPoint ab) r = 1) :
+    Nonempty (Polynomial K ≃ₐ[K] R) := by
+  have hinj : Function.Injective (Polynomial.aeval r : Polynomial K →ₐ[K] R) :=
+    transcendental_iff_injective.mp
+      (transcendental_of_poleOrd_eq_one ab ι hstr hrange hgen hr1)
+  have hsurj : Function.Surjective (Polynomial.aeval r : Polynomial K →ₐ[K] R) := by
+    intro s
+    have hm := mem_adjoin_of_poleOrd_eq_one ab ι hstr hrange hgen hr1 s
+    rwa [Algebra.adjoin_singleton_eq_range_aeval, AlgHom.mem_range] at hm
+  exact ⟨AlgEquiv.ofBijective _ ⟨hinj, hsurj⟩⟩
+
+include f hstr hrange in
+/-- **LEAF 3a — THE AFFINE COMPLEMENT OF THE ZERO SECTION IS NOT THE AFFINE LINE**, i.e.
+*an elliptic curve is not rational* (sorry leaf, cut 2026-08-02 out of
+`poleOrd_ne_one_and_exists_two_three`; this is the `genus ≥ 1` half).
+
+**THE MATHEMATICS OF THIS LEAF IS ALREADY PROVEN IN THIS TREE — DOWNSTREAM.**  It is
+`Fermat.exists_section_of_affineLine_toAbelianScheme` in `Fermat/FLT/ModularCurve/X0.lean`
+(PROVEN 2026-07-28, over `exists_smoothProperCompactification_affineLine`): *every morphism
+`𝔸(Unit; Spec K) ⟶ A` over `Spec K` into an abelian scheme factors through a section*, i.e.
+is constant.  `X0.lean` imports `EllipticScheme.lean`, which imports this module, so the name
+is not available here and this leaf is blocked by DECLARATION/IMPORT ORDER rather than by
+mathematics.  **A successor should not re-prove it and should not attack the geometry.**
+
+**THE ROUTE, in the order to take it.**
+
+1. *The hoist.*  Move `exists_section_of_affineLine_toAbelianScheme` (and, if its own cone
+   needs it, `exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion` and
+   `valuationRing_stalk_affineLine`) out of `X0.lean` into a module upstream of this one —
+   `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` already holds
+   `exists_smoothProperCompactification_affineLine`, which is that proof's own main input, so
+   that file (or a new sibling) is the natural destination.  `AbelianSchemeStruct` lives in
+   `Fermat/FLT/Modularity/AbelianScheme.lean`, which this module already imports, so the
+   statement is expressible there.  Measure the block with `flt-hoistcheck.py` first;
+   `X0.lean` is the most contended file in the repository and the move belongs in a commit of
+   its own.
+2. *The assembly, ~40 lines and needing no geometry.*  Given `e : Polynomial K ≃ₐ[K] R`:
+   compose `MvPolynomial.pUnitAlgEquiv K` with `e` to get `MvPolynomial Unit K ≃ₐ[K] R`,
+   apply `Spec` to obtain `𝔸(Unit; Spec K) ≅ Spec (CommRingCat.of R)`, and postcompose with
+   `ι` to get `Φ : 𝔸(Unit; Spec K) ⟶ A`.  `hstr` is exactly what makes `Φ` a morphism over
+   `Spec K`.  Rigidity then gives a section `s` with `Φ = (structure map) ≫ s`, so `Φ`'s image
+   is the single point `s(Spec K)` — while `Φ` is a composite of an isomorphism with an open
+   immersion, hence INJECTIVE on points, and `𝔸¹_K = Spec K[X]` has at least the two points
+   `(0)` and `(X)`.  Contradiction.
+
+**FAITHFULNESS.**  `hstr` is load-bearing: the conclusion is about `R` AS A `K`-ALGEBRA, and
+without `hstr` the `Algebra K R` instance need not be the geometric one (the parent's audit's
+`K = ℚ(t)`, `t ↦ t²` witness applies verbatim).  `hrange` is NOT needed for truth — the
+statement holds for the coordinate ring of ANY nonempty open affine of `A`, since the route
+above consumes only that `ι` is an open immersion over `Spec K` — and is retained because
+the call site holds it for free and it cannot make a true leaf false.  A prover who wants to
+drop it may.  `hgen` is deliberately absent: it is derivable from `hrange`
+(`genericPoint_mem_chart`) and nothing in the statement mentions the function field.
+
+**NOT VACUOUS**: at the Weierstrass chart of an elliptic curve, `R = K[x, y]/(y² + ⋯)` needs
+two generators as a `K`-algebra, so no such isomorphism exists — which is the statement, and
+it is exactly what `poleOrd (x^i y^j) = 2i + 3j` records: `1` is not a value, so no `r`
+generates. -/
+theorem isEmpty_algEquivPolynomial_chart : IsEmpty (Polynomial K ≃ₐ[K] R) :=
+  sorry
+
+include f hstr hrange in
+/-- **LEAF 3b — SOME FUNCTION HAS A DOUBLE POLE AND SOME A TRIPLE POLE** (sorry leaf, cut
+2026-08-02 out of `poleOrd_ne_one_and_exists_two_three`; this is the `genus ≤ 1` half, and
+it is Riemann's inequality).
+
+Unlike leaf 3a this is NOT reducible to anything already in the tree, and the two halves
+share no technique: 3a is rigidity, this is a dimension count.
+
+**THE ABSENCE CLAIM ON THE PARENT LEAF WAS STALE, AND THIS IS THE CORRECTION.**  That leaf
+said "there is no Riemann–Roch theorem, no genus and no theory of divisors/linear systems in
+`Fermat/`, in the mathlib pin or in `~/cs/FLT`; absent from all three as of 2026-07-31".
+Re-run 2026-08-02 the mathlib and `~/cs/FLT` halves still hold; the `Fermat/` half is FALSE.
+The tree carries
+
+* `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean` — `rrSet` (the Riemann–Roch space),
+  `ell` (`ℓ(D)`), `divisorDegree`, `IsDivisorOn`, `pointDivisor`, `IsCurveGenus strX g`
+  (Riemann's theorem `ℓ(D) = deg D + 1 − g` for `deg D ≥ B`), `IsCurveGenus.unique` (PROVEN)
+  and `exists_isCurveGenus` (Riemann's theorem itself, a leaf);
+* `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveDivisorDegree.lean` — `divDegree`,
+  `divDegree_eq_zero_curve` (`deg div f = 0`, a leaf) and the degree-one machinery;
+* `Fermat/FLT/Mathlib/AlgebraicGeometry/PrincipalDivisorDegree.lean` — the zero/pole
+  decomposition of a principal divisor.
+
+None of those is imported here, and none of them is upstream of this module by accident:
+`CurveGenus.lean` imports only mathlib, so importing it is available at no cost.
+
+**THE ROUTE, AND THE TRAP IN IT.**  Two things are needed and only the second is hard:
+
+1. *`ℓ(n · [O])` counts pole orders*: `ell strX (pointDivisor (zeroPoint ab) n)` equals the
+   number of values of `poleOrd` in `[0, n]`.  This is the identification of `rrSet` with
+   `{r ∈ R | poleOrd r ≤ n}` — the functions regular away from `O` are exactly the elements
+   of `R`, which is `hrange` — together with `Submodule.span = rrSet`, which `CurveGenus.lean`
+   flags in `ell`'s own docstring as the expensive step (it needs `algebraMap k K(X)`
+   identified with the germ of the structure map at `⊤`).
+2. *The genus of an abelian scheme of relative dimension one is `1`.*
+
+**THE TRAP: `IsCurveGenus` GIVES NO BOUND ON `B`, so it cannot be applied at `n = 2, 3`.**
+Its own docstring says so ("It gives no bound on `B`, and in particular does not assert
+`ℓ(D) = deg D + 1 − g` for `deg D ≥ 2g − 1`").  The argument must therefore go through LARGE
+`n`: with `g = 1`, `ℓ(n[O]) = n` for all `n ≥ B`, and `ℓ(n[O])` is the number of values of
+`poleOrd` in `[0, n]`, so the value semigroup has exactly ONE gap; leaf 3a says `1` is a gap;
+hence the value semigroup is `ℕ ∖ {1}` and `2` and `3` are values.  A prover who tries to
+read `ℓ(2[O]) = 2` off `IsCurveGenus` directly will find the hypothesis `B ≤ deg D`
+undischargeable.
+
+**FAITHFULNESS.**  `hrange` is load-bearing: it is what makes the elements of `R` the
+functions with poles only at `O`, and hence what ties `ℓ(n[O])` to `poleOrd`.  `hstr` is
+load-bearing for the same reason it is on leaf 2 — the graded pieces are one-dimensional over
+`K` only if the residue field at `O` is `K`.  Note this leaf does NOT need leaf 3a for its
+truth; the two are independent, and the gap-counting argument above uses 3a only to identify
+WHICH integer the single gap is.
+
+**NOT VACUOUS**: at the Weierstrass chart, `x` and `y` witness the two existentials. -/
+theorem exists_poleOrd_eq_two_and_three :
+    (∃ x : R, poleOrd ι hgen (zeroPoint ab) x = 2) ∧
+      (∃ y : R, poleOrd ι hgen (zeroPoint ab) y = 3) :=
+  sorry
+
+include f hstr hrange in
+/-- **LEAF 3 — the genus is one** — PROVEN 2026-08-02 over `isEmpty_algEquivPolynomial_chart`
+(the `genus ≥ 1` half) and `exists_poleOrd_eq_two_and_three` (the `genus ≤ 1` half).
+
+The statement and the name are unchanged, so
+`exists_poleOrderValuation_of_affineComplement'` and everything below it are untouched.
+What changed is that the `hone` clause no longer mentions the genus at all: a simple pole
+would make `Spec R` the affine line (`nonempty_algEquivPolynomial_of_poleOrd_eq_one`, PROVEN
+above), and 3a says it is not.
+
+**ACCOUNTING: the direct-sorry count of this module goes `3 → 4`, and that is the honest
+figure.**  One leaf became two, and what was bought is that the two halves are now separately
+dispatchable at people who share no technique — 3a is rigidity and its mathematics is
+already proven downstream (so it is a HOIST, not a proof), 3b is Riemann's inequality and now
+names the file that carries the genus.  Between them sits ~90 lines of proven reduction that
+nobody has to write again.  Judged by CLAUDE.md's tie-breaker — what is LEFT in the leaf,
+not how many leaves — 3a mentions no pole order, no `Scheme.ord`, no chart embedding and no
+`hgen`, and 3b is a citation with a named route. -/
+theorem poleOrd_ne_one_and_exists_two_three :
+    (∀ r : R, r ≠ 0 → poleOrd ι hgen (zeroPoint ab) r ≠ 1) ∧
+      (∃ x : R, poleOrd ι hgen (zeroPoint ab) x = 2) ∧
+      (∃ y : R, poleOrd ι hgen (zeroPoint ab) y = 3) := by
+  refine ⟨fun r _ hr1 => ?_, (exists_poleOrd_eq_two_and_three ab ι hstr hrange hgen).1,
+    (exists_poleOrd_eq_two_and_three ab ι hstr hrange hgen).2⟩
+  exact (isEmpty_algEquivPolynomial_chart ab ι hstr hrange).elim
+    (nonempty_algEquivPolynomial_of_poleOrd_eq_one ab ι hstr hrange hgen hr1).some
+
 
 end Leaves
 
