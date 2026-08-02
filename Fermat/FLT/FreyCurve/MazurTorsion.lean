@@ -18838,29 +18838,57 @@ theorem exists_weierstrassPointEquiv_of_abelianSchemeStruct {X : Scheme.{0}}
       (W' := E.toAffine) (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))
     rw [hg P, hP, e.symm_apply_apply]
 
-/-- **WHICH ELLIPTIC CURVE `X_0(N)` IS, AT THE FOUR GENUS-ONE LEVELS** (sorry
-leaf, cut 2026-07-31 (flt-lean-49) out of
-`exists_relPoint_inj_x0Model_of_abelianSchemeStruct` below, which is now an
-assembly).  **This is the whole modular content and nothing else** — no
-Riemann–Roch, no Galois descent, no scheme in the conclusion.
+/-- **WHICH ELLIPTIC CURVE `X_0(N)` IS, AT THE FOUR GENUS-ONE LEVELS**
+(**PROVEN 2026-08-02 (flt-lean-77) in three lines from the UPSTREAM
+`Fermat.X0GenusOne.exists_x0Model`**; was a sorry leaf from 2026-07-31
+(flt-lean-49), cut out of `exists_relPoint_inj_x0Model_of_abelianSchemeStruct`
+below).
 
-TRUE.  `t` says `#E(ℚ) = #X_0(N)(ℚ)`, and at `N ∈ {11, 17, 19, 32}` the modular
-curve `X_0(N)` has genus `1` (`x0Genus_eq_one`, `decide`) and a rational cusp,
-hence IS the elliptic curve `N a 1` of conductor `N`; the tables give
-`#X_0(N)(ℚ) = 5, 4, 3, 4`, which is exactly `#(x0Model N)(ℚ)` — see the section
-note above `levels` for the PARI/GP certificate, and `countTable`, whose third
-column is that same count.  So both sides have the same finite cardinality and
-an injection exists.
+**THE CLOSURE IS A DELEGATION, NOT A PROOF, AND THE ACCOUNTING MUST SAY SO.**
+No mathematics was done here.  `exists_x0Model` (`ModularCurve/X0.lean:113474`)
+has the SAME conclusion under STRICTLY FEWER hypotheses — it wants `hN` and `h`
+and not `E`, `hE`, `t` — and is PROVEN there, over `X0.lean`'s own leaf
+`exists_x0Compactification_relPoint_inj_x0Model`.  `MazurTorsion.lean`
+`public import`s `X0.lean` (line 326), so that theorem is simply in scope, and
+the whole proof is `g ∘ t.symm`.  The modular identification is therefore still
+owed — ONCE, upstream, where it always was; what this closure removes is a
+SECOND, DOWNSTREAM copy of it that was being counted as an independent leaf.
+Direct-sorry frontier `−1`; transitive cone unchanged, since the upstream leaf
+it now routes through was already in the tree's live chain (used at
+`X0.lean:115256`).
 
-**WHAT A SUCCESSOR MUST PROVE, and the list is now ONE item.**  The previous
-version of this seam owed three (a Weierstrass model of the abstract curve as a
-scheme; the `ℚ`-points dictionary; the identification with `N a 1`).  The first
-two are discharged in `exists_weierstrassPointEquiv_of_abelianSchemeStruct`
-above — see its docstring, and the correction there to bullet 4 of the
-verification pass below, which had priced the dictionary as absent when
-`X0.lean` proves it.  What is left is the classical fact that `X_0(N)` at these
-four levels has at most `5, 4, 3, 4` rational points.  Two routes, and both are
-real work at this pin:
+**THE CIRCULARITY WARNING THIS DOCSTRING USED TO CARRY WAS STALE, AND IT IS THE
+REASON THE LEAF SURVIVED.**  It said, of the count-directly route, that
+`… → finite_relPoint_x0 → exists_x0Model → THIS leaf`, "traced 2026-07-31
+against the tree" — i.e. it asserted that `exists_x0Model` depends on this
+declaration.  That was true when `exists_x0Model` lived BELOW this leaf in this
+file (the paragraph on `ab` below still says "`exists_x0Model` (below,
+PROVEN …)", which is now false: it is upstream, in `X0.lean`).  Since the hoist
+it is false in the strongest possible way — `X0.lean` is an IMPORT of this
+module, so Lean forbids the dependency outright, and `exists_x0Model`'s body
+names only `exists_x0Compactification_relPoint_inj_x0Model` and
+`nonempty_relPointEquiv_of_isX0Compactification_rat`.  **A cycle verdict is a
+claim about the arrangement of the tree on the day it was written; re-read the
+cited proof body before inheriting one.**
+
+**THIS DECLARATION AND ITS CONSUMER ARE DEAD CODE, AND THAT IS THE FINDING
+WORTH ACTING ON.**  Comment-stripped, tree-wide, on 2026-08-02:
+`exists_relPoint_inj_x0Model_of_abelianSchemeStruct` — the ONLY consumer of this
+theorem — has exactly ONE code occurrence, its own declaration.  Nothing in the
+project reaches it.  So the pair is a DOWNSTREAM RIVAL CUT of the upstream
+`exists_x0Compactification_relPoint_inj_x0Model` → `exists_x0Model` chain, which
+is the one everything actually uses; and a downstream rival of an upstream
+theorem is consumerless by construction.  Closing this leaf by delegation was
+chosen over deleting the pair because deletion also strands the PROVEN ~130-line
+`exists_weierstrassPointEquiv_of_abelianSchemeStruct` above (its only consumer is
+the consumer of this theorem), and choosing what happens to another agent's
+proven work is an author's call, not a passer-by's.  The deletion is queued.
+
+**WHAT REMAINS OPEN, unchanged in substance:** the classical fact that `X_0(N)`
+at `N ∈ {11, 17, 19, 32}` has at most `5, 4, 3, 4` rational points — now owed
+only at `exists_x0Compactification_relPoint_inj_x0Model` in `X0.lean`.  Two
+routes, both real work at this pin, and they are recorded there rather than
+here:
 
 * *Identify the curve.*  Show `E ≅ x0Model N` over `ℚ` — e.g. by computing the
   conductor of `E` and invoking the (unwritten) classification of curves of
@@ -18868,63 +18896,55 @@ real work at this pin:
   nor that classification exists in the pin, so this route needs new theory.
 * *Count directly.*  Bound `#X_0(N)(ℚ)` by reduction modulo the good prime `ℓ`
   of `countTable` — `(N, ℓ, m) = (11,3,5), (17,3,4), (19,5,3), (32,3,4)`, and
-  `Fermat.card_le_of_rankZeroJacobian` is the theorem that does it.  **This
-  route is CIRCULAR as the file stands and a successor must not take it
-  blind**: `card_le_of_rankZeroJacobian` wants `HasRankZeroJacobian`, and at
-  these levels the only producer of that is `hasRankZeroJacobian` →
-  `finite_jacobian` → `isTorsion_jacobian` → `finite_relPoint_x0` →
-  `exists_x0Model` → THIS leaf.  (Traced 2026-07-31 against the tree, at
-  `MazurTorsion.lean:33693, 33771, 33825`.)  Making it non-circular means
-  producing rank `0` at these four levels independently of the modular
-  identification, which is the same work as the first route in a different
-  suit.
+  `Fermat.card_le_of_rankZeroJacobian` is the theorem that does it.  It wants
+  `HasRankZeroJacobian`, whose only in-section producer runs back through
+  `finite_relPoint_x0`, so a successor still needs rank `0` at these four levels
+  from a source OUTSIDE that chain.  (The old text called this "circular as the
+  file stands"; against the CURRENT arrangement the cycle claim needs re-tracing
+  from `X0.lean`, not from here.)
 
-**`t` IS THE PIN ON `E`, AND WEAKENING IT TO AN INJECTION MAKES THIS LEAF
+TRUE, and the reason is unchanged.  `t` says `#E(ℚ) = #X_0(N)(ℚ)`, and at
+`N ∈ {11, 17, 19, 32}` the modular curve `X_0(N)` has genus `1`
+(`x0Genus_eq_one`, `decide`) and a rational cusp, hence IS the elliptic curve
+`N a 1` of conductor `N`; the tables give `#X_0(N)(ℚ) = 5, 4, 3, 4`, which is
+exactly `#(x0Model N)(ℚ)` — see the section note above `levels` for the PARI/GP
+certificate, and `countTable`, whose third column is that same count.
+
+**`t` IS THE PIN ON `E`, AND WEAKENING IT TO AN INJECTION MAKES THIS STATEMENT
 FALSE.**  With only `X_0(N)(ℚ) ↪ E(ℚ)` the hypothesis constrains `E` not at
 all — take `E = 37a1`, of rank `1`, which receives any finite set — and the
 conclusion `E(ℚ) ↪ x0Model N(ℚ)` fails outright for it.  This is recorded
 because the injection is the shape the consumer below wants, so the weakening
-looks free and is not.
+looks free and is not.  (The proof below uses `t` only through `t.symm`, i.e.
+only in the direction `E(ℚ) → X_0(N)(ℚ)`; that is the direction the audit says
+is load-bearing, so the audit is not weakened by the delegation.)
 
-**`hE` IS NOT NEEDED FOR TRUTH** and is supplied for the same reason `ab` was
-supplied to the leaf it replaces: a prover who has to identify `E` with a
-tabulated curve wants to know it is elliptic before anything else, and the
-assembly has it for free.  A proof that does not use it is strictly stronger
-and should say so.
+**`hE` IS NOT NEEDED FOR TRUTH**, and the proof below does not use it — which
+the audit already predicted ("a proof that does not use it is strictly stronger
+and should say so").  It is kept in the signature because the sole call site
+supplies it for free and dropping it is a signature change with no gain.
 
-**`hN` IS LOAD-BEARING FOR THE INTENDED CONTENT** — off the four tabulated
-levels `x0Model N` is the junk cubic `⟨0,0,0,0,0⟩` and has nothing to do with
-`X_0(N)` — **but the counterexample usually quoted for dropping it does not
-work**, and that correction (from the leaf below, kept here because this is now
-where `hN` is consumed) is worth carrying: the conclusion asks only for an
-injection of BARE SETS, and `y² = x³` has infinitely many nonsingular
-`ℚ`-points `(t², t³)`, `t ∈ ℚˣ` — pairwise distinct since `t ↦ t³` is injective,
-and nonsingular because `polynomialX.evalEval x y = −3t⁴ ≠ 0`.  So off the four
-levels the honest status is *the counterexample is void*, NOT *the leaf is
-false*; a refutation would have to attack the countability of
-`RelPoint strX (𝟙 SpecQ)`, and nobody has written that.
+**`hN` IS LOAD-BEARING** — off the four tabulated levels `x0Model N` is the junk
+cubic `⟨0,0,0,0,0⟩` — **but the counterexample usually quoted for dropping it
+does not work**: the conclusion asks only for an injection of BARE SETS, and
+`y² = x³` has infinitely many nonsingular `ℚ`-points `(t², t³)`, `t ∈ ℚˣ` —
+pairwise distinct since `t ↦ t³` is injective, and nonsingular because
+`polynomialX.evalEval x y = −3t⁴ ≠ 0`.  So off the four levels the honest status
+is *the counterexample is void*, NOT *the statement is false*.  It is consumed
+here by `exists_x0Model`, which needs it for the same reason.
 
 **`h` IS genuinely load-bearing**, and here the usual argument does work:
 without it `strX` is an arbitrary `ℚ`-scheme, `X = 𝔸¹_ℚ` gives `t` a source
 with `ℚ` as its point set, and no injection into the five-element set
-`curve11a1(ℚ)` exists.
-
-**NOT VACUOUS in either direction.**  `Fermat.exists_x0Compactification N`
-supplies `h` at each of the four levels (needing only `0 < N`);
-`exists_abelianSchemeStruct_of_x0Genus_eq_one` followed by
-`exists_weierstrassPointEquiv_of_abelianSchemeStruct` supplies `E`, `hE` and
-`t` whenever `RelPoint strX (𝟙 SpecQ)` is nonempty — which is exactly how the
-assembly below calls this leaf — so the hypotheses are jointly satisfiable; and
-the CONCLUSION is not satisfiable by a junk map, because
-`(x0Model N).toAffine.Point` is a genuine finite nonempty set at these levels
-and injectivity into it is exactly the finiteness the consumer wants. -/
-theorem exists_inj_point_x0Model_of_relPointEquiv (N : ℕ) (_hN : N ∈ levels)
+`curve11a1(ℚ)` exists. -/
+theorem exists_inj_point_x0Model_of_relPointEquiv (N : ℕ) (hN : N ∈ levels)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_h : IsX0Compactification N strX strY jY)
+    (h : IsX0Compactification N strX strY jY)
     (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic)
-    (_t : RelPoint strX (𝟙 SpecQ) ≃ E.toAffine.Point) :
-    ∃ f : E.toAffine.Point → (x0Model N).toAffine.Point, Function.Injective f :=
-  sorry
+    (t : RelPoint strX (𝟙 SpecQ) ≃ E.toAffine.Point) :
+    ∃ f : E.toAffine.Point → (x0Model N).toAffine.Point, Function.Injective f := by
+  obtain ⟨g, hg⟩ := exists_x0Model N hN h
+  exact ⟨g ∘ t.symm, hg.comp t.symm.injective⟩
 
 /-- **WHICH elliptic curve `X_0(N)` is, at the four genus-one levels** (sorry
 leaf, cut 2026-07-30 (flt-lean-170) out of
@@ -18946,9 +18966,26 @@ of compactification, the empty-points branch, and the construction of `ab` from
 a rational point through the Jacobian/Albanese chain.
 
 **`ab` IS NOT NEEDED FOR TRUTH, and saying so is the honest description of this
-cut.**  The same statement without `ab` is `exists_x0Model` (below, PROVEN — but
-proven FROM the assembly that consumes this leaf, so the two are not
-interchangeable and quoting it here would be circular).  `ab` is supplied
+cut.**  The same statement without `ab` is `exists_x0Model`.
+
+> **CORRECTION, 2026-08-02 (flt-lean-77).**  This paragraph used to continue
+> "(below, PROVEN — but proven FROM the assembly that consumes this leaf, so the
+> two are not interchangeable and quoting it here would be circular)", and every
+> clause of that is now FALSE.  `exists_x0Model` is not *below*: it is UPSTREAM,
+> at `ModularCurve/X0.lean:113474`, which this module `public import`s (line
+> 326).  It is not proven from anything here — its body names only
+> `exists_x0Compactification_relPoint_inj_x0Model` and
+> `nonempty_relPointEquiv_of_isX0Compactification_rat`, both in `X0.lean` — so
+> quoting it is not circular, and Lean would forbid the cycle regardless.  It
+> WAS accurate before the hoist that moved `exists_x0Model` out of this file.
+> Acting on the correction closed `exists_inj_point_x0Model_of_relPointEquiv`
+> above in three lines; see its docstring for the accounting, which is `−1` on
+> the direct-sorry count and `0` on the mathematics.  **A "quoting it would be
+> circular" note is a claim about where two declarations sat on the day it was
+> written — re-read the cited proof body and the import direction before
+> inheriting one.**
+
+`ab` is supplied
 because the assembly can produce it for FREE in the only branch where it is
 wanted, and because a prover who has to exhibit a Weierstrass model needs a
 group law with a chosen origin before anything else: it converts "find an
