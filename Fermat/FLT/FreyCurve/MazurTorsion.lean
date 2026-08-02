@@ -209,6 +209,10 @@ public import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Card
 -- ADDED 2026-07-31: the dimension formula for a smooth curve over a field, which
 -- closes `X0GenusOne.ringKrullDim_stalk_eq_zero_of_mono_of_curve_over_field` below.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveDimension
+-- ADDED 2026-08-02 (flt-lean-47): the Jacobian criterion for a HYPERSURFACE, which
+-- closes `smoothOfRelativeDimension_sexticThirtySeven` below.  That module imports
+-- MATHLIB ONLY, so it cannot create an import cycle.
+public import Fermat.FLT.Mathlib.RingTheory.Smooth.Hypersurface
 -- NOTE (2026-07-30): `Fermat.locallyOfFinitePresentation_of_comp` (Stacks 02FV)
 -- and `Fermat.flat_of_flat_fiberMap` (the fibrewise criterion of flatness), both
 -- consumed by `X0GenusOne.etale_of_mono_of_relCurve` / `flat_of_mono_of_relCurve`
@@ -37123,34 +37127,168 @@ theorem isIntegral_planeCurveSchemeQ_sexticThirtySeven :
   haveI := isDomain_quotient_sexticThirtySevenPoly
   infer_instance
 
-/-- **The affine sextic is a SMOOTH curve over `ℚ`** (SORRY LEAF, cut 2026-07-31
-by flt-lean-273 out of `exists_affinePlaneOpen_x0ThirtySeven`).
+/-- **`sexticThirtySevenPoly` with every numeral in `MvPolynomial.C`-form** — and this
+is `rfl`.
 
-`Spec (ℚ[x, y]/(y² − f)) ⟶ Spec ℚ` is smooth of relative dimension `1`.
+A numeral of `MvPolynomial (Fin 2) ℚ` *is* `C` of the corresponding rational, on the
+nose.  That one-line observation is what makes the two partial derivatives below
+computable at all: `simp` cannot fire `MvPolynomial.pderiv_C` against a bare numeral
+(the numeral's `OfNat` instance path is not the one a `C`-shaped lemma matches), and
+it will not rewrite `4` into `C 4` by itself.  Stating the `C`-form once, by `rfl`,
+puts every coefficient into a shape `pderiv_C` does match. -/
+theorem sextic_C_form : sexticThirtySevenPoly =
+    MvPolynomial.X 1 ^ 2 - (MvPolynomial.X 0 ^ 6
+      + MvPolynomial.C 8 * MvPolynomial.X 0 ^ 5 - MvPolynomial.C 20 * MvPolynomial.X 0 ^ 4
+      + MvPolynomial.C 28 * MvPolynomial.X 0 ^ 3 - MvPolynomial.C 24 * MvPolynomial.X 0 ^ 2
+      + MvPolynomial.C 12 * MvPolynomial.X 0 - MvPolynomial.C 4) := rfl
 
-TRUE, by the Jacobian criterion, and this is where squarefreeness of `f` enters:
-a singular point of `V(F)`, `F = y² − f(x)`, needs `∂F/∂y = 2y = 0` and
-`∂F/∂x = −f'(x) = 0` and `F = 0`, i.e. a repeated root of `f`.  `Disc f = 2¹² · 37³
-≠ 0` (reconnaissance above), so there is none, over `ℚ̄` as well as over `ℚ`.
+/-- **`∂F/∂x = −f′(x)`** (PROVEN). -/
+theorem pderiv0_sexticThirtySeven :
+    MvPolynomial.pderiv (0 : Fin 2) sexticThirtySevenPoly
+      = -(6 * MvPolynomial.X 0 ^ 5 + 40 * MvPolynomial.X 0 ^ 4 - 80 * MvPolynomial.X 0 ^ 3
+          + 84 * MvPolynomial.X 0 ^ 2 - 48 * MvPolynomial.X 0 + 12) := by
+  rw [sextic_C_form]
+  simp [MvPolynomial.pderiv_X]
+  try simp only [map_ofNat]
+  try ring
 
-The work is not the mathematics but the presentation: `SmoothOfRelativeDimension 1`
-wants a standard-smooth presentation locally, and the Jacobian `(2y, −f'(x))` is a
-UNIT only after inverting one of its two entries, so the honest route is the two
-basic opens `D(y)` and `D(f'(x))` — which cover `V(F)` precisely because
-`(F, 2y, f'(x)) = (1)`, a Bézout identity with EXPLICIT cofactors that `ring` can
-check once someone computes them (over `ℚ[x]`, `gcd(f, f') = 1` gives
-`a·f + b·f' = 1` with `a, b` of degrees `4` and `5`; `decide`/`norm_num` on the
-rational coefficients).  Smoothness of a basic open of a smooth scheme is
+/-- **`∂F/∂y = 2y`** (PROVEN). -/
+theorem pderiv1_sexticThirtySeven :
+    MvPolynomial.pderiv (1 : Fin 2) sexticThirtySevenPoly = 2 * MvPolynomial.X 1 := by
+  rw [sextic_C_form]
+  simp [MvPolynomial.pderiv_X]
+  try simp only [map_ofNat]
+  try ring
+
+/-- **THE BÉZOUT IDENTITY FOR THE SEXTIC, CLEARED OF DENOMINATORS** (PROVEN).
+
+`f` is squarefree (`Disc f = 2¹² · 37³ ≠ 0`), so `gcd(f, f') = 1` in `ℚ[x]`, and
+PARI/GP's `gcdext` returns
+
+    296 = A·f + B·f',
+    A = −546x⁴ − 3760x³ + 6744x² − 4056x + 640,
+    B =   91x⁵ +  748x⁴ − 1704x³ + 1758x² − 1040x + 238.
+
+(An untrusted searcher: that identity was re-verified independently in exact integer
+arithmetic before a line of Lean was written, and `ring` re-checks it here.)
+
+**Why the identity below is stated with `592` and not `1`, and with no fractions.**
+`MvPolynomial (Fin 2) ℚ` has no `Inv`, so `A/296` is not writable in it and `ring`
+cannot see `C (1/296)` as a numeral.  Substituting `f = y² − F`, `f' = −∂F/∂x` and
+`y² = y · (∂F/∂y) / 2` and then clearing the `2` gives an identity with ALL-INTEGER
+cofactors, which `ring` checks directly:
+
+    592 = (−2B)·(∂F/∂x) + (A·y)·(∂F/∂y) + (−2A)·F.
+
+`592` is a unit of any `ℚ`-algebra, so this is exactly as good as `1` for the
+covering statement below. -/
+theorem bezout_sexticThirtySeven :
+    (592 : MvPolynomial (Fin 2) ℚ)
+      = (-182 * MvPolynomial.X 0 ^ 5 - 1496 * MvPolynomial.X 0 ^ 4
+            + 3408 * MvPolynomial.X 0 ^ 3 - 3516 * MvPolynomial.X 0 ^ 2
+            + 2080 * MvPolynomial.X 0 - 476)
+          * MvPolynomial.pderiv (0 : Fin 2) sexticThirtySevenPoly
+        + ((-546 * MvPolynomial.X 0 ^ 4 - 3760 * MvPolynomial.X 0 ^ 3
+              + 6744 * MvPolynomial.X 0 ^ 2 - 4056 * MvPolynomial.X 0 + 640)
+            * MvPolynomial.X 1)
+          * MvPolynomial.pderiv (1 : Fin 2) sexticThirtySevenPoly
+        + (1092 * MvPolynomial.X 0 ^ 4 + 7520 * MvPolynomial.X 0 ^ 3
+            - 13488 * MvPolynomial.X 0 ^ 2 + 8112 * MvPolynomial.X 0 - 1280)
+          * sexticThirtySevenPoly := by
+  rw [pderiv0_sexticThirtySeven, pderiv1_sexticThirtySeven, sextic_C_form]
+  simp only [map_ofNat]
+  ring
+
+/-- **THE TWO JACOBIAN CHARTS COVER `V(F)`** (PROVEN): the images of `∂F/∂x` and
+`∂F/∂y` generate the unit ideal of `ℚ[x, y]/(F)`.
+
+This is the Bézout identity above pushed through `Ideal.Quotient.mk`, where the `F`
+term dies; what is left exhibits `592` — a unit, since `ℚ[x,y]/(F)` is a `ℚ`-algebra —
+inside the ideal generated by the two partial derivatives. -/
+theorem span_pderiv_sexticThirtySeven_eq_top :
+    Ideal.span (Set.range (fun k : Fin 2 =>
+      Ideal.Quotient.mk (Ideal.span {sexticThirtySevenPoly})
+        (MvPolynomial.pderiv k sexticThirtySevenPoly))) = ⊤ := by
+  set I : Ideal (MvPolynomial (Fin 2) ℚ) := Ideal.span {sexticThirtySevenPoly} with hI
+  have hF : Ideal.Quotient.mk I sexticThirtySevenPoly = 0 :=
+    Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton_self _)
+  have h592 : (592 : MvPolynomial (Fin 2) ℚ ⧸ I) * algebraMap ℚ _ (1/592 : ℚ) = 1 := by
+    rw [show (592 : MvPolynomial (Fin 2) ℚ ⧸ I) = algebraMap ℚ _ (592:ℚ) from
+      (map_ofNat _ _).symm, ← map_mul]
+    norm_num
+  have hunit : IsUnit (592 : MvPolynomial (Fin 2) ℚ ⧸ I) :=
+    ⟨⟨_, _, h592, by rw [mul_comm]; exact h592⟩, rfl⟩
+  refine Ideal.eq_top_of_isUnit_mem _ ?_ hunit
+  have key := congrArg (Ideal.Quotient.mk I) bezout_sexticThirtySeven
+  simp only [map_add, map_mul, map_ofNat, hF, mul_zero, add_zero] at key
+  rw [key]
+  exact Ideal.add_mem _
+    (Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨0, rfl⟩))
+    (Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨1, rfl⟩))
+
+/-- **The affine sextic is a SMOOTH curve over `ℚ`** (**PROVEN 2026-08-02** by
+flt-lean-47; was a sorry leaf, cut 2026-07-31 by flt-lean-273 out of
+`exists_affinePlaneOpen_x0ThirtySeven`).
+
+`Spec (ℚ[x, y]/(y² − f)) ⟶ Spec ℚ` is smooth of relative dimension `1`, by the
+Jacobian criterion; this is where squarefreeness of `f` enters, since a singular
+point of `V(F)`, `F = y² − f(x)`, needs `∂F/∂y = 2y = 0` and `∂F/∂x = −f'(x) = 0`
+and `F = 0`, i.e. a repeated root of `f`, and `Disc f = 2¹² · 37³ ≠ 0`.
+
+## The proof, and the one thing the old route note got wrong
+
+The old note prescribed
 `AlgebraicGeometry.isStandardSmoothOfRelativeDimension_of_isLocalizationAway`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`), and locality of
-`SmoothOfRelativeDimension` on the source does the gluing.
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`).  **That lemma runs the
+wrong way**: it takes `Algebra.IsStandardSmooth K A` as a HYPOTHESIS and transports
+the relative DIMENSION from a localization back to `A`.  It cannot establish
+smoothness of `A` in the first place, which is the whole of what was open here.
 
-CAS note: `gp`'s `polresultant(f, f')` and `Singular`'s `groebner` both produce the
-Bézout cofactors directly; they are an untrusted searcher for the coefficients, and
-the identity is then a one-line `linear_combination` in Lean. -/
+What the statement actually unfolds to is much more direct.
+`SmoothOfRelativeDimension n` is a `HasRingHomProperty` for
+`RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension n)`, so
+`HasRingHomProperty.Spec_iff` turns the scheme statement into precisely "there is a
+family of elements generating the unit ideal on whose localizations the composite is
+standard smooth of relative dimension `1`" — i.e. the two-chart cover, with no
+gluing to do by hand and no Krull dimension anywhere.  `RingHom.locally_of_exists`
+consumes it.  The two inputs are then
+
+* `span_pderiv_sexticThirtySeven_eq_top` above (the cover), and
+* `Fermat.isStandardSmoothOfRelativeDimension_hypersurface_away`
+  (`Fermat/FLT/Mathlib/RingTheory/Smooth/Hypersurface.lean`) at each of `k = 0, 1`.
+
+**That second input was the missing piece, and it did not exist in a usable form.**
+This development already had the hypersurface Jacobian criterion TWICE — as
+`Fermat.isStandardSmoothOfRelativeDimension_projChartAway` in
+`Fermat/FLT/ModularCurve/EllipticScheme.lean` and again in
+`Fermat/FLT/Modularity/MoretBailly.lean` — but both are stated about
+`projChartPolynomial E i` and `ProjChartVar i`, so neither is applicable to an
+arbitrary plane curve, and the `EllipticScheme` copy is additionally unreachable
+from here (`X0.lean` imports that module NON-publicly, on purpose).  Neither proof
+uses anything about a Weierstrass equation, so the new module is that proof with the
+elliptic-curve vocabulary deleted; it imports mathlib only.
+
+Axiom audit: `[propext, Classical.choice, Quot.sound]`. -/
 theorem smoothOfRelativeDimension_sexticThirtySeven :
-    SmoothOfRelativeDimension 1 (planeCurveStrQ sexticThirtySevenPoly) :=
-  sorry
+    SmoothOfRelativeDimension 1 (planeCurveStrQ sexticThirtySevenPoly) := by
+  show SmoothOfRelativeDimension 1 (Spec.map (CommRingCat.ofHom
+    (algebraMap ℚ (MvPolynomial (Fin 2) ℚ ⧸ Ideal.span {sexticThirtySevenPoly}))))
+  rw [HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension 1)]
+  refine RingHom.locally_of_exists
+    (RingHom.isStandardSmoothOfRelativeDimension_respectsIso (n := 1))
+    (algebraMap ℚ (MvPolynomial (Fin 2) ℚ ⧸ Ideal.span {sexticThirtySevenPoly}))
+    (fun k : Fin 2 => Ideal.Quotient.mk (Ideal.span {sexticThirtySevenPoly})
+      (MvPolynomial.pderiv k sexticThirtySevenPoly))
+    span_pderiv_sexticThirtySeven_eq_top
+    (fun k : Fin 2 => Localization.Away (Ideal.Quotient.mk
+      (Ideal.span {sexticThirtySevenPoly}) (MvPolynomial.pderiv k sexticThirtySevenPoly)))
+    ?_
+  intro k
+  have h := Fermat.isStandardSmoothOfRelativeDimension_hypersurface_away
+    sexticThirtySevenPoly k
+    (Localization.Away (Ideal.Quotient.mk (Ideal.span {sexticThirtySevenPoly})
+      (MvPolynomial.pderiv k sexticThirtySevenPoly)))
+  simpa using h
 
 /-! #### Rational points inject into the topological space
 
