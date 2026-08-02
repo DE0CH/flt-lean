@@ -28668,3 +28668,77 @@ name, so it is not a cross-file collision, and one is proven while the other is 
 scan scoped to sorried declarations sees only one of them.  **A duplicate whose two copies are
 one PROVEN and one `sorry`, in ONE file, is invisible to every instrument in this repository
 except the scope balance.**
+
+### THE TOOL IS `tools/merge/scopepair.py`, AND IT HAS NOW BEEN VALIDATED AGAINST THE COMPILER
+(Same release, second pass.)  The paragraphs above cite `/tmp/r34/bal.py`, which is a temp
+path and will not exist for the next reader — this file's own standing rule is that a check
+worth running every release should be **a script with a name, not a paragraph**.  It is
+`tools/merge/scopepair.py`, it prints the open/close PAIRING (so a wrongly-paired `end` is
+visible even when the totals balance), `--quiet` makes it exit non-zero on any report, and it
+is calibrated to **0 reports on all 409 `Fermat/**.lean` of green main `280981f1`**.
+**It is not merely suggestive: it PREDICTED a fault before the build could report it.**  It
+flagged `WeightTwoEigenform.lean` as having an unclosed `section ShimuraAlgebraicity`; the
+build then produced, independently,
+`Invalid name after 'end': Expected 'ShimuraAlgebraicity', but found 'Fermat'`.  A scan that
+agrees with the compiler on a file the compiler has not yet reached is worth running before
+every release build, because it is seconds against forty minutes.
+### THE WOUNDS ARRIVE IN LAYERS, FOR THE SAME REASON COMMENT WOUNDS DO
+Release 34 repaired four scope wounds, built, and found SIX MORE — in modules that had been
+red the whole time and had therefore never been compiled.  `lake build` stops at the first red
+module in a cone, so every module downstream of a wound is UNSEEN, and its own wounds surface
+only after the upstream one is fixed.  **So budget the scope repair as several rounds, exactly
+as the release build itself is budgeted**, and do not read "four wounds found and fixed" as a
+count of what is wrong with the tree.
+The corollary is the useful half: **run the scope scan TREE-WIDE, not on the red files.**  It
+needs no build and no oleans, so it sees behind every red upstream at once — which is the one
+thing the compiler cannot do.  A tree-wide sweep of 409 files takes about three minutes and it
+is what turned this from a per-round hunt into a single pass.
+### `git log -S` TIMES OUT ON A 119 000-LINE FILE — DEDUPLICATE THE MERGE PARENTS' BLOBS INSTEAD
+To find which branch a merge lost something from, the reflex is `git log -S '<text>' -- <path>`.
+On `X0.lean` that did not return in two minutes.  What does work, in seconds, is to search the
+BLOBS rather than the history — a batch of 341 merges has far fewer distinct versions of one
+file than it has commits:
+    git log --format='%P' --first-parent <base>..HEAD | awk '{print $2}' > parents.txt
+    while read c; do b=$(git rev-parse "$c:$PATH_" 2>/dev/null) && echo "$b $c"; done \
+      < parents.txt | sort -u -k1,1 > ublobs.txt      # 341 -> 107 for X0, 22 for HyperellipticJacobian
+    while read b c; do git cat-file blob "$b" | grep -q '<the thing>' && echo "HIT $c"; done < ublobs.txt
+Two traps, both hit here.  The file is `"<blob> <commit>"`, so **grepping a COMMIT prefix
+against it matches the blob column and silently returns nothing** — iterate and compare
+`${b:0:8}` instead.  And a branch that merely *inherited* the text has the same blob as its
+base, which is exactly what the dedup collapses: the survivors are the branches that CHANGED
+the file, and those are the only candidates.
+### TWO NEW SHAPES: A SECTION FUSED WITH ANOTHER, AND A SECTION SPLIT IN TWO
+Both were found this pass and neither is the "lost opener" the section above describes.
+**FUSED.**  Two branches each had a section carrying the IDENTICAL pair of opens —
+`ShimuraAlgebraicity` (5821a6ad, `open ModularForm Matrix.SpecialLinearGroup` + `open scoped
+Manifold`) and `SturmFiniteness` (8eb94e36, the same two) — and the merge kept ONE header and
+ONE `end`, running the two blocks together.  The tell is that the surviving section's name
+matches only the first block's content.  **The repair trap is sharp and I fell into it: adding
+the missing `end` at the obvious place — after the last declaration that visibly belongs to the
+named section — closes it too early, and the SECOND block then loses the opens.**  The symptom
+is `Unknown identifier` for a NOTATION (`MDiff`, `∣[`, `𝒮ℒ`), which reads as a missing import.
+So: **before placing an `end`, find the LAST CODE USE of the section's notation** — mask block
+comments first, or a docstring quoting `∣[` will send you hundreds of lines too far — and put
+the `end` after it.
+**SPLIT.**  The mirror: `SinglePlaceBound` in `HyperellipticJacobian.lean` existed on two
+branches, one with an extra block appended inside it (29e2ebac) and one without (29ff5516).
+The merge took the second's `end PlaceData`/`end SinglePlaceBound`, then the first's extra
+block, then ANOTHER `end PlaceData`/`end SinglePlaceBound` — and inserted the third branch's
+`section RiemannRochSpaces` header run into the gap.  Three closers too many, one section
+opener (`MultiPlaceBound`) lost entirely.  **The arithmetic is what settles it**: count the
+openers and closers each NAME needs against what is present, and the deficit tells you exactly
+what to insert and delete before you look at a single declaration.
+**And the CONTENT is what assigns each block to its section**, not the line numbers: list the
+declaration names in each candidate range and grep the branches for them.  Here that showed
+`valMax_isPrime`…`exists_chartValue_of_isAlgClosed` sits INSIDE `SinglePlaceBound` on the only
+branch that has it, so the `RiemannRochSpaces` header standing in front of it was misplaced —
+a fact no amount of reasoning about the merge could have produced.
+### AND THE CLASS-7 SPLIT SURFACES HERE TOO: A FALSITY REPAIR WHOSE CALL-SITE HALF WAS DROPPED
+`MoretBailly.lean` carried flt-lean-79's repair `(hCne : Nonempty ↥C)` in the SIGNATURE of
+`exists_boundarySubscheme_of_projectiveCompactification` and NOT at its call site, so `hZ` was
+being passed in the `hCne` slot.  Lean says
+`Application type mismatch: the argument hZ has type (Set.range ⇑j)ᶜ.Nonempty but is expected
+to have type Nonempty ↥C` — which is the one diagnostic in this whole catalogue that names its
+own cause.  **The repair is on a branch and should be recovered verbatim rather than rewritten**:
+`git rev-parse <parent>:<path>` over the merge parents, dedup, and grep for the binder NAME
+(`hCne`) — here 21 of 21 blobs had it in the signature and exactly one had it at the call site.

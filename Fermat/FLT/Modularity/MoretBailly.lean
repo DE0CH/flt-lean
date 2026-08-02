@@ -39903,8 +39903,19 @@ theorem exists_skolemBallDatum_of_projectiveCompactification
   obtain ⟨Zb, ι, hιimm, hιrange, hZfin, hZflat, hZsurj⟩ :=
     exists_boundarySubscheme_of_projectiveCompactification fX j hjimm hXsmooth hXproper hXgi
       hCne hZ hXdim
+  -- (release 34) The `hpush` argument below was LOST by the merge, in the same class-7
+  -- interface split as `hCne` above: `Fermat.exists_genRelPic` gained
+  -- `HasUniversallyTrivialPushforward strX` (flt-lean-115's falsity repair -- without it the
+  -- naive functor of rigidified pairs is not even a separated presheaf) and this, its SOLE
+  -- call site, was never updated.  No branch in the batch touches it, so it is discharged
+  -- here rather than recovered: the repair's own note says the consumer holds `Smooth` and
+  -- `IsProper`, which is exactly what the purpose-built wrapper wants.
+  haveI hgconn : AlgebraicGeometry.GeometricallyConnected fX :=
+    AlgebraicGeometry.geometricallyConnected_of_geometricallyIrreducible fX
+  have hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward fX :=
+    AlgebraicGeometry.hasUniversallyTrivialPushforward_of_isProper_of_smooth fX
   obtain ⟨P, pstr, ⟨hPG⟩⟩ :=
-    Fermat.exists_genRelPic fX ι hXproper inferInstance hXgi hZfin hZflat hZsurj
+    Fermat.exists_genRelPic fX ι hXproper inferInstance hXgi hpush hZfin hZflat hZsurj
   -- The two instances `IsCurveGenus` needs in order to be STATED.  Both are
   -- consequences of the hypotheses already present: smooth over a field is
   -- reduced, geometrically irreducible over a one-point base is irreducible, and
