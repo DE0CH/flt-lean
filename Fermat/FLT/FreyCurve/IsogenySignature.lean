@@ -6168,6 +6168,189 @@ theorem WeierstrassCurve.fullTranslationDatum_of_scale {q : ℕ} [Fact q.Prime]
       rw [hcoe, hΔL]; field_simp
     rw [e]; exact D.hΔ
 
+/-- **The tame base with an arbitrary RATIONAL translation** (PROVEN 2026-08-02). This is
+`translationDatum_of_tameBase` above with `r = 0` replaced by an arbitrary `r : ℚ`. Over a
+base of ramification index `12` at `q` take `u = π^{v_q(Δ)}`; writing `d = v_q(Δ)`, the four
+MEMBERSHIP conditions of `TranslationDatum` then read
+
+    v(a₂') = −2d  + 12·v_q(3r)              ≥ 0  ⟺  d ≤ 6·v_q(3r)         (`h2`)
+    v(a₄') = −4d  + 12·v_q(a₄ + 3r²)        ≥ 0  ⟺  d ≤ 3·v_q(f'(r))      (`h4`)
+    v(a₆') = −6d  + 12·v_q(a₆ + r·a₄ + r³)  ≥ 0  ⟺  d ≤ 2·v_q(f(r))       (`h6`)
+    v(Δ')  = −12d + 12d = 0                                               (always)
+
+for `f(X) = X³ + a₄X + a₆`.
+
+**WHY A RATIONAL `r` COSTS NOTHING, and it is the whole point of the generalisation.**
+Every quantity above is a RATIONAL number, so the base's membership criterion `hmem` —
+which decides `π^m · x ∈ A` for `x : ℚ` only — applies verbatim, and no valuation theory of
+`L` beyond what `translationDatum_of_tameBase` already needed appears. Each condition is
+discharged by `A.zero_mem` when the rational in question is `0`, which is what makes `h2`
+vacuous at `r = 0` and recovers the old theorem on the nose
+(`hasRatTranslation_of_padicValRat_le` below).
+
+A general `r : L` would be a different and much larger statement: the three conditions are
+then memberships of elements of `L`, and deciding them needs the full valuation of the tame
+base rather than `hmem`. Nothing here attempts that. -/
+theorem WeierstrassCurve.translationDatum_of_tameBase_rat {q : ℕ} [Fact q.Prime]
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    (L : Type) [Field L] [DecidableEq L] [Algebra ℚ L] [FiniteDimensional ℚ L]
+    (A : ValuationSubring L) [IsDiscreteValuationRing A]
+    (resEquiv : IsLocalRing.ResidueField A ≃+* ZMod q)
+    (π : L) (hπ0 : π ≠ 0)
+    (hmem : ∀ (m : ℤ) {x : ℚ}, x ≠ 0 →
+      (π ^ m * algebraMap ℚ L x ∈ A ↔ 0 ≤ m + 12 * padicValRat q x))
+    (r : ℚ)
+    (h2 : 3 * r ≠ 0 → padicValRat q W.Δ ≤ 6 * padicValRat q (3 * r))
+    (h4 : W.a₄ + 3 * r ^ 2 ≠ 0 →
+      padicValRat q W.Δ ≤ 3 * padicValRat q (W.a₄ + 3 * r ^ 2))
+    (h6 : W.a₆ + r * W.a₄ + r ^ 3 ≠ 0 →
+      padicValRat q W.Δ ≤ 2 * padicValRat q (W.a₆ + r * W.a₄ + r ^ 3)) :
+    Nonempty (W.TranslationDatum q) := by
+  classical
+  have hΔ0 : W.Δ ≠ 0 := W.isUnit_Δ.ne_zero
+  set d : ℤ := padicValRat q W.Δ with hd
+  have hπd : (π ^ d) ≠ 0 := zpow_ne_zero _ hπ0
+  set u : Lˣ := Units.mk0 (π ^ d) hπd with hu
+  have hui : ∀ k : ℕ, ((u⁻¹ : Lˣ) : L) ^ k = π ^ (-(k : ℤ) * d) := by
+    intro k
+    rw [hu]
+    simp only [Units.val_inv_eq_inv_val, Units.val_mk0]
+    rw [← zpow_natCast (π ^ d)⁻¹ k, ← zpow_neg, ← zpow_mul]
+    ring_nf
+  have huk : ∀ k : ℕ, ((u : Lˣ) : L) ^ k = π ^ ((k : ℤ) * d) := by
+    intro k
+    rw [hu]
+    simp only [Units.val_mk0]
+    rw [← zpow_natCast (π ^ d) k, ← zpow_mul]
+    ring_nf
+  refine ⟨{ L := L
+            A := A
+            resEquiv := resEquiv
+            u := u
+            r := algebraMap ℚ L r
+            ha₂ := ?_
+            ha₄ := ?_
+            ha₆ := ?_
+            hΔ := ?_ }⟩
+  · rcases eq_or_ne (3 * r) 0 with h0 | h0
+    · have hz : (3 : L) * algebraMap ℚ L r = 0 := by
+        have h := congrArg (algebraMap ℚ L) h0
+        simp only [map_mul, map_ofNat, map_zero] at h
+        exact h
+      rw [hz, mul_zero]; exact A.zero_mem
+    · have e : ((u⁻¹ : Lˣ) : L) ^ 2 * (3 * algebraMap ℚ L r)
+          = π ^ (-2 * d) * algebraMap ℚ L (3 * r) := by
+        rw [hui 2, map_mul, map_ofNat]; push_cast; ring
+      rw [e, hmem _ h0]
+      have := h2 h0
+      omega
+  · rcases eq_or_ne (W.a₄ + 3 * r ^ 2) 0 with h0 | h0
+    · have hz : algebraMap ℚ L W.a₄ + 3 * (algebraMap ℚ L r) ^ 2 = 0 := by
+        have h := congrArg (algebraMap ℚ L) h0
+        simp only [map_add, map_mul, map_pow, map_ofNat, map_zero] at h
+        exact h
+      rw [hz, mul_zero]; exact A.zero_mem
+    · have e : ((u⁻¹ : Lˣ) : L) ^ 4 * (algebraMap ℚ L W.a₄ + 3 * (algebraMap ℚ L r) ^ 2)
+          = π ^ (-4 * d) * algebraMap ℚ L (W.a₄ + 3 * r ^ 2) := by
+        rw [hui 4, map_add, map_mul, map_pow, map_ofNat]; push_cast; ring
+      rw [e, hmem _ h0]
+      have := h4 h0
+      omega
+  · rcases eq_or_ne (W.a₆ + r * W.a₄ + r ^ 3) 0 with h0 | h0
+    · have hz : algebraMap ℚ L W.a₆ + algebraMap ℚ L r * algebraMap ℚ L W.a₄
+          + (algebraMap ℚ L r) ^ 3 = 0 := by
+        have h := congrArg (algebraMap ℚ L) h0
+        simp only [map_add, map_mul, map_pow, map_zero] at h
+        exact h
+      rw [hz, mul_zero]; exact A.zero_mem
+    · have e : ((u⁻¹ : Lˣ) : L) ^ 6
+            * (algebraMap ℚ L W.a₆ + algebraMap ℚ L r * algebraMap ℚ L W.a₄
+                + (algebraMap ℚ L r) ^ 3)
+          = π ^ (-6 * d) * algebraMap ℚ L (W.a₆ + r * W.a₄ + r ^ 3) := by
+        rw [hui 6, map_add, map_add, map_mul, map_pow]; push_cast; ring
+      rw [e, hmem _ h0]
+      have := h6 h0
+      omega
+  · have e : ((u : Lˣ) : L) ^ 12 * (algebraMap ℚ L W.Δ)⁻¹
+        = π ^ (12 * d) * algebraMap ℚ L (W.Δ)⁻¹ := by
+      rw [huk 12, map_inv₀]; push_cast; ring
+    rw [e, hmem _ (inv_ne_zero hΔ0), padicValRat.inv]
+    omega
+
+/-- **Some RATIONAL translation already puts `W` in good position at `q`.** Additively,
+with `d = v_q(Δ)` and `f(X) = X³ + a₄X + a₆`, this says
+
+    ∃ r ∈ ℚ :   v_q(3r) ≥ d/6,   v_q(f'(r)) ≥ d/3,   v_q(f(r)) ≥ d/2,
+
+i.e. exactly the three inequalities a `TranslationDatum` over a base of ramification index
+`12` asks for, at a RATIONAL `r`. Taking `r = 0` is the old
+`nonempty_translationDatum_of_padicValRat_le` (`hasRatTranslation_of_padicValRat_le`
+below), so this predicate is implied by that theorem's two hypotheses and is strictly
+weaker than them.
+
+**IT IS STRICTLY WEAKER, and the witness is `y² = x³ + 8` at `q = 3`** (checked in PARI
+2026-08-02, `elllocalred` returns conductor exponent `2`, Kodaira type `III` — genuinely
+ADDITIVE, so it is not a curve that was already good). There `Δ = −27648`, `d = v₃(Δ) = 3`,
+and `2·v₃(a₆) = 2·v₃(8) = 0 < 3`, so `r = 0` FAILS; while `r = 1` gives `v₃(3) = 1` with
+`6·1 = 6 ≥ 3`, `v₃(a₄ + 3) = v₃(3) = 1` with `3·1 = 3 ≥ 3`, and `v₃(f(1)) = v₃(9) = 2` with
+`2·2 = 4 ≥ 3`. All of `hj`, `h4`, `h6`, `hd` of the wild leaf hold for that curve (`j = 0`,
+`a₄ = 0`, `a₆ = 8`, `d = 3 > 0`), so it is a curve the leaf used to owe and no longer does.
+
+**IT DOES NOT REACH THE HARD CASES**, and that is the point of the narrowing rather than a
+defect: for `y² = x³ + 4` at `q = 3` (`d = 3`) a rational `r` would need `r³ ≡ −4 ≡ 5`
+(mod 9), and the cubes mod `9` are `{0, 1, 8}`. So that curve — the witness the `q = 3`
+reconnaissance below uses to refute the tame base outright — stays inside the leaf, exactly
+where it belongs. -/
+def WeierstrassCurve.HasRatTranslation (W : WeierstrassCurve ℚ) (q : ℕ) [Fact q.Prime] :
+    Prop :=
+  ∃ r : ℚ,
+    (3 * r ≠ 0 → padicValRat q W.Δ ≤ 6 * padicValRat q (3 * r)) ∧
+    (W.a₄ + 3 * r ^ 2 ≠ 0 →
+      padicValRat q W.Δ ≤ 3 * padicValRat q (W.a₄ + 3 * r ^ 2)) ∧
+    (W.a₆ + r * W.a₄ + r ^ 3 ≠ 0 →
+      padicValRat q W.Δ ≤ 2 * padicValRat q (W.a₆ + r * W.a₄ + r ^ 3))
+
+/-- **`r = 0` is an instance** (PROVEN 2026-08-02): the two hypotheses of
+`nonempty_translationDatum_of_padicValRat_le` give `HasRatTranslation`, so the new
+predicate is weaker than the old pair and the generalisation below subsumes that theorem. -/
+theorem WeierstrassCurve.hasRatTranslation_of_padicValRat_le
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF] {q : ℕ} [Fact q.Prime]
+    (h4 : W.a₄ ≠ 0 → padicValRat q W.Δ ≤ 3 * padicValRat q W.a₄)
+    (h6 : W.a₆ ≠ 0 → padicValRat q W.Δ ≤ 2 * padicValRat q W.a₆) :
+    W.HasRatTranslation q := by
+  refine ⟨0, by simp, ?_, ?_⟩
+  · simpa using h4
+  · simpa using h6
+
+/-- **The concrete tame instantiation with a rational translation** (PROVEN 2026-08-02),
+the exact analogue of `nonempty_translationDatum_of_padicValRat_le` one hypothesis weaker.
+The base is `ℚ(q^{1/12})` and the three non-arithmetic obligations are discharged by the
+same three `TameBaseAux` facts. -/
+theorem WeierstrassCurve.nonempty_translationDatum_of_hasRatTranslation
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF] {q : ℕ} [Fact q.Prime]
+    (h : W.HasRatTranslation q) : Nonempty (W.TranslationDatum q) := by
+  classical
+  obtain ⟨r, h2, h4, h6⟩ := h
+  obtain ⟨res, hres⟩ := TameBaseAux.exists_tameResidueHom q
+  letI : DecidableEq (AdjoinRoot (TameBaseAux.qpoly q)) := Classical.decEq _
+  haveI := hres
+  refine WeierstrassCurve.translationDatum_of_tameBase_rat W
+    (AdjoinRoot (TameBaseAux.qpoly q)) (TameBaseAux.tameSubring q)
+    (WeierstrassCurve.residueFieldEquivZModOfLocalHom res) (TameBaseAux.unif q)
+    (TameBaseAux.unif_ne_zero q) ?_ r h2 h4 h6
+  intro m x hx
+  rw [TameBaseAux.algebraMap_eq_ofQ]
+  exact TameBaseAux.tame_mem_iff q m hx
+
+/-- **…and the `FullTranslationDatum` it yields** (PROVEN 2026-08-02), by
+`fullTranslationDatum_of_translationDatum` (`s = t = 0`). This is what the wild leaf's
+`by_cases` consumes on the easy side. -/
+theorem WeierstrassCurve.nonempty_fullTranslationDatum_of_hasRatTranslation
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF] {q : ℕ} [Fact q.Prime]
+    (h : W.HasRatTranslation q) : Nonempty (W.FullTranslationDatum q) := by
+  obtain ⟨D⟩ := WeierstrassCurve.nonempty_translationDatum_of_hasRatTranslation W h
+  exact WeierstrassCurve.fullTranslationDatum_of_translationDatum W D
+
 /-- **THE ARITHMETIC OF THE WILD CASES, UNIFORM IN `q`** (sorry leaf; opened 2026-07-30
 by `flt-lean-203` as `nonempty_fullTranslationDatum_of_jIntegral` in `MazurTorsion.lean`,
 MOVED here and NARROWED on 2026-07-31 — see "WHAT CHANGED" below). What is owed is a
@@ -6225,14 +6408,72 @@ is exactly the setting a Newton-polygon argument wants.
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: exhibit `E/ℚ` with `0 ≤ v_q(j(E))` acquiring
 good reduction over NO finite extension of `ℚ_q` of residue degree `1`. VII.5.5 supplies
 good reduction over *some* finite extension unconditionally, so such a witness would have
-to break the unramified-descent step. -/
+to break the unramified-descent step. **Re-run 2026-08-02 and it comes back NEGATIVE**: the
+leaf is equivalent to *`E` acquires good reduction over a totally ramified extension of
+`ℚ_q`*, since (i) every finite extension of `ℚ_q` is the completion of a number field at a
+prime (Krasner), (ii) `L` is dense in `L_v` and all six conditions are OPEN in `(u, r, s, t)`,
+so a solution over `𝒪_{L_v}` perturbs into one over the localisation `𝒪_{L,v}` that the
+structure asks for, and (iii) the group-theoretic descent quoted above always produces such
+an extension. So no refutation exists and the leaf must be proven.
+
+**NARROWED 2026-08-02 (`flt-lean-52`): the RATIONAL-TRANSLATION case is now CLOSED**, by
+`nonempty_fullTranslationDatum_of_hasRatTranslation` above, and this leaf receives `hnr` in
+exchange. The narrowing is strict — `y² = x³ + 8` at `q = 3` satisfies every hypothesis of
+the old statement, is additive there (PARI: conductor exponent `2`, Kodaira `III`), and is
+now discharged by `r = 1` — and it is faithful, since
+`nonempty_fullTranslationDatum_wild` below is the old statement recovered by `by_cases`.
+Count unchanged, `1 → 1`.
+
+**THE COST WALL, MEASURED 2026-08-02, and it is the reason nothing bigger was attempted.**
+What is left after the narrowing is (a) CHOOSE the totally ramified extension and (b) find
+`u, r, s, t` in it. There is currently **no way in this project to build a residue-degree-`1`
+base other than `TameBaseAux`'s `ℚ(q^{1/12})`**, and that base is refuted at both wild
+primes (the `y² = x³ + 4` Newton-polygon computation at `3`, Kraus's `e ∈ {8, 24}` at `2`,
+both below). The general construction is `ℚ[X]/(g)` for `g ∈ ℤ[X]` monic and Eisenstein at
+`q`: such a field has a UNIQUE prime above `q`, totally ramified, residue degree `1`, and
+every totally ramified extension of `ℚ_q` arises this way. Formalising it is a port of
+`TameBaseAux` (`EllipticCurve/TorsionReduction.lean`, lines 638–1422, **784 lines**) with
+`12` replaced by `deg g` throughout; the ONLY step that is not a mechanical substitution is
+
+    v(π)^{deg g} = v(q)     (`unif_pow` becomes a Newton-polygon argument)
+
+which is a three-way case split on `v(π)^n` versus `v(q)`, each branch closed by
+`Valuation.map_sum_lt` / `map_add_eq_of_lt_right` off `q ∣ g.coeff i` and `q² ∤ g.coeff 0`.
+Everything downstream of it — `tame_mem_iff`, `exists_repr`, `padicValRat_coeff_nonneg`
+(whose "pairwise distinct mod `12`" becomes "mod `n`"), `exists_tameResidueHom`, the DVR
+instance — transfers verbatim. **That port is queued as its own task**; it is the single
+thing standing between this leaf and an attack, and it is reusable by every route.
+
+Note what the port does NOT give: it produces the base from an EXPLICIT `g`, so a prover
+must still exhibit `g`, and for a compositum such as `ℚ(4^{1/3}, 3^{1/4})` (the base
+`y² = x³ + 4` needs) writing down a degree-`12` Eisenstein polynomial over `ℤ` is itself
+work. That is obligation (a) and it is the mathematics. -/
+theorem WeierstrassCurve.nonempty_fullTranslationDatum_wild_of_not_ratTranslation
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    {q : ℕ} [Fact q.Prime] (hq : q = 2 ∨ q = 3) (hj : 0 ≤ padicValRat q W.j)
+    (h4 : ∃ m : ℤ, W.a₄ = (m : ℚ)) (h6 : ∃ n : ℤ, W.a₆ = (n : ℚ))
+    (hd : 0 < padicValRat q W.Δ) (hnr : ¬ W.HasRatTranslation q) :
+    Nonempty (W.FullTranslationDatum q) :=
+  sorry
+
+/-- **The wild leaf in its original form** (PROVEN 2026-08-02 over
+`nonempty_fullTranslationDatum_wild_of_not_ratTranslation` above; it was itself the leaf
+from 2026-07-30 until then, and every consumer still calls THIS name with THIS signature).
+
+The proof is one `by_cases` on `HasRatTranslation`: on the easy side
+`nonempty_fullTranslationDatum_of_hasRatTranslation` closes it over the tame base
+`ℚ(q^{1/12})` with a rational translation, on the other side the narrowed leaf applies.
+So the recut is faithful — the two statements are equivalent — and no consumer moved. -/
 theorem WeierstrassCurve.nonempty_fullTranslationDatum_wild
     (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
     {q : ℕ} [Fact q.Prime] (hq : q = 2 ∨ q = 3) (hj : 0 ≤ padicValRat q W.j)
     (h4 : ∃ m : ℤ, W.a₄ = (m : ℚ)) (h6 : ∃ n : ℤ, W.a₆ = (n : ℚ))
     (hd : 0 < padicValRat q W.Δ) :
-    Nonempty (W.FullTranslationDatum q) :=
-  sorry
+    Nonempty (W.FullTranslationDatum q) := by
+  by_cases hnr : W.HasRatTranslation q
+  · exact WeierstrassCurve.nonempty_fullTranslationDatum_of_hasRatTranslation W hnr
+  · exact WeierstrassCurve.nonempty_fullTranslationDatum_wild_of_not_ratTranslation
+      W hq hj h4 h6 hd hnr
 
 /-- **THE WILD ARITHMETIC, ASSEMBLED AND UNIFORM IN `q`** (PROVEN 2026-07-31 over
 `nonempty_fullTranslationDatum_wild`; opened 2026-07-30 by `flt-lean-203` as a leaf in
