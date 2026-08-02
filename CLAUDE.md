@@ -16151,3 +16151,100 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## THE ABSENCE CLAIM YOU ARE ABOUT TO SHIP IS AS WRONG AS THE ONE YOU INHERIT — AND YOUR OWN IMPORT CONE IS WHERE TO CHECK IT
+
+(2026-07-31, `flt-lean-61`, `MazurTorsion.lean`.)  This file spends pages on
+inherited absence claims going stale.  The instance below is the same defect
+with the staleness removed: I **wrote** a `MACHINERY SURVEY` on a leaf I was
+**creating**, saying
+
+> This pin has no lattices in `ℂ`, no Weierstrass `℘`, and no uniformisation:
+> a prover takes on the analytic theory.
+
+and it was false on two of its three counts **on the day it was written**.
+`Mathlib/Analysis/SpecialFunctions/Elliptic/Weierstrass.lean` is 1080 lines of
+`PeriodPair`, `PeriodPair.lattice`, `℘`, `℘'`, periodicity, meromorphy, pole
+orders, the lattice Eisenstein series `G n`, `g₂ := 60 G₄`, `g₃ := 140 G₆`, and
+— as its last lemma — `derivWeierstrassP_sq`, i.e. the whole
+lattice-`→`-cubic direction.  So there is no staleness to blame: **a fresh
+absence claim is just an unrun search.**
+
+**Two things made it wrong, and both are cheap to defend against.**
+
+* **I searched for the THEORY, not the OBJECT.**  `grep -ri "uniformiz"`,
+  `"complex torus"`, `"ComplexMultiplication"` all come back empty and all feel
+  conclusive.  `ls Mathlib/Analysis/SpecialFunctions/Elliptic/` is one call and
+  ends it.  This is the standing "search for the OBJECT" rule; what is new is
+  that it fires just as hard when *you* are the author.
+* **I never asked what my own declaration could CITE.**  A leaf's survey is not
+  a claim about the pin at large — it is a claim about the leaf's IMPORT CONE,
+  and that is COMPUTABLE.  Here `MazurTorsion.lean` already reached that module
+  through `KnownIn1980s/EllipticCurves/TateCurveConstruction.lean`, so every one
+  of those names was in scope at the leaf with **no new import**.
+
+**So before writing "the pin lacks X" in any leaf docstring, run the
+two-command check** — and note the second command is the one nobody runs:
+
+    ls .lake/packages/mathlib/Mathlib/<the directory X would live in>/
+    # then, decisively, from a scratch that `public import`s YOUR file:
+    #   #check @<the name>          -- in scope here, or not
+
+`#check` against your own module's olean is the only form of the question that
+matters, it takes ~15 s, and it answers "may this declaration cite it" rather
+than "does it exist somewhere".
+
+**And grep `Fermat/` for the correction before writing the claim**, because in
+this fleet somebody has usually made it already: the identical correction had
+been recorded in `X0.lean`'s cluster docstring on 2026-07-30, under the heading
+`FALSE-ABSENCE CORRECTION`, one file away.  Two agents, two days, one grep
+apiece.  `grep -rn "FALSE-ABSENCE\|<the object>" --include=*.lean Fermat/`.
+
+Corollary about what a corrected survey is worth: it re-priced the residue from
+"take on the analytic theory" to **four named gaps** (nondegeneracy of the
+cubic; the `g₂/g₃` ↔ `E₄`/`Δ` normalisation identity, which is arithmetic and
+not analysis; `End =` the multiplier ring, by Liouville; descent to `ℚ̄`) on top
+of a `℘` that is already imported.  That is the difference between a leaf a
+successor can start and one they will decline.
+
+### VERIFY A BLOCK BY EXTRACTING IT VERBATIM AND RENAMING ONLY THE COLLISIONS
+
+Same run, and it is a sharpening of the standing "scratch that `public import`s
+the target module" rule.  A hand-written parallel scratch tests text you wrote
+twice; what you want to test is **the literal characters you are about to
+commit**.  So after editing, extract the inserted block BY LINE RANGE into a
+scratch that imports the still-unmodified olean, and `sed`-rename only the names
+that collide with the olean's own copy:
+
+    { echo 'module'; echo 'public import <the target module>'
+      echo '@[expose] public section'; echo 'namespace <the exact namespace>'
+      echo '<the section'"'"'s exact open lines>'
+      sed -n '<lo>,<hi>p' <the file> | sed 's/<the one colliding name>/&_VERIFY/g'
+      echo 'end <namespace>'; echo 'end'; } > Fermat/ScratchN.lean
+
+New declarations do not collide — only the leaf you are REPLACING does — so the
+rename list is usually one name.  This caught an inlining bug the hand-written
+version had not had, ran in ~8 s against an 11-minute module build, and the text
+then compiled in the real file first try.
+
+Two limits, both real: it cannot see DECLARATION ORDER (the scratch sees the
+whole file, the paste site does not — so `grep -n` each cited name and compare
+against your insertion line; mine were at 25574/25585/25712/25777/26019 against
+a block starting at 26023), and it reads the olean, so `lake build` the module
+first and do not interleave the two.
+
+**Rider — `#print axioms` DOES work from that importer**, provided the target
+file has `@[expose] public section`, which every project file here does.  Run it
+with a KNOWN-SORRIED name from the same file as the CONTROL, in the same run: an
+importer whose traversal found nothing would report everything clean.  Here the
+three new theorems came back `[propext, Classical.choice, Quot.sound]` and the
+new leaf came back with `sorryAx`, which is the control firing.
+
+**Rider — an anonymous constructor inlined into a lemma with an implicit
+EXPONENT elaborates before the exponent is known.**  `(Int.even_pow.mp ⟨w, by
+linarith⟩).1` fails with `a✝ : g.b ^ ?m.135 < …` in the `linarith` context,
+because `Int.even_pow : Even (n ^ k) ↔ Even n ∧ k ≠ 0` has `k` implicit and
+nothing has fixed it when the `by` block runs.  Split it: `have h2 : Even (g.b ^
+2) := ⟨w, by linarith⟩` — where the ascription pins `k` — `then exact
+(Int.even_pow.mp h2).1`.  The same shape bites for any `_pow`/`_smul`/`_zpow`
+lemma whose exponent is implicit.
