@@ -26290,3 +26290,56 @@ algebraically closed `K` of characteristic zero) sits in the `Picard` section an
 to every other `PlaceData` consumer — including the still-open
 `degOf_poleDivisor_eq_finrank_of_transcendental`, whose "≥" half is exactly the statement that
 the poles it now knows exist have enough total degree.
+## "A MORPHISM CARRIES THE IDENTITY COMPONENT INTO ITSELF" IS NOT GEOMETRY — IT IS `ε` BEING AN ALGEBRA MAP
+(2026-08-01, `flt-lean-331`, `connected_locus_smul_of_hopf_package` in
+`HardlyRamified/Threeadic.lean`.) A leaf whose recorded route is *"extend the map to
+the integral model by Raynaud, then use that a morphism of group schemes preserves the
+connected component of the identity"* reads as two pieces of geometry. The second piece
+is not geometry at all, and separating it is what makes the leaf citable.
+In this development a connected component is an IDEMPOTENT: `e₀` with `ε e₀ = 1` and
+minimal (`hmin₀`, hence `hprim₀ : ∀ y idempotent, y·e₀ ∈ {0, e₀}` through
+`mul_eq_zero_or_mul_eq_of_minimal` in `GroupScheme/ConnectedEtale.lean`). Given ANY
+algebra endomorphism `u` of the Hopf order with `ε ∘ u = ε`:
+* `u e₀` is idempotent (`map_mul`), so `hprim₀` gives `u e₀ · e₀ ∈ {0, e₀}`;
+* **the counit is an ALGEBRA map** (`Bialgebra.counitAlgHom`), so
+  `ε (u e₀ · e₀) = ε (u e₀) · ε e₀ = 1 · 1 = 1 ≠ 0`, which kills the zero branch;
+* hence `u e₀ · e₀ = e₀`, and applying a point `φ` to that identity turns
+  `φ (1 ⊗ e₀) = 1` into `φ (1 ⊗ u e₀) = 1` — i.e. the connected locus is preserved.
+Three lines, no topology, no flatness, no connectedness argument. So the leaf should be
+cut so that it owes only the EXTENSION (Raynaud's fullness), stated coefficient-free:
+*a `Γ Kᵥ`-equivariant additive endomorphism of the geometric points of a finite flat
+`𝒪ᵥ`-Hopf order with étale generic fibre is the pullback along an `𝒪ᵥ`-algebra
+endomorphism of the order preserving the counit.* Here that took the leaf from carrying
+`R`, `V`, `ρ`, a congruence level `n`, `e₀` and four idempotent hypotheses down to
+carrying none of them; count unchanged `1 → 1`, and the survivor is the named citation
+(Raynaud, Bull. SMF 102 (1974), 3.3.6) instead of a mixed statement no reference proves.
+**The generalisable question: when a route says a canonical SUB-OBJECT is preserved by a
+morphism, ask how that sub-object is CUT OUT in the formalisation.** If it is cut out by
+the value of a point at a distinguished idempotent/element, the preservation step is
+almost always a two-line consequence of the structure maps being algebra maps — and the
+only real content is that the morphism exists at all. Ask for the morphism, not for the
+preservation.
+Corollary about the OLD proof, which this replaces and which is worth contrasting: the
+displacement route (`M⁰ ⊆ ⟨ρ(σ)y − y⟩`) reduced the same statement to *the connected
+part has no nonzero unramified quotient* — TRUE, and strictly MORE than fullness, since
+it is a piece of the classification of simple objects at `e < p − 1`. A route that
+reduces to a bigger theorem than the one you can cite is the wrong cut even when it is
+correct; compare what each route leaves OPEN, not how short each is.
+### `GaloisRep.Space` HAS AN `AddCommGroup` AND NO `Module` — name the scalar action as a `LinearMap`
+Same task, and it will bite anyone touching a `GaloisRep`'s space. `GaloisRep.Space ρ` is
+a `def` synonym for the module `M` carrying `AddCommGroup` (by `inferInstanceAs`) and the
+`Γ K`-action, and **no `Module A` instance**. So for `fG : … →+[Γ Kᵥ] (ρ.toLocal v).Space`,
+writing `a • fG φ` fails with
+    failed to synthesize   HSMul A ((ρ.baseChange A).toLocal v).Space ?m
+even under `set_option backward.isDefEq.respectTransparency false`, because that option
+governs DEFEQ checks and not instance SEARCH — the same asymmetry recorded elsewhere in
+this file for `(𝟭 C).obj X`. A type ascription does not help either: it retypes nothing
+that instance search then looks at.
+The cure is to name the scalar action on the UNDERLYING module and let application cross
+the synonym by defeq. Do it with an `obtain` so the map is opaque and cannot be unfolded:
+    obtain ⟨La, hLa⟩ : ∃ La : (Q ⊗[R] V) →ₗ[Q] (Q ⊗[R] V), ∀ z, La z = (algebraMap R Q r) • z :=
+      ⟨(algebraMap R Q r) • LinearMap.id, fun z => rfl⟩
+`La (fG φ)` then elaborates, `map_add La` is free, and equivariance is `map_smul` of
+`(ρ.baseChange Q).toLocal v σ : Module.End Q _`. Use the same `obtain ⟨f, hf⟩ : ∃ f, ∀ x,
+f x = …` idiom for the conjugated endomorphism itself — `set` leaves a let-bound local
+that later `rw`s zeta-unfold, and `fun _ => rfl` discharges the characterising equation.
