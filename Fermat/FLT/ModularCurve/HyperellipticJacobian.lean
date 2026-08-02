@@ -11081,6 +11081,25 @@ separable monic sextic, which `y² = x⁶ + x² + 1` refutes), with
 not lost: the same content is on `exists_finiteIndex_divisible_pic` above, which is the
 surviving cut's arithmetic leaf.
 
+**THE DELETION IS LOSSLESS AS MATHEMATICS, not merely as bookkeeping — verified 2026-08-02.**
+"Consumerless" says only that the leaf is unreachable today.  The stronger fact, which is
+what forecloses the losing axis for good, is that `geomPic_exists_finiteCover_kummer` is a
+THEOREM of the surviving pair: it was re-proved from `exists_finiteIndex_divisible_pic` and
+`finite_torsion_pic_geom` alone, in about 35 lines, first try, in a 4.7-second scratch.
+Label `σ` by the pair (its coset modulo the `H` those leaves supply, the permutation it
+induces on `J[p]`); both components lie in a FINITE type — the second because `act σ` is
+additive, so it preserves `J[p]`, which the second leaf makes finite — so the fibres of that
+labelling are a finite cover.  On a fibre, split `Q = Y P + (Q − Y P)`: `σ` and `τ` share a
+coset of `H`, which fixes `Y P`, so they agree there by `act_mul`; and `Q − Y P` is
+`p`-torsion, on which they induce the same permutation by construction.  Hence
+`act σ Q = act τ Q`, which is strictly stronger than the cover clause asked for.
+
+So nothing the cover formulation could ever supply fails to follow from the two leaves that
+ARE in the cone, and a future proposal to re-cut along the cover axis is refuted in advance
+rather than merely discouraged.  This matters because `semmerge.py` will restore these
+declarations again from any branch forked before a deletion; when that happens, delete them
+again and cite this paragraph instead of re-deriving the analysis.
+
 `geomPic_divisible_place` and `geomPic_divisible` are the OTHER two declarations of the same
 losing cut and are deliberately KEPT — they were revived on 2026-08-01 by an unmerged branch
 that re-points `exists_finiteIndex_divisible_pic` onto `geomPic_divisible` plus a new
