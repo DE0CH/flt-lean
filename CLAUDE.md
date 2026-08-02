@@ -25239,3 +25239,70 @@ down here instead of performed" sentences this file already catalogues.  Under
 the loop there is nobody for such a sentence to defer to.  If you write one,
 perform it in the same commit or queue it; if you read one, check whether it was
 performed before believing anything else the docstring says.
+## AN AUDIT NAMING "STEP X DESTROYS PROPERTY P" — READ X'S CONCLUSION FOR A P-TRANSFER CONJUNCT
+(2026-08-01, `flt-lean-303`, closing
+`exists_totallyReal_point_padicEmbedding_of_geometricallyIrreducible`.)  That
+leaf carried a ROUTE AUDIT with TWO obstructions, each argued in detail, one of
+them flagged as "NEW, and not recorded anywhere before 2026-07-31" and backed by
+a machine-checked PARI witness (`ℚ(√17,√5)` has `f = 2` above `2`).  The
+mathematics was right.  **The obstruction did not exist**, and had not existed
+since before the audit was written.
+The shape is worth naming because it is not the ordinary stale-absence-claim.
+The audit said: the parity step `exists_evenDegree_totallyReal_of_sup_eq_top`
+enlarges `F` to `F(√d)` with `d` carrying no condition at `2`, so it DESTROYS the
+`ℚ_[2]`-embedding.  True of the ROUTE — `d` really is built that way.  And that
+theorem's CONCLUSION already contains
+    (Nonempty (F →+* ℚ_[2]) → Nonempty (F' →+* ℚ_[2])) ∧
+i.e. the repair the audit goes on to prescribe (`Q ↦ 8·Q`) is what produced that
+conjunct, and somebody had already done it.  What the audit was actually looking
+at is the WRAPPER one level up, whose body binds the conjunct as `-`.
+**So: when an audit says a step destroys a property, read that step's CONCLUSION,
+not its construction.**  A step whose internal choice looks hostile to `P` very
+often exports a `P → P'` transfer clause precisely because someone hit the same
+wall; the audit's own prescribed repair is the thing to grep for.  This is the
+"THAT THEOREM HANDS BACK X is a claim about its CONCLUSION" rule turned around:
+there a docstring over-promised what a theorem exports, here it under-read it.
+**The tell was in the tree and was a comment, not a signature.** The wrapper's
+body says, at the discard site, *"The `ℚ_[2]`-transfer conjunct that theorem also
+returns (2026-07-31) is DISCARDED here and only here."*  A leaf's audit and the
+comment that refutes it were in two different modules and neither cites the other.
+Grep the CONSUMER's proof body for your property's name before believing an
+obstruction about it.
+### A REPAIR PARAGRAPH CAN ASK FOR A STRICTLY STRONGER LEAF THAN THE PROOF NEEDS
+Same leaf, and it is what made the residue citable.  The surviving obstruction
+was the affine shrink, and the audit priced its repair as
+> ONE affine open carrying the real point TOGETHER WITH finitely many prescribed
+> local points
+— an EXISTENCE statement about opens, i.e. a moving lemma.  What the proof needs
+is the DENSITY statement about a FIXED open: *a nonempty open of a smooth
+geometrically irreducible `X` still has a `ℚ_[p]`-point*.  The two differ because
+`X` is IRREDUCIBLE, so every nonempty open is dense and **any** affine open works
+— in particular the one the existing shrink already produces around the real
+point.  Density-about-a-given-object is a standard citable fact
+(`X(ℚ_p)` Zariski-dense for smooth geometrically integral `X` with a `ℚ_p`-point);
+existence-of-a-good-object is a lemma nobody states.
+**The check, and it costs one line: when a repair paragraph asks for an object
+with SEVERAL properties at once, ask whether irreducibility, density or
+connectedness makes an ARBITRARY object do.**  In this development the ambient
+object is geometrically irreducible far more often than not, so the "at once" is
+usually free and the conjunctive existence statement is a self-inflicted moving
+lemma.
+### A WRAPPER THAT DISCARDS A CONJUNCT IS NOT AN OBSTRUCTION — CALL ITS INPUTS
+The same leaf's recorded work list had, as its item (ii), *"stop discarding
+`IsTotallySplitAt` in the affine wrapper"* — an interface edit to a 61 000-line
+module with concurrent editors, i.e. the class-7 hazard.  It was not needed.
+`exists_normalRealPoint_of_affine_curve` returns the conjunct directly, is
+`public`, and is one Bertini call away, so **calling the two sub-theorems instead
+of the wrapper** cost ten lines in my own file and zero edits to theirs.
+Generalisable: a wrapper is a convenience, and a convenience that drops what you
+need is not a dependency.  Before proposing to widen a proven theorem's
+conclusion, check whether its own inputs are reachable — in this tree they almost
+always are, since everything is `public import`ed.  Widening is right only when
+several consumers want the conjunct; for one consumer, bypass.
+**And check what the retained conjunct is NOT.**  The wrapper does keep a
+residue-degree form (`Nat.card (𝓞_F ⧸ w) = p` at every `w ∣ p`), which reads like
+a substitute for complete splitting and is not one: it says `f = 1` and nothing
+about `e`, and `ℚ(i)` at `p = 2` has `e = 2`, `f = 1` with NO `ℚ_[2]`-embedding.
+There is no adapter in that direction because there is no such implication — the
+file ships adapters both ways for the OTHER pair (`IsTotallySplitAt` ⟷ embedding)
+and the asymmetry is the tell.
