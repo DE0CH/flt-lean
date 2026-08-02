@@ -16151,3 +16151,66 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A HYPOTHESIS THAT FAILS GLOBALLY MAY HOLD LOCALLY — AND `IsRegularRing` IS A LOCAL CONDITION
+
+(2026-08-02, `flt-lean-153`, `isRegularRing_of_isInvariant_of_smooth` in
+`Fermat/FLT/Mathlib/RingTheory/InvariantTensorRegular.lean`.)
+
+That leaf carried a long, careful, correct diagnosis: every lemma the classical route needs
+(`Algebra.IsInvariant.isIntegrallyClosed_of_isInvariant`, `dimensionLEOne_of_isInvariant`,
+mathlib's `[IsDedekindDomain R] : IsRegularRing R`) carries `[IsDomain R]`, and **`IsDomain R`
+is FALSE here** — `S` is a smooth curve algebra that SPLITS into `φ(n)` components, so neither
+`S` nor `R = S^G` is a domain. From that it prescribed the repair: build the `G`-equivariant
+PRODUCT DECOMPOSITION of `S`, i.e. a structure theory of reduced normal noetherian rings the
+pin does not have. Nobody had taken it, and the price is why.
+
+**The conclusion is `IsRegularRing`, which is DEFINED prime-locally** — `IsNoetherianRing` plus
+`∀ p, IsRegularLocalRing (Localization.AtPrime p)`. So the hypothesis that has to hold is not
+`IsDomain R` but `IsDomain (Localization.AtPrime p)`, and **that one is TRUE**: a product of
+domains is not a domain, and every localization of it at a prime is. The product decomposition
+was being built to repair a failure that localizing removes for free.
+
+**So the check, before pricing any repair of a failed hypothesis: is the CONCLUSION local?**
+If it is — `IsRegularRing`, `IsReduced`, `Module.Flat`, `IsIntegrallyClosed` for a domain,
+anything defined by "for every prime/maximal ideal" — then the hypothesis only has to hold
+after localizing, and the standard reason a global hypothesis fails (the object is a product,
+or has several connected components, or several minimal primes) is exactly the reason its
+local versions hold. Localization is what a decomposition would have bought you, and it costs
+nothing.
+
+Corollary about how such an audit goes wrong: it reasoned from the LEMMA LIST (`every lemma I
+would use carries [IsDomain R]`) rather than from the GOAL. A lemma list is evidence about the
+lemmas; the goal's own definition is evidence about the goal, and here unfolding
+`IsRegularRing` once is the whole insight.
+
+### The technique that made the local statement cheap: read a localization through its KERNEL
+
+`IsDomain (Localization.AtPrime p)` looks like it needs the correspondence between minimal
+primes of `R_p` and minimal primes of `R` below `p`. It does not:
+
+> **`R_p` is a domain iff `ker (R → R_p)` is PRIME** (given `p ≠ ⊤`).
+
+`⇐` is three lines: write `x = mk' a s`, `y = mk' b t`; `x * y = 0` says `a * b ∈ ker` by
+`IsLocalization.mk'_eq_zero_iff`, and primeness of the kernel puts `a` or `b` in it, i.e.
+kills `x` or `y`. So "is this localization a domain" becomes an ideal-theoretic computation in
+the ring you started with, with no order isomorphism and no minimal primes anywhere. Upstairs
+the same equivalence runs backwards — `ker (S → S_P)` is prime *because* `S_P` is a domain,
+being the comap of `⊥` — so a statement about localizations turns into a statement relating
+two kernels, which is the shape a group action can act on.
+
+Here that statement was `ker (R → R_p) = ker (S → S_P) ∩ R` for any prime `P` of `S` over `p`,
+and it is where the GROUP does its work, twice, in a shape worth copying:
+
+* **a `G`-stable annihilator upgrades ONE witness to a UNIFORM one.** `Ann_S(algebraMap R S a)`
+  is `G`-stable because `a` is `G`-invariant, so a single `t ∉ P` killing `a` gives `g • t`
+  killing `a` and outside `g • P`, for every `g`. **Prime avoidance** (`Ideal.subset_union_prime`)
+  over that finite orbit then produces ONE element outside every `g • P` — and the uniformity is
+  exactly what the single `t` did not give, and exactly what the next step needs;
+* **the norm `∏_{g} g • u` is `G`-invariant, so `Algebra.IsInvariant` pulls it back to `R`**; it
+  still annihilates (one of its factors does, via `Finset.mul_prod_erase`) and it stays outside
+  `P` because `P.primeCompl` is a SUBMONOID — `Submonoid.prod_mem` is the whole argument, and it
+  is cheaper than any `∏ ∈ prime ↔ ∃ factor ∈ prime` lemma.
+
+Note what the resulting statement does NOT need: no reducedness, no noetherianity, no finite
+type, no dimension. Those all belong to the other half.
