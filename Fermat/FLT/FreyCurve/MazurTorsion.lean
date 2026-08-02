@@ -22232,6 +22232,73 @@ theorem WeierstrassCurve.isIsogeny_equivOfEq_trans {F : Type*} [Field F] [Decida
   exact WeierstrassCurve.isIsogeny_equivVariableChange W C
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+open Polynomial in
+open scoped Polynomial.Bivariate in
+/-- **THE CHART-COMPATIBLE VARIABLE CHANGE: two Weierstrass models of one elliptic
+scheme differ by a `VariableChange` AND by a coordinate-ring equivalence that is the
+restriction of `𝟙 A`** (PROVEN 2026-08-02, no leaf, first compile).
+
+**WHY THIS EXISTS, and it is a `hands back X` repair rather than new mathematics.**
+`Fermat.exists_variableChange_of_isWeierstrassModel` (`X0.lean`) concludes only
+`∃ V, W' = V • W`.  Its route through `Fermat.exists_linearAlgHom_of_isWeierstrassModel`
+(`X0.lean`, PROVEN) internally obtains its `Φ` from
+`Fermat.exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel` (`X0.lean`, PROVEN),
+which DOES carry `Spec.map Ψ ≫ ι = ι'` — i.e. `Ψ` is the identity of `A` read in the two
+charts — and then throws that conjunct away.  So the compatibility every consumer of the
+`Γ₀(N)` pin needs was already proven upstream and simply not exported.  This declaration
+re-runs those five lines and keeps it; it is CLAUDE.md's *"THAT THEOREM HANDS BACK X is a
+claim about its CONCLUSION, not about its proof"*, and it is stated HERE rather than in
+`X0.lean` because that module is upstream of the most expensive cone in the tree and its
+consumers are outside this one (the standing "re-derive downstream" rule).  When somebody
+does widen the `X0.lean` statement, delete this and cite it.
+
+**WHAT IT DOES AND DOES NOT GIVE.**  It gives `V`, the two open immersions, the
+chart-compatible `Ψ`, and `Ψ`'s linear coordinate shape `(a, r, b, c, t)` with `IsUnit a`,
+`IsUnit b`.  It does NOT say that the point map of `V` is the point map of `Ψ`: the link
+between the shape `(a, r, b, c, t)` and `V`'s own `(u, r, s, t)` — `a = u²`, `b = u³`,
+`c = u² s` — is established INSIDE `Fermat.exists_variableChange_of_linearAlgHom`
+(`X0.lean`) and is likewise not exported.  That residue is pure `VariableChange`
+arithmetic with no scheme theory in it; see the route note on
+`WeierstrassCurve.exists_variableChange_image_of_gamma0Model_isBaseChangeOf` below, which
+is what consumes this. -/
+theorem Fermat.exists_variableChange_chartCompat_of_isWeierstrassModel {R : Type} [CommRing R]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)} {ab : AbelianSchemeStruct f}
+    (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic]
+    (hW : Fermat.IsWeierstrassModel ab W) (hW' : Fermat.IsWeierstrassModel ab W') :
+    ∃ (V : WeierstrassCurve.VariableChange R)
+      (ι : Fermat.weierstrassAffine W ⟶ A) (ι' : Fermat.weierstrassAffine W' ⟶ A)
+      (Ψ : W.toAffine.CoordinateRing ≃ₐ[R] W'.toAffine.CoordinateRing) (a r b c t : R),
+      W' = V • W ∧
+      IsOpenImmersion ι ∧ IsOpenImmersion ι' ∧
+      ι ≫ f = Fermat.weierstrassAffineStr W ∧ ι' ≫ f = Fermat.weierstrassAffineStr W' ∧
+      Set.range ι.base = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of R)))).1.base)ᶜ ∧
+      Set.range ι'.base = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of R)))).1.base)ᶜ ∧
+      Spec.map (CommRingCat.ofHom Ψ.toAlgHom.toRingHom) ≫ ι = ι' ∧
+      IsUnit a ∧ IsUnit b ∧
+      Ψ (WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine (C X)) =
+        WeierstrassCurve.Affine.CoordinateRing.mk W'.toAffine (C (C a * X + C r)) ∧
+      Ψ (WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine Y) =
+        WeierstrassCurve.Affine.CoordinateRing.mk W'.toAffine
+          (C (C b) * Y + C (C c * X + C t)) := by
+  obtain ⟨ι, hιoi, hιf, hιr⟩ := hW
+  obtain ⟨ι', hι'oi, hι'f, hι'r⟩ := hW'
+  have hrange : Set.range ι.base = Set.range ι'.base := by rw [hιr, hι'r]
+  obtain ⟨Ψ, hfwd, hbwd⟩ :=
+    Fermat.exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel hιoi hι'oi hιf hι'f hrange
+  obtain ⟨a, r, b, c, t, hx, hy⟩ :=
+    Fermat.exists_linearShape_of_isWeierstrassModel ab W W' hιoi hιf hιr hι'oi hι'f hι'r
+      Ψ.toAlgHom hfwd
+  obtain ⟨a', r', b', c', t', hx', hy'⟩ :=
+    Fermat.exists_linearShape_of_isWeierstrassModel ab W' W hι'oi hι'f hι'r hιoi hιf hιr
+      Ψ.symm.toAlgHom hbwd
+  obtain ⟨ha, hb⟩ := Fermat.isUnit_of_linear_roundtrip Ψ hx hy hx' hy'
+  obtain ⟨V, hV⟩ := Fermat.exists_variableChange_of_isWeierstrassModel W W'
+    ⟨ι, hιoi, hιf, hιr⟩ ⟨ι', hι'oi, hι'f, hι'r⟩ Ψ
+  exact ⟨V, ι, ι', Ψ, a, r, b, c, t, hV, hιoi, hι'oi, hιf, hι'f, hιr, hι'r, hfwd, ha, hb, hx, hy⟩
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+open Polynomial in
+open scoped Polynomial.Bivariate in
 /-- **The scheme half of STEP 3 *up*: the two modelled curves differ by a
 `VariableChange` over `ℚ̄`** (PROVEN 2026-07-31, no leaf).
 
@@ -22260,7 +22327,19 @@ required.
 
 `S`, `S'`, and the `e`/`e'` of the two pins are NOT consumed — only the model
 clause is.  They are kept in the signature so that this reads uniformly with its
-consumers and so that it can absorb the level clause when the pin is repaired. -/
+consumers and so that it can absorb the level clause when the pin is repaired.
+
+**STRENGTHENED 2026-08-02 (flt-lean-80): the conclusion now also returns the CHART
+DATA.**  It used to return the bare `∃ Cv, E'⁄ℚ̄ = Cv • (E⁄ℚ̄)`, which is not enough
+for its consumer: the residue leaf below has to compare LEVEL STRUCTURES through the
+charts, and a bare variable change is not known to be the one the charts induce.
+`Fermat.exists_variableChange_chartCompat_of_isWeierstrassModel` (immediately above,
+PROVEN) supplies, at no cost, the two open immersions into `d₁.E`, the coordinate-ring
+equivalence `Ψ` with `Spec.map Ψ ≫ ι = ι'`, and `Ψ`'s linear shape — so this theorem
+now hands all of it on.  The proof is unchanged except for its last two lines: the
+abstract `ealg` from `nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel` is gone,
+because that equivalence is exactly the one whose lack of compatibility the 2026-07-30
+ROUTE AUDIT on `exists_isogenyIsom_of_gamma0Model_isBaseChangeOf` flags. -/
 theorem WeierstrassCurve.exists_variableChange_of_gamma0Model_isBaseChangeOf {N : ℕ}
     (hN : 0 < N)
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (E' : WeierstrassCurve ℚ) [E'.IsElliptic]
@@ -22270,8 +22349,27 @@ theorem WeierstrassCurve.exists_variableChange_of_gamma0Model_isBaseChangeOf {N 
     {d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
     (bc₁ : IsBaseChangeOf (specAlgClos ℚ) d₁ d) (bc₂ : IsBaseChangeOf (specAlgClos ℚ) d₂ d')
     (iso : IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :
-    ∃ Cv : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ),
-      E'⁄(AlgebraicClosure ℚ) = Cv • (E⁄(AlgebraicClosure ℚ)) := by
+    ∃ (Cv : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+      (ι : Fermat.weierstrassAffine (E⁄(AlgebraicClosure ℚ)) ⟶ d₁.E)
+      (ι' : Fermat.weierstrassAffine (E'⁄(AlgebraicClosure ℚ)) ⟶ d₁.E)
+      (Ψ : (E⁄(AlgebraicClosure ℚ)).toAffine.CoordinateRing ≃ₐ[AlgebraicClosure ℚ]
+        (E'⁄(AlgebraicClosure ℚ)).toAffine.CoordinateRing) (a r b c t : AlgebraicClosure ℚ),
+      E'⁄(AlgebraicClosure ℚ) = Cv • (E⁄(AlgebraicClosure ℚ)) ∧
+      IsOpenImmersion ι ∧ IsOpenImmersion ι' ∧
+      ι ≫ d₁.f = Fermat.weierstrassAffineStr (E⁄(AlgebraicClosure ℚ)) ∧
+      ι' ≫ d₁.f = Fermat.weierstrassAffineStr (E'⁄(AlgebraicClosure ℚ)) ∧
+      Set.range ι.base =
+        (Set.range (d₁.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ ∧
+      Set.range ι'.base =
+        (Set.range (d₁.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ ∧
+      Spec.map (CommRingCat.ofHom Ψ.toAlgHom.toRingHom) ≫ ι = ι' ∧
+      IsUnit a ∧ IsUnit b ∧
+      Ψ (WeierstrassCurve.Affine.CoordinateRing.mk (E⁄(AlgebraicClosure ℚ)).toAffine (C X)) =
+        WeierstrassCurve.Affine.CoordinateRing.mk (E'⁄(AlgebraicClosure ℚ)).toAffine
+          (C (C a * X + C r)) ∧
+      Ψ (WeierstrassCurve.Affine.CoordinateRing.mk (E⁄(AlgebraicClosure ℚ)).toAffine Y) =
+        WeierstrassCurve.Affine.CoordinateRing.mk (E'⁄(AlgebraicClosure ℚ)).toAffine
+          (C (C b) * Y + C (C c * X + C t)) := by
   classical
   haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
     inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
@@ -22299,27 +22397,59 @@ theorem WeierstrassCurve.exists_variableChange_of_gamma0Model_isBaseChangeOf {N 
     have h := isWeierstrassModel_map_of_isBaseChangeOf (RingHom.id (AlgebraicClosure ℚ)) iso1
       (E'⁄(AlgebraicClosure ℚ)) hW₂
     rwa [WeierstrassCurve.map_id] at h
-  obtain ⟨ealg⟩ := nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel hW₁ hW₂'
-  exact exists_variableChange_of_isWeierstrassModel _ _ hW₁ hW₂' ealg
+  exact Fermat.exists_variableChange_chartCompat_of_isWeierstrassModel _ _ hW₁ hW₂'
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
+open Polynomial in
+open scoped Polynomial.Bivariate in
 /-- **THE RESIDUE OF STEP 3 *up*: some variable change in the orbit carries `S'`
 onto `S`** (LEAF, cut 2026-07-31 off
 `exists_isogenyIsom_of_gamma0Model_isBaseChangeOf`) — **LEVEL-GENERIC**, and it
 is the ONLY clause of that theorem still open.
 
-`hex` is the conclusion of `exists_variableChange_of_gamma0Model_isBaseChangeOf`
-immediately above, handed in as a DELIBERATELY REDUNDANT hypothesis — the same
-device `X0.lean` uses for the `e` of `exists_variableChange_of_isWeierstrassModel`,
-and for the same reason: any proof of this leaf begins by producing exactly that
-variable change, so passing it in records that the scheme half is already done
-and keeps it out of the leaf's own obligations.
+The binder block `Cv₀ … _hy` is the conclusion of
+`exists_variableChange_of_gamma0Model_isBaseChangeOf` immediately above, handed in as a
+DELIBERATELY REDUNDANT hypothesis — the same device `X0.lean` uses for the `e` of
+`exists_variableChange_of_isWeierstrassModel`, and for the same reason: any proof of this
+leaf begins by producing exactly that data, so passing it in records that the scheme half
+is already done and keeps it out of the leaf's own obligations.
 
-**WHAT IS OPEN IS THE SET CLAUSE AND NOTHING ELSE.**  `hex` already gives a `Cv`;
-what it does not give is that `Cv` can be chosen inside its `Aut(E⁄ℚ̄)`-orbit so
+**WHAT IS OPEN IS THE SET CLAUSE AND NOTHING ELSE.**  The binders already give a `Cv₀`;
+what they do not give is that `Cv₀` can be chosen inside its `Aut(E⁄ℚ̄)`-orbit so
 that the induced point map carries `S'` onto `S`.  `IsIsogeny` and injectivity of
 that point map are PROVEN (`isIsogeny_equivOfEq_trans`), so a prover of this leaf
 closes the whole of STEP 3 *up*.
+
+## WHAT THE 2026-08-02 STRENGTHENING (flt-lean-80) BOUGHT, AND WHAT IT DID NOT
+
+The hypothesis used to be the bare `hex : ∃ Cv, E'⁄ℚ̄ = Cv • (E⁄ℚ̄)`.  That is strictly
+too weak for the route the paragraph below names, and the gap was not recorded anywhere:
+**the leaf has to compare LEVEL STRUCTURES through the two Weierstrass charts into `d₁.E`,
+and a bare variable change is not known to be the one those charts induce.**  So even
+after the pin repair the old statement could not have been closed by "the chart
+comparison" — a prover would have reached that point and found the link missing.
+
+The link was already proven upstream and merely not exported, which is why the repair
+cost nothing: `Fermat.exists_linearAlgHom_of_isWeierstrassModel` (`X0.lean`, PROVEN)
+takes its `Φ` from `Fermat.exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel`
+(`X0.lean`, PROVEN), which carries `Spec.map Ψ ≫ ι = ι'`, and then drops that conjunct.
+`Fermat.exists_variableChange_chartCompat_of_isWeierstrassModel` (this file, PROVEN
+2026-08-02) re-runs those five lines and keeps it.  The binders now carry the two open
+immersions, the chart-compatible `Ψ`, and `Ψ`'s linear shape `(a, r, b, c, t)` with
+`IsUnit a`, `IsUnit b`.  **Adding hypotheses can only weaken the leaf, so the faithfulness
+audit below is inherited verbatim and was not re-run; the NOT VACUOUS witness is
+re-checked against the new binders instead (see below).**
+
+**WHAT IS STILL MISSING FOR THE CHART ROUTE, and it is now the only non-pin obligation.**
+`Ψ` is compatible with the charts and has shape `(a, r, b, c, t)`; `Cv₀` satisfies
+`E'⁄ℚ̄ = Cv₀ • (E⁄ℚ̄)`.  Nothing yet says the point map of `Cv₀` IS the point map of `Ψ`.
+The relation `a = u²`, `b = u³`, `c = u² s` between the shape and `Cv₀`'s own
+`(u, r, s, t)` is established INSIDE `Fermat.exists_variableChange_of_linearAlgHom`
+(`X0.lean`) and is not exported either — the same defect one level down.  Exporting it
+is a statement widening of a PROVEN theorem in `X0.lean` (two lines, `refine ⟨⟨u, r, s,
+t⟩, ?_⟩` already names the witness), and with it the residue of this leaf is exactly the
+pin's `α`-gap and nothing else.  A successor should do that widening rather than rebuild
+the link here.
 
 **READ THE AUDIT ON `exists_isogenyIsom_of_gamma0Model_isBaseChangeOf` BEFORE
 STARTING.**  In short: this leaf is **not derivable from `IsGamma0ModelOf` as it
@@ -22333,8 +22463,12 @@ is nothing here for a proof effort to bite on.  It is NOT refuted: with the pin
 repaired the statement is true and its proof is the chart comparison, which is
 why it is stated in this form rather than deleted.
 
-**NOT VACUOUS**: at `N = 1` with `E' = E`, `d' = d`, `S' = S` and `Cv = 1` every
-hypothesis holds and the conclusion is a genuine equation.
+**NOT VACUOUS**, re-checked 2026-08-02 against the widened binder list: at `N = 1` with
+`E' = E`, `d' = d`, `S' = S`, `Cv₀ = 1`, `Ψ = 1`, `ι = ι'` the chosen chart, and
+`(a, r, b, c, t) = (1, 0, 1, 0, 0)`, every hypothesis holds — `_hfwd` is
+`Spec.map (ofHom 1) ≫ ι = ι`, and `_hx`/`_hy` are `rfl` — and the conclusion is a
+genuine equation.  The new binders are therefore satisfiable and the leaf has not been
+made vacuous by them.
 
 The `letI` in the conclusion supplies `(E⁄ℚ̄).IsElliptic`, which does not
 synthesise through the `⁄` notation; it is `inferInstanceAs` of the instance
@@ -22348,8 +22482,28 @@ theorem WeierstrassCurve.exists_variableChange_image_of_gamma0Model_isBaseChange
     {d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
     (bc₁ : IsBaseChangeOf (specAlgClos ℚ) d₁ d) (bc₂ : IsBaseChangeOf (specAlgClos ℚ) d₂ d')
     (iso : IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂)
-    (hex : ∃ Cv : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ),
-      E'⁄(AlgebraicClosure ℚ) = Cv • (E⁄(AlgebraicClosure ℚ))) :
+    (Cv₀ : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+    (ι : Fermat.weierstrassAffine (E⁄(AlgebraicClosure ℚ)) ⟶ d₁.E)
+    (ι' : Fermat.weierstrassAffine (E'⁄(AlgebraicClosure ℚ)) ⟶ d₁.E)
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).toAffine.CoordinateRing ≃ₐ[AlgebraicClosure ℚ]
+      (E'⁄(AlgebraicClosure ℚ)).toAffine.CoordinateRing)
+    (a r b c t : AlgebraicClosure ℚ)
+    (hex : E'⁄(AlgebraicClosure ℚ) = Cv₀ • (E⁄(AlgebraicClosure ℚ)))
+    (_hιoi : IsOpenImmersion ι) (_hι'oi : IsOpenImmersion ι')
+    (_hιf : ι ≫ d₁.f = Fermat.weierstrassAffineStr (E⁄(AlgebraicClosure ℚ)))
+    (_hι'f : ι' ≫ d₁.f = Fermat.weierstrassAffineStr (E'⁄(AlgebraicClosure ℚ)))
+    (_hιr : Set.range ι.base =
+      (Set.range (d₁.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ)
+    (_hι'r : Set.range ι'.base =
+      (Set.range (d₁.ab.zero (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))).1.base)ᶜ)
+    (_hfwd : Spec.map (CommRingCat.ofHom Ψ.toAlgHom.toRingHom) ≫ ι = ι')
+    (_ha : IsUnit a) (_hb : IsUnit b)
+    (_hx : Ψ (WeierstrassCurve.Affine.CoordinateRing.mk (E⁄(AlgebraicClosure ℚ)).toAffine (C X)) =
+      WeierstrassCurve.Affine.CoordinateRing.mk (E'⁄(AlgebraicClosure ℚ)).toAffine
+        (C (C a * X + C r)))
+    (_hy : Ψ (WeierstrassCurve.Affine.CoordinateRing.mk (E⁄(AlgebraicClosure ℚ)).toAffine Y) =
+      WeierstrassCurve.Affine.CoordinateRing.mk (E'⁄(AlgebraicClosure ℚ)).toAffine
+        (C (C b) * Y + C (C c * X + C t))) :
     ∃ (Cv : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
       (h : E'⁄(AlgebraicClosure ℚ) = Cv • (E⁄(AlgebraicClosure ℚ))),
       (letI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
@@ -22460,11 +22614,13 @@ theorem WeierstrassCurve.exists_isogenyIsom_of_gamma0Model_isBaseChangeOf {N : �
         (ι : (E'⁄(AlgebraicClosure ℚ)).Point → (E⁄(AlgebraicClosure ℚ)).Point) '' S' = S := by
   haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
     inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  obtain ⟨Cv₀, ι, ι', Ψ, a, r, b, c, t, hex, hιoi, hι'oi, hιf, hι'f, hιr, hι'r, hfwd,
+      ha, hb, hx, hy⟩ :=
+    WeierstrassCurve.exists_variableChange_of_gamma0Model_isBaseChangeOf hN E E' hd hd'
+      bc₁ bc₂ iso
   obtain ⟨Cv, hCv, himg⟩ :=
     WeierstrassCurve.exists_variableChange_image_of_gamma0Model_isBaseChangeOf hN E E' hd hd'
-      bc₁ bc₂ iso
-      (WeierstrassCurve.exists_variableChange_of_gamma0Model_isBaseChangeOf hN E E' hd hd'
-        bc₁ bc₂ iso)
+      bc₁ bc₂ iso Cv₀ ι ι' Ψ a r b c t hex hιoi hι'oi hιf hι'f hιr hι'r hfwd ha hb hx hy
   refine ⟨((WeierstrassCurve.Affine.Point.equivOfEq hCv).trans
       (WeierstrassCurve.Affine.Point.equivVariableChange (E⁄(AlgebraicClosure ℚ)) Cv)).toAddMonoidHom,
     WeierstrassCurve.isIsogeny_equivOfEq_trans Cv hCv, fun Q hQ => ?_, himg⟩

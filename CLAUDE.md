@@ -16151,3 +16151,88 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A STALE `.lake` MAKES A PRESENT DECLARATION LOOK SWALLOWED — and the contradiction is the tell
+
+(2026-08-02, `flt-lean-80`.) A worktree fast-forwarded 2242 commits still had a
+`.lake/build` from two days earlier. A scratch module that `public import`ed
+`MazurTorsion.lean` then reported `Unknown identifier
+Fermat.exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel` for a theorem that is
+plainly at `X0.lean:20829` in the source — while `Fermat.exists_variableChange_of_isWeierstrassModel`,
+declared 1500 lines BELOW it in the same file, resolved fine.
+
+That combination reads exactly like a **runaway doc comment**: a declaration present in the
+source, absent from the environment, with its neighbours fine. I ran the comment-depth scan
+(the right instinct) and it said **depth 0 at that line and total depth 0 for the file** —
+i.e. real code, no wound. **That contradiction is the diagnosis, not a puzzle**: a
+comment-nesting scan reads the SOURCE and an `Unknown identifier` reads the OLEAN, so when
+they disagree the olean is from a different source. One `stat` on the olean settled it
+(mtime two days before the sources), and
+`rsync -a --delete ~/.flt-release-lake/build/ .lake/build/` — 69 s — made all three names
+resolve.
+
+**So the order of checks when a scratch cannot see a declaration you can read:**
+
+    stat -c '%y %n' .lake/build/lib/lean/<the declaring module>.olean   # older than your ff?
+    git diff --stat $(cat ~/.flt-release-lake/sha) HEAD -- Fermat/      # empty => rsync is exact
+
+and only then reach for `commentspan.py` / `parsecheck.py`. The doctrine already says to
+rsync after a fast-forward; what is new is that **skipping it produces a false SWALLOWED-
+DECLARATION report**, which is one of the most expensive wrong diagnoses in this tree
+because it sends you into another module's merge history.
+
+Corollary for the enumeration trick itself, which is worth keeping: to find a declaration's
+real namespace, do not guess and do not grep for `^namespace` (this project's docstrings say
+"namespace" in prose). Ask the environment:
+
+    run_cmd do
+      let env ← Lean.getEnv
+      for (n, _) in env.constants.toList do
+        if (n.toString.splitOn "<distinctive fragment>").length ≥ 2 then Lean.logInfo n.toString
+
+Ten seconds, and it returns the fully-qualified name. It is also the check that exposed the
+stale olean, because it returned the *neighbours* and not the target.
+
+## "THAT THEOREM HANDS BACK X" FAILS ONE LEVEL DOWN TOO — grep for a `_compat_` SIBLING before pricing the link
+
+(2026-08-02, `flt-lean-80`, on `exists_variableChange_image_of_gamma0Model_isBaseChangeOf`.)
+CLAUDE.md already records that a docstring's claim about what an upstream theorem *gives*
+you must be checked against its CONCLUSION rather than its proof. The same defect stacks,
+and a route note that survives the first check can die at the second.
+
+That leaf's route is *"with the pin repaired the statement is true and its proof is the chart
+comparison"*. The chart comparison needs the variable change to be **the one the two
+Weierstrass charts induce**; the leaf was handed `∃ Cv, E'⁄ℚ̄ = Cv • (E⁄ℚ̄)`, which is not
+that. So the route was unrunnable for a second, unrecorded reason on top of the `α`-gap
+everyone had written about.
+
+**The link was already proven upstream and simply not exported, twice over:**
+
+* `Fermat.exists_coordinateRingAlgEquiv_compat_of_isWeierstrassModel` (`X0.lean`, PROVEN)
+  concludes `Spec.map Ψ ≫ ι = ι'` — `Ψ` IS the identity of the total space read in the two
+  charts;
+* `Fermat.exists_linearAlgHom_of_isWeierstrassModel` (`X0.lean`, PROVEN) obtains its `Φ`
+  from exactly that and returns `Φ := Ψ.toAlgHom` **with the compatibility dropped**;
+* `Fermat.exists_variableChange_of_linearAlgHom` (`X0.lean`, PROVEN) then builds `V` from
+  `Φ`'s coordinate shape and does not export `a = u²`, `b = u³`, `c = u² s` either.
+
+So a five-line re-run of the middle theorem's own proof, keeping the conjunct, gives
+`Fermat.exists_variableChange_chartCompat_of_isWeierstrassModel` — `V`, both open
+immersions, the chart-compatible `Ψ`, its linear shape and the two `IsUnit`s. It compiled
+**first try**, and it is stated DOWNSTREAM (in `MazurTorsion.lean`) rather than as a widening
+of `X0.lean`, per the standing rule: re-derive downstream when the upstream module's
+consumers are outside your cone.
+
+**The cheap check this argues for: when a route needs "the map induced by the charts", grep
+the upstream chain for a `_compat_` / `_compatible_` sibling.** In this development the
+compatible version usually exists, is PROVEN, and is consumed only inside a proof body — so
+it is invisible to anyone reading conclusions. `grep -n 'compat' <the upstream module>` is
+the whole check.
+
+Corollary on how to bank it: a proven bridge with no consumer is free-floating and forbidden
+here, so land it by **moving it into the blocked leaf's binders**. Widening a leaf's
+hypotheses can only weaken it, so the old faithfulness audit is inherited verbatim (say so)
+— but the **NOT VACUOUS witness must be re-checked against the new binders**, because that
+is the one thing extra hypotheses can break. Count unchanged, `1 → 1`; what changed is that
+the residue is now the pin's `α`-gap plus one two-line statement widening, instead of an
+unbounded "chart comparison".
