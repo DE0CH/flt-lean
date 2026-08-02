@@ -80,16 +80,11 @@ coarser than it needed to be.
   the residue field `𝓞 F ⧸ q` is a root of `X ^ (N 𝔭) - X` then `f(q | 𝔭) = 1`.
 * `NumberField.finite_ramifiedBelow` — PROVEN. Only finitely many primes of `𝓞 K`
   ramify in `L` (via the different ideal).
-* `NumberField.finrank_eq_one_of_forall_inertiaDeg_eq_one` — **THE DENSITY INPUT OF
-  CHEBOTAREV, and it is PROVEN as of 2026-08-02** (in `Density.lean`; it was an open leaf
-  there until its three Dirichlet-series sub-leaves were closed). A finite extension of
-  number fields in which all but finitely many primes of the base have residue degree `1`
-  is trivial.
-* `NumberField.closure_frobAt_eq_top` — PROVEN 2026-07-31 over the theorem above, by the
-  fixed-field reduction. **Since 2026-08-02 it is therefore UNCONDITIONAL**:
-  `#print axioms NumberField.closure_frobAt_eq_top` gives
-  `[propext, Classical.choice, Quot.sound]`. Chebotarev is no longer a place where this
-  development owes anything.
+* `NumberField.finrank_eq_one_of_forall_inertiaDeg_eq_one` — **OPEN LEAF: THE DENSITY
+  INPUT OF CHEBOTAREV.** A finite extension of number fields in which all but finitely
+  many primes of the base have residue degree `1` is trivial.
+* `NumberField.closure_frobAt_eq_top` — PROVEN 2026-07-31 over the leaf above, by the
+  fixed-field reduction.
 
 ## The reciprocity cut (2026-07-30)
 
