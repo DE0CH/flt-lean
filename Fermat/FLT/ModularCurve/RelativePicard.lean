@@ -351,13 +351,22 @@ The autoduality half of the cut lives next to its consumer in
 those are no longer `IsRelPicZeroOf.exists_albaneseFactorisation` and
 `IsRelPicZeroOf.eq_of_aj_eq` — both of THOSE are now PROVEN.**  They are
 `IsRelPicZeroOf.exists_flatSurj_ajListSum` (`Sym^d C ↠ Pic^d`, i.e.
-Riemann–Roch) and
-`IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq_of_compactSpace`
-(Abel's theorem: `Σ c(yᵢ)` depends only on the class `Σ aj(yᵢ)`).  Those
-two are the whole of what autoduality still owes, and since 2026-07-30 they
-carry the SAME `[CompactSpace T]` hypothesis: the general-base form of the
-second is PROVEN over it by Zariski-locality, so one subtree closes both
-under one hypothesis.
+Riemann–Roch) and `listSum_map_eq_of_relPicEquiv_divisor`
+(Abel's theorem: the divisor map into an abelian scheme kills relative
+linear equivalence).  Those two are the whole of what autoduality still owes.
+
+**AMENDED 2026-08-02, and the amendment corrects the two sentences that stood
+here.**  The Abel leaf was named
+`IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq_of_compactSpace`; it was re-cut
+on 2026-07-31 into the `Pic⁰`-free form shown, the old declaration was left in
+place with no consumer, and it has now been deleted (see the module-comment note
+left at its
+old site in `X0.lean`).  And the two leaves no longer "carry the SAME
+`[CompactSpace T]` hypothesis": the Abel leaf carries no finiteness hypothesis
+at all, while `exists_flatSurj_ajListSum` was narrowed on 2026-08-02 from
+`[CompactSpace T]` to `[IsAffine T]`, because every live call site of it — there
+are exactly two, and both are in `X0.lean` — instantiates `T` at
+`J.affineCover.X i`.
 
 Note that the phrase "autoduality and biduality" this paragraph used to
 carry was ALSO wrong about the mathematics, not merely about which names
