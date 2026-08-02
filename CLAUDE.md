@@ -16151,3 +16151,95 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A RE-CUT ORPHANS THE LOSER *IN ONE FILE, WITH NO MERGE INVOLVED* — and the parent's docstring goes on naming it
+
+(2026-08-02, `flt-lean-264`, `ModularCurve/X0.lean`.  Frontier −1, no mathematics
+done, and the leaf had been dead for two days.)
+
+The duplicate-cut sections above are all about two BRANCHES cutting one node and a
+merge landing both.  The same orphan is produced by **one author re-cutting one node
+in one file on one day**, and then it is not a merge defect at all — it is simply
+that a re-cut rewires the parent's PROOF and cannot rewire the parent's DOCSTRING.
+
+`IsRelPicZeroOf.listSum_map_eq_of_listSum_aj_eq` was cut on 2026-07-30 over a leaf
+`…_of_listSum_aj_eq_of_compactSpace`, and RE-CUT on 2026-07-31 over the strictly
+better `listSum_map_eq_of_relPicEquiv_divisor` (Abel's theorem with `Pic⁰` removed
+from the statement) plus a proven bridge.  The re-cut did not delete the loser.  From
+then on:
+
+* the old leaf had **exactly one comment-stripped occurrence in the whole tree — its
+  own declaration**;
+* it emitted `declaration uses 'sorry'`, was counted by every frontier scan, and
+  passed every ownership check, so it was a live dispatch target that could never
+  move the project;
+* the parent's docstring still read *"PROVEN 2026-07-30, over the quasi-compact leaf
+  above **and nothing else**"*, and the leaf's own docstring still read *"the general
+  statement is PROVEN over this one just below"*.  **Both sentences were true when
+  written and neither is checked by anything.**
+
+**The detector is one line and it is already in this file for the merge case; it
+applies verbatim with no merge in sight: when a PROVEN declaration's docstring names
+the leaf it rests on, `grep` its PROOF BODY for that name.**  A docstring is written
+once, at the cut; a re-cut edits the body.  Here the body says
+`listSum_map_eq_of_relPicEquiv_divisor` and the docstring says something else, and
+that mismatch is the whole finding.
+
+**Then DELETE rather than delegate, but check which it is first.**  The rule recorded
+above — do not delete a true audited statement, make it a corollary — assumes the
+orphan's statement is not otherwise available.  Check: here the orphan was the live
+theorem 30 lines below **plus an unused `[CompactSpace T]`**, i.e. strictly weaker
+than something already in the file, so nothing was lost and a proven corollary would
+have been free-floating (banned).  When the orphan is strictly weaker than a live
+declaration, deletion is the right repair and the only cost is prose.
+
+**And the prose cost is the real work: five docstrings in `X0.lean` and one in
+`RelativePicard.lean` named the dead leaf**, including a leaf table, a route note on
+its sibling, and the "what the Jacobian still owes" paragraph 23 000 lines away.
+`grep` the dead name after deleting and fix every hit — an unrepaired hit is exactly
+how the next agent re-cuts it.
+
+## NARROW A LEAF TO WHAT ITS CALL SITES SUPPLY — and check whether the narrowing costs a call site anything
+
+(Same run.  `[CompactSpace T]` → `[IsAffine T]` on
+`exists_flatSurj_relPicEquiv_sectionIdealProd`, its consumer, and that consumer's
+consumer: three signatures, **zero call-site edits**, one green build.)
+
+The standing rule is that a leaf stated wider than any live call site needs is a
+harder theorem than anybody ordered.  Two things make it cheap to act on:
+
+* **Trace the WHOLE chain, not the leaf's own call sites.**  This leaf had one
+  consumer, which had two, one of which had one — and all four terminal
+  instantiations were `T := J.affineCover.X i`.  Nothing anywhere supplied a merely
+  quasi-compact base.  Four `grep`s over comment-stripped source, five minutes.
+* **Ask whether the narrowing is INSTANCE-INVISIBLE.**  `IsAffine T → CompactSpace T`
+  is an instance and `IsAffine (J.affineCover.X i)` is an instance, so instance search
+  finds the affineness exactly where it used to find the compactness: no call site
+  changed by a character, and every proof step below that had consumed
+  quasi-compactness still had it.  When that holds the narrowing is free; when it does
+  not, price the call-site churn before starting, because it is the class-7 interface
+  split.
+
+**Say explicitly that the old faithfulness audit is INHERITED and why.**
+Strengthening a hypothesis shrinks the class of instances, so a counterexample to the
+narrowed form is a counterexample to the old one — the audit transfers in that
+direction and only in that direction.  And say what the new hypothesis is load-bearing
+FOR: here `[IsAffine T]` is **not** claimed load-bearing for truth (the compact form
+is true too), only for the route, where it turns "a gluing over a quasi-compact base"
+into "commutative algebra over one ring".
+
+## `` `/-!` `` IN PROSE OPENS A COMMENT — BACKTICKS DO NOT PROTECT, AND THE BALANCE CAN COME OUT ZERO
+
+(Same run, caught by re-scanning, and it is the sharpening the existing rule needs.)
+Writing the note that RECORDS a comment-level repair is the likeliest place to cause
+one — this file already says so.  Two things it does not say, both measured here:
+
+* **Backticks are not protection.**  Lean's lexer knows nothing about code spans, so
+  `` `/-!` `` inside a docstring is an opener exactly as a bare `/-!` is.  Write
+  "module-comment note", "the doc-comment opener", "the closing delimiter" in words.
+* **The total depth can come out ZERO and still be wrong.**  Three such openers in
+  `X0.lean` swallowed three later `-/` and the file scanned as `depth 0, no strays`
+  — the runaway-that-balances shape — while a fourth in `RelativePicard.lean` left
+  `depth 1` and was obvious.  So the scan that decides is **depth AND strays AND the
+  line of every unclosed opener**, run after EVERY docstring edit, not once at the end.
+  `tools/merge/parsecheck.py <file>` is the project's version and takes seconds.
