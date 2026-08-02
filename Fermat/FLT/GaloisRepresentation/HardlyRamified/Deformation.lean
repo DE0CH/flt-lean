@@ -115,14 +115,17 @@ written and the frontier moves.
 - ~~`finiteDimensional_h1_adZeroTwistRestricted`~~ — PROVEN (verified 2026-07-30;
   this one had already caused a phantom dispatch in the 2026-07-28 release
   window, per CLAUDE.md's list of leaves agents were sent at after they closed)
-- `isLocalTateDual` — **OPEN** (cut out 2026-07-31 as item (b) of the build order,
-  the LOCAL half: local class field theory's invariant map `H²(ℚ_v, k(1)) ≅ k`
-  together with nondegeneracy of the cup-product pairing
-  `H^m(ℚ_v, ad⁰) × H^n(ℚ_v, ad⁰(1)) → H²(ℚ_v, k(1))`, `m + n = 2`. It is stated
-  over an actual `def` — `localTatePairingU`, built from the cup product vendored
-  the same day from `~/cs/FLT` — rather than over a phrase in a docstring, which
-  is the whole point of the cut. UNCONDITIONALLY TRUE and audited; the deepest
-  single item in this subtree)
+- ~~`isLocalTateDual`~~ — PROVEN 2026-08-02, an assembly over the two leaves below;
+  it was cut out 2026-07-31 as item (b) of the build order, the LOCAL half
+- `exists_localInvariantMap` — **OPEN** (cut out 2026-08-02 out of
+  `isLocalTateDual`): local class field theory's invariant map, in the form
+  `H²(ℚ_v, k(1)) ≅ k` as `k`-modules. NSW VII.5 / Serre XI. Mentions no `ad⁰`, no
+  `ρbar`, no `hℓOdd` and no `hdim`; the deepest single item in this subtree
+- `nondegenerate_cup_cycloLocal` — **OPEN** (cut out 2026-08-02 out of
+  `isLocalTateDual`): Tate local duality, NSW VII.2, for an arbitrary pair of FINITE
+  discrete `Γ ℚ_v`-modules with a perfect intertwining pairing into `k(1)` — the cup
+  product is then nondegenerate on both sides at `m + n = 2`. Carries no invariant
+  map, so it is separately ownable from `exists_localInvariantMap`
 - `poitouTateExactness_of_localTateDuality` — **OPEN** (cut out 2026-07-31 as the
   GLOBAL half: NSW VIII.6.7's nine-term arrow, with local duality now an explicit
   hypothesis `hloc` instead of an unbuilt prerequisite. Its own docstring lists the
@@ -22205,10 +22208,185 @@ def IsLocalTateDual (ρbar : GaloisRep ℚ k V)
           ∃ x : ↥(continuousCohomology m (adZeroLocalU ρbar v)),
             inv (localTatePairingU ℓ ρbar v m n hmn x y) ≠ 0)
 
+/-! ##### The two classical inputs, and the bridge that is already proven
+
+`isLocalTateDual` below was a single `sorry` leaf from 2026-07-31 until 2026-08-02.
+It is now PROVEN over exactly two leaves — `exists_localInvariantMap` and
+`nondegenerate_cup_cycloLocal` — and the frontier goes `1 → 2`.  **That is disclosure,
+not progress on the arithmetic**, and the count is the wrong thing to read: what changed
+is that one undivided obligation carrying the phrase "local class field theory" became
+two statements that a reader can look up, neither of which mentions `ad⁰`, the trace
+form, or `ρbar`.
+
+**WHY THE CUT IS HERE AND NOT WHERE THE BUILD ORDER SUGGESTED.**  The build-order note
+on `exists_injective_sha2_dual_sha1Twist_of_selfDual` proposed
+`H²(ℚ_v, μ_ℓ) ≅ ℤ/ℓ` and a separate base change `H²(ℚ_v, k(1)) ≅ H²(ℚ_v, μ_ℓ) ⊗ k` as
+two items.  Splitting them that way COSTS more than it buys here: `μ_ℓ` is a
+`ZMod ℓ`-module and this file has no such object, so stating it needs new vocabulary,
+AND the base-change step needs a flat-base-change comparison theorem for CONTINUOUS
+cohomology, which is not in the pin and would itself be a leaf.  Net `1 → 3`, with two
+of the three existing only because of the split.  Stated directly over `k` — which is
+what `IsLocalTateDual` asks for anyway — it is one leaf in vocabulary the file already
+has.  A prover is of course free to go through `μ_ℓ ⊗_{𝔽_ℓ} k` internally.
+
+**THE TWO LEAVES SHARE NO DATUM, which is what makes them separately ownable.**  The
+naive cut has both halves mentioning the invariant map `inv`, because
+`IsLocalTateDual` names it in both clauses.  They need not: nondegeneracy is invariant
+under composing with ANY linear isomorphism (`inv z ≠ 0 ↔ z ≠ 0`, `inv` being
+injective), so `nondegenerate_cup_cycloLocal` is stated about the RAW cup pairing
+valued in `H²(ℚ_v, k(1))`, with no `inv` anywhere.  The assembly below is what puts
+them together, and it is the whole of the `inv`-transfer.
+
+**WHAT IS ALREADY PROVEN AND IS NOT A LEAF**: `ad⁰(1) ≅ Hom(ad⁰, k(1))`, i.e. the
+perfectness of the trace form.  `adZeroTraceForm_nondegenerate` above is it, and the
+four short lemmas below carry it across the `ULift` and across the symmetry of
+`tr(xy)` into the two coefficient-level hypotheses `nondegenerate_cup_cycloLocal`
+takes.  Nobody should re-prove any of that. -/
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+/-- The trace form is symmetric, `tr(xy) = tr(yx)` (`LinearMap.trace_mul_comm`).
+This is what makes right-nondegeneracy free from left-nondegeneracy below. -/
+lemma adZeroTraceForm_symm (x y : AdZero k V) :
+    adZeroTraceForm k V x y = adZeroTraceForm k V y x := by
+  rw [adZeroTraceForm_apply, adZeroTraceForm_apply, LinearMap.trace_mul_comm]
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+/-- `adZeroTraceFormU` is symmetric, `adZeroTraceForm_symm` across the `ULift`. -/
+lemma adZeroTraceFormU_symm (x y : ULift.{u} (AdZero k V)) :
+    adZeroTraceFormU k V x y = adZeroTraceFormU k V y x := by
+  show ULift.up (adZeroTraceForm k V x.down y.down)
+      = ULift.up (adZeroTraceForm k V y.down x.down)
+  rw [adZeroTraceForm_symm]
+
+/-- **`ad⁰` is a finite type** — `k` is finite and `V` is a finite free `k`-module, so
+`Module.End k V` is finite and `ad⁰` embeds in it by `AdZero.toEnd_injective`.
+
+Deliberately a `lemma` and NOT an `instance`: a new global `Finite` instance in this
+namespace is an elaboration-invisible dependency for the 4 000 lines below and for
+every downstream module, and its only consumer is the assembly below, which brings it
+in with one `haveI`.  The three-line idiom is the one
+`exists_openNormalSubgroup_index_le_of_cocycle` already uses. -/
+lemma finite_adZero : Finite (AdZero k V) :=
+  haveI : Finite V := Module.finite_of_finite k
+  haveI : Finite (Module.End k V) :=
+    Finite.of_injective (fun f : Module.End k V => (f : V → V)) DFunLike.coe_injective
+  Finite.of_injective (AdZero.toEnd k V) AdZero.toEnd_injective
+
 include hℓOdd hdim in
+/-- Nondegeneracy of the trace form in the LEFT slot, across the `ULift` — one of the
+two coefficient-level hypotheses of `nondegenerate_cup_cycloLocal` below. -/
+lemma adZeroTraceFormU_nondeg_left {x : ULift.{u} (AdZero k V)} (hx : x ≠ 0) :
+    ∃ y : ULift.{u} (AdZero k V), adZeroTraceFormU k V x y ≠ 0 := by
+  obtain ⟨y, hy⟩ := adZeroTraceForm_nondegenerate hℓOdd hdim
+    (x := x.down) (fun hz => hx (ULift.down_injective hz))
+  exact ⟨ULift.up y, fun hz => hy (by simpa using congrArg ULift.down hz)⟩
+
+include hℓOdd hdim in
+/-- Nondegeneracy of the trace form in the RIGHT slot — free from the left one, because
+`tr(xy) = tr(yx)` (`adZeroTraceFormU_symm`). -/
+lemma adZeroTraceFormU_nondeg_right {y : ULift.{u} (AdZero k V)} (hy : y ≠ 0) :
+    ∃ x : ULift.{u} (AdZero k V), adZeroTraceFormU k V x y ≠ 0 := by
+  obtain ⟨x, hx⟩ := adZeroTraceFormU_nondeg_left hℓOdd hdim hy
+  exact ⟨x, fun hz => hx (by rw [adZeroTraceFormU_symm]; exact hz)⟩
+
+/-- **LEAF A — THE LOCAL INVARIANT MAP** (sorry leaf, cut out 2026-08-02):
+`H²(ℚ_v, k(1))` is one-dimensional over `k`.
+
+This is the local class field theory, and it is the whole of it: `k(1)` is `μ_ℓ ⊗ k`
+(`char k = ℓ`, `natCast_self_eq_zero` above, and `adZeroCycloChar` really is the mod-`ℓ`
+cyclotomic character — it is mathlib's `cyclotomicCharacter` pushed along
+`algebraMap ℤ_[ℓ] k`, see its docstring), so this says
+`H²(ℚ_v, μ_ℓ) ⊗_{𝔽_ℓ} k ≅ k`, i.e. `H²(ℚ_v, μ_ℓ) ≅ ℤ/ℓ` — the invariant map
+`Br(ℚ_v)[ℓ] ≅ (1/ℓ)ℤ/ℤ` of NSW VII.5 / Serre XI.
+
+**FAITHFULNESS AUDIT, 2026-08-02. VERDICT: FAITHFUL, and unconditionally TRUE.**
+
+* *Every `v` is a FINITE place.*  `v` ranges over
+  `HeightOneSpectrum (RingOfIntegers ℚ)`, i.e. the height-one primes of `ℤ`, so `ℚ_v`
+  is a `p`-adic field and there is no archimedean case to exclude.  `H²(K, μ_n) ≅ ℤ/n`
+  for EVERY `n` and every `p`-adic `K`, including `n` divisible by the residue
+  characteristic, so no hypothesis relating `ℓ` to `v` is needed and none is taken.
+* *The twist is load-bearing and is present.*  With the TRIVIAL action this statement
+  would be FALSE: `H²(K, ℤ/ℓ) ≅ (μ_ℓ(K))^∨`, which is `ℤ/ℓ` only when `μ_ℓ ⊆ K`.  The
+  action here is through `adZeroCycloChar`, checked above to be the cyclotomic
+  character, so the statement is the correct one.
+* *No `hℓOdd`, no `hdim`, no `ρbar`.*  None of the three occurs in the statement and
+  none is needed: the invariant map has nothing to do with `ad⁰`.  `V` occurs ONLY as
+  the universe marker `cycloLocalU` takes (see the section header) — its value is
+  irrelevant to the mathematics.
+* *No junk-value hazard.*  `≃ₗ[k]` forces the dimension to be exactly `1`; a degenerate
+  witness is impossible.  `Nonempty` rather than a chosen map because nothing
+  downstream reads WHICH isomorphism (see `IsLocalTateDual`'s own docstring: any two
+  differ by a nonzero scalar and every consumer is scale-invariant).
+
+References: NSW VII.5, Serre *Local Fields* XI, Milne *Arithmetic Duality Theorems*
+I.2. -/
+theorem exists_localInvariantMap
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    Nonempty (↥(continuousCohomology 2 (cycloLocalU ℓ k V v)) ≃ₗ[k] k) :=
+  sorry
+
+/-- **LEAF B — TATE LOCAL DUALITY** (sorry leaf, cut out 2026-08-02): for FINITE
+discrete `Γ ℚ_v`-modules `X`, `Y` over `k` and an intertwining pairing
+`f : X × Y → k(1)` that is nondegenerate on both sides AT THE COEFFICIENT LEVEL, the
+cup product `H^m(X) × H^n(Y) → H²(ℚ_v, k(1))` is nondegenerate on both sides whenever
+`m + n = 2`.
+
+This is NSW VII.2 / Milne I.2.3.  Stated for a general pair of finite modules rather
+than for `ad⁰`, because the classical proof is at that generality and specialising it
+buys nothing; the consumer instantiates it at `ad⁰`, `ad⁰(1)` and the trace pairing.
+
+**WHY THE HYPOTHESIS IS A PERFECT PAIRING AND NOT `Y = Hom(X, k(1))`.**  The classical
+statement pairs `M` against `M* = Hom(M, μ)`.  Taking that literally would force the
+consumer to transport the cup product along an isomorphism `ad⁰(1) ≅ Hom(ad⁰, k(1))`,
+which needs NATURALITY OF THE CUP PRODUCT IN THE COEFFICIENT PAIRING — a compatibility
+lemma nobody has written.  Taking an abstract perfect pairing instead makes the
+consumer's obligation exactly `adZeroTraceForm_nondegenerate`, which is proven.  The
+two forms are equivalent: `hleft` says `X ↪ Hom_k(Y, k(1))` and `hright` says
+`Y ↪ Hom_k(X, k(1))`, `k(1)` is one-dimensional, so the dimensions agree and both
+injections are isomorphisms of `Γ ℚ_v`-modules (`f` being intertwining).
+
+**FAITHFULNESS AUDIT, 2026-08-02. VERDICT: FAITHFUL.**
+
+* *Finiteness is load-bearing and is taken.*  Tate duality is FALSE without it — an
+  infinite discrete module has no reason to have finite-dimensional `H^i`.  `[Finite ↥X]`
+  and `[Finite ↥Y]` are hypotheses; the consumer discharges them from `finite_adZero`.
+* *`k`-linear vs `ℤ`-linear duals.*  The classical dual is `Hom_ℤ(M, μ_ℓ)`; here it is
+  `Hom_k(-, k(1))`.  For a FINITE field `k` of characteristic `ℓ` the two agree as
+  `k`-modules once a nonzero `𝔽_ℓ`-functional `k → 𝔽_ℓ` is fixed, so the `k`-linear
+  statement is the classical one and is the form the consumer needs.
+* *`m + n = 2` is exactly the three cases `(0,2)`, `(1,1)`, `(2,0)`*, all of which are
+  Tate duality; there is no degenerate instantiation.
+* *No `inv`, no `hℓOdd`, no `hdim`, no `ρbar`.*  Nondegeneracy is scale-invariant, so
+  the invariant map of `exists_localInvariantMap` does not belong in this statement and
+  is not taken — which is what makes the two leaves separately ownable.  `hℓOdd` and
+  `hdim` enter only through the CONSUMER's proof of `hleft`/`hright`.
+
+References: NSW VII.2, Milne *Arithmetic Duality Theorems* I.2.3. -/
+theorem nondegenerate_cup_cycloLocal
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (X Y : TopRep k (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))
+    [DiscreteTopology ↥X] [DiscreteTopology ↥Y] [Finite ↥X] [Finite ↥Y]
+    (f : ContIntertwiningMap X.ρ (ContRepresentation.linHom Y.ρ (cycloLocalU ℓ k V v).ρ))
+    (hp : Continuous fun p : ↥X × ↥Y ↦ f p.1 p.2)
+    (hleft : ∀ x : ↥X, x ≠ 0 → ∃ y : ↥Y, f x y ≠ 0)
+    (hright : ∀ y : ↥Y, y ≠ 0 → ∃ x : ↥X, f x y ≠ 0)
+    (m n : ℕ) (hmn : (2 : ℕ) = m + n) :
+    (∀ x : ↥(continuousCohomology m X), x ≠ 0 →
+        ∃ y : ↥(continuousCohomology n Y),
+          ContinuousCohomology.cup X.ρ Y.ρ (cycloLocalU ℓ k V v).ρ f hp m n 2 hmn x y ≠ 0) ∧
+    (∀ y : ↥(continuousCohomology n Y), y ≠ 0 →
+        ∃ x : ↥(continuousCohomology m X),
+          ContinuousCohomology.cup X.ρ Y.ρ (cycloLocalU ℓ k V v).ρ f hp m n 2 hmn x y ≠ 0) :=
+  sorry
+
+include hℓOdd hdim in
+set_option maxHeartbeats 1000000 in
 /-- **LOCAL CLASS FIELD THEORY: the local invariant map, and local Tate duality for
-`ad⁰` at `v`** (sorry leaf, cut out 2026-07-31 as item (b) of the build order on
-`exists_injective_sha2_dual_sha1Twist_of_selfDual` below).
+`ad⁰` at `v`** (PROVEN 2026-08-02 over the two leaves above; cut out 2026-07-31 as item
+(b) of the build order on `exists_injective_sha2_dual_sha1Twist_of_selfDual` below, and
+decomposed 2026-08-02).
 
 This is NSW VII.2 / Tate local duality for the finite `Γ ℚ_v`-module `M = ad⁰`, together
 with the identification `H²(ℚ_v, k(1)) ≅ k` that makes it a `k`-valued statement.
@@ -22218,9 +22396,24 @@ i.e. the invariant map of local class field theory, of which our mathlib pin, th
 and `~/cs/FLT` have nothing (re-verified by statement shape on 2026-07-27, -28, -29,
 -30 and -31; mathlib's `Algebra/BrauerGroup/Defs.lean` is CSAs modulo Morita with no
 valuation input, and `TateCohomology/Basic.lean` is Tate cohomology of a FINITE group).
-It is the deepest single item in this subtree and it is not going to be discharged by
-an assembly. What this cut buys is that it is now a statement about objects that EXIST
-rather than a phrase, and that its consumer below can be written.
+It is the deepest single item in this subtree.  The 2026-08-02 decomposition does NOT
+reduce that cost by one line — it isolates it: the whole of it is now
+`exists_localInvariantMap` above, and everything else this statement used to bundle
+(Tate duality proper, and the perfectness of the trace form) is either a separately
+ownable leaf or already proven.
+
+**AND IT IS NOT VENDORABLE.**  `Mathlib/RingTheory/Valuation/Discrete/Basic.lean:57`
+points at the out-of-tree `github.com/mariainesdff/LocalClassFieldTheory`.  AUDITED
+2026-08-02: it does not have this and cannot be used for it.  Its
+`ClassFormation/ClassFormation.lean` — the one file whose name promises the invariant
+map — is a **2-byte empty placeholder**; its blueprint's own scope list excludes the
+invariant map, the Brauer group, Galois cohomology, `H²`, reciprocity and Tate duality;
+everything real in it (≈275 kB) is DVR / local-field / spectral-norm foundations, i.e.
+strictly BELOW where this leaf sits.  Its README says "local fields, and eventually
+LCFT" — the name is a statement of intent, not of content.  Pin drift would sink it
+independently: `v4.22.0-rc2` and mathlib `81a4b04c` against our `v4.32.0-rc1` and
+`a3364fae`.  Do not re-audit it; re-check only if that repository gains a
+`ClassFormation` with content.
 
 **FAITHFULNESS AUDIT, 2026-07-31. VERDICT: FAITHFUL, and unconditionally TRUE.**
 
@@ -22248,11 +22441,49 @@ the bound this leaf ultimately feeds. This leaf takes no `ρbar`-irreducibility
 hypothesis, so the guard binds only in the sense that no such input may be smuggled in.
 
 References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VII.2 (local
-duality) and VII.5 (the invariant map); Serre, *Local Fields*, XI. -/
+duality) and VII.5 (the invariant map); Serre, *Local Fields*, XI.
+
+**DECOMPOSED 2026-08-02, and this is now an ASSEMBLY rather than a leaf.**  It is
+PROVEN over `exists_localInvariantMap` (NSW VII.5) and `nondegenerate_cup_cycloLocal`
+(NSW VII.2) above, plus `adZeroTraceForm_nondegenerate` — which is where `hℓOdd` and
+`hdim` are spent, and the ONLY place they are spent, exactly as the audit above says.
+The frontier went `1 → 2`; see the subsection header above for why that is disclosure
+and why the `μ_ℓ`-then-base-change cut was NOT the one taken.
+
+The proof is the `inv`-transfer and nothing else: `nondegenerate_cup_cycloLocal` gives
+nondegeneracy of the RAW cup pairing valued in `H²(ℚ_v, k(1))`, and composing with the
+linear isomorphism `inv` preserves it in both directions because `inv` is injective
+(`LinearEquiv.map_eq_zero_iff`).  `localTatePairingU` is by definition the cup product
+of `adZeroTraceIntertwinerU`, so the two pairings are the same term.
+
+The `maxHeartbeats` bump is for one unavoidable `isDefEq`: `cup` states its type
+through `TopRep.of ρ₁`, the consumer through the bundled `adZeroLocalU ρbar v`, and
+crossing that structure-eta on objects this size is what costs the budget.  Note the
+`set_option` sits ABOVE the doc comment, beside the `include`: between the docstring and
+the `theorem` it is a parse error reported at the END of the docstring, which reads as a
+problem with the comment. -/
 theorem isLocalTateDual (ρbar : GaloisRep ℚ k V)
     (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
-    IsLocalTateDual ℓ ρbar v :=
-  sorry
+    IsLocalTateDual ℓ ρbar v := by
+  obtain ⟨inv⟩ := exists_localInvariantMap (ℓ := ℓ) (k := k) (V := V) v
+  refine ⟨inv, fun m n hmn => ?_⟩
+  haveI : Finite (AdZero k V) := finite_adZero
+  haveI : Finite ↥(adZeroLocalU ρbar v) :=
+    inferInstanceAs (Finite (ULift.{u} (AdZero k V)))
+  haveI : Finite ↥(adZeroTwistLocalU ℓ ρbar v) :=
+    inferInstanceAs (Finite (ULift.{u} (AdZero k V)))
+  obtain ⟨h1, h2⟩ := nondegenerate_cup_cycloLocal (ℓ := ℓ) (V := V) v
+    (adZeroLocalU ρbar v) (adZeroTwistLocalU ℓ ρbar v)
+    (adZeroTraceIntertwinerU ℓ ρbar v)
+    (ContRepresentation.continuous_pair_of_discrete _)
+    (fun _ hx => adZeroTraceFormU_nondeg_left hℓOdd hdim hx)
+    (fun _ hy => adZeroTraceFormU_nondeg_right hℓOdd hdim hy)
+    m n hmn
+  refine ⟨fun x hx => ?_, fun y hy => ?_⟩
+  · obtain ⟨y, hy⟩ := h1 x hx
+    exact ⟨y, fun hz => hy ((LinearEquiv.map_eq_zero_iff inv).mp hz)⟩
+  · obtain ⟨x, hx⟩ := h2 y hy
+    exact ⟨x, fun hz => hx ((LinearEquiv.map_eq_zero_iff inv).mp hz)⟩
 
 include hℓOdd hdim in
 /-- **THE GLOBAL HALF of Poitou–Tate: the nine-term arrow, GIVEN local duality**
