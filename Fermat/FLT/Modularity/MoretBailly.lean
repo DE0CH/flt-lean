@@ -48923,9 +48923,19 @@ WHAT IS PROVEN HERE, and therefore what nobody has to prove again:
   (`twistUnit_mem_specialUnits`), GIVEN the two determinant leaves;
 * the ARCHIMEDEAN clause, which is Lemma 4.4 read at `F = ℝ` and is now a
   one-line consequence of the fineness clause of
-  `exists_twistedFamily_of_isGaloisTwistForm` — the two statements are literally
+  `exists_splitModuliLevelAction_twistedFamily` — the two statements are literally
   the same text, `HasRealHilbertBlumenthalObject` being `IsTwistedLevelStructure`
   at `𝟙 (Spec ℝ)` spelled out.
+
+UPDATE 2026-08-02 — THE CUT BELOW WAS UNSOUND AND HAS BEEN REPAIRED BY FUSION.
+This subsection originally left THREE statements with named owners: LEAF Γ (the
+action exists), LEAF 4.4 (what its twists carry) and the two determinant leaves.
+The first two have been fused into `exists_splitModuliLevelAction_twistedFamily`,
+because `SplitModuliLevelAction` is satisfied by the constantly-`𝟙` family — see
+the PROVEN `exists_trivial_twistCocycle_splitModuliLevelAction` below, which is
+the witness — so LEAF Γ was trivially true and the `act` LEAF 4.4 received carried
+no information at all. Two open leaves became one and the survivor PRODUCES its
+action instead of receiving it. The determinant leaves are untouched.
 
 WHY `Γ` IS `SL₂` AND NOT "THE `Λ`-PRESERVING SUBGROUP". Both readings were tried.
 The `Λ`-stabilizer version is REFUTED twice over, and the refutations are worth
@@ -49348,12 +49358,42 @@ theorem SplitModuliLevelAction.isOpen_kernel_twistCocycle
     rw [e1, e2, act.act_one]
 
 open CategoryTheory AlgebraicGeometry in
-/-- **LEAF Γ — Taylor's `Γ` acts on the split space over `ℚ̄`** (sorry node, cut
-2026-07-31): the split moduli space, base-changed to an algebraic closure of `ℚ`,
-carries an action of `SL₂(k) × SL₂(kp)` by automorphisms over `Spec ℚ̄`, semilinear
-for `Γ_ℚ` in the `ρ₀`-conjugation sense.
+/-- **VACUITY AUDIT (2026-08-02) — `SplitModuliLevelAction` PINS NOTHING, AND
+THIS PROVEN THEOREM IS THE WITNESS.** Formerly **LEAF Γ**, a `sorry` node cut
+2026-07-31 asking for `Nonempty (SplitModuliLevelAction ρ₀ ρ₀p ratGaloisBaseAction
+fX₀)`. That leaf was **TRIVIALLY TRUE**: the constantly-`𝟙` family satisfies
+`act_snd`, `act_one`, `act_mul` and `act_baseAct` on the nose, so the structure is
+inhabited with no moduli input at all, and closing the leaf that way would have
+achieved nothing. It has therefore been REPLACED by the statement below, which
+records the defect instead of hiding it, and its consumer has been FUSED with
+`exists_splitModuliLevelAction_twistedFamily` (see that leaf's docstring for the
+accounting: two open leaves became one).
 
-THE MATHEMATICS. `X₀ ⊗ K` represents the split moduli problem over `K`-schemes:
+WHY THAT MATTERED, and it is the reason the fusion is a REPAIR and not merely a
+tidy-up. `exists_twistedFamily_of_isGaloisTwistForm` RECEIVED an
+`act : SplitModuliLevelAction …` and asserted a property of every twist by
+`act.twistCocycle`. Instantiate it at the witness below: the cocycle is `𝟙`, so
+`isGaloisTwistForm_one` presents `X₀` as one of its own twists, and the leaf then
+asserted that the UNTWISTED `X₀` carries a family whose level structures are
+`ρbar`-equivariant at every field point — for an arbitrary `ρbar` with
+`det ρbar = det ρ₀`. That is the "descend along the twist" conclusion asserted
+about a space nothing was twisted by, i.e. exactly the sentence the old docstring
+of that leaf offered as its NON-VACUITY argument ("at `c = 𝟙` the statement would
+assert `ρbar`-equivariant level structures on `X₀` itself, which is false whenever
+`ρbar ≇ ρ₀`"). The observation was right and was read the wrong way round: `c = 𝟙`
+is REACHABLE inside the leaf's own hypotheses, so it does not show the clause
+carries content — it shows the hypotheses do not determine the object. This is
+CLAUDE.md's THIRD OUTCOME (neither provable nor refutable: the axioms do not pin
+the object where the leaf looks), and its prescribed repair — pin the object by
+making the leaf PRODUCE it — is what the fusion does.
+
+The derivation is machine-checked rather than argued: applying the old leaf to the
+witness below, `isGaloisTwistForm_one`, and the four shape clauses of `hmod`
+elaborates and yields exactly that conclusion about `X₀`.
+
+WHAT THE ACTION MUST BE — the mathematics of the old LEAF Γ, preserved verbatim
+because it is what the fused leaf's `∃ act` still has to construct. `X₀ ⊗ K`
+represents the split moduli problem over `K`-schemes:
 an HBAV with real multiplication, a polarization of class `𝔞`, and bases
 `α : k² ≅ A[λ]`, `αp : kp² ≅ A[𝔭]` normalized by `Λ`, `Λp`. `(g, gp)` acts by
 `(α, αp) ↦ (α ∘ g, αp ∘ gp)`. The `Λ`-normalization survives precisely because
@@ -49381,45 +49421,78 @@ points of a dense open — the standard route).
 
 `hpℓ` is RIGIDITY and it is not decoration: the action would not be by
 automorphisms of a SCHEME if the moduli problem had automorphisms, and coprime
-residue characteristics at `λ` and `𝔭` are exactly what rules those out. -/
-theorem exists_splitModuliLevelAction
-    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
-    {ℓ p : ℕ} [NeZero ℓ] [NeZero p]
-    {lam frp : Ideal (NumberField.RingOfIntegers D)}
-    {hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam}
-    {hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp}
-    (hlam : lam.IsMaximal) (hfrp : frp.IsMaximal) (hne : lam ≠ frp) (hpℓ : p ≠ ℓ)
-    {𝔞 : Ideal (NumberField.RingOfIntegers D)}
-    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
-    {kp : Type u} [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
-    {X₀ : Scheme.{u}} (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+residue characteristics at `λ` and `𝔭` are exactly what rules those out.
+
+THE WITNESS. `act g gp := 𝟙` satisfies all five axioms, for every `ρ₀`, `ρ₀p`,
+`b` and `fX₀`, with no hypotheses whatever — which is what the proof term below
+is. Its twisting cocycle is then `𝟙` at every `σ` BY `rfl`, whatever `ρ` and `ρp`
+are, so `isGaloisTwistForm_one` makes `X₀` itself one of the twists. -/
+theorem exists_trivial_twistCocycle_splitModuliLevelAction
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {kp : Type u} [Field kp] [TopologicalSpace kp]
     (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
-    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
-      rootsOfUnity ℓ (AlgebraicClosure F))
-    (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
-      rootsOfUnity p (AlgebraicClosure F))
-    (hmod : IsSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 fX₀ ρ₀ ρ₀p Λ Λp) :
-    Nonempty (SplitModuliLevelAction ρ₀ ρ₀p (ratGaloisBaseAction.{u}) fX₀) :=
-  sorry
+    {K : Type u} [Field K] [Algebra ℚ K] (b : QGaloisBaseAction K)
+    {X₀ : Scheme.{u}} (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    {ρ : GaloisRep ℚ k (Fin 2 → k)} {ρp : GaloisRep ℚ kp (Fin 2 → kp)}
+    (hg : ∀ σ, twistUnit ρ ρ₀ σ ∈ specialUnits k)
+    (hgp : ∀ σ, twistUnit ρp ρ₀p σ ∈ specialUnits kp) :
+    ∃ act : SplitModuliLevelAction ρ₀ ρ₀p b fX₀,
+      ∀ σ, act.twistCocycle hg hgp σ = 𝟙 _ :=
+  ⟨{ act := fun _ _ => 𝟙 _
+     act_snd := fun _ _ => Category.id_comp _
+     act_one := rfl
+     act_mul := fun _ _ _ _ => (Category.id_comp _).symm
+     act_baseAct := fun _ _ _ _ _ _ _ => by simp }, fun _ => rfl⟩
 
 open CategoryTheory AlgebraicGeometry in
-/-- **LEAF 4.4 — what a twist of the split space by the twisting cocycle
-carries** (sorry node, cut 2026-07-31). This is Taylor, *On the meromorphic
-continuation of degree two `L`-functions*, Lemma 4.4, and it is the only
-statement of leaf B1a that mentions the abelian family.
+/-- **LEAF Γ + 4.4, FUSED (2026-08-02) — Taylor's level-changing action, TOGETHER
+WITH what its twists carry** (sorry node). This is Taylor, *On the meromorphic
+continuation of degree two `L`-functions*, §4 (the action) and Lemma 4.4 (what the
+twist carries), and it is the only statement of leaf B1a that mentions the abelian
+family.
 
-WHAT IT SAYS. Let `X` be ANY `ℚ`-form of `X₀` cut out by the cocycle
-`σ ↦ act (ρbar(σ) ρ₀(σ)⁻¹, ρbarp(σ) ρ₀p(σ)⁻¹)`. Then `X` carries an abelian
-family with real multiplication of relative dimension `[D:ℚ]` whose level
-structures are TWISTED — `ρbar`-equivariant at `λ` and `ρbarp`-equivariant at
-`𝔭`, in place of `ρ₀` and `ρ₀p` — at every `ℚ`-algebra field point, and it is
-FINE in the objects-to-points direction for that twisted problem.
+**BOOKKEEPING: TWO OPEN LEAVES BECAME ONE, and the fusion is a REPAIR.** This
+replaces `exists_splitModuliLevelAction` (formerly LEAF Γ, now the PROVEN vacuity
+audit `exists_trivial_twistCocycle_splitModuliLevelAction` above) and
+`exists_twistedFamily_of_isGaloisTwistForm` (formerly LEAF 4.4, which RECEIVED the
+action). Read that audit before this docstring: the pair was not merely redundant,
+it was UNSOUND AS A CUT. `SplitModuliLevelAction` is satisfied by the constantly-`𝟙`
+family with no hypotheses, so the received `act` carried no information, its
+twisting cocycle could be `𝟙`, and LEAF 4.4 was then being asked to put a
+`ρbar`-twisted family on the UNTWISTED `X₀`. Producing the action here instead of
+receiving it pins it by what it is required to do — CLAUDE.md's "the leaf must
+PRODUCE the object, not receive it" — and it costs nothing, because the two leaves
+had one consumer between them and it obtained both from the same place.
 
-THE `∀`-OVER-TWISTS SHAPE IS NOT VACUOUS, and this is where the cocycle is
-pinned: `isGaloisTwistForm_one` makes `X₀` its own twist by the trivial cocycle,
-so at `c = 𝟙` the statement would assert `ρbar`-equivariant level structures on
-`X₀` itself, which is false whenever `ρbar ≇ ρ₀`. So the clause carries the whole
-"descend along the twist" content and cannot be discharged trivially.
+WHAT IT SAYS. There is a level-changing action of `SL₂(k) × SL₂(kp)` on `X₀ ⊗ ℚ̄`
+(the object the audit above describes, and the only thing that discharges the `∃`
+honestly) such that: for ANY `ℚ`-form `X` of `X₀` cut out by the cocycle
+`σ ↦ act (ρbar(σ) ρ₀(σ)⁻¹, ρbarp(σ) ρ₀p(σ)⁻¹)`, `X` carries an abelian family with
+real multiplication of relative dimension `[D:ℚ]` whose level structures are
+TWISTED — `ρbar`-equivariant at `λ` and `ρbarp`-equivariant at `𝔭`, in place of
+`ρ₀` and `ρ₀p` — at every `ℚ`-algebra field point, and it is FINE in the
+objects-to-points direction for that twisted problem.
+
+**DO NOT DISCHARGE THE `∃ act` WITH THE TRIVIAL ACTION.** It typechecks (see the
+audit above) and it makes the rest of the statement false. A prover who reaches for
+it has found the reason this leaf exists in fused form; the `∀`-over-twists clause
+is what forbids it, and that is now a clause the SAME leaf owns rather than a
+constraint the seam could not express.
+
+WHAT IS STILL MISSING FROM THE PIN, and it is the honest residue (2026-08-02, and
+this is a NEW finding rather than the old docstring's list). Beyond the moduli
+interpretation of `X₀ ⊗ K` over `K`-schemes, which the audit above already records
+as the obstruction to building the action at all, descending the FAMILY needs one
+thing the action as axiomatised does not carry: **the action must lift to the
+universal family.** Writing `A₀K → X₀ ⊗ K` for the base change of `hmod`'s
+universal family, the descent datum on `A₀K` along the twisted form is assembled
+from `(baseAct σ)^* A₀K ≅ A₀K` — free, since `A₀K` is a base change from `ℚ` — and
+`(act g gp)^* A₀K ≅ A₀K`, which is NOT free and is not asserted anywhere. It is
+true of the intended object for the moduli reason (`act` re-labels the level
+structure and leaves the underlying HBAV alone), so a prover who constructs the
+action gets it in the same breath; a prover who takes the action as given cannot
+recover it. That asymmetry is a second, independent reason the two halves belong
+in one leaf.
 
 THE PROOF IS Taylor's points formula. A `ℚ`-algebra field point of `X` is a
 `K`-point `y` of `X₀` with `σ(y) = c(σ)·y` for `σ ∈ Γ_F`; the universal object at
@@ -49446,7 +49519,7 @@ identity point, so feeding it to this clause at `F = ULift ℝ` gives
 derivation free; the clause is stated in the WEAKEST form the derivation needs
 (the point exists; no comparison isomorphism is demanded), which is strictly less
 than the split-side fineness clause asks for. -/
-theorem exists_twistedFamily_of_isGaloisTwistForm
+theorem exists_splitModuliLevelAction_twistedFamily
     (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
     {ℓ p : ℕ} [NeZero ℓ] [NeZero p]
     {lam frp : Ideal (NumberField.RingOfIntegers D)}
@@ -49463,30 +49536,31 @@ theorem exists_twistedFamily_of_isGaloisTwistForm
     {Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
       rootsOfUnity p (AlgebraicClosure F)}
     (hmod : IsSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 fX₀ ρ₀ ρ₀p Λ Λp)
-    (act : SplitModuliLevelAction ρ₀ ρ₀p (ratGaloisBaseAction.{u}) fX₀)
     {W : Type v} [AddCommGroup W] [Module k W] (ρbar : GaloisRep ℚ k W)
     (θ : W ≃ₗ[k] (Fin 2 → k)) (ρbarp : GaloisRep ℚ kp (Fin 2 → kp))
     (hg : ∀ σ, twistUnit (ρbar.conj θ) ρ₀ σ ∈ specialUnits k)
-    (hgp : ∀ σ, twistUnit ρbarp ρ₀p σ ∈ specialUnits kp)
-    (X : Scheme.{u}) (fX : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (htw : IsGaloisTwistForm (ratGaloisBaseAction.{u}) fX fX₀ (act.twistCocycle hg hgp))
-    (hsm : AlgebraicGeometry.Smooth fX) (hsep : AlgebraicGeometry.IsSeparated fX)
-    (hlft : AlgebraicGeometry.LocallyOfFiniteType fX)
-    (hqc : AlgebraicGeometry.QuasiCompact fX) :
-    ∃ (A : Scheme.{u}) (fA : A ⟶ X) (ab : Fermat.AbelianSchemeStruct fA)
-      (m : Fermat.Mult ab (NumberField.RingOfIntegers D)),
-      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fA ∧
-      (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
-        (x : Spec (CommRingCat.of F) ⟶ X), x ≫ fX = specRatMap F →
-        IsTwistedLevelStructure lam m ρbar x ∧ IsTwistedLevelStructure frp m ρbarp x) ∧
-      (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
-        (B : Scheme.{u}) (fB : B ⟶ Spec (CommRingCat.of F))
-        (abB : Fermat.AbelianSchemeStruct fB)
-        (mB : Fermat.Mult abB (NumberField.RingOfIntegers D)),
-        AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB →
-        IsTwistedLevelStructure lam mB ρbar (𝟙 (Spec (CommRingCat.of F))) →
-        IsTwistedLevelStructure frp mB ρbarp (𝟙 (Spec (CommRingCat.of F))) →
-        ∃ x : Spec (CommRingCat.of F) ⟶ X, x ≫ fX = specRatMap F) :=
+    (hgp : ∀ σ, twistUnit ρbarp ρ₀p σ ∈ specialUnits kp) :
+    ∃ act : SplitModuliLevelAction ρ₀ ρ₀p (ratGaloisBaseAction.{u}) fX₀,
+      ∀ (X : Scheme.{u}) (fX : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ))),
+        IsGaloisTwistForm (ratGaloisBaseAction.{u}) fX fX₀ (act.twistCocycle hg hgp) →
+        AlgebraicGeometry.Smooth fX → AlgebraicGeometry.IsSeparated fX →
+        AlgebraicGeometry.LocallyOfFiniteType fX →
+        AlgebraicGeometry.QuasiCompact fX →
+        ∃ (A : Scheme.{u}) (fA : A ⟶ X) (ab : Fermat.AbelianSchemeStruct fA)
+          (m : Fermat.Mult ab (NumberField.RingOfIntegers D)),
+          AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fA ∧
+          (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+            (x : Spec (CommRingCat.of F) ⟶ X), x ≫ fX = specRatMap F →
+            IsTwistedLevelStructure lam m ρbar x ∧
+              IsTwistedLevelStructure frp m ρbarp x) ∧
+          (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+            (B : Scheme.{u}) (fB : B ⟶ Spec (CommRingCat.of F))
+            (abB : Fermat.AbelianSchemeStruct fB)
+            (mB : Fermat.Mult abB (NumberField.RingOfIntegers D)),
+            AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB →
+            IsTwistedLevelStructure lam mB ρbar (𝟙 (Spec (CommRingCat.of F))) →
+            IsTwistedLevelStructure frp mB ρbarp (𝟙 (Spec (CommRingCat.of F))) →
+            ∃ x : Spec (CommRingCat.of F) ⟶ X, x ≫ fX = specRatMap F) :=
   sorry
 
 open CategoryTheory AlgebraicGeometry in
@@ -49674,17 +49748,15 @@ theorem exists_twistedHilbertBlumenthalCocycle_of_split
     twistUnit_mem_specialUnits _ _ hdet
   have hgp : ∀ σ, twistUnit ρbarp ρ₀p σ ∈ specialUnits kp :=
     twistUnit_mem_specialUnits _ _ hdetp
-  obtain ⟨act⟩ :=
-    exists_splitModuliLevelAction D hlam hfrp hne hpℓ fX₀ ρ₀ ρ₀p Λ Λp hmod
+  obtain ⟨act, hact⟩ :=
+    exists_splitModuliLevelAction_twistedFamily D hlam hfrp hne hpℓ hmod ρbar θ ρbarp hg hgp
   refine ⟨X₀, fX₀, AlgebraicClosure (ULift.{u} ℚ), inferInstance, inferInstance,
     inferInstance, ratGaloisBaseAction, act.twistCocycle hg hgp,
     isAlgebraic_ratAlgClosure, hsm₀, hsep₀, hlft₀, hqc₀, hgi₀, horb,
     act.isQGaloisCocycle_twistCocycle hg hgp,
     act.isOpen_kernel_twistCocycle hg hgp, ?_⟩
   intro X fX htw hsm hsep hlft hqc
-  obtain ⟨A, fA, ab, m, hrel, hlev, hfineX⟩ :=
-    exists_twistedFamily_of_isGaloisTwistForm D hlam hfrp hne hpℓ hmod act ρbar θ ρbarp
-      hg hgp X fX htw hsm hsep hlft hqc
+  obtain ⟨A, fA, ab, m, hrel, hlev, hfineX⟩ := hact X fX htw hsm hsep hlft hqc
   refine ⟨A, fA, ab, m, hrel, hlev, ?_⟩
   rintro ⟨B, fB, abB, mB, hrelB, hlamB, hfrpB⟩
   exact hfineX (ULift.{u} ℝ) inferInstance inferInstance B fB abB mB hrelB hlamB hfrpB
