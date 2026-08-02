@@ -355,6 +355,21 @@ def stray_toplevel_lines(text: str) -> list[tuple[int, str]]:
         s = ln.rstrip()
         if not s:
             continue
+        # A term may begin in column 0 when the PREVIOUS code line left it
+        # owing one: `theorem foo : T :=` / newline / `by`.  That is legal Lean
+        # 4 (verified 2026-08-02 by elaborating a three-line scratch) and this
+        # tree uses it — `ModThree.lean` after release 34 has one at 61359.
+        # Without this the scanner reports a hard wound on a file that
+        # compiles, which is the one thing its own calibration note forbids.
+        # Keyed on the previous line rather than on a `by` whitelist entry: a
+        # `by` NOT preceded by `:=` is still a genuine wound.
+        prev = ""
+        for j in range(idx - 1, -1, -1):
+            if lines[j].strip():
+                prev = lines[j].rstrip()
+                break
+        if prev.endswith((":=", "=>", "↦", "<|")):
+            continue
         if s.startswith(_TOPLEVEL_PUNCT):
             continue
         # A `#` command is always `#` immediately followed by an identifier
