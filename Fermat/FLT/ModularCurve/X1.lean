@@ -14005,10 +14005,355 @@ theorem geomFrobF_eq_self_of_residueFDegree_eq_one {ℓ : ℕ} [Fact (Nat.Prime 
   simp only [RingHom.coe_comp, Function.comp_apply, h1, frobenius_def]
   rw [← map_pow, ZMod.pow_card]
 
+/-! ### The geometric points above a point are a `ZMod (deg)`-TORSOR under Frobenius
+
+(2026-08-01, and this is the RECUT recorded on the two declarations below.)
+
+The Deligne–Rapoport cusp leaf used to be stated about the total space
+`Σ c, Hom(κ(c), 𝔽̄_ℓ)` with `geomFrobF` acting, so a prover had to carry an
+algebraic closure, ring maps into it, and the Frobenius bookkeeping all the
+way through a MODULI argument that mentions none of them.  None of that is
+modular, and none of it depends on `Γ₁`, on `N`, or on the cusp locus:
+
+> for any point `x` of an `𝔽_ℓ`-scheme whose residue field is FINITE over
+> `𝔽_ℓ`, the set `Hom(κ(x), 𝔽̄_ℓ)` is a torsor under `ZMod (deg x)` with the
+> arithmetic Frobenius acting as `+1`.
+
+This subsection proves exactly that, over mathlib alone, and the leaf below
+is then stated over `ZMod (residueFDegree strX c)` — where the Galois action
+is literally "add one" — with the geometric form derived from it in eight
+lines.  Count unchanged, `1 → 1`; what left the leaf is every mention of
+`AlgebraicClosure`, of `→+*` and of `geomFrobF`, and what a successor is now
+asked for is Ogg's statement in the form the literature gives it: the cusps
+of `X_1(N)_{𝔽_ℓ}`, INDEXED BY THEIR RESIDUE DEGREES, are the `cuspFrobX1`
+orbits on the primitive symbols.
+
+The three arithmetic inputs, all from `Mathlib/FieldTheory/Finite/`:
+`FiniteField.pow_card` (periodicity `Frob^[d] = id`),
+`FiniteField.orderOf_frobeniusAlgHom` (the order of Frobenius on a finite
+extension IS its degree, which is what makes the torsor FREE), and
+`AlgHom.card` (an algebraically closed target receives exactly `finrank`
+embeddings, which is what makes it TRANSITIVE — by cardinality, so no
+Galois theory of finite fields is needed anywhere).
+
+`RingHom.ext_zmod` is what lets the statement speak of bare ring maps rather
+than `𝔽_ℓ`-algebra maps, exactly as in `nonempty_residueF_hom_iff` above. -/
+
+/-- **The arithmetic Frobenius on ring maps `K →+* 𝔽̄_ℓ`, for an arbitrary
+field `K`** — `geomFrobF` with the scheme forgotten, so that the torsor
+lemmas below can be stated once and applied at `K = κ(c)`. -/
+noncomputable def geomFrobHom (ℓ : ℕ) [Fact (Nat.Prime ℓ)] {K : Type} [Field K]
+    (σ : K →+* AlgebraicClosure (ZMod ℓ)) : K →+* AlgebraicClosure (ZMod ℓ) :=
+  (frobenius (AlgebraicClosure (ZMod ℓ)) ℓ).comp σ
+
+/-- `geomFrobF` IS `geomFrobHom` at `K = κ(x)` (PROVEN, definitionally). -/
+theorem geomFrobF_eq_geomFrobHom {ℓ : ℕ} [Fact (Nat.Prime ℓ)] {X : Scheme.{0}} {x : X}
+    (σ : X.residueField x →+* AlgebraicClosure (ZMod ℓ)) :
+    geomFrobF ℓ σ = geomFrobHom ℓ σ := rfl
+
+/-- **Iterating the geometric Frobenius raises to the `ℓ^n`-th power**
+(PROVEN). -/
+theorem geomFrobHom_iterate_apply {ℓ : ℕ} [Fact (Nat.Prime ℓ)] {K : Type} [Field K] (n : ℕ)
+    (σ : K →+* AlgebraicClosure (ZMod ℓ)) (y : K) :
+    (geomFrobHom ℓ)^[n] σ y = (σ y) ^ (ℓ ^ n) := by
+  induction n generalizing σ with
+  | zero => simp
+  | succ n ih =>
+      rw [Function.iterate_succ_apply, ih (geomFrobHom ℓ σ)]
+      show ((frobenius (AlgebraicClosure (ZMod ℓ)) ℓ) (σ y)) ^ (ℓ ^ n) = _
+      rw [frobenius_def, ← pow_mul, ← pow_succ']
+
+/-- **The geometric Frobenius is injective on geometric points** (PROVEN) —
+it is post-composition with the injective `frobenius`.  This is what lets the
+orbit argument below CANCEL, so that only `Frob^[m] σ = σ` has to be
+analysed. -/
+theorem geomFrobHom_injective {ℓ : ℕ} [Fact (Nat.Prime ℓ)] {K : Type} [Field K] :
+    Function.Injective (geomFrobHom ℓ (K := K)) := by
+  intro σ τ h
+  ext y
+  have h2 := congrArg (fun f : K →+* AlgebraicClosure (ZMod ℓ) => f y) h
+  simp only [geomFrobHom, RingHom.coe_comp, Function.comp_apply] at h2
+  exact (frobenius (AlgebraicClosure (ZMod ℓ)) ℓ).injective h2
+
+section GeomPointTorsor
+
+variable {ℓ : ℕ} [Fact (Nat.Prime ℓ)] (K : Type) [Field K] [Algebra (ZMod ℓ) K]
+    {d : ℕ} (hd : Module.finrank (ZMod ℓ) K = d) (hd0 : 0 < d)
+
+include hd hd0 in
+/-- **`Frob^[d]` is the identity on geometric points**, `d` the degree
+(PROVEN).  `K` has `ℓ^d` elements, so `y ^ ℓ^d = y` by `FiniteField.pow_card`
+and the Frobenius iterate is `σ ∘ (· ^ ℓ^d)`. -/
+theorem geomFrobHom_iterate_finrank (σ : K →+* AlgebraicClosure (ZMod ℓ)) :
+    (geomFrobHom ℓ)^[d] σ = σ := by
+  haveI : Module.Finite (ZMod ℓ) K := Module.finite_of_finrank_pos (by omega)
+  haveI : Finite K := Module.finite_of_finite (ZMod ℓ)
+  haveI : Fintype K := Fintype.ofFinite K
+  have hc : Fintype.card K = ℓ ^ d := by
+    rw [Module.card_eq_pow_finrank (K := ZMod ℓ), ZMod.card, hd]
+  ext y
+  rw [geomFrobHom_iterate_apply, ← map_pow, ← hc, FiniteField.pow_card]
+
+include hd hd0 in
+/-- **`Frob^[m]` fixes a geometric point only when `d ∣ m`** (PROVEN) — the
+freeness half of the torsor.
+
+`σ` is injective, so `Frob^[m] σ = σ` pushes back to `y ^ ℓ^m = y` on `K`
+itself, i.e. to `frobeniusAlgHom ^ m = 1`; and mathlib's
+`FiniteField.orderOf_frobeniusAlgHom` says that endomorphism has order
+exactly `finrank`.  No subfield or Galois-group argument is needed. -/
+theorem dvd_of_geomFrobHom_iterate_eq {m : ℕ} (σ : K →+* AlgebraicClosure (ZMod ℓ))
+    (h : (geomFrobHom ℓ)^[m] σ = σ) : d ∣ m := by
+  haveI : Module.Finite (ZMod ℓ) K := Module.finite_of_finrank_pos (by omega)
+  haveI : Finite K := Module.finite_of_finite (ZMod ℓ)
+  have hy : ∀ y : K, y ^ (ℓ ^ m) = y := by
+    intro y
+    have h2 := congrArg (fun f : K →+* AlgebraicClosure (ZMod ℓ) => f y) h
+    rw [geomFrobHom_iterate_apply, ← map_pow] at h2
+    exact σ.injective h2
+  have hpow : (FiniteField.frobeniusAlgHom (ZMod ℓ) K) ^ m = 1 := by
+    ext y
+    simp_rw [AlgHom.coe_pow, FiniteField.coe_frobeniusAlgHom, pow_iterate, AlgHom.one_apply,
+      ZMod.card]
+    exact hy y
+  have hh := orderOf_dvd_of_pow_eq_one hpow
+  rwa [FiniteField.orderOf_frobeniusAlgHom, hd] at hh
+
+include hd hd0 in
+/-- **There are exactly `d` geometric points above a point of degree `d`**
+(PROVEN).
+
+A bare ring map `K →+* 𝔽̄_ℓ` is automatically an `𝔽_ℓ`-algebra map
+(`RingHom.ext_zmod`), and mathlib's `AlgHom.card` counts those as `finrank`
+because the target is algebraically closed.  This is the TRANSITIVITY half of
+the torsor, obtained by cardinality rather than by Galois theory. -/
+theorem card_geomPoint_of_finrank : Nat.card (K →+* AlgebraicClosure (ZMod ℓ)) = d := by
+  haveI : Module.Finite (ZMod ℓ) K := Module.finite_of_finrank_pos (by omega)
+  haveI : FiniteDimensional (ZMod ℓ) K := inferInstance
+  have hcom : ∀ (f : K →+* AlgebraicClosure (ZMod ℓ)) (r : ZMod ℓ),
+      f (algebraMap (ZMod ℓ) K r) = algebraMap (ZMod ℓ) (AlgebraicClosure (ZMod ℓ)) r := by
+    intro f r
+    have h : f.comp (algebraMap (ZMod ℓ) K) = algebraMap (ZMod ℓ) _ := RingHom.ext_zmod _ _
+    exact congrArg (fun g : ZMod ℓ →+* AlgebraicClosure (ZMod ℓ) => g r) h
+  have e : (K →+* AlgebraicClosure (ZMod ℓ)) ≃ (K →ₐ[ZMod ℓ] AlgebraicClosure (ZMod ℓ)) :=
+    { toFun := fun f => ⟨f, hcom f⟩
+      invFun := fun g => g.toRingHom
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl }
+  rw [Nat.card_congr e, Nat.card_eq_fintype_card, AlgHom.card, hd]
+
+include hd hd0 in
+/-- **The geometric points above a point of degree `d` are a `ZMod d`-torsor
+under the arithmetic Frobenius** (PROVEN).
+
+The whole scheme-theoretic/Galois content of the Deligne–Rapoport cusp leaf,
+isolated from the moduli.  Pick a base point `σ₀` (there is one, by
+`card_geomPoint_of_finrank` and `d > 0`) and send `k : ZMod d` to
+`Frob^[k.val] σ₀`; that is well defined by `geomFrobHom_iterate_finrank`,
+injective by `dvd_of_geomFrobHom_iterate_eq` after cancelling with
+`geomFrobHom_injective`, and therefore BIJECTIVE by the count — which is why
+no transitivity statement about `Gal(𝔽̄_ℓ/𝔽_ℓ)` is needed.
+
+Nothing here is `Γ₁`-specific, cuspidal, or even about a scheme. -/
+theorem exists_geomPointEquivZMod :
+    ∃ e : (K →+* AlgebraicClosure (ZMod ℓ)) ≃ ZMod d,
+      ∀ σ, e (geomFrobHom ℓ σ) = e σ + 1 := by
+  classical
+  haveI : NeZero d := ⟨hd0.ne'⟩
+  have hcard := card_geomPoint_of_finrank K hd hd0
+  have hpos : 0 < Nat.card (K →+* AlgebraicClosure (ZMod ℓ)) := by omega
+  haveI : Finite (K →+* AlgebraicClosure (ZMod ℓ)) := (Nat.card_pos_iff.mp hpos).2
+  obtain ⟨σ₀⟩ := (Nat.card_pos_iff.mp hpos).1
+  have hFd : ∀ σ : K →+* AlgebraicClosure (ZMod ℓ), (geomFrobHom ℓ)^[d] σ = σ :=
+    geomFrobHom_iterate_finrank K hd hd0
+  have hdper : ∀ (q : ℕ) (σ : K →+* AlgebraicClosure (ZMod ℓ)),
+      (geomFrobHom ℓ)^[d * q] σ = σ := by
+    intro q; induction q with
+    | zero => simp
+    | succ q ih => intro σ; rw [Nat.mul_succ, Function.iterate_add_apply, hFd, ih]
+  have hper : ∀ n : ℕ, (geomFrobHom ℓ)^[n] σ₀ = (geomFrobHom ℓ)^[n % d] σ₀ := by
+    intro n
+    have h := hdper (n / d) ((geomFrobHom ℓ)^[n % d] σ₀)
+    rw [← Function.iterate_add_apply, Nat.div_add_mod] at h
+    exact h
+  set f : ZMod d → (K →+* AlgebraicClosure (ZMod ℓ)) :=
+    fun k => (geomFrobHom ℓ)^[k.val] σ₀ with hfdef
+  have hcast : ∀ n : ℕ, f (n : ZMod d) = (geomFrobHom ℓ)^[n] σ₀ := by
+    intro n
+    rw [hfdef]
+    simp only [ZMod.val_natCast]
+    exact (hper n).symm
+  have hstep : ∀ k : ZMod d, geomFrobHom ℓ (f k) = f (k + 1) := by
+    intro k
+    have h1 : geomFrobHom ℓ (f k) = (geomFrobHom ℓ)^[k.val + 1] σ₀ := by
+      rw [hfdef, Function.iterate_succ_apply']
+    have hk : ((k.val + 1 : ℕ) : ZMod d) = k + 1 := by
+      push_cast
+      simp [ZMod.natCast_val, ZMod.cast_id]
+    rw [h1, ← hk, hcast]
+  have hinj : Function.Injective f := by
+    have key : ∀ i j : ZMod d, i.val ≤ j.val → f i = f j → i = j := by
+      intro i j hle hij
+      obtain ⟨m, hm⟩ := Nat.exists_eq_add_of_le hle
+      have hit : (geomFrobHom ℓ)^[i.val] ((geomFrobHom ℓ)^[m] σ₀)
+          = (geomFrobHom ℓ)^[i.val] σ₀ := by
+        rw [← Function.iterate_add_apply, ← hm]
+        exact hij.symm
+      have hm0 : (geomFrobHom ℓ)^[m] σ₀ = σ₀ :=
+        (Function.Injective.iterate geomFrobHom_injective i.val) hit
+      have hdvd : d ∣ m := dvd_of_geomFrobHom_iterate_eq K hd hd0 σ₀ hm0
+      have hmlt : m < d := by have := j.val_lt; omega
+      have hm00 : m = 0 := Nat.eq_zero_of_dvd_of_lt hdvd hmlt
+      exact ZMod.val_injective _ (by omega)
+    intro i j hij
+    rcases le_total i.val j.val with hle | hle
+    · exact key i j hle hij
+    · exact (key j i hle hij.symm).symm
+  have hbij : Function.Bijective f := by
+    rw [Nat.bijective_iff_injective_and_card]
+    exact ⟨hinj, by rw [Nat.card_zmod, hcard]⟩
+  refine ⟨(Equiv.ofBijective f hbij).symm, fun σ => ?_⟩
+  rw [Equiv.symm_apply_eq]
+  show geomFrobHom ℓ σ = f _
+  rw [← hstep]
+  congr 1
+  exact ((Equiv.ofBijective f hbij).apply_symm_apply σ).symm
+
+end GeomPointTorsor
+
+/-- **Deligne–Rapoport: the cusps of `X_1(N)_{𝔽_ℓ}`, indexed by their residue
+degrees, are the `cuspFrobX1`-orbits on the primitive cusp symbols** (sorry
+leaf, RECUT 2026-08-01 from `exists_geometricCuspEquiv_x1_finiteField`, which
+is now PROVEN over this plus `exists_geomPointEquivZMod`; count unchanged,
+`1 → 1`).
+
+TRUE and classical (Ogg 1973; Deligne–Rapoport VI.5, *L'action de Galois sur
+les pointes*; Katz–Mazur; Diamond–Shurman §3.8 for the cusp set and §9.3 for
+the Galois action).  Two sentences, and both are moduli:
+
+* the cusp locus of the Deligne–Rapoport model of `X_1(N)` over `ℤ[1/N]` is
+  finite étale, and its GEOMETRIC points are `Γ_1(N)∖ℙ¹(ℚ)`, which written
+  mod `N` is exactly the set of PRIMITIVE symbols of `CuspSymbolX1 N` — the
+  non-primitive symbols are junk in the quotient type, not cusps;
+* `Gal(𝔽̄_ℓ/𝔽_ℓ)` acts through the cyclotomic character, so the arithmetic
+  Frobenius acts by `cuspFrobX1 N ℓ`.  See `CuspSymbolX1.lean`'s module
+  docstring for WHICH coordinate the character moves and why getting it
+  backwards would make this false.
+
+**WHY THE INDEX IS `ZMod (residueFDegree strX c)`.**  A closed point `c` of
+the cusp locus has exactly `deg c` geometric points above it, permuted
+CYCLICALLY and FREELY by the arithmetic Frobenius — that is
+`exists_geomPointEquivZMod` above, PROVEN, and it is the whole of the
+non-moduli content that used to be welded into this leaf.  So an
+equivariant bijection on the total space `Σ c, Hom(κ(c), 𝔽̄_ℓ)` is exactly a
+bijection `Σ c, ZMod (deg c) ≃ {primitive symbols}` intertwining `+1` with
+`cuspFrobX1 N ℓ`, i.e. a matching of the cusps with the `cuspFrobX1`-orbits
+under which `deg c` is the orbit LENGTH.  That is Ogg's statement verbatim —
+the cusps of `X_1(N)_{𝔽_ℓ}` together with their fields of definition — and it
+mentions no algebraic closure, no ring map and no Frobenius.
+
+At `(N, ℓ) = (25, 3)` it says: the `28` primitive symbols fall into
+`cuspFrobX1 25 3`-orbits of sizes `{1 × 10, 4 × 2, 10 × 1}`, and the cusp
+locus of `X_1(25)_{𝔽_3}` accordingly consists of `10` points of residue
+degree `1`, `2` of degree `4` and `1` of degree `10` — which is exactly the
+residue-degree computation `card_cuspLocusPoints_x1_finiteField_le`'s
+docstring does from `ord_25(3) = 20` and `ord_5(3) = 4`.  Both sides sum to
+`28`, which is the counting sanity check on the statement, and the symbol
+side of it was re-verified by exhaustive enumeration over `(ZMod N)²` for
+every `N ≤ 25` on 2026-08-01: the number of primitive classes is
+`½ Σ_{d ∣ N} φ(d)φ(N/d)` at all of them.
+
+**THE POSITIVITY CONJUNCT IS NOT DECORATION.**  `0 < residueFDegree strX c`
+says `κ(c)` is FINITE over `𝔽_ℓ`, i.e. that `c` is a closed point — true
+here (the cusp locus is the complement of a nonempty open in a proper curve,
+so it misses the generic point, and `X` is of finite type), and it is what
+makes `ZMod (residueFDegree strX c)` a finite cyclic group rather than `ℤ`.
+Any Deligne–Rapoport proof has it in hand from the finiteness of the cusp
+locus; it is carried here rather than derived because deriving it is a
+separate piece of scheme theory (closedness of the points of a finite
+complement, plus Jacobson-ness of a finite-type `𝔽_ℓ`-scheme) that the
+moduli owner should not have to do, and because the assembly below needs it.
+A prover who would rather not carry it may instead derive it from `Ψ`
+itself, since the symbol set is finite and `ZMod 0 = ℤ` is not.
+
+**No arithmetic is asked for.**  Nothing here counts cusps, mentions
+`ord_25(3)`, or mentions `φ(N)/2`; that is `card_fixedCuspSymbolX1`, PROVEN.
+The leaf is stated uniformly in `(N, ℓ)` and is TRUE uniformly, whereas the
+bound it ultimately feeds is FALSE for `ℓ ≡ ±1 (mod N)` — the arithmetic
+hypothesis lives entirely on the other factor.  In particular the obvious
+attempted refutation (`ℓ ≡ 1 (mod N)`, where every geometric cusp is
+Frobenius-fixed and at `N = 25` all `28` of them are `𝔽_ℓ`-rational against
+`φ(25)/2 = 10`) does NOT touch this leaf: all `28` are primitive symbols, so
+the bijection has exactly the room it needs — at `ℓ ≡ 1 (mod N)` every orbit
+is a singleton and every cusp has residue degree `1`, which is consistent.
+It touches `card_fixedCuspSymbolX1`, which carries `IsUnit (ℓ - 1)` and
+`IsUnit (ℓ + 1)` for precisely that reason.
+
+**What each hypothesis is doing.**  `hℓN : ¬ ℓ ∣ N` is what makes the
+`Γ₁(N)`-problem étale at `ℓ` and the cusp locus finite étale — at `ℓ ∣ N`
+the reduction is not the Deligne–Rapoport one and no such description is
+claimed.  `hN : 5 ≤ N` is the standing hypothesis of the `Γ_1(N)∖ℙ¹(ℚ)`
+description: at `N ≤ 4` the `±` identification is not free (`-I ∈ Γ_1(N)`
+acts with fixed points on the symbols), so the symbol set is not the cusp
+set.  Both are discharged for free at the single witness row `(25, 3, 10)`.
+
+AXES SEARCHED.  The GEOMETRY-vs-MODULI axis is TAKEN — twice: once for the
+`exists_cuspSymbolEmbedding_x1_finiteField` cut of 2026-07-31, and again on
+2026-08-01 for the Frobenius torsor above.  The BASE-FIELD axis is NOT
+available: the statement is about Frobenius.  The SYMBOL-SET axis —
+replacing `CuspSymbolX1` by the moduli description (Néron `d`-gons with a
+point of order `N`) — is a REFORMULATION, not a reduction: the two index
+sets are isomorphic and the Galois actions correspond, so nothing is bought,
+and taking it would additionally cost the DEFINITION of the moduli
+description, which is the theory build this whole cluster is trying to avoid.
+
+**THE BIJECTION-vs-INJECTION AXIS IS AVAILABLE, and the previous version of
+this paragraph said it was not.**  That claim read: *"the consumer needs only
+an injection, but an injection of GEOMETRIC points would not let the
+degree-one points be separated, since two distinct cusps of the same degree
+are distinguished only by the fibre structure a bijection records."*  It is
+FALSE, and the refutation is a compile: the sole consumer,
+`exists_cuspSymbolEmbedding_x1_finiteField` below, separates two cusps by
+`Subtype.ext (congrArg Sigma.fst (Φ.injective (Subtype.ext hab)))` — that is
+`Function.Injective Φ` and nothing else, so its proof goes through verbatim
+over a leaf giving only an injective FUNCTION.  This was checked by
+restating the consumer over the weakened hypothesis and elaborating it
+(2026-08-01).
+
+The axis was nevertheless NOT taken, and the reason is a judgement a
+successor may reverse.  Surjectivity here is "the model has no cusps beyond
+`Γ_1(N)∖ℙ¹(ℚ)`", which in every Deligne–Rapoport treatment falls out of the
+same construction as injectivity — the cusps ARE the degenerate objects, and
+the classification is exhaustive by construction — so weakening buys a
+successor almost nothing while giving up the form the literature states and
+the form a future exact count would need.  **What would change this: a
+successor who finds the completeness half genuinely separable from the
+construction should weaken the `≃` to `Function.Injective` and delete this
+paragraph;** every consumer in the tree compiles unchanged. -/
+theorem exists_cuspOrbitEquiv_x1_finiteField (N ℓ : ℕ) [Fact (Nat.Prime ℓ)]
+    (_hN : 5 ≤ N) (_hℓN : ¬ ℓ ∣ N)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
+    (_h : IsX1Compactification N strX strY jY) :
+    ∃ Ψ : (Σ c : ((Set.range jY.base)ᶜ : Set X), ZMod (residueFDegree strX c.1)) ≃
+            {s : CuspSymbolX1 N // IsPrimitiveCuspSymbolX1 N s},
+      (∀ c : ((Set.range jY.base)ᶜ : Set X), 0 < residueFDegree strX c.1) ∧
+      ∀ (c : ((Set.range jY.base)ᶜ : Set X)) (k : ZMod (residueFDegree strX c.1)),
+        (Ψ ⟨c, k + 1⟩).1 = cuspFrobX1 N ((ℓ : ℕ) : ZMod N) (Ψ ⟨c, k⟩).1 :=
+  sorry
+
 /-- **Deligne–Rapoport: the geometric cusps of `X_1(N)_{𝔽_ℓ}` are the
-primitive cusp symbols, Galois-equivariantly** (sorry leaf, 2026-07-31 — the
-moduli half of the old `exists_cuspSymbolEmbedding_x1_finiteField`, which is
-now PROVEN over this).
+primitive cusp symbols, Galois-equivariantly** (PROVEN 2026-08-01 over
+`exists_cuspOrbitEquiv_x1_finiteField` and `exists_geomPointEquivZMod`; a
+sorry leaf from 2026-07-31 until then).
+
+**Everything modular in this statement is now on the leaf above; what is
+left here is the Frobenius torsor.**  For each cusp `c`,
+`exists_geomPointEquivZMod` identifies `Hom(κ(c), 𝔽̄_ℓ)` with
+`ZMod (deg c)` carrying `geomFrobF` as `+1`; `Equiv.sigmaCongrRight` glues
+those over the cusp locus and the leaf's `Ψ` finishes.  The positivity
+`0 < residueFDegree strX c` is the leaf's first conjunct and is what makes
+the torsor lemma applicable — see there for why it is carried rather than
+derived.
 
 TRUE and classical (Ogg 1973; Deligne–Rapoport VI.5, *L'action de Galois sur
 les pointes*; Katz–Mazur; Diamond–Shurman §3.8 for the cusp set and §9.3 for
@@ -14033,17 +14378,17 @@ carried by `X` alone.
 
 **No scheme theory beyond the identification is asked for.**  The step
 "residue degree one ⟹ Frobenius-fixed" is `geomFrobF_eq_self_of_residueFDegree_eq_one`
-above, PROVEN; that is the 2026-07-31 cut, and it is why this leaf mentions
-`residueFDegree` nowhere.
+above, PROVEN; that is the 2026-07-31 cut, and it is why this statement
+mentions `residueFDegree` nowhere.
 
 **No arithmetic is asked for either.**  Nothing here counts cusps, mentions
 `ord_25(3)`, or mentions `φ(N)/2`; that is `card_fixedCuspSymbolX1`, PROVEN.
-The leaf is stated uniformly in `(N, ℓ)` and is TRUE uniformly, whereas the
+The statement is uniform in `(N, ℓ)` and is TRUE uniformly, whereas the
 bound it ultimately feeds is FALSE for `ℓ ≡ ±1 (mod N)` — the arithmetic
 hypothesis lives entirely on the other factor.  In particular the obvious
 attempted refutation (`ℓ ≡ 1 (mod N)`, where every geometric cusp is
 Frobenius-fixed and at `N = 25` all `28` of them are `𝔽_ℓ`-rational against
-`φ(25)/2 = 10`) does NOT touch this leaf: all `28` are primitive symbols, so
+`φ(25)/2 = 10`) does NOT touch it: all `28` are primitive symbols, so
 the bijection has exactly the room it needs.  It touches
 `card_fixedCuspSymbolX1`, which carries `IsUnit (ℓ - 1)` and
 `IsUnit (ℓ + 1)` for precisely that reason.
@@ -14055,28 +14400,35 @@ claimed.  `hN : 5 ≤ N` is the standing hypothesis of the `Γ_1(N)∖ℙ¹(ℚ)
 description: at `N ≤ 4` the `±` identification is not free (`-I ∈ Γ_1(N)`
 acts with fixed points on the symbols), so the symbol set is not the cusp
 set.  Both are discharged for free at the single witness row `(25, 3, 10)`.
+Both are consumed here only by being forwarded to the leaf.
 
-AXES SEARCHED.  The GEOMETRY-vs-MODULI axis is TAKEN — that is this cut.
-The BIJECTION-vs-INJECTION axis is NOT available here and this is a change
-from the old leaf: the consumer needs only an injection, but an injection of
-GEOMETRIC points would not let the degree-one points be separated, since two
-distinct cusps of the same degree are distinguished only by the fibre
-structure a bijection records.  The BASE-FIELD axis is NOT available: the
-statement is about Frobenius.  The SYMBOL-SET axis — replacing
-`CuspSymbolX1` by the moduli description (Néron `d`-gons with a point of
-order `N`) — is a REFORMULATION, not a reduction: the two index sets are
-isomorphic and the Galois actions correspond, so nothing is bought. -/
+The AXES SEARCHED paragraph that used to stand here has MOVED to
+`exists_cuspOrbitEquiv_x1_finiteField` above, which is where the open
+obligation now is; one of its clauses (the BIJECTION-vs-INJECTION axis) was
+corrected there on 2026-08-01. -/
 theorem exists_geometricCuspEquiv_x1_finiteField (N ℓ : ℕ) [Fact (Nat.Prime ℓ)]
-    (_hN : 5 ≤ N) (_hℓN : ¬ ℓ ∣ N)
+    (hN : 5 ≤ N) (hℓN : ¬ ℓ ∣ N)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
-    (_h : IsX1Compactification N strX strY jY) :
+    (h : IsX1Compactification N strX strY jY) :
     ∃ Φ : (Σ c : ((Set.range jY.base)ᶜ : Set X),
               (X.residueField c.1 →+* AlgebraicClosure (ZMod ℓ))) ≃
             {s : CuspSymbolX1 N // IsPrimitiveCuspSymbolX1 N s},
       ∀ (c : ((Set.range jY.base)ᶜ : Set X))
         (σ : X.residueField c.1 →+* AlgebraicClosure (ZMod ℓ)),
-        (Φ ⟨c, geomFrobF ℓ σ⟩).1 = cuspFrobX1 N ((ℓ : ℕ) : ZMod N) (Φ ⟨c, σ⟩).1 :=
-  sorry
+        (Φ ⟨c, geomFrobF ℓ σ⟩).1 = cuspFrobX1 N ((ℓ : ℕ) : ZMod N) (Φ ⟨c, σ⟩).1 := by
+  classical
+  obtain ⟨Ψ, hpos, hΨ⟩ := exists_cuspOrbitEquiv_x1_finiteField N ℓ hN hℓN h
+  have hE : ∀ c : ((Set.range jY.base)ᶜ : Set X),
+      ∃ e : (X.residueField c.1 →+* AlgebraicClosure (ZMod ℓ)) ≃
+              ZMod (residueFDegree strX c.1),
+        ∀ σ, e (geomFrobF ℓ σ) = e σ + 1 := by
+    intro c
+    letI := residueFAlgebra strX c.1
+    exact exists_geomPointEquivZMod (X.residueField c.1) rfl (hpos c)
+  choose e he using hE
+  refine ⟨(Equiv.sigmaCongrRight e).trans Ψ, fun c σ => ?_⟩
+  simp only [Equiv.trans_apply, Equiv.sigmaCongrRight_apply, he c σ]
+  exact hΨ c (e c σ)
 
 /-- **The `𝔽_ℓ`-rational points of the cusp locus of `X_1(N)_{𝔽_ℓ}` inject
 into the Frobenius-fixed cusp symbols** (PROVEN 2026-07-31 over
