@@ -15,10 +15,17 @@ This module carries the whole of
 (`Interface → MazurTorsion → X0 → …`), so anything proved there costs a
 25-minute elaboration per iteration, and — on `merger` at release 28 — that cone
 does not build at all (see the module note at the end of this docstring).  The
-mathematics here needs **nothing from the project**: the statement is entirely in
-mathlib's vocabulary (`Scheme`, `IsProper`, `SmoothOfRelativeDimension`,
-`GeometricallyConnected`, `Scheme.functionField`, `MvPolynomial`), so it is
-stated and proved here against mathlib alone, verifiable in ~90 seconds.
+STATEMENT here is entirely in mathlib's vocabulary (`Scheme`, `IsProper`,
+`SmoothOfRelativeDimension`, `GeometricallyConnected`, `Scheme.functionField`,
+`MvPolynomial`), which is what lets it be stated and proved outside that cone.
+
+Until 2026-08-02 the PROOFS needed nothing from the project either.  They now use
+one project theorem — `Algebra.rank_kaehlerDifferential_eq_trdeg_of_formallySmooth`
+from `Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean`, MacLane's
+criterion, which is genuinely not in mathlib at this pin — so this module now
+imports that one file.  That adds four mathlib-facing modules to the closure and no
+cycle (the only consumer of this module is `Interface.lean`, which none of them
+reaches); a scratch round trip against the built oleans is still ~12 seconds.
 
 `Fermat.SpecF q` is `noncomputable abbrev SpecF (ℓ : ℕ) := Spec (CommRingCat.of (ZMod ℓ))`
 (`X0.lean`), so the statement below is *definitionally* the one `Interface.lean`
@@ -31,9 +38,14 @@ asks for and the delegation there is an `exact`.
   degree `1` over a perfect field `k`, is `Frac (k[X,Y]/(F))` for an irreducible
   `F`.  This is the half the old docstring called "separating transcendence basis,
   primitive element, clearing denominators", and it is the whole of that half.
-* `exists_algebra_essFiniteType_trdeg_one_functionField` (**sorry leaf**) — the
-  GEOMETRY: `K(X)` is a finitely generated field extension of `𝔽_q` of
-  transcendence degree `1`.
+* `essFiniteType_and_trdeg_of_isStandardSmoothOfRelativeDimension` (**PROVEN**) —
+  the fraction field of a standard smooth domain of relative dimension `n` over a
+  field is essentially of finite type of transcendence degree `n`.  No dimension
+  theory: the rank of `Ω` is read off the standard smooth presentation directly.
+* `exists_algebra_essFiniteType_trdeg_one_functionField` (**PROVEN** 2026-08-02) —
+  the GEOMETRY: `K(X)` is a finitely generated field extension of `𝔽_q` of
+  transcendence degree `1`.  Note this does NOT go through `ringKrullDim`; see its
+  docstring for why that route reduces to another open leaf and closes nothing.
 * `irreducible_map_algebraicClosure_functionField` (**sorry leaf**) — the other
   half of the geometry: `𝔽_q` is algebraically closed in `K(X)`, expressed as the
   absolute irreducibility of any plane model.
@@ -97,6 +109,18 @@ public import Mathlib.AlgebraicGeometry.FunctionField
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
+public import Mathlib.RingTheory.Smooth.StandardSmoothCotangent
+public import Mathlib.RingTheory.Etale.Kaehler
+-- The ONLY project import, and it buys exactly one theorem:
+-- `Algebra.rank_kaehlerDifferential_eq_trdeg_of_formallySmooth`
+-- (`Module.rank L Ω[L⁄K] = Algebra.trdeg K L` for a formally smooth `L/K` of finite
+-- type), which is PROVEN there over MacLane's separability criterion and is not in
+-- mathlib at this pin.  It adds four modules to this module's closure
+-- (`SmoothConnectedCriteria`, `RegularStalks`, `IrreducibleNhds`,
+-- `RingTheory.Smooth.RegularLocal`), all of them mathlib-facing, and creates no
+-- cycle: the only consumer of THIS module is `Modularity/Interface.lean`, which none
+-- of the four reaches.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.SmoothConnectedCriteria
 
 @[expose] public noncomputable section
 
@@ -330,10 +354,64 @@ theorem exists_mvPolynomial_ringEquiv_fractionRing_of_trdeg_eq_one
     exact hrt
   exact ⟨(FractionRing.algEquiv (MvPolynomial (Fin 2) k ⧸ Ideal.span {F}) K).symm.toRingEquiv⟩
 
+/-- **THE FRACTION FIELD OF A STANDARD SMOOTH DOMAIN OF RELATIVE DIMENSION `n` OVER A
+FIELD IS ESSENTIALLY OF FINITE TYPE OF TRANSCENDENCE DEGREE `n`** (PROVEN 2026-08-02).
+
+The characteristic-free, dimension-theory-free companion of
+`Algebra.trdeg_fractionRing_eq_of_ringKrullDim`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean`): that one reads
+the transcendence degree off `ringKrullDim B`, this one reads it off the RELATIVE
+DIMENSION of a standard smooth presentation, which is available directly from
+`SmoothOfRelativeDimension` at the scheme level and needs no dimension theory at all.
+
+Three moves, all off the shelf:
+
+* `Module.rank B Ω[B⁄K] = n` is
+  `Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential` (mathlib);
+* `L` is a localization of `B`, hence formally étale over it, so `Ω` base-changes and
+  `Module.rank L Ω[L⁄K] = Module.rank B Ω[B⁄K]`
+  (`KaehlerDifferential.isBaseChange_of_formallyEtale`);
+* `Module.rank L Ω[L⁄K] = Algebra.trdeg K L` is
+  `Algebra.rank_kaehlerDifferential_eq_trdeg_of_formallySmooth`, which is where
+  MacLane's criterion is spent and is the one thing not in mathlib.
+
+`L` is taken as a parameter with `[IsFractionRing B L]` rather than as `FractionRing B`
+so that the consumer can feed it `X.functionField` directly — the geometric statement
+identifies `K(X)` with `Frac Γ(X, V)` through `IsFractionRing` and never through a
+`RingEquiv`, so no transport is needed anywhere.
+
+WHERE THIS BELONGS: beside `rank_kaehlerDifferential_eq_of_ringKrullDim_of_smooth` in
+`SmoothConnectedCriteria.lean`.  It is stated here because it has exactly one consumer,
+immediately below, and that file is large and concurrently edited; hoisting it is a
+pure move whenever a second consumer appears. -/
+theorem essFiniteType_and_trdeg_of_isStandardSmoothOfRelativeDimension
+    (K B L : Type) [Field K] [CommRing B] [IsDomain B] [Algebra K B] (n : ℕ)
+    [Algebra.IsStandardSmoothOfRelativeDimension n K B]
+    [Field L] [Algebra B L] [IsFractionRing B L] [Algebra K L] [IsScalarTower K B L] :
+    Algebra.EssFiniteType K L ∧ Algebra.trdeg K L = (n : Cardinal) := by
+  haveI : Algebra.IsStandardSmooth K B :=
+    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth (n := n)
+  haveI : Algebra.Smooth K B := inferInstance
+  haveI : Algebra.EssFiniteType K B := Algebra.EssFiniteType.of_finiteType K B
+  haveI : Algebra.FormallyEtale B L :=
+    Algebra.FormallyEtale.of_isLocalization (nonZeroDivisors B)
+  haveI : Algebra.EssFiniteType B L :=
+    Algebra.EssFiniteType.of_isLocalization L (nonZeroDivisors B)
+  haveI : Algebra.EssFiniteType K L := Algebra.EssFiniteType.comp K B L
+  haveI : Algebra.FormallySmooth K L := Algebra.FormallySmooth.comp K B L
+  refine ⟨inferInstance, ?_⟩
+  have hrank : Module.rank B Ω[B⁄K] = (n : Cardinal) :=
+    Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential n
+  have hbc : Module.rank L Ω[L⁄K] = Module.rank B Ω[B⁄K] :=
+    (KaehlerDifferential.isBaseChange_of_formallyEtale K B L).rank_eq
+  have htr : Module.rank L Ω[L⁄K] = Algebra.trdeg K L :=
+    Algebra.rank_kaehlerDifferential_eq_trdeg_of_formallySmooth K L
+  rw [← htr, hbc, hrank]
+
 /-- **THE FUNCTION FIELD OF A SMOOTH PROPER GEOMETRICALLY CONNECTED CURVE OVER
-`𝔽_q` IS A FINITELY GENERATED EXTENSION OF TRANSCENDENCE DEGREE ONE** (sorry
-leaf, 2026-07-31, cut out of
-`exists_planeModel_ringEquiv_functionField_of_isProperSmoothCurve`).
+`𝔽_q` IS A FINITELY GENERATED EXTENSION OF TRANSCENDENCE DEGREE ONE** (**PROVEN**
+2026-08-02; cut out of
+`exists_planeModel_ringEquiv_functionField_of_isProperSmoothCurve` on 2026-07-31).
 
 STATEMENT.  For `strX : X ⟶ Spec 𝔽_q` proper, smooth of relative dimension `1`
 and geometrically connected, `K(X)` carries an `𝔽_q`-algebra structure for which
@@ -350,28 +428,49 @@ through `Scheme.ΓSpecIso`, `Scheme.Hom.appTop` and `Scheme.germToFunctionField`
 which is bookkeeping the consumer does not need: the target's conclusion is a
 BARE `RingEquiv` and mentions no `𝔽_q`-structure at all.
 
-ROUTE.  Take any nonempty affine open `U ⊆ X`.  Then
+**PROVEN 2026-08-02.  THE KRULL DIMENSION IS A DETOUR, AND IT WAS THE WHOLE OF THE
+RECORDED COST.**  The route recorded here until then (kept below, struck, because
+its dead end is worth knowing) went
+`trdeg = ringKrullDim Γ(X, U)` and then owed `ringKrullDim Γ(X, U) = 1`, calling the
+`≥ 1` half "the only genuinely new work".  That half is genuinely missing — and it is
+missing as an OPEN SORRY LEAF, `AlgebraicGeometry.ringKrullDim_eq_of_smoothOfRelativeDimension`
+(`SmoothConnectedCriteria.lean:1304`), whose own docstring records that mathlib has no
+`ringKrullDim`-of-a-quotient-by-a-regular-sequence and no `ringKrullDim`-vs-`trdeg`
+theorem at all.  So the recorded route reduces this leaf to another open leaf and
+closes nothing.
 
-* `Γ(X, U)` is a finite-type `𝔽_q`-algebra, because `IsProper` extends
-  `LocallyOfFiniteType` and `HasRingHomProperty.appLE` reads that off on an
-  affine; it is a domain because `X` is integral
-  (`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`,
-  `CurveExtension.lean`);
-* `K(X) = Frac Γ(X, U)` is `AlgebraicGeometry.functionField_isFractionRing_of_isAffineOpen`
-  (`Mathlib/AlgebraicGeometry/FunctionField.lean:148`).  `Algebra.EssFiniteType`
-  then follows from `Algebra.EssFiniteType.of_isLocalization` composed with
-  `Algebra.EssFiniteType.of_finiteType`;
-* `Algebra.trdeg 𝔽_q (Frac Γ(X, U)) = ringKrullDim Γ(X, U)` is the project's own
-  `trdeg_fractionRing_eq_of_ringKrullDim`
-  (`Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean:842`,
-  Stacks 00OS/00P0, PROVEN and NOT in mathlib);
-* so what is left is `ringKrullDim Γ(X, U) = 1`.  The `≤ 1` half is
-  `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`
-  (`CurveCompactification.lean:3288`).  The `≥ 1` half — equivalently, that `X`
-  is not a finite `𝔽_q`-scheme — is the only genuinely new work; it is where
-  `SmoothOfRelativeDimension 1` is spent, and the cheapest formal route is
-  probably `rank_kaehlerDifferential_eq_of_ringKrullDim_of_smooth`
-  (same project file) read backwards from `Module.rank Γ Ω[Γ⁄𝔽_q] = 1`.
+`ringKrullDim` never has to be mentioned.  What `SmoothOfRelativeDimension 1` gives at
+a point is an affine open `V ∋ x` with `Γ(X, V)` STANDARD SMOOTH OF RELATIVE DIMENSION
+`1` over the base, and for such an algebra the rank of `Ω` is `1` OUTRIGHT
+(`Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`, mathlib).  The
+transcendence degree is that same rank, so the two are connected without any dimension
+theory in between:
+
+* `SmoothOfRelativeDimension.exists_isStandardSmoothOfRelativeDimension x` hands over
+  `U`, `V`, `e : V ≤ strX ⁻¹ᵁ U` and standard smoothness of `strX.appLE U V e`.  `U = ⊤`
+  because `Spec` of a FIELD is a one-point space (`instance [Field K] : Unique (Spec (.of K))`)
+  and `U` is nonempty (it contains `strX.base x`);
+* `Γ(Spec 𝔽_q, ⊤) ≅ 𝔽_q` (`Scheme.ΓSpecIso`) is bijective, hence standard smooth of
+  relative dimension `0` (`of_algebraMap_bijective`), so
+  `IsStandardSmoothOfRelativeDimension.trans` gives relative dimension `1 + 0` over
+  `𝔽_q` itself.  This is the only place the base is used, and it is where a base that
+  is not a field would break;
+* the rest is `essFiniteType_and_trdeg_of_isStandardSmoothOfRelativeDimension` above,
+  pure algebra, at `n = 1`, with `K(X) = Frac Γ(X, V)` supplied by
+  `AlgebraicGeometry.functionField_isFractionRing_of_isAffineOpen`.
+
+Note `IsProper` is NOT used, and neither is `GeometricallyConnected` except through the
+`[IsIntegral X]` instance the consumer discharges from it; both are kept because the
+call site holds them for free and dropping them would move a signature.  The honest
+statement is that this is true for any smooth-of-relative-dimension-`1` integral scheme
+over a field.
+
+~~ROUTE (superseded).  Take any nonempty affine open `U ⊆ X`.  Then `Γ(X, U)` is a
+finite-type `𝔽_q`-algebra and a domain, `K(X) = Frac Γ(X, U)`, and
+`Algebra.trdeg 𝔽_q (Frac Γ(X, U)) = ringKrullDim Γ(X, U)` by the project's own
+`trdeg_fractionRing_eq_of_ringKrullDim`; so what is left is `ringKrullDim Γ(X, U) = 1`,
+whose `≤ 1` half is `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`
+(`CurveCompactification.lean`) and whose `≥ 1` half is open.~~
 
 FAITHFULNESS.  TRUE.  `GeometricallyConnected` is load-bearing: it excludes
 `X = ∅`, where `IrreducibleSpace X` fails and the statement cannot even be
@@ -390,8 +489,52 @@ theorem exists_algebra_essFiniteType_trdeg_one_functionField
     [AlgebraicGeometry.IsIntegral X] :
     ∃ alg : Algebra (ZMod q) ↥X.functionField,
       @Algebra.EssFiniteType (ZMod q) ↥X.functionField _ _ alg ∧
-        @Algebra.trdeg (ZMod q) ↥X.functionField _ _ alg = 1 :=
-  sorry
+        @Algebra.trdeg (ZMod q) ↥X.functionField _ _ alg = 1 := by
+  obtain ⟨x⟩ : Nonempty X := inferInstance
+  obtain ⟨U, hU, V, hV, hxV, e, hss⟩ :=
+    SmoothOfRelativeDimension.exists_isStandardSmoothOfRelativeDimension (n := 1) (f := strX) x
+  haveI : Nonempty V := ⟨⟨x, hxV⟩⟩
+  -- `Spec` of a field is a one-point space, so the nonempty `U` handed over is `⊤`.
+  have hUtop : U = ⊤ := by
+    ext y
+    refine ⟨fun _ => trivial, fun _ => ?_⟩
+    have hy : y = strX.base x := Subsingleton.elim _ _
+    rw [hy]
+    exact e hxV
+  subst hUtop
+  letI algA : Algebra (ZMod q) ↥Γ(Spec (CommRingCat.of (ZMod q)), ⊤) :=
+    ((Scheme.ΓSpecIso (CommRingCat.of (ZMod q))).inv).hom.toAlgebra
+  letI algB : Algebra ↥Γ(Spec (CommRingCat.of (ZMod q)), ⊤) ↥Γ(X, V) :=
+    (strX.appLE ⊤ V e).hom.toAlgebra
+  letI algAB : Algebra (ZMod q) ↥Γ(X, V) :=
+    (((strX.appLE ⊤ V e).hom).comp
+      ((Scheme.ΓSpecIso (CommRingCat.of (ZMod q))).inv).hom).toAlgebra
+  haveI : IsScalarTower (ZMod q) ↥Γ(Spec (CommRingCat.of (ZMod q)), ⊤) ↥Γ(X, V) :=
+    IsScalarTower.of_algebraMap_eq (fun _ => rfl)
+  -- `𝔽_q ≅ Γ(Spec 𝔽_q, ⊤)` is bijective, hence of relative dimension `0`; composing
+  -- transports the relative dimension `1` from the base `Γ(Spec 𝔽_q, ⊤)` to `𝔽_q`.
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension 0 (ZMod q)
+      ↥Γ(Spec (CommRingCat.of (ZMod q)), ⊤) :=
+    Algebra.IsStandardSmoothOfRelativeDimension.of_algebraMap_bijective
+      (Scheme.ΓSpecIso (CommRingCat.of (ZMod q))).symm.commRingCatIsoToRingEquiv.bijective
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension 1
+      ↥Γ(Spec (CommRingCat.of (ZMod q)), ⊤) ↥Γ(X, V) := hss
+  haveI h10 : Algebra.IsStandardSmoothOfRelativeDimension (1 + 0) (ZMod q) ↥Γ(X, V) :=
+    Algebra.IsStandardSmoothOfRelativeDimension.trans (n := 0) (m := 1) (R := ZMod q)
+      (S := ↥Γ(Spec (CommRingCat.of (ZMod q)), ⊤)) (T := ↥Γ(X, V))
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension 1 (ZMod q) ↥Γ(X, V) := by
+    simpa using h10
+  haveI : IsDomain ↥Γ(X, V) := inferInstance
+  haveI : IsFractionRing ↥Γ(X, V) ↥X.functionField :=
+    functionField_isFractionRing_of_isAffineOpen X V hV
+  letI algK : Algebra (ZMod q) ↥X.functionField :=
+    ((algebraMap ↥Γ(X, V) ↥X.functionField).comp
+      (algebraMap (ZMod q) ↥Γ(X, V))).toAlgebra
+  haveI : IsScalarTower (ZMod q) ↥Γ(X, V) ↥X.functionField :=
+    IsScalarTower.of_algebraMap_eq (fun _ => rfl)
+  obtain ⟨hef, htr⟩ := essFiniteType_and_trdeg_of_isStandardSmoothOfRelativeDimension
+    (ZMod q) ↥Γ(X, V) ↥X.functionField 1
+  exact ⟨algK, hef, by simpa using htr⟩
 
 /-- **`𝔽_q` IS ALGEBRAICALLY CLOSED IN THE FUNCTION FIELD OF A SMOOTH PROPER
 GEOMETRICALLY CONNECTED CURVE — EQUIVALENTLY, EVERY PLANE MODEL IS ABSOLUTELY

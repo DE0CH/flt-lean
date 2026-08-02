@@ -16151,3 +16151,79 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A RECORDED ROUTE CAN REDUCE YOUR LEAF TO ANOTHER OPEN LEAF — CHECK WHETHER ITS KEY INPUT IS ITSELF A `sorry`
+
+(2026-08-02, `flt-lean-156`, closing `exists_algebra_essFiniteType_trdeg_one_functionField`
+in `ModularCurve/PlaneModelFunctionField.lean`.)
+
+This file already says a leaf's recorded ROUTE is a cost hypothesis. There is a
+specific failure of that hypothesis worth checking FIRST, because it is mechanical
+and it decides whether the route can close anything at all: **the route may bottom
+out at a declaration that is itself an open leaf, in which case following it to the
+end trades your `sorry` for somebody else's and the frontier does not move.**
+
+That leaf's route was: `trdeg 𝔽_q K(X) = ringKrullDim Γ(X, U)` (a PROVEN project
+theorem), so "what is left is `ringKrullDim Γ(X, U) = 1`", of which the `≥ 1` half
+"is the only genuinely new work". Every clause is true. What the docstring does not
+say — because the route was written before anyone looked — is that the `≥ 1` half
+**already exists as a named open leaf**,
+`AlgebraicGeometry.ringKrullDim_eq_of_smoothOfRelativeDimension`, in the very file the
+route cites for its other step, carrying its own audit that mathlib has no
+`ringKrullDim`-of-a-quotient-by-a-regular-sequence and no `ringKrullDim`-vs-`trdeg`
+theorem. So the prescribed route is a reduction to an existing leaf, not a proof.
+
+**The check is one grep per named step of the route, and it is `grep -n` for the
+step's declaration plus a look at its body**, not at its docstring:
+
+    grep -n 'theorem <the route step>' -A20 <the file the route cites>   # is the body `sorry`?
+
+**AND THE ESCAPE IS USUALLY TO DELETE THE QUANTITY THE ROUTE ROUTES THROUGH.** Here
+the whole route goes through `ringKrullDim`, and `ringKrullDim` is exactly where the
+gap is. It is never needed: what `SmoothOfRelativeDimension n` hands you at a point is
+an affine open on which the algebra is STANDARD SMOOTH OF RELATIVE DIMENSION `n`, and
+for such an algebra `Module.rank B Ω[B⁄K] = n` is immediate
+(`Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`, mathlib) —
+while the transcendence degree is that same rank
+(`Algebra.rank_kaehlerDifferential_eq_trdeg_of_formallySmooth`, this project). Rank of
+`Ω` connects the two ends directly and no dimension theory appears anywhere. The leaf
+closed in an afternoon, axiom-clean, over ~90 lines.
+
+**Generalisable: when a route passes through an invariant `I` and stalls, ask which
+OTHER invariant computes the same thing and whether your hypothesis produces it
+DIRECTLY.** `ringKrullDim`, `Module.rank Ω`, `trdeg` and the relative dimension of a
+standard smooth presentation are four names for one number here, and the hypothesis
+you are given decides which of the four is free. A route is written in the invariant
+its author was thinking in.
+
+Three smaller things from the same run, each worth a minute:
+
+* **`Spec` of a FIELD is a one-point space and mathlib says so** —
+  `instance {K} [Field K] : Unique (Spec (.of K))` (`AlgebraicGeometry/Scheme.lean`).
+  That is what turns the `U` that `exists_isStandardSmoothOfRelativeDimension` hands
+  you into `⊤`, which is the only fiddly step in getting from the scheme hypothesis to
+  an algebra over the base itself. Then `Scheme.ΓSpecIso` is bijective, hence relative
+  dimension `0` (`of_algebraMap_bijective`), and
+  `IsStandardSmoothOfRelativeDimension.trans` moves the relative dimension from
+  `Γ(Spec K, ⊤)` to `K`. Its `n`/`m` are EXPLICIT `variable`s, so pass them by name
+  (`(n := 0) (m := 1)`) or the elaborator cannot infer them from `(m + n)`.
+* **State the fraction field as a PARAMETER with `[IsFractionRing B L]`, never as
+  `FractionRing B`.** The consumer here needs `X.functionField`, which mathlib
+  identifies with `Frac Γ(X, V)` through `functionField_isFractionRing_of_isAffineOpen`
+  — an `IsFractionRing` INSTANCE, not a `RingEquiv`. Taking `L` as a parameter means no
+  transport is written anywhere; taking `FractionRing B` would have cost a transport of
+  every conclusion.
+* **`Nonempty V` and `Nonempty ↥V` are not interchangeable for `V : X.Opens`.** The
+  instances mathlib states (`germToFunctionField`, `IsIntegral.component_integral`,
+  `functionField_isFractionRing_of_isAffineOpen`) all want the form `Nonempty V`
+  elaborates to; supplying `haveI : Nonempty ↥V` leaves every one of them unsynthesized,
+  with errors that read as four unrelated missing instances (`IsDomain Γ(X,V)`,
+  `Algebra Γ(X,V) X.functionField`, `SMul …`) rather than as one spelling problem.
+
+**And check the marginal cost of a new import against the REAL CONSUMER, not against
+the module you are editing.** This module was deliberately mathlib-only for build
+speed, so importing one project file to reach MacLane's criterion looked like a real
+regression. It is not: all four modules the import adds were ALREADY in the closure of
+`Modularity/Interface.lean`, the module's only consumer, so the marginal cost of the
+edge in the actual build is exactly zero. One closure computation settles it, and
+without it the honest-looking decision is to reprove the citation locally.
