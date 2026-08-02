@@ -6165,7 +6165,9 @@ theorem exists_cuspResidueIndexing_specialFibre (N q : ℕ)
     · exact hqN h2
   -- the `ℚ`-side compactification structure, and its divisor-indexed cusps
   have hdata := isX0Compactification_data_of_compactificationY0 N hN.ne_zero hc hX
-  obtain ⟨e0, hcyc⟩ :=
+  -- `exists_cuspResidueIndexing` gained a second conjunct on 2026-08-02 (the
+  -- Atkin–Lehner action on the indexing); this proof reads only the first.
+  obtain ⟨e0, hcyc, -⟩ :=
     exists_cuspResidueIndexing N hN.ne_zero (hX.toX0Compactification hc hdata)
   -- at PRIME level every `ℚ`-cusp is rational: `gcd(d, N/d) = 1`, so `φ = 1`
   have hdeg0 : ∀ dd : N.divisors,
