@@ -1,8 +1,11 @@
 ---
 name: flt-every-vs-some-representing-object
-description: A leaf saying "every object representing F has property P" cannot cite the literature, which only constructs one; prove uniqueness-up-to-iso and move P into the existence leaf
-metadata:
+description: "A leaf saying \"every object representing F has property P\" cannot cite the literature, which only constructs one; prove uniqueness-up-to-iso and move P into the existence leaf"
+metadata: 
+  node_type: memory
   type: project
+  originSessionId: 5c927d46-112d-479d-bea8-bf1f3dd81b99
+  modified: 2026-08-02T19:41:54.129Z
 ---
 
 In `RelativePicard.lean` (2026-07-31) `smooth_of_isRelPicOf` and
@@ -31,3 +34,10 @@ faithfulness audit against the composite; and if the existence theorem needs a
 hypothesis the leaf lacks (here a section `o`), check the consumer can supply
 it before adding it. See [[flt-two-leaves-may-be-one]] and
 [[audit-searched-production-not-invariant]].
+
+**The GEOMETRIC sibling, where threading is not available**, is
+[[flt-forall-geometric-leaf-is-uniqueness-plus-existential]]: when the arbitrary
+object is pinned by a geometric property rather than by a representability
+structure, uniqueness comes from the valuative criterion instead of Yoneda and the
+property is moved by transporting along the resulting isomorphism, so the trade is
+`1 → 1` rather than a net closure.

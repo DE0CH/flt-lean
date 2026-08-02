@@ -1,35 +1,44 @@
 ---
 name: flt-sorry-grep-returns-zero
-description: Lean writes "declaration uses `sorry`" with BACKTICKS; CLAUDE.md and the doctrine write it with single quotes, so the literal grep they prescribe returns zero and reads as a clean build.
-metadata:
+description: "The `declaration uses 'sorry'` grep returns 0 on Lean 4.32 — it emits BACKTICKS, and the warning prefix swaps sides between lake build and lake env lean"
+metadata: 
+  node_type: memory
   type: project
+  originSessionId: 60ba0bb4-3044-477d-ab03-d0378b13c9c2
+  modified: 2026-08-02T02:28:12.330Z
 ---
 
-Lean 4 at this toolchain (v4.32.0-rc1) emits
+Measured 2026-08-02 (`flt-lean-225`, Lean 4.32.0-rc1, commit `b4812ae5`) on a
+green `lake build` log of `X0.lean`'s cone containing **164** sorry warnings:
 
-    Fermat/FLT/ModularCurve/X1.lean:3948:8: warning: declaration uses `sorry`
+    grep -c "declaration uses 'sorry'"   ->    0     <- the recipe CLAUDE.md quotes ~15 times (and `~/.flt-agent-doctrine.md` ~10 times)
+    grep -c 'declaration uses `sorry`'   ->  164     <- what Lean actually writes
 
-with **BACKTICKS** around `sorry`. `CLAUDE.md` writes the string with single
-quotes — `declaration uses 'sorry'` — **35 times**, and
-`~/.flt-agent-doctrine.md` **10 times**; neither contains the backtick form
-even once (measured 2026-08-02). So every recipe in this project that says
-"grep the build log for `declaration uses 'sorry'`" returns **zero** on a log
-full of them.
+Two independent axes break the usual recipes, and each silently yields `0`:
 
-**Why:** an empty result here is indistinguishable from a clean build, and
-the recipes that use it are exactly the ones that decide whether a leaf is
-open, whether a cut moved the frontier, and whether a release is green. I hit
-it in this run: `grep -c "declaration uses 'sorry'" /tmp/x1.log` printed `0`
-for a file the same log showed 23 warnings for. Same family as
-[[flt-error-count-recipe-returns-zero]] and the lake-not-on-PATH trap — a
-check whose failure mode is a confident, quiet, wrong "nothing here".
+* **quoting** — Lean writes the token in BACKTICKS, not single quotes;
+* **prefix side** — `lake build` writes `warning: <path>:<l>:<c>: …` (prefix
+  first), `lake env lean` writes `<path>:<l>:<c>: warning: …` (location first).
+  So `^warning:` scores 164 / **0** and `: warning:` scores **0** / 2.
 
-**How to apply:** grep for a spelling that cannot be wrong —
+Robust, and validated: `grep -cE 'declaration uses .sorry.' <log>` — no prefix
+anchor, quote-agnostic dot. Checked against `flt-frontier.py`'s source scan on
+the same tree: `X0.lean` **101 = 101**, and across all **23** modules the build
+reached, **164 warnings, zero mismatches in either direction**.
 
-    grep -c "declaration uses" /tmp/build.log      # quote-agnostic
-    grep -ci sorry /tmp/build.log                  # cross-check
+**Why it survived:** the *scripts* are safe. `flt-buildfrontier.py` already
+parses `declaration uses .sorry.`, and `.claude/check-sorries.py` reads
+`sorryAx` from the environment, not message text. Only the hand-typed recipe
+breaks — and CLAUDE.md instructs agents to type it as the ground-truth
+cross-check for every frontier scan. Run today it compares 380 rows against 0.
 
-and cross-check any count against a comment-stripped source scan
-([[flt-frontier-tools-hardcode-staging-root]] for why the scanner also needs
-checking). Never let either number stand alone: they answer the same question
-by independent routes, and agreement is the evidence.
+**Why:** a counting recipe whose failure mode is `0` is indistinguishable from
+the healthy answer, so nothing reports it. This is the third instance in this
+project after `EXIT=127` (missing `lake` on `PATH`) and the error-count recipe
+(`': error(\(|:)'` returns 0 on a `lake build` log — see
+[[flt-error-count-recipe-returns-zero]]).
+
+**How to apply:** validate any inherited counting recipe against a case with a
+KNOWN NONZERO answer before trusting a zero from it. Never validate it on a tree
+you believe is clean — that direction cannot tell a working grep from a broken
+one. Related: [[flt-frontier-tools-hardcode-staging-root]].
