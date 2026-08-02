@@ -21778,6 +21778,10 @@ triples are harmless because for `d ≥ 2` they are automatically NOT good
 sections (a section along a degenerate parametrisation is a univariate
 polynomial in a linear form, hence reducible over `𝔽̄_p`), so they are
 absorbed into Bertini's exceptional count rather than excluded by hand.
+That parenthesis is no longer prose: it is
+`not_irreducible_planeSection_of_not_linearIndependent` (PROVEN 2026-08-02, in the
+Bertini block far below), whose only hypothesis is `2 ≤ d` on the degree of the
+SECTION -- nothing about `h` is used.
 Dropping the condition is what makes the averaging identity below a single
 translation bijection. -/
 noncomputable def planeSection {N : ℕ} {R : Type*} [CommRing R]
@@ -24336,6 +24340,199 @@ theorem exists_frame_eval_homogeneousComponent_ne_zero {K : Type*} [Field K] [In
   · have hkey := irreducible_planeSection_of_det_ne_zero P ![0, 0] w w' hdet hsec
     rwa [hcomp] at hkey
 
+/-! #### The DEGENERATE PLANE, proven (2026-08-02)
+
+Two docstrings in this module assert, as prose, that a section along a parametrisation
+whose two directions are linearly DEPENDENT "is a univariate polynomial in a linear form,
+hence reducible over `𝔽̄_p`" — `planeSection`'s own docstring, where it is the reason the
+averaging identity may quantify over ALL triples, and
+`exists_bertiniNoetherWitness_of_three_le`'s "DEGENERATE TRIPLES ARE NOT EXCLUDED"
+paragraph, where it is the reason such triples need not be dodged by the Noether forms.
+Neither was in Lean. The four lemmas below put it there, and the last of them is the
+`LinearIndependent` clause that `exists_plane_irreducible_planeSection` used to CARRY in
+its conclusion and now does not.
+
+The argument, in the order the proof takes it. A dependent pair is a pair of scalar
+multiples `(l₁ • w, l₂ • w)` of ONE vector with `(l₁, l₂) ≠ (0, 0)`; complete `(l₁, l₂)`
+to an invertible `2 × 2` frame `(l₁, l₁'), (l₂, l₂')` — one case split, exactly as in
+`exists_frame_eval_homogeneousComponent_ne_zero` — and `planeSection_comp` then exhibits
+the section as `planeSection Q 0 ![l₁, l₁'] ![l₂, l₂']` with `Q := planeSection h v w 0`
+and NONZERO determinant. So the section is an invertible substitution away from `Q`, which
+lies in the image of `MvPolynomial (Fin 1) K` under `rename`. Over `K = K̄` a one-variable
+polynomial of total degree `≥ 2` is not irreducible
+(`exists_eq_linear_of_irreducible_of_unique`), so it factors into two non-units; push that
+factorisation through `rename` and through the substitution — both of which preserve total
+degree, the second because its determinant is nonzero — and the section is a product of
+two polynomials of positive total degree.
+
+Note the hypothesis is `2 ≤ d` on the DEGREE OF THE SECTION, not on `h`: nothing about `h`
+is used at all, and the statement is about an arbitrary `planeSection`. -/
+
+/-- **PROVEN**: `rename` along a map with a LEFT INVERSE preserves total degree. Mathlib has
+`MvPolynomial.totalDegree_rename_le` (one inequality) and `totalDegree_renameEquiv` (for an
+`Equiv`); the injection `Fin 1 ↪ Fin 2` used below is neither, but it does have a
+retraction, and that is all the reverse inequality needs. -/
+theorem totalDegree_rename_eq_of_leftInverse {σ τ R : Type*} [CommSemiring R]
+    (f : σ → τ) (g : τ → σ) (hgf : Function.LeftInverse g f) (p : MvPolynomial σ R) :
+    (MvPolynomial.rename f p).totalDegree = p.totalDegree := by
+  refine le_antisymm (MvPolynomial.totalDegree_rename_le f p) ?_
+  have hback : MvPolynomial.rename g (MvPolynomial.rename f p) = p := by
+    rw [MvPolynomial.rename_rename]
+    have hid : g ∘ f = id := funext hgf
+    rw [hid, MvPolynomial.rename_id]
+    rfl
+  calc p.totalDegree
+      = (MvPolynomial.rename g (MvPolynomial.rename f p)).totalDegree := by rw [hback]
+    _ ≤ (MvPolynomial.rename f p).totalDegree := MvPolynomial.totalDegree_rename_le _ _
+
+/-- **PROVEN**: `planeSection · v u₁ u₂` is a ring homomorphism, so it is multiplicative.
+This is what carries a factorisation of a section across a change of frame. -/
+theorem planeSection_mul {N : ℕ} {R : Type*} [CommRing R]
+    (p q : MvPolynomial (Fin N) R) (v u₁ u₂ : Fin N → R) :
+    planeSection (p * q) v u₁ u₂ = planeSection p v u₁ u₂ * planeSection q v u₁ u₂ := by
+  simp [planeSection]
+
+/-- **PROVEN**: over a field, a nonzero NON-UNIT has positive total degree. The converse of
+the "a nonzero constant is a unit" half of
+`MvPolynomial.isUnit_iff_totalDegree_of_isReduced`, which a field satisfies. -/
+theorem totalDegree_ne_zero_of_ne_zero_of_not_isUnit {σ K : Type*} [Field K]
+    {p : MvPolynomial σ K} (hp0 : p ≠ 0) (hpu : ¬ IsUnit p) : p.totalDegree ≠ 0 := by
+  intro hdz
+  refine hpu ?_
+  rw [MvPolynomial.isUnit_iff_totalDegree_of_isReduced]
+  refine ⟨isUnit_iff_ne_zero.mpr ?_, hdz⟩
+  intro hc
+  refine hp0 ?_
+  rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C] at hdz
+  rw [hdz, hc, map_zero]
+
+/-- **PROVEN**: a linearly DEPENDENT pair of vectors is a pair of scalar multiples of ONE
+vector, with the two scalars not both zero. Stated this way — rather than as "one is a
+multiple of the other" — so that the two cases `u₁ = 0` and `u₂ ∈ K·u₁` are handled once. -/
+theorem exists_common_of_not_linearIndependent {K : Type*} [Field K] {N : ℕ}
+    (u₁ u₂ : Fin N → K) (hli : ¬ LinearIndependent K ![u₁, u₂]) :
+    ∃ (w : Fin N → K) (l₁ l₂ : K), (l₁ ≠ 0 ∨ l₂ ≠ 0) ∧
+      (∀ i, u₁ i = l₁ * w i) ∧ (∀ i, u₂ i = l₂ * w i) := by
+  rw [LinearIndependent.pair_iff] at hli
+  push Not at hli
+  obtain ⟨s, t, hst, hns⟩ := hli
+  have hstpt : ∀ i, s * u₁ i + t * u₂ i = 0 := by
+    intro i
+    have hi := congrFun hst i
+    simpa using hi
+  by_cases ht : t = 0
+  · have hs : s ≠ 0 := fun hc => hns hc ht
+    have hu₁ : ∀ i, u₁ i = 0 := by
+      intro i
+      have hi := hstpt i
+      rw [ht, zero_mul, add_zero] at hi
+      exact (mul_eq_zero.mp hi).resolve_left hs
+    exact ⟨u₂, 0, 1, Or.inr one_ne_zero, fun i => by rw [hu₁ i]; ring, fun i => by ring⟩
+  · refine ⟨u₁, 1, -s / t, Or.inl one_ne_zero, fun i => by ring, fun i => ?_⟩
+    have hi := hstpt i
+    rw [div_mul_eq_mul_div, eq_div_iff ht]
+    linear_combination hi
+
+/-- **PROVEN 2026-08-02 — THE DEGENERATE-PLANE FACT**: over an algebraically closed field, a
+plane section along a parametrisation whose directions are linearly DEPENDENT is never
+irreducible once its total degree is at least two.
+
+This is the sentence `planeSection`'s docstring and
+`exists_bertiniNoetherWitness_of_three_le`'s "DEGENERATE TRIPLES ARE NOT EXCLUDED"
+paragraph both assert without proof. See the section note above for the route. -/
+theorem not_irreducible_planeSection_of_not_linearIndependent
+    {K : Type*} [Field K] [IsAlgClosed K] {N d : ℕ}
+    (h : MvPolynomial (Fin N) K) (v u₁ u₂ : Fin N → K) (hd : 2 ≤ d)
+    (hdeg : (planeSection h v u₁ u₂).totalDegree = d)
+    (hli : ¬ LinearIndependent K ![u₁, u₂]) :
+    ¬ Irreducible (planeSection h v u₁ u₂) := by
+  classical
+  intro hirr
+  obtain ⟨w, l₁, l₂, hl, hu₁, hu₂⟩ := exists_common_of_not_linearIndependent u₁ u₂ hli
+  obtain ⟨l₁', l₂', hdet⟩ : ∃ a b : K, l₁ * b - l₂ * a ≠ 0 := by
+    rcases hl with hc | hc
+    · exact ⟨0, 1, by simpa using hc⟩
+    · exact ⟨1, 0, by simpa using hc⟩
+  have hdet' : (![l₁, l₁'] : Fin 2 → K) 0 * (![l₂, l₂'] : Fin 2 → K) 1
+      - (![l₂, l₂'] : Fin 2 → K) 0 * (![l₁, l₁'] : Fin 2 → K) 1 ≠ 0 := by simpa using hdet
+  set Q : MvPolynomial (Fin 2) K := planeSection h v w 0 with hQ
+  have hcomp : planeSection Q ![0, 0] ![l₁, l₁'] ![l₂, l₂'] = planeSection h v u₁ u₂ := by
+    rw [hQ, planeSection_comp]
+    congr 1
+    · funext i; simp
+    · funext i; simp [hu₁ i]; ring
+    · funext i; simp [hu₂ i]; ring
+  have hQdeg : Q.totalDegree = d := by
+    have hh := totalDegree_planeSection_of_det_ne_zero Q ![0, 0] ![l₁, l₁'] ![l₂, l₂'] hdet'
+    rw [hcomp, hdeg] at hh
+    exact hh.symm
+  set Q₀ : MvPolynomial (Fin 1) K :=
+    MvPolynomial.bind₁
+      (fun i => MvPolynomial.C (v i) + MvPolynomial.C (w i) * MvPolynomial.X 0) h with hQ0
+  have hlinv :
+      Function.LeftInverse (fun _ : Fin 2 => (0 : Fin 1)) (fun _ : Fin 1 => (0 : Fin 2)) :=
+    fun _ => Subsingleton.elim _ _
+  have hren : MvPolynomial.rename (fun _ : Fin 1 => (0 : Fin 2)) Q₀ = Q := by
+    rw [hQ0, MvPolynomial.rename_bind₁, hQ, planeSection]
+    refine congrArg (fun F : Fin N → MvPolynomial (Fin 2) K => (MvPolynomial.bind₁ F) h) ?_
+    funext i
+    simp
+  have hQ0deg : Q₀.totalDegree = d := by
+    rw [← hQdeg, ← hren, totalDegree_rename_eq_of_leftInverse _ _ hlinv]
+  have hQ0ne : Q₀ ≠ 0 := by
+    intro hc
+    rw [hc, MvPolynomial.totalDegree_zero] at hQ0deg
+    omega
+  have hnotirr : ¬ Irreducible Q₀ := by
+    intro hirr0
+    obtain ⟨a, b, ha, hab⟩ := exists_eq_linear_of_irreducible_of_unique hirr0
+    rw [hab, totalDegree_C_add_C_mul_X b a default ha] at hQ0deg
+    omega
+  have hnotunit : ¬ IsUnit Q₀ := by
+    intro hu
+    have hz := (MvPolynomial.isUnit_iff_totalDegree_of_isReduced.mp hu).2
+    rw [hQ0deg] at hz
+    omega
+  rw [irreducible_iff] at hnotirr
+  push Not at hnotirr
+  obtain ⟨a, b, hab, hua, hub⟩ := hnotirr hnotunit
+  have ha0 : a ≠ 0 := fun hc => hQ0ne (by rw [hab, hc, zero_mul])
+  have hb0 : b ≠ 0 := fun hc => hQ0ne (by rw [hab, hc, mul_zero])
+  have hadeg : a.totalDegree ≠ 0 := totalDegree_ne_zero_of_ne_zero_of_not_isUnit ha0 hua
+  have hbdeg : b.totalDegree ≠ 0 := totalDegree_ne_zero_of_ne_zero_of_not_isUnit hb0 hub
+  have key : ∀ g : MvPolynomial (Fin 1) K,
+      (planeSection (MvPolynomial.rename (fun _ : Fin 1 => (0 : Fin 2)) g)
+        ![0, 0] ![l₁, l₁'] ![l₂, l₂']).totalDegree = g.totalDegree := by
+    intro g
+    rw [totalDegree_planeSection_of_det_ne_zero _ _ _ _ hdet',
+      totalDegree_rename_eq_of_leftInverse _ _ hlinv]
+  have hPfac : planeSection h v u₁ u₂ =
+      planeSection (MvPolynomial.rename (fun _ : Fin 1 => (0 : Fin 2)) a)
+          ![0, 0] ![l₁, l₁'] ![l₂, l₂'] *
+        planeSection (MvPolynomial.rename (fun _ : Fin 1 => (0 : Fin 2)) b)
+          ![0, 0] ![l₁, l₁'] ![l₂, l₂'] := by
+    rw [← hcomp, ← hren, hab, map_mul, planeSection_mul]
+  rcases hirr.isUnit_or_isUnit hPfac with hu | hu
+  · have hz := (MvPolynomial.isUnit_iff_totalDegree_of_isReduced.mp hu).2
+    rw [key a] at hz
+    exact hadeg hz
+  · have hz := (MvPolynomial.isUnit_iff_totalDegree_of_isReduced.mp hu).2
+    rw [key b] at hz
+    exact hbdeg hz
+
+/-- **PROVEN 2026-08-02**: the contrapositive, and the form the consumers use — a plane whose
+section is IRREDUCIBLE of total degree at least two has a linearly independent direction
+pair. So `LinearIndependent K ![u₁, u₂]` never has to be asked for alongside those two
+clauses, and `exists_plane_irreducible_planeSection` below no longer does. -/
+theorem linearIndependent_of_irreducible_planeSection
+    {K : Type*} [Field K] [IsAlgClosed K] {N d : ℕ}
+    (h : MvPolynomial (Fin N) K) (v u₁ u₂ : Fin N → K) (hd : 2 ≤ d)
+    (hdeg : (planeSection h v u₁ u₂).totalDegree = d)
+    (hsec : Irreducible (planeSection h v u₁ u₂)) :
+    LinearIndependent K ![u₁, u₂] := by
+  by_contra hc
+  exact not_irreducible_planeSection_of_not_linearIndependent h v u₁ u₂ hd hdeg hc hsec
+
 /-- **BERTINI'S IRREDUCIBILITY THEOREM FOR A HYPERSURFACE (SORRY LEAF, cut 2026-07-31 out of
 `exists_basisPlane_irreducible_planeSection` below, which is now GLUE ONLY over this leaf and
 the two PROVEN normalisations above)**.
@@ -24387,15 +24584,81 @@ the earlier audit).
   point) and `K = K̄` (the section must be ABSOLUTELY irreducible -- over `ℝ`, `h = X 0 ^ 2 + X 1 ^ 2 + X 2 ^ 2 - 1`
   has irreducible plane sections, but the statement its consumers need is the one over `K̄`).
 
-`LinearIndependent K ![u₁, u₂]` IS NOT A STRENGTHENING. It follows from the other two clauses
-(a degenerate pair makes the section a univariate polynomial in one linear form, which over
-`K = K̄` factors into `d ≥ 2` linear factors), but no construction of a genuine `2`-plane has
-to work for it, so it is asked for rather than re-derived. A prover who has a plane has it. -/
+`LinearIndependent K ![u₁, u₂]` USED TO BE A THIRD CLAUSE OF THIS CONCLUSION, with the note
+that it "follows from the other two clauses … but no construction of a genuine `2`-plane has
+to work for it, so it is asked for rather than re-derived". **RECUT 2026-08-02: the note was
+right and the clause is gone.** `linearIndependent_of_irreducible_planeSection` immediately
+above PROVES it from the other two, so it costs a prover nothing to omit and the sole
+consumer re-derives it in one line. The leaf is therefore strictly weaker than it was; the
+direct-sorry count did not move (`1 → 1`), and what changed is what is LEFT in the leaf.
+
+---
+
+**AUDIT AND ROUTE SURVEY, 2026-08-02.** Four findings, in decreasing order of how much they
+would cost a prover to rediscover.
+
+**1. THIS FILE CARRIES A SECOND BERTINI LEAF, AND THE TWO CITE THE SAME THEOREM.**
+`exists_bertiniIrreducibleLocus_isAlgClosed` (LEDGER ITEM 4′, ~19 000 lines above) is also
+Bertini's irreducibility theorem and also cites *Jouanolou, Théorèmes de Bertini et
+applications, Thm 6.3*. The two share no identifier, no type and no statement shape — one
+is scheme-theoretic (`IrreducibleSpace (PrimeSpectrum (A ⧸ ℓ_w))` for a good LOCUS of
+hyperplanes), this one is polynomial (ONE good `2`-plane, `Irreducible (planeSection …)`) —
+so no duplicate scan can pair them and neither docstring mentions the other.
+
+NEITHER IMPLIES THE OTHER, and the check is one read of the binder lists:
+
+* item 4′ carries `[CharZero K]` and `[Algebra.Smooth K A]`, and this leaf has neither. Its
+  only call site is in characteristic `p` (see finding 3) and `V(h)` for an arbitrary
+  irreducible `h` is not smooth, so item 4′ cannot discharge this leaf;
+* this leaf produces ONE plane for a HYPERSURFACE; item 4′ needs a good LOCUS of hyperplanes
+  for an arbitrary integral affine algebra. So it cannot discharge item 4′ either.
+
+They are nevertheless one theorem in the literature, and whoever attacks either should
+attack the common statement — an integral affine `K`-variety of dimension `≥ 2` over `K = K̄`
+has an irreducible general hyperplane section, in every characteristic — and derive both.
+Dispatching the two independently is how the same development gets built twice.
+
+**2. THE INCIDENCE VARIETY IS FREE; THE CONTENT IS THE GENERIC FIBRE.** Item 4′'s docstring
+records the observation, and it applies verbatim here: the incidence variety of the family of
+plane sections is `Spec A × 𝔸ⁿ` — the defining relation SOLVES for the base-point parameter —
+so it is irreducible for nothing, and none of the content is in producing an irreducible
+object. In this module's own vocabulary that step is already PROVEN twice over:
+`prime_familyPlaneSection_std` (the all-translates family is prime, because the substitution
+is a SHEAR AUTOMORPHISM) and `irreducible_map_paramFractionHom_translateFamily` (Gauss). What
+is left is GEOMETRIC irreducibility of the generic fibre — Schmidt's step 2 — and nothing else.
+
+**3. …BUT THIS LEAF DOES NOT NEED ITEM 4′'s SECOND OBSTRUCTION.** Item 4′ lists the passage
+from the generic fibre to a dense open set of special fibres (EGA IV 9.7.7, constructibility
+of the geometrically-irreducible locus) as its second missing input, and correctly says it is
+absent from `Mathlib` at this pin. **Here it is not needed**: this leaf asks for ONE good
+plane, not a locus, and `exists_irreducibilityFormsInt_two` (Noether's forms over `ℤ`, PROVEN
+below, with no open input left) plus `K` infinite already carries "the generic plane section
+is good" to "some `K`-rational plane section is good". So of the two obstructions item 4′
+names, this leaf owes only the first. That is the precise sense in which this is the smaller
+of the two Bertini leaves in this module.
+
+The warning that goes with it: those two blocks are DECLARED BELOW this leaf, so cashing that
+in is a hoist, not a citation. Whoever does it should read the CLAUDE.md hoist checklist —
+the block to move is the `not_irreducible_iff_exists_badPiece` / `exists_unionForms` /
+`exists_irreducibilityFormsInt_two` cluster, and its own dependencies are all further down.
+
+**4. THE ONLY CALL SITE IS AT `K = AlgebraicClosure (ZMod p)`.** Traced 2026-08-02: this leaf
+is consumed by `exists_basisPlane_irreducible_planeSection`, thence
+`exists_basisPlane_irreducible_familyPlaneSection` → … →
+`exists_irreducible_planeSection_of_irreducible`, whose ONE use is inside
+`exists_bertiniNoetherWitness_of_three_le`, applied to `h` base-changed along
+`ZMod p → AlgebraicClosure (ZMod p)`. So a proof that works only over the algebraic closure
+of a finite field discharges every consumer in the tree. The statement is left general
+because that is the form the literature proves and because the extra generality is free; a
+prover who wants the hypothesis may add it and the assembly will not notice.
+
+DO NOT, however, reach for point counting on the way: the counting bounds
+(`exists_bound_forall_hypersurfaceCount_of_planeCurveCount` and everything above it) are
+proven THROUGH this leaf, so using them here is circular. -/
 theorem exists_plane_irreducible_planeSection {K : Type*} [Field K] [IsAlgClosed K]
     (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
     (hdeg : h.totalDegree = d) (hirr : Irreducible h) (hd : 2 ≤ d) :
     ∃ v u₁ u₂ : Fin (n + 3) → K,
-      LinearIndependent K ![u₁, u₂] ∧
       (planeSection h v u₁ u₂).totalDegree = d ∧
       Irreducible (planeSection h v u₁ u₂) :=
   sorry
@@ -24482,7 +24745,12 @@ neither of them is Bertini:
   asks for a plane and never mentions a direction.
 
 The remaining leaf is therefore Bertini's irreducibility theorem and the non-degeneracy of
-the plane, and nothing else. -/
+the plane, and nothing else.
+
+**UPDATE 2026-08-02**: not even the non-degeneracy. The leaf no longer carries
+`LinearIndependent K ![u₁, u₂]` in its conclusion; the two lines below re-derive it from the
+other two clauses through `linearIndependent_of_irreducible_planeSection`, which is PROVEN.
+So the remaining leaf is Bertini's irreducibility theorem and nothing else at all. -/
 theorem exists_basisPlane_irreducible_planeSection {K : Type*} [Field K]
     [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
     (hdeg : h.totalDegree = d) (hirr : Irreducible h) (hd : 2 ≤ d) :
@@ -24491,8 +24759,10 @@ theorem exists_basisPlane_irreducible_planeSection {K : Type*} [Field K]
       MvPolynomial.eval (fun i => A i 0) (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
       Irreducible (planeSection h (fun i => ∑ j, A i j.succ.succ * x₀ j)
         (fun i => A i 0) (fun i => A i 1)) := by
-  obtain ⟨v, u₁, u₂, hli, hPdeg, hsec⟩ :=
+  obtain ⟨v, u₁, u₂, hPdeg, hsec⟩ :=
     exists_plane_irreducible_planeSection n d h hdeg hirr hd
+  have hli : LinearIndependent K ![u₁, u₂] :=
+    linearIndependent_of_irreducible_planeSection h v u₁ u₂ hd hPdeg hsec
   obtain ⟨w₁, w₂, hli', hlead, hsec'⟩ :=
     exists_frame_eval_homogeneousComponent_ne_zero h hdeg hd v u₁ u₂ hPdeg hli hsec
   exact exists_basisPlane_of_linearIndependent_pair h v w₁ w₂ hli' hlead hsec'
@@ -27449,7 +27719,11 @@ INFRASTRUCTURE ALREADY IN PLACE, so that proofs of those two need not rebuild it
 DEGENERATE TRIPLES ARE NOT EXCLUDED and need not be: for `d ≥ 2` a section along
 a parametrisation with `u₁, u₂` dependent is a univariate polynomial in a linear
 form, hence reducible over `𝔽̄_p`, so such triples automatically satisfy
-`F(w) = 0` for any `F` with the stated property.
+`F(w) = 0` for any `F` with the stated property. (PROVEN 2026-08-02 as
+`not_irreducible_planeSection_of_not_linearIndependent`; this sentence had been
+prose since the cut, in this docstring and in its parent's, and it is the one place
+a reader could have doubted that the averaging identity may quantify over ALL
+triples.)
 
 THE `D < p` HYPOTHESIS is not needed for the mathematics -- Bertini
 irreducibility and Noether's forms are characteristic-free -- but it costs the
@@ -27592,9 +27866,12 @@ over `𝔽_p` either since `𝔽_p[v, u₁, u₂] → 𝔽̄_p[v, u₁, u₂]` i
 DEGENERATE TRIPLES ARE NOT EXCLUDED and need not be: for `d ≥ 2` a section along
 a parametrisation with `u₁, u₂` dependent is a univariate polynomial in a linear
 form, hence reducible over `𝔽̄_p`, so such triples automatically satisfy
-`F(w) = 0` for any `F` with the stated property. Dropping the independence
-condition is what makes the averaging identity `sum_zeroCount_planeSection` a
-single translation bijection.
+`F(w) = 0` for any `F` with the stated property. (PROVEN 2026-08-02 as
+`not_irreducible_planeSection_of_not_linearIndependent`; this sentence had been
+prose since the cut, in this docstring and in its parent's, and it is the one place
+a reader could have doubted that the averaging identity may quantify over ALL
+triples.) Dropping the independence condition is what makes the averaging
+identity `sum_zeroCount_planeSection` a single translation bijection.
 
 SMALL `N` — PROVEN 2026-07-27, so the Bertini content is genuinely and
 mechanically a statement about `N ≥ 3` only:
