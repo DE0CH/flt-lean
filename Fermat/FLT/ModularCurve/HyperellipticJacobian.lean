@@ -10578,8 +10578,9 @@ theorem geomPic_exists_const_of_ord_nonneg {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     ∃ a : AlgebraicClosure ℚ,
       gp.Dbar.VanishesAt w (z - algebraMap (AlgebraicClosure ℚ) gp.Dbar.F a) := sorry
 
-/-- **LEAF (weak Mordell–Weil, 3b of 4): a Galois-invariant geometric divisor is a base
-change.**
+open scoped Classical in
+/-- **A Galois-invariant geometric divisor is a base change** (PROVEN 2026-08-02 over
+`placeAct_transitive`; was "LEAF (weak Mordell–Weil, 3b of 4)").
 
 `F̄/F` is Galois with group `Γ_ℚ` — `ℚ` is algebraically closed in `F`, the curve being
 geometrically irreducible — and Galois acts TRANSITIVELY on the places above a given place of
@@ -10587,8 +10588,22 @@ geometrically irreducible — and Galois acts TRANSITIVELY on the places above a
 divisor is constant on them, and `ε v := δ w` for any `w` above `v` (and `0` if the fibre is
 empty) is a divisor with `bcDiv ε = δ`.  Finite support of `ε` is `below '' supp δ`.
 
-Transitivity is the only input and it is the only thing `GeomPic` does not already carry:
-`below_placeAct` (PROVEN) says the action preserves each fibre, which is the trivial half.
+**Why this stopped being a leaf, and why it had stopped being reachable.**  Transitivity was
+the only input, and the docstring here used to record that it "is the only thing `GeomPic`
+does not already carry".  That was true when written and stopped being true on 2026-07-31,
+when `placeAct_transitive` was PROVEN — over `PlaceData.pt_surjective_of_isAlgClosed`, i.e.
+by the observation that over `ℚ̄` every place IS a named point, so no residue theory is
+needed.  It is declared ~250 lines above this one, so the derivation is available exactly
+where it stands.
+
+In the meantime `geomPic_descent` had been re-proved through `geomPic_descent_divisor` with
+this statement INLINED in its body, which left this declaration with **no consumer anywhere
+in `Fermat/`** — a superseded half of an earlier four-way cut, invisible to every frontier
+scan because it is an ordinary well-formed `sorry`.  It is now proven and `geomPic_descent`
+calls it, so the duplication is gone and the statement is reachable again.
+
+**`hsep` is new here** and is inherited from `placeAct_transitive`, where it is load-bearing;
+the sole consumer (`geomPic_descent`) already carries it, so nothing above this moved.
 
 **Not the conclusion in disguise, and `below` surjective is NOT needed.**  This is a
 statement about `Divisors`, one level below `Pic`; the descent argument uses it after the
@@ -10601,8 +10616,38 @@ the set of divisors constant on fibres, and a `δ` taking two different values o
 not a base change. -/
 theorem geomPic_exists_bcDiv_of_divAct_fixed {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable)
     {δ : gp.Dbar.Divisors} (hδ : ∀ σ : QbarGal, gp.divAct σ δ = δ) :
-    ∃ ε : D.Divisors, gp.bcDiv ε = δ := sorry
+    ∃ ε : D.Divisors, gp.bcDiv ε = δ := by
+  -- an invariant divisor is constant on the fibres of `below`, by transitivity
+  have hconst : ∀ w w' : gp.Dbar.Places, gp.below w = gp.below w' → δ w = δ w' := by
+    intro w w' hww'
+    obtain ⟨σ, hσ⟩ := placeAct_transitive gp hsep w w' hww'
+    have h1 : gp.divAct σ δ (gp.placeAct σ w) = δ w := by
+      rw [GeomPic.divAct_apply, Equiv.symm_apply_apply]
+    rw [hδ σ, hσ] at h1
+    exact h1.symm
+  -- so it is the base change of the rational divisor reading off any fibre
+  set f : D.Places → ℤ := fun v =>
+    if h : ∃ w : gp.Dbar.Places, gp.below w = v then δ h.choose else 0 with hf
+  have hfval : ∀ w : gp.Dbar.Places, f (gp.below w) = δ w := by
+    intro w
+    have hex : ∃ w' : gp.Dbar.Places, gp.below w' = gp.below w := ⟨w, rfl⟩
+    rw [hf]
+    simp only [dif_pos hex]
+    exact hconst _ _ hex.choose_spec
+  refine ⟨Finsupp.onFinset (δ.support.image gp.below) f ?_, ?_⟩
+  · intro v hv
+    rw [hf] at hv
+    by_cases hex : ∃ w : gp.Dbar.Places, gp.below w = v
+    · simp only [dif_pos hex] at hv
+      exact Finset.mem_image.mpr ⟨hex.choose, Finsupp.mem_support_iff.mpr hv, hex.choose_spec⟩
+    · simp only [dif_neg hex] at hv
+      exact absurd rfl hv
+  · ext w
+    rw [GeomPic.bcDiv_apply]
+    show f (gp.below w) = δ w
+    exact hfval w
 
 /-- **LEAF (weak Mordell–Weil, 3c of 4): every geometric divisor is defined over a finite
 Galois level.**
@@ -10741,37 +10786,9 @@ theorem geomPic_descent {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c�
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (y : gp.Dbar.Pic)
     (hy : ∀ σ : QbarGal, gp.act σ y = y) : ∃ a : D.Pic, gp.bc a = y := by
   obtain ⟨δbar, hfix, hcl⟩ := geomPic_descent_divisor gp y hy
-  -- an invariant divisor is constant on the fibres of `below`, by transitivity
-  have hconst : ∀ w w' : gp.Dbar.Places, gp.below w = gp.below w' → δbar w = δbar w' := by
-    intro w w' hww'
-    obtain ⟨σ, hσ⟩ := placeAct_transitive gp hsep w w' hww'
-    have h1 : gp.divAct σ δbar (gp.placeAct σ w) = δbar w := by
-      rw [GeomPic.divAct_apply, Equiv.symm_apply_apply]
-    rw [hfix σ, hσ] at h1
-    exact h1.symm
-  -- so it is the base change of the rational divisor reading off any fibre
-  set f : D.Places → ℤ := fun v =>
-    if h : ∃ w : gp.Dbar.Places, gp.below w = v then δbar h.choose else 0 with hf
-  have hfval : ∀ w : gp.Dbar.Places, f (gp.below w) = δbar w := by
-    intro w
-    have hex : ∃ w' : gp.Dbar.Places, gp.below w' = gp.below w := ⟨w, rfl⟩
-    rw [hf]
-    simp only [dif_pos hex]
-    exact hconst _ _ hex.choose_spec
-  set δ : D.Divisors := Finsupp.onFinset (δbar.support.image gp.below) f (by
-    intro v hv
-    rw [hf] at hv
-    by_cases hex : ∃ w : gp.Dbar.Places, gp.below w = v
-    · simp only [dif_pos hex] at hv
-      exact Finset.mem_image.mpr ⟨hex.choose, Finsupp.mem_support_iff.mpr hv, hex.choose_spec⟩
-    · simp only [dif_neg hex] at hv
-      exact absurd rfl hv) with hδ
+  -- an invariant divisor is a base change (step 7), by transitivity of Galois on the fibres
+  obtain ⟨δ, hbc⟩ := geomPic_exists_bcDiv_of_divAct_fixed gp hsep hfix
   refine ⟨QuotientAddGroup.mk δ, ?_⟩
-  have hbc : gp.bcDiv δ = δbar := by
-    ext w
-    rw [GeomPic.bcDiv_apply]
-    show f (gp.below w) = δbar w
-    exact hfval w
   show (QuotientAddGroup.mk (gp.bcDiv δ) : gp.Dbar.Pic) = y
   rw [hbc, hcl]
 
