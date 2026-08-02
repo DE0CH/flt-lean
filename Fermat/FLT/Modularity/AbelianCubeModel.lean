@@ -128,6 +128,43 @@ for an invertible sheaf).  It is declared here only because editing `AmpleSheaf.
 re-elaborates the whole 81k-line cone of this module; hoist it next time that file is
 touched for another reason. -/
 
+/-- **`Spec ℚ`**, the base of every modular curve considered here. -/
+noncomputable abbrev SpecQ : Scheme.{0} := Spec (CommRingCat.of ℚ)
+/-! ### Evaluating global sections at rational points
+
+**Why this apparatus exists (2026-07-31).**  `nonempty_cubeModel_of_isAmpleSheaf_cube`
+below used to assert its `coords` outright.  A `CubeModel` whose `coords` are merely
+*asserted to exist* cannot be cut further along the embedding/forms axis, because the
+resulting FORMS half would be the coordinate-level statement refuted on `CubeModel`'s
+docstring by `E : y² + y = x³ − x`, `coords n = (1, n³, n⁶)`.  The four declarations
+here MANUFACTURE `coords` from a sheaf and a section family, which is what defeats that
+counterexample and makes the cut faithful.
+
+**THE TRICK THAT MAKES THIS CHEAP, and it is worth reusing.**  Evaluating a section of
+an invertible sheaf at a point normally means germs, stalks, or a trivialization over
+some unnamed neighbourhood.  None of that is needed here, for one reason: over
+`Spec ℚ` the base is a SINGLE point, so the trivialization one carries is a GLOBAL
+isomorphism `P^*M ≅ 𝒪` rather than a restriction — and then
+
+* `nonvanishingAt_of_iso` transports non-vanishing across it with no bookkeeping;
+* `nonvanishingLocus_modUnit` identifies the non-vanishing locus of a section of `𝒪`
+  with its basic open;
+* on `Spec` of a FIELD a basic open is `⊤` or `⊥` according as the section is a unit or
+  zero (`Scheme.basicOpen_of_isUnit` / `Scheme.basicOpen_zero`).
+
+So "does not vanish at the point" becomes "is nonzero in `ℚ`" in three rewrites, with
+no `restrict`, no stalk and no `PrimeSpectrum` topology.  Carrying the trivialization
+as a restriction `(P^*M)|_U ≅ 𝒪_U` instead costs the whole `trivializedSection`
+apparatus and the identification `Γ((⊤ : Opens), ⊤) ≅ Γ(Spec ℚ, ⊤)`.
+
+`nonvanishingAt_modPullbackSection` is stated for an arbitrary morphism of schemes and
+has nothing to do with `SpecQ`; it BELONGS in `Modularity/AmpleSheaf.lean` beside
+`nonvanishingLocus_modPullback_of_isAmpleSheaf`, whose proof it generalizes verbatim
+(that one is the closed-immersion, ample, whole-locus form; this is the pointwise form
+for an invertible sheaf).  It is declared here only because editing `AmpleSheaf.lean`
+re-elaborates the whole 81k-line cone of this module; hoist it next time that file is
+touched for another reason. -/
+
 /-- **NON-VANISHING IS DETECTED ON PULLBACKS** (PROVEN 2026-07-31): for an invertible
 `A` and ANY morphism `f`, the pulled-back section `f^*s` is non-vanishing at `x` exactly
 when `s` is non-vanishing at `f x`.
@@ -150,11 +187,11 @@ theorem nonvanishingAt_modPullbackSection {X Y : Scheme.{u}} (f : X ⟶ Y) {A : 
 
 /-- **A global section of `𝒪` on `Spec ℚ`, as a rational number** — the canonical
 `Γ(Spec R, ⊤) ≅ R` at `R = ℚ`. -/
-noncomputable def ratOfSpecQ (r : Γ((Spec (CommRingCat.of ℚ)), ⊤)) : ℚ :=
+noncomputable def ratOfSpecQ (r : Γ(SpecQ, ⊤)) : ℚ :=
   (Scheme.ΓSpecIso (CommRingCat.of ℚ)).hom r
 
 /-- `ratOfSpecQ` is injective at `0`, because it is half of an isomorphism. -/
-theorem ratOfSpecQ_eq_zero_iff (r : Γ((Spec (CommRingCat.of ℚ)), ⊤)) : ratOfSpecQ r = 0 ↔ r = 0 := by
+theorem ratOfSpecQ_eq_zero_iff (r : Γ(SpecQ, ⊤)) : ratOfSpecQ r = 0 ↔ r = 0 := by
   refine ⟨fun h => ?_, fun h => by simp [ratOfSpecQ, h]⟩
   have h1 := Iso.hom_inv_id_apply (Scheme.ΓSpecIso (CommRingCat.of ℚ)) r
   rw [show (Scheme.ΓSpecIso (CommRingCat.of ℚ)).hom r = (0 : ℚ) from h] at h1
@@ -167,11 +204,11 @@ theorem ratOfSpecQ_eq_zero_iff (r : Γ((Spec (CommRingCat.of ℚ)), ⊤)) : ratO
 `nonvanishingLocus_modUnit` turns the left side into membership of the basic open of
 `r`, and over a FIELD a basic open is `⊤` or `⊥` according as `r` is a unit or zero —
 so the point-set topology of `Spec ℚ` never has to be touched. -/
-theorem nonvanishingAt_modUnit_specQ (r : Γ((Spec (CommRingCat.of ℚ)), ⊤)) (x : (Spec (CommRingCat.of ℚ))) :
-    NonvanishingAt (modUnit (Spec (CommRingCat.of ℚ))) r x ↔ ratOfSpecQ r ≠ 0 := by
-  have hloc := nonvanishingLocus_modUnit (Spec (CommRingCat.of ℚ)) r
-  have hx : NonvanishingAt (modUnit (Spec (CommRingCat.of ℚ))) r x ↔ x ∈ (Spec (CommRingCat.of ℚ)).basicOpen r := by
-    have : x ∈ nonvanishingLocus (modUnit (Spec (CommRingCat.of ℚ))) r ↔ x ∈ ((Spec (CommRingCat.of ℚ)).basicOpen r : Set (Spec (CommRingCat.of ℚ))) := by
+theorem nonvanishingAt_modUnit_specQ (r : Γ(SpecQ, ⊤)) (x : SpecQ) :
+    NonvanishingAt (modUnit SpecQ) r x ↔ ratOfSpecQ r ≠ 0 := by
+  have hloc := nonvanishingLocus_modUnit SpecQ r
+  have hx : NonvanishingAt (modUnit SpecQ) r x ↔ x ∈ SpecQ.basicOpen r := by
+    have : x ∈ nonvanishingLocus (modUnit SpecQ) r ↔ x ∈ (SpecQ.basicOpen r : Set SpecQ) := by
       rw [hloc]
     exact this
   rw [hx]
@@ -185,15 +222,15 @@ theorem nonvanishingAt_modUnit_specQ (r : Γ((Spec (CommRingCat.of ℚ)), ⊤)) 
         h2.map (Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv.hom
       rwa [show (Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv (ratOfSpecQ r) = r from
         Iso.hom_inv_id_apply (Scheme.ΓSpecIso (CommRingCat.of ℚ)) r] at h3
-    have hb : (Spec (CommRingCat.of ℚ)).basicOpen r = ⊤ := (Spec (CommRingCat.of ℚ)).basicOpen_of_isUnit hu
+    have hb : SpecQ.basicOpen r = ⊤ := SpecQ.basicOpen_of_isUnit hu
     rw [hb]
     simp [h]
 
 /-- **THE SAME, THROUGH A GLOBAL TRIVIALIZATION** (PROVEN 2026-07-31): for an
 invertible sheaf on `Spec ℚ` presented as `N ≅ 𝒪`, a section is non-vanishing exactly
 when its image in `ℚ` is nonzero. -/
-theorem nonvanishingAt_iff_ratOfSpecQ {N : (Spec (CommRingCat.of ℚ)).Modules} (ψ : N ≅ modUnit (Spec (CommRingCat.of ℚ)))
-    (t : Γ(N, ⊤)) (x : (Spec (CommRingCat.of ℚ))) :
+theorem nonvanishingAt_iff_ratOfSpecQ {N : SpecQ.Modules} (ψ : N ≅ modUnit SpecQ)
+    (t : Γ(N, ⊤)) (x : SpecQ) :
     NonvanishingAt N t x ↔ ratOfSpecQ (ψ.hom.val.app (Opposite.op ⊤) t) ≠ 0 := by
   rw [← nonvanishingAt_modUnit_specQ]
   refine ⟨fun h => nonvanishingAt_of_iso ψ t x h, fun h => ?_⟩
@@ -208,8 +245,8 @@ Changing `φ` multiplies every `ptSectionValue M φ t` by one common nonzero sca
 an isomorphism `𝒪 ≅ 𝒪` on `Spec ℚ` is multiplication by a unit of `ℚ` — which is
 exactly the projective ambiguity `CubeModel` allows.  That is why the two leaves below
 may take `φ` as given data rather than having to pin it down. -/
-noncomputable def ptSectionValue {J : Scheme.{0}} {jstr : J ⟶ (Spec (CommRingCat.of ℚ))} (M : J.Modules)
-    {P : RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ)))} (φ : modPullback P.1 M ≅ modUnit (Spec (CommRingCat.of ℚ))) (t : Γ(M, ⊤)) : ℚ :=
+noncomputable def ptSectionValue {J : Scheme.{0}} {jstr : J ⟶ SpecQ} (M : J.Modules)
+    {P : RelPoint jstr (𝟙 SpecQ)} (φ : modPullback P.1 M ≅ modUnit SpecQ) (t : Γ(M, ⊤)) : ℚ :=
   ratOfSpecQ (φ.hom.val.app (Opposite.op ⊤) (modPullbackSection P.1 M t))
 
 /-- **THE BRIDGE** (PROVEN 2026-07-31): the coordinate `ptSectionValue M φ t` is nonzero
@@ -218,9 +255,9 @@ exactly when `t` does not vanish at the image point of `P`.
 This is what makes `CubeModel.coords_ne_zero` a THEOREM below rather than a hypothesis:
 its geometric content is base-point-freeness of the linear system, a statement about
 `M` and `s` on `J` that mentions no coordinates at all. -/
-theorem ptSectionValue_ne_zero_iff {J : Scheme.{0}} {jstr : J ⟶ (Spec (CommRingCat.of ℚ))} (M : J.Modules)
-    (hM : IsInvertibleSheaf M) {P : RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ)))}
-    (φ : modPullback P.1 M ≅ modUnit (Spec (CommRingCat.of ℚ))) (t : Γ(M, ⊤)) (x : (Spec (CommRingCat.of ℚ))) :
+theorem ptSectionValue_ne_zero_iff {J : Scheme.{0}} {jstr : J ⟶ SpecQ} (M : J.Modules)
+    (hM : IsInvertibleSheaf M) {P : RelPoint jstr (𝟙 SpecQ)}
+    (φ : modPullback P.1 M ≅ modUnit SpecQ) (t : Γ(M, ⊤)) (x : SpecQ) :
     ptSectionValue M φ t ≠ 0 ↔ NonvanishingAt M t (P.1.base x) := by
   rw [ptSectionValue, ← nonvanishingAt_iff_ratOfSpecQ φ _ x,
     nonvanishingAt_modPullbackSection P.1 hM t x]
@@ -292,14 +329,14 @@ hypotheses are only `hinv` and `hamp` — symmetry and normalization are NOT use
 adding them would record hypotheses this half does not read.  `ab` is kept because the
 constant `3` is an abelian-variety statement: for a general proper scheme only "some
 power" is very ample. -/
-theorem exists_veryAmpleSystem_of_isAmpleSheaf {J : Scheme.{0}} {jstr : J ⟶ (Spec (CommRingCat.of ℚ))}
+theorem exists_veryAmpleSystem_of_isAmpleSheaf {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (L : J.Modules)
     (hinv : IsInvertibleSheaf L) (hamp : IsAmpleSheaf L) :
     ∃ (M : J.Modules) (dim : ℕ) (s : Fin dim → Γ(M, ⊤))
-      (φ : ∀ P : RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ))), modPullback P.1 M ≅ modUnit (Spec (CommRingCat.of ℚ))),
+      (φ : ∀ P : RelPoint jstr (𝟙 SpecQ), modPullback P.1 M ≅ modUnit SpecQ),
       IsInvertibleSheaf M ∧ Nonempty (M ≅ modTensorPow L 3) ∧
       (∀ z : J, ∃ i, NonvanishingAt M (s i) z) ∧
-      (∀ P Q : RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ))), P ≠ Q → ∃ i j,
+      (∀ P Q : RelPoint jstr (𝟙 SpecQ), P ≠ Q → ∃ i j,
         ptSectionValue M (φ P) (s i) * ptSectionValue M (φ Q) (s j)
           ≠ ptSectionValue M (φ P) (s j) * ptSectionValue M (φ Q) (s i)) ∧
       SpansSquare M s :=
@@ -352,26 +389,26 @@ cube's right-hand side `p₁^*L^{⊗2} ⊗ p₂^*L^{⊗2}` rather than
 *Not stronger than the geometry supplies.*  `hamp` is deliberately ABSENT: ampleness is
 consumed entirely by the embedding half, and what survives into the forms is the
 spanning clause, which is the part of it this half actually reads. -/
-theorem exists_cubeForms_of_veryAmpleSystem {J : Scheme.{0}} {jstr : J ⟶ (Spec (CommRingCat.of ℚ))}
+theorem exists_cubeForms_of_veryAmpleSystem {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (L : J.Modules) (hinv : IsInvertibleSheaf L)
     (hsym : Nonempty (modPullback ab.negSelfHom L ≅ L))
-    (hzero : Nonempty (modPullback ab.zeroSection L ≅ modUnit (Spec (CommRingCat.of ℚ))))
+    (hzero : Nonempty (modPullback ab.zeroSection L ≅ modUnit SpecQ))
     (hcube : ab.HasCubeIso L)
     (M : J.Modules) (hM : IsInvertibleSheaf M) (hML : Nonempty (M ≅ modTensorPow L 3))
     {dim : ℕ} (s : Fin dim → Γ(M, ⊤))
-    (φ : ∀ P : RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ))), modPullback P.1 M ≅ modUnit (Spec (CommRingCat.of ℚ)))
+    (φ : ∀ P : RelPoint jstr (𝟙 SpecQ), modPullback P.1 M ≅ modUnit SpecQ)
     (hspan : SpansSquare M s) :
-    letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of ℚ)))
+    letI := ab.addCommGroup (𝟙 SpecQ)
     ∃ (cube : Fin dim × Fin dim → MvPolynomial (Fin dim × Fin dim) ℚ) (relDim : ℕ)
       (relDeg : Fin relDim → ℕ) (rel : Fin relDim → MvPolynomial (Fin dim × Fin dim) ℚ),
       (∀ k, (cube k).IsHomogeneous 2) ∧
-      (∀ P Q : RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ))), ∃ c : ℚ, c ≠ 0 ∧ ∀ k : Fin dim × Fin dim,
+      (∀ P Q : RelPoint jstr (𝟙 SpecQ), ∃ c : ℚ, c ≠ 0 ∧ ∀ k : Fin dim × Fin dim,
         MvPolynomial.eval (fun m : Fin dim × Fin dim =>
             ptSectionValue M (φ P) (s m.1) * ptSectionValue M (φ Q) (s m.2)) (cube k)
           = c * (ptSectionValue M (φ (P + Q)) (s k.1) *
               ptSectionValue M (φ (P - Q)) (s k.2))) ∧
       (∀ i, (rel i).IsHomogeneous (relDeg i)) ∧
-      (∀ P Q : RelPoint jstr (𝟙 (Spec (CommRingCat.of ℚ))), ∀ i,
+      (∀ P Q : RelPoint jstr (𝟙 SpecQ), ∀ i,
         MvPolynomial.eval (fun m : Fin dim × Fin dim =>
           ptSectionValue M (φ P) (s m.1) * ptSectionValue M (φ Q) (s m.2)) (rel i) = 0) ∧
       (∀ z : Fin dim × Fin dim → AlgebraicClosure ℚ, z ≠ 0 →
