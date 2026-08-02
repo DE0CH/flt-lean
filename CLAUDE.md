@@ -30266,3 +30266,72 @@ FORWARDS:**
     rw [hmc, IsOpenImmersion.lift_fac]
 `conv_lhs => rw [← d.model.comm]` also works; the auxiliary equation is better, because
 it says which occurrence you meant and survives later edits to the goal.
+## A STRUCTURE THAT JUSTIFIES OMITTING A CLAUSE BY CITING A THEOREM — CHECK THAT THEOREM'S HYPOTHESES AGAINST THE STRUCTURE'S OWN CLAUSES
+(2026-08-02, `flt-lean-393`, `CyclicSubgroupOfOrder` in `ModularCurve/X0.lean`.)
+A bundled structure in this development routinely carries a paragraph explaining
+why it pins its object with a WEAKER clause than the literature uses, of the
+shape *"the reference asks for `X`; we ask for `Y`, and `Y ⟹ X` by <named
+theorem>, so nothing is lost — and `Y` is cheaper to state."*  That paragraph is
+a PROOF SKETCH with hypotheses, and it is the one part of a structure's
+docstring that nobody re-reads, because it reads as a design note rather than as
+a claim.
+`CyclicSubgroupOfOrder` asks that the GEOMETRIC FIBRES of `C ⊆ E` be cyclic of
+order `N`, where Katz–Mazur (6.7.1) ask that `C` be finite locally free of RANK
+`N`.  Its docstring justified the substitution by Cartier's theorem — *a finite
+flat group scheme is étale, so its rank equals the number of points of any
+geometric fibre.*  **Cartier's theorem needs the ORDER — the rank — to be
+invertible on the base, and the rank is precisely what was not being pinned.**
+The justification is circular, and the structure was therefore strictly larger
+than `[Γ₀(N)]`: over `𝔽̄_p` with `p ∤ N` and `E` ordinary, `C = (ℤ/N) ⊕ μ_{p^k}`
+satisfies every clause for every `k ≥ 0` (`μ_{p^k}` is connected, so it
+contributes no geometric points, and over a FIELD every module is flat, so the
+`flat` field is free).
+**The check is mechanical and takes one careful read: write down the cited
+theorem's hypotheses, and verify each against the structure's OWN fields — not
+against the hypotheses of the leaves that happen to consume it.**  Here the
+missing hypothesis (`rank` invertible) is not implied by any field, and the
+ambient `IsUnit (N : R)` that every consumer carries does not supply it either,
+because `N` is not the rank.  The tell is that the cited theorem's conclusion
+and the structure's weak clause are the SAME quantity: if you are citing `X ⟹ Y`
+to avoid asserting `X`, and the theorem's hypothesis mentions `X`, stop.
+### The repair was already in the file, on the sibling structure, and had not been propagated
+`Gamma0Datum` carries TWO level structures.  `FullLevelStructure` pins its
+points with `geom_basis` — a geometric-fibre clause — and carries `nsmul_P`,
+`nsmul_Q` beside it, added after the spurious `R[ε]`-point `(P₀ + εv, Q₀)`
+refuted the version without them.  `CyclicSubgroupOfOrder` carries
+`geom_cyclic`, the exact analogue of `geom_basis`, and carried NO analogue of
+`nsmul_P`.  Same file, 1300 lines apart, same failure, one repaired and one not.
+The existing rule ([[flt-faithfulness-repair-not-inherited-by-twin]]) is about a
+`ℚ`/`F` twin pair in two files.  **The sharper and commoner case is two SIBLING
+structures in one file describing two level structures on one object**: nothing
+names them as twins, they share no identifier, and only the SHAPE of their
+clauses matches.  So when you repair a structure, grep the file for the other
+structures with a `geom_`-prefixed field and check each for the same gap.
+### What a torsion clause buys that a rank clause would, without `finrank`
+The repair is `nsmul_liesIn : LiesIn ι x → N • x = 0`, i.e. `C ⊆ E[N]` by Yoneda
+at the tautological point.  It is strictly cheaper than the rank clause the
+docstring was avoiding, and it delivers the same thing over the bases that carry
+`IsUnit (N : R)`: `E[N]` is finite étale there, a closed immersion into an étale
+scheme is unramified, and unramified + flat + locally of finite presentation is
+étale — so `C` is étale, its rank IS the geometric-fibre cardinality, and
+`geom_cyclic` now pins it.  **When a docstring declines a clause because it
+would need machinery the file lacks (`Scheme.Hom.finrank` here), look for a
+DIFFERENT clause that implies it over the bases actually used**; the reason the
+weak clause was chosen is usually a statability constraint, not a mathematical
+one, and a third option often meets both.
+### Costing an interface repair: count the STRUCTURE LITERALS, not the references
+`CyclicSubgroupOfOrder` is named ~40 times across three files, which prices the
+repair as a multi-file interface change.  The number that matters is the number
+of places the structure is CONSTRUCTED, and that is found by grepping for a
+field assignment rather than for the type name:
+    grep -rn "geom_cyclic :=\|neg_liesIn :=" --include=*.lean Fermat/
+Four, tree-wide.  Two get the new field for free (a base-change transport along
+an injective additive map; a `hmem` hypothesis that already states it), and two
+are the same Galois-descent construction and share one new lemma.  Every other
+occurrence is a `∀`-over-the-structure, which a new field only WEAKENS, or a
+docstring.  **Check the direction at the `∀` sites before relaxing, though: a
+`∀`-over-the-structure standing as a HYPOTHESIS makes its theorem STRONGER when
+the class shrinks** — here `X1.lean`'s Hecke leaves, which are all over `Spec ℚ̄`
+where the old and new classes coincide (Cartier applies unconditionally in
+characteristic zero), so their truth value is unchanged.  Say so explicitly; a
+reader who sees a hypothesis weaken will otherwise assume the leaf got easier.
