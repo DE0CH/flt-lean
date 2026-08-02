@@ -2077,9 +2077,220 @@ theorem not_isSquare_discr (q : ℕ) [Fact q.Prime]
   have h4 : 4 * (r * (c - r)) = 4 * (q : ℤ) := by linear_combination hk
   linarith
 
-/-- **AUT-FINITENESS** (sorry leaf, opened 2026-07-31; Silverman *AEC* III.10.1):
-an elliptic curve over an algebraically closed field has only FINITELY MANY
-automorphisms — i.e. the unit group of `WeierstrassCurve.End` is finite.
+/-! ### THIRTEENTH CUT, 2026-08-01: AUT-FINITENESS is a COUNTING argument over ONE leaf
+
+`finite_units_end` is now PROVEN, over the single leaf `exists_affine_xMap_of_isUnit`
+— *the `x`-map of a unit is AFFINE*, with NO exceptional set.  Everything else that
+the 2026-07-31 route note called "finite combinatorics over the small torsion" is
+below, and the frontier is unchanged at `1 → 1`: what left the leaf is the whole
+counting half, and what is LEFT in it is one statement about a rational map being a
+morphism at every point.
+
+**WHY THE LEAF IS STATED WITHOUT A GUARD, and it is the whole reason this cut is
+where it is.**  `exists_xWitness_natDegree_le_one_of_injective` (TWELFTH CUT, below)
+returns a THIRD polynomial `G ≠ 0` and its witness identity holds only where
+`G(x P) ≠ 0`.  A Möbius `x`-map is pinned by its values at three points and an affine
+one by two, so a guarded identity is enough only if the guard misses two of the
+chosen torsion points — and `deg G` is NOT bounded over the unit group, so no fixed
+`ℓ` works and no choice of `ℓ` can be made before the unit is known.  That is
+exactly why the counting half needs the UNGUARDED statement, and why the leaf below
+asks for it.
+-/
+
+/-- **A unit of `End W` is injective on points**: its inverse in `End W` is a left
+inverse of it as a map, because `↑u⁻¹ * ↑u = 1` and multiplication in `End W` is
+composition on points (`End.mul_apply`, which is `rfl`). -/
+theorem injective_units_end {F : Type*} [Field F] [DecidableEq F] [IsAlgClosed F]
+    {W : WeierstrassCurve.Affine F} [W.IsElliptic] (u : (WeierstrassCurve.End W)ˣ) :
+    Function.Injective (((u : WeierstrassCurve.End W) : AddMonoid.End W.Point)) := by
+  have hli : ∀ P : W.Point,
+      ((↑u⁻¹ : WeierstrassCurve.End W) : AddMonoid.End W.Point)
+        (((↑u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P) = P := by
+    intro P
+    have h : ((↑u⁻¹ * ↑u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P
+        = ((1 : WeierstrassCurve.End W) : AddMonoid.End W.Point) P :=
+      congrArg (fun f : WeierstrassCurve.End W => (f : AddMonoid.End W.Point) P) u.inv_mul
+    exact h
+  exact Function.LeftInverse.injective hli
+
+/-- **An ODD `ℓ ≥ 3` invertible in `F`**: `3`, unless `3 = 0` in `F`, and then `5`.
+They cannot both vanish, since `2·3 − 5 = 1`.
+
+Oddness is load-bearing below and not decoration: `u` and `−u` agree POINTWISE on the
+`2`-torsion, so the restriction map to `E[2]` can never separate them, and the whole
+injection would fail.  On `E[ℓ]` with `ℓ` odd it does separate them. -/
+theorem exists_odd_ne_zero_natCast {F : Type*} [Field F] :
+    ∃ ℓ : ℕ, (∃ k : ℕ, ℓ = 2 * k + 1) ∧ ((ℓ : ℕ) : F) ≠ 0 ∧ 2 ≤ ℓ := by
+  by_cases h3 : ((3 : ℕ) : F) = 0
+  · refine ⟨5, ⟨2, rfl⟩, ?_, by norm_num⟩
+    intro h5
+    have h30 : (3 : F) = 0 := by exact_mod_cast h3
+    have h50 : (5 : F) = 0 := by exact_mod_cast h5
+    have h1 : (1 : F) = 0 := by linear_combination 2 * h30 - h50
+    exact one_ne_zero h1
+  · exact ⟨3, ⟨1, rfl⟩, h3, by norm_num⟩
+
+/-- A point killed by `2` and by an ODD `ℓ` is zero: `1 = ℓ − 2k`. -/
+theorem eq_zero_of_two_zsmul_of_odd_zsmul {F : Type*} [Field F] [DecidableEq F]
+    {W : WeierstrassCurve.Affine F} [W.IsElliptic] {Q : W.Point} {ℓ k : ℕ}
+    (hk : ℓ = 2 * k + 1) (h2 : (2 : ℤ) • Q = 0) (hℓ : ((ℓ : ℕ) : ℤ) • Q = 0) : Q = 0 := by
+  have hone : (((ℓ : ℕ) : ℤ) - (k : ℤ) * 2) = 1 := by rw [hk]; push_cast; ring
+  calc Q = (1 : ℤ) • Q := (one_smul _ _).symm
+    _ = (((ℓ : ℕ) : ℤ) - (k : ℤ) * 2) • Q := by rw [hone]
+    _ = ((ℓ : ℕ) : ℤ) • Q - (k : ℤ) • ((2 : ℤ) • Q) := by rw [smul_smul, sub_smul]
+    _ = 0 := by rw [hℓ, h2, smul_zero, sub_zero]
+
+/-- **Two `ℓ`-torsion points with DISTINCT `x`-coordinates.**
+
+`#W[ℓ] = ℓ² ≥ 4` (`TorsionCard.card_torsionBy`), whereas the nonzero points sharing
+a single `x`-coordinate are at most two (`eq_or_eq_neg_of_veluPointX_eq`), so a
+`W[ℓ]` all of whose nonzero points had one `x`-value would have at most `3`
+elements.  This is where the exact torsion count is spent, and it is the only place. -/
+theorem exists_pair_torsion_veluPointX_ne {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] {W : WeierstrassCurve.Affine F} [W.IsElliptic] (ℓ : ℕ)
+    (hℓF : ((ℓ : ℕ) : F) ≠ 0) (hℓ : 2 ≤ ℓ) :
+    ∃ P₁ P₂ : W.Point, P₁ ≠ 0 ∧ P₂ ≠ 0 ∧
+      ((ℓ : ℕ) : ℤ) • P₁ = 0 ∧ ((ℓ : ℕ) : ℤ) • P₂ = 0 ∧
+      veluPointX P₁ ≠ veluPointX P₂ := by
+  classical
+  set M : Submodule ℤ W.Point := Submodule.torsionBy ℤ W.Point ((ℓ : ℕ) : ℤ) with hM
+  have hcard : Nat.card ↥M = ℓ ^ 2 := TorsionCard.card_torsionBy W ℓ hℓF
+  have hpos : 0 < Nat.card ↥M := by rw [hcard]; positivity
+  haveI hfinM : Finite ↥M := (Nat.card_pos_iff.mp hpos).2
+  have hmem : ∀ P : W.Point, P ∈ M ↔ ((ℓ : ℕ) : ℤ) • P = 0 := by
+    intro P; rw [hM, Submodule.mem_torsionBy_iff]
+  have hEq : Nat.card ↥M = (M : Set W.Point).ncard := Nat.card_coe_set_eq _
+  by_contra hcon
+  push Not at hcon
+  -- a nonzero element of `M`
+  obtain ⟨P₀, hP₀M, hP₀⟩ : ∃ P : W.Point, P ∈ M ∧ P ≠ 0 := by
+    by_contra hno
+    push Not at hno
+    have hsub : (M : Set W.Point) ⊆ {0} := by
+      intro P hP; exact Set.mem_singleton_iff.2 (hno P hP)
+    have h1 : Nat.card ↥M ≤ 1 := by
+      have hle := Set.ncard_le_ncard hsub (Set.finite_singleton (0 : W.Point))
+      rw [hEq]
+      simpa using hle
+    rw [hcard] at h1
+    nlinarith
+  -- every nonzero element of `M` is `± P₀`, so `#M ≤ 3`
+  have hsub : (M : Set W.Point) ⊆ {0, P₀, -P₀} := by
+    intro P hP
+    rcases eq_or_ne P 0 with rfl | hP0
+    · exact Set.mem_insert _ _
+    have hx : veluPointX P = veluPointX P₀ :=
+      hcon P P₀ hP0 hP₀ ((hmem P).1 hP) ((hmem P₀).1 hP₀M)
+    rcases eq_or_eq_neg_of_veluPointX_eq hP0 hP₀ hx with h | h
+    · exact Set.mem_insert_iff.2 (Or.inr (Set.mem_insert_iff.2 (Or.inl h)))
+    · exact Set.mem_insert_iff.2 (Or.inr (Set.mem_insert_iff.2 (Or.inr h)))
+  have h3 : Nat.card ↥M ≤ 3 := by
+    have hfin : ({0, P₀, -P₀} : Set W.Point).Finite := Set.toFinite _
+    have hle := Set.ncard_le_ncard hsub hfin
+    rw [hEq]
+    refine hle.trans ?_
+    refine (Set.ncard_insert_le _ _).trans ?_
+    have hin := Set.ncard_insert_le P₀ ({-P₀} : Set W.Point)
+    simp only [Set.ncard_singleton] at hin
+    omega
+  rw [hcard] at h3
+  nlinarith
+
+/-- **THE `x`-MAP OF A UNIT IS AFFINE** (sorry leaf, opened 2026-08-01; this is the
+whole residue of `finite_units_end`, and it is *AEC* III.3.1(b) in the one form the
+counting argument below can consume):
+
+  `x(u P) = a · x(P) + b` for EVERY `P ≠ 0`,
+
+with no exceptional set and no hypothesis beyond `u` being a unit.
+
+`a ≠ 0` is deliberately NOT asserted: the counting argument does not need it (two
+distinct `x`-values determine `(a, b)` whatever `a` is), and it is free anyway — a
+constant `x`-map has finite range, so `eq_zero_of_constX`/`eq_zero_of_finite_range`
+would make `u` the zero map, which a unit is not.
+
+**HALF OF IT IS ALREADY A THEOREM, BELOW.**  A unit is injective
+(`injective_units_end`) and has `λ(u) ≠ 0` — obtain `c` with `IsDiffChar ↑u c` from
+`exists_isDiffChar` applied to `(↑u).2.isRationalMap`, likewise `d` for `u⁻¹`, then
+`isDiffChar_comp` gives `IsDiffChar (↑u⁻¹ ∘ ↑u) (d·c)`, that composite IS the
+identity, and `isDiffChar_id` with `isDiffChar_unique` force `d·c = 1`.  So
+`exists_xWitness_natDegree_le_one_of_injective` (TWELFTH CUT) applies and returns
+`A, B, G` with `G ≠ 0`, `IsCoprime A B`, `max (deg A) (deg B) ≤ 1` and
+
+  `x(u P) · B(x P) = A(x P)`  whenever `u P ≠ 0` and `G(x P) ≠ 0`.
+
+**THE TWO GAPS BETWEEN THAT AND THIS, AND THE ONE DEVICE THAT CLOSES BOTH.**
+
+*(i) `B` has no root, so the `x`-map is affine rather than merely Möbius.*  If
+`B(t₀) = 0` then `A(t₀) ≠ 0` by coprimality, and a nonzero `P` over `t₀` would give
+`0 = x(u P)·B(t₀) = A(t₀) ≠ 0` — except that the guard needs `G(t₀) ≠ 0`, and
+`B(t₀) = 0` forces `t₀` to be a root of `G` (the raw certificate gives `A₀(t₀) = 0`
+too, so `(X − t₀)` divides `gcd(A₀, B₀) = G`).  So this is not a gap in the
+mathematics but exactly the guard.
+
+*(ii) the identity at the roots of `G`.*  Same guard.
+
+**BOTH CLOSE THROUGH THE DIVISION POLYNOMIALS, whose certificate is COPRIME and
+EVERYWHERE-VALID** — that is the asymmetry to exploit, and it is why the device is
+not circular.  Write `νₙ = Φₙ/Ψₙ²` for the `x`-map of `[n]`
+(`veluPointX_nsmul`, with `isCoprime_Φ_ΨSq` and `Ψₙ²(x P) = 0 ↔ n • P = 0`).  Then:
+
+* `u ∘ [n] = [n] ∘ u`, so `νₙ ∘ Φᵤ = Φᵤ ∘ νₙ` as RATIONAL FUNCTIONS — they agree at
+  cofinitely many `x`-values, hence after clearing denominators as POLYNOMIALS, and
+  a polynomial identity may then be evaluated at ANY point;
+* `[n]` is surjective (`zsmul_surjective_algClosed`) and its fibres have `n²`
+  elements (`TorsionCard.card_torsionBy`), so they carry at least `n²/2` distinct
+  `x`-values.  Taking `n` with `n² > 2·(deg G + deg B)` — legitimate, since `G` and
+  `B` are fixed once `u` is — EVERY `t₀ ∈ F` has a preimage `s` under `νₙ` outside
+  the bad set;
+* then `x(u P_{t₀}) = X(νₙ(s)) = νₙ(X(s)) = νₙ(Φᵤ(s))`, and the cross-multiplied
+  commutation identity evaluated at `s` turns that into `Φᵤ(t₀)`, which is gap (ii);
+* for gap (i), the same identity at `s` has `B(νₙ(s)) = B(t₀) = 0` in its
+  right-hand denominator while its left-hand numerator is `Ψₙ²(s)·A(t₀) ≠ 0`, so the
+  left-hand denominator `B(s)^d · Ψₙ²(Φᵤ(s))` must vanish; `B(s) ≠ 0` off the bad
+  set, so `Ψₙ²(x(u P_s)) = 0`, i.e. `u P_s` is `n`-torsion, i.e. `P_s` is (`u` is an
+  automorphism), i.e. `Ψₙ²(s) = 0` — contradicting `s` being outside the bad set.
+
+**DECLARATION ORDER: the proof cannot be written HERE as the file now stands, and
+the repair is a HOIST that has been MEASURED rather than guessed.**
+`exists_xWitness_natDegree_le_one_of_injective` is ~700 lines BELOW this line, in
+`section Separability` of the TWELFTH CUT, and Lean has no forward references.  So
+the successor's FIRST step is to move `section Separability … end Separability`
+above the TENTH CUT, as its OWN commit touching nothing else.  Checked at this
+commit, on all three axes a hoist can fail on:
+
+* `flt-hoistcheck.py … --block 2925 3198 --to 1928` reports **HITS: 0** — the block
+  references NOTHING declared in the 17 declarations it would jump over;
+* the block contains no `@[simp]`, no `instance` and no `attribute`, so no simp set
+  and no instance search changes behaviour by moving it earlier;
+* it carries its OWN `open _root_.Polynomial` and
+  `variable {F : Type*} [Field F] [DecidableEq F] {W W' : Affine F}` INSIDE the
+  section, and the jumped region has no depth-`0` `variable` line, so the scope
+  travels with it and nothing between the two positions is re-scoped.
+
+Take the sorted-line-multiset receipt anyway (`sort` the file before and after: a
+pure move leaves the multiset unchanged), since the line numbers above will have
+moved by the time anyone reads this — re-run the check rather than trusting them.
+Do NOT restate the theorem here; that manufactures a duplicate cut.
+
+**NON-VACUITY.**  The group is nonempty and contains `±1`, and for `j ≠ 0, 1728` it
+is exactly `{±1}`, so neither this leaf nor `finite_units_end` is satisfied by an
+empty object.  `IsAlgClosed` is what makes `endSubring` a subring at all
+(`IsIsogeny.add` is FALSE without it — see `Isogeny.lean`'s falsity audit) and
+`IsElliptic` excludes the singular cubic, whose smooth locus is `𝔾ₐ` or `𝔾ₘ` and has
+infinite automorphism group. -/
+theorem exists_affine_xMap_of_isUnit {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
+    (u : (WeierstrassCurve.End W)ˣ) :
+    ∃ a b : F, ∀ P : W.Point, P ≠ 0 →
+      veluPointX (((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P)
+        = a * veluPointX P + b :=
+  sorry
+
+/-- **AUT-FINITENESS** (PROVEN 2026-08-01 over `exists_affine_xMap_of_isUnit`;
+Silverman *AEC* III.10.1): an elliptic curve over an algebraically closed field has
+only FINITELY MANY automorphisms — i.e. the unit group of `WeierstrassCurve.End` is
+finite.
 
 Classically `#Aut(E) ∈ {2, 4, 6, 12, 24}`, the larger values occurring only for
 `j = 0` and `j = 1728` and, in characteristics `2` and `3`, for the supersingular
@@ -2101,60 +2312,125 @@ no scheme-theoretic degree and that `Isogeny.lean` machine-REFUTES the
 characteristic-`p` dual isogeny (`isRationalMap_dualHom_is_false`), so any leaf
 phrased in terms of `deg` is blocked on a development that does not exist.  This
 one is not: a unit of `End W` carries an `IsRationalMap` certificate in both
-directions, so it is an automorphism of the plane curve fixing the origin, i.e. an
-element of the stabiliser of `W` in `WeierstrassCurve.VariableChange`.
+directions, so it is an automorphism of the plane curve fixing the origin.
 
-WHAT THE TREE ALREADY HAS.  `EllipticCurve/AutomorphismExponent.lean` proves the
-GROUP-THEORETIC half — that stabiliser has exponent dividing `12` — so the missing
-step is the bridge `Aut(W, O) ↪ VariableChange` (*AEC* III.3.1(b)): an invertible
-endomorphism is induced by a variable change `(u, r, s, t)`.  The `x`-witness
-`A/B` of `IsRationalMap` for an invertible `φ` has an inverse of the same shape,
-so `A/B` is a Möbius transformation of `ℙ¹`; compatibility with the group law then
-pins `r, s, t` and leaves `u` a root of unity.
+**THE PROOF, and it is a COUNTING argument with no classification in it.**  Fix an
+ODD `ℓ` invertible in `F` (`exists_odd_ne_zero_natCast`: `3`, or `5` in
+characteristic `3`).  A unit `u` is injective (`injective_units_end`) and commutes
+with `[ℓ]`, so it maps `W[ℓ]` into itself; and `W[ℓ]` is FINITE with `ℓ²` elements
+(`TorsionCard.card_torsionBy`).  So
 
-NON-VACUITY, and it is worth stating because "finitely many" statements are easy
-to satisfy trivially: the group is nonempty and contains `±1`, and for
-`j ≠ 0, 1728` it is EXACTLY `{±1}`.  The hypotheses are all load-bearing:
-`IsAlgClosed` is what makes `endSubring` a subring at all (`IsIsogeny.add` is
-FALSE without it — see `Isogeny.lean`'s falsity audit), and `IsElliptic` excludes
-a singular Weierstrass curve, whose smooth locus is `𝔾ₐ` or `𝔾ₘ` and has infinite
-automorphism group.
+    u ↦ (u P₁, u P₂) ∈ W[ℓ] × W[ℓ]
 
-THE CHECK THAT WOULD REFUTE the claim that this is a genuine escape from `A`: an
-interpretation of this module's algebra in which the unit group of `End` is finite
-and Hasse still fails.
+is a map into a finite type for any two fixed `P₁, P₂ ∈ W[ℓ]`, and it is enough to
+show it is INJECTIVE for a good choice of the pair.  Take `P₁, P₂` nonzero with
+`x P₁ ≠ x P₂` (`exists_pair_torsion_veluPointX_ne`).  If `u` and `v` agree at both:
 
-ROUTE UPDATE, 2026-07-31, and it is HALF THE BRIDGE, PROVEN.  The paragraph above
-names the missing step as *AEC* III.3.1(b), "an invertible endomorphism is induced
-by a variable change `(u, r, s, t)`", and says the way in is that "the `x`-witness
-`A/B` of `IsRationalMap` for an invertible `φ` has an inverse of the same shape, so
-`A/B` is a Möbius transformation of `ℙ¹`".  **That step no longer needs the inverse,
-and it is now a theorem.**  A unit `ψ` is INJECTIVE, and `λ(ψ)·λ(ψ⁻¹) = λ(1) = 1`
-(`isDiffChar_comp`) forces `λ(ψ) ≠ 0`; so
-`exists_xWitness_natDegree_le_one_of_injective` (TWELFTH CUT, below
-`natCard_ker_degreeFormEnd_abs`) gives `ψ` an `x`-map of degree `≤ 1` outright.
+* their affine `x`-maps agree at the two distinct values `x P₁ ≠ x P₂`, so
+  `(a, b) = (a', b')` — two points determine an affine map;
+* hence `x(u P) = x(v P)` for EVERY `P ≠ 0`, so `u P = ± v P` pointwise, so the
+  exceptional set of `eq_or_add_eq_zero_of_finite_compl` is EMPTY and that theorem
+  gives `u = v` or `u + v = 0`;
+* `u + v = 0` is impossible: it makes `2 • (u P₁) = 0` (using `u P₁ = v P₁`), while
+  `u P₁` is a nonzero point of `W[ℓ]` with `ℓ` ODD, and
+  `eq_zero_of_two_zsmul_of_odd_zsmul` then forces `u P₁ = 0`.
 
-WHAT IS LEFT, and it is a COUNTING argument rather than a classification.  A degree-
-`≤ 1` `x`-map is a Möbius transformation, and a Möbius transformation is determined
-by its values at THREE distinct points.  Take the three `x`-coordinates of the
-nonzero `2`-torsion (three distinct values for `q` odd, since `#E[2] = 4` by
-`TorsionCard.card_torsionBy` and each nonzero `2`-torsion point is its own negative):
-`ψ` maps `E[2]` to itself bijectively, so its `x`-map permutes those three values, of
-which there are `3! = 6` permutations; and `ψ` is determined by its `x`-map up to
-sign (`W.Point` is not the union of two proper subgroups — see the discussion at
-`Isogeny.lean`'s `eq_or_eq_neg_of_veluPointX_eq`).  That bounds the unit group by
-`12`, which is both finite and the classically correct bound away from `q ∈ {2, 3}`.
-`q = 2` needs its own treatment, since `#E[2] ∈ {1, 2}` there and three points are
-not available; the honest fallback is `E[3]` (`#E[3] = 9`, four `x`-values), which
-serves every `q ≠ 3`, so a two-case split on `q = 3` covers everything.
-
-So the successor at this leaf is doing finite combinatorics over the small torsion,
-NOT reconstructing `WeierstrassCurve.VariableChange` — and in particular
-`AutomorphismExponent.lean` is no longer on the critical path. -/
+**A CORRECTION to the 2026-07-31 route note, which prescribed the `2`-torsion.**
+`u` and `−u` agree POINTWISE on `W[2]` (there `−Q = Q`), so no restriction map to
+`W[2]` can be injective and the `2`-torsion cannot end the argument by itself; the
+note's `12` was a bound obtained by counting `x`-maps, which needs the `x`-map
+pinned at THREE points.  Using ODD torsion instead removes both difficulties at
+once — the restriction is injective outright, and an AFFINE map needs only TWO
+points — and it also removes the note's `q = 2` / `q = 3` case split, since one of
+`3, 5` is invertible in every field. -/
 theorem finite_units_end {F : Type*} [Field F] [DecidableEq F] [IsAlgClosed F]
     (W : WeierstrassCurve.Affine F) [W.IsElliptic] :
-    Finite (WeierstrassCurve.End W)ˣ :=
-  sorry
+    Finite (WeierstrassCurve.End W)ˣ := by
+  classical
+  obtain ⟨ℓ, ⟨k, hk⟩, hℓF, hℓ2⟩ := exists_odd_ne_zero_natCast (F := F)
+  obtain ⟨P₁, P₂, hP₁0, hP₂0, hP₁t, hP₂t, hxne⟩ :=
+    exists_pair_torsion_veluPointX_ne (W := W) ℓ hℓF hℓ2
+  set M : Submodule ℤ W.Point := Submodule.torsionBy ℤ W.Point ((ℓ : ℕ) : ℤ) with hM
+  have hcard : Nat.card ↥M = ℓ ^ 2 := TorsionCard.card_torsionBy W ℓ hℓF
+  have hpos : 0 < Nat.card ↥M := by rw [hcard]; positivity
+  haveI hfinM : Finite ↥M := (Nat.card_pos_iff.mp hpos).2
+  -- units preserve the `ℓ`-torsion
+  have hmem : ∀ (u : (WeierstrassCurve.End W)ˣ) (P : W.Point), ((ℓ : ℕ) : ℤ) • P = 0 →
+      ((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P ∈ M := by
+    intro u P hP
+    rw [hM, Submodule.mem_torsionBy_iff, ← map_zsmul, hP, map_zero]
+  refine Finite.of_injective
+    (fun u : (WeierstrassCurve.End W)ˣ =>
+      ((⟨((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P₁, hmem u P₁ hP₁t⟩ : ↥M),
+       (⟨((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P₂, hmem u P₂ hP₂t⟩ : ↥M)))
+    ?_
+  intro u v huv
+  have h1 : ((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P₁
+      = ((v : WeierstrassCurve.End W) : AddMonoid.End W.Point) P₁ :=
+    congrArg (fun p => (p.1 : W.Point)) huv
+  have h2 : ((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P₂
+      = ((v : WeierstrassCurve.End W) : AddMonoid.End W.Point) P₂ :=
+    congrArg (fun p => (p.2 : W.Point)) huv
+  obtain ⟨a, b, hab⟩ := exists_affine_xMap_of_isUnit u
+  obtain ⟨a', b', hab'⟩ := exists_affine_xMap_of_isUnit v
+  -- two distinct `x`-values determine the affine map
+  have e1 : a * veluPointX P₁ + b = a' * veluPointX P₁ + b' := by
+    rw [← hab P₁ hP₁0, ← hab' P₁ hP₁0, h1]
+  have e2 : a * veluPointX P₂ + b = a' * veluPointX P₂ + b' := by
+    rw [← hab P₂ hP₂0, ← hab' P₂ hP₂0, h2]
+  have hsubx : veluPointX P₁ - veluPointX P₂ ≠ 0 := sub_ne_zero.2 hxne
+  have haa : a = a' := by
+    have hmul : (a - a') * (veluPointX P₁ - veluPointX P₂) = 0 := by
+      linear_combination e1 - e2
+    have h0 := (mul_eq_zero.mp hmul).resolve_right hsubx
+    linear_combination h0
+  have hbb : b = b' := by
+    linear_combination e1 - veluPointX P₁ * haa
+  -- so `u` and `v` have the same `x`-map, hence agree up to sign at every point
+  have hxall : ∀ P : W.Point, P ≠ 0 →
+      veluPointX (((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P)
+        = veluPointX (((v : WeierstrassCurve.End W) : AddMonoid.End W.Point) P) := by
+    intro P hP
+    rw [hab P hP, hab' P hP, haa, hbb]
+  have hnot : ∀ P : W.Point,
+      ¬ (((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P
+            ≠ ((v : WeierstrassCurve.End W) : AddMonoid.End W.Point) P ∧
+          ((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P
+            ≠ -(((v : WeierstrassCurve.End W) : AddMonoid.End W.Point) P)) := by
+    rintro P ⟨hne, hnegne⟩
+    rcases eq_or_ne P 0 with rfl | hP0
+    · exact hne (by rw [map_zero, map_zero])
+    have hu0 : ((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P ≠ 0 := by
+      intro hc
+      exact hP0 (injective_units_end u (by rw [hc, map_zero]))
+    have hv0 : ((v : WeierstrassCurve.End W) : AddMonoid.End W.Point) P ≠ 0 := by
+      intro hc
+      exact hP0 (injective_units_end v (by rw [hc, map_zero]))
+    rcases eq_or_eq_neg_of_veluPointX_eq hu0 hv0 (hxall P hP0) with h | h
+    · exact hne h
+    · exact hnegne h
+  rcases eq_or_add_eq_zero_of_finite_compl
+      (φ := ((u : WeierstrassCurve.End W) : AddMonoid.End W.Point))
+      (ψ := ((v : WeierstrassCurve.End W) : AddMonoid.End W.Point))
+      (Set.Finite.subset Set.finite_empty (fun P hP => absurd hP (hnot P))) with hcase | hcase
+  · exact Units.ext (Subtype.ext hcase)
+  · -- `u = −v` would make the nonzero `ℓ`-torsion point `u P₁` also `2`-torsion
+    exfalso
+    have hsum : ((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P₁
+        + ((v : WeierstrassCurve.End W) : AddMonoid.End W.Point) P₁ = 0 := by
+      have h := DFunLike.congr_fun hcase P₁
+      rw [AddMonoidHom.add_apply, AddMonoidHom.zero_apply] at h
+      exact h
+    have hQ0 : ((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P₁ ≠ 0 := by
+      intro hc
+      exact hP₁0 (injective_units_end u (by rw [hc, map_zero]))
+    have h2Q : (2 : ℤ) • (((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P₁) = 0 := by
+      rw [two_smul]
+      nth_rewrite 2 [h1]
+      exact hsum
+    have hlQ : ((ℓ : ℕ) : ℤ) • (((u : WeierstrassCurve.End W) : AddMonoid.End W.Point) P₁) = 0 :=
+      (Submodule.mem_torsionBy_iff _ _).mp (hmem u P₁ hP₁t)
+    exact hQ0 (eq_zero_of_two_zsmul_of_odd_zsmul hk h2Q hlQ)
 
 /-- **HASSE FOR THE CHARACTERISTIC-EQUATION COEFFICIENT** (PROVEN 2026-07-31 over
 `finite_units_end`): any `c` with `F² = c·F − q` satisfies `c² ≤ 4q`.
