@@ -30629,3 +30629,50 @@ Three riders, all mechanical:
 * **The prose that described the leaf stays on the CONSUMER when the consumer is
   proven.**  Retitle it ("everything from here down is about `X′` above") rather than
   moving it; the reader arrives at the named theorem, not at its input.
+## A "UNIVERSE OBSTRUCTION" IS A 60-LINE ISOMETRY TRANSPORT — ASK WHICH CLAUSES ARE INVARIANT
+(2026-08-02, `flt-lean-60`, on `heckeIdealTheta_functionalEquation_of_traceForm`.)  That
+leaf carried, in THREE places and under the heading `UNIVERSE OBSTRUCTION, confirmed`, the
+claim that `hθ` — the `ZLattice` Poisson law, quantified over `E : Type` — "CANNOT be
+applied to the mixed space directly", `euclidean.mixedSpace K` living in `K`'s universe.
+The observation is TRUE and was correctly re-verified twice.  It was recorded as a
+standing blocker for a week, and it is **sixty lines**.
+A universe mismatch between a proved law and its intended instance is never irreducible
+when the law is invariant under an equivalence of the relevant structure, because every
+finite-dimensional object has a copy in `Type`.  Here `(stdOrthonormalBasis ℝ E).repr` is a
+linear ISOMETRY `E ≃ₗᵢ[ℝ] EuclideanSpace ℝ (Fin (finrank ℝ E))`, and the target IS in
+`Type`.  So the whole question is **which clauses of the statement an isometry moves**, and
+that is a three-line audit of the statement rather than a search:
+* `‖·‖` and hence both theta sums — free (`LinearIsometryEquiv.norm_map`);
+* `ZLattice.covolume` — free, `ZLattice.covolume_comap` plus
+  `LinearIsometryEquiv.measurePreserving`;
+* `Module.finrank` — free;
+* the `ℤ`-DUAL `LinearMap.BilinForm.dualSubmodule (innerₗ ·)` — the ONLY clause with
+  content, and it is `⟪e x, y⟫ = ⟪x, e.symm y⟫`, so `x` pairs integrally with the pullback
+  lattice iff `e x` pairs integrally with the original.  Four lines.
+**So before recording a universe mismatch as a blocker, list the statement's clauses and
+ask which are transported by the obvious equivalence.**  If they all are, the obstruction
+is bookkeeping, and leaving it unwritten costs every later reader a paragraph of the
+docstring and every dispatcher a wrong cost estimate.  Same family as
+[[flt-leaf-cost-estimates-are-hypotheses]], with the unusual feature that the *observation*
+is correct and only the *price* is wrong — which is why re-verifying it (twice, here) does
+not help.
+Two riders, both of which cost a round.
+* **`ZLattice.comap` is stated for a `≃L`, so use `e.toContinuousLinearEquiv` UNIFORMLY**
+  — the `DiscreteTopology` and `IsZLattice` instances for a pullback lattice have
+  `ContinuousLinearEquiv.toLinearMap` in their heads, and mixing that with
+  `e.toLinearEquiv.toLinearMap` makes instance search fail on a term that prints right.
+* **The coercion `⇑↑↑e` is `rfl`-equal to `⇑e` and NOT syntactically equal**, so `rw` fails
+  with the pattern and the target printing identically.  The cure is the documented one:
+  state the `have` in the CLEAN form and let `exact`'s defeq check cross it —
+  `have h2 : innerₗ E (e x) (e y) ∈ (1 : Submodule ℤ ℝ) := h (e y) hy` works where
+  `rw [show (↑↑e x) = e x from rfl]` does not even elaborate.
+### PACKAGE A HYPOTHESIS AS A `Prop` `def` WHEN THE CONSUMER WOULD NEED `open scoped Classical`
+Same task.  `TraceFormBridge` in `MixedSpaceTraceForm.lean` is a `def … : Prop` rather than
+an inline hypothesis, and its docstring says why: the `Inner` instance on
+`euclidean.mixedSpace K` goes through `Fintype {w // IsReal w}`, which needs a
+`DecidablePred`, so a consumer stating the hypothesis inline must `open scoped Classical`
+itself — and then its instance is a DIFFERENT term from the producer's.  Any new hypothesis
+about the same objects has to be packaged the same way; `IdealLatticeTheta` is, and the
+consumer in `ModThree.lean` (which does not open `Classical` at that point) takes it as one
+opaque `Prop`.  **The tell that you need this: the hypothesis mentions a type whose
+INSTANCES depend on a `Classical` choice, not merely a type that was defined under one.**
