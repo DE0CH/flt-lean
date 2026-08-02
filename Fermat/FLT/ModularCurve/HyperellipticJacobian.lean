@@ -12030,21 +12030,26 @@ theorem exists_finiteIndex_divisible_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
     (p : ℕ) (hp : p.Prime) :
     ∃ H : Subgroup QbarGal, Finite (QbarGal ⧸ H) ∧
       ∀ P : D.Pic, ∃ y : gp.Dbar.Pic, p • y = gp.bc P ∧ ∀ σ ∈ H, gp.act σ y = y := by
-  obtain ⟨J, jstr, ab, he⟩ := exists_abelianScheme_geomAddEquiv_pic gp
-  letI := ab.addCommGroup (𝟙 (Spec (CommRingCat.of ℚ)))
-  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 (Spec (CommRingCat.of ℚ)))
-  obtain ⟨e, ebar, hbc, hact⟩ := he
-  obtain ⟨H, hHfin, hdiv⟩ := exists_finiteIndex_divisible_of_abelianScheme ab p hp
+  obtain ⟨H, hHfin, hH⟩ := exists_finiteIndex_fixing_divisionPoints_pic gp p hp
   refine ⟨H, hHfin, fun P => ?_⟩
-  obtain ⟨y', hy'p, hy'fix⟩ := hdiv (e P)
-  refine ⟨ebar.symm y', ?_, ?_⟩
-  · apply ebar.injective
-    rw [map_nsmul, ebar.apply_symm_apply, hy'p]
-    exact (hbc P).symm
-  · intro σ hσ
-    apply ebar.injective
-    rw [hact, ebar.apply_symm_apply]
-    exact hy'fix σ hσ
+  obtain ⟨y, hy⟩ := geomPic_divisible gp p hp.ne_zero (gp.bc P)
+  exact ⟨y, hy, hH P y hy⟩
+
+/-! ### The two sub-leaves of `finite_kummerCochains_pic` (cut 2026-07-30)
+
+The cut separates the two things the classical proof (Silverman *AEC* VIII.1.1) actually uses,
+which are of completely different natures:
+
+* `geomPic_finite_torsion` — `J[n](ℚ̄)` is finite.  GEOMETRY, and the same kind of statement
+  as `geomPic_divisible` beside it: both say `[n] : J → J` is a finite flat isogeny, one
+  asking for surjectivity and one for the size of the kernel.  Nothing arithmetic in it.
+* `geomPic_exists_finiteCover_kummer` — every Kummer cochain is constant on the blocks of ONE
+  finite cover of `Γ`.  ARITHMETIC, and all of it: this is where Hermite–Minkowski (or the
+  class group and the unit theorem) enters, and it is the only place.
+
+What is Lean between them is that the cochains take their values in `J[p]` — which is
+`act_bc` applied to `p·Q = bc P` — and the bookkeeping that a function determined on a finite
+cover, with values in a finite set, ranges over a finite set. -/
 
 open AlgebraicGeometry CategoryTheory in
 /-- **`J[p](ℚ̄)` is finite** (PROVEN 2026-08-01 — was a leaf, is now the `Pic⁰` reading of
@@ -12253,21 +12258,81 @@ theorem geomPic_divisible {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c
   divisible_of_prime
     (fun p hp y => divisible_of_finsuppSingle p (geomPic_divisible_place gp p hp) y) n hn y
 
-/-! ### The two sub-leaves of `finite_kummerCochains_pic` (cut 2026-07-30)
+/-! #### RECUT PARTLY REVERSED 2026-08-01: the divisibility half is a leaf again, because
+the 2026-07-31 recut left it DEAD rather than deleting it
 
-The cut separates the two things the classical proof (Silverman *AEC* VIII.1.1) actually uses,
-which are of completely different natures:
+The 2026-07-31 note above says of `geomPic_divisible`: *"DELETED, not sorried elsewhere."*
+**It was not deleted.**  It, `geomPic_divisible_place`, `divisible_of_prime` and
+`divisible_of_finsuppSingle` all stayed in the file; only the CALL SITE moved, onto the
+newly bundled `exists_finiteIndex_divisible_pic`.  What that left behind, measured on
+`main` at `2026-08-01` by a comment-stripped usage scan of the whole tree:
 
-* `geomPic_finite_torsion` — `J[n](ℚ̄)` is finite.  GEOMETRY, and the same kind of statement
-  as `geomPic_divisible` beside it: both say `[n] : J → J` is a finite flat isogeny, one
-  asking for surjectivity and one for the size of the kernel.  Nothing arithmetic in it.
-* `geomPic_exists_finiteCover_kummer` — every Kummer cochain is constant on the blocks of ONE
-  finite cover of `Γ`.  ARITHMETIC, and all of it: this is where Hermite–Minkowski (or the
-  class group and the unit theorem) enters, and it is the only place.
+* `geomPic_divisible_place` — an OPEN leaf whose only consumer is `geomPic_divisible`;
+* `geomPic_divisible` — PROVEN, and consumed by **nothing**, in this file or any other.
 
-What is Lean between them is that the cochains take their values in `J[p]` — which is
-`act_bc` applied to `p·Q = bc P` — and the bookkeeping that a function determined on a finite
-cover, with values in a finite set, ranges over a finite set. -/
+So the chain `geomPic_divisible_place → geomPic_divisible → ∅` was free-floating, and the
+leaf at the bottom of it was a phantom that every frontier scan reported as ordinary open
+work.  It drew a dispatch on 2026-08-01, which is how this was found.
+
+**Why the divisibility half is restored as a leaf rather than deleted.**  The recut's
+stated reason for bundling — *"they must be bundled because the `H` has to be uniform in
+`P`"* — is refuted by its own model.  `X0.lean` proves the corresponding
+`exists_finiteIndex_divisible_of_abelianScheme` over exactly the SPLIT:
+
+    exists_geomPt_nsmul_eq_of_abelianScheme        -- divisibility on geometric points
+    exists_discrBound_divisionField_of_abelianScheme -- the arithmetic, quantified over
+                                                     -- EVERY `y` with `p • y = P`
+
+Quantifying the arithmetic half over every division point, rather than over a chosen one,
+is what makes the `H` uniform in `P` with no bundling at all: the assembly below picks `y`
+from the geometric half and then feeds that same `y` to the arithmetic half.  That is four
+lines, and it is the transcription of X0's own assembly.
+
+**Accounting, stated plainly because the count does not move.**  Before: two sorries here,
+`exists_finiteIndex_divisible_pic` (live) and `geomPic_divisible_place` (dead).  After: two
+sorries, `exists_finiteIndex_fixing_divisionPoints_pic` (live) and
+`geomPic_divisible_place` (live).  **1 → 1 on the frontier count.**  What changed is that
+no leaf here is a phantom any more, that the geometry and the arithmetic are separately
+dispatchable, and that this cluster now fails in exactly the two places the abelian-scheme
+development succeeds — which is what the recut said the point of the recut was.
+-/
+
+/-- **LEAF (weak Mordell–Weil, arithmetic): every `p`-division point of every rational class
+is defined over ONE fixed finite extension.**
+
+There is a finite-index subgroup `H ≤ Gal(ℚ̄/ℚ)` such that whenever `p·y = bc P` for a
+rational class `P` and a geometric class `y`, every `σ ∈ H` fixes `y`.  Equivalently: with
+`L = ℚ̄^H`, a finite extension of `ℚ`, we have `bc(J(ℚ)) ⊆ p·J(L)` and moreover *all* the
+`p`-division points involved are already `L`-rational.
+
+The argument (Silverman *AEC* VIII.1.1, and the abelian-variety case is the same): the
+fields `ℚ(y)` are of bounded degree over `ℚ(J[p])` and ramified only above `p·disc(f)`,
+hence of bounded discriminant, hence — Hermite–Minkowski — finitely many; take `L` to be
+their compositum.  **Class groups and Dirichlet's unit theorem are NOT needed**; the
+assembly meets one division field at a time, never the maximal `S`-ramified exponent-`p`
+extension.
+
+This is the `Pic⁰` transcription of the composite of two theorems PROVEN in `X0.lean`,
+`Fermat.exists_discrBound_divisionField_of_abelianScheme` (which is quantified over every
+`y` in exactly this way) followed by
+`Fermat.exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le`.  A prover should
+transcribe those rather than restart: the split here was chosen to match them.
+
+**FAITHFULNESS (this is a NEW statement, so the parent's audit does not transfer
+untouched — but it survives verbatim, because the clause below is the parent's `H`-clause
+with the existential dropped).**  The finite-index requirement is the whole content: `H = ⊤`
+meets the index condition and then demands that every `p`-division point of every rational
+class be Galois-invariant, which is false; `H = ⊥` fixes everything and has infinite index,
+`Gal(ℚ̄/ℚ)` being infinite.  Only an honest finite `L` with `bc(J(ℚ)) ⊆ p·J(L)` satisfies
+both.  `hp` is NOT load-bearing for truth here — the statement is true for every `p ≠ 0`,
+and even vacuously at `p = 0` it would only assert that division points of `0 = bc P` are
+`L`-rational — but it is kept because the sole consumer has it and because the intended
+proof reads `J[p]` at a prime; a prover who does not need it should say so and drop it. -/
+theorem exists_finiteIndex_fixing_divisionPoints_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (p : ℕ) (hp : p.Prime) :
+    ∃ H : Subgroup QbarGal, Finite (QbarGal ⧸ H) ∧
+      ∀ (P : D.Pic) (y : gp.Dbar.Pic), p • y = gp.bc P → ∀ σ ∈ H, gp.act σ y = y := sorry
 
 /-- **LEAF (weak Mordell–Weil, arithmetic 1 of 2, geometric): `J[n](ℚ̄)` is finite.**
 
@@ -12443,13 +12508,23 @@ statement is FALSE for any positive-rank Jacobian; at `p = 1` it is vacuously tr
 exists), which is the same weak-Mordell–Weil obligation as this leaf; see the section
 docstring.
 
-**NO LONGER A LEAF (2026-07-28).**  It is PROVEN below over the four leaves cut
-immediately above — `exists_geomPic`, `geomPic_bc_injective`, `geomPic_descent`,
-`geomPic_divisible` and `finite_kummerCochains_pic` — assembled by the released reduction
-`Fermat.finite_quotient_nsmul_of_kummerCochains`.  Of those four, `geomPic_divisible` became
-PROVEN on 2026-07-30 in turn, so the open ones reached from here are `exists_geomPic`,
-`geomPic_bc_injective`, `geomPic_descent`, `geomPic_divisible_place` and
-`finite_kummerCochains_pic`.  Note what the assembly does NOT mention:
+**NO LONGER A LEAF (2026-07-28).**  It is PROVEN below over the leaves cut immediately
+above, assembled by the released reduction
+`Fermat.finite_quotient_nsmul_of_kummerCochains`.
+
+**The open leaves REACHED FROM HERE, re-derived from this theorem's own proof body on
+2026-08-01 rather than inherited from this paragraph** (the previous version of it listed
+`geomPic_divisible`, which this proof has not called since the 2026-07-31 recut — that
+mismatch between a docstring's leaf list and the `by` block below it is what left
+`geomPic_divisible_place` dead for a day, and it is the cheapest detector for the whole
+class; see the `RECUT PARTLY REVERSED` note above):
+
+* `exists_geomPic`, `geomPic_bc_injective`, `geomPic_descent` — via this proof directly;
+* `exists_finiteIndex_fixing_divisionPoints_pic` and `geomPic_divisible_place` — via
+  `exists_finiteIndex_divisible_pic`, the arithmetic and the geometry respectively;
+* `finite_torsion_pic_geom` — via `finite_kummerCochains_pic`.
+
+Note what the assembly does NOT mention:
 no group cohomology, no `H¹`, no profinite topology.  The Kummer cochain is a plain
 function on `QbarGal` and the coboundary relation is never formed. -/
 theorem finite_quotient_psmul_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ)
