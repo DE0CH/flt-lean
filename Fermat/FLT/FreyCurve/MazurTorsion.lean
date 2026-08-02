@@ -21951,7 +21951,8 @@ ownable.  The split is by *kind of obstruction*, not by convenience:
 | `Fermat.RelPoint.post_post` | PROVEN — `Category.assoc`, one line |
 | `WeierstrassCurve.exists_dualIsogeny_of_isIsogeny` | **PROVEN 2026-08-02** — assembly over the PROVEN `Isogeny.dual` API |
 | `Fermat.exists_geomFibreAddEquiv_hom_of_isWeierstrassModel` | LEAF — the real geometry: the Weierstrass charts realise an isogeny as a scheme morphism |
-| `Fermat.liesIn_congr_of_geomFibreAddEquiv` | LEAF — the residual **`α`-gap** in the pin; see its docstring, it may be DELETABLE |
+| `Fermat.liesIn_congr_of_geomFibreAddEquiv` | PROVEN 2026-08-02 over the leaf below — the residual **`α`-gap** in the pin |
+| `WeierstrassCurve.exists_intSmul_nTorsion_of_galoisEquivariant` | LEAF — `End_{Γ_ℚ}(E) = ℤ` on `N`-torsion, i.e. Tate/Faltings; **no scheme in it** |
 | `Fermat.Gamma0Datum.hom_ext_of_geomFibrePt` | LEAF — rigidity: reduced source, dense `ℚ̄`-points |
 | `Fermat.Gamma0Datum.ker_of_geomFibrePt` | LEAF — the kernel at NON-REDUCED test bases |
 
@@ -21983,10 +21984,23 @@ input the pin's own docstring says is absent from this tree — so it has not be
 removed by the model clause, only **moved**, from "produce a morphism" to
 "identify the two identifications".
 
-The gap is isolated as `liesIn_congr_of_geomFibreAddEquiv` so that it can be
-attacked OR deleted; the cheap repair is described there and it is a change to
-the PIN, not a theorem.  Nothing else in this block depends on which way that
-goes. -/
+The gap was isolated as `liesIn_congr_of_geomFibreAddEquiv` so that it could be
+attacked OR deleted.  **As of 2026-08-02 it is ATTACKED**: that declaration is
+PROVEN, over the single leaf
+`WeierstrassCurve.exists_intSmul_nTorsion_of_galoisEquivariant`, which is the
+Faltings input above and nothing else — a `Γ_ℚ`-equivariant additive
+endomorphism of `E(ℚ̄)` acts on the `N`-torsion by an integer.  That residue
+mentions no scheme, no datum and no level structure, so it is dispatchable at
+somebody who knows the Tate conjecture and nothing about this development.  The
+count is unchanged, `1 → 1`; what changed is what is LEFT in the leaf.
+
+The pin repair — which would delete the Faltings dependency outright rather
+than name it — is still the right long-run move and is written out in full at
+`liesIn_congr_of_geomFibreAddEquiv` below, together with the measurement that
+decides its cost: step 3 of it is a statement strengthening of an OPEN LEAF in
+`ModularCurve/EllipticScheme.lean`, not of a proven theorem, so it is a
+three-module interface change and not a local edit.  Nothing else in this block
+depends on which way that goes. -/
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **Postcomposition of relative points is FUNCTORIAL** (PROVEN 2026-07-31, no
@@ -22241,10 +22255,86 @@ theorem Fermat.exists_geomFibreAddEquiv_hom_of_isWeierstrassModel {N M : ℕ}
             RelPoint.post v hv (ε' y) = ε (χ y)) :=
   sorry
 
+/-- **A GALOIS-EQUIVARIANT ENDOMORPHISM OF `E(ℚ̄)` ACTS ON THE `N`-TORSION BY AN
+INTEGER** (LEAF, cut 2026-08-02 off `liesIn_congr_of_geomFibreAddEquiv` below,
+which is now PROVEN over it) — `End_{Γ_ℚ}(E) = ℤ` in its Tate-module form.
+
+**Statement, in words.**  `E` is an elliptic curve over `ℚ` and `α` is an
+additive endomorphism of the group of `ℚ̄`-points commuting with the action of
+`Γ_ℚ = Gal(ℚ̄/ℚ)`.  Then there is a single integer `c` with `α x = c • x` for
+every `x` killed by `N`.  There is no scheme, no datum, no level structure and
+no `GeomFibrePt` in it: this is a statement about one elliptic curve over `ℚ`
+and it is stated in the vocabulary its citation is stated in.
+
+**TRUE, and it is Tate/Faltings.**  `α` is additive, so it preserves `E[ℓ^n]`
+for every `n` and commutes with the transition maps `[ℓ]`; hence it is an
+endomorphism of the `ℓ`-divisible group `E[ℓ^∞]`, i.e. an element of
+`End_{ℤ_ℓ}(T_ℓE)` commuting with `Γ_ℚ`.  The Tate conjecture for abelian
+varieties over a number field (Faltings 1983) gives
+`End_{Γ_ℚ}(T_ℓE) = End_ℚ(E) ⊗ ℤ_ℓ`, and `End_ℚ(E) = ℤ` for EVERY `E/ℚ` — the
+thirteen `ℚ`-curves with CM included, since their CM is defined only over the
+imaginary quadratic field, so the `ℚ`-rational (equivalently
+`Γ_ℚ`-equivariant) endomorphisms are still just `ℤ`.  So `α` is a `ℤ_ℓ`-scalar
+on `E[ℓ^{v_ℓ(N)}]` for each `ℓ ∣ N`, i.e. an integer scalar modulo
+`ℓ^{v_ℓ(N)}`; CRT over the `ℓ ∣ N` assembles the single `c`.  Serre's open
+image theorem gives the same conclusion for non-CM `E` and is an alternative
+citation; the CM curves then need the remark above rather than Faltings.
+**Absent from this tree, from mathlib at this pin, and from `~/cs/FLT`**
+(`grep -rin 'faltings\|tate conjecture\|isogeny theorem' Fermat/`
+`.lake/packages/mathlib/Mathlib/` returns prose only, 2026-08-02).
+
+**FALSITY AUDIT (2026-08-02).**
+
+*`hN : N ≠ 0` is load-bearing.*  At `N = 0` the hypothesis `(0 : ℕ) • x = 0`
+holds for EVERY `x`, so the conclusion degenerates to "`α` is multiplication by
+a single integer on the whole of `E(ℚ̄)`" — a statement about the full
+Mordell–Weil group over `ℚ̄`, which the Tate-module argument above says nothing
+about (it controls torsion only) and which no theorem in the literature
+asserts.  Note the sharper form of the degeneracy: `E(ℚ̄)` is DIVISIBLE, so
+`c • ` is surjective for `c ≠ 0` and zero for `c = 0`; the `N = 0` statement
+therefore asserts that every `Γ_ℚ`-equivariant endomorphism of `E(ℚ̄)` is either
+zero or surjective, which is a strong and unrecorded claim about the
+`Γ_ℚ`-module `E(ℚ̄) ⊗ ℚ` (of infinite length).  **No explicit `α` was
+constructed**, so this is a statement that `hN` is not known to be droppable
+rather than a proof that it cannot be; it is carried because the sole call site
+supplies it for free (`nonempty_isNIsogenyPair_of_gamma0Model` has `hN` among
+its own binders), so keeping it costs a prover nothing and cannot make a true
+leaf false.
+
+*The base field `ℚ` is load-bearing, and this is a genuine refutation of the
+general form.*  Over a field `K` over which `E` has CM by an order in an
+imaginary quadratic `F`, `End_{Γ_K}(T_ℓE) = O ⊗ ℤ_ℓ` contains non-scalars, and
+at a prime `ℓ` split in `F` those act on `E[ℓ]` with two distinct eigenvalues —
+so they are not `c • ` for any integer `c`.  The statement must therefore be
+about `ℚ` (or, more generally, about a base over which `End` is `ℤ`), and
+generalising the base field refutes it.
+
+*`α` is NOT assumed bijective*, and need not be: the argument above applies to
+any `Γ`-equivariant additive endomorphism.  The consumer uses the leaf twice,
+at an automorphism and at its inverse, and recovers invertibility of `c` mod
+`N` from the two applications rather than assuming it — see the proof below.
+
+**The check that refutes this leaf**: a `Γ_ℚ`-equivariant additive
+endomorphism of `E(ℚ̄)`, for some elliptic curve `E/ℚ` and some `N ≠ 0`, whose
+restriction to `E[N]` is not multiplication by an integer.  Equivalently, a
+non-scalar element of `End_{Γ_ℚ}(E[N])` in the image of `End_{Γ_ℚ}(E(ℚ̄))`. -/
+theorem WeierstrassCurve.exists_intSmul_nTorsion_of_galoisEquivariant
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ} (_hN : N ≠ 0)
+    (α : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hα : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+      α (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+        = Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (α x)) :
+    ∃ c : ℤ, ∀ x : (E⁄(AlgebraicClosure ℚ)).Point, (N : ℕ) • x = 0 → α x = c • x :=
+  sorry
+
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **THE LEVEL STRUCTURE A DATUM CARRIES DOES NOT DEPEND ON WHICH
-GALOIS-EQUIVARIANT IDENTIFICATION OF ITS GEOMETRIC FIBRE IS USED** (LEAF, cut
-2026-07-31 off `nonempty_isNIsogenyPair_of_gamma0Model` below) —
+GALOIS-EQUIVARIANT IDENTIFICATION OF ITS GEOMETRIC FIBRE IS USED** (PROVEN
+2026-08-02 over `WeierstrassCurve.exists_intSmul_nTorsion_of_galoisEquivariant`
+immediately above; was a LEAF, cut 2026-07-31 off
+`nonempty_isNIsogenyPair_of_gamma0Model` below) —
 **LEVEL-GENERIC**, and **THIS ONE MAY BE DELETABLE; READ BEFORE ATTACKING IT.**
 
 **What it is.**  This is the `α`-gap of the subsection docstring above, isolated.
@@ -22254,48 +22344,83 @@ subset of `E(ℚ̄)` inside the level structure `d.cyc`.  Equivalently:
 `α := ε⁻¹ ∘ e`, a Galois-equivariant additive automorphism of `E(ℚ̄)`,
 preserves the finite subgroup `ε⁻¹(d.cyc(ℚ̄))`.
 
-**TRUE, and the only proof anyone knows is Tate/Faltings.**  `α` commutes with
-`[m]` for every `m` (it is additive), so it restricts to an automorphism of
-`E[ℓ^∞]` compatible with the transition maps, i.e. to a unit of
-`End_{Γ_ℚ}(T_ℓ E)`.  The Tate conjecture for elliptic curves over a number field
-(Faltings) identifies that with `End(E) ⊗ ℤ_ℓ`, and `End_{Γ_ℚ}(E) = ℤ` for every
-`E/ℚ` — including the thirteen `ℚ`-curves with CM, whose CM is defined only over
-the imaginary quadratic field, so the Galois-EQUIVARIANT endomorphisms over `ℚ`
-are still just `ℤ`.  Hence `α` acts on all of `E_tors` by a scalar in `ℤ̂ˣ`, and a
-scalar preserves every subgroup.  **Not available in this tree, in mathlib, or
-in `~/cs/FLT`.**
+**THE PROOF, now that the Faltings input is a named leaf of its own.**  All the
+arithmetic has moved to
+`WeierstrassCurve.exists_intSmul_nTorsion_of_galoisEquivariant` above; what is
+left here is bookkeeping and is written out below.  In outline:
 
-**THE CHEAPER REPAIR, and it is what a successor should probably do instead.**
-The gap exists only because `IsGamma0ModelOf` asserts the existence of *some*
-Galois-equivariant `e` without tying it to the model clause's chart.  Strengthen
-the pin to say `e` IS the chart identification and this leaf disappears, along
-with its use in the gate.  Concretely, three edits, and the mathematics is
-already there:
+* `d.cyc.geom_cyclic` at `K = ℚ̄` says the geometric points of the level
+  structure are `⟨y⟩` for a single `y` of order `N`, so
+  `{z | LiesIn d.cyc.ι (ε z)} = ⟨g₀⟩` with `g₀ := ε⁻¹ y`, again of order `N`;
+* the leaf, applied to `α` and to `α⁻¹`, gives integers `c`, `c'` acting as
+  `α`, `α⁻¹` on `N`-torsion; composing them gives `(c' * c) • z = z` for every
+  `N`-torsion `z`, which is invertibility of `c` mod `N` **without ever naming
+  `ZMod N` or the structure of `E[N]`** — that is why the leaf can be stated
+  for a bare `→+` and needs no bijectivity;
+* `⟨g₀⟩` is a subgroup, so it is closed under `c • ` and `c' • `, and the two
+  inclusions follow;
+* a point outside `⟨g₀⟩` and not killed by `N` is handled separately: `⟨g₀⟩` is
+  `N`-torsion, and `α` is injective, so `α x ∈ ⟨g₀⟩` forces `N • x = 0` too.
 
-1. add to `IsGamma0ModelOf` (above) the clause that `e` agrees with the chart:
-   for every affine point `Affine.Point.some x₁ y₁ h`, `(e P).1` is the
-   `ℚ̄`-point of `Spec ℚ[E]` at `(x₁, y₁)` composed with the model's `ι`;
-2. `exists_gamma0Model_of_stable` (above, PROVEN) then needs its producer,
-   `exists_ellipticScheme_isWeierstrassModel_of_weierstrass` (`X0.lean` ~67199),
-   to return an `e` with that compatibility.  It does construct both from one
-   source, so this is a strengthening of a STATEMENT, not of a proof — but it is
-   in `X0.lean`, upstream of an expensive cone, which is why it was not done
-   here;
-3. delete this leaf and the two `liesIn_congr_of_geomFibreAddEquiv` rewrites in
-   the gate's proof, which then reads `hlev` directly against `ε`.
+**WHY THE `N`-TORSION FORM OF THE FALTINGS INPUT IS THE RIGHT CUT.**  The
+tempting alternative is to demand that `α` be a `ℤ̂ˣ`-scalar on all of
+`E_tors`, which is what the classical sentence says.  That is strictly more
+than this consumer needs, it drags in `ℤ̂`, and it does not make the residue any
+more citable.  Restricting to `E[N]` keeps the statement inside `ℤ` and inside
+the vocabulary of one curve.
 
-Whoever does (1)–(2) should also check the sibling leaf
+**THE ALTERNATIVE REPAIR — deleting the Faltings dependency altogether — and
+what it now costs** (re-measured 2026-08-02; the estimate that stood here
+before was right in letter and wrong about who can act on it).  The `α`-gap
+exists only because `IsGamma0ModelOf` asserts the existence of *some*
+Galois-equivariant `e` without tying it to the model clause's chart.  Tying
+them deletes this leaf AND its Faltings input:
+
+1. thread the chart `ι` through `IsGamma0ModelOf` (above), so that its second
+   clause reads "∃ ι witnessing the model conjunct, ∃ e, equivariant ∧
+   *`e` is induced by `ι` on affine points* ∧ level";
+2. restate `exists_geomFibreAddEquiv_hom_of_isWeierstrassModel` (above) to TAKE
+   that `ι` and produce its `ε` compatible with it.  Then `e` and `ε` are
+   compatible with the same chart, hence EQUAL (a chart is a monomorphism and
+   both send the point at infinity to the zero section), and the two rewrites
+   in the gate below disappear;
+3. `exists_gamma0Model_of_stable` (above, PROVEN) then needs its producer,
+   `exists_ellipticScheme_isWeierstrassModel_of_weierstrass` (`X0.lean`
+   ~111855), to return an `e` with that compatibility.
+
+**Step 3 is NOT free, and that is the correction.**  The previous version of
+this paragraph said it is "a strengthening of a STATEMENT, not of a proof".
+That is true of `exists_ellipticScheme_isWeierstrassModel_of_weierstrass`
+itself, which is a re-export, and of
+`Fermat.exists_ellipticScheme_isWeierstrassModel_of_projModel`
+(`ModularCurve/EllipticScheme.lean` ~10008), whose proof really is
+`⟨proj E, projToSpec E, (projGroupLaw E).toAbelianSchemeStruct, …,
+exists_affineChart_projModel E (projGroupLaw E), exists_projGeomFibreAddEquiv E⟩`
+— two separate existentials about the SAME concrete objects.  But
+`exists_projGeomFibreAddEquiv` is itself
+`(exists_projGroupLaw_geomFibreAddEquiv E _).choose_spec`, and
+`exists_projGroupLaw_geomFibreAddEquiv` is an OPEN LEAF: the `e` is obtained
+from an existential, not built from the chart.  So step 3 is a **statement
+strengthening of an open leaf in `EllipticScheme.lean`**, propagated through
+`X0.lean`'s re-export — three modules, one of them the 119 000-line `X0.lean`,
+i.e. a full rebuild of the largest cone in the tree.  It remains the right
+long-run repair (it is `−1` on the frontier and removes Faltings from the
+project), and it is queued rather than taken here because an interface change
+across those three modules is the class-7 merge hazard and cannot be verified
+in one run.
+
+**A ROUTE THAT DOES NOT WORK, recorded so it is not tried.**  One may not
+instead restate `exists_geomFibreAddEquiv_hom_of_isWeierstrassModel` to take
+the pin's `e`, `e'` as hypotheses and realise `χ` against THEM.  That asks for
+`α' ∘ χ ∘ α⁻¹` to be algebraic for the comparison automorphisms `α`, `α'`, and
+Faltings controls `α` only on TORSION — on the free part of `E(ℚ̄)` nothing
+pins it, so the restated leaf is not known to be true and is probably false.
+The gap must be closed on the pin, not on the hom leaf.
+
+Whoever does (1)–(3) should also check the sibling leaf
 `exists_isogenyIsom_of_gamma0Model_isBaseChangeOf` below, which is stated
-against the same pin and inherits the same hole in the opposite direction.
-
-**The check that refutes this leaf**: a Galois-equivariant additive automorphism
-of `E(ℚ̄)`, for `E` over `ℚ`, moving a Galois-stable cyclic subgroup of order `N`
-off itself.  By the paragraph above there is none — but note that dropping
-"over `ℚ`" DOES refute it: over a base field where `E` has CM rationally,
-`End_Γ(T_ℓE) = O_K ⊗ ℤ_ℓ` contains non-scalars, and at a split `ℓ` those move
-cyclic subgroups.  So the leaf is false as a statement about a general base
-field and its proof must use `ℚ`. -/
-theorem Fermat.liesIn_congr_of_geomFibreAddEquiv {N : ℕ}
+against the same pin and inherits the same hole in the opposite direction. -/
+theorem Fermat.liesIn_congr_of_geomFibreAddEquiv {N : ℕ} (hN : N ≠ 0)
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (d : Gamma0Datum N SpecQ) :
     letI := d.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
     ∀ (e ε : (E⁄(AlgebraicClosure ℚ)).Point ≃+ GeomFibrePt d.f (𝟙 SpecQ)),
@@ -22308,8 +22433,97 @@ theorem Fermat.liesIn_congr_of_geomFibreAddEquiv {N : ℕ}
               (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
             = d.ab.galSMul (𝟙 SpecQ) σ (ε x)) →
       ∀ x : (E⁄(AlgebraicClosure ℚ)).Point,
-        (RelPoint.LiesIn d.cyc.ι (e x) ↔ RelPoint.LiesIn d.cyc.ι (ε x)) :=
-  sorry
+        (RelPoint.LiesIn d.cyc.ι (e x) ↔ RelPoint.LiesIn d.cyc.ι (ε x)) := by
+  letI := d.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  intro e ε he hε
+  -- the level structure's geometric points are `⟨y⟩` for a point `y` of order `N`
+  obtain ⟨y, -, hyord, hymem⟩ :=
+    d.cyc.geom_cyclic (AlgebraicClosure ℚ) (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  -- the comparison automorphism `α = ε⁻¹ ∘ e`
+  set α : (E⁄(AlgebraicClosure ℚ)).Point ≃+ (E⁄(AlgebraicClosure ℚ)).Point :=
+    e.trans ε.symm with hα_def
+  have hαe : ∀ z : (E⁄(AlgebraicClosure ℚ)).Point, ε (α z) = e z := fun z => by
+    rw [hα_def]; exact ε.apply_symm_apply (e z)
+  have hαgal : ∀ (σ : Field.absoluteGaloisGroup ℚ) (z : (E⁄(AlgebraicClosure ℚ)).Point),
+      α (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom z)
+        = Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (α z) := by
+    intro σ z
+    apply ε.injective
+    rw [hαe, he, hε, hαe]
+  have hαsymmgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (z : (E⁄(AlgebraicClosure ℚ)).Point),
+      α.symm (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom z)
+        = Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (α.symm z) := by
+    intro σ z
+    apply α.injective
+    rw [α.apply_symm_apply, hαgal, α.apply_symm_apply]
+  -- the generator, pulled back along `ε`
+  set g₀ : (E⁄(AlgebraicClosure ℚ)).Point := ε.symm y with hg₀_def
+  have hg₀ord : addOrderOf g₀ = N := by
+    rw [hg₀_def, AddEquiv.addOrderOf_eq]; exact hyord
+  have hg₀N : (N : ℕ) • g₀ = 0 := by
+    rw [← hg₀ord]; exact addOrderOf_nsmul_eq_zero g₀
+  have hmemP : ∀ z : (E⁄(AlgebraicClosure ℚ)).Point,
+      RelPoint.LiesIn d.cyc.ι (ε z) ↔ z ∈ AddSubgroup.zmultiples g₀ := by
+    intro z
+    rw [hymem]
+    constructor
+    · intro hz
+      obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hz
+      refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+      apply ε.injective
+      rw [map_zsmul, hg₀_def, ε.apply_symm_apply, hk]
+    · intro hz
+      obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hz
+      refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+      rw [← hk, map_zsmul, hg₀_def, ε.apply_symm_apply]
+  have hZtor : ∀ z : (E⁄(AlgebraicClosure ℚ)).Point,
+      z ∈ AddSubgroup.zmultiples g₀ → (N : ℕ) • z = 0 := by
+    intro z hz
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hz
+    rw [← hk, smul_comm, hg₀N]
+    exact zsmul_zero k
+  -- the two scalars, from the Faltings leaf applied to `α` and to `α⁻¹`
+  obtain ⟨c, hc⟩ :=
+    WeierstrassCurve.exists_intSmul_nTorsion_of_galoisEquivariant E hN
+      α.toAddMonoidHom hαgal
+  obtain ⟨c', hc'⟩ :=
+    WeierstrassCurve.exists_intSmul_nTorsion_of_galoisEquivariant E hN
+      α.symm.toAddMonoidHom hαsymmgal
+  simp only [AddEquiv.coe_toAddMonoidHom] at hc hc'
+  -- `c` is invertible on the `N`-torsion, with inverse `c'`
+  have hcomp : ∀ z : (E⁄(AlgebraicClosure ℚ)).Point,
+      (N : ℕ) • z = 0 → (c' * c) • z = z := by
+    intro z hz
+    have h1 : (N : ℕ) • α z = 0 := by rw [← map_nsmul, hz, map_zero]
+    have h2 := hc' (α z) h1
+    rw [α.symm_apply_apply] at h2
+    rw [hc z hz, smul_smul] at h2
+    exact h2.symm
+  have key : ∀ z : (E⁄(AlgebraicClosure ℚ)).Point, (N : ℕ) • z = 0 →
+      (α z ∈ AddSubgroup.zmultiples g₀ ↔ z ∈ AddSubgroup.zmultiples g₀) := by
+    intro z hz
+    constructor
+    · intro h
+      have h2 : c' • α z ∈ AddSubgroup.zmultiples g₀ := AddSubgroup.zsmul_mem _ h _
+      rwa [hc z hz, smul_smul, hcomp z hz] at h2
+    · intro h
+      rw [hc z hz]
+      exact AddSubgroup.zsmul_mem _ h _
+  intro x
+  rw [← hαe x, hmemP (α x), hmemP x]
+  by_cases hx : (N : ℕ) • x = 0
+  · exact key x hx
+  · constructor
+    · intro h
+      have h2 : α ((N : ℕ) • x) = α 0 := by rw [map_nsmul, hZtor _ h, map_zero]
+      exact absurd (α.injective h2) hx
+    · intro h
+      exact absurd (hZtor x h) hx
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat in
 /-- **RIGIDITY: two morphisms of elliptic schemes over `ℚ` that agree on
@@ -22518,12 +22732,13 @@ theorem WeierstrassCurve.nonempty_isNIsogenyPair_of_gamma0Model {N : ℕ} (hN : 
   -- docstring, and note that strengthening the pin deletes these two lines.
   have hlevε : ∀ x : (E⁄(AlgebraicClosure ℚ)).Point,
       RelPoint.LiesIn d.cyc.ι (ε x) ↔ x ∈ AddSubgroup.zmultiples g := fun x =>
-    (Fermat.liesIn_congr_of_geomFibreAddEquiv E d e ε he hεgal x).symm.trans (hlev x)
+    (Fermat.liesIn_congr_of_geomFibreAddEquiv hN E d e ε he hεgal x).symm.trans (hlev x)
   have hlevε' : ∀ y : (E'⁄(AlgebraicClosure ℚ)).Point,
       RelPoint.LiesIn d'.cyc.ι (ε' y) ↔
         y ∈ (φ : (E⁄(AlgebraicClosure ℚ)).Point → (E'⁄(AlgebraicClosure ℚ)).Point) ''
           {P : (E⁄(AlgebraicClosure ℚ)).Point | (N : ℕ) • P = 0} := fun y =>
-    (Fermat.liesIn_congr_of_geomFibreAddEquiv E' d' e' ε' he' hε'gal y).symm.trans (hlev' y)
+    (Fermat.liesIn_congr_of_geomFibreAddEquiv hN E' d' e' ε' he' hε'gal y).symm.trans
+      (hlev' y)
   -- the two kernels, read on geometric points
   have hgeomu : ∀ x : GeomFibrePt d.f (𝟙 SpecQ),
       RelPoint.post u hu x = d'.ab.zero (specAlgClos ℚ ≫ 𝟙 SpecQ) ↔
