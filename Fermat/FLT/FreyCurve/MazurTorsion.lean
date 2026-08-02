@@ -7363,6 +7363,22 @@ open is `WeierstrassCurve.nonempty_fullTranslationDatum_wild`, the same obligati
 `q ∈ {2, 3}` with integral coefficients and `0 < v_q(Δ)`.  Nothing in this file used
 either declaration; they are re-exported through the `public import` above. -/
 
+/-! **RELOCATED 2026-08-01 to `Fermat/FLT/FreyCurve/IsogenySignature.lean`**, for the same
+import-order reason and by the same move:
+`WeierstrassCurve.exists_localInertia_subgroup_relIndex_dvd_twelve_of_padicValRat_j_nonneg`
+(`A₀-3a-i-c′`), `exists_fundamentalCharacter_of_relIndex_localInertiaGroup` (`A₀-3b-i-a`)
+and `WeierstrassCurve.exists_raynaudExponent_of_fundamentalCharacter` (`A₀-3b-i-b`) — three
+sorry leaves that were cut HERE on 2026-07-31 out of three parents that had already been
+hoisted UPSTREAM into `IsogenySignature.lean`.  So each parent sat `sorry` upstream while
+its proof, and the leaf that proof consumes, sat downstream where the parent could not
+reach them; the leaves themselves had no consumer at all in this file.  In their new home
+the three parents (`A₀-3a-i-b` `det_galoisRep_five_eq_one_of_mem_localInertiaGroup`,
+`A₀-3a-i-c` `not_five_dvd_relIndex_of_padicValRat_j_nonneg`, `A₀-3b-i`
+`exists_fundamentalCharacter_of_semistabilityDefect`) are PROVEN over them, verbatim from
+`b897b395^`.  Statements are byte-identical to the copies deleted here — recover with
+`git show b897b395^:Fermat/FLT/FreyCurve/MazurTorsion.lean`.  Nothing in this file used any
+of the three; they are re-exported through the `public import` above. -/
+
 open scoped Pointwise in
 open scoped Pointwise in
 open scoped Pointwise in
@@ -17616,6 +17632,30 @@ theorem ringKrullDim_stalk_eq_zero_of_mono_of_curve_over_field
   _root_.AlgebraicGeometry.ringKrullDim_stalk_eq_zero_of_mono_of_curve_over_field
     hXsmooth hJsmooth u hu hmono x hx
 
+/-! **RELOCATED 2026-08-01 to `Fermat/FLT/ModularCurve/X0.lean`**, out of the block
+below: `ringKrullDim_stalk_eq_zero_of_mono_of_curve_over_field`,
+`exists_point_map_eq_of_galoisFixed`, `exists_weierstrassPointEquiv_of_abelianSchemeStruct`,
+`exists_inj_point_x0Model_of_relPointEquiv` and
+`exists_relPoint_inj_x0Model_of_abelianSchemeStruct`.
+
+The hoist that moved the `X0GenusOne` cluster into `X0.lean` left these five behind, so
+`flat_of_mono_of_curve_over_field` and `exists_x0Compactification_relPoint_inj_x0Model` sat
+`sorry` upstream while their proofs sat here, where the parents could not reach them; and
+the five had no consumer in this file at all, only each other.  Both parents are now PROVEN
+upstream over them, verbatim from `b897b395^` — recover the deleted text with
+`git show b897b395^:Fermat/FLT/FreyCurve/MazurTorsion.lean`.  `X0.lean` gained one import,
+`Fermat.FLT.Mathlib.AlgebraicGeometry.CurveDimension`, which the first of the five wraps;
+that module imports nothing from `Fermat/`, so the edge cannot cycle.
+
+**THE SEVEN THAT REMAIN BELOW CANNOT FOLLOW THEM, and the reason is `X1.lean`.**  Their
+consumer `exists_x0Compactification_relPoint_equiv_point` — still `sorry` in `X0.lean` — is
+proven here over `Fermat.exists_weierstrassModel_of_abelianSchemeStruct_finiteField` and
+`Fermat.nonempty_relPointEquiv_of_weierstrassModel_finiteField`, both declared in
+`ModularCurve/X1.lean`, which `public import`s `X0.lean`.  So that proof is not expressible
+upstream, and moving the seven would strand them free-floating.  Closing it needs the
+`Fermat` block `X1.lean:11278..11814` — 22 declarations, 466 lines, self-contained within
+X1 (measured 2026-08-01) — hoisted into `X0.lean` first, which also costs `X0.lean` up to
+seven of X1's imports and is a separate task. -/
 /-- **A genus-`1` modular curve with a rational point IS an abelian
 scheme, based at that point** (PROVEN 2026-07-27 by decomposition;
 introduced earlier the same day as a sorry leaf) — the

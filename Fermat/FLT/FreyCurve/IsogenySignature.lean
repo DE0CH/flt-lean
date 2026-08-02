@@ -3830,7 +3830,9 @@ theorem WeierstrassCurve.exists_localInertia_subgroup_relIndex_dvd_twelve_of_pad
   sorry
 
 /-- **`A₀-3a-i-c` — potentially good reduction: `5` does not divide the
-semistability defect** (sorry leaf, cut 2026-07-30; Serre–Tate, Ann. of Math.
+semistability defect** (cut 2026-07-30, **PROVEN the same day** — sorry-free
+body, transitively open only through the good-model cluster it consumes;
+Serre–Tate, Ann. of Math.
 88 (1968), Thm. 2 and Cor. 3; Serre, Invent. Math. 15 (1972), §5.6).
 
 **THIS IS WHERE `hj` LIVES, and it is the whole of the Serre–Tate input.**  The
@@ -3866,9 +3868,49 @@ this project, re-verified 2026-07-30, while
 it rather than re-derive procyclicity.  That is the cheapest route to this leaf
 and it is why this leaf, rather than the `{2,4,6}` bound, is what was cut.)
 
-The good-model input still has to be built UPSTREAM: `PotentiallyGoodModel` is
-declared ~1300 lines below and release-12 deliberately rejected hoisting it (see
-`A₀-3a-i`'s docstring). -/
+**PROVEN 2026-07-30, ON EXACTLY THAT ROUTE, AND THE `PotentiallyGoodModel`
+OBSTRUCTION WAS DISCHARGED BY MOVING THIS CLUSTER DOWN.**  The paragraph that
+stood here said the good-model input "still has to be built UPSTREAM", because
+`PotentiallyGoodModel` was declared ~1300 lines BELOW.  It is now ~2800 lines
+ABOVE: the `A₀-3a-i` cluster was relocated past
+`exists_reductionFrame_of_potentiallyGoodModel`, which is the same move the `B₀`
+cluster made on 2026-07-28 and for the same reason.  Nothing was hoisted and no
+module was extracted — see the section note above this cluster.
+
+The proof is the `B₀²ᵃ` chain (`exists_inertiaAut_of_padicValRat_j_nonneg`) run
+on the FULL representation rather than on a character, followed by one group-theory
+step:
+
+* `exists_potentiallyGoodModel_of_jIntegral` turns `hj` into a good model `D`
+  over a number field with residue degree one at `N` — this is the ONLY consumer
+  of `hj`, which is why the refuting curve above refutes this leaf and no other;
+* `D.nonempty_localFrame` places `D.K` inside `ℚ̄` at the pinned subring;
+* `Fr.exists_isTorsionReduction` (at torsion prime `5`, using `N ≠ 5`) gives the
+  reduction EQUIVALENCE `ψ₀` on `5`-torsion;
+* `Fr.exists_aut_of_isTorsionReduction` — Serre–Tate — gives, for each
+  `σ ∈ I_N`, a variable change `C` of the reduction with
+  `ψ₀ ∘ ρ(σ) = autTorsionEnd C ∘ ψ₀`.  The odd branch suffices: `N > 19`, so the
+  `q = 2` sibling is never needed;
+* `pow_twelve_eq_one_of_smul_eq` gives `C¹² = 1` over ANY field, so
+  `autTorsionEnd C¹² = 1` (`autTorsionEnd_pow_eq_one`), and `ψ₀` being injective
+  transports that to `ρ(σ)¹² = 1` on the whole of `E[5]`;
+* `hJmem` identifies `J` with `I_N ⊓ ker ρ` (the same three-line argument
+  `A₀-3a-i` performs at its own call site), and
+  `relIndex_eq_orderOf_of_cyclic_image` — with the generator `σ₀` from
+  `A₀-3a-i-a` — turns `[I_N : J]` into `orderOf (ρ σ₀)`, which divides `12`.
+  `5 ∤ 12` finishes.
+
+So `[I_N : J] ∣ 12` is what is actually established, which is STRONGER than the
+stated conclusion and strictly weaker than `#Aut(Ẽ) ∈ {2,4,6}`; no
+classification of `Aut(Ẽ)` is used anywhere, exactly as the route note above
+predicted.  The statement was deliberately left as `5 ∤ [I_N : J]` and not
+strengthened, because that is what `relIndex_dvd_of_det_eq_one_five` consumes and
+widening it would be an interface change for no gain.
+
+This declaration is therefore sorry-free but still TRANSITIVELY open, through
+`exists_potentiallyGoodModel_of_jIntegral`'s own cluster and the two
+`exists_aut_of_isTorsionReduction` leaves.  A prover dispatched HERE has no work;
+the leaves to attack are those. -/
 theorem WeierstrassCurve.not_five_dvd_relIndex_of_padicValRat_j_nonneg
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
     (hN : N.Prime) (hN19 : 19 < N)
