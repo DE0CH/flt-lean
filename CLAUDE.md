@@ -24344,3 +24344,48 @@ stated one notch too general is false, compiles, and can never be closed.  Say i
 leaf's docstring which of the two generalities it has and why, and name the alternative
 cut (here: cut along `IsAffineOpen` of the complement, which IS base-generic, at the cost
 of a residue that no longer matches the field twin).
+## A REPACKAGING CUT CAN BE PROVABLY EQUIVALENT — LOOK FOR THE `refl` LEMMA BEFORE TAKING IT
+(2026-08-01, `flt-lean-277`, on `exists_twistedHilbertBlumenthalModuliScheme_padicPoint_of_five_le`
+in `HardlyRamified/HilbertModularity.lean`.) A tempting cut on a leaf whose conclusion carries a
+bare conjunct `P fX` is to WRAP it as `∃ Y fY, P fY ∧ R fX fY` for a comparison relation `R` the
+file already uses — here `R = IsFormOver K`, mirroring a sibling theorem's own `Y`-clause. It reads
+as a strengthening (the residue names the comparison object the literature actually produces), and
+it appears to PAY, because two PROVEN lemmas about `R` would enter the root cone.
+**It is usually not a cut at all — it is the same proposition.** The wrap is equivalent exactly
+when the file has both halves, and a file that uses the pattern always does:
+* `R.refl` — every object is its own comparison (`isFormOver_refl` here), giving `P fX → ∃ Y, …`;
+* the TRANSPORT lemma `P fY → R fX fY → P fX` (`hasRationalPoint_of_isFormOver`), giving the
+  converse.
+Two named lemmas, three lines each way. So the residue is a strictly LONGER statement of what you
+started with, and the "proven lemmas enter the cone" gain is illusory — they enter only by being
+applied to a `refl` you supplied yourself.
+**The check is one grep for the reflexivity lemma, and this project usually labels it for you.**
+`isFormOver_refl`'s own docstring already said of the `ℝ` instance that the clause "is, up to this
+lemma, exactly `HasRationalPoint fX ℝ`. The `Y` in it is a memory of Taylor's route, not an extra
+demand." **A sibling clause documented as vestigial packaging is not a template to copy** — it is a
+warning that the wrap carries no content.
+Generalises past forms: `∃ y, P y ∧ Nonempty (x ≅ y)`, `∃ y, P y ∧ IsBaseChangeOf x y`,
+`∃ y, P y ∧ RelPicEquiv x y` are all in this class. Before writing one, ask whether the relation is
+reflexive and whether `P` transports along it; if both, you are renaming, not cutting.
+## A SUPERSEDED CHAIN'S LEAVES GO DEAD, AND THE ONLY PLACE THAT SHOWS IS THE CHAIN'S **TOP**
+(Same run.) The standing rule is to grep YOUR leaf for consumers. That catches a leaf nobody calls.
+It does NOT catch the commoner shape, in which your leaf has a perfectly live consumer and a
+DIFFERENT chain — the one your leaf was cut to replace — has quietly lost its own.
+The tell is in the leaf's own docstring, and it reads as a virtue: *"this is theorem `T` with ONE
+conjunct added … the price is that `T`'s glue is restated here rather than consumed, so `T` stays
+out of the root cone."* Restating rather than consuming is exactly what supersedes `T`'s chain.
+Measured here: `Modularity.exists_moretBailly_seed_of_five_le`, the TOP of the whole Moret–Bailly
+construction chain, has **zero code consumers anywhere in `Fermat/`** — its one surviving occurrence
+is inside a prose dependency diagram.
+So when a leaf is stated as "theorem `T` plus a conjunct", **grep the TOP of `T`'s chain, not `T`
+itself.** `T` always has a consumer — its own chain — and only the chain's top shows the
+supersession. Two riders, both of which cost time here:
+* **Run a comment-depth scan on every surviving hit before calling it a consumer.** In this tree the
+  survivors are routinely prose dependency diagrams drawn with arrows, which read exactly like call
+  sites in a `grep`. One ten-line scan settles it.
+* **Do not extrapolate from the top to the leaves without a call graph.** Which of the superseded
+  file's open leaves are reachable ONLY through that chain is a real computation over a 61 000-line
+  module; guessing it produces a confident wrong dispatch list. Queue it instead.
+Why it matters: every leaf reachable only through a superseded chain is one an agent can close
+without moving the project — the seventh invisibility class, arrived at through a RESTATEMENT rather
+than through a deletion.

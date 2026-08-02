@@ -12851,6 +12851,114 @@ a demand on Taylor's construction.
   `ρbar|_{G_{ℚ_2}}` alone, and such a refutation would also falsify the
   `residueCardTwo` field of `PotentialHeckeDatum` above and every consumer of it.
 
+# ATOMICITY AUDIT (2026-08-01, flt-lean-277): THE EXISTENTIAL SHAPE IS FORCED, AND
+# ALL THREE CANDIDATE CUTS INSIDE THIS FILE ARE REFUTED
+
+Recorded because deriving it cost a whole run, and because the axes below are
+exactly the ones a successor thinks of first.
+
+1. **HYPOTHESIS-SHAPED** — take `X` from the PROVEN
+   `Modularity.exists_twistedHilbertBlumenthalModuliScheme_of_five_le`, whose
+   binder list is CHARACTER-FOR-CHARACTER this leaf's, and sorry only the
+   `ℚ_[2]`-point for THAT `X`. REFUTED, and not merely by the even-twist witness
+   the docstring above cites: the FORM-cut section of `Modularity/MoretBailly.lean`
+   (immediately above `Modularity.IsFormOver`) states the general form — that
+   refutation "kills every cut whose second leaf is a statement ABOUT `X`, because
+   nothing `IsTwistedHilbertBlumenthalModuli` says can force a point to exist — it
+   is a condition on the points there ARE, never a supply of points".
+
+2. **FORM-REPACKAGED** — replace the bare conjunct `HasRationalPoint fX ℚ_[2]` by
+   `∃ Z fZ, HasRationalPoint fZ ℚ_[2] ∧ IsFormOver ℚ_[2] fX fZ`, mirroring the
+   `Y`-clause of `Modularity.exists_twistedHilbertBlumenthalModuliForm_of_five_le`,
+   so that the two PROVEN form lemmas would enter the root cone. **NOT A CUT: the
+   two are PROVABLY EQUIVALENT**, three lines each way, by
+   `Modularity.isFormOver_refl` (forward, `Z := X`) and
+   `Modularity.hasRationalPoint_of_isFormOver` (backward). This is not a guess —
+   `isFormOver_refl`'s own docstring says it of the `ℝ` clause: it "is, up to this
+   lemma, exactly `HasRationalPoint fX ℝ`. The `Y` in it is a memory of Taylor's
+   route, not an extra demand." So the repackaging is a strictly longer statement
+   of the same proposition, i.e. pure churn.
+
+3. **DIHEDRAL-`Y`** — leaf: "the dihedral twist `Y` has a `ℚ_[2]`-point". REFUTED
+   by the same FORM-cut paragraph, which names this cut explicitly: "again vacuous
+   for a pointless `Y`".
+
+# THE ONE REAL CUT IS NOT IN THIS FILE: the `2`-adic mirror of the archimedean
+# architecture, with its cost AND its risk both named
+
+`Modularity/MoretBailly.lean` solves the identical problem at `ℝ`, and how it does
+so is the template: the archimedean point is never a conjunct asserted of a
+produced `X`; it is an IMPLICATION exported by the constructor and discharged by a
+second leaf that mentions no space at all. Traced (2026-08-01):
+
+    exists_twistedHilbertBlumenthalCocycle_of_split  (PROVEN; its `hmain` BIRTHS
+      the implication `HasRealHilbertBlumenthalObject -> HasRationalPoint fX ℝ`)
+      -> exists_twistedHilbertBlumenthalDescent_of_split       (PROVEN glue)
+      -> exists_twistedHilbertBlumenthalModuliTwist_of_datum   (PROVEN glue)
+      -> exists_twistedHilbertBlumenthalModuliTwist_of_five_le (PROVEN glue)
+      -> exists_twistedHilbertBlumenthalModuliForm_of_five_le  (PROVEN glue; it
+           discharges the implication with the leaf
+           `hasRealHilbertBlumenthalObject_of_isHardlyRamified`)
+      -> exists_twistedHilbertBlumenthalModuliScheme_of_five_le (PROVEN)
+
+The `2`-adic mirror is: add the conjunct
+`HasPadicHilbertBlumenthalObject ρbar D lam frp ρbarp -> HasRationalPoint fX ℚ_[2]`
+at the birth site, thread it through the four PROVEN glue links (mechanical — each
+is one more component of an existing `refine`), define
+`HasPadicHilbertBlumenthalObject` by transcribing `HasRealHilbertBlumenthalObject`
+with `ℝ` replaced by `ℚ_[2]`, and open ONE new leaf asserting it. **This leaf then
+CLOSES**, and it closes into a purely LOCAL statement at `2` with no moduli space,
+no Moret–Bailly and no Taylor Lemma 4.5 in it.
+
+WHY IT WAS NOT DONE FROM HERE, and only the second reason is mathematical:
+
+* it is six edits across a 61 000-line file with concurrent editors, and a
+  half-landed interface change of that shape is the class-seven merge hazard;
+* **THE RISK, which must be settled BEFORE the cut, not after.** At `ℝ` the second
+  leaf is easily TRUE and the FORM-cut section writes the proof out — one real
+  elliptic curve suffices. At `2` it is not free. It needs the auxiliary DIHEDRAL
+  datum `ρbarp` to be realized on the `𝔭`-torsion of the SAME abelian variety over
+  `ℚ_2`, which is a condition on
+  `exists_dihedralOddGaloisRep_standardLevel_of_charThree` — a THIRD edit site, and
+  the one that can make the new leaf FALSE if the datum cannot be so chosen.
+  What makes it plausible rather than speculative: `ρbar` hardly ramified is
+  multiplicative at `2`, so `ρbar|_{G_{ℚ_2}}` IS realized by an elliptic curve
+  `E/ℚ_2`, and `B = E ⊗_ℤ 𝒪_D` realizes it on `B[λ]` by the FORM-cut section's own
+  archimedean argument, which is characteristic-free (it needs only that the
+  `λ`-torsion of `𝒪_D/ℓ` is one-dimensional over the residue field). The `𝔭`-part
+  is the open question.
+  THE CHECK THAT WOULD SETTLE IT: decide whether
+  `exists_dihedralOddGaloisRep_standardLevel_of_charThree` can be strengthened to
+  prescribe `ρbarp|_{G_{ℚ_2}}` on the `3`-torsion of a chosen `E/ℚ_2`.
+
+# WHAT THIS LEAF COSTS THE TREE TODAY, MEASURED (2026-08-01)
+
+The paragraph above prices the existential shape as "the five lines of PROVEN glue
+... are restated here rather than consumed, so that theorem stays out of the root
+cone". That is right, and it UNDERSTATES the consequence.
+
+`Modularity.exists_moretBailly_seed_of_five_le` — the TOP of the entire
+Moret–Bailly construction chain — has **ZERO code consumers anywhere in
+`Fermat/`**. Its only occurrence outside its own declaration is inside a prose
+dependency diagram at `Modularity/KhareWintenberger.lean:1734` (established by a
+comment-depth scan, not by eye). So the chain
+
+    ..._Scheme_of_five_le -> ..._Moduli_of_five_le
+      -> exists_hilbertBlumenthalPoint_of_five_le
+      -> exists_moretBailly_seed_of_five_le
+
+is reachable from nothing: this file's
+`exists_hilbertBlumenthalPoint_padicEmbedding_of_five_le` SUPERSEDED it rather than
+calling it, which is what the ROOT-CONE NOTE below says in words.
+
+So closing this leaf by the `2`-adic mirror is not merely tidier — it is what would
+put that PROVEN construction back into the root cone, and with it whichever leaves
+of `Modularity/MoretBailly.lean` feed that chain and nothing else. Those leaves are
+currently reachable only through a superseded chain, i.e. proving them moves the
+count and not the project. WHICH of that file's twenty open leaves are in that
+position was NOT computed here — it needs a full call graph of a 61 000-line file —
+and is queued instead of guessed.
+
 CIRCULARITY GUARD, inherited: this leaf may only ever be discharged by the
 independent Moret–Bailly/Taylor construction — never through `Family.lean`,
 `Lift.lean`, `Modularity/Interface.lean`, or the odd-prime dichotomy
@@ -14566,6 +14674,18 @@ owner, not to this leaf.
   REFUTING CHECK: read the binders of `exists_moretBailly_seed_of_five_le` for
   `ρ`/`hρ`/`π`. While they are present, the paragraph above must not be acted
   on.
+  **THE CHECK WAS RUN ON 2026-08-01 (flt-lean-277) AND IT FIRES.** That theorem now
+  binds exactly `{ℓ} (hℓodd) [Fact ℓ.Prime] (hℓ5) {k} … {W} … (hW) {ρbar} (hρbar)
+  (hirr)` — no `O`, no `hZinj`, no `ρ`, no `hrank`, no `π`, no `hπsurj`, no `hπ`.
+  The lift-package deletion described above has LANDED, so the paragraph records a
+  repair that is COMPLETE, not work outstanding; it is kept because the reasoning
+  is what makes the deletion checkable. Two consequences a reader should not have
+  to re-derive: `exists_moretBaillySeed_residueCardTwo_of_five_le` is no longer a
+  leaf, and `exists_moretBailly_seed_of_five_le` — now package-free — has NO code
+  consumer anywhere in `Fermat/`, so the chain it tops is superseded rather than
+  called. See the section "WHAT THIS LEAF COSTS THE TREE TODAY" in the docstring
+  of `exists_twistedHilbertBlumenthalModuliScheme_padicPoint_of_five_le` above,
+  where that measurement and what would reverse it are written out.
 
 CONFIRMED 2026-07-27 by an agent dispatched at this leaf, which is the second
 such report: Break B is now REPAIRED (see the status block above, and the
