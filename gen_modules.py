@@ -17,7 +17,7 @@ import os
 import sys
 
 from gen_all import ROWS, extract
-from gen_row import body
+from gen_row import SPLIT, body, body_split
 
 LICENSE = """/-
 Copyright (c) 2026 Kevin Buzzard. All rights reserved.
@@ -62,6 +62,16 @@ degree `< 2 deg f` however large the exponent; and they run modulo the IRREDUCIB
 `H` rather than `H` itself, which is `k ^ 2` cheaper and — since `IsCoprime.mul_dvd` reassembles
 the product — needs the factors only to be pairwise coprime, never to be irreducible.  No
 irreducibility test appears anywhere in this development.
+
+**A SUPERSEDED HAND-ROLLED COPY OF THE `p = 11` CERTIFICATES USED TO SIT BELOW THIS POINT**
+(removed 2026-07-31).  It was the same two divisibilities proven through a hand-written
+`namespace F1` … `namespace F5` Frobenius-table chain — 2 272 lines here plus a whole sibling
+module `MazurNonCMFrobeniusB.lean` for the second row — and it had NO consumer once the
+generated `MazurNonCMFrobenius/ElevenA.lean` and `…/ElevenB.lean` landed.  It survived only
+because the semantic merge propagates additions and not deletions, so the branch that replaced
+it could not remove it.  Measured cost of carrying it: `530 s` in this module (which every
+consumer waits on) and `235 s` in the sibling.  Recover it from git history if it is ever
+wanted; do not re-add it here.
 -/
 
 """
@@ -163,19 +173,7 @@ def write_base(root):
         f.write("".join(out))
 
 
-def write_row(root, tag):
-    hname, q, m = ROWS[tag]
-    which, ql, ml = ROW_DOC[tag]
-    doc = (f"""/-!
-# Row {which}: `H ∣ X ^ ({ql} ^ {ml}) - X`
-
-The certificate is machine-checked twice outside Lean — PARI/GP 2.15.4 and an independent
-Python reimplementation — and then re-derived here by the compiler, which is the only check
-that counts.  Everything below is generated; see `MazurNonCMFrobenius.lean` for `XPow` and why
-the exponents have to stay behind it.
--/
-
-@[expose] public section
+PREAMBLE = """@[expose] public section
 
 open Polynomial
 
@@ -191,19 +189,96 @@ set_option linter.unusedTactic false
 
 namespace Fermat.MazurNonCMCertificate
 
-""")
-    txt = (LICENSE
-           + "public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius\n\n"
-           + doc + body(tag) + "end Fermat.MazurNonCMCertificate\n")
+"""
+
+ROW_HEAD = """/-!
+# Row {which}: `H ∣ X ^ ({ql} ^ {ml}) - X`
+
+The certificate is machine-checked twice outside Lean — PARI/GP 2.15.4 and an independent
+Python reimplementation — and then re-derived here by the compiler, which is the only check
+that counts.  Everything below is generated; see `MazurNonCMFrobenius.lean` for `XPow` and why
+the exponents have to stay behind it.
+-/
+
+"""
+
+SPLIT_ROW_HEAD = """/-!
+# Row {which}: `H ∣ X ^ ({ql} ^ {ml}) - X`, and `IsCoprime H (X ^ ({ql} ^ 2) - X)`
+
+The certificate is machine-checked twice outside Lean — PARI/GP 2.15.4 and an independent
+Python reimplementation — and then re-derived here by the compiler, which is the only check
+that counts.  Everything below is generated; see `MazurNonCMFrobenius.lean` for `XPow` and why
+the exponents have to stay behind it.
+
+**THIS ROW IS SPLIT ONE MODULE PER FACTOR, AND THE SPLIT IS WHAT MAKES IT BUILD AT ALL.**
+Lean elaborates a module SINGLE-THREADED, so the whole row in one file — 14 200 lines, ~2 500
+theorems — was still running after 60 minutes at 47 GB resident when it was stopped
+(2026-07-31).  `H` is a product of {k} pairwise-coprime factors of degree {d} whose
+square-and-multiply chains share nothing but the factor definitions, so each chain lives in
+`{tag}/Factor{{i}}.lean` and `lake` elaborates the {k} of them CONCURRENTLY.  What is left here
+is everything that mentions more than one factor: the product identity, the {pairs} Bézout
+coprimalities, the `xpow_mul` assembly and the coprimality leaf.
+-/
+
+"""
+
+FACTOR_HEAD = """/-!
+# Row {which}: factor {i} of `H`, and its two square-and-multiply chains
+
+Generated.  This module holds ONE of the {k} pairwise-coprime degree-`{d}` factors of `H` and
+the two chains run modulo it: `X ^ ({ql} ^ {ml})` for the divisibility, and `X ^ ({ql} ^ 2)` for
+the coprimality.  Both chains start from the same `XPow f 1 X`, so they cannot be separated
+from each other; nothing else in the row refers to anything here except the final step of each
+chain and the factor's own definition.
+
+It is a separate module because elaboration is single-threaded per module — see
+`{tag}.lean` for the measurement.  Every identity handed to `ring_nf` has degree `< 2 · {d}`
+however large the exponent, which is what square-and-multiply buys.
+-/
+
+"""
+
+
+def _wrap(head, bodytext, imports):
+    return (LICENSE + imports + "\n" + head + PREAMBLE + bodytext
+            + "end Fermat.MazurNonCMCertificate\n")
+
+
+def write_row(root, tag):
+    hname, q, m = ROWS[tag]
+    which, ql, ml = ROW_DOC[tag]
     d = os.path.join(root, "Fermat/FLT/EllipticCurve/MazurNonCMFrobenius")
     os.makedirs(d, exist_ok=True)
+    base_import = "public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius\n"
+
+    if tag not in SPLIT:
+        txt = _wrap(ROW_HEAD.format(which=which, ql=ql, ml=ml), body(tag), base_import)
+        with open(os.path.join(d, tag + ".lean"), "w") as f:
+            f.write(txt)
+        return 1
+
+    parent, factor_bodies, deg = body_split(tag)
+    k = len(factor_bodies)
+    sub = os.path.join(d, tag)
+    os.makedirs(sub, exist_ok=True)
+    for i, fb in enumerate(factor_bodies):
+        head = FACTOR_HEAD.format(which=which, i=i + 1, k=k, d=deg, ql=ql, ml=ml, tag=tag)
+        with open(os.path.join(sub, f"Factor{i + 1}.lean"), "w") as f:
+            f.write(_wrap(head, fb, base_import))
+    imports = "".join(
+        f"public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.{tag}.Factor{i + 1}\n"
+        for i in range(k))
+    head = SPLIT_ROW_HEAD.format(which=which, ql=ql, ml=ml, k=k, d=deg, tag=tag,
+                                 pairs=k * (k - 1) // 2)
     with open(os.path.join(d, tag + ".lean"), "w") as f:
-        f.write(txt)
+        f.write(_wrap(head, parent, imports))
+    return k + 1
 
 
 if __name__ == "__main__":
     root = sys.argv[1] if len(sys.argv) > 1 else "."
     write_base(root)
+    n = 1
     for tag in ROWS:
-        write_row(root, tag)
-    print("wrote 5 modules")
+        n += write_row(root, tag)
+    print(f"wrote {n} modules")

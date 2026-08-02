@@ -116,49 +116,52 @@ def emit_chain(w, fname, tag, q, m, T, Q, R):
         w(line + ")\n\n")
 
 
-def generate_row(hname, hsrc, factors_src, q, m, tag, coprime_at, doc, out):
-    """Emit the whole per-row module body."""
-    w = out.write
+def _prepare(hsrc, factors_src, q):
     H = parse_poly(hsrc, q)
     F = [parse_poly(s, q) for s in factors_src]
-    k = len(F)
     prod = [1]
     for f in F:
         prod = poly_mul(prod, f, q)
     assert prod == H, "the factorisation does not multiply back to H"
+    return F
 
-    w(doc)
 
-    # ---- the factors
-    for i, f in enumerate(F):
-        w(f"/-- Irreducible factor {i + 1} of `H` on this row, of degree {len(f) - 1}.  Its"
-          f" irreducibility is\nnot used anywhere — only that the {k} factors are pairwise"
-          " coprime. -/\n")
-        w(f"noncomputable def f{tag}{i + 1} : (ZMod {q})[X] :=\n")
-        w("  " + fmt_poly(f, "    ") + "\n\n")
+def _emit_def(w, tag, i, f, q, k):
+    """The `noncomputable def` for one factor."""
+    w(f"/-- Irreducible factor {i + 1} of `H` on this row, of degree {len(f) - 1}.  Its"
+      f" irreducibility is\nnot used anywhere — only that the {k} factors are pairwise"
+      " coprime. -/\n")
+    w(f"noncomputable def f{tag}{i + 1} : (ZMod {q})[X] :=\n")
+    w("  " + fmt_poly(f, "    ") + "\n\n")
 
+
+def _emit_chains(w, tag, i, f, q, m, coprime_at):
+    """Both square-and-multiply chains for one factor.  Returns `(last step, residue info)`.
+
+    The second chain shares the first's `XPow f 1 X` base, so the two cannot be separated.
+    """
+    w(f"/-! ### Factor {i + 1}: `X ^ ({q} ^ {m})` mod `f` by square-and-multiply -/\n\n")
+    nm, r = emit_factor(w, f"f{tag}{i + 1}", f"{tag}{i + 1}", q, q ** m, f)
+    assert r == [0, 1], f"CERTIFICATE FALSE on factor {i + 1}: residue {r[:6]}"
+    resid = r
+    if coprime_at is not None:
+        w(f"/-! Factor {i + 1} again, at the smaller exponent `{q} ^ {coprime_at}`,"
+          " for the coprimality below. -/\n\n")
+        nm2, r2 = emit_factor(w, f"f{tag}{i + 1}", f"{tag}{i + 1}c", q,
+                              q ** coprime_at, f, base=f"p{tag}{i + 1}1")
+        resid = (r2, nm2)
+    return nm, resid
+
+
+def _emit_factor_thm(w, hname, tag, k, q):
     prodexpr = " * ".join(f"f{tag}{i + 1}" for i in range(k))
     w(f"/-- The factorisation of `H` used by every statement below. -/\ntheorem factor_{hname} :"
       f" {hname} = {prodexpr} := by\n")
     w(f"  simp only [{hname}, " + ", ".join(f"f{tag}{i + 1}" for i in range(k)) + "]\n")
     w("  ring_nf\n  reduce_mod_char\n\n")
 
-    # ---- per-factor chains
-    last, resid = [], []
-    for i, f in enumerate(F):
-        w(f"/-! ### Factor {i + 1}: `X ^ ({q} ^ {m})` mod `f` by square-and-multiply -/\n\n")
-        nm, r = emit_factor(w, f"f{tag}{i + 1}", f"{tag}{i + 1}", q, q ** m, f)
-        assert r == [0, 1], f"CERTIFICATE FALSE on factor {i + 1}: residue {r[:6]}"
-        last.append(nm)
-        resid.append(r)
-        if coprime_at is not None:
-            w(f"/-! Factor {i + 1} again, at the smaller exponent `{q} ^ {coprime_at}`,"
-              " for the coprimality below. -/\n\n")
-            nm2, r2 = emit_factor(w, f"f{tag}{i + 1}", f"{tag}{i + 1}c", q,
-                                  q ** coprime_at, f, base=f"p{tag}{i + 1}1")
-            resid[i] = (r2, nm2)
 
-    # ---- pairwise coprimality
+def _emit_coprime(w, tag, F, q, k):
     w("/-! ### Pairwise coprimality of the factors, by explicit Bézout identities -/\n\n")
     for i in range(k):
         for j in range(i + 1, k):
@@ -168,13 +171,13 @@ def generate_row(hname, hsrc, factors_src, q, m, tag, coprime_at, doc, out):
             w("   " + fmt_poly(v, "    ") + ",\n")
             w(f"   by simp only [f{tag}{i + 1}, f{tag}{j + 1}]; ring_nf; reduce_mod_char⟩\n\n")
 
-    # ---- assemble the divisibility
-    N = q ** m
+
+def _emit_assembly(w, hname, tag, k, q, m, last):
     w("/-! ### Assembly -/\n\n")
     w(f"theorem dvd_X_pow_card_pow_sub_X_{hname} :\n")
     w(f"    {hname} ∣ X ^ (Nat.card (ZMod {q})) ^ {m} - X := by\n")
 
-    # every `have` below is UNASCRIBED on purpose: writing out `… ∣ X ^ {N} - X` puts the
+    # every `have` below is UNASCRIBED on purpose: writing out `… ∣ X ^ (q ^ m) - X` puts the
     # huge exponent literal in a position the elaborator unifies structurally, and that is
     # the `npowRec` blow-up `XPow` exists to avoid.  Inferred types keep it an argument.
     for i in range(1, k):
@@ -188,31 +191,83 @@ def generate_row(hname, hsrc, factors_src, q, m, tag, coprime_at, doc, out):
     w(f"  rw [factor_{hname}]\n")
     w(f"  exact xpow_card (by rw [Nat.card_zmod]; norm_num) h{k}\n\n")
 
-    # ---- the coprimality leaf, when the row needs one
+
+def _emit_coprime_leaf(w, hname, tag, F, q, j, resid):
+    k = len(F)
+    for i in range(k):
+        r2, nm2 = resid[i]
+        target = poly_sub(r2, [0, 1], q)
+        u, v = bezout_pair(F[i], target, q)
+        w(f"theorem cofrob{tag}{i + 1} : IsCoprime f{tag}{i + 1}"
+          f" (X ^ (Nat.card (ZMod {q})) ^ {j} - X) := by\n")
+        w(f"  have hd : f{tag}{i + 1} ∣ X ^ (Nat.card (ZMod {q})) ^ {j} -\n")
+        w("      (" + fmt_poly(r2, "        ") + ") :=\n")
+        w(f"    xpow_card (by rw [Nat.card_zmod]; norm_num) {nm2}\n")
+        w("  obtain ⟨w, hw⟩ := hd\n")
+        w(f"  have key : (X : (ZMod {q})[X]) ^ (Nat.card (ZMod {q})) ^ {j} - X =\n")
+        w("      (" + fmt_poly(target, "        ") + ") +\n")
+        w(f"      f{tag}{i + 1} * w := by linear_combination hw\n")
+        w("  rw [key]\n")
+        w("  exact IsCoprime.add_mul_left_right ⟨" + fmt_poly(u, "      ") + ",\n")
+        w("    " + fmt_poly(v, "      ") + ",\n")
+        w(f"    by simp only [f{tag}{i + 1}]; ring_nf; reduce_mod_char⟩ w\n\n")
+    w(f"theorem isCoprime_{hname} :\n")
+    w(f"    IsCoprime {hname} (X ^ (Nat.card (ZMod {q})) ^ {j} - X) := by\n")
+    w(f"  rw [factor_{hname}]\n")
+    w("  exact " + left_assoc([f"cofrob{tag}{i + 1}" for i in range(k)]) + "\n\n")
+
+
+def generate_row(hname, hsrc, factors_src, q, m, tag, coprime_at, doc, out):
+    """Emit the whole per-row module body as ONE file."""
+    w = out.write
+    F = _prepare(hsrc, factors_src, q)
+    k = len(F)
+    w(doc)
+    for i, f in enumerate(F):
+        _emit_def(w, tag, i, f, q, k)
+    _emit_factor_thm(w, hname, tag, k, q)
+    last, resid = [], []
+    for i, f in enumerate(F):
+        nm, r = _emit_chains(w, tag, i, f, q, m, coprime_at)
+        last.append(nm)
+        resid.append(r)
+    _emit_coprime(w, tag, F, q, k)
+    _emit_assembly(w, hname, tag, k, q, m, last)
     if coprime_at is not None:
-        j = coprime_at
-        Nj = q ** j
-        for i in range(k):
-            r2, nm2 = resid[i]
-            target = poly_sub(r2, [0, 1], q)
-            u, v = bezout_pair(F[i], target, q)
-            w(f"theorem cofrob{tag}{i + 1} : IsCoprime f{tag}{i + 1}"
-              f" (X ^ (Nat.card (ZMod {q})) ^ {j} - X) := by\n")
-            w(f"  have hd : f{tag}{i + 1} ∣ X ^ (Nat.card (ZMod {q})) ^ {j} -\n")
-            w("      (" + fmt_poly(r2, "        ") + ") :=\n")
-            w(f"    xpow_card (by rw [Nat.card_zmod]; norm_num) {nm2}\n")
-            w("  obtain ⟨w, hw⟩ := hd\n")
-            w(f"  have key : (X : (ZMod {q})[X]) ^ (Nat.card (ZMod {q})) ^ {j} - X =\n")
-            w("      (" + fmt_poly(target, "        ") + ") +\n")
-            w(f"      f{tag}{i + 1} * w := by linear_combination hw\n")
-            w("  rw [key]\n")
-            w("  exact IsCoprime.add_mul_left_right ⟨" + fmt_poly(u, "      ") + ",\n")
-            w("    " + fmt_poly(v, "      ") + ",\n")
-            w(f"    by simp only [f{tag}{i + 1}]; ring_nf; reduce_mod_char⟩ w\n\n")
-        w(f"theorem isCoprime_{hname} :\n")
-        w(f"    IsCoprime {hname} (X ^ (Nat.card (ZMod {q})) ^ {j} - X) := by\n")
-        w(f"  rw [factor_{hname}]\n")
-        w("  exact " + left_assoc([f"cofrob{tag}{i + 1}" for i in range(k)]) + "\n\n")
+        _emit_coprime_leaf(w, hname, tag, F, q, coprime_at, resid)
+
+
+def generate_row_split(hname, hsrc, factors_src, q, m, tag, coprime_at, doc, out, factor_outs):
+    """Emit the row as ONE parent body plus ONE body per factor.
+
+    MEASURED 2026-07-31, and this is the whole reason the option exists: Lean elaborates a
+    module single-threaded, so the `q = 67`, `m = 34` rows — 14 200 lines and ~2 500 theorems
+    apiece — were still running after 60 minutes at 47 GB resident.  The `k` chains share
+    nothing but the factor definitions, so one module per factor turns that into `k`
+    independent jobs that `lake` runs CONCURRENTLY.
+
+    What has to stay together: a factor's two chains (they share their `XPow f 1 X` base),
+    and the factor's `def` (every step's `simp only [f…]` unfolds it).  What has to stay in
+    the parent: everything that mentions more than one factor.
+    """
+    w = out.write
+    F = _prepare(hsrc, factors_src, q)
+    k = len(F)
+    assert len(factor_outs) == k, f"expected {k} factor sinks, got {len(factor_outs)}"
+    last, resid = [], []
+    for i, f in enumerate(F):
+        fw = factor_outs[i].write
+        _emit_def(fw, tag, i, f, q, k)
+        nm, r = _emit_chains(fw, tag, i, f, q, m, coprime_at)
+        last.append(nm)
+        resid.append(r)
+    w(doc)
+    _emit_factor_thm(w, hname, tag, k, q)
+    _emit_coprime(w, tag, F, q, k)
+    _emit_assembly(w, hname, tag, k, q, m, last)
+    if coprime_at is not None:
+        _emit_coprime_leaf(w, hname, tag, F, q, coprime_at, resid)
+    return k
 
 
 def left_assoc(names):

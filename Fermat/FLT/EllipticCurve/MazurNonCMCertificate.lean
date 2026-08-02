@@ -20,6 +20,8 @@ public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.ElevenA
 public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.ElevenB
 public import Fermat.FLT.EllipticCurve.MazurNonCMFrobeniusSevA
 public import Fermat.FLT.EllipticCurve.MazurNonCMFrobeniusSevB
+public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.SeventeenA
+public import Fermat.FLT.EllipticCurve.MazurNonCMFrobenius.SeventeenB
 
 /-!
 # A mod-`ℓ` degree obstruction, and the `p = 11` certificate of Mazur's non-CM table
@@ -713,6 +715,13 @@ theorem preΨ'_seventeen_seventeenAMod :
   ring_nf
   reduce_mod_char
 
+/-! `dvd_X_pow_card_pow_sub_X_hPolySeventeenA` (every irreducible factor of `H` has degree
+dividing `34`) and `isCoprime_hPolySeventeenA` (`H` has no irreducible factor of degree `1` or
+`2` — the divisors of `m = 34` that are at most `n = 16` are `1` and `2`, and both divide `2`)
+used to be SORRIED HERE.  Both are PROVEN as of 2026-07-31, in this same namespace, in the
+generated `MazurNonCMFrobenius/SeventeenA.lean` over its four `SeventeenA/Factor{i}.lean`; they
+are in scope through this module's imports, so the two consumers below need no change. -/
+
 /-- Every irreducible factor of `H` has degree dividing `34` (PROVEN 2026-07-31).
 
 `H` is a product of four irreducibles of degree exactly `34`; the certificate is
@@ -958,6 +967,11 @@ theorem preΨ'_seventeen_seventeenBMod :
   reduce_mod_char
   ring_nf
   reduce_mod_char
+
+/-! `dvd_X_pow_card_pow_sub_X_hPolySeventeenB` and `isCoprime_hPolySeventeenB` used to be
+SORRIED HERE, word for word the `SeventeenA` pair with a different `H`.  Both are PROVEN as of
+2026-07-31 in the generated `MazurNonCMFrobenius/SeventeenB.lean` over its four
+`SeventeenB/Factor{i}.lean`. -/
 
 /-- Every irreducible factor of `H` has degree dividing `34` (PROVEN 2026-07-31).
 Word for word `dvd_X_pow_card_pow_sub_X_hPolySeventeenA` with a different `H`; see that
