@@ -17190,6 +17190,45 @@ resolution both times was the same and it is worth reaching for directly:
 `Gamma0AtlasData` there, `IsRelPicZeroOf` (`ModularCurve/RelativePicard.lean`)
 here — every field of which is about maps into the object, so it base-changes by
 inspection.
+
+### SECOND CONFIRMED INSTANCE, AND THE GENERALISATION: N BLOCKERS DECAY INDEPENDENTLY, SO RE-RUN ALL N
+
+(2026-08-01, `flt-lean-355`, on `smoothOfRelativeDimension_finrank_cuspForm` — the
+very leaf whose audit the section above uses as its example. Three days later the
+audit was still being dispatched verbatim, and by then **all three** of its axes
+were stale, not just the one recorded above.)
+
+The section above records that this audit's *refuting check* for axis 2 fires
+(`isJacobianOf_baseChange`, X0.lean:78018, ~34 000 lines above the leaf). Two
+further clauses had rotted meanwhile, each by somebody else's unrelated work:
+
+* axis 1's *"no genus of a scheme, no `h¹(𝒪_X)`, no Riemann–Roch exists here, so
+  the middle term of the split cannot be written down"* — refuted by
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean`, created 2026-07-31 and
+  `public import`ed by `X0.lean` at line 1062;
+* the leaf's own headline, *"the place the `Modularity` subtree is meant to be fed
+  in"* — refuted by `finrank_cuspForm_eq_x0Genus` becoming PROVEN, which makes the
+  leaf's conclusion **literally the same proposition** as a modular-form-free one.
+
+**The generalisable rule: an audit that lists N independent blockers is N separate
+dated claims, and they expire on N independent clocks. Re-run every one of them,
+not the one that looks likeliest.** The instinct is to check the blocker you have
+an idea about; the leaf becomes attackable when the LAST one falls, so the ones you
+skip are exactly the ones that decide it. Cost here: four `grep`s, about ten
+minutes, against an audit three agents had inherited without re-running.
+
+**Corollary, and it is the part that changed what could be delivered: when one of
+the halves of a bridge becomes PROVEN, the leaf holding the other half should be
+RESTATED to spend it.** `dim J_0(N) = dim_ℂ S_2(Γ_0(N))` and
+`dim J_0(N) = x0Genus N` are interchangeable the moment `dim_ℂ S_2 = x0Genus` is
+proven — so the leaf can be re-stated with every mention of `ℂ`, `CuspForm` and
+`Gamma0GL` deleted, at `1 → 1` and with the faithfulness audit transferring
+verbatim (the two conclusions are the same proposition under the shared `0 < N`,
+so a counterexample refutes one iff it refutes the other). The count does not move
+and must be reported as not moving; what changes is that the residue no longer
+requires its prover to know any modular-forms theory. **Grep a leaf's docstring for
+the phrase "where subtree X feeds in" and check whether X has already fed in.**
+
 ## A LEAF CAN BE BLOCKED BY DECLARATION ORDER, NOT BY MISSING MATHEMATICS
 (2026-07-31, `realCoeff_norm_le_of_isWeightTwoEigenform`.) Two audits of the same leaf, both
 careful, both correct, reached opposite verdicts — and the reason is a failure mode no rule here
