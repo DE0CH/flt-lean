@@ -20240,3 +20240,51 @@ Two riders, both reusable:
   `ringKrullDim_eq_of_isIntegral_of_injective`) — no `IsDomain`. Finiteness of the dimension
   is usually assumed to need the domain case and does not, and it is what lets two dimensions
   be compared as numbers rather than in `WithBot ℕ∞`.
+## GLOBALISING A LOCAL BOUND BY APPROXIMATION: PICK THE PLACE FROM THE GLOBAL EXTREMUM, AND DO NOT NORMALISE
+(2026-08-01, `flt-lean-194`, closing `degOf_poleDivisor_le_finrank_of_transcendental` —
+Stichtenoth I.4.11(a) — in `ModularCurve/HyperellipticJacobian.lean`.)
+The commonest shape of a "sum of local bounds ≤ a global invariant" leaf is: the local
+argument is already PROVEN at one place, and what is missing is the passage to the sum. Two
+things decide whether that passage goes through, and neither is visible from the single-place
+case.
+**1. THE PLACE YOU RUN THE ARGUMENT AT MUST BE CHOSEN FROM A GLOBAL EXTREMUM.** Having cleared
+denominators so the coefficients of the relation are `λ_q = P_q(g)`, put `d := max_q deg P_q`
+over ALL indices — every place at once, not one — and let `v₀` be the pole carried by an index
+attaining `d`. Only then does the `v₀`-part contain a term whose order beats every other
+contribution. Fix `v₀` first and take the per-place maximum afterwards and the remainder
+absorbs the surviving term; the proof simply does not close, and nothing about the failure
+points at the choice. **The tell is that the remainder's bound involves a GLOBAL maximum while
+the surviving terms' orders involve a LOCAL one.**
+**2. DO NOT NORMALISE THE RELATION, EVEN THOUGH THE LOCAL LEMMA DOES.** It is tempting to
+multiply through by `g^{−d}` so every coefficient is regular at every pole simultaneously — the
+local residue computation does exactly that, and this looks like its uniform version. It is
+fatal. After normalising, a group of terms of degree below `d` has order `≥ 1` instead of
+`≥ e`, and `≥ 1` does not clear the surviving term's order `k < e`. Un-normalised those orders
+are `−e·d_k`, i.e. MULTIPLES OF `e`, and the multiple-of-`e` structure is the whole content.
+**Normalisation belongs inside the local lemma, where the per-`k` degree is available; the
+assembly must compare raw orders.**
+Generalisable past valuations: whenever a local argument's estimates are confined to an
+arithmetic progression — multiples of a ramification index, a rank, a period — a change of
+variables that makes them all non-negative destroys the progression and with it the gap you
+were going to exploit. **Check what the estimates are congruent to before rescaling.**
+**And the accounting, which is the reusable half.** The leaf's docstring said approximation "is
+the genuinely missing input", and that was exactly right: the entire passage to the sum is ~340
+lines over ONE new leaf (`PlaceData.exists_approx`, weak approximation, Stichtenoth Thm. 1.3.1)
+and reached green in five 13-second scratch iterations, because the single-place block was
+already there. **A docstring that names exactly ONE missing input is telling you the assembly
+is affordable — cut that input and write the assembly.** The frontier does not move (one leaf
+out, one in) and that must be said in the commit; what changes is that the survivor is a
+hypothesis-free, reusable theorem of valuation theory with a name in a textbook.
+Two smaller notes from the same run:
+* **the route a docstring names for its missing input can name the wrong axiom.** This one said
+  to prove approximation "from `ord_injective` + `ord_complete`". `ord_complete` (every
+  valuation is a place) plays no part; what the independence step spends is `ord_injective`
+  (distinct places are distinct valuations) plus `ord_surjective` (the value group is all of
+  `ℤ`). An axiom list attached to an UNPROVEN leaf is a guess by whoever declined to prove it;
+  read the classical argument before budgeting off it.
+* **`simp only [h]` with `h` a pointwise `if`-elimination silently does nothing.** simp
+  normalises the decidable condition to `True` first, so `h` never matches — and then the
+  `unusedSimpArgs` linter reports YOUR lemma as unused while `if True then … else …` is still
+  sitting in the goal, which reads as "my lemma is wrong". Use an explicit congruence,
+  `rw [Finset.sum_congr rfl (fun p _ => h p)]`, so the `if` is discharged by `if_pos rfl`
+  before anything can normalise it.

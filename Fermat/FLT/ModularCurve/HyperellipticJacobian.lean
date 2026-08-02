@@ -5751,6 +5751,453 @@ end PlaceData
 
 end SinglePlaceBound
 
+/-! ### From ONE place to the SUM over all poles, PROVEN 2026-08-01 over weak approximation
+
+The section above proves the single-place bound `e_v·f_v ≤ n` and records, correctly, that what
+it cannot do is run at several places at once: it wants a uniformiser and residue lifts that are
+controlled at the OTHER poles.  That is the approximation theorem and nothing else, so it is cut
+here as the single leaf `exists_approx`; everything between it and
+`degOf_poleDivisor_le_finrank_of_transcendental` below is now Lean.
+
+Two things about the shape of the argument, because neither is visible from the single-place
+case and both were needed to make it go through:
+
+* **the index attaining the GLOBAL maximum degree decides which pole to work at.**  Having
+  cleared denominators to `λ_q = P_q(g)`, put `d := max_q deg P_q` and let `v₀` be the pole of
+  an index attaining `d`.  Then the `v₀`-part of the relation has a term of order `−e·d + k`
+  with `k < e`, while EVERY other contribution — the terms from other poles and all the
+  approximation errors — has order `≥ −e·d + e`.  Choosing `v₀` any other way loses this;
+* **no normalisation by `g^{−d}` appears in the assembly.**  It is used only inside the
+  single-place residue computation `vanishesAt_aeval_mul_inv_pow`, and there with the
+  per-`k` degree.  Stating the comparison with the un-normalised orders is what keeps the
+  remainder bound linear in `d`. -/
+
+section MultiPlaceBound
+
+open Polynomial
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+namespace PlaceData
+
+/-- **LEAF (weak approximation for the places of `F`)** —
+[Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.3.1], the independence-of-valuations
+theorem: finitely many places, arbitrary targets `y_v`, arbitrary levels `N_v`, one `b ∈ F`
+meeting all of them at once.
+
+A `Finset` of places is automatically a family of PAIRWISE DISTINCT places, and distinct places
+are inequivalent valuations by `ord_injective` — that is exactly the hypothesis the classical
+theorem needs, so no side condition is required here.
+
+**Why the disjunction, and why it is not a weakening.**  `ord v 0 = 0` is this file's junk
+convention, so `N v ≤ ord v (b - y v)` is FALSE whenever the approximation is exact and
+`N v > 0`.  The honest reading of the conclusion is `b - y v ∈ 𝔪_v^{N_v}`, and `0` lies there;
+every axiom of `PlaceData` carries the same disjunct for the same reason.
+
+**The classical route, and the two axioms it spends.**
+
+1. *Independence.*  For `v ≠ w` there is `z ∈ F` with `ord_v z > 0` and `ord_w z < 0`.  This is
+   where `ord_injective` enters — it is what forbids two distinct places from having the same
+   valuation ring — together with `ord_surjective`, which forbids that ring from being all of
+   `F`.
+2. *Approximate idempotents.*  For such a `z`, `u := z^m/(1 + z^m)` has `ord_v (u - 1)` and
+   `ord_w u` both `≥ m·min(ord_v z, −ord_w z)`, so for `m` large one builds `u_v` congruent to
+   `1` at `v` and to `0` at every other place of `V`.
+3. `b := Σ_{v ∈ V} y_v · u_v`, and the ultrametric inequality (`ord_add`, or `ord_sum_ge`
+   above) gives the estimate at every `v ∈ V` simultaneously.
+
+Nothing beyond `ord_mul`, `ord_add`, `ord_injective` and `ord_surjective` is needed: neither
+`ord_complete` nor `ord_finite`, and nothing about `K` or the sextic.  (The route recorded on
+the consumer before this cut named `ord_complete`; it is step 1 that is wanted, and step 1 is
+`ord_injective`.)
+
+**What would refute it**: a `PlaceData` carrying two distinct places with equivalent `ord`
+functions, or a place whose value group is a proper subgroup of `ℤ`.  `ord_injective` and
+`ord_surjective` exclude both, which is why this is stated with no hypothesis at all.
+
+**Not vacuous.**  At `V = ∅` it is trivially true (`b = 0`), but `V` is arbitrary, and already
+at a single place with `N v = 1` and `y v = 1` it asserts that `1 + 𝔪_v` is nonempty.  The
+content is the SIMULTANEITY, which is why the leaf quantifies over a `Finset` rather than over
+one place. -/
+theorem exists_approx (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (V : Finset D.Places)
+    (y : D.Places → D.F) (N : D.Places → ℤ) :
+    ∃ b : D.F, ∀ v ∈ V, b - y v = 0 ∨ N v ≤ D.ord v (b - y v) := sorry
+
+/-- **THE MULTI-PLACE BOUND**, `Σ_{v ∈ V} e_v·f_v ≤ [F : K⟮g⟯]`, over ANY finite set `V` of
+poles of a transcendental `g` (PROVEN, over `exists_approx` alone).
+
+This is `mul_card_le_finrank_adjoin_of_ord_neg` run at all the places of `V` at once.  The
+family exhibited is indexed by `Σ v ∈ V, Fin f_v × Fin e_v`; for each triple `(v, i, k)` weak
+approximation supplies a single `b_{v,i,k} ∈ F` with
+
+* `b_{v,i,k} ≡ s_{v,i}·t_v^k  (mod 𝔪_v^{e_v})`, and
+* `b_{v,i,k} ≡ 0  (mod 𝔪_w^{e_w})` at every OTHER pole `w ∈ V`.
+
+Given a `K⟮g⟯`-relation between them, clear denominators to `λ_q = P_q(g)` with `P_{q₀} ≠ 0`,
+put `d := max_q deg P_q`, and let `q* = (v₀, i*, k*)` attain it.  Reading orders at `v₀`:
+
+* a term from a pole `w ≠ v₀` has order `≥ −e·d + e`, since `ord_{v₀} λ_q ≥ −e·d` by
+  `ord_aeval_of_ord_neg` and `ord_{v₀} b_q ≥ e` by the second clause above;
+* an approximation error at `v₀` contributes the same bound, for the same two reasons;
+* what survives is `Σ_k z_k·t_{v₀}^k` with `z_k = Σ_i P_{(v₀,i,k)}(g)·s_{v₀,i}`, and
+  `ord_{v₀}(z_k·t_{v₀}^k) = −e·d_k + k` by the single-place residue computation — pairwise
+  DISTINCT because `0 ≤ k < e`, so `ord_sum_eq_of_unique_min` applies.
+
+Since `d_{k*} = d`, the minimum of those orders is `≤ −e·d + k* < −e·d + e`, i.e. STRICTLY
+below the remainder's bound; so the total has that order and in particular is nonzero.
+**Choosing `v₀` to be the pole of an index attaining the GLOBAL maximum degree is the step the
+naive attempt lacks** — with any other choice the `v₀`-part can be absorbed by the remainder
+and no contradiction follows.
+
+`ee` and `ff` are arbitrary functions and `s` is a TOTAL family; only their values on `V` are
+constrained.  That is deliberate: it lets a caller build `s` with a single `choose` over all
+places, with the off-`V` branch discharged by `fun _ => 0`, instead of carrying a membership
+proof inside the data.  The caller instantiates `ee v = (−ord_v g).toNat` and
+`ff v = [κ(v) : K]`, both of which are non-junk on `V` by `finite_residue_of_ord_neg`. -/
+theorem sum_mul_card_le_finrank_adjoin (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    {g : D.F} (hg : Transcendental K g)
+    (V : Finset D.Places) (ee ff : D.Places → ℕ)
+    (hee : ∀ v ∈ V, D.ord v g = -(ee v : ℤ)) (hee0 : ∀ v ∈ V, 0 < ee v)
+    (s : ∀ v : D.Places, Fin (ff v) → D.valRing v)
+    (hs : ∀ v ∈ V, LinearIndependent K (fun i => Ideal.Quotient.mk (D.valMax v) (s v i))) :
+    ∑ v ∈ V, ee v * ff v ≤ Module.finrank (IntermediateField.adjoin K {g}) D.F := by
+  classical
+  haveI hfd : FiniteDimensional (IntermediateField.adjoin K {g}) D.F :=
+    finiteDimensional_adjoin_of_transcendental D hg
+  have hg0 : g ≠ 0 := by
+    rintro rfl; exact hg (isAlgebraic_zero)
+  -- uniformisers
+  choose t ht using D.ord_surjective
+  have ht0 : ∀ v : D.Places, t v ≠ 0 := by
+    intro v h; have h1 := ht v; rw [h, D.ord_zero] at h1; omega
+  -- the approximation family, in a per-place interface
+  have hbex : ∀ (v : {x // x ∈ V}) (u : D.F),
+      ∃ b : D.F, (b - u = 0 ∨ (ee (v : D.Places) : ℤ) ≤ D.ord (v : D.Places) (b - u)) ∧
+        ∀ w ∈ V, w ≠ (v : D.Places) → (b = 0 ∨ (ee w : ℤ) ≤ D.ord w b) := by
+    rintro ⟨v, hv⟩ u
+    obtain ⟨b, hbb⟩ :=
+      exists_approx D V (fun w => if w = v then u else 0) (fun w => (ee w : ℤ))
+    refine ⟨b, by simpa using hbb v hv, fun w hw hwv => by simpa [hwv] using hbb w hw⟩
+  choose bb hbb1 hbb2 using hbex
+  set I : Type := Σ v : {x // x ∈ V}, Fin (ff (v : D.Places)) × Fin (ee (v : D.Places))
+    with hIdef
+  obtain ⟨u, hu⟩ : ∃ u : I → D.F, ∀ q : I,
+      u q = (s (q.1 : D.Places) q.2.1 : D.F) * t (q.1 : D.Places) ^ ((q.2.2 : ℕ)) :=
+    ⟨_, fun _ => rfl⟩
+  obtain ⟨B, hB⟩ : ∃ B : I → D.F, ∀ q : I, B q = bb q.1 (u q) := ⟨_, fun _ => rfl⟩
+  have hcard : Fintype.card I = ∑ v ∈ V, ee v * ff v := by
+    have h1 : Fintype.card I = ∑ v : {x // x ∈ V}, (ff (v : D.Places) * ee (v : D.Places)) := by
+      show Fintype.card (Σ v : {x // x ∈ V},
+        Fin (ff (v : D.Places)) × Fin (ee (v : D.Places))) = _
+      rw [Fintype.card_sigma]
+      exact Finset.sum_congr rfl (fun v _ => by simp)
+    rw [h1, Finset.sum_coe_sort V (fun v => ff v * ee v)]
+    exact Finset.sum_congr rfl (fun v _ => Nat.mul_comm _ _)
+  have hindep : LinearIndependent (↥(IntermediateField.adjoin K {g})) B := by
+    rw [Fintype.linearIndependent_iff]
+    intro c hc q₀
+    by_contra hcq0
+    have hsmul : ∀ (y : ↥(IntermediateField.adjoin K {g})) (x : D.F), y • x = (y : D.F) * x :=
+      fun _ _ => rfl
+    -- STEP 1: clear denominators.
+    have hden : ∀ q : I, ∃ p w : K[X], aeval g w ≠ 0 ∧ (c q : D.F) * aeval g w = aeval g p := by
+      intro q
+      obtain ⟨r, uu, hru⟩ :=
+        (IntermediateField.mem_adjoin_simple_iff (F := K) (α := g) ((c q : D.F))).mp (c q).2
+      rcases eq_or_ne (aeval g uu) 0 with hu0 | hu0
+      · exact ⟨0, 1, by simp, by rw [hru, hu0, div_zero]; simp⟩
+      · exact ⟨r, uu, hu0, by rw [hru]; field_simp⟩
+    choose pp ww hww hcw using hden
+    set W : K[X] := ∏ q : I, ww q with hWdef
+    have hWne : aeval g W ≠ 0 := by
+      rw [hWdef, map_prod]
+      exact Finset.prod_ne_zero_iff.mpr (fun q _ => hww q)
+    have hPex : ∀ q : I, ∃ P : K[X], (c q : D.F) * aeval g W = aeval g P := by
+      intro q
+      refine ⟨pp q * ∏ q' ∈ Finset.univ.erase q, ww q', ?_⟩
+      simp only [map_mul, map_prod, hWdef]
+      rw [← Finset.mul_prod_erase Finset.univ (fun q' => aeval g (ww q')) (Finset.mem_univ q),
+        ← mul_assoc, hcw q]
+    choose P hP using hPex
+    have hPq0 : P q₀ ≠ 0 := by
+      intro h
+      apply hcq0
+      have hz := hP q₀
+      rw [h, map_zero] at hz
+      rcases mul_eq_zero.mp hz with h1 | h1
+      · exact Subtype.ext h1
+      · exact absurd h1 hWne
+    -- STEP 2: the relation with polynomial coefficients.
+    have hrel : ∑ q : I, aeval g (P q) * B q = 0 := by
+      have h1 := congrArg (fun x : D.F => x * aeval g W) hc
+      simp only [zero_mul, Finset.sum_mul] at h1
+      rw [← h1]
+      refine Finset.sum_congr rfl (fun q _ => ?_)
+      rw [← hP q, hsmul]
+      ring
+    -- STEP 3: the global degree and an index attaining it.
+    set d : ℕ := Finset.univ.sup (fun q : I => (P q).natDegree) with hddef
+    have hdle : ∀ q : I, (P q).natDegree ≤ d := fun q =>
+      Finset.le_sup (f := fun q : I => (P q).natDegree) (Finset.mem_univ q)
+    have hqmax : ∃ q : I, P q ≠ 0 ∧ (P q).natDegree = d := by
+      obtain ⟨q₂, -, hq₂⟩ := Finset.exists_mem_eq_sup (Finset.univ : Finset I)
+        ⟨q₀, Finset.mem_univ q₀⟩ (fun q : I => (P q).natDegree)
+      rcases eq_or_ne (P q₂) 0 with h0 | h0
+      · have hd0 : d = 0 := by rw [hddef, hq₂, h0, Polynomial.natDegree_zero]
+        exact ⟨q₀, hPq0, by have := hdle q₀; omega⟩
+      · exact ⟨q₂, h0, by rw [hddef, hq₂]⟩
+    obtain ⟨⟨v₀, i₀, k₀⟩, hqs0, hqsd⟩ := hqmax
+    have hw₀V : (v₀ : D.Places) ∈ V := v₀.2
+    have he : D.ord (v₀ : D.Places) g = -((ee (v₀ : D.Places) : ℕ) : ℤ) := hee _ hw₀V
+    have he0 : 0 < ee (v₀ : D.Places) := hee0 _ hw₀V
+    have he0' : (0 : ℤ) < ((ee (v₀ : D.Places) : ℕ) : ℤ) := by exact_mod_cast he0
+    -- STEP 4: the `v₀`-part, grouped by the power of the uniformiser.
+    set z : Fin (ee (v₀ : D.Places)) → D.F := fun k =>
+      ∑ i : Fin (ff (v₀ : D.Places)),
+        aeval g (P ⟨v₀, (i, k)⟩) * (s (v₀ : D.Places) i : D.F) with hzdef
+    set dk : Fin (ee (v₀ : D.Places)) → ℕ := fun k =>
+      Finset.univ.sup (fun i : Fin (ff (v₀ : D.Places)) => (P ⟨v₀, (i, k)⟩).natDegree)
+      with hdkdef
+    have hkey : ∀ k : Fin (ee (v₀ : D.Places)), (∃ i, P ⟨v₀, (i, k)⟩ ≠ 0) →
+        z k ≠ 0 ∧ D.ord (v₀ : D.Places) (z k)
+          = -((ee (v₀ : D.Places) : ℕ) : ℤ) * ((dk k : ℕ) : ℤ) := by
+      intro k hk
+      obtain ⟨i₁, hi₁⟩ := hk
+      have hdle' : ∀ i : Fin (ff (v₀ : D.Places)), (P ⟨v₀, (i, k)⟩).natDegree ≤ dk k := fun i =>
+        Finset.le_sup (f := fun i : Fin (ff (v₀ : D.Places)) => (P ⟨v₀, (i, k)⟩).natDegree)
+          (Finset.mem_univ i)
+      have hcoeff : ∃ i, (P ⟨v₀, (i, k)⟩).coeff (dk k) ≠ 0 := by
+        obtain ⟨i₂, -, hi₂⟩ :=
+          Finset.exists_mem_eq_sup (Finset.univ : Finset (Fin (ff (v₀ : D.Places))))
+            ⟨i₁, Finset.mem_univ i₁⟩
+            (fun i : Fin (ff (v₀ : D.Places)) => (P ⟨v₀, (i, k)⟩).natDegree)
+        rcases eq_or_ne (P ⟨v₀, (i₂, k)⟩) 0 with h0 | h0
+        · refine ⟨i₁, ?_⟩
+          have hd0 : dk k = 0 := by
+            rw [hdkdef]; simp only []; rw [hi₂, h0, Polynomial.natDegree_zero]
+          have hdeg : (P ⟨v₀, (i₁, k)⟩).natDegree = 0 := Nat.le_zero.mp (hd0 ▸ hdle' i₁)
+          rw [hd0, ← hdeg]
+          exact Polynomial.leadingCoeff_ne_zero.mpr hi₁
+        · refine ⟨i₂, ?_⟩
+          have hdd : dk k = (P ⟨v₀, (i₂, k)⟩).natDegree := by rw [hdkdef]; exact hi₂
+          rw [hdd]
+          exact Polynomial.leadingCoeff_ne_zero.mpr h0
+      obtain ⟨iz, hiz⟩ := hcoeff
+      set Bk : D.F := ∑ i, algebraMap K D.F ((P ⟨v₀, (i, k)⟩).coeff (dk k))
+        * (s (v₀ : D.Places) i : D.F) with hBkdef
+      set Ak : D.F := z k * (g⁻¹) ^ (dk k) with hAkdef
+      have hcong : D.VanishesAt (v₀ : D.Places) (Ak - Bk) := by
+        have hexp : Ak - Bk = ∑ i : Fin (ff (v₀ : D.Places)),
+            (aeval g (P ⟨v₀, (i, k)⟩) * (g⁻¹) ^ (dk k)
+              - algebraMap K D.F ((P ⟨v₀, (i, k)⟩).coeff (dk k))) * (s (v₀ : D.Places) i : D.F) := by
+          rw [hAkdef, hBkdef, hzdef]
+          simp only [Finset.sum_mul, ← Finset.sum_sub_distrib]
+          exact Finset.sum_congr rfl (fun i _ => by ring)
+        rw [hexp]
+        refine vanishesAt_sum D (v₀ : D.Places) _ _ (fun i _ => ?_)
+        rw [mul_comm]
+        exact vanishesAt_mul_left (s (v₀ : D.Places) i).2
+          (vanishesAt_aeval_mul_inv_pow D (v₀ : D.Places) hg0 he he0' _ _ (hdle' i))
+      have hnvB : ¬ D.VanishesAt (v₀ : D.Places) Bk :=
+        not_vanishesAt_combination D (v₀ : D.Places) (s (v₀ : D.Places)) (hs _ hw₀V) _ hiz
+      have hnvA : ¬ D.VanishesAt (v₀ : D.Places) Ak := by
+        intro h
+        refine hnvB ?_
+        have hBeq : Bk = Ak + (-(Ak - Bk)) := by ring
+        rw [hBeq]
+        exact vanishesAt_add h (vanishesAt_neg hcong)
+      have hAnonneg : 0 ≤ D.ord (v₀ : D.Places) Ak := by
+        have hBmem : Bk ∈ D.valRing (v₀ : D.Places) := by
+          rw [hBkdef]
+          exact Subalgebra.sum_mem _ (fun i _ =>
+            Subalgebra.mul_mem _ (Subalgebra.algebraMap_mem _ _) (s (v₀ : D.Places) i).2)
+        have hABmem : Ak - Bk ∈ D.valRing (v₀ : D.Places) := ord_nonneg_of_vanishesAt D hcong
+        have hAeq : Ak = Bk + (Ak - Bk) := by ring
+        rw [hAeq]
+        exact Subalgebra.add_mem _ hBmem hABmem
+      obtain ⟨hAne, hAnpos⟩ := not_or.mp hnvA
+      have hA0 : D.ord (v₀ : D.Places) Ak = 0 := by omega
+      have hzk0 : z k ≠ 0 := by
+        intro h; exact hAne (by rw [hAkdef, h, zero_mul])
+      refine ⟨hzk0, ?_⟩
+      have hgi0 : g⁻¹ ≠ 0 := inv_ne_zero hg0
+      have hsplit : D.ord (v₀ : D.Places) Ak
+          = D.ord (v₀ : D.Places) (z k) + ((dk k : ℕ) : ℤ) * D.ord (v₀ : D.Places) g⁻¹ := by
+        rw [hAkdef, D.ord_mul (v₀ : D.Places) _ _ hzk0 (pow_ne_zero _ hgi0),
+          ord_pow D (v₀ : D.Places) _ hgi0]
+      have hordi : D.ord (v₀ : D.Places) g⁻¹ = ((ee (v₀ : D.Places) : ℕ) : ℤ) := by
+        rw [D.ord_inv (v₀ : D.Places) g hg0, he, neg_neg]
+      rw [hordi, hA0] at hsplit
+      linarith [hsplit]
+    -- STEP 5: split the relation into the `v₀`-part and a remainder of large order.
+    obtain ⟨R, hRdef⟩ : ∃ R : D.F,
+        R = ∑ q : I, aeval g (P q) * (B q - (if q.1 = v₀ then u q else 0)) := ⟨_, rfl⟩
+    obtain ⟨S, hSdef⟩ : ∃ S : D.F,
+        S = ∑ k : Fin (ee (v₀ : D.Places)), z k * t (v₀ : D.Places) ^ ((k : ℕ)) := ⟨_, rfl⟩
+    have hYord : ∀ q : I, (B q - (if q.1 = v₀ then u q else 0)) = 0
+        ∨ ((ee (v₀ : D.Places) : ℕ) : ℤ)
+            ≤ D.ord (v₀ : D.Places) (B q - (if q.1 = v₀ then u q else 0)) := by
+      intro q
+      rcases eq_or_ne q.1 v₀ with h | h
+      · have h1 := hbb1 q.1 (u q)
+        rw [h] at h1
+        rw [if_pos h, hB q, h]
+        exact h1
+      · rw [if_neg h, sub_zero, hB q]
+        exact hbb2 q.1 (u q) (v₀ : D.Places) hw₀V (fun hcoe => h (Subtype.ext hcoe.symm))
+    have hAR : (∑ q : I, aeval g (P q) * (if q.1 = v₀ then u q else 0)) + R = 0 := by
+      rw [hRdef, ← Finset.sum_add_distrib, ← hrel]
+      exact Finset.sum_congr rfl (fun q _ => by ring)
+    have hRord : R = 0 ∨ -((ee (v₀ : D.Places) : ℕ) : ℤ) * ((d : ℕ) : ℤ)
+        + ((ee (v₀ : D.Places) : ℕ) : ℤ) ≤ D.ord (v₀ : D.Places) R := by
+      rw [hRdef]
+      refine ord_sum_ge D (v₀ : D.Places) Finset.univ _ _ (fun q _ => ?_)
+      rcases eq_or_ne (P q) 0 with hP0 | hP0
+      · exact Or.inl (by rw [hP0, map_zero, zero_mul])
+      rcases hYord q with hY0 | hY
+      · exact Or.inl (by rw [hY0, mul_zero])
+      right
+      obtain ⟨hane, haord⟩ :=
+        ord_aeval_of_ord_neg D (v₀ : D.Places) (m := -((ee (v₀ : D.Places) : ℕ) : ℤ))
+          (by omega) he hP0
+      have hYne : (B q - (if q.1 = v₀ then u q else 0)) ≠ 0 := by
+        intro h0; rw [h0, D.ord_zero] at hY; omega
+      rw [D.ord_mul (v₀ : D.Places) _ _ hane hYne, haord]
+      have hdq : (((P q).natDegree : ℕ) : ℤ) ≤ ((d : ℕ) : ℤ) := by exact_mod_cast hdle q
+      have hmul : ((ee (v₀ : D.Places) : ℕ) : ℤ) * (((P q).natDegree : ℕ) : ℤ)
+          ≤ ((ee (v₀ : D.Places) : ℕ) : ℤ) * ((d : ℕ) : ℤ) :=
+        mul_le_mul_of_nonneg_left hdq (le_of_lt he0')
+      linarith [hY, hmul]
+    have hA : (∑ q : I, aeval g (P q) * (if q.1 = v₀ then u q else 0)) = S := by
+      have hsig : ∑ q : I, aeval g (P q) * (if q.1 = v₀ then u q else 0)
+          = ∑ v : {x // x ∈ V}, ∑ p : Fin (ff (v : D.Places)) × Fin (ee (v : D.Places)),
+              aeval g (P ⟨v, p⟩) * (if (⟨v, p⟩ : I).1 = v₀ then u ⟨v, p⟩ else 0) := by
+        rw [← Finset.univ_sigma_univ, Finset.sum_sigma]
+      rw [hsig, hSdef, Finset.sum_eq_single v₀]
+      · have hif : ∀ p : Fin (ff (v₀ : D.Places)) × Fin (ee (v₀ : D.Places)),
+            aeval g (P ⟨v₀, p⟩) * (if (⟨v₀, p⟩ : I).1 = v₀ then u ⟨v₀, p⟩ else 0)
+              = aeval g (P ⟨v₀, p⟩) * u ⟨v₀, p⟩ := fun _ => by rw [if_pos rfl]
+        rw [Finset.sum_congr rfl (fun p (_ : p ∈ Finset.univ) => hif p)]
+        rw [Fintype.sum_prod_type, Finset.sum_comm]
+        refine Finset.sum_congr rfl (fun k _ => ?_)
+        rw [hzdef]
+        simp only [Finset.sum_mul]
+        refine Finset.sum_congr rfl (fun i _ => ?_)
+        rw [hu ⟨v₀, (i, k)⟩]
+        ring
+      · intro v _ hv
+        exact Finset.sum_eq_zero (fun p _ => by rw [if_neg hv, mul_zero])
+      · intro h; exact absurd (Finset.mem_univ v₀) h
+    -- STEP 6: the `v₀`-part has an order below the remainder's, so the sum cannot vanish.
+    have hordT : ∀ k ∈ Finset.univ.filter (fun k : Fin (ee (v₀ : D.Places)) => z k ≠ 0),
+        D.ord (v₀ : D.Places) (z k * t (v₀ : D.Places) ^ ((k : ℕ)))
+          = -((ee (v₀ : D.Places) : ℕ) : ℤ) * ((dk k : ℕ) : ℤ) + ((k : ℕ) : ℤ) := by
+      intro k hk
+      have hzk : z k ≠ 0 := (Finset.mem_filter.mp hk).2
+      have hex : ∃ i, P ⟨v₀, (i, k)⟩ ≠ 0 := by
+        by_contra hcon
+        push Not at hcon
+        refine hzk ?_
+        rw [hzdef]
+        simp only []
+        exact Finset.sum_eq_zero (fun i _ => by rw [hcon i, map_zero, zero_mul])
+      rw [D.ord_mul (v₀ : D.Places) _ _ hzk (pow_ne_zero _ (ht0 _)),
+        ord_pow D (v₀ : D.Places) _ (ht0 _), ht (v₀ : D.Places), (hkey k hex).2]
+      ring
+    have hk₀T : k₀ ∈ Finset.univ.filter (fun k : Fin (ee (v₀ : D.Places)) => z k ≠ 0) := by
+      rw [Finset.mem_filter]
+      exact ⟨Finset.mem_univ _, (hkey k₀ ⟨i₀, hqs0⟩).1⟩
+    have hdk₀ : dk k₀ = d := by
+      have h1 : (P ⟨v₀, (i₀, k₀)⟩).natDegree ≤ dk k₀ :=
+        Finset.le_sup (f := fun i => (P ⟨v₀, (i, k₀)⟩).natDegree) (Finset.mem_univ i₀)
+      have h2 : dk k₀ ≤ d := by
+        rw [hdkdef]
+        exact Finset.sup_le (fun i _ => hdle ⟨v₀, (i, k₀)⟩)
+      omega
+    obtain ⟨km, hkmT, hkmmin⟩ :=
+      (Finset.univ.filter (fun k : Fin (ee (v₀ : D.Places)) => z k ≠ 0)).exists_min_image
+        (fun k => D.ord (v₀ : D.Places) (z k * t (v₀ : D.Places) ^ ((k : ℕ)))) ⟨k₀, hk₀T⟩
+    have hzkm : z km * t (v₀ : D.Places) ^ ((km : ℕ)) ≠ 0 :=
+      mul_ne_zero (Finset.mem_filter.mp hkmT).2 (pow_ne_zero _ (ht0 _))
+    have huniq : ∀ k ∈ Finset.univ.filter (fun k : Fin (ee (v₀ : D.Places)) => z k ≠ 0),
+        k ≠ km → z k * t (v₀ : D.Places) ^ ((k : ℕ)) = 0
+          ∨ D.ord (v₀ : D.Places) (z km * t (v₀ : D.Places) ^ ((km : ℕ)))
+            < D.ord (v₀ : D.Places) (z k * t (v₀ : D.Places) ^ ((k : ℕ))) := by
+      intro k hk hkne
+      right
+      refine lt_of_le_of_ne (hkmmin k hk) ?_
+      rw [hordT km hkmT, hordT k hk]
+      intro heq
+      have hkl : ((k : ℕ) : ℤ) < ((ee (v₀ : D.Places) : ℕ) : ℤ) := by exact_mod_cast k.isLt
+      have hkml : ((km : ℕ) : ℤ) < ((ee (v₀ : D.Places) : ℕ) : ℤ) := by exact_mod_cast km.isLt
+      have hkne' : ((k : ℕ) : ℤ) ≠ ((km : ℕ) : ℤ) := by
+        intro h; exact hkne (Fin.ext (by exact_mod_cast h))
+      have hm : ((ee (v₀ : D.Places) : ℕ) : ℤ) * (((dk k : ℕ) : ℤ) - ((dk km : ℕ) : ℤ))
+          = ((k : ℕ) : ℤ) - ((km : ℕ) : ℤ) := by linarith [heq]
+      rcases lt_trichotomy (((dk k : ℕ) : ℤ) - ((dk km : ℕ) : ℤ)) 0 with hlt | hz0 | hgt
+      · nlinarith [Int.le_of_lt_add_one
+          (by omega : ((dk k : ℕ) : ℤ) - ((dk km : ℕ) : ℤ) < 0 + 1)]
+      · rw [hz0, mul_zero] at hm; omega
+      · nlinarith
+    obtain ⟨hSum_ne, hSum_ord⟩ := ord_sum_eq_of_unique_min D (v₀ : D.Places)
+      (Finset.univ.filter (fun k : Fin (ee (v₀ : D.Places)) => z k ≠ 0))
+      (fun k => z k * t (v₀ : D.Places) ^ ((k : ℕ))) hkmT hzkm huniq
+    have hST : S = ∑ k ∈ Finset.univ.filter (fun k : Fin (ee (v₀ : D.Places)) => z k ≠ 0),
+        z k * t (v₀ : D.Places) ^ ((k : ℕ)) := by
+      rw [hSdef]
+      refine (Finset.sum_subset (Finset.subset_univ _) ?_).symm
+      intro k _ hk
+      have hz0 : z k = 0 := by
+        by_contra hcon
+        exact hk (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hcon⟩)
+      rw [hz0, zero_mul]
+    have hSne : S ≠ 0 := by rw [hST]; exact hSum_ne
+    have hbound : D.ord (v₀ : D.Places) S
+        < -((ee (v₀ : D.Places) : ℕ) : ℤ) * ((d : ℕ) : ℤ) + ((ee (v₀ : D.Places) : ℕ) : ℤ) := by
+      have h1 := hkmmin k₀ hk₀T
+      rw [hordT k₀ hk₀T, hdk₀] at h1
+      have hk₀lt : ((k₀ : ℕ) : ℤ) < ((ee (v₀ : D.Places) : ℕ) : ℤ) := by exact_mod_cast k₀.isLt
+      rw [hST, hSum_ord]
+      linarith
+    rw [hA] at hAR
+    rcases hRord with hR0 | hR
+    · exact hSne (by rw [hR0, add_zero] at hAR; exact hAR)
+    · have hRne : R ≠ 0 := by
+        intro h0
+        rw [h0, add_zero] at hAR
+        exact hSne hAR
+      have hSR : S = -R := by linear_combination hAR
+      rw [hSR, ord_neg D (v₀ : D.Places) _ hRne] at hbound
+      linarith
+  rw [← hcard]
+  exact hindep.fintype_card_le_finrank
+
+end PlaceData
+
+/-- Bookkeeping: the degree of the pole divisor as a sum over the poles. -/
+theorem degHom_poleDivisor_eq (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) (hg0 : g ≠ 0) :
+    degHom D D.degOf (D.poleDivisor g)
+      = ∑ v ∈ (D.poleDivisor g).support, (-D.ord v g) * D.degOf v := by
+  rw [degHom, Finsupp.liftAddHom_apply]
+  refine Finset.sum_congr rfl (fun v hv => ?_)
+  have hne := Finsupp.mem_support_iff.mp hv
+  have h2 : D.poleDivisor g v = max (-(D.ord v g)) 0 := by
+    rw [PlaceData.poleDivisor_apply D g v, PlaceData.divisor_apply D hg0 v]
+  have h4 : D.poleDivisor g v = -D.ord v g := by omega
+  simp only [mulRightHom, AddMonoidHom.coe_mk, ZeroHom.coe_mk]
+  rw [h4]
+
+/-- Every place in the support of the pole divisor is a genuine pole. -/
+theorem ord_neg_of_mem_support_poleDivisor (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F)
+    (hg0 : g ≠ 0) {v : D.Places} (hv : v ∈ (D.poleDivisor g).support) : D.ord v g < 0 := by
+  have hne := Finsupp.mem_support_iff.mp hv
+  have h2 : D.poleDivisor g v = max (-(D.ord v g)) 0 := by
+    rw [PlaceData.poleDivisor_apply D g v, PlaceData.divisor_apply D hg0 v]
+  omega
+
+end MultiPlaceBound
+
+set_option synthInstance.maxHeartbeats 1000000 in
 /-- **LEAF (fundamental identity, first inequality): `deg (div_∞ g) ≤ [F : K⟮g⟯]`.**
 
 [Stichtenoth, *Algebraic Function Fields and Codes*, Thm. 1.4.11, part (a)]:
@@ -5780,10 +6227,30 @@ non-junk:
   `0 ≤ k < e_v`, and the strict ultrametric equality forbids the sum from vanishing.
 
 What that argument cannot do is run at several places at once: it needs `t_v` and `s_{v,i}`
-to be units at the OTHER poles, which is the approximation theorem
-([Stichtenoth, Thm. 1.3.1]) and is the genuinely missing input.  A prover should expect to
-have to prove approximation from `ord_injective` + `ord_complete` first, or to find a
-route that sums the single-place bounds without it.
+to be controlled at the OTHER poles, which is the approximation theorem
+([Stichtenoth, Thm. 1.3.1]).
+
+## PROVEN 2026-08-01, over weak approximation and nothing else
+
+The paragraph above ended, until this commit, "…and is the genuinely missing input.  A prover
+should expect to have to prove approximation from `ord_injective` + `ord_complete` first".
+That was right about WHICH input is missing and wrong about the price of everything else: the
+passage from one place to the sum is now `PlaceData.sum_mul_card_le_finrank_adjoin` in the
+section `MultiPlaceBound` immediately above, and the only leaf under it is
+`PlaceData.exists_approx`, weak approximation stated with no hypothesis at all.  (It is
+`ord_injective` and not `ord_complete` that approximation spends; see that leaf's docstring.)
+
+So this theorem is an assembly: `degHom_poleDivisor_eq` turns the left-hand side into
+`Σ_{v ∈ supp} (−ord_v g)·deg v`, `finite_residue_of_ord_neg` says every factor on the right is
+a genuine dimension rather than `Module.finrank`'s junk `0`, and the multi-place bound is
+applied with `e_v = (−ord_v g).toNat` and `f_v = [κ(v) : K]`.
+
+**The frontier did not move**: one leaf out, one leaf in.  What changed is that the surviving
+leaf is a standard, reusable, hypothesis-free theorem of valuation theory with a name in a
+textbook, instead of a statement about pole divisors and field degrees — and that the second
+inequality `finrank_le_degOf_poleDivisor_of_transcendental` below, which needs Riemann spaces
+and NOT approximation, is now the only other thing between this file and the fundamental
+identity.
 
 **What would refute it**: nothing about the sextic — this is general function-field theory,
 so `hsep` is deliberately absent.  A counterexample would have to be a `PlaceData` with a
@@ -5792,7 +6259,49 @@ above rules that out. -/
 theorem degOf_poleDivisor_le_finrank_of_transcendental {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type}
     [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) (hg : Transcendental K g) :
     degHom D D.degOf (D.poleDivisor g)
-      ≤ (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) := sorry
+      ≤ (Module.finrank (IntermediateField.adjoin K {g}) D.F : ℤ) := by
+  classical
+  have hg0 : g ≠ 0 := by rintro rfl; exact hg isAlgebraic_zero
+  have hVneg : ∀ v ∈ (D.poleDivisor g).support, D.ord v g < 0 := fun v hv =>
+    ord_neg_of_mem_support_poleDivisor D g hg0 hv
+  have hee : ∀ v ∈ (D.poleDivisor g).support,
+      D.ord v g = -(((-D.ord v g).toNat : ℕ) : ℤ) := by
+    intro v hv; have h := hVneg v hv; omega
+  have hee0 : ∀ v ∈ (D.poleDivisor g).support, 0 < (-D.ord v g).toNat := by
+    intro v hv; have h := hVneg v hv; omega
+  have hex : ∀ v : D.Places, ∃ σ : Fin (Module.finrank K (D.residue v)) → D.valRing v,
+      v ∈ (D.poleDivisor g).support →
+        LinearIndependent K (fun i => Ideal.Quotient.mk (D.valMax v) (σ i)) := by
+    intro v
+    by_cases hv : v ∈ (D.poleDivisor g).support
+    · haveI : Module.Finite K (D.residue v) :=
+        PlaceData.finite_residue_of_ord_neg D hg v (hVneg v hv)
+      have hsurj : ∀ i : Fin (Module.finrank K (D.residue v)), ∃ x : D.valRing v,
+          Ideal.Quotient.mk (D.valMax v) x = Module.finBasis K (D.residue v) i :=
+        fun i => Ideal.Quotient.mk_surjective _
+      choose σ hσ using hsurj
+      refine ⟨σ, fun _ => ?_⟩
+      have hfe : (fun i => Ideal.Quotient.mk (D.valMax v) (σ i))
+          = fun i => Module.finBasis K (D.residue v) i := funext hσ
+      rw [hfe]
+      exact (Module.finBasis K (D.residue v)).linearIndependent
+    · exact ⟨fun _ => 0, fun h => absurd h hv⟩
+  choose s hs using hex
+  have hmain := PlaceData.sum_mul_card_le_finrank_adjoin D hg (D.poleDivisor g).support
+    (fun v => (-D.ord v g).toNat) (fun v => Module.finrank K (D.residue v)) hee hee0 s hs
+  rw [degHom_poleDivisor_eq D g hg0]
+  have hconv : ∑ v ∈ (D.poleDivisor g).support, (-D.ord v g) * D.degOf v
+      = ((∑ v ∈ (D.poleDivisor g).support,
+          (-D.ord v g).toNat * Module.finrank K (D.residue v) : ℕ) : ℤ) := by
+    rw [Nat.cast_sum]
+    refine Finset.sum_congr rfl (fun v hv => ?_)
+    have h := hVneg v hv
+    have h1 : (-D.ord v g) = (((-D.ord v g).toNat : ℕ) : ℤ) := by omega
+    have h2 : D.degOf v = ((Module.finrank K (D.residue v) : ℕ) : ℤ) := rfl
+    rw [h2, Nat.cast_mul]
+    exact congrArg (fun x : ℤ => x * ((Module.finrank K (D.residue v) : ℕ) : ℤ)) h1
+  rw [hconv]
+  exact_mod_cast hmain
 
 /-- **LEAF (fundamental identity, second inequality): `[F : K⟮g⟯] ≤ deg (div_∞ g)`.**
 
