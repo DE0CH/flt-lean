@@ -29413,3 +29413,72 @@ here on `lake env lean`'s current output, which is the `error(lean.…)`
 parenthesised form above and matches the `: error(` alternative.
 **And whichever recipe you use, the `EXIT=` line you appended yourself outranks
 it.**  A count is a summary of a log; `EXIT=` is a statement about the process.
+## A CLAUSE THAT TIES THE OUTPUT TO AN ARBITRARY INPUT TURNS AN `∃` LEAF BACK INTO A `∀` ONE — silently, and the collapse is mechanical
+(2026-08-02, `flt-lean-243`, auditing `exists_commutingHeckeAlbaneseFamily_values`
+This development is full of leaves of the shape
+> given an arbitrary `v` satisfying a LOOSE pin, **∃** a replacement `w` that is
+> pinned the same way and additionally is good,
+and the existential is deliberate and load-bearing: the pin is loose (it is a
+`∀` over data that may be uninhabited, or inhabited only sparsely), so the
+`∀ v, v is good` form is FALSE and every such leaf's docstring says so, usually
+with an `End(J) ⊇ M₂(ℤ)` witness.
+**A later cut then adds a clause tying `w` to `v`, to transport some property of
+`v` across the replacement, and that clause converts the `∃` back into the `∀`
+the docstring just refused.** Here the clause was
+`★ : ∀ n, w n = v n ∨ w n = 𝟙 J`, added to carry an Atkin–Lehner commutation.
+Nothing about it looks universal; its own defence — *"★ is the intended
+construction written down, not an extra demand"* — is true of the two settled
+regimes and is exactly what fails in the third.
+**THE COLLAPSE IS TWO MECHANICAL STEPS, AND BOTH ARE CHECKABLE IN MINUTES.**
+1. *Resolve the alternatives against the OTHER clauses of the conclusion.* ★
+   offers two values; the conclusion also demands `w` be pinned. So at every
+   arity where the alternative (`𝟙 J`) fails the pin, ★ is an EQUATION
+   `w ℓ = v ℓ`, and the remaining clauses become statements about `v` itself.
+   Write down the set `B` of arities where that happens — and note `B` depends
+   only on the ambient data, never on `v`, which is what makes step 2 work.
+2. *Perturb `v` at one arity.* If the hypothesis on `v` is a PER-ARITY
+   `∀ ℓ, ∃ e, pin ℓ (v ℓ) e` — and in this development it always is — then for
+   any other pinned `a`, `Function.update v ℓ a` satisfies **every** hypothesis
+   of the leaf, because the leaf's own hypothesis supplies the rest of the
+   family. So the leaf entails its conclusion for `a` as well, and the
+   restriction "`v` extends to a fully pinned family" is **not load-bearing**.
+Together: the leaf now says *for all pinned `a, b` at arities in `B`,
+`a ≫ b = b ≫ a`* — the forbidden `∀`-cut, restricted to `B`. Check whether that
+restriction saves it by computing what `B ≠ ∅` costs: here it needs only TWO
+reached configurations disagreeing, which is far short of the DENSITY the
+forbidden cut was missing, so it does not.
+**THE DIAGNOSTIC THAT FINDS THESE IN ONE `grep`: count the consumers that USE
+the clause.** Of three consumers here, two discarded it with `-` in their
+`obtain` and the third used it ONCE, at one value of one variable. A clause that
+one consumer uses at one instantiation, stated as a universal equation, is
+over-strong by construction.
+**THE REPAIR IS TO STATE THE TRANSPORT, NOT THE VALUES**, and it is usually
+signature-free. Replacing ★ by
+> `✦ : ∀ z, (∀ n, v n ≫ z = z ≫ v n) → ∀ n, w n ≫ z = z ≫ w n`
+("`w` lies in the BICOMMUTANT of `v`") gives the one consumer exactly what it
+read off ★, and:
+* `★ → ✦` is four lines, so **every witness the old docstrings prescribe still
+  works** — the repair is a strict WEAKENING and cannot make a true leaf false
+  or break a consumer. Prove that implication in the scratch and quote it;
+* step 2 does not run against ✦, because ✦ does not force `w ℓ = a`;
+* the CONJUNCT COUNT is unchanged, so the consumers that discard the clause are
+  **byte-identical** and no argument list moves. The whole edit was one clause,
+  one two-line proof fragment, and three docstrings, verified in **7 seconds**
+  in a scratch that `public import`s the target's own olean.
+Generalise past commutation: whenever a clause exists to transport property `P`
+from `v` to `w`, state *"`w` has `P` whenever `v` does"* rather than *"`w` IS
+`v`"*. The second is the first plus an unrelated and much stronger claim.
+**AND THE TELL THAT THE CLUSTER ALREADY KNEW: a third paragraph the clause
+contradicts.** `exists_commutingHeckeAlbaneseFamily_atkinLehner`'s docstring
+ended *"an arbitrary `z` commuting with the input family need not commute with
+the replacement. Do not weaken it that way."* ★ IMPLIES that generalised form,
+so the cluster was assuming and declining one statement at once. **When a clause
+is added to carry a transport, grep the consumer's docstring for a warning about
+that very transport** — the warning is normally about INFERRING it, and the fix
+is to promote it to an OBLIGATION on the producer, which is the safe direction
+and is what the warning meant.
+Accounting note, in the shape the RECUT rule asks for: **the frontier does not
+move, `1 → 1`.** What changed is that the surviving leaf is strictly weaker, no
+longer entails a statement two of its own audits refuse, and degrades in the
+open regime the way its parent does (an existential that may lack a witness)
+rather than becoming refutable.
