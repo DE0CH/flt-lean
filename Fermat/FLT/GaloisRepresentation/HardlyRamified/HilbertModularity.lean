@@ -34466,6 +34466,26 @@ deliberately does NOT need the residue characteristic: it kills the `ℓ'`-part
 using only that `m'` is a unit of `ℤ_ℓ`. The two are complementary, and only the
 wild half ever needed `char k = ℓ`.
 
+# WHAT THE LEAF DOES *NOT* ASK, WHICH MAKES IT EASIER THAN IT READS
+
+**`χ i` is EXISTENTIALLY quantified and is tied to NOTHING but its own two
+clauses.** No clause relates it to `𝒟Q.ρ`, to `isSplitTorusAt`, or to the
+representation at all; it is a bare `MonoidHom` (not required continuous) that
+need only be residually trivial on wild inertia and take the value `1 + t i`
+somewhere on inertia. So a prover is FREE not to use the split torus: any
+character with those two properties will do, and the split-torus clause is a
+suggestion about where to find one, not a constraint the statement imposes.
+
+That is not a vacuity — the clause is load-bearing, and the consumer shows
+exactly how: through
+`pow_natCard_residue_sub_one_eq_one_of_forall_mem_wildInertiaGroup` it forces
+`(1 + t i)^{N (w i) − 1} = 1`, which is the whole reason the diamond generators
+are `ℓ`-power torsion. But it does mean the "PINNED" of the title should be read
+as *pinned enough to carry the torsion bound*, not as *pinned to the
+construction*. A successor who wants the stronger reading — `χ i` IS the
+split-torus character — must add that as a clause; it is not there now, and the
+consumer does not need it.
+
 # FAITHFULNESS
 
 The `ex`-clause `ex i = padicValNat ℓ (N (w i) − 1)` is FREE for the prover: it is
