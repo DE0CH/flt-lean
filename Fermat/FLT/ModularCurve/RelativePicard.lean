@@ -9476,7 +9476,8 @@ the `g¹₂` leaf HANDS THE RATIONAL FUNCTION BACK DIRECTLY, with
 direction that consumes no cohomology; the `h⁰(D) ≥ 2` phrasing produces the
 SAME `f` (as the pencil `⟨1, f⟩`) through strictly more machinery.
 `exists_units_functionField_of_iso_sectionIdeal` at the end of this section is
-that hand-back, and it is PROVEN over the three leaves below.
+that hand-back, and it is PROVEN over the three leaves below — all three of
+which are now closed, so it owes this section nothing.
 
 **THE CHECK THAT WOULD HAVE REFUTED THE WHOLE ROUTE — RUN, AND IT COMES BACK
 NEGATIVE.**  The route correction named one: "an isomorphism of `sectionIdeal`s
@@ -9515,14 +9516,34 @@ Multiplication by `a ∈ K` is likewise pushed forward from `Spec K`
 (`constSmul`), through the endomorphism of `𝒪_{Spec K}` that
 `SheafOfModules.unitHomEquiv` attaches to a global section (`modUnitMul`).
 
-**WHAT IS GENUINELY OPEN HERE — three leaves, and none of them is
-Riemann–Roch.**  `mono_toConstSheaf` (`𝒪_X ↪ 𝒦_X` on an integral scheme),
-`mono_modTensorToUnit` (the product-ideal map `I ⊗ J ⟶ 𝒪_X` is injective for
-invertible ideal sheaves on an integral scheme) and `exists_constSmul_of_iso`
-(THE dictionary: a morphism of invertible subsheaves of `𝒦_X` is multiplication
-by an element of `𝒦_X`).  The first two are local statements about integral
-schemes; the third is the generic-stalk argument written out in its own
-docstring.  Everything else in this section is a definition or is proven.
+**NOTHING IS OPEN HERE ANY MORE (2026-08-02).**  This block owed three leaves —
+`mono_toConstSheaf` (`𝒪_X ↪ 𝒦_X` on an integral scheme), `mono_modTensorToUnit`
+(the product-ideal map `I ⊗ J ⟶ 𝒪_X` is injective for invertible ideal sheaves
+on an integral scheme) and `exists_constSmul_of_iso` (THE dictionary: a morphism
+of invertible subsheaves of `𝒦_X` is multiplication by an element of `𝒦_X`) —
+and none of them was Riemann–Roch.  The first two closed on 2026-07-31, the
+third on 2026-08-02, so obligation (1) of the `g¹₂` route correction is
+discharged and everything in this section is a definition or is proven.
+
+**BUT `exists_units_functionField_of_iso_sectionIdeal` IS NOT YET AXIOM-CLEAN,
+and saying otherwise would be the mistake this file warns about.**  Measured
+with `#print axioms` on 2026-08-02, it still reports `sorryAx`, and the path is
+NOT through this block: it runs `isInvertibleSheaf_sectionIdeal` →
+`isInvertibleSheaf_sectionIdeal_of_isSection` →
+`exists_generator_sectionIdeal_at_section`, the still-open trivialization of
+`𝒪(−σ)` near a section, some 2 700 lines above.  What closing the three leaves
+bought is that the `𝒦_X` dictionary owes nothing; the hand-back's remaining
+debt is the INVERTIBILITY of a section ideal, which is a different statement
+with its own owner.
+
+**What the third one cost, since the route note predicted a stalk argument and
+it was not needed.**  `𝒦_X` is `g_* 𝒪_{Spec K}` by DEFINITION, so
+`Hom(L, 𝒦_X) ≅ Hom(g^*L, 𝒪_{Spec K})` is just the `g^* ⊣ g_*` adjunction; being
+a bijection it discharges the "an identity of morphisms follows from the identity
+on the generic stalk" step for free, and the whole argument moves into
+`(Spec K).Modules`, where the only inputs are local triviality at `η` and the
+fact that every endomorphism of `𝒪` is multiplication by a global section.  So
+the generic STALK never appears — only the generic POINT as a morphism.
 
 **RESIDUAL OBLIGATION FOR THE CONSUMER, and it is NOT discharged here.**
 `exists_units_functionField_of_iso_sectionIdeal` needs
@@ -10008,8 +10029,210 @@ theorem mono_modTensorToUnit {X : Scheme.{u}} [IsIntegral X] {L M : X.Modules}
   haveI := mono_modTensorMap_of_invertible ιL ιM hM hιL hιM
   exact mono_comp _ _
 
+/-! #### `𝒪_Z ⟶ 𝒪_Z` IS MULTIPLICATION BY A GLOBAL SECTION (all PROVEN)
+
+Seven short facts about `modUnitMul`.  Together they say that
+`a ↦ modUnitMul a` is an INJECTIVE, MULTIPLICATIVE map from `Γ(Z, ⊤)` ONTO the
+endomorphism monoid of `𝒪_Z`.  They are what turns the generic-fibre comparison
+inside `exists_constSmul_of_iso` below into an element of `K`.
+
+**The engine is mathlib's `SheafOfModules.unitHomEquiv : (𝒪 ⟶ M) ≃ M.sections`,
+and the one thing worth knowing is that the value of `(modUnitMul a).app U`
+never has to be written down.**  `PresheafOfModules.unitHomEquiv`'s inverse is
+`x ↦ x • s.val U` (it is `LinearMap.ringLmapEquivSelf ... |>.symm`), so after
+`unitHomEquiv_symm_comp` the composite `modUnitMul a ≫ modUnitMul b` is a
+PRODUCT OF RESTRICTIONS by `rfl` and only `map_mul` is left to apply.  Writing
+the `1` of `unitHomEquiv_apply_coe` by hand instead fails: its ring is
+`Z.ringCatSheaf.obj.obj U` and the module is `(modUnit Z).val.obj U`, which are
+defeq and not syntactically equal, so `OfNat` does not synthesize and every
+`rw` through such a term reports the pattern it is staring at as absent. -/
+
+/-- **RECOGNISING `modUnitMul`** (PROVEN) — `modUnitMul a = φ` as soon as the
+compatible family `a` restricts to is the one `unitHomEquiv` reads off `φ`. -/
+theorem modUnitMul_eq {Z : Scheme.{u}} (a : Γ(Z, ⊤)) (φ : modUnit Z ⟶ modUnit Z)
+    (h : modUnitSections a = SheafOfModules.unitHomEquiv (modUnit Z) φ) :
+    modUnitMul a = φ := by
+  rw [modUnitMul, h, Equiv.symm_apply_apply]
+
+/-- **Multiplication by `1` is the identity** (PROVEN). -/
+theorem modUnitMul_one {Z : Scheme.{u}} : modUnitMul (1 : Γ(Z, ⊤)) = 𝟙 (modUnit Z) := by
+  refine modUnitMul_eq _ _ (PresheafOfModules.sections_ext _ _ (fun U => ?_))
+  rw [SheafOfModules.unitHomEquiv_apply_coe]
+  show Z.presheaf.map _ 1 = _
+  rw [map_one]
+  rfl
+
+/-- **Multiplication by `0` is the zero map** (PROVEN). -/
+theorem modUnitMul_zero {Z : Scheme.{u}} : modUnitMul (0 : Γ(Z, ⊤)) = 0 := by
+  refine modUnitMul_eq _ _ (PresheafOfModules.sections_ext _ _ (fun U => ?_))
+  rw [SheafOfModules.unitHomEquiv_apply_coe]
+  show Z.presheaf.map _ 0 = _
+  rw [map_zero]
+  rfl
+
+/-- **A global section is recovered from its own compatible family at `⊤`**
+(PROVEN) — the restriction `⊤ ⟶ ⊤` is the identity, by `Subsingleton.elim` in
+`Opens Z`.  This is what makes `modUnitMul` injective. -/
+theorem modUnitSections_top {Z : Scheme.{u}} (a : Γ(Z, ⊤)) :
+    (modUnitSections a).val (op ⊤) = a := by
+  show Z.presheaf.map _ a = a
+  rw [Subsingleton.elim (homOfLE le_top : (⊤ : Z.Opens) ⟶ ⊤) (𝟙 _)]
+  simp
+
+/-- **`unitHomEquiv` undoes `modUnitMul`** (PROVEN). -/
+theorem unitHomEquiv_modUnitMul {Z : Scheme.{u}} (a : Γ(Z, ⊤)) :
+    SheafOfModules.unitHomEquiv (modUnit Z) (modUnitMul a) = modUnitSections a := by
+  rw [modUnitMul, Equiv.apply_symm_apply]
+
+/-- **`modUnitMul` is injective** (PROVEN) — `unitHomEquiv` is a bijection and
+`modUnitSections` is undone by evaluation at `⊤`. -/
+theorem modUnitMul_injective {Z : Scheme.{u}} : Function.Injective (modUnitMul (Z := Z)) := by
+  intro a b hab
+  have h : modUnitSections a = modUnitSections b := by
+    rw [← unitHomEquiv_modUnitMul, ← unitHomEquiv_modUnitMul, hab]
+  have h2 : (modUnitSections a).val (op ⊤) = (modUnitSections b).val (op ⊤) := by rw [h]
+  rwa [modUnitSections_top, modUnitSections_top] at h2
+
+/-- **`modUnitMul` is multiplicative** (PROVEN) — see the section note: after
+`unitHomEquiv_symm_comp` both sides are products of restrictions by `rfl`. -/
+theorem modUnitMul_comp {Z : Scheme.{u}} (a b : Γ(Z, ⊤)) :
+    modUnitMul a ≫ modUnitMul b = modUnitMul (a * b) := by
+  have key := SheafOfModules.unitHomEquiv_symm_comp (modUnitSections a) (modUnitMul b)
+  refine key.trans (congrArg _ (PresheafOfModules.sections_ext _ _ (fun U => ?_)))
+  show (Z.presheaf.map (homOfLE le_top).op a) * (Z.presheaf.map (homOfLE le_top).op b)
+      = Z.presheaf.map (homOfLE le_top).op (a * b)
+  rw [map_mul]
+
+/-- **Multiplication by a UNIT is an isomorphism** (PROVEN) — immediate from
+`modUnitMul_comp` and `modUnitMul_one`. -/
+theorem isIso_modUnitMul {Z : Scheme.{u}} {a : Γ(Z, ⊤)} (h : IsUnit a) :
+    IsIso (modUnitMul a) := by
+  obtain ⟨v, hv⟩ := h
+  refine ⟨modUnitMul (↑v⁻¹ : Γ(Z, ⊤)), ?_, ?_⟩
+  · rw [modUnitMul_comp, ← hv]; simp [modUnitMul_one]
+  · rw [modUnitMul_comp, ← hv]; simp [modUnitMul_one]
+
+/-- **EVERY endomorphism of `𝒪_Z` is a `modUnitMul`** (PROVEN) — the surjectivity
+half, and the one that produces the rational function.  `unitHomEquiv` turns `φ`
+into a compatible family; its value at `⊤` is the global section, and the
+family's own compatibility says the rest of it is that section restricted. -/
+theorem exists_modUnitMul {Z : Scheme.{u}} (φ : modUnit Z ⟶ modUnit Z) :
+    ∃ a : Γ(Z, ⊤), modUnitMul a = φ := by
+  refine ⟨((modUnit Z).unitHomEquiv φ).val (op ⊤), ?_⟩
+  refine modUnitMul_eq _ _ (PresheafOfModules.sections_ext _ _ (fun U => ?_))
+  exact ((modUnit Z).unitHomEquiv φ).property (homOfLE le_top).op
+
+/-! #### The generic fibre of an invertible subsheaf of `𝒦_X` (all PROVEN)
+
+`𝒦_X` is `g_* 𝒪_{Spec K}`, so `Hom(L, 𝒦_X) ≅ Hom(g^*L, 𝒪_{Spec K})` by the
+`g^* ⊣ g_*` adjunction — and that BIJECTION is the fourth bullet of
+`exists_constSmul_of_iso`'s route ("an identity of morphisms follows from the
+identity on the generic stalk") for free, with no stalk, no filtered colimit and
+no exactness argument.  What is left is to see that the transpose is an
+ISOMORPHISM, which is invertibility (it makes `g^*L ≅ 𝒪`) plus monicity (it makes
+the scalar nonzero). -/
+
+/-- **THE PULLBACK OF AN INVERTIBLE SHEAF TO THE GENERIC POINT IS TRIVIAL**
+(PROVEN) — and it costs no "invertible over a field is free" theorem.
+
+`IsInvertibleSheaf` is LOCAL TRIVIALITY, so it hands over an open `U ∋ η` with
+`L|_U ≅ 𝒪_U` directly; `g : Spec K ⟶ X` has its whole (one-point) image in `U`
+by `preimage_genericPointHom_eq_top`, so it factors through `U` by
+`IsOpenImmersion.lift`, and the four pseudo-functoriality isos of `modPullback`
+carry `L|_U ≅ 𝒪_U` down to `g^*L ≅ 𝒪_{Spec K}`.
+
+Doing it the other way round — `isInvertibleSheaf_modPullback` and then "the
+only nonempty open of `Spec K` is `⊤`" — also works and is worse: it needs the
+restriction-along-`⊤` bookkeeping that this route never meets. -/
+theorem nonempty_modPullback_genericPointHom_unit {X : Scheme.{u}} [IsIntegral X]
+    {L : X.Modules} (hL : IsInvertibleSheaf L) :
+    Nonempty (modPullback (genericPointHom X) L ≅ modUnit (Spec X.functionField)) := by
+  obtain ⟨U, hU, ⟨φ⟩⟩ := hL (genericPoint X)
+  haveI : Nonempty U := ⟨⟨_, hU⟩⟩
+  have hrange : Set.range (genericPointHom X).base ⊆ Set.range U.ι.base := by
+    rw [Scheme.Opens.range_ι]
+    rintro _ ⟨p, rfl⟩
+    have hp : p ∈ (genericPointHom X) ⁻¹ᵁ U := by
+      rw [preimage_genericPointHom_eq_top X U]; trivial
+    exact hp
+  refine ⟨?_⟩
+  set g' := IsOpenImmersion.lift U.ι (genericPointHom X) hrange with hg'
+  have hfac : g' ≫ U.ι = genericPointHom X := IsOpenImmersion.lift_fac _ _ _
+  exact modPullbackCongrIso hfac.symm L ≪≫
+    (modPullbackCompIso g' U.ι L).symm ≪≫
+    modPullbackMapIso g' (modRestrictPullbackIso U.ι L).symm ≪≫
+    modPullbackMapIso g' φ ≪≫
+    modPullbackUnitIso g'
+
+/-- **THE GENERIC TRANSPOSE** of a map into `𝒦_X`: the same datum read as a map
+`g^*L ⟶ 𝒪_{Spec K}` across the `g^* ⊣ g_*` adjunction, `g` the generic point. -/
+noncomputable def genericTranspose {X : Scheme.{u}} [IrreducibleSpace X] {L : X.Modules}
+    (ι : L ⟶ constSheaf X) :
+    modPullback (genericPointHom X) L ⟶ modUnit (Spec X.functionField) :=
+  ((Scheme.Modules.pullbackPushforwardAdjunction (genericPointHom X)).homEquiv L
+    (modUnit (Spec X.functionField))).symm ι
+
+/-- **The transpose transposes back** (PROVEN). -/
+theorem homEquiv_genericTranspose {X : Scheme.{u}} [IrreducibleSpace X] {L : X.Modules}
+    (ι : L ⟶ constSheaf X) :
+    ((Scheme.Modules.pullbackPushforwardAdjunction (genericPointHom X)).homEquiv L
+      (modUnit (Spec X.functionField))) (genericTranspose ι) = ι :=
+  Equiv.apply_symm_apply _ _
+
+/-- **AN INVERTIBLE SUBSHEAF OF `𝒦_X` IS ALL OF `𝒦_X` AT THE GENERIC POINT**
+(PROVEN) — this is where BOTH clauses of `IsInvertibleSubsheaf` are spent.
+
+Invertibility gives `g^*L ≅ 𝒪_{Spec K}`, so the transpose is `modUnitMul c` up to
+that iso.  Monicity gives `c ≠ 0`: if `c` were `0` the transpose would be `0`, so
+`ι` would be `0` (the adjunction bijection is additive because `g_*` is), so
+`𝟙 L = 0`, so `𝟙 (𝒪_{Spec K}) = 0`, so `(1 : Γ(Spec K, ⊤)) = 0` — and `K` is a
+field.  Finally `K` being a field turns `c ≠ 0` into `IsUnit c`, which is the
+only place reducedness (as opposed to irreducibility) is used. -/
+theorem isIso_genericTranspose {X : Scheme.{u}} [IsIntegral X] {L : X.Modules}
+    {ι : L ⟶ constSheaf X} (h : IsInvertibleSubsheaf ι) : IsIso (genericTranspose ι) := by
+  obtain ⟨hinv, hmono⟩ := h
+  obtain ⟨α⟩ := nonempty_modPullback_genericPointHom_unit hinv
+  obtain ⟨c, hc⟩ := exists_modUnitMul (α.inv ≫ genericTranspose ι)
+  have hgt : genericTranspose ι = α.hom ≫ modUnitMul c := by rw [hc]; simp
+  have hcu : IsUnit c := by
+    by_cases h0 : (Scheme.ΓSpecIso X.functionField).hom c = 0
+    · exfalso
+      have hc0 : c = 0 := by
+        have h' := congrArg (Scheme.ΓSpecIso X.functionField).inv h0
+        rwa [Iso.hom_inv_id_apply, map_zero] at h'
+      have h2 : genericTranspose ι = 0 := by rw [hgt, hc0, modUnitMul_zero, comp_zero]
+      have hz : ((Scheme.Modules.pullbackPushforwardAdjunction (genericPointHom X)).homEquiv L
+          (modUnit (Spec X.functionField))) 0 = 0 := by
+        rw [Adjunction.homEquiv_unit, Functor.map_zero]
+        exact comp_zero
+      have h3 : ι = 0 := (homEquiv_genericTranspose ι).symm.trans (by rw [h2]; exact hz)
+      have h4 : (𝟙 L) = (0 : L ⟶ L) := by
+        rw [← cancel_mono ι, h3]; simp
+      have h5 : 𝟙 (modPullback (genericPointHom X) L) = 0 := by
+        have e1 : (Scheme.Modules.pullback (genericPointHom X)).map (𝟙 L) = 𝟙 _ :=
+          CategoryTheory.Functor.map_id _ _
+        have e2 : (Scheme.Modules.pullback (genericPointHom X)).map (0 : L ⟶ L) = 0 :=
+          Functor.map_zero _ _ _
+        exact e1.symm.trans (by rw [h4]; exact e2)
+      have h6 : 𝟙 (modUnit (Spec X.functionField)) = 0 := by
+        have h' : α.inv ≫ 𝟙 _ ≫ α.hom = α.inv ≫ (0 : _ ⟶ _) ≫ α.hom := by rw [h5]
+        simpa using h'
+      have h7 : (1 : Γ(Spec X.functionField, ⊤)) = 0 := by
+        apply modUnitMul_injective
+        rw [modUnitMul_one, modUnitMul_zero]
+        exact h6
+      have h8 := congrArg (Scheme.ΓSpecIso X.functionField).hom.hom h7
+      rw [map_one, map_zero] at h8
+      exact one_ne_zero h8
+    · have hu : IsUnit ((Scheme.ΓSpecIso X.functionField).hom c) := isUnit_iff_ne_zero.mpr h0
+      have h' := hu.map (Scheme.ΓSpecIso X.functionField).inv.hom
+      rwa [Iso.hom_inv_id_apply] at h'
+  haveI := isIso_modUnitMul hcu
+  rw [hgt]
+  infer_instance
+
 /-- **THE DICTIONARY: AN ISOMORPHISM OF INVERTIBLE SUBSHEAVES OF `𝒦_X` IS
-MULTIPLICATION BY AN ELEMENT OF `𝒦_Xˣ`** (sorry leaf, 2026-07-31) — obligation
+MULTIPLICATION BY AN ELEMENT OF `𝒦_Xˣ`** (PROVEN 2026-08-02) — obligation
 (1) of the `g¹₂` route correction, and the statement that removes Riemann–Roch
 from `hasDoubleCoverOfAffineLine_of_iso_sectionIdeal`.
 
@@ -10028,37 +10251,118 @@ point and `K = X.functionField = 𝒪_{X,η}`.  Taking stalks at `η` is exact, 
   identity of `K` for `U` nonempty and `0 ⟶ K` for `U = ∅`.  This is the one
   step that uses what `𝒦_X` IS rather than that it is a sheaf.
 
-**FAITHFULNESS.  This was the check named as able to refute the whole route
-correction, and it comes back NEGATIVE — with both hypotheses load-bearing.**
+**FAITHFULNESS — RE-RUN 2026-08-02 AGAINST THE PROOF, and the earlier audit was
+WRONG IN ONE BULLET.  It is reproduced corrected, not deleted, because its
+reasoning is what identifies `L_η ≠ 0` as the real content.**
 
-* Drop `Mono ιL` and it is FALSE: take `ιL = 0` with `L = 𝒪_X` and `M = 𝒪_X`,
-  `ιM = ` the canonical inclusion, `e = Iso.refl`.  Then `e ≫ ιM ≠ 0 = ιL ≫ c`
-  for every `c`, since `ιM` is monic and nonzero.  Without monicity there is no
-  ratio to speak of.
-* Drop `IsInvertibleSheaf L` and it is FALSE: the generic stalk can vanish.  On
-  `X = Spec ℤ` let `L` be the kernel of `𝒪 ⟶ 𝒪/(p)`… which is invertible, so
-  instead take `L` the SKYSCRAPER `(p)/(p²)` at `(p)`, `ιL = 0` — already
-  covered — or, keeping `ιL` monic, note that no monic `ι` out of a torsion
-  sheaf exists into `𝒦_X` at all, so the honest statement of what invertibility
-  buys is `L_η ≠ 0`: the hypothesis could be weakened to that, and is left as
-  invertibility because that is what both call sites have in hand
-  (`isInvertibleSheaf_sectionIdeal`, `isInvertibleSheaf_modTensorPic`).
-* Drop `[IsIntegral X]` and `X.functionField` is not a field, `L_η ↪ K` has no
-  submodule dichotomy, and the ratio need not exist: on
-  `X = Spec k[x,y]/(xy)` (not irreducible, so not even statable) or on a
-  non-reduced irreducible `X` the germ map is not injective and `𝒦_X` is not a
-  constant sheaf of fields.
+* **`Mono ιL` is load-bearing** — CONFIRMED, and the witness is valid.  Take
+  `X = Spec ℚ`, `L = M = 𝒪_X`, `ιL = 0`, `ιM = toConstSheaf X`, `e = Iso.refl`.
+  Every surviving hypothesis holds (`isInvertibleSheaf_modUnit` twice,
+  `mono_toConstSheaf` for `ιM`), and the conclusion asks
+  `toConstSheaf X = 0 ≫ constSmul f = 0`, which fails because `toConstSheaf X`
+  is monic out of a nonzero sheaf.  Without monicity there is no ratio to speak
+  of.  Symmetrically for `Mono ιM`, with `constSmul f` an ISO for `f` a unit
+  (`isIso_modUnitMul`), so `ιL ≫ constSmul f = 0` would force `ιL = 0`.
+* **`IsInvertibleSheaf L` is NOT load-bearing, and the previous audit's claim
+  that dropping it makes the statement FALSE is incorrect.**  It is REDUNDANT:
+  `IsInvertibleSheaf` is an isomorphism invariant, so it follows from
+  `IsInvertibleSheaf M` together with `e : L ≅ M`.  Verified (2026-08-02) as
+
+      fun z => by
+        obtain ⟨U, hU, ⟨φ⟩⟩ := hM z
+        exact ⟨U, hU, ⟨(Scheme.Modules.restrictFunctor U.ι).mapIso e ≪≫ φ⟩⟩
+
+  and symmetrically `IsInvertibleSheaf M` follows from `IsInvertibleSheaf L`
+  and `e`.  So the two invertibility clauses are interchangeable and only ONE
+  of them is doing anything; the proof below happens to spend both, through
+  `isIso_genericTranspose` at `ιL` and at `ιM`.  **The tell that the old bullet
+  was not a witness is inside the old bullet**: it opens a candidate, writes
+  "… which is invertible, so instead take …", and then retracts every
+  replacement it proposes without ever exhibiting one — exactly the hedge
+  CLAUDE.md's *AN AUDIT'S COUNTEREXAMPLE MUST BE CHECKED AGAINST THE HYPOTHESIS
+  IT REFUTES* describes, and the same defect the sibling `mono_modTensorToUnit`
+  turned out to have.  What the old bullet IS right about is the content:
+  invertibility is used only through `L_η ≠ 0`.
+* **Both clauses are nevertheless KEPT in the signature**, exactly as
+  `mono_modTensorToUnit` above keeps its two: a weaker hypothesis set cannot
+  make a statement false, the sole call site
+  (`exists_units_functionField_of_iso_sectionIdeal`) has all four in hand and
+  passes them positionally, and changing a signature is the interface-split
+  merge hazard CLAUDE.md devotes a section to.
+* **`[IsIntegral X]` is load-bearing**, and the proof spends it in exactly two
+  places: `preimage_genericPointHom_eq_top` (which is where reducedness enters,
+  through `germ_injective_of_isIntegral`), and `Field X.functionField`, which is
+  what turns `c ≠ 0` into `IsUnit c`.  Without it `X.functionField` is not a
+  field, `L_η ↪ K` has no submodule dichotomy, and the ratio need not be a
+  unit: on `X = Spec k[x,y]/(xy)` the statement is not even expressible (not
+  irreducible), and on a non-reduced irreducible `X` the germ map is not
+  injective and `𝒦_X` is not a constant sheaf of fields.
+* **NOT USED AT ALL: nothing beyond the above.**  In particular the proof needs
+  no exactness of stalk-taking, no filtered colimit and no "`Mono` is objectwise
+  injective" — see the route note below.
 
 **NOT VACUOUS, and not `Iso`-trivial.**  `L = M = 𝒪_X` with `ιL = ιM` the
 canonical inclusion and `e = Iso.refl` gives `f = 1`; and the content is real
 because for `L = 𝒪(−x)`, `M = 𝒪(−y)` on a curve with `x ∼ y` the `f` produced
 is a nonconstant rational function with `div f = x − y`, which is exactly what
-the consumer extracts. -/
+the consumer extracts.
+
+**HOW IT WAS PROVEN (2026-08-02), and it is the route above with the fourth
+bullet replaced by the adjunction.**  `𝒦_X` is `g_* 𝒪_{Spec K}` BY DEFINITION,
+so `Hom(L, 𝒦_X) ≅ Hom(g^*L, 𝒪_{Spec K})` is the `g^* ⊣ g_*` adjunction, and
+being a BIJECTION it discharges "an identity of morphisms follows from the
+identity on the generic stalk" for free — no stalk, no filtered colimit, no
+exactness, and no use of `injective_genericPointHom_app`.  What is left is
+entirely inside `(Spec K).Modules`:
+
+* `isIso_genericTranspose` makes both transposes ISOMORPHISMS `g^*L ≅ 𝒪`;
+* so `Ψ := (g^*ιL)⁻¹ ≫ g^*e ≫ (g^*ιM)` is an automorphism of `𝒪_{Spec K}`;
+* `exists_modUnitMul` writes it as `modUnitMul a`, `modUnitMul_comp` +
+  `modUnitMul_injective` make `a` a UNIT, and `Scheme.ΓSpecIso` carries it to
+  `Kˣ`;
+* the two `Adjunction.homEquiv_naturality_*_symm` lemmas turn the goal into
+  `g^*e ≫ g^*ιM = g^*ιL ≫ modUnitMul a`, which is the definition of `Ψ`.
+
+**Cost: about 190 lines, all of it the `modUnitMul` dictionary and the two
+transpose lemmas above, none of it new mathematics.** -/
 theorem exists_constSmul_of_iso {X : Scheme.{u}} [IsIntegral X] {L M : X.Modules}
     {ιL : L ⟶ constSheaf X} {ιM : M ⟶ constSheaf X}
-    (_hL : IsInvertibleSubsheaf ιL) (_hM : IsInvertibleSubsheaf ιM) (e : L ≅ M) :
-    ∃ f : X.functionFieldˣ, e.hom ≫ ιM = ιL ≫ constSmul (f : X.functionField) :=
-  sorry
+    (hL : IsInvertibleSubsheaf ιL) (hM : IsInvertibleSubsheaf ιM) (e : L ≅ M) :
+    ∃ f : X.functionFieldˣ, e.hom ≫ ιM = ιL ≫ constSmul (f : X.functionField) := by
+  haveI hiL : IsIso (genericTranspose ιL) := isIso_genericTranspose hL
+  haveI hiM : IsIso (genericTranspose ιM) := isIso_genericTranspose hM
+  set Ψ : modUnit (Spec X.functionField) ≅ modUnit (Spec X.functionField) :=
+    (asIso (genericTranspose ιL)).symm ≪≫ modPullbackMapIso (genericPointHom X) e ≪≫
+      asIso (genericTranspose ιM) with hΨ
+  obtain ⟨a, ha⟩ := exists_modUnitMul Ψ.hom
+  obtain ⟨a', ha'⟩ := exists_modUnitMul Ψ.inv
+  have haa : a * a' = 1 := by
+    apply modUnitMul_injective
+    rw [← modUnitMul_comp, ha, ha', modUnitMul_one, Ψ.hom_inv_id]
+  have hau : IsUnit a := ⟨⟨a, a', haa, by rw [mul_comm]; exact haa⟩, rfl⟩
+  have hf : IsUnit ((Scheme.ΓSpecIso X.functionField).hom a) :=
+    hau.map (Scheme.ΓSpecIso X.functionField).hom.hom
+  refine ⟨hf.unit, ?_⟩
+  have hinv : (Scheme.ΓSpecIso X.functionField).inv (hf.unit : X.functionField) = a := by
+    show (Scheme.ΓSpecIso X.functionField).inv
+      ((Scheme.ΓSpecIso X.functionField).hom a) = a
+    rw [Iso.hom_inv_id_apply]
+  have hcs : constSmul ((hf.unit : X.functionField)) =
+      (Scheme.Modules.pushforward (genericPointHom X)).map (modUnitMul a) :=
+    congrArg (Scheme.Modules.pushforward (genericPointHom X)).map (congrArg modUnitMul hinv)
+  rw [hcs]
+  refine ((Scheme.Modules.pullbackPushforwardAdjunction (genericPointHom X)).homEquiv L
+    (modUnit (Spec X.functionField))).symm.injective ?_
+  have hleft := Adjunction.homEquiv_naturality_left_symm
+    (Scheme.Modules.pullbackPushforwardAdjunction (genericPointHom X)) e.hom ιM
+  have hright := Adjunction.homEquiv_naturality_right_symm
+    (Scheme.Modules.pullbackPushforwardAdjunction (genericPointHom X)) ιL (modUnitMul a)
+  refine hleft.trans (Eq.trans ?_ hright.symm)
+  show (Scheme.Modules.pullback (genericPointHom X)).map e.hom ≫ genericTranspose ιM
+      = genericTranspose ιL ≫ modUnitMul a
+  rw [ha, hΨ]
+  simp [modPullbackMapIso]
+  rfl
 
 /-- **THE HAND-BACK: AN ISOMORPHISM `𝒪(−x₁−x₂) ≅ 𝒪(−y₁−y₂)` IS MULTIPLICATION
 BY A RATIONAL FUNCTION** (PROVEN 2026-07-31 over the three leaves above) — the
