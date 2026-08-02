@@ -469,7 +469,9 @@ open in them has been split along the theories it needed:
 |---|---|---|
 | ~~`exists_isAffine_gamma1RigidifiedModuliScheme`~~ | **PROVEN 2026-07-31 (evening)**, no longer a leaf — over the two-step tower `exists_isAffine_gamma1ModuliScheme` (bottom) + `exists_isAffineHom_fullLevelModuli` (top).  The row used to read as below and the reading is kept because it is the citation chain the two residues inherit.  Katz-Mazur 4.7.1/4.7.2 + 5.1.1 + 6.6.2 + the affineness parenthesis of 8.1.1: the rigidified moduli problem of `[Γ₁(N)], [Γ(n)]` is representable by an AFFINE scheme.  RE-MERGED 2026-07-31 out of the two leaves `exists_gamma1RigidifiedModuliScheme` and `isAffine_of_gamma1RigidifiedModuliScheme` that the 2026-07-30 split had created; both are now PROVEN over this row, the second through the new `nonempty_iso_gamma1RigidifiedModuliScheme` (fine moduli ⇒ any two inhabitants are isomorphic ⇒ `IsAffine` transports).  The affineness clause of 8.1.1 is not a separable theorem in Katz-Mazur — it is a remark on the construction 4.7.2/5.1.1/6.6.2 carries out — so one prover discharges both.  Everything the old two rows fed is unchanged: `exists_gamma1RigidifiedModuli`, hence `exists_gamma1Rigidification`, `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`. | any `K`, `char K ∤ N`, `char K ∤ n` |
 | `exists_isAffine_gamma1ModuliScheme` | Katz-Mazur (4.10) + Corollary 4.7.1, rigidity 2.7.4: for `N ≥ 4` the moduli problem `[Γ₁(N)]` ALONE — no `[Γ(n)]` — is representable by a smooth AFFINE curve.  Cut 2026-07-31 (evening) as the bottom of the tower under `exists_isAffine_gamma1RigidifiedModuliScheme`; affineness is part of 4.7.1's own conclusion, so 8.1.1 does not reappear.  `4 ≤ N` is load-bearing for TRUTH here (at `N = 3`, `j = 0`, the order-3 automorphism fixes a point of exact order 3, so `[Γ₁(3)]` is not rigid). | any `K`, `char K ∤ N`, `4 ≤ N` |
-| `exists_isAffineHom_fullLevelModuli` | Katz-Mazur 3.7.1: full level-`n` structures on an ARBITRARY elliptic scheme are relatively representable, by a scheme AFFINE over the base.  The top of the same tower, and the half that is a LEAN job rather than a citation: section `IsomTorsorCoverX1` above already builds the representing object (the clopen independence locus in `E[n] ×_T E[n]`) and `IsAffineHom` is free from it being closed in a finite `T`-scheme; what is missing is only the universal property. | any `K`, `char K ∤ n`, `3 ≤ n` |
+| ~~`exists_isAffineHom_fullLevelModuli`~~ | **PROVEN 2026-08-02**, no longer a leaf — over `map_eq_map_of_isBaseChangeOfGamma1` (rigidity) + `exists_isAffineHom_fullLevelModuli_pinned` (the Lean job).  It also GAINED the binders `4 ≤ N` and `char K ∤ N`, both free at the sole call site.  The row used to claim that this half "is a LEAN job rather than a citation … what is missing is only the universal property", and that is REFUTED: with the independence locus of `IsomTorsorCoverX1` as `M`, the unpinned `∃!` is FALSE whenever the datum has a nontrivial automorphism fixing its `Γ₁(N)`-point (`N = 1`, `n = 3`, twist by negation — see the ROUTE REFUTATION on the theorem), which is exactly what `4 ≤ N` excludes and exactly the fact the row above already records for the bottom of the tower. | any `K`, `char K ∤ Nn`, `4 ≤ N`, `3 ≤ n` |
+| `map_eq_map_of_isBaseChangeOfGamma1` | Katz-Mazur 2.7.4: `[Γ₁(N)]` is RIGID for `N ≥ 4`, in the form "two base-change structures of one datum along one morphism have the same map".  Cut 2026-08-02; `4 ≤ N` is load-bearing for TRUTH, with the same witness as the row above. | any `K`, `char K ∤ N`, `4 ≤ N` |
+| `exists_isAffineHom_fullLevelModuli_pinned` | Katz-Mazur 3.7.1 with the base change PINNED (`bc.map ≫ bcM.map = bcd.map`), which is the citation-free half and the one to dispatch at a formaliser: section `IsomTorsorCoverX1` above already builds the representing object (the clopen independence locus in `E[n] ×_T E[n]`), `IsAffineHom` is free from it being closed in a finite `T`-scheme, and with the pinning clause the universal property needs no rigidity and no Katz-Mazur.  Cut 2026-08-02. | any `K`, `char K ∤ n`, `3 ≤ n`, any `N` |
 | ~~`exists_gamma1RigidifiedModuliScheme`~~ | PROVEN 2026-07-31 over the row above (forget the affineness); no longer a leaf | — |
 | ~~`isAffine_of_gamma1RigidifiedModuliScheme`~~ | PROVEN 2026-07-31 over the row above plus `nonempty_iso_gamma1RigidifiedModuliScheme`; no longer a leaf | — |
 | `exists_torsionBasisCover_field` | Katz-Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4: after a flat surjective quasi-compact cover the `n`-torsion of an abelian scheme of relative dimension one acquires a basis.  Stated for a BARE abelian scheme — no `Gamma1Datum`, no moduli scheme — and it is all that is left under `exists_gamma1FullLevelStructure_cover`, which is PROVEN over it (2026-07-28).  It is the general-base form of `X0.lean`'s `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both of which are stated only over `SpecQ`. | any `K`, `char K ∤ n` |
@@ -3790,8 +3792,20 @@ which is also already here.  `Gamma1ModuliScheme` below adds a *packaging*
 | step | statement | status |
 |---|---|---|
 | `[Γ₁(N)]` is representable by an AFFINE scheme, `N ≥ 4` | `exists_isAffine_gamma1ModuliScheme` | **LEAF** (KM 4.10 + 4.7.1, rigidity 2.7.4) |
-| full level `n` is relatively representable, AFFINE over the base | `exists_isAffineHom_fullLevelModuli` | **LEAF** (KM 3.7.1; but see below — it is a Lean job here, not a citation) |
+| full level `n` is relatively representable, AFFINE over the base | `exists_isAffineHom_fullLevelModuli` | **PROVEN 2026-08-02** over the two rows below |
+| … its citation half: `[Γ₁(N)]` is rigid at `N ≥ 4` | `map_eq_map_of_isBaseChangeOfGamma1` | **LEAF** (KM 2.7.4) |
+| … its formalisation half, with the base change PINNED | `exists_isAffineHom_fullLevelModuli_pinned` | **LEAF** (the Lean job over `IsomTorsorCoverX1`) |
 | the tower assembles | `exists_isAffine_gamma1RigidifiedModuliScheme` | **PROVEN 2026-07-31** |
+
+**2026-08-02: the top row split, and the row above it was already carrying
+the reason.**  The claim that the top of the tower "is a Lean job here, not a
+citation" was checked and is FALSE as it stood: the independence locus does
+NOT satisfy the `∃!` while the datum has a nontrivial automorphism fixing its
+`Γ₁(N)`-point, which is precisely the non-rigidity that the `N ≥ 4` row is
+about.  Adding `4 ≤ N` (free at the sole call site) makes the claim true, and
+splitting off the rigidity citation makes the remaining half genuinely
+citation-free.  See the ROUTE REFUTATION on `exists_isAffineHom_fullLevelModuli`
+below for the witness.
 
 **`1 -> 2` open leaves, and here is the case for paying it.**
 
@@ -3914,9 +3928,147 @@ theorem exists_isAffine_gamma1ModuliScheme (N : ℕ) (_hN : 4 ≤ N) (K : Type) 
     ∃ R : Gamma1ModuliScheme N (Spec (CommRingCat.of K)), IsAffine R.Y :=
   sorry
 
+/-- **KATZ–MAZUR (2.7.4): `[Γ₁(N)]` IS RIGID FOR `N ≥ 4`** (sorry leaf, cut
+2026-08-02 out of `exists_isAffineHom_fullLevelModuli` below, whose route
+refutation is the reason it exists).
+
+## What the prover of this node owes
+
+Book §2.7, the rigidity of the moduli problem `[Γ₁(N)]` on `(Ell/ℤ[1/N])`
+for `N ≥ 4`, in the one form this file consumes: **a `Γ₁(N)`-datum has no
+automorphisms over its base**, phrased as "any two base-change structures of
+`d` over `dY` along the SAME morphism `g` have the same underlying map".
+
+The two statements are the same one.  Given `bc₁ bc₂ : IsBaseChangeOfGamma1
+g d dY`, both squares are cartesian over `g`, so `bc₂.isPullback.lift d.f
+bc₁.map _` is an endomorphism `ψ` of `d.E` over `T` with `ψ ≫ bc₂.map =
+bc₁.map`; `map_zero` and `map_add` of the two make `ψ` compatible with the
+group law, and `map_sec` of the two plus `IsPullback.hom_ext` make `ψ` fix
+`d.pt.sec` (both `d.pt.sec ≫ ψ` and `d.pt.sec` agree after `d.f`, both being
+`𝟙 T`, and after `bc₂.map`, both being `g ≫ dY.pt.sec`).  So `ψ` is an
+automorphism of the `Γ₁(N)`-datum `d` over `T`, and rigidity says `ψ = 𝟙`.
+
+Over a base this is the standard argument: `Aut(E/T, P)` is a subgroup
+scheme of the finite unramified `Aut(E/T)`, it is trivial on every geometric
+fibre, hence it is the trivial group scheme and every `T`-point of it is the
+identity.  On a geometric fibre it is the classical list — `Aut(E)` is
+`{±1}` away from `j ∈ {0, 1728}`, `μ₄` at `j = 1728` and `μ₆` at `j = 0`
+(with the larger groups in characteristics `2, 3`), and a nontrivial
+automorphism `u` fixes only `ker(u − 1)`, whose order is `deg(u − 1) =
+N(u − 1) ≤ 3`.  So no nontrivial automorphism fixes a point of exact order
+`N ≥ 4`.
+
+## Faithfulness
+
+**`hN : 4 ≤ N` is load-bearing for TRUTH, and the witness is the same one
+`exists_isAffine_gamma1ModuliScheme` records for the bottom of the tower.**
+At `N ≤ 2` negation fixes every point of order dividing `2`; at `N = 3` and
+`j = 0` the order-`3` automorphism `ζ` has `N(ζ − 1) = 3`, so it fixes a
+point of exact order `3`; at `N = 1` negation fixes the zero section.  In
+each case the two base-change structures `bc` and `⟨ψ ≫ bc.map, …⟩` have
+different maps, and the conclusion is false.
+
+`hcharN : ¬ ringChar K ∣ N` is load-bearing for the CITATION rather than
+demonstrably for the truth: 2.7.4 is stated on `(Ell/ℤ[1/N])`, and where `N`
+is not invertible this development's `PointOfExactOrder` — an honest section
+whose geometric fibres have additive order exactly `N` — is not Katz–Mazur's
+`Incl_{Z/N}` and the supersingular automorphism groups in characteristics
+`2, 3` are larger than the list above.  It is carried because the sole call
+site has it, so it costs a prover nothing; a prover who finds it unnecessary
+should say so rather than silently drop it.
+
+`K` and `strY` enter only to state `hcharN`; `T` is a `K`-scheme through
+`g ≫ strY` and nothing else is asked of it. -/
+theorem map_eq_map_of_isBaseChangeOfGamma1 {N : ℕ} (_hN : 4 ≤ N) (K : Type) [Field K]
+    (_hcharN : ¬ ringChar K ∣ N) {Y : Scheme.{0}} (_strY : Y ⟶ Spec (CommRingCat.of K))
+    {T : Scheme.{0}} {g : T ⟶ Y} {d : Gamma1Datum N T} {dY : Gamma1Datum N Y}
+    (bc₁ bc₂ : IsBaseChangeOfGamma1 g d dY) : bc₁.map = bc₂.map :=
+  sorry
+
+/-- **KATZ–MAZUR (3.7.1) WITH THE BASE CHANGE PINNED: full level-`n`
+structures are RELATIVELY REPRESENTABLE, by a scheme AFFINE over the base**
+(sorry leaf, cut 2026-08-02 out of `exists_isAffineHom_fullLevelModuli`
+below).
+
+**This is the citation-free half, and it is the one that should be dispatched
+at a formaliser.**  It differs from the node below in exactly one conjunct:
+the base-change structure `bc` the classifying map carries is required to be
+COMPATIBLE with the one that was handed in, `bc.map ≫ bcM.map = bcd.map`.
+That single clause is what makes the independence locus of
+`IsomTorsorCoverX1` the representing object, and what removes rigidity —
+hence Katz–Mazur — from this half entirely; see the ROUTE REFUTATION on the
+node below for the two-line witness showing that without it the locus does
+NOT represent, and `map_eq_map_of_isBaseChangeOfGamma1` above for the
+citation that bridges the two halves.
+
+Note that `hN` and `hcharN` are ABSENT here on purpose: with `bc` pinned the
+statement is true at every `N`, because the twist that breaks the unpinned
+form is exactly what the pinning clause forbids.
+
+## What the prover of this node owes, and it is all in this file
+
+`M` is the locus in `V := E[n] ×_Y E[n]` where the two tautological sections
+are independent, built and shown CLOPEN by `exists_clopen_equalizer` and
+assembled by `exists_independentPairCover` (~line 2732).  That theorem's
+conclusion is NOT reusable verbatim — it exports `Flat` and `QuasiCompact`
+where this asks for `IsAffineHom` and a universal property — so the
+construction has to be re-run with a different conclusion, but no step of it
+has to be re-invented.  What is owed on top of it:
+
+* **`IsAffineHom p`.** `M ⟶ V` is an open immersion with CLOSED range (the
+  complement of the clopen `bad`), hence a closed immersion, hence affine;
+  `V ⟶ Y` is a base change of the finite `E[n] ⟶ Y`
+  (`isFinite_flat_nTorsion_noBase`), hence finite, hence affine; and
+  `IsAffineHom` is closed under composition
+  (`Mathlib/AlgebraicGeometry/Morphisms/Affine.lean`).
+* **`dM` and `bcM`.**  `Gamma1BaseChange.datumBC p dY` and
+  `Gamma1BaseChange.isBaseChangeBC p dY`, both already `def`s in this file —
+  the datum is a CONSTRUCTION here and not merely an existential, which is
+  what makes the pinning clause statable at all.
+* **`lvlM`.**  The two tautological points, moved from `RelPoint dY.f p` to
+  `RelPoint dM.f (𝟙 M)` by `RelPoint.baseChangeUp`; `nsmul_P` / `nsmul_Q` are
+  `exists_independentPairCover`'s first clause, and `geom_basis` is its
+  independence clause fed to `geomBasis_of_indep_geomPoint`.
+* **EXISTENCE.**  `bcd.toRelPoint L.P` is an `n`-torsion `RelPoint dY.f g`
+  (`nsmul_eq_zero_of_toRelPoint`), so it lifts to `E[n]`; pairing the two
+  lifts gives `w : T ⟶ V` over `g`.  That `w` lands in `M` is checked
+  POINTWISE: over each `t : T` take a geometric point `Spec K ⟶ T` (residue
+  field, then algebraic closure), where `L.geom_basis` plus
+  `indep_of_geomBasis` gives independence, and the `havoid` argument of
+  `exists_independentPairCover` — clopen preimage in a preconnected `Spec K`,
+  then `IsOpenImmersion.lift` — shows the composite misses `bad`.
+* **UNIQUENESS, and this is where the pinning clause is spent.**  With
+  `bc.map ≫ bcM.map = bcd.map` fixed, `m ≫ U.ι` is determined by
+  `pullback.hom_ext` twice: after `q` it is `g`, and after `ι` it is
+  `L.P.1 ≫ bcd.map` resp. `L.Q.1 ≫ bcd.map`, neither of which mentions `m`.
+  Then `U.ι` is a mono, so `m` is determined.  No rigidity, no automorphism
+  group, no Katz–Mazur.
+
+## Faithfulness
+
+Verbatim the analysis on the node below, minus the `hN` / `hcharN`
+paragraph: `hn : 3 ≤ n` is load-bearing for `M` to be nonempty rather than
+for the existence of the locus, and `hcharn` enters only through `n` being
+invertible on `Y`, which is what makes `E[n] ⟶ Y` etale and hence the
+equalizers open. -/
+theorem exists_isAffineHom_fullLevelModuli_pinned {N n : ℕ} (_hn : 3 ≤ n) (K : Type)
+    [Field K] (_hcharn : ¬ ringChar K ∣ n) {Y : Scheme.{0}}
+    (_strY : Y ⟶ Spec (CommRingCat.of K)) (dY : Gamma1Datum N Y) :
+    ∃ (M : Scheme.{0}) (p : M ⟶ Y) (dM : Gamma1Datum N M)
+      (bcM : IsBaseChangeOfGamma1 p dM dY) (lvlM : AbelianFullLevelStructure n dM.ab),
+      IsAffineHom p ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ Y) (d : Gamma1Datum N T)
+        (bcd : IsBaseChangeOfGamma1 g d dY) (L : AbelianFullLevelStructure n d.ab),
+        ∃! m : T ⟶ M, m ≫ p = g ∧
+          ∃ bc : IsBaseChangeOfGamma1 m d dM,
+            bc.map ≫ bcM.map = bcd.map ∧
+            L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1 :=
+  sorry
+
 /-- **KATZ–MAZUR (3.7.1): full level-`n` structures are RELATIVELY
-REPRESENTABLE, by a scheme AFFINE over the base** (sorry leaf, cut
-2026-07-31 as the top of the tower described in the section comment above).
+REPRESENTABLE, by a scheme AFFINE over the base** — **PROVEN 2026-08-02**
+over the two leaves immediately above; cut 2026-07-31 as the top of the
+tower described in the section comment above.
 
 ## What the prover of this node owes
 
@@ -3967,6 +4119,76 @@ Estimated at a few hundred lines by an owner who reads `IsomTorsorCoverX1`
 first.  It is the half of this node that should be dispatched at a
 formaliser rather than at a reader of Katz–Mazur.
 
+## ROUTE REFUTATION, 2026-08-02 — THE PARAGRAPH ABOVE IS WRONG, AND THE REPAIR IS ONE BINDER
+
+Everything above is right about the GEOMETRY and wrong about the
+UNIVERSAL PROPERTY.  With `M` taken to be the independence locus that
+`IsomTorsorCoverX1` builds, the `∃!` below is **FALSE** as the statement
+stood before 2026-08-02, and the witness needs no scheme theory at all.
+
+Take `K` algebraically closed of characteristic `0`, `Y = T = Spec K`,
+`n = 3`, `N = 1` (so `dY.pt.sec` is the zero section and `geom_order` reads
+`addOrderOf 0 = 1`), `E` any elliptic curve over `K`, `g = 𝟙`, `d = dY`,
+`bcd = IsBaseChangeOfGamma1.refl`, and `L = (P, Q)` a basis of `E[3]`.
+Write `θ` for the negation morphism of `E`, i.e. `(dY.ab.neg ⟨𝟙 E, _⟩).1`
+read off the tautological point of `RelPoint dY.f dY.f`; `θ` is an
+automorphism of `E` over `Y` (`θ ≫ θ = 𝟙` because `neg (neg x) = x`), it
+preserves the group law and the zero section by the group axioms, and at
+`N = 1` it fixes `dY.pt.sec`.  So
+
+* `bcd' := ⟨θ ≫ bcd.map, …⟩` is a second `IsBaseChangeOfGamma1 g d dY`
+  — the cartesian square survives because `θ` is an iso over `T`, and
+  `map_zero` / `map_add` / `map_sec` are `neg 0 = 0`, additivity of `neg`,
+  and `θ` fixing the zero section;
+* the point `(-P, -Q)` of the independence locus satisfies the level
+  clauses for `L` with that `bcd'`, exactly as `(P, Q)` does with `bcd`;
+* and `(-P, -Q) ≠ (P, Q)`, because `P` has exact order `3` so `2 • P ≠ 0`.
+
+Two distinct `m`, both satisfying the predicate.  The predicate never
+mentions `_bcd`, so the twist by `θ` is invisible to it; what the locus
+represents is the set of level structures on `g^*dY` **rigidified by a
+chosen base change**, while what the `∃!` asks for is that set modulo
+`Aut(d/T)`.  The two agree exactly when `Aut(d/T)` is trivial.
+
+**The leaf as stated is NOT refuted** — `M` is existentially quantified, and
+`M₀/Aut(dY)` does satisfy the `∃!` whenever that quotient exists (the action
+of `Aut` on the independence locus is free for `n ≥ 3`, since a nontrivial
+automorphism of an elliptic scheme acts nontrivially on the `n`-torsion).
+So the honest verdict is: the STATEMENT survives, the ROUTE does not, and
+taking the route as written costs a prover a theory of quotients by finite
+group schemes that this pin does not have.
+
+**The repair is `4 ≤ N`, and the sole call site supplies it for free.**  At
+`N ≥ 4` Katz–Mazur (2.7.4) makes `[Γ₁(N)]` rigid, so `Aut(d/T)` fixing a
+section of exact order `N` is trivial, the twist above cannot happen, and
+the independence locus IS the representing object.  This is the SAME fact
+the sibling bottom leaf `exists_isAffine_gamma1ModuliScheme` already records
+as load-bearing for TRUTH — "at `N = 3`, `j = 0`, the order-`3` automorphism
+fixes a point of exact order `3`, so `[Γ₁(3)]` is not rigid" — and nobody had
+connected it to the top of the tower.  `hcharN` is added with it, because
+2.7.4 is a statement on `(Ell/ℤ[1/N])` and this development's
+`PointOfExactOrder` agrees with Katz–Mazur's `Incl_{Z/N}` only where `N` is
+invertible; the call site has it, so it is free.
+
+## THE CUT, 2026-08-02: rigidity is a CITATION and belongs in its own leaf
+
+With `4 ≤ N` in hand the node splits along the seam the refutation exposes,
+and this theorem is now PROVEN over the two residues:
+
+| what | where | status |
+|---|---|---|
+| `[Γ₁(N)]` is rigid at `N ≥ 4` | `map_eq_map_of_isBaseChangeOfGamma1` | **LEAF** (KM 2.7.4) |
+| relative representability, with the base change PINNED | `exists_isAffineHom_fullLevelModuli_pinned` | **LEAF** (the Lean job over `IsomTorsorCoverX1`) |
+
+`1 -> 2` open leaves, and the case for paying it is that the leaf as it stood
+was BOTH a citation and a several-hundred-line formalisation, with the
+citation invisible — the docstring said in bold that it was a Lean job and
+not a citation, which is what this refutation corrects.  After the cut the
+formalisation residue really is citation-free, which is what makes it
+dispatchable at a formaliser; and the rigidity residue is one classical
+sentence that the sibling bottom leaf cites anyway, so a prover of either
+half now reads one thing rather than two.
+
 ## Faithfulness
 
 `hn : 3 ≤ n` is not load-bearing for the EXISTENCE of `M` (the locus is
@@ -3978,13 +4200,20 @@ on `Y`, which is what makes `E[n] ⟶ Y` etale; `strY` is otherwise inert and is
 taken rather than an `Algebra`-style hypothesis because that is the idiom
 `etale_nTorsion_field` and the whole `IsomTorsorCoverX1` section already use.
 
+`hN` and `hcharN` are the 2026-08-02 additions; see the route refutation
+above for why, and note that ADDING a hypothesis can only weaken the
+statement, so the pre-existing faithfulness analysis transfers verbatim and
+is not re-derived.
+
 `_bcd` is a hypothesis, not decoration: without it `d` need bear no relation
 to `dY` and there is no reason for a classifying map over `g` to exist at all.
 It is discharged at the one call site from the bottom leaf's own base-change
-datum. -/
-theorem exists_isAffineHom_fullLevelModuli {N n : ℕ} (_hn : 3 ≤ n) (K : Type) [Field K]
-    (_hcharn : ¬ ringChar K ∣ n) {Y : Scheme.{0}} (_strY : Y ⟶ Spec (CommRingCat.of K))
-    (dY : Gamma1Datum N Y) :
+datum.  It is STILL not read by the conclusion, which is precisely the gap
+the route refutation above turns on; the pinned residue below is the version
+that does read it. -/
+theorem exists_isAffineHom_fullLevelModuli {N n : ℕ} (hN : 4 ≤ N) (hn : 3 ≤ n) (K : Type)
+    [Field K] (hcharN : ¬ ringChar K ∣ N) (hcharn : ¬ ringChar K ∣ n) {Y : Scheme.{0}}
+    (strY : Y ⟶ Spec (CommRingCat.of K)) (dY : Gamma1Datum N Y) :
     ∃ (M : Scheme.{0}) (p : M ⟶ Y) (dM : Gamma1Datum N M)
       (_bcM : IsBaseChangeOfGamma1 p dM dY) (lvlM : AbelianFullLevelStructure n dM.ab),
       IsAffineHom p ∧
@@ -3992,8 +4221,20 @@ theorem exists_isAffineHom_fullLevelModuli {N n : ℕ} (_hn : 3 ≤ n) (K : Type
         (_bcd : IsBaseChangeOfGamma1 g d dY) (L : AbelianFullLevelStructure n d.ab),
         ∃! m : T ⟶ M, m ≫ p = g ∧
           ∃ bc : IsBaseChangeOfGamma1 m d dM,
-            L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1 :=
-  sorry
+            L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1 := by
+  obtain ⟨M, p, dM, bcM, lvlM, hpaff, huniv⟩ :=
+    exists_isAffineHom_fullLevelModuli_pinned hn K hcharn strY dY
+  refine ⟨M, p, dM, bcM, lvlM, hpaff, ?_⟩
+  intro T g d bcd L
+  obtain ⟨m, ⟨hmp, bc, _hbcpin, hmP, hmQ⟩, hmuniq⟩ := huniv g d bcd L
+  refine ⟨m, ⟨hmp, bc, hmP, hmQ⟩, ?_⟩
+  rintro m' ⟨hm'p, bc', hm'P, hm'Q⟩
+  -- `m' ≫ p = g`, so `bc'.comp bcM` and `bcd` are two base-change structures of `d`
+  -- over `dY` ALONG THE SAME MORPHISM; rigidity at `N ≥ 4` makes their maps equal,
+  -- i.e. `bc'` is automatically pinned, and the pinned uniqueness applies.
+  subst hm'p
+  refine hmuniq m' ⟨rfl, bc', ?_, hm'P, hm'Q⟩
+  exact map_eq_map_of_isBaseChangeOfGamma1 hN K hcharN strY (bc'.comp bcM) bcd
 
 /-- **KATZ–MAZUR, THE WHOLE CITATION: the rigidified `Γ₁` moduli problem is
 representable by an AFFINE scheme** — **PROVEN 2026-07-31 (evening)** over
@@ -4124,7 +4365,7 @@ theorem exists_isAffine_gamma1RigidifiedModuliScheme (N : ℕ) (hN : 4 ≤ N) (n
   obtain ⟨Y₁, hYaff⟩ := exists_isAffine_gamma1ModuliScheme N hN K hcharN
   -- the top: full level-`n` structures on ITS universal curve, affine over it
   obtain ⟨M, p, dM, bcM, lvlM, hpaff, huniv⟩ :=
-    exists_isAffineHom_fullLevelModuli hn K hcharn Y₁.strY Y₁.dY
+    exists_isAffineHom_fullLevelModuli hN hn K hcharN hcharn Y₁.strY Y₁.dY
   haveI : IsAffine Y₁.Y := hYaff
   haveI : IsAffineHom p := hpaff
   refine ⟨⟨M, p ≫ Y₁.strY, dM, lvlM, ?_⟩, isAffine_of_isAffineHom p⟩
