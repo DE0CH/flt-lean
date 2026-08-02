@@ -2359,11 +2359,16 @@ when opened 2026-07-30; **PROVEN 2026-07-31** over
 principle, with `N`, the modular curve, the Eisenstein ideal and the cusp
 all removed.
 
-**`_hsm` AND `_abZ` ARE BOTH UNUSED BY THE PROOF, and that is not an
-accident — see below.**  They are kept in the signature only so that the
-call site in `formalImmersion_of_cuspFormalImmersionCert` does not change;
-a successor who wants the sharp statement should delete them and drop the
-two arguments there.
+**`_hsm` (smoothness of `xstr`) AND `_abZ` (the abelian-scheme structure on
+`astrZ`) WERE BOTH UNUSED BY THE PROOF, and that is not an accident — see
+below.  THEY WERE DELETED FROM THIS SIGNATURE ON 2026-08-02**, together
+with the two corresponding arguments at the sole call site in
+`formalImmersion_of_cuspFormalImmersionCert` below (and with the
+`haveI := d.model.smooth` there, whose only consumer was the `_hsm`
+argument).  They had been carried since 2026-07-31 only so that the call
+site would not have to move.  Everything the paragraphs below say about
+where they "enter" is a statement about the COMPLETION route, which is not
+the route taken; the statement proved here is the sharp one.
 
 **THE ROUTE TAKEN IS NOT THE ONE THE AUDIT BELOW PRESCRIBES, and the
 difference is exactly the two hypotheses.**  The audit's route — dualise
@@ -2438,18 +2443,21 @@ being inherited).**  Write `c̄` for the reduction `RelPoint.pre
   and `ℤ_(q) → ℤ_q` is injective.  So the two local homomorphisms agree,
   and `x = c`.
 
-**WHERE THE HYPOTHESES ENTER, AND WHICH ONE IS THE WEAK ONE.**  `_hbase` is
-what makes `SpecLoc.special toF` the reduction at the maximal ideal with
-residue field `𝔽_q`, without which `c̄` is not an `𝔽_q`-point and the first
-item is false.  `_hsm` is consumed TWICE and cannot be dropped: for
-finite-dimensionality of the cotangent space (the duality of item 1) and
-for noetherianity of `𝒪_{XZ,c̄}` (item 2).  `_abZ` is the honest wart: the
-argument uses only that `𝒪_{AZ,ā}` is noetherian local, i.e. that `astrZ`
-is locally of finite type, so the abelian-scheme hypothesis is far stronger
-than the proof needs.  It is carried because the call site has it for free
-and because weakening a leaf's hypotheses is not a prover's business; a
-prover who proves the statement for `LocallyOfFiniteType astrZ` should
-restate it that way and is strictly ahead.
+**WHERE THE HYPOTHESES ENTER *ON THE COMPLETION ROUTE*, AND WHY NEITHER OF
+THE TWO IS IN THE SIGNATURE ANY MORE.**  `_hbase` is what makes
+`SpecLoc.special toF` the reduction at the maximal ideal with residue field
+`𝔽_q`, without which `c̄` is not an `𝔽_q`-point and the first item is false;
+it is load-bearing on BOTH routes and it is still a hypothesis.  Smoothness
+of `xstr` is consumed TWICE by the audit's route — for finite-dimensionality
+of the cotangent space (the duality of item 1) and for noetherianity of
+`𝒪_{XZ,c̄}` (item 2) — and an abelian-scheme structure on `astrZ` was the
+"honest wart" there, the argument using only that `𝒪_{AZ,ā}` is noetherian
+local.  **Both are artefacts of passing to completions.**  The `q`-adic
+induction actually formalised completes nothing, so it needs no
+noetherianity and no finite-dimensionality anywhere, and the two hypotheses
+were deleted on 2026-08-02.  This is the standing lesson that an audit's
+"this hypothesis is load-bearing" is a claim about ITS route, not about the
+statement.
 
 **NON-VACUITY, and it is not the trivial kind.**  Take `R := ℤ_(q)`,
 `AZ := XZ`, `fmor := 𝟙`: then `htan` holds and the conclusion holds, so the
@@ -2483,7 +2491,6 @@ and Edixhoven's account, for the form in which it is usually quoted. -/
 theorem eq_of_formalImmersionAt {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
     (_hbase : IsReductionBase q R toF)
     {XZ AZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {astrZ : AZ ⟶ SpecLoc R}
-    (_hsm : Smooth xstr) (_abZ : AbelianSchemeStruct astrZ)
     {fmor : XZ ⟶ AZ} (hfmor : fmor ≫ astrZ = xstr)
     (c : RelPoint xstr (𝟙 (SpecLoc R)))
     (_htan : ∀ v w : RelPoint xstr (specFDStr q ≫ SpecLoc.special toF),
@@ -2660,10 +2667,8 @@ theorem formalImmersion_of_cuspFormalImmersionCert (N q : ℕ)
     rw [key x, key cusp] at h
     exact (bijective_pre_generic_of_isProper q R toF d.base G.astrZ G.abZ.proper).1 h
   -- STEP 3.  the formal-immersion principle, plus `d.intX` injective (the valuative criterion)
-  haveI := d.model.smooth
   refine intX_injective_of_x0JNeronDatum d
-    (eq_of_formalImmersionAt d.base (SmoothOfRelativeDimension.smooth (n := 1) (f := xstr))
-      G.abZ G.fmor_over (d.intX cusp) ?_ (d.intX x) hsp hpost)
+    (eq_of_formalImmersionAt d.base G.fmor_over (d.intX cusp) ?_ (d.intX x) hsp hpost)
   -- the certificate's tangent hypothesis, transported along `d.spX`
   intro V W hV hW hVW
   set E := d.spX (specFDStr q) (specFDStr q ≫ SpecLoc.special toF) rfl with hE

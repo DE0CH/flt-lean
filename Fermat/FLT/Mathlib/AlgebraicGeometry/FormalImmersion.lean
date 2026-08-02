@@ -30,9 +30,10 @@ surjectivity of the cotangent map, Nakayama makes `𝒪̂_{A,ā} ↠ 𝒪̂_{X,c
 `𝒪_{X,c̄}` NOETHERIAN (hence smoothness or local finite type) and finite-dimensionality
 of the cotangent space.
 
-The proof here needs **neither**, and that is why `eq_of_formalImmersionAt`'s `_hsm`
-(smoothness of `xstr`) and `_abZ` (the abelian-scheme structure on `astrZ`) are BOTH
-unused.  Instead of completing, it runs the `q`-adic induction directly:
+The proof here needs **neither**, and that is why `eq_of_formalImmersionAt` used to
+carry an unused `_hsm` (smoothness of `xstr`) and an unused `_abZ` (the abelian-scheme
+structure on `astrZ`); both were deleted from its signature on 2026-08-02.  Instead of
+completing, it runs the `q`-adic induction directly:
 
 * a section `Spec ℤ_(q) ⟶ X` whose closed point lands at `c̄` IS a local homomorphism
   `φ : 𝒪_{X,c̄} → ℤ_(q)` (`AlgebraicGeometry.SpecToEquivOfLocalRing`);
