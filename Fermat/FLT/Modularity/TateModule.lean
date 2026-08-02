@@ -18281,9 +18281,48 @@ theorem exists_frobPt_of_semilinearIso {O : CommRingCat.{u}} {𝒜 : Scheme.{u}}
     fun u => (relPointTwist_fibre hΦ σ hπ sp hsp u).symm⟩
 
 /-- **THE RESIDUE FIELD OF A VALUATION RING OF `F̄` CENTRED ON `w` IS AN
-ALGEBRAIC CLOSURE OF `κ(w)`** (sorry leaf — valuation theory; Bourbaki
+ALGEBRAIC CLOSURE OF `κ(w)`** (PROVEN 2026-08-02; valuation theory, Bourbaki
 *Commutative Algebra* VI, Engler–Prestel *Valued Fields* §3.2, Neukirch II
 §§4, 8).
+
+**THIS DECLARATION'S COMPONENT IS A DEAD DUPLICATE CUT — BUT THIS
+DECLARATION IS THE ONE PIECE OF IT THAT MUST SURVIVE.**  The node "a
+Frobenius-equivariant place of `F̄` above `w`" was cut twice, a day apart,
+and a merge kept both:
+
+* **Cut A (2026-07-30, DEAD)** — this theorem, plus
+  `exists_valuationSubring_arithFrob_of_heightOneSpectrum` below, assembled by
+  `exists_localRing_arithFrob_of_heightOneSpectrum`, **which has no consumer
+  anywhere in the tree**, so the component is unreachable from the root;
+* **Cut B (2026-07-31, LIVE)** — `placeAbove` / `frobRestrict` and the single
+  leaf `exists_residueHom_placeAbove` ~200 lines above, assembled by
+  `exists_frobEquivariant_placeAbove`, which IS consumed, by
+  `exists_finset_abelianReductionDatum_of_mult`.
+
+That diagnosis is `flt-lean-34`'s (commit `ca25bc0d`, 2026-08-02) and it is
+correct.  **Two of its clauses are not, and they are the ones that decide what
+gets deleted.**  It records this leaf as *"a strictly stronger, strictly
+harder statement that nothing needs"* and reports `flt-lean-332` as having
+*"landed nothing"*.  The leaf is PROVEN (below), and its extra generality —
+an ARBITRARY valuation subring centred on `w`, rather than the explicit
+`placeAbove w` — costs nothing (the proof never inspects which subring it is)
+and is exactly what makes it REUSABLE BY CUT B: see the instantiation
+receipt at the end of this docstring, which discharges three of
+`exists_residueHom_placeAbove`'s four clauses.  So the deletion must take
+`exists_valuationSubring_arithFrob_of_heightOneSpectrum` and
+`exists_localRing_arithFrob_of_heightOneSpectrum` and **leave this one**,
+re-pointed at Cut B.
+
+Worth keeping from that diagnosis, because it is the transferable part: the
+two cuts share NO IDENTIFIER (Cut A says `ValuationSubring`, `gV`, `hcentre`;
+Cut B says `placeAbove`, `frobRestrict`, `algebraMap_mem_placeAbove`), so
+`check-dup`, `xdup.py` and `dupstmt.py` are all silent, every frontier scan
+counts two honest leaves, and `own.py`/`leafstat.py` correctly report both
+unowned and open.  What identifies it is that the docstring on
+`exists_valuationSubring_arithFrob_of_heightOneSpectrum` below PRESCRIBES Cut
+B's construction by name — its "VERIFIED STARTING POINT" fragment is verbatim
+`placeAbove`'s body.  **When a leaf's docstring prescribes a construction,
+grep the file for that construction before writing it.**
 
 `V` is a valuation subring of the ALGEBRAICALLY CLOSED field `F̄` whose
 centre on `𝓞_F` is `w` (that is what `hcentre` and `hw` say: every algebraic
@@ -18306,6 +18345,35 @@ Together these make `κ(V)` an algebraic closure of `κ(w)`, and any two
 algebraic closures are isomorphic, which gives `p` as the composite of the
 residue map with such an isomorphism.
 
+HOW IT IS ACTUALLY PROVED, and it is cheaper than the route above: **run
+both halves over the PRIME FIELD `ZMod p` rather than over `κ(w)`**, where
+`p := ringChar κ(w)` (prime because `κ(w)` is FINITE —
+`finite_residueField_heightOneSpectrum` above).  Then
+
+* nothing has to be said about the residue extension of a valued field.
+  `κ(V)` is algebraic over `ZMod p` because an `a : V` is algebraic over `ℤ`
+  (`F̄` is algebraic over `ℚ = Frac ℤ`, `F` being a number field), and its
+  PRIMITIVE PART `g` still kills `a` while `g mod p ≠ 0` exactly because `g`
+  is primitive — if `p` divided every coefficient, `C p ∣ g` would make `p` a
+  unit of `ℤ`.  Ring maps out of `ℤ` are unique (`RingHom.ext_int`), so the
+  `ZMod p`-structure and the `ℤ`-structure agree automatically;
+* the `ZMod p`-algebra structure on `κ(w)ᵃˡᵍ` needs no work either: it is
+  derived from `Algebra (ZMod p) κ(w)` by `AlgebraicClosure.instAlgebra`,
+  which also supplies the scalar tower and `CharP (κ(w)ᵃˡᵍ) p`.  Do NOT
+  install a `letI : Algebra (ZMod p) (AlgebraicClosure _)` by hand — it is a
+  second, non-defeq `SMul` and `IsScalarTower.of_algebraMap_eq'` will then
+  fail to typecheck against `AlgebraicClosure.instSMulOfIsScalarTower`;
+
+and `IsAlgClosure.equiv (ZMod p) κ(V) (κ(w)ᵃˡᵍ)` produces the isomorphism.
+That the two algebraic closures are compared over `𝔽_p` rather than over
+`κ(w)` costs nothing, precisely because no compatibility is asked of `p`
+(next paragraph).
+
+The characteristic bridge is the only place `hcentre`/`hw` are spent:
+`(p : 𝓞_F) ∈ w` (as `algebraMap 𝓞_F κ(w) p = 0`), so `hw` puts `(p : V)` in
+`𝔪_V`, so `(p : κ(V)) = 0`, so `ringChar κ(V) ∣ p` and `ZMod.castHom` gives
+an injective `ZMod p →+* κ(V)`, i.e. `CharP κ(V) p`.
+
 WHY NO COMPATIBILITY IS ASKED OF `p`.  The isomorphism to `κ(w)ᵃˡᵍ` is not
 canonical, and nothing downstream needs it to be: the five pinning fields of
 `IsAbelianReductionDatum` constrain `π` only through its KERNEL, and the
@@ -18320,7 +18388,69 @@ the residue field of a valuation ring (`grep` over `Mathlib/` for
 `IsAlgClosed.*ResidueField` is empty), and
 `Fermat/FLT/Mathlib/RingTheory/Valuation/AlgebraicExtension.lean` builds the
 `ℚ`-valued extension of a valuation to an algebraic extension but says
-nothing about residue fields.  Both halves have to be written. -/
+nothing about residue fields.
+
+**CORRECTED 2026-08-02: that paragraph greps MATHLIB and stops, and it is the
+reason this leaf sat open.**  Both halves were already written IN THIS TREE,
+three times over, and one instance is a general-purpose theorem:
+
+* `GaloisRepresentation.exists_resIso_of_comap_toSubring_eq_range`
+  (`FreyCurve/IsogenySignature.lean`) — a valuation subring of `ℚ̄` has
+  residue field `≃+* AlgebraicClosure (ZMod p)`, with BOTH halves proved
+  inline and a docstring spelling out the argument;
+* `Fermat/FLT/EllipticCurve/WeilPairing.lean` and
+  `FreyCurve/MazurTorsion.lean` carry two more `IsAlgClosed` proofs for
+  `IsLocalRing.ResidueField` of a `localValuationSubring`, and
+  `MazurTorsion.exists_localResidueHom` is the `ρ := IsAlgClosed.lift ∘
+  residue` assembly over `ZMod p`.
+
+None of them is CITABLE from here (all three files are in the `FreyCurve`
+/ `EllipticCurve` layer, which this module does not import), so the proof
+below is a transcription rather than a call — but the ROUTE was known and
+the cost estimate above was wrong by an order of magnitude.  The
+transcription is verbatim modulo `AlgebraicClosure ℚ ↝ AlgebraicClosure F`;
+`IsFractionRing V F̄` and `IsIntegrallyClosed V` are mathlib instances for
+any `ValuationSubring`, and neither depends on the base being `ℚ`.
+
+The standing lesson, and it is CLAUDE.md's: an absence audit that greps
+`Mathlib/` and names no command over `Fermat/` is evidence about mathlib
+and about nothing else.
+
+**DO NOT DELETE THIS DECLARATION WITH THE REST OF ITS COMPONENT.**  Its only
+consumer, `exists_localRing_arithFrob_of_heightOneSpectrum` below, is
+CONSUMERLESS, and the whole three-declaration component is a DEAD DUPLICATE
+of the LIVE `placeAbove` / `exists_residueHom_placeAbove` /
+`exists_frobEquivariant_placeAbove` cut above and below it (diagnosed by
+`flt-lean-34`, commit `ca25bc0d`; a deletion task is queued).  That
+diagnosis is right about the other two declarations and WRONG about this
+one, because this theorem is stated about an ARBITRARY valuation subring
+centred on `w` and is therefore reusable by the live cut.
+
+Concretely — machine-checked 2026-08-02, `lake env lean` against this
+module's own olean — instantiating it at `V := placeAbove w`,
+`hcentre := algebraMap_mem_placeAbove w` discharges the FIRST THREE clauses
+of `exists_residueHom_placeAbove` over that leaf's own docstring bullet 3
+as the only extra input:
+
+    obtain ⟨π, hsurj, hker⟩ :=
+      exists_residueField_ringHom_of_valuationSubring w (placeAbove w)
+        (algebraMap_mem_placeAbove w) hw
+    exact ⟨π, hsurj, fun z => (hker z).trans (by
+        simp [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]),
+      fun a => (hker _).trans (hw a)⟩
+
+with `hw : ∀ a : 𝓞 F, (⟨_, algebraMap_mem_placeAbove w a⟩ : placeAbove w) ∈
+IsLocalRing.maximalIdeal (placeAbove w) ↔ a ∈ w.asIdeal`.  So bullets 1 and 2
+of that leaf's four-step classical proof — the two carrying all the valuation
+theory, and the ones its docstring routes through the contraction of the
+maximal ideal of `localValuationSubring w` — are ALREADY DONE, and by a
+cheaper route (over the prime field, so the contraction argument is not
+needed at all).  What is left of it is bullet 3 (`hw`) and bullet 4 (the
+Frobenius clause).
+
+Whoever closes `exists_residueHom_placeAbove` should CALL this rather than
+re-derive it, and whoever performs the deletion should delete the other two
+declarations only. -/
 theorem exists_residueField_ringHom_of_valuationSubring {F : Type u} [Field F] [NumberField F]
     (w : HeightOneSpectrum (𝓞 F)) (V : ValuationSubring (AlgebraicClosure F))
     (hcentre : ∀ a : 𝓞 F,
@@ -18328,8 +18458,134 @@ theorem exists_residueField_ringHom_of_valuationSubring {F : Type u} [Field F] [
     (hw : ∀ a : 𝓞 F,
       (⟨_, hcentre a⟩ : V) ∈ IsLocalRing.maximalIdeal V ↔ a ∈ w.asIdeal) :
     ∃ p : V →+* AlgebraicClosure w.asIdeal.ResidueField,
-      Function.Surjective p ∧ ∀ z : V, p z = 0 ↔ z ∈ IsLocalRing.maximalIdeal V :=
-  sorry
+      Function.Surjective p ∧ ∀ z : V, p z = 0 ↔ z ∈ IsLocalRing.maximalIdeal V := by
+  classical
+  haveI : w.asIdeal.IsMaximal := w.isPrime.isMaximal w.ne_bot
+  haveI hfinκ : Finite w.asIdeal.ResidueField := inferInstance
+  -- the residue characteristic
+  set p : ℕ := ringChar w.asIdeal.ResidueField with hpdef
+  haveI hcharκ : CharP w.asIdeal.ResidueField p := ringChar.charP _
+  have hp : p.Prime := CharP.char_is_prime w.asIdeal.ResidueField p
+  haveI : Fact p.Prime := ⟨hp⟩
+  -- `p` lies in `w`, hence in the maximal ideal of `V`, so `κ(V)` has characteristic `p`
+  have hpw : ((p : ℕ) : 𝓞 F) ∈ w.asIdeal := by
+    rw [← Ideal.algebraMap_residueField_eq_zero, map_natCast]
+    exact CharP.cast_eq_zero _ p
+  have hcast : (⟨_, hcentre ((p : ℕ) : 𝓞 F)⟩ : V) = ((p : ℕ) : V) := by
+    apply Subtype.ext
+    push_cast
+    simp
+  have hpV : ((p : ℕ) : V) ∈ IsLocalRing.maximalIdeal V := by
+    rw [← hcast]; exact (hw _).mpr hpw
+  have hp0 : ((p : ℕ) : IsLocalRing.ResidueField V) = 0 := by
+    have h1 : IsLocalRing.residue V ((p : ℕ) : V) = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.mpr hpV
+    simpa using h1
+  haveI hcharV : CharP (IsLocalRing.ResidueField V) p := by
+    have hdvd : ringChar (IsLocalRing.ResidueField V) ∣ p := ringChar.dvd hp0
+    haveI := ringChar.charP (IsLocalRing.ResidueField V)
+    exact charP_of_injective_ringHom
+      (f := ZMod.castHom hdvd (IsLocalRing.ResidueField V)) (RingHom.injective _) p
+  -- `κ(V)` is ALGEBRAICALLY CLOSED: a monic lift splits over `F̄`, and a root of a monic
+  -- polynomial over `V` is integral over `V`, hence in `V` since `V` is integrally closed
+  haveI hAC : IsAlgClosed (IsLocalRing.ResidueField V) := by
+    apply IsAlgClosed.of_exists_root
+    intro P0 hmonic hirr
+    have hsurj : Function.Surjective (IsLocalRing.residue V) := Ideal.Quotient.mk_surjective
+    obtain ⟨P, hPmap, hPdeg, hPmonic⟩ :=
+      Polynomial.lifts_and_degree_eq_and_monic
+        (Polynomial.mem_lifts_of_surjective hsurj P0) hmonic
+    have hdegne : (P.map (algebraMap V (AlgebraicClosure F))).degree ≠ 0 := by
+      rw [hPmonic.degree_map, hPdeg]
+      exact (Polynomial.degree_pos_of_irreducible hirr).ne'
+    obtain ⟨x, hx⟩ :=
+      IsAlgClosed.exists_root (P.map (algebraMap V (AlgebraicClosure F))) hdegne
+    have hint : IsIntegral V x := ⟨P, hPmonic, by rwa [Polynomial.eval₂_eq_eval_map]⟩
+    obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.1 hint
+    have hPy : P.eval y = 0 := by
+      have h1 : algebraMap V (AlgebraicClosure F) (P.eval y) = 0 := by
+        rw [← Polynomial.eval₂_at_apply (algebraMap V (AlgebraicClosure F)) y, hy,
+          ← Polynomial.eval_map]
+        exact hx
+      have h2 : Function.Injective (algebraMap V (AlgebraicClosure F)) :=
+        IsFractionRing.injective V (AlgebraicClosure F)
+      exact h2 (by simpa using h1)
+    exact ⟨IsLocalRing.residue V y, by
+      rw [← hPmap, Polynomial.eval_map, Polynomial.eval₂_at_apply, hPy, map_zero]⟩
+  -- `κ(V)` is ALGEBRAIC over its prime field: use the PRIMITIVE PART of an integral
+  -- equation, which survives reduction mod `p` precisely because it is primitive
+  letI : Algebra (ZMod p) (IsLocalRing.ResidueField V) :=
+    (ZMod.castHom (dvd_refl p) (IsLocalRing.ResidueField V)).toAlgebra
+  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure F) := by
+    haveI : Algebra.IsAlgebraic ℚ F := Algebra.IsAlgebraic.of_finite ℚ F
+    exact Algebra.IsAlgebraic.trans ℚ F (AlgebraicClosure F)
+  haveI hAA : Algebra.IsAlgebraic (ZMod p) (IsLocalRing.ResidueField V) := by
+    constructor
+    intro z
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective z
+    have halgQ : IsAlgebraic ℚ ((a : AlgebraicClosure F)) :=
+      Algebra.IsAlgebraic.isAlgebraic _
+    have halgZ : IsAlgebraic ℤ ((a : AlgebraicClosure F)) :=
+      (IsFractionRing.isAlgebraic_iff ℤ ℚ (AlgebraicClosure F)).2 halgQ
+    obtain ⟨f, hf0, hfa⟩ := halgZ
+    set g := f.primPart with hgdef
+    have hgprim : g.IsPrimitive := f.isPrimitive_primPart
+    have hcont : (f.content : ℤ) ≠ 0 := by
+      simpa [Polynomial.content_eq_zero_iff] using hf0
+    have hga : (Polynomial.aeval ((a : AlgebraicClosure F))) g = 0 := by
+      have hfeq := f.eq_C_content_mul_primPart
+      rw [hfeq, map_mul, Polynomial.aeval_C] at hfa
+      have hne : (algebraMap ℤ (AlgebraicClosure F)) f.content ≠ 0 := by simpa using hcont
+      exact (mul_eq_zero.1 hfa).resolve_left hne
+    have hgA : (Polynomial.aeval a) g = 0 := by
+      have h2 : Function.Injective (algebraMap V (AlgebraicClosure F)) :=
+        IsFractionRing.injective V (AlgebraicClosure F)
+      apply h2
+      rw [map_zero, ← Polynomial.aeval_algebraMap_apply]
+      exact hga
+    have hgres : (Polynomial.aeval (IsLocalRing.residue V a)) g = 0 := by
+      show (Polynomial.aeval (algebraMap V (IsLocalRing.ResidueField V) a)) g = 0
+      rw [Polynomial.aeval_algebraMap_apply, hgA, map_zero]
+    refine ⟨g.map (Int.castRingHom (ZMod p)), ?_, ?_⟩
+    · intro hzero
+      have hdvd : (Polynomial.C (p : ℤ)) ∣ g := by
+        rw [Polynomial.C_dvd_iff_dvd_coeff]
+        intro n
+        have hc : ((g.coeff n : ℤ) : ZMod p) = 0 := by
+          have := congrArg (fun r => Polynomial.coeff r n) hzero
+          simpa using this
+        exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).1 hc
+      have hu := hgprim _ hdvd
+      rw [Int.isUnit_iff] at hu
+      have hp2 := hp.two_le
+      omega
+    · have hcomp : (algebraMap (ZMod p) (IsLocalRing.ResidueField V)).comp
+          (Int.castRingHom (ZMod p)) = algebraMap ℤ (IsLocalRing.ResidueField V) :=
+        RingHom.ext_int _ _
+      rw [Polynomial.aeval_def, Polynomial.eval₂_map, hcomp]
+      exact hgres
+  haveI : IsAlgClosure (ZMod p) (IsLocalRing.ResidueField V) := ⟨inferInstance, inferInstance⟩
+  -- the target is also an algebraic closure of the prime field: `κ(w)` is FINITE, and the
+  -- `ZMod p`-algebra structure on `κ(w)ᵃˡᵍ` is the one `AlgebraicClosure.instAlgebra` derives
+  letI : Algebra (ZMod p) w.asIdeal.ResidueField :=
+    (ZMod.castHom (dvd_refl p) w.asIdeal.ResidueField).toAlgebra
+  haveI : Module.Finite (ZMod p) w.asIdeal.ResidueField := Module.Finite.of_finite
+  haveI : Algebra.IsAlgebraic (ZMod p) w.asIdeal.ResidueField :=
+    Algebra.IsAlgebraic.of_finite (ZMod p) w.asIdeal.ResidueField
+  haveI : Algebra.IsAlgebraic (ZMod p) (AlgebraicClosure w.asIdeal.ResidueField) :=
+    Algebra.IsAlgebraic.trans (ZMod p) w.asIdeal.ResidueField
+      (AlgebraicClosure w.asIdeal.ResidueField)
+  haveI : IsAlgClosure (ZMod p) (AlgebraicClosure w.asIdeal.ResidueField) :=
+    ⟨inferInstance, inferInstance⟩
+  -- any two algebraic closures of `ZMod p` are isomorphic
+  let e := IsAlgClosure.equiv (ZMod p) (IsLocalRing.ResidueField V)
+    (AlgebraicClosure w.asIdeal.ResidueField)
+  refine ⟨(e : IsLocalRing.ResidueField V →+* _).comp (IsLocalRing.residue V), ?_, ?_⟩
+  · exact e.surjective.comp Ideal.Quotient.mk_surjective
+  · intro z
+    show e (IsLocalRing.residue V z) = 0 ↔ _
+    rw [map_eq_zero_iff _ e.injective]
+    exact Ideal.Quotient.eq_zero_iff_mem
 
 /-- **THE ARITHMETIC FROBENIUS AT `w` STABILISES A VALUATION RING OF `F̄` AND
 REDUCES TO THE `N w`-POWER MAP** (sorry leaf — local class field theory;
