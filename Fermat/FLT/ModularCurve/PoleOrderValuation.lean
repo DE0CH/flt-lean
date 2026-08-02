@@ -62,12 +62,18 @@ stated about *that* function and are true.
    pole at `O` (genus `≥ 1`), and some function has a double pole and some a triple pole
    (genus `≤ 1`, i.e. Riemann's inequality at `n = 2, 3`).
 
-Leaf 1 is a residue-field statement, leaf 2 the only genuinely missing mathematics.  There is
-still no Riemann–Roch, genus or divisor theory in `Fermat/`, in the mathlib pin or in
-`~/cs/FLT` (re-checked 2026-07-31), which is why leaf 2 stands; leaf 1 is reachable with
-tooling this tree already owns (`Scheme.Hom.stalkClosedPointTo` and the section lemmas of
-`CurveAffineComplement.lean`) and is left open here only for want of time, not for want of a
-route.
+Leaf 1 is a residue-field statement and is reachable with tooling this tree already owns
+(`Scheme.Hom.stalkClosedPointTo` and the section lemmas of `CurveAffineComplement.lean`); it
+is left open here only for want of time, not for want of a route.
+
+**Leaf 2 is NOT "the only genuinely missing mathematics", and the sentence that used to say
+so here was stale.**  Its own docstring's refuting check — *a Riemann–Roch theorem, a genus,
+or a divisor theory in `Fermat/`* — was re-run on 2026-08-02 and it FIRES:
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean` has `rrSet`, `ell`, `divisorDegree`,
+`pointDivisor` and `IsCurveGenus` (Riemann's theorem as the definition of the genus), all
+proven, with a single open leaf `exists_isCurveGenus`; its import cone is mathlib only, so
+importing it from here creates no cycle.  The residue is therefore narrower than a theory
+build, and the re-cut is written out on the leaf itself.
 
 **What closing the properness leaf cost, and what it says about the recorded route.**  Its
 docstring prescribed gluing two sections over `A ∖ {O}` and a neighbourhood of `O`, with
@@ -707,6 +713,33 @@ statement.)
 **WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS**: a Riemann–Roch theorem, a genus, or a theory of
 divisors/linear systems on a curve, in `Fermat/`, `.lake/packages/mathlib` or `~/cs/FLT`.
 Absent from all three as of 2026-07-31.
+
+**THAT CHECK WAS RE-RUN ON 2026-08-02 AND IT FIRES — the diagnosis above is STALE for the
+`Fermat/` half, and a prover should not be dispatched here on the strength of it.**
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveGenus.lean` (296 lines, mathlib-only import cone,
+so importing it from here creates no cycle) has exactly this vocabulary, and everything in
+it is PROVEN except one leaf:
+
+* `rrSet D` — the Riemann–Roch space `L(D)` inside `X.functionField`, and `ell strX D` its
+  `k`-dimension;
+* `divisorDegree`, `IsDivisorOn`, `pointDivisor z n` and `divisorDegree_pointDivisor`;
+* `IsCurveGenus strX g` — Riemann's theorem AS the definition of the genus
+  (`∃ B, ∀ D, deg D ≥ B → ℓ(D) = deg D + 1 - g`), with `IsCurveGenus.unique` PROVEN, which
+  is what stops a consumer discharging it by choosing a convenient `g`;
+* `exists_isCurveGenus` (`SmoothOfRelativeDimension 1` + `IsProper` +
+  `GeometricallyConnected` ⟹ `∃ g, IsCurveGenus strX g`) — **itself a `sorry` leaf**, and
+  the only one in that file.
+
+So what is genuinely missing is narrower than "genus theory": it is (i) `exists_isCurveGenus`
+and (ii) `g = 1` for an abelian scheme, plus (iii) the bridge from `ell strX (pointDivisor O n)`
+to `poleOrd` — `L(n[O])` is `{r | poleOrd r ≤ n}`, which is the submodule
+`exists_poleOrderValuation_of_affineComplement'` already builds, so (iii) is a computation in
+this file and not a citation.  Whoever takes this leaf should re-cut it along that seam rather
+than treat it as one indivisible citation; the two existentials are then Riemann's inequality
+at `n = 2, 3` over `g = 1`, and `poleOrd r ≠ 1` is `ℓ([O]) = 1`.  NOTE also that
+`CurveDivisorDegree.lean` and `PrincipalDivisorDegree.lean` are rival, partly duplicated
+developments of the degree theory with open leaves of their own; see the release-33 handover
+before building on either.
 
 **NOT VACUOUS**: at the Weierstrass chart, `x` and `y` witness the two existentials and
 `2i + 3j = 1` has no solution in non-negative integers. -/
