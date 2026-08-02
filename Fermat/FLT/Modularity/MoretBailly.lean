@@ -13555,8 +13555,570 @@ theorem exists_ringHom_retraction_of_localizedSystemGens
   obtain ⟨w, rfl⟩ := Ideal.Quotient.mk_surjective y
   exact hfin w
 
+/-! ### Denominator clearing: the presentation of a localised presented algebra
+
+The block below closes `exists_localizedSystemGens_identities_of_ratRetraction`.
+It supplies four things the leaf's own route note asked for, plus one it did not:
+
+* `ker_aeval_eq_span_localizedSystemGens` — the generators `localizedSystemGens F a N`
+  really PRESENT `Localization.Away x`: the canonical tuple's evaluation map is
+  surjective and its kernel is exactly their span. Both halves come from one
+  two-sided inverse built by `IsLocalization.Away.liftAlgHom`, so no fraction is
+  ever written by hand;
+* `exists_intRep_localizationAway` — every element of the localisation is the value
+  of an INTEGER polynomial at the canonical tuple, once the level `N` is divisible by
+  a denominator depending only on the element. This is where `IsLocalization.surj`
+  and `exists_intPoly_map_eq_intCast_mul` are spent; the extra variable stands for
+  `(N · a)⁻¹`, so `1/N = a · X none` is itself integral, which is what makes an
+  integral representative possible at all;
+* `exists_natCast_mul_mem_span_of_map_mem` — a membership over `ℚ` becomes a
+  membership over `ℤ` after multiplying by a positive integer (Bézout with a common
+  denominator for the finitely many cofactors);
+* and the step the route note did NOT anticipate: **the multiplier produced by the
+  previous item need not divide a power of `N`, so the identities do not follow at
+  the level `N` one started with.** Concretely, a class of `MvPolynomial (Option (Fin k)) ℤ ⧸
+  span (localizedSystemGens …)` that dies over `ℚ` is only TORSION, and `N` is a unit
+  in that ring, so killing it needs the torsion order to be inverted too. (Witness
+  that the naive reading fails: `k = 1`, `g = 2 X₀`, `b = 1`, `N = 1`; then
+  `z = X (some 0)` maps to `0` over `ℚ` while `z ∉ span {2 X (some 0), X none - 1}`
+  over `ℤ`, since that quotient is `ℤ[X]/(2X)` and `X` is `2`-torsion.)
+  `subNoneMul_mem_span_of_natCast_mul_mem` and
+  `upgrade_localizedSystemGens_identities` repair it: substituting `M · X none` for
+  the extra variable carries the generators at level `N₁` to the generators at level
+  `N₁ · M`, where `M` HAS become a unit, so an identity valid up to a factor `M` at
+  level `N₁` becomes an identity outright at level `N₁ · M`. The two `none`
+  components are built divisible by `X none` precisely so that the substituted tuple
+  can be divided by `M` again.
+
+Nothing here is specific to the Moret–Bailly application; it is the presentation
+theory of `Localization.Away` of a finitely presented algebra, over `ℤ` and over `ℚ`.
+-/
+
+theorem aeval_comp_some_eq {n : ℕ} {K : Type*} [CommRing K] {I : Ideal (MvPolynomial (Fin n) K)}
+    (x : MvPolynomial (Fin n) K ⧸ I) (w : Option (Fin n) → Localization.Away x)
+    (hws : ∀ i, w (Option.some i) =
+      algebraMap (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x)
+        (Ideal.Quotient.mk I (MvPolynomial.X i))) (h : MvPolynomial (Fin n) K) :
+    MvPolynomial.aeval (w ∘ Option.some) h =
+      algebraMap (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x) (Ideal.Quotient.mk I h) := by
+  have : (MvPolynomial.aeval (w ∘ Option.some) : MvPolynomial (Fin n) K →ₐ[K] Localization.Away x)
+      = (IsScalarTower.toAlgHom K (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x)).comp
+          (Ideal.Quotient.mkₐ K I) := by
+    apply MvPolynomial.algHom_ext
+    intro i
+    simp [hws i]
+  exact congrArg (fun φ => φ h) this
+
+/-- Values of the canonical tuple on renamed polynomials. -/
+theorem intEval_rename_canonical {n : ℕ} {K : Type*} [CommRing K]
+    {I : Ideal (MvPolynomial (Fin n) K)} {x : MvPolynomial (Fin n) K ⧸ I}
+    (w : Option (Fin n) → Localization.Away x)
+    (hws : ∀ i, w (Option.some i) =
+      algebraMap (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x)
+        (Ideal.Quotient.mk I (MvPolynomial.X i))) (z : MvPolynomial (Fin n) ℤ) :
+    intEval w (MvPolynomial.rename Option.some z) =
+      algebraMap (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x)
+        (Ideal.Quotient.mk I (MvPolynomial.map (Int.castRingHom K) z)) := by
+  rw [intEval_rename, intEval_eq_aeval_map K, aeval_comp_some_eq x w hws]
+
+/-- The `none` component of the canonical tuple inverts `N * x`. -/
+theorem canonicalTuple_none_spec {n m : ℕ} {K : Type*} [CommRing K]
+    {I : Ideal (MvPolynomial (Fin n) K)} (F : Fin m → MvPolynomial (Fin n) ℤ)
+    (a : MvPolynomial (Fin n) ℤ) (N : ℕ) {x : MvPolynomial (Fin n) K ⧸ I}
+    (hx : x = Ideal.Quotient.mk I (MvPolynomial.map (Int.castRingHom K) a))
+    (w : Option (Fin n) → Localization.Away x)
+    (hws : ∀ i, w (Option.some i) =
+      algebraMap (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x)
+        (Ideal.Quotient.mk I (MvPolynomial.X i)))
+    (hwg : ∀ o, intEval w (localizedSystemGens F a N o) = 0) :
+    (N : Localization.Away x) *
+      algebraMap (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x) x * w Option.none = 1 := by
+  have h := hwg Option.none
+  rw [show localizedSystemGens F a N Option.none =
+    (N : MvPolynomial (Option (Fin n)) ℤ) * MvPolynomial.rename Option.some a *
+      MvPolynomial.X Option.none - 1 from rfl] at h
+  rw [map_sub, map_mul, map_mul, map_natCast, map_one, intEval_X,
+    intEval_rename_canonical w hws, ← hx, sub_eq_zero] at h
+  exact h.symm ▸ rfl
+
+set_option maxHeartbeats 1000000 in
+/-- **THE PRESENTATION OF `Localization.Away` OF A PRESENTED ALGEBRA.** -/
+theorem ker_aeval_eq_span_localizedSystemGens
+    {n m : ℕ} {K : Type*} [CommRing K] (F : Fin m → MvPolynomial (Fin n) ℤ)
+    (a : MvPolynomial (Fin n) ℤ) (N : ℕ)
+    (I : Ideal (MvPolynomial (Fin n) K))
+    (hI : I = Ideal.span (Set.range fun j => MvPolynomial.map (Int.castRingHom K) (F j)))
+    (x : MvPolynomial (Fin n) K ⧸ I)
+    (hx : x = Ideal.Quotient.mk I (MvPolynomial.map (Int.castRingHom K) a))
+    (w : Option (Fin n) → Localization.Away x)
+    (hws : ∀ i, w (Option.some i) =
+      algebraMap (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x)
+        (Ideal.Quotient.mk I (MvPolynomial.X i)))
+    (hwg : ∀ o, intEval w (localizedSystemGens F a N o) = 0) :
+    (∀ z : MvPolynomial (Option (Fin n)) K,
+        MvPolynomial.aeval w z = 0 →
+        z ∈ Ideal.span (Set.range fun o =>
+          MvPolynomial.map (Int.castRingHom K) (localizedSystemGens F a N o))) ∧
+      Function.Surjective (MvPolynomial.aeval w :
+        MvPolynomial (Option (Fin n)) K →ₐ[K] Localization.Away x) := by
+  classical
+  set J : Ideal (MvPolynomial (Option (Fin n)) K) :=
+    Ideal.span (Set.range fun o =>
+      MvPolynomial.map (Int.castRingHom K) (localizedSystemGens F a N o)) with hJ
+  -- the generator memberships
+  have hgen : ∀ o, MvPolynomial.map (Int.castRingHom K) (localizedSystemGens F a N o) ∈ J :=
+    fun o => Ideal.subset_span ⟨o, rfl⟩
+  -- θ₀ : MvPolynomial (Fin n) K →ₐ[K] quotient
+  set θ₀ : MvPolynomial (Fin n) K →ₐ[K] (MvPolynomial (Option (Fin n)) K ⧸ J) :=
+    (Ideal.Quotient.mkₐ K J).comp (MvPolynomial.rename Option.some) with hθ₀
+  have hθ₀ker : ∀ y ∈ I, θ₀ y = 0 := by
+    intro y hy
+    rw [hI] at hy
+    refine Submodule.span_induction ?_ (by simp) (fun u v _ _ hu hv => by simp [hu, hv])
+      (fun c u _ hu => by simp [hu]) hy
+    rintro _ ⟨j, rfl⟩
+    have h1 : MvPolynomial.rename Option.some
+        (MvPolynomial.map (Int.castRingHom K) (F j)) =
+        MvPolynomial.map (Int.castRingHom K) (localizedSystemGens F a N (Option.some j)) := by
+      rw [show localizedSystemGens F a N (Option.some j) =
+        MvPolynomial.rename Option.some (F j) from rfl, MvPolynomial.map_rename]
+    show Ideal.Quotient.mk J (MvPolynomial.rename Option.some
+      (MvPolynomial.map (Int.castRingHom K) (F j))) = 0
+    rw [h1, Ideal.Quotient.eq_zero_iff_mem]
+    exact hgen (Option.some j)
+  set θ : (MvPolynomial (Fin n) K ⧸ I) →ₐ[K] (MvPolynomial (Option (Fin n)) K ⧸ J) :=
+    Ideal.Quotient.liftₐ I θ₀ hθ₀ker with hθdef
+  -- θ x is a unit
+  have hθx : θ x * Ideal.Quotient.mk J
+      ((N : MvPolynomial (Option (Fin n)) K) * MvPolynomial.X Option.none) = 1 := by
+    have hnone := hgen Option.none
+    rw [show localizedSystemGens F a N Option.none =
+      (N : MvPolynomial (Option (Fin n)) ℤ) * MvPolynomial.rename Option.some a *
+        MvPolynomial.X Option.none - 1 from rfl] at hnone
+    simp only [map_sub, map_mul, map_natCast, map_one, MvPolynomial.map_X] at hnone
+    rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_one, sub_eq_zero] at hnone
+    rw [hx]
+    show θ₀ (MvPolynomial.map (Int.castRingHom K) a) * _ = 1
+    rw [hθ₀]
+    show Ideal.Quotient.mk J (MvPolynomial.rename Option.some
+      (MvPolynomial.map (Int.castRingHom K) a)) * _ = 1
+    rw [← map_mul, ← MvPolynomial.map_rename]
+    rw [← hnone]
+    ring_nf
+  have hunit : IsUnit (θ x) := IsUnit.of_mul_eq_one _ hθx
+  set σ : Localization.Away x →ₐ[K] (MvPolynomial (Option (Fin n)) K ⧸ J) :=
+    IsLocalization.Away.liftAlgHom _ hunit with hσdef
+  have hσalg : ∀ y, σ (algebraMap (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x) y) = θ y :=
+    fun y => IsLocalization.Away.lift_eq _ hunit y
+  -- the `none` value of `w` is the inverse of `N * x`
+  have hnoneval : (N : Localization.Away x) *
+      algebraMap (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x) x * w Option.none = 1 :=
+    canonicalTuple_none_spec F a N hx w hws hwg
+  -- the key identity: σ ∘ aeval w = mk J
+  have hkey : ∀ z : MvPolynomial (Option (Fin n)) K,
+      σ (MvPolynomial.aeval w z) = Ideal.Quotient.mk J z := by
+    have hcomp : σ.comp (MvPolynomial.aeval w) = Ideal.Quotient.mkₐ K J := by
+      apply MvPolynomial.algHom_ext
+      intro o
+      cases o with
+      | some i =>
+          show σ (MvPolynomial.aeval w (MvPolynomial.X (Option.some i))) = _
+          rw [MvPolynomial.aeval_X, hws i, hσalg]
+          show θ₀ (MvPolynomial.X i) = _
+          rw [hθ₀]
+          show Ideal.Quotient.mk J (MvPolynomial.rename Option.some (MvPolynomial.X i)) = _
+          simp
+      | none =>
+          show σ (MvPolynomial.aeval w (MvPolynomial.X Option.none)) = _
+          rw [MvPolynomial.aeval_X]
+          refine eq_of_mul_eq_one_of_mul_eq_one
+            (A := (N : MvPolynomial (Option (Fin n)) K ⧸ J) * θ x) ?_ ?_
+          · have := congrArg σ hnoneval
+            rw [map_mul, map_mul, map_one, map_natCast, hσalg] at this
+            exact this
+          · show _ * Ideal.Quotient.mk J (MvPolynomial.X Option.none) = 1
+            rw [← hθx, map_mul, map_natCast]; ring
+    intro z
+    exact congrArg (fun φ => φ z) hcomp
+  -- J is contained in the kernel
+  have hJker : ∀ z ∈ J, MvPolynomial.aeval w z = 0 := by
+    intro z hz
+    refine Submodule.span_induction ?_ (by simp) (fun u v _ _ hu hv => by simp [hu, hv])
+      (fun c u _ hu => by simp [hu]) hz
+    rintro _ ⟨o, rfl⟩
+    rw [← intEval_eq_aeval_map K]
+    exact hwg o
+  refine ⟨fun z hz => ?_, ?_⟩
+  · have := hkey z
+    rw [hz, map_zero] at this
+    exact Ideal.Quotient.eq_zero_iff_mem.mp this.symm
+  · -- surjectivity
+    set φ : (MvPolynomial (Option (Fin n)) K ⧸ J) →ₐ[K] Localization.Away x :=
+      Ideal.Quotient.liftₐ J (MvPolynomial.aeval w) hJker with hφdef
+    have hφmk : ∀ z, φ (Ideal.Quotient.mk J z) = MvPolynomial.aeval w z := fun z => rfl
+    have hφσ : ∀ y : Localization.Away x, φ (σ y) = y := by
+      have hcomp : (φ.comp σ).toRingHom.comp
+          (algebraMap (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x)) =
+          (AlgHom.id K (Localization.Away x)).toRingHom.comp
+            (algebraMap (MvPolynomial (Fin n) K ⧸ I) (Localization.Away x)) := by
+        refine RingHom.ext fun y => ?_
+        obtain ⟨h, rfl⟩ := Ideal.Quotient.mk_surjective y
+        show φ (σ (algebraMap _ _ (Ideal.Quotient.mk I h))) = _
+        rw [hσalg]
+        show φ (θ₀ h) = _
+        rw [hθ₀]
+        show φ (Ideal.Quotient.mk J (MvPolynomial.rename Option.some h)) = _
+        rw [hφmk, MvPolynomial.aeval_rename, aeval_comp_some_eq x w hws]
+        rfl
+      have := IsLocalization.ringHom_ext (Submonoid.powers x) hcomp
+      intro y
+      exact congrArg (fun ρ => ρ y) this
+    intro y
+    obtain ⟨z, hz⟩ := Ideal.Quotient.mk_surjective (σ y)
+    exact ⟨z, by rw [show (MvPolynomial.aeval w z : Localization.Away x) = φ (Ideal.Quotient.mk J z) from (hφmk z).symm, hz, hφσ]⟩
+
+/-- Substituting `M * X none` for the extra variable `X none`. -/
+noncomputable def subNoneMul {ι : Type*} (M : ℕ) :
+    MvPolynomial (Option ι) ℤ →ₐ[ℤ] MvPolynomial (Option ι) ℤ :=
+  MvPolynomial.bind₁ (fun o => Option.elim o
+    ((M : MvPolynomial (Option ι) ℤ) * MvPolynomial.X Option.none)
+    (fun i => MvPolynomial.X (Option.some i)))
+
+@[simp] theorem subNoneMul_X_some {ι : Type*} (M : ℕ) (i : ι) :
+    subNoneMul M (MvPolynomial.X (Option.some i)) = MvPolynomial.X (Option.some i) := by
+  simp [subNoneMul]
+
+@[simp] theorem subNoneMul_X_none {ι : Type*} (M : ℕ) :
+    subNoneMul (ι := ι) M (MvPolynomial.X Option.none) =
+      (M : MvPolynomial (Option ι) ℤ) * MvPolynomial.X Option.none := by
+  simp [subNoneMul]
+
+theorem subNoneMul_rename {ι : Type*} (M : ℕ) (z : MvPolynomial ι ℤ) :
+    subNoneMul M (MvPolynomial.rename Option.some z) = MvPolynomial.rename Option.some z := by
+  rw [subNoneMul, MvPolynomial.bind₁_rename]
+  rw [MvPolynomial.rename_eq_aeval]
+  rfl
+
+theorem subNoneMul_localizedSystemGens {n m : ℕ} (F : Fin m → MvPolynomial (Fin n) ℤ)
+    (a : MvPolynomial (Fin n) ℤ) (N M : ℕ) (o : Option (Fin m)) :
+    subNoneMul M (localizedSystemGens F a N o) = localizedSystemGens F a (N * M) o := by
+  cases o with
+  | some j =>
+      show subNoneMul M (MvPolynomial.rename Option.some (F j)) = _
+      rw [subNoneMul_rename]; rfl
+  | none =>
+      show subNoneMul M ((N : MvPolynomial (Option (Fin n)) ℤ) *
+        MvPolynomial.rename Option.some a * MvPolynomial.X Option.none - 1) =
+        (((N * M : ℕ)) : MvPolynomial (Option (Fin n)) ℤ) *
+          MvPolynomial.rename Option.some a * MvPolynomial.X Option.none - 1
+      rw [map_sub, map_mul, map_mul, map_natCast, map_one, subNoneMul_X_none, subNoneMul_rename]
+      push_cast
+      ring
+
+/-- `M` is invertible modulo the presenting ideal at `N * M`. -/
+theorem isUnit_natCast_span_localizedSystemGens {n m : ℕ} (F : Fin m → MvPolynomial (Fin n) ℤ)
+    (a : MvPolynomial (Fin n) ℤ) (N M : ℕ) :
+    IsUnit ((M : MvPolynomial (Option (Fin n)) ℤ ⧸
+      Ideal.span (Set.range (localizedSystemGens F a (N * M))))) := by
+  set J := Ideal.span (Set.range (localizedSystemGens F a (N * M))) with hJ
+  have hmem : localizedSystemGens F a (N * M) Option.none ∈ J := Ideal.subset_span ⟨_, rfl⟩
+  rw [show localizedSystemGens F a (N * M) Option.none =
+    ((N * M : ℕ) : MvPolynomial (Option (Fin n)) ℤ) *
+      MvPolynomial.rename Option.some a * MvPolynomial.X Option.none - 1 from rfl] at hmem
+  rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_one, sub_eq_zero] at hmem
+  refine IsUnit.of_mul_eq_one ((N : MvPolynomial (Option (Fin n)) ℤ ⧸ J) *
+    Ideal.Quotient.mk J (MvPolynomial.rename Option.some a * MvPolynomial.X Option.none)) ?_
+  rw [map_mul] at hmem
+  rw [map_mul, map_natCast] at hmem
+  push_cast at hmem
+  rw [← hmem, map_mul]; ring
+
+/-- **THE TRANSFER**: an identity that holds up to a factor `M` at level `N` holds
+outright at level `N * M`, after substituting `M * X none` for the extra variable. -/
+theorem subNoneMul_mem_span_of_natCast_mul_mem {n m : ℕ} (F : Fin m → MvPolynomial (Fin n) ℤ)
+    (a : MvPolynomial (Fin n) ℤ) (N M : ℕ) {z : MvPolynomial (Option (Fin n)) ℤ}
+    (hz : (M : MvPolynomial (Option (Fin n)) ℤ) * z ∈
+      Ideal.span (Set.range (localizedSystemGens F a N))) :
+    subNoneMul M z ∈ Ideal.span (Set.range (localizedSystemGens F a (N * M))) := by
+  set J := Ideal.span (Set.range (localizedSystemGens F a (N * M))) with hJ
+  have hmap : subNoneMul M ((M : MvPolynomial (Option (Fin n)) ℤ) * z) ∈ J := by
+    have hle : Ideal.span (Set.range (localizedSystemGens F a N)) ≤
+        Ideal.comap ((subNoneMul M : MvPolynomial (Option (Fin n)) ℤ →ₐ[ℤ] _).toRingHom) J := by
+      rw [Ideal.span_le]
+      rintro _ ⟨o, rfl⟩
+      show subNoneMul M (localizedSystemGens F a N o) ∈ J
+      rw [subNoneMul_localizedSystemGens]
+      exact Ideal.subset_span ⟨o, rfl⟩
+    exact hle hz
+  rw [map_mul, map_natCast] at hmap
+  rw [← Ideal.Quotient.eq_zero_iff_mem] at hmap ⊢
+  rw [map_mul, map_natCast] at hmap
+  exact eq_zero_of_isUnit_mul_eq_zero (isUnit_natCast_span_localizedSystemGens F a N M) hmap
+
+theorem bind₁_subNoneMul_comm {ι κ : Type*} (M : ℕ)
+    (P P₁ : Option ι → MvPolynomial (Option κ) ℤ)
+    (hs : ∀ i, P (Option.some i) = subNoneMul M (P₁ (Option.some i)))
+    (hn : (M : MvPolynomial (Option κ) ℤ) * P Option.none = subNoneMul M (P₁ Option.none))
+    (z : MvPolynomial (Option ι) ℤ) :
+    MvPolynomial.bind₁ P (subNoneMul M z) = subNoneMul M (MvPolynomial.bind₁ P₁ z) := by
+  have hcomp : (MvPolynomial.bind₁ P).comp (subNoneMul M) =
+      (subNoneMul M).comp (MvPolynomial.bind₁ P₁) := by
+    apply MvPolynomial.algHom_ext
+    intro o
+    cases o with
+    | some i => simp [hs i]
+    | none => simpa using hn
+  exact congrArg (fun φ => φ z) hcomp
+
+set_option maxHeartbeats 1000000 in
+/-- **THE LEVEL UPGRADE**: identities holding up to a factor `M` at level `N₁` become
+identities at level `N₁ * M`, provided the `none`-components are divisible by `X none`. -/
+theorem upgrade_localizedSystemGens_identities
+    {n m k : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ) (g : MvPolynomial (Fin k) ℤ)
+    (a : MvPolynomial (Fin n) ℤ) (b : MvPolynomial (Fin k) ℤ)
+    (P₁ : Option (Fin n) → MvPolynomial (Option (Fin k)) ℤ)
+    (Q₁ : Option (Fin k) → MvPolynomial (Option (Fin n)) ℤ)
+    (N₁ M t : ℕ)
+    (RP : MvPolynomial (Option (Fin k)) ℤ)
+    (hRP : P₁ Option.none = MvPolynomial.X Option.none * RP)
+    (RQ : MvPolynomial (Option (Fin n)) ℤ)
+    (hRQ : Q₁ Option.none = MvPolynomial.X Option.none * RQ)
+    (H1 : ∀ o : Option (Fin m),
+      (M : MvPolynomial (Option (Fin k)) ℤ) *
+          MvPolynomial.bind₁ P₁ (localizedSystemGens f a N₁ o) ∈
+        Ideal.span (Set.range (localizedSystemGens (fun _ : Fin 1 => g) b N₁)))
+    (H2 : ∀ o : Option (Fin 1),
+      (M : MvPolynomial (Option (Fin n)) ℤ) *
+          MvPolynomial.bind₁ Q₁ (localizedSystemGens (fun _ : Fin 1 => g) b N₁ o) ^ t ∈
+        Ideal.span (Set.range (localizedSystemGens f a N₁)))
+    (H3 : ∀ i : Fin n,
+      (M : MvPolynomial (Option (Fin n)) ℤ) *
+          (MvPolynomial.bind₁ Q₁ (P₁ (Option.some i)) - MvPolynomial.X (Option.some i)) ^ t ∈
+        Ideal.span (Set.range (localizedSystemGens f a N₁))) :
+    ∃ (P : Option (Fin n) → MvPolynomial (Option (Fin k)) ℤ)
+      (Q : Option (Fin k) → MvPolynomial (Option (Fin n)) ℤ),
+      (∀ o : Option (Fin m),
+        ((N₁ * M : ℕ) : MvPolynomial (Option (Fin k)) ℤ) *
+            MvPolynomial.bind₁ P (localizedSystemGens f a (N₁ * M) o) ∈
+          Ideal.span (Set.range (localizedSystemGens (fun _ : Fin 1 => g) b (N₁ * M)))) ∧
+      (∀ o : Option (Fin 1),
+        ((N₁ * M : ℕ) : MvPolynomial (Option (Fin n)) ℤ) *
+            MvPolynomial.bind₁ Q (localizedSystemGens (fun _ : Fin 1 => g) b (N₁ * M) o) ^ t ∈
+          Ideal.span (Set.range (localizedSystemGens f a (N₁ * M)))) ∧
+      (∀ i : Fin n,
+        ((N₁ * M : ℕ) : MvPolynomial (Option (Fin n)) ℤ) *
+            (MvPolynomial.bind₁ Q (P (Option.some i)) - MvPolynomial.X (Option.some i)) ^ t ∈
+          Ideal.span (Set.range (localizedSystemGens f a (N₁ * M)))) := by
+  classical
+  refine ⟨fun o => o.elim (MvPolynomial.X Option.none * subNoneMul M RP)
+      (fun i => subNoneMul M (P₁ (Option.some i))),
+    fun o => o.elim (MvPolynomial.X Option.none * subNoneMul M RQ)
+      (fun j => subNoneMul M (Q₁ (Option.some j))), ?_, ?_, ?_⟩
+  · intro o
+    have hP : MvPolynomial.bind₁ (fun o' : Option (Fin n) =>
+        o'.elim (MvPolynomial.X Option.none * subNoneMul M RP)
+          (fun i => subNoneMul M (P₁ (Option.some i))))
+        (localizedSystemGens f a (N₁ * M) o) =
+        subNoneMul M (MvPolynomial.bind₁ P₁ (localizedSystemGens f a N₁ o)) := by
+      rw [← subNoneMul_localizedSystemGens f a N₁ M o]
+      refine bind₁_subNoneMul_comm M _ P₁ (fun i => rfl) ?_ _
+      show (M : MvPolynomial (Option (Fin k)) ℤ) *
+        (MvPolynomial.X Option.none * subNoneMul M RP) = subNoneMul M (P₁ Option.none)
+      rw [hRP, map_mul, subNoneMul_X_none]
+      ring
+    rw [hP]
+    exact Ideal.mul_mem_left _ _
+      (subNoneMul_mem_span_of_natCast_mul_mem (fun _ : Fin 1 => g) b N₁ M (H1 o))
+  · intro o
+    have hQnone : (M : MvPolynomial (Option (Fin n)) ℤ) *
+        (MvPolynomial.X Option.none * subNoneMul M RQ) = subNoneMul M (Q₁ Option.none) := by
+      rw [hRQ, map_mul, subNoneMul_X_none]; ring
+    have hQ : MvPolynomial.bind₁ (fun o' : Option (Fin k) =>
+        o'.elim (MvPolynomial.X Option.none * subNoneMul M RQ)
+          (fun j => subNoneMul M (Q₁ (Option.some j))))
+        (localizedSystemGens (fun _ : Fin 1 => g) b (N₁ * M) o) =
+        subNoneMul M (MvPolynomial.bind₁ Q₁ (localizedSystemGens (fun _ : Fin 1 => g) b N₁ o)) := by
+      rw [← subNoneMul_localizedSystemGens (fun _ : Fin 1 => g) b N₁ M o]
+      exact bind₁_subNoneMul_comm M _ Q₁ (fun j => rfl) hQnone _
+    rw [hQ, ← map_pow]
+    exact Ideal.mul_mem_left _ _
+      (subNoneMul_mem_span_of_natCast_mul_mem f a N₁ M (H2 o))
+  · intro i
+    have hQnone : (M : MvPolynomial (Option (Fin n)) ℤ) *
+        (MvPolynomial.X Option.none * subNoneMul M RQ) = subNoneMul M (Q₁ Option.none) := by
+      rw [hRQ, map_mul, subNoneMul_X_none]; ring
+    have hQP : MvPolynomial.bind₁ (fun o' : Option (Fin k) =>
+        o'.elim (MvPolynomial.X Option.none * subNoneMul M RQ)
+          (fun j => subNoneMul M (Q₁ (Option.some j))))
+        (subNoneMul M (P₁ (Option.some i))) =
+        subNoneMul M (MvPolynomial.bind₁ Q₁ (P₁ (Option.some i))) :=
+      bind₁_subNoneMul_comm M _ Q₁ (fun j => rfl) hQnone _
+    have hdiff : MvPolynomial.bind₁ (fun o' : Option (Fin k) =>
+        o'.elim (MvPolynomial.X Option.none * subNoneMul M RQ)
+          (fun j => subNoneMul M (Q₁ (Option.some j))))
+        ((fun o' : Option (Fin n) => o'.elim (MvPolynomial.X Option.none * subNoneMul M RP)
+          (fun i' => subNoneMul M (P₁ (Option.some i')))) (Option.some i)) -
+        MvPolynomial.X (Option.some i) =
+        subNoneMul M (MvPolynomial.bind₁ Q₁ (P₁ (Option.some i)) -
+          MvPolynomial.X (Option.some i)) := by
+      show MvPolynomial.bind₁ _ (subNoneMul M (P₁ (Option.some i))) - _ = _
+      rw [hQP, map_sub, subNoneMul_X_some]
+    rw [hdiff, ← map_pow]
+    exact Ideal.mul_mem_left _ _
+      (subNoneMul_mem_span_of_natCast_mul_mem f a N₁ M (H3 i))
+
+/-- A single POSITIVE natural number clears the denominators of a finite family of
+rational polynomials. -/
+theorem exists_common_intMultiple {ι σ : Type*} [Fintype ι] [DecidableEq ι]
+    (c : ι → MvPolynomial σ ℚ) :
+    ∃ (M : ℕ) (c' : ι → MvPolynomial σ ℤ), 0 < M ∧
+      ∀ i, MvPolynomial.map (Int.castRingHom ℚ) (c' i) = (M : MvPolynomial σ ℚ) * c i := by
+  classical
+  choose Ni ci hNi hci using fun i => exists_intPoly_map_eq_intCast_mul (c i)
+  set M₀ : ℤ := ∏ i, Ni i with hM₀
+  have hM₀ne : M₀ ≠ 0 := Finset.prod_ne_zero_iff.mpr (fun i _ => hNi i)
+  have hstep : ∀ i, MvPolynomial.map (Int.castRingHom ℚ)
+      ((∏ j ∈ Finset.univ.erase i, Ni j) • ci i) = (M₀ : MvPolynomial σ ℚ) * c i := by
+    intro i
+    have hsplit : M₀ = Ni i * ∏ j ∈ Finset.univ.erase i, Ni j :=
+      (Finset.mul_prod_erase Finset.univ Ni (Finset.mem_univ i)).symm
+    rw [hsplit]
+    push_cast
+    rw [zsmul_eq_mul, map_mul, hci i]
+    simp only [map_intCast]
+    push_cast
+    ring
+  refine ⟨M₀.natAbs ^ 2, fun i => M₀ • ((∏ j ∈ Finset.univ.erase i, Ni j) • ci i),
+    pow_pos (Int.natAbs_pos.mpr hM₀ne) 2, fun i => ?_⟩
+  show MvPolynomial.map (Int.castRingHom ℚ)
+    (M₀ • ((∏ j ∈ Finset.univ.erase i, Ni j) • ci i)) = _
+  rw [zsmul_eq_mul, map_mul, hstep i]
+  simp only [map_intCast]
+  have h1 : ((M₀.natAbs ^ 2 : ℕ) : ℤ) = M₀ * M₀ := by
+    rw [sq, Nat.cast_mul]
+    exact Int.natAbs_mul_self' M₀
+  have hcast : (((M₀.natAbs ^ 2 : ℕ) : ℤ) : MvPolynomial σ ℚ) =
+      ((M₀.natAbs ^ 2 : ℕ) : MvPolynomial σ ℚ) := Int.cast_natCast _
+  have hsq : ((M₀.natAbs ^ 2 : ℕ) : MvPolynomial σ ℚ) =
+      (M₀ : MvPolynomial σ ℚ) * (M₀ : MvPolynomial σ ℚ) := by
+    rw [← hcast, h1]; push_cast; ring
+  rw [hsq]; ring
+
+/-- **THE TRANSFER STEP**: a membership over `ℚ` becomes a membership over `ℤ` after
+multiplying by a positive integer. -/
+theorem exists_natCast_mul_mem_span_of_map_mem {ι σ : Type*} [Fintype ι] [DecidableEq ι]
+    (G : ι → MvPolynomial σ ℤ) (z : MvPolynomial σ ℤ)
+    (hz : MvPolynomial.map (Int.castRingHom ℚ) z ∈
+      Ideal.span (Set.range fun i => MvPolynomial.map (Int.castRingHom ℚ) (G i))) :
+    ∃ M : ℕ, 0 < M ∧ (M : MvPolynomial σ ℤ) * z ∈ Ideal.span (Set.range G) := by
+  classical
+  rw [Submodule.mem_span_range_iff_exists_fun] at hz
+  obtain ⟨c, hc⟩ := hz
+  obtain ⟨M, c', hM, hc'⟩ := exists_common_intMultiple c
+  refine ⟨M, hM, ?_⟩
+  have hinj : Function.Injective
+      (MvPolynomial.map (Int.castRingHom ℚ) : MvPolynomial σ ℤ → MvPolynomial σ ℚ) :=
+    MvPolynomial.map_injective _ Int.cast_injective
+  have hkey : MvPolynomial.map (Int.castRingHom ℚ) ((M : MvPolynomial σ ℤ) * z) =
+      MvPolynomial.map (Int.castRingHom ℚ) (∑ i, c' i * G i) := by
+    rw [map_mul, map_sum]
+    simp only [map_natCast]
+    rw [← hc, Finset.mul_sum]
+    exact Finset.sum_congr rfl fun i _ => by
+      rw [map_mul, hc' i, smul_eq_mul]; ring
+  rw [hinj hkey]
+  exact Ideal.sum_mem _ fun i _ => Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨i, rfl⟩)
+
+set_option maxHeartbeats 1000000 in
+/-- **INTEGRAL REPRESENTATIVES**: every element of the localisation is the value, at the
+canonical tuple, of an INTEGER polynomial — provided the level `N` is divisible by a
+denominator `D` depending only on the element. -/
+theorem exists_intRep_localizationAway
+    {n : ℕ} {I : Ideal (MvPolynomial (Fin n) ℚ)}
+    (a : MvPolynomial (Fin n) ℤ)
+    (x : MvPolynomial (Fin n) ℚ ⧸ I)
+    (hx : x = Ideal.Quotient.mk I (MvPolynomial.map (Int.castRingHom ℚ) a))
+    (z : Localization.Away x) :
+    ∃ D : ℕ, 0 < D ∧ ∀ N : ℕ, D ∣ N →
+      ∀ w : Option (Fin n) → Localization.Away x,
+        (∀ i, w (Option.some i) = algebraMap (MvPolynomial (Fin n) ℚ ⧸ I) (Localization.Away x)
+          (Ideal.Quotient.mk I (MvPolynomial.X i))) →
+        ((N : Localization.Away x) *
+          algebraMap (MvPolynomial (Fin n) ℚ ⧸ I) (Localization.Away x) x * w Option.none = 1) →
+        ∃ zz : MvPolynomial (Option (Fin n)) ℤ, intEval w zz = z := by
+  classical
+  obtain ⟨⟨y, q⟩, hz⟩ := IsLocalization.surj (Submonoid.powers x) z
+  obtain ⟨s, hs⟩ := q.2
+  obtain ⟨h, rfl⟩ := Ideal.Quotient.mk_surjective y
+  obtain ⟨D₀, hh, hD₀, hhh⟩ := exists_intPoly_map_eq_intCast_mul h
+  refine ⟨D₀.natAbs, Int.natAbs_pos.mpr hD₀, ?_⟩
+  intro N hdvd w hws hnone
+  obtain ⟨e, he⟩ : (D₀ ∣ (N : ℤ)) := by
+    rcases hdvd with ⟨c, hc⟩
+    exact Dvd.dvd.trans (Int.natAbs_dvd.mp dvd_rfl) ⟨(c : ℤ), by exact_mod_cast congrArg (Nat.cast : ℕ → ℤ) hc⟩
+  have hs' : x ^ s = (q : MvPolynomial (Fin n) ℚ ⧸ I) := hs
+  set u : Localization.Away x :=
+    algebraMap (MvPolynomial (Fin n) ℚ ⧸ I) (Localization.Away x) x with hu
+  set Y : Localization.Away x :=
+    algebraMap (MvPolynomial (Fin n) ℚ ⧸ I) (Localization.Away x) (Ideal.Quotient.mk I h) with hY
+  have hzs : z * u ^ s = Y := by
+    rw [hu, hY, ← map_pow, hs']
+    exact hz
+  have hhhval : intEval (w ∘ Option.some) hh = (D₀ : Localization.Away x) * Y := by
+    rw [intEval_eq_aeval_map ℚ, aeval_comp_some_eq x w hws, hhh, map_mul, hY]
+    push_cast
+    simp
+  have haval : intEval (w ∘ Option.some) a = u := by
+    rw [intEval_eq_aeval_map ℚ, aeval_comp_some_eq x w hws, ← hx]
+  refine ⟨(e : MvPolynomial (Option (Fin n)) ℤ) *
+    ((N : ℕ) : MvPolynomial (Option (Fin n)) ℤ) ^ s * MvPolynomial.rename Option.some hh *
+    MvPolynomial.X Option.none ^ s *
+    (MvPolynomial.rename Option.some a * MvPolynomial.X Option.none), ?_⟩
+  have hval : intEval w ((e : MvPolynomial (Option (Fin n)) ℤ) *
+      ((N : ℕ) : MvPolynomial (Option (Fin n)) ℤ) ^ s * MvPolynomial.rename Option.some hh *
+      MvPolynomial.X Option.none ^ s *
+      (MvPolynomial.rename Option.some a * MvPolynomial.X Option.none)) =
+      (e : Localization.Away x) * (N : Localization.Away x) ^ s * ((D₀ : Localization.Away x) * Y) *
+        (w Option.none) ^ s * (u * w Option.none) := by
+    simp only [map_mul, map_pow, map_intCast, map_natCast, intEval_X, intEval_rename]
+    rw [hhhval, haval]
+  rw [hval]
+  -- cancellation
+  have hunit1 : ((N : Localization.Away x) * u * w Option.none) ^ (s + 1) = 1 := by
+    rw [hnone, one_pow]
+  have hcancel : ∀ A B : Localization.Away x,
+      A * ((N : Localization.Away x) * u) ^ (s + 1) =
+        B * ((N : Localization.Away x) * u) ^ (s + 1) → A = B := by
+    intro A B hAB
+    have h1 : A * (((N : Localization.Away x) * u) ^ (s + 1) * (w Option.none) ^ (s + 1)) =
+        B * (((N : Localization.Away x) * u) ^ (s + 1) * (w Option.none) ^ (s + 1)) := by
+      rw [← mul_assoc, ← mul_assoc, hAB]
+    rw [← mul_pow, hunit1] at h1
+    simpa using h1
+  refine hcancel _ _ ?_
+  have heN : (e : Localization.Away x) * (D₀ : Localization.Away x) =
+      (N : Localization.Away x) := by
+    have hcast : ((N : ℤ) : Localization.Away x) = ((D₀ * e : ℤ) : Localization.Away x) := by
+      rw [← he]
+    push_cast at hcast
+    rw [hcast]; ring
+  calc (e : Localization.Away x) * (N : Localization.Away x) ^ s *
+        ((D₀ : Localization.Away x) * Y) * (w Option.none) ^ s * (u * w Option.none) *
+        ((N : Localization.Away x) * u) ^ (s + 1)
+      = ((e : Localization.Away x) * (D₀ : Localization.Away x)) *
+        (N : Localization.Away x) ^ s * Y * u *
+        (((N : Localization.Away x) * u * w Option.none) ^ (s + 1)) := by
+          rw [mul_pow, mul_pow]; ring
+    _ = (N : Localization.Away x) ^ (s + 1) * Y * u := by rw [hunit1, heN]; ring
+    _ = z * ((N : Localization.Away x) * u) ^ (s + 1) := by rw [mul_pow, ← hzs]; ring
+
+theorem pow_eq_zero_of_le' {R : Type*} [CommRing R] {x : R} {t T : ℕ} (h : t ≤ T)
+    (hx : x ^ t = 0) : x ^ T = 0 := by
+  rw [← Nat.add_sub_cancel' h, pow_add, hx, zero_mul]
+
+set_option maxHeartbeats 4000000 in
 /-- **THE DENOMINATOR-CLEARING HEART OF THE SPREADING-OUT, AS POLYNOMIAL IDENTITIES
-OVER `ℤ` AND WITH NO PRIME IN SIGHT** (SORRY LEAF, cut 2026-07-31 out of
+OVER `ℤ` AND WITH NO PRIME IN SIGHT** (**PROVEN 2026-08-02**; cut 2026-07-31 out of
 `exists_pos_forall_prime_not_dvd_reduction_retraction_localizationAway_integralSystemModel`
 immediately below, which is now PROVEN over it through the fibrewise assembly
 `exists_ringHom_retraction_of_localizedSystemGens` above).
@@ -13647,7 +14209,36 @@ above.
 
 CIRCULARITY GUARD: inherited from the consumer; pure commutative algebra, no
 Galois representation, no route through `Family.lean`, `Lift.lean` or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean`.
+
+**CORRECTION TO THE ROUTE ABOVE (2026-08-02, and it is why the proof needed the
+block of presentation theory immediately preceding this declaration).** Steps (1)–(3)
+are right and are exactly what `exists_intRep_localizationAway` and
+`exists_natCast_mul_mem_span_of_map_mem` do. Step (4) is not the whole of what is
+left, and the sentence *"`N` is the product of the denominators … and over `ℤ` it is
+what makes the identity true at all"* is wrong twice over:
+
+* the leading `N` in each identity is REDUNDANT. `N · (rename some b · X none) ≡ 1`
+  modulo the presenting ideal, so `N` is already a UNIT there and
+  `N * z ∈ span … ↔ z ∈ span …`. Nothing is bought by the factor, and nothing is lost
+  by keeping it — the statement is unchanged, but a prover should not spend effort
+  arranging it;
+* what the factor was silently standing in for is the TORSION of
+  `MvPolynomial (Option (Fin k)) ℤ ⧸ span (localizedSystemGens …)`. Clearing
+  denominators in a `ℚ`-certificate gives `M * z ∈ span` for an integer `M` that is
+  produced only AFTER `P`, `Q` and hence `N` have been chosen, and `M` need not divide
+  a power of `N`. So the identities genuinely do NOT hold at the level one first picks.
+  Witness that this is not an artefact of the argument: at `k = 1`, `g = 2 X₀`,
+  `b = 1`, `N = 1` the element `z = X (some 0)` dies over `ℚ` and
+  `z ∉ span {2 X (some 0), X none - 1}` over `ℤ`, that quotient being `ℤ[X]/(2X)`.
+
+The repair is `upgrade_localizedSystemGens_identities`: substituting `M · X none` for
+the extra variable sends `localizedSystemGens F a N₁` to `localizedSystemGens F a
+(N₁ * M)`, where `M` in turn is a unit, so an identity valid up to `M` at level `N₁`
+becomes an identity outright at level `N₁ * M`. It is why `P none` and `Q none` are
+constructed with an explicit `X none` factor — that is what lets the substituted tuple
+be divided by `M` again — and why the `N` returned here is `N₁ * M` rather than the
+`N₁` that clears the denominators of `P` and `Q`. -/
 theorem exists_localizedSystemGens_identities_of_ratRetraction
     {n m k : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ) (g : MvPolynomial (Fin k) ℤ)
     (a : MvPolynomial (Fin n) ℤ) (b : MvPolynomial (Fin k) ℤ)
@@ -13676,8 +14267,213 @@ theorem exists_localizedSystemGens_identities_of_ratRetraction
       (∀ i : Fin n,
         (N : MvPolynomial (Option (Fin n)) ℤ) *
             (MvPolynomial.bind₁ Q (P (Option.some i)) - MvPolynomial.X (Option.some i)) ^ t ∈
-          Ideal.span (Set.range (localizedSystemGens f a N))) :=
-  sorry
+          Ideal.span (Set.range (localizedSystemGens f a N))) := by
+  classical
+  -- the B-side ideal, in `Set.range` form
+  have hIB : (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} :
+      Ideal (MvPolynomial (Fin k) ℚ)) =
+      Ideal.span (Set.range fun _ : Fin 1 => MvPolynomial.map (Int.castRingHom ℚ) g) := by
+    rw [Set.range_const]
+  have hIA : (integralSystemIdeal f ℚ) =
+      Ideal.span (Set.range fun j => MvPolynomial.map (Int.castRingHom ℚ) (f j)) := rfl
+  -- the two units and their inverses
+  have hαu : IsUnit (algebraMap (MvPolynomial (Fin n) ℚ ⧸ integralSystemIdeal f ℚ)
+      (Localization.Away (integralSystemClass f ℚ a)) (integralSystemClass f ℚ a)) :=
+    IsLocalization.Away.algebraMap_isUnit _
+  have hβu : IsUnit (algebraMap
+      (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+      (Localization.Away (Ideal.Quotient.mk
+        (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+        (MvPolynomial.map (Int.castRingHom ℚ) b)))
+      (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})
+        (MvPolynomial.map (Int.castRingHom ℚ) b))) :=
+    IsLocalization.Away.algebraMap_isUnit _
+  obtain ⟨ν, hν⟩ := hαu.exists_right_inv
+  obtain ⟨νb, hνb⟩ := hβu.exists_right_inv
+  -- lifts through the nilradical quotient of the `Λ`-values
+  choose zQ hzQ using fun (o : Option (Fin k)) => Ideal.Quotient.mk_surjective
+    (I := nilradical (Localization.Away (integralSystemClass f ℚ a)))
+    (Option.elim o (Λ νb)
+      (fun j => Λ (algebraMap (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b)))
+        (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.X j)))))
+  -- denominators
+  choose DP hDPpos hDP using fun (o : Option (Fin n)) =>
+    exists_intRep_localizationAway (n := k) b (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b)) rfl
+      (Option.elim o (Ψ ν)
+        (fun i => Ψ (algebraMap (MvPolynomial (Fin n) ℚ ⧸ integralSystemIdeal f ℚ) (Localization.Away (integralSystemClass f ℚ a))
+          (Ideal.Quotient.mk (integralSystemIdeal f ℚ) (MvPolynomial.X i)))))
+  choose DQ hDQpos hDQ using fun (o : Option (Fin k)) =>
+    exists_intRep_localizationAway (n := n) a (integralSystemClass f ℚ a) rfl (zQ o)
+  -- the level
+  obtain ⟨N₁, hN₁P, hN₁Q, hN₁pos⟩ : ∃ N₁ : ℕ, (∀ o, DP o ∣ N₁) ∧ (∀ o, DQ o ∣ N₁) ∧ 0 < N₁ := by
+    refine ⟨(∏ o, DP o) * ∏ o, DQ o, fun o => ?_, fun o => ?_, ?_⟩
+    · exact Dvd.dvd.mul_right (Finset.dvd_prod_of_mem _ (Finset.mem_univ o)) _
+    · exact Dvd.dvd.mul_left (Finset.dvd_prod_of_mem _ (Finset.mem_univ o)) _
+    · exact Nat.mul_pos (Finset.prod_pos fun o _ => hDPpos o)
+        (Finset.prod_pos fun o _ => hDQpos o)
+  have hN₁unit : IsUnit ((N₁ : ℚ)) := by
+    rw [isUnit_iff_ne_zero]
+    exact Nat.cast_ne_zero.mpr hN₁pos.ne'
+  obtain ⟨wA, hwAs, hwAg⟩ := exists_canonicalTuple_localizedSystemGens
+    (integralSystemIdeal f ℚ) f (fun j => Ideal.subset_span ⟨j, rfl⟩) a N₁ hN₁unit
+    (integralSystemClass f ℚ a) rfl
+  obtain ⟨wB, hwBs, hwBg⟩ := exists_canonicalTuple_localizedSystemGens
+    (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (fun _ : Fin 1 => g) (fun _ => Ideal.subset_span rfl) b N₁ hN₁unit
+    (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b)) rfl
+  have hnoneA : (N₁ : Localization.Away (integralSystemClass f ℚ a)) * algebraMap (MvPolynomial (Fin n) ℚ ⧸ integralSystemIdeal f ℚ) (Localization.Away (integralSystemClass f ℚ a)) (integralSystemClass f ℚ a) *
+      wA Option.none = 1 := canonicalTuple_none_spec f a N₁ rfl wA hwAs hwAg
+  have hnoneB : (N₁ : Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) * algebraMap (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b)) *
+      wB Option.none = 1 :=
+    canonicalTuple_none_spec (fun _ : Fin 1 => g) b N₁ rfl wB hwBs hwBg
+  have hrenA : intEval wA (MvPolynomial.rename Option.some a) =
+      algebraMap (MvPolynomial (Fin n) ℚ ⧸ integralSystemIdeal f ℚ) (Localization.Away (integralSystemClass f ℚ a)) (integralSystemClass f ℚ a) :=
+    intEval_rename_canonical wA hwAs a
+  have hrenB : intEval wB (MvPolynomial.rename Option.some b) =
+      algebraMap (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b)) :=
+    intEval_rename_canonical wB hwBs b
+  choose PP hPP using fun o => hDP o N₁ (hN₁P o) wB hwBs hnoneB
+  choose QQ hQQ using fun o => hDQ o N₁ (hN₁Q o) wA hwAs hnoneA
+  -- the two tuples
+  obtain ⟨P₁, hP₁s, hP₁n⟩ : ∃ P₁ : Option (Fin n) → MvPolynomial (Option (Fin k)) ℤ,
+      (∀ i, P₁ (Option.some i) = PP (Option.some i)) ∧
+      P₁ Option.none = MvPolynomial.X Option.none *
+        (PP Option.none * MvPolynomial.rename Option.some b) :=
+    ⟨fun o => Option.elim o (MvPolynomial.X Option.none *
+      (PP Option.none * MvPolynomial.rename Option.some b)) (fun i => PP (Option.some i)),
+      fun _ => rfl, rfl⟩
+  obtain ⟨Q₁, hQ₁s, hQ₁n⟩ : ∃ Q₁ : Option (Fin k) → MvPolynomial (Option (Fin n)) ℤ,
+      (∀ j, Q₁ (Option.some j) = QQ (Option.some j)) ∧
+      Q₁ Option.none = MvPolynomial.X Option.none *
+        (QQ Option.none * MvPolynomial.rename Option.some a) :=
+    ⟨fun o => Option.elim o (MvPolynomial.X Option.none *
+      (QQ Option.none * MvPolynomial.rename Option.some a)) (fun j => QQ (Option.some j)),
+      fun _ => rfl, rfl⟩
+  -- (star) the B-side tuple is the Ψ-image of the A-side canonical tuple
+  have hstar : ∀ o, intEval wB (P₁ o) = Ψ (wA o) := by
+    intro o
+    cases o with
+    | some i => rw [hP₁s i, hPP (Option.some i), hwAs i]; rfl
+    | none =>
+        rw [hP₁n]
+        simp only [map_mul, intEval_X]
+        rw [hPP Option.none, hrenB]
+        refine eq_of_mul_eq_one_of_mul_eq_one
+          (A := (N₁ : Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) * Ψ (algebraMap (MvPolynomial (Fin n) ℚ ⧸ integralSystemIdeal f ℚ) (Localization.Away (integralSystemClass f ℚ a)) (integralSystemClass f ℚ a))) ?_ ?_
+        · have h1 : Ψ (algebraMap (MvPolynomial (Fin n) ℚ ⧸ integralSystemIdeal f ℚ) (Localization.Away (integralSystemClass f ℚ a)) (integralSystemClass f ℚ a)) * Ψ ν = 1 := by
+            rw [← map_mul, hν, map_one]
+          calc (N₁ : Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) * Ψ (algebraMap (MvPolynomial (Fin n) ℚ ⧸ integralSystemIdeal f ℚ) (Localization.Away (integralSystemClass f ℚ a)) (integralSystemClass f ℚ a)) *
+                (wB Option.none * (Ψ ν * algebraMap (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))))
+              = (Ψ (algebraMap (MvPolynomial (Fin n) ℚ ⧸ integralSystemIdeal f ℚ) (Localization.Away (integralSystemClass f ℚ a)) (integralSystemClass f ℚ a)) * Ψ ν) *
+                ((N₁ : Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) * algebraMap (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b)) * wB Option.none) := by ring
+            _ = 1 := by rw [h1, hnoneB, one_mul]
+        · have h2 := congrArg Ψ hnoneA
+          rw [map_mul, map_mul, map_natCast, map_one] at h2
+          exact h2
+  -- (starstar) the A-side tuple lifts the Λ-image of the B-side canonical tuple
+  have hstarstar : ∀ o, Ideal.Quotient.mk (nilradical (Localization.Away (integralSystemClass f ℚ a))) (intEval wA (Q₁ o)) = Λ (wB o) := by
+    intro o
+    cases o with
+    | some j => rw [hQ₁s j, hQQ (Option.some j), hzQ (Option.some j), hwBs j]; rfl
+    | none =>
+        rw [hQ₁n]
+        simp only [map_mul, intEval_X]
+        rw [hQQ Option.none, hrenA, hzQ Option.none]
+        refine eq_of_mul_eq_one_of_mul_eq_one
+          (A := (N₁ : Localization.Away (integralSystemClass f ℚ a) ⧸ nilradical (Localization.Away (integralSystemClass f ℚ a))) * Λ (algebraMap (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b)))) ?_ ?_
+        · have h1 : Λ (algebraMap (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) * Λ νb = 1 := by
+            rw [← map_mul, hνb, map_one]
+          have h2 := congrArg (Ideal.Quotient.mk (nilradical (Localization.Away (integralSystemClass f ℚ a)))) hnoneA
+          rw [map_mul, map_mul, map_natCast, map_one] at h2
+          calc (N₁ : Localization.Away (integralSystemClass f ℚ a) ⧸ nilradical (Localization.Away (integralSystemClass f ℚ a))) * Λ (algebraMap (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) *
+                (Ideal.Quotient.mk (nilradical (Localization.Away (integralSystemClass f ℚ a))) (wA Option.none) *
+                  (Λ νb * Ideal.Quotient.mk (nilradical (Localization.Away (integralSystemClass f ℚ a)))
+                    (algebraMap (MvPolynomial (Fin n) ℚ ⧸ integralSystemIdeal f ℚ) (Localization.Away (integralSystemClass f ℚ a)) (integralSystemClass f ℚ a))))
+              = (Λ (algebraMap (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (Localization.Away (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b))) * Λ νb) *
+                ((N₁ : Localization.Away (integralSystemClass f ℚ a) ⧸ nilradical (Localization.Away (integralSystemClass f ℚ a))) *
+                  Ideal.Quotient.mk (nilradical (Localization.Away (integralSystemClass f ℚ a)))
+                    (algebraMap (MvPolynomial (Fin n) ℚ ⧸ integralSystemIdeal f ℚ) (Localization.Away (integralSystemClass f ℚ a)) (integralSystemClass f ℚ a)) *
+                  Ideal.Quotient.mk (nilradical (Localization.Away (integralSystemClass f ℚ a))) (wA Option.none)) := by ring
+            _ = 1 := by rw [h1, h2, one_mul]
+        · have h3 := congrArg Λ hnoneB
+          rw [map_mul, map_mul, map_natCast, map_one] at h3
+          exact h3
+  -- the three identity families over ℚ
+  have hI1 : ∀ o : Option (Fin m),
+      intEval wB (MvPolynomial.bind₁ P₁ (localizedSystemGens f a N₁ o)) = 0 := by
+    intro o
+    rw [intEval_bind₁, show (fun o' => intEval wB (P₁ o')) = (fun o' => Ψ (wA o')) from
+      funext hstar, ← ringHom_intEval, hwAg o, map_zero]
+  have hI2 : ∀ o : Option (Fin 1), IsNilpotent (intEval wA
+      (MvPolynomial.bind₁ Q₁ (localizedSystemGens (fun _ : Fin 1 => g) b N₁ o))) := by
+    intro o
+    rw [← mem_nilradical, ← Ideal.Quotient.eq_zero_iff_mem, intEval_bind₁, ringHom_intEval,
+      show (fun o' => Ideal.Quotient.mk (nilradical (Localization.Away (integralSystemClass f ℚ a))) (intEval wA (Q₁ o'))) = (fun o' => Λ (wB o')) from
+        funext hstarstar, ← ringHom_intEval, hwBg o, map_zero]
+  have hI3 : ∀ i : Fin n, IsNilpotent (intEval wA
+      (MvPolynomial.bind₁ Q₁ (P₁ (Option.some i)) - MvPolynomial.X (Option.some i))) := by
+    intro i
+    rw [← mem_nilradical, ← Ideal.Quotient.eq_zero_iff_mem, map_sub, intEval_X, intEval_bind₁,
+      map_sub, ringHom_intEval,
+      show (fun o' => Ideal.Quotient.mk (nilradical (Localization.Away (integralSystemClass f ℚ a))) (intEval wA (Q₁ o'))) = (fun o' => Λ (wB o')) from
+        funext hstarstar, ← ringHom_intEval, hstar (Option.some i), hcomp, sub_self]
+  -- the presentations
+  obtain ⟨kerB, -⟩ := ker_aeval_eq_span_localizedSystemGens (fun _ : Fin 1 => g) b N₁
+    (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) hIB (Ideal.Quotient.mk (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) (MvPolynomial.map (Int.castRingHom ℚ) b)) rfl wB hwBs hwBg
+  obtain ⟨kerA, -⟩ := ker_aeval_eq_span_localizedSystemGens f a N₁
+    (integralSystemIdeal f ℚ) hIA (integralSystemClass f ℚ a) rfl wA hwAs hwAg
+  -- the uniform nilpotency exponent
+  choose t1 ht1 using hI2
+  choose t2 ht2 using hI3
+  obtain ⟨T, hT1, hT2⟩ : ∃ T : ℕ, (∀ o, t1 o ≤ T) ∧ (∀ i, t2 i ≤ T) := by
+    refine ⟨(∑ o, t1 o) + ∑ i, t2 i, fun o => ?_, fun i => ?_⟩
+    · exact le_trans (Finset.single_le_sum (f := t1) (fun _ _ => Nat.zero_le _)
+        (Finset.mem_univ o)) (Nat.le_add_right _ _)
+    · exact le_trans (Finset.single_le_sum (f := t2) (fun _ _ => Nat.zero_le _)
+        (Finset.mem_univ i)) (Nat.le_add_left _ _)
+  -- the multipliers
+  choose M1 hM1pos hM1 using fun (o : Option (Fin m)) =>
+    exists_natCast_mul_mem_span_of_map_mem (localizedSystemGens (fun _ : Fin 1 => g) b N₁)
+      (MvPolynomial.bind₁ P₁ (localizedSystemGens f a N₁ o))
+      (kerB _ (by rw [← intEval_eq_aeval_map ℚ]; exact hI1 o))
+  choose M2 hM2pos hM2 using fun (o : Option (Fin 1)) =>
+    exists_natCast_mul_mem_span_of_map_mem (localizedSystemGens f a N₁)
+      (MvPolynomial.bind₁ Q₁ (localizedSystemGens (fun _ : Fin 1 => g) b N₁ o) ^ T)
+      (kerA _ (by
+        rw [← intEval_eq_aeval_map ℚ, map_pow]
+        exact pow_eq_zero_of_le' (hT1 o) (ht1 o)))
+  choose M3 hM3pos hM3 using fun (i : Fin n) =>
+    exists_natCast_mul_mem_span_of_map_mem (localizedSystemGens f a N₁)
+      ((MvPolynomial.bind₁ Q₁ (P₁ (Option.some i)) - MvPolynomial.X (Option.some i)) ^ T)
+      (kerA _ (by
+        rw [← intEval_eq_aeval_map ℚ, map_pow]
+        exact pow_eq_zero_of_le' (hT2 i) (ht2 i)))
+  obtain ⟨M, hMpos, hM1d, hM2d, hM3d⟩ : ∃ M : ℕ, 0 < M ∧ (∀ o, M1 o ∣ M) ∧ (∀ o, M2 o ∣ M) ∧
+      (∀ i, M3 i ∣ M) := by
+    refine ⟨(∏ o, M1 o) * (∏ o, M2 o) * ∏ i, M3 i, ?_, fun o => ?_, fun o => ?_, fun i => ?_⟩
+    · exact Nat.mul_pos (Nat.mul_pos (Finset.prod_pos fun o _ => hM1pos o)
+        (Finset.prod_pos fun o _ => hM2pos o)) (Finset.prod_pos fun i _ => hM3pos i)
+    · exact Dvd.dvd.mul_right (Dvd.dvd.mul_right
+        (Finset.dvd_prod_of_mem _ (Finset.mem_univ o)) _) _
+    · exact Dvd.dvd.mul_right (Dvd.dvd.mul_left
+        (Finset.dvd_prod_of_mem _ (Finset.mem_univ o)) _) _
+    · exact Dvd.dvd.mul_left (Finset.dvd_prod_of_mem _ (Finset.mem_univ i)) _
+  -- upgrade the multiplier from `Mi` to `M`
+  have hmulup : ∀ {τ : Type} (J : Ideal (MvPolynomial τ ℤ))
+      (M' : ℕ) (z : MvPolynomial τ ℤ), M' ∣ M → (M' : MvPolynomial τ ℤ) * z ∈ J →
+      (M : MvPolynomial τ ℤ) * z ∈ J := by
+    intro τ J M' z hd hz
+    obtain ⟨c, hc⟩ := hd
+    rw [hc]
+    push_cast
+    rw [mul_comm (M' : MvPolynomial τ ℤ) (c : MvPolynomial τ ℤ), mul_assoc]
+    exact Ideal.mul_mem_left _ _ hz
+  obtain ⟨P, Q, HP1, HP2, HP3⟩ := upgrade_localizedSystemGens_identities f g a b P₁ Q₁ N₁ M T
+    (PP Option.none * MvPolynomial.rename Option.some b) hP₁n
+    (QQ Option.none * MvPolynomial.rename Option.some a) hQ₁n
+    (fun o => hmulup _ (M1 o) _ (hM1d o) (hM1 o))
+    (fun o => hmulup _ (M2 o) _ (hM2d o) (hM2 o))
+    (fun i => hmulup _ (M3 i) _ (hM3d i) (hM3 i))
+  exact ⟨N₁ * M, P, Q, T, Nat.mul_pos hN₁pos hMpos, HP1, HP2, HP3⟩
 
 /-- **THE PURE DESCENT: A `ℚ`-DIAGRAM WITH AN INTEGRAL DENOMINATOR SPREADS OUT TO
 ALMOST EVERY FIBRE** (SORRY LEAF, cut 2026-07-30 out of
