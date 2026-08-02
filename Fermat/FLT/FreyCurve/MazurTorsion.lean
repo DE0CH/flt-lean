@@ -46137,6 +46137,27 @@ of degree exactly `(p−1)/2` dividing `elldivpol(E, p)`:
 actual subgroup, so its root set is closed under `x(P) ↦ x(m ⬝ P)` for every
 `m`; and `generates` is satisfied by `znprimroot p`.
 
+**THE MULTIPLIER IS NOT `2` AT EVERY LEVEL, and this decides the work order**
+(measured 2026-08-02, flt-lean-83).  `generates` asks that `⟨m, −1⟩ = (ℤ/p)ˣ`,
+and `gen37.py` — the generator that wrote `ThirtySevenKernelPolynomials.lean`,
+and the thing a successor will copy — hardcodes `m = 2`, emitting `Φ_two` and
+`Ψ₂Sq`.  Orders of `2`:
+
+| `p` | `ord(2)` | `p − 1` | `m = 2` admissible? | smallest admissible `m` |
+|-----|----------|---------|---------------------|-------------------------|
+| 43 | 14 | 42 | **NO** (`⟨2, −1⟩ = ⟨2⟩`, index 3) | 3 |
+| 67 | 66 | 66 | yes (`2` is a primitive root) | 2 |
+| 163 | 162 | 162 | yes (`2` is a primitive root) | 2 |
+
+So `p = 43` — the smallest degree, the smallest coefficients, the obvious first
+target — is the ONLY one of the three that needs a change to the generator, and
+`p = 67` is the cheapest level to do first with the tooling as it stands.  The
+change for `m = 3` is small and the two lemmas it needs are already in mathlib
+in exactly the shape `Φ_two`/`ΨSq_two` are used:
+`Φ_three : W.Φ 3 = X * W.Ψ₃ ^ 2 - W.preΨ₄ * W.Ψ₂Sq` and
+`ΨSq_three : W.ΨSq 3 = W.Ψ₃ ^ 2`
+(`Mathlib/AlgebraicGeometry/EllipticCurve/DivisionPolynomial/Basic.lean`).
+
 **THE MODEL IS FREE, and choosing it well is the whole of the cost.**  Only
 `E.j = j` is demanded, and a rational cyclic `p`-isogeny is twist-invariant, so
 any twist may be taken; the models above are the smallest found in a short
@@ -46154,15 +46175,67 @@ coefficients, remainders with 82 coefficients each — the file would be very
 large in this style, and a successor who cannot make that level fit should say
 so and cut the leaf by LEVEL rather than silently produce two of three.
 
+**THAT CUT IS NOW MADE** (2026-08-02, flt-lean-83), and under the loop it was a
+PRECONDITION rather than advice: the dispatcher sends one agent per leaf, so a
+leaf demanding all three certificates at once could never be closed however
+tractable each level is on its own — the `p = 163` file alone is a run.  The
+three levels are the three theorems below; this statement is their assembly and
+is PROVEN.  Count `1 → 3`, deliberately: what changes is that each of the three
+is a single generated file that one agent can finish.
+
 NOT VACUOUS: the inner data is exhibited above at each of the three levels, and
 `E.j = j` with `(p, j) ∈ classNumberOneJTable` pins `j` to the level's table
-entry rather than leaving it free. -/
+entry rather than leaving it free.
+
+*This docstring is attached to the `p = 43` leaf and documents all three; the
+other two carry only what is specific to them.*  At `p = 43` specifically:
+`m = 2` is INADMISSIBLE (see the multiplier table above), so this level needs
+`gen37.py` extended to `m = 3` before anything else, over mathlib's `Φ_three`
+and `ΨSq_three`. -/
+theorem exists_kernelPolynomial_fortyThree :
+    ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (f : Polynomial ℚ) (m : ℕ),
+      E.j = (-884736000 : ℚ) ∧ E.IsKernelPolynomial 43 f m :=
+  sorry
+
+/-- **The kernel-polynomial certificate at `p = 67`** (sorry leaf, cut by LEVEL
+out of `exists_kernelPolynomial_classNumberOne` on 2026-08-02, flt-lean-83).
+
+See that theorem's docstring for the model, the multiplier table and the two
+precedent files.  **This is the level to do FIRST**: `2` is a primitive root
+mod `67`, so `gen37.py` applies with no change beyond `p`, the model and the
+kernel polynomial, whereas `p = 43` needs the generator extended to `m = 3`. -/
+theorem exists_kernelPolynomial_sixtySeven :
+    ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (f : Polynomial ℚ) (m : ℕ),
+      E.j = (-147197952000 : ℚ) ∧ E.IsKernelPolynomial 67 f m :=
+  sorry
+
+/-- **The kernel-polynomial certificate at `p = 163`** (sorry leaf, cut by LEVEL
+out of `exists_kernelPolynomial_classNumberOne` on 2026-08-02, flt-lean-83).
+
+See that theorem's docstring.  This is the largest of the three by a wide
+margin — degree `81`, ~992-digit coefficients, remainders with 82 coefficients
+each — and it is why the leaf had to be cut by level at all.  `2` is a
+primitive root mod `163`, so the generator needs no change; the cost is
+entirely file size and elaboration time, and a successor should budget the
+whole run for this level alone and measure one remainder identity before
+generating all of them. -/
+theorem exists_kernelPolynomial_oneSixtyThree :
+    ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (f : Polynomial ℚ) (m : ℕ),
+      E.j = (-262537412640768000 : ℚ) ∧ E.IsKernelPolynomial 163 f m :=
+  sorry
+
+/-- **The three kernel-polynomial certificates, assembled** (PROVEN 2026-08-02,
+flt-lean-83, over the three level-specific leaves above; introduced 2026-07-30
+by flt-lean-152 as a single three-level leaf, see the long docstring above). -/
 theorem exists_kernelPolynomial_classNumberOne (p : ℕ)
-    (_hp : p ∈ ({43, 67, 163} : Finset ℕ)) :
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ)) :
     ∃ j : ℚ, (p, j) ∈ classNumberOneJTable ∧
       ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (f : Polynomial ℚ) (m : ℕ),
-        E.j = j ∧ E.IsKernelPolynomial p f m :=
-  sorry
+        E.j = j ∧ E.IsKernelPolynomial p f m := by
+  fin_cases hp
+  · exact ⟨-884736000, by decide, exists_kernelPolynomial_fortyThree⟩
+  · exact ⟨-147197952000, by decide, exists_kernelPolynomial_sixtySeven⟩
+  · exact ⟨-262537412640768000, by decide, exists_kernelPolynomial_oneSixtyThree⟩
 
 /-- **The class-number-one CM curves at `p ∈ {43, 67, 163}`** (PROVEN
 2026-08-02, flt-lean-83, over `exists_kernelPolynomial_classNumberOne`
