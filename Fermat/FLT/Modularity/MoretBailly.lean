@@ -4562,7 +4562,42 @@ so it is `Spec A × 𝔸ⁿ` and irreducible for free.  None of the content is i
 irreducible object.  All of it is in (i) GEOMETRIC irreducibility of the generic fibre over
 `K(t₀,…,t_n)`, which is Bertini proper, and (ii) the passage from the generic fibre to a
 dense open set of special fibres (EGA IV 9.7.7, constructibility of the
-geometrically-irreducible locus), which is absent from `Mathlib` at this pin. -/
+geometrically-irreducible locus), which is absent from `Mathlib` at this pin.
+
+**THIS MODULE CONTAINS A SECOND BERTINI-IRREDUCIBILITY LEAF, AND IT CITES THE SAME THEOREM
+(recorded 2026-08-02).** `exists_plane_irreducible_planeSection`, ~19 000 lines below, also
+cites Jouanolou Thm 6.3: for `K = K̄` and `h` an irreducible polynomial in `n + 3 ≥ 3`
+variables of total degree `d ≥ 2`, SOME affine `2`-plane has a section that is irreducible of
+degree `d`. The two share no identifier, no type and no statement shape — that one is
+polynomial (`Irreducible (planeSection h v u₁ u₂)`) where this one is scheme-theoretic — so
+nothing pairs them mechanically and neither was written knowing about the other.
+
+NEITHER IMPLIES THE OTHER, and the check is one read of the binder lists:
+
+* this leaf carries `[CharZero K]` and `[Algebra.Smooth K A]`. The polynomial leaf has
+  neither: its only call site is over `AlgebraicClosure (ZMod p)`, and the hypersurface
+  `V(h)` cut out by an arbitrary irreducible `h` is singular. So THIS leaf cannot discharge
+  that one;
+* conversely that leaf produces ONE plane for a HYPERSURFACE, while this one needs a good
+  LOCUS of hyperplanes for an ARBITRARY integral affine algebra. So it cannot discharge this
+  one either.
+
+So the duplication is in the WORK and not in the statements, and neither should be deleted.
+What should be proven, once, is the statement they are both instances of: an integral affine
+`K`-variety of dimension `≥ 2` over `K = K̄` has an irreducible general hyperplane section,
+in EVERY characteristic and with NO smoothness hypothesis. A prover dispatched here should
+read that leaf's docstring first — it records the same incidence-variety observation as the
+paragraph above, in this module's polynomial vocabulary, where the "irreducible for free"
+half is already PROVEN twice (`prime_familyPlaneSection_std`,
+`irreducible_map_paramFractionHom_translateFamily`).
+
+AND NOTE WHICH OF THE TWO OBSTRUCTIONS ABOVE IS SHARED. Obstruction (i) is; obstruction (ii)
+is NOT — the polynomial leaf asks for one plane rather than a locus, and
+`exists_irreducibilityFormsInt_two` (E. Noether's forms over `ℤ`, PROVEN below with no open
+input left) already carries a good generic plane to a good `K`-rational one. So EGA IV 9.7.7
+is an obstruction of THIS statement's locus form only, and a route that avoids producing a
+locus avoids it. That is worth knowing before pricing this leaf, because (ii) is the half
+this docstring correctly reports as absent from the pin. -/
 theorem exists_bertiniIrreducibleLocus_isAlgClosed {K : Type u} [Field K] [IsAlgClosed K]
     [CharZero K] {A : Type u} [CommRing A] [Algebra K A] [Algebra.Smooth K A] [IsDomain A]
     (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of A)))
