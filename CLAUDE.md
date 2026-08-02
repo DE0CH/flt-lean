@@ -16151,3 +16151,115 @@ statements differ from each other in DISJOINT hypotheses.**  Rival cuts differ
 in the CONCLUSION or in the same hypothesis; complementary ones each add a
 different one, and then each implies the other's residue once its own added
 hypothesis is discharged.  Diff the binder lists before deciding anything.
+
+## A DUPLICATE CUT ACROSS A NAMESPACE BOUNDARY IS INVISIBLE TO EVERY DUPLICATE SCAN — AND THE SORRY COPY IS THE ONE THAT WINS
+
+(2026-08-02, `flt-lean-90`.)  The duplicate-cut sections above are about two
+statements of one theorem under DIFFERENT NAMES.  There is a sharper form that
+defeats `xdup.py`, `dupstmt.py` and `check-dup` at once: **the same name, in two
+namespaces, where one module `public import`s the other.**
+
+`Fermat.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint` (`X1.lean`,
+`sorry`) and
+`Fermat.WeilRestriction.exists_nonconstant_toAbelianScheme_of_baseChange_relPoint`
+(`WeilRestriction.lean`, PROVEN over two named atoms) are CHARACTER-IDENTICAL
+statements, and `X1.lean` imports `WeilRestriction.lean`.  Why nothing fires:
+
+* it is not a `has already been declared` error, because the qualified names
+  differ — so the build is green and the cross-file duplicate scan is silent;
+* `dupstmt.py` compares SORRIED declarations, and one of the two is proven;
+* the parent module's import comment says the theorem is *"Stated and PROVEN
+  there"*, so a reader checking the docstrings concludes the wiring was done.
+
+**And the resolution goes the wrong way by default.**  Inside `namespace Fermat`
+an unqualified use resolves to `Fermat.foo` before anything in a sub-namespace
+that is not `open`ed — so the live consumer took the LOCAL `sorry`, and the
+proven copy plus BOTH of its atoms had zero consumers anywhere in the tree.  A
+worker dispatched at either atom is working on dead code.
+
+**The check is two commands and it belongs in the consumer-grep every prover
+already runs:**
+
+    grep -rn '<yourTargetsConsumer>' --include=*.lean Fermat/    # note EVERY file
+    # then, for each hit, compute the enclosing namespace and ask whether the
+    # use site would resolve to THAT declaration or to a same-named one nearer
+
+Computing the namespace needs a comment-masked scan (this tree's docstrings are
+full of the words `namespace`, `section` and `end`); a bare `grep '^namespace'`
+gave the wrong stack here by three levels.
+
+**The repair is a one-line delegation, not a deletion**, when the two statements
+are identical: the `sorry` copy becomes `:= <the qualified proven name> <args>`.
+That keeps every call site, is -1 on the frontier, puts the dead atoms on the
+live path, and costs the merge worker nothing.  Deleting the duplicate is the
+right END state and belongs in `to_merger`, not in a branch that also has
+mathematics in it.
+
+**Generalises to the shape rather than the instance: whenever a module docstring
+or an import comment says a theorem was RELOCATED and is "PROVEN there", grep for
+the old name in the old file.**  A relocation is two edits — add there, delegate
+here — and the second one is the one that gets forgotten, because the first one
+is what the author was interested in.
+
+## `AbelianSchemeStruct` IS A FUNCTOR-OF-POINTS PRESENTATION, SO A REPRESENTABILITY LEAF NEED NOT CARRY A GROUP LAW
+
+(Same task, and it is what made the recut worth making.)  `AbelianSchemeStruct f`
+has twelve fields: nine are the group law on `RelPoint f g` plus its naturality,
+and three are `IsProper`, `Smooth`, `GeometricallyConnected`.  **The nine are
+transported by any bijection `RelPoint f' g ≃ RelPoint f (…)` that is natural in
+the test object.**  So a leaf whose content is "this new scheme represents that
+functor" should assert the THREE geometric conditions and the bijection, and
+never the group structure — the consumer builds it, in about forty lines of
+`Equiv.apply_symm_apply` plus one `(Φ _ _).injective` per naturality field.
+
+`exists_weilRestriction_of_finiteEtale` is the worked instance: the residue of
+Weil restriction is now BLR 7.6/4 + 7.6/5 and nothing else, where the leaf it
+replaced also owed the group law, the `t = 𝟙` step and the nonconstancy transfer.
+
+Two riders:
+
+* **The count does not move** — one leaf out, one leaf in — so say so in the
+  commit and give the receipt (`git diff` shows one `-  sorry` and one `+  sorry`
+  in that module).  Judge it by what is LEFT: here the residue lost every mention
+  of a group, of a curve and of nonconstancy.
+* **A structure-instance field written as `pre_add h hg x y := …` binds the
+  IMPLICIT binders too.**  `AbelianSchemeStruct.pre_add` is
+  `∀ {T' T} (h) {g} {g'} (hg) (x y), …`, and `pre_add h hg x y :=` bound `hg` to
+  the implicit `g`; the goal then still starts with a `∀` and every `simp only`
+  reports "made no progress".  Use `pre_add := by intro T' T h g g' hg x y` and
+  the problem disappears.  The symptom — a `simp only` failing on a goal that
+  looks right in the error message — reads as a missing lemma and is not one.
+
+## AN ENDOMORPHISM OF `Spec K` FIXING A NONEMPTY `K`-SCHEME IS `𝟙` — and `Hom(Spec K, Spec K)` is NOT a subsingleton
+
+(Same task; ~15 lines, and it is the step every "transport nonconstancy across an
+adjunction" argument in this tree will need.)  Given `cstr : C ⟶ Spec K` and
+`t : Spec K ⟶ Spec K` with `cstr ≫ t = cstr`, `t = 𝟙` **provided `C` is
+nonempty** — and the hypothesis is not decoration, because `Hom(Spec K, Spec K)`
+is `Hom(K, K)`, which has Frobenius in it over `𝔽_p(t)` and complex conjugation
+over `ℚ(i)`.
+
+The proof, and every name in it is at this pin:
+
+    haveI : Nonempty ((⊤ : C.Opens) : Type) := ⟨⟨hne.some, trivial⟩⟩
+    haveI : Nontrivial (Scheme.Γ.obj (Opposite.op C) : CommRingCat) :=
+      (inferInstance : Nontrivial Γ(C, ⊤))          -- Scheme.component_nontrivial
+    -- a ring hom out of a FIELD into a nonzero ring is injective, hence mono
+    ConcreteCategory.mono_of_injective _ (RingHom.injective _)
+    -- then cancel_mono on  Γ(t) ≫ Γ(cstr) = 𝟙 ≫ Γ(cstr)
+    -- and AlgebraicGeometry.ext_to_Spec returns `t = 𝟙`
+
+Three traps, each one round:
+
+* **`Scheme.component_nontrivial` gives `Nontrivial Γ(C, ⊤)` and the goal is
+  `Nontrivial (Scheme.Γ.obj (op C))`.**  They are defeq and instance search does
+  not cross it; one `haveI := (inferInstance : …)` does.
+* **`set β := Scheme.Γ.map cstr.op` breaks the next `rw`.**  With the `set` in
+  place, `rw [← Scheme.Γ.map_comp]` failed with "did not find an occurrence" on a
+  goal that displayed the pattern, and the note said the target was not
+  type-correct at `instances` transparency.  Without the `set` the same rewrite
+  works.  This is the standing let-binding trap; do not name a categorical
+  composite you are about to rewrite under.
+* **`mono_of_mono_fac` is the wrong tool for "iso ≫ f is mono ⟹ f is mono".**
+  `mono_comp _ _` on `i.hom ≫ (i.inv ≫ β)` followed by `simpa` is two lines and
+  works.
