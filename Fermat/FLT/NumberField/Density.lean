@@ -71,8 +71,9 @@ endgame is `exists_mul_sq_dedekindZeta_re_le` + `finrank_eq_one_of_forall_inerti
 both PROVEN below.
 
 The cut left exactly three open statements, each a standard fact about Dirichlet series
-over ideals stated with mathlib vocabulary only. **The first two were PROVEN on
-2026-08-02**, so one remains:
+over ideals stated with mathlib vocabulary only. **ALL THREE WERE PROVEN ON 2026-08-02**,
+so this file is sorry-free and `finrank_eq_one_of_forall_inertiaDeg_eq_one` is
+unconditional (`#print axioms` → `[propext, Classical.choice, Quot.sound]`):
 
 * `NumberField.dedekindZeta_re_eq_zetaAvoiding_empty` — the REGROUPING. `ζ_K(s)` really is
   the sum of `(N I)^{-s}` over the nonzero ideals. This is `LSeries` unfolded and the
@@ -84,7 +85,17 @@ over ideals stated with mathlib vocabulary only. **The first two were PROVEN on
   is `NumberField.summable_absNorm_rpow`, also proven 2026-08-02 and stated over an
   ARBITRARY predicate on ideals, so it serves the other two leaves unchanged.
 * `NumberField.exists_zetaAvoiding_empty_le` — the finitely many removed Euler factors cost
-  at most `∏_{𝔭 ∈ T} (1 - N𝔭^{-s})^{-1} ≤ 2^{#T}`.
+  at most `∏_{𝔭 ∈ T} (1 - N𝔭^{-s})^{-1} ≤ 2^{#T}`. **PROVEN 2026-08-02**, one factor at a
+  time and with no geometric series: see `zetaAvoiding_le_two_mul_insert`.
+
+**A NOTE ON WHAT THE THREE PROOFS ACTUALLY COST, since the cut mispriced all three the same
+way.** Each was priced at a piece of the `HeightOneSpectrum`/`FractionalIdeal.count`
+factorisation calculus. None of them needs it. What they need is (i) the MULTISET
+`UniqueFactorizationMonoid.normalizedFactors` of an ideal, whose `prod` is the ideal
+(`Ideal.prod_normalizedFactors_eq_self`) and which is recovered from a product of primes by
+`normalizedFactors_prod_of_prime`, and (ii) `Equiv.sigmaFiberEquiv` to group a sum over
+ideals by their norm. Both are elementary, and between them they replace the whole
+`∏ᶠ`-over-height-one-primes development the cut asked for.
 
 ## Falsity audit
 
@@ -738,8 +749,121 @@ theorem sq_zetaAvoiding_le_zetaAvoiding_empty
       Real.rpow_nonneg (Nat.cast_nonneg (Ideal.absNorm (J : Ideal (𝓞 F)))) (-s))
 
 
-/-- **LEAF 3 — REMOVING FINITELY MANY EULER FACTORS COSTS A CONSTANT** (OPEN, cut
-2026-07-31).
+/-- **`zetaAvoiding` ONLY SEES THE MAXIMAL MEMBERS OF `T`** (PROVEN 2026-08-02). Two sets
+imposing the same divisibility conditions give the same series, by
+`Equiv.subtypeEquivRight`. -/
+theorem zetaAvoiding_congr (K : Type*) [Field K] [NumberField K] {T T' : Set (Ideal (𝓞 K))}
+    (h : ∀ I : Ideal (𝓞 K),
+      (∀ 𝔭 ∈ T, 𝔭.IsMaximal → ¬ 𝔭 ∣ I) ↔ (∀ 𝔭 ∈ T', 𝔭.IsMaximal → ¬ 𝔭 ∣ I)) (s : ℝ) :
+    zetaAvoiding K T s = zetaAvoiding K T' s :=
+  (Equiv.subtypeEquivRight (fun I : Ideal (𝓞 K) => and_congr_right' (h I))).tsum_eq
+    (fun J => (Ideal.absNorm (J : Ideal (𝓞 K)) : ℝ) ^ (-s))
+
+/-- **THE EULER FACTOR AT A MAXIMAL IDEAL IS AT MOST `2` FOR `s > 1`** (PROVEN 2026-08-02).
+
+`N 𝔭 ≠ 1` because a maximal ideal is not `⊤`, so `N 𝔭` is `0` or at least `2`; in the first
+case `(0:ℝ) ^ (-s) = 0`, in the second `(N 𝔭)^{-s} ≤ 2^{-s} ≤ 2^{-1}`. -/
+theorem absNorm_rpow_neg_le_half (K : Type*) [Field K] [NumberField K]
+    {𝔭 : Ideal (𝓞 K)} (h𝔭 : 𝔭.IsMaximal) {s : ℝ} (hs : 1 < s) :
+    (Ideal.absNorm 𝔭 : ℝ) ^ (-s) ≤ 1 / 2 := by
+  have hne1 : Ideal.absNorm 𝔭 ≠ 1 := fun hc => h𝔭.ne_top (Ideal.absNorm_eq_one_iff.mp hc)
+  rcases eq_or_ne (Ideal.absNorm 𝔭) 0 with h0 | h0
+  · rw [h0]
+    norm_num
+    rw [Real.zero_rpow (by linarith : (-s) ≠ 0)]
+    norm_num
+  · have h2 : (2 : ℝ) ≤ (Ideal.absNorm 𝔭 : ℝ) := by
+      have : 2 ≤ Ideal.absNorm 𝔭 := by omega
+      exact_mod_cast this
+    have hpos : (0:ℝ) < (Ideal.absNorm 𝔭 : ℝ) := by linarith
+    rw [Real.rpow_neg hpos.le]
+    have h3 : (2:ℝ) ≤ (Ideal.absNorm 𝔭 : ℝ) ^ s := by
+      calc (2:ℝ) = (2:ℝ) ^ (1:ℝ) := (Real.rpow_one 2).symm
+        _ ≤ (2:ℝ) ^ s := Real.rpow_le_rpow_of_exponent_le (by norm_num) hs.le
+        _ ≤ (Ideal.absNorm 𝔭 : ℝ) ^ s := Real.rpow_le_rpow (by norm_num) h2 (by linarith)
+    rw [← one_div]
+    exact one_div_le_one_div_of_le (by norm_num) h3
+
+/-- **REMOVING ONE EULER FACTOR COSTS AT MOST A FACTOR `2`** (PROVEN 2026-08-02).
+
+Split the `T`-avoiding ideals by whether `𝔭` divides them. The ones it does not are exactly
+the `insert 𝔭 T`-avoiding ones; the ones it does are `𝔭 · J` with `J` again `T`-avoiding,
+and `N (𝔭 J)^{-s} = (N 𝔭)^{-s} (N J)^{-s} ≤ ½ (N J)^{-s}` by `absNorm_rpow_neg_le_half`.
+So `Z_T ≤ Z_{insert 𝔭 T} + ½ Z_T`, which is the claim.
+
+No geometric series and no product of two `tsum`s is needed: the halving is applied ONCE,
+to the sub-sum over the multiples of `𝔭`, and the recursion is absorbed by the inequality
+rather than summed. -/
+theorem zetaAvoiding_le_two_mul_insert (K : Type*) [Field K] [NumberField K]
+    (T : Set (Ideal (𝓞 K))) {𝔭 : Ideal (𝓞 K)} (h𝔭 : 𝔭.IsMaximal) {s : ℝ} (hs : 1 < s) :
+    zetaAvoiding K T s ≤ 2 * zetaAvoiding K (insert 𝔭 T) s := by
+  classical
+  have hf : Summable (fun I : {I : Ideal (𝓞 K) // I ≠ ⊥ ∧ ∀ 𝔮 ∈ T, 𝔮.IsMaximal → ¬ 𝔮 ∣ I} =>
+      (Ideal.absNorm (I : Ideal (𝓞 K)) : ℝ) ^ (-s)) := summable_absNorm_rpow K _ hs
+  set S : Set {I : Ideal (𝓞 K) // I ≠ ⊥ ∧ ∀ 𝔮 ∈ T, 𝔮.IsMaximal → ¬ 𝔮 ∣ I} :=
+    {I | 𝔭 ∣ (I : Ideal (𝓞 K))} with hSdef
+  have hsplit : (∑' x : S, (Ideal.absNorm ((x : {I : Ideal (𝓞 K) // I ≠ ⊥ ∧
+        ∀ 𝔮 ∈ T, 𝔮.IsMaximal → ¬ 𝔮 ∣ I}) : Ideal (𝓞 K)) : ℝ) ^ (-s))
+      + ∑' x : ↥Sᶜ, (Ideal.absNorm ((x : {I : Ideal (𝓞 K) // I ≠ ⊥ ∧
+        ∀ 𝔮 ∈ T, 𝔮.IsMaximal → ¬ 𝔮 ∣ I}) : Ideal (𝓞 K)) : ℝ) ^ (-s)
+      = zetaAvoiding K T s :=
+    Summable.tsum_add_tsum_compl (hf.subtype _) (hf.subtype _)
+  -- the ideals `𝔭` does NOT divide are exactly the `insert 𝔭 T`-avoiding ones
+  have h1 : (∑' x : ↥Sᶜ, (Ideal.absNorm ((x : {I : Ideal (𝓞 K) // I ≠ ⊥ ∧
+        ∀ 𝔮 ∈ T, 𝔮.IsMaximal → ¬ 𝔮 ∣ I}) : Ideal (𝓞 K)) : ℝ) ^ (-s))
+      = zetaAvoiding K (insert 𝔭 T) s :=
+    Equiv.tsum_eq
+      (⟨fun x => ⟨x.1.1, x.1.2.1, fun 𝔮 h𝔮 hmax => by
+          rcases Set.mem_insert_iff.mp h𝔮 with rfl | h𝔮'
+          · exact x.2
+          · exact x.1.2.2 𝔮 h𝔮' hmax⟩,
+        fun J => ⟨⟨J.1, J.2.1, fun 𝔮 h𝔮 hmax => J.2.2 𝔮 (Set.mem_insert_of_mem _ h𝔮) hmax⟩,
+          J.2.2 𝔭 (Set.mem_insert _ _) h𝔭⟩,
+        fun _ => rfl, fun _ => rfl⟩ :
+        ↥Sᶜ ≃ {I : Ideal (𝓞 K) // I ≠ ⊥ ∧ ∀ 𝔮 ∈ insert 𝔭 T, 𝔮.IsMaximal → ¬ 𝔮 ∣ I})
+      (fun J => (Ideal.absNorm (J : Ideal (𝓞 K)) : ℝ) ^ (-s))
+  -- the ideals `𝔭` DOES divide contribute at most half of the whole
+  have h2 : (∑' x : S, (Ideal.absNorm ((x : {I : Ideal (𝓞 K) // I ≠ ⊥ ∧
+        ∀ 𝔮 ∈ T, 𝔮.IsMaximal → ¬ 𝔮 ∣ I}) : Ideal (𝓞 K)) : ℝ) ^ (-s))
+      ≤ 1 / 2 * zetaAvoiding K T s := by
+    have hdiv : ∀ x : ↥S, ∃ J : Ideal (𝓞 K), (x.1 : Ideal (𝓞 K)) = 𝔭 * J := fun x => x.2
+    choose D hD using hdiv
+    have hDbot : ∀ x : ↥S, D x ≠ ⊥ := by
+      intro x hbot
+      exact x.1.2.1 (by rw [hD x, hbot]; simp)
+    have hDdvd : ∀ x : ↥S, D x ∣ (x.1 : Ideal (𝓞 K)) := fun x => ⟨𝔭, by rw [hD x]; ring⟩
+    have hDavoid : ∀ x : ↥S, ∀ 𝔮 ∈ T, 𝔮.IsMaximal → ¬ 𝔮 ∣ D x :=
+      fun x 𝔮 h𝔮 hmax hc => x.1.2.2 𝔮 h𝔮 hmax (hc.trans (hDdvd x))
+    obtain ⟨Φ, hΦ⟩ : ∃ Φ : ↥S → {I : Ideal (𝓞 K) // I ≠ ⊥ ∧ ∀ 𝔮 ∈ T, 𝔮.IsMaximal → ¬ 𝔮 ∣ I},
+        ∀ x, ((Φ x : {I : Ideal (𝓞 K) // I ≠ ⊥ ∧
+          ∀ 𝔮 ∈ T, 𝔮.IsMaximal → ¬ 𝔮 ∣ I}) : Ideal (𝓞 K)) = D x :=
+      ⟨fun x => ⟨D x, hDbot x, hDavoid x⟩, fun _ => rfl⟩
+    have hinj : Function.Injective Φ := by
+      intro x y hxy
+      have hDxy : D x = D y := by rw [← hΦ x, ← hΦ y, hxy]
+      have h' : (x.1 : Ideal (𝓞 K)) = (y.1 : Ideal (𝓞 K)) := by rw [hD x, hD y, hDxy]
+      exact Subtype.ext (Subtype.ext h')
+    have hle : ∀ x : ↥S,
+        (Ideal.absNorm ((x.1 : Ideal (𝓞 K))) : ℝ) ^ (-s)
+          ≤ 1 / 2 * (Ideal.absNorm ((Φ x).1 : Ideal (𝓞 K)) : ℝ) ^ (-s) := by
+      intro x
+      have hnorm : (Ideal.absNorm ((x.1 : Ideal (𝓞 K))) : ℝ)
+          = (Ideal.absNorm 𝔭 : ℝ) * (Ideal.absNorm (D x) : ℝ) := by
+        rw [hD x]; push_cast [map_mul]; ring
+      rw [hnorm, Real.mul_rpow (Nat.cast_nonneg _) (Nat.cast_nonneg _), hΦ x]
+      exact mul_le_mul_of_nonneg_right (absNorm_rpow_neg_le_half K h𝔭 hs)
+        (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+    calc (∑' x : S, (Ideal.absNorm ((x : {I : Ideal (𝓞 K) // I ≠ ⊥ ∧
+            ∀ 𝔮 ∈ T, 𝔮.IsMaximal → ¬ 𝔮 ∣ I}) : Ideal (𝓞 K)) : ℝ) ^ (-s))
+        ≤ ∑' I : {I : Ideal (𝓞 K) // I ≠ ⊥ ∧ ∀ 𝔮 ∈ T, 𝔮.IsMaximal → ¬ 𝔮 ∣ I},
+            1 / 2 * (Ideal.absNorm (I : Ideal (𝓞 K)) : ℝ) ^ (-s) :=
+          Summable.tsum_le_tsum_of_inj Φ hinj
+            (fun c _ => by positivity) hle (hf.subtype _) (hf.mul_left _)
+      _ = 1 / 2 * zetaAvoiding K T s := tsum_mul_left
+  linarith [hsplit, h1, h2]
+
+/-- **REMOVING FINITELY MANY EULER FACTORS COSTS A CONSTANT** (PROVEN 2026-08-02; cut as
+LEAF 3 on 2026-07-31).
 
 Every nonzero ideal `𝔞` of `𝓞 K` factors uniquely as `𝔟 · 𝔠` with `𝔟` supported on the
 maximal ideals of `T` and `𝔠` avoiding them, so
@@ -750,16 +874,35 @@ and the first factor is `∏_{𝔭 ∈ T maximal} (1 - (N 𝔭)^{-s})⁻¹ ≤ 2
 because `2 ≤ N 𝔭` for a maximal `𝔭`. The constant is uniform in `s`, which is what the
 endgame needs — it takes `s → 1⁺`.
 
-**What it needs.** The `T`-part/`T`-free factorisation of an ideal (again
-`Ideal.factorization` over `HeightOneSpectrum`, or `UniqueFactorizationMonoid`
-`Finsupp` support splitting), and the geometric series for each of the finitely many
-removed factors. Nothing analytic beyond `Summable.mul_of_nonneg`.
+**NEITHER THE FACTORISATION NOR THE GEOMETRIC SERIES IS NEEDED.** The cut priced this at a
+`T`-part/`T`-free splitting of every ideal plus a geometric series per removed factor. Both
+are avoided by removing ONE factor at a time and letting the inequality absorb the
+recursion (`zetaAvoiding_le_two_mul_insert` above): split the `T`-avoiding ideals by whether
+`𝔭` divides them; the ones it does are `𝔭 · J` with `J` again `T`-avoiding, and each
+contributes at most `½ (N J)^{-s}`, so `Z_T ≤ Z_{insert 𝔭 T} + ½ Z_T`. Then induct on the
+finite set with `Set.Finite.induction_on`, taking `C = 2 ^ #T`; a non-maximal member of `T`
+is absorbed by `zetaAvoiding_congr`, since `zetaAvoiding` does not see it.
 
 Only the maximal members of `T` are removed, by the definition of `zetaAvoiding`; a
 composite member imposes a non-Euler condition and this bound would fail for it. -/
 theorem exists_zetaAvoiding_empty_le (T : Set (Ideal (𝓞 k))) (hT : T.Finite) :
-    ∃ C : ℝ, 0 < C ∧ ∀ s : ℝ, 1 < s → zetaAvoiding k ∅ s ≤ C * zetaAvoiding k T s :=
-  sorry
+    ∃ C : ℝ, 0 < C ∧ ∀ s : ℝ, 1 < s → zetaAvoiding k ∅ s ≤ C * zetaAvoiding k T s := by
+  induction T, hT using Set.Finite.induction_on with
+  | empty => exact ⟨1, one_pos, fun s _ => by rw [one_mul]⟩
+  | @insert 𝔭 S _ _ ih =>
+    obtain ⟨C, hC, hCle⟩ := ih
+    by_cases hm : 𝔭.IsMaximal
+    · refine ⟨2 * C, by positivity, fun s hs => ?_⟩
+      have h1 := hCle s hs
+      have h2 := zetaAvoiding_le_two_mul_insert k S hm hs
+      nlinarith [zetaAvoiding_nonneg k (insert 𝔭 S) s, zetaAvoiding_nonneg k S s]
+    · refine ⟨C, hC, fun s hs => ?_⟩
+      rw [zetaAvoiding_congr k (T' := S) (fun I => ⟨fun hI 𝔮 h𝔮 hmax => hI 𝔮
+        (Set.mem_insert_of_mem _ h𝔮) hmax, fun hI 𝔮 h𝔮 hmax => by
+          rcases Set.mem_insert_iff.mp h𝔮 with rfl | h𝔮'
+          · exact absurd hmax hm
+          · exact hI 𝔮 h𝔮' hmax⟩) s]
+      exact hCle s hs
 
 /-! ### The endgame -/
 
@@ -813,8 +956,9 @@ theorem exists_mul_sq_dedekindZeta_re_le
   linarith [this, heq ▸ h2]
 
 /-- **THE DENSITY INPUT OF CHEBOTAREV: a finite extension of number fields in which all but
-finitely many primes of the base have residue degree one is trivial** (PROVEN 2026-07-31
-over the three Dirichlet-series leaves above).
+finitely many primes of the base have residue degree one is trivial** (assembled 2026-07-31
+over three Dirichlet-series leaves; **those were PROVEN on 2026-08-02, so this theorem is
+now unconditional** — `#print axioms` gives `[propext, Classical.choice, Quot.sound]`).
 
 Only the residue degrees are constrained, not the ramification indices: the hypothesis is
 `f(q | 𝔭) = 1` for every maximal `q` of `𝓞 F` whose contraction avoids the finite set `S`.
