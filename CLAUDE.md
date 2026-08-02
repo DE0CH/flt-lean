@@ -22818,3 +22818,62 @@ happens to sit next to the declaration** — mine put a block's start inside a `
 note and another's end on an `end SeventeenDescent`. Print the first and last line of any
 block before moving it; the two seconds that costs is the difference between a clean hoist
 and one that carries a scope line into another file.
+## A LEAF THAT *NAMES* THE MODULE HOLDING ITS ANSWER IS THE MOST CONVINCING KIND OF WRONG
+(2026-08-01, `flt-lean-147`, `nonempty_isX0Compactification_of_isCompactificationY0` in
+`FreyCurve/MazurTorsion.lean`.  Cut 2026-07-31; closed in ONE LINE over two
+declarations that had been in `X0.lean`, PROVEN, since 2026-07-27.)
+This file already records several shapes of stale absence claim.  This is the
+sharpest, and it is sharp precisely because the leaf did everything right except
+the one grep.  Its docstring:
+* named the target module correctly — *"`X0.lean` proves each of them for the
+  compactification IT constructs (`exists_x0Compactification`, whose `connected`
+  and `finite_compl` come out of `exists_isSmoothCompactification_of_isAffine`
+  and `geometricallyConnected_of_isSmoothCompactification`)"* — all true;
+* stated the gap correctly — *"what is missing is the statement for an ARBITRARY
+  `IsCompactificationY0`"* — the right question;
+* gave correct route pointers — `isSmoothCurve_of_isCoarseModuliY0`,
+  `CurveCompactification.lean` — both genuinely the inputs;
+* and concluded *"recovering it means re-running those transfers rather than
+  quoting them."*  **That clause was false on the day it was written.**
+`X0.lean` had `isX0Compactification_data_of_compactificationY0` (the three
+missing clauses, for an arbitrary `IsCompactificationY0`) and
+`IsCompactificationY0.toX0Compactification` (the packaging), both PROVEN, in the
+very module the paragraph names, reached by a `public import`.
+**TWO THINGS MADE IT INVISIBLE, AND BOTH GENERALISE.**
+**1. The answer was a COMPOSITION OF TWO DECLARATIONS, so no grep for the
+conclusion finds it.**  Neither half's statement is the leaf's statement: one
+returns a three-way conjunction of clauses, the other consumes that conjunction.
+`grep` for `Nonempty (IsX0Compactification` finds neither.  So the grep that
+works is **for the TARGET TYPE and for the PACKAGING CONSTRUCTOR** — a `to…`,
+`of…`, `mk…` or `…_data_…` name whose *result* is the type your leaf produces:
+    grep -n 'toX0Compactification\|: IsX0Compactification\|IsX0Compactification N strX' X0.lean
+A leaf produces a bundled structure surprisingly often, and when it does, the
+existing proof is nearly always split as *(build the missing fields)* plus
+*(package them)*, because that is the shape a previous consumer needed.  Grep for
+the second half; it is short, it is named after the structure, and it is the one
+declaration that cannot exist without the first.
+**2. CORRECT ROUTE POINTERS ARE AN ACTIVE HARM when the theorem already exists.**
+The two the docstring gave are exactly the inputs `isX0Compactification_data_…`
+itself consumes.  A prover who follows them re-derives a proven theorem and never
+learns it was there — and, worse, arrives at a *duplicate statement*, which no
+name-based scan catches.  **So a route pointer must be read as "here is what the
+proof would need", never as "here is where to look for the proof".**  They are
+different questions and a docstring almost never distinguishes them.
+**THE POSITION IS WHY NOBODY HAD SEEN IT.**  The two proven halves sit at
+`X0.lean:79213` and `:79237`, in a section about the `j`-layer's INTEGRAL MODELS,
+~35 000 lines below the compactification theory a reader would search, and named
+`…_data_of_compactificationY0` / `toX0Compactification` — a "data" name and a
+"to" name, sharing no keyword with `nonempty_isX0Compactification`.  Nothing about
+a leaf's own vocabulary reaches them.
+**AND DO NOT "FIX" IT BY RESTATING THE COMPOSITE UPSTREAM.**  The tempting tidy-up
+— also put the one-line composite in `X0.lean`, where more consumers could see it —
+is a build break: `MazurTorsion.lean` `public import`s `X0.lean`, so a second
+declaration of the same name is a hard `has already been declared`, and the same
+statement under a different name is exactly what `tools/merge/dupstmt.py` exists to
+find.  Prove the leaf where it stands, in one line, and say in its docstring where
+the halves live.  If a future X0-internal consumer needs the composite above line
+79213, that is a HOIST of the two halves and a separate, measured task.
+**The standing check, one command, before believing any "what is missing is …":**
+    grep -n '<the STRUCTURE your conclusion produces>' <the module the docstring names>
+It costs ten seconds, it is aimed at the one module the leaf itself tells you to
+suspect, and here it would have ended the task at minute two.
