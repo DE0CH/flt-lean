@@ -1066,11 +1066,30 @@ first from the other two — a module with no `declaration uses 'sorry'` warning
 *direct*-clean and says nothing about the cone — and the fleet has repeatedly
 paid a worker to rediscover the difference.
 
-`#print axioms <name>` gives it exactly, but **it must be appended to the END OF
-THE FILE THAT DECLARES THE NAME**, not written in a scratch module that imports
-it. The module system elides imported proof bodies (`value? = none`, and
+`#print axioms <name>` gives it exactly.
+
+**CORRECTED 2026-08-02 (`flt-lean-62`), measured rather than argued: IT WORKS
+FROM AN IMPORTER, and that is the form to use.** This paragraph used to say the
+command "**must be appended to the END OF THE FILE THAT DECLARES THE NAME**"
+because "the module system elides imported proof bodies (`value? = none`, and
 `import all` does not help), so from a scratch importer the traversal has nothing
-to walk. Cost is one `lake env lean` of the module; restore the file afterwards:
+to walk". That is FALSE at this pin. A two-line scratch that `public import`s the
+module and `#print axioms`es five of its declarations returned
+`[propext, Classical.choice, Quot.sound]` for all five **in 7 seconds**, against
+the ~50 minutes one `lake env lean` of `ModThree.lean` costs — a 400× difference,
+and the difference between running the check and skipping it. So:
+
+    module
+    public import Fermat.FLT.Path.To.Module
+    @[expose] public section
+    #print axioms Some.Namespace.someDecl
+
+**The one precondition is that the module's `.olean` is CURRENT** — the traversal
+reads the compiled environment, so a stale or missing olean is what makes the
+importer form fail, and that is the likeliest origin of the older claim. Build the
+module first (you were going to anyway) and the check is free afterwards. The
+append-to-the-declaring-file form below still works and is what to fall back on if
+the importer form ever returns nothing:
 
     cp F.lean /tmp/orig.lean
     printf '\n#print axioms Some.Decl\n' >> F.lean
