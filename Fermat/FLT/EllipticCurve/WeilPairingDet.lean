@@ -10,8 +10,13 @@ This module holds the general-base form of Silverman *AEC* III.8.1(a)–(e),
 
 and reduces it — completely, by a proven assembly — to the SINGLE equation
 
-  `WeilPairingDet.galois_apply_primitiveRoot_eq_pow_det` :
-      `σ ζ = ζ ^ (det (σ | E[n])).val`   for every primitive `n`-th root `ζ` of `k̄`,
+  `WeilPairingDet.exists_primitiveRoot_galois_apply_eq_pow_det` :
+      `σ ζ = ζ ^ (det (σ | E[n])).val`   for SOME primitive `n`-th root `ζ` of `k̄`,
+
+(the `∀ ζ` forms `galois_apply_pow_eq_one_eq_pow_det` — at every `n`-th root of
+unity — and `galois_apply_primitiveRoot_eq_pow_det` — the statement that was the
+leaf until 2026-08-02 — are PROVEN over it by `pow_transport`, so no consumer's
+signature has moved),
 
 i.e. to `det ρ_{E,n} = χ_n`, the mod-`n` cyclotomic character.  That equation IS
 the arithmetic content of the Weil pairing; everything else in III.8.1 is the
@@ -53,6 +58,17 @@ nothing else in the project — so BOTH consumers can reach it.
 file has many concurrent editors and the edit is a pure win only once the leaf
 below is closed); the rewiring is one `exact` and is queued.
 
+**AND THERE WAS A THIRD COPY, WHICH WAS DEAD** (found 2026-08-02).
+`MoretBailly.det_nTorsion_eq_cyclotomicExponent` is this same statement over a
+characteristic-zero base, cut on 2026-07-30 out of `exists_weilPairing_mu_charZero`
+— which was re-proven the SAME DAY over `exists_weilPairing_mu_nondeg_of_natCast_ne_zero`
+instead, so the cut was orphaned at birth.  A comment-stripped scan of `Fermat/`
+found exactly ONE occurrence of its name, its own declaration.  It is now PROVEN
+over `galois_apply_pow_eq_one_eq_pow_det` below (`MoretBailly` 20 → 19 direct
+sorries) and marked for deletion.  The general shape is worth remembering when
+reading this module: `det ρ = χ_n` has been cut FOUR times in three files, and
+the copies share no identifier, so only a scan for the CONCLUSION finds them.
+
 ## What the RESIDUAL leaf will cost, honestly
 
 Not less than the Weil pairing itself.  The two routes visible from here:
@@ -76,6 +92,22 @@ Not less than the Weil pairing itself.  The two routes visible from here:
   `E(F)` always exist) and then re-run the 94 assembly steps.  The LEVEL
   generalisation `p ↦ n` is by contrast mechanical: `weilValueProp` already
   takes a bare `(p : ℕ)`.
+
+  **MEASURED 2026-08-02, so the price is a number rather than a line count.**  Of
+  the **49** top-level declarations in `EllipticCurve/WeilPairing.lean`, **21**
+  have a STATEMENT — not merely a hypothesis — mentioning `ZMod q`, `frobFixed`,
+  `frobPeriod`, `frobAlgHom`, `frobeniusTorsionEnd` or `Fact q.Prime`.  That is
+  the port's real surface, and it confirms the audit above rather than softening
+  it: `weilValueProp`'s own TYPE is `WeierstrassCurve (ZMod q) → …`, so no
+  instantiation reaches it and the 21 must be restated.  What the audit gets
+  slightly wrong is WHICH clause is the obstruction.  The finite subfields
+  `F ≤ F'` are used only for GENERICITY ("pick a point whose abscissa lies
+  outside `F`"), and that role does survive over any algebraically closed `k̄`
+  with `F` finitely generated.  The clause with no analogue is
+  `frobFixed q (…) ≤ F`, i.e. that `F` be FROBENIUS-STABLE: its replacement is
+  `σ`-stability, and the auxiliary generic points `S`, `R` are not algebraic
+  over `k`, so their `σ`-orbits need not lie in a finitely generated field.  A
+  successor should attack that clause first, not the cardinality argument.
 
 ## Faithfulness
 
@@ -146,13 +178,54 @@ lemma coordDet_map_eq_det_mul_of_basis {R : Type*} [CommRing R] {M : Type*}
   rw [key x 0, key x 1, key y 0, key y 1, hdet]
   ring
 
+/-- **EXPONENTS OF A PRIMITIVE `n`-TH ROOT AGREE MODULO `n`** (PROVEN
+2026-08-02).  In a domain, `ζ ^ c = ζ ^ d` for a primitive `n`-th root `ζ`
+forces `(c : ZMod n) = (d : ZMod n)`.
+
+`pow_eq_pow_iff_modEq` is stated for a `LeftCancelMonoid`, which a field is NOT
+(`0` does not cancel), so the argument goes through the UNIT `ζ`; that is the
+same device the assembly below already uses for `ζu`. -/
+theorem natCast_eq_of_pow_eq_pow {K : Type*} [CommRing K] [IsDomain K] {n : ℕ}
+    [NeZero n] {ζ : K} (hζ : IsPrimitiveRoot ζ n) {c d : ℕ} (h : ζ ^ c = ζ ^ d) :
+    ((c : ℕ) : ZMod n) = ((d : ℕ) : ZMod n) := by
+  have hn0 : n ≠ 0 := NeZero.ne n
+  have hval : (((hζ.isUnit hn0).unit : Kˣ) : K) = ζ := IsUnit.unit_spec _
+  have hζu : IsPrimitiveRoot ((hζ.isUnit hn0).unit : Kˣ) n := hζ.isUnit_unit hn0
+  have hord : orderOf ((hζ.isUnit hn0).unit : Kˣ) = n := hζu.eq_orderOf.symm
+  have hu : ((hζ.isUnit hn0).unit : Kˣ) ^ c = ((hζ.isUnit hn0).unit : Kˣ) ^ d := by
+    refine Units.ext ?_
+    rw [Units.val_pow_eq_pow_val, Units.val_pow_eq_pow_val, hval]
+    exact h
+  have hmod := pow_eq_pow_iff_modEq.mp hu
+  rw [hord] at hmod
+  exact (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+
+/-- **AN EXPONENT THAT WORKS ON ONE PRIMITIVE `n`-TH ROOT WORKS ON EVERY `n`-TH
+ROOT OF UNITY** (PROVEN 2026-08-02).  If `f` is multiplicative and
+`f ζ₀ = ζ₀ ^ d` for a single primitive `n`-th root `ζ₀`, then `f ζ = ζ ^ d` for
+every `ζ` with `ζ ^ n = 1` — because every such `ζ` is a power of `ζ₀`
+(`IsPrimitiveRoot.eq_pow_of_pow_eq_one`) and `f` commutes with powers.
+
+This is what makes the `∃ ζ` form of the leaf below equivalent to the `∀ ζ`
+form: a prover may work at whatever primitive root the construction hands them.
+Note the CONCLUSION is about all `n`-th roots of unity, not merely the primitive
+ones — which is the shape the `hc` hypothesis of
+`MoretBailly.det_nTorsion_eq_cyclotomicExponent` asks for. -/
+theorem pow_transport {K : Type*} [CommRing K] [IsDomain K] {M : Type*}
+    [FunLike M K K] [MonoidHomClass M K K] (f : M) (n : ℕ) [NeZero n] (d : ℕ)
+    {ζ₀ : K} (h0 : IsPrimitiveRoot ζ₀ n) (hf : f ζ₀ = ζ₀ ^ d)
+    (ζ : K) (hζ : ζ ^ n = 1) : f ζ = ζ ^ d := by
+  obtain ⟨i, _, rfl⟩ := h0.eq_pow_of_pow_eq_one hζ
+  rw [map_pow, hf, ← pow_mul, ← pow_mul, Nat.mul_comm]
+
 /-- **`det ρ_{E,n} = χ_n`: THE DETERMINANT OF THE GALOIS ACTION ON `E[n]` IS THE
 MOD-`n` CYCLOTOMIC CHARACTER** (sorry leaf, cut 2026-07-31 out of
 `exists_weilPairing_mu_nondeg_of_natCast_ne_zero` below, which is now a PROVEN
-assembly over it).
+assembly over it; **RECUT 2026-08-02 from `∀ ζ` to `∃ ζ`**, see below).
 
 Stated elementarily and without any cyclotomic-character API: for every
-`k`-automorphism `σ` of `k̄` and every primitive `n`-th root of unity `ζ ∈ k̄`,
+`k`-automorphism `σ` of `k̄` there is SOME primitive `n`-th root of unity
+`ζ ∈ k̄` with
 
     `σ ζ = ζ ^ (det (σ | E[n])).val`.
 
@@ -163,28 +236,108 @@ determinant is taken of the `ZMod n`-linear endomorphism of `E[n]` induced by
 (which is where `(n : k) ≠ 0` is spent a second time), so the determinant is not
 a junk value.
 
-QUANTIFIER NOTE.  `ζ` is universally quantified, but the statement for ONE
-primitive root implies it for all: any other is `ζ ^ j` with `j` coprime to `n`,
-and both sides are `j`-th powers.  So a prover may prove it at a single
-convenient `ζ` and transport.
+**THE 2026-08-02 RECUT, and the accounting: the direct-sorry count did NOT move,
+`1 → 1`.**  The previous statement quantified over `ζ` UNIVERSALLY, and its own
+docstring observed that one primitive root suffices ("a prover may prove it at a
+single convenient `ζ` and transport") without paying for the transport.  That
+transport is now `pow_transport` above, PROVEN, so the leaf is the `∃ ζ` form —
+strictly weaker, and the form every construction of the pairing actually
+produces (the pairing's value at a basis IS a specific primitive root; nothing
+hands you an arbitrary one).  Both stronger forms are derived below and no
+consumer's statement changed.  Since the recut only WEAKENS the leaf, every
+counterexample to the new form is a counterexample to the old, so the
+faithfulness audit below transfers verbatim rather than being void — that is the
+one direction in which CLAUDE.md's "a restatement VOIDS the earlier audit" rule
+does not bite, and it is stated here so a reader does not have to re-derive it.
 
-WHY IT IS TRUE, AND HOW TO PROVE IT.  It is Silverman *AEC* III.8.1(a)–(e): the
-Weil pairing `e_n : E[n] × E[n] → μ_n` is alternating, nondegenerate and
-Galois-equivariant, so `σ` scales it by `det(σ)` on the source and by `χ_n(σ)`
-on the target.  Two routes are visible from this file (both discussed at length
-in the module docstring): reduce `k` to a finitely generated field and import
-the tree's `ℚ`-case Chebotarev argument
-(`WeilPairing.det_galoisRep_eq_cyclotomic`), or generalise the divisor-theoretic
-construction `WeilPairing.exists_weilPairing_mu` off finite fields by replacing
-its finite-subfield genericity device.
+**WHY IT IS TRUE, AND WHAT IT WILL COST — MEASURED 2026-08-02, correcting a
+size estimate that was previously given only in lines.**  It is Silverman *AEC*
+III.8.1(a)–(e): the Weil pairing `e_n : E[n] × E[n] → μ_n` is alternating,
+nondegenerate and Galois-equivariant, so `σ` scales it by `det(σ)` on the source
+and by `χ_n(σ)` on the target.  Two routes are visible (both discussed in the
+module docstring):
 
-FAITHFULNESS.  `(n : k) ≠ 0` forces `n ≠ 0`; at `n = 0` there is no primitive
-`0`-th root of unity in a field other than by the degenerate convention, and
-`E[0] = E(k̄)` is not free of rank two, so the hypothesis is doing real work.
-At `n = 1` both sides are `1`.  At `n = 2` the claim is `σ ζ = ζ` for `ζ = -1`
-and `det ∈ (ℤ/2)ˣ = {1}`, which is true and vacuous.  No hypothesis on `k`
-beyond `char k ∤ n` is needed or true: the statement holds over every field,
-including `k = k̄` where `Aut(k̄/k)` is trivial and both sides are `ζ`. -/
+* *Port the divisor-theoretic construction* `WeilPairing.exists_weilPairing_mu`
+  off finite fields.  The module docstring's claim that this is a rewrite rather
+  than a base substitution was RE-CHECKED on 2026-08-02 and is CORRECT, and can
+  now be quoted as a number: of the **49** top-level declarations in
+  `EllipticCurve/WeilPairing.lean`, **21** have a STATEMENT (not merely a
+  hypothesis) mentioning `ZMod q`, `frobFixed`, `frobPeriod`, `frobAlgHom`,
+  `frobeniusTorsionEnd` or `Fact q.Prime` — including `weilValueProp` itself,
+  whose very TYPE is `WeierstrassCurve (ZMod q) → …`, so no instantiation
+  reaches it.  A useful sharpening of the docstring's pessimism: the finite
+  subfields `F ≤ F'` are used only as a GENERICITY device ("pick a point whose
+  abscissa lies outside `F`"), and that role survives over any algebraically
+  closed `k̄` with `F` a finitely generated subfield, since an algebraically
+  closed field is never finitely generated over its prime field.  What does NOT
+  survive is the `frobFixed q …≤ F` clause, which asks that `F` be
+  FROBENIUS-STABLE; its analogue is `σ`-stability of `F`, and the auxiliary
+  generic points `S`, `R` are not algebraic over `k`, so their `σ`-orbits need
+  not generate a finitely generated field.  **That clause, not the cardinality
+  argument, is the real obstruction, and a successor should attack it first.**
+* *Reduce `k` to a finitely generated field* and import the tree's `ℚ`-case
+  Chebotarev argument `WeilPairing.det_galoisRep_eq_cyclotomic`.  Note this does
+  NOT bottom out as stated: `k₀ = ℚ(a₁,…,a₆)` is a transcendental extension of
+  `ℚ` for a general `E`, so the ℚ-case does not apply to it and a specialisation
+  (spreading-out) argument is still owed.  It closes the leaf immediately only
+  for curves whose coefficients are algebraic and for prime `n`.
+
+FAITHFULNESS (unchanged by the recut, see above).  `(n : k) ≠ 0` forces
+`n ≠ 0`; at `n = 0` there is no primitive `0`-th root of unity in a field other
+than by the degenerate convention, and `E[0] = E(k̄)` is not free of rank two, so
+the hypothesis is doing real work.  At `n = 1` both sides are `1`.  At `n = 2`
+the claim is `σ ζ = ζ` for `ζ = -1` and `det ∈ (ℤ/2)ˣ = {1}`, which is true and
+vacuous.  No hypothesis on `k` beyond `char k ∤ n` is needed or true: the
+statement holds over every field, including `k = k̄` where `Aut(k̄/k)` is trivial
+and both sides are `ζ`.  The `∃` is not the junk-witness trap: a junk `ζ` cannot
+satisfy `IsPrimitiveRoot ζ n`, and such a `ζ` exists (`(n : k) ≠ 0` gives
+`HasEnoughRootsOfUnity (AlgebraicClosure k) n`), so the existential is
+contentful. -/
+theorem exists_primitiveRoot_galois_apply_eq_pow_det {k : Type u} [Field k]
+    (E : WeierstrassCurve k) [E.IsElliptic] (n : ℕ) (hnk : ((n : ℕ) : k) ≠ 0)
+    (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) :
+    letI : DecidableEq (AlgebraicClosure k) := Classical.typeDecidableEq _
+    ∃ ζ : AlgebraicClosure k, IsPrimitiveRoot ζ n ∧
+      σ ζ = ζ ^ (LinearMap.det
+        (AddMonoidHom.toZModLinearMap n
+          (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+            σ.toAlgHom) (n : ℤ))
+          : ((E.map (algebraMap k (AlgebraicClosure k))).nTorsion n) →ₗ[ZMod n]
+            ((E.map (algebraMap k (AlgebraicClosure k))).nTorsion n))).val :=
+  sorry
+
+/-- **`det ρ_{E,n} = χ_n` AT EVERY `n`-TH ROOT OF UNITY** (**PROVEN 2026-08-02**
+over `exists_primitiveRoot_galois_apply_eq_pow_det` above, by `pow_transport`).
+
+This is strictly stronger than the `IsPrimitiveRoot` form below — it asks
+nothing of `ζ` except `ζ ^ n = 1` — and it is the shape a consumer that names
+the cyclotomic exponent explicitly wants, because "`τ` acts on `μ_n` by the
+exponent `c`" is naturally phrased as `∀ ζ, ζ ^ n = 1 → τ ζ = ζ ^ c`.
+`MoretBailly.det_nTorsion_eq_cyclotomicExponent` is exactly that consumer. -/
+theorem galois_apply_pow_eq_one_eq_pow_det {k : Type u} [Field k]
+    (E : WeierstrassCurve k) [E.IsElliptic] (n : ℕ) (hnk : ((n : ℕ) : k) ≠ 0)
+    (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k)
+    (ζ : AlgebraicClosure k) (hζ : ζ ^ n = 1) :
+    letI : DecidableEq (AlgebraicClosure k) := Classical.typeDecidableEq _
+    σ ζ = ζ ^ (LinearMap.det
+      (AddMonoidHom.toZModLinearMap n
+        (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+          σ.toAlgHom) (n : ℤ))
+        : ((E.map (algebraMap k (AlgebraicClosure k))).nTorsion n) →ₗ[ZMod n]
+          ((E.map (algebraMap k (AlgebraicClosure k))).nTorsion n))).val := by
+  letI : DecidableEq (AlgebraicClosure k) := Classical.typeDecidableEq _
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    exact hnk (by simp)
+  haveI : NeZero n := ⟨hn0⟩
+  obtain ⟨ζ₀, h0, hf⟩ := exists_primitiveRoot_galois_apply_eq_pow_det E n hnk σ
+  exact pow_transport σ n _ h0 hf ζ hζ
+
+/-- **`det ρ_{E,n} = χ_n` AT A PRIMITIVE ROOT** (**PROVEN 2026-08-02**; this was
+itself the leaf until that date, and its signature is UNCHANGED, so the assembly
+`exists_weilPairing_mu_nondeg_of_natCast_ne_zero` below and every downstream
+consumer are untouched by the recut).  It is
+`galois_apply_pow_eq_one_eq_pow_det` at `hζ.pow_eq_one`. -/
 theorem galois_apply_primitiveRoot_eq_pow_det {k : Type u} [Field k]
     (E : WeierstrassCurve k) [E.IsElliptic] (n : ℕ) (hnk : ((n : ℕ) : k) ≠ 0)
     (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k)
@@ -196,7 +349,7 @@ theorem galois_apply_primitiveRoot_eq_pow_det {k : Type u} [Field k]
           σ.toAlgHom) (n : ℤ))
         : ((E.map (algebraMap k (AlgebraicClosure k))).nTorsion n) →ₗ[ZMod n]
           ((E.map (algebraMap k (AlgebraicClosure k))).nTorsion n))).val :=
-  sorry
+  galois_apply_pow_eq_one_eq_pow_det E n hnk σ ζ hζ.pow_eq_one
 
 /-- **THE WEIL PAIRING OVER `k̄` IN SILVERMAN'S OWN FORM, OVER AN ARBITRARY BASE
 FIELD WITH `(n : k) ≠ 0`** (**PROVEN 2026-07-31** over the single leaf

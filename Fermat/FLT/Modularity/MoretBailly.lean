@@ -56912,9 +56912,33 @@ theorem exists_weilPairing_mu_nondeg_of_natCast_ne_zero {k : Type u} [Field k]
   WeilPairingDet.exists_weilPairing_mu_nondeg_of_natCast_ne_zero E n hnk
 
 /-- **THE MOD-`n` GALOIS DETERMINANT IS THE CYCLOTOMIC CHARACTER, OVER AN
-ARBITRARY CHARACTERISTIC-ZERO FIELD** (sorry leaf, cut 2026-07-30 out of
-`exists_weilPairing_mu_charZero` below, which is now PROVEN over it).  This is the
-ONE genuinely missing piece of mathematics in the whole archimedean cluster.
+ARBITRARY CHARACTERISTIC-ZERO FIELD** (**PROVEN 2026-08-02** over
+`WeilPairingDet.galois_apply_pow_eq_one_eq_pow_det`; a sorry leaf from
+2026-07-30 until then).
+
+**THIS DECLARATION IS A CONSUMERLESS DUPLICATE AND SHOULD BE DELETED.**  Read
+this before spending anything on it.  It was cut on 2026-07-30 out of
+`exists_weilPairing_mu_charZero` below; on the SAME DAY that consumer was
+re-proven over `exists_weilPairing_mu_nondeg_of_natCast_ne_zero` instead, which
+since 2026-07-31 delegates to `WeilPairingDet`.  So this leaf lost its only
+consumer at birth and nothing in the tree has referenced it since: a
+comment-stripped scan of every `.lean` file under `Fermat/` on 2026-08-02 found
+**exactly one** occurrence of the name `det_nTorsion_eq_cyclotomicExponent`,
+namely this declaration itself.  It is the characteristic-zero special case of
+`WeilPairingDet.galois_apply_pow_eq_one_eq_pow_det`, phrased with the cyclotomic
+exponent named as `c` instead of read off as `(det …).val`, and the derivation
+below is the whole of the difference.  It is kept, PROVEN, rather than deleted
+only because deleting a declaration from this 57 000-line file is a merge hazard
+for its many concurrent editors while proving it is not; the deletion is queued
+to the merge worker, and whoever performs it should check no consumer has
+appeared in the meantime.
+
+**A STALE CLAIM CORRECTED.**  Until 2026-08-02 this docstring said "This is the
+ONE genuinely missing piece of mathematics in the whole archimedean cluster",
+and the docstring of `det_nTorsion_eq_neg_one_of_conj_inv` below still said the
+cluster "bottoms out" here.  Both were true when written and became false the
+same day, for the reason above.  The cluster bottoms out at
+`WeilPairingDet.exists_primitiveRoot_galois_apply_eq_pow_det`.
 
 WHAT IT SAYS.  `τ` acts on the `n`-th roots of unity of `F̄` by a single exponent
 `c` — the hypothesis `hc`, which is not a restriction on `τ` but a naming of its
@@ -56978,8 +57002,19 @@ theorem det_nTorsion_eq_cyclotomicExponent {F : Type u} [Field F] [CharZero F]
             (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ))
           : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
             ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n))
-      = (c : ZMod n) :=
-  sorry
+      = (c : ZMod n) := by
+  letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+  haveI : NeZero n := ⟨by omega⟩
+  have hnF : ((n : ℕ) : F) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+  haveI : NeZero ((n : ℕ) : F) := ⟨hnF⟩
+  haveI : NeZero ((n : ℕ) : AlgebraicClosure F) :=
+    (‹NeZero ((n : ℕ) : F)›).of_injective (algebraMap F (AlgebraicClosure F)).injective
+  -- a primitive `n`-th root of unity of `F̄`, at which the two exponents meet
+  obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure F) n
+  have h1 := WeilPairingDet.galois_apply_pow_eq_one_eq_pow_det E n hnF
+    (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) ζ hζ.pow_eq_one
+  rw [hc ζ hζ.pow_eq_one] at h1
+  rw [WeilPairingDet.natCast_eq_of_pow_eq_pow hζ h1, ZMod.natCast_val, ZMod.cast_id]
 
 /-- **THE `μ_n`-VALUED WEIL PAIRING OVER THE ALGEBRAIC CLOSURE OF A
 CHARACTERISTIC-ZERO FIELD** (**PROVEN 2026-07-30** over the single leaf
