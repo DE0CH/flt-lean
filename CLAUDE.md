@@ -25971,3 +25971,46 @@ the file before and after the edit and compare the results.  Byte-identical
 stripped output PROVES the Lean is untouched, so no rebuild is needed to know the
 change is safe — which is what makes correcting a docstring in a 119 000-line
 module a cheap action rather than a multi-hour one.
+## A DOCSTRING THAT STATES A COUNT IS MACHINE-CHECKABLE — and a wrong count is usually a DUPLICATE CUT
+(2026-08-01, `flt-lean-323`, `Mathlib/AlgebraicGeometry/CurveAffineComplement.lean`.)
+The duplicate-cut sections above give two detectors: `dupstmt.py`, and "a proven parent
+whose docstring names a different leaf from its proof body".  Both are good and both are
+things you have to think to run.  Here is a third that is free, because the file volunteers
+it: **this development's module docstrings routinely assert a COUNT — "X is now the file's
+only remaining `sorry`", "the seventeen banked rows" — and a count is the one kind of prose
+a compiler can refute.**
+That file's module docstring said, in bold, *"`exists_locallyQuasiFinite_toAffineLine_compl_singleton`
+(RIEMANN–ROCH) is now the file's only remaining `sorry`"*.  The file had **two**, and it was
+wrong twice over: the declaration it named is PROVEN (the leaf is one level below it), and the
+second `sorry` was a DUPLICATE CUT — a leaf whose statement is character-for-character the
+statement of a PROVEN theorem 106 lines above it, kept by a merge, consumed by nothing.
+    grep -c "declaration uses \`sorry\`" <the build log>   # against the docstring's own claim
+**A count claim that is off by one, in a file that has been merged more than once, is a
+duplicate until proven otherwise.**  It is off by one because somebody's honest accounting
+described the tree they cut, and a merge then added a copy nobody counted.
+Three riders, each of which mattered here.
+* **The two names shared every word and no substring.**
+  `existence_valuativeCriterion_toAffineLine_compl_singleton` against
+  `valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton` — an
+  *anagram at the level of words*.  No name-keyed scan pairs those, and `dupstmt.py` is the
+  tool that does; but if you are eyeballing, **compare the SET of words in two suspicious
+  names**, not their prefixes.
+* **Delete, do not delegate.**  The proven twin had the live call site; mine had none.  A
+  one-line `:= <the twin> …` would have left a PROVEN theorem that nothing consumes, i.e.
+  free-floating code, which this project forbids.  The count goes down either way and only
+  one of them is legal.
+* **The receipt is the differential build, and it is cheap.**  `cp` the file aside,
+  `git checkout HEAD -- <path>`, build, `cp` back, `git add <path>`.  Nine seconds per side
+  here, and it turns "I deleted something and it still compiles" into
+  *baseline 2 warnings at lines 549 and 2293; mine 1 warning at line 561; `EXIT=0` both ways* —
+  which anybody can re-run.  Do not skip the `git add`: the `checkout` STAGES the old version
+  and `git status` reads `MM` until you do.
+**And check a folded-in falsity audit before you fold it.**  The dead copy's docstring carried
+an `hqf` witness — *"no lift once `R` is a DVR dominating a point of `𝔸¹` other than `0`"* —
+that cannot be instantiated at all: commutativity of the valuative square forces the
+`Spec R`-point to be the constant `0` too, since `R` is a domain inside its fraction field.
+The witness that works is `R = 𝒪_{X,z}` with the generic point, and it fails for a different
+reason (`U` itself is not proper).  **A counterexample inherited from a deleted duplicate is
+exactly as unchecked as one inherited from anywhere else** — instantiate it against every
+surviving hypothesis, including the commutativity the statement itself imposes, before
+copying it into the survivor.

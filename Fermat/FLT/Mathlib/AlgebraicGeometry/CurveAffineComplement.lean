@@ -2550,9 +2550,41 @@ gives an ill-typed motive.
 
 ## Faithfulness
 
-`hconn` and `hqf` are not consumed here — they are consumed inside step B's leaf, which is
-also where `SmoothOfRelativeDimension 1 strX` is used.  What this proof consumes is
-`IsProper strX` (step A) and `hover` (steps A and D). -/
+`hconn` and `hqf` are not consumed here — they are consumed inside step B's sub-lemma, which
+is also where `SmoothOfRelativeDimension 1 strX` is used.  What this proof consumes is
+`IsProper strX` (step A) and `hover` (steps A and D).  (Step B is
+`notMem_range_of_valuativeLift_toAffineLine_compl_singleton`, itself PROVEN since 2026-07-30;
+the prose above still calls it "the leaf" from when it was one.)
+
+### FALSITY AUDIT for `hqf`, corrected 2026-08-01
+
+`hqf` IS LOAD-BEARING: the statement is FALSE without it.  A deleted duplicate of this
+declaration carried a witness for that, and its witness does not exist — it read *"the
+constant morphism at `0` has no lift once `R` is a DVR dominating a point of `𝔸¹` other than
+`0`"*, and no such square commutes.  Take `g` constant at `0`, so that `i₁ ≫ g` is the
+constant `0` on `Spec L`; commutativity forces `Spec.map (algebraMap R L) ≫ i₂` to be constant
+`0` too, and `i₂` is `Spec` of `K[T] ⟶ R`, `T ↦ r`.  So `r` maps to `0` in `L`, and `R` is a
+domain with `R ↪ L`, whence `r = 0`.  Every admissible `i₂` is therefore ALSO the constant
+`0`, and a DVR dominating any other point of `𝔸¹` is simply not part of a commuting square.
+This is the standing rule that a counterexample must be checked against the hypotheses it is
+offered alongside, not only against the one being dropped.
+
+**The correct witness, and it satisfies every surviving hypothesis.**  Keep `g` constant at
+`0`.  Note `hover` still holds, since `K ⟶ K[T] ⟶ K` with `T ↦ 0` is the identity, so
+`g ≫ affineLineOver K = Scheme.Opens.ι U ≫ strX`; only `hqf` fails, the fibre over `0` being
+all of `U`.  Now take `R = 𝒪_{X,z}`, a DVR by
+`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`, with fraction field
+`L = K(X)`; let `i₁ : Spec L ⟶ U` be the generic point, which lies in `U` because `X` is
+integral and `U` is a nonempty open; and let `i₂` be the constant `0`.  The square commutes,
+both composites factoring through `Spec K`.  A lift `h : Spec R ⟶ U` would give
+`h ≫ Scheme.Opens.ι U : Spec R ⟶ X` agreeing with the canonical `Spec 𝒪_{X,z} ⟶ X` on
+`Spec L`, and over `Spec K` — because `h ≫ ι ≫ strX = h ≫ g ≫ affineLineOver K` is the
+structure map by `hover` — so the two are EQUAL by the uniqueness half of the valuative
+criterion for the separated `strX`.  Hence `h`'s closed point maps to `z`, which is not in
+`U`.  Contradiction.
+
+So what `hqf` really buys is that `U` need not itself be proper: without it the square above
+is asking `U ⟶ Spec K` to satisfy the valuative criterion, which an affine curve does not. -/
 theorem valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton
     {K : Type u} [Field K] {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [IsProper strX] [SmoothOfRelativeDimension 1 strX]
@@ -2616,6 +2648,33 @@ theorem valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_sin
     simpa using h4
   rw [← Spec.map_preimage (IsOpenImmersion.lift _ l hrange ≫ g), hpre, Spec.map_preimage]
 
+/-!
+### A DUPLICATE CUT USED TO STAND HERE — `existence_valuativeCriterion_toAffineLine_compl_singleton`
+
+Deleted 2026-08-01.  It was a `sorry` leaf whose statement is CHARACTER-FOR-CHARACTER the
+statement of `valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton`
+above — same binders in the same order, same conclusion `ValuativeCriterion.Existence g` —
+and that one is PROVEN.  Two branches cut the same node out of
+`isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` under two names, the regions
+were ~100 lines apart so nothing conflicted, and a merge kept both.
+
+It had ZERO consumers: a comment-stripped scan of `Fermat/` found the name only at its own
+declaration and in one line of the consumer's docstring (which named it while the consumer's
+PROOF BODY called the proven twin — that mismatch is what exposed the duplicate).  So it was
+an open leaf that no proof term in the project could reach, and closing it would have moved
+the frontier count and nothing else.
+
+Deleting rather than proving it from the twin is deliberate: a one-line
+`:= valuativeCriterionExistence_of_… ` would leave a PROVEN theorem that nothing consumes,
+which is free-floating code and is forbidden here.
+
+Its docstring's only content not already recorded on the twin was a load-bearing analysis
+copied from the consumer, plus one `hqf` witness that is WRONG for this statement; the
+corrected witness has been folded into the twin's docstring above under FAITHFULNESS.
+
+Recover the deleted text with `git show <this commit>^` if it is ever wanted.
+-/
+
 /-- **THE POLE AT `z`, AS THE EXISTENCE HALF OF THE VALUATIVE CRITERION** (sorry leaf, cut
 2026-07-30 out of `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` below, which
 is now PROVEN over this and nothing else).
@@ -2674,8 +2733,15 @@ theorem existence_valuativeCriterion_toAffineLine_compl_singleton
 
 /-- **The compactification step: a quasi-finite `K`-morphism `X ∖ {z} ⟶ 𝔸¹_K` is proper**
 (cut 2026-07-28 out of `isAffineOpen_compl_singleton_of_isSmoothProperCurve`; was a bare
-`sorry`, **DECOMPOSED 2026-07-30** — now PROVEN over the single leaf
-`existence_valuativeCriterion_toAffineLine_compl_singleton` above).
+`sorry`, **DECOMPOSED 2026-07-30** — now PROVEN over the single declaration
+`valuativeCriterionExistence_of_locallyQuasiFinite_toAffineLine_compl_singleton` above, which
+is itself PROVEN, so this branch of the file carries no leaf at all).
+
+(Until 2026-08-01 this line named `existence_valuativeCriterion_toAffineLine_compl_singleton`
+instead — a `sorry` DUPLICATE of that declaration which a merge had left in the file and which
+this proof never called.  The mismatch between the name here and the name in the proof body
+below is what exposed it; the duplicate is deleted and the section note where it stood records
+the whole story.)
 
 TRUE.  Write `U = X ∖ {z}` and let `f ∈ Γ(X, U)` be the function `g` classifies.  The
 intended proof is the valuative criterion, in two steps:
