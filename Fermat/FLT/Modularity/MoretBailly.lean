@@ -57640,10 +57640,20 @@ archimedean or characteristic-zero-specific:
   standard basis back).
 
 So the ONE genuinely missing piece of mathematics in the archimedean cluster is
-now the single leaf above, and it is missing in the honest form: Silverman
-III.8.1 over a base that is not a finite field.  See that leaf for why the
-finite-field proof in `WeilPairing.lean` cannot be ported by substituting the
-base.
+now `WeilPairingDet.galois_apply_primitiveRoot_eq_pow_det`
+(`Fermat/FLT/EllipticCurve/WeilPairingDet.lean`), reached from here through
+`exists_weilPairing_mu_nondeg_of_natCast_ne_zero` above, and it is missing in the
+honest form: Silverman III.8.1 over a base that is not a finite field.  See that
+leaf for why the finite-field proof in `WeilPairing.lean` cannot be ported by
+substituting the base.
+
+(CORRECTED 2026-08-01.  This paragraph used to name the leaf ABOVE this theorem,
+`det_nTorsion_eq_cyclotomicExponent`.  That leaf is now PROVEN — over THIS
+theorem, which is why it had to be moved BELOW it — and it turned out to be a
+restatement of `galois_apply_primitiveRoot_eq_pow_det` with the determinant moved
+out of the exponent, so the archimedean cluster never owed two pieces of
+mathematics.  The count of genuinely missing statements under this cluster was
+always one; it was written down twice.)
 
 WHY THE VALUE CLAUSE IS `IsPrimitiveRoot` AND NOT `∃ y, e x y ≠ 1`.  Over `ZMod n`
 with `n` composite, "nondegenerate" in the weak sense does not pin the scalar by
@@ -57661,8 +57671,9 @@ to a scalar, so the primitive-value clause forces `e` to be the Weil pairing up
 to a unit.  The Galois clause then carries the arithmetic — it is what yields
 `det τ = χ_n(τ)`.
 
-THE CHECK THAT WOULD REFUTE THE "missing" CLAIM (it still applies verbatim to the
-leaf above, which is where the gap now lives): a `μ_n`-valued pairing on
+THE CHECK THAT WOULD REFUTE THE "missing" CLAIM (it still applies verbatim to
+`WeilPairingDet.galois_apply_primitiveRoot_eq_pow_det`, which is where the gap
+now lives): a `μ_n`-valued pairing on
 `nTorsion n` over a base that is not a finite field, anywhere in `Fermat/`,
 `.lake/packages/mathlib/` or `~/cs/FLT/`.  THE AXIS SEARCHED (2026-07-28): every
 `exists_weilPairing*` in this project (`WeilPairing.lean` — `𝔽_q`, prime level;
@@ -57790,125 +57801,20 @@ theorem det_nTorsion_eq_neg_one_of_conj_inv {F : Type u} [Field F] [CharZero F]
           : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
             ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n))
       = -1 := by
-  letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
-  haveI : NeZero n := ⟨by omega⟩
-  haveI hcharK : CharZero (AlgebraicClosure F) :=
-    charZero_of_injective_algebraMap (algebraMap F (AlgebraicClosure F)).injective
-  have hn0 : ((n : ℕ) : AlgebraicClosure F) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
-  -- the rank-two basis of the `n`-torsion at the separably closed `F̄`
-  obtain ⟨φ⟩ := WeierstrassCurve.n_torsion_dimension
-    (E.map (algebraMap F (AlgebraicClosure F))) hn0
-  let ψ : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) ≃ₗ[ZMod n]
-      (ZMod n × ZMod n) := { φ with map_smul' := ZMod.map_smul φ.toAddMonoidHom }
-  let b : Module.Basis (Fin 2) (ZMod n)
-      ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) :=
-    (Module.Basis.finTwoProd (ZMod n)).map ψ.symm
-  set S : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
-      ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) :=
-    AddMonoidHom.toZModLinearMap n
-      (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
-        (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ)) with hSdef
-  -- the `μ_n`-valued pairing
-  obtain ⟨e₀, hbl, hbr, halt, hord, ⟨x₀, y₀, hprim⟩, hgal⟩ :=
-    exists_weilPairing_mu_charZero E n hn
-  -- the discrete logarithm base the primitive value supplied by the leaf
-  set ζu : (AlgebraicClosure F)ˣ := e₀ x₀ y₀ with hζudef
-  have hmem : ∀ x y, e₀ x y ∈ Subgroup.zpowers ζu := by
-    intro x y
-    rw [hprim.zpowers_eq]
-    exact (mem_rootsOfUnity n _).mpr (hord x y)
-  set dlog : ∀ (_ _ : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n)), ZMod n :=
-    fun x y => hprim.zmodEquivZPowers.symm
-      (Additive.ofMul (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu)) with hdlogdef
-  -- the reference pair logs to `1`, which is where the unit value comes from
-  have hdunit : IsUnit (dlog x₀ y₀) := by
-    have hval1 : ((Additive.toMul
-        (hprim.zmodEquivZPowers (((1 : ℕ) : ZMod n)))) : Subgroup.zpowers ζu).1 = ζu := by
-      rw [hprim.zmodEquivZPowers_apply_coe_nat 1]
-      exact pow_one ζu
-    have helt : (⟨e₀ x₀ y₀, hmem x₀ y₀⟩ : Subgroup.zpowers ζu) =
-        Additive.toMul (hprim.zmodEquivZPowers (((1 : ℕ) : ZMod n))) :=
-      Subtype.ext hval1.symm
-    have h2 : dlog x₀ y₀ = ((1 : ℕ) : ZMod n) := by
-      show hprim.zmodEquivZPowers.symm
-        (Additive.ofMul (⟨e₀ x₀ y₀, hmem x₀ y₀⟩ : Subgroup.zpowers ζu)) = _
-      rw [helt]
-      exact hprim.zmodEquivZPowers.symm_apply_apply _
-    rw [h2, Nat.cast_one]
-    exact isUnit_one
-  -- transfer of the pairing laws through the logarithm
-  have hdadd_l : ∀ x y z, dlog (x + y) z = dlog x z + dlog y z := by
-    intro x y z
-    simp only [hdlogdef]
-    have hsub : (⟨e₀ (x + y) z, hmem (x + y) z⟩ : Subgroup.zpowers ζu) =
-        (⟨e₀ x z, hmem x z⟩ : Subgroup.zpowers ζu) * ⟨e₀ y z, hmem y z⟩ :=
-      Subtype.ext (hbl x y z)
-    rw [hsub, ofMul_mul, map_add]
-  have hdadd_r : ∀ x y z, dlog x (y + z) = dlog x y + dlog x z := by
-    intro x y z
-    simp only [hdlogdef]
-    have hsub : (⟨e₀ x (y + z), hmem x (y + z)⟩ : Subgroup.zpowers ζu) =
-        (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) * ⟨e₀ x z, hmem x z⟩ :=
-      Subtype.ext (hbr x y z)
-    rw [hsub, ofMul_mul, map_add]
-  have hdalt : ∀ x, dlog x x = 0 := by
-    intro x
-    simp only [hdlogdef]
-    have hsub : (⟨e₀ x x, hmem x x⟩ : Subgroup.zpowers ζu) = 1 := Subtype.ext (halt x)
-    rw [hsub]
-    rw [show Additive.ofMul (1 : Subgroup.zpowers ζu) = 0 from rfl, map_zero]
-  -- `hinv` turns the Galois clause into inversion, hence negation after the log
-  have hinvval : ∀ x y, e₀ (S x) (S y) = (e₀ x y)⁻¹ := by
-    intro x y
-    have hg := hgal τ x y
-    have hpow : ((e₀ x y : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) ^ n = 1 := by
-      rw [← Units.val_pow_eq_pow_val, hord x y, Units.val_one]
-    have hmul := hinv ((e₀ x y : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) hpow
-    have hu1 : Units.map
-        (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom
-        (e₀ x y) * (e₀ x y) = 1 := Units.ext hmul
-    exact hg.trans (eq_inv_of_mul_eq_one_left hu1)
-  have hdgal : ∀ x y, dlog (S x) (S y) = -dlog x y := by
-    intro x y
-    simp only [hdlogdef]
-    have hsub : (⟨e₀ (S x) (S y), hmem _ _⟩ : Subgroup.zpowers ζu) =
-        (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu)⁻¹ :=
-      Subtype.ext (hinvval x y)
-    rw [hsub, ofMul_inv, map_neg]
-  -- package the logarithm as a `ZMod n`-bilinear form
-  have hdzero_r : ∀ x, dlog x 0 = 0 := by
-    intro x
-    have h2 := hdadd_r x 0 0
-    rw [add_zero] at h2
-    exact add_left_cancel (h2.symm.trans (add_zero _).symm)
-  have hdzero_l : ∀ y, dlog 0 y = 0 := by
-    intro y
-    have h2 := hdadd_l 0 0 y
-    rw [add_zero] at h2
-    exact add_left_cancel (h2.symm.trans (add_zero _).symm)
-  have heinner : ∀ x : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n),
-      ∃ f : (((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n] ZMod n),
-      ∀ y, f y = dlog x y := by
-    intro x
-    exact ⟨AddMonoidHom.toZModLinearMap n ⟨⟨dlog x, hdzero_r x⟩, hdadd_r x⟩, fun y => rfl⟩
-  choose einner heinnerval using heinner
-  have houter : ∃ e : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
-      (((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n] ZMod n),
-      ∀ x y, e x y = dlog x y := by
-    refine ⟨AddMonoidHom.toZModLinearMap n ⟨⟨einner, ?_⟩, ?_⟩, fun x y => heinnerval x y⟩
-    · refine LinearMap.ext fun y => ?_
-      rw [heinnerval]
-      exact hdzero_l y
-    · intro x₁ x₂
-      refine LinearMap.ext fun y => ?_
-      rw [LinearMap.add_apply, heinnerval, heinnerval, heinnerval]
-      exact hdadd_l x₁ x₂ y
-  obtain ⟨e, he⟩ := houter
-  refine det_eq_of_alternating_scaling_fin_two b e (fun v => (he v v).trans (hdalt v))
-    ⟨x₀, y₀, by rw [he]; exact hdunit⟩ S (-1) ?_
-  intro x y
-  rw [he, he, hdgal x y]
-  ring
+  have hc : ∀ ζ : AlgebraicClosure F, ζ ^ n = 1 →
+      (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) ζ = ζ ^ (n - 1) := by
+    intro ζ hζ
+    have hζ0 : ζ ≠ 0 := by
+      intro h
+      rw [h, zero_pow (by omega : n ≠ 0)] at hζ
+      exact zero_ne_one hζ
+    have h2 : ζ ^ (n - 1) * ζ = 1 := by
+      rw [← pow_succ, Nat.sub_add_cancel hn]
+      exact hζ
+    exact mul_right_cancel₀ hζ0 ((hinv ζ hζ).trans h2.symm)
+  have hcast : ((n - 1 : ℕ) : ZMod n) = -1 := by
+    rw [Nat.cast_sub hn, ZMod.natCast_self, Nat.cast_one, zero_sub]
+  rw [det_nTorsion_eq_cyclotomicExponent E n hn τ (n - 1) hc, hcast]
 
 /-- **CONJUGATION IS NEITHER `+1` NOR `−1` ON THE `n`-TORSION, `n ≥ 3`** (PROVEN;
 formerly a sorry leaf, cut 2026-07-27 out of
@@ -57942,10 +57848,14 @@ CUT 2026-07-27: the leaf is discharged from the single sub-leaf
 ONLY form the node consumes — plus a real assembly.  See that leaf's docstring
 for why the pairing form was chosen over the determinant form.
 
-STATUS 2026-07-30 (superseding 2026-07-28): `exists_weilPairing_real` is PROVEN
-over `det_nTorsion_eq_neg_one_of_conj_inv`, THAT is PROVEN over
-`exists_weilPairing_mu_charZero`, and THAT is now PROVEN too, over the single leaf
-`exists_weilPairing_mu_nondeg_of_natCast_ne_zero`.  So the whole chain from this
+STATUS 2026-08-01 (superseding 2026-07-30, which superseded 2026-07-28):
+`exists_weilPairing_real` is PROVEN over `det_nTorsion_eq_neg_one_of_conj_inv`,
+THAT is PROVEN over `det_nTorsion_eq_cyclotomicExponent` (the same identity at a
+general cyclotomic exponent, PROVEN 2026-08-01 — the `−1` case is its `c = n − 1`
+specialisation), THAT over `exists_weilPairing_mu_charZero`, and THAT over the
+single leaf `exists_weilPairing_mu_nondeg_of_natCast_ne_zero`, which delegates to
+`WeilPairingDet.exists_weilPairing_mu_nondeg_of_natCast_ne_zero` and so to
+`WeilPairingDet.galois_apply_primitiveRoot_eq_pow_det`.  So the whole chain from this
 node down is real code except for one statement: Silverman *AEC* III.8.1 over a
 base field that is not finite.  The archimedean half is closed
 (`realConj_mul_eq_one_of_pow_eq_one`), the discrete-logarithm and rank-two

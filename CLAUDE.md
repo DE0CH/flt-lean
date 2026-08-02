@@ -30127,3 +30127,80 @@ AUDIT THAT PRESCRIBES A CUT MUST BE PERFORMED*, and the response is the same —
 the agent that reads it is the owner.  Perform the repair, keep the audit
 verbatim underneath as the EVIDENCE for the new hypothesis, and say in the
 module docstring that a proof effort may now be dispatched.
+## A LEAF DECLARED **ABOVE** THE THEOREM THAT CLOSES IT LOOKS ATOMIC FOREVER — AND ITS "MISSING MATHEMATICS" VERDICT HARDENS
+(2026-08-01, `flt-lean-389`, `det_nTorsion_eq_cyclotomicExponent` in
+`Modularity/MoretBailly.lean`.  Proven in one 9-second scratch round, first try,
+after two days as the file's advertised hardest node.)
+The declaration-order leaf class is already in this file, and this is its
+nastiest variant: **the leaf is declared above its own solution, so it acquires a
+verdict rather than a repair.**  The sequence, and it takes one day:
+* 2026-07-30 morning: a node is cut into a `sorry` leaf `L` plus a `sorry` leaf
+  `P`, with `L` declared FIRST.  `L`'s docstring, written honestly at that moment,
+  says `L` is *"the ONE genuinely missing piece of mathematics in the whole
+  cluster"* and prices two routes to it, both real theory builds.  Both prices are
+  CORRECT, because `P` is open;
+* 2026-07-30 afternoon: somebody proves `P` — and `P` is exactly what makes `L`
+  a fifteen-line variant of an argument already written out below it;
+* every prover thereafter opens `L`, reads a dated verdict naming two theory
+  builds, checks that the tree still lacks both, and correctly moves on.  The
+  verdict is never wrong about anything it asserts; it is simply about a tree that
+  stopped existing that afternoon.
+**The check that breaks it is not a grep for what is MISSING — it is a grep for
+what the leaf's own SIBLINGS now prove, and then one look at the line numbers.**
+Concretely, and it is two commands:
+    grep -n 'theorem <every name the leaf.s docstring cites>' <the file>
+    # is any of them BELOW your leaf, and PROVEN?  then you cannot cite it
+    # where you stand, and that -- not the mathematics -- is why it is open
+Here `exists_weilPairing_mu_charZero` was PROVEN, 78 lines BELOW the leaf.  The
+repair is a relocation of the smaller block (leaf: 69 lines; the theorem it needs:
+101) DOWN past it — the safe direction — plus the proof, which was the neighbouring
+theorem's proof with one hypothesis renamed and one scalar generalised.
+**AND THE TELL WAS WRITTEN IN THE FILE, IN THE NEIGHBOUR'S OWN DOCSTRING.**
+`det_nTorsion_eq_neg_one_of_conj_inv` said, in as many words: *"this theorem is
+derivable from that leaf in a few lines (take `c = n − 1`), and the
+discrete-logarithm route below would then be dead code.  It has deliberately NOT
+been rewritten that way, because the route below is what keeps
+`exists_weilPairing_mu_charZero` inside the cone rather than free-floating."*
+That decline was **correct while the leaf was open** — deriving a proven theorem
+from an open leaf really would have orphaned the pairing — and it **inverts the
+moment the leaf is proven by that same route**, because then the route is not dead
+code, it IS the leaf's proof, and the pairing is consumed there.  So:
+> **A decline that reasons "doing this would orphan X" is indexed to the leaf's
+> STATUS, not to its statement.  Re-evaluate every such decline whenever anything
+> in its chain closes.**
+Same family as the standing rule that a prohibition naming its own repair is a
+work item; the new part is that the trigger for re-reading it is a status change
+*elsewhere in the chain*, which nothing announces.
+## TWO LEAVES CAN BE THE SAME THEOREM WITH THE OPERATOR ON OPPOSITE SIDES — grep the DOCSTRING PROSE, not the statement
+(Same task, and it is why closing the leaf cost nothing.)  `Fermat/` carried
+`det ρ_{E,n} = χ_n` (Silverman *AEC* III.8.1(e)) as **two** `sorry` leaves in two
+modules:
+    WeilPairingDet.galois_apply_primitiveRoot_eq_pow_det   -- σ ζ = ζ ^ det(σ | E[n]),  ζ primitive
+    Modularity.det_nTorsion_eq_cyclotomicExponent          -- det(σ | E[n]) = c,  given σ ζ = ζ ^ c
+They share no identifier, no statement shape and no type: one has the determinant
+in an EXPONENT and quantifies over one primitive root, the other has it as the
+CONCLUSION and quantifies over all `n`-th roots.  `dupstmt.py` cannot pair them
+(the statements are genuinely different terms), `xdup.py` cannot (different
+names), and every frontier scan honestly counts two.
+**What matched was the PROSE.**  Both docstrings contain the string
+`det ρ_{E,n} = χ_n` and both cite `Silverman *AEC* III.8.1(e)`.  That is the
+detector this file already prescribes for the Riemann–Roch case — *grep the
+docstrings for the NAME OF THE CLASSICAL THEOREM, not for identifiers* — and it
+is the only one that fires here.  Run it whenever a leaf's docstring names a
+citation:
+    grep -rn 'III.8.1\|det ρ_{E,n}' --include=*.lean Fermat/    # the citation, not the name
+**The accounting, and it is what makes this worth doing rather than a rename.**
+The two were not independent: the downstream one is DERIVABLE from the upstream
+one (through the pairing the upstream one produces), and the upstream one was
+already in the downstream cluster's cone.  So proving the downstream leaf added
+**no `sorryAx` edge at all** — the direct-sorry count drops by one and the
+mathematics still owed is unchanged.  Say exactly that in the commit; a `−1` that
+buys no mathematics and a `−1` that buys a theorem look identical to every
+instrument, and only the first is honest here.
+**The general shape to look for**, since an operator can be moved to the other
+side of almost any equation: a leaf whose conclusion is `f(x) = c` and a leaf
+whose hypothesis names `c` and whose conclusion is `g(c) = y`.  In this
+development the commonest instances are determinant-versus-exponent (as here),
+degree-versus-valuation, and index-versus-order.  When you cut a leaf of that
+shape, write the classical statement out IN WORDS in the docstring — it is the
+only thing that will match.
