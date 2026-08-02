@@ -356,6 +356,77 @@ binders that are now unused (the first is renamed `_hq2`). Propagating the remov
 seven-signature interface change with call sites in three modules — the class-7 split hazard —
 and it buys nothing until a consumer at `q = 2` actually appears. Removing it in the same
 commit as the mathematics would have made the mathematics unreviewable.
+## THE RELEASE SNAPSHOT'S OLEAN SET IS THE RECORD OF WHAT WAS ACTUALLY COMPILED
+(2026-08-01, `flt-lean-4`.) A whole class of task prompt says *"module X has NEVER
+been compiled since release N"* — the fourth/seventh invisibility classes, a module
+sitting behind a red import. Those prompts are written from a build log, and they go
+stale the instant a release publishes. **The direct test is one `ls`:**
+    ls -la ~/.flt-release-lake/build/lib/lean/<the module path>.olean
+An olean there means the last PUBLISHED release elaborated that module, green,
+because the snapshot is taken from the build that published. Absence means it was
+never reached. This is a *historical* answer that no source scan, no import-closure
+walk and no `lake build` of your own tree can give you — they all tell you about
+NOW, and the claim you are checking is about THEN.
+My task named two modules as never-compiled-since-release-25 and prescribed a
+three-part syntax repair for a 41 600-line swallowed comment. Both oleans were in
+the snapshot, dated the evening of release 33, and `swallowed.py` reported both
+files clean: five held releases had ended and X0's cone had gone green between the
+task being written and being dispatched. **Check the snapshot before you repair
+anything a prompt describes as broken** — and note the check costs one command
+against a repair that would have been a wasted merge conflict against a tree that
+had already fixed it another way.
+## QUEUE COVERAGE DECAYS BY DISPATCH — SUBTRACT THE LIVE AGENTS BEFORE REPORTING A GAP
+(Same run.) A release verifies its coverage invariant against the queue **as
+installed**. The loop then pops tasks FIFO, so by mid-cycle the queue is a fraction
+of what was installed — here `queue1` had drained 385 → 134 — and a naive re-run of
+the coverage check reports every dispatched leaf as UNCOVERED.
+Measured on my two modules: **17 leaves uncovered by `queue1` + `queue2`, of which
+14 were held by a live agent and 3 were genuinely unowned.** Reporting the 17 would
+have been alarmist and wrong; reporting the 3 is a real result.
+So the check has three terms, not two:
+    UNOWNED = frontier − queue1 − queue2 − {leaves named in LIVE agents' prompts}
+and "live" is `jobs/<name>.started` present with `jobs/<name>.sentinel` absent. Grep
+each live job's `.prompt` **and** `.json` (the payload is in the json; the prompt
+file can lag), and match on the last dotted component with a trailing dot stripped.
+The corollary is what makes this worth running at all: **a coverage gap found
+mid-cycle is a gap the release audit could not have seen**, because the leaves that
+fall through are the ones cut *after* the audit — freshly-cut residues of work that
+landed in the same release. All three of mine were cut on 2026-07-31, the day before.
+## A REDUNDANT HYPOTHESIS IS WORTH DROPPING WHEN IT IS **DERIVABLE** AND **CONTAINED**
+(Same run, on `pow_dvd_log_valuation_of_exists_fixed_rootOfUnity_of_not_forall_commutator_fixed`
+in `Interface.lean`.) This file already says to KEEP a hypothesis you cannot justify
+— *"it costs the prover nothing and cannot make the leaf false; deleting it is the
+move that can go wrong"*. That advice is about a hypothesis that **might be needed**,
+and following it blindly at one that provably cannot be is the wrong call. Two tests
+separate the cases, and both are cheap.
+**1. Is it DERIVABLE from the surviving hypotheses?** If so, the statement with it
+and the statement without it IMPLY EACH OTHER, and the distinction that matters is
+one people conflate: here the PROPOSITIONS `hnab` and `hncomm` are genuinely
+inequivalent (`hncomm` is strictly stronger — that was the point of the narrowing
+that introduced it), while the THEOREMS are equivalent, because `hncomm` together
+with `hfix` yields `hnab` in one line through a PROVEN lemma. **Dropping a derivable
+hypothesis is therefore not a restatement in the sense that voids an audit** — every
+audit transfers verbatim, in both directions. Say so explicitly, or the next reader
+will re-run the falsity audit for nothing.
+**2. Is the edit CONTAINED?** `grep -rn` the two declaration names tree-wide,
+comment-stripped, and count the call sites. Mine came back as exactly two
+declarations and two call sites, all inside one file inside a thousand-line window —
+so the class-7 interface-split hazard, which is the real argument for leaving
+redundant binders alone, simply did not apply. Had a consumer been in another module
+I would have left it.
+What tipped it from cosmetic to worth doing: the redundant binder was costing the
+top-level caller **three lines of inline derivation to manufacture an argument
+nothing reads**, and the file CONTRADICTED ITSELF about it — one docstring bullet
+called the redundancy deliberate while the narrowing note and the consumer's own
+docstring both said the binder "has been replaced". A union merge had kept both
+notes and both binders. **Two notes in one file disagreeing about a binder is the
+tell**; reconcile it in writing wherever you land, because leaving the contradiction
+is what guarantees the next owner re-opens the question.
+Receipt to demand of yourself for a change like this, since it touches a proven
+theorem: same `EXIT=0`, same job count, **same `declaration uses 'sorry'` count in
+both directions**, and a message-keyed diff of the whole warning set that comes back
+EMPTY. Mine did (16 → 16 and 37 → 37, zero warning-set delta), which is what makes
+"logically equivalent" a checked claim rather than an argument.
 This repository was split out of Deyao's dissertation repo on
 2026-07-22 (`git subtree split --prefix=fermat`); the full commit
 history of the formalization is preserved. The project root IS the
