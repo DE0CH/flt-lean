@@ -30755,3 +30755,56 @@ nothing has fixed it when the `by` block runs.  Split it: `have h2 : Even (g.b ^
 2) := ⟨w, by linarith⟩` — where the ascription pins `k` — `then exact
 (Int.even_pow.mp h2).1`.  The same shape bites for any `_pow`/`_smul`/`_zpow`
 lemma whose exponent is implicit.
+## "RE-RUN CONSTRUCTION `C` WITH `X` IN PLACE OF `Y`" IS A CLAIM ABOUT `C`'S *STATEMENT* — READ IT BEFORE COSTING THE RE-RUN
+(2026-08-02, `flt-lean-63`, closing `exists_relArtinAuxiliaryNumberField_ray_class`
+in `ModThree.lean` — a leaf whose docstring, and the task prompt built from it,
+both priced it as a strengthening of Childress 2.3–2.7.)
+The commonest shape of a route note in this development is *"the only place the
+extra clause touches the existing proof is step `C`; re-run it with `X` in place
+of `Y`"*. That sentence is a statement about the MATHEMATICS of `C`, written by
+whoever cut the leaf while reasoning about the book. It is almost never a
+statement about the LEAN DECLARATION that was cut out of `C` — and in a tree that
+generalises aggressively, that declaration has usually already been stated at a
+parameter general enough to cover `X`.
+Here the note read: *"Lemmas 2.3–2.7 already choose the auxiliary primes `q ∣ m`
+to avoid a finite set; **require in addition that those `q` be unramified in
+`M E₀`**, then `F(ζ_m) ∩ M E₀ = F` … so a prover should re-run
+`exists_artinModulusCore_ray_class`'s route with `M E₀` in place of `M` at the
+ramification step."* Every clause of the mathematics is right. The Lean cost was
+zero: `exists_badPrimes_mul_muFixer_eq_top_ray_class` is stated for an
+**ARBITRARY OPEN SUBGROUP** `H ≤ Γ F` —
+    ∃ T, ∀ m > 0 avoiding T, ∀ σ, ∃ τ ρ, τ ∈ H ∧ ρ ∈ Γ_{F(ζ_m)} ∧ σ = τ ρ
+— and `ker χ ⊓ H₀` is an open subgroup. Instantiating there IS
+`M E₀ ∩ F(ζ_m) = F`. The "unramified in `M E₀`" condition is exactly what that
+theorem's own proof arranges internally, for whatever subgroup it is handed. It
+had been written at that generality **so as to serve at `F` and at `ℚ` both**, and
+nobody had noticed the third instance. Total cost of the "new arithmetic": one
+`obtain`, and `Subgroup.coe_inf` to see the intersection is open.
+**The check is one `grep -n 'theorem <the named step>' -A15` and it costs
+seconds:** read the binder list of the declaration the note tells you to re-run,
+and ask whether the thing you wanted to vary is already a BINDER. If it is, the
+re-run is an instantiation and the leaf is glue. This is the same family as
+[[flt-inventory-audits-understate-what-exists]] and *AN AUDIT'S "MISSING ATOM" IS
+A GUESS AT THE COST* above, with a sharper tell: **the note names the step, so
+there is a specific statement to read, and reading it is not a search.**
+Two riders from the same run, both reusable:
+* **A generality that was introduced for one reason serves reasons its author
+  never listed.** That theorem's docstring justifies its `∀ H open` shape by the
+  `F`/`ℚ` double duty and says nothing else; a reader looking for "can I get
+  `M E₀ ∩ F(ζ_m) = F`" finds no keyword match anywhere. So when a note asks for a
+  statement about a COMPOSITUM, an INTERSECTION, or a JOIN of two objects you both
+  have, look for a lemma quantified over ONE object and try it at the combination
+  — `ker χ ⊓ H₀` here — before looking for a lemma about the combination.
+* **The other half of the note was exactly right, and cheap.** *"`w ∈ H₀` is the
+  single fact to add, everything else is verbatim"* — true. `H` is the preimage of
+  `⟨q w, q f⟩`, and clause (i)'s proof already factors `σ = (σ·w^{-i})·w^i`, so
+  the compositum clause needs only `w ∈ H` (the symmetric twin of the exported
+  `f ∈ H`, **one line**, `Subgroup.subset_closure`) together with `w ∈ H₀`. A
+  route note is not uniformly reliable or unreliable: its claims about the SHAPE
+  of the argument are usually sound, and its claims about the COST of a named Lean
+  step are the perishable half.
+**Accounting.** Frontier `14 → 13` in `ModThree.lean`, no new leaf anywhere, and
+**no new axiom dependency**: every declaration the new proof cites is already
+cited by the pre-existing absolute chain. Verified by the sorry-warning-set diff —
+the 11 warnings below the insertion point identical, the two above shifted by a
+single constant (the insertion length), and the target's line gone.
