@@ -752,7 +752,12 @@ def creds_stamp():
 # are shared); it is read fresh at each spawn so a rotated key needs no loop
 # restart. medic2 (the crash handler) deliberately stays DIRECT on the on-disk
 # credential: the last-resort path should not depend on the proxy being up.
-PROXY_URL = "http://mystique:8790"
+#
+# LOOPBACK, because one proxy runs per worker host. A single central instance
+# was tried first and is unreachable: inter-host ports are firewalled here (only
+# ssh crosses), so every worker's connect hung until it timed out. $HOME is
+# shared, so the per-host instances all serve the same account bank.
+PROXY_URL = "http://127.0.0.1:8790"
 
 
 def proxy_prefix():
