@@ -1053,9 +1053,12 @@ theorem exists_zetaAvoiding_empty_le_finset (K : Type*) [Field K] [NumberField K
       rw [Finset.coe_insert]
       have hcongr : zetaAvoiding K (insert a (↑M : Set (Ideal (𝓞 K)))) s
           = zetaAvoiding K (↑M : Set (Ideal (𝓞 K))) s := by
-        refine zetaAvoiding_congr K _ _ _
+        -- release 35: call-site repaired to ours' signature of `zetaAvoiding_congr`
+        -- (`{T T'}` implicit, `h` before `s`); the merged body arrived from flt-lean-37,
+        -- whose copy had `(T T' : _) (s) (h)`.
+        refine zetaAvoiding_congr K
           (fun I => ⟨fun h 𝔭 h𝔭 => h 𝔭 (Set.mem_insert_of_mem _ h𝔭),
-            fun h 𝔭 h𝔭 h𝔭max => ?_⟩)
+            fun h 𝔭 h𝔭 h𝔭max => ?_⟩) s
         rcases Set.mem_insert_iff.mp h𝔭 with rfl | h𝔭M
         · exact absurd h𝔭max hmax
         · exact h 𝔭 h𝔭M h𝔭max
