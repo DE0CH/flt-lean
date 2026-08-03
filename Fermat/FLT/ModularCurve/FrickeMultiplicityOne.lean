@@ -1,213 +1,85 @@
-# HANDOFF — the Fricke multiplicity-one route, COMPILED
+/-
+Copyright (c) 2026 Deyao Chen. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Claude
+-/
+module
 
-## ✅ CONSUMED 2026-08-02 BY `flt-lean-97` — DO NOT RE-DO THIS WORK
+public import Fermat.FLT.ModularCurve.WeightTwoEigenform
+public import Fermat.FLT.Modularity.HeckeAtkinLehner
 
-The hoist this handoff was waiting for **landed** as
-`Fermat/FLT/Modularity/HeckeAtkinLehner.lean`.  The block below was re-pointed at
-it and compiled **unchanged, first try, in 9.5 s**, `EXIT=0`, with exactly its one
-named `sorry` — so the banking technique is validated end to end.
+/-!
+# Atkin-Lehner multiplicity one for the FRICKE involution
 
-Where it lives now:
+The Fricke involution `W_M` of `S_2(Gamma_0(M))` is the Atkin-Lehner operator at
+`Q = M`, and on a weight-two NEWFORM it acts by a scalar.  This module proves
+that, and the carrier bridge that makes it usable from
+`Fermat/FLT/ModularCurve/X0.lean`.
 
-* steps 1–4 and the carrier bridge → `Fermat/FLT/ModularCurve/FrickeMultiplicityOne.lean`
-  (a new module importing `WeightTwoEigenform.lean` and `HeckeAtkinLehner.lean` and
-  nothing else; `#print axioms`-clean);
-* the residue `eigensystem_minimal_of_isNewEigenformAt` and the assembled leaf
-  `exists_frickeSlash_eq_smul_of_isNewEigenformAt` → `Fermat/FLT/ModularCurve/X0.lean`,
-  which gained one import line.
+## Why this is a module of its own
 
-**The one-command check that retired this handoff, and that it should have stated:**
+The mathematics lives in `Fermat/FLT/Modularity/HeckeAtkinLehner.lean` (hoisted
+out of `Modularity/Interface.lean`) and the Fricke vocabulary lives in
+`Fermat/FLT/ModularCurve/WeightTwoEigenform.lean`.  Until the hoist landed, the
+Atkin-Lehner theory was reachable only from `Interface.lean`, which
+`public import`s `X0.lean`, so the leaf
+`Fermat.exists_frickeSlash_eq_smul_of_isNewEigenformAt` in `X0.lean` could not
+name it; that is the MODULE DIRECTION blockage its docstring records at length,
+and it is now GONE.  `HeckeAtkinLehner.lean` imports only `HeckeOperator` and
+`HeckeQExpansion`, neither of which imports `X0.lean`, so there is no cycle.
 
-    grep -n '^public import Fermat\|^import Fermat' Fermat/FLT/Modularity/HeckeAtkinLehner.lean
+This module sits between the two and touches neither, which keeps the whole
+development off `X0.lean` (118 000 lines, the most-edited file in the tree) and
+off `HeckeAtkinLehner.lean` (concurrently being de-duplicated against
+`HeckeQExpansion.lean`).  `X0.lean` needs one import line and fifteen lines of
+assembly.
 
-`HeckeAtkinLehner.lean` imports only `HeckeOperator` and `HeckeQExpansion`, neither of
-which reaches `X0.lean`, so the edge `X0 → HeckeAtkinLehner` creates no cycle
-(confirmed by `tools/merge/cyclecheck.py` over all 410 modules).  **A handoff should
-always name the grep that retires it** — this one did not, which is why it sat
-unclaimed after its blockage had already been removed.
+## Main results
 
-This file is kept as the provenance record for the code now in those two modules, and
-because its STEP-2 finding (below) is still the reason the primed generalisations exist.
+* `frickeSlash_eq_atkinLehnerOp` — the Fricke involution IS `atkinLehnerOp M M`;
+* `heckeTransform_slash_atkinLehnerRep'` — the double-coset computation with the
+  prime hypothesis on `q` weakened to `q != 0` and `not (r | q)`, which is what
+  `Q = M` needs;
+* `heckeOp_comm_atkinLehnerOp_self` — `T_r` commutes with `W_M` for `r` not
+  dividing `M`;
+* `exists_frickeSlash_eq_smul_of_isWeightTwoNewform` — the conclusion, over
+  `GaloisRepresentation.Modularity.IsWeightTwoNewform`;
+* `isWeightTwoEigenform_of_carrier` — the CARRIER BRIDGE: the carried-coefficient
+  eigenform predicate of `WeightTwoEigenform.lean` implies the `qCoeff`-based one
+  of `HeckeAtkinLehner.lean`.  This is the coefficient half of the bridge and it
+  is PROVEN; the remaining half (newness) is the leaf
+  `Fermat.eigensystem_minimal_of_isNewEigenformAt` in `X0.lean`.
 
----
+## Provenance
 
-Written by `flt-lean-148`, 2026-07-31, against `main` at `9a2ca10d`.
+Every proof below was verified by `flt-lean-148` on 2026-07-31 in a scratch
+module against `Modularity/Interface.lean` and recorded in
+`HANDOFF-fricke-multiplicity-one.md` at the repository root, precisely so that
+it could be pasted once the hoist landed.  It is pasted here unchanged except
+for the namespace header.  Re-verified against `HeckeAtkinLehner.lean` by
+`flt-lean-97` on 2026-08-02.
 
-This file exists because the leaf it is about,
-`exists_frickeSlash_eq_smul_of_isNewEigenformAt` in
-`Fermat/FLT/ModularCurve/X0.lean`, is blocked by the MODULE DIRECTION and by
-nothing else, so no agent sent at it in `X0.lean` can make progress — while the
-entire route can be, and now has been, verified one module DOWNSTREAM of the
-blocker.
+## A note on the primed declarations
 
-**The technique is the reusable part**: when a leaf is blocked because the
-theory it needs sits in a module that IMPORTS the leaf's file, you cannot prove
-the leaf, but you can prove *the theorem the leaf will become* in a scratch
-module that imports the downstream file. That converts an unbounded hoist
-("move 8 000 lines and hope the route closes") into a bounded one ("move
-8 000 lines and paste in this compiled 557-line block").
+`atkinLehnerConjIndex_injective'`, `atkinLehnerConjIndex_some_ne_none'`,
+`exists_gamma0_atkinLehner_conj_core'`, `exists_gamma0_atkinLehner_conj'` and
+`heckeTransform_slash_atkinLehnerRep'` are STRICTLY MORE GENERAL restatements of
+their unprimed namesakes in `HeckeAtkinLehner.lean`: in all five, `q.Prime` and
+`r != q` are used ONLY to produce `not (r | q)` together with `(q : Z) != 0`.
+Their right long-run home is beside the originals, with the unprimed versions
+re-derived as one-line wrappers (`hq.ne_zero` and
+`fun h => hrq ((Nat.prime_dvd_prime_iff_eq hr hq).mp h)`).  That was NOT done
+here so as to keep this branch's diff off `HeckeAtkinLehner.lean` while that
+file is being de-duplicated; it is queued as a follow-up.
+-/
 
-## STATUS OF THE ROUTE — ONE SORRY LEFT, AND IT IS NAMED
-
-The code block at the end of this file is 557 lines and **compiles with exactly
-one `declaration uses 'sorry'` warning** (`lake env lean`, `EXIT=0`, zero
-errors). It contains, in order:
-
-* **steps 1–4** of the route recorded on the leaf's docstring (as rewritten at
-  `82ea7ac7`, on `merger`), ending at
-
-  ```
-  theorem exists_frickeSlash_eq_smul_of_isWeightTwoNewform {M : ℕ} (hM : M ≠ 0)
-      (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g) :
-      ∃ c : ℂ, Fermat.frickeSlash M hM g = c • g
-  ```
-
-  — the leaf's conclusion, over `Modularity.IsWeightTwoNewform`;
-
-* the **coefficient half of the carrier bridge**, PROVEN and not sorried:
-  `qCoeff_eq_of_isWeightTwoEigenform` (the carried sequence `b` IS the pin's
-  `q`-expansion coefficient sequence, through
-  `ModularFormClass.qExpansion_coeff_unique`), the multiplicativity induction
-  `carrier_pow_mul` / `carrier_mul_coprime`, and
-
-  ```
-  isWeightTwoEigenform_of_carrier :
-      Fermat.IsWeightTwoEigenform M g b → IsWeightTwoEigenform M g
-  ```
-
-* the **one residue**, as a named leaf and the file's only `sorry`:
-
-  ```
-  eigensystem_minimal_of_isNewEigenformAt {M : ℕ} (hM : M ≠ 0)
-      {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ}
-      (hb : Fermat.IsWeightTwoEigenform M g b) (hnew : Fermat.IsNewEigenformAt M b) :
-      ∀ M' : ℕ, M' ∣ M → M' ≠ M →
-        ∀ g' : CuspForm (Gamma0GL M') 2, IsWeightTwoEigenform M' g' →
-          ¬ ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff M' g' q = qCoeff M g q
-  ```
-
-  This is Atkin–Lehner 1970 Theorem 1 / Diamond–Shurman Thm 5.8.3 and it is the
-  ONLY mathematics still missing under the leaf;
-
-* and the assembled leaf itself,
-  `exists_frickeSlash_eq_smul_of_isNewEigenformAt'`, over exactly those two.
-
-So the leaf is a `−1 +1` on the frontier, with the surviving leaf being real
-mathematics rather than a module-direction artefact. No new sorry is inherited
-from the Atkin–Lehner side: its closure in `Interface.lean` is sorry-free.
-
-Note the `sorry` above is honest under CLAUDE.md's rule — it replaces the proof
-of an explicitly written proposition that is classical and true — but it is
-*not* to be committed under `Fermat/` as-is: it lands only when the hoist lands,
-as a properly docstring'd leaf.
-
-## THE STEP-2 FINDING (the one the route asked for)
-
-The route said: generalise `heckeTransform_slash_atkinLehnerRep` from a PRIME
-`q ‖ M` to `Q = M`, and expect to have to weaken the same hypothesis on
-`atkinLehnerConjIndex_injective`, `atkinLehnerConjIndex_some_ne_none` and
-`exists_gamma0_atkinLehner_conj`. That is right, and the generalisation is
-sharper than "replace prime by `Q = M`":
-
-> In all five declarations, `hq : q.Prime` and `hrq : r ≠ q` are used
-> **only** to produce `((q : ℕ) : ZMod r) ≠ 0` — i.e. `¬ r ∣ q` — plus
-> `(q : ℤ) ≠ 0` / `(q : ℝ) ≠ 0`.
-
-So the correct weakening is
-
-    (hq : q.Prime) (hrq : r ≠ q)   ⟶   (hq0n : q ≠ 0) (hqr : ¬ r ∣ q)
-
-with `hr : r.Prime` genuinely needed (it gives `Fact r.Prime`, hence the field
-structure on `ZMod r` used by `div_eq_div_iff` and `inv_mul_cancel₀`, and it is
-consumed by `exists_gamma0_factor_inf` and `Nat.prime_iff_prime_int`).
-
-**No step needs `q` prime.** At `Q = M` the new hypotheses are `M ≠ 0` and
-`¬ r ∣ M`, both of which the Hecke side supplies anyway.
-
-Existing consumers keep working with
-`hq.ne_zero` and `fun h => hrq ((Nat.prime_dvd_prime_iff_eq hr hq).mp h)`.
-
-## THE ALTERNATIVE TO THE HOIST, CHECKED AND CLOSED
-
-Before dispatching the hoist, one asks whether the Fricke/newform cluster could
-instead move DOWNSTREAM of `Interface.lean` (a much smaller move). It cannot,
-and the reason is worth the two minutes it costs to establish, because the
-naive form of the check says the opposite.
-
-`Interface → HardlyRamified/ModThree → FreyCurve/MazurTorsion → X0`
-(`MazurTorsion.lean:289` and `ModThree.lean:51` both `public import` `X0.lean`;
-`Interface.lean:170` imports it directly as well). So `MazurTorsion.lean` sits
-between `X0.lean` and `Interface.lean`, and anything it uses must stay upstream
-of `Interface.lean`.
-
-The naive check — "does `MazurTorsion.lean` mention the cluster?" — says NO:
-in comment-stripped source, `kenkuLevels`, `cuspPeriod`, `frickeSlash` and
-`isFrickeEigenform` each occur **zero** times there (all 18 textual hits are
-docstring). The real answer is the TRANSITIVE one. Inside `X0.lean` the cluster
-runs down a 14-link thread, each link occurring exactly twice in comment-stripped
-source (its declaration plus its single consumer):
-
-    exists_frickeSlash_eq_smul_of_isNewEigenformAt
-      → isFrickeEigenform_of_isNewEigenformAt
-      → cuspPeriod_ne_zero_of_isNewEigenformAt
-      → cuspPeriod_ne_zero_of_kenkuLevel
-      → lFunction_apply_one_ne_zero_of_kenkuLevel
-      → isTorsion_jacobian_of_kenkuLevel
-      → finite_jacobian_of_kenkuLevel
-      → hasRankZeroJacobian_of_kenkuLevel
-      → {card_le_x0TwentySix, y0HasNoRationalPoint_of_sieveLevel,
-         y0HasNoRationalPoint_of_witnessPrime}
-      → the twelve  y0HasNoRationalPoint_*
-
-and `MazurTorsion.lean` uses `y0HasNoRationalPoint` **32 times in non-comment
-source**. So the cluster must stay upstream of `MazurTorsion.lean`, hence
-upstream of `Interface.lean`. The hoist is the only direction.
-
-## THE VERIFIED TEXT
-
-Verified with `lake env lean` on a scratch module whose only import is
-`Fermat.FLT.Modularity.Interface`, in worktree `flt-lean-148` on host
-`cyclops`. Baseline for the worktree: `lake build Fermat.FLT.ModularCurve.X0`
-= `Build completed successfully (4973 jobs)`, `EXIT=0`, 110
-`declaration uses 'sorry'` warnings in `X0.lean`.
-
-Everything below is namespace `GaloisRepresentation.Modularity`, with
-
-```lean
-open scoped ModularForm MatrixGroups Matrix
-open Matrix.SpecialLinearGroup CongruenceSubgroup
-```
-
-The full text is in the code block at the end of this file. After the hoist,
-paste steps 1–3 beside the Atkin–Lehner block and step 4 beside
-`exists_smul_of_heckeOp_eq_smul_of_not_dvd_level`; the carrier-bridge section
-and `eigensystem_minimal_of_isNewEigenformAt` must go in a module that sees BOTH
-`Fermat.IsWeightTwoEigenform`/`Fermat.IsNewEigenformAt` (i.e. `X0.lean` or
-upstream) and `qCoeff`/`IsWeightTwoNewform` (i.e. the new Atkin–Lehner module) —
-after the hoist that is `X0.lean` itself. Then `X0.lean`'s leaf becomes the
-last declaration of the block, with `eigensystem_minimal_of_isNewEigenformAt`
-the only remaining `sorry`.
-
-Two mechanical notes, both cost a cycle if rediscovered:
-
-* `Fermat.Gamma0GL` and `Modularity.Gamma0GL` ARE defeq (the machine-checked
-  note in `HeckeOperator.lean`), but they are not *syntactically* equal, so a
-  `rw` chain that mixes them produces
-  `Application type mismatch … in the application ⇑g` and a
-  "not type-correct under the `instances` transparency level" note. Build the
-  two coercion equations as separate `have`s and combine them with
-  `Eq.trans` — `exact` unifies them at default transparency where `rw` will
-  not. That is what `frickeSlash_eq_atkinLehnerOp` below does, and the naive
-  `rw`-only version fails.
-* `Function.Periodic.qParam 1` leaves a `((1 : ℝ) : ℂ)` that `ring_nf` will
-  not clear; `rw [Complex.ofReal_one, div_one]` first.
-
-```lean
-import Fermat.FLT.Modularity.Interface
+@[expose] public section
 
 open scoped ModularForm MatrixGroups Matrix
 
 namespace GaloisRepresentation.Modularity
+
+open Matrix.SpecialLinearGroup CongruenceSubgroup
 
 open Matrix.SpecialLinearGroup CongruenceSubgroup
 
@@ -738,26 +610,5 @@ theorem isWeightTwoEigenform_of_carrier (hb : Fermat.IsWeightTwoEigenform M g b)
 
 end Carrier
 
-/-! ## THE RESIDUE — the ONE genuine gap, as a named leaf. -/
-
-theorem eigensystem_minimal_of_isNewEigenformAt {M : ℕ} (hM : M ≠ 0)
-    {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ}
-    (hb : Fermat.IsWeightTwoEigenform M g b) (hnew : Fermat.IsNewEigenformAt M b) :
-    ∀ M' : ℕ, M' ∣ M → M' ≠ M →
-      ∀ g' : CuspForm (Gamma0GL M') 2, IsWeightTwoEigenform M' g' →
-        ¬ ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff M' g' q = qCoeff M g q :=
-  sorry
-
-/-! ## THE LEAF ITSELF, assembled. -/
-
-theorem exists_frickeSlash_eq_smul_of_isNewEigenformAt' {M : ℕ} (hM : M ≠ 0)
-    (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
-    (hb : Fermat.IsWeightTwoEigenform M g b) (hnew : Fermat.IsNewEigenformAt M b) :
-    ∃ c : ℂ, Fermat.frickeSlash M hM g = c • g :=
-  exists_frickeSlash_eq_smul_of_isWeightTwoNewform hM g
-    { toIsWeightTwoEigenform := isWeightTwoEigenform_of_carrier hb
-      eigensystem_minimal := eigensystem_minimal_of_isNewEigenformAt hM hb hnew }
 
 end GaloisRepresentation.Modularity
-```
-
