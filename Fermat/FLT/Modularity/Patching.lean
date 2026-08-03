@@ -7104,11 +7104,271 @@ lemma range_subRho_ne_top_of_mem_taylorWilesLocus.{uK, uW}
 -- `N₁ = kerFixSubgroup p ρbar 1` and so needs it declared earlier in the file.
 -- Same name, same statement, same definition; every use below is unchanged.
 
-/-- **`H¹(Gal(L/ℚ), ad⁰ρbar(1)) = 0`, ON COCYCLES** (SORRY LEAF, cut 2026-07-30
-out of `ker_resSubgroupTwist1_kerFix_eq_zero` immediately below, which is now
-PROVEN over it): a `1`-cocycle whose inhomogeneous cochain VANISHES IDENTICALLY
+/-- **A COMMUTATOR ACTS TRIVIALLY ON ROOTS OF UNITY** (PROVEN 2026-08-02): for any
+`g, h ∈ Γ ℚ` and any `m`-th root of unity `ζ ∈ ℚᵃˡᵍ`, `(g h g⁻¹ h⁻¹) ζ = ζ`.
+
+The action of `Γ ℚ` on `μ_m` is through `Aut(ℤ/m) = (ℤ/m)ˣ`, which is ABELIAN, so
+commutators act trivially.  Formally this is mathlib's
+`modularCyclotomicCharacter' (ℚᵃˡᵍ) m : (ℚᵃˡᵍ ≃+* ℚᵃˡᵍ) →* (ZMod d)ˣ` — where
+`d = #μ_m(ℚᵃˡᵍ)` — precomposed with `AlgEquiv.toRingEquiv`; the target is a
+COMMUTATIVE group, so the commutator lands in `1`, and
+`modularCyclotomicCharacter'.spec'` reads that back as `ζ ↦ ζ`.  Note that
+`modularCyclotomicCharacter'` (with the prime) needs NO hypothesis that `ℚᵃˡᵍ`
+contains `m` roots of unity, which is why no `IsCyclotomicExtension` bookkeeping
+appears.
+
+This is what makes the `n ≥ 1` case of `cocycleClass_eq_zero_of_eval₁_kerFix_eq_zero`
+below reduce to its `n = 1` case: it gives `[Γ ℚ, kerFixSubgroup p ρbar 1] ≤
+kerFixSubgroup p ρbar n`, i.e. `kerFixSubgroup p ρbar 1 / kerFixSubgroup p ρbar n`
+is CENTRAL in the quotient, which is the only property of the tower `μ_p ⊆ μ_{p^n}`
+the reduction uses. -/
+lemma fixes_rootsOfUnity_commutator (m : ℕ) [NeZero m]
+    (g h : Field.absoluteGaloisGroup ℚ) (ζ : AlgebraicClosure ℚ) (hζ : ζ ^ m = 1) :
+    (g * h * g⁻¹ * h⁻¹) ζ = ζ := by
+  classical
+  let φ : Field.absoluteGaloisGroup ℚ →*
+      (AlgebraicClosure ℚ ≃+* AlgebraicClosure ℚ) :=
+    { toFun := fun g => g.toRingEquiv
+      map_one' := rfl
+      map_mul' := fun _ _ => rfl }
+  let χ : Field.absoluteGaloisGroup ℚ →*
+      (ZMod (Nat.card { x // x ∈ rootsOfUnity m (AlgebraicClosure ℚ) }))ˣ :=
+    (modularCyclotomicCharacter' (AlgebraicClosure ℚ) m).comp φ
+  have htmem : ((rootsOfUnity.mkOfPowEq ζ hζ : (AlgebraicClosure ℚ)ˣ)) ∈
+      rootsOfUnity m (AlgebraicClosure ℚ) := (rootsOfUnity.mkOfPowEq ζ hζ).2
+  have hcoe : (((rootsOfUnity.mkOfPowEq ζ hζ : (AlgebraicClosure ℚ)ˣ) :
+      AlgebraicClosure ℚ)) = ζ := rootsOfUnity.coe_mkOfPowEq hζ
+  have hc1 : χ (g * h * g⁻¹ * h⁻¹) = χ 1 := by
+    simp only [map_mul, map_inv, map_one]
+    rw [← commutatorElement_def]
+    exact (Commute.all _ _).commutator_eq
+  have h1 := modularCyclotomicCharacter'.spec' (n := m) (L := AlgebraicClosure ℚ)
+    (φ (g * h * g⁻¹ * h⁻¹)) htmem
+  have h2 := modularCyclotomicCharacter'.spec' (n := m) (L := AlgebraicClosure ℚ)
+    (φ 1) htmem
+  have hχ : (modularCyclotomicCharacter' (AlgebraicClosure ℚ) m)
+      (φ (g * h * g⁻¹ * h⁻¹)) =
+      (modularCyclotomicCharacter' (AlgebraicClosure ℚ) m) (φ 1) := hc1
+  rw [hχ, ← h2] at h1
+  have hfin : (g * h * g⁻¹ * h⁻¹) ζ = (1 : Field.absoluteGaloisGroup ℚ) ζ := by
+    rw [← hcoe]
+    exact h1
+  simpa using hfin
+
+/-- **`H⁰(ℚ, ad⁰ρbar(1)) = 0`** (SORRY LEAF, cut 2026-08-02 out of
+`cocycleClass_eq_zero_of_eval₁_kerFix_eq_zero` below, which is PROVEN over it and
+over `cocycleClass_eq_zero_of_eval₁_kerFix_one_eq_zero`): a `Γ ℚ`-invariant vector
+of the twisted adjoint representation is `0`.
+
+# THE CLASSICAL PROOF, AND WHERE ITS ONE ARITHMETIC INPUT SITS
+
+Write `X ∈ ad⁰ρbar` for the underlying trace-zero endomorphism of `m` and `χ` for
+`adZeroCycloChar p k`.  Invariance says `χ σ • (ρbar σ) X (ρbar σ)⁻¹ = X`, i.e.
+
+    (ρbar σ) X (ρbar σ)⁻¹ = (χ σ)⁻¹ • X    for every σ.
+
+Square it.  Since `X` has trace `0` on a rank-`2` module, Cayley–Hamilton gives
+`X ^ 2 = -(det X) • 1`, a SCALAR, and conjugation fixes scalars — so
+`det X = (χ σ)⁻² • det X` for every `σ`.  Hence:
+
+* **if some `σ` has `(χ σ) ^ 2 ≠ 1`** then `det X = 0`, so `X` is nilpotent; if
+  `X ≠ 0` it has rank one and `ker X` is a LINE, which the displayed identity shows
+  is `ρbar`-stable (the scalar `(χ σ)⁻¹` does not move a kernel) — contradicting
+  `hirr`.  Note only `IsIrreducible` over `k` is needed, NOT absolute
+  irreducibility: the stable line is already defined over `k`.
+
+**So the whole leaf reduces to ONE arithmetic fact: `χ ^ 2 ≠ 1`.**  That is exactly
+where `5 ≤ p` enters and it is the only place: `χ` is the mod-`p` cyclotomic
+character, whose image is the full `μ_{p-1} ⊆ kˣ`, so `χ ^ 2 = 1` forces
+`p - 1 ∣ 2`, i.e. `p ≤ 3`.  Formalizing that needs SURJECTIVITY of the mod-`p`
+cyclotomic character of `ℚ` (equivalently `[ℚ(μ_p) : ℚ] = p - 1` together with
+faithfulness of `Γ ℚ → (ZMod p)ˣ → kˣ`), which is **not in this module's import
+cone**: the only surjectivity statement of that shape in the tree is
+`exists_algEquiv_pow_of_coprime` (`ModularCurve/X0.lean:33413`, PROVEN, stated for an
+arbitrary modulus over `Polynomial.cyclotomic.irreducible_rat` and
+`IsCyclotomicExtension.autEquivPow`), and `X0.lean` is NOT imported here and must not
+be — it is a 100 000-line modular-curve module far off this file's architecture.  A
+prover of this leaf should either re-derive the two-line consequence
+"`∃ σ, (adZeroCycloChar p k σ) ^ 2 ≠ 1`" from mathlib directly, or hoist
+`exists_algEquiv_pow_of_coprime` into a small shared module.
+
+# WHY THIS IS A SEPARATE LEAF
+
+It is independent of Wiles' Lemma 1.12 in both directions: the case analysis on the
+projective image says nothing about `H⁰`, and `H⁰ = 0` does not bound `H¹`.  It is
+also reusable — the Greenberg–Wiles Euler-characteristic formula, which this module
+will need for the dual-Selmer bookkeeping, has `dim H⁰(ℚ, M)` and `dim H⁰(ℚ, M*)` as
+explicit terms.
+
+Both-ways audit: not vacuous — `m = 0` satisfies the hypothesis, and the conclusion
+holds for it.  The FALSITY test is a nonzero `Γ ℚ`-invariant vector of `ad⁰ρbar(1)`,
+which at `p = 3` genuinely exists for suitable `ρbar` (there `χ ^ 2 = 1`, the whole
+argument above collapses, and `M ≅ ad⁰ρbar ⊗ (a quadratic character)` can have
+invariants) — which is why `5 ≤ p` is stated and is LOAD-BEARING FOR TRUTH, not merely
+for the route.  `hirr` is load-bearing too: for `ρbar` reducible, take `X` the
+nilpotent with kernel the stable line and twist appropriately.
+
+CIRCULARITY GUARD (inherited): it must not be discharged through
+`not_isIrreducible_of_isHardlyRamified_of_five_le`, `Family.lean` or anything
+downstream of them — that headline rests on pillar α, which rests on this cluster.
+Note that `IsHardlyRamified.mod_three_reducible` is NOT on that list and is not
+available here either, since this leaf carries `5 ≤ p`. -/
+theorem adZeroTwist_eq_zero_of_forall_rho_apply_eq_self.{uK, uW}
+    {p : ℕ} (_hpodd : Odd p) [Fact p.Prime] (_hp5 : 5 ≤ p)
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (_hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (_hirr : ρbar.IsIrreducible) (m : ↥(adZeroTwist p ρbar))
+    (_hm : ∀ g : Field.absoluteGaloisGroup ℚ, (adZeroTwist p ρbar).ρ g m = m) :
+    m = 0 := sorry
+
+/-- **WILES, LEMMA 1.12 / DDT LEMMA 2.48: `H¹(Gal(L/ℚ), ad⁰ρbar(1)) = 0` FOR
+`L = ℚ(ρbar, μ_p)`, ON COCYCLES** (SORRY LEAF, cut 2026-08-02 out of
+`cocycleClass_eq_zero_of_eval₁_kerFix_eq_zero` below, which is PROVEN over it and
+over `adZeroTwist_eq_zero_of_forall_rho_apply_eq_self` above).
+
+A `1`-cocycle whose inhomogeneous cochain VANISHES IDENTICALLY on
+`N₁ = ker ρbar ∩ Fix(μ_p)`, and whose class is unramified outside `{2, p}`, has
+vanishing class.
+
+# WHAT THE CUT OF 2026-08-02 REMOVED, AND WHY IT MATTERS
+
+The predecessor statement quantified over an arbitrary level `n ≥ 1` and carried only
+`Odd p`.  Both are gone, and each removal is a real narrowing:
+
+* **The level.** The predecessor's `N = ker ρbar ∩ Fix(μ_{p^n})` is smaller than `N₁`
+  for `n ≥ 2`, so "vanishes on `N`" is a WEAKER hypothesis and the predecessor was a
+  strictly stronger statement.  The gap is closed below by
+  `fixes_rootsOfUnity_commutator` plus `H⁰ = 0`: the commutator relation
+  `[Γ ℚ, N₁] ≤ N` makes `z|_{N₁}` take values in `M^{Γ ℚ}`, which vanishes.  This
+  leaf is now stated at exactly the level Wiles and DDT state it at — the field cut
+  out by `ad⁰ρbar(1)` itself is `ℚ(ρbar, μ_p)`, and `μ_{p^n}` never appears in the
+  classical argument.
+* **`5 ≤ p`.**  The classical proof CONSUMES it (see the route below) and the
+  predecessor could not have it, because at `p = 3` the only way to the hypothesis
+  set's emptiness was banned as circular.  It is not banned: see the note on the
+  consumer below.  So `5 ≤ p` is now available and is load-bearing.
+
+# ROUTE (Wiles, Ann. of Math. 141 (1995), Lemma 1.12; DDT §2, Lemma 2.48)
+
+`N₁` is open and normal in `Γ ℚ` and acts TRIVIALLY on `M = ad⁰ρbar(1)`, so a
+cocycle vanishing on it IS an inflated cocycle and the claim is
+`H¹(Gal(L/ℚ), M) = 0` for `L = ℚ(ρbar, μ_p)`.  Write `G = Gal(L/ℚ)`.  The classical
+proof is a CASE ANALYSIS on the projective image `PG ⊆ PGL₂(k)`:
+
+1. **Restriction to a prime-to-`p` index subgroup is injective on `p`-torsion.**  In
+   cocycle language, with no corestriction and no quotient groups: if `H ≤ Γ ℚ` has
+   finite index `d` with `(d : k) ≠ 0` and `z|_H` is the coboundary of some `m₀`,
+   then averaging `−d⁻¹ • Σ_{gH ∈ Γ/H} (z − ∂m₀)(g)` — the sum is well defined
+   because `(z − ∂m₀)(gh) = (z − ∂m₀)(g)` for `h ∈ H` — produces a global `m` with
+   `z = ∂(m + m₀)`, and `ContinuousCohomology.cocycleClass_eq_zero_of_eval₁_eq_sub`
+   then kills the class (its continuity side condition is free here, since `N₁` is
+   open and acts trivially, so `g ↦ ρ g m` is locally constant).  **That averaging
+   lemma is not in this file and is the first thing a prover should write**; it is
+   pure cochain algebra, needs no arithmetic, and is what replaces every
+   inflation–restriction step below.
+2. Applying 1 with `H` = the preimage of the scalars (index prime to `p`, the
+   scalars being a subgroup of `kˣ` and `char k = p`) reduces to the PROJECTIVE
+   image; applying it again with `H` = the preimage of a `p`-Sylow of `PG` reduces
+   to the `p`-Sylow.
+3. **Dickson's classification**, and this is where `5 ≤ p` is spent.  It is
+   SORRY-FREE in this tree and already in this module's transitive `public import`
+   closure (through `HardlyRamified/ModThree.lean`, which `public import`s
+   `Fermat.FLT.KnownIn1980s.PGL2.Defs`):
+   * `Dickson.classification_tame` — order PRIME to `p`: cyclic, dihedral, `A₄`, `S₄`
+     or `A₅`.  Then the `p`-Sylow is trivial, step 1 applies with `H = N₁` itself and
+     the class vanishes with no further work.
+   * `Dickson.classification_wild` — order DIVISIBLE by `p`: an
+     elementary-abelian-by-cyclic semidirect product (i.e. contained in a BOREL, which
+     contradicts `hirr`), `PSL₂(𝔽_{p^m})`, `PGL₂(𝔽_{p^m})`, or — only at `p = 3` —
+     `A₅`.  The surviving cases need `H¹(PSL₂(𝔽_{p^m}), ad⁰) = 0`, which holds for
+     `p ≥ 5` (Cline–Parshall–Scott) and FAILS at `p = 3` through the `A₅` case.  That
+     failure is the whole reason `5 ≤ p` is stated.
+   (Do NOT cite `Dickson.dickson_classification`: `Slop/PGL2/FiniteSubgroups/`
+   `DicksonClassification.lean` advertises it in its module docstring and the file
+   contains no declarations at all.  Cite the two halves.)
+
+# WHAT IS LOAD-BEARING
+
+* `_hp5 : 5 ≤ p` — step 3, and it cannot be dropped: at `p = 3` the `A₅` case is
+  live and the vanishing is FALSE for the abstract group-cohomological statement.
+* `_hirr` — step 3, to exclude the Borel case.  Only irreducibility over `k` is used
+  by that exclusion; absolute irreducibility is what the classical account assumes,
+  and a prover who finds it necessary should say so rather than silently strengthen.
+* `_hρbar` and `_hcunr` are RETAINED DEFENSIVELY and are not known to be needed.
+  Unramifiedness plays no part in Wiles' proof of the vanishing, and `_hρbar` is
+  spent classically only to know `det ρbar` is the cyclotomic character — which this
+  statement does not mention.  They cost a prover nothing (the consumer holds both)
+  and dropping either would STRENGTHEN the leaf, so they stay; a proof that does not
+  use them should record that here rather than change the signature.
+
+Both-ways audit: not vacuous — the zero cocycle satisfies the hypothesis and has
+vanishing class, and `h1TwistUnramified` contains genuine classes.  The FALSITY test
+that would refute it is a cocycle vanishing on `N₁` with NONZERO class, i.e. a
+nonzero element of `H¹(Gal(L/ℚ), ad⁰ρbar(1))`, which is exactly what the case
+analysis excludes at `p ≥ 5`.
+
+CIRCULARITY GUARD: it must not be discharged through
+`not_isIrreducible_of_isHardlyRamified_of_five_le`, `Family.lean` or anything
+downstream of them — a proof ending in `exfalso` on `hirr` through that headline is
+the circular discharge and is BANNED, since it rests on pillar α, which rests on this
+cluster.  `IsHardlyRamified.mod_three_reducible` is NOT a legitimate discharge here
+either, but for a different and weaker reason: it is `p = 3` only, and this leaf
+carries `5 ≤ p`. -/
+theorem cocycleClass_eq_zero_of_eval₁_kerFix_one_eq_zero.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime] (_hp5 : 5 ≤ p)
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (_hρbar : IsHardlyRamified hpodd hW ρbar) (_hirr : ρbar.IsIrreducible)
+    (z : ContinuousCohomology.cocycles₁ (adZeroTwist p ρbar))
+    (_hcunr : ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z ∈
+      h1TwistUnramified p ρbar)
+    (_hvan : ∀ g ∈ kerFixSubgroup p ρbar 1,
+      ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 g = 0) :
+    ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = 0 := sorry
+
+/-- **`H¹(Gal(L/ℚ), ad⁰ρbar(1)) = 0`, ON COCYCLES** (a SORRY LEAF from its cut on
+2026-07-30 until **2026-08-02, when it became PROVEN** over the two leaves above —
+`cocycleClass_eq_zero_of_eval₁_kerFix_one_eq_zero` (the same statement at `n = 1`
+and `5 ≤ p`) and `adZeroTwist_eq_zero_of_forall_rho_apply_eq_self` (`H⁰ = 0`) —
+together with the `p = 3` horn, which is discharged here.  The statement is
+UNCHANGED: `ker_resSubgroupTwist1_kerFix_eq_zero` immediately below calls it exactly
+as before.): a `1`-cocycle whose inhomogeneous cochain VANISHES IDENTICALLY
 on `N = ker ρbar ∩ Fix(μ_{p^n})`, and whose class is unramified outside
 `{2, p}`, has vanishing class.
+
+# WHAT WAS CLOSED HERE, AND WHAT THE ACCOUNTING IS
+
+**The direct-sorry count went 1 → 2 and that is DISCLOSURE, not regression.**  What
+left this declaration is everything that is not Wiles' case analysis:
+
+* **the `p = 3` horn**, which the previous docstring recorded as an unpayable debt
+  ("that horn is not available non-circularly").  It IS available: at `p = 3` the
+  hypothesis package `Odd p` + `IsHardlyRamified` + `IsIrreducible` is refuted by
+  `IsHardlyRamified.mod_three_reducible` (`HardlyRamified/ModThree.lean`, the
+  Fontaine/Odlyzko discriminant-bound route) through
+  `Slop.OddRep.isIrreducible_iff_forall`, and `ModThree.lean` is `public import`ed by
+  this module — so by MODULE ORDER it cannot depend on anything here, and the
+  discharge is not circular.  See the CIRCULARITY GUARD below, which is narrowed
+  accordingly.  The same discharge is already used twice in this module, at
+  `exists_framedStrictlyUniversal_hardlyRamified_finiteTests` and
+  `topologicalClosure_adjoin_charFrobCoeff_univ_eq_top`.
+* **the level `n`.**  The predecessor asked for the vanishing at `N = ker ρbar ∩
+  Fix(μ_{p^n})` for arbitrary `n ≥ 1`, which for `n ≥ 2` is strictly stronger than
+  the classical statement.  The reduction below is `fixes_rootsOfUnity_commutator`
+  above plus `H⁰ = 0`: for `h ∈ N₁` the commutator `g h g⁻¹ h⁻¹` lies in `N` (its
+  `ρbar` is `1` because `ρbar h = 1`, and it fixes `μ_{p^n}` because the action on
+  `μ_{p^n}` is abelian), so `z (g h g⁻¹) = z h`; and `ρ (g h g⁻¹) = 1` makes
+  `ContinuousCohomology.eval₁_conj`'s correction term cancel, giving
+  `z (g h g⁻¹) = ρ g (z h)`.  Hence `ρ g (z h) = z h` for EVERY `g`, i.e. `z h` is a
+  `Γ ℚ`-invariant vector, and `H⁰ = 0` makes it `0`.
+
+So the residue is exactly Wiles' Lemma 1.12 in the shape the literature proves it,
+plus one small independent classical fact.  Nothing in this declaration is arithmetic
+any more.
 
 # WHY THIS FORM, AND NOT `ker res = 0` OR A QUOTIENT-GROUP `H¹`
 
@@ -7131,7 +7391,7 @@ reasons, both of which cost a previous route real work:
    asks only that each `ρ g` be continuous — see that lemma's docstring, which
    says so in as many words) and which is free ONLY at `m = 0`.  Concluding
    "the class is zero" rather than "the cocycle is a coboundary" keeps the
-   obligation inside this leaf, where whoever proves it may discharge it
+   obligation inside the leaf, where whoever proves it may discharge it
    however the argument actually goes.
 
 `hcunr` is retained rather than dropped, for the reason recorded on the
@@ -7142,16 +7402,12 @@ what is needed.
 
 * `hn : 1 ≤ n` — WITHOUT it `N` need not act trivially on `M` (the cyclotomic
   twist is untrivialised, `adZeroCycloChar` being killed only by fixing `μ_p`),
-  `M^N ≠ M`, and the identification with `H¹(Gal(L/ℚ), M)` fails.  Note that
-  `hn` is ALSO consumed by the consumer below, which needs exactly
-  `Fix(μ_{p^n}) ⊆ Fix(μ_p)` to turn "`res` kills the class" into `hvan`; that
-  is a different use and neither subsumes the other.
-* `hρbar` and `hirr` — the classical proof consumes ABSOLUTE irreducibility of
-  `ρbar|_{ℚ(ζ_p)}` together with `p ≥ 5`, extracted from these with `p` odd.
-  Only `Odd p` is available here, matching the parent; at `p = 3` the hypothesis
-  set is classically EMPTY (`IsHardlyRamified.mod_three_reducible`) so the
-  statement is true but vacuously, and that horn is not available
-  non-circularly.
+  `M^N ≠ M`, and the identification with `H¹(Gal(L/ℚ), M)` fails.  It is consumed
+  TWICE in the proof below — once through `Fix(μ_{p^n}) ⊆ Fix(μ_p)` to trivialise the
+  action of the commutator, and once by the consumer below for its own reduction —
+  and neither use subsumes the other.
+* `hρbar` and `hirr` — `hρbar` is spent ONLY on the `p = 3` horn, where it is what
+  `mod_three_reducible` consumes; `hirr` is spent there and passed to both leaves.
 
 Both-ways audit: not vacuous — the zero cocycle satisfies `hvan` and has
 vanishing class, and `h1TwistUnramified` contains genuine classes; and the
@@ -7160,52 +7416,30 @@ rather than refutable.  The FALSITY test that would refute it is a cocycle
 vanishing on `N` with NONZERO class, i.e. a nonzero element of
 `H¹(Gal(L/ℚ), ad⁰ρbar(1))`, which is exactly what Wiles' case analysis excludes.
 
-# RESOURCE POINTER (added 2026-07-30, verified by grep and by a sorry scan)
+# CIRCULARITY GUARD, NARROWED 2026-08-02 — READ THE REASON BEFORE WIDENING IT AGAIN
 
-Wiles' proof of Lemma 1.12 is a CASE ANALYSIS on the image of the projective
-representation attached to `ρbar`: the exceptional and dihedral cases have order
-prime to `p` (so `H¹` vanishes for order reasons on a `p`-torsion module), and the
-`PSL₂`/`PGL₂` cases are the ones needing `p ≥ 5`.  **That classification is
-already in this tree and is SORRY-FREE**, which no note on this leaf had said:
+The guard as written on 2026-07-30 banned discharging this node through
+`not_isIrreducible_of_isHardlyRamified_of_five_le`, `IsHardlyRamified`
+`.mod_three_reducible`, `Family.lean` "or anything downstream of them".  **The first
+and third are correct and stand.**  `not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`) is proven over
+`exists_hardlyRamified_lift_residual_of_five_le` — pillar α, i.e. modularity lifting,
+i.e. the Taylor–Wiles machinery this cluster is being built for — so using it here is
+mathematically circular even though the module graph permits it, and a fully vacuous
+`exfalso` discharge of this node is therefore still BANNED.
 
-* `Dickson.classification_tame` (`KnownIn1980s/PGL2/Defs.lean`) — a finite
-  subgroup of `PGL p` of order PRIME to `p` is cyclic, dihedral of order `2n`
-  (`n ≥ 2`), `A₄`, `S₄` or `A₅`;
-* `Dickson.classification_wild` (same file) — order DIVISIBLE by `p`: an
-  elementary-abelian-by-cyclic semidirect product, `PSL₂(𝔽_{p^m})`,
-  `PGL₂(𝔽_{p^m})`, or (`p = 3` only) `A₅`.
+**The ban on `IsHardlyRamified.mod_three_reducible` was over-broad and is lifted for
+the `p = 3` horn alone.**  That theorem lives in `HardlyRamified/ModThree.lean`, which
+this module `public import`s at line 254; Lean's module order therefore makes it
+impossible for it to depend on anything in `Modularity/`, and its own route
+(Fontaine's discriminant bound, Odlyzko, and the Serre-elimination leaf
+`not_isAbsolutelyIrreducible`) has nothing to do with patching.  Using it to kill the
+single characteristic `p = 3` — while the real content survives at `p ≥ 5` in the leaf
+above — is therefore NOT circular, and it is the discharge this module already uses at
+two other nodes.
 
-Both are thin wrappers over `Dickson.classification_tame_slop`
-(`Slop/PGL2/FiniteSubgroups/TameClassification.lean`) and
-`Dickson.classification_wild_slop` (`.../WildClassification.lean`); all twelve
-modules of `Slop/PGL2/FiniteSubgroups/` contain zero `sorry` tokens, and the
-wrapper module is `public import`ed by
-`GaloisRepresentation/HardlyRamified/ModThree.lean`.
+What a future reader must not do is read this as licence for the `p ≥ 5` half. -/
 
-**STALE CLAIM CORRECTED 2026-07-30.** This paragraph used to end "It is NOT
-currently in this module's import cone — an owner of this leaf will have to add
-the import."  That is FALSE and would have sent the next owner after a
-non-existent obstacle: `ModThree.lean` line 115 is
-`public import Fermat.FLT.KnownIn1980s.PGL2.Defs`, and THIS module's line 254 is
-`public import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree` — and
-`public import` re-exports, so `Dickson.classification_tame` and
-`Dickson.classification_wild` are already visible here with NO import change.
-(The note was written from the absence of a direct `KnownIn1980s` import line in
-this file's header; the reachability question is about the transitive `public`
-closure, not about the header.)
-
-**FALSE CITATION CORRECTED while checking that.**
-`Slop/PGL2/FiniteSubgroups/DicksonClassification.lean` advertises a main theorem
-`Dickson.dickson_classification` in its module docstring.  **That declaration does
-not exist**: the file is 54 lines of header and imports with NO declarations at
-all, and the combined statement is nowhere assembled — only the tame and wild
-halves are.  Cite the two halves, not the name the docstring gives.
-
-CIRCULARITY GUARD, inherited verbatim from the consumer: it must not be
-discharged through `not_isIrreducible_of_isHardlyRamified_of_five_le`,
-`IsHardlyRamified.mod_three_reducible`, `Family.lean` or anything
-downstream of them — a proof ending in `exfalso` on `hirr` is the circular
-discharge and is BANNED. -/
 theorem cocycleClass_eq_zero_of_eval₁_kerFix_eq_zero.{uK, uW}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -7219,12 +7453,91 @@ theorem cocycleClass_eq_zero_of_eval₁_kerFix_eq_zero.{uK, uW}
       h1TwistUnramified p ρbar)
     (hvan : ∀ g ∈ kerFixSubgroup p ρbar n,
       ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 g = 0) :
-    ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = 0 := sorry
+    ContinuousCohomology.cocycleClass (adZeroTwist p ρbar) 1 z = 0 := by
+  classical
+  have hp := (Fact.out : p.Prime)
+  rcases Nat.lt_or_ge p 5 with h5 | h5
+  · -- `p < 5`: primality and oddness force `p = 3`, where the hypothesis package is
+    -- contradictory (`mod_three_reducible`, `HardlyRamified/ModThree.lean`, which
+    -- this module `public import`s and which therefore cannot depend on it).  See
+    -- the narrowed CIRCULARITY GUARD above for why this horn — and only this horn —
+    -- is a legitimate discharge.
+    exfalso
+    have hp3 : p = 3 := by
+      have := hp.two_le
+      have := Nat.odd_iff.mp hpodd
+      omega
+    subst hp3
+    obtain ⟨W₀, hW₀0, hW₀top, hW₀stable⟩ :=
+      IsHardlyRamified.mod_three_reducible W hW hρbar
+    have hirr' : ρbar.toRepresentation.IsIrreducible := hirr
+    obtain ⟨-, hsub⟩ :=
+      (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr'
+    rcases hsub W₀
+        (fun g v hv => hW₀stable g (Submodule.mem_map_of_mem hv)) with hb | ht
+    · exact hW₀0 hb
+    · exact hW₀top ht
+  · -- `p ≥ 5`: reduce the level from `n` to `1` and apply the leaf.
+    haveI : NeZero (p ^ n) := ⟨pow_ne_zero n hp.pos.ne'⟩
+    refine cocycleClass_eq_zero_of_eval₁_kerFix_one_eq_zero hpodd h5 hW hρbar hirr z
+      hcunr ?_
+    intro h hh
+    -- `h ∈ N₁` acts trivially on `ad⁰ρbar(1)`.
+    have hρh : ∀ m : ↥(adZeroTwist p ρbar), (adZeroTwist p ρbar).ρ h m = m :=
+      adZeroTwist_rho_apply_eq_self p ρbar hh.1
+        (adZeroCycloChar_eq_one_of_fixes_rootsOfUnity p (by simpa using hh.2))
+    -- It is enough that `z h` is `Γ ℚ`-invariant: `H⁰ = 0` then makes it zero.
+    refine adZeroTwist_eq_zero_of_forall_rho_apply_eq_self hpodd h5 hW hirr _ ?_
+    intro g
+    -- `g h g⁻¹` acts trivially too, which kills the correction term of `eval₁_conj`.
+    have hρghg : ∀ m : ↥(adZeroTwist p ρbar),
+        (adZeroTwist p ρbar).ρ (g * h * g⁻¹) m = m := by
+      intro m
+      rw [ContinuousCohomology.rho_mul_apply, ContinuousCohomology.rho_mul_apply, hρh,
+        ContinuousCohomology.rho_apply_inv]
+    have hconj := ContinuousCohomology.eval₁_conj (X := adZeroTwist p ρbar)
+      (ContinuousCohomology.cocycles₁_d_eq_zero z) g h
+    rw [hρghg] at hconj
+    -- The commutator lies in `N = kerFixSubgroup p ρbar n`: its `ρbar` is `1` because
+    -- `ρbar h = 1`, and it fixes `μ_{p^n}` because that action is abelian.
+    have hcmem : g * h * g⁻¹ * h⁻¹ ∈ kerFixSubgroup p ρbar n := by
+      constructor
+      · have h1 : ρbar h = 1 := hh.1
+        have h2 : ρbar h⁻¹ = 1 := by
+          have hx : ρbar h⁻¹ * ρbar h = 1 := by
+            rw [← map_mul, inv_mul_cancel, map_one]
+          rwa [h1, mul_one] at hx
+        show ρbar (g * h * g⁻¹ * h⁻¹) = 1
+        rw [map_mul, map_mul, map_mul, h1, h2, mul_one, mul_one, ← map_mul,
+          mul_inv_cancel, map_one]
+      · intro ζ hζ
+        exact fixes_rootsOfUnity_commutator (p ^ n) g h ζ hζ
+    -- so `z` kills it, and (using `1 ≤ n`) it acts trivially as well
+    have hρc : ∀ m : ↥(adZeroTwist p ρbar),
+        (adZeroTwist p ρbar).ρ (g * h * g⁻¹ * h⁻¹) m = m := by
+      have hfix : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p = 1 →
+          (g * h * g⁻¹ * h⁻¹) ζ = ζ := by
+        intro ζ hζ
+        refine hcmem.2 ζ ?_
+        obtain ⟨j, rfl⟩ := Nat.exists_eq_add_of_le hn
+        rw [pow_add, pow_one, pow_mul, hζ, one_pow]
+      exact adZeroTwist_rho_apply_eq_self p ρbar hcmem.1
+        (adZeroCycloChar_eq_one_of_fixes_rootsOfUnity p hfix)
+    have hsplit : g * h * g⁻¹ = (g * h * g⁻¹ * h⁻¹) * h := by group
+    have hval : ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 (g * h * g⁻¹) =
+        ContinuousCohomology.eval₁ (adZeroTwist p ρbar) z.1 h := by
+      rw [hsplit, ContinuousCohomology.cocycles₁_eval₁_mul, hvan _ hcmem, hρc,
+        zero_add]
+    rw [hval, add_sub_cancel_right] at hconj
+    exact hconj.symm
 
 /-- **`H¹(Gal(L/ℚ), ad⁰ρbar(1)) = 0`, in the form inflation–restriction
 delivers it (cut 2026-07-30 out of `exists_mem_kerFix_eval₁_ne_zero` below;
-**PROVEN 2026-07-30** over the single cocycle-level leaf
-`cocycleClass_eq_zero_of_eval₁_kerFix_eq_zero` immediately above): a class
+**PROVEN 2026-07-30** over the cocycle-level theorem
+`cocycleClass_eq_zero_of_eval₁_kerFix_eq_zero` immediately above — which was itself
+a leaf until 2026-08-02 and is now PROVEN over the two leaves above it,
+`cocycleClass_eq_zero_of_eval₁_kerFix_one_eq_zero` (Wiles 1.12 at `n = 1` and
+`5 ≤ p`) and `adZeroTwist_eq_zero_of_forall_rho_apply_eq_self` (`H⁰ = 0`)): a class
 unramified outside `{2, p}` that DIES under restriction to
 `N = ker ρbar ∩ Fix(μ_{p^n})` is ZERO.**
 
@@ -7237,12 +7550,14 @@ the coboundary criterion); `N` acts TRIVIALLY on `ad⁰ρbar(1)` for `n ≥ 1`
 (`adZeroTwist_rho_apply_eq_self` composed with
 `adZeroCycloChar_eq_one_of_fixes_rootsOfUnity`, after
 `Fix(μ_{p^n}) ⊆ Fix(μ_p)`), so that coboundary is `ρ σ m − m = 0` and `eval₁ z`
-vanishes identically on `N`.  The leaf above then kills the class.
+vanishes identically on `N`.  The theorem above then kills the class.
 
 No arithmetic is left at this level: the residual content is exactly Wiles'
-case analysis on the image of `ρbar`, and it now sits in ONE declaration stated
-purely about a cocycle, with no `Γ ℚ ⧸ N` and no inflation map required to say
-it.
+case analysis on the image of `ρbar`, stated purely about a cocycle, with no
+`Γ ℚ ⧸ N` and no inflation map required to say it.  Since 2026-08-02 it sits in
+`cocycleClass_eq_zero_of_eval₁_kerFix_one_eq_zero` — at `n = 1`, which is the level
+the classical statement is about, and with `5 ≤ p`, which the classical proof
+consumes — beside the small independent classical leaf `H⁰(ℚ, ad⁰ρbar(1)) = 0`.
 
 # WHY THIS SHAPE AND NOT `ker (res) = ⊥`
 
@@ -7350,12 +7665,16 @@ identically on `N`, then the transported cocycle
 `cocycleClass_eq_zero_of_eval₁_eq_sub` (at `m = 0`, the one instance whose
 continuity side condition is free) kills its class, and
 `map_cocycleClass_cocyclesMapKer` transports that back to
-`res^{Γ ℚ}_N c = 0`.  The leaf above then gives `c = 0`, against `hc0`.
+`res^{Γ ℚ}_N c = 0`.  The theorem above then gives `c = 0`, against `hc0`.
 
 So the whole of the classical content — `H¹(Gal(L/ℚ), M) = 0` together with
 the inflation–restriction injectivity that turns it into a statement about
-`res` — now sits in ONE named declaration, stated over the packaged
-subgroup `kerFixSubgroup`, and nothing else in Step 1 is open.
+`res` — sits in the cocycle-level cluster above, stated over the packaged
+subgroup `kerFixSubgroup`, and nothing else in Step 1 is open.  Since 2026-08-02
+that cluster is TWO leaves rather than one: Wiles' Lemma 1.12 at `n = 1` with
+`5 ≤ p` (`cocycleClass_eq_zero_of_eval₁_kerFix_one_eq_zero`), and
+`H⁰(ℚ, ad⁰ρbar(1)) = 0` (`adZeroTwist_eq_zero_of_forall_rho_apply_eq_self`), the
+level reduction and the `p = 3` horn between them having become PROOFS.
 
 Two hypothesis facts, recorded because they moved:
 
