@@ -5248,10 +5248,474 @@ theorem inj_of_isRelPicOverAffines {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr :
   refine relPicEquiv_trans _ _ (relPicEquiv_modPullback strX (g ⁻¹ᵁ V).ι rfl h) ?_
   exact relPicEquiv_symm _ _ (hP.sheaf_pre (g ⁻¹ᵁ V).ι rfl q)
 
+/-! ### DESCENT ALONG A MORPHISM WITH TRIVIAL PUSHFORWARD (BLR 8.1/4)
+
+**Built 2026-08-02**, and it is what closes `exists_modPullback_of_locally_modPullback`
+below.  The route is the counit one that leaf's docstring prescribes —
+`N := π_*M` and `ε := (pullbackPushforwardAdjunction π).counit.app M` — and the
+three inputs it lists as "genuinely missing at this pin" are supplied here as
+
+* `isIso_restrict_pushforward_unit` — the BASE CHANGE of `π_*` along an open
+  immersion of the target, in the only form the argument consumes: the map
+  `(π_*M)|_U ⟶ (π_*(j_*(M|_{π⁻¹U})))|_U` induced by the unit of
+  `restrictFunctor j ⊣ pushforward j` is an isomorphism.  Both sides are naive
+  on sections — `Γ((pushforward f).obj M, U) = Γ(M, f ⁻¹ᵁ U)` and
+  `Γ(M.restrict f, U) = Γ(M, f ''ᵁ U)` are both `rfl` — so the component at
+  `V` is `M.presheaf.map` of the inclusion `j ''ᵁ (j ⁻¹ᵁ W) ≤ W` at
+  `W = π ⁻¹ᵁ (U.ι ''ᵁ V)`, and that inclusion is an EQUALITY because `W ≤ π⁻¹U`.
+  So the whole of item 1 is one `Hom.isIso_iff_isIso_app` plus one opens
+  computation;
+* `map_counit_eq` — item 2, the Beck–Chevalley compatibility, which turns out to
+  need NO mate machinery.  It is the pure adjunction identity
+  `H(ε¹_M) = (F ⋙ H)(G(η²_M)) ≫ εᶜ_{H M}` for the COMPOSITE adjunction
+  `adj₁.comp adj₂`, proved by computing `homEquiv` of the left-hand side:
+  naturality of `η²` turns it into `ε¹_M ≫ η²_M`, and the right triangle
+  identity for `adj₁` then collapses it to `G(η²_M)`.  Ten lines, in any
+  categories;
+* `modUnitToPushforward` — item 3, `π_*𝒪_Z ≅ 𝒪_T` from
+  `HasTrivialPushforward π`.  This is mathlib's
+  `SheafOfModules.unitToPushforwardObjUnit`, whose value on sections is `π.app U`
+  **by `rfl`** (`modUnitToPushforward_app_apply`), so the predicate hands the
+  isomorphism over directly.
+
+**WHY THE COMPOSITE-ADJUNCTION FORM AVOIDS COMPARING TWO ADJUNCTIONS.**  The
+obvious route factors `q = j ≫ π` as `p ≫ ι` and compares the two composite
+adjunctions, which needs `conjugateEquiv`/`mateEquiv` bookkeeping.  It is not
+needed: `εᶜ` at `j^*M` is handled by the general
+`isIso_counit_app_of_isIso_map_unit` — a counit at an object of the form `L B`
+is an iso as soon as `L(η_B)` is — applied at `B = 𝒪_T`, where
+`Lᶜ(𝒪_T) = j^*π^*𝒪_T ≅ 𝒪_{π⁻¹U}` and `ηᶜ_{𝒪_T} = η^π_{𝒪_T} ≫ π_*(η^j_{π^*𝒪_T})`
+has both factors iso after `Lᶜ` (the first by item 3, the second by item 1 read
+through `pullback π ⋙ pullback j ≅ pullback ι ⋙ pullback (π ∣_ U)`).  The two
+factorisations of `q` are compared only as PULLBACK functors, where
+`pullbackComp`/`pullbackCongr` suffice.
+
+**THREE LEAN TRAPS, all instances of the standing `(𝟭 C).obj`/`⋙` wrapper
+problem** — an adjunction's `unit.app X` has type `(𝟭 C).obj X ⟶ (F ⋙ G).obj X`,
+which is `rfl`-equal to and not syntactically equal to the unwrapped form:
+
+* `rw [Functor.map_comp]` fails on a goal that prints correctly (the reported
+  pattern `G.map (?f ≫ ?g)` "is not found"), so the distribution is done with a
+  `calc` step closed by `G.map_comp _ _` as a TERM;
+* instance search cannot cross it, so `Functor.map_isIso` and
+  `IsIso.of_isIso_fac_left` fail with the hypothesis literally in context.  The
+  cure is the recorded one: pass the `IsIso` or the factorisation EQUATION as an
+  EXPLICIT argument (`isIso_map_of_isIso`, `isIso_map_of_comp`,
+  `isIso_snd_of_comp_eq_id`, `isoOf`), which is checked up to defeq;
+* `have eW : W ≅ … := hsq.isoIsPullback _ _ hcan` FORGETS the definition, so the
+  two `isoIsPullback_hom_*` lemmas no longer typecheck against it.  Bind it with
+  `obtain` from an `∃` carrying both equations instead.
+
+Nothing in this section is specific to a curve, a relative Picard functor or an
+invertible sheaf; it is descent for `SheafOfModules` along a morphism whose
+pushforward of `𝒪` is `𝒪`, stated for one module. -/
+
+/-- **The canonical `𝒪_T ⟶ π_*𝒪_Z`, at the level of `𝒪`-modules** — mathlib's
+`SheafOfModules.unitToPushforwardObjUnit`, wrapped for `Scheme.Modules`. -/
+noncomputable def modUnitToPushforward {Z T : Scheme.{u}} (π : Z ⟶ T) :
+    modUnit T ⟶ (Scheme.Modules.pushforward π).obj (modUnit Z) :=
+  SheafOfModules.unitToPushforwardObjUnit (Scheme.Hom.toRingCatSheafHom π)
+
+/-- Its component at `U` is `π.app U`, on the nose.  This is what makes
+`HasTrivialPushforward` — a statement about the map of sheaves of RINGS — give
+the module-level isomorphism with no work. -/
+theorem modUnitToPushforward_app_apply {Z T : Scheme.{u}} (π : Z ⟶ T) (U : T.Opens)
+    (a : Γ(T, U)) :
+    (modUnitToPushforward π).app U a = π.app U a := rfl
+
+/-- **`𝒪_T ≅ π_*𝒪_Z` when `π` has trivial pushforward.** -/
+theorem isIso_modUnitToPushforward {Z T : Scheme.{u}} (π : Z ⟶ T)
+    (hπ : AlgebraicGeometry.HasTrivialPushforward π) : IsIso (modUnitToPushforward π) := by
+  rw [Scheme.Modules.Hom.isIso_iff_isIso_app]
+  intro U
+  have := hπ U
+  rw [ConcreteCategory.isIso_iff_bijective]
+  have hb : Function.Bijective ⇑(π.app U) := by
+    rw [← ConcreteCategory.isIso_iff_bijective]; infer_instance
+  exact hb
+
+/-- The unit of `π^* ⊣ π_*` at `𝒪_T`, followed by `π_*` of the canonical
+`π^*𝒪_T ≅ 𝒪_Z`, IS `modUnitToPushforward` — this is mathlib's
+`pullbackPushforwardAdjunction_homEquiv_pullbackObjUnitToUnit`. -/
+theorem unit_app_modUnit {Z T : Scheme.{u}} (π : Z ⟶ T) :
+    (Scheme.Modules.pullbackPushforwardAdjunction π).unit.app (modUnit T) ≫
+        (Scheme.Modules.pushforward π).map (modPullbackUnitIso π).hom =
+      modUnitToPushforward π :=
+  SheafOfModules.pullbackPushforwardAdjunction_homEquiv_pullbackObjUnitToUnit
+    (Scheme.Hom.toRingCatSheafHom π)
+
+/-- **The unit at `𝒪_T` is an isomorphism.** -/
+theorem isIso_unit_app_modUnit {Z T : Scheme.{u}} (π : Z ⟶ T)
+    (hπ : AlgebraicGeometry.HasTrivialPushforward π) :
+    IsIso ((Scheme.Modules.pullbackPushforwardAdjunction π).unit.app (modUnit T)) := by
+  haveI := isIso_modUnitToPushforward π hπ
+  have h2 : (Scheme.Modules.pullbackPushforwardAdjunction π).unit.app (modUnit T) =
+      (asIso (modUnitToPushforward π) ≪≫
+        ((Scheme.Modules.pushforward π).mapIso (modPullbackUnitIso π)).symm).hom :=
+    ((Scheme.Modules.pushforward π).mapIso (modPullbackUnitIso π)).eq_comp_inv.mpr
+      (unit_app_modUnit π)
+  rw [h2]
+  infer_instance
+
+/-- **`π_*𝒪_Z ≅ 𝒪_T`.** -/
+noncomputable def pushforwardModUnitIso {Z T : Scheme.{u}} (π : Z ⟶ T)
+    (hπ : AlgebraicGeometry.HasTrivialPushforward π) :
+    (Scheme.Modules.pushforward π).obj (modUnit Z) ≅ modUnit T :=
+  haveI := isIso_modUnitToPushforward π hπ
+  (asIso (modUnitToPushforward π)).symm
+
+/-! #### The general adjunction identities
+
+These are pure category theory and hold in any categories; they are stated here
+rather than in a `Fermat/FLT/Mathlib/` module because nothing else consumes them
+and this project does not allow free-floating declarations. -/
+
+/-- **The adjunct of `H(ε¹_M)` under the COMPOSITE adjunction is `G(η²_M)`.**
+
+Both steps are forced: `homEquiv` of the composite is the composite of the two
+`homEquiv`s, the inner one turns `H(ε¹_M)` into `ε¹_M ≫ η²_M` by naturality of
+`η²`, and the outer one then collapses by the right triangle identity for
+`adj₁`. -/
+theorem comp_homEquiv_map_counit {C D E : Type*} [Category C] [Category D] [Category E]
+    {F : C ⥤ D} {G : D ⥤ C} {H : D ⥤ E} {I : E ⥤ D}
+    (adj₁ : F ⊣ G) (adj₂ : H ⊣ I) (M : D) :
+    (adj₁.comp adj₂).homEquiv (G.obj M) (H.obj M) (H.map (adj₁.counit.app M))
+      = G.map (adj₂.unit.app M) := by
+  have key : adj₂.homEquiv (F.obj (G.obj M)) (H.obj M) (H.map (adj₁.counit.app M))
+      = adj₁.counit.app M ≫ adj₂.unit.app M := by
+    rw [Adjunction.homEquiv_unit]
+    exact adj₂.unit_naturality _
+  rw [Adjunction.comp_homEquiv]
+  show adj₁.homEquiv (G.obj M) (I.obj (H.obj M))
+    (adj₂.homEquiv (F.obj (G.obj M)) (H.obj M) (H.map (adj₁.counit.app M))) = _
+  rw [key, Adjunction.homEquiv_unit]
+  calc adj₁.unit.app (G.obj M) ≫ G.map (adj₁.counit.app M ≫ adj₂.unit.app M)
+      = adj₁.unit.app (G.obj M) ≫ G.map (adj₁.counit.app M) ≫ G.map (adj₂.unit.app M) := by
+        congr 1
+        exact G.map_comp _ _
+    _ = G.map (adj₂.unit.app M) := adj₁.right_triangle_components_assoc M _
+
+/-- **THE BECK–CHEVALLEY IDENTITY, in the only form the descent needs.**
+`H(ε¹_M)` factors as `(F ⋙ H)(G(η²_M))` followed by the counit of the composite
+adjunction.  Read at `F ⊣ G = π^* ⊣ π_*` and `H ⊣ I = j^* ⊣ j_*`, this says
+that the restriction of `ε` to an open of `Z` is the base-change map followed by
+a counit — which is exactly what a mate computation would produce, obtained here
+from `comp_homEquiv_map_counit` and nothing else. -/
+theorem map_counit_eq {C D E : Type*} [Category C] [Category D] [Category E]
+    {F : C ⥤ D} {G : D ⥤ C} {H : D ⥤ E} {I : E ⥤ D}
+    (adj₁ : F ⊣ G) (adj₂ : H ⊣ I) (M : D) :
+    H.map (adj₁.counit.app M) =
+      (F ⋙ H).map (G.map (adj₂.unit.app M)) ≫ (adj₁.comp adj₂).counit.app (H.obj M) := by
+  have h := comp_homEquiv_map_counit adj₁ adj₂ M
+  have h2 : H.map (adj₁.counit.app M)
+      = ((adj₁.comp adj₂).homEquiv (G.obj M) (H.obj M)).symm (G.map (adj₂.unit.app M)) :=
+    ((adj₁.comp adj₂).homEquiv (G.obj M) (H.obj M)).eq_symm_apply.mpr h
+  rw [h2, Adjunction.homEquiv_counit]
+  rfl
+
+/-! `IsIso` helpers taking the hypothesis or the factorisation EQUATION
+EXPLICITLY.  Instance search cannot cross the `(𝟭 C).obj`/`⋙` wrappers that an
+adjunction's unit and counit carry in their types, so every one of these fails
+as an `infer_instance` and succeeds as an `exact`. -/
+
+theorem isIso_snd_of_comp_eq_id {C : Type*} [Category C] {X Y : C} {f : X ⟶ Y} {g : Y ⟶ X}
+    (w : f ≫ g = 𝟙 X) (hf : IsIso f) : IsIso g := by
+  haveI := hf
+  exact IsIso.of_isIso_fac_left w
+
+/-- `asIso` with the `IsIso` hypothesis explicit. -/
+noncomputable def isoOf {C : Type*} [Category C] {X Y : C} (f : X ⟶ Y) (h : IsIso f) : X ≅ Y :=
+  @asIso _ _ _ _ f h
+
+theorem isIso_comp_of {C : Type*} [Category C] {X Y W : C} (f : X ⟶ Y) (g : Y ⟶ W)
+    (hf : IsIso f) (hg : IsIso g) : IsIso (f ≫ g) := by
+  haveI := hf; haveI := hg; infer_instance
+
+theorem isIso_map_of_isIso {C D : Type*} [Category C] [Category D] (F : C ⥤ D) {X Y : C}
+    (f : X ⟶ Y) (h : IsIso f) : IsIso (F.map f) := by
+  haveI := h; infer_instance
+
+theorem isIso_map_of_comp {C D : Type*} [Category C] [Category D] (F : C ⥤ D) {X Y W : C}
+    {f : X ⟶ W} {g : W ⟶ Y} {u : X ⟶ Y} (w : f ≫ g = u)
+    (hf : IsIso (F.map f)) (hg : IsIso (F.map g)) : IsIso (F.map u) := by
+  haveI := hf; haveI := hg
+  rw [← w, F.map_comp]
+  infer_instance
+
+/-- **A counit at an object in the image of the left adjoint is an isomorphism
+as soon as the left adjoint's image of the unit is** — immediately from the left
+triangle identity.  This is what replaces a comparison of composite adjunctions
+in the proof below. -/
+theorem isIso_counit_app_of_isIso_map_unit {C D : Type*} [Category C] [Category D]
+    {F : C ⥤ D} {G : D ⥤ C} (adj : F ⊣ G) (B : C)
+    (h : IsIso (F.map (adj.unit.app B))) : IsIso (adj.counit.app (F.obj B)) :=
+  isIso_snd_of_comp_eq_id (adj.left_triangle_components B) h
+
+/-- Transport of `IsIso` of a counit along an isomorphism of the object. -/
+theorem isIso_counit_app_of_iso {C D : Type*} [Category C] [Category D]
+    {F : C ⥤ D} {G : D ⥤ C} (adj : F ⊣ G) {Y Y' : D} (e : Y ≅ Y')
+    (h : IsIso (adj.counit.app Y')) : IsIso (adj.counit.app Y) := by
+  have w : F.map (G.map e.hom) ≫ adj.counit.app Y' = adj.counit.app Y ≫ e.hom :=
+    adj.counit_naturality e.hom
+  have h2 : adj.counit.app Y = (F.map (G.map e.hom) ≫ adj.counit.app Y') ≫ e.inv :=
+    e.eq_comp_inv.mpr w.symm
+  rw [h2]
+  refine isIso_comp_of _ _ (isIso_comp_of _ _ ?_ h) ?_
+  · exact isIso_map_of_isIso _ _ (isIso_map_of_isIso _ _ (by infer_instance))
+  · infer_instance
+
+/-! #### The base change of `π_*` along an open immersion of the target -/
+
+/-- Sections of `(π_*(-))|_U` over `V` are sections over `π⁻¹(U.ι ''ᵁ V)`, by `rfl`:
+pushforward and restriction are both NAIVE on sections. -/
+theorem restrictFunctor_pushforward_map_app {Z T : Scheme.{u}} (π : Z ⟶ T) (U : T.Opens)
+    {A B : Z.Modules} (g : A ⟶ B) (V : (U : Scheme.{u}).Opens) :
+    ((Scheme.Modules.restrictFunctor U.ι).map ((Scheme.Modules.pushforward π).map g)).app V
+      = g.app (π ⁻¹ᵁ (U.ι ''ᵁ V)) := rfl
+
+/-- A functor sends `eqToHom` to an isomorphism.  Stated rather than left to
+instance search, which does not find `IsIso (eqToHom _)` in the `Ab`-valued
+presheaf categories here (it exhausts its heartbeat budget). -/
+theorem isIso_map_eqToHom {C D : Type*} [Category C] [Category D] (F : C ⥤ D) {X Y : C}
+    (h : X = Y) : IsIso (F.map (eqToHom h)) := by
+  subst h
+  rw [eqToHom_refl, F.map_id]
+  exact IsIso.id _
+
+/-- **THE BASE-CHANGE MAP IS AN ISOMORPHISM OVER `U`** — item 1 of the leaf's
+"what is genuinely missing" list.
+
+Its component at `V` is `B.presheaf.map` of the inclusion
+`j ''ᵁ (j ⁻¹ᵁ W) ≤ W` at `W = π ⁻¹ᵁ (U.ι ''ᵁ V)`, and that inclusion is an
+EQUALITY because `W ≤ π ⁻¹ᵁ U = j.opensRange`.  Everything else is `rfl`. -/
+theorem isIso_restrict_pushforward_unit {Z T : Scheme.{u}} (π : Z ⟶ T) (U : T.Opens)
+    (B : Z.Modules) :
+    IsIso ((Scheme.Modules.restrictFunctor U.ι).map
+      ((Scheme.Modules.pushforward π).map
+        ((Scheme.Modules.restrictAdjunction (π ⁻¹ᵁ U).ι).unit.app B))) := by
+  rw [Scheme.Modules.Hom.isIso_iff_isIso_app]
+  intro V
+  rw [restrictFunctor_pushforward_map_app]
+  rw [Scheme.Modules.restrictAdjunction_unit_app_app]
+  have hle : (π ⁻¹ᵁ (U.ι ''ᵁ V)) ≤ π ⁻¹ᵁ U :=
+    fun _ hx => U.ι_image_le V hx
+  have heq : (π ⁻¹ᵁ U).ι ''ᵁ ((π ⁻¹ᵁ U).ι ⁻¹ᵁ (π ⁻¹ᵁ (U.ι ''ᵁ V))) = π ⁻¹ᵁ (U.ι ''ᵁ V) := by
+    rw [Scheme.Hom.image_preimage_eq_opensRange_inf, Scheme.Opens.opensRange_ι]
+    exact inf_eq_right.mpr hle
+  have hh : (homOfLE ((π ⁻¹ᵁ U).ι.image_preimage_le (π ⁻¹ᵁ (U.ι ''ᵁ V))) :
+      _ ⟶ (π ⁻¹ᵁ (U.ι ''ᵁ V))) = eqToHom heq := Subsingleton.elim _ _
+  rw [hh, eqToHom_op]
+  exact isIso_map_eqToHom _ _
+
+/-- The same statement for the PULLBACK-adjunction unit, and after applying
+`pullback π ⋙ pullback (π⁻¹U).ι`.  The bridge between the two units is
+`Adjunction.unit_leftAdjointUniq_hom_app`, since `restrictFunctorIsoPullback` is
+by definition the `leftAdjointUniq` comparison; the transfer from
+`pullback π ⋙ pullback (π⁻¹U).ι` to `pullback U.ι ⋙ pullback (π ∣_ U)` is
+`pullbackComp`/`pullbackCongr` off `(π ⁻¹ᵁ U).ι ≫ π = (π ∣_ U) ≫ U.ι`. -/
+theorem isIso_pullbackComp_map_pushforward_unit {Z T : Scheme.{u}} (π : Z ⟶ T) (U : T.Opens)
+    (B : Z.Modules) :
+    IsIso ((Scheme.Modules.pullback π ⋙ Scheme.Modules.pullback (π ⁻¹ᵁ U).ι).map
+      ((Scheme.Modules.pushforward π).map
+        ((Scheme.Modules.pullbackPushforwardAdjunction (π ⁻¹ᵁ U).ι).unit.app B))) := by
+  have hbridge : (Scheme.Modules.restrictAdjunction (π ⁻¹ᵁ U).ι).unit.app B ≫
+      (Scheme.Modules.pushforward (π ⁻¹ᵁ U).ι).map
+        ((Scheme.Modules.restrictFunctorIsoPullback (π ⁻¹ᵁ U).ι).hom.app B) =
+      (Scheme.Modules.pullbackPushforwardAdjunction (π ⁻¹ᵁ U).ι).unit.app B :=
+    Adjunction.unit_leftAdjointUniq_hom_app _ _ B
+  have hres : IsIso ((Scheme.Modules.pushforward π ⋙
+      Scheme.Modules.restrictFunctor U.ι).map
+      ((Scheme.Modules.pullbackPushforwardAdjunction (π ⁻¹ᵁ U).ι).unit.app B)) := by
+    refine isIso_map_of_comp _ hbridge ?_ ?_
+    · exact isIso_restrict_pushforward_unit π U B
+    · exact isIso_map_of_isIso _ _ (isIso_map_of_isIso _ _
+        ((Scheme.Modules.restrictFunctorIsoPullback (π ⁻¹ᵁ U).ι).app B).isIso_hom)
+  have hpull : IsIso ((Scheme.Modules.pullback U.ι).map
+      ((Scheme.Modules.pushforward π).map
+        ((Scheme.Modules.pullbackPushforwardAdjunction (π ⁻¹ᵁ U).ι).unit.app B))) :=
+    (NatIso.isIso_map_iff (Scheme.Modules.restrictFunctorIsoPullback U.ι) _).mp hres
+  have hcomp : IsIso ((Scheme.Modules.pullback U.ι ⋙
+      Scheme.Modules.pullback (π ∣_ U)).map
+      ((Scheme.Modules.pushforward π).map
+        ((Scheme.Modules.pullbackPushforwardAdjunction (π ⁻¹ᵁ U).ι).unit.app B))) :=
+    isIso_map_of_isIso (Scheme.Modules.pullback (π ∣_ U)) _ hpull
+  have hsq : (π ⁻¹ᵁ U).ι ≫ π = (π ∣_ U) ≫ U.ι := (morphismRestrict_ι π U).symm
+  have natiso : Scheme.Modules.pullback π ⋙ Scheme.Modules.pullback (π ⁻¹ᵁ U).ι ≅
+      Scheme.Modules.pullback U.ι ⋙ Scheme.Modules.pullback (π ∣_ U) :=
+    Scheme.Modules.pullbackComp (π ⁻¹ᵁ U).ι π ≪≫ Scheme.Modules.pullbackCongr hsq ≪≫
+      (Scheme.Modules.pullbackComp (π ∣_ U) U.ι).symm
+  exact (NatIso.isIso_map_iff natiso _).mpr hcomp
+
+set_option maxHeartbeats 1600000 in
+/-- **THE COUNIT IS AN ISOMORPHISM OVER `π⁻¹U`** when `M` is trivial there.
+
+This is `map_counit_eq` at `π^* ⊣ π_*` and `j^* ⊣ j_*`, with the first factor an
+iso by `isIso_pullbackComp_map_pushforward_unit` and the composite counit an iso
+by `isIso_counit_app_of_isIso_map_unit` at `𝒪_T` — no comparison of composite
+adjunctions anywhere. -/
+theorem isIso_pullback_map_counit {Z T : Scheme.{u}} (π : Z ⟶ T)
+    (hπ : AlgebraicGeometry.HasTrivialPushforward π) (M : Z.Modules) (U : T.Opens)
+    (e : (Scheme.Modules.pullback (π ⁻¹ᵁ U).ι).obj M ≅
+      modUnit ((π ⁻¹ᵁ U : Z.Opens) : Scheme.{u})) :
+    IsIso ((Scheme.Modules.pullback (π ⁻¹ᵁ U).ι).map
+      ((Scheme.Modules.pullbackPushforwardAdjunction π).counit.app M)) := by
+  have hid := map_counit_eq (Scheme.Modules.pullbackPushforwardAdjunction π)
+    (Scheme.Modules.pullbackPushforwardAdjunction (π ⁻¹ᵁ U).ι) M
+  have hunit : IsIso ((Scheme.Modules.pullback π ⋙
+      Scheme.Modules.pullback (π ⁻¹ᵁ U).ι).map
+      (((Scheme.Modules.pullbackPushforwardAdjunction π).comp
+        (Scheme.Modules.pullbackPushforwardAdjunction (π ⁻¹ᵁ U).ι)).unit.app (modUnit T))) := by
+    exact isIso_map_of_comp
+      (Scheme.Modules.pullback π ⋙ Scheme.Modules.pullback (π ⁻¹ᵁ U).ι)
+      (Adjunction.comp_unit_app (Scheme.Modules.pullbackPushforwardAdjunction π)
+        (Scheme.Modules.pullbackPushforwardAdjunction (π ⁻¹ᵁ U).ι) (modUnit T)).symm
+      (isIso_map_of_isIso _ _ (isIso_unit_app_modUnit π hπ))
+      (isIso_pullbackComp_map_pushforward_unit π U
+        ((Scheme.Modules.pullback π).obj (modUnit T)))
+  have hb0 := isIso_counit_app_of_isIso_map_unit
+    ((Scheme.Modules.pullbackPushforwardAdjunction π).comp
+      (Scheme.Modules.pullbackPushforwardAdjunction (π ⁻¹ᵁ U).ι)) (modUnit T) hunit
+  have e' : (Scheme.Modules.pullback (π ⁻¹ᵁ U).ι).obj M ≅
+      (Scheme.Modules.pullback π ⋙ Scheme.Modules.pullback (π ⁻¹ᵁ U).ι).obj (modUnit T) :=
+    e ≪≫ (modPullbackUnitIso (π ⁻¹ᵁ U).ι).symm ≪≫
+      ((Scheme.Modules.pullback (π ⁻¹ᵁ U).ι).mapIso (modPullbackUnitIso π)).symm
+  have hb := isIso_counit_app_of_iso _ e' hb0
+  rw [hid]
+  exact isIso_comp_of _ _ (isIso_pullbackComp_map_pushforward_unit π U M) hb
+
+/-! #### Invertibility of `π_*M` -/
+
+/-- **`π_*M` restricted to `U` is trivial**, once `M` is trivial on `π⁻¹U`:
+`(π_*M)|_U ≅ (π ∣_ U)_*(M|_{π⁻¹U}) ≅ (π ∣_ U)_*𝒪 ≅ 𝒪_U`, the first step by
+`isIso_restrict_pushforward_unit` plus `pushforwardComp`/`pushforwardCongr` and
+the counit of `restrictFunctor U.ι ⊣ pushforward U.ι` (an iso for an open
+immersion), the last by `pushforwardModUnitIso` at the base change `π ∣_ U`.
+
+**Shrinking `U` first is what removes any need for a projection formula**: the
+local twist has already been trivialised, so `(π ∣_ U)_*` is only ever applied to
+`𝒪`. -/
+noncomputable def restrictPushforwardIsoModUnit {Z T : Scheme.{u}} (π : Z ⟶ T) (U : T.Opens)
+    (hp : AlgebraicGeometry.HasTrivialPushforward (π ∣_ U)) {M : Z.Modules}
+    (e : modPullback (π ⁻¹ᵁ U).ι M ≅ modUnit ((π ⁻¹ᵁ U : Z.Opens) : Scheme.{u})) :
+    ((Scheme.Modules.pushforward π).obj M).restrict U.ι ≅ modUnit ((U : Scheme.{u})) := by
+  have hsq : (π ⁻¹ᵁ U).ι ≫ π = (π ∣_ U) ≫ U.ι := (morphismRestrict_ι π U).symm
+  refine isoOf _ (isIso_restrict_pushforward_unit π U M) ≪≫ ?_
+  refine (Scheme.Modules.restrictFunctor U.ι).mapIso
+      ((Scheme.Modules.pushforwardComp (π ⁻¹ᵁ U).ι π).app _) ≪≫ ?_
+  refine (Scheme.Modules.restrictFunctor U.ι).mapIso
+      ((Scheme.Modules.pushforwardCongr hsq).app _) ≪≫ ?_
+  refine (Scheme.Modules.restrictFunctor U.ι).mapIso
+      ((Scheme.Modules.pushforwardComp (π ∣_ U) U.ι).symm.app _) ≪≫ ?_
+  refine (Scheme.Modules.restrictFunctorAdjCounitIso U.ι).app _ ≪≫ ?_
+  exact (Scheme.Modules.pushforward (π ∣_ U)).mapIso
+      (modRestrictPullbackIso (π ⁻¹ᵁ U).ι M ≪≫ e) ≪≫ pushforwardModUnitIso _ hp
+
+/-- **THE DESCENT, given a cover of `T` over which `M` is TRIVIAL.**  Both halves
+are local on `T`: invertibility of `π_*M` by `restrictPushforwardIsoModUnit`, and
+`IsIso ε` by `isIso_pullback_map_counit` fed to `isIso_of_locally_isIso` on the
+cover `{π ⁻¹ᵁ U}` of `Z`. -/
+theorem exists_modPullback_of_locally_trivial {Z T : Scheme.{u}} (π : Z ⟶ T)
+    (hπ : AlgebraicGeometry.HasUniversallyTrivialPushforward π) {M : Z.Modules}
+    (hloc : ∀ t : T, ∃ U : T.Opens, t ∈ U ∧
+      Nonempty (modPullback (π ⁻¹ᵁ U).ι M ≅ modUnit ((π ⁻¹ᵁ U : Z.Opens) : Scheme.{u}))) :
+    ∃ N : T.Modules, IsInvertibleSheaf N ∧ Nonempty (M ≅ modPullback π N) := by
+  refine ⟨(Scheme.Modules.pushforward π).obj M, ?_, ?_⟩
+  · intro t
+    obtain ⟨U, htU, ⟨e⟩⟩ := hloc t
+    have hp : AlgebraicGeometry.HasTrivialPushforward (π ∣_ U) :=
+      hπ (π ⁻¹ᵁ U).ι U.ι (π ∣_ U) (isPullback_morphismRestrict π U)
+    exact ⟨U, htU, ⟨restrictPushforwardIsoModUnit π U hp e⟩⟩
+  · have hiso : IsIso ((Scheme.Modules.pullbackPushforwardAdjunction π).counit.app M) := by
+      apply isIso_of_locally_isIso
+      intro z
+      obtain ⟨U, htU, ⟨e⟩⟩ := hloc (π.base z)
+      refine ⟨π ⁻¹ᵁ U, htU, ?_⟩
+      exact (NatIso.isIso_map_iff
+        (Scheme.Modules.restrictFunctorIsoPullback (π ⁻¹ᵁ U).ι) _).mpr
+        (isIso_pullback_map_counit π hπ.hasTrivialPushforward M U e)
+    exact ⟨(isoOf _ hiso).symm⟩
+
+/-! #### Normalising the square, and shrinking -/
+
+/-- Transport a trivialisation along an isomorphism over `Z`. -/
+theorem nonempty_modPullback_modUnit_of_iso {X X' Z : Scheme.{u}} (M : Z.Modules)
+    {f : X ⟶ Z} {g : X' ⟶ Z} (ε : X ≅ X') (hε : ε.hom ≫ g = f)
+    (h : Nonempty (modPullback f M ≅ modUnit X)) :
+    Nonempty (modPullback g M ≅ modUnit X') := by
+  obtain ⟨e⟩ := h
+  have hf : ε.inv ≫ f = g := by
+    rw [← hε, ← Category.assoc, ε.inv_hom_id, Category.id_comp]
+  exact ⟨(modPullbackCongrIso hf M).symm ≪≫ (modPullbackCompIso ε.inv f M).symm ≪≫
+    modPullbackMapIso ε.inv e ≪≫ modPullbackUnitIso ε.inv⟩
+
+/-- Transport a trivialisation to the canonical open subscheme with the same range. -/
+theorem nonempty_modPullback_modUnit_of_opensRange {X Z : Scheme.{u}} (M : Z.Modules)
+    (f : X ⟶ Z) [IsOpenImmersion f] (Ω : Z.Opens) (hr : f.opensRange = Ω)
+    (h : Nonempty (modPullback f M ≅ modUnit X)) :
+    Nonempty (modPullback Ω.ι M ≅ modUnit ((Ω : Z.Opens) : Scheme.{u})) := by
+  have hrange : Set.range f.base = Set.range Ω.ι.base := by
+    rw [Scheme.Opens.range_ι, ← hr]; rfl
+  exact nonempty_modPullback_modUnit_of_iso M (IsOpenImmersion.isoOfRangeEq f Ω.ι hrange)
+    (IsOpenImmersion.isoOfRangeEq_hom_fac f Ω.ι hrange) h
+
+/-- **FROM THE LEAF'S HYPOTHESIS TO A TRIVIALISING COVER.**
+
+Two steps, both pure bookkeeping.  The abstract cartesian square is normalised
+against `isPullback_morphismRestrict` by `IsPullback.isoIsPullback`, which turns
+the hypothesis into `modPullback (π ⁻¹ᵁ U).ι M ≅ modPullback (π ∣_ U) N`.  Then
+`U` is SHRUNK to `U.ι ''ᵁ V`, where `V` trivialises `N`; the resulting open of
+`Z` is `(π ∣_ U) ⁻¹ᵁ V` inside `π ⁻¹ᵁ U`, and `image_morphismRestrict_preimage`
+identifies its image with `π ⁻¹ᵁ (U.ι ''ᵁ V)` — which is the one topological
+identity the whole descent needs. -/
+theorem forall_trivialization_preimage_of_locally_modPullback {Z T : Scheme.{u}} (π : Z ⟶ T)
+    {M : Z.Modules}
+    (hloc : ∀ t : T, ∃ (U : T.Opens) (W : Scheme.{u}) (jW : W ⟶ Z) (πW : W ⟶ (U : Scheme.{u})),
+      t ∈ U ∧ IsPullback jW πW π U.ι ∧
+      ∃ N : (U : Scheme.{u}).Modules, IsInvertibleSheaf N ∧
+        Nonempty (modPullback jW M ≅ modPullback πW N)) :
+    ∀ t : T, ∃ U : T.Opens, t ∈ U ∧
+      Nonempty (modPullback (π ⁻¹ᵁ U).ι M ≅ modUnit ((π ⁻¹ᵁ U : Z.Opens) : Scheme.{u})) := by
+  intro t
+  obtain ⟨U, W, jW, πW, htU, hsq, N, hN, ⟨eU⟩⟩ := hloc t
+  have hcan : IsPullback (π ⁻¹ᵁ U).ι (π ∣_ U) π U.ι := (isPullback_morphismRestrict π U).flip
+  obtain ⟨eW, h1, h2⟩ : ∃ eW : W ≅ ((π ⁻¹ᵁ U : Z.Opens) : Scheme.{u}),
+      eW.hom ≫ (π ⁻¹ᵁ U).ι = jW ∧ eW.hom ≫ (π ∣_ U) = πW :=
+    ⟨hsq.isoIsPullback _ _ hcan, hsq.isoIsPullback_hom_fst _ _ hcan,
+      hsq.isoIsPullback_hom_snd _ _ hcan⟩
+  have hA : eW.inv ≫ jW = (π ⁻¹ᵁ U).ι := by
+    rw [← h1, ← Category.assoc, eW.inv_hom_id, Category.id_comp]
+  have hB : eW.inv ≫ πW = π ∣_ U := by
+    rw [← h2, ← Category.assoc, eW.inv_hom_id, Category.id_comp]
+  have e0 : modPullback (π ⁻¹ᵁ U).ι M ≅ modPullback (π ∣_ U) N :=
+    (modPullbackCongrIso hA M).symm ≪≫ (modPullbackCompIso eW.inv jW M).symm ≪≫
+      modPullbackMapIso eW.inv eU ≪≫ modPullbackCompIso eW.inv πW N ≪≫
+      modPullbackCongrIso hB N
+  obtain ⟨V, htV, ⟨φ⟩⟩ := hN ⟨t, htU⟩
+  have hC : ((π ∣_ U) ⁻¹ᵁ V).ι ≫ (π ∣_ U) = ((π ∣_ U) ∣_ V) ≫ V.ι :=
+    (morphismRestrict_ι (π ∣_ U) V).symm
+  have e1 : modPullback (((π ∣_ U) ⁻¹ᵁ V).ι ≫ (π ⁻¹ᵁ U).ι) M ≅
+      modUnit ((((π ∣_ U) ⁻¹ᵁ V : (π ⁻¹ᵁ U : Z.Opens).toScheme.Opens)) : Scheme.{u}) :=
+    (modPullbackCompIso ((π ∣_ U) ⁻¹ᵁ V).ι (π ⁻¹ᵁ U).ι M).symm ≪≫
+      modPullbackMapIso ((π ∣_ U) ⁻¹ᵁ V).ι e0 ≪≫
+      modPullbackCompIso ((π ∣_ U) ⁻¹ᵁ V).ι (π ∣_ U) N ≪≫
+      modPullbackCongrIso hC N ≪≫
+      (modPullbackCompIso ((π ∣_ U) ∣_ V) V.ι N).symm ≪≫
+      modPullbackMapIso ((π ∣_ U) ∣_ V) ((modRestrictPullbackIso V.ι N).symm ≪≫ φ) ≪≫
+      modPullbackUnitIso ((π ∣_ U) ∣_ V)
+  refine ⟨U.ι ''ᵁ V, ⟨⟨t, htU⟩, htV, rfl⟩, ?_⟩
+  refine nonempty_modPullback_modUnit_of_opensRange M _ _ ?_ ⟨e1⟩
+  rw [Scheme.Hom.opensRange_comp, Scheme.Opens.opensRange_ι]
+  exact image_morphismRestrict_preimage π U V
+
 /-- **BEING A PULLBACK FROM THE BASE IS ZARISKI-LOCAL ON THE BASE**
-(sorry leaf, cut 2026-07-31 out of `relPicEquiv_of_locally_relPicEquiv`, which
-is now PROVEN over it).  This is BLR 8.1/4 with everything that is not the
-descent removed: there is no curve here, no `RelPicEquiv`, no base change of a
+(**PROVEN 2026-08-02** over the descent section immediately above; cut
+2026-07-31 out of `relPicEquiv_of_locally_relPicEquiv`, which is PROVEN over
+it).  The route below is the one that was taken, and the three "genuinely
+missing" items are now the three named theorems above; see the correction on
+item 2, which turned out not to need mates at all.
+
+This is BLR 8.1/4 with everything that is not the descent removed: there is no
+curve here, no `RelPicEquiv`, no base change of a
 curve and no second sheaf — only a morphism of schemes `π : Z ⟶ T` with
 `π_*𝒪 = 𝒪` universally, and one invertible sheaf `M` on `Z` that is a pullback
 from the base over each member of an open cover of `T`.
@@ -5285,7 +5749,9 @@ With `ε` in hand both remaining obligations are local on `T`:
   over each member `ε` is the counit at `𝒪`, which the triangle identity makes
   an isomorphism.
 
-**WHAT IS GENUINELY MISSING AT THIS PIN, and it is three named statements.**
+**WHAT WAS GENUINELY MISSING AT THIS PIN — three named statements, all now
+supplied above (2026-08-02).  The inventory below was ACCURATE; only the
+pricing of item 2 was wrong, and the correction is recorded after the list.**
 `Mathlib.AlgebraicGeometry.Modules.Sheaf` gives `pushforward`, `pullback`,
 their adjunction, `restrictFunctor` (with `Γ(M.restrict f, U) = Γ(M, f ''ᵁ U)`
 by `rfl`) and `Γ((pushforward f).obj M, U) = Γ(M, f ⁻¹ᵁ U)` by `rfl`.  What it
@@ -5299,8 +5765,18 @@ does not give:
    itself uses for `restrictFunctorComp` and `restrictFunctorAdjCounitIso`;
 2. **compatibility of the counit with (1)** — the Beck–Chevalley/mate identity
    saying that the restriction of `ε` to `π⁻¹U` IS the counit for `π ∣_ U`.
-   This is the one step with no obvious shortcut; `CategoryTheory`'s
-   `mateEquiv`/`conjugateEquiv` are the tools;
+   This was called "the one step with no obvious shortcut", with
+   `mateEquiv`/`conjugateEquiv` named as the tools.  **THAT WAS THE ONE WRONG
+   ENTRY, and it is the reason the leaf looked expensive.**  No mate machinery
+   is needed and neither is any comparison of composite adjunctions: `map_counit_eq`
+   above is the identity `H(ε¹_M) = (F ⋙ H)(G(η²_M)) ≫ εᶜ_{H M}` for
+   `adj₁.comp adj₂` in ARBITRARY categories, and its whole proof is
+   `homEquiv` of the composite = composite of the `homEquiv`s, naturality of
+   `η²`, and the right triangle identity for `adj₁`.  What remains — that
+   `εᶜ` is an iso at `j^*M` — is `isIso_counit_app_of_isIso_map_unit` at
+   `B = 𝒪_T`, i.e. the LEFT triangle identity, and needs only items 1 and 3.
+   The two factorisations `j ≫ π = (π ∣_ U) ≫ U.ι` are compared only as
+   PULLBACK functors, where `pullbackComp`/`pullbackCongr` suffice;
 3. **`π_*𝒪_Z ≅ 𝒪_T` as `𝒪_T`-modules from `HasTrivialPushforward π`.**  The
    predicate is `∀ U : T.Opens, IsIso (π.app U)`, i.e. a statement about the
    map of sheaves of RINGS; the module-level statement is
@@ -5322,14 +5798,15 @@ product of two invertible sheaves).  It is very likely derivable from `_hloc`,
 since `πᵢ^*Nᵢ` is invertible and the `Wᵢ` cover `Z`; nothing here reads it as a
 claim that it is needed. -/
 theorem exists_modPullback_of_locally_modPullback {Z T : Scheme.{u}} (π : Z ⟶ T)
-    (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward π)
+    (hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward π)
     {M : Z.Modules} (_hM : IsInvertibleSheaf M)
-    (_hloc : ∀ t : T, ∃ (U : T.Opens) (W : Scheme.{u}) (jW : W ⟶ Z) (πW : W ⟶ (U : Scheme.{u})),
+    (hloc : ∀ t : T, ∃ (U : T.Opens) (W : Scheme.{u}) (jW : W ⟶ Z) (πW : W ⟶ (U : Scheme.{u})),
       t ∈ U ∧ IsPullback jW πW π U.ι ∧
       ∃ N : (U : Scheme.{u}).Modules, IsInvertibleSheaf N ∧
         Nonempty (modPullback jW M ≅ modPullback πW N)) :
     ∃ N : T.Modules, IsInvertibleSheaf N ∧ Nonempty (M ≅ modPullback π N) :=
-  sorry
+  exists_modPullback_of_locally_trivial π hpush
+    (forall_trivialization_preimage_of_locally_modPullback π hloc)
 
 /-- **THE RELATIVE PICARD RELATION IS A ZARISKI SHEAF CONDITION ON `T`**
 (**PROVEN 2026-07-31** over `exists_modPullback_of_locally_modPullback`; cut
