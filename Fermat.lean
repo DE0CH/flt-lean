@@ -27,6 +27,7 @@ import Fermat.FLT.Mathlib.RingTheory.RegularLocalNormal
 -- would be invisible to every frontier scan (CLAUDE.md's fourth invisibility class).
 import Fermat.FLT.Mathlib.AlgebraicGeometry.SpreadOutOverZ
 import Fermat.SorryGate
+import Fermat.FLT.Mathlib.GroupTheory.CyclicComplement
 
 /-!
 The sorry gate (see `Fermat/SorryGate.lean`): this root module FAILS to
