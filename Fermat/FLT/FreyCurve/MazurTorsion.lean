@@ -5135,16 +5135,146 @@ structure that `redX_base_ne_of_isCusp` consumes without it — so it is not mer
 unproven here, it is the wrong shape.  A successor wanting a fibre-comparison
 statement should state it with `hsq` in its own signature, not on the model. -/
 
+/-- **THE SPECIAL FIBRE OF THE CUSPIDAL SUBSCHEME HAS NO MORE POINTS THAN THE
+GENERIC ONE, when every `gcd(d, N/d)` is `1`** (sorry leaf, new 2026-08-02) —
+the COUNTING half of "the cuspidal subscheme of the smooth model is finite
+étale over `ℤ_(q)`", and after 2026-08-02 the only part of it that is still
+asked of the literature at this point in the file.
+
+**IT IS THE SECOND CONJUNCT OF
+`redX_base_ne_and_card_compl_range_le_of_jNeronDatum` BELOW, COPIED CHARACTER
+FOR CHARACTER**, with the conjunction's antecedent moved into the binder list.
+That is the whole of the change, and it is what lets every audit written for
+that conjunct transfer verbatim rather than be re-derived — see the
+RECUT heading on the composite below for why the SEPARATION conjunct left.
+Since the statement is unchanged, no faithfulness question is reopened: a
+counterexample to this leaf is a counterexample to that conjunct and
+conversely.
+
+**`hsq` IS LOAD-BEARING FOR TRUTH, NOT A CONVENIENCE** (audit inherited, and
+re-checked 2026-08-02).  Over `𝔽_q` the number of CLOSED points above a
+divisor `d` is `φ(gcd(d, N/d)) / ord_{gcd(d, N/d)}(q)`, since the `φ(gcd)`
+geometric cusps above `d` are permuted by Frobenius through `ζ ↦ ζ^q` and so
+fall into orbits of size `ord_{gcd}(q)`.  **Counterexample without `hsq`:**
+`N = 16`, `q = 5`.  The divisors `1, 2, 4, 8, 16` have gcds `1, 2, 4, 2, 1`, so
+there are `1 + 1 + 2 + 1 + 1 = 6` geometric cusps; and `5 ≡ 1 (mod 4)` puts
+`ζ_4` in `𝔽_5`, so the two cusps above `d = 4` are each `𝔽_5`-rational and
+remain two closed points, while over `ℚ` they are ONE closed point with residue
+field `ℚ(ζ_4)`.  That is `6` special against `5` generic and the conclusion is
+FALSE.  Under `hsq` every gcd is `1`, every divisor carries one geometric cusp,
+that cusp is rational over every base, and both fibres have exactly `σ₀(N)`
+points — so the stated `≤` is in fact an equality.
+
+**`hqN : ¬ q ∣ N` IS GOOD REDUCTION** and is equally load-bearing: at `q ∣ N`
+the cuspidal subscheme is genuinely not étale at `q`, cusps collide and the
+fibres differ.
+
+**WHY THIS IS NOT DERIVABLE FROM `IsX0JNeronCuspModel`, ALTHOUGH THE SEPARATION
+HALF IS** (audit, 2026-08-02, and it is the reason this leaf survives the recut
+while its former partner does not).  `IsX0JNeronCuspModel` presents the cuspidal
+subscheme as `Spec A` for `A` finite étale over `R = ℤ_(q)`, which is exactly
+what separates two SECTIONS — and a section is a `RelPoint`, which is what every
+field of `IsX0JNeronDatum` speaks about.  The present statement is not about
+sections: it compares the CARDINALITIES OF THE UNDERLYING POINT SETS of `X'` and
+`X`.  The datum carries `genX`/`spX` as functorial equivalences of `RelPoint`
+functors and NOTHING at the level of topological spaces, so there is no way from
+its fields to identify the point set of `X'` with the special fibre of `Spec A`,
+nor that of `X` with its generic fibre.  Two further obstructions sit behind
+that one, and both are real:
+
+* the comparison runs the WRONG WAY for the reduction map.  `redX` sends generic
+  points to special ones, so a `RelPoint`-level argument produces an injection
+  *from* the generic cusps *into* the special ones — the `≥` direction, which is
+  already free (`redX_base_ne_of_isCusp`, and it is how
+  `exists_cuspResidueIndexing_specialFibre` gets its injectivity).  The `≤`
+  direction needs LIFTING a special-fibre cusp to a generic one, i.e. the
+  henselian/étale content itself;
+* even with the fibres identified, `#special ≤ #generic` is FALSE for a general
+  finite étale `A`: take `A = ℤ_(5)[x]/(x² + 1)`, finite étale over `ℤ_(5)`, with
+  generic fibre `ℚ(i)` — ONE point — and special fibre `𝔽_5 × 𝔽_5` — TWO.  That
+  is the `N = 16`, `q = 5` counterexample above in algebraic dress.  What rules
+  it out under `hsq` is that the generic fibre is TOTALLY SPLIT, whence `A` is
+  the integral closure of `R` in `ℚ^r`, i.e. `R^r`; and total splitness is the
+  `ℚ`-side cusp count (`exists_cuspResidueIndexing`, residue field
+  `ℚ(ζ_{gcd(d, N/d)})`, trivial exactly under `hsq`), not anything the cusp model
+  knows.
+
+So a successor closing this leaf must either add a scheme-level fibre
+identification to `IsX0JNeronDatum` — the honest repair, and a structure change
+with call sites — or cite Deligne–Rapoport for the count directly, which is what
+the statement does today.
+
+**NON-VACUITY.**  `N = 37`, `q = 3`: `X_0(37)` has two cusps over either base,
+so the bound is the attained equality `2 ≤ 2` rather than a bound against `∞`.
+
+**REFERENCES.**  Deligne–Rapoport, *Les schémas de modules de courbes
+elliptiques* (Antwerp II, 1973), IV.3, V.5 and VI.6, for the smooth model over
+`ℤ[1/N]` and its finite étale cuspidal subscheme; Katz–Mazur, *Arithmetic Moduli
+of Elliptic Curves*, 13.11; Ogg, *Rational points on certain elliptic modular
+curves* (1973) for the cusp count at prime level. -/
+theorem card_compl_range_specialFibre_le_generic_of_jNeronDatum (N q : ℕ)
+    (_hqN : ¬ q ∣ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (_d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+    (_hsq : ∀ dd : N.divisors, Nat.gcd dd.1 (N / dd.1) = 1) :
+    Nat.card ((Set.range jY'.base)ᶜ : Set X') ≤
+      Nat.card ((Set.range hX.j.base)ᶜ : Set X) :=
+  sorry
+
 /-- **THE CUSPIDAL SUBSCHEME OF THE SMOOTH MODEL IS FINITE ÉTALE OVER `ℤ_(q)`**,
-read at the level of points (sorry leaf, new 2026-07-30) — the ONE
-Deligne–Rapoport input of the fourth cut.
+read at the level of points (**PROVEN 2026-08-02**; a sorry leaf from
+2026-07-30 to 2026-08-01) — what was the ONE Deligne–Rapoport input of the
+fourth cut, now an assembly of two.
 
-It REPLACES the two leaves `redX_base_ne_of_isCusp` and
+**RECUT 2026-08-02, LEAF COUNT UNCHANGED `1 → 1`, AND WHAT GOT SMALLER.**  The
+statement, the hypothesis order and the single call site are untouched; only
+the proof is new, and `_hqN` lost its underscore because it is now consumed.
+The two conjuncts are now discharged separately:
+
+* the SEPARATION conjunct is `nonempty_isX0JNeronCuspModel` followed by
+  `redX_base_ne_of_isX0JNeronCuspModel`, both PROVEN above since 2026-07-31 —
+  the same two lines that `redX_base_ne_of_isCusp` below already used;
+* the COUNTING conjunct is the new leaf
+  `card_compl_range_specialFibre_le_generic_of_jNeronDatum` immediately above,
+  which is that conjunct copied character for character.
+
+**WHY THE RECUT WAS OWED: THE SEPARATION HALF WAS BEING CITED TWICE.**  When
+this leaf was cut on 2026-07-30 its first conjunct was the live route to
+`redX_base_ne_of_isCusp`.  On 2026-07-31 that route was replaced — the cuspidal
+subscheme was built as the structure `IsX0JNeronCuspModel`, its existence became
+the leaf `nonempty_isX0JNeronCuspModel`, and `redX_base_ne_of_isCusp` was
+reproven over it.  From that moment the first conjunct here had NO consumer
+anywhere in the tree (checked 2026-08-02 by a comment-stripped scan of
+`Fermat/`: the only code use of this theorem is
+`card_compl_range_le_card_divisors_specialFibre`, and it projects `.2`), while
+still asking the literature for a fact the tree was independently asking for
+four hundred lines above.  Every frontier instrument reported one honest open
+leaf throughout, because the duplication is between a CONJUNCT and a separate
+declaration and no scan compares those.
+
+The consequence for anyone reading the paragraphs below: **"WHY ONE LEAF AND
+NOT TWO" is now history rather than doctrine.**  Its argument — that separation
+and counting are one fact read twice — is correct about the mathematics and is
+exactly why the separation half could be split off and proven; what it did not
+anticipate is that the split would be made on the OTHER side of the file.  The
+counting half's own reason for staying a leaf is on that leaf, and it is not the
+reason recorded here.
+
+It REPLACED the two leaves `redX_base_ne_of_isCusp` and
 `card_compl_range_le_card_divisors_specialFibre`, opened separately on
-2026-07-28.  Both are now THEOREMS over it, with their statements, their
-hypothesis order and their call sites unchanged; only their proofs changed.
+2026-07-28.  Both are still THEOREMS over it, with their statements, their
+hypothesis order and their call sites unchanged.
 
-**WHY ONE LEAF AND NOT TWO.**  The two docstrings already said the pair is "one
+**WHY ONE LEAF AND NOT TWO** (2026-07-30; superseded by the RECUT heading above,
+and kept because it is the record of how the cut was chosen).  The two
+docstrings already said the pair is "one
 fact read twice", and it is: étaleness of `𝒞 = 𝒳 ∖ 𝒴` over the LOCAL base is
 what separates two sections agreeing in the special fibre (first conjunct), and
 it is what forbids a cusp of the special fibre that is not the reduction of a
@@ -5205,9 +5335,10 @@ the junk shapes above are ruled out — by the moduli theory, which is precisely
 the classical content being cited.  A successor should expect to BUILD the
 cuspidal subscheme as a finite étale `ℤ[1/N]`-scheme, not to find it.
 
-**WHERE THE OTHER HYPOTHESES ENTER.**  `_hqN : ¬ q ∣ N` is good reduction: at
+**WHERE THE OTHER HYPOTHESES ENTER.**  `hqN : ¬ q ∣ N` is good reduction: at
 `q ∣ N` the cuspidal subscheme is genuinely NOT étale at `q`, cusps do collide
-and the fibres do differ, so both conjuncts are false there.  `d` is the guard
+and the fibres do differ, so both conjuncts are false there.  It lost its
+underscore on 2026-08-02: both halves of the proof now consume it.  `d` is the guard
 that the assertion is about the special fibre of the good model — `redX` cannot
 even be written without it, and over an arbitrary `IsX0JReductionAt`, whose
 `redX` is a posited function, the first conjunct is false against the constant
@@ -5226,7 +5357,7 @@ elliptiques* (Antwerp II, 1973), IV.3, V.5 and VI.6, for the smooth model over
 `ℤ[1/N]` and its finite étale cuspidal subscheme; Katz–Mazur, *Arithmetic Moduli
 of Elliptic Curves*, 13.11; Ogg, *Rational points on certain elliptic modular
 curves* (1973) for the cusp count at prime level. -/
-theorem redX_base_ne_and_card_compl_range_le_of_jNeronDatum (N q : ℕ) (_hqN : ¬ q ∣ N)
+theorem redX_base_ne_and_card_compl_range_le_of_jNeronDatum (N q : ℕ) (hqN : ¬ q ∣ N)
     {R : Subring ℚ} {toF : R →+* ZMod q}
     {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
@@ -5241,7 +5372,10 @@ theorem redX_base_ne_and_card_compl_range_le_of_jNeronDatum (N q : ℕ) (_hqN : 
       ((∀ dd : N.divisors, Nat.gcd dd.1 (N / dd.1) = 1) →
         Nat.card ((Set.range jY'.base)ᶜ : Set X') ≤
           Nat.card ((Set.range hX.j.base)ᶜ : Set X)) :=
-  sorry
+  ⟨fun x₁ x₂ hx₁ hx₂ hne P =>
+      (nonempty_isX0JNeronCuspModel N q hqN d).elim fun C =>
+        redX_base_ne_of_isX0JNeronCuspModel C x₁ x₂ hx₁ hx₂ hne P,
+    fun hsq => card_compl_range_specialFibre_le_generic_of_jNeronDatum N q hqN d hsq⟩
 
 /-- **DISTINCT rational cusps of `X_0(N)` have DISTINCT reductions mod `q`**
 (PROVEN 2026-07-31 over `nonempty_isX0JNeronCuspModel`; PROVEN 2026-07-30 over

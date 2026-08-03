@@ -30065,3 +30065,59 @@ proves the statement at one level and your leaf quantifies over all of them, ask
 the tower's Galois group is a quotient of.  When it is abelian — cyclotomic towers,
 Kummer towers, anything landing in `(ℤ/m)ˣ` — the levels above the first are a
 CENTRAL extension and collapse against `H⁰ = 0`.
+## A DEAD CONJUNCT INSIDE A LIVE LEAF — the duplication no scan compares
+(2026-08-02, `flt-lean-392`, `redX_base_ne_and_card_compl_range_le_of_jNeronDatum`
+in `FreyCurve/MazurTorsion.lean`.)  This file already catalogues the orphaned
+LEAF (nothing consumes it) and the duplicate CUT (two declarations, one
+statement).  Here is a third shape, and it is invisible to the checks written
+for both.
+A leaf whose conclusion is a **conjunction** can have one conjunct alive and one
+DEAD, where the dead one duplicates a *separate* leaf elsewhere in the file.
+* the consumerless-leaf check PASSES — the theorem has a live consumer, which
+  projects the other conjunct;
+* `dupstmt.py` and `xdup.py` are silent — the duplication is between a CONJUNCT
+  and a whole declaration, and no scan compares those;
+* the frontier count is one honest open leaf, and the build's
+  `declaration uses 'sorry'` warning is truthful.
+Concretely: that leaf's first conjunct was the live route to
+`redX_base_ne_of_isCusp` when it was cut on 2026-07-30.  The next day the
+separation half was re-cut through a new structure — `IsX0JNeronCuspModel`,
+with `nonempty_isX0JNeronCuspModel` as its leaf — and `redX_base_ne_of_isCusp`
+was reproven over that, four hundred lines ABOVE.  From that moment the
+conjunct was simultaneously provable in place and still citing Deligne–Rapoport
+for a fact the tree was independently citing them for elsewhere.  Nothing said
+so for three days.
+**THE CHECK, and it costs one grep per leaf: when a leaf's conclusion is a
+conjunction, list its consumers and record WHICH PROJECTION each one uses.**
+    grep -rn '<leafName>' --include=*.lean Fermat/     # comment-stripped
+    # then read each hit: `.1`, `.2`, `.left`, `.right`, or a destructuring
+    # `obtain ⟨h1, h2⟩` -- and note which components are actually bound
+A conjunct no consumer projects is dead.  In a tree that re-cuts as aggressively
+as this one, it is usually dead *because it was independently re-proven*, so the
+next move is to grep the file for a declaration whose statement IS that conjunct
+— and if there is one above you, the conjunct is free.
+**THE REPAIR IS A RECUT THAT KEEPS THE STATEMENT.**  Prove the composite
+outright (dead conjunct from the sibling route, live conjunct from a new leaf
+that is the live conjunct copied CHARACTER FOR CHARACTER), and leave the
+signature and the call site untouched.  Copying the conjunct verbatim is what
+makes the inherited falsity audit transfer rather than have to be re-run — say
+so in the new leaf's docstring, since an audit labelled "inherited" with no
+argument is a failure mode this file records elsewhere.
+**REPORT IT AS `1 -> 1`, WITH THE RECEIPT.**  The warning-set delta is `-1 +1`
+and is indistinguishable from "nothing happened"; the honest statement is that
+the count did not move and a duplicated CITATION was removed.  Two cheap
+receipts, both worth quoting in the commit:
+    git diff -- <file> | grep -E '^[+-] *sorry *$'      # exactly one + and one -
+    # comment-stripped `sorry` token count before and after, against the
+    # build's `declaration uses 'sorry'` count -- equal all three ways rules
+    # out an anonymous inner sorry having been swapped in
+**AND SAY WHY THE SURVIVING CONJUNCT DID NOT ALSO FALL**, on the leaf.  Here the
+two halves look like "one fact read twice" — the leaf's own docstring said so,
+correctly — and they are still not equally reachable: the separation half is
+about SECTIONS, which are `RelPoint`s, which is what every field of the datum
+speaks about; the counting half is about CARDINALITIES OF UNDERLYING POINT SETS,
+and the datum carries its fibre comparisons only as functorial `RelPoint`
+equivalences.  **A structure that settles one conjunct of a "one fact read
+twice" pair need not settle the other, and the discriminator is which LANGUAGE
+each conjunct is stated in** — points, sections, or sheaves.  Check that before
+assuming a new structure closes both.
