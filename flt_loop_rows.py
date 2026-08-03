@@ -703,11 +703,48 @@ def r6_guard(s):
 
 
 def r6_action(s):
-    if s["inflight"]:
-        s["batch"] = s["inflight"] + s["batch"]
-        s["inflight"] = None
-    del s["jobs"]["merger"]
-    note(s, "6  merger died without releasing: .inflight restored to batch, record dropped")
+    """A died merger RESUMES its own conversation, exactly like row 8's agents.
+
+    (Deyao, 2026-08-03.) This used to drop the record and let row 11 mint a
+    fresh one, so every death cost a brand-new session that spent its first
+    100-500 KB of transcript re-orienting from disk before doing new work --
+    measured across ~15 deaths in one release window. The claim needs no
+    restoring on this path: the record survives, so it still owns .inflight.
+
+    The old retire-and-fresh behaviour is kept as the FALLBACK once the record
+    has been resumed MAX_RESUME times without delivering. It exists because
+    resume has a failure mode fresh spawns do not: a transcript that died AT
+    the context ceiling refails instantly on every resume ("Prompt is too
+    long"), so without a cap this row would re-spawn a session that can never
+    say another word. Unlike row 22's graveyard this fallback touches nothing
+    in the staging worktree -- the merger's committed work IS the release, and
+    a fresh session picks it up from disk, which was the old normal.
+    """
+    m = s["jobs"]["merger"]
+    if (m.get("retries") or 0) >= MAX_RESUME:
+        if s["inflight"]:
+            s["batch"] = s["inflight"] + s["batch"]
+            s["inflight"] = None
+        del s["jobs"]["merger"]
+        s["email"].append(
+            "the merger died %d times without delivering; its session was "
+            "abandoned and a fresh merger record will be minted. Staging was "
+            "not touched -- committed work is intact." % MAX_RESUME)
+        note(s, "6  merger died %d times -> session abandoned, .inflight "
+                "restored to batch, record dropped" % MAX_RESUME)
+        return
+    m["started"] = False
+    m["alive"] = False
+    # Token rotation + prev_tokens retention: same reasoning as row 8 -- the
+    # token names the PROCESS, the session names the CONVERSATION, and a
+    # sentinel written under a retired token stays valid through prev_tokens.
+    m["prev_tokens"] = ((m.get("prev_tokens") or []) + [m["token"]])[-10:]
+    m["token"] = tok()
+    m["retries"] = (m.get("retries") or 0) + 1
+    m["resume"] = bool(m.get("session"))
+    note(s, "6  merger died -> %s (attempt %d)"
+            % ("resuming its session" if m["resume"]
+               else "re-running its task", m["retries"]))
 
 
 def r7_guard(s):
@@ -1320,7 +1357,7 @@ ROWS = [
     (22, "agent wedged past the resume cap -> archive, reset, restart clean",
      r_wedged_guard, r_wedged_action),
     (8, "agent died -> resume its session", r4_guard, r4_action),
-    (9, "merger died without releasing -> restore .inflight", r6_guard, r6_action),
+    (9, "merger died without releasing -> resume its session", r6_guard, r6_action),
     (10, "merger delivered main+snapshot+audit -> ADOPT", r7_guard, r7_action),
     (21, "merger HELD the release (red build) -> relay, restore claim, retire",
      r_merger_held_guard, r_merger_held_action),
