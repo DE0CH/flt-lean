@@ -65,13 +65,25 @@ makes a general `Res_{S'/S}` available.
 ## Why separability is load-bearing, and where
 
 `Spec L ⟶ Spec K` is étale exactly when `L/K` is finite separable
-(`Mathlib.RingTheory.Etale.Field`), and étaleness of `ℓ` is what makes
-`Res_{L/K} A ⟶ Spec K` **smooth**, hence what lets the Weil restriction
-carry an `AbelianSchemeStruct` at all.  A merely finite `ℓ` gives a
-`Res` that is proper but not smooth in general (`Res_{k(t^{1/p})/k(t)}`
-of an abelian variety in characteristic `p`), so the separability in
-ATOM 1 is not a convenience: dropping `Etale ℓ` from ATOM 2 makes ATOM 2
-**false**.
+(`Mathlib.RingTheory.Etale.Field`), and étaleness of `ℓ` is what lets the
+Weil restriction carry an `AbelianSchemeStruct` at all.  Dropping
+`Etale ℓ` from ATOM 2 makes ATOM 2 **false**, so the separability in
+ATOM 1 is not a convenience.
+
+**CORRECTED 2026-08-02 — the clause that fails is PROPERNESS, not
+smoothness.**  This paragraph read "a merely finite `ℓ` gives a `Res`
+that is proper but not smooth in general", and the witness it named
+refutes the opposite clause.  Take `K = k(t)`, `L = k(t^{1/p})` in
+characteristic `p`.  Then `L ⊗_K K̄ ≅ K̄[ε]/(ε^p)` is NON-REDUCED, so
+`Res_{L/K} A ×_K K̄` is the Greenberg/jet group of `A` over
+`K̄[ε]/(ε^p)`: an extension of `A_{K̄}` by a unipotent group of dimension
+`(p−1)·dim A`.  That is smooth and connected, and it contains `𝔾_a`, so
+it is not PROPER.  Weil restriction along a finite locally free morphism
+does preserve smoothness; what separability buys is that
+`L ⊗_K K̄ ≅ K̄^{[L:K]}` is reduced, so that
+`Res_{L/K} A ×_K K̄ ≅ ∏_{σ : L ↪ K̄} A^σ_{K̄}` is a PRODUCT OF ABELIAN
+VARIETIES — which is where properness, smoothness and geometric
+connectedness all come from at once.
 
 ## The tempting shortcut, and why it fails
 
@@ -109,10 +121,17 @@ degenerate case is not worth making a prover handle, and the consumer has
 
 ## Relocation
 
-Nothing here is `Γ₁`- or even modular-specific.  `X0.lean`'s open
-`exists_nonconstant_toAbelianScheme_of_one_le_x0Genus` needs the same
-descent verbatim, which is why this lives under `Fermat/FLT/Mathlib/`
-rather than in a curve file.
+Nothing here is `Γ₁`- or even modular-specific, which is why this lives
+under `Fermat/FLT/Mathlib/` rather than in a curve file.
+
+**CORRECTED 2026-08-02.**  This paragraph, and the two `RELOCATION NOTE`
+paragraphs in `X1.lean` that it was copied from, justified the placement by
+*"`X0.lean`'s OPEN `exists_nonconstant_toAbelianScheme_of_one_le_x0Genus`
+needs the same descent verbatim"*.  That declaration is **PROVEN** — it is a
+two-line assembly over `exists_nonconstant_toAbelianScheme_of_nontrivial_cuspForm`
+at `X0.lean:64325` — and it does not consume anything here.  The placement is
+still right (the material genuinely mentions no level and no modular curve),
+but do not queue anyone at the `Γ₀` side on the strength of that sentence.
 -/
 module
 
@@ -312,7 +331,191 @@ theorem exists_finiteEtale_point_of_smooth
   ext k
   exact ψ.commutes k
 
-/-! ### ATOM 2 — Weil restriction along a finite étale extension of fields -/
+/-! ### ATOM 2 — Weil restriction along a finite étale extension of fields
+
+The leaf is `exists_weilRestriction_of_finiteEtale`: the CONSTRUCTION, and
+nothing else.  Everything between it and the applied statement — the group
+law, the `t = 𝟙` step, the nonconstancy transfer — is proven below. -/
+
+/-- **Base change of a morphism `h : X ⟶ Y` OVER the base**, i.e. the induced
+`X ×_S T ⟶ Y ×_S T`.
+
+Not to be confused with `curveBaseChangeMap`, which changes the BASE `T` and
+fixes the source; this one fixes `T` and moves the source, and is what the
+naturality of a Weil-restriction adjunction is stated against. -/
+noncomputable def weilSrcMap {X Y S T : Scheme.{0}} {xstr : X ⟶ S} {ystr : Y ⟶ S}
+    (ℓ : T ⟶ S) (h : X ⟶ Y) (hh : h ≫ ystr = xstr) :
+    curveBaseChange xstr ℓ ⟶ curveBaseChange ystr ℓ :=
+  pullback.lift (pullback.fst xstr ℓ ≫ h) (pullback.snd xstr ℓ)
+    (by rw [Category.assoc, hh, pullback.condition])
+
+@[reassoc]
+theorem weilSrcMap_proj {X Y S T : Scheme.{0}} {xstr : X ⟶ S} {ystr : Y ⟶ S}
+    (ℓ : T ⟶ S) (h : X ⟶ Y) (hh : h ≫ ystr = xstr) :
+    weilSrcMap ℓ h hh ≫ curveBaseChangeProj ystr ℓ = curveBaseChangeProj xstr ℓ :=
+  pullback.lift_snd _ _ _
+
+@[reassoc]
+theorem weilSrcMap_fst {X Y S T : Scheme.{0}} {xstr : X ⟶ S} {ystr : Y ⟶ S}
+    (ℓ : T ⟶ S) (h : X ⟶ Y) (hh : h ≫ ystr = xstr) :
+    weilSrcMap ℓ h hh ≫ pullback.fst ystr ℓ = pullback.fst xstr ℓ ≫ h :=
+  pullback.lift_fst _ _ _
+
+/-- **An endomorphism of `Spec K` under which a NONEMPTY `K`-scheme is
+invariant is the identity** (PROVEN).
+
+This is the `t = 𝟙` step the module docstring flags as the one easy-to-miss
+point of the nonconstancy transfer, and it is the only place `Nonempty C` is
+spent.  `Hom(Spec K, Spec K)` is `Hom(K, K)`, which is NOT a subsingleton —
+Frobenius on `𝔽_p(t)`, complex conjugation on `ℚ(i)` — so the hypothesis is
+not decoration.
+
+The argument: `cstr ≫ t = cstr` gives `Γ(t) ≫ Γ(cstr) = Γ(cstr)` on global
+sections; `Γ(C, ⊤)` is nontrivial because `C` is nonempty
+(`Scheme.component_nontrivial`), so the ring map `K ⟶ Γ(C, ⊤)` underlying
+`cstr` is injective — a ring hom out of a FIELD into a nonzero ring — hence a
+mono, and cancels.  `AlgebraicGeometry.ext_to_Spec` returns the conclusion. -/
+theorem eq_id_of_comp_eq_self {C : Scheme.{0}} {K : Type} [Field K]
+    {cstr : C ⟶ Spec (CommRingCat.of K)} (hne : Nonempty C)
+    {t : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of K)}
+    (h : cstr ≫ t = cstr) : t = 𝟙 _ := by
+  haveI : Nonempty ((⊤ : C.Opens) : Type) := ⟨⟨hne.some, trivial⟩⟩
+  haveI : Nontrivial (Scheme.Γ.obj (Opposite.op C) : CommRingCat) :=
+    (inferInstance : Nontrivial Γ(C, ⊤))
+  have hmono : Mono ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ Scheme.Γ.map cstr.op) :=
+    ConcreteCategory.mono_of_injective _ (RingHom.injective _)
+  have hmonoβ : Mono (Scheme.Γ.map cstr.op) := by
+    have h2 : Mono ((Scheme.ΓSpecIso (CommRingCat.of K)).hom ≫
+        ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ Scheme.Γ.map cstr.op)) := mono_comp _ _
+    simpa using h2
+  have key : Scheme.Γ.map t.op ≫ Scheme.Γ.map cstr.op = 𝟙 _ ≫ Scheme.Γ.map cstr.op := by
+    rw [Category.id_comp, ← Scheme.Γ.map_comp, ← op_comp, h]
+  have ht : Scheme.Γ.map t.op = 𝟙 _ := (cancel_mono _).mp key
+  refine AlgebraicGeometry.ext_to_Spec ?_
+  rw [ht]
+  simp
+
+/-- **THE LEAF: Weil restriction along a finite étale extension of fields
+exists, is proper, smooth and geometrically connected, and represents the
+expected functor** (sorry leaf, cut 2026-08-02 out of
+`exists_nonconstant_toAbelianScheme_of_finiteEtale_descent` below).
+
+`Res_{L/K} A`, together with the adjunction
+
+    Hom_K(X, Res_{L/K} A) ≅ Hom_L(X ×_K L, A)
+
+natural in the `K`-scheme `X`, which is the whole of what a consumer needs.
+`Φ` is stated on `RelPoint`s, i.e. in the slice over the base, because that
+is the presentation `AbelianSchemeStruct` uses; the naturality clause is the
+same bijection's compatibility with a morphism `h : X ⟶ Y` over `Spec K`.
+
+**WHAT THE CITATION IS.**  Representability is Weil / BLR *Néron Models*
+7.6/4, whose hypothesis — every finite set of points lies in an affine open —
+holds because `A` is an abelian variety over a field, hence projective; that
+is the second place `ab` is load-bearing, beyond supplying the group law.
+Properness, smoothness and geometric connectedness of `Res` are BLR 7.6/5.
+No functoriality of `Res`, no unit and no counit are needed: only the
+bijection at a general test object and its naturality.
+
+**WHY THE CONCLUSION CARRIES NO GROUP LAW.**  It does not need to.
+`AbelianSchemeStruct` presents an abelian scheme by its functor of points, so
+`Φ` transports the group structure from `ab` verbatim — that is
+`abelianSchemeStruct_of_weilRestriction` below, and all nine group fields of
+the structure are formal consequences of the bijection plus its naturality.
+Only the three GEOMETRIC conditions have to be asserted here.
+
+**FALSITY AUDIT (2026-08-02, this statement; the audit on the parent covers a
+different statement and does not transfer).**
+
+*Not vacuous*: at `L = K`, `ℓ = 𝟙` — which is finite and étale — take
+`R = A`, `rstr = astr` and for `Φ` the canonical bijection coming from
+`pullback xstr (𝟙 _) ≅ X`; the three geometric clauses are `ab.proper`,
+`ab.smooth`, `ab.connected`.
+
+*`het` is load-bearing, and the reason is PROPERNESS rather than smoothness*
+— correcting the parent's docstring, which attributes the failure to
+smoothness.  Take `K = k(t)`, `L = k(t^{1/p})` in characteristic `p`, so
+`ℓ` is finite and purely inseparable.  Then `L ⊗_K K̄ ≅ K̄[ε]/(ε^p)` is
+NON-REDUCED, so the geometric fibre of `Res_{L/K} A` is the Greenberg/jet
+group of `A` over `K̄[ε]/(ε^p)`: an extension of `A_{K̄}` by a unipotent
+group of dimension `(p−1)·dim A`.  It is still smooth and connected, and it
+contains `𝔾_a`, so it is NOT proper — hence not an abelian scheme.  For
+`L/K` separable, `L ⊗_K K̄ ≅ K̄^{[L:K]}` and
+`Res_{L/K} A ×_K K̄ ≅ ∏_{σ : L ↪ K̄} A^σ_{K̄}`, a product of abelian
+varieties, which is where all three geometric clauses come from at once.
+
+*`hfin` is load-bearing*: Weil restriction is not representable along an
+arbitrary affine morphism.
+
+*`ab` is load-bearing twice*: for projectivity (hence representability, see
+above) and for the group law the consumer transports. -/
+theorem exists_weilRestriction_of_finiteEtale {K L : Type} [Field K] [Field L]
+    {ℓ : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of K)}
+    (hfin : IsFinite ℓ) (het : Etale ℓ)
+    {A : Scheme.{0}} {astr : A ⟶ Spec (CommRingCat.of L)}
+    (ab : AbelianSchemeStruct astr) :
+    ∃ (R : Scheme.{0}) (rstr : R ⟶ Spec (CommRingCat.of K))
+      (Φ : ∀ (X : Scheme.{0}) (xstr : X ⟶ Spec (CommRingCat.of K)),
+             RelPoint rstr xstr ≃ RelPoint astr (curveBaseChangeProj xstr ℓ)),
+      IsProper rstr ∧ Smooth rstr ∧ GeometricallyConnected rstr ∧
+        ∀ (X Y : Scheme.{0}) (xstr : X ⟶ Spec (CommRingCat.of K))
+          (ystr : Y ⟶ Spec (CommRingCat.of K)) (h : X ⟶ Y) (hh : h ≫ ystr = xstr)
+          (f : RelPoint rstr ystr),
+          Φ X xstr (RelPoint.pre h hh f)
+            = RelPoint.pre (weilSrcMap ℓ h hh) (weilSrcMap_proj ℓ h hh) (Φ Y ystr f) :=
+  sorry
+
+/-- **The group structure transports through the universal property**
+(PROVEN) — the formal half of ATOM 2.
+
+`AbelianSchemeStruct` is the functor-of-points presentation, so a bijection
+`RelPoint rstr xstr ≃ RelPoint astr (curveBaseChangeProj xstr ℓ)` natural in
+`X` carries the group law across with nothing to check beyond transporting
+the axioms along an `Equiv`.  The two naturality fields `pre_add`/`pre_zero`
+are exactly where `hnat` is spent; the three geometric fields are handed in.
+
+This is why the leaf above may assert the geometric conditions ALONE. -/
+noncomputable def abelianSchemeStruct_of_weilRestriction {K L : Type} [Field K] [Field L]
+    {ℓ : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of K)}
+    {A R : Scheme.{0}} {astr : A ⟶ Spec (CommRingCat.of L)}
+    {rstr : R ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct astr)
+    (Φ : ∀ (X : Scheme.{0}) (xstr : X ⟶ Spec (CommRingCat.of K)),
+           RelPoint rstr xstr ≃ RelPoint astr (curveBaseChangeProj xstr ℓ))
+    (hnat : ∀ (X Y : Scheme.{0}) (xstr : X ⟶ Spec (CommRingCat.of K))
+        (ystr : Y ⟶ Spec (CommRingCat.of K)) (h : X ⟶ Y) (hh : h ≫ ystr = xstr)
+        (f : RelPoint rstr ystr),
+        Φ X xstr (RelPoint.pre h hh f)
+          = RelPoint.pre (weilSrcMap ℓ h hh) (weilSrcMap_proj ℓ h hh) (Φ Y ystr f))
+    (hproper : IsProper rstr) (hsmooth : Smooth rstr)
+    (hconn : GeometricallyConnected rstr) :
+    AbelianSchemeStruct rstr where
+  add {T} {g} x y := (Φ T g).symm (ab.add (Φ T g x) (Φ T g y))
+  zero {T} g := (Φ T g).symm (ab.zero _)
+  neg {T} {g} x := (Φ T g).symm (ab.neg (Φ T g x))
+  add_assoc := by
+    intro T g x y z
+    simp only [Equiv.apply_symm_apply]
+    rw [ab.add_assoc]
+  add_comm := by
+    intro T g x y
+    exact congrArg (Φ T g).symm (ab.add_comm _ _)
+  zero_add := by
+    intro T g x
+    simp only [Equiv.apply_symm_apply, ab.zero_add, Equiv.symm_apply_apply]
+  neg_add := by
+    intro T g x
+    simp only [Equiv.apply_symm_apply, ab.neg_add]
+  pre_add := by
+    intro T' T h g g' hg x y
+    apply (Φ _ _).injective
+    simp only [hnat, Equiv.apply_symm_apply, ab.pre_add]
+  pre_zero := by
+    intro T' T h g g' hg
+    apply (Φ _ _).injective
+    simp only [hnat, Equiv.apply_symm_apply, ab.pre_zero]
+  proper := hproper
+  smooth := hsmooth
+  connected := hconn
 
 /-- **Weil restriction, in applied form: a nonconstant map to an abelian
 scheme over a finite separable extension descends to the base field**
@@ -353,10 +556,13 @@ universal property at the single test object `C` is enough.
 both operations send a constant map to a constant map.  See the module
 docstring for the `t = 𝟙` step, which is where `hne` is consumed.
 
-**`het` IS LOAD-BEARING**: without it `A'` need not be smooth over `K`,
-so no `AbelianSchemeStruct` exists on it — `Res` along a purely
-inseparable finite extension in characteristic `p` is the standard
-counterexample.  `hfin` is load-bearing because Weil restriction is not
+**`het` IS LOAD-BEARING**: without it no `AbelianSchemeStruct` exists on
+`A'` — `Res` along a purely inseparable finite extension in
+characteristic `p` is the standard counterexample.  (This sentence used
+to say the failing clause is SMOOTHNESS; it is PROPERNESS, and the
+correction with the witness worked out is in the module docstring and
+restated in the falsity audit of `exists_weilRestriction_of_finiteEtale`
+below.)  `hfin` is load-bearing because Weil restriction is not
 representable along an arbitrary affine morphism.
 
 **NOT VACUOUS and the junk witness is killed by the nonconstancy clause
@@ -365,7 +571,18 @@ the final clause fails at `s = 𝟙`.  A prover must produce a genuinely
 positive-dimensional `A'`.
 
 **`hne` is not decoration** — see the module docstring.  It is available
-free at the only call site, from the point ATOM 1 produces. -/
+free at the only call site, from the point ATOM 1 produces.
+
+**RECUT 2026-08-02, count unchanged `1 → 1`.**  Everything above is
+still true and this theorem is now **PROVEN**, over the single leaf
+`exists_weilRestriction_of_finiteEtale` below.  What left the leaf is
+everything that is not the construction: the group law (transported
+through the universal property by `abelianSchemeStruct_of_weilRestriction`
+— `AbelianSchemeStruct` presents an abelian scheme by its functor of
+points, so *all nine* group fields are formal), the `t = 𝟙` step
+(`eq_id_of_comp_eq_self`, which is where `hne` is spent) and the
+nonconstancy transfer.  The residue mentions no group law, no
+`AbelianSchemeStruct`, no curve and no nonconstancy. -/
 theorem exists_nonconstant_toAbelianScheme_of_finiteEtale_descent
     {C : Scheme.{0}} {K L : Type} [Field K] [Field L]
     {cstr : C ⟶ Spec (CommRingCat.of K)}
@@ -377,8 +594,36 @@ theorem exists_nonconstant_toAbelianScheme_of_finiteEtale_descent
     (hnc : ∀ s : Spec (CommRingCat.of L) ⟶ A, c ≠ curveBaseChangeProj cstr ℓ ≫ s) :
     ∃ (A' : Scheme.{0}) (astr' : A' ⟶ Spec (CommRingCat.of K)) (_ : AbelianSchemeStruct astr')
       (c' : C ⟶ A'), c' ≫ astr' = cstr ∧
-        ∀ s : Spec (CommRingCat.of K) ⟶ A', c' ≠ cstr ≫ s :=
-  sorry
+        ∀ s : Spec (CommRingCat.of K) ⟶ A', c' ≠ cstr ≫ s := by
+  obtain ⟨R, rstr, Φ, hproper, hsmooth, hconn, hnat⟩ :=
+    exists_weilRestriction_of_finiteEtale hfin het ab
+  refine ⟨R, rstr, abelianSchemeStruct_of_weilRestriction ab Φ hnat hproper hsmooth hconn,
+    ((Φ C cstr).symm ⟨c, hc⟩).1, ((Φ C cstr).symm ⟨c, hc⟩).2, ?_⟩
+  intro s hs
+  -- The base point `t := s ≫ rstr` of the alleged constant is forced to be the identity;
+  -- this is the only place `hne` is used.
+  have hcst : cstr ≫ (s ≫ rstr) = cstr := by
+    rw [← Category.assoc, ← hs]; exact ((Φ C cstr).symm ⟨c, hc⟩).2
+  have ht : s ≫ rstr = 𝟙 _ := eq_id_of_comp_eq_self hne hcst
+  have hcid : cstr ≫ 𝟙 (Spec (CommRingCat.of K)) = cstr := Category.comp_id _
+  -- so `c'` is `cstr` precomposed with a genuine relative point over the identity, and
+  -- naturality of `Φ` reads that back on the `L`-side.
+  have hpre : (Φ C cstr).symm ⟨c, hc⟩ = RelPoint.pre cstr hcid ⟨s, ht⟩ := Subtype.ext hs
+  have hΦ : (⟨c, hc⟩ : RelPoint astr (curveBaseChangeProj cstr ℓ))
+      = RelPoint.pre (weilSrcMap ℓ cstr hcid) (weilSrcMap_proj ℓ cstr hcid)
+          (Φ _ (𝟙 _) ⟨s, ht⟩) := by
+    rw [← hnat, ← hpre, Equiv.apply_symm_apply]
+  have hc' : c = weilSrcMap ℓ cstr hcid ≫ (Φ _ (𝟙 _) ⟨s, ht⟩).1 := congrArg Subtype.val hΦ
+  -- `Spec L` maps into `(Spec K) ×_K L` compatibly with the two base changes, which turns
+  -- the right-hand factor into an honest constant and contradicts `hnc`.
+  have hj : curveBaseChangeProj cstr ℓ ≫
+      pullback.lift ℓ (𝟙 (Spec (CommRingCat.of L))) (by simp) = weilSrcMap ℓ cstr hcid := by
+    apply pullback.hom_ext
+    · rw [Category.assoc, pullback.lift_fst, weilSrcMap_fst]
+      exact pullback.condition.symm
+    · rw [Category.assoc, pullback.lift_snd, Category.comp_id, weilSrcMap_proj]
+  exact hnc (pullback.lift ℓ (𝟙 (Spec (CommRingCat.of L))) (by simp) ≫
+    (Φ _ (𝟙 _) ⟨s, ht⟩).1) (by rw [hc', ← hj, Category.assoc])
 
 /-! ### The assembly -/
 
