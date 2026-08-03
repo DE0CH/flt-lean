@@ -4655,8 +4655,10 @@ structure IsX0JNeronCuspModel {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod 
   [finite : Module.Finite (R : Type) A]
   /-- the immersion of the cuspidal subscheme into the model -/
   ι : Spec (CommRingCat.of A) ⟶ XZ
-  /-- it is a monomorphism -/
-  mono : Mono ι
+  /-- it is a CLOSED immersion — strictly more than the `Mono` this field used
+  to say, and exactly what Deligne–Rapoport offer; see the structure docstring
+  for why the derivation of `section_of_isCusp` needs it -/
+  isClosedImmersion : IsClosedImmersion ι
   /-- it lies over the base -/
   comm : ι ≫ xstr = Spec.map (CommRingCat.ofHom (algebraMap (R : Type) A))
   /-- its image is exactly the cusp locus of the model -/
@@ -4667,10 +4669,6 @@ structure IsX0JNeronCuspModel {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod 
   degenerate level, where `Gamma0Datum 0 T` is empty and no cusp count is meant. -/
   rank : N ≠ 0 → Module.finrank (R : Type) A
     = ∑ dd ∈ N.divisors, (Nat.gcd dd (N / dd)).totient
-  /-- the integral section attached to a rational CUSP is a section of `𝒞` -/
-  section_of_isCusp : ∀ x : RelPoint strX (𝟙 SpecQ), hX.IsCusp x →
-    ∃ f : A →ₐ[(R : Type)] (R : Type),
-      Spec.map (CommRingCat.ofHom f.toRingHom) ≫ ι = (d.intX x).1
 
 attribute [instance] IsX0JNeronCuspModel.commRing IsX0JNeronCuspModel.algebra
   IsX0JNeronCuspModel.etale IsX0JNeronCuspModel.finite
@@ -4943,7 +4941,7 @@ over the integral base.
 Nothing here is geometry: the cusps are untouched, and `𝒳` does not appear.
 What is left for `exists_extend_atkinLehnerCusps_of_jNeronDatum` is exactly
 the extension across the cuspidal locus. -/
-theorem exists_atkinLehnerModelOpen_of_jNeronDatum (hq : q.Prime) (hqN : q ≠ N) :
+theorem exists_atkinLehnerModelOpen_of_jNeronDatum (hq : q.Prime) (hqN : ¬ q ∣ N) :
     ∃ (alZ : AtkinLehnerMorphismOver N (SpecLoc R)) (wY : YZ ⟶ YZ)
       (hwY : wY ≫ ystr = ystr),
       wY ≫ wY = 𝟙 YZ ∧
@@ -5160,7 +5158,7 @@ Deligne–Rapoport's.
 Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*, ch. 13; Liu, *Algebraic
 Geometry and Arithmetic Curves*, 9.3.13 (uniqueness of the minimal regular
 model), for the paragraph identifying `𝒳` with `𝒳_DR`. -/
-theorem nonempty_isX0JNeronDegModuli (_hq : q.Prime) (_hqN : q ≠ N) :
+theorem nonempty_isX0JNeronDegModuli (_hq : q.Prime) (_hqN : ¬ q ∣ N) :
     Nonempty (IsX0JNeronDegModuli d) :=
   sorry
 
@@ -5202,7 +5200,7 @@ one.
 
 **REFERENCES.**  Deligne–Rapoport (Antwerp II, 1973), IV.4, VI.6; Katz–Mazur,
 *Arithmetic Moduli of Elliptic Curves*, 13.5, 13.11. -/
-theorem exists_dualDeg_of_degModuli (_hq : q.Prime) (_hqN : q ≠ N)
+theorem exists_dualDeg_of_degModuli (_hq : q.Prime) (_hqN : ¬ q ∣ N)
     (M : IsX0JNeronDegModuli d) (alZ : AtkinLehnerMorphismOver N (SpecLoc R)) :
     ∃ dualDeg : ∀ {T : Scheme.{0}}, (T ⟶ SpecLoc R) → M.Deg T → M.Deg T,
       (∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecLoc R} {g' : T' ⟶ SpecLoc R}
@@ -5250,7 +5248,7 @@ consumer of that density theorem.
 moduli-pinned `w_N` of the open integral model does not extend to the smooth
 proper model — equivalently, at which `w_N` is not defined on the smooth
 model. -/
-theorem exists_extend_atkinLehnerCusps_of_jNeronDatum (hq : q.Prime) (hqN : q ≠ N)
+theorem exists_extend_atkinLehnerCusps_of_jNeronDatum (hq : q.Prime) (hqN : ¬ q ∣ N)
     (alZ : AtkinLehnerMorphismOver N (SpecLoc R)) (wY : YZ ⟶ YZ)
     (hwY : wY ≫ ystr = ystr)
     (hpinZ : ∀ {T : Scheme.{0}} (g₀ : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
@@ -6045,7 +6043,9 @@ theorem exists_isCusp_ne_post_of_atkinLehnerPin (hN : 1 < N) (al : AtkinLehnerMo
     show ((hc.classify g dd).1 ≫ hX.j) ≫ v = (hc.classify g dd').1 ≫ hX.j
     rw [Category.assoc, hvj, ← Category.assoc, hp1, hcl]
   -- the cusp above `1` goes to the cusp above `N`, and `1 ≠ N`
-  obtain ⟨C, hswap⟩ := exists_cuspLocus_atkinLehnerSwap (by omega) h1 v hv hvinv hal
+  -- `exists_cuspLocus_atkinLehnerSwap` gained a second conjunct (the totient
+  -- divisibility across equal cusp ranges); this proof reads only the swap.
+  obtain ⟨C, hswap, -⟩ := exists_cuspLocus_atkinLehnerSwap (by omega) h1 v hv hvinv hal
   have hone : (1 : ℕ) ∈ N.divisors := Nat.one_mem_divisors.mpr (by omega)
   have hNd : N ∈ N.divisors := Nat.mem_divisors_self N (by omega)
   -- `φ(gcd(1, N)) = 1`, so the cusp above `1` is `ℚ`-rational
@@ -7183,7 +7183,7 @@ theorem card_compl_range_le_finrank_of_cuspModel
       = (Limits.pullback.fst xstr (SpecLoc.special toF)).base ⁻¹' Set.range jZ.base := by
     rw [fibreBaseChangeMap_eq_map, Scheme.Pullback.range_map]
     simp
-  haveI := C.mono
+  haveI := C.isClosedImmersion
   have hover : ∀ (a : PrimeSpectrum C.A) (w : ↥(Limits.pullback xstr (SpecLoc.special toF))),
       C.ι.base a = (Limits.pullback.fst xstr (SpecLoc.special toF)).base w →
       (IsLocalRing.maximalIdeal (R : Type)).map (algebraMap (R : Type) C.A) ≤ a.asIdeal := by
@@ -7455,9 +7455,7 @@ theorem exists_cuspResidueIndexing_specialFibre (N q : ℕ)
     · exact hqN h2
   -- the `ℚ`-side compactification structure, and its divisor-indexed cusps
   have hdata := isX0Compactification_data_of_compactificationY0 N hN.ne_zero hc hX
-  -- `exists_cuspResidueIndexing` gained a second conjunct on 2026-08-02 (the
-  -- Atkin–Lehner action on the indexing); this proof reads only the first.
-  obtain ⟨e0, hcyc, -⟩ :=
+  obtain ⟨e0, hcyc⟩ :=
     exists_cuspResidueIndexing N hN.ne_zero (hX.toX0Compactification hc hdata)
   -- at PRIME level every `ℚ`-cusp is rational: `gcd(d, N/d) = 1`, so `φ = 1`
   have hdeg0 : ∀ dd : N.divisors,
@@ -28475,9 +28473,13 @@ theorem exists_isCMJInvariant_ne_of_not_equivalent
   obtain ⟨y, hy, hyj⟩ :=
     exists_isCMJInvariant_complexEmbedding_eq n ⟨1, 0, n⟩ hppd hpdiscr hpprim
   refine ⟨x, y, hx, hy, fun hxy => ?_⟩
+  -- `Fermat.BinaryQuadraticForm.formPoint` is the hoisted copy of this file's
+  -- `formPoint` (identical body, so `show` crosses by defeq); the doubled
+  -- dictionary is queued for deletion.
   exact Fermat.BinaryQuadraticForm.jInvariant_formPoint_ne_of_not_equivalent hpd hppd
     (by rw [hdisc, hpdiscr]) hne
-    (by rw [← hxj, ← hyj, hxy])
+    (by show jInvariant (formPoint f hpd) = jInvariant (formPoint ⟨1, 0, n⟩ hppd)
+        rw [← hxj, ← hyj, hxy])
 
 end FormPointDictionary
 
@@ -41915,9 +41917,11 @@ closed in the same run.  The cut separates what is provable with today's machine
 from the class-field-theoretic core, and it makes the assembly — the
 ORBIT-COUNTING half of the classical argument — real Lean rather than prose:
 
-* `isCMJInvariantOfRel_algEquiv` — the predicate is `Gal(ℚ̄/ℚ)`-STABLE.  **PROVEN**:
-  conjugate the curve, over `Isogeny.lean`'s `GaloisTransport` section, which
-  already had every piece.  No class field theory, and no new machinery.
+* `isCMJInvariantOfRel_algEquiv` — the predicate is `Gal(ℚ̄/ℚ)`-STABLE.  Was PROVEN
+  over `Isogeny.lean`'s `GaloisTransport` section; DELETED at release 37 together
+  with that section (both consumerless — the assembly below routes through
+  `MazurCMForm.minpoly_eq_of_isCMJInvariantOfQuadratic` and never cites stability).
+  See the tombstone below and in `Isogeny.lean`.
 * `finite_setOf_isCMJInvariantOfRel` — there are only FINITELY many CM
   `j`-invariants of a fixed order (classically `h(D)` of them).  OPEN.
 * `ncard_setOf_isCMJInvariantOfRel_le` — `h(D) ≤ [ℚ(j) : ℚ]`.  THE CORE, and the
@@ -41973,68 +41977,16 @@ because leaf 1 is attackable today and leaf 2 is a different theorem from leaf 3
 the price is that the leaf count goes `1 → 3`, which is DISCLOSURE and not
 regression — see the accounting rule in `CLAUDE.md`. -/
 
-/-- **`IsCMJInvariantOfRel` IS STABLE UNDER `Gal(ℚ̄/ℚ)`** (cut and PROVEN 2026-08-01,
-flt-lean-179, out of `minpoly_eq_of_isCMJInvariantOfRel`).
-
-Uniform in `m`, and it carries NO negativity hypothesis: it is true for every `m`,
-including the degenerate ones where the predicate collapses to "`End(W) = ℤ`" —
-that class is Galois-stable too.
-
-**THE ARGUMENT** is four lines of bookkeeping over machinery that was already in the
-tree.  Let `W^σ := W.map σ` be the conjugate curve.  `WeierstrassCurve.map_j` gives
-`j(W^σ) = σ (j W) = σ x`, and `(W.map f).IsElliptic` is a mathlib instance, so `W^σ`
-is again elliptic.  For the endomorphism ring,
-`WeierstrassCurve.End.mapRingEquiv W.toAffine σ` is a RING ISOMORPHISM
-`End W ≃+* End W^σ`; being a ring isomorphism it preserves the integer cast, so
-`φ * φ + m = φ` transports verbatim, and `Subring.closure {φ} = ⊤` transports by
-`RingHom.map_closure` plus surjectivity.
-
-**THIS LEAF WAS CUT AGAINST A "WHAT IS MISSING" PARAGRAPH THAT WAS FALSE, and the
-correction is the reusable part.**  The paragraph said the coordinatewise map
-`W(ℚ̄) → W^σ(ℚ̄)` "has to be built", on the correct observation that mathlib's
-`WeierstrassCurve.Affine.Point.map` moves points between BASE CHANGES of one curve
-and so does not apply to two genuinely different curves over `ℚ̄`.  That observation
-is true and the conclusion drawn from it was not: the whole transport already
-existed, in `Fermat/FLT/EllipticCurve/Isogeny.lean`'s `GaloisTransport` section —
-`Affine.Point.mapRingHom`, `Affine.Point.mapRingEquiv`, `conjHom`,
-`IsRationalMap.transport`, `IsIsogeny.transport`, `isRationalMap_conjHom_iff`,
-`isIsogeny_conjHom_iff`, `AddEquiv.conjAddMonoidEnd` and `End.mapRingEquiv`, all
-PROVEN, in a module this file already `public import`s.  That section's own
-docstring even names its intended consumer as "`MazurCMForm.IsCMJInvariant.map`:
-the CM `j`-invariants of a fixed order are stable under `Gal(ℚ̄/ℚ)`" — i.e. exactly
-this statement, one predicate over.  About 250 lines were re-derived from scratch
-in a scratch module before the grep that found it; see the note in `CLAUDE.md`.
-
-**NOT VACUOUS**: `σ = 1` gives the hypothesis back, and the conclusion at a
-nontrivial `σ` is exactly what makes the orbit-counting in
-`minpoly_eq_of_isCMJInvariantOfRel` nonempty of content. -/
-theorem isCMJInvariantOfRel_algEquiv (m : ℤ)
-    (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) {x : AlgebraicClosure ℚ}
-    (hx : IsCMJInvariantOfRel m x) : IsCMJInvariantOfRel m (σ x) := by
-  classical
-  obtain ⟨W, hW, hj, φ, hrel, htop⟩ := hx
-  letI := hW
-  refine ⟨W.map (σ.toRingEquiv : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ), inferInstance,
-    ?_, ?_⟩
-  · rw [WeierstrassCurve.map_j]
-    exact congrArg _ hj
-  · set Ψ := WeierstrassCurve.End.mapRingEquiv W.toAffine σ.toRingEquiv
-    refine ⟨Ψ φ, ?_, ?_⟩
-    · have h := congrArg Ψ hrel
-      rw [map_add, map_mul, map_intCast] at h
-      exact h
-    · rw [Subring.eq_top_iff']
-      intro y
-      have hmemtop : Ψ.symm y ∈ Subring.closure ({φ} : Set (WeierstrassCurve.End W.toAffine)) := by
-        rw [htop]; exact Subring.mem_top _
-      have hmem : y
-          ∈ Subring.map (Ψ : WeierstrassCurve.End W.toAffine →+*
-              WeierstrassCurve.End (W.toAffine.map (σ.toRingEquiv : AlgebraicClosure ℚ →+*
-                AlgebraicClosure ℚ)))
-            (Subring.closure ({φ} : Set (WeierstrassCurve.End W.toAffine))) :=
-        Subring.mem_map.2 ⟨Ψ.symm y, hmemtop, Ψ.apply_symm_apply y⟩
-      rw [RingHom.map_closure, Set.image_singleton] at hmem
-      exact hmem
+/-! `isCMJInvariantOfRel_algEquiv` (Galois stability of the predicate) stood here,
+PROVEN over `Isogeny.lean`'s `GaloisTransport` section.  DELETED at release 37:
+flt-lean-249 had already deleted that section as free-floating (see the tombstone
+in `Fermat/FLT/EllipticCurve/Isogeny.lean`, with the audit showing every consumer
+of the cluster needs orbit TRANSITIVITY, not stability, and routes through
+`Normal.minpoly_eq_iff_mem_orbit`), and this theorem had no code consumer —
+`minpoly_eq_of_isCMJInvariantOfRel` below bridges to
+`MazurCMForm.minpoly_eq_of_isCMJInvariantOfQuadratic` and never cites it.  Recover
+both from git history together if a consumer that conjugates a moving-coefficient
+curve ever appears. -/
 
 /-- **LEAF — THERE ARE ONLY FINITELY MANY CM `j`-INVARIANTS OF A FIXED ORDER**
 (cut 2026-08-01, flt-lean-179, out of `minpoly_eq_of_isCMJInvariantOfRel`).
@@ -42109,7 +42061,8 @@ polynomial over `ℚ`.
 
 **PROVEN 2026-08-01 (flt-lean-179)** over the block above.  Of the three statements
 cut out of it, `isCMJInvariantOfRel_algEquiv` (Galois stability) was closed in the
-same run; the two that remain OPEN are `finite_setOf_isCMJInvariantOfRel`
+same run and then DELETED at release 37 as consumerless (this proof does not use
+it); the two that remain OPEN are `finite_setOf_isCMJInvariantOfRel`
 (finiteness of the class number) and `ncard_setOf_isCMJInvariantOfRel_le` (the ring
 class field).  The orbit-counting half of the classical argument is the proof
 below.  Read the subsection note above before attacking either leaf.
@@ -46788,134 +46741,16 @@ whose `jm` misses a value that `classify_jm` is supposed to force — i.e. a
 defect in `classify_jm` rather than in these leaves.  That would break
 `exists_jMap` too, and is the only way the reduction below can be wrong. -/
 
-/-- **A prime level has exactly the two rational cusps `0` and `∞`**
-(PROVEN 2026-07-27).
+/-! `numRationalCusps_of_prime`, `exists_jm_eq_of_isogenyCurve`,
+`exists_isogenyCurve_thirtySeven`, `exists_x0ThirtySevenPoints` and
+`exists_jMap_thirtySeven` stood here (the level-37 chain).  DELETED at
+release 37: byte-identical copies were hoisted into `X0.lean`
+(`namespace MazurIsogenyPrimeJ`, ~line 139000), which this module
+`public import`s, so the pair clashed as already-declared duplicates.
+The `classNumberOne` chain below is the surviving unique material and
+now resolves those names to the `X0.lean` copies. -/
 
-`numRationalCusps p = 2` for every prime `p`: the divisors of `p` are `1`
-and `p`, and both qualify, since `gcd(1, p) = gcd(p, 1) = 1` and
-`φ(1) = 1`.  This is the arithmetic that the docstring of
-`higherGenusCountTable` states inline — `m = 2 + #(the level's `j`-table)` —
-and it is stated here so the two assemblies below can consume it rather
-than each running `decide` on `Nat.divisors 163`. -/
-theorem numRationalCusps_of_prime {p : ℕ} (hp : p.Prime) : numRationalCusps p = 2 := by
-  have hdiv : rationalCuspDivisors p = {1, p} := by
-    ext d
-    show d ∈ p.divisors.filter (fun d => Nat.totient (Nat.gcd d (p / d)) = 1) ↔ _
-    simp only [Finset.mem_filter, Nat.mem_divisors, Finset.mem_insert, Finset.mem_singleton]
-    constructor
-    · rintro ⟨⟨hd, -⟩, -⟩
-      exact hp.eq_one_or_self_of_dvd d hd
-    · rintro (rfl | rfl)
-      · refine ⟨⟨one_dvd _, hp.ne_zero⟩, ?_⟩
-        simp
-      · refine ⟨⟨dvd_rfl, hp.ne_zero⟩, ?_⟩
-        rw [Nat.div_self hp.pos, Nat.gcd_one_right, Nat.totient_one]
-  rw [numRationalCusps_eq_card, hdiv,
-    Finset.card_insert_of_notMem (by simp [hp.one_lt.ne]), Finset.card_singleton]
 
-/-- **A curve with a rational cyclic `N`-isogeny gives a rational point of
-`Y_0(N)` carrying its `j`-invariant** (PROVEN 2026-07-27).
-
-This is the whole of the moduli axis, and it is three lines: `classify_jm`
-applied to the curve yields a `Gamma0Datum N SpecQ`, and `hc.classify`
-turns that datum into the rational point.
-
-It is what makes the two constructive leaves below *arithmetic* rather than
-*geometric*: the caller never touches `X_0(N)`, never chooses coordinates,
-and never needs a model — it supplies an elliptic curve and receives a
-point.  Stated generically in `N` and in the value `j` so that both levels
-and all four primes consume the same lemma. -/
-theorem exists_jm_eq_of_isogenyCurve {N : ℕ} {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
-    {hc : IsCoarseModuliY0 N strY} (hj : IsJMapOn N hc) {j : ℚ}
-    (h : ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
-      addOrderOf g = N ∧
-      (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
-        Affine.Point.map
-          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g) ∧
-      E.j = j) :
-    ∃ y : RelPoint strY (𝟙 SpecQ), hj.jm y = j := by
-  obtain ⟨E, _, g, hg, hstable, hEj⟩ := h
-  obtain ⟨d, hd⟩ := hj.classify_jm E g hg hstable
-  exact ⟨hc.classify (𝟙 SpecQ) d, hd.trans hEj⟩
-
-/-- **The two Mazur–Swinnerton-Dyer curves at level `37`** (introduced
-2026-07-27, flt-lean-26 as a sorry leaf carrying ALL the arithmetic of the
-constructive half at `p = 37`; **PROVEN 2026-07-30**, flt-lean-152, over the
-two kernel-polynomial certificates of
-`Fermat/FLT/EllipticCurve/ThirtySevenKernelPolynomials.lean`).
-
-Each tabulated `j`-invariant is realised by an elliptic curve over `ℚ`
-carrying a Galois-stable cyclic subgroup of order `37`.
-
-TRUE and classical: the two curves are the isogeny pair of conductor
-`1225 = 5²·7²`, of `j`-invariants `−7·11³ = −9317` and
-`−7·137³·2083³ = −162677523113838677` (Mazur–Swinnerton-Dyer, *Arithmetic
-of Weil curves*, Invent. Math. 25 (1974), §5; Mazur–Vélu, *Courbes de Weil
-de conducteur 37*).  Confirmed in this block's reconnaissance:
-`ellisomat` returns `[1, 37; 37, 1]` at both values, so each carries a
-rational `37`-isogeny and exactly one.
-
-**NOT vacuous, and not circular.**  `hj` restricts the statement to the two
-tabulated values, so the leaf cannot be discharged by producing some curve
-with some `37`-isogeny — it must hit each prescribed `j`.  And it is the
-FORWARD direction (the curve exists), never the converse (a `37`-isogeny
-forces this `j`), which is what the `classPoly` circularity objection
-recorded nearby is about and which lives entirely in
-`card_le_of_isogenyPrimeHigherGenus`.
-
-**HOW IT WAS DISCHARGED, and why the residue the old audit named turned out
-to cost no new theory at all.**  That audit read: "For each of the two
-curves, a point of order `37` over `ℚ̄` whose `ℤ`-span is Galois-stable —
-equivalently the degree-`18` kernel polynomial of the `37`-isogeny …
-`Fermat.FLT.EllipticCurve.Velu` is the natural consumer of such a
-polynomial, and is the axis a successor should search first."  The
-polynomial half was right and the consumer was wrong: Vélu runs subgroup →
-quotient curve, which is the direction this leaf does not need.  The
-machinery that does exactly what is wanted — kernel polynomial → point of
-exact order `p` with Galois-stable span — was already in the tree as
-`WeierstrassCurve.exists_point_of_isKernelPolynomial`, written on
-2026-07-27 for the genus-one levels `p ∈ {11, 17, 19}` and stated for a
-general odd prime.  So the whole residue was two `IsKernelPolynomial`
-certificates, produced in the new module in exactly the style of
-`GenusOneKernelPolynomials.lean`.
-
-**The second model is NOT the minimal one, deliberately.**  At
-`j = −162677523113838677` the minimal model `[1, 1, 1, -208083, -36621194]`
-has a kernel polynomial whose constant coefficient carries a denominator of
-`37` — the `37`-torsion points cutting out the kernel have `x`-coordinates of
-`37`-adic valuation `−1` there — and the `ring` calls of the certificate
-cannot carry rational numerals.  The minimal model of the **quadratic twist
-by `37`**, `[1, 1, 0, -284865655, -1850700345850]`, multiplies those
-`x`-coordinates by `37`, clears the denominator, and has the same `j`; a
-rational cyclic `p`-isogeny is twist-invariant, and this statement demands
-only `E.j = j`.  See that module's docstring.
-
-AXIS SEARCHED: the moduli side, which is what this block discharged, and
-then the division-polynomial side, which is where the certificates live. -/
-theorem exists_isogenyCurve_thirtySeven (j : ℚ) (hj : ((37 : ℕ), j) ∈ thirtySevenJTable) :
-    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
-      addOrderOf g = 37 ∧
-      (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
-        Affine.Point.map
-          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g) ∧
-      E.j = j := by
-  have hp : (37 : ℕ).Prime := by norm_num
-  obtain ⟨E, hE, f, m, hjE, hker⟩ :
-      ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (f : Polynomial ℚ) (m : ℕ),
-        E.j = j ∧ E.IsKernelPolynomial 37 f m := by
-    fin_cases hj
-    · exact ⟨ThirtySevenKernel.curve₁, inferInstance, ThirtySevenKernel.ker₁, 2,
-        ThirtySevenKernel.curve₁_j, ThirtySevenKernel.curve₁_isKernelPolynomial⟩
-    · exact ⟨ThirtySevenKernel.curve₂, inferInstance, ThirtySevenKernel.ker₂, 2,
-        ThirtySevenKernel.curve₂_j, ThirtySevenKernel.curve₂_isKernelPolynomial⟩
-  haveI := hE
-  obtain ⟨g, hord, hstab⟩ :=
-    WeierstrassCurve.exists_point_of_isKernelPolynomial
-      (L := AlgebraicClosure ℚ) hp (by norm_num) hker
-  exact ⟨E, hE, g, hord,
-    fun σ x hx => hstab (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) x hx, hjE⟩
 
 /-- **The kernel-polynomial certificate at `p = 43`** (PROVEN 2026-08-01,
 flt-lean-188, over `ClassNumberOneKernelPolynomials.lean`).
@@ -47351,86 +47186,6 @@ theorem exists_isogenyCurve_classNumberOne (p : ℕ) (hp : p ∈ ({43, 67, 163} 
   · exact hcm (by decide)
   · exact hcm (by decide)
 
-/-- **The rational points of `X_0(37)` with their `j`-invariants** (PROVEN
-2026-07-27, flt-lean-26, over `exists_isogenyCurve_thirtySeven` through
-`exists_jm_eq_of_isogenyCurve`, `Fermat.exists_jMap` and
-`Fermat.exists_rationalCusps`; introduced the same day as a sorry leaf, the
-CONSTRUCTIVE half at `p = 37`).
-
-The exact analogue of `exists_x0GenusOnePoints` at this level: a `j`-map
-on `Y_0(37)`, a `Finset` of rational points of `X_0(37)` none of which
-comes from `Y_0(37)` (the cusps), and a `Finset` of rational points of
-`Y_0(37)` every one of which has its `j`-invariant in
-`thirtySevenJTable`, with cardinalities summing to `4`.
-
-TRUE, and this is the classical half: `X_0(37)` has the two rational cusps
-`0` and `∞` and exactly two non-cuspidal rational points, of `j`-invariants
-`−7·11³ = −9317` and `−7·137³·2083³ = −162677523113838677`
-(Mazur–Swinnerton-Dyer; Mazur–Vélu, *Courbes de Weil de conducteur 37*).
-Both values re-verified in this task's reconnaissance block.
-
-**Why the `j`-map is PRODUCED here rather than assumed.**  `IsJMapOn`
-under-determines `jm` away from the image of `classify`, so the variant
-taking `hj` as a hypothesis would be FALSE against a junk witness — see
-the subsection note, and `X0.lean`'s FORMAL-CONTENT AUDIT of
-`IsX0JReductionAt`, which prescribes exactly this discipline.  Producing
-it also means this leaf SUBSUMES `Fermat.exists_jMap` at level `37`.
-
-**NOT vacuous, and the check is a cardinality one**, identically to
-`exists_x0GenusOnePoints`: `cusps = pts = ∅` gives sum `0 ≠ 4`, and since
-`X_0(37)(ℚ)` has exactly `2` points outside `Y_0(37)`, reaching `4` FORCES
-`cusps.card = 2` and `pts.card = 2`, i.e. forces `pts` to be all of
-`Y_0(37)(ℚ)` with both `j`-values tabulated.
-
-**What this leaf does NOT assert**, deliberately: that `pts` exhausts
-`Y_0(37)(ℚ)`.  That is supplied by `card_le_of_isogenyPrimeHigherGenus`,
-and keeping the two apart is the whole point of the split.
-
-**THE IRREDUCIBILITY VERDICT THAT STOOD HERE IS REFUTED** (2026-07-27,
-flt-lean-26).  It read: "IRREDUCIBLE at this pin: it needs the `j`-function
-of `X_0(37)` as an explicit rational function on an explicit model — the
-genus-`2` curve `y² = x⁶ + 14x⁵ + 35x⁴ + 48x³ + 35x² + 14x + 1` is the
-standard one", with the refuting check given as "an explicit model of
-`X_0(37)` in this project", and it named its own axis honestly: *the
-coarse-space side only*.
-
-No model of `X_0(37)` was needed, and the genus never entered.  The axis it
-did not search is `IsJMapOn.classify_jm`, which runs CURVE → POINT: the
-`j`-map's one axiom hands back a rational point of `Y_0(37)` for every
-elliptic curve over `ℚ` with a Galois-stable cyclic `37`-subgroup, so the
-two points are *received* rather than constructed from coordinates.  The
-whole residue is `exists_isogenyCurve_thirtySeven`, which mentions no
-scheme at all.  See the sub-block note above `numRationalCusps_of_prime`.
-
-Recorded because the same verdict, in the same words, was carried by the
-sibling `exists_x0ClassNumberOnePoints`, and a hyperelliptic model layer in
-`Fermat/FLT/ModularCurve/HyperellipticJacobian.lean` would have been built
-for nothing at both. -/
-theorem exists_x0ThirtySevenPoints {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ}
-    {jY : Y ⟶ X} (hX : IsX0Compactification 37 strX strY jY) :
-    ∃ (hj : IsJMapOn 37 hX.coarse) (cusps : Finset (RelPoint strX (𝟙 SpecQ)))
-      (pts : Finset (RelPoint strY (𝟙 SpecQ))),
-      (∀ c ∈ cusps, ∀ y : RelPoint strY (𝟙 SpecQ), sectionAlong jY hX.comm y ≠ c) ∧
-      (∀ y ∈ pts, ((37 : ℕ), hj.jm y) ∈ thirtySevenJTable) ∧
-      cusps.card + pts.card = 4 := by
-  classical
-  obtain ⟨hj⟩ := exists_jMap 37 (by norm_num) hX.coarse
-  obtain ⟨cusps, hcard, hcusp⟩ := exists_rationalCusps 37 hX
-  obtain ⟨y₁, hy₁⟩ := exists_jm_eq_of_isogenyCurve hj
-    (exists_isogenyCurve_thirtySeven (-9317) (by decide))
-  obtain ⟨y₂, hy₂⟩ := exists_jm_eq_of_isogenyCurve hj
-    (exists_isogenyCurve_thirtySeven (-162677523113838677) (by decide))
-  have hne : y₁ ≠ y₂ := by
-    intro hEq
-    rw [hEq, hy₂] at hy₁
-    norm_num at hy₁
-  refine ⟨hj, cusps, {y₁, y₂}, hcusp, ?_, ?_⟩
-  · intro y hy
-    rcases Finset.mem_insert.mp hy with rfl | hy
-    · rw [hy₁]; decide
-    · rw [Finset.mem_singleton.mp hy, hy₂]; decide
-  · rw [hcard, numRationalCusps_of_prime (by norm_num),
-      Finset.card_insert_of_notMem (by simpa using hne), Finset.card_singleton]
 
 /-- **The rational points of `X_0(p)` with their `j`-invariants, at
 `p ∈ {43, 67, 163}`** (PROVEN 2026-07-27, flt-lean-26, over
@@ -47498,50 +47253,6 @@ theorem exists_x0ClassNumberOnePoints (p : ℕ) (hp : p ∈ ({43, 67, 163} : Fin
     exact hjmem
   · rw [hcard, numRationalCusps_of_prime hprime, Finset.card_singleton]
 
-/-- **The `j`-values of `Y_0(37)(ℚ)`** (PROVEN 2026-07-27 over
-`card_le_of_isogenyPrimeHigherGenus` and `exists_x0ThirtySevenPoints`,
-through the counting assembly `forall_jm_mem_of_pointBound`; formerly a
-sorry leaf, introduced the same day as the modular-curve form of
-`jInvariant_mem_of_isogenyPrime_thirtySeven`).
-
-TRUE: `X_0(37)` has genus `2` and exactly two non-cuspidal rational points,
-of `j`-invariants `−7·11³` and `−7·137³·2083³` (Mazur–Swinnerton-Dyer,
-Mazur–Vélu).
-
-**CORRECTION (2026-07-27, flt-lean-38) to this docstring's own verdict.**
-It read "Chabauty–Coleman applies directly to the curve, and that is the
-axis a successor should search".  The first half is true and the second is
-MISLEADING, and it is refuted with numbers in the
-`#### The higher-genus levels` block above: the effective Chabauty–Coleman
-bound `#X(𝔽_ℓ) + 2g − 2` gives `10` here against a truth of `4`, and even
-`#X(𝔽_ℓ) + 2r` gives `10`, so writing that criterion as a general
-interface would discharge nothing at this level.  What Mazur–Swinnerton-Dyer
-actually do is count zeros of the Coleman integral disc by disc, which is
-not an instance of the general bound.
-
-**Why this level is NOT decomposed along the rank-`0` axis.**
-`rank J_0(37)(ℚ) = 1` (`J_0(37) ~ 37a × 37b` of ranks `1` and `0`;
-analytic rank `1` recomputed independently in the reconnaissance block), so
-`Fermat.card_le_of_rankZeroJacobian` is not merely unavailable here — its
-hypothesis `Fermat.HasRankZeroJacobian` is FALSE at this level, and any
-attempt to route through it would produce a false sub-leaf.  The CHECK that
-would refute this: `ellrank` on the two isogeny factors of `J_0(37)`, or any
-source giving `rank J_0(37)(ℚ) = 0`.
-
-**NOT vacuous**: both values are realised, `ellisomat (ellfromj j)`
-returning `[1, 37; 37, 1]` for each.  `37` is the only one of the four
-higher-genus levels with `h(−p) ≠ 1` (`quaddisc(−37) = −148`,
-`qfbclassno(−148) = 2`), so it carries no CM point and its two values are a
-non-CM pair — see the leaf below for the contrast. -/
-theorem exists_jMap_thirtySeven :
-    ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (hc : IsCoarseModuliY0 37 strY)
-      (hj : IsJMapOn 37 hc), ∀ y : RelPoint strY (𝟙 SpecQ),
-        ((37 : ℕ), hj.jm y) ∈ thirtySevenJTable := by
-  obtain ⟨X, Y, strX, strY, jY, ⟨hX⟩⟩ := exists_x0Compactification 37 (by norm_num)
-  obtain ⟨hj, cusps, pts, hcusp, hjm, hsum⟩ := exists_x0ThirtySevenPoints hX
-  exact ⟨Y, strY, hX.coarse, hj,
-    forall_jm_mem_of_pointBound hX
-      (card_le_of_isogenyPrimeHigherGenus 37 4 (by decide) hX) hj cusps pts hcusp hjm hsum⟩
 
 /-- **The `j`-values of `Y_0(p)(ℚ)` at `p ∈ {43, 67, 163}`** (PROVEN
 2026-07-27 over `card_le_of_isogenyPrimeHigherGenus` and
