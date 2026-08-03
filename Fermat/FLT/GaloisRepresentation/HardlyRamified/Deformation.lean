@@ -23321,9 +23321,11 @@ theorem nondegenerate_cup_cycloLocal
   sorry
 
 include hℓOdd hdim in
+set_option maxHeartbeats 1000000 in
 /-- **LOCAL CLASS FIELD THEORY: the local invariant map, and local Tate duality for
-`ad⁰` at `v`** (sorry leaf, cut out 2026-07-31 as item (b) of the build order on
-`exists_injective_sha2_dual_sha1Twist_of_selfDual` below).
+`ad⁰` at `v`** (PROVEN 2026-08-02 over the two leaves above; cut out 2026-07-31 as item
+(b) of the build order on `exists_injective_sha2_dual_sha1Twist_of_selfDual` below, and
+decomposed 2026-08-02).
 
 This is NSW VII.2 / Tate local duality for the finite `Γ ℚ_v`-module `M = ad⁰`, together
 with the identification `H²(ℚ_v, k(1)) ≅ k` that makes it a `k`-valued statement.
@@ -23333,9 +23335,24 @@ i.e. the invariant map of local class field theory, of which our mathlib pin, th
 and `~/cs/FLT` have nothing (re-verified by statement shape on 2026-07-27, -28, -29,
 -30 and -31; mathlib's `Algebra/BrauerGroup/Defs.lean` is CSAs modulo Morita with no
 valuation input, and `TateCohomology/Basic.lean` is Tate cohomology of a FINITE group).
-It is the deepest single item in this subtree and it is not going to be discharged by
-an assembly. What this cut buys is that it is now a statement about objects that EXIST
-rather than a phrase, and that its consumer below can be written.
+It is the deepest single item in this subtree.  The 2026-08-02 decomposition does NOT
+reduce that cost by one line — it isolates it: the whole of it is now
+`exists_localInvariantMap` above, and everything else this statement used to bundle
+(Tate duality proper, and the perfectness of the trace form) is either a separately
+ownable leaf or already proven.
+
+**AND IT IS NOT VENDORABLE.**  `Mathlib/RingTheory/Valuation/Discrete/Basic.lean:57`
+points at the out-of-tree `github.com/mariainesdff/LocalClassFieldTheory`.  AUDITED
+2026-08-02: it does not have this and cannot be used for it.  Its
+`ClassFormation/ClassFormation.lean` — the one file whose name promises the invariant
+map — is a **2-byte empty placeholder**; its blueprint's own scope list excludes the
+invariant map, the Brauer group, Galois cohomology, `H²`, reciprocity and Tate duality;
+everything real in it (≈275 kB) is DVR / local-field / spectral-norm foundations, i.e.
+strictly BELOW where this leaf sits.  Its README says "local fields, and eventually
+LCFT" — the name is a statement of intent, not of content.  Pin drift would sink it
+independently: `v4.22.0-rc2` and mathlib `81a4b04c` against our `v4.32.0-rc1` and
+`a3364fae`.  Do not re-audit it; re-check only if that repository gains a
+`ClassFormation` with content.
 
 **FAITHFULNESS AUDIT, 2026-07-31. VERDICT: FAITHFUL, and unconditionally TRUE.**
 
@@ -23345,7 +23362,7 @@ rather than a phrase, and that its consumer below can be written.
   therefore satisfiable for EVERY finite place `v` of `ℚ`, with no hypothesis on `v` —
   which is why `v` is unconstrained here.
 * *The pairing is right.* `hℓOdd` and `hdim` make the trace form on `ad⁰` a PERFECT
-  pairing (`adZeroTraceForm_nondegenerate` below), so `ad⁰(1) ≅ Hom(ad⁰, k(1))` as
+  pairing (`adZeroTraceForm_nondegenerate` above), so `ad⁰(1) ≅ Hom(ad⁰, k(1))` as
   `Γ ℚ_v`-modules and Tate duality applies verbatim. Both hypotheses are genuinely
   load-bearing: for `ℓ = 2` the trace form on `sl₂` has the scalars in its radical and
   the statement is FALSE, and without `rank V = 2` there is no `sl₂` to begin with.
@@ -23363,7 +23380,27 @@ the bound this leaf ultimately feeds. This leaf takes no `ρbar`-irreducibility
 hypothesis, so the guard binds only in the sense that no such input may be smuggled in.
 
 References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VII.2 (local
-duality) and VII.5 (the invariant map); Serre, *Local Fields*, XI. -/
+duality) and VII.5 (the invariant map); Serre, *Local Fields*, XI.
+
+**DECOMPOSED 2026-08-02, and this is now an ASSEMBLY rather than a leaf.**  It is
+PROVEN over `exists_localInvariantMap` (NSW VII.5) and `nondegenerate_cup_cycloLocal`
+(NSW VII.2) above, plus `adZeroTraceForm_nondegenerate` — which is where `hℓOdd` and
+`hdim` are spent, and the ONLY place they are spent, exactly as the audit above says.
+The frontier went `1 → 2`; see the subsection header above for why that is disclosure
+and why the `μ_ℓ`-then-base-change cut was NOT the one taken.
+
+The proof is the `inv`-transfer and nothing else: `nondegenerate_cup_cycloLocal` gives
+nondegeneracy of the RAW cup pairing valued in `H²(ℚ_v, k(1))`, and composing with the
+linear isomorphism `inv` preserves it in both directions because `inv` is injective
+(`LinearEquiv.map_eq_zero_iff`).  `localTatePairingU` is by definition the cup product
+of `adZeroTraceIntertwinerU`, so the two pairings are the same term.
+
+The `maxHeartbeats` bump is for one unavoidable `isDefEq`: `cup` states its type
+through `TopRep.of ρ₁`, the consumer through the bundled `adZeroLocalU ρbar v`, and
+crossing that structure-eta on objects this size is what costs the budget.  Note the
+`set_option` sits ABOVE the doc comment, beside the `include`: between the docstring and
+the `theorem` it is a parse error reported at the END of the docstring, which reads as a
+problem with the comment. -/
 theorem isLocalTateDual (ρbar : GaloisRep ℚ k V)
     (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
     IsLocalTateDual ℓ ρbar v := by
