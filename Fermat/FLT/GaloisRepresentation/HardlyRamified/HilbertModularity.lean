@@ -18513,8 +18513,7 @@ theorem exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal
   letI := hloc
   -- the Rouquier–Nyssen descent, which is RETRACTION-FREE: it takes `hloc` only
   obtain ⟨ρ', e, he⟩ :=
-    exists_framedGaloisRep_baseChange_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟.ρ 𝒟.isHilbertHardlyRamified.det 𝒟.π 𝒟.π_surjective
-      𝒟.resid 𝒟.isAdic 𝒟.isAdicComplete hloc
+    exists_framedGaloisRep_baseChange_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟 hloc
   -- the structure map of `R'` is the inclusion, hence injective
   have hinj : Function.Injective
       (algebraMap (hilbertTraceSubring ℓ 𝒟.ρ) 𝒟.R) := Subtype.val_injective
@@ -19534,8 +19533,7 @@ theorem exists_framedGaloisRep_hilbertTraceSubring
         (𝒟.ρ g).charpoly := by
   letI := hloc
   obtain ⟨ρ', e, he⟩ :=
-    exists_framedGaloisRep_baseChange_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟.ρ 𝒟.isHilbertHardlyRamified.det 𝒟.π 𝒟.π_surjective
-      𝒟.resid 𝒟.isAdic 𝒟.isAdicComplete hloc
+    exists_framedGaloisRep_baseChange_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟 hloc
   -- the structure map of `R'` is the inclusion, hence injective
   have hinj : Function.Injective
       (algebraMap (hilbertTraceSubring ℓ 𝒟.ρ) 𝒟.R) := Subtype.val_injective
