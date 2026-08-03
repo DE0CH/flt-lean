@@ -38558,6 +38558,140 @@ correction `Σ_{w ∈ S} (dim H¹(F_w, ad⁰) − dim L_w)` vanishes for a hardl
 `ρbar` at `ℓ ≥ 5`, which would make the RELAXED group usable and revive cut (a)/(b)
 as stated. Either would retire this section.
 
+# THE SELMER VERDICT ABOVE IS CORRECT AND IT COVERS ONE AXIS. THERE IS A SECOND
+# AXIS, IT IS OPEN, AND THE `ℚ` LEVEL ALREADY TOOK IT (2026-08-02, `flt-lean-41`)
+
+The refuting greps the paragraph above prescribes were re-run on 2026-08-02 and
+they come back NEGATIVE, so the Selmer verdict stands: `Fermat/` and the pin
+contain no `H1f`, no `FontaineLaffaille`, no `finiteFlatLocalCondition`, and the
+only `flatLocal` hit is `Deformation.lean`'s `exists_flatLocalLift_of_isSmallExtension`,
+which is a LIFTING statement and not a `Submodule` of a cohomology group.
+
+**But "this leaf does not cut along a Selmer group" is not "this leaf does not
+cut".** The axis the section above searched is the COHOMOLOGICAL one, where the
+middle object is `H¹_L` for a family of local conditions `L` the cutter has to
+spell — and that is exactly why it fails, since spelling `L` is what costs
+`L_HR`. The DEFORMATION-FUNCTOR axis does not spell anything: its middle object
+is the set of deformations to `k[ε]`, which is pinned by
+`IsHilbertRaisedLevelHardlyRamified` — already in this file — so no `L_w` is ever
+chosen and the "two spellings fail in opposite directions" argument has nothing
+to bite on.
+
+`Deformation.lean` took precisely this cut at the `ℚ` level on 2026-07-31 and its
+own docstring calls the result "gate-free — no cup product, no local invariant
+map, **no Selmer group**". The chain there is
+
+* `dualNumberPoints R π` — the ring maps `R → k[ε]` lifting `π`;
+* `card_dualNumberPoints_eq_pow_cotangentFinrankModL` — PROVEN, the count
+  `#points = #k ^ cotangentFinrankModL R ℓ`, via `dualNumberPointsEquivCotDual`;
+* `DualNumberDeformation` / `DualNumberDeformationClasses` — the functor's own
+  `k[ε]`-points modulo equality of Frobenius charpolys;
+* `card_dualNumberDeformationClasses_le_card_dualNumberPoints` — PROVEN;
+* `card_sha1Twist_le_card_dualNumberDeformationClasses` — the arithmetic, left open.
+
+**THE DIRECTION IS THE WHOLE POINT, AND IT IS WHY `h𝒟Qt` IS IN THIS SIGNATURE.**
+The `ℚ` level needs `#classes ≤ #points` and gets it from a SURJECTION
+`points ↠ classes`, which weak universality supplies. This leaf needs the
+opposite, `#points ≤ #classes`, i.e. that the map `f ↦ the deformation f induces`
+is INJECTIVE — two homomorphisms `𝒟Q.R → k[ε]` agreeing on the charpoly data of
+`𝒟Q.ρ` are equal. The `ℚ`-level docstring names that step exactly and declines
+it: "concluding from that that the two homomorphisms `D.R → k[ε]` are equal is
+precisely trace generation (`IsTraceGenerated`, i.e. Carayol)". Here trace
+generation is a HYPOTHESIS, `h𝒟Qt`, put there by the 2026-07-31 audit above. So
+the direction the `ℚ` level could not run is the one this leaf can, and the
+hypothesis that was added to repair the falsity is the same one that opens the
+cut.
+
+# THE PORT, ITS EXACT HYPOTHESIS, AND SIX CRUX LEMMAS VERIFIED 2026-08-02
+
+The `ℚ`-level counting theorem is stated at `J = (ℓ)` through `cotangentFinrankModL`;
+this file's `hilbertRelCotangentFinrank R J` is already its arbitrary-`J`
+generalisation (`hilbertCotSub R J` and `cotSub R ℓ` are the same `comap` with
+`J` in place of `Ideal.span {(ℓ : R)}`), so the port is a transcription. It was
+NOT carried out here; what was carried out is a check that it can be, and the
+check found one hypothesis the naive transcription omits.
+
+**`Deformation.lean` is NOT in this module's import closure** (measured: 330
+modules, `Deformation` absent), so the machinery has to be transcribed rather
+than imported, and it belongs in `section HilbertRelativeCotangent` above, which
+is pure ring theory over `{R} [CommRing R] [IsLocalRing R]`.
+
+**THE HYPOTHESIS THE TRANSCRIPTION NEEDS IS `Ideal.span {(ℓ : R)} ≤ J ≤ 𝔪`, NOT
+ARBITRARY `J`.** The nontrivial step of the `ℚ` chain is `cotFrob_add`, and it
+runs on `CharP (R ⧸ (𝔪² ⊔ J)) ℓ` through `add_pow_char_pow`; that characteristic
+statement is FALSE for a general `J` and needs `(ℓ : R) ∈ J`. Anyone who
+transcribes without noticing will produce a block that does not elaborate at
+`cotFrob_add` and will not see why.
+
+That hypothesis IS available here, and the derivation is not obvious because
+`TaylorWilesCoefficients` carries no tie to `ℓ` at all — its only residue-field
+field is `finite_residueField`, and `Patching.lean` says in as many words that
+"no field of that structure ties `𝒪` to any residue field beyond
+`finite_residueField`". The route is through `hc` instead: `hc` makes `k` a
+quotient of `𝒪`, so `ker (𝒟Q.π.comp c)` is maximal, hence equals `𝔪_𝒪`; and
+`(ℓ : k) = 0`; so `ℓ ∈ 𝔪_𝒪` and `(ℓ : 𝒟Q.R) = c ℓ ∈ Ideal.map c (𝔪_𝒪)`. The
+other side, `J ≤ 𝔪`, is `map_maximalIdeal_le_maximalIdeal_of_surjective_comp`
+immediately above, already PROVEN.
+
+Six crux lemmas — every step at which the `ℚ` proof spends `ℓ` — were written
+out and compiled green against this module on 2026-08-02, in a scratch that
+`public import`s it (the scratch was deleted; the statements are reproduced here
+because they are the evidence for this section):
+
+1. a relative `k[ε]`-point kills the `ε`-part of `𝔪² ⊔ J`. The `ℚ` version
+   (`snd_eq_zero_of_mem_cotIdeal`) spends `char k = ℓ` on the `(ℓ)` half; in the
+   relative version that half IS the hypothesis "kills `J`", so it is free, and
+   the `𝔪²` half transcribes unchanged;
+2. the Frobenius twist `x - x ^ #k` lies in `𝔪` — this is what lets the inverse
+   map be built with no coefficient-field section, no Hensel and no Teichmüller
+   lift, and it is the reason the `ℚ` chain is as short as it is;
+3. the Frobenius twist of an element of `J` stays in `𝔪² ⊔ J`, which is what
+   makes the inverse map land in the relative point set — it replaces the
+   `ℚ`-level `cotFrob_algebraMap`, and needs only `0 < Nat.card k`;
+4. `((#k : ℕ) : k) = 0`, the `left_inv` step. The `ℚ` version goes through
+   `charP_coeff_field` and `ell_dvd_card_coeff`; for a general finite field it is
+   `FiniteField.cast_card_eq_zero` and mentions no `ℓ`;
+5. `(ℓ : R) ∈ Ideal.map c (𝔪_𝒪)`, by the `hc` route set out above;
+6. hence `((ℓ : ℕ) : R ⧸ (𝔪² ⊔ J)) = 0`, which is what `add_pow_char_pow` consumes.
+
+**AND THE `ℤ_[ℓ]`-ALGEBRA CONDITION DISAPPEARS.** `dualNumberPoints` asks its
+maps to be `ℤ_[ℓ]`-compatible, spelled to dodge an `Algebra ℤ_[ℓ] (DualNumber k)`
+instance; that clause exists only to force `(ℓ)` to be killed. In the relative
+version `J` does that directly, so the transcribed definition is
+`{f : R →+* DualNumber k // (∀ x ∈ J, f x = 0) ∧ ∀ x, (f x).fst = π x}` and needs
+no `ℤ_[ℓ]`-algebra structure on `R` anywhere.
+
+# WHAT THE CUT LEAVES, AND WHAT IT DOES NOT CLAIM
+
+Landing it is two steps and they are independently ownable:
+
+* STEP 1, pure ring theory, no arithmetic: transcribe the count, giving
+  `hilbertRelCotangentFinrank R J ≤ q` from `#(relative k[ε]-points) ≤ #k ^ q`.
+  Only ONE direction of the `ℚ`-level `Equiv` is needed — the injection from the
+  semilinear dual into the points — so `pointDeriv`, `cotDualOfDualNumberPoint`
+  and the `left_inv` half can be skipped. This restates the leaf as a COUNT and
+  deletes the Mazur/Nakayama/duality half permanently. Count unchanged, 1 leaf
+  in, 1 leaf out.
+* STEP 2, the trace-generation injection: `#points ≤ #classes`, over a
+  raised-level twin of `DualNumberDeformation`. After it the residual mentions
+  neither `𝒟Q.R` nor a cotangent space, only the deformation functor's tangent
+  space — which is the object Greenberg–Wiles computes.
+
+What is left after both is Greenberg–Wiles alone. **This section does NOT claim
+the arithmetic gets easier**: the Euler-characteristic computation and `hQ`'s
+second conjunct are still the content, and no part of that has been done here.
+What it claims, and what the six lemmas above check, is that the ring-theoretic
+half is separable by a route the section above did not consider, and that the
+`L_HR` blocker it names governs the cohomological axis only.
+
+**WHAT WOULD CHANGE MY MIND**: a clause of `IsHilbertRaisedLevelHardlyRamified`
+that is not stable under push-forward along `𝒟Q.R → k[ε]` — that would break the
+raised-level `DualNumberDeformation` of STEP 2 the way the section above says a
+bad `L` breaks the Selmer cut. The 2026-07-31 audit above checked exactly this
+list for the power-series inflation and found none, and push-forward along a
+local map is the same test; but it was checked there for a DIFFERENT target ring
+and should be re-run for `k[ε]` before STEP 2 is dispatched.
+
 References: Greenberg, *Iwasawa theory and p-adic deformations*; Wiles, Ann. of
 Math. 141 (1995), ch. 2 (the Selmer-group formula); Darmon–Diamond–Taylor §2.7;
 Fujiwara, *Deformation rings and Hecke algebras in the totally real case*, §3;
