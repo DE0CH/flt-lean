@@ -217,8 +217,14 @@ written and the frontier moves.
   pro-representability bookkeeping, PROVEN, gate-free).  Frontier unchanged, one
   leaf in and one out; the surviving leaf's right-hand side is the deformation
   functor's own tangent space rather than the universal ring's `k[ε]`-points, so
-  it no longer mentions `D.R`.  The record below is unchanged and still applies
-  to the assembled statement:
+  it no longer mentions `D.R`.  **2026-08-02: the peel is loss-free** — the
+  bookkeeping half is now an EQUALITY
+  (`card_dualNumberDeformationClasses_eq_card_dualNumberPoints`, over the
+  injectivity `eq_of_isTraceGenerated_of_charFrob_map_eq` and the reverse bound
+  `card_dualNumberPoints_le_card_dualNumberDeformationClasses`, Carayol), so the
+  surviving leaf is formally EQUIVALENT to this one and not merely stronger.
+  Again no leaf closed and none opened.  The record below is unchanged and still
+  applies to the assembled statement:
   (re-cut 2026-07-28 in `ℕ`
   and over `D.IsUniversal`, then re-cut again the same day as a COUNT of
   `k[ε]`-points; `finrank_sha1Twist_le_cotangentFinrank` and
@@ -25995,7 +26001,75 @@ LEFT in the leaf: the surviving statement compares `Ш¹` with the deformation
 functor's own tangent space, which is the object Greenberg–Wiles computes, and
 mentions neither `D.R` nor `dualNumberPoints` in its right-hand side.  The
 universal datum survives in its hypothesis list for ONE reason and it is
-recorded on the leaf: it is what makes the middle object finite. -/
+recorded on the leaf: it is what makes the middle object finite.
+
+**COMPLETED 2026-08-02 — THE PEEL IS LOSS-FREE.**  The bookkeeping half was an
+INEQUALITY, so the peel was a priori a strengthening of the node it replaced;
+its own audit said so and named the missing step.  That step is the INJECTIVITY
+of the same map, i.e. trace generation of the universal ring (Carayol), and it
+is now proven:
+
+* `eq_of_isTraceGenerated_of_charFrob_map_eq` — two `k[ε]`-points of a
+  TRACE-GENERATED coefficient ring with equal Frobenius charpolys are equal
+  (the argument of `isUniversal_of_isWeaklyUniversal_isTraceGenerated` above,
+  with the continuity step replaced by "a `k[ε]`-point kills `𝔪²`");
+* `card_dualNumberPoints_le_card_dualNumberDeformationClasses` — the reverse
+  bound, transporting trace generation to an arbitrary universal `D`;
+* `card_dualNumberDeformationClasses_eq_card_dualNumberPoints` — the equality.
+
+So the leaf below and `card_sha1Twist_le_card_dualNumberPoints` further below are
+formally EQUIVALENT.  **No leaf closed and none opened** by that work: it is
+three theorems about two theorems, and the frontier is unchanged. -/
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+/-- **Two dual numbers with vanishing constant term multiply to zero**
+(PROVEN, elementary): `(0 + bε)(0 + b'ε) = 0`.  This is what makes a
+`k[ε]`-point of `R` kill `𝔪²`, which is the OPENNESS half of the injectivity
+argument below (`eq_of_isTraceGenerated_of_charFrob_map_eq`). -/
+lemma dualNumber_mul_eq_zero_of_fst_eq_zero {u v : DualNumber k}
+    (hu : u.fst = 0) (hv : v.fst = 0) : u * v = 0 := by
+  refine TrivSqZeroExt.ext ?_ ?_
+  · rw [TrivSqZeroExt.fst_mul, hu, zero_mul]; simp
+  · rw [DualNumber.snd_mul, hu, hv, zero_mul, mul_zero, add_zero]; simp
+
+omit [Finite k] [TopologicalSpace k] [DiscreteTopology k] in
+/-- **The `ε`-part of a power of a dual number** (PROVEN, elementary):
+`(a + bε) ^ (m+1) = a^(m+1) + (m+1) a^m b ε`.  Stated at `m + 1` rather than
+at `m` so that no truncated subtraction appears; the only consumer is
+`dualNumber_snd_eq_zero_of_pow_eq_self` below. -/
+lemma dualNumber_snd_pow_succ (u : DualNumber k) (m : ℕ) :
+    (u ^ (m + 1)).snd = ((m + 1 : ℕ) : k) * u.fst ^ m * u.snd := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+      have hfst : (u ^ (m + 1)).fst = u.fst ^ (m + 1) :=
+        map_pow (TrivSqZeroExt.fstHom k k k) u (m + 1)
+      rw [pow_succ, DualNumber.snd_mul, hfst, ih]
+      push_cast
+      ring
+
+omit [TopologicalSpace k] [DiscreteTopology k] in
+/-- **A Teichmüller root of `k[ε]` has no `ε`-part**, hence is pinned by its
+constant term (PROVEN, elementary).  If `u ^ (ℓ ^ n) = u` with `n ≥ 1` then, by
+`dualNumber_snd_pow_succ`, `u.snd = (ℓ ^ n) · u.fst ^ (ℓ ^ n − 1) · u.snd`, and
+`(ℓ ^ n : k) = 0` because `char k = ℓ` (`charP_coeff_field` above).
+
+**This replaces `eq_of_mem_teichmullerRoots` on the `k[ε]` side**, and is why
+the injectivity argument below needs no `IsLocalRing (DualNumber k)` instance:
+the general uniqueness lemma asks for a local ring in which `ℓ` is a nonunit,
+whereas here the computation is two lines and produces the sharper statement
+that the `ε`-part is *zero* rather than merely determined. -/
+lemma dualNumber_snd_eq_zero_of_pow_eq_self {u : DualNumber k} {n : ℕ}
+    (hn : 1 ≤ n) (hu : u ^ ℓ ^ n = u) : u.snd = 0 := by
+  haveI := charP_coeff_field (ℓ := ℓ) (k := k)
+  have hℓpos : 0 < ℓ := Nat.Prime.pos Fact.out
+  obtain ⟨m, hm⟩ : ∃ m, ℓ ^ n = m + 1 :=
+    ⟨ℓ ^ n - 1, by have : 0 < ℓ ^ n := pow_pos hℓpos n; omega⟩
+  have hcast : ((ℓ ^ n : ℕ) : k) = 0 := by
+    rw [Nat.cast_pow, CharP.cast_eq_zero k ℓ, zero_pow (by omega : n ≠ 0)]
+  have key := dualNumber_snd_pow_succ (k := k) u m
+  rw [← hm, hu, hcast, zero_mul, zero_mul] at key
+  exact key
 
 /-- **A `k[ε]`-point of the hardly ramified deformation problem**: a hardly
 ramified deformation `D` of `ρbar` together with a `ℤ_ℓ`-compatible reduction of
@@ -26067,6 +26141,67 @@ owes, together with Greenberg–Wiles. -/
 def DualNumberDeformationClasses (ρbar : GaloisRep ℚ k V) : Type _ :=
   Quotient (dualNumberDeformationSetoid hℓOdd ρbar)
 
+omit [Finite k] [DiscreteTopology k] in
+/-- **`f ↦ ⟦⟨D, f⟩⟧` is surjective** (PROVEN 2026-07-31, extracted 2026-08-02
+from the body of `card_dualNumberDeformationClasses_le_card_dualNumberPoints`
+below so that both that bound and the FINITENESS of the target — which
+`card_dualNumberPoints_le_card_dualNumberDeformationClasses` below needs before
+it may cite `Nat.card_le_card_of_injective` — rest on one proof rather than two).
+
+Given a `k[ε]`-point `X` of the functor, `hu` supplies the unique compatible
+`g : D.R → X.D.R`, and `X.pt ∘ g` is a `k[ε]`-point of `D.R` mapping to `⟦X⟧`:
+its two `dualNumberPoints` clauses are `hu`'s first two conjuncts composed with
+`X.pt`'s own two, and `⟦⟨D, X.pt ∘ g⟩⟧ = ⟦X⟧` is `hu`'s third conjunct read
+through `Polynomial.map_map`. -/
+theorem surjective_dualNumberPointsToClasses
+    {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) (hu : D.IsUniversal) :
+    letI := D.commRing; letI := D.algebra
+    Function.Surjective (fun f : dualNumberPoints (ℓ := ℓ) D.R D.π =>
+      Quotient.mk (dualNumberDeformationSetoid hℓOdd ρbar) ⟨D, f⟩) := by
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  intro b
+  refine Quotient.inductionOn b fun X => ?_
+  obtain ⟨g, ⟨hg1, hg2, hg3⟩, -⟩ := hu X.D
+  letI := X.D.commRing; letI := X.D.topologicalSpace; letI := X.D.isTopologicalRing
+  letI := X.D.isLocalRing; letI := X.D.algebra
+  refine ⟨⟨X.pt.1.comp g, fun a => ?_, fun x => ?_⟩, ?_⟩
+  · show X.pt.1 (g (algebraMap ℤ_[ℓ] D.R a)) = _
+    rw [show g (algebraMap ℤ_[ℓ] D.R a) = algebraMap ℤ_[ℓ] X.D.R a from
+      RingHom.congr_fun hg1 a]
+    exact X.pt.2.1 a
+  · show (X.pt.1 (g x)).fst = D.π x
+    rw [X.pt.2.2 (g x)]
+    exact RingHom.congr_fun hg2 x
+  · refine Quotient.sound ?_
+    intro q hq h2 hl
+    show (D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map (X.pt.1.comp g) =
+      (X.D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map X.pt.1
+    rw [← Polynomial.map_map, hg3 q hq h2 hl]
+
+omit [DiscreteTopology k] in
+/-- **Finiteness of the tangent space** (PROVEN 2026-08-02): the middle object
+of the peel is finite, because `surjective_dualNumberPointsToClasses` above maps
+onto it from `dualNumberPoints D.R D.π`, whose cardinality is
+`#k ^ cotangentFinrankModL D.R ℓ` and in particular nonzero.  This is the ONLY
+role `D` and `hu` play in the leaf below, exactly as its FAITHFULNESS AUDIT
+No. 3 records; it is separated out here because
+`card_dualNumberPoints_le_card_dualNumberDeformationClasses` below needs it as
+an INSTANCE before it can cite `Nat.card_le_card_of_injective`. -/
+theorem finite_dualNumberDeformationClasses
+    {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) (hu : D.IsUniversal) :
+    Finite (DualNumberDeformationClasses hℓOdd ρbar) := by
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra; letI := D.isNoetherianRing
+  haveI : Finite (dualNumberPoints (ℓ := ℓ) D.R D.π) := by
+    refine Nat.finite_of_card_ne_zero ?_
+    rw [card_dualNumberPoints_eq_pow_cotangentFinrankModL (ℓ := ℓ) D.R D.π
+      D.π_surjective]
+    exact pow_ne_zero _ (Nat.card_ne_zero.mpr ⟨inferInstance, inferInstance⟩)
+  exact Finite.of_surjective _ (surjective_dualNumberPointsToClasses hℓOdd D hu)
+
 omit [DiscreteTopology k] in
 /-- **Pro-representability, in the only direction this development needs**
 (PROVEN 2026-07-31, gate-free — no cup product, no local invariant map, no Selmer
@@ -26083,6 +26218,15 @@ known to have equal charpoly data, and concluding from that that the two
 homomorphisms `D.R → k[ε]` are equal is precisely trace generation
 (`IsTraceGenerated` above, i.e. Carayol).  So the injection is *not* free, and a
 route note that says it is has skipped this step.
+
+**THE INJECTION IS NOW PROVEN TOO** (2026-08-02,
+`eq_of_isTraceGenerated_of_charFrob_map_eq` and
+`card_dualNumberPoints_le_card_dualNumberDeformationClasses` below), so the two
+counts are EQUAL (`card_dualNumberDeformationClasses_eq_card_dualNumberPoints`
+below).  It really is not free, which is why THIS theorem still runs the cheap
+way round: the reverse bound costs `hℓ5`, `h` and `hirr` — the hypothesis list
+of `exists_isWeaklyUniversal_isTraceGenerated` above, i.e. the price of Carayol
+— whereas all this one needs is `hu`.
 
 Run the correspondence the other way and nothing is owed.  The map
 `f ↦ ⟦⟨D, f⟩⟧` out of `dualNumberPoints D.R D.π` needs no well-definedness check
@@ -26109,27 +26253,242 @@ theorem card_dualNumberDeformationClasses_le_card_dualNumberPoints
     exact pow_ne_zero _ (Nat.card_ne_zero.mpr ⟨inferInstance, inferInstance⟩)
   show Nat.card (Quotient (dualNumberDeformationSetoid hℓOdd ρbar)) ≤
     Nat.card (dualNumberPoints (ℓ := ℓ) D.R D.π)
-  refine Nat.card_le_card_of_surjective
+  exact Nat.card_le_card_of_surjective _
+    (surjective_dualNumberPointsToClasses hℓOdd D hu)
+
+omit [DiscreteTopology k] in
+/-- **Injectivity of the same map, from TRACE GENERATION** (PROVEN 2026-08-02;
+this is the step the docstring above says is *not* free, and it is Carayol).
+Two `k[ε]`-points of `D.R` with the same Frobenius characteristic polynomials
+are equal, provided `D` is trace-generated.
+
+**THE PROOF IS `isUniversal_of_isWeaklyUniversal_isTraceGenerated` ABOVE WITH
+`D'.R` REPLACED BY `k[ε]`, AND THE ONE STEP THAT CHANGES IS CONTINUITY.**  There
+the two homomorphisms are continuous because they are local and the target is
+adic; here the target carries no topology at all, and none is needed: a
+`k[ε]`-point KILLS `𝔪²` — `(f x).fst = π x` puts `f 𝔪` inside the square-zero
+ideal `(ε)` (`dualNumber_mul_eq_zero_of_fst_eq_zero` above) — so the equalizer
+of any two of them is an additive subgroup of `D.R` CONTAINING the open ideal
+`𝔪²`, hence open, hence closed.  That is the only place `D.isAdic` is used, and
+it is what lets the whole argument avoid `TopologicalSpace`, `IsLocalRing` and
+`IsAdicComplete` instances for `DualNumber k` — the instances the
+`DualNumberDeformation` docstring above declines to build.
+
+The three pieces of the trace-generating set are then discharged exactly as in
+the theorem above: the image of `ℤ_[ℓ]` by the first clause of
+`dualNumberPoints` (both maps send it to `inl (algebraMap ℤ_[ℓ] k a)` on the
+nose), the `charFrob` coefficients by the hypothesis read through
+`Polynomial.coeff_map`, and the Teichmüller roots by
+`dualNumber_snd_eq_zero_of_pow_eq_self` above — *not* by
+`eq_of_mem_teichmullerRoots`, which would want `DualNumber k` to be a local ring.
+
+`hℓOdd`, `hdim` and the hardly ramified hypotheses play no role here: this is a
+statement about a trace-generated coefficient ring and nothing else. -/
+theorem eq_of_isTraceGenerated_of_charFrob_map_eq
+    {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) (ht : D.IsTraceGenerated)
+    (f₁ f₂ : letI := D.commRing; letI := D.algebra;
+      dualNumberPoints (ℓ := ℓ) D.R D.π)
+    (hfr : letI := D.commRing; letI := D.topologicalSpace
+      letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+      ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+        (D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map f₁.1 =
+          (D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map f₂.1) :
+    f₁ = f₂ := by
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  have hker : RingHom.ker D.π = IsLocalRing.maximalIdeal D.R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective D.π D.π_surjective)
+  -- every `k[ε]`-point kills `𝔪²`
+  have hsq : ∀ g : dualNumberPoints (ℓ := ℓ) D.R D.π,
+      ∀ x ∈ (IsLocalRing.maximalIdeal D.R) ^ 2, g.1 x = 0 := by
+    intro g x hx
+    have hle : (IsLocalRing.maximalIdeal D.R) ^ 2 ≤ RingHom.ker g.1 := by
+      rw [pow_two]
+      refine Ideal.mul_le.mpr fun r hr s hs => ?_
+      have hr0 : (g.1 r).fst = 0 := by
+        rw [g.2.2 r]; exact (hker ▸ hr : r ∈ RingHom.ker D.π)
+      have hs0 : (g.1 s).fst = 0 := by
+        rw [g.2.2 s]; exact (hker ▸ hs : s ∈ RingHom.ker D.π)
+      rw [RingHom.mem_ker, map_mul]
+      exact dualNumber_mul_eq_zero_of_fst_eq_zero hr0 hs0
+    exact hle hx
+  -- hence the equalizer is open, hence closed
+  have hopen : IsOpen ((RingHom.eqLocus f₁.1 f₂.1 : Subring D.R) : Set D.R) := by
+    refine AddSubgroup.isOpen_mono
+      (H₁ := Submodule.toAddSubgroup ((IsLocalRing.maximalIdeal D.R) ^ 2))
+      (H₂ := (RingHom.eqLocus f₁.1 f₂.1).toAddSubgroup) ?_
+      ((isAdic_iff.mp D.isAdic).1 2)
+    intro y hy
+    show f₁.1 y = f₂.1 y
+    rw [hsq f₁ y hy, hsq f₂ y hy]
+  have hclosed : IsClosed ((RingHom.eqLocus f₁.1 f₂.1 : Subring D.R) : Set D.R) :=
+    AddSubgroup.isClosed_of_isOpen
+      (RingHom.eqLocus f₁.1 f₂.1).toAddSubgroup hopen
+  -- … and it contains the trace-generating set
+  have hgen : Subring.closure (Set.range (algebraMap ℤ_[ℓ] D.R) ∪
+      (teichmullerRoots ℓ D.R ∪
+      {x : D.R | ∃ q, ∃ hq : q.Prime, q ≠ 2 ∧ q ≠ ℓ ∧ ∃ n : ℕ,
+        x = (D.ρ.charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat).coeff n})) ≤
+      RingHom.eqLocus f₁.1 f₂.1 := by
+    rw [Subring.closure_le]
+    rintro y (⟨c, rfl⟩ | hy | ⟨q, hq, hq2, hqℓ, n, rfl⟩)
+    · show f₁.1 (algebraMap ℤ_[ℓ] D.R c) = f₂.1 (algebraMap ℤ_[ℓ] D.R c)
+      rw [f₁.2.1 c, f₂.2.1 c]
+    · show f₁.1 y = f₂.1 y
+      obtain ⟨n, hn, hyn⟩ := hy
+      have h1 : (f₁.1 y) ^ ℓ ^ n = f₁.1 y := by rw [← map_pow, hyn]
+      have h2 : (f₂.1 y) ^ ℓ ^ n = f₂.1 y := by rw [← map_pow, hyn]
+      refine TrivSqZeroExt.ext ?_ ?_
+      · rw [f₁.2.2 y, f₂.2.2 y]
+      · rw [dualNumber_snd_eq_zero_of_pow_eq_self hn h1,
+          dualNumber_snd_eq_zero_of_pow_eq_self hn h2]
+    · show f₁.1 ((D.ρ.charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat).coeff n) =
+        f₂.1 ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff n)
+      have hcoeff := congrArg (fun p : Polynomial (DualNumber k) => p.coeff n)
+        (hfr q hq hq2 hqℓ)
+      simpa [Polynomial.coeff_map] using hcoeff
+  have htop : (⊤ : Subring D.R) ≤ RingHom.eqLocus f₁.1 f₂.1 := by
+    have hcl : (Subring.closure (Set.range (algebraMap ℤ_[ℓ] D.R) ∪
+        (teichmullerRoots ℓ D.R ∪
+        {x : D.R | ∃ q, ∃ hq : q.Prime, q ≠ 2 ∧ q ≠ ℓ ∧ ∃ n : ℕ,
+          x = (D.ρ.charFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat).coeff n}))).topologicalClosure
+        = ⊤ := ht
+    rw [← hcl]
+    exact Subring.topologicalClosure_minimal _ hgen hclosed
+  exact Subtype.ext (RingHom.ext fun x => htop (Subring.mem_top x))
+
+/-- **The reverse bound** (PROVEN 2026-08-02, gate-free): the universal ring's
+`k[ε]`-points are at most as many as the functor's `k[ε]`-points modulo
+Frobenius charpolys.  With
+`card_dualNumberDeformationClasses_le_card_dualNumberPoints` above this makes
+the two counts EQUAL (`card_dualNumberDeformationClasses_eq_card_dualNumberPoints`
+below), which is what the fifth bullet of FAITHFULNESS AUDIT No. 3 on the leaf
+below asked for: with the equality in hand that leaf and
+`card_sha1Twist_le_card_dualNumberPoints` further below are formally EQUIVALENT,
+so the peel is a peel and not a strengthening.
+
+**IT IS THE INJECTIVITY OF THE SURJECTION USED ABOVE**, i.e. exactly the step
+the theorem above declines to take, and the input is trace generation (Carayol).
+`D` is not assumed trace-generated — nothing in the development produces a
+universal datum together with that property at a given `D` — so the proof gets
+it by TRANSPORT, in the idiom of `moduleFinite_of_isUniversal` and
+`algebraMap_injective_of_isUniversal` above:
+`exists_isWeaklyUniversal_isTraceGenerated hℓOdd hdim hℓ5 h hirr` produces a
+trace-generated `D₀`, `isUniversal_of_isWeaklyUniversal_isTraceGenerated` makes
+it universal, and the two compatible homomorphisms `g : D₀.R → D.R`,
+`g' : D.R → D₀.R` that universality then supplies satisfy `g ∘ g' = 𝟙` (the
+identity being the unique compatible endomorphism of `D.R` — the argument of
+`exists_ringEquiv_of_isUniversal` above, inlined because what is wanted here is
+SURJECTIVITY of the compatible `g` and not merely the existence of some
+isomorphism).  Precomposing with `g` sends the two `k[ε]`-points of `D.R` to two
+`k[ε]`-points of `D₀.R` with the same charpoly data, `D₀`'s trace generation
+identifies those, and surjectivity of `g` brings the identification back.
+
+`hℓ5`, `h` and `hirr` are here for that reason and no other — they are the
+hypothesis list of `exists_isWeaklyUniversal_isTraceGenerated`, i.e. the price
+of Carayol; `hu` is used both for the transport and (through
+`finite_dualNumberDeformationClasses` above) for finiteness of the target, which
+`Nat.card_le_card_of_injective` needs and without which the statement would be
+the junk `n ≤ 0`. -/
+theorem card_dualNumberPoints_le_card_dualNumberDeformationClasses
+    (hℓ5 : 5 ≤ ℓ) {ρbar : GaloisRep ℚ k V}
+    (h : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) (hu : D.IsUniversal) :
+    letI := D.commRing; letI := D.algebra
+    Nat.card (dualNumberPoints (ℓ := ℓ) D.R D.π) ≤
+      Nat.card (DualNumberDeformationClasses hℓOdd ρbar) := by
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra; letI := D.isNoetherianRing
+  haveI : Finite (DualNumberDeformationClasses hℓOdd ρbar) :=
+    finite_dualNumberDeformationClasses hℓOdd D hu
+  obtain ⟨D₀, hw₀, ht₀⟩ :=
+    exists_isWeaklyUniversal_isTraceGenerated hℓOdd hdim hℓ5 h hirr
+  have hu₀ : D₀.IsUniversal :=
+    isUniversal_of_isWeaklyUniversal_isTraceGenerated hℓOdd D₀ hw₀ ht₀
+  letI := D₀.commRing; letI := D₀.topologicalSpace; letI := D₀.isTopologicalRing
+  letI := D₀.isLocalRing; letI := D₀.algebra
+  obtain ⟨g, hg, -⟩ := hu₀ D
+  obtain ⟨g', hg', -⟩ := hu D₀
+  -- `g ∘ g' = 𝟙`, so the compatible `g` is surjective
+  have hgg' : g.comp g' = RingHom.id D.R := by
+    obtain ⟨i, -, hiu⟩ := hu D
+    have e1 : g.comp g' = i := by
+      refine hiu (g.comp g') ⟨?_, ?_, ?_⟩
+      · rw [RingHom.comp_assoc, hg'.1, hg.1]
+      · rw [← RingHom.comp_assoc, hg.2.1, hg'.2.1]
+      · intro q hq hq2 hqℓ
+        rw [← Polynomial.map_map, hg'.2.2 q hq hq2 hqℓ, hg.2.2 q hq hq2 hqℓ]
+    have e2 : RingHom.id D.R = i := by
+      refine hiu (RingHom.id D.R) ⟨?_, ?_, ?_⟩
+      · rw [RingHom.id_comp]
+      · rw [RingHom.comp_id]
+      · intro q hq _ _
+        exact Polynomial.map_id
+    rw [e1, e2]
+  have hgsurj : Function.Surjective g := fun y =>
+    ⟨g' y, by simpa using RingHom.congr_fun hgg' y⟩
+  refine Nat.card_le_card_of_injective
     (fun f : dualNumberPoints (ℓ := ℓ) D.R D.π =>
       Quotient.mk (dualNumberDeformationSetoid hℓOdd ρbar) ⟨D, f⟩) ?_
-  intro b
-  refine Quotient.inductionOn b fun X => ?_
-  obtain ⟨g, ⟨hg1, hg2, hg3⟩, -⟩ := hu X.D
-  letI := X.D.commRing; letI := X.D.topologicalSpace; letI := X.D.isTopologicalRing
-  letI := X.D.isLocalRing; letI := X.D.algebra
-  refine ⟨⟨X.pt.1.comp g, fun a => ?_, fun x => ?_⟩, ?_⟩
-  · show X.pt.1 (g (algebraMap ℤ_[ℓ] D.R a)) = _
-    rw [show g (algebraMap ℤ_[ℓ] D.R a) = algebraMap ℤ_[ℓ] X.D.R a from
-      RingHom.congr_fun hg1 a]
-    exact X.pt.2.1 a
-  · show (X.pt.1 (g x)).fst = D.π x
-    rw [X.pt.2.2 (g x)]
-    exact RingHom.congr_fun hg2 x
-  · refine Quotient.sound ?_
-    intro q hq h2 hl
-    show (D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map (X.pt.1.comp g) =
-      (X.D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map X.pt.1
-    rw [← Polynomial.map_map, hg3 q hq h2 hl]
+  intro f₁ f₂ hEq
+  have hrel : ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map f₁.1 =
+        (D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map f₂.1 :=
+    Quotient.exact hEq
+  -- precomposition with `g` lands in `dualNumberPoints D₀.R D₀.π`
+  have hpt : ∀ f : dualNumberPoints (ℓ := ℓ) D.R D.π,
+      (f.1.comp g) ∈ {F : D₀.R →+* DualNumber k |
+        (∀ a : ℤ_[ℓ], F (algebraMap ℤ_[ℓ] D₀.R a) =
+          TrivSqZeroExt.inl (algebraMap ℤ_[ℓ] k a)) ∧ ∀ x, (F x).fst = D₀.π x} := by
+    intro f
+    refine ⟨fun a => ?_, fun x => ?_⟩
+    · show f.1 (g (algebraMap ℤ_[ℓ] D₀.R a)) = _
+      rw [show g (algebraMap ℤ_[ℓ] D₀.R a) = algebraMap ℤ_[ℓ] D.R a from
+        RingHom.congr_fun hg.1 a]
+      exact f.2.1 a
+    · show (f.1 (g x)).fst = D₀.π x
+      rw [f.2.2 (g x)]
+      exact RingHom.congr_fun hg.2.1 x
+  have key : (⟨f₁.1.comp g, hpt f₁⟩ : dualNumberPoints (ℓ := ℓ) D₀.R D₀.π) =
+      ⟨f₂.1.comp g, hpt f₂⟩ := by
+    refine eq_of_isTraceGenerated_of_charFrob_map_eq hℓOdd D₀ ht₀ _ _ ?_
+    intro q hq hq2 hqℓ
+    show (D₀.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map (f₁.1.comp g) =
+      (D₀.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map (f₂.1.comp g)
+    rw [← Polynomial.map_map, ← Polynomial.map_map, hg.2.2 q hq hq2 hqℓ,
+      hrel q hq hq2 hqℓ]
+  have key' : f₁.1.comp g = f₂.1.comp g := congrArg Subtype.val key
+  refine Subtype.ext (RingHom.ext fun y => ?_)
+  obtain ⟨x, rfl⟩ := hgsurj y
+  exact RingHom.congr_fun key' x
+
+/-- **The tangent-space count is an EQUALITY** (PROVEN 2026-08-02): the
+`k[ε]`-points of the hardly ramified deformation FUNCTOR, modulo Frobenius
+charpolys, are exactly as many as the `k[ε]`-points of the universal RING.
+
+This is what makes the 2026-07-31 peel loss-free.  Before it, the leaf
+`card_sha1Twist_le_card_dualNumberDeformationClasses` below was a priori
+STRONGER than `card_sha1Twist_le_card_dualNumberPoints` further below (a cut of
+`a ≤ c` as `a ≤ b ≤ c` always is); with it the two are formally EQUIVALENT, and
+the fifth bullet of that leaf's FAITHFULNESS AUDIT No. 3 — which asked for
+precisely this and left it unproved — is discharged.  **No leaf closed and none
+opened**: this is a statement about two proven theorems. -/
+theorem card_dualNumberDeformationClasses_eq_card_dualNumberPoints
+    (hℓ5 : 5 ≤ ℓ) {ρbar : GaloisRep ℚ k V}
+    (h : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) (hu : D.IsUniversal) :
+    letI := D.commRing; letI := D.algebra
+    Nat.card (DualNumberDeformationClasses hℓOdd ρbar) =
+      Nat.card (dualNumberPoints (ℓ := ℓ) D.R D.π) :=
+  le_antisymm
+    (card_dualNumberDeformationClasses_le_card_dualNumberPoints hℓOdd D hu)
+    (card_dualNumberPoints_le_card_dualNumberDeformationClasses hℓOdd hdim hℓ5
+      h hirr D hu)
 
 variable (ℓ) in
 /-- **`Ш¹_S(ad⁰(1))` SITS INSIDE THE DUAL SELMER GROUP** (sorry leaf, cut out 2026-08-02 as
@@ -26388,15 +26747,18 @@ VOID here and is deliberately not inherited.
   kept, rather than replaced by a bare `Finite` hypothesis, because the sole
   consumer below already holds them and because a `Finite` hypothesis on a
   quotient is exactly the thing a caller would then have to re-derive from them.
-* *This statement is a priori STRONGER than the declaration below*, and that is
-  inherent to cutting `a ≤ c` as `a ≤ b ≤ c` rather than a defect — but it must be
-  said, since the project rule is that a restatement voids its audit. The gap is
-  precisely INJECTIVITY of the surjection used above, i.e. trace generation of
-  `D.R` (Carayol again); with it the two counts are equal and the two statements
-  are equivalent. Nothing here needs that, so it is not proved; a successor who
-  wants it should prove
-  `Nat.card (dualNumberPoints D.R D.π) ≤ Nat.card (DualNumberDeformationClasses …)`
-  over `IsTraceGenerated` and get the equality by antisymmetry.
+* *This statement was a priori STRONGER than the declaration below — **NO LONGER,
+  DISCHARGED 2026-08-02.*** Cutting `a ≤ c` as `a ≤ b ≤ c` is inherently a
+  strengthening rather than a defect, but it had to be said, since the project
+  rule is that a restatement voids its audit. The gap was precisely INJECTIVITY
+  of the surjection used above, i.e. trace generation of `D.R` (Carayol again).
+  That is now `card_dualNumberPoints_le_card_dualNumberDeformationClasses` above,
+  and with it `card_dualNumberDeformationClasses_eq_card_dualNumberPoints` above
+  makes the two counts EQUAL — so this leaf and
+  `card_sha1Twist_le_card_dualNumberPoints` further below are formally
+  EQUIVALENT, and the peel is exactly a peel. The bullet is kept, struck rather
+  than deleted, because the equivalence is what licenses inheriting anything at
+  all between the two audits.
 * *The degenerate case survives the change of vocabulary.*
   `cotangentFinrankModL D.R ℓ = 0` — the RIGID problem, `D.R = ℤ_ℓ` or `ℤ/ℓⁿ` —
   makes `dualNumberPoints D.R D.π` a singleton, hence the middle object a
