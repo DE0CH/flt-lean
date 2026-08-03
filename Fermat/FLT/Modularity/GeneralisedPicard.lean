@@ -42,8 +42,10 @@ the two are directly comparable:
 * `Fermat.IsGenRelPicOf strX ι pstr` — the predicate "`pstr : P ⟶ S`
   represents `PG(X, Z)`", modelled field-for-field on
   `Fermat.IsRelPicOf`;
-* `Fermat.geometricallyConnected_of_geometricallyIrreducible` — a
-  four-line bridge the consumer needs, PROVEN;
+* (a local `geometricallyConnected_of_geometricallyIrreducible` bridge was
+  deleted at release 38 — use
+  `AlgebraicGeometry.geometricallyConnected_of_geometricallyIrreducible` from
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean`);
 * `Fermat.exists_genRelPic` — the LEAF: §3.4's representability.  It
   carried a FALSITY AUDIT on 2026-08-02: it was FALSE as stated, and is
   repaired by the added hypothesis `hpush`.  Read that audit before
@@ -272,27 +274,14 @@ structure IsGenRelPicOf {X Z P S : Scheme.{u}} (strX : X ⟶ S) (ι : Z ⟶ X) (
     (hg : h ≫ g = g') (p : RelPoint pstr g),
     TrivialisedSheafEquiv (pair (RelPoint.pre h hg p)) (pullbackTrivialisedSheaf h hg (pair p))
 
-/-- **irreducible fibres are connected fibres** (PROVEN), geometrically.
-
-`IrreducibleSpace → ConnectedSpace` is a mathlib instance and `geometrically`
-is a pointwise condition on the geometric fibres, so this is the instance
-applied under the quantifier.  It is here rather than in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/` only because it has a single
-consumer — the call site of `exists_genRelPic` in `Modularity/MoretBailly.lean`,
-which holds `GeometricallyIrreducible` and owes `GeometricallyConnected`.
-Whoever needs it a second time should hoist it beside the other
-`Geometrically*` bridges; nothing in it is specific to this file.
-
-The gap it fills is real and was measured on 2026-08-02: at this pin neither
-`GeometricallyIrreducible f → GeometricallyConnected f` nor
-`GeometricallyIrreducible f → GeometricallyReduced f` is an instance, and the
-second of them is FALSE (see the falsity audit below). -/
-theorem geometricallyConnected_of_geometricallyIrreducible {X S : Scheme.{u}} (f : X ⟶ S)
-    (h : GeometricallyIrreducible f) : GeometricallyConnected f where
-  geometrically_connectedSpace := by
-    intro K _ y Z fst snd hpb
-    haveI := h.geometrically_irreducibleSpace y fst snd hpb
-    infer_instance
+-- TOMBSTONE (release 38): a local `geometricallyConnected_of_geometricallyIrreducible`
+-- lived here.  Deleted: `Fermat/FLT/ModularCurve/X0.lean` landed a same-name copy in
+-- the same `Fermat` namespace, so any module importing both (first casualty:
+-- `HardlyRamified/HilbertModularity.lean`) died at import with "environment already
+-- contains".  This copy had no term-level consumer — `Modularity/MoretBailly.lean`
+-- consumes the `AlgebraicGeometry.`-qualified instance-argument original in
+-- `Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean`, which is what
+-- any future consumer should use.
 
 /-- **Moret–Bailly §3.4: the generalised relative Picard functor is
 REPRESENTABLE** (SORRY — leaf).
@@ -415,8 +404,9 @@ of `(X, Z)` it quantifies over has only shrunk.
 The consumer discharges `hpush` in one call and no signature above it moved;
 see `exists_skolemBallDatum_of_projectiveCompactification` in
 `Modularity/MoretBailly.lean`, which holds `Smooth` and `IsProper` and gets
-`GeometricallyConnected` from `geometricallyConnected_of_geometricallyIrreducible`
-above.
+`GeometricallyConnected` from
+`AlgebraicGeometry.geometricallyConnected_of_geometricallyIrreducible`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean`).
 
 **FAITHFULNESS.**  The hypotheses are MB's 3.1.2 normalisations, restated
 over an arbitrary base:
