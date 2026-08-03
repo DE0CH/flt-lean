@@ -30264,3 +30264,46 @@ equivalences.  **A structure that settles one conjunct of a "one fact read
 twice" pair need not settle the other, and the discriminator is which LANGUAGE
 each conjunct is stated in** — points, sections, or sheaves.  Check that before
 assuming a new structure closes both.
+### Rider: `dupstmt.py` IS BLIND TO A TWO-SPELLING TWIN, AND A CLEAN RUN IS NOT EVIDENCE
+(2026-08-02, `flt-lean-40`, arrived at the section above independently and one day
+later — see the decline note below, which is the more useful half.)
+The rule above says to match an orphan closure against the open leaves **on the
+statement, never on the name**. It is worth saying why no tool does that for you.
+`tools/merge/dupstmt.py` normalises binder grouping, the leading `_` and — in its
+weakest key — alpha-renaming of top-level and inner binders. A two-spelling twin
+defeats all three, because the two statements are not alpha-variants: they are
+DIFFERENT TERMS that happen to be definitionally equal
+(`HilbertInertiaTrivialAt w N`, a bounded quantifier over `Γ F_w`, against
+`∀ σ : ↥(localInertiaGroup w), hilbertInertiaToGlobalHom F w σ ∈ N`, the same map
+over the subtype). Run on the whole tree over sorried declarations at release 33
+it reports **0 groups**, on a tree containing exactly this pair. So: a clean
+`dupstmt` run rules out copy-paste duplicates and says nothing whatever about the
+class the section above is about. The only instrument for that is reading the two
+statements.
+**And the cheapest tell that a module HAS a two-spelling pair is free: the same
+translation one level up is already written down.** Here
+`finite_hilbertInertiaOutsideSubgroups`'s docstring explains, in prose, that its
+own inertia clause and `HilbertInertiaTrivialAt`'s "are the same statement
+(`hilbertInertiaToGlobalHom` is `hilbertDecompHom` composed with
+`Subgroup.subtype`)". That paragraph is a general fact about the module, not a
+remark about one proof — so when you find one, grep for every other leaf written
+in the losing spelling.
+**INDEPENDENT CONFIRMATION OF THE BRIDGE, since it is worth what a second
+computation is worth.** Dispatched at the same leaf a day later, with no sight of
+`flt-lean-71`, I re-derived the identical four-line proof — the same
+`Set.Finite.subset`, the same `fun w hw σ hσ => hinert w hw ⟨σ, hσ⟩`, differing
+only in one binder name — the same relocation direction, and the same accounting
+(module 14 → 13 sorried declarations; comment-stripped sorry TOKEN count 14 → 13
+in step, which is what rules out an anonymous inner sorry having been swapped in).
+Verified green: `lake build` of the module plus its farthest downstream consumer
+`Fermat.FLT.Modularity.KhareWintenberger`, `EXIT=0`,
+`Build completed successfully (5643 jobs)`, zero errors. My Lean payload was then
+DECLINED in favour of `flt-lean-71`'s, which is a strict superset (same bridge,
+plus the deletion of the orphaned subgroup route). Two agents converging on one
+four-line proof is reassuring about the mathematics and is still one worker-cycle
+spent; the release-window check the prompt mandates (`git show merger:<file>`) was
+run and correctly reported the leaf OPEN, because the rival lives on an unmerged
+sibling branch that neither `main` nor `merger` can see. **`git branch --contains`
+on a commit named in a QUEUE ENTRY is the check that would have caught it**, and
+it costs one command — queue text is written by agents who have just done the
+work, so it names branches no ownership record does.
