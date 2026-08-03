@@ -741,6 +741,29 @@ def creds_stamp():
         return 0
 
 
+# Every spawned job talks to api.anthropic.com through cc_proxy.mjs on this
+# host (Deyao, 2026-08-03: "swap onto the proxy ... it should just switch to
+# the available account if there is, and if there isn't, it should just relay
+# the out of quota message"). The proxy injects a banked account with headroom;
+# a whole-pool-dry answer reaches the agent as the ordinary refusal line, which
+# is exactly what rows 18/19/20 already consume -- so the quota rows now mean
+# "the POOL is dry", not "the one on-disk credential is dry". The key
+# authenticates the fleet to the proxy (it binds the LAN and these machines
+# are shared); it is read fresh at each spawn so a rotated key needs no loop
+# restart. medic2 (the crash handler) deliberately stays DIRECT on the on-disk
+# credential: the last-resort path should not depend on the proxy being up.
+PROXY_URL = "http://mystique:8790"
+
+
+def proxy_prefix():
+    try:
+        key = (pathlib.Path.home() / ".claude" / "proxy-key").read_text().strip()
+    except OSError:
+        return ""
+    return ("export ANTHROPIC_BASE_URL=%s ANTHROPIC_CUSTOM_HEADERS=%s; "
+            % (shlex.quote(PROXY_URL), shlex.quote("x-flt-proxy: " + key)))
+
+
 def send_probe():
     """Launch one probe with the credential currently on disk.
 
@@ -749,7 +772,8 @@ def send_probe():
     """
     result = STATE / "quota-probe.json"
     rm(result)
-    inner = ('exec -a flt-job-quotaprobe %s --model %s '
+    inner = (proxy_prefix() +
+             'exec -a flt-job-quotaprobe %s --model %s '
              '--dangerously-skip-permissions -p %s'
              % (shlex.quote(CLAUDE), shlex.quote(MODEL),
                 shlex.quote('Write the file %s containing exactly {"ok":true} '
@@ -896,10 +920,10 @@ def do_spawn(s, name, j):
         # not the EFFECTS.
         act = ("--session-id %s -p \"$(cat %s)\""
                % (shlex.quote(j["session"]), shlex.quote(str(pf))))
-    inner = ("cd %s 2>/dev/null || cd %s; "
-             "exec -a flt-job-%s %s --model %s --dangerously-skip-permissions %s"
-             % (shlex.quote(str(wt)), shlex.quote(str(REPO)), j["token"],
-                shlex.quote(CLAUDE), shlex.quote(MODEL), act))
+    inner = ("cd %s 2>/dev/null || cd %s; " % (shlex.quote(str(wt)), shlex.quote(str(REPO)))
+             + proxy_prefix()
+             + "exec -a flt-job-%s %s --model %s --dangerously-skip-permissions %s"
+             % (j["token"], shlex.quote(CLAUDE), shlex.quote(MODEL), act))
     cmd = ("setsid --fork nohup bash -c %s >%s 2>&1 </dev/null"
            % (shlex.quote(inner), shlex.quote(str(log))))
     try:
