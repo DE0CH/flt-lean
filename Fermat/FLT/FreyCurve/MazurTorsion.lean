@@ -8355,9 +8355,17 @@ statements it was written to close (`nonempty_preTranslationDatum_three_of_intCo
 and `nonempty_fullTranslationDatum_two`), which import order forbids, so all three sat
 open and the merged leaf had no consumer at all.  In their new home the uniform statement
 is PROVEN at `5 ≤ q` outright and both per-prime statements are corollaries; what remains
-open is `WeierstrassCurve.nonempty_fullTranslationDatum_wild`, the same obligation at
-`q ∈ {2, 3}` with integral coefficients and `0 < v_q(Δ)`.  Nothing in this file used
-either declaration; they are re-exported through the `public import` above. -/
+open is `WeierstrassCurve.nonempty_fullTranslationDatum_wild_of_not_ratTranslation`, the
+same obligation at `q ∈ {2, 3}` with integral coefficients, `0 < v_q(Δ)`, and no RATIONAL
+translation available.  Nothing in this file used either declaration; they are re-exported
+through the `public import` above.
+
+**RENAMED 2026-08-02 (`flt-lean-52`), and this paragraph is the only place in this file
+that named it.**  `WeierstrassCurve.nonempty_fullTranslationDatum_wild` still exists with
+its exact old signature and is now PROVEN, by one `by_cases` on `HasRatTranslation` over
+the leaf above and `nonempty_fullTranslationDatum_of_hasRatTranslation`; the OPEN leaf is
+the renamed one.  So a queue entry naming the old name now points at a proven declaration
+and fails loudly rather than dispatching a prover at nothing. -/
 
 /-! **RELOCATED 2026-08-01 to `Fermat/FLT/FreyCurve/IsogenySignature.lean`**, for the same
 import-order reason and by the same move:
