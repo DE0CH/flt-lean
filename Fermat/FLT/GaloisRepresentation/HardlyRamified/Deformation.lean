@@ -22791,7 +22791,57 @@ lemma adZeroTraceForm_rep (ρbar : GaloisRep ℚ k V) (σ : Field.absoluteGalois
       _ = a * (X * Y) * b := by noncomm_ring
   rw [hstep, LinearMap.trace_mul_comm, ← mul_assoc, hb, one_mul]
 
-include hℓOdd hdim in
+/-! #### The LOCAL TATE PAIRING at `v`, and local duality
+
+Added 2026-07-31. This section is items (a) and (b) of the build order recorded on
+`exists_injective_sha2_dual_sha1Twist_of_selfDual` below — "(a) vendor the cup product
+from `~/cs/FLT` with its `linHom`/`iHom` shims, (b) build the local invariant map,
+(c) then both leaves at once". Item (a) is
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/CupProduct.lean`
+and the seven shim modules beside it, all sorry-free; item (b) is what follows, and it
+is what turns "the local Tate pairing" from a phrase in a docstring into a `def` the
+compiler has checked.
+
+**What is built here.** The cup product
+`H^m(ℚ_v, ad⁰) × H^n(ℚ_v, ad⁰(1)) → H^{m+n}(ℚ_v, k(1))` induced by the trace form
+`ad⁰ × ad⁰(1) → k(1)` (`adZeroTraceIntertwinerU`), at `m + n = 2`
+(`localTatePairingU`); and the statement that composing it with an isomorphism
+`H²(ℚ_v, k(1)) ≅ k` — the LOCAL INVARIANT MAP of local class field theory — gives a
+pairing nondegenerate on both sides (`IsLocalTateDual`). `isLocalTateDual` below is
+that statement as a leaf, and `poitouTateExactness_of_localTateDuality` derives the
+global nine-term arrow from it.
+
+**Why the coefficients are the full `ad⁰` and not `ad⁰^{N_S}`.** The global objects
+`Sha2`/`Sha1Twist` take cohomology of the `N_S`-invariants (`adZeroRestricted`), and
+those invariants are all of `ad⁰` only because `ρbar` is unramified outside `S` — true,
+but not proven in this file. Stating local duality for the invariants would therefore
+make its TRUTH depend on an unproven identification, and a leaf whose truth is
+conditional on something nobody has checked is the failure mode this file's faithfulness
+audits exist to prevent. Local Tate duality holds for ANY finite `Γ ℚ_v`-module, so the
+statement is put on the full `ad⁰`, where it is unconditionally true; the
+`ad⁰^{N_S} = ad⁰` step is part of what
+`poitouTateExactness_of_localTateDuality` owes, where it belongs.
+
+**THE `ULift` IS A UNIVERSE ARTEFACT, NOT MATHEMATICS, AND IT CANNOT BE AVOIDED.**
+`k : Type u` and `V : Type v` are INDEPENDENT universe variables here, so
+`AdZero k V : Type v` and `k : Type u` live in different universes. The cup product is a
+morphism in `TopModuleCat`, and `A ⟶ TopModuleCat.linHom B C` forces `A`, `B` and `C`
+into ONE universe — a category has morphisms only between objects of its own universe.
+That is not a defect of the port: it is forced by the categorical formulation, and
+`max v u = v` is not derivable. So all three modules are lifted into `Type (max u v)`:
+`ad⁰` and `ad⁰(1)` by `ULift.{u}`, `k(1)` by `ULift.{v}`. `contRepULift` transports the
+action, and every carrier here is DISCRETE, so the transport costs no topology.
+Whoever proves `isLocalTateDual` should read `ULift.{u} (AdZero k V)` as `ad⁰` and
+`ULift.{v} k` as `k`, and use `ULift.moduleEquiv` to move between them. -/
+
+section LocalTatePairing
+
+open _root_.ContinuousLinearMap.CompactOpen
+
+variable {G : Type*} [Group G]
+variable {M : Type w} [AddCommGroup M] [Module k M] [TopologicalSpace M]
+  [DiscreteTopology M]
+
 instance instContinuousSMulULift : ContinuousSMul k (ULift.{v} M) :=
   ⟨continuous_of_discreteTopology⟩
 
@@ -24687,57 +24737,6 @@ lemma adZeroTraceForm_nondegenerate {x : AdZero k V} (hx : x ≠ 0) :
   show LinearMap.trace k V (F * z₀) ≠ 0
   rw [hFz₀]
   exact htr
-
-/-! #### The LOCAL TATE PAIRING at `v`, and local duality
-
-Added 2026-07-31. This section is items (a) and (b) of the build order recorded on
-`exists_injective_sha2_dual_sha1Twist_of_selfDual` below — "(a) vendor the cup product
-from `~/cs/FLT` with its `linHom`/`iHom` shims, (b) build the local invariant map,
-(c) then both leaves at once". Item (a) is
-`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/CupProduct.lean`
-and the seven shim modules beside it, all sorry-free; item (b) is what follows, and it
-is what turns "the local Tate pairing" from a phrase in a docstring into a `def` the
-compiler has checked.
-
-**What is built here.** The cup product
-`H^m(ℚ_v, ad⁰) × H^n(ℚ_v, ad⁰(1)) → H^{m+n}(ℚ_v, k(1))` induced by the trace form
-`ad⁰ × ad⁰(1) → k(1)` (`adZeroTraceIntertwinerU`), at `m + n = 2`
-(`localTatePairingU`); and the statement that composing it with an isomorphism
-`H²(ℚ_v, k(1)) ≅ k` — the LOCAL INVARIANT MAP of local class field theory — gives a
-pairing nondegenerate on both sides (`IsLocalTateDual`). `isLocalTateDual` below is
-that statement as a leaf, and `poitouTateExactness_of_localTateDuality` derives the
-global nine-term arrow from it.
-
-**Why the coefficients are the full `ad⁰` and not `ad⁰^{N_S}`.** The global objects
-`Sha2`/`Sha1Twist` take cohomology of the `N_S`-invariants (`adZeroRestricted`), and
-those invariants are all of `ad⁰` only because `ρbar` is unramified outside `S` — true,
-but not proven in this file. Stating local duality for the invariants would therefore
-make its TRUTH depend on an unproven identification, and a leaf whose truth is
-conditional on something nobody has checked is the failure mode this file's faithfulness
-audits exist to prevent. Local Tate duality holds for ANY finite `Γ ℚ_v`-module, so the
-statement is put on the full `ad⁰`, where it is unconditionally true; the
-`ad⁰^{N_S} = ad⁰` step is part of what
-`poitouTateExactness_of_localTateDuality` owes, where it belongs.
-
-**THE `ULift` IS A UNIVERSE ARTEFACT, NOT MATHEMATICS, AND IT CANNOT BE AVOIDED.**
-`k : Type u` and `V : Type v` are INDEPENDENT universe variables here, so
-`AdZero k V : Type v` and `k : Type u` live in different universes. The cup product is a
-morphism in `TopModuleCat`, and `A ⟶ TopModuleCat.linHom B C` forces `A`, `B` and `C`
-into ONE universe — a category has morphisms only between objects of its own universe.
-That is not a defect of the port: it is forced by the categorical formulation, and
-`max v u = v` is not derivable. So all three modules are lifted into `Type (max u v)`:
-`ad⁰` and `ad⁰(1)` by `ULift.{u}`, `k(1)` by `ULift.{v}`. `contRepULift` transports the
-action, and every carrier here is DISCRETE, so the transport costs no topology.
-Whoever proves `isLocalTateDual` should read `ULift.{u} (AdZero k V)` as `ad⁰` and
-`ULift.{v} k` as `k`, and use `ULift.moduleEquiv` to move between them. -/
-
-section LocalTatePairing
-
-open _root_.ContinuousLinearMap.CompactOpen
-
-variable {G : Type*} [Group G]
-variable {M : Type w} [AddCommGroup M] [Module k M] [TopologicalSpace M]
-  [DiscreteTopology M]
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
 `Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (**PROVEN
