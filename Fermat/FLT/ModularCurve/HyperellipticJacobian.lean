@@ -6666,12 +6666,77 @@ lemma vanishesAt_or_of_mul (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : 
     D.VanishesAt v a ∨ D.VanishesAt v b :=
   (valMax_isPrime D v).mem_or_mem (show (⟨a, ha⟩ * ⟨b, hb⟩ : D.valRing v) ∈ D.valMax v from h)
 
+/-- **PROVEN: a place with the chart values of an affine point IS that point's place.**
+
+`hsep` is load-bearing and this is the only place it enters: at a SINGULAR point of the
+affine model two distinct places share the chart value `(α, 0)`, and it is smoothness that
+`exists_localDenom_affine` spends to exclude that. -/
+theorem eq_pt_affine_of_chartValue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (v : D.Places) (hx : D.VanishesAt v (D.xx - algebraMap K D.F q.1.1))
+    (hy : D.VanishesAt v (D.yy - algebraMap K D.F q.1.2)) :
+    v = D.pt (Sum.inl q) := by
+  refine D.ord_injective ?_
+  obtain ⟨π, hπ⟩ := D.ord_surjective (D.pt (Sum.inl q))
+  have hπ0 : π ≠ 0 := by intro h; rw [h, D.ord_zero] at hπ; omega
+  refine PlaceClassify.isPlaceFun_eq_of_le (isPlaceFun_ord D v)
+    (isPlaceFun_ord D (D.pt (Sum.inl q))) ?_ hπ0 hπ
+  intro z hzP
+  rcases eq_or_ne z 0 with rfl | hz0
+  · rw [D.ord_zero]
+  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_affine D hsep q hzP
+  have hden0 : aeval D.xx e₁ + aeval D.xx e₂ * D.yy ≠ 0 := by
+    intro h0
+    have hV := vanishesAt_chart_sub D v hx hy e₁ e₂
+    rw [h0, zero_sub] at hV
+    exact hd (eq_zero_of_vanishesAt_algebraMap D v (by simpa using vanishesAt_neg hV))
+  have hordden : D.ord v (aeval D.xx e₁ + aeval D.xx e₂ * D.yy) = 0 :=
+    (ord_chart_eq_zero_iff D v hx hy hden0).mpr hd
+  have hnum : 0 ≤ D.ord v (aeval D.xx a + aeval D.xx b * D.yy) :=
+    chart_mem_valRing D v hx hy a b
+  have hmul := D.ord_mul v z _ hz0 hden0
+  rw [heq] at hmul
+  omega
+
+/-- **PROVEN: a place at which `x` has a pole and `y/x³ ≡ ε` IS the point at infinity of
+sign `ε`.**  NO separability: `exists_localDenom_infinite` had carried an underscored
+`_hsep` since 2026-07-30 — the chart at infinity is smooth for every monic sextic — and that
+unused binder has been deleted, which is what makes this statement, and
+`pt_infinite_of_ord_xx_neg` below it, `hsep`-free. -/
+theorem eq_pt_infinite_of_chartValue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (sgn : Bool) (v : D.Places)
+    (hu : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F 0))
+    (hw : D.VanishesAt v
+      (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if sgn then (1 : K) else -1))) :
+    v = D.pt (Sum.inr sgn) := by
+  refine D.ord_injective ?_
+  obtain ⟨π, hπ⟩ := D.ord_surjective (D.pt (Sum.inr sgn))
+  have hπ0 : π ≠ 0 := by intro h; rw [h, D.ord_zero] at hπ; omega
+  refine PlaceClassify.isPlaceFun_eq_of_le (isPlaceFun_ord D v)
+    (isPlaceFun_ord D (D.pt (Sum.inr sgn))) ?_ hπ0 hπ
+  intro z hzP
+  rcases eq_or_ne z 0 with rfl | hz0
+  · rw [D.ord_zero]
+  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_infinite D sgn hzP
+  have hden0 : aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0 := by
+    intro h0
+    have hV := vanishesAt_chart_sub D v hu hw e₁ e₂
+    rw [h0, zero_sub] at hV
+    exact hd (eq_zero_of_vanishesAt_algebraMap D v (by simpa using vanishesAt_neg hV))
+  have hordden : D.ord v (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3)) = 0 :=
+    (ord_chart_eq_zero_iff D v hu hw hden0).mpr hd
+  have hnum : 0 ≤ D.ord v (aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3)) :=
+    chart_mem_valRing D v hu hw a b
+  have hmul := D.ord_mul v z _ hz0 hden0
+  rw [heq] at hmul
+  omega
+
 /-- **EXISTENCE, affine case** (PROVEN): a place at which some `xx − α` has POSITIVE order is
 the place of an affine rational point.
 
 `yy² − f(α) = f(xx) − f(α)` vanishes at `v` because `xx − α` divides it; `K` is algebraically
 closed, so `f(α) = β²`, and `(yy − β)(yy + β)` vanishes, hence one factor does.  That factor
-is the second chart coordinate, and `eq_pt_affine_of_chart` identifies the place. -/
+is the second chart coordinate, and `eq_pt_affine_of_chartValue` identifies the place. -/
 theorem exists_pt_of_ord_pos {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) [IsAlgClosed K]
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (v : D.Places) {α : K}
@@ -6691,13 +6756,27 @@ theorem exists_pt_of_ord_pos {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [F
       = (D.yy - algebraMap K D.F β) * (D.yy + algebraMap K D.F β) := by
     rw [map_pow]; ring
   rw [hfac] at hV
+  -- both factors lie in `O_v`: `yy² = sext(xx)` does, hence `yy` does, and constants do
+  have hyy : (0 : ℤ) ≤ D.ord v D.yy := by
+    have hyy2 : (0 : ℤ) ≤ D.ord v (D.yy ^ 2) := by
+      have h' := aeval_mem_valRing D v hxmem (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+      rw [aeval_sextPoly] at h'
+      rw [D.eqn]
+      exact h'
+    rcases eq_or_ne D.yy 0 with h0 | h0
+    · rw [h0, D.ord_zero]
+    · rw [ord_pow D v _ h0] at hyy2
+      push_cast at hyy2
+      omega
+  have hβmem : algebraMap K D.F β ∈ D.valRing v := (D.valRing v).algebraMap_mem β
   -- one of the two factors vanishes; that is the ordinate's chart value
-  rcases vanishesAt_or_of_mul D v hV with hy | hy
+  rcases vanishesAt_or_of_mul D v ((D.valRing v).sub_mem hyy hβmem)
+    ((D.valRing v).add_mem hyy hβmem) hV with hy | hy
   · refine ⟨Sum.inl ⟨(α, β), hβ⟩, ?_⟩
-    exact (eq_pt_affine_of_chart D hsep v ⟨(α, β), hβ⟩ hxv hy).symm
+    exact (eq_pt_affine_of_chartValue D hsep ⟨(α, β), hβ⟩ v hxv hy).symm
   · refine ⟨Sum.inl ⟨(α, -β), by rw [neg_pow]; simpa using hβ⟩, ?_⟩
-    refine (eq_pt_affine_of_chart D hsep v ⟨(α, -β), by rw [neg_pow]; simpa using hβ⟩
-      hxv ?_).symm
+    refine (eq_pt_affine_of_chartValue D hsep ⟨(α, -β), by rw [neg_pow]; simpa using hβ⟩
+      v hxv ?_).symm
     simpa [sub_neg_eq_add] using hy
 
 /-- **EXISTENCE, case at infinity** (PROVEN): a place at which some `xx − α` has NEGATIVE
@@ -6705,7 +6784,7 @@ order is one of the two points at infinity.
 
 Then `ord v xx < 0`, so `u := 1/xx` vanishes at `v`; and `w := yy·u³` satisfies
 `w² = revSext u` (`revSext_inv_eq`), whose constant term is `1`, so `w² − 1 = u · (…)`
-vanishes and one of `w ∓ 1` does.  `eq_pt_infinite_of_chart` then identifies the place, the
+vanishes and one of `w ∓ 1` does.  `eq_pt_infinite_of_chartValue` then identifies the place, the
 sign being the `Bool`. -/
 theorem exists_pt_of_ord_neg {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) [IsAlgClosed K]
@@ -6751,10 +6830,24 @@ theorem exists_pt_of_ord_neg {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [F
   have hfac : (D.yy * D.xx⁻¹ ^ 3) ^ 2 - 1
       = (D.yy * D.xx⁻¹ ^ 3 - 1) * (D.yy * D.xx⁻¹ ^ 3 + 1) := by ring
   rw [hfac] at hVu
-  rcases vanishesAt_or_of_mul D v hVu with hW | hW
-  · refine ⟨Sum.inr true, (eq_pt_infinite_of_chart D hsep v true huv ?_).symm⟩
+  -- both factors lie in `O_v`: `w² = revSext u` does, hence `w` does, and `1` does
+  have hw : (0 : ℤ) ≤ D.ord v (D.yy * D.xx⁻¹ ^ 3) := by
+    rcases eq_or_ne (D.yy * D.xx⁻¹ ^ 3) 0 with h | h
+    · rw [h, D.ord_zero]
+    · have h2 : D.ord v ((D.yy * D.xx⁻¹ ^ 3) ^ 2) = 2 * D.ord v (D.yy * D.xx⁻¹ ^ 3) := by
+        rw [ord_pow D v _ h]; norm_num
+      have hrevord : (0 : ℤ) ≤ D.ord v
+          (PlaceAtInfinity.revSext c₀ c₁ c₂ c₃ c₄ c₅ D.xx⁻¹) := by
+        have h' := aeval_mem_valRing D v humem
+          (PlaceAtInfinity.revSextPoly c₀ c₁ c₂ c₃ c₄ c₅ K)
+        rwa [PlaceAtInfinity.aeval_revSextPoly] at h'
+      rw [hwsq] at h2
+      omega
+  rcases vanishesAt_or_of_mul D v ((D.valRing v).sub_mem hw (D.valRing v).one_mem)
+    ((D.valRing v).add_mem hw (D.valRing v).one_mem) hVu with hW | hW
+  · refine ⟨Sum.inr true, (eq_pt_infinite_of_chartValue D true v huv ?_).symm⟩
     simpa using hW
-  · refine ⟨Sum.inr false, (eq_pt_infinite_of_chart D hsep v false huv ?_).symm⟩
+  · refine ⟨Sum.inr false, (eq_pt_infinite_of_chartValue D false v huv ?_).symm⟩
     simpa [sub_neg_eq_add] using hW
 
 /-- **PROVEN: at a POLE of the abscissa the chart at infinity has a value `±1`.**
@@ -6875,70 +6968,6 @@ place, which the recorded plan asks for as its step 2.  The localDenom theorems 
 `pt P`, where their own congruences come from `ord_pt_affine` / `ord_pt_infinite`; the other
 place `v` only ever has to READ the resulting identity. -/
 
-/-- **PROVEN: a place with the chart values of an affine point IS that point's place.**
-
-`hsep` is load-bearing and this is the only place it enters: at a SINGULAR point of the
-affine model two distinct places share the chart value `(α, 0)`, and it is smoothness that
-`exists_localDenom_affine` spends to exclude that. -/
-theorem eq_pt_affine_of_chartValue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (v : D.Places) (hx : D.VanishesAt v (D.xx - algebraMap K D.F q.1.1))
-    (hy : D.VanishesAt v (D.yy - algebraMap K D.F q.1.2)) :
-    v = D.pt (Sum.inl q) := by
-  refine D.ord_injective ?_
-  obtain ⟨π, hπ⟩ := D.ord_surjective (D.pt (Sum.inl q))
-  have hπ0 : π ≠ 0 := by intro h; rw [h, D.ord_zero] at hπ; omega
-  refine PlaceClassify.isPlaceFun_eq_of_le (isPlaceFun_ord D v)
-    (isPlaceFun_ord D (D.pt (Sum.inl q))) ?_ hπ0 hπ
-  intro z hzP
-  rcases eq_or_ne z 0 with rfl | hz0
-  · rw [D.ord_zero]
-  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_affine D hsep q hzP
-  have hden0 : aeval D.xx e₁ + aeval D.xx e₂ * D.yy ≠ 0 := by
-    intro h0
-    have hV := vanishesAt_chart_sub D v hx hy e₁ e₂
-    rw [h0, zero_sub] at hV
-    exact hd (eq_zero_of_vanishesAt_algebraMap D v (by simpa using vanishesAt_neg hV))
-  have hordden : D.ord v (aeval D.xx e₁ + aeval D.xx e₂ * D.yy) = 0 :=
-    (ord_chart_eq_zero_iff D v hx hy hden0).mpr hd
-  have hnum : 0 ≤ D.ord v (aeval D.xx a + aeval D.xx b * D.yy) :=
-    chart_mem_valRing D v hx hy a b
-  have hmul := D.ord_mul v z _ hz0 hden0
-  rw [heq] at hmul
-  omega
-
-/-- **PROVEN: a place at which `x` has a pole and `y/x³ ≡ ε` IS the point at infinity of
-sign `ε`.**  NO separability: `exists_localDenom_infinite` had carried an underscored
-`_hsep` since 2026-07-30 — the chart at infinity is smooth for every monic sextic — and that
-unused binder has been deleted, which is what makes this statement, and
-`pt_infinite_of_ord_xx_neg` below it, `hsep`-free. -/
-theorem eq_pt_infinite_of_chartValue (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (sgn : Bool) (v : D.Places)
-    (hu : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F 0))
-    (hw : D.VanishesAt v
-      (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if sgn then (1 : K) else -1))) :
-    v = D.pt (Sum.inr sgn) := by
-  refine D.ord_injective ?_
-  obtain ⟨π, hπ⟩ := D.ord_surjective (D.pt (Sum.inr sgn))
-  have hπ0 : π ≠ 0 := by intro h; rw [h, D.ord_zero] at hπ; omega
-  refine PlaceClassify.isPlaceFun_eq_of_le (isPlaceFun_ord D v)
-    (isPlaceFun_ord D (D.pt (Sum.inr sgn))) ?_ hπ0 hπ
-  intro z hzP
-  rcases eq_or_ne z 0 with rfl | hz0
-  · rw [D.ord_zero]
-  obtain ⟨a, b, e₁, e₂, hd, heq⟩ := exists_localDenom_infinite D sgn hzP
-  have hden0 : aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3) ≠ 0 := by
-    intro h0
-    have hV := vanishesAt_chart_sub D v hu hw e₁ e₂
-    rw [h0, zero_sub] at hV
-    exact hd (eq_zero_of_vanishesAt_algebraMap D v (by simpa using vanishesAt_neg hV))
-  have hordden : D.ord v (aeval D.xx⁻¹ e₁ + aeval D.xx⁻¹ e₂ * (D.yy * D.xx⁻¹ ^ 3)) = 0 :=
-    (ord_chart_eq_zero_iff D v hu hw hden0).mpr hd
-  have hnum : 0 ≤ D.ord v (aeval D.xx⁻¹ a + aeval D.xx⁻¹ b * (D.yy * D.xx⁻¹ ^ 3)) :=
-    chart_mem_valRing D v hu hw a b
-  have hmul := D.ord_mul v z _ hz0 hden0
-  rw [heq] at hmul
-  omega
 
 end PlaceData
 
@@ -13106,14 +13135,6 @@ lemma vanishesAt_yy_pt {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K
     D.VanishesAt (D.pt (Sum.inl q)) (D.yy - algebraMap K D.F q.1.2) :=
   Or.inr (D.ord_pt_affine q).2
 
-/-- `ord v (aⁿ) = n · ord v a` for an INTEGER exponent (PROVEN). -/
-lemma ord_zpow {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K] (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v : D.Places) (a : D.F) (ha : a ≠ 0)
-    (n : ℤ) : D.ord v (a ^ n) = n * D.ord v a := by
-  obtain ⟨m, rfl | rfl⟩ := n.eq_nat_or_neg
-  · rw [zpow_natCast, ord_pow D v a ha]
-  · rw [zpow_neg, zpow_natCast, ord_inv D v _ (pow_ne_zero _ ha), ord_pow D v a ha]
-    ring
-
 /-- **A place is determined by its valuation ring** (PROVEN). -/
 theorem eq_of_forall_ord_nonneg_iff {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (v w : D.Places)
@@ -13262,13 +13283,13 @@ theorem eq_pt_affine_of_chart {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [
 `yy/xx³ ≡ ε` IS the place of the point at infinity with that sign. -/
 theorem eq_pt_infinite_of_chart {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
-    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (v : D.Places) (sgn : Bool)
+    (_hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (v : D.Places) (sgn : Bool)
     (huv : D.VanishesAt v (D.xx⁻¹ - algebraMap K D.F 0))
     (hwv : D.VanishesAt v
       (D.yy * D.xx⁻¹ ^ 3 - algebraMap K D.F (if sgn then (1 : K) else -1))) :
     v = D.pt (Sum.inr sgn) := by
   refine eq_of_ord_nonneg_imp D v (D.pt (Sum.inr sgn)) (fun z hz => ?_)
-  obtain ⟨a, b, e₁, e₂, hne, heq⟩ := exists_localDenom_infinite D hsep sgn hz
+  obtain ⟨a, b, e₁, e₂, hne, heq⟩ := exists_localDenom_infinite D sgn hz
   exact ord_nonneg_of_localDenom D v huv hwv a b e₁ e₂ hne heq
 
 /-- `(2 : K[X]) ≠ 0`, since `2 ≠ 0` in `K` (PROVEN). -/
@@ -14176,7 +14197,8 @@ prevents that.  It is NOT vacuous: `divAct σ (bcDiv δ) = bcDiv δ` is proven a
 `act_bc`), so invariant representatives exist for every class in the image of `bc`, which is
 the content being asserted for all invariant classes. -/
 theorem geomPic_descent_divisor {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
-    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D) (y : gp.Dbar.Pic)
+    (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (y : gp.Dbar.Pic)
     (hy : ∀ σ : QbarGal, gp.act σ y = y) :
     ∃ δ : gp.Dbar.Divisors, (∀ σ : QbarGal, gp.divAct σ δ = δ) ∧
       (QuotientAddGroup.mk δ : gp.Dbar.Pic) = y := by
@@ -14348,7 +14370,7 @@ theorem geomPic_descent_divisor {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : Place
         rwa [map_sub, map_one] at h5
   -- STEP 5: `A` is inflated from the finite Galois level of `δ` (leaf 3c), which is what
   -- makes Hilbert 90 applicable to an infinite Galois group at all
-  obtain ⟨L, hLfin, hLgal, hLfix⟩ := geomPic_exists_finiteLevel_divisor gp δ
+  obtain ⟨L, hLfin, hLgal, hLfix⟩ := geomPic_exists_finiteLevel_divisor gp hsep δ
   have hAone : ∀ ρ : QbarGal, (∀ x ∈ L, ρ x = x) → A ρ = 1 := by
     intro ρ hρ
     refine huniq _ _ (hA0 ρ) one_ne_zero ?_ (hA1 ρ) ?_
@@ -14440,14 +14462,16 @@ That theorem was the leaf carrying steps 1–6; it is PROVEN above, over 3a, 3c,
 **And step 7 does NOT go through leaf 3b.**  The plan above named
 `geomPic_exists_bcDiv_of_divAct_fixed` for it, but the proof below instead derives
 constancy on the fibres of `below` directly from `placeAct_transitive` (the sibling half of
-the descent, PROVEN) and then builds the rational divisor by hand — which is why the
-`hsep` hypothesis is here and not on `geomPic_descent_divisor`.  Leaf 3b is therefore
+the descent, PROVEN) and then builds the rational divisor by hand.  (`hsep` now sits on
+`geomPic_descent_divisor` as well: its STEP 5 consumes
+`geomPic_exists_finiteLevel_divisor`, whose proof needs separability of the sextic — the
+2026-08-03 merge reconciliation of the two branches that proved those steps.)  Leaf 3b is therefore
 CONSUMERLESS; see the note on its own declaration. -/
 theorem geomPic_descent {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ}
     (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ ℚ).Separable) (y : gp.Dbar.Pic)
     (hy : ∀ σ : QbarGal, gp.act σ y = y) : ∃ a : D.Pic, gp.bc a = y := by
-  obtain ⟨δbar, hfix, hcl⟩ := geomPic_descent_divisor gp y hy
+  obtain ⟨δbar, hfix, hcl⟩ := geomPic_descent_divisor gp hsep y hy
   -- an invariant divisor is constant on the fibres of `below`, by transitivity
   have hconst : ∀ w w' : gp.Dbar.Places, gp.below w = gp.below w' → δbar w = δbar w' := by
     intro w w' hww'
@@ -14650,50 +14674,6 @@ theorem exists_abelianScheme_geomAddEquiv_pic {c₀ c₁ c₂ c₃ c₄ c₅ : �
             = ab.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (ebar y)) := sorry
 
 open AlgebraicGeometry CategoryTheory in
-/-- **The `p`-division points of rational classes are defined over a FIXED finite
-extension** (PROVEN 2026-08-01 — was a leaf, is now the `Pic⁰` reading of `X0.lean`'s
-`Fermat.exists_finiteIndex_divisible_of_abelianScheme`, which is PROVEN there).
-
-Precisely: there is a finite-index subgroup `H ≤ Gal(ℚ̄/ℚ)` and, for every rational class
-`P`, a geometric class `y` with `p·y = bc P` that `H` fixes.  Two things at once, and they
-must be bundled because the `H` has to be uniform in `P`:
-
-* **divisibility** along the image of `bc` — surjectivity of `[p]` on `J(ℚ̄)`;
-* **the arithmetic** — the fields `ℚ(y)` are of bounded degree over `ℚ(J[p])` and ramified
-  only above `p·disc(f)`, hence of bounded discriminant, hence (Hermite–Minkowski) finitely
-  many, hence contained in one finite extension `L/ℚ`; take `H = Gal(ℚ̄/L)`.
-
-This is the `Pic⁰` transcription of `Fermat.exists_finiteIndex_divisible_of_abelianScheme`
-(`X0.lean`), which is PROVEN there over
-`exists_discrBound_divisionField_of_abelianScheme` and
-`exists_geomPt_nsmul_eq_of_abelianScheme`.  **Class groups and Dirichlet's unit theorem are
-NOT needed** — that was the old cut's mistake, recorded on the `X0` sibling: the assembly
-meets one division field at a time, never the maximal `S`-ramified exponent-`p` extension.
-
-**FAITHFULNESS.**  The finite-index requirement is what gives the leaf content: `H = ⊤` is
-allowed by the index condition but then demands that every `p`-division point of every
-rational class be Galois-invariant, which is false; `H = ⊥` fixes everything but has
-infinite index, since `Gal(ℚ̄/ℚ)` is infinite.  Only an honest finite extension `L` with
-`J(ℚ) ⊆ p·J(L)` satisfies both, and producing one IS weak Mordell–Weil's arithmetic input.
-`hp` is load-bearing through `p ≠ 0`: at `p = 0` the condition reads `0 = bc P` for every
-`P`, which fails for any `P ≠ 0` by `geomPic_bc_injective`.
-
-**THE PROOF (2026-08-01).**  Transport along `ebar`, and nothing else.  The `H` is `X0`'s,
-unchanged: `QbarGal` IS `Field.absoluteGaloisGroup ℚ` unfolded, so its subgroups and the
-finiteness of its quotients need no transport at all.  What the two clauses of the bridge
-buy is exactly the two clauses here — `hbc` turns `p • y' = ratToGeom (e P)` into
-`p • ebar.symm y' = bc P`, and `hact` turns `galSMul σ y' = y'` into `act σ (ebar.symm y')
-= ebar.symm y'`. -/
-theorem exists_finiteIndex_divisible_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
-    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
-    (p : ℕ) (hp : p.Prime) :
-    ∃ H : Subgroup QbarGal, Finite (QbarGal ⧸ H) ∧
-      ∀ P : D.Pic, ∃ y : gp.Dbar.Pic, p • y = gp.bc P ∧ ∀ σ ∈ H, gp.act σ y = y := by
-  obtain ⟨H, hHfin, hH⟩ := exists_finiteIndex_fixing_divisionPoints_pic gp p hp
-  refine ⟨H, hHfin, fun P => ?_⟩
-  obtain ⟨y, hy⟩ := geomPic_divisible gp p hp.ne_zero (gp.bc P)
-  exact ⟨y, hy, hH P y hy⟩
-
 /-! ### The two sub-leaves of `finite_kummerCochains_pic` (cut 2026-07-30)
 
 The cut separates the two things the classical proof (Silverman *AEC* VIII.1.1) actually uses,
@@ -14992,6 +14972,50 @@ theorem exists_finiteIndex_fixing_divisionPoints_pic {c₀ c₁ c₂ c₃ c₄ c
     (p : ℕ) (hp : p.Prime) :
     ∃ H : Subgroup QbarGal, Finite (QbarGal ⧸ H) ∧
       ∀ (P : D.Pic) (y : gp.Dbar.Pic), p • y = gp.bc P → ∀ σ ∈ H, gp.act σ y = y := sorry
+
+/-- **The `p`-division points of rational classes are defined over a FIXED finite
+extension** (PROVEN 2026-08-01 — was a leaf, is now the `Pic⁰` reading of `X0.lean`'s
+`Fermat.exists_finiteIndex_divisible_of_abelianScheme`, which is PROVEN there).
+
+Precisely: there is a finite-index subgroup `H ≤ Gal(ℚ̄/ℚ)` and, for every rational class
+`P`, a geometric class `y` with `p·y = bc P` that `H` fixes.  Two things at once, and they
+must be bundled because the `H` has to be uniform in `P`:
+
+* **divisibility** along the image of `bc` — surjectivity of `[p]` on `J(ℚ̄)`;
+* **the arithmetic** — the fields `ℚ(y)` are of bounded degree over `ℚ(J[p])` and ramified
+  only above `p·disc(f)`, hence of bounded discriminant, hence (Hermite–Minkowski) finitely
+  many, hence contained in one finite extension `L/ℚ`; take `H = Gal(ℚ̄/L)`.
+
+This is the `Pic⁰` transcription of `Fermat.exists_finiteIndex_divisible_of_abelianScheme`
+(`X0.lean`), which is PROVEN there over
+`exists_discrBound_divisionField_of_abelianScheme` and
+`exists_geomPt_nsmul_eq_of_abelianScheme`.  **Class groups and Dirichlet's unit theorem are
+NOT needed** — that was the old cut's mistake, recorded on the `X0` sibling: the assembly
+meets one division field at a time, never the maximal `S`-ramified exponent-`p` extension.
+
+**FAITHFULNESS.**  The finite-index requirement is what gives the leaf content: `H = ⊤` is
+allowed by the index condition but then demands that every `p`-division point of every
+rational class be Galois-invariant, which is false; `H = ⊥` fixes everything but has
+infinite index, since `Gal(ℚ̄/ℚ)` is infinite.  Only an honest finite extension `L` with
+`J(ℚ) ⊆ p·J(L)` satisfies both, and producing one IS weak Mordell–Weil's arithmetic input.
+`hp` is load-bearing through `p ≠ 0`: at `p = 0` the condition reads `0 = bc P` for every
+`P`, which fails for any `P ≠ 0` by `geomPic_bc_injective`.
+
+**THE PROOF (2026-08-01).**  Transport along `ebar`, and nothing else.  The `H` is `X0`'s,
+unchanged: `QbarGal` IS `Field.absoluteGaloisGroup ℚ` unfolded, so its subgroups and the
+finiteness of its quotients need no transport at all.  What the two clauses of the bridge
+buy is exactly the two clauses here — `hbc` turns `p • y' = ratToGeom (e P)` into
+`p • ebar.symm y' = bc P`, and `hact` turns `galSMul σ y' = y'` into `act σ (ebar.symm y')
+= ebar.symm y'`. -/
+theorem exists_finiteIndex_divisible_pic {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ}
+    {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} (gp : GeomPic c₀ c₁ c₂ c₃ c₄ c₅ D)
+    (p : ℕ) (hp : p.Prime) :
+    ∃ H : Subgroup QbarGal, Finite (QbarGal ⧸ H) ∧
+      ∀ P : D.Pic, ∃ y : gp.Dbar.Pic, p • y = gp.bc P ∧ ∀ σ ∈ H, gp.act σ y = y := by
+  obtain ⟨H, hHfin, hH⟩ := exists_finiteIndex_fixing_divisionPoints_pic gp p hp
+  refine ⟨H, hHfin, fun P => ?_⟩
+  obtain ⟨y, hy⟩ := geomPic_divisible gp p hp.ne_zero (gp.bc P)
+  exact ⟨y, hy, hH P y hy⟩
 
 /-- **LEAF (weak Mordell–Weil, arithmetic 1 of 2, geometric): `J[n](ℚ̄)` is finite.**
 
