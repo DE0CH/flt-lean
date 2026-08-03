@@ -6,6 +6,17 @@ Authors: Claude
 module
 
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModel
+-- `AbelianSchemeStruct`, `RelPoint`, `GeomFibrePt`, `specAlgClos` and `galSMul`, all of
+-- which occur in the STATEMENT of `exists_projMul_geomFibre_relPoint_addEquiv` below, so
+-- this edge must be `public`.  It costs nothing: `Modularity/AbelianScheme.lean` imports
+-- no `Fermat.*` module at all, so it adds exactly one module to this closure.
+public import Fermat.FLT.Modularity.AbelianScheme
+-- `WeierstrassCurve.Affine.Point` and `Affine.baseChange`, for the two point dictionaries.
+public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+-- properness of `Proj.toSpecZero`, the instance `isProper_projToSpec` closes on.
+public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Proper
+public import Mathlib.RingTheory.FiniteType
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Pullbacks
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
@@ -2500,5 +2511,267 @@ theorem projNeg_comp_projToSpec :
   · exact Subtype.ext (by simp)
 
 end WeierstrassCurve.Projective
+
+/-! ## The chord–tangent group law over an arbitrary field: THE ONE SHARED LEAF
+
+**This section exists to hold ONE leaf that two downstream modules were each carrying a
+private copy of** (cut 2026-08-02, `flt-lean-9`).  Before it,
+
+* `Fermat.exists_projGroupLaw_relPointAddEquiv_field` (`ModularCurve/EllipticScheme.lean`) and
+* `GaloisRepresentation.Modularity.exists_projMulOverField_geomFibreAddEquiv`
+  (`Modularity/MoretBailly.lean`)
+
+were two `sorry` leaves asserting the SAME thing — the existence of the chord–tangent
+multiplication `m : proj E ×_F proj E ⟶ proj E` over an arbitrary field, with the same four
+axioms in the same `ofMul` shape — differing only in the dictionary conjunct hung off it:
+MoretBailly's publishes the GEOMETRIC fibre over `F̄` with its Galois equivariance,
+EllipticScheme's the `F`-RATIONAL points.  Everything expensive is shared, and the two
+modules are IMPORT-INCOMPARABLE (neither reaches the other), so neither could consume the
+other's copy.  This module is the common ancestor: `MoretBailly.lean` has imported it since
+it was written and `EllipticScheme.lean` began importing it on 2026-07-31.
+
+The leaf below carries BOTH dictionaries as a conjunction, and both consumers are now
+short assemblies over it.  **Frontier 2 → 1**, with no mathematics done and none lost.
+
+## What a prover of this leaf owes, MEASURED rather than estimated (2026-08-02)
+
+The route is the `ℚ ↝ F` port of `EllipticScheme.lean`'s Bosma–Lenstra gluing, ending at
+`Fermat.exists_projMul` / `Fermat.nonempty_projGroupLaw` and, for the rational half,
+`Fermat.ProjCoords.specPointEquiv`.  The number quoted by every earlier docstring in this
+cluster is **6677 lines**; that is the size of the whole chain and it is now an
+OVER-estimate by more than half, because eighteen of its declarations (986 lines) have
+since been ported into this very module.  A transitive in-file dependency closure of
+`Fermat.exists_projMul`, comment-stripped, taken at `280981f1`:
+
+* closure: **191 declarations**, of which **62** have a `ℚ` or a `Scheme.{0}` in the header;
+* of those, **18 are already here** (`eval₂_dehomogenizeAt`, `homogenizeAt`,
+  `not_X_dvd_polynomial`, `exists_projChartRingEquiv`, `projChart_jacobian_span_eq_top`,
+  `isStandardSmoothOfRelativeDimension_projChartAway`, `locally_isStandardSmooth_awayCoord`,
+  `smoothOfRelativeDimension_projToSpec`, … ) — do not port them a second time;
+* **REMAINING: 73 declarations, 2518 lines**, listed below by line number at `280981f1`.
+  `Fermat.ProjCoords` itself is NOT among them: it is already stated over
+  `{F : Type u} [Field F]`, so the chart interface needs no porting at all.
+
+  3481–3706 the `IsProjMulOn` gluing (6 decls, 225 lines) — checked 2026-07-31 by
+  `flt-lean-387` to use neither `hom_ext_spec_rat` nor `base_eq` nor `Subsingleton`, so
+  these port by binder change alone;
+  3821–4306 the `projChart*` coordinate cover (23 decls, 486 lines);
+  4307–4751 `exists_projMulOfCoordsTwo` and the `projMulCoords_*` axioms (12 decls, 445);
+  4803–4895 `projMulPt` / `comp_triAdd*_proj` (4 decls, 93);
+  4912–5278 the `K`-point dictionary through `specPointEquiv` (15 decls, 366) — this is
+  what the RATIONAL conjunct needs, and it is already stated over a general TARGET field
+  `f : ℚ →+* K`, so only the SOURCE `ℚ` moves;
+  6667–7017 `exists_projMulOfCoords` (350) and `exists_projMul` (52);
+  7069–7469 `IsProjMulLaw`, the associativity transfer and `nonempty_projGroupLaw` (9, 365).
+
+## Two things a porter must NOT re-derive, and one architectural constraint
+
+`Fermat.hom_ext_spec_rat` — "a scheme admits at most one morphism to `Spec ℚ`" — is FALSE
+over `F` and is the obstruction every earlier estimate leads with.  Its replacement is
+`fromOfGlobalSections_comp_projToSpec` above, and the four `Fermat.ProjCoords` lemmas
+`toHom_comp_projToSpec`, `toHom_comp_projToSpec_congr`, `base_eq_of_comp_projToSpec_eq` and
+`base_eq_of_toHom_eq_pullback_proj`, all PROVEN.  The `ProjCoords` API takes the base
+equality as an AUTO-PARAM defaulting to `by exact Subsingleton.elim _ _`, so every `ℚ` call
+site keeps working untouched and only the `F` sites pass it.  What is genuinely owed is
+threading `c.base = d.base` at the **11** `base_eq` and **14** `ProjCoords.ext` call sites,
+and the `[Algebra ℚ S]` instance binders, which are the one part that is not a substitution.
+
+**The architectural constraint, and it decides where the port goes.**  The port cannot be
+done in place in `EllipticScheme.lean`: that module is DOWNSTREAM of this one, so a general
+`m` proved there could not discharge this leaf, and `MoretBailly.lean` could only reach it
+by importing `EllipticScheme.lean` (acyclic, +7 modules, but it serialises the build behind
+`ProjectiveEquationAdd.lean`).  Nor should the 2518 lines be COPIED here, which would leave
+the tree carrying the chain twice.  The correct shape is a MOVE: relocate
+`Fermat.ProjCoords` and the chain above into this module, generalised, and leave
+`EllipticScheme.lean`'s `ℚ` declarations as `F := ℚ` instantiations — under which every one
+of its existing consumers keeps compiling unchanged, and nothing is duplicated. -/
+
+namespace WeierstrassCurve.Projective.OverField
+
+universe u
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+section GroupLawOverField
+
+variable {F : Type u} [Field F]
+
+/-- **The projective Weierstrass model is proper over `Spec F`, for an ARBITRARY field**
+(PROVEN — HOISTED here 2026-08-02 out of two downstream copies).
+
+This statement had been proved INDEPENDENTLY and identically in two modules —
+`Fermat.isProper_projToSpec_field` (`ModularCurve/EllipticScheme.lean`) and
+`GaloisRepresentation.Modularity.isProper_projToSpecOverField` (`Modularity/MoretBailly.lean`)
+— neither of which can see the other.  The proof below is theirs, character for character;
+both now delegate to it.  It is needed HERE because `abelianSchemeStructOfMul` below feeds
+`Fermat.AbelianSchemeStruct.ofMorphisms`, which asks for `IsProper`, `Smooth` and
+`GeometricallyConnected`, and this module already had the other two.
+
+**`[E.IsElliptic]` is NOT used** and is not asked for: properness holds for the projective
+model of an arbitrary Weierstrass equation over any field, singular or not.  The proof is
+that `projToSpec` is `Proj.toSpecZero` followed by `Spec` of `F → projGrading E 0`; the first
+factor is proper because the coordinate ring is of finite type over its degree-zero part, and
+the second is an ISOMORPHISM because that degree-zero part is `F` itself — which is
+`MvPolynomial.homogeneousSubmodule_zero` plus the observation that `constantCoeff` kills
+`(W)`, `W` being homogeneous of degree `3`. -/
+theorem isProper_projToSpec (E : WeierstrassCurve F) : IsProper (projToSpec E) := by
+  -- The projective Weierstrass polynomial has vanishing constant term: it is
+  -- homogeneous of degree `3`, and `3 ≠ 0`.
+  have hc : MvPolynomial.constantCoeff (polynomial E) = 0 :=
+    (isHomogeneous_polynomial E).coeff_eq_zero (d := 0) (by simp)
+  -- Hence `F → F[X, Y, Z] ⧸ (W)` is injective: a constant in `(W)` is `b * W`, and
+  -- `constantCoeff` sends that to `0`.
+  have hinj : Function.Injective (algebraMap F
+      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal)) := by
+    intro c c' h
+    have h' : (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
+          (MvPolynomial.C c)) = Ideal.Quotient.mk _ (MvPolynomial.C c') := h
+    rw [Ideal.Quotient.mk_eq_mk_iff_sub_mem, ← MvPolynomial.C_sub] at h'
+    obtain ⟨b, hb⟩ := Ideal.mem_span_singleton'.mp h'
+    have hcc := congrArg MvPolynomial.constantCoeff hb
+    rw [map_mul, hc, mul_zero, MvPolynomial.constantCoeff_C] at hcc
+    exact sub_eq_zero.mp hcc.symm
+  -- The degree-zero part of the homogeneous coordinate ring is exactly `F`.
+  have hbij : Function.Bijective (algebraMap F (projGrading E 0)) := by
+    refine ⟨fun c c' h => hinj (congrArg Subtype.val h), ?_⟩
+    rintro ⟨x, hx⟩
+    obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hx
+    rw [MvPolynomial.homogeneousSubmodule_zero] at hp
+    obtain ⟨c, rfl⟩ := Submodule.mem_one.mp hp
+    exact ⟨c, rfl⟩
+  haveI := IsScalarTower.of_algebraMap_eq (R := F) (S := (projGrading E 0))
+    (A := MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) fun _ => rfl
+  haveI : Algebra.FiniteType F
+      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
+    Algebra.FiniteType.of_surjective (Ideal.Quotient.mkₐ F _) Ideal.Quotient.mk_surjective
+  haveI : Algebra.FiniteType (projGrading E 0)
+      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
+    Algebra.FiniteType.of_restrictScalars_finiteType F _ _
+  haveI : IsIso (CommRingCat.ofHom (algebraMap F (projGrading E 0))) :=
+    (ConcreteCategory.isIso_iff_bijective _).mpr hbij
+  show IsProper (Proj.toSpecZero (projGrading E) ≫
+    Spec.map (CommRingCat.ofHom (algebraMap F (projGrading E 0))))
+  infer_instance
+
+/-- **The abelian-scheme structure carried by a multiplication `m` alone**, over an
+arbitrary field (PROVEN — formal, the bridge applied).
+
+The unit and the inversion are PINNED, to `projInfty E` and `projNeg E`, and their two
+"lies over the base" equations are `projInfty_comp_projToSpec` and `projNeg_comp_projToSpec`
+above — both over an arbitrary commutative ring.  So a producer of the group law owes ONE
+morphism and FOUR equations, not a ten-field structure.
+
+This is the common refinement of `Fermat.ProjGroupLaw.toAbelianSchemeStructField`
+(`EllipticScheme.lean`) and
+`GaloisRepresentation.Modularity.ProjGroupLawOverField.ofMul (…).toAbelianSchemeStruct`
+(`MoretBailly.lean`): all three are `Fermat.AbelianSchemeStruct.ofMorphisms` applied to the
+same data, and the three geometric inputs it also asks for are `Prop`s, so the three terms
+are DEFINITIONALLY EQUAL and each consumer's bridge to this one is `rfl`.
+
+Pinning `e` does not weaken anything, and is what lets the leaf below bind `m`
+existentially without binding a whole structure: `ProjGroupLawOverField` pins nothing about
+its unit section, so every translate of the chord–tangent law by a rational point is again
+a lawful structure with a different zero — which is exactly the falsity-of-cut recorded at
+`ℚ` on 2026-07-27 and the reason a `∀ gl` form is unprovable. -/
+noncomputable def abelianSchemeStructOfMul (E : WeierstrassCurve F) [E.IsElliptic]
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (hm : m ≫ projToSpec E =
+      Limits.pullback.fst (projToSpec E) (projToSpec E) ≫ projToSpec E)
+    (hassoc : Fermat.AbelianSchemeStruct.triAddLeft (projToSpec E) m hm =
+      Fermat.AbelianSchemeStruct.triAddRight (projToSpec E) m hm)
+    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+      (Limits.pullback.fst (projToSpec E) (projToSpec E))
+      Limits.pullback.condition.symm ≫ m = m)
+    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+      (by rw [Category.assoc, projInfty_comp_projToSpec, Category.comp_id,
+        Category.id_comp]) ≫ m = 𝟙 (proj E))
+    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+      (by rw [projNeg_comp_projToSpec, Category.id_comp]) ≫ m =
+        projToSpec E ≫ projInfty E) :
+    Fermat.AbelianSchemeStruct (projToSpec E) :=
+  haveI := smoothOfRelativeDimension_projToSpec E
+  Fermat.AbelianSchemeStruct.ofMorphisms (projToSpec E) m (projInfty E) (projNeg E)
+    hm (projInfty_comp_projToSpec E) (projNeg_comp_projToSpec E)
+    hassoc hcomm hunit hinv (isProper_projToSpec E)
+    (SmoothOfRelativeDimension.smooth 1 (projToSpec E))
+    (geometricallyConnected_projToSpec F E)
+
+end GroupLawOverField
+
+/-- **The chord–tangent group law on the projective Weierstrass model over an ARBITRARY
+field, together with BOTH point dictionaries** (sorry leaf, cut 2026-08-02, `flt-lean-9`) —
+the single shared leaf of the two ports described in the section docstring above.
+
+The conclusion is: a multiplication `m` with the four axioms, such that the abelian-scheme
+structure it generates identifies
+
+* its GEOMETRIC fibre over `F̄` with `E(F̄)`, `Γ_F`-equivariantly (the conjunct
+  `Modularity/MoretBailly.lean` consumes), and
+* its `F`-RATIONAL points with `E(F)` (the conjunct `ModularCurve/EllipticScheme.lean`
+  consumes).
+
+**Neither conjunct implies the other** — one is about `Spec F̄`-points and one about
+`Spec F`-points, and no map between the two statements exists — which is why they are a
+CONJUNCTION here rather than one being derived from the other.  They are nevertheless ONE
+leaf and not two, because both are read off the SAME `m` by the same chart computation
+(`Fermat.ProjCoords.specPointEquiv`, already stated over a general target field
+`f : ℚ →+* K`), so a prover who has either has the other for the price of instantiating
+`K := F̄` or `K := F`.
+
+## Faithfulness
+
+`m` is bound EXISTENTIALLY and that is load-bearing: `abelianSchemeStructOfMul` pins the
+unit to `projInfty E`, but a `∀ m` form would still be refuted by any translate of the
+chord–tangent law, exactly as the `∀ gl` form was refuted at `ℚ` on 2026-07-27.  Conversely
+the clauses are not under-pinned: the geometric `≃+` is required to be Galois-EQUIVARIANT,
+which forbids a junk bijection, and both `≃+`s are stated FOR the group structure that this
+leaf's own `m` generates, so a witness cannot supply a group law and an unrelated
+equivalence.
+
+NOT VACUOUS: `(E⁄F).Point` is nonempty (the point at infinity) and so is
+`RelPoint (projToSpec E) (𝟙 _)` (the zero section), so the rational `≃+` is a real claim;
+likewise over `F̄`.
+
+`[DecidableEq F]` is what mathlib's chord–tangent addition on `WeierstrassCurve.Affine.Point`
+requires — the law branches on `x₁ = x₂` — so `(E⁄F).Point` has no group structure without
+it.  It is an instance binder here rather than a `Classical.typeDecidableEq` inside the
+statement precisely so that `EllipticScheme.lean`'s consumer, which HAS such an instance,
+gets a group structure that matches its own syntactically.  The `F̄` side has no such
+consumer constraint, so it is supplied internally by `Classical.typeDecidableEq`, matching
+`MoretBailly.lean`'s statement character for character. -/
+theorem exists_projMul_geomFibre_relPoint_addEquiv (F : Type u) [Field F] [DecidableEq F]
+    (E : WeierstrassCurve F) [E.IsElliptic] :
+    letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+    ∃ (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+      (hm : m ≫ projToSpec E =
+        Limits.pullback.fst (projToSpec E) (projToSpec E) ≫ projToSpec E)
+      (hassoc : Fermat.AbelianSchemeStruct.triAddLeft (projToSpec E) m hm =
+        Fermat.AbelianSchemeStruct.triAddRight (projToSpec E) m hm)
+      (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+        (Limits.pullback.fst (projToSpec E) (projToSpec E))
+        Limits.pullback.condition.symm ≫ m = m)
+      (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+        (by rw [Category.assoc, projInfty_comp_projToSpec, Category.comp_id,
+          Category.id_comp]) ≫ m = 𝟙 (proj E))
+      (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+        (by rw [projNeg_comp_projToSpec, Category.id_comp]) ≫ m =
+          projToSpec E ≫ projInfty E),
+      (letI := (abelianSchemeStructOfMul E m hm hassoc hcomm hunit
+          hinv).addCommGroup (Fermat.specAlgClos F ≫ 𝟙 (Spec (CommRingCat.of F)))
+       ∃ e : (WeierstrassCurve.Affine.baseChange E (AlgebraicClosure F)).Point ≃+
+           Fermat.GeomFibrePt (projToSpec E) (𝟙 (Spec (CommRingCat.of F))),
+         ∀ (σ : Field.absoluteGaloisGroup F)
+           (x : (WeierstrassCurve.Affine.baseChange E (AlgebraicClosure F)).Point),
+           e (WeierstrassCurve.Affine.Point.map
+               (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom x)
+             = (abelianSchemeStructOfMul E m hm hassoc hcomm hunit
+                 hinv).galSMul (𝟙 (Spec (CommRingCat.of F))) σ (e x)) ∧
+      (letI := (abelianSchemeStructOfMul E m hm hassoc hcomm hunit
+          hinv).addCommGroup (𝟙 (Spec (CommRingCat.of F)))
+       Nonempty (Fermat.RelPoint (projToSpec E) (𝟙 (Spec (CommRingCat.of F))) ≃+
+         (WeierstrassCurve.Affine.baseChange E F).Point)) :=
+  sorry
+
+end WeierstrassCurve.Projective.OverField
 
 end

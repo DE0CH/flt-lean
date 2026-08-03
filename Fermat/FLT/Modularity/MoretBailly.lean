@@ -56095,44 +56095,8 @@ what it does and does not need:
   constant term, hence `F → F[X, Y, Z] ⧸ (W)` is injective — a constant in `(W)`
   is `b · W` and `constantCoeff` kills it. -/
 theorem isProper_projToSpecOverField (F : Type u) [Field F] (E : WeierstrassCurve F) :
-    IsProper (projToSpec E) := by
-  -- The projective Weierstrass polynomial has vanishing constant term: it is
-  -- homogeneous of degree `3`, and `3 ≠ 0`.
-  have hc : MvPolynomial.constantCoeff (polynomial E) = 0 :=
-    (isHomogeneous_polynomial E).coeff_eq_zero (d := 0) (by simp)
-  -- Hence `F → F[X, Y, Z] ⧸ (W)` is injective: a constant in `(W)` is `b * W`, and
-  -- `constantCoeff` sends that to `0`.
-  have hinj : Function.Injective (algebraMap F
-      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal)) := by
-    intro c c' h
-    have h' : (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
-          (MvPolynomial.C c)) = Ideal.Quotient.mk _ (MvPolynomial.C c') := h
-    rw [Ideal.Quotient.mk_eq_mk_iff_sub_mem, ← MvPolynomial.C_sub] at h'
-    obtain ⟨b, hb⟩ := Ideal.mem_span_singleton'.mp h'
-    have hcc := congrArg MvPolynomial.constantCoeff hb
-    rw [map_mul, hc, mul_zero, MvPolynomial.constantCoeff_C] at hcc
-    exact sub_eq_zero.mp hcc.symm
-  -- The degree-zero part of the homogeneous coordinate ring is exactly `F`.
-  have hbij : Function.Bijective (algebraMap F (projGrading E 0)) := by
-    refine ⟨fun c c' h => hinj (congrArg Subtype.val h), ?_⟩
-    rintro ⟨x, hx⟩
-    obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hx
-    rw [MvPolynomial.homogeneousSubmodule_zero] at hp
-    obtain ⟨c, rfl⟩ := Submodule.mem_one.mp hp
-    exact ⟨c, rfl⟩
-  haveI := IsScalarTower.of_algebraMap_eq (R := F) (S := (projGrading E 0))
-    (A := MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) fun _ => rfl
-  haveI : Algebra.FiniteType F
-      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
-    Algebra.FiniteType.of_surjective (Ideal.Quotient.mkₐ F _) Ideal.Quotient.mk_surjective
-  haveI : Algebra.FiniteType (projGrading E 0)
-      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
-    Algebra.FiniteType.of_restrictScalars_finiteType F _ _
-  haveI : IsIso (CommRingCat.ofHom (algebraMap F (projGrading E 0))) :=
-    (ConcreteCategory.isIso_iff_bijective _).mpr hbij
-  show IsProper (Proj.toSpecZero (projGrading E) ≫
-    Spec.map (CommRingCat.ofHom (algebraMap F (projGrading E 0))))
-  infer_instance
+    IsProper (projToSpec E) :=
+  WeierstrassCurve.Projective.OverField.isProper_projToSpec E
 
 /-! #### The dehomogenisation dictionary and the three coordinate charts
 
@@ -56144,7 +56108,39 @@ specific to this module: its only project-level input is
 upstream of both this module and `EllipticScheme.lean`, so a future cleanup can
 relocate the whole namespace there verbatim and let `EllipticScheme.lean`'s `ℚ`
 versions collapse to `F := ℚ` instantiations.  It lives here rather than upstream
-only to keep the blast radius of this commit to the one file that needed it. -/
+only to keep the blast radius of this commit to the one file that needed it.
+
+**THAT RELOCATION HAS ALREADY HAPPENED, AND THIS COPY WAS NEVER DELETED**
+(measured 2026-08-02, `flt-lean-9`).  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/
+ProjectiveModelOverField.lean` was CREATED on 2026-07-30 by hoisting exactly these blocks
+out of this module — and this module still carries them and still uses its local copies.
+Comment-stripped declaration-name intersection of the two modules, restricted to the two
+namespaces:
+
+    ProjChartOverField      1259 lines   39 of 40 declarations shared
+    ProjConnectedOverField  1082 lines   69 of 71 declarations shared
+
+i.e. **~2341 lines of this module duplicate a module it already `public import`s.**
+Nothing reports it: the hoist RENAMED the namespace (`ProjChartOverField` /
+`ProjConnectedOverField` here against `WeierstrassCurve.Projective.OverField` there), so
+`tools/merge/xdup.py`'s qualified pass is silent and its last-component pass buries the
+hits in ~7000 tree-wide matches.  Diffing the ONE PAIR of modules is what finds it, and it
+takes seconds.
+
+**Deleting it is a DECISION, not a cleanup, and that is why it is not done here.**  Of the
+108 shared declarations, 94 are byte-identical comment-stripped and **14 have DRIFTED** —
+`projCoord` (0.79), `smoothOfRelativeDimension_projToSpec` (0.94), `nonempty_projPullbackIso`
+(0.78), `geometricallyConnected_projToSpec` (0.93), and most sharply
+`not_X_dvd_polynomial` at **0.40**, because the upstream copy carries a
+CHARACTERISTIC-TWO REPAIR that this one does not (the `ℚ` argument by evaluation at
+`F`-points fails over `𝔽₂` with `a₃ = 1`, `a₆ = 0`, where `W(0, Y, Z) = YZ(Y + Z)` vanishes
+identically on `𝔽₂²` while `X ∤ W` still holds; the repair evaluates in `F[t]` at
+`(0, t, 1)` and reads off a coefficient — see that module's header).  So for each drifted
+pair somebody must decide which proof survives, and taking the wrong one silently reverts a
+fix.  The ~15 external use sites in this module (`ProjChartOverField.projCoord`,
+`ProjChartOverField.smoothOfRelativeDimension_projToSpec`, and the
+`ProjConnectedOverField` uses around `projBaseChangeGradedHom`) all re-point to
+`WeierstrassCurve.Projective.OverField.*` by name. -/
 namespace ProjChartOverField
 
 variable {F : Type u} [Field F]
@@ -58997,7 +58993,33 @@ field), so `c.base = d.base` has to be threaded as a hypothesis at 11 `base_eq` 
 `ProjCoords.ext` call sites; and `ℚ ↦ F` plus `Scheme.{0} ↦ Scheme.{u}` is 611
 comment-stripped `ℚ` occurrences and 100 `Scheme.{0}` occurrences across 6 677 lines of
 code.  The `[Algebra ℚ S]` instance binders are the part that is NOT a substitution and
-should be costed separately. -/
+should be costed separately.
+
+**PROVEN 2026-08-02 (`flt-lean-9`) OVER THE ONE SHARED LEAF — and it was the same leaf as
+`Fermat.exists_projGroupLaw_relPointAddEquiv_field` all along.**  Everything above is kept
+as the record of how this leaf was measured; what changed is only WHERE the obligation
+lives.  `ModularCurve/EllipticScheme.lean` was carrying an independent `sorry` asserting
+the existence of the SAME `m` with the SAME four axioms in the SAME `ofMul` shape,
+differing only in the dictionary hung off it — that one the `F`-RATIONAL points, this one
+the GEOMETRIC fibre with its Galois equivariance.  Since the two modules are
+import-INCOMPARABLE, neither could ever consume the other's copy, and dispatching them
+separately would have paid the `ℚ ↝ F` port twice.
+
+Both now rest on
+`WeierstrassCurve.Projective.OverField.exists_projMul_geomFibre_relPoint_addEquiv`, in the
+already-imported `.../EllipticCurve/ProjectiveModelOverField.lean` — the common ancestor of
+the two consumers — which produces `m` together with BOTH dictionaries as a conjunction.
+Read that leaf's docstring for the port's remeasurement: **73 declarations / 2518 lines**,
+not the 6677 quoted above, because eighteen of the closure's declarations (986 lines) have
+since landed in that module, and `Fermat.ProjCoords` is already stated over an arbitrary
+field.
+
+The bridge is definitional: `ProjGroupLawOverField.ofMul (…).toAbelianSchemeStruct` and
+`OverField.abelianSchemeStructOfMul` are both `Fermat.AbelianSchemeStruct.ofMorphisms`
+applied to the same data — same `m`, and `e`/`i` pinned to `projInfty E`/`projNeg E` on
+both sides — differing only in the three geometric arguments, which are `Prop`s.  So the
+two `AddCommGroup` instances are the same instance and `exact` crosses the gap with no
+transport. -/
 theorem exists_projMulOverField_geomFibreAddEquiv (F : Type u) [Field F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
@@ -59026,8 +59048,11 @@ theorem exists_projMulOverField_geomFibreAddEquiv (F : Type u) [Field F]
                (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom x)
              = (ProjGroupLawOverField.ofMul m hm hassoc hcomm hunit
                  hinv).toAbelianSchemeStruct.galSMul
-                 (𝟙 (Spec (CommRingCat.of F))) σ (e x)) :=
-  sorry
+                 (𝟙 (Spec (CommRingCat.of F))) σ (e x)) := by
+  letI : DecidableEq F := Classical.typeDecidableEq _
+  obtain ⟨m, hm, hassoc, hcomm, hunit, hinv, hgeom, -⟩ :=
+    WeierstrassCurve.Projective.OverField.exists_projMul_geomFibre_relPoint_addEquiv F E
+  exact ⟨m, hm, hassoc, hcomm, hunit, hinv, hgeom⟩
 
 /-- **The chord–tangent group law together with the equivariant identification of the
 geometric fibre** (**PROVEN 2026-07-31** over

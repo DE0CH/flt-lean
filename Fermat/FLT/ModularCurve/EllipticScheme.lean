@@ -13723,45 +13723,8 @@ used.  Properness holds for the projective model of an arbitrary Weierstrass equ
 over any field, singular or not.  The hypothesis is retained only because
 `ProjGroupLaw.toAbelianSchemeStructField` consumes this signature. -/
 theorem isProper_projToSpec_field (E : WeierstrassCurve F) [E.IsElliptic] :
-    IsProper (projToSpec E) := by
-  -- The projective Weierstrass polynomial has vanishing constant term: it is
-  -- homogeneous of degree `3`, and `3 ≠ 0`.
-  have hc : MvPolynomial.constantCoeff (polynomial E) = 0 :=
-    (isHomogeneous_polynomial E).coeff_eq_zero (d := 0) (by simp)
-  -- Hence `F → F[X, Y, Z] ⧸ (W)` is injective: a constant in `(W)` is `b * W`, and
-  -- `constantCoeff` sends that to `0`.
-  have hinj : Function.Injective (algebraMap F
-      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal)) := by
-    intro c c' h
-    have h' : (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
-          (MvPolynomial.C c)) = Ideal.Quotient.mk _ (MvPolynomial.C c') := h
-    rw [Ideal.Quotient.mk_eq_mk_iff_sub_mem, ← MvPolynomial.C_sub] at h'
-    obtain ⟨b, hb⟩ := Ideal.mem_span_singleton'.mp h'
-    have hcc := congrArg MvPolynomial.constantCoeff hb
-    rw [map_mul, hc, mul_zero, MvPolynomial.constantCoeff_C] at hcc
-    exact sub_eq_zero.mp hcc.symm
-  -- The degree-zero part of the homogeneous coordinate ring is exactly `F`.
-  have hbij : Function.Bijective (algebraMap F (projGrading E 0)) := by
-    refine ⟨fun c c' h => hinj (congrArg Subtype.val h), ?_⟩
-    rintro ⟨x, hx⟩
-    obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hx
-    rw [MvPolynomial.homogeneousSubmodule_zero] at hp
-    obtain ⟨c, rfl⟩ := Submodule.mem_one.mp hp
-    exact ⟨c, rfl⟩
-  -- `R`/`S`/`A` pinned by name: see the implementation note on `isProper_projToSpec`.
-  haveI := IsScalarTower.of_algebraMap_eq (R := F) (S := (projGrading E 0))
-    (A := MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) fun _ => rfl
-  haveI : Algebra.FiniteType F
-      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
-    Algebra.FiniteType.of_surjective (Ideal.Quotient.mkₐ F _) Ideal.Quotient.mk_surjective
-  haveI : Algebra.FiniteType (projGrading E 0)
-      (MvPolynomial (Fin 3) F ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
-    Algebra.FiniteType.of_restrictScalars_finiteType F _ _
-  haveI : IsIso (CommRingCat.ofHom (algebraMap F (projGrading E 0))) :=
-    (ConcreteCategory.isIso_iff_bijective _).mpr hbij
-  show IsProper (Proj.toSpecZero (projGrading E) ≫
-    Spec.map (CommRingCat.ofHom (algebraMap F (projGrading E 0))))
-  infer_instance
+    IsProper (projToSpec E) :=
+  _root_.WeierstrassCurve.Projective.OverField.isProper_projToSpec E
 
 /-- **The projective Weierstrass model is smooth of relative dimension one over an
 ARBITRARY field** (PROVEN 2026-07-31, `flt-lean-387`, by DELEGATION) — the
@@ -14019,13 +13982,40 @@ smooth curve over a field with a rational point is nonempty (the zero section), 
 `≃+` is a real claim.  The check that would refute it is a `ProjGroupLaw E` whose `m`
 is NOT the chord–tangent law but whose `RelPoint` group is still `(E⁄F).Point` — that
 does not refute this statement, which is existential over `gl`, and it is precisely
-why the existential is the right shape. -/
+why the existential is the right shape.
+
+**PROVEN 2026-08-02 (`flt-lean-9`) over the ONE SHARED LEAF, and the port did not have to
+be done twice.**  Everything above is preserved because it is the record of how the leaf
+came to be cut; what changed is only WHERE the remaining obligation lives.
+`WeierstrassCurve.Projective.OverField.exists_projMul_geomFibre_relPoint_addEquiv`, in the
+already-imported `.../EllipticCurve/ProjectiveModelOverField.lean`, produces the
+multiplication `m` together with BOTH point dictionaries — the geometric one that
+`Modularity/MoretBailly.lean` consumes and the rational one this leaf consumes — so this
+theorem is now the assembly of a `ProjGroupLaw` out of that `m`, with the unit and the
+inversion pinned to `projInfty E` and `projNeg E` and their two compatibilities supplied by
+`WeierstrassCurve.Projective.projInfty_comp_projToSpec` / `projNeg_comp_projToSpec`.
+
+The bridge is definitional: `ProjGroupLaw.toAbelianSchemeStructField` and
+`OverField.abelianSchemeStructOfMul` are both `Fermat.AbelianSchemeStruct.ofMorphisms`
+applied to the same data, differing only in the three GEOMETRIC arguments, which are `Prop`s
+— so the two `AddCommGroup` instances are the same instance and `exact` crosses the gap. -/
 theorem exists_projGroupLaw_relPointAddEquiv_field [DecidableEq F]
     (E : WeierstrassCurve F) [E.IsElliptic] :
     ∃ gl : ProjGroupLaw E,
       letI := gl.toAbelianSchemeStructField.addCommGroup (𝟙 (Spec (CommRingCat.of F)))
-      Nonempty (RelPoint (projToSpec E) (𝟙 (Spec (CommRingCat.of F))) ≃+ (E⁄F).Point) :=
-  sorry
+      Nonempty (RelPoint (projToSpec E) (𝟙 (Spec (CommRingCat.of F))) ≃+ (E⁄F).Point) := by
+  obtain ⟨m, hm, hassoc, hcomm, hunit, hinv, -, hrat⟩ :=
+    WeierstrassCurve.Projective.OverField.exists_projMul_geomFibre_relPoint_addEquiv F E
+  exact ⟨{ m := m
+           e := _root_.WeierstrassCurve.Projective.projInfty E
+           i := _root_.WeierstrassCurve.Projective.projNeg E
+           hm := hm
+           he := _root_.WeierstrassCurve.Projective.projInfty_comp_projToSpec E
+           hi := _root_.WeierstrassCurve.Projective.projNeg_comp_projToSpec E
+           hassoc := hassoc
+           hcomm := hcomm
+           hunit := hunit
+           hinv := hinv }, hrat⟩
 
 /-- **The chord–tangent group law EXISTS on the projective model over an ARBITRARY
 field** (PROVEN 2026-08-02, `flt-lean-51`) — the general-base form of
