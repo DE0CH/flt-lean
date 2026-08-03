@@ -147,6 +147,67 @@ order is to build bridge 2 FIRST as a leaf in its own right — it is wanted by
 `hmm₀ram`-style hypotheses all over `ModThree.lean` — and only then ask about a shared
 reciprocity.
 
+## ROUTE CORRECTION (2026-08-03, `flt-lean-170`) — READ BEFORE DISPATCHING A PROVER.
+The inventory above is retained because its FACTS are right (those declarations exist
+and are proven), but its ROUTE CLAIM — "what is missing is one assembly", descending
+the cyclotomic base case through the auxiliary field — names the WRONG CONTAINMENT,
+and the error was found by reading the cited pages rather than the cited theorem
+names. Checked against Childress ch. 5 §2 directly (the book is on disk:
+`~/flt-lean/sources/childress2009cft.txt`, proof of Theorem 2.1(ii) at p. 114 and of
+Proposition 2.2 at pp. 115–123):
+
+* **The descent apparatus serves `ker ⊆ P⁺·N`, not `P⁺ ⊆ ker`.** Childress
+  pp. 115–123 (Van der Waerden lemmas, Artin's Lemma, the auxiliary-field assembly
+  `a = α · N(A) · b_F^D`) is the proof of Proposition 2.2, `ker A ⊆ P⁺_{F,m} N(m)` —
+  which is exactly the containment the in-tree
+  `artinDivisorKernel_le_sup_*`/`exists_artinNormSubgroups_ramified_ray_class` cluster
+  already proves. Run on a RAY element instead of a kernel element, the same mechanics
+  return a tautology: `D` is defined by `σ^D = (a, K/F)`, so the assembly computes the
+  symbol of `a` in terms of itself and yields nothing.
+* **The classical proof of THIS leaf consumes the norm-index inequality `n ≤ h`.**
+  Childress p. 114, general cyclic case: `[I : ker] = [K:F]` (surjectivity, from
+  density) and `[I : P⁺N] = [K:F]` (the Global Cyclic Norm Index EQUALITY, Thm 5.12 —
+  Herbrand quotients on one side, the analytic inequality on the other); with
+  Prop 2.2's `ker ⊆ P⁺N` the equal finite indices force `ker = P⁺N ⊇ P⁺`. The
+  `[I : P⁺N] ≥ [K:F]` half used there is verbatim
+  `exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class` below — the
+  theorem this tree proves OVER this leaf. So the classical route is CIRCULAR as this
+  tree is wired, and no non-circular direct-descent proof of this leaf exists in the
+  literature this cluster follows. (Why descent alone cannot do it: the auxiliary
+  field transfers cyclotomic reciprocity down to `F` only on norm-reachable classes;
+  the gap between `P⁺` and those classes is precisely what the index equality
+  bridges. This is also why the three pre-recut audits quoted below — "reciprocity is
+  strictly harder than the inequality" — were correct as stated.)
+* **Honest non-circular routes, priced.** (α) REVERSE THE RECUT: prove the inequality
+  below directly by the cohomological route (Herbrand quotient of the idele classes /
+  ambiguous class number formula — Childress ch. 5 §1 Thm 5.12, Neukirch VI (4.6);
+  the route its own pre-recut docstring priced as "a development, not a leaf"), and
+  DELETE this leaf: nothing else consumes it, and the conductor cluster in
+  `ModThree.lean` derives all its `ray ⊆ ker` outputs from `hidx₂` + `ker ⊆ P⁺N` +
+  counting, so once the inequality is proven directly this statement is derivable
+  downstream if ever wanted. (β) Keep this leaf and prove it classically — which
+  needs the SAME Herbrand development for `n ≤ h`, PLUS the analytic `h ≤ n` (the
+  open `exists_lseries_bound_narrowRayCharacter_ray_class` chain in `ModThree.lean`)
+  PLUS surjectivity, i.e. strictly more than (α) for the same unlock. Verdict: (α);
+  the deletion reverses an audited recut and is the merge worker's call, flagged in
+  this branch's handoff.
+
+## AUDIT DELTA FOR THE `KK` RESTATEMENT (2026-08-03, `flt-lean-170`). The statement
+is generalised from `Dickson.K 3` to a variable value field `{KK : Type*} [Field KK]`
+and `hℓ3 : ℓ ≠ 3` becomes `hℓchar : ((ℓ : ℕ) : KK) ≠ 0`, completing the seam of the
+2026-08-01 KK-generalisation, which had reached
+`exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class` below (reopening
+its glue, since it could no longer be applied over a `Dickson.K 3`-only leaf) but not
+this file's leaf. The re-audit argument is the parent's, one section below, verbatim:
+the mathematics does not see the value field — every object in the classical
+statement lives over `F`, and `χ`, `c` occur only as names for the cyclic extension
+`M/F` — and `hℓchar` is what `hℓ3` always meant (over `𝔽̄₃` the two are equivalent,
+and `hℓchar` is the exact condition for `μ_{ℓ^k} ⊆ KKˣ` to be nontrivial). Both
+`ℚ(i)` refutations below run at `KK = Dickson.K 3`, where `((2 : ℕ) : 𝔽̄₃) ≠ 0`
+holds, so they transfer verbatim, as does the `mm₀ = ⊤` branch, which mentions no
+value field. At `KK := Dickson.K 3` this statement restricts to the audited
+2026-07-31 form, so it is a strict generalisation of a statement audited TRUE.
+
 ## FALSITY AUDIT (run from scratch, 2026-07-31). VERDICT: TRUE AS STATED
 
 * *Monotone in `t`, the right way.* Raising `t` SHRINKS `mm₀ ^ (t+1)`, hence shrinks the
@@ -188,15 +249,15 @@ reciprocity.
 **The check that would refute it**: a number field `F`, a character `χ` as above, an `mm₀`
 divisible by every prime at which `χ` is ramified, and for EVERY `t` a nonzero totally
 positive `δ ≡ 1 (mod mm₀ ^ (t+1))` with `c ((δ)) ≠ 1`. -/
-theorem exists_artinSymbol_span_eq_one_narrowRay_ray_class
+theorem exists_artinSymbol_span_eq_one_narrowRay_ray_class {KK : Type*} [Field KK]
     (F : Type u) [Field F] [NumberField F]
-    (χ : Γ F → Dickson.K 3)
+    (χ : Γ F → KK)
     (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
     (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
     (hVker : ∀ a ∈ V, χ a = 1)
-    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓchar : ((ℓ : ℕ) : KK) ≠ 0) (k : ℕ)
     (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
-    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (c : Ideal (NumberField.RingOfIntegers F) → KK)
     (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
       c (I * J) = c I * c J)
     (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
@@ -216,7 +277,12 @@ theorem exists_artinSymbol_span_eq_one_narrowRay_ray_class
 
 /-- **THE GLOBAL NORM-INDEX INEQUALITY, AT A PRIME-POWER MODULUS AND WITH THE TRIVIAL
 CASE ALREADY DISCHARGED** (**PROVEN 2026-07-31** (`flt-lean-167`) as containment glue over
-`exists_artinSymbol_span_eq_one_narrowRay_ray_class` just above; created 2026-07-31 by
+`exists_artinSymbol_span_eq_one_narrowRay_ray_class` just above; REOPENED by the
+2026-08-01 KK generalisation, which restated this theorem at a variable value field while
+the leaf above was still at `Dickson.K 3`, so the glue could no longer be applied and the
+release-34 merge repair re-sorried it; **RE-PROVEN 2026-08-03** (`flt-lean-170`) by
+restating the leaf above at `KK`/`hℓchar` — completing that seam — and restoring the
+recut's glue verbatim from `315f9fc7`; created 2026-07-31 by
 hoisting the irreducible
 core of `ModThree.lean`'s `exists_natCard_charDivisorImage_le_ray_class` into this module;
 that theorem is now PROVEN as glue over
@@ -499,8 +565,37 @@ theorem exists_natCard_charDivisorImage_le_normIndex_primePow_ray_class {KK : Ty
         IsCyclic (Im.map φ) → Nat.card (Im.map φ) ∣ ℓ ^ k → N ≤ φ.ker →
         P ≤ Im → N ≤ Im → P.relIndex Im ≠ 0 →
         1 < Nat.card (Im.map φ) →
-        Nat.card (Im.map φ) ≤ (P ⊔ N).relIndex Im :=
-  sorry
+        Nat.card (Im.map φ) ≤ (P ⊔ N).relIndex Im := by
+  obtain ⟨t, ht⟩ := exists_artinSymbol_span_eq_one_narrowRay_ray_class
+    F χ hmul V hVopen hVker ℓ hℓ hℓchar k hord c hcmul hcfrob mm₀ hmm₀ hmm₀ram
+  refine ⟨t, ?_⟩
+  intro φ d Im P N _hd _hφv hφd _hIm hP hN _hcyc _hcard hNker _hPIm _hNIm hPidx _hgt
+  -- **RECIPROCITY**: the narrow ray group lies in the kernel of the divisor Artin map.
+  -- `P` is generated by the `d δ` for `δ` in the ray, `hφd` identifies `φ (d δ)` with the
+  -- ideal symbol `c ((δ))`, and the leaf above kills that.
+  have hPker : P ≤ φ.ker := by
+    rw [hP]
+    refine (Subgroup.closure_le _).2 ?_
+    intro y hy
+    obtain ⟨δ, hδ0, hδpos, hδcong, rfl⟩ := hy
+    rw [SetLike.mem_coe, MonoidHom.mem_ker]
+    refine Units.ext ?_
+    rw [hφd δ hδ0, Units.val_one]
+    exact ht δ hδ0 hδpos hδcong
+  -- `N ≤ φ.ker` is a hypothesis — it is the elementary half of the containment, `φ` sending
+  -- the generator `single v (f_v)` to `χ (globalFrob v) ^ f_v = 1`.
+  have hsup : P ⊔ N ≤ φ.ker := sup_le hPker hNker
+  -- The index is FINITE, inherited from `P.relIndex Im ≠ 0` along `P ≤ P ⊔ N`.  Without
+  -- this the `Nat.le_of_dvd` below is unavailable and the conclusion is false for the
+  -- trivial reason that `relIndex` returns `0` for an infinite index.
+  have hne : (P ⊔ N).relIndex Im ≠ 0 := fun h0 =>
+    hPidx (zero_dvd_iff.mp (h0 ▸ Subgroup.relIndex_dvd_of_le_left Im le_sup_left))
+  -- `Nat.card (Im.map φ) = (ker φ).relIndex Im` (`Subgroup.relIndex_ker`), and `relIndex`
+  -- is antitone in its first argument, so the containment above IS the inequality.
+  calc Nat.card (Im.map φ) = φ.ker.relIndex Im := (Subgroup.relIndex_ker (K := Im) φ).symm
+    _ ≤ (P ⊔ N).relIndex Im :=
+        Nat.le_of_dvd (Nat.pos_of_ne_zero hne)
+          (Subgroup.relIndex_dvd_of_le_left Im hsup)
 
 /-- **THE GLOBAL NORM-INDEX INEQUALITY IN THE FORM THE RAY-CLASS CLUSTER CONSUMES**
 (**PROVEN 2026-07-31** as glue over
