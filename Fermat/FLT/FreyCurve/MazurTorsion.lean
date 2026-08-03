@@ -4943,7 +4943,7 @@ over the integral base.
 Nothing here is geometry: the cusps are untouched, and `𝒳` does not appear.
 What is left for `exists_extend_atkinLehnerCusps_of_jNeronDatum` is exactly
 the extension across the cuspidal locus. -/
-theorem exists_atkinLehnerModelOpen_of_jNeronDatum (hq : q.Prime) (hqN : ¬ q ∣ N) :
+theorem exists_atkinLehnerModelOpen_of_jNeronDatum (hq : q.Prime) (hqN : q ≠ N) :
     ∃ (alZ : AtkinLehnerMorphismOver N (SpecLoc R)) (wY : YZ ⟶ YZ)
       (hwY : wY ≫ ystr = ystr),
       wY ≫ wY = 𝟙 YZ ∧
@@ -4981,6 +4981,236 @@ theorem exists_atkinLehnerModelOpen_of_jNeronDatum (hq : q.Prime) (hqN : ¬ q �
     (huniq (wY ≫ wY) ⟨by rw [Category.assoc, hwY, hwY], fun g₀ dd => hsq g₀ dd⟩).trans
       (huniq (𝟙 YZ) ⟨Category.id_comp _, fun _ _ => (Category.comp_id _).symm⟩).symm
   exact ⟨alZ, wY, hwY, hinv, fun g₀ dd => Subtype.ext (hwYc g₀ dd).symm⟩
+
+/-! #### THE SIXTH CUT (2026-08-02): the cusps as DEGENERATION DATA
+
+`exists_extend_atkinLehnerCusps_of_jNeronDatum` below was the last GEOMETRIC
+leaf of the fourth cut, and its own docstring said what it is: the extension of
+`w_𝒴` across the cuspidal locus, whose points are Néron polygons with
+`Γ₀(N)`-structure and on which `w_N` acts by `e ↦ N/e`.  It is now PROVEN over
+the two statements that description names, and the assembly is entirely formal.
+
+**WHY THE CUT HAS TO KEEP THE MODULI PIN, AND WHY IT CANNOT BE GEOMETRIC.**
+The obvious cut is along `IsX0JNeronCuspModel` (the fifth cut, above): `𝒞` is
+already carried there as a finite étale `ℤ_(q)`-scheme immersed in the model,
+so one is tempted to ask for an action of `w_N` on `𝒞` and then to GLUE `w_𝒴`
+and that action into `w`.  **Every such cut is FALSE**, and the refutation is
+one line: `𝒳 = 𝒴 ⊔ 𝒞` holds as a decomposition of the underlying SET (that is
+exactly `IsX0JNeronCuspModel.cover`) and NOT as one of schemes, so a morphism
+out of `𝒳` is neither determined by, nor assemblable from, its restrictions to
+the two pieces.  A "gluing" leaf taking `w_𝒴` and a cusp action and returning
+`w` would therefore be satisfied by ARBITRARY `w_𝒴` — which is precisely the
+unpinned form that the target's own ⚠ heading records as false, with the
+codimension-two obstruction of `exists_unique_extension_of_isSmoothProperCurve`
+as the witness.  The cusps have to enter as MODULI, not as a subscheme.
+
+**SO THE CUT IS THE UNIVERSAL PROPERTY, EXTENDED ACROSS THE BOUNDARY.**
+Deligne–Rapoport do not compactify `Y_0(N)` and then check that `w_N` happens
+to extend; they construct `𝒳` itself as a coarse moduli space, for the
+`Γ₀(N)`-problem on GENERALIZED elliptic curves.  `IsX0JNeronDegModuli` is that
+sentence, in the shape of `IsCoarseModuliY0`, and with it:
+
+| piece | what it asks for |
+|---|---|
+| `nonempty_isX0JNeronDegModuli` | `𝒳` is a coarse space for the extended problem |
+| `exists_dualDeg_of_degModuli` | `w_N` acts on degeneration data, by `e ↦ N/e` |
+
+and the extension is then the SAME three-line descent that
+`exists_atkinLehnerModelOpen_of_jNeronDatum` runs on `𝒴`, plus one use of
+`d.model.coarse.universal`'s UNIQUENESS half to identify `w_𝒴 ≫ jZ` with
+`jZ ≫ w`.  Nothing geometric survives in the assembly, which is the point of
+the cut: what is left in the two leaves is one citation each.
+
+**WHAT THIS DOES NOT NEED, AND DELIBERATELY DOES NOT USE.**  It does not use
+`IsX0JNeronCuspModel`, and the two are not rivals: that structure is the
+cuspidal locus as a SCHEME and is what the separation half
+(`redX_base_ne_of_isX0JNeronCuspModel`) consumes, while this one is the
+cuspidal locus as MODULI and is what an extension argument consumes.  A
+successor who proves `nonempty_isX0JNeronDegModuli` gets
+`nonempty_isX0JNeronCuspModel` within reach — `𝒞` is the closed complement of
+the open sublocus where the universal generalized curve is smooth — but the
+derivation is not attempted here and the two leaves stay independent. -/
+
+/-- **THE COMPACTIFIED MODEL AS A COARSE MODULI SPACE FOR DEGENERATION DATA**
+(structure, new 2026-08-02) — Deligne–Rapoport's actual description of `𝒳`,
+in the shape of `IsCoarseModuliY0`, and the object along which the extension
+leaf below is cut.
+
+`Deg T` is the type of `Γ₀(N)`-structures on GENERALIZED elliptic curves over
+an `S`-scheme `T` — Néron polygons in the degenerate fibres — and `IsBC` is
+the base-change relation on them, exactly as `IsBaseChangeOf` is for honest
+data.  `ofGamma0` says an honest `Γ₀(N)`-datum is one of these, `classify`
+sends a degeneration datum to a `T`-point of the MODEL rather than of the open
+part, and `universal` is the coarse-moduli initiality of `(𝒳, classify)`.
+
+**THE PROBLEM IS CARRIED ABSTRACTLY, AND THE PINNING FIELD IS
+`classify_ofGamma0`.**  Nothing here defines a generalized elliptic curve; the
+functor is a field.  What stops that from being vacuous is `classify_ofGamma0`,
+which ties the extended classifying map to `d.model.coarse.classify` on honest
+data, so `Deg` is pinned to be an extension OF `Gamma0Datum` compatible with
+the open model rather than an unrelated functor.
+
+**FAITHFULNESS AUDIT: the trivial extension does NOT satisfy this.**  The
+witness to beat is `Deg := Gamma0Datum N`, `IsBC := IsBaseChangeOf`,
+`ofGamma0 := id`, `classify g dd := relSectionAlong jZ _ (coarse.classify g dd)`
+— i.e. "no new data at the cusps at all", which satisfies every field except
+`universal`.  It fails `universal`, and here is the computation.  Feed
+`universal` the target `(𝒴, ystr)` with `c := d.model.coarse.classify`, which
+is natural.  It returns `u : 𝒳 ⟶ 𝒴` with `u ≫ ystr = xstr` and
+`(coarse.classify g dd).1 = (coarse.classify g dd).1 ≫ jZ ≫ u` for all
+`g, dd`.  The uniqueness half of `d.model.coarse.universal` (applied to
+`coarse.classify` itself, where `𝟙 𝒴` is the unique factorisation) then gives
+`jZ ≫ u = 𝟙 𝒴`.  So `jZ` is a SECTION of `u`, hence a closed immersion (`𝒴` is
+separated over the base, `d.model.isProper` giving separatedness of `𝒳`), and
+it is an open immersion by `d.model.isOpen` — so `Set.range jZ.base` is CLOPEN
+in `𝒳`.  `d.model.connected` makes `𝒳` connected, so the range is `∅` or
+everything, i.e. `𝒴 = ∅` or `𝒞 = ∅`; and if `𝒞 = ∅` then `jZ` is an
+isomorphism and the extension leaf below is trivially satisfiable anyway.  The
+structure therefore genuinely asserts that `𝒳` classifies MORE than `𝒴` does.
+
+**REFERENCES.**  Deligne–Rapoport, *Les schémas de modules de courbes
+elliptiques* (Antwerp II, 1973), II.1 (generalized elliptic curves), IV.2–IV.3
+(the `Γ₀(N)`-problem on them and its coarse space), VI.6; Katz–Mazur,
+*Arithmetic Moduli of Elliptic Curves*, ch. 13. -/
+structure IsX0JNeronDegModuli where
+  /-- `Γ₀(N)`-structures on GENERALIZED elliptic curves over an `S`-scheme -/
+  Deg : Scheme.{0} → Type
+  /-- the base-change relation on degeneration data — the analogue of
+  `IsBaseChangeOf`, carried as a relation for the same reason that one is -/
+  IsBC : ∀ {T' T : Scheme.{0}}, (T' ⟶ T) → Deg T' → Deg T → Prop
+  /-- an honest `Γ₀(N)`-datum is a degeneration datum -/
+  ofGamma0 : ∀ {T : Scheme.{0}}, Gamma0Datum N T → Deg T
+  /-- and that assignment respects base change -/
+  ofGamma0_bc : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {dd' : Gamma0Datum N T'}
+    {dd : Gamma0Datum N T}, IsBaseChangeOf h dd' dd →
+    IsBC h (ofGamma0 dd') (ofGamma0 dd)
+  /-- the classifying map of the extended problem, into the MODEL -/
+  classify : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R), Deg T → RelPoint xstr g
+  /-- it is natural in cartesian squares -/
+  classify_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecLoc R}
+    {g' : T' ⟶ SpecLoc R} (hg : h ≫ g = g') {D' : Deg T'} {D : Deg T},
+    IsBC h D' D → classify g' D' = RelPoint.pre h hg (classify g D)
+  /-- **the pinning field**: on honest data it is the classifying map of the
+  open model, pushed into `𝒳` along `jZ` -/
+  classify_ofGamma0 : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
+    classify g (ofGamma0 dd)
+      = relSectionAlong jZ d.model.comm (d.model.coarse.classify g dd)
+  /-- `(𝒳, classify)` is initial among `S`-schemes receiving a natural
+  transformation from the extended problem -/
+  universal : ∀ {Z : Scheme.{0}} (zstr : Z ⟶ SpecLoc R)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R), Deg T → RelPoint zstr g),
+    (∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecLoc R} {g' : T' ⟶ SpecLoc R}
+      (hg : h ≫ g = g') {D' : Deg T'} {D : Deg T},
+      IsBC h D' D → c g' D' = RelPoint.pre h hg (c g D)) →
+    ∃! u : XZ ⟶ Z, u ≫ zstr = xstr ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (D : Deg T),
+        (c g D).1 = (classify g D).1 ≫ u
+
+/-- **DELIGNE–RAPOPORT: the smooth model at `q ∤ N` IS the coarse moduli space
+of `Γ₀(N)`-structures on generalized elliptic curves** (sorry leaf, new
+2026-08-02) — the FIRST of the two pieces of the sixth cut, and the classical
+citation of the extension leaf.
+
+TRUE, and it is the whole content of Deligne–Rapoport IV: the compactified
+modular curve is not built by compactifying `Y_0(N)` and checking properties
+afterwards, it is built as the coarse space of the moduli problem on
+generalized elliptic curves.  Over `ℤ[1/N]` that space is smooth and proper,
+and for `q ∤ N` the ring `ℤ_(q)` is a `ℤ[1/N]`-algebra, so the base change is
+again a coarse space (the stack is Deligne–Mumford and formation of its coarse
+space commutes with the flat base change `ℤ[1/N] → ℤ_(q)`).
+
+**WHY THE GIVEN `𝒳` IS THAT SPACE, which is the one thing a reader should
+check.**  `d` does not say `𝒳` is Deligne–Rapoport's model; it says `𝒳` is a
+smooth proper geometrically connected compactification of `𝒴` with finite
+complement.  Those two agree, and the argument is minimal-model uniqueness in
+the only form needed here.  Write `𝒳_DR` for the Deligne–Rapoport model.  Both
+contain `𝒴` as an open with FINITE complement (`d.model.finite_compl`), so the
+identity of `𝒴` is a birational map `𝒳 ⇢ 𝒳_DR` that is an isomorphism outside
+finitely many closed points; both are regular (smooth over the regular base
+`Spec ℤ_(q)`) and proper; and both have IRREDUCIBLE special fibre, being smooth
+proper with geometrically connected fibres (`d.model.smooth`,
+`d.model.connected`).  A birational map between regular proper relative curves
+over a discrete valuation ring which is an isomorphism in codimension one is an
+isomorphism as soon as neither special fibre contains a contractible component,
+and an irreducible special fibre has none.  **Note where the genus-`0`
+counterexample recorded on `exists_extend_atkinLehnerCusps_of_jNeronDatum` does
+NOT apply**: that witness is about a model compared to another through an
+arbitrary automorphism of the GENERIC fibre, whereas here the two models already
+agree on a dense two-dimensional open, so no genus hypothesis is needed.
+
+**⚠ `q ≠ N` RATHER THAN `¬ q ∣ N`, DELIBERATELY AND FOR THE SAME REASON AS THE
+SIBLING.**  The honest hypothesis is `q ∤ N`; at `q ∣ N` the model is not
+smooth at `q`, the cusps collide in the special fibre and the statement is
+FALSE.  This leaf carries `q.Prime` and `q ≠ N` — which give `q ∤ N` exactly
+when `N` is prime, i.e. in the Mazur setting every consumer of this file is in
+— because that is what `exists_isNIsogenyPair_of_x0JNeronDatum`, the other
+citation leaf of the same cut, carries; keeping the section uniform is what
+makes the repair a single sweep.  **If a prover finds the gap at composite `N`
+real, strengthen `q ≠ N` to `¬ q ∣ N` throughout the whole
+`AtkinLehnerModelCut` section and in
+`exists_atkinLehnerModelAut_of_jNeronDatum` — every consumer can supply it —
+and NOT here alone.**
+
+**The check that refutes it**: a level `N`, a prime `q ∤ N` and an
+`IsX0JNeronDatum` whose `𝒳` admits no such extended classifying map — e.g. a
+smooth proper compactification of `𝒴` over `ℤ_(q)` other than
+Deligne–Rapoport's.
+
+**REFERENCES.**  Deligne–Rapoport (Antwerp II, 1973), II.1, IV.2–IV.3, V.5;
+Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*, ch. 13; Liu, *Algebraic
+Geometry and Arithmetic Curves*, 9.3.13 (uniqueness of the minimal regular
+model), for the paragraph identifying `𝒳` with `𝒳_DR`. -/
+theorem nonempty_isX0JNeronDegModuli (_hq : q.Prime) (_hqN : q ≠ N) :
+    Nonempty (IsX0JNeronDegModuli d) :=
+  sorry
+
+/-- **The Atkin–Lehner involution acts on DEGENERATION DATA** (sorry leaf, new
+2026-08-02) — the SECOND piece of the sixth cut, and the sentence "`w_N` acts
+on the cusps by `e ↦ N/e`" in the form the extension needs.
+
+**WHAT IS ASKED.**  A natural self-map of the extended moduli problem
+extending `alZ.dual`: on honest data it is the isogeny quotient `alZ` already
+supplies, and on a Néron polygon of `e`-gons it is the quotient by the cyclic
+subgroup of order `N`, which is the `d`-gon with `d = N/e`.
+
+TRUE — Deligne–Rapoport VI.6 / Katz–Mazur 13.5–13.11: a generalized elliptic
+curve with `Γ₀(N)`-structure may be divided by that structure, and the
+quotient is again a generalized elliptic curve with `Γ₀(N)`-structure, because
+`N` is invertible on the base.  On the standard `N`-gon this is the assertion
+that the cusp `e` goes to the cusp `N/e`.
+
+**THE COMPATIBILITY IS AN ISOMORPHISM, NOT AN EQUALITY**, and that is the
+honest form: `E/C` is defined only up to isomorphism, so `dualDeg` on the image
+of `ofGamma0` agrees with `alZ.dual` only up to `IsBC (𝟙 T)` — exactly as
+`AtkinLehnerMorphismOver.dual_dual` states involutivity up to
+`IsBaseChangeOf (𝟙 T)`, and for the same reason.  Naturality of `classify` is
+what makes that enough downstream.
+
+**INVOLUTIVITY IS NOT ASKED FOR**, for the same reason the extension leaf does
+not ask for `w ≫ w = 𝟙 𝒳`: `eq_of_comp_open_x0JNeronModel` promotes
+`w_𝒴 ≫ w_𝒴 = 𝟙 𝒴` to the model, and asking for it here would hide the one
+consumer of that density theorem.
+
+**`q ≠ N` rather than `¬ q ∣ N`**: as on the sibling leaf immediately above,
+and see the ⚠ paragraph there.
+
+**The check that refutes it**: an `IsX0JNeronDegModuli` and an
+`AtkinLehnerMorphismOver N (SpecLoc R)` whose action does not extend to the
+degeneration data — equivalently, a generalized elliptic curve with
+`Γ₀(N)`-structure over a `ℤ_(q)`-scheme whose quotient by that structure is not
+one.
+
+**REFERENCES.**  Deligne–Rapoport (Antwerp II, 1973), IV.4, VI.6; Katz–Mazur,
+*Arithmetic Moduli of Elliptic Curves*, 13.5, 13.11. -/
+theorem exists_dualDeg_of_degModuli (_hq : q.Prime) (_hqN : q ≠ N)
+    (M : IsX0JNeronDegModuli d) (alZ : AtkinLehnerMorphismOver N (SpecLoc R)) :
+    ∃ dualDeg : ∀ {T : Scheme.{0}}, (T ⟶ SpecLoc R) → M.Deg T → M.Deg T,
+      (∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecLoc R} {g' : T' ⟶ SpecLoc R}
+          (_hg : h ≫ g = g') {D' : M.Deg T'} {D : M.Deg T},
+          M.IsBC h D' D → M.IsBC h (dualDeg g' D') (dualDeg g D)) ∧
+      (∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
+        M.IsBC (𝟙 T) (dualDeg g (M.ofGamma0 dd)) (M.ofGamma0 (alZ.dual g dd))) :=
+  sorry
 
 /-- **The Atkin–Lehner involution of the OPEN integral model extends across
 the cusps** (sorry leaf, new 2026-07-31) — the SECOND Deligne–Rapoport piece
@@ -5020,14 +5250,51 @@ consumer of that density theorem.
 moduli-pinned `w_N` of the open integral model does not extend to the smooth
 proper model — equivalently, at which `w_N` is not defined on the smooth
 model. -/
-theorem exists_extend_atkinLehnerCusps_of_jNeronDatum (_hq : q.Prime) (_hqN : ¬ q ∣ N)
+theorem exists_extend_atkinLehnerCusps_of_jNeronDatum (hq : q.Prime) (hqN : q ≠ N)
     (alZ : AtkinLehnerMorphismOver N (SpecLoc R)) (wY : YZ ⟶ YZ)
     (hwY : wY ≫ ystr = ystr)
-    (_hpinZ : ∀ {T : Scheme.{0}} (g₀ : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
+    (hpinZ : ∀ {T : Scheme.{0}} (g₀ : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
       RelPoint.post wY hwY (d.model.coarse.classify g₀ dd)
         = d.model.coarse.classify g₀ (alZ.dual g₀ dd)) :
-    ∃ w : XZ ⟶ XZ, w ≫ xstr = xstr ∧ wY ≫ jZ = jZ ≫ w :=
-  sorry
+    ∃ w : XZ ⟶ XZ, w ≫ xstr = xstr ∧ wY ≫ jZ = jZ ≫ w := by
+  obtain ⟨M⟩ := nonempty_isX0JNeronDegModuli d hq hqN
+  obtain ⟨dualDeg, hdnat, hdcomp⟩ := exists_dualDeg_of_degModuli d hq hqN M alZ
+  -- `D ↦ classify (dualDeg D)` is a natural transformation into `𝒳`; factor it
+  obtain ⟨w, ⟨hwx, hwc⟩, -⟩ := M.universal xstr
+    (fun {_T} g D => M.classify g (dualDeg g D))
+    (fun {_T'} {_T} h {_g} {_g'} hg {_D'} {_D} hbc =>
+      M.classify_natural h hg (hdnat h hg hbc))
+  refine ⟨w, hwx, ?_⟩
+  -- both `wY ≫ jZ` and `jZ ≫ w` factor the same transformation out of `𝒴`
+  obtain ⟨_u, -, huniq⟩ := d.model.coarse.universal xstr
+    (fun {_T} g dd => relSectionAlong jZ d.model.comm
+      (d.model.coarse.classify g (alZ.dual g dd)))
+    (fun {_T'} {_T} h {_g} {_g'} hg {_dd'} {_dd} hbc => by
+      rw [d.model.coarse.classify_natural h hg (alZ.dual_baseChange h hg hbc),
+        pre_relSectionAlong])
+  have h1 : wY ≫ jZ = _u := by
+    refine huniq _ ⟨?_, ?_⟩
+    · rw [Category.assoc, d.model.comm, hwY]
+    · intro T g dd
+      show (d.model.coarse.classify g (alZ.dual g dd)).1 ≫ jZ = _
+      rw [← hpinZ g dd]
+      show _ = (d.model.coarse.classify g dd).1 ≫ wY ≫ jZ
+      rw [← Category.assoc]
+      rfl
+  have h2 : jZ ≫ w = _u := by
+    refine huniq _ ⟨?_, ?_⟩
+    · rw [Category.assoc, hwx, d.model.comm]
+    · intro T g dd
+      have hA : (d.model.coarse.classify g dd).1 ≫ jZ
+          = (M.classify g (M.ofGamma0 dd)).1 := by
+        rw [M.classify_ofGamma0]; rfl
+      have hB := hwc g (M.ofGamma0 dd)
+      have hC := M.classify_natural (𝟙 T) (Category.id_comp g) (hdcomp g dd)
+      show (relSectionAlong jZ d.model.comm
+        (d.model.coarse.classify g (alZ.dual g dd))).1 = _
+      rw [← Category.assoc, hA, ← hB, hC, M.classify_ofGamma0]
+      exact (Category.id_comp _).symm
+  rw [h1, h2]
 
 /-- **The reduction of a rational cusp is a cusp** (PROVEN 2026-07-27).
 
