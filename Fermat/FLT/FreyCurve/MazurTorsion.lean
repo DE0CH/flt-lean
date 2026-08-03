@@ -37785,6 +37785,200 @@ The check that would refute this re-refutation: a rank-`0` quotient `A` of
 `Y_0(p)(ℚ) → A(ℚ)` is injective; the second half is the whole leaf, so a
 successor should not expect the first half to buy anything on its own. -/
 
+/-- **THE SMOOTH COMPACTIFICATION OF AN INTEGRAL CURVE OVER A FIELD IS UNIQUE**
+(PROVEN 2026-08-02, flt-lean-49; general algebraic geometry, no modular input,
+no level, and no `ℚ`).
+
+Two smooth compactifications of one integral scheme `U` over a field are
+canonically isomorphic over that field, compatibly with the two open immersions.
+
+**Proof, and why it is three applications of ONE theorem.**  `X₁` is integral —
+`IsReduced` from `isReduced_of_smooth_over_field` and `IrreducibleSpace` from
+`irreducibleSpace_of_denseRange`, `u₁` being dominant with irreducible source —
+so its stalks are valuation rings
+(`valuationRing_stalk_of_smoothOfRelativeDimension_one`) and
+`exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion` extends `u₂`
+across the finitely many missing points to `w : X₁ ⟶ X₂`.  Symmetrically `w'`.
+Both composites `w ≫ w'` and `𝟙 X₁` extend `u₁` along `u₁`, so the UNIQUENESS
+half of the same theorem — instantiated at `Z := X₁`, which is the step worth
+noticing — identifies them; likewise on the other side.
+
+**`exists_unique_extension_of_isSmoothProperCurve` is deliberately NOT used**,
+though it is the packaged form of the same fact: it asks for
+`GeometricallyConnected strX₁`, and the consumer here has only
+`IsSmoothCompactification`, whose fields do not include it.  Geometric
+connectedness of the compactification of the affine sextic would have to come
+from geometric connectedness of the sextic — a genuine extra obligation about
+`y² − f` over `ℚ̄` — whereas `IsIntegral X₁`, which is all the underlying theorem
+`exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion` consumes, is
+free from `IsIntegral U` plus smoothness.  **The hypothesis to check when reusing
+this is `[IsIntegral U]` and nothing else.**
+
+BELONGS in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`,
+beside `IsSmoothCompactification` itself, and is stated here only for build
+economics: that module is `public import`ed by `ModularCurve/X0.lean`, so moving
+it re-elaborates the largest cone in the tree for a fifty-line lemma.  A hoist is
+mechanical — it cites only `CurveExtension.lean` and `Morphisms/SmoothReduced.lean`,
+both of which that file already sits above. -/
+theorem exists_inverse_of_isSmoothCompactification {K : Type} [Field K]
+    {U X₁ X₂ : Scheme.{0}} {strU : U ⟶ Spec (CommRingCat.of K)}
+    {strX₁ : X₁ ⟶ Spec (CommRingCat.of K)} {strX₂ : X₂ ⟶ Spec (CommRingCat.of K)}
+    {u₁ : U ⟶ X₁} {u₂ : U ⟶ X₂} [AlgebraicGeometry.IsIntegral U]
+    (h₁ : IsSmoothCompactification strU strX₁ u₁)
+    (h₂ : IsSmoothCompactification strU strX₂ u₂) :
+    ∃ (w : X₁ ⟶ X₂) (w' : X₂ ⟶ X₁),
+      w ≫ strX₂ = strX₁ ∧ w' ≫ strX₁ = strX₂ ∧
+        w ≫ w' = 𝟙 X₁ ∧ w' ≫ w = 𝟙 X₂ ∧ u₁ ≫ w = u₂ := by
+  haveI := h₁.isOpenImmersion; haveI := h₁.isDominant
+  haveI := h₁.isProper; haveI := h₁.smooth
+  haveI := h₂.isOpenImmersion; haveI := h₂.isDominant
+  haveI := h₂.isProper; haveI := h₂.smooth
+  haveI : Smooth strX₁ := SmoothOfRelativeDimension.smooth (n := 1) (f := strX₁)
+  haveI : Smooth strX₂ := SmoothOfRelativeDimension.smooth (n := 1) (f := strX₂)
+  haveI : AlgebraicGeometry.IsReduced X₁ := isReduced_of_smooth_over_field strX₁
+  haveI : AlgebraicGeometry.IsReduced X₂ := isReduced_of_smooth_over_field strX₂
+  haveI : IrreducibleSpace X₁ :=
+    irreducibleSpace_of_denseRange u₁.continuous (Scheme.Hom.denseRange u₁)
+  haveI : IrreducibleSpace X₂ :=
+    irreducibleSpace_of_denseRange u₂.continuous (Scheme.Hom.denseRange u₂)
+  haveI : AlgebraicGeometry.IsIntegral X₁ := isIntegral_of_irreducibleSpace_of_isReduced _
+  haveI : AlgebraicGeometry.IsIntegral X₂ := isIntegral_of_irreducibleSpace_of_isReduced _
+  have hval₁ := valuationRing_stalk_of_smoothOfRelativeDimension_one strX₁
+  have hval₂ := valuationRing_stalk_of_smoothOfRelativeDimension_one strX₂
+  obtain ⟨w, ⟨hw, hjw⟩, -⟩ :=
+    exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion
+      (strX := strX₁) (strZ := strX₂) hval₁ (j := u₁) u₂ (by rw [h₂.comm, h₁.comm])
+  obtain ⟨w', ⟨hw', hjw'⟩, -⟩ :=
+    exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion
+      (strX := strX₂) (strZ := strX₁) hval₂ (j := u₂) u₁ (by rw [h₁.comm, h₂.comm])
+  have huniq₁ :=
+    exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion
+      (strX := strX₁) (strZ := strX₁) hval₁ (j := u₁) u₁ rfl
+  have huniq₂ :=
+    exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion
+      (strX := strX₂) (strZ := strX₂) hval₂ (j := u₂) u₂ rfl
+  refine ⟨w, w', hw, hw', ?_, ?_, hjw⟩
+  · exact huniq₁.unique ⟨by rw [Category.assoc, hw', hw], by rw [← Category.assoc, hjw, hjw']⟩
+      ⟨Category.id_comp _, Category.comp_id _⟩
+  · exact huniq₂.unique ⟨by rw [Category.assoc, hw, hw'], by rw [← Category.assoc, hjw', hjw]⟩
+      ⟨Category.id_comp _, Category.comp_id _⟩
+
+/-- **A NONEMPTY OPEN OF `X_0(N)` OVER `ℚ` IS A SMOOTH COMPACTIFICATION OF
+ITSELF-AS-A-CURVE** (PROVEN 2026-08-02, flt-lean-49): an open immersion over the
+base into an `X_0(N)` automatically has the other four
+`IsSmoothCompactification` clauses.
+
+This is what lets the modular leaf below ask for an OPEN IMMERSION and nothing
+else.  `isProper` and `smooth` are fields of `IsX0Compactification`; `isDominant`
+is "a nonempty open of an irreducible space is dense", `X_0(N)` being integral by
+`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected` out of its
+`smooth` and `connected` fields; and `finite_compl` is
+`finite_compl_range_of_topologicalKrullDim_le_one` over
+`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`, i.e. the complement
+of a dense open in a curve is finite.  **None of the four is modular**, which is
+the whole point: a successor at the leaf below owes a map, not a package.
+
+`[AlgebraicGeometry.IsIntegral U]` is used twice — for `Nonempty U` (without which
+`u₀` could have empty range and `isDominant` would be false) and as the hypothesis
+of the finiteness theorem. -/
+theorem isSmoothCompactification_of_isX0Compactification {N : ℕ}
+    {X₀ Y U : Scheme.{0}} {strX₀ : X₀ ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X₀}
+    {strU : U ⟶ SpecQ} {u₀ : U ⟶ X₀} [IsOpenImmersion u₀] [AlgebraicGeometry.IsIntegral U]
+    (h : IsX0Compactification N strX₀ strY jY) (hu : u₀ ≫ strX₀ = strU) :
+    IsSmoothCompactification strU strX₀ u₀ := by
+  haveI := h.isProper
+  haveI := h.smooth
+  haveI : AlgebraicGeometry.IsIntegral X₀ :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX₀ h.connected
+  haveI hdom : IsDominant u₀ := by
+    refine ⟨?_⟩
+    obtain ⟨x⟩ : Nonempty U := inferInstance
+    exact (u₀.isOpenEmbedding.isOpen_range).dense ⟨u₀.base x, Set.mem_range_self x⟩
+  exact { comm := hu
+          isOpenImmersion := inferInstance
+          isDominant := hdom
+          isProper := h.isProper
+          smooth := h.smooth
+          finite_compl := finite_compl_range_of_topologicalKrullDim_le_one strX₀ u₀
+            (topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one strX₀) }
+
+/-- **THE MODULAR LEAF: THE AFFINE SEXTIC IS AN OPEN SUBSCHEME OF `X_0(37)`**
+(SORRY LEAF, cut 2026-08-02 by flt-lean-49 as the residue of
+`exists_isX0Compactification_sexticThirtySeven`, which is PROVEN over it and the
+two general theorems above; that leaf was itself cut 2026-07-31 by flt-lean-273
+out of `exists_affinePlaneOpen_x0ThirtySeven`).
+
+There is an `X_0(37)` — an `IsX0Compactification 37` — into which the affine
+sextic `V(F)`, `F = y² − (x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4)`, embeds as an
+open subscheme over `ℚ`.
+
+**This is the entire remaining modular content of level `37`, and it is now
+stated with no geometry attached to it.**  What the previous form of the leaf
+additionally asked for — that `X` be proper, smooth, geometrically connected, and
+contain the sextic densely with finite complement — is discharged by
+`isSmoothCompactification_of_isX0Compactification` above (four clauses, none
+modular), and the passage from *this* `X_0(37)` to an ARBITRARY smooth
+compactification `X` of the sextic is discharged by
+`exists_inverse_of_isSmoothCompactification` plus
+`Fermat.IsX0Compactification.ofInverse`.  So a successor owes ONE MORPHISM.
+
+TRUE.  Magma's `SmallModularCurve(37)` is `y² − x³y = 2x⁵ − 5x⁴ + 7x³ − 6x² +
+3x − 1`, which `SimplifiedModel` (`Y = 2y − x³`) carries to exactly
+`sexticThirtySevenPoly` — the reconnaissance block above, Magma V2.29-2,
+2026-07-31.  `f` is squarefree of degree `6`, so `V(F)` is a SMOOTH affine curve
+(its singularities are at infinity), hence an open subscheme of its own smooth
+compactification, and that compactification is `X_0(37)`.
+
+Two independent numerical confirmations, PARI/GP, 2026-08-02, `flt-lean-49`:
+`disc(f) = 207474688 = 2¹² · 37³`, so `f` is squarefree — which is what makes
+`V(F)` smooth and the model of genus `2` — and the discriminant is supported on
+`{2, 37}`, which is what a model of a level-`37` modular curve must look like.
+`f` is moreover irreducible over `ℚ`.  Neither is a proof of the moduli
+interpretation; both would have refuted it had they come out otherwise.
+
+**The `∃`-shape is deliberate and is what a citation supplies.**  The `∀`-form
+("every `X_0(37)` receives the sextic") is equivalent — two `X_0(37)`s are
+isomorphic over `ℚ`, by initiality of `IsCoarseModuliY0` for the open part
+(`IsCoarseModuliY0.exists_inverse`) and `exists_inverse_of_isSmoothCompactification`
+above for the compactification — but it is strictly more to prove and no consumer
+needs it.  The `𝔽_ℓ` analogue of that equivalence is already in `X0.lean` as
+`exists_inverse_of_isX0Compactification`; only its base is different.
+
+**WHAT PROVING IT NEEDS, and the shape of the route.**  A `Γ₀(37)`-moduli
+interpretation of an explicit equation is not derivable from the equation.  The
+classical route, and the one this development is set up for:
+
+* `Fermat.exists_x0Compactification 37` (PROVEN) supplies `X₀`, `Y`, and the
+  `IsX0Compactification`, so **the leaf's first component costs nothing**; the
+  content is the open immersion `u₀` alone;
+* `Y` is `Spec (A^G)` for the Katz–Mazur presentation
+  (`Fermat.exists_gamma0AffineModel`, `Fermat.isAffine_of_isCoarseModuliY0`), so
+  the open immersion is a ring map in the other direction on each chart, and what
+  has to be produced is a pair of modular functions `x, y` on `Y_0(37)` with
+  `y² = f(x)` generating the function field — the modular parametrisation.  That
+  is the `q`-expansion / modular-units identity, and it is NOT in the tree: the
+  pin has `Mathlib.NumberTheory.ModularForms` (Eisenstein series, `Δ`, `η`,
+  `q`-expansions) and no `j`, no modular units, and no function field of a
+  modular curve.  Galbraith's thesis *Equations for modular curves* is where the
+  `η`-quotient coordinates for this model are written out.
+
+**Not vacuous in either direction.**  `IsX0Compactification 37` pins `X₀` up to
+unique isomorphism (its `coarse` field is an INITIALITY property), so the leaf
+cannot be satisfied by a degenerate `X₀`; and `IsOpenImmersion u₀` is injective on
+points, so it cannot be satisfied by a degenerate `u₀` either — `V(F)` is a
+genuine curve, `isIntegral_planeCurveSchemeQ_sexticThirtySeven` being PROVEN.
+
+**The check that would refute it**: a fifth rational point on
+`y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4` (`X_0(37)(ℚ)` has exactly four —
+see the reconnaissance, where two of the four are the cusps `(1 : 1 : 1)` and
+`(1 : 1 : 0)`), or a genus computation for that sextic giving anything but `2`. -/
+theorem exists_openImmersion_x0ThirtySeven :
+    ∃ (X₀ Y : Scheme.{0}) (strX₀ : X₀ ⟶ SpecQ) (strY : Y ⟶ SpecQ) (jY : Y ⟶ X₀)
+      (u₀ : planeCurveSchemeQ sexticThirtySevenPoly ⟶ X₀) (_ : IsOpenImmersion u₀),
+      Nonempty (IsX0Compactification 37 strX₀ strY jY) ∧
+        u₀ ≫ strX₀ = planeCurveStrQ sexticThirtySevenPoly :=
+  sorry
+
 /-- `Spec (Frac R) ⟶ Spec R` is DOMINANT (PROVEN): its image is the generic point `(0)`,
 whose closure is `Spec R`. -/
 theorem isDominant_specMap_algebraMap {R : Type} [CommRing R] [IsDomain R]
