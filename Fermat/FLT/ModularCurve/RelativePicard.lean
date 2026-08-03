@@ -4525,21 +4525,26 @@ transfers verbatim.
 
 **What is left in the leaf, in the order a prover meets it.**
 
-1. *Transport.*  The hypothesis is stated in the LOCAL world — `RelPoint
-   (pstr ∣_ V) gV` and `curveBaseChange (curveBaseChangeProj strX V.ι) gV` —
-   and the conclusion in the GLOBAL one, `RelPoint pstr g` and
-   `curveBaseChange strX g`.  Bridging them is the pair of sublemmas the
-   route note on `exists_isRelPicOverAffines_of_forall_isAffineOpen` names and
-   dismisses: `RelPoint (pstr ∣_ V) gV ≃ RelPoint pstr (gV ≫ V.ι)` (because
-   `pstr ⁻¹ᵁ V` is `P ×_S V`, `isPullback_morphismRestrict`), and
+1. *Transport.*  **DONE, 2026-08-02, `flt-lean-43`.**  The hypothesis USED to
+   be stated in the LOCAL world — `RelPoint (pstr ∣_ V) gV` and
+   `curveBaseChange (curveBaseChangeProj strX V.ι) gV` — while the conclusion
+   is in the GLOBAL one, `RelPoint pstr g` and `curveBaseChange strX g`.  The
+   pair of sublemmas that bridges them is the pair this note and two others
+   named and dismissed as "routine and real work":
+   `RelPoint (pstr ∣_ V) gV ≃ RelPoint pstr (gV ≫ V.ι)` (because `pstr ⁻¹ᵁ V`
+   is `P ×_S V`, `isPullback_morphismRestrict`) and
    `curveBaseChange (curveBaseChangeProj strX V.ι) gV ≅ curveBaseChange strX
    (gV ≫ V.ι)` (pullback pasting), compatibly with the projections to `T` so
-   that `RelPicEquiv` crosses.  Neither is stated as a leaf here because
-   neither is a citation; both are routine and both are real work.
-2. *Rigidification and gluing*, which is the mathematics — see the route in
-   the leaf's own docstring.  `_o` and `_hpush` are spent here and only here.
-
-`isPullback_curveBaseChangeMap` (PROVEN, below) is half of (1). -/
+   that `RelPicEquiv` crosses.  Both are now PROVEN, in the subsection *The
+   LOCAL/GLOBAL transport* below, and the leaf's hypothesis has been RECUT
+   into the global world (`RelPicClassifiesOverOpen`) so that the mismatch is
+   gone from the leaf entirely.  `isPullback_curveBaseChangeMap` (PROVEN,
+   below) is half of the second.
+2. *Rigidification and gluing*, which is the mathematics, and is now the WHOLE
+   of the leaf — see the route in the leaf's own docstring, which also records
+   the 2026-08-02 reconnaissance on what `Mathlib/CategoryTheory/Sites/Descent/`
+   does and does not give (it has no `IsStack` instances at all).  `_o` and
+   `_hpush` are spent here and only here. -/
 
 /-- **The sheaf on `X_T` classified by a `T`-point `p` of `P`**, given a
 Poincaré bundle `poin` on `X ×_S P`: the pullback of `poin` along the map
@@ -4650,6 +4655,255 @@ theorem exists_relPicUniversal_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ 
     rw [relPicSelfPoint_pre p] at h
     exact h
 
+/-! #### The LOCAL/GLOBAL transport (PROVEN 2026-08-02, `flt-lean-43`)
+
+Three route notes in this file called these sublemmas "routine" and said they
+were "not stated as a leaf here because nothing in the assembly consumes
+them"; `HANDOFF-flt-lean-266-relpic-transport.md` then wrote and verified the
+first two without landing them, for the same reason.  They are landed here
+because the RECUT below consumes them: the gluing leaf's hypothesis is now
+stated in the GLOBAL world, so the leaf contains no local/global mismatch at
+all and the transport is paid once, here, rather than by whoever proves it.
+
+The fact that makes the whole transport cheap, and which no earlier note
+records, is that mathlib's pasting isomorphism
+`pullbackLeftPullbackSndIso strX V.ι gV : (X ×_S V) ×_V T ≅ X ×_S T` commutes
+with the projection to `T` **on the nose** (`pullbackLeftPullbackSndIso_hom_snd`)
+— and that projection is exactly the map `RelPicEquiv` twists along, so the
+relation crosses with nothing to fight.
+
+The one generalisation the handoff named as still owed —
+`relPicEquiv_modPullback` for an arbitrary comparison morphism rather than for
+`curveBaseChangeMap` — was ALREADY PROVEN above, as
+`relPicEquiv_modPullback_of_comm`; it landed for the `IsRelPicOf.ofIsPullback`
+cluster on 2026-07-31 and nothing had connected the two.  So no new
+tensor-calculus input was needed. -/
+
+/-- **A `V`-point of `pstr ∣_ V` is an `S`-point of `pstr` over `gV ≫ V.ι`** —
+compose with the open immersion `(pstr ⁻¹ᵁ V).ι`. -/
+def relPointOfRestrict {P S : Scheme.{u}} (pstr : P ⟶ S) (V : S.Opens) {T : Scheme.{u}}
+    {gV : T ⟶ (V : Scheme.{u})} (y : RelPoint (pstr ∣_ V) gV) :
+    RelPoint pstr (gV ≫ V.ι) :=
+  ⟨y.1 ≫ (pstr ⁻¹ᵁ V).ι, by
+    rw [Category.assoc, ← morphismRestrict_ι pstr V, ← Category.assoc, y.2]⟩
+
+/-- **And conversely** — a point of `pstr` whose base point factors through `V`
+factors through `pstr ⁻¹ᵁ V`, because `isPullback_morphismRestrict` says the
+square `(pstr ∣_ V, (pstr ⁻¹ᵁ V).ι, V.ι, pstr)` is cartesian. -/
+noncomputable def relPointToRestrict {P S : Scheme.{u}} (pstr : P ⟶ S) (V : S.Opens)
+    {T : Scheme.{u}} {gV : T ⟶ (V : Scheme.{u})} (x : RelPoint pstr (gV ≫ V.ι)) :
+    RelPoint (pstr ∣_ V) gV :=
+  ⟨(isPullback_morphismRestrict pstr V).lift gV x.1 x.2.symm,
+    (isPullback_morphismRestrict pstr V).lift_fst _ _ _⟩
+
+theorem relPointOfRestrict_toRestrict {P S : Scheme.{u}} (pstr : P ⟶ S) (V : S.Opens)
+    {T : Scheme.{u}} {gV : T ⟶ (V : Scheme.{u})} (x : RelPoint pstr (gV ≫ V.ι)) :
+    relPointOfRestrict pstr V (relPointToRestrict pstr V x) = x :=
+  Subtype.ext ((isPullback_morphismRestrict pstr V).lift_snd _ _ _)
+
+theorem relPointToRestrict_ofRestrict {P S : Scheme.{u}} (pstr : P ⟶ S) (V : S.Opens)
+    {T : Scheme.{u}} {gV : T ⟶ (V : Scheme.{u})} (y : RelPoint (pstr ∣_ V) gV) :
+    relPointToRestrict pstr V (relPointOfRestrict pstr V y) = y := by
+  refine Subtype.ext ((isPullback_morphismRestrict pstr V).hom_ext ?_ ?_)
+  · exact ((isPullback_morphismRestrict pstr V).lift_fst _ _ _).trans y.2.symm
+  · exact (isPullback_morphismRestrict pstr V).lift_snd _ _ _
+
+/-- **A point of `f : A ⟶ V` over `g` is a point of `f ≫ m` over `g ≫ m`** —
+the same morphism, reassociated.  Kept separate from `relPointOfRestrict`
+because it says nothing about open immersions and is what moves a point out of
+the world of `V`-schemes without moving it along `(pstr ⁻¹ᵁ V).ι`. -/
+def relPointComp {A V S : Scheme.{u}} (f : A ⟶ V) (m : V ⟶ S) {T : Scheme.{u}} {g : T ⟶ V}
+    (y : RelPoint f g) : RelPoint (f ≫ m) (g ≫ m) :=
+  ⟨y.1, by rw [← Category.assoc, y.2]⟩
+
+/-- **A GLOBAL point of `pstr` over an open `V`, read as a point of
+`(pstr ∣_ V) ≫ V.ι`.**  This is the map `RelPicClassifiesOverOpen` below
+classifies along, and it is a BIJECTION onto its target
+(`relPointOfRestrict_toRestrict` / `relPointToRestrict_ofRestrict` are its two
+round trips), which is why quantifying the predicate over global points of
+`pstr` loses nothing. -/
+noncomputable def relPointRestrictOpen {P S : Scheme.{u}} (pstr : P ⟶ S) (V : S.Opens)
+    {T : Scheme.{u}} {gV : T ⟶ (V : Scheme.{u})} (p : RelPoint pstr (gV ≫ V.ι)) :
+    RelPoint ((pstr ∣_ V) ≫ V.ι) (gV ≫ V.ι) :=
+  relPointComp (pstr ∣_ V) V.ι (relPointToRestrict pstr V p)
+
+/-- **`X ×_S T` IS THE SAME COMPUTED OVER `V` OR OVER `S`** — mathlib's
+pullback pasting isomorphism, named so that the statements below read as
+geometry. -/
+noncomputable def curveBaseChangeRestrictIso {X S : Scheme.{u}} (strX : X ⟶ S) (V : S.Opens)
+    {T : Scheme.{u}} (gV : T ⟶ (V : Scheme.{u})) :
+    curveBaseChange (curveBaseChangeProj strX V.ι) gV ≅ curveBaseChange strX (gV ≫ V.ι) :=
+  pullbackLeftPullbackSndIso strX V.ι gV
+
+/-- **The comparison commutes with the projection to `T` ON THE NOSE.**  This
+is the whole reason the transport is cheap: `RelPicEquiv`'s twisting sheaf is
+pulled back along exactly this projection. -/
+theorem curveBaseChangeRestrictIso_hom_proj {X S : Scheme.{u}} (strX : X ⟶ S) (V : S.Opens)
+    {T : Scheme.{u}} (gV : T ⟶ (V : Scheme.{u})) :
+    (curveBaseChangeRestrictIso strX V gV).hom ≫ curveBaseChangeProj strX (gV ≫ V.ι)
+      = curveBaseChangeProj (curveBaseChangeProj strX V.ι) gV :=
+  pullbackLeftPullbackSndIso_hom_snd strX V.ι gV
+
+theorem curveBaseChangeRestrictIso_inv_proj {X S : Scheme.{u}} (strX : X ⟶ S) (V : S.Opens)
+    {T : Scheme.{u}} (gV : T ⟶ (V : Scheme.{u})) :
+    (curveBaseChangeRestrictIso strX V gV).inv
+        ≫ curveBaseChangeProj (curveBaseChangeProj strX V.ι) gV
+      = curveBaseChangeProj strX (gV ≫ V.ι) := by
+  rw [← curveBaseChangeRestrictIso_hom_proj strX V gV, Iso.inv_hom_id_assoc]
+
+/-- **The comparison is NATURAL in the test object** — `pullback.hom_ext`
+against the two projections.
+
+Note that `pullback.lift_fst`/`lift_snd` are `@[reassoc]` but NOT `@[simp]` at
+this pin, and that `curveBaseChangeProj` has to be unfolded explicitly: without
+both, `simp` leaves the goal untouched and reports "unsolved goals", because
+the `abbrev` appears on one side and `pullback.snd` on the other. -/
+theorem curveBaseChangeRestrictIso_naturality {X S : Scheme.{u}} (strX : X ⟶ S) (V : S.Opens)
+    {T T' : Scheme.{u}} (u : T' ⟶ T) {gV : T ⟶ (V : Scheme.{u})} {gV' : T' ⟶ (V : Scheme.{u})}
+    (hu : u ≫ gV = gV') :
+    curveBaseChangeMap (curveBaseChangeProj strX V.ι) u hu
+          ≫ (curveBaseChangeRestrictIso strX V gV).hom
+      = (curveBaseChangeRestrictIso strX V gV').hom
+          ≫ curveBaseChangeMap strX u (by rw [← Category.assoc, hu]) := by
+  apply pullback.hom_ext <;>
+    simp [curveBaseChangeRestrictIso, curveBaseChangeMap, curveBaseChangeProj,
+      curveBaseChange, pullback.lift_fst, pullback.lift_snd, pullback.lift_fst_assoc]
+
+/-- **`U` CLASSIFIES `Pic_{X/S}` OVER THE OPEN `V`** — the global-world form of
+`RelPicClassifies`, and the hypothesis the gluing leaf below receives.
+
+`U` lives on `X ×_S (pstr ⁻¹ᵁ V)`, presented as
+`curveBaseChange strX ((pstr ∣_ V) ≫ V.ι)`; the points quantified over are
+GLOBAL points of `pstr`, restricted to `pstr ⁻¹ᵁ V` by `relPointRestrictOpen`.
+
+**Why the points are global and the sheaf is not.**  Both halves could have
+been stated locally, over `RelPoint (pstr ∣_ V) gV` and sheaves on
+`(X ×_S V) ×_V T`, which is what the pre-2026-08-02 hypothesis did.  Stating
+the POINTS globally is what makes this predicate read in the same vocabulary
+as the conclusion `RelPicClassifiesOverAffines` — same `RelPoint pstr`, same
+`RelPicEquiv strX`, same `relPicPullback` — so a prover attacking the gluing
+never meets a local/global mismatch.  The SHEAF cannot be stated globally,
+because there is no global sheaf until the gluing is done: that is the leaf.
+
+**Presented with `(pstr ∣_ V) ≫ V.ι` and not with `(pstr ⁻¹ᵁ V).ι ≫ pstr`,**
+which are equal (`morphismRestrict_ι`) and neither of which is preferable
+outright: the first keeps every point transport here definitional, the second
+is what a gluer wants when identifying `X ×_S (pstr ⁻¹ᵁ V)` as an OPEN of
+`X ×_S P`.  The first was chosen so that the cost lands on one
+`morphismRestrict_ι` rewrite inside the gluing proof rather than on an
+`eqToHom` transport in this statement. -/
+def RelPicClassifiesOverOpen {X P S : Scheme.{u}} (strX : X ⟶ S) (pstr : P ⟶ S) (V : S.Opens)
+    (U : (curveBaseChange strX ((pstr ∣_ V) ≫ V.ι)).Modules) : Prop :=
+  (∀ (T : Scheme.{u}) (gV : T ⟶ (V : Scheme.{u})) (p q : RelPoint pstr (gV ≫ V.ι)),
+      RelPicEquiv strX (gV ≫ V.ι)
+          (relPicPullback U (relPointRestrictOpen pstr V p))
+          (relPicPullback U (relPointRestrictOpen pstr V q)) → p = q) ∧
+    ∀ (T : Scheme.{u}) (gV : T ⟶ (V : Scheme.{u}))
+      (L : (curveBaseChange strX (gV ≫ V.ι)).Modules), IsInvertibleSheaf L →
+      ∃ p : RelPoint pstr (gV ≫ V.ι),
+        RelPicEquiv strX (gV ≫ V.ι) (relPicPullback U (relPointRestrictOpen pstr V p)) L
+
+section RelPicTransport
+
+variable {X P S : Scheme.{u}} (strX : X ⟶ S) {pstr : P ⟶ S} (V : S.Opens)
+
+/-- **The comparison square for the classifying pullback** — the naturality
+square above, moved onto the inverses.  `Iso.comp_inv_eq` then one rewrite. -/
+theorem relPicPullback_restrict_comm
+    {T : Scheme.{u}} {gV : T ⟶ (V : Scheme.{u})} (y : RelPoint (pstr ∣_ V) gV) :
+    curveBaseChangeMap strX y.1
+        (by rw [← Category.assoc, y.2] :
+          y.1 ≫ ((pstr ∣_ V) ≫ V.ι) = gV ≫ V.ι)
+        ≫ (curveBaseChangeRestrictIso strX V (pstr ∣_ V)).inv
+      = (curveBaseChangeRestrictIso strX V gV).inv
+          ≫ curveBaseChangeMap (curveBaseChangeProj strX V.ι) y.1 y.2 := by
+  rw [Iso.comp_inv_eq, Category.assoc,
+    curveBaseChangeRestrictIso_naturality strX V y.1 y.2, ← Category.assoc,
+    Iso.inv_hom_id, Category.id_comp]
+
+/-- **The classified sheaf computed LOCALLY and transported IS the one computed
+GLOBALLY** — both are `modPullback` of `U` along the two ways round the square
+above, so `modPullbackCompIso` twice and `modPullbackCongrIso` once. -/
+noncomputable def relPicPullbackRestrictIso
+    {U : (curveBaseChange (curveBaseChangeProj strX V.ι) (pstr ∣_ V)).Modules}
+    {T : Scheme.{u}} {gV : T ⟶ (V : Scheme.{u})} (y : RelPoint (pstr ∣_ V) gV) :
+    relPicPullback (modPullback (curveBaseChangeRestrictIso strX V (pstr ∣_ V)).inv U)
+        (relPointComp (pstr ∣_ V) V.ι y)
+      ≅ modPullback (curveBaseChangeRestrictIso strX V gV).inv (relPicPullback U y) :=
+  modPullbackCompIso _ _ U ≪≫
+    modPullbackCongrIso (relPicPullback_restrict_comm strX V y) U ≪≫
+    (modPullbackCompIso _ _ U).symm
+
+/-- **THE BRIDGE** (PROVEN 2026-08-02) — a LOCAL universal sheaf over the affine
+open `V`, in the sense of `RelPicClassifies` for the curve `X ×_S V ⟶ V`, IS a
+GLOBAL-world one in the sense of `RelPicClassifiesOverOpen`.
+
+Transport `U` along `curveBaseChangeRestrictIso` and read the two halves of
+`RelPicClassifies` through `relPicEquiv_modPullback_of_comm` at `u = 𝟙 T`,
+which is legitimate because the comparison respects the projection to `T`
+(`curveBaseChangeRestrictIso_hom_proj`).  The point bookkeeping is the two
+round trips of `relPointOfRestrict`/`relPointToRestrict`.
+
+Nothing here is about `V` being AFFINE; the hypothesis is carried by the
+consumer only because that is where affineness is available. -/
+theorem relPicClassifiesOverOpen_of_relPicClassifies
+    {U : (curveBaseChange (curveBaseChangeProj strX V.ι) (pstr ∣_ V)).Modules}
+    (hU : IsInvertibleSheaf U)
+    (hcl : RelPicClassifies (curveBaseChangeProj strX V.ι) U) :
+    ∃ U' : (curveBaseChange strX ((pstr ∣_ V) ≫ V.ι)).Modules,
+      IsInvertibleSheaf U' ∧ RelPicClassifiesOverOpen strX pstr V U' := by
+  refine ⟨modPullback (curveBaseChangeRestrictIso strX V (pstr ∣_ V)).inv U,
+    isInvertibleSheaf_modPullback _ hU, ?_, ?_⟩
+  · intro T gV p q hpq
+    have hcomm : (curveBaseChangeRestrictIso strX V gV).hom
+        ≫ curveBaseChangeProj strX (gV ≫ V.ι)
+        = curveBaseChangeProj (curveBaseChangeProj strX V.ι) gV ≫ 𝟙 T := by
+      rw [Category.comp_id]; exact curveBaseChangeRestrictIso_hom_proj strX V gV
+    have key := relPicEquiv_modPullback_of_comm strX
+      (curveBaseChangeRestrictIso strX V gV).hom (𝟙 T) hcomm hpq
+    have ep := relPicPullbackRestrictIso strX V (U := U) (relPointToRestrict pstr V p)
+    have eq' := relPicPullbackRestrictIso strX V (U := U) (relPointToRestrict pstr V q)
+    have key2 : RelPicEquiv (curveBaseChangeProj strX V.ι) gV
+        (relPicPullback U (relPointToRestrict pstr V p))
+        (relPicPullback U (relPointToRestrict pstr V q)) := by
+      refine relPicEquiv_trans _ gV
+        (relPicEquiv_of_iso _ gV
+          (modPullbackHomInvIsoPic (curveBaseChangeRestrictIso strX V gV) _).symm) ?_
+      refine relPicEquiv_trans _ gV ?_
+        (relPicEquiv_of_iso _ gV
+          (modPullbackHomInvIsoPic (curveBaseChangeRestrictIso strX V gV) _))
+      refine relPicEquiv_trans _ gV
+        (relPicEquiv_of_iso _ gV (modPullbackMapIso _ ep.symm)) ?_
+      refine relPicEquiv_trans _ gV ?_ (relPicEquiv_of_iso _ gV (modPullbackMapIso _ eq'))
+      exact key
+    have hres := hcl.1 T gV _ _ key2
+    calc p = relPointOfRestrict pstr V (relPointToRestrict pstr V p) :=
+            (relPointOfRestrict_toRestrict pstr V p).symm
+      _ = relPointOfRestrict pstr V (relPointToRestrict pstr V q) := by rw [hres]
+      _ = q := relPointOfRestrict_toRestrict pstr V q
+  · intro T gV L hL
+    obtain ⟨y, hy⟩ := hcl.2 T gV
+      (modPullback (curveBaseChangeRestrictIso strX V gV).hom L)
+      (isInvertibleSheaf_modPullback _ hL)
+    have hcomm : (curveBaseChangeRestrictIso strX V gV).inv
+        ≫ curveBaseChangeProj (curveBaseChangeProj strX V.ι) gV
+        = curveBaseChangeProj strX (gV ≫ V.ι) ≫ 𝟙 T := by
+      rw [Category.comp_id]; exact curveBaseChangeRestrictIso_inv_proj strX V gV
+    have key := relPicEquiv_modPullback_of_comm (curveBaseChangeProj strX V.ι)
+      (curveBaseChangeRestrictIso strX V gV).inv (𝟙 T) hcomm hy
+    refine ⟨relPointOfRestrict pstr V y, ?_⟩
+    have hy' : relPointRestrictOpen pstr V (relPointOfRestrict pstr V y)
+        = relPointComp (pstr ∣_ V) V.ι y := by
+      rw [relPointRestrictOpen, relPointToRestrict_ofRestrict]
+    rw [hy']
+    refine relPicEquiv_trans _ _
+      (relPicEquiv_of_iso _ _ (relPicPullbackRestrictIso strX V (U := U) y)) ?_
+    refine relPicEquiv_trans _ _ key ?_
+    exact relPicEquiv_of_iso _ _
+      (modPullbackInvHomIsoPic (curveBaseChangeRestrictIso strX V gV) L)
+
+end RelPicTransport
+
 /-- **THE RIGIDIFIED POINCARÉ BUNDLE** (sorry leaf, cut 2026-07-31 out of
 `exists_isRelPicOverAffines_of_forall_isAffineOpen` and RESTATED the same day
 over `RelPicClassifies`) — step 2 of that leaf's route, and the ONLY place
@@ -4679,28 +4933,62 @@ have only the identity automorphism.  The glued sheaf is `poin`, and
 `RelPicClassifiesOverAffines` for it is the local classification transported
 through `pstr ∣_ V`.
 
-Beyond the gluing itself, the work that is left is the TRANSPORT between the
-local and global worlds, and it is named here because no earlier note names
-it: `RelPoint (pstr ∣_ V) gV ≃ RelPoint pstr (gV ≫ V.ι)` (because `pstr ⁻¹ᵁ V`
-is `P ×_S V`, `isPullback_morphismRestrict`) and
-`curveBaseChange (curveBaseChangeProj strX V.ι) gV ≅ curveBaseChange strX
-(gV ≫ V.ι)` (pullback pasting), compatibly with the projections to `T`, so
-that `RelPicEquiv` crosses.  Neither is a citation; both are routine and both
-are real work.  `isPullback_curveBaseChangeMap` (PROVEN, below) is half of the
-second.
+**THE LOCAL/GLOBAL TRANSPORT IS DONE — RECUT 2026-08-02, `flt-lean-43`.**  The
+pre-2026-08-02 hypothesis was `RelPicClassifies (curveBaseChangeProj strX V.ι) U`
+for a sheaf `U` on `(X ×_S V) ×_V (pstr ⁻¹ᵁ V)`, i.e. it was stated in the LOCAL
+world, and every route note in this file recorded the resulting mismatch —
+`RelPoint (pstr ∣_ V) gV ≃ RelPoint pstr (gV ≫ V.ι)` and
+`curveBaseChange (curveBaseChangeProj strX V.ι) gV ≅ curveBaseChange strX (gV ≫ V.ι)`,
+compatibly with the projections to `T` — as work that was left, "routine and
+real", for whoever proved the leaf.
 
-**BOTH OF THOSE ARE WRITTEN AND VERIFIED**, in
-`HANDOFF-flt-lean-266-relpic-transport.md` at the repository root — ~35 lines,
-compiled against this module's olean, and not landed here only because nothing
-consumes them yet.  The fact that makes them cheap, and that no route note in
-this file records, is that mathlib's pasting isomorphism
+That work is now PROVEN, in the subsection above, and this leaf receives its
+hypothesis in the GLOBAL world (`RelPicClassifiesOverOpen`), whose points are
+points of `pstr` and whose equalities are `RelPicEquiv strX`.  So **the leaf
+now contains no local/global mismatch at all**: what is left is the gluing and
+nothing else.  The bridge from the old hypothesis to the new one is
+`relPicClassifiesOverOpen_of_relPicClassifies`, and the consumer
+`nonempty_isRelPicOverAffines_of_restrict` below discharges it, so no call site
+of this leaf changed.
+
+Two things about that recut are worth keeping.  Mathlib's pasting isomorphism
 `pullbackLeftPullbackSndIso strX V.ι gV : (X ×_S V) ×_V T ≅ X ×_S T` commutes
 with the projection to `T` ON THE NOSE (`pullbackLeftPullbackSndIso_hom_snd`),
-which is exactly the map `RelPicEquiv` twists along — so the relation crosses
-with nothing to fight.  The handoff also says what the recut that consumes them
-looks like, and names the one further generalisation it needs
-(`relPicEquiv_modPullback` for an arbitrary comparison morphism commuting with
-the projections, rather than for `curveBaseChangeMap`).
+which is exactly the map `RelPicEquiv` twists along — that is what makes the
+whole transport cheap.  And the one further generalisation
+`HANDOFF-flt-lean-266-relpic-transport.md` named as still owed —
+`relPicEquiv_modPullback` for an arbitrary comparison morphism rather than for
+`curveBaseChangeMap` — turned out to be ALREADY PROVEN, 800 lines above, as
+`relPicEquiv_modPullback_of_comm`; it had landed for the
+`IsRelPicOf.ofIsPullback` cluster the same day the handoff was written and
+nothing had connected the two.  **RECUT, direct-sorry count UNCHANGED (1 → 1).**
+
+**WHAT REMAINS, and the check to run first.**  Rigidify each `U_V` along `_o`
+and glue.  The gluing is descent for `SheafOfModules` along the OPEN cover
+`{X ×_S (pstr ⁻¹ᵁ V)}` of `X ×_S P` — an open cover, not a general one, which
+is much weaker than a stack.  Reconnaissance, 2026-08-02, so the next owner
+does not repeat it:
+
+* `Mathlib/CategoryTheory/Sites/Descent/` exists (`IsStack.lean`,
+  `DescentData.lean`, `IsPrestack.lean`, `DescentDataAsCoalgebra.lean`), with
+  `Pseudofunctor.IsStack`, the constructor `IsStack.of_isStackFor` and the
+  payoff `isEquivalence_toDescentData`.  **It has NO instances — not for
+  sheaves of modules and not for anything else, anywhere in mathlib at this
+  pin.**  So the general-stack route is a subtree, not a citation, and there
+  is not even a worked example to copy.
+* The fibred category itself DOES exist:
+  `AlgebraicGeometry.Scheme.Modules.pseudofunctor :
+  Pseudofunctor (LocallyDiscrete Scheme.{u}ᵒᵖ) (Adj Cat)`
+  (`Mathlib/AlgebraicGeometry/Modules/Sheaf.lean`).  Note it lands in `Adj Cat`
+  and `IsStack` wants `Cat`, so even connecting the two needs a
+  "take the left adjoint" pseudofunctor that is not there.
+* The cheap route is therefore NOT the stack machinery but the open-cover one:
+  `Scheme.Modules.restrictFunctor` for an open immersion (with
+  `restrictAdjunction`, `restrictFunctorIsoPullback`, `restrictFunctorId`) is
+  the right vocabulary, and `X ×_S (pstr ⁻¹ᵁ V)` really is an open subscheme
+  of `X ×_S P`.  Identifying it as one is the single
+  `morphismRestrict_ι` rewrite this leaf's hypothesis deliberately leaves to
+  the gluer (see `RelPicClassifiesOverOpen`).
 
 **Both `_o` and `_hpush` are load-bearing and must not be dropped "because
 the gluing is formal"**: without them there is no canonical universal sheaf
@@ -4732,15 +5020,47 @@ function, which is exactly what the assembly below checks.  So no
 counterexample can distinguish the two statements.
 
 NOT VACUOUS: `_hloc` is what `exists_gluedRelPic_of_forall_isAffineOpen`
-produces, composed with `exists_relPicUniversal_of_isRelPicOf`. -/
+produces, composed with `exists_relPicUniversal_of_isRelPicOf`.
+
+**SECOND FAITHFULNESS AUDIT (2026-08-02, for the SECOND restatement).**  This
+statement has now been restated twice, so by the standing rule the audit above
+is VOID and may not be inherited a second time on the strength of the first
+inheritance.  Re-run against the composite:
+
+The 2026-08-02 recut changed ONLY the hypothesis, from
+`∃ U on (X ×_S V) ×_V (pstr ⁻¹ᵁ V), RelPicClassifies (curveBaseChangeProj strX V.ι) U`
+to
+`∃ U on X ×_S (pstr ⁻¹ᵁ V), RelPicClassifiesOverOpen strX pstr V U`.
+The conclusion is untouched, character for character.  The two hypotheses are
+EQUIVALENT, so the two statements are equivalent and no counterexample can
+distinguish them:
+
+* old → new is `relPicClassifiesOverOpen_of_relPicClassifies`, PROVEN above and
+  consumed by the assembly below.  It transports `U` along
+  `curveBaseChangeRestrictIso` and reads the two halves of `RelPicClassifies`
+  through `relPicEquiv_modPullback_of_comm` at `u = 𝟙 T`;
+* new → old runs the SAME argument backwards — take
+  `U := modPullback (curveBaseChangeRestrictIso strX V (pstr ∣_ V)).hom U'`,
+  and the same `relPicEquiv_modPullback_of_comm` at the other side of the
+  isomorphism.  The point bookkeeping is the same bijection read the other way
+  (`relPointOfRestrict`/`relPointToRestrict` are mutually inverse, so `p = q`
+  and `p̃ = q̃` are interchangeable, and the two `∃` range over sets in
+  bijection).  Not in Lean: nothing consumes that direction.
+
+Note what did NOT change and therefore cannot have broken: `_o` and `_hpush`
+are still load-bearing for exactly the reason recorded above, since the
+`X = S ⊔ S` witness is a statement about the CONCLUSION's `surj` at a `T`
+covered by two affine opens and the conclusion did not move.  And the
+hypothesis is no weaker, so the leaf did not become harder: the equivalence is
+two-way. -/
 theorem exists_relPicPoincare_of_localUniversal {X P S : Scheme.{u}} (strX : X ⟶ S)
     {pstr : P ⟶ S}
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S))
     (_hpush : AlgebraicGeometry.HasUniversallyTrivialPushforward strX)
     (_hloc : ∀ V : S.Opens, IsAffineOpen V →
-      ∃ U : (curveBaseChange (curveBaseChangeProj strX V.ι) (pstr ∣_ V)).Modules,
-        IsInvertibleSheaf U ∧ RelPicClassifies (curveBaseChangeProj strX V.ι) U) :
+      ∃ U : (curveBaseChange strX ((pstr ∣_ V) ≫ V.ι)).Modules,
+        IsInvertibleSheaf U ∧ RelPicClassifiesOverOpen strX pstr V U) :
     ∃ poin : (curveBaseChange strX pstr).Modules,
       IsInvertibleSheaf poin ∧ RelPicClassifiesOverAffines strX poin :=
   sorry
@@ -4758,7 +5078,10 @@ reading as the record of what is and is not free:
 * `_hres` is turned into a universal sheaf per affine open by
   `exists_relPicUniversal_of_isRelPicOf` — the classifying function of ANY
   representing object is pullback of a single sheaf, by `sheaf_pre` at the
-  tautological point;
+  tautological point — and then moved from the LOCAL world to the GLOBAL one
+  by `relPicClassifiesOverOpen_of_relPicClassifies` (added 2026-08-02 with the
+  recut of the leaf's hypothesis; this is the only line of this proof that
+  changed, and no call site of this theorem moved);
 * `exists_relPicPoincare_of_localUniversal` glues those into one `poin` on
   `X ×_S P`.  That is the whole mathematical content, and the only leaf;
 * `sheaf := relPicPullback poin` then makes `invertible`
@@ -4783,7 +5106,8 @@ theorem nonempty_isRelPicOverAffines_of_restrict {X P S : Scheme.{u}} (strX : X 
     exists_relPicPoincare_of_localUniversal strX _hproper _hsmooth _hconn _o _hpush
       (fun V hV => by
         obtain ⟨hV'⟩ := _hres V hV
-        exact exists_relPicUniversal_of_isRelPicOf hV')
+        obtain ⟨U, hU, hcl⟩ := exists_relPicUniversal_of_isRelPicOf hV'
+        exact relPicClassifiesOverOpen_of_relPicClassifies strX V hU hcl)
   exact ⟨{ sheaf := fun {_T _g} p => relPicPullback poin p
          , invertible := fun {_T _g} _p => isInvertibleSheaf_modPullback _ hpoin
          , sheaf_pre := fun {_T' _T} h {_g _g'} hg p => relPicEquiv_relPicPullback_pre poin h hg p
