@@ -15614,31 +15614,41 @@ underlying the Cauchy-product compatibility. -/
 lemma sum_antidiagonal_cons {S : Type*} [AddCommMonoid S] {n : ℕ} (k : ℕ)
     (m : Fin n →₀ ℕ)
     (F : (Fin (n + 1) →₀ ℕ) × (Fin (n + 1) →₀ ℕ) → S) :
-    ∑ p ∈ Finset.antidiagonal (Finsupp.cons k m), F p =
-      ∑ ij ∈ Finset.antidiagonal k, ∑ ab ∈ Finset.antidiagonal m,
+    ∑ p ∈ Finset.HasAntidiagonal.antidiagonal (Finsupp.cons k m), F p =
+      ∑ ij ∈ Finset.HasAntidiagonal.antidiagonal k,
+        ∑ ab ∈ Finset.HasAntidiagonal.antidiagonal m,
         F (Finsupp.cons ij.1 ab.1, Finsupp.cons ij.2 ab.2) := by
-  calc ∑ p ∈ Finset.antidiagonal (Finsupp.cons k m), F p
-      = ∑ x ∈ Finset.antidiagonal k ×ˢ Finset.antidiagonal m,
+  -- NOTE: `Finset.antidiagonal` is written fully qualified throughout this
+  -- lemma: this module's import cone reaches
+  -- `Mathlib.Data.Finset.MulAntidiagonal`, whose `Set.IsPWO`-flavoured
+  -- genuine `def Finset.antidiagonal` shadows the `HasAntidiagonal` export
+  -- alias of the same name.
+  calc ∑ p ∈ Finset.HasAntidiagonal.antidiagonal (Finsupp.cons k m), F p
+      = ∑ x ∈ Finset.HasAntidiagonal.antidiagonal k ×ˢ
+            Finset.HasAntidiagonal.antidiagonal m,
           F (Finsupp.cons x.1.1 x.2.1, Finsupp.cons x.1.2 x.2.2) := ?_
-    _ = ∑ ij ∈ Finset.antidiagonal k, ∑ ab ∈ Finset.antidiagonal m,
+    _ = ∑ ij ∈ Finset.HasAntidiagonal.antidiagonal k,
+          ∑ ab ∈ Finset.HasAntidiagonal.antidiagonal m,
           F (Finsupp.cons ij.1 ab.1, Finsupp.cons ij.2 ab.2) :=
-        Finset.sum_product' (Finset.antidiagonal k) (Finset.antidiagonal m)
+        Finset.sum_product' (Finset.HasAntidiagonal.antidiagonal k)
+          (Finset.HasAntidiagonal.antidiagonal m)
           (fun ij ab => F (Finsupp.cons ij.1 ab.1, Finsupp.cons ij.2 ab.2))
   refine Finset.sum_nbij'
     (i := fun p => ((p.1 0, p.2 0), (Finsupp.tail p.1, Finsupp.tail p.2)))
     (j := fun x => (Finsupp.cons x.1.1 x.2.1, Finsupp.cons x.1.2 x.2.2))
     ?_ ?_ ?_ ?_ ?_
   · rintro ⟨p, q⟩ hp
-    rw [Finset.mem_antidiagonal] at hp
-    rw [Finset.mem_product, Finset.mem_antidiagonal, Finset.mem_antidiagonal]
+    rw [Finset.HasAntidiagonal.mem_antidiagonal] at hp
+    rw [Finset.mem_product, Finset.HasAntidiagonal.mem_antidiagonal,
+      Finset.HasAntidiagonal.mem_antidiagonal]
     refine ⟨?_, ?_⟩
     · have h0 := DFunLike.congr_fun hp 0
       simpa using h0
     · rw [← finsupp_tail_add, hp, Finsupp.tail_cons]
   · rintro ⟨⟨i, j⟩, a, b⟩ hx
-    rw [Finset.mem_product, Finset.mem_antidiagonal,
-      Finset.mem_antidiagonal] at hx
-    rw [Finset.mem_antidiagonal]
+    rw [Finset.mem_product, Finset.HasAntidiagonal.mem_antidiagonal,
+      Finset.HasAntidiagonal.mem_antidiagonal] at hx
+    rw [Finset.HasAntidiagonal.mem_antidiagonal]
     show Finsupp.cons i a + Finsupp.cons j b = Finsupp.cons k m
     rw [finsupp_cons_add_cons, hx.1, hx.2]
   · rintro ⟨p, q⟩ -
@@ -22791,6 +22801,80 @@ lemma adZeroTraceForm_rep (ρbar : GaloisRep ℚ k V) (σ : Field.absoluteGalois
       _ = a * (X * Y) * b := by noncomm_ring
   rw [hstep, LinearMap.trace_mul_comm, ← mul_assoc, hb, one_mul]
 
+include hℓOdd hdim in
+/-- **The trace form on `ad⁰` is nondegenerate** (PROVEN), for `ℓ` odd and
+`rank_k V = 2`: every nonzero `x` has some `y` with `tr(xy) ≠ 0`.
+
+`hℓOdd` is genuinely load-bearing and this is the ONLY place either hypothesis
+is used. `char k = ℓ` (`natCast_self_eq_zero` above), so `ℓ` odd is exactly
+`(2 : k) ≠ 0`, and `2` is `finrank k V`; the proof splits an arbitrary
+endomorphism `z` as `z₀ + (tr z / 2) · 1` with `z₀` traceless, which is the
+step that divides by `2`. For `ℓ = 2` the statement is FALSE — the trace form
+on `sl₂` in characteristic `2` has the scalars in its radical, since
+`tr(1 · Y) = tr Y = 0` for every traceless `Y` while `1` is itself traceless —
+so this leaf may not be restated for `ℓ = 2`, and neither may the Poitou–Tate
+leaf that consumes it.
+
+The nondegeneracy on all of `Module.End k V` comes from the rank-one
+endomorphism `w ↦ φ(w) • v` (`LinearMap.smulRight`), whose trace is `φ v`
+(`LinearMap.trace_smulRight`); choosing `v` with `x v ≠ 0` and then `φ` with
+`φ (x v) ≠ 0` (`Module.forall_dual_apply_eq_zero_iff`) gives `tr(x z) ≠ 0`, and
+the traceless correction preserves that because `tr x = 0`. -/
+lemma adZeroTraceForm_nondegenerate {x : AdZero k V} (hx : x ≠ 0) :
+    ∃ y : AdZero k V, adZeroTraceForm k V x y ≠ 0 := by
+  have h2k : (2 : k) ≠ 0 := by
+    intro h20
+    have hd2 : ringChar k ∣ 2 := ringChar.dvd (by exact_mod_cast h20)
+    have hdl : ringChar k ∣ ℓ := ringChar.dvd natCast_self_eq_zero
+    have hp : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hchar2 : ringChar k = 2 :=
+      (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp hd2
+    rw [hchar2] at hdl
+    obtain ⟨m, hm⟩ := hdl
+    obtain ⟨t, ht⟩ := hℓOdd
+    omega
+  have hfr : Module.finrank k V = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
+  set F : Module.End k V := AdZero.toEnd k V x with hFdef
+  have hF0 : F ≠ 0 := by
+    intro h
+    exact hx (AdZero.toEnd_injective (by rw [← hFdef, h, map_zero]))
+  obtain ⟨v, hv⟩ : ∃ v : V, F v ≠ 0 := by
+    by_contra hc
+    push_neg at hc
+    exact hF0 (LinearMap.ext hc)
+  obtain ⟨φ, hφ⟩ : ∃ φ : Module.Dual k V, φ (F v) ≠ 0 := by
+    by_contra hc
+    push_neg at hc
+    exact hv ((Module.forall_dual_apply_eq_zero_iff k (F v)).mp hc)
+  set z : Module.End k V := LinearMap.smulRight φ v with hzdef
+  have hFz : F * z = LinearMap.smulRight φ (F v) := by
+    ext w
+    simp [hzdef, Module.End.mul_apply]
+  have htr : LinearMap.trace k V (F * z) ≠ 0 := by
+    rw [hFz, LinearMap.trace_smulRight]; exact hφ
+  set c : k := LinearMap.trace k V z with hcdef
+  set z₀ : Module.End k V := z - (c / 2) • (1 : Module.End k V) with hz₀def
+  have htrone : LinearMap.trace k V (1 : Module.End k V) = (2 : k) := by
+    have hone : LinearMap.trace k V (1 : Module.End k V)
+        = ((Module.finrank k V : ℕ) : k) := by
+      rw [Module.End.one_eq_id, LinearMap.trace_id]
+    rw [hone, hfr]
+    norm_num
+  have hcc : c / 2 * 2 = c := by field_simp
+  have hz₀tr : LinearMap.trace k V z₀ = 0 := by
+    rw [hz₀def, map_sub, map_smul, htrone, ← hcdef, smul_eq_mul, hcc, sub_self]
+  have hFtr : LinearMap.trace k V F = 0 := by rw [hFdef]; exact adZero_trace_toEnd x
+  have hFz₀ : LinearMap.trace k V (F * z₀) = LinearMap.trace k V (F * z) := by
+    rw [hz₀def, mul_sub, mul_smul_comm, mul_one, map_sub, map_smul, hFtr,
+      smul_zero, sub_zero]
+  refine ⟨⟨z₀, LinearMap.mem_ker.mpr hz₀tr⟩, ?_⟩
+  rw [adZeroTraceForm_apply]
+  show LinearMap.trace k V (F * z₀) ≠ 0
+  rw [hFz₀]
+  exact htr
+
 /-! #### The LOCAL TATE PAIRING at `v`, and local duality
 
 Added 2026-07-31. This section is items (a) and (b) of the build order recorded on
@@ -23303,7 +23387,6 @@ theorem isLocalTateDual (ρbar : GaloisRep ℚ k V)
   · obtain ⟨x, hx⟩ := h2 y hy
     exact ⟨x, fun hz => hx ((LinearEquiv.map_eq_zero_iff inv).mp hz)⟩
 
-include hℓOdd hdim in
 open NumberField in
 /-- **Every finite place of `ℚ` comes from a rational prime** (PROVEN): transport along
 `Rat.ringOfIntegersEquiv` to `ℤ`, take the positive generator of the corresponding prime.
@@ -24664,79 +24747,6 @@ statement about `(ad⁰, ad⁰(1))`. Equivariance with TRIVIAL action downstairs
 the load-bearing clause, and it is what `LinearMap.trace_mul_comm` gives:
 conjugation does not move the trace. -/
 
-
-/-- **The trace form on `ad⁰` is nondegenerate** (PROVEN), for `ℓ` odd and
-`rank_k V = 2`: every nonzero `x` has some `y` with `tr(xy) ≠ 0`.
-
-`hℓOdd` is genuinely load-bearing and this is the ONLY place either hypothesis
-is used. `char k = ℓ` (`natCast_self_eq_zero` above), so `ℓ` odd is exactly
-`(2 : k) ≠ 0`, and `2` is `finrank k V`; the proof splits an arbitrary
-endomorphism `z` as `z₀ + (tr z / 2) · 1` with `z₀` traceless, which is the
-step that divides by `2`. For `ℓ = 2` the statement is FALSE — the trace form
-on `sl₂` in characteristic `2` has the scalars in its radical, since
-`tr(1 · Y) = tr Y = 0` for every traceless `Y` while `1` is itself traceless —
-so this leaf may not be restated for `ℓ = 2`, and neither may the Poitou–Tate
-leaf that consumes it.
-
-The nondegeneracy on all of `Module.End k V` comes from the rank-one
-endomorphism `w ↦ φ(w) • v` (`LinearMap.smulRight`), whose trace is `φ v`
-(`LinearMap.trace_smulRight`); choosing `v` with `x v ≠ 0` and then `φ` with
-`φ (x v) ≠ 0` (`Module.forall_dual_apply_eq_zero_iff`) gives `tr(x z) ≠ 0`, and
-the traceless correction preserves that because `tr x = 0`. -/
-lemma adZeroTraceForm_nondegenerate {x : AdZero k V} (hx : x ≠ 0) :
-    ∃ y : AdZero k V, adZeroTraceForm k V x y ≠ 0 := by
-  have h2k : (2 : k) ≠ 0 := by
-    intro h20
-    have hd2 : ringChar k ∣ 2 := ringChar.dvd (by exact_mod_cast h20)
-    have hdl : ringChar k ∣ ℓ := ringChar.dvd natCast_self_eq_zero
-    have hp : (ringChar k).Prime :=
-      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
-        (CharP.char_ne_zero_of_finite k (ringChar k))
-    have hchar2 : ringChar k = 2 :=
-      (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp hd2
-    rw [hchar2] at hdl
-    obtain ⟨m, hm⟩ := hdl
-    obtain ⟨t, ht⟩ := hℓOdd
-    omega
-  have hfr : Module.finrank k V = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
-  set F : Module.End k V := AdZero.toEnd k V x with hFdef
-  have hF0 : F ≠ 0 := by
-    intro h
-    exact hx (AdZero.toEnd_injective (by rw [← hFdef, h, map_zero]))
-  obtain ⟨v, hv⟩ : ∃ v : V, F v ≠ 0 := by
-    by_contra hc
-    push_neg at hc
-    exact hF0 (LinearMap.ext hc)
-  obtain ⟨φ, hφ⟩ : ∃ φ : Module.Dual k V, φ (F v) ≠ 0 := by
-    by_contra hc
-    push_neg at hc
-    exact hv ((Module.forall_dual_apply_eq_zero_iff k (F v)).mp hc)
-  set z : Module.End k V := LinearMap.smulRight φ v with hzdef
-  have hFz : F * z = LinearMap.smulRight φ (F v) := by
-    ext w
-    simp [hzdef, Module.End.mul_apply]
-  have htr : LinearMap.trace k V (F * z) ≠ 0 := by
-    rw [hFz, LinearMap.trace_smulRight]; exact hφ
-  set c : k := LinearMap.trace k V z with hcdef
-  set z₀ : Module.End k V := z - (c / 2) • (1 : Module.End k V) with hz₀def
-  have htrone : LinearMap.trace k V (1 : Module.End k V) = (2 : k) := by
-    have hone : LinearMap.trace k V (1 : Module.End k V)
-        = ((Module.finrank k V : ℕ) : k) := by
-      rw [Module.End.one_eq_id, LinearMap.trace_id]
-    rw [hone, hfr]
-    norm_num
-  have hcc : c / 2 * 2 = c := by field_simp
-  have hz₀tr : LinearMap.trace k V z₀ = 0 := by
-    rw [hz₀def, map_sub, map_smul, htrone, ← hcdef, smul_eq_mul, hcc, sub_self]
-  have hFtr : LinearMap.trace k V F = 0 := by rw [hFdef]; exact adZero_trace_toEnd x
-  have hFz₀ : LinearMap.trace k V (F * z₀) = LinearMap.trace k V (F * z) := by
-    rw [hz₀def, mul_sub, mul_smul_comm, mul_one, map_sub, map_smul, hFtr,
-      smul_zero, sub_zero]
-  refine ⟨⟨z₀, LinearMap.mem_ker.mpr hz₀tr⟩, ?_⟩
-  rw [adZeroTraceForm_apply]
-  show LinearMap.trace k V (F * z₀) ≠ 0
-  rw [hFz₀]
-  exact htr
 
 /-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
 `Ш¹_S(ad⁰(1))`, GIVEN the self-duality of the coefficients** (**PROVEN
